@@ -1,10 +1,13 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/ext"
 require "rubygems/installer"
 
 class TestGemExtBuilder < Gem::TestCase
   def setup
+    @orig_destdir = ENV["DESTDIR"]
+    @orig_make = ENV["make"]
     super
 
     @ext = File.join @tempdir, "ext"
@@ -13,19 +16,15 @@ class TestGemExtBuilder < Gem::TestCase
     FileUtils.mkdir_p @ext
     FileUtils.mkdir_p @dest_path
 
-    @orig_DESTDIR = ENV["DESTDIR"]
-    @orig_make = ENV["make"]
-
     @spec = util_spec "a"
 
     @builder = Gem::Ext::Builder.new @spec, ""
   end
 
   def teardown
-    ENV["DESTDIR"] = @orig_DESTDIR
-    ENV["make"] = @orig_make
-
     super
+    ENV["DESTDIR"] = @orig_destdir
+    ENV["make"] = @orig_make
   end
 
   def test_class_make
@@ -49,14 +48,14 @@ install:
 
     results = results.join("\n").b
 
-    assert_match %r{DESTDIR\\=#{ENV['DESTDIR']} clean$},   results
-    assert_match %r{DESTDIR\\=#{ENV['DESTDIR']}$},         results
-    assert_match %r{DESTDIR\\=#{ENV['DESTDIR']} install$}, results
+    assert_match(/DESTDIR\\=#{ENV['DESTDIR']} clean$/,   results)
+    assert_match(/DESTDIR\\=#{ENV['DESTDIR']}$/,         results)
+    assert_match(/DESTDIR\\=#{ENV['DESTDIR']} install$/, results)
 
-    if /nmake/ !~ results
-      assert_match %r{^clean: destination$},   results
-      assert_match %r{^all: destination$},     results
-      assert_match %r{^install: destination$}, results
+    unless /nmake/.match?(results)
+      assert_match(/^clean: destination$/,   results)
+      assert_match(/^all: destination$/,     results)
+      assert_match(/^install: destination$/, results)
     end
   end
 
@@ -78,9 +77,9 @@ install:
 
     results = results.join("\n").b
 
-    assert_match %r{DESTDIR\\=#{ENV['DESTDIR']} clean$},   results
-    assert_match %r{DESTDIR\\=#{ENV['DESTDIR']}$},         results
-    assert_match %r{DESTDIR\\=#{ENV['DESTDIR']} install$}, results
+    assert_match(/DESTDIR\\=#{ENV['DESTDIR']} clean$/,   results)
+    assert_match(/DESTDIR\\=#{ENV['DESTDIR']}$/,         results)
+    assert_match(/DESTDIR\\=#{ENV['DESTDIR']} install$/, results)
   end
 
   def test_custom_make_with_options
@@ -100,49 +99,52 @@ install:
     end
     Gem::Ext::Builder.make @dest_path, results, @ext
     results = results.join("\n").b
-    assert_match %r{clean: OK}, results
-    assert_match %r{all: OK}, results
-    assert_match %r{install: OK}, results
+    assert_match(/clean: OK/, results)
+    assert_match(/all: OK/, results)
+    assert_match(/install: OK/, results)
   end
 
   def test_build_extensions
-    pend if RUBY_PLATFORM.include?("mswin") && ENV.key?("GITHUB_ACTIONS") # not working from the beginning
-    @spec.extensions << "ext/extconf.rb"
+    pend "terminates on mswin" if vc_windows? && ruby_repo?
 
-    ext_dir = File.join @spec.gem_dir, "ext"
+    extension_in_lib do
+      @spec.extensions << "ext/extconf.rb"
 
-    FileUtils.mkdir_p ext_dir
+      ext_dir = File.join @spec.gem_dir, "ext"
 
-    extconf_rb = File.join ext_dir, "extconf.rb"
+      FileUtils.mkdir_p ext_dir
 
-    File.open extconf_rb, "w" do |f|
-      f.write <<-'RUBY'
-        require 'mkmf'
+      extconf_rb = File.join ext_dir, "extconf.rb"
 
-        create_makefile 'a'
-      RUBY
+      File.open extconf_rb, "w" do |f|
+        f.write <<-'RUBY'
+          require 'mkmf'
+
+          create_makefile 'a'
+        RUBY
+      end
+
+      ext_lib_dir = File.join ext_dir, "lib"
+      FileUtils.mkdir ext_lib_dir
+      FileUtils.touch File.join ext_lib_dir, "a.rb"
+      FileUtils.mkdir File.join ext_lib_dir, "a"
+      FileUtils.touch File.join ext_lib_dir, "a", "b.rb"
+
+      use_ui @ui do
+        @builder.build_extensions
+      end
+
+      assert_path_exist @spec.extension_dir
+      assert_path_exist @spec.gem_build_complete_path
+      assert_path_exist File.join @spec.extension_dir, "gem_make.out"
+      assert_path_exist File.join @spec.extension_dir, "a.rb"
+      assert_path_exist File.join @spec.gem_dir, "lib", "a.rb"
+      assert_path_exist File.join @spec.gem_dir, "lib", "a", "b.rb"
     end
-
-    ext_lib_dir = File.join ext_dir, "lib"
-    FileUtils.mkdir ext_lib_dir
-    FileUtils.touch File.join ext_lib_dir, "a.rb"
-    FileUtils.mkdir File.join ext_lib_dir, "a"
-    FileUtils.touch File.join ext_lib_dir, "a", "b.rb"
-
-    use_ui @ui do
-      @builder.build_extensions
-    end
-
-    assert_path_exist @spec.extension_dir
-    assert_path_exist @spec.gem_build_complete_path
-    assert_path_exist File.join @spec.extension_dir, "gem_make.out"
-    assert_path_exist File.join @spec.extension_dir, "a.rb"
-    assert_path_exist File.join @spec.gem_dir, "lib", "a.rb"
-    assert_path_exist File.join @spec.gem_dir, "lib", "a", "b.rb"
   end
 
   def test_build_extensions_with_gemhome_with_space
-    pend if RUBY_PLATFORM.include?("mswin") && ENV.key?("GITHUB_ACTIONS") # not working from the beginning
+    pend "terminates on mswin" if vc_windows? && ruby_repo?
     new_gemhome = File.join @tempdir, "gem home"
     File.rename(@gemhome, new_gemhome)
     @gemhome = new_gemhome
@@ -154,54 +156,41 @@ install:
   end
 
   def test_build_extensions_install_ext_only
-    class << Gem
-      alias orig_install_extension_in_lib install_extension_in_lib
+    pend "terminates on mswin" if vc_windows? && ruby_repo?
 
-      remove_method :install_extension_in_lib
+    extension_in_lib(false) do
+      @spec.extensions << "ext/extconf.rb"
 
-      def Gem.install_extension_in_lib
-        false
+      ext_dir = File.join @spec.gem_dir, "ext"
+
+      FileUtils.mkdir_p ext_dir
+
+      extconf_rb = File.join ext_dir, "extconf.rb"
+
+      File.open extconf_rb, "w" do |f|
+        f.write <<-'RUBY'
+          require 'mkmf'
+
+          create_makefile 'a'
+        RUBY
       end
-    end
-    pend if RUBY_PLATFORM.include?("mswin") && ENV.key?("GITHUB_ACTIONS") # not working from the beginning
 
-    @spec.extensions << "ext/extconf.rb"
+      ext_lib_dir = File.join ext_dir, "lib"
+      FileUtils.mkdir ext_lib_dir
+      FileUtils.touch File.join ext_lib_dir, "a.rb"
+      FileUtils.mkdir File.join ext_lib_dir, "a"
+      FileUtils.touch File.join ext_lib_dir, "a", "b.rb"
 
-    ext_dir = File.join @spec.gem_dir, "ext"
+      use_ui @ui do
+        @builder.build_extensions
+      end
 
-    FileUtils.mkdir_p ext_dir
-
-    extconf_rb = File.join ext_dir, "extconf.rb"
-
-    File.open extconf_rb, "w" do |f|
-      f.write <<-'RUBY'
-        require 'mkmf'
-
-        create_makefile 'a'
-      RUBY
-    end
-
-    ext_lib_dir = File.join ext_dir, "lib"
-    FileUtils.mkdir ext_lib_dir
-    FileUtils.touch File.join ext_lib_dir, "a.rb"
-    FileUtils.mkdir File.join ext_lib_dir, "a"
-    FileUtils.touch File.join ext_lib_dir, "a", "b.rb"
-
-    use_ui @ui do
-      @builder.build_extensions
-    end
-
-    assert_path_exist @spec.extension_dir
-    assert_path_exist @spec.gem_build_complete_path
-    assert_path_exist File.join @spec.extension_dir, "gem_make.out"
-    assert_path_exist File.join @spec.extension_dir, "a.rb"
-    assert_path_not_exist File.join @spec.gem_dir, "lib", "a.rb"
-    assert_path_not_exist File.join @spec.gem_dir, "lib", "a", "b.rb"
-  ensure
-    class << Gem
-      remove_method :install_extension_in_lib
-
-      alias install_extension_in_lib orig_install_extension_in_lib
+      assert_path_exist @spec.extension_dir
+      assert_path_exist @spec.gem_build_complete_path
+      assert_path_exist File.join @spec.extension_dir, "gem_make.out"
+      assert_path_exist File.join @spec.extension_dir, "a.rb"
+      assert_path_not_exist File.join @spec.gem_dir, "lib", "a.rb"
+      assert_path_not_exist File.join @spec.gem_dir, "lib", "a", "b.rb"
     end
   end
 
@@ -252,7 +241,7 @@ install:
     cmd_make_out = File.read(gem_make_out)
 
     assert_match %r{#{Regexp.escape Gem.ruby} .* extconf\.rb}, cmd_make_out
-    assert_match %r{: No such file}, cmd_make_out
+    assert_match(/: No such file/, cmd_make_out)
 
     assert_path_not_exist @spec.gem_build_complete_path
 

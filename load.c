@@ -9,7 +9,7 @@
 #include "internal/error.h"
 #include "internal/file.h"
 #include "internal/load.h"
-#include "internal/parse.h"
+#include "internal/ruby_parser.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
 #include "iseq.h"
@@ -23,6 +23,11 @@ static VALUE ruby_dln_librefs;
 #define IS_RBEXT(e) (strcmp((e), ".rb") == 0)
 #define IS_SOEXT(e) (strcmp((e), ".so") == 0 || strcmp((e), ".o") == 0)
 #define IS_DLEXT(e) (strcmp((e), DLEXT) == 0)
+
+enum {
+    loadable_ext_rb = (0+ /* .rb extension is the first in both tables */
+                       1) /* offset by rb_find_file_ext() */
+};
 
 static const char *const loadable_ext[] = {
     ".rb", DLEXT,
@@ -161,6 +166,12 @@ static VALUE
 get_loaded_features_realpaths(rb_vm_t *vm)
 {
     return vm->loaded_features_realpaths;
+}
+
+static VALUE
+get_loaded_features_realpath_map(rb_vm_t *vm)
+{
+    return vm->loaded_features_realpath_map;
 }
 
 static VALUE
@@ -361,7 +372,10 @@ get_loaded_features_index(rb_vm_t *vm)
         st_foreach(vm->loaded_features_index, loaded_features_index_clear_i, 0);
 
         VALUE realpaths = vm->loaded_features_realpaths;
+        VALUE realpath_map = vm->loaded_features_realpath_map;
+        VALUE previous_realpath_map = rb_hash_dup(realpath_map);
         rb_hash_clear(realpaths);
+        rb_hash_clear(realpath_map);
         features = vm->loaded_features;
         for (i = 0; i < RARRAY_LEN(features); i++) {
             VALUE entry, as_str;
@@ -378,9 +392,14 @@ get_loaded_features_index(rb_vm_t *vm)
         long j = RARRAY_LEN(features);
         for (i = 0; i < j; i++) {
             VALUE as_str = rb_ary_entry(features, i);
-            VALUE realpath = rb_check_realpath(Qnil, as_str, NULL);
-            if (NIL_P(realpath)) realpath = as_str;
-            rb_hash_aset(realpaths, rb_fstring(realpath), Qtrue);
+            VALUE realpath = rb_hash_aref(previous_realpath_map, as_str);
+            if (NIL_P(realpath)) {
+                realpath = rb_check_realpath(Qnil, as_str, NULL);
+                if (NIL_P(realpath)) realpath = as_str;
+                realpath = rb_fstring(realpath);
+            }
+            rb_hash_aset(realpaths, realpath, Qtrue);
+            rb_hash_aset(realpath_map, as_str, realpath);
         }
     }
     return vm->loaded_features_index;
@@ -461,6 +480,12 @@ loaded_feature_path_i(st_data_t v, st_data_t b, st_data_t f)
     return ST_STOP;
 }
 
+/*
+ * Returns the type of already provided feature.
+ * 'r': ruby script (".rb")
+ * 's': shared object (".so"/"."DLEXT)
+ * 'u': unsuffixed
+ */
 static int
 rb_feature_p(rb_vm_t *vm, const char *feature, const char *ext, int rb, int expanded, const char **fn)
 {
@@ -675,6 +700,19 @@ rb_provide(const char *feature)
 
 NORETURN(static void load_failed(VALUE));
 
+static inline VALUE
+realpath_internal_cached(VALUE hash, VALUE path)
+{
+    VALUE ret = rb_hash_aref(hash, path);
+    if(RTEST(ret)) {
+        return ret;
+    }
+
+    VALUE realpath = rb_realpath_internal(Qnil, path, 1);
+    rb_hash_aset(hash, rb_fstring(path), rb_fstring(realpath));
+    return realpath;
+}
+
 static inline void
 load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
 {
@@ -687,8 +725,12 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
         VALUE parser = rb_parser_new();
         rb_parser_set_context(parser, NULL, FALSE);
         ast = (rb_ast_t *)rb_parser_load_file(parser, fname);
+
+        rb_thread_t *th = rb_ec_thread_ptr(ec);
+        VALUE realpath_map = get_loaded_features_realpath_map(th->vm);
+
         iseq = rb_iseq_new_top(&ast->body, rb_fstring_lit("<top (required)>"),
-                               fname, rb_realpath_internal(Qnil, fname, 1), NULL);
+                               fname, realpath_internal_cached(realpath_map, fname), NULL);
         rb_ast_dispose(ast);
         rb_vm_pop_frame(ec);
         RB_GC_GUARD(v);
@@ -893,6 +935,7 @@ load_unlock(rb_vm_t *vm, const char *ftptr, int done)
     }
 }
 
+static VALUE rb_require_string_internal(VALUE fname);
 
 /*
  *  call-seq:
@@ -955,7 +998,7 @@ rb_f_require_relative(VALUE obj, VALUE fname)
         rb_loaderror("cannot infer basepath");
     }
     base = rb_file_dirname(base);
-    return rb_require_string(rb_file_absolute_path(fname, base));
+    return rb_require_string_internal(rb_file_absolute_path(fname, base));
 }
 
 typedef int (*feature_func)(rb_vm_t *vm, const char *feature, const char *ext, int rb, int expanded, const char **fn);
@@ -965,7 +1008,7 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
 {
     VALUE tmp;
     char *ext, *ftptr;
-    int type, ft = 0;
+    int ft = 0;
     const char *loading;
 
     *path = 0;
@@ -1017,9 +1060,11 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
         return 'r';
     }
     tmp = fname;
-    type = rb_find_file_ext(&tmp, ft == 's' ? ruby_ext : loadable_ext);
-#if EXTSTATIC
-    if (!ft && type != 1) { // not already a feature and not found as a dynamic library
+    const unsigned int type = rb_find_file_ext(&tmp, ft == 's' ? ruby_ext : loadable_ext);
+
+    // Check if it's a statically linked extension when
+    // not already a feature and not found as a dynamic library.
+    if (!ft && type != loadable_ext_rb && vm->static_ext_inits) {
         VALUE lookup_name = tmp;
         // Append ".so" if not already present so for example "etc" can find "etc.so".
         // We always register statically linked extensions with a ".so" extension.
@@ -1034,7 +1079,7 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
             return 's';
         }
     }
-#endif
+
     switch (type) {
       case 0:
         if (ft)
@@ -1047,13 +1092,13 @@ search_required(rb_vm_t *vm, VALUE fname, volatile VALUE *path, feature_func rb_
             goto feature_present;
         }
         /* fall through */
-      case 1:
+      case loadable_ext_rb:
         ext = strrchr(ftptr = RSTRING_PTR(tmp), '.');
-        if (rb_feature_p(vm, ftptr, ext, !--type, TRUE, &loading) && !loading)
+        if (rb_feature_p(vm, ftptr, ext, type == loadable_ext_rb, TRUE, &loading) && !loading)
             break;
         *path = tmp;
     }
-    return type ? 's' : 'r';
+    return type > loadable_ext_rb ? 's' : 'r';
 
   feature_present:
     if (loading) *path = rb_filesystem_str_new_cstr(loading);
@@ -1073,19 +1118,18 @@ load_ext(VALUE path)
     return (VALUE)dln_load(RSTRING_PTR(path));
 }
 
-#if EXTSTATIC
 static bool
 run_static_ext_init(rb_vm_t *vm, const char *feature)
 {
     st_data_t key = (st_data_t)feature;
     st_data_t init_func;
-    if (st_delete(vm->static_ext_inits, &key, &init_func)) {
+
+    if (vm->static_ext_inits && st_delete(vm->static_ext_inits, &key, &init_func)) {
         ((void (*)(void))init_func)();
         return true;
     }
     return false;
 }
-#endif
 
 static int
 no_feature_p(rb_vm_t *vm, const char *feature, const char *ext, int rb, int expanded, const char **fn)
@@ -1152,8 +1196,10 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     rb_thread_t *th = rb_ec_thread_ptr(ec);
     volatile const struct {
         VALUE wrapper, self, errinfo;
+        rb_execution_context_t *ec;
     } saved = {
         th->top_wrapper, th->top_self, ec->errinfo,
+        ec,
     };
     enum ruby_tag_type state;
     char *volatile ftptr = 0;
@@ -1161,10 +1207,10 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     volatile VALUE saved_path;
     volatile VALUE realpath = 0;
     VALUE realpaths = get_loaded_features_realpaths(th->vm);
+    VALUE realpath_map = get_loaded_features_realpath_map(th->vm);
     volatile bool reset_ext_config = false;
     struct rb_ext_config prev_ext_config;
 
-    fname = rb_get_path(fname);
     path = rb_str_encode_ospath(fname);
     RUBY_DTRACE_HOOK(REQUIRE_ENTRY, RSTRING_PTR(fname));
     saved_path = path;
@@ -1188,13 +1234,11 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
             else if (!*ftptr) {
                 result = TAG_RETURN;
             }
-#if EXTSTATIC
             else if (found == 's' && run_static_ext_init(th->vm, RSTRING_PTR(path))) {
                 result = TAG_RETURN;
             }
-#endif
             else if (RTEST(rb_hash_aref(realpaths,
-                                        realpath = rb_realpath_internal(Qnil, path, 1)))) {
+                                        realpath = realpath_internal_cached(realpath_map, path)))) {
                 result = 0;
             }
             else {
@@ -1217,6 +1261,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     }
     EC_POP_TAG();
 
+    ec = saved.ec;
     rb_thread_t *th2 = rb_ec_thread_ptr(ec);
     th2->top_self = saved.self;
     th2->top_wrapper = saved.wrapper;
@@ -1252,7 +1297,8 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
         rb_provide_feature(th2->vm, path);
         VALUE real = realpath;
         if (real) {
-            rb_hash_aset(realpaths, rb_fstring(real), Qtrue);
+            real = rb_fstring(real);
+            rb_hash_aset(realpaths, real, Qtrue);
         }
     }
     ec->errinfo = saved.errinfo;
@@ -1290,6 +1336,12 @@ ruby_require_internal(const char *fname, unsigned int len)
 VALUE
 rb_require_string(VALUE fname)
 {
+    return rb_require_string_internal(FilePathValue(fname));
+}
+
+static VALUE
+rb_require_string_internal(VALUE fname)
+{
     rb_execution_context_t *ec = GET_EC();
     int result = require_internal(ec, fname, 1, RTEST(ruby_verbose));
 
@@ -1306,10 +1358,11 @@ rb_require_string(VALUE fname)
 VALUE
 rb_require(const char *fname)
 {
-    return rb_require_string(rb_str_new_cstr(fname));
+    struct RString fake;
+    VALUE str = rb_setup_fake_str(&fake, fname, strlen(fname), 0);
+    return rb_require_string_internal(str);
 }
 
-#if EXTSTATIC
 static int
 register_init_ext(st_data_t *key, st_data_t *value, st_data_t init, int existing)
 {
@@ -1324,17 +1377,25 @@ register_init_ext(st_data_t *key, st_data_t *value, st_data_t init, int existing
     return ST_CONTINUE;
 }
 
+// Private API for statically linked extensions.
+// Used with the ext/Setup file, the --with-setup and
+// --with-static-linked-ext configuration option, etc.
 void
 ruby_init_ext(const char *name, void (*init)(void))
 {
+    st_table *inits_table;
     rb_vm_t *vm = GET_VM();
-    st_table *inits_table = vm->static_ext_inits;
 
     if (feature_provided(vm, name, 0))
         return;
+
+    inits_table = vm->static_ext_inits;
+    if (!inits_table) {
+        inits_table = st_init_strtable();
+        vm->static_ext_inits = inits_table;
+    }
     st_update(inits_table, (st_data_t)name, register_init_ext, (st_data_t)init);
 }
-#endif
 
 /*
  *  call-seq:
@@ -1473,6 +1534,8 @@ Init_load(void)
     vm->loaded_features_index = st_init_numtable();
     vm->loaded_features_realpaths = rb_hash_new();
     rb_obj_hide(vm->loaded_features_realpaths);
+    vm->loaded_features_realpath_map = rb_hash_new();
+    rb_obj_hide(vm->loaded_features_realpath_map);
 
     rb_define_global_function("load", rb_f_load, -1);
     rb_define_global_function("require", rb_f_require, 1);

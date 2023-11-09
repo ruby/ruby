@@ -5,7 +5,7 @@ require "rbconfig"
 module Bundler
   class CLI::Issue
     def run
-      Bundler.ui.info <<-EOS.gsub(/^ {8}/, "")
+      Bundler.ui.info <<~EOS
         Did you find an issue with Bundler? Before filing a new issue,
         be sure to check out these resources:
 

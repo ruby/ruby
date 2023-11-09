@@ -38,13 +38,13 @@ class OpenSSL::TestNSSPI < OpenSSL::TestCase
   def test_decode_data
     spki = OpenSSL::Netscape::SPKI.new(@b64)
     assert_equal(@b64, spki.to_pem)
-    assert_equal(@b64.unpack("m").first, spki.to_der)
+    assert_equal(@b64.unpack1("m"), spki.to_der)
     assert_equal("MozillaIsMyFriend", spki.challenge)
     assert_equal(OpenSSL::PKey::RSA, spki.public_key.class)
 
-    spki = OpenSSL::Netscape::SPKI.new(@b64.unpack("m").first)
+    spki = OpenSSL::Netscape::SPKI.new(@b64.unpack1("m"))
     assert_equal(@b64, spki.to_pem)
-    assert_equal(@b64.unpack("m").first, spki.to_der)
+    assert_equal(@b64.unpack1("m"), spki.to_der)
     assert_equal("MozillaIsMyFriend", spki.challenge)
     assert_equal(OpenSSL::PKey::RSA, spki.public_key.class)
   end

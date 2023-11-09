@@ -265,9 +265,6 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
 * `ssl_verify_mode` (`BUNDLE_SSL_VERIFY_MODE`):
    The SSL verification mode Bundler uses when making HTTPS requests.
    Defaults to verify peer.
-* `suppress_install_using_messages` (`BUNDLE_SUPPRESS_INSTALL_USING_MESSAGES`):
-   Avoid printing `Using ...` messages during installation when the version of
-   a gem has not changed.
 * `system_bindir` (`BUNDLE_SYSTEM_BINDIR`):
    The location where RubyGems installs binstubs. Defaults to `Gem.bindir`.
 * `timeout` (`BUNDLE_TIMEOUT`):
@@ -277,6 +274,12 @@ learn more about their operation in [bundle install(1)](bundle-install.1.html).
    and disallow passing no options to `bundle update`.
 * `user_agent` (`BUNDLE_USER_AGENT`):
    The custom user agent fragment Bundler includes in API requests.
+* `version` (`BUNDLE_VERSION`):
+   The version of Bundler to use when running under Bundler environment.
+   Defaults to `lockfile`. You can also specify `system` or `x.y.z`.
+   `lockfile` will use the Bundler version specified in the `Gemfile.lock`,
+   `system` will use the system version of Bundler, and `x.y.z` will use
+   the specified version of Bundler.
 * `with` (`BUNDLE_WITH`):
    A `:`-separated list of groups whose gems bundler should install.
 * `without` (`BUNDLE_WITHOUT`):

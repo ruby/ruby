@@ -160,6 +160,16 @@ module ArraySpecs
     end
   end
 
+  class ArrayMethodMissing
+    def initialize(*values, &block)
+      @values = values;
+    end
+
+    def method_missing(name, *args)
+      @values
+    end
+  end
+
   class SortSame
     def <=>(other); 0; end
     def ==(other); true; end

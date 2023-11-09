@@ -18,7 +18,7 @@ gc.rb
 io.rb
 kernel.rb
 marshal.rb
-mjit.rb
+rjit.rb
 numeric.rb
 nilclass.rb
 pack.rb
@@ -47,8 +47,5 @@ COPYING
 COPYING.ja
 
 LEGAL
-
-# win32/README.win32 linked from README.md
-win32
 
 doc

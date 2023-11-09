@@ -30,8 +30,8 @@ ruby/spec is known to be tested in these implementations for every commit:
 * [Opal](https://github.com/opal/opal/tree/master/spec)
 * [Artichoke](https://github.com/artichoke/spec/tree/artichoke-vendor)
 
-ruby/spec describes the behavior of Ruby 2.7 and more recent Ruby versions.
-More precisely, every latest stable MRI release should [pass](https://github.com/ruby/spec/actions/workflows/ci.yml) all specs of ruby/spec (2.7.x, 3.0.x, 3.1.x, etc), and those are tested in CI.
+ruby/spec describes the behavior of Ruby 3.0 and more recent Ruby versions.
+More precisely, every latest stable MRI release should [pass](https://github.com/ruby/spec/actions/workflows/ci.yml) all specs of ruby/spec (3.0.x, 3.1.x, 3.2.x, etc), and those are tested in CI.
 
 ### Synchronization with Ruby Implementations
 
@@ -61,6 +61,7 @@ For older specs try these commits:
 * Ruby 2.4.10 - [Suite](https://github.com/ruby/spec/commit/bce4f2b81d6c31db67cf4d023a0625ceadde59bd) using [MSpec](https://github.com/ruby/mspec/commit/e7eb8aa4c26495b7b461e687d950b96eb08b3ff2)
 * Ruby 2.5.9 - [Suite](https://github.com/ruby/spec/commit/c503335d3d9f6ec6ef24de60a0716c34af69b64f) using [MSpec](https://github.com/ruby/mspec/commit/0091e8a62e954717cd54641f935eaf1403692041)
 * Ruby 2.6.10 - [Suite](https://github.com/ruby/spec/commit/aaf998fb8c92c4e63ad423a2e7ca6e6921818c6e) using [MSpec](https://github.com/ruby/mspec/commit/5e36c684e9e2b92b1187589bba1df22c640a8661)
+* Ruby 2.7.8 - [Suite](https://github.com/ruby/spec/commit/93787e6035c925b593a9c0c6fb0e7e07a6f1df1f) using [MSpec](https://github.com/ruby/mspec/commit/1d8cf64722d8a7529f7cd205be5f16a89b7a67fd)
 
 ### Running the specs
 
@@ -126,6 +127,12 @@ Exceptions to these rules are contained in the file `.mspec.constants`.
 MSpec can automatically add new top-level constants in this file with:
 
     $ CHECK_LEAKS=save mspec ../mspec/bin/mspec file
+
+### Running Specs on S390x CPU Architecture
+
+Run the specs with `DFLTCC=0` if you see failing specs related to the zlib library on s390x CPU architecture. The failures can happen with the zlib library applying the patch madler/zlib#410 to enable the deflate algorithm producing a different compressed byte stream.
+
+    $ DFLTCC=0 ../mspec/bin/mspec
 
 ### Contributing and Writing Specs
 

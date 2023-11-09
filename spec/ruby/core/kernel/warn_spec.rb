@@ -128,36 +128,34 @@ describe "Kernel#warn" do
       end
     end
 
-    ruby_version_is "3.0" do
-      it "accepts :category keyword with a symbol" do
-        -> {
-          $VERBOSE = true
-          warn("message", category: :deprecated)
-        }.should output(nil, "message\n")
-      end
+    it "accepts :category keyword with a symbol" do
+      -> {
+        $VERBOSE = true
+        warn("message", category: :deprecated)
+      }.should output(nil, "message\n")
+    end
 
-      it "accepts :category keyword with nil" do
-        -> {
-          $VERBOSE = true
-          warn("message", category: nil)
-        }.should output(nil, "message\n")
-      end
+    it "accepts :category keyword with nil" do
+      -> {
+        $VERBOSE = true
+        warn("message", category: nil)
+      }.should output(nil, "message\n")
+    end
 
-      it "accepts :category keyword with object convertible to symbol" do
-        o = Object.new
-        def o.to_sym; :deprecated; end
-        -> {
-          $VERBOSE = true
-          warn("message", category: o)
-        }.should output(nil, "message\n")
-      end
+    it "accepts :category keyword with object convertible to symbol" do
+      o = Object.new
+      def o.to_sym; :deprecated; end
+      -> {
+        $VERBOSE = true
+        warn("message", category: o)
+      }.should output(nil, "message\n")
+    end
 
-      it "raises if :category keyword is not nil and not convertible to symbol" do
-        -> {
-          $VERBOSE = true
-          warn("message", category: Object.new)
-        }.should raise_error(TypeError)
-      end
+    it "raises if :category keyword is not nil and not convertible to symbol" do
+      -> {
+        $VERBOSE = true
+        warn("message", category: Object.new)
+      }.should raise_error(TypeError)
     end
 
     it "converts first arg using to_s" do
@@ -212,67 +210,52 @@ describe "Kernel#warn" do
     -> { warn('foo', **h) }.should complain("foo\n")
   end
 
-  ruby_version_is '3.0' do
-    it "calls Warning.warn without keyword arguments if Warning.warn does not accept keyword arguments" do
-      verbose = $VERBOSE
-      $VERBOSE = false
+  it "calls Warning.warn without keyword arguments if Warning.warn does not accept keyword arguments" do
+    verbose = $VERBOSE
+    $VERBOSE = false
+    class << Warning
+      alias_method :_warn, :warn
+      def warn(message)
+        ScratchPad.record(message)
+      end
+    end
+
+    begin
+      ScratchPad.clear
+      Kernel.warn("Chunky bacon!")
+      ScratchPad.recorded.should == "Chunky bacon!\n"
+
+      Kernel.warn("Deprecated bacon!", category: :deprecated)
+      ScratchPad.recorded.should == "Deprecated bacon!\n"
+    ensure
       class << Warning
-        alias_method :_warn, :warn
-        def warn(message)
-          ScratchPad.record(message)
-        end
+        remove_method :warn
+        alias_method :warn, :_warn
+        remove_method :_warn
       end
-
-      begin
-        ScratchPad.clear
-        Kernel.warn("Chunky bacon!")
-        ScratchPad.recorded.should == "Chunky bacon!\n"
-
-        Kernel.warn("Deprecated bacon!", category: :deprecated)
-        ScratchPad.recorded.should == "Deprecated bacon!\n"
-      ensure
-        class << Warning
-          remove_method :warn
-          alias_method :warn, :_warn
-          remove_method :_warn
-        end
-        $VERBOSE = verbose
-      end
-    end
-
-    it "calls Warning.warn with category: nil if Warning.warn accepts keyword arguments" do
-      Warning.should_receive(:warn).with("Chunky bacon!\n", category: nil)
-      verbose = $VERBOSE
-      $VERBOSE = false
-      begin
-        Kernel.warn("Chunky bacon!")
-      ensure
-        $VERBOSE = verbose
-      end
-    end
-
-    it "calls Warning.warn with given category keyword converted to a symbol" do
-      Warning.should_receive(:warn).with("Chunky bacon!\n", category: :deprecated)
-      verbose = $VERBOSE
-      $VERBOSE = false
-      begin
-        Kernel.warn("Chunky bacon!", category: 'deprecated')
-      ensure
-        $VERBOSE = verbose
-      end
+      $VERBOSE = verbose
     end
   end
 
-  ruby_version_is ''...'3.0' do
-    it "calls Warning.warn with no keyword arguments" do
-      Warning.should_receive(:warn).with("Chunky bacon!\n")
-      verbose = $VERBOSE
-      $VERBOSE = false
-      begin
-        Kernel.warn("Chunky bacon!")
-      ensure
-        $VERBOSE = verbose
-      end
+  it "calls Warning.warn with category: nil if Warning.warn accepts keyword arguments" do
+    Warning.should_receive(:warn).with("Chunky bacon!\n", category: nil)
+    verbose = $VERBOSE
+    $VERBOSE = false
+    begin
+      Kernel.warn("Chunky bacon!")
+    ensure
+      $VERBOSE = verbose
+    end
+  end
+
+  it "calls Warning.warn with given category keyword converted to a symbol" do
+    Warning.should_receive(:warn).with("Chunky bacon!\n", category: :deprecated)
+    verbose = $VERBOSE
+    $VERBOSE = false
+    begin
+      Kernel.warn("Chunky bacon!", category: 'deprecated')
+    ensure
+      $VERBOSE = verbose
     end
   end
 

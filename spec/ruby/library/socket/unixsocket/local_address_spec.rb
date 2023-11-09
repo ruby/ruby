@@ -46,9 +46,7 @@ with_feature :unix_socket do
       end
     end
   end
-end
 
-with_feature :unix_socket do
   describe 'UNIXSocket#local_address with a UNIX socket pair' do
     before :each do
       @sock, @sock2 = Socket.pair(Socket::AF_UNIX, Socket::SOCK_STREAM)

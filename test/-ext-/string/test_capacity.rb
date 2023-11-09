@@ -23,7 +23,7 @@ class Test_StringCapacity < Test::Unit::TestCase
   def test_s_new_capacity
     assert_equal("", String.new(capacity: 1000))
     assert_equal(String, String.new(capacity: 1000).class)
-    assert_equal(10000, capa(String.new(capacity: 10000)))
+    assert_equal(10_000 - 1, capa(String.new(capacity: 10_000))) # Real capa doesn't account for termlen
 
     assert_equal("", String.new(capacity: -1000))
     assert_equal(capa(String.new(capacity: -10000)), capa(String.new(capacity: -1000)))
@@ -66,11 +66,7 @@ class Test_StringCapacity < Test::Unit::TestCase
   end
 
   def embed_header_size
-    if GC.using_rvargc?
-      2 * RbConfig::SIZEOF['void*'] + RbConfig::SIZEOF['long']
-    else
-      2 * RbConfig::SIZEOF['void*']
-    end
+    3 * RbConfig::SIZEOF['void*']
   end
 
   def max_embed_len

@@ -205,8 +205,10 @@ lcov*.info
 
 # /ext/ripper/
 /ext/ripper/eventids1.c
+/ext/ripper/eventids1.h
 /ext/ripper/.eventids2-check
 /ext/ripper/eventids2table.c
+/ext/ripper/ripper_init.c
 /ext/ripper/ripper.*
 /ext/ripper/ids1
 /ext/ripper/ids2
@@ -228,8 +230,9 @@ lcov*.info
 # /misc/
 /misc/**/__pycache__
 
-# /spec/bundler
+# for `make test-bundler`
 /.rspec_status
+/tool/bundler/*.lock
 
 # /tool/
 /tool/config.guess
@@ -238,11 +241,12 @@ lcov*.info
 # /win32/
 /win32/*.ico
 
-# MJIT
-/include/ruby-*/*/rb_mjit_min_header-*.h
-/lib/ruby_vm/mjit/instruction.rb
-/mjit_config.h
-/rb_mjit_header.h*
+# RJIT
+/include/ruby-*/*/rb_rjit_min_header-*.h
+/lib/ruby_vm/rjit/instruction.rb
+/lib/ruby_vm/rjit/instruction.rb
+/rjit_config.h
+/rb_rjit_header.h*
 
 # YJIT
 /yjit-bench
@@ -250,3 +254,23 @@ lcov*.info
 
 # /wasm/
 /wasm/tests/*.wasm
+
+# prism
+/lib/prism/compiler.rb
+/lib/prism/dispatcher.rb
+/lib/prism/dsl.rb
+/lib/prism/mutation_compiler.rb
+/lib/prism/node.rb
+/lib/prism/serialize.rb
+/lib/prism/visitor.rb
+/prism/api_node.c
+/prism/ast.h
+/prism/node.c
+/prism/prettyprint.c
+/prism/serialize.c
+/prism/token_type.c
+
+# tool/update-NEWS-gemlist.rb
+/bundled_gems.json
+/default_gems.json
+/gems/default_gems

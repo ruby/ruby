@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -19,9 +20,7 @@ require_relative "user_interaction"
 class Gem::Command
   include Gem::UserInteraction
 
-  Gem::OptionParser.accept Symbol do |value|
-    value.to_sym
-  end
+  Gem::OptionParser.accept Symbol, &:to_sym
 
   ##
   # The name of the command.
@@ -93,7 +92,7 @@ class Gem::Command
   # array or a string to be split on white space.
 
   def self.add_specific_extra_args(cmd,args)
-    args = args.split(/\s+/) if args.kind_of? String
+    args = args.split(/\s+/) if args.is_a? String
     specific_extra_args_hash[cmd] = args
   end
 
@@ -201,11 +200,15 @@ class Gem::Command
   # respectively.
   def get_all_gem_names_and_versions
     get_all_gem_names.map do |name|
-      if /\A(.*):(#{Gem::Requirement::PATTERN_RAW})\z/ =~ name
-        [$1, $2]
-      else
-        [name]
-      end
+      extract_gem_name_and_version(name)
+    end
+  end
+
+  def extract_gem_name_and_version(name) # :nodoc:
+    if /\A(.*):(#{Gem::Requirement::PATTERN_RAW})\z/ =~ name
+      [$1, $2]
+    else
+      [name]
     end
   end
 
@@ -223,7 +226,7 @@ class Gem::Command
 
     if args.size > 1
       raise Gem::CommandLineError,
-            "Too many gem names (#{args.join(', ')}); please specify only one"
+            "Too many gem names (#{args.join(", ")}); please specify only one"
     end
 
     args.first
@@ -311,7 +314,7 @@ class Gem::Command
     options[:build_args] = build_args
 
     if options[:silent]
-      old_ui = self.ui
+      old_ui = ui
       self.ui = ui = Gem::SilentUI.new
     end
 
@@ -320,6 +323,10 @@ class Gem::Command
     elsif @when_invoked
       @when_invoked.call options
     else
+      if Gem.paths.auto_user_install && !options[:install_dir] && !options[:user_install]
+        self.ui.say "Defaulting to user installation because default installation directory (#{Gem.default_dir}) is not writable."
+      end
+
       execute
     end
   ensure
@@ -393,22 +400,21 @@ class Gem::Command
 
   def check_deprecated_options(options)
     options.each do |option|
-      if option_is_deprecated?(option)
-        deprecation = @deprecated_options[command][option]
-        version_to_expire = deprecation["rg_version_to_expire"]
+      next unless option_is_deprecated?(option)
+      deprecation = @deprecated_options[command][option]
+      version_to_expire = deprecation["rg_version_to_expire"]
 
-        deprecate_option_msg = if version_to_expire
-          "The \"#{option}\" option has been deprecated and will be removed in Rubygems #{version_to_expire}."
-        else
-          "The \"#{option}\" option has been deprecated and will be removed in future versions of Rubygems."
-        end
-
-        extra_msg = deprecation["extra_msg"]
-
-        deprecate_option_msg += " #{extra_msg}" if extra_msg
-
-        alert_warning(deprecate_option_msg)
+      deprecate_option_msg = if version_to_expire
+        "The \"#{option}\" option has been deprecated and will be removed in Rubygems #{version_to_expire}."
+      else
+        "The \"#{option}\" option has been deprecated and will be removed in future versions of Rubygems."
       end
+
+      extra_msg = deprecation["extra_msg"]
+
+      deprecate_option_msg += " #{extra_msg}" if extra_msg
+
+      alert_warning(deprecate_option_msg)
     end
   end
 
@@ -425,12 +431,10 @@ class Gem::Command
   # True if the command handles the given argument list.
 
   def handles?(args)
-    begin
-      parser.parse!(args.dup)
-      return true
-    rescue
-      return false
-    end
+    parser.parse!(args.dup)
+    true
+  rescue StandardError
+    false
   end
 
   ##
@@ -457,7 +461,7 @@ class Gem::Command
     until extra.empty? do
       ex = []
       ex << extra.shift
-      ex << extra.shift if extra.first.to_s =~ /^[^-]/ # rubocop:disable Performance/StartWith
+      ex << extra.shift if /^[^-]/.match?(extra.first.to_s)
       result << ex if handles?(ex)
     end
 
@@ -473,7 +477,7 @@ class Gem::Command
   private
 
   def option_is_deprecated?(option)
-    @deprecated_options[command].has_key?(option)
+    @deprecated_options[command].key?(option)
   end
 
   def add_parser_description # :nodoc:
@@ -579,12 +583,12 @@ class Gem::Command
   # Add the options common to all commands.
 
   add_common_option("-h", "--help",
-                    "Get help on this command") do |value, options|
+                    "Get help on this command") do |_value, options|
     options[:help] = true
   end
 
   add_common_option("-V", "--[no-]verbose",
-                    "Set the verbose level of output") do |value, options|
+                    "Set the verbose level of output") do |value, _options|
     # Set us to "really verbose" so the progress meter works
     if Gem.configuration.verbose && value
       Gem.configuration.verbose = 1
@@ -593,12 +597,12 @@ class Gem::Command
     end
   end
 
-  add_common_option("-q", "--quiet", "Silence command progress meter") do |value, options|
+  add_common_option("-q", "--quiet", "Silence command progress meter") do |_value, _options|
     Gem.configuration.verbose = false
   end
 
   add_common_option("--silent",
-                    "Silence RubyGems output") do |value, options|
+                    "Silence RubyGems output") do |_value, options|
     options[:silent] = true
   end
 

@@ -68,6 +68,21 @@ describe "Array#rindex" do
     seen.should == [3]
   end
 
+  it "tolerates increasing an array size during iteration" do
+    array = [:a, :b, :c]
+    ScratchPad.record []
+    i = 0
+
+    array.rindex do |e|
+      ScratchPad << e
+      array.prepend i if i < 100
+      i += 1
+      false
+    end
+
+    ScratchPad.recorded.should == [:c, :a, 1]
+  end
+
   describe "given no argument and no block" do
     it "produces an Enumerator" do
       enum = [4, 2, 1, 5, 1, 3].rindex

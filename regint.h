@@ -35,19 +35,15 @@
 /* #define ONIG_DEBUG_COMPILE */
 /* #define ONIG_DEBUG_SEARCH */
 /* #define ONIG_DEBUG_MATCH */
+/* #define ONIG_DEBUG_MATCH_CACHE */
 /* #define ONIG_DEBUG_MEMLEAK */
 /* #define ONIG_DONT_OPTIMIZE */
 
 /* for byte-code statistical data. */
 /* #define ONIG_DEBUG_STATISTICS */
 
-/* enable matching optimization by using cache. */
-#define USE_CACHE_MATCH_OPT
-
-#ifdef USE_CACHE_MATCH_OPT
-#  define NUM_CACHE_OPCODE_FAIL -1
-#  define NUM_CACHE_OPCODE_UNINIT -2
-#endif
+/* enable the match optimization by using a cache. */
+#define USE_MATCH_CACHE
 
 #if defined(ONIG_DEBUG_PARSE_TREE) || defined(ONIG_DEBUG_MATCH) || \
     defined(ONIG_DEBUG_SEARCH) || defined(ONIG_DEBUG_COMPILE) || \
@@ -319,9 +315,13 @@ RUBY_SYMBOL_EXPORT_BEGIN
 
 #define ONIG_LAST_CODE_POINT    (~((OnigCodePoint )0))
 
+#define PLATFORM_GET_INC_ARGUMENTS_ASSERT(val, type) \
+  ((void)sizeof(char[2 * (sizeof(val) == sizeof(type)) - 1]))
+
 #ifdef PLATFORM_UNALIGNED_WORD_ACCESS
 
 # define PLATFORM_GET_INC(val,p,type) do{\
+  PLATFORM_GET_INC_ARGUMENTS_ASSERT(val, type);\
   val  = *(type* )p;\
   (p) += sizeof(type);\
 } while(0)
@@ -329,7 +329,10 @@ RUBY_SYMBOL_EXPORT_BEGIN
 #else
 
 # define PLATFORM_GET_INC(val,p,type) do{\
-  xmemcpy(&val, (p), sizeof(type));\
+  PLATFORM_GET_INC_ARGUMENTS_ASSERT(val, type);\
+  type platform_get_value;\
+  xmemcpy(&platform_get_value, (p), sizeof(type));\
+  val = platform_get_value;\
   (p) += sizeof(type);\
 } while(0)
 
@@ -870,15 +873,25 @@ typedef struct _OnigStackType {
       UChar *abs_pstr;        /* absent start position */
       const UChar *end_pstr;  /* end position */
     } absent_pos;
+#ifdef USE_MATCH_CACHE
+    struct {
+      long    index;      /* index of the match cache buffer */
+      uint8_t mask;       /* bit-mask for the match cache buffer */
+    } match_cache_point;
+#endif
   } u;
 } OnigStackType;
 
-#ifdef USE_CACHE_MATCH_OPT
+#ifdef USE_MATCH_CACHE
 typedef struct {
   UChar *addr;
-  long num;
-  int outer_repeat;
-} OnigCacheIndex;
+  long cache_point;
+  int outer_repeat_mem;
+  long num_cache_points_at_outer_repeat;
+  long num_cache_points_in_outer_repeat;
+  int lookaround_nesting;
+  UChar *match_addr;
+} OnigCacheOpcode;
 #endif
 
 typedef struct {
@@ -903,16 +916,23 @@ typedef struct {
 #else
   uint64_t end_time;
 #endif
-#ifdef USE_CACHE_MATCH_OPT
-  long            num_fail;
-  int             enable_cache_match_opt;
-  long            num_cache_opcode;
-  long            num_cache_table;
-  OnigCacheIndex* cache_index_table;
-  uint8_t*        match_cache;
+#ifdef USE_MATCH_CACHE
+  int              match_cache_status;
+  long             num_fails;
+  long             num_cache_opcodes;
+  OnigCacheOpcode* cache_opcodes;
+  long             num_cache_points;
+  uint8_t*         match_cache_buf;
 #endif
 } OnigMatchArg;
 
+#define NUM_CACHE_OPCODES_UNINIT      1
+#define NUM_CACHE_OPCODES_IMPOSSIBLE -1
+
+#define MATCH_CACHE_STATUS_UNINIT    1
+#define MATCH_CACHE_STATUS_INIT      2
+#define MATCH_CACHE_STATUS_DISABLED -1
+#define MATCH_CACHE_STATUS_ENABLED   0
 
 #define IS_CODE_SB_WORD(enc,code) \
   (ONIGENC_IS_CODE_ASCII(code) && ONIGENC_IS_CODE_WORD(enc,code))

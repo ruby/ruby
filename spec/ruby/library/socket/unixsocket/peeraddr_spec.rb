@@ -1,9 +1,8 @@
 require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
-describe "UNIXSocket#peeraddr" do
-
-  platform_is_not :windows do
+with_feature :unix_socket do
+  describe "UNIXSocket#peeraddr" do
     before :each do
       @path = SocketSpecs.socket_path
       @server = UNIXServer.open(@path)
@@ -26,5 +25,4 @@ describe "UNIXSocket#peeraddr" do
       }.should raise_error(Errno::ENOTCONN)
     end
   end
-
 end

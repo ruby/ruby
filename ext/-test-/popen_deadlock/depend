@@ -112,7 +112,6 @@ infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/error.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/eval.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/file.h
-infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/gc.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/hash.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/io.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -143,7 +142,6 @@ infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/memory.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/method.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/module.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/newobj.h
-infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/rgengc.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/scan_args.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/special_consts.h
 infinite_loop_dlsym.o: $(hdrdir)/ruby/internal/static_assert.h

@@ -10,8 +10,16 @@
  */
 #include "ruby/ruby.h"          /* for VALUE */
 #include "ruby/intern.h"        /* for rb_blocking_function_t */
+#include "ccan/list/list.h"     /* for list in rb_io_close_wait_list */
 
 struct rb_thread_struct;        /* in vm_core.h */
+
+#define RB_VM_SAVE_MACHINE_CONTEXT(th)				\
+    do {							\
+        FLUSH_REGISTER_WINDOWS;					\
+        setjmp((th)->ec->machine.regs);				\
+        SET_MACHINE_STACK_END(&(th)->ec->machine.stack_end);	\
+    } while (0)
 
 /* thread.c */
 #define COVERAGE_INDEX_LINES    0
@@ -21,6 +29,10 @@ struct rb_thread_struct;        /* in vm_core.h */
 #define COVERAGE_TARGET_METHODS  4
 #define COVERAGE_TARGET_ONESHOT_LINES 8
 #define COVERAGE_TARGET_EVAL 16
+
+#define RUBY_FATAL_THREAD_KILLED INT2FIX(0)
+#define RUBY_FATAL_THREAD_TERMINATED INT2FIX(1)
+#define RUBY_FATAL_FIBER_KILLED RB_INT2FIX(2)
 
 VALUE rb_obj_is_mutex(VALUE obj);
 VALUE rb_suppress_tracing(VALUE (*func)(VALUE), VALUE arg);
@@ -38,8 +50,17 @@ void rb_mutex_allow_trap(VALUE self, int val);
 VALUE rb_uninterruptible(VALUE (*b_proc)(VALUE), VALUE data);
 VALUE rb_mutex_owned_p(VALUE self);
 VALUE rb_exec_recursive_outer_mid(VALUE (*f)(VALUE g, VALUE h, int r), VALUE g, VALUE h, ID mid);
+void ruby_mn_threads_params(void);
 
 int rb_thread_wait_for_single_fd(int fd, int events, struct timeval * timeout);
+
+struct rb_io_close_wait_list {
+    struct ccan_list_head pending_fd_users;
+    VALUE closing_thread;
+    VALUE wakeup_mutex;
+};
+int rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy);
+void rb_notify_fd_close_wait(struct rb_io_close_wait_list *busy);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* Temporary.  This API will be removed (renamed). */
@@ -49,8 +70,6 @@ VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, in
 int ruby_thread_has_gvl_p(void); /* for ext/fiddle/closure.c */
 RUBY_SYMBOL_EXPORT_END
 
-MJIT_SYMBOL_EXPORT_BEGIN
 int rb_threadptr_execute_interrupts(struct rb_thread_struct *th, int blocking_timing);
-MJIT_SYMBOL_EXPORT_END
 
 #endif /* INTERNAL_THREAD_H */

@@ -307,11 +307,11 @@ class ERB
   #    def build
   #      b = binding
   #      # create and run templates, filling member data variables
-  #      ERB.new(<<-'END_PRODUCT'.gsub(/^\s+/, ""), trim_mode: "", eoutvar: "@product").result b
+  #      ERB.new(<<~'END_PRODUCT', trim_mode: "", eoutvar: "@product").result b
   #        <%= PRODUCT[:name] %>
   #        <%= PRODUCT[:desc] %>
   #      END_PRODUCT
-  #      ERB.new(<<-'END_PRICE'.gsub(/^\s+/, ""), trim_mode: "", eoutvar: "@price").result b
+  #      ERB.new(<<~'END_PRICE', trim_mode: "", eoutvar: "@price").result b
   #        <%= PRODUCT[:name] %> -- <%= PRODUCT[:cost] %>
   #        <%= PRODUCT[:desc] %>
   #      END_PRICE

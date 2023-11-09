@@ -212,6 +212,34 @@ end
 
 describe :kernel_require, shared: true do
   describe "(path resolution)" do
+    it "loads .rb file when passed absolute path without extension" do
+      path = File.expand_path "load_fixture", CODE_LOADING_DIR
+      @object.send(@method, path).should be_true
+      # This should _not_ be [:no_ext]
+      ScratchPad.recorded.should == [:loaded]
+    end
+
+    platform_is :linux, :darwin do
+      it "loads c-extension file when passed absolute path without extension when no .rb is present" do
+        # the error message is specific to what dlerror() returns
+        path = File.join CODE_LOADING_DIR, "a", "load_fixture"
+        -> { @object.send(@method, path) }.should raise_error(Exception, /file too short|not a mach-o file/)
+      end
+    end
+
+    platform_is :darwin do
+      it "loads .bundle file when passed absolute path with .so" do
+        # the error message is specific to what dlerror() returns
+        path = File.join CODE_LOADING_DIR, "a", "load_fixture.so"
+        -> { @object.send(@method, path) }.should raise_error(Exception, /load_fixture\.bundle.+(file too short|not a mach-o file)/)
+      end
+    end
+
+    it "does not try an extra .rb if the path already ends in .rb" do
+      path = File.join CODE_LOADING_DIR, "d", "load_fixture.rb"
+      -> { @object.send(@method, path) }.should raise_error(LoadError)
+    end
+
     # For reference see [ruby-core:24155] in which matz confirms this feature is
     # intentional for security reasons.
     it "does not load a bare filename unless the current working directory is in $LOAD_PATH" do
@@ -262,13 +290,11 @@ describe :kernel_require, shared: true do
       ScratchPad.recorded.should == [:loaded]
     end
 
-    ruby_bug "#16926", ""..."3.0" do
-      it "does not load a feature twice when $LOAD_PATH has been modified" do
-        $LOAD_PATH.replace [CODE_LOADING_DIR]
-        @object.require("load_fixture").should be_true
-        $LOAD_PATH.replace [File.expand_path("b", CODE_LOADING_DIR), CODE_LOADING_DIR]
-        @object.require("load_fixture").should be_false
-      end
+    it "does not load a feature twice when $LOAD_PATH has been modified" do
+      $LOAD_PATH.replace [CODE_LOADING_DIR]
+      @object.require("load_fixture").should be_true
+      $LOAD_PATH.replace [File.expand_path("b", CODE_LOADING_DIR), CODE_LOADING_DIR]
+      @object.require("load_fixture").should be_false
     end
   end
 
@@ -557,20 +583,6 @@ describe :kernel_require, shared: true do
       ScratchPad.recorded.should == []
     end
 
-    provided = %w[complex enumerator rational thread]
-    provided << 'ruby2_keywords'
-
-    it "#{provided.join(', ')} are already required" do
-      features = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems')
-      provided.each { |feature|
-        features.should =~ /\b#{feature}\.(rb|so|jar)$/
-      }
-
-      code = provided.map { |f| "puts require #{f.inspect}\n" }.join
-      required = ruby_exe(code, options: '--disable-gems')
-      required.should == "false\n" * provided.size
-    end
-
     it "unicode_normalize is part of core and not $LOADED_FEATURES" do
       features = ruby_exe("puts $LOADED_FEATURES", options: '--disable-gems')
       features.lines.each { |feature|
@@ -580,23 +592,21 @@ describe :kernel_require, shared: true do
       -> { @object.require("unicode_normalize") }.should raise_error(LoadError)
     end
 
-    ruby_version_is "3.0" do
-      it "does not load a file earlier on the $LOAD_PATH when other similar features were already loaded" do
-        Dir.chdir CODE_LOADING_DIR do
-          @object.send(@method, "../code/load_fixture").should be_true
-        end
-        ScratchPad.recorded.should == [:loaded]
-
-        $LOAD_PATH.unshift "#{CODE_LOADING_DIR}/b"
-        # This loads because the above load was not on the $LOAD_PATH
-        @object.send(@method, "load_fixture").should be_true
-        ScratchPad.recorded.should == [:loaded, :loaded]
-
-        $LOAD_PATH.unshift "#{CODE_LOADING_DIR}/c"
-        # This does not load because the above load was on the $LOAD_PATH
-        @object.send(@method, "load_fixture").should be_false
-        ScratchPad.recorded.should == [:loaded, :loaded]
+    it "does not load a file earlier on the $LOAD_PATH when other similar features were already loaded" do
+      Dir.chdir CODE_LOADING_DIR do
+        @object.send(@method, "../code/load_fixture").should be_true
       end
+      ScratchPad.recorded.should == [:loaded]
+
+      $LOAD_PATH.unshift "#{CODE_LOADING_DIR}/b"
+      # This loads because the above load was not on the $LOAD_PATH
+      @object.send(@method, "load_fixture").should be_true
+      ScratchPad.recorded.should == [:loaded, :loaded]
+
+      $LOAD_PATH.unshift "#{CODE_LOADING_DIR}/c"
+      # This does not load because the above load was on the $LOAD_PATH
+      @object.send(@method, "load_fixture").should be_false
+      ScratchPad.recorded.should == [:loaded, :loaded]
     end
   end
 

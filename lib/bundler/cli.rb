@@ -771,7 +771,7 @@ module Bundler
 
     def self.deprecated_ext_value?(arguments)
       index = arguments.index("--ext")
-      next_argument = arguments[index+1]
+      next_argument = arguments[index + 1]
 
       # it is ok when --ext is followed with valid extension value
       # for example `bundle gem hello --ext c`

@@ -43,12 +43,22 @@ have_struct_member('struct group', 'gr_passwd', 'grp.h')
 
 # for https://github.com/ruby/etc
 srcdir = File.expand_path("..", __FILE__)
-if !File.exist?("#{srcdir}/depend")
-  %x[#{RbConfig.ruby} #{srcdir}/mkconstants.rb -o #{srcdir}/constdefs.h]
+constdefs = "#{srcdir}/constdefs.h"
+if !File.exist?(constdefs)
+  ruby = RbConfig.ruby
+  if File.file?(ruby)
+    ruby = [ruby]
+  else
+    require "shellwords"
+    ruby = Shellwords.split(ruby)
+  end
+  system(*ruby, "#{srcdir}/mkconstants.rb", "-o", constdefs)
 end
 
 # TODO: remove when dropping 2.7 support, as exported since 3.0
 have_func('rb_deprecate_constant(Qnil, "None")')
+
+have_func("rb_io_descriptor")
 
 $distcleanfiles << "constdefs.h"
 

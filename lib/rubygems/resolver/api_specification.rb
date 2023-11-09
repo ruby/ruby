@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # Represents a specification retrieved via the rubygems.org API.
 #
@@ -21,7 +22,7 @@ class Gem::Resolver::APISpecification < Gem::Resolver::Specification
   # Creates an APISpecification for the given +set+ from the rubygems.org
   # +api_data+.
   #
-  # See https://guides.rubygems.org/rubygems-org-api/#misc_methods for the
+  # See https://guides.rubygems.org/rubygems-org-api/#misc-methods for the
   # format of the +api_data+.
 
   def initialize(set, api_data)

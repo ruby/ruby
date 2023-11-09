@@ -1,0 +1,19 @@
+@ ProgramNode (location: (1,0)-(1,7))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,7))
+    └── body: (length: 1)
+        └── @ InterpolatedStringNode (location: (1,0)-(1,7))
+            ├── opening_loc: (1,0)-(1,7) = "<<~HERE"
+            ├── parts: (length: 2)
+            │   ├── @ EmbeddedStatementsNode (location: (2,2)-(2,5))
+            │   │   ├── opening_loc: (2,2)-(2,4) = "\#{"
+            │   │   ├── statements: ∅
+            │   │   └── closing_loc: (2,4)-(2,5) = "}"
+            │   └── @ StringNode (location: (2,5)-(3,0))
+            │       ├── flags: ∅
+            │       ├── opening_loc: ∅
+            │       ├── content_loc: (2,5)-(3,0) = "\n"
+            │       ├── closing_loc: ∅
+            │       └── unescaped: "\n"
+            └── closing_loc: (3,0)-(4,0) = "HERE\n"

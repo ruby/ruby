@@ -22,9 +22,7 @@ describe "Module#ruby2_keywords" do
     end
 
     h = {a: 1}
-    ruby_version_is "3.0" do
-      obj.regular(**h).should.equal?(h)
-    end
+    obj.regular(**h).should.equal?(h)
 
     last = mark(**h).last
     Hash.ruby2_keywords_hash?(last).should == true
@@ -221,25 +219,6 @@ describe "Module#ruby2_keywords" do
 
     last = obj.bob(1, 2, a: "a")
     Hash.ruby2_keywords_hash?(last).should == true
-  end
-
-  ruby_version_is ""..."3.0" do
-    it "fixes delegation warnings when calling a method accepting keywords" do
-      obj = Object.new
-
-      obj.singleton_class.class_exec do
-        def foo(*a) bar(*a) end
-        def bar(*a, **b) end
-      end
-
-      -> { obj.foo(1, 2, {a: "a"}) }.should complain(/Using the last argument as keyword parameters is deprecated/)
-
-      obj.singleton_class.class_exec do
-        ruby2_keywords :foo
-      end
-
-      -> { obj.foo(1, 2, {a: "a"}) }.should_not complain
-    end
   end
 
   it "returns nil" do

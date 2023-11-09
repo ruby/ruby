@@ -43,11 +43,7 @@ $" << "mkmf.rb"
 load File.expand_path("lib/mkmf.rb", srcdir)
 require 'optparse/shellwords'
 
-if defined?(File::NULL)
-  @null = File::NULL
-elsif !File.chardev?(@null = "/dev/null")
-  @null = "nul"
-end
+@null = File::NULL
 
 def verbose?
   $mflags.defined?("V") == "1"
@@ -764,6 +760,13 @@ begin
     mf.macro "NOTE_MESG", %w[$(RUBY) $(top_srcdir)/tool/lib/colorize.rb skip]
     mf.macro "NOTE_NAME", %w[$(RUBY) $(top_srcdir)/tool/lib/colorize.rb fail]
     %w[RM RMDIRS RMDIR RMALL].each {|w| mf.macro w, [RbConfig::CONFIG[w]]}
+    if $nmake
+      message = ['@(for %I in (', ') do @echo.%~I)']
+    else
+      message = ['@for line in', '; do echo "$$line"; done']
+    end
+    mf.macro "MESSAGE_BEGIN", [message.first]
+    mf.macro "MESSAGE_END", [message.last]
     mf.puts
     targets = %w[all install static install-so install-rb clean distclean realclean]
     targets.each do |tgt|
@@ -826,15 +829,17 @@ begin
       fails.each do |ext, (parent, err)|
         abandon ||= mandatory_exts[ext]
         mf.puts %Q<\t@$(NOTE_NAME) "#{ext}:">
+        mf.puts "\t$(MESSAGE_BEGIN) \\"
         if parent
-          mf.puts %Q<\t@echo "\tCould not be configured. It will not be installed.">
+          mf.puts %Q<\t"\tCould not be configured. It will not be installed." \\>
           err and err.scan(/.+/) do |ee|
-            mf.puts %Q<\t@echo "\t#{ee.gsub(/["`$^]/, '\\\\\\&')}">
+            mf.puts %Q<\t"\t#{ee.gsub(/["`$^]/, '\\\\\\&')}" \\>
           end
-          mf.puts %Q<\t@echo "\tCheck #{ext_prefix}/#{ext}/mkmf.log for more details.">
+          mf.puts %Q<\t"\tCheck #{ext_prefix}/#{ext}/mkmf.log for more details." \\>
         else
-          mf.puts %Q<\t@echo "\tSkipped because its parent was not configured.">
+          mf.puts %Q<\t"\tSkipped because its parent was not configured." \\>
         end
+        mf.puts "\t$(MESSAGE_END)"
       end
       mf.puts "note:\n"
       mf.puts %Q<\t@$(NOTE_MESG) "*** Fix the problems, then remove these directories and try again if you want.">

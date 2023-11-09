@@ -4,7 +4,7 @@
 require_relative "../helper"
 
 module TestCSVWriteGeneral
-  include Helper
+  include CSVHelper
 
   def test_tab
     assert_equal("\t#{$INPUT_RECORD_SEPARATOR}",

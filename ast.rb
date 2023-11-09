@@ -20,7 +20,7 @@
 module RubyVM::AbstractSyntaxTree
 
   #  call-seq:
-  #     RubyVM::AbstractSyntaxTree.parse(string, keep_script_lines: false, error_tolerant: false, keep_tokens: false) -> RubyVM::AbstractSyntaxTree::Node
+  #     RubyVM::AbstractSyntaxTree.parse(string, keep_script_lines: RubyVM.keep_script_lines, error_tolerant: false, keep_tokens: false) -> RubyVM::AbstractSyntaxTree::Node
   #
   #  Parses the given _string_ into an abstract syntax tree,
   #  returning the root node of that tree.
@@ -53,14 +53,14 @@ module RubyVM::AbstractSyntaxTree
   #     #  (ERROR@1:7-1:11),
   #     #  (LASGN@1:12-1:15 :y (LIT@1:14-1:15 2))]
   #
-  #  Note that parsing continues even after the errored expresion.
+  #  Note that parsing continues even after the errored expression.
   #
-  def self.parse string, keep_script_lines: false, error_tolerant: false, keep_tokens: false
+  def self.parse string, keep_script_lines: RubyVM.keep_script_lines, error_tolerant: false, keep_tokens: false
     Primitive.ast_s_parse string, keep_script_lines, error_tolerant, keep_tokens
   end
 
   #  call-seq:
-  #     RubyVM::AbstractSyntaxTree.parse_file(pathname, keep_script_lines: false, error_tolerant: false, keep_tokens: false) -> RubyVM::AbstractSyntaxTree::Node
+  #     RubyVM::AbstractSyntaxTree.parse_file(pathname, keep_script_lines: RubyVM.keep_script_lines, error_tolerant: false, keep_tokens: false) -> RubyVM::AbstractSyntaxTree::Node
   #
   #   Reads the file from _pathname_, then parses it like ::parse,
   #   returning the root node of the abstract syntax tree.
@@ -72,13 +72,13 @@ module RubyVM::AbstractSyntaxTree
   #     # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-31:3>
   #
   #   See ::parse for explanation of keyword argument meaning and usage.
-  def self.parse_file pathname, keep_script_lines: false, error_tolerant: false, keep_tokens: false
+  def self.parse_file pathname, keep_script_lines: RubyVM.keep_script_lines, error_tolerant: false, keep_tokens: false
     Primitive.ast_s_parse_file pathname, keep_script_lines, error_tolerant, keep_tokens
   end
 
   #  call-seq:
-  #     RubyVM::AbstractSyntaxTree.of(proc, keep_script_lines: false, error_tolerant: false, keep_tokens: false)   -> RubyVM::AbstractSyntaxTree::Node
-  #     RubyVM::AbstractSyntaxTree.of(method, keep_script_lines: false, error_tolerant: false, keep_tokens: false) -> RubyVM::AbstractSyntaxTree::Node
+  #     RubyVM::AbstractSyntaxTree.of(proc, keep_script_lines: RubyVM.keep_script_lines, error_tolerant: false, keep_tokens: false)   -> RubyVM::AbstractSyntaxTree::Node
+  #     RubyVM::AbstractSyntaxTree.of(method, keep_script_lines: RubyVM.keep_script_lines, error_tolerant: false, keep_tokens: false) -> RubyVM::AbstractSyntaxTree::Node
   #
   #   Returns AST nodes of the given _proc_ or _method_.
   #
@@ -93,7 +93,7 @@ module RubyVM::AbstractSyntaxTree
   #     # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-3:3>
   #
   #   See ::parse for explanation of keyword argument meaning and usage.
-  def self.of body, keep_script_lines: false, error_tolerant: false, keep_tokens: false
+  def self.of body, keep_script_lines: RubyVM.keep_script_lines, error_tolerant: false, keep_tokens: false
     Primitive.ast_s_of body, keep_script_lines, error_tolerant, keep_tokens
   end
 
@@ -265,8 +265,8 @@ module RubyVM::AbstractSyntaxTree
       lines = script_lines
       if lines
         lines = lines[first_lineno - 1 .. last_lineno - 1]
-        lines[-1] = lines[-1][0...last_column]
-        lines[0] = lines[0][first_column..-1]
+        lines[-1] = lines[-1].byteslice(0...last_column)
+        lines[0] = lines[0].byteslice(first_column..-1)
         lines.join
       else
         nil

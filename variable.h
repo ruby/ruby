@@ -10,17 +10,25 @@
 
 /* per-object */
 
+#include "shape.h"
+
 struct gen_ivtbl {
 #if !SHAPE_IN_BASIC_FLAGS
     uint16_t shape_id;
 #endif
-    uint32_t numiv;
-    VALUE ivptr[FLEX_ARY_LEN];
+    union {
+        struct {
+            uint32_t numiv;
+            VALUE ivptr[1];
+        } shape;
+        struct {
+            st_table *table;
+        } complex;
+    } as;
 };
 
 int rb_ivar_generic_ivtbl_lookup(VALUE obj, struct gen_ivtbl **);
 
-#include "shape.h"
 #if !SHAPE_IN_BASIC_FLAGS
 shape_id_t rb_generic_shape_id(VALUE obj);
 #endif

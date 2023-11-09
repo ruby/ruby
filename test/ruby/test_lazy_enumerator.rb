@@ -282,6 +282,11 @@ class TestLazyEnumerator < Test::Unit::TestCase
     assert_equal(3, a.current)
   end
 
+  def test_zip_map_lambda_bug_19569
+    ary = [1, 2, 3].to_enum.lazy.zip([:a, :b, :c]).map(&:last).to_a
+    assert_equal([:a, :b, :c], ary)
+  end
+
   def test_take
     a = Step.new(1..10)
     assert_equal(1, a.take(5).first)

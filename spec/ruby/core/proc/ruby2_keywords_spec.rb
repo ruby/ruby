@@ -25,28 +25,6 @@ describe "Proc#ruby2_keywords" do
     Hash.ruby2_keywords_hash?(f4.call(1, 2, a: "a")).should == true
   end
 
-  ruby_version_is ""..."3.0" do
-    it "fixes delegation warnings when calling a method accepting keywords" do
-      obj = Object.new
-      def obj.foo(*a, **b) end
-
-      f = -> *a { obj.foo(*a) }
-
-      -> { f.call(1, 2, {a: "a"}) }.should complain(/Using the last argument as keyword parameters is deprecated/)
-      f.ruby2_keywords
-      -> { f.call(1, 2, {a: "a"}) }.should_not complain
-    end
-
-    it "fixes delegation warnings when calling a proc accepting keywords" do
-      g = -> *a, **b { }
-      f = -> *a { g.call(*a) }
-
-      -> { f.call(1, 2, {a: "a"}) }.should complain(/Using the last argument as keyword parameters is deprecated/)
-      f.ruby2_keywords
-      -> { f.call(1, 2, {a: "a"}) }.should_not complain
-    end
-  end
-
   it "returns self" do
     f = -> *a { }
     f.ruby2_keywords.should equal f

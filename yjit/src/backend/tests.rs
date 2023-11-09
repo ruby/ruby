@@ -87,7 +87,7 @@ fn test_mov_mem2mem()
 {
     let (mut asm, mut cb) = setup_asm();
 
-    asm.comment("check that comments work too");
+    asm_comment!(asm, "check that comments work too");
     asm.mov(Opnd::mem(64, SP, 0), Opnd::mem(64, SP, 8));
 
     asm.compile_with_num_regs(&mut cb, 1);
@@ -199,7 +199,7 @@ fn test_alloc_ccall_regs() {
     let out2 = asm.ccall(0 as *const u8, vec![out1]);
     asm.mov(EC, out2);
     let mut cb = CodeBlock::new_dummy(1024);
-    asm.compile_with_regs(&mut cb, Assembler::get_alloc_regs());
+    asm.compile_with_regs(&mut cb, None, Assembler::get_alloc_regs());
 }
 
 #[test]
@@ -231,7 +231,7 @@ fn test_jcc_ptr()
 {
     let (mut asm, mut cb) = setup_asm();
 
-    let side_exit = Target::CodePtr(((cb.get_write_ptr().raw_ptr() as usize + 4) as *mut u8).into());
+    let side_exit = Target::CodePtr(cb.get_write_ptr().add_bytes(4));
     let not_mask = asm.not(Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_MASK));
     asm.test(
         Opnd::mem(32, EC, RUBY_OFFSET_EC_INTERRUPT_FLAG),
@@ -248,7 +248,7 @@ fn test_jmp_ptr()
 {
     let (mut asm, mut cb) = setup_asm();
 
-    let stub = Target::CodePtr(((cb.get_write_ptr().raw_ptr() as usize + 4) as *mut u8).into());
+    let stub = Target::CodePtr(cb.get_write_ptr().add_bytes(4));
     asm.jmp(stub);
 
     asm.compile_with_num_regs(&mut cb, 0);
@@ -259,7 +259,7 @@ fn test_jo()
 {
     let (mut asm, mut cb) = setup_asm();
 
-    let side_exit = Target::CodePtr(((cb.get_write_ptr().raw_ptr() as usize + 4) as *mut u8).into());
+    let side_exit = Target::CodePtr(cb.get_write_ptr().add_bytes(4));
 
     let arg1 = Opnd::mem(64, SP, 0);
     let arg0 = Opnd::mem(64, SP, 8);
@@ -299,25 +299,6 @@ fn test_draining_iterator() {
             2 => assert!(matches!(insn, Insn::Add { .. })),
             _ => panic!("Unexpected instruction index"),
         };
-    }
-}
-
-#[test]
-fn test_lookback_iterator() {
-    let mut asm = Assembler::new();
-
-    let _ = asm.load(Opnd::None);
-    asm.store(Opnd::None, Opnd::None);
-    asm.store(Opnd::None, Opnd::None);
-
-    let iter = asm.into_lookback_iter();
-
-    while let Some((index, insn)) = iter.next_unmapped() {
-        if index > 0 {
-            let opnd_iter = iter.get_previous().unwrap().opnd_iter();
-            assert_eq!(opnd_iter.take(1).next(), Some(&Opnd::None));
-            assert!(matches!(insn, Insn::Store { .. }));
-        }
     }
 }
 

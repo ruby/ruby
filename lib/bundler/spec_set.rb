@@ -24,6 +24,7 @@ module Bundler
 
         name = dep[0].name
         platform = dep[1]
+        incomplete = false
 
         key = [name, platform]
         next if handled.key?(key)
@@ -36,14 +37,19 @@ module Bundler
 
           specs_for_dep.first.dependencies.each do |d|
             next if d.type == :development
+            incomplete = true if d.name != "bundler" && lookup[d.name].empty?
             deps << [d, dep[1]]
           end
-        elsif check
-          @incomplete_specs += lookup[name]
+        else
+          incomplete = true
+        end
+
+        if incomplete && check
+          @incomplete_specs += lookup[name].any? ? lookup[name] : [LazySpecification.new(name, nil, nil)]
         end
       end
 
-      specs
+      specs.uniq
     end
 
     def [](key)
@@ -57,8 +63,8 @@ module Bundler
       @sorted = nil
     end
 
-    def delete(spec)
-      @specs.delete(spec)
+    def delete(specs)
+      specs.each {|spec| @specs.delete(spec) }
       @lookup = nil
       @sorted = nil
     end
@@ -94,8 +100,12 @@ module Bundler
       end
     end
 
-    def incomplete_ruby_specs?(deps)
-      self.for(deps, true, [Gem::Platform::RUBY])
+    def incomplete_for_platform?(deps, platform)
+      return false if @specs.empty?
+
+      @incomplete_specs = []
+
+      self.for(deps, true, [platform])
 
       @incomplete_specs.any?
     end
@@ -190,8 +200,11 @@ module Bundler
 
     def specs_for_dependency(dep, platform)
       specs_for_name = lookup[dep.name]
-      target_platform = dep.force_ruby_platform ? Gem::Platform::RUBY : (platform || Bundler.local_platform)
-      matching_specs = GemHelpers.select_best_platform_match(specs_for_name, target_platform)
+      matching_specs = if dep.force_ruby_platform
+        GemHelpers.force_ruby_platform(specs_for_name)
+      else
+        GemHelpers.select_best_platform_match(specs_for_name, platform || Bundler.local_platform)
+      end
       matching_specs.map!(&:materialize_for_installation).compact! if platform.nil?
       matching_specs
     end

@@ -1,10 +1,9 @@
 [![Actions Status: MinGW](https://github.com/ruby/ruby/workflows/MinGW/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"MinGW")
-[![Actions Status: MJIT](https://github.com/ruby/ruby/workflows/MJIT/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"MJIT")
+[![Actions Status: RJIT](https://github.com/ruby/ruby/workflows/RJIT/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"RJIT")
 [![Actions Status: Ubuntu](https://github.com/ruby/ruby/workflows/Ubuntu/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Ubuntu")
 [![Actions Status: Windows](https://github.com/ruby/ruby/workflows/Windows/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Windows")
 [![AppVeyor status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/master?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/master)
 [![Travis Status](https://app.travis-ci.com/ruby/ruby.svg?branch=master)](https://app.travis-ci.com/ruby/ruby)
-[![Cirrus Status](https://api.cirrus-ci.com/github/ruby/ruby.svg)](https://cirrus-ci.com/github/ruby/ruby/master)
 
 # What is Ruby?
 
@@ -25,7 +24,7 @@ It is simple, straightforward, and extensible.
 * Dynamic Loading of Object Files (on some architectures)
 * Highly Portable (works on many Unix-like/POSIX compatible platforms as
   well as Windows, macOS, etc.) cf.
-  https://github.com/ruby/ruby/blob/master/doc/maintainers.md#platform-maintainers
+    https://docs.ruby-lang.org/en/master/maintainers_md.html#label-Platform+Maintainers
 
 ## How to get Ruby
 
@@ -34,8 +33,8 @@ like rvm, see:
 
 https://www.ruby-lang.org/en/downloads/
 
-Our official distribution site is https://cache.ruby-lang.org/pub/ruby/. You can download
-the whole archive of the release packages and the snapshot of the repository.
+You can download release packages and the snapshot of the repository. If you want to
+download whole versions of Ruby, please visit https://www.ruby-lang.org/en/downloads/releases/.
 
 ### Download with Git
 
@@ -53,7 +52,7 @@ if you are a committer.
 
 ## How to build
 
-see [Building Ruby](doc/contributing/building_ruby.md)
+See [Building Ruby](https://docs.ruby-lang.org/en/master/contributing/building_ruby_md.html)
 
 ## Ruby home page
 
@@ -69,11 +68,11 @@ https://www.ruby-lang.org/
 There is a mailing list to discuss Ruby. To subscribe to this list, please
 send the following phrase:
 
-    subscribe
+    join
 
-in the mail body (not subject) to the address [ruby-talk-request@ruby-lang.org].
+in the mail subject (not body) to the address [ruby-talk-request@ml.ruby-lang.org].
 
-[ruby-talk-request@ruby-lang.org]: mailto:ruby-talk-request@ruby-lang.org?subject=Join%20Ruby%20Mailing%20List&body=subscribe
+[ruby-talk-request@ml.ruby-lang.org]: mailto:ruby-talk-request@ml.ruby-lang.org?subject=join
 
 ## Copying
 

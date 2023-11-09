@@ -20,14 +20,16 @@ build directory:
 make html
 ```
 
+If you don't have a build directory, follow the [quick start
+guide](building_ruby.md#label-Quick+start+guide) up to step 4.
+
 Then you can preview your changes by opening
 `{build folder}/.ext/html/index.html` file in your browser.
-
 
 ## Goal
 
 The goal of Ruby documentation is to impart the most important
-and relevant in the shortest time.
+and relevant information in the shortest time.
 The reader should be able to quickly understand the usefulness
 of the subject code and how to use it.
 
@@ -41,16 +43,17 @@ Use your judgment about what the user needs to know.
 - Write short declarative or imperative sentences.
 - Group sentences into (ideally short) paragraphs,
   each covering a single topic.
-- Organize material with [headers](rdoc-ref:RDoc::Markup@Headers).
+- Organize material with
+  [headings](rdoc-ref:RDoc::MarkupReference@Headings).
 - Refer to authoritative and relevant sources using
-  [links](rdoc-ref:RDoc::Markup@Links).
+  [links](rdoc-ref:RDoc::MarkupReference@Links).
 - Use simple verb tenses: simple present, simple past, simple future.
 - Use simple sentence structure, not compound or complex structure.
 - Avoid:
     - Excessive comma-separated phrases;
-      consider a [list](rdoc-ref:RDoc::Markup@Simple+Lists).
+      consider a [list](rdoc-ref:RDoc::MarkupReference@Lists).
     - Idioms and culture-specific references.
-    - Overuse of headers.
+    - Overuse of headings.
     - Using US-ASCII-incompatible characters in C source files;
       see [Characters](#label-Characters) below.
 
@@ -124,16 +127,23 @@ a.shuffle!    #=> [2, 3, 1]
 a             #=> [2, 3, 1]
 ```
 
-### Headers
+### Headings
 
-Organize a long discussion with [headers](rdoc-ref:RDoc::Markup@Headers).
+Organize a long discussion for a class or module with [headings](rdoc-ref:RDoc::MarkupReference@Headings).
+
+Do not use formal headings in the documentation for a method or constant.
+
+In the rare case where heading-like structures are needed
+within the documentation for a method or constant, use
+[bold text](rdoc-ref:RDoc::MarkupReference@Bold)
+as pseudo-headings.
 
 ### Blank Lines
 
 A blank line begins a new paragraph.
 
-A [code block](rdoc-ref:RDoc::Markup@Paragraphs+and+Verbatim)
-or [list](rdoc-ref:RDoc::Markup@Simple+Lists)
+A [code block](rdoc-ref:RDoc::MarkupReference@Code+Blocks)
+or [list](rdoc-ref:RDoc::MarkupReference@Lists)
 should be preceded by and followed by a blank line.
 This is unnecessary for the HTML output, but helps in the `ri` output.
 
@@ -150,6 +160,14 @@ For a method name in text:
   or a hash mark for an instance method:
   <tt>Foo.bar</tt>, <tt>Foo#baz</tt>.
 
+### Embedded Code and Commands
+
+Code or commands embedded in running text (i.e., not in a code block)
+should marked up as
+[monofont](rdoc-ref:RDoc::MarkupReference@Monofont).
+
+Code that is a simple string should include the quote marks.
+
 ### Auto-Linking
 
 In general, \RDoc's auto-linking should not be suppressed.
@@ -163,6 +181,31 @@ We might consider whether to suppress when:
   (e.g., _Array_ in the documentation for class `Array`).
 - The same reference is repeated many times
   (e.g., _RDoc_ on this page).
+- The reference is to a class or module that users
+  usually don't deal with, including these:
+
+    - \Class.
+    - \Method.
+    - \Module.
+
+Most often, the name of a class, module, or method
+will be autolinked:
+
+- Array.
+- Enumerable.
+- File.new
+- File#read.
+
+If not, or if you suppress autolinking, consider forcing
+[monofont](rdoc-ref:RDoc::MarkupReference@Monofont).
+
+### Variable Names
+
+The name of a variable (as specified in its call-seq) should be marked up as
+[monofont](rdoc-ref:RDoc::MarkupReference@Monofont).
+
+Also, use monofont text for the name of a transient variable
+(i.e., one defined and used only in the discussion, such as +n+).
 
 ### HTML Tags
 
@@ -175,16 +218,21 @@ may not render them properly.
 In particular, avoid building tables with HTML tags
 (<tt><table></tt>, etc.).
 
-Alternatives are:
-
-- The GFM (GitHub Flavored Markdown) table extension,
-  which is enabled by default. See
-  {GFM tables extension}[https://github.github.com/gfm/#tables-extension-].
+Alternatives:
 
 - A {verbatim text block}[rdoc-ref:RDoc::MarkupReference@Verbatim+Text+Blocks],
-  using spaces and punctuation to format the text.
-  Note that {text markup}[rdoc-ref:RDoc::MarkupReference@Text+Markup]
-  will not be honored.
+  using spaces and punctuation to format the text;
+  note that {text markup}[rdoc-ref:RDoc::MarkupReference@Text+Markup]
+  will not be honored:
+
+    - Example {source}[https://github.com/ruby/ruby/blob/34d802f32f00df1ac0220b62f72605827c16bad8/file.c#L6570-L6596].
+    - Corresponding {output}[rdoc-ref:File@Read-2FWrite+Mode].
+
+- (Markdown format only): A {Github Flavored Markdown (GFM) table}[https://github.github.com/gfm/#tables-extension-],
+  using special formatting for the text:
+
+    - Example {source}[https://github.com/ruby/ruby/blob/34d802f32f00df1ac0220b62f72605827c16bad8/doc/contributing/glossary.md?plain=1].
+    - Corresponding {output}[https://docs.ruby-lang.org/en/master/contributing/glossary_md.html].
 
 ## Documenting Classes and Modules
 
@@ -214,7 +262,7 @@ Guidelines:
 
 - The section title is `What's Here`.
 - Consider listing the parent class and any included modules; consider
-  [links](rdoc-ref:RDoc::Markup@Links)
+  [links](rdoc-ref:RDoc::MarkupReference@Links)
   to their "What's Here" sections if those exist.
 - List methods as a bullet list:
 
@@ -224,9 +272,9 @@ Guidelines:
       (and do not list the aliases separately).
     - Check the rendered documentation to determine whether \RDoc has recognized
       the method and linked to it;  if not, manually insert a
-      [link](rdoc-ref:RDoc::Markup@Links).
+      [link](rdoc-ref:RDoc::MarkupReference@Links).
 
-- If there are numerous entries, consider grouping them into subsections with headers.
+- If there are numerous entries, consider grouping them into subsections with headings.
 - If there are more than a few such subsections,
   consider adding a table of contents just below the main section title.
 
@@ -249,7 +297,7 @@ For methods written in Ruby, \RDoc documents the calling sequence automatically.
 
 For methods written in C, \RDoc cannot determine what arguments
 the method accepts, so those need to be documented using \RDoc directive
-[`call-seq:`](rdoc-ref:RDoc::Markup@Method+arguments).
+[`call-seq:`](rdoc-ref:RDoc::MarkupReference@Directives+for+Method+Documentation).
 
 For a singleton method, use the form:
 
@@ -388,7 +436,7 @@ argument passed if it is not obvious, not explicitly mentioned in the
 details, and not implicitly shown in the examples.
 
 If there is more than one argument or block argument, use a
-[labeled list](rdoc-ref:RDoc::Markup@Labeled+Lists).
+[labeled list](rdoc-ref:RDoc::MarkupReference@Labeled+Lists).
 
 ### Corner Cases and Exceptions
 

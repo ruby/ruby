@@ -97,6 +97,7 @@ class TestData < Test::Unit::TestCase
 
     # Missing arguments can be fixed in initialize
     assert_equal([[], {foo: 1}], klass.new(foo: 1).passed)
+    assert_equal([[], {foo: 42}], klass.new(42).passed)
 
     # Extra keyword arguments can be dropped in initialize
     assert_equal([[], {foo: 1, bar: 2, baz: 3}], klass.new(foo: 1, bar: 2, baz: 3).passed)

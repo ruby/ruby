@@ -12,6 +12,12 @@ module BundledGem
     pkg = Gem::Package.new(file)
     prepare_test(pkg.spec, *rest) {|dir| pkg.extract_files(dir)}
     puts "Unpacked #{file}"
+  rescue Gem::Package::FormatError, Errno::ENOENT
+    puts "Try with hash version of bundled gems instead of #{file}. We don't use this gem with release version of Ruby."
+    if file =~ /^gems\/(\w+)-/
+      file = Dir.glob("gems/#{$1}-*.gem").first
+    end
+    retry
   end
 
   def build(gemspec, version, outdir = ".", validation: true)
@@ -20,7 +26,6 @@ module BundledGem
     Dir.chdir(gemdir) do
       spec = Gem::Specification.load(gemfile)
       abort "Failed to load #{gemspec}" unless spec
-      abort "Unexpected version #{spec.version}" unless spec.version == Gem::Version.new(version)
       output = File.join(outdir, spec.file_name)
       FileUtils.rm_rf(output)
       package = Gem::Package.new(output)
@@ -87,13 +92,16 @@ module BundledGem
   end
 
   def checkout(gemdir, repo, rev, git: $git)
-    return unless rev
+    return unless rev or !git or git.empty?
     unless File.exist?("#{gemdir}/.git")
       puts "Cloning #{repo}"
-      system("#{git} clone #{repo} #{gemdir}") or raise
+      command = "#{git} clone #{repo} #{gemdir}"
+      system(command) or raise "failed: #{command}"
     end
     puts "Update #{File.basename(gemdir)} to #{rev}"
-    system("#{git} fetch origin #{rev}", chdir: gemdir)
-    system("#{git} checkout --detach #{rev}", chdir: gemdir)
+    command = "#{git} fetch origin #{rev}"
+    system(command, chdir: gemdir) or raise "failed: #{command}"
+    command = "#{git} checkout --detach #{rev}"
+    system(command, chdir: gemdir) or raise "failed: #{command}"
   end
 end

@@ -1,6 +1,6 @@
 require_relative '../fixtures/classes'
 
-# NOTE: should be syncronized with library/stringio/initialize_spec.rb
+# NOTE: should be synchronized with library/stringio/initialize_spec.rb
 
 # This group of specs may ONLY contain specs that do successfully create
 # an IO instance from the file descriptor returned by #new_fd helper.
@@ -62,6 +62,15 @@ describe :io_new, shared: true do
     obj.should_receive(:to_int).and_return(@fd)
     @io = IO.send(@method, obj, "w")
     @io.should be_an_instance_of(IO)
+  end
+
+  it "accepts options as keyword arguments" do
+    @io = IO.send(@method, @fd, "w", flags: File::CREAT)
+    @io.write("foo").should == 3
+
+    -> {
+      IO.send(@method, @fd, "w", {flags: File::CREAT})
+    }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 1..2)")
   end
 
   it "accepts a :mode option" do
@@ -199,21 +208,10 @@ describe :io_new, shared: true do
     @io.internal_encoding.to_s.should == 'IBM866'
   end
 
-  ruby_version_is ''...'3.0' do
-    it "accepts nil options" do
-      @io = suppress_keyword_warning do
-        IO.send(@method, @fd, 'w', nil)
-      end
-      @io.write("foo").should == 3
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "raises ArgumentError for nil options" do
-      -> {
-        IO.send(@method, @fd, 'w', nil)
-      }.should raise_error(ArgumentError)
-    end
+  it "raises ArgumentError for nil options" do
+    -> {
+      IO.send(@method, @fd, 'w', nil)
+    }.should raise_error(ArgumentError)
   end
 
   it "coerces mode with #to_str" do
@@ -384,21 +382,9 @@ describe :io_new_errors, shared: true do
     }.should raise_error(ArgumentError)
   end
 
-  ruby_version_is ''...'3.0' do
-    it "raises TypeError if passed a hash for mode and nil for options" do
-      -> {
-        suppress_keyword_warning do
-          @io = IO.send(@method, @fd, {mode: 'w'}, nil)
-        end
-      }.should raise_error(TypeError)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "raises ArgumentError if passed a hash for mode and nil for options" do
-      -> {
-        @io = IO.send(@method, @fd, {mode: 'w'}, nil)
-      }.should raise_error(ArgumentError)
-    end
+  it "raises ArgumentError if passed a hash for mode and nil for options" do
+    -> {
+      @io = IO.send(@method, @fd, {mode: 'w'}, nil)
+    }.should raise_error(ArgumentError)
   end
 end

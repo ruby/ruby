@@ -2,4 +2,7 @@
     "rust-analyzer.cargo.features": [
         "disasm",
     ],
+    "rust-analyzer.cargo.unsetTest": [
+        "yjit",
+    ],
 }

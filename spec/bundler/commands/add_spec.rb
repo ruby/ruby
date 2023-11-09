@@ -9,6 +9,7 @@ RSpec.describe "bundle add" do
       build_gem "bar", "0.12.3"
       build_gem "cat", "0.12.3.pre"
       build_gem "dog", "1.1.3.pre"
+      build_gem "lemur", "3.1.1.pre.2023.1.1"
     end
 
     build_git "foo", "2.0"
@@ -51,6 +52,13 @@ RSpec.describe "bundle add" do
       expect(bundled_app_gemfile.read).to match(/gem "dog", "~> 1.1.pre"/)
       expect(the_bundle).to include_gems "dog 1.1.3.pre"
     end
+
+    it "version requirement becomes ~> major.minor.pre.tail when resolved version has a very long tail pre version" do
+      bundle "add 'lemur'"
+      # the trailing pre purposely matches the release version to ensure that subbing the release doesn't change the pre.version"
+      expect(bundled_app_gemfile.read).to match(/gem "lemur", "~> 3.1.pre.2023.1.1"/)
+      expect(the_bundle).to include_gems "lemur 3.1.1.pre.2023.1.1"
+    end
   end
 
   describe "with --version" do
@@ -63,7 +71,7 @@ RSpec.describe "bundle add" do
     it "adds multiple version constraints when specified" do
       requirements = ["< 3.0", "> 1.0"]
       bundle "add 'foo' --version='#{requirements.join(", ")}'"
-      expect(bundled_app_gemfile.read).to match(/gem "foo", #{Gem::Requirement.new(requirements).as_list.map(&:dump).join(', ')}/)
+      expect(bundled_app_gemfile.read).to match(/gem "foo", #{Gem::Requirement.new(requirements).as_list.map(&:dump).join(", ")}/)
       expect(the_bundle).to include_gems "foo 2.0"
     end
   end
@@ -147,7 +155,7 @@ RSpec.describe "bundle add" do
     it "adds dependency with specified github source", :realworld do
       bundle "add rake --github=ruby/rake"
 
-      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.0", :github => "ruby\/rake"})
+      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.\d+", :github => "ruby\/rake"})
     end
   end
 
@@ -155,7 +163,7 @@ RSpec.describe "bundle add" do
     it "adds dependency with specified github source and branch", :realworld do
       bundle "add rake --github=ruby/rake --branch=master"
 
-      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.0", :github => "ruby\/rake", :branch => "master"})
+      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.\d+", :github => "ruby\/rake", :branch => "master"})
     end
   end
 
@@ -163,7 +171,7 @@ RSpec.describe "bundle add" do
     it "adds dependency with specified github source and ref", :realworld do
       bundle "add rake --github=ruby/rake --ref=5c60da8"
 
-      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.0", :github => "ruby\/rake", :ref => "5c60da8"})
+      expect(bundled_app_gemfile.read).to match(%r{gem "rake", "~> 13\.\d+", :github => "ruby\/rake", :ref => "5c60da8"})
     end
   end
 

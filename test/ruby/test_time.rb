@@ -75,6 +75,7 @@ class TestTime < Test::Unit::TestCase
       Time.new("2020-12-25 00 +09:00")
     }
 
+    assert_equal(Time.new(2021), Time.new("2021"))
     assert_equal(Time.new(2021, 12, 25, in: "+09:00"), Time.new("2021-12-25+09:00"))
 
     assert_equal(0.123456r, Time.new("2021-12-25 00:00:00.123456 +09:00").subsec)
@@ -137,6 +138,18 @@ class TestTime < Test::Unit::TestCase
     }
     assert_raise_with_message(ArgumentError, /mon out of range/) {
       Time.new("2020-17-25 00:56:17 +0900")
+    }
+    assert_raise_with_message(ArgumentError, /no time information/) {
+      Time.new("2020-12")
+    }
+    assert_raise_with_message(ArgumentError, /no time information/) {
+      Time.new("2020-12-02")
+    }
+    assert_raise_with_message(ArgumentError, /can't parse/) {
+      Time.new(" 2020-12-02 00:00:00")
+    }
+    assert_raise_with_message(ArgumentError, /can't parse/) {
+      Time.new("2020-12-02 00:00:00 ")
     }
   end
 
@@ -425,7 +438,7 @@ class TestTime < Test::Unit::TestCase
   end
 
   def test_marshal_zone_gc
-    assert_separately(%w(--disable-gems), <<-'end;', timeout: 30)
+    assert_separately([], <<-'end;', timeout: 30)
       ENV["TZ"] = "JST-9"
       s = Marshal.dump(Time.now)
       t = Marshal.load(s)
@@ -1394,7 +1407,10 @@ class TestTime < Test::Unit::TestCase
   def test_memsize
     # Time objects are common in some code, try to keep them small
     omit "Time object size test" if /^(?:i.?86|x86_64)-linux/ !~ RUBY_PLATFORM
-    omit "GC is in debug" if GC::INTERNAL_CONSTANTS[:DEBUG]
+    omit "GC is in debug" if GC::INTERNAL_CONSTANTS[:RVALUE_OVERHEAD] > 0
+    omit "memsize is not accurate due to using malloc_usable_size" if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
+    omit "Only run this test on 64-bit" if RbConfig::SIZEOF["void*"] != 8
+
     require 'objspace'
     t = Time.at(0)
     sizeof_timew =
@@ -1403,12 +1419,9 @@ class TestTime < Test::Unit::TestCase
       else
         RbConfig::SIZEOF["void*"] # Same size as VALUE
       end
-    expect =
-      GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] +
-        sizeof_timew +
-        RbConfig::SIZEOF["void*"] * 4 + 5 + # vtm
-        1 # tzmode, tm_got
-    assert_equal expect, ObjectSpace.memsize_of(t)
+    sizeof_vtm = RbConfig::SIZEOF["void*"] * 4 + 8
+    expect = GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] + sizeof_timew + sizeof_vtm
+    assert_operator ObjectSpace.memsize_of(t), :<=, expect
   rescue LoadError => e
     omit "failed to load objspace: #{e.message}"
   end

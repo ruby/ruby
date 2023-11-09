@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # The \HTTPHeader module provides access to \HTTP headers.
 #
@@ -179,6 +179,8 @@
 # - #each_value: Passes each string field value to the block.
 #
 module Net::HTTPHeader
+  MAX_KEY_LENGTH = 1024
+  MAX_FIELD_LENGTH = 65536
 
   def initialize_http_header(initheader) #:nodoc:
     @header = {}
@@ -189,6 +191,12 @@ module Net::HTTPHeader
         warn "net/http: nil HTTP header: #{key}", uplevel: 3 if $VERBOSE
       else
         value = value.strip # raise error for invalid byte sequences
+        if key.to_s.bytesize > MAX_KEY_LENGTH
+          raise ArgumentError, "too long (#{key.bytesize} bytes) header: #{key[0, 30].inspect}..."
+        end
+        if value.to_s.bytesize > MAX_FIELD_LENGTH
+          raise ArgumentError, "header #{key} has too long field value: #{value.bytesize}"
+        end
         if value.count("\r\n") > 0
           raise ArgumentError, "header #{key} has field value #{value.inspect}, this cannot include CR/LF"
         end
@@ -691,10 +699,14 @@ module Net::HTTPHeader
   #   res.content_type    # => "application/json"
   #
   def content_type
-    return nil unless main_type()
-    if sub_type()
-    then "#{main_type()}/#{sub_type()}"
-    else main_type()
+    main = main_type()
+    return nil unless main
+
+    sub = sub_type()
+    if sub
+      "#{main}/#{sub}"
+    else
+      main
     end
   end
 

@@ -43,6 +43,27 @@ describe "Regexp.union" do
     Regexp.union("\u00A9".encode("ISO-8859-1"), "a".encode("UTF-8")).encoding.should == Encoding::ISO_8859_1
   end
 
+  it "returns ASCII-8BIT if the regexp encodings are ASCII-8BIT and at least one has non-ASCII characters" do
+    us_ascii_implicit, us_ascii_explicit, binary = /abc/, /[\x00-\x7f]/n, /[\x80-\xBF]/n
+    us_ascii_implicit.encoding.should == Encoding::US_ASCII
+    us_ascii_explicit.encoding.should == Encoding::US_ASCII
+    binary.encoding.should == Encoding::BINARY
+
+    Regexp.union(us_ascii_implicit, us_ascii_explicit, binary).encoding.should == Encoding::BINARY
+    Regexp.union(us_ascii_implicit, binary, us_ascii_explicit).encoding.should == Encoding::BINARY
+    Regexp.union(us_ascii_explicit, us_ascii_implicit, binary).encoding.should == Encoding::BINARY
+    Regexp.union(us_ascii_explicit, binary, us_ascii_implicit).encoding.should == Encoding::BINARY
+    Regexp.union(binary, us_ascii_implicit, us_ascii_explicit).encoding.should == Encoding::BINARY
+    Regexp.union(binary, us_ascii_explicit, us_ascii_implicit).encoding.should == Encoding::BINARY
+  end
+
+  it "return US-ASCII if all patterns are ASCII-only" do
+    Regexp.union(/abc/e, /def/e).encoding.should == Encoding::US_ASCII
+    Regexp.union(/abc/n, /def/n).encoding.should == Encoding::US_ASCII
+    Regexp.union(/abc/s, /def/s).encoding.should == Encoding::US_ASCII
+    Regexp.union(/abc/u, /def/u).encoding.should == Encoding::US_ASCII
+  end
+
   it "returns a Regexp with UTF-8 if one part is UTF-8" do
     Regexp.union(/probl[éeè]me/i, /help/i).encoding.should == Encoding::UTF_8
   end
@@ -54,83 +75,83 @@ describe "Regexp.union" do
   it "raises ArgumentError if the arguments include conflicting ASCII-incompatible Strings" do
     -> {
       Regexp.union("a".encode("UTF-16LE"), "b".encode("UTF-16BE"))
-    }.should raise_error(ArgumentError)
+    }.should raise_error(ArgumentError, 'incompatible encodings: UTF-16LE and UTF-16BE')
   end
 
   it "raises ArgumentError if the arguments include conflicting ASCII-incompatible Regexps" do
     -> {
       Regexp.union(Regexp.new("a".encode("UTF-16LE")),
                    Regexp.new("b".encode("UTF-16BE")))
-    }.should raise_error(ArgumentError)
+    }.should raise_error(ArgumentError, 'incompatible encodings: UTF-16LE and UTF-16BE')
   end
 
   it "raises ArgumentError if the arguments include conflicting fixed encoding Regexps" do
     -> {
       Regexp.union(Regexp.new("a".encode("UTF-8"),    Regexp::FIXEDENCODING),
                    Regexp.new("b".encode("US-ASCII"), Regexp::FIXEDENCODING))
-    }.should raise_error(ArgumentError)
+    }.should raise_error(ArgumentError, 'incompatible encodings: UTF-8 and US-ASCII')
   end
 
   it "raises ArgumentError if the arguments include a fixed encoding Regexp and a String containing non-ASCII-compatible characters in a different encoding" do
     -> {
       Regexp.union(Regexp.new("a".encode("UTF-8"), Regexp::FIXEDENCODING),
                    "\u00A9".encode("ISO-8859-1"))
-    }.should raise_error(ArgumentError)
+    }.should raise_error(ArgumentError, 'incompatible encodings: UTF-8 and ISO-8859-1')
   end
 
   it "raises ArgumentError if the arguments include a String containing non-ASCII-compatible characters and a fixed encoding Regexp in a different encoding" do
     -> {
       Regexp.union("\u00A9".encode("ISO-8859-1"),
                    Regexp.new("a".encode("UTF-8"), Regexp::FIXEDENCODING))
-    }.should raise_error(ArgumentError)
+    }.should raise_error(ArgumentError, 'incompatible encodings: ISO-8859-1 and UTF-8')
   end
 
   it "raises ArgumentError if the arguments include an ASCII-incompatible String and an ASCII-only String" do
     -> {
       Regexp.union("a".encode("UTF-16LE"), "b".encode("UTF-8"))
-    }.should raise_error(ArgumentError)
+    }.should raise_error(ArgumentError, /ASCII incompatible encoding: UTF-16LE|incompatible encodings: UTF-16LE and US-ASCII/)
   end
 
   it "raises ArgumentError if the arguments include an ASCII-incompatible Regexp and an ASCII-only String" do
     -> {
       Regexp.union(Regexp.new("a".encode("UTF-16LE")), "b".encode("UTF-8"))
-    }.should raise_error(ArgumentError)
+    }.should raise_error(ArgumentError, /ASCII incompatible encoding: UTF-16LE|incompatible encodings: UTF-16LE and US-ASCII/)
   end
 
   it "raises ArgumentError if the arguments include an ASCII-incompatible String and an ASCII-only Regexp" do
     -> {
       Regexp.union("a".encode("UTF-16LE"), Regexp.new("b".encode("UTF-8")))
-    }.should raise_error(ArgumentError)
+    }.should raise_error(ArgumentError, /ASCII incompatible encoding: UTF-16LE|incompatible encodings: UTF-16LE and US-ASCII/)
   end
 
   it "raises ArgumentError if the arguments include an ASCII-incompatible Regexp and an ASCII-only Regexp" do
     -> {
       Regexp.union(Regexp.new("a".encode("UTF-16LE")), Regexp.new("b".encode("UTF-8")))
-    }.should raise_error(ArgumentError)
+    }.should raise_error(ArgumentError, /ASCII incompatible encoding: UTF-16LE|incompatible encodings: UTF-16LE and US-ASCII/)
   end
 
   it "raises ArgumentError if the arguments include an ASCII-incompatible String and a String containing non-ASCII-compatible characters in a different encoding" do
     -> {
       Regexp.union("a".encode("UTF-16LE"), "\u00A9".encode("ISO-8859-1"))
-    }.should raise_error(ArgumentError)
+    }.should raise_error(ArgumentError, 'incompatible encodings: UTF-16LE and ISO-8859-1')
   end
 
   it "raises ArgumentError if the arguments include an ASCII-incompatible Regexp and a String containing non-ASCII-compatible characters in a different encoding" do
     -> {
       Regexp.union(Regexp.new("a".encode("UTF-16LE")), "\u00A9".encode("ISO-8859-1"))
-    }.should raise_error(ArgumentError)
+    }.should raise_error(ArgumentError, 'incompatible encodings: UTF-16LE and ISO-8859-1')
   end
 
   it "raises ArgumentError if the arguments include an ASCII-incompatible String and a Regexp containing non-ASCII-compatible characters in a different encoding" do
     -> {
       Regexp.union("a".encode("UTF-16LE"), Regexp.new("\u00A9".encode("ISO-8859-1")))
-    }.should raise_error(ArgumentError)
+    }.should raise_error(ArgumentError, 'incompatible encodings: UTF-16LE and ISO-8859-1')
   end
 
   it "raises ArgumentError if the arguments include an ASCII-incompatible Regexp and a Regexp containing non-ASCII-compatible characters in a different encoding" do
     -> {
       Regexp.union(Regexp.new("a".encode("UTF-16LE")), Regexp.new("\u00A9".encode("ISO-8859-1")))
-    }.should raise_error(ArgumentError)
+    }.should raise_error(ArgumentError, 'incompatible encodings: UTF-16LE and ISO-8859-1')
   end
 
   it "uses to_str to convert arguments (if not Regexp)" do
@@ -154,6 +175,8 @@ describe "Regexp.union" do
     not_supported_on :opal do
       Regexp.union([/dogs/, /cats/i]).should == /(?-mix:dogs)|(?i-mx:cats)/
     end
-    ->{Regexp.union(["skiing", "sledding"], [/dogs/, /cats/i])}.should raise_error(TypeError)
+    -> {
+      Regexp.union(["skiing", "sledding"], [/dogs/, /cats/i])
+    }.should raise_error(TypeError, 'no implicit conversion of Array into String')
   end
 end

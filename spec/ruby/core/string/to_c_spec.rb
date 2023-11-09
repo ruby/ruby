@@ -38,4 +38,16 @@ describe "String#to_c" do
       '79+4i'.encode("UTF-16").to_c
     }.should raise_error(Encoding::CompatibilityError, "ASCII incompatible encoding: UTF-16")
   end
+
+  ruby_version_is "3.2" do
+    it "treats a sequence of underscores as an end of Complex string" do
+      "5+3_1i".to_c.should == Complex(5, 31)
+      "5+3__1i".to_c.should == Complex(5)
+      "5+3___1i".to_c.should == Complex(5)
+
+      "12_3".to_c.should == Complex(123)
+      "12__3".to_c.should == Complex(12)
+      "12___3".to_c.should == Complex(12)
+    end
+  end
 end

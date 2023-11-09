@@ -7,12 +7,10 @@ module Bundler
     class Rubygems < Source
       autoload :Remote, File.expand_path("rubygems/remote", __dir__)
 
-      # Use the API when installing less than X gems
-      API_REQUEST_LIMIT = 500
       # Ask for X gems per API request
       API_REQUEST_SIZE = 50
 
-      attr_reader :remotes, :caches
+      attr_reader :remotes
 
       def initialize(options = {})
         @options = options
@@ -21,9 +19,13 @@ module Bundler
         @allow_remote = false
         @allow_cached = false
         @allow_local = options["allow_local"] || false
-        @caches = [cache_path, *Bundler.rubygems.gem_cache]
+        @checksum_store = Checksum::Store.new
 
         Array(options["remotes"]).reverse_each {|r| add_remote(r) }
+      end
+
+      def caches
+        @caches ||= [cache_path, *Bundler.rubygems.gem_cache]
       end
 
       def local_only!
@@ -87,6 +89,7 @@ module Bundler
       end
 
       def self.from_lock(options)
+        options["remotes"] = Array(options.delete("remote")).reverse
         new(options)
       end
 
@@ -122,16 +125,17 @@ module Bundler
         end
       end
       alias_method :name, :identifier
+      alias_method :to_gemfile, :identifier
 
       def specs
         @specs ||= begin
           # remote_specs usually generates a way larger Index than the other
-          # sources, and large_idx.use small_idx is way faster than
-          # small_idx.use large_idx.
-          idx = @allow_remote ? remote_specs.dup : Index.new
-          idx.use(cached_specs, :override_dupes) if @allow_cached || @allow_remote
-          idx.use(installed_specs, :override_dupes) if @allow_local
-          idx
+          # sources, and large_idx.merge! small_idx is way faster than
+          # small_idx.merge! large_idx.
+          index = @allow_remote ? remote_specs.dup : Index.new
+          index.merge!(cached_specs) if @allow_cached || @allow_remote
+          index.merge!(installed_specs) if @allow_local
+          index
         end
       end
 
@@ -174,7 +178,6 @@ module Bundler
           :wrappers => true,
           :env_shebang => true,
           :build_args => options[:build_args],
-          :bundler_expected_checksum => spec.respond_to?(:checksum) && spec.checksum,
           :bundler_extension_cache_path => extension_cache_path(spec)
         )
 
@@ -192,6 +195,8 @@ module Bundler
 
           spec.__swap__(s)
         end
+
+        spec.source.checksum_store.register(spec, installer.gem_checksum)
 
         message = "Installing #{version_message(spec, options[:previous_spec])}"
         message += " with native extensions" if spec.extensions.any?
@@ -235,7 +240,7 @@ module Bundler
       end
 
       def spec_names
-        if @allow_remote && dependency_api_available?
+        if dependency_api_available?
           remote_specs.spec_names
         else
           []
@@ -243,7 +248,7 @@ module Bundler
       end
 
       def unmet_deps
-        if @allow_remote && dependency_api_available?
+        if dependency_api_available?
           remote_specs.unmet_dependency_names
         else
           []
@@ -258,7 +263,6 @@ module Bundler
       end
 
       def double_check_for(unmet_dependency_names)
-        return unless @allow_remote
         return unless dependency_api_available?
 
         unmet_dependency_names = unmet_dependency_names.call
@@ -273,7 +277,9 @@ module Bundler
 
         Bundler.ui.debug "Double checking for #{unmet_dependency_names || "all specs (due to the size of the request)"} in #{self}"
 
-        fetch_names(api_fetchers, unmet_dependency_names, specs, false)
+        fetch_names(api_fetchers, unmet_dependency_names, remote_specs)
+
+        specs.use remote_specs
       end
 
       def dependency_names_to_double_check
@@ -326,9 +332,9 @@ module Bundler
 
       def cached_path(spec)
         global_cache_path = download_cache_path(spec)
-        @caches << global_cache_path if global_cache_path
+        caches << global_cache_path if global_cache_path
 
-        possibilities = @caches.map {|p| package_path(p, spec) }
+        possibilities = caches.map {|p| package_path(p, spec) }
         possibilities.find {|p| File.exist?(p) }
       end
 
@@ -337,8 +343,7 @@ module Bundler
       end
 
       def normalize_uri(uri)
-        uri = uri.to_s
-        uri = "#{uri}/" unless %r{/$}.match?(uri)
+        uri = URINormalizer.normalize_suffix(uri.to_s)
         require_relative "../vendored_uri"
         uri = Bundler::URI(uri)
         raise ArgumentError, "The source must be an absolute URI. For example:\n" \
@@ -378,10 +383,9 @@ module Bundler
 
       def cached_specs
         @cached_specs ||= begin
-          idx = @allow_local ? installed_specs.dup : Index.new
+          idx = Index.new
 
           Dir["#{cache_path}/*.gem"].each do |gemfile|
-            next if /^bundler\-[\d\.]+?\.gem/.match?(gemfile)
             s ||= Bundler.rubygems.spec_from_gem(gemfile)
             s.source = self
             idx << s
@@ -392,36 +396,30 @@ module Bundler
       end
 
       def api_fetchers
-        fetchers.select {|f| f.use_api && f.fetchers.first.api_fetcher? }
+        fetchers.select(&:api_fetcher?)
       end
 
       def remote_specs
         @remote_specs ||= Index.build do |idx|
           index_fetchers = fetchers - api_fetchers
 
-          # gather lists from non-api sites
-          fetch_names(index_fetchers, nil, idx, false)
-
-          # because ensuring we have all the gems we need involves downloading
-          # the gemspecs of those gems, if the non-api sites contain more than
-          # about 500 gems, we treat all sites as non-api for speed.
-          allow_api = idx.size < API_REQUEST_LIMIT && dependency_names.size < API_REQUEST_LIMIT
-          Bundler.ui.debug "Need to query more than #{API_REQUEST_LIMIT} gems." \
-            " Downloading full index instead..." unless allow_api
-
-          fetch_names(api_fetchers, allow_api && dependency_names, idx, false)
+          if index_fetchers.empty?
+            fetch_names(api_fetchers, dependency_names, idx)
+          else
+            fetch_names(fetchers, nil, idx)
+          end
         end
       end
 
-      def fetch_names(fetchers, dependency_names, index, override_dupes)
+      def fetch_names(fetchers, dependency_names, index)
         fetchers.each do |f|
           if dependency_names
             Bundler.ui.info "Fetching gem metadata from #{URICredentialsFilter.credential_filtered_uri(f.uri)}", Bundler.ui.debug?
-            index.use f.specs_with_retry(dependency_names, self), override_dupes
+            index.use f.specs_with_retry(dependency_names, self)
             Bundler.ui.info "" unless Bundler.ui.debug? # new line now that the dots are over
           else
             Bundler.ui.info "Fetching source index from #{URICredentialsFilter.credential_filtered_uri(f.uri)}"
-            index.use f.specs_with_retry(nil, self), override_dupes
+            index.use f.specs_with_retry(nil, self)
           end
         end
       end

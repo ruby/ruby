@@ -49,6 +49,19 @@ class TestVariable < Test::Unit::TestCase
     assert_equal(1, c.class_variable_get(:@@foo))
   end
 
+  Zeus = Gods.clone
+
+  def test_cloned_allows_setting_cvar
+    Zeus.class_variable_set(:@@rule, "Athena")
+
+    god = Gods.new.ruler0
+    zeus = Zeus.new.ruler0
+
+    assert_equal "Cronus", god
+    assert_equal "Athena", zeus
+    assert_not_equal god.object_id, zeus.object_id
+  end
+
   def test_singleton_class_included_class_variable
     c = Class.new
     c.extend(Olympians)
@@ -398,6 +411,18 @@ class TestVariable < Test::Unit::TestCase
     bug11674 = '[ruby-core:71437] [Bug #11674]'
     v = with_kwargs_11(v1:1,v2:2,v3:3,v4:4,v5:5,v6:6,v7:7,v8:8,v9:9,v10:10,v11:11)
     assert_equal(%i(v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11), v, bug11674)
+  end
+
+  def test_many_instance_variables
+    objects = [Object.new, Hash.new, Module.new]
+    objects.each do |obj|
+      1000.times do |i|
+        obj.instance_variable_set("@var#{i}", i)
+      end
+      1000.times do |i|
+        assert_equal(i, obj.instance_variable_get("@var#{i}"))
+      end
+    end
   end
 
   private

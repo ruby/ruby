@@ -694,26 +694,8 @@ module Psych
     dump_tags[klass] = tag
   end
 
-  # Workaround for emulating `warn '...', uplevel: 1` in Ruby 2.4 or lower.
-  def self.warn_with_uplevel(message, uplevel: 1)
-    at = parse_caller(caller[uplevel]).join(':')
-    warn "#{at}: #{message}"
-  end
-
-  def self.parse_caller(at)
-    if /^(.+?):(\d+)(?::in `.*')?/ =~ at
-      file = $1
-      line = $2.to_i
-      [file, line]
-    end
-  end
-  private_class_method :warn_with_uplevel, :parse_caller
-
   class << self
     if defined?(Ractor)
-      require 'forwardable'
-      extend Forwardable
-
       class Config
         attr_accessor :load_tags, :dump_tags, :domain_types
         def initialize
@@ -727,7 +709,29 @@ module Psych
         Ractor.current[:PsychConfig] ||= Config.new
       end
 
-      def_delegators :config, :load_tags, :dump_tags, :domain_types, :load_tags=, :dump_tags=, :domain_types=
+      def load_tags
+        config.load_tags
+      end
+
+      def dump_tags
+        config.dump_tags
+      end
+
+      def domain_types
+        config.domain_types
+      end
+
+      def load_tags=(value)
+        config.load_tags = value
+      end
+
+      def dump_tags=(value)
+        config.dump_tags = value
+      end
+
+      def domain_types=(value)
+        config.domain_types = value
+      end
     else
       attr_accessor :load_tags
       attr_accessor :dump_tags

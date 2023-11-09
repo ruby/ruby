@@ -57,8 +57,11 @@ calc_pos(const rb_iseq_t *iseq, const VALUE *pc, int *lineno, int *node_id)
         VM_ASSERT(ISEQ_BODY(iseq)->iseq_size);
 
         ptrdiff_t n = pc - ISEQ_BODY(iseq)->iseq_encoded;
-        VM_ASSERT(n <= ISEQ_BODY(iseq)->iseq_size);
         VM_ASSERT(n >= 0);
+#if SIZEOF_PTRDIFF_T > SIZEOF_INT
+        VM_ASSERT(n <= (ptrdiff_t)UINT_MAX);
+#endif
+        VM_ASSERT((unsigned int)n <= ISEQ_BODY(iseq)->iseq_size);
         ASSUME(n >= 0);
         size_t pos = n; /* no overflow */
         if (LIKELY(pos)) {
@@ -68,7 +71,7 @@ calc_pos(const rb_iseq_t *iseq, const VALUE *pc, int *lineno, int *node_id)
 #if VMDEBUG && defined(HAVE_BUILTIN___BUILTIN_TRAP)
         else {
             /* SDR() is not possible; that causes infinite loop. */
-            rb_print_backtrace();
+            rb_print_backtrace(stderr);
             __builtin_trap();
         }
 #endif
@@ -475,7 +478,7 @@ static void
 backtrace_free(void *ptr)
 {
    rb_backtrace_t *bt = (rb_backtrace_t *)ptr;
-   if (bt->backtrace) ruby_xfree(bt->backtrace);
+   ruby_xfree(bt->backtrace);
    ruby_xfree(bt);
 }
 
@@ -684,7 +687,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
     return btobj;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_ec_backtrace_object(const rb_execution_context_t *ec)
 {
     return rb_ec_partial_backtrace_object(ec, BACKTRACE_START, ALL_BACKTRACE_LINES, NULL, FALSE, FALSE);
@@ -735,7 +738,7 @@ rb_backtrace_to_str_ary(VALUE self)
     return bt->strary;
 }
 
-MJIT_FUNC_EXPORTED void
+void
 rb_backtrace_use_iseq_first_lineno_for_last_location(VALUE self)
 {
     const rb_backtrace_t *bt;
@@ -1000,31 +1003,38 @@ vm_backtrace_print(FILE *fp)
                    &arg);
 }
 
+struct oldbt_bugreport_arg {
+    FILE *fp;
+    int count;
+};
+
 static void
 oldbt_bugreport(void *arg, VALUE file, int line, VALUE method)
 {
+    struct oldbt_bugreport_arg *p = arg;
+    FILE *fp = p->fp;
     const char *filename = NIL_P(file) ? "ruby" : RSTRING_PTR(file);
-    if (!*(int *)arg) {
-        fprintf(stderr, "-- Ruby level backtrace information "
+    if (!p->count) {
+        fprintf(fp, "-- Ruby level backtrace information "
                 "----------------------------------------\n");
-        *(int *)arg = 1;
+        p->count = 1;
     }
     if (NIL_P(method)) {
-        fprintf(stderr, "%s:%d:in unknown method\n", filename, line);
+        fprintf(fp, "%s:%d:in unknown method\n", filename, line);
     }
     else {
-        fprintf(stderr, "%s:%d:in `%s'\n", filename, line, RSTRING_PTR(method));
+        fprintf(fp, "%s:%d:in `%s'\n", filename, line, RSTRING_PTR(method));
     }
 }
 
 void
-rb_backtrace_print_as_bugreport(void)
+rb_backtrace_print_as_bugreport(FILE *fp)
 {
     struct oldbt_arg arg;
-    int i = 0;
+    struct oldbt_bugreport_arg barg = {fp, 0};
 
     arg.func = oldbt_bugreport;
-    arg.data = (int *)&i;
+    arg.data = &barg;
 
     backtrace_each(GET_EC(),
                    oldbt_init,
@@ -1574,12 +1584,12 @@ rb_debug_inspector_backtrace_locations(const rb_debug_inspector_t *dc)
     return dc->backtrace;
 }
 
-int
-rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
+static int
+thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *buff, int *lines)
 {
     int i;
-    const rb_execution_context_t *ec = GET_EC();
     const rb_control_frame_t *cfp = ec->cfp, *end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
+    const rb_control_frame_t *top = cfp;
     const rb_callable_method_entry_t *cme;
 
     // If this function is called inside a thread after thread creation, but
@@ -1610,7 +1620,18 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
                 buff[i] = (VALUE)cfp->iseq;
             }
 
-            if (lines) lines[i] = calc_lineno(cfp->iseq, cfp->pc);
+            if (lines) {
+                // The topmost frame may not have an updated PC because the JIT
+                // may not have set one.  The JIT compiler will update the PC
+                // before entering a new function (so that `caller` will work),
+                // so only the topmost frame could possibly have an out of date PC
+                if (cfp == top && cfp->jit_return) {
+                    lines[i] = 0;
+                }
+                else {
+                    lines[i] = calc_lineno(cfp->iseq, cfp->pc);
+                }
+            }
 
             i++;
         }
@@ -1626,6 +1647,20 @@ rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
     }
 
     return i;
+}
+
+int
+rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
+{
+    rb_execution_context_t *ec = GET_EC();
+    return thread_profile_frames(ec, start, limit, buff, lines);
+}
+
+int
+rb_profile_thread_frames(VALUE thread, int start, int limit, VALUE *buff, int *lines)
+{
+    rb_thread_t *th = rb_thread_ptr(thread);
+    return thread_profile_frames(th->ec, start, limit, buff, lines);
 }
 
 static const rb_iseq_t *

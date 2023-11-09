@@ -28,4 +28,3 @@ class RDoc::SingleClass < RDoc::ClassModule
     end
   end
 end
-

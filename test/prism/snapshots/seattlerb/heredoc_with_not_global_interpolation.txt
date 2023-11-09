@@ -1,0 +1,11 @@
+@ ProgramNode (location: (1,0)-(1,10))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,10))
+    └── body: (length: 1)
+        └── @ StringNode (location: (1,0)-(1,10))
+            ├── flags: ∅
+            ├── opening_loc: (1,0)-(1,10) = "<<-HEREDOC"
+            ├── content_loc: (2,0)-(3,0) = "\#${\n"
+            ├── closing_loc: (3,0)-(4,0) = "HEREDOC\n"
+            └── unescaped: "\#${\n"

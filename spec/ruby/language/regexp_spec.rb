@@ -18,10 +18,8 @@ describe "Literal Regexps" do
     /Hello/.should be_kind_of(Regexp)
   end
 
-  ruby_version_is "3.0" do
-    it "is frozen" do
-      /Hello/.should.frozen?
-    end
+  it "is frozen" do
+    /Hello/.should.frozen?
   end
 
   it "caches the Regexp object" do

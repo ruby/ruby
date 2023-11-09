@@ -61,10 +61,16 @@ pack up your own arguments to pass as args for locking functions, etc.
  *   f.fcntl(Fcntl::F_SETFL, Fcntl::O_NONBLOCK|m)
  *
  */
+
+#define FCNTL_VERSION "1.1.0"
+
 void
 Init_fcntl(void)
 {
     VALUE mFcntl = rb_define_module("Fcntl");
+
+    rb_define_const(mFcntl, "VERSION", rb_str_new_cstr(FCNTL_VERSION));
+
 #ifdef F_DUPFD
     /* Document-const: F_DUPFD
      *

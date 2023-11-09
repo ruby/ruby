@@ -235,7 +235,7 @@ RBIMPL_ATTR_NORETURN()
  * @param[in]  max           Maximum allowed `argc`.
  * @exception  rb_eArgError  Always.
  */
-MJIT_STATIC void rb_error_arity(int argc, int min, int max);
+void rb_error_arity(int argc, int min, int max);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

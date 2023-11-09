@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 
 # This class is the base class for \Net::HTTP request classes.
 # The class should not be used directly;

@@ -70,7 +70,7 @@ CLONESETUP(VALUE clone, VALUE obj)
     RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(obj));
     RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(clone));
 
-    const VALUE flags = RUBY_FL_PROMOTED0 | RUBY_FL_PROMOTED1 | RUBY_FL_FINALIZE;
+    const VALUE flags = RUBY_FL_PROMOTED | RUBY_FL_FINALIZE;
     rb_obj_setup(clone, rb_singleton_class_clone(obj),
                  RB_FL_TEST_RAW(obj, ~flags));
     rb_singleton_class_attached(RBASIC_CLASS(clone), clone);
@@ -152,6 +152,16 @@ proc_clone(VALUE self)
 {
     VALUE procval = rb_proc_dup(self);
     CLONESETUP(procval, self);
+    rb_check_funcall(procval, idInitialize_clone, 1, &self);
+    return procval;
+}
+
+/* :nodoc: */
+static VALUE
+proc_dup(VALUE self)
+{
+    VALUE procval = rb_proc_dup(self);
+    rb_check_funcall(procval, idInitialize_dup, 1, &self);
     return procval;
 }
 
@@ -743,14 +753,14 @@ rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int m
     return (struct vm_ifunc *)ret;
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_func_proc_new(rb_block_call_func_t func, VALUE val)
 {
     struct vm_ifunc *ifunc = rb_vm_ifunc_proc_new(func, (void *)val);
     return cfunc_proc_new(rb_cProc, (VALUE)ifunc);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_func_lambda_new(rb_block_call_func_t func, VALUE val, int min_argc, int max_argc)
 {
     struct vm_ifunc *ifunc = rb_vm_ifunc_new(func, (void *)val, min_argc, max_argc);
@@ -760,7 +770,7 @@ rb_func_lambda_new(rb_block_call_func_t func, VALUE val, int min_argc, int max_a
 static const char proc_without_block[] = "tried to create Proc object without a block";
 
 static VALUE
-proc_new(VALUE klass, int8_t is_lambda, int8_t kernel)
+proc_new(VALUE klass, int8_t is_lambda)
 {
     VALUE procval;
     const rb_execution_context_t *ec = GET_EC();
@@ -793,16 +803,8 @@ proc_new(VALUE klass, int8_t is_lambda, int8_t kernel)
         break;
 
       case block_handler_type_ifunc:
-        return rb_vm_make_proc_lambda(ec, VM_BH_TO_CAPT_BLOCK(block_handler), klass, is_lambda);
       case block_handler_type_iseq:
-        {
-            const struct rb_captured_block *captured = VM_BH_TO_CAPT_BLOCK(block_handler);
-            rb_control_frame_t *last_ruby_cfp = rb_vm_get_ruby_level_next_cfp(ec, cfp);
-            if (is_lambda && last_ruby_cfp && vm_cfp_forwarded_bh_p(last_ruby_cfp, block_handler)) {
-                is_lambda = false;
-            }
-            return rb_vm_make_proc_lambda(ec, captured, klass, is_lambda);
-        }
+        return rb_vm_make_proc_lambda(ec, VM_BH_TO_CAPT_BLOCK(block_handler), klass, is_lambda);
     }
     VM_UNREACHABLE(proc_new);
     return Qnil;
@@ -825,7 +827,7 @@ proc_new(VALUE klass, int8_t is_lambda, int8_t kernel)
 static VALUE
 rb_proc_s_new(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE block = proc_new(klass, FALSE, FALSE);
+    VALUE block = proc_new(klass, FALSE);
 
     rb_obj_call_init_kw(block, argc, argv, RB_PASS_CALLED_KEYWORDS);
     return block;
@@ -834,7 +836,7 @@ rb_proc_s_new(int argc, VALUE *argv, VALUE klass)
 VALUE
 rb_block_proc(void)
 {
-    return proc_new(rb_cProc, FALSE, FALSE);
+    return proc_new(rb_cProc, FALSE);
 }
 
 /*
@@ -847,41 +849,44 @@ rb_block_proc(void)
 static VALUE
 f_proc(VALUE _)
 {
-    return proc_new(rb_cProc, FALSE, TRUE);
+    return proc_new(rb_cProc, FALSE);
 }
 
 VALUE
 rb_block_lambda(void)
 {
-    return proc_new(rb_cProc, TRUE, FALSE);
+    return proc_new(rb_cProc, TRUE);
 }
 
 static void
-f_lambda_warn(void)
+f_lambda_filter_non_literal(void)
 {
     rb_control_frame_t *cfp = GET_EC()->cfp;
     VALUE block_handler = rb_vm_frame_block_handler(cfp);
 
-    if (block_handler != VM_BLOCK_HANDLER_NONE) {
-        switch (vm_block_handler_type(block_handler)) {
-          case block_handler_type_iseq:
-            if (RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)->ep == VM_BH_TO_ISEQ_BLOCK(block_handler)->ep) {
-                return;
-            }
-            break;
-          case block_handler_type_symbol:
-            return;
-          case block_handler_type_proc:
-            if (rb_proc_lambda_p(VM_BH_TO_PROC(block_handler))) {
-                return;
-            }
-            break;
-          case block_handler_type_ifunc:
-            break;
-        }
+    if (block_handler == VM_BLOCK_HANDLER_NONE) {
+        // no block erorr raised else where
+        return;
     }
 
-    rb_warn_deprecated("lambda without a literal block", "the proc without lambda");
+    switch (vm_block_handler_type(block_handler)) {
+      case block_handler_type_iseq:
+        if (RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)->ep == VM_BH_TO_ISEQ_BLOCK(block_handler)->ep) {
+            return;
+        }
+        break;
+      case block_handler_type_symbol:
+        return;
+      case block_handler_type_proc:
+        if (rb_proc_lambda_p(VM_BH_TO_PROC(block_handler))) {
+            return;
+        }
+        break;
+      case block_handler_type_ifunc:
+        break;
+    }
+
+    rb_raise(rb_eArgError, "the lambda method requires a literal block");
 }
 
 /*
@@ -895,7 +900,7 @@ f_lambda_warn(void)
 static VALUE
 f_lambda(VALUE _)
 {
-    f_lambda_warn();
+    f_lambda_filter_non_literal();
     return rb_block_lambda();
 }
 
@@ -1359,7 +1364,7 @@ iseq_location(const rb_iseq_t *iseq)
     return rb_ary_new4(2, loc);
 }
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_iseq_location(const rb_iseq_t *iseq)
 {
     return iseq_location(iseq);
@@ -1471,7 +1476,7 @@ rb_hash_proc(st_index_t hash, VALUE prc)
  *
  */
 
-MJIT_FUNC_EXPORTED VALUE
+VALUE
 rb_sym_to_proc(VALUE sym)
 {
     static VALUE sym_proc_cache = Qfalse;
@@ -2096,10 +2101,9 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
     VALUE klass = rb_singleton_class_get(obj);
     ID id = rb_check_id(&vid);
 
-    if (NIL_P(klass)) {
-        /* goto undef; */
-    }
-    else if (NIL_P(klass = RCLASS_ORIGIN(klass))) {
+    if (NIL_P(klass) ||
+        NIL_P(klass = RCLASS_ORIGIN(klass)) ||
+        !NIL_P(rb_special_singleton_class(obj))) {
         /* goto undef; */
     }
     else if (! id) {
@@ -4264,7 +4268,7 @@ Init_Proc(void)
     rb_define_method(rb_cProc, "to_proc", proc_to_proc, 0);
     rb_define_method(rb_cProc, "arity", proc_arity, 0);
     rb_define_method(rb_cProc, "clone", proc_clone, 0);
-    rb_define_method(rb_cProc, "dup", rb_proc_dup, 0);
+    rb_define_method(rb_cProc, "dup", proc_dup, 0);
     rb_define_method(rb_cProc, "hash", proc_hash, 0);
     rb_define_method(rb_cProc, "to_s", proc_to_s, 0);
     rb_define_alias(rb_cProc, "inspect", "to_s");

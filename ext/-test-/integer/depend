@@ -112,7 +112,6 @@ core_ext.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 core_ext.o: $(hdrdir)/ruby/internal/intern/error.h
 core_ext.o: $(hdrdir)/ruby/internal/intern/eval.h
 core_ext.o: $(hdrdir)/ruby/internal/intern/file.h
-core_ext.o: $(hdrdir)/ruby/internal/intern/gc.h
 core_ext.o: $(hdrdir)/ruby/internal/intern/hash.h
 core_ext.o: $(hdrdir)/ruby/internal/intern/io.h
 core_ext.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -143,7 +142,6 @@ core_ext.o: $(hdrdir)/ruby/internal/memory.h
 core_ext.o: $(hdrdir)/ruby/internal/method.h
 core_ext.o: $(hdrdir)/ruby/internal/module.h
 core_ext.o: $(hdrdir)/ruby/internal/newobj.h
-core_ext.o: $(hdrdir)/ruby/internal/rgengc.h
 core_ext.o: $(hdrdir)/ruby/internal/scan_args.h
 core_ext.o: $(hdrdir)/ruby/internal/special_consts.h
 core_ext.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -281,7 +279,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -312,7 +309,6 @@ init.o: $(hdrdir)/ruby/internal/memory.h
 init.o: $(hdrdir)/ruby/internal/method.h
 init.o: $(hdrdir)/ruby/internal/module.h
 init.o: $(hdrdir)/ruby/internal/newobj.h
-init.o: $(hdrdir)/ruby/internal/rgengc.h
 init.o: $(hdrdir)/ruby/internal/scan_args.h
 init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -442,7 +438,6 @@ my_integer.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 my_integer.o: $(hdrdir)/ruby/internal/intern/error.h
 my_integer.o: $(hdrdir)/ruby/internal/intern/eval.h
 my_integer.o: $(hdrdir)/ruby/internal/intern/file.h
-my_integer.o: $(hdrdir)/ruby/internal/intern/gc.h
 my_integer.o: $(hdrdir)/ruby/internal/intern/hash.h
 my_integer.o: $(hdrdir)/ruby/internal/intern/io.h
 my_integer.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -473,7 +468,6 @@ my_integer.o: $(hdrdir)/ruby/internal/memory.h
 my_integer.o: $(hdrdir)/ruby/internal/method.h
 my_integer.o: $(hdrdir)/ruby/internal/module.h
 my_integer.o: $(hdrdir)/ruby/internal/newobj.h
-my_integer.o: $(hdrdir)/ruby/internal/rgengc.h
 my_integer.o: $(hdrdir)/ruby/internal/scan_args.h
 my_integer.o: $(hdrdir)/ruby/internal/special_consts.h
 my_integer.o: $(hdrdir)/ruby/internal/static_assert.h

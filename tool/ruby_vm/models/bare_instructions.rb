@@ -16,7 +16,7 @@ require_relative 'typemap'
 require_relative 'attribute'
 
 class RubyVM::BareInstructions
-  attr_reader :template, :name, :opes, :pops, :rets, :decls, :expr
+  attr_reader :template, :name, :operands, :pops, :rets, :decls, :expr
 
   def initialize opts = {}
     @template = opts[:template]
@@ -24,7 +24,7 @@ class RubyVM::BareInstructions
     @loc      = opts[:location]
     @sig      = opts[:signature]
     @expr     = RubyVM::CExpr.new opts[:expr]
-    @opes     = typesplit @sig[:ope]
+    @operands = typesplit @sig[:ope]
     @pops     = typesplit @sig[:pop].reject {|i| i == '...' }
     @rets     = typesplit @sig[:ret].reject {|i| i == '...' }
     @attrs    = opts[:attributes].map {|i|
@@ -51,7 +51,7 @@ class RubyVM::BareInstructions
 
   def call_attribute name
     return sprintf 'attr_%s_%s(%s)', name, @name, \
-                   @opes.map {|i| i[:name] }.compact.join(', ')
+                   @operands.map {|i| i[:name] }.compact.join(', ')
   end
 
   def has_attribute? k
@@ -65,7 +65,7 @@ class RubyVM::BareInstructions
   end
 
   def width
-    return 1 + opes.size
+    return 1 + operands.size
   end
 
   def declarations
@@ -98,7 +98,7 @@ class RubyVM::BareInstructions
   end
 
   def operands_info
-    opes.map {|o|
+    operands.map {|o|
       c, _ = RubyVM::Typemap.fetch o[:type]
       next c
     }.join
@@ -137,7 +137,7 @@ class RubyVM::BareInstructions
   end
 
   def has_ope? var
-    return @opes.any? {|i| i[:name] == var[:name] }
+    return @operands.any? {|i| i[:name] == var[:name] }
   end
 
   def has_pop? var
@@ -180,7 +180,7 @@ class RubyVM::BareInstructions
     # Beware: order matters here because some attribute depends another.
     generate_attribute 'const char*', 'name', "insn_name(#{bin})"
     generate_attribute 'enum ruby_vminsn_type', 'bin', bin
-    generate_attribute 'rb_num_t', 'open', opes.size
+    generate_attribute 'rb_num_t', 'open', operands.size
     generate_attribute 'rb_num_t', 'popn', pops.size
     generate_attribute 'rb_num_t', 'retn', rets.size
     generate_attribute 'rb_num_t', 'width', width
@@ -191,7 +191,7 @@ class RubyVM::BareInstructions
 
   def default_definition_of_handles_sp
     # Insn with ISEQ should yield it; can handle sp.
-    return opes.any? {|o| o[:type] == 'ISEQ' }
+    return operands.any? {|o| o[:type] == 'ISEQ' }
   end
 
   def default_definition_of_leaf

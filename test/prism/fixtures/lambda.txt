@@ -1,0 +1,11 @@
+->(
+  foo
+) {}
+
+->(x: "b#{a}") { }
+
+->(a: b * 3) {}
+
+-> foo = bar do end
+
+-> foo: bar do end

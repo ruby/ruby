@@ -1,3 +1,4 @@
+require_relative "../../../spec_helper"
 platform_is :windows do
   require 'win32ole'
 

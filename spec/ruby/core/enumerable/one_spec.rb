@@ -83,7 +83,6 @@ describe "Enumerable#one?" do
     end
   end
 
-
   describe 'when given a pattern argument' do
     it "calls `===` on the pattern the return value " do
       pattern = EnumerableSpecs::Pattern.new { |x| x == 1 }
@@ -144,6 +143,12 @@ describe "Enumerable#one?" do
       pattern = EnumerableSpecs::Pattern.new { false }
       multi.one?(pattern).should == false
       pattern.yielded.should == [[[1, 2]], [[3, 4, 5]], [[6, 7, 8, 9]]]
+    end
+
+    it "ignores the block if there is an argument" do
+      -> {
+        EnumerableSpecs::Numerous.new(1, 2, 3, 4, "5").one?(String) { false }.should == true
+      }.should complain(/given block not used/)
     end
   end
 end

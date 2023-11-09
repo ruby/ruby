@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 module Gem
   # The Gem::List class is currently unused and will be removed in the next major rubygems version
   class List # :nodoc:

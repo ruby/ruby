@@ -61,7 +61,7 @@ class CaseFolding
     @version = nil
     turkic = []
 
-    IO.foreach(filename, mode: "rb") do |line|
+    File.foreach(filename, mode: "rb") do |line|
       @version ||= line[/-([0-9.]+).txt/, 1]
       next unless res = pattern.match(line)
       ch_from = res[1].to_i(16)
@@ -230,7 +230,7 @@ class CaseMapping
     @specials = []
     @specials_length = 0
     @version = nil
-    IO.foreach(File.join(mapping_directory, 'UnicodeData.txt'), mode: "rb") do |line|
+    File.foreach(File.join(mapping_directory, 'UnicodeData.txt'), mode: "rb") do |line|
       next if line =~ /^</
       code, _, _, _, _, _, _, _, _, _, _, _, upper, lower, title = line.chomp.split ';'
       unless upper and lower and title and (upper+lower+title)==''
@@ -239,7 +239,7 @@ class CaseMapping
     end
 
     @filename = File.join(mapping_directory, 'SpecialCasing.txt')
-    IO.foreach(@filename, mode: "rb") do |line|
+    File.foreach(@filename, mode: "rb") do |line|
       @version ||= line[/-([0-9.]+).txt/, 1]
       line.chomp!
       line, comment = line.split(/ *#/)

@@ -23,6 +23,7 @@
 #define RARRAY_PTR_IN_USE_FLAG  FL_USER14
 
 /* array.c */
+VALUE rb_ary_hash_values(long len, const VALUE *elements);
 VALUE rb_ary_last(int, const VALUE *, VALUE);
 void rb_ary_set_len(VALUE, long);
 void rb_ary_delete_same(VALUE, VALUE);
@@ -39,10 +40,7 @@ VALUE rb_ary_diff(VALUE ary1, VALUE ary2);
 
 static inline VALUE rb_ary_entry_internal(VALUE ary, long offset);
 static inline bool ARY_PTR_USING_P(VALUE ary);
-static inline void RARY_TRANSIENT_SET(VALUE ary);
-static inline void RARY_TRANSIENT_UNSET(VALUE ary);
 
-MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_ary_tmp_new_from_values(VALUE, long, const VALUE *);
 VALUE rb_check_to_array(VALUE ary);
 VALUE rb_ary_behead(VALUE, long);
@@ -50,14 +48,13 @@ VALUE rb_ary_aref1(VALUE ary, VALUE i);
 
 struct rb_execution_context_struct;
 VALUE rb_ec_ary_new_from_values(struct rb_execution_context_struct *ec, long n, const VALUE *elts);
-MJIT_SYMBOL_EXPORT_END
 
 // YJIT needs this function to never allocate and never raise
 static inline VALUE
 rb_ary_entry_internal(VALUE ary, long offset)
 {
     long len = RARRAY_LEN(ary);
-    const VALUE *ptr = RARRAY_CONST_PTR_TRANSIENT(ary);
+    const VALUE *ptr = RARRAY_CONST_PTR(ary);
     if (len == 0) return Qnil;
     if (offset < 0) {
         offset += len;
@@ -119,22 +116,6 @@ ARY_SHARED_ROOT_REFCNT(VALUE ary)
     return RARRAY(ary)->as.heap.aux.capa;
 }
 
-static inline void
-RARY_TRANSIENT_SET(VALUE ary)
-{
-#if USE_TRANSIENT_HEAP
-    FL_SET_RAW(ary, RARRAY_TRANSIENT_FLAG);
-#endif
-}
-
-static inline void
-RARY_TRANSIENT_UNSET(VALUE ary)
-{
-#if USE_TRANSIENT_HEAP
-    FL_UNSET_RAW(ary, RARRAY_TRANSIENT_FLAG);
-#endif
-}
-
 #undef rb_ary_new_from_args
 #if RBIMPL_HAS_WARNING("-Wgnu-zero-variadic-macro-arguments")
 # /* Skip it; clang -pedantic doesn't like the following */
@@ -155,9 +136,16 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline VALUE
 RARRAY_AREF(VALUE ary, long i)
 {
+    VALUE val;
     RBIMPL_ASSERT_TYPE(ary, RUBY_T_ARRAY);
 
-    return RARRAY_CONST_PTR_TRANSIENT(ary)[i];
+    RBIMPL_WARNING_PUSH();
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ == 13
+    RBIMPL_WARNING_IGNORED(-Warray-bounds);
+#endif
+    val = RARRAY_CONST_PTR(ary)[i];
+    RBIMPL_WARNING_POP();
+    return val;
 }
 
 #endif /* INTERNAL_ARRAY_H */

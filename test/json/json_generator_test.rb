@@ -2,7 +2,7 @@
 # encoding: utf-8
 # frozen_string_literal: false
 
-require 'test_helper'
+require_relative 'test_helper'
 
 class JSONGeneratorTest < Test::Unit::TestCase
   include JSON
@@ -233,7 +233,7 @@ EOT
 
   def test_gc
     if respond_to?(:assert_in_out_err) && !(RUBY_PLATFORM =~ /java/)
-      assert_in_out_err(%w[-rjson --disable-gems], <<-EOS, [], [])
+      assert_in_out_err(%w[-rjson], <<-EOS, [], [])
         bignum_too_long_to_embed_as_string = 1234567890123456789012345
         expect = bignum_too_long_to_embed_as_string.to_s
         GC.stress = true
@@ -388,6 +388,31 @@ EOT
     end
     assert_nothing_raised(SystemStackError) do
       assert_equal '["foo"]', JSON.generate([s.new('foo')])
+    end
+  end
+
+  if defined?(JSON::Ext::Generator) and RUBY_PLATFORM != "java"
+    def test_string_ext_included_calls_super
+      included = false
+
+      Module.send(:alias_method, :included_orig, :included)
+      Module.send(:remove_method, :included)
+      Module.send(:define_method, :included) do |base|
+        included_orig(base)
+        included = true
+      end
+
+      Class.new(String) do
+        include JSON::Ext::Generator::GeneratorMethods::String
+      end
+
+      assert included
+    ensure
+      if Module.private_method_defined?(:included_orig)
+        Module.send(:remove_method, :included) if Module.method_defined?(:included)
+        Module.send(:alias_method, :included, :included_orig)
+        Module.send(:remove_method, :included_orig)
+      end
     end
   end
 

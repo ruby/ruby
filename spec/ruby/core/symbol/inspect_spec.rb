@@ -5,6 +5,8 @@ describe "Symbol#inspect" do
     fred:         ":fred",
     :fred?     => ":fred?",
     :fred!     => ":fred!",
+    :BAD!      => ":BAD!",
+    :_BAD!      => ":_BAD!",
     :$ruby     => ":$ruby",
     :@ruby     => ":@ruby",
     :@@ruby    => ":@@ruby",

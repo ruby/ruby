@@ -43,6 +43,13 @@ module Bundler
         end
       end
 
+      class AmbiguousGitReference < GitError
+        def initialize(options)
+          msg = "Specification of branch or ref with tag is ambiguous. You specified #{options.inspect}"
+          super msg
+        end
+      end
+
       # The GitProxy is responsible to interact with git repositories.
       # All actions required by the Git source is encapsulated in this
       # object.
@@ -53,10 +60,15 @@ module Bundler
         def initialize(path, uri, options = {}, revision = nil, git = nil)
           @path     = path
           @uri      = uri
-          @branch   = options["branch"]
           @tag      = options["tag"]
+          @branch   = options["branch"]
           @ref      = options["ref"]
-          @explicit_ref = branch || tag || ref
+          if @tag
+            raise AmbiguousGitReference.new(options) if @branch || @ref
+            @explicit_ref = @tag
+          else
+            @explicit_ref = @ref || @branch
+          end
           @revision = revision
           @git      = git
           @commit_ref = nil
@@ -67,8 +79,8 @@ module Bundler
         end
 
         def current_branch
-          @current_branch ||= allowed_with_path do
-            git("rev-parse", "--abbrev-ref", "HEAD", :dir => path).strip
+          @current_branch ||= with_path do
+            git_local("rev-parse", "--abbrev-ref", "HEAD", :dir => path).strip
           end
         end
 
@@ -84,7 +96,7 @@ module Bundler
         end
 
         def full_version
-          @full_version ||= git("--version").sub(/git version\s*/, "").strip
+          @full_version ||= git_local("--version").sub(/git version\s*/, "").strip
         end
 
         def checkout
@@ -118,7 +130,12 @@ module Bundler
             end
           end
 
-          git "fetch", "--force", "--quiet", *extra_fetch_args, :dir => destination if @commit_ref
+          ref = @commit_ref || (locked_to_full_sha? && @revision)
+          if ref
+            git "config", "uploadpack.allowAnySHA1InWant", "true", :dir => path.to_s if @commit_ref.nil? && needs_allow_any_sha1_in_want?
+
+            git "fetch", "--force", "--quiet", *extra_fetch_args(ref), :dir => destination
+          end
 
           git "reset", "--hard", @revision, :dir => destination
 
@@ -235,7 +252,15 @@ module Bundler
         end
 
         def pinned_to_full_sha?
-          ref =~ /\A\h{40}\z/
+          full_sha_revision?(ref)
+        end
+
+        def locked_to_full_sha?
+          full_sha_revision?(@revision)
+        end
+
+        def full_sha_revision?(ref)
+          ref&.match?(/\A\h{40}\z/)
         end
 
         def git_null(*command, dir: nil)
@@ -253,15 +278,15 @@ module Bundler
         end
 
         def git(*command, dir: nil)
-          command_with_no_credentials = check_allowed(command)
+          run_command(*command, :dir => dir) do |unredacted_command|
+            check_allowed(unredacted_command)
+          end
+        end
 
-          out, err, status = capture(command, dir)
-
-          raise GitCommandError.new(command_with_no_credentials, dir || SharedHelpers.pwd, err) unless status.success?
-
-          Bundler.ui.warn err unless err.empty?
-
-          out
+        def git_local(*command, dir: nil)
+          run_command(*command, :dir => dir) do |unredacted_command|
+            redact_and_check_presence(unredacted_command)
+          end
         end
 
         def has_revision_cached?
@@ -330,10 +355,28 @@ module Bundler
         end
 
         def check_allowed(command)
-          require "shellwords"
-          command_with_no_credentials = URICredentialsFilter.credential_filtered_string("git #{command.shelljoin}", uri)
+          command_with_no_credentials = redact_and_check_presence(command)
           raise GitNotAllowedError.new(command_with_no_credentials) unless allow?
           command_with_no_credentials
+        end
+
+        def redact_and_check_presence(command)
+          raise GitNotInstalledError.new unless Bundler.git_present?
+
+          require "shellwords"
+          URICredentialsFilter.credential_filtered_string("git #{command.shelljoin}", uri)
+        end
+
+        def run_command(*command, dir: nil)
+          command_with_no_credentials = yield(command)
+
+          out, err, status = capture(command, dir)
+
+          raise GitCommandError.new(command_with_no_credentials, dir || SharedHelpers.pwd, err) unless status.success?
+
+          Bundler.ui.warn err unless err.empty?
+
+          out
         end
 
         def capture(cmd, dir, ignore_err: false)
@@ -366,6 +409,11 @@ module Bundler
           args += ["--single-branch"]
           args.unshift("--no-tags") if supports_cloning_with_no_tags?
 
+          # If there's a locked revision, no need to clone any specific branch
+          # or tag, since we will end up checking out that locked revision
+          # anyways.
+          return args if @revision
+
           args += ["--branch", branch || tag] if branch || tag
           args
         end
@@ -376,9 +424,9 @@ module Bundler
           ["--depth", depth.to_s]
         end
 
-        def extra_fetch_args
+        def extra_fetch_args(ref)
           extra_args = [path.to_s, *depth_args]
-          extra_args.push(@commit_ref)
+          extra_args.push(ref)
           extra_args
         end
 
@@ -388,6 +436,10 @@ module Bundler
 
         def supports_minus_c?
           @supports_minus_c ||= Gem::Version.new(version) >= Gem::Version.new("1.8.5")
+        end
+
+        def needs_allow_any_sha1_in_want?
+          @needs_allow_any_sha1_in_want ||= Gem::Version.new(version) <= Gem::Version.new("2.13.7")
         end
 
         def supports_fetching_unreachable_refs?

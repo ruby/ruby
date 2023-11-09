@@ -85,11 +85,15 @@
  *   puts e.next   # => 3
  *   puts e.next   # raises StopIteration
  *
- * +next+, +next_values+, +peek+ and +peek_values+ are the only methods
- * which use external iteration (and Array#zip(Enumerable-not-Array) which uses +next+).
+ * +next+, +next_values+, +peek+, and +peek_values+ are the only methods
+ * which use external iteration (and Array#zip(Enumerable-not-Array) which uses +next+ internally).
  *
  * These methods do not affect other internal enumeration methods,
  * unless the underlying iteration method itself has side-effect, e.g. IO#each_line.
+ *
+ * FrozenError will be raised if these methods are called against a frozen enumerator.
+ * Since +rewind+ and +feed+ also change state for external iteration,
+ * these methods may raise FrozenError too.
  *
  * External iteration differs *significantly* from internal iteration
  * due to using a Fiber:
@@ -165,7 +169,10 @@ static VALUE sym_each, sym_cycle, sym_yield;
 
 static VALUE lazy_use_super_method;
 
+extern ID ruby_static_id_cause;
+
 #define id_call idCall
+#define id_cause ruby_static_id_cause
 #define id_each idEach
 #define id_eqq idEqq
 #define id_initialize idInitialize
@@ -187,6 +194,18 @@ struct enumerator {
     rb_enumerator_size_func *size_fn;
     int kw_splat;
 };
+
+RUBY_REFERENCES_START(enumerator_refs)
+    REF_EDGE(enumerator, obj),
+    REF_EDGE(enumerator, args),
+    REF_EDGE(enumerator, fib),
+    REF_EDGE(enumerator, dst),
+    REF_EDGE(enumerator, lookahead),
+    REF_EDGE(enumerator, feedvalue),
+    REF_EDGE(enumerator, stop_exc),
+    REF_EDGE(enumerator, size),
+    REF_EDGE(enumerator, procs),
+RUBY_REFERENCES_END
 
 static VALUE rb_cGenerator, rb_cYielder, rb_cEnumProducer;
 
@@ -237,39 +256,6 @@ struct enum_product {
 
 VALUE rb_cArithSeq;
 
-/*
- * Enumerator
- */
-static void
-enumerator_mark(void *p)
-{
-    struct enumerator *ptr = p;
-    rb_gc_mark_movable(ptr->obj);
-    rb_gc_mark_movable(ptr->args);
-    rb_gc_mark_movable(ptr->fib);
-    rb_gc_mark_movable(ptr->dst);
-    rb_gc_mark_movable(ptr->lookahead);
-    rb_gc_mark_movable(ptr->feedvalue);
-    rb_gc_mark_movable(ptr->stop_exc);
-    rb_gc_mark_movable(ptr->size);
-    rb_gc_mark_movable(ptr->procs);
-}
-
-static void
-enumerator_compact(void *p)
-{
-    struct enumerator *ptr = p;
-    ptr->obj = rb_gc_location(ptr->obj);
-    ptr->args = rb_gc_location(ptr->args);
-    ptr->fib = rb_gc_location(ptr->fib);
-    ptr->dst = rb_gc_location(ptr->dst);
-    ptr->lookahead = rb_gc_location(ptr->lookahead);
-    ptr->feedvalue = rb_gc_location(ptr->feedvalue);
-    ptr->stop_exc = rb_gc_location(ptr->stop_exc);
-    ptr->size = rb_gc_location(ptr->size);
-    ptr->procs = rb_gc_location(ptr->procs);
-}
-
 #define enumerator_free RUBY_TYPED_DEFAULT_FREE
 
 static size_t
@@ -281,12 +267,12 @@ enumerator_memsize(const void *p)
 static const rb_data_type_t enumerator_data_type = {
     "enumerator",
     {
-        enumerator_mark,
+        REFS_LIST_PTR(enumerator_refs),
         enumerator_free,
         enumerator_memsize,
-        enumerator_compact,
+        NULL,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, NULL, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_DECL_MARKING
 };
 
 static struct enumerator *
@@ -808,8 +794,16 @@ get_next_values(VALUE obj, struct enumerator *e)
 {
     VALUE curr, vs;
 
-    if (e->stop_exc)
-        rb_exc_raise(e->stop_exc);
+    if (e->stop_exc) {
+        VALUE exc = e->stop_exc;
+        VALUE result = rb_attr_get(exc, id_result);
+        VALUE mesg = rb_attr_get(exc, idMesg);
+        if (!NIL_P(mesg)) mesg = rb_str_dup(mesg);
+        VALUE stop_exc = rb_exc_new_str(rb_eStopIteration, mesg);
+        rb_ivar_set(stop_exc, id_cause, exc);
+        rb_ivar_set(stop_exc, id_result, result);
+        rb_exc_raise(stop_exc);
+    }
 
     curr = rb_fiber_current();
 
@@ -879,6 +873,8 @@ enumerator_next_values(VALUE obj)
     struct enumerator *e = enumerator_ptr(obj);
     VALUE vs;
 
+    rb_check_frozen(obj);
+
     if (!UNDEF_P(e->lookahead)) {
         vs = e->lookahead;
         e->lookahead = Qundef;
@@ -939,6 +935,8 @@ static VALUE
 enumerator_peek_values(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
+
+    rb_check_frozen(obj);
 
     if (UNDEF_P(e->lookahead)) {
         e->lookahead = get_next_values(obj, e);
@@ -1064,6 +1062,8 @@ enumerator_feed(VALUE obj, VALUE v)
 {
     struct enumerator *e = enumerator_ptr(obj);
 
+    rb_check_frozen(obj);
+
     if (!UNDEF_P(e->feedvalue)) {
         rb_raise(rb_eTypeError, "feed value already set");
     }
@@ -1085,6 +1085,8 @@ static VALUE
 enumerator_rewind(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
+
+    rb_check_frozen(obj);
 
     rb_check_funcall(e->obj, id_rewind, 0, 0);
 
@@ -2390,7 +2392,6 @@ lazy_zip_arrays_func(VALUE proc_entry, struct MEMO *result, VALUE memos, long me
         rb_ary_push(ary, rb_ary_entry(RARRAY_AREF(arrays, i), count));
     }
     LAZY_MEMO_SET_VALUE(result, ary);
-    LAZY_MEMO_SET_PACKED(result);
     rb_ary_store(memos, memo_index, LONG2NUM(++count));
     return result;
 }

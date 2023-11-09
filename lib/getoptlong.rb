@@ -352,7 +352,7 @@
 #
 # Command line:
 #
-# $ ruby fibonacci.rb --number 6 --verbose yes
+#   $ ruby fibonacci.rb --number 6 --verbose yes
 #
 # Output:
 #
@@ -368,7 +368,7 @@
 #
 class GetoptLong
   # Version.
-  VERSION = "0.2.0"
+  VERSION = "0.2.1"
 
   #
   # Orderings.

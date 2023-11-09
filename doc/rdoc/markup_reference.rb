@@ -26,7 +26,7 @@ require 'rdoc'
 # - Single-line or multi-line comments that precede certain definitions;
 #   see {Markup in Comments}[rdoc-ref:RDoc::MarkupReference@Markup+in+Comments].
 # - \RDoc directives in trailing comments (on the same line as code);
-#   see <tt>:nodoc:</tt>, <tt>:doc:</tt>, and <tt>:notnew</tt>.
+#   see <tt>:nodoc:</tt>, <tt>:doc:</tt>, and <tt>:notnew:</tt>.
 # - \RDoc directives in single-line comments;
 #   see other {Directives}[rdoc-ref:RDoc::MarkupReference@Directives].
 # - The Ruby code itself (but not from C code);

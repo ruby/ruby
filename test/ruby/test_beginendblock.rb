@@ -45,9 +45,9 @@ class TestBeginEndBlock < Test::Unit::TestCase
   end
 
   def test_endblockwarn_in_eval
-    assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", [], ['(eval):2: warning: END in method; use at_exit'])
+    assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", [], ['test.rb:1: warning: END in method; use at_exit'])
     begin;
-      eval <<-EOE
+      eval <<-EOE, nil, "test.rb", 0
         def end2
           END {}
         end

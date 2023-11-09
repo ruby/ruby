@@ -13,7 +13,7 @@ io/wait
 nkf
 #openssl
 pty
-racc/cparse
+#racc/cparse
 readline
 ripper
 socket

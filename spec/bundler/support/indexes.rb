@@ -14,9 +14,9 @@ module Spec
 
     alias_method :platforms, :platform
 
-    def resolve(args = [])
+    def resolve(args = [], dependency_api_available: true)
       @platforms ||= ["ruby"]
-      default_source = instance_double("Bundler::Source::Rubygems", :specs => @index, :to_s => "locally install gems")
+      default_source = instance_double("Bundler::Source::Rubygems", :specs => @index, :to_s => "locally install gems", :dependency_api_available? => dependency_api_available)
       source_requirements = { :default => default_source }
       base = args[0] || Bundler::SpecSet.new([])
       base.each {|ls| ls.source = default_source }
@@ -37,6 +37,12 @@ module Spec
 
     def should_resolve_as(specs)
       got = resolve
+      got = got.map(&:full_name).sort
+      expect(got).to eq(specs.sort)
+    end
+
+    def should_resolve_without_dependency_api(specs)
+      got = resolve(:dependency_api_available => false)
       got = got.map(&:full_name).sort
       expect(got).to eq(specs.sort)
     end
@@ -298,7 +304,7 @@ module Spec
       end
     end
 
-    def a_unresovable_child_index
+    def a_unresolvable_child_index
       build_index do
         gem "json", %w[1.8.0]
 

@@ -45,6 +45,14 @@ module Bundler
       spec
     end
 
+    def pre_install_checks
+      super
+    rescue Gem::FilePermissionError
+      # Ignore permission checks in RubyGems. Instead, go on, and try to write
+      # for real. We properly handle permission errors when they happen.
+      nil
+    end
+
     def generate_plugins
       return unless Gem::Installer.instance_methods(false).include?(:generate_plugins)
 
@@ -58,10 +66,6 @@ module Bundler
       else
         regenerate_plugins_for(spec, @plugins_dir)
       end
-    end
-
-    def pre_install_checks
-      super && validate_bundler_checksum(options[:bundler_expected_checksum])
     end
 
     def build_extensions
@@ -98,6 +102,18 @@ module Bundler
       end
     end
 
+    def gem_checksum
+      return nil if Bundler.settings[:disable_checksum_validation]
+      return nil unless source = @package.instance_variable_get(:@gem)
+      return nil unless source.respond_to?(:with_read_io)
+
+      source.with_read_io do |io|
+        Checksum.from_gem(io, source.path)
+      ensure
+        io.rewind
+      end
+    end
+
     private
 
     def prepare_extension_build(extension_dir)
@@ -108,64 +124,21 @@ module Bundler
     end
 
     def strict_rm_rf(dir)
-      Bundler.rm_rf dir
-    rescue StandardError => e
-      raise unless File.exist?(dir)
+      return unless File.exist?(dir)
 
-      raise DirectoryRemovalError.new(e, "Could not delete previous installation of `#{dir}`")
-    end
+      parent = File.dirname(dir)
+      parent_st = File.stat(parent)
 
-    def validate_bundler_checksum(checksum)
-      return true if Bundler.settings[:disable_checksum_validation]
-      return true unless checksum
-      return true unless source = @package.instance_variable_get(:@gem)
-      return true unless source.respond_to?(:with_read_io)
-      digest = source.with_read_io do |io|
-        digest = SharedHelpers.digest(:SHA256).new
-        digest << io.read(16_384) until io.eof?
-        io.rewind
-        send(checksum_type(checksum), digest)
+      if parent_st.world_writable? && !parent_st.sticky?
+        raise InsecureInstallPathError.new(parent)
       end
-      unless digest == checksum
-        raise SecurityError, <<-MESSAGE
-          Bundler cannot continue installing #{spec.name} (#{spec.version}).
-          The checksum for the downloaded `#{spec.full_name}.gem` does not match \
-          the checksum given by the server. This means the contents of the downloaded \
-          gem is different from what was uploaded to the server, and could be a potential security issue.
 
-          To resolve this issue:
-          1. delete the downloaded gem located at: `#{spec.gem_dir}/#{spec.full_name}.gem`
-          2. run `bundle install`
+      begin
+        FileUtils.remove_entry_secure(dir)
+      rescue StandardError => e
+        raise unless File.exist?(dir)
 
-          If you wish to continue installing the downloaded gem, and are certain it does not pose a \
-          security issue despite the mismatching checksum, do the following:
-          1. run `bundle config set --local disable_checksum_validation true` to turn off checksum verification
-          2. run `bundle install`
-
-          (More info: The expected SHA256 checksum was #{checksum.inspect}, but the \
-          checksum for the downloaded gem was #{digest.inspect}.)
-          MESSAGE
-      end
-      true
-    end
-
-    def checksum_type(checksum)
-      case checksum.length
-      when 64 then :hexdigest!
-      when 44 then :base64digest!
-      else raise InstallError, "The given checksum for #{spec.full_name} (#{checksum.inspect}) is not a valid SHA256 hexdigest nor base64digest"
-      end
-    end
-
-    def hexdigest!(digest)
-      digest.hexdigest!
-    end
-
-    def base64digest!(digest)
-      if digest.respond_to?(:base64digest!)
-        digest.base64digest!
-      else
-        [digest.digest!].pack("m0")
+        raise DirectoryRemovalError.new(e, "Could not delete previous installation of `#{dir}`")
       end
     end
   end

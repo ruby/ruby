@@ -6,11 +6,18 @@
 #   v1 = dispatch0(stmts_new);
 #   v2 = dispatch0(void_stmt);
 #   $$ = dispatch2(stmts_add, v1, v2);
-
-$dollar = "$$"
-alias $$ $dollar
+#
+# - The code must be a single line.
+#
+# - The code is basically Ruby code, even if it appears like in C and
+#   the result will be processed as C. e.g., comments need to be in
+#   Ruby style.
 
 class DSL
+  TAG_PATTERN = /(?><[a-zA-Z0-9_]+>)/.source
+  NAME_PATTERN = /(?>\$|\d+|[a-zA-Z_][a-zA-Z0-9_]*|\[[a-zA-Z_.][-a-zA-Z0-9_.]*\])(?>(?:\.|->)[a-zA-Z_][a-zA-Z0-9_]*)*/.source
+  NOT_REF_PATTERN = /(?>\#.*|[^\"$@]*|"(?>\\.|[^\"])*")/.source
+
   def initialize(code, options)
     @events = {}
     @error = options.include?("error")
@@ -18,19 +25,15 @@ class DSL
     if options.include?("final")
       @final = "p->result"
     else
-      @final = (options.grep(/\A\$(?:\$|\d+)\z/)[0] || "$$")
+      @final = (options.grep(/\A\$#{NAME_PATTERN}\z/o)[0] || "$$")
     end
     @vars = 0
-
-    # create $1 == "$1", $2 == "$2", ...
-    s = (1..20).map {|n| "$#{n}"}
-    re = Array.new(s.size, "([^\0]+)")
-    /#{re.join("\0")}/ =~ s.join("\0")
 
     # struct parser_params *p
     p = p = "p"
 
     @code = ""
+    code = code.gsub(%r[\G#{NOT_REF_PATTERN}\K[$@]#{TAG_PATTERN}?#{NAME_PATTERN}]o, '"\&"')
     @last_value = eval(code)
   end
 

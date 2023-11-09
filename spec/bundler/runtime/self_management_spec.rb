@@ -6,6 +6,10 @@ RSpec.describe "Self management", :rubygems => ">= 3.3.0.dev", :realworld => tru
       "2.3.0"
     end
 
+    let(:current_version) do
+      "2.4.0"
+    end
+
     before do
       build_repo2
 
@@ -92,7 +96,7 @@ RSpec.describe "Self management", :rubygems => ">= 3.3.0.dev", :realworld => tru
     end
 
     it "shows a discrete message if locked bundler does not exist" do
-      missing_minor ="#{Bundler::VERSION[0]}.999.999"
+      missing_minor = "#{Bundler::VERSION[0]}.999.999"
 
       lockfile_bundled_with(missing_minor)
 
@@ -101,6 +105,35 @@ RSpec.describe "Self management", :rubygems => ">= 3.3.0.dev", :realworld => tru
 
       bundle "-v"
       expect(out).to eq(Bundler::VERSION[0] == "2" ? "Bundler version #{Bundler::VERSION}" : Bundler::VERSION)
+    end
+
+    it "installs BUNDLE_VERSION version when using bundle config version x.y.z" do
+      lockfile_bundled_with(current_version)
+
+      bundle "config set --local version #{previous_minor}"
+      bundle "install", :artifice => "vcr"
+      expect(out).to include("Bundler #{Bundler::VERSION} is running, but your configuration was #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
+
+      bundle "-v"
+      expect(out).to eq(previous_minor[0] == "2" ? "Bundler version #{previous_minor}" : previous_minor)
+    end
+
+    it "does not try to install when using bundle config version global" do
+      lockfile_bundled_with(previous_minor)
+
+      bundle "config set version system"
+      bundle "install", :artifice => "vcr"
+      expect(out).not_to match(/restarting using that version/)
+
+      bundle "-v"
+      expect(out).to eq(Bundler::VERSION[0] == "2" ? "Bundler version #{Bundler::VERSION}" : Bundler::VERSION)
+    end
+
+    it "ignores malformed lockfile version" do
+      lockfile_bundled_with("2.3.")
+
+      bundle "install --verbose"
+      expect(out).to include("Using bundler #{Bundler::VERSION}")
     end
 
     private

@@ -87,8 +87,15 @@ io_nread(VALUE io)
     rb_io_check_readable(fptr);
     len = rb_io_read_pending(fptr);
     if (len > 0) return INT2FIX(len);
-    if (!FIONREAD_POSSIBLE_P(fptr->fd)) return INT2FIX(0);
-    if (ioctl(fptr->fd, FIONREAD, &n)) return INT2FIX(0);
+
+#ifdef HAVE_RB_IO_DESCRIPTOR
+    int fd = rb_io_descriptor(io);
+#else
+    int fd = fptr->fd;
+#endif
+
+    if (!FIONREAD_POSSIBLE_P(fd)) return INT2FIX(0);
+    if (ioctl(fd, FIONREAD, &n)) return INT2FIX(0);
     if (n > 0) return ioctl_arg2num(n);
     return INT2FIX(0);
 }

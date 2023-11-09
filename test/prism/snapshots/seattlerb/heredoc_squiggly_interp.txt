@@ -1,0 +1,47 @@
+@ ProgramNode (location: (1,0)-(1,10))
+├── locals: [:a]
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,10))
+    └── body: (length: 1)
+        └── @ LocalVariableWriteNode (location: (1,0)-(1,10))
+            ├── name: :a
+            ├── depth: 0
+            ├── name_loc: (1,0)-(1,1) = "a"
+            ├── value:
+            │   @ InterpolatedStringNode (location: (1,4)-(1,10))
+            │   ├── opening_loc: (1,4)-(1,10) = "<<~EOF"
+            │   ├── parts: (length: 5)
+            │   │   ├── @ StringNode (location: (2,0)-(3,0))
+            │   │   │   ├── flags: ∅
+            │   │   │   ├── opening_loc: ∅
+            │   │   │   ├── content_loc: (2,0)-(3,0) = "      w\n"
+            │   │   │   ├── closing_loc: ∅
+            │   │   │   └── unescaped: "    w\n"
+            │   │   ├── @ StringNode (location: (3,0)-(3,3))
+            │   │   │   ├── flags: ∅
+            │   │   │   ├── opening_loc: ∅
+            │   │   │   ├── content_loc: (3,0)-(3,3) = "  x"
+            │   │   │   ├── closing_loc: ∅
+            │   │   │   └── unescaped: "x"
+            │   │   ├── @ EmbeddedStatementsNode (location: (3,3)-(3,8))
+            │   │   │   ├── opening_loc: (3,3)-(3,5) = "\#{"
+            │   │   │   ├── statements:
+            │   │   │   │   @ StatementsNode (location: (3,5)-(3,7))
+            │   │   │   │   └── body: (length: 1)
+            │   │   │   │       └── @ IntegerNode (location: (3,5)-(3,7))
+            │   │   │   │           └── flags: decimal
+            │   │   │   └── closing_loc: (3,7)-(3,8) = "}"
+            │   │   ├── @ StringNode (location: (3,8)-(4,0))
+            │   │   │   ├── flags: ∅
+            │   │   │   ├── opening_loc: ∅
+            │   │   │   ├── content_loc: (3,8)-(4,0) = " y\n"
+            │   │   │   ├── closing_loc: ∅
+            │   │   │   └── unescaped: " y\n"
+            │   │   └── @ StringNode (location: (4,0)-(5,0))
+            │   │       ├── flags: ∅
+            │   │       ├── opening_loc: ∅
+            │   │       ├── content_loc: (4,0)-(5,0) = "    z\n"
+            │   │       ├── closing_loc: ∅
+            │   │       └── unescaped: "  z\n"
+            │   └── closing_loc: (5,0)-(6,0) = "  EOF\n"
+            └── operator_loc: (1,2)-(1,3) = "="

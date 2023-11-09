@@ -8,7 +8,7 @@ For example, CSV lives in [a separate repository](https://github.com/ruby/csv) a
 
 ## Maintainers
 
-You can find the list of maintainers [here](https://docs.ruby-lang.org/en/master/maintainers_rdoc.html#label-Maintainers).
+You can find the list of maintainers [here](https://docs.ruby-lang.org/en/master/maintainers_md.html#label-Maintainers).
 
 ## Build
 

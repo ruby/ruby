@@ -36,7 +36,7 @@ module CGI::Util
 
   # URL-encode a string following RFC 3986
   # Space characters (+" "+) are encoded with (+"%20"+)
-  #   url_encoded_string = CGI.escape("'Stop!' said Fred")
+  #   url_encoded_string = CGI.escapeURIComponent("'Stop!' said Fred")
   #      # => "%27Stop%21%27%20said%20Fred"
   def escapeURIComponent(string)
     encoding = string.encoding
@@ -46,9 +46,10 @@ module CGI::Util
     end
     buffer.force_encoding(encoding)
   end
+  alias escape_uri_component escapeURIComponent
 
   # URL-decode a string following RFC 3986 with encoding(optional).
-  #   string = CGI.unescape("%27Stop%21%27+said%20Fred")
+  #   string = CGI.unescapeURIComponent("%27Stop%21%27+said%20Fred")
   #      # => "'Stop!'+said Fred"
   def unescapeURIComponent(string, encoding = @@accept_charset)
     str = string.b
@@ -58,6 +59,8 @@ module CGI::Util
     str.force_encoding(encoding)
     str.valid_encoding? ? str : str.force_encoding(string.encoding)
   end
+
+  alias unescape_uri_component unescapeURIComponent
 
   # The set of special characters and their escaped values
   TABLE_FOR_ESCAPE_HTML__ = {
@@ -90,9 +93,12 @@ module CGI::Util
     end
   end
 
-  begin
-    require 'cgi/escape'
-  rescue LoadError
+  # TruffleRuby runs the pure-Ruby variant faster, do not use the C extension there
+  unless RUBY_ENGINE == 'truffleruby'
+    begin
+      require 'cgi/escape'
+    rescue LoadError
+    end
   end
 
   # Unescape a string that has been HTML-escaped

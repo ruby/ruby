@@ -55,13 +55,24 @@ describe "IO.select" do
     end
   end
 
-  it "returns supplied objects correctly even when monitoring the same object in different arrays" do
-    filename = tmp("IO_select_pipe_file") + $$.to_s
+  it "returns supplied objects correctly when monitoring the same object in different arrays" do
+    filename = tmp("IO_select_pipe_file")
     io = File.open(filename, 'w+')
     result = IO.select [io], [io], nil, 0
     result.should == [[io], [io], []]
     io.close
     rm_r filename
+  end
+
+  it "returns the pipe read end in read set if the pipe write end is closed concurrently" do
+    main = Thread.current
+    t = Thread.new {
+      Thread.pass until main.stop?
+      @wr.close
+    }
+    IO.select([@rd]).should == [[@rd], [], []]
+  ensure
+    t.join
   end
 
   it "invokes to_io on supplied objects that are not IO and returns the supplied objects" do

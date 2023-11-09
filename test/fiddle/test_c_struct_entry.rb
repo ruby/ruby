@@ -8,7 +8,7 @@ end
 module Fiddle
   class TestCStructEntity < TestCase
     def test_class_size
-      types = [TYPE_DOUBLE, TYPE_CHAR]
+      types = [TYPE_DOUBLE, TYPE_CHAR, TYPE_DOUBLE, TYPE_BOOL]
 
       size = CStructEntity.size types
 
@@ -19,6 +19,12 @@ module Fiddle
 
       expected = PackInfo.align expected, alignments[1]
       expected += PackInfo::SIZE_MAP[TYPE_CHAR]
+
+      expected = PackInfo.align expected, alignments[2]
+      expected += PackInfo::SIZE_MAP[TYPE_DOUBLE]
+
+      expected = PackInfo.align expected, alignments[3]
+      expected += PackInfo::SIZE_MAP[TYPE_BOOL]
 
       expected = PackInfo.align expected, alignments.max
 

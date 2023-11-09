@@ -8,7 +8,7 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     @config.read_lines(<<~LINES.split(/(?<=\n)/))
       set editing-mode vi
     LINES
-    @encoding = Reline::IOGate.encoding
+    @encoding = Reline.core.encoding
     @line_editor = Reline::LineEditor.new(@config, @encoding)
     @line_editor.reset(@prompt, encoding: @encoding)
   end

@@ -50,6 +50,7 @@ platform_is_not :windows do
 
   describe "IO#write_nonblock" do
     it_behaves_like :io_write, :write_nonblock
+    it_behaves_like :io_write_no_transcode, :write_nonblock
   end
 end
 

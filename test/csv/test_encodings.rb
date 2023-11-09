@@ -5,7 +5,7 @@ require_relative "helper"
 
 class TestCSVEncodings < Test::Unit::TestCase
   extend DifferentOFS
-  include Helper
+  include CSVHelper
 
   def setup
     super
@@ -280,12 +280,12 @@ class TestCSVEncodings < Test::Unit::TestCase
   def test_invalid_encoding_row_error
     csv = CSV.new("valid,x\rinvalid,\xF8\r".force_encoding("UTF-8"),
                   encoding: "UTF-8", row_sep: "\r")
-    error = assert_raise(CSV::MalformedCSVError) do
+    error = assert_raise(CSV::InvalidEncodingError) do
       csv.shift
       csv.shift
     end
-    assert_equal("Invalid byte sequence in UTF-8 in line 2.",
-                 error.message)
+    assert_equal([Encoding::UTF_8, "Invalid byte sequence in UTF-8 in line 2."],
+                 [error.encoding, error.message])
   end
 
   def test_string_input_transcode

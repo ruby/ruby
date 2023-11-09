@@ -1,6 +1,6 @@
 require_relative '../../spec_helper'
 
-describe "Struct#values_at" do
+describe "MatchData#values_at" do
   # Should be synchronized with core/array/values_at_spec.rb and core/struct/values_at_spec.rb
   #
   # /(.)(.)(\d+)(\d)/.match("THX1138: The Movie").to_a # => ["HX1138", "H", "X", "113", "8"]
@@ -34,7 +34,7 @@ describe "Struct#values_at" do
     end
 
     it "supports beginningless Range" do
-      /(.)(.)(\d+)(\d)/.match("THX1138: The Movie").values_at(0..2).should == ["HX1138", "H", "X"]
+      /(.)(.)(\d+)(\d)/.match("THX1138: The Movie").values_at(..2).should == ["HX1138", "H", "X"]
     end
 
     it "returns an empty Array when Range is empty" do

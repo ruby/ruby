@@ -96,7 +96,7 @@ class TestDir < Test::Unit::TestCase
     d.close
   end
 
-  def test_chdir
+  def test_class_chdir
     pwd = Dir.pwd
     setup_envs
 
@@ -132,6 +132,45 @@ class TestDir < Test::Unit::TestCase
     rescue
       abort("cannot return the original directory: #{ pwd }")
     end
+  end
+
+  def test_instance_chdir
+    pwd = Dir.pwd
+    dir = Dir.new(pwd)
+    root_dir = Dir.new(@root)
+    setup_envs
+
+    ENV["HOME"] = pwd
+    root_dir.chdir do
+      assert_warning(/conflicting chdir during another chdir block/) { dir.chdir }
+      assert_warning(/conflicting chdir during another chdir block/) { root_dir.chdir }
+
+      assert_equal(@root, Dir.pwd)
+
+      assert_raise(RuntimeError) { Thread.new { Thread.current.report_on_exception = false; dir.chdir }.join }
+      assert_raise(RuntimeError) { Thread.new { Thread.current.report_on_exception = false; dir.chdir{} }.join }
+
+      assert_warning(/conflicting chdir during another chdir block/) { dir.chdir }
+      assert_equal(pwd, Dir.pwd)
+
+      assert_warning(/conflicting chdir during another chdir block/) { root_dir.chdir }
+      assert_equal(@root, Dir.pwd)
+
+      assert_warning(/conflicting chdir during another chdir block/) { dir.chdir }
+
+      root_dir.chdir do
+        assert_equal(@root, Dir.pwd)
+      end
+      assert_equal(pwd, Dir.pwd)
+    end
+  ensure
+    begin
+      dir.chdir
+    rescue
+      abort("cannot return the original directory: #{ pwd }")
+    end
+    dir.close
+    root_dir.close
   end
 
   def test_chdir_conflict
@@ -539,6 +578,40 @@ class TestDir < Test::Unit::TestCase
       ENV.delete('USERPROFILE')
       assert_equal("C:/ruby/homepath", Dir.home)
     end
+
+    def test_home_at_startup_windows
+      env = {'HOME' => "C:\\ruby\\home"}
+      args = [env]
+      assert_separately(args, "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        assert_equal("C:/ruby/home", Dir.home)
+      end;
+
+      env['USERPROFILE'] = "C:\\ruby\\userprofile"
+      assert_separately(args, "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        assert_equal("C:/ruby/home", Dir.home)
+      end;
+
+      env['HOME'] = nil
+      assert_separately(args, "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        assert_equal("C:/ruby/userprofile", Dir.home)
+      end;
+
+      env['HOMEDRIVE'] = "C:"
+      env['HOMEPATH'] = "\\ruby\\homepath"
+      assert_separately(args, "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        assert_equal("C:/ruby/userprofile", Dir.home)
+      end;
+
+      env['USERPROFILE'] = nil
+      assert_separately(args, "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        assert_equal("C:/ruby/homepath", Dir.home)
+      end;
+    end
   end
 
   def test_home
@@ -598,6 +671,21 @@ class TestDir < Test::Unit::TestCase
         assert_raise(NotImplementedError) { d.fileno }
       end
     }
+  end
+
+  def test_for_fd
+    if Dir.respond_to? :for_fd
+      begin
+        new_dir = Dir.new('..')
+        for_fd_dir = Dir.for_fd(new_dir.fileno)
+        assert_equal(new_dir.chdir{Dir.pwd}, for_fd_dir.chdir{Dir.pwd})
+      ensure
+        new_dir&.close
+        for_fd_dir&.close
+      end
+    else
+      assert_raise(NotImplementedError) { Dir.for_fd(0) }
+    end
   end
 
   def test_empty?

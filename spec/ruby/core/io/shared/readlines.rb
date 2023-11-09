@@ -105,12 +105,10 @@ describe :io_readlines_options_19, shared: true do
     end
 
     describe "when the object is an options Hash" do
-      ruby_version_is "3.0" do
-        it "raises TypeError exception" do
-          -> {
-            IO.send(@method, @name, { chomp: true }, &@object)
-          }.should raise_error(TypeError)
-        end
+      it "raises TypeError exception" do
+        -> {
+          IO.send(@method, @name, { chomp: true }, &@object)
+        }.should raise_error(TypeError)
       end
     end
 
@@ -179,12 +177,10 @@ describe :io_readlines_options_19, shared: true do
     end
 
     describe "when the second object is an options Hash" do
-      ruby_version_is "3.0" do
-        it "raises TypeError exception" do
-          -> {
-            IO.send(@method, @name, "", { chomp: true }, &@object)
-          }.should raise_error(TypeError)
-        end
+      it "raises TypeError exception" do
+        -> {
+          IO.send(@method, @name, "", { chomp: true }, &@object)
+        }.should raise_error(TypeError)
       end
     end
   end

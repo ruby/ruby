@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/iterable_and_tolerating_size_increasing'
 
 describe "Array#to_h" do
   it "converts empty array to empty hash" do
@@ -76,4 +77,9 @@ describe "Array#to_h" do
       end.should raise_error(TypeError, /wrong element type MockObject at 0/)
     end
   end
+end
+
+describe "Array#to_h" do
+  @value_to_return = -> e { [e, e.to_s] }
+  it_behaves_like :array_iterable_and_tolerating_size_increasing, :to_h
 end

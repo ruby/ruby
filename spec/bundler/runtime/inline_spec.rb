@@ -191,6 +191,31 @@ RSpec.describe "bundler/inline#gemfile" do
     expect(err).to be_empty
   end
 
+  it "installs subdependencies quietly if necessary when the install option is not set, and multiple sources used" do
+    build_repo4 do
+      build_gem "rack" do |s|
+        s.add_dependency "rackdep"
+      end
+
+      build_gem "rackdep", "1.0.0"
+    end
+
+    script <<-RUBY
+      gemfile do
+        source "#{file_uri_for(gem_repo1)}"
+        source "#{file_uri_for(gem_repo4)}" do
+          gem "rack"
+        end
+      end
+
+      require "rackdep"
+      puts RACKDEP
+    RUBY
+
+    expect(out).to eq("1.0.0")
+    expect(err).to be_empty
+  end
+
   it "installs quietly from git if necessary when the install option is not set" do
     build_git "foo", "1.0.0"
     baz_ref = build_git("baz", "2.0.0").ref_for("HEAD")

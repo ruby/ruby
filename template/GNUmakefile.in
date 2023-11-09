@@ -27,7 +27,6 @@ override UNICODE_TABLES_DEPENDENTS = \
 		    $(UNICODE_TABLES_DATA_FILES)))),\
 	    force,none)
 
-include $(srcdir)/defs/universal.mk
 -include uncommon.mk
 include $(srcdir)/defs/gmake.mk
 

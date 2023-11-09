@@ -4,7 +4,7 @@
 source_version = ["", "ext/stringio/"].find do |dir|
   begin
     break File.open(File.join(__dir__, "#{dir}stringio.c")) {|f|
-      f.gets("\n#define STRINGIO_VERSION ")
+      f.gets("\nSTRINGIO_VERSION ")
       f.gets[/\s*"(.+)"/, 1]
     }
   rescue Errno::ENOENT
@@ -14,7 +14,6 @@ Gem::Specification.new do |s|
   s.name = "stringio"
   s.version = source_version
 
-  s.required_rubygems_version = Gem::Requirement.new(">= 2.6")
   s.require_paths = ["lib"]
   s.authors = ["Nobu Nakada", "Charles Oliver Nutter"]
   s.description = "Pseudo `IO` class from/to `String`."
@@ -22,7 +21,8 @@ Gem::Specification.new do |s|
   s.files = ["README.md"]
   jruby = true if Gem::Platform.new('java') =~ s.platform or RUBY_ENGINE == 'jruby'
   if jruby
-    s.files += ["lib/stringio.rb", "lib/stringio.jar"]
+    s.require_paths = "lib/java"
+    s.files += ["lib/java/stringio.rb", "lib/java/stringio.jar"]
     s.platform = "java"
   else
     s.extensions = ["ext/stringio/extconf.rb"]
@@ -30,7 +30,7 @@ Gem::Specification.new do |s|
   end
   s.homepage = "https://github.com/ruby/stringio"
   s.licenses = ["Ruby", "BSD-2-Clause"]
-  s.required_ruby_version = ">= 2.5"
+  s.required_ruby_version = ">= 2.7"
   s.summary = "Pseudo IO on String"
 
   # s.cert_chain  = %w[certs/nobu.pem]

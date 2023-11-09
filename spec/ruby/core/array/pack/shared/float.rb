@@ -27,7 +27,9 @@ describe :array_pack_float_le, shared: true do
 
   ruby_version_is ""..."3.3" do
     it "ignores NULL bytes between directives" do
-      [5.3, 9.2].pack(pack_format("\000", 2)).should == "\x9a\x99\xa9@33\x13A"
+      suppress_warning do
+        [5.3, 9.2].pack(pack_format("\000", 2)).should == "\x9a\x99\xa9@33\x13A"
+      end
     end
   end
 
@@ -105,7 +107,9 @@ describe :array_pack_float_be, shared: true do
 
   ruby_version_is ""..."3.3" do
     it "ignores NULL bytes between directives" do
-      [5.3, 9.2].pack(pack_format("\000", 2)).should == "@\xa9\x99\x9aA\x1333"
+      suppress_warning do
+        [5.3, 9.2].pack(pack_format("\000", 2)).should == "@\xa9\x99\x9aA\x1333"
+      end
     end
   end
 
@@ -175,7 +179,9 @@ describe :array_pack_double_le, shared: true do
 
   ruby_version_is ""..."3.3" do
     it "ignores NULL bytes between directives" do
-      [5.3, 9.2].pack(pack_format("\000", 2)).should == "333333\x15@ffffff\x22@"
+      suppress_warning do
+        [5.3, 9.2].pack(pack_format("\000", 2)).should == "333333\x15@ffffff\x22@"
+      end
     end
   end
 
@@ -244,7 +250,9 @@ describe :array_pack_double_be, shared: true do
 
   ruby_version_is ""..."3.3" do
     it "ignores NULL bytes between directives" do
-      [5.3, 9.2].pack(pack_format("\000", 2)).should == "@\x15333333@\x22ffffff"
+      suppress_warning do
+        [5.3, 9.2].pack(pack_format("\000", 2)).should == "@\x15333333@\x22ffffff"
+      end
     end
   end
 

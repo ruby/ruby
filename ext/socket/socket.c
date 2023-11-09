@@ -1654,8 +1654,7 @@ socket_s_ip_address_list(VALUE self)
 
   finish:
     save_errno = errno;
-    if (lc.lifc_buf != NULL)
-        xfree(lc.lifc_req);
+    xfree(lc.lifc_req);
     if (fd != -1)
         close(fd);
     errno = save_errno;

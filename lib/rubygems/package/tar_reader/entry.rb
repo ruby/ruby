@@ -1,13 +1,30 @@
 # frozen_string_literal: true
-#++
+
+# rubocop:disable Style/AsciiComments
+
 # Copyright (C) 2004 Mauricio Julio Fernández Pradier
 # See LICENSE.txt for additional licensing information.
-#--
+
+# rubocop:enable Style/AsciiComments
 
 ##
 # Class for reading entries out of a tar file
 
 class Gem::Package::TarReader::Entry
+  ##
+  # Creates a new tar entry for +header+ that will be read from +io+
+  # If a block is given, the entry is yielded and then closed.
+
+  def self.open(header, io, &block)
+    entry = new header, io
+    return entry unless block_given?
+    begin
+      yield entry
+    ensure
+      entry.close
+    end
+  end
+
   ##
   # Header for this tar entry
 
@@ -21,6 +38,7 @@ class Gem::Package::TarReader::Entry
     @header = header
     @io = io
     @orig_pos = @io.pos
+    @end_pos = @orig_pos + @header.size
     @read = 0
   end
 
@@ -39,7 +57,14 @@ class Gem::Package::TarReader::Entry
   # Closes the tar entry
 
   def close
+    return if closed?
+    # Seek to the end of the entry if it wasn't fully read
+    seek(0, IO::SEEK_END)
+    # discard trailing zeros
+    skip = (512 - (@header.size % 512)) % 512
+    @io.read(skip)
     @closed = true
+    nil
   end
 
   ##
@@ -77,9 +102,7 @@ class Gem::Package::TarReader::Entry
   # Read one byte from the tar entry
 
   def getc
-    check_closed
-
-    return nil if @read >= @header.size
+    return nil if eof?
 
     ret = @io.getc
     @read += 1 if ret
@@ -117,37 +140,42 @@ class Gem::Package::TarReader::Entry
     bytes_read
   end
 
+  ##
+  # Seek to the position in the tar entry
+
+  def pos=(new_pos)
+    seek(new_pos, IO::SEEK_SET)
+  end
+
   def size
     @header.size
   end
 
-  alias length size
+  alias_method :length, :size
 
   ##
-  # Reads +len+ bytes from the tar file entry, or the rest of the entry if
-  # nil
+  # Reads +maxlen+ bytes from the tar file entry, or the rest of the entry if nil
 
-  def read(len = nil)
-    check_closed
+  def read(maxlen = nil)
+    if eof?
+      return maxlen.to_i.zero? ? "" : nil
+    end
 
-    len ||= @header.size - @read
-
-    return nil if len > 0 && @read >= @header.size
-
-    max_read = [len, @header.size - @read].min
+    max_read = [maxlen, @header.size - @read].compact.min
 
     ret = @io.read max_read
+    if ret.nil?
+      return maxlen ? nil : "" # IO.read returns nil on EOF with len argument
+    end
     @read += ret.size
 
     ret
   end
 
-  def readpartial(maxlen = nil, outbuf = "".b)
-    check_closed
-
-    maxlen ||= @header.size - @read
-
-    raise EOFError if maxlen > 0 && @read >= @header.size
+  def readpartial(maxlen, outbuf = "".b)
+    if eof? && maxlen > 0
+      raise EOFError, "end of file reached"
+    end
 
     max_read = [maxlen, @header.size - @read].min
 
@@ -158,12 +186,63 @@ class Gem::Package::TarReader::Entry
   end
 
   ##
+  # Seeks to +offset+ bytes into the tar file entry
+  # +whence+ can be IO::SEEK_SET, IO::SEEK_CUR, or IO::SEEK_END
+
+  def seek(offset, whence = IO::SEEK_SET)
+    check_closed
+
+    new_pos =
+      case whence
+      when IO::SEEK_SET then @orig_pos + offset
+      when IO::SEEK_CUR then @io.pos + offset
+      when IO::SEEK_END then @end_pos + offset
+      else
+        raise ArgumentError, "invalid whence"
+      end
+
+    if new_pos < @orig_pos
+      new_pos = @orig_pos
+    elsif new_pos > @end_pos
+      new_pos = @end_pos
+    end
+
+    pending = new_pos - @io.pos
+
+    return 0 if pending == 0
+
+    if @io.respond_to?(:seek)
+      begin
+        # avoid reading if the @io supports seeking
+        @io.seek new_pos, IO::SEEK_SET
+        pending = 0
+      rescue Errno::EINVAL
+      end
+    end
+
+    # if seeking isn't supported or failed
+    # negative seek requires that we rewind and read
+    if pending < 0
+      @io.rewind
+      pending = new_pos
+    end
+
+    while pending > 0 do
+      size_read = @io.read([pending, 4096].min)&.size
+      raise(EOFError, "end of file reached") if size_read.nil?
+      pending -= size_read
+    end
+
+    @read = @io.pos - @orig_pos
+
+    0
+  end
+
+  ##
   # Rewinds to the beginning of the tar file entry
 
   def rewind
     check_closed
-
-    @io.pos = @orig_pos
-    @read = 0
+    seek(0, IO::SEEK_SET)
   end
 end

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # Used Internally. Wraps a Dependency object to also track which spec
 # contained the Dependency.

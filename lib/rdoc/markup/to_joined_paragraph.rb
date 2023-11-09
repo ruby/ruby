@@ -25,9 +25,9 @@ class RDoc::Markup::ToJoinedParagraph < RDoc::Markup::Formatter
   def accept_paragraph paragraph
     parts = paragraph.parts.chunk do |part|
       String === part
-    end.map do |string, chunk|
+    end.flat_map do |string, chunk|
       string ? chunk.join.rstrip : chunk
-    end.flatten
+    end
 
     paragraph.parts.replace parts
   end
@@ -44,4 +44,3 @@ class RDoc::Markup::ToJoinedParagraph < RDoc::Markup::Formatter
   alias accept_table           ignore
 
 end
-

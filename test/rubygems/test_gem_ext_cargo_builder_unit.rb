@@ -55,6 +55,6 @@ class TestGemExtCargoBuilderUnit < Gem::TestCase
   end
 
   def skip_unsupported_platforms!
-    pend "jruby not supported" if java_platform?
+    pend "jruby not supported" if Gem.java_platform?
   end
 end

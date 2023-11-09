@@ -10,7 +10,7 @@ class EndpointStrictBasicAuthentication < Endpoint
 
     # Only accepts password == "password"
     unless env["HTTP_AUTHORIZATION"] == "Basic dXNlcjpwYXNz"
-      halt 403, "Authentication failed"
+      halt 401, "Authentication failed"
     end
   end
 end

@@ -977,6 +977,10 @@ class URI::TestGeneric < Test::Unit::TestCase
     end
   end
 
+  def test_split
+    assert_equal [nil, nil, nil, nil, nil, "", nil, nil, nil], URI.split("//")
+  end
+
   class CaseInsensitiveEnv
     def initialize(h={})
       @h = {}

@@ -657,6 +657,20 @@ describe "C-API Encoding function" do
     end
   end
 
+  describe "rb_enc_raise" do
+    it "forces exception message encoding to the specified one" do
+      utf_8_incompatible_string = "\x81".b
+
+      -> {
+        @s.rb_enc_raise(Encoding::UTF_8, RuntimeError, utf_8_incompatible_string)
+      }.should raise_error { |e|
+        e.message.encoding.should == Encoding::UTF_8
+        e.message.valid_encoding?.should == false
+        e.message.bytes.should == utf_8_incompatible_string.bytes
+      }
+    end
+  end
+
   describe "rb_uv_to_utf8" do
     it 'converts a Unicode codepoint to a UTF-8 C string' do
       str = ' ' * 6
@@ -671,6 +685,22 @@ describe "C-API Encoding function" do
         len = @s.rb_uv_to_utf8(str, num)
         str.byteslice(0, len).should == result
       end
+    end
+  end
+
+  describe "rb_enc_left_char_head" do
+    it 'returns the head position of a character' do
+      @s.rb_enc_left_char_head("é", 1).should == 0
+      @s.rb_enc_left_char_head("éééé", 7).should == 6
+
+      @s.rb_enc_left_char_head("a", 0).should == 0
+
+      # unclear if this is intended to work
+      @s.rb_enc_left_char_head("a", 1).should == 1
+
+      # Works because for single-byte encodings rb_enc_left_char_head() just returns the pointer
+      @s.rb_enc_left_char_head("a".force_encoding(Encoding::US_ASCII), 88).should == 88
+      @s.rb_enc_left_char_head("a".b, 88).should == 88
     end
   end
 

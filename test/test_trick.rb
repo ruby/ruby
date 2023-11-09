@@ -1,6 +1,7 @@
 require "test/unit"
 require "ripper"
 require "envutil"
+require "stringio"
 
 # This is a test suite for TRICK entries, joke Ruby program contest.
 # The programs are very unusual, and not practical.
@@ -210,5 +211,63 @@ class TestTRICK2022 < Test::Unit::TestCase
 
     # TODO
     assert_in_out_err(["-W0", "-c", src], "", ["Syntax OK"])
+  end
+end
+
+class TestRubyKaigi2023🥢 < Test::Unit::TestCase
+  CHOPSTICKS = [<<~'0', <<~'1'] # by mame
+  BEGIN{q=:Ruby};p||=:Enjoy;END{puts p,q||2023}
+  0
+  q=print(q||"/:|}\n")||p&&:@Matsumoto;p=:Kaigi
+  1
+
+  def test_chopsticks_0
+    assert_in_out_err(%w[-W0], CHOPSTICKS[0], %w[Enjoy Ruby])
+  end
+
+  def test_chopsticks_1
+    assert_in_out_err(%w[-W0], CHOPSTICKS[1], %w[/:|}])
+  end
+
+  def test_chopsticks_0_1
+    assert_in_out_err(%w[-W0], "#{CHOPSTICKS[0]}\n#{CHOPSTICKS[1]}", %w[RubyKaigi @Matsumoto])
+  end
+
+  def test_chopsticks_1_0
+    assert_in_out_err(%w[-W0], "#{CHOPSTICKS[1]}\n#{CHOPSTICKS[0]}", %w[RubyKaigi 2023])
+  end
+end
+
+# https://github.com/mame/all-ruby-quine
+class TestAllRubyQuine < Test::Unit::TestCase
+  def test_all_ruby_quine
+    stdout_bak = $stdout
+    $stdout = StringIO.new
+    verbose_bak = $VERBOSE
+    $VERBOSE = nil
+    src = File.read(File.join(__dir__, "../sample/all-ruby-quine.rb"))
+
+    eval(src)
+
+    out = $stdout.string.lines(chomp: true)
+    $stdout = stdout_bak
+
+    # cheat OCR
+    font = {
+      "-" => 0x7ffffffffffe03fffffffffff, "." => 0x7fffffffffffffffffffc7f8f, "_" => 0x7fffffffffffffffffffff800,
+      "0" => 0x6030e03e07c0f81f03e038603, "1" => 0x70fc1f23fc7f8ff1fe3fc7c01, "2" => 0x4011f1fe3fc7e1f0f87c3f800,
+      "3" => 0x4031e3fe3f8e03fe3fe078c03, "4" => 0x783e0788e318e31c6003f1fe3, "5" => 0x0001fe3fc7f801fe1fe078401,
+      "6" => 0x78083e3fc7f8011e03e038401, "7" => 0x000fe1fc3f0fc3f0fc3f0fc3f, "8" => 0x4011f03e238e038e23e07c401,
+      "9" => 0x4010e03e03c400ff1fe078401, "a" => 0x7fffff00c787f88003e078408, "b" => 0x0ff1fe3fc408701f03e078001,
+      "c" => 0x7fffff8063c0ff1fe3fe3c601, "d" => 0x7f8ff1fe3004781f03e038408,
+    }.invert
+    out = (0...out.first.size / 15).map do |i|
+      font[(3..11).map {|j| out[j][i * 15 + 5, 11] }.join.gsub(/\S/, "#").tr("# ", "10").to_i(2)]
+    end.join
+
+    assert_equal(RUBY_VERSION, out)
+  ensure
+    $stdout = stdout_bak
+    $VERBOSE = verbose_bak
   end
 end

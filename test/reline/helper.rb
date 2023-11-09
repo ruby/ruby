@@ -21,21 +21,23 @@ end
 module Reline
   class <<self
     def test_mode(ansi: false)
-        remove_const('IOGate') if const_defined?('IOGate')
-        const_set('IOGate', ansi ? Reline::ANSI : Reline::GeneralIO)
-        if ENV['RELINE_TEST_ENCODING']
-          encoding = Encoding.find(ENV['RELINE_TEST_ENCODING'])
-        else
-          encoding = Encoding::UTF_8
-        end
-        Reline::GeneralIO.reset(encoding: encoding) unless ansi
-        send(:core).config.instance_variable_set(:@test_mode, true)
-        send(:core).config.reset
+      @original_iogate = IOGate
+      remove_const('IOGate')
+      const_set('IOGate', ansi ? Reline::ANSI : Reline::GeneralIO)
+      if ENV['RELINE_TEST_ENCODING']
+        encoding = Encoding.find(ENV['RELINE_TEST_ENCODING'])
+      else
+        encoding = Encoding::UTF_8
+      end
+      Reline::GeneralIO.reset(encoding: encoding) unless ansi
+      core.config.instance_variable_set(:@test_mode, true)
+      core.config.reset
     end
 
     def test_reset
-      remove_const('IOGate') if const_defined?('IOGate')
-      const_set('IOGate', Reline::GeneralIO)
+      remove_const('IOGate')
+      const_set('IOGate', @original_iogate)
+      Reline::GeneralIO.reset
       Reline.instance_variable_set(:@core, nil)
     end
 
@@ -157,13 +159,7 @@ class Reline::TestCase < Test::Unit::TestCase
   end
 
   def assert_whole_lines(expected)
-    previous_line_index = @line_editor.instance_variable_get(:@previous_line_index)
-    if previous_line_index
-      lines = @line_editor.whole_lines(index: previous_line_index)
-    else
-      lines = @line_editor.whole_lines
-    end
-    assert_equal(expected, lines)
+    assert_equal(expected, @line_editor.whole_lines)
   end
 
   def assert_key_binding(input, method_symbol, editing_modes = [:emacs, :vi_insert, :vi_command])

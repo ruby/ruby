@@ -6,14 +6,14 @@ module TestParallel
   PARALLEL_RB = "#{__dir__}/../../lib/test/unit/parallel.rb"
   TESTS = "#{__dir__}/tests_for_parallel"
   # use large timeout for --jit-wait
-  TIMEOUT = EnvUtil.apply_timeout_scale(defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? ? 100 : 30)
+  TIMEOUT = EnvUtil.apply_timeout_scale(defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? ? 100 : 30)
 
   class TestParallelWorker < Test::Unit::TestCase
     def setup
       i, @worker_in = IO.pipe
       @worker_out, o = IO.pipe
-      @worker_pid = spawn(*@options[:ruby], PARALLEL_RB,
-                          "--ruby", @options[:ruby].join(" "),
+      @worker_pid = spawn(*@__runner_options__[:ruby], PARALLEL_RB,
+                          "--ruby", @__runner_options__[:ruby].join(" "),
                           "-j", "t1", "-v", out: o, in: i)
       [i,o].each(&:close)
     end
@@ -143,11 +143,11 @@ module TestParallel
   end
 
   class TestParallel < Test::Unit::TestCase
-    def spawn_runner(*opt_args)
+    def spawn_runner(*opt_args, jobs: "t1")
       @test_out, o = IO.pipe
-      @test_pid = spawn(*@options[:ruby], TESTS+"/runner.rb",
-                        "--ruby", @options[:ruby].join(" "),
-                        "-j","t1",*opt_args, out: o, err: o)
+      @test_pid = spawn(*@__runner_options__[:ruby], TESTS+"/runner.rb",
+                        "--ruby", @__runner_options__[:ruby].join(" "),
+                        "-j", jobs, *opt_args, out: o, err: o)
       o.close
     end
 
@@ -166,11 +166,7 @@ module TestParallel
     end
 
     def test_ignore_jzero
-      @test_out, o = IO.pipe
-      @test_pid = spawn(*@options[:ruby], TESTS+"/runner.rb",
-                        "--ruby", @options[:ruby].join(" "),
-                        "-j","0", out: File::NULL, err: o)
-      o.close
+      spawn_runner(jobs: "0")
       Timeout.timeout(TIMEOUT) {
         assert_match(/Error: parameter of -j option should be greater than 0/,@test_out.read)
       }
@@ -211,6 +207,13 @@ module TestParallel
 
     def test_hungup
       spawn_runner "--worker-timeout=1", "test4test_hungup.rb"
+      buf = Timeout.timeout(TIMEOUT) {@test_out.read}
+      assert_match(/^Retrying hung up testcases\.+$/, buf)
+      assert_match(/^2 tests,.* 0 failures,/, buf)
+    end
+
+    def test_retry_workers
+      spawn_runner "--worker-timeout=1", "test4test_slow_0.rb", "test4test_slow_1.rb", jobs: "2"
       buf = Timeout.timeout(TIMEOUT) {@test_out.read}
       assert_match(/^Retrying hung up testcases\.+$/, buf)
       assert_match(/^2 tests,.* 0 failures,/, buf)

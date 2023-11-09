@@ -14,6 +14,13 @@ on:
       - '**.md'
       - '**.rdoc'
       - '**/.document'
+  merge_group:
+    paths-ignore:
+      - 'doc/**'
+      - '**/man'
+      - '**.md'
+      - '**.rdoc'
+      - '**/.document'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -28,49 +35,42 @@ permissions:
 jobs:
   make:
     runs-on: windows-2022
+
     name: ${{ github.workflow }} (${{ matrix.msystem }})
+
     env:
       MSYSTEM: ${{ matrix.msystem }}
       MSYS2_ARCH: x86_64
-      CHOST: "x86_64-w64-mingw32"
-      CFLAGS:   "-march=x86-64 -mtune=generic -O3 -pipe"
-      CXXFLAGS: "-march=x86-64 -mtune=generic -O3 -pipe"
-      CPPFLAGS: "-D_FORTIFY_SOURCE=2 -D__USE_MINGW_ANSI_STDIO=1 -DFD_SETSIZE=2048"
-      LDFLAGS:  "-pipe"
-      GITPULLOPTIONS: --no-tags origin ${{github.ref}}
+      CHOST: 'x86_64-w64-mingw32'
+      CFLAGS: '-march=x86-64 -mtune=generic -O3 -pipe'
+      CXXFLAGS: '-march=x86-64 -mtune=generic -O3 -pipe'
+      CPPFLAGS: '-D_FORTIFY_SOURCE=2 -D__USE_MINGW_ANSI_STDIO=1 -DFD_SETSIZE=2048'
+      LDFLAGS: '-pipe'
+      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
+
     strategy:
       matrix:
         include:
           # To mitigate flakiness of MinGW CI, we test only one runtime that newer MSYS2 uses.
-          - msystem: "UCRT64"
+          - msystem: 'UCRT64'
             base_ruby: head
-            test_task: "check"
-            test-all-opts: "--name=!/TestObjSpace#test_reachable_objects_during_iteration/"
+            test_task: 'check'
+            test-all-opts: '--name=!/TestObjSpace#test_reachable_objects_during_iteration/'
       fail-fast: false
-    if: ${{ !contains(github.event.head_commit.message, '[DOC]') && !contains(github.event.pull_request.labels.*.name, 'Documentation') }}
+
+    if: >-
+      ${{!(false
+      || contains(github.event.head_commit.message, '[DOC]')
+      || contains(github.event.pull_request.title, '[DOC]')
+      || contains(github.event.pull_request.labels.*.name, 'Documentation')
+      || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
+      )}}
+
     steps:
-      - run: mkdir build
-        working-directory:
-      - name: git config
-        run: |
-          git config --global core.autocrlf false
-          git config --global core.eol lf
-          git config --global advice.detachedHead 0
-          git config --global init.defaultBranch garbage
-      - uses: actions/checkout@ac593985615ec2ede58e132d2e21d2b1cbd6127c # v3.3.0
-        with:
-          path: src
-      - uses: actions/cache@6998d139ddd3e68c71e9e398d8e40b71a2f39812 # v3.2.5
-        with:
-          path: src/.downloaded-cache
-          key: downloaded-cache
       - name: Set up Ruby & MSYS2
-        uses: ruby/setup-ruby@d3c9825d67b0d8720afdfdde5af56c79fdb38d16 # v1.138.0
+        uses: ruby/setup-ruby@036ef458ddccddb148a2b9fb67e95a22fdbf728b # v1.160.0
         with:
           ruby-version: ${{ matrix.base_ruby }}
-      - name: set env
-        run: |
-          echo "GNUMAKEFLAGS=-j$((2 * NUMBER_OF_PROCESSORS))" >> $GITHUB_ENV
 
       - name: where check
         run: |
@@ -78,59 +78,57 @@ jobs:
           mv /c/Windows/System32/libcrypto-1_1-x64.dll /c/Windows/System32/libcrypto-1_1-x64.dll_
           mv /c/Windows/System32/libssl-1_1-x64.dll    /c/Windows/System32/libssl-1_1-x64.dll_
           result=true
-          for e in gcc.exe ragel.exe make.exe bison.exe libcrypto-1_1-x64.dll libssl-1_1-x64.dll; do
-            echo '##['group']'$'\033[93m'$e$'\033[m'
+          for e in gcc.exe ragel.exe make.exe libcrypto-1_1-x64.dll libssl-1_1-x64.dll; do
+            echo ::group::$'\033[93m'$e$'\033[m'
             where $e || result=false
-            echo '##['endgroup']'
+            echo ::endgroup::
           done
           $result
+        working-directory:
 
       - name: version check
         run: |
           # show version
           result=true
-          for e in gcc ragel make bison "openssl version"; do
+          for e in gcc ragel make "openssl version"; do
             case "$e" in *" "*) ;; *) e="$e --version";; esac
-            echo '##['group']'$'\033[93m'$e$'\033[m'
+            echo ::group::$'\033[93m'$e$'\033[m'
             $e || result=false
-            echo '##['endgroup']'
+            echo ::endgroup::
           done
           $result
+        working-directory:
 
-      - name: autogen
-        run: |
-          ./autogen.sh
-        working-directory: src
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: /.github
+
+      - uses: ./.github/actions/setup/directories
+        with:
+          srcdir: src
+          builddir: build
+          makeup: true
 
       - name: configure
         run: >
           ../src/configure --disable-install-doc --prefix=/.
           --build=$CHOST --host=$CHOST --target=$CHOST
 
-      - name: update
-        run: |
-          make incs
-
-      - name: download gems
-        run: |
-          make update-gems
-
       - name: make all
         timeout-minutes: 30
-        run: |
-          make
-
-      - run: make leaked-globals
+        run: make
 
       - name: make install
-        run: |
-          make DESTDIR=../install install-nodoc
+        run: make DESTDIR=../install install-nodoc
 
       - name: test
-        timeout-minutes: 5
-        run: |
-          make test
-        if: ${{matrix.test_task == 'check' || matrix.test_task == 'test'}}
+        timeout-minutes: 30
+        run: make test
+        env:
+          GNUMAKEFLAGS: ''
+          RUBY_TESTOPTS: '-v --tty=no'
+        if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test' }}
 
       - name: test-all
         timeout-minutes: 45
@@ -143,27 +141,19 @@ jobs:
             --retry --job-status=normal --show-skip --timeout-scale=1.5
             ${{ matrix.test-all-opts }}
           BUNDLER_VERSION:
-        if: ${{matrix.test_task == 'check' || matrix.test_task == 'test-all' || StartsWith(matrix.test_task, 'test/')}}
+        if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' || StartsWith(matrix.test_task, 'test/') }}
 
       - name: test-spec
         timeout-minutes: 10
         run: |
           make ${{ StartsWith(matrix.test_task, 'spec/') && matrix.test_task || 'test-spec' }}
-        if: ${{matrix.test_task == 'check' || matrix.test_task == 'test-spec' || StartsWith(matrix.test_task, 'spec/')}}
+        if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-spec' || StartsWith(matrix.test_task, 'spec/') }}
 
-      - uses: ruby/action-slack@b6882ea6ef8f556f9f9af9ec1220d3f1ced74acf # v3.0.0
+      - uses: ./src/.github/actions/slack
         with:
-          payload: |
-            {
-              "ci": "GitHub Actions",
-              "env": "${{ github.workflow }} ${{ matrix.msystem }} / ${{ matrix.test_task }}",
-              "url": "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}",
-              "commit": "${{ github.sha }}",
-              "branch": "${{ github.ref_name }}"
-            }
-        env:
+          label: ${{ matrix.msystem }} / ${{ matrix.test_task }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() && github.event_name == 'push' }}
+        if: ${{ failure() }}
 
 defaults:
   run:

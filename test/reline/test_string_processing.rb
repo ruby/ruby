@@ -6,7 +6,7 @@ class Reline::LineEditor::StringProcessingTest < Reline::TestCase
     @prompt = '> '
     @config = Reline::Config.new
     Reline::HISTORY.instance_variable_set(:@config, @config)
-    @encoding = Reline::IOGate.encoding
+    @encoding = Reline.core.encoding
     @line_editor = Reline::LineEditor.new(@config, @encoding)
     @line_editor.reset(@prompt, encoding: @encoding)
   end

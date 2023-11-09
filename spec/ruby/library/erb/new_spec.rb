@@ -140,7 +140,7 @@ END
   end
 
   describe "warning about arguments" do
-    ruby_version_is "3.1" do
+    version_is ERB.version, "2.2.1" do #ruby_version_is "3.1" do
       it "warns when passed safe_level and later arguments" do
         -> {
           ERB.new(@eruby_str, nil, '%')

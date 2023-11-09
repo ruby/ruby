@@ -172,6 +172,8 @@ RBIMPL_ATTR_DEPRECATED(("This is no longer how Object#clone works."))
 static inline void
 rb_clone_setup(VALUE clone, VALUE obj)
 {
+    (void)clone;
+    (void)obj;
     return;
 }
 
@@ -189,6 +191,8 @@ RBIMPL_ATTR_DEPRECATED(("This is no longer how Object#dup works."))
 static inline void
 rb_dup_setup(VALUE dup, VALUE obj)
 {
+    (void)dup;
+    (void)obj;
     return;
 }
 

@@ -675,7 +675,7 @@ transcode_restartable0(const unsigned char **in_pos, unsigned char **out_pos,
                 }
                 break;
             }
-      case FUNsio:
+          case FUNsio:
             {
                 const unsigned char *char_start;
                 size_t char_len;
@@ -1715,8 +1715,7 @@ rb_econv_close(rb_econv_t *ec)
     }
     for (i = 0; i < ec->num_trans; i++) {
         rb_transcoding_close(ec->elems[i].tc);
-        if (ec->elems[i].out_buf_start)
-            xfree(ec->elems[i].out_buf_start);
+        xfree(ec->elems[i].out_buf_start);
     }
     xfree(ec->in_buf_start);
     xfree(ec->elems);
@@ -3768,11 +3767,8 @@ econv_primitive_convert(int argc, VALUE *argv, VALUE self)
     rb_str_modify(output);
 
     if (NIL_P(output_bytesize_v)) {
-#if USE_RVARGC
         output_bytesize = rb_str_capacity(output);
-#else
-        output_bytesize = RSTRING_EMBED_LEN_MAX;
-#endif
+
         if (!NIL_P(input) && output_bytesize < RSTRING_LEN(input))
             output_bytesize = RSTRING_LEN(input);
     }

@@ -192,7 +192,7 @@ RSpec.describe "bundle outdated" do
             vcr (6.0.0)
 
         PLATFORMS
-          #{specific_local_platform}
+          #{local_platform}
 
         DEPENDENCIES
           dotenv

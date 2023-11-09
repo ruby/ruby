@@ -92,7 +92,7 @@ rb_id_table_init(struct rb_id_table *tbl, int capa)
     return tbl;
 }
 
-MJIT_FUNC_EXPORTED struct rb_id_table *
+struct rb_id_table *
 rb_id_table_create(size_t capa)
 {
     struct rb_id_table *tbl = ALLOC(struct rb_id_table);
@@ -223,7 +223,7 @@ hash_table_show(struct rb_id_table *tbl)
 }
 #endif
 
-MJIT_FUNC_EXPORTED int
+int
 rb_id_table_lookup(struct rb_id_table *tbl, ID id, VALUE *valp)
 {
     id_key_t key = id2key(id);
@@ -253,7 +253,7 @@ rb_id_table_insert_key(struct rb_id_table *tbl, const id_key_t key, const VALUE 
     return TRUE;
 }
 
-MJIT_FUNC_EXPORTED int
+int
 rb_id_table_insert(struct rb_id_table *tbl, ID id, VALUE val)
 {
     return rb_id_table_insert_key(tbl, id2key(id), val);

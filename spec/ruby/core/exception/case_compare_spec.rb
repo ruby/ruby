@@ -26,13 +26,11 @@ describe "SystemCallError.===" do
   end
 
   it "returns true if receiver is generic and arg is kind of SystemCallError" do
-    unknown_error_number = Errno.constants.size
     e = SystemCallError.new('foo', @example_errno)
     SystemCallError.===(e).should == true
   end
 
   it "returns false if receiver is generic and arg is not kind of SystemCallError" do
-    unknown_error_number = Errno.constants.size
     e = Object.new
     SystemCallError.===(e).should == false
   end

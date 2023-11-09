@@ -36,7 +36,7 @@ class Gem::SourceList
 
     list.replace ary
 
-    return list
+    list
   end
 
   def initialize_copy(other) # :nodoc:
@@ -49,10 +49,10 @@ class Gem::SourceList
 
   def <<(obj)
     src = case obj
-    when Gem::Source
-      obj
-    else
-      Gem::Source.new(obj)
+          when Gem::Source
+            obj
+          else
+            Gem::Source.new(obj)
     end
 
     @sources << src unless @sources.include?(src)
@@ -126,7 +126,7 @@ class Gem::SourceList
   # Gem::Source or a source URI.
 
   def include?(other)
-    if other.kind_of? Gem::Source
+    if other.is_a? Gem::Source
       @sources.include? other
     else
       @sources.find {|x| x.uri.to_s == other.to_s }
@@ -137,7 +137,7 @@ class Gem::SourceList
   # Deletes +source+ from the source list which may be a Gem::Source or a URI.
 
   def delete(source)
-    if source.kind_of? Gem::Source
+    if source.is_a? Gem::Source
       @sources.delete source
     else
       @sources.delete_if {|x| x.uri.to_s == source.to_s }

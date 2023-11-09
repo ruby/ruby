@@ -89,8 +89,11 @@ RSpec.describe Bundler::Dependency do
         :windows_30 => Gem::Platform::WINDOWS,
         :windows_31 => Gem::Platform::WINDOWS,
         :windows_32 => Gem::Platform::WINDOWS,
-        :windows_33 => Gem::Platform::WINDOWS,
-        :mswin => Gem::Platform::MSWIN,
+        :windows_33 => Gem::Platform::WINDOWS }
+    end
+
+    let(:deprecated) do
+      { :mswin => Gem::Platform::MSWIN,
         :mswin_18 => Gem::Platform::MSWIN,
         :mswin_19 => Gem::Platform::MSWIN,
         :mswin_20 => Gem::Platform::MSWIN,
@@ -151,7 +154,7 @@ RSpec.describe Bundler::Dependency do
     # rubocop:enable Naming/VariableNumber
 
     it "includes all platforms" do
-      expect(subject).to eq(platforms)
+      expect(subject).to eq(platforms.merge(deprecated))
     end
   end
 end

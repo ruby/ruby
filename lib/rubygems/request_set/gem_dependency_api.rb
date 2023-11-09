@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # A semi-compatible DSL for the Bundler Gemfile and Isolate gem dependencies
 # files.
@@ -261,7 +262,7 @@ class Gem::RequestSet::GemDependencyAPI
       raise ArgumentError, "no gemspecs found at #{Dir.pwd}"
     else
       raise ArgumentError,
-        "found multiple gemspecs at #{Dir.pwd}, " +
+        "found multiple gemspecs at #{Dir.pwd}, " \
         "use the name: option to specify the one you want"
     end
   end
@@ -356,7 +357,7 @@ class Gem::RequestSet::GemDependencyAPI
   #   Use the given tag for git:, gist: and github: dependencies.
 
   def gem(name, *requirements)
-    options = requirements.pop if requirements.last.kind_of?(Hash)
+    options = requirements.pop if requirements.last.is_a?(Hash)
     options ||= {}
 
     options[:git] = @current_repository if @current_repository
@@ -435,7 +436,6 @@ Gem dependencies file #{@path} requires #{name} more than once.
     reference ||= ref
     reference ||= branch
     reference ||= tag
-    reference ||= "master"
 
     if ref && branch
       warn <<-WARNING
@@ -533,8 +533,8 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
   # platform matches the current platform.
 
   def gem_platforms(name, options) # :nodoc:
-    platform_names = Array(options.delete :platform)
-    platform_names.concat Array(options.delete :platforms)
+    platform_names = Array(options.delete(:platform))
+    platform_names.concat Array(options.delete(:platforms))
     platform_names.concat @current_platforms if @current_platforms
 
     return true if platform_names.empty?
@@ -593,7 +593,6 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
     @current_repository = repository
 
     yield
-
   ensure
     @current_repository = nil
   end
@@ -685,7 +684,6 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
     @current_groups = groups
 
     yield
-
   ensure
     @current_groups = nil
   end
@@ -760,7 +758,6 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
     @current_platforms = platforms
 
     yield
-
   ensure
     @current_platforms = nil
   end
@@ -771,7 +768,7 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
   # Block form for restricting gems to a particular set of platforms.  See
   # #platform.
 
-  alias :platforms :platform
+  alias_method :platforms, :platform
 
   ##
   # :category: Gem Dependencies DSL
@@ -793,15 +790,15 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
 
     return true if @installing
 
-    unless RUBY_VERSION == version
-      message = "Your Ruby version is #{RUBY_VERSION}, " +
+    unless version == RUBY_VERSION
+      message = "Your Ruby version is #{RUBY_VERSION}, " \
                 "but your #{gem_deps_file} requires #{version}"
 
       raise Gem::RubyVersionMismatch, message
     end
 
     if engine && engine != Gem.ruby_engine
-      message = "Your Ruby engine is #{Gem.ruby_engine}, " +
+      message = "Your Ruby engine is #{Gem.ruby_engine}, " \
                 "but your #{gem_deps_file} requires #{engine}"
 
       raise Gem::RubyVersionMismatch, message
@@ -810,14 +807,14 @@ Gem dependencies file #{@path} includes git reference for both ref/branch and ta
     if engine_version
       if engine_version != RUBY_ENGINE_VERSION
         message =
-          "Your Ruby engine version is #{Gem.ruby_engine} #{RUBY_ENGINE_VERSION}, " +
+          "Your Ruby engine version is #{Gem.ruby_engine} #{RUBY_ENGINE_VERSION}, " \
           "but your #{gem_deps_file} requires #{engine} #{engine_version}"
 
         raise Gem::RubyVersionMismatch, message
       end
     end
 
-    return true
+    true
   end
 
   ##

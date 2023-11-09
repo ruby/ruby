@@ -219,7 +219,7 @@ describe "CApiObject" do
     end
 
     it "requires a ruby file" do
-      $:.unshift File.dirname(__FILE__)
+      $:.unshift __dir__
       @o.rb_require()
       $foo.should == 7
     end

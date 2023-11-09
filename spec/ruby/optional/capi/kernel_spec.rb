@@ -1,4 +1,5 @@
 require_relative 'spec_helper'
+require_relative 'fixtures/kernel'
 
 kernel_path = load_extension("kernel")
 
@@ -502,6 +503,11 @@ describe "C-API Kernel function" do
     it "evaluates a string of ruby code" do
       @s.rb_eval_string("1+1").should == 2
     end
+
+    it "captures local variables when called within a method" do
+      a = 2
+      @s.rb_eval_string("a+1").should == 3
+    end
   end
 
   describe "rb_eval_cmd_kw" do
@@ -597,47 +603,65 @@ describe "C-API Kernel function" do
       @s.rb_funcallv(self, :empty, []).should == 42
       @s.rb_funcallv(self, :sum, [1, 2]).should == 3
     end
-  end
 
-  ruby_version_is "3.0" do
-    describe "rb_funcallv_kw" do
-      it "passes keyword arguments to the callee" do
-        def m(*args, **kwargs)
-          [args, kwargs]
-        end
-
-        @s.rb_funcallv_kw(self, :m, [{}]).should == [[], {}]
-        @s.rb_funcallv_kw(self, :m, [{a: 1}]).should == [[], {a: 1}]
-        @s.rb_funcallv_kw(self, :m, [{b: 2}, {a: 1}]).should == [[{b: 2}], {a: 1}]
-        @s.rb_funcallv_kw(self, :m, [{b: 2}, {}]).should == [[{b: 2}], {}]
-      end
-
-      it "raises TypeError if the last argument is not a Hash" do
-        def m(*args, **kwargs)
-          [args, kwargs]
-        end
-
-        -> {
-          @s.rb_funcallv_kw(self, :m, [42])
-        }.should raise_error(TypeError, 'no implicit conversion of Integer into Hash')
-      end
+    it "calls a private method" do
+      object = CApiKernelSpecs::ClassWithPrivateMethod.new
+      @s.rb_funcallv(object, :private_method, []).should == 0
     end
 
-    describe "rb_keyword_given_p" do
-      it "returns whether keywords were given to the C extension method" do
-        h = {a: 1}
-        empty = {}
-        @s.rb_keyword_given_p(a: 1).should == true
-        @s.rb_keyword_given_p("foo" => "bar").should == true
-        @s.rb_keyword_given_p(**h).should == true
+    it "calls a protected method" do
+      object = CApiKernelSpecs::ClassWithProtectedMethod.new
+      @s.rb_funcallv(object, :protected_method, []).should == 0
+    end
+  end
 
-        @s.rb_keyword_given_p(h).should == false
-        @s.rb_keyword_given_p().should == false
-        @s.rb_keyword_given_p(**empty).should == false
-
-        @s.rb_funcallv_kw(@s, :rb_keyword_given_p, [{a: 1}]).should == true
-        @s.rb_funcallv_kw(@s, :rb_keyword_given_p, [{}]).should == false
+  describe "rb_funcallv_kw" do
+    it "passes keyword arguments to the callee" do
+      def m(*args, **kwargs)
+        [args, kwargs]
       end
+
+      @s.rb_funcallv_kw(self, :m, [{}]).should == [[], {}]
+      @s.rb_funcallv_kw(self, :m, [{a: 1}]).should == [[], {a: 1}]
+      @s.rb_funcallv_kw(self, :m, [{b: 2}, {a: 1}]).should == [[{b: 2}], {a: 1}]
+      @s.rb_funcallv_kw(self, :m, [{b: 2}, {}]).should == [[{b: 2}], {}]
+    end
+
+    it "calls a private method" do
+      object = CApiKernelSpecs::ClassWithPrivateMethod.new
+      @s.rb_funcallv_kw(object, :private_method, [{}]).should == 0
+    end
+
+    it "calls a protected method" do
+      object = CApiKernelSpecs::ClassWithProtectedMethod.new
+      @s.rb_funcallv_kw(object, :protected_method, [{}]).should == 0
+    end
+
+    it "raises TypeError if the last argument is not a Hash" do
+      def m(*args, **kwargs)
+        [args, kwargs]
+      end
+
+      -> {
+        @s.rb_funcallv_kw(self, :m, [42])
+      }.should raise_error(TypeError, 'no implicit conversion of Integer into Hash')
+    end
+  end
+
+  describe "rb_keyword_given_p" do
+    it "returns whether keywords were given to the C extension method" do
+      h = {a: 1}
+      empty = {}
+      @s.rb_keyword_given_p(a: 1).should == true
+      @s.rb_keyword_given_p("foo" => "bar").should == true
+      @s.rb_keyword_given_p(**h).should == true
+
+      @s.rb_keyword_given_p(h).should == false
+      @s.rb_keyword_given_p().should == false
+      @s.rb_keyword_given_p(**empty).should == false
+
+      @s.rb_funcallv_kw(@s, :rb_keyword_given_p, [{a: 1}]).should == true
+      @s.rb_funcallv_kw(@s, :rb_keyword_given_p, [{}]).should == false
     end
   end
 
@@ -676,21 +700,56 @@ describe "C-API Kernel function" do
   end
 
   describe 'rb_funcall_with_block' do
-    before :each do
+    it "calls a method with block" do
       @obj = Object.new
       class << @obj
-        def method_public; yield end
-        def method_private; yield end
-        private :method_private
+        def method_public(*args); [args, yield] end
       end
-    end
 
-    it "calls a method with block" do
-      @s.rb_funcall_with_block(@obj, :method_public, proc { :result }).should == :result
+      @s.rb_funcall_with_block(@obj, :method_public, [1, 2], proc { :result }).should == [[1, 2], :result]
     end
 
     it "does not call a private method" do
-      -> { @s.rb_funcall_with_block(@obj, :method_private, proc { :result }) }.should raise_error(NoMethodError, /private/)
+      object = CApiKernelSpecs::ClassWithPrivateMethod.new
+
+      -> {
+        @s.rb_funcall_with_block(object, :private_method, [], proc { })
+      }.should raise_error(NoMethodError, /private/)
+    end
+
+    it "does not call a protected method" do
+      object = CApiKernelSpecs::ClassWithProtectedMethod.new
+
+      -> {
+        @s.rb_funcall_with_block(object, :protected_method, [], proc { })
+      }.should raise_error(NoMethodError, /protected/)
+    end
+  end
+
+  describe 'rb_funcall_with_block_kw' do
+    it "calls a method with keyword arguments and a block" do
+      @obj = Object.new
+      class << @obj
+        def method_public(*args, **kw, &block); [args, kw, block.call] end
+      end
+
+      @s.rb_funcall_with_block_kw(@obj, :method_public, [1, 2, {a: 2}], proc { :result }).should == [[1, 2], {a: 2}, :result]
+    end
+
+    it "does not call a private method" do
+      object = CApiKernelSpecs::ClassWithPrivateMethod.new
+
+      -> {
+        @s.rb_funcall_with_block_kw(object, :private_method, [{}], proc { })
+      }.should raise_error(NoMethodError, /private/)
+    end
+
+    it "does not call a protected method" do
+      object = CApiKernelSpecs::ClassWithProtectedMethod.new
+
+      -> {
+        @s.rb_funcall_with_block_kw(object, :protected_method, [{}], proc { })
+      }.should raise_error(NoMethodError, /protected/)
     end
   end
 end

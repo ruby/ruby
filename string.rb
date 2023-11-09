@@ -90,7 +90,7 @@
 #    which contains string after match.
 #  - <tt>\`</tt> corresponds to <tt>$`</tt>,
 #    which contains string before match.
-#  - <tt>\+</tt> corresponds to <tt>$+</tt>,
+#  - <tt>\\+</tt> corresponds to <tt>$+</tt>,
 #    which contains last capture group.
 #
 #  See rdoc-ref:regexp.rdoc for details.
@@ -265,7 +265,7 @@
 #
 #  <b><tt>string[regexp, capture = 0]</tt></b>
 #
-#  When the \Regexp argument +regexp+ is given,
+#  When the Regexp argument +regexp+ is given,
 #  and the +capture+ argument is <tt>0</tt>,
 #  the slice is the first matching substring found in +self+:
 #
@@ -278,7 +278,7 @@
 #  If argument +capture+ is given and not <tt>0</tt>,
 #  it should be either an capture group index (integer)
 #  or a capture group name (string or symbol);
-#  the slice is the specified capture (see Regexp@Capturing):
+#  the slice is the specified capture (see Regexp@Groups+and+Captures):
 #
 #    s = 'hello there'
 #    s[/[aeiou](.)\1/, 1] # => "l"

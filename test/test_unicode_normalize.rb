@@ -24,7 +24,7 @@ class TestUnicodeNormalize
   NormTest = Struct.new :source, :NFC, :NFD, :NFKC, :NFKD, :line
 
   def self.read_tests
-    lines = IO.readlines(expand_filename('NormalizationTest'), encoding: 'utf-8')
+    lines = File.readlines(expand_filename('NormalizationTest'), encoding: 'utf-8')
     firstline = lines.shift
     define_method "test_0_normalizationtest_firstline" do
       assert_include(firstline, "NormalizationTest-#{UNICODE_VERSION}.txt")

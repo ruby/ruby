@@ -120,4 +120,17 @@ class IO
   def write_nonblock(buf, exception: true)
     Primitive.io_write_nonblock(buf, exception)
   end
+
+  # call-seq:
+  #   readline(sep = $/, chomp: false)   -> string
+  #   readline(limit, chomp: false)      -> string
+  #   readline(sep, limit, chomp: false) -> string
+  #
+  # Reads a line as with IO#gets, but raises EOFError if already at end-of-stream.
+  #
+  # Optional keyword argument +chomp+ specifies whether line separators
+  # are to be omitted.
+  def readline(sep = $/, limit = nil, chomp: false)
+    Primitive.io_readline(sep, limit, chomp)
+  end
 end

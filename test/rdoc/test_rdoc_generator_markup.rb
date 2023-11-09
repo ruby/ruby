@@ -57,4 +57,3 @@ class TestRDocGeneratorMarkup < RDoc::TestCase
   end
 
 end
-

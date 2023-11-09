@@ -19,6 +19,17 @@ RSpec.describe Bundler::StubSpecification do
     end
   end
 
+  describe "#gem_build_complete_path" do
+    it "StubSpecification should have equal gem_build_complete_path as Specification" do
+      spec_path = File.join(File.dirname(__FILE__), "specifications", "foo.gemspec")
+      spec = Gem::Specification.load(spec_path)
+      gem_stub = Gem::StubSpecification.new(spec_path, File.dirname(__FILE__),"","")
+
+      stub = described_class.from_stub(gem_stub)
+      expect(stub.gem_build_complete_path).to eq spec.gem_build_complete_path
+    end
+  end
+
   describe "#manually_installed?" do
     it "returns true if installed_by_version is nil or 0" do
       stub = described_class.from_stub(with_bundler_stub_spec)

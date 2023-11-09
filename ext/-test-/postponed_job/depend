@@ -113,7 +113,6 @@ postponed_job.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/error.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/eval.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/file.h
-postponed_job.o: $(hdrdir)/ruby/internal/intern/gc.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/hash.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/io.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -144,7 +143,6 @@ postponed_job.o: $(hdrdir)/ruby/internal/memory.h
 postponed_job.o: $(hdrdir)/ruby/internal/method.h
 postponed_job.o: $(hdrdir)/ruby/internal/module.h
 postponed_job.o: $(hdrdir)/ruby/internal/newobj.h
-postponed_job.o: $(hdrdir)/ruby/internal/rgengc.h
 postponed_job.o: $(hdrdir)/ruby/internal/scan_args.h
 postponed_job.o: $(hdrdir)/ruby/internal/special_consts.h
 postponed_job.o: $(hdrdir)/ruby/internal/static_assert.h

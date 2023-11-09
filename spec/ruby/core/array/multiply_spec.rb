@@ -76,20 +76,10 @@ describe "Array#* with an integer" do
       @array = ArraySpecs::MyArray[1, 2, 3, 4, 5]
     end
 
-    ruby_version_is ''...'3.0' do
-      it "returns a subclass instance" do
-        (@array * 0).should be_an_instance_of(ArraySpecs::MyArray)
-        (@array * 1).should be_an_instance_of(ArraySpecs::MyArray)
-        (@array * 2).should be_an_instance_of(ArraySpecs::MyArray)
-      end
-    end
-
-    ruby_version_is '3.0' do
-      it "returns an Array instance" do
-        (@array * 0).should be_an_instance_of(Array)
-        (@array * 1).should be_an_instance_of(Array)
-        (@array * 2).should be_an_instance_of(Array)
-      end
+    it "returns an Array instance" do
+      (@array * 0).should be_an_instance_of(Array)
+      (@array * 1).should be_an_instance_of(Array)
+      (@array * 2).should be_an_instance_of(Array)
     end
 
     it "does not call #initialize on the subclass instance" do

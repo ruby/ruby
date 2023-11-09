@@ -28,9 +28,13 @@ static int set_non_blocking(int fd) {
 }
 
 static int io_spec_get_fd(VALUE io) {
+#ifdef RUBY_VERSION_IS_3_1
+  return rb_io_descriptor(io);
+#else
   rb_io_t* fp;
   GetOpenFile(io, fp);
   return fp->fd;
+#endif
 }
 
 VALUE io_spec_GetOpenFile_fd(VALUE self, VALUE io) {
@@ -130,7 +134,7 @@ VALUE io_spec_rb_io_wait_readable(VALUE self, VALUE io, VALUE read_p) {
     rb_sys_fail("set_non_blocking failed");
 
 #ifndef SET_NON_BLOCKING_FAILS_ALWAYS
-  if(RTEST(read_p)) {
+  if (RTEST(read_p)) {
     if (read(fd, buf, RB_IO_WAIT_READABLE_BUF) != -1) {
       return Qnil;
     }
@@ -141,7 +145,7 @@ VALUE io_spec_rb_io_wait_readable(VALUE self, VALUE io, VALUE read_p) {
 
   ret = rb_io_wait_readable(fd);
 
-  if(RTEST(read_p)) {
+  if (RTEST(read_p)) {
     ssize_t r = read(fd, buf, RB_IO_WAIT_READABLE_BUF);
     if (r != RB_IO_WAIT_READABLE_BUF) {
       perror("read");
@@ -161,6 +165,60 @@ VALUE io_spec_rb_io_wait_writable(VALUE self, VALUE io) {
   int ret = rb_io_wait_writable(io_spec_get_fd(io));
   return ret ? Qtrue : Qfalse;
 }
+
+#ifdef RUBY_VERSION_IS_3_1
+VALUE io_spec_rb_io_maybe_wait_writable(VALUE self, VALUE error, VALUE io, VALUE timeout) {
+  int ret = rb_io_maybe_wait_writable(NUM2INT(error), io, timeout);
+  return INT2NUM(ret);
+}
+#endif
+
+#ifdef RUBY_VERSION_IS_3_1
+VALUE io_spec_rb_io_maybe_wait_readable(VALUE self, VALUE error, VALUE io, VALUE timeout, VALUE read_p) {
+  int fd = io_spec_get_fd(io);
+#ifndef SET_NON_BLOCKING_FAILS_ALWAYS
+  char buf[RB_IO_WAIT_READABLE_BUF];
+  int ret, saved_errno;
+#endif
+
+  if (set_non_blocking(fd) == -1)
+    rb_sys_fail("set_non_blocking failed");
+
+#ifndef SET_NON_BLOCKING_FAILS_ALWAYS
+  if (RTEST(read_p)) {
+    if (read(fd, buf, RB_IO_WAIT_READABLE_BUF) != -1) {
+      return Qnil;
+    }
+    saved_errno = errno;
+    rb_ivar_set(self, rb_intern("@write_data"), Qtrue);
+    errno = saved_errno;
+  }
+
+  // main part
+  ret = rb_io_maybe_wait_readable(NUM2INT(error), io, timeout);
+
+  if (RTEST(read_p)) {
+    ssize_t r = read(fd, buf, RB_IO_WAIT_READABLE_BUF);
+    if (r != RB_IO_WAIT_READABLE_BUF) {
+      perror("read");
+      return SSIZET2NUM(r);
+    }
+    rb_ivar_set(self, rb_intern("@read_data"),
+        rb_str_new(buf, RB_IO_WAIT_READABLE_BUF));
+  }
+
+  return INT2NUM(ret);
+#else
+  UNREACHABLE;
+#endif
+}
+#endif
+
+#ifdef RUBY_VERSION_IS_3_1
+VALUE io_spec_rb_io_maybe_wait(VALUE self, VALUE error, VALUE io, VALUE events, VALUE timeout) {
+  return rb_io_maybe_wait(NUM2INT(error), io, events, timeout);
+}
+#endif
 
 VALUE io_spec_rb_thread_wait_fd(VALUE self, VALUE io) {
   rb_thread_wait_fd(io_spec_get_fd(io));
@@ -249,7 +307,7 @@ VALUE io_spec_rb_io_set_nonblock(VALUE self, VALUE io) {
   GetOpenFile(io, fp);
   rb_io_set_nonblock(fp);
 #ifdef F_GETFL
-  flags = fcntl(fp->fd, F_GETFL, 0);
+  flags = fcntl(io_spec_get_fd(io), F_GETFL, 0);
   return flags & O_NONBLOCK ? Qtrue : Qfalse;
 #else
   return Qfalse;
@@ -268,9 +326,13 @@ static VALUE io_spec_errno_set(VALUE self, VALUE val) {
 }
 
 VALUE io_spec_mode_sync_flag(VALUE self, VALUE io) {
+#ifdef RUBY_VERSION_IS_3_3
+  if (rb_io_mode(io) & FMODE_SYNC) {
+#else
   rb_io_t *fp;
   GetOpenFile(io, fp);
   if (fp->mode & FMODE_SYNC) {
+#endif
     return Qtrue;
   } else {
     return Qfalse;
@@ -294,6 +356,11 @@ void Init_io_spec(void) {
   rb_define_method(cls, "rb_io_taint_check", io_spec_rb_io_taint_check, 1);
   rb_define_method(cls, "rb_io_wait_readable", io_spec_rb_io_wait_readable, 2);
   rb_define_method(cls, "rb_io_wait_writable", io_spec_rb_io_wait_writable, 1);
+#ifdef RUBY_VERSION_IS_3_1
+  rb_define_method(cls, "rb_io_maybe_wait_writable", io_spec_rb_io_maybe_wait_writable, 3);
+  rb_define_method(cls, "rb_io_maybe_wait_readable", io_spec_rb_io_maybe_wait_readable, 4);
+  rb_define_method(cls, "rb_io_maybe_wait", io_spec_rb_io_maybe_wait, 4);
+#endif
   rb_define_method(cls, "rb_thread_wait_fd", io_spec_rb_thread_wait_fd, 1);
   rb_define_method(cls, "rb_thread_fd_writable", io_spec_rb_thread_fd_writable, 1);
   rb_define_method(cls, "rb_thread_fd_select_read", io_spec_rb_thread_fd_select_read, 1);

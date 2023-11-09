@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require_relative "helper"
 
 class TestBundlerGem < Gem::TestCase
@@ -36,7 +38,7 @@ class TestBundlerGem < Gem::TestCase
           s.files << discover_path
         end
 
-        write_file(File.join "gems", spec.full_name, discover_path) do |fp|
+        write_file(File.join("gems", spec.full_name, discover_path)) do |fp|
           fp.puts "# #{spec.full_name}"
         end
 
@@ -44,11 +46,11 @@ class TestBundlerGem < Gem::TestCase
       end
       Gem.refresh
 
-      write_file(File.join Dir.pwd, "Gemfile") do |fp|
+      write_file(File.join(Dir.pwd, "Gemfile")) do |fp|
         fp.puts "source 'https://rubygems.org'"
         fp.puts "gem '#{foo1.name}', '#{foo1.version}'"
       end
-      Gem.use_gemdeps(File.join Dir.pwd, "Gemfile")
+      Gem.use_gemdeps(File.join(Dir.pwd, "Gemfile"))
 
       expected = [
         File.expand_path("test/rubygems/sff/discover.rb", PROJECT_DIR),
@@ -136,15 +138,15 @@ class TestBundlerGem < Gem::TestCase
       ENV["GEM_PATH"] = path
 
       with_rubygems_gemdeps("-") do
-        new_PATH = [File.join(path, "bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
-        new_RUBYOPT = "-I#{rubygems_path} -I#{bundler_path}"
+        new_path = [File.join(path, "bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
+        new_rubyopt = "-I#{rubygems_path} -I#{bundler_path}"
 
         path = File.join @tempdir, "gem.deps.rb"
 
         File.open path, "w" do |f|
           f.puts "gem 'a'"
         end
-        out0 = with_path_and_rubyopt(new_PATH, new_RUBYOPT) do
+        out0 = with_path_and_rubyopt(new_path, new_rubyopt) do
           IO.popen("foo", &:read).split(/\n/)
         end
 
@@ -152,7 +154,7 @@ class TestBundlerGem < Gem::TestCase
           f.puts "gem 'b'"
           f.puts "gem 'c'"
         end
-        out = with_path_and_rubyopt(new_PATH, new_RUBYOPT) do
+        out = with_path_and_rubyopt(new_path, new_rubyopt) do
           IO.popen("foo", &:read).split(/\n/)
         end
 
@@ -190,15 +192,15 @@ class TestBundlerGem < Gem::TestCase
       with_rubygems_gemdeps("-") do
         Dir.mkdir "sub1"
 
-        new_PATH = [File.join(path, "bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
-        new_RUBYOPT = "-I#{rubygems_path} -I#{bundler_path}"
+        new_path = [File.join(path, "bin"), ENV["PATH"]].join(File::PATH_SEPARATOR)
+        new_rubyopt = "-I#{rubygems_path} -I#{bundler_path}"
 
         path = File.join @tempdir, "gem.deps.rb"
 
         File.open path, "w" do |f|
           f.puts "gem 'a'"
         end
-        out0 = with_path_and_rubyopt(new_PATH, new_RUBYOPT) do
+        out0 = with_path_and_rubyopt(new_path, new_rubyopt) do
           IO.popen("foo", :chdir => "sub1", &:read).split(/\n/)
         end
 
@@ -206,7 +208,7 @@ class TestBundlerGem < Gem::TestCase
           f.puts "gem 'b'"
           f.puts "gem 'c'"
         end
-        out = with_path_and_rubyopt(new_PATH, new_RUBYOPT) do
+        out = with_path_and_rubyopt(new_path, new_rubyopt) do
           IO.popen("foo", :chdir => "sub1", &:read).split(/\n/)
         end
 
@@ -376,14 +378,16 @@ You may need to `bundle install` to install missing gems
   private
 
   def add_bundler_full_name(names)
-    names << "bundler-#{Bundler::VERSION}".freeze
+    names << "bundler-#{Bundler::VERSION}"
     names.sort!
     names
   end
 
   def with_path_and_rubyopt(path_value, rubyopt_value)
-    path, ENV["PATH"] = ENV["PATH"], path_value
-    rubyopt, ENV["RUBYOPT"] = ENV["RUBYOPT"], rubyopt_value
+    path = ENV["PATH"]
+    ENV["PATH"] = path_value
+    rubyopt = ENV["RUBYOPT"]
+    ENV["RUBYOPT"] = rubyopt_value
 
     yield
   ensure
@@ -392,7 +396,8 @@ You may need to `bundle install` to install missing gems
   end
 
   def with_rubygems_gemdeps(value)
-    rubygems_gemdeps, ENV["RUBYGEMS_GEMDEPS"] = ENV["RUBYGEMS_GEMDEPS"], value
+    rubygems_gemdeps = ENV["RUBYGEMS_GEMDEPS"]
+    ENV["RUBYGEMS_GEMDEPS"] = value
 
     yield
   ensure

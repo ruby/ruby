@@ -265,8 +265,7 @@ require_relative 'logger/errors'
 #   logger.error! # => 3
 #   logger.fatal! # => 4
 #
-# You can retrieve the log level with method
-# {level}[Logger.html#attribute-i-level]:
+# You can retrieve the log level with method #level.
 #
 #   logger.level = Logger::ERROR
 #   logger.level # => 3

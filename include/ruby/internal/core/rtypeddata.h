@@ -114,6 +114,8 @@
 #define RUBY_TYPED_PROMOTED1         RUBY_TYPED_PROMOTED1
 /** @endcond */
 
+#define TYPED_DATA_EMBEDDED 2
+
 /**
  * @private
  *
@@ -136,6 +138,8 @@ rbimpl_typeddata_flags {
      * would better leave it unspecified.
      */
     RUBY_TYPED_FREE_IMMEDIATELY = 1,
+
+    RUBY_TYPED_EMBEDDABLE = 2,
 
     /**
      * This flag has something to do with Ractor.  Multiple Ractors run without
@@ -173,10 +177,16 @@ rbimpl_typeddata_flags {
     RUBY_TYPED_WB_PROTECTED     = RUBY_FL_WB_PROTECTED, /* THIS FLAG DEPENDS ON Ruby version */
 
     /**
-     * This flag  is mysterious.  It seems  nobody is currently using  it.  The
-     * intention of this flag is also unclear.  We need further investigations.
+     * This flag no longer in use
      */
-    RUBY_TYPED_PROMOTED1        = RUBY_FL_PROMOTED1     /* THIS FLAG DEPENDS ON Ruby version */
+    RUBY_TYPED_UNUSED           = RUBY_FL_UNUSED6,
+
+    /**
+     * This flag determines whether marking and compaction should be carried out
+     * using the dmark/dcompact callback functions or whether we should mark
+     * declaratively using a list of references defined inside the data struct we're wrapping
+     */
+    RUBY_TYPED_DECL_MARKING     = RUBY_FL_USER2
 };
 
 /**
@@ -347,16 +357,14 @@ struct RTypedData {
      * data.   This roughly  resembles a  Ruby level  class (apart  from method
      * definition etc.)
      */
-    const rb_data_type_t *type;
+    const rb_data_type_t *const type;
 
     /**
      * This has to be always 1.
      *
      * @internal
-     *
-     * Why, then, this is not a const ::VALUE?
      */
-    VALUE typed_flag;
+    const VALUE typed_flag;
 
     /** Pointer to the actual C level struct that you want to wrap. */
     void *data;
@@ -456,7 +464,7 @@ RBIMPL_SYMBOL_EXPORT_END()
  */
 #define TypedData_Make_Struct0(result, klass, type, size, data_type, sval) \
     VALUE result = rb_data_typed_object_zalloc(klass, size, data_type);    \
-    (sval) = RBIMPL_CAST((type *)RTYPEDDATA_DATA(result));                  \
+    (sval) = (type *)RTYPEDDATA_GET_DATA(result); \
     RBIMPL_CAST(/*suppress unused variable warnings*/(void)(sval))
 
 /**
@@ -507,6 +515,36 @@ RBIMPL_SYMBOL_EXPORT_END()
 #define TypedData_Get_Struct(obj,type,data_type,sval) \
     ((sval) = RBIMPL_CAST((type *)rb_check_typeddata((obj), (data_type))))
 
+static inline bool
+RTYPEDDATA_EMBEDDED_P(VALUE obj)
+{
+#if RUBY_DEBUG
+    if (RB_UNLIKELY(!RB_TYPE_P(obj, RUBY_T_DATA))) {
+        Check_Type(obj, RUBY_T_DATA);
+        RBIMPL_UNREACHABLE_RETURN(false);
+    }
+#endif
+
+    return RTYPEDDATA(obj)->typed_flag & TYPED_DATA_EMBEDDED;
+}
+
+static inline void *
+RTYPEDDATA_GET_DATA(VALUE obj)
+{
+#if RUBY_DEBUG
+    if (RB_UNLIKELY(!RB_TYPE_P(obj, RUBY_T_DATA))) {
+        Check_Type(obj, RUBY_T_DATA);
+        RBIMPL_UNREACHABLE_RETURN(false);
+    }
+#endif
+
+    /* We reuse the data pointer in embedded TypedData. We can't use offsetof
+     * since RTypedData a non-POD type in C++. */
+    const size_t embedded_typed_data_size = sizeof(struct RTypedData) - sizeof(void *);
+
+    return RTYPEDDATA_EMBEDDED_P(obj) ? (char *)obj + embedded_typed_data_size : RTYPEDDATA(obj)->data;
+}
+
 RBIMPL_ATTR_PURE()
 RBIMPL_ATTR_ARTIFICIAL()
 /**
@@ -523,7 +561,8 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline bool
 rbimpl_rtypeddata_p(VALUE obj)
 {
-    return RTYPEDDATA(obj)->typed_flag == 1;
+    VALUE typed_flag = RTYPEDDATA(obj)->typed_flag;
+    return typed_flag != 0 && typed_flag <= 3;
 }
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()

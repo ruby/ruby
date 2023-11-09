@@ -3,7 +3,7 @@
 begin
   require 'rbconfig'
 rescue LoadError
-  # for make mjit-headers
+  # for make rjit-headers
 end
 
 # Namespace for file utility methods for copying, moving, removing, etc.
@@ -180,7 +180,7 @@ end
 # - {CVE-2004-0452}[https://cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2004-0452].
 #
 module FileUtils
-  VERSION = "1.7.0"
+  VERSION = "1.7.2"
 
   def self.private_module_function(name)   #:nodoc:
     module_function name

@@ -167,6 +167,13 @@ describe "String#index with String" do
   it "handles a substring in a subset encoding" do
     'été'.index('t'.force_encoding(Encoding::US_ASCII)).should == 1
   end
+
+  it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
+    str = 'abc'.force_encoding("ISO-2022-JP")
+    pattern = 'b'.force_encoding("EUC-JP")
+
+    -> { str.index(pattern) }.should raise_error(Encoding::CompatibilityError, "incompatible character encodings: ISO-2022-JP and EUC-JP")
+  end
 end
 
 describe "String#index with Regexp" do
@@ -312,6 +319,17 @@ describe "String#index with Regexp" do
     "われわわれ".index(/わ/, 3).should == 3
   end
 
+  ruby_bug "#19763", ""..."3.3.0" do
+    it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
+      re = Regexp.new "れ".encode(Encoding::EUC_JP)
+      -> do
+        "あれ".index re
+      end.should raise_error(Encoding::CompatibilityError, "incompatible encoding regexp match (EUC-JP regexp with UTF-8 string)")
+    end
+  end
+
+  # The exception message was incorrectly "incompatible character encodings: UTF-8 and EUC-JP" before 3.3.0
+  # Still test that the right exception class is used before that.
   it "raises an Encoding::CompatibilityError if the encodings are incompatible" do
     re = Regexp.new "れ".encode(Encoding::EUC_JP)
     -> do

@@ -104,7 +104,7 @@ RSpec.describe "bundle open" do
         input.puts "2"
       end
 
-      expect(out).to match(%r{bundler_editor #{default_bundle_path('gems', 'activerecord-2.3.2')}/CHANGELOG\.md\z})
+      expect(out).to match(%r{bundler_editor #{default_bundle_path("gems", "activerecord-2.3.2")}/CHANGELOG\.md\z})
     end
 
     it "opens deep subpath of the selected matching gem", :readline do
@@ -113,7 +113,7 @@ RSpec.describe "bundle open" do
         input.puts "2"
       end
 
-      expect(out).to match(%r{bundler_editor #{default_bundle_path('gems', 'activerecord-2.3.2')}/lib/activerecord/version\.rb\z})
+      expect(out).to match(%r{bundler_editor #{default_bundle_path("gems", "activerecord-2.3.2")}/lib/activerecord/version\.rb\z})
     end
 
     it "select the gem from many match gems", :readline do
@@ -122,7 +122,7 @@ RSpec.describe "bundle open" do
         input.puts "2"
       end
 
-      expect(out).to match(/bundler_editor #{default_bundle_path('gems', 'activerecord-2.3.2')}\z/)
+      expect(out).to match(/bundler_editor #{default_bundle_path("gems", "activerecord-2.3.2")}\z/)
     end
 
     it "allows selecting exit from many match gems", :readline do

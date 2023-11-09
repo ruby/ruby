@@ -1,0 +1,43 @@
+@ ProgramNode (location: (1,0)-(3,11))
+├── locals: [:a]
+└── statements:
+    @ StatementsNode (location: (1,0)-(3,11))
+    └── body: (length: 4)
+        ├── @ MatchRequiredNode (location: (1,0)-(1,8))
+        │   ├── value:
+        │   │   @ IntegerNode (location: (1,0)-(1,1))
+        │   │   └── flags: decimal
+        │   ├── pattern:
+        │   │   @ ArrayPatternNode (location: (1,5)-(1,8))
+        │   │   ├── constant: ∅
+        │   │   ├── requireds: (length: 1)
+        │   │   │   └── @ LocalVariableTargetNode (location: (1,6)-(1,7))
+        │   │   │       ├── name: :a
+        │   │   │       └── depth: 0
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── opening_loc: (1,5)-(1,6) = "["
+        │   │   └── closing_loc: (1,7)-(1,8) = "]"
+        │   └── operator_loc: (1,2)-(1,4) = "=>"
+        ├── @ LocalVariableReadNode (location: (1,10)-(1,11))
+        │   ├── name: :a
+        │   └── depth: 0
+        ├── @ MatchPredicateNode (location: (3,0)-(3,8))
+        │   ├── value:
+        │   │   @ IntegerNode (location: (3,0)-(3,1))
+        │   │   └── flags: decimal
+        │   ├── pattern:
+        │   │   @ ArrayPatternNode (location: (3,5)-(3,8))
+        │   │   ├── constant: ∅
+        │   │   ├── requireds: (length: 1)
+        │   │   │   └── @ LocalVariableTargetNode (location: (3,6)-(3,7))
+        │   │   │       ├── name: :a
+        │   │   │       └── depth: 0
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── opening_loc: (3,5)-(3,6) = "["
+        │   │   └── closing_loc: (3,7)-(3,8) = "]"
+        │   └── operator_loc: (3,2)-(3,4) = "in"
+        └── @ LocalVariableReadNode (location: (3,10)-(3,11))
+            ├── name: :a
+            └── depth: 0

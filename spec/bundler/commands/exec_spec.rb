@@ -697,7 +697,7 @@ RSpec.describe "bundle exec" do
   context "`load`ing a ruby file instead of `exec`ing" do
     let(:path) { bundled_app("ruby_executable") }
     let(:shebang) { "#!/usr/bin/env ruby" }
-    let(:executable) { <<-RUBY.gsub(/^ */, "").strip }
+    let(:executable) { <<~RUBY.strip }
       #{shebang}
 
       require "rack"
@@ -916,6 +916,30 @@ Run `bundle install` to install missing gems.
       end
     end
 
+    context "when Bundler.setup fails and Gemfile is not the default" do
+      before do
+        create_file "CustomGemfile", <<-G
+          source "#{file_uri_for(gem_repo1)}"
+          gem 'rack', '2'
+        G
+        ENV["BUNDLER_FORCE_TTY"] = "true"
+        ENV["BUNDLE_GEMFILE"] = "CustomGemfile"
+        ENV["BUNDLER_ORIG_BUNDLE_GEMFILE"] = nil
+      end
+
+      let(:exit_code) { Bundler::GemNotFound.new.status_code }
+      let(:expected) { "" }
+
+      it "prints proper suggestion" do
+        skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
+
+        subject
+        expect(exitstatus).to eq(exit_code)
+        expect(err).to include("Run `bundle install --gemfile CustomGemfile` to install missing gems.")
+        expect(out).to eq(expected)
+      end
+    end
+
     context "when the executable exits non-zero via at_exit" do
       let(:executable) { super() + "\n\nat_exit { $! ? raise($!) : exit(1) }" }
       let(:exit_code) { 1 }
@@ -1000,7 +1024,7 @@ __FILE__: #{path.to_s.inspect}
       end
 
       context "signals being trapped by bundler" do
-        let(:executable) { strip_whitespace <<-RUBY }
+        let(:executable) { <<~RUBY }
           #{shebang}
           begin
             Thread.new do
@@ -1027,7 +1051,7 @@ __FILE__: #{path.to_s.inspect}
       end
 
       context "signals not being trapped by bunder" do
-        let(:executable) { strip_whitespace <<-RUBY }
+        let(:executable) { <<~RUBY }
           #{shebang}
 
           signals = #{test_signals.inspect}

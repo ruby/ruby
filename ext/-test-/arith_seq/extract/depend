@@ -111,7 +111,6 @@ extract.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 extract.o: $(hdrdir)/ruby/internal/intern/error.h
 extract.o: $(hdrdir)/ruby/internal/intern/eval.h
 extract.o: $(hdrdir)/ruby/internal/intern/file.h
-extract.o: $(hdrdir)/ruby/internal/intern/gc.h
 extract.o: $(hdrdir)/ruby/internal/intern/hash.h
 extract.o: $(hdrdir)/ruby/internal/intern/io.h
 extract.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +141,6 @@ extract.o: $(hdrdir)/ruby/internal/memory.h
 extract.o: $(hdrdir)/ruby/internal/method.h
 extract.o: $(hdrdir)/ruby/internal/module.h
 extract.o: $(hdrdir)/ruby/internal/newobj.h
-extract.o: $(hdrdir)/ruby/internal/rgengc.h
 extract.o: $(hdrdir)/ruby/internal/scan_args.h
 extract.o: $(hdrdir)/ruby/internal/special_consts.h
 extract.o: $(hdrdir)/ruby/internal/static_assert.h

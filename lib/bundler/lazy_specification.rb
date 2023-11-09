@@ -20,23 +20,31 @@ module Bundler
     end
 
     def full_name
-      if platform == Gem::Platform::RUBY
+      @full_name ||= if platform == Gem::Platform::RUBY
         "#{@name}-#{@version}"
       else
         "#{@name}-#{@version}-#{platform}"
       end
     end
 
+    def lock_name
+      @lock_name ||= name_tuple.lock_name
+    end
+
+    def name_tuple
+      Gem::NameTuple.new(@name, @version, @platform)
+    end
+
     def ==(other)
-      identifier == other.identifier
+      full_name == other.full_name
     end
 
     def eql?(other)
-      identifier.eql?(other.identifier)
+      full_name.eql?(other.full_name)
     end
 
     def hash
-      identifier.hash
+      full_name.hash
     end
 
     ##
@@ -61,12 +69,7 @@ module Bundler
 
     def to_lock
       out = String.new
-
-      if platform == Gem::Platform::RUBY
-        out << "    #{name} (#{version})\n"
-      else
-        out << "    #{name} (#{version}-#{platform})\n"
-      end
+      out << "    #{lock_name}\n"
 
       dependencies.sort_by(&:to_s).uniq.each do |dep|
         next if dep.type == :development
@@ -122,20 +125,16 @@ module Bundler
     end
 
     def to_s
-      @__to_s ||= if platform == Gem::Platform::RUBY
-        "#{name} (#{version})"
-      else
-        "#{name} (#{version}-#{platform})"
-      end
-    end
-
-    def identifier
-      @__identifier ||= [name, version, platform.to_s]
+      lock_name
     end
 
     def git_version
       return unless source.is_a?(Bundler::Source::Git)
       " #{source.revision[0..6]}"
+    end
+
+    def force_ruby_platform!
+      @force_ruby_platform = true
     end
 
     private

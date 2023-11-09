@@ -43,8 +43,10 @@ describe :array_pack_16bit_le, shared: true do
 
   ruby_version_is ""..."3.3" do
     it "ignores NULL bytes between directives" do
-      str = [0x1243_6578, 0xdef0_abcd].pack(pack_format("\000", 2))
-      str.should == "\x78\x65\xcd\xab"
+      suppress_warning do
+        str = [0x1243_6578, 0xdef0_abcd].pack(pack_format("\000", 2))
+        str.should == "\x78\x65\xcd\xab"
+      end
     end
   end
 
@@ -105,8 +107,10 @@ describe :array_pack_16bit_be, shared: true do
 
   ruby_version_is ""..."3.3" do
     it "ignores NULL bytes between directives" do
-      str = [0x1243_6578, 0xdef0_abcd].pack(pack_format("\000", 2))
-      str.should == "\x65\x78\xab\xcd"
+      suppress_warning do
+        str = [0x1243_6578, 0xdef0_abcd].pack(pack_format("\000", 2))
+        str.should == "\x65\x78\xab\xcd"
+      end
     end
   end
 
@@ -167,8 +171,10 @@ describe :array_pack_32bit_le, shared: true do
 
   ruby_version_is ""..."3.3" do
     it "ignores NULL bytes between directives" do
-      str = [0x1243_6578, 0xdef0_abcd].pack(pack_format("\000", 2))
-      str.should == "\x78\x65\x43\x12\xcd\xab\xf0\xde"
+      suppress_warning do
+        str = [0x1243_6578, 0xdef0_abcd].pack(pack_format("\000", 2))
+        str.should == "\x78\x65\x43\x12\xcd\xab\xf0\xde"
+      end
     end
   end
 
@@ -229,8 +235,10 @@ describe :array_pack_32bit_be, shared: true do
 
   ruby_version_is ""..."3.3" do
     it "ignores NULL bytes between directives" do
-      str = [0x1243_6578, 0xdef0_abcd].pack(pack_format("\000", 2))
-      str.should == "\x12\x43\x65\x78\xde\xf0\xab\xcd"
+      suppress_warning do
+        str = [0x1243_6578, 0xdef0_abcd].pack(pack_format("\000", 2))
+        str.should == "\x12\x43\x65\x78\xde\xf0\xab\xcd"
+      end
     end
   end
 
@@ -351,8 +359,10 @@ describe :array_pack_64bit_le, shared: true do
 
   ruby_version_is ""..."3.3" do
     it "ignores NULL bytes between directives" do
-      str = [0xdef0_abcd_3412_7856, 0x7865_4321_dcba_def0].pack(pack_format("\000", 2))
-      str.should == "\x56\x78\x12\x34\xcd\xab\xf0\xde\xf0\xde\xba\xdc\x21\x43\x65\x78"
+      suppress_warning do
+        str = [0xdef0_abcd_3412_7856, 0x7865_4321_dcba_def0].pack(pack_format("\000", 2))
+        str.should == "\x56\x78\x12\x34\xcd\xab\xf0\xde\xf0\xde\xba\xdc\x21\x43\x65\x78"
+      end
     end
   end
 
@@ -421,8 +431,10 @@ describe :array_pack_64bit_be, shared: true do
 
   ruby_version_is ""..."3.3" do
     it "ignores NULL bytes between directives" do
-      str = [0xdef0_abcd_3412_7856, 0x7865_4321_dcba_def0].pack(pack_format("\000", 2))
-      str.should == "\xde\xf0\xab\xcd\x34\x12\x78\x56\x78\x65\x43\x21\xdc\xba\xde\xf0"
+      suppress_warning do
+        str = [0xdef0_abcd_3412_7856, 0x7865_4321_dcba_def0].pack(pack_format("\000", 2))
+        str.should == "\xde\xf0\xab\xcd\x34\x12\x78\x56\x78\x65\x43\x21\xdc\xba\xde\xf0"
+      end
     end
   end
 

@@ -18,7 +18,6 @@
 #include "internal/proc.h"
 #include "internal/struct.h"
 #include "internal/symbol.h"
-#include "transient_heap.h"
 #include "vm_core.h"
 #include "builtin.h"
 
@@ -562,7 +561,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *
  *  <b>Member Names</b>
  *
- *  \Symbol arguments +member_names+
+ *  Symbol arguments +member_names+
  *  determines the members of the new subclass:
  *
  *    Struct.new(:foo, :bar).members        # => [:foo, :bar]
@@ -637,17 +636,14 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 static VALUE
 rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE name, rest, keyword_init = Qnil;
+    VALUE name = Qnil, rest, keyword_init = Qnil;
     long i;
     VALUE st;
     VALUE opt;
 
-    argc = rb_scan_args(argc, argv, "1*:", NULL, NULL, &opt);
-    name = argv[0];
-    if (SYMBOL_P(name)) {
-        name = Qnil;
-    }
-    else {
+    argc = rb_scan_args(argc, argv, "0*:", NULL, &opt);
+    if (argc >= 1 && !SYMBOL_P(argv[0])) {
+        name = argv[0];
         --argc;
         ++argv;
     }
@@ -801,60 +797,34 @@ rb_struct_initialize(VALUE self, VALUE values)
 static VALUE *
 struct_heap_alloc(VALUE st, size_t len)
 {
-    VALUE *ptr = rb_transient_heap_alloc((VALUE)st, sizeof(VALUE) * len);
-
-    if (ptr) {
-        RSTRUCT_TRANSIENT_SET(st);
-        return ptr;
-    }
-    else {
-        RSTRUCT_TRANSIENT_UNSET(st);
-        return ALLOC_N(VALUE, len);
-    }
+    return ALLOC_N(VALUE, len);
 }
-
-#if USE_TRANSIENT_HEAP
-void
-rb_struct_transient_heap_evacuate(VALUE obj, int promote)
-{
-    if (RSTRUCT_TRANSIENT_P(obj)) {
-        const VALUE *old_ptr = rb_struct_const_heap_ptr(obj);
-        VALUE *new_ptr;
-        long len = RSTRUCT_LEN(obj);
-
-        if (promote) {
-            new_ptr = ALLOC_N(VALUE, len);
-            FL_UNSET_RAW(obj, RSTRUCT_TRANSIENT_FLAG);
-        }
-        else {
-            new_ptr = struct_heap_alloc(obj, len);
-        }
-        MEMCPY(new_ptr, old_ptr, VALUE, len);
-        RSTRUCT(obj)->as.heap.ptr = new_ptr;
-    }
-}
-#endif
 
 static VALUE
 struct_alloc(VALUE klass)
 {
-    long n;
-    NEWOBJ_OF(st, struct RStruct, klass, T_STRUCT | (RGENGC_WB_PROTECTED_STRUCT ? FL_WB_PROTECTED : 0));
+    long n = num_members(klass);
+    size_t embedded_size = offsetof(struct RStruct, as.ary) + (sizeof(VALUE) * n);
+    VALUE flags = T_STRUCT | (RGENGC_WB_PROTECTED_STRUCT ? FL_WB_PROTECTED : 0);
 
-    n = num_members(klass);
+    if (n > 0 && rb_gc_size_allocatable_p(embedded_size)) {
+        flags |= n << RSTRUCT_EMBED_LEN_SHIFT;
 
-    if (0 < n && n <= RSTRUCT_EMBED_LEN_MAX) {
-        RBASIC(st)->flags &= ~RSTRUCT_EMBED_LEN_MASK;
-        RBASIC(st)->flags |= n << RSTRUCT_EMBED_LEN_SHIFT;
+        NEWOBJ_OF(st, struct RStruct, klass, flags, embedded_size, 0);
+
         rb_mem_clear((VALUE *)st->as.ary, n);
+
+        return (VALUE)st;
     }
     else {
+        NEWOBJ_OF(st, struct RStruct, klass, flags, sizeof(struct RStruct), 0);
+
         st->as.heap.ptr = struct_heap_alloc((VALUE)st, n);
         rb_mem_clear((VALUE *)st->as.heap.ptr, n);
         st->as.heap.len = n;
-    }
 
-    return (VALUE)st;
+        return (VALUE)st;
+    }
 }
 
 VALUE
@@ -1605,7 +1575,7 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
  *     distance.unit #=> "km"
  *
  *  Constructed object also has a reasonable definitions of #==
- *  operator, #to_h hash conversion, and #deconstruct/#deconstruct_keys
+ *  operator, #to_h hash conversion, and #deconstruct / #deconstruct_keys
  *  to be used in pattern matching.
  *
  *  ::define method accepts an optional block and evaluates it in
@@ -1720,6 +1690,18 @@ rb_data_s_def(int argc, VALUE *argv, VALUE klass)
     return data_class;
 }
 
+VALUE
+rb_data_define(VALUE super, ...)
+{
+    va_list ar;
+    VALUE ary;
+    va_start(ar, super);
+    ary = struct_make_members_list(ar);
+    va_end(ar);
+    if (!super) super = rb_cData;
+    return setup_data(anonymous_struct(super), ary);
+}
+
 /*
  *  call-seq:
  *    DataClass::members -> array_of_symbols
@@ -1751,7 +1733,7 @@ rb_data_s_def(int argc, VALUE *argv, VALUE klass)
  *     Measure.new(amount: 1, unit: 'km')
  *     #=> #<data Measure amount=1, unit="km">
  *
- *     # Alternative shorter intialization with []
+ *     # Alternative shorter initialization with []
  *     Measure[1, 'km']
  *     #=> #<data Measure amount=1, unit="km">
  *     Measure[amount: 1, unit: 'km']
@@ -1869,7 +1851,7 @@ rb_data_with(int argc, const VALUE *argv, VALUE self)
     }
 
     VALUE h = rb_struct_to_h(self);
-    rb_hash_update_by(h, kwargs, NULL);
+    rb_hash_update_by(h, kwargs, 0);
     return rb_class_new_instance_kw(1, &h, rb_obj_class(self), TRUE);
 }
 
