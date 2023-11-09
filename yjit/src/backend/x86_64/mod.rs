@@ -457,6 +457,9 @@ impl Assembler
         // List of GC offsets
         let mut gc_offsets: Vec<u32> = Vec::new();
 
+        // Buffered list of PosMarker callbacks to fire if codegen is successful
+        let mut pos_markers: Vec<(usize, CodePtr)> = vec![];
+
         // For each instruction
         let start_write_pos = cb.get_write_pos();
         let mut insn_idx: usize = 0;
@@ -479,8 +482,8 @@ impl Assembler
                 },
 
                 // Report back the current position in the generated code
-                Insn::PosMarker(pos_marker) => {
-                    pos_marker(cb.get_write_ptr());
+                Insn::PosMarker(..) => {
+                    pos_markers.push((insn_idx, cb.get_write_ptr()));
                 },
 
                 Insn::BakeString(text) => {
@@ -817,7 +820,21 @@ impl Assembler
             }
         }
 
-        Some(gc_offsets)
+        // Error if we couldn't write out everything
+        if cb.has_dropped_bytes() {
+            return None
+        } else {
+            // No bytes dropped, so the pos markers point to valid code
+            for (insn_idx, pos) in pos_markers {
+                if let Insn::PosMarker(callback) = self.insns.get(insn_idx).unwrap() {
+                    callback(pos);
+                } else {
+                    panic!("non-PosMarker in pos_markers insn_idx={insn_idx} {self:?}");
+                }
+            }
+
+            return Some(gc_offsets)
+        }
     }
 
     /// Optimize and compile the stored instructions

@@ -310,3 +310,21 @@ fn test_cmp_8_bit() {
 
     asm.compile_with_num_regs(&mut cb, 1);
 }
+
+#[test]
+fn test_no_pos_marker_callback_when_compile_fails() {
+    // When compilation fails (e.g. when out of memory), the code written out is malformed.
+    // We don't want to invoke the pos_marker callbacks with positions of malformed code.
+    let mut asm = Assembler::new();
+
+    // Markers around code to exhaust memory limit
+    let fail_if_called = |_code_ptr| panic!("pos_marker callback should not be called");
+    asm.pos_marker(fail_if_called);
+    let zero = asm.load(0.into());
+    let sum = asm.add(zero, 500.into());
+    asm.store(Opnd::mem(64, SP, 8), sum);
+    asm.pos_marker(fail_if_called);
+
+    let cb = &mut CodeBlock::new_dummy(8);
+    assert!(asm.compile(cb, None).is_none(), "should fail due to tiny size limit");
+}
