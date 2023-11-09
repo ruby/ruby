@@ -765,7 +765,7 @@ See {Subexpression calls}[https://learnbyexample.github.io/Ruby_Regexp/groupings
 The conditional construct takes the form <tt>(?(_cond_)_yes_|_no_)</tt>, where:
 
 - _cond_ may be a capture number or name.
-- The match to be applied is _yes_ if_cond_ is captured;
+- The match to be applied is _yes_ if _cond_ is captured;
   otherwise the match to be applied is _no_.
 - If not needed, <tt>|_no_</tt> may be omitted.
 
@@ -902,7 +902,7 @@ Punctation:
 - {Pe, Close_Punctuation}[https://www.compart.com/en/unicode/category/Pe].
 - {Pf, Final_Punctuation}[https://www.compart.com/en/unicode/category/Pf].
 - {Pi, Initial_Punctuation}[https://www.compart.com/en/unicode/category/Pi].
-- {Po, Open_Punctuation}[https://www.compart.com/en/unicode/category/Po].
+- {Po, Other_Punctuation}[https://www.compart.com/en/unicode/category/Po].
 - {Ps, Open_Punctuation}[https://www.compart.com/en/unicode/category/Ps].
 
 - +S+, +Symbol+: +Sc+, +Sk+, +Sm+, or +So+.
