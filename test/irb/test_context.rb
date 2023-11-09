@@ -653,7 +653,6 @@ module TestIRB
     end
 
     def test_build_completor
-      pend 'set ENV["WITH_TYPE_COMPLETION_TEST"] to run this test' unless ENV['WITH_TYPE_COMPLETION_TEST']
       verbose, $VERBOSE = $VERBOSE, nil
       original_completor = IRB.conf[:COMPLETOR]
       IRB.conf[:COMPLETOR] = :regexp
