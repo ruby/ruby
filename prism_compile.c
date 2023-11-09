@@ -719,6 +719,9 @@ pm_lookup_local_index_with_depth(rb_iseq_t *iseq, pm_scope_node_t *scope_node, p
 static ID
 pm_constant_id_lookup(pm_scope_node_t *scope_node, pm_constant_id_t constant_id)
 {
+    if (constant_id < 1 || constant_id > scope_node->parser->constant_pool.size) {
+        rb_raise(rb_eArgError, "[PRISM] constant_id out of range: %u", (unsigned int)constant_id);
+    }
     return scope_node->constants[constant_id - 1];
 }
 
