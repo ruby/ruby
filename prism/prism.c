@@ -14326,6 +14326,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                 equal = parser->previous;
 
                 context_push(parser, PM_CONTEXT_DEF);
+                pm_do_loop_stack_push(parser, false);
                 statements = (pm_node_t *) pm_statements_node_create(parser);
 
                 pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_DEFINED + 1, PM_ERR_DEF_ENDLESS);
@@ -14338,6 +14339,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                 }
 
                 pm_statements_node_body_append((pm_statements_node_t *) statements, statement);
+                pm_do_loop_stack_pop(parser);
                 context_pop(parser);
                 end_keyword = not_provided(parser);
             } else {
