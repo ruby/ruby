@@ -1304,6 +1304,7 @@ preludes: {$(srcdir)}golf_prelude.c
 $(BUILTIN_BINARY:yes=built)in_binary.inc: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)/template/builtin_binary.inc.tmpl
 	$(Q) $(MINIRUBY) $(tooldir)/generic_erb.rb -o $@ \
 		$(srcdir)/template/builtin_binary.inc.tmpl
+	-$(Q) sha256sum $@ 2> $(NULL) || $(NULLCMD)
 
 $(BUILTIN_BINARY:no=builtin)_binary.inc:
 	$(Q) echo> $@ // empty $(@F)
