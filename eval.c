@@ -554,10 +554,9 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
 {
     VALUE e;
     int line;
-    const char *file = rb_source_location_cstr(&line);
-    const char *const volatile file0 = file;
+    const volatile VALUE source_path = rb_ec_first_backtrace_location(ec, &line);
 
-    if ((file && !NIL_P(mesg)) || !UNDEF_P(cause))  {
+    if ((!NIL_P(source_path) && !NIL_P(mesg)) || !UNDEF_P(cause))  {
         volatile int state = 0;
 
         EC_PUSH_TAG(ec);
@@ -579,7 +578,6 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
             rb_ec_reset_raised(ec);
         }
         EC_POP_TAG();
-        file = file0;
         if (state) goto fatal;
     }
 
@@ -594,15 +592,16 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
         mesg = e;
         EC_PUSH_TAG(ec);
         if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+            VALUE file = source_path;
             ec->errinfo = Qnil;
             e = rb_obj_as_string(mesg);
             ec->errinfo = mesg;
-            if (file && line) {
-                e = rb_sprintf("Exception `%"PRIsVALUE"' at %s:%d - %"PRIsVALUE"\n",
+            if (!NIL_P(file) && line) {
+                e = rb_sprintf("Exception `%"PRIsVALUE"' at %"PRIsVALUE":%d - %"PRIsVALUE"\n",
                                rb_obj_class(mesg), file, line, e);
             }
-            else if (file) {
-                e = rb_sprintf("Exception `%"PRIsVALUE"' at %s - %"PRIsVALUE"\n",
+            else if (!NIL_P(file)) {
+                e = rb_sprintf("Exception `%"PRIsVALUE"' at %"PRIsVALUE" - %"PRIsVALUE"\n",
                                rb_obj_class(mesg), file, e);
             }
             else {

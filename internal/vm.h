@@ -116,6 +116,7 @@ const struct rb_iseq_struct *rb_get_iseq_from_frame_info(VALUE obj);
 
 VALUE rb_ec_backtrace_object(const struct rb_execution_context_struct *ec);
 void rb_backtrace_use_iseq_first_lineno_for_last_location(VALUE self);
+VALUE rb_ec_first_backtrace_location(const struct rb_execution_context_struct *ec, int *line);
 
 #define RUBY_DTRACE_CREATE_HOOK(name, arg) \
     RUBY_DTRACE_HOOK(name##_CREATE, arg)

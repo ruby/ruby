@@ -790,6 +790,24 @@ rb_backtrace_to_location_ary(VALUE self)
     return bt->locary;
 }
 
+VALUE
+rb_ec_first_backtrace_location(const rb_execution_context_t *ec, int *line)
+{
+    rb_backtrace_t *bt;
+    rb_backtrace_location_t *loc;
+    const rb_iseq_t *iseq;
+    VALUE path;
+    VALUE btobj = rb_ec_partial_backtrace_object(ec, 0, 1, NULL, true, FALSE);
+    GetCoreDataFromValue(btobj, rb_backtrace_t, bt);
+    if (bt->backtrace_size != 1 || !(loc = &bt->backtrace[0]) || !loc->pc ||
+        !(iseq = location_iseq(loc)) || NIL_P(path = rb_iseq_path(iseq))) {
+        if (line) *line = 0;
+        return Qnil;
+    }
+    if (line) *line = calc_lineno(iseq, loc->pc);
+    return path;
+}
+
 static VALUE
 backtrace_dump_data(VALUE self)
 {
