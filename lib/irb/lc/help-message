@@ -30,6 +30,9 @@ Usage:  irb.rb [options] [programfile] [arguments]
   --nocolorize      Don't use color-highlighting.
   --autocomplete    Use auto-completion (default).
   --noautocomplete  Don't use auto-completion.
+  --regexp-completor
+                    Use regexp based completion (default).
+  --type-completor  Use type based completion.
   --prompt prompt-mode, --prompt-mode prompt-mode
                     Set prompt mode. Pre-defined prompt modes are:
                     'default', 'classic', 'simple', 'inf-ruby', 'xmp', 'null'.
