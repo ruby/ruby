@@ -531,7 +531,9 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
 
             cb.set_write_ptr(patch.inline_patch_pos);
             cb.set_dropped_bytes(false);
-            asm.compile(cb, None).expect("can rewrite existing code");
+            if asm.compile(cb, None).is_none() {
+                panic!("Failed to apply patch at {:?}", patch.inline_patch_pos);
+            }
             last_patch_end = cb.get_write_ptr().raw_ptr(cb);
         }
         cb.set_pos(old_pos);
