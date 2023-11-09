@@ -4508,43 +4508,43 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 pm_node_t *keyword_parameter_node = keywords_list->nodes[i];
                 pm_constant_id_t name;
 
-                switch PM_NODE_TYPE(keyword_parameter_node) {
+                switch (PM_NODE_TYPE(keyword_parameter_node)) {
                   // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
                   //                                                       ^^^^
                   case PM_OPTIONAL_KEYWORD_PARAMETER_NODE: {
-                      pm_optional_keyword_parameter_node_t *cast = ((pm_optional_keyword_parameter_node_t *)keyword_parameter_node);
+                    pm_optional_keyword_parameter_node_t *cast = ((pm_optional_keyword_parameter_node_t *)keyword_parameter_node);
 
-                      pm_node_t *value = cast->value;
-                      name = cast->name;
+                    pm_node_t *value = cast->value;
+                    name = cast->name;
 
-                      if (pm_static_literal_p(value)) {
-                          rb_ary_push(default_values, pm_static_literal_value(value, scope_node, parser));
-                      }
-                      else {
-                          LABEL *end_label = NEW_LABEL(nd_line(&dummy_line_node));
+                    if (pm_static_literal_p(value)) {
+                        rb_ary_push(default_values, pm_static_literal_value(value, scope_node, parser));
+                    }
+                    else {
+                        LABEL *end_label = NEW_LABEL(nd_line(&dummy_line_node));
 
-                          int index = pm_lookup_local_index(iseq, scope_node, name);
-                          int kw_bits_idx = table_size - body->param.keyword->bits_start;
-                          ADD_INSN2(ret, &dummy_line_node, checkkeyword, INT2FIX(kw_bits_idx + VM_ENV_DATA_SIZE - 1), INT2FIX(i - 1));
-                          ADD_INSNL(ret, &dummy_line_node, branchif, end_label);
-                          PM_COMPILE(value);
-                          ADD_SETLOCAL(ret, &dummy_line_node, index, 0);
+                        int index = pm_lookup_local_index(iseq, scope_node, name);
+                        int kw_bits_idx = table_size - body->param.keyword->bits_start;
+                        ADD_INSN2(ret, &dummy_line_node, checkkeyword, INT2FIX(kw_bits_idx + VM_ENV_DATA_SIZE - 1), INT2FIX(i - 1));
+                        ADD_INSNL(ret, &dummy_line_node, branchif, end_label);
+                        PM_COMPILE(value);
+                        ADD_SETLOCAL(ret, &dummy_line_node, index, 0);
 
-                          ADD_LABEL(ret, end_label);
-                          rb_ary_push(default_values, complex_mark);
-                      }
+                        ADD_LABEL(ret, end_label);
+                        rb_ary_push(default_values, complex_mark);
+                    }
 
-                      break;
+                    break;
                   }
                   // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
                   //                                                   ^^
                   case PM_REQUIRED_KEYWORD_PARAMETER_NODE: {
-                      name = ((pm_required_keyword_parameter_node_t *)keyword_parameter_node)->name;
-                      keyword->required_num++;
-                      break;
+                    name = ((pm_required_keyword_parameter_node_t *)keyword_parameter_node)->name;
+                    keyword->required_num++;
+                    break;
                   }
                   default: {
-                      rb_bug("Unexpected keyword parameter node type");
+                    rb_bug("Unexpected keyword parameter node type");
                   }
                 }
 
