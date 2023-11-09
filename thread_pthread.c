@@ -265,8 +265,8 @@ rb_native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, u
 // thread scheduling
 
 static rb_internal_thread_event_hook_t *rb_internal_thread_event_hooks = NULL;
-static void rb_thread_execute_hooks(rb_event_flag_t event);
-#define RB_INTERNAL_THREAD_HOOK(event) if (rb_internal_thread_event_hooks) { rb_thread_execute_hooks(event); }
+static void rb_thread_execute_hooks(rb_event_flag_t event, rb_thread_t *th);
+#define RB_INTERNAL_THREAD_HOOK(event, th) if (rb_internal_thread_event_hooks) { rb_thread_execute_hooks(event, th); }
 
 static rb_serial_t current_fork_gen = 1; /* We can't use GET_VM()->fork_gen */
 
@@ -781,7 +781,7 @@ thread_sched_to_ready_common(struct rb_thread_sched *sched, rb_thread_t *th, boo
         thread_sched_enq(sched, th);
     }
 
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_READY);
+    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_READY, th);
 }
 
 // waiting -> ready
@@ -876,7 +876,7 @@ thread_sched_wait_running_turn(struct rb_thread_sched *sched, rb_thread_t *th, b
     }
 
     // VM_ASSERT(ractor_sched_running_threads_contain_p(th->vm, th)); need locking
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_RESUMED);
+    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_RESUMED, th);
 }
 
 // waiting -> ready -> running (locked)
@@ -959,7 +959,7 @@ static void
 thread_sched_to_waiting_common0(struct rb_thread_sched *sched, rb_thread_t *th, bool to_dead)
 {
     if (rb_internal_thread_event_hooks) {
-        rb_thread_execute_hooks(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED);
+        rb_thread_execute_hooks(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
     }
 
     if (!to_dead) native_thread_dedicated_inc(th->vm, th->ractor, th->nt);
@@ -975,7 +975,7 @@ static void
 thread_sched_to_dead_common(struct rb_thread_sched *sched, rb_thread_t *th)
 {
     RUBY_DEBUG_LOG("dedicated:%d", th->nt->dedicated);
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_EXITED);
+    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_EXITED, th);
 
     thread_sched_to_waiting_common0(sched, th, true);
 }
@@ -1007,7 +1007,7 @@ thread_sched_to_waiting_common(struct rb_thread_sched *sched, rb_thread_t *th)
 static void
 thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th)
 {
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED);
+    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
 
     thread_sched_lock(sched, th);
     {
@@ -2148,7 +2148,7 @@ native_thread_create_dedicated(rb_thread_t *th)
 static void
 call_thread_start_func_2(rb_thread_t *th)
 {
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_STARTED);
+    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_STARTED, th);
 
 #if defined USE_NATIVE_THREAD_INIT
     native_thread_init_stack(th);
@@ -3232,7 +3232,7 @@ static void
 native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 {
     struct rb_thread_sched *sched = TH_SCHED(th);
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED);
+    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
 
     RUBY_DEBUG_LOG("rel:%d", rel ? (int)*rel : 0);
     if (rel) {
@@ -3248,7 +3248,7 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
     }
 
     RUBY_DEBUG_LOG("wakeup");
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_READY);
+    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_READY, th);
 }
 
 // thread internal event hooks (only for pthread)
@@ -3322,7 +3322,7 @@ rb_internal_thread_remove_event_hook(rb_internal_thread_event_hook_t * hook)
 }
 
 static void
-rb_thread_execute_hooks(rb_event_flag_t event)
+rb_thread_execute_hooks(rb_event_flag_t event, rb_thread_t *th)
 {
     int r;
     if ((r = pthread_rwlock_rdlock(&rb_internal_thread_event_hooks_rw_lock))) {
@@ -3333,7 +3333,10 @@ rb_thread_execute_hooks(rb_event_flag_t event)
         rb_internal_thread_event_hook_t *h = rb_internal_thread_event_hooks;
         do {
             if (h->event & event) {
-                (*h->callback)(event, NULL, h->user_data);
+                rb_internal_thread_event_data_t event_data = {
+                    .thread = th->self,
+                };
+                (*h->callback)(event, &event_data, h->user_data);
             }
         } while((h = h->next));
     }

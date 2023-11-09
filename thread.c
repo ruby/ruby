@@ -5409,7 +5409,7 @@ Init_Thread(void)
             // thread_sched_to_running(sched, th);
 
 #ifdef RB_INTERNAL_THREAD_HOOK
-            RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_RESUMED);
+            RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_RESUMED, th);
 #endif
 
             th->pending_interrupt_queue = rb_ary_hidden_new(0);
