@@ -227,7 +227,9 @@ void *rb_nogvl(void *(*func)(void *), void *data1,
 
 #define RUBY_INTERNAL_THREAD_EVENT_MASK       0xff /** All Thread events */
 
-typedef void rb_internal_thread_event_data_t; // for future extension.
+typedef struct rb_internal_thread_event_data {
+   VALUE thread;
+} rb_internal_thread_event_data_t;
 
 typedef void (*rb_internal_thread_event_callback)(rb_event_flag_t event,
               const rb_internal_thread_event_data_t *event_data,
