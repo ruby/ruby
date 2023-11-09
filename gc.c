@@ -4943,24 +4943,22 @@ obj_memsize_of(VALUE obj, int use_all_types)
         break;
       case T_MODULE:
       case T_CLASS:
-        if (RCLASS_EXT(obj)) {
-            if (RCLASS_M_TBL(obj)) {
-                size += rb_id_table_memsize(RCLASS_M_TBL(obj));
-            }
-            // class IV sizes are allocated as powers of two
-            size += SIZEOF_VALUE << bit_length(RCLASS_IV_COUNT(obj));
-            if (RCLASS_CVC_TBL(obj)) {
-                size += rb_id_table_memsize(RCLASS_CVC_TBL(obj));
-            }
-            if (RCLASS_EXT(obj)->const_tbl) {
-                size += rb_id_table_memsize(RCLASS_EXT(obj)->const_tbl);
-            }
-            if (RCLASS_CC_TBL(obj)) {
-                size += cc_table_memsize(RCLASS_CC_TBL(obj));
-            }
-            if (FL_TEST_RAW(obj, RCLASS_SUPERCLASSES_INCLUDE_SELF)) {
-                size += (RCLASS_SUPERCLASS_DEPTH(obj) + 1) * sizeof(VALUE);
-            }
+        if (RCLASS_M_TBL(obj)) {
+            size += rb_id_table_memsize(RCLASS_M_TBL(obj));
+        }
+        // class IV sizes are allocated as powers of two
+        size += SIZEOF_VALUE << bit_length(RCLASS_IV_COUNT(obj));
+        if (RCLASS_CVC_TBL(obj)) {
+            size += rb_id_table_memsize(RCLASS_CVC_TBL(obj));
+        }
+        if (RCLASS_EXT(obj)->const_tbl) {
+            size += rb_id_table_memsize(RCLASS_EXT(obj)->const_tbl);
+        }
+        if (RCLASS_CC_TBL(obj)) {
+            size += cc_table_memsize(RCLASS_CC_TBL(obj));
+        }
+        if (FL_TEST_RAW(obj, RCLASS_SUPERCLASSES_INCLUDE_SELF)) {
+            size += (RCLASS_SUPERCLASS_DEPTH(obj) + 1) * sizeof(VALUE);
         }
         break;
       case T_ICLASS:
@@ -4969,7 +4967,7 @@ obj_memsize_of(VALUE obj, int use_all_types)
                 size += rb_id_table_memsize(RCLASS_M_TBL(obj));
             }
         }
-        if (RCLASS_EXT(obj) && RCLASS_CC_TBL(obj)) {
+        if (RCLASS_CC_TBL(obj)) {
             size += cc_table_memsize(RCLASS_CC_TBL(obj));
         }
         break;
