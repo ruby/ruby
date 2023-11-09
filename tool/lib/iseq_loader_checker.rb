@@ -76,6 +76,15 @@ class RubyVM::InstructionSequence
     # return value
     i2_bin if CHECK_TO_BINARY
   end if CHECK_TO_A || CHECK_TO_BINARY
+
+  if opt == "prism"
+    # If RUBY_ISEQ_DUMP_DEBUG is "prism", we'll set up
+    # InstructionSequence.load_iseq to intercept loading filepaths to compile
+    # using prism.
+    def self.load_iseq(filepath)
+      RubyVM::InstructionSequence.compile_file_prism(filepath)
+    end
+  end
 end
 
 #require_relative 'x'; exit(1)

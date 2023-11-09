@@ -943,6 +943,20 @@ rb_iseq_new_with_opt(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE rea
 
 VALUE rb_iseq_compile_prism_node(rb_iseq_t * iseq, pm_scope_node_t *scope_node, pm_parser_t *parser);
 
+/**
+ * Initialize an rb_code_location_t with a prism location.
+ */
+static void
+pm_code_location(rb_code_location_t *code_location, const pm_newline_list_t *newline_list, const pm_location_t *location) {
+    pm_line_column_t start = pm_newline_list_line_column(newline_list, location->start);
+    pm_line_column_t end = pm_newline_list_line_column(newline_list, location->end);
+
+    *code_location = (rb_code_location_t) {
+        .beg_pos = { .lineno = (int) start.line, .column = (int) start.column },
+        .end_pos = { .lineno = (int) end.line, .column = (int) end.column }
+    };
+}
+
 rb_iseq_t *
 pm_iseq_new_with_opt(pm_scope_node_t *scope_node, pm_parser_t *parser, VALUE name, VALUE path, VALUE realpath,
                      int first_lineno, const rb_iseq_t *parent, int isolated_depth,
@@ -950,31 +964,17 @@ pm_iseq_new_with_opt(pm_scope_node_t *scope_node, pm_parser_t *parser, VALUE nam
 {
     rb_iseq_t *iseq = iseq_alloc();
     VALUE script_lines = Qnil;
-    rb_code_location_t code_loc;
-
     if (!option) option = &COMPILE_OPTION_DEFAULT;
 
-    pm_line_column_t start_line_col = pm_newline_list_line_column(&parser->newline_list, scope_node->base.location.start);
-    pm_line_column_t end_line_col = pm_newline_list_line_column(&parser->newline_list, scope_node->base.location.end);
-
-    code_loc = (rb_code_location_t) {
-        .beg_pos = {
-            .lineno = (int) start_line_col.line,
-            .column = (int) start_line_col.column
-        },
-        .end_pos = {
-            .lineno = (int) end_line_col.line,
-            .column = (int) end_line_col.column
-        },
-    };
+    rb_code_location_t code_location;
+    pm_code_location(&code_location, &parser->newline_list, &scope_node->base.location);
 
     // TODO: node_id
     int node_id = -1;
-    prepare_iseq_build(iseq, name, path, realpath, first_lineno, &code_loc, node_id,
+    prepare_iseq_build(iseq, name, path, realpath, first_lineno, &code_location, node_id,
             parent, isolated_depth, type, script_lines, option);
 
     rb_iseq_compile_prism_node(iseq, scope_node, parser);
-
     finish_iseq_build(iseq);
 
     return iseq_translate(iseq);
@@ -1391,6 +1391,24 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
     return iseqw_new(rb_iseq_compile_with_option(src, file, path, line, opt));
 }
 
+static void
+iseqw_s_compile_prism_compile(pm_parser_t *parser, VALUE opt, rb_iseq_t *iseq, VALUE file, VALUE path, int first_lineno) {
+    pm_node_t *node = pm_parse(parser);
+    rb_code_location_t code_location;
+    pm_code_location(&code_location, &parser->newline_list, &node->location);
+
+    rb_compile_option_t option;
+    make_compile_option(&option, opt);
+    prepare_iseq_build(iseq, rb_fstring_lit("<compiled>"), file, path, first_lineno, &code_location, -1, NULL, 0, ISEQ_TYPE_TOP, Qnil, &option);
+
+    pm_scope_node_t scope_node;
+    pm_scope_node_init(node, &scope_node, NULL, parser);
+    rb_iseq_compile_prism_node(iseq, &scope_node, parser);
+
+    finish_iseq_build(iseq);
+    pm_node_destroy(parser, node);
+}
+
 static VALUE
 iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
 {
@@ -1413,44 +1431,50 @@ iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
     Check_Type(path, T_STRING);
     Check_Type(file, T_STRING);
 
-    rb_iseq_t *iseq = iseq_alloc();
-    int start_line = NUM2INT(line);
-
     pm_options_t options = { 0 };
     pm_options_filepath_set(&options, RSTRING_PTR(file));
+
+    int start_line = NUM2INT(line);
     pm_options_line_set(&options, start_line);
 
     pm_parser_t parser;
     pm_parser_init(&parser, (const uint8_t *) RSTRING_PTR(src), RSTRING_LEN(src), &options);
 
-    pm_node_t *node = pm_parse(&parser);
-    pm_line_column_t start_loc = pm_newline_list_line_column(&parser.newline_list, node->location.start);
-    pm_line_column_t end_loc = pm_newline_list_line_column(&parser.newline_list, node->location.end);
-
-    rb_code_location_t node_location;
-    node_location.beg_pos.lineno = (int) start_loc.line;
-    node_location.beg_pos.column = (int) start_loc.column;
-    node_location.end_pos.lineno = (int) end_loc.line;
-    node_location.end_pos.column = (int) end_loc.column;
-
-    int node_id = 0;
-    rb_iseq_t *parent = NULL;
-    enum rb_iseq_type iseq_type = ISEQ_TYPE_TOP;
-    rb_compile_option_t option;
-
-    make_compile_option(&option, opt);
-
-    VALUE name = rb_fstring_lit("<compiled>");
-    prepare_iseq_build(iseq, name, file, path, start_line, &node_location, node_id,
-                       parent, 0, (enum rb_iseq_type)iseq_type, Qnil, &option);
-
-    pm_scope_node_t scope_node;
-    pm_scope_node_init(node, &scope_node, NULL, &parser);
-    rb_iseq_compile_prism_node(iseq, &scope_node, &parser);
-
-    finish_iseq_build(iseq);
-    pm_node_destroy(&parser, node);
+    rb_iseq_t *iseq = iseq_alloc();
+    iseqw_s_compile_prism_compile(&parser, opt, iseq, file, path, start_line);
     pm_parser_free(&parser);
+    pm_options_free(&options);
+
+    return iseqw_new(iseq);
+}
+
+static VALUE
+iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
+{
+    VALUE file = Qnil, opt = Qnil;
+    int i;
+
+    i = rb_scan_args(argc, argv, "1*:", &file, NULL, &opt);
+    if (i > 1+NIL_P(opt)) rb_error_arity(argc, 1, 5);
+    switch (i) {
+      case 2: opt = argv[--i];
+    }
+    FilePathValue(file);
+    file = rb_fstring(file); /* rb_io_t->pathv gets frozen anyways */
+
+    pm_string_t input;
+    pm_string_mapped_init(&input, RSTRING_PTR(file));
+
+    pm_options_t options = { 0 };
+    pm_options_filepath_set(&options, RSTRING_PTR(file));
+
+    pm_parser_t parser;
+    pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), &options);
+
+    rb_iseq_t *iseq = iseq_alloc();
+    iseqw_s_compile_prism_compile(&parser, opt, iseq, file, rb_realpath_internal(Qnil, file, 1), 1);
+    pm_parser_free(&parser);
+    pm_string_free(&input);
     pm_options_free(&options);
 
     return iseqw_new(iseq);
@@ -4029,6 +4053,7 @@ Init_ISeq(void)
 
     rb_define_singleton_method(rb_cISeq, "compile", iseqw_s_compile, -1);
     rb_define_singleton_method(rb_cISeq, "compile_prism", iseqw_s_compile_prism, -1);
+    rb_define_singleton_method(rb_cISeq, "compile_file_prism", iseqw_s_compile_file_prism, -1);
     rb_define_singleton_method(rb_cISeq, "new", iseqw_s_compile, -1);
     rb_define_singleton_method(rb_cISeq, "compile_file", iseqw_s_compile_file, -1);
     rb_define_singleton_method(rb_cISeq, "compile_option", iseqw_s_compile_option_get, 0);
