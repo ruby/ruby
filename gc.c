@@ -3188,7 +3188,7 @@ rb_objspace_data_type_memsize(VALUE obj)
     size_t size = 0;
     if (RTYPEDDATA_P(obj)) {
         const rb_data_type_t *type = RTYPEDDATA_TYPE(obj);
-        const void *ptr = RTYPEDDATA_DATA(obj);
+        const void *ptr = RTYPEDDATA_GET_DATA(obj);
 
         if (RTYPEDDATA_TYPE(obj)->flags & RUBY_TYPED_EMBEDDABLE && !RTYPEDDATA_EMBEDDED_P(obj)) {
 #ifdef HAVE_MALLOC_USABLE_SIZE
@@ -3471,10 +3471,10 @@ obj_free_object_id(rb_objspace_t *objspace, VALUE obj)
 static bool
 rb_data_free(rb_objspace_t *objspace, VALUE obj)
 {
-    if (DATA_PTR(obj)) {
+    void *data = RTYPEDDATA_P(obj) ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
+    if (data) {
         int free_immediately = false;
         void (*dfree)(void *);
-        void *data = DATA_PTR(obj);
 
         if (RTYPEDDATA_P(obj)) {
             free_immediately = (RANY(obj)->as.typeddata.type->flags & RUBY_TYPED_FREE_IMMEDIATELY) != 0;
@@ -10699,7 +10699,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
       case T_DATA:
         /* Call the compaction callback, if it exists */
         {
-            void *const ptr = DATA_PTR(obj);
+            void *const ptr = RTYPEDDATA_P(obj) ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
             if (ptr) {
                 if (RTYPEDDATA_P(obj) && gc_declarative_marking_p(any->as.typeddata.type)) {
                     gc_ref_update_from_offset(objspace, obj);
