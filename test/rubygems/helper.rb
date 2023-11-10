@@ -370,7 +370,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
     ENV["GEM_PRIVATE_KEY_PASSPHRASE"] = PRIVATE_KEY_PASSPHRASE
 
-    Gem.instance_variable_set(:@default_specifications_dir, nil)
+    Gem.instance_variable_set(:@default_specifications_dir, File.join(@gemhome, "specifications", "default"))
     if Gem.java_platform?
       @orig_default_gem_home = RbConfig::CONFIG["default_gem_home"]
       RbConfig::CONFIG["default_gem_home"] = @gemhome
