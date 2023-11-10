@@ -1,7 +1,7 @@
 #include "prism/extension.h"
 
 // NOTE: this file should contain only bindings. All non-trivial logic should be
-// in librubyparser so it can be shared its the various callers.
+// in libprism so it can be shared its the various callers.
 
 VALUE rb_cPrism;
 VALUE rb_cPrismNode;

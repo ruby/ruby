@@ -13,8 +13,8 @@ module Prism
     def setup
       super
 
-      @librubyparser_a = File.expand_path("../../build/librubyparser.a", __dir__)
-      @librubyparser_so = File.expand_path("../../build/librubyparser.so", __dir__)
+      @libprism_a = File.expand_path("../../build/libprism.a", __dir__)
+      @libprism_so = File.expand_path("../../build/libprism.so", __dir__)
       @prism_so = File.expand_path("../../lib/prism/prism.so", __dir__)
     end
 
@@ -56,34 +56,34 @@ module Prism
     end
 
     #
-    #  static archive - librubyparser.a
+    #  static archive - libprism.a
     #
-    def test_librubyparser_a_contains_nothing_globally_visible
-      omit("librubyparser.a is not built") unless File.exist?(@librubyparser_a)
+    def test_libprism_a_contains_nothing_globally_visible
+      omit("libprism.a is not built") unless File.exist?(@libprism_a)
 
-      assert_empty(names(visible_global_objdump_symbols(@librubyparser_a)))
+      assert_empty(names(visible_global_objdump_symbols(@libprism_a)))
     end
 
-    def test_librubyparser_a_contains_hidden_pm_symbols
-      omit("librubyparser.a is not built") unless File.exist?(@librubyparser_a)
+    def test_libprism_a_contains_hidden_pm_symbols
+      omit("libprism.a is not built") unless File.exist?(@libprism_a)
 
-      names(hidden_global_objdump_symbols(@librubyparser_a)).tap do |symbols|
+      names(hidden_global_objdump_symbols(@libprism_a)).tap do |symbols|
         assert_includes(symbols, "pm_parse")
         assert_includes(symbols, "pm_version")
       end
     end
 
     #
-    #  shared object - librubyparser.so
+    #  shared object - libprism.so
     #
-    def test_librubyparser_so_exports_only_the_necessary_functions
-      omit("librubyparser.so is not built") unless File.exist?(@librubyparser_so)
+    def test_libprism_so_exports_only_the_necessary_functions
+      omit("libprism.so is not built") unless File.exist?(@libprism_so)
 
-      names(global_nm_symbols(@librubyparser_so)).tap do |symbols|
+      names(global_nm_symbols(@libprism_so)).tap do |symbols|
         assert_includes(symbols, "pm_parse")
         assert_includes(symbols, "pm_version")
       end
-      names(local_nm_symbols(@librubyparser_so)).tap do |symbols|
+      names(local_nm_symbols(@libprism_so)).tap do |symbols|
         assert_includes(symbols, "pm_encoding_shift_jis_isupper_char")
       end
       # TODO: someone who uses this library needs to finish this test

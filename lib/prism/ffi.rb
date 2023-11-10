@@ -14,7 +14,7 @@ module Prism
 
     # Define the library that we will be pulling functions from. Note that this
     # must align with the build shared library from make/rake.
-    ffi_lib File.expand_path("../../build/librubyparser.#{RbConfig::CONFIG["SOEXT"]}", __dir__)
+    ffi_lib File.expand_path("../../build/libprism.#{RbConfig::CONFIG["SOEXT"]}", __dir__)
 
     # Convert a native C type declaration into a symbol that FFI understands.
     # For example:
