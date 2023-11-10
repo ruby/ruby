@@ -769,6 +769,70 @@ module Prism
       # )
     end
 
+    def test_RescueNode
+      assert_prism_eval("begin; 1; rescue; 2; end")
+      assert_prism_eval(<<~CODE)
+        begin
+         1
+        rescue SyntaxError
+        2
+        end
+      CODE
+      assert_prism_eval(<<~CODE)
+        begin
+          1
+          raise 'boom'
+        rescue StandardError
+          2
+        end
+      CODE
+      assert_prism_eval(<<~CODE)
+        begin
+          a = 1
+        rescue StandardError => e
+        end
+      CODE
+      assert_prism_eval(<<~CODE)
+        begin
+          1
+        rescue StandardError => e
+          e
+        rescue SyntaxError => f
+          f
+        else
+          4
+        end
+      CODE
+      assert_prism_eval(<<-CODE)
+        begin
+          a = 2
+        rescue
+          a = 3
+        end
+        a
+      CODE
+      assert_prism_eval(<<-CODE)
+        a = 1
+        begin
+          a = 2
+        rescue
+          a = 3
+        end
+        a
+      CODE
+      assert_prism_eval(<<-CODE)
+        a = 1
+        begin
+          b = 2
+          raise "bang"
+        rescue
+          c = 3
+        end
+        a + b + c
+      CODE
+      assert_prism_eval("begin; rescue; end")
+    end
+
     def test_ReturnNode
       assert_prism_eval("def return_node; return 1; end")
     end

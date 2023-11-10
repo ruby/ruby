@@ -1407,6 +1407,12 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
             scope->locals = cast->locals;
             break;
         }
+        case PM_RESCUE_NODE: {
+            pm_rescue_node_t *cast = (pm_rescue_node_t *)node;
+            scope->body = (pm_node_t *)cast->statements;
+            scope->local_depth_offset += 1;
+            break;
+        }
         case PM_SINGLETON_CLASS_NODE: {
             pm_singleton_class_node_t *cast = (pm_singleton_class_node_t *) node;
             scope->body = cast->body;
@@ -1808,24 +1814,23 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         rb_iseq_t *child_iseq;
         LABEL *lstart = NEW_LABEL(lineno);
         LABEL *lend = NEW_LABEL(lineno);
-
-        ADD_LABEL(ret, lstart);
-        if (begin_node->statements) {
-            PM_COMPILE((pm_node_t *)begin_node->statements);
-        }
-        else {
-            PM_PUTNIL_UNLESS_POPPED;
-        }
-        ADD_LABEL(ret, lend);
+        LABEL *lcont = NEW_LABEL(lineno);
 
         if (begin_node->ensure_clause) {
+            ADD_LABEL(ret, lstart);
+            if (begin_node->statements) {
+                PM_COMPILE((pm_node_t *)begin_node->statements);
+            }
+            else {
+                PM_PUTNIL_UNLESS_POPPED;
+            }
+            ADD_LABEL(ret, lend);
             pm_statements_node_t *statements = begin_node->ensure_clause->statements;
             if (statements) {
                 PM_COMPILE((pm_node_t *)statements);
                 PM_POP_UNLESS_POPPED;
             }
 
-            LABEL *lcont = NEW_LABEL(lineno);
             struct ensure_range er;
             struct iseq_compile_data_ensure_node_stack enl;
             struct ensure_range *erange;
@@ -1851,6 +1856,53 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     erange = erange->next;
                 }
             }
+        }
+
+        if (begin_node->rescue_clause) {
+            pm_scope_node_t rescue_scope_node;
+            pm_scope_node_init((pm_node_t *)begin_node->rescue_clause, &rescue_scope_node, scope_node, parser);
+
+            rb_iseq_t *rescue_iseq = NEW_CHILD_ISEQ(rescue_scope_node,
+                                                    rb_str_concat(rb_str_new2("rescue in"),
+                                                                  ISEQ_BODY(iseq)->location.label),
+                                                    ISEQ_TYPE_RESCUE, 1);
+            lstart->rescued = LABEL_RESCUE_BEG;
+            lend->rescued = LABEL_RESCUE_END;
+            ADD_LABEL(ret, lstart);
+
+            bool prev_in_rescue = ISEQ_COMPILE_DATA(iseq)->in_rescue;
+            ISEQ_COMPILE_DATA(iseq)->in_rescue = true;
+            if (begin_node->statements) {
+                PM_COMPILE_NOT_POPPED((pm_node_t *)begin_node->statements);
+            }
+            else {
+                PM_PUTNIL;
+            }
+            ISEQ_COMPILE_DATA(iseq)->in_rescue = prev_in_rescue;
+
+            if (begin_node->else_clause) {
+                PM_POP_UNLESS_POPPED;
+                PM_COMPILE((pm_node_t *)begin_node->else_clause);
+            }
+
+            ADD_LABEL(ret, lend);
+            ADD_INSN(ret, &dummy_line_node, nop);
+            ADD_LABEL(ret, lcont);
+
+            PM_POP_IF_POPPED;
+            ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, rescue_iseq, lcont);
+            ADD_CATCH_ENTRY(CATCH_TYPE_RETRY, lend, lcont, NULL, lstart);
+        }
+
+        if (!begin_node->rescue_clause && !begin_node->ensure_clause) {
+            ADD_LABEL(ret, lstart);
+            if (begin_node->statements) {
+                PM_COMPILE((pm_node_t *)begin_node->statements);
+            }
+            else {
+                PM_PUTNIL_UNLESS_POPPED;
+            }
+            ADD_LABEL(ret, lend);
         }
         return;
       }
@@ -1880,7 +1932,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         ID method_id = pm_constant_id_lookup(scope_node, call_node->name);
         int flags = 0;
         struct rb_callinfo_kwarg *kw_arg = NULL;
-
         if (call_node->receiver == NULL) {
             PM_PUTSELF;
         } else {
@@ -3572,6 +3623,49 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         return;
       }
+      case PM_RESCUE_NODE: {
+        LABEL *excep_match = NEW_LABEL(lineno);
+        LABEL *rescue_end = NEW_LABEL(lineno);
+
+        pm_rescue_node_t *rescue_node = (pm_rescue_node_t *)node;
+        iseq_set_exception_local_table(iseq);
+
+        pm_node_list_t exception_list = rescue_node->exceptions;
+        if (exception_list.size > 0) {
+            for (size_t i = 0; i < exception_list.size; i++) {
+                ADD_GETLOCAL(ret, &dummy_line_node, LVAR_ERRINFO, 0);
+                PM_COMPILE(exception_list.nodes[i]);
+                ADD_INSN1(ret, &dummy_line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
+                ADD_INSN1(ret, &dummy_line_node, branchif, excep_match);
+            }
+        } else {
+            ADD_GETLOCAL(ret, &dummy_line_node, LVAR_ERRINFO, 0);
+            ADD_INSN1(ret, &dummy_line_node, putobject, rb_eStandardError);
+            ADD_INSN1(ret, &dummy_line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
+            ADD_INSN1(ret, &dummy_line_node, branchif, excep_match);
+        }
+        ADD_INSN1(ret, &dummy_line_node, jump, rescue_end);
+
+        ADD_LABEL(ret, excep_match);
+        ADD_TRACE(ret, RUBY_EVENT_RESCUE);
+        if (rescue_node->reference) {
+            ADD_GETLOCAL(ret, &dummy_line_node, LVAR_ERRINFO, 0);
+            PM_COMPILE((pm_node_t *)rescue_node->reference);
+        }
+        if (rescue_node->statements) {
+            PM_COMPILE((pm_node_t *)rescue_node->statements);
+        }
+        ADD_INSN(ret, &dummy_line_node, leave);
+        ADD_LABEL(ret, rescue_end);
+
+        if (rescue_node->consequent) {
+            PM_COMPILE((pm_node_t *)rescue_node->consequent);
+        } else {
+            ADD_GETLOCAL(ret, &dummy_line_node, 1, 0);
+        }
+
+        return;
+      }
       case PM_RETURN_NODE: {
         pm_arguments_node_t *arguments = ((pm_return_node_t *)node)->arguments;
 
@@ -3868,6 +3962,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             ADD_GETLOCAL(ret, &dummy_line_node, 1, 0);
             ADD_INSN1(ret, &dummy_line_node, throw, INT2FIX(0));
+            return;
+        }
+        case ISEQ_TYPE_RESCUE: {
+            iseq_set_exception_local_table(iseq);
+            PM_COMPILE((pm_node_t *)scope_node->ast_node);
+            ADD_INSN1(ret, &dummy_line_node, throw, INT2FIX(0));
+
             return;
         }
         default:
