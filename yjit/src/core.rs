@@ -634,8 +634,8 @@ impl BranchTarget {
 
     fn get_ctx(&self) -> Context {
         match self {
-            BranchTarget::Stub(stub) => stub.ctx.clone(),
-            BranchTarget::Block(blockref) => unsafe { blockref.as_ref() }.ctx.clone(),
+            BranchTarget::Stub(stub) => stub.ctx,
+            BranchTarget::Block(blockref) => unsafe { blockref.as_ref() }.ctx,
         }
     }
 
@@ -792,7 +792,7 @@ impl PendingBranch {
                 address: Some(stub_addr),
                 iseq: Cell::new(target.iseq),
                 iseq_idx: target.idx,
-                ctx: ctx.clone(),
+                ctx: *ctx,
             })))));
         }
 
@@ -1401,7 +1401,7 @@ fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
 pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
     // Guard chains implement limits separately, do nothing
     if ctx.get_chain_depth() > 0 {
-        return ctx.clone();
+        return *ctx;
     }
 
     // If this block version we're about to add will hit the version limit
@@ -1420,7 +1420,7 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
         return generic_ctx;
     }
 
-    return ctx.clone();
+    return *ctx;
 }
 
 /// Install a block version into its [IseqPayload], letting the GC track its
@@ -1618,7 +1618,7 @@ impl Context {
     /// accordingly. This is useful when you want to virtually rewind a stack_size for
     /// generating a side exit while considering past sp_offset changes on gen_save_sp.
     pub fn with_stack_size(&self, stack_size: u8) -> Context {
-        let mut ctx = self.clone();
+        let mut ctx = *self;
         ctx.sp_offset -= (ctx.get_stack_size() as isize - stack_size as isize) as i8;
         ctx.stack_size = stack_size;
         ctx
@@ -2670,7 +2670,7 @@ fn gen_branch_stub(
     let ocb = ocb.unwrap();
 
     let mut asm = Assembler::new();
-    asm.ctx = ctx.clone();
+    asm.ctx = *ctx;
     asm.set_reg_temps(ctx.reg_temps);
     asm_comment!(asm, "branch stub hit");
 
@@ -2868,7 +2868,7 @@ pub fn gen_direct_jump(jit: &mut JITState, ctx: &Context, target0: BlockId, asm:
         // compile the target block right after this one (fallthrough).
         BranchTarget::Stub(Box::new(BranchStub {
             address: None,
-            ctx: ctx.clone(),
+            ctx: *ctx,
             iseq: Cell::new(target0.iseq),
             iseq_idx: target0.idx,
         }))
@@ -2887,7 +2887,7 @@ pub fn defer_compilation(
         panic!("Double defer!");
     }
 
-    let mut next_ctx = asm.ctx.clone();
+    let mut next_ctx = asm.ctx;
 
     next_ctx.increment_chain_depth();
 
@@ -3127,7 +3127,7 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
             address: Some(stub_addr),
             iseq: block.iseq.clone(),
             iseq_idx: block.iseq_range.start,
-            ctx: block.ctx.clone(),
+            ctx: block.ctx,
         })))));
 
         // Check if the invalidated block immediately follows

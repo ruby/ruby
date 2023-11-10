@@ -1097,7 +1097,7 @@ impl Assembler
         let side_exit = match self.side_exits.get(&side_exit_context) {
             None => {
                 let exit_code = gen_outlined_exit(side_exit_context.pc, &side_exit_context.get_ctx(), ocb)?;
-                self.side_exits.insert(side_exit_context.clone(), exit_code);
+                self.side_exits.insert(*side_exit_context, exit_code);
                 exit_code
             }
             Some(code_ptr) => *code_ptr,
