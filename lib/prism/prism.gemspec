@@ -118,4 +118,6 @@ Gem::Specification.new do |spec|
 
   spec.extensions = ["ext/prism/extconf.rb"]
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
+  spec.metadata["source_code_uri"] = "https://github.com/ruby/prism"
+  spec.metadata["changelog_uri"] = "https://github.com/ruby/prism/blob/main/CHANGELOG.md"
 end
