@@ -11,13 +11,13 @@ pub static LARGE_CALL_THRESHOLD: u64 = 120;
 // Number of live ISEQs after which we consider an app to be large
 pub static LARGE_ISEQ_COUNT: u64 = 40_000;
 
-// This option is exposed to the C side a a global variable for performance, see vm.c
+// This option is exposed to the C side in a global variable for performance, see vm.c
 // Number of method calls after which to start generating code
 // Threshold==1 means compile on first execution
 #[no_mangle]
 pub static mut rb_yjit_call_threshold: u64 = SMALL_CALL_THRESHOLD;
 
-// This option is exposed to the C side a a global variable for performance, see vm.c
+// This option is exposed to the C side in a global variable for performance, see vm.c
 // Number of execution requests after which a method is no longer
 // considered hot. Raising this results in more generated code.
 #[no_mangle]
