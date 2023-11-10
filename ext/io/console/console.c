@@ -1672,6 +1672,7 @@ InitVM_console(void)
     {
 	/* :stopdoc: */
         cConmode = rb_define_class_under(rb_cIO, "ConsoleMode", rb_cObject);
+        rb_define_const(cConmode, "VERSION", rb_str_new_cstr(STRINGIZE(IO_CONSOLE_VERSION)));
         rb_define_alloc_func(cConmode, conmode_alloc);
         rb_undef_method(cConmode, "initialize");
         rb_define_method(cConmode, "initialize_copy", conmode_init_copy, 1);
