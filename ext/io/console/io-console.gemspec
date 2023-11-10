@@ -35,6 +35,7 @@ Gem::Specification.new do |s|
       lib/ffi/io/console/native_console.rb
       lib/ffi/io/console/stty_console.rb
       lib/ffi/io/console/stub_console.rb
+      lib/ffi/io/console/version.rb
     ])
   end
 
