@@ -425,143 +425,146 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\nb"
         │   └── closing_loc: (117,6)-(117,7) = "\""
-        ├── @ StringConcatNode (location: (119,0)-(120,5))
-        │   ├── left:
-        │   │   @ StringNode (location: (119,0)-(119,3))
-        │   │   ├── flags: ∅
-        │   │   ├── opening_loc: (119,0)-(119,1) = "'"
-        │   │   ├── content_loc: (119,1)-(119,2) = "a"
-        │   │   ├── closing_loc: (119,2)-(119,3) = "'"
-        │   │   └── unescaped: "a"
-        │   └── right:
-        │       @ InterpolatedStringNode (location: (120,0)-(120,5))
-        │       ├── opening_loc: (120,0)-(120,1) = "\""
-        │       ├── parts: (length: 1)
-        │       │   └── @ EmbeddedStatementsNode (location: (120,1)-(120,4))
-        │       │       ├── opening_loc: (120,1)-(120,3) = "\#{"
-        │       │       ├── statements: ∅
-        │       │       └── closing_loc: (120,3)-(120,4) = "}"
-        │       └── closing_loc: (120,4)-(120,5) = "\""
-        ├── @ StringConcatNode (location: (122,0)-(122,8))
-        │   ├── left:
-        │   │   @ StringConcatNode (location: (122,0)-(122,5))
-        │   │   ├── left:
-        │   │   │   @ StringNode (location: (122,0)-(122,2))
+        ├── @ InterpolatedStringNode (location: (119,0)-(120,5))
+        │   ├── opening_loc: ∅
+        │   ├── parts: (length: 2)
+        │   │   ├── @ StringNode (location: (119,0)-(119,3))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: (119,0)-(119,1) = "'"
+        │   │   │   ├── content_loc: (119,1)-(119,2) = "a"
+        │   │   │   ├── closing_loc: (119,2)-(119,3) = "'"
+        │   │   │   └── unescaped: "a"
+        │   │   └── @ InterpolatedStringNode (location: (120,0)-(120,5))
+        │   │       ├── opening_loc: (120,0)-(120,1) = "\""
+        │   │       ├── parts: (length: 1)
+        │   │       │   └── @ EmbeddedStatementsNode (location: (120,1)-(120,4))
+        │   │       │       ├── opening_loc: (120,1)-(120,3) = "\#{"
+        │   │       │       ├── statements: ∅
+        │   │       │       └── closing_loc: (120,3)-(120,4) = "}"
+        │   │       └── closing_loc: (120,4)-(120,5) = "\""
+        │   └── closing_loc: ∅
+        ├── @ InterpolatedStringNode (location: (122,0)-(122,8))
+        │   ├── opening_loc: ∅
+        │   ├── parts: (length: 3)
+        │   │   ├── @ StringNode (location: (122,0)-(122,2))
         │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (122,0)-(122,1) = "\""
         │   │   │   ├── content_loc: (122,1)-(122,1) = ""
         │   │   │   ├── closing_loc: (122,1)-(122,2) = "\""
         │   │   │   └── unescaped: ""
-        │   │   └── right:
-        │   │       @ StringNode (location: (122,3)-(122,5))
+        │   │   ├── @ StringNode (location: (122,3)-(122,5))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: (122,3)-(122,4) = "\""
+        │   │   │   ├── content_loc: (122,4)-(122,4) = ""
+        │   │   │   ├── closing_loc: (122,4)-(122,5) = "\""
+        │   │   │   └── unescaped: ""
+        │   │   └── @ StringNode (location: (122,6)-(122,8))
         │   │       ├── flags: ∅
-        │   │       ├── opening_loc: (122,3)-(122,4) = "\""
-        │   │       ├── content_loc: (122,4)-(122,4) = ""
-        │   │       ├── closing_loc: (122,4)-(122,5) = "\""
+        │   │       ├── opening_loc: (122,6)-(122,7) = "\""
+        │   │       ├── content_loc: (122,7)-(122,7) = ""
+        │   │       ├── closing_loc: (122,7)-(122,8) = "\""
         │   │       └── unescaped: ""
-        │   └── right:
-        │       @ StringNode (location: (122,6)-(122,8))
-        │       ├── flags: ∅
-        │       ├── opening_loc: (122,6)-(122,7) = "\""
-        │       ├── content_loc: (122,7)-(122,7) = ""
-        │       ├── closing_loc: (122,7)-(122,8) = "\""
-        │       └── unescaped: ""
-        ├── @ StringConcatNode (location: (124,0)-(124,12))
-        │   ├── left:
-        │   │   @ InterpolatedStringNode (location: (124,0)-(124,8))
-        │   │   ├── opening_loc: (124,0)-(124,1) = "\""
-        │   │   ├── parts: (length: 2)
-        │   │   │   ├── @ StringNode (location: (124,1)-(124,2))
-        │   │   │   │   ├── flags: ∅
-        │   │   │   │   ├── opening_loc: ∅
-        │   │   │   │   ├── content_loc: (124,1)-(124,2) = "a"
-        │   │   │   │   ├── closing_loc: ∅
-        │   │   │   │   └── unescaped: "a"
-        │   │   │   └── @ EmbeddedStatementsNode (location: (124,2)-(124,7))
-        │   │   │       ├── opening_loc: (124,2)-(124,4) = "\#{"
-        │   │   │       ├── statements:
-        │   │   │       │   @ StatementsNode (location: (124,4)-(124,6))
-        │   │   │       │   └── body: (length: 1)
-        │   │   │       │       └── @ InstanceVariableReadNode (location: (124,4)-(124,6))
-        │   │   │       │           └── name: :@a
-        │   │   │       └── closing_loc: (124,6)-(124,7) = "}"
-        │   │   └── closing_loc: (124,7)-(124,8) = "\""
-        │   └── right:
-        │       @ StringNode (location: (124,9)-(124,12))
-        │       ├── flags: ∅
-        │       ├── opening_loc: (124,9)-(124,10) = "\""
-        │       ├── content_loc: (124,10)-(124,11) = "b"
-        │       ├── closing_loc: (124,11)-(124,12) = "\""
-        │       └── unescaped: "b"
-        ├── @ StringConcatNode (location: (125,0)-(125,10))
-        │   ├── left:
-        │   │   @ InterpolatedStringNode (location: (125,0)-(125,6))
-        │   │   ├── opening_loc: (125,0)-(125,1) = "\""
-        │   │   ├── parts: (length: 2)
-        │   │   │   ├── @ StringNode (location: (125,1)-(125,2))
-        │   │   │   │   ├── flags: ∅
-        │   │   │   │   ├── opening_loc: ∅
-        │   │   │   │   ├── content_loc: (125,1)-(125,2) = "a"
-        │   │   │   │   ├── closing_loc: ∅
-        │   │   │   │   └── unescaped: "a"
-        │   │   │   └── @ EmbeddedVariableNode (location: (125,2)-(125,5))
-        │   │   │       ├── operator_loc: (125,2)-(125,3) = "#"
-        │   │   │       └── variable:
-        │   │   │           @ InstanceVariableReadNode (location: (125,3)-(125,5))
-        │   │   │           └── name: :@a
-        │   │   └── closing_loc: (125,5)-(125,6) = "\""
-        │   └── right:
-        │       @ StringNode (location: (125,7)-(125,10))
-        │       ├── flags: ∅
-        │       ├── opening_loc: (125,7)-(125,8) = "\""
-        │       ├── content_loc: (125,8)-(125,9) = "b"
-        │       ├── closing_loc: (125,9)-(125,10) = "\""
-        │       └── unescaped: "b"
-        ├── @ StringConcatNode (location: (126,0)-(126,10))
-        │   ├── left:
-        │   │   @ InterpolatedStringNode (location: (126,0)-(126,6))
-        │   │   ├── opening_loc: (126,0)-(126,1) = "\""
-        │   │   ├── parts: (length: 2)
-        │   │   │   ├── @ StringNode (location: (126,1)-(126,2))
-        │   │   │   │   ├── flags: ∅
-        │   │   │   │   ├── opening_loc: ∅
-        │   │   │   │   ├── content_loc: (126,1)-(126,2) = "a"
-        │   │   │   │   ├── closing_loc: ∅
-        │   │   │   │   └── unescaped: "a"
-        │   │   │   └── @ EmbeddedVariableNode (location: (126,2)-(126,5))
-        │   │   │       ├── operator_loc: (126,2)-(126,3) = "#"
-        │   │   │       └── variable:
-        │   │   │           @ GlobalVariableReadNode (location: (126,3)-(126,5))
-        │   │   │           └── name: :$a
-        │   │   └── closing_loc: (126,5)-(126,6) = "\""
-        │   └── right:
-        │       @ StringNode (location: (126,7)-(126,10))
-        │       ├── flags: ∅
-        │       ├── opening_loc: (126,7)-(126,8) = "\""
-        │       ├── content_loc: (126,8)-(126,9) = "b"
-        │       ├── closing_loc: (126,9)-(126,10) = "\""
-        │       └── unescaped: "b"
-        └── @ StringConcatNode (location: (127,0)-(127,11))
-            ├── left:
-            │   @ InterpolatedStringNode (location: (127,0)-(127,7))
-            │   ├── opening_loc: (127,0)-(127,1) = "\""
-            │   ├── parts: (length: 2)
-            │   │   ├── @ StringNode (location: (127,1)-(127,2))
-            │   │   │   ├── flags: ∅
-            │   │   │   ├── opening_loc: ∅
-            │   │   │   ├── content_loc: (127,1)-(127,2) = "a"
-            │   │   │   ├── closing_loc: ∅
-            │   │   │   └── unescaped: "a"
-            │   │   └── @ EmbeddedVariableNode (location: (127,2)-(127,6))
-            │   │       ├── operator_loc: (127,2)-(127,3) = "#"
-            │   │       └── variable:
-            │   │           @ ClassVariableReadNode (location: (127,3)-(127,6))
-            │   │           └── name: :@@a
-            │   └── closing_loc: (127,6)-(127,7) = "\""
-            └── right:
-                @ StringNode (location: (127,8)-(127,11))
-                ├── flags: ∅
-                ├── opening_loc: (127,8)-(127,9) = "\""
-                ├── content_loc: (127,9)-(127,10) = "b"
-                ├── closing_loc: (127,10)-(127,11) = "\""
-                └── unescaped: "b"
+        │   └── closing_loc: ∅
+        ├── @ InterpolatedStringNode (location: (124,0)-(124,12))
+        │   ├── opening_loc: ∅
+        │   ├── parts: (length: 2)
+        │   │   ├── @ InterpolatedStringNode (location: (124,0)-(124,8))
+        │   │   │   ├── opening_loc: (124,0)-(124,1) = "\""
+        │   │   │   ├── parts: (length: 2)
+        │   │   │   │   ├── @ StringNode (location: (124,1)-(124,2))
+        │   │   │   │   │   ├── flags: ∅
+        │   │   │   │   │   ├── opening_loc: ∅
+        │   │   │   │   │   ├── content_loc: (124,1)-(124,2) = "a"
+        │   │   │   │   │   ├── closing_loc: ∅
+        │   │   │   │   │   └── unescaped: "a"
+        │   │   │   │   └── @ EmbeddedStatementsNode (location: (124,2)-(124,7))
+        │   │   │   │       ├── opening_loc: (124,2)-(124,4) = "\#{"
+        │   │   │   │       ├── statements:
+        │   │   │   │       │   @ StatementsNode (location: (124,4)-(124,6))
+        │   │   │   │       │   └── body: (length: 1)
+        │   │   │   │       │       └── @ InstanceVariableReadNode (location: (124,4)-(124,6))
+        │   │   │   │       │           └── name: :@a
+        │   │   │   │       └── closing_loc: (124,6)-(124,7) = "}"
+        │   │   │   └── closing_loc: (124,7)-(124,8) = "\""
+        │   │   └── @ StringNode (location: (124,9)-(124,12))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: (124,9)-(124,10) = "\""
+        │   │       ├── content_loc: (124,10)-(124,11) = "b"
+        │   │       ├── closing_loc: (124,11)-(124,12) = "\""
+        │   │       └── unescaped: "b"
+        │   └── closing_loc: ∅
+        ├── @ InterpolatedStringNode (location: (125,0)-(125,10))
+        │   ├── opening_loc: ∅
+        │   ├── parts: (length: 2)
+        │   │   ├── @ InterpolatedStringNode (location: (125,0)-(125,6))
+        │   │   │   ├── opening_loc: (125,0)-(125,1) = "\""
+        │   │   │   ├── parts: (length: 2)
+        │   │   │   │   ├── @ StringNode (location: (125,1)-(125,2))
+        │   │   │   │   │   ├── flags: ∅
+        │   │   │   │   │   ├── opening_loc: ∅
+        │   │   │   │   │   ├── content_loc: (125,1)-(125,2) = "a"
+        │   │   │   │   │   ├── closing_loc: ∅
+        │   │   │   │   │   └── unescaped: "a"
+        │   │   │   │   └── @ EmbeddedVariableNode (location: (125,2)-(125,5))
+        │   │   │   │       ├── operator_loc: (125,2)-(125,3) = "#"
+        │   │   │   │       └── variable:
+        │   │   │   │           @ InstanceVariableReadNode (location: (125,3)-(125,5))
+        │   │   │   │           └── name: :@a
+        │   │   │   └── closing_loc: (125,5)-(125,6) = "\""
+        │   │   └── @ StringNode (location: (125,7)-(125,10))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: (125,7)-(125,8) = "\""
+        │   │       ├── content_loc: (125,8)-(125,9) = "b"
+        │   │       ├── closing_loc: (125,9)-(125,10) = "\""
+        │   │       └── unescaped: "b"
+        │   └── closing_loc: ∅
+        ├── @ InterpolatedStringNode (location: (126,0)-(126,10))
+        │   ├── opening_loc: ∅
+        │   ├── parts: (length: 2)
+        │   │   ├── @ InterpolatedStringNode (location: (126,0)-(126,6))
+        │   │   │   ├── opening_loc: (126,0)-(126,1) = "\""
+        │   │   │   ├── parts: (length: 2)
+        │   │   │   │   ├── @ StringNode (location: (126,1)-(126,2))
+        │   │   │   │   │   ├── flags: ∅
+        │   │   │   │   │   ├── opening_loc: ∅
+        │   │   │   │   │   ├── content_loc: (126,1)-(126,2) = "a"
+        │   │   │   │   │   ├── closing_loc: ∅
+        │   │   │   │   │   └── unescaped: "a"
+        │   │   │   │   └── @ EmbeddedVariableNode (location: (126,2)-(126,5))
+        │   │   │   │       ├── operator_loc: (126,2)-(126,3) = "#"
+        │   │   │   │       └── variable:
+        │   │   │   │           @ GlobalVariableReadNode (location: (126,3)-(126,5))
+        │   │   │   │           └── name: :$a
+        │   │   │   └── closing_loc: (126,5)-(126,6) = "\""
+        │   │   └── @ StringNode (location: (126,7)-(126,10))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: (126,7)-(126,8) = "\""
+        │   │       ├── content_loc: (126,8)-(126,9) = "b"
+        │   │       ├── closing_loc: (126,9)-(126,10) = "\""
+        │   │       └── unescaped: "b"
+        │   └── closing_loc: ∅
+        └── @ InterpolatedStringNode (location: (127,0)-(127,11))
+            ├── opening_loc: ∅
+            ├── parts: (length: 2)
+            │   ├── @ InterpolatedStringNode (location: (127,0)-(127,7))
+            │   │   ├── opening_loc: (127,0)-(127,1) = "\""
+            │   │   ├── parts: (length: 2)
+            │   │   │   ├── @ StringNode (location: (127,1)-(127,2))
+            │   │   │   │   ├── flags: ∅
+            │   │   │   │   ├── opening_loc: ∅
+            │   │   │   │   ├── content_loc: (127,1)-(127,2) = "a"
+            │   │   │   │   ├── closing_loc: ∅
+            │   │   │   │   └── unescaped: "a"
+            │   │   │   └── @ EmbeddedVariableNode (location: (127,2)-(127,6))
+            │   │   │       ├── operator_loc: (127,2)-(127,3) = "#"
+            │   │   │       └── variable:
+            │   │   │           @ ClassVariableReadNode (location: (127,3)-(127,6))
+            │   │   │           └── name: :@@a
+            │   │   └── closing_loc: (127,6)-(127,7) = "\""
+            │   └── @ StringNode (location: (127,8)-(127,11))
+            │       ├── flags: ∅
+            │       ├── opening_loc: (127,8)-(127,9) = "\""
+            │       ├── content_loc: (127,9)-(127,10) = "b"
+            │       ├── closing_loc: (127,10)-(127,11) = "\""
+            │       └── unescaped: "b"
+            └── closing_loc: ∅

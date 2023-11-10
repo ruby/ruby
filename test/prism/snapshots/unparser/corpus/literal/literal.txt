@@ -338,21 +338,22 @@
         │       └── numeric:
         │           @ IntegerNode (location: (27,0)-(27,1))
         │           └── flags: decimal
-        ├── @ StringConcatNode (location: (28,0)-(28,11))
-        │   ├── left:
-        │   │   @ StringNode (location: (28,0)-(28,5))
-        │   │   ├── flags: ∅
-        │   │   ├── opening_loc: (28,0)-(28,1) = "\""
-        │   │   ├── content_loc: (28,1)-(28,4) = "foo"
-        │   │   ├── closing_loc: (28,4)-(28,5) = "\""
-        │   │   └── unescaped: "foo"
-        │   └── right:
-        │       @ StringNode (location: (28,6)-(28,11))
-        │       ├── flags: ∅
-        │       ├── opening_loc: (28,6)-(28,7) = "\""
-        │       ├── content_loc: (28,7)-(28,10) = "bar"
-        │       ├── closing_loc: (28,10)-(28,11) = "\""
-        │       └── unescaped: "bar"
+        ├── @ InterpolatedStringNode (location: (28,0)-(28,11))
+        │   ├── opening_loc: ∅
+        │   ├── parts: (length: 2)
+        │   │   ├── @ StringNode (location: (28,0)-(28,5))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: (28,0)-(28,1) = "\""
+        │   │   │   ├── content_loc: (28,1)-(28,4) = "foo"
+        │   │   │   ├── closing_loc: (28,4)-(28,5) = "\""
+        │   │   │   └── unescaped: "foo"
+        │   │   └── @ StringNode (location: (28,6)-(28,11))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: (28,6)-(28,7) = "\""
+        │   │       ├── content_loc: (28,7)-(28,10) = "bar"
+        │   │       ├── closing_loc: (28,10)-(28,11) = "\""
+        │   │       └── unescaped: "bar"
+        │   └── closing_loc: ∅
         ├── @ InterpolatedStringNode (location: (29,0)-(29,15))
         │   ├── opening_loc: (29,0)-(29,1) = "\""
         │   ├── parts: (length: 2)
