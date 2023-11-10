@@ -133,6 +133,10 @@ module Prism
               *params.keywords.grep(OptionalKeywordParameterNode).map(&:name),
             ]
 
+            if params.keyword_rest.is_a?(ForwardingParameterNode)
+              sorted.push(:*, :&, :"...")
+            end
+
             sorted << AnonymousLocal if params.keywords.any?
 
             # Recurse down the parameter tree to find any destructured

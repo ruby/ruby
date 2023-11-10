@@ -5570,15 +5570,6 @@ pm_parser_local_add(pm_parser_t *parser, pm_constant_id_t constant_id) {
 }
 
 /**
- * Add a local variable from a constant string to the current scope.
- */
-static inline void
-pm_parser_local_add_constant(pm_parser_t *parser, const char *start, size_t length) {
-    pm_constant_id_t constant_id = pm_parser_constant_id_constant(parser, start, length);
-    if (constant_id != 0) pm_parser_local_add(parser, constant_id);
-}
-
-/**
  * Add a local variable from a location to the current scope.
  */
 static pm_constant_id_t
@@ -11090,8 +11081,6 @@ parse_parameters(
                     parser_lex(parser);
 
                     if (allows_forwarding_parameters) {
-                        pm_parser_local_add_constant(parser, "*", 1);
-                        pm_parser_local_add_constant(parser, "&", 1);
                         pm_parser_local_add_token(parser, &parser->previous);
                     }
 

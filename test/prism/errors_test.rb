@@ -723,7 +723,7 @@ module Prism
           nil
         ),
         nil,
-        [:*, :&, :"...", :a],
+        [:"...", :a],
         Location(),
         nil,
         Location(),
@@ -800,7 +800,7 @@ module Prism
         nil,
         ParametersNode([], [], nil, [], [], ForwardingParameterNode(), nil),
         nil,
-        [:*, :&, :"..."],
+        [:"..."],
         Location(),
         nil,
         Location(),

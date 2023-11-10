@@ -38,7 +38,7 @@
         │   │           │           ├── block: ∅
         │   │           │           ├── flags: ∅
         │   │           │           └── name: :bar
-        │   │           ├── locals: [:*, :&, :"..."]
+        │   │           ├── locals: [:"..."]
         │   │           ├── def_keyword_loc: (1,1)-(1,4) = "def"
         │   │           ├── operator_loc: ∅
         │   │           ├── lparen_loc: ∅
@@ -82,7 +82,7 @@
         │   │           │           ├── block: ∅
         │   │           │           ├── flags: ∅
         │   │           │           └── name: :bar
-        │   │           ├── locals: [:*, :&, :"..."]
+        │   │           ├── locals: [:"..."]
         │   │           ├── def_keyword_loc: (5,1)-(5,4) = "def"
         │   │           ├── operator_loc: ∅
         │   │           ├── lparen_loc: ∅
@@ -106,7 +106,7 @@
         │   │   │   @ ForwardingParameterNode (location: (7,8)-(7,11))
         │   │   └── block: ∅
         │   ├── body: ∅
-        │   ├── locals: [:*, :&, :"..."]
+        │   ├── locals: [:"..."]
         │   ├── def_keyword_loc: (7,0)-(7,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -144,7 +144,7 @@
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
         │   │           └── name: :bar
-        │   ├── locals: [:*, :&, :"..."]
+        │   ├── locals: [:"..."]
         │   ├── def_keyword_loc: (10,0)-(10,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -184,7 +184,7 @@
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
         │   │           └── name: :bar
-        │   ├── locals: [:a, :*, :&, :"..."]
+        │   ├── locals: [:a, :"..."]
         │   ├── def_keyword_loc: (12,0)-(12,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -224,7 +224,7 @@
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
         │   │           └── name: :bar
-        │   ├── locals: [:a, :*, :&, :"..."]
+        │   ├── locals: [:a, :"..."]
         │   ├── def_keyword_loc: (16,0)-(16,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -255,7 +255,7 @@
         │   │   │   @ ForwardingParameterNode (location: (18,18)-(18,21))
         │   │   └── block: ∅
         │   ├── body: ∅
-        │   ├── locals: [:a, :b, :*, :&, :"..."]
+        │   ├── locals: [:a, :b, :"..."]
         │   ├── def_keyword_loc: (18,0)-(18,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -300,7 +300,7 @@
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
         │   │           └── name: :bar
-        │   ├── locals: [:b, :*, :&, :"..."]
+        │   ├── locals: [:b, :"..."]
         │   ├── def_keyword_loc: (21,0)-(21,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -345,7 +345,7 @@
         │   │           ├── block: ∅
         │   │           ├── flags: ∅
         │   │           └── name: :bar
-        │   ├── locals: [:b, :*, :&, :"..."]
+        │   ├── locals: [:b, :"..."]
         │   ├── def_keyword_loc: (25,0)-(25,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -385,7 +385,7 @@
             │           ├── block: ∅
             │           ├── flags: ∅
             │           └── name: :bar
-            ├── locals: [:a, :*, :&, :"..."]
+            ├── locals: [:a, :"..."]
             ├── def_keyword_loc: (27,0)-(27,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (27,7)-(27,8) = "("
