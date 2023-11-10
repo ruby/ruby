@@ -102,20 +102,20 @@ env:
 
 matrix:
   include:
+    - <<: *arm64-linux
+    - <<: *ppc64le-linux
+    - <<: *s390x-linux
     # FIXME: lib/rubygems/util.rb:104 glob_files_in_dir -
     # <internal:dir>:411:in glob: File name too long - (Errno::ENAMETOOLONG)
     # https://github.com/rubygems/rubygems/issues/7132
     - <<: *arm32-linux
-    - <<: *arm64-linux
-    - <<: *ppc64le-linux
-    - <<: *s390x-linux
   allow_failures:
     # Allow failures for the unstable jobs.
-    # - name: arm32-linux
-    # The 2nd arm64 pipeline may be unstable.
-    - name: arm64-linux
+    # - name: arm64-linux
     # - name: ppc64le-linux
     # - name: s390x-linux
+    # The 2nd arm64 pipeline may be unstable.
+    # - name: arm32-linux
   fast_finish: true
 
 before_script:
