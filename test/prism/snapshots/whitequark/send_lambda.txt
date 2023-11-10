@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(5,5))
     └── body: (length: 3)
         ├── @ LambdaNode (location: (1,0)-(1,8))
-        │   ├── locals: [:*]
+        │   ├── locals: []
         │   ├── operator_loc: (1,0)-(1,2) = "->"
         │   ├── opening_loc: (1,5)-(1,6) = "{"
         │   ├── closing_loc: (1,7)-(1,8) = "}"

@@ -11029,7 +11029,7 @@ parse_parameters(
     pm_binding_power_t binding_power,
     bool uses_parentheses,
     bool allows_trailing_comma,
-    bool allows_forwarding_parameter
+    bool allows_forwarding_parameters
 ) {
     pm_parameters_node_t *params = pm_parameters_node_create(parser);
     bool looping = true;
@@ -11064,7 +11064,10 @@ parse_parameters(
                     pm_parser_local_add_token(parser, &name);
                 } else {
                     name = not_provided(parser);
-                    pm_parser_local_add_token(parser, &operator);
+
+                    if (allows_forwarding_parameters) {
+                        pm_parser_local_add_token(parser, &operator);
+                    }
                 }
 
                 pm_block_parameter_node_t *param = pm_block_parameter_node_create(parser, &name, &operator);
@@ -11078,7 +11081,7 @@ parse_parameters(
                 break;
             }
             case PM_TOKEN_UDOT_DOT_DOT: {
-                if (!allows_forwarding_parameter) {
+                if (!allows_forwarding_parameters) {
                     pm_parser_err_current(parser, PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES);
                 }
 
@@ -11086,7 +11089,7 @@ parse_parameters(
                     update_parameter_state(parser, &parser->current, &order);
                     parser_lex(parser);
 
-                    if (allows_forwarding_parameter) {
+                    if (allows_forwarding_parameters) {
                         pm_parser_local_add_constant(parser, "*", 1);
                         pm_parser_local_add_constant(parser, "&", 1);
                         pm_parser_local_add_token(parser, &parser->previous);
@@ -11244,7 +11247,10 @@ parse_parameters(
                     pm_parser_local_add_token(parser, &name);
                 } else {
                     name = not_provided(parser);
-                    pm_parser_local_add_token(parser, &operator);
+
+                    if (allows_forwarding_parameters) {
+                        pm_parser_local_add_token(parser, &operator);
+                    }
                 }
 
                 pm_rest_parameter_node_t *param = pm_rest_parameter_node_create(parser, &operator, &name);
@@ -11276,7 +11282,10 @@ parse_parameters(
                         pm_parser_local_add_token(parser, &name);
                     } else {
                         name = not_provided(parser);
-                        pm_parser_local_add_token(parser, &operator);
+
+                        if (allows_forwarding_parameters) {
+                            pm_parser_local_add_token(parser, &operator);
+                        }
                     }
 
                     param = (pm_node_t *) pm_keyword_rest_parameter_node_create(parser, &operator, &name);

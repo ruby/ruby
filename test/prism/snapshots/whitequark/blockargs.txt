@@ -119,7 +119,7 @@
         │   ├── closing_loc: ∅
         │   ├── block:
         │   │   @ BlockNode (location: (9,1)-(9,12))
-        │   │   ├── locals: [:*, :b]
+        │   │   ├── locals: [:b]
         │   │   ├── parameters:
         │   │   │   @ BlockParametersNode (location: (9,3)-(9,10))
         │   │   │   ├── parameters:
@@ -265,7 +265,7 @@
         │   ├── closing_loc: ∅
         │   ├── block:
         │   │   @ BlockNode (location: (17,1)-(17,8))
-        │   │   ├── locals: [:*]
+        │   │   ├── locals: []
         │   │   ├── parameters:
         │   │   │   @ BlockParametersNode (location: (17,3)-(17,6))
         │   │   │   ├── parameters:
@@ -379,7 +379,7 @@
         │   ├── closing_loc: ∅
         │   ├── block:
         │   │   @ BlockNode (location: (27,1)-(27,15))
-        │   │   ├── locals: [:a, :*, :b]
+        │   │   ├── locals: [:a, :b]
         │   │   ├── parameters:
         │   │   │   @ BlockParametersNode (location: (27,3)-(27,13))
         │   │   │   ├── parameters:
@@ -533,7 +533,7 @@
         │   ├── closing_loc: ∅
         │   ├── block:
         │   │   @ BlockNode (location: (35,1)-(35,11))
-        │   │   ├── locals: [:a, :*]
+        │   │   ├── locals: [:a]
         │   │   ├── parameters:
         │   │   │   @ BlockParametersNode (location: (35,3)-(35,9))
         │   │   │   ├── parameters:

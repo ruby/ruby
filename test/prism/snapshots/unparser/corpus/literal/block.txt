@@ -226,7 +226,7 @@
         │   ├── closing_loc: ∅
         │   ├── block:
         │   │   @ BlockNode (location: (17,4)-(19,1))
-        │   │   ├── locals: [:a, :*]
+        │   │   ├── locals: [:a]
         │   │   ├── parameters:
         │   │   │   @ BlockParametersNode (location: (17,6)-(17,12))
         │   │   │   ├── parameters:
@@ -488,7 +488,7 @@
         │   ├── closing_loc: ∅
         │   ├── block:
         │   │   @ BlockNode (location: (32,8)-(34,1))
-        │   │   ├── locals: [:*]
+        │   │   ├── locals: []
         │   │   ├── parameters:
         │   │   │   @ BlockParametersNode (location: (32,10)-(32,13))
         │   │   │   ├── parameters:
