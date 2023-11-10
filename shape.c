@@ -597,7 +597,8 @@ remove_shape_recursive(VALUE obj, ID id, rb_shape_t * shape, VALUE * removed)
                     return new_child;
                 }
 
-                new_child->capacity = shape->capacity;
+                RUBY_ASSERT(new_child->capacity <= shape->capacity);
+
                 if (new_child->type == SHAPE_IVAR) {
                     move_iv(obj, id, shape->next_iv_index - 1, new_child->next_iv_index - 1);
                 }
