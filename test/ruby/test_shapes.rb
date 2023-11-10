@@ -695,6 +695,39 @@ class TestShapes < Test::Unit::TestCase
     end;
   end
 
+  def test_remove_instance_variable_capacity_transition
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      t_object_shape = RubyVM::Shape.find_by_id(GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT])
+      assert_equal(RubyVM::Shape::SHAPE_T_OBJECT, t_object_shape.type)
+
+      initial_capacity = t_object_shape.capacity
+
+      # a does not transition in capacity
+      a = Class.new.new
+      initial_capacity.times do |i|
+        a.instance_variable_set(:"@ivar#{i + 1}", i)
+      end
+
+      # b transitions in capacity
+      b = Class.new.new
+      (initial_capacity + 1).times do |i|
+        b.instance_variable_set(:"@ivar#{i}", i)
+      end
+
+      assert_operator(RubyVM::Shape.of(a).capacity, :<, RubyVM::Shape.of(b).capacity)
+
+      # b will now have the same tree as a
+      b.remove_instance_variable(:@ivar0)
+
+      a.instance_variable_set(:@foo, 1)
+      a.instance_variable_set(:@bar, 1)
+
+      # Check that there is no heap corruption
+      GC.verify_internal_consistency
+    end;
+  end
+
   def test_freeze_after_complex
     ensure_complex
 
