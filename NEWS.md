@@ -137,7 +137,7 @@ The following default gems are updated.
 * fileutils 1.7.2
 * find 0.2.0
 * getoptlong 0.2.1
-* io-console 0.6.1.dev
+* io-console 0.6.1.dev.1
 * irb 1.8.3
 * logger 1.6.0
 * mutex_m 0.2.0
