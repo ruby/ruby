@@ -771,11 +771,6 @@ shape_i(rb_shape_t *shape, void *data)
       case SHAPE_FROZEN:
         dump_append(dc, "\"FROZEN\"");
         break;
-      case SHAPE_CAPACITY_CHANGE:
-        dump_append(dc, "\"CAPACITY_CHANGE\"");
-        dump_append(dc, ", \"capacity\":");
-        dump_append_sizet(dc, shape->capacity);
-        break;
       case SHAPE_T_OBJECT:
         dump_append(dc, "\"T_OBJECT\"");
         break;
