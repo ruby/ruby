@@ -1,5 +1,5 @@
 # -*- ruby -*-
-_VERSION = "0.6.1.dev"
+_VERSION = "0.6.1.dev.1"
 
 Gem::Specification.new do |s|
   s.name = "io-console"
@@ -26,15 +26,16 @@ Gem::Specification.new do |s|
   if Gem::Platform === s.platform and s.platform =~ 'java'
     s.files.delete_if {|f| f.start_with?("ext/")}
     s.extensions.clear
+    s.require_paths.unshift('lib/ffi')
     s.files.concat(%w[
-      lib/io/console.rb
-      lib/io/console/ffi/bsd_console.rb
-      lib/io/console/ffi/common.rb
-      lib/io/console/ffi/console.rb
-      lib/io/console/ffi/linux_console.rb
-      lib/io/console/ffi/native_console.rb
-      lib/io/console/ffi/stty_console.rb
-      lib/io/console/ffi/stub_console.rb
+      lib/ffi/io/console.rb
+      lib/ffi/io/console/bsd_console.rb
+      lib/ffi/io/console/common.rb
+      lib/ffi/io/console/linux_console.rb
+      lib/ffi/io/console/native_console.rb
+      lib/ffi/io/console/stty_console.rb
+      lib/ffi/io/console/stub_console.rb
+      lib/ffi/io/console/version.rb
     ])
   end
 
