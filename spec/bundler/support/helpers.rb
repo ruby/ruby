@@ -116,7 +116,7 @@ module Spec
         end
       end.join
 
-      ruby_cmd = build_ruby_cmd({ load_path: load_path, requires: requires })
+      ruby_cmd = build_ruby_cmd({ load_path: load_path, requires: requires, env: env })
       cmd = "#{ruby_cmd} #{bundle_bin} #{cmd}#{args}"
       sys_exec(cmd, { env: env, dir: dir, raise_on_error: raise_on_error }, &block)
     end
@@ -147,7 +147,13 @@ module Spec
       lib_option = libs ? "-I#{libs.join(File::PATH_SEPARATOR)}" : []
 
       requires = options.delete(:requires) || []
-      requires << "#{Path.spec_dir}/support/hax.rb"
+
+      hax_path = "#{Path.spec_dir}/support/hax.rb"
+
+      # For specs that need to ignore the default Bundler gem, load hax before
+      # anything else since other stuff may actually load bundler and not skip
+      # the default version
+      options[:env]&.include?("BUNDLER_IGNORE_DEFAULT_GEM") ? requires.prepend(hax_path) : requires.append(hax_path)
       require_option = requires.map {|r| "-r#{r}" }
 
       [Gem.ruby, *lib_option, *require_option].compact.join(" ")
