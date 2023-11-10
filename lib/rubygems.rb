@@ -8,7 +8,7 @@
 require "rbconfig"
 
 module Gem
-  VERSION = "3.3.26".freeze
+  VERSION = "3.3.27".freeze
 end
 
 # Must be first since it unloads the prelude from 1.9.2

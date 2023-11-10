@@ -5,21 +5,21 @@ GEM
       rack-test
     builder (3.2.4)
     compact_index (0.13.0)
-    mustermann (1.1.1)
+    mustermann (2.0.2)
       ruby2_keywords (~> 0.0.1)
-    rack (2.0.8)
-    rack-protection (2.0.8.1)
+    rack (2.2.8)
+    rack-protection (2.2.4)
       rack
     rack-test (1.1.0)
       rack (>= 1.0, < 3)
     rake (13.0.1)
     ruby2_keywords (0.0.5)
-    sinatra (2.0.8.1)
-      mustermann (~> 1.0)
-      rack (~> 2.0)
-      rack-protection (= 2.0.8.1)
+    sinatra (2.2.4)
+      mustermann (~> 2.0)
+      rack (~> 2.2)
+      rack-protection (= 2.2.4)
       tilt (~> 2.0)
-    tilt (2.0.10)
+    tilt (2.0.11)
     webrick (1.7.0)
 
 PLATFORMS
@@ -36,10 +36,11 @@ DEPENDENCIES
   artifice (~> 0.6.0)
   builder (~> 3.2)
   compact_index (~> 0.13.0)
-  rack (= 2.0.8)
+  rack (~> 2.0)
   rack-test (~> 1.1)
   rake (= 13.0.1)
   sinatra (~> 2.0)
+  tilt (~> 2.0.11)
   webrick (= 1.7.0)
 
 BUNDLED WITH
