@@ -2459,7 +2459,7 @@ fn gen_setinstancevariable(
         // If the VM ran out of shapes, or this class generated too many leaf,
         // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
         if next_shape_id == OBJ_TOO_COMPLEX_SHAPE_ID {
-            Some((next_shape_id, None, 0 as usize))
+            Some((next_shape_id, None, 0_usize))
         } else {
             let current_capacity = unsafe { (*current_shape).capacity };
 

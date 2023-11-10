@@ -1847,7 +1847,7 @@ impl Context {
         // Update the type bits
         let type_bits = local_type as u32;
         assert!(type_bits <= 0b1111);
-        let mask_bits = (0b1111 as u32) << (4 * local_idx);
+        let mask_bits = 0b1111_u32 << (4 * local_idx);
         let shifted_bits = type_bits << (4 * local_idx);
         self.local_types = (self.local_types & !mask_bits) | shifted_bits;
     }
@@ -2044,7 +2044,7 @@ impl Assembler {
     pub fn shift_stack(&mut self, argc: usize) {
         assert!(argc < self.ctx.stack_size.into());
 
-        let method_name_index = (self.ctx.stack_size as usize) - (argc as usize) - 1;
+        let method_name_index = (self.ctx.stack_size as usize) - argc - 1;
 
         for i in method_name_index..(self.ctx.stack_size - 1) as usize {
             if i + 1 < MAX_TEMP_TYPES {
