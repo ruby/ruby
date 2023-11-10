@@ -4028,23 +4028,38 @@ pm_refute_numbered_parameter(pm_parser_t *parser, const uint8_t *start, const ui
 }
 
 /**
- * Allocate and initialize a new LocalVariableTargetNode node.
+ * Allocate and initialize a new LocalVariableTargetNode node with the given
+ * name and depth.
  */
 static pm_local_variable_target_node_t *
-pm_local_variable_target_node_create(pm_parser_t *parser, const pm_token_t *name) {
+pm_local_variable_target_node_create_values(pm_parser_t *parser, const pm_location_t *location, pm_constant_id_t name, uint32_t depth) {
     pm_local_variable_target_node_t *node = PM_ALLOC_NODE(parser, pm_local_variable_target_node_t);
-    pm_refute_numbered_parameter(parser, name->start, name->end);
 
     *node = (pm_local_variable_target_node_t) {
         {
             .type = PM_LOCAL_VARIABLE_TARGET_NODE,
-            .location = PM_LOCATION_TOKEN_VALUE(name)
+            .location = *location
         },
-        .name = pm_parser_constant_id_token(parser, name),
-        .depth = 0
+        .name = name,
+        .depth = depth
     };
 
     return node;
+}
+
+/**
+ * Allocate and initialize a new LocalVariableTargetNode node.
+ */
+static pm_local_variable_target_node_t *
+pm_local_variable_target_node_create(pm_parser_t *parser, const pm_token_t *name) {
+    pm_refute_numbered_parameter(parser, name->start, name->end);
+
+    return pm_local_variable_target_node_create_values(
+        parser,
+        &(pm_location_t) { .start = name->start, .end = name->end },
+        pm_parser_constant_id_token(parser, name),
+        0
+    );
 }
 
 /**
@@ -4109,10 +4124,10 @@ pm_match_write_node_create(pm_parser_t *parser, pm_call_node_t *call) {
             .type = PM_MATCH_WRITE_NODE,
             .location = call->base.location
         },
-        .call = call
+        .call = call,
+        .targets = { 0 }
     };
 
-    pm_constant_id_list_init(&node->locals);
     return node;
 }
 
@@ -5694,17 +5709,16 @@ pm_parser_scope_push_transparent(pm_parser_t *parser) {
 }
 
 /**
- * Check if the current scope has a given local variables.
+ * Check if any of the currently visible scopes contain a local variable
+ * described by the given constant id.
  */
 static int
-pm_parser_local_depth(pm_parser_t *parser, pm_token_t *token) {
-    pm_constant_id_t constant_id = pm_parser_constant_id_token(parser, token);
+pm_parser_local_depth_constant_id(pm_parser_t *parser, pm_constant_id_t constant_id) {
     pm_scope_t *scope = parser->current_scope;
     int depth = 0;
 
     while (scope != NULL) {
-        if (!scope->transparent &&
-                pm_constant_id_list_includes(&scope->locals, constant_id)) return depth;
+        if (!scope->transparent && pm_constant_id_list_includes(&scope->locals, constant_id)) return depth;
         if (scope->closed) break;
 
         scope = scope->previous;
@@ -5712,6 +5726,16 @@ pm_parser_local_depth(pm_parser_t *parser, pm_token_t *token) {
     }
 
     return -1;
+}
+
+/**
+ * Check if any of the currently visible scopes contain a local variable
+ * described by the given token. This function implicitly inserts a constant
+ * into the constant pool.
+ */
+static inline int
+pm_parser_local_depth(pm_parser_t *parser, pm_token_t *token) {
+    return pm_parser_local_depth_constant_id(parser, pm_parser_constant_id_token(parser, token));
 }
 
 /**
@@ -15766,37 +15790,40 @@ parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *
     pm_node_t *result;
 
     if (pm_regexp_named_capture_group_names(pm_string_source(content), pm_string_length(content), &named_captures, parser->encoding_changed, &parser->encoding) && (named_captures.length > 0)) {
-        // Since we should not create a MatchWriteNode when all capture names are invalid,
-        // creating a MatchWriteNode is delayed here.
+        // Since we should not create a MatchWriteNode when all capture names
+        // are invalid, creating a MatchWriteNode is delayed here.
         pm_match_write_node_t *match = NULL;
+        pm_constant_id_list_t names = { 0 };
 
         for (size_t index = 0; index < named_captures.length; index++) {
-            pm_string_t *name = &named_captures.strings[index];
+            pm_string_t *string = &named_captures.strings[index];
 
-            const uint8_t *source = pm_string_source(name);
-            size_t length = pm_string_length(name);
+            const uint8_t *source = pm_string_source(string);
+            size_t length = pm_string_length(string);
 
-            if (!name_is_identifier(parser, source, length)) {
-                continue;
-            }
+            pm_location_t location;
+            pm_constant_id_t name;
 
-            pm_constant_id_t local;
+            // If the name of the capture group isn't a valid identifier, we do
+            // not add it to the local table.
+            if (!name_is_identifier(parser, source, length)) continue;
+
             if (content->type == PM_STRING_SHARED) {
                 // If the unescaped string is a slice of the source, then we can
                 // copy the names directly. The pointers will line up.
-                local = pm_parser_local_add_location(parser, source, source + length);
+                location = (pm_location_t) { .start = source, .end = source + length };
+                name = pm_parser_constant_id_location(parser, location.start, location.end);
                 pm_refute_numbered_parameter(parser, source, source + length);
             } else {
                 // Otherwise, the name is a slice of the malloc-ed owned string,
                 // in which case we need to copy it out into a new string.
+                location = call->receiver->location;
+
                 void *memory = malloc(length);
                 if (memory == NULL) abort();
 
                 memcpy(memory, source, length);
-
-                // This silences clang analyzer warning about leak of memory pointed by `memory`.
-                // NOLINTNEXTLINE(clang-analyzer-*)
-                local = pm_parser_local_add_owned(parser, (const uint8_t *) memory, length);
+                name = pm_parser_constant_id_owned(parser, (const uint8_t *) memory, length);
 
                 if (pm_token_is_numbered_parameter(source, source + length)) {
                     const pm_location_t *location = &call->receiver->location;
@@ -15804,15 +15831,27 @@ parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *
                 }
             }
 
-            if (match == NULL) {
-                match = pm_match_write_node_create(parser, call);
-            }
+            if (name != 0) {
+                // We dont want to create duplicate targets if the capture name
+                // is duplicated.
+                if (pm_constant_id_list_includes(&names, name)) continue;
+                pm_constant_id_list_append(&names, name);
 
-            if (pm_constant_id_list_includes(&match->locals, local)) {
-                continue;
-            }
+                // Here we lazily create the MatchWriteNode since we know we're
+                // about to add a target.
+                if (match == NULL) match = pm_match_write_node_create(parser, call);
 
-            pm_constant_id_list_append(&match->locals, local);
+                // First, find the depth of the local that is being assigned.
+                int depth;
+                if ((depth = pm_parser_local_depth_constant_id(parser, name)) == -1) {
+                    pm_parser_local_add(parser, name);
+                }
+
+                // Next, create the local variable target and add it to the
+                // list of targets for the match.
+                pm_node_t *target = (pm_node_t *) pm_local_variable_target_node_create_values(parser, &location, name, depth == -1 ? 0 : (uint32_t) depth);
+                pm_node_list_append(&match->targets, target);
+            }
         }
 
         if (match != NULL) {
@@ -15820,6 +15859,8 @@ parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *
         } else {
             result = (pm_node_t *) call;
         }
+
+        pm_constant_id_list_free(&names);
     } else {
         result = (pm_node_t *) call;
     }

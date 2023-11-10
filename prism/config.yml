@@ -1880,8 +1880,8 @@ nodes:
       - name: call
         type: node
         kind: CallNode
-      - name: locals
-        type: constant[]
+      - name: targets
+        type: node[]
     comment: |
       Represents writing local variables using a regular expression match with
       named capture groups.
