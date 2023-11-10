@@ -4212,7 +4212,7 @@ rb_class_ivar_set(VALUE obj, ID id, VALUE val)
                                     class_ivar_set_set_shape,
                                     class_ivar_set_transition_too_complex,
                                     class_ivar_set_too_complex_table).existing;
-}
+    }
     RB_VM_LOCK_LEAVE();
 
     return existing;
