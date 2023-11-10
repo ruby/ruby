@@ -410,7 +410,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
                 }
             }
             TempMappingKind::MapToLocal => {
-                let local_idx: u8 = learned_mapping.get_local_idx().into();
+                let local_idx: u8 = learned_mapping.get_local_idx();
                 let local_val = jit.peek_at_local(local_idx.into());
                 if local_val != stack_val {
                     panic!(
@@ -2680,7 +2680,7 @@ fn gen_definedivar(
         jit_prepare_routine_call(jit, asm);
 
         // Call rb_ivar_defined(recv, ivar_name)
-        let def_result = asm.ccall(rb_ivar_defined as *const u8, vec![recv.into(), ivar_name.into()]);
+        let def_result = asm.ccall(rb_ivar_defined as *const u8, vec![recv, ivar_name.into()]);
 
         // if (rb_ivar_defined(recv, ivar_name)) {
         //  val = pushval;
@@ -5028,7 +5028,7 @@ fn jit_obj_respond_to(
         (METHOD_VISI_UNDEF, _) => {
             // No method, we can return false given respond_to_missing? hasn't been overridden.
             // In the future, we might want to jit the call to respond_to_missing?
-            if !assume_method_basic_definition(jit, asm, ocb, recv_class, ID!(respond_to_missing).into()) {
+            if !assume_method_basic_definition(jit, asm, ocb, recv_class, ID!(respond_to_missing)) {
                 return false;
             }
             Qfalse

@@ -514,8 +514,8 @@ impl BranchGenFn {
                     BranchShape::Next0 => asm.jz(target1.unwrap()),
                     BranchShape::Next1 => asm.jnz(target0),
                     BranchShape::Default => {
-                        asm.jnz(target0.into());
-                        asm.jmp(target1.unwrap().into());
+                        asm.jnz(target0);
+                        asm.jmp(target1.unwrap());
                     }
                 }
             }
@@ -544,11 +544,11 @@ impl BranchGenFn {
                     panic!("Branch shape Next1 not allowed in JumpToTarget0!");
                 }
                 if shape.get() == BranchShape::Default {
-                    asm.jmp(target0.into());
+                    asm.jmp(target0);
                 }
             }
             BranchGenFn::JNZToTarget0 => {
-                asm.jnz(target0.into())
+                asm.jnz(target0)
             }
             BranchGenFn::JZToTarget0 => {
                 asm.jz(target0)
@@ -1835,7 +1835,7 @@ impl Context {
                 MapToLocal => {
                     let idx = mapping.get_local_idx();
                     if idx as usize == local_idx {
-                        let local_type = self.get_local_type(local_idx.into());
+                        let local_type = self.get_local_type(local_idx);
                         TempMapping::map_to_stack(local_type)
                     } else {
                         TempMapping::map_to_local(idx)
@@ -2015,7 +2015,7 @@ impl Assembler {
             return self.stack_push(Type::Unknown);
         }
 
-        return self.stack_push_mapping(TempMapping::map_to_local((local_idx as u8).into()));
+        return self.stack_push_mapping(TempMapping::map_to_local(local_idx as u8));
     }
 
     // Pop N values off the stack
