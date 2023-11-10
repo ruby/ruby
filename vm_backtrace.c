@@ -162,14 +162,13 @@ location_mark_entry(rb_backtrace_location_t *fi)
 static size_t
 location_memsize(const void *ptr)
 {
-    /* rb_backtrace_location_t *fi = (rb_backtrace_location_t *)ptr; */
-    return sizeof(rb_backtrace_location_t);
+    return 0;
 }
 
 static const rb_data_type_t location_data_type = {
     "frame_info",
     {location_mark, RUBY_TYPED_DEFAULT_FREE, location_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 int
@@ -182,7 +181,7 @@ static inline rb_backtrace_location_t *
 location_ptr(VALUE locobj)
 {
     struct valued_frame_info *vloc;
-    GetCoreDataFromValue(locobj, struct valued_frame_info, vloc);
+    TypedData_Get_Struct(locobj, struct valued_frame_info, &location_data_type, vloc);
     return vloc->loc;
 }
 
