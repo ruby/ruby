@@ -5128,28 +5128,6 @@ pm_statements_node_body_append(pm_statements_node_t *node, pm_node_t *statement)
 }
 
 /**
- * Allocate a new StringConcatNode node.
- */
-static pm_string_concat_node_t *
-pm_string_concat_node_create(pm_parser_t *parser, pm_node_t *left, pm_node_t *right) {
-    pm_string_concat_node_t *node = PM_ALLOC_NODE(parser, pm_string_concat_node_t);
-
-    *node = (pm_string_concat_node_t) {
-        {
-            .type = PM_STRING_CONCAT_NODE,
-            .location = {
-                .start = left->location.start,
-                .end = right->location.end
-            }
-        },
-        .left = left,
-        .right = right
-    };
-
-    return node;
-}
-
-/**
  * Allocate a new StringNode node with the current string on the parser.
  */
 static inline pm_string_node_t *
@@ -13470,9 +13448,10 @@ parse_strings_empty_content(const uint8_t *location) {
  * Parse a set of strings that could be concatenated together.
  */
 static inline pm_node_t *
-parse_strings(pm_parser_t *parser) {
+parse_strings(pm_parser_t *parser, pm_node_t *current) {
     assert(parser->current.type == PM_TOKEN_STRING_BEGIN);
-    pm_node_t *result = NULL;
+
+    bool concating = false;
     bool state_is_arg_labeled = lex_state_p(parser, PM_LEX_STATE_ARG | PM_LEX_STATE_LABELED);
 
     while (match1(parser, PM_TOKEN_STRING_BEGIN)) {
@@ -13608,7 +13587,7 @@ parse_strings(pm_parser_t *parser) {
             }
         }
 
-        if (result == NULL) {
+        if (current == NULL) {
             // If the node we just parsed is a symbol node, then we can't
             // concatenate it with anything else, so we can now return that
             // node.
@@ -13618,7 +13597,7 @@ parse_strings(pm_parser_t *parser) {
 
             // If we don't already have a node, then it's fine and we can just
             // set the result to be the node we just parsed.
-            result = node;
+            current = node;
         } else {
             // Otherwise we need to check the type of the node we just parsed.
             // If it cannot be concatenated with the previous node, then we'll
@@ -13627,13 +13606,22 @@ parse_strings(pm_parser_t *parser) {
                 pm_parser_err_node(parser, node, PM_ERR_STRING_CONCATENATION);
             }
 
-            // Either way we will create a concat node to hold the strings
-            // together.
-            result = (pm_node_t *) pm_string_concat_node_create(parser, result, node);
+            // If we haven't already created our container for concatenation,
+            // we'll do that now.
+            if (!concating) {
+                concating = true;
+                pm_token_t bounds = not_provided(parser);
+
+                pm_interpolated_string_node_t *container = pm_interpolated_string_node_create(parser, &bounds, NULL, &bounds);
+                pm_interpolated_string_node_append(container, current);
+                current = (pm_node_t *) container;
+            }
+
+            pm_interpolated_string_node_append((pm_interpolated_string_node_t *) current, node);
         }
     }
 
-    return result;
+    return current;
 }
 
 /**
@@ -13894,8 +13882,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             // Characters can be followed by strings in which case they are
             // automatically concatenated.
             if (match1(parser, PM_TOKEN_STRING_BEGIN)) {
-                pm_node_t *concat = parse_strings(parser);
-                return (pm_node_t *) pm_string_concat_node_create(parser, node, concat);
+                return parse_strings(parser, node);
             }
 
             return node;
@@ -14169,8 +14156,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             }
 
             if (match1(parser, PM_TOKEN_STRING_BEGIN)) {
-                pm_node_t *concat = parse_strings(parser);
-                return (pm_node_t *) pm_string_concat_node_create(parser, node, concat);
+                return parse_strings(parser, node);
             }
 
             return node;
@@ -15773,7 +15759,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             return (pm_node_t *) node;
         }
         case PM_TOKEN_STRING_BEGIN:
-            return parse_strings(parser);
+            return parse_strings(parser, NULL);
         case PM_TOKEN_SYMBOL_BEGIN: {
             pm_lex_mode_t lex_mode = *parser->lex_modes.current;
             parser_lex(parser);

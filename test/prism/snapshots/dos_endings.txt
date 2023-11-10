@@ -11,21 +11,22 @@
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (1,5)-(2,12))
         │   │   ├── arguments: (length: 1)
-        │   │   │   └── @ StringConcatNode (location: (1,5)-(2,12))
-        │   │   │       ├── left:
-        │   │   │       │   @ StringNode (location: (1,5)-(1,9))
-        │   │   │       │   ├── flags: ∅
-        │   │   │       │   ├── opening_loc: (1,5)-(1,6) = "\""
-        │   │   │       │   ├── content_loc: (1,6)-(1,8) = "hi"
-        │   │   │       │   ├── closing_loc: (1,8)-(1,9) = "\""
-        │   │   │       │   └── unescaped: "hi"
-        │   │   │       └── right:
-        │   │   │           @ StringNode (location: (2,5)-(2,12))
-        │   │   │           ├── flags: ∅
-        │   │   │           ├── opening_loc: (2,5)-(2,6) = "\""
-        │   │   │           ├── content_loc: (2,6)-(2,11) = "there"
-        │   │   │           ├── closing_loc: (2,11)-(2,12) = "\""
-        │   │   │           └── unescaped: "there"
+        │   │   │   └── @ InterpolatedStringNode (location: (1,5)-(2,12))
+        │   │   │       ├── opening_loc: ∅
+        │   │   │       ├── parts: (length: 2)
+        │   │   │       │   ├── @ StringNode (location: (1,5)-(1,9))
+        │   │   │       │   │   ├── flags: ∅
+        │   │   │       │   │   ├── opening_loc: (1,5)-(1,6) = "\""
+        │   │   │       │   │   ├── content_loc: (1,6)-(1,8) = "hi"
+        │   │   │       │   │   ├── closing_loc: (1,8)-(1,9) = "\""
+        │   │   │       │   │   └── unescaped: "hi"
+        │   │   │       │   └── @ StringNode (location: (2,5)-(2,12))
+        │   │   │       │       ├── flags: ∅
+        │   │   │       │       ├── opening_loc: (2,5)-(2,6) = "\""
+        │   │   │       │       ├── content_loc: (2,6)-(2,11) = "there"
+        │   │   │       │       ├── closing_loc: (2,11)-(2,12) = "\""
+        │   │   │       │       └── unescaped: "there"
+        │   │   │       └── closing_loc: ∅
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅

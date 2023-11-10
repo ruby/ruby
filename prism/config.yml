@@ -2370,17 +2370,6 @@ nodes:
 
           foo; bar; baz
           ^^^^^^^^^^^^^
-  - name: StringConcatNode
-    fields:
-      - name: left
-        type: node
-      - name: right
-        type: node
-    comment: |
-      Represents the use of compile-time string concatenation.
-
-          "foo" "bar"
-          ^^^^^^^^^^^
   - name: StringNode
     fields:
       - name: flags

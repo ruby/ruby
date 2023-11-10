@@ -482,21 +482,22 @@
         │   ├── content_loc: (97,1)-(97,2) = "a"
         │   ├── closing_loc: ∅
         │   └── unescaped: "a"
-        ├── @ StringConcatNode (location: (99,0)-(99,6))
-        │   ├── left:
-        │   │   @ StringNode (location: (99,0)-(99,2))
-        │   │   ├── flags: ∅
-        │   │   ├── opening_loc: (99,0)-(99,1) = "?"
-        │   │   ├── content_loc: (99,1)-(99,2) = "a"
-        │   │   ├── closing_loc: ∅
-        │   │   └── unescaped: "a"
-        │   └── right:
-        │       @ StringNode (location: (99,3)-(99,6))
-        │       ├── flags: ∅
-        │       ├── opening_loc: (99,3)-(99,4) = "\""
-        │       ├── content_loc: (99,4)-(99,5) = "a"
-        │       ├── closing_loc: (99,5)-(99,6) = "\""
-        │       └── unescaped: "a"
+        ├── @ InterpolatedStringNode (location: (99,0)-(99,6))
+        │   ├── opening_loc: ∅
+        │   ├── parts: (length: 2)
+        │   │   ├── @ StringNode (location: (99,0)-(99,2))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: (99,0)-(99,1) = "?"
+        │   │   │   ├── content_loc: (99,1)-(99,2) = "a"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "a"
+        │   │   └── @ StringNode (location: (99,3)-(99,6))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: (99,3)-(99,4) = "\""
+        │   │       ├── content_loc: (99,4)-(99,5) = "a"
+        │   │       ├── closing_loc: (99,5)-(99,6) = "\""
+        │   │       └── unescaped: "a"
+        │   └── closing_loc: ∅
         ├── @ StringNode (location: (101,0)-(101,7))
         │   ├── flags: ∅
         │   ├── opening_loc: (101,0)-(101,3) = "%Q{"

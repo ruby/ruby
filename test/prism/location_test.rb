@@ -495,6 +495,7 @@ module Prism
     def test_InterpolatedStringNode
       assert_location(InterpolatedStringNode, "\"foo \#@bar baz\"")
       assert_location(InterpolatedStringNode, "<<~A\nhello \#{1} world\nA", 0...4)
+      assert_location(InterpolatedStringNode, '"foo" "bar"')
     end
 
     def test_InterpolatedSymbolNode
@@ -787,10 +788,6 @@ module Prism
       assert_location(StatementsNode, "END { foo }", 6...9, &:statements)
 
       assert_location(StatementsNode, "\"\#{foo}\"", 3...6) { |node| node.parts.first.statements }
-    end
-
-    def test_StringConcatNode
-      assert_location(StringConcatNode, '"foo" "bar"')
     end
 
     def test_StringNode
