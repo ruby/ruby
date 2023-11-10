@@ -44,6 +44,8 @@ static ID id_frozen;
 static ID id_t_object;
 static ID size_pool_edge_names[SIZE_POOL_COUNT];
 
+rb_shape_t * rb_shape_transition_shape_capa(rb_shape_t * shape);
+
 #define LEAF 0
 #define BLACK 0x0
 #define RED 0x1
@@ -432,16 +434,12 @@ rb_shape_alloc_new_child(ID id, rb_shape_t * shape, enum shape_type shape_type)
 
     switch (shape_type) {
       case SHAPE_IVAR:
-        if (UNLIKELY(shape->next_iv_index >= shape->capacity)) {
-            RUBY_ASSERT(shape->next_iv_index == shape->capacity);
-            new_shape->capacity = (uint32_t)rb_malloc_grow_capa(shape->capacity, sizeof(VALUE));
-        }
-        RUBY_ASSERT(new_shape->capacity > shape->next_iv_index);
         new_shape->next_iv_index = shape->next_iv_index + 1;
         if (new_shape->next_iv_index > ANCESTOR_CACHE_THRESHOLD) {
             redblack_cache_ancestors(new_shape);
         }
         break;
+      case SHAPE_CAPACITY_CHANGE:
       case SHAPE_FROZEN:
       case SHAPE_T_OBJECT:
         new_shape->next_iv_index = shape->next_iv_index;
@@ -682,8 +680,16 @@ rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id)
         allow_new_shape = RCLASS_EXT(klass)->variation_count < SHAPE_MAX_VARIATIONS;
     }
 
+    if (UNLIKELY(shape->next_iv_index >= shape->capacity)) {
+        RUBY_ASSERT(shape->next_iv_index == shape->capacity);
+        shape = rb_shape_transition_shape_capa(shape);
+        if (UNLIKELY(shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
+            return shape;
+        }
+    }
+
     bool variation_created = false;
-    rb_shape_t *new_shape = get_next_shape_internal(shape, id, SHAPE_IVAR, &variation_created, allow_new_shape);
+    rb_shape_t * new_shape = get_next_shape_internal(shape, id, SHAPE_IVAR, &variation_created, allow_new_shape);
 
     // Check if we should update max_iv_count on the object's class
     if (BUILTIN_TYPE(obj) == T_OBJECT) {
@@ -708,6 +714,29 @@ rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id)
     }
 
     return new_shape;
+}
+
+static inline rb_shape_t *
+rb_shape_transition_shape_capa_create(rb_shape_t* shape, size_t new_capacity)
+{
+    RUBY_ASSERT(new_capacity < (size_t)MAX_IVARS);
+
+    ID edge_name = rb_make_temporary_id(new_capacity);
+    bool dont_care;
+    rb_shape_t * new_shape = get_next_shape_internal(shape, edge_name, SHAPE_CAPACITY_CHANGE, &dont_care, true);
+    if (rb_shape_id(new_shape) != OBJ_TOO_COMPLEX_SHAPE_ID) {
+        new_shape->capacity = (uint32_t)new_capacity;
+    }
+    return new_shape;
+}
+
+rb_shape_t *
+rb_shape_transition_shape_capa(rb_shape_t* shape)
+{
+    if (UNLIKELY(shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
+        return shape;
+    }
+    return rb_shape_transition_shape_capa_create(shape, rb_malloc_grow_capa(shape->capacity, sizeof(VALUE)));
 }
 
 // Same as rb_shape_get_iv_index, but uses a provided valid shape id and index
@@ -796,6 +825,7 @@ rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t *value)
                     RUBY_ASSERT(shape->next_iv_index > 0);
                     *value = shape->next_iv_index - 1;
                     return true;
+                  case SHAPE_CAPACITY_CHANGE:
                   case SHAPE_ROOT:
                   case SHAPE_T_OBJECT:
                     return false;
@@ -862,6 +892,7 @@ rb_shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *dest_shap
         }
         break;
       case SHAPE_ROOT:
+      case SHAPE_CAPACITY_CHANGE:
       case SHAPE_T_OBJECT:
         break;
       case SHAPE_OBJ_TOO_COMPLEX:
@@ -894,10 +925,18 @@ rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape)
 
     switch ((enum shape_type)dest_shape->type) {
       case SHAPE_IVAR:
-        midway_shape = rb_shape_get_next_iv_shape(midway_shape, dest_shape->edge_name);
+        if (midway_shape->capacity <= midway_shape->next_iv_index) {
+            // There isn't enough room to write this IV, so we need to increase the capacity
+            midway_shape = rb_shape_transition_shape_capa(midway_shape);
+        }
+
+        if (LIKELY(rb_shape_id(midway_shape) != OBJ_TOO_COMPLEX_SHAPE_ID)) {
+            midway_shape = rb_shape_get_next_iv_shape(midway_shape, dest_shape->edge_name);
+        }
         break;
       case SHAPE_ROOT:
       case SHAPE_FROZEN:
+      case SHAPE_CAPACITY_CHANGE:
       case SHAPE_T_OBJECT:
         break;
       case SHAPE_OBJ_TOO_COMPLEX:
