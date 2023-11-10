@@ -31,6 +31,53 @@
 
 require 'open3/version'
 
+# \Module \Open3 supports creating child processes
+# with access to their $stdin, $stdout, and $stderr streams.
+#
+# == What's Here
+#
+# Each of these methods executes a given command in a new process or subshell,
+# or multiple commands in new processes and/or subshells:
+#
+# - Each of these methods executes a single command in a process or subshell,
+#   accepts a string for input to $stdin,
+#   and returns string output from $stdout, $stderr, or both:
+#
+#   - Open3.capture2: Executes the command;
+#     returns the string from $stdout.
+#   - Open3.capture2e: Executes the command;
+#     returns the string from merged $stdout and $stderr.
+#   - Open3.capture3: Executes the command;
+#     returns strings from $stdout and $stderr.
+#
+# - Each of these methods executes a single command in a process or subshell,
+#   and returns pipes for $stdin, $stdout, and/or $stderr:
+#
+#   - Open3.popen2: Executes the command;
+#     returns pipes for $stdin and $stdout.
+#   - Open3.popen2e: Executes the command;
+#     returns pipes for $stdin and merged $stdout and $stderr.
+#   - Open3.popen3: Executes the command;
+#     returns pipes for $stdin, $stdout, and $stderr.
+#
+# - Each of these methods executes one or more commands in processes and/or subshells,
+#   returns pipes for the first $stdin, the last $stdout, or both:
+#
+#   - Open3.pipeline_r: Returns a pipe for the last $stdout.
+#   - Open3.pipeline_rw: Returns pipes for the first $stdin and the last $stdout.
+#   - Open3.pipeline_w: Returns a pipe for the first $stdin.
+#   - Open3.pipeline_start: Does not wait for processes to complete.
+#   - Open3.pipeline: Waits for processes to complete.
+#
+# Each of the methods above accepts:
+#
+# - An optional hash of environment variable names and values;
+#   see {Execution Environment}[rdoc-ref:Process#Execution+Environment].
+# - A required string argument that is a +command_line+ or +exe_path+;
+#   see {Argument command_line or exe_path}[rdoc-ref:Process#Argument+command_line+or+exe_path].
+# - An optional hash of execution options;
+#   see {Execution Options}[rdoc-ref:Process#Execution+Options].
+#
 module Open3
 
   # :call-seq:
@@ -1061,57 +1108,54 @@ module Open3
   end
   module_function :pipeline_start
 
-  # Open3.pipeline starts a list of commands as a pipeline.
-  # It waits for the completion of the commands.
-  # No pipes are created for stdin of the first command and
-  # stdout of the last command.
+  # :call-seq:
+  #   Open3.pipeline([env, ] *cmds, options = {}) -> array_of_statuses
   #
-  #   status_list = Open3.pipeline(cmd1, cmd2, ... [, opts])
+  # Basically a wrapper for
+  # {Process.spawn}[rdoc-ref:Process.spawn]
+  # that:
   #
-  # Each cmd is a string or an array.
-  # If it is an array, the elements are passed to Process.spawn.
+  # - Creates a child process for each of the given +cmds+
+  #   by calling Process.spawn.
+  # - Pipes the +stdout+ from each child to the +stdin+ of the next child,
+  #   or, for the last child, to the caller's +stdout+.
+  # - Waits for all child processes to exit.
+  # - Returns an array of Process::Status objects (one for each child).
   #
-  #   cmd:
-  #     commandline                              command line string which is passed to a shell
-  #     [env, commandline, opts]                 command line string which is passed to a shell
-  #     [env, cmdname, arg1, ..., opts]          command name and one or more arguments (no shell)
-  #     [env, [cmdname, argv0], arg1, ..., opts] command name and arguments including argv[0] (no shell)
+  # A simple example:
   #
-  #   Note that env and opts are optional, as Process.spawn.
+  #   Open3.pipeline('ls', 'grep [A-Z]')
+  #   # => [#<Process::Status: pid 1343895 exit 0>, #<Process::Status: pid 1343897 exit 0>]
   #
-  # Example:
+  # Output:
   #
-  #   fname = "/usr/share/man/man1/ruby.1.gz"
-  #   p Open3.pipeline(["zcat", fname], "nroff -man", "less")
-  #   #=> [#<Process::Status: pid 11817 exit 0>,
-  #   #    #<Process::Status: pid 11820 exit 0>,
-  #   #    #<Process::Status: pid 11828 exit 0>]
+  #   Gemfile
+  #   LICENSE.txt
+  #   Rakefile
+  #   README.md
   #
-  #   fname = "/usr/share/man/man1/ls.1.gz"
-  #   Open3.pipeline(["zcat", fname], "nroff -man", "colcrt")
+  # Like Process.spawn, this method has potential security vulnerabilities
+  # if called with untrusted input;
+  # see {Command Injection}[rdoc-ref:command_injection.rdoc].
   #
-  #   # convert PDF to PS and send to a printer by lpr
-  #   pdf_file = "paper.pdf"
-  #   printer = "printer-name"
-  #   Open3.pipeline(["pdftops", pdf_file, "-"],
-  #                  ["lpr", "-P#{printer}"])
+  # Unlike Process.spawn, this method waits for the child process to exit
+  # before returning, so the caller need not do so.
   #
-  #   # count lines
-  #   Open3.pipeline("sort", "uniq -c", :in=>"names.txt", :out=>"count")
+  # If the first argument is a hash, it becomes leading argument +env+
+  # in each call to Process.spawn;
+  # see {Execution Environment}[rdoc-ref:Process@Execution+Environment].
   #
-  #   # cyclic pipeline
-  #   r,w = IO.pipe
-  #   w.print "ibase=14\n10\n"
-  #   Open3.pipeline("bc", "tee /dev/tty", :in=>r, :out=>w)
-  #   #=> 14
-  #   #   18
-  #   #   22
-  #   #   30
-  #   #   42
-  #   #   58
-  #   #   78
-  #   #   106
-  #   #   202
+  # If the last argument is a hash, it becomes trailing argument +options+
+  # in each call to Process.spawn'
+  # see {Execution Options}[rdoc-ref:Process@Execution+Options].
+  #
+  # Each remaining argument in +cmds+ is one of:
+  #
+  # - A +command_line+: a string that begins with a shell reserved word
+  #   or special built-in, or contains one or more metacharacters.
+  # - An +exe_path+: the string path to an executable to be called.
+  # - An array containing a +command_line+ or an +exe_path+,
+  #   along with zero or more string arguments for the command.
   #
   def pipeline(*cmds)
     if Hash === cmds.last
