@@ -71,6 +71,7 @@ module Bundler
       when Gem::Specification, RemoteSpecification, LazySpecification, EndpointSpecification then search_by_spec(query)
       when String then specs_by_name(query)
       when Gem::Dependency then search_by_dependency(query)
+      when Array then search_by_name_and_version(*query)
       else
         raise "You can't search for a #{query.inspect}."
       end
@@ -171,6 +172,10 @@ module Bundler
 
         found
       end
+    end
+
+    def search_by_name_and_version(name, version)
+      specs_by_name(name).select {|spec| spec.version == version }
     end
 
     EMPTY_SEARCH = [].freeze
