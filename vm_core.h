@@ -885,13 +885,68 @@ typedef void *rb_jmpbuf_t[5];
 #endif
 
 /*
+  `rb_vm_tag_jmpbuf_t` type represents a buffer used to
+  long jump to a C frame associated with `rb_vm_tag`.
+
+  Use-site of `rb_vm_tag_jmpbuf_t` is responsible for calling the
+  following functions:
+  - `rb_vm_tag_jmpbuf_init` once `rb_vm_tag_jmpbuf_t` is allocated.
+  - `rb_vm_tag_jmpbuf_deinit` once `rb_vm_tag_jmpbuf_t` is no longer necessary.
+
+  `RB_VM_TAG_JMPBUF_GET` transforms a `rb_vm_tag_jmpbuf_t` into a
+  `rb_jmpbuf_t` to be passed to `rb_setjmp/rb_longjmp`.
+*/
+#if defined(__wasm__) && !defined(__EMSCRIPTEN__)
+/*
+  WebAssembly target with Asyncify-based SJLJ needs
+  to capture the execution context by unwind/rewind-ing
+  call frames into a jump buffer. The buffer space tends
+  to be considerably large unlike other architectures'
+  register-based buffers.
+  Therefore, we allocates the buffer on the heap on such
+  environments.
+*/
+typedef rb_jmpbuf_t *rb_vm_tag_jmpbuf_t;
+
+#define RB_VM_TAG_JMPBUF_GET(buf) (*buf)
+
+static inline void
+rb_vm_tag_jmpbuf_init(rb_vm_tag_jmpbuf_t *jmpbuf)
+{
+  *jmpbuf = malloc(sizeof(rb_jmpbuf_t));
+}
+
+static inline void
+rb_vm_tag_jmpbuf_deinit(const rb_vm_tag_jmpbuf_t *jmpbuf)
+{
+  free(*jmpbuf);
+}
+#else
+typedef rb_jmpbuf_t rb_vm_tag_jmpbuf_t;
+
+#define RB_VM_TAG_JMPBUF_GET(buf) (buf)
+
+static inline void
+rb_vm_tag_jmpbuf_init(rb_vm_tag_jmpbuf_t *jmpbuf)
+{
+  // no-op
+}
+
+static inline void
+rb_vm_tag_jmpbuf_deinit(const rb_vm_tag_jmpbuf_t *jmpbuf)
+{
+  // no-op
+}
+#endif
+
+/*
   the members which are written in EC_PUSH_TAG() should be placed at
   the beginning and the end, so that entire region is accessible.
 */
 struct rb_vm_tag {
     VALUE tag;
     VALUE retval;
-    rb_jmpbuf_t buf;
+    rb_vm_tag_jmpbuf_t buf;
     struct rb_vm_tag *prev;
     enum ruby_tag_type state;
     unsigned int lock_rec;
@@ -899,7 +954,7 @@ struct rb_vm_tag {
 
 STATIC_ASSERT(rb_vm_tag_buf_offset, offsetof(struct rb_vm_tag, buf) > 0);
 STATIC_ASSERT(rb_vm_tag_buf_end,
-              offsetof(struct rb_vm_tag, buf) + sizeof(rb_jmpbuf_t) <
+              offsetof(struct rb_vm_tag, buf) + sizeof(rb_vm_tag_jmpbuf_t) <
               sizeof(struct rb_vm_tag));
 
 struct rb_unblock_callback {
