@@ -1,35 +1,34 @@
 # frozen_string_literal: true
+# :markup: markdown
 
-# This module allows for introspection of YJIT, CRuby's in-process
-# just-in-time compiler. This module exists only to help develop YJIT, as such,
-# everything in the module is highly implementation specific and comes with no
-# API stability guarantee whatsoever.
+# This module allows for introspection of \YJIT, CRuby's just-in-time compiler.
+# Everything in the module is highly implementation specific and the API might
+# be less stable compared to the standard library.
 #
-# This module may not exist if YJIT does not support the particular platform
-# for which CRuby is built. There is also no API stability guarantee as to in
-# what situations this module is defined.
+# This module may not exist if \YJIT does not support the particular platform
+# for which CRuby is built.
 module RubyVM::YJIT
-  # Check if YJIT is enabled
+  # Check if \YJIT is enabled.
   def self.enabled?
     Primitive.cexpr! 'RBOOL(rb_yjit_enabled_p)'
   end
 
-  # Check if --yjit-stats is used.
+  # Check if `--yjit-stats` is used.
   def self.stats_enabled?
     Primitive.rb_yjit_stats_enabled_p
   end
 
   # Check if rb_yjit_trace_exit_locations_enabled_p is enabled.
-  def self.trace_exit_locations_enabled?
+  def self.trace_exit_locations_enabled? # :nodoc:
     Primitive.rb_yjit_trace_exit_locations_enabled_p
   end
 
-  # Discard statistics collected for --yjit-stats.
+  # Discard statistics collected for `--yjit-stats`.
   def self.reset_stats!
     Primitive.rb_yjit_reset_stats_bang
   end
 
-  # Enable YJIT compilation.
+  # Enable \YJIT compilation.
   def self.enable
     Primitive.rb_yjit_enable
   end
@@ -38,7 +37,7 @@ module RubyVM::YJIT
   # Primitive.rb_yjit_get_exit_locations into a format readable
   # by Stackprof. This will allow us to find the exact location of a
   # side exit in YJIT based on the instruction that is exiting.
-  def self.exit_locations
+  def self.exit_locations # :nodoc:
     return unless trace_exit_locations_enabled?
 
     results = Primitive.rb_yjit_get_exit_locations
@@ -130,13 +129,13 @@ module RubyVM::YJIT
   #
   # In a script call:
   #
-  #   at_exit do
-  #     RubyVM::YJIT.dump_exit_locations("my_file.dump")
-  #   end
+  #     at_exit do
+  #       RubyVM::YJIT.dump_exit_locations("my_file.dump")
+  #     end
   #
   # Then run the file with the following options:
   #
-  #   ruby --yjit --yjit-trace-exits test.rb
+  #     ruby --yjit --yjit-trace-exits test.rb
   #
   # Once the code is done running, use Stackprof to read the dump file.
   # See Stackprof documentation for options.
@@ -148,8 +147,8 @@ module RubyVM::YJIT
     File.binwrite(filename, Marshal.dump(RubyVM::YJIT.exit_locations))
   end
 
-  # Return a hash for statistics generated for the --yjit-stats command line option.
-  # Return nil when option is not passed or unavailable.
+  # Return a hash for statistics generated for the `--yjit-stats` command line option.
+  # Return `nil` when option is not passed or unavailable.
   def self.runtime_stats(context: false)
     stats = Primitive.rb_yjit_get_stats(context)
     return stats if stats.nil?
@@ -182,7 +181,7 @@ module RubyVM::YJIT
   end
 
   # Format and print out counters as a String. This returns a non-empty
-  # content only when --yjit-stats is enabled.
+  # content only when `--yjit-stats` is enabled.
   def self.stats_string
     # Lazily require StringIO to avoid breaking miniruby
     require 'stringio'
@@ -191,8 +190,8 @@ module RubyVM::YJIT
     strio.string
   end
 
-  # Produce disassembly for an iseq
-  def self.disasm(iseq)
+  # Produce disassembly for an iseq. This requires a `--enable-yjit=dev` build.
+  def self.disasm(iseq) # :nodoc:
     # If a method or proc is passed in, get its iseq
     iseq = RubyVM::InstructionSequence.of(iseq)
 
@@ -206,7 +205,7 @@ module RubyVM::YJIT
   end
 
   # Produce a list of instructions compiled by YJIT for an iseq
-  def self.insns_compiled(iseq)
+  def self.insns_compiled(iseq) # :nodoc:
     return nil unless self.enabled?
 
     # If a method or proc is passed in, get its iseq
@@ -214,7 +213,8 @@ module RubyVM::YJIT
     Primitive.rb_yjit_insns_compiled(iseq)
   end
 
-  # Free and recompile all existing JIT code
+  # Discard existing compiled code to reclaim memory
+  # and allow for recompilations in the future.
   def self.code_gc
     Primitive.rb_yjit_code_gc
   end
@@ -233,7 +233,7 @@ module RubyVM::YJIT
     end
   end
 
-  class << self
+  class << self # :stopdoc:
     private
 
     def _dump_locations # :nodoc:
