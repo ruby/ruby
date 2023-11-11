@@ -1307,17 +1307,10 @@ iter_lev_in_flags_set(VALUE hash, unsigned long lev)
     RBASIC(hash)->flags = ((RBASIC(hash)->flags & ~RHASH_LEV_MASK) | ((VALUE)lev << RHASH_LEV_SHIFT));
 }
 
-static unsigned long
-RHASH_ITER_LEV(VALUE hash)
+static inline bool
+hash_iterating_p(VALUE hash)
 {
-    unsigned long lev = iter_lev_in_flags(hash);
-
-    if (lev == RHASH_LEV_MAX) {
-        return iter_lev_in_ivar(hash);
-    }
-    else {
-        return lev;
-    }
+    return iter_lev_in_flags(hash) > 0;
 }
 
 static void
@@ -1436,7 +1429,7 @@ void rb_st_compact_table(st_table *tab);
 static void
 compact_after_delete(VALUE hash)
 {
-    if (RHASH_ITER_LEV(hash) == 0 && RHASH_ST_TABLE_P(hash)) {
+    if (!hash_iterating_p(hash) && RHASH_ST_TABLE_P(hash)) {
         rb_st_compact_table(RHASH_ST_TABLE(hash));
     }
 }
@@ -1691,14 +1684,14 @@ tbl_update(VALUE hash, VALUE key, tbl_update_func func, st_data_t optional_arg)
     return ret;
 }
 
-#define UPDATE_CALLBACK(iter_lev, func) ((iter_lev) > 0 ? func##_noinsert : func##_insert)
+#define UPDATE_CALLBACK(iter_p, func) ((iter_p) ? func##_noinsert : func##_insert)
 
-#define RHASH_UPDATE_ITER(h, iter_lev, key, func, a) do {                        \
-    tbl_update((h), (key), UPDATE_CALLBACK((iter_lev), func), (st_data_t)(a)); \
+#define RHASH_UPDATE_ITER(h, iter_p, key, func, a) do { \
+    tbl_update((h), (key), UPDATE_CALLBACK(iter_p, func), (st_data_t)(a)); \
 } while (0)
 
 #define RHASH_UPDATE(hash, key, func, arg) \
-    RHASH_UPDATE_ITER(hash, RHASH_ITER_LEV(hash), key, func, arg)
+    RHASH_UPDATE_ITER(hash, hash_iterating_p(hash), key, func, arg)
 
 static void
 set_proc_default(VALUE hash, VALUE proc)
@@ -1986,7 +1979,7 @@ rb_hash_rehash(VALUE hash)
     VALUE tmp;
     st_table *tbl;
 
-    if (RHASH_ITER_LEV(hash) > 0) {
+    if (hash_iterating_p(hash)) {
         rb_raise(rb_eRuntimeError, "rehash during iteration");
     }
     rb_hash_modify_check(hash);
@@ -2465,7 +2458,7 @@ rb_hash_shift(VALUE hash)
     rb_hash_modify_check(hash);
     if (RHASH_AR_TABLE_P(hash)) {
         var.key = Qundef;
-        if (RHASH_ITER_LEV(hash) == 0) {
+        if (!hash_iterating_p(hash)) {
             if (ar_shift(hash, &var.key, &var.val)) {
                 return rb_assoc_new(var.key, var.val);
             }
@@ -2480,7 +2473,7 @@ rb_hash_shift(VALUE hash)
     }
     if (RHASH_ST_TABLE_P(hash)) {
         var.key = Qundef;
-        if (RHASH_ITER_LEV(hash) == 0) {
+        if (!hash_iterating_p(hash)) {
             if (st_shift(RHASH_ST_TABLE(hash), &var.key, &var.val)) {
                 return rb_assoc_new(var.key, var.val);
             }
@@ -2838,7 +2831,7 @@ rb_hash_clear(VALUE hash)
 {
     rb_hash_modify_check(hash);
 
-    if (RHASH_ITER_LEV(hash) > 0) {
+    if (hash_iterating_p(hash)) {
         rb_hash_foreach(hash, clear_i, 0);
     }
     else if (RHASH_AR_TABLE_P(hash)) {
@@ -2909,15 +2902,15 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
 VALUE
 rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 {
-    unsigned long iter_lev = RHASH_ITER_LEV(hash);
+    bool iter_p = hash_iterating_p(hash);
 
     rb_hash_modify(hash);
 
     if (RHASH_TYPE(hash) == &identhash || rb_obj_class(key) != rb_cString) {
-        RHASH_UPDATE_ITER(hash, iter_lev, key, hash_aset, val);
+        RHASH_UPDATE_ITER(hash, iter_p, key, hash_aset, val);
     }
     else {
-        RHASH_UPDATE_ITER(hash, iter_lev, key, hash_aset_str, val);
+        RHASH_UPDATE_ITER(hash, iter_p, key, hash_aset_str, val);
     }
     return val;
 }
@@ -2937,7 +2930,7 @@ rb_hash_replace(VALUE hash, VALUE hash2)
 {
     rb_hash_modify_check(hash);
     if (hash == hash2) return hash;
-    if (RHASH_ITER_LEV(hash) > 0) {
+    if (hash_iterating_p(hash)) {
         rb_raise(rb_eRuntimeError, "can't replace hash during iteration");
     }
     hash2 = to_hash(hash2);
