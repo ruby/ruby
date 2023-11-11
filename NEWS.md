@@ -237,9 +237,10 @@ changelog for details of the default gems or bundled gems.
   * This can also be used to enable YJIT only once your application is
     done booting. `--yjit-disable` can be used if you want to use other
     YJIT options while disabling YJIT at boot.
-* Option to disable code GC and treat `--yjit-exec-mem-size` as a hard limit
-  * Can produce better copy-on-write behavior on servers using unicorn and forking
-* `ratio_in_yjit` stat produced by `--yjit-stats` is now avaiable in release builds,
+* Code GC now disabled by default, with `--yjit-exec-mem-size` treated as a hard limit
+  * Can produce better copy-on-write behavior on forking web servers such as `unicorn`
+  * Use the `--yjit-code-gc` option to automatically run code GC when YJIT reaches the size limit
+* `ratio_in_yjit` stat produced by `--yjit-stats` is now available in release builds,
   a special stats or dev build is no longer required to access most stats.
 * Exit tracing option now supports sampling
   * `--trace-exits-sample-rate=N`
