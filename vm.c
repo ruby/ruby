@@ -2462,7 +2462,7 @@ vm_exec(rb_execution_context_t *ec)
 
     rb_wasm_try_catch_init(&try_catch, vm_exec_bottom_main, vm_exec_bottom_rescue, &ctx);
 
-    rb_wasm_try_catch_loop_run(&try_catch, &_tag.buf);
+    rb_wasm_try_catch_loop_run(&try_catch, &RB_VM_TAG_JMPBUF_GET(_tag.buf));
 
     result = ctx.result;
 #else
