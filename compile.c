@@ -11997,13 +11997,34 @@ ibf_dump_ci_entries(struct ibf_dump *dump, const rb_iseq_t *iseq)
     return offset;
 }
 
-static enum rb_id_table_iterator_result
-dump_outer_variable(ID id, VALUE val, void *dump)
-{
-    ibf_dump_write_small_value(dump, ibf_dump_id(dump, id));
-    ibf_dump_write_small_value(dump, val);
+struct outer_variable_pair {
+    ID id;
+    VALUE name;
+    VALUE val;
+};
 
+struct outer_variable_list {
+    size_t num;
+    struct outer_variable_pair pairs[1];
+};
+
+static enum rb_id_table_iterator_result
+store_outer_variable(ID id, VALUE val, void *dump)
+{
+    struct outer_variable_list *ovlist = dump;
+    struct outer_variable_pair *pair = &ovlist->pairs[ovlist->num++];
+    pair->id = id;
+    pair->name = rb_id2str(id);
+    pair->val = val;
     return ID_TABLE_CONTINUE;
+}
+
+static int
+outer_variable_cmp(const void *a, const void *b, void *arg)
+{
+    const struct outer_variable_pair *ap = (const struct outer_variable_pair *)a;
+    const struct outer_variable_pair *bp = (const struct outer_variable_pair *)b;
+    return rb_str_cmp(ap->name, bp->name);
 }
 
 static ibf_offset_t
@@ -12013,12 +12034,24 @@ ibf_dump_outer_variables(struct ibf_dump *dump, const rb_iseq_t *iseq)
 
     ibf_offset_t offset = ibf_dump_pos(dump);
 
-    if (ovs) {
-        ibf_dump_write_small_value(dump, (VALUE)rb_id_table_size(ovs));
-        rb_id_table_foreach(ovs, dump_outer_variable, (void *)dump);
-    }
-    else {
-        ibf_dump_write_small_value(dump, (VALUE)0);
+    size_t size = ovs ? rb_id_table_size(ovs) : 0;
+    ibf_dump_write_small_value(dump, (VALUE)size);
+    if (size > 0) {
+        VALUE buff;
+        size_t buffsize =
+            rb_size_mul_add_or_raise(sizeof(struct outer_variable_pair), size,
+                                     offsetof(struct outer_variable_list, pairs),
+                                     rb_eArgError);
+        struct outer_variable_list *ovlist = RB_ALLOCV(buff, buffsize);
+        ovlist->num = 0;
+        rb_id_table_foreach(ovs, store_outer_variable, ovlist);
+        ruby_qsort(ovlist->pairs, size, sizeof(struct outer_variable_pair), outer_variable_cmp, NULL);
+        for (size_t i = 0; i < size; ++i) {
+            ID id = ovlist->pairs[i].id;
+            ID val = ovlist->pairs[i].val;
+            ibf_dump_write_small_value(dump, ibf_dump_id(dump, id));
+            ibf_dump_write_small_value(dump, val);
+        }
     }
 
     return offset;
