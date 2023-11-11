@@ -1274,39 +1274,43 @@ hash_foreach_iter(st_data_t key, st_data_t value, st_data_t argp, int error)
     return hash_iter_status_check(status);
 }
 
-static int
+static unsigned long
 iter_lev_in_ivar(VALUE hash)
 {
     VALUE levval = rb_ivar_get(hash, id_hash_iter_lev);
     HASH_ASSERT(FIXNUM_P(levval));
-    return FIX2INT(levval);
+    long lev = FIX2LONG(levval);
+    HASH_ASSERT(lev >= 0);
+    return (unsigned long)lev;
 }
 
 void rb_ivar_set_internal(VALUE obj, ID id, VALUE val);
 
 static void
-iter_lev_in_ivar_set(VALUE hash, int lev)
+iter_lev_in_ivar_set(VALUE hash, unsigned long lev)
 {
-    rb_ivar_set_internal(hash, id_hash_iter_lev, INT2FIX(lev));
+    HASH_ASSERT(lev >= RHASH_LEV_MAX);
+    HASH_ASSERT(POSFIXABLE(lev)); /* POSFIXABLE means fitting to long */
+    rb_ivar_set_internal(hash, id_hash_iter_lev, LONG2FIX((long)lev));
 }
 
-static inline int
+static inline unsigned long
 iter_lev_in_flags(VALUE hash)
 {
-    unsigned int u = (unsigned int)((RBASIC(hash)->flags >> RHASH_LEV_SHIFT) & RHASH_LEV_MAX);
-    return (int)u;
+    return (unsigned long)((RBASIC(hash)->flags >> RHASH_LEV_SHIFT) & RHASH_LEV_MAX);
 }
 
 static inline void
-iter_lev_in_flags_set(VALUE hash, int lev)
+iter_lev_in_flags_set(VALUE hash, unsigned long lev)
 {
+    HASH_ASSERT(lev <= RHASH_LEV_MAX);
     RBASIC(hash)->flags = ((RBASIC(hash)->flags & ~RHASH_LEV_MASK) | ((VALUE)lev << RHASH_LEV_SHIFT));
 }
 
-static int
+static unsigned long
 RHASH_ITER_LEV(VALUE hash)
 {
-    int lev = iter_lev_in_flags(hash);
+    unsigned long lev = iter_lev_in_flags(hash);
 
     if (lev == RHASH_LEV_MAX) {
         return iter_lev_in_ivar(hash);
@@ -1319,33 +1323,37 @@ RHASH_ITER_LEV(VALUE hash)
 static void
 hash_iter_lev_inc(VALUE hash)
 {
-    int lev = iter_lev_in_flags(hash);
+    unsigned long lev = iter_lev_in_flags(hash);
     if (lev == RHASH_LEV_MAX) {
-        lev = iter_lev_in_ivar(hash);
-        iter_lev_in_ivar_set(hash, lev+1);
+        lev = iter_lev_in_ivar(hash) + 1;
+        if (!POSFIXABLE(lev)) { /* paranoiac check */
+            rb_raise(rb_eRuntimeError, "too much nested iterations");
+        }
     }
     else {
         lev += 1;
         iter_lev_in_flags_set(hash, lev);
-        if (lev == RHASH_LEV_MAX) {
-            iter_lev_in_ivar_set(hash, lev);
-        }
+        if (lev < RHASH_LEV_MAX) return;
     }
+    iter_lev_in_ivar_set(hash, lev);
 }
 
 static void
 hash_iter_lev_dec(VALUE hash)
 {
-    int lev = iter_lev_in_flags(hash);
+    unsigned long lev = iter_lev_in_flags(hash);
     if (lev == RHASH_LEV_MAX) {
         lev = iter_lev_in_ivar(hash);
-        HASH_ASSERT(lev > 0);
-        iter_lev_in_ivar_set(hash, lev-1);
+        if (lev > RHASH_LEV_MAX) {
+            iter_lev_in_ivar_set(hash, lev-1);
+            return;
+        }
+        rb_attr_delete(hash, id_hash_iter_lev);
     }
-    else {
-        HASH_ASSERT(lev > 0);
-        iter_lev_in_flags_set(hash, lev - 1);
+    else if (lev == 0) {
+        rb_raise(rb_eRuntimeError, "iteration level underflow");
     }
+    iter_lev_in_flags_set(hash, lev - 1);
 }
 
 static VALUE
@@ -2901,7 +2909,7 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
 VALUE
 rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 {
-    int iter_lev = RHASH_ITER_LEV(hash);
+    unsigned long iter_lev = RHASH_ITER_LEV(hash);
 
     rb_hash_modify(hash);
 
