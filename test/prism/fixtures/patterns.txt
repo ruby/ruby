@@ -190,3 +190,6 @@ foo in A[
     value: a
   ]
 ]
+
+foo in bar => baz
+foo => bar => baz

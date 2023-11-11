@@ -1,8 +1,8 @@
-@ ProgramNode (location: (1,0)-(192,1))
+@ ProgramNode (location: (1,0)-(195,17))
 ├── locals: [:bar, :baz, :qux, :b, :a]
 └── statements:
-    @ StatementsNode (location: (1,0)-(192,1))
-    └── body: (length: 170)
+    @ StatementsNode (location: (1,0)-(195,17))
+    └── body: (length: 172)
         ├── @ MatchRequiredNode (location: (1,0)-(1,10))
         │   ├── value:
         │   │   @ CallNode (location: (1,0)-(1,3))
@@ -4449,12 +4449,87 @@
         │   │   ├── opening_loc: (184,5)-(184,6) = "["
         │   │   └── closing_loc: (186,0)-(186,1) = "]"
         │   └── operator_loc: (184,2)-(184,4) = "=>"
-        └── @ MatchPredicateNode (location: (188,0)-(192,1))
+        ├── @ MatchPredicateNode (location: (188,0)-(192,1))
+        │   ├── value:
+        │   │   @ CallNode (location: (188,0)-(188,3))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (188,0)-(188,3) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: :foo
+        │   ├── pattern:
+        │   │   @ HashPatternNode (location: (188,7)-(192,1))
+        │   │   ├── constant:
+        │   │   │   @ ConstantReadNode (location: (188,7)-(188,8))
+        │   │   │   └── name: :A
+        │   │   ├── elements: (length: 1)
+        │   │   │   └── @ AssocNode (location: (189,2)-(191,3))
+        │   │   │       ├── key:
+        │   │   │       │   @ SymbolNode (location: (189,2)-(189,6))
+        │   │   │       │   ├── opening_loc: ∅
+        │   │   │       │   ├── value_loc: (189,2)-(189,5) = "bar"
+        │   │   │       │   ├── closing_loc: (189,5)-(189,6) = ":"
+        │   │   │       │   └── unescaped: "bar"
+        │   │   │       ├── value:
+        │   │   │       │   @ HashPatternNode (location: (189,7)-(191,3))
+        │   │   │       │   ├── constant:
+        │   │   │       │   │   @ ConstantReadNode (location: (189,7)-(189,8))
+        │   │   │       │   │   └── name: :B
+        │   │   │       │   ├── elements: (length: 1)
+        │   │   │       │   │   └── @ AssocNode (location: (190,4)-(190,12))
+        │   │   │       │   │       ├── key:
+        │   │   │       │   │       │   @ SymbolNode (location: (190,4)-(190,10))
+        │   │   │       │   │       │   ├── opening_loc: ∅
+        │   │   │       │   │       │   ├── value_loc: (190,4)-(190,9) = "value"
+        │   │   │       │   │       │   ├── closing_loc: (190,9)-(190,10) = ":"
+        │   │   │       │   │       │   └── unescaped: "value"
+        │   │   │       │   │       ├── value:
+        │   │   │       │   │       │   @ LocalVariableTargetNode (location: (190,11)-(190,12))
+        │   │   │       │   │       │   ├── name: :a
+        │   │   │       │   │       │   └── depth: 0
+        │   │   │       │   │       └── operator_loc: ∅
+        │   │   │       │   ├── rest: ∅
+        │   │   │       │   ├── opening_loc: (189,8)-(189,9) = "["
+        │   │   │       │   └── closing_loc: (191,2)-(191,3) = "]"
+        │   │   │       └── operator_loc: ∅
+        │   │   ├── rest: ∅
+        │   │   ├── opening_loc: (188,8)-(188,9) = "["
+        │   │   └── closing_loc: (192,0)-(192,1) = "]"
+        │   └── operator_loc: (188,4)-(188,6) = "in"
+        ├── @ MatchPredicateNode (location: (194,0)-(194,17))
+        │   ├── value:
+        │   │   @ CallNode (location: (194,0)-(194,3))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (194,0)-(194,3) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: variable_call
+        │   │   └── name: :foo
+        │   ├── pattern:
+        │   │   @ CapturePatternNode (location: (194,7)-(194,17))
+        │   │   ├── value:
+        │   │   │   @ LocalVariableTargetNode (location: (194,7)-(194,10))
+        │   │   │   ├── name: :bar
+        │   │   │   └── depth: 0
+        │   │   ├── target:
+        │   │   │   @ LocalVariableTargetNode (location: (194,14)-(194,17))
+        │   │   │   ├── name: :baz
+        │   │   │   └── depth: 0
+        │   │   └── operator_loc: (194,11)-(194,13) = "=>"
+        │   └── operator_loc: (194,4)-(194,6) = "in"
+        └── @ MatchRequiredNode (location: (195,0)-(195,17))
             ├── value:
-            │   @ CallNode (location: (188,0)-(188,3))
+            │   @ CallNode (location: (195,0)-(195,3))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
-            │   ├── message_loc: (188,0)-(188,3) = "foo"
+            │   ├── message_loc: (195,0)-(195,3) = "foo"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
@@ -4462,41 +4537,14 @@
             │   ├── flags: variable_call
             │   └── name: :foo
             ├── pattern:
-            │   @ HashPatternNode (location: (188,7)-(192,1))
-            │   ├── constant:
-            │   │   @ ConstantReadNode (location: (188,7)-(188,8))
-            │   │   └── name: :A
-            │   ├── elements: (length: 1)
-            │   │   └── @ AssocNode (location: (189,2)-(191,3))
-            │   │       ├── key:
-            │   │       │   @ SymbolNode (location: (189,2)-(189,6))
-            │   │       │   ├── opening_loc: ∅
-            │   │       │   ├── value_loc: (189,2)-(189,5) = "bar"
-            │   │       │   ├── closing_loc: (189,5)-(189,6) = ":"
-            │   │       │   └── unescaped: "bar"
-            │   │       ├── value:
-            │   │       │   @ HashPatternNode (location: (189,7)-(191,3))
-            │   │       │   ├── constant:
-            │   │       │   │   @ ConstantReadNode (location: (189,7)-(189,8))
-            │   │       │   │   └── name: :B
-            │   │       │   ├── elements: (length: 1)
-            │   │       │   │   └── @ AssocNode (location: (190,4)-(190,12))
-            │   │       │   │       ├── key:
-            │   │       │   │       │   @ SymbolNode (location: (190,4)-(190,10))
-            │   │       │   │       │   ├── opening_loc: ∅
-            │   │       │   │       │   ├── value_loc: (190,4)-(190,9) = "value"
-            │   │       │   │       │   ├── closing_loc: (190,9)-(190,10) = ":"
-            │   │       │   │       │   └── unescaped: "value"
-            │   │       │   │       ├── value:
-            │   │       │   │       │   @ LocalVariableTargetNode (location: (190,11)-(190,12))
-            │   │       │   │       │   ├── name: :a
-            │   │       │   │       │   └── depth: 0
-            │   │       │   │       └── operator_loc: ∅
-            │   │       │   ├── rest: ∅
-            │   │       │   ├── opening_loc: (189,8)-(189,9) = "["
-            │   │       │   └── closing_loc: (191,2)-(191,3) = "]"
-            │   │       └── operator_loc: ∅
-            │   ├── rest: ∅
-            │   ├── opening_loc: (188,8)-(188,9) = "["
-            │   └── closing_loc: (192,0)-(192,1) = "]"
-            └── operator_loc: (188,4)-(188,6) = "in"
+            │   @ CapturePatternNode (location: (195,7)-(195,17))
+            │   ├── value:
+            │   │   @ LocalVariableTargetNode (location: (195,7)-(195,10))
+            │   │   ├── name: :bar
+            │   │   └── depth: 0
+            │   ├── target:
+            │   │   @ LocalVariableTargetNode (location: (195,14)-(195,17))
+            │   │   ├── name: :baz
+            │   │   └── depth: 0
+            │   └── operator_loc: (195,11)-(195,13) = "=>"
+            └── operator_loc: (195,4)-(195,6) = "=>"

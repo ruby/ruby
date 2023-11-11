@@ -19,3 +19,5 @@ while class << self; tap do end; end; break; end
 while class << self; a = tap do end; end; break; end
 
 while def foo = bar do end; end
+
+foo while bar in baz

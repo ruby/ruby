@@ -9719,7 +9719,7 @@ parser_lex(pm_parser_t *parser) {
 typedef enum {
     PM_BINDING_POWER_UNSET =            0, // used to indicate this token cannot be used as an infix operator
     PM_BINDING_POWER_STATEMENT =        2,
-    PM_BINDING_POWER_MODIFIER =         4, // if unless until while in
+    PM_BINDING_POWER_MODIFIER =         4, // if unless until while
     PM_BINDING_POWER_MODIFIER_RESCUE =  6, // rescue
     PM_BINDING_POWER_COMPOSITION =      8, // and or
     PM_BINDING_POWER_NOT =             10, // not
@@ -9758,34 +9758,44 @@ typedef struct {
 
     /** Whether or not this token can be used as a binary operator. */
     bool binary;
+
+    /**
+     * Whether or not this token can be used as non associative binary operator.
+     * Usually, non associative operator can be handled by using the above left
+     * and right binding powers, but some operators (e.g. in and =>) need special
+     * treatment since they do not call parse_expression recursively.
+     */
+    bool nonassoc;
 } pm_binding_powers_t;
 
-#define BINDING_POWER_ASSIGNMENT { PM_BINDING_POWER_UNARY, PM_BINDING_POWER_ASSIGNMENT, true }
-#define LEFT_ASSOCIATIVE(precedence) { precedence, precedence + 1, true }
-#define RIGHT_ASSOCIATIVE(precedence) { precedence, precedence, true }
-#define RIGHT_ASSOCIATIVE_UNARY(precedence) { precedence, precedence, false }
+#define BINDING_POWER_ASSIGNMENT { PM_BINDING_POWER_UNARY, PM_BINDING_POWER_ASSIGNMENT, true, false }
+#define LEFT_ASSOCIATIVE(precedence) { precedence, precedence + 1, true, false }
+#define RIGHT_ASSOCIATIVE(precedence) { precedence, precedence, true, false }
+#define NON_ASSOCIATIVE(precedence) { precedence + 1, precedence + 1, true, true }
+#define RIGHT_ASSOCIATIVE_UNARY(precedence) { precedence, precedence, false, false }
 
 pm_binding_powers_t pm_binding_powers[PM_TOKEN_MAXIMUM] = {
-    // if unless until while in rescue
+    // if unless until while
     [PM_TOKEN_KEYWORD_IF_MODIFIER] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_MODIFIER),
     [PM_TOKEN_KEYWORD_UNLESS_MODIFIER] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_MODIFIER),
     [PM_TOKEN_KEYWORD_UNTIL_MODIFIER] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_MODIFIER),
     [PM_TOKEN_KEYWORD_WHILE_MODIFIER] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_MODIFIER),
-    [PM_TOKEN_KEYWORD_IN] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_MODIFIER),
 
-    // rescue modifier
+    // rescue
     [PM_TOKEN_KEYWORD_RESCUE_MODIFIER] = {
         PM_BINDING_POWER_ASSIGNMENT,
         PM_BINDING_POWER_MODIFIER_RESCUE + 1,
-        true
+        true,
+        false
     },
 
     // and or
     [PM_TOKEN_KEYWORD_AND] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_COMPOSITION),
     [PM_TOKEN_KEYWORD_OR] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_COMPOSITION),
 
-    // =>
-    [PM_TOKEN_EQUAL_GREATER] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_MATCH),
+    // => in
+    [PM_TOKEN_EQUAL_GREATER] = NON_ASSOCIATIVE(PM_BINDING_POWER_MATCH),
+    [PM_TOKEN_KEYWORD_IN] = NON_ASSOCIATIVE(PM_BINDING_POWER_MATCH),
 
     // &&= &= ^= = >>= <<= -= %= |= += /= *= **=
     [PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL] = BINDING_POWER_ASSIGNMENT,
@@ -9853,7 +9863,7 @@ pm_binding_powers_t pm_binding_powers[PM_TOKEN_MAXIMUM] = {
 
     // -@
     [PM_TOKEN_UMINUS] = RIGHT_ASSOCIATIVE_UNARY(PM_BINDING_POWER_UMINUS),
-    [PM_TOKEN_UMINUS_NUM] = { PM_BINDING_POWER_UMINUS, PM_BINDING_POWER_MAX, false },
+    [PM_TOKEN_UMINUS_NUM] = { PM_BINDING_POWER_UMINUS, PM_BINDING_POWER_MAX, false, false },
 
     // **
     [PM_TOKEN_STAR_STAR] = RIGHT_ASSOCIATIVE(PM_BINDING_POWER_EXPONENT),
@@ -16212,6 +16222,12 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, pm_diagn
         current_binding_powers.binary
      ) {
         node = parse_expression_infix(parser, node, binding_power, current_binding_powers.right);
+        if (
+            current_binding_powers.nonassoc &&
+            current_binding_powers.right <= pm_binding_powers[parser->current.type].left
+        ) {
+            break;
+        }
     }
 
     return node;
