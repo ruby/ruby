@@ -140,12 +140,12 @@ ruby_mn_threads_params(void)
 }
 
 void
-ruby_init_stack(volatile VALUE *addr)
+ruby_init_stack(volatile void *addr)
 {
 }
 
 static int
-native_thread_init_stack(rb_thread_t *th)
+native_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
 {
 #if defined(__wasm__) && !defined(__EMSCRIPTEN__)
     th->ec->machine.stack_start = (VALUE *)rb_wasm_stack_get_base();

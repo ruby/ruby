@@ -70,7 +70,7 @@ ruby_setup(void)
     if (GET_VM())
         return 0;
 
-    ruby_init_stack((void *)&state);
+    ruby_init_stack(&state);
 
     /*
      * Disable THP early before mallocs happen because we want this to
@@ -79,7 +79,7 @@ ruby_setup(void)
 #if defined(__linux__) && defined(PR_SET_THP_DISABLE)
     prctl(PR_SET_THP_DISABLE, 1, 0, 0, 0);
 #endif
-    Init_BareVM();
+    Init_BareVM(&state);
     Init_heap();
     rb_vm_encoded_insn_data_table_init();
     Init_vm_objects();
