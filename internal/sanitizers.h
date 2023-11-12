@@ -64,6 +64,8 @@
 # define __asan_poison_memory_region(x, y)
 # define __asan_unpoison_memory_region(x, y)
 # define __asan_region_is_poisoned(x, y) 0
+# define __asan_get_current_fake_stack() NULL
+# define __asan_addr_is_in_fake_stack(fake_stack, slot, start, end) NULL
 #endif
 
 #if !__has_feature(memory_sanitizer)
@@ -181,6 +183,30 @@ asan_unpoison_object(VALUE obj, bool newobj_p)
 {
     MAYBE_UNUSED(struct RVALUE *) ptr = (void *)obj;
     asan_unpoison_memory_region(ptr, SIZEOF_VALUE, newobj_p);
+}
+
+
+/*!
+ * Checks if the given pointer is on an ASAN fake stack. If so, it returns the
+ * address this variable has on the real frame; if not, it returns the origin
+ * address unmodified.
+ *
+ * n.b. - _dereferencing_ the returned address is meaningless and should not
+ * be done; even though ASAN reserves space for the variable in both the real and
+ * fake stacks, the _value_ of that variable is only in the fake stack.
+ *
+ * n.b. - this only works for addresses passed in from local variables on the same
+ * thread, because the ASAN fake stacks are threadlocal.
+ *
+ * \param[in] slot  the address of some local variable
+ * \retval          a pointer to something from that frame on the _real_ machine stack
+ */
+static inline void *
+asan_get_real_stack_addr(void* slot)
+{
+    VALUE *addr;
+    addr = __asan_addr_is_in_fake_stack(__asan_get_current_fake_stack(), slot, NULL, NULL);
+    return addr ? addr : slot;
 }
 
 #endif /* INTERNAL_SANITIZERS_H */

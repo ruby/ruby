@@ -11,6 +11,7 @@
 
 #ifdef THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
+#include "internal/sanitizers.h"
 #include <process.h>
 
 #define TIME_QUANTUM_USEC (10 * 1000)
@@ -596,7 +597,7 @@ COMPILER_WARNING_IGNORED(-Wmaybe-uninitialized)
 static inline SIZE_T
 query_memory_basic_info(PMEMORY_BASIC_INFORMATION mi, void *local_in_parent_frame)
 {
-    return VirtualQuery(local_in_parent_frame, mi, sizeof(*mi));
+    return VirtualQuery(asan_get_real_stack_addr(local_in_parent_frame), mi, sizeof(*mi));
 }
 COMPILER_WARNING_POP
 
