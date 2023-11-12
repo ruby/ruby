@@ -6022,10 +6022,18 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
     }
 
     // Next, we're going to check for UTF-8. This is the most common encoding.
-    // Extensions like utf-8 can contain extra encoding details like,
-    // utf-8-dos, utf-8-linux, utf-8-mac. We treat these all as utf-8 should
-    // treat any encoding starting utf-8 as utf-8.
+    // utf-8 can contain extra information at the end about the platform it is
+    // encoded on, such as utf-8-mac or utf-8-unix. We'll ignore those suffixes.
     if ((start + 5 <= end) && (pm_strncasecmp(start, (const uint8_t *) "utf-8", 5) == 0)) {
+        // We need to explicitly handle utf-8-hfs, as that one needs to switch
+        // over to being utf8-mac.
+        if (width == 9 && (pm_strncasecmp(start + 5, (const uint8_t *) "-hfs", 4) == 0)) {
+            parser->encoding = pm_encoding_utf8_mac;
+            parser->encoding_changed = true;
+            if (parser->encoding_changed_callback != NULL) parser->encoding_changed_callback(parser);
+            return true;
+        }
+
         // We don't need to do anything here because the default encoding is
         // already UTF-8. We'll just return.
         return true;
@@ -6036,48 +6044,58 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
 #define ENCODING(value, prebuilt) \
     if (width == sizeof(value) - 1 && start + width <= end && pm_strncasecmp(start, (const uint8_t *) value, width) == 0) { \
         parser->encoding = prebuilt; \
-        parser->encoding_changed |= true; \
+        parser->encoding_changed = true; \
         if (parser->encoding_changed_callback != NULL) parser->encoding_changed_callback(parser); \
         return true; \
     }
 
+    // Built convenience macros to compare aliases for the same encoding.
+#define ENCODING2(value1, value2, prebuilt) ENCODING(value1, prebuilt) ENCODING(value2, prebuilt)
+#define ENCODING3(value1, value2, value3, prebuilt) ENCODING2(value1, value2, prebuilt) ENCODING(value3, prebuilt)
+#define ENCODING4(value1, value2, value3, value4, prebuilt) ENCODING3(value1, value2, value3, prebuilt) ENCODING(value4, prebuilt)
+#define ENCODING5(value1, value2, value3, value4, value5, prebuilt) ENCODING4(value1, value2, value3, value4, prebuilt) ENCODING(value5, prebuilt)
+
     // Check most common first. (This is pretty arbitrary.)
-    ENCODING("ascii", pm_encoding_ascii);
-    ENCODING("ascii-8bit", pm_encoding_ascii_8bit);
-    ENCODING("us-ascii", pm_encoding_ascii);
-    ENCODING("binary", pm_encoding_ascii_8bit);
-    ENCODING("shift_jis", pm_encoding_shift_jis);
-    ENCODING("euc-jp", pm_encoding_euc_jp);
+    ENCODING("ASCII", pm_encoding_ascii);
+    ENCODING("ASCII-8BIT", pm_encoding_ascii_8bit);
+    ENCODING("US-ASCII", pm_encoding_ascii);
+    ENCODING("BINARY", pm_encoding_ascii_8bit);
+    ENCODING("Shift_JIS", pm_encoding_shift_jis);
+    ENCODING("EUC-JP", pm_encoding_euc_jp);
 
     // Then check all the others.
-    ENCODING("big5", pm_encoding_big5);
+    ENCODING2("ANSI_X3.4-1968", "646", pm_encoding_ascii);
     ENCODING("cp51932", pm_encoding_cp51932);
-    ENCODING("gbk", pm_encoding_gbk);
-    ENCODING("iso-8859-1", pm_encoding_iso_8859_1);
-    ENCODING("iso-8859-2", pm_encoding_iso_8859_2);
-    ENCODING("iso-8859-3", pm_encoding_iso_8859_3);
-    ENCODING("iso-8859-4", pm_encoding_iso_8859_4);
-    ENCODING("iso-8859-5", pm_encoding_iso_8859_5);
-    ENCODING("iso-8859-6", pm_encoding_iso_8859_6);
-    ENCODING("iso-8859-7", pm_encoding_iso_8859_7);
-    ENCODING("iso-8859-8", pm_encoding_iso_8859_8);
-    ENCODING("iso-8859-9", pm_encoding_iso_8859_9);
-    ENCODING("iso-8859-10", pm_encoding_iso_8859_10);
-    ENCODING("iso-8859-11", pm_encoding_iso_8859_11);
-    ENCODING("iso-8859-13", pm_encoding_iso_8859_13);
-    ENCODING("iso-8859-14", pm_encoding_iso_8859_14);
-    ENCODING("iso-8859-15", pm_encoding_iso_8859_15);
-    ENCODING("iso-8859-16", pm_encoding_iso_8859_16);
-    ENCODING("koi8-r", pm_encoding_koi8_r);
-    ENCODING("windows-31j", pm_encoding_windows_31j);
-    ENCODING("windows-1251", pm_encoding_windows_1251);
-    ENCODING("windows-1252", pm_encoding_windows_1252);
-    ENCODING("cp1251", pm_encoding_windows_1251);
-    ENCODING("cp1252", pm_encoding_windows_1252);
-    ENCODING("cp932", pm_encoding_windows_31j);
-    ENCODING("sjis", pm_encoding_windows_31j);
-    ENCODING("utf8-mac", pm_encoding_utf8_mac);
+    ENCODING("eucJP", pm_encoding_euc_jp);
+    ENCODING("Big5", pm_encoding_big5);
+    ENCODING2("GBK", "CP936", pm_encoding_gbk);
+    ENCODING2("ISO-8859-1", "ISO8859-1", pm_encoding_iso_8859_1);
+    ENCODING2("ISO-8859-2", "ISO8859-2", pm_encoding_iso_8859_2);
+    ENCODING2("ISO-8859-3", "ISO8859-3", pm_encoding_iso_8859_3);
+    ENCODING2("ISO-8859-4", "ISO8859-4", pm_encoding_iso_8859_4);
+    ENCODING2("ISO-8859-5", "ISO8859-5", pm_encoding_iso_8859_5);
+    ENCODING2("ISO-8859-6", "ISO8859-6", pm_encoding_iso_8859_6);
+    ENCODING2("ISO-8859-7", "ISO8859-7", pm_encoding_iso_8859_7);
+    ENCODING2("ISO-8859-8", "ISO8859-8", pm_encoding_iso_8859_8);
+    ENCODING2("ISO-8859-9", "ISO8859-9", pm_encoding_iso_8859_9);
+    ENCODING2("ISO-8859-10", "ISO8859-10", pm_encoding_iso_8859_10);
+    ENCODING2("ISO-8859-11", "ISO8859-11", pm_encoding_iso_8859_11);
+    ENCODING2("ISO-8859-13", "ISO8859-13", pm_encoding_iso_8859_13);
+    ENCODING2("ISO-8859-14", "ISO8859-14", pm_encoding_iso_8859_14);
+    ENCODING2("ISO-8859-15", "ISO8859-15", pm_encoding_iso_8859_15);
+    ENCODING2("ISO-8859-16", "ISO8859-16", pm_encoding_iso_8859_16);
+    ENCODING2("KOI8-R", "CP878", pm_encoding_koi8_r);
+    ENCODING4("CP65001", "locale", "external", "filesystem", pm_encoding_utf_8);
+    ENCODING3("UTF8-MAC", "UTF-8-MAC", "UTF-8-HFS", pm_encoding_utf8_mac);
+    ENCODING2("Windows-1250", "CP1250", pm_encoding_windows_1250);
+    ENCODING2("Windows-1251", "CP1251", pm_encoding_windows_1251);
+    ENCODING2("Windows-1252", "CP1252", pm_encoding_windows_1252);
+    ENCODING5("Windows-31J", "CP932", "csWindows31J", "SJIS", "PCK", pm_encoding_windows_31j);
 
+#undef ENCODING2
+#undef ENCODING3
+#undef ENCODING4
+#undef ENCODING5
 #undef ENCODING
 
     return false;

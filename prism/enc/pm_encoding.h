@@ -180,8 +180,9 @@ extern pm_encoding_t pm_encoding_koi8_r;
 extern pm_encoding_t pm_encoding_shift_jis;
 extern pm_encoding_t pm_encoding_utf_8;
 extern pm_encoding_t pm_encoding_utf8_mac;
-extern pm_encoding_t pm_encoding_windows_31j;
+extern pm_encoding_t pm_encoding_windows_1250;
 extern pm_encoding_t pm_encoding_windows_1251;
 extern pm_encoding_t pm_encoding_windows_1252;
+extern pm_encoding_t pm_encoding_windows_31j;
 
 #endif
