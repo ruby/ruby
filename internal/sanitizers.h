@@ -213,4 +213,67 @@ asan_get_real_stack_addr(void* slot)
     return addr ? addr : slot;
 }
 
+/*!
+ * Gets the current thread's fake stack handle, which can be passed into get_fake_stack_extents
+ *
+ * \retval An opaque value which can be passed to asan_get_fake_stack_extents
+ */
+static inline void *
+asan_get_thread_fake_stack_handle(void)
+{
+    return __asan_get_current_fake_stack();
+}
+
+/*!
+ * Checks if the given VALUE _actually_ represents a pointer to an ASAN fake stack.
+ *
+ * If the given slot _is_ actually a reference to an ASAN fake stack, and that fake stack
+ * contains the real values for the passed-in range of machine stack addresses, returns true
+ * and the range of the fake stack through the outparams.
+ *
+ * Otherwise, returns false, and sets the outparams to NULL.
+ *
+ * Note that this function expects "start" to be > "end" on downward-growing stack architectures;
+ *
+ * \param[in]  thread_fake_stack_handle  The asan fake stack reference for the thread we're scanning
+ * \param[in]  slot                      The value on the machine stack we want to inspect
+ * \param[in]  machine_stack_start       The extents of the real machine stack on which slot lives
+ * \param[in]  machine_stack_end         The extents of the real machine stack on which slot lives
+ * \param[out] fake_stack_start_out      The extents of the fake stack which contains real VALUEs
+ * \param[out] fake_stack_end_out        The extents of the fake stack which contains real VALUEs
+ * \return                               Whether slot is a pointer to a fake stack for the given machine stack range
+*/
+
+static inline bool
+asan_get_fake_stack_extents(void *thread_fake_stack_handle, VALUE slot,
+                            void *machine_stack_start, void *machine_stack_end,
+                            void **fake_stack_start_out, void **fake_stack_end_out)
+{
+    /* the ifdef is needed here to suppress a warning about fake_frame_{start/end} being
+       uninitialized if __asan_addr_is_in_fake_stack is an empty macro */
+#ifdef RUBY_ASAN_ENABLED
+    void *fake_frame_start;
+    void *fake_frame_end;
+    void *real_stack_frame = __asan_addr_is_in_fake_stack(
+        thread_fake_stack_handle, (void *)slot, &fake_frame_start, &fake_frame_end
+    );
+    if (real_stack_frame) {
+        bool in_range;
+#if STACK_GROW_DIRECTION < 0
+        in_range = machine_stack_start >= real_stack_frame && real_stack_frame >= machine_stack_end;
+#else
+        in_range = machine_stack_start <= real_stack_frame && real_stack_frame <= machine_stack_end;
+#endif
+        if (in_range) {
+            *fake_stack_start_out = fake_frame_start;
+            *fake_stack_end_out = fake_frame_end;
+            return true;
+        }
+    }
+#endif
+    *fake_stack_start_out = 0;
+    *fake_stack_end_out = 0;
+    return false;
+}
+
 #endif /* INTERNAL_SANITIZERS_H */

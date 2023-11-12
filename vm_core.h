@@ -94,6 +94,7 @@ extern int ruby_assert_critical_section_entered;
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/basic_operators.h"
+#include "internal/sanitizers.h"
 #include "internal/serial.h"
 #include "internal/vm.h"
 #include "method.h"
@@ -1155,6 +1156,10 @@ typedef struct rb_thread_struct {
     void **specific_storage;
 
     struct rb_ext_config ext_config;
+
+#ifdef RUBY_ASAN_ENABLED
+    void *asan_fake_stack_handle;
+#endif
 } rb_thread_t;
 
 static inline unsigned int
