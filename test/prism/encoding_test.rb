@@ -18,6 +18,7 @@ module Prism
       Encoding::IBM720,
       Encoding::IBM737,
       Encoding::IBM775,
+      Encoding::IBM852,
       Encoding::ISO_8859_1,
       Encoding::ISO_8859_2,
       Encoding::ISO_8859_3,
