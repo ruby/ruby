@@ -5049,7 +5049,7 @@ rb_ary_rassoc(VALUE ary, VALUE value)
     VALUE v;
 
     for (i = 0; i < RARRAY_LEN(ary); ++i) {
-        v = RARRAY_AREF(ary, i);
+        v = rb_check_array_type(RARRAY_AREF(ary, i));
         if (RB_TYPE_P(v, T_ARRAY) &&
             RARRAY_LEN(v) > 1 &&
             rb_equal(RARRAY_AREF(v, 1), value))
