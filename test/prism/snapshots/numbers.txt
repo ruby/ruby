@@ -1,8 +1,8 @@
-@ ProgramNode (location: (1,0)-(63,5))
+@ ProgramNode (location: (1,0)-(67,5))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (1,0)-(63,5))
-    └── body: (length: 32)
+    @ StatementsNode (location: (1,0)-(67,5))
+    └── body: (length: 34)
         ├── @ IntegerNode (location: (1,0)-(1,1))
         │   └── flags: decimal
         ├── @ IntegerNode (location: (3,0)-(3,1))
@@ -56,47 +56,53 @@
         │       └── numeric:
         │           @ IntegerNode (location: (45,0)-(45,1))
         │           └── flags: decimal
-        ├── @ ImaginaryNode (location: (47,0)-(47,5))
+        ├── @ RationalNode (location: (47,0)-(47,4))
         │   └── numeric:
-        │       @ RationalNode (location: (47,0)-(47,4))
-        │       └── numeric:
-        │           @ FloatNode (location: (47,0)-(47,3))
-        ├── @ ImaginaryNode (location: (49,0)-(49,4))
+        │       @ FloatNode (location: (47,0)-(47,3))
+        ├── @ ImaginaryNode (location: (49,0)-(49,5))
         │   └── numeric:
-        │       @ RationalNode (location: (49,0)-(49,3))
+        │       @ RationalNode (location: (49,0)-(49,4))
         │       └── numeric:
-        │           @ IntegerNode (location: (49,0)-(49,2))
+        │           @ FloatNode (location: (49,0)-(49,3))
+        ├── @ ImaginaryNode (location: (51,0)-(51,4))
+        │   └── numeric:
+        │       @ RationalNode (location: (51,0)-(51,3))
+        │       └── numeric:
+        │           @ IntegerNode (location: (51,0)-(51,2))
         │           └── flags: decimal
-        ├── @ ImaginaryNode (location: (51,0)-(51,6))
+        ├── @ RationalNode (location: (53,0)-(53,5))
         │   └── numeric:
-        │       @ RationalNode (location: (51,0)-(51,5))
+        │       @ FloatNode (location: (53,0)-(53,4))
+        ├── @ ImaginaryNode (location: (55,0)-(55,6))
+        │   └── numeric:
+        │       @ RationalNode (location: (55,0)-(55,5))
         │       └── numeric:
-        │           @ FloatNode (location: (51,0)-(51,4))
-        ├── @ RationalNode (location: (53,0)-(53,4))
+        │           @ FloatNode (location: (55,0)-(55,4))
+        ├── @ RationalNode (location: (57,0)-(57,4))
         │   └── numeric:
-        │       @ IntegerNode (location: (53,0)-(53,3))
+        │       @ IntegerNode (location: (57,0)-(57,3))
         │       └── flags: octal
-        ├── @ ImaginaryNode (location: (55,0)-(55,4))
-        │   └── numeric:
-        │       @ IntegerNode (location: (55,0)-(55,3))
-        │       └── flags: octal
-        ├── @ ImaginaryNode (location: (57,0)-(57,5))
-        │   └── numeric:
-        │       @ RationalNode (location: (57,0)-(57,4))
-        │       └── numeric:
-        │           @ IntegerNode (location: (57,0)-(57,3))
-        │           └── flags: octal
-        ├── @ RationalNode (location: (59,0)-(59,4))
+        ├── @ ImaginaryNode (location: (59,0)-(59,4))
         │   └── numeric:
         │       @ IntegerNode (location: (59,0)-(59,3))
-        │       └── flags: decimal
-        ├── @ ImaginaryNode (location: (61,0)-(61,4))
+        │       └── flags: octal
+        ├── @ ImaginaryNode (location: (61,0)-(61,5))
         │   └── numeric:
-        │       @ IntegerNode (location: (61,0)-(61,3))
+        │       @ RationalNode (location: (61,0)-(61,4))
+        │       └── numeric:
+        │           @ IntegerNode (location: (61,0)-(61,3))
+        │           └── flags: octal
+        ├── @ RationalNode (location: (63,0)-(63,4))
+        │   └── numeric:
+        │       @ IntegerNode (location: (63,0)-(63,3))
         │       └── flags: decimal
-        └── @ ImaginaryNode (location: (63,0)-(63,5))
+        ├── @ ImaginaryNode (location: (65,0)-(65,4))
+        │   └── numeric:
+        │       @ IntegerNode (location: (65,0)-(65,3))
+        │       └── flags: decimal
+        └── @ ImaginaryNode (location: (67,0)-(67,5))
             └── numeric:
-                @ RationalNode (location: (63,0)-(63,4))
+                @ RationalNode (location: (67,0)-(67,4))
                 └── numeric:
-                    @ IntegerNode (location: (63,0)-(63,3))
+                    @ IntegerNode (location: (67,0)-(67,3))
                     └── flags: binary

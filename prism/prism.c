@@ -6315,7 +6315,7 @@ pm_strspn_hexadecimal_number_validate(pm_parser_t *parser, const uint8_t *string
 }
 
 static pm_token_type_t
-lex_optional_float_suffix(pm_parser_t *parser) {
+lex_optional_float_suffix(pm_parser_t *parser, bool* seen_e) {
     pm_token_type_t type = PM_TOKEN_INTEGER;
 
     // Here we're going to attempt to parse the optional decimal portion of a
@@ -6336,6 +6336,7 @@ lex_optional_float_suffix(pm_parser_t *parser) {
     // float. If it's not there, it's okay and we'll just continue on.
     if (match(parser, 'e') || match(parser, 'E')) {
         (void) (match(parser, '+') || match(parser, '-'));
+        *seen_e = true;
 
         if (pm_char_is_decimal_digit(*parser->current.end)) {
             parser->current.end++;
@@ -6351,8 +6352,9 @@ lex_optional_float_suffix(pm_parser_t *parser) {
 }
 
 static pm_token_type_t
-lex_numeric_prefix(pm_parser_t *parser) {
+lex_numeric_prefix(pm_parser_t *parser, bool* seen_e) {
     pm_token_type_t type = PM_TOKEN_INTEGER;
+    *seen_e = false;
 
     if (peek_offset(parser, -1) == '0') {
         switch (*parser->current.end) {
@@ -6423,14 +6425,14 @@ lex_numeric_prefix(pm_parser_t *parser) {
 
             // 0.xxx is a float
             case '.': {
-                type = lex_optional_float_suffix(parser);
+                type = lex_optional_float_suffix(parser, seen_e);
                 break;
             }
 
             // 0exxx is a float
             case 'e':
             case 'E': {
-                type = lex_optional_float_suffix(parser);
+                type = lex_optional_float_suffix(parser, seen_e);
                 break;
             }
         }
@@ -6440,7 +6442,7 @@ lex_numeric_prefix(pm_parser_t *parser) {
         parser->current.end += pm_strspn_decimal_number_validate(parser, parser->current.end);
 
         // Afterward, we'll lex as far as we can into an optional float suffix.
-        type = lex_optional_float_suffix(parser);
+        type = lex_optional_float_suffix(parser, seen_e);
     }
 
     return type;
@@ -6452,7 +6454,8 @@ lex_numeric(pm_parser_t *parser) {
     parser->integer_base = PM_INTEGER_BASE_FLAGS_DECIMAL;
 
     if (parser->current.end < parser->end) {
-        type = lex_numeric_prefix(parser);
+        bool seen_e = false;
+        type = lex_numeric_prefix(parser, &seen_e);
 
         const uint8_t *end = parser->current.end;
         pm_token_type_t suffix_type = type;
@@ -6468,7 +6471,7 @@ lex_numeric(pm_parser_t *parser) {
                 suffix_type = PM_TOKEN_INTEGER_IMAGINARY;
             }
         } else {
-            if (match(parser, 'r')) {
+            if (!seen_e && match(parser, 'r')) {
                 suffix_type = PM_TOKEN_FLOAT_RATIONAL;
 
                 if (match(parser, 'i')) {
