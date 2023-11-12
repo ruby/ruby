@@ -16,11 +16,15 @@
 #endif
 
 #ifdef HAVE_SANITIZER_ASAN_INTERFACE_H
-# include <sanitizer/asan_interface.h>
+# if __has_feature(address_sanitizer)
+#  define RUBY_ASAN_ENABLED
+#  include <sanitizer/asan_interface.h>
+# endif
 #endif
 
 #ifdef HAVE_SANITIZER_MSAN_INTERFACE_H
 # if __has_feature(memory_sanitizer)
+#  define RUBY_MSAN_ENABLED
 #  include <sanitizer/msan_interface.h>
 # endif
 #endif
@@ -29,10 +33,10 @@
 #include "ruby/ruby.h"          /* for VALUE */
 
 #if 0
-#elif __has_feature(memory_sanitizer) && __has_feature(address_sanitizer)
+#elif defined(RUBY_ASAN_ENABLED) && defined(RUBY_MSAN_ENABLED)
 # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
     __attribute__((__no_sanitize__("memory, address"), __noinline__)) x
-#elif __has_feature(address_sanitizer)
+#elif defined(RUBY_ASAN_ENABLED)
 # define ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(x) \
     __attribute__((__no_sanitize__("address"), __noinline__)) x
 #elif defined(NO_SANITIZE_ADDRESS)
@@ -60,7 +64,7 @@
 # define NO_SANITIZE(x, y) y
 #endif
 
-#if !__has_feature(address_sanitizer)
+#ifndef RUBY_ASAN_ENABLED
 # define __asan_poison_memory_region(x, y)
 # define __asan_unpoison_memory_region(x, y)
 # define __asan_region_is_poisoned(x, y) 0
@@ -68,7 +72,7 @@
 # define __asan_addr_is_in_fake_stack(fake_stack, slot, start, end) NULL
 #endif
 
-#if !__has_feature(memory_sanitizer)
+#ifndef RUBY_MSAN_ENABLED
 # define __msan_allocated_memory(x, y) ((void)(x), (void)(y))
 # define __msan_poison(x, y) ((void)(x), (void)(y))
 # define __msan_unpoison(x, y) ((void)(x), (void)(y))
@@ -123,12 +127,12 @@ asan_poison_object(VALUE obj)
     asan_poison_memory_region(ptr, SIZEOF_VALUE);
 }
 
-#if !__has_feature(address_sanitizer)
-#define asan_poison_object_if(ptr, obj) ((void)(ptr), (void)(obj))
-#else
+#ifdef RUBY_ASAN_ENABLED
 #define asan_poison_object_if(ptr, obj) do { \
         if (ptr) asan_poison_object(obj); \
     } while (0)
+#else
+#define asan_poison_object_if(ptr, obj) ((void)(ptr), (void)(obj))
 #endif
 
 /*!
