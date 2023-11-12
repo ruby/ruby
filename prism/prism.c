@@ -5793,7 +5793,16 @@ pm_parser_scope_pop(pm_parser_t *parser) {
 static inline size_t
 char_is_identifier_start(pm_parser_t *parser, const uint8_t *b) {
     if (parser->encoding_changed) {
-        return parser->encoding.alpha_char(b, parser->end - b) || (*b == '_') || (*b >= 0x80);
+        size_t width;
+        if ((width = parser->encoding.alpha_char(b, parser->end - b)) != 0) {
+            return width;
+        } else if (*b == '_') {
+            return 1;
+        } else if (*b >= 0x80) {
+            return parser->encoding.char_width(b, parser->end - b);
+        } else {
+            return 0;
+        }
     } else if (*b < 0x80) {
         return (pm_encoding_unicode_table[*b] & PRISM_ENCODING_ALPHABETIC_BIT ? 1 : 0) || (*b == '_');
     } else {
@@ -5809,7 +5818,16 @@ char_is_identifier_start(pm_parser_t *parser, const uint8_t *b) {
 static inline size_t
 char_is_identifier(pm_parser_t *parser, const uint8_t *b) {
     if (parser->encoding_changed) {
-        return parser->encoding.alnum_char(b, parser->end - b) || (*b == '_') || (*b >= 0x80);
+        size_t width;
+        if ((width = parser->encoding.alnum_char(b, parser->end - b)) != 0) {
+            return width;
+        } else if (*b == '_') {
+            return 1;
+        } else if (*b >= 0x80) {
+            return parser->encoding.char_width(b, parser->end - b);
+        } else {
+            return 0;
+        }
     } else if (*b < 0x80) {
         return (pm_encoding_unicode_table[*b] & PRISM_ENCODING_ALPHANUMERIC_BIT ? 1 : 0) || (*b == '_');
     } else {
