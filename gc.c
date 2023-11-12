@@ -6548,32 +6548,38 @@ ruby_stack_check(void)
     return stack_check(GET_EC(), STACKFRAME_FOR_CALL_CFUNC);
 }
 
-ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(static void each_location(rb_objspace_t *objspace, register const VALUE *x, register long n, void (*cb)(rb_objspace_t *, VALUE)));
+ATTRIBUTE_NO_ADDRESS_SAFETY_ANALYSIS(static void each_location(rb_objspace_t *objspace, register const VALUE *x, register long n, void *ctx, void (*cb)(rb_objspace_t *, void *, VALUE)));
 static void
-each_location(rb_objspace_t *objspace, register const VALUE *x, register long n, void (*cb)(rb_objspace_t *, VALUE))
+each_location(rb_objspace_t *objspace, register const VALUE *x, register long n, void *ctx, void (*cb)(rb_objspace_t *, void *, VALUE))
 {
     VALUE v;
     while (n--) {
         v = *x;
-        cb(objspace, v);
+        cb(objspace, ctx, v);
         x++;
     }
 }
 
 static void
-gc_mark_locations(rb_objspace_t *objspace, const VALUE *start, const VALUE *end, void (*cb)(rb_objspace_t *, VALUE))
+gc_mark_locations(rb_objspace_t *objspace, const VALUE *start, const VALUE *end, void *ctx, void (*cb)(rb_objspace_t *, void *, VALUE))
 {
     long n;
 
     if (end <= start) return;
     n = end - start;
-    each_location(objspace, start, n, cb);
+    each_location(objspace, start, n, ctx, cb);
+}
+
+static void
+gc_mark_maybe_cb(rb_objspace_t *objspace, void *ctx, VALUE obj)
+{
+    gc_mark_maybe(objspace, obj);
 }
 
 void
 rb_gc_mark_locations(const VALUE *start, const VALUE *end)
 {
-    gc_mark_locations(&rb_objspace, start, end, gc_mark_maybe);
+    gc_mark_locations(&rb_objspace, start, end, NULL, gc_mark_maybe_cb);
 }
 
 void
@@ -6819,7 +6825,8 @@ mark_const_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
 #endif
 
 static void each_stack_location(rb_objspace_t *objspace, const rb_execution_context_t *ec,
-                                 const VALUE *stack_start, const VALUE *stack_end, void (*cb)(rb_objspace_t *, VALUE));
+                                 const VALUE *stack_start, const VALUE *stack_end, void *ctx,
+                                 void (*cb)(rb_objspace_t *, void *, VALUE));
 
 #if defined(__wasm__)
 
@@ -6839,10 +6846,10 @@ static void
 mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec)
 {
     emscripten_scan_stack(rb_mark_locations);
-    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe);
+    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe_cb);
 
     emscripten_scan_registers(rb_mark_locations);
-    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe);
+    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe_cb);
 }
 # else // use Asyncify version
 
@@ -6852,10 +6859,10 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec
     VALUE *stack_start, *stack_end;
     SET_STACK_END;
     GET_STACK_BOUNDS(stack_start, stack_end, 1);
-    each_stack_location(objspace, ec, stack_start, stack_end, gc_mark_maybe);
+    each_stack_location(objspace, ec, stack_start, stack_end, gc_mark_maybe_cb);
 
     rb_wasm_scan_locals(rb_mark_locations);
-    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe);
+    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe_cb);
 }
 
 # endif
@@ -6882,40 +6889,41 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec
     SET_STACK_END;
     GET_STACK_BOUNDS(stack_start, stack_end, 1);
 
-    each_location(objspace, save_regs_gc_mark.v, numberof(save_regs_gc_mark.v), gc_mark_maybe);
+    each_location(objspace, save_regs_gc_mark.v, numberof(save_regs_gc_mark.v), NULL, gc_mark_maybe_cb);
 
-    each_stack_location(objspace, ec, stack_start, stack_end, gc_mark_maybe);
+    each_stack_location(objspace, ec, stack_start, stack_end, NULL, gc_mark_maybe_cb);
 }
 #endif
 
 static void
-each_machine_stack_value(const rb_execution_context_t *ec, void (*cb)(rb_objspace_t *, VALUE))
+each_machine_stack_value(const rb_execution_context_t *ec, void *ctx, void (*cb)(rb_objspace_t *, void *, VALUE))
 {
     rb_objspace_t *objspace = &rb_objspace;
     VALUE *stack_start, *stack_end;
 
     GET_STACK_BOUNDS(stack_start, stack_end, 0);
     RUBY_DEBUG_LOG("ec->th:%u stack_start:%p stack_end:%p", rb_ec_thread_ptr(ec)->serial, stack_start, stack_end);
-    each_stack_location(objspace, ec, stack_start, stack_end, cb);
+    each_stack_location(objspace, ec, stack_start, stack_end, ctx, cb);
 }
 
 void
 rb_gc_mark_machine_stack(const rb_execution_context_t *ec)
 {
-    each_machine_stack_value(ec, gc_mark_maybe);
+    each_machine_stack_value(ec, NULL, gc_mark_maybe_cb);
 }
 
 static void
 each_stack_location(rb_objspace_t *objspace, const rb_execution_context_t *ec,
-                     const VALUE *stack_start, const VALUE *stack_end, void (*cb)(rb_objspace_t *, VALUE))
+                     const VALUE *stack_start, const VALUE *stack_end, void *ctx,
+                     void (*cb)(rb_objspace_t *, void *, VALUE))
 {
 
-    gc_mark_locations(objspace, stack_start, stack_end, cb);
+    gc_mark_locations(objspace, stack_start, stack_end, ctx, cb);
 
 #if defined(__mc68000__)
     gc_mark_locations(objspace,
                       (VALUE*)((char*)stack_start + 2),
-                      (VALUE*)((char*)stack_end - 2), cb);
+                      (VALUE*)((char*)stack_end - 2), ctx, cb);
 #endif
 }
 
