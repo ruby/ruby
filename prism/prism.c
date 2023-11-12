@@ -5610,7 +5610,7 @@ pm_parser_parameter_name_check(pm_parser_t *parser, const pm_token_t *name) {
     }
 
     // We want to ignore any parameter name that starts with an underscore.
-    if ((*name->start == '_')) return;
+    if ((name->start < name->end) && (*name->start == '_')) return;
 
     // Otherwise we'll fetch the constant id for the parameter name and check
     // whether it's already in the current scope.
