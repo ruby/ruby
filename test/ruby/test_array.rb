@@ -529,14 +529,19 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_assoc
+    def (a4 = Object.new).to_ary
+      %w( pork porcine )
+    end
+
     a1 = @cls[*%w( cat feline )]
     a2 = @cls[*%w( dog canine )]
     a3 = @cls[*%w( mule asinine )]
 
-    a = @cls[ a1, a2, a3 ]
+    a = @cls[ a1, a2, a3, a4 ]
 
     assert_equal(a1, a.assoc('cat'))
     assert_equal(a3, a.assoc('mule'))
+    assert_equal(%w( pork porcine ), a.assoc("pork"))
     assert_equal(nil, a.assoc('asinine'))
     assert_equal(nil, a.assoc('wombat'))
     assert_equal(nil, a.assoc(1..2))
@@ -1329,13 +1334,17 @@ class TestArray < Test::Unit::TestCase
   end
 
   def test_rassoc
+    def (a4 = Object.new).to_ary
+      %w( pork porcine )
+    end
     a1 = @cls[*%w( cat  feline )]
     a2 = @cls[*%w( dog  canine )]
     a3 = @cls[*%w( mule asinine )]
-    a  = @cls[ a1, a2, a3 ]
+    a  = @cls[ a1, a2, a3, a4 ]
 
     assert_equal(a1,  a.rassoc('feline'))
     assert_equal(a3,  a.rassoc('asinine'))
+    assert_equal(%w( pork porcine ), a.rassoc("porcine"))
     assert_equal(nil, a.rassoc('dog'))
     assert_equal(nil, a.rassoc('mule'))
     assert_equal(nil, a.rassoc(1..2))
