@@ -9505,6 +9505,7 @@ parser_lex(pm_parser_t *parser) {
                             parser->heredoc_end = parser->current.end;
                         }
 
+                        parser->current_string_common_whitespace = parser->lex_modes.current->as.heredoc.common_whitespace;
                         lex_mode_pop(parser);
                         if (!at_end) {
                             lex_state_set(parser, PM_LEX_STATE_END);
@@ -13672,7 +13673,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                     cast->base.type = PM_X_STRING_NODE;
                 }
 
-                size_t common_whitespace = lex_mode->as.heredoc.common_whitespace;
+                size_t common_whitespace = parser->current_string_common_whitespace;
                 if (indent == PM_HEREDOC_INDENT_TILDE && (common_whitespace != (size_t) -1) && (common_whitespace != 0)) {
                     parse_heredoc_dedent_string(&cast->unescaped, common_whitespace);
                 }
@@ -13718,7 +13719,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
 
                 // If this is a heredoc that is indented with a ~, then we need
                 // to dedent each line by the common leading whitespace.
-                size_t common_whitespace = lex_mode->as.heredoc.common_whitespace;
+                size_t common_whitespace = parser->current_string_common_whitespace;
                 if (indent == PM_HEREDOC_INDENT_TILDE && (common_whitespace != (size_t) -1) && (common_whitespace != 0)) {
                     pm_node_list_t *nodes;
                     if (quote == PM_HEREDOC_QUOTE_BACKTICK) {
