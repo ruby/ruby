@@ -169,6 +169,7 @@ extern pm_encoding_t pm_encoding_ibm720;
 extern pm_encoding_t pm_encoding_ibm737;
 extern pm_encoding_t pm_encoding_ibm775;
 extern pm_encoding_t pm_encoding_ibm852;
+extern pm_encoding_t pm_encoding_ibm855;
 extern pm_encoding_t pm_encoding_iso_8859_1;
 extern pm_encoding_t pm_encoding_iso_8859_2;
 extern pm_encoding_t pm_encoding_iso_8859_3;
