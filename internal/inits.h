@@ -29,7 +29,7 @@ int Init_enc_set_filesystem_encoding(void);
 void Init_newline(void);
 
 /* vm.c */
-void Init_BareVM(void);
+void Init_BareVM(void *local_in_parent_frame);
 void Init_vm_objects(void);
 
 /* vm_backtrace.c */
