@@ -12,6 +12,7 @@
 #ifdef THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION
 
 #include "internal/gc.h"
+#include "internal/sanitizers.h"
 #include "rjit.h"
 
 #ifdef HAVE_SYS_RESOURCE_H
@@ -1966,6 +1967,9 @@ static void
 native_thread_init_main_thread_stack(void *addr)
 {
     native_main_thread.id = pthread_self();
+#ifdef RUBY_ASAN_ENABLED
+    addr = asan_get_real_stack_addr((void *)addr);
+#endif
 
 #if MAINSTACKADDR_AVAILABLE
     if (native_main_thread.stack_maxsize) return;
@@ -2051,6 +2055,9 @@ static int
 native_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
 {
     rb_nativethread_id_t curr = pthread_self();
+#ifdef RUBY_ASAN_ENABLED
+    local_in_parent_frame = asan_get_real_stack_addr(local_in_parent_frame);
+#endif
 
     if (!native_main_thread.id) {
         /* This thread is the first thread, must be the main thread -
@@ -2070,7 +2077,7 @@ native_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
 
             if (get_stack(&start, &size) == 0) {
                 uintptr_t diff = (uintptr_t)start - (uintptr_t)local_in_parent_frame;
-                th->ec->machine.stack_start = (uintptr_t)local_in_parent_frame;
+                th->ec->machine.stack_start = local_in_parent_frame;
                 th->ec->machine.stack_maxsize = size - diff;
             }
         }
@@ -2197,12 +2204,10 @@ call_thread_start_func_2(rb_thread_t *th)
        on a new thread, and replacing that data on fiber-switch would break it (see
        bug #13887) */
     VALUE stack_start = 0;
-    VALUE *stack_start_addr = &stack_start;
+    VALUE *stack_start_addr = asan_get_real_stack_addr(&stack_start);
+
     native_thread_init_stack(th, stack_start_addr);
     thread_start_func_2(th, th->ec->machine.stack_start);
-
-    /* Ensure that stack_start really was spilled to the stack */
-    RB_GC_GUARD(stack_start)
 }
 
 static void *
