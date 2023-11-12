@@ -158,6 +158,16 @@ class OpenSSL::TestPKCS7 < OpenSSL::TestCase
   def test_empty_signed_data_ruby_bug_19974
     data = "-----BEGIN PKCS7-----\nMAsGCSqGSIb3DQEHAg==\n-----END PKCS7-----\n"
     assert_raise(ArgumentError) { OpenSSL::PKCS7.new(data) }
+
+    data = <<END
+MIME-Version: 1.0
+Content-Disposition: attachment; filename="smime.p7m"
+Content-Type: application/x-pkcs7-mime; smime-type=signed-data; name="smime.p7m"
+Content-Transfer-Encoding: base64
+
+#{data}
+END
+    assert_raise(OpenSSL::PKCS7::PKCS7Error) { OpenSSL::PKCS7.read_smime(data) }
   end
 
   def test_graceful_parsing_failure #[ruby-core:43250]

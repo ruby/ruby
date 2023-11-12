@@ -165,7 +165,11 @@ ossl_pkcs7_s_read_smime(VALUE klass, VALUE arg)
     out = NULL;
     pkcs7 = SMIME_read_PKCS7(in, &out);
     BIO_free(in);
-    if(!pkcs7) ossl_raise(ePKCS7Error, NULL);
+    if (!pkcs7)
+        ossl_raise(ePKCS7Error, "Could not parse the PKCS7");
+    if (!pkcs7->d.ptr)
+        ossl_raise(ePKCS7Error, "No content in PKCS7");
+
     data = out ? ossl_membio2str(out) : Qnil;
     SetPKCS7(ret, pkcs7);
     ossl_pkcs7_set_data(ret, data);
