@@ -16,6 +16,7 @@ module Prism
       Encoding::GBK,
       Encoding::IBM437,
       Encoding::IBM720,
+      Encoding::IBM737,
       Encoding::ISO_8859_1,
       Encoding::ISO_8859_2,
       Encoding::ISO_8859_3,
