@@ -14,6 +14,7 @@ module Prism
       Encoding::CP855,
       Encoding::EUC_JP,
       Encoding::GBK,
+      Encoding::IBM437,
       Encoding::ISO_8859_1,
       Encoding::ISO_8859_2,
       Encoding::ISO_8859_3,

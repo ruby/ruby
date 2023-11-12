@@ -164,6 +164,7 @@ extern pm_encoding_t pm_encoding_cp852;
 extern pm_encoding_t pm_encoding_cp855;
 extern pm_encoding_t pm_encoding_euc_jp;
 extern pm_encoding_t pm_encoding_gbk;
+extern pm_encoding_t pm_encoding_ibm437;
 extern pm_encoding_t pm_encoding_iso_8859_1;
 extern pm_encoding_t pm_encoding_iso_8859_2;
 extern pm_encoding_t pm_encoding_iso_8859_3;
