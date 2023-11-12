@@ -183,6 +183,12 @@ extern pm_encoding_t pm_encoding_utf8_mac;
 extern pm_encoding_t pm_encoding_windows_1250;
 extern pm_encoding_t pm_encoding_windows_1251;
 extern pm_encoding_t pm_encoding_windows_1252;
+extern pm_encoding_t pm_encoding_windows_1253;
+extern pm_encoding_t pm_encoding_windows_1254;
+extern pm_encoding_t pm_encoding_windows_1255;
+extern pm_encoding_t pm_encoding_windows_1256;
+extern pm_encoding_t pm_encoding_windows_1257;
+extern pm_encoding_t pm_encoding_windows_1258;
 extern pm_encoding_t pm_encoding_windows_31j;
 
 #endif

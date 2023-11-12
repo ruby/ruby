@@ -28,12 +28,18 @@ module Prism
       "ISO-8859-16",
       "KOI8-R",
       "Shift_JIS",
-      "Windows-31J",
       "UTF-8",
       "UTF8-MAC",
       "Windows-1250",
       "Windows-1251",
       "Windows-1252",
+      "Windows-1253",
+      "Windows-1254",
+      "Windows-1255",
+      "Windows-1256",
+      "Windows-1257",
+      "Windows-1258",
+      "Windows-31J"
     ].each do |canonical_name|
       encoding = Encoding.find(canonical_name)
 

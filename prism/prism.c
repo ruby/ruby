@@ -6090,6 +6090,12 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
     ENCODING2("Windows-1250", "CP1250", pm_encoding_windows_1250);
     ENCODING2("Windows-1251", "CP1251", pm_encoding_windows_1251);
     ENCODING2("Windows-1252", "CP1252", pm_encoding_windows_1252);
+    ENCODING2("Windows-1253", "CP1253", pm_encoding_windows_1253);
+    ENCODING2("Windows-1254", "CP1254", pm_encoding_windows_1254);
+    ENCODING2("Windows-1255", "CP1255", pm_encoding_windows_1255);
+    ENCODING2("Windows-1256", "CP1256", pm_encoding_windows_1256);
+    ENCODING2("Windows-1257", "CP1257", pm_encoding_windows_1257);
+    ENCODING2("Windows-1258", "CP1258", pm_encoding_windows_1258);
     ENCODING5("Windows-31J", "CP932", "csWindows31J", "SJIS", "PCK", pm_encoding_windows_31j);
 
 #undef ENCODING2
