@@ -6041,7 +6041,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
 
     // Next, we're going to loop through each of the encodings that we handle
     // explicitly. If we found one that we understand, we'll use that value.
-#define ENCODING(value, prebuilt) \
+#define ENCODING1(value, prebuilt) \
     if (width == sizeof(value) - 1 && start + width <= end && pm_strncasecmp(start, (const uint8_t *) value, width) == 0) { \
         parser->encoding = prebuilt; \
         parser->encoding_changed = true; \
@@ -6050,24 +6050,26 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
     }
 
     // Built convenience macros to compare aliases for the same encoding.
-#define ENCODING2(value1, value2, prebuilt) ENCODING(value1, prebuilt) ENCODING(value2, prebuilt)
-#define ENCODING3(value1, value2, value3, prebuilt) ENCODING2(value1, value2, prebuilt) ENCODING(value3, prebuilt)
-#define ENCODING4(value1, value2, value3, value4, prebuilt) ENCODING3(value1, value2, value3, prebuilt) ENCODING(value4, prebuilt)
-#define ENCODING5(value1, value2, value3, value4, value5, prebuilt) ENCODING4(value1, value2, value3, value4, prebuilt) ENCODING(value5, prebuilt)
+#define ENCODING2(value1, value2, prebuilt) ENCODING1(value1, prebuilt) ENCODING1(value2, prebuilt)
+#define ENCODING3(value1, value2, value3, prebuilt) ENCODING2(value1, value2, prebuilt) ENCODING1(value3, prebuilt)
+#define ENCODING4(value1, value2, value3, value4, prebuilt) ENCODING3(value1, value2, value3, prebuilt) ENCODING1(value4, prebuilt)
+#define ENCODING5(value1, value2, value3, value4, value5, prebuilt) ENCODING4(value1, value2, value3, value4, prebuilt) ENCODING1(value5, prebuilt)
 
     // Check most common first. (This is pretty arbitrary.)
-    ENCODING("ASCII", pm_encoding_ascii);
-    ENCODING("ASCII-8BIT", pm_encoding_ascii_8bit);
-    ENCODING("US-ASCII", pm_encoding_ascii);
-    ENCODING("BINARY", pm_encoding_ascii_8bit);
-    ENCODING("Shift_JIS", pm_encoding_shift_jis);
-    ENCODING("EUC-JP", pm_encoding_euc_jp);
+    ENCODING1("ASCII", pm_encoding_ascii);
+    ENCODING1("ASCII-8BIT", pm_encoding_ascii_8bit);
+    ENCODING1("US-ASCII", pm_encoding_ascii);
+    ENCODING1("BINARY", pm_encoding_ascii_8bit);
+    ENCODING1("Shift_JIS", pm_encoding_shift_jis);
+    ENCODING1("EUC-JP", pm_encoding_euc_jp);
 
     // Then check all the others.
     ENCODING2("ANSI_X3.4-1968", "646", pm_encoding_ascii);
-    ENCODING("cp51932", pm_encoding_cp51932);
-    ENCODING("eucJP", pm_encoding_euc_jp);
-    ENCODING("Big5", pm_encoding_big5);
+    ENCODING1("cp51932", pm_encoding_cp51932);
+    ENCODING1("eucJP", pm_encoding_euc_jp);
+    ENCODING1("Big5", pm_encoding_big5);
+    ENCODING2("CP850", "IBM850", pm_encoding_cp850);
+    ENCODING1("CP852", pm_encoding_cp852);
     ENCODING2("GBK", "CP936", pm_encoding_gbk);
     ENCODING2("ISO-8859-1", "ISO8859-1", pm_encoding_iso_8859_1);
     ENCODING2("ISO-8859-2", "ISO8859-2", pm_encoding_iso_8859_2);
@@ -6098,11 +6100,11 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
     ENCODING2("Windows-1258", "CP1258", pm_encoding_windows_1258);
     ENCODING5("Windows-31J", "CP932", "csWindows31J", "SJIS", "PCK", pm_encoding_windows_31j);
 
-#undef ENCODING2
-#undef ENCODING3
-#undef ENCODING4
 #undef ENCODING5
-#undef ENCODING
+#undef ENCODING4
+#undef ENCODING3
+#undef ENCODING2
+#undef ENCODING1
 
     return false;
 }

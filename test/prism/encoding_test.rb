@@ -8,6 +8,8 @@ module Prism
       "US-ASCII",
       "ASCII-8BIT",
       "Big5",
+      "CP850",
+      "CP852",
       "CP51932",
       "EUC-JP",
       "GBK",
