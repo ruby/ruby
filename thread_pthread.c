@@ -1962,9 +1962,8 @@ reserve_stack(volatile char *limit, size_t size)
 # define reserve_stack(limit, size) ((void)(limit), (void)(size))
 #endif
 
-#undef ruby_init_stack
-void
-ruby_init_stack(volatile VALUE *addr)
+static void
+native_thread_init_main_thread_stack(void *addr)
 {
     native_main_thread.id = pthread_self();
 
@@ -1987,7 +1986,7 @@ ruby_init_stack(volatile VALUE *addr)
     if (!native_main_thread.stack_start ||
         STACK_UPPER((VALUE *)(void *)&addr,
                     native_main_thread.stack_start > addr,
-                    native_main_thread.stack_start < addr)) {
+                    native_main_thread.stack_start < (VALUE *)addr)) {
         native_main_thread.stack_start = (VALUE *)addr;
     }
 #endif
@@ -2049,9 +2048,15 @@ ruby_init_stack(volatile VALUE *addr)
     {int err = (expr); if (err) {rb_bug_errno(#expr, err);}}
 
 static int
-native_thread_init_stack(rb_thread_t *th)
+native_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
 {
     rb_nativethread_id_t curr = pthread_self();
+
+    if (!native_main_thread.id) {
+        /* This thread is the first thread, must be the main thread -
+         * configure the native_main_thread object */
+        native_thread_init_main_thread_stack(local_in_parent_frame);
+    }
 
     if (pthread_equal(curr, native_main_thread.id)) {
         th->ec->machine.stack_start = native_main_thread.stack_start;
@@ -2064,8 +2069,8 @@ native_thread_init_stack(rb_thread_t *th)
             size_t size;
 
             if (get_stack(&start, &size) == 0) {
-                uintptr_t diff = (uintptr_t)start - (uintptr_t)&curr;
-                th->ec->machine.stack_start = (VALUE *)&curr;
+                uintptr_t diff = (uintptr_t)start - (uintptr_t)local_in_parent_frame;
+                th->ec->machine.stack_start = (uintptr_t)local_in_parent_frame;
                 th->ec->machine.stack_maxsize = size - diff;
             }
         }
@@ -2185,8 +2190,19 @@ native_thread_create_dedicated(rb_thread_t *th)
 static void
 call_thread_start_func_2(rb_thread_t *th)
 {
-    native_thread_init_stack(th);
+    /* Capture the address of a local in this stack frame to mark the beginning of the
+       machine stack for this thread. This is required even if we can tell the real
+       stack beginning from the pthread API in native_thread_init_stack, because
+       glibc stores some of its own data on the stack before calling into user code
+       on a new thread, and replacing that data on fiber-switch would break it (see
+       bug #13887) */
+    VALUE stack_start = 0;
+    VALUE *stack_start_addr = &stack_start;
+    native_thread_init_stack(th, stack_start_addr);
     thread_start_func_2(th, th->ec->machine.stack_start);
+
+    /* Ensure that stack_start really was spilled to the stack */
+    RB_GC_GUARD(stack_start)
 }
 
 static void *

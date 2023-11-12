@@ -70,8 +70,6 @@ ruby_setup(void)
     if (GET_VM())
         return 0;
 
-    ruby_init_stack((void *)&state);
-
     /*
      * Disable THP early before mallocs happen because we want this to
      * affect as many future pages as possible for CoW-friendliness
@@ -115,7 +113,6 @@ ruby_options(int argc, char **argv)
     enum ruby_tag_type state;
     void *volatile iseq = 0;
 
-    ruby_init_stack((void *)&iseq);
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         SAVE_ROOT_JMPBUF(GET_THREAD(), iseq = ruby_process_options(argc, argv));
@@ -205,7 +202,6 @@ rb_ec_cleanup(rb_execution_context_t *ec, enum ruby_tag_type ex)
       step_0: step++;
         save_error = ec->errinfo;
         if (THROW_DATA_P(ec->errinfo)) ec->errinfo = Qnil;
-        ruby_init_stack(&message);
 
         /* exits with failure but silently when an exception raised
          * here */
@@ -324,14 +320,12 @@ ruby_run_node(void *n)
         rb_ec_cleanup(ec, (NIL_P(ec->errinfo) ? TAG_NONE : TAG_RAISE));
         return status;
     }
-    ruby_init_stack((void *)&status);
     return rb_ec_cleanup(ec, rb_ec_exec_node(ec, n));
 }
 
 int
 ruby_exec_node(void *n)
 {
-    ruby_init_stack((void *)&n);
     return rb_ec_exec_node(GET_EC(), n);
 }
 
