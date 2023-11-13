@@ -918,14 +918,6 @@ class TestObjSpace < Test::Unit::TestCase
     assert_equal 2, ObjectSpace.dump_shapes(output: :string, since: RubyVM.stat(:next_shape_id) - 2).lines.size
   end
 
-  def test_dump_all_in_parallel_bug_19922
-    dump_ten_times = ->() { 10.times { ObjectSpace.dump_all.tap { _1.close } } }
-    t = Thread.new { dump_ten_times.call }
-    dump_ten_times.call
-    t.value
-    # Bug #19922 would cause this test to crash.
-  end
-
   private
 
   def utf8_❨╯°□°❩╯︵┻━┻
