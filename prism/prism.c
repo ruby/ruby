@@ -6338,7 +6338,7 @@ lex_optional_float_suffix(pm_parser_t *parser, bool* seen_e) {
         (void) (match(parser, '+') || match(parser, '-'));
         *seen_e = true;
 
-        if (pm_char_is_decimal_digit(*parser->current.end)) {
+        if (pm_char_is_decimal_digit(peek(parser))) {
             parser->current.end++;
             parser->current.end += pm_strspn_decimal_number_validate(parser, parser->current.end);
             type = PM_TOKEN_FLOAT;
