@@ -3656,10 +3656,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             for (size_t i = 0; i < keywords_list->size; i++) {
                 pm_node_t *keyword_parameter_node = keywords_list->nodes[i];
+                pm_constant_id_t name;
 
                 switch PM_NODE_TYPE(keyword_parameter_node) {
                   case PM_OPTIONAL_KEYWORD_PARAMETER_NODE: {
-                      pm_node_t *value = ((pm_optional_keyword_parameter_node_t *)keyword_parameter_node)->value;
+                      pm_optional_keyword_parameter_node_t *cast = ((pm_optional_keyword_parameter_node_t *)keyword_parameter_node);
+
+                      pm_node_t *value = cast->value;
+                      name = cast->name;
 
                       if (pm_static_literal_p(value)) {
                           rb_ary_push(default_values, pm_static_literal_value(value, scope_node, parser));
@@ -3672,8 +3676,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                       break;
                   }
                   case PM_REQUIRED_KEYWORD_PARAMETER_NODE: {
-                      pm_required_keyword_parameter_node_t *cast = (pm_required_keyword_parameter_node_t *)keyword_parameter_node;
-                      ids[keyword->required_num] = pm_constant_id_lookup(scope_node, cast->name);
+                      name = ((pm_required_keyword_parameter_node_t *)keyword_parameter_node)->name;
                       keyword->required_num++;
                       break;
                   }
@@ -3681,7 +3684,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                       rb_bug("Unexpected keyword parameter node type");
                   }
                 }
+
+                ids[i] = pm_constant_id_lookup(scope_node, name);
             }
+
+            keyword->table = ids;
 
             VALUE *dvs = ALLOC_N(VALUE, RARRAY_LEN(default_values));
 
@@ -3695,7 +3702,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
 
             keyword->default_values = dvs;
-            keyword->table = ids;
         }
 
         if (parameters_node) {
@@ -3712,7 +3718,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     if (!body->param.flags.has_kw) {
                         body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
                     }
-                    keyword->rest_start = (int) locals_size;
+                    keyword->rest_start = (int) locals_size - (parameters_node->block ? 2 : 1);
                     body->param.flags.has_kwrest = true;
                 }
             }
