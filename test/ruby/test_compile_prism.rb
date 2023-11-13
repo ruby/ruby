@@ -719,6 +719,15 @@ module Prism
                        )
     end
 
+    def test_method_parameters
+      assert_prism_eval(<<-CODE)
+        def self.prism_test_method_parameters(a, b=1, *c, d:, e: 2, **f, &g)
+        end
+
+        method(:prism_test_method_parameters).parameters
+      CODE
+    end
+
     def test_LambdaNode
       assert_prism_eval("-> { to_s }.call")
     end
