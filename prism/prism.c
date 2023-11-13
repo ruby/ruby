@@ -568,6 +568,102 @@ pm_parser_optional_constant_id_token(pm_parser_t *parser, const pm_token_t *toke
 }
 
 /**
+ * Check whether or not the given node is value expression.
+ * If the node is value node, it returns NULL.
+ * If not, it returns the pointer to the node to be inspected as "void expression".
+ */
+static pm_node_t*
+pm_check_value_expression(pm_node_t *node) {
+    pm_node_t* void_node = NULL;
+
+    while (node != NULL) {
+        switch (PM_NODE_TYPE(node)) {
+            case PM_RETURN_NODE:
+            case PM_BREAK_NODE:
+            case PM_NEXT_NODE:
+            case PM_REDO_NODE:
+            case PM_RETRY_NODE:
+            case PM_MATCH_REQUIRED_NODE:
+                return void_node != NULL ? void_node : node;
+            case PM_MATCH_PREDICATE_NODE:
+                return NULL;
+            case PM_BEGIN_NODE: {
+                pm_begin_node_t *cast = (pm_begin_node_t *) node;
+                node = (pm_node_t *) cast->statements;
+                break;
+            }
+            case PM_PARENTHESES_NODE: {
+                pm_parentheses_node_t *cast = (pm_parentheses_node_t *) node;
+                node = (pm_node_t *) cast->body;
+                break;
+            }
+            case PM_STATEMENTS_NODE: {
+                pm_statements_node_t *cast = (pm_statements_node_t *) node;
+                node = cast->body.nodes[cast->body.size - 1];
+                break;
+            }
+            case PM_IF_NODE: {
+                pm_if_node_t *cast = (pm_if_node_t *) node;
+                if (cast->statements == NULL || cast->consequent == NULL) {
+                    return NULL;
+                }
+                pm_node_t *vn = pm_check_value_expression((pm_node_t *) cast->statements);
+                if (vn == NULL) {
+                    return NULL;
+                }
+                if (void_node == NULL) {
+                    void_node = vn;
+                }
+                node = cast->consequent;
+                break;
+            }
+            case PM_UNLESS_NODE: {
+                pm_unless_node_t *cast = (pm_unless_node_t *) node;
+                if (cast->statements == NULL || cast->consequent == NULL) {
+                    return NULL;
+                }
+                pm_node_t *vn = pm_check_value_expression((pm_node_t *) cast->statements);
+                if (vn == NULL) {
+                    return NULL;
+                }
+                if (void_node == NULL) {
+                    void_node = vn;
+                }
+                node = (pm_node_t *) cast->consequent;
+                break;
+            }
+            case PM_ELSE_NODE: {
+                pm_else_node_t *cast = (pm_else_node_t *) node;
+                node = (pm_node_t *) cast->statements;
+                break;
+            }
+            case PM_AND_NODE: {
+                pm_and_node_t *cast = (pm_and_node_t *) node;
+                node = cast->left;
+                break;
+            }
+            case PM_OR_NODE: {
+                pm_or_node_t *cast = (pm_or_node_t *) node;
+                node = cast->left;
+                break;
+            }
+            default:
+                return NULL;
+        }
+    }
+
+    return NULL;
+}
+
+static inline void
+pm_assert_value_expression(pm_parser_t *parser, pm_node_t *node) {
+    pm_node_t *void_node = pm_check_value_expression(node);
+    if (void_node != NULL) {
+        pm_parser_err_node(parser, void_node, PM_ERR_VOID_EXPRESSION);
+    }
+}
+
+/**
  * The predicate of conditional nodes can change what would otherwise be regular
  * nodes into specialized nodes. For example:
  *

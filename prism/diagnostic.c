@@ -244,6 +244,7 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_UNARY_RECEIVER_PLUS]                = "Expected a receiver for unary `+`",
     [PM_ERR_UNARY_RECEIVER_TILDE]               = "Expected a receiver for unary `~`",
     [PM_ERR_UNTIL_TERM]                         = "Expected an `end` to close the `until` statement",
+    [PM_ERR_VOID_EXPRESSION]                    = "Unexpected void value expression",
     [PM_ERR_WHILE_TERM]                         = "Expected an `end` to close the `while` statement",
     [PM_ERR_WRITE_TARGET_READONLY]              = "Immutable variable as a write target",
     [PM_ERR_WRITE_TARGET_UNEXPECTED]            = "Unexpected write target",
