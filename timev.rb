@@ -66,7 +66,7 @@
 #
 #   Time.new(2002, 10, 31, 2, 2, 2, "+02:00") #=> 2002-10-31 02:02:02 +0200
 #
-# Or a timezone object:
+# Or {a timezone object}[rdoc-ref:timezones.rdoc@Timezone+Objects]:
 #
 #   zone = timezone("Europe/Athens")      # Eastern European Time, UTC+2
 #   Time.new(2002, 10, 31, 2, 2, 2, zone) #=> 2002-10-31 02:02:02 +0200

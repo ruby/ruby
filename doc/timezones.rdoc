@@ -57,7 +57,9 @@ in the range <tt>-86399..86399</tt>:
 
 === Timezone Objects
 
-The zone value may be an object responding to certain timezone methods.
+The zone value may be an object responding to certain timezone methods, an
+instance of {Timezone}[https://github.com/panthomakos/timezone] and
+{TZInfo}[https://tzinfo.github.io] for example.
 
 The timezone methods are:
 
