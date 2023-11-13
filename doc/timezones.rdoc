@@ -57,13 +57,7 @@ in the range <tt>-86399..86399</tt>:
 
 ==== Timezone Objects
 
-In most cases, the zone value may be an object
-responding to certain timezone methods.
-
-\Exceptions (timezone object not allowed):
-
-- Time.new with positional argument +zone+.
-- Time.now with keyword argument +in:+.
+The zone value may be an object responding to certain timezone methods.
 
 The timezone methods are:
 
