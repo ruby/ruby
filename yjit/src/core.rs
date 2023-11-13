@@ -461,12 +461,24 @@ pub struct Context {
     ///   ([Self::is_return_landing])
     chain_depth_return_landing: u8,
 
+    // Type we track for self
+    self_type: Type,
+
     // Local variable types we keep track of
     // We store 8 local types, requiring 4 bits each, for a total of 32 bits
     local_types: u32,
 
-    // Type we track for self
-    self_type: Type,
+    // Temp mapping kinds we track
+    // 8 temp mappings * 2 bits, total 16 bits
+    temp_mapping_kind: u16,
+
+    // Stack slot type/local_idx we track
+    // 8 temp types * 4 bits, total 32 bits
+    temp_payload: u32,
+
+
+
+
 
     // Mapping of temp stack entries to types we track
     temp_mapping: [TempMapping; MAX_TEMP_TYPES],
@@ -1723,6 +1735,89 @@ impl Context {
             unsafe { transmute::<u8, Type>(type_bits as u8) }
         }
     }
+
+
+
+
+    /// Get the current temp mapping for a given stack slot
+    fn get_temp_mapping(&self, temp_idx: usize) -> TempMapping {
+        assert!(temp_idx < MAX_TEMP_TYPES);
+
+        // Extract the temp mapping kind
+        let kind_bits = (self.temp_mapping_kind >> (2 * temp_idx)) & 0b11;
+        let temp_kind = unsafe { transmute::<u8, TempMappingKind>(kind_bits as u8) };
+
+        // Extract the payload bits (temp type or local idx)
+        let payload_bits = (self.temp_payload >> (4 * temp_idx)) & 0b1111;
+
+        match temp_kind {
+            MapToSelf => TempMapping::map_to_self(),
+
+            MapToStack => {
+                TempMapping::map_to_stack(
+                    unsafe { transmute::<u8, Type>(payload_bits as u8) }
+                )
+            }
+
+            MapToLocal => {
+                TempMapping::map_to_local(
+                    payload_bits as u8
+                )
+            }
+        }
+    }
+
+
+
+    /// Get the current temp mapping for a given stack slot
+    fn set_temp_mapping(&mut self, temp_idx: usize, mapping: TempMapping) {
+        assert!(temp_idx < MAX_TEMP_TYPES);
+
+        // Extract the kind bits
+        let mapping_kind = mapping.get_kind();
+        let kind_bits = unsafe { transmute::<TempMappingKind, u8>(mapping_kind) };
+        assert!(kind_bits <= 0b11);
+
+        // Extract the payload bits
+        let payload_bits = match mapping_kind {
+            MapToSelf => 0,
+
+            MapToStack => {
+                let t = mapping.get_type();
+                unsafe { transmute::<Type, u8>(t) }
+            }
+
+            MapToLocal => {
+                mapping.get_local_idx()
+            }
+        };
+        assert!(payload_bits <= 0b1111);
+
+        // Update the kind bits
+        {
+            let mask_bits = 0b11_u16 << (2 * temp_idx);
+            let shifted_bits = (kind_bits as u16) << (2 * temp_idx);
+            let all_kind_bits = self.temp_mapping_kind as u16;
+            self.temp_mapping_kind = (all_kind_bits & !mask_bits) | shifted_bits;
+        }
+
+        // Update the payload bits
+        {
+            let mask_bits = 0b1111_u32 << (4 * temp_idx);
+            let shifted_bits = (payload_bits as u32) << (4 * temp_idx);
+            let all_payload_bits = self.temp_payload as u32;
+            self.temp_payload = (all_payload_bits & !mask_bits) | shifted_bits;
+        }
+    }
+
+
+
+
+
+
+
+
+
 
     /// Upgrade (or "learn") the type of an instruction operand
     /// This value must be compatible and at least as specific as the previously known type.
