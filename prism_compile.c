@@ -1091,6 +1091,11 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
             scope->body = (pm_node_t *)cast->statements;
             break;
         }
+        case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
+            RUBY_ASSERT(node->flags & PM_REGULAR_EXPRESSION_FLAGS_ONCE);
+            scope->body = (pm_node_t *)node;
+            break;
+        }
         case PM_LAMBDA_NODE: {
             pm_lambda_node_t *cast = (pm_lambda_node_t *) node;
             if (cast->parameters) scope->parameters = cast->parameters->parameters;
@@ -2667,10 +2672,34 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
+        if (node->flags & PM_REGULAR_EXPRESSION_FLAGS_ONCE) {
+            const rb_iseq_t *prevblock = ISEQ_COMPILE_DATA(iseq)->current_block;
+            const rb_iseq_t *block_iseq = NULL;
+            int ic_index = ISEQ_BODY(iseq)->ise_size++;
+
+            pm_scope_node_t next_scope_node;
+            pm_scope_node_init((pm_node_t*)node, &next_scope_node, scope_node, parser);
+
+            block_iseq = NEW_CHILD_ISEQ(next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+            ISEQ_COMPILE_DATA(iseq)->current_block = block_iseq;
+
+            ADD_INSN2(ret, &dummy_line_node, once, block_iseq, INT2FIX(ic_index));
+
+            ISEQ_COMPILE_DATA(iseq)->current_block = prevblock;
+            return;
+        }
+
         pm_interpolated_regular_expression_node_t *cast = (pm_interpolated_regular_expression_node_t *) node;
+
+        int parts_size = (int)cast->parts.size;
+        if (cast->parts.size > 0 && !PM_NODE_TYPE_P(cast->parts.nodes[0], PM_STRING_NODE)) {
+            ADD_INSN1(ret, &dummy_line_node, putobject, rb_str_new(0, 0));
+            parts_size++;
+        }
+
         pm_interpolated_node_compile(&cast->parts, iseq, dummy_line_node, ret, src, popped, scope_node, parser);
 
-        ADD_INSN2(ret, &dummy_line_node, toregexp, INT2FIX(pm_reg_flags(node)), INT2FIX((int) (cast->parts.size)));
+        ADD_INSN2(ret, &dummy_line_node, toregexp, INT2FIX(pm_reg_flags(node)), INT2FIX(parts_size));
         PM_POP_IF_POPPED;
         return;
       }
@@ -3480,6 +3509,21 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     ADD_GETLOCAL(ret, &dummy_line_node, 1, 0);
                     PM_COMPILE(for_node->index);
                     ADD_INSN(ret, &dummy_line_node, nop);
+                    pm_compile_node(iseq, (pm_node_t *)(scope_node->body), ret, src, popped, scope_node);
+                    break;
+                  }
+                  case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
+                    pm_interpolated_regular_expression_node_t *cast = (pm_interpolated_regular_expression_node_t *) scope_node->ast_node;
+
+                    int parts_size = (int)cast->parts.size;
+                    if (parts_size > 0 && !PM_NODE_TYPE_P(cast->parts.nodes[0], PM_STRING_NODE)) {
+                        ADD_INSN1(ret, &dummy_line_node, putobject, rb_str_new(0, 0));
+                        parts_size++;
+                    }
+
+                    pm_interpolated_node_compile(&cast->parts, iseq, dummy_line_node, ret, src, false, scope_node, parser);
+                    ADD_INSN2(ret, &dummy_line_node, toregexp, INT2FIX(pm_reg_flags((pm_node_t *)cast)), INT2FIX(parts_size));
+                    break;
                   }
                   default: {
                     pm_compile_node(iseq, (pm_node_t *)(scope_node->body), ret, src, popped, scope_node);
