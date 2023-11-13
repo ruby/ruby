@@ -1218,7 +1218,7 @@ RUBY_EXTERN VALUE rb_block_param_proxy;
 RUBY_SYMBOL_EXPORT_END
 
 #define GetProcPtr(obj, ptr) \
-  GetCoreDataFromValue((obj), rb_proc_t, (ptr))
+  ptr = (rb_proc_t*) RTYPEDDATA_GET_DATA((obj))
 
 typedef struct {
     const struct rb_block block;
@@ -1676,7 +1676,7 @@ static inline const struct rb_block *
 vm_proc_block(VALUE procval)
 {
     VM_ASSERT(rb_obj_is_proc(procval));
-    return &((rb_proc_t *)RTYPEDDATA_DATA(procval))->block;
+    return &((rb_proc_t *)RTYPEDDATA_GET_DATA(procval))->block;
 }
 
 static inline const rb_iseq_t *vm_block_iseq(const struct rb_block *block);

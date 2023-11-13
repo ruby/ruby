@@ -1091,7 +1091,7 @@ vm_proc_create_from_captured(VALUE klass,
                              int8_t is_from_method, int8_t is_lambda)
 {
     VALUE procval = rb_proc_alloc(klass);
-    rb_proc_t *proc = RTYPEDDATA_DATA(procval);
+    rb_proc_t *proc = RTYPEDDATA_GET_DATA(procval);
 
     VM_ASSERT(VM_EP_IN_HEAP_P(GET_EC(), captured->ep));
 
@@ -1131,7 +1131,7 @@ static VALUE
 proc_create(VALUE klass, const struct rb_block *block, int8_t is_from_method, int8_t is_lambda)
 {
     VALUE procval = rb_proc_alloc(klass);
-    rb_proc_t *proc = RTYPEDDATA_DATA(procval);
+    rb_proc_t *proc = RTYPEDDATA_GET_DATA(procval);
 
     VM_ASSERT(VM_EP_IN_HEAP_P(GET_EC(), vm_block_ep(block)));
     rb_vm_block_copy(procval, &proc->block, block);
@@ -1304,7 +1304,7 @@ rb_proc_isolate_bang(VALUE self)
     const rb_iseq_t *iseq = vm_proc_iseq(self);
 
     if (iseq) {
-        rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
+        rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_GET_DATA(self);
         if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
 
         if (ISEQ_BODY(iseq)->outer_variables) {
@@ -1333,7 +1333,7 @@ rb_proc_ractor_make_shareable(VALUE self)
     const rb_iseq_t *iseq = vm_proc_iseq(self);
 
     if (iseq) {
-        rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_DATA(self);
+        rb_proc_t *proc = (rb_proc_t *)RTYPEDDATA_GET_DATA(self);
         if (proc->block.type != block_type_iseq) rb_raise(rb_eRuntimeError, "not supported yet");
 
         if (!rb_ractor_shareable_p(vm_block_self(&proc->block))) {
