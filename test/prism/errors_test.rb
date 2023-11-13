@@ -1422,6 +1422,39 @@ module Prism
       ]
     end
 
+    def test_while_endless_method
+      source = "while def f = g do end"
+      assert_errors expression(source), source, [
+        ['Expected a predicate expression for the `while` statement', 22..22],
+        ['Cannot parse the expression', 22..22],
+        ['Expected an `end` to close the `while` statement', 22..22]
+      ]
+    end
+
+    def test_match_plus
+      source = <<~RUBY
+        a in b + c
+        a => b + c
+      RUBY
+      message1 = 'Expected a newline or semicolon after the statement'
+      message2 = 'Cannot parse the expression'
+      assert_errors expression(source), source, [
+        [message1, 6..6],
+        [message2, 6..6],
+        [message1, 17..17],
+        [message2, 17..17],
+      ]
+    end
+
+    def test_rational_number_with_exponential_portion
+      source = '1e1r; 1e1ri'
+      message = 'Expected a newline or semicolon after the statement'
+      assert_errors expression(source), source, [
+        [message, 3..3],
+        [message, 9..9]
+      ]
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")
