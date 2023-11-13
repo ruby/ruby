@@ -461,15 +461,20 @@ pub struct Context {
     ///   ([Self::is_return_landing])
     chain_depth_return_landing: u8,
 
+    // Type we track for self
+    self_type: Type,
+
     // Local variable types we keep track of
     // We store 8 local types, requiring 4 bits each, for a total of 32 bits
     local_types: u32,
 
-    // Type we track for self
-    self_type: Type,
+    // Temp mapping kinds we track
+    // 8 temp mappings * 2 bits, total 16 bits
+    temp_mapping_kind: u16,
 
-    // Mapping of temp stack entries to types we track
-    temp_mapping: [TempMapping; MAX_TEMP_TYPES],
+    // Stack slot type/local_idx we track
+    // 8 temp types * 4 bits, total 32 bits
+    temp_payload: u32,
 }
 
 /// Tuple of (iseq, idx) used to identify basic blocks
@@ -1698,7 +1703,7 @@ impl Context {
                     return Type::Unknown;
                 }
 
-                let mapping = self.temp_mapping[stack_idx];
+                let mapping = self.get_temp_mapping(stack_idx);
 
                 match mapping.get_kind() {
                     MapToSelf => self.self_type,
@@ -1724,6 +1729,75 @@ impl Context {
         }
     }
 
+    /// Get the current temp mapping for a given stack slot
+    fn get_temp_mapping(&self, temp_idx: usize) -> TempMapping {
+        assert!(temp_idx < MAX_TEMP_TYPES);
+
+        // Extract the temp mapping kind
+        let kind_bits = (self.temp_mapping_kind >> (2 * temp_idx)) & 0b11;
+        let temp_kind = unsafe { transmute::<u8, TempMappingKind>(kind_bits as u8) };
+
+        // Extract the payload bits (temp type or local idx)
+        let payload_bits = (self.temp_payload >> (4 * temp_idx)) & 0b1111;
+
+        match temp_kind {
+            MapToSelf => TempMapping::map_to_self(),
+
+            MapToStack => {
+                TempMapping::map_to_stack(
+                    unsafe { transmute::<u8, Type>(payload_bits as u8) }
+                )
+            }
+
+            MapToLocal => {
+                TempMapping::map_to_local(
+                    payload_bits as u8
+                )
+            }
+        }
+    }
+
+    /// Get the current temp mapping for a given stack slot
+    fn set_temp_mapping(&mut self, temp_idx: usize, mapping: TempMapping) {
+        assert!(temp_idx < MAX_TEMP_TYPES);
+
+        // Extract the kind bits
+        let mapping_kind = mapping.get_kind();
+        let kind_bits = unsafe { transmute::<TempMappingKind, u8>(mapping_kind) };
+        assert!(kind_bits <= 0b11);
+
+        // Extract the payload bits
+        let payload_bits = match mapping_kind {
+            MapToSelf => 0,
+
+            MapToStack => {
+                let t = mapping.get_type();
+                unsafe { transmute::<Type, u8>(t) }
+            }
+
+            MapToLocal => {
+                mapping.get_local_idx()
+            }
+        };
+        assert!(payload_bits <= 0b1111);
+
+        // Update the kind bits
+        {
+            let mask_bits = 0b11_u16 << (2 * temp_idx);
+            let shifted_bits = (kind_bits as u16) << (2 * temp_idx);
+            let all_kind_bits = self.temp_mapping_kind as u16;
+            self.temp_mapping_kind = (all_kind_bits & !mask_bits) | shifted_bits;
+        }
+
+        // Update the payload bits
+        {
+            let mask_bits = 0b1111_u32 << (4 * temp_idx);
+            let shifted_bits = (payload_bits as u32) << (4 * temp_idx);
+            let all_payload_bits = self.temp_payload as u32;
+            self.temp_payload = (all_payload_bits & !mask_bits) | shifted_bits;
+        }
+    }
+
     /// Upgrade (or "learn") the type of an instruction operand
     /// This value must be compatible and at least as specific as the previously known type.
     /// If this value originated from self, or an lvar, the learned type will be
@@ -1745,14 +1819,14 @@ impl Context {
                     return;
                 }
 
-                let mapping = self.temp_mapping[stack_idx];
+                let mapping = self.get_temp_mapping(stack_idx);
 
                 match mapping.get_kind() {
                     MapToSelf => self.self_type.upgrade(opnd_type),
                     MapToStack => {
                         let mut temp_type = mapping.get_type();
                         temp_type.upgrade(opnd_type);
-                        self.temp_mapping[stack_idx] = TempMapping::map_to_stack(temp_type);
+                        self.set_temp_mapping(stack_idx, TempMapping::map_to_stack(temp_type));
                     }
                     MapToLocal => {
                         let idx = mapping.get_local_idx() as usize;
@@ -1781,7 +1855,7 @@ impl Context {
                 let stack_idx = (self.stack_size - 1 - idx) as usize;
 
                 if stack_idx < MAX_TEMP_TYPES {
-                    self.temp_mapping[stack_idx]
+                    self.get_temp_mapping(stack_idx)
                 } else {
                     // We can't know the source of this stack operand, so we assume it is
                     // a stack-only temporary. type will be UNKNOWN
@@ -1810,7 +1884,7 @@ impl Context {
                     return;
                 }
 
-                self.temp_mapping[stack_idx] = mapping;
+                self.set_temp_mapping(stack_idx, mapping);
             }
         }
     }
@@ -1827,9 +1901,9 @@ impl Context {
         }
 
         // If any values on the stack map to this local we must detach them
-        for mapping_idx in 0..self.temp_mapping.len() {
-            let mapping = self.temp_mapping[mapping_idx];
-            self.temp_mapping[mapping_idx] = match mapping.get_kind() {
+        for mapping_idx in 0..MAX_TEMP_TYPES {
+            let mapping = self.get_temp_mapping(mapping_idx);
+            let tm = match mapping.get_kind() {
                 MapToStack => mapping,
                 MapToSelf => mapping,
                 MapToLocal => {
@@ -1841,7 +1915,8 @@ impl Context {
                         TempMapping::map_to_local(idx)
                     }
                 }
-            }
+            };
+            self.set_temp_mapping(mapping_idx, tm);
         }
 
         // Update the type bits
@@ -1858,11 +1933,11 @@ impl Context {
         // When clearing local types we must detach any stack mappings to those
         // locals. Even if local values may have changed, stack values will not.
 
-        for mapping_idx in 0..self.temp_mapping.len() {
-            let mapping = self.temp_mapping[mapping_idx];
+        for mapping_idx in 0..MAX_TEMP_TYPES {
+            let mapping = self.get_temp_mapping(mapping_idx);
             if mapping.get_kind() == MapToLocal {
                 let local_idx = mapping.get_local_idx() as usize;
-                self.temp_mapping[mapping_idx] = TempMapping::map_to_stack(self.get_local_type(local_idx));
+                self.set_temp_mapping(mapping_idx, TempMapping::map_to_stack(self.get_local_type(local_idx)));
             }
         }
 
@@ -1979,7 +2054,7 @@ impl Assembler {
 
         // Keep track of the type and mapping of the value
         if stack_size < MAX_TEMP_TYPES {
-            self.ctx.temp_mapping[stack_size] = mapping;
+            self.ctx.set_temp_mapping(stack_size, mapping);
 
             if mapping.get_kind() == MapToLocal {
                 let idx = mapping.get_local_idx();
@@ -2030,7 +2105,7 @@ impl Assembler {
             let idx: usize = (self.ctx.stack_size as usize) - i - 1;
 
             if idx < MAX_TEMP_TYPES {
-                self.ctx.temp_mapping[idx] = TempMapping::map_to_stack(Type::Unknown);
+                self.ctx.set_temp_mapping(idx, TempMapping::map_to_stack(Type::Unknown));
             }
         }
 
@@ -2048,7 +2123,7 @@ impl Assembler {
 
         for i in method_name_index..(self.ctx.stack_size - 1) as usize {
             if i + 1 < MAX_TEMP_TYPES {
-                self.ctx.temp_mapping[i] = self.ctx.temp_mapping[i + 1];
+                self.ctx.set_temp_mapping(i, self.ctx.get_temp_mapping(i + 1));
             }
         }
         self.stack_pop(1);
@@ -3297,7 +3372,7 @@ mod tests {
 
     #[test]
     fn context_size() {
-        assert_eq!(mem::size_of::<Context>(), 17);
+        assert_eq!(mem::size_of::<Context>(), 15);
     }
 
     #[test]
