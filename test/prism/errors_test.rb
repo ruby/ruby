@@ -1676,6 +1676,12 @@ module Prism
       ], compare_ripper: false # Ripper does not check 'void value expression'.
     end
 
+    def test_trailing_comma_in_calls
+      assert_errors expression("foo 1,"), "foo 1,", [
+        ["Expected an argument", 5..6]
+      ]
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")

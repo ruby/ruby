@@ -11922,6 +11922,13 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
         // argument to this method call.
         parse_arguments(parser, arguments, true, PM_TOKEN_EOF);
 
+        // If we have done with the arguments and still not consumed the comma,
+        // then we have a trailing comma where we need to check whether it is
+        // allowed or not.
+        if (parser->previous.type == PM_TOKEN_COMMA && !match1(parser, PM_TOKEN_SEMICOLON)) {
+            pm_parser_err_previous(parser, PM_ERR_EXPECT_ARGUMENT);
+        }
+
         pm_accepts_block_stack_pop(parser);
     }
 
