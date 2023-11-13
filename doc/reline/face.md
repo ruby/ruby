@@ -102,7 +102,10 @@ irb(main):001:0> Reline::Face.configs
    :scrollbar=>{:foreground=>:white, :background=>:cyan, :escape_sequence=>"\e[0m\e[37;46m"}}}
 ```
 
-## Backlog
+## 256-Color and TrueColor
 
-- Support for 256-color terminal emulator. Fallback hex color code such as "#FF1020" to 256 colors
-
+Reline will automatically detect if your terminal emulator supports truecolor with `ENV['COLORTERM] in 'truecolor' | '24bit'`. When this env is not set, Reline will fallback to 256-color.
+If your terminal emulator supports truecolor but does not set COLORTERM env, add this line to `.irbrc`.
+```ruby
+Reline::Face.force_truecolor
+```

@@ -5,12 +5,19 @@ require_relative 'helper'
 class Reline::Face::Test < Reline::TestCase
   RESET_SGR = "\e[0m"
 
+  def setup
+    @colorterm_backup = ENV['COLORTERM']
+    ENV['COLORTERM'] = 'truecolor'
+  end
+
   def teardown
     Reline::Face.reset_to_initial_configs
+    ENV['COLORTERM'] = @colorterm_backup
   end
 
   class WithInsufficientSetupTest < self
     def setup
+      super
       Reline::Face.config(:my_insufficient_config) do |face|
       end
       @face = Reline::Face[:my_insufficient_config]
@@ -37,6 +44,7 @@ class Reline::Face::Test < Reline::TestCase
 
   class WithSetupTest < self
     def setup
+      super
       Reline::Face.config(:my_config) do |face|
         face.define :default, foreground: :blue
         face.define :enhanced, foreground: "#FF1020", background: :black, style: [:bold, :underlined]
@@ -148,7 +156,13 @@ class Reline::Face::Test < Reline::TestCase
 
   class ConfigTest < self
     def setup
+      super
       @config = Reline::Face.const_get(:Config).new(:my_config) { }
+    end
+
+    def teardown
+      super
+      Reline::Face.instance_variable_set(:@force_truecolor, nil)
     end
 
     def test_rgb?
@@ -190,9 +204,54 @@ class Reline::Face::Test < Reline::TestCase
       )
     end
 
-    def test_sgr_rgb
+    def test_truecolor
+      ENV['COLORTERM'] = 'truecolor'
+      assert_equal true, Reline::Face.truecolor?
+      ENV['COLORTERM'] = '24bit'
+      assert_equal true, Reline::Face.truecolor?
+      ENV['COLORTERM'] = nil
+      assert_equal false, Reline::Face.truecolor?
+      Reline::Face.force_truecolor
+      assert_equal true, Reline::Face.truecolor?
+    end
+
+    def test_sgr_rgb_truecolor
+      ENV['COLORTERM'] = 'truecolor'
       assert_equal "38;2;255;255;255", @config.send(:sgr_rgb, :foreground, "#ffffff")
       assert_equal "48;2;18;52;86", @config.send(:sgr_rgb, :background, "#123456")
+    end
+
+    def test_sgr_rgb_256color
+      ENV['COLORTERM'] = nil
+      assert_equal '38;5;231', @config.send(:sgr_rgb, :foreground, '#ffffff')
+      assert_equal '48;5;16', @config.send(:sgr_rgb, :background, '#000000')
+      # Color steps are [0x00, 0x5f, 0x87, 0xaf, 0xd7, 0xff]
+      assert_equal '38;5;24', @config.send(:sgr_rgb, :foreground, '#005f87')
+      assert_equal '38;5;67', @config.send(:sgr_rgb, :foreground, '#5f87af')
+      assert_equal '48;5;110', @config.send(:sgr_rgb, :background, '#87afd7')
+      assert_equal '48;5;153', @config.send(:sgr_rgb, :background, '#afd7ff')
+      # Boundary values are [0x30, 0x73, 0x9b, 0xc3, 0xeb]
+      assert_equal '38;5;24', @config.send(:sgr_rgb, :foreground, '#2f729a')
+      assert_equal '38;5;67', @config.send(:sgr_rgb, :foreground, '#30739b')
+      assert_equal '48;5;110', @config.send(:sgr_rgb, :background, '#9ac2ea')
+      assert_equal '48;5;153', @config.send(:sgr_rgb, :background, '#9bc3eb')
+    end
+
+    def test_force_truecolor_reconfigure
+      ENV['COLORTERM'] = nil
+
+      Reline::Face.config(:my_config) do |face|
+        face.define :default, foreground: '#005f87'
+        face.define :enhanced, background: '#afd7ff'
+      end
+
+      assert_equal "\e[0m\e[38;5;24m", Reline::Face[:my_config][:default]
+      assert_equal "\e[0m\e[48;5;153m", Reline::Face[:my_config][:enhanced]
+
+      Reline::Face.force_truecolor
+
+      assert_equal "\e[0m\e[38;2;0;95;135m", Reline::Face[:my_config][:default]
+      assert_equal "\e[0m\e[48;2;175;215;255m", Reline::Face[:my_config][:enhanced]
     end
   end
 end
