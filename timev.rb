@@ -66,9 +66,10 @@
 #
 #   Time.new(2002, 10, 31, 2, 2, 2, "+02:00") #=> 2002-10-31 02:02:02 +0200
 #
-# Or a timezone object:
+# Or a {TZInfo}[https://github.com/tzinfo/tzinfo] timezone object:
 #
-#   zone = timezone("Europe/Athens")      # Eastern European Time, UTC+2
+#   require "tzinfo"
+#   zone = TZInfo::Timezone.get("Europe/Athens") # Eastern European Time, UTC+2
 #   Time.new(2002, 10, 31, 2, 2, 2, zone) #=> 2002-10-31 02:02:02 +0200
 #
 # You can also use Time.local and Time.utc to infer
