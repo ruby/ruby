@@ -3275,7 +3275,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_node_list_t *posts_list = NULL;
         pm_node_list_t *requireds_list = NULL;
 
-        struct rb_iseq_param_keyword *keyword;
+        struct rb_iseq_param_keyword *keyword = NULL;
 
         struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
