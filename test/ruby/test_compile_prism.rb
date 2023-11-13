@@ -427,6 +427,8 @@ module Prism
 
       assert_prism_eval('/pit/me')
       assert_prism_eval('/pit/ne')
+
+      assert_prism_eval('2.times.map { /#{1}/o }')
     end
 
     def test_StringConcatNode
