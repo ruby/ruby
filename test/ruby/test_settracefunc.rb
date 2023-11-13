@@ -2132,7 +2132,7 @@ CODE
     q = Thread::Queue.new
     t = Thread.new{
       Thread.current.add_trace_func proc{|ev, file, line, *args|
-        events << [ev, line]
+        events << [ev, file, line]
       } # do not stop trace. They will be stopped at Thread termination.
       q.push 1
       _x = 1
@@ -2142,15 +2142,15 @@ CODE
     q.pop
     method_for_test_thread_add_trace_func
     t.join
-    assert_equal ["c-return", base_line + 3], events[0]
-    assert_equal ["line", base_line + 6],     events[1]
-    assert_equal ["c-call", base_line + 6],   events[2]
-    assert_equal ["c-return", base_line + 6], events[3]
-    assert_equal ["line", base_line + 7],     events[4]
-    assert_equal ["line", base_line + 8],     events[5]
-    assert_equal ["call", base_line + -6],    events[6]
-    assert_equal ["return", base_line + -4],  events[7]
-    assert_equal ["line", base_line + 9],     events[8]
+    assert_equal ["c-return", __FILE__, base_line + 3], events[0]
+    assert_equal ["line", __FILE__, base_line + 6],     events[1]
+    assert_equal ["c-call", __FILE__, base_line + 6],   events[2]
+    assert_equal ["c-return", __FILE__, base_line + 6], events[3]
+    assert_equal ["line", __FILE__, base_line + 7],     events[4]
+    assert_equal ["line", __FILE__, base_line + 8],     events[5]
+    assert_equal ["call", __FILE__, base_line + -6],    events[6]
+    assert_equal ["return", __FILE__, base_line + -4],  events[7]
+    assert_equal ["line", __FILE__, base_line + 9],     events[8]
     assert_equal nil,                         events[9]
 
     # other thread
