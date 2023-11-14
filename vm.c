@@ -1750,12 +1750,7 @@ rb_vm_svar_lep(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
         }
     }
 
-    if (cfp) {
-        return (VALUE *)VM_CF_LEP(cfp);
-    }
-    else {
-        return NULL;
-    }
+    return (VALUE *)VM_CF_LEP(cfp);
 }
 
 static VALUE
