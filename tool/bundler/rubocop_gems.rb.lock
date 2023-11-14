@@ -5,12 +5,9 @@ GEM
     diff-lcs (1.5.0)
     minitest (5.20.0)
     parallel (1.23.0)
-    parser (3.2.2.4)
+    parser (3.2.2.2)
       ast (~> 2.4.1)
-      racc
     power_assert (2.0.3)
-    racc (1.7.3)
-    racc (1.7.3-java)
     rainbow (3.1.1)
     rake (13.1.0)
     rake-compiler (1.2.5)
@@ -62,6 +59,7 @@ PLATFORMS
 
 DEPENDENCIES
   minitest
+  parser (= 3.2.2.2)
   rake
   rake-compiler
   rspec
