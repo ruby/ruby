@@ -2,7 +2,7 @@
 
 source "https://rubygems.org"
 
-gem "standard", "~> 1.0"
+gem "standard", "1.12.1"
 
 gem "minitest"
 gem "rake"
