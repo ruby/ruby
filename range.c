@@ -2654,6 +2654,10 @@ range_overlap(VALUE range, VALUE other)
  *
  * === Methods for Working with JSON
  *
+ * To make these methods available:
+ *
+ *   require 'json/add/range'
+ *
  * - ::json_create: Returns a new \Range object constructed from the given object.
  * - #as_json: Returns a 2-element hash representing +self+.
  * - #to_json: Returns a \JSON string representing +self+.
