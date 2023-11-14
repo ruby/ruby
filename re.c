@@ -538,7 +538,7 @@ static VALUE rb_reg_str_with_term(VALUE re, int term);
  *
  *  The returned string may be used as an argument to Regexp.new,
  *  or as interpolated text for a
- *  {Regexp interpolation}[rdoc-ref:regexp.rdoc@Interpolation+Mode]:
+ *  {Regexp interpolation}[rdoc-ref:Regexp@Interpolation+Mode]:
  *
  *    r1 = Regexp.new(s0) # => /(?ix-m:ab+c)/
  *    r2 = /#{s0}/        # => /(?ix-m:ab+c)/
@@ -4692,7 +4692,7 @@ rb_reg_timeout_get(VALUE re)
 /*
  *  Document-class: Regexp
  *
- *  :include: doc/regexp.rdoc
+ *  :include: doc/_regexp.rdoc
  */
 
 void
