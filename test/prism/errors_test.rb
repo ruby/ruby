@@ -1455,6 +1455,78 @@ module Prism
       ]
     end
 
+    def test_check_value_expression
+      source = <<~RUBY
+        1 => ^(return)
+        while true
+          1 => ^(break)
+          1 => ^(next)
+          1 => ^(redo)
+          1 => ^(retry)
+          1 => ^(2 => a)
+        end
+        1 => ^(if 1; (return) else (return) end)
+        1 => ^(unless 1; (return) else (return) end)
+      RUBY
+      message = 'Unexpected void value expression'
+      assert_errors expression(source), source, [
+        [message, 7..13],
+        [message, 35..40],
+        [message, 51..55],
+        [message, 66..70],
+        [message, 81..86],
+        [message, 97..103],
+        [message, 123..129],
+        [message, 168..174],
+      ], compare_ripper: false # Ripper does not check 'void value expression'.
+    end
+
+    def test_void_value_expression_in_statement
+      source = <<~RUBY
+        if (return)
+        end
+        unless (return)
+        end
+        while (return)
+        end
+        until (return)
+        end
+        case (return)
+        when 1
+        end
+        class A < (return)
+        end
+        for x in (return)
+        end
+      RUBY
+      message = 'Unexpected void value expression'
+      assert_errors expression(source), source, [
+        [message, 4..10],
+        [message, 24..30],
+        [message, 43..49],
+        [message, 62..68],
+        [message, 80..86],
+        [message, 110..116],
+        [message, 132..138],
+      ], compare_ripper: false # Ripper does not check 'void value expression'.
+    end
+
+    def test_void_value_expression_in_modifier
+      source = <<~RUBY
+        1 if (return)
+        1 unless (return)
+        1 while (return)
+        1 until (return)
+      RUBY
+      message = 'Unexpected void value expression'
+      assert_errors expression(source), source, [
+        [message, 6..12],
+        [message, 24..30],
+        [message, 41..47],
+        [message, 58..64],
+      ], compare_ripper: false # Ripper does not check 'void value expression'.
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")
