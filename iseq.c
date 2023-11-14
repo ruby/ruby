@@ -2071,7 +2071,7 @@ local_var_name(const rb_iseq_t *diseq, VALUE level, VALUE op)
     if (!name) {
         name = rb_str_new_cstr("?");
     }
-    else if (!rb_str_symname_p(name)) {
+    else if (!rb_is_local_id(lid)) {
         name = rb_str_inspect(name);
     }
     else {
