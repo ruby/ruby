@@ -3517,6 +3517,7 @@ dir_s_home(int argc, VALUE *argv, VALUE obj)
  *   Dir.exist?('/nosuch')          # => false
  *   Dir.exist?('/example/main.rb') # => false
  *
+ * Same as File.directory?.
  *
  */
 VALUE
