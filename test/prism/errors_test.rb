@@ -1740,19 +1740,33 @@ module Prism
       ], compare_ripper: false # Ripper does not check 'void value expression'.
     end
 
-    def test_void_value_expression_in_hash
+    def test_void_value_expression_in_unary_call
       source = <<~RUBY
-        { return => 1 }
-        { 1 => return }
-        { a: return }
-        { **return }
+        +(return)
+        not return
       RUBY
       message = 'Unexpected void value expression'
       assert_errors expression(source), source, [
         [message, 2..8],
-        [message, 23..29],
-        [message, 37..43],
-        [message, 50..56],
+        [message, 14..20],
+      ], compare_ripper: false # Ripper does not check 'void value expression'.
+    end
+
+    def test_void_value_expression_in_binary_call
+      source = <<~RUBY
+        1 + (return)
+        (return) + 1
+        1 and (return)
+        (return) and 1
+        1 or (return)
+        (return) or 1
+      RUBY
+      message = 'Unexpected void value expression'
+      assert_errors expression(source), source, [
+        [message, 5..11],
+        [message, 14..20],
+        [message, 42..48],
+        [message, 71..77],
       ], compare_ripper: false # Ripper does not check 'void value expression'.
     end
 
