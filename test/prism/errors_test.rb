@@ -1716,6 +1716,46 @@ module Prism
       ], compare_ripper: false # Ripper does not check 'void value expression'.
     end
 
+    def test_void_value_expression_in_arguments
+      source = <<~RUBY
+        foo(return)
+        foo(1, return)
+        foo(*return)
+        foo(**return)
+        foo(&return)
+        foo(return => 1)
+        foo(:a => return)
+        foo(a: return)
+      RUBY
+      message = 'Unexpected void value expression'
+      assert_errors expression(source), source, [
+        [message, 4..10],
+        [message, 19..25],
+        [message, 32..38],
+        [message, 46..52],
+        [message, 59..65],
+        [message, 71..77],
+        [message, 94..100],
+        [message, 109..115],
+      ], compare_ripper: false # Ripper does not check 'void value expression'.
+    end
+
+    def test_void_value_expression_in_hash
+      source = <<~RUBY
+        { return => 1 }
+        { 1 => return }
+        { a: return }
+        { **return }
+      RUBY
+      message = 'Unexpected void value expression'
+      assert_errors expression(source), source, [
+        [message, 2..8],
+        [message, 23..29],
+        [message, 37..43],
+        [message, 50..56],
+      ], compare_ripper: false # Ripper does not check 'void value expression'.
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")
