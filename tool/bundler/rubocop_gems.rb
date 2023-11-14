@@ -2,7 +2,8 @@
 
 source "https://rubygems.org"
 
-gem "rubocop", "~> 1.7"
+gem "rubocop", "1.31.0"
+gem "parser", "3.2.2.2"
 
 gem "minitest"
 gem "rake"

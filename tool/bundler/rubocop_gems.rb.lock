@@ -3,17 +3,11 @@ GEM
   specs:
     ast (2.4.2)
     diff-lcs (1.5.0)
-    json (2.6.1)
-    json (2.6.1-java)
-    language_server-protocol (3.17.0.3)
     minitest (5.20.0)
     parallel (1.23.0)
-    parser (3.2.2.4)
+    parser (3.2.2.2)
       ast (~> 2.4.1)
-      racc
     power_assert (2.0.3)
-    racc (1.7.1)
-    racc (1.7.1-java)
     rainbow (3.1.1)
     rake (13.1.0)
     rake-compiler (1.2.5)
@@ -33,17 +27,15 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.12.0)
     rspec-support (3.12.1)
-    rubocop (1.57.2)
-      json (~> 2.3)
-      language_server-protocol (>= 3.17.0)
+    rubocop (1.31.0)
       parallel (~> 1.10)
-      parser (>= 3.2.2.4)
+      parser (>= 3.1.0.0)
       rainbow (>= 2.2.2, < 4.0)
       regexp_parser (>= 1.8, < 3.0)
       rexml (>= 3.2.5, < 4.0)
-      rubocop-ast (>= 1.28.1, < 2.0)
+      rubocop-ast (>= 1.18.0, < 2.0)
       ruby-progressbar (~> 1.7)
-      unicode-display_width (>= 2.4.0, < 3.0)
+      unicode-display_width (>= 1.4.0, < 3.0)
     rubocop-ast (1.30.0)
       parser (>= 3.2.1.0)
     ruby-progressbar (1.13.0)
@@ -67,10 +59,11 @@ PLATFORMS
 
 DEPENDENCIES
   minitest
+  parser (= 3.2.2.2)
   rake
   rake-compiler
   rspec
-  rubocop (~> 1.7)
+  rubocop (= 1.31.0)
   test-unit
 
 BUNDLED WITH
