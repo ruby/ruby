@@ -1954,6 +1954,7 @@ ractor_alloc(VALUE klass)
     VALUE rv = TypedData_Make_Struct(klass, rb_ractor_t, &ractor_data_type, r);
     FL_SET_RAW(rv, RUBY_FL_SHAREABLE);
     r->pub.self = rv;
+    rb_ractor_init_mfd(r);
     VM_ASSERT(ractor_status_p(r, ractor_created));
     return rv;
 }
@@ -1972,7 +1973,7 @@ rb_ractor_main_alloc(void)
     r->name = Qnil;
     r->pub.self = Qnil;
     ruby_single_main_ractor = r;
-
+    rb_ractor_init_mfd(r);
     return r;
 }
 
