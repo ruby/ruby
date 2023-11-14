@@ -990,6 +990,8 @@ pm_alternation_pattern_node_create(pm_parser_t *parser, pm_node_t *left, pm_node
  */
 static pm_and_node_t *
 pm_and_node_create(pm_parser_t *parser, pm_node_t *left, const pm_token_t *operator, pm_node_t *right) {
+    pm_assert_value_expression(parser, left);
+
     pm_and_node_t *node = PM_ALLOC_NODE(parser, pm_and_node_t);
 
     *node = (pm_and_node_t) {
@@ -1584,6 +1586,8 @@ pm_call_node_create(pm_parser_t *parser) {
  */
 static pm_call_node_t *
 pm_call_node_aref_create(pm_parser_t *parser, pm_node_t *receiver, pm_arguments_t *arguments) {
+    pm_assert_value_expression(parser, receiver);
+
     pm_call_node_t *node = pm_call_node_create(parser);
 
     node->base.location.start = receiver->location.start;
@@ -1611,6 +1615,9 @@ pm_call_node_aref_create(pm_parser_t *parser, pm_node_t *receiver, pm_arguments_
  */
 static pm_call_node_t *
 pm_call_node_binary_create(pm_parser_t *parser, pm_node_t *receiver, pm_token_t *operator, pm_node_t *argument) {
+    pm_assert_value_expression(parser, receiver);
+    pm_assert_value_expression(parser, argument);
+
     pm_call_node_t *node = pm_call_node_create(parser);
 
     node->base.location.start = MIN(receiver->location.start, argument->location.start);
@@ -1632,6 +1639,8 @@ pm_call_node_binary_create(pm_parser_t *parser, pm_node_t *receiver, pm_token_t 
  */
 static pm_call_node_t *
 pm_call_node_call_create(pm_parser_t *parser, pm_node_t *receiver, pm_token_t *operator, pm_token_t *message, pm_arguments_t *arguments) {
+    pm_assert_value_expression(parser, receiver);
+
     pm_call_node_t *node = pm_call_node_create(parser);
 
     node->base.location.start = receiver->location.start;
@@ -1695,6 +1704,8 @@ pm_call_node_fcall_create(pm_parser_t *parser, pm_token_t *message, pm_arguments
  */
 static pm_call_node_t *
 pm_call_node_not_create(pm_parser_t *parser, pm_node_t *receiver, pm_token_t *message, pm_arguments_t *arguments) {
+    pm_assert_value_expression(parser, receiver);
+
     pm_call_node_t *node = pm_call_node_create(parser);
 
     node->base.location.start = message->start;
@@ -1719,6 +1730,8 @@ pm_call_node_not_create(pm_parser_t *parser, pm_node_t *receiver, pm_token_t *me
  */
 static pm_call_node_t *
 pm_call_node_shorthand_create(pm_parser_t *parser, pm_node_t *receiver, pm_token_t *operator, pm_arguments_t *arguments) {
+    pm_assert_value_expression(parser, receiver);
+
     pm_call_node_t *node = pm_call_node_create(parser);
 
     node->base.location.start = receiver->location.start;
@@ -1748,6 +1761,8 @@ pm_call_node_shorthand_create(pm_parser_t *parser, pm_node_t *receiver, pm_token
  */
 static pm_call_node_t *
 pm_call_node_unary_create(pm_parser_t *parser, pm_token_t *operator, pm_node_t *receiver, const char *name) {
+    pm_assert_value_expression(parser, receiver);
+
     pm_call_node_t *node = pm_call_node_create(parser);
 
     node->base.location.start = operator->start;
@@ -3243,6 +3258,7 @@ pm_if_node_modifier_create(pm_parser_t *parser, pm_node_t *statement, const pm_t
  */
 static pm_if_node_t *
 pm_if_node_ternary_create(pm_parser_t *parser, pm_node_t *predicate, pm_node_t *true_expression, const pm_token_t *colon, pm_node_t *false_expression) {
+    pm_assert_value_expression(parser, predicate);
     pm_conditional_predicate(predicate);
 
     pm_statements_node_t *if_statements = pm_statements_node_create(parser);
@@ -4000,6 +4016,8 @@ pm_local_variable_target_node_create(pm_parser_t *parser, const pm_token_t *name
  */
 static pm_match_predicate_node_t *
 pm_match_predicate_node_create(pm_parser_t *parser, pm_node_t *value, pm_node_t *pattern, const pm_token_t *operator) {
+    pm_assert_value_expression(parser, value);
+
     pm_match_predicate_node_t *node = PM_ALLOC_NODE(parser, pm_match_predicate_node_t);
 
     *node = (pm_match_predicate_node_t) {
@@ -4023,6 +4041,8 @@ pm_match_predicate_node_create(pm_parser_t *parser, pm_node_t *value, pm_node_t 
  */
 static pm_match_required_node_t *
 pm_match_required_node_create(pm_parser_t *parser, pm_node_t *value, pm_node_t *pattern, const pm_token_t *operator) {
+    pm_assert_value_expression(parser, value);
+
     pm_match_required_node_t *node = PM_ALLOC_NODE(parser, pm_match_required_node_t);
 
     *node = (pm_match_required_node_t) {
@@ -4296,6 +4316,8 @@ pm_optional_parameter_node_create(pm_parser_t *parser, const pm_token_t *name, c
  */
 static pm_or_node_t *
 pm_or_node_create(pm_parser_t *parser, pm_node_t *left, const pm_token_t *operator, pm_node_t *right) {
+    pm_assert_value_expression(parser, left);
+
     pm_or_node_t *node = PM_ALLOC_NODE(parser, pm_or_node_t);
 
     *node = (pm_or_node_t) {
@@ -4566,6 +4588,9 @@ pm_pre_execution_node_create(pm_parser_t *parser, const pm_token_t *keyword, con
  */
 static pm_range_node_t *
 pm_range_node_create(pm_parser_t *parser, pm_node_t *left, const pm_token_t *operator, pm_node_t *right) {
+    pm_assert_value_expression(parser, left);
+    pm_assert_value_expression(parser, right);
+
     pm_range_node_t *node = PM_ALLOC_NODE(parser, pm_range_node_t);
     pm_node_flags_t flags = 0;
 
