@@ -28,6 +28,8 @@ test_subtract_several_subtrahends(RBS::CliTest) running tests without Bundler
 test_subtract_write(RBS::CliTest) running tests without Bundler
 test_subtract_write_removes_definition_if_empty(RBS::CliTest) running tests without Bundler
 
+test_TOPDIR(RbConfigSingletonTest) `TOPDIR` is `nil` during CI while RBS type is declared as `String`
+
 test_aref(FiberSingletonTest) the method should not accept String keys
 
 NetSingletonTest depending on external resources
