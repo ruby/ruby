@@ -48,7 +48,7 @@
             │           ├── block: ∅
             │           ├── flags: ∅
             │           └── name: :b
-            ├── locals: [:x, :y, :z, :*, :&, :"..."]
+            ├── locals: [:x, :y, :z, :"..."]
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,5)-(1,6) = "("

@@ -46,6 +46,7 @@ pm_encoding_shift_jis_isupper_char(const uint8_t *b, ptrdiff_t n) {
     }
 }
 
+/** Shift_JIS encoding */
 pm_encoding_t pm_encoding_shift_jis = {
     .name = "shift_jis",
     .char_width = pm_encoding_shift_jis_char_width,

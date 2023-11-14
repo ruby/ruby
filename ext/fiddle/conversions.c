@@ -3,25 +3,6 @@
 #include <fiddle.h>
 
 VALUE
-rb_fiddle_type_bool(void)
-{
-    if (sizeof(bool) == sizeof(char)) {
-        return INT2NUM(TYPE_UCHAR);
-    } else if (sizeof(bool) == sizeof(short)) {
-        return INT2NUM(TYPE_USHORT);
-    } else if (sizeof(bool) == sizeof(int)) {
-        return INT2NUM(TYPE_UINT);
-    } else if (sizeof(bool) == sizeof(long)) {
-        return INT2NUM(TYPE_ULONG);
-    } else {
-        rb_raise(rb_eNotImpError,
-                 "bool isn't supported: %u",
-                 (unsigned int)sizeof(bool));
-        return RUBY_Qnil;
-    }
-}
-
-VALUE
 rb_fiddle_type_ensure(VALUE type)
 {
     VALUE original_type = type;
@@ -168,7 +149,7 @@ rb_fiddle_type_ensure(VALUE type)
             return INT2NUM(TYPE_UINTPTR_T);
         }
         else if (type_id == bool_id) {
-            return rb_fiddle_type_bool();
+            return INT2NUM(TYPE_BOOL);
         }
         else {
             type = original_type;
@@ -213,6 +194,20 @@ rb_fiddle_int_to_ffi_type(int type)
 	return &ffi_type_double;
       case TYPE_CONST_STRING:
 	return &ffi_type_pointer;
+      case TYPE_BOOL:
+	signed_p = 0;
+        if (sizeof(bool) == sizeof(char)) {
+            return rb_ffi_type_of(char);
+        } else if (sizeof(bool) == sizeof(short)) {
+            return rb_ffi_type_of(short);
+        } else if (sizeof(bool) == sizeof(int)) {
+            return rb_ffi_type_of(int);
+        } else if (sizeof(bool) == sizeof(long)) {
+            return rb_ffi_type_of(long);
+        } else {
+            rb_raise(rb_eNotImpError, "bool isn't supported: %u",
+                     (unsigned int)sizeof(bool));
+        }
       default:
 	rb_raise(rb_eRuntimeError, "unknown type %d", type);
     }
@@ -284,8 +279,23 @@ rb_fiddle_value_to_generic(int type, VALUE *src, fiddle_generic *dst)
             dst->pointer = rb_string_value_cstr(src);
         }
 	break;
+      case TYPE_BOOL:
+        if (sizeof(bool) == sizeof(char)) {
+            dst->uchar = RB_TEST(*src);
+        } else if (sizeof(bool) == sizeof(short)) {
+            dst->ushort = RB_TEST(*src);
+        } else if (sizeof(bool) == sizeof(int)) {
+            dst->uint = RB_TEST(*src);
+        } else if (sizeof(bool) == sizeof(long)) {
+            dst->ulong = RB_TEST(*src);
+        } else {
+            rb_raise(rb_eNotImpError, "bool isn't supported: %u",
+                     (unsigned int)sizeof(bool));
+        }
+        break;
       default:
 	rb_raise(rb_eRuntimeError, "unknown type %d", type);
+        break;
     }
 }
 
@@ -343,6 +353,19 @@ rb_fiddle_generic_to_value(VALUE rettype, fiddle_generic retval)
         }
         else {
             return Qnil;
+        }
+      case TYPE_BOOL:
+        if (sizeof(bool) == sizeof(char)) {
+            return CBOOL2RBBOOL((unsigned char)retval.fffi_arg);
+        } else if (sizeof(bool) == sizeof(short)) {
+            return CBOOL2RBBOOL((unsigned short)retval.fffi_arg);
+        } else if (sizeof(bool) == sizeof(int)) {
+            return CBOOL2RBBOOL((unsigned int)retval.fffi_arg);
+        } else if (sizeof(bool) == sizeof(long)) {
+            return CBOOL2RBBOOL(retval.ulong);
+        } else {
+            rb_raise(rb_eNotImpError, "bool isn't supported: %u",
+                     (unsigned int)sizeof(bool));
         }
       default:
 	rb_raise(rb_eRuntimeError, "unknown type %d", type);

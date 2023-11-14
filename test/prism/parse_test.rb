@@ -41,7 +41,7 @@ module Prism
 
     def test_parse_takes_file_path
       filepath = "filepath.rb"
-      result = Prism.parse("def foo; __FILE__; end", filepath)
+      result = Prism.parse("def foo; __FILE__; end", filepath: filepath)
 
       assert_equal filepath, find_source_file_node(result.value).filepath
     end
@@ -122,7 +122,7 @@ module Prism
         end
 
         # Next, assert that there were no errors during parsing.
-        result = Prism.parse(source, relative)
+        result = Prism.parse(source, filepath: relative)
         assert_empty result.errors
 
         # Next, pretty print the source.
@@ -149,7 +149,7 @@ module Prism
 
         # Next, assert that the value can be serialized and deserialized without
         # changing the shape of the tree.
-        assert_equal_nodes(result.value, Prism.load(source, Prism.dump(source, relative)).value)
+        assert_equal_nodes(result.value, Prism.load(source, Prism.dump(source, filepath: relative)).value)
 
         # Next, check that the location ranges of each node in the tree are a
         # superset of their respective child nodes.
@@ -203,10 +203,10 @@ module Prism
 
         file_contents.split(/(?<=\S)\n\n(?=\S)/).each do |snippet|
           snippet = snippet.rstrip
-          result = Prism.parse(snippet, relative)
+          result = Prism.parse(snippet, filepath: relative)
           assert_empty result.errors
 
-          assert_equal_nodes(result.value, Prism.load(snippet, Prism.dump(snippet, relative)).value)
+          assert_equal_nodes(result.value, Prism.load(snippet, Prism.dump(snippet, filepath: relative)).value)
         end
       end
     end

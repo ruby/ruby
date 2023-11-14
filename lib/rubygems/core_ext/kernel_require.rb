@@ -46,12 +46,11 @@ module Kernel
           load_path_check_index = Gem.load_path_insert_index - Gem.activated_gem_paths
           Gem.suffixes.find do |s|
             $LOAD_PATH[0...load_path_check_index].find do |lp|
-              safe_lp = lp.dup.tap(&Gem::UNTAINT)
-              if File.symlink? safe_lp # for backward compatibility
+              if File.symlink? lp # for backward compatibility
                 next
               end
 
-              full_path = File.expand_path(File.join(safe_lp, "#{path}#{s}"))
+              full_path = File.expand_path(File.join(lp, "#{path}#{s}"))
               rp = full_path if File.file?(full_path)
             end
           end

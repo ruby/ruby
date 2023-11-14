@@ -512,7 +512,6 @@ EOM
     raise Gem::Package::PathError.new(destination, destination_dir) unless
       normalize_path(destination).start_with? normalize_path(destination_dir + "/")
 
-    destination.tap(&Gem::UNTAINT)
     destination
   end
 

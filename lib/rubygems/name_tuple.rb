@@ -51,7 +51,7 @@ class Gem::NameTuple
       "#{@name}-#{@version}"
     else
       "#{@name}-#{@version}-#{@platform}"
-    end.dup.tap(&Gem::UNTAINT)
+    end
   end
 
   ##

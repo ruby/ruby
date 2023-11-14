@@ -1,15 +1,22 @@
 # frozen_string_literal: true
 
+# The Prism Ruby parser.
+#
+# "Parsing Ruby is suddenly manageable!"
+#   - You, hopefully
+#
 module Prism
   # There are many files in prism that are templated to handle every node type,
   # which means the files can end up being quite large. We autoload them to make
   # our require speed faster since consuming libraries are unlikely to use all
   # of these features.
+
   autoload :BasicVisitor, "prism/visitor"
   autoload :Compiler, "prism/compiler"
   autoload :Debug, "prism/debug"
   autoload :DesugarCompiler, "prism/desugar_compiler"
   autoload :Dispatcher, "prism/dispatcher"
+  autoload :DotVisitor, "prism/dot_visitor"
   autoload :DSL, "prism/dsl"
   autoload :LexCompat, "prism/lex_compat"
   autoload :LexRipper, "prism/lex_compat"
@@ -23,17 +30,26 @@ module Prism
 
   # Some of these constants are not meant to be exposed, so marking them as
   # private here.
+
   private_constant :Debug
   private_constant :LexCompat
   private_constant :LexRipper
 
+  # :call-seq:
+  #   Prism::lex_compat(source, **options) -> Array
+  #
   # Returns an array of tokens that closely resembles that of the Ripper lexer.
   # The only difference is that since we don't keep track of lexer state in the
   # same way, it's going to always return the NONE state.
-  def self.lex_compat(source, filepath = "")
-    LexCompat.new(source, filepath).result
+  #
+  # For supported options, see Prism::parse.
+  def self.lex_compat(source, **options)
+    LexCompat.new(source, **options).result
   end
 
+  # :call-seq:
+  #   Prism::lex_ripper(source) -> Array
+  #
   # This lexes with the Ripper lex. It drops any space events but otherwise
   # returns the same tokens. Raises SyntaxError if the syntax in source is
   # invalid.
@@ -41,6 +57,9 @@ module Prism
     LexRipper.new(source).result
   end
 
+  # :call-seq:
+  #   Prism::load(source, serialized) -> ParseResult
+  #
   # Load the serialized AST using the source as a reference into a tree.
   def self.load(source, serialized)
     Serialize.load(source, serialized)

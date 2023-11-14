@@ -162,14 +162,13 @@ location_mark_entry(rb_backtrace_location_t *fi)
 static size_t
 location_memsize(const void *ptr)
 {
-    /* rb_backtrace_location_t *fi = (rb_backtrace_location_t *)ptr; */
-    return sizeof(rb_backtrace_location_t);
+    return 0;
 }
 
 static const rb_data_type_t location_data_type = {
     "frame_info",
     {location_mark, RUBY_TYPED_DEFAULT_FREE, location_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 int
@@ -182,7 +181,7 @@ static inline rb_backtrace_location_t *
 location_ptr(VALUE locobj)
 {
     struct valued_frame_info *vloc;
-    GetCoreDataFromValue(locobj, struct valued_frame_info, vloc);
+    TypedData_Get_Struct(locobj, struct valued_frame_info, &location_data_type, vloc);
     return vloc->loc;
 }
 
@@ -479,7 +478,6 @@ backtrace_free(void *ptr)
 {
    rb_backtrace_t *bt = (rb_backtrace_t *)ptr;
    ruby_xfree(bt->backtrace);
-   ruby_xfree(bt);
 }
 
 static void
@@ -516,13 +514,13 @@ static size_t
 backtrace_memsize(const void *ptr)
 {
     rb_backtrace_t *bt = (rb_backtrace_t *)ptr;
-    return sizeof(rb_backtrace_t) + sizeof(rb_backtrace_location_t) * bt->backtrace_size;
+    return sizeof(rb_backtrace_location_t) * bt->backtrace_size;
 }
 
 static const rb_data_type_t backtrace_data_type = {
     "backtrace",
     {backtrace_mark, backtrace_free, backtrace_memsize, backtrace_update},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 int
@@ -596,9 +594,9 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
     ptrdiff_t size;
     rb_backtrace_t *bt;
     VALUE btobj = backtrace_alloc(rb_cBacktrace);
+    TypedData_Get_Struct(btobj, rb_backtrace_t, &backtrace_data_type, bt);
     rb_backtrace_location_t *loc = NULL;
     unsigned long cfunc_counter = 0;
-    GetCoreDataFromValue(btobj, rb_backtrace_t, bt);
 
     // In the case the thread vm_stack or cfp is not initialized, there is no backtrace.
     if (end_cfp == NULL) {
@@ -626,8 +624,8 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
         }
     }
 
-    bt->backtrace = ZALLOC_N(rb_backtrace_location_t, num_frames);
     bt->backtrace_size = 0;
+    bt->backtrace = ZALLOC_N(rb_backtrace_location_t, num_frames);
     if (num_frames == 0) {
         if (start_too_large) *start_too_large = 0;
         return btobj;
@@ -720,7 +718,7 @@ backtrace_to_str_ary(VALUE self)
 {
     VALUE r;
     rb_backtrace_t *bt;
-    GetCoreDataFromValue(self, rb_backtrace_t, bt);
+    TypedData_Get_Struct(self, rb_backtrace_t, &backtrace_data_type, bt);
     r = backtrace_collect(bt, location_to_str_dmyarg, 0);
     RB_GC_GUARD(self);
     return r;
@@ -730,7 +728,7 @@ VALUE
 rb_backtrace_to_str_ary(VALUE self)
 {
     rb_backtrace_t *bt;
-    GetCoreDataFromValue(self, rb_backtrace_t, bt);
+    TypedData_Get_Struct(self, rb_backtrace_t, &backtrace_data_type, bt);
 
     if (!bt->strary) {
         RB_OBJ_WRITE(self, &bt->strary, backtrace_to_str_ary(self));
@@ -744,7 +742,7 @@ rb_backtrace_use_iseq_first_lineno_for_last_location(VALUE self)
     const rb_backtrace_t *bt;
     rb_backtrace_location_t *loc;
 
-    GetCoreDataFromValue(self, rb_backtrace_t, bt);
+    TypedData_Get_Struct(self, rb_backtrace_t, &backtrace_data_type, bt);
     VM_ASSERT(bt->backtrace_size > 0);
 
     loc = &bt->backtrace[0];
@@ -772,7 +770,7 @@ backtrace_to_location_ary(VALUE self)
 {
     VALUE r;
     rb_backtrace_t *bt;
-    GetCoreDataFromValue(self, rb_backtrace_t, bt);
+    TypedData_Get_Struct(self, rb_backtrace_t, &backtrace_data_type, bt);
     r = backtrace_collect(bt, location_create, (void *)self);
     RB_GC_GUARD(self);
     return r;
@@ -782,7 +780,7 @@ VALUE
 rb_backtrace_to_location_ary(VALUE self)
 {
     rb_backtrace_t *bt;
-    GetCoreDataFromValue(self, rb_backtrace_t, bt);
+    TypedData_Get_Struct(self, rb_backtrace_t, &backtrace_data_type, bt);
 
     if (!bt->locary) {
         RB_OBJ_WRITE(self, &bt->locary, backtrace_to_location_ary(self));
@@ -801,7 +799,7 @@ static VALUE
 backtrace_load_data(VALUE self, VALUE str)
 {
     rb_backtrace_t *bt;
-    GetCoreDataFromValue(self, rb_backtrace_t, bt);
+    TypedData_Get_Struct(self, rb_backtrace_t, &backtrace_data_type, bt);
     RB_OBJ_WRITE(self, &bt->strary, str);
     return self;
 }

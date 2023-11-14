@@ -84,7 +84,7 @@ module Bundler
       @new_platform = nil
       @removed_platform = nil
 
-      if lockfile && File.exist?(lockfile)
+      if lockfile_exists?
         @lockfile_contents = Bundler.read_file(lockfile)
         @locked_gems = LockfileParser.new(@lockfile_contents)
         @locked_platforms = @locked_gems.platforms
@@ -302,6 +302,10 @@ module Bundler
       end
     end
 
+    def should_complete_platforms?
+      !lockfile_exists? && generic_local_platform_is_ruby? && !Bundler.settings[:force_ruby_platform]
+    end
+
     def spec_git_paths
       sources.git_sources.map {|s| File.realpath(s.path) if File.exist?(s.path) }.compact
     end
@@ -491,6 +495,10 @@ module Bundler
 
     private
 
+    def lockfile_exists?
+      lockfile && File.exist?(lockfile)
+    end
+
     def resolver
       @resolver ||= Resolver.new(resolution_packages, gem_version_promoter)
     end
@@ -567,11 +575,12 @@ module Bundler
     end
 
     def start_resolution
-      result = resolver.start
+      result = SpecSet.new(resolver.start)
 
       @resolved_bundler_version = result.find {|spec| spec.name == "bundler" }&.version
+      @platforms = result.complete_platforms!(platforms) if should_complete_platforms?
 
-      SpecSet.new(SpecSet.new(result).for(dependencies, false, @platforms))
+      SpecSet.new(result.for(dependencies, false, @platforms))
     end
 
     def precompute_source_requirements_for_indirect_dependencies?
@@ -592,7 +601,7 @@ module Bundler
     end
 
     def current_ruby_platform_locked?
-      return false unless generic_local_platform == Gem::Platform::RUBY
+      return false unless generic_local_platform_is_ruby?
       return false if Bundler.settings[:force_ruby_platform] && !@platforms.include?(Gem::Platform::RUBY)
 
       current_platform_locked?

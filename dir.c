@@ -3478,6 +3478,9 @@ file_s_fnmatch(int argc, VALUE *argv, VALUE obj)
  * call-seq:
  *   Dir.home(user_name = nil) -> dirpath
  *
+ * Retruns the home directory path of the user specified with +user_name+
+ * if it is not +nil+, or the current login user:
+ *
  *   Dir.home         # => "/home/me"
  *   Dir.home('root') # => "/root"
  *
@@ -3514,6 +3517,7 @@ dir_s_home(int argc, VALUE *argv, VALUE obj)
  *   Dir.exist?('/nosuch')          # => false
  *   Dir.exist?('/example/main.rb') # => false
  *
+ * Same as File.directory?.
  *
  */
 VALUE

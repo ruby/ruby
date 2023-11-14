@@ -387,7 +387,7 @@ RSpec.describe "bundle lock" do
         build_gem "sequel", "5.72.0" do |s|
           s.add_dependency "bigdecimal", ">= 0"
         end
-        build_gem "bigdecimal", %w[1.4.4 3.1.4]
+        build_gem "bigdecimal", %w[1.4.4 99.1.4]
       end
 
       gemfile <<~G
@@ -417,7 +417,7 @@ RSpec.describe "bundle lock" do
     it "adds the latest version of the new dependency" do
       bundle "lock --minor --update sequel"
 
-      expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[sequel-5.72.0 bigdecimal-3.1.4].sort)
+      expect(the_bundle.locked_gems.specs.map(&:full_name)).to eq(%w[sequel-5.72.0 bigdecimal-99.1.4].sort)
     end
   end
 
@@ -449,7 +449,7 @@ RSpec.describe "bundle lock" do
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array([java, x86_mingw32, local_platform].uniq)
+    expect(lockfile.platforms).to match_array(default_platform_list(java, x86_mingw32))
   end
 
   it "supports adding new platforms with force_ruby_platform = true" do
@@ -481,7 +481,7 @@ RSpec.describe "bundle lock" do
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array(["ruby", local_platform].uniq)
+    expect(lockfile.platforms).to match_array(default_platform_list("ruby"))
   end
 
   it "warns when adding an unknown platform" do
@@ -494,12 +494,12 @@ RSpec.describe "bundle lock" do
 
     allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array([java, x86_mingw32, local_platform].uniq)
+    expect(lockfile.platforms).to match_array(default_platform_list(java, x86_mingw32))
 
     bundle "lock --remove-platform java"
 
     lockfile = Bundler::LockfileParser.new(read_lockfile)
-    expect(lockfile.platforms).to match_array([x86_mingw32, local_platform].uniq)
+    expect(lockfile.platforms).to match_array(default_platform_list(x86_mingw32))
   end
 
   it "also cleans up redundant platform gems when removing platforms" do
@@ -733,7 +733,7 @@ RSpec.describe "bundle lock" do
       gem "libv8"
     G
 
-    simulate_platform(Gem::Platform.new("x86_64-darwin")) { bundle "lock" }
+    simulate_platform(Gem::Platform.new("x86_64-darwin-19")) { bundle "lock" }
 
     expect(lockfile).to eq <<~G
       GEM
@@ -743,7 +743,8 @@ RSpec.describe "bundle lock" do
           libv8 (8.4.255.0-x86_64-darwin-20)
 
       PLATFORMS
-        x86_64-darwin
+        x86_64-darwin-19
+        x86_64-darwin-20
 
       DEPENDENCIES
         libv8
@@ -1237,7 +1238,7 @@ RSpec.describe "bundle lock" do
             activemodel (>= 6.0.4)
 
       PLATFORMS
-        #{lockfile_platforms}
+        #{local_platform}
 
       DEPENDENCIES
         activeadmin (= 2.13.1)
@@ -1273,7 +1274,7 @@ RSpec.describe "bundle lock" do
             version solving has failed.
     ERR
 
-    lockfile lockfile.gsub(/PLATFORMS\n  #{lockfile_platforms}/m, "PLATFORMS\n  #{lockfile_platforms("ruby")}")
+    lockfile lockfile.gsub(/PLATFORMS\n  #{local_platform}/m, "PLATFORMS\n  #{lockfile_platforms("ruby")}")
 
     bundle "lock", :raise_on_error => false
 
@@ -1438,7 +1439,7 @@ RSpec.describe "bundle lock" do
             nokogiri (1.14.2)
 
         PLATFORMS
-          x86_64-linux
+          #{lockfile_platforms}
 
         DEPENDENCIES
           foo!

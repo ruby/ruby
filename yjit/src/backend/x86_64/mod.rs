@@ -1,17 +1,12 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
-#![allow(unused_imports)]
-
 use std::mem::take;
 
 use crate::asm::*;
 use crate::asm::x86_64::*;
-use crate::codegen::{JITState, CodePtr};
-use crate::core::Context;
+use crate::codegen::CodePtr;
 use crate::cruby::*;
 use crate::backend::ir::*;
-use crate::codegen::CodegenGlobals;
 use crate::options::*;
+use crate::utils::*;
 
 // Use the x86 register type for this platform
 pub type Reg = X86Reg;
@@ -462,6 +457,9 @@ impl Assembler
         // List of GC offsets
         let mut gc_offsets: Vec<u32> = Vec::new();
 
+        // Buffered list of PosMarker callbacks to fire if codegen is successful
+        let mut pos_markers: Vec<(usize, CodePtr)> = vec![];
+
         // For each instruction
         let start_write_pos = cb.get_write_pos();
         let mut insn_idx: usize = 0;
@@ -484,8 +482,8 @@ impl Assembler
                 },
 
                 // Report back the current position in the generated code
-                Insn::PosMarker(pos_marker) => {
-                    pos_marker(cb.get_write_ptr());
+                Insn::PosMarker(..) => {
+                    pos_markers.push((insn_idx, cb.get_write_ptr()));
                 },
 
                 Insn::BakeString(text) => {
@@ -592,16 +590,23 @@ impl Assembler
                     lea(cb, out.into(), opnd.into());
                 },
 
-                // Load relative address
-                Insn::LeaLabel { target, out } => {
-                    let label_idx = target.unwrap_label_idx();
+                // Load address of jump target
+                Insn::LeaJumpTarget { target, out } => {
+                    if let Target::Label(label_idx) = target {
+                        // Set output to the raw address of the label
+                        cb.label_ref(*label_idx, 7, |cb, src_addr, dst_addr| {
+                            let disp = dst_addr - src_addr;
+                            lea(cb, Self::SCRATCH0, mem_opnd(8, RIP, disp.try_into().unwrap()));
+                        });
 
-                    cb.label_ref(label_idx, 7, |cb, src_addr, dst_addr| {
-                        let disp = dst_addr - src_addr;
-                        lea(cb, Self::SCRATCH0, mem_opnd(8, RIP, disp.try_into().unwrap()));
-                    });
-
-                    mov(cb, out.into(), Self::SCRATCH0);
+                        mov(cb, out.into(), Self::SCRATCH0);
+                    } else {
+                        // Set output to the jump target's raw address
+                        let target_code = target.unwrap_code_ptr();
+                        let target_addr = target_code.raw_addr(cb).as_u64();
+                        // Constant encoded length important for patching
+                        movabs(cb, out.into(), target_addr);
+                    }
                 },
 
                 // Push and pop to/from the C stack
@@ -815,7 +820,21 @@ impl Assembler
             }
         }
 
-        Some(gc_offsets)
+        // Error if we couldn't write out everything
+        if cb.has_dropped_bytes() {
+            return None
+        } else {
+            // No bytes dropped, so the pos markers point to valid code
+            for (insn_idx, pos) in pos_markers {
+                if let Insn::PosMarker(callback) = self.insns.get(insn_idx).unwrap() {
+                    callback(pos);
+                } else {
+                    panic!("non-PosMarker in pos_markers insn_idx={insn_idx} {self:?}");
+                }
+            }
+
+            return Some(gc_offsets)
+        }
     }
 
     /// Optimize and compile the stored instructions

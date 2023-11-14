@@ -68,7 +68,7 @@ fn test_call_ptr() {
     // calling a lower address
     check_bytes("e8fbffffff", |cb| {
         let ptr = cb.get_write_ptr();
-        call_ptr(cb, RAX, ptr.raw_ptr());
+        call_ptr(cb, RAX, ptr.raw_ptr(cb));
     });
 }
 
@@ -442,15 +442,15 @@ fn basic_capstone_usage() -> std::result::Result<(), capstone::Error> {
 fn block_comments() {
     let mut cb = super::CodeBlock::new_dummy(4096);
 
-    let first_write_ptr = cb.get_write_ptr().into_usize();
+    let first_write_ptr = cb.get_write_ptr().raw_addr(&cb);
     cb.add_comment("Beginning");
     xor(&mut cb, EAX, EAX); // 2 bytes long
-    let second_write_ptr = cb.get_write_ptr().into_usize();
+    let second_write_ptr = cb.get_write_ptr().raw_addr(&cb);
     cb.add_comment("Two bytes in");
     cb.add_comment("Still two bytes in");
     cb.add_comment("Still two bytes in"); // Duplicate, should be ignored
     test(&mut cb, mem_opnd(64, RSI, 64), imm_opnd(!0x08)); // 8 bytes long
-    let third_write_ptr = cb.get_write_ptr().into_usize();
+    let third_write_ptr = cb.get_write_ptr().raw_addr(&cb);
     cb.add_comment("Ten bytes in");
 
     assert_eq!(&vec!( "Beginning".to_string() ), cb.comments_at(first_write_ptr).unwrap());

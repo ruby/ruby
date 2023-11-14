@@ -105,6 +105,10 @@
 
 If you are having unexplainable build errors, after saving all your work, try running `git clean -xfd` in the source root to remove all git ignored local files. If you are working from a source directory that's been updated several times, you may have temporary build artifacts from previous releases which can cause build failures.
 
+## Building on Windows
+
+The documentation for building on Windows can be found [here](../windows.md).
+
 ## More details
 
 If you're interested in continuing development on Ruby, here are more details

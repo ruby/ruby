@@ -1,18 +1,11 @@
-#![allow(dead_code)]
-#![allow(unused_variables)]
-#![allow(unused_imports)]
-
 use std::mem::take;
 
-use crate::asm::x86_64::jmp_ptr;
 use crate::asm::{CodeBlock, OutlinedCb};
 use crate::asm::arm64::*;
-use crate::codegen::{JITState, CodegenGlobals};
-use crate::core::Context;
 use crate::cruby::*;
 use crate::backend::ir::*;
 use crate::virtualmem::CodePtr;
-use crate::options::*;
+use crate::utils::*;
 
 // Use the arm64 register type for this platform
 pub type Reg = A64Reg;
@@ -105,14 +98,13 @@ fn emit_jmp_ptr_with_invalidation(cb: &mut CodeBlock, dst_ptr: CodePtr) {
     #[cfg(not(test))]
     {
         let end = cb.get_write_ptr();
-        use crate::cruby::rb_yjit_icache_invalidate;
-        unsafe { rb_yjit_icache_invalidate(start.raw_ptr() as _, end.raw_ptr() as _) };
+        unsafe { rb_yjit_icache_invalidate(start.raw_ptr(cb) as _, end.raw_ptr(cb) as _) };
     }
 }
 
 fn emit_jmp_ptr(cb: &mut CodeBlock, dst_ptr: CodePtr, padding: bool) {
-    let src_addr = cb.get_write_ptr().into_i64();
-    let dst_addr = dst_ptr.into_i64();
+    let src_addr = cb.get_write_ptr().as_offset();
+    let dst_addr = dst_ptr.as_offset();
 
     // If the offset is short enough, then we'll use the
     // branch instruction. Otherwise, we'll move the
@@ -618,9 +610,9 @@ impl Assembler
 
                     asm.not(opnd0);
                 },
-                Insn::LShift { opnd, shift, .. } |
-                Insn::RShift { opnd, shift, .. } |
-                Insn::URShift { opnd, shift, .. } => {
+                Insn::LShift { opnd, .. } |
+                Insn::RShift { opnd, .. } |
+                Insn::URShift { opnd, .. } => {
                     // The operand must be in a register, so
                     // if we get anything else we need to load it first.
                     let opnd0 = match opnd {
@@ -725,8 +717,8 @@ impl Assembler
         fn emit_conditional_jump<const CONDITION: u8>(cb: &mut CodeBlock, target: Target) {
             match target {
                 Target::CodePtr(dst_ptr) | Target::SideExitPtr(dst_ptr) => {
-                    let dst_addr = dst_ptr.into_i64();
-                    let src_addr = cb.get_write_ptr().into_i64();
+                    let dst_addr = dst_ptr.as_offset();
+                    let src_addr = cb.get_write_ptr().as_offset();
 
                     let num_insns = if bcond_offset_fits_bits((dst_addr - src_addr) / 4) {
                         // If the jump offset fits into the conditional jump as
@@ -755,7 +747,7 @@ impl Assembler
                     } else {
                         // Otherwise, we need to load the address into a
                         // register and use the branch register instruction.
-                        let dst_addr = dst_ptr.into_u64();
+                        let dst_addr = (dst_ptr.raw_ptr(cb) as usize).as_u64();
                         let load_insns: i32 = emit_load_size(dst_addr).into();
 
                         // We're going to write out the inverse condition so
@@ -827,6 +819,9 @@ impl Assembler
         // List of GC offsets
         let mut gc_offsets: Vec<u32> = Vec::new();
 
+        // Buffered list of PosMarker callbacks to fire if codegen is successful
+        let mut pos_markers: Vec<(usize, CodePtr)> = vec![];
+
         // For each instruction
         let start_write_pos = cb.get_write_pos();
         let mut insn_idx: usize = 0;
@@ -846,8 +841,8 @@ impl Assembler
                     cb.write_label(target.unwrap_label_idx());
                 },
                 // Report back the current position in the generated code
-                Insn::PosMarker(pos_marker) => {
-                    pos_marker(cb.get_write_ptr());
+                Insn::PosMarker(..) => {
+                    pos_markers.push((insn_idx, cb.get_write_ptr()))
                 }
                 Insn::BakeString(text) => {
                     for byte in text.as_bytes() {
@@ -885,8 +880,8 @@ impl Assembler
                 Insn::Mul { left, right, out } => {
                     // If the next instruction is jo (jump on overflow)
                     match (self.insns.get(insn_idx + 1), self.insns.get(insn_idx + 2)) {
-                        (Some(Insn::JoMul(target)), _) |
-                        (Some(Insn::PosMarker(_)), Some(Insn::JoMul(target))) => {
+                        (Some(Insn::JoMul(_)), _) |
+                        (Some(Insn::PosMarker(_)), Some(Insn::JoMul(_))) => {
                             // Compute the high 64 bits
                             smulh(cb, Self::SCRATCH0, left.into(), right.into());
 
@@ -1032,14 +1027,20 @@ impl Assembler
                         }
                     };
                 },
-                Insn::LeaLabel { out, target, .. } => {
-                    let label_idx = target.unwrap_label_idx();
+                Insn::LeaJumpTarget { out, target, .. } => {
+                    if let Target::Label(label_idx) = target {
+                        // Set output to the raw address of the label
+                        cb.label_ref(*label_idx, 4, |cb, end_addr, dst_addr| {
+                            adr(cb, Self::SCRATCH0, A64Opnd::new_imm(dst_addr - (end_addr - 4)));
+                        });
 
-                    cb.label_ref(label_idx, 4, |cb, end_addr, dst_addr| {
-                        adr(cb, Self::SCRATCH0, A64Opnd::new_imm(dst_addr - (end_addr - 4)));
-                    });
-
-                    mov(cb, out.into(), Self::SCRATCH0);
+                        mov(cb, out.into(), Self::SCRATCH0);
+                    } else {
+                        // Set output to the jump target's raw address
+                        let target_code = target.unwrap_code_ptr();
+                        let target_addr = target_code.raw_addr(cb).as_u64();
+                        emit_load_value(cb, out.into(), target_addr);
+                    }
                 },
                 Insn::CPush(opnd) => {
                     emit_push(cb, opnd.into());
@@ -1074,7 +1075,7 @@ impl Assembler
                 },
                 Insn::CCall { fptr, .. } => {
                     // The offset to the call target in bytes
-                    let src_addr = cb.get_write_ptr().into_i64();
+                    let src_addr = cb.get_write_ptr().raw_ptr(cb) as i64;
                     let dst_addr = *fptr as i64;
 
                     // Use BL if the offset is short enough to encode as an immediate.
@@ -1207,7 +1208,21 @@ impl Assembler
             }
         }
 
-        Ok(gc_offsets)
+        // Error if we couldn't write out everything
+        if cb.has_dropped_bytes() {
+            return Err(EmitError::OutOfMemory)
+        } else {
+            // No bytes dropped, so the pos markers point to valid code
+            for (insn_idx, pos) in pos_markers {
+                if let Insn::PosMarker(callback) = self.insns.get(insn_idx).unwrap() {
+                    callback(pos);
+                } else {
+                    panic!("non-PosMarker in pos_markers insn_idx={insn_idx} {self:?}");
+                }
+            }
+
+            return Ok(gc_offsets)
+        }
     }
 
     /// Optimize and compile the stored instructions
@@ -1326,8 +1341,7 @@ mod tests {
     fn test_emit_je_fits_into_bcond() {
         let (mut asm, mut cb) = setup_asm();
 
-        let offset = 80;
-        let target: CodePtr = ((cb.get_write_ptr().into_u64() + offset) as *mut u8).into();
+        let target: CodePtr = cb.get_write_ptr().add_bytes(80);
 
         asm.je(Target::CodePtr(target));
         asm.compile_with_num_regs(&mut cb, 0);
@@ -1338,7 +1352,7 @@ mod tests {
         let (mut asm, mut cb) = setup_asm();
 
         let offset = 1 << 21;
-        let target: CodePtr = ((cb.get_write_ptr().into_u64() + offset) as *mut u8).into();
+        let target: CodePtr = cb.get_write_ptr().add_bytes(offset);
 
         asm.je(Target::CodePtr(target));
         asm.compile_with_num_regs(&mut cb, 0);
@@ -1349,7 +1363,7 @@ mod tests {
         let (mut asm, mut cb) = setup_asm();
 
         let label = asm.new_label("label");
-        let opnd = asm.lea_label(label);
+        let opnd = asm.lea_jump_target(label);
 
         asm.write_label(label);
         asm.bake_string("Hello, world!");
@@ -1599,7 +1613,7 @@ mod tests {
         assert!(gap > 0b1111111111111111111);
 
         let instruction_at_starting_pos: [u8; 4] = unsafe {
-            std::slice::from_raw_parts(cb.get_ptr(starting_pos).raw_ptr(), 4)
+            std::slice::from_raw_parts(cb.get_ptr(starting_pos).raw_ptr(&cb), 4)
         }.try_into().unwrap();
         assert_eq!(
             0b000101 << 26_u32,

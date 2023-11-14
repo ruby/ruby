@@ -49,7 +49,7 @@ module Bundler
       (\d+\.\d+\.\d+(?:\.\S+)?) # ruby version
       (?:p(-?\d+))? # optional patchlevel
       (?:\s\((\S+)\s(.+)\))? # optional engine info
-    /xo.freeze
+    /xo
 
     # Returns a RubyVersion from the given string.
     # @param [String] the version string to match.

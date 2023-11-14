@@ -1,15 +1,14 @@
-// Note that the UTF-8 decoding code is based on Bjoern Hoehrmann's UTF-8 DFA
-// decoder. See http://bjoern.hoehrmann.de/utf-8/decoder/dfa/ for details.
-
 #include "prism/enc/pm_encoding.h"
 
 typedef uint32_t pm_unicode_codepoint_t;
 
-// Each element of the following table contains a bitfield that indicates a
-// piece of information about the corresponding unicode codepoint. Note that
-// this table is different from other encodings where we used a lookup table
-// because the indices of those tables are the byte representations, not the
-// codepoints themselves.
+/**
+ * Each element of the following table contains a bitfield that indicates a
+ * piece of information about the corresponding unicode codepoint. Note that
+ * this table is different from other encodings where we used a lookup table
+ * because the indices of those tables are the byte representations, not the
+ * codepoints themselves.
+ */
 const uint8_t pm_encoding_unicode_table[256] = {
 //  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
@@ -2179,6 +2178,10 @@ static const pm_unicode_codepoint_t unicode_isupper_codepoints[UNICODE_ISUPPER_C
     0x1F170, 0x1F189,
 };
 
+/**
+ * Binary search through the given list of codepoints to see if the given
+ * codepoint is in the list.
+ */
 static bool
 pm_unicode_codepoint_match(pm_unicode_codepoint_t codepoint, const pm_unicode_codepoint_t *codepoints, size_t size) {
     size_t start = 0;
@@ -2202,6 +2205,29 @@ pm_unicode_codepoint_match(pm_unicode_codepoint_t codepoint, const pm_unicode_co
     return false;
 }
 
+/**
+ * A state transition table for decoding UTF-8.
+ *
+ * Copyright (c) 2008-2009 Bjoern Hoehrmann <bjoern@hoehrmann.de>
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 static const uint8_t pm_utf_8_dfa[] = {
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 00..1f
     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, // 20..3f
@@ -2219,6 +2245,11 @@ static const uint8_t pm_utf_8_dfa[] = {
     1,3,1,1,1,1,1,3,1,3,1,1,1,1,1,1,1,3,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // s7..s8
 };
 
+/**
+ * Given a pointer to a string and the number of bytes remaining in the string,
+ * decode the next UTF-8 codepoint and return it. The number of bytes consumed
+ * is returned in the width out parameter.
+ */
 static pm_unicode_codepoint_t
 pm_utf_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
     assert(n >= 1);
@@ -2253,6 +2284,10 @@ pm_encoding_utf_8_char_width(const uint8_t *b, ptrdiff_t n) {
     return width;
 }
 
+/**
+ * Return the size of the next character in the UTF-8 encoding if it is an
+ * alphabetical character.
+ */
 size_t
 pm_encoding_utf_8_alpha_char(const uint8_t *b, ptrdiff_t n) {
     if (*b < 0x80) {
@@ -2269,6 +2304,10 @@ pm_encoding_utf_8_alpha_char(const uint8_t *b, ptrdiff_t n) {
     }
 }
 
+/**
+ * Return the size of the next character in the UTF-8 encoding if it is an
+ * alphanumeric character.
+ */
 size_t
 pm_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n) {
     if (*b < 0x80) {
@@ -2285,6 +2324,10 @@ pm_encoding_utf_8_alnum_char(const uint8_t *b, ptrdiff_t n) {
     }
 }
 
+/**
+ * Return true if the next character in the UTF-8 encoding if it is an uppercase
+ * character.
+ */
 bool
 pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
     if (*b < 0x80) {
@@ -2305,6 +2348,7 @@ pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
 #undef UNICODE_ALNUM_CODEPOINTS_LENGTH
 #undef UNICODE_ISUPPER_CODEPOINTS_LENGTH
 
+/** UTF-8 */
 pm_encoding_t pm_encoding_utf_8 = {
     .name = "utf-8",
     .char_width = pm_encoding_utf_8_char_width,
@@ -2314,6 +2358,7 @@ pm_encoding_t pm_encoding_utf_8 = {
     .multibyte = true
 };
 
+/** UTF8-mac */
 pm_encoding_t pm_encoding_utf8_mac = {
     .name = "utf8-mac",
     .char_width = pm_encoding_utf_8_char_width,

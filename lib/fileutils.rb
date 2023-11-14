@@ -180,7 +180,7 @@ end
 # - {CVE-2004-0452}[https://cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2004-0452].
 #
 module FileUtils
-  VERSION = "1.7.1"
+  VERSION = "1.7.2"
 
   def self.private_module_function(name)   #:nodoc:
     module_function name

@@ -115,7 +115,9 @@ module IRB
           io.write easter_egg_logo(:large)
         end
       when :dancing
-        begin
+        STDOUT.cooked do
+          interrupted = false
+          prev_trap = trap("SIGINT") { interrupted = true }
           canvas = Canvas.new(Reline.get_screen_size)
           Reline::IOGate.set_winch_handler do
             canvas = Canvas.new(Reline.get_screen_size)
@@ -131,10 +133,12 @@ module IRB
             buff[0, 20] = "\e[0mPress Ctrl+C to stop\e[31m\e[1m"
             print "\e[H" + buff
             sleep 0.05
+            break if interrupted
           end
         rescue Interrupt
         ensure
           print "\e[0m\e[?1049l"
+          trap("SIGINT", prev_trap)
         end
       end
     end

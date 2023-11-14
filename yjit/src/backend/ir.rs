@@ -447,9 +447,8 @@ pub enum Insn {
     // Add a label into the IR at the point that this instruction is added.
     Label(Target),
 
-    // Load effective address relative to the current instruction pointer. It
-    // accepts a single signed immediate operand.
-    LeaLabel { target: Target, out: Opnd },
+    /// Get the code address of a jump target
+    LeaJumpTarget { target: Target, out: Opnd },
 
     // Load effective address
     Lea { opnd: Opnd, out: Opnd },
@@ -539,7 +538,7 @@ impl Insn {
             Insn::Jo(target) |
             Insn::Jz(target) |
             Insn::Label(target) |
-            Insn::LeaLabel { target, .. } => {
+            Insn::LeaJumpTarget { target, .. } => {
                 Some(target)
             }
             _ => None,
@@ -587,7 +586,7 @@ impl Insn {
             Insn::JoMul(_) => "JoMul",
             Insn::Jz(_) => "Jz",
             Insn::Label(_) => "Label",
-            Insn::LeaLabel { .. } => "LeaLabel",
+            Insn::LeaJumpTarget { .. } => "LeaJumpTarget",
             Insn::Lea { .. } => "Lea",
             Insn::LiveReg { .. } => "LiveReg",
             Insn::Load { .. } => "Load",
@@ -626,7 +625,7 @@ impl Insn {
             Insn::CSelNZ { out, .. } |
             Insn::CSelZ { out, .. } |
             Insn::Lea { out, .. } |
-            Insn::LeaLabel { out, .. } |
+            Insn::LeaJumpTarget { out, .. } |
             Insn::LiveReg { out, .. } |
             Insn::Load { out, .. } |
             Insn::LoadSExt { out, .. } |
@@ -659,7 +658,7 @@ impl Insn {
             Insn::CSelNZ { out, .. } |
             Insn::CSelZ { out, .. } |
             Insn::Lea { out, .. } |
-            Insn::LeaLabel { out, .. } |
+            Insn::LeaJumpTarget { out, .. } |
             Insn::LiveReg { out, .. } |
             Insn::Load { out, .. } |
             Insn::LoadSExt { out, .. } |
@@ -688,7 +687,7 @@ impl Insn {
             Insn::Jnz(target) |
             Insn::Jo(target) |
             Insn::Jz(target) |
-            Insn::LeaLabel { target, .. } => Some(target),
+            Insn::LeaJumpTarget { target, .. } => Some(target),
             _ => None
         }
     }
@@ -741,7 +740,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::JoMul(_) |
             Insn::Jz(_) |
             Insn::Label(_) |
-            Insn::LeaLabel { .. } |
+            Insn::LeaJumpTarget { .. } |
             Insn::PadInvalPatch |
             Insn::PosMarker(_) => None,
             Insn::CPopInto(opnd) |
@@ -842,7 +841,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::JoMul(_) |
             Insn::Jz(_) |
             Insn::Label(_) |
-            Insn::LeaLabel { .. } |
+            Insn::LeaJumpTarget { .. } |
             Insn::PadInvalPatch |
             Insn::PosMarker(_) => None,
             Insn::CPopInto(opnd) |
@@ -1098,7 +1097,7 @@ impl Assembler
         let side_exit = match self.side_exits.get(&side_exit_context) {
             None => {
                 let exit_code = gen_outlined_exit(side_exit_context.pc, &side_exit_context.get_ctx(), ocb)?;
-                self.side_exits.insert(side_exit_context.clone(), exit_code);
+                self.side_exits.insert(*side_exit_context, exit_code);
                 exit_code
             }
             Some(code_ptr) => *code_ptr,
@@ -1830,9 +1829,9 @@ impl Assembler {
     }
 
     #[must_use]
-    pub fn lea_label(&mut self, target: Target) -> Opnd {
+    pub fn lea_jump_target(&mut self, target: Target) -> Opnd {
         let out = self.next_opnd_out(Opnd::DEFAULT_NUM_BITS);
-        self.push_insn(Insn::LeaLabel { target, out });
+        self.push_insn(Insn::LeaJumpTarget { target, out });
         out
     }
 

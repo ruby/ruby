@@ -68,8 +68,6 @@
 #define YYPULL 1
 
 
-
-
 <%# b4_user_pre_prologue -%>
 /* First part of user prologue.  */
 #line <%= output.aux.prologue_first_lineno %> "<%= output.grammar_file_path %>"

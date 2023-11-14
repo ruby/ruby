@@ -517,10 +517,9 @@
         │   │   │   │   ├── rest: ∅
         │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 1)
-        │   │   │   │   │   └── @ KeywordParameterNode (location: (33,17)-(33,19))
+        │   │   │   │   │   └── @ RequiredKeywordParameterNode (location: (33,17)-(33,19))
         │   │   │   │   │       ├── name: :z
-        │   │   │   │   │       ├── name_loc: (33,17)-(33,19) = "z:"
-        │   │   │   │   │       └── value: ∅
+        │   │   │   │   │       └── name_loc: (33,17)-(33,19) = "z:"
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block: ∅
         │   │   │   ├── locals: (length: 0)
@@ -696,13 +695,13 @@
         │   │   │       │   │   │   ├── rest: ∅
         │   │   │       │   │   │   ├── posts: (length: 0)
         │   │   │       │   │   │   ├── keywords: (length: 2)
-        │   │   │       │   │   │   │   ├── @ KeywordParameterNode (location: (49,2)-(49,6))
+        │   │   │       │   │   │   │   ├── @ OptionalKeywordParameterNode (location: (49,2)-(49,6))
         │   │   │       │   │   │   │   │   ├── name: :a
         │   │   │       │   │   │   │   │   ├── name_loc: (49,2)-(49,4) = "a:"
         │   │   │       │   │   │   │   │   └── value:
         │   │   │       │   │   │   │   │       @ IntegerNode (location: (49,5)-(49,6))
         │   │   │       │   │   │   │   │       └── flags: decimal
-        │   │   │       │   │   │   │   └── @ KeywordParameterNode (location: (50,2)-(50,6))
+        │   │   │       │   │   │   │   └── @ OptionalKeywordParameterNode (location: (50,2)-(50,6))
         │   │   │       │   │   │   │       ├── name: :b
         │   │   │       │   │   │   │       ├── name_loc: (50,2)-(50,4) = "b:"
         │   │   │       │   │   │   │       └── value:

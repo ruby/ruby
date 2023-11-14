@@ -95,12 +95,17 @@ module Spec
       9999
     end
 
-    def lockfile_platforms(*extra)
-      formatted_lockfile_platforms(local_platform, *extra)
+    def default_platform_list(*extra, defaults: default_locked_platforms)
+      defaults.concat(extra).uniq
     end
 
-    def formatted_lockfile_platforms(*platforms)
+    def lockfile_platforms(*extra, defaults: default_locked_platforms)
+      platforms = default_platform_list(*extra, :defaults => defaults)
       platforms.map(&:to_s).sort.join("\n  ")
+    end
+
+    def default_locked_platforms
+      [local_platform, generic_local_platform]
     end
   end
 end

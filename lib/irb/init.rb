@@ -76,6 +76,7 @@ module IRB # :nodoc:
     @CONF[:USE_SINGLELINE] = false unless defined?(ReadlineInputMethod)
     @CONF[:USE_COLORIZE] = (nc = ENV['NO_COLOR']).nil? || nc.empty?
     @CONF[:USE_AUTOCOMPLETE] = ENV.fetch("IRB_USE_AUTOCOMPLETE", "true") != "false"
+    @CONF[:COMPLETOR] = :regexp
     @CONF[:INSPECT_MODE] = true
     @CONF[:USE_TRACER] = false
     @CONF[:USE_LOADER] = false
@@ -329,6 +330,10 @@ module IRB # :nodoc:
         @CONF[:USE_AUTOCOMPLETE] = true
       when "--noautocomplete"
         @CONF[:USE_AUTOCOMPLETE] = false
+      when "--regexp-completor"
+        @CONF[:COMPLETOR] = :regexp
+      when "--type-completor"
+        @CONF[:COMPLETOR] = :type
       when /^--prompt-mode(?:=(.+))?/, /^--prompt(?:=(.+))?/
         opt = $1 || argv.shift
         prompt_mode = opt.upcase.tr("-", "_").intern

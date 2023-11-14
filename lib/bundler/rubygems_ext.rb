@@ -2,6 +2,8 @@
 
 require "pathname"
 
+require "rubygems" unless defined?(Gem)
+
 require "rubygems/specification"
 
 # We can't let `Gem::Source` be autoloaded in the `Gem::Specification#source`
@@ -46,7 +48,7 @@ module Gem
 
     def full_gem_path
       if source.respond_to?(:root)
-        Pathname.new(loaded_from).dirname.expand_path(source.root).to_s.tap {|x| x.untaint if RUBY_VERSION < "2.7" }
+        Pathname.new(loaded_from).dirname.expand_path(source.root).to_s
       else
         rg_full_gem_path
       end
@@ -94,7 +96,7 @@ module Gem
       rg_missing_extensions?
     end
 
-    remove_method :gem_dir if instance_methods(false).include?(:gem_dir)
+    remove_method :gem_dir
     def gem_dir
       full_gem_path
     end
@@ -134,17 +136,6 @@ module Gem
       end
       gemfile
     end
-
-    # Backfill missing YAML require when not defined. Fixed since 3.1.0.pre1.
-    module YamlBackfiller
-      def to_yaml(opts = {})
-        Gem.load_yaml unless defined?(::YAML)
-
-        super(opts)
-      end
-    end
-
-    prepend YamlBackfiller
 
     def nondevelopment_dependencies
       dependencies - development_dependencies
@@ -338,7 +329,7 @@ module Gem
   end
 
   # On universal Rubies, resolve the "universal" arch to the real CPU arch, without changing the extension directory.
-  class Specification
+  class BasicSpecification
     if /^universal\.(?<arch>.*?)-/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
       local_platform = Platform.local
       if local_platform.cpu == "universal"
@@ -351,9 +342,8 @@ module Gem
         end
 
         def extensions_dir
-          Gem.default_ext_dir_for(base_dir) ||
-            File.join(base_dir, "extensions", ORIGINAL_LOCAL_PLATFORM,
-                      Gem.extension_api_version)
+          @extensions_dir ||=
+            Gem.default_ext_dir_for(base_dir) || File.join(base_dir, "extensions", ORIGINAL_LOCAL_PLATFORM, Gem.extension_api_version)
         end
       end
     end
@@ -383,9 +373,7 @@ module Gem
   require "rubygems/util"
 
   Util.singleton_class.module_eval do
-    if Util.singleton_methods.include?(:glob_files_in_dir) # since 3.0.0.beta.2
-      remove_method :glob_files_in_dir
-    end
+    remove_method :glob_files_in_dir
 
     def glob_files_in_dir(glob, base_path)
       Dir.glob(glob, :base => base_path).map! {|f| File.expand_path(f, base_path) }

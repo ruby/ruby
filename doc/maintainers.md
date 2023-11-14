@@ -225,6 +225,12 @@ have commit right, others don't.
 * https://github.com/ruby/prettyprint
 * https://rubygems.org/gems/prettyprint
 
+#### lib/prism.rb
+* Kevin Newton (kddnewton)
+* Jemma Issroff (jemmaissroff)
+* https://github.com/ruby/prism
+* https://rubygems.org/gems/prism
+
 #### lib/pstore.rb
 * *unmaintained*
 * https://github.com/ruby/pstore

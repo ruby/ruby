@@ -5,14 +5,25 @@ end
 
 class Range
 
-  # Deserializes JSON string by constructing new Range object with arguments
-  # <tt>a</tt> serialized by <tt>to_json</tt>.
+  # Returns a new \Range object constructed from <tt>object['a']</tt>,
+  # which must be an array of values suitable for a call to Range.new:
+  #
+  #   require 'json/add/range'
+  #   Range.json_create({"a"=>[1, 4]})        # => 1..4
+  #   Range.json_create({"a"=>[1, 4, true]}) # => 1...4
+  #   Range.json_create({"a" => ['a', 'd']})  # => "a".."d"
+  #
   def self.json_create(object)
     new(*object['a'])
   end
 
-  # Returns a hash, that will be turned into a JSON object and represent this
-  # object.
+  # Returns a 2-element hash representing +self+:
+  #
+  #   require 'json/add/range'
+  #   (1..4).as_json     # => {"json_class"=>"Range", "a"=>[1, 4, false]}
+  #   (1...4).as_json    # => {"json_class"=>"Range", "a"=>[1, 4, true]}
+  #   ('a'..'d').as_json # => {"json_class"=>"Range", "a"=>["a", "d", false]}
+  #
   def as_json(*)
     {
       JSON.create_id  => self.class.name,
@@ -20,9 +31,13 @@ class Range
     }
   end
 
-  # Stores class name (Range) with JSON array of arguments <tt>a</tt> which
-  # include <tt>first</tt> (integer), <tt>last</tt> (integer), and
-  # <tt>exclude_end?</tt> (boolean) as JSON string.
+  # Returns a JSON string representing +self+:
+  #
+  #   require 'json/add/range'
+  #   (1..4).to_json   # => "{\"json_class\":\"Range\",\"a\":[1,4,false]}"
+  #   (1...4).to_json    # => "{\"json_class\":\"Range\",\"a\":[1,4,true]}"
+  #   ('a'..'d').to_json # => "{\"json_class\":\"Range\",\"a\":[\"a\",\"d\",false]}"
+  #
   def to_json(*args)
     as_json.to_json(*args)
   end

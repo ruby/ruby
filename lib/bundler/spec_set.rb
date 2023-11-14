@@ -52,6 +52,44 @@ module Bundler
       specs.uniq
     end
 
+    def complete_platforms!(platforms)
+      return platforms.concat([Gem::Platform::RUBY]).uniq if @specs.empty?
+
+      new_platforms = @specs.flat_map {|spec| spec.source.specs.search([spec.name, spec.version]).map(&:platform) }.uniq.select do |platform|
+        next if platforms.include?(platform)
+        next unless GemHelpers.generic(platform) == Gem::Platform::RUBY
+
+        new_specs = []
+
+        valid_platform = lookup.all? do |_, specs|
+          spec = specs.first
+          matching_specs = spec.source.specs.search([spec.name, spec.version])
+          platform_spec = GemHelpers.select_best_platform_match(matching_specs, platform).first
+
+          if platform_spec
+            new_specs << LazySpecification.from_spec(platform_spec)
+            true
+          else
+            false
+          end
+        end
+        next unless valid_platform
+
+        @specs.concat(new_specs.uniq)
+      end
+      return platforms if new_platforms.empty?
+
+      platforms.concat(new_platforms)
+
+      less_specific_platform = new_platforms.find {|platform| platform != Gem::Platform::RUBY && platform === Bundler.local_platform }
+      platforms.delete(Bundler.local_platform) if less_specific_platform
+
+      @sorted = nil
+      @lookup = nil
+
+      platforms
+    end
+
     def [](key)
       key = key.name if key.respond_to?(:name)
       lookup[key].reverse
@@ -112,16 +150,6 @@ module Bundler
 
     def missing_specs
       @specs.select {|s| s.is_a?(LazySpecification) }
-    end
-
-    def merge(set)
-      arr = sorted.dup
-      set.each do |set_spec|
-        full_name = set_spec.full_name
-        next if arr.any? {|spec| spec.full_name == full_name }
-        arr << set_spec
-      end
-      SpecSet.new(arr)
     end
 
     def -(other)
@@ -200,9 +228,11 @@ module Bundler
 
     def specs_for_dependency(dep, platform)
       specs_for_name = lookup[dep.name]
-      target_platform = dep.force_ruby_platform ? Gem::Platform::RUBY : (platform || Bundler.local_platform)
-      matching_specs = GemHelpers.select_best_platform_match(specs_for_name, target_platform)
-      matching_specs.each {|s| s.force_ruby_platform = true } if dep.force_ruby_platform
+      matching_specs = if dep.force_ruby_platform
+        GemHelpers.force_ruby_platform(specs_for_name)
+      else
+        GemHelpers.select_best_platform_match(specs_for_name, platform || Bundler.local_platform)
+      end
       matching_specs.map!(&:materialize_for_installation).compact! if platform.nil?
       matching_specs
     end

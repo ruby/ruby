@@ -657,7 +657,7 @@ BigDecimal_precision(VALUE self)
  *  Returns the number of decimal digits following the decimal digits in +self+.
  *
  *    BigDecimal("0").scale         # => 0
- *    BigDecimal("1").scale         # => 1
+ *    BigDecimal("1").scale         # => 0
  *    BigDecimal("1.1").scale       # => 1
  *    BigDecimal("3.1415").scale    # => 4
  *    BigDecimal("-1e20").precision # => 0

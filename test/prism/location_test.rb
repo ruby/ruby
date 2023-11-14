@@ -502,16 +502,6 @@ module Prism
       assert_location(KeywordHashNode, "foo(a, b: 1)", 7...11) { |node| node.arguments.arguments[1] }
     end
 
-    def test_KeywordParameterNode
-      assert_location(KeywordParameterNode, "def foo(bar:); end", 8...12) do |node|
-        node.parameters.keywords.first
-      end
-
-      assert_location(KeywordParameterNode, "def foo(bar: nil); end", 8...16) do |node|
-        node.parameters.keywords.first
-      end
-    end
-
     def test_KeywordRestParameterNode
       assert_location(KeywordRestParameterNode, "def foo(**); end", 8...10) do |node|
         node.parameters.keyword_rest
@@ -609,6 +599,12 @@ module Prism
       assert_location(NumberedReferenceReadNode, "$1")
     end
 
+    def test_OptionalKeywordParameterNode
+      assert_location(OptionalKeywordParameterNode, "def foo(bar: nil); end", 8...16) do |node|
+        node.parameters.keywords.first
+      end
+    end
+
     def test_OptionalParameterNode
       assert_location(OptionalParameterNode, "def foo(bar = nil); end", 8...17) do |node|
         node.parameters.optionals.first
@@ -671,6 +667,12 @@ module Prism
 
     def test_RegularExpressionNode
       assert_location(RegularExpressionNode, "/foo/")
+    end
+
+    def test_RequiredKeywordParameterNode
+      assert_location(RequiredKeywordParameterNode, "def foo(bar:); end", 8...12) do |node|
+        node.parameters.keywords.first
+      end
     end
 
     def test_RequiredParameterNode

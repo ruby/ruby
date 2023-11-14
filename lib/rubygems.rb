@@ -115,11 +115,6 @@ require_relative "rubygems/errors"
 module Gem
   RUBYGEMS_DIR = __dir__
 
-  # Taint support is deprecated in Ruby 2.7.
-  # This allows switching ".untaint" to ".tap(&Gem::UNTAINT)",
-  # to avoid deprecation warnings in Ruby 2.7.
-  UNTAINT = RUBY_VERSION < "2.7" ? :untaint.to_sym : proc {}
-
   ##
   # An Array of Regexps that match windows Ruby platforms.
 
@@ -496,7 +491,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     glob_with_suffixes = "#{glob}#{Gem.suffix_pattern}"
     $LOAD_PATH.map do |load_path|
       Gem::Util.glob_files_in_dir(glob_with_suffixes, load_path)
-    end.flatten.select {|file| File.file? file.tap(&Gem::UNTAINT) }
+    end.flatten.select {|file| File.file? file }
   end
 
   ##
@@ -1084,8 +1079,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
       end
     end
 
-    path.tap(&Gem::UNTAINT)
-
     unless File.file? path
       return unless raise_exception
 
@@ -1294,7 +1287,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   ##
   # Location of Marshal quick gemspecs on remote repositories
 
-  MARSHAL_SPEC_DIR = "quick/Marshal.#{Gem.marshal_version}/"
+  MARSHAL_SPEC_DIR = "quick/Marshal.#{Gem.marshal_version}/".freeze
 
   autoload :ConfigFile,         File.expand_path("rubygems/config_file", __dir__)
   autoload :Dependency,         File.expand_path("rubygems/dependency", __dir__)
@@ -1352,7 +1345,7 @@ require_relative "rubygems/core_ext/kernel_gem"
 path = File.join(__dir__, "rubygems/core_ext/kernel_require.rb")
 # When https://bugs.ruby-lang.org/issues/17259 is available, there is no need to override Kernel#warn
 if RUBY_ENGINE == "truffleruby" ||
-   (RUBY_ENGINE == "ruby" && RUBY_VERSION >= "3.0")
+   RUBY_ENGINE == "ruby"
   file = "<internal:#{path}>"
 else
   require_relative "rubygems/core_ext/kernel_warn"

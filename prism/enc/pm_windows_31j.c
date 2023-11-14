@@ -46,6 +46,7 @@ pm_encoding_windows_31j_isupper_char(const uint8_t *b, ptrdiff_t n) {
     }
 }
 
+/** Windows-31J */
 pm_encoding_t pm_encoding_windows_31j = {
     .name = "windows-31j",
     .char_width = pm_encoding_windows_31j_char_width,

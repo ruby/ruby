@@ -17,11 +17,11 @@ module Bundler
       Bundler.ui.debug "#{worker}:  #{spec.name} (#{spec.version}) from #{spec.loaded_from}"
       generate_executable_stubs
       [true, post_install_message]
-    rescue Bundler::InstallHookError, Bundler::SecurityError, Bundler::APIResponseMismatchError
+    rescue Bundler::InstallHookError, Bundler::SecurityError, Bundler::APIResponseMismatchError, Bundler::InsecureInstallPathError
       raise
     rescue Errno::ENOSPC
       [false, out_of_space_message]
-    rescue Bundler::BundlerError, Gem::InstallError, Bundler::APIResponseInvalidDependenciesError => e
+    rescue Bundler::BundlerError, Gem::InstallError => e
       [false, specific_failure_message(e)]
     end
 

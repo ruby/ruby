@@ -70,6 +70,7 @@ module Gem::BUNDLED_GEMS
   end
 
   def self.warning?(name, specs: nil)
+    name = File.path(name) # name can be a feature name or a file path with String or Pathname
     return if specs.to_a.map(&:name).include?(name.sub(LIBEXT, ""))
     name = name.tr("/", "-")
     _t, path = $:.resolve_feature_path(name)
@@ -95,7 +96,10 @@ module Gem::BUNDLED_GEMS
 
     if defined?(Bundler)
       msg += " Add #{gem} to your Gemfile or gemspec."
-      location = caller_locations(2,2)[0]&.path
+      # We detect the gem name from caller_locations. We need to skip 2 frames like:
+      # lib/ruby/3.3.0+0/bundled_gems.rb:90:in `warning?'",
+      # lib/ruby/3.3.0+0/bundler/rubygems_integration.rb:247:in `block (2 levels) in replace_require'",
+      location = caller_locations(3,3)[0]&.path
       if File.file?(location) && !location.start_with?(Gem::BUNDLED_GEMS::LIBDIR)
         caller_gem = nil
         Gem.path.each do |path|
@@ -104,7 +108,9 @@ module Gem::BUNDLED_GEMS
             break
           end
         end
-        msg += " Also contact author of #{caller_gem} to add #{gem} into its gemspec."
+        if caller_gem
+          msg += " Also contact author of #{caller_gem} to add #{gem} into its gemspec."
+        end
       end
     else
       msg += " Install #{gem} from RubyGems."

@@ -22,7 +22,7 @@
             │   │   │   ├── rest: ∅
             │   │   │   ├── posts: (length: 0)
             │   │   │   ├── keywords: (length: 1)
-            │   │   │   │   └── @ KeywordParameterNode (location: (1,6)-(1,14))
+            │   │   │   │   └── @ OptionalKeywordParameterNode (location: (1,6)-(1,14))
             │   │   │   │       ├── name: :kw
             │   │   │   │       ├── name_loc: (1,6)-(1,9) = "kw:"
             │   │   │   │       └── value:

@@ -144,14 +144,12 @@
         │   │   │   ├── rest: ∅
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 2)
-        │   │   │   │   ├── @ KeywordParameterNode (location: (17,13)-(17,15))
+        │   │   │   │   ├── @ RequiredKeywordParameterNode (location: (17,13)-(17,15))
         │   │   │   │   │   ├── name: :c
-        │   │   │   │   │   ├── name_loc: (17,13)-(17,15) = "c:"
-        │   │   │   │   │   └── value: ∅
-        │   │   │   │   └── @ KeywordParameterNode (location: (17,17)-(17,19))
+        │   │   │   │   │   └── name_loc: (17,13)-(17,15) = "c:"
+        │   │   │   │   └── @ RequiredKeywordParameterNode (location: (17,17)-(17,19))
         │   │   │   │       ├── name: :d
-        │   │   │   │       ├── name_loc: (17,17)-(17,19) = "d:"
-        │   │   │   │       └── value: ∅
+        │   │   │   │       └── name_loc: (17,17)-(17,19) = "d:"
         │   │   │   ├── keyword_rest: ∅
         │   │   │   └── block:
         │   │   │       @ BlockParameterNode (location: (17,21)-(17,23))
@@ -194,14 +192,12 @@
         │   │   │   │   └── operator_loc: (19,14)-(19,15) = "*"
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 2)
-        │   │   │   │   ├── @ KeywordParameterNode (location: (19,18)-(19,20))
+        │   │   │   │   ├── @ RequiredKeywordParameterNode (location: (19,18)-(19,20))
         │   │   │   │   │   ├── name: :d
-        │   │   │   │   │   ├── name_loc: (19,18)-(19,20) = "d:"
-        │   │   │   │   │   └── value: ∅
-        │   │   │   │   └── @ KeywordParameterNode (location: (19,22)-(19,24))
+        │   │   │   │   │   └── name_loc: (19,18)-(19,20) = "d:"
+        │   │   │   │   └── @ RequiredKeywordParameterNode (location: (19,22)-(19,24))
         │   │   │   │       ├── name: :e
-        │   │   │   │       ├── name_loc: (19,22)-(19,24) = "e:"
-        │   │   │   │       └── value: ∅
+        │   │   │   │       └── name_loc: (19,22)-(19,24) = "e:"
         │   │   │   ├── keyword_rest:
         │   │   │   │   @ KeywordRestParameterNode (location: (19,26)-(19,29))
         │   │   │   │   ├── name: :f
@@ -248,14 +244,12 @@
         │   │   │   │   └── operator_loc: (21,14)-(21,15) = "*"
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 2)
-        │   │   │   │   ├── @ KeywordParameterNode (location: (21,18)-(21,20))
+        │   │   │   │   ├── @ RequiredKeywordParameterNode (location: (21,18)-(21,20))
         │   │   │   │   │   ├── name: :d
-        │   │   │   │   │   ├── name_loc: (21,18)-(21,20) = "d:"
-        │   │   │   │   │   └── value: ∅
-        │   │   │   │   └── @ KeywordParameterNode (location: (21,22)-(21,24))
+        │   │   │   │   │   └── name_loc: (21,18)-(21,20) = "d:"
+        │   │   │   │   └── @ RequiredKeywordParameterNode (location: (21,22)-(21,24))
         │   │   │   │       ├── name: :e
-        │   │   │   │       ├── name_loc: (21,22)-(21,24) = "e:"
-        │   │   │   │       └── value: ∅
+        │   │   │   │       └── name_loc: (21,22)-(21,24) = "e:"
         │   │   │   ├── keyword_rest:
         │   │   │   │   @ KeywordRestParameterNode (location: (21,26)-(21,29))
         │   │   │   │   ├── name: :f

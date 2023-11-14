@@ -97,8 +97,10 @@ VALUE rb_get_path(VALUE obj);
 VALUE rb_get_path_no_checksafe(VALUE);
 
 /**
- * @deprecated  This macro is an alias of #FilePathValue now.  The part that did
- *              "String" was deleted.  It remains here because of no harm.
+ * This macro actually does the same  thing as #FilePathValue now.  The "String"
+ * part indicates  that this is  for when a string  is treated like  a pathname,
+ * rather  than  the  actual  pathname  on  the  file  systems.   For  examples:
+ * `Dir.fnmatch?`, `File.join`, `File.basename`, etc.
  */
 #define FilePathStringValue(v) ((v) = rb_get_path(v))
 

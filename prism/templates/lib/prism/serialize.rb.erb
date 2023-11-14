@@ -4,7 +4,7 @@ require "stringio"
 if String.instance_method(:unpack1).parameters.none? { |_, name| name == :offset }
   String.prepend(
     Module.new {
-      def unpack1(format, offset: 0)
+      def unpack1(format, offset: 0) # :nodoc:
         offset == 0 ? super(format) : self[offset..].unpack1(format)
       end
     }
@@ -12,11 +12,21 @@ if String.instance_method(:unpack1).parameters.none? { |_, name| name == :offset
 end
 
 module Prism
+  # A module responsible for deserializing parse results.
   module Serialize
+    # The major version of prism that we are expecting to find in the serialized
+    # strings.
     MAJOR_VERSION = 0
-    MINOR_VERSION = 16
-    PATCH_VERSION = 0
 
+    # The minor version of prism that we are expecting to find in the serialized
+    # strings.
+    MINOR_VERSION = 17
+
+    # The patch version of prism that we are expecting to find in the serialized
+    # strings.
+    PATCH_VERSION = 1
+
+    # Deserialize the AST represented by the given string into a parse result.
     def self.load(input, serialized)
       input = input.dup
       source = Source.new(input)
@@ -27,13 +37,16 @@ module Prism
       result
     end
 
+    # Deserialize the tokens represented by the given string into a parse
+    # result.
     def self.load_tokens(source, serialized)
       Loader.new(source, serialized).load_tokens_result
     end
 
-    class Loader
+    class Loader # :nodoc:
       attr_reader :encoding, :input, :serialized, :io
       attr_reader :constant_pool_offset, :constant_pool, :source
+      attr_reader :start_line
 
       def initialize(source, serialized)
         @encoding = Encoding::UTF_8
@@ -47,7 +60,7 @@ module Prism
         @constant_pool = nil
 
         @source = source
-        define_load_node_lambdas unless RUBY_ENGINE == 'ruby'
+        define_load_node_lambdas unless RUBY_ENGINE == "ruby"
       end
 
       def load_header
@@ -68,8 +81,18 @@ module Prism
         @input = input.force_encoding(@encoding).freeze
       end
 
+      def load_start_line
+        source.start_line = load_varint
+      end
+
       def load_comments
-        load_varint.times.map { Comment.new(Comment::TYPES.fetch(load_varint), load_location) }
+        load_varint.times.map do
+          case load_varint
+          when 0 then InlineComment.new(load_location)
+          when 1 then EmbDocComment.new(load_location)
+          when 2 then DATAComment.new(load_location)
+          end
+        end
       end
 
       def load_metadata
@@ -96,6 +119,7 @@ module Prism
       def load_tokens_result
         tokens = load_tokens
         encoding = load_encoding
+        load_start_line
         comments, magic_comments, errors, warnings = load_metadata
 
         if encoding != @encoding
@@ -109,6 +133,7 @@ module Prism
       def load_nodes
         load_header
         load_force_encoding
+        load_start_line
 
         comments, magic_comments, errors, warnings = load_metadata
 
@@ -272,6 +297,7 @@ module Prism
       end
     end
 
+    # The token types that can be indexed by their enum values.
     TOKEN_TYPES = [
       nil,
       <%- tokens.each do |token| -%>

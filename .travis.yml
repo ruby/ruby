@@ -25,7 +25,7 @@ git:
 env:
   global:
     - NPROC="$(nproc)"
-    - JOBS=-j$((1+${NPROC}))
+    - JOBS="-j${NPROC}"
     # SETARCH are overridden when necessary. See below.
     - SETARCH=
     # https://github.com/travis-ci/travis-build/blob/e411371dda21430a60f61b8f3f57943d2fe4d344/lib/travis/build/bash/travis_apt_get_options.bash#L7
@@ -64,7 +64,7 @@ env:
   - &s390x-linux
     name: s390x-linux
     arch: s390x
-    compiler: gcc
+    <<: *gcc-11
     env:
       # Avoid possible test failures with the zlib applying the following patch
       # on s390x CPU architecture.
@@ -102,19 +102,20 @@ env:
 
 matrix:
   include:
-    - <<: *arm32-linux
-    # Comment out as the 2nd arm64 pipeline is unstable.
-    # - <<: *arm64-linux
+    - <<: *arm64-linux
     - <<: *ppc64le-linux
     - <<: *s390x-linux
+    # FIXME: lib/rubygems/util.rb:104 glob_files_in_dir -
+    # <internal:dir>:411:in glob: File name too long - (Errno::ENAMETOOLONG)
+    # https://github.com/rubygems/rubygems/issues/7132
+    - <<: *arm32-linux
   allow_failures:
     # Allow failures for the unstable jobs.
-    # - name: arm32-linux
     # - name: arm64-linux
-    # FIXME: TestRDocGeneratorJsonIndex#test_generate fails randomly.
-    # https://app.travis-ci.com/github/ruby/ruby/jobs/612380961#L2900
-    - name: ppc64le-linux
+    # - name: ppc64le-linux
     # - name: s390x-linux
+    # The 2nd arm64 pipeline may be unstable.
+    # - name: arm32-linux
   fast_finish: true
 
 before_script:
@@ -124,6 +125,10 @@ before_script:
   - $SETARCH ../configure -C --disable-install-doc --prefix=$(pwd)/install
   - $SETARCH make -s $JOBS
   - make -s $JOBS install
+  # Useful info to report issues to the Ruby.
+  - $SETARCH $(pwd)/install/bin/ruby -v
+  # Useful info To report issues to the RubyGems.
+  - $SETARCH $(pwd)/install/bin/gem env
 
 script:
   - $SETARCH make -s test

@@ -797,28 +797,6 @@ dependencies: []
     assert_equal File.join(@tempdir, "a-2.gemspec"), spec.loaded_from
   end
 
-  if RUBY_ENGINE == "ruby" && RUBY_VERSION < "2.7"
-    def test_self_load_tainted
-      full_path = @a2.spec_file
-      write_file full_path do |io|
-        io.write @a2.to_ruby_for_cache
-      end
-
-      full_path.taint
-      loader = Thread.new do
-        $SAFE = 1
-        Gem::Specification.load full_path
-      end
-      spec = loader.value
-
-      @a2.files.clear
-
-      assert_equal @a2, spec
-    ensure
-      $SAFE = 0
-    end
-  end
-
   def test_self_load_escape_curly
     @a2.name = 'a};raise "improper escaping";%q{'
 

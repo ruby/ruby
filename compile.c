@@ -120,7 +120,7 @@ struct ensure_range {
 };
 
 struct iseq_compile_data_ensure_node_stack {
-    const NODE *ensure_node;
+    const void *ensure_node;
     struct iseq_compile_data_ensure_node_stack *prev;
     struct ensure_range *erange;
 };
@@ -5274,7 +5274,6 @@ compile_massign0(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const rhs
 
     int llen = 0;
     int lpos = 0;
-    int expand = 1;
 
     while (lhsn_count) {
         llen++;
@@ -5312,7 +5311,6 @@ compile_massign0(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const rhs
         }
     }
 
-
     if (!state->nested) {
         NO_CHECK(COMPILE(rhs, "normal masgn rhs", rhsn));
     }
@@ -5320,9 +5318,7 @@ compile_massign0(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const rhs
     if (!popped) {
         ADD_INSN(rhs, node, dup);
     }
-    if (expand) {
-        ADD_INSN2(rhs, node, expandarray, INT2FIX(llen), INT2FIX(lhs_splat));
-    }
+    ADD_INSN2(rhs, node, expandarray, INT2FIX(llen), INT2FIX(lhs_splat));
     return COMPILE_OK;
 }
 
@@ -5754,7 +5750,7 @@ make_name_for_block(const rb_iseq_t *orig_iseq)
 static void
 push_ensure_entry(rb_iseq_t *iseq,
                   struct iseq_compile_data_ensure_node_stack *enl,
-                  struct ensure_range *er, const NODE *const node)
+                  struct ensure_range *er, const void *const node)
 {
     enl->ensure_node = node;
     enl->prev = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack;	/* prev */
@@ -11069,7 +11065,7 @@ rb_local_defined(ID id, const rb_iseq_t *iseq)
 #define IBF_ISEQ_ENABLE_LOCAL_BUFFER 0
 #endif
 
-typedef unsigned int ibf_offset_t;
+typedef uint32_t ibf_offset_t;
 #define IBF_OFFSET(ptr) ((ibf_offset_t)(VALUE)(ptr))
 
 #define IBF_MAJOR_VERSION ISEQ_MAJOR_VERSION
@@ -11080,17 +11076,27 @@ typedef unsigned int ibf_offset_t;
 #define IBF_MINOR_VERSION ISEQ_MINOR_VERSION
 #endif
 
+static const char IBF_ENDIAN_MARK =
+#ifdef WORDS_BIGENDIAN
+    'b'
+#else
+    'l'
+#endif
+    ;
+
 struct ibf_header {
     char magic[4]; /* YARB */
-    unsigned int major_version;
-    unsigned int minor_version;
-    unsigned int size;
-    unsigned int extra_size;
+    uint32_t major_version;
+    uint32_t minor_version;
+    uint32_t size;
+    uint32_t extra_size;
 
-    unsigned int iseq_list_size;
-    unsigned int global_object_list_size;
+    uint32_t iseq_list_size;
+    uint32_t global_object_list_size;
     ibf_offset_t iseq_list_offset;
     ibf_offset_t global_object_list_offset;
+    uint8_t endian;
+    uint8_t wordsize;           /* assume no 2048-bit CPU */
 };
 
 struct ibf_dump_buffer {
@@ -11991,13 +11997,34 @@ ibf_dump_ci_entries(struct ibf_dump *dump, const rb_iseq_t *iseq)
     return offset;
 }
 
-static enum rb_id_table_iterator_result
-dump_outer_variable(ID id, VALUE val, void *dump)
-{
-    ibf_dump_write_small_value(dump, ibf_dump_id(dump, id));
-    ibf_dump_write_small_value(dump, val);
+struct outer_variable_pair {
+    ID id;
+    VALUE name;
+    VALUE val;
+};
 
+struct outer_variable_list {
+    size_t num;
+    struct outer_variable_pair pairs[1];
+};
+
+static enum rb_id_table_iterator_result
+store_outer_variable(ID id, VALUE val, void *dump)
+{
+    struct outer_variable_list *ovlist = dump;
+    struct outer_variable_pair *pair = &ovlist->pairs[ovlist->num++];
+    pair->id = id;
+    pair->name = rb_id2str(id);
+    pair->val = val;
     return ID_TABLE_CONTINUE;
+}
+
+static int
+outer_variable_cmp(const void *a, const void *b, void *arg)
+{
+    const struct outer_variable_pair *ap = (const struct outer_variable_pair *)a;
+    const struct outer_variable_pair *bp = (const struct outer_variable_pair *)b;
+    return rb_str_cmp(ap->name, bp->name);
 }
 
 static ibf_offset_t
@@ -12007,12 +12034,24 @@ ibf_dump_outer_variables(struct ibf_dump *dump, const rb_iseq_t *iseq)
 
     ibf_offset_t offset = ibf_dump_pos(dump);
 
-    if (ovs) {
-        ibf_dump_write_small_value(dump, (VALUE)rb_id_table_size(ovs));
-        rb_id_table_foreach(ovs, dump_outer_variable, (void *)dump);
-    }
-    else {
-        ibf_dump_write_small_value(dump, (VALUE)0);
+    size_t size = ovs ? rb_id_table_size(ovs) : 0;
+    ibf_dump_write_small_value(dump, (VALUE)size);
+    if (size > 0) {
+        VALUE buff;
+        size_t buffsize =
+            rb_size_mul_add_or_raise(sizeof(struct outer_variable_pair), size,
+                                     offsetof(struct outer_variable_list, pairs),
+                                     rb_eArgError);
+        struct outer_variable_list *ovlist = RB_ALLOCV(buff, buffsize);
+        ovlist->num = 0;
+        rb_id_table_foreach(ovs, store_outer_variable, ovlist);
+        ruby_qsort(ovlist->pairs, size, sizeof(struct outer_variable_pair), outer_variable_cmp, NULL);
+        for (size_t i = 0; i < size; ++i) {
+            ID id = ovlist->pairs[i].id;
+            ID val = ovlist->pairs[i].val;
+            ibf_dump_write_small_value(dump, ibf_dump_id(dump, id));
+            ibf_dump_write_small_value(dump, val);
+        }
     }
 
     return offset;
@@ -13215,7 +13254,6 @@ rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
     ibf_dump_setup(dump, dump_obj);
 
     ibf_dump_write(dump, &header, sizeof(header));
-    ibf_dump_write(dump, RUBY_PLATFORM, strlen(RUBY_PLATFORM) + 1);
     ibf_dump_iseq(dump, iseq);
 
     header.magic[0] = 'Y'; /* YARB */
@@ -13224,6 +13262,8 @@ rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
     header.magic[3] = 'B';
     header.major_version = IBF_MAJOR_VERSION;
     header.minor_version = IBF_MINOR_VERSION;
+    header.endian = IBF_ENDIAN_MARK;
+    header.wordsize = (uint8_t)SIZEOF_VALUE;
     ibf_dump_iseq_list(dump, &header);
     ibf_dump_object_list(dump, &header.global_object_list_offset, &header.global_object_list_size);
     header.size = ibf_dump_pos(dump);
@@ -13359,8 +13399,11 @@ ibf_load_setup_bytes(struct ibf_load *load, VALUE loader_obj, const char *bytes,
         rb_raise(rb_eRuntimeError, "unmatched version file (%u.%u for %u.%u)",
                  header->major_version, header->minor_version, IBF_MAJOR_VERSION, IBF_MINOR_VERSION);
     }
-    if (strcmp(load->global_buffer.buff + sizeof(struct ibf_header), RUBY_PLATFORM) != 0) {
-        rb_raise(rb_eRuntimeError, "unmatched platform");
+    if (header->endian != IBF_ENDIAN_MARK) {
+        rb_raise(rb_eRuntimeError, "unmatched endian: %c", header->endian);
+    }
+    if (header->wordsize != SIZEOF_VALUE) {
+        rb_raise(rb_eRuntimeError, "unmatched word size: %d", header->wordsize);
     }
     if (header->iseq_list_offset % RUBY_ALIGNOF(ibf_offset_t)) {
         rb_raise(rb_eArgError, "unaligned iseq list offset: %u",

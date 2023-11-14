@@ -140,6 +140,10 @@ require_relative "irb/debug"
 #
 #     IRB.conf[:USE_AUTOCOMPLETE] = false
 #
+# To enable enhanced completion using type information, add the following to your +.irbrc+:
+#
+#     IRB.conf[:COMPLETOR] = :type
+#
 # === History
 #
 # By default, irb will store the last 1000 commands you used in

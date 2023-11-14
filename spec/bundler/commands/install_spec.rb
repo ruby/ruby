@@ -430,6 +430,60 @@ RSpec.describe "bundle install with gem sources" do
       expect(the_bundle).to include_gems("my-private-gem 1.0")
     end
 
+    it "throws a warning if a gem is added once in Gemfile and also inside a gemspec as a development dependency, with different requirements" do
+      build_lib "my-gem", :path => bundled_app do |s|
+        s.add_development_dependency "rubocop", "~> 1.36.0"
+      end
+
+      build_repo4 do
+        build_gem "rubocop", "1.36.0"
+        build_gem "rubocop", "1.37.1"
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gemspec
+
+        gem "rubocop", group: :development
+      G
+
+      bundle :install
+
+      expect(err).to include("A gemspec development dependency (rubocop, ~> 1.36.0) is being overridden by a Gemfile dependency (rubocop, >= 0).")
+      expect(err).to include("This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement")
+
+      # This is not the best behavior I believe, it would be better if both
+      # requirements are considered if they are compatible, and a version
+      # satisfying both is chosen. But not sure about changing it right now, so
+      # I went with a warning for the time being.
+      expect(the_bundle).to include_gems("rubocop 1.37.1")
+    end
+
+    it "considers both dependencies for resolution if a gem is added once in Gemfile and also inside a local gemspec as a runtime dependency, with different requirements" do
+      build_lib "my-gem", :path => bundled_app do |s|
+        s.add_dependency "rubocop", "~> 1.36.0"
+      end
+
+      build_repo4 do
+        build_gem "rubocop", "1.36.0"
+        build_gem "rubocop", "1.37.1"
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gemspec
+
+        gem "rubocop"
+      G
+
+      bundle :install
+
+      expect(err).to be_empty
+      expect(the_bundle).to include_gems("rubocop 1.36.0")
+    end
+
     it "throws an error if a gem is added twice in Gemfile when version of one dependency is not specified" do
       install_gemfile <<-G, :raise_on_error => false
         source "#{file_uri_for(gem_repo2)}"
@@ -789,6 +843,71 @@ RSpec.describe "bundle install with gem sources" do
       expect(err).not_to include("ERROR REPORT TEMPLATE")
       expect(err).to include("Could not delete previous installation of `#{foo_path}`.")
       expect(err).to include("The underlying error was Errno::EACCES")
+    end
+  end
+
+  describe "when gem home does not have the writable bit set, yet it's still writable", :permissions do
+    let(:gem_home) { bundled_app("vendor/#{Bundler.ruby_scope}") }
+
+    before do
+      build_repo4 do
+        build_gem "foo", "1.0.0" do |s|
+          s.write "CHANGELOG.md", "foo"
+        end
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem 'foo'
+      G
+    end
+
+    it "should display a proper message to explain the problem" do
+      bundle "config set --local path vendor"
+      bundle :install
+      expect(out).to include("Bundle complete!")
+      expect(err).to be_empty
+
+      FileUtils.chmod("-w", gem_home)
+
+      begin
+        bundle "install --redownload"
+      ensure
+        FileUtils.chmod("+w", gem_home)
+      end
+
+      expect(out).to include("Bundle complete!")
+      expect(err).to be_empty
+    end
+  end
+
+  describe "when gems path is world writable (no sticky bit set)", :permissions do
+    let(:gems_path) { bundled_app("vendor/#{Bundler.ruby_scope}/gems") }
+
+    before do
+      build_repo4 do
+        build_gem "foo", "1.0.0" do |s|
+          s.write "CHANGELOG.md", "foo"
+        end
+      end
+
+      gemfile <<-G
+        source "#{file_uri_for(gem_repo4)}"
+        gem 'foo'
+      G
+    end
+
+    it "should display a proper message to explain the problem" do
+      bundle "config set --local path vendor"
+      bundle :install
+      expect(out).to include("Bundle complete!")
+      expect(err).to be_empty
+
+      FileUtils.chmod(0o777, gems_path)
+
+      bundle "install --redownload", :raise_on_error => false
+
+      expect(err).to include("The installation path is insecure. Bundler cannot continue.")
     end
   end
 

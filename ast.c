@@ -117,7 +117,6 @@ rb_ast_parse_file(VALUE path, VALUE keep_script_lines, VALUE error_tolerant, VAL
     rb_ast_t *ast = 0;
     rb_encoding *enc = rb_utf8_encoding();
 
-    FilePathValue(path);
     f = rb_file_open_str(path, "r");
     rb_funcall(f, rb_intern("set_encoding"), 2, rb_enc_from_encoding(enc), rb_str_new_cstr("-"));
     VALUE vparser = ast_parse_new();

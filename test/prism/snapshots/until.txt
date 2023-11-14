@@ -1,8 +1,8 @@
-@ ProgramNode (location: (1,0)-(11,21))
-├── locals: []
+@ ProgramNode (location: (1,0)-(13,20))
+├── locals: [:baz]
 └── statements:
-    @ StatementsNode (location: (1,0)-(11,21))
-    └── body: (length: 6)
+    @ StatementsNode (location: (1,0)-(13,20))
+    └── body: (length: 7)
         ├── @ UntilNode (location: (1,0)-(1,18))
         │   ├── keyword_loc: (1,0)-(1,5) = "until"
         │   ├── closing_loc: (1,15)-(1,18) = "end"
@@ -61,44 +61,79 @@
         │   │           ├── keyword_loc: (9,0)-(9,6) = "return"
         │   │           └── arguments: ∅
         │   └── flags: ∅
-        └── @ UntilNode (location: (11,0)-(11,21))
-            ├── keyword_loc: (11,11)-(11,16) = "until"
+        ├── @ UntilNode (location: (11,0)-(11,21))
+        │   ├── keyword_loc: (11,11)-(11,16) = "until"
+        │   ├── closing_loc: ∅
+        │   ├── predicate:
+        │   │   @ CallNode (location: (11,17)-(11,21))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (11,17)-(11,21) = "bar?"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: ∅
+        │   │   └── name: :bar?
+        │   ├── statements:
+        │   │   @ StatementsNode (location: (11,0)-(11,10))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (11,0)-(11,10))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── message_loc: (11,0)-(11,3) = "foo"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (11,4)-(11,10))
+        │   │           │   ├── arguments: (length: 2)
+        │   │           │   │   ├── @ SymbolNode (location: (11,4)-(11,6))
+        │   │           │   │   │   ├── opening_loc: (11,4)-(11,5) = ":"
+        │   │           │   │   │   ├── value_loc: (11,5)-(11,6) = "a"
+        │   │           │   │   │   ├── closing_loc: ∅
+        │   │           │   │   │   └── unescaped: "a"
+        │   │           │   │   └── @ SymbolNode (location: (11,8)-(11,10))
+        │   │           │   │       ├── opening_loc: (11,8)-(11,9) = ":"
+        │   │           │   │       ├── value_loc: (11,9)-(11,10) = "b"
+        │   │           │   │       ├── closing_loc: ∅
+        │   │           │   │       └── unescaped: "b"
+        │   │           │   └── flags: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           ├── flags: ∅
+        │   │           └── name: :foo
+        │   └── flags: ∅
+        └── @ WhileNode (location: (13,0)-(13,20))
+            ├── keyword_loc: (13,4)-(13,9) = "while"
             ├── closing_loc: ∅
             ├── predicate:
-            │   @ CallNode (location: (11,17)-(11,21))
-            │   ├── receiver: ∅
-            │   ├── call_operator_loc: ∅
-            │   ├── message_loc: (11,17)-(11,21) = "bar?"
-            │   ├── opening_loc: ∅
-            │   ├── arguments: ∅
-            │   ├── closing_loc: ∅
-            │   ├── block: ∅
-            │   ├── flags: ∅
-            │   └── name: :bar?
+            │   @ MatchPredicateNode (location: (13,10)-(13,20))
+            │   ├── value:
+            │   │   @ CallNode (location: (13,10)-(13,13))
+            │   │   ├── receiver: ∅
+            │   │   ├── call_operator_loc: ∅
+            │   │   ├── message_loc: (13,10)-(13,13) = "bar"
+            │   │   ├── opening_loc: ∅
+            │   │   ├── arguments: ∅
+            │   │   ├── closing_loc: ∅
+            │   │   ├── block: ∅
+            │   │   ├── flags: variable_call
+            │   │   └── name: :bar
+            │   ├── pattern:
+            │   │   @ LocalVariableTargetNode (location: (13,17)-(13,20))
+            │   │   ├── name: :baz
+            │   │   └── depth: 0
+            │   └── operator_loc: (13,14)-(13,16) = "in"
             ├── statements:
-            │   @ StatementsNode (location: (11,0)-(11,10))
+            │   @ StatementsNode (location: (13,0)-(13,3))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (11,0)-(11,10))
+            │       └── @ CallNode (location: (13,0)-(13,3))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (11,0)-(11,3) = "foo"
+            │           ├── message_loc: (13,0)-(13,3) = "foo"
             │           ├── opening_loc: ∅
-            │           ├── arguments:
-            │           │   @ ArgumentsNode (location: (11,4)-(11,10))
-            │           │   ├── arguments: (length: 2)
-            │           │   │   ├── @ SymbolNode (location: (11,4)-(11,6))
-            │           │   │   │   ├── opening_loc: (11,4)-(11,5) = ":"
-            │           │   │   │   ├── value_loc: (11,5)-(11,6) = "a"
-            │           │   │   │   ├── closing_loc: ∅
-            │           │   │   │   └── unescaped: "a"
-            │           │   │   └── @ SymbolNode (location: (11,8)-(11,10))
-            │           │   │       ├── opening_loc: (11,8)-(11,9) = ":"
-            │           │   │       ├── value_loc: (11,9)-(11,10) = "b"
-            │           │   │       ├── closing_loc: ∅
-            │           │   │       └── unescaped: "b"
-            │           │   └── flags: ∅
+            │           ├── arguments: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: ∅
+            │           ├── flags: variable_call
             │           └── name: :foo
             └── flags: ∅

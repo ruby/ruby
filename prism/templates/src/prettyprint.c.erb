@@ -177,7 +177,9 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
     }
 }
 
-// Pretty-prints the AST represented by the given node to the given buffer.
+/**
+ * Pretty-prints the AST represented by the given node to the given buffer.
+ */
 PRISM_EXPORTED_FUNCTION void
 pm_prettyprint(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm_node_t *node) {
     pm_buffer_t prefix_buffer = { 0 };

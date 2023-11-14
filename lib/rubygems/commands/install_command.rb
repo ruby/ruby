@@ -136,13 +136,6 @@ You can use `i` command instead of `install`.
     "#{program_name} [options] GEMNAME [GEMNAME ...] -- --build-flags"
   end
 
-  def check_install_dir # :nodoc:
-    if options[:install_dir] && options[:user_install]
-      alert_error "Use --install-dir or --user-install but not both"
-      terminate_interaction 1
-    end
-  end
-
   def check_version # :nodoc:
     if options[:version] != Gem::Requirement.default &&
        get_all_gem_names.size > 1
@@ -162,7 +155,6 @@ You can use `i` command instead of `install`.
 
     ENV.delete "GEM_PATH" if options[:install_dir].nil?
 
-    check_install_dir
     check_version
 
     load_hooks

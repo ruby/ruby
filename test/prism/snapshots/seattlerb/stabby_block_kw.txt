@@ -17,7 +17,7 @@
             │   │   ├── rest: ∅
             │   │   ├── posts: (length: 0)
             │   │   ├── keywords: (length: 1)
-            │   │   │   └── @ KeywordParameterNode (location: (1,4)-(1,8))
+            │   │   │   └── @ OptionalKeywordParameterNode (location: (1,4)-(1,8))
             │   │   │       ├── name: :k
             │   │   │       ├── name_loc: (1,4)-(1,6) = "k:"
             │   │   │       └── value:

@@ -158,6 +158,14 @@ class Gem::TestCase < Test::Unit::TestCase
   end
 
   ##
+  # Overrides the Gem.install_extension_in_lib function and restores the
+  # original when the block ends
+  #
+  def extension_in_lib(value = true) # :nodoc:
+    Gem.stub(:install_extension_in_lib, value) { yield }
+  end
+
+  ##
   # Sets the vendordir entry in RbConfig::CONFIG to +value+ and restores the
   # original value when the block ends
   #
@@ -287,7 +295,6 @@ class Gem::TestCase < Test::Unit::TestCase
     FileUtils.mkdir_p @tmp
 
     @tempdir = Dir.mktmpdir("test_rubygems_", @tmp)
-    @tempdir.tap(&Gem::UNTAINT)
 
     ENV["GEM_VENDOR"] = nil
     ENV["GEMRC"] = nil
@@ -337,7 +344,6 @@ class Gem::TestCase < Test::Unit::TestCase
                       File.expand_path(s)
                     end
       if expand_path != s
-        expand_path.tap(&Gem::UNTAINT)
         if s.instance_variable_defined?(:@gem_prelude_index)
           expand_path.instance_variable_set(:@gem_prelude_index, expand_path)
         end
@@ -364,7 +370,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
     ENV["GEM_PRIVATE_KEY_PASSPHRASE"] = PRIVATE_KEY_PASSPHRASE
 
-    Gem.instance_variable_set(:@default_specifications_dir, nil)
+    Gem.instance_variable_set(:@default_specifications_dir, File.join(@gemhome, "specifications", "default"))
     if Gem.java_platform?
       @orig_default_gem_home = RbConfig::CONFIG["default_gem_home"]
       RbConfig::CONFIG["default_gem_home"] = @gemhome
@@ -598,7 +604,7 @@ class Gem::TestCase < Test::Unit::TestCase
         end
       end
 
-      gem = File.join(@tempdir, File.basename(gem)).tap(&Gem::UNTAINT)
+      gem = File.join(@tempdir, File.basename(gem))
     end
 
     Gem::Installer.at(gem, options.merge({ :wrappers => true })).install
@@ -637,7 +643,7 @@ class Gem::TestCase < Test::Unit::TestCase
   # Reads a Marshal file at +path+
 
   def read_cache(path)
-    File.open path.dup.tap(&Gem::UNTAINT), "rb" do |io|
+    File.open path.dup, "rb" do |io|
       Marshal.load io.read
     end
   end

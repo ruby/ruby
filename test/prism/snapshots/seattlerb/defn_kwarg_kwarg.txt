@@ -16,13 +16,13 @@
             │   ├── rest: ∅
             │   ├── posts: (length: 0)
             │   ├── keywords: (length: 2)
-            │   │   ├── @ KeywordParameterNode (location: (1,9)-(1,13))
+            │   │   ├── @ OptionalKeywordParameterNode (location: (1,9)-(1,13))
             │   │   │   ├── name: :b
             │   │   │   ├── name_loc: (1,9)-(1,11) = "b:"
             │   │   │   └── value:
             │   │   │       @ IntegerNode (location: (1,12)-(1,13))
             │   │   │       └── flags: decimal
-            │   │   └── @ KeywordParameterNode (location: (1,15)-(1,19))
+            │   │   └── @ OptionalKeywordParameterNode (location: (1,15)-(1,19))
             │   │       ├── name: :c
             │   │       ├── name_loc: (1,15)-(1,17) = "c:"
             │   │       └── value:

@@ -1286,22 +1286,48 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
         }
 #endif
 
-        rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
-
         if (shape_id == OBJ_TOO_COMPLEX_SHAPE_ID) {
-            if (!st_lookup(ROBJECT_IV_HASH(obj), id, &val)) {
+            st_table *table = NULL;
+            switch (BUILTIN_TYPE(obj)) {
+              case T_CLASS:
+              case T_MODULE:
+                table = (st_table *)RCLASS_IVPTR(obj);
+                break;
+
+              case T_OBJECT:
+                table = ROBJECT_IV_HASH(obj);
+                break;
+
+              default: {
+                struct gen_ivtbl *ivtbl;
+                if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
+                    table = ivtbl->as.complex.table;
+                }
+                break;
+              }
+            }
+
+            if (!table || !st_lookup(table, id, &val)) {
                 val = default_value;
             }
         }
         else {
-            if (rb_shape_get_iv_index(shape, id, &index)) {
+            shape_id_t previous_cached_id = cached_id;
+            if (rb_shape_get_iv_index_with_hint(shape_id, id, &index, &cached_id)) {
                 // This fills in the cache with the shared cache object.
                 // "ent" is the shared cache object
-                fill_ivar_cache(iseq, ic, cc, is_attr, index, shape_id);
+                if (cached_id != previous_cached_id) {
+                    fill_ivar_cache(iseq, ic, cc, is_attr, index, cached_id);
+                }
 
-                // We fetched the ivar list above
-                val = ivar_list[index];
-                RUBY_ASSERT(!UNDEF_P(val));
+                if (index == ATTR_INDEX_NOT_SET) {
+                    val = default_value;
+                }
+                else {
+                    // We fetched the ivar list above
+                    val = ivar_list[index];
+                    RUBY_ASSERT(!UNDEF_P(val));
+                }
             }
             else {
                 if (is_attr) {
@@ -1432,21 +1458,13 @@ vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_i
     // Cache hit case
     if (shape_id == dest_shape_id) {
         RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
-
-        // Just get the IV table
-        rb_gen_ivtbl_get(obj, 0, &ivtbl);
     }
     else if (dest_shape_id != INVALID_SHAPE_ID) {
-        rb_shape_t * dest_shape = rb_shape_get_shape_by_id(dest_shape_id);
-        shape_id_t source_shape_id = dest_shape->parent_id;
+        rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
+        rb_shape_t *dest_shape = rb_shape_get_shape_by_id(dest_shape_id);
 
-        if (shape_id == source_shape_id && dest_shape->edge_name == id && dest_shape->type == SHAPE_IVAR) {
-            ivtbl = rb_ensure_generic_iv_list_size(obj, dest_shape, index + 1);
-#if SHAPE_IN_BASIC_FLAGS
-            RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
-#else
-            RUBY_ASSERT(ivtbl->shape_id == dest_shape_id);
-#endif
+        if (shape_id == dest_shape->parent_id && dest_shape->edge_name == id && shape->capacity == dest_shape->capacity) {
+            RUBY_ASSERT(index < dest_shape->capacity);
         }
         else {
             return Qundef;
@@ -1456,9 +1474,17 @@ vm_setivar_default(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_i
         return Qundef;
     }
 
-    VALUE *ptr = ivtbl->as.shape.ivptr;
+    rb_gen_ivtbl_get(obj, 0, &ivtbl);
 
-    RB_OBJ_WRITE(obj, &ptr[index], val);
+    if (shape_id != dest_shape_id) {
+#if SHAPE_IN_BASIC_FLAGS
+        RBASIC_SET_SHAPE_ID(obj, dest_shape_id);
+#else
+        ivtbl->shape_id = dest_shape_id;
+#endif
+    }
+
+    RB_OBJ_WRITE(obj, &ivtbl->as.shape.ivptr[index], val);
 
     RB_DEBUG_COUNTER_INC(ivar_set_ic_hit);
 
@@ -1482,10 +1508,11 @@ vm_setivar(VALUE obj, ID id, VALUE val, shape_id_t dest_shape_id, attr_index_t i
                 VM_ASSERT(!rb_ractor_shareable_p(obj));
             }
             else if (dest_shape_id != INVALID_SHAPE_ID) {
+                rb_shape_t *shape = rb_shape_get_shape_by_id(shape_id);
                 rb_shape_t *dest_shape = rb_shape_get_shape_by_id(dest_shape_id);
                 shape_id_t source_shape_id = dest_shape->parent_id;
 
-                if (shape_id == source_shape_id && dest_shape->edge_name == id) {
+                if (shape_id == source_shape_id && dest_shape->edge_name == id && shape->capacity == dest_shape->capacity) {
                     RUBY_ASSERT(dest_shape_id != INVALID_SHAPE_ID && shape_id != INVALID_SHAPE_ID);
 
                     ROBJECT_SET_SHAPE_ID(obj, dest_shape_id);

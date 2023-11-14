@@ -80,7 +80,7 @@
             │   │       │   │   ├── rest: ∅
             │   │       │   │   ├── posts: (length: 0)
             │   │       │   │   ├── keywords: (length: 1)
-            │   │       │   │   │   └── @ KeywordParameterNode (location: (3,5)-(3,14))
+            │   │       │   │   │   └── @ OptionalKeywordParameterNode (location: (3,5)-(3,14))
             │   │       │   │   │       ├── name: :a
             │   │       │   │   │       ├── name_loc: (3,5)-(3,7) = "a:"
             │   │       │   │   │       └── value:

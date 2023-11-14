@@ -22,7 +22,7 @@
             │   │   │   ├── rest: ∅
             │   │   │   ├── posts: (length: 0)
             │   │   │   ├── keywords: (length: 2)
-            │   │   │   │   ├── @ KeywordParameterNode (location: (1,6)-(1,14))
+            │   │   │   │   ├── @ OptionalKeywordParameterNode (location: (1,6)-(1,14))
             │   │   │   │   │   ├── name: :kw
             │   │   │   │   │   ├── name_loc: (1,6)-(1,9) = "kw:"
             │   │   │   │   │   └── value:
@@ -31,7 +31,7 @@
             │   │   │   │   │       ├── value_loc: (1,11)-(1,14) = "val"
             │   │   │   │   │       ├── closing_loc: ∅
             │   │   │   │   │       └── unescaped: "val"
-            │   │   │   │   └── @ KeywordParameterNode (location: (1,16)-(1,26))
+            │   │   │   │   └── @ OptionalKeywordParameterNode (location: (1,16)-(1,26))
             │   │   │   │       ├── name: :kw2
             │   │   │   │       ├── name_loc: (1,16)-(1,20) = "kw2:"
             │   │   │   │       └── value:

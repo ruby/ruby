@@ -119,7 +119,7 @@
         │   ├── closing_loc: ∅
         │   ├── block:
         │   │   @ BlockNode (location: (9,1)-(9,12))
-        │   │   ├── locals: [:*, :b]
+        │   │   ├── locals: [:b]
         │   │   ├── parameters:
         │   │   │   @ BlockParametersNode (location: (9,3)-(9,10))
         │   │   │   ├── parameters:
@@ -265,7 +265,7 @@
         │   ├── closing_loc: ∅
         │   ├── block:
         │   │   @ BlockNode (location: (17,1)-(17,8))
-        │   │   ├── locals: [:*]
+        │   │   ├── locals: []
         │   │   ├── parameters:
         │   │   │   @ BlockParametersNode (location: (17,3)-(17,6))
         │   │   │   ├── parameters:
@@ -379,7 +379,7 @@
         │   ├── closing_loc: ∅
         │   ├── block:
         │   │   @ BlockNode (location: (27,1)-(27,15))
-        │   │   ├── locals: [:a, :*, :b]
+        │   │   ├── locals: [:a, :b]
         │   │   ├── parameters:
         │   │   │   @ BlockParametersNode (location: (27,3)-(27,13))
         │   │   │   ├── parameters:
@@ -533,7 +533,7 @@
         │   ├── closing_loc: ∅
         │   ├── block:
         │   │   @ BlockNode (location: (35,1)-(35,11))
-        │   │   ├── locals: [:a, :*]
+        │   │   ├── locals: [:a]
         │   │   ├── parameters:
         │   │   │   @ BlockParametersNode (location: (35,3)-(35,9))
         │   │   │   ├── parameters:
@@ -963,7 +963,7 @@
         │   │   │   │   ├── rest: ∅
         │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 1)
-        │   │   │   │   │   └── @ KeywordParameterNode (location: (57,4)-(57,10))
+        │   │   │   │   │   └── @ OptionalKeywordParameterNode (location: (57,4)-(57,10))
         │   │   │   │   │       ├── name: :foo
         │   │   │   │   │       ├── name_loc: (57,4)-(57,8) = "foo:"
         │   │   │   │   │       └── value:
@@ -1002,13 +1002,13 @@
         │   │   │   │   ├── rest: ∅
         │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 2)
-        │   │   │   │   │   ├── @ KeywordParameterNode (location: (59,4)-(59,10))
+        │   │   │   │   │   ├── @ OptionalKeywordParameterNode (location: (59,4)-(59,10))
         │   │   │   │   │   │   ├── name: :foo
         │   │   │   │   │   │   ├── name_loc: (59,4)-(59,8) = "foo:"
         │   │   │   │   │   │   └── value:
         │   │   │   │   │   │       @ IntegerNode (location: (59,9)-(59,10))
         │   │   │   │   │   │       └── flags: decimal
-        │   │   │   │   │   └── @ KeywordParameterNode (location: (59,12)-(59,18))
+        │   │   │   │   │   └── @ OptionalKeywordParameterNode (location: (59,12)-(59,18))
         │   │   │   │   │       ├── name: :bar
         │   │   │   │   │       ├── name_loc: (59,12)-(59,16) = "bar:"
         │   │   │   │   │       └── value:
@@ -1051,10 +1051,9 @@
         │   │   │   │   ├── rest: ∅
         │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── keywords: (length: 1)
-        │   │   │   │   │   └── @ KeywordParameterNode (location: (61,4)-(61,8))
+        │   │   │   │   │   └── @ RequiredKeywordParameterNode (location: (61,4)-(61,8))
         │   │   │   │   │       ├── name: :foo
-        │   │   │   │   │       ├── name_loc: (61,4)-(61,8) = "foo:"
-        │   │   │   │   │       └── value: ∅
+        │   │   │   │   │       └── name_loc: (61,4)-(61,8) = "foo:"
         │   │   │   │   ├── keyword_rest: ∅
         │   │   │   │   └── block: ∅
         │   │   │   ├── locals: (length: 0)

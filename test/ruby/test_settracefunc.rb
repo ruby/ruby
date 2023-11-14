@@ -1923,7 +1923,11 @@ CODE
 
   def tp_return_value mid
     ary = []
-    TracePoint.new(:return, :b_return){|tp| next if !target_thread?; ary << [tp.event, tp.method_id, tp.return_value]}.enable{
+    TracePoint.new(:return, :b_return){|tp|
+      next if !target_thread?
+      next if tp.path != __FILE__
+      ary << [tp.event, tp.method_id, tp.return_value]
+    }.enable{
       send mid
     }
     ary.pop # last b_return event is not required.
@@ -2132,7 +2136,7 @@ CODE
     q = Thread::Queue.new
     t = Thread.new{
       Thread.current.add_trace_func proc{|ev, file, line, *args|
-        events << [ev, line]
+        events << [ev, line] if file == __FILE__
       } # do not stop trace. They will be stopped at Thread termination.
       q.push 1
       _x = 1

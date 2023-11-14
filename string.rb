@@ -76,7 +76,7 @@
 #  - <tt>\n</tt> (_n_ a non-negative integer) refers to <tt>$n</tt>.
 #  - <tt>\k<name></tt> refers to the named capture +name+.
 #
-#  See rdoc-ref:regexp.rdoc for details.
+#  See Regexp for details.
 #
 #  Note that within the string +replacement+, a character combination
 #  such as <tt>$&</tt> is treated as ordinary text, and not as
@@ -93,7 +93,7 @@
 #  - <tt>\\+</tt> corresponds to <tt>$+</tt>,
 #    which contains last capture group.
 #
-#  See rdoc-ref:regexp.rdoc for details.
+#  See Regexp for details.
 #
 #  Note that <tt>\\\\</tt> is interpreted as an escape, i.e., a single backslash.
 #

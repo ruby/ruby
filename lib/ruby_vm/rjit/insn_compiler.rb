@@ -502,28 +502,7 @@ module RubyVM::RJIT
           shape = C.rb_shape_get_shape_by_id(shape_id)
 
           current_capacity = shape.capacity
-          # If the object doesn't have the capacity to store the IV,
-          # then we'll need to allocate it.
-          needs_extension = shape.next_iv_index >= current_capacity
-
-          # We can write to the object, but we need to transition the shape
-          ivar_index = shape.next_iv_index
-
-          capa_shape =
-            if needs_extension
-              # We need to add an extended table to the object
-              # First, create an outgoing transition that increases the capacity
-              C.rb_shape_transition_shape_capa(shape)
-            else
-              nil
-            end
-
-          dest_shape =
-            if capa_shape
-              C.rb_shape_get_next(capa_shape, comptime_receiver, ivar_name)
-            else
-              C.rb_shape_get_next(shape, comptime_receiver, ivar_name)
-            end
+          dest_shape = C.rb_shape_get_next(shape, comptime_receiver, ivar_name)
           new_shape_id = C.rb_shape_id(dest_shape)
 
           if new_shape_id == C::OBJ_TOO_COMPLEX_SHAPE_ID
@@ -531,12 +510,18 @@ module RubyVM::RJIT
             return CantCompile
           end
 
+          ivar_index = shape.next_iv_index
+
+          # If the new shape has a different capacity, we need to
+          # reallocate the object.
+          needs_extension = dest_shape.capacity != shape.capacity
+
           if needs_extension
             # Generate the C call so that runtime code will increase
             # the capacity and set the buffer.
             asm.mov(C_ARGS[0], :rax)
             asm.mov(C_ARGS[1], current_capacity)
-            asm.mov(C_ARGS[2], capa_shape.capacity)
+            asm.mov(C_ARGS[2], dest_shape.capacity)
             asm.call(C.rb_ensure_iv_list_size)
 
             # Load the receiver again after the function call

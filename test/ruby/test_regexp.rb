@@ -723,6 +723,12 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(RegexpError) { Regexp.new("((?<v>))\\g<0>") }
   end
 
+  def test_initialize_from_regex_memory_corruption
+    assert_ruby_status([], <<-'end;')
+      10_000.times { Regexp.new(Regexp.new("(?<name>)")) }
+    end;
+  end
+
   def test_initialize_bool_warning
     assert_warning(/expected true or false as ignorecase/) do
       Regexp.new("foo", :i)

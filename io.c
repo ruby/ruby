@@ -3276,9 +3276,10 @@ io_setstrbuf(VALUE *str, long len)
     }
     else {
         VALUE s = StringValue(*str);
+        rb_str_modify(s);
+
         long clen = RSTRING_LEN(s);
         if (clen >= len) {
-            rb_str_modify(s);
             return FALSE;
         }
         len -= clen;

@@ -736,6 +736,8 @@ class TestGemCommandsExecCommand < Gem::TestCase
       rescue StandardError
         nil
       end
+
+      assert_empty @ui.error
       refute_includes @ui.output, "running gem exec with"
       assert_includes @ui.output, "Successfully uninstalled a-2\n"
 

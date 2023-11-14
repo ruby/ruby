@@ -47,9 +47,9 @@ module Lrama
           name = "YYACCEPT"
         when eof_symbol?
           name = "YYEOF"
-        when term? && id.type == Token::Char
+        when term? && id.is_a?(Lrama::Lexer::Token::Char)
           name = number.to_s + display_name
-        when term? && id.type == Token::Ident
+        when term? && id.is_a?(Lrama::Lexer::Token::Ident)
           name = id.s_value
         when nterm? && (id.s_value.include?("$") || id.s_value.include?("@"))
           name = number.to_s + id.s_value

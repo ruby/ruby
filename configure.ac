@@ -422,13 +422,16 @@ AC_SUBST(COUTFLAG)
 AC_SUBST(CSRCFLAG)
 
 AS_CASE(["$build_os"],
-  [darwin1*.*], [
+  [darwin*], [
+    # gcc 13 warns duplicate -l options, which are added by the
+    # default spec.
     # Xcode linker warns for deprecated architecture and wrongly
     # installed TBD files.
-    CC_WRAPPER=""
+    CC_WRAPPER="" CC_NO_WRAPPER="$CC"
     echo 'int main(void) {return 0;}' > conftest.c
     AS_IF([$CC -framework Foundation -o conftest conftest.c 2>&1 |
-	   grep '^ld: warning: text-based stub file' >/dev/null], [
+	   grep -e '^ld: warning: ignoring duplicate libraries:' \
+	        -e '^ld: warning: text-based stub file' >/dev/null], [
 	CC_WRAPPER=`cd -P "${tooldir}" && pwd`/darwin-cc
 	CC="$CC_WRAPPER $CC"
     ])
@@ -1092,12 +1095,18 @@ main()
 		])
 		POSTLINK=""
 		AC_CHECK_PROGS(codesign, codesign)
-		AC_CHECK_PROGS(dsymutil, dsymutil)
+		dsymutils=
+		AS_CASE("$CC_NO_WRAPPER", [gcc*-1[[3-9]]], [
+		    dsymutils=${CC_NO_WRAPPER@%:@gcc}
+		    dsymutils=dsymutil${dsymutils%-1*}
+		    dsymutils="$dsymutils-19 $dsymutils-18 $dsymutils-17"
+		])
+		AC_CHECK_PROGS(dsymutil, $dsymutils dsymutil)
 		AS_IF([test -n "$codesign"], [
 		    POSTLINK="{ test -z '\$(RUBY_CODESIGN)' || $codesign -s '\$(RUBY_CODESIGN)' -f \$@; }${POSTLINK:+; $POSTLINK}"
 		])
 		AS_IF([test -n "$dsymutil"], [
-		    POSTLINK="$dsymutil \$@${POSTLINK:+; $POSTLINK}"
+		    POSTLINK="$dsymutil \$@ 2>/dev/null${POSTLINK:+; $POSTLINK}"
 		])
 		AS_IF([test -n "${POSTLINK}"], [
 		    LINK_SO="$LINK_SO
@@ -1481,6 +1490,25 @@ RUBY_CHECK_SIZEOF(float)
 RUBY_CHECK_SIZEOF(double)
 RUBY_CHECK_SIZEOF(time_t, [long "long long"], [], [@%:@include <time.h>])
 RUBY_CHECK_SIZEOF(clock_t, [], [], [@%:@include <time.h>])
+AC_SUBST(X_BUILTIN_BINARY, yes)
+AS_IF([test "$cross_compiling" = yes],
+[dnl miniruby cannot run if cross compiling
+    X_BUILTIN_BINARY=no
+],
+[
+    AS_CASE([ac_cv_sizeof_voidp],
+    [[1-9]*], [dnl fixed value
+    ],
+    [
+        AC_CACHE_CHECK([word size], [rb_cv_word_size],
+            [for w in 4 8; do
+                AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[@%:@if SIZEOF_VOIDP != ${w}
+                @%:@error SIZEOF_VOIDP
+                @%:@endif]])], [rb_cv_word_size=${w}; break])
+            done])
+        AS_IF([test -z $rb_cv_word_size], [X_BUILTIN_BINARY=no])
+    ])
+])
 
 AC_CACHE_CHECK(packed struct attribute, rb_cv_packed_struct,
     [rb_cv_packed_struct=no
@@ -4477,7 +4505,7 @@ guard=INCLUDE_RUBY_CONFIG_H
 {
   echo "#ifndef $guard"
   echo "#define $guard 1"
-  grep -v "^#define PACKAGE_" confdefs.h
+  sed "/^@%:@define PACKAGE_/d;s/  *$//" confdefs.h
   echo "#endif /* $guard */"
 } | tr -d '\015' |
 (

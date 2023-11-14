@@ -80,6 +80,12 @@ Note: We're only listing outstanding class updates.
     * String#bytesplice now accepts new arguments index/length or range of the
       source string to be copied.  [[Feature #19314]]
 
+* TracePoint
+
+    * TracePoint supports `rescue` event. When the raised exception was rescued,
+      the TracePoint will fire the hook. `rescue` event only supports Ruby-level
+      `rescue`. [[Feature #19572]]
+
 ## Stdlib updates
 
 * RubyGems and Bundler warn if users require gem that is scheduled to become the bundled gems
@@ -95,6 +101,7 @@ Note: We're only listing outstanding class updates.
     * mutex_m
     * nkf
     * observer
+    * racc
     * resolv-replace
     * rinda
     * syslog
@@ -108,35 +115,70 @@ Note: We're only listing outstanding class updates.
 
 The following default gem is added.
 
-* prism 0.16.0
+* prism 0.17.1
 
 The following default gems are updated.
 
 * RubyGems 3.5.0.dev
+* base64 0.2.0
+* benchmark 0.3.0
 * bigdecimal 3.1.5
 * bundler 2.5.0.dev
+* cgi 0.4.0
 * csv 3.2.8
+* date 3.3.4
+* delegate 0.3.1
+* drb 2.2.0
+* english 0.8.0
 * erb 4.0.3
 * etc 1.4.3.dev.1
+* fcntl 1.1.0
 * fiddle 1.1.2
-* fileutils 1.7.1
-* io-console 0.6.1.dev
-* irb 1.8.3
+* fileutils 1.7.2
+* find 0.2.0
+* getoptlong 0.2.1
+* io-console 0.6.1.dev.1
+* irb 1.9.0
+* logger 1.6.0
+* mutex_m 0.2.0
+* net-http 0.4.0
+* net-protocol 0.2.2
 * nkf 0.1.3
+* observer 0.1.2
+* open-uri 0.4.0
+* open3 0.2.0
 * openssl 3.2.0
-* optparse 0.4.0.pre.1
+* optparse 0.4.0
+* ostruct 0.6.0
+* pathname 0.3.0
+* pp 0.5.0
+* prettyprint 0.2.0
+* pstore 0.1.3
 * psych 5.1.1.1
-* reline 0.3.9
-* stringio 3.0.9
-* strscan 3.0.7
+* rdoc 6.6.0
+* reline 0.4.0
+* rinda 0.2.0
+* securerandom 0.3.0
+* shellwords 0.2.0
+* singleton 0.2.0
+* stringio 3.1.0
+* strscan 3.0.8
 * syntax_suggest 1.1.0
-* time 0.2.2
-* timeout 0.4.0
-* uri 0.12.2
+* tempfile 0.2.0
+* time 0.3.0
+* timeout 0.4.1
+* tmpdir 0.2.0
+* tsort 0.2.0
+* un 0.3.0
+* uri 0.13.0
+* weakref 0.1.3
+* win32ole 1.8.10
+* yaml 0.3.0
+* zlib 3.1.0
 
 The following bundled gem is promoted from default gems.
 
-* racc 1.7.1
+* racc 1.7.3
 
 The following bundled gems are updated.
 
@@ -145,7 +187,7 @@ The following bundled gems are updated.
 * test-unit 3.6.1
 * rexml 3.2.6
 * rss 0.3.0
-* net-imap 0.4.3
+* net-imap 0.4.4
 * net-smtp 0.4.0
 * rbs 3.2.2
 * typeprof 0.21.8
@@ -171,6 +213,7 @@ changelog for details of the default gems or bundled gems.
 ## Implementation improvements
 
 * `defined?(@ivar)` is optimized with Object Shapes.
+* Name resolution such as `Socket.getaddrinfo` can now be interrupted. [[Feature #19965]]
 
 ### YJIT
 
@@ -194,9 +237,10 @@ changelog for details of the default gems or bundled gems.
   * This can also be used to enable YJIT only once your application is
     done booting. `--yjit-disable` can be used if you want to use other
     YJIT options while disabling YJIT at boot.
-* Option to disable code GC and treat `--yjit-exec-mem-size` as a hard limit
-  * Can produce better copy-on-write behavior on servers using unicorn and forking
-* `ratio_in_yjit` stat produced by `--yjit-stats` is now avaiable in release builds,
+* Code GC now disabled by default, with `--yjit-exec-mem-size` treated as a hard limit
+  * Can produce better copy-on-write behavior on forking web servers such as `unicorn`
+  * Use the `--yjit-code-gc` option to automatically run code GC when YJIT reaches the size limit
+* `ratio_in_yjit` stat produced by `--yjit-stats` is now available in release builds,
   a special stats or dev build is no longer required to access most stats.
 * Exit tracing option now supports sampling
   * `--trace-exits-sample-rate=N`
@@ -217,6 +261,36 @@ changelog for details of the default gems or bundled gems.
 * RJIT exists only for experimental purposes.
   * You should keep using YJIT in production.
 
+### M:N Therad scheduler
+
+* M:N Thread scheduler is introduced. [[Feature #19842]]
+  * Background: Ruby 1.8 and before, M:1 thread scheduler (M Ruby threads
+    with 1 native thread. Called as User level threads or Green threads)
+    is used. Ruby 1.9 and later, 1:1 thread scheduler (1 Ruby thread with
+    1 native thread). M:1 threads takes lower resources compare with 1:1
+    threads because it needs only 1 native threads. However it is difficult
+    to support context switching for all of blocking operation so 1:1
+    threads are employed from Ruby 1.9. M:N thread scheduler uses N native
+    threads for M Ruby threads (N is small number in general). It doesn't
+    need same number of native threads as Ruby threads (similar to the M:1
+    thread scheduler). Also our M:N threads supports blocking operations
+    well same as 1:1 threads. See the ticket for more details.
+    Our M:N thread scheduler refers on the gorotuine scheduler in the
+    Go language.
+  * In a ractor, only 1 thread can run in a same time because of
+    implementation. Therefore, applications that use only one Ractor
+    (most applications) M:N thread scheduler works as M:1 thread scheduler
+    with further extension from Ruby 1.8.
+  * M:N thread scheduler can introduce incompatibility for C-extensions,
+    so it is disabled by default on the main Ractors.
+    `RUBY_MN_THREADS=1` environment variable will enable it.
+    On non-main Ractors, M:N thread scheduler is enabled (and can not
+    disable it now).
+  * `N` (the number of native threads) can be specified with `RUBY_MAX_CPU`
+    environment variable. The default is 8.
+    Note that more than `N` native threads are used to support many kind of
+    blocking operations.
+
 [Feature #18183]: https://bugs.ruby-lang.org/issues/18183
 [Feature #18498]: https://bugs.ruby-lang.org/issues/18498
 [Feature #18515]: https://bugs.ruby-lang.org/issues/18515
@@ -229,9 +303,12 @@ changelog for details of the default gems or bundled gems.
 [Feature #19362]: https://bugs.ruby-lang.org/issues/19362
 [Feature #19521]: https://bugs.ruby-lang.org/issues/19521
 [Feature #19538]: https://bugs.ruby-lang.org/issues/19538
+[Feature #19572]: https://bugs.ruby-lang.org/issues/19572
 [Feature #19591]: https://bugs.ruby-lang.org/issues/19591
 [Feature #19714]: https://bugs.ruby-lang.org/issues/19714
 [Feature #19776]: https://bugs.ruby-lang.org/issues/19776
 [Feature #19785]: https://bugs.ruby-lang.org/issues/19785
+[Feature #19842]: https://bugs.ruby-lang.org/issues/19842
 [Feature #19843]: https://bugs.ruby-lang.org/issues/19843
 [Bug #19868]:     https://bugs.ruby-lang.org/issues/19868
+[Feature #19965]: https://bugs.ruby-lang.org/issues/19965

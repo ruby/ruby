@@ -25,46 +25,46 @@ A regexp may be used:
     re.match('food')        # => #<MatchData "foo">
     re.match('good')        # => nil
 
-  See sections {Method match}[rdoc-ref:regexp.rdoc@Method+match]
-  and {Operator =~}[rdoc-ref:regexp.rdoc@Operator+-3D~].
+  See sections {Method match}[rdoc-ref:Regexp@Method+match]
+  and {Operator =~}[rdoc-ref:Regexp@Operator+-3D~].
 
 - To determine whether a string matches a given pattern:
 
     re.match?('food') # => true
     re.match?('good') # => false
 
-  See section {Method match?}[rdoc-ref:regexp.rdoc@Method+match-3F].
+  See section {Method match?}[rdoc-ref:Regexp@Method+match-3F].
 
 - As an argument for calls to certain methods in other classes and modules;
   most such methods accept an argument that may be either a string
   or the (much more powerful) regexp.
 
-  See {Regexp Methods}[./Regexp/methods_rdoc.html].
+  See {Regexp Methods}[rdoc-ref:regexp/methods.rdoc].
 
 == \Regexp Objects
 
 A regexp object has:
 
-- A source; see {Sources}[rdoc-ref:regexp.rdoc@Sources].
+- A source; see {Sources}[rdoc-ref:Regexp@Sources].
 
-- Several modes; see {Modes}[rdoc-ref:regexp.rdoc@Modes].
+- Several modes; see {Modes}[rdoc-ref:Regexp@Modes].
 
-- A timeout; see {Timeouts}[rdoc-ref:regexp.rdoc@Timeouts].
+- A timeout; see {Timeouts}[rdoc-ref:Regexp@Timeouts].
 
-- An encoding; see {Encodings}[rdoc-ref:regexp.rdoc@Encodings].
+- An encoding; see {Encodings}[rdoc-ref:Regexp@Encodings].
 
 == Creating a \Regexp
 
 A regular expression may be created with:
 
 - A regexp literal using slash characters
-  (see {Regexp Literals}[https://docs.ruby-lang.org/en/master/syntax/literals_rdoc.html#label-Regexp+Literals]):
+  (see {Regexp Literals}[rdoc-ref:syntax/literals.rdoc@Regexp+Literals]):
 
     # This is a very common usage.
     /foo/ # => /foo/
 
 - A <tt>%r</tt> regexp literal
-  (see {%r: Regexp Literals}[https://docs.ruby-lang.org/en/master/syntax/literals_rdoc.html#label-25r-3A+Regexp+Literals]):
+  (see {%r: Regexp Literals}[rdoc-ref:syntax/literals.rdoc@25r-3A+Regexp+Literals]):
 
     # Same delimiter character at beginning and end;
     # useful for avoiding escaping characters
@@ -84,7 +84,7 @@ A regular expression may be created with:
 
 Each of the methods Regexp#match, String#match, and Symbol#match
 returns a MatchData object if a match was found, +nil+ otherwise;
-each also sets {global variables}[rdoc-ref:regexp.rdoc@Global+Variables]:
+each also sets {global variables}[rdoc-ref:Regexp@Global+Variables]:
 
   'food'.match(/foo/) # => #<MatchData "foo">
   'food'.match(/bar/) # => nil
@@ -93,7 +93,7 @@ each also sets {global variables}[rdoc-ref:regexp.rdoc@Global+Variables]:
 
 Each of the operators Regexp#=~, String#=~, and Symbol#=~
 returns an integer offset if a match was found, +nil+ otherwise;
-each also sets {global variables}[rdoc-ref:regexp.rdoc@Global+Variables]:
+each also sets {global variables}[rdoc-ref:Regexp@Global+Variables]:
 
   /bar/ =~ 'foo bar' # => 4
   'foo bar' =~ /bar/ # => 4
@@ -103,7 +103,7 @@ each also sets {global variables}[rdoc-ref:regexp.rdoc@Global+Variables]:
 
 Each of the methods Regexp#match?, String#match?, and Symbol#match?
 returns +true+ if a match was found, +false+ otherwise;
-none sets {global variables}[rdoc-ref:regexp.rdoc@Global+Variables]:
+none sets {global variables}[rdoc-ref:Regexp@Global+Variables]:
 
   'food'.match?(/foo/) # => true
   'food'.match?(/bar/) # => false
@@ -112,8 +112,8 @@ none sets {global variables}[rdoc-ref:regexp.rdoc@Global+Variables]:
 
 Certain regexp-oriented methods assign values to global variables:
 
-- <tt>#match</tt>: see {Method match}[rdoc-ref:regexp.rdoc@Method+match].
-- <tt>#=~</tt>: see {Operator =~}[rdoc-ref:regexp.rdoc@Operator+-3D~].
+- <tt>#match</tt>: see {Method match}[rdoc-ref:Regexp@Method+match].
+- <tt>#=~</tt>: see {Operator =~}[rdoc-ref:Regexp@Operator+-3D~].
 
 The affected global variables are:
 
@@ -172,17 +172,17 @@ As seen above, the simplest regexp uses a literal expression as its source:
 A rich collection of available _subexpressions_
 gives the regexp great power and flexibility:
 
-- {Special characters}[rdoc-ref:regexp.rdoc@Special+Characters]
-- {Source literals}[rdoc-ref:regexp.rdoc@Source+Literals]
-- {Character classes}[rdoc-ref:regexp.rdoc@Character+Classes]
-- {Shorthand character classes}[rdoc-ref:regexp.rdoc@Shorthand+Character+Classes]
-- {Anchors}[rdoc-ref:regexp.rdoc@Anchors]
-- {Alternation}[rdoc-ref:regexp.rdoc@Alternation]
-- {Quantifiers}[rdoc-ref:regexp.rdoc@Quantifiers]
-- {Groups and captures}[rdoc-ref:regexp.rdoc@Groups+and+Captures]
-- {Unicode}[rdoc-ref:regexp.rdoc@Unicode]
-- {POSIX Bracket Expressions}[rdoc-ref:regexp.rdoc@POSIX+Bracket+Expressions]
-- {Comments}[rdoc-ref:regexp.rdoc@Comments]
+- {Special characters}[rdoc-ref:Regexp@Special+Characters]
+- {Source literals}[rdoc-ref:Regexp@Source+Literals]
+- {Character classes}[rdoc-ref:Regexp@Character+Classes]
+- {Shorthand character classes}[rdoc-ref:Regexp@Shorthand+Character+Classes]
+- {Anchors}[rdoc-ref:Regexp@Anchors]
+- {Alternation}[rdoc-ref:Regexp@Alternation]
+- {Quantifiers}[rdoc-ref:Regexp@Quantifiers]
+- {Groups and captures}[rdoc-ref:Regexp@Groups+and+Captures]
+- {Unicode}[rdoc-ref:Regexp@Unicode]
+- {POSIX Bracket Expressions}[rdoc-ref:Regexp@POSIX+Bracket+Expressions]
+- {Comments}[rdoc-ref:Regexp@Comments]
 
 === Special Characters
 
@@ -222,7 +222,7 @@ In particular, a source literal may contain interpolated expressions:
   /#{2 + 2}/        # => /4/
 
 There are differences between an ordinary string literal and a source literal;
-see {Shorthand Character Classes}[rdoc-ref:regexp.rdoc@Shorthand+Character+Classes].
+see {Shorthand Character Classes}[rdoc-ref:Regexp@Shorthand+Character+Classes].
 
 - <tt>\s</tt> in an ordinary string literal is equivalent to a space character;
   in a source literal, it's shorthand for matching a whitespace character.
@@ -279,7 +279,7 @@ for a character class:
     /./.match("\n")  # => nil
 
 - <tt>/./m</tt>: Matches any character, including a newline;
-  see {Multiline Mode}[rdoc-ref:regexp.rdoc@Multiline+Mode}:
+  see {Multiline Mode}[rdoc-ref:Regexp@Multiline+Mode]:
 
     /./m.match("\n") # => #<MatchData "\n">
 
@@ -578,8 +578,7 @@ called _captures_:
 The first capture is the entire matched string;
 the other captures are the matched substrings from the groups.
 
-A group may have a
-{quantifier}[rdoc-ref:regexp.rdoc@Quantifiers]:
+A group may have a {quantifier}[rdoc-ref:Regexp@Quantifiers]:
 
   re = /July 4(th)?/
   re.match('July 4')   # => #<MatchData "July 4" 1:nil>
@@ -765,7 +764,7 @@ See {Subexpression calls}[https://learnbyexample.github.io/Ruby_Regexp/groupings
 The conditional construct takes the form <tt>(?(_cond_)_yes_|_no_)</tt>, where:
 
 - _cond_ may be a capture number or name.
-- The match to be applied is _yes_ if_cond_ is captured;
+- The match to be applied is _yes_ if _cond_ is captured;
   otherwise the match to be applied is _no_.
 - If not needed, <tt>|_no_</tt> may be omitted.
 
@@ -815,7 +814,7 @@ Or by using <tt>\P</tt> (uppercase +P+):
   /\P{Alpha}/.match('1') # => #<MatchData "1">
   /\P{Alpha}/.match('a') # => nil
 
-See {Unicode Properties}[./Regexp/unicode_properties_rdoc.html]
+See {Unicode Properties}[rdoc-ref:regexp/unicode_properties.rdoc]
 for regexps based on the numerous properties.
 
 Some commonly-used properties correspond to POSIX bracket expressions:
@@ -902,7 +901,7 @@ Punctation:
 - {Pe, Close_Punctuation}[https://www.compart.com/en/unicode/category/Pe].
 - {Pf, Final_Punctuation}[https://www.compart.com/en/unicode/category/Pf].
 - {Pi, Initial_Punctuation}[https://www.compart.com/en/unicode/category/Pi].
-- {Po, Open_Punctuation}[https://www.compart.com/en/unicode/category/Po].
+- {Po, Other_Punctuation}[https://www.compart.com/en/unicode/category/Po].
 - {Ps, Open_Punctuation}[https://www.compart.com/en/unicode/category/Ps].
 
 - +S+, +Symbol+: +Sc+, +Sk+, +Sm+, or +So+.
@@ -1012,20 +1011,20 @@ arbitrary text ignored by the regexp engine:
 
 The comment may not include an unescaped terminator character.
 
-See also {Extended Mode}[rdoc-ref:regexp.rdoc@Extended+Mode].
+See also {Extended Mode}[rdoc-ref:Regexp@Extended+Mode].
 
 == Modes
 
 Each of these modifiers sets a mode for the regexp:
 
 - +i+: <tt>/_pattern_/i</tt> sets
-  {Case-Insensitive Mode}[rdoc-ref:regexp.rdoc@Case-Insensitive+Mode].
+  {Case-Insensitive Mode}[rdoc-ref:Regexp@Case-Insensitive+Mode].
 - +m+: <tt>/_pattern_/m</tt> sets
-  {Multiline Mode}[rdoc-ref:regexp.rdoc@Multiline+Mode].
+  {Multiline Mode}[rdoc-ref:Regexp@Multiline+Mode].
 - +x+: <tt>/_pattern_/x</tt> sets
-  {Extended Mode}[rdoc-ref:regexp.rdoc@Extended+Mode].
+  {Extended Mode}[rdoc-ref:Regexp@Extended+Mode].
 - +o+: <tt>/_pattern_/o</tt> sets
-  {Interpolation Mode}[rdoc-ref:regexp.rdoc@Interpolation+Mode].
+  {Interpolation Mode}[rdoc-ref:Regexp@Interpolation+Mode].
 
 Any, all, or none of these may be applied.
 
@@ -1227,6 +1226,33 @@ when regexp.timeout is non-+nil+, that value controls timing out:
   |         nil          |          nil         |       Never times out.      |
   |         nil          |         Float        | Times out in Float seconds. |
   |        Float         |          Any         | Times out in Float seconds. |
+
+== Optimization
+
+For certain values of the pattern and target string,
+matching time can grow polynomially or exponentially in relation to the input size;
+the potential vulnerability arising from this is the {regular expression denial-of-service}[https://en.wikipedia.org/wiki/ReDoS] (ReDoS) attack.
+
+\Regexp matching can apply an optimization to prevent ReDoS attacks.
+When the optimization is applied, matching time increases linearly (not polynomially or exponentially)
+in relation to the input size, and a ReDoS attach is not possible.
+
+This optimization is applied if the pattern meets these criteria:
+
+- No backreferences.
+- No subexpression calls.
+- No nested lookaround anchors or atomic groups.
+- No nested quantifiers with counting (i.e. no nested <tt>{n}</tt>,
+  <tt>{min,}</tt>, <tt>{,max}</tt>, or <tt>{min,max}</tt> style quantifiers)
+
+You can use method Regexp.linear_time? to determine whether a pattern meets these criteria:
+
+  Regexp.linear_time?(/a*/)     # => true
+  Regexp.linear_time?('a*')     # => true
+  Regexp.linear_time?(/(a*)\1/) # => false
+
+However, an untrusted source may not be safe even if the method returns +true+,
+because the optimization uses memoization (which may invoke large memory consumption).
 
 == References
 

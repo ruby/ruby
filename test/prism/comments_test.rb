@@ -10,7 +10,7 @@ module Prism
 
       assert_comment(
         source,
-        :inline,
+        InlineComment,
         start_offset: 0,
         end_offset: 9,
         start_line: 1,
@@ -29,7 +29,7 @@ module Prism
 
       assert_comment(
         source,
-        :inline,
+        InlineComment,
         start_offset: 10,
         end_offset: 21,
         start_line: 2,
@@ -47,7 +47,7 @@ module Prism
 
       assert_comment(
         source,
-        :__END__,
+        DATAComment,
         start_offset: 0,
         end_offset: 16,
         start_line: 1,
@@ -62,7 +62,7 @@ module Prism
 
       assert_comment(
         source,
-        :__END__,
+        DATAComment,
         start_offset: 0,
         end_offset: 18,
         start_line: 1,
@@ -81,7 +81,7 @@ module Prism
 
       assert_comment(
         source,
-        :embdoc,
+        EmbDocComment,
         start_offset: 0,
         end_offset: 20,
         start_line: 1,
@@ -99,7 +99,7 @@ module Prism
 
       assert_comment(
         source,
-        :embdoc,
+        EmbDocComment,
         start_offset: 0,
         end_offset: 24,
         start_line: 1,
@@ -138,7 +138,7 @@ module Prism
     def assert_comment(source, type, start_offset:, end_offset:, start_line:, end_line:, start_column:, end_column:)
       result = Prism.parse(source)
       assert result.errors.empty?, result.errors.map(&:message).join("\n")
-      assert_equal type, result.comments.first.type
+      assert_kind_of type, result.comments.first
 
       location = result.comments.first.location
       assert_equal start_offset, location.start_offset, -> { "Expected start_offset to be #{start_offset}" }

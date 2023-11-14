@@ -64,8 +64,6 @@ enum shape_type {
     SHAPE_ROOT,
     SHAPE_IVAR,
     SHAPE_FROZEN,
-    SHAPE_CAPACITY_CHANGE,
-    SHAPE_INITIAL_CAPACITY,
     SHAPE_T_OBJECT,
     SHAPE_OBJ_TOO_COMPLEX,
 };
@@ -156,14 +154,14 @@ rb_shape_t* rb_shape_get_shape_by_id(shape_id_t shape_id);
 shape_id_t rb_shape_get_shape_id(VALUE obj);
 rb_shape_t * rb_shape_get_next_iv_shape(rb_shape_t * shape, ID id);
 bool rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t * value);
+bool rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t * value, shape_id_t *shape_id_hint);
 bool rb_shape_obj_too_complex(VALUE obj);
 
 void rb_shape_set_shape(VALUE obj, rb_shape_t* shape);
 rb_shape_t* rb_shape_get_shape(VALUE obj);
 int rb_shape_frozen_shape_p(rb_shape_t* shape);
 rb_shape_t* rb_shape_transition_shape_frozen(VALUE obj);
-void rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE * removed);
-rb_shape_t * rb_shape_transition_shape_capa(rb_shape_t * shape);
+bool rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE * removed);
 rb_shape_t* rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id);
 
 rb_shape_t * rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape);

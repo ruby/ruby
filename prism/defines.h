@@ -1,7 +1,13 @@
+/**
+ * @file defines.h
+ *
+ * Macro definitions used throughout the prism library.
+ *
+ * This file should be included first by any *.h or *.c in prism for consistency
+ * and to ensure that the macros are defined before they are used.
+ */
 #ifndef PRISM_DEFINES_H
 #define PRISM_DEFINES_H
-
-// This file should be included first by any *.h or *.c in prism
 
 #include <ctype.h>
 #include <stdarg.h>
@@ -10,7 +16,11 @@
 #include <stdio.h>
 #include <string.h>
 
-// PRISM_EXPORTED_FUNCTION
+/**
+ * By default, we compile with -fvisibility=hidden. When this is enabled, we
+ * need to mark certain functions as being publically-visible. This macro does
+ * that in a compiler-agnostic way.
+ */
 #ifndef PRISM_EXPORTED_FUNCTION
 #   ifdef PRISM_EXPORT_SYMBOLS
 #       ifdef _WIN32
@@ -23,7 +33,12 @@
 #   endif
 #endif
 
-// PRISM_ATTRIBUTE_FORMAT
+/**
+ * Certain compilers support specifying that a function accepts variadic
+ * parameters that look like printf format strings to provide a better developer
+ * experience when someone is using the function. This macro does that in a
+ * compiler-agnostic way.
+ */
 #if defined(__GNUC__)
 #   define PRISM_ATTRIBUTE_FORMAT(string_index, argument_index) __attribute__((format(printf, string_index, argument_index)))
 #elif defined(__clang__)
@@ -32,23 +47,31 @@
 #   define PRISM_ATTRIBUTE_FORMAT(string_index, argument_index)
 #endif
 
-// PRISM_ATTRIBUTE_UNUSED
+/**
+ * GCC will warn if you specify a function or parameter that is unused at
+ * runtime. This macro allows you to mark a function or parameter as unused in a
+ * compiler-agnostic way.
+ */
 #if defined(__GNUC__)
 #   define PRISM_ATTRIBUTE_UNUSED __attribute__((unused))
 #else
 #   define PRISM_ATTRIBUTE_UNUSED
 #endif
 
-// inline
+/**
+ * Old Visual Studio versions do not support the inline keyword, so we need to
+ * define it to be __inline.
+ */
 #if defined(_MSC_VER) && !defined(inline)
 #   define inline __inline
 #endif
 
-// Windows versions before 2015 use _snprintf
+/**
+ * Old Visual Studio versions before 2015 do not implement sprintf, but instead
+ * implement _snprintf. We standard that here.
+ */
 #if !defined(snprintf) && defined(_MSC_VER) && (_MSC_VER < 1900)
 #   define snprintf _snprintf
 #endif
-
-int pm_strncasecmp(const uint8_t *string1, const uint8_t *string2, size_t length);
 
 #endif

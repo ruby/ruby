@@ -189,12 +189,6 @@ class Gem::Installer
     @package.prog_mode = options[:prog_mode]
     @package.data_mode = options[:data_mode]
 
-    if options[:user_install]
-      @gem_home = Gem.user_dir
-      @bin_dir = Gem.bindir gem_home unless options[:bin_dir]
-      @plugins_dir = Gem.plugindir(gem_home)
-    end
-
     if @gem_home == Gem.user_dir
       # If we get here, then one of the following likely happened:
       # - `--user-install` was specified
@@ -232,7 +226,8 @@ class Gem::Installer
       line = io.gets
       shebang = /^#!.*ruby/
 
-      if load_relative_enabled?
+      # TruffleRuby uses a bash prelude in default launchers
+      if load_relative_enabled? || RUBY_ENGINE == "truffleruby"
         until line.nil? || line =~ shebang do
           line = io.gets
         end
@@ -356,11 +351,6 @@ class Gem::Installer
     run_post_install_hooks
 
     spec
-
-  # TODO: This rescue is in the wrong place. What is raising this exception?
-  # move this rescue to around the code that actually might raise it.
-  rescue Zlib::GzipFile::Error
-    raise Gem::InstallError, "gzip error installing #{gem}"
   end
 
   def run_pre_install_hooks # :nodoc:
@@ -401,7 +391,7 @@ class Gem::Installer
       specs = []
 
       Gem::Util.glob_files_in_dir("*.gemspec", File.join(gem_home, "specifications")).each do |path|
-        spec = Gem::Specification.load path.tap(&Gem::UNTAINT)
+        spec = Gem::Specification.load path
         specs << spec if spec
       end
 
@@ -500,7 +490,6 @@ class Gem::Installer
     ensure_writable_dir @bin_dir
 
     spec.executables.each do |filename|
-      filename.tap(&Gem::UNTAINT)
       bin_path = File.join gem_dir, spec.bindir, filename
       next unless File.exist? bin_path
 
@@ -642,7 +631,6 @@ class Gem::Installer
 
   def ensure_loadable_spec
     ruby = spec.to_ruby_for_cache
-    ruby.tap(&Gem::UNTAINT)
 
     begin
       eval ruby
@@ -673,21 +661,26 @@ class Gem::Installer
     @env_shebang         = options[:env_shebang]
     @force               = options[:force]
     @install_dir         = options[:install_dir]
-    @gem_home            = options[:install_dir] || Gem.dir
-    @plugins_dir         = Gem.plugindir(@gem_home)
     @ignore_dependencies = options[:ignore_dependencies]
     @format_executable   = options[:format_executable]
     @wrappers            = options[:wrappers]
     @only_install_dir    = options[:only_install_dir]
 
-    # If the user has asked for the gem to be installed in a directory that is
-    # the system gem directory, then use the system bin directory, else create
-    # (or use) a new bin dir under the gem_home.
-    @bin_dir             = options[:bin_dir] || Gem.bindir(gem_home)
+    @bin_dir             = options[:bin_dir]
     @development         = options[:development]
     @build_root          = options[:build_root]
 
     @build_args = options[:build_args]
+
+    @gem_home = @install_dir
+    @gem_home ||= options[:user_install] ? Gem.user_dir : Gem.dir
+
+    # If the user has asked for the gem to be installed in a directory that is
+    # the system gem directory, then use the system bin directory, else create
+    # (or use) a new bin dir under the gem_home.
+    @bin_dir ||= Gem.bindir(@gem_home)
+
+    @plugins_dir = Gem.plugindir(@gem_home)
 
     unless @build_root.nil?
       @bin_dir = File.join(@build_root, @bin_dir.gsub(/^[a-zA-Z]:/, ""))

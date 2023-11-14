@@ -821,7 +821,7 @@ gem 'other', version
     File.chmod(0o555, Gem.plugindir)
     system_path = File.join(Gem.plugindir, "a_plugin.rb")
     user_path = File.join(Gem.plugindir(Gem.user_dir), "a_plugin.rb")
-    installer = util_installer spec, Gem.dir, :user
+    installer = Gem::Installer.at spec.cache_file, :user_install => true, :force => true
 
     assert_equal spec, installer.install
 
@@ -993,6 +993,19 @@ end
     assert_equal File.join(Gem.user_dir, "gems", @spec.full_name),
                  installer.gem_dir
     assert_equal @tempdir, installer.bin_dir
+  end
+
+  def test_install_dir_takes_precedence_to_user_install
+    gemhome2 = "#{@gemhome}2"
+
+    @gem = setup_base_gem
+
+    installer =
+      Gem::Installer.at @gem, :install_dir => gemhome2, :user_install => true
+    installer.install
+
+    assert_path_exist File.join(gemhome2, "gems", @spec.full_name)
+    assert_path_not_exist File.join(Gem.user_dir, "gems", @spec.full_name)
   end
 
   def test_install

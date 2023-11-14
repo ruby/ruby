@@ -8,16 +8,32 @@ module Prism
       filepath = __FILE__
       source = File.read(filepath, binmode: true, external_encoding: Encoding::UTF_8)
 
-      assert_equal Prism.lex(source, filepath).value, Prism.lex_file(filepath).value
-      assert_equal Prism.dump(source, filepath), Prism.dump_file(filepath)
+      assert_equal Prism.lex(source, filepath: filepath).value, Prism.lex_file(filepath).value
+      assert_equal Prism.dump(source, filepath: filepath), Prism.dump_file(filepath)
 
-      serialized = Prism.dump(source, filepath)
+      serialized = Prism.dump(source, filepath: filepath)
       ast1 = Prism.load(source, serialized).value
-      ast2 = Prism.parse(source, filepath).value
+      ast2 = Prism.parse(source, filepath: filepath).value
       ast3 = Prism.parse_file(filepath).value
 
       assert_equal_nodes ast1, ast2
       assert_equal_nodes ast2, ast3
+    end
+
+    def test_options
+      assert_equal "", Prism.parse("__FILE__").value.statements.body[0].filepath
+      assert_equal "foo.rb", Prism.parse("__FILE__", filepath: "foo.rb").value.statements.body[0].filepath
+
+      assert_equal 1, Prism.parse("foo").value.statements.body[0].location.start_line
+      assert_equal 10, Prism.parse("foo", line: 10).value.statements.body[0].location.start_line
+
+      refute Prism.parse("\"foo\"").value.statements.body[0].frozen?
+      assert Prism.parse("\"foo\"", frozen_string_literal: true).value.statements.body[0].frozen?
+      refute Prism.parse("\"foo\"", frozen_string_literal: false).value.statements.body[0].frozen?
+
+      assert_kind_of Prism::CallNode, Prism.parse("foo").value.statements.body[0]
+      assert_kind_of Prism::LocalVariableReadNode, Prism.parse("foo", scopes: [[:foo]]).value.statements.body[0]
+      assert_equal 2, Prism.parse("foo", scopes: [[:foo], []]).value.statements.body[0].depth
     end
 
     def test_literal_value_method

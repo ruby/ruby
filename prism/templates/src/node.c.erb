@@ -1,17 +1,12 @@
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
 #include "prism/node.h"
 
-// Clear the node but preserves the location.
-void pm_node_clear(pm_node_t *node) {
-    pm_location_t location = node->location;
-    memset(node, 0, sizeof(pm_node_t));
-    node->location = location;
-}
-
 static void
 pm_node_memsize_node(pm_node_t *node, pm_memsize_t *memsize);
 
-// Calculate the size of the node list in bytes.
+/**
+ * Calculate the size of the node list in bytes.
+ */
 static size_t
 pm_node_list_memsize(pm_node_list_t *node_list, pm_memsize_t *memsize) {
     size_t size = sizeof(pm_node_list_t) + (node_list->capacity * sizeof(pm_node_t *));
@@ -21,7 +16,9 @@ pm_node_list_memsize(pm_node_list_t *node_list, pm_memsize_t *memsize) {
     return size;
 }
 
-// Append a new node onto the end of the node list.
+/**
+ * Append a new node onto the end of the node list.
+ */
 void
 pm_node_list_append(pm_node_list_t *list, pm_node_t *node) {
     if (list->size == list->capacity) {
@@ -34,8 +31,10 @@ pm_node_list_append(pm_node_list_t *list, pm_node_t *node) {
 PRISM_EXPORTED_FUNCTION void
 pm_node_destroy(pm_parser_t *parser, pm_node_t *node);
 
-// Deallocate the inner memory of a list of nodes. The parser argument is not
-// used, but is here for the future possibility of pre-allocating memory pools.
+/**
+ * Deallocate the inner memory of a list of nodes. The parser argument is not
+ * used, but is here for the future possibility of pre-allocating memory pools.
+ */
 static void
 pm_node_list_free(pm_parser_t *parser, pm_node_list_t *list) {
     if (list->capacity > 0) {
@@ -46,9 +45,11 @@ pm_node_list_free(pm_parser_t *parser, pm_node_list_t *list) {
     }
 }
 
-// Deallocate the space for a pm_node_t. Similarly to pm_node_alloc, we're not
-// using the parser argument, but it's there to allow for the future possibility
-// of pre-allocating larger memory pools.
+/**
+ * Deallocate the space for a pm_node_t. Similarly to pm_node_alloc, we're not
+ * using the parser argument, but it's there to allow for the future possibility
+ * of pre-allocating larger memory pools.
+ */
 PRISM_EXPORTED_FUNCTION void
 pm_node_destroy(pm_parser_t *parser, pm_node_t *node) {
     switch (PM_NODE_TYPE(node)) {
@@ -136,14 +137,18 @@ pm_node_memsize_node(pm_node_t *node, pm_memsize_t *memsize) {
     }
 }
 
-// Calculates the memory footprint of a given node.
+/**
+ * Calculates the memory footprint of a given node.
+ */
 PRISM_EXPORTED_FUNCTION void
 pm_node_memsize(pm_node_t *node, pm_memsize_t *memsize) {
     *memsize = (pm_memsize_t) { .memsize = 0, .node_count = 0 };
     pm_node_memsize_node(node, memsize);
 }
 
-// Returns a string representation of the given node type.
+/**
+ * Returns a string representation of the given node type.
+ */
 PRISM_EXPORTED_FUNCTION const char *
 pm_node_type_to_str(pm_node_type_t node_type)
 {

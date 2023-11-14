@@ -59,11 +59,11 @@ tokens:
   - name: CONSTANT
     comment: "a constant"
   - name: DOT
-    comment: "."
+    comment: "the . call operator"
   - name: DOT_DOT
-    comment: ".."
+    comment: "the .. range operator"
   - name: DOT_DOT_DOT
-    comment: "..."
+    comment: "the ... range operator or forwarding parameter"
   - name: EMBDOC_BEGIN
     comment: "=begin"
   - name: EMBDOC_END
@@ -311,9 +311,9 @@ tokens:
   - name: UCOLON_COLON
     comment: "unary ::"
   - name: UDOT_DOT
-    comment: "unary .."
+    comment: "unary .. operator"
   - name: UDOT_DOT_DOT
-    comment: "unary ..."
+    comment: "unary ... operator"
   - name: UMINUS
     comment: "-@"
   - name: UMINUS_NUM
@@ -333,12 +333,14 @@ flags:
     values:
       - name: KEYWORD_SPLAT
         comment: "if arguments contain keyword splat"
+    comment: Flags for arguments nodes.
   - name: CallNodeFlags
     values:
       - name: SAFE_NAVIGATION
         comment: "&. operator"
       - name: VARIABLE_CALL
         comment: "a call that could have been a local variable"
+    comment: Flags for call nodes.
   - name: IntegerBaseFlags
     values:
       - name: BINARY
@@ -349,14 +351,17 @@ flags:
         comment: "0d or no prefix"
       - name: HEXADECIMAL
         comment: "0x prefix"
+    comment: Flags for integer nodes that correspond to the base of the integer.
   - name: LoopFlags
     values:
       - name: BEGIN_MODIFIER
         comment: "a loop after a begin statement, so the body is executed first before the condition"
+    comment: Flags for while and until loop nodes.
   - name: RangeFlags
     values:
       - name: EXCLUDE_END
         comment: "... operator"
+    comment: Flags for range and flip-flop nodes.
   - name: RegularExpressionFlags
     values:
       - name: IGNORE_CASE
@@ -375,10 +380,12 @@ flags:
         comment: "s - forces the Windows-31J encoding"
       - name: UTF_8
         comment: "u - forces the UTF-8 encoding"
+    comment: Flags for regular expression and match last line nodes.
   - name: StringFlags
     values:
       - name: FROZEN
         comment: "frozen by virtue of a `frozen_string_literal` comment"
+    comment: Flags for string nodes.
 nodes:
   - name: AliasGlobalVariableNode
     fields:
@@ -777,10 +784,10 @@ nodes:
     comment: |
       Represents the use of a case statement.
 
-      case true
-      ^^^^^^^^^
-      when false
-      end
+          case true
+          when false
+          end
+          ^^^^^^^^^^
   - name: ClassNode
     fields:
       - name: locals
@@ -818,7 +825,7 @@ nodes:
       Represents the use of the `&&=` operator for assignment to a class variable.
 
           @@target &&= value
-          ^^^^^^^^^^^^^^^^
+          ^^^^^^^^^^^^^^^^^^
   - name: ClassVariableOperatorWriteNode
     fields:
       - name: name
@@ -1183,13 +1190,13 @@ nodes:
       Represents a find pattern in pattern matching.
 
           foo in *bar, baz, *qux
-          ^^^^^^^^^^^^^^^^^^^^^^
+                 ^^^^^^^^^^^^^^^
 
           foo in [*bar, baz, *qux]
-          ^^^^^^^^^^^^^^^^^^^^^^^^
+                 ^^^^^^^^^^^^^^^^^
 
           foo in Foo(*bar, baz, *qux)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                 ^^^^^^^^^^^^^^^^^^^^
   - name: FlipFlopNode
     fields:
       - name: left
@@ -1240,7 +1247,7 @@ nodes:
 
           def foo(...)
             bar(...)
-            ^^^^^^^^
+                ^^^
           end
   - name: ForwardingParameterNode
     comment: |
@@ -1692,24 +1699,6 @@ nodes:
 
           foo(a: b)
               ^^^^
-  - name: KeywordParameterNode
-    fields:
-      - name: name
-        type: constant
-      - name: name_loc
-        type: location
-      - name: value
-        type: node?
-    comment: |
-      Represents a keyword parameter to a method, block, or lambda definition.
-
-          def a(b:)
-                ^^
-          end
-
-          def a(b: 1)
-                ^^^^
-          end
   - name: KeywordRestParameterNode
     fields:
       - name: name
@@ -1997,6 +1986,20 @@ nodes:
 
           $1
           ^^
+  - name: OptionalKeywordParameterNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+      - name: value
+        type: node
+    comment: |
+      Represents an optional keyword parameter to a method, block, or lambda definition.
+
+          def a(b: 1)
+                ^^^^
+          end
   - name: OptionalParameterNode
     fields:
       - name: name
@@ -2184,6 +2187,18 @@ nodes:
 
           /foo/i
           ^^^^^^
+  - name: RequiredKeywordParameterNode
+    fields:
+      - name: name
+        type: constant
+      - name: name_loc
+        type: location
+    comment: |
+      Represents a required keyword parameter to a method, block, or lambda definition.
+
+          def a(b: )
+                ^^
+          end
   - name: RequiredParameterNode
     fields:
       - name: name
@@ -2206,8 +2221,8 @@ nodes:
     comment: |
       Represents an expression modified with a rescue.
 
-        foo rescue nil
-        ^^^^^^^^^^^^^^
+          foo rescue nil
+          ^^^^^^^^^^^^^^
   - name: RescueNode
     fields:
       - name: keyword_loc
@@ -2229,8 +2244,8 @@ nodes:
 
           begin
           rescue Foo, *splat, Bar => ex
-          ^^^^^^
             foo
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           end
 
       `Foo, *splat, Bar` are in the `exceptions` field.

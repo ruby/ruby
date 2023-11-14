@@ -14,10 +14,9 @@
             │   ├── rest: ∅
             │   ├── posts: (length: 0)
             │   ├── keywords: (length: 1)
-            │   │   └── @ KeywordParameterNode (location: (1,6)-(1,8))
+            │   │   └── @ RequiredKeywordParameterNode (location: (1,6)-(1,8))
             │   │       ├── name: :k
-            │   │       ├── name_loc: (1,6)-(1,8) = "k:"
-            │   │       └── value: ∅
+            │   │       └── name_loc: (1,6)-(1,8) = "k:"
             │   ├── keyword_rest: ∅
             │   └── block: ∅
             ├── body: ∅

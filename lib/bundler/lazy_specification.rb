@@ -7,13 +7,23 @@ module Bundler
     include MatchPlatform
     include ForcePlatform
 
-    attr_reader :name, :version, :dependencies, :platform
-    attr_accessor :source, :remote, :force_ruby_platform
+    attr_reader :name, :version, :platform
+    attr_accessor :source, :remote, :force_ruby_platform, :dependencies, :required_ruby_version, :required_rubygems_version
+
+    def self.from_spec(s)
+      lazy_spec = new(s.name, s.version, s.platform, s.source)
+      lazy_spec.dependencies = s.dependencies
+      lazy_spec.required_ruby_version = s.required_ruby_version
+      lazy_spec.required_rubygems_version = s.required_rubygems_version
+      lazy_spec
+    end
 
     def initialize(name, version, platform, source = nil)
       @name          = name
       @version       = version
       @dependencies  = []
+      @required_ruby_version = Gem::Requirement.default
+      @required_rubygems_version = Gem::Requirement.default
       @platform      = platform || Gem::Platform::RUBY
       @source        = source
       @force_ruby_platform = default_force_ruby_platform
@@ -131,6 +141,10 @@ module Bundler
     def git_version
       return unless source.is_a?(Bundler::Source::Git)
       " #{source.revision[0..6]}"
+    end
+
+    def force_ruby_platform!
+      @force_ruby_platform = true
     end
 
     private

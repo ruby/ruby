@@ -379,7 +379,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
                   rack
 
             PLATFORMS
-              #{local_platform}
+              #{lockfile_platforms}
 
             DEPENDENCIES
               depends_on_rack!
@@ -422,7 +422,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
                   rack
 
             PLATFORMS
-              #{local_platform}
+              #{lockfile_platforms}
 
             DEPENDENCIES
               depends_on_rack!
@@ -803,7 +803,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
               zeitwerk (2.4.2)
 
           PLATFORMS
-            #{local_platform}
+            #{lockfile_platforms}
 
           DEPENDENCIES
             activesupport
@@ -874,7 +874,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
                 sidekiq (>= 6.1.0)
 
           PLATFORMS
-            #{local_platform}
+            #{lockfile_platforms}
 
           DEPENDENCIES
             activesupport
@@ -975,7 +975,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
                 sidekiq (>= 6.1.0)
 
           PLATFORMS
-            #{local_platform}
+            #{lockfile_platforms}
 
           DEPENDENCIES
             activesupport
@@ -1049,7 +1049,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
                 sidekiq (>= 6.1.0)
 
           PLATFORMS
-            #{local_platform}
+            #{lockfile_platforms}
 
           DEPENDENCIES
             activesupport
@@ -1146,7 +1146,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
                 nokogiri (>= 1.2.3)
 
           PLATFORMS
-            #{local_platform}
+            #{lockfile_platforms}
 
           DEPENDENCIES
             handsoap!
@@ -1209,7 +1209,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
               rack (0.9.1)
 
           PLATFORMS
-            #{local_platform}
+            #{lockfile_platforms}
 
           DEPENDENCIES
             rack!
@@ -1239,7 +1239,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
               rack (0.9.1)
 
           PLATFORMS
-            #{local_platform}
+            #{lockfile_platforms}
 
           DEPENDENCIES
             rack!
@@ -1261,7 +1261,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
               rack (0.9.1)
 
           PLATFORMS
-            #{local_platform}
+            #{lockfile_platforms}
 
           DEPENDENCIES
             rack!
@@ -1582,11 +1582,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
     G
 
-    simulate_bundler_version_when_missing_prerelease_default_gem_activation do
-      ruby <<~R, :raise_on_error => false
-        require 'bundler/setup'
-      R
-    end
+    ruby <<~R, :raise_on_error => false
+      require 'bundler/setup'
+    R
 
     expect(last_command).to be_failure
     expect(err).to include("Could not find gem 'example' in locally installed gems.")
@@ -1701,7 +1699,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
             mime-types (3.3.1)
 
         PLATFORMS
-          #{local_platform}
+          #{lockfile_platforms}
 
         DEPENDENCIES
           capybara (~> 2.5.0)
@@ -1732,7 +1730,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
             mime-types (3.0.0)
 
         PLATFORMS
-          #{local_platform}
+          #{lockfile_platforms}
 
         DEPENDENCIES
           capybara (~> 2.5.0)
@@ -1789,7 +1787,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
               pdf-writer (= 1.1.8)
 
         PLATFORMS
-          #{local_platform}
+          #{lockfile_platforms}
 
         DEPENDENCIES
           ruport (= 1.7.0.3)!
@@ -1851,7 +1849,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
               pdf-writer (= 1.1.8)
 
         PLATFORMS
-          #{local_platform}
+          #{lockfile_platforms}
 
         DEPENDENCIES
           ruport (= 1.7.0.3)!
@@ -1899,7 +1897,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
             pdf-writer (1.1.8)
 
         PLATFORMS
-          #{local_platform}
+          #{lockfile_platforms}
 
         DEPENDENCIES
           pdf-writer (= 1.1.8)

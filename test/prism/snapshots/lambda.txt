@@ -39,7 +39,7 @@
         │   │   │   ├── rest: ∅
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 1)
-        │   │   │   │   └── @ KeywordParameterNode (location: (5,3)-(5,13))
+        │   │   │   │   └── @ OptionalKeywordParameterNode (location: (5,3)-(5,13))
         │   │   │   │       ├── name: :x
         │   │   │   │       ├── name_loc: (5,3)-(5,5) = "x:"
         │   │   │   │       └── value:
@@ -89,7 +89,7 @@
         │   │   │   ├── rest: ∅
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 1)
-        │   │   │   │   └── @ KeywordParameterNode (location: (7,3)-(7,11))
+        │   │   │   │   └── @ OptionalKeywordParameterNode (location: (7,3)-(7,11))
         │   │   │   │       ├── name: :a
         │   │   │   │       ├── name_loc: (7,3)-(7,5) = "a:"
         │   │   │   │       └── value:
@@ -173,7 +173,7 @@
             │   │   ├── rest: ∅
             │   │   ├── posts: (length: 0)
             │   │   ├── keywords: (length: 1)
-            │   │   │   └── @ KeywordParameterNode (location: (11,3)-(11,11))
+            │   │   │   └── @ OptionalKeywordParameterNode (location: (11,3)-(11,11))
             │   │   │       ├── name: :foo
             │   │   │       ├── name_loc: (11,3)-(11,7) = "foo:"
             │   │   │       └── value:

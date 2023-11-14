@@ -57,5 +57,7 @@ module Prism
       a
       /{/, ''\\
     RUBY
+
+    snippet "parameter name that is zero length", "a { |b;"
   end
 end

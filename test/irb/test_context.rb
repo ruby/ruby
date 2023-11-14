@@ -652,6 +652,25 @@ module TestIRB
         ], out)
     end
 
+    def test_build_completor
+      pend 'set ENV["WITH_TYPE_COMPLETION_TEST"] to run this test' unless ENV['WITH_TYPE_COMPLETION_TEST']
+      verbose, $VERBOSE = $VERBOSE, nil
+      original_completor = IRB.conf[:COMPLETOR]
+      IRB.conf[:COMPLETOR] = :regexp
+      assert_equal 'IRB::RegexpCompletor', @context.send(:build_completor).class.name
+      IRB.conf[:COMPLETOR] = :type
+      if RUBY_VERSION >= '3.0.0' && RUBY_ENGINE != 'truffleruby'
+        assert_equal 'IRB::TypeCompletion::Completor', @context.send(:build_completor).class.name
+      else
+        assert_equal 'IRB::RegexpCompletor', @context.send(:build_completor).class.name
+      end
+      IRB.conf[:COMPLETOR] = :unknown
+      assert_equal 'IRB::RegexpCompletor', @context.send(:build_completor).class.name
+    ensure
+      $VERBOSE = verbose
+      IRB.conf[:COMPLETOR] = original_completor
+    end
+
     private
 
     def without_colorize

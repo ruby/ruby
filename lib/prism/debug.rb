@@ -4,7 +4,9 @@ module Prism
   # This module is used for testing and debugging and is not meant to be used by
   # consumers of this library.
   module Debug
-    class ISeq
+    # A wrapper around a RubyVM::InstructionSequence that provides a more
+    # convenient interface for accessing parts of the iseq.
+    class ISeq # :nodoc:
       attr_reader :parts
 
       def initialize(parts)
@@ -42,6 +44,11 @@ module Prism
       end
     end
 
+    private_constant :ISeq
+
+    # :call-seq:
+    #   Debug::cruby_locals(source) -> Array
+    #
     # For the given source, compiles with CRuby and returns a list of all of the
     # sets of local variables that were encountered.
     def self.cruby_locals(source)
@@ -76,8 +83,16 @@ module Prism
       end
     end
 
+    # Used to hold the place of a local that will be in the local table but
+    # cannot be accessed directly from the source code. For example, the
+    # iteration variable in a for loop or the positional parameter on a method
+    # definition that is destructured.
     AnonymousLocal = Object.new
+    private_constant :AnonymousLocal
 
+    # :call-seq:
+    #   Debug::prism_locals(source) -> Array
+    #
     # For the given source, parses with prism and returns a list of all of the
     # sets of local variables that were encountered.
     def self.prism_locals(source)
@@ -114,9 +129,13 @@ module Prism
                   AnonymousLocal
                 end
               end,
-              *params.keywords.reject(&:value).map(&:name),
-              *params.keywords.select(&:value).map(&:name)
+              *params.keywords.grep(RequiredKeywordParameterNode).map(&:name),
+              *params.keywords.grep(OptionalKeywordParameterNode).map(&:name),
             ]
+
+            if params.keyword_rest.is_a?(ForwardingParameterNode)
+              sorted.push(:*, :&, :"...")
+            end
 
             sorted << AnonymousLocal if params.keywords.any?
 
@@ -164,12 +183,13 @@ module Prism
       locals
     end
 
+    # :call-seq:
+    #   Debug::newlines(source) -> Array
+    #
+    # For the given source string, return the byte offsets of every newline in
+    # the source.
     def self.newlines(source)
       Prism.parse(source).source.offsets
-    end
-
-    def self.parse_serialize_file(filepath)
-      parse_serialize_file_metadata(filepath, [filepath.bytesize, filepath.b, 0].pack("LA*L"))
     end
   end
 end

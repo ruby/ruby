@@ -8,7 +8,7 @@ module Prism
   # of cases, this is a one-to-one mapping of the token type. Everything else
   # generally lines up. However, there are a few cases that require special
   # handling.
-  class LexCompat
+  class LexCompat # :nodoc:
     # This is a mapping of prism token types to Ripper token types. This is a
     # many-to-one mapping because we split up our token types, whereas Ripper
     # tends to group them.
@@ -184,18 +184,22 @@ module Prism
     # However, we add a couple of convenience methods onto them to make them a
     # little easier to work with. We delegate all other methods to the array.
     class Token < SimpleDelegator
+      # The location of the token in the source.
       def location
         self[0]
       end
 
+      # The type of the token.
       def event
         self[1]
       end
 
+      # The slice of the source that this token represents.
       def value
         self[2]
       end
 
+      # The state of the lexer when this token was produced.
       def state
         self[3]
       end
@@ -204,7 +208,7 @@ module Prism
     # Ripper doesn't include the rest of the token in the event, so we need to
     # trim it down to just the content on the first line when comparing.
     class EndContentToken < Token
-      def ==(other)
+      def ==(other) # :nodoc:
         [self[0], self[1], self[2][0..self[2].index("\n")], self[3]] == other
       end
     end
@@ -212,7 +216,7 @@ module Prism
     # Tokens where state should be ignored
     # used for :on_comment, :on_heredoc_end, :on_embexpr_end
     class IgnoreStateToken < Token
-      def ==(other)
+      def ==(other) # :nodoc:
         self[0...-1] == other[0...-1]
       end
     end
@@ -222,7 +226,7 @@ module Prism
     # through named captures in regular expressions). In that case we don't
     # compare the state.
     class IdentToken < Token
-      def ==(other)
+      def ==(other) # :nodoc:
         (self[0...-1] == other[0...-1]) && (
           (other[3] == Ripper::EXPR_LABEL | Ripper::EXPR_END) ||
           (other[3] & Ripper::EXPR_ARG_ANY != 0)
@@ -233,7 +237,7 @@ module Prism
     # Ignored newlines can occasionally have a LABEL state attached to them, so
     # we compare the state differently here.
     class IgnoredNewlineToken < Token
-      def ==(other)
+      def ==(other) # :nodoc:
         return false unless self[0...-1] == other[0...-1]
 
         if self[4] == Ripper::EXPR_ARG | Ripper::EXPR_LABELED
@@ -253,7 +257,7 @@ module Prism
     # more accurately, so we need to allow comparing against both END and
     # END|LABEL.
     class ParamToken < Token
-      def ==(other)
+      def ==(other) # :nodoc:
         (self[0...-1] == other[0...-1]) && (
           (other[3] == Ripper::EXPR_END) ||
           (other[3] == Ripper::EXPR_END | Ripper::EXPR_LABEL)
@@ -264,12 +268,12 @@ module Prism
     # A heredoc in this case is a list of tokens that belong to the body of the
     # heredoc that should be appended onto the list of tokens when the heredoc
     # closes.
-    module Heredoc
+    module Heredoc # :nodoc:
       # Heredocs that are no dash or tilde heredocs are just a list of tokens.
       # We need to keep them around so that we can insert them in the correct
       # order back into the token stream and set the state of the last token to
       # the state that the heredoc was opened in.
-      class PlainHeredoc
+      class PlainHeredoc # :nodoc:
         attr_reader :tokens
 
         def initialize
@@ -288,7 +292,7 @@ module Prism
       # Dash heredocs are a little more complicated. They are a list of tokens
       # that need to be split on "\\\n" to mimic Ripper's behavior. We also need
       # to keep track of the state that the heredoc was opened in.
-      class DashHeredoc
+      class DashHeredoc # :nodoc:
         attr_reader :split, :tokens
 
         def initialize(split)
@@ -347,7 +351,7 @@ module Prism
       # insert them into the stream in the correct order. As such, we can do
       # some extra manipulation on the tokens to make them match Ripper's
       # output by mirroring the dedent logic that Ripper uses.
-      class DedentingHeredoc
+      class DedentingHeredoc # :nodoc:
         TAB_WIDTH = 8
 
         attr_reader :tokens, :dedent_next, :dedent, :embexpr_balance
@@ -588,11 +592,13 @@ module Prism
       end
     end
 
-    attr_reader :source, :filepath
+    private_constant :Heredoc
 
-    def initialize(source, filepath = "")
+    attr_reader :source, :options
+
+    def initialize(source, **options)
       @source = source
-      @filepath = filepath || ""
+      @options = options
     end
 
     def result
@@ -601,7 +607,7 @@ module Prism
       state = :default
       heredoc_stack = [[]]
 
-      result = Prism.lex(source, @filepath)
+      result = Prism.lex(source, **options)
       result_value = result.value
       previous_state = nil
 
@@ -829,9 +835,11 @@ module Prism
     end
   end
 
+  private_constant :LexCompat
+
   # This is a class that wraps the Ripper lexer to produce almost exactly the
   # same tokens.
-  class LexRipper
+  class LexRipper # :nodoc:
     attr_reader :source
 
     def initialize(source)
@@ -869,4 +877,6 @@ module Prism
       results
     end
   end
+
+  private_constant :LexRipper
 end

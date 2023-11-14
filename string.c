@@ -554,7 +554,7 @@ rb_fstring(VALUE str)
         }
     }
 
-    if (!OBJ_FROZEN(str))
+    if (!FL_TEST_RAW(str, FL_FREEZE | STR_NOFREE))
         rb_str_resize(str, RSTRING_LEN(str));
 
     fstr = register_fstring(str, FALSE);
@@ -2194,6 +2194,98 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
     else if (n == 1) {
         rb_str_replace(str, orig);
     }
+    return str;
+}
+
+/* :nodoc: */
+static VALUE
+rb_str_s_new(int argc, VALUE *argv, VALUE klass)
+{
+    if (klass != rb_cString) {
+        return rb_class_new_instance_pass_kw(argc, argv, klass);
+    }
+
+    static ID keyword_ids[2];
+    VALUE orig, opt, encoding = Qnil, capacity = Qnil;
+    VALUE kwargs[2];
+    rb_encoding *enc = NULL;
+
+    int n = rb_scan_args(argc, argv, "01:", &orig, &opt);
+    if (NIL_P(opt)) {
+        return rb_class_new_instance_pass_kw(argc, argv, klass);
+    }
+
+    keyword_ids[0] = rb_id_encoding();
+    CONST_ID(keyword_ids[1], "capacity");
+    rb_get_kwargs(opt, keyword_ids, 0, 2, kwargs);
+    encoding = kwargs[0];
+    capacity = kwargs[1];
+
+    int termlen = 1;
+
+    if (n == 1) {
+        orig = StringValue(orig);
+    }
+    else {
+        orig = Qnil;
+    }
+
+    if (UNDEF_P(encoding)) {
+        if (!NIL_P(orig)) {
+            encoding = rb_obj_encoding(orig);
+        }
+    }
+
+    if (!UNDEF_P(encoding)) {
+        enc = rb_to_encoding(encoding);
+        termlen = rb_enc_mbminlen(enc);
+    }
+
+    // If capacity is nil, we're basically just duping `orig`.
+    if (UNDEF_P(capacity)) {
+        if (NIL_P(orig)) {
+            VALUE empty_str = str_new(klass, "", 0);
+            if (enc) {
+                rb_enc_associate(empty_str, enc);
+            }
+            return empty_str;
+        }
+        VALUE copy = str_duplicate(klass, orig);
+        rb_enc_associate(copy, enc);
+        ENC_CODERANGE_CLEAR(copy);
+        return copy;
+    }
+
+    long capa = 0;
+    capa = NUM2LONG(capacity);
+    if (capa < 0) {
+        capa = 0;
+    }
+
+    if (!NIL_P(orig)) {
+        long orig_capa = rb_str_capacity(orig);
+        if (orig_capa > capa) {
+            capa = orig_capa;
+        }
+    }
+
+    long fake_len = capa - termlen;
+    if (fake_len < 0) {
+        fake_len = 0;
+    }
+
+    VALUE str = str_new0(klass, NULL, fake_len, termlen);
+    STR_SET_LEN(str, 0);
+    TERM_FILL(RSTRING_PTR(str), termlen);
+
+    if (enc) {
+        rb_enc_associate(str, enc);
+    }
+
+    if (!NIL_P(orig)) {
+        rb_str_buf_append(str, orig);
+    }
+
     return str;
 }
 
@@ -11158,7 +11250,23 @@ static VALUE
 rb_str_force_encoding(VALUE str, VALUE enc)
 {
     str_modifiable(str);
-    rb_enc_associate(str, rb_to_encoding(enc));
+
+    rb_encoding *encoding = rb_to_encoding(enc);
+    int idx = rb_enc_to_index(encoding);
+
+    // If the encoding is unchanged, we do nothing.
+    if (ENCODING_GET(str) == idx) {
+        return str;
+    }
+
+    rb_enc_associate_index(str, idx);
+
+    // If the coderange was 7bit and the new encoding is ASCII-compatible
+    // we can keep the coderange.
+    if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT && encoding && rb_enc_asciicompat(encoding)) {
+        return str;
+    }
+
     ENC_CODERANGE_CLEAR(str);
     return str;
 }
@@ -12338,6 +12446,7 @@ Init_String(void)
     st_foreach(rb_vm_fstring_table(), fstring_set_class_i, rb_cString);
     rb_include_module(rb_cString, rb_mComparable);
     rb_define_alloc_func(rb_cString, empty_str_alloc);
+    rb_define_singleton_method(rb_cString, "new", rb_str_s_new, -1);
     rb_define_singleton_method(rb_cString, "try_convert", rb_str_s_try_convert, 1);
     rb_define_method(rb_cString, "initialize", rb_str_init, -1);
     rb_define_method(rb_cString, "initialize_copy", rb_str_replace, 1);

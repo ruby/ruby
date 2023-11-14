@@ -1,4 +1,4 @@
-== Case Mapping
+= Case Mapping
 
 Some string-oriented methods use case mapping.
 
@@ -24,7 +24,7 @@ In Symbol:
 - Symbol#swapcase
 - Symbol#upcase
 
-=== Default Case Mapping
+== Default Case Mapping
 
 By default, all of these methods use full Unicode case mapping,
 which is suitable for most languages.
@@ -60,7 +60,7 @@ Case changes may not be reversible:
 Case changing methods may not maintain Unicode normalization.
 See String#unicode_normalize).
 
-=== Options for Case Mapping
+== Options for Case Mapping
 
 Except for +casecmp+ and +casecmp?+,
 each of the case-mapping methods listed above

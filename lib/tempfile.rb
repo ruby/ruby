@@ -88,7 +88,7 @@ require 'tmpdir'
 # mutex.
 class Tempfile < DelegateClass(File)
 
-  VERSION = "0.1.3"
+  VERSION = "0.2.0"
 
   # Creates a file in the underlying file system;
   # returns a new \Tempfile object based on that file.
@@ -152,26 +152,50 @@ class Tempfile < DelegateClass(File)
 
     @unlinked = false
     @mode = mode|File::RDWR|File::CREAT|File::EXCL
+    @finalizer_obj = Object.new
+    tmpfile = nil
     ::Dir::Tmpname.create(basename, tmpdir, **options) do |tmpname, n, opts|
       opts[:perm] = 0600
-      @tmpfile = File.open(tmpname, @mode, **opts)
+      tmpfile = File.open(tmpname, @mode, **opts)
       @opts = opts.freeze
     end
-    ObjectSpace.define_finalizer(self, Remover.new(@tmpfile))
+    ObjectSpace.define_finalizer(@finalizer_obj, Remover.new(tmpfile.path))
+    ObjectSpace.define_finalizer(self, Closer.new(tmpfile))
 
-    super(@tmpfile)
+    super(tmpfile)
+  end
+
+  def initialize_dup(other)
+    initialize_copy_iv(other)
+    super(other)
+    ObjectSpace.define_finalizer(self, Closer.new(__getobj__))
+  end
+
+  def initialize_clone(other)
+    initialize_copy_iv(other)
+    super(other)
+    ObjectSpace.define_finalizer(self, Closer.new(__getobj__))
+  end
+
+  private def initialize_copy_iv(other)
+    @unlinked = other.unlinked
+    @mode = other.mode
+    @opts = other.opts
+    @finalizer_obj = other.finalizer_obj
   end
 
   # Opens or reopens the file with mode "r+".
   def open
     _close
+    ObjectSpace.undefine_finalizer(self)
     mode = @mode & ~(File::CREAT|File::EXCL)
-    @tmpfile = File.open(@tmpfile.path, mode, **@opts)
-    __setobj__(@tmpfile)
+    __setobj__(File.open(__getobj__.path, mode, **@opts))
+    ObjectSpace.define_finalizer(self, Closer.new(__getobj__))
+    __getobj__
   end
 
   def _close    # :nodoc:
-    @tmpfile.close
+    __getobj__.close
   end
   protected :_close
 
@@ -228,13 +252,13 @@ class Tempfile < DelegateClass(File)
   def unlink
     return if @unlinked
     begin
-      File.unlink(@tmpfile.path)
+      File.unlink(__getobj__.path)
     rescue Errno::ENOENT
     rescue Errno::EACCES
       # may not be able to unlink on Windows; just ignore
       return
     end
-    ObjectSpace.undefine_finalizer(self)
+    ObjectSpace.undefine_finalizer(@finalizer_obj)
     @unlinked = true
   end
   alias delete unlink
@@ -242,43 +266,56 @@ class Tempfile < DelegateClass(File)
   # Returns the full path name of the temporary file.
   # This will be nil if #unlink has been called.
   def path
-    @unlinked ? nil : @tmpfile.path
+    @unlinked ? nil : __getobj__.path
   end
 
   # Returns the size of the temporary file.  As a side effect, the IO
   # buffer is flushed before determining the size.
   def size
-    if !@tmpfile.closed?
-      @tmpfile.size # File#size calls rb_io_flush_raw()
+    if !__getobj__.closed?
+      __getobj__.size # File#size calls rb_io_flush_raw()
     else
-      File.size(@tmpfile.path)
+      File.size(__getobj__.path)
     end
   end
   alias length size
 
   # :stopdoc:
   def inspect
-    if @tmpfile.closed?
+    if __getobj__.closed?
       "#<#{self.class}:#{path} (closed)>"
     else
       "#<#{self.class}:#{path}>"
     end
   end
 
-  class Remover # :nodoc:
+  protected
+
+  attr_reader :unlinked, :mode, :opts, :finalizer_obj
+
+  class Closer # :nodoc:
     def initialize(tmpfile)
-      @pid = Process.pid
       @tmpfile = tmpfile
+    end
+
+    def call(*args)
+      @tmpfile.close
+    end
+  end
+
+  class Remover # :nodoc:
+    def initialize(path)
+      @pid = Process.pid
+      @path = path
     end
 
     def call(*args)
       return if @pid != Process.pid
 
-      $stderr.puts "removing #{@tmpfile.path}..." if $DEBUG
+      $stderr.puts "removing #{@path}..." if $DEBUG
 
-      @tmpfile.close
       begin
-        File.unlink(@tmpfile.path)
+        File.unlink(@path)
       rescue Errno::ENOENT
       end
 

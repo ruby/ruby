@@ -2,5 +2,8 @@
 exec 2> >(exec grep -v \
   -e '^ld: warning: The [a-z0-9_][a-z0-9_]* architecture is deprecated for macOS' \
   -e '^ld: warning: text-based stub file /System/Library/Frameworks/' \
+  -e '^ld: warning: ignoring duplicate libraries:' \
+  -e "warning: '\.debug_macinfo' is not currently supported:" \
+  -e "note: while processing" \
   >&2)
 exec "$@"
