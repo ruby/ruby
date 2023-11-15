@@ -4092,7 +4092,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	  if (num_match_cache_points >= LONG_MAX_LIMIT) {
 	    return ONIGERR_MEMORY;
 	  }
-	  size_t match_cache_buf_length = (num_match_cache_points >> 3) + (num_match_cache_points & 7 ? 1 : 0);
+	  size_t match_cache_buf_length = (num_match_cache_points >> 3) + (num_match_cache_points & 7 ? 1 : 0) + 1;
 	  uint8_t* match_cache_buf = (uint8_t*)xmalloc(match_cache_buf_length * sizeof(uint8_t));
 	  if (match_cache_buf == NULL) {
 	    return ONIGERR_MEMORY;
