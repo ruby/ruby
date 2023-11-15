@@ -358,18 +358,18 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_thread_trace
     events = {:set => [], :add => []}
+    name = "#{self.class}\##{__method__}"
     prc = Proc.new { |event, file, lineno, mid, binding, klass|
-      events[:set] << [event, lineno, mid, klass, :set]
+      events[:set] << [event, lineno, mid, klass, :set] if file == name
     }
     prc = prc # suppress warning
     prc2 = Proc.new { |event, file, lineno, mid, binding, klass|
-      events[:add] << [event, lineno, mid, klass, :add]
+      events[:add] << [event, lineno, mid, klass, :add] if file == name
     }
     prc2 = prc2 # suppress warning
 
     th = Thread.new do
       th = Thread.current
-      name = "#{self.class}\##{__method__}"
       eval <<-EOF.gsub(/^.*?: /, ""), nil, name
        1: th.set_trace_func(prc)
        2: th.add_trace_func(prc2)
