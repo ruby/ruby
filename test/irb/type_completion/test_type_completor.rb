@@ -10,6 +10,7 @@ rescue LoadError
   return
 end
 
+require 'irb/version'
 require 'irb/type_completion/completor'
 require_relative '../helper'
 
@@ -89,7 +90,7 @@ module TestIRB
     def test_const
       assert_completion('Ar', include: 'Array')
       assert_completion('::Ar', include: 'Array')
-      assert_completion('IRB::V', include: 'VERSION') if defined?(IRB::VERSION)
+      assert_completion('IRB::V', include: 'VERSION')
       assert_completion('FooBar=1; F', include: 'FooBar')
       assert_completion('::FooBar=1; ::F', include: 'FooBar')
       assert_doc_namespace('Array', 'Array')
