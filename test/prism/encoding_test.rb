@@ -37,6 +37,7 @@ module Prism
       windows-1252
       CP1251
       CP1252
+      CP51932
     ].each do |encoding|
       define_method "test_encoding_#{encoding}" do
         result = Prism.parse("# encoding: #{encoding}\n'string'")
