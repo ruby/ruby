@@ -84,11 +84,9 @@ class TestHash < Test::Unit::TestCase
       self => 'self', true => 'true', nil => 'nil',
       'nil' => nil
     ]
-    @verbose = $VERBOSE
   end
 
   def teardown
-    $VERBOSE = @verbose
   end
 
   def test_clear_initialize_copy
