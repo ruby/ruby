@@ -6033,6 +6033,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
 
     // Then check all the others.
     ENCODING("big5", pm_encoding_big5);
+    ENCODING("cp51932", pm_encoding_cp51932);
     ENCODING("gbk", pm_encoding_gbk);
     ENCODING("iso-8859-1", pm_encoding_iso_8859_1);
     ENCODING("iso-8859-2", pm_encoding_iso_8859_2);
