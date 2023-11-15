@@ -688,6 +688,7 @@
         │   │   │   ├── flags: variable_call
         │   │   │   └── name: :qux
         │   │   └── operator_loc: (51,26)-(51,29) = "and"
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (51,0)-(51,10))
         │   │   └── body: (length: 1)
@@ -1835,6 +1836,7 @@
         │   │   │       │   ├── block: ∅
         │   │   │       │   ├── flags: variable_call
         │   │   │       │   └── name: :x
+        │   │   │       ├── then_keyword_loc: ∅
         │   │   │       ├── statements:
         │   │   │       │   @ StatementsNode (location: (121,4)-(123,7))
         │   │   │       │   └── body: (length: 1)

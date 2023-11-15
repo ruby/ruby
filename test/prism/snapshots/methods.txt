@@ -773,6 +773,7 @@
         │   │       │   ├── if_keyword_loc: (99,11)-(99,13) = "if"
         │   │       │   ├── predicate:
         │   │       │   │   @ TrueNode (location: (99,14)-(99,18))
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (99,0)-(99,10))
         │   │       │   │   └── body: (length: 1)

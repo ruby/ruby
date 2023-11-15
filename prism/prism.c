@@ -3206,6 +3206,7 @@ static pm_if_node_t *
 pm_if_node_create(pm_parser_t *parser,
     const pm_token_t *if_keyword,
     pm_node_t *predicate,
+    const pm_token_t *then_keyword,
     pm_statements_node_t *statements,
     pm_node_t *consequent,
     const pm_token_t *end_keyword
@@ -3235,6 +3236,7 @@ pm_if_node_create(pm_parser_t *parser,
         },
         .if_keyword_loc = PM_LOCATION_TOKEN_VALUE(if_keyword),
         .predicate = predicate,
+        .then_keyword_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(then_keyword),
         .statements = statements,
         .consequent = consequent,
         .end_keyword_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(end_keyword)
@@ -3265,6 +3267,7 @@ pm_if_node_modifier_create(pm_parser_t *parser, pm_node_t *statement, const pm_t
         },
         .if_keyword_loc = PM_LOCATION_TOKEN_VALUE(if_keyword),
         .predicate = predicate,
+        .then_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .statements = statements,
         .consequent = NULL,
         .end_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
@@ -3277,7 +3280,7 @@ pm_if_node_modifier_create(pm_parser_t *parser, pm_node_t *statement, const pm_t
  * Allocate and initialize an if node from a ternary expression.
  */
 static pm_if_node_t *
-pm_if_node_ternary_create(pm_parser_t *parser, pm_node_t *predicate, pm_node_t *true_expression, const pm_token_t *colon, pm_node_t *false_expression) {
+pm_if_node_ternary_create(pm_parser_t *parser, pm_node_t *predicate, const pm_token_t *qmark, pm_node_t *true_expression, const pm_token_t *colon, pm_node_t *false_expression) {
     pm_assert_value_expression(parser, predicate);
     pm_conditional_predicate(predicate);
 
@@ -3303,6 +3306,7 @@ pm_if_node_ternary_create(pm_parser_t *parser, pm_node_t *predicate, pm_node_t *
         },
         .if_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .predicate = predicate,
+        .then_keyword_loc = PM_LOCATION_TOKEN_VALUE(qmark),
         .statements = if_statements,
         .consequent = (pm_node_t *)else_node,
         .end_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
@@ -5348,7 +5352,7 @@ pm_undef_node_append(pm_undef_node_t *node, pm_node_t *name) {
  * Allocate a new UnlessNode node.
  */
 static pm_unless_node_t *
-pm_unless_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *predicate, pm_statements_node_t *statements) {
+pm_unless_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *predicate, const pm_token_t *then_keyword, pm_statements_node_t *statements) {
     pm_conditional_predicate(predicate);
     pm_unless_node_t *node = PM_ALLOC_NODE(parser, pm_unless_node_t);
 
@@ -5370,6 +5374,7 @@ pm_unless_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t 
         },
         .keyword_loc = PM_LOCATION_TOKEN_VALUE(keyword),
         .predicate = predicate,
+        .then_keyword_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(then_keyword),
         .statements = statements,
         .consequent = NULL,
         .end_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
@@ -5400,6 +5405,7 @@ pm_unless_node_modifier_create(pm_parser_t *parser, pm_node_t *statement, const 
         },
         .keyword_loc = PM_LOCATION_TOKEN_VALUE(unless_keyword),
         .predicate = predicate,
+        .then_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
         .statements = statements,
         .consequent = NULL,
         .end_keyword_loc = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
@@ -11839,14 +11845,19 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
 }
 
 static inline pm_node_t *
-parse_predicate(pm_parser_t *parser, pm_binding_power_t binding_power, pm_context_t context) {
+parse_predicate(pm_parser_t *parser, pm_binding_power_t binding_power, pm_context_t context, pm_token_t *then_keyword) {
     context_push(parser, PM_CONTEXT_PREDICATE);
     pm_diagnostic_id_t error_id = context == PM_CONTEXT_IF ? PM_ERR_CONDITIONAL_IF_PREDICATE : PM_ERR_CONDITIONAL_UNLESS_PREDICATE;
     pm_node_t *predicate = parse_value_expression(parser, binding_power, error_id);
 
     // Predicates are closed by a term, a "then", or a term and then a "then".
     bool predicate_closed = accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
-    predicate_closed |= accept1(parser, PM_TOKEN_KEYWORD_THEN);
+
+    if (accept1(parser, PM_TOKEN_KEYWORD_THEN)) {
+        predicate_closed = true;
+        *then_keyword = parser->previous;
+    }
+
     if (!predicate_closed) {
         pm_parser_err_current(parser, PM_ERR_CONDITIONAL_PREDICATE_TERM);
     }
@@ -11858,7 +11869,9 @@ parse_predicate(pm_parser_t *parser, pm_binding_power_t binding_power, pm_contex
 static inline pm_node_t *
 parse_conditional(pm_parser_t *parser, pm_context_t context) {
     pm_token_t keyword = parser->previous;
-    pm_node_t *predicate = parse_predicate(parser, PM_BINDING_POWER_MODIFIER, context);
+    pm_token_t then_keyword = not_provided(parser);
+
+    pm_node_t *predicate = parse_predicate(parser, PM_BINDING_POWER_MODIFIER, context, &then_keyword);
     pm_statements_node_t *statements = NULL;
 
     if (!match3(parser, PM_TOKEN_KEYWORD_ELSIF, PM_TOKEN_KEYWORD_ELSE, PM_TOKEN_KEYWORD_END)) {
@@ -11873,10 +11886,10 @@ parse_conditional(pm_parser_t *parser, pm_context_t context) {
 
     switch (context) {
         case PM_CONTEXT_IF:
-            parent = (pm_node_t *) pm_if_node_create(parser, &keyword, predicate, statements, NULL, &end_keyword);
+            parent = (pm_node_t *) pm_if_node_create(parser, &keyword, predicate, &then_keyword, statements, NULL, &end_keyword);
             break;
         case PM_CONTEXT_UNLESS:
-            parent = (pm_node_t *) pm_unless_node_create(parser, &keyword, predicate, statements);
+            parent = (pm_node_t *) pm_unless_node_create(parser, &keyword, predicate, &then_keyword, statements);
             break;
         default:
             assert(false && "unreachable");
@@ -11890,14 +11903,14 @@ parse_conditional(pm_parser_t *parser, pm_context_t context) {
     if (context == PM_CONTEXT_IF) {
         while (accept1(parser, PM_TOKEN_KEYWORD_ELSIF)) {
             pm_token_t elsif_keyword = parser->previous;
-            pm_node_t *predicate = parse_predicate(parser, PM_BINDING_POWER_MODIFIER, PM_CONTEXT_ELSIF);
+            pm_node_t *predicate = parse_predicate(parser, PM_BINDING_POWER_MODIFIER, PM_CONTEXT_ELSIF, &then_keyword);
             pm_accepts_block_stack_push(parser, true);
             pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_ELSIF);
             pm_accepts_block_stack_pop(parser);
 
             accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
 
-            pm_node_t *elsif = (pm_node_t *) pm_if_node_create(parser, &elsif_keyword, predicate, statements, NULL, &end_keyword);
+            pm_node_t *elsif = (pm_node_t *) pm_if_node_create(parser, &elsif_keyword, predicate, &then_keyword, statements, NULL, &end_keyword);
             ((pm_if_node_t *) current)->consequent = elsif;
             current = elsif;
         }
@@ -16179,6 +16192,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
             return (pm_node_t *) pm_while_node_modifier_create(parser, &token, predicate, statements, PM_NODE_TYPE_P(node, PM_BEGIN_NODE) ? PM_LOOP_FLAGS_BEGIN_MODIFIER : 0);
         }
         case PM_TOKEN_QUESTION_MARK: {
+            pm_token_t qmark = parser->current;
             parser_lex(parser);
             pm_node_t *true_expression = parse_expression(parser, PM_BINDING_POWER_DEFINED, PM_ERR_TERNARY_EXPRESSION_TRUE);
 
@@ -16192,7 +16206,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 pm_token_t colon = (pm_token_t) { .type = PM_TOKEN_MISSING, .start = parser->previous.end, .end = parser->previous.end };
                 pm_node_t *false_expression = (pm_node_t *) pm_missing_node_create(parser, colon.start, colon.end);
 
-                return (pm_node_t *) pm_if_node_ternary_create(parser, node, true_expression, &colon, false_expression);
+                return (pm_node_t *) pm_if_node_ternary_create(parser, node, &qmark, true_expression, &colon, false_expression);
             }
 
             accept1(parser, PM_TOKEN_NEWLINE);
@@ -16201,7 +16215,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
             pm_token_t colon = parser->previous;
             pm_node_t *false_expression = parse_expression(parser, PM_BINDING_POWER_DEFINED, PM_ERR_TERNARY_EXPRESSION_FALSE);
 
-            return (pm_node_t *) pm_if_node_ternary_create(parser, node, true_expression, &colon, false_expression);
+            return (pm_node_t *) pm_if_node_ternary_create(parser, node, &qmark, true_expression, &colon, false_expression);
         }
         case PM_TOKEN_COLON_COLON: {
             parser_lex(parser);

@@ -221,6 +221,7 @@
         │   ├── if_keyword_loc: (77,0)-(77,2) = "if"
         │   ├── predicate:
         │   │   @ TrueNode (location: (77,3)-(77,7))
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (78,2)-(78,8))
         │   │   └── body: (length: 1)
@@ -244,6 +245,7 @@
         │   ├── if_keyword_loc: (83,0)-(83,2) = "if"
         │   ├── predicate:
         │   │   @ TrueNode (location: (83,3)-(83,7))
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (84,2)-(84,8))
         │   │   └── body: (length: 1)
@@ -273,6 +275,7 @@
         │   ├── if_keyword_loc: (89,0)-(89,2) = "if"
         │   ├── predicate:
         │   │   @ TrueNode (location: (89,3)-(89,7))
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (90,2)-(90,8))
         │   │   └── body: (length: 1)
@@ -296,6 +299,7 @@
         │   ├── if_keyword_loc: (95,0)-(95,2) = "if"
         │   ├── predicate:
         │   │   @ TrueNode (location: (95,3)-(95,7))
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (96,2)-(96,10))
         │   │   └── body: (length: 1)

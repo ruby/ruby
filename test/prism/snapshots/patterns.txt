@@ -3466,6 +3466,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (154,20)-(154,23))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (154,13)-(154,16))
         │   │       │   │   └── body: (length: 1)
@@ -3501,6 +3502,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (155,18)-(155,21))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (155,13)-(155,14))
         │   │       │   │   └── body: (length: 1)
@@ -3535,6 +3537,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (156,20)-(156,23))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (156,13)-(156,16))
         │   │       │   │   └── body: (length: 1)
@@ -3568,6 +3571,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (157,19)-(157,22))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (157,13)-(157,15))
         │   │       │   │   └── body: (length: 1)
@@ -3604,6 +3608,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (158,19)-(158,22))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (158,13)-(158,15))
         │   │       │   │   └── body: (length: 1)
@@ -3640,6 +3645,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (159,21)-(159,24))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (159,13)-(159,17))
         │   │       │   │   └── body: (length: 1)
@@ -3677,6 +3683,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (160,24)-(160,27))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (160,13)-(160,20))
         │   │       │   │   └── body: (length: 1)
@@ -3714,6 +3721,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (161,23)-(161,26))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (161,13)-(161,19))
         │   │       │   │   └── body: (length: 1)
@@ -3751,6 +3759,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (162,22)-(162,25))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (162,13)-(162,18))
         │   │       │   │   └── body: (length: 1)
@@ -3789,6 +3798,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (163,22)-(163,25))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (163,13)-(163,18))
         │   │       │   │   └── body: (length: 1)
@@ -3826,6 +3836,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (164,24)-(164,27))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (164,13)-(164,20))
         │   │       │   │   └── body: (length: 1)
@@ -3863,6 +3874,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (165,24)-(165,27))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (165,13)-(165,20))
         │   │       │   │   └── body: (length: 1)
@@ -3904,6 +3916,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (166,24)-(166,27))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (166,13)-(166,20))
         │   │       │   │   └── body: (length: 1)
@@ -3945,6 +3958,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (167,24)-(167,27))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (167,13)-(167,20))
         │   │       │   │   └── body: (length: 1)
@@ -3987,6 +4001,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (168,24)-(168,27))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (168,13)-(168,20))
         │   │       │   │   └── body: (length: 1)
@@ -4029,6 +4044,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (169,24)-(169,27))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (169,13)-(169,20))
         │   │       │   │   └── body: (length: 1)
@@ -4067,6 +4083,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (170,24)-(170,27))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (170,13)-(170,20))
         │   │       │   │   └── body: (length: 1)
@@ -4105,6 +4122,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (171,22)-(171,25))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (171,13)-(171,18))
         │   │       │   │   └── body: (length: 1)
@@ -4143,6 +4161,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (172,20)-(172,23))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (172,13)-(172,16))
         │   │       │   │   └── body: (length: 1)
@@ -4176,6 +4195,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (173,21)-(173,24))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (173,13)-(173,17))
         │   │       │   │   └── body: (length: 1)
@@ -4209,6 +4229,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (174,21)-(174,24))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (174,13)-(174,17))
         │   │       │   │   └── body: (length: 1)
@@ -4242,6 +4263,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (175,22)-(175,25))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (175,13)-(175,18))
         │   │       │   │   └── body: (length: 1)
@@ -4275,6 +4297,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (176,25)-(176,28))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (176,13)-(176,21))
         │   │       │   │   └── body: (length: 1)
@@ -4309,6 +4332,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (177,25)-(177,28))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (177,13)-(177,21))
         │   │       │   │   └── body: (length: 1)
@@ -4342,6 +4366,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (178,29)-(178,32))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (178,13)-(178,25))
         │   │       │   │   └── body: (length: 1)
@@ -4375,6 +4400,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (179,27)-(179,30))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (179,13)-(179,23))
         │   │       │   │   └── body: (length: 1)
@@ -4422,6 +4448,7 @@
         │   │   │   ├── opening_loc: (181,8)-(181,9) = "["
         │   │   │   └── closing_loc: (181,9)-(181,10) = "]"
         │   │   └── operator_loc: (181,5)-(181,7) = "in"
+        │   ├── then_keyword_loc: ∅
         │   ├── statements: ∅
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (182,0)-(182,3) = "end"

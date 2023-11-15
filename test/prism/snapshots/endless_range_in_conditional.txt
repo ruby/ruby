@@ -15,6 +15,7 @@
         │   │   │   └── flags: decimal
         │   │   ├── operator_loc: (1,4)-(1,6) = ".."
         │   │   └── flags: ∅
+        │   ├── then_keyword_loc: ∅
         │   ├── statements: ∅
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (1,10)-(1,13) = "end"
@@ -28,6 +29,7 @@
         │   │   │   └── flags: decimal
         │   │   ├── operator_loc: (2,3)-(2,5) = ".."
         │   │   └── flags: ∅
+        │   ├── then_keyword_loc: ∅
         │   ├── statements: ∅
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (2,9)-(2,12) = "end"
@@ -41,6 +43,7 @@
             │   ├── right: ∅
             │   ├── operator_loc: (3,4)-(3,6) = ".."
             │   └── flags: ∅
+            ├── then_keyword_loc: ∅
             ├── statements: ∅
             ├── consequent: ∅
             └── end_keyword_loc: (3,9)-(3,12) = "end"

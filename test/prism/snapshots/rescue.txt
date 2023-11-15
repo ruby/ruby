@@ -96,6 +96,7 @@
         │       ├── if_keyword_loc: ∅
         │       ├── predicate:
         │       │   @ NilNode (location: (14,11)-(14,14))
+        │       ├── then_keyword_loc: (14,15)-(14,16) = "?"
         │       ├── statements:
         │       │   @ StatementsNode (location: (14,17)-(14,18))
         │       │   └── body: (length: 1)
@@ -266,6 +267,7 @@
         │   │   │   └── rescue_expression:
         │   │   │       @ NilNode (location: (22,18)-(22,21))
         │   │   └── operator_loc: (22,5)-(22,6) = "="
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (23,2)-(23,5))
         │   │   └── body: (length: 1)

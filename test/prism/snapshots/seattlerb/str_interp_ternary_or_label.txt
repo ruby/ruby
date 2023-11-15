@@ -34,6 +34,7 @@
             │       │           │   ├── block: ∅
             │       │           │   ├── flags: ∅
             │       │           │   └── name: :b?
+            │       │           ├── then_keyword_loc: (1,8)-(1,9) = "?"
             │       │           ├── statements:
             │       │           │   @ StatementsNode (location: (1,10)-(1,17))
             │       │           │   └── body: (length: 1)

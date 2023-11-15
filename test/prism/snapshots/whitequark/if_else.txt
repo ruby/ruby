@@ -16,6 +16,7 @@
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
         │   │   └── name: :foo
+        │   ├── then_keyword_loc: (1,7)-(1,11) = "then"
         │   ├── statements:
         │   │   @ StatementsNode (location: (1,12)-(1,15))
         │   │   └── body: (length: 1)
@@ -60,6 +61,7 @@
             │   ├── block: ∅
             │   ├── flags: variable_call
             │   └── name: :foo
+            ├── then_keyword_loc: ∅
             ├── statements:
             │   @ StatementsNode (location: (3,8)-(3,11))
             │   └── body: (length: 1)

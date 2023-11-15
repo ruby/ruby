@@ -398,6 +398,7 @@
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
         │   │   │   └── name: :foo
+        │   │   ├── then_keyword_loc: ∅
         │   │   ├── statements: ∅
         │   │   ├── consequent: ∅
         │   │   └── end_keyword_loc: (36,0)-(36,3) = "end"

@@ -124,6 +124,7 @@
         │   │   │   │   ├── if_keyword_loc: (10,6)-(10,8) = "if"
         │   │   │   │   ├── predicate:
         │   │   │   │   │   @ TrueNode (location: (10,9)-(10,13))
+        │   │   │   │   ├── then_keyword_loc: ∅
         │   │   │   │   ├── statements:
         │   │   │   │   │   @ StatementsNode (location: (10,3)-(10,5))
         │   │   │   │   │   └── body: (length: 1)

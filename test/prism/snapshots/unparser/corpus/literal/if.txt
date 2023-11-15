@@ -12,6 +12,7 @@
         │   │   ├── closing_loc: (1,7)-(1,8) = "/"
         │   │   ├── unescaped: "foo"
         │   │   └── flags: ∅
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (2,2)-(2,5))
         │   │   └── body: (length: 1)
@@ -32,6 +33,7 @@
         │   ├── predicate:
         │   │   @ IntegerNode (location: (4,3)-(4,4))
         │   │   └── flags: decimal
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (5,2)-(5,3))
         │   │   └── body: (length: 1)
@@ -44,6 +46,7 @@
         │   ├── predicate:
         │   │   @ IntegerNode (location: (7,3)-(7,4))
         │   │   └── flags: decimal
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (8,2)-(8,3))
         │   │   └── body: (length: 1)
@@ -64,6 +67,7 @@
         │   ├── predicate:
         │   │   @ IntegerNode (location: (12,7)-(12,8))
         │   │   └── flags: decimal
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (13,2)-(13,5))
         │   │   └── body: (length: 1)
@@ -75,6 +79,7 @@
         │   ├── predicate:
         │   │   @ IntegerNode (location: (15,7)-(15,8))
         │   │   └── flags: decimal
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (16,2)-(16,3))
         │   │   └── body: (length: 1)
@@ -95,6 +100,7 @@
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
         │   │   └── name: :foo
+        │   ├── then_keyword_loc: ∅
         │   ├── statements: ∅
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (19,0)-(19,3) = "end"
@@ -113,6 +119,7 @@
         │   │           │   @ LocalVariableReadNode (location: (22,15)-(22,18))
         │   │           │   ├── name: :foo
         │   │           │   └── depth: 0
+        │   │           ├── then_keyword_loc: ∅
         │   │           ├── statements:
         │   │           │   @ StatementsNode (location: (22,2)-(22,11))
         │   │           │   └── body: (length: 1)
@@ -151,6 +158,7 @@
         │   │           │   @ LocalVariableReadNode (location: (26,19)-(26,22))
         │   │           │   ├── name: :foo
         │   │           │   └── depth: 0
+        │   │           ├── then_keyword_loc: ∅
         │   │           ├── statements:
         │   │           │   @ StatementsNode (location: (26,2)-(26,11))
         │   │           │   └── body: (length: 1)
@@ -187,6 +195,7 @@
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
         │   │   └── name: :foo
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (29,2)-(29,11))
         │   │   └── body: (length: 1)
@@ -247,6 +256,7 @@
             │   │   └── closing_loc: (33,0)-(33,1) = "}"
             │   ├── flags: ∅
             │   └── name: :foo
+            ├── then_keyword_loc: ∅
             ├── statements:
             │   @ StatementsNode (location: (34,2)-(35,5))
             │   └── body: (length: 2)

@@ -31,6 +31,7 @@
             │   │   └── name: :b
             │   ├── operator_loc: (1,4)-(1,6) = ".."
             │   └── flags: ∅
+            ├── then_keyword_loc: (1,8)-(1,12) = "then"
             ├── statements: ∅
             ├── consequent: ∅
             └── end_keyword_loc: (1,13)-(1,16) = "end"

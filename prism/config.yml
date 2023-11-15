@@ -1385,6 +1385,8 @@ nodes:
         type: location?
       - name: predicate
         type: node
+      - name: then_keyword_loc
+        type: location?
       - name: statements
         type: node?
         kind: StatementsNode
@@ -2446,6 +2448,8 @@ nodes:
         type: location
       - name: predicate
         type: node
+      - name: then_keyword_loc
+        type: location?
       - name: statements
         type: node?
         kind: StatementsNode

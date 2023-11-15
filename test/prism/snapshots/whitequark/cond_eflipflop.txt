@@ -72,6 +72,7 @@
             │   │   └── name: :bar
             │   ├── operator_loc: (3,6)-(3,9) = "..."
             │   └── flags: exclude_end
+            ├── then_keyword_loc: ∅
             ├── statements: ∅
             ├── consequent: ∅
             └── end_keyword_loc: (3,14)-(3,17) = "end"

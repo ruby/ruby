@@ -7,6 +7,7 @@
         │   ├── if_keyword_loc: ∅
         │   ├── predicate:
         │   │   @ FalseNode (location: (1,0)-(1,5))
+        │   ├── then_keyword_loc: (1,6)-(1,7) = "?"
         │   ├── statements:
         │   │   @ StatementsNode (location: (1,8)-(1,20))
         │   │   └── body: (length: 1)
@@ -54,6 +55,7 @@
         │   ├── if_keyword_loc: ∅
         │   ├── predicate:
         │   │   @ FalseNode (location: (3,0)-(3,5))
+        │   ├── then_keyword_loc: (3,6)-(3,7) = "?"
         │   ├── statements:
         │   │   @ StatementsNode (location: (3,8)-(3,16))
         │   │   └── body: (length: 1)
@@ -101,6 +103,7 @@
             ├── if_keyword_loc: ∅
             ├── predicate:
             │   @ TrueNode (location: (5,0)-(5,4))
+            ├── then_keyword_loc: (5,5)-(5,6) = "?"
             ├── statements:
             │   @ StatementsNode (location: (5,7)-(5,27))
             │   └── body: (length: 1)

@@ -16,6 +16,7 @@
             │   ├── block: ∅
             │   ├── flags: variable_call
             │   └── name: :foo
+            ├── then_keyword_loc: ∅
             ├── statements:
             │   @ StatementsNode (location: (1,8)-(1,11))
             │   └── body: (length: 1)
@@ -43,6 +44,7 @@
             │   │   ├── block: ∅
             │   │   ├── flags: variable_call
             │   │   └── name: :baz
+            │   ├── then_keyword_loc: ∅
             │   ├── statements:
             │   │   @ StatementsNode (location: (1,24)-(1,25))
             │   │   └── body: (length: 1)
