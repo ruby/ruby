@@ -904,7 +904,7 @@ vm_block_handler_escape(const rb_execution_context_t *ec, VALUE block_handler)
     switch (vm_block_handler_type(block_handler)) {
       case block_handler_type_ifunc:
       case block_handler_type_iseq:
-        return  rb_vm_make_proc(ec, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc);
+        return rb_vm_make_proc(ec, VM_BH_TO_CAPT_BLOCK(block_handler), rb_cProc);
 
       case block_handler_type_symbol:
       case block_handler_type_proc:
@@ -1218,7 +1218,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
             ID id = NUM2ID(RARRAY_AREF(read_only_variables, i));
 
             for (unsigned int j=0; j<ISEQ_BODY(src_env->iseq)->local_table_size; j++) {
-                if (id ==  ISEQ_BODY(src_env->iseq)->local_table[j]) {
+                if (id == ISEQ_BODY(src_env->iseq)->local_table[j]) {
                     VALUE v = src_env->env[j];
                     if (!rb_ractor_shareable_p(v)) {
                         VALUE name = rb_id2str(id);
@@ -1375,7 +1375,7 @@ rb_vm_make_proc_lambda(const rb_execution_context_t *ec, const struct rb_capture
                                            code_type == imemo_iseq ? block_type_iseq : block_type_ifunc,
                                            FALSE, is_lambda);
 
-    if (code_type ==  imemo_ifunc) {
+    if (code_type == imemo_ifunc) {
         struct vm_ifunc *ifunc = (struct vm_ifunc *)captured->code.val;
         if (ifunc->svar_lep) {
             VALUE ep0 = ifunc->svar_lep[0];
@@ -1737,7 +1737,7 @@ VALUE *
 rb_vm_svar_lep(const rb_execution_context_t *ec, const rb_control_frame_t *cfp)
 {
     while (cfp->pc == 0 || cfp->iseq == 0) {
-        if (VM_FRAME_TYPE(cfp) ==  VM_FRAME_MAGIC_IFUNC) {
+        if (VM_FRAME_TYPE(cfp) == VM_FRAME_MAGIC_IFUNC) {
             struct vm_ifunc *ifunc = (struct vm_ifunc *)cfp->iseq;
             return ifunc->svar_lep;
         }
@@ -4390,21 +4390,21 @@ usage_analysis_register_stop(VALUE self)
 static VALUE
 usage_analysis_insn_running(VALUE self)
 {
-  return RBOOL(ruby_vm_collect_usage_func_insn != 0);
+    return RBOOL(ruby_vm_collect_usage_func_insn != 0);
 }
 
 /* :nodoc: */
 static VALUE
 usage_analysis_operand_running(VALUE self)
 {
-  return RBOOL(ruby_vm_collect_usage_func_operand != 0);
+    return RBOOL(ruby_vm_collect_usage_func_operand != 0);
 }
 
 /* :nodoc: */
 static VALUE
 usage_analysis_register_running(VALUE self)
 {
-  return RBOOL(ruby_vm_collect_usage_func_register != 0);
+    return RBOOL(ruby_vm_collect_usage_func_register != 0);
 }
 
 static VALUE
