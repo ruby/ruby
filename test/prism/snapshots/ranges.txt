@@ -1,8 +1,8 @@
-@ ProgramNode (location: (1,0)-(17,5))
+@ ProgramNode (location: (1,0)-(19,8))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (1,0)-(17,5))
-    └── body: (length: 9)
+    @ StatementsNode (location: (1,0)-(19,8))
+    └── body: (length: 10)
         ├── @ ParenthesesNode (location: (1,0)-(1,6))
         │   ├── body:
         │   │   @ StatementsNode (location: (1,1)-(1,5))
@@ -146,16 +146,30 @@
         │   │       │   └── flags: ∅
         │   │       └── operator_loc: ∅
         │   └── closing_loc: (15,13)-(15,14) = "}"
-        └── @ ParenthesesNode (location: (17,0)-(17,5))
-            ├── body:
-            │   @ StatementsNode (location: (17,1)-(17,4))
-            │   └── body: (length: 1)
-            │       └── @ RangeNode (location: (17,1)-(17,4))
-            │           ├── left:
-            │           │   @ IntegerNode (location: (17,1)-(17,2))
-            │           │   └── flags: decimal
-            │           ├── right: ∅
-            │           ├── operator_loc: (17,2)-(17,4) = ".."
-            │           └── flags: ∅
-            ├── opening_loc: (17,0)-(17,1) = "("
-            └── closing_loc: (17,4)-(17,5) = ")"
+        ├── @ ParenthesesNode (location: (17,0)-(17,5))
+        │   ├── body:
+        │   │   @ StatementsNode (location: (17,1)-(17,4))
+        │   │   └── body: (length: 1)
+        │   │       └── @ RangeNode (location: (17,1)-(17,4))
+        │   │           ├── left:
+        │   │           │   @ IntegerNode (location: (17,1)-(17,2))
+        │   │           │   └── flags: decimal
+        │   │           ├── right: ∅
+        │   │           ├── operator_loc: (17,2)-(17,4) = ".."
+        │   │           └── flags: ∅
+        │   ├── opening_loc: (17,0)-(17,1) = "("
+        │   └── closing_loc: (17,4)-(17,5) = ")"
+        └── @ RangeNode (location: (19,0)-(19,8))
+            ├── left:
+            │   @ IntegerNode (location: (19,0)-(19,1))
+            │   └── flags: decimal
+            ├── right:
+            │   @ RangeNode (location: (19,5)-(19,8))
+            │   ├── left: ∅
+            │   ├── right:
+            │   │   @ IntegerNode (location: (19,7)-(19,8))
+            │   │   └── flags: decimal
+            │   ├── operator_loc: (19,5)-(19,7) = ".."
+            │   └── flags: ∅
+            ├── operator_loc: (19,2)-(19,4) = ".."
+            └── flags: ∅

@@ -1770,6 +1770,21 @@ module Prism
       ]
     end
 
+    def test_binary_range_with_left_unary_range
+      source = <<~RUBY
+        ..1..
+        ...1..
+      RUBY
+      message1 = 'Expected a newline or semicolon after the statement'
+      message2 =  'Cannot parse the expression'
+      assert_errors expression(source), source, [
+        [message1, 3..3],
+        [message2, 3..3],
+        [message1, 10..10],
+        [message2, 10..10],
+      ]
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")
