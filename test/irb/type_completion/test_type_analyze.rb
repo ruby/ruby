@@ -445,8 +445,10 @@ module TestIRB
       assert_call('class A; X=1; class B; X=""; X.', include: String, exclude: Integer)
       assert_call('class A; X=1; class B; X=""; end; X.', include: Integer, exclude: String)
       assert_call('class A; class B; X=1; end; end; class A; class B; X.', include: Integer)
-      assert_call('module IRB; VERSION.', include: String)
-      assert_call('module IRB; IRB::VERSION.', include: String)
+      if defined?(IRB::VERSION)
+        assert_call('module IRB; VERSION.', include: String)
+        assert_call('module IRB; IRB::VERSION.', include: String)
+      end
       assert_call('module IRB; VERSION=1; VERSION.', include: Integer)
       assert_call('module IRB; VERSION=1; IRB::VERSION.', include: Integer)
       assert_call('module IRB; module A; VERSION.', include: String)
