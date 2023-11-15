@@ -1,9 +1,5 @@
 # frozen_string_literal: true
 
-# Should be done in rubygems test files?
-ENV["GEM_SKIP"] = ENV["GEM_HOME"] = ENV["GEM_PATH"] = "".freeze
-ENV.delete("RUBY_CODESIGN")
-
-Warning[:experimental] = false
+# NOTE: Do not add any settings here for test-all. Instead, please add it to ../tool/test/init.rb.
 
 require_relative '../tool/test/runner'
