@@ -10,7 +10,7 @@ rescue LoadError
   return
 end
 
-
+require 'irb/version'
 require 'irb/completion'
 require 'irb/type_completion/completor'
 require_relative '../helper'
