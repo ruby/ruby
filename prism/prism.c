@@ -6134,6 +6134,9 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
             case 'L': case 'l':
                 ENCODING1("locale", pm_encoding_utf_8);
                 break;
+            case 'M': case 'm':
+                ENCODING1("macIceland", pm_encoding_mac_iceland);
+                break;
             case 'P': case 'p':
                 ENCODING1("PCK", pm_encoding_windows_31j);
                 break;
@@ -6269,6 +6272,8 @@ parser_lex_magic_comment_emacs_marker(pm_parser_t *parser, const uint8_t *cursor
  */
 static inline bool
 parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
+    bool result = true;
+
     const uint8_t *start = parser->current.start + 1;
     const uint8_t *end = parser->current.end;
     if (end - start <= 7) return false;
@@ -6366,7 +6371,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
                 (key_length == 8 && pm_strncasecmp(key_source, (const uint8_t *) "encoding", 8) == 0) ||
                 (key_length == 6 && pm_strncasecmp(key_source, (const uint8_t *) "coding", 6) == 0)
             ) {
-                parser_lex_magic_comment_encoding_value(parser, value_start, value_end);
+                result = parser_lex_magic_comment_encoding_value(parser, value_start, value_end);
             }
         }
 
@@ -6393,7 +6398,7 @@ parser_lex_magic_comment(pm_parser_t *parser, bool semantic_token_seen) {
         }
     }
 
-    return true;
+    return result;
 }
 
 /******************************************************************************/
