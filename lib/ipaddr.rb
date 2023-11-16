@@ -227,6 +227,22 @@ class IPAddr
     return str
   end
 
+  # Returns a string containing the IP address representation with prefix.
+  def as_json(*)
+    if ipv4? && prefix == 32
+      to_s
+    elsif ipv6? && prefix == 128
+      to_s
+    else
+      cidr
+    end
+  end
+
+  # Returns a json string containing the IP address representation.
+  def to_json(*)
+    format("\"%s\"", as_json)
+  end
+
   # Returns a string containing the IP address representation in
   # cidr notation
   def cidr

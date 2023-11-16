@@ -260,6 +260,20 @@ class TC_IPAddr < Test::Unit::TestCase
     assert_equal("3ffe:505:2::1", IPAddr.new("3ffe:505:2::1").to_s)
   end
 
+  def test_as_json
+    assert_equal("192.168.1.2", IPAddr.new("192.168.1.2").as_json)
+    assert_equal("192.168.1.0/24", IPAddr.new("192.168.1.2/24").as_json)
+    assert_equal("2001:200:300::1", IPAddr.new("2001:200:300::1").as_json)
+    assert_equal("2001:200:300::/48", IPAddr.new("2001:200:300::/48").as_json)
+  end
+
+  def test_to_json
+    assert_equal("\"192.168.1.2\"", IPAddr.new("192.168.1.2").to_json)
+    assert_equal("\"192.168.1.0/24\"", IPAddr.new("192.168.1.2/24").to_json)
+    assert_equal("\"2001:200:300::1\"", IPAddr.new("2001:200:300::1").to_json)
+    assert_equal("\"2001:200:300::/48\"", IPAddr.new("2001:200:300::/48").to_json)
+  end
+
   def test_netmask
     a = IPAddr.new("192.168.1.2/8")
     assert_equal(a.netmask, "255.0.0.0")
