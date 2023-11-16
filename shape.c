@@ -915,13 +915,6 @@ rb_shape_obj_too_complex(VALUE obj)
     return rb_shape_get_shape_id(obj) == OBJ_TOO_COMPLEX_SHAPE_ID;
 }
 
-void
-rb_shape_set_too_complex(VALUE obj)
-{
-    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
-    rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
-}
-
 size_t
 rb_shape_edges_count(rb_shape_t *shape)
 {

@@ -293,12 +293,10 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     rb_shape_t * src_shape = rb_shape_get_shape(obj);
 
     if (rb_shape_obj_too_complex(obj)) {
+        // obj is TOO_COMPLEX so we can copy its iv_hash
         st_table * table = rb_st_init_numtable_with_size(rb_st_table_size(ROBJECT_IV_HASH(obj)));
-
-        rb_ivar_foreach(obj, rb_obj_evacuate_ivs_to_hash_table, (st_data_t)table);
-        rb_shape_set_too_complex(dest);
-
-        ROBJECT(dest)->as.heap.ivptr = (VALUE *)table;
+        st_replace(table, ROBJECT_IV_HASH(obj));
+        rb_obj_convert_to_too_complex(dest, table);
 
         return;
     }
@@ -328,10 +326,8 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
         shape_to_set_on_dest = rb_shape_rebuild_shape(initial_shape, src_shape);
         if (UNLIKELY(rb_shape_id(shape_to_set_on_dest) == OBJ_TOO_COMPLEX_SHAPE_ID)) {
             st_table * table = rb_st_init_numtable_with_size(src_num_ivs);
-
-            rb_ivar_foreach(obj, rb_obj_evacuate_ivs_to_hash_table, (st_data_t)table);
-            rb_shape_set_too_complex(dest);
-            ROBJECT(dest)->as.heap.ivptr = (VALUE *)table;
+            rb_obj_copy_ivs_to_hash_table(obj, table);
+            rb_obj_convert_to_too_complex(dest, table);
 
             return;
         }

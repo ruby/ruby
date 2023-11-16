@@ -226,7 +226,6 @@ rb_shape_t *rb_shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_
 bool rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id);
 
 VALUE rb_obj_debug_shape(VALUE self, VALUE obj);
-void rb_shape_set_too_complex(VALUE obj);
 
 // For ext/objspace
 RUBY_SYMBOL_EXPORT_BEGIN
