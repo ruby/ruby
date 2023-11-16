@@ -41,6 +41,7 @@ module Prism
       Encoding::MACGREEK =>     0x00...0x100,
       Encoding::MACICELAND =>   0x00...0x100,
       Encoding::MACROMANIA =>   0x00...0x100,
+      Encoding::MACTURKISH =>   0x00...0x100,
       Encoding::Windows_1250 => 0x00...0x100,
       Encoding::Windows_1251 => 0x00...0x100,
       Encoding::Windows_1252 => 0x00...0x100,
