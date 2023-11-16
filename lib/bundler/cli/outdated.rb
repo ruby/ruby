@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "json"
+
 module Bundler
   class CLI::Outdated
     attr_reader :options, :gems, :options_include_groups, :filter_options_patch, :sources, :strict
@@ -53,13 +55,13 @@ module Bundler
         options[:local] ? definition.resolve_with_cache! : definition.resolve_remotely!
       end
 
-      if options[:parseable]
+      if options[:parseable] || options[:json]
         Bundler.ui.silence(&definition_resolution)
       else
         definition_resolution.call
       end
 
-      Bundler.ui.info ""
+      Bundler.ui.info "" unless options[:json]
 
       # Loop through the current specs
       gemfile_specs, dependency_specs = current_specs.partition do |spec|
@@ -98,7 +100,9 @@ module Bundler
       end
 
       if outdated_gems.empty?
-        unless options[:parseable]
+        if options[:json]
+          print_gems_json([])
+        elsif !options[:parseable]
           Bundler.ui.info(nothing_outdated_message)
         end
       else
@@ -108,7 +112,9 @@ module Bundler
           outdated_gems
         end
 
-        if options[:parseable]
+        if options[:json]
+          print_gems_json(relevant_outdated_gems)
+        elsif options[:parseable]
           print_gems(relevant_outdated_gems)
         else
           print_gems_table(relevant_outdated_gems)
@@ -173,6 +179,20 @@ module Bundler
       end
     end
 
+    def print_gems_json(gems_list)
+      data = gems_list.map do |gem|
+        gem_data_for(
+          gem[:current_spec],
+          gem[:active_spec],
+          gem[:dependency],
+          gem[:groups]
+        )
+      end
+
+      data = { :outdated_count => gems_list.count, :outdated_gems => data }
+      Bundler.ui.info data.to_json
+    end
+
     def print_gems_table(gems_list)
       data = gems_list.map do |gem|
         gem_column_for(
@@ -210,6 +230,26 @@ module Bundler
       end
 
       Bundler.ui.info output_message.rstrip
+    end
+
+    def gem_data_for(current_spec, active_spec, dependency, groups)
+      {
+        :current_spec => spec_data_for(current_spec),
+        :active_spec => spec_data_for(active_spec),
+        :dependency => dependency&.to_s,
+        :groups => (groups || "").split(", "),
+      }
+    end
+
+    def spec_data_for(spec)
+      {
+        :name => spec.name,
+        :version => spec.version.to_s,
+        :platform => spec.platform,
+        :source => spec.source.to_s,
+        :required_ruby_version => spec.required_ruby_version.to_s,
+        :required_rubygems_version => spec.required_rubygems_version.to_s,
+      }
     end
 
     def gem_column_for(current_spec, active_spec, dependency, groups)
