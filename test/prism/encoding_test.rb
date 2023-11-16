@@ -38,6 +38,7 @@ module Prism
       Encoding::ISO_8859_15 =>  0x00...0x100,
       Encoding::ISO_8859_16 =>  0x00...0x100,
       Encoding::KOI8_R =>       0x00...0x100,
+      Encoding::MACGREEK =>     0x00...0x100,
       Encoding::MACICELAND =>   0x00...0x100,
       Encoding::MACROMANIA =>   0x00...0x100,
       Encoding::Windows_1250 => 0x00...0x100,
