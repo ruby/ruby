@@ -3435,6 +3435,10 @@ thread_free(void *ptr)
         rb_bug("thread_free: keeping_mutexes must be NULL (%p:%p)", (void *)th, (void *)th->keeping_mutexes);
     }
 
+    if (th->specific_storage) {
+        ruby_xfree(th->specific_storage);
+    }
+
     rb_threadptr_root_fiber_release(th);
 
     if (th->vm && th->vm->ractor.main_thread == th) {

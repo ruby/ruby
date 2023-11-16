@@ -1152,6 +1152,7 @@ typedef struct rb_thread_struct {
 
     /* misc */
     VALUE name;
+    void **specific_storage;
 
     struct rb_ext_config ext_config;
 } rb_thread_t;
