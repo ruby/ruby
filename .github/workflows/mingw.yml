@@ -125,6 +125,7 @@ jobs:
       - name: test
         timeout-minutes: 30
         run: make test
+        shell: cmd
         env:
           GNUMAKEFLAGS: ''
           RUBY_TESTOPTS: '-v --tty=no'
@@ -132,9 +133,8 @@ jobs:
 
       - name: test-all
         timeout-minutes: 45
+        shell: cmd
         run: |
-          # Actions uses UTF8, causes test failures, similar to normal OS setup
-          chcp.com 437
           make ${{ StartsWith(matrix.test_task, 'test/') && matrix.test_task || 'test-all' }}
         env:
           RUBY_TESTOPTS: >-
@@ -147,6 +147,7 @@ jobs:
         timeout-minutes: 10
         run: |
           make ${{ StartsWith(matrix.test_task, 'spec/') && matrix.test_task || 'test-spec' }}
+        shell: cmd
         if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-spec' || StartsWith(matrix.test_task, 'spec/') }}
 
       - uses: ./src/.github/actions/slack
