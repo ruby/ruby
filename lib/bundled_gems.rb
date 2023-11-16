@@ -74,10 +74,15 @@ module Gem::BUNDLED_GEMS
     return if specs.to_a.map(&:name).include?(name.sub(LIBEXT, ""))
     name = name.tr("/", "-")
     _t, path = $:.resolve_feature_path(name)
-    return unless gem = find_gem(path)
-    caller = caller_locations(3, 3).find {|c| c&.absolute_path}
-    return if find_gem(caller&.absolute_path)
-    name = name.sub(LIBEXT, "") # assume "foo.rb"/"foo.so" belongs to "foo" gem
+    if gem = find_gem(path)
+      caller = caller_locations(3, 3).find {|c| c&.absolute_path}
+      return if find_gem(caller&.absolute_path)
+      name = name.sub(LIBEXT, "") # assume "foo.rb"/"foo.so" belongs to "foo" gem
+    elsif SINCE[name]
+      gem = true
+    else
+      return
+    end
     return if WARNED[name]
     WARNED[name] = true
     if gem == true
