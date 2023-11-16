@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+return if RUBY_ENGINE != "ruby"
+
 require_relative "test_helper"
 
 module Prism
@@ -84,7 +86,6 @@ module Prism
       actual = result.value.statements.body.first.unescaped.encoding
       assert_equal Encoding.find("ascii-8bit"), actual
     end
-
 
     def test_emacs_style
       result = Prism.parse("# -*- coding: utf-8 -*-\n'string'")
@@ -200,7 +201,7 @@ module Prism
 
       range.each do |codepoint|
         character = codepoint.chr(encoding)
-  
+
         if character.match?(/[[:alpha:]]/)
           if character.match?(/[[:upper:]]/)
             assert_encoding_constant(name, character)
