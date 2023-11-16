@@ -267,6 +267,46 @@ rb_internal_thread_event_hook_t *rb_internal_thread_add_event_hook(
 bool rb_internal_thread_remove_event_hook(
         rb_internal_thread_event_hook_t * hook);
 
+
+typedef int rb_internal_thread_specific_key_t;
+#define RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX 8
+/**
+ * Create a key to store thread specific data.
+ *
+ * These APIs are designed for tools using
+ * rb_internal_thread_event_hook APIs.
+ *
+ * Note that only `RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX` keys
+ * can be created. raises `ThreadError` if exceeded.
+ *
+ * Usage:
+ *   // at initialize time:
+ *   int tool_key; // gvar
+ *   Init_tool() {
+ *     tool_key = rb_internal_thread_specific_key_create();
+ *   }
+ *
+ *   // at any timing:
+ *   rb_internal_thread_pecific_set(thread, tool_key, per_thread_data);
+ *   ...
+ *   per_thread_data = rb_internal_thread_specific_get(thread, tool_key);
+ */
+rb_internal_thread_specific_key_t rb_internal_thread_specific_key_create(void);
+
+/**
+ * Get thread and tool specific data.
+ *
+ * This function is async signal safe and thread safe.
+ */
+void *rb_internal_thread_specific_get(VALUE thread_val, rb_internal_thread_specific_key_t key);
+
+/**
+ * Set thread and tool specific data.
+ *
+ * This function is async signal safe and thread safe.
+ */
+void rb_internal_thread_specific_set(VALUE thread_val, rb_internal_thread_specific_key_t key, void *data);
+
 RBIMPL_SYMBOL_EXPORT_END()
 
 #endif /* RUBY_THREAD_H */

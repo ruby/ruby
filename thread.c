@@ -149,6 +149,7 @@ NORETURN(static void async_bug_fd(const char *mesg, int errno_arg, int fd));
 static int consume_communication_pipe(int fd);
 
 static volatile int system_working = 1;
+static rb_internal_thread_specific_key_t specific_key_count;
 
 struct waiting_fd {
     struct ccan_list_node wfd_node; /* <=> vm.waiting_fds */
@@ -778,12 +779,16 @@ struct thread_create_params {
     VALUE (*fn)(void *);
 };
 
+static void thread_specific_storage_alloc(rb_thread_t *th);
+
 static VALUE
 thread_create_core(VALUE thval, struct thread_create_params *params)
 {
     rb_execution_context_t *ec = GET_EC();
     rb_thread_t *th = rb_thread_ptr(thval), *current_th = rb_ec_thread_ptr(ec);
     int err;
+
+    thread_specific_storage_alloc(th);
 
     if (OBJ_FROZEN(current_th->thgroup)) {
         rb_raise(rb_eThreadError,
@@ -5782,4 +5787,67 @@ rb_uninterruptible(VALUE (*b_proc)(VALUE), VALUE data)
 
     RUBY_VM_CHECK_INTS(cur_th->ec);
     return ret;
+}
+
+static void
+thread_specific_storage_alloc(rb_thread_t *th)
+{
+    VM_ASSERT(th->specific_storage == NULL);
+
+    if (UNLIKELY(specific_key_count > 0)) {
+        th->specific_storage = ZALLOC_N(void *, RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX);
+    }
+}
+
+rb_internal_thread_specific_key_t
+rb_internal_thread_specific_key_create(void)
+{
+    rb_vm_t *vm = GET_VM();
+
+    if (specific_key_count == 0 && vm->ractor.cnt > 1) {
+        rb_raise(rb_eThreadError, "The first rb_internal_thread_specific_key_create() is called with multiple ractors");
+    }
+    else if (specific_key_count > RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX) {
+        rb_raise(rb_eThreadError, "rb_internal_thread_specific_key_create() is called more than %d times", RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX);
+    }
+    else {
+        rb_internal_thread_specific_key_t key = specific_key_count++;
+
+        if (key == 0) {
+            // allocate
+            rb_ractor_t *cr = GET_RACTOR();
+            rb_thread_t *th;
+
+            ccan_list_for_each(&cr->threads.set, th, lt_node) {
+                thread_specific_storage_alloc(th);
+            }
+        }
+        return key;
+    }
+}
+
+// async and native thread safe.
+void *
+rb_internal_thread_specific_get(VALUE thread_val, rb_internal_thread_specific_key_t key)
+{
+    rb_thread_t *th = DATA_PTR(thread_val);
+
+    VM_ASSERT(rb_thread_ptr(thread_val) == th);
+    VM_ASSERT(key < RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX);
+    VM_ASSERT(th->specific_storage);
+
+    return th->specific_storage[key];
+}
+
+// async and native thread safe.
+void
+rb_internal_thread_specific_set(VALUE thread_val, rb_internal_thread_specific_key_t key, void *data)
+{
+    rb_thread_t *th = DATA_PTR(thread_val);
+
+    VM_ASSERT(rb_thread_ptr(thread_val) == th);
+    VM_ASSERT(key < RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX);
+    VM_ASSERT(th->specific_storage);
+
+    th->specific_storage[key] = data;
 }
