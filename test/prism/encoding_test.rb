@@ -4,65 +4,71 @@ require_relative "test_helper"
 
 module Prism
   class EncodingTest < TestCase
-    [
-      Encoding::ASCII,
-      Encoding::ASCII_8BIT,
-      Encoding::Big5,
-      Encoding::CP51932,
-      Encoding::CP850,
-      Encoding::CP852,
-      Encoding::CP855,
-      Encoding::EUC_JP,
-      Encoding::GBK,
-      Encoding::IBM437,
-      Encoding::IBM720,
-      Encoding::IBM737,
-      Encoding::IBM775,
-      Encoding::IBM852,
-      Encoding::IBM855,
-      Encoding::IBM857,
-      Encoding::IBM860,
-      Encoding::IBM861,
-      Encoding::IBM862,
-      Encoding::ISO_8859_1,
-      Encoding::ISO_8859_2,
-      Encoding::ISO_8859_3,
-      Encoding::ISO_8859_4,
-      Encoding::ISO_8859_5,
-      Encoding::ISO_8859_6,
-      Encoding::ISO_8859_7,
-      Encoding::ISO_8859_8,
-      Encoding::ISO_8859_9,
-      Encoding::ISO_8859_10,
-      Encoding::ISO_8859_11,
-      Encoding::ISO_8859_13,
-      Encoding::ISO_8859_14,
-      Encoding::ISO_8859_15,
-      Encoding::ISO_8859_16,
-      Encoding::KOI8_R,
-      Encoding::Shift_JIS,
-      Encoding::UTF_8,
-      Encoding::UTF8_MAC,
-      Encoding::Windows_1250,
-      Encoding::Windows_1251,
-      Encoding::Windows_1252,
-      Encoding::Windows_1253,
-      Encoding::Windows_1254,
-      Encoding::Windows_1255,
-      Encoding::Windows_1256,
-      Encoding::Windows_1257,
-      Encoding::Windows_1258,
-      Encoding::Windows_31J
-    ].each do |encoding|
-      encoding.names.each do |name|
-        # Even though UTF-8-MAC is an alias for UTF8-MAC, CRuby treats it as
-        # UTF-8. So we'll skip this test.
-        next if name == "UTF-8-MAC"
+    encodings = {
+      Encoding::ASCII =>        0x00...0x100,
+      Encoding::ASCII_8BIT =>   0x00...0x100,
+      Encoding::CP850 =>        0x00...0x100,
+      Encoding::CP852 =>        0x00...0x100,
+      Encoding::CP855 =>        0x00...0x100,
+      Encoding::IBM437 =>       0x00...0x100,
+      Encoding::IBM720 =>       0x00...0x100,
+      Encoding::IBM737 =>       0x00...0x100,
+      Encoding::IBM775 =>       0x00...0x100,
+      Encoding::IBM852 =>       0x00...0x100,
+      Encoding::IBM855 =>       0x00...0x100,
+      Encoding::IBM857 =>       0x00...0x100,
+      Encoding::IBM860 =>       0x00...0x100,
+      Encoding::IBM861 =>       0x00...0x100,
+      Encoding::IBM862 =>       0x00...0x100,
+      Encoding::ISO_8859_1 =>   0x00...0x100,
+      Encoding::ISO_8859_2 =>   0x00...0x100,
+      Encoding::ISO_8859_3 =>   0x00...0x100,
+      Encoding::ISO_8859_4 =>   0x00...0x100,
+      Encoding::ISO_8859_5 =>   0x00...0x100,
+      Encoding::ISO_8859_6 =>   0x00...0x100,
+      Encoding::ISO_8859_7 =>   0x00...0x100,
+      Encoding::ISO_8859_8 =>   0x00...0x100,
+      Encoding::ISO_8859_9 =>   0x00...0x100,
+      Encoding::ISO_8859_10 =>  0x00...0x100,
+      Encoding::ISO_8859_11 =>  0x00...0x100,
+      Encoding::ISO_8859_13 =>  0x00...0x100,
+      Encoding::ISO_8859_14 =>  0x00...0x100,
+      Encoding::ISO_8859_15 =>  0x00...0x100,
+      Encoding::ISO_8859_16 =>  0x00...0x100,
+      Encoding::KOI8_R =>       0x00...0x100,
+      Encoding::MACICELAND =>   0x00...0x100,
+      Encoding::MACROMANIA =>   0x00...0x100,
+      Encoding::Windows_1250 => 0x00...0x100,
+      Encoding::Windows_1251 => 0x00...0x100,
+      Encoding::Windows_1252 => 0x00...0x100,
+      Encoding::Windows_1253 => 0x00...0x100,
+      Encoding::Windows_1254 => 0x00...0x100,
+      Encoding::Windows_1255 => 0x00...0x100,
+      Encoding::Windows_1256 => 0x00...0x100,
+      Encoding::Windows_1257 => 0x00...0x100,
+      Encoding::Windows_1258 => 0x00...0x100,
+      Encoding::Big5 =>         0x00...0x10000,
+      Encoding::CP51932 =>      0x00...0x10000,
+      Encoding::GBK =>          0x00...0x10000,
+      Encoding::Shift_JIS =>    0x00...0x10000,
+      Encoding::Windows_31J =>  0x00...0x10000
+    }
 
-        define_method "test_encoding_#{name}" do
-          result = Prism.parse("# encoding: #{name}\n'string'")
-          actual = result.value.statements.body.first.unescaped.encoding
-          assert_equal encoding, actual
+    # By default we don't test every codepoint in these encodings because they
+    # are 3 and 4 byte representations so it can drastically slow down the test
+    # suite.
+    if ENV["PRISM_TEST_ALL_ENCODINGS"]
+      encodings.merge!(
+        Encoding::EUC_JP =>   0x00...0x1000000,
+        Encoding::UTF_8 =>    0x00...0x110000,
+        Encoding::UTF8_MAC => 0x00...0x110000
+      )
+    end
+
+    encodings.each do |encoding, range|
+      encoding.names.each do |name|
+        define_method(:"test_encoding_#{name}") do
+          assert_encoding(encoding, name, range)
         end
       end
     end
@@ -123,6 +129,96 @@ module Prism
       slice = Prism.parse("# encoding: Shift_JIS\nア").value.slice
       assert_equal (+"ア").force_encoding(Encoding::SHIFT_JIS), slice
       assert_equal Encoding::SHIFT_JIS, slice.encoding
+    end
+
+    private
+
+    class ConstantContext < BasicObject
+      def self.const_missing(const)
+        const
+      end
+    end
+
+    def constant_context
+      ConstantContext.new
+    end
+
+    class IdentifierContext < BasicObject
+      def method_missing(name, *)
+        name
+      end
+    end
+
+    def identifier_context
+      IdentifierContext.new
+    end
+
+    def assert_encoding_constant(name, character)
+      source = "# encoding: #{name}\n#{character}"
+      expected = constant_context.instance_eval(source)
+
+      result = Prism.parse(source)
+      assert result.success?
+
+      actual = result.value.statements.body.last
+      assert_kind_of ConstantReadNode, actual
+      assert_equal expected, actual.name
+    end
+
+    def assert_encoding_identifier(name, character)
+      source = "# encoding: #{name}\n#{character}"
+      expected = identifier_context.instance_eval(source)
+
+      result = Prism.parse(source)
+      assert result.success?
+
+      actual = result.value.statements.body.last
+      assert_kind_of CallNode, actual
+      assert_equal expected, actual.name
+    end
+
+    # Check that we can properly parse every codepoint in the given encoding.
+    def assert_encoding(encoding, name, range)
+      # I'm not entirely sure, but I believe these codepoints are incorrect in
+      # their parsing in CRuby. They all report as matching `[[:lower:]]` but
+      # then they are parsed as constants. This is because CRuby determines if
+      # an identifier is a constant or not by case folding it down to lowercase
+      # and checking if there is a difference. And even though they report
+      # themselves as lowercase, their case fold is different. I have reported
+      # this bug upstream.
+      case encoding
+      when Encoding::UTF_8, Encoding::UTF_8_MAC
+        range = range.to_a - [
+          0x01c5, 0x01c8, 0x01cb, 0x01f2, 0x1f88, 0x1f89, 0x1f8a, 0x1f8b,
+          0x1f8c, 0x1f8d, 0x1f8e, 0x1f8f, 0x1f98, 0x1f99, 0x1f9a, 0x1f9b,
+          0x1f9c, 0x1f9d, 0x1f9e, 0x1f9f, 0x1fa8, 0x1fa9, 0x1faa, 0x1fab,
+          0x1fac, 0x1fad, 0x1fae, 0x1faf, 0x1fbc, 0x1fcc, 0x1ffc,
+        ]
+      when Encoding::Windows_1253
+        range = range.to_a - [0xb5]
+      end
+
+      range.each do |codepoint|
+        character = codepoint.chr(encoding)
+  
+        if character.match?(/[[:alpha:]]/)
+          if character.match?(/[[:upper:]]/)
+            assert_encoding_constant(name, character)
+          else
+            assert_encoding_identifier(name, character)
+          end
+        elsif character.match?(/[[:alnum:]]/)
+          assert_encoding_identifier(name, "_#{character}")
+        else
+          next if ["/", "{"].include?(character)
+
+          source = "# encoding: #{name}\n/(?##{character})/\n"
+          assert Prism.parse(source).success?
+        end
+      rescue RangeError
+        source = "# encoding: #{name}\n\\x#{codepoint.to_s(16)}"
+        refute Prism.parse(source).success?
+      end
     end
   end
 end
