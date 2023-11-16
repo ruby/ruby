@@ -102,23 +102,16 @@ module Bundler
           Bundler.ui.info(nothing_outdated_message)
         end
       else
-        if options_include_groups
-          relevant_outdated_gems = outdated_gems.group_by {|g| g[:groups] }.sort.flat_map do |groups, gems|
-            contains_group = groups.split(", ").include?(options[:group])
-            next unless options[:groups] || contains_group
-
-            gems
-          end.compact
-
-          if options[:parseable]
-            print_gems(relevant_outdated_gems)
-          else
-            print_gems_table(relevant_outdated_gems)
-          end
-        elsif options[:parseable]
-          print_gems(outdated_gems)
+        relevant_outdated_gems = if options_include_groups
+          by_group(outdated_gems, :filter => options[:group])
         else
-          print_gems_table(outdated_gems)
+          outdated_gems
+        end
+
+        if options[:parseable]
+          print_gems(relevant_outdated_gems)
+        else
+          print_gems_table(relevant_outdated_gems)
         end
 
         exit 1
@@ -160,6 +153,13 @@ module Bundler
         active_specs.delete_if {|b| b.respond_to?(:version) && b.version.prerelease? }
       end
       active_specs.last
+    end
+
+    def by_group(gems, filter: nil)
+      gems.group_by {|g| g[:groups] }.sort.flat_map do |groups_string, grouped_gems|
+        next if filter && !groups_string.split(", ").include?(filter)
+        grouped_gems
+      end.compact
     end
 
     def print_gems(gems_list)
