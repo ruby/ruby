@@ -474,7 +474,7 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
         if (RB_OBJ_FROZEN(obj)) {
             rb_shape_t * next_shape = rb_shape_transition_shape_frozen(clone);
             if (!rb_shape_obj_too_complex(clone) && next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-                rb_evict_ivars_to_hash(clone, rb_shape_get_shape(clone));
+                rb_evict_ivars_to_hash(clone);
             }
             else {
                 rb_shape_set_shape(clone, next_shape);
@@ -498,7 +498,7 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
         // If we're out of shapes, but we want to freeze, then we need to
         // evacuate this clone to a hash
         if (!rb_shape_obj_too_complex(clone) && next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-            rb_evict_ivars_to_hash(clone, rb_shape_get_shape(clone));
+            rb_evict_ivars_to_hash(clone);
         }
         else {
             rb_shape_set_shape(clone, next_shape);

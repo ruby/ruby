@@ -1331,7 +1331,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
 
     if (!rb_shape_transition_shape_remove_ivar(obj, id, shape, &val)) {
         if (!rb_shape_obj_too_complex(obj)) {
-            rb_evict_ivars_to_hash(obj, shape);
+            rb_evict_ivars_to_hash(obj);
         }
 
         st_table *table = NULL;
@@ -1371,11 +1371,11 @@ rb_attr_delete(VALUE obj, ID id)
 }
 
 void
-rb_evict_ivars_to_hash(VALUE obj, rb_shape_t * shape)
+rb_evict_ivars_to_hash(VALUE obj)
 {
     RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
 
-    st_table *table = st_init_numtable_with_size(shape->next_iv_index);
+    st_table *table = st_init_numtable_with_size(rb_ivar_count(obj));
 
     // Evacuate all previous values from shape into id_table
     rb_ivar_foreach(obj, rb_obj_evacuate_ivs_to_hash_table, (st_data_t)table);
@@ -1570,7 +1570,7 @@ generic_ivar_set_set_shape(VALUE obj, rb_shape_t *shape, void *data)
 static void
 generic_ivar_set_transition_too_complex(VALUE obj, void *_data)
 {
-    rb_evict_ivars_to_hash(obj, rb_shape_get_shape_by_id(SHAPE_OBJ_TOO_COMPLEX));
+    rb_evict_ivars_to_hash(obj);
     FL_SET_RAW(obj, FL_EXIVAR);
 }
 
@@ -1666,7 +1666,7 @@ obj_ivar_set_set_shape(VALUE obj, rb_shape_t *shape, void *_data)
 static void
 obj_ivar_set_transition_too_complex(VALUE obj, void *_data)
 {
-    rb_evict_ivars_to_hash(obj, rb_shape_get_shape_by_id(SHAPE_OBJ_TOO_COMPLEX));
+    rb_evict_ivars_to_hash(obj);
 }
 
 static st_table *
@@ -1756,7 +1756,7 @@ void rb_obj_freeze_inline(VALUE x)
         // If we're transitioning from "not complex" to "too complex"
         // then evict ivars.  This can happen if we run out of shapes
         if (!rb_shape_obj_too_complex(x) && next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-            rb_evict_ivars_to_hash(x, rb_shape_get_shape(x));
+            rb_evict_ivars_to_hash(x);
         }
         rb_shape_set_shape(x, next_shape);
 
@@ -4185,7 +4185,7 @@ class_ivar_set_set_shape(VALUE obj, rb_shape_t *shape, void *_data)
 static void
 class_ivar_set_transition_too_complex(VALUE obj, void *_data)
 {
-    rb_evict_ivars_to_hash(obj, rb_shape_get_shape_by_id(SHAPE_OBJ_TOO_COMPLEX));
+    rb_evict_ivars_to_hash(obj);
 }
 
 static st_table *
