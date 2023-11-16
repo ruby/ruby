@@ -53,5 +53,14 @@ class TestRDocTokenStream < RDoc::TestCase
     end.new
 
     assert_equal "foo 'bar'", foo.tokens_to_s
+
+    foo = Class.new do
+      include RDoc::TokenStream
+
+      def initialize
+        @token_stream = nil
+      end
+    end.new
+    assert_equal "", foo.tokens_to_s
   end
 end
