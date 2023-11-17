@@ -1033,14 +1033,14 @@ get_overloaded_cme(const rb_callable_method_entry_t *cme)
     else {
         // create
         rb_method_definition_t *def = rb_method_definition_create(VM_METHOD_TYPE_ISEQ, cme->def->original_id);
-        def->body.iseq.cref = cme->def->body.iseq.cref;
-        def->body.iseq.iseqptr = ISEQ_BODY(cme->def->body.iseq.iseqptr)->mandatory_only_iseq;
-
         rb_method_entry_t *me = rb_method_entry_alloc(cme->called_id,
                                                       cme->owner,
                                                       cme->defined_class,
                                                       def,
                                                       false);
+
+        RB_OBJ_WRITE(me, &def->body.iseq.cref, cme->def->body.iseq.cref);
+        RB_OBJ_WRITE(me, &def->body.iseq.iseqptr, ISEQ_BODY(cme->def->body.iseq.iseqptr)->mandatory_only_iseq);
 
         ASSERT_vm_locking();
         st_insert(overloaded_cme_table(), (st_data_t)cme, (st_data_t)me);
