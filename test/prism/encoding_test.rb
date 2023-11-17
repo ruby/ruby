@@ -40,6 +40,7 @@ module Prism
       Encoding::KOI8_R =>       0x00...0x100,
       Encoding::MACGREEK =>     0x00...0x100,
       Encoding::MACICELAND =>   0x00...0x100,
+      Encoding::MACROMAN =>     0x00...0x100,
       Encoding::MACROMANIA =>   0x00...0x100,
       Encoding::MACTURKISH =>   0x00...0x100,
       Encoding::Windows_1250 => 0x00...0x100,

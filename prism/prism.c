@@ -6137,6 +6137,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
             case 'M': case 'm':
                 ENCODING1("macGreek", pm_encoding_mac_greek);
                 ENCODING1("macIceland", pm_encoding_mac_iceland);
+                ENCODING1("macRoman", pm_encoding_mac_roman);
                 ENCODING1("macRomania", pm_encoding_mac_romania);
                 ENCODING1("macTurkish", pm_encoding_mac_turkish);
                 ENCODING1("macUkraine", pm_encoding_mac_ukraine);
