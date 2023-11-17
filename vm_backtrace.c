@@ -454,10 +454,10 @@ location_inspect_m(VALUE self)
 }
 
 typedef struct rb_backtrace_struct {
-    rb_backtrace_location_t *backtrace;
     int backtrace_size;
     VALUE strary;
     VALUE locary;
+    rb_backtrace_location_t backtrace[1];
 } rb_backtrace_t;
 
 static void
@@ -471,13 +471,6 @@ backtrace_mark(void *ptr)
     }
     rb_gc_mark_movable(bt->strary);
     rb_gc_mark_movable(bt->locary);
-}
-
-static void
-backtrace_free(void *ptr)
-{
-   rb_backtrace_t *bt = (rb_backtrace_t *)ptr;
-   ruby_xfree(bt->backtrace);
 }
 
 static void
@@ -513,13 +506,12 @@ backtrace_update(void *ptr)
 static size_t
 backtrace_memsize(const void *ptr)
 {
-    rb_backtrace_t *bt = (rb_backtrace_t *)ptr;
-    return sizeof(rb_backtrace_location_t) * bt->backtrace_size;
+    return 0;
 }
 
 static const rb_data_type_t backtrace_data_type = {
     "backtrace",
-    {backtrace_mark, backtrace_free, backtrace_memsize, backtrace_update},
+    {backtrace_mark, RUBY_DEFAULT_FREE, backtrace_memsize, backtrace_update},
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
@@ -592,9 +584,8 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
     const rb_control_frame_t *cfp = ec->cfp;
     const rb_control_frame_t *end_cfp = RUBY_VM_END_CONTROL_FRAME(ec);
     ptrdiff_t size;
-    rb_backtrace_t *bt;
-    VALUE btobj = backtrace_alloc(rb_cBacktrace);
-    TypedData_Get_Struct(btobj, rb_backtrace_t, &backtrace_data_type, bt);
+    rb_backtrace_t *bt = NULL;
+    VALUE btobj = Qnil;
     rb_backtrace_location_t *loc = NULL;
     unsigned long cfunc_counter = 0;
 
@@ -624,8 +615,11 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
         }
     }
 
+    size_t memsize = offsetof(rb_backtrace_t, backtrace) + num_frames * sizeof(rb_backtrace_location_t);
+    btobj = rb_data_typed_object_zalloc(rb_cBacktrace, memsize, &backtrace_data_type);
+    TypedData_Get_Struct(btobj, rb_backtrace_t, &backtrace_data_type, bt);
+
     bt->backtrace_size = 0;
-    bt->backtrace = ZALLOC_N(rb_backtrace_location_t, num_frames);
     if (num_frames == 0) {
         if (start_too_large) *start_too_large = 0;
         return btobj;
@@ -739,7 +733,7 @@ rb_backtrace_to_str_ary(VALUE self)
 void
 rb_backtrace_use_iseq_first_lineno_for_last_location(VALUE self)
 {
-    const rb_backtrace_t *bt;
+    rb_backtrace_t *bt;
     rb_backtrace_location_t *loc;
 
     TypedData_Get_Struct(self, rb_backtrace_t, &backtrace_data_type, bt);
