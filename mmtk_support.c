@@ -697,19 +697,6 @@ rb_mmtk_maybe_register_obj_free_candidate(VALUE obj)
     }
 }
 
-int
-rb_mmtk_run_finalizers_immediately(st_data_t key, st_data_t value, st_data_t data)
-{
-    VALUE obj = (VALUE)key;
-    VALUE finalizer_array = (VALUE)value;
-    VALUE observed_id = rb_obj_id(obj);
-
-    RUBY_DEBUG_LOG("Running finalizer on exits for %p", (void*)obj);
-    rb_mmtk_run_finalizer(observed_id, finalizer_array);
-
-    return ST_CONTINUE;
-}
-
 static void
 rb_mmtk_call_obj_free_inner(VALUE obj, bool on_exit) {
     if (on_exit) {
@@ -818,7 +805,7 @@ rb_gc_set_obj_free_on_exit_started(void) {
 struct rb_mmtk_weak_table_rebuilding_context {
     st_table *old_table;
     st_table *new_table;
-    bool update_values;
+    enum RbMmtkWeakTableValueKind values_kind;
     rb_mmtk_hash_on_delete_func on_delete;
     void *on_delete_arg;
 };
@@ -839,7 +826,7 @@ rb_mmtk_update_weak_table_migrate_each(st_data_t key, st_data_t value, st_data_t
     bool keep = key_live;
     bool value_live = true;
 
-    if (ctx->update_values) {
+    if (ctx->values_kind == RB_MMTK_VALUES_WEAK_REF) {
         RUBY_ASSERT(
             // The value is either a primitive value (e.g. Fixnum that represents an ID)
             SPECIAL_CONST_P((VALUE)value) ||
@@ -854,9 +841,9 @@ rb_mmtk_update_weak_table_migrate_each(st_data_t key, st_data_t value, st_data_t
 
     if (keep) {
         st_data_t new_key = (st_data_t)rb_mmtk_call_object_closure((MMTk_ObjectReference)key, false);
-        st_data_t new_value = ctx->update_values ?
-            (st_data_t)rb_mmtk_maybe_forward((VALUE)value) : // Note that value may be primitive value or objref.
-            value;
+        st_data_t new_value = ctx->values_kind == RB_MMTK_VALUES_NON_REF ?
+            value :
+            (st_data_t)rb_mmtk_maybe_forward((VALUE)value); // Note that value may be primitive value or objref.
         st_insert(ctx->new_table, new_key, new_value);
         RUBY_DEBUG_LOG("Forwarding key-value pair: (%p, %p) -> (%p, %p)",
             (void*)key, (void*)value, (void*)new_key, (void*)new_value);
@@ -873,7 +860,7 @@ rb_mmtk_update_weak_table_migrate_each(st_data_t key, st_data_t value, st_data_t
 }
 
 struct rb_mmtk_weak_table_updating_context {
-    bool update_values;
+    enum RbMmtkWeakTableValueKind values_kind;
     rb_mmtk_hash_on_delete_func on_delete;
     void *on_delete_arg;
 };
@@ -888,7 +875,7 @@ rb_mmtk_update_weak_table_should_replace(st_data_t key, st_data_t value, st_data
         return ST_DELETE;
     }
 
-    if (ctx->update_values && !mmtk_is_live_object((MMTk_ObjectReference)key)) {
+    if (ctx->values_kind == RB_MMTK_VALUES_WEAK_REF && !mmtk_is_live_object((MMTk_ObjectReference)value)) {
         return ST_DELETE;
     }
 
@@ -897,7 +884,7 @@ rb_mmtk_update_weak_table_should_replace(st_data_t key, st_data_t value, st_data
         return ST_REPLACE;
     }
 
-    if (ctx->update_values) {
+    if (ctx->values_kind != RB_MMTK_VALUES_NON_REF) {
         MMTk_ObjectReference new_value = mmtk_get_forwarded_object((MMTk_ObjectReference)value);
         if (new_value != NULL && new_value != (MMTk_ObjectReference)value) {
             return ST_REPLACE;
@@ -918,7 +905,7 @@ rb_mmtk_update_weak_table_replace(st_data_t *key, st_data_t *value, st_data_t ar
         *key = (st_data_t)new_key;
     }
 
-    if (ctx->update_values) {
+    if (ctx->values_kind != RB_MMTK_VALUES_NON_REF) {
         MMTk_ObjectReference new_value = mmtk_get_forwarded_object((MMTk_ObjectReference)*value);
         if (new_value != NULL && new_value != (MMTk_ObjectReference)*value) {
             *value = (st_data_t)new_value;
@@ -938,7 +925,7 @@ rb_mmtk_update_weak_table_replace(st_data_t *key, st_data_t *value, st_data_t ar
 void
 rb_mmtk_update_weak_table(st_table *table,
                           bool addr_hashed,
-                          bool update_values,
+                          enum RbMmtkWeakTableValueKind values_kind,
                           rb_mmtk_hash_on_delete_func on_delete,
                           void *on_delete_arg)
 {
@@ -965,7 +952,7 @@ rb_mmtk_update_weak_table(st_table *table,
         struct rb_mmtk_weak_table_rebuilding_context ctx = {
             .old_table = old_table,
             .new_table = new_table,
-            .update_values = update_values,
+            .values_kind = values_kind,
             .on_delete = on_delete,
             .on_delete_arg = on_delete_arg,
         };
@@ -992,7 +979,7 @@ rb_mmtk_update_weak_table(st_table *table,
         // The hash will not change if the object is moved.
         // We can update the table in place.
         struct rb_mmtk_weak_table_updating_context ctx = {
-            .update_values = update_values,
+            .values_kind = values_kind,
             .on_delete = on_delete,
             .on_delete_arg = on_delete_arg,
         };

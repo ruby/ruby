@@ -62,19 +62,25 @@ void rb_mmtk_maybe_register_ppp(VALUE obj);
 
 // Finalization and exiting
 void rb_mmtk_maybe_register_obj_free_candidate(VALUE obj);
-int rb_mmtk_run_finalizers_immediately(st_data_t key, st_data_t value, st_data_t data);
 void rb_mmtk_call_obj_free_on_exit(void);
 
 bool rb_gc_obj_free_on_exit_started(void);
 void rb_gc_set_obj_free_on_exit_started(void);
 
 // Weak table processing
+
+enum RbMmtkWeakTableValueKind {
+    RB_MMTK_VALUES_NON_REF,
+    RB_MMTK_VALUES_STRONG_REF,
+    RB_MMTK_VALUES_WEAK_REF,
+};
+
 typedef void (*rb_mmtk_hash_on_delete_func)(st_data_t, st_data_t, void *arg);
 
 void
 rb_mmtk_update_weak_table(st_table *table,
                           bool addr_hashed,
-                          bool update_values,
+                          enum RbMmtkWeakTableValueKind values_kind,
                           rb_mmtk_hash_on_delete_func on_delete,
                           void *on_delete_arg);
 

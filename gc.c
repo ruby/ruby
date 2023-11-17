@@ -3704,6 +3704,10 @@ rb_mmtk_make_dfree_job(void (*dfree)(void *), void *data)
 static inline void
 rb_mmtk_make_finalize_job(VALUE obj, VALUE finalizer_array)
 {
+    if (rb_gc_obj_free_on_exit_started()) {
+        rb_bug("Finalize job created when obj_free on exit has started.");
+    }
+
     struct MMTk_FinalJob *job = (struct MMTk_FinalJob*)xmalloc(sizeof(struct MMTk_FinalJob));
     job->kind = MMTK_FJOB_FINALIZE;
 
@@ -4800,25 +4804,56 @@ run_final(rb_objspace_t *objspace, VALUE zombie)
 
 #if USE_MMTK
 static void
-rb_mmtk_finalize_list(struct MMTk_FinalJob *job_list) {
-    struct MMTk_FinalJob *job = job_list;
-    while (job != NULL) {
-        switch (job->kind) {
-            case MMTK_FJOB_DFREE: {
-                job->as.dfree.dfree(job->as.dfree.data);
-                break;
+rb_mmtk_run_final_job(struct MMTk_FinalJob *job)
+{
+    switch (job->kind) {
+        case MMTK_FJOB_DFREE: {
+            job->as.dfree.dfree(job->as.dfree.data);
+            break;
+        }
+        case MMTK_FJOB_FINALIZE: {
+            if (rb_gc_obj_free_on_exit_started()) {
+                rb_bug("Finalize job still exists after obj_free on exit has started.");
             }
-            case MMTK_FJOB_FINALIZE: {
-                run_finalizer(&rb_objspace,
-                              job->as.finalize.observed_id,
-                              job->as.finalize.finalizer_array);
-                break;
-            }
+            run_finalizer(&rb_objspace,
+                            job->as.finalize.observed_id,
+                            job->as.finalize.finalizer_array);
+            break;
+        }
+    }
+
+    xfree(job);
+}
+
+static struct MMTk_FinalJob*
+rb_mmtk_poll_one_final_job(rb_objspace_t *objspace)
+{
+    while (true) {
+        struct MMTk_FinalJob *job = (struct MMTk_FinalJob*)heap_pages_deferred_final;
+        if (job == NULL) {
+            break;
         }
 
-        struct MMTk_FinalJob *next = job->next;
-        xfree(job);
-        job = next;
+        struct MMTk_FinalJob *next_job = job->next;
+
+        VALUE old = ATOMIC_VALUE_CAS(heap_pages_deferred_final, (VALUE)job, (VALUE)next_job);
+        if (old == (VALUE)job) {
+            return job;
+        }
+    }
+
+    return NULL;
+}
+
+static void
+rb_mmtk_run_final_jobs(rb_objspace_t *objspace)
+{
+    struct MMTk_FinalJob *job;
+    // Note: We could poll all jobs at once, but that'll require us to keep the linked list of
+    // polled jobs as thread-local roots.  Currently we choose the easy way, i.e. making the global
+    // linked list (starting with heap_pages_deferred_final) global roots.
+    while ((job = rb_mmtk_poll_one_final_job(objspace)) != NULL) {
+        rb_mmtk_run_final_job(job);
     }
 }
 #endif
@@ -4826,13 +4861,6 @@ rb_mmtk_finalize_list(struct MMTk_FinalJob *job_list) {
 static void
 finalize_list(rb_objspace_t *objspace, VALUE zombie)
 {
-#if USE_MMTK
-    if (rb_mmtk_enabled_p()) {
-        rb_mmtk_finalize_list((struct MMTk_FinalJob *)zombie);
-        return;
-    }
-#endif
-
     while (zombie) {
         VALUE next_zombie;
         struct heap_page *page;
@@ -4867,6 +4895,13 @@ finalize_list(rb_objspace_t *objspace, VALUE zombie)
 static void
 finalize_deferred_heap_pages(rb_objspace_t *objspace)
 {
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_mmtk_run_final_jobs(objspace);
+        return;
+    }
+#endif
+
     VALUE zombie;
     while ((zombie = ATOMIC_VALUE_EXCHANGE(heap_pages_deferred_final, 0)) != 0) {
         finalize_list(objspace, zombie);
@@ -4920,6 +4955,19 @@ force_chain_object(st_data_t key, st_data_t val, st_data_t arg)
 
 bool rb_obj_is_main_ractor(VALUE gv);
 
+#if USE_MMTK
+int
+rb_mmtk_evacuate_finalizer_table_on_exit_i(st_data_t key, st_data_t value, st_data_t data)
+{
+    VALUE obj = (VALUE)key;
+    VALUE finalizer_array = (VALUE)value;
+
+    rb_mmtk_make_finalize_job(obj, finalizer_array);
+
+    return ST_DELETE;
+}
+#endif
+
 void
 rb_objspace_call_finalizer(rb_objspace_t *objspace)
 {
@@ -4959,9 +5007,15 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
         // Force to run finalizers, the MMTk style.
-        // When using MMTk, we simply iterate through all elements and call run_finalizer immediately.
-        // The finalizer_table will be freed soon, so we don't need to remove elements.
-        st_foreach(finalizer_table, rb_mmtk_run_finalizers_immediately, 0);
+        while (finalizer_table->num_entries) {
+            // We move all elements from the finalizer_table to heap_pages_deferred_final.
+            st_foreach(finalizer_table, rb_mmtk_evacuate_finalizer_table_on_exit_i, 0);
+
+            // Then call all pushed finalizers in heap_pages_deferred_final.
+            finalize_deferred_heap_pages(objspace);
+
+            // We need to repeat because a finalizer may register new finalizers.
+        }
 
         // Tell the world that obj_free on exit has started.
         rb_gc_set_obj_free_on_exit_started();
@@ -4973,6 +5027,10 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
         // similar to the FinalizerProcessor for JVM which maintains a list of finalizable objects.
         // But since we are on exit, we call obj_free immediately on those objects instead of in GC.
         rb_mmtk_call_obj_free_on_exit();
+
+        // Some `T_DATA` and `T_FILE` objects still make final jobs (or zombies if not using MMTk).
+        // We execute the final jobs here.
+        finalize_deferred_heap_pages(objspace);
     } else {
 #endif
     /* force to run finalizer */
@@ -5033,16 +5091,36 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 
     gc_exit(objspace, gc_enter_event_finalizer, &lock_lev);
 
+    finalize_deferred_heap_pages(objspace);
+
 #if USE_MMTK
     }
 #endif
-
-    finalize_deferred_heap_pages(objspace);
 
     st_free_table(finalizer_table);
     finalizer_table = 0;
     ATOMIC_SET(finalizing, 0);
 }
+
+#if USE_MMTK
+/* Mark all final jobs. */
+static void
+rb_mmtk_mark_final_jobs(void)
+{
+    rb_vm_t *vm = GET_VM();
+
+    struct MMTk_FinalJob *cur_job = (struct MMTk_FinalJob*)vm->objspace->heap_pages.deferred_final;
+    while (cur_job != NULL) {
+        if (cur_job->kind == MMTK_FJOB_FINALIZE) {
+            // The finalizer array is a proper MMTk heap object, and needs to be kept alive.
+            // We treat it as a root.  Currently we pin all roots.
+            rb_gc_mark(cur_job->as.finalize.finalizer_array);
+        }
+
+        cur_job = cur_job->next;
+    }
+}
+#endif
 
 static inline int
 is_swept_object(VALUE ptr)
@@ -15092,6 +15170,8 @@ ruby_xrealloc2(void *ptr, size_t n, size_t new_size)
 
 #if USE_MMTK
 
+/////////////// BEGIN: Global table updating ////////////////
+
 static void
 rb_mmtk_on_finalizer_table_delete(st_data_t key, st_data_t value, void *arg)
 {
@@ -15124,7 +15204,6 @@ rb_mmtk_on_overloaded_cme_delete(st_data_t key, st_data_t value, void *arg)
 #endif
 }
 
-/////////////// BEGIN: Global table updating ////////////////
 void
 rb_mmtk_update_frozen_strings_table(void)
 {
@@ -15148,14 +15227,14 @@ rb_mmtk_update_finalizer_table(void)
     // The macro `finalizer_table` insists on accessing the field via the hard-coded identifier `objspace`.
     rb_objspace_t *objspace = &rb_objspace;
 
-    // This table maps object addresses to its finalizer functions.
+    // This table maps object addresses to its finalizer functions (held in an array).
     // Not all keys point to live objects.
-    // If a key points to a dead object, we make a zombie for it so that their finalizers are
-    // scheduled to be executed later.
-    // Currently finalizers are disabled when running with MMTk.
+    // If a key points to a dead object, we make a FinalJob (replacing "zombie") for it so that
+    // their finalizers are scheduled to be executed later.  The value array should be kept alive
+    // in this case.
     rb_mmtk_update_weak_table(finalizer_table,
                               true,
-                              false, // Currently values are pinned.
+                              RB_MMTK_VALUES_STRONG_REF,
                               rb_mmtk_on_finalizer_table_delete,
                               NULL);
 }
@@ -15169,7 +15248,7 @@ rb_mmtk_update_obj_id_tables(void)
     // obj_to_id_tbl and id_to_obj_tbl.
     rb_mmtk_update_weak_table(rb_objspace.obj_to_id_tbl,
                               true,
-                              false,
+                              RB_MMTK_VALUES_NON_REF,
                               rb_mmtk_on_obj_to_id_tbl_delete,
                               NULL);
 
@@ -15190,7 +15269,7 @@ rb_mmtk_update_global_symbols_table(void)
     // We need to remove entries for dead symbols.
     rb_mmtk_update_weak_table(global_symbols.str_sym,
                               false,
-                              true,
+                              RB_MMTK_VALUES_WEAK_REF,
                               NULL,
                               NULL);
 }
@@ -15215,6 +15294,7 @@ rb_mmtk_mark_roots(void)
     rb_vm_t *vm = GET_VM();
     const char *phase;
     gc_mark_roots(vm->objspace, &phase);
+    rb_mmtk_mark_final_jobs();
 }
 
 void
@@ -15236,13 +15316,6 @@ rb_mmtk_obj_free(VALUE obj)
 {
     rb_objspace_t *objspace = &rb_objspace;
     obj_free(objspace, obj);
-}
-
-void
-rb_mmtk_run_finalizer(VALUE obj, VALUE table)
-{
-    rb_objspace_t *objspace = &rb_objspace;
-    run_finalizer(objspace, obj, table);
 }
 
 void
