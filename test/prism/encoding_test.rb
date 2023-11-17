@@ -70,10 +70,9 @@ module Prism
     end
 
     encodings.each do |encoding, range|
-      names = encoding.names
-      names.delete("locale") if encoding == Encoding::UTF_8 && RUBY_PLATFORM.include?("mingw")
+      encoding.names.each do |name|
+        next if name == "locale"
 
-      names.each do |name|
         define_method(:"test_encoding_#{name}") do
           assert_encoding(encoding, name, range)
         end
