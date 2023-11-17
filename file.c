@@ -1593,8 +1593,6 @@ rb_access(VALUE fname, int mode)
  */
 
 /*
- * Document-method: directory?
- *
  * call-seq:
  *   File.directory?(path) -> true or false
  *
