@@ -972,7 +972,7 @@ module Bundler
     def remove_invalid_platforms!(dependencies)
       return if Bundler.frozen_bundle?
 
-      platforms.each do |platform|
+      platforms.reverse_each do |platform|
         next if local_platform == platform ||
                 (@new_platform && platforms.last == platform) ||
                 @path_changes ||

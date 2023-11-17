@@ -746,6 +746,7 @@ RSpec.describe "bundle install with specific platforms" do
             sorbet-static (0.5.10696-x86_64-linux)
 
         PLATFORMS
+          aarch64-linux
           arm-linux
           x86_64-linux
 
