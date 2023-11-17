@@ -210,5 +210,6 @@ extern pm_encoding_t pm_encoding_windows_1256;
 extern pm_encoding_t pm_encoding_windows_1257;
 extern pm_encoding_t pm_encoding_windows_1258;
 extern pm_encoding_t pm_encoding_windows_31j;
+extern pm_encoding_t pm_encoding_windows_874;
 
 #endif

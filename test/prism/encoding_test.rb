@@ -53,6 +53,7 @@ module Prism
       Encoding::Windows_1256 => 0x00...0x100,
       Encoding::Windows_1257 => 0x00...0x100,
       Encoding::Windows_1258 => 0x00...0x100,
+      Encoding::Windows_874 =>  0x00...0x100,
       Encoding::Big5 =>         0x00...0x10000,
       Encoding::CP51932 =>      0x00...0x10000,
       Encoding::GBK =>          0x00...0x10000,

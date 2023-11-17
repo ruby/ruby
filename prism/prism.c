@@ -6075,6 +6075,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
                 ENCODING1("CP860", pm_encoding_ibm860);
                 ENCODING1("CP861", pm_encoding_ibm861);
                 ENCODING1("CP862", pm_encoding_ibm862);
+                ENCODING1("CP874", pm_encoding_windows_874);
                 ENCODING1("CP878", pm_encoding_koi8_r);
                 ENCODING2("CP932", "csWindows31J", pm_encoding_windows_31j);
                 ENCODING1("CP936", pm_encoding_gbk);
@@ -6156,6 +6157,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
                 break;
             case 'W': case 'w':
                 ENCODING1("Windows-31J", pm_encoding_windows_31j);
+                ENCODING1("Windows-874", pm_encoding_windows_874);
                 ENCODING1("Windows-1250", pm_encoding_windows_1250);
                 ENCODING1("Windows-1251", pm_encoding_windows_1251);
                 ENCODING1("Windows-1252", pm_encoding_windows_1252);
