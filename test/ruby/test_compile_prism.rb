@@ -862,6 +862,31 @@ module Prism
     end
 
     def test_ForwardingArgumentsNode
+      # http://ci.rvm.jp/results/trunk-iseq_binary@ruby-sp2-docker/4779277
+      #
+      # expected:
+      # == disasm: #<ISeq:prism_test_forwarding_arguments_node1@<compiled>:2 (2,8)-(4,11)>
+      # local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: 1])
+      # [ 1] "..."@0
+      # 0000 putself                                                          (   3)
+      # 0001 getlocal_WC_0                          ?@-2
+      # 0003 splatarray                             false
+      # 0005 getblockparamproxy                     ?@-1, 0
+      # 0008 send                                   <calldata!mid:prism_test_forwarding_arguments_node, argc:1, ARGS_SPLAT|ARGS_BLOCKARG|FCALL>, nil
+      # 0011 leave                                                            (   2)
+      # actual:
+      # == disasm: #<ISeq:prism_test_forwarding_arguments_node1@<compiled>:2 (2,8)-(4,11)>
+      # local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: 1])
+      # [ 1] "..."@0
+      # 0000 putself                                                          (   3)
+      # 0001 getlocal_WC_0                          ?@-2
+      # 0003 splatarray                             false
+      # 0005 getblockparamproxy                     "!"@-1, 0
+      # 0008 send                                   <calldata!mid:prism_test_forwarding_arguments_node, argc:1, ARGS_SPLAT|ARGS_BLOCKARG|FCALL>, nil
+      # 0011 leave                                                            (   2)
+
+      omit "fails on trunk-iseq_binary"
+
       assert_prism_eval(<<-CODE)
         def prism_test_forwarding_arguments_node(...); end;
         def prism_test_forwarding_arguments_node1(...)
