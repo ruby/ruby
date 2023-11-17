@@ -414,6 +414,27 @@ class TestShapes < Test::Unit::TestCase
       assert_equal true, A.instance_variable_defined?(:@a)
     end;
   end
+
+  def test_run_out_of_shape_during_remove_instance_variable
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      o = Object.new
+      10.times { |i| o.instance_variable_set(:"@a#{i}", i) }
+
+      i = 0
+      a = Object.new
+      while RubyVM::Shape.shapes_available > 2
+        a.instance_variable_set(:"@i#{i}", 1)
+        i += 1
+      end
+
+      o.remove_instance_variable(:@a0)
+      (1...10).each do |i|
+        assert_equal(i, o.instance_variable_get(:"@a#{i}"))
+      end
+    end;
+  end
+
   def test_run_out_of_shape_remove_instance_variable
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;

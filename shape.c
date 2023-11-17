@@ -528,29 +528,8 @@ rb_shape_frozen_shape_p(rb_shape_t* shape)
     return SHAPE_FROZEN == (enum shape_type)shape->type;
 }
 
-static void
-move_iv(VALUE obj, ID id, attr_index_t from, attr_index_t to)
-{
-    switch(BUILTIN_TYPE(obj)) {
-      case T_CLASS:
-      case T_MODULE:
-        RCLASS_IVPTR(obj)[to] = RCLASS_IVPTR(obj)[from];
-        break;
-      case T_OBJECT:
-        RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
-        ROBJECT_IVPTR(obj)[to] = ROBJECT_IVPTR(obj)[from];
-        break;
-      default: {
-        struct gen_ivtbl *ivtbl;
-        rb_gen_ivtbl_get(obj, id, &ivtbl);
-        ivtbl->as.shape.ivptr[to] = ivtbl->as.shape.ivptr[from];
-        break;
-      }
-    }
-}
-
 static rb_shape_t *
-remove_shape_recursive(VALUE obj, ID id, rb_shape_t * shape, VALUE * removed)
+remove_shape_recursive(rb_shape_t *shape, ID id, rb_shape_t **removed_shape)
 {
     if (shape->parent_id == INVALID_SHAPE_ID) {
         // We've hit the top of the shape tree and couldn't find the
@@ -559,30 +538,13 @@ remove_shape_recursive(VALUE obj, ID id, rb_shape_t * shape, VALUE * removed)
     }
     else {
         if (shape->type == SHAPE_IVAR && shape->edge_name == id) {
-            // We've hit the edge we wanted to remove, return it's _parent_
-            // as the new parent while we go back down the stack.
-            attr_index_t index = shape->next_iv_index - 1;
+            *removed_shape = shape;
 
-            switch(BUILTIN_TYPE(obj)) {
-              case T_CLASS:
-              case T_MODULE:
-                *removed = RCLASS_IVPTR(obj)[index];
-                break;
-              case T_OBJECT:
-                *removed = ROBJECT_IVPTR(obj)[index];
-                break;
-              default: {
-                struct gen_ivtbl *ivtbl;
-                rb_gen_ivtbl_get(obj, id, &ivtbl);
-                *removed = ivtbl->as.shape.ivptr[index];
-                break;
-              }
-            }
             return rb_shape_get_parent(shape);
         }
         else {
             // This isn't the IV we want to remove, keep walking up.
-            rb_shape_t * new_parent = remove_shape_recursive(obj, id, rb_shape_get_parent(shape), removed);
+            rb_shape_t *new_parent = remove_shape_recursive(rb_shape_get_parent(shape), id, removed_shape);
 
             // We found a new parent.  Create a child of the new parent that
             // has the same attributes as this shape.
@@ -592,16 +554,12 @@ remove_shape_recursive(VALUE obj, ID id, rb_shape_t * shape, VALUE * removed)
                 }
 
                 bool dont_care;
-                rb_shape_t * new_child = get_next_shape_internal(new_parent, shape->edge_name, shape->type, &dont_care, true);
+                rb_shape_t *new_child = get_next_shape_internal(new_parent, shape->edge_name, shape->type, &dont_care, true);
                 if (UNLIKELY(new_child->type == SHAPE_OBJ_TOO_COMPLEX)) {
                     return new_child;
                 }
 
                 RUBY_ASSERT(new_child->capacity <= shape->capacity);
-
-                if (new_child->type == SHAPE_IVAR) {
-                    move_iv(obj, id, shape->next_iv_index - 1, new_child->next_iv_index - 1);
-                }
 
                 return new_child;
             }
@@ -615,17 +573,44 @@ remove_shape_recursive(VALUE obj, ID id, rb_shape_t * shape, VALUE * removed)
 }
 
 bool
-rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE * removed)
+rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE *removed)
 {
     if (UNLIKELY(shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
         return false;
     }
 
-    rb_shape_t * new_shape = remove_shape_recursive(obj, id, shape, removed);
+    rb_shape_t *removed_shape = NULL;
+    rb_shape_t *new_shape = remove_shape_recursive(shape, id, &removed_shape);
     if (new_shape) {
+        RUBY_ASSERT(removed_shape != NULL);
+
         if (UNLIKELY(new_shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
             return false;
         }
+
+        RUBY_ASSERT(new_shape->next_iv_index == shape->next_iv_index - 1);
+
+        VALUE *ivptr;
+        switch(BUILTIN_TYPE(obj)) {
+          case T_CLASS:
+          case T_MODULE:
+            ivptr = RCLASS_IVPTR(obj);
+            break;
+          case T_OBJECT:
+            ivptr = ROBJECT_IVPTR(obj);
+            break;
+          default: {
+            struct gen_ivtbl *ivtbl;
+            rb_gen_ivtbl_get(obj, id, &ivtbl);
+            ivptr = ivtbl->as.shape.ivptr;
+            break;
+          }
+        }
+
+        *removed = ivptr[removed_shape->next_iv_index - 1];
+
+        memmove(&ivptr[removed_shape->next_iv_index - 1], &ivptr[removed_shape->next_iv_index],
+                ((new_shape->next_iv_index + 1) - removed_shape->next_iv_index) * sizeof(VALUE));
 
         rb_shape_set_shape(obj, new_shape);
     }
