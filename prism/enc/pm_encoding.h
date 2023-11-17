@@ -194,6 +194,7 @@ extern pm_encoding_t pm_encoding_mac_greek;
 extern pm_encoding_t pm_encoding_mac_iceland;
 extern pm_encoding_t pm_encoding_mac_roman;
 extern pm_encoding_t pm_encoding_mac_romania;
+extern pm_encoding_t pm_encoding_mac_thai;
 extern pm_encoding_t pm_encoding_mac_turkish;
 extern pm_encoding_t pm_encoding_mac_ukraine;
 extern pm_encoding_t pm_encoding_shift_jis;
