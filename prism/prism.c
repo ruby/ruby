@@ -10445,6 +10445,8 @@ parse_write_name(pm_parser_t *parser, pm_constant_id_t *name_field) {
     name[length] = '=';
 
     // Now switch the name to the new string.
+    // This silences clang analyzer warning about leak of memory pointed by `name`.
+    // NOLINTNEXTLINE(clang-analyzer-*)
     *name_field = pm_constant_pool_insert_owned(&parser->constant_pool, name, length + 1);
 }
 
@@ -15707,6 +15709,9 @@ parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *
                 if (memory == NULL) abort();
 
                 memcpy(memory, source, length);
+
+                // This silences clang analyzer warning about leak of memory pointed by `memory`.
+                // NOLINTNEXTLINE(clang-analyzer-*)
                 local = pm_parser_local_add_owned(parser, (const uint8_t *) memory, length);
 
                 if (token_is_numbered_parameter(source, source + length)) {
