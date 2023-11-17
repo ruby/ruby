@@ -6139,6 +6139,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
                 ENCODING1("macIceland", pm_encoding_mac_iceland);
                 ENCODING1("macRomania", pm_encoding_mac_romania);
                 ENCODING1("macTurkish", pm_encoding_mac_turkish);
+                ENCODING1("macUkraine", pm_encoding_mac_ukraine);
                 break;
             case 'P': case 'p':
                 ENCODING1("PCK", pm_encoding_windows_31j);
