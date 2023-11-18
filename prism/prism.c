@@ -6101,6 +6101,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
                 ENCODING1("filesystem", pm_encoding_utf_8);
                 break;
             case 'G': case 'g':
+                ENCODING1("GB1988", pm_encoding_gb1988);
                 ENCODING1("GBK", pm_encoding_gbk);
                 break;
             case 'I': case 'i':
