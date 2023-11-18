@@ -1,6 +1,20 @@
 module Lrama
   class Grammar
-    class Rule < Struct.new(:id, :lhs, :rhs, :code, :nullable, :precedence_sym, :lineno, keyword_init: true)
+    # _rhs holds original RHS element. Use rhs to refer to Symbol.
+    class Rule < Struct.new(:id, :_lhs, :lhs, :_rhs, :rhs, :token_code, :position_in_original_rule_rhs, :nullable, :precedence_sym, :lineno, keyword_init: true)
+      attr_accessor :original_rule
+
+      def ==(other)
+        self.class == other.class &&
+        self.lhs == other.lhs &&
+        self.rhs == other.rhs &&
+        self.token_code == other.token_code &&
+        self.position_in_original_rule_rhs == other.position_in_original_rule_rhs &&
+        self.nullable == other.nullable &&
+        self.precedence_sym == other.precedence_sym &&
+        self.lineno == other.lineno
+      end
+
       # TODO: Change this to display_name
       def to_s
         l = lhs.id.s_value
@@ -32,7 +46,9 @@ module Lrama
       end
 
       def translated_code
-        code&.translated_code
+        return nil unless token_code
+
+        Code::RuleAction.new(type: :rule_action, token_code: token_code, rule: self).translated_code
       end
     end
   end

@@ -3,7 +3,10 @@ require "set"
 require "lrama/counterexamples/derivation"
 require "lrama/counterexamples/example"
 require "lrama/counterexamples/path"
+require "lrama/counterexamples/production_path"
+require "lrama/counterexamples/start_path"
 require "lrama/counterexamples/state_item"
+require "lrama/counterexamples/transition_path"
 require "lrama/counterexamples/triple"
 
 module Lrama
