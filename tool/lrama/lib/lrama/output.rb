@@ -186,9 +186,9 @@ module Lrama
       str = ""
 
       @context.states.rules.each do |rule|
-        next unless rule.code
+        next unless rule.token_code
 
-        code = rule.code
+        code = rule.token_code
         spaces = " " * (code.column - 1)
 
         str << <<-STR
