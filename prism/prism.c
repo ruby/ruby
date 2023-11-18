@@ -16,7 +16,7 @@ pm_version(void) {
 
 #ifndef PM_DEBUG_LOGGING
 /**
- * Debugging logging will provide you will additional debugging functions as
+ * Debugging logging will provide you with additional debugging functions as
  * well as automatically replace some functions with their debugging
  * counterparts.
  */
