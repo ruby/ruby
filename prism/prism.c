@@ -6091,6 +6091,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
                 ENCODING1("BINARY", pm_encoding_ascii_8bit);
                 ENCODING1("Big5", pm_encoding_big5);
                 ENCODING1("Big5-HKSCS", pm_encoding_big5_hkscs);
+                ENCODING1("Big5-UAO", pm_encoding_big5_uao);
                 break;
             case 'C': case 'c':
                 ENCODING1("CP437", pm_encoding_ibm437);
