@@ -232,7 +232,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             directory => {
                 let pid = std::process::id();
                 let path = format!("{directory}/yjit_{pid}.log");
-                println!("YJIT disasm dump: {path}");
+                eprintln!("YJIT disasm dump: {path}");
                 unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(path)) }
             }
          },
