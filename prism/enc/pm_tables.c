@@ -722,6 +722,30 @@ static uint8_t pm_encoding_koi8_r_table[256] = {
 
 /**
  * Each element of the following table contains a bitfield that indicates a
+ * piece of information about the corresponding macCentEuro character.
+ */
+static uint8_t pm_encoding_mac_cent_euro_table[256] = {
+//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
+    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
+    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
+    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
+    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Ax
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Bx
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Cx
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Dx
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Ex
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // Fx
+};
+
+/**
+ * Each element of the following table contains a bitfield that indicates a
  * piece of information about the corresponding macGreek character.
  */
 static uint8_t pm_encoding_mac_greek_table[256] = {
@@ -1222,6 +1246,7 @@ PRISM_ENCODING_TABLE(iso_8859_14)
 PRISM_ENCODING_TABLE(iso_8859_15)
 PRISM_ENCODING_TABLE(iso_8859_16)
 PRISM_ENCODING_TABLE(koi8_r)
+PRISM_ENCODING_TABLE(mac_cent_euro)
 PRISM_ENCODING_TABLE(mac_greek)
 PRISM_ENCODING_TABLE(mac_iceland)
 PRISM_ENCODING_TABLE(mac_roman)
@@ -1549,6 +1574,16 @@ pm_encoding_t pm_encoding_koi8_r = {
     .alnum_char = pm_encoding_koi8_r_alnum_char,
     .alpha_char = pm_encoding_koi8_r_alpha_char,
     .isupper_char = pm_encoding_koi8_r_isupper_char,
+    .multibyte = false
+};
+
+/** macCentEuro */
+pm_encoding_t pm_encoding_mac_cent_euro = {
+    .name = "macCentEuro",
+    .char_width = pm_encoding_single_char_width,
+    .alnum_char = pm_encoding_mac_cent_euro_alnum_char,
+    .alpha_char = pm_encoding_mac_cent_euro_alpha_char,
+    .isupper_char = pm_encoding_mac_cent_euro_isupper_char,
     .multibyte = false
 };
 
