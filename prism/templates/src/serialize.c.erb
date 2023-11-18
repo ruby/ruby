@@ -47,21 +47,6 @@ pm_serialize_string(pm_parser_t *parser, pm_string_t *string, pm_buffer_t *buffe
     }
 }
 
-/**
- * Serialize a 32-bit integer to the given address always in little-endian.
- */
-static void
-pm_serialize_32(char *address, uint32_t value) {
-#ifdef PRISM_WORDS_BIGENDIAN
-    address[0] = (char) ((value >> 24) & 0xFF);
-    address[1] = (char) ((value >> 16) & 0xFF);
-    address[2] = (char) ((value >> 8) & 0xFF);
-    address[3] = (char) (value & 0xFF);
-#else
-    memcpy(address, &value, sizeof(uint32_t));
-#endif
-}
-
 static void
 pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
     pm_buffer_append_byte(buffer, (uint8_t) PM_NODE_TYPE(node));
@@ -133,7 +118,7 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
             <%- if node.needs_serialized_length? -%>
             // serialize length
             uint32_t length = pm_sizet_to_u32(buffer->length - offset - sizeof(uint32_t));
-            pm_serialize_32(buffer->value + length_offset, length);
+            memcpy(buffer->value + length_offset, &length, sizeof(uint32_t));
             <%- end -%>
             break;
         }
@@ -246,7 +231,7 @@ pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) 
     // Now we're going to serialize the offset of the constant pool back where
     // we left space for it.
     uint32_t length = pm_sizet_to_u32(buffer->length);
-    pm_serialize_32(buffer->value + offset, length);
+    memcpy(buffer->value + offset, &length, sizeof(uint32_t));
 
     // Now we're going to serialize the constant pool.
     offset = buffer->length;
@@ -273,18 +258,18 @@ pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) 
                 assert(content_offset < owned_mask);
                 content_offset |= owned_mask;
 
-                pm_serialize_32(buffer->value + buffer_offset, content_offset);
+                memcpy(buffer->value + buffer_offset, &content_offset, 4);
                 pm_buffer_append_bytes(buffer, constant->start, constant->length);
             } else {
                 // Since this is a shared constant, we are going to write its
                 // source offset directly into the buffer.
                 uint32_t source_offset = pm_ptrdifft_to_u32(constant->start - parser->start);
-                pm_serialize_32(buffer->value + buffer_offset, source_offset);
+                memcpy(buffer->value + buffer_offset, &source_offset, 4);
             }
 
             // Now we can write the length of the constant into the buffer.
             uint32_t constant_length = pm_sizet_to_u32(constant->length);
-            pm_serialize_32(buffer->value + buffer_offset + 4, constant_length);
+            memcpy(buffer->value + buffer_offset + 4, &constant_length, 4);
         }
     }
 }

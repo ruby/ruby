@@ -74,14 +74,4 @@
 #   define snprintf _snprintf
 #endif
 
-/**
- * Defined PRISM_WORDS_BIGENDIAN so we can ensure our serialization happens in
- * little endian format regardless of platform.
- */
-#if defined(WORDS_BIGENDIAN)
-#   define PRISM_WORDS_BIGENDIAN
-#elif defined(AC_APPLE_UNIVERSAL_BUILD) && defined(__BIG_ENDIAN__)
-#   define PRISM_WORDS_BIGENDIAN
-#endif
-
 #endif

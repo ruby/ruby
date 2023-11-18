@@ -137,7 +137,7 @@ module Prism
 
         comments, magic_comments, errors, warnings = load_metadata
 
-        @constant_pool_offset = io.read(4).unpack1("L<")
+        @constant_pool_offset = io.read(4).unpack1("L")
         @constant_pool = Array.new(load_varint, nil)
 
         [load_node, comments, magic_comments, errors, warnings]
@@ -167,7 +167,7 @@ module Prism
       end
 
       def load_serialized_length
-        io.read(4).unpack1("L<")
+        io.read(4).unpack1("L")
       end
 
       def load_optional_node
@@ -206,8 +206,8 @@ module Prism
 
         unless constant
           offset = constant_pool_offset + index * 8
-          start = serialized.unpack1("L<", offset: offset)
-          length = serialized.unpack1("L<", offset: offset + 4)
+          start = serialized.unpack1("L", offset: offset)
+          length = serialized.unpack1("L", offset: offset + 4)
 
           constant =
             if start.nobits?(1 << 31)
