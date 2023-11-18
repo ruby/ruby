@@ -158,6 +158,7 @@ extern const uint8_t pm_encoding_unicode_table[256];
 extern pm_encoding_t pm_encoding_ascii;
 extern pm_encoding_t pm_encoding_ascii_8bit;
 extern pm_encoding_t pm_encoding_big5;
+extern pm_encoding_t pm_encoding_big5_hkscs;
 extern pm_encoding_t pm_encoding_cp51932;
 extern pm_encoding_t pm_encoding_cp850;
 extern pm_encoding_t pm_encoding_cp852;
