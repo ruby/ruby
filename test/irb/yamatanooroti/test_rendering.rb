@@ -203,6 +203,21 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     EOC
   end
 
+  def test_autocomplete_with_multiple_doc_namespaces
+    write_irbrc <<~'LINES'
+      puts 'start IRB'
+    LINES
+    start_terminal(4, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+    write("{}.__id_")
+    write("\C-i")
+    close
+    assert_screen(<<~EOC)
+      start IRB
+      irb(main):001> {}.__id__
+                      }.__id__
+    EOC
+  end
+
   def test_autocomplete_with_showdoc_in_gaps_on_narrow_screen_right
     rdoc_dir = File.join(@tmpdir, 'rdoc')
     system("bundle exec rdoc -r -o #{rdoc_dir}")

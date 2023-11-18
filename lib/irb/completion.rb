@@ -210,16 +210,16 @@ module IRB
         end
 
       when /^([^\}]*\})\.([^.]*)$/
-        # Proc or Hash
+        # Hash or Proc
         receiver = $1
         message = $2
 
         if doc_namespace
-          ["Proc.#{message}", "Hash.#{message}"]
+          ["Hash.#{message}", "Proc.#{message}"]
         else
-          proc_candidates = Proc.instance_methods.collect{|m| m.to_s}
           hash_candidates = Hash.instance_methods.collect{|m| m.to_s}
-          select_message(receiver, message, proc_candidates | hash_candidates)
+          proc_candidates = Proc.instance_methods.collect{|m| m.to_s}
+          select_message(receiver, message, hash_candidates | proc_candidates)
         end
 
       when /^(:[^:.]+)$/
