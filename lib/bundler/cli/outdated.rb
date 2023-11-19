@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "json"
-
 module Bundler
   class CLI::Outdated
     attr_reader :options, :gems, :options_include_groups, :filter_options_patch, :sources, :strict
@@ -180,6 +178,7 @@ module Bundler
     end
 
     def print_gems_json(gems_list)
+      require "json"
       data = gems_list.map do |gem|
         gem_data_for(
           gem[:current_spec],
