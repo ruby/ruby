@@ -176,3 +176,7 @@ def f x:+a; end
 def f x:!a; end
 
 def foo x:%(xx); end
+
+def foo(...)
+  bar(&)
+end
