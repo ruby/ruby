@@ -566,6 +566,7 @@ ripper.o: $(hdrdir)/ruby/st.h
 ripper.o: $(hdrdir)/ruby/subst.h
 ripper.o: $(hdrdir)/ruby/thread_native.h
 ripper.o: $(hdrdir)/ruby/util.h
+ripper.o: $(hdrdir)/ruby/version.h
 ripper.o: $(top_srcdir)/ccan/check_type/check_type.h
 ripper.o: $(top_srcdir)/ccan/container_of/container_of.h
 ripper.o: $(top_srcdir)/ccan/list/list.h

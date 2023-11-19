@@ -22,7 +22,6 @@ rb_call_inits(void)
 {
     CALL(default_shapes);
     CALL(Thread_Mutex);
-    CALL(vm_postponed_job);
     CALL(RandomSeedCore);
     CALL(encodings);
     CALL(sym);
