@@ -24,6 +24,7 @@ module Prism
       Encoding::IBM861 =>       0x00...0x100,
       Encoding::IBM862 =>       0x00...0x100,
       Encoding::IBM864 =>       0x00...0x100,
+      Encoding::IBM866 =>       0x00...0x100,
       Encoding::ISO_8859_1 =>   0x00...0x100,
       Encoding::ISO_8859_2 =>   0x00...0x100,
       Encoding::ISO_8859_3 =>   0x00...0x100,
