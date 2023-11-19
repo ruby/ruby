@@ -3002,6 +3002,7 @@ class.$(OBJEXT): {$(VPATH)}vm_debug.h
 class.$(OBJEXT): {$(VPATH)}vm_opts.h
 class.$(OBJEXT): {$(VPATH)}vm_sync.h
 compar.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+compar.$(OBJEXT): $(hdrdir)/ruby/version.h
 compar.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 compar.$(OBJEXT): $(top_srcdir)/internal/compar.h
 compar.$(OBJEXT): $(top_srcdir)/internal/compilers.h
@@ -3185,6 +3186,7 @@ compile.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 compile.$(OBJEXT): $(CCAN_DIR)/list/list.h
 compile.$(OBJEXT): $(CCAN_DIR)/str/str.h
 compile.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+compile.$(OBJEXT): $(hdrdir)/ruby/version.h
 compile.$(OBJEXT): $(top_srcdir)/internal/array.h
 compile.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 compile.$(OBJEXT): $(top_srcdir)/internal/bignum.h
@@ -3653,6 +3655,7 @@ cont.$(OBJEXT): $(CCAN_DIR)/list/list.h
 cont.$(OBJEXT): $(CCAN_DIR)/str/str.h
 cont.$(OBJEXT): $(hdrdir)/ruby.h
 cont.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+cont.$(OBJEXT): $(hdrdir)/ruby/version.h
 cont.$(OBJEXT): $(top_srcdir)/internal/array.h
 cont.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 cont.$(OBJEXT): $(top_srcdir)/internal/compilers.h
@@ -4238,6 +4241,7 @@ dir.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 dir.$(OBJEXT): $(CCAN_DIR)/list/list.h
 dir.$(OBJEXT): $(CCAN_DIR)/str/str.h
 dir.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+dir.$(OBJEXT): $(hdrdir)/ruby/version.h
 dir.$(OBJEXT): $(top_srcdir)/internal/array.h
 dir.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 dir.$(OBJEXT): $(top_srcdir)/internal/class.h
@@ -5739,14 +5743,22 @@ enc/utf_8.$(OBJEXT): {$(VPATH)}oniguruma.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}regenc.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}st.h
 enc/utf_8.$(OBJEXT): {$(VPATH)}subst.h
+encoding.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
+encoding.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
+encoding.$(OBJEXT): $(CCAN_DIR)/list/list.h
+encoding.$(OBJEXT): $(CCAN_DIR)/str/str.h
 encoding.$(OBJEXT): $(hdrdir)/ruby.h
 encoding.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+encoding.$(OBJEXT): $(hdrdir)/ruby/version.h
+encoding.$(OBJEXT): $(top_srcdir)/internal/array.h
+encoding.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/class.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/enc.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/encoding.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/error.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/gc.h
+encoding.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/inits.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/load.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/object.h
@@ -5757,6 +5769,7 @@ encoding.$(OBJEXT): $(top_srcdir)/internal/variable.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/vm.h
 encoding.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 encoding.$(OBJEXT): {$(VPATH)}assert.h
+encoding.$(OBJEXT): {$(VPATH)}atomic.h
 encoding.$(OBJEXT): {$(VPATH)}backward/2/assume.h
 encoding.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
 encoding.$(OBJEXT): {$(VPATH)}backward/2/bool.h
@@ -5773,6 +5786,7 @@ encoding.$(OBJEXT): {$(VPATH)}defines.h
 encoding.$(OBJEXT): {$(VPATH)}encindex.h
 encoding.$(OBJEXT): {$(VPATH)}encoding.c
 encoding.$(OBJEXT): {$(VPATH)}encoding.h
+encoding.$(OBJEXT): {$(VPATH)}id.h
 encoding.$(OBJEXT): {$(VPATH)}id_table.h
 encoding.$(OBJEXT): {$(VPATH)}intern.h
 encoding.$(OBJEXT): {$(VPATH)}internal.h
@@ -5924,16 +5938,24 @@ encoding.$(OBJEXT): {$(VPATH)}internal/value_type.h
 encoding.$(OBJEXT): {$(VPATH)}internal/variable.h
 encoding.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 encoding.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
+encoding.$(OBJEXT): {$(VPATH)}method.h
 encoding.$(OBJEXT): {$(VPATH)}missing.h
+encoding.$(OBJEXT): {$(VPATH)}node.h
 encoding.$(OBJEXT): {$(VPATH)}onigmo.h
 encoding.$(OBJEXT): {$(VPATH)}oniguruma.h
 encoding.$(OBJEXT): {$(VPATH)}regenc.h
 encoding.$(OBJEXT): {$(VPATH)}ruby_assert.h
+encoding.$(OBJEXT): {$(VPATH)}ruby_atomic.h
+encoding.$(OBJEXT): {$(VPATH)}rubyparser.h
 encoding.$(OBJEXT): {$(VPATH)}shape.h
 encoding.$(OBJEXT): {$(VPATH)}st.h
 encoding.$(OBJEXT): {$(VPATH)}subst.h
+encoding.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
+encoding.$(OBJEXT): {$(VPATH)}thread_native.h
 encoding.$(OBJEXT): {$(VPATH)}util.h
+encoding.$(OBJEXT): {$(VPATH)}vm_core.h
 encoding.$(OBJEXT): {$(VPATH)}vm_debug.h
+encoding.$(OBJEXT): {$(VPATH)}vm_opts.h
 encoding.$(OBJEXT): {$(VPATH)}vm_sync.h
 enum.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 enum.$(OBJEXT): $(top_srcdir)/internal/array.h
@@ -6139,6 +6161,7 @@ enumerator.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 enumerator.$(OBJEXT): $(CCAN_DIR)/list/list.h
 enumerator.$(OBJEXT): $(CCAN_DIR)/str/str.h
 enumerator.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+enumerator.$(OBJEXT): $(hdrdir)/ruby/version.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/array.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 enumerator.$(OBJEXT): $(top_srcdir)/internal/bignum.h
@@ -6352,6 +6375,7 @@ error.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 error.$(OBJEXT): $(CCAN_DIR)/list/list.h
 error.$(OBJEXT): $(CCAN_DIR)/str/str.h
 error.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+error.$(OBJEXT): $(hdrdir)/ruby/version.h
 error.$(OBJEXT): $(top_srcdir)/internal/array.h
 error.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 error.$(OBJEXT): $(top_srcdir)/internal/class.h
@@ -6567,6 +6591,7 @@ eval.$(OBJEXT): $(CCAN_DIR)/list/list.h
 eval.$(OBJEXT): $(CCAN_DIR)/str/str.h
 eval.$(OBJEXT): $(hdrdir)/ruby.h
 eval.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+eval.$(OBJEXT): $(hdrdir)/ruby/version.h
 eval.$(OBJEXT): $(top_srcdir)/internal/array.h
 eval.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 eval.$(OBJEXT): $(top_srcdir)/internal/class.h
@@ -6806,6 +6831,7 @@ file.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 file.$(OBJEXT): $(CCAN_DIR)/list/list.h
 file.$(OBJEXT): $(CCAN_DIR)/str/str.h
 file.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+file.$(OBJEXT): $(hdrdir)/ruby/version.h
 file.$(OBJEXT): $(top_srcdir)/internal/array.h
 file.$(OBJEXT): $(top_srcdir)/internal/class.h
 file.$(OBJEXT): $(top_srcdir)/internal/compilers.h
@@ -7010,6 +7036,7 @@ gc.$(OBJEXT): $(CCAN_DIR)/list/list.h
 gc.$(OBJEXT): $(CCAN_DIR)/str/str.h
 gc.$(OBJEXT): $(hdrdir)/ruby.h
 gc.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+gc.$(OBJEXT): $(hdrdir)/ruby/version.h
 gc.$(OBJEXT): $(top_srcdir)/internal/array.h
 gc.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 gc.$(OBJEXT): $(top_srcdir)/internal/bignum.h
@@ -7457,6 +7484,7 @@ hash.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 hash.$(OBJEXT): $(CCAN_DIR)/list/list.h
 hash.$(OBJEXT): $(CCAN_DIR)/str/str.h
 hash.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+hash.$(OBJEXT): $(hdrdir)/ruby/version.h
 hash.$(OBJEXT): $(top_srcdir)/internal/array.h
 hash.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 hash.$(OBJEXT): $(top_srcdir)/internal/bignum.h
@@ -7839,6 +7867,7 @@ io.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 io.$(OBJEXT): $(CCAN_DIR)/list/list.h
 io.$(OBJEXT): $(CCAN_DIR)/str/str.h
 io.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+io.$(OBJEXT): $(hdrdir)/ruby/version.h
 io.$(OBJEXT): $(top_srcdir)/internal/array.h
 io.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 io.$(OBJEXT): $(top_srcdir)/internal/bignum.h
@@ -8061,6 +8090,7 @@ io_buffer.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 io_buffer.$(OBJEXT): $(CCAN_DIR)/list/list.h
 io_buffer.$(OBJEXT): $(CCAN_DIR)/str/str.h
 io_buffer.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+io_buffer.$(OBJEXT): $(hdrdir)/ruby/version.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/array.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 io_buffer.$(OBJEXT): $(top_srcdir)/internal/bits.h
@@ -8252,6 +8282,7 @@ iseq.$(OBJEXT): $(CCAN_DIR)/list/list.h
 iseq.$(OBJEXT): $(CCAN_DIR)/str/str.h
 iseq.$(OBJEXT): $(hdrdir)/ruby.h
 iseq.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+iseq.$(OBJEXT): $(hdrdir)/ruby/version.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/array.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/bits.h
@@ -8501,6 +8532,7 @@ load.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 load.$(OBJEXT): $(CCAN_DIR)/list/list.h
 load.$(OBJEXT): $(CCAN_DIR)/str/str.h
 load.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+load.$(OBJEXT): $(hdrdir)/ruby/version.h
 load.$(OBJEXT): $(top_srcdir)/internal/array.h
 load.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 load.$(OBJEXT): $(top_srcdir)/internal/bits.h
@@ -9203,6 +9235,7 @@ marshal.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 marshal.$(OBJEXT): $(CCAN_DIR)/list/list.h
 marshal.$(OBJEXT): $(CCAN_DIR)/str/str.h
 marshal.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+marshal.$(OBJEXT): $(hdrdir)/ruby/version.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/array.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 marshal.$(OBJEXT): $(top_srcdir)/internal/bignum.h
@@ -10636,6 +10669,7 @@ object.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 object.$(OBJEXT): $(CCAN_DIR)/list/list.h
 object.$(OBJEXT): $(CCAN_DIR)/str/str.h
 object.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+object.$(OBJEXT): $(hdrdir)/ruby/version.h
 object.$(OBJEXT): $(top_srcdir)/internal/array.h
 object.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 object.$(OBJEXT): $(top_srcdir)/internal/bignum.h
@@ -11061,6 +11095,7 @@ parse.$(OBJEXT): $(CCAN_DIR)/list/list.h
 parse.$(OBJEXT): $(CCAN_DIR)/str/str.h
 parse.$(OBJEXT): $(hdrdir)/ruby.h
 parse.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+parse.$(OBJEXT): $(hdrdir)/ruby/version.h
 parse.$(OBJEXT): $(top_srcdir)/internal/array.h
 parse.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 parse.$(OBJEXT): $(top_srcdir)/internal/bignum.h
@@ -12318,6 +12353,7 @@ proc.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 proc.$(OBJEXT): $(CCAN_DIR)/list/list.h
 proc.$(OBJEXT): $(CCAN_DIR)/str/str.h
 proc.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+proc.$(OBJEXT): $(hdrdir)/ruby/version.h
 proc.$(OBJEXT): $(top_srcdir)/internal/array.h
 proc.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 proc.$(OBJEXT): $(top_srcdir)/internal/class.h
@@ -12530,6 +12566,7 @@ process.$(OBJEXT): $(CCAN_DIR)/list/list.h
 process.$(OBJEXT): $(CCAN_DIR)/str/str.h
 process.$(OBJEXT): $(hdrdir)/ruby.h
 process.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+process.$(OBJEXT): $(hdrdir)/ruby/version.h
 process.$(OBJEXT): $(top_srcdir)/internal/array.h
 process.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 process.$(OBJEXT): $(top_srcdir)/internal/bignum.h
@@ -12755,6 +12792,7 @@ ractor.$(OBJEXT): $(CCAN_DIR)/list/list.h
 ractor.$(OBJEXT): $(CCAN_DIR)/str/str.h
 ractor.$(OBJEXT): $(hdrdir)/ruby.h
 ractor.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+ractor.$(OBJEXT): $(hdrdir)/ruby/version.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/array.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 ractor.$(OBJEXT): $(top_srcdir)/internal/bignum.h
@@ -13181,6 +13219,7 @@ random.$(OBJEXT): {$(VPATH)}thread_native.h
 random.$(OBJEXT): {$(VPATH)}vm_core.h
 random.$(OBJEXT): {$(VPATH)}vm_opts.h
 range.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+range.$(OBJEXT): $(hdrdir)/ruby/version.h
 range.$(OBJEXT): $(top_srcdir)/internal/array.h
 range.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 range.$(OBJEXT): $(top_srcdir)/internal/bignum.h
@@ -15842,6 +15881,7 @@ shape.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 shape.$(OBJEXT): $(CCAN_DIR)/list/list.h
 shape.$(OBJEXT): $(CCAN_DIR)/str/str.h
 shape.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+shape.$(OBJEXT): $(hdrdir)/ruby/version.h
 shape.$(OBJEXT): $(top_srcdir)/internal/array.h
 shape.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 shape.$(OBJEXT): $(top_srcdir)/internal/class.h
@@ -16050,6 +16090,7 @@ signal.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 signal.$(OBJEXT): $(CCAN_DIR)/list/list.h
 signal.$(OBJEXT): $(CCAN_DIR)/str/str.h
 signal.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+signal.$(OBJEXT): $(hdrdir)/ruby/version.h
 signal.$(OBJEXT): $(top_srcdir)/internal/array.h
 signal.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 signal.$(OBJEXT): $(top_srcdir)/internal/compilers.h
@@ -16255,6 +16296,7 @@ signal.$(OBJEXT): {$(VPATH)}vm_core.h
 signal.$(OBJEXT): {$(VPATH)}vm_debug.h
 signal.$(OBJEXT): {$(VPATH)}vm_opts.h
 sprintf.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+sprintf.$(OBJEXT): $(hdrdir)/ruby/version.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/bits.h
 sprintf.$(OBJEXT): $(top_srcdir)/internal/class.h
@@ -16798,6 +16840,7 @@ string.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 string.$(OBJEXT): $(CCAN_DIR)/list/list.h
 string.$(OBJEXT): $(CCAN_DIR)/str/str.h
 string.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+string.$(OBJEXT): $(hdrdir)/ruby/version.h
 string.$(OBJEXT): $(top_srcdir)/internal/array.h
 string.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 string.$(OBJEXT): $(top_srcdir)/internal/bignum.h
@@ -17050,6 +17093,7 @@ struct.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 struct.$(OBJEXT): $(CCAN_DIR)/list/list.h
 struct.$(OBJEXT): $(CCAN_DIR)/str/str.h
 struct.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+struct.$(OBJEXT): $(hdrdir)/ruby/version.h
 struct.$(OBJEXT): $(top_srcdir)/internal/array.h
 struct.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 struct.$(OBJEXT): $(top_srcdir)/internal/class.h
@@ -17260,6 +17304,7 @@ symbol.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 symbol.$(OBJEXT): $(CCAN_DIR)/list/list.h
 symbol.$(OBJEXT): $(CCAN_DIR)/str/str.h
 symbol.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+symbol.$(OBJEXT): $(hdrdir)/ruby/version.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/array.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 symbol.$(OBJEXT): $(top_srcdir)/internal/class.h
@@ -17476,6 +17521,7 @@ thread.$(OBJEXT): $(CCAN_DIR)/list/list.h
 thread.$(OBJEXT): $(CCAN_DIR)/str/str.h
 thread.$(OBJEXT): $(hdrdir)/ruby.h
 thread.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+thread.$(OBJEXT): $(hdrdir)/ruby/version.h
 thread.$(OBJEXT): $(top_srcdir)/internal/array.h
 thread.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 thread.$(OBJEXT): $(top_srcdir)/internal/bits.h
@@ -18269,6 +18315,7 @@ variable.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 variable.$(OBJEXT): $(CCAN_DIR)/list/list.h
 variable.$(OBJEXT): $(CCAN_DIR)/str/str.h
 variable.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+variable.$(OBJEXT): $(hdrdir)/ruby/version.h
 variable.$(OBJEXT): $(top_srcdir)/internal/array.h
 variable.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 variable.$(OBJEXT): $(top_srcdir)/internal/class.h
@@ -18691,6 +18738,7 @@ vm.$(OBJEXT): $(CCAN_DIR)/list/list.h
 vm.$(OBJEXT): $(CCAN_DIR)/str/str.h
 vm.$(OBJEXT): $(hdrdir)/ruby.h
 vm.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+vm.$(OBJEXT): $(hdrdir)/ruby/version.h
 vm.$(OBJEXT): $(top_srcdir)/internal/array.h
 vm.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 vm.$(OBJEXT): $(top_srcdir)/internal/bignum.h
@@ -18944,6 +18992,7 @@ vm_backtrace.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 vm_backtrace.$(OBJEXT): $(CCAN_DIR)/list/list.h
 vm_backtrace.$(OBJEXT): $(CCAN_DIR)/str/str.h
 vm_backtrace.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+vm_backtrace.$(OBJEXT): $(hdrdir)/ruby/version.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/array.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/class.h
@@ -19562,6 +19611,7 @@ vm_trace.$(OBJEXT): $(hdrdir)/ruby.h
 vm_trace.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/array.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+vm_trace.$(OBJEXT): $(top_srcdir)/internal/bits.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/class.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/gc.h
@@ -19570,6 +19620,7 @@ vm_trace.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/serial.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/symbol.h
+vm_trace.$(OBJEXT): $(top_srcdir)/internal/thread.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/variable.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/vm.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/warnings.h
