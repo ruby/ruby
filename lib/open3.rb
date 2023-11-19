@@ -983,15 +983,19 @@ module Open3
   #   # => [#<IO:fd 5>, [#<Process::Waiter:0x00005638280167b8 sleep>, #<Process::Waiter:0x0000563828015480 dead>]]
   #
   # With a block given, calls the block with the +stdout+ stream
-  # of the last child process:
+  # of the last child process,
+  # and an array of the wait processes:
   #
-  #   Open3.pipeline_r('ls', 'grep R') {|x| puts x.read }
+  #   Open3.pipeline_r('ls', 'grep R') do |x, ts|
+  #     puts x.read
+  #     p ts
+  #   end
   #
   # Output:
   #
-  #   CONTRIBUTING.md
   #   Rakefile
   #   README.md
+  #   [#<Process::Waiter:0x000055f1d78d76f0 sleep>, #<Process::Waiter:0x000055f1d78d7358 dead>]
   #
   # Like Process.spawn, this method has potential security vulnerabilities
   # if called with untrusted input;
@@ -1030,33 +1034,72 @@ module Open3
   end
   module_function :pipeline_r
 
-  # Open3.pipeline_w starts a list of commands as a pipeline with a pipe
-  # which connects to stdin of the first command.
+
+  # :call-seq:
+  #   Open3.pipeline_w([env, ] *cmds, options = {}) -> [first_stdin, wait_threads]
   #
-  #   Open3.pipeline_w(cmd1, cmd2, ... [, opts]) {|first_stdin, wait_threads|
-  #     ...
-  #   }
+  # Basically a wrapper for
+  # {Process.spawn}[rdoc-ref:Process.spawn]
+  # that:
   #
-  #   first_stdin, wait_threads = Open3.pipeline_w(cmd1, cmd2, ... [, opts])
-  #   ...
-  #   first_stdin.close
+  # - Creates a child process for each of the given +cmds+
+  #   by calling Process.spawn.
+  # - Pipes the +stdout+ from each child to the +stdin+ of the next child,
+  #   or, for the first child, pipes the caller's +stdout+ to the child's +stdin+.
+  # - Waits for all child processes to exit.
   #
-  # Each cmd is a string or an array.
-  # If it is an array, the elements are passed to Process.spawn.
+  # With no block given, returns a 2-element array containing:
   #
-  #   cmd:
-  #     commandline                              command line string which is passed to a shell
-  #     [env, commandline, opts]                 command line string which is passed to a shell
-  #     [env, cmdname, arg1, ..., opts]          command name and one or more arguments (no shell)
-  #     [env, [cmdname, argv0], arg1, ..., opts] command name and arguments including argv[0] (no shell)
-  #
-  #   Note that env and opts are optional, as for Process.spawn.
+  # - The +stdin+ stream of the first child process.
+  # - An array of the wait threads for all of the child processes.
   #
   # Example:
   #
-  #   Open3.pipeline_w("bzip2 -c", :out=>"/tmp/hello.bz2") {|i, ts|
-  #     i.puts "hello"
-  #   }
+  #   p Open3.pipeline_r(
+  #     ['ruby', '-e', 'print "Foo"'],
+  #     ['ruby', '-e', 'print STDIN.read + "Bar"']
+  #   )
+  #   [#<IO:fd 5>, [#<Process::Waiter:0x00005568cad44a08 sleep>, #<Process::Waiter:0x00005568cad44508 run>]]
+  #
+  # With a block given, calls the block with the +stdin+ stream
+  # of the first child process,
+  # and an array of the wait processes:
+  #
+  #   Open3.pipeline_r(
+  #     ['ruby', '-e', 'print "Foo"'],
+  #     ['ruby', '-e', 'print STDIN.read + "Bar"']
+  #   ) do |x, ts|
+  #     puts x.read
+  #     p ts
+  #   end
+  #
+  # Output:
+  #
+  #   FooBar
+  #   [#<Process::Waiter:0x000055628e2ebbc0 dead>, #<Process::Waiter:0x000055628e2eb7b0 sleep>]
+  #
+  # Like Process.spawn, this method has potential security vulnerabilities
+  # if called with untrusted input;
+  # see {Command Injection}[rdoc-ref:command_injection.rdoc].
+  #
+  # Unlike Process.spawn, this method waits for the child processes to exit
+  # before returning, so the caller need not do so.
+  #
+  # If the first argument is a hash, it becomes leading argument +env+
+  # in each call to Process.spawn;
+  # see {Execution Environment}[rdoc-ref:Process@Execution+Environment].
+  #
+  # If the last argument is a hash, it becomes trailing argument +options+
+  # in each call to Process.spawn;
+  # see {Execution Options}[rdoc-ref:Process@Execution+Options].
+  #
+  # Each remaining argument in +cmds+ is one of:
+  #
+  # - A +command_line+: a string that begins with a shell reserved word
+  #   or special built-in, or contains one or more metacharacters.
+  # - An +exe_path+: the string path to an executable to be called.
+  # - An array containing a +command_line+ or an +exe_path+,
+  #   along with zero or more string arguments for the command.
   #
   def pipeline_w(*cmds, &block)
     if Hash === cmds.last
