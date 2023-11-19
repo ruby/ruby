@@ -102,10 +102,20 @@ jobs:
         run: |
           echo "WASI_SDK_PATH=/opt/wasi-sdk" >> $GITHUB_ENV
 
+      - name: Build baseruby
+        run: |
+          set -ex
+          mkdir ../baseruby
+          pushd ../baseruby
+          ../src/configure --prefix=$PWD/install
+          make
+          make install
+
       - name: Run configure
         run: |
           ../src/configure \
             --host wasm32-unknown-wasi \
+            --with-baseruby=$PWD/../baseruby/install/bin/ruby \
             --with-static-linked-ext \
             --with-ext=bigdecimal,cgi/escape,continuation,coverage,date,dbm,digest/bubblebabble,digest,digest/md5,digest/rmd160,digest/sha1,digest/sha2,etc,fcntl,fiber,gdbm,json,json/generator,json/parser,nkf,objspace,pathname,racc/cparse,rbconfig/sizeof,ripper,stringio,strscan,monitor \
             LDFLAGS=" \
