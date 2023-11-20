@@ -59,7 +59,7 @@
         │   │   └── flags: ∅
         │   ├── rparen_loc: (4,10)-(4,11) = ")"
         │   └── block: ∅
-        ├── @ SuperNode (location: (5,0)-(5,12))
+        ├── @ SuperNode (location: (5,0)-(5,13))
         │   ├── keyword_loc: (5,0)-(5,5) = "super"
         │   ├── lparen_loc: (5,5)-(5,6) = "("
         │   ├── arguments: ∅
@@ -78,7 +78,7 @@
         │       │   ├── flags: variable_call
         │       │   └── name: :block
         │       └── operator_loc: (5,6)-(5,7) = "&"
-        ├── @ SuperNode (location: (6,0)-(6,15))
+        ├── @ SuperNode (location: (6,0)-(6,16))
         │   ├── keyword_loc: (6,0)-(6,5) = "super"
         │   ├── lparen_loc: (6,5)-(6,6) = "("
         │   ├── arguments:

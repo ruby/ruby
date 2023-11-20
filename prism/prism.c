@@ -797,6 +797,27 @@ typedef struct {
 } pm_arguments_t;
 
 /**
+ * Retrieve the end location of a `pm_arguments_t` object.
+ */
+static inline const uint8_t *
+pm_arguments_end(pm_arguments_t *arguments) {
+    if (arguments->block != NULL) {
+        const uint8_t *end = arguments->block->location.end;
+        if (arguments->closing_loc.start != NULL && arguments->closing_loc.end > end) {
+            end = arguments->closing_loc.end;
+        }
+        return end;
+    }
+    if (arguments->closing_loc.start != NULL) {
+        return arguments->closing_loc.end;
+    }
+    if (arguments->arguments != NULL) {
+        return arguments->arguments->base.location.end;
+    }
+    return arguments->closing_loc.end;
+}
+
+/**
  * Check that we're not about to attempt to attach a brace block to a call that
  * has arguments without parentheses.
  */
@@ -1611,11 +1632,7 @@ pm_call_node_aref_create(pm_parser_t *parser, pm_node_t *receiver, pm_arguments_
     pm_call_node_t *node = pm_call_node_create(parser);
 
     node->base.location.start = receiver->location.start;
-    if (arguments->block != NULL) {
-        node->base.location.end = arguments->block->location.end;
-    } else {
-        node->base.location.end = arguments->closing_loc.end;
-    }
+    node->base.location.end = pm_arguments_end(arguments);
 
     node->receiver = receiver;
     node->message_loc.start = arguments->opening_loc.start;
@@ -1664,15 +1681,11 @@ pm_call_node_call_create(pm_parser_t *parser, pm_node_t *receiver, pm_token_t *o
     pm_call_node_t *node = pm_call_node_create(parser);
 
     node->base.location.start = receiver->location.start;
-    if (arguments->block != NULL) {
-        node->base.location.end = arguments->block->location.end;
-    } else if (arguments->closing_loc.start != NULL) {
-        node->base.location.end = arguments->closing_loc.end;
-    } else if (arguments->arguments != NULL) {
-        node->base.location.end = arguments->arguments->base.location.end;
-    } else {
-        node->base.location.end = message->end;
+    const uint8_t *end = pm_arguments_end(arguments);
+    if (end == NULL) {
+        end = message->end;
     }
+    node->base.location.end = end;
 
     node->receiver = receiver;
     node->call_operator_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(operator);
@@ -1699,15 +1712,7 @@ pm_call_node_fcall_create(pm_parser_t *parser, pm_token_t *message, pm_arguments
     pm_call_node_t *node = pm_call_node_create(parser);
 
     node->base.location.start = message->start;
-    if (arguments->block != NULL) {
-        node->base.location.end = arguments->block->location.end;
-    } else if (arguments->closing_loc.start != NULL) {
-        node->base.location.end = arguments->closing_loc.end;
-    } else if (arguments->arguments != NULL) {
-        node->base.location.end = arguments->arguments->base.location.end;
-    } else {
-        node->base.location.end = arguments->closing_loc.end;
-    }
+    node->base.location.end = pm_arguments_end(arguments);
 
     node->message_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(message);
     node->opening_loc = arguments->opening_loc;
@@ -1755,11 +1760,7 @@ pm_call_node_shorthand_create(pm_parser_t *parser, pm_node_t *receiver, pm_token
     pm_call_node_t *node = pm_call_node_create(parser);
 
     node->base.location.start = receiver->location.start;
-    if (arguments->block != NULL) {
-        node->base.location.end = arguments->block->location.end;
-    } else {
-        node->base.location.end = arguments->closing_loc.end;
-    }
+    node->base.location.end = pm_arguments_end(arguments);
 
     node->receiver = receiver;
     node->call_operator_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(operator);
@@ -5136,16 +5137,9 @@ pm_super_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_argument
     assert(keyword->type == PM_TOKEN_KEYWORD_SUPER);
     pm_super_node_t *node = PM_ALLOC_NODE(parser, pm_super_node_t);
 
-    const uint8_t *end;
-    if (arguments->block != NULL) {
-        end = arguments->block->location.end;
-    } else if (arguments->closing_loc.start != NULL) {
-        end = arguments->closing_loc.end;
-    } else if (arguments->arguments != NULL) {
-        end = arguments->arguments->base.location.end;
-    } else {
+    const uint8_t *end = pm_arguments_end(arguments);
+    if (end == NULL) {
         assert(false && "unreachable");
-        end = NULL;
     }
 
     *node = (pm_super_node_t) {
