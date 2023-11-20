@@ -350,6 +350,14 @@ module Prism
 
     def test_LocalVariableTargetNode
       assert_prism_eval("pit, pit1 = 1")
+      assert_prism_eval(<<-CODE)
+        a = 1
+        [1].each do
+          c = 2
+          a, b = 2
+        end
+        a
+      CODE
     end
 
     def test_MultiTargetNode
