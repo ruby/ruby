@@ -685,6 +685,26 @@ pm_interpolated_node_compile(pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_
     }
 }
 
+// This recurses through scopes and finds the local index at any scope leve
+static int
+pm_lookup_local_index_any_scope(rb_iseq_t *iseq, pm_scope_node_t *scope_node, pm_constant_id_t constant_id)
+{
+    if (!scope_node) {
+        // We have recursed up all scope nodes
+        // and have not found the local yet
+        rb_bug("This local does not exist");
+    }
+
+    st_data_t local_index;
+
+    if (!st_lookup(scope_node->index_lookup_table, constant_id, &local_index)) {
+        // Local does not exist at this level, continue recursing up
+        return pm_lookup_local_index_any_scope(iseq, scope_node->previous, constant_id);
+    }
+
+    return (int)scope_node->index_lookup_table->num_entries - (int)local_index;
+}
+
 static int
 pm_lookup_local_index(rb_iseq_t *iseq, pm_scope_node_t *scope_node, pm_constant_id_t constant_id)
 {
@@ -2866,7 +2886,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         for (size_t index = 0; index < local_write_node->depth; index++) scope_node = scope_node->previous;
         int index = pm_lookup_local_index(iseq, scope_node, constant_id);
 
-        ADD_SETLOCAL(ret, &dummy_line_node, (int)index, local_write_node->depth);
+        ADD_SETLOCAL(ret, &dummy_line_node, index, local_write_node->depth);
         return;
       }
       case PM_LOCAL_VARIABLE_WRITE_NODE: {
@@ -2876,9 +2896,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PM_DUP_UNLESS_POPPED;
 
         pm_constant_id_t constant_id = local_write_node->name;
-        int index = pm_lookup_local_index(iseq, scope_node, constant_id);
+        int index = pm_lookup_local_index_any_scope(iseq, scope_node, constant_id);
 
-        ADD_SETLOCAL(ret, &dummy_line_node, (int)index, local_write_node->depth);
+        ADD_SETLOCAL(ret, &dummy_line_node, index, local_write_node->depth);
         return;
       }
       case PM_MATCH_LAST_LINE_NODE: {

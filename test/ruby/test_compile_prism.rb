@@ -268,6 +268,28 @@ module Prism
 
     def test_LocalVariableWriteNode
       assert_prism_eval("pit = 1")
+      assert_prism_eval(<<-CODE)
+        a = 0
+        [].each do
+          a = 1
+        end
+        a
+      CODE
+
+      assert_prism_eval(<<-CODE)
+        a = 1
+        d = 1
+        [1].each do
+          b = 2
+          a = 2
+          [2].each do
+            c = 3
+            d = 4
+            a = 2
+          end
+        end
+        [a, d]
+      CODE
     end
 
     def test_MatchWriteNode
