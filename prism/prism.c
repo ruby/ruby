@@ -6077,6 +6077,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
                 ENCODING1("CP861", pm_encoding_ibm861);
                 ENCODING1("CP862", pm_encoding_ibm862);
                 ENCODING1("CP864", pm_encoding_ibm864);
+                ENCODING1("CP865", pm_encoding_ibm865);
                 ENCODING1("CP866", pm_encoding_ibm866);
                 ENCODING1("CP874", pm_encoding_windows_874);
                 ENCODING1("CP878", pm_encoding_koi8_r);
@@ -6118,6 +6119,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
                 ENCODING1("IBM861", pm_encoding_ibm861);
                 ENCODING1("IBM862", pm_encoding_ibm862);
                 ENCODING1("IBM864", pm_encoding_ibm864);
+                ENCODING1("IBM865", pm_encoding_ibm865);
                 ENCODING1("IBM866", pm_encoding_ibm866);
                 ENCODING2("ISO-8859-1", "ISO8859-1", pm_encoding_iso_8859_1);
                 ENCODING2("ISO-8859-2", "ISO8859-2", pm_encoding_iso_8859_2);
