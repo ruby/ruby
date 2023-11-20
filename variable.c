@@ -1378,35 +1378,35 @@ rb_obj_convert_to_too_complex(VALUE obj, st_table *table)
     VALUE *old_ivptr = NULL;
 
     switch (BUILTIN_TYPE(obj)) {
-        case T_OBJECT:
-          if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
-              old_ivptr = ROBJECT_IVPTR(obj);
-          }
-          rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
-          ROBJECT_SET_IV_HASH(obj, table);
-          break;
-        case T_CLASS:
-        case T_MODULE:
-          old_ivptr = RCLASS_IVPTR(obj);
-          rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
-          RCLASS_SET_IV_HASH(obj, table);
-          break;
-        default:
-          RB_VM_LOCK_ENTER();
-          {
-              struct st_table *gen_ivs = generic_ivtbl_no_ractor_check(obj);
-              st_lookup(gen_ivs, (st_data_t)&obj, (st_data_t *)&old_ivptr);
+      case T_OBJECT:
+        if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
+            old_ivptr = ROBJECT_IVPTR(obj);
+        }
+        rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
+        ROBJECT_SET_IV_HASH(obj, table);
+        break;
+      case T_CLASS:
+      case T_MODULE:
+        old_ivptr = RCLASS_IVPTR(obj);
+        rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
+        RCLASS_SET_IV_HASH(obj, table);
+        break;
+      default:
+        RB_VM_LOCK_ENTER();
+        {
+            struct st_table *gen_ivs = generic_ivtbl_no_ractor_check(obj);
+            st_lookup(gen_ivs, (st_data_t)&obj, (st_data_t *)&old_ivptr);
 
-              struct gen_ivtbl *ivtbl = xmalloc(sizeof(struct gen_ivtbl));
-              ivtbl->as.complex.table = table;
+            struct gen_ivtbl *ivtbl = xmalloc(sizeof(struct gen_ivtbl));
+            ivtbl->as.complex.table = table;
 #if SHAPE_IN_BASIC_FLAGS
-              rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
+            rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
 #else
-              ivtbl->shape_id = OBJ_TOO_COMPLEX_SHAPE_ID;
+            ivtbl->shape_id = OBJ_TOO_COMPLEX_SHAPE_ID;
 #endif
-              st_insert(gen_ivs, (st_data_t)obj, (st_data_t)ivtbl);
-          }
-          RB_VM_LOCK_LEAVE();
+            st_insert(gen_ivs, (st_data_t)obj, (st_data_t)ivtbl);
+        }
+        RB_VM_LOCK_LEAVE();
     }
 
     if (old_ivptr) {
