@@ -6091,6 +6091,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
                 ENCODING1("CP866", pm_encoding_ibm866);
                 ENCODING1("CP874", pm_encoding_windows_874);
                 ENCODING1("CP878", pm_encoding_koi8_r);
+                ENCODING1("CP863", pm_encoding_ibm863);
                 ENCODING2("CP932", "csWindows31J", pm_encoding_windows_31j);
                 ENCODING1("CP936", pm_encoding_gbk);
                 ENCODING1("CP1250", pm_encoding_windows_1250);
@@ -6128,6 +6129,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
                 ENCODING1("IBM860", pm_encoding_ibm860);
                 ENCODING1("IBM861", pm_encoding_ibm861);
                 ENCODING1("IBM862", pm_encoding_ibm862);
+                ENCODING1("IBM863", pm_encoding_ibm863);
                 ENCODING1("IBM864", pm_encoding_ibm864);
                 ENCODING1("IBM865", pm_encoding_ibm865);
                 ENCODING1("IBM866", pm_encoding_ibm866);

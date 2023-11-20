@@ -23,6 +23,7 @@ module Prism
       Encoding::IBM860 =>       0x00...0x100,
       Encoding::IBM861 =>       0x00...0x100,
       Encoding::IBM862 =>       0x00...0x100,
+      Encoding::IBM863 =>       0x00...0x100,
       Encoding::IBM864 =>       0x00...0x100,
       Encoding::IBM865 =>       0x00...0x100,
       Encoding::IBM866 =>       0x00...0x100,
