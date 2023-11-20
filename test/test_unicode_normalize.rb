@@ -229,12 +229,17 @@ class TestUnicodeNormalize
     s_unordered = "s\u0307\u0323"
     o = "\u{1611e}\u{1611e}\u{1611f}"
     # Actual cases called through String#unicode_normalize
-    assert_equal(s + o, UnicodeNormalize.canonical_ordering_one(s_unordered + o))
-    assert_equal(a[1..], UnicodeNormalize.canonical_ordering_one(a_unordered1[1..]))
-    assert_equal(a[1..] + o, UnicodeNormalize.canonical_ordering_one(a_unordered2[1..] + o))
+    assert_equal(s + o, canonical_ordering_one(s_unordered + o))
+    assert_equal(a[1..], canonical_ordering_one(a_unordered1[1..]))
+    assert_equal(a[1..] + o, canonical_ordering_one(a_unordered2[1..] + o))
     # Artificial cases
-    assert_equal(a + u1 + o + u2 + s, UnicodeNormalize.canonical_ordering_one(a + u1 + o + u2 + s))
-    assert_equal(s[1..] + a + a, UnicodeNormalize.canonical_ordering_one(s_unordered[1..] + a_unordered1 + a_unordered2))
-    assert_equal(o + s + u1 + a + o + a + u2 + o, UnicodeNormalize.canonical_ordering_one(o + s_unordered + u1 + a_unordered1 + o + a_unordered2 + u2 + o))
+    assert_equal(a + u1 + o + u2 + s, canonical_ordering_one(a + u1 + o + u2 + s))
+    assert_equal(s[1..] + a + a, canonical_ordering_one(s_unordered[1..] + a_unordered1 + a_unordered2))
+    assert_equal(o + s + u1 + a + o + a + u2 + o, canonical_ordering_one(o + s_unordered + u1 + a_unordered1 + o + a_unordered2 + u2 + o))
+  end
+
+  private
+  def canonical_ordering_one(str)
+    UnicodeNormalize.canonical_ordering_one(str.codepoints).pack('U*')
   end
 end
