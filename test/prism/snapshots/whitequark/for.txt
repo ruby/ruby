@@ -12,19 +12,20 @@
         │   │   @ CallNode (location: (1,9)-(1,12))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :foo
         │   │   ├── message_loc: (1,9)-(1,12) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :foo
+        │   │   └── flags: variable_call
         │   ├── statements:
         │   │   @ StatementsNode (location: (1,16)-(1,19))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (1,16)-(1,19))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :p
         │   │           ├── message_loc: (1,16)-(1,17) = "p"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
@@ -36,8 +37,7 @@
         │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: ∅
-        │   │           └── name: :p
+        │   │           └── flags: ∅
         │   ├── for_keyword_loc: (1,0)-(1,3) = "for"
         │   ├── in_keyword_loc: (1,6)-(1,8) = "in"
         │   ├── do_keyword_loc: (1,13)-(1,15) = "do"
@@ -51,19 +51,20 @@
             │   @ CallNode (location: (3,9)-(3,12))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
+            │   ├── name: :foo
             │   ├── message_loc: (3,9)-(3,12) = "foo"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: variable_call
-            │   └── name: :foo
+            │   └── flags: variable_call
             ├── statements:
             │   @ StatementsNode (location: (3,14)-(3,17))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (3,14)-(3,17))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
+            │           ├── name: :p
             │           ├── message_loc: (3,14)-(3,15) = "p"
             │           ├── opening_loc: ∅
             │           ├── arguments:
@@ -75,8 +76,7 @@
             │           │   └── flags: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: ∅
-            │           └── name: :p
+            │           └── flags: ∅
             ├── for_keyword_loc: (3,0)-(3,3) = "for"
             ├── in_keyword_loc: (3,6)-(3,8) = "in"
             ├── do_keyword_loc: ∅

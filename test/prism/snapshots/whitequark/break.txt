@@ -13,13 +13,13 @@
         │   │   │   └── @ CallNode (location: (3,6)-(3,9))
         │   │   │       ├── receiver: ∅
         │   │   │       ├── call_operator_loc: ∅
+        │   │   │       ├── name: :foo
         │   │   │       ├── message_loc: (3,6)-(3,9) = "foo"
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── arguments: ∅
         │   │   │       ├── closing_loc: ∅
         │   │   │       ├── block: ∅
-        │   │   │       ├── flags: variable_call
-        │   │   │       └── name: :foo
+        │   │   │       └── flags: variable_call
         │   │   └── flags: ∅
         │   └── keyword_loc: (3,0)-(3,5) = "break"
         ├── @ BreakNode (location: (5,0)-(5,7))
@@ -43,13 +43,13 @@
             │   │       │       └── @ CallNode (location: (7,6)-(7,9))
             │   │       │           ├── receiver: ∅
             │   │       │           ├── call_operator_loc: ∅
+            │   │       │           ├── name: :foo
             │   │       │           ├── message_loc: (7,6)-(7,9) = "foo"
             │   │       │           ├── opening_loc: ∅
             │   │       │           ├── arguments: ∅
             │   │       │           ├── closing_loc: ∅
             │   │       │           ├── block: ∅
-            │   │       │           ├── flags: variable_call
-            │   │       │           └── name: :foo
+            │   │       │           └── flags: variable_call
             │   │       ├── opening_loc: (7,5)-(7,6) = "("
             │   │       └── closing_loc: (7,9)-(7,10) = ")"
             │   └── flags: ∅

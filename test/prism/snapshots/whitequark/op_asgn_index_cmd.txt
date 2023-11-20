@@ -8,13 +8,13 @@
             │   @ CallNode (location: (1,0)-(1,3))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
+            │   ├── name: :foo
             │   ├── message_loc: (1,0)-(1,3) = "foo"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: variable_call
-            │   └── name: :foo
+            │   └── flags: variable_call
             ├── call_operator_loc: ∅
             ├── opening_loc: (1,3)-(1,4) = "["
             ├── arguments:
@@ -34,6 +34,7 @@
                 @ CallNode (location: (1,13)-(1,18))
                 ├── receiver: ∅
                 ├── call_operator_loc: ∅
+                ├── name: :m
                 ├── message_loc: (1,13)-(1,14) = "m"
                 ├── opening_loc: ∅
                 ├── arguments:
@@ -42,15 +43,14 @@
                 │   │   └── @ CallNode (location: (1,15)-(1,18))
                 │   │       ├── receiver: ∅
                 │   │       ├── call_operator_loc: ∅
+                │   │       ├── name: :foo
                 │   │       ├── message_loc: (1,15)-(1,18) = "foo"
                 │   │       ├── opening_loc: ∅
                 │   │       ├── arguments: ∅
                 │   │       ├── closing_loc: ∅
                 │   │       ├── block: ∅
-                │   │       ├── flags: variable_call
-                │   │       └── name: :foo
+                │   │       └── flags: variable_call
                 │   └── flags: ∅
                 ├── closing_loc: ∅
                 ├── block: ∅
-                ├── flags: ∅
-                └── name: :m
+                └── flags: ∅

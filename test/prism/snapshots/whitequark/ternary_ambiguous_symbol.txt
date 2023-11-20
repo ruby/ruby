@@ -21,13 +21,13 @@
             │   │       └── @ CallNode (location: (1,5)-(1,8))
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
+            │   │           ├── name: :foo
             │   │           ├── message_loc: (1,5)-(1,8) = "foo"
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
-            │   │           ├── flags: variable_call
-            │   │           └── name: :foo
+            │   │           └── flags: variable_call
             │   ├── opening_loc: (1,4)-(1,5) = "("
             │   └── closing_loc: (1,8)-(1,9) = ")"
             ├── then_keyword_loc: (1,9)-(1,10) = "?"

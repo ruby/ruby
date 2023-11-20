@@ -130,6 +130,7 @@
         │   │   @ CallNode (location: (23,0)-(23,16))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :foo
         │   │   ├── message_loc: (23,0)-(23,3) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
@@ -151,9 +152,9 @@
         │   │   │   │           └── keyword_loc: (23,6)-(23,11) = "break"
         │   │   │   ├── opening_loc: (23,4)-(23,5) = "{"
         │   │   │   └── closing_loc: (23,15)-(23,16) = "}"
-        │   │   ├── flags: ∅
-        │   │   └── name: :foo
+        │   │   └── flags: ∅
         │   ├── call_operator_loc: ∅
+        │   ├── name: :==
         │   ├── message_loc: (23,17)-(23,19) = "=="
         │   ├── opening_loc: ∅
         │   ├── arguments:
@@ -164,13 +165,13 @@
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :==
+        │   └── flags: ∅
         └── @ CallNode (location: (25,0)-(25,23))
             ├── receiver:
             │   @ CallNode (location: (25,0)-(25,17))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
+            │   ├── name: :foo
             │   ├── message_loc: (25,0)-(25,3) = "foo"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
@@ -202,9 +203,9 @@
             │   │   │           └── keyword_loc: (25,10)-(25,15) = "break"
             │   │   ├── opening_loc: (25,4)-(25,5) = "{"
             │   │   └── closing_loc: (25,16)-(25,17) = "}"
-            │   ├── flags: ∅
-            │   └── name: :foo
+            │   └── flags: ∅
             ├── call_operator_loc: ∅
+            ├── name: :==
             ├── message_loc: (25,18)-(25,20) = "=="
             ├── opening_loc: ∅
             ├── arguments:
@@ -215,5 +216,4 @@
             │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: ∅
-            └── name: :==
+            └── flags: ∅

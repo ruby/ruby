@@ -22,13 +22,13 @@
         │   │   @ CallNode (location: (4,9)-(4,10))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :a
         │   │   ├── message_loc: (4,9)-(4,10) = "a"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :a
+        │   │   └── flags: variable_call
         │   ├── body: ∅
         │   └── end_keyword_loc: (5,0)-(5,3) = "end"
         ├── @ SingletonClassNode (location: (7,0)-(9,3))
@@ -39,26 +39,26 @@
         │   │   @ CallNode (location: (7,9)-(7,10))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :a
         │   │   ├── message_loc: (7,9)-(7,10) = "a"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :a
+        │   │   └── flags: variable_call
         │   ├── body:
         │   │   @ StatementsNode (location: (8,2)-(8,3))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (8,2)-(8,3))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :b
         │   │           ├── message_loc: (8,2)-(8,3) = "b"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: variable_call
-        │   │           └── name: :b
+        │   │           └── flags: variable_call
         │   └── end_keyword_loc: (9,0)-(9,3) = "end"
         ├── @ ClassNode (location: (11,0)-(12,3))
         │   ├── locals: []
@@ -171,6 +171,7 @@
         │   │       ├── @ CallNode (location: (27,2)-(27,16))
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
+        │   │       │   ├── name: :include
         │   │       │   ├── message_loc: (27,2)-(27,9) = "include"
         │   │       │   ├── opening_loc: (27,9)-(27,10) = "("
         │   │       │   ├── arguments:
@@ -181,18 +182,17 @@
         │   │       │   │   │       │   @ ConstantReadNode (location: (27,10)-(27,11))
         │   │       │   │   │       │   └── name: :B
         │   │       │   │   │       ├── call_operator_loc: (27,11)-(27,12) = "."
+        │   │       │   │   │       ├── name: :new
         │   │       │   │   │       ├── message_loc: (27,12)-(27,15) = "new"
         │   │       │   │   │       ├── opening_loc: ∅
         │   │       │   │   │       ├── arguments: ∅
         │   │       │   │   │       ├── closing_loc: ∅
         │   │       │   │   │       ├── block: ∅
-        │   │       │   │   │       ├── flags: ∅
-        │   │       │   │   │       └── name: :new
+        │   │       │   │   │       └── flags: ∅
         │   │       │   │   └── flags: ∅
         │   │       │   ├── closing_loc: (27,15)-(27,16) = ")"
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: ∅
-        │   │       │   └── name: :include
+        │   │       │   └── flags: ∅
         │   │       └── @ DefNode (location: (29,2)-(31,5))
         │   │           ├── name: :foo
         │   │           ├── name_loc: (29,6)-(29,9) = "foo"

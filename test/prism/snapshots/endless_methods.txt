@@ -31,6 +31,7 @@
         │   │       └── @ CallNode (location: (3,10)-(3,14))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :A
         │   │           ├── message_loc: (3,10)-(3,11) = "A"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
@@ -45,8 +46,7 @@
         │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: ∅
-        │   │           └── name: :A
+        │   │           └── flags: ∅
         │   ├── locals: []
         │   ├── def_keyword_loc: (3,0)-(3,3) = "def"
         │   ├── operator_loc: ∅
@@ -69,6 +69,7 @@
             │           │   │   @ IntegerNode (location: (5,13)-(5,14))
             │           │   │   └── flags: decimal
             │           │   ├── call_operator_loc: ∅
+            │           │   ├── name: :+
             │           │   ├── message_loc: (5,15)-(5,16) = "+"
             │           │   ├── opening_loc: ∅
             │           │   ├── arguments:
@@ -79,9 +80,9 @@
             │           │   │   └── flags: ∅
             │           │   ├── closing_loc: ∅
             │           │   ├── block: ∅
-            │           │   ├── flags: ∅
-            │           │   └── name: :+
+            │           │   └── flags: ∅
             │           ├── call_operator_loc: ∅
+            │           ├── name: :+
             │           ├── message_loc: (5,19)-(5,20) = "+"
             │           ├── opening_loc: ∅
             │           ├── arguments:
@@ -92,8 +93,7 @@
             │           │   └── flags: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: ∅
-            │           └── name: :+
+            │           └── flags: ∅
             ├── locals: []
             ├── def_keyword_loc: (5,0)-(5,3) = "def"
             ├── operator_loc: ∅

@@ -6,6 +6,7 @@
         └── @ CallNode (location: (1,0)-(1,15))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
+            ├── name: :a
             ├── message_loc: (1,0)-(1,1) = "a"
             ├── opening_loc: ∅
             ├── arguments:
@@ -37,5 +38,4 @@
             │   ├── body: ∅
             │   ├── opening_loc: (1,5)-(1,7) = "do"
             │   └── closing_loc: (1,12)-(1,15) = "end"
-            ├── flags: ∅
-            └── name: :a
+            └── flags: ∅

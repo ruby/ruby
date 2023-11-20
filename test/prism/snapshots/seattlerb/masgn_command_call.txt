@@ -22,14 +22,15 @@
                 │   @ CallNode (location: (1,5)-(1,6))
                 │   ├── receiver: ∅
                 │   ├── call_operator_loc: ∅
+                │   ├── name: :b
                 │   ├── message_loc: (1,5)-(1,6) = "b"
                 │   ├── opening_loc: ∅
                 │   ├── arguments: ∅
                 │   ├── closing_loc: ∅
                 │   ├── block: ∅
-                │   ├── flags: variable_call
-                │   └── name: :b
+                │   └── flags: variable_call
                 ├── call_operator_loc: (1,6)-(1,7) = "."
+                ├── name: :c
                 ├── message_loc: (1,7)-(1,8) = "c"
                 ├── opening_loc: ∅
                 ├── arguments:
@@ -40,5 +41,4 @@
                 │   └── flags: ∅
                 ├── closing_loc: ∅
                 ├── block: ∅
-                ├── flags: ∅
-                └── name: :c
+                └── flags: ∅

@@ -8,13 +8,13 @@
         │   │   @ CallNode (location: (1,5)-(1,8))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :foo
         │   │   ├── message_loc: (1,5)-(1,8) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :foo
+        │   │   └── flags: variable_call
         │   ├── conditions: (length: 2)
         │   │   ├── @ InNode (location: (2,0)-(4,4))
         │   │   │   ├── pattern:
@@ -74,14 +74,15 @@
         │   │   @ CallNode (location: (10,0)-(10,3))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :obj
         │   │   ├── message_loc: (10,0)-(10,3) = "obj"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :obj
+        │   │   └── flags: variable_call
         │   ├── call_operator_loc: (10,3)-(10,4) = "."
+        │   ├── name: :set
         │   ├── message_loc: (10,4)-(10,7) = "set"
         │   ├── opening_loc: ∅
         │   ├── arguments:
@@ -103,21 +104,21 @@
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :set
+        │   └── flags: ∅
         └── @ CallNode (location: (13,0)-(14,1))
             ├── receiver:
             │   @ CallNode (location: (13,0)-(13,3))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
+            │   ├── name: :obj
             │   ├── message_loc: (13,0)-(13,3) = "obj"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: variable_call
-            │   └── name: :obj
+            │   └── flags: variable_call
             ├── call_operator_loc: (13,3)-(13,4) = "."
+            ├── name: :set
             ├── message_loc: (13,4)-(13,7) = "set"
             ├── opening_loc: ∅
             ├── arguments:
@@ -139,5 +140,4 @@
             │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: ∅
-            └── name: :set
+            └── flags: ∅

@@ -146,6 +146,7 @@
         │   │           │           │   ├── name: :a
         │   │           │           │   └── depth: 0
         │   │           │           ├── call_operator_loc: ∅
+        │   │           │           ├── name: :+
         │   │           │           ├── message_loc: (54,6)-(54,7) = "+"
         │   │           │           ├── opening_loc: ∅
         │   │           │           ├── arguments:
@@ -157,8 +158,7 @@
         │   │           │           │   └── flags: ∅
         │   │           │           ├── closing_loc: ∅
         │   │           │           ├── block: ∅
-        │   │           │           ├── flags: ∅
-        │   │           │           └── name: :+
+        │   │           │           └── flags: ∅
         │   │           ├── locals: [:a, :b]
         │   │           ├── def_keyword_loc: (52,2)-(52,5) = "def"
         │   │           ├── operator_loc: (52,10)-(52,11) = "."
@@ -238,6 +238,7 @@
         │   │           │           │   ├── name: :a
         │   │           │           │   └── depth: 0
         │   │           │           ├── call_operator_loc: ∅
+        │   │           │           ├── name: :+
         │   │           │           ├── message_loc: (69,6)-(69,7) = "+"
         │   │           │           ├── opening_loc: ∅
         │   │           │           ├── arguments:
@@ -249,8 +250,7 @@
         │   │           │           │   └── flags: ∅
         │   │           │           ├── closing_loc: ∅
         │   │           │           ├── block: ∅
-        │   │           │           ├── flags: ∅
-        │   │           │           └── name: :+
+        │   │           │           └── flags: ∅
         │   │           ├── locals: [:a, :b]
         │   │           ├── def_keyword_loc: (67,2)-(67,5) = "def"
         │   │           ├── operator_loc: ∅
@@ -323,6 +323,7 @@
         └── @ CallNode (location: (89,0)-(92,1))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
+            ├── name: :x
             ├── message_loc: (89,0)-(89,1) = "x"
             ├── opening_loc: (89,1)-(89,2) = "("
             ├── arguments:
@@ -341,5 +342,4 @@
             │   └── flags: ∅
             ├── closing_loc: (92,0)-(92,1) = ")"
             ├── block: ∅
-            ├── flags: ∅
-            └── name: :x
+            └── flags: ∅

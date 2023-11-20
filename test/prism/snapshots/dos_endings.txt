@@ -6,6 +6,7 @@
         ├── @ CallNode (location: (1,0)-(2,12))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
+        │   ├── name: :puts
         │   ├── message_loc: (1,0)-(1,4) = "puts"
         │   ├── opening_loc: ∅
         │   ├── arguments:
@@ -30,8 +31,7 @@
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :puts
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (4,0)-(5,2))
         │   ├── elements: (length: 1)
         │   │   └── @ SymbolNode (location: (4,3)-(5,1))
@@ -68,6 +68,7 @@
             │   @ CallNode (location: (17,4)-(17,20))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
+            │   ├── name: :foo
             │   ├── message_loc: (17,4)-(17,7) = "foo"
             │   ├── opening_loc: (17,7)-(17,8) = "("
             │   ├── arguments:
@@ -92,16 +93,15 @@
             │   │   │       │   │       └── unescaped: "baz\r\n"
             │   │   │       │   └── closing_loc: (20,0)-(21,0) = "  EOF\r\n"
             │   │   │       ├── call_operator_loc: (17,14)-(17,15) = "."
+            │   │   │       ├── name: :chop
             │   │   │       ├── message_loc: (17,15)-(17,19) = "chop"
             │   │   │       ├── opening_loc: ∅
             │   │   │       ├── arguments: ∅
             │   │   │       ├── closing_loc: ∅
             │   │   │       ├── block: ∅
-            │   │   │       ├── flags: ∅
-            │   │   │       └── name: :chop
+            │   │   │       └── flags: ∅
             │   │   └── flags: ∅
             │   ├── closing_loc: (17,19)-(17,20) = ")"
             │   ├── block: ∅
-            │   ├── flags: ∅
-            │   └── name: :foo
+            │   └── flags: ∅
             └── operator_loc: (17,2)-(17,3) = "="

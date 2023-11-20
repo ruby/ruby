@@ -26,6 +26,7 @@
             │       └── @ CallNode (location: (1,12)-(1,18))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
+            │           ├── name: :bar
             │           ├── message_loc: (1,12)-(1,15) = "bar"
             │           ├── opening_loc: (1,15)-(1,16) = "("
             │           ├── arguments:
@@ -37,8 +38,7 @@
             │           │   └── flags: ∅
             │           ├── closing_loc: (1,17)-(1,18) = ")"
             │           ├── block: ∅
-            │           ├── flags: ∅
-            │           └── name: :bar
+            │           └── flags: ∅
             ├── locals: [:*]
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅

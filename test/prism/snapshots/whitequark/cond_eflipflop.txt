@@ -14,36 +14,36 @@
         │   │   │           │   @ CallNode (location: (1,2)-(1,5))
         │   │   │           │   ├── receiver: ∅
         │   │   │           │   ├── call_operator_loc: ∅
+        │   │   │           │   ├── name: :foo
         │   │   │           │   ├── message_loc: (1,2)-(1,5) = "foo"
         │   │   │           │   ├── opening_loc: ∅
         │   │   │           │   ├── arguments: ∅
         │   │   │           │   ├── closing_loc: ∅
         │   │   │           │   ├── block: ∅
-        │   │   │           │   ├── flags: variable_call
-        │   │   │           │   └── name: :foo
+        │   │   │           │   └── flags: variable_call
         │   │   │           ├── right:
         │   │   │           │   @ CallNode (location: (1,8)-(1,11))
         │   │   │           │   ├── receiver: ∅
         │   │   │           │   ├── call_operator_loc: ∅
+        │   │   │           │   ├── name: :bar
         │   │   │           │   ├── message_loc: (1,8)-(1,11) = "bar"
         │   │   │           │   ├── opening_loc: ∅
         │   │   │           │   ├── arguments: ∅
         │   │   │           │   ├── closing_loc: ∅
         │   │   │           │   ├── block: ∅
-        │   │   │           │   ├── flags: variable_call
-        │   │   │           │   └── name: :bar
+        │   │   │           │   └── flags: variable_call
         │   │   │           ├── operator_loc: (1,5)-(1,8) = "..."
         │   │   │           └── flags: exclude_end
         │   │   ├── opening_loc: (1,1)-(1,2) = "("
         │   │   └── closing_loc: (1,11)-(1,12) = ")"
         │   ├── call_operator_loc: ∅
+        │   ├── name: :!
         │   ├── message_loc: (1,0)-(1,1) = "!"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :!
+        │   └── flags: ∅
         └── @ IfNode (location: (3,0)-(3,17))
             ├── if_keyword_loc: (3,0)-(3,2) = "if"
             ├── predicate:
@@ -52,24 +52,24 @@
             │   │   @ CallNode (location: (3,3)-(3,6))
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
+            │   │   ├── name: :foo
             │   │   ├── message_loc: (3,3)-(3,6) = "foo"
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
-            │   │   ├── flags: variable_call
-            │   │   └── name: :foo
+            │   │   └── flags: variable_call
             │   ├── right:
             │   │   @ CallNode (location: (3,9)-(3,12))
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
+            │   │   ├── name: :bar
             │   │   ├── message_loc: (3,9)-(3,12) = "bar"
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
-            │   │   ├── flags: variable_call
-            │   │   └── name: :bar
+            │   │   └── flags: variable_call
             │   ├── operator_loc: (3,6)-(3,9) = "..."
             │   └── flags: exclude_end
             ├── then_keyword_loc: ∅

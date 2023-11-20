@@ -11,13 +11,13 @@
             │       └── @ CallNode (location: (2,2)-(2,3))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
+            │           ├── name: :a
             │           ├── message_loc: (2,2)-(2,3) = "a"
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: variable_call
-            │           └── name: :a
+            │           └── flags: variable_call
             ├── rescue_clause:
             │   @ RescueNode (location: (3,0)-(6,3))
             │   ├── keyword_loc: (3,0)-(3,6) = "rescue"
@@ -30,13 +30,13 @@
             │   │       └── @ CallNode (location: (4,2)-(4,3))
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
+            │   │           ├── name: :b
             │   │           ├── message_loc: (4,2)-(4,3) = "b"
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
-            │   │           ├── flags: variable_call
-            │   │           └── name: :b
+            │   │           └── flags: variable_call
             │   └── consequent:
             │       @ RescueNode (location: (5,0)-(6,3))
             │       ├── keyword_loc: (5,0)-(5,6) = "rescue"
@@ -49,13 +49,13 @@
             │       │       └── @ CallNode (location: (6,2)-(6,3))
             │       │           ├── receiver: ∅
             │       │           ├── call_operator_loc: ∅
+            │       │           ├── name: :c
             │       │           ├── message_loc: (6,2)-(6,3) = "c"
             │       │           ├── opening_loc: ∅
             │       │           ├── arguments: ∅
             │       │           ├── closing_loc: ∅
             │       │           ├── block: ∅
-            │       │           ├── flags: variable_call
-            │       │           └── name: :c
+            │       │           └── flags: variable_call
             │       └── consequent: ∅
             ├── else_clause: ∅
             ├── ensure_clause: ∅

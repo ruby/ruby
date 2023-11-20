@@ -43,14 +43,15 @@
         │   │   @ CallNode (location: (7,0)-(7,3))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :foo
         │   │   ├── message_loc: (7,0)-(7,3) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :foo
+        │   │   └── flags: variable_call
         │   ├── call_operator_loc: ∅
+        │   ├── name: :[]
         │   ├── message_loc: (7,3)-(7,9) = "[...2]"
         │   ├── opening_loc: (7,3)-(7,4) = "["
         │   ├── arguments:
@@ -66,8 +67,7 @@
         │   │   └── flags: ∅
         │   ├── closing_loc: (7,8)-(7,9) = "]"
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :[]
+        │   └── flags: ∅
         ├── @ HashNode (location: (9,0)-(9,15))
         │   ├── opening_loc: (9,0)-(9,1) = "{"
         │   ├── elements: (length: 1)
@@ -85,13 +85,13 @@
         │   │       │   │   @ CallNode (location: (9,10)-(9,13))
         │   │       │   │   ├── receiver: ∅
         │   │       │   │   ├── call_operator_loc: ∅
+        │   │       │   │   ├── name: :bar
         │   │       │   │   ├── message_loc: (9,10)-(9,13) = "bar"
         │   │       │   │   ├── opening_loc: ∅
         │   │       │   │   ├── arguments: ∅
         │   │       │   │   ├── closing_loc: ∅
         │   │       │   │   ├── block: ∅
-        │   │       │   │   ├── flags: variable_call
-        │   │       │   │   └── name: :bar
+        │   │       │   │   └── flags: variable_call
         │   │       │   ├── operator_loc: (9,7)-(9,10) = "..."
         │   │       │   └── flags: exclude_end
         │   │       └── operator_loc: ∅
@@ -135,13 +135,13 @@
         │   │       │   │   @ CallNode (location: (15,9)-(15,12))
         │   │       │   │   ├── receiver: ∅
         │   │       │   │   ├── call_operator_loc: ∅
+        │   │       │   │   ├── name: :bar
         │   │       │   │   ├── message_loc: (15,9)-(15,12) = "bar"
         │   │       │   │   ├── opening_loc: ∅
         │   │       │   │   ├── arguments: ∅
         │   │       │   │   ├── closing_loc: ∅
         │   │       │   │   ├── block: ∅
-        │   │       │   │   ├── flags: variable_call
-        │   │       │   │   └── name: :bar
+        │   │       │   │   └── flags: variable_call
         │   │       │   ├── operator_loc: (15,7)-(15,9) = ".."
         │   │       │   └── flags: ∅
         │   │       └── operator_loc: ∅

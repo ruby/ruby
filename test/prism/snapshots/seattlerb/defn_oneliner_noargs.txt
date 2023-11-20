@@ -14,13 +14,13 @@
             │       └── @ CallNode (location: (1,11)-(1,17))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
+            │           ├── name: :system
             │           ├── message_loc: (1,11)-(1,17) = "system"
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: variable_call
-            │           └── name: :system
+            │           └── flags: variable_call
             ├── locals: []
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅

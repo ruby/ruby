@@ -13,6 +13,7 @@
             │   │   │   ├── receiver:
             │   │   │   │   @ SourceLineNode (location: (1,24)-(1,32))
             │   │   │   ├── call_operator_loc: ∅
+            │   │   │   ├── name: :+
             │   │   │   ├── message_loc: (1,33)-(1,34) = "+"
             │   │   │   ├── opening_loc: ∅
             │   │   │   ├── arguments:
@@ -23,8 +24,7 @@
             │   │   │   │   └── flags: ∅
             │   │   │   ├── closing_loc: ∅
             │   │   │   ├── block: ∅
-            │   │   │   ├── flags: ∅
-            │   │   │   └── name: :+
+            │   │   │   └── flags: ∅
             │   │   └── @ SourceEncodingNode (location: (1,38)-(1,50))
             │   ├── opening_loc: (1,13)-(1,14) = "["
             │   ├── closing_loc: (1,50)-(1,51) = "]"

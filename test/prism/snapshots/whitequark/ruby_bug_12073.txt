@@ -14,6 +14,7 @@
         ├── @ CallNode (location: (1,7)-(1,13))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
+        │   ├── name: :a
         │   ├── message_loc: (1,7)-(1,8) = "a"
         │   ├── opening_loc: ∅
         │   ├── arguments:
@@ -35,8 +36,7 @@
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :a
+        │   └── flags: ∅
         └── @ DefNode (location: (3,0)-(3,34))
             ├── name: :foo
             ├── name_loc: (3,4)-(3,7) = "foo"
@@ -58,6 +58,7 @@
             │       └── @ CallNode (location: (3,15)-(3,29))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
+            │           ├── name: :raise
             │           ├── message_loc: (3,15)-(3,20) = "raise"
             │           ├── opening_loc: ∅
             │           ├── arguments:
@@ -80,8 +81,7 @@
             │           │   └── flags: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: ∅
-            │           └── name: :raise
+            │           └── flags: ∅
             ├── locals: [:raise]
             ├── def_keyword_loc: (3,0)-(3,3) = "def"
             ├── operator_loc: ∅

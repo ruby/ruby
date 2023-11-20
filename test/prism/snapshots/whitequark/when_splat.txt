@@ -8,13 +8,13 @@
             │   @ CallNode (location: (1,5)-(1,8))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
+            │   ├── name: :foo
             │   ├── message_loc: (1,5)-(1,8) = "foo"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: variable_call
-            │   └── name: :foo
+            │   └── flags: variable_call
             ├── conditions: (length: 2)
             │   ├── @ WhenNode (location: (1,10)-(1,27))
             │   │   ├── keyword_loc: (1,10)-(1,14) = "when"
@@ -27,26 +27,26 @@
             │   │   │           @ CallNode (location: (1,19)-(1,22))
             │   │   │           ├── receiver: ∅
             │   │   │           ├── call_operator_loc: ∅
+            │   │   │           ├── name: :baz
             │   │   │           ├── message_loc: (1,19)-(1,22) = "baz"
             │   │   │           ├── opening_loc: ∅
             │   │   │           ├── arguments: ∅
             │   │   │           ├── closing_loc: ∅
             │   │   │           ├── block: ∅
-            │   │   │           ├── flags: variable_call
-            │   │   │           └── name: :baz
+            │   │   │           └── flags: variable_call
             │   │   └── statements:
             │   │       @ StatementsNode (location: (1,24)-(1,27))
             │   │       └── body: (length: 1)
             │   │           └── @ CallNode (location: (1,24)-(1,27))
             │   │               ├── receiver: ∅
             │   │               ├── call_operator_loc: ∅
+            │   │               ├── name: :bar
             │   │               ├── message_loc: (1,24)-(1,27) = "bar"
             │   │               ├── opening_loc: ∅
             │   │               ├── arguments: ∅
             │   │               ├── closing_loc: ∅
             │   │               ├── block: ∅
-            │   │               ├── flags: variable_call
-            │   │               └── name: :bar
+            │   │               └── flags: variable_call
             │   └── @ WhenNode (location: (1,29)-(1,38))
             │       ├── keyword_loc: (1,29)-(1,33) = "when"
             │       ├── conditions: (length: 1)
@@ -56,13 +56,13 @@
             │       │           @ CallNode (location: (1,35)-(1,38))
             │       │           ├── receiver: ∅
             │       │           ├── call_operator_loc: ∅
+            │       │           ├── name: :foo
             │       │           ├── message_loc: (1,35)-(1,38) = "foo"
             │       │           ├── opening_loc: ∅
             │       │           ├── arguments: ∅
             │       │           ├── closing_loc: ∅
             │       │           ├── block: ∅
-            │       │           ├── flags: variable_call
-            │       │           └── name: :foo
+            │       │           └── flags: variable_call
             │       └── statements: ∅
             ├── consequent: ∅
             ├── case_keyword_loc: (1,0)-(1,4) = "case"

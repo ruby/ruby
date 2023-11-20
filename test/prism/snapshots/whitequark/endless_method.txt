@@ -44,6 +44,7 @@
         │   │           │   ├── name: :x
         │   │           │   └── depth: 0
         │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :+
         │   │           ├── message_loc: (3,15)-(3,16) = "+"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
@@ -54,8 +55,7 @@
         │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: ∅
-        │   │           └── name: :+
+        │   │           └── flags: ∅
         │   ├── locals: [:x]
         │   ├── def_keyword_loc: (3,0)-(3,3) = "def"
         │   ├── operator_loc: ∅
@@ -70,13 +70,13 @@
         │   │   @ CallNode (location: (5,4)-(5,7))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :obj
         │   │   ├── message_loc: (5,4)-(5,7) = "obj"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :obj
+        │   │   └── flags: variable_call
         │   ├── parameters: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (5,16)-(5,18))
@@ -97,13 +97,13 @@
             │   @ CallNode (location: (7,4)-(7,7))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
+            │   ├── name: :obj
             │   ├── message_loc: (7,4)-(7,7) = "obj"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: variable_call
-            │   └── name: :obj
+            │   └── flags: variable_call
             ├── parameters:
             │   @ ParametersNode (location: (7,12)-(7,13))
             │   ├── requireds: (length: 1)
@@ -124,6 +124,7 @@
             │           │   ├── name: :x
             │           │   └── depth: 0
             │           ├── call_operator_loc: ∅
+            │           ├── name: :+
             │           ├── message_loc: (7,19)-(7,20) = "+"
             │           ├── opening_loc: ∅
             │           ├── arguments:
@@ -134,8 +135,7 @@
             │           │   └── flags: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: ∅
-            │           └── name: :+
+            │           └── flags: ∅
             ├── locals: [:x]
             ├── def_keyword_loc: (7,0)-(7,3) = "def"
             ├── operator_loc: (7,7)-(7,8) = "."

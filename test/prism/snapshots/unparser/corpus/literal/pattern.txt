@@ -8,13 +8,13 @@
         │   │   @ CallNode (location: (1,5)-(1,8))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :foo
         │   │   ├── message_loc: (1,5)-(1,8) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :foo
+        │   │   └── flags: variable_call
         │   ├── conditions: (length: 15)
         │   │   ├── @ InNode (location: (2,0)-(3,6))
         │   │   │   ├── pattern:
@@ -64,13 +64,13 @@
         │   │   │   │       └── @ CallNode (location: (5,2)-(5,3))
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── name: :y
         │   │   │   │           ├── message_loc: (5,2)-(5,3) = "y"
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
-        │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: :y
+        │   │   │   │           └── flags: variable_call
         │   │   │   ├── in_loc: (4,0)-(4,2) = "in"
         │   │   │   └── then_loc: (4,12)-(4,16) = "then"
         │   │   ├── @ InNode (location: (6,0)-(7,6))
@@ -337,13 +337,13 @@
         │   │   @ CallNode (location: (34,5)-(34,8))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :foo
         │   │   ├── message_loc: (34,5)-(34,8) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :foo
+        │   │   └── flags: variable_call
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (35,0)-(35,17))
         │   │       ├── pattern:
@@ -379,13 +379,13 @@
         │   │   @ CallNode (location: (37,5)-(37,8))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :foo
         │   │   ├── message_loc: (37,5)-(37,8) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :foo
+        │   │   └── flags: variable_call
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (38,0)-(38,4))
         │   │       ├── pattern:

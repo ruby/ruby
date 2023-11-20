@@ -8,13 +8,13 @@
             │   @ CallNode (location: (1,5)-(1,8))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
+            │   ├── name: :obj
             │   ├── message_loc: (1,5)-(1,8) = "obj"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: variable_call
-            │   └── name: :obj
+            │   └── flags: variable_call
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (2,0)-(3,6))
             │       ├── pattern:

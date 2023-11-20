@@ -10,23 +10,23 @@
         │   │   @ CallNode (location: (2,8)-(2,11))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :bar
         │   │   ├── message_loc: (2,8)-(2,11) = "bar"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :bar
+        │   │   └── flags: variable_call
         │   ├── name: :foo
         │   ├── operator: :+
         │   └── depth: 0
         └── @ CallNode (location: (3,6)-(3,9))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
+            ├── name: :baz
             ├── message_loc: (3,6)-(3,9) = "baz"
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: variable_call
-            └── name: :baz
+            └── flags: variable_call

@@ -24,13 +24,13 @@
         │   │       └── @ CallNode (location: (1,16)-(1,28))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :do_something
         │   │           ├── message_loc: (1,16)-(1,28) = "do_something"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: variable_call
-        │   │           └── name: :do_something
+        │   │           └── flags: variable_call
         │   ├── locals: [:other]
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
@@ -59,13 +59,13 @@
         │   │       └── @ CallNode (location: (3,16)-(3,28))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :do_something
         │   │           ├── message_loc: (3,16)-(3,28) = "do_something"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: variable_call
-        │   │           └── name: :do_something
+        │   │           └── flags: variable_call
         │   ├── locals: [:other]
         │   ├── def_keyword_loc: (3,0)-(3,3) = "def"
         │   ├── operator_loc: ∅
@@ -94,13 +94,13 @@
         │   │       └── @ CallNode (location: (5,16)-(5,28))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :do_something
         │   │           ├── message_loc: (5,16)-(5,28) = "do_something"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: variable_call
-        │   │           └── name: :do_something
+        │   │           └── flags: variable_call
         │   ├── locals: [:other]
         │   ├── def_keyword_loc: (5,0)-(5,3) = "def"
         │   ├── operator_loc: ∅
@@ -129,13 +129,13 @@
         │   │       └── @ CallNode (location: (7,16)-(7,28))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :do_something
         │   │           ├── message_loc: (7,16)-(7,28) = "do_something"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: variable_call
-        │   │           └── name: :do_something
+        │   │           └── flags: variable_call
         │   ├── locals: [:other]
         │   ├── def_keyword_loc: (7,0)-(7,3) = "def"
         │   ├── operator_loc: ∅
@@ -164,13 +164,13 @@
         │   │       └── @ CallNode (location: (9,17)-(9,29))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :do_something
         │   │           ├── message_loc: (9,17)-(9,29) = "do_something"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: variable_call
-        │   │           └── name: :do_something
+        │   │           └── flags: variable_call
         │   ├── locals: [:other]
         │   ├── def_keyword_loc: (9,0)-(9,3) = "def"
         │   ├── operator_loc: ∅
@@ -199,13 +199,13 @@
             │       └── @ CallNode (location: (11,16)-(11,28))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
+            │           ├── name: :do_something
             │           ├── message_loc: (11,16)-(11,28) = "do_something"
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: variable_call
-            │           └── name: :do_something
+            │           └── flags: variable_call
             ├── locals: [:other]
             ├── def_keyword_loc: (11,0)-(11,3) = "def"
             ├── operator_loc: ∅

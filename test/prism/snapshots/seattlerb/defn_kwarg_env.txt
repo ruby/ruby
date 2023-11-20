@@ -26,6 +26,7 @@
             │       └── @ CallNode (location: (1,20)-(1,41))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
+            │           ├── name: :test_splat
             │           ├── message_loc: (1,20)-(1,30) = "test_splat"
             │           ├── opening_loc: (1,30)-(1,31) = "("
             │           ├── arguments:
@@ -42,8 +43,7 @@
             │           │   └── flags: contains_keyword_splat
             │           ├── closing_loc: (1,40)-(1,41) = ")"
             │           ├── block: ∅
-            │           ├── flags: ∅
-            │           └── name: :test_splat
+            │           └── flags: ∅
             ├── locals: [:testing]
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅

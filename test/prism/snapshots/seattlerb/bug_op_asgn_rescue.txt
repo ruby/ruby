@@ -12,13 +12,13 @@
             │   │   @ CallNode (location: (1,6)-(1,7))
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
+            │   │   ├── name: :b
             │   │   ├── message_loc: (1,6)-(1,7) = "b"
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
-            │   │   ├── flags: variable_call
-            │   │   └── name: :b
+            │   │   └── flags: variable_call
             │   ├── keyword_loc: (1,8)-(1,14) = "rescue"
             │   └── rescue_expression:
             │       @ NilNode (location: (1,15)-(1,18))

@@ -8,14 +8,15 @@
             │   @ CallNode (location: (1,0)-(1,4))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
+            │   ├── name: :_buf
             │   ├── message_loc: (1,0)-(1,4) = "_buf"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: variable_call
-            │   └── name: :_buf
+            │   └── flags: variable_call
             ├── call_operator_loc: ∅
+            ├── name: :<<
             ├── message_loc: (1,5)-(1,7) = "<<"
             ├── opening_loc: ∅
             ├── arguments:
@@ -30,5 +31,4 @@
             │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: ∅
-            └── name: :<<
+            └── flags: ∅

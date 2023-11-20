@@ -17,13 +17,13 @@
         │       @ CallNode (location: (1,4)-(1,7))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
+        │       ├── name: :bar
         │       ├── message_loc: (1,4)-(1,7) = "bar"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
-        │       ├── flags: variable_call
-        │       └── name: :bar
+        │       └── flags: variable_call
         ├── @ MultiWriteNode (location: (3,0)-(3,13))
         │   ├── lefts: (length: 0)
         │   ├── rest:
@@ -44,13 +44,13 @@
         │       @ CallNode (location: (3,10)-(3,13))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
+        │       ├── name: :bar
         │       ├── message_loc: (3,10)-(3,13) = "bar"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
-        │       ├── flags: variable_call
-        │       └── name: :bar
+        │       └── flags: variable_call
         ├── @ MultiWriteNode (location: (5,0)-(5,8))
         │   ├── lefts: (length: 0)
         │   ├── rest:
@@ -68,13 +68,13 @@
         │       @ CallNode (location: (5,5)-(5,8))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
+        │       ├── name: :bar
         │       ├── message_loc: (5,5)-(5,8) = "bar"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
-        │       ├── flags: variable_call
-        │       └── name: :bar
+        │       └── flags: variable_call
         ├── @ MultiWriteNode (location: (7,0)-(7,11))
         │   ├── lefts: (length: 0)
         │   ├── rest:
@@ -95,13 +95,13 @@
         │       @ CallNode (location: (7,8)-(7,11))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
+        │       ├── name: :bar
         │       ├── message_loc: (7,8)-(7,11) = "bar"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
-        │       ├── flags: variable_call
-        │       └── name: :bar
+        │       └── flags: variable_call
         ├── @ MultiWriteNode (location: (9,0)-(9,18))
         │   ├── lefts: (length: 2)
         │   │   ├── @ InstanceVariableTargetNode (location: (9,0)-(9,4))
@@ -122,13 +122,13 @@
         │       │           @ CallNode (location: (9,15)-(9,18))
         │       │           ├── receiver: ∅
         │       │           ├── call_operator_loc: ∅
+        │       │           ├── name: :foo
         │       │           ├── message_loc: (9,15)-(9,18) = "foo"
         │       │           ├── opening_loc: ∅
         │       │           ├── arguments: ∅
         │       │           ├── closing_loc: ∅
         │       │           ├── block: ∅
-        │       │           ├── flags: variable_call
-        │       │           └── name: :foo
+        │       │           └── flags: variable_call
         │       ├── opening_loc: ∅
         │       ├── closing_loc: ∅
         │       └── flags: contains_splat
@@ -149,13 +149,13 @@
         │       @ CallNode (location: (11,7)-(11,10))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
+        │       ├── name: :bar
         │       ├── message_loc: (11,7)-(11,10) = "bar"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
-        │       ├── flags: variable_call
-        │       └── name: :bar
+        │       └── flags: variable_call
         ├── @ MultiWriteNode (location: (13,0)-(13,13))
         │   ├── lefts: (length: 1)
         │   │   └── @ LocalVariableTargetNode (location: (13,0)-(13,1))
@@ -176,13 +176,13 @@
         │       @ CallNode (location: (13,10)-(13,13))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
+        │       ├── name: :bar
         │       ├── message_loc: (13,10)-(13,13) = "bar"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
-        │       ├── flags: variable_call
-        │       └── name: :bar
+        │       └── flags: variable_call
         ├── @ MultiWriteNode (location: (15,0)-(15,11))
         │   ├── lefts: (length: 1)
         │   │   └── @ LocalVariableTargetNode (location: (15,0)-(15,1))
@@ -203,13 +203,13 @@
         │       @ CallNode (location: (15,8)-(15,11))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
+        │       ├── name: :bar
         │       ├── message_loc: (15,8)-(15,11) = "bar"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
-        │       ├── flags: variable_call
-        │       └── name: :bar
+        │       └── flags: variable_call
         ├── @ MultiWriteNode (location: (17,0)-(17,14))
         │   ├── lefts: (length: 1)
         │   │   └── @ LocalVariableTargetNode (location: (17,0)-(17,1))
@@ -233,13 +233,13 @@
         │       @ CallNode (location: (17,11)-(17,14))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
+        │       ├── name: :bar
         │       ├── message_loc: (17,11)-(17,14) = "bar"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
-        │       ├── flags: variable_call
-        │       └── name: :bar
+        │       └── flags: variable_call
         └── @ MultiWriteNode (location: (19,0)-(19,16))
             ├── lefts: (length: 2)
             │   ├── @ LocalVariableTargetNode (location: (19,0)-(19,1))
@@ -262,23 +262,23 @@
                 │   │       @ CallNode (location: (19,8)-(19,11))
                 │   │       ├── receiver: ∅
                 │   │       ├── call_operator_loc: ∅
+                │   │       ├── name: :foo
                 │   │       ├── message_loc: (19,8)-(19,11) = "foo"
                 │   │       ├── opening_loc: ∅
                 │   │       ├── arguments: ∅
                 │   │       ├── closing_loc: ∅
                 │   │       ├── block: ∅
-                │   │       ├── flags: variable_call
-                │   │       └── name: :foo
+                │   │       └── flags: variable_call
                 │   └── @ CallNode (location: (19,13)-(19,16))
                 │       ├── receiver: ∅
                 │       ├── call_operator_loc: ∅
+                │       ├── name: :bar
                 │       ├── message_loc: (19,13)-(19,16) = "bar"
                 │       ├── opening_loc: ∅
                 │       ├── arguments: ∅
                 │       ├── closing_loc: ∅
                 │       ├── block: ∅
-                │       ├── flags: variable_call
-                │       └── name: :bar
+                │       └── flags: variable_call
                 ├── opening_loc: ∅
                 ├── closing_loc: ∅
                 └── flags: contains_splat

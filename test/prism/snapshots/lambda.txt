@@ -60,13 +60,13 @@
         │   │   │   │           │       │       └── @ CallNode (location: (5,10)-(5,11))
         │   │   │   │           │       │           ├── receiver: ∅
         │   │   │   │           │       │           ├── call_operator_loc: ∅
+        │   │   │   │           │       │           ├── name: :a
         │   │   │   │           │       │           ├── message_loc: (5,10)-(5,11) = "a"
         │   │   │   │           │       │           ├── opening_loc: ∅
         │   │   │   │           │       │           ├── arguments: ∅
         │   │   │   │           │       │           ├── closing_loc: ∅
         │   │   │   │           │       │           ├── block: ∅
-        │   │   │   │           │       │           ├── flags: variable_call
-        │   │   │   │           │       │           └── name: :a
+        │   │   │   │           │       │           └── flags: variable_call
         │   │   │   │           │       └── closing_loc: (5,11)-(5,12) = "}"
         │   │   │   │           └── closing_loc: (5,12)-(5,13) = "\""
         │   │   │   ├── keyword_rest: ∅
@@ -98,14 +98,15 @@
         │   │   │   │           │   @ CallNode (location: (7,6)-(7,7))
         │   │   │   │           │   ├── receiver: ∅
         │   │   │   │           │   ├── call_operator_loc: ∅
+        │   │   │   │           │   ├── name: :b
         │   │   │   │           │   ├── message_loc: (7,6)-(7,7) = "b"
         │   │   │   │           │   ├── opening_loc: ∅
         │   │   │   │           │   ├── arguments: ∅
         │   │   │   │           │   ├── closing_loc: ∅
         │   │   │   │           │   ├── block: ∅
-        │   │   │   │           │   ├── flags: variable_call
-        │   │   │   │           │   └── name: :b
+        │   │   │   │           │   └── flags: variable_call
         │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── name: :*
         │   │   │   │           ├── message_loc: (7,8)-(7,9) = "*"
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments:
@@ -116,8 +117,7 @@
         │   │   │   │           │   └── flags: ∅
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
-        │   │   │   │           ├── flags: ∅
-        │   │   │   │           └── name: :*
+        │   │   │   │           └── flags: ∅
         │   │   │   ├── keyword_rest: ∅
         │   │   │   └── block: ∅
         │   │   ├── locals: (length: 0)
@@ -143,13 +143,13 @@
         │   │   │   │           @ CallNode (location: (9,9)-(9,12))
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── name: :bar
         │   │   │   │           ├── message_loc: (9,9)-(9,12) = "bar"
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
-        │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: :bar
+        │   │   │   │           └── flags: variable_call
         │   │   │   ├── rest: ∅
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 0)
@@ -180,13 +180,13 @@
             │   │   │           @ CallNode (location: (11,8)-(11,11))
             │   │   │           ├── receiver: ∅
             │   │   │           ├── call_operator_loc: ∅
+            │   │   │           ├── name: :bar
             │   │   │           ├── message_loc: (11,8)-(11,11) = "bar"
             │   │   │           ├── opening_loc: ∅
             │   │   │           ├── arguments: ∅
             │   │   │           ├── closing_loc: ∅
             │   │   │           ├── block: ∅
-            │   │   │           ├── flags: variable_call
-            │   │   │           └── name: :bar
+            │   │   │           └── flags: variable_call
             │   │   ├── keyword_rest: ∅
             │   │   └── block: ∅
             │   ├── locals: (length: 0)

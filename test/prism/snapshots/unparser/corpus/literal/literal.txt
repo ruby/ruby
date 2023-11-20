@@ -109,6 +109,7 @@
         │   │   @ CallNode (location: (6,0)-(6,13))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :a
         │   │   ├── message_loc: (6,0)-(6,1) = "a"
         │   │   ├── opening_loc: (6,1)-(6,2) = "("
         │   │   ├── arguments:
@@ -137,21 +138,21 @@
         │   │   │   └── flags: ∅
         │   │   ├── closing_loc: (6,12)-(6,13) = ")"
         │   │   ├── block: ∅
-        │   │   ├── flags: ∅
-        │   │   └── name: :a
+        │   │   └── flags: ∅
         │   ├── call_operator_loc: (6,13)-(6,14) = "."
+        │   ├── name: :a
         │   ├── message_loc: (6,14)-(6,15) = "a"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :a
+        │   └── flags: ∅
         ├── @ CallNode (location: (9,0)-(9,8))
         │   ├── receiver:
         │   │   @ CallNode (location: (9,0)-(9,6))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :a
         │   │   ├── message_loc: (9,0)-(9,1) = "a"
         │   │   ├── opening_loc: (9,1)-(9,2) = "("
         │   │   ├── arguments:
@@ -166,16 +167,15 @@
         │   │   │   └── flags: ∅
         │   │   ├── closing_loc: (9,5)-(9,6) = ")"
         │   │   ├── block: ∅
-        │   │   ├── flags: ∅
-        │   │   └── name: :a
+        │   │   └── flags: ∅
         │   ├── call_operator_loc: (9,6)-(9,7) = "."
+        │   ├── name: :a
         │   ├── message_loc: (9,7)-(9,8) = "a"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :a
+        │   └── flags: ∅
         ├── @ HashNode (location: (10,0)-(10,30))
         │   ├── opening_loc: (10,0)-(10,1) = "{"
         │   ├── elements: (length: 2)
@@ -214,13 +214,13 @@
         │   │       │   @ CallNode (location: (10,25)-(10,28))
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
+        │   │       │   ├── name: :baz
         │   │       │   ├── message_loc: (10,25)-(10,28) = "baz"
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── arguments: ∅
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: variable_call
-        │   │       │   └── name: :baz
+        │   │       │   └── flags: variable_call
         │   │       └── operator_loc: (10,23)-(10,25) = "**"
         │   └── closing_loc: (10,29)-(10,30) = "}"
         ├── @ HashNode (location: (13,0)-(13,23))
@@ -247,13 +247,13 @@
         │   │       │   @ CallNode (location: (13,18)-(13,21))
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
+        │   │       │   ├── name: :baz
         │   │       │   ├── message_loc: (13,18)-(13,21) = "baz"
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── arguments: ∅
         │   │       │   ├── closing_loc: ∅
         │   │       │   ├── block: ∅
-        │   │       │   ├── flags: variable_call
-        │   │       │   └── name: :baz
+        │   │       │   └── flags: variable_call
         │   │       └── operator_loc: (13,16)-(13,18) = "**"
         │   └── closing_loc: (13,22)-(13,23) = "}"
         ├── @ InterpolatedStringNode (location: (14,0)-(14,14))
@@ -294,13 +294,13 @@
         │   │   @ IntegerNode (location: (16,1)-(16,3))
         │   │   └── flags: decimal
         │   ├── call_operator_loc: ∅
+        │   ├── name: :+@
         │   ├── message_loc: (16,0)-(16,1) = "+"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :+@
+        │   └── flags: ∅
         ├── @ IntegerNode (location: (17,0)-(17,1))
         │   └── flags: decimal
         ├── @ IntegerNode (location: (18,0)-(18,1))
@@ -372,13 +372,13 @@
         │   │       │       └── @ CallNode (location: (29,10)-(29,13))
         │   │       │           ├── receiver: ∅
         │   │       │           ├── call_operator_loc: ∅
+        │   │       │           ├── name: :baz
         │   │       │           ├── message_loc: (29,10)-(29,13) = "baz"
         │   │       │           ├── opening_loc: ∅
         │   │       │           ├── arguments: ∅
         │   │       │           ├── closing_loc: ∅
         │   │       │           ├── block: ∅
-        │   │       │           ├── flags: variable_call
-        │   │       │           └── name: :baz
+        │   │       │           └── flags: variable_call
         │   │       └── closing_loc: (29,13)-(29,14) = "}"
         │   └── closing_loc: (29,14)-(29,15) = "\""
         ├── @ InterpolatedStringNode (location: (30,0)-(30,12))
@@ -647,13 +647,13 @@
         │   │   │   │       └── @ CallNode (location: (58,7)-(58,10))
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── name: :bar
         │   │   │   │           ├── message_loc: (58,7)-(58,10) = "bar"
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
-        │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: :bar
+        │   │   │   │           └── flags: variable_call
         │   │   │   └── closing_loc: (58,10)-(58,11) = "}"
         │   │   └── @ StringNode (location: (58,11)-(58,14))
         │   │       ├── flags: ∅
@@ -688,6 +688,7 @@
         │   │   │           ├── receiver:
         │   │   │           │   @ FloatNode (location: (60,1)-(60,4))
         │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── name: :/
         │   │   │           ├── message_loc: (60,5)-(60,6) = "/"
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments:
@@ -697,8 +698,7 @@
         │   │   │           │   └── flags: ∅
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
-        │   │   │           ├── flags: ∅
-        │   │   │           └── name: :/
+        │   │   │           └── flags: ∅
         │   │   ├── opening_loc: (60,0)-(60,1) = "("
         │   │   └── closing_loc: (60,10)-(60,11) = ")"
         │   ├── right:
@@ -719,6 +719,7 @@
         │   │   │           ├── receiver:
         │   │   │           │   @ FloatNode (location: (61,4)-(61,7))
         │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── name: :/
         │   │   │           ├── message_loc: (61,8)-(61,9) = "/"
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments:
@@ -728,8 +729,7 @@
         │   │   │           │   └── flags: ∅
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
-        │   │   │           ├── flags: ∅
-        │   │   │           └── name: :/
+        │   │   │           └── flags: ∅
         │   │   ├── opening_loc: (61,3)-(61,4) = "("
         │   │   └── closing_loc: (61,13)-(61,14) = ")"
         │   ├── operator_loc: (61,1)-(61,3) = ".."
@@ -744,6 +744,7 @@
         │   │   │           ├── receiver:
         │   │   │           │   @ FloatNode (location: (62,1)-(62,4))
         │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── name: :/
         │   │   │           ├── message_loc: (62,5)-(62,6) = "/"
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments:
@@ -753,8 +754,7 @@
         │   │   │           │   └── flags: ∅
         │   │   │           ├── closing_loc: ∅
         │   │   │           ├── block: ∅
-        │   │   │           ├── flags: ∅
-        │   │   │           └── name: :/
+        │   │   │           └── flags: ∅
         │   │   ├── opening_loc: (62,0)-(62,1) = "("
         │   │   └── closing_loc: (62,10)-(62,11) = ")"
         │   ├── right:
@@ -784,13 +784,13 @@
         │   │   └── @ CallNode (location: (66,8)-(66,10))
         │   │       ├── receiver: ∅
         │   │       ├── call_operator_loc: ∅
+        │   │       ├── name: :n2
         │   │       ├── message_loc: (66,8)-(66,10) = "n2"
         │   │       ├── opening_loc: ∅
         │   │       ├── arguments: ∅
         │   │       ├── closing_loc: ∅
         │   │       ├── block: ∅
-        │   │       ├── flags: variable_call
-        │   │       └── name: :n2
+        │   │       └── flags: variable_call
         │   ├── opening_loc: (66,0)-(66,1) = "["
         │   ├── closing_loc: (66,10)-(66,11) = "]"
         │   └── flags: ∅
@@ -921,13 +921,13 @@
         │   │   │   │   │               @ CallNode (location: (76,15)-(76,18))
         │   │   │   │   │               ├── receiver: ∅
         │   │   │   │   │               ├── call_operator_loc: ∅
+        │   │   │   │   │               ├── name: :foo
         │   │   │   │   │               ├── message_loc: (76,15)-(76,18) = "foo"
         │   │   │   │   │               ├── opening_loc: ∅
         │   │   │   │   │               ├── arguments: ∅
         │   │   │   │   │               ├── closing_loc: ∅
         │   │   │   │   │               ├── block: ∅
-        │   │   │   │   │               ├── flags: variable_call
-        │   │   │   │   │               └── name: :foo
+        │   │   │   │   │               └── flags: variable_call
         │   │   │   │   ├── opening_loc: (76,5)-(76,6) = "("
         │   │   │   │   └── closing_loc: (76,18)-(76,19) = ")"
         │   │   │   └── operator_loc: ∅
@@ -1044,6 +1044,7 @@
         ├── @ CallNode (location: (83,0)-(86,1))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
+        │   ├── name: :foo
         │   ├── message_loc: (83,0)-(83,3) = "foo"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
@@ -1081,8 +1082,7 @@
         │   │   │           └── closing_loc: (85,6)-(85,7) = "\""
         │   │   ├── opening_loc: (83,4)-(83,5) = "{"
         │   │   └── closing_loc: (86,0)-(86,1) = "}"
-        │   ├── flags: ∅
-        │   └── name: :foo
+        │   └── flags: ∅
         ├── @ SymbolNode (location: (87,0)-(88,2))
         │   ├── opening_loc: (87,0)-(87,2) = ":\""
         │   ├── value_loc: (87,2)-(88,1) = "a\\\\\nb"
@@ -1105,13 +1105,13 @@
             │   │   │       └── @ CallNode (location: (90,2)-(90,5))
             │   │   │           ├── receiver: ∅
             │   │   │           ├── call_operator_loc: ∅
+            │   │   │           ├── name: :foo
             │   │   │           ├── message_loc: (90,2)-(90,5) = "foo"
             │   │   │           ├── opening_loc: ∅
             │   │   │           ├── arguments: ∅
             │   │   │           ├── closing_loc: ∅
             │   │   │           ├── block: ∅
-            │   │   │           ├── flags: variable_call
-            │   │   │           └── name: :foo
+            │   │   │           └── flags: variable_call
             │   │   └── closing_loc: (90,5)-(90,6) = "}"
             │   └── @ StringNode (location: (90,6)-(91,1))
             │       ├── flags: ∅

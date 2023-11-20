@@ -17,13 +17,13 @@
         │   │   │   └── @ CallNode (location: (2,6)-(2,7))
         │   │   │       ├── receiver: ∅
         │   │   │       ├── call_operator_loc: ∅
+        │   │   │       ├── name: :a
         │   │   │       ├── message_loc: (2,6)-(2,7) = "a"
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── arguments: ∅
         │   │   │       ├── closing_loc: ∅
         │   │   │       ├── block: ∅
-        │   │   │       ├── flags: variable_call
-        │   │   │       └── name: :a
+        │   │   │       └── flags: variable_call
         │   │   └── flags: ∅
         │   └── rparen_loc: (2,7)-(2,8) = ")"
         └── @ YieldNode (location: (3,0)-(3,11))
@@ -35,22 +35,22 @@
             │   │   ├── @ CallNode (location: (3,6)-(3,7))
             │   │   │   ├── receiver: ∅
             │   │   │   ├── call_operator_loc: ∅
+            │   │   │   ├── name: :a
             │   │   │   ├── message_loc: (3,6)-(3,7) = "a"
             │   │   │   ├── opening_loc: ∅
             │   │   │   ├── arguments: ∅
             │   │   │   ├── closing_loc: ∅
             │   │   │   ├── block: ∅
-            │   │   │   ├── flags: variable_call
-            │   │   │   └── name: :a
+            │   │   │   └── flags: variable_call
             │   │   └── @ CallNode (location: (3,9)-(3,10))
             │   │       ├── receiver: ∅
             │   │       ├── call_operator_loc: ∅
+            │   │       ├── name: :b
             │   │       ├── message_loc: (3,9)-(3,10) = "b"
             │   │       ├── opening_loc: ∅
             │   │       ├── arguments: ∅
             │   │       ├── closing_loc: ∅
             │   │       ├── block: ∅
-            │   │       ├── flags: variable_call
-            │   │       └── name: :b
+            │   │       └── flags: variable_call
             │   └── flags: ∅
             └── rparen_loc: (3,10)-(3,11) = ")"

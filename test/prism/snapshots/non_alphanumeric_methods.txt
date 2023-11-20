@@ -235,13 +235,13 @@
         │   │   @ CallNode (location: (48,4)-(48,5))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :a
         │   │   ├── message_loc: (48,4)-(48,5) = "a"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :a
+        │   │   └── flags: variable_call
         │   ├── parameters: ∅
         │   ├── body: ∅
         │   ├── locals: []

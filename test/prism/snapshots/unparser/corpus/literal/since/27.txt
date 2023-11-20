@@ -18,6 +18,7 @@
         │               │   ├── name: :_1
         │               │   └── depth: 0
         │               ├── call_operator_loc: ∅
+        │               ├── name: :+
         │               ├── message_loc: (2,5)-(2,6) = "+"
         │               ├── opening_loc: ∅
         │               ├── arguments:
@@ -29,8 +30,7 @@
         │               │   └── flags: ∅
         │               ├── closing_loc: ∅
         │               ├── block: ∅
-        │               ├── flags: ∅
-        │               └── name: :+
+        │               └── flags: ∅
         └── @ ParenthesesNode (location: (4,0)-(4,5))
             ├── body:
             │   @ StatementsNode (location: (4,1)-(4,4))

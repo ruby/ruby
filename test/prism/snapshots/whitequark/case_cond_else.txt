@@ -12,13 +12,13 @@
             │       │   └── @ CallNode (location: (1,11)-(1,14))
             │       │       ├── receiver: ∅
             │       │       ├── call_operator_loc: ∅
+            │       │       ├── name: :foo
             │       │       ├── message_loc: (1,11)-(1,14) = "foo"
             │       │       ├── opening_loc: ∅
             │       │       ├── arguments: ∅
             │       │       ├── closing_loc: ∅
             │       │       ├── block: ∅
-            │       │       ├── flags: variable_call
-            │       │       └── name: :foo
+            │       │       └── flags: variable_call
             │       └── statements:
             │           @ StatementsNode (location: (1,16)-(1,21))
             │           └── body: (length: 1)

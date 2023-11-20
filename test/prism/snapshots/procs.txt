@@ -95,13 +95,13 @@
         │           └── @ CallNode (location: (13,5)-(13,8))
         │               ├── receiver: ∅
         │               ├── call_operator_loc: ∅
+        │               ├── name: :foo
         │               ├── message_loc: (13,5)-(13,8) = "foo"
         │               ├── opening_loc: ∅
         │               ├── arguments: ∅
         │               ├── closing_loc: ∅
         │               ├── block: ∅
-        │               ├── flags: variable_call
-        │               └── name: :foo
+        │               └── flags: variable_call
         ├── @ LambdaNode (location: (15,0)-(15,15))
         │   ├── locals: []
         │   ├── operator_loc: (15,0)-(15,2) = "->"
@@ -114,13 +114,13 @@
         │           └── @ CallNode (location: (15,7)-(15,10))
         │               ├── receiver: ∅
         │               ├── call_operator_loc: ∅
+        │               ├── name: :foo
         │               ├── message_loc: (15,7)-(15,10) = "foo"
         │               ├── opening_loc: ∅
         │               ├── arguments: ∅
         │               ├── closing_loc: ∅
         │               ├── block: ∅
-        │               ├── flags: variable_call
-        │               └── name: :foo
+        │               └── flags: variable_call
         ├── @ LambdaNode (location: (17,0)-(17,29))
         │   ├── locals: [:a, :b, :c, :d, :e]
         │   ├── operator_loc: (17,0)-(17,2) = "->"
@@ -323,6 +323,7 @@
         │                           │   ├── name: :a
         │                           │   └── depth: 1
         │                           ├── call_operator_loc: ∅
+        │                           ├── name: :*
         │                           ├── message_loc: (25,18)-(25,19) = "*"
         │                           ├── opening_loc: ∅
         │                           ├── arguments:
@@ -334,8 +335,7 @@
         │                           │   └── flags: ∅
         │                           ├── closing_loc: ∅
         │                           ├── block: ∅
-        │                           ├── flags: ∅
-        │                           └── name: :*
+        │                           └── flags: ∅
         └── @ LambdaNode (location: (27,0)-(27,19))
             ├── locals: [:a, :b, :c]
             ├── operator_loc: (27,0)-(27,2) = "->"

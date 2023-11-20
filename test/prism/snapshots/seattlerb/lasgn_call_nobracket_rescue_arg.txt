@@ -13,6 +13,7 @@
             │   │   @ CallNode (location: (1,4)-(1,7))
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
+            │   │   ├── name: :b
             │   │   ├── message_loc: (1,4)-(1,5) = "b"
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments:
@@ -23,8 +24,7 @@
             │   │   │   └── flags: ∅
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
-            │   │   ├── flags: ∅
-            │   │   └── name: :b
+            │   │   └── flags: ∅
             │   ├── keyword_loc: (1,8)-(1,14) = "rescue"
             │   └── rescue_expression:
             │       @ IntegerNode (location: (1,15)-(1,16))

@@ -6,6 +6,7 @@
         └── @ CallNode (location: (1,0)-(1,15))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
+            ├── name: :a
             ├── message_loc: (1,0)-(1,1) = "a"
             ├── opening_loc: ∅
             ├── arguments:
@@ -30,6 +31,7 @@
             │   │       │           │   @ CallNode (location: (1,11)-(1,14))
             │   │       │           │   ├── receiver: ∅
             │   │       │           │   ├── call_operator_loc: ∅
+            │   │       │           │   ├── name: :d
             │   │       │           │   ├── message_loc: (1,11)-(1,12) = "d"
             │   │       │           │   ├── opening_loc: ∅
             │   │       │           │   ├── arguments:
@@ -38,23 +40,21 @@
             │   │       │           │   │   │   └── @ CallNode (location: (1,13)-(1,14))
             │   │       │           │   │   │       ├── receiver: ∅
             │   │       │           │   │   │       ├── call_operator_loc: ∅
+            │   │       │           │   │   │       ├── name: :e
             │   │       │           │   │   │       ├── message_loc: (1,13)-(1,14) = "e"
             │   │       │           │   │   │       ├── opening_loc: ∅
             │   │       │           │   │   │       ├── arguments: ∅
             │   │       │           │   │   │       ├── closing_loc: ∅
             │   │       │           │   │   │       ├── block: ∅
-            │   │       │           │   │   │       ├── flags: variable_call
-            │   │       │           │   │   │       └── name: :e
+            │   │       │           │   │   │       └── flags: variable_call
             │   │       │           │   │   └── flags: ∅
             │   │       │           │   ├── closing_loc: ∅
             │   │       │           │   ├── block: ∅
-            │   │       │           │   ├── flags: ∅
-            │   │       │           │   └── name: :d
+            │   │       │           │   └── flags: ∅
             │   │       │           └── operator: :*
             │   │       ├── opening_loc: (1,2)-(1,3) = "("
             │   │       └── closing_loc: (1,14)-(1,15) = ")"
             │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: ∅
-            └── name: :a
+            └── flags: ∅

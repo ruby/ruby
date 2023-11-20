@@ -10,6 +10,7 @@
             │   │   └── @ CallNode (location: (1,5)-(1,19))
             │   │       ├── receiver: ∅
             │   │       ├── call_operator_loc: ∅
+            │   │       ├── name: :fun
             │   │       ├── message_loc: (1,5)-(1,8) = "fun"
             │   │       ├── opening_loc: ∅
             │   │       ├── arguments:
@@ -18,13 +19,13 @@
             │   │       │   │   └── @ CallNode (location: (1,9)-(1,12))
             │   │       │   │       ├── receiver: ∅
             │   │       │   │       ├── call_operator_loc: ∅
+            │   │       │   │       ├── name: :foo
             │   │       │   │       ├── message_loc: (1,9)-(1,12) = "foo"
             │   │       │   │       ├── opening_loc: ∅
             │   │       │   │       ├── arguments: ∅
             │   │       │   │       ├── closing_loc: ∅
             │   │       │   │       ├── block: ∅
-            │   │       │   │       ├── flags: variable_call
-            │   │       │   │       └── name: :foo
+            │   │       │   │       └── flags: variable_call
             │   │       │   └── flags: ∅
             │   │       ├── closing_loc: ∅
             │   │       ├── block:
@@ -34,7 +35,6 @@
             │   │       │   ├── body: ∅
             │   │       │   ├── opening_loc: (1,13)-(1,15) = "do"
             │   │       │   └── closing_loc: (1,16)-(1,19) = "end"
-            │   │       ├── flags: ∅
-            │   │       └── name: :fun
+            │   │       └── flags: ∅
             │   └── flags: ∅
             └── keyword_loc: (1,0)-(1,4) = "next"

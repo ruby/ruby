@@ -124,13 +124,13 @@
         │   │   │   │       └── @ CallNode (location: (35,8)-(35,11))
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── name: :bbb
         │   │   │   │           ├── message_loc: (35,8)-(35,11) = "bbb"
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
-        │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: :bbb
+        │   │   │   │           └── flags: variable_call
         │   │   │   └── closing_loc: (35,11)-(35,12) = "}"
         │   │   └── @ StringNode (location: (35,12)-(35,16))
         │   │       ├── flags: ∅
@@ -154,6 +154,7 @@
         │   │   ├── closing_loc: (39,4)-(39,5) = "\""
         │   │   └── unescaped: "foo"
         │   ├── call_operator_loc: ∅
+        │   ├── name: :+
         │   ├── message_loc: (39,6)-(39,7) = "+"
         │   ├── opening_loc: ∅
         │   ├── arguments:
@@ -168,8 +169,7 @@
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :+
+        │   └── flags: ∅
         ├── @ StringNode (location: (43,0)-(43,7))
         │   ├── flags: ∅
         │   ├── opening_loc: (43,0)-(43,3) = "%q{"
@@ -222,13 +222,13 @@
         │   │   │   │       └── @ CallNode (location: (55,7)-(55,10))
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── name: :bbb
         │   │   │   │           ├── message_loc: (55,7)-(55,10) = "bbb"
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
-        │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: :bbb
+        │   │   │   │           └── flags: variable_call
         │   │   │   └── closing_loc: (55,10)-(55,11) = "}"
         │   │   └── @ StringNode (location: (55,11)-(55,15))
         │   │       ├── flags: ∅
@@ -348,13 +348,13 @@
         │   │   │   │   │   │       └── @ CallNode (location: (67,8)-(67,9))
         │   │   │   │   │   │           ├── receiver: ∅
         │   │   │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │   │   │           ├── name: :c
         │   │   │   │   │   │           ├── message_loc: (67,8)-(67,9) = "c"
         │   │   │   │   │   │           ├── opening_loc: ∅
         │   │   │   │   │   │           ├── arguments: ∅
         │   │   │   │   │   │           ├── closing_loc: ∅
         │   │   │   │   │   │           ├── block: ∅
-        │   │   │   │   │   │           ├── flags: variable_call
-        │   │   │   │   │   │           └── name: :c
+        │   │   │   │   │   │           └── flags: variable_call
         │   │   │   │   │   └── closing_loc: (67,9)-(67,10) = "}"
         │   │   │   │   └── @ StringNode (location: (67,10)-(67,11))
         │   │   │   │       ├── flags: ∅

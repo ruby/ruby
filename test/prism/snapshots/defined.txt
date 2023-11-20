@@ -43,24 +43,24 @@
         │   │   │   @ CallNode (location: (5,9)-(5,12))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── name: :foo
         │   │   │   ├── message_loc: (5,9)-(5,12) = "foo"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: variable_call
-        │   │   │   └── name: :foo
+        │   │   │   └── flags: variable_call
         │   │   ├── right:
         │   │   │   @ CallNode (location: (5,17)-(5,20))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── name: :bar
         │   │   │   ├── message_loc: (5,17)-(5,20) = "bar"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: variable_call
-        │   │   │   └── name: :bar
+        │   │   │   └── flags: variable_call
         │   │   └── operator_loc: (5,13)-(5,16) = "and"
         │   ├── rparen_loc: (5,20)-(5,21) = ")"
         │   └── keyword_loc: (5,0)-(5,8) = "defined?"

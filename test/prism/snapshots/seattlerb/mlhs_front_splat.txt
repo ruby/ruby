@@ -29,10 +29,10 @@
                 @ CallNode (location: (1,14)-(1,15))
                 ├── receiver: ∅
                 ├── call_operator_loc: ∅
+                ├── name: :f
                 ├── message_loc: (1,14)-(1,15) = "f"
                 ├── opening_loc: ∅
                 ├── arguments: ∅
                 ├── closing_loc: ∅
                 ├── block: ∅
-                ├── flags: variable_call
-                └── name: :f
+                └── flags: variable_call

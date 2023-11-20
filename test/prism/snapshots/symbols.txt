@@ -19,13 +19,13 @@
         │   │       │       └── @ CallNode (location: (3,4)-(3,7))
         │   │       │           ├── receiver: ∅
         │   │       │           ├── call_operator_loc: ∅
+        │   │       │           ├── name: :var
         │   │       │           ├── message_loc: (3,4)-(3,7) = "var"
         │   │       │           ├── opening_loc: ∅
         │   │       │           ├── arguments: ∅
         │   │       │           ├── closing_loc: ∅
         │   │       │           ├── block: ∅
-        │   │       │           ├── flags: variable_call
-        │   │       │           └── name: :var
+        │   │       │           └── flags: variable_call
         │   │       └── closing_loc: (3,7)-(3,8) = "}"
         │   └── closing_loc: (3,8)-(3,9) = "\""
         ├── @ InterpolatedSymbolNode (location: (5,0)-(5,10))

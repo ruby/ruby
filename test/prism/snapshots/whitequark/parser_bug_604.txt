@@ -6,6 +6,7 @@
         └── @ CallNode (location: (1,0)-(1,14))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
+            ├── name: :m
             ├── message_loc: (1,0)-(1,1) = "m"
             ├── opening_loc: ∅
             ├── arguments:
@@ -16,14 +17,15 @@
             │   │       │   @ CallNode (location: (1,2)-(1,3))
             │   │       │   ├── receiver: ∅
             │   │       │   ├── call_operator_loc: ∅
+            │   │       │   ├── name: :a
             │   │       │   ├── message_loc: (1,2)-(1,3) = "a"
             │   │       │   ├── opening_loc: ∅
             │   │       │   ├── arguments: ∅
             │   │       │   ├── closing_loc: ∅
             │   │       │   ├── block: ∅
-            │   │       │   ├── flags: variable_call
-            │   │       │   └── name: :a
+            │   │       │   └── flags: variable_call
             │   │       ├── call_operator_loc: ∅
+            │   │       ├── name: :+
             │   │       ├── message_loc: (1,4)-(1,5) = "+"
             │   │       ├── opening_loc: ∅
             │   │       ├── arguments:
@@ -32,18 +34,17 @@
             │   │       │   │   └── @ CallNode (location: (1,6)-(1,7))
             │   │       │   │       ├── receiver: ∅
             │   │       │   │       ├── call_operator_loc: ∅
+            │   │       │   │       ├── name: :b
             │   │       │   │       ├── message_loc: (1,6)-(1,7) = "b"
             │   │       │   │       ├── opening_loc: ∅
             │   │       │   │       ├── arguments: ∅
             │   │       │   │       ├── closing_loc: ∅
             │   │       │   │       ├── block: ∅
-            │   │       │   │       ├── flags: variable_call
-            │   │       │   │       └── name: :b
+            │   │       │   │       └── flags: variable_call
             │   │       │   └── flags: ∅
             │   │       ├── closing_loc: ∅
             │   │       ├── block: ∅
-            │   │       ├── flags: ∅
-            │   │       └── name: :+
+            │   │       └── flags: ∅
             │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block:
@@ -53,5 +54,4 @@
             │   ├── body: ∅
             │   ├── opening_loc: (1,8)-(1,10) = "do"
             │   └── closing_loc: (1,11)-(1,14) = "end"
-            ├── flags: ∅
-            └── name: :m
+            └── flags: ∅

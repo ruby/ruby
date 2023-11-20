@@ -677,6 +677,8 @@ nodes:
         type: node?
       - name: call_operator_loc
         type: location?
+      - name: name
+        type: constant
       - name: message_loc
         type: location?
       - name: opening_loc
@@ -691,8 +693,6 @@ nodes:
       - name: flags
         type: flags
         kind: CallNodeFlags
-      - name: name
-        type: constant
     comment: |
       Represents a method call, in all of the various forms that can take.
 

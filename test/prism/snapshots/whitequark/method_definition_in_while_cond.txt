@@ -23,6 +23,7 @@
         │   │   │   │           @ CallNode (location: (1,18)-(1,28))
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── name: :tap
         │   │   │   │           ├── message_loc: (1,18)-(1,21) = "tap"
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
@@ -34,8 +35,7 @@
         │   │   │   │           │   ├── body: ∅
         │   │   │   │           │   ├── opening_loc: (1,22)-(1,24) = "do"
         │   │   │   │           │   └── closing_loc: (1,25)-(1,28) = "end"
-        │   │   │   │           ├── flags: ∅
-        │   │   │   │           └── name: :tap
+        │   │   │   │           └── flags: ∅
         │   │   │   ├── rest: ∅
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 0)
@@ -71,6 +71,7 @@
         │   │   │       └── @ CallNode (location: (3,15)-(3,25))
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── name: :tap
         │   │   │           ├── message_loc: (3,15)-(3,18) = "tap"
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments: ∅
@@ -82,8 +83,7 @@
         │   │   │           │   ├── body: ∅
         │   │   │           │   ├── opening_loc: (3,19)-(3,21) = "do"
         │   │   │           │   └── closing_loc: (3,22)-(3,25) = "end"
-        │   │   │           ├── flags: ∅
-        │   │   │           └── name: :tap
+        │   │   │           └── flags: ∅
         │   │   ├── locals: []
         │   │   ├── def_keyword_loc: (3,6)-(3,9) = "def"
         │   │   ├── operator_loc: ∅
@@ -119,6 +119,7 @@
         │   │   │   │           @ CallNode (location: (5,23)-(5,33))
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── name: :tap
         │   │   │   │           ├── message_loc: (5,23)-(5,26) = "tap"
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
@@ -130,8 +131,7 @@
         │   │   │   │           │   ├── body: ∅
         │   │   │   │           │   ├── opening_loc: (5,27)-(5,29) = "do"
         │   │   │   │           │   └── closing_loc: (5,30)-(5,33) = "end"
-        │   │   │   │           ├── flags: ∅
-        │   │   │   │           └── name: :tap
+        │   │   │   │           └── flags: ∅
         │   │   │   ├── rest: ∅
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 0)
@@ -168,6 +168,7 @@
             │   │       └── @ CallNode (location: (7,20)-(7,30))
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
+            │   │           ├── name: :tap
             │   │           ├── message_loc: (7,20)-(7,23) = "tap"
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments: ∅
@@ -179,8 +180,7 @@
             │   │           │   ├── body: ∅
             │   │           │   ├── opening_loc: (7,24)-(7,26) = "do"
             │   │           │   └── closing_loc: (7,27)-(7,30) = "end"
-            │   │           ├── flags: ∅
-            │   │           └── name: :tap
+            │   │           └── flags: ∅
             │   ├── locals: []
             │   ├── def_keyword_loc: (7,6)-(7,9) = "def"
             │   ├── operator_loc: (7,14)-(7,15) = "."

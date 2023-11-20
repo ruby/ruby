@@ -8,46 +8,46 @@
         │   │   @ CallNode (location: (1,0)-(1,3))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :foo
         │   │   ├── message_loc: (1,0)-(1,3) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :foo
+        │   │   └── flags: variable_call
         │   ├── right:
         │   │   @ CallNode (location: (1,7)-(1,10))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :bar
         │   │   ├── message_loc: (1,7)-(1,10) = "bar"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :bar
+        │   │   └── flags: variable_call
         │   └── operator_loc: (1,4)-(1,6) = "&&"
         └── @ AndNode (location: (3,0)-(3,11))
             ├── left:
             │   @ CallNode (location: (3,0)-(3,3))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
+            │   ├── name: :foo
             │   ├── message_loc: (3,0)-(3,3) = "foo"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: variable_call
-            │   └── name: :foo
+            │   └── flags: variable_call
             ├── right:
             │   @ CallNode (location: (3,8)-(3,11))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
+            │   ├── name: :bar
             │   ├── message_loc: (3,8)-(3,11) = "bar"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: variable_call
-            │   └── name: :bar
+            │   └── flags: variable_call
             └── operator_loc: (3,4)-(3,7) = "and"

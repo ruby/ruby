@@ -69,6 +69,7 @@
         │   │   │   └── @ CallNode (location: (5,6)-(5,13))
         │   │   │       ├── receiver: ∅
         │   │   │       ├── call_operator_loc: ∅
+        │   │   │       ├── name: :y
         │   │   │       ├── message_loc: (5,6)-(5,7) = "y"
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── arguments:
@@ -90,8 +91,7 @@
         │   │   │       │   └── flags: ∅
         │   │   │       ├── closing_loc: ∅
         │   │   │       ├── block: ∅
-        │   │   │       ├── flags: ∅
-        │   │   │       └── name: :y
+        │   │   │       └── flags: ∅
         │   │   └── flags: ∅
         │   └── rparen_loc: ∅
         ├── @ YieldNode (location: (7,0)-(7,11))
@@ -103,6 +103,7 @@
         │   │   │   └── @ CallNode (location: (7,6)-(7,11))
         │   │   │       ├── receiver: ∅
         │   │   │       ├── call_operator_loc: ∅
+        │   │   │       ├── name: :y
         │   │   │       ├── message_loc: (7,6)-(7,7) = "y"
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── arguments:
@@ -124,8 +125,7 @@
         │   │   │       │   └── flags: ∅
         │   │   │       ├── closing_loc: ∅
         │   │   │       ├── block: ∅
-        │   │   │       ├── flags: ∅
-        │   │   │       └── name: :y
+        │   │   │       └── flags: ∅
         │   │   └── flags: ∅
         │   └── rparen_loc: ∅
         ├── @ YieldNode (location: (9,0)-(9,12))
@@ -137,6 +137,7 @@
         │   │   │   └── @ CallNode (location: (9,6)-(9,12))
         │   │   │       ├── receiver: ∅
         │   │   │       ├── call_operator_loc: ∅
+        │   │   │       ├── name: :y
         │   │   │       ├── message_loc: (9,6)-(9,7) = "y"
         │   │   │       ├── opening_loc: (9,7)-(9,8) = "("
         │   │   │       ├── arguments:
@@ -158,8 +159,7 @@
         │   │   │       │   └── flags: ∅
         │   │   │       ├── closing_loc: (9,11)-(9,12) = ")"
         │   │   │       ├── block: ∅
-        │   │   │       ├── flags: ∅
-        │   │   │       └── name: :y
+        │   │   │       └── flags: ∅
         │   │   └── flags: ∅
         │   └── rparen_loc: ∅
         └── @ YieldNode (location: (11,0)-(11,13))
@@ -171,6 +171,7 @@
             │   │   └── @ CallNode (location: (11,6)-(11,13))
             │   │       ├── receiver: ∅
             │   │       ├── call_operator_loc: ∅
+            │   │       ├── name: :y
             │   │       ├── message_loc: (11,6)-(11,7) = "y"
             │   │       ├── opening_loc: (11,7)-(11,8) = "("
             │   │       ├── arguments:
@@ -183,13 +184,13 @@
             │   │       │   │               │   @ CallNode (location: (11,8)-(11,9))
             │   │       │   │               │   ├── receiver: ∅
             │   │       │   │               │   ├── call_operator_loc: ∅
+            │   │       │   │               │   ├── name: :z
             │   │       │   │               │   ├── message_loc: (11,8)-(11,9) = "z"
             │   │       │   │               │   ├── opening_loc: ∅
             │   │       │   │               │   ├── arguments: ∅
             │   │       │   │               │   ├── closing_loc: ∅
             │   │       │   │               │   ├── block: ∅
-            │   │       │   │               │   ├── flags: variable_call
-            │   │       │   │               │   └── name: :z
+            │   │       │   │               │   └── flags: variable_call
             │   │       │   │               ├── value:
             │   │       │   │               │   @ IntegerNode (location: (11,11)-(11,12))
             │   │       │   │               │   └── flags: decimal
@@ -197,7 +198,6 @@
             │   │       │   └── flags: ∅
             │   │       ├── closing_loc: (11,12)-(11,13) = ")"
             │   │       ├── block: ∅
-            │   │       ├── flags: ∅
-            │   │       └── name: :y
+            │   │       └── flags: ∅
             │   └── flags: ∅
             └── rparen_loc: ∅

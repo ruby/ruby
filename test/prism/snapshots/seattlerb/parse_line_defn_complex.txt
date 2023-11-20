@@ -24,6 +24,7 @@
             │       ├── @ CallNode (location: (2,2)-(2,6))
             │       │   ├── receiver: ∅
             │       │   ├── call_operator_loc: ∅
+            │       │   ├── name: :p
             │       │   ├── message_loc: (2,2)-(2,3) = "p"
             │       │   ├── opening_loc: (2,3)-(2,4) = "("
             │       │   ├── arguments:
@@ -35,8 +36,7 @@
             │       │   │   └── flags: ∅
             │       │   ├── closing_loc: (2,5)-(2,6) = ")"
             │       │   ├── block: ∅
-            │       │   ├── flags: ∅
-            │       │   └── name: :p
+            │       │   └── flags: ∅
             │       ├── @ LocalVariableOperatorWriteNode (location: (3,2)-(3,8))
             │       │   ├── name_loc: (3,2)-(3,3) = "y"
             │       │   ├── operator_loc: (3,4)-(3,6) = "*="

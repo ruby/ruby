@@ -12,10 +12,10 @@
             │   ├── closing_loc: (3,0)-(4,0) = "END\n"
             │   └── unescaped: "blah\n"
             ├── call_operator_loc: (4,0)-(4,1) = "."
+            ├── name: :strip
             ├── message_loc: (4,1)-(4,6) = "strip"
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: ∅
-            └── name: :strip
+            └── flags: ∅

@@ -8,13 +8,13 @@
             │   @ CallNode (location: (1,0)-(1,1))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
+            │   ├── name: :a
             │   ├── message_loc: (1,0)-(1,1) = "a"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: variable_call
-            │   └── name: :a
+            │   └── flags: variable_call
             ├── right: ∅
             ├── operator_loc: (1,1)-(1,4) = "..."
             └── flags: exclude_end

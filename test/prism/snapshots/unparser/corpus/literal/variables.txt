@@ -6,13 +6,13 @@
         ├── @ CallNode (location: (1,0)-(1,1))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
+        │   ├── name: :a
         │   ├── message_loc: (1,0)-(1,1) = "a"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: variable_call
-        │   └── name: :a
+        │   └── flags: variable_call
         ├── @ InstanceVariableReadNode (location: (2,0)-(2,2))
         │   └── name: :@a
         ├── @ ClassVariableReadNode (location: (3,0)-(3,3))

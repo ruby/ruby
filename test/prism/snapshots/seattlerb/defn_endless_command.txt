@@ -14,6 +14,7 @@
             │       └── @ CallNode (location: (1,18)-(1,33))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
+            │           ├── name: :other_method
             │           ├── message_loc: (1,18)-(1,30) = "other_method"
             │           ├── opening_loc: ∅
             │           ├── arguments:
@@ -24,8 +25,7 @@
             │           │   └── flags: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: ∅
-            │           └── name: :other_method
+            │           └── flags: ∅
             ├── locals: []
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅

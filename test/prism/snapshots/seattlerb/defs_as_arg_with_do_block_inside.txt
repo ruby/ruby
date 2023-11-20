@@ -6,6 +6,7 @@
         └── @ CallNode (location: (1,0)-(1,30))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
+            ├── name: :p
             ├── message_loc: (1,0)-(1,1) = "p"
             ├── opening_loc: ∅
             ├── arguments:
@@ -25,14 +26,15 @@
             │   │       │           │   @ CallNode (location: (1,14)-(1,15))
             │   │       │           │   ├── receiver: ∅
             │   │       │           │   ├── call_operator_loc: ∅
+            │   │       │           │   ├── name: :x
             │   │       │           │   ├── message_loc: (1,14)-(1,15) = "x"
             │   │       │           │   ├── opening_loc: ∅
             │   │       │           │   ├── arguments: ∅
             │   │       │           │   ├── closing_loc: ∅
             │   │       │           │   ├── block: ∅
-            │   │       │           │   ├── flags: variable_call
-            │   │       │           │   └── name: :x
+            │   │       │           │   └── flags: variable_call
             │   │       │           ├── call_operator_loc: (1,15)-(1,16) = "."
+            │   │       │           ├── name: :y
             │   │       │           ├── message_loc: (1,16)-(1,17) = "y"
             │   │       │           ├── opening_loc: ∅
             │   │       │           ├── arguments: ∅
@@ -44,8 +46,7 @@
             │   │       │           │   ├── body: ∅
             │   │       │           │   ├── opening_loc: (1,18)-(1,20) = "do"
             │   │       │           │   └── closing_loc: (1,22)-(1,25) = "end"
-            │   │       │           ├── flags: ∅
-            │   │       │           └── name: :y
+            │   │       │           └── flags: ∅
             │   │       ├── locals: []
             │   │       ├── def_keyword_loc: (1,2)-(1,5) = "def"
             │   │       ├── operator_loc: (1,10)-(1,11) = "."
@@ -56,5 +57,4 @@
             │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: ∅
-            └── name: :p
+            └── flags: ∅

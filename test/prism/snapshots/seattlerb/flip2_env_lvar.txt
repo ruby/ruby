@@ -11,24 +11,24 @@
             │   │   @ CallNode (location: (1,3)-(1,4))
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
+            │   │   ├── name: :a
             │   │   ├── message_loc: (1,3)-(1,4) = "a"
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
-            │   │   ├── flags: variable_call
-            │   │   └── name: :a
+            │   │   └── flags: variable_call
             │   ├── right:
             │   │   @ CallNode (location: (1,6)-(1,7))
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
+            │   │   ├── name: :b
             │   │   ├── message_loc: (1,6)-(1,7) = "b"
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
-            │   │   ├── flags: variable_call
-            │   │   └── name: :b
+            │   │   └── flags: variable_call
             │   ├── operator_loc: (1,4)-(1,6) = ".."
             │   └── flags: ∅
             ├── then_keyword_loc: (1,8)-(1,12) = "then"

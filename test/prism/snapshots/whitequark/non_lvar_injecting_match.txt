@@ -25,6 +25,7 @@
             │   ├── closing_loc: (1,18)-(1,19) = "/"
             │   └── flags: ∅
             ├── call_operator_loc: ∅
+            ├── name: :=~
             ├── message_loc: (1,20)-(1,22) = "=~"
             ├── opening_loc: ∅
             ├── arguments:
@@ -39,5 +40,4 @@
             │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: ∅
-            └── name: :=~
+            └── flags: ∅

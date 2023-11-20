@@ -8,6 +8,7 @@
             │   @ IntegerNode (location: (1,0)-(1,1))
             │   └── flags: decimal
             ├── call_operator_loc: ∅
+            ├── name: :/
             ├── message_loc: (1,2)-(1,3) = "/"
             ├── opening_loc: ∅
             ├── arguments:
@@ -18,5 +19,4 @@
             │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: ∅
-            └── name: :/
+            └── flags: ∅

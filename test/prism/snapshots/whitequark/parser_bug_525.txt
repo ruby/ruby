@@ -6,6 +6,7 @@
         └── @ CallNode (location: (1,0)-(1,32))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
+            ├── name: :m1
             ├── message_loc: (1,0)-(1,2) = "m1"
             ├── opening_loc: ∅
             ├── arguments:
@@ -24,13 +25,13 @@
             │   │               │   @ CallNode (location: (1,9)-(1,11))
             │   │               │   ├── receiver: ∅
             │   │               │   ├── call_operator_loc: ∅
+            │   │               │   ├── name: :m2
             │   │               │   ├── message_loc: (1,9)-(1,11) = "m2"
             │   │               │   ├── opening_loc: ∅
             │   │               │   ├── arguments: ∅
             │   │               │   ├── closing_loc: ∅
             │   │               │   ├── block: ∅
-            │   │               │   ├── flags: variable_call
-            │   │               │   └── name: :m2
+            │   │               │   └── flags: variable_call
             │   │               └── operator_loc: (1,6)-(1,8) = "=>"
             │   └── flags: ∅
             ├── closing_loc: ∅
@@ -44,6 +45,7 @@
             │   │       └── @ CallNode (location: (1,16)-(1,27))
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
+            │   │           ├── name: :m3
             │   │           ├── message_loc: (1,16)-(1,18) = "m3"
             │   │           ├── opening_loc: (1,18)-(1,19) = "("
             │   │           ├── arguments: ∅
@@ -55,9 +57,7 @@
             │   │           │   ├── body: ∅
             │   │           │   ├── opening_loc: (1,21)-(1,23) = "do"
             │   │           │   └── closing_loc: (1,24)-(1,27) = "end"
-            │   │           ├── flags: ∅
-            │   │           └── name: :m3
+            │   │           └── flags: ∅
             │   ├── opening_loc: (1,12)-(1,14) = "do"
             │   └── closing_loc: (1,29)-(1,32) = "end"
-            ├── flags: ∅
-            └── name: :m1
+            └── flags: ∅

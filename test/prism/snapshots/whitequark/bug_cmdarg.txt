@@ -6,6 +6,7 @@
         ├── @ CallNode (location: (1,0)-(1,15))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
+        │   ├── name: :assert
         │   ├── message_loc: (1,0)-(1,6) = "assert"
         │   ├── opening_loc: ∅
         │   ├── arguments:
@@ -26,11 +27,11 @@
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :assert
+        │   └── flags: ∅
         ├── @ CallNode (location: (3,0)-(3,11))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
+        │   ├── name: :assert
         │   ├── message_loc: (3,0)-(3,6) = "assert"
         │   ├── opening_loc: ∅
         │   ├── arguments:
@@ -39,21 +40,21 @@
         │   │   │   └── @ CallNode (location: (3,7)-(3,11))
         │   │   │       ├── receiver: ∅
         │   │   │       ├── call_operator_loc: ∅
+        │   │   │       ├── name: :dogs
         │   │   │       ├── message_loc: (3,7)-(3,11) = "dogs"
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── arguments: ∅
         │   │   │       ├── closing_loc: ∅
         │   │   │       ├── block: ∅
-        │   │   │       ├── flags: variable_call
-        │   │   │       └── name: :dogs
+        │   │   │       └── flags: variable_call
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :assert
+        │   └── flags: ∅
         └── @ CallNode (location: (5,0)-(5,26))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
+            ├── name: :f
             ├── message_loc: (5,0)-(5,1) = "f"
             ├── opening_loc: ∅
             ├── arguments:
@@ -81,6 +82,7 @@
             │   │               │           └── @ CallNode (location: (5,11)-(5,22))
             │   │               │               ├── receiver: ∅
             │   │               │               ├── call_operator_loc: ∅
+            │   │               │               ├── name: :meth
             │   │               │               ├── message_loc: (5,11)-(5,15) = "meth"
             │   │               │               ├── opening_loc: ∅
             │   │               │               ├── arguments: ∅
@@ -92,11 +94,9 @@
             │   │               │               │   ├── body: ∅
             │   │               │               │   ├── opening_loc: (5,16)-(5,18) = "do"
             │   │               │               │   └── closing_loc: (5,19)-(5,22) = "end"
-            │   │               │               ├── flags: ∅
-            │   │               │               └── name: :meth
+            │   │               │               └── flags: ∅
             │   │               └── operator_loc: ∅
             │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: ∅
-            └── name: :f
+            └── flags: ∅

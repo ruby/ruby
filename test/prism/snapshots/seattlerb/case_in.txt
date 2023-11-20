@@ -736,13 +736,13 @@
         │   │       │   │       │   @ CallNode (location: (90,6)-(90,7))
         │   │       │   │       │   ├── receiver: ∅
         │   │       │   │       │   ├── call_operator_loc: ∅
+        │   │       │   │       │   ├── name: :a
         │   │       │   │       │   ├── message_loc: (90,6)-(90,7) = "a"
         │   │       │   │       │   ├── opening_loc: ∅
         │   │       │   │       │   ├── arguments: ∅
         │   │       │   │       │   ├── closing_loc: ∅
         │   │       │   │       │   ├── block: ∅
-        │   │       │   │       │   ├── flags: variable_call
-        │   │       │   │       │   └── name: :a
+        │   │       │   │       │   └── flags: variable_call
         │   │       │   │       ├── operator_loc: (90,4)-(90,5) = "^"
         │   │       │   │       ├── lparen_loc: (90,5)-(90,6) = "("
         │   │       │   │       └── rparen_loc: (90,7)-(90,8) = ")"

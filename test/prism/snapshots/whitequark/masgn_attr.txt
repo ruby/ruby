@@ -9,13 +9,13 @@
         │   │   │   ├── receiver:
         │   │   │   │   @ SelfNode (location: (1,0)-(1,4))
         │   │   │   ├── call_operator_loc: (1,4)-(1,5) = "."
+        │   │   │   ├── name: :A=
         │   │   │   ├── message_loc: (1,5)-(1,6) = "A"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: ∅
-        │   │   │   └── name: :A=
+        │   │   │   └── flags: ∅
         │   │   └── @ LocalVariableTargetNode (location: (1,8)-(1,11))
         │   │       ├── name: :foo
         │   │       └── depth: 0
@@ -34,17 +34,18 @@
         │   │   │   ├── receiver:
         │   │   │   │   @ SelfNode (location: (3,0)-(3,4))
         │   │   │   ├── call_operator_loc: (3,4)-(3,5) = "."
+        │   │   │   ├── name: :a=
         │   │   │   ├── message_loc: (3,5)-(3,6) = "a"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: ∅
-        │   │   │   └── name: :a=
+        │   │   │   └── flags: ∅
         │   │   └── @ CallNode (location: (3,8)-(3,18))
         │   │       ├── receiver:
         │   │       │   @ SelfNode (location: (3,8)-(3,12))
         │   │       ├── call_operator_loc: ∅
+        │   │       ├── name: :[]=
         │   │       ├── message_loc: (3,12)-(3,18) = "[1, 2]"
         │   │       ├── opening_loc: (3,12)-(3,13) = "["
         │   │       ├── arguments:
@@ -57,8 +58,7 @@
         │   │       │   └── flags: ∅
         │   │       ├── closing_loc: (3,17)-(3,18) = "]"
         │   │       ├── block: ∅
-        │   │       ├── flags: ∅
-        │   │       └── name: :[]=
+        │   │       └── flags: ∅
         │   ├── rest: ∅
         │   ├── rights: (length: 0)
         │   ├── lparen_loc: ∅
@@ -74,13 +74,13 @@
             │   │   ├── receiver:
             │   │   │   @ SelfNode (location: (5,0)-(5,4))
             │   │   ├── call_operator_loc: (5,4)-(5,6) = "::"
+            │   │   ├── name: :a=
             │   │   ├── message_loc: (5,6)-(5,7) = "a"
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
-            │   │   ├── flags: ∅
-            │   │   └── name: :a=
+            │   │   └── flags: ∅
             │   └── @ LocalVariableTargetNode (location: (5,9)-(5,12))
             │       ├── name: :foo
             │       └── depth: 0

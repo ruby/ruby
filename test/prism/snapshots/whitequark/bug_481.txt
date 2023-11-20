@@ -6,6 +6,7 @@
         ├── @ CallNode (location: (1,0)-(1,14))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
+        │   ├── name: :m
         │   ├── message_loc: (1,0)-(1,1) = "m"
         │   ├── opening_loc: ∅
         │   ├── arguments:
@@ -27,13 +28,13 @@
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :m
+        │   └── flags: ∅
         └── @ CallNode (location: (1,16)-(1,28))
             ├── receiver:
             │   @ IntegerNode (location: (1,16)-(1,17))
             │   └── flags: decimal
             ├── call_operator_loc: (1,17)-(1,18) = "."
+            ├── name: :tap
             ├── message_loc: (1,18)-(1,21) = "tap"
             ├── opening_loc: ∅
             ├── arguments: ∅
@@ -45,5 +46,4 @@
             │   ├── body: ∅
             │   ├── opening_loc: (1,22)-(1,24) = "do"
             │   └── closing_loc: (1,25)-(1,28) = "end"
-            ├── flags: ∅
-            └── name: :tap
+            └── flags: ∅

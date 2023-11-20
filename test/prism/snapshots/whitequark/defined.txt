@@ -16,13 +16,13 @@
         │   │   @ CallNode (location: (3,9)-(3,12))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :foo
         │   │   ├── message_loc: (3,9)-(3,12) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :foo
+        │   │   └── flags: variable_call
         │   ├── rparen_loc: ∅
         │   └── keyword_loc: (3,0)-(3,8) = "defined?"
         └── @ DefinedNode (location: (5,0)-(5,13))
@@ -31,12 +31,12 @@
             │   @ CallNode (location: (5,9)-(5,12))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
+            │   ├── name: :foo
             │   ├── message_loc: (5,9)-(5,12) = "foo"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: variable_call
-            │   └── name: :foo
+            │   └── flags: variable_call
             ├── rparen_loc: (5,12)-(5,13) = ")"
             └── keyword_loc: (5,0)-(5,8) = "defined?"

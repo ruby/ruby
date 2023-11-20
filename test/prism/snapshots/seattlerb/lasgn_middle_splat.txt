@@ -13,36 +13,36 @@
             │   │   ├── @ CallNode (location: (1,4)-(1,5))
             │   │   │   ├── receiver: ∅
             │   │   │   ├── call_operator_loc: ∅
+            │   │   │   ├── name: :b
             │   │   │   ├── message_loc: (1,4)-(1,5) = "b"
             │   │   │   ├── opening_loc: ∅
             │   │   │   ├── arguments: ∅
             │   │   │   ├── closing_loc: ∅
             │   │   │   ├── block: ∅
-            │   │   │   ├── flags: variable_call
-            │   │   │   └── name: :b
+            │   │   │   └── flags: variable_call
             │   │   ├── @ SplatNode (location: (1,7)-(1,9))
             │   │   │   ├── operator_loc: (1,7)-(1,8) = "*"
             │   │   │   └── expression:
             │   │   │       @ CallNode (location: (1,8)-(1,9))
             │   │   │       ├── receiver: ∅
             │   │   │       ├── call_operator_loc: ∅
+            │   │   │       ├── name: :c
             │   │   │       ├── message_loc: (1,8)-(1,9) = "c"
             │   │   │       ├── opening_loc: ∅
             │   │   │       ├── arguments: ∅
             │   │   │       ├── closing_loc: ∅
             │   │   │       ├── block: ∅
-            │   │   │       ├── flags: variable_call
-            │   │   │       └── name: :c
+            │   │   │       └── flags: variable_call
             │   │   └── @ CallNode (location: (1,11)-(1,12))
             │   │       ├── receiver: ∅
             │   │       ├── call_operator_loc: ∅
+            │   │       ├── name: :d
             │   │       ├── message_loc: (1,11)-(1,12) = "d"
             │   │       ├── opening_loc: ∅
             │   │       ├── arguments: ∅
             │   │       ├── closing_loc: ∅
             │   │       ├── block: ∅
-            │   │       ├── flags: variable_call
-            │   │       └── name: :d
+            │   │       └── flags: variable_call
             │   ├── opening_loc: ∅
             │   ├── closing_loc: ∅
             │   └── flags: contains_splat

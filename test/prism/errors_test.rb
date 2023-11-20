@@ -83,13 +83,13 @@ module Prism
           CallNode(
             expression("1"),
             nil,
+            :+,
             Location(),
             nil,
             ArgumentsNode([MissingNode()], 0),
             nil,
             nil,
-            0,
-            :+
+            0
           )
         ]),
         Location(),
@@ -341,6 +341,7 @@ module Prism
       expected = CallNode(
         nil,
         nil,
+        :a,
         Location(),
         Location(),
         ArgumentsNode([
@@ -349,8 +350,7 @@ module Prism
         ], 1),
         Location(),
         nil,
-        0,
-        :a
+        0
       )
 
       assert_errors expected, "a(**kwargs, *args)", [
@@ -362,13 +362,13 @@ module Prism
       expected = CallNode(
         nil,
         nil,
+        :a,
         Location(),
         Location(),
         ArgumentsNode([expression("foo")], 0),
         Location(),
         BlockArgumentNode(expression("block"), Location()),
-        0,
-        :a
+        0
       )
 
       assert_errors expected, "a(&block, foo)", [
@@ -388,6 +388,7 @@ module Prism
       expected = CallNode(
         nil,
         nil,
+        :a,
         Location(),
         Location(),
         ArgumentsNode([
@@ -402,8 +403,7 @@ module Prism
         ], 0),
         Location(),
         nil,
-        0,
-        :a
+        0
       )
 
       assert_errors expected, "a(foo: bar, *args)", [
@@ -442,6 +442,7 @@ module Prism
           [CallNode(
             nil,
             nil,
+            :bar,
             Location(),
             nil,
             nil,
@@ -453,8 +454,7 @@ module Prism
               Location(),
               Location()
             ),
-            0,
-            :bar
+            0
           )]
         ),
         [],
@@ -1004,6 +1004,7 @@ module Prism
       expected = CallNode(
         nil,
         nil,
+        :a,
         Location(),
         nil,
         nil,
@@ -1015,8 +1016,7 @@ module Prism
           Location(),
           Location()
         ),
-        0,
-        :a
+        0
       )
 
       assert_errors expected, "a {|...|}", [

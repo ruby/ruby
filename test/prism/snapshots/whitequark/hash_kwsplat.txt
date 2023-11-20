@@ -22,12 +22,12 @@
             │       │   @ CallNode (location: (1,12)-(1,15))
             │       │   ├── receiver: ∅
             │       │   ├── call_operator_loc: ∅
+            │       │   ├── name: :bar
             │       │   ├── message_loc: (1,12)-(1,15) = "bar"
             │       │   ├── opening_loc: ∅
             │       │   ├── arguments: ∅
             │       │   ├── closing_loc: ∅
             │       │   ├── block: ∅
-            │       │   ├── flags: variable_call
-            │       │   └── name: :bar
+            │       │   └── flags: variable_call
             │       └── operator_loc: (1,10)-(1,12) = "**"
             └── closing_loc: (1,16)-(1,17) = "}"

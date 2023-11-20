@@ -6,6 +6,7 @@
         ├── @ CallNode (location: (4,0)-(7,7))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
+        │   ├── name: :pp
         │   ├── message_loc: (4,0)-(4,2) = "pp"
         │   ├── opening_loc: ∅
         │   ├── arguments:
@@ -20,6 +21,7 @@
         │   │   │       │   ├── closing_loc: (6,0)-(7,0) = "A\n"
         │   │   │       │   └── unescaped: "a\n"
         │   │   │       ├── call_operator_loc: (4,7)-(4,8) = "."
+        │   │   │       ├── name: :gsub
         │   │   │       ├── message_loc: (4,8)-(4,12) = "gsub"
         │   │   │       ├── opening_loc: (4,12)-(4,13) = "("
         │   │   │       ├── arguments:
@@ -51,16 +53,15 @@
         │   │   │       │   └── flags: ∅
         │   │   │       ├── closing_loc: (7,6)-(7,7) = ")"
         │   │   │       ├── block: ∅
-        │   │   │       ├── flags: ∅
-        │   │   │       └── name: :gsub
+        │   │   │       └── flags: ∅
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :pp
+        │   └── flags: ∅
         ├── @ CallNode (location: (10,0)-(13,2))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
+        │   ├── name: :pp
         │   ├── message_loc: (10,0)-(10,2) = "pp"
         │   ├── opening_loc: ∅
         │   ├── arguments:
@@ -91,11 +92,11 @@
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :pp
+        │   └── flags: ∅
         ├── @ CallNode (location: (16,0)-(19,2))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
+        │   ├── name: :pp
         │   ├── message_loc: (16,0)-(16,2) = "pp"
         │   ├── opening_loc: ∅
         │   ├── arguments:
@@ -126,11 +127,11 @@
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :pp
+        │   └── flags: ∅
         ├── @ CallNode (location: (22,0)-(25,2))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
+        │   ├── name: :pp
         │   ├── message_loc: (22,0)-(22,2) = "pp"
         │   ├── opening_loc: ∅
         │   ├── arguments:
@@ -161,11 +162,11 @@
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :pp
+        │   └── flags: ∅
         ├── @ CallNode (location: (28,0)-(31,2))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
+        │   ├── name: :pp
         │   ├── message_loc: (28,0)-(28,2) = "pp"
         │   ├── opening_loc: ∅
         │   ├── arguments:
@@ -197,11 +198,11 @@
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :pp
+        │   └── flags: ∅
         ├── @ CallNode (location: (35,0)-(38,2))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
+        │   ├── name: :pp
         │   ├── message_loc: (35,0)-(35,2) = "pp"
         │   ├── opening_loc: ∅
         │   ├── arguments:
@@ -237,11 +238,11 @@
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :pp
+        │   └── flags: ∅
         ├── @ CallNode (location: (41,0)-(44,2))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
+        │   ├── name: :pp
         │   ├── message_loc: (41,0)-(41,2) = "pp"
         │   ├── opening_loc: ∅
         │   ├── arguments:
@@ -271,11 +272,11 @@
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :pp
+        │   └── flags: ∅
         ├── @ CallNode (location: (48,0)-(51,2))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
+        │   ├── name: :pp
         │   ├── message_loc: (48,0)-(48,2) = "pp"
         │   ├── opening_loc: ∅
         │   ├── arguments:
@@ -310,8 +311,7 @@
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :pp
+        │   └── flags: ∅
         ├── @ StringNode (location: (53,0)-(53,3))
         │   ├── flags: ∅
         │   ├── opening_loc: (53,0)-(53,3) = "<<A"
@@ -340,6 +340,7 @@
             │   │   ├── closing_loc: (55,6)-(55,7) = "/"
             │   │   └── flags: ∅
             │   ├── call_operator_loc: ∅
+            │   ├── name: :=~
             │   ├── message_loc: (55,8)-(55,10) = "=~"
             │   ├── opening_loc: ∅
             │   ├── arguments:
@@ -354,8 +355,7 @@
             │   │   └── flags: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: ∅
-            │   └── name: :=~
+            │   └── flags: ∅
             └── targets: (length: 1)
                 └── @ LocalVariableTargetNode (location: (53,5)-(55,7))
                     ├── name: :a

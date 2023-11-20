@@ -14,6 +14,7 @@
         │   │       └── @ CallNode (location: (2,8)-(2,17))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :g
         │   │           ├── message_loc: (2,8)-(2,9) = "g"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
@@ -32,8 +33,7 @@
         │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: ∅
-        │   │           └── name: :g
+        │   │           └── flags: ∅
         │   ├── locals: []
         │   ├── def_keyword_loc: (1,6)-(1,9) = "def"
         │   ├── operator_loc: ∅
@@ -52,6 +52,7 @@
         │   │       └── @ CallNode (location: (7,8)-(7,16))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :g
         │   │           ├── message_loc: (7,8)-(7,9) = "g"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
@@ -70,8 +71,7 @@
         │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: ∅
-        │   │           └── name: :g
+        │   │           └── flags: ∅
         │   ├── locals: []
         │   ├── def_keyword_loc: (6,6)-(6,9) = "def"
         │   ├── operator_loc: ∅
@@ -82,6 +82,7 @@
         └── @ CallNode (location: (11,0)-(11,9))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
+            ├── name: :g
             ├── message_loc: (11,0)-(11,1) = "g"
             ├── opening_loc: ∅
             ├── arguments:
@@ -100,5 +101,4 @@
             │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: ∅
-            └── name: :g
+            └── flags: ∅

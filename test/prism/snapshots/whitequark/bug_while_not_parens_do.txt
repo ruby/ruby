@@ -17,12 +17,12 @@
             │   │   ├── opening_loc: (1,10)-(1,11) = "("
             │   │   └── closing_loc: (1,15)-(1,16) = ")"
             │   ├── call_operator_loc: ∅
+            │   ├── name: :!
             │   ├── message_loc: (1,6)-(1,9) = "not"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: ∅
-            │   └── name: :!
+            │   └── flags: ∅
             ├── statements: ∅
             └── flags: ∅

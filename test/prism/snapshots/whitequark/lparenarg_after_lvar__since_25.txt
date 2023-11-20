@@ -6,6 +6,7 @@
         ├── @ CallNode (location: (1,0)-(1,14))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
+        │   ├── name: :foo
         │   ├── message_loc: (1,0)-(1,3) = "foo"
         │   ├── opening_loc: ∅
         │   ├── arguments:
@@ -21,21 +22,21 @@
         │   │   │       │   ├── opening_loc: (1,4)-(1,5) = "("
         │   │   │       │   └── closing_loc: (1,9)-(1,10) = ")"
         │   │   │       ├── call_operator_loc: (1,10)-(1,11) = "."
+        │   │   │       ├── name: :abs
         │   │   │       ├── message_loc: (1,11)-(1,14) = "abs"
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── arguments: ∅
         │   │   │       ├── closing_loc: ∅
         │   │   │       ├── block: ∅
-        │   │   │       ├── flags: ∅
-        │   │   │       └── name: :abs
+        │   │   │       └── flags: ∅
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :foo
+        │   └── flags: ∅
         └── @ CallNode (location: (3,0)-(3,15))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
+            ├── name: :meth
             ├── message_loc: (3,0)-(3,4) = "meth"
             ├── opening_loc: ∅
             ├── arguments:
@@ -51,15 +52,14 @@
             │   │       │   ├── opening_loc: (3,5)-(3,6) = "("
             │   │       │   └── closing_loc: (3,10)-(3,11) = ")"
             │   │       ├── call_operator_loc: (3,11)-(3,12) = "."
+            │   │       ├── name: :abs
             │   │       ├── message_loc: (3,12)-(3,15) = "abs"
             │   │       ├── opening_loc: ∅
             │   │       ├── arguments: ∅
             │   │       ├── closing_loc: ∅
             │   │       ├── block: ∅
-            │   │       ├── flags: ∅
-            │   │       └── name: :abs
+            │   │       └── flags: ∅
             │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: ∅
-            └── name: :meth
+            └── flags: ∅

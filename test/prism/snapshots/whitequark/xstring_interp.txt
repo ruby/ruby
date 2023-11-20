@@ -20,13 +20,13 @@
             │   │   │       └── @ CallNode (location: (1,6)-(1,9))
             │   │   │           ├── receiver: ∅
             │   │   │           ├── call_operator_loc: ∅
+            │   │   │           ├── name: :bar
             │   │   │           ├── message_loc: (1,6)-(1,9) = "bar"
             │   │   │           ├── opening_loc: ∅
             │   │   │           ├── arguments: ∅
             │   │   │           ├── closing_loc: ∅
             │   │   │           ├── block: ∅
-            │   │   │           ├── flags: variable_call
-            │   │   │           └── name: :bar
+            │   │   │           └── flags: variable_call
             │   │   └── closing_loc: (1,9)-(1,10) = "}"
             │   └── @ StringNode (location: (1,10)-(1,13))
             │       ├── flags: ∅

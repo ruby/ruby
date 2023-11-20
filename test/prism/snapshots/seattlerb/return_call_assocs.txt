@@ -64,6 +64,7 @@
         │       │   └── @ CallNode (location: (5,7)-(5,14))
         │       │       ├── receiver: ∅
         │       │       ├── call_operator_loc: ∅
+        │       │       ├── name: :y
         │       │       ├── message_loc: (5,7)-(5,8) = "y"
         │       │       ├── opening_loc: ∅
         │       │       ├── arguments:
@@ -85,8 +86,7 @@
         │       │       │   └── flags: ∅
         │       │       ├── closing_loc: ∅
         │       │       ├── block: ∅
-        │       │       ├── flags: ∅
-        │       │       └── name: :y
+        │       │       └── flags: ∅
         │       └── flags: ∅
         ├── @ ReturnNode (location: (7,0)-(7,12))
         │   ├── keyword_loc: (7,0)-(7,6) = "return"
@@ -96,6 +96,7 @@
         │       │   └── @ CallNode (location: (7,7)-(7,12))
         │       │       ├── receiver: ∅
         │       │       ├── call_operator_loc: ∅
+        │       │       ├── name: :y
         │       │       ├── message_loc: (7,7)-(7,8) = "y"
         │       │       ├── opening_loc: ∅
         │       │       ├── arguments:
@@ -117,8 +118,7 @@
         │       │       │   └── flags: ∅
         │       │       ├── closing_loc: ∅
         │       │       ├── block: ∅
-        │       │       ├── flags: ∅
-        │       │       └── name: :y
+        │       │       └── flags: ∅
         │       └── flags: ∅
         ├── @ ReturnNode (location: (9,0)-(9,13))
         │   ├── keyword_loc: (9,0)-(9,6) = "return"
@@ -128,6 +128,7 @@
         │       │   └── @ CallNode (location: (9,7)-(9,13))
         │       │       ├── receiver: ∅
         │       │       ├── call_operator_loc: ∅
+        │       │       ├── name: :y
         │       │       ├── message_loc: (9,7)-(9,8) = "y"
         │       │       ├── opening_loc: (9,8)-(9,9) = "("
         │       │       ├── arguments:
@@ -149,8 +150,7 @@
         │       │       │   └── flags: ∅
         │       │       ├── closing_loc: (9,12)-(9,13) = ")"
         │       │       ├── block: ∅
-        │       │       ├── flags: ∅
-        │       │       └── name: :y
+        │       │       └── flags: ∅
         │       └── flags: ∅
         └── @ ReturnNode (location: (11,0)-(11,14))
             ├── keyword_loc: (11,0)-(11,6) = "return"
@@ -160,6 +160,7 @@
                 │   └── @ CallNode (location: (11,7)-(11,14))
                 │       ├── receiver: ∅
                 │       ├── call_operator_loc: ∅
+                │       ├── name: :y
                 │       ├── message_loc: (11,7)-(11,8) = "y"
                 │       ├── opening_loc: (11,8)-(11,9) = "("
                 │       ├── arguments:
@@ -172,13 +173,13 @@
                 │       │   │               │   @ CallNode (location: (11,9)-(11,10))
                 │       │   │               │   ├── receiver: ∅
                 │       │   │               │   ├── call_operator_loc: ∅
+                │       │   │               │   ├── name: :z
                 │       │   │               │   ├── message_loc: (11,9)-(11,10) = "z"
                 │       │   │               │   ├── opening_loc: ∅
                 │       │   │               │   ├── arguments: ∅
                 │       │   │               │   ├── closing_loc: ∅
                 │       │   │               │   ├── block: ∅
-                │       │   │               │   ├── flags: variable_call
-                │       │   │               │   └── name: :z
+                │       │   │               │   └── flags: variable_call
                 │       │   │               ├── value:
                 │       │   │               │   @ IntegerNode (location: (11,12)-(11,13))
                 │       │   │               │   └── flags: decimal
@@ -186,6 +187,5 @@
                 │       │   └── flags: ∅
                 │       ├── closing_loc: (11,13)-(11,14) = ")"
                 │       ├── block: ∅
-                │       ├── flags: ∅
-                │       └── name: :y
+                │       └── flags: ∅
                 └── flags: ∅

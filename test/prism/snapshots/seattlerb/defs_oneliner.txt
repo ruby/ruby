@@ -25,6 +25,7 @@
             │       └── @ CallNode (location: (1,21)-(1,32))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
+            │           ├── name: :system
             │           ├── message_loc: (1,21)-(1,27) = "system"
             │           ├── opening_loc: (1,27)-(1,28) = "("
             │           ├── arguments:
@@ -36,8 +37,7 @@
             │           │   └── flags: ∅
             │           ├── closing_loc: (1,31)-(1,32) = ")"
             │           ├── block: ∅
-            │           ├── flags: ∅
-            │           └── name: :system
+            │           └── flags: ∅
             ├── locals: [:cmd]
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: (1,8)-(1,9) = "."

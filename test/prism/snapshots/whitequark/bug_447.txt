@@ -6,6 +6,7 @@
         ├── @ CallNode (location: (1,0)-(1,11))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
+        │   ├── name: :m
         │   ├── message_loc: (1,0)-(1,1) = "m"
         │   ├── opening_loc: ∅
         │   ├── arguments:
@@ -25,11 +26,11 @@
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (1,5)-(1,7) = "do"
         │   │   └── closing_loc: (1,8)-(1,11) = "end"
-        │   ├── flags: ∅
-        │   └── name: :m
+        │   └── flags: ∅
         └── @ CallNode (location: (3,0)-(3,14))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
+            ├── name: :m
             ├── message_loc: (3,0)-(3,1) = "m"
             ├── opening_loc: ∅
             ├── arguments:
@@ -51,5 +52,4 @@
             │   ├── body: ∅
             │   ├── opening_loc: (3,8)-(3,10) = "do"
             │   └── closing_loc: (3,11)-(3,14) = "end"
-            ├── flags: ∅
-            └── name: :m
+            └── flags: ∅

@@ -55,13 +55,13 @@
         │   │   @ CallNode (location: (6,6)-(6,7))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :b
         │   │   ├── message_loc: (6,6)-(6,7) = "b"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :b
+        │   │   └── flags: variable_call
         │   ├── name: :a
         │   └── depth: 0
         ├── @ LocalVariableOrWriteNode (location: (7,0)-(7,7))
@@ -89,13 +89,13 @@
         │   │   ├── opening_loc: (8,0)-(8,1) = "("
         │   │   └── closing_loc: (8,8)-(8,9) = ")"
         │   ├── call_operator_loc: (8,9)-(8,10) = "."
+        │   ├── name: :bar
         │   ├── message_loc: (8,10)-(8,13) = "bar"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :bar
+        │   └── flags: ∅
         ├── @ CallNode (location: (9,0)-(9,17))
         │   ├── receiver:
         │   │   @ ParenthesesNode (location: (9,0)-(9,10))
@@ -115,6 +115,7 @@
         │   │   ├── opening_loc: (9,0)-(9,1) = "("
         │   │   └── closing_loc: (9,9)-(9,10) = ")"
         │   ├── call_operator_loc: ∅
+        │   ├── name: :[]=
         │   ├── message_loc: (9,10)-(9,13) = "[k]"
         │   ├── opening_loc: (9,10)-(9,11) = "["
         │   ├── arguments:
@@ -123,28 +124,27 @@
         │   │   │   ├── @ CallNode (location: (9,11)-(9,12))
         │   │   │   │   ├── receiver: ∅
         │   │   │   │   ├── call_operator_loc: ∅
+        │   │   │   │   ├── name: :k
         │   │   │   │   ├── message_loc: (9,11)-(9,12) = "k"
         │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   ├── arguments: ∅
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
-        │   │   │   │   ├── flags: variable_call
-        │   │   │   │   └── name: :k
+        │   │   │   │   └── flags: variable_call
         │   │   │   └── @ CallNode (location: (9,16)-(9,17))
         │   │   │       ├── receiver: ∅
         │   │   │       ├── call_operator_loc: ∅
+        │   │   │       ├── name: :v
         │   │   │       ├── message_loc: (9,16)-(9,17) = "v"
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── arguments: ∅
         │   │   │       ├── closing_loc: ∅
         │   │   │       ├── block: ∅
-        │   │   │       ├── flags: variable_call
-        │   │   │       └── name: :v
+        │   │   │       └── flags: variable_call
         │   │   └── flags: ∅
         │   ├── closing_loc: (9,12)-(9,13) = "]"
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :[]=
+        │   └── flags: ∅
         ├── @ CallOperatorWriteNode (location: (10,0)-(10,8))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (10,0)-(10,1))
@@ -235,13 +235,13 @@
         │       @ CallNode (location: (15,8)-(15,9))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
+        │       ├── name: :b
         │       ├── message_loc: (15,8)-(15,9) = "b"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
-        │       ├── flags: variable_call
-        │       └── name: :b
+        │       └── flags: variable_call
         ├── @ CallOrWriteNode (location: (16,0)-(16,9))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (16,0)-(16,1))
@@ -269,13 +269,13 @@
         │   │   │   └── @ CallNode (location: (17,2)-(17,3))
         │   │   │       ├── receiver: ∅
         │   │   │       ├── call_operator_loc: ∅
+        │   │   │       ├── name: :b
         │   │   │       ├── message_loc: (17,2)-(17,3) = "b"
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── arguments: ∅
         │   │   │       ├── closing_loc: ∅
         │   │   │       ├── block: ∅
-        │   │   │       ├── flags: variable_call
-        │   │   │       └── name: :b
+        │   │   │       └── flags: variable_call
         │   │   └── flags: ∅
         │   ├── closing_loc: (17,3)-(17,4) = "]"
         │   ├── block: ∅
@@ -298,13 +298,13 @@
         │   │   │   └── @ CallNode (location: (18,2)-(18,3))
         │   │   │       ├── receiver: ∅
         │   │   │       ├── call_operator_loc: ∅
+        │   │   │       ├── name: :b
         │   │   │       ├── message_loc: (18,2)-(18,3) = "b"
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── arguments: ∅
         │   │   │       ├── closing_loc: ∅
         │   │   │       ├── block: ∅
-        │   │   │       ├── flags: variable_call
-        │   │   │       └── name: :b
+        │   │   │       └── flags: variable_call
         │   │   └── flags: ∅
         │   ├── closing_loc: (18,3)-(18,4) = "]"
         │   ├── block: ∅
@@ -327,13 +327,13 @@
         │   │   │   └── @ CallNode (location: (19,2)-(19,3))
         │   │   │       ├── receiver: ∅
         │   │   │       ├── call_operator_loc: ∅
+        │   │   │       ├── name: :b
         │   │   │       ├── message_loc: (19,2)-(19,3) = "b"
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── arguments: ∅
         │   │   │       ├── closing_loc: ∅
         │   │   │       ├── block: ∅
-        │   │   │       ├── flags: variable_call
-        │   │   │       └── name: :b
+        │   │   │       └── flags: variable_call
         │   │   └── flags: ∅
         │   ├── closing_loc: (19,3)-(19,4) = "]"
         │   ├── block: ∅
@@ -356,13 +356,13 @@
         │   │   │   └── @ CallNode (location: (20,2)-(20,3))
         │   │   │       ├── receiver: ∅
         │   │   │       ├── call_operator_loc: ∅
+        │   │   │       ├── name: :b
         │   │   │       ├── message_loc: (20,2)-(20,3) = "b"
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── arguments: ∅
         │   │   │       ├── closing_loc: ∅
         │   │   │       ├── block: ∅
-        │   │   │       ├── flags: variable_call
-        │   │   │       └── name: :b
+        │   │   │       └── flags: variable_call
         │   │   └── flags: ∅
         │   ├── closing_loc: (20,3)-(20,4) = "]"
         │   ├── block: ∅
@@ -385,13 +385,13 @@
         │   │   │   └── @ CallNode (location: (21,2)-(21,3))
         │   │   │       ├── receiver: ∅
         │   │   │       ├── call_operator_loc: ∅
+        │   │   │       ├── name: :b
         │   │   │       ├── message_loc: (21,2)-(21,3) = "b"
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── arguments: ∅
         │   │   │       ├── closing_loc: ∅
         │   │   │       ├── block: ∅
-        │   │   │       ├── flags: variable_call
-        │   │   │       └── name: :b
+        │   │   │       └── flags: variable_call
         │   │   └── flags: ∅
         │   ├── closing_loc: (21,3)-(21,4) = "]"
         │   ├── block: ∅
@@ -414,13 +414,13 @@
         │   │   │   └── @ CallNode (location: (22,2)-(22,3))
         │   │   │       ├── receiver: ∅
         │   │   │       ├── call_operator_loc: ∅
+        │   │   │       ├── name: :b
         │   │   │       ├── message_loc: (22,2)-(22,3) = "b"
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── arguments: ∅
         │   │   │       ├── closing_loc: ∅
         │   │   │       ├── block: ∅
-        │   │   │       ├── flags: variable_call
-        │   │   │       └── name: :b
+        │   │   │       └── flags: variable_call
         │   │   └── flags: ∅
         │   ├── closing_loc: (22,3)-(22,4) = "]"
         │   ├── block: ∅
@@ -430,13 +430,13 @@
         │       @ CallNode (location: (22,9)-(22,10))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
+        │       ├── name: :b
         │       ├── message_loc: (22,9)-(22,10) = "b"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
-        │       ├── flags: variable_call
-        │       └── name: :b
+        │       └── flags: variable_call
         ├── @ IndexOrWriteNode (location: (23,0)-(23,10))
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (23,0)-(23,1))
@@ -450,13 +450,13 @@
         │   │   │   └── @ CallNode (location: (23,2)-(23,3))
         │   │   │       ├── receiver: ∅
         │   │   │       ├── call_operator_loc: ∅
+        │   │   │       ├── name: :b
         │   │   │       ├── message_loc: (23,2)-(23,3) = "b"
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── arguments: ∅
         │   │   │       ├── closing_loc: ∅
         │   │   │       ├── block: ∅
-        │   │   │       ├── flags: variable_call
-        │   │   │       └── name: :b
+        │   │   │       └── flags: variable_call
         │   │   └── flags: ∅
         │   ├── closing_loc: (23,3)-(23,4) = "]"
         │   ├── block: ∅
@@ -470,13 +470,13 @@
             │   @ CallNode (location: (24,0)-(24,3))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
+            │   ├── name: :foo
             │   ├── message_loc: (24,0)-(24,3) = "foo"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: variable_call
-            │   └── name: :foo
+            │   └── flags: variable_call
             ├── call_operator_loc: (24,3)-(24,4) = "."
             ├── message_loc: (24,4)-(24,5) = "A"
             ├── flags: ∅

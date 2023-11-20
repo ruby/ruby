@@ -19,6 +19,7 @@
             │   ├── closing_loc: (1,11)-(1,12) = "]"
             │   └── flags: ∅
             ├── call_operator_loc: ∅
+            ├── name: :[]=
             ├── message_loc: (1,12)-(1,24) = "[from .. to]"
             ├── opening_loc: (1,12)-(1,13) = "["
             ├── arguments:
@@ -29,24 +30,24 @@
             │   │   │   │   @ CallNode (location: (1,13)-(1,17))
             │   │   │   │   ├── receiver: ∅
             │   │   │   │   ├── call_operator_loc: ∅
+            │   │   │   │   ├── name: :from
             │   │   │   │   ├── message_loc: (1,13)-(1,17) = "from"
             │   │   │   │   ├── opening_loc: ∅
             │   │   │   │   ├── arguments: ∅
             │   │   │   │   ├── closing_loc: ∅
             │   │   │   │   ├── block: ∅
-            │   │   │   │   ├── flags: variable_call
-            │   │   │   │   └── name: :from
+            │   │   │   │   └── flags: variable_call
             │   │   │   ├── right:
             │   │   │   │   @ CallNode (location: (1,21)-(1,23))
             │   │   │   │   ├── receiver: ∅
             │   │   │   │   ├── call_operator_loc: ∅
+            │   │   │   │   ├── name: :to
             │   │   │   │   ├── message_loc: (1,21)-(1,23) = "to"
             │   │   │   │   ├── opening_loc: ∅
             │   │   │   │   ├── arguments: ∅
             │   │   │   │   ├── closing_loc: ∅
             │   │   │   │   ├── block: ∅
-            │   │   │   │   ├── flags: variable_call
-            │   │   │   │   └── name: :to
+            │   │   │   │   └── flags: variable_call
             │   │   │   ├── operator_loc: (1,18)-(1,20) = ".."
             │   │   │   └── flags: ∅
             │   │   └── @ ArrayNode (location: (1,27)-(1,42))
@@ -75,5 +76,4 @@
             │   └── flags: ∅
             ├── closing_loc: (1,23)-(1,24) = "]"
             ├── block: ∅
-            ├── flags: ∅
-            └── name: :[]=
+            └── flags: ∅

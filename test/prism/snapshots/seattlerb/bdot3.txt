@@ -16,22 +16,22 @@
         │   │   @ CallNode (location: (2,5)-(2,6))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :a
         │   │   ├── message_loc: (2,5)-(2,6) = "a"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :a
+        │   │   └── flags: variable_call
         │   ├── operator_loc: (2,2)-(2,5) = "..."
         │   └── flags: exclude_end
         └── @ CallNode (location: (3,2)-(3,3))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
+            ├── name: :c
             ├── message_loc: (3,2)-(3,3) = "c"
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: variable_call
-            └── name: :c
+            └── flags: variable_call

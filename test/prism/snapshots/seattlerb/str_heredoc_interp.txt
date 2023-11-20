@@ -14,13 +14,13 @@
             │   │   │       └── @ CallNode (location: (2,2)-(2,3))
             │   │   │           ├── receiver: ∅
             │   │   │           ├── call_operator_loc: ∅
+            │   │   │           ├── name: :x
             │   │   │           ├── message_loc: (2,2)-(2,3) = "x"
             │   │   │           ├── opening_loc: ∅
             │   │   │           ├── arguments: ∅
             │   │   │           ├── closing_loc: ∅
             │   │   │           ├── block: ∅
-            │   │   │           ├── flags: variable_call
-            │   │   │           └── name: :x
+            │   │   │           └── flags: variable_call
             │   │   └── closing_loc: (2,3)-(2,4) = "}"
             │   └── @ StringNode (location: (2,4)-(4,0))
             │       ├── flags: ∅

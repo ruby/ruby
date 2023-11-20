@@ -10,24 +10,24 @@
         │   │   │   @ CallNode (location: (1,0)-(1,1))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── name: :a
         │   │   │   ├── message_loc: (1,0)-(1,1) = "a"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: variable_call
-        │   │   │   └── name: :a
+        │   │   │   └── flags: variable_call
         │   │   ├── right:
         │   │   │   @ CallNode (location: (1,4)-(1,5))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── name: :b
         │   │   │   ├── message_loc: (1,4)-(1,5) = "b"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: variable_call
-        │   │   │   └── name: :b
+        │   │   │   └── flags: variable_call
         │   │   ├── operator_loc: (1,1)-(1,4) = "..."
         │   │   └── flags: exclude_end
         │   ├── right:
@@ -36,24 +36,24 @@
         │   │   │   @ CallNode (location: (1,9)-(1,10))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── name: :c
         │   │   │   ├── message_loc: (1,9)-(1,10) = "c"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: variable_call
-        │   │   │   └── name: :c
+        │   │   │   └── flags: variable_call
         │   │   ├── right:
         │   │   │   @ CallNode (location: (1,13)-(1,14))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── name: :d
         │   │   │   ├── message_loc: (1,13)-(1,14) = "d"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: variable_call
-        │   │   │   └── name: :d
+        │   │   │   └── flags: variable_call
         │   │   ├── operator_loc: (1,10)-(1,13) = "..."
         │   │   └── flags: exclude_end
         │   └── operator_loc: (1,6)-(1,8) = "or"
@@ -64,24 +64,24 @@
         │   │   │   @ CallNode (location: (2,0)-(2,1))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── name: :a
         │   │   │   ├── message_loc: (2,0)-(2,1) = "a"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: variable_call
-        │   │   │   └── name: :a
+        │   │   │   └── flags: variable_call
         │   │   ├── right:
         │   │   │   @ CallNode (location: (2,4)-(2,5))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── name: :b
         │   │   │   ├── message_loc: (2,4)-(2,5) = "b"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: variable_call
-        │   │   │   └── name: :b
+        │   │   │   └── flags: variable_call
         │   │   ├── operator_loc: (2,1)-(2,4) = "..."
         │   │   └── flags: exclude_end
         │   ├── right:
@@ -90,24 +90,24 @@
         │   │   │   @ CallNode (location: (2,10)-(2,11))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── name: :c
         │   │   │   ├── message_loc: (2,10)-(2,11) = "c"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: variable_call
-        │   │   │   └── name: :c
+        │   │   │   └── flags: variable_call
         │   │   ├── right:
         │   │   │   @ CallNode (location: (2,14)-(2,15))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── name: :d
         │   │   │   ├── message_loc: (2,14)-(2,15) = "d"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: variable_call
-        │   │   │   └── name: :d
+        │   │   │   └── flags: variable_call
         │   │   ├── operator_loc: (2,11)-(2,14) = "..."
         │   │   └── flags: exclude_end
         │   └── operator_loc: (2,6)-(2,9) = "and"
@@ -121,24 +121,24 @@
         │   │   │   │   @ CallNode (location: (4,3)-(4,4))
         │   │   │   │   ├── receiver: ∅
         │   │   │   │   ├── call_operator_loc: ∅
+        │   │   │   │   ├── name: :a
         │   │   │   │   ├── message_loc: (4,3)-(4,4) = "a"
         │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   ├── arguments: ∅
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
-        │   │   │   │   ├── flags: variable_call
-        │   │   │   │   └── name: :a
+        │   │   │   │   └── flags: variable_call
         │   │   │   ├── right:
         │   │   │   │   @ CallNode (location: (4,7)-(4,8))
         │   │   │   │   ├── receiver: ∅
         │   │   │   │   ├── call_operator_loc: ∅
+        │   │   │   │   ├── name: :b
         │   │   │   │   ├── message_loc: (4,7)-(4,8) = "b"
         │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   ├── arguments: ∅
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
-        │   │   │   │   ├── flags: variable_call
-        │   │   │   │   └── name: :b
+        │   │   │   │   └── flags: variable_call
         │   │   │   ├── operator_loc: (4,4)-(4,7) = "..."
         │   │   │   └── flags: exclude_end
         │   │   ├── right:
@@ -147,24 +147,24 @@
         │   │   │   │   @ CallNode (location: (4,12)-(4,13))
         │   │   │   │   ├── receiver: ∅
         │   │   │   │   ├── call_operator_loc: ∅
+        │   │   │   │   ├── name: :c
         │   │   │   │   ├── message_loc: (4,12)-(4,13) = "c"
         │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   ├── arguments: ∅
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
-        │   │   │   │   ├── flags: variable_call
-        │   │   │   │   └── name: :c
+        │   │   │   │   └── flags: variable_call
         │   │   │   ├── right:
         │   │   │   │   @ CallNode (location: (4,16)-(4,17))
         │   │   │   │   ├── receiver: ∅
         │   │   │   │   ├── call_operator_loc: ∅
+        │   │   │   │   ├── name: :d
         │   │   │   │   ├── message_loc: (4,16)-(4,17) = "d"
         │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   ├── arguments: ∅
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   ├── block: ∅
-        │   │   │   │   ├── flags: variable_call
-        │   │   │   │   └── name: :d
+        │   │   │   │   └── flags: variable_call
         │   │   │   ├── operator_loc: (4,13)-(4,16) = "..."
         │   │   │   └── flags: exclude_end
         │   │   └── operator_loc: (4,9)-(4,11) = "or"
@@ -182,24 +182,24 @@
             │   │   │   @ CallNode (location: (7,3)-(7,4))
             │   │   │   ├── receiver: ∅
             │   │   │   ├── call_operator_loc: ∅
+            │   │   │   ├── name: :a
             │   │   │   ├── message_loc: (7,3)-(7,4) = "a"
             │   │   │   ├── opening_loc: ∅
             │   │   │   ├── arguments: ∅
             │   │   │   ├── closing_loc: ∅
             │   │   │   ├── block: ∅
-            │   │   │   ├── flags: variable_call
-            │   │   │   └── name: :a
+            │   │   │   └── flags: variable_call
             │   │   ├── right:
             │   │   │   @ CallNode (location: (7,7)-(7,8))
             │   │   │   ├── receiver: ∅
             │   │   │   ├── call_operator_loc: ∅
+            │   │   │   ├── name: :b
             │   │   │   ├── message_loc: (7,7)-(7,8) = "b"
             │   │   │   ├── opening_loc: ∅
             │   │   │   ├── arguments: ∅
             │   │   │   ├── closing_loc: ∅
             │   │   │   ├── block: ∅
-            │   │   │   ├── flags: variable_call
-            │   │   │   └── name: :b
+            │   │   │   └── flags: variable_call
             │   │   ├── operator_loc: (7,4)-(7,7) = "..."
             │   │   └── flags: exclude_end
             │   ├── right:
@@ -208,24 +208,24 @@
             │   │   │   @ CallNode (location: (7,13)-(7,14))
             │   │   │   ├── receiver: ∅
             │   │   │   ├── call_operator_loc: ∅
+            │   │   │   ├── name: :c
             │   │   │   ├── message_loc: (7,13)-(7,14) = "c"
             │   │   │   ├── opening_loc: ∅
             │   │   │   ├── arguments: ∅
             │   │   │   ├── closing_loc: ∅
             │   │   │   ├── block: ∅
-            │   │   │   ├── flags: variable_call
-            │   │   │   └── name: :c
+            │   │   │   └── flags: variable_call
             │   │   ├── right:
             │   │   │   @ CallNode (location: (7,17)-(7,18))
             │   │   │   ├── receiver: ∅
             │   │   │   ├── call_operator_loc: ∅
+            │   │   │   ├── name: :d
             │   │   │   ├── message_loc: (7,17)-(7,18) = "d"
             │   │   │   ├── opening_loc: ∅
             │   │   │   ├── arguments: ∅
             │   │   │   ├── closing_loc: ∅
             │   │   │   ├── block: ∅
-            │   │   │   ├── flags: variable_call
-            │   │   │   └── name: :d
+            │   │   │   └── flags: variable_call
             │   │   ├── operator_loc: (7,14)-(7,17) = "..."
             │   │   └── flags: exclude_end
             │   └── operator_loc: (7,9)-(7,12) = "and"

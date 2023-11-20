@@ -13,23 +13,23 @@
             │   │   @ CallNode (location: (1,6)-(1,10))
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
+            │   │   ├── name: :meth
             │   │   ├── message_loc: (1,6)-(1,10) = "meth"
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
-            │   │   ├── flags: variable_call
-            │   │   └── name: :meth
+            │   │   └── flags: variable_call
             │   ├── keyword_loc: (1,11)-(1,17) = "rescue"
             │   └── rescue_expression:
             │       @ CallNode (location: (1,18)-(1,21))
             │       ├── receiver: ∅
             │       ├── call_operator_loc: ∅
+            │       ├── name: :bar
             │       ├── message_loc: (1,18)-(1,21) = "bar"
             │       ├── opening_loc: ∅
             │       ├── arguments: ∅
             │       ├── closing_loc: ∅
             │       ├── block: ∅
-            │       ├── flags: variable_call
-            │       └── name: :bar
+            │       └── flags: variable_call
             └── operator_loc: (1,4)-(1,5) = "="

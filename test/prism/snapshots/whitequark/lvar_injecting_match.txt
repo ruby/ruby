@@ -14,6 +14,7 @@
         │   │   │   ├── unescaped: "(?<match>bar)"
         │   │   │   └── flags: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :=~
         │   │   ├── message_loc: (1,16)-(1,18) = "=~"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments:
@@ -28,8 +29,7 @@
         │   │   │   └── flags: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: ∅
-        │   │   └── name: :=~
+        │   │   └── flags: ∅
         │   └── targets: (length: 1)
         │       └── @ LocalVariableTargetNode (location: (1,4)-(1,9))
         │           ├── name: :match

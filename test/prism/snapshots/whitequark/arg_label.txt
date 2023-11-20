@@ -14,6 +14,7 @@
         │   │       └── @ CallNode (location: (2,1)-(2,4))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :a
         │   │           ├── message_loc: (2,1)-(2,2) = "a"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
@@ -27,8 +28,7 @@
         │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: ∅
-        │   │           └── name: :a
+        │   │           └── flags: ∅
         │   ├── locals: []
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
@@ -47,6 +47,7 @@
         │   │       └── @ CallNode (location: (4,10)-(4,13))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :a
         │   │           ├── message_loc: (4,10)-(4,11) = "a"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
@@ -60,8 +61,7 @@
         │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: ∅
-        │   │           └── name: :a
+        │   │           └── flags: ∅
         │   ├── locals: []
         │   ├── def_keyword_loc: (4,0)-(4,3) = "def"
         │   ├── operator_loc: ∅
@@ -72,6 +72,7 @@
         └── @ CallNode (location: (6,0)-(6,12))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
+            ├── name: :f
             ├── message_loc: (6,0)-(6,1) = "f"
             ├── opening_loc: ∅
             ├── arguments: ∅
@@ -91,6 +92,7 @@
             │   │       └── @ CallNode (location: (6,7)-(6,10))
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
+            │   │           ├── name: :a
             │   │           ├── message_loc: (6,7)-(6,8) = "a"
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments:
@@ -104,9 +106,7 @@
             │   │           │   └── flags: ∅
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
-            │   │           ├── flags: ∅
-            │   │           └── name: :a
+            │   │           └── flags: ∅
             │   ├── opening_loc: (6,2)-(6,3) = "{"
             │   └── closing_loc: (6,11)-(6,12) = "}"
-            ├── flags: ∅
-            └── name: :f
+            └── flags: ∅

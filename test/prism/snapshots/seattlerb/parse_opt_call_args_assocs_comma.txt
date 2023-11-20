@@ -8,6 +8,7 @@
             │   @ IntegerNode (location: (1,0)-(1,1))
             │   └── flags: decimal
             ├── call_operator_loc: ∅
+            ├── name: :[]
             ├── message_loc: (1,1)-(1,8) = "[2=>3,]"
             ├── opening_loc: (1,1)-(1,2) = "["
             ├── arguments:
@@ -26,5 +27,4 @@
             │   └── flags: ∅
             ├── closing_loc: (1,7)-(1,8) = "]"
             ├── block: ∅
-            ├── flags: ∅
-            └── name: :[]
+            └── flags: ∅

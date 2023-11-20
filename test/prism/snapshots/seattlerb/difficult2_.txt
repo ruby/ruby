@@ -15,6 +15,7 @@
         │   │       └── @ CallNode (location: (1,4)-(1,9))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :b
         │   │           ├── message_loc: (1,4)-(1,5) = "b"
         │   │           ├── opening_loc: (1,5)-(1,6) = "("
         │   │           ├── arguments:
@@ -29,8 +30,7 @@
         │   │           │   └── flags: ∅
         │   │           ├── closing_loc: (1,8)-(1,9) = ")"
         │   │           ├── block: ∅
-        │   │           ├── flags: ∅
-        │   │           └── name: :b
+        │   │           └── flags: ∅
         │   ├── consequent:
         │   │   @ ElseNode (location: (1,10)-(1,13))
         │   │   ├── else_keyword_loc: (1,10)-(1,11) = ":"
@@ -44,6 +44,7 @@
         └── @ CallNode (location: (2,0)-(2,6))
             ├── receiver: ∅
             ├── call_operator_loc: ∅
+            ├── name: :a
             ├── message_loc: (2,0)-(2,1) = "a"
             ├── opening_loc: ∅
             ├── arguments:
@@ -65,5 +66,4 @@
             │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: ∅
-            └── name: :a
+            └── flags: ∅

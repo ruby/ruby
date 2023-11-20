@@ -11,13 +11,13 @@
             │       └── @ CallNode (location: (2,2)-(2,5))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
+            │           ├── name: :foo
             │           ├── message_loc: (2,2)-(2,5) = "foo"
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: variable_call
-            │           └── name: :foo
+            │           └── flags: variable_call
             ├── rescue_clause: ∅
             ├── else_clause: ∅
             ├── ensure_clause: ∅

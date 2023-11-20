@@ -8,10 +8,10 @@
             │   @ IntegerNode (location: (1,4)-(1,6))
             │   └── flags: decimal
             ├── call_operator_loc: ∅
+            ├── name: :!
             ├── message_loc: (1,0)-(1,3) = "not"
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: ∅
-            └── name: :!
+            └── flags: ∅

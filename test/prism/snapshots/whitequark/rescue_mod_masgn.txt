@@ -22,13 +22,13 @@
                 │   @ CallNode (location: (1,11)-(1,15))
                 │   ├── receiver: ∅
                 │   ├── call_operator_loc: ∅
+                │   ├── name: :meth
                 │   ├── message_loc: (1,11)-(1,15) = "meth"
                 │   ├── opening_loc: ∅
                 │   ├── arguments: ∅
                 │   ├── closing_loc: ∅
                 │   ├── block: ∅
-                │   ├── flags: variable_call
-                │   └── name: :meth
+                │   └── flags: variable_call
                 ├── keyword_loc: (1,16)-(1,22) = "rescue"
                 └── rescue_expression:
                     @ ArrayNode (location: (1,23)-(1,29))

@@ -21,14 +21,15 @@
         │   │   │           │   │           │   @ CallNode (location: (1,5)-(1,6))
         │   │   │           │   │           │   ├── receiver: ∅
         │   │   │           │   │           │   ├── call_operator_loc: ∅
+        │   │   │           │   │           │   ├── name: :i
         │   │   │           │   │           │   ├── message_loc: (1,5)-(1,6) = "i"
         │   │   │           │   │           │   ├── opening_loc: ∅
         │   │   │           │   │           │   ├── arguments: ∅
         │   │   │           │   │           │   ├── closing_loc: ∅
         │   │   │           │   │           │   ├── block: ∅
-        │   │   │           │   │           │   ├── flags: variable_call
-        │   │   │           │   │           │   └── name: :i
+        │   │   │           │   │           │   └── flags: variable_call
         │   │   │           │   │           ├── call_operator_loc: ∅
+        │   │   │           │   │           ├── name: :==
         │   │   │           │   │           ├── message_loc: (1,7)-(1,9) = "=="
         │   │   │           │   │           ├── opening_loc: ∅
         │   │   │           │   │           ├── arguments:
@@ -39,8 +40,7 @@
         │   │   │           │   │           │   └── flags: ∅
         │   │   │           │   │           ├── closing_loc: ∅
         │   │   │           │   │           ├── block: ∅
-        │   │   │           │   │           ├── flags: ∅
-        │   │   │           │   │           └── name: :==
+        │   │   │           │   │           └── flags: ∅
         │   │   │           │   ├── opening_loc: (1,4)-(1,5) = "("
         │   │   │           │   └── closing_loc: (1,11)-(1,12) = ")"
         │   │   │           ├── right:
@@ -53,14 +53,15 @@
         │   │   │           │   │           │   @ CallNode (location: (1,15)-(1,16))
         │   │   │           │   │           │   ├── receiver: ∅
         │   │   │           │   │           │   ├── call_operator_loc: ∅
+        │   │   │           │   │           │   ├── name: :i
         │   │   │           │   │           │   ├── message_loc: (1,15)-(1,16) = "i"
         │   │   │           │   │           │   ├── opening_loc: ∅
         │   │   │           │   │           │   ├── arguments: ∅
         │   │   │           │   │           │   ├── closing_loc: ∅
         │   │   │           │   │           │   ├── block: ∅
-        │   │   │           │   │           │   ├── flags: variable_call
-        │   │   │           │   │           │   └── name: :i
+        │   │   │           │   │           │   └── flags: variable_call
         │   │   │           │   │           ├── call_operator_loc: ∅
+        │   │   │           │   │           ├── name: :==
         │   │   │           │   │           ├── message_loc: (1,17)-(1,19) = "=="
         │   │   │           │   │           ├── opening_loc: ∅
         │   │   │           │   │           ├── arguments:
@@ -71,8 +72,7 @@
         │   │   │           │   │           │   └── flags: ∅
         │   │   │           │   │           ├── closing_loc: ∅
         │   │   │           │   │           ├── block: ∅
-        │   │   │           │   │           ├── flags: ∅
-        │   │   │           │   │           └── name: :==
+        │   │   │           │   │           └── flags: ∅
         │   │   │           │   ├── opening_loc: (1,14)-(1,15) = "("
         │   │   │           │   └── closing_loc: (1,21)-(1,22) = ")"
         │   │   │           ├── operator_loc: (1,12)-(1,14) = ".."
@@ -86,13 +86,13 @@
         │   │       └── @ CallNode (location: (2,2)-(2,5))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :foo
         │   │           ├── message_loc: (2,2)-(2,5) = "foo"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: variable_call
-        │   │           └── name: :foo
+        │   │           └── flags: variable_call
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (3,0)-(3,3) = "end"
         └── @ IfNode (location: (4,0)-(6,3))
@@ -113,14 +113,15 @@
             │   │           │   │           │   @ CallNode (location: (4,5)-(4,6))
             │   │           │   │           │   ├── receiver: ∅
             │   │           │   │           │   ├── call_operator_loc: ∅
+            │   │           │   │           │   ├── name: :i
             │   │           │   │           │   ├── message_loc: (4,5)-(4,6) = "i"
             │   │           │   │           │   ├── opening_loc: ∅
             │   │           │   │           │   ├── arguments: ∅
             │   │           │   │           │   ├── closing_loc: ∅
             │   │           │   │           │   ├── block: ∅
-            │   │           │   │           │   ├── flags: variable_call
-            │   │           │   │           │   └── name: :i
+            │   │           │   │           │   └── flags: variable_call
             │   │           │   │           ├── call_operator_loc: ∅
+            │   │           │   │           ├── name: :==
             │   │           │   │           ├── message_loc: (4,7)-(4,9) = "=="
             │   │           │   │           ├── opening_loc: ∅
             │   │           │   │           ├── arguments:
@@ -131,8 +132,7 @@
             │   │           │   │           │   └── flags: ∅
             │   │           │   │           ├── closing_loc: ∅
             │   │           │   │           ├── block: ∅
-            │   │           │   │           ├── flags: ∅
-            │   │           │   │           └── name: :==
+            │   │           │   │           └── flags: ∅
             │   │           │   ├── opening_loc: (4,4)-(4,5) = "("
             │   │           │   └── closing_loc: (4,11)-(4,12) = ")"
             │   │           ├── right:
@@ -145,14 +145,15 @@
             │   │           │   │           │   @ CallNode (location: (4,16)-(4,17))
             │   │           │   │           │   ├── receiver: ∅
             │   │           │   │           │   ├── call_operator_loc: ∅
+            │   │           │   │           │   ├── name: :i
             │   │           │   │           │   ├── message_loc: (4,16)-(4,17) = "i"
             │   │           │   │           │   ├── opening_loc: ∅
             │   │           │   │           │   ├── arguments: ∅
             │   │           │   │           │   ├── closing_loc: ∅
             │   │           │   │           │   ├── block: ∅
-            │   │           │   │           │   ├── flags: variable_call
-            │   │           │   │           │   └── name: :i
+            │   │           │   │           │   └── flags: variable_call
             │   │           │   │           ├── call_operator_loc: ∅
+            │   │           │   │           ├── name: :==
             │   │           │   │           ├── message_loc: (4,18)-(4,20) = "=="
             │   │           │   │           ├── opening_loc: ∅
             │   │           │   │           ├── arguments:
@@ -163,8 +164,7 @@
             │   │           │   │           │   └── flags: ∅
             │   │           │   │           ├── closing_loc: ∅
             │   │           │   │           ├── block: ∅
-            │   │           │   │           ├── flags: ∅
-            │   │           │   │           └── name: :==
+            │   │           │   │           └── flags: ∅
             │   │           │   ├── opening_loc: (4,15)-(4,16) = "("
             │   │           │   └── closing_loc: (4,22)-(4,23) = ")"
             │   │           ├── operator_loc: (4,12)-(4,15) = "..."
@@ -178,12 +178,12 @@
             │       └── @ CallNode (location: (5,2)-(5,5))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
+            │           ├── name: :foo
             │           ├── message_loc: (5,2)-(5,5) = "foo"
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: variable_call
-            │           └── name: :foo
+            │           └── flags: variable_call
             ├── consequent: ∅
             └── end_keyword_loc: (6,0)-(6,3) = "end"

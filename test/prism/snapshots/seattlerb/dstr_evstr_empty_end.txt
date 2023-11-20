@@ -14,12 +14,12 @@
             │       │       └── @ CallNode (location: (1,4)-(1,9))
             │       │           ├── receiver: ∅
             │       │           ├── call_operator_loc: ∅
+            │       │           ├── name: :field
             │       │           ├── message_loc: (1,4)-(1,9) = "field"
             │       │           ├── opening_loc: ∅
             │       │           ├── arguments: ∅
             │       │           ├── closing_loc: ∅
             │       │           ├── block: ∅
-            │       │           ├── flags: variable_call
-            │       │           └── name: :field
+            │       │           └── flags: variable_call
             │       └── closing_loc: (1,9)-(1,10) = "}"
             └── closing_loc: (1,10)-(1,11) = "\""

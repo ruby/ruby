@@ -12,6 +12,7 @@
         │   │   ├── closing_loc: (2,0)-(3,0) = "TARGET\n"
         │   │   └── unescaped: ""
         │   ├── call_operator_loc: (1,9)-(1,10) = "."
+        │   ├── name: :gsub
         │   ├── message_loc: (1,10)-(1,14) = "gsub"
         │   ├── opening_loc: ∅
         │   ├── arguments:
@@ -32,8 +33,7 @@
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :gsub
+        │   └── flags: ∅
         └── @ CallNode (location: (5,0)-(5,25))
             ├── receiver:
             │   @ StringNode (location: (5,0)-(5,9))
@@ -43,6 +43,7 @@
             │   ├── closing_loc: (6,0)-(7,0) = "TARGET\r\n"
             │   └── unescaped: ""
             ├── call_operator_loc: (5,9)-(5,10) = "."
+            ├── name: :gsub
             ├── message_loc: (5,10)-(5,14) = "gsub"
             ├── opening_loc: ∅
             ├── arguments:
@@ -63,5 +64,4 @@
             │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅
-            ├── flags: ∅
-            └── name: :gsub
+            └── flags: ∅

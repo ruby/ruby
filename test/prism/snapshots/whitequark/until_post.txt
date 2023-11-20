@@ -10,13 +10,13 @@
             │   @ CallNode (location: (1,21)-(1,24))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
+            │   ├── name: :foo
             │   ├── message_loc: (1,21)-(1,24) = "foo"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: variable_call
-            │   └── name: :foo
+            │   └── flags: variable_call
             ├── statements:
             │   @ StatementsNode (location: (1,0)-(1,14))
             │   └── body: (length: 1)
@@ -28,13 +28,13 @@
             │           │       └── @ CallNode (location: (1,6)-(1,10))
             │           │           ├── receiver: ∅
             │           │           ├── call_operator_loc: ∅
+            │           │           ├── name: :meth
             │           │           ├── message_loc: (1,6)-(1,10) = "meth"
             │           │           ├── opening_loc: ∅
             │           │           ├── arguments: ∅
             │           │           ├── closing_loc: ∅
             │           │           ├── block: ∅
-            │           │           ├── flags: variable_call
-            │           │           └── name: :meth
+            │           │           └── flags: variable_call
             │           ├── rescue_clause: ∅
             │           ├── else_clause: ∅
             │           ├── ensure_clause: ∅

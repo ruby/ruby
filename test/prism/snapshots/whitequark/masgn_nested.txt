@@ -26,13 +26,13 @@
         │       @ CallNode (location: (1,10)-(1,13))
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
+        │       ├── name: :foo
         │       ├── message_loc: (1,10)-(1,13) = "foo"
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
         │       ├── block: ∅
-        │       ├── flags: variable_call
-        │       └── name: :foo
+        │       └── flags: variable_call
         └── @ MultiWriteNode (location: (3,0)-(3,15))
             ├── lefts: (length: 2)
             │   ├── @ LocalVariableTargetNode (location: (3,0)-(3,1))
@@ -59,10 +59,10 @@
                 @ CallNode (location: (3,12)-(3,15))
                 ├── receiver: ∅
                 ├── call_operator_loc: ∅
+                ├── name: :foo
                 ├── message_loc: (3,12)-(3,15) = "foo"
                 ├── opening_loc: ∅
                 ├── arguments: ∅
                 ├── closing_loc: ∅
                 ├── block: ∅
-                ├── flags: variable_call
-                └── name: :foo
+                └── flags: variable_call

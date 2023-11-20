@@ -15,6 +15,7 @@
         │   │       └── @ CallNode (location: (2,2)-(6,3))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :foo
         │   │           ├── message_loc: (2,2)-(2,5) = "foo"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
@@ -48,13 +49,13 @@
         │   │           │   │           │   @ CallNode (location: (3,10)-(3,13))
         │   │           │   │           │   ├── receiver: ∅
         │   │           │   │           │   ├── call_operator_loc: ∅
+        │   │           │   │           │   ├── name: :foo
         │   │           │   │           │   ├── message_loc: (3,10)-(3,13) = "foo"
         │   │           │   │           │   ├── opening_loc: ∅
         │   │           │   │           │   ├── arguments: ∅
         │   │           │   │           │   ├── closing_loc: ∅
         │   │           │   │           │   ├── block: ∅
-        │   │           │   │           │   ├── flags: variable_call
-        │   │           │   │           │   └── name: :foo
+        │   │           │   │           │   └── flags: variable_call
         │   │           │   │           ├── statements:
         │   │           │   │           │   @ StatementsNode (location: (4,6)-(4,15))
         │   │           │   │           │   └── body: (length: 1)
@@ -70,8 +71,7 @@
         │   │           │   │           └── flags: ∅
         │   │           │   ├── opening_loc: (2,6)-(2,7) = "{"
         │   │           │   └── closing_loc: (6,2)-(6,3) = "}"
-        │   │           ├── flags: ∅
-        │   │           └── name: :foo
+        │   │           └── flags: ∅
         │   ├── end_keyword_loc: (7,0)-(7,3) = "end"
         │   └── name: :A
         ├── @ DefNode (location: (9,0)-(11,3))
@@ -92,6 +92,7 @@
         │   │           │   │   ├── name: :foo
         │   │           │   │   └── depth: 0
         │   │           │   ├── call_operator_loc: ∅
+        │   │           │   ├── name: :!=
         │   │           │   ├── message_loc: (10,22)-(10,24) = "!="
         │   │           │   ├── opening_loc: ∅
         │   │           │   ├── arguments:
@@ -100,18 +101,17 @@
         │   │           │   │   │   └── @ CallNode (location: (10,25)-(10,28))
         │   │           │   │   │       ├── receiver: ∅
         │   │           │   │   │       ├── call_operator_loc: ∅
+        │   │           │   │   │       ├── name: :baz
         │   │           │   │   │       ├── message_loc: (10,25)-(10,28) = "baz"
         │   │           │   │   │       ├── opening_loc: ∅
         │   │           │   │   │       ├── arguments: ∅
         │   │           │   │   │       ├── closing_loc: ∅
         │   │           │   │   │       ├── block: ∅
-        │   │           │   │   │       ├── flags: variable_call
-        │   │           │   │   │       └── name: :baz
+        │   │           │   │   │       └── flags: variable_call
         │   │           │   │   └── flags: ∅
         │   │           │   ├── closing_loc: ∅
         │   │           │   ├── block: ∅
-        │   │           │   ├── flags: ∅
-        │   │           │   └── name: :!=
+        │   │           │   └── flags: ∅
         │   │           ├── statements:
         │   │           │   @ StatementsNode (location: (10,2)-(10,11))
         │   │           │   └── body: (length: 1)
@@ -123,13 +123,13 @@
         │   │           │           │   @ CallNode (location: (10,8)-(10,11))
         │   │           │           │   ├── receiver: ∅
         │   │           │           │   ├── call_operator_loc: ∅
+        │   │           │           │   ├── name: :bar
         │   │           │           │   ├── message_loc: (10,8)-(10,11) = "bar"
         │   │           │           │   ├── opening_loc: ∅
         │   │           │           │   ├── arguments: ∅
         │   │           │           │   ├── closing_loc: ∅
         │   │           │           │   ├── block: ∅
-        │   │           │           │   ├── flags: variable_call
-        │   │           │           │   └── name: :bar
+        │   │           │           │   └── flags: variable_call
         │   │           │           └── operator_loc: (10,6)-(10,7) = "="
         │   │           └── flags: ∅
         │   ├── locals: [:foo]
@@ -166,13 +166,13 @@
         │   │           │           │   @ CallNode (location: (14,8)-(14,11))
         │   │           │           │   ├── receiver: ∅
         │   │           │           │   ├── call_operator_loc: ∅
+        │   │           │           │   ├── name: :bar
         │   │           │           │   ├── message_loc: (14,8)-(14,11) = "bar"
         │   │           │           │   ├── opening_loc: ∅
         │   │           │           │   ├── arguments: ∅
         │   │           │           │   ├── closing_loc: ∅
         │   │           │           │   ├── block: ∅
-        │   │           │           │   ├── flags: variable_call
-        │   │           │           │   └── name: :bar
+        │   │           │           │   └── flags: variable_call
         │   │           │           └── operator_loc: (14,6)-(14,7) = "="
         │   │           └── flags: ∅
         │   ├── end_keyword_loc: (15,0)-(15,3) = "end"
@@ -204,13 +204,13 @@
         │   │           │           │   @ CallNode (location: (18,8)-(18,11))
         │   │           │           │   ├── receiver: ∅
         │   │           │           │   ├── call_operator_loc: ∅
+        │   │           │           │   ├── name: :bar
         │   │           │           │   ├── message_loc: (18,8)-(18,11) = "bar"
         │   │           │           │   ├── opening_loc: ∅
         │   │           │           │   ├── arguments: ∅
         │   │           │           │   ├── closing_loc: ∅
         │   │           │           │   ├── block: ∅
-        │   │           │           │   ├── flags: variable_call
-        │   │           │           │   └── name: :bar
+        │   │           │           │   └── flags: variable_call
         │   │           │           └── operator_loc: (18,6)-(18,7) = "="
         │   │           └── flags: ∅
         │   ├── end_keyword_loc: (19,0)-(19,3) = "end"
@@ -231,13 +231,13 @@
         │   │           │   @ CallNode (location: (22,8)-(22,11))
         │   │           │   ├── receiver: ∅
         │   │           │   ├── call_operator_loc: ∅
+        │   │           │   ├── name: :foo
         │   │           │   ├── message_loc: (22,8)-(22,11) = "foo"
         │   │           │   ├── opening_loc: ∅
         │   │           │   ├── arguments: ∅
         │   │           │   ├── closing_loc: ∅
         │   │           │   ├── block: ∅
-        │   │           │   ├── flags: variable_call
-        │   │           │   └── name: :foo
+        │   │           │   └── flags: variable_call
         │   │           ├── statements:
         │   │           │   @ StatementsNode (location: (23,4)-(23,13))
         │   │           │   └── body: (length: 1)
@@ -249,13 +249,13 @@
         │   │           │           │   @ CallNode (location: (23,10)-(23,13))
         │   │           │           │   ├── receiver: ∅
         │   │           │           │   ├── call_operator_loc: ∅
+        │   │           │           │   ├── name: :bar
         │   │           │           │   ├── message_loc: (23,10)-(23,13) = "bar"
         │   │           │           │   ├── opening_loc: ∅
         │   │           │           │   ├── arguments: ∅
         │   │           │           │   ├── closing_loc: ∅
         │   │           │           │   ├── block: ∅
-        │   │           │           │   ├── flags: variable_call
-        │   │           │           │   └── name: :bar
+        │   │           │           │   └── flags: variable_call
         │   │           │           └── operator_loc: (23,8)-(23,9) = "="
         │   │           └── flags: ∅
         │   ├── end_keyword_loc: (25,0)-(25,3) = "end"
@@ -272,6 +272,7 @@
         │   │       └── @ CallNode (location: (28,2)-(32,3))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :each
         │   │           ├── message_loc: (28,2)-(28,6) = "each"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
@@ -305,13 +306,13 @@
         │   │           │   │           │   @ CallNode (location: (29,10)-(29,13))
         │   │           │   │           │   ├── receiver: ∅
         │   │           │   │           │   ├── call_operator_loc: ∅
+        │   │           │   │           │   ├── name: :foo
         │   │           │   │           │   ├── message_loc: (29,10)-(29,13) = "foo"
         │   │           │   │           │   ├── opening_loc: ∅
         │   │           │   │           │   ├── arguments: ∅
         │   │           │   │           │   ├── closing_loc: ∅
         │   │           │   │           │   ├── block: ∅
-        │   │           │   │           │   ├── flags: variable_call
-        │   │           │   │           │   └── name: :foo
+        │   │           │   │           │   └── flags: variable_call
         │   │           │   │           ├── statements:
         │   │           │   │           │   @ StatementsNode (location: (30,6)-(30,15))
         │   │           │   │           │   └── body: (length: 1)
@@ -323,19 +324,18 @@
         │   │           │   │           │           │   @ CallNode (location: (30,12)-(30,15))
         │   │           │   │           │           │   ├── receiver: ∅
         │   │           │   │           │           │   ├── call_operator_loc: ∅
+        │   │           │   │           │           │   ├── name: :bar
         │   │           │   │           │           │   ├── message_loc: (30,12)-(30,15) = "bar"
         │   │           │   │           │           │   ├── opening_loc: ∅
         │   │           │   │           │           │   ├── arguments: ∅
         │   │           │   │           │           │   ├── closing_loc: ∅
         │   │           │   │           │           │   ├── block: ∅
-        │   │           │   │           │           │   ├── flags: variable_call
-        │   │           │   │           │           │   └── name: :bar
+        │   │           │   │           │           │   └── flags: variable_call
         │   │           │   │           │           └── operator_loc: (30,10)-(30,11) = "="
         │   │           │   │           └── flags: ∅
         │   │           │   ├── opening_loc: (28,7)-(28,8) = "{"
         │   │           │   └── closing_loc: (32,2)-(32,3) = "}"
-        │   │           ├── flags: ∅
-        │   │           └── name: :each
+        │   │           └── flags: ∅
         │   ├── end_keyword_loc: (33,0)-(33,3) = "end"
         │   └── name: :A
         ├── @ ModuleNode (location: (35,0)-(41,3))
@@ -350,6 +350,7 @@
         │   │       └── @ CallNode (location: (36,2)-(40,3))
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :each
         │   │           ├── message_loc: (36,2)-(36,6) = "each"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
@@ -394,19 +395,18 @@
         │   │           │   │           │           │   @ CallNode (location: (38,12)-(38,15))
         │   │           │   │           │           │   ├── receiver: ∅
         │   │           │   │           │           │   ├── call_operator_loc: ∅
+        │   │           │   │           │           │   ├── name: :bar
         │   │           │   │           │           │   ├── message_loc: (38,12)-(38,15) = "bar"
         │   │           │   │           │           │   ├── opening_loc: ∅
         │   │           │   │           │           │   ├── arguments: ∅
         │   │           │   │           │           │   ├── closing_loc: ∅
         │   │           │   │           │           │   ├── block: ∅
-        │   │           │   │           │           │   ├── flags: variable_call
-        │   │           │   │           │           │   └── name: :bar
+        │   │           │   │           │           │   └── flags: variable_call
         │   │           │   │           │           └── operator_loc: (38,10)-(38,11) = "="
         │   │           │   │           └── flags: ∅
         │   │           │   ├── opening_loc: (36,7)-(36,8) = "{"
         │   │           │   └── closing_loc: (40,2)-(40,3) = "}"
-        │   │           ├── flags: ∅
-        │   │           └── name: :each
+        │   │           └── flags: ∅
         │   ├── end_keyword_loc: (41,0)-(41,3) = "end"
         │   └── name: :A
         ├── @ LocalVariableWriteNode (location: (42,0)-(44,14))
@@ -425,13 +425,13 @@
         │   │   │           │   @ CallNode (location: (44,10)-(44,13))
         │   │   │           │   ├── receiver: ∅
         │   │   │           │   ├── call_operator_loc: ∅
+        │   │   │           │   ├── name: :baz
         │   │   │           │   ├── message_loc: (44,10)-(44,13) = "baz"
         │   │   │           │   ├── opening_loc: ∅
         │   │   │           │   ├── arguments: ∅
         │   │   │           │   ├── closing_loc: ∅
         │   │   │           │   ├── block: ∅
-        │   │   │           │   ├── flags: variable_call
-        │   │   │           │   └── name: :baz
+        │   │   │           │   └── flags: variable_call
         │   │   │           ├── statements:
         │   │   │           │   @ StatementsNode (location: (42,5)-(44,3))
         │   │   │           │   └── body: (length: 1)
@@ -443,13 +443,13 @@
         │   │   │           │           │       └── @ CallNode (location: (43,2)-(43,5))
         │   │   │           │           │           ├── receiver: ∅
         │   │   │           │           │           ├── call_operator_loc: ∅
+        │   │   │           │           │           ├── name: :foo
         │   │   │           │           │           ├── message_loc: (43,2)-(43,5) = "foo"
         │   │   │           │           │           ├── opening_loc: ∅
         │   │   │           │           │           ├── arguments: ∅
         │   │   │           │           │           ├── closing_loc: ∅
         │   │   │           │           │           ├── block: ∅
-        │   │   │           │           │           ├── flags: variable_call
-        │   │   │           │           │           └── name: :foo
+        │   │   │           │           │           └── flags: variable_call
         │   │   │           │           ├── rescue_clause: ∅
         │   │   │           │           ├── else_clause: ∅
         │   │   │           │           ├── ensure_clause: ∅
@@ -465,13 +465,13 @@
         │   │   @ CallNode (location: (47,10)-(47,13))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :baz
         │   │   ├── message_loc: (47,10)-(47,13) = "baz"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :baz
+        │   │   └── flags: variable_call
         │   ├── statements:
         │   │   @ StatementsNode (location: (45,0)-(47,3))
         │   │   └── body: (length: 1)
@@ -483,13 +483,13 @@
         │   │           │       └── @ CallNode (location: (46,2)-(46,5))
         │   │           │           ├── receiver: ∅
         │   │           │           ├── call_operator_loc: ∅
+        │   │           │           ├── name: :foo
         │   │           │           ├── message_loc: (46,2)-(46,5) = "foo"
         │   │           │           ├── opening_loc: ∅
         │   │           │           ├── arguments: ∅
         │   │           │           ├── closing_loc: ∅
         │   │           │           ├── block: ∅
-        │   │           │           ├── flags: variable_call
-        │   │           │           └── name: :foo
+        │   │           │           └── flags: variable_call
         │   │           ├── rescue_clause: ∅
         │   │           ├── else_clause: ∅
         │   │           ├── ensure_clause: ∅
@@ -502,13 +502,13 @@
         │   │   @ CallNode (location: (51,10)-(51,13))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :baz
         │   │   ├── message_loc: (51,10)-(51,13) = "baz"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :baz
+        │   │   └── flags: variable_call
         │   ├── statements:
         │   │   @ StatementsNode (location: (48,0)-(51,3))
         │   │   └── body: (length: 1)
@@ -520,23 +520,23 @@
         │   │           │       ├── @ CallNode (location: (49,2)-(49,5))
         │   │           │       │   ├── receiver: ∅
         │   │           │       │   ├── call_operator_loc: ∅
+        │   │           │       │   ├── name: :foo
         │   │           │       │   ├── message_loc: (49,2)-(49,5) = "foo"
         │   │           │       │   ├── opening_loc: ∅
         │   │           │       │   ├── arguments: ∅
         │   │           │       │   ├── closing_loc: ∅
         │   │           │       │   ├── block: ∅
-        │   │           │       │   ├── flags: variable_call
-        │   │           │       │   └── name: :foo
+        │   │           │       │   └── flags: variable_call
         │   │           │       └── @ CallNode (location: (50,2)-(50,5))
         │   │           │           ├── receiver: ∅
         │   │           │           ├── call_operator_loc: ∅
+        │   │           │           ├── name: :bar
         │   │           │           ├── message_loc: (50,2)-(50,5) = "bar"
         │   │           │           ├── opening_loc: ∅
         │   │           │           ├── arguments: ∅
         │   │           │           ├── closing_loc: ∅
         │   │           │           ├── block: ∅
-        │   │           │           ├── flags: variable_call
-        │   │           │           └── name: :bar
+        │   │           │           └── flags: variable_call
         │   │           ├── rescue_clause: ∅
         │   │           ├── else_clause: ∅
         │   │           ├── ensure_clause: ∅
@@ -549,13 +549,13 @@
         │   │   @ CallNode (location: (55,10)-(55,13))
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :baz
         │   │   ├── message_loc: (55,10)-(55,13) = "baz"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :baz
+        │   │   └── flags: variable_call
         │   ├── statements:
         │   │   @ StatementsNode (location: (52,0)-(55,3))
         │   │   └── body: (length: 1)
@@ -567,23 +567,23 @@
         │   │           │       ├── @ CallNode (location: (53,2)-(53,5))
         │   │           │       │   ├── receiver: ∅
         │   │           │       │   ├── call_operator_loc: ∅
+        │   │           │       │   ├── name: :foo
         │   │           │       │   ├── message_loc: (53,2)-(53,5) = "foo"
         │   │           │       │   ├── opening_loc: ∅
         │   │           │       │   ├── arguments: ∅
         │   │           │       │   ├── closing_loc: ∅
         │   │           │       │   ├── block: ∅
-        │   │           │       │   ├── flags: variable_call
-        │   │           │       │   └── name: :foo
+        │   │           │       │   └── flags: variable_call
         │   │           │       └── @ CallNode (location: (54,2)-(54,5))
         │   │           │           ├── receiver: ∅
         │   │           │           ├── call_operator_loc: ∅
+        │   │           │           ├── name: :bar
         │   │           │           ├── message_loc: (54,2)-(54,5) = "bar"
         │   │           │           ├── opening_loc: ∅
         │   │           │           ├── arguments: ∅
         │   │           │           ├── closing_loc: ∅
         │   │           │           ├── block: ∅
-        │   │           │           ├── flags: variable_call
-        │   │           │           └── name: :bar
+        │   │           │           └── flags: variable_call
         │   │           ├── rescue_clause: ∅
         │   │           ├── else_clause: ∅
         │   │           ├── ensure_clause: ∅
@@ -618,6 +618,7 @@
         │   │   │       └── @ CallNode (location: (61,7)-(62,1))
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── name: :foo
         │   │   │           ├── message_loc: (61,7)-(61,10) = "foo"
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments: ∅
@@ -629,8 +630,7 @@
         │   │   │           │   ├── body: ∅
         │   │   │           │   ├── opening_loc: (61,11)-(61,12) = "{"
         │   │   │           │   └── closing_loc: (62,0)-(62,1) = "}"
-        │   │   │           ├── flags: ∅
-        │   │   │           └── name: :foo
+        │   │   │           └── flags: ∅
         │   │   ├── opening_loc: (61,6)-(61,7) = "("
         │   │   └── closing_loc: (62,1)-(62,2) = ")"
         │   ├── statements:
@@ -671,6 +671,7 @@
             │   │       └── @ CallNode (location: (70,7)-(71,1))
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
+            │   │           ├── name: :foo
             │   │           ├── message_loc: (70,7)-(70,10) = "foo"
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments: ∅
@@ -682,8 +683,7 @@
             │   │           │   ├── body: ∅
             │   │           │   ├── opening_loc: (70,11)-(70,12) = "{"
             │   │           │   └── closing_loc: (71,0)-(71,1) = "}"
-            │   │           ├── flags: ∅
-            │   │           └── name: :foo
+            │   │           └── flags: ∅
             │   ├── opening_loc: (70,6)-(70,7) = "("
             │   └── closing_loc: (71,1)-(71,2) = ")"
             ├── statements:

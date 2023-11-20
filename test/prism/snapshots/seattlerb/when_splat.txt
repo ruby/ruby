@@ -8,13 +8,13 @@
             │   @ CallNode (location: (1,5)-(1,6))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
+            │   ├── name: :a
             │   ├── message_loc: (1,5)-(1,6) = "a"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: variable_call
-            │   └── name: :a
+            │   └── flags: variable_call
             ├── conditions: (length: 1)
             │   └── @ WhenNode (location: (1,8)-(1,15))
             │       ├── keyword_loc: (1,8)-(1,12) = "when"
@@ -25,13 +25,13 @@
             │       │           @ CallNode (location: (1,14)-(1,15))
             │       │           ├── receiver: ∅
             │       │           ├── call_operator_loc: ∅
+            │       │           ├── name: :b
             │       │           ├── message_loc: (1,14)-(1,15) = "b"
             │       │           ├── opening_loc: ∅
             │       │           ├── arguments: ∅
             │       │           ├── closing_loc: ∅
             │       │           ├── block: ∅
-            │       │           ├── flags: variable_call
-            │       │           └── name: :b
+            │       │           └── flags: variable_call
             │       └── statements: ∅
             ├── consequent: ∅
             ├── case_keyword_loc: (1,0)-(1,4) = "case"

@@ -16,6 +16,7 @@
         │   │   │   @ CallNode (location: (1,12)-(1,17))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── name: :m
         │   │   │   ├── message_loc: (1,12)-(1,13) = "m"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments:
@@ -27,8 +28,7 @@
         │   │   │   │   └── flags: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: ∅
-        │   │   │   └── name: :m
+        │   │   │   └── flags: ∅
         │   │   └── operator_loc: (1,10)-(1,11) = "="
         │   └── operator_loc: (1,4)-(1,5) = "="
         └── @ LocalVariableWriteNode (location: (3,0)-(3,11))
@@ -39,6 +39,7 @@
             │   @ CallNode (location: (3,6)-(3,11))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
+            │   ├── name: :m
             │   ├── message_loc: (3,6)-(3,7) = "m"
             │   ├── opening_loc: ∅
             │   ├── arguments:
@@ -50,6 +51,5 @@
             │   │   └── flags: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: ∅
-            │   └── name: :m
+            │   └── flags: ∅
             └── operator_loc: (3,4)-(3,5) = "="

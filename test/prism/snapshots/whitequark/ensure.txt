@@ -11,13 +11,13 @@
             │       └── @ CallNode (location: (1,7)-(1,11))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
+            │           ├── name: :meth
             │           ├── message_loc: (1,7)-(1,11) = "meth"
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: variable_call
-            │           └── name: :meth
+            │           └── flags: variable_call
             ├── rescue_clause: ∅
             ├── else_clause: ∅
             ├── ensure_clause:
@@ -29,12 +29,12 @@
             │   │       └── @ CallNode (location: (1,21)-(1,24))
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
+            │   │           ├── name: :bar
             │   │           ├── message_loc: (1,21)-(1,24) = "bar"
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
             │   │           ├── block: ∅
-            │   │           ├── flags: variable_call
-            │   │           └── name: :bar
+            │   │           └── flags: variable_call
             │   └── end_keyword_loc: (1,26)-(1,29) = "end"
             └── end_keyword_loc: (1,26)-(1,29) = "end"

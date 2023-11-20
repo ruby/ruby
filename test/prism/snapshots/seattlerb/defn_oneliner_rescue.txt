@@ -27,6 +27,7 @@
         │   │   │       └── @ CallNode (location: (2,2)-(2,13))
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
+        │   │   │           ├── name: :system
         │   │   │           ├── message_loc: (2,2)-(2,8) = "system"
         │   │   │           ├── opening_loc: (2,8)-(2,9) = "("
         │   │   │           ├── arguments:
@@ -38,8 +39,7 @@
         │   │   │           │   └── flags: ∅
         │   │   │           ├── closing_loc: (2,12)-(2,13) = ")"
         │   │   │           ├── block: ∅
-        │   │   │           ├── flags: ∅
-        │   │   │           └── name: :system
+        │   │   │           └── flags: ∅
         │   │   ├── rescue_clause:
         │   │   │   @ RescueNode (location: (3,0)-(4,5))
         │   │   │   ├── keyword_loc: (3,0)-(3,6) = "rescue"
@@ -84,6 +84,7 @@
         │   │           │   @ CallNode (location: (9,2)-(9,13))
         │   │           │   ├── receiver: ∅
         │   │           │   ├── call_operator_loc: ∅
+        │   │           │   ├── name: :system
         │   │           │   ├── message_loc: (9,2)-(9,8) = "system"
         │   │           │   ├── opening_loc: (9,8)-(9,9) = "("
         │   │           │   ├── arguments:
@@ -95,8 +96,7 @@
         │   │           │   │   └── flags: ∅
         │   │           │   ├── closing_loc: (9,12)-(9,13) = ")"
         │   │           │   ├── block: ∅
-        │   │           │   ├── flags: ∅
-        │   │           │   └── name: :system
+        │   │           │   └── flags: ∅
         │   │           ├── keyword_loc: (9,14)-(9,20) = "rescue"
         │   │           └── rescue_expression:
         │   │               @ NilNode (location: (9,21)-(9,24))
@@ -130,6 +130,7 @@
             │           │   @ CallNode (location: (13,16)-(13,27))
             │           │   ├── receiver: ∅
             │           │   ├── call_operator_loc: ∅
+            │           │   ├── name: :system
             │           │   ├── message_loc: (13,16)-(13,22) = "system"
             │           │   ├── opening_loc: (13,22)-(13,23) = "("
             │           │   ├── arguments:
@@ -141,8 +142,7 @@
             │           │   │   └── flags: ∅
             │           │   ├── closing_loc: (13,26)-(13,27) = ")"
             │           │   ├── block: ∅
-            │           │   ├── flags: ∅
-            │           │   └── name: :system
+            │           │   └── flags: ∅
             │           ├── keyword_loc: (13,28)-(13,34) = "rescue"
             │           └── rescue_expression:
             │               @ NilNode (location: (13,35)-(13,38))

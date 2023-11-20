@@ -92,13 +92,13 @@
             │   @ CallNode (location: (14,18)-(14,22))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
+            │   ├── name: :bar?
             │   ├── message_loc: (14,18)-(14,22) = "bar?"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: ∅
-            │   └── name: :bar?
+            │   └── flags: ∅
             ├── then_keyword_loc: ∅
             ├── statements:
             │   @ StatementsNode (location: (14,0)-(14,10))
@@ -106,6 +106,7 @@
             │       └── @ CallNode (location: (14,0)-(14,10))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
+            │           ├── name: :foo
             │           ├── message_loc: (14,0)-(14,3) = "foo"
             │           ├── opening_loc: ∅
             │           ├── arguments:
@@ -124,7 +125,6 @@
             │           │   └── flags: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
-            │           ├── flags: ∅
-            │           └── name: :foo
+            │           └── flags: ∅
             ├── consequent: ∅
             └── end_keyword_loc: ∅

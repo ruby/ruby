@@ -11,6 +11,7 @@
             │   @ CallNode (location: (1,4)-(1,20))
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
+            │   ├── name: :foo
             │   ├── message_loc: (1,4)-(1,7) = "foo"
             │   ├── opening_loc: (1,7)-(1,8) = "("
             │   ├── arguments:
@@ -35,13 +36,13 @@
             │   │   │       │   │   │   │       └── @ CallNode (location: (3,6)-(3,9))
             │   │   │       │   │   │   │           ├── receiver: ∅
             │   │   │       │   │   │   │           ├── call_operator_loc: ∅
+            │   │   │       │   │   │   │           ├── name: :bar
             │   │   │       │   │   │   │           ├── message_loc: (3,6)-(3,9) = "bar"
             │   │   │       │   │   │   │           ├── opening_loc: ∅
             │   │   │       │   │   │   │           ├── arguments: ∅
             │   │   │       │   │   │   │           ├── closing_loc: ∅
             │   │   │       │   │   │   │           ├── block: ∅
-            │   │   │       │   │   │   │           ├── flags: variable_call
-            │   │   │       │   │   │   │           └── name: :bar
+            │   │   │       │   │   │   │           └── flags: variable_call
             │   │   │       │   │   │   └── closing_loc: (3,9)-(3,10) = "}"
             │   │   │       │   │   └── @ StringNode (location: (3,10)-(4,0))
             │   │   │       │   │       ├── flags: ∅
@@ -51,16 +52,15 @@
             │   │   │       │   │       └── unescaped: "baz\n"
             │   │   │       │   └── closing_loc: (4,0)-(5,0) = "  EOF\n"
             │   │   │       ├── call_operator_loc: (1,14)-(1,15) = "."
+            │   │   │       ├── name: :chop
             │   │   │       ├── message_loc: (1,15)-(1,19) = "chop"
             │   │   │       ├── opening_loc: ∅
             │   │   │       ├── arguments: ∅
             │   │   │       ├── closing_loc: ∅
             │   │   │       ├── block: ∅
-            │   │   │       ├── flags: ∅
-            │   │   │       └── name: :chop
+            │   │   │       └── flags: ∅
             │   │   └── flags: ∅
             │   ├── closing_loc: (1,19)-(1,20) = ")"
             │   ├── block: ∅
-            │   ├── flags: ∅
-            │   └── name: :foo
+            │   └── flags: ∅
             └── operator_loc: (1,2)-(1,3) = "="

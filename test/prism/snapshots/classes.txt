@@ -112,21 +112,21 @@
         │   │   │   @ CallNode (location: (11,13)-(11,16))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── name: :foo
         │   │   │   ├── message_loc: (11,13)-(11,16) = "foo"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: variable_call
-        │   │   │   └── name: :foo
+        │   │   │   └── flags: variable_call
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :!
         │   │   ├── message_loc: (11,9)-(11,12) = "not"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: ∅
-        │   │   └── name: :!
+        │   │   └── flags: ∅
         │   ├── body: ∅
         │   └── end_keyword_loc: (12,0)-(12,3) = "end"
         ├── @ ClassNode (location: (14,0)-(14,40))
@@ -214,21 +214,21 @@
         │   │   │   @ CallNode (location: (18,9)-(18,12))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── name: :foo
         │   │   │   ├── message_loc: (18,9)-(18,12) = "foo"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: variable_call
-        │   │   │   └── name: :foo
+        │   │   │   └── flags: variable_call
         │   │   ├── call_operator_loc: (18,12)-(18,13) = "."
+        │   │   ├── name: :bar
         │   │   ├── message_loc: (18,13)-(18,16) = "bar"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: ∅
-        │   │   └── name: :bar
+        │   │   └── flags: ∅
         │   ├── body: ∅
         │   └── end_keyword_loc: (19,0)-(19,3) = "end"
         ├── @ SingletonClassNode (location: (21,0)-(21,20))
@@ -241,21 +241,21 @@
         │   │   │   @ CallNode (location: (21,9)-(21,12))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── name: :foo
         │   │   │   ├── message_loc: (21,9)-(21,12) = "foo"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: variable_call
-        │   │   │   └── name: :foo
+        │   │   │   └── flags: variable_call
         │   │   ├── call_operator_loc: (21,12)-(21,13) = "."
+        │   │   ├── name: :bar
         │   │   ├── message_loc: (21,13)-(21,16) = "bar"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   ├── block: ∅
-        │   │   ├── flags: ∅
-        │   │   └── name: :bar
+        │   │   └── flags: ∅
         │   ├── body: ∅
         │   └── end_keyword_loc: (21,17)-(21,20) = "end"
         ├── @ SingletonClassNode (location: (23,0)-(24,3))
@@ -288,6 +288,7 @@
         │   │           │   @ IntegerNode (location: (29,0)-(29,1))
         │   │           │   └── flags: decimal
         │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :+
         │   │           ├── message_loc: (29,2)-(29,3) = "+"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
@@ -298,8 +299,7 @@
         │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: ∅
-        │   │           └── name: :+
+        │   │           └── flags: ∅
         │   └── end_keyword_loc: (30,0)-(30,3) = "end"
         ├── @ SingletonClassNode (location: (32,0)-(32,23))
         │   ├── locals: []
@@ -315,6 +315,7 @@
         │   │           │   @ IntegerNode (location: (32,14)-(32,15))
         │   │           │   └── flags: decimal
         │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :+
         │   │           ├── message_loc: (32,16)-(32,17) = "+"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
@@ -325,8 +326,7 @@
         │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
-        │   │           ├── flags: ∅
-        │   │           └── name: :+
+        │   │           └── flags: ∅
         │   └── end_keyword_loc: (32,20)-(32,23) = "end"
         └── @ ClassNode (location: (34,0)-(35,3))
             ├── locals: []
@@ -341,6 +341,7 @@
             │   │   @ ConstantReadNode (location: (34,10)-(34,11))
             │   │   └── name: :B
             │   ├── call_operator_loc: ∅
+            │   ├── name: :[]
             │   ├── message_loc: (34,11)-(34,14) = "[1]"
             │   ├── opening_loc: (34,11)-(34,12) = "["
             │   ├── arguments:
@@ -351,8 +352,7 @@
             │   │   └── flags: ∅
             │   ├── closing_loc: (34,13)-(34,14) = "]"
             │   ├── block: ∅
-            │   ├── flags: ∅
-            │   └── name: :[]
+            │   └── flags: ∅
             ├── body: ∅
             ├── end_keyword_loc: (35,0)-(35,3) = "end"
             └── name: :A

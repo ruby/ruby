@@ -13,19 +13,19 @@
             │   │   @ CallNode (location: (1,4)-(1,5))
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
+            │   │   ├── name: :a
             │   │   ├── message_loc: (1,4)-(1,5) = "a"
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
             │   │   ├── block: ∅
-            │   │   ├── flags: variable_call
-            │   │   └── name: :a
+            │   │   └── flags: variable_call
             │   ├── call_operator_loc: (1,5)-(1,7) = "&."
+            │   ├── name: :b
             │   ├── message_loc: (1,7)-(1,8) = "b"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
             │   ├── block: ∅
-            │   ├── flags: safe_navigation
-            │   └── name: :b
+            │   └── flags: safe_navigation
             └── operator_loc: (1,2)-(1,3) = "="

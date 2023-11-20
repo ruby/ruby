@@ -39,13 +39,13 @@
         │   │   │   │       └── @ CallNode (location: (3,9)-(3,12))
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── name: :bbb
         │   │   │   │           ├── message_loc: (3,9)-(3,12) = "bbb"
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
         │   │   │   │           ├── block: ∅
-        │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: :bbb
+        │   │   │   │           └── flags: variable_call
         │   │   │   └── closing_loc: (3,12)-(3,13) = "}"
         │   │   └── @ StringNode (location: (3,13)-(3,17))
         │   │       ├── flags: ∅
@@ -63,13 +63,13 @@
         │   │   │   @ CallNode (location: (5,7)-(5,8))
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── name: :m
         │   │   │   ├── message_loc: (5,7)-(5,8) = "m"
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: variable_call
-        │   │   │   └── name: :m
+        │   │   │   └── flags: variable_call
         │   │   ├── child:
         │   │   │   @ ConstantReadNode (location: (5,10)-(5,11))
         │   │   │   └── name: :M
@@ -134,13 +134,13 @@
         │   │   │   │   @ ConstantReadNode (location: (14,7)-(14,8))
         │   │   │   │   └── name: :A
         │   │   │   ├── call_operator_loc: ∅
+        │   │   │   ├── name: :[]
         │   │   │   ├── message_loc: (14,8)-(14,10) = "[]"
         │   │   │   ├── opening_loc: (14,8)-(14,9) = "["
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: (14,9)-(14,10) = "]"
         │   │   │   ├── block: ∅
-        │   │   │   ├── flags: ∅
-        │   │   │   └── name: :[]
+        │   │   │   └── flags: ∅
         │   │   ├── child:
         │   │   │   @ ConstantReadNode (location: (14,12)-(14,13))
         │   │   │   └── name: :B
@@ -159,6 +159,7 @@
             │   │   │   @ ConstantReadNode (location: (17,7)-(17,8))
             │   │   │   └── name: :A
             │   │   ├── call_operator_loc: ∅
+            │   │   ├── name: :[]
             │   │   ├── message_loc: (17,8)-(17,11) = "[1]"
             │   │   ├── opening_loc: (17,8)-(17,9) = "["
             │   │   ├── arguments:
@@ -169,8 +170,7 @@
             │   │   │   └── flags: ∅
             │   │   ├── closing_loc: (17,10)-(17,11) = "]"
             │   │   ├── block: ∅
-            │   │   ├── flags: ∅
-            │   │   └── name: :[]
+            │   │   └── flags: ∅
             │   ├── child:
             │   │   @ ConstantReadNode (location: (17,13)-(17,14))
             │   │   └── name: :B
