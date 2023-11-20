@@ -804,6 +804,15 @@ module Prism
 
       # with arguments and popped
       assert_prism_eval("eval '1'; 1")
+
+      # With different types of calling arguments
+      assert_prism_eval(<<-CODE)
+        def self.prism_test_call_node(**); end
+        prism_test_call_node(b: 1, **{})
+      CODE
+      assert_prism_eval(<<-CODE)
+        prism_test_call_node(:b => 1)
+      CODE
     end
 
     def test_CallAndWriteNode
