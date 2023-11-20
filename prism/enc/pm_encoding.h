@@ -196,6 +196,7 @@ extern pm_encoding_t pm_encoding_iso_8859_15;
 extern pm_encoding_t pm_encoding_iso_8859_16;
 extern pm_encoding_t pm_encoding_koi8_r;
 extern pm_encoding_t pm_encoding_mac_cent_euro;
+extern pm_encoding_t pm_encoding_mac_croatian;
 extern pm_encoding_t pm_encoding_mac_cyrillic;
 extern pm_encoding_t pm_encoding_mac_greek;
 extern pm_encoding_t pm_encoding_mac_iceland;
