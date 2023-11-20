@@ -7215,33 +7215,6 @@ gc_declarative_marking_p(const rb_data_type_t *type)
     return (type->flags & RUBY_TYPED_DECL_MARKING) != 0;
 }
 
-#define EDGE (VALUE *)((char *)data_struct + offset)
-
-static inline void
-gc_mark_from_offset(rb_objspace_t *objspace, VALUE obj)
-{
-    // we are overloading the dmark callback to contain a list of offsets
-    size_t *offset_list = (size_t *)RANY(obj)->as.typeddata.type->function.dmark;
-    void *data_struct = RANY(obj)->as.typeddata.data;
-
-    for (size_t offset = *offset_list; *offset_list != RUBY_REF_END; offset = *offset_list++) {
-        rb_gc_mark_movable(*EDGE);
-    }
-}
-
-static inline void
-gc_ref_update_from_offset(rb_objspace_t *objspace, VALUE obj)
-{
-    // we are overloading the dmark callback to contain a list of offsets
-    size_t *offset_list = (size_t *)RANY(obj)->as.typeddata.type->function.dmark;
-    void *data_struct = RANY(obj)->as.typeddata.data;
-
-    for (size_t offset = *offset_list; *offset_list != RUBY_REF_END; offset = *offset_list++) {
-        if (SPECIAL_CONST_P(*EDGE)) continue;
-        *EDGE = rb_gc_location(*EDGE);
-    }
-}
-
 static void mark_cvc_tbl(rb_objspace_t *objspace, VALUE klass);
 
 static void
@@ -7353,7 +7326,11 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
             if (ptr) {
                 if (RTYPEDDATA_P(obj) && gc_declarative_marking_p(any->as.typeddata.type)) {
-                    gc_mark_from_offset(objspace, obj);
+                    size_t *offset_list = (size_t *)RANY(obj)->as.typeddata.type->function.dmark;
+
+                    for (size_t offset = *offset_list; *offset_list != RUBY_REF_END; offset = *offset_list++) {
+                        rb_gc_mark_movable(*(VALUE *)((char *)ptr + offset));
+                    }
                 }
                 else {
                     RUBY_DATA_FUNC mark_func = RTYPEDDATA_P(obj) ?
@@ -10700,7 +10677,13 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
             void *const ptr = RTYPEDDATA_P(obj) ? RTYPEDDATA_GET_DATA(obj) : DATA_PTR(obj);
             if (ptr) {
                 if (RTYPEDDATA_P(obj) && gc_declarative_marking_p(any->as.typeddata.type)) {
-                    gc_ref_update_from_offset(objspace, obj);
+                    size_t *offset_list = (size_t *)RANY(obj)->as.typeddata.type->function.dmark;
+
+                    for (size_t offset = *offset_list; *offset_list != RUBY_REF_END; offset = *offset_list++) {
+                        VALUE *ref = (VALUE *)((char *)ptr + offset);
+                        if (SPECIAL_CONST_P(*ref)) continue;
+                        *ref = rb_gc_location(*ref);
+                    }
                 }
                 else if (RTYPEDDATA_P(obj)) {
                     RUBY_DATA_FUNC compact_func = any->as.typeddata.type->function.dcompact;
