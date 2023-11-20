@@ -228,19 +228,24 @@ static void
 free_dump_arg(void *ptr)
 {
     clear_dump_arg(ptr);
-    xfree(ptr);
 }
 
 static size_t
 memsize_dump_arg(const void *ptr)
 {
-    return sizeof(struct dump_arg);
+    const struct dump_arg *p = (struct dump_arg *)ptr;
+    size_t memsize = 0;
+    if (p->symbols) memsize += rb_st_memsize(p->symbols);
+    if (p->data) memsize += rb_st_memsize(p->data);
+    if (p->compat_tbl) memsize += rb_st_memsize(p->compat_tbl);
+    if (p->encodings) memsize += rb_st_memsize(p->encodings);
+    return memsize;
 }
 
 static const rb_data_type_t dump_arg_data = {
     "dump_arg",
     {mark_dump_arg, free_dump_arg, memsize_dump_arg,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE
@@ -1272,19 +1277,24 @@ static void
 free_load_arg(void *ptr)
 {
     clear_load_arg(ptr);
-    xfree(ptr);
 }
 
 static size_t
 memsize_load_arg(const void *ptr)
 {
-    return sizeof(struct load_arg);
+    const struct load_arg *p = (struct load_arg *)ptr;
+    size_t memsize = 0;
+    if (p->symbols) memsize += rb_st_memsize(p->symbols);
+    if (p->data) memsize += rb_st_memsize(p->data);
+    if (p->partial_objects) memsize += rb_st_memsize(p->partial_objects);
+    if (p->compat_tbl) memsize += rb_st_memsize(p->compat_tbl);
+    return memsize;
 }
 
 static const rb_data_type_t load_arg_data = {
     "load_arg",
     {mark_load_arg, free_load_arg, memsize_load_arg,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
 #define r_entry(v, arg) r_entry0((v), (arg)->data->num_entries, (arg))
