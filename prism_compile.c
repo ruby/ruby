@@ -2883,8 +2883,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_local_variable_target_node_t *local_write_node = (pm_local_variable_target_node_t *) node;
 
         pm_constant_id_t constant_id = local_write_node->name;
-        for (size_t index = 0; index < local_write_node->depth; index++) scope_node = scope_node->previous;
-        int index = pm_lookup_local_index(iseq, scope_node, constant_id);
+        int index = pm_lookup_local_index_any_scope(iseq, scope_node, constant_id);
 
         ADD_SETLOCAL(ret, &dummy_line_node, index, local_write_node->depth);
         return;
