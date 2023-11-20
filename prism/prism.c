@@ -10023,7 +10023,7 @@ typedef enum {
     PM_BINDING_POWER_MODIFIER_RESCUE =  6, // rescue
     PM_BINDING_POWER_COMPOSITION =      8, // and or
     PM_BINDING_POWER_NOT =             10, // not
-    PM_BINDING_POWER_MATCH =           12, // =>
+    PM_BINDING_POWER_MATCH =           12, // => in
     PM_BINDING_POWER_DEFINED =         14, // defined?
     PM_BINDING_POWER_ASSIGNMENT =      16, // = += -= *= /= %= &= |= ^= &&= ||= <<= >>= **=
     PM_BINDING_POWER_TERNARY =         18, // ?:
@@ -10082,12 +10082,7 @@ pm_binding_powers_t pm_binding_powers[PM_TOKEN_MAXIMUM] = {
     [PM_TOKEN_KEYWORD_WHILE_MODIFIER] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_MODIFIER),
 
     // rescue
-    [PM_TOKEN_KEYWORD_RESCUE_MODIFIER] = {
-        PM_BINDING_POWER_ASSIGNMENT,
-        PM_BINDING_POWER_MODIFIER_RESCUE + 1,
-        true,
-        false
-    },
+    [PM_TOKEN_KEYWORD_RESCUE_MODIFIER] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_MODIFIER_RESCUE),
 
     // and or
     [PM_TOKEN_KEYWORD_AND] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_COMPOSITION),
@@ -15657,10 +15652,29 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
 }
 
 static inline pm_node_t *
-parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_power, pm_binding_power_t binding_power, pm_diagnostic_id_t diag_id) {
+parse_assignment_value(pm_parser_t *parser, pm_binding_power_t binding_power, pm_diagnostic_id_t diag_id) {
+    pm_node_t *value = parse_value_expression(parser, binding_power, diag_id);
+
+    // Contradicting binding powers, the right-hand-side value of rthe assignment allows the `rescue` modifier.
+    if (match1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
+        pm_token_t rescue = parser->current;
+        parser_lex(parser);
+        pm_node_t *right = parse_expression(parser, binding_power, PM_ERR_RESCUE_MODIFIER_VALUE);
+
+        return (pm_node_t *) pm_rescue_modifier_node_create(parser, value, &rescue, right);
+    }
+
+    return value;
+}
+
+
+static inline pm_node_t *
+parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding_power, pm_binding_power_t binding_power, pm_diagnostic_id_t diag_id) {
     pm_node_t *value = parse_starred_expression(parser, binding_power, diag_id);
 
+    bool is_single_value = true;
     if (previous_binding_power == PM_BINDING_POWER_STATEMENT && (PM_NODE_TYPE_P(value, PM_SPLAT_NODE) || match1(parser, PM_TOKEN_COMMA))) {
+        is_single_value = false;
         pm_token_t opening = not_provided(parser);
         pm_array_node_t *array = pm_array_node_create(parser, &opening);
 
@@ -15672,6 +15686,15 @@ parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_
             pm_array_node_elements_append(array, element);
             if (PM_NODE_TYPE_P(element, PM_MISSING_NODE)) break;
         }
+    }
+
+    // Contradicting binding powers, the right-hand-side value of the assignment allows the `rescue` modifier.
+    if (is_single_value && match1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
+        pm_token_t rescue = parser->current;
+        parser_lex(parser);
+        pm_node_t *right = parse_expression(parser, binding_power, PM_ERR_RESCUE_MODIFIER_VALUE);
+
+        return (pm_node_t *) pm_rescue_modifier_node_create(parser, value, &rescue, right);
     }
 
     return value;
@@ -15813,7 +15836,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 /* fallthrough */
                 case PM_CASE_WRITABLE: {
                     parser_lex(parser);
-                    pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL);
+                    pm_node_t *value = parse_assignment_values(parser, previous_binding_power, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL);
                     return parse_write(parser, node, &token, value);
                 }
                 case PM_SPLAT_NODE: {
@@ -15821,7 +15844,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     pm_multi_target_node_targets_append(parser, multi_target, node);
 
                     parser_lex(parser);
-                    pm_node_t *value = parse_assignment_value(parser, previous_binding_power, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL);
+                    pm_node_t *value = parse_assignment_values(parser, previous_binding_power, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_EQUAL);
                     return parse_write(parser, (pm_node_t *) multi_target, &token, value);
                 }
                 default:
@@ -15843,7 +15866,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_GLOBAL_VARIABLE_READ_NODE: {
                     parser_lex(parser);
 
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
                     pm_node_t *result = (pm_node_t *) pm_global_variable_and_write_node_create(parser, node, &token, value);
 
                     pm_node_destroy(parser, node);
@@ -15852,7 +15875,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_CLASS_VARIABLE_READ_NODE: {
                     parser_lex(parser);
 
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
                     pm_node_t *result = (pm_node_t *) pm_class_variable_and_write_node_create(parser, (pm_class_variable_read_node_t *) node, &token, value);
 
                     pm_node_destroy(parser, node);
@@ -15861,13 +15884,13 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_CONSTANT_PATH_NODE: {
                     parser_lex(parser);
 
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
                     return (pm_node_t *) pm_constant_path_and_write_node_create(parser, (pm_constant_path_node_t *) node, &token, value);
                 }
                 case PM_CONSTANT_READ_NODE: {
                     parser_lex(parser);
 
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
                     pm_node_t *result = (pm_node_t *) pm_constant_and_write_node_create(parser, (pm_constant_read_node_t *) node, &token, value);
 
                     pm_node_destroy(parser, node);
@@ -15876,7 +15899,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_INSTANCE_VARIABLE_READ_NODE: {
                     parser_lex(parser);
 
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
                     pm_node_t *result = (pm_node_t *) pm_instance_variable_and_write_node_create(parser, (pm_instance_variable_read_node_t *) node, &token, value);
 
                     pm_node_destroy(parser, node);
@@ -15886,7 +15909,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     pm_local_variable_read_node_t *cast = (pm_local_variable_read_node_t *) node;
                     parser_lex(parser);
 
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
                     pm_node_t *result = (pm_node_t *) pm_local_variable_and_write_node_create(parser, node, &token, value, cast->name, cast->depth);
 
                     pm_node_destroy(parser, node);
@@ -15907,7 +15930,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                             pm_parser_err_location(parser, &message_loc, PM_ERR_PARAMETER_NUMBERED_RESERVED);
                         }
 
-                        pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
+                        pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
                         pm_node_t *result = (pm_node_t *) pm_local_variable_and_write_node_create(parser, (pm_node_t *) cast, &token, value, constant_id, 0);
 
                         pm_node_destroy(parser, (pm_node_t *) cast);
@@ -15918,7 +15941,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     // this is an aref expression, and we can transform it into
                     // an aset expression.
                     if (pm_call_node_index_p(cast)) {
-                        pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
+                        pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
                         return (pm_node_t *) pm_index_and_write_node_create(parser, cast, &token, value);
                     }
 
@@ -15930,7 +15953,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     }
 
                     parse_call_operator_write(parser, cast, &token);
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_AMPAMPEQ);
                     return (pm_node_t *) pm_call_and_write_node_create(parser, cast, &token, value);
                 }
                 case PM_MULTI_WRITE_NODE: {
@@ -15957,7 +15980,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_GLOBAL_VARIABLE_READ_NODE: {
                     parser_lex(parser);
 
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
                     pm_node_t *result = (pm_node_t *) pm_global_variable_or_write_node_create(parser, node, &token, value);
 
                     pm_node_destroy(parser, node);
@@ -15966,7 +15989,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_CLASS_VARIABLE_READ_NODE: {
                     parser_lex(parser);
 
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
                     pm_node_t *result = (pm_node_t *) pm_class_variable_or_write_node_create(parser, (pm_class_variable_read_node_t *) node, &token, value);
 
                     pm_node_destroy(parser, node);
@@ -15975,13 +15998,13 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_CONSTANT_PATH_NODE: {
                     parser_lex(parser);
 
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
                     return (pm_node_t *) pm_constant_path_or_write_node_create(parser, (pm_constant_path_node_t *) node, &token, value);
                 }
                 case PM_CONSTANT_READ_NODE: {
                     parser_lex(parser);
 
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
                     pm_node_t *result = (pm_node_t *) pm_constant_or_write_node_create(parser, (pm_constant_read_node_t *) node, &token, value);
 
                     pm_node_destroy(parser, node);
@@ -15990,7 +16013,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_INSTANCE_VARIABLE_READ_NODE: {
                     parser_lex(parser);
 
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
                     pm_node_t *result = (pm_node_t *) pm_instance_variable_or_write_node_create(parser, (pm_instance_variable_read_node_t *) node, &token, value);
 
                     pm_node_destroy(parser, node);
@@ -16000,7 +16023,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     pm_local_variable_read_node_t *cast = (pm_local_variable_read_node_t *) node;
                     parser_lex(parser);
 
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
                     pm_node_t *result = (pm_node_t *) pm_local_variable_or_write_node_create(parser, node, &token, value, cast->name, cast->depth);
 
                     pm_node_destroy(parser, node);
@@ -16021,7 +16044,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                             pm_parser_err_location(parser, &message_loc, PM_ERR_PARAMETER_NUMBERED_RESERVED);
                         }
 
-                        pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
+                        pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
                         pm_node_t *result = (pm_node_t *) pm_local_variable_or_write_node_create(parser, (pm_node_t *) cast, &token, value, constant_id, 0);
 
                         pm_node_destroy(parser, (pm_node_t *) cast);
@@ -16032,7 +16055,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     // this is an aref expression, and we can transform it into
                     // an aset expression.
                     if (pm_call_node_index_p(cast)) {
-                        pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
+                        pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
                         return (pm_node_t *) pm_index_or_write_node_create(parser, cast, &token, value);
                     }
 
@@ -16044,7 +16067,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     }
 
                     parse_call_operator_write(parser, cast, &token);
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_PIPEPIPEEQ);
                     return (pm_node_t *) pm_call_or_write_node_create(parser, cast, &token, value);
                 }
                 case PM_MULTI_WRITE_NODE: {
@@ -16081,7 +16104,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_GLOBAL_VARIABLE_READ_NODE: {
                     parser_lex(parser);
 
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
                     pm_node_t *result = (pm_node_t *) pm_global_variable_operator_write_node_create(parser, node, &token, value);
 
                     pm_node_destroy(parser, node);
@@ -16090,7 +16113,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_CLASS_VARIABLE_READ_NODE: {
                     parser_lex(parser);
 
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
                     pm_node_t *result = (pm_node_t *) pm_class_variable_operator_write_node_create(parser, (pm_class_variable_read_node_t *) node, &token, value);
 
                     pm_node_destroy(parser, node);
@@ -16099,13 +16122,13 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_CONSTANT_PATH_NODE: {
                     parser_lex(parser);
 
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
                     return (pm_node_t *) pm_constant_path_operator_write_node_create(parser, (pm_constant_path_node_t *) node, &token, value);
                 }
                 case PM_CONSTANT_READ_NODE: {
                     parser_lex(parser);
 
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
                     pm_node_t *result = (pm_node_t *) pm_constant_operator_write_node_create(parser, (pm_constant_read_node_t *) node, &token, value);
 
                     pm_node_destroy(parser, node);
@@ -16114,7 +16137,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                 case PM_INSTANCE_VARIABLE_READ_NODE: {
                     parser_lex(parser);
 
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
                     pm_node_t *result = (pm_node_t *) pm_instance_variable_operator_write_node_create(parser, (pm_instance_variable_read_node_t *) node, &token, value);
 
                     pm_node_destroy(parser, node);
@@ -16124,7 +16147,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     pm_local_variable_read_node_t *cast = (pm_local_variable_read_node_t *) node;
                     parser_lex(parser);
 
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
                     pm_node_t *result = (pm_node_t *) pm_local_variable_operator_write_node_create(parser, node, &token, value, cast->name, cast->depth);
 
                     pm_node_destroy(parser, node);
@@ -16145,7 +16168,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                             pm_parser_err_location(parser, &message_loc, PM_ERR_PARAMETER_NUMBERED_RESERVED);
                         }
 
-                        pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
+                        pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
                         pm_node_t *result = (pm_node_t *) pm_local_variable_operator_write_node_create(parser, (pm_node_t *) cast, &token, value, constant_id, 0);
 
                         pm_node_destroy(parser, (pm_node_t *) cast);
@@ -16156,7 +16179,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     // this is an aref expression, and we can transform it into
                     // an aset expression.
                     if (pm_call_node_index_p(cast)) {
-                        pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
+                        pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
                         return (pm_node_t *) pm_index_operator_write_node_create(parser, cast, &token, value);
                     }
 
@@ -16168,7 +16191,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     }
 
                     parse_call_operator_write(parser, cast, &token);
-                    pm_node_t *value = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
+                    pm_node_t *value = parse_assignment_value(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_OPERATOR);
                     return (pm_node_t *) pm_call_operator_write_node_create(parser, cast, &token, value);
                 }
                 case PM_MULTI_WRITE_NODE: {

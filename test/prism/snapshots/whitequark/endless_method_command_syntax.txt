@@ -269,48 +269,48 @@
         │   ├── body:
         │   │   @ StatementsNode (location: (13,17)-(13,60))
         │   │   └── body: (length: 1)
-        │   │       └── @ CallNode (location: (13,17)-(13,60))
-        │   │           ├── receiver: ∅
-        │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (13,17)-(13,22) = "raise"
-        │   │           ├── opening_loc: ∅
-        │   │           ├── arguments:
-        │   │           │   @ ArgumentsNode (location: (13,23)-(13,60))
-        │   │           │   ├── arguments: (length: 1)
-        │   │           │   │   └── @ RescueModifierNode (location: (13,23)-(13,60))
-        │   │           │   │       ├── expression:
-        │   │           │   │       │   @ StringNode (location: (13,23)-(13,37))
-        │   │           │   │       │   ├── flags: ∅
-        │   │           │   │       │   ├── opening_loc: (13,23)-(13,24) = "\""
-        │   │           │   │       │   ├── content_loc: (13,24)-(13,36) = "to be caught"
-        │   │           │   │       │   ├── closing_loc: (13,36)-(13,37) = "\""
-        │   │           │   │       │   └── unescaped: "to be caught"
-        │   │           │   │       ├── keyword_loc: (13,38)-(13,44) = "rescue"
-        │   │           │   │       └── rescue_expression:
-        │   │           │   │           @ InterpolatedStringNode (location: (13,45)-(13,60))
-        │   │           │   │           ├── opening_loc: (13,45)-(13,46) = "\""
-        │   │           │   │           ├── parts: (length: 2)
-        │   │           │   │           │   ├── @ StringNode (location: (13,46)-(13,55))
-        │   │           │   │           │   │   ├── flags: ∅
-        │   │           │   │           │   │   ├── opening_loc: ∅
-        │   │           │   │           │   │   ├── content_loc: (13,46)-(13,55) = "instance "
-        │   │           │   │           │   │   ├── closing_loc: ∅
-        │   │           │   │           │   │   └── unescaped: "instance "
-        │   │           │   │           │   └── @ EmbeddedStatementsNode (location: (13,55)-(13,59))
-        │   │           │   │           │       ├── opening_loc: (13,55)-(13,57) = "\#{"
-        │   │           │   │           │       ├── statements:
-        │   │           │   │           │       │   @ StatementsNode (location: (13,57)-(13,58))
-        │   │           │   │           │       │   └── body: (length: 1)
-        │   │           │   │           │       │       └── @ LocalVariableReadNode (location: (13,57)-(13,58))
-        │   │           │   │           │       │           ├── name: :x
-        │   │           │   │           │       │           └── depth: 0
-        │   │           │   │           │       └── closing_loc: (13,58)-(13,59) = "}"
-        │   │           │   │           └── closing_loc: (13,59)-(13,60) = "\""
-        │   │           │   └── flags: ∅
-        │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           ├── flags: ∅
-        │   │           └── name: :raise
+        │   │       └── @ RescueModifierNode (location: (13,17)-(13,60))
+        │   │           ├── expression:
+        │   │           │   @ CallNode (location: (13,17)-(13,37))
+        │   │           │   ├── receiver: ∅
+        │   │           │   ├── call_operator_loc: ∅
+        │   │           │   ├── message_loc: (13,17)-(13,22) = "raise"
+        │   │           │   ├── opening_loc: ∅
+        │   │           │   ├── arguments:
+        │   │           │   │   @ ArgumentsNode (location: (13,23)-(13,37))
+        │   │           │   │   ├── arguments: (length: 1)
+        │   │           │   │   │   └── @ StringNode (location: (13,23)-(13,37))
+        │   │           │   │   │       ├── flags: ∅
+        │   │           │   │   │       ├── opening_loc: (13,23)-(13,24) = "\""
+        │   │           │   │   │       ├── content_loc: (13,24)-(13,36) = "to be caught"
+        │   │           │   │   │       ├── closing_loc: (13,36)-(13,37) = "\""
+        │   │           │   │   │       └── unescaped: "to be caught"
+        │   │           │   │   └── flags: ∅
+        │   │           │   ├── closing_loc: ∅
+        │   │           │   ├── block: ∅
+        │   │           │   ├── flags: ∅
+        │   │           │   └── name: :raise
+        │   │           ├── keyword_loc: (13,38)-(13,44) = "rescue"
+        │   │           └── rescue_expression:
+        │   │               @ InterpolatedStringNode (location: (13,45)-(13,60))
+        │   │               ├── opening_loc: (13,45)-(13,46) = "\""
+        │   │               ├── parts: (length: 2)
+        │   │               │   ├── @ StringNode (location: (13,46)-(13,55))
+        │   │               │   │   ├── flags: ∅
+        │   │               │   │   ├── opening_loc: ∅
+        │   │               │   │   ├── content_loc: (13,46)-(13,55) = "instance "
+        │   │               │   │   ├── closing_loc: ∅
+        │   │               │   │   └── unescaped: "instance "
+        │   │               │   └── @ EmbeddedStatementsNode (location: (13,55)-(13,59))
+        │   │               │       ├── opening_loc: (13,55)-(13,57) = "\#{"
+        │   │               │       ├── statements:
+        │   │               │       │   @ StatementsNode (location: (13,57)-(13,58))
+        │   │               │       │   └── body: (length: 1)
+        │   │               │       │       └── @ LocalVariableReadNode (location: (13,57)-(13,58))
+        │   │               │       │           ├── name: :x
+        │   │               │       │           └── depth: 0
+        │   │               │       └── closing_loc: (13,58)-(13,59) = "}"
+        │   │               └── closing_loc: (13,59)-(13,60) = "\""
         │   ├── locals: [:x]
         │   ├── def_keyword_loc: (13,0)-(13,3) = "def"
         │   ├── operator_loc: ∅
@@ -337,48 +337,48 @@
             ├── body:
             │   @ StatementsNode (location: (15,22)-(15,62))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (15,22)-(15,62))
-            │           ├── receiver: ∅
-            │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (15,22)-(15,27) = "raise"
-            │           ├── opening_loc: ∅
-            │           ├── arguments:
-            │           │   @ ArgumentsNode (location: (15,28)-(15,62))
-            │           │   ├── arguments: (length: 1)
-            │           │   │   └── @ RescueModifierNode (location: (15,28)-(15,62))
-            │           │   │       ├── expression:
-            │           │   │       │   @ StringNode (location: (15,28)-(15,42))
-            │           │   │       │   ├── flags: ∅
-            │           │   │       │   ├── opening_loc: (15,28)-(15,29) = "\""
-            │           │   │       │   ├── content_loc: (15,29)-(15,41) = "to be caught"
-            │           │   │       │   ├── closing_loc: (15,41)-(15,42) = "\""
-            │           │   │       │   └── unescaped: "to be caught"
-            │           │   │       ├── keyword_loc: (15,43)-(15,49) = "rescue"
-            │           │   │       └── rescue_expression:
-            │           │   │           @ InterpolatedStringNode (location: (15,50)-(15,62))
-            │           │   │           ├── opening_loc: (15,50)-(15,51) = "\""
-            │           │   │           ├── parts: (length: 2)
-            │           │   │           │   ├── @ StringNode (location: (15,51)-(15,57))
-            │           │   │           │   │   ├── flags: ∅
-            │           │   │           │   │   ├── opening_loc: ∅
-            │           │   │           │   │   ├── content_loc: (15,51)-(15,57) = "class "
-            │           │   │           │   │   ├── closing_loc: ∅
-            │           │   │           │   │   └── unescaped: "class "
-            │           │   │           │   └── @ EmbeddedStatementsNode (location: (15,57)-(15,61))
-            │           │   │           │       ├── opening_loc: (15,57)-(15,59) = "\#{"
-            │           │   │           │       ├── statements:
-            │           │   │           │       │   @ StatementsNode (location: (15,59)-(15,60))
-            │           │   │           │       │   └── body: (length: 1)
-            │           │   │           │       │       └── @ LocalVariableReadNode (location: (15,59)-(15,60))
-            │           │   │           │       │           ├── name: :x
-            │           │   │           │       │           └── depth: 0
-            │           │   │           │       └── closing_loc: (15,60)-(15,61) = "}"
-            │           │   │           └── closing_loc: (15,61)-(15,62) = "\""
-            │           │   └── flags: ∅
-            │           ├── closing_loc: ∅
-            │           ├── block: ∅
-            │           ├── flags: ∅
-            │           └── name: :raise
+            │       └── @ RescueModifierNode (location: (15,22)-(15,62))
+            │           ├── expression:
+            │           │   @ CallNode (location: (15,22)-(15,42))
+            │           │   ├── receiver: ∅
+            │           │   ├── call_operator_loc: ∅
+            │           │   ├── message_loc: (15,22)-(15,27) = "raise"
+            │           │   ├── opening_loc: ∅
+            │           │   ├── arguments:
+            │           │   │   @ ArgumentsNode (location: (15,28)-(15,42))
+            │           │   │   ├── arguments: (length: 1)
+            │           │   │   │   └── @ StringNode (location: (15,28)-(15,42))
+            │           │   │   │       ├── flags: ∅
+            │           │   │   │       ├── opening_loc: (15,28)-(15,29) = "\""
+            │           │   │   │       ├── content_loc: (15,29)-(15,41) = "to be caught"
+            │           │   │   │       ├── closing_loc: (15,41)-(15,42) = "\""
+            │           │   │   │       └── unescaped: "to be caught"
+            │           │   │   └── flags: ∅
+            │           │   ├── closing_loc: ∅
+            │           │   ├── block: ∅
+            │           │   ├── flags: ∅
+            │           │   └── name: :raise
+            │           ├── keyword_loc: (15,43)-(15,49) = "rescue"
+            │           └── rescue_expression:
+            │               @ InterpolatedStringNode (location: (15,50)-(15,62))
+            │               ├── opening_loc: (15,50)-(15,51) = "\""
+            │               ├── parts: (length: 2)
+            │               │   ├── @ StringNode (location: (15,51)-(15,57))
+            │               │   │   ├── flags: ∅
+            │               │   │   ├── opening_loc: ∅
+            │               │   │   ├── content_loc: (15,51)-(15,57) = "class "
+            │               │   │   ├── closing_loc: ∅
+            │               │   │   └── unescaped: "class "
+            │               │   └── @ EmbeddedStatementsNode (location: (15,57)-(15,61))
+            │               │       ├── opening_loc: (15,57)-(15,59) = "\#{"
+            │               │       ├── statements:
+            │               │       │   @ StatementsNode (location: (15,59)-(15,60))
+            │               │       │   └── body: (length: 1)
+            │               │       │       └── @ LocalVariableReadNode (location: (15,59)-(15,60))
+            │               │       │           ├── name: :x
+            │               │       │           └── depth: 0
+            │               │       └── closing_loc: (15,60)-(15,61) = "}"
+            │               └── closing_loc: (15,61)-(15,62) = "\""
             ├── locals: [:x]
             ├── def_keyword_loc: (15,0)-(15,3) = "def"
             ├── operator_loc: (15,8)-(15,9) = "."
