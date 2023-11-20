@@ -732,6 +732,10 @@ module Prism
     def test_YieldNode
       assert_prism_eval("def prism_test_yield_node; yield; end")
       assert_prism_eval("def prism_test_yield_node; yield 1, 2; end")
+
+      # Test case where there's a call directly after the yield call
+      assert_prism_eval("def prism_test_yield_node; yield; 1; end")
+      assert_prism_eval("def prism_test_yield_node; yield 1, 2; 1; end")
     end
 
     ############################################################################
