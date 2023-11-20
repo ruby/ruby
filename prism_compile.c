@@ -3756,7 +3756,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         int argc = 0;
 
         if (yield_node->arguments) {
-            PM_COMPILE((pm_node_t *)yield_node->arguments);
+            PM_COMPILE_NOT_POPPED((pm_node_t *)yield_node->arguments);
 
             argc = (int) yield_node->arguments->arguments.size;
         }
