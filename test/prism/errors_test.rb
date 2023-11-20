@@ -1682,6 +1682,20 @@ module Prism
       ]
     end
 
+    def test_argument_after_ellipsis
+      source = 'def foo(...); foo(..., 1); end'
+      assert_errors expression(source), source, [
+        ['Unexpected argument after `...`', 23..24]
+      ]
+    end
+
+    def test_ellipsis_in_no_paren_call
+      source = 'def foo(...); foo 1, ...; end'
+      assert_errors expression(source), source, [
+        ['Unexpected `...` in an non-parenthesized call', 21..24]
+      ]
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")

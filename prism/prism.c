@@ -11039,12 +11039,17 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
         return;
     }
 
+    bool parsed_first_argument = false;
     bool parsed_bare_hash = false;
     bool parsed_block_argument = false;
+    bool parsed_forwarding_arguments = false;
 
     while (!match1(parser, PM_TOKEN_EOF)) {
         if (parsed_block_argument) {
             pm_parser_err_current(parser, PM_ERR_ARGUMENT_AFTER_BLOCK);
+        }
+        if (parsed_forwarding_arguments) {
+            pm_parser_err_current(parser, PM_ERR_ARGUMENT_AFTER_FORWARDING_ELLIPSES);
         }
 
         pm_node_t *argument = NULL;
@@ -11129,9 +11134,13 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                         if (pm_parser_local_depth(parser, &parser->previous) == -1) {
                             pm_parser_err_previous(parser, PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES);
                         }
+                        if (parsed_first_argument && terminator == PM_TOKEN_EOF) {
+                            pm_parser_err_previous(parser, PM_ERR_ARGUMENT_FORWARDING_UNBOUND);
+                        }
 
                         argument = (pm_node_t *) pm_forwarding_arguments_node_create(parser, &parser->previous);
                         parse_arguments_append(parser, arguments, argument);
+                        parsed_forwarding_arguments = true;
                         break;
                     }
                 }
@@ -11182,6 +11191,8 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 break;
             }
         }
+
+        parsed_first_argument = true;
 
         // If parsing the argument failed, we need to stop parsing arguments.
         if (PM_NODE_TYPE_P(argument, PM_MISSING_NODE) || parser->recovering) break;
