@@ -1770,6 +1770,18 @@ rb_str_dup(VALUE str)
     return str_duplicate(rb_obj_class(str), str);
 }
 
+/* :nodoc: */
+VALUE
+rb_str_dup_m(VALUE str)
+{
+    if (LIKELY(BARE_STRING_P(str))) {
+        return str_duplicate(rb_obj_class(str), str);
+    }
+    else {
+        return rb_obj_dup(str);
+    }
+}
+
 VALUE
 rb_str_resurrect(VALUE str)
 {
@@ -12084,6 +12096,7 @@ Init_String(void)
     rb_define_method(rb_cString, "freeze", rb_str_freeze, 0);
     rb_define_method(rb_cString, "+@", str_uplus, 0);
     rb_define_method(rb_cString, "-@", str_uminus, 0);
+    rb_define_method(rb_cString, "dup", rb_str_dup_m, 0);
     rb_define_alias(rb_cString, "dedup", "-@");
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, -1);
