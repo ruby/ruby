@@ -1399,12 +1399,12 @@ rb_obj_convert_to_too_complex(VALUE obj, st_table *table)
 
             struct gen_ivtbl *ivtbl = xmalloc(sizeof(struct gen_ivtbl));
             ivtbl->as.complex.table = table;
+            st_insert(gen_ivs, (st_data_t)obj, (st_data_t)ivtbl);
 #if SHAPE_IN_BASIC_FLAGS
             rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
 #else
             ivtbl->shape_id = OBJ_TOO_COMPLEX_SHAPE_ID;
 #endif
-            st_insert(gen_ivs, (st_data_t)obj, (st_data_t)ivtbl);
         }
         RB_VM_LOCK_LEAVE();
     }
