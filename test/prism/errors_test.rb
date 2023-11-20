@@ -1263,6 +1263,13 @@ module Prism
       ]
     end
 
+    def test_defining_numbered_parameter
+      error_messages = ["Token reserved for a numbered parameter"]
+
+      assert_error_messages "def _1; end", error_messages
+      assert_error_messages "def self._1; end", error_messages
+    end
+
     def test_double_scope_numbered_parameters
       source = "-> { _1 + -> { _2 } }"
       errors = [["Numbered parameter is already used in outer scope", 15..17]]
