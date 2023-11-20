@@ -47,7 +47,8 @@ VALUE rb_mod_set_temporary_name(VALUE, VALUE);
 
 struct gen_ivtbl;
 int rb_gen_ivtbl_get(VALUE obj, ID id, struct gen_ivtbl **ivtbl);
-void rb_obj_copy_ivs_to_hash_table(VALUE obj, st_table *table);
+VALUE rb_obj_copy_ivs_to_hash_table(VALUE obj, st_table *table);
+void rb_obj_copy_ivs_to_hash_table_complete(VALUE ivar_pinner);
 void rb_obj_convert_to_too_complex(VALUE obj, st_table *table);
 void rb_evict_ivars_to_hash(VALUE obj);
 

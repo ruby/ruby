@@ -1370,12 +1370,21 @@ rb_attr_delete(VALUE obj, ID id)
     return rb_ivar_delete(obj, id, Qnil);
 }
 
+static int
+rb_obj_write_barrier_ivars_i(ID key, VALUE val, st_data_t arg)
+{
+    RB_OBJ_WRITTEN((VALUE)arg, Qundef, val);
+    return ST_CONTINUE;
+}
+
 void
 rb_obj_convert_to_too_complex(VALUE obj, st_table *table)
 {
     RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
 
     VALUE *old_ivptr = NULL;
+
+    rb_ivar_foreach(obj, rb_obj_write_barrier_ivars_i, (st_data_t)obj);
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
@@ -1422,8 +1431,9 @@ rb_evict_ivars_to_hash(VALUE obj)
     st_table *table = st_init_numtable_with_size(rb_ivar_count(obj));
 
     // Evacuate all previous values from shape into id_table
-    rb_obj_copy_ivs_to_hash_table(obj, table);
+    VALUE ivar_pinner = rb_obj_copy_ivs_to_hash_table(obj, table);
     rb_obj_convert_to_too_complex(obj, table);
+    rb_obj_copy_ivs_to_hash_table_complete(ivar_pinner);
 
     RUBY_ASSERT(rb_shape_obj_too_complex(obj));
 }
@@ -1640,17 +1650,44 @@ rb_ensure_iv_list_size(VALUE obj, uint32_t current_capacity, uint32_t new_capaci
     }
 }
 
-int
-rb_obj_copy_ivs_to_hash_table_i(ID key, VALUE val, st_data_t arg)
+struct rb_evacuate_arg {
+    st_table *table;
+    VALUE host;
+};
+
+static int
+copy_ivs_to_hash_table_i(ID key, VALUE val, st_data_t arg)
 {
-    st_insert((st_table *)arg, (st_data_t)key, (st_data_t)val);
+    struct rb_evacuate_arg *evac_arg = (struct rb_evacuate_arg *)arg;
+    st_insert(evac_arg->table, (st_data_t)key, (st_data_t)val);
+    RB_OBJ_WRITTEN(evac_arg->host, Qundef, val);
     return ST_CONTINUE;
 }
 
-void
+VALUE
 rb_obj_copy_ivs_to_hash_table(VALUE obj, st_table *table)
 {
-    rb_ivar_foreach(obj, rb_obj_copy_ivs_to_hash_table_i, (st_data_t)table);
+    // There can be compaction runs between each ivar we copy out of obj, so we
+    // need an object to mark each ivar to make sure every reference is valid
+    // by the time we're done. Use a special T_OBJECT for marking.
+    VALUE ivar_pinner = rb_wb_protected_newobj_of(GET_EC(), rb_cBasicObject, T_OBJECT | ROBJECT_EMBED, RVALUE_SIZE);
+    rb_shape_set_shape_id(ivar_pinner, OBJ_TOO_COMPLEX_SHAPE_ID);
+    ROBJECT_SET_IV_HASH(ivar_pinner, table);
+
+    // Evacuate all previous values from shape into id_table
+    struct rb_evacuate_arg evac_arg = { .table = table, .host = ivar_pinner };
+    rb_ivar_foreach(obj, copy_ivs_to_hash_table_i, (st_data_t)&evac_arg);
+
+    return ivar_pinner;
+}
+
+void
+rb_obj_copy_ivs_to_hash_table_complete(VALUE ivar_pinner)
+{
+    // done with pinning, now set pinner to 0 ivars
+    ROBJECT_SET_IV_HASH(ivar_pinner, NULL);
+    rb_shape_set_shape(ivar_pinner, rb_shape_get_root_shape());
+    RB_GC_GUARD(ivar_pinner);
 }
 
 static VALUE *

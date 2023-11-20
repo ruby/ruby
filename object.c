@@ -326,8 +326,9 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
         shape_to_set_on_dest = rb_shape_rebuild_shape(initial_shape, src_shape);
         if (UNLIKELY(rb_shape_id(shape_to_set_on_dest) == OBJ_TOO_COMPLEX_SHAPE_ID)) {
             st_table * table = rb_st_init_numtable_with_size(src_num_ivs);
-            rb_obj_copy_ivs_to_hash_table(obj, table);
+            VALUE ivar_pinner = rb_obj_copy_ivs_to_hash_table(obj, table);
             rb_obj_convert_to_too_complex(dest, table);
+            rb_obj_copy_ivs_to_hash_table_complete(ivar_pinner);
 
             return;
         }
