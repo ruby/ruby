@@ -71,6 +71,38 @@ module Prism
       end
     end
 
+    def test_location_character_offsets
+      program = Prism.parse("😀 + 😀\n😍 ||= 😍").value
+
+      # first 😀
+      location = program.statements.body.first.receiver.location
+      assert_equal 0, location.start_character_offset
+      assert_equal 1, location.end_character_offset
+      assert_equal 0, location.start_character_column
+      assert_equal 1, location.end_character_column
+
+      # second 😀
+      location = program.statements.body.first.arguments.arguments.first.location
+      assert_equal 4, location.start_character_offset
+      assert_equal 5, location.end_character_offset
+      assert_equal 4, location.start_character_column
+      assert_equal 5, location.end_character_column
+
+      # first 😍
+      location = program.statements.body.last.name_loc
+      assert_equal 6, location.start_character_offset
+      assert_equal 7, location.end_character_offset
+      assert_equal 0, location.start_character_column
+      assert_equal 1, location.end_character_column
+
+      # second 😍
+      location = program.statements.body.last.value.location
+      assert_equal 12, location.start_character_offset
+      assert_equal 13, location.end_character_offset
+      assert_equal 6, location.start_character_column
+      assert_equal 7, location.end_character_column
+    end
+
     private
 
     def parse_expression(source)

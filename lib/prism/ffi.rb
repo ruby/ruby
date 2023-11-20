@@ -230,7 +230,7 @@ module Prism
         loader = Serialize::Loader.new(source, buffer.read)
 
         loader.load_header
-        loader.load_force_encoding
+        loader.load_encoding
         loader.load_start_line
         loader.load_comments
       end
