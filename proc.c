@@ -1600,7 +1600,7 @@ bm_mark_and_move(void *ptr)
 static size_t
 bm_memsize(const void *ptr)
 {
-    return sizeof(struct METHOD);
+    return 0;
 }
 
 static const rb_data_type_t method_data_type = {
@@ -1611,7 +1611,7 @@ static const rb_data_type_t method_data_type = {
         bm_memsize,
         bm_mark_and_move,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 VALUE
@@ -1805,8 +1805,8 @@ method_eq(VALUE method, VALUE other)
         return Qfalse;
 
     Check_TypedStruct(method, &method_data_type);
-    m1 = (struct METHOD *)DATA_PTR(method);
-    m2 = (struct METHOD *)DATA_PTR(other);
+    m1 = (struct METHOD *)RTYPEDDATA_GET_DATA(method);
+    m2 = (struct METHOD *)RTYPEDDATA_GET_DATA(other);
 
     klass1 = method_entry_defined_class(m1->me);
     klass2 = method_entry_defined_class(m2->me);
@@ -2222,7 +2222,7 @@ rb_mod_define_method_with_visibility(int argc, VALUE *argv, VALUE mod, const str
     if (!id) id = rb_to_id(name);
 
     if (is_method) {
-        struct METHOD *method = (struct METHOD *)DATA_PTR(body);
+        struct METHOD *method = (struct METHOD *)RTYPEDDATA_GET_DATA(body);
         if (method->me->owner != mod && !RB_TYPE_P(method->me->owner, T_MODULE) &&
             !RTEST(rb_class_inherited_p(mod, method->me->owner))) {
             if (FL_TEST(method->me->owner, FL_SINGLETON)) {
