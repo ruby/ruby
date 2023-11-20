@@ -2953,66 +2953,83 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_MATCH_WRITE_NODE: {
-        pm_match_write_node_t *cast = (pm_match_write_node_t *)node;
+        // Match write nodes are specialized call nodes that have a regular
+        // expression with valid named capture groups on the left, the =~
+        // operator, and some value on the right. The nodes themselves simply
+        // wrap the call with the local variable targets that will be written
+        // when the call is executed.
+        pm_match_write_node_t *cast = (pm_match_write_node_t *) node;
         LABEL *fail_label = NEW_LABEL(lineno);
         LABEL *end_label = NEW_LABEL(lineno);
-        size_t capture_count = cast->locals.size;
-        VALUE r;
 
-        pm_constant_id_t *locals = ALLOCV_N(pm_constant_id_t, r, capture_count);
+        // First, we'll compile the call so that all of its instructions are
+        // present. Then we'll compile all of the local variable targets.
+        PM_COMPILE_NOT_POPPED((pm_node_t *) cast->call);
 
-        for (size_t i = 0; i < capture_count; i++) {
-            locals[i] = cast->locals.ids[i];
-        }
-
-        PM_COMPILE_NOT_POPPED((pm_node_t *)cast->call);
-        VALUE global_variable_name = rb_id2sym(idBACKREF);
-
-        ADD_INSN1(ret, &dummy_line_node, getglobal, global_variable_name);
+        // Now, check if the match was successful. If it was, then we'll
+        // continue on and assign local variables. Otherwise we'll skip over the
+        // assignment code.
+        ADD_INSN1(ret, &dummy_line_node, getglobal, rb_id2sym(idBACKREF));
         PM_DUP;
         ADD_INSNL(ret, &dummy_line_node, branchunless, fail_label);
 
-        if (capture_count == 1) {
-            int local_index = pm_lookup_local_index(iseq, scope_node, *locals);
+        // If there's only a single local variable target, we can skip some of
+        // the bookkeeping, so we'll put a special branch here.
+        size_t targets_count = cast->targets.size;
 
-            DECL_ANCHOR(nom);
-            INIT_ANCHOR(nom);
+        if (targets_count == 1) {
+            pm_node_t *target = cast->targets.nodes[0];
+            assert(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_TARGET_NODE));
 
-            ADD_INSNL(nom, &dummy_line_node, jump, end_label);
-            ADD_LABEL(nom, fail_label);
-            ADD_LABEL(nom, end_label);
-            ADD_INSN1(ret, &dummy_line_node, putobject, rb_id2sym(pm_constant_id_lookup(scope_node, *locals)));
+            pm_local_variable_target_node_t *local_target = (pm_local_variable_target_node_t *) target;
+            int index = pm_lookup_local_index(iseq, scope_node, local_target->name);
+
+            ADD_INSN1(ret, &dummy_line_node, putobject, rb_id2sym(pm_constant_id_lookup(scope_node, local_target->name)));
             ADD_SEND(ret, &dummy_line_node, idAREF, INT2FIX(1));
-            ADD_SETLOCAL(nom, &dummy_line_node, local_index, 0);
+            ADD_LABEL(ret, fail_label);
+            ADD_SETLOCAL(ret, &dummy_line_node, index, (int) local_target->depth);
             PM_POP_IF_POPPED;
-
-            ADD_SEQ(ret, nom);
             return;
         }
 
-        for (size_t index = 0; index < capture_count; index++) {
-            int local_index = pm_lookup_local_index(iseq, scope_node, locals[index]);
+        // Otherwise there is more than one local variable target, so we'll need
+        // to do some bookkeeping.
+        for (size_t targets_index = 0; targets_index < targets_count; targets_index++) {
+            pm_node_t *target = cast->targets.nodes[targets_index];
+            assert(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_TARGET_NODE));
 
-            if (index < (capture_count - 1)) {
+            pm_local_variable_target_node_t *local_target = (pm_local_variable_target_node_t *) target;
+            int index = pm_lookup_local_index(iseq, scope_node, local_target->name);
+
+            if (((size_t) targets_index) < (targets_count - 1)) {
                 PM_DUP;
             }
-            ADD_INSN1(ret, &dummy_line_node, putobject, rb_id2sym(pm_constant_id_lookup(scope_node, locals[index])));
+            ADD_INSN1(ret, &dummy_line_node, putobject, rb_id2sym(pm_constant_id_lookup(scope_node, local_target->name)));
             ADD_SEND(ret, &dummy_line_node, idAREF, INT2FIX(1));
-            ADD_SETLOCAL(ret, &dummy_line_node, local_index, 0);
+            ADD_SETLOCAL(ret, &dummy_line_node, index, (int) local_target->depth);
         }
 
+        // Since we matched successfully, now we'll jump to the end.
         ADD_INSNL(ret, &dummy_line_node, jump, end_label);
-        ADD_LABEL(ret, fail_label);
-        PM_POP_UNLESS_POPPED;
 
-        for (size_t index = 0; index < capture_count; index++) {
-            pm_constant_id_t constant = cast->locals.ids[index];
-            int local_index = pm_lookup_local_index(iseq, scope_node, constant);
+        // In the case that the match failed, we'll loop through each local
+        // variable target and set all of them to `nil`.
+        ADD_LABEL(ret, fail_label);
+        PM_POP;
+
+        for (size_t targets_index = 0; targets_index < targets_count; targets_index++) {
+            pm_node_t *target = cast->targets.nodes[targets_index];
+            assert(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_TARGET_NODE));
+
+            pm_local_variable_target_node_t *local_target = (pm_local_variable_target_node_t *) target;
+            int index = pm_lookup_local_index(iseq, scope_node, local_target->name);
 
             PM_PUTNIL;
-            ADD_SETLOCAL(ret, &dummy_line_node, local_index, 0);
-            PM_POP_IF_POPPED;
+            ADD_SETLOCAL(ret, &dummy_line_node, index, (int) local_target->depth);
         }
+
+        // Finally, we can push the end label for either case.
+        PM_POP_IF_POPPED;
         ADD_LABEL(ret, end_label);
         return;
       }
