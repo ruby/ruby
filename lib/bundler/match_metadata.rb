@@ -2,6 +2,10 @@
 
 module Bundler
   module MatchMetadata
+    def matches_current_metadata?
+      matches_current_ruby? && matches_current_rubygems?
+    end
+
     def matches_current_ruby?
       @required_ruby_version.satisfied_by?(Gem.ruby_version)
     end

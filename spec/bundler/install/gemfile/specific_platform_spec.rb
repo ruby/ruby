@@ -1168,6 +1168,64 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
+  it "does not fail when a platform variant is incompatible with the current ruby and another equivalent platform specific variant is part of the resolution", :rubygems => ">= 3.3.21" do
+    build_repo4 do
+      build_gem "nokogiri", "1.15.5"
+
+      build_gem "nokogiri", "1.15.5" do |s|
+        s.platform = "x86_64-linux"
+        s.required_ruby_version = "< #{current_ruby_minor}.dev"
+      end
+
+      build_gem "sass-embedded", "1.69.5"
+
+      build_gem "sass-embedded", "1.69.5" do |s|
+        s.platform = "x86_64-linux-gnu"
+      end
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+
+      gem "nokogiri"
+      gem "sass-embedded"
+    G
+
+    expected_checksums = checksum_section do |c|
+      c.repo_gem gem_repo4, "nokogiri", "1.15.5"
+      c.no_checksum "sass-embedded", "1.69.5"
+      c.repo_gem gem_repo4, "sass-embedded", "1.69.5", "x86_64-linux-gnu"
+    end
+
+    simulate_platform "x86_64-linux" do
+      bundle "install --verbose", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+
+      # locks all compatible platforms, excluding Java and Windows
+      expect(lockfile).to eq(<<~L)
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            nokogiri (1.15.5)
+            sass-embedded (1.69.5)
+            sass-embedded (1.69.5-x86_64-linux-gnu)
+
+        PLATFORMS
+          ruby
+          x86_64-linux
+
+        DEPENDENCIES
+          nokogiri
+          sass-embedded
+
+        CHECKSUMS
+          #{expected_checksums}
+
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+  end
+
   private
 
   def setup_multiplatform_gem

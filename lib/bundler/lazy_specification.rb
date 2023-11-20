@@ -122,9 +122,7 @@ module Bundler
     # bad gem.
     def __materialize__(candidates, fallback_to_non_installable: Bundler.frozen_bundle?)
       search = candidates.reverse.find do |spec|
-        spec.is_a?(StubSpecification) ||
-          (spec.matches_current_ruby? &&
-            spec.matches_current_rubygems?)
+        spec.is_a?(StubSpecification) || spec.matches_current_metadata?
       end
       if search.nil? && fallback_to_non_installable
         search = candidates.last
