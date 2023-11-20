@@ -1,16 +1,8 @@
-<<<<<<< HEAD
-@ ProgramNode (location: (1,0)-(178,20))
+@ ProgramNode (location: (1,0)-(182,3))
 ├── locals: [:a, :c, :foo]
 └── statements:
-    @ StatementsNode (location: (1,0)-(178,20))
-    └── body: (length: 67)
-=======
-@ ProgramNode (location: (1,0)-(174,3))
-├── locals: [:a, :c, :foo]
-└── statements:
-    @ StatementsNode (location: (1,0)-(174,3))
-    └── body: (length: 64)
->>>>>>> e3f9313c27 (Allow `&` forwarding in a method having `...` parameter)
+    @ StatementsNode (location: (1,0)-(182,3))
+    └── body: (length: 68)
         ├── @ DefNode (location: (1,0)-(2,3))
         │   ├── name: :foo
         │   ├── name_loc: (1,4)-(1,7) = "foo"
@@ -1683,12 +1675,8 @@
         │   │           │       ├── operator_loc: (170,11)-(170,12) = "*"
         │   │           │       └── expression: ∅
         │   │           ├── opening_loc: (170,10)-(170,11) = "["
-<<<<<<< HEAD
         │   │           ├── closing_loc: (170,12)-(170,13) = "]"
         │   │           └── flags: contains_splat
-=======
-        │   │           └── closing_loc: (170,12)-(170,13) = "]"
->>>>>>> e3f9313c27 (Allow `&` forwarding in a method having `...` parameter)
         │   ├── locals: [:*]
         │   ├── def_keyword_loc: (170,0)-(170,3) = "def"
         │   ├── operator_loc: ∅
@@ -1696,7 +1684,6 @@
         │   ├── rparen_loc: (170,7)-(170,8) = ")"
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (170,15)-(170,18) = "end"
-<<<<<<< HEAD
         ├── @ DefNode (location: (172,0)-(172,15))
         │   ├── name: :f
         │   ├── name_loc: (172,4)-(172,5) = "f"
@@ -1832,72 +1819,71 @@
         │   ├── rparen_loc: ∅
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (176,12)-(176,15) = "end"
-        └── @ DefNode (location: (178,0)-(178,20))
+        ├── @ DefNode (location: (178,0)-(178,20))
+        │   ├── name: :foo
+        │   ├── name_loc: (178,4)-(178,7) = "foo"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (178,8)-(178,15))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 1)
+        │   │   │   └── @ OptionalKeywordParameterNode (location: (178,8)-(178,15))
+        │   │   │       ├── name: :x
+        │   │   │       ├── name_loc: (178,8)-(178,10) = "x:"
+        │   │   │       └── value:
+        │   │   │           @ StringNode (location: (178,10)-(178,15))
+        │   │   │           ├── flags: ∅
+        │   │   │           ├── opening_loc: (178,10)-(178,12) = "%("
+        │   │   │           ├── content_loc: (178,12)-(178,14) = "xx"
+        │   │   │           ├── closing_loc: (178,14)-(178,15) = ")"
+        │   │   │           └── unescaped: "xx"
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body: ∅
+        │   ├── locals: [:x]
+        │   ├── def_keyword_loc: (178,0)-(178,3) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (178,17)-(178,20) = "end"
+        └── @ DefNode (location: (180,0)-(182,3))
             ├── name: :foo
-            ├── name_loc: (178,4)-(178,7) = "foo"
+            ├── name_loc: (180,4)-(180,7) = "foo"
             ├── receiver: ∅
             ├── parameters:
-            │   @ ParametersNode (location: (178,8)-(178,15))
-=======
-        └── @ DefNode (location: (172,0)-(174,3))
-            ├── name: :foo
-            ├── name_loc: (172,4)-(172,7) = "foo"
-            ├── receiver: ∅
-            ├── parameters:
-            │   @ ParametersNode (location: (172,8)-(172,11))
->>>>>>> e3f9313c27 (Allow `&` forwarding in a method having `...` parameter)
+            │   @ ParametersNode (location: (180,8)-(180,11))
             │   ├── requireds: (length: 0)
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
             │   ├── posts: (length: 0)
-<<<<<<< HEAD
-            │   ├── keywords: (length: 1)
-            │   │   └── @ OptionalKeywordParameterNode (location: (178,8)-(178,15))
-            │   │       ├── name: :x
-            │   │       ├── name_loc: (178,8)-(178,10) = "x:"
-            │   │       └── value:
-            │   │           @ StringNode (location: (178,10)-(178,15))
-            │   │           ├── flags: ∅
-            │   │           ├── opening_loc: (178,10)-(178,12) = "%("
-            │   │           ├── content_loc: (178,12)-(178,14) = "xx"
-            │   │           ├── closing_loc: (178,14)-(178,15) = ")"
-            │   │           └── unescaped: "xx"
-            │   ├── keyword_rest: ∅
-            │   └── block: ∅
-            ├── body: ∅
-            ├── locals: [:x]
-            ├── def_keyword_loc: (178,0)-(178,3) = "def"
-            ├── operator_loc: ∅
-            ├── lparen_loc: ∅
-            ├── rparen_loc: ∅
-            ├── equal_loc: ∅
-            └── end_keyword_loc: (178,17)-(178,20) = "end"
-=======
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest:
-            │   │   @ ForwardingParameterNode (location: (172,8)-(172,11))
+            │   │   @ ForwardingParameterNode (location: (180,8)-(180,11))
             │   └── block: ∅
             ├── body:
-            │   @ StatementsNode (location: (173,2)-(173,7))
+            │   @ StatementsNode (location: (181,2)-(181,7))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (173,2)-(173,7))
+            │       └── @ CallNode (location: (181,2)-(181,7))
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
-            │           ├── message_loc: (173,2)-(173,5) = "bar"
-            │           ├── opening_loc: (173,5)-(173,6) = "("
+            │           ├── name: :bar
+            │           ├── message_loc: (181,2)-(181,5) = "bar"
+            │           ├── opening_loc: (181,5)-(181,6) = "("
             │           ├── arguments: ∅
-            │           ├── closing_loc: (173,7)-(173,8) = ")"
+            │           ├── closing_loc: (181,7)-(181,8) = ")"
             │           ├── block:
-            │           │   @ BlockArgumentNode (location: (173,6)-(173,7))
+            │           │   @ BlockArgumentNode (location: (181,6)-(181,7))
             │           │   ├── expression: ∅
-            │           │   └── operator_loc: (173,6)-(173,7) = "&"
-            │           ├── flags: ∅
-            │           └── name: :bar
+            │           │   └── operator_loc: (181,6)-(181,7) = "&"
+            │           └── flags: ∅
             ├── locals: [:"..."]
-            ├── def_keyword_loc: (172,0)-(172,3) = "def"
+            ├── def_keyword_loc: (180,0)-(180,3) = "def"
             ├── operator_loc: ∅
-            ├── lparen_loc: (172,7)-(172,8) = "("
-            ├── rparen_loc: (172,11)-(172,12) = ")"
+            ├── lparen_loc: (180,7)-(180,8) = "("
+            ├── rparen_loc: (180,11)-(180,12) = ")"
             ├── equal_loc: ∅
-            └── end_keyword_loc: (174,0)-(174,3) = "end"
->>>>>>> e3f9313c27 (Allow `&` forwarding in a method having `...` parameter)
+            └── end_keyword_loc: (182,0)-(182,3) = "end"

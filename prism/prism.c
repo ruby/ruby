@@ -11161,8 +11161,14 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
 
                 if (token_begins_expression_p(parser->current.type)) {
                     expression = parse_value_expression(parser, PM_BINDING_POWER_DEFINED, PM_ERR_EXPECT_ARGUMENT);
-                } else if (pm_parser_local_depth(parser, &operator) == -1) {
-                    pm_parser_err_token(parser, &operator, PM_ERR_ARGUMENT_NO_FORWARDING_AMP);
+                } else {
+                    if (pm_parser_local_depth(parser, &operator) == -1) {
+                        // A block forwarding in a method having `...` parameter (e.g. `def foo(...); bar(&); end`) is available.
+                        pm_constant_id_t ellipsis_id = pm_parser_constant_id_constant(parser, "...", 3);
+                        if (pm_parser_local_depth_constant_id(parser, ellipsis_id) == -1) {
+                            pm_parser_err_token(parser, &operator, PM_ERR_ARGUMENT_NO_FORWARDING_AMP);
+                        }
+                    }
                 }
 
                 argument = (pm_node_t *) pm_block_argument_node_create(parser, &operator, expression);
