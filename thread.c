@@ -550,8 +550,7 @@ thread_do_start_proc(rb_thread_t *th)
     const VALUE *args_ptr;
     int args_len;
     VALUE procval = th->invoke_arg.proc.proc;
-    rb_proc_t *proc;
-    GetProcPtr(procval, proc);
+    rb_proc_t *proc = rb_proc_ptr(procval);
 
     th->ec->errinfo = Qnil;
     th->ec->root_lep = rb_vm_proc_local_ep(procval);

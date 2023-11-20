@@ -467,9 +467,7 @@ rb_RSTRING_PTR(VALUE str)
 rb_proc_t *
 rb_yjit_get_proc_ptr(VALUE procv)
 {
-    rb_proc_t *proc;
-    GetProcPtr(procv, proc);
-    return proc;
+    return rb_proc_ptr(procv);
 }
 
 // This is defined only as a named struct inside rb_iseq_constant_body.
@@ -722,8 +720,7 @@ rb_get_iseq_body_param_opt_table(const rb_iseq_t *iseq)
 VALUE
 rb_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler)
 {
-    rb_proc_t *proc;
-    GetProcPtr(recv, proc);
+    rb_proc_t *proc = rb_proc_ptr(*recv);
     return rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, block_handler);
 }
 

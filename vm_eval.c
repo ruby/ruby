@@ -292,8 +292,7 @@ vm_call0_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const
             goto success;
           case OPTIMIZED_METHOD_TYPE_CALL:
             {
-                rb_proc_t *proc;
-                GetProcPtr(calling->recv, proc);
+                rb_proc_t *proc = rb_proc_ptr(calling->recv);
                 ret = rb_vm_invoke_proc(ec, proc, calling->argc, argv, calling->kw_splat, calling->block_handler);
                 goto success;
             }

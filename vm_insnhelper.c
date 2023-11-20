@@ -3689,8 +3689,6 @@ vm_call_attrset(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_c
 static inline VALUE
 vm_call_bmethod_body(rb_execution_context_t *ec, struct rb_calling_info *calling, const VALUE *argv)
 {
-    rb_proc_t *proc;
-    VALUE val;
     const struct rb_callcache *cc = calling->cc;
     const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
     VALUE procv = cme->def->body.bmethod.proc;
@@ -3701,8 +3699,8 @@ vm_call_bmethod_body(rb_execution_context_t *ec, struct rb_calling_info *calling
     }
 
     /* control block frame */
-    GetProcPtr(procv, proc);
-    val = rb_vm_invoke_bmethod(ec, proc, calling->recv, CALLING_ARGC(calling), argv, calling->kw_splat, calling->block_handler, vm_cc_cme(cc));
+    rb_proc_t *proc = rb_proc_ptr(procv);
+    VALUE val = rb_vm_invoke_bmethod(ec, proc, calling->recv, CALLING_ARGC(calling), argv, calling->kw_splat, calling->block_handler, vm_cc_cme(cc));
 
     return val;
 }
@@ -3724,8 +3722,7 @@ vm_call_iseq_bmethod(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct
         rb_raise(rb_eRuntimeError, "defined with an un-shareable Proc in a different Ractor");
     }
 
-    rb_proc_t *proc;
-    GetProcPtr(procv, proc);
+    rb_proc_t *proc = rb_proc_ptr(procv);
     const struct rb_block *block = &proc->block;
 
     while (vm_block_type(block) == block_type_proc) {
@@ -3791,8 +3788,8 @@ vm_call_bmethod(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_c
     const struct rb_callcache *cc = calling->cc;
     const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
     VALUE procv = cme->def->body.bmethod.proc;
-    rb_proc_t *proc;
-    GetProcPtr(procv, proc);
+    rb_proc_t *proc = rb_proc_ptr(procv);
+
     const struct rb_block *block = &proc->block;
 
     while (vm_block_type(block) == block_type_proc) {
@@ -4736,11 +4733,8 @@ vm_search_super_method(const rb_control_frame_t *reg_cfp, struct rb_call_data *c
 static inline int
 block_proc_is_lambda(const VALUE procval)
 {
-    rb_proc_t *proc;
-
     if (procval) {
-        GetProcPtr(procval, proc);
-        return proc->is_lambda;
+        return rb_proc_ptr(procval)->is_lambda;
     }
     else {
         return 0;

@@ -160,8 +160,7 @@ mprotect_exec(rb_execution_context_t *ec, VALUE self, VALUE rb_mem_block, VALUE 
 static VALUE
 rjit_optimized_call(VALUE *recv, rb_execution_context_t *ec, int argc, VALUE *argv, int kw_splat, VALUE block_handler)
 {
-    rb_proc_t *proc;
-    GetProcPtr(recv, proc);
+    rb_proc_t *proc = rb_proc_ptr(*recv);
     return rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, block_handler);
 }
 
@@ -230,11 +229,9 @@ rjit_full_cfunc_return(rb_execution_context_t *ec, VALUE return_value)
 }
 
 static rb_proc_t *
-rjit_get_proc_ptr(VALUE procv)
+rjit_get_proc_ptr(VALUE procval)
 {
-    rb_proc_t *proc;
-    GetProcPtr(procv, proc);
-    return proc;
+    return rb_proc_ptr(procval);
 }
 
 // Use the same buffer size as Stackprof.

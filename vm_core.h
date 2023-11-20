@@ -1217,15 +1217,18 @@ RUBY_EXTERN VALUE rb_mRubyVMFrozenCore;
 RUBY_EXTERN VALUE rb_block_param_proxy;
 RUBY_SYMBOL_EXPORT_END
 
-#define GetProcPtr(obj, ptr) \
-  ptr = (rb_proc_t*) RTYPEDDATA_GET_DATA((obj))
-
 typedef struct {
     const struct rb_block block;
     unsigned int is_from_method: 1;	/* bool */
     unsigned int is_lambda: 1;		/* bool */
     unsigned int is_isolated: 1;        /* bool */
 } rb_proc_t;
+
+static inline rb_proc_t*
+rb_proc_ptr(VALUE obj)
+{
+    return RTYPEDDATA_GET_DATA(obj);
+}
 
 RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_proc_isolate(VALUE self);

@@ -2500,7 +2500,7 @@ rb_fiber_start(rb_fiber_t *fiber)
         rb_context_t *cont = &VAR_FROM_MEMORY(fiber)->cont;
         int argc;
         const VALUE *argv, args = cont->value;
-        GetProcPtr(fiber->first_proc, proc);
+        proc = rb_proc_ptr(fiber->first_proc);
         argv = (argc = cont->argc) > 1 ? RARRAY_CONST_PTR(args) : &args;
         cont->value = Qnil;
         th->ec->errinfo = Qnil;
@@ -3308,7 +3308,7 @@ fiber_to_s(VALUE fiber_value)
         rb_str_cat_cstr(str, status_info);
         return str;
     }
-    GetProcPtr(fiber->first_proc, proc);
+    proc = rb_proc_ptr(fiber->first_proc);
     return rb_block_to_s(fiber_value, &proc->block, status_info);
 }
 

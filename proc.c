@@ -271,9 +271,7 @@ proc_dup(VALUE self)
 VALUE
 rb_proc_lambda_p(VALUE procval)
 {
-    rb_proc_t *proc;
-    GetProcPtr(procval, proc);
-
+    rb_proc_t *proc = rb_proc_ptr(procval);
     return RBOOL(proc->is_lambda);
 }
 
@@ -713,8 +711,7 @@ static VALUE
 sym_proc_new(VALUE klass, VALUE sym)
 {
     VALUE procval = rb_proc_alloc(klass);
-    rb_proc_t *proc;
-    GetProcPtr(procval, proc);
+    rb_proc_t *proc = rb_proc_ptr(procval);
 
     vm_block_type_set(&proc->block, block_type_symbol);
     proc->is_lambda = TRUE;
@@ -980,10 +977,9 @@ VALUE
 rb_proc_call_kw(VALUE self, VALUE args, int kw_splat)
 {
     VALUE vret;
-    rb_proc_t *proc;
+    rb_proc_t *proc = rb_proc_ptr(self);
     int argc = check_argc(RARRAY_LEN(args));
     const VALUE *argv = RARRAY_CONST_PTR(args);
-    GetProcPtr(self, proc);
     vret = rb_vm_invoke_proc(GET_EC(), proc, argc, argv,
                              kw_splat, VM_BLOCK_HANDLER_NONE);
     RB_GC_GUARD(self);
@@ -1008,8 +1004,7 @@ rb_proc_call_with_block_kw(VALUE self, int argc, const VALUE *argv, VALUE passed
 {
     rb_execution_context_t *ec = GET_EC();
     VALUE vret;
-    rb_proc_t *proc;
-    GetProcPtr(self, proc);
+    rb_proc_t *proc = rb_proc_ptr(self);
     vret = rb_vm_invoke_proc(ec, proc, argc, argv, kw_splat, proc_to_block_handler(passed_procval));
     RB_GC_GUARD(self);
     return vret;
@@ -1117,17 +1112,15 @@ rb_vm_block_min_max_arity(const struct rb_block *block, int *max)
 static int
 rb_proc_min_max_arity(VALUE self, int *max)
 {
-    rb_proc_t *proc;
-    GetProcPtr(self, proc);
+    rb_proc_t *proc = rb_proc_ptr(self);
     return rb_vm_block_min_max_arity(&proc->block, max);
 }
 
 int
 rb_proc_arity(VALUE self)
 {
-    rb_proc_t *proc;
+    rb_proc_t *proc = rb_proc_ptr(self);
     int max, min;
-    GetProcPtr(self, proc);
     min = rb_vm_block_min_max_arity(&proc->block, &max);
     return (proc->is_lambda ? min == max : max != UNLIMITED_ARGUMENTS) ? min : -min-1;
 }
@@ -1177,8 +1170,7 @@ rb_block_pair_yield_optimizable(void)
       case block_handler_type_proc:
         {
             VALUE procval = block_handler;
-            rb_proc_t *proc;
-            GetProcPtr(procval, proc);
+            rb_proc_t *proc = rb_proc_ptr(procval);
             if (proc->is_lambda) return 0;
             if (min != max) return 0;
             return min > 1;
@@ -1236,10 +1228,9 @@ rb_block_min_max_arity(int *max)
 const rb_iseq_t *
 rb_proc_get_iseq(VALUE self, int *is_proc)
 {
-    const rb_proc_t *proc;
+    const rb_proc_t *proc = rb_proc_ptr(self);
     const struct rb_block *block;
 
-    GetProcPtr(self, proc);
     block = &proc->block;
     if (is_proc) *is_proc = !proc->is_lambda;
 
@@ -1304,8 +1295,8 @@ proc_eq(VALUE self, VALUE other)
         return Qfalse;
     }
 
-    GetProcPtr(self, self_proc);
-    GetProcPtr(other, other_proc);
+    self_proc = rb_proc_ptr(self);
+    other_proc = rb_proc_ptr(other);
 
     if (self_proc->is_from_method != other_proc->is_from_method ||
             self_proc->is_lambda != other_proc->is_lambda) {
@@ -1452,10 +1443,9 @@ rb_proc_parameters(int argc, VALUE *argv, VALUE self)
 }
 
 st_index_t
-rb_hash_proc(st_index_t hash, VALUE prc)
+rb_hash_proc(st_index_t hash, VALUE procval)
 {
-    rb_proc_t *proc;
-    GetProcPtr(prc, proc);
+    rb_proc_t *proc = rb_proc_ptr(procval);
     hash = rb_hash_uint(hash, (st_index_t)proc->block.as.captured.code.val);
     hash = rb_hash_uint(hash, (st_index_t)proc->block.as.captured.self);
     return rb_hash_uint(hash, (st_index_t)proc->block.as.captured.ep);
@@ -1567,8 +1557,7 @@ rb_block_to_s(VALUE self, const struct rb_block *block, const char *additional_i
 static VALUE
 proc_to_s(VALUE self)
 {
-    const rb_proc_t *proc;
-    GetProcPtr(self, proc);
+    rb_proc_t *proc = rb_proc_ptr(self);
     return rb_block_to_s(self, &proc->block, proc->is_lambda ? " (lambda)" : NULL);
 }
 
@@ -2244,8 +2233,7 @@ rb_mod_define_method_with_visibility(int argc, VALUE *argv, VALUE mod, const str
     else {
         VALUE procval = rb_proc_dup(body);
         if (vm_proc_iseq(procval) != NULL) {
-            rb_proc_t *proc;
-            GetProcPtr(procval, proc);
+            rb_proc_t *proc = rb_proc_ptr(procval);
             proc->is_lambda = TRUE;
             proc->is_from_method = TRUE;
         }
@@ -2989,11 +2977,10 @@ rb_method_location(VALUE method)
 static const rb_method_definition_t *
 vm_proc_method_def(VALUE procval)
 {
-    const rb_proc_t *proc;
+    const rb_proc_t *proc = rb_proc_ptr(procval);
     const struct rb_block *block;
     const struct vm_ifunc *ifunc;
 
-    GetProcPtr(procval, proc);
     block = &proc->block;
 
     if (vm_block_type(block) == block_type_ifunc &&
@@ -3328,9 +3315,6 @@ rb_proc_new(
 static VALUE
 method_to_proc(VALUE method)
 {
-    VALUE procval;
-    rb_proc_t *proc;
-
     /*
      * class Method
      *   def to_proc
@@ -3340,8 +3324,8 @@ method_to_proc(VALUE method)
      *   end
      * end
      */
-    procval = rb_block_call(rb_mRubyVMFrozenCore, idLambda, 0, 0, bmcall, method);
-    GetProcPtr(procval, proc);
+    VALUE procval = rb_block_call(rb_mRubyVMFrozenCore, idLambda, 0, 0, bmcall, method);
+    rb_proc_t *proc = rb_proc_ptr(procval);
     proc->is_from_method = 1;
     return procval;
 }
@@ -3451,12 +3435,11 @@ proc_binding(VALUE self)
 {
     VALUE bindval, binding_self = Qundef;
     rb_binding_t *bind;
-    const rb_proc_t *proc;
     const rb_iseq_t *iseq = NULL;
     const struct rb_block *block;
     const rb_env_t *env = NULL;
 
-    GetProcPtr(self, proc);
+    const rb_proc_t *proc = rb_proc_ptr(self);
     block = &proc->block;
 
     if (proc->is_isolated) rb_raise(rb_eArgError, "Can't create Binding from isolated Proc");
@@ -3469,7 +3452,7 @@ proc_binding(VALUE self)
         env = VM_ENV_ENVVAL_PTR(block->as.captured.ep);
         break;
       case block_type_proc:
-        GetProcPtr(block->as.proc, proc);
+        proc = rb_proc_ptr(block->as.proc);
         block = &proc->block;
         goto again;
       case block_type_ifunc:
@@ -3519,20 +3502,18 @@ proc_binding(VALUE self)
 static rb_block_call_func curry;
 
 static VALUE
-make_curry_proc(VALUE proc, VALUE passed, VALUE arity)
+make_curry_proc(VALUE procval, VALUE passed, VALUE arity)
 {
-    VALUE args = rb_ary_new3(3, proc, passed, arity);
-    rb_proc_t *procp;
-    int is_lambda;
-
-    GetProcPtr(proc, procp);
-    is_lambda = procp->is_lambda;
+    VALUE args = rb_ary_new3(3, procval, passed, arity);
+    rb_proc_t *proc = rb_proc_ptr(procval);
+    int is_lambda = proc->is_lambda;
     rb_ary_freeze(passed);
     rb_ary_freeze(args);
-    proc = rb_proc_new(curry, args);
-    GetProcPtr(proc, procp);
-    procp->is_lambda = is_lambda;
-    return proc;
+
+    procval = rb_proc_new(curry, args);
+    proc = rb_proc_ptr(procval);
+    proc->is_lambda = is_lambda;
+    return procval;
 }
 
 static VALUE
@@ -3727,7 +3708,7 @@ rb_proc_compose_to_left(VALUE self, VALUE g)
     args = rb_ary_tmp_new_from_values(0, 2, procs);
 
     if (rb_obj_is_proc(g)) {
-        GetProcPtr(g, procp);
+        procp = rb_proc_ptr(g);
         is_lambda = procp->is_lambda;
     }
     else {
@@ -3736,7 +3717,7 @@ rb_proc_compose_to_left(VALUE self, VALUE g)
     }
 
     proc = rb_proc_new(compose, args);
-    GetProcPtr(proc, procp);
+    procp = rb_proc_ptr(proc);
     procp->is_lambda = is_lambda;
 
     return proc;
@@ -3778,18 +3759,16 @@ static VALUE
 rb_proc_compose_to_right(VALUE self, VALUE g)
 {
     VALUE proc, args, procs[2];
-    rb_proc_t *procp;
-    int is_lambda;
 
     procs[0] = g;
     procs[1] = self;
     args = rb_ary_tmp_new_from_values(0, 2, procs);
 
-    GetProcPtr(self, procp);
-    is_lambda = procp->is_lambda;
+    rb_proc_t *procp = rb_proc_ptr(self);
+    int is_lambda = procp->is_lambda;
 
     proc = rb_proc_new(compose, args);
-    GetProcPtr(proc, procp);
+    procp = rb_proc_ptr(proc);
     procp->is_lambda = is_lambda;
 
     return proc;
@@ -3878,8 +3857,7 @@ rb_method_compose_to_right(VALUE self, VALUE g)
 static VALUE
 proc_ruby2_keywords(VALUE procval)
 {
-    rb_proc_t *proc;
-    GetProcPtr(procval, proc);
+    rb_proc_t *proc = rb_proc_ptr(procval);
 
     rb_check_frozen(procval);
 
