@@ -1354,8 +1354,8 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                             case PM_ASSOC_NODE: {
                                 pm_assoc_node_t *assoc = (pm_assoc_node_t *)cur_node;
 
-                                PM_COMPILE(assoc->key);
-                                PM_COMPILE(assoc->value);
+                                PM_COMPILE_NOT_POPPED(assoc->key);
+                                PM_COMPILE_NOT_POPPED(assoc->value);
                                 cur_hash_size++;
 
                                 // If we're at the last keyword arg, or the last assoc node of this "set",
@@ -1386,7 +1386,7 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                                 }
 
                                 pm_assoc_splat_node_t *assoc_splat = (pm_assoc_splat_node_t *)cur_node;
-                                PM_COMPILE(assoc_splat->value);
+                                PM_COMPILE_NOT_POPPED(assoc_splat->value);
 
                                 *flags |= VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT;
 
@@ -1411,14 +1411,14 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                   }
                   else {
                       *kw_arg = rb_xmalloc_mul_add(len, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
-                      *flags |= VM_CALL_KWARG;
-                      (*kw_arg)->keyword_len += len;
+                      *flags = VM_CALL_KWARG;
+                      (*kw_arg)->keyword_len = (int) len;
 
                       // TODO: Method callers like `foo(a => b)`
                       for (size_t i = 0; i < len; i++) {
                           pm_assoc_node_t *assoc = (pm_assoc_node_t *)keyword_arg->elements.nodes[i];
                           (*kw_arg)->keywords[i] = pm_static_literal_value(assoc->key, scope_node, parser);
-                          PM_COMPILE(assoc->value);
+                          PM_COMPILE_NOT_POPPED(assoc->value);
                       }
                   }
                   break;
