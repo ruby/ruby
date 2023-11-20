@@ -277,6 +277,28 @@ class TestShapes < Test::Unit::TestCase
     end;
   end
 
+  def test_gc_stress_during_evacuate_generic_ivar
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      [].instance_variable_set(:@a, 1)
+
+      i = 0
+      o = Object.new
+      while RubyVM::Shape.shapes_available > 0
+        o.instance_variable_set(:"@i#{i}", 1)
+        i += 1
+      end
+
+      ary = 10.times.map { [] }
+
+      GC.stress = true
+      ary.each do |o|
+        o.instance_variable_set(:@a, 1)
+        o.instance_variable_set(:@b, 1)
+      end
+    end;
+  end
+
   def test_run_out_of_shape_for_module_ivar
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
