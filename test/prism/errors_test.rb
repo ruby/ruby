@@ -1722,6 +1722,54 @@ module Prism
       ]
     end
 
+    def test_statement_operators
+      source = <<~RUBY
+        alias x y + 1
+        alias x y.z
+        BEGIN { bar } + 1
+        BEGIN { bar }.z
+        END { bar } + 1
+        END { bar }.z
+        undef x + 1
+        undef x.z
+      RUBY
+      message1 = 'Expected a newline or semicolon after the statement'
+      message2 = 'Cannot parse the expression'
+      assert_errors expression(source), source, [
+        [message1, 9..9],
+        [message2, 9..9],
+        [message1, 23..23],
+        [message2, 23..23],
+        [message1, 39..39],
+        [message2, 39..39],
+        [message1, 57..57],
+        [message2, 57..57],
+        [message1, 71..71],
+        [message2, 71..71],
+        [message1, 87..87],
+        [message2, 87..87],
+        [message1, 97..97],
+        [message2, 97..97],
+        [message1, 109..109],
+        [message2, 109..109],
+      ]
+    end
+
+    def test_statement_at_non_statement
+      source = <<~RUBY
+        foo(alias x y)
+        foo(BEGIN { bar })
+        foo(END { bar })
+        foo(undef x)
+      RUBY
+      assert_errors expression(source), source, [
+        ['Unexpected an `alias` at a non-statement position', 4..9],
+        ['Unexpected a `BEGIN` at a non-statement position', 19..24],
+        ['Unexpected an `END` at a non-statement position', 38..41],
+        ['Unexpected an `undef` at a non-statement position', 55..60],
+      ]
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")

@@ -14214,6 +14214,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             parser_lex(parser);
             return (pm_node_t *) pm_source_line_node_create(parser, &parser->previous);
         case PM_TOKEN_KEYWORD_ALIAS: {
+            if (binding_power != PM_BINDING_POWER_STATEMENT) {
+                pm_parser_err_current(parser, PM_ERR_STATEMENT_ALIAS);
+            }
+
             parser_lex(parser);
             pm_token_t keyword = parser->previous;
 
@@ -14451,6 +14455,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             return (pm_node_t *) begin_node;
         }
         case PM_TOKEN_KEYWORD_BEGIN_UPCASE: {
+            if (binding_power != PM_BINDING_POWER_STATEMENT) {
+                pm_parser_err_current(parser, PM_ERR_STATEMENT_PREEXE_BEGIN);
+            }
+
             parser_lex(parser);
             pm_token_t keyword = parser->previous;
 
@@ -14901,6 +14909,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             );
         }
         case PM_TOKEN_KEYWORD_END_UPCASE: {
+            if (binding_power != PM_BINDING_POWER_STATEMENT) {
+                pm_parser_err_current(parser, PM_ERR_STATEMENT_POSTEXE_END);
+            }
+
             parser_lex(parser);
             pm_token_t keyword = parser->previous;
 
@@ -14983,6 +14995,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             parser_lex(parser);
             return parse_conditional(parser, PM_CONTEXT_IF);
         case PM_TOKEN_KEYWORD_UNDEF: {
+            if (binding_power != PM_BINDING_POWER_STATEMENT) {
+                pm_parser_err_current(parser, PM_ERR_STATEMENT_UNDEF);
+            }
+
             parser_lex(parser);
             pm_undef_node_t *undef = pm_undef_node_create(parser, &parser->previous);
             pm_node_t *name = parse_undef_argument(parser);
@@ -16757,6 +16773,19 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, pm_diagn
     // to add the error message to the parser's error list.
     if (PM_NODE_TYPE_P(node, PM_MISSING_NODE)) {
         pm_parser_err(parser, recovery.end, recovery.end, diag_id);
+        return node;
+    }
+
+    // The statements BEGIN { ... }, END { ... }, alias ..., and undef ... are statement.
+    // They cannot follow operators, but they can follow modifiers.
+    bool is_statement =
+        PM_NODE_TYPE_P(node, PM_PRE_EXECUTION_NODE) || PM_NODE_TYPE_P(node, PM_POST_EXECUTION_NODE) ||
+        PM_NODE_TYPE_P(node, PM_ALIAS_GLOBAL_VARIABLE_NODE) || PM_NODE_TYPE_P(node, PM_ALIAS_METHOD_NODE) ||
+        PM_NODE_TYPE_P(node, PM_UNDEF_NODE);
+    // TODO: the right condition should `pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER_RESCUE` instead.
+    // However, it does not work because of the `rescue` modifier's binding power trick.
+    // After getting to merge #1879, this TODO can be removed.
+    if (is_statement && pm_binding_powers[parser->current.type].right > PM_BINDING_POWER_MODIFIER_RESCUE + 1) {
         return node;
     }
 
