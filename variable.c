@@ -1951,7 +1951,7 @@ gen_ivar_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
     itr_data.arg = arg;
     itr_data.func = func;
     if (rb_shape_obj_too_complex(obj)) {
-        rb_st_foreach((st_table *)ivtbl, each_hash_iv, (st_data_t)&itr_data);
+        rb_st_foreach(ivtbl->as.complex.table, each_hash_iv, (st_data_t)&itr_data);
     }
     else {
         iterate_over_shapes_with_callback(shape, func, &itr_data);

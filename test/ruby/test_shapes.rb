@@ -207,6 +207,8 @@ class TestShapes < Test::Unit::TestCase
       tc.instance_variable_set(:@very_unique2, 4)
       assert_equal 3, tc.instance_variable_get(:@very_unique)
       assert_equal 4, tc.instance_variable_get(:@very_unique2)
+
+      assert_equal [:@very_unique, :@very_unique2], tc.instance_variables
     end;
   end
 
