@@ -1733,6 +1733,15 @@ class TestHash < Test::Unit::TestCase
     assert_no_memory_leak([], prepare, code, bug9187)
   end
 
+  def test_memory_size_after_delete
+    require 'objspace'
+    h = {}
+    1000.times {|i| h[i] = true}
+    big = ObjectSpace.memsize_of(h)
+    1000.times {|i| h.delete(i)}
+    assert_operator ObjectSpace.memsize_of(h), :<, big/10
+  end
+
   def test_wrapper
     bug9381 = '[ruby-core:59638] [Bug #9381]'
 
