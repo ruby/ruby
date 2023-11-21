@@ -41,7 +41,7 @@
             │           │   │           └── @ AssocSplatNode (location: (1,37)-(1,39))
             │           │   │               ├── value: ∅
             │           │   │               └── operator_loc: (1,37)-(1,39) = "**"
-            │           │   └── flags: keyword_splat
+            │           │   └── flags: contains_keyword_splat
             │           ├── closing_loc: (1,39)-(1,40) = ")"
             │           ├── block: ∅
             │           ├── flags: ∅

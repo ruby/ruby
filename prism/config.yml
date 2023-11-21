@@ -331,7 +331,7 @@ tokens:
 flags:
   - name: ArgumentsNodeFlags
     values:
-      - name: KEYWORD_SPLAT
+      - name: CONTAINS_KEYWORD_SPLAT
         comment: "if arguments contain keyword splat"
     comment: Flags for arguments nodes.
   - name: CallNodeFlags

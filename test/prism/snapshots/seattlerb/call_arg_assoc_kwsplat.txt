@@ -31,7 +31,7 @@
             │   │               │   @ IntegerNode (location: (1,14)-(1,15))
             │   │               │   └── flags: decimal
             │   │               └── operator_loc: (1,12)-(1,14) = "**"
-            │   └── flags: keyword_splat
+            │   └── flags: contains_keyword_splat
             ├── closing_loc: (1,15)-(1,16) = ")"
             ├── block: ∅
             ├── flags: ∅

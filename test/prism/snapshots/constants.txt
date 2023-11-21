@@ -128,7 +128,7 @@
         │   │   │               │   ├── flags: variable_call
         │   │   │               │   └── name: :bar
         │   │   │               └── operator_loc: (17,4)-(17,6) = "**"
-        │   │   └── flags: keyword_splat
+        │   │   └── flags: contains_keyword_splat
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -209,7 +209,7 @@
         │   │   │               │   ├── flags: variable_call
         │   │   │               │   └── name: :baz
         │   │   │               └── operator_loc: (23,9)-(23,11) = "**"
-        │   │   └── flags: keyword_splat
+        │   │   └── flags: contains_keyword_splat
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅

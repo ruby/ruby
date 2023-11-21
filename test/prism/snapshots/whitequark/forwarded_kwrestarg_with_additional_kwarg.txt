@@ -46,7 +46,7 @@
             │           │   │               ├── value:
             │           │   │               │   @ TrueNode (location: (1,31)-(1,35))
             │           │   │               └── operator_loc: ∅
-            │           │   └── flags: keyword_splat
+            │           │   └── flags: contains_keyword_splat
             │           ├── closing_loc: (1,35)-(1,36) = ")"
             │           ├── block: ∅
             │           ├── flags: ∅

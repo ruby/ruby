@@ -11144,7 +11144,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 parsed_bare_hash = true;
                 parse_arguments_append(parser, arguments, argument);
                 if (contains_keyword_splat) {
-                    arguments->arguments->base.flags |= PM_ARGUMENTS_NODE_FLAGS_KEYWORD_SPLAT;
+                    arguments->arguments->base.flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT;
                 }
                 break;
             }
@@ -11258,7 +11258,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
 
                 parse_arguments_append(parser, arguments, argument);
                 if (contains_keyword_splat) {
-                    arguments->arguments->base.flags |= PM_ARGUMENTS_NODE_FLAGS_KEYWORD_SPLAT;
+                    arguments->arguments->base.flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT;
                 }
                 break;
             }

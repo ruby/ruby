@@ -1285,7 +1285,7 @@
         │   │           │   │               │   ├── flags: variable_call
         │   │           │   │               │   └── name: :qux
         │   │           │   │               └── operator_loc: (139,25)-(139,27) = "**"
-        │   │           │   └── flags: keyword_splat
+        │   │           │   └── flags: contains_keyword_splat
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
         │   │           ├── flags: ∅

@@ -1324,7 +1324,7 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
     else {
         pm_node_list_t arguments_node_list = arguments_node->arguments;
 
-        bool has_keyword_splat = (arguments_node->base.flags & PM_ARGUMENTS_NODE_FLAGS_KEYWORD_SPLAT);
+        bool has_keyword_splat = (arguments_node->base.flags & PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT);
         bool has_splat = false;
 
         // We count the number of elements post the splat node that are not keyword elements to

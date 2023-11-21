@@ -318,7 +318,7 @@
         │   │   │               │   ├── flags: variable_call
         │   │   │               │   └── name: :kwargs
         │   │   │               └── operator_loc: (27,2)-(27,4) = "**"
-        │   │   └── flags: keyword_splat
+        │   │   └── flags: contains_keyword_splat
         │   ├── closing_loc: (27,10)-(27,11) = ")"
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -1030,7 +1030,7 @@
         │   │   │               │   ├── closing_loc: ∅
         │   │   │               │   └── unescaped: "dog"
         │   │   │               └── operator_loc: ∅
-        │   │   └── flags: keyword_splat
+        │   │   └── flags: contains_keyword_splat
         │   ├── closing_loc: ∅
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -1080,7 +1080,7 @@
         │   │   │               │   ├── closing_loc: ∅
         │   │   │               │   └── unescaped: "dog"
         │   │   │               └── operator_loc: ∅
-        │   │   └── flags: keyword_splat
+        │   │   └── flags: contains_keyword_splat
         │   ├── closing_loc: (70,40)-(70,41) = ")"
         │   ├── block: ∅
         │   ├── flags: ∅
