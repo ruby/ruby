@@ -609,6 +609,10 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                 kw_flag &= ~(VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT);
             }
             else {
+                if (!(kw_flag & VM_CALL_KW_SPLAT_MUT)) {
+                    converted_keyword_hash = rb_hash_dup(converted_keyword_hash);
+                }
+
                 if (last_arg != converted_keyword_hash) {
                     last_arg = converted_keyword_hash;
                     args->argv[args->argc-1] = last_arg;
