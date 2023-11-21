@@ -21,12 +21,6 @@ test_collection_install(RBS::CliTest) running tests without Bundler
 test_collection_install_frozen(RBS::CliTest) running tests without Bundler
 test_collection_install_gemspec(RBS::CliTest) running tests without Bundler
 test_collection_update(RBS::CliTest) running tests without Bundler
-test_diff_diff(RBS::CliTest) running tests without Bundler
-test_diff_markdown(RBS::CliTest) running tests without Bundler
-test_subtract(RBS::CliTest) running tests without Bundler
-test_subtract_several_subtrahends(RBS::CliTest) running tests without Bundler
-test_subtract_write(RBS::CliTest) running tests without Bundler
-test_subtract_write_removes_definition_if_empty(RBS::CliTest) running tests without Bundler
 
 test_TOPDIR(RbConfigSingletonTest) `TOPDIR` is `nil` during CI while RBS type is declared as `String`
 
