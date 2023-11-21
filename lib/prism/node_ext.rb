@@ -74,6 +74,14 @@ module Prism
   end
 
   class ConstantPathNode < Node
+    # An error class raised when dynamic parts are found while computing a
+    # constant path's full name. For example:
+    # Foo::Bar::Baz -> does not raise because all parts of the constant path are
+    # simple constants
+    # var::Bar::Baz -> raises because the first part of the constant path is a
+    # local variable
+    class DynamicPartsInConstantPathError < StandardError; end
+
     # Returns the list of parts for the full name of this constant path.
     # For example: [:Foo, :Bar]
     def full_name_parts
@@ -83,6 +91,10 @@ module Prism
       while current.is_a?(ConstantPathNode)
         parts.unshift(current.child.name)
         current = current.parent
+      end
+
+      unless current.is_a?(ConstantReadNode)
+        raise DynamicPartsInConstantPathError, "Constant path contains dynamic parts. Cannot compute full name"
       end
 
       parts.unshift(current&.name || :"")
