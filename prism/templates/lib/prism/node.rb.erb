@@ -70,7 +70,7 @@ module Prism
     def set_newline_flag(newline_marked) # :nodoc:
       <%- field = node.fields.find { |f| f.name == node.newline } or raise node.newline -%>
       <%- case field -%>
-      <%- when Prism::NodeField, Prism::OptionalNodeField -%>
+      <%- when Prism::NodeField -%>
       <%= field.name %>.set_newline_flag(newline_marked)
       <%- when Prism::NodeListField -%>
       first = <%= field.name %>.first
