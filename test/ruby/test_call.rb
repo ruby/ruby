@@ -100,6 +100,12 @@ class TestCall < Test::Unit::TestCase
     }
   end
 
+  def test_frozen_splat_and_keywords
+   a = [1, 2].freeze
+   def self.f(*a); a end
+   assert_equal([1, 2, {kw: 3}], f(*a, kw: 3))
+  end
+
   def test_call_bmethod_proc
     pr = proc{|sym| sym}
     define_singleton_method(:a, &pr)

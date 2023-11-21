@@ -542,11 +542,13 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         else if (UNLIKELY(ISEQ_BODY(iseq)->param.flags.ruby2_keywords)) {
             converted_keyword_hash = check_kwrestarg(converted_keyword_hash, &kw_flag);
             flag_keyword_hash = converted_keyword_hash;
+            arg_rest_dup(args);
             rb_ary_push(args->rest, converted_keyword_hash);
             keyword_hash = Qnil;
         }
         else if (!ISEQ_BODY(iseq)->param.flags.has_kwrest && !ISEQ_BODY(iseq)->param.flags.has_kw) {
             converted_keyword_hash = check_kwrestarg(converted_keyword_hash, &kw_flag);
+            arg_rest_dup(args);
             rb_ary_push(args->rest, converted_keyword_hash);
             keyword_hash = Qnil;
         } else {
