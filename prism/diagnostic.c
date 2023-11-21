@@ -256,6 +256,7 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_WARN_AMBIGUOUS_FIRST_ARGUMENT_PLUS]     = "Ambiguous first argument; put parentheses or a space even after `+` operator",
     [PM_WARN_AMBIGUOUS_PREFIX_STAR]             = "Ambiguous `*` has been interpreted as an argument prefix",
     [PM_WARN_AMBIGUOUS_SLASH]                   = "Ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator",
+    [PM_WARN_END_IN_METHOD]                     = "END in method; use at_exit",
 };
 
 static const char*

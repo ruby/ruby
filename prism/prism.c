@@ -14891,6 +14891,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             parser_lex(parser);
             pm_token_t keyword = parser->previous;
 
+            if (context_def_p(parser)) {
+                pm_parser_warn_token(parser, &keyword, PM_WARN_END_IN_METHOD);
+            }
+
             expect1(parser, PM_TOKEN_BRACE_LEFT, PM_ERR_END_UPCASE_BRACE);
             pm_token_t opening = parser->previous;
             pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_POSTEXE);

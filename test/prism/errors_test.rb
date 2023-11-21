@@ -1708,6 +1708,12 @@ module Prism
       ]
     end
 
+    def test_upcase_end_in_def
+      assert_warning_messages "def foo; END { }; end", [
+        "END in method; use at_exit"
+      ]
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")
@@ -1725,6 +1731,11 @@ module Prism
       assert_nil Ripper.sexp_raw(source) if compare_ripper
       result = Prism.parse(source)
       assert_equal(errors, result.errors.map(&:message))
+    end
+
+    def assert_warning_messages(source, warnings)
+      result = Prism.parse(source)
+      assert_equal(warnings, result.warnings.map(&:message))
     end
 
     def expression(source)

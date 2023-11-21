@@ -250,6 +250,7 @@ typedef enum {
     PM_WARN_AMBIGUOUS_FIRST_ARGUMENT_PLUS,
     PM_WARN_AMBIGUOUS_PREFIX_STAR,
     PM_WARN_AMBIGUOUS_SLASH,
+    PM_WARN_END_IN_METHOD,
 
     /* This must be the last member. */
     PM_DIAGNOSTIC_ID_LEN,
