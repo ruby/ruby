@@ -10141,10 +10141,8 @@ typedef struct {
     bool binary;
 
     /**
-     * Whether or not this token can be used as non associative binary operator.
-     * Usually, non associative operator can be handled by using the above left
-     * and right binding powers, but some operators (e.g. in and =>) need special
-     * treatment since they do not call parse_expression recursively.
+     * Whether or not this token can be used as non-associative binary operator.
+     * Non-associative operators (e.g. in and =>) need special treatment in parse_expression.
      */
     bool nonassoc;
 } pm_binding_powers_t;
@@ -10193,8 +10191,8 @@ pm_binding_powers_t pm_binding_powers[PM_TOKEN_MAXIMUM] = {
     [PM_TOKEN_QUESTION_MARK] = RIGHT_ASSOCIATIVE(PM_BINDING_POWER_TERNARY),
 
     // .. ...
-    [PM_TOKEN_DOT_DOT] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_RANGE),
-    [PM_TOKEN_DOT_DOT_DOT] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_RANGE),
+    [PM_TOKEN_DOT_DOT] = NON_ASSOCIATIVE(PM_BINDING_POWER_RANGE),
+    [PM_TOKEN_DOT_DOT_DOT] = NON_ASSOCIATIVE(PM_BINDING_POWER_RANGE),
 
     // ||
     [PM_TOKEN_PIPE_PIPE] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_LOGICAL_OR),
