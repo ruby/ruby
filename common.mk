@@ -89,7 +89,6 @@ PRISM_FILES = prism/api_node.$(OBJEXT) \
 		prism/api_pack.$(OBJEXT) \
 		prism/diagnostic.$(OBJEXT) \
 		prism/enc/pm_big5.$(OBJEXT) \
-		prism/enc/pm_big5_hkscs.$(OBJEXT) \
 		prism/enc/pm_cp51932.$(OBJEXT) \
 		prism/enc/pm_euc_jp.$(OBJEXT) \
 		prism/enc/pm_gbk.$(OBJEXT) \
@@ -11755,10 +11754,6 @@ prism/enc/pm_big5.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/enc/pm_big5.$(OBJEXT): $(top_srcdir)/prism/enc/pm_big5.c
 prism/enc/pm_big5.$(OBJEXT): $(top_srcdir)/prism/enc/pm_encoding.h
 prism/enc/pm_big5.$(OBJEXT): {$(VPATH)}config.h
-prism/enc/pm_big5_hkscs.$(OBJEXT): $(top_srcdir)/prism/defines.h
-prism/enc/pm_big5_hkscs.$(OBJEXT): $(top_srcdir)/prism/enc/pm_big5_hkscs.c
-prism/enc/pm_big5_hkscs.$(OBJEXT): $(top_srcdir)/prism/enc/pm_encoding.h
-prism/enc/pm_big5_hkscs.$(OBJEXT): {$(VPATH)}config.h
 prism/enc/pm_cp51932.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/enc/pm_cp51932.$(OBJEXT): $(top_srcdir)/prism/enc/pm_cp51932.c
 prism/enc/pm_cp51932.$(OBJEXT): $(top_srcdir)/prism/enc/pm_encoding.h
