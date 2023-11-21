@@ -69,7 +69,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "ρ"
         │   ├── opening_loc: (7,0)-(7,1) = "["
-        │   └── closing_loc: (7,19)-(7,20) = "]"
+        │   ├── closing_loc: (7,19)-(7,20) = "]"
+        │   └── flags: ∅
         ├── @ SymbolNode (location: (9,0)-(9,3))
         │   ├── opening_loc: (9,0)-(9,1) = ":"
         │   ├── value_loc: (9,1)-(9,3) = "-@"
@@ -134,7 +135,8 @@
         │   │           @ IntegerNode (location: (29,13)-(29,14))
         │   │           └── flags: decimal
         │   ├── opening_loc: (29,0)-(29,1) = "["
-        │   └── closing_loc: (29,15)-(29,16) = "]"
+        │   ├── closing_loc: (29,15)-(29,16) = "]"
+        │   └── flags: ∅
         ├── @ SymbolNode (location: (31,0)-(31,2))
         │   ├── opening_loc: (31,0)-(31,1) = ":"
         │   ├── value_loc: (31,1)-(31,2) = "~"
@@ -163,7 +165,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "c"
         │   ├── opening_loc: (35,0)-(35,3) = "%i["
-        │   └── closing_loc: (35,8)-(35,9) = "]"
+        │   ├── closing_loc: (35,8)-(35,9) = "]"
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (37,0)-(37,24))
         │   ├── elements: (length: 4)
         │   │   ├── @ SymbolNode (location: (37,3)-(37,4))
@@ -187,7 +190,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "d\#{3}f"
         │   ├── opening_loc: (37,0)-(37,3) = "%i["
-        │   └── closing_loc: (37,23)-(37,24) = "]"
+        │   ├── closing_loc: (37,23)-(37,24) = "]"
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (39,0)-(39,24))
         │   ├── elements: (length: 4)
         │   │   ├── @ SymbolNode (location: (39,3)-(39,4))
@@ -256,7 +260,8 @@
         │   │       │       └── unescaped: "f"
         │   │       └── closing_loc: ∅
         │   ├── opening_loc: (39,0)-(39,3) = "%I["
-        │   └── closing_loc: (39,23)-(39,24) = "]"
+        │   ├── closing_loc: (39,23)-(39,24) = "]"
+        │   └── flags: ∅
         ├── @ SymbolNode (location: (41,0)-(41,4))
         │   ├── opening_loc: (41,0)-(41,1) = ":"
         │   ├── value_loc: (41,1)-(41,4) = "@@a"
@@ -275,7 +280,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "a\\b"
         │   ├── opening_loc: (45,0)-(45,3) = "%i["
-        │   └── closing_loc: (45,6)-(45,7) = "]"
+        │   ├── closing_loc: (45,6)-(45,7) = "]"
+        │   └── flags: ∅
         ├── @ SymbolNode (location: (47,0)-(47,3))
         │   ├── opening_loc: (47,0)-(47,1) = ":"
         │   ├── value_loc: (47,1)-(47,3) = "$a"

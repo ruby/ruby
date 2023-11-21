@@ -30,4 +30,5 @@
                 │   └── @ IntegerNode (location: (1,14)-(1,15))
                 │       └── flags: decimal
                 ├── opening_loc: ∅
-                └── closing_loc: ∅
+                ├── closing_loc: ∅
+                └── flags: ∅

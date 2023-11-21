@@ -16,7 +16,8 @@
         │   │               │   └── flags: decimal
         │   │               └── operator_loc: (1,4)-(1,6) = "=>"
         │   ├── opening_loc: (1,0)-(1,1) = "["
-        │   └── closing_loc: (1,9)-(1,10) = "]"
+        │   ├── closing_loc: (1,9)-(1,10) = "]"
+        │   └── flags: ∅
         └── @ ArrayNode (location: (3,0)-(3,13))
             ├── elements: (length: 2)
             │   ├── @ IntegerNode (location: (3,2)-(3,3))
@@ -32,4 +33,5 @@
             │               │   └── flags: decimal
             │               └── operator_loc: (3,7)-(3,9) = "=>"
             ├── opening_loc: (3,0)-(3,1) = "["
-            └── closing_loc: (3,12)-(3,13) = "]"
+            ├── closing_loc: (3,12)-(3,13) = "]"
+            └── flags: ∅

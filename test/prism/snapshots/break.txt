@@ -81,7 +81,8 @@
         │   │   │       │   └── @ IntegerNode (location: (12,13)-(12,14))
         │   │   │       │       └── flags: decimal
         │   │   │       ├── opening_loc: (12,6)-(12,7) = "["
-        │   │   │       └── closing_loc: (12,14)-(12,15) = "]"
+        │   │   │       ├── closing_loc: (12,14)-(12,15) = "]"
+        │   │   │       └── flags: ∅
         │   │   └── flags: ∅
         │   └── keyword_loc: (12,0)-(12,5) = "break"
         ├── @ BreakNode (location: (14,0)-(17,1))

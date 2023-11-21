@@ -44,5 +44,6 @@
             │   │       ├── flags: variable_call
             │   │       └── name: :d
             │   ├── opening_loc: ∅
-            │   └── closing_loc: ∅
+            │   ├── closing_loc: ∅
+            │   └── flags: contains_splat
             └── operator_loc: (1,2)-(1,3) = "="

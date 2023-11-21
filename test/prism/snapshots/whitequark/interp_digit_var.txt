@@ -23,7 +23,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\#@1"
         │   ├── opening_loc: (5,1)-(5,4) = "%I["
-        │   └── closing_loc: (5,7)-(5,8) = "]"
+        │   ├── closing_loc: (5,7)-(5,8) = "]"
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (7,1)-(7,9))
         │   ├── elements: (length: 1)
         │   │   └── @ SymbolNode (location: (7,4)-(7,8))
@@ -32,7 +33,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\#@@1"
         │   ├── opening_loc: (7,1)-(7,4) = "%I["
-        │   └── closing_loc: (7,8)-(7,9) = "]"
+        │   ├── closing_loc: (7,8)-(7,9) = "]"
+        │   └── flags: ∅
         ├── @ StringNode (location: (9,1)-(9,8))
         │   ├── flags: ∅
         │   ├── opening_loc: (9,1)-(9,4) = "%Q{"
@@ -54,7 +56,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\#@1"
         │   ├── opening_loc: (13,1)-(13,4) = "%W["
-        │   └── closing_loc: (13,7)-(13,8) = "]"
+        │   ├── closing_loc: (13,7)-(13,8) = "]"
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (15,1)-(15,9))
         │   ├── elements: (length: 1)
         │   │   └── @ StringNode (location: (15,4)-(15,8))
@@ -64,7 +67,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\#@@1"
         │   ├── opening_loc: (15,1)-(15,4) = "%W["
-        │   └── closing_loc: (15,8)-(15,9) = "]"
+        │   ├── closing_loc: (15,8)-(15,9) = "]"
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (17,1)-(17,10))
         │   ├── elements: (length: 1)
         │   │   └── @ SymbolNode (location: (17,5)-(17,8))
@@ -73,7 +77,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\#@1"
         │   ├── opening_loc: (17,1)-(17,4) = "%i["
-        │   └── closing_loc: (17,9)-(17,10) = "]"
+        │   ├── closing_loc: (17,9)-(17,10) = "]"
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (19,1)-(19,11))
         │   ├── elements: (length: 1)
         │   │   └── @ SymbolNode (location: (19,5)-(19,9))
@@ -82,7 +87,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\#@@1"
         │   ├── opening_loc: (19,1)-(19,4) = "%i["
-        │   └── closing_loc: (19,10)-(19,11) = "]"
+        │   ├── closing_loc: (19,10)-(19,11) = "]"
+        │   └── flags: ∅
         ├── @ StringNode (location: (21,1)-(21,8))
         │   ├── flags: ∅
         │   ├── opening_loc: (21,1)-(21,4) = "%q{"
@@ -126,7 +132,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\#@1"
         │   ├── opening_loc: (33,1)-(33,4) = "%w["
-        │   └── closing_loc: (33,9)-(33,10) = "]"
+        │   ├── closing_loc: (33,9)-(33,10) = "]"
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (35,1)-(35,11))
         │   ├── elements: (length: 1)
         │   │   └── @ StringNode (location: (35,5)-(35,9))
@@ -136,7 +143,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\#@@1"
         │   ├── opening_loc: (35,1)-(35,4) = "%w["
-        │   └── closing_loc: (35,10)-(35,11) = "]"
+        │   ├── closing_loc: (35,10)-(35,11) = "]"
+        │   └── flags: ∅
         ├── @ XStringNode (location: (37,1)-(37,8))
         │   ├── opening_loc: (37,1)-(37,4) = "%x{"
         │   ├── content_loc: (37,4)-(37,7) = "\#@1"

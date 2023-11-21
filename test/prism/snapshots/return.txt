@@ -93,7 +93,8 @@
         │       │       │   └── @ IntegerNode (location: (14,14)-(14,15))
         │       │       │       └── flags: decimal
         │       │       ├── opening_loc: (14,7)-(14,8) = "["
-        │       │       └── closing_loc: (14,15)-(14,16) = "]"
+        │       │       ├── closing_loc: (14,15)-(14,16) = "]"
+        │       │       └── flags: ∅
         │       └── flags: ∅
         ├── @ ReturnNode (location: (16,0)-(19,1))
         │   ├── keyword_loc: (16,0)-(16,6) = "return"

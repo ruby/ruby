@@ -18,6 +18,7 @@
         │   │       ├── closing_loc: (3,2)-(3,3) = "'"
         │   │       └── unescaped: "b"
         │   ├── opening_loc: (1,0)-(1,1) = "["
-        │   └── closing_loc: (3,3)-(3,4) = "]"
+        │   ├── closing_loc: (3,3)-(3,4) = "]"
+        │   └── flags: ∅
         └── @ IntegerNode (location: (4,0)-(4,1))
             └── flags: decimal

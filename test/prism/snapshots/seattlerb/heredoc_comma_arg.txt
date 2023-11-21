@@ -12,7 +12,8 @@
         │   │       ├── closing_loc: (2,0)-(2,1) = "\""
         │   │       └── unescaped: "  some text\n"
         │   ├── opening_loc: (1,0)-(1,1) = "["
-        │   └── closing_loc: (2,2)-(2,3) = "]"
+        │   ├── closing_loc: (2,2)-(2,3) = "]"
+        │   └── flags: ∅
         └── @ ArrayNode (location: (4,0)-(7,1))
             ├── elements: (length: 1)
             │   └── @ StringNode (location: (4,1)-(4,8))
@@ -22,4 +23,5 @@
             │       ├── closing_loc: (6,0)-(7,0) = "FILE\n"
             │       └── unescaped: "  some text\n"
             ├── opening_loc: (4,0)-(4,1) = "["
-            └── closing_loc: (7,0)-(7,1) = "]"
+            ├── closing_loc: (7,0)-(7,1) = "]"
+            └── flags: ∅

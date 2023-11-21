@@ -30,4 +30,5 @@
             │       │       └── closing_loc: (3,6)-(3,7) = "}"
             │       └── closing_loc: ∅
             ├── opening_loc: (3,0)-(3,3) = "%W\""
-            └── closing_loc: (3,7)-(3,8) = "\""
+            ├── closing_loc: (3,7)-(3,8) = "\""
+            └── flags: ∅

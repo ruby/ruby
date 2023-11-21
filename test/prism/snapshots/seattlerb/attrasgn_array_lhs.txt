@@ -16,7 +16,8 @@
             │   │   └── @ IntegerNode (location: (1,10)-(1,11))
             │   │       └── flags: decimal
             │   ├── opening_loc: (1,0)-(1,1) = "["
-            │   └── closing_loc: (1,11)-(1,12) = "]"
+            │   ├── closing_loc: (1,11)-(1,12) = "]"
+            │   └── flags: ∅
             ├── call_operator_loc: ∅
             ├── message_loc: (1,12)-(1,24) = "[from .. to]"
             ├── opening_loc: (1,12)-(1,13) = "["
@@ -69,7 +70,8 @@
             │   │       │       ├── closing_loc: (1,40)-(1,41) = "\""
             │   │       │       └── unescaped: "c"
             │   │       ├── opening_loc: (1,27)-(1,28) = "["
-            │   │       └── closing_loc: (1,41)-(1,42) = "]"
+            │   │       ├── closing_loc: (1,41)-(1,42) = "]"
+            │   │       └── flags: ∅
             │   └── flags: ∅
             ├── closing_loc: (1,23)-(1,24) = "]"
             ├── block: ∅

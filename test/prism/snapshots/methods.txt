@@ -1675,7 +1675,8 @@
         │   │           │       ├── operator_loc: (170,11)-(170,12) = "*"
         │   │           │       └── expression: ∅
         │   │           ├── opening_loc: (170,10)-(170,11) = "["
-        │   │           └── closing_loc: (170,12)-(170,13) = "]"
+        │   │           ├── closing_loc: (170,12)-(170,13) = "]"
+        │   │           └── flags: contains_splat
         │   ├── locals: [:*]
         │   ├── def_keyword_loc: (170,0)-(170,3) = "def"
         │   ├── operator_loc: ∅

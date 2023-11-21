@@ -17,7 +17,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "a\nb"
         │   ├── opening_loc: (4,0)-(4,3) = "%I{"
-        │   └── closing_loc: (5,1)-(5,2) = "}"
+        │   ├── closing_loc: (5,1)-(5,2) = "}"
+        │   └── flags: ∅
         ├── @ StringNode (location: (7,0)-(8,2))
         │   ├── flags: ∅
         │   ├── opening_loc: (7,0)-(7,3) = "%Q{"
@@ -33,7 +34,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "a\nb"
         │   ├── opening_loc: (10,0)-(10,3) = "%W{"
-        │   └── closing_loc: (11,1)-(11,2) = "}"
+        │   ├── closing_loc: (11,1)-(11,2) = "}"
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (13,0)-(14,2))
         │   ├── elements: (length: 1)
         │   │   └── @ SymbolNode (location: (13,3)-(14,1))
@@ -42,7 +44,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "a\nb"
         │   ├── opening_loc: (13,0)-(13,3) = "%i{"
-        │   └── closing_loc: (14,1)-(14,2) = "}"
+        │   ├── closing_loc: (14,1)-(14,2) = "}"
+        │   └── flags: ∅
         ├── @ StringNode (location: (16,0)-(17,2))
         │   ├── flags: ∅
         │   ├── opening_loc: (16,0)-(16,3) = "%q{"
@@ -69,7 +72,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "a\nb"
         │   ├── opening_loc: (25,0)-(25,3) = "%w{"
-        │   └── closing_loc: (26,1)-(26,2) = "}"
+        │   ├── closing_loc: (26,1)-(26,2) = "}"
+        │   └── flags: ∅
         ├── @ XStringNode (location: (28,0)-(29,2))
         │   ├── opening_loc: (28,0)-(28,3) = "%x{"
         │   ├── content_loc: (28,3)-(29,1) = "a\\\nb"

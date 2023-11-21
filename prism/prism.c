@@ -1151,6 +1151,10 @@ pm_array_node_elements_append(pm_array_node_t *node, pm_node_t *element) {
     if (PM_NODE_TYPE_P(element, PM_ARRAY_NODE) || PM_NODE_TYPE_P(element, PM_HASH_NODE) || PM_NODE_TYPE_P(element, PM_RANGE_NODE) || (element->flags & PM_NODE_FLAG_STATIC_LITERAL) == 0) {
         node->base.flags &= (pm_node_flags_t) ~PM_NODE_FLAG_STATIC_LITERAL;
     }
+
+    if (PM_NODE_TYPE_P(element, PM_SPLAT_NODE)) {
+        node->base.flags |= PM_ARRAY_NODE_FLAGS_CONTAINS_SPLAT;
+    }
 }
 
 /**

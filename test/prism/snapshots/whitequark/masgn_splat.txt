@@ -130,7 +130,8 @@
         │       │           ├── flags: variable_call
         │       │           └── name: :foo
         │       ├── opening_loc: ∅
-        │       └── closing_loc: ∅
+        │       ├── closing_loc: ∅
+        │       └── flags: contains_splat
         ├── @ MultiWriteNode (location: (11,0)-(11,10))
         │   ├── lefts: (length: 1)
         │   │   └── @ LocalVariableTargetNode (location: (11,0)-(11,1))
@@ -279,4 +280,5 @@
                 │       ├── flags: variable_call
                 │       └── name: :bar
                 ├── opening_loc: ∅
-                └── closing_loc: ∅
+                ├── closing_loc: ∅
+                └── flags: contains_splat

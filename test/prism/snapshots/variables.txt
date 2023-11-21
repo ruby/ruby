@@ -37,7 +37,8 @@
         │   │   │   └── @ IntegerNode (location: (7,11)-(7,12))
         │   │   │       └── flags: decimal
         │   │   ├── opening_loc: ∅
-        │   │   └── closing_loc: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   └── flags: ∅
         │   └── operator_loc: (7,6)-(7,7) = "="
         ├── @ GlobalVariableWriteNode (location: (9,0)-(9,8))
         │   ├── name: :$abc
@@ -100,7 +101,8 @@
         │   │   │   └── @ IntegerNode (location: (23,10)-(23,11))
         │   │   │       └── flags: decimal
         │   │   ├── opening_loc: ∅
-        │   │   └── closing_loc: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   └── flags: ∅
         │   └── operator_loc: (23,5)-(23,6) = "="
         ├── @ MultiWriteNode (location: (25,0)-(25,14))
         │   ├── lefts: (length: 2)
@@ -127,7 +129,8 @@
         │   │   │   └── @ IntegerNode (location: (27,10)-(27,11))
         │   │   │       └── flags: decimal
         │   │   ├── opening_loc: ∅
-        │   │   └── closing_loc: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   └── flags: ∅
         │   └── operator_loc: (27,5)-(27,6) = "="
         ├── @ LocalVariableWriteNode (location: (29,0)-(29,7))
         │   ├── name: :foo
@@ -149,7 +152,8 @@
         │   │   │   └── @ IntegerNode (location: (29,18)-(29,19))
         │   │   │       └── flags: decimal
         │   │   ├── opening_loc: ∅
-        │   │   └── closing_loc: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   └── flags: ∅
         │   └── operator_loc: (29,13)-(29,14) = "="
         ├── @ LocalVariableWriteNode (location: (31,0)-(31,10))
         │   ├── name: :foo
@@ -163,7 +167,8 @@
         │   │   │   └── @ IntegerNode (location: (31,9)-(31,10))
         │   │   │       └── flags: decimal
         │   │   ├── opening_loc: ∅
-        │   │   └── closing_loc: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   └── flags: ∅
         │   └── operator_loc: (31,4)-(31,5) = "="
         ├── @ MultiWriteNode (location: (33,0)-(33,13))
         │   ├── lefts: (length: 1)
@@ -186,7 +191,8 @@
         │       │   └── @ IntegerNode (location: (33,12)-(33,13))
         │       │       └── flags: decimal
         │       ├── opening_loc: ∅
-        │       └── closing_loc: ∅
+        │       ├── closing_loc: ∅
+        │       └── flags: ∅
         ├── @ MultiWriteNode (location: (35,0)-(35,11))
         │   ├── lefts: (length: 1)
         │   │   └── @ LocalVariableTargetNode (location: (35,0)-(35,3))
@@ -208,7 +214,8 @@
         │       │   └── @ IntegerNode (location: (35,10)-(35,11))
         │       │       └── flags: decimal
         │       ├── opening_loc: ∅
-        │       └── closing_loc: ∅
+        │       ├── closing_loc: ∅
+        │       └── flags: ∅
         ├── @ MultiWriteNode (location: (37,0)-(37,16))
         │   ├── lefts: (length: 1)
         │   │   └── @ LocalVariableTargetNode (location: (37,0)-(37,3))
@@ -233,7 +240,8 @@
         │       │   └── @ IntegerNode (location: (37,15)-(37,16))
         │       │       └── flags: decimal
         │       ├── opening_loc: ∅
-        │       └── closing_loc: ∅
+        │       ├── closing_loc: ∅
+        │       └── flags: ∅
         ├── @ MultiWriteNode (location: (39,0)-(39,27))
         │   ├── lefts: (length: 2)
         │   │   ├── @ LocalVariableTargetNode (location: (39,0)-(39,3))
@@ -268,9 +276,11 @@
         │       │       │   └── @ IntegerNode (location: (39,25)-(39,26))
         │       │       │       └── flags: decimal
         │       │       ├── opening_loc: (39,21)-(39,22) = "["
-        │       │       └── closing_loc: (39,26)-(39,27) = "]"
+        │       │       ├── closing_loc: (39,26)-(39,27) = "]"
+        │       │       └── flags: ∅
         │       ├── opening_loc: ∅
-        │       └── closing_loc: ∅
+        │       ├── closing_loc: ∅
+        │       └── flags: ∅
         ├── @ LocalVariableWriteNode (location: (41,0)-(41,10))
         │   ├── name: :foo
         │   ├── depth: 0
@@ -285,7 +295,8 @@
         │   │   │           ├── name: :bar
         │   │   │           └── depth: 0
         │   │   ├── opening_loc: ∅
-        │   │   └── closing_loc: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   └── flags: contains_splat
         │   └── operator_loc: (41,4)-(41,5) = "="
         ├── @ ConstantWriteNode (location: (43,0)-(43,10))
         │   ├── name: :Foo
@@ -298,7 +309,8 @@
         │   │   │   └── @ IntegerNode (location: (43,9)-(43,10))
         │   │   │       └── flags: decimal
         │   │   ├── opening_loc: ∅
-        │   │   └── closing_loc: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   └── flags: ∅
         │   └── operator_loc: (43,4)-(43,5) = "="
         ├── @ ParenthesesNode (location: (45,0)-(45,9))
         │   ├── body:
@@ -365,4 +377,5 @@
                 @ ArrayNode (location: (47,15)-(47,17))
                 ├── elements: (length: 0)
                 ├── opening_loc: (47,15)-(47,16) = "["
-                └── closing_loc: (47,16)-(47,17) = "]"
+                ├── closing_loc: (47,16)-(47,17) = "]"
+                └── flags: ∅

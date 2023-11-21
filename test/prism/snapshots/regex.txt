@@ -124,7 +124,8 @@
         │   │       ├── name: :foo
         │   │       └── depth: 0
         │   ├── opening_loc: (11,0)-(11,1) = "["
-        │   └── closing_loc: (11,26)-(11,27) = "]"
+        │   ├── closing_loc: (11,26)-(11,27) = "]"
+        │   └── flags: ∅
         ├── @ RegularExpressionNode (location: (13,0)-(13,6))
         │   ├── opening_loc: (13,0)-(13,1) = "/"
         │   ├── content_loc: (13,1)-(13,4) = "abc"

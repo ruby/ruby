@@ -36,4 +36,5 @@
             │   └── @ IntegerNode (location: (7,0)-(7,1))
             │       └── flags: decimal
             ├── opening_loc: (1,0)-(1,1) = "["
-            └── closing_loc: (7,1)-(7,2) = "]"
+            ├── closing_loc: (7,1)-(7,2) = "]"
+            └── flags: ∅

@@ -22,7 +22,8 @@
             │   │       │       │       └── @ ArrayNode (location: (1,5)-(1,7))
             │   │       │       │           ├── elements: (length: 0)
             │   │       │       │           ├── opening_loc: (1,5)-(1,6) = "["
-            │   │       │       │           └── closing_loc: (1,6)-(1,7) = "]"
+            │   │       │       │           ├── closing_loc: (1,6)-(1,7) = "]"
+            │   │       │       │           └── flags: ∅
             │   │       │       └── closing_loc: (1,7)-(1,8) = "}"
             │   │       └── closing_loc: (1,8)-(1,9) = "\""
             │   └── flags: ∅

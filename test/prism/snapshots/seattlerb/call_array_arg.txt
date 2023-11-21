@@ -26,7 +26,8 @@
             │   │       │       ├── closing_loc: ∅
             │   │       │       └── unescaped: "c"
             │   │       ├── opening_loc: (1,5)-(1,6) = "["
-            │   │       └── closing_loc: (1,12)-(1,13) = "]"
+            │   │       ├── closing_loc: (1,12)-(1,13) = "]"
+            │   │       └── flags: ∅
             │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅

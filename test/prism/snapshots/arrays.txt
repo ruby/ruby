@@ -19,7 +19,8 @@
         │   │           ├── flags: variable_call
         │   │           └── name: :a
         │   ├── opening_loc: (1,0)-(1,1) = "["
-        │   └── closing_loc: (1,3)-(1,4) = "]"
+        │   ├── closing_loc: (1,3)-(1,4) = "]"
+        │   └── flags: contains_splat
         ├── @ CallNode (location: (3,0)-(3,23))
         │   ├── receiver:
         │   │   @ CallNode (location: (3,0)-(3,3))
@@ -67,7 +68,8 @@
         │   │   │       │   └── @ IntegerNode (location: (3,22)-(3,23))
         │   │   │       │       └── flags: decimal
         │   │   │       ├── opening_loc: ∅
-        │   │   │       └── closing_loc: ∅
+        │   │   │       ├── closing_loc: ∅
+        │   │   │       └── flags: ∅
         │   │   └── flags: ∅
         │   ├── closing_loc: (3,12)-(3,13) = "]"
         │   ├── block: ∅
@@ -98,10 +100,12 @@
         │   │               │   │       ├── closing_loc: ∅
         │   │               │   │       └── unescaped: "c"
         │   │               │   ├── opening_loc: (5,4)-(5,5) = "["
-        │   │               │   └── closing_loc: (5,11)-(5,12) = "]"
+        │   │               │   ├── closing_loc: (5,11)-(5,12) = "]"
+        │   │               │   └── flags: ∅
         │   │               └── operator_loc: ∅
         │   ├── opening_loc: (5,0)-(5,1) = "["
-        │   └── closing_loc: (5,12)-(5,13) = "]"
+        │   ├── closing_loc: (5,12)-(5,13) = "]"
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (9,0)-(15,1))
         │   ├── elements: (length: 5)
         │   │   ├── @ SymbolNode (location: (9,1)-(9,3))
@@ -127,7 +131,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "d"
         │   ├── opening_loc: (9,0)-(9,1) = "["
-        │   └── closing_loc: (15,0)-(15,1) = "]"
+        │   ├── closing_loc: (15,0)-(15,1) = "]"
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (18,0)-(26,1))
         │   ├── elements: (length: 5)
         │   │   ├── @ SymbolNode (location: (18,1)-(18,3))
@@ -153,7 +158,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "d"
         │   ├── opening_loc: (18,0)-(18,1) = "["
-        │   └── closing_loc: (26,0)-(26,1) = "]"
+        │   ├── closing_loc: (26,0)-(26,1) = "]"
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (28,0)-(28,12))
         │   ├── elements: (length: 1)
         │   │   └── @ KeywordHashNode (location: (28,1)-(28,11))
@@ -183,7 +189,8 @@
         │   │               │   └── name: :bar
         │   │               └── operator_loc: (28,5)-(28,7) = "=>"
         │   ├── opening_loc: (28,0)-(28,1) = "["
-        │   └── closing_loc: (28,11)-(28,12) = "]"
+        │   ├── closing_loc: (28,11)-(28,12) = "]"
+        │   └── flags: ∅
         ├── @ CallNode (location: (30,0)-(30,19))
         │   ├── receiver:
         │   │   @ CallNode (location: (30,0)-(30,8))
@@ -309,7 +316,8 @@
         ├── @ ArrayNode (location: (34,0)-(35,1))
         │   ├── elements: (length: 0)
         │   ├── opening_loc: (34,0)-(34,1) = "["
-        │   └── closing_loc: (35,0)-(35,1) = "]"
+        │   ├── closing_loc: (35,0)-(35,1) = "]"
+        │   └── flags: ∅
         ├── @ CallNode (location: (37,0)-(37,13))
         │   ├── receiver:
         │   │   @ CallNode (location: (37,0)-(37,3))
@@ -471,7 +479,8 @@
         │       │   └── @ IntegerNode (location: (41,20)-(41,21))
         │       │       └── flags: decimal
         │       ├── opening_loc: ∅
-        │       └── closing_loc: ∅
+        │       ├── closing_loc: ∅
+        │       └── flags: ∅
         ├── @ CallNode (location: (43,0)-(43,19))
         │   ├── receiver:
         │   │   @ CallNode (location: (43,0)-(43,3))
@@ -626,7 +635,8 @@
         │   │               │   └── closing_loc: (49,4)-(49,5) = "}"
         │   │               └── operator_loc: (49,1)-(49,3) = "**"
         │   ├── opening_loc: (49,0)-(49,1) = "["
-        │   └── closing_loc: (49,5)-(49,6) = "]"
+        │   ├── closing_loc: (49,5)-(49,6) = "]"
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (51,0)-(51,6))
         │   ├── elements: (length: 1)
         │   │   └── @ KeywordHashNode (location: (51,1)-(51,5))
@@ -645,7 +655,8 @@
         │   │               │   └── name: :kw
         │   │               └── operator_loc: (51,1)-(51,3) = "**"
         │   ├── opening_loc: (51,0)-(51,1) = "["
-        │   └── closing_loc: (51,5)-(51,6) = "]"
+        │   ├── closing_loc: (51,5)-(51,6) = "]"
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (53,0)-(53,9))
         │   ├── elements: (length: 2)
         │   │   ├── @ IntegerNode (location: (53,1)-(53,2))
@@ -666,7 +677,8 @@
         │   │               │   └── name: :kw
         │   │               └── operator_loc: (53,4)-(53,6) = "**"
         │   ├── opening_loc: (53,0)-(53,1) = "["
-        │   └── closing_loc: (53,8)-(53,9) = "]"
+        │   ├── closing_loc: (53,8)-(53,9) = "]"
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (55,0)-(55,21))
         │   ├── elements: (length: 2)
         │   │   ├── @ IntegerNode (location: (55,1)-(55,2))
@@ -707,7 +719,8 @@
         │   │               │   └── name: :kw
         │   │               └── operator_loc: (55,16)-(55,18) = "**"
         │   ├── opening_loc: (55,0)-(55,1) = "["
-        │   └── closing_loc: (55,20)-(55,21) = "]"
+        │   ├── closing_loc: (55,20)-(55,21) = "]"
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (57,0)-(59,1))
         │   ├── elements: (length: 1)
         │   │   └── @ KeywordHashNode (location: (58,2)-(58,12))
@@ -737,7 +750,8 @@
         │   │               │   └── name: :bar
         │   │               └── operator_loc: (58,6)-(58,8) = "=>"
         │   ├── opening_loc: (57,0)-(57,1) = "["
-        │   └── closing_loc: (59,0)-(59,1) = "]"
+        │   ├── closing_loc: (59,0)-(59,1) = "]"
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (62,0)-(62,17))
         │   ├── elements: (length: 3)
         │   │   ├── @ SymbolNode (location: (62,3)-(62,6))
@@ -756,7 +770,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "three"
         │   ├── opening_loc: (62,0)-(62,3) = "%i#"
-        │   └── closing_loc: (62,16)-(62,17) = "#"
+        │   ├── closing_loc: (62,16)-(62,17) = "#"
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (64,0)-(64,17))
         │   ├── elements: (length: 3)
         │   │   ├── @ StringNode (location: (64,3)-(64,6))
@@ -778,7 +793,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "three"
         │   ├── opening_loc: (64,0)-(64,3) = "%w#"
-        │   └── closing_loc: (64,16)-(64,17) = "#"
+        │   ├── closing_loc: (64,16)-(64,17) = "#"
+        │   └── flags: ∅
         ├── @ XStringNode (location: (66,0)-(66,17))
         │   ├── opening_loc: (66,0)-(66,3) = "%x#"
         │   ├── content_loc: (66,3)-(66,16) = "one two three"
@@ -802,7 +818,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "three"
         │   ├── opening_loc: (69,0)-(69,3) = "%i@"
-        │   └── closing_loc: (69,16)-(69,17) = "@"
+        │   ├── closing_loc: (69,16)-(69,17) = "@"
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (71,0)-(71,17))
         │   ├── elements: (length: 3)
         │   │   ├── @ StringNode (location: (71,3)-(71,6))
@@ -824,7 +841,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "three"
         │   ├── opening_loc: (71,0)-(71,3) = "%w@"
-        │   └── closing_loc: (71,16)-(71,17) = "@"
+        │   ├── closing_loc: (71,16)-(71,17) = "@"
+        │   └── flags: ∅
         ├── @ XStringNode (location: (73,0)-(73,17))
         │   ├── opening_loc: (73,0)-(73,3) = "%x@"
         │   ├── content_loc: (73,3)-(73,16) = "one two three"
@@ -848,7 +866,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "three"
         │   ├── opening_loc: (76,0)-(76,3) = "%i{"
-        │   └── closing_loc: (76,16)-(76,17) = "}"
+        │   ├── closing_loc: (76,16)-(76,17) = "}"
+        │   └── flags: ∅
         ├── @ ArrayNode (location: (78,0)-(78,17))
         │   ├── elements: (length: 3)
         │   │   ├── @ StringNode (location: (78,3)-(78,6))
@@ -870,7 +889,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "three"
         │   ├── opening_loc: (78,0)-(78,3) = "%w{"
-        │   └── closing_loc: (78,16)-(78,17) = "}"
+        │   ├── closing_loc: (78,16)-(78,17) = "}"
+        │   └── flags: ∅
         ├── @ XStringNode (location: (80,0)-(80,17))
         │   ├── opening_loc: (80,0)-(80,3) = "%x{"
         │   ├── content_loc: (80,3)-(80,16) = "one two three"
@@ -885,7 +905,8 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "\\C:"
         │   ├── opening_loc: (82,0)-(82,3) = "%w["
-        │   └── closing_loc: (82,6)-(82,7) = "]"
+        │   ├── closing_loc: (82,6)-(82,7) = "]"
+        │   └── flags: ∅
         ├── @ IndexOperatorWriteNode (location: (84,0)-(84,10))
         │   ├── receiver:
         │   │   @ CallNode (location: (84,0)-(84,3))

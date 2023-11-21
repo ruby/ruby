@@ -57,7 +57,8 @@
         │   │       │   │       ├── closing_loc: ∅
         │   │       │   │       └── unescaped: "b"
         │   │       │   ├── opening_loc: (6,3)-(6,6) = "%I["
-        │   │       │   └── closing_loc: (6,9)-(6,10) = "]"
+        │   │       │   ├── closing_loc: (6,9)-(6,10) = "]"
+        │   │       │   └── flags: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (6,0)-(6,2) = "in"
         │   │       └── then_loc: ∅
@@ -89,7 +90,8 @@
         │   │       │   │       ├── closing_loc: ∅
         │   │       │   │       └── unescaped: "b"
         │   │       │   ├── opening_loc: (10,3)-(10,6) = "%W["
-        │   │       │   └── closing_loc: (10,9)-(10,10) = "]"
+        │   │       │   ├── closing_loc: (10,9)-(10,10) = "]"
+        │   │       │   └── flags: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (10,0)-(10,2) = "in"
         │   │       └── then_loc: ∅
@@ -119,7 +121,8 @@
         │   │       │   │       ├── closing_loc: ∅
         │   │       │   │       └── unescaped: "b"
         │   │       │   ├── opening_loc: (14,3)-(14,6) = "%i["
-        │   │       │   └── closing_loc: (14,9)-(14,10) = "]"
+        │   │       │   ├── closing_loc: (14,9)-(14,10) = "]"
+        │   │       │   └── flags: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (14,0)-(14,2) = "in"
         │   │       └── then_loc: ∅
@@ -151,7 +154,8 @@
         │   │       │   │       ├── closing_loc: ∅
         │   │       │   │       └── unescaped: "b"
         │   │       │   ├── opening_loc: (18,3)-(18,6) = "%w["
-        │   │       │   └── closing_loc: (18,9)-(18,10) = "]"
+        │   │       │   ├── closing_loc: (18,9)-(18,10) = "]"
+        │   │       │   └── flags: ∅
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (18,0)-(18,2) = "in"
         │   │       └── then_loc: ∅

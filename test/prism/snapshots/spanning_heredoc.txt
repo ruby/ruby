@@ -192,7 +192,8 @@
         │   │   │       │       ├── closing_loc: ∅
         │   │   │       │       └── unescaped: "j"
         │   │   │       ├── opening_loc: (28,9)-(28,12) = "%w["
-        │   │   │       └── closing_loc: (31,1)-(31,2) = "]"
+        │   │   │       ├── closing_loc: (31,1)-(31,2) = "]"
+        │   │   │       └── flags: ∅
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
@@ -231,7 +232,8 @@
         │   │   │       │       │       └── unescaped: "l"
         │   │   │       │       └── closing_loc: ∅
         │   │   │       ├── opening_loc: (35,9)-(35,12) = "%W["
-        │   │   │       └── closing_loc: (38,1)-(38,2) = "]"
+        │   │   │       ├── closing_loc: (38,1)-(38,2) = "]"
+        │   │   │       └── flags: ∅
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
@@ -264,7 +266,8 @@
         │   │   │       │       ├── closing_loc: ∅
         │   │   │       │       └── unescaped: "n"
         │   │   │       ├── opening_loc: (41,9)-(41,12) = "%i["
-        │   │   │       └── closing_loc: (44,1)-(44,2) = "]"
+        │   │   │       ├── closing_loc: (44,1)-(44,2) = "]"
+        │   │   │       └── flags: ∅
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
@@ -302,7 +305,8 @@
         │   │   │       │       │       └── unescaped: "p"
         │   │   │       │       └── closing_loc: ∅
         │   │   │       ├── opening_loc: (48,9)-(48,12) = "%I["
-        │   │   │       └── closing_loc: (51,1)-(51,2) = "]"
+        │   │   │       ├── closing_loc: (51,1)-(51,2) = "]"
+        │   │   │       └── flags: ∅
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅

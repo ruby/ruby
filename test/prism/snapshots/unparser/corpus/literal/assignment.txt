@@ -29,7 +29,8 @@
         │       │   └── @ IntegerNode (location: (2,15)-(2,16))
         │       │       └── flags: decimal
         │       ├── opening_loc: (2,11)-(2,12) = "["
-        │       └── closing_loc: (2,16)-(2,17) = "]"
+        │       ├── closing_loc: (2,16)-(2,17) = "]"
+        │       └── flags: ∅
         ├── @ MultiWriteNode (location: (3,0)-(3,13))
         │   ├── lefts: (length: 2)
         │   │   ├── @ MultiTargetNode (location: (3,1)-(3,5))
@@ -72,7 +73,8 @@
         │       @ ArrayNode (location: (4,7)-(4,9))
         │       ├── elements: (length: 0)
         │       ├── opening_loc: (4,7)-(4,8) = "["
-        │       └── closing_loc: (4,8)-(4,9) = "]"
+        │       ├── closing_loc: (4,8)-(4,9) = "]"
+        │       └── flags: ∅
         ├── @ MultiWriteNode (location: (5,0)-(5,15))
         │   ├── lefts: (length: 0)
         │   ├── rest:
@@ -94,7 +96,8 @@
         │       │   └── @ IntegerNode (location: (5,13)-(5,14))
         │       │       └── flags: decimal
         │       ├── opening_loc: (5,9)-(5,10) = "["
-        │       └── closing_loc: (5,14)-(5,15) = "]"
+        │       ├── closing_loc: (5,14)-(5,15) = "]"
+        │       └── flags: ∅
         ├── @ MultiWriteNode (location: (6,0)-(6,19))
         │   ├── lefts: (length: 2)
         │   │   ├── @ ClassVariableTargetNode (location: (6,1)-(6,4))
@@ -114,7 +117,8 @@
         │       │   └── @ IntegerNode (location: (6,17)-(6,18))
         │       │       └── flags: decimal
         │       ├── opening_loc: (6,13)-(6,14) = "["
-        │       └── closing_loc: (6,18)-(6,19) = "]"
+        │       ├── closing_loc: (6,18)-(6,19) = "]"
+        │       └── flags: ∅
         ├── @ MultiWriteNode (location: (7,0)-(7,17))
         │   ├── lefts: (length: 2)
         │   │   ├── @ InstanceVariableTargetNode (location: (7,1)-(7,3))
@@ -134,7 +138,8 @@
         │       │   └── @ IntegerNode (location: (7,15)-(7,16))
         │       │       └── flags: decimal
         │       ├── opening_loc: (7,11)-(7,12) = "["
-        │       └── closing_loc: (7,16)-(7,17) = "]"
+        │       ├── closing_loc: (7,16)-(7,17) = "]"
+        │       └── flags: ∅
         ├── @ MultiWriteNode (location: (8,0)-(8,25))
         │   ├── lefts: (length: 2)
         │   │   ├── @ LocalVariableTargetNode (location: (8,1)-(8,2))
@@ -169,9 +174,11 @@
         │       │       │   └── @ IntegerNode (location: (8,22)-(8,23))
         │       │       │       └── flags: decimal
         │       │       ├── opening_loc: (8,18)-(8,19) = "["
-        │       │       └── closing_loc: (8,23)-(8,24) = "]"
+        │       │       ├── closing_loc: (8,23)-(8,24) = "]"
+        │       │       └── flags: ∅
         │       ├── opening_loc: (8,14)-(8,15) = "["
-        │       └── closing_loc: (8,24)-(8,25) = "]"
+        │       ├── closing_loc: (8,24)-(8,25) = "]"
+        │       └── flags: ∅
         ├── @ MultiWriteNode (location: (9,0)-(9,15))
         │   ├── lefts: (length: 1)
         │   │   └── @ LocalVariableTargetNode (location: (9,1)-(9,2))
@@ -193,7 +200,8 @@
         │       │   └── @ IntegerNode (location: (9,13)-(9,14))
         │       │       └── flags: decimal
         │       ├── opening_loc: (9,9)-(9,10) = "["
-        │       └── closing_loc: (9,14)-(9,15) = "]"
+        │       ├── closing_loc: (9,14)-(9,15) = "]"
+        │       └── flags: ∅
         ├── @ MultiWriteNode (location: (10,0)-(10,18))
         │   ├── lefts: (length: 1)
         │   │   └── @ LocalVariableTargetNode (location: (10,1)-(10,2))
@@ -218,7 +226,8 @@
         │       │   └── @ IntegerNode (location: (10,16)-(10,17))
         │       │       └── flags: decimal
         │       ├── opening_loc: (10,12)-(10,13) = "["
-        │       └── closing_loc: (10,17)-(10,18) = "]"
+        │       ├── closing_loc: (10,17)-(10,18) = "]"
+        │       └── flags: ∅
         ├── @ MultiWriteNode (location: (11,0)-(11,15))
         │   ├── lefts: (length: 2)
         │   │   ├── @ LocalVariableTargetNode (location: (11,1)-(11,2))
@@ -240,7 +249,8 @@
         │       │   └── @ IntegerNode (location: (11,13)-(11,14))
         │       │       └── flags: decimal
         │       ├── opening_loc: (11,9)-(11,10) = "["
-        │       └── closing_loc: (11,14)-(11,15) = "]"
+        │       ├── closing_loc: (11,14)-(11,15) = "]"
+        │       └── flags: ∅
         ├── @ MultiWriteNode (location: (12,0)-(12,12))
         │   ├── lefts: (length: 2)
         │   │   ├── @ LocalVariableTargetNode (location: (12,1)-(12,2))
@@ -316,7 +326,8 @@
         │       │   └── @ IntegerNode (location: (14,21)-(14,22))
         │       │       └── flags: decimal
         │       ├── opening_loc: (14,17)-(14,18) = "["
-        │       └── closing_loc: (14,22)-(14,23) = "]"
+        │       ├── closing_loc: (14,22)-(14,23) = "]"
+        │       └── flags: ∅
         ├── @ MultiWriteNode (location: (15,0)-(15,24))
         │   ├── lefts: (length: 2)
         │   │   ├── @ CallNode (location: (15,1)-(15,8))
@@ -372,7 +383,8 @@
         │       │   └── @ IntegerNode (location: (15,22)-(15,23))
         │       │       └── flags: decimal
         │       ├── opening_loc: (15,18)-(15,19) = "["
-        │       └── closing_loc: (15,23)-(15,24) = "]"
+        │       ├── closing_loc: (15,23)-(15,24) = "]"
+        │       └── flags: ∅
         ├── @ MultiWriteNode (location: (16,0)-(16,21))
         │   ├── lefts: (length: 2)
         │   │   ├── @ CallNode (location: (16,1)-(16,5))
@@ -424,7 +436,8 @@
         │       │   └── @ IntegerNode (location: (16,19)-(16,20))
         │       │       └── flags: decimal
         │       ├── opening_loc: (16,15)-(16,16) = "["
-        │       └── closing_loc: (16,20)-(16,21) = "]"
+        │       ├── closing_loc: (16,20)-(16,21) = "]"
+        │       └── flags: ∅
         ├── @ MultiWriteNode (location: (17,0)-(17,12))
         │   ├── lefts: (length: 0)
         │   ├── rest:
