@@ -1045,16 +1045,16 @@ complex_pow_for_special_angle(VALUE self, VALUE other)
     };
     int z_dir = FIX2INT(rb_int_modulo(rb_int_mul(INT2FIX(dir), other), INT2FIX(8)));
 
-    VALUE zr, zi;
+    VALUE zr = zx, zi = zx;
     switch (dirs[z_dir][0]) {
       case 0: zr = zero_for(zx); break;
-      case 1: zr = zx; break;
       case -1: zr = f_negate(zx); break;
+      default: break;
     }
     switch (dirs[z_dir][1]) {
       case 0: zi = zero_for(zx); break;
-      case 1: zi = zx; break;
       case -1: zi = f_negate(zx); break;
+      default: break;
     }
     return nucomp_s_new_internal(CLASS_OF(self), zr, zi);
 }
