@@ -8372,7 +8372,9 @@ rb_clock_gettime(int argc, VALUE *argv, VALUE _)
 
     VALUE unit = (rb_check_arity(argc, 1, 2) == 2) ? argv[1] : Qnil;
     VALUE clk_id = argv[0];
+#ifdef HAVE_CLOCK_GETTIME
     clockid_t c;
+#endif
 
     if (SYMBOL_P(clk_id)) {
 #ifdef CLOCK_REALTIME
@@ -8598,7 +8600,9 @@ rb_clock_getres(int argc, VALUE *argv, VALUE _)
     timetick_int_t denominators[2];
     int num_numerators = 0;
     int num_denominators = 0;
+#ifdef HAVE_CLOCK_GETRES
     clockid_t c;
+#endif
 
     VALUE unit = (rb_check_arity(argc, 1, 2) == 2) ? argv[1] : Qnil;
     VALUE clk_id = argv[0];
