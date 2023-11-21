@@ -788,7 +788,7 @@ tp_memsize(const void *ptr)
 static const rb_data_type_t tp_data_type = {
     "tracepoint",
     {tp_mark, RUBY_TYPED_DEFAULT_FREE, tp_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 static VALUE
@@ -1244,7 +1244,7 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
     }
 
     VM_ASSERT(tp->local_target_set == Qfalse);
-    tp->local_target_set = rb_obj_hide(rb_ident_hash_new());
+    RB_OBJ_WRITE(tpval, &tp->local_target_set, rb_obj_hide(rb_ident_hash_new()));
 
     /* bmethod */
     if (rb_obj_is_method(target)) {
@@ -1315,7 +1315,7 @@ rb_tracepoint_disable(VALUE tpval)
 
     if (tp->local_target_set) {
         rb_hash_foreach(tp->local_target_set, disable_local_event_iseq_i, tpval);
-        tp->local_target_set = Qfalse;
+        RB_OBJ_WRITE(tpval, &tp->local_target_set, Qfalse);
         ruby_vm_event_local_num--;
     }
     else {
@@ -1382,6 +1382,9 @@ tracepoint_enable_m(rb_execution_context_t *ec, VALUE tpval, VALUE target, VALUE
             rb_raise(rb_eArgError, "can not override target_thread filter");
         }
         tp->target_th = rb_thread_ptr(target_thread);
+
+        RUBY_ASSERT(tp->target_th->self == target_thread);
+        RB_OBJ_WRITTEN(tpval, Qundef, target_thread);
     }
     else {
         tp->target_th = NULL;
@@ -1449,7 +1452,7 @@ tracepoint_new(VALUE klass, rb_thread_t *target_th, rb_event_flag_t events, void
     rb_tp_t *tp;
     TypedData_Get_Struct(tpval, rb_tp_t, &tp_data_type, tp);
 
-    tp->proc = proc;
+    RB_OBJ_WRITE(tpval, &tp->proc, proc);
     tp->ractor = rb_ractor_shareable_p(proc) ? NULL : GET_RACTOR();
     tp->func = func;
     tp->data = data;
