@@ -489,7 +489,7 @@ class Gem::Command
 
     @parser.separator nil
     @parser.separator "  Description:"
-    formatted.each_line |line|
+    formatted.each_line do |line|
       @parser.separator "    #{line.rstrip}"
     end
   end
