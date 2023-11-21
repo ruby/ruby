@@ -3686,15 +3686,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         return;
       }
-      case PM_STRING_CONCAT_NODE: {
-        pm_string_concat_node_t *str_concat_node = (pm_string_concat_node_t *)node;
-        PM_COMPILE(str_concat_node->left);
-        PM_COMPILE(str_concat_node->right);
-        if (!popped) {
-            ADD_INSN1(ret, &dummy_line_node, concatstrings, INT2FIX(2));
-        }
-        return;
-      }
       case PM_STRING_NODE: {
         if (!popped) {
             pm_string_node_t *string_node = (pm_string_node_t *) node;
