@@ -417,6 +417,7 @@ module Prism
     def test_InterpolatedStringNode
       assert_prism_eval('$pit = 1; "1 #$pit 1"')
       assert_prism_eval('"1 #{1 + 2} 1"')
+      assert_prism_eval('"Prism" "::" "TestCompilePrism"')
     end
 
     def test_InterpolatedSymbolNode
@@ -459,10 +460,6 @@ module Prism
       assert_prism_eval('/pit/ne')
 
       assert_prism_eval('2.times.map { /#{1}/o }')
-    end
-
-    def test_StringConcatNode
-      assert_prism_eval('"Prism" "::" "TestCompilePrism"')
     end
 
     def test_StringNode
