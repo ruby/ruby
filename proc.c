@@ -1597,18 +1597,12 @@ bm_mark_and_move(void *ptr)
     rb_gc_mark_and_move_ptr((rb_method_entry_t **)&data->me);
 }
 
-static size_t
-bm_memsize(const void *ptr)
-{
-    return 0;
-}
-
 static const rb_data_type_t method_data_type = {
     "method",
     {
         bm_mark_and_move,
         RUBY_TYPED_DEFAULT_FREE,
-        bm_memsize,
+        NULL, // No external memory to report,
         bm_mark_and_move,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE

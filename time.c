@@ -1841,15 +1841,13 @@ time_mark(void *ptr)
     rb_gc_mark(tobj->vtm.zone);
 }
 
-static size_t
-time_memsize(const void *tobj)
-{
-    return 0;
-}
-
 static const rb_data_type_t time_data_type = {
     "time",
-    {time_mark, RUBY_TYPED_DEFAULT_FREE, time_memsize,},
+    {
+        time_mark,
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL, // No external memory to report,
+    },
     0, 0,
     (RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE),
 };
