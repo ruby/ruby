@@ -1,4 +1,4 @@
-use std::{ffi::{CStr, CString}, ptr::null};
+use std::{ffi::{CStr, CString}, ptr::null, fs::File};
 use crate::backend::current::TEMP_REGS;
 use std::os::raw::{c_char, c_int, c_uint};
 
@@ -230,10 +230,14 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("dump-disasm", _) => match opt_val {
             "" => unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::Stdout) },
             directory => {
-                let pid = std::process::id();
-                let path = format!("{directory}/yjit_{pid}.log");
-                eprintln!("YJIT disasm dump: {path}");
-                unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(path)) }
+                let path = format!("{directory}/yjit_{}.log", std::process::id());
+                match File::options().create(true).append(true).open(&path) {
+                    Ok(_) => {
+                        eprintln!("YJIT disasm dump: {path}");
+                        unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(path)) }
+                    }
+                    Err(err) => eprintln!("Failed to create {path}: {err}"),
+                }
             }
          },
 
