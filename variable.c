@@ -2074,41 +2074,10 @@ rb_ivar_count(VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (rb_shape_obj_too_complex(obj)) {
-            return ROBJECT_IV_COUNT(obj);
-        }
-
-        if (rb_shape_get_shape(obj)->next_iv_index > 0) {
-            st_index_t i, count, num = ROBJECT_IV_COUNT(obj);
-            const VALUE *const ivptr = ROBJECT_IVPTR(obj);
-            for (i = count = 0; i < num; ++i) {
-                if (!UNDEF_P(ivptr[i])) {
-                    count++;
-                }
-            }
-            return count;
-        }
-        break;
+        return ROBJECT_IV_COUNT(obj);
       case T_CLASS:
       case T_MODULE:
-        if (rb_shape_get_shape(obj)->next_iv_index > 0) {
-            st_index_t count = 0;
-
-            RB_VM_LOCK_ENTER();
-            {
-                st_index_t i, num = rb_shape_get_shape(obj)->next_iv_index;
-                const VALUE *const ivptr = RCLASS_IVPTR(obj);
-                for (i = count = 0; i < num; ++i) {
-                    if (!UNDEF_P(ivptr[i])) {
-                        count++;
-                    }
-                }
-            }
-            RB_VM_LOCK_LEAVE();
-
-            return count;
-        }
-        break;
+        return RCLASS_IV_COUNT(obj);
       default:
         if (FL_TEST(obj, FL_EXIVAR)) {
             struct gen_ivtbl *ivtbl;
