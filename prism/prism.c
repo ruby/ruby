@@ -415,7 +415,7 @@ lex_state_ignored_p(pm_parser_t *parser) {
 
 static inline bool
 lex_state_beg_p(pm_parser_t *parser) {
-    return lex_state_p(parser, PM_LEX_STATE_BEG_ANY) || (parser->lex_state == (PM_LEX_STATE_ARG | PM_LEX_STATE_LABELED));
+    return lex_state_p(parser, PM_LEX_STATE_BEG_ANY) || ((parser->lex_state & (PM_LEX_STATE_ARG | PM_LEX_STATE_LABELED)) == (PM_LEX_STATE_ARG | PM_LEX_STATE_LABELED));
 }
 
 static inline bool

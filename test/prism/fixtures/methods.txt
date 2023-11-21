@@ -168,3 +168,11 @@ foo = 1
 def foo.bar; end
 
 def f(*); [*]; end
+
+def f x:-a; end
+
+def f x:+a; end
+
+def f x:!a; end
+
+def foo x:%(xx); end
