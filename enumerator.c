@@ -1309,7 +1309,7 @@ static const rb_data_type_t yielder_data_type = {
         yielder_memsize,
         yielder_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct yielder *
@@ -1449,7 +1449,7 @@ static const rb_data_type_t generator_data_type = {
         generator_memsize,
         generator_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct generator *
@@ -2958,7 +2958,7 @@ static const rb_data_type_t producer_data_type = {
         producer_memsize,
         producer_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct producer *
