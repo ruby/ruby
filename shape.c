@@ -1057,6 +1057,15 @@ rb_shape_shapes_available(VALUE self)
     return INT2NUM(MAX_SHAPE_ID - (GET_SHAPE_TREE()->next_shape_id - 1));
 }
 
+static VALUE
+rb_shape_exhaust(int argc, VALUE *argv, VALUE self)
+{
+    rb_check_arity(argc, 0, 1);
+    int offset = argc == 1 ? NUM2INT(argv[0]) : 0;
+    GET_SHAPE_TREE()->next_shape_id = MAX_SHAPE_ID - offset;
+    return Qnil;
+}
+
 VALUE rb_obj_shape(rb_shape_t* shape);
 
 static enum rb_id_table_iterator_result collect_keys_and_values(ID key, VALUE value, void *ref)
@@ -1239,5 +1248,6 @@ Init_shape(void)
     rb_define_singleton_method(rb_cShape, "of", rb_shape_debug_shape, 1);
     rb_define_singleton_method(rb_cShape, "root_shape", rb_shape_root_shape, 0);
     rb_define_singleton_method(rb_cShape, "shapes_available", rb_shape_shapes_available, 0);
+    rb_define_singleton_method(rb_cShape, "exhaust_shapes", rb_shape_exhaust, -1);
 #endif
 }
