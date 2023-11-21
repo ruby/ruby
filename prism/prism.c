@@ -480,6 +480,11 @@ pm_parser_err(pm_parser_t *parser, const uint8_t *start, const uint8_t *end, pm_
 }
 
 /**
+ * Append an error to the list of errors on the parser using a format string.
+ */
+#define PM_PARSER_ERR_FORMAT(parser, start, end, diag_id, ...) pm_diagnostic_list_append_format(&parser->error_list, start, end, diag_id, __VA_ARGS__)
+
+/**
  * Append an error to the list of errors on the parser using the location of the
  * current token.
  */
@@ -489,12 +494,10 @@ pm_parser_err_current(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
 }
 
 /**
- * Append an error to the list of errors on the parser using the given location.
+ * Append an error to the list of errors on the parser using the given location
+ * using a format string.
  */
-static inline void
-pm_parser_err_location(pm_parser_t *parser, const pm_location_t *location, pm_diagnostic_id_t diag_id) {
-    pm_parser_err(parser, location->start, location->end, diag_id);
-}
+#define PM_PARSER_ERR_LOCATION_FORMAT(parser, location, diag_id, ...) pm_diagnostic_list_append_format(&parser->error_list, (location)->start, (location)->end, diag_id, __VA_ARGS__)
 
 /**
  * Append an error to the list of errors on the parser using the location of the
@@ -504,6 +507,12 @@ static inline void
 pm_parser_err_node(pm_parser_t *parser, const pm_node_t *node, pm_diagnostic_id_t diag_id) {
     pm_parser_err(parser, node->location.start, node->location.end, diag_id);
 }
+
+/**
+ * Append an error to the list of errors on the parser using the location of the
+ * given node and a format string.
+ */
+#define PM_PARSER_ERR_NODE_FORMAT(parser, node, diag_id, ...) pm_diagnostic_list_append_format(&parser->error_list, node->location.start, node->location.end, diag_id, __VA_ARGS__)
 
 /**
  * Append an error to the list of errors on the parser using the location of the
@@ -522,6 +531,12 @@ static inline void
 pm_parser_err_token(pm_parser_t *parser, const pm_token_t *token, pm_diagnostic_id_t diag_id) {
     pm_parser_err(parser, token->start, token->end, diag_id);
 }
+
+/**
+ * Append an error to the list of errors on the parser using the location of the
+ * given token and a format string.
+ */
+#define PM_PARSER_ERR_TOKEN_FORMAT(parser, token, diag_id, ...) pm_diagnostic_list_append_format(&parser->error_list, token->start, token->end, diag_id, __VA_ARGS__)
 
 /**
  * Append a warning to the list of warnings on the parser.
@@ -4078,7 +4093,7 @@ pm_token_is_numbered_parameter(const uint8_t *start, const uint8_t *end) {
 static inline void
 pm_refute_numbered_parameter(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
     if (pm_token_is_numbered_parameter(start, end)) {
-        pm_parser_err(parser, start, end, PM_ERR_PARAMETER_NUMBERED_RESERVED);
+        PM_PARSER_ERR_FORMAT(parser, start, end, PM_ERR_PARAMETER_NUMBERED_RESERVED, start);
     }
 }
 
@@ -10576,7 +10591,7 @@ parse_target(pm_parser_t *parser, pm_node_t *target) {
             return target;
         case PM_LOCAL_VARIABLE_READ_NODE:
             if (pm_token_is_numbered_parameter(target->location.start, target->location.end)) {
-                pm_parser_err_node(parser, target, PM_ERR_PARAMETER_NUMBERED_RESERVED);
+                PM_PARSER_ERR_NODE_FORMAT(parser, target, PM_ERR_PARAMETER_NUMBERED_RESERVED, target->location.start);
             } else {
                 assert(sizeof(pm_local_variable_target_node_t) == sizeof(pm_local_variable_read_node_t));
                 target->type = PM_LOCAL_VARIABLE_TARGET_NODE;
@@ -15905,7 +15920,7 @@ parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *
 
                 if (pm_token_is_numbered_parameter(source, source + length)) {
                     const pm_location_t *location = &call->receiver->location;
-                    pm_parser_err_location(parser, location, PM_ERR_PARAMETER_NUMBERED_RESERVED);
+                    PM_PARSER_ERR_LOCATION_FORMAT(parser, location, PM_ERR_PARAMETER_NUMBERED_RESERVED, location->start);
                 }
             }
 

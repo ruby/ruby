@@ -202,7 +202,7 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_PARAMETER_NAME_REPEAT]              = "Repeated parameter name",
     [PM_ERR_PARAMETER_NO_DEFAULT]               = "Expected a default value for the parameter",
     [PM_ERR_PARAMETER_NO_DEFAULT_KW]            = "Expected a default value for the keyword parameter",
-    [PM_ERR_PARAMETER_NUMBERED_RESERVED]        = "Token reserved for a numbered parameter",
+    [PM_ERR_PARAMETER_NUMBERED_RESERVED]        = "%.2s is reserved for a numbered parameter",
     [PM_ERR_PARAMETER_ORDER]                    = "Unexpected parameter order",
     [PM_ERR_PARAMETER_SPLAT_MULTI]              = "Unexpected multiple `*` splat parameters",
     [PM_ERR_PARAMETER_STAR]                     = "Unexpected parameter `*`",
@@ -261,8 +261,10 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
 static const char*
 pm_diagnostic_message(pm_diagnostic_id_t diag_id) {
     assert(diag_id < PM_DIAGNOSTIC_ID_LEN);
+
     const char *message = diagnostic_messages[diag_id];
     assert(message);
+
     return message;
 }
 
@@ -274,7 +276,57 @@ pm_diagnostic_list_append(pm_list_t *list, const uint8_t *start, const uint8_t *
     pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) calloc(sizeof(pm_diagnostic_t), 1);
     if (diagnostic == NULL) return false;
 
-    *diagnostic = (pm_diagnostic_t) { .start = start, .end = end, .message = pm_diagnostic_message(diag_id) };
+    *diagnostic = (pm_diagnostic_t) {
+        .start = start,
+        .end = end,
+        .message = pm_diagnostic_message(diag_id),
+        .owned = false
+    };
+
+    pm_list_append(list, (pm_list_node_t *) diagnostic);
+    return true;
+}
+
+/**
+ * Append a diagnostic to the given list of diagnostics that is using a format
+ * string for its message.
+ */
+bool
+pm_diagnostic_list_append_format(pm_list_t *list, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id, ...) {
+    va_list arguments;
+    va_start(arguments, diag_id);
+
+    const char *format = pm_diagnostic_message(diag_id);
+    int result = vsnprintf(NULL, 0, format, arguments);
+    va_end(arguments);
+
+    if (result < 0) {
+        return false;
+    }
+
+    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) calloc(sizeof(pm_diagnostic_t), 1);
+    if (diagnostic == NULL) {
+        return false;
+    }
+
+    size_t length = (size_t) (result + 1);
+    char *message = (char *) malloc(length);
+    if (message == NULL) {
+        free(diagnostic);
+        return false;
+    }
+
+    va_start(arguments, diag_id);
+    vsnprintf(message, length, format, arguments);
+    va_end(arguments);
+
+    *diagnostic = (pm_diagnostic_t) {
+        .start = start,
+        .end = end,
+        .message = message,
+        .owned = true
+    };
+
     pm_list_append(list, (pm_list_node_t *) diagnostic);
     return true;
 }
@@ -288,8 +340,9 @@ pm_diagnostic_list_free(pm_list_t *list) {
 
     for (node = list->head; node != NULL; node = next) {
         next = node->next;
-
         pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) node;
+
+        if (diagnostic->owned) free((void *) diagnostic->message);
         free(diagnostic);
     }
 }

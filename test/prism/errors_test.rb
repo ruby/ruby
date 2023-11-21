@@ -563,15 +563,15 @@ module Prism
       end
       RUBY
       assert_errors expected, source, [
-        ["Token reserved for a numbered parameter", 8..10],
-        ["Token reserved for a numbered parameter", 14..16],
-        ["Token reserved for a numbered parameter", 20..22],
-        ["Token reserved for a numbered parameter", 26..28],
-        ["Token reserved for a numbered parameter", 32..34],
-        ["Token reserved for a numbered parameter", 40..42],
-        ["Token reserved for a numbered parameter", 46..48],
-        ["Token reserved for a numbered parameter", 52..54],
-        ["Token reserved for a numbered parameter", 58..60],
+        ["_1 is reserved for a numbered parameter", 8..10],
+        ["_2 is reserved for a numbered parameter", 14..16],
+        ["_3 is reserved for a numbered parameter", 20..22],
+        ["_4 is reserved for a numbered parameter", 26..28],
+        ["_5 is reserved for a numbered parameter", 32..34],
+        ["_6 is reserved for a numbered parameter", 40..42],
+        ["_7 is reserved for a numbered parameter", 46..48],
+        ["_8 is reserved for a numbered parameter", 52..54],
+        ["_9 is reserved for a numbered parameter", 58..60],
       ]
     end
 
@@ -1253,18 +1253,18 @@ module Prism
 
     def test_writing_numbered_parameter
       assert_errors expression("-> { _1 = 0 }"), "-> { _1 = 0 }", [
-        ["Token reserved for a numbered parameter", 5..7]
+        ["_1 is reserved for a numbered parameter", 5..7]
       ]
     end
 
     def test_targeting_numbered_parameter
       assert_errors expression("-> { _1, = 0 }"), "-> { _1, = 0 }", [
-        ["Token reserved for a numbered parameter", 5..7]
+        ["_1 is reserved for a numbered parameter", 5..7]
       ]
     end
 
     def test_defining_numbered_parameter
-      error_messages = ["Token reserved for a numbered parameter"]
+      error_messages = ["_1 is reserved for a numbered parameter"]
 
       assert_error_messages "def _1; end", error_messages
       assert_error_messages "def self._1; end", error_messages
@@ -1319,7 +1319,7 @@ module Prism
     def test_numbered_parameters_in_block_arguments
       source = "foo { |_1| }"
       assert_errors expression(source), source, [
-        ["Token reserved for a numbered parameter", 7..9],
+        ["_1 is reserved for a numbered parameter", 7..9],
       ]
     end
 
@@ -1405,7 +1405,7 @@ module Prism
         /(?<_1>)/ =~ a
       RUBY
 
-      message = "Token reserved for a numbered parameter"
+      message = "_1 is reserved for a numbered parameter"
       assert_errors expression(source), source, [
         [message, 5..7],
         [message, 13..15],
