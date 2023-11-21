@@ -1655,7 +1655,7 @@
         │   │   │               │   ├── flags: variable_call
         │   │   │               │   └── name: :a
         │   │   │               └── operator_loc: (72,6)-(72,8) = "**"
-        │   │   └── flags: keyword_splat
+        │   │   └── flags: contains_keyword_splat
         │   ├── closing_loc: (72,9)-(72,10) = ")"
         │   ├── block: ∅
         │   ├── flags: ∅
@@ -2070,7 +2070,7 @@
         │   │   │               │   ├── flags: variable_call
         │   │   │               │   └── name: :foo
         │   │   │               └── operator_loc: (81,2)-(81,4) = "**"
-        │   │   └── flags: keyword_splat
+        │   │   └── flags: contains_keyword_splat
         │   ├── closing_loc: (81,7)-(81,8) = ")"
         │   ├── block: ∅
         │   ├── flags: ∅

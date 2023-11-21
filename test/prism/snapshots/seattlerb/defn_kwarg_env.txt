@@ -39,7 +39,7 @@
             │           │   │               │   ├── name: :testing
             │           │   │               │   └── depth: 0
             │           │   │               └── operator_loc: (1,31)-(1,33) = "**"
-            │           │   └── flags: keyword_splat
+            │           │   └── flags: contains_keyword_splat
             │           ├── closing_loc: (1,40)-(1,41) = ")"
             │           ├── block: ∅
             │           ├── flags: ∅

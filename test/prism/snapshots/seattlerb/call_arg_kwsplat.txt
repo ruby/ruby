@@ -28,7 +28,7 @@
             │   │               │   @ IntegerNode (location: (1,7)-(1,8))
             │   │               │   └── flags: decimal
             │   │               └── operator_loc: (1,5)-(1,7) = "**"
-            │   └── flags: keyword_splat
+            │   └── flags: contains_keyword_splat
             ├── closing_loc: (1,8)-(1,9) = ")"
             ├── block: ∅
             ├── flags: ∅
