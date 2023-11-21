@@ -10692,8 +10692,12 @@ static pm_node_t *
 parse_target_validate(pm_parser_t *parser, pm_node_t *target) {
     pm_node_t *result = parse_target(parser, target);
 
-    // Ensure that we have either an = or a ) after the targets.
-    if (!match3(parser, PM_TOKEN_EQUAL, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_KEYWORD_IN)) {
+    // Ensure that we have one of an =, an 'in' in for indexes, and a ')' in parens after the targets.
+    if (
+        !match1(parser, PM_TOKEN_EQUAL) &&
+        !(context_p(parser, PM_CONTEXT_FOR_INDEX) && match1(parser, PM_TOKEN_KEYWORD_IN)) &&
+        !(context_p(parser, PM_CONTEXT_PARENS) && match1(parser, PM_TOKEN_PARENTHESIS_RIGHT))
+    ) {
         pm_parser_err_node(parser, result, PM_ERR_WRITE_TARGET_UNEXPECTED);
     }
 
@@ -13746,7 +13750,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             // Otherwise, we're going to parse the first statement in the list
             // of statements within the parentheses.
             pm_accepts_block_stack_push(parser, true);
+            context_push(parser, PM_CONTEXT_PARENS);
             pm_node_t *statement = parse_expression(parser, PM_BINDING_POWER_STATEMENT, PM_ERR_CANNOT_PARSE_EXPRESSION);
+            context_pop(parser);
 
             // Determine if this statement is followed by a terminator. In the
             // case of a single statement, this is fine. But in the case of

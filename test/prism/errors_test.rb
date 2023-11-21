@@ -1225,6 +1225,11 @@ module Prism
       assert_error_messages "Foo::foo,", error_messages
       assert_error_messages "foo[foo],", error_messages
       assert_error_messages "(foo, bar)", error_messages
+      assert_error_messages "foo((foo, bar))", error_messages
+      assert_error_messages "foo((*))", error_messages
+      assert_error_messages "foo(((foo, bar), *))", error_messages
+      assert_error_messages "(foo, bar) + 1", error_messages
+      assert_error_messages "(foo, bar) in baz", error_messages
     end
 
     def test_call_with_block_and_write
