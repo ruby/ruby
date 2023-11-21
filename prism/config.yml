@@ -768,6 +768,26 @@ nodes:
 
           foo => [bar => baz]
                  ^^^^^^^^^^^^
+  - name: CaseMatchNode
+    fields:
+      - name: predicate
+        type: node?
+      - name: conditions
+        type: node[]
+      - name: consequent
+        type: node?
+        kind: ElseNode
+      - name: case_keyword_loc
+        type: location
+      - name: end_keyword_loc
+        type: location
+    comment: |
+      Represents the use of a case statement for pattern matching.
+
+          case true
+          in false
+          end
+          ^^^^^^^^^
   - name: CaseNode
     fields:
       - name: predicate

@@ -201,6 +201,13 @@ module Prism
       assert_location(CaseNode, "case foo; when bar; when baz; else; end")
     end
 
+    def test_CaseMatchNode
+      assert_location(CaseMatchNode, "case foo; in bar; end")
+      assert_location(CaseMatchNode, "case foo; in bar; else; end")
+      assert_location(CaseMatchNode, "case foo; in bar; in baz; end")
+      assert_location(CaseMatchNode, "case foo; in bar; in baz; else; end")
+    end
+
     def test_ClassNode
       assert_location(ClassNode, "class Foo end")
       assert_location(ClassNode, "class Foo < Bar; end")

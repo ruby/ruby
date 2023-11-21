@@ -937,7 +937,7 @@ module Prism
     end
 
     def test_case_without_when_clauses_errors_on_else_clause
-      expected = CaseNode(
+      expected = CaseMatchNode(
         SymbolNode(Location(), Location(), nil, "a"),
         [],
         ElseNode(Location(), nil, Location()),

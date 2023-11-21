@@ -87,6 +87,7 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_CANNOT_PARSE_STRING_PART]           = "Cannot parse the string part",
     [PM_ERR_CASE_EXPRESSION_AFTER_CASE]         = "Expected an expression after `case`",
     [PM_ERR_CASE_EXPRESSION_AFTER_WHEN]         = "Expected an expression after `when`",
+    [PM_ERR_CASE_MATCH_MISSING_PREDICATE]       = "Expected a predicate for a case matching statement",
     [PM_ERR_CASE_MISSING_CONDITIONS]            = "Expected a `when` or `in` clause after `case`",
     [PM_ERR_CASE_TERM]                          = "Expected an `end` to close the `case` statement",
     [PM_ERR_CLASS_IN_METHOD]                    = "Unexpected class definition in a method body",

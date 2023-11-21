@@ -3,7 +3,7 @@
 └── statements:
     @ StatementsNode (location: (1,0)-(6,3))
     └── body: (length: 1)
-        └── @ CaseNode (location: (1,0)-(6,3))
+        └── @ CaseMatchNode (location: (1,0)-(6,3))
             ├── predicate:
             │   @ ConstantReadNode (location: (1,5)-(1,10))
             │   └── name: :Array

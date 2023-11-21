@@ -306,7 +306,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (38,0)-(38,4) = "case"
         │   └── end_keyword_loc: (38,21)-(38,24) = "end"
-        ├── @ CaseNode (location: (40,0)-(42,3))
+        ├── @ CaseMatchNode (location: (40,0)-(42,3))
         │   ├── predicate:
         │   │   @ MatchPredicateNode (location: (40,5)-(40,11))
         │   │   ├── value:
@@ -327,7 +327,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (40,0)-(40,4) = "case"
         │   └── end_keyword_loc: (42,0)-(42,3) = "end"
-        └── @ CaseNode (location: (44,0)-(44,22))
+        └── @ CaseMatchNode (location: (44,0)-(44,22))
             ├── predicate:
             │   @ MatchPredicateNode (location: (44,5)-(44,11))
             │   ├── value:
