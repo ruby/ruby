@@ -53,6 +53,7 @@ module Prism
       Encoding::MACROMANIA =>   0x00...0x100,
       Encoding::MACTHAI =>      0x00...0x100,
       Encoding::MACTURKISH =>   0x00...0x100,
+      Encoding::TIS_620 =>      0x00...0x100,
       Encoding::Windows_1250 => 0x00...0x100,
       Encoding::Windows_1251 => 0x00...0x100,
       Encoding::Windows_1252 => 0x00...0x100,

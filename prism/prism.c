@@ -6242,6 +6242,9 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
                 ENCODING1("Shift_JIS", pm_encoding_shift_jis);
                 ENCODING1("SJIS", pm_encoding_windows_31j);
                 break;
+            case 'T': case 't':
+                ENCODING1("TIS-620", pm_encoding_tis_620);
+                break;
             case 'U': case 'u':
                 ENCODING1("US-ASCII", pm_encoding_ascii);
                 ENCODING2("UTF8-MAC", "UTF-8-HFS", pm_encoding_utf8_mac);

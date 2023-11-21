@@ -209,6 +209,7 @@ extern pm_encoding_t pm_encoding_mac_thai;
 extern pm_encoding_t pm_encoding_mac_turkish;
 extern pm_encoding_t pm_encoding_mac_ukraine;
 extern pm_encoding_t pm_encoding_shift_jis;
+extern pm_encoding_t pm_encoding_tis_620;
 extern pm_encoding_t pm_encoding_utf_8;
 extern pm_encoding_t pm_encoding_utf8_mac;
 extern pm_encoding_t pm_encoding_windows_1250;
