@@ -471,13 +471,6 @@ dir_free(void *ptr)
     struct dir_data *dir = ptr;
 
     if (dir->dir) closedir(dir->dir);
-    xfree(dir);
-}
-
-static size_t
-dir_memsize(const void *ptr)
-{
-    return sizeof(struct dir_data);
 }
 
 RUBY_REFERENCES_START(dir_refs)
@@ -486,8 +479,12 @@ RUBY_REFERENCES_END
 
 static const rb_data_type_t dir_data_type = {
     "dir",
-    {REFS_LIST_PTR(dir_refs), dir_free, dir_memsize,},
-    0, NULL, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_DECL_MARKING
+    {
+        REFS_LIST_PTR(dir_refs),
+        dir_free,
+        NULL, // Nothing allocated externally, so don't need a memsize function
+    },
+    0, NULL, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE dir_close(VALUE);
@@ -3116,7 +3113,7 @@ push_glob(VALUE ary, VALUE str, VALUE base, int flags)
     fd = AT_FDCWD;
     if (!NIL_P(base)) {
         if (!RB_TYPE_P(base, T_STRING) || !rb_enc_check(str, base)) {
-            struct dir_data *dirp = DATA_PTR(base);
+            struct dir_data *dirp = RTYPEDDATA_GET_DATA(base);
             if (!dirp->dir) dir_closed();
 #ifdef HAVE_DIRFD
             if ((fd = dirfd(dirp->dir)) == -1)
