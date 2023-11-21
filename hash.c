@@ -6597,17 +6597,6 @@ env_dup(VALUE obj)
     rb_raise(rb_eTypeError, "Cannot dup ENV, use ENV.to_h to get a copy of ENV as a hash");
 }
 
-static const rb_data_type_t env_data_type = {
-    "ENV",
-    {
-        NULL,
-        NULL,
-        NULL,
-        NULL,
-    },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
-};
-
 /*
  *  A \Hash maps each of its unique keys to a specific value.
  *
@@ -7354,7 +7343,7 @@ Init_Hash(void)
      * envtbl = rb_define_class("ENV", rb_cObject);
      */
     origenviron = environ;
-    envtbl = TypedData_Wrap_Struct(rb_cObject, &env_data_type, NULL);
+    envtbl = rb_obj_alloc(rb_cObject);
     rb_extend_object(envtbl, rb_mEnumerable);
     FL_SET_RAW(envtbl, RUBY_FL_SHAREABLE);
 
