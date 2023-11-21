@@ -2202,50 +2202,50 @@ rb_nomethod_err_new(VALUE mesg, VALUE recv, VALUE method, VALUE args, int priv)
     return nometh_err_init_attr(exc, args, priv);
 }
 
-/* :nodoc: */
-enum {
-    NAME_ERR_MESG__MESG,
-    NAME_ERR_MESG__RECV,
-    NAME_ERR_MESG__NAME,
-    NAME_ERR_MESG_COUNT
-};
+typedef struct name_error_message_struct {
+    VALUE mesg;
+    VALUE recv;
+    VALUE name;
+} name_error_message_t;
 
 static void
 name_err_mesg_mark(void *p)
 {
-    VALUE *ptr = p;
-    rb_gc_mark_locations(ptr, ptr+NAME_ERR_MESG_COUNT);
+    name_error_message_t *ptr = (name_error_message_t *)p;
+    rb_gc_mark_movable(ptr->mesg);
+    rb_gc_mark_movable(ptr->recv);
+    rb_gc_mark_movable(ptr->name);
 }
 
-#define name_err_mesg_free RUBY_TYPED_DEFAULT_FREE
-
-static size_t
-name_err_mesg_memsize(const void *p)
+static void
+name_err_mesg_update(void *p)
 {
-    return NAME_ERR_MESG_COUNT * sizeof(VALUE);
+    name_error_message_t *ptr = (name_error_message_t *)p;
+    ptr->mesg = rb_gc_location(ptr->mesg);
+    ptr->recv = rb_gc_location(ptr->recv);
+    ptr->name = rb_gc_location(ptr->name);
 }
 
 static const rb_data_type_t name_err_mesg_data_type = {
     "name_err_mesg",
     {
         name_err_mesg_mark,
-        name_err_mesg_free,
-        name_err_mesg_memsize,
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL, // No external memory to report,
+        name_err_mesg_update,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 /* :nodoc: */
 static VALUE
-rb_name_err_mesg_init(VALUE klass, VALUE mesg, VALUE recv, VALUE method)
+rb_name_err_mesg_init(VALUE klass, VALUE mesg, VALUE recv, VALUE name)
 {
-    VALUE result = TypedData_Wrap_Struct(klass, &name_err_mesg_data_type, 0);
-    VALUE *ptr = ALLOC_N(VALUE, NAME_ERR_MESG_COUNT);
-
-    ptr[NAME_ERR_MESG__MESG] = mesg;
-    ptr[NAME_ERR_MESG__RECV] = recv;
-    ptr[NAME_ERR_MESG__NAME] = method;
-    RTYPEDDATA_DATA(result) = ptr;
+    name_error_message_t *message;
+    VALUE result = TypedData_Make_Struct(klass, name_error_message_t, &name_err_mesg_data_type, message);
+    RB_OBJ_WRITE(result, &message->mesg, mesg);
+    RB_OBJ_WRITE(result, &message->recv, recv);
+    RB_OBJ_WRITE(result, &message->name, name);
     return result;
 }
 
@@ -2267,14 +2267,16 @@ name_err_mesg_alloc(VALUE klass)
 static VALUE
 name_err_mesg_init_copy(VALUE obj1, VALUE obj2)
 {
-    VALUE *ptr1, *ptr2;
-
     if (obj1 == obj2) return obj1;
     rb_obj_init_copy(obj1, obj2);
 
-    TypedData_Get_Struct(obj1, VALUE, &name_err_mesg_data_type, ptr1);
-    TypedData_Get_Struct(obj2, VALUE, &name_err_mesg_data_type, ptr2);
-    MEMCPY(ptr1, ptr2, VALUE, NAME_ERR_MESG_COUNT);
+    name_error_message_t *ptr1, *ptr2;
+    TypedData_Get_Struct(obj1, name_error_message_t, &name_err_mesg_data_type, ptr1);
+    TypedData_Get_Struct(obj2, name_error_message_t, &name_err_mesg_data_type, ptr2);
+
+    RB_OBJ_WRITE(obj1, &ptr1->mesg, ptr2->mesg);
+    RB_OBJ_WRITE(obj1, &ptr1->recv, ptr2->recv);
+    RB_OBJ_WRITE(obj1, &ptr1->name, ptr2->name);
     return obj1;
 }
 
@@ -2282,19 +2284,18 @@ name_err_mesg_init_copy(VALUE obj1, VALUE obj2)
 static VALUE
 name_err_mesg_equal(VALUE obj1, VALUE obj2)
 {
-    VALUE *ptr1, *ptr2;
-    int i;
-
     if (obj1 == obj2) return Qtrue;
+
     if (rb_obj_class(obj2) != rb_cNameErrorMesg)
         return Qfalse;
 
-    TypedData_Get_Struct(obj1, VALUE, &name_err_mesg_data_type, ptr1);
-    TypedData_Get_Struct(obj2, VALUE, &name_err_mesg_data_type, ptr2);
-    for (i=0; i<NAME_ERR_MESG_COUNT; i++) {
-        if (!rb_equal(ptr1[i], ptr2[i]))
-            return Qfalse;
-    }
+    name_error_message_t *ptr1, *ptr2;
+    TypedData_Get_Struct(obj1, name_error_message_t, &name_err_mesg_data_type, ptr1);
+    TypedData_Get_Struct(obj2, name_error_message_t, &name_err_mesg_data_type, ptr2);
+
+    if (!rb_equal(ptr1->mesg, ptr2->mesg)) return Qfalse;
+    if (!rb_equal(ptr1->recv, ptr2->recv)) return Qfalse;
+    if (!rb_equal(ptr1->name, ptr2->name)) return Qfalse;
     return Qtrue;
 }
 
@@ -2313,10 +2314,10 @@ name_err_mesg_receiver_name(VALUE obj)
 static VALUE
 name_err_mesg_to_str(VALUE obj)
 {
-    VALUE *ptr, mesg;
-    TypedData_Get_Struct(obj, VALUE, &name_err_mesg_data_type, ptr);
+    name_error_message_t *ptr;
+    TypedData_Get_Struct(obj, name_error_message_t, &name_err_mesg_data_type, ptr);
 
-    mesg = ptr[NAME_ERR_MESG__MESG];
+    VALUE mesg = ptr->mesg;
     if (NIL_P(mesg)) return Qnil;
     else {
         struct RString s_str, c_str, d_str;
@@ -2326,7 +2327,7 @@ name_err_mesg_to_str(VALUE obj)
 
 #define FAKE_CSTR(v, str) rb_setup_fake_str((v), (str), rb_strlen_lit(str), usascii)
         c = s = FAKE_CSTR(&s_str, "");
-        obj = ptr[NAME_ERR_MESG__RECV];
+        obj = ptr->recv;
         switch (obj) {
           case Qnil:
             c = d = FAKE_CSTR(&d_str, "nil");
@@ -2397,7 +2398,7 @@ name_err_mesg_to_str(VALUE obj)
             c = c2;
             break;
         }
-        args[0] = rb_obj_as_string(ptr[NAME_ERR_MESG__NAME]);
+        args[0] = rb_obj_as_string(ptr->name);
         args[1] = d;
         args[2] = s;
         args[3] = c;
@@ -2430,17 +2431,17 @@ name_err_mesg_load(VALUE klass, VALUE str)
 static VALUE
 name_err_receiver(VALUE self)
 {
-    VALUE *ptr, recv, mesg;
-
-    recv = rb_ivar_lookup(self, id_recv, Qundef);
+    VALUE recv = rb_ivar_lookup(self, id_recv, Qundef);
     if (!UNDEF_P(recv)) return recv;
 
-    mesg = rb_attr_get(self, id_mesg);
+    VALUE mesg = rb_attr_get(self, id_mesg);
     if (!rb_typeddata_is_kind_of(mesg, &name_err_mesg_data_type)) {
         rb_raise(rb_eArgError, "no receiver is available");
     }
-    ptr = DATA_PTR(mesg);
-    return ptr[NAME_ERR_MESG__RECV];
+
+    name_error_message_t *ptr;
+    TypedData_Get_Struct(mesg, name_error_message_t, &name_err_mesg_data_type, ptr);
+    return ptr->recv;
 }
 
 /*
