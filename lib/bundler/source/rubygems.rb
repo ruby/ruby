@@ -255,11 +255,15 @@ module Bundler
         end
       end
 
-      def fetchers
-        @fetchers ||= remotes.map do |uri|
+      def remote_fetchers
+        @remote_fetchers ||= remotes.to_h do |uri|
           remote = Source::Rubygems::Remote.new(uri)
-          Bundler::Fetcher.new(remote)
-        end
+          [remote, Bundler::Fetcher.new(remote)]
+        end.freeze
+      end
+
+      def fetchers
+        @fetchers ||= remote_fetchers.values.freeze
       end
 
       def double_check_for(unmet_dependency_names)
@@ -480,7 +484,8 @@ module Bundler
       def download_gem(spec, download_cache_path, previous_spec = nil)
         uri = spec.remote.uri
         Bundler.ui.confirm("Fetching #{version_message(spec, previous_spec)}")
-        Bundler.rubygems.download_gem(spec, uri, download_cache_path)
+        gem_remote_fetcher = remote_fetchers.fetch(spec.remote).gem_remote_fetcher
+        Bundler.rubygems.download_gem(spec, uri, download_cache_path, gem_remote_fetcher)
       end
 
       # Returns the global cache path of the calling Rubygems::Source object.

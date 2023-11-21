@@ -917,13 +917,13 @@ typedef rb_jmpbuf_t *rb_vm_tag_jmpbuf_t;
 static inline void
 rb_vm_tag_jmpbuf_init(rb_vm_tag_jmpbuf_t *jmpbuf)
 {
-  *jmpbuf = malloc(sizeof(rb_jmpbuf_t));
+    *jmpbuf = malloc(sizeof(rb_jmpbuf_t));
 }
 
 static inline void
 rb_vm_tag_jmpbuf_deinit(const rb_vm_tag_jmpbuf_t *jmpbuf)
 {
-  free(*jmpbuf);
+    free(*jmpbuf);
 }
 #else
 typedef rb_jmpbuf_t rb_vm_tag_jmpbuf_t;
@@ -933,13 +933,13 @@ typedef rb_jmpbuf_t rb_vm_tag_jmpbuf_t;
 static inline void
 rb_vm_tag_jmpbuf_init(rb_vm_tag_jmpbuf_t *jmpbuf)
 {
-  // no-op
+    // no-op
 }
 
 static inline void
 rb_vm_tag_jmpbuf_deinit(const rb_vm_tag_jmpbuf_t *jmpbuf)
 {
-  // no-op
+    // no-op
 }
 #endif
 

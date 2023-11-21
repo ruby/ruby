@@ -35,6 +35,7 @@
             │   ├── block: ∅
             │   ├── flags: ∅
             │   └── name: :test
+            ├── then_keyword_loc: (1,16)-(1,20) = "then"
             ├── statements: ∅
             ├── consequent: ∅
             └── end_keyword_loc: (1,21)-(1,24) = "end"

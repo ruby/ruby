@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-return unless ENV['WITH_TYPE_COMPLETION_TEST']
-
 return unless RUBY_VERSION >= '3.0.0'
 return if RUBY_ENGINE == 'truffleruby' # needs endless method definition
 

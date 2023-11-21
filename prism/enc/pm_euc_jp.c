@@ -18,6 +18,16 @@ pm_encoding_euc_jp_char_width(const uint8_t *b, ptrdiff_t n) {
         return 2;
     }
 
+    // These are the triple byte characters.
+    if (
+        (n > 2) &&
+        (b[0] == 0x8F) &&
+        (b[1] >= 0xA1 && b[2] <= 0xFE) &&
+        (b[2] >= 0xA1 && b[2] <= 0xFE)
+    ) {
+        return 3;
+    }
+
     return 0;
 }
 

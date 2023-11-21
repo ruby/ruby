@@ -3,7 +3,7 @@
 └── statements:
     @ StatementsNode (location: (1,0)-(41,8))
     └── body: (length: 4)
-        ├── @ CaseNode (location: (1,0)-(33,3))
+        ├── @ CaseMatchNode (location: (1,0)-(33,3))
         │   ├── predicate:
         │   │   @ CallNode (location: (1,5)-(1,8))
         │   │   ├── receiver: ∅
@@ -124,6 +124,7 @@
         │   │   │   │   ├── if_keyword_loc: (10,6)-(10,8) = "if"
         │   │   │   │   ├── predicate:
         │   │   │   │   │   @ TrueNode (location: (10,9)-(10,13))
+        │   │   │   │   ├── then_keyword_loc: ∅
         │   │   │   │   ├── statements:
         │   │   │   │   │   @ StatementsNode (location: (10,3)-(10,5))
         │   │   │   │   │   └── body: (length: 1)
@@ -331,7 +332,7 @@
         │   │   └── end_keyword_loc: (33,0)-(33,3) = "end"
         │   ├── case_keyword_loc: (1,0)-(1,4) = "case"
         │   └── end_keyword_loc: (33,0)-(33,3) = "end"
-        ├── @ CaseNode (location: (34,0)-(36,3))
+        ├── @ CaseMatchNode (location: (34,0)-(36,3))
         │   ├── predicate:
         │   │   @ CallNode (location: (34,5)-(34,8))
         │   │   ├── receiver: ∅
@@ -373,7 +374,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (34,0)-(34,4) = "case"
         │   └── end_keyword_loc: (36,0)-(36,3) = "end"
-        ├── @ CaseNode (location: (37,0)-(40,3))
+        ├── @ CaseMatchNode (location: (37,0)-(40,3))
         │   ├── predicate:
         │   │   @ CallNode (location: (37,5)-(37,8))
         │   │   ├── receiver: ∅

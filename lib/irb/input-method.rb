@@ -312,6 +312,9 @@ module IRB
         return nil if result.nil? or pointer.nil? or pointer < 0
 
         name = doc_namespace.call(result[pointer])
+        # Use first one because document dialog does not support multiple namespaces.
+        name = name.first if name.is_a?(Array)
+
         show_easter_egg = name&.match?(/\ARubyVM/) && !ENV['RUBY_YES_I_AM_NOT_A_NORMAL_USER']
 
         options = {}

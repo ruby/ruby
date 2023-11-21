@@ -54,12 +54,14 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_ALIAS_ARGUMENT]                     = "Invalid argument being passed to `alias`; expected a bare word, symbol, constant, or global variable",
     [PM_ERR_AMPAMPEQ_MULTI_ASSIGN]              = "Unexpected `&&=` in a multiple assignment",
     [PM_ERR_ARGUMENT_AFTER_BLOCK]               = "Unexpected argument after a block argument",
+    [PM_ERR_ARGUMENT_AFTER_FORWARDING_ELLIPSES] = "Unexpected argument after `...`",
     [PM_ERR_ARGUMENT_BARE_HASH]                 = "Unexpected bare hash argument",
     [PM_ERR_ARGUMENT_BLOCK_MULTI]               = "Multiple block arguments; only one block is allowed",
     [PM_ERR_ARGUMENT_FORMAL_CLASS]              = "Invalid formal argument; formal argument cannot be a class variable",
     [PM_ERR_ARGUMENT_FORMAL_CONSTANT]           = "Invalid formal argument; formal argument cannot be a constant",
     [PM_ERR_ARGUMENT_FORMAL_GLOBAL]             = "Invalid formal argument; formal argument cannot be a global variable",
     [PM_ERR_ARGUMENT_FORMAL_IVAR]               = "Invalid formal argument; formal argument cannot be an instance variable",
+    [PM_ERR_ARGUMENT_FORWARDING_UNBOUND]        = "Unexpected `...` in an non-parenthesized call",
     [PM_ERR_ARGUMENT_NO_FORWARDING_AMP]         = "Unexpected `&` when the parent method is not forwarding",
     [PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES]    = "Unexpected `...` when the parent method is not forwarding",
     [PM_ERR_ARGUMENT_NO_FORWARDING_STAR]        = "Unexpected `*` when the parent method is not forwarding",
@@ -85,6 +87,7 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_CANNOT_PARSE_STRING_PART]           = "Cannot parse the string part",
     [PM_ERR_CASE_EXPRESSION_AFTER_CASE]         = "Expected an expression after `case`",
     [PM_ERR_CASE_EXPRESSION_AFTER_WHEN]         = "Expected an expression after `when`",
+    [PM_ERR_CASE_MATCH_MISSING_PREDICATE]       = "Expected a predicate for a case matching statement",
     [PM_ERR_CASE_MISSING_CONDITIONS]            = "Expected a `when` or `in` clause after `case`",
     [PM_ERR_CASE_TERM]                          = "Expected an `end` to close the `case` statement",
     [PM_ERR_CLASS_IN_METHOD]                    = "Unexpected class definition in a method body",
@@ -199,7 +202,7 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_PARAMETER_NAME_REPEAT]              = "Repeated parameter name",
     [PM_ERR_PARAMETER_NO_DEFAULT]               = "Expected a default value for the parameter",
     [PM_ERR_PARAMETER_NO_DEFAULT_KW]            = "Expected a default value for the keyword parameter",
-    [PM_ERR_PARAMETER_NUMBERED_RESERVED]        = "Token reserved for a numbered parameter",
+    [PM_ERR_PARAMETER_NUMBERED_RESERVED]        = "%.2s is reserved for a numbered parameter",
     [PM_ERR_PARAMETER_ORDER]                    = "Unexpected parameter order",
     [PM_ERR_PARAMETER_SPLAT_MULTI]              = "Unexpected multiple `*` splat parameters",
     [PM_ERR_PARAMETER_STAR]                     = "Unexpected parameter `*`",
@@ -244,6 +247,7 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_UNARY_RECEIVER_PLUS]                = "Expected a receiver for unary `+`",
     [PM_ERR_UNARY_RECEIVER_TILDE]               = "Expected a receiver for unary `~`",
     [PM_ERR_UNTIL_TERM]                         = "Expected an `end` to close the `until` statement",
+    [PM_ERR_VOID_EXPRESSION]                    = "Unexpected void value expression",
     [PM_ERR_WHILE_TERM]                         = "Expected an `end` to close the `while` statement",
     [PM_ERR_WRITE_TARGET_READONLY]              = "Immutable variable as a write target",
     [PM_ERR_WRITE_TARGET_UNEXPECTED]            = "Unexpected write target",
@@ -257,8 +261,10 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
 static const char*
 pm_diagnostic_message(pm_diagnostic_id_t diag_id) {
     assert(diag_id < PM_DIAGNOSTIC_ID_LEN);
+
     const char *message = diagnostic_messages[diag_id];
     assert(message);
+
     return message;
 }
 
@@ -270,7 +276,57 @@ pm_diagnostic_list_append(pm_list_t *list, const uint8_t *start, const uint8_t *
     pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) calloc(sizeof(pm_diagnostic_t), 1);
     if (diagnostic == NULL) return false;
 
-    *diagnostic = (pm_diagnostic_t) { .start = start, .end = end, .message = pm_diagnostic_message(diag_id) };
+    *diagnostic = (pm_diagnostic_t) {
+        .start = start,
+        .end = end,
+        .message = pm_diagnostic_message(diag_id),
+        .owned = false
+    };
+
+    pm_list_append(list, (pm_list_node_t *) diagnostic);
+    return true;
+}
+
+/**
+ * Append a diagnostic to the given list of diagnostics that is using a format
+ * string for its message.
+ */
+bool
+pm_diagnostic_list_append_format(pm_list_t *list, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id, ...) {
+    va_list arguments;
+    va_start(arguments, diag_id);
+
+    const char *format = pm_diagnostic_message(diag_id);
+    int result = vsnprintf(NULL, 0, format, arguments);
+    va_end(arguments);
+
+    if (result < 0) {
+        return false;
+    }
+
+    pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) calloc(sizeof(pm_diagnostic_t), 1);
+    if (diagnostic == NULL) {
+        return false;
+    }
+
+    size_t length = (size_t) (result + 1);
+    char *message = (char *) malloc(length);
+    if (message == NULL) {
+        free(diagnostic);
+        return false;
+    }
+
+    va_start(arguments, diag_id);
+    vsnprintf(message, length, format, arguments);
+    va_end(arguments);
+
+    *diagnostic = (pm_diagnostic_t) {
+        .start = start,
+        .end = end,
+        .message = message,
+        .owned = true
+    };
+
     pm_list_append(list, (pm_list_node_t *) diagnostic);
     return true;
 }
@@ -284,8 +340,9 @@ pm_diagnostic_list_free(pm_list_t *list) {
 
     for (node = list->head; node != NULL; node = next) {
         next = node->next;
-
         pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) node;
+
+        if (diagnostic->owned) free((void *) diagnostic->message);
         free(diagnostic);
     }
 }

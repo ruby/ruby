@@ -132,6 +132,15 @@ class TestCall < Test::Unit::TestCase
     assert_equal([0, 1, 2, b], aaa(0, *ary, &ary.pop), bug16504)
   end
 
+  def test_call_args_splat_with_nonhash_keyword_splat
+    o = Object.new
+    def o.to_hash; {a: 1} end
+    def self.f(*a, **kw)
+      kw
+    end
+    assert_equal Hash, f(*[], **o).class
+  end
+
   OVER_STACK_LEN = (ENV['RUBY_OVER_STACK_LEN'] || 150).to_i # Greater than VM_ARGC_STACK_MAX
   OVER_STACK_ARGV = OVER_STACK_LEN.times.to_a.freeze
 

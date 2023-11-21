@@ -36,6 +36,7 @@
             │   ├── block: ∅
             │   ├── flags: ∅
             │   └── name: :!
+            ├── then_keyword_loc: (1,16)-(1,20) = "then"
             ├── statements:
             │   @ StatementsNode (location: (1,21)-(1,26))
             │   └── body: (length: 1)

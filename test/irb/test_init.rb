@@ -120,6 +120,34 @@ module TestIRB
       IRB.conf[:USE_AUTOCOMPLETE] = orig_use_autocomplete_conf
     end
 
+    def test_completor_environment_variable
+      orig_use_autocomplete_env = ENV['IRB_COMPLETOR']
+      orig_use_autocomplete_conf = IRB.conf[:COMPLETOR]
+
+      ENV['IRB_COMPLETOR'] = nil
+      IRB.setup(__FILE__)
+      assert_equal(:regexp, IRB.conf[:COMPLETOR])
+
+      ENV['IRB_COMPLETOR'] = 'regexp'
+      IRB.setup(__FILE__)
+      assert_equal(:regexp, IRB.conf[:COMPLETOR])
+
+      ENV['IRB_COMPLETOR'] = 'type'
+      IRB.setup(__FILE__)
+      assert_equal(:type, IRB.conf[:COMPLETOR])
+
+      ENV['IRB_COMPLETOR'] = 'regexp'
+      IRB.setup(__FILE__, argv: ['--type-completor'])
+      assert_equal :type, IRB.conf[:COMPLETOR]
+
+      ENV['IRB_COMPLETOR'] = 'type'
+      IRB.setup(__FILE__, argv: ['--regexp-completor'])
+      assert_equal :regexp, IRB.conf[:COMPLETOR]
+    ensure
+      ENV['IRB_COMPLETOR'] = orig_use_autocomplete_env
+      IRB.conf[:COMPLETOR] = orig_use_autocomplete_conf
+    end
+
     def test_completor_setup_with_argv
       orig_completor_conf = IRB.conf[:COMPLETOR]
 

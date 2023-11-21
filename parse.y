@@ -4124,7 +4124,7 @@ primary		: literal
                         p->ctxt.in_class = $k_class.in_class;
                         p->ctxt.shareable_constant_value = $k_class.shareable_constant_value;
                     }
-                | k_class tLSHFT expr
+                | k_class tLSHFT expr_value
                     {
                         begin_definition("", &@k_class, &@tLSHFT);
                     }
@@ -4133,12 +4133,12 @@ primary		: literal
                   k_end
                     {
                     /*%%%*/
-                        $$ = NEW_SCLASS($expr, $bodystmt, &@$);
+                        $$ = NEW_SCLASS($expr_value, $bodystmt, &@$);
                         nd_set_line(RNODE_SCLASS($$)->nd_body, @k_end.end_pos.lineno);
-                        set_line_body($bodystmt, nd_line($expr));
-                        fixpos($$, $expr);
+                        set_line_body($bodystmt, nd_line($expr_value));
+                        fixpos($$, $expr_value);
                     /*% %*/
-                    /*% ripper: sclass!($expr, $bodystmt) %*/
+                    /*% ripper: sclass!($expr_value, $bodystmt) %*/
                         local_pop(p);
                         p->ctxt.in_def = $k_class.in_def;
                         p->ctxt.in_class = $k_class.in_class;

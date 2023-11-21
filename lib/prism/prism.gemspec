@@ -85,6 +85,7 @@ Gem::Specification.new do |spec|
     "lib/prism/visitor.rb",
     "src/diagnostic.c",
     "src/enc/pm_big5.c",
+    "src/enc/pm_cp51932.c",
     "src/enc/pm_euc_jp.c",
     "src/enc/pm_gbk.c",
     "src/enc/pm_shift_jis.c",

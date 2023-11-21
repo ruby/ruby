@@ -3,7 +3,7 @@
 static size_t
 pm_encoding_gbk_char_width(const uint8_t *b, ptrdiff_t n) {
     // These are the single byte characters.
-    if (*b < 0x80) {
+    if (*b <= 0x80) {
         return 1;
     }
 
@@ -15,7 +15,10 @@ pm_encoding_gbk_char_width(const uint8_t *b, ptrdiff_t n) {
             ((b[0] >= 0xB0 && b[0] <= 0xF7) && (b[1] >= 0xA1 && b[1] <= 0xFE)) || // GBK/2
             ((b[0] >= 0x81 && b[0] <= 0xA0) && (b[1] >= 0x40 && b[1] <= 0xFE) && (b[1] != 0x7F)) || // GBK/3
             ((b[0] >= 0xAA && b[0] <= 0xFE) && (b[1] >= 0x40 && b[1] <= 0xA0) && (b[1] != 0x7F)) || // GBK/4
-            ((b[0] >= 0xA8 && b[0] <= 0xA9) && (b[1] >= 0x40 && b[1] <= 0xA0) && (b[1] != 0x7F)) // GBK/5
+            ((b[0] >= 0xA8 && b[0] <= 0xA9) && (b[1] >= 0x40 && b[1] <= 0xA0) && (b[1] != 0x7F)) || // GBK/5
+            ((b[0] >= 0xAA && b[0] <= 0xAF) && (b[1] >= 0xA1 && b[1] <= 0xFE)) || // user-defined 1
+            ((b[0] >= 0xF8 && b[0] <= 0xFE) && (b[1] >= 0xA1 && b[1] <= 0xFE)) || // user-defined 2
+            ((b[0] >= 0xA1 && b[0] <= 0xA7) && (b[1] >= 0x40 && b[1] <= 0xA0) && (b[1] != 0x7F)) // user-defined 3
         )
     ) {
         return 2;

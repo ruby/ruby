@@ -660,13 +660,13 @@ pm_compile_while(rb_iseq_t *iseq, int lineno, pm_node_flags_t flags, enum pm_nod
 }
 
 static void
-pm_interpolated_node_compile(pm_node_list_t parts, rb_iseq_t *iseq, NODE dummy_line_node, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, pm_scope_node_t *scope_node, pm_parser_t *parser)
+pm_interpolated_node_compile(pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_line_node, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, pm_scope_node_t *scope_node, pm_parser_t *parser)
 {
-    size_t parts_size = parts.size;
+    size_t parts_size = parts->size;
 
     if (parts_size > 0) {
         for (size_t index = 0; index < parts_size; index++) {
-            pm_node_t *part = parts.nodes[index];
+            pm_node_t *part = parts->nodes[index];
 
             if (PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
                 pm_string_node_t *string_node = (pm_string_node_t *) part;
@@ -683,6 +683,26 @@ pm_interpolated_node_compile(pm_node_list_t parts, rb_iseq_t *iseq, NODE dummy_l
     else {
         PM_PUTNIL;
     }
+}
+
+// This recurses through scopes and finds the local index at any scope leve
+static int
+pm_lookup_local_index_any_scope(rb_iseq_t *iseq, pm_scope_node_t *scope_node, pm_constant_id_t constant_id)
+{
+    if (!scope_node) {
+        // We have recursed up all scope nodes
+        // and have not found the local yet
+        rb_bug("This local does not exist");
+    }
+
+    st_data_t local_index;
+
+    if (!st_lookup(scope_node->index_lookup_table, constant_id, &local_index)) {
+        // Local does not exist at this level, continue recursing up
+        return pm_lookup_local_index_any_scope(iseq, scope_node->previous, constant_id);
+    }
+
+    return (int)scope_node->index_lookup_table->num_entries - (int)local_index;
 }
 
 static int
@@ -1089,6 +1109,11 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
         case PM_FOR_NODE: {
             pm_for_node_t *cast = (pm_for_node_t *)node;
             scope->body = (pm_node_t *)cast->statements;
+            break;
+        }
+        case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
+            RUBY_ASSERT(node->flags & PM_REGULAR_EXPRESSION_FLAGS_ONCE);
+            scope->body = (pm_node_t *)node;
             break;
         }
         case PM_LAMBDA_NODE: {
@@ -2655,7 +2680,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_INTERPOLATED_MATCH_LAST_LINE_NODE: {
         pm_interpolated_match_last_line_node_t *cast = (pm_interpolated_match_last_line_node_t *) node;
-        pm_interpolated_node_compile(cast->parts, iseq, dummy_line_node, ret, src, popped, scope_node, parser);
+
+        pm_interpolated_node_compile(&cast->parts, iseq, dummy_line_node, ret, src, popped, scope_node, parser);
 
         ADD_INSN2(ret, &dummy_line_node, toregexp, INT2FIX(pm_reg_flags(node)), INT2FIX((int) (cast->parts.size)));
 
@@ -2666,16 +2692,40 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
-        pm_interpolated_regular_expression_node_t *cast = (pm_interpolated_regular_expression_node_t *) node;
-        pm_interpolated_node_compile(cast->parts, iseq, dummy_line_node, ret, src, popped, scope_node, parser);
+        if (node->flags & PM_REGULAR_EXPRESSION_FLAGS_ONCE) {
+            const rb_iseq_t *prevblock = ISEQ_COMPILE_DATA(iseq)->current_block;
+            const rb_iseq_t *block_iseq = NULL;
+            int ic_index = ISEQ_BODY(iseq)->ise_size++;
 
-        ADD_INSN2(ret, &dummy_line_node, toregexp, INT2FIX(pm_reg_flags(node)), INT2FIX((int) (cast->parts.size)));
+            pm_scope_node_t next_scope_node;
+            pm_scope_node_init((pm_node_t*)node, &next_scope_node, scope_node, parser);
+
+            block_iseq = NEW_CHILD_ISEQ(next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+            ISEQ_COMPILE_DATA(iseq)->current_block = block_iseq;
+
+            ADD_INSN2(ret, &dummy_line_node, once, block_iseq, INT2FIX(ic_index));
+
+            ISEQ_COMPILE_DATA(iseq)->current_block = prevblock;
+            return;
+        }
+
+        pm_interpolated_regular_expression_node_t *cast = (pm_interpolated_regular_expression_node_t *) node;
+
+        int parts_size = (int)cast->parts.size;
+        if (cast->parts.size > 0 && !PM_NODE_TYPE_P(cast->parts.nodes[0], PM_STRING_NODE)) {
+            ADD_INSN1(ret, &dummy_line_node, putobject, rb_str_new(0, 0));
+            parts_size++;
+        }
+
+        pm_interpolated_node_compile(&cast->parts, iseq, dummy_line_node, ret, src, popped, scope_node, parser);
+
+        ADD_INSN2(ret, &dummy_line_node, toregexp, INT2FIX(pm_reg_flags(node)), INT2FIX(parts_size));
         PM_POP_IF_POPPED;
         return;
       }
       case PM_INTERPOLATED_STRING_NODE: {
         pm_interpolated_string_node_t *interp_string_node = (pm_interpolated_string_node_t *) node;
-        pm_interpolated_node_compile(interp_string_node->parts, iseq, dummy_line_node, ret, src, popped, scope_node, parser);
+        pm_interpolated_node_compile(&interp_string_node->parts, iseq, dummy_line_node, ret, src, popped, scope_node, parser);
 
         size_t parts_size = interp_string_node->parts.size;
         if (parts_size > 1) {
@@ -2687,7 +2737,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_INTERPOLATED_SYMBOL_NODE: {
         pm_interpolated_symbol_node_t *interp_symbol_node = (pm_interpolated_symbol_node_t *) node;
-        pm_interpolated_node_compile(interp_symbol_node->parts, iseq, dummy_line_node, ret, src, popped, scope_node, parser);
+        pm_interpolated_node_compile(&interp_symbol_node->parts, iseq, dummy_line_node, ret, src, popped, scope_node, parser);
 
         size_t parts_size = interp_symbol_node->parts.size;
         if (parts_size > 1) {
@@ -2706,7 +2756,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_INTERPOLATED_X_STRING_NODE: {
         pm_interpolated_x_string_node_t *interp_x_string_node = (pm_interpolated_x_string_node_t *) node;
         PM_PUTSELF;
-        pm_interpolated_node_compile(interp_x_string_node->parts, iseq, dummy_line_node, ret, src, false, scope_node, parser);
+        pm_interpolated_node_compile(&interp_x_string_node->parts, iseq, dummy_line_node, ret, src, false, scope_node, parser);
 
         size_t parts_size = interp_x_string_node->parts.size;
         if (parts_size > 1) {
@@ -2833,10 +2883,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_local_variable_target_node_t *local_write_node = (pm_local_variable_target_node_t *) node;
 
         pm_constant_id_t constant_id = local_write_node->name;
-        for (size_t index = 0; index < local_write_node->depth; index++) scope_node = scope_node->previous;
-        int index = pm_lookup_local_index(iseq, scope_node, constant_id);
+        int index = pm_lookup_local_index_any_scope(iseq, scope_node, constant_id);
 
-        ADD_SETLOCAL(ret, &dummy_line_node, (int)index, local_write_node->depth);
+        ADD_SETLOCAL(ret, &dummy_line_node, index, local_write_node->depth);
         return;
       }
       case PM_LOCAL_VARIABLE_WRITE_NODE: {
@@ -2846,9 +2895,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PM_DUP_UNLESS_POPPED;
 
         pm_constant_id_t constant_id = local_write_node->name;
-        int index = pm_lookup_local_index(iseq, scope_node, constant_id);
+        int index = pm_lookup_local_index_any_scope(iseq, scope_node, constant_id);
 
-        ADD_SETLOCAL(ret, &dummy_line_node, (int)index, local_write_node->depth);
+        ADD_SETLOCAL(ret, &dummy_line_node, index, local_write_node->depth);
         return;
       }
       case PM_MATCH_LAST_LINE_NODE: {
@@ -2904,66 +2953,83 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_MATCH_WRITE_NODE: {
-        pm_match_write_node_t *cast = (pm_match_write_node_t *)node;
+        // Match write nodes are specialized call nodes that have a regular
+        // expression with valid named capture groups on the left, the =~
+        // operator, and some value on the right. The nodes themselves simply
+        // wrap the call with the local variable targets that will be written
+        // when the call is executed.
+        pm_match_write_node_t *cast = (pm_match_write_node_t *) node;
         LABEL *fail_label = NEW_LABEL(lineno);
         LABEL *end_label = NEW_LABEL(lineno);
-        size_t capture_count = cast->locals.size;
-        VALUE r;
 
-        pm_constant_id_t *locals = ALLOCV_N(pm_constant_id_t, r, capture_count);
+        // First, we'll compile the call so that all of its instructions are
+        // present. Then we'll compile all of the local variable targets.
+        PM_COMPILE_NOT_POPPED((pm_node_t *) cast->call);
 
-        for (size_t i = 0; i < capture_count; i++) {
-            locals[i] = cast->locals.ids[i];
-        }
-
-        PM_COMPILE_NOT_POPPED((pm_node_t *)cast->call);
-        VALUE global_variable_name = rb_id2sym(idBACKREF);
-
-        ADD_INSN1(ret, &dummy_line_node, getglobal, global_variable_name);
+        // Now, check if the match was successful. If it was, then we'll
+        // continue on and assign local variables. Otherwise we'll skip over the
+        // assignment code.
+        ADD_INSN1(ret, &dummy_line_node, getglobal, rb_id2sym(idBACKREF));
         PM_DUP;
         ADD_INSNL(ret, &dummy_line_node, branchunless, fail_label);
 
-        if (capture_count == 1) {
-            int local_index = pm_lookup_local_index(iseq, scope_node, *locals);
+        // If there's only a single local variable target, we can skip some of
+        // the bookkeeping, so we'll put a special branch here.
+        size_t targets_count = cast->targets.size;
 
-            DECL_ANCHOR(nom);
-            INIT_ANCHOR(nom);
+        if (targets_count == 1) {
+            pm_node_t *target = cast->targets.nodes[0];
+            assert(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_TARGET_NODE));
 
-            ADD_INSNL(nom, &dummy_line_node, jump, end_label);
-            ADD_LABEL(nom, fail_label);
-            ADD_LABEL(nom, end_label);
-            ADD_INSN1(ret, &dummy_line_node, putobject, rb_id2sym(pm_constant_id_lookup(scope_node, *locals)));
+            pm_local_variable_target_node_t *local_target = (pm_local_variable_target_node_t *) target;
+            int index = pm_lookup_local_index(iseq, scope_node, local_target->name);
+
+            ADD_INSN1(ret, &dummy_line_node, putobject, rb_id2sym(pm_constant_id_lookup(scope_node, local_target->name)));
             ADD_SEND(ret, &dummy_line_node, idAREF, INT2FIX(1));
-            ADD_SETLOCAL(nom, &dummy_line_node, local_index, 0);
+            ADD_LABEL(ret, fail_label);
+            ADD_SETLOCAL(ret, &dummy_line_node, index, (int) local_target->depth);
             PM_POP_IF_POPPED;
-
-            ADD_SEQ(ret, nom);
             return;
         }
 
-        for (size_t index = 0; index < capture_count; index++) {
-            int local_index = pm_lookup_local_index(iseq, scope_node, locals[index]);
+        // Otherwise there is more than one local variable target, so we'll need
+        // to do some bookkeeping.
+        for (size_t targets_index = 0; targets_index < targets_count; targets_index++) {
+            pm_node_t *target = cast->targets.nodes[targets_index];
+            assert(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_TARGET_NODE));
 
-            if (index < (capture_count - 1)) {
+            pm_local_variable_target_node_t *local_target = (pm_local_variable_target_node_t *) target;
+            int index = pm_lookup_local_index(iseq, scope_node, local_target->name);
+
+            if (((size_t) targets_index) < (targets_count - 1)) {
                 PM_DUP;
             }
-            ADD_INSN1(ret, &dummy_line_node, putobject, rb_id2sym(pm_constant_id_lookup(scope_node, locals[index])));
+            ADD_INSN1(ret, &dummy_line_node, putobject, rb_id2sym(pm_constant_id_lookup(scope_node, local_target->name)));
             ADD_SEND(ret, &dummy_line_node, idAREF, INT2FIX(1));
-            ADD_SETLOCAL(ret, &dummy_line_node, local_index, 0);
+            ADD_SETLOCAL(ret, &dummy_line_node, index, (int) local_target->depth);
         }
 
+        // Since we matched successfully, now we'll jump to the end.
         ADD_INSNL(ret, &dummy_line_node, jump, end_label);
-        ADD_LABEL(ret, fail_label);
-        PM_POP_UNLESS_POPPED;
 
-        for (size_t index = 0; index < capture_count; index++) {
-            pm_constant_id_t constant = cast->locals.ids[index];
-            int local_index = pm_lookup_local_index(iseq, scope_node, constant);
+        // In the case that the match failed, we'll loop through each local
+        // variable target and set all of them to `nil`.
+        ADD_LABEL(ret, fail_label);
+        PM_POP;
+
+        for (size_t targets_index = 0; targets_index < targets_count; targets_index++) {
+            pm_node_t *target = cast->targets.nodes[targets_index];
+            assert(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_TARGET_NODE));
+
+            pm_local_variable_target_node_t *local_target = (pm_local_variable_target_node_t *) target;
+            int index = pm_lookup_local_index(iseq, scope_node, local_target->name);
 
             PM_PUTNIL;
-            ADD_SETLOCAL(ret, &dummy_line_node, local_index, 0);
-            PM_POP_IF_POPPED;
+            ADD_SETLOCAL(ret, &dummy_line_node, index, (int) local_target->depth);
         }
+
+        // Finally, we can push the end label for either case.
+        PM_POP_IF_POPPED;
         ADD_LABEL(ret, end_label);
         return;
       }
@@ -3479,6 +3545,21 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     ADD_GETLOCAL(ret, &dummy_line_node, 1, 0);
                     PM_COMPILE(for_node->index);
                     ADD_INSN(ret, &dummy_line_node, nop);
+                    pm_compile_node(iseq, (pm_node_t *)(scope_node->body), ret, src, popped, scope_node);
+                    break;
+                  }
+                  case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
+                    pm_interpolated_regular_expression_node_t *cast = (pm_interpolated_regular_expression_node_t *) scope_node->ast_node;
+
+                    int parts_size = (int)cast->parts.size;
+                    if (parts_size > 0 && !PM_NODE_TYPE_P(cast->parts.nodes[0], PM_STRING_NODE)) {
+                        ADD_INSN1(ret, &dummy_line_node, putobject, rb_str_new(0, 0));
+                        parts_size++;
+                    }
+
+                    pm_interpolated_node_compile(&cast->parts, iseq, dummy_line_node, ret, src, false, scope_node, parser);
+                    ADD_INSN2(ret, &dummy_line_node, toregexp, INT2FIX(pm_reg_flags((pm_node_t *)cast)), INT2FIX(parts_size));
+                    break;
                   }
                   default: {
                     pm_compile_node(iseq, (pm_node_t *)(scope_node->body), ret, src, popped, scope_node);
@@ -3755,7 +3836,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         int argc = 0;
 
         if (yield_node->arguments) {
-            PM_COMPILE((pm_node_t *)yield_node->arguments);
+            PM_COMPILE_NOT_POPPED((pm_node_t *)yield_node->arguments);
 
             argc = (int) yield_node->arguments->arguments.size;
         }

@@ -3,7 +3,7 @@
 └── statements:
     @ StatementsNode (location: (1,0)-(3,3))
     └── body: (length: 1)
-        └── @ CaseNode (location: (1,0)-(3,3))
+        └── @ CaseMatchNode (location: (1,0)-(3,3))
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
             │   ├── opening_loc: (1,5)-(1,6) = ":"

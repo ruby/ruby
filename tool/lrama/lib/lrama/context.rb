@@ -309,10 +309,8 @@ module Lrama
       # Index is sequence number of nterm, value is state id
       # of a default nterm transition destination.
       @yydefgoto = Array.new(@states.nterms.count, 0)
-      h = {}
       # Mapping from nterm to next_states
       nterm_to_next_states = {}
-      terms_count = @states.terms.count
 
       @states.states.each do |state|
         state.nterm_transitions.each do |shift, next_state|
@@ -369,7 +367,7 @@ module Lrama
         end
 
         j = @sorted_actions.count - 1
-        state_id, froms_and_tos, count, width = action
+        _state_id, _froms_and_tos, count, width = action
 
         while (j >= 0) do
           case

@@ -18,6 +18,7 @@
             │       │   ├── if_keyword_loc: (1,4)-(1,6) = "if"
             │       │   ├── predicate:
             │       │   │   @ TrueNode (location: (1,7)-(1,11))
+            │       │   ├── then_keyword_loc: (1,12)-(1,16) = "then"
             │       │   ├── statements:
             │       │   │   @ StatementsNode (location: (1,17)-(1,19))
             │       │   │   └── body: (length: 1)

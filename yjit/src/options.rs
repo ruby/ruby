@@ -100,7 +100,7 @@ pub static mut OPTIONS: Options = Options {
 };
 
 /// YJIT option descriptions for `ruby --help`.
-static YJIT_OPTIONS: [(&str, &str); 9] = [
+static YJIT_OPTIONS: [(&str, &str); 8] = [
     ("--yjit-stats",                    "Enable collecting YJIT statistics"),
     ("--yjit-trace-exits",              "Record Ruby source location when exiting from generated code"),
     ("--yjit-trace-exits-sample-rate",  "Trace exit locations only every Nth occurrence"),
@@ -108,7 +108,6 @@ static YJIT_OPTIONS: [(&str, &str); 9] = [
     ("--yjit-code-gc",                  "Run code GC when the code size reaches the limit"),
     ("--yjit-call-threshold=num",       "Number of calls to trigger JIT"),
     ("--yjit-cold-threshold=num",       "Global call after which ISEQs not compiled (default: 200K)"),
-    ("--yjit-max-versions=num",         "Maximum number of versions per basic block (default: 4)"),
     ("--yjit-perf",                     "Enable frame pointers and perf profiling"),
 ];
 
@@ -233,7 +232,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             directory => {
                 let pid = std::process::id();
                 let path = format!("{directory}/yjit_{pid}.log");
-                println!("YJIT disasm dump: {path}");
+                eprintln!("YJIT disasm dump: {path}");
                 unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(path)) }
             }
          },

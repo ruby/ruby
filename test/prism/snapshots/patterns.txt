@@ -2778,7 +2778,7 @@
         │   │               ├── name: :bar
         │   │               └── depth: 1
         │   └── operator_loc: (125,4)-(125,6) = "in"
-        ├── @ CaseNode (location: (127,0)-(127,25))
+        ├── @ CaseMatchNode (location: (127,0)-(127,25))
         │   ├── predicate:
         │   │   @ CallNode (location: (127,5)-(127,8))
         │   │   ├── receiver: ∅
@@ -2802,7 +2802,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (127,0)-(127,4) = "case"
         │   └── end_keyword_loc: (127,22)-(127,25) = "end"
-        ├── @ CaseNode (location: (128,0)-(128,23))
+        ├── @ CaseMatchNode (location: (128,0)-(128,23))
         │   ├── predicate:
         │   │   @ CallNode (location: (128,5)-(128,8))
         │   │   ├── receiver: ∅
@@ -2825,7 +2825,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (128,0)-(128,4) = "case"
         │   └── end_keyword_loc: (128,20)-(128,23) = "end"
-        ├── @ CaseNode (location: (129,0)-(129,25))
+        ├── @ CaseMatchNode (location: (129,0)-(129,25))
         │   ├── predicate:
         │   │   @ CallNode (location: (129,5)-(129,8))
         │   │   ├── receiver: ∅
@@ -2847,7 +2847,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (129,0)-(129,4) = "case"
         │   └── end_keyword_loc: (129,22)-(129,25) = "end"
-        ├── @ CaseNode (location: (130,0)-(130,24))
+        ├── @ CaseMatchNode (location: (130,0)-(130,24))
         │   ├── predicate:
         │   │   @ CallNode (location: (130,5)-(130,8))
         │   │   ├── receiver: ∅
@@ -2872,7 +2872,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (130,0)-(130,4) = "case"
         │   └── end_keyword_loc: (130,21)-(130,24) = "end"
-        ├── @ CaseNode (location: (131,0)-(131,24))
+        ├── @ CaseMatchNode (location: (131,0)-(131,24))
         │   ├── predicate:
         │   │   @ CallNode (location: (131,5)-(131,8))
         │   │   ├── receiver: ∅
@@ -2897,7 +2897,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (131,0)-(131,4) = "case"
         │   └── end_keyword_loc: (131,21)-(131,24) = "end"
-        ├── @ CaseNode (location: (132,0)-(132,26))
+        ├── @ CaseMatchNode (location: (132,0)-(132,26))
         │   ├── predicate:
         │   │   @ CallNode (location: (132,5)-(132,8))
         │   │   ├── receiver: ∅
@@ -2923,7 +2923,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (132,0)-(132,4) = "case"
         │   └── end_keyword_loc: (132,23)-(132,26) = "end"
-        ├── @ CaseNode (location: (133,0)-(133,29))
+        ├── @ CaseMatchNode (location: (133,0)-(133,29))
         │   ├── predicate:
         │   │   @ CallNode (location: (133,5)-(133,8))
         │   │   ├── receiver: ∅
@@ -2949,7 +2949,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (133,0)-(133,4) = "case"
         │   └── end_keyword_loc: (133,26)-(133,29) = "end"
-        ├── @ CaseNode (location: (134,0)-(134,28))
+        ├── @ CaseMatchNode (location: (134,0)-(134,28))
         │   ├── predicate:
         │   │   @ CallNode (location: (134,5)-(134,8))
         │   │   ├── receiver: ∅
@@ -2975,7 +2975,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (134,0)-(134,4) = "case"
         │   └── end_keyword_loc: (134,25)-(134,28) = "end"
-        ├── @ CaseNode (location: (135,0)-(135,27))
+        ├── @ CaseMatchNode (location: (135,0)-(135,27))
         │   ├── predicate:
         │   │   @ CallNode (location: (135,5)-(135,8))
         │   │   ├── receiver: ∅
@@ -3002,7 +3002,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (135,0)-(135,4) = "case"
         │   └── end_keyword_loc: (135,24)-(135,27) = "end"
-        ├── @ CaseNode (location: (136,0)-(136,27))
+        ├── @ CaseMatchNode (location: (136,0)-(136,27))
         │   ├── predicate:
         │   │   @ CallNode (location: (136,5)-(136,8))
         │   │   ├── receiver: ∅
@@ -3028,7 +3028,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (136,0)-(136,4) = "case"
         │   └── end_keyword_loc: (136,24)-(136,27) = "end"
-        ├── @ CaseNode (location: (137,0)-(137,29))
+        ├── @ CaseMatchNode (location: (137,0)-(137,29))
         │   ├── predicate:
         │   │   @ CallNode (location: (137,5)-(137,8))
         │   │   ├── receiver: ∅
@@ -3054,7 +3054,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (137,0)-(137,4) = "case"
         │   └── end_keyword_loc: (137,26)-(137,29) = "end"
-        ├── @ CaseNode (location: (138,0)-(138,29))
+        ├── @ CaseMatchNode (location: (138,0)-(138,29))
         │   ├── predicate:
         │   │   @ CallNode (location: (138,5)-(138,8))
         │   │   ├── receiver: ∅
@@ -3084,7 +3084,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (138,0)-(138,4) = "case"
         │   └── end_keyword_loc: (138,26)-(138,29) = "end"
-        ├── @ CaseNode (location: (139,0)-(139,29))
+        ├── @ CaseMatchNode (location: (139,0)-(139,29))
         │   ├── predicate:
         │   │   @ CallNode (location: (139,5)-(139,8))
         │   │   ├── receiver: ∅
@@ -3114,7 +3114,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (139,0)-(139,4) = "case"
         │   └── end_keyword_loc: (139,26)-(139,29) = "end"
-        ├── @ CaseNode (location: (140,0)-(140,29))
+        ├── @ CaseMatchNode (location: (140,0)-(140,29))
         │   ├── predicate:
         │   │   @ CallNode (location: (140,5)-(140,8))
         │   │   ├── receiver: ∅
@@ -3145,7 +3145,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (140,0)-(140,4) = "case"
         │   └── end_keyword_loc: (140,26)-(140,29) = "end"
-        ├── @ CaseNode (location: (141,0)-(141,29))
+        ├── @ CaseMatchNode (location: (141,0)-(141,29))
         │   ├── predicate:
         │   │   @ CallNode (location: (141,5)-(141,8))
         │   │   ├── receiver: ∅
@@ -3176,7 +3176,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (141,0)-(141,4) = "case"
         │   └── end_keyword_loc: (141,26)-(141,29) = "end"
-        ├── @ CaseNode (location: (142,0)-(142,29))
+        ├── @ CaseMatchNode (location: (142,0)-(142,29))
         │   ├── predicate:
         │   │   @ CallNode (location: (142,5)-(142,8))
         │   │   ├── receiver: ∅
@@ -3203,7 +3203,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (142,0)-(142,4) = "case"
         │   └── end_keyword_loc: (142,26)-(142,29) = "end"
-        ├── @ CaseNode (location: (143,0)-(143,29))
+        ├── @ CaseMatchNode (location: (143,0)-(143,29))
         │   ├── predicate:
         │   │   @ CallNode (location: (143,5)-(143,8))
         │   │   ├── receiver: ∅
@@ -3230,7 +3230,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (143,0)-(143,4) = "case"
         │   └── end_keyword_loc: (143,26)-(143,29) = "end"
-        ├── @ CaseNode (location: (144,0)-(144,27))
+        ├── @ CaseMatchNode (location: (144,0)-(144,27))
         │   ├── predicate:
         │   │   @ CallNode (location: (144,5)-(144,8))
         │   │   ├── receiver: ∅
@@ -3257,7 +3257,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (144,0)-(144,4) = "case"
         │   └── end_keyword_loc: (144,24)-(144,27) = "end"
-        ├── @ CaseNode (location: (145,0)-(145,25))
+        ├── @ CaseMatchNode (location: (145,0)-(145,25))
         │   ├── predicate:
         │   │   @ CallNode (location: (145,5)-(145,8))
         │   │   ├── receiver: ∅
@@ -3279,7 +3279,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (145,0)-(145,4) = "case"
         │   └── end_keyword_loc: (145,22)-(145,25) = "end"
-        ├── @ CaseNode (location: (146,0)-(146,26))
+        ├── @ CaseMatchNode (location: (146,0)-(146,26))
         │   ├── predicate:
         │   │   @ CallNode (location: (146,5)-(146,8))
         │   │   ├── receiver: ∅
@@ -3301,7 +3301,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (146,0)-(146,4) = "case"
         │   └── end_keyword_loc: (146,23)-(146,26) = "end"
-        ├── @ CaseNode (location: (147,0)-(147,26))
+        ├── @ CaseMatchNode (location: (147,0)-(147,26))
         │   ├── predicate:
         │   │   @ CallNode (location: (147,5)-(147,8))
         │   │   ├── receiver: ∅
@@ -3323,7 +3323,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (147,0)-(147,4) = "case"
         │   └── end_keyword_loc: (147,23)-(147,26) = "end"
-        ├── @ CaseNode (location: (148,0)-(148,27))
+        ├── @ CaseMatchNode (location: (148,0)-(148,27))
         │   ├── predicate:
         │   │   @ CallNode (location: (148,5)-(148,8))
         │   │   ├── receiver: ∅
@@ -3345,7 +3345,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (148,0)-(148,4) = "case"
         │   └── end_keyword_loc: (148,24)-(148,27) = "end"
-        ├── @ CaseNode (location: (149,0)-(149,30))
+        ├── @ CaseMatchNode (location: (149,0)-(149,30))
         │   ├── predicate:
         │   │   @ CallNode (location: (149,5)-(149,8))
         │   │   ├── receiver: ∅
@@ -3368,7 +3368,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (149,0)-(149,4) = "case"
         │   └── end_keyword_loc: (149,27)-(149,30) = "end"
-        ├── @ CaseNode (location: (150,0)-(150,30))
+        ├── @ CaseMatchNode (location: (150,0)-(150,30))
         │   ├── predicate:
         │   │   @ CallNode (location: (150,5)-(150,8))
         │   │   ├── receiver: ∅
@@ -3390,7 +3390,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (150,0)-(150,4) = "case"
         │   └── end_keyword_loc: (150,27)-(150,30) = "end"
-        ├── @ CaseNode (location: (151,0)-(151,34))
+        ├── @ CaseMatchNode (location: (151,0)-(151,34))
         │   ├── predicate:
         │   │   @ CallNode (location: (151,5)-(151,8))
         │   │   ├── receiver: ∅
@@ -3412,7 +3412,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (151,0)-(151,4) = "case"
         │   └── end_keyword_loc: (151,31)-(151,34) = "end"
-        ├── @ CaseNode (location: (152,0)-(152,32))
+        ├── @ CaseMatchNode (location: (152,0)-(152,32))
         │   ├── predicate:
         │   │   @ CallNode (location: (152,5)-(152,8))
         │   │   ├── receiver: ∅
@@ -3445,7 +3445,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (152,0)-(152,4) = "case"
         │   └── end_keyword_loc: (152,29)-(152,32) = "end"
-        ├── @ CaseNode (location: (154,0)-(154,32))
+        ├── @ CaseMatchNode (location: (154,0)-(154,32))
         │   ├── predicate:
         │   │   @ CallNode (location: (154,5)-(154,8))
         │   │   ├── receiver: ∅
@@ -3466,6 +3466,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (154,20)-(154,23))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (154,13)-(154,16))
         │   │       │   │   └── body: (length: 1)
@@ -3480,7 +3481,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (154,0)-(154,4) = "case"
         │   └── end_keyword_loc: (154,29)-(154,32) = "end"
-        ├── @ CaseNode (location: (155,0)-(155,30))
+        ├── @ CaseMatchNode (location: (155,0)-(155,30))
         │   ├── predicate:
         │   │   @ CallNode (location: (155,5)-(155,8))
         │   │   ├── receiver: ∅
@@ -3501,6 +3502,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (155,18)-(155,21))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (155,13)-(155,14))
         │   │       │   │   └── body: (length: 1)
@@ -3514,7 +3516,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (155,0)-(155,4) = "case"
         │   └── end_keyword_loc: (155,27)-(155,30) = "end"
-        ├── @ CaseNode (location: (156,0)-(156,32))
+        ├── @ CaseMatchNode (location: (156,0)-(156,32))
         │   ├── predicate:
         │   │   @ CallNode (location: (156,5)-(156,8))
         │   │   ├── receiver: ∅
@@ -3535,6 +3537,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (156,20)-(156,23))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (156,13)-(156,16))
         │   │       │   │   └── body: (length: 1)
@@ -3547,7 +3550,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (156,0)-(156,4) = "case"
         │   └── end_keyword_loc: (156,29)-(156,32) = "end"
-        ├── @ CaseNode (location: (157,0)-(157,31))
+        ├── @ CaseMatchNode (location: (157,0)-(157,31))
         │   ├── predicate:
         │   │   @ CallNode (location: (157,5)-(157,8))
         │   │   ├── receiver: ∅
@@ -3568,6 +3571,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (157,19)-(157,22))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (157,13)-(157,15))
         │   │       │   │   └── body: (length: 1)
@@ -3583,7 +3587,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (157,0)-(157,4) = "case"
         │   └── end_keyword_loc: (157,28)-(157,31) = "end"
-        ├── @ CaseNode (location: (158,0)-(158,31))
+        ├── @ CaseMatchNode (location: (158,0)-(158,31))
         │   ├── predicate:
         │   │   @ CallNode (location: (158,5)-(158,8))
         │   │   ├── receiver: ∅
@@ -3604,6 +3608,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (158,19)-(158,22))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (158,13)-(158,15))
         │   │       │   │   └── body: (length: 1)
@@ -3619,7 +3624,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (158,0)-(158,4) = "case"
         │   └── end_keyword_loc: (158,28)-(158,31) = "end"
-        ├── @ CaseNode (location: (159,0)-(159,33))
+        ├── @ CaseMatchNode (location: (159,0)-(159,33))
         │   ├── predicate:
         │   │   @ CallNode (location: (159,5)-(159,8))
         │   │   ├── receiver: ∅
@@ -3640,6 +3645,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (159,21)-(159,24))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (159,13)-(159,17))
         │   │       │   │   └── body: (length: 1)
@@ -3656,7 +3662,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (159,0)-(159,4) = "case"
         │   └── end_keyword_loc: (159,30)-(159,33) = "end"
-        ├── @ CaseNode (location: (160,0)-(160,36))
+        ├── @ CaseMatchNode (location: (160,0)-(160,36))
         │   ├── predicate:
         │   │   @ CallNode (location: (160,5)-(160,8))
         │   │   ├── receiver: ∅
@@ -3677,6 +3683,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (160,24)-(160,27))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (160,13)-(160,20))
         │   │       │   │   └── body: (length: 1)
@@ -3693,7 +3700,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (160,0)-(160,4) = "case"
         │   └── end_keyword_loc: (160,33)-(160,36) = "end"
-        ├── @ CaseNode (location: (161,0)-(161,35))
+        ├── @ CaseMatchNode (location: (161,0)-(161,35))
         │   ├── predicate:
         │   │   @ CallNode (location: (161,5)-(161,8))
         │   │   ├── receiver: ∅
@@ -3714,6 +3721,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (161,23)-(161,26))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (161,13)-(161,19))
         │   │       │   │   └── body: (length: 1)
@@ -3730,7 +3738,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (161,0)-(161,4) = "case"
         │   └── end_keyword_loc: (161,32)-(161,35) = "end"
-        ├── @ CaseNode (location: (162,0)-(162,34))
+        ├── @ CaseMatchNode (location: (162,0)-(162,34))
         │   ├── predicate:
         │   │   @ CallNode (location: (162,5)-(162,8))
         │   │   ├── receiver: ∅
@@ -3751,6 +3759,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (162,22)-(162,25))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (162,13)-(162,18))
         │   │       │   │   └── body: (length: 1)
@@ -3768,7 +3777,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (162,0)-(162,4) = "case"
         │   └── end_keyword_loc: (162,31)-(162,34) = "end"
-        ├── @ CaseNode (location: (163,0)-(163,34))
+        ├── @ CaseMatchNode (location: (163,0)-(163,34))
         │   ├── predicate:
         │   │   @ CallNode (location: (163,5)-(163,8))
         │   │   ├── receiver: ∅
@@ -3789,6 +3798,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (163,22)-(163,25))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (163,13)-(163,18))
         │   │       │   │   └── body: (length: 1)
@@ -3805,7 +3815,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (163,0)-(163,4) = "case"
         │   └── end_keyword_loc: (163,31)-(163,34) = "end"
-        ├── @ CaseNode (location: (164,0)-(164,36))
+        ├── @ CaseMatchNode (location: (164,0)-(164,36))
         │   ├── predicate:
         │   │   @ CallNode (location: (164,5)-(164,8))
         │   │   ├── receiver: ∅
@@ -3826,6 +3836,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (164,24)-(164,27))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (164,13)-(164,20))
         │   │       │   │   └── body: (length: 1)
@@ -3842,7 +3853,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (164,0)-(164,4) = "case"
         │   └── end_keyword_loc: (164,33)-(164,36) = "end"
-        ├── @ CaseNode (location: (165,0)-(165,36))
+        ├── @ CaseMatchNode (location: (165,0)-(165,36))
         │   ├── predicate:
         │   │   @ CallNode (location: (165,5)-(165,8))
         │   │   ├── receiver: ∅
@@ -3863,6 +3874,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (165,24)-(165,27))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (165,13)-(165,20))
         │   │       │   │   └── body: (length: 1)
@@ -3883,7 +3895,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (165,0)-(165,4) = "case"
         │   └── end_keyword_loc: (165,33)-(165,36) = "end"
-        ├── @ CaseNode (location: (166,0)-(166,36))
+        ├── @ CaseMatchNode (location: (166,0)-(166,36))
         │   ├── predicate:
         │   │   @ CallNode (location: (166,5)-(166,8))
         │   │   ├── receiver: ∅
@@ -3904,6 +3916,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (166,24)-(166,27))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (166,13)-(166,20))
         │   │       │   │   └── body: (length: 1)
@@ -3924,7 +3937,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (166,0)-(166,4) = "case"
         │   └── end_keyword_loc: (166,33)-(166,36) = "end"
-        ├── @ CaseNode (location: (167,0)-(167,36))
+        ├── @ CaseMatchNode (location: (167,0)-(167,36))
         │   ├── predicate:
         │   │   @ CallNode (location: (167,5)-(167,8))
         │   │   ├── receiver: ∅
@@ -3945,6 +3958,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (167,24)-(167,27))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (167,13)-(167,20))
         │   │       │   │   └── body: (length: 1)
@@ -3966,7 +3980,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (167,0)-(167,4) = "case"
         │   └── end_keyword_loc: (167,33)-(167,36) = "end"
-        ├── @ CaseNode (location: (168,0)-(168,36))
+        ├── @ CaseMatchNode (location: (168,0)-(168,36))
         │   ├── predicate:
         │   │   @ CallNode (location: (168,5)-(168,8))
         │   │   ├── receiver: ∅
@@ -3987,6 +4001,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (168,24)-(168,27))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (168,13)-(168,20))
         │   │       │   │   └── body: (length: 1)
@@ -4008,7 +4023,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (168,0)-(168,4) = "case"
         │   └── end_keyword_loc: (168,33)-(168,36) = "end"
-        ├── @ CaseNode (location: (169,0)-(169,36))
+        ├── @ CaseMatchNode (location: (169,0)-(169,36))
         │   ├── predicate:
         │   │   @ CallNode (location: (169,5)-(169,8))
         │   │   ├── receiver: ∅
@@ -4029,6 +4044,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (169,24)-(169,27))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (169,13)-(169,20))
         │   │       │   │   └── body: (length: 1)
@@ -4046,7 +4062,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (169,0)-(169,4) = "case"
         │   └── end_keyword_loc: (169,33)-(169,36) = "end"
-        ├── @ CaseNode (location: (170,0)-(170,36))
+        ├── @ CaseMatchNode (location: (170,0)-(170,36))
         │   ├── predicate:
         │   │   @ CallNode (location: (170,5)-(170,8))
         │   │   ├── receiver: ∅
@@ -4067,6 +4083,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (170,24)-(170,27))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (170,13)-(170,20))
         │   │       │   │   └── body: (length: 1)
@@ -4084,7 +4101,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (170,0)-(170,4) = "case"
         │   └── end_keyword_loc: (170,33)-(170,36) = "end"
-        ├── @ CaseNode (location: (171,0)-(171,34))
+        ├── @ CaseMatchNode (location: (171,0)-(171,34))
         │   ├── predicate:
         │   │   @ CallNode (location: (171,5)-(171,8))
         │   │   ├── receiver: ∅
@@ -4105,6 +4122,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (171,22)-(171,25))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (171,13)-(171,18))
         │   │       │   │   └── body: (length: 1)
@@ -4122,7 +4140,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (171,0)-(171,4) = "case"
         │   └── end_keyword_loc: (171,31)-(171,34) = "end"
-        ├── @ CaseNode (location: (172,0)-(172,32))
+        ├── @ CaseMatchNode (location: (172,0)-(172,32))
         │   ├── predicate:
         │   │   @ CallNode (location: (172,5)-(172,8))
         │   │   ├── receiver: ∅
@@ -4143,6 +4161,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (172,20)-(172,23))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (172,13)-(172,16))
         │   │       │   │   └── body: (length: 1)
@@ -4155,7 +4174,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (172,0)-(172,4) = "case"
         │   └── end_keyword_loc: (172,29)-(172,32) = "end"
-        ├── @ CaseNode (location: (173,0)-(173,33))
+        ├── @ CaseMatchNode (location: (173,0)-(173,33))
         │   ├── predicate:
         │   │   @ CallNode (location: (173,5)-(173,8))
         │   │   ├── receiver: ∅
@@ -4176,6 +4195,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (173,21)-(173,24))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (173,13)-(173,17))
         │   │       │   │   └── body: (length: 1)
@@ -4188,7 +4208,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (173,0)-(173,4) = "case"
         │   └── end_keyword_loc: (173,30)-(173,33) = "end"
-        ├── @ CaseNode (location: (174,0)-(174,33))
+        ├── @ CaseMatchNode (location: (174,0)-(174,33))
         │   ├── predicate:
         │   │   @ CallNode (location: (174,5)-(174,8))
         │   │   ├── receiver: ∅
@@ -4209,6 +4229,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (174,21)-(174,24))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (174,13)-(174,17))
         │   │       │   │   └── body: (length: 1)
@@ -4221,7 +4242,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (174,0)-(174,4) = "case"
         │   └── end_keyword_loc: (174,30)-(174,33) = "end"
-        ├── @ CaseNode (location: (175,0)-(175,34))
+        ├── @ CaseMatchNode (location: (175,0)-(175,34))
         │   ├── predicate:
         │   │   @ CallNode (location: (175,5)-(175,8))
         │   │   ├── receiver: ∅
@@ -4242,6 +4263,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (175,22)-(175,25))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (175,13)-(175,18))
         │   │       │   │   └── body: (length: 1)
@@ -4254,7 +4276,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (175,0)-(175,4) = "case"
         │   └── end_keyword_loc: (175,31)-(175,34) = "end"
-        ├── @ CaseNode (location: (176,0)-(176,37))
+        ├── @ CaseMatchNode (location: (176,0)-(176,37))
         │   ├── predicate:
         │   │   @ CallNode (location: (176,5)-(176,8))
         │   │   ├── receiver: ∅
@@ -4275,6 +4297,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (176,25)-(176,28))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (176,13)-(176,21))
         │   │       │   │   └── body: (length: 1)
@@ -4288,7 +4311,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (176,0)-(176,4) = "case"
         │   └── end_keyword_loc: (176,34)-(176,37) = "end"
-        ├── @ CaseNode (location: (177,0)-(177,37))
+        ├── @ CaseMatchNode (location: (177,0)-(177,37))
         │   ├── predicate:
         │   │   @ CallNode (location: (177,5)-(177,8))
         │   │   ├── receiver: ∅
@@ -4309,6 +4332,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (177,25)-(177,28))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (177,13)-(177,21))
         │   │       │   │   └── body: (length: 1)
@@ -4321,7 +4345,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (177,0)-(177,4) = "case"
         │   └── end_keyword_loc: (177,34)-(177,37) = "end"
-        ├── @ CaseNode (location: (178,0)-(178,41))
+        ├── @ CaseMatchNode (location: (178,0)-(178,41))
         │   ├── predicate:
         │   │   @ CallNode (location: (178,5)-(178,8))
         │   │   ├── receiver: ∅
@@ -4342,6 +4366,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (178,29)-(178,32))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (178,13)-(178,25))
         │   │       │   │   └── body: (length: 1)
@@ -4354,7 +4379,7 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (178,0)-(178,4) = "case"
         │   └── end_keyword_loc: (178,38)-(178,41) = "end"
-        ├── @ CaseNode (location: (179,0)-(179,39))
+        ├── @ CaseMatchNode (location: (179,0)-(179,39))
         │   ├── predicate:
         │   │   @ CallNode (location: (179,5)-(179,8))
         │   │   ├── receiver: ∅
@@ -4375,6 +4400,7 @@
         │   │       │   │   @ LocalVariableReadNode (location: (179,27)-(179,30))
         │   │       │   │   ├── name: :baz
         │   │       │   │   └── depth: 0
+        │   │       │   ├── then_keyword_loc: ∅
         │   │       │   ├── statements:
         │   │       │   │   @ StatementsNode (location: (179,13)-(179,23))
         │   │       │   │   └── body: (length: 1)
@@ -4422,6 +4448,7 @@
         │   │   │   ├── opening_loc: (181,8)-(181,9) = "["
         │   │   │   └── closing_loc: (181,9)-(181,10) = "]"
         │   │   └── operator_loc: (181,5)-(181,7) = "in"
+        │   ├── then_keyword_loc: ∅
         │   ├── statements: ∅
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (182,0)-(182,3) = "end"

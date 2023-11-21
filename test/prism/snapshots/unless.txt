@@ -7,6 +7,7 @@
         │   ├── keyword_loc: (1,0)-(1,6) = "unless"
         │   ├── predicate:
         │   │   @ TrueNode (location: (1,7)-(1,11))
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (1,13)-(1,14))
         │   │   └── body: (length: 1)
@@ -18,6 +19,7 @@
         │   ├── keyword_loc: (3,0)-(3,6) = "unless"
         │   ├── predicate:
         │   │   @ TrueNode (location: (3,7)-(3,11))
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (4,0)-(4,1))
         │   │   └── body: (length: 1)
@@ -37,6 +39,7 @@
         │   ├── keyword_loc: (6,2)-(6,8) = "unless"
         │   ├── predicate:
         │   │   @ TrueNode (location: (6,9)-(6,13))
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (6,0)-(6,1))
         │   │   └── body: (length: 1)
@@ -48,6 +51,7 @@
         │   ├── keyword_loc: (8,6)-(8,12) = "unless"
         │   ├── predicate:
         │   │   @ TrueNode (location: (8,13)-(8,17))
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (8,0)-(8,5))
         │   │   └── body: (length: 1)
@@ -60,6 +64,7 @@
         │   ├── keyword_loc: (10,5)-(10,11) = "unless"
         │   ├── predicate:
         │   │   @ TrueNode (location: (10,12)-(10,16))
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (10,0)-(10,4))
         │   │   └── body: (length: 1)
@@ -72,6 +77,7 @@
         │   ├── keyword_loc: (12,7)-(12,13) = "unless"
         │   ├── predicate:
         │   │   @ TrueNode (location: (12,14)-(12,18))
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (12,0)-(12,6))
         │   │   └── body: (length: 1)
@@ -93,6 +99,7 @@
             │   ├── block: ∅
             │   ├── flags: ∅
             │   └── name: :bar?
+            ├── then_keyword_loc: ∅
             ├── statements:
             │   @ StatementsNode (location: (14,0)-(14,10))
             │   └── body: (length: 1)

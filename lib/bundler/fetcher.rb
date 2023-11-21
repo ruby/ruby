@@ -204,6 +204,16 @@ module Bundler
       fetchers.first.api_fetcher?
     end
 
+    def gem_remote_fetcher
+      @gem_remote_fetcher ||= begin
+        require_relative "fetcher/gem_remote_fetcher"
+        fetcher = GemRemoteFetcher.new Gem.configuration[:http_proxy]
+        fetcher.headers["User-Agent"] = user_agent
+        fetcher.headers["X-Gemfile-Source"] = @remote.original_uri.to_s if @remote.original_uri
+        fetcher
+      end
+    end
+
     private
 
     def available_fetchers
@@ -218,7 +228,7 @@ module Bundler
     end
 
     def fetchers
-      @fetchers ||= available_fetchers.map {|f| f.new(downloader, @remote, uri) }.drop_while {|f| !f.available? }
+      @fetchers ||= available_fetchers.map {|f| f.new(downloader, @remote, uri, gem_remote_fetcher) }.drop_while {|f| !f.available? }
     end
 
     def fetch_specs(gem_names)

@@ -1,7 +1,7 @@
-@ ProgramNode (location: (1,0)-(17,20))
+@ ProgramNode (location: (1,0)-(17,21))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (1,0)-(17,20))
+    @ StatementsNode (location: (1,0)-(17,21))
     └── body: (length: 9)
         ├── @ ForwardingSuperNode (location: (1,0)-(1,5))
         │   └── block: ∅
@@ -51,7 +51,7 @@
         │       │   ├── closing_loc: ∅
         │       │   └── unescaped: "foo"
         │       └── operator_loc: (9,6)-(9,7) = "&"
-        ├── @ SuperNode (location: (11,0)-(11,11))
+        ├── @ SuperNode (location: (11,0)-(11,12))
         │   ├── keyword_loc: (11,0)-(11,5) = "super"
         │   ├── lparen_loc: (11,5)-(11,6) = "("
         │   ├── arguments: ∅
@@ -94,7 +94,7 @@
         │       ├── body: ∅
         │       ├── opening_loc: (15,15)-(15,16) = "{"
         │       └── closing_loc: (15,16)-(15,17) = "}"
-        └── @ SuperNode (location: (17,0)-(17,20))
+        └── @ SuperNode (location: (17,0)-(17,21))
             ├── keyword_loc: (17,0)-(17,5) = "super"
             ├── lparen_loc: (17,5)-(17,6) = "("
             ├── arguments:

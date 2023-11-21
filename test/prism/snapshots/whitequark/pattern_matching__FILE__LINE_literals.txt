@@ -3,7 +3,7 @@
 └── statements:
     @ StatementsNode (location: (1,8)-(3,11))
     └── body: (length: 1)
-        └── @ CaseNode (location: (1,8)-(3,11))
+        └── @ CaseMatchNode (location: (1,8)-(3,11))
             ├── predicate:
             │   @ ArrayNode (location: (1,13)-(1,51))
             │   ├── elements: (length: 3)

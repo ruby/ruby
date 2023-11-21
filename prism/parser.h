@@ -532,6 +532,12 @@ struct pm_parser {
         size_t index;
     } lex_modes;
 
+    /**
+     * The common_whitespace value from the most-recently-popped heredoc mode of the lexer, so we
+     * can dedent the heredoc after popping the lex mode.
+     */
+    size_t current_string_common_whitespace;
+
     /** The pointer to the start of the source. */
     const uint8_t *start;
 

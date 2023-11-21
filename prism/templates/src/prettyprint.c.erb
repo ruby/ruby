@@ -1,3 +1,4 @@
+<%# encoding: ASCII -%>
 #include "prism/prettyprint.h"
 
 static void
@@ -63,29 +64,29 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
             prettyprint_location(output_buffer, parser, &node->location);
             pm_buffer_append_string(output_buffer, ")\n", 2);
             <%- node.fields.each_with_index do |field, index| -%>
-            <%- pointer, preadd = index == node.fields.length - 1 ? ["└── ", "    "] : ["├── ", "│   "] -%>
+            <%- pointer, preadd, preadd_bytesize = index == node.fields.length - 1 ? ["\\xe2\\x94\\x94\\xe2\\x94\\x80\\xe2\\x94\\x80 ", "    ", 4] : ["\\xe2\\x94\\x9c\\xe2\\x94\\x80\\xe2\\x94\\x80 ", "\\xe2\\x94\\x82   ", 6] -%>
 
             // <%= field.name %>
             {
                 pm_buffer_concat(output_buffer, prefix_buffer);
-                pm_buffer_append_string(output_buffer, "<%= pointer %><%= field.name %>:", <%= pointer.bytesize + field.name.length + 1 %>);
+                pm_buffer_append_string(output_buffer, "<%= pointer %><%= field.name %>:", <%= 10 + field.name.length + 1 %>);
             <%- case field -%>
             <%- when Prism::NodeField -%>
                 pm_buffer_append_byte(output_buffer, '\n');
 
                 size_t prefix_length = prefix_buffer->length;
-                pm_buffer_append_string(prefix_buffer, "<%= preadd %>", <%= preadd.bytesize %>);
+                pm_buffer_append_string(prefix_buffer, "<%= preadd %>", <%= preadd_bytesize %>);
                 pm_buffer_concat(output_buffer, prefix_buffer);
                 prettyprint_node(output_buffer, parser, (pm_node_t *) cast-><%= field.name %>, prefix_buffer);
                 prefix_buffer->length = prefix_length;
             <%- when Prism::OptionalNodeField -%>
                 if (cast-><%= field.name %> == NULL) {
-                    pm_buffer_append_string(output_buffer, " ∅\n", 5);
+                    pm_buffer_append_string(output_buffer, " \xe2\x88\x85\n", 5);
                 } else {
                     pm_buffer_append_byte(output_buffer, '\n');
 
                     size_t prefix_length = prefix_buffer->length;
-                    pm_buffer_append_string(prefix_buffer, "<%= preadd %>", <%= preadd.bytesize %>);
+                    pm_buffer_append_string(prefix_buffer, "<%= preadd %>", <%= preadd_bytesize %>);
                     pm_buffer_concat(output_buffer, prefix_buffer);
                     prettyprint_node(output_buffer, parser, (pm_node_t *) cast-><%= field.name %>, prefix_buffer);
                     prefix_buffer->length = prefix_length;
@@ -100,15 +101,15 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                 size_t last_index = cast-><%= field.name %>.size;
                 for (uint32_t index = 0; index < last_index; index++) {
                     size_t prefix_length = prefix_buffer->length;
-                    pm_buffer_append_string(prefix_buffer, "<%= preadd %>", <%= preadd.bytesize %>);
+                    pm_buffer_append_string(prefix_buffer, "<%= preadd %>", <%= preadd_bytesize %>);
                     pm_buffer_concat(output_buffer, prefix_buffer);
 
                     if (index == last_index - 1) {
-                        pm_buffer_append_string(output_buffer, "└── ", 10);
+                        pm_buffer_append_string(output_buffer, "\xe2\x94\x94\xe2\x94\x80\xe2\x94\x80 ", 10);
                         pm_buffer_append_string(prefix_buffer, "    ", 4);
                     } else {
-                        pm_buffer_append_string(output_buffer, "├── ", 10);
-                        pm_buffer_append_string(prefix_buffer, "│   ", 6);
+                        pm_buffer_append_string(output_buffer, "\xe2\x94\x9c\xe2\x94\x80\xe2\x94\x80 ", 10);
+                        pm_buffer_append_string(prefix_buffer, "\xe2\x94\x82   ", 6);
                     }
 
                     prettyprint_node(output_buffer, parser, (pm_node_t *) cast-><%= field.name %>.nodes[index], prefix_buffer);
@@ -120,7 +121,7 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                 pm_buffer_append_byte(output_buffer, '\n');
             <%- when Prism::OptionalConstantField -%>
                 if (cast-><%= field.name %> == 0) {
-                    pm_buffer_append_string(output_buffer, " ∅\n", 5);
+                    pm_buffer_append_string(output_buffer, " \xe2\x88\x85\n", 5);
                 } else {
                     pm_buffer_append_byte(output_buffer, ' ');
                     prettyprint_constant(output_buffer, parser, cast-><%= field.name %>);
@@ -143,7 +144,7 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
             <%- when Prism::OptionalLocationField -%>
                 pm_location_t *location = &cast-><%= field.name %>;
                 if (location->start == NULL) {
-                    pm_buffer_append_string(output_buffer, " ∅\n", 5);
+                    pm_buffer_append_string(output_buffer, " \xe2\x88\x85\n", 5);
                 } else {
                     pm_buffer_append_byte(output_buffer, ' ');
                     prettyprint_location(output_buffer, parser, location);
@@ -163,7 +164,7 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                     found = true;
                 }
                 <%- end -%>
-                if (!found) pm_buffer_append_string(output_buffer, " ∅", 4);
+                if (!found) pm_buffer_append_string(output_buffer, " \xe2\x88\x85", 4);
                 pm_buffer_append_byte(output_buffer, '\n');
             <%- else -%>
             <%- raise -%>

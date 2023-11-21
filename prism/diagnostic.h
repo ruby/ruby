@@ -30,6 +30,13 @@ typedef struct {
 
     /** The message associated with the diagnostic. */
     const char *message;
+
+    /**
+     * Whether or not the memory related to the message of this diagnostic is
+     * owned by this diagnostic. If it is, it needs to be freed when the
+     * diagnostic is freed.
+     */
+    bool owned;
 } pm_diagnostic_t;
 
 /**
@@ -40,12 +47,14 @@ typedef enum {
     PM_ERR_ALIAS_ARGUMENT,
     PM_ERR_AMPAMPEQ_MULTI_ASSIGN,
     PM_ERR_ARGUMENT_AFTER_BLOCK,
+    PM_ERR_ARGUMENT_AFTER_FORWARDING_ELLIPSES,
     PM_ERR_ARGUMENT_BARE_HASH,
     PM_ERR_ARGUMENT_BLOCK_MULTI,
     PM_ERR_ARGUMENT_FORMAL_CLASS,
     PM_ERR_ARGUMENT_FORMAL_CONSTANT,
     PM_ERR_ARGUMENT_FORMAL_GLOBAL,
     PM_ERR_ARGUMENT_FORMAL_IVAR,
+    PM_ERR_ARGUMENT_FORWARDING_UNBOUND,
     PM_ERR_ARGUMENT_NO_FORWARDING_AMP,
     PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES,
     PM_ERR_ARGUMENT_NO_FORWARDING_STAR,
@@ -71,6 +80,7 @@ typedef enum {
     PM_ERR_CANNOT_PARSE_STRING_PART,
     PM_ERR_CASE_EXPRESSION_AFTER_CASE,
     PM_ERR_CASE_EXPRESSION_AFTER_WHEN,
+    PM_ERR_CASE_MATCH_MISSING_PREDICATE,
     PM_ERR_CASE_MISSING_CONDITIONS,
     PM_ERR_CASE_TERM,
     PM_ERR_CLASS_IN_METHOD,
@@ -231,6 +241,7 @@ typedef enum {
     PM_ERR_UNARY_RECEIVER_TILDE,
     PM_ERR_UNDEF_ARGUMENT,
     PM_ERR_UNTIL_TERM,
+    PM_ERR_VOID_EXPRESSION,
     PM_ERR_WHILE_TERM,
     PM_ERR_WRITE_TARGET_READONLY,
     PM_ERR_WRITE_TARGET_UNEXPECTED,
@@ -245,7 +256,8 @@ typedef enum {
 } pm_diagnostic_id_t;
 
 /**
- * Append a diagnostic to the given list of diagnostics.
+ * Append a diagnostic to the given list of diagnostics that is using shared
+ * memory for its message.
  *
  * @param list The list to append to.
  * @param start The start of the diagnostic.
@@ -254,6 +266,19 @@ typedef enum {
  * @return Whether the diagnostic was successfully appended.
  */
 bool pm_diagnostic_list_append(pm_list_t *list, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id);
+
+/**
+ * Append a diagnostic to the given list of diagnostics that is using a format
+ * string for its message.
+ *
+ * @param list The list to append to.
+ * @param start The start of the diagnostic.
+ * @param end The end of the diagnostic.
+ * @param diag_id The diagnostic ID.
+ * @param ... The arguments to the format string for the message.
+ * @return Whether the diagnostic was successfully appended.
+ */
+bool pm_diagnostic_list_append_format(pm_list_t *list, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id, ...);
 
 /**
  * Deallocate the internal state of the given diagnostic list.

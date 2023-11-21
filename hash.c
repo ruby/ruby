@@ -815,6 +815,14 @@ ar_add_direct_with_hash(VALUE hash, st_data_t key, st_data_t val, st_hash_t hash
     }
 }
 
+static void
+ensure_ar_table(VALUE hash)
+{
+    if (!RHASH_AR_TABLE_P(hash)) {
+        rb_raise(rb_eRuntimeError, "hash representation was changed during iteration");
+    }
+}
+
 static int
 ar_general_foreach(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg)
 {
@@ -826,6 +834,7 @@ ar_general_foreach(VALUE hash, st_foreach_check_callback_func *func, st_update_c
 
             ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, i);
             enum st_retval retval = (*func)(pair->key, pair->val, arg, 0);
+            ensure_ar_table(hash);
             /* pair may be not valid here because of theap */
 
             switch (retval) {
@@ -900,6 +909,7 @@ ar_foreach_check(VALUE hash, st_foreach_check_callback_func *func, st_data_t arg
             hint = ar_hint(hash, i);
 
             retval = (*func)(key, pair->val, arg, 0);
+            ensure_ar_table(hash);
             hash_verify(hash);
 
             switch (retval) {
@@ -960,6 +970,7 @@ ar_update(VALUE hash, st_data_t key,
     old_key = key;
     retval = (*func)(&key, &value, arg, existing);
     /* pair can be invalid here because of theap */
+    ensure_ar_table(hash);
 
     switch (retval) {
       case ST_CONTINUE:
@@ -4073,24 +4084,17 @@ assoc_cmp(VALUE a, VALUE b)
     return !RTEST(rb_equal(a, b));
 }
 
-static VALUE
-lookup2_call(VALUE arg)
-{
-    VALUE *args = (VALUE *)arg;
-    return rb_hash_lookup2(args[0], args[1], Qundef);
-}
-
-struct reset_hash_type_arg {
-    VALUE hash;
-    const struct st_hash_type *orighash;
+struct assoc_arg {
+    st_table *tbl;
+    st_data_t key;
 };
 
 static VALUE
-reset_hash_type(VALUE arg)
+assoc_lookup(VALUE arg)
 {
-    struct reset_hash_type_arg *p = (struct reset_hash_type_arg *)arg;
-    HASH_ASSERT(RHASH_ST_TABLE_P(p->hash));
-    RHASH_ST_TABLE(p->hash)->type = p->orighash;
+    struct assoc_arg *p = (struct assoc_arg*)arg;
+    st_data_t data;
+    if (st_lookup(p->tbl, p->key, &data)) return (VALUE)data;
     return Qundef;
 }
 
@@ -4120,30 +4124,30 @@ assoc_i(VALUE key, VALUE val, VALUE arg)
 static VALUE
 rb_hash_assoc(VALUE hash, VALUE key)
 {
-    st_table *table;
-    const struct st_hash_type *orighash;
     VALUE args[2];
 
     if (RHASH_EMPTY_P(hash)) return Qnil;
 
-    ar_force_convert_table(hash, __FILE__, __LINE__);
-    HASH_ASSERT(RHASH_ST_TABLE_P(hash));
-    table = RHASH_ST_TABLE(hash);
-    orighash = table->type;
+    if (RHASH_ST_TABLE_P(hash) && RHASH_ST_TABLE(hash)->type != &identhash) {
+        VALUE value = Qundef;
+        st_table assoctable = *RHASH_ST_TABLE(hash);
+        assoctable.type = &(struct st_hash_type){
+            .compare = assoc_cmp,
+            .hash = assoctable.type->hash,
+        };
+        VALUE arg = (VALUE)&(struct assoc_arg){
+            .tbl = &assoctable,
+            .key = (st_data_t)key,
+        };
 
-    if (orighash != &identhash) {
-        VALUE value;
-        struct reset_hash_type_arg ensure_arg;
-        struct st_hash_type assochash;
-
-        assochash.compare = assoc_cmp;
-        assochash.hash = orighash->hash;
-        table->type = &assochash;
-        args[0] = hash;
-        args[1] = key;
-        ensure_arg.hash = hash;
-        ensure_arg.orighash = orighash;
-        value = rb_ensure(lookup2_call, (VALUE)&args, reset_hash_type, (VALUE)&ensure_arg);
+        if (RB_OBJ_FROZEN(hash)) {
+            value = assoc_lookup(arg);
+        }
+        else {
+            hash_iter_lev_inc(hash);
+            value = rb_ensure(assoc_lookup, arg, hash_foreach_ensure, hash);
+        }
+        hash_verify(hash);
         if (!UNDEF_P(value)) return rb_assoc_new(key, value);
     }
 
@@ -4360,6 +4364,9 @@ rb_hash_compare_by_id(VALUE hash)
     if (rb_hash_compare_by_id_p(hash)) return hash;
 
     rb_hash_modify_check(hash);
+    if (hash_iterating_p(hash)) {
+        rb_raise(rb_eRuntimeError, "compare_by_identity during iteration");
+    }
     ar_force_convert_table(hash, __FILE__, __LINE__);
     HASH_ASSERT(RHASH_ST_TABLE_P(hash));
 

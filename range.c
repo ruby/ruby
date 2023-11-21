@@ -2609,6 +2609,7 @@ range_overlap(VALUE range, VALUE other)
  * - {Comparing}[rdoc-ref:Range@Methods+for+Comparing]
  * - {Iterating}[rdoc-ref:Range@Methods+for+Iterating]
  * - {Converting}[rdoc-ref:Range@Methods+for+Converting]
+ * - {Methods for Working with JSON}[rdoc-ref:Range@Methods+for+Working+with+JSON]
  *
  * === Methods for Creating a \Range
  *
@@ -2650,6 +2651,16 @@ range_overlap(VALUE range, VALUE other)
  * - #inspect: Returns a string representation of +self+ (uses #inspect).
  * - #to_a (aliased as #entries): Returns elements of +self+ in an array.
  * - #to_s: Returns a string representation of +self+ (uses #to_s).
+ *
+ * === Methods for Working with \JSON
+ *
+ * - ::json_create: Returns a new \Range object constructed from the given object.
+ * - #as_json: Returns a 2-element hash representing +self+.
+ * - #to_json: Returns a \JSON string representing +self+.
+ *
+ * To make these methods available:
+ *
+ *   require 'json/add/range'
  *
  */
 

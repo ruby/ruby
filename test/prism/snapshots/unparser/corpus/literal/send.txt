@@ -398,6 +398,7 @@
         │   │   │   ├── block: ∅
         │   │   │   ├── flags: variable_call
         │   │   │   └── name: :foo
+        │   │   ├── then_keyword_loc: ∅
         │   │   ├── statements: ∅
         │   │   ├── consequent: ∅
         │   │   └── end_keyword_loc: (36,0)-(36,3) = "end"
@@ -1003,7 +1004,7 @@
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: :foo
-        ├── @ CallNode (location: (58,0)-(58,12))
+        ├── @ CallNode (location: (58,0)-(58,13))
         │   ├── receiver:
         │   │   @ CallNode (location: (58,0)-(58,3))
         │   │   ├── receiver: ∅
@@ -1177,7 +1178,7 @@
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: :bar
-        ├── @ CallNode (location: (62,0)-(62,18))
+        ├── @ CallNode (location: (62,0)-(62,19))
         │   ├── receiver:
         │   │   @ CallNode (location: (62,0)-(62,3))
         │   │   ├── receiver: ∅
@@ -1363,7 +1364,7 @@
         │   ├── block: ∅
         │   ├── flags: ∅
         │   └── name: :bar
-        ├── @ CallNode (location: (66,0)-(66,26))
+        ├── @ CallNode (location: (66,0)-(66,27))
         │   ├── receiver:
         │   │   @ CallNode (location: (66,0)-(66,3))
         │   │   ├── receiver: ∅

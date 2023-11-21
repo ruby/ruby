@@ -1727,6 +1727,11 @@ eom
     assert_valid_syntax("tap {a = (break unless true)}")
   end
 
+  def test_value_expr_in_singleton
+    mesg = /void value expression/
+    assert_syntax_error("class << (return); end", mesg)
+  end
+
   def test_tautological_condition
     assert_valid_syntax("def f() return if false and invalid; nil end")
     assert_valid_syntax("def f() return unless true or invalid; nil end")

@@ -28,6 +28,7 @@
             │   ├── closing_loc: (3,7)-(3,8) = "/"
             │   ├── unescaped: "wat"
             │   └── flags: ∅
+            ├── then_keyword_loc: ∅
             ├── statements: ∅
             ├── consequent: ∅
             └── end_keyword_loc: (3,10)-(3,13) = "end"

@@ -373,11 +373,8 @@ module Bundler
     def replace_entrypoints(specs)
       specs_by_name = add_default_gems_to(specs)
 
-      if defined?(::Gem::BUNDLED_GEMS)
-        replace_require(specs)
-      else
-        reverse_rubygems_kernel_mixin
-      end
+      reverse_rubygems_kernel_mixin
+      replace_require(specs) if defined?(::Gem::BUNDLED_GEMS)
       replace_gem(specs, specs_by_name)
       stub_rubygems(specs)
       replace_bin_path(specs_by_name)
@@ -467,11 +464,9 @@ module Bundler
       Gem::Specification.all = specs
     end
 
-    def fetch_specs(remote, name)
+    def fetch_specs(remote, name, fetcher)
       require "rubygems/remote_fetcher"
       path = remote.uri.to_s + "#{name}.#{Gem.marshal_version}.gz"
-      fetcher = gem_remote_fetcher
-      fetcher.headers = { "X-Gemfile-Source" => remote.original_uri.to_s } if remote.original_uri
       string = fetcher.fetch_path(path)
       specs = Bundler.safe_load_marshal(string)
       raise MarshalError, "Specs #{name} from #{remote} is expected to be an Array but was unexpected class #{specs.class}" unless specs.is_a?(Array)
@@ -481,18 +476,16 @@ module Bundler
       raise unless name == "prerelease_specs"
     end
 
-    def fetch_all_remote_specs(remote)
-      specs = fetch_specs(remote, "specs")
-      pres = fetch_specs(remote, "prerelease_specs") || []
+    def fetch_all_remote_specs(remote, gem_remote_fetcher)
+      specs = fetch_specs(remote, "specs", gem_remote_fetcher)
+      pres = fetch_specs(remote, "prerelease_specs", gem_remote_fetcher) || []
 
       specs.concat(pres)
     end
 
-    def download_gem(spec, uri, cache_dir)
+    def download_gem(spec, uri, cache_dir, fetcher)
       require "rubygems/remote_fetcher"
       uri = Bundler.settings.mirror_for(uri)
-      fetcher = gem_remote_fetcher
-      fetcher.headers = { "X-Gemfile-Source" => spec.remote.original_uri.to_s } if spec.remote.original_uri
       Bundler::Retry.new("download gem from #{uri}").attempts do
         gem_file_name = spec.file_name
         local_gem_path = File.join cache_dir, gem_file_name
@@ -517,11 +510,6 @@ module Bundler
       end
     rescue Gem::RemoteFetcher::FetchError => e
       raise Bundler::HTTPError, "Could not download gem from #{uri} due to underlying error <#{e.message}>"
-    end
-
-    def gem_remote_fetcher
-      require "rubygems/remote_fetcher"
-      Gem::RemoteFetcher.fetcher
     end
 
     def build(spec, skip_validation = false)

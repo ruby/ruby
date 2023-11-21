@@ -73,12 +73,9 @@ module Prism
       end
 
       def load_encoding
-        Encoding.find(io.read(load_varint))
-      end
-
-      def load_force_encoding
-        @encoding = load_encoding
+        @encoding = Encoding.find(io.read(load_varint))
         @input = input.force_encoding(@encoding).freeze
+        @encoding
       end
 
       def load_start_line
@@ -121,10 +118,7 @@ module Prism
         encoding = load_encoding
         load_start_line
         comments, magic_comments, errors, warnings = load_metadata
-
-        if encoding != @encoding
-          tokens.each { |token,| token.value.force_encoding(encoding) }
-        end
+        tokens.each { |token,| token.value.force_encoding(encoding) }
 
         raise "Expected to consume all bytes while deserializing" unless @io.eof?
         Prism::ParseResult.new(tokens, comments, magic_comments, errors, warnings, @source)
@@ -132,7 +126,7 @@ module Prism
 
       def load_nodes
         load_header
-        load_force_encoding
+        load_encoding
         load_start_line
 
         comments, magic_comments, errors, warnings = load_metadata

@@ -96,6 +96,7 @@
         │       ├── if_keyword_loc: ∅
         │       ├── predicate:
         │       │   @ NilNode (location: (14,11)-(14,14))
+        │       ├── then_keyword_loc: (14,15)-(14,16) = "?"
         │       ├── statements:
         │       │   @ StatementsNode (location: (14,17)-(14,18))
         │       │   └── body: (length: 1)
@@ -266,6 +267,7 @@
         │   │   │   └── rescue_expression:
         │   │   │       @ NilNode (location: (22,18)-(22,21))
         │   │   └── operator_loc: (22,5)-(22,6) = "="
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (23,2)-(23,5))
         │   │   └── body: (length: 1)
@@ -289,26 +291,26 @@
         │   ├── body:
         │   │   @ StatementsNode (location: (26,18)-(26,44))
         │   │   └── body: (length: 1)
-        │   │       └── @ CallNode (location: (26,18)-(26,44))
-        │   │           ├── receiver: ∅
-        │   │           ├── call_operator_loc: ∅
-        │   │           ├── message_loc: (26,18)-(26,30) = "other_method"
-        │   │           ├── opening_loc: ∅
-        │   │           ├── arguments:
-        │   │           │   @ ArgumentsNode (location: (26,31)-(26,44))
-        │   │           │   ├── arguments: (length: 1)
-        │   │           │   │   └── @ RescueModifierNode (location: (26,31)-(26,44))
-        │   │           │   │       ├── expression:
-        │   │           │   │       │   @ IntegerNode (location: (26,31)-(26,33))
-        │   │           │   │       │   └── flags: decimal
-        │   │           │   │       ├── keyword_loc: (26,34)-(26,40) = "rescue"
-        │   │           │   │       └── rescue_expression:
-        │   │           │   │           @ NilNode (location: (26,41)-(26,44))
-        │   │           │   └── flags: ∅
-        │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           ├── flags: ∅
-        │   │           └── name: :other_method
+        │   │       └── @ RescueModifierNode (location: (26,18)-(26,44))
+        │   │           ├── expression:
+        │   │           │   @ CallNode (location: (26,18)-(26,33))
+        │   │           │   ├── receiver: ∅
+        │   │           │   ├── call_operator_loc: ∅
+        │   │           │   ├── message_loc: (26,18)-(26,30) = "other_method"
+        │   │           │   ├── opening_loc: ∅
+        │   │           │   ├── arguments:
+        │   │           │   │   @ ArgumentsNode (location: (26,31)-(26,33))
+        │   │           │   │   ├── arguments: (length: 1)
+        │   │           │   │   │   └── @ IntegerNode (location: (26,31)-(26,33))
+        │   │           │   │   │       └── flags: decimal
+        │   │           │   │   └── flags: ∅
+        │   │           │   ├── closing_loc: ∅
+        │   │           │   ├── block: ∅
+        │   │           │   ├── flags: ∅
+        │   │           │   └── name: :other_method
+        │   │           ├── keyword_loc: (26,34)-(26,40) = "rescue"
+        │   │           └── rescue_expression:
+        │   │               @ NilNode (location: (26,41)-(26,44))
         │   ├── locals: []
         │   ├── def_keyword_loc: (26,0)-(26,3) = "def"
         │   ├── operator_loc: ∅

@@ -3,7 +3,7 @@
 └── statements:
     @ StatementsNode (location: (1,0)-(6,3))
     └── body: (length: 1)
-        └── @ CaseNode (location: (1,0)-(6,3))
+        └── @ CaseMatchNode (location: (1,0)-(6,3))
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
             │   ├── opening_loc: (1,5)-(1,6) = ":"
@@ -17,6 +17,7 @@
             │   │   │   ├── if_keyword_loc: (2,5)-(2,7) = "if"
             │   │   │   ├── predicate:
             │   │   │   │   @ TrueNode (location: (2,8)-(2,12))
+            │   │   │   ├── then_keyword_loc: ∅
             │   │   │   ├── statements:
             │   │   │   │   @ StatementsNode (location: (2,3)-(2,4))
             │   │   │   │   └── body: (length: 1)
@@ -40,6 +41,7 @@
             │       │   ├── keyword_loc: (4,5)-(4,11) = "unless"
             │       │   ├── predicate:
             │       │   │   @ FalseNode (location: (4,12)-(4,17))
+            │       │   ├── then_keyword_loc: ∅
             │       │   ├── statements:
             │       │   │   @ StatementsNode (location: (4,3)-(4,4))
             │       │   │   └── body: (length: 1)

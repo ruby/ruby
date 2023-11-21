@@ -549,6 +549,8 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             converted_keyword_hash = check_kwrestarg(converted_keyword_hash, &kw_flag);
             rb_ary_push(args->rest, converted_keyword_hash);
             keyword_hash = Qnil;
+        } else {
+            keyword_hash = converted_keyword_hash;
         }
 
         int len = RARRAY_LENINT(args->rest);

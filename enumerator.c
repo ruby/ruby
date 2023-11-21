@@ -256,23 +256,15 @@ struct enum_product {
 
 VALUE rb_cArithSeq;
 
-#define enumerator_free RUBY_TYPED_DEFAULT_FREE
-
-static size_t
-enumerator_memsize(const void *p)
-{
-    return sizeof(struct enumerator);
-}
-
 static const rb_data_type_t enumerator_data_type = {
     "enumerator",
     {
         REFS_LIST_PTR(enumerator_refs),
-        enumerator_free,
-        enumerator_memsize,
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL, // Nothing allocated externally, so don't need a memsize function
         NULL,
     },
-    0, NULL, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_DECL_MARKING
+    0, NULL, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct enumerator *
@@ -1909,7 +1901,7 @@ lazy_add_method(VALUE obj, int argc, VALUE *argv, VALUE args, VALUE memo,
     rb_ary_push(new_procs, entry_obj);
 
     new_obj = enumerator_init_copy(enumerator_allocate(rb_cLazy), obj);
-    new_e = DATA_PTR(new_obj);
+    new_e = RTYPEDDATA_GET_DATA(new_obj);
     new_e->obj = new_generator;
     new_e->procs = new_procs;
 

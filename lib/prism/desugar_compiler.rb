@@ -188,6 +188,7 @@ module Prism
       IfNode.new(
         node.operator_loc,
         DefinedNode.new(nil, read_class.new(*arguments, node.name_loc), nil, node.operator_loc, node.name_loc),
+        node.operator_loc,
         StatementsNode.new([read_class.new(*arguments, node.name_loc)], node.location),
         ElseNode.new(
           node.operator_loc,

@@ -563,15 +563,15 @@ module Prism
       end
       RUBY
       assert_errors expected, source, [
-        ["Token reserved for a numbered parameter", 8..10],
-        ["Token reserved for a numbered parameter", 14..16],
-        ["Token reserved for a numbered parameter", 20..22],
-        ["Token reserved for a numbered parameter", 26..28],
-        ["Token reserved for a numbered parameter", 32..34],
-        ["Token reserved for a numbered parameter", 40..42],
-        ["Token reserved for a numbered parameter", 46..48],
-        ["Token reserved for a numbered parameter", 52..54],
-        ["Token reserved for a numbered parameter", 58..60],
+        ["_1 is reserved for a numbered parameter", 8..10],
+        ["_2 is reserved for a numbered parameter", 14..16],
+        ["_3 is reserved for a numbered parameter", 20..22],
+        ["_4 is reserved for a numbered parameter", 26..28],
+        ["_5 is reserved for a numbered parameter", 32..34],
+        ["_6 is reserved for a numbered parameter", 40..42],
+        ["_7 is reserved for a numbered parameter", 46..48],
+        ["_8 is reserved for a numbered parameter", 52..54],
+        ["_9 is reserved for a numbered parameter", 58..60],
       ]
     end
 
@@ -937,7 +937,7 @@ module Prism
     end
 
     def test_case_without_when_clauses_errors_on_else_clause
-      expected = CaseNode(
+      expected = CaseMatchNode(
         SymbolNode(Location(), Location(), nil, "a"),
         [],
         ElseNode(Location(), nil, Location()),
@@ -1225,6 +1225,11 @@ module Prism
       assert_error_messages "Foo::foo,", error_messages
       assert_error_messages "foo[foo],", error_messages
       assert_error_messages "(foo, bar)", error_messages
+      assert_error_messages "foo((foo, bar))", error_messages
+      assert_error_messages "foo((*))", error_messages
+      assert_error_messages "foo(((foo, bar), *))", error_messages
+      assert_error_messages "(foo, bar) + 1", error_messages
+      assert_error_messages "(foo, bar) in baz", error_messages
     end
 
     def test_call_with_block_and_write
@@ -1253,14 +1258,21 @@ module Prism
 
     def test_writing_numbered_parameter
       assert_errors expression("-> { _1 = 0 }"), "-> { _1 = 0 }", [
-        ["Token reserved for a numbered parameter", 5..7]
+        ["_1 is reserved for a numbered parameter", 5..7]
       ]
     end
 
     def test_targeting_numbered_parameter
       assert_errors expression("-> { _1, = 0 }"), "-> { _1, = 0 }", [
-        ["Token reserved for a numbered parameter", 5..7]
+        ["_1 is reserved for a numbered parameter", 5..7]
       ]
+    end
+
+    def test_defining_numbered_parameter
+      error_messages = ["_1 is reserved for a numbered parameter"]
+
+      assert_error_messages "def _1; end", error_messages
+      assert_error_messages "def self._1; end", error_messages
     end
 
     def test_double_scope_numbered_parameters
@@ -1312,7 +1324,7 @@ module Prism
     def test_numbered_parameters_in_block_arguments
       source = "foo { |_1| }"
       assert_errors expression(source), source, [
-        ["Token reserved for a numbered parameter", 7..9],
+        ["_1 is reserved for a numbered parameter", 7..9],
       ]
     end
 
@@ -1398,7 +1410,7 @@ module Prism
         /(?<_1>)/ =~ a
       RUBY
 
-      message = "Token reserved for a numbered parameter"
+      message = "_1 is reserved for a numbered parameter"
       assert_errors expression(source), source, [
         [message, 5..7],
         [message, 13..15],
@@ -1452,6 +1464,247 @@ module Prism
       assert_errors expression(source), source, [
         [message, 3..3],
         [message, 9..9]
+      ]
+    end
+
+    def test_check_value_expression
+      source = <<~RUBY
+        1 => ^(return)
+        while true
+          1 => ^(break)
+          1 => ^(next)
+          1 => ^(redo)
+          1 => ^(retry)
+          1 => ^(2 => a)
+        end
+        1 => ^(if 1; (return) else (return) end)
+        1 => ^(unless 1; (return) else (return) end)
+      RUBY
+      message = 'Unexpected void value expression'
+      assert_errors expression(source), source, [
+        [message, 7..13],
+        [message, 35..40],
+        [message, 51..55],
+        [message, 66..70],
+        [message, 81..86],
+        [message, 97..103],
+        [message, 123..129],
+        [message, 168..174],
+      ], compare_ripper: false # Ripper does not check 'void value expression'.
+    end
+
+    def test_void_value_expression_in_statement
+      source = <<~RUBY
+        if (return)
+        end
+        unless (return)
+        end
+        while (return)
+        end
+        until (return)
+        end
+        case (return)
+        when 1
+        end
+        class A < (return)
+        end
+        for x in (return)
+        end
+      RUBY
+      message = 'Unexpected void value expression'
+      assert_errors expression(source), source, [
+        [message, 4..10],
+        [message, 24..30],
+        [message, 43..49],
+        [message, 62..68],
+        [message, 80..86],
+        [message, 110..116],
+        [message, 132..138],
+      ], compare_ripper: false # Ripper does not check 'void value expression'.
+    end
+
+    def test_void_value_expression_in_def
+      source = <<~RUBY
+        def (return).x
+        end
+        def x(a = return)
+        end
+        def x(a: return)
+        end
+      RUBY
+      message = 'Unexpected void value expression'
+      assert_errors expression(source), source, [
+        [message, 5..11],
+        [message, 29..35],
+        [message, 50..56],
+      ], compare_ripper: false # Ripper does not check 'void value expression'.
+    end
+
+    def test_void_value_expression_in_assignment
+      source = <<~RUBY
+        a = return
+        a = 1, return
+        a, b = return, 1
+        a, b = 1, *return
+      RUBY
+      message = 'Unexpected void value expression'
+      assert_errors expression(source), source, [
+        [message, 4..10],
+        [message, 18..24],
+        [message, 32..38],
+        [message, 53..59],
+      ], compare_ripper: false # Ripper does not check 'void value expression'.
+    end
+
+    def test_void_value_expression_in_modifier
+      source = <<~RUBY
+        1 if (return)
+        1 unless (return)
+        1 while (return)
+        1 until (return)
+        (return) => a
+        (return) in a
+      RUBY
+      message = 'Unexpected void value expression'
+      assert_errors expression(source), source, [
+        [message, 6..12],
+        [message, 24..30],
+        [message, 41..47],
+        [message, 58..64],
+        [message, 67..73],
+        [message, 81..87]
+      ], compare_ripper: false # Ripper does not check 'void value expression'.
+    end
+
+    def test_void_value_expression_in_expression
+      source = <<~RUBY
+        (return) ? 1 : 1
+        (return)..1
+        1..(return)
+        (return)...1
+        1...(return)
+        (..(return))
+        (...(return))
+        ((return)..)
+        ((return)...)
+      RUBY
+      message = 'Unexpected void value expression'
+      assert_errors expression(source), source, [
+        [message, 1..7],
+        [message, 18..24],
+        [message, 33..39],
+        [message, 42..48],
+        [message, 59..65],
+        [message, 71..77],
+        [message, 85..91],
+        [message, 96..102],
+        [message, 109..115]
+      ], compare_ripper: false # Ripper does not check 'void value expression'.
+    end
+
+    def test_void_value_expression_in_hash
+      source = <<~RUBY
+        { return => 1 }
+        { 1 => return }
+        { a: return }
+        { **return }
+      RUBY
+      message = 'Unexpected void value expression'
+      assert_errors expression(source), source, [
+        [message, 2..8],
+        [message, 23..29],
+        [message, 37..43],
+        [message, 50..56],
+      ], compare_ripper: false # Ripper does not check 'void value expression'.
+    end
+
+    def test_void_value_expression_in_call
+      source = <<~RUBY
+        (return).foo
+        (return).(1)
+        (return)[1]
+        (return)[1] = 2
+      RUBY
+      message = 'Unexpected void value expression'
+      assert_errors expression(source), source, [
+        [message, 1..7],
+        [message, 14..20],
+        [message, 27..33],
+        [message, 39..45],
+      ], compare_ripper: false # Ripper does not check 'void value expression'.
+    end
+
+    def test_void_value_expression_in_arguments
+      source = <<~RUBY
+        foo(return)
+        foo(1, return)
+        foo(*return)
+        foo(**return)
+        foo(&return)
+        foo(return => 1)
+        foo(:a => return)
+        foo(a: return)
+      RUBY
+      message = 'Unexpected void value expression'
+      assert_errors expression(source), source, [
+        [message, 4..10],
+        [message, 19..25],
+        [message, 32..38],
+        [message, 46..52],
+        [message, 59..65],
+        [message, 71..77],
+        [message, 94..100],
+        [message, 109..115],
+      ], compare_ripper: false # Ripper does not check 'void value expression'.
+    end
+
+    def test_void_value_expression_in_unary_call
+      source = <<~RUBY
+        +(return)
+        not return
+      RUBY
+      message = 'Unexpected void value expression'
+      assert_errors expression(source), source, [
+        [message, 2..8],
+        [message, 14..20],
+      ], compare_ripper: false # Ripper does not check 'void value expression'.
+    end
+
+    def test_void_value_expression_in_binary_call
+      source = <<~RUBY
+        1 + (return)
+        (return) + 1
+        1 and (return)
+        (return) and 1
+        1 or (return)
+        (return) or 1
+      RUBY
+      message = 'Unexpected void value expression'
+      assert_errors expression(source), source, [
+        [message, 5..11],
+        [message, 14..20],
+        [message, 42..48],
+        [message, 71..77],
+      ], compare_ripper: false # Ripper does not check 'void value expression'.
+    end
+
+    def test_trailing_comma_in_calls
+      assert_errors expression("foo 1,"), "foo 1,", [
+        ["Expected an argument", 5..6]
+      ]
+    end
+
+    def test_argument_after_ellipsis
+      source = 'def foo(...); foo(..., 1); end'
+      assert_errors expression(source), source, [
+        ['Unexpected argument after `...`', 23..24]
+      ]
+    end
+
+    def test_ellipsis_in_no_paren_call
+      source = 'def foo(...); foo 1, ...; end'
+      assert_errors expression(source), source, [
+        ['Unexpected `...` in an non-parenthesized call', 21..24]
       ]
     end
 

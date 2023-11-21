@@ -1,8 +1,8 @@
-@ ProgramNode (location: (1,0)-(33,14))
-├── locals: [:foo, :ab]
+@ ProgramNode (location: (1,0)-(40,24))
+├── locals: [:foo, :ab, :abc, :a]
 └── statements:
-    @ StatementsNode (location: (1,0)-(33,14))
-    └── body: (length: 16)
+    @ StatementsNode (location: (1,0)-(40,24))
+    └── body: (length: 21)
         ├── @ CallNode (location: (1,0)-(1,9))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -116,7 +116,10 @@
         │   │   │   │   ├── block: ∅
         │   │   │   │   ├── flags: ∅
         │   │   │   │   └── name: :=~
-        │   │   │   └── locals: [:foo]
+        │   │   │   └── targets: (length: 1)
+        │   │   │       └── @ LocalVariableTargetNode (location: (11,5)-(11,8))
+        │   │   │           ├── name: :foo
+        │   │   │           └── depth: 0
         │   │   └── @ LocalVariableReadNode (location: (11,23)-(11,26))
         │   │       ├── name: :foo
         │   │       └── depth: 0
@@ -237,7 +240,130 @@
         │   │   ├── block: ∅
         │   │   ├── flags: ∅
         │   │   └── name: :=~
-        │   └── locals: [:ab]
-        └── @ LocalVariableReadNode (location: (33,12)-(33,14))
-            ├── name: :ab
-            └── depth: 0
+        │   └── targets: (length: 1)
+        │       └── @ LocalVariableTargetNode (location: (32,0)-(33,4))
+        │           ├── name: :ab
+        │           └── depth: 0
+        ├── @ LocalVariableReadNode (location: (33,12)-(33,14))
+        │   ├── name: :ab
+        │   └── depth: 0
+        ├── @ MatchWriteNode (location: (35,0)-(35,24))
+        │   ├── call:
+        │   │   @ CallNode (location: (35,0)-(35,24))
+        │   │   ├── receiver:
+        │   │   │   @ RegularExpressionNode (location: (35,0)-(35,18))
+        │   │   │   ├── opening_loc: (35,0)-(35,1) = "/"
+        │   │   │   ├── content_loc: (35,1)-(35,17) = "(?<abc>)(?<abc>)"
+        │   │   │   ├── closing_loc: (35,17)-(35,18) = "/"
+        │   │   │   ├── unescaped: "(?<abc>)(?<abc>)"
+        │   │   │   └── flags: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── message_loc: (35,19)-(35,21) = "=~"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments:
+        │   │   │   @ ArgumentsNode (location: (35,22)-(35,24))
+        │   │   │   ├── arguments: (length: 1)
+        │   │   │   │   └── @ StringNode (location: (35,22)-(35,24))
+        │   │   │   │       ├── flags: ∅
+        │   │   │   │       ├── opening_loc: (35,22)-(35,23) = "\""
+        │   │   │   │       ├── content_loc: (35,23)-(35,23) = ""
+        │   │   │   │       ├── closing_loc: (35,23)-(35,24) = "\""
+        │   │   │   │       └── unescaped: ""
+        │   │   │   └── flags: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   ├── flags: ∅
+        │   │   └── name: :=~
+        │   └── targets: (length: 1)
+        │       └── @ LocalVariableTargetNode (location: (35,4)-(35,7))
+        │           ├── name: :abc
+        │           └── depth: 0
+        ├── @ LocalVariableReadNode (location: (35,26)-(35,29))
+        │   ├── name: :abc
+        │   └── depth: 0
+        ├── @ CallNode (location: (37,0)-(37,16))
+        │   ├── receiver:
+        │   │   @ RegularExpressionNode (location: (37,0)-(37,10))
+        │   │   ├── opening_loc: (37,0)-(37,1) = "/"
+        │   │   ├── content_loc: (37,1)-(37,9) = "(?<a b>)"
+        │   │   ├── closing_loc: (37,9)-(37,10) = "/"
+        │   │   ├── unescaped: "(?<a b>)"
+        │   │   └── flags: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── message_loc: (37,11)-(37,13) = "=~"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (37,14)-(37,16))
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ StringNode (location: (37,14)-(37,16))
+        │   │   │       ├── flags: ∅
+        │   │   │       ├── opening_loc: (37,14)-(37,15) = "\""
+        │   │   │       ├── content_loc: (37,15)-(37,15) = ""
+        │   │   │       ├── closing_loc: (37,15)-(37,16) = "\""
+        │   │   │       └── unescaped: ""
+        │   │   └── flags: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   ├── flags: ∅
+        │   └── name: :=~
+        ├── @ LocalVariableWriteNode (location: (39,0)-(39,5))
+        │   ├── name: :a
+        │   ├── depth: 0
+        │   ├── name_loc: (39,0)-(39,1) = "a"
+        │   ├── value:
+        │   │   @ IntegerNode (location: (39,4)-(39,5))
+        │   │   └── flags: decimal
+        │   └── operator_loc: (39,2)-(39,3) = "="
+        └── @ CallNode (location: (40,0)-(40,24))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── message_loc: (40,0)-(40,3) = "tap"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block:
+            │   @ BlockNode (location: (40,4)-(40,24))
+            │   ├── locals: []
+            │   ├── parameters: ∅
+            │   ├── body:
+            │   │   @ StatementsNode (location: (40,6)-(40,22))
+            │   │   └── body: (length: 1)
+            │   │       └── @ MatchWriteNode (location: (40,6)-(40,22))
+            │   │           ├── call:
+            │   │           │   @ CallNode (location: (40,6)-(40,22))
+            │   │           │   ├── receiver:
+            │   │           │   │   @ RegularExpressionNode (location: (40,6)-(40,14))
+            │   │           │   │   ├── opening_loc: (40,6)-(40,7) = "/"
+            │   │           │   │   ├── content_loc: (40,7)-(40,13) = "(?<a>)"
+            │   │           │   │   ├── closing_loc: (40,13)-(40,14) = "/"
+            │   │           │   │   ├── unescaped: "(?<a>)"
+            │   │           │   │   └── flags: ∅
+            │   │           │   ├── call_operator_loc: ∅
+            │   │           │   ├── message_loc: (40,15)-(40,17) = "=~"
+            │   │           │   ├── opening_loc: ∅
+            │   │           │   ├── arguments:
+            │   │           │   │   @ ArgumentsNode (location: (40,18)-(40,22))
+            │   │           │   │   ├── arguments: (length: 1)
+            │   │           │   │   │   └── @ CallNode (location: (40,18)-(40,22))
+            │   │           │   │   │       ├── receiver: ∅
+            │   │           │   │   │       ├── call_operator_loc: ∅
+            │   │           │   │   │       ├── message_loc: (40,18)-(40,22) = "to_s"
+            │   │           │   │   │       ├── opening_loc: ∅
+            │   │           │   │   │       ├── arguments: ∅
+            │   │           │   │   │       ├── closing_loc: ∅
+            │   │           │   │   │       ├── block: ∅
+            │   │           │   │   │       ├── flags: variable_call
+            │   │           │   │   │       └── name: :to_s
+            │   │           │   │   └── flags: ∅
+            │   │           │   ├── closing_loc: ∅
+            │   │           │   ├── block: ∅
+            │   │           │   ├── flags: ∅
+            │   │           │   └── name: :=~
+            │   │           └── targets: (length: 1)
+            │   │               └── @ LocalVariableTargetNode (location: (40,10)-(40,11))
+            │   │                   ├── name: :a
+            │   │                   └── depth: 1
+            │   ├── opening_loc: (40,4)-(40,5) = "{"
+            │   └── closing_loc: (40,23)-(40,24) = "}"
+            ├── flags: ∅
+            └── name: :tap

@@ -29,6 +29,7 @@
             │   │               │   │   ├── value_loc: (1,9)-(1,10) = "c"
             │   │               │   │   ├── closing_loc: ∅
             │   │               │   │   └── unescaped: "c"
+            │   │               │   ├── then_keyword_loc: ∅
             │   │               │   ├── statements:
             │   │               │   │   @ StatementsNode (location: (2,0)-(2,1))
             │   │               │   │   └── body: (length: 1)

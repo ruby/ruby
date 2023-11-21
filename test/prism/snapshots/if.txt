@@ -7,6 +7,7 @@
         │   ├── if_keyword_loc: (1,0)-(1,2) = "if"
         │   ├── predicate:
         │   │   @ TrueNode (location: (1,3)-(1,7))
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (1,9)-(1,10))
         │   │   └── body: (length: 1)
@@ -18,6 +19,7 @@
         │   ├── if_keyword_loc: (3,0)-(3,2) = "if"
         │   ├── predicate:
         │   │   @ TrueNode (location: (3,3)-(3,7))
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (4,0)-(4,1))
         │   │   └── body: (length: 1)
@@ -37,6 +39,7 @@
         │   ├── if_keyword_loc: (6,0)-(6,2) = "if"
         │   ├── predicate:
         │   │   @ TrueNode (location: (6,3)-(6,7))
+        │   ├── then_keyword_loc: (6,8)-(6,12) = "then"
         │   ├── statements:
         │   │   @ StatementsNode (location: (6,13)-(6,17))
         │   │   └── body: (length: 1)
@@ -46,6 +49,7 @@
         │   │   ├── if_keyword_loc: (6,18)-(6,23) = "elsif"
         │   │   ├── predicate:
         │   │   │   @ FalseNode (location: (6,24)-(6,29))
+        │   │   ├── then_keyword_loc: (6,30)-(6,34) = "then"
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (6,35)-(6,40))
         │   │   │   └── body: (length: 1)
@@ -55,6 +59,7 @@
         │   │   │   ├── if_keyword_loc: (6,41)-(6,46) = "elsif"
         │   │   │   ├── predicate:
         │   │   │   │   @ NilNode (location: (6,47)-(6,50))
+        │   │   │   ├── then_keyword_loc: (6,51)-(6,55) = "then"
         │   │   │   ├── statements:
         │   │   │   │   @ StatementsNode (location: (6,56)-(6,59))
         │   │   │   │   └── body: (length: 1)
@@ -74,6 +79,7 @@
         │   ├── if_keyword_loc: (8,2)-(8,4) = "if"
         │   ├── predicate:
         │   │   @ TrueNode (location: (8,5)-(8,9))
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (8,0)-(8,1))
         │   │   └── body: (length: 1)
@@ -85,6 +91,7 @@
         │   ├── if_keyword_loc: (10,6)-(10,8) = "if"
         │   ├── predicate:
         │   │   @ TrueNode (location: (10,9)-(10,13))
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (10,0)-(10,5))
         │   │   └── body: (length: 1)
@@ -97,6 +104,7 @@
         │   ├── if_keyword_loc: (12,5)-(12,7) = "if"
         │   ├── predicate:
         │   │   @ TrueNode (location: (12,8)-(12,12))
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (12,0)-(12,4))
         │   │   └── body: (length: 1)
@@ -109,6 +117,7 @@
         │   ├── if_keyword_loc: (14,7)-(14,9) = "if"
         │   ├── predicate:
         │   │   @ TrueNode (location: (14,10)-(14,14))
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (14,0)-(14,6))
         │   │   └── body: (length: 1)
@@ -130,6 +139,7 @@
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
         │   │   └── name: :exit_loop
+        │   ├── then_keyword_loc: (16,13)-(16,17) = "then"
         │   ├── statements:
         │   │   @ StatementsNode (location: (16,18)-(16,26))
         │   │   └── body: (length: 1)
@@ -156,6 +166,7 @@
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
         │   │   └── name: :foo
+        │   ├── then_keyword_loc: (19,0)-(19,4) = "then"
         │   ├── statements:
         │   │   @ StatementsNode (location: (19,5)-(19,8))
         │   │   └── body: (length: 1)
@@ -184,6 +195,7 @@
         │   │   ├── block: ∅
         │   │   ├── flags: variable_call
         │   │   └── name: :c
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (22,0)-(22,6))
         │   │   └── body: (length: 1)
@@ -200,6 +212,7 @@
         │   │           │   ├── block: ∅
         │   │           │   ├── flags: variable_call
         │   │           │   └── name: :b
+        │   │           ├── then_keyword_loc: ∅
         │   │           ├── statements:
         │   │           │   @ StatementsNode (location: (22,0)-(22,1))
         │   │           │   └── body: (length: 1)
@@ -221,6 +234,7 @@
         │   ├── if_keyword_loc: (24,0)-(24,2) = "if"
         │   ├── predicate:
         │   │   @ TrueNode (location: (24,3)-(24,7))
+        │   ├── then_keyword_loc: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (25,2)-(25,6))
         │   │   └── body: (length: 1)
@@ -285,6 +299,7 @@
         │   │   │   @ IntegerNode (location: (29,11)-(29,12))
         │   │   │   └── flags: decimal
         │   │   └── operator_loc: (29,8)-(29,10) = "in"
+        │   ├── then_keyword_loc: ∅
         │   ├── statements: ∅
         │   ├── consequent:
         │   │   @ IfNode (location: (30,0)-(31,3))
@@ -306,6 +321,7 @@
         │   │   │   │   @ ConstantReadNode (location: (30,14)-(30,15))
         │   │   │   │   └── name: :B
         │   │   │   └── operator_loc: (30,11)-(30,13) = "in"
+        │   │   ├── then_keyword_loc: ∅
         │   │   ├── statements: ∅
         │   │   ├── consequent: ∅
         │   │   └── end_keyword_loc: (31,0)-(31,3) = "end"
@@ -315,6 +331,7 @@
             ├── predicate:
             │   @ IntegerNode (location: (33,3)-(33,4))
             │   └── flags: decimal
+            ├── then_keyword_loc: ∅
             ├── statements:
             │   @ StatementsNode (location: (34,2)-(35,5))
             │   └── body: (length: 1)
@@ -355,6 +372,7 @@
             │   ├── predicate:
             │   │   @ IntegerNode (location: (36,6)-(36,7))
             │   │   └── flags: decimal
+            │   ├── then_keyword_loc: ∅
             │   ├── statements:
             │   │   @ StatementsNode (location: (37,2)-(38,5))
             │   │   └── body: (length: 1)

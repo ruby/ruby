@@ -268,6 +268,28 @@ module Prism
 
     def test_LocalVariableWriteNode
       assert_prism_eval("pit = 1")
+      assert_prism_eval(<<-CODE)
+        a = 0
+        [].each do
+          a = 1
+        end
+        a
+      CODE
+
+      assert_prism_eval(<<-CODE)
+        a = 1
+        d = 1
+        [1].each do
+          b = 2
+          a = 2
+          [2].each do
+            c = 3
+            d = 4
+            a = 2
+          end
+        end
+        [a, d]
+      CODE
     end
 
     def test_MatchWriteNode
@@ -328,6 +350,14 @@ module Prism
 
     def test_LocalVariableTargetNode
       assert_prism_eval("pit, pit1 = 1")
+      assert_prism_eval(<<-CODE)
+        a = 1
+        [1].each do
+          c = 2
+          a, b = 2
+        end
+        a
+      CODE
     end
 
     def test_MultiTargetNode
@@ -427,6 +457,8 @@ module Prism
 
       assert_prism_eval('/pit/me')
       assert_prism_eval('/pit/ne')
+
+      assert_prism_eval('2.times.map { /#{1}/o }')
     end
 
     def test_StringConcatNode
@@ -732,6 +764,10 @@ module Prism
     def test_YieldNode
       assert_prism_eval("def prism_test_yield_node; yield; end")
       assert_prism_eval("def prism_test_yield_node; yield 1, 2; end")
+
+      # Test case where there's a call directly after the yield call
+      assert_prism_eval("def prism_test_yield_node; yield; 1; end")
+      assert_prism_eval("def prism_test_yield_node; yield 1, 2; 1; end")
     end
 
     ############################################################################
@@ -862,6 +898,31 @@ module Prism
     end
 
     def test_ForwardingArgumentsNode
+      # http://ci.rvm.jp/results/trunk-iseq_binary@ruby-sp2-docker/4779277
+      #
+      # expected:
+      # == disasm: #<ISeq:prism_test_forwarding_arguments_node1@<compiled>:2 (2,8)-(4,11)>
+      # local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: 1])
+      # [ 1] "..."@0
+      # 0000 putself                                                          (   3)
+      # 0001 getlocal_WC_0                          ?@-2
+      # 0003 splatarray                             false
+      # 0005 getblockparamproxy                     ?@-1, 0
+      # 0008 send                                   <calldata!mid:prism_test_forwarding_arguments_node, argc:1, ARGS_SPLAT|ARGS_BLOCKARG|FCALL>, nil
+      # 0011 leave                                                            (   2)
+      # actual:
+      # == disasm: #<ISeq:prism_test_forwarding_arguments_node1@<compiled>:2 (2,8)-(4,11)>
+      # local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: 1])
+      # [ 1] "..."@0
+      # 0000 putself                                                          (   3)
+      # 0001 getlocal_WC_0                          ?@-2
+      # 0003 splatarray                             false
+      # 0005 getblockparamproxy                     "!"@-1, 0
+      # 0008 send                                   <calldata!mid:prism_test_forwarding_arguments_node, argc:1, ARGS_SPLAT|ARGS_BLOCKARG|FCALL>, nil
+      # 0011 leave                                                            (   2)
+
+      omit "fails on trunk-iseq_binary"
+
       assert_prism_eval(<<-CODE)
         def prism_test_forwarding_arguments_node(...); end;
         def prism_test_forwarding_arguments_node1(...)

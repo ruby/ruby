@@ -982,6 +982,84 @@ f_reciprocal(VALUE x)
     return f_quo(ONE, x);
 }
 
+static VALUE
+zero_for(VALUE x)
+{
+    if (RB_FLOAT_TYPE_P(x))
+        return DBL2NUM(0);
+    if (RB_TYPE_P(x, T_RATIONAL))
+        return rb_rational_new(INT2FIX(0), INT2FIX(1));
+
+    return INT2FIX(0);
+}
+
+static VALUE
+complex_pow_for_special_angle(VALUE self, VALUE other)
+{
+    if (!rb_integer_type_p(other)) {
+        return Qundef;
+    }
+
+    get_dat1(self);
+    VALUE x = Qundef;
+    int dir;
+    if (f_zero_p(dat->imag)) {
+        x = dat->real;
+        dir = 0;
+    }
+    else if (f_zero_p(dat->real)) {
+        x = dat->imag;
+        dir = 2;
+    }
+    else if (f_eqeq_p(dat->real, dat->imag)) {
+        x = dat->real;
+        dir = 1;
+    }
+    else if (f_eqeq_p(dat->real, f_negate(dat->imag))) {
+        x = dat->imag;
+        dir = 3;
+    }
+
+    if (x == Qundef) return x;
+
+    if (f_negative_p(x)) {
+        x = f_negate(x);
+        dir += 4;
+    }
+
+    VALUE zx;
+    if (dir % 2 == 0) {
+        zx = rb_num_pow(x, other);
+    }
+    else {
+        zx = rb_num_pow(
+            rb_funcall(rb_int_mul(TWO, x), '*', 1, x),
+            rb_int_div(other, TWO)
+        );
+        if (rb_int_odd_p(other)) {
+            zx = rb_funcall(zx, '*', 1, x);
+        }
+    }
+    static const int dirs[][2] = {
+        {1, 0}, {1, 1}, {0, 1}, {-1, 1}, {-1, 0}, {-1, -1}, {0, -1}, {1, -1}
+    };
+    int z_dir = FIX2INT(rb_int_modulo(rb_int_mul(INT2FIX(dir), other), INT2FIX(8)));
+
+    VALUE zr, zi;
+    switch (dirs[z_dir][0]) {
+      case 0: zr = zero_for(zx); break;
+      case 1: zr = zx; break;
+      case -1: zr = f_negate(zx); break;
+    }
+    switch (dirs[z_dir][1]) {
+      case 0: zi = zero_for(zx); break;
+      case 1: zi = zx; break;
+      case -1: zi = f_negate(zx); break;
+    }
+    return nucomp_s_new_internal(CLASS_OF(self), zr, zi);
+}
+
+
 /*
  * call-seq:
  *    cmp ** numeric  ->  complex
@@ -1006,6 +1084,14 @@ rb_complex_pow(VALUE self, VALUE other)
         if (k_exact_zero_p(dat->imag))
             other = dat->real; /* c14n */
     }
+
+    if (other == ONE) {
+        get_dat1(self);
+        return nucomp_s_new_internal(CLASS_OF(self), dat->real, dat->imag);
+    }
+
+    VALUE result = complex_pow_for_special_angle(self, other);
+    if (result != Qundef) return result;
 
     if (RB_TYPE_P(other, T_COMPLEX)) {
         VALUE r, theta, nr, ntheta;

@@ -47,8 +47,9 @@ VALUE rb_mod_set_temporary_name(VALUE, VALUE);
 
 struct gen_ivtbl;
 int rb_gen_ivtbl_get(VALUE obj, ID id, struct gen_ivtbl **ivtbl);
-int rb_obj_evacuate_ivs_to_hash_table(ID key, VALUE val, st_data_t arg);
-void rb_evict_ivars_to_hash(VALUE obj, rb_shape_t * shape);
+void rb_obj_copy_ivs_to_hash_table(VALUE obj, st_table *table);
+void rb_obj_convert_to_too_complex(VALUE obj, st_table *table);
+void rb_evict_ivars_to_hash(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* variable.c (export) */

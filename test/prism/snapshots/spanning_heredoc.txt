@@ -352,4 +352,7 @@
             │   ├── block: ∅
             │   ├── flags: ∅
             │   └── name: :=~
-            └── locals: [:a]
+            └── targets: (length: 1)
+                └── @ LocalVariableTargetNode (location: (53,5)-(55,7))
+                    ├── name: :a
+                    └── depth: 0
