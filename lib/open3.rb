@@ -899,48 +899,84 @@ module Open3
   end
   module_function :capture2e
 
-  # Open3.pipeline_rw starts a list of commands as a pipeline with pipes
-  # which connect to stdin of the first command and stdout of the last command.
+  # :call-seq:
+  #   Open3.pipeline_rw([env, ] *cmds, options = {}) -> [first_stdin, last_stdout, wait_threads]
   #
-  #   Open3.pipeline_rw(cmd1, cmd2, ... [, opts]) {|first_stdin, last_stdout, wait_threads|
-  #     ...
-  #   }
+  # Basically a wrapper for
+  # {Process.spawn}[rdoc-ref:Process.spawn]
+  # that:
   #
-  #   first_stdin, last_stdout, wait_threads = Open3.pipeline_rw(cmd1, cmd2, ... [, opts])
-  #   ...
-  #   first_stdin.close
-  #   last_stdout.close
+  # - Creates a child process for each of the given +cmds+
+  #   by calling Process.spawn.
+  # - Pipes the +stdout+ from each child to the +stdin+ of the next child,
+  #   or, for the first child, from the caller's +stdin+,
+  #   or, for the last child, to the caller's +stdout+.
   #
-  # Each cmd is a string or an array.
-  # If it is an array, the elements are passed to Process.spawn.
+  # The method does not wait for child processes to exit,
+  # so the caller must do so.
   #
-  #   cmd:
-  #     commandline                              command line string which is passed to a shell
-  #     [env, commandline, opts]                 command line string which is passed to a shell
-  #     [env, cmdname, arg1, ..., opts]          command name and one or more arguments (no shell)
-  #     [env, [cmdname, argv0], arg1, ..., opts] command name and arguments including argv[0] (no shell)
+  # With no block given, returns a 3-element array containing:
   #
-  #   Note that env and opts are optional, as for Process.spawn.
-  #
-  # The options to pass to Process.spawn are constructed by merging
-  # +opts+, the last hash element of the array, and
-  # specifications for the pipes between each of the commands.
+  # - The +stdin+ stream of the first child process.
+  # - The +stdout+ stream of the last child process.
+  # - An array of the wait threads for all of the child processes.
   #
   # Example:
   #
-  #   Open3.pipeline_rw("tr -dc A-Za-z", "wc -c") {|i, o, ts|
-  #     i.puts "All persons more than a mile high to leave the court."
-  #     i.close
-  #     p o.gets #=> "42\n"
-  #   }
+  #   first_stdin, last_stdout, wait_threads = Open3.pipeline_rw('sort', 'cat -n')
+  #   # => [#<IO:fd 20>, #<IO:fd 21>, [#<Process::Waiter:0x000055e8de29ab40 sleep>, #<Process::Waiter:0x000055e8de29a690 sleep>]]
+  #   first_stdin.puts("foo\nbar\nbaz")
+  #   first_stdin.close # Send EOF to sort.
+  #   puts last_stdout.read
+  #   wait_threads.each do |wait_thread|
+  #     wait_thread.join
+  #   end
   #
-  #   Open3.pipeline_rw("sort", "cat -n") {|stdin, stdout, wait_thrs|
-  #     stdin.puts "foo"
-  #     stdin.puts "bar"
-  #     stdin.puts "baz"
-  #     stdin.close     # send EOF to sort.
-  #     p stdout.read   #=> "     1\tbar\n     2\tbaz\n     3\tfoo\n"
-  #   }
+  # Output:
+  #
+  #   1	bar
+  #   2	baz
+  #   3	foo
+  #
+  # With a block given, calls the block with the +stdin+ stream of the first child,
+  # the +stdout+ stream  of the last child,
+  # and an array of the wait processes:
+  #
+  #   Open3.pipeline_rw('sort', 'cat -n') do |first_stdin, last_stdout, wait_threads|
+  #     first_stdin.puts "foo\nbar\nbaz"
+  #     first_stdin.close # send EOF to sort.
+  #     puts last_stdout.read
+  #     wait_threads.each do |wait_thread|
+  #       wait_thread.join
+  #     end
+  #   end
+  #
+  # Output:
+  #
+  #   1	bar
+  #   2	baz
+  #   3	foo
+  #
+  # Like Process.spawn, this method has potential security vulnerabilities
+  # if called with untrusted input;
+  # see {Command Injection}[rdoc-ref:command_injection.rdoc].
+  #
+  # If the first argument is a hash, it becomes leading argument +env+
+  # in each call to Process.spawn;
+  # see {Execution Environment}[rdoc-ref:Process@Execution+Environment].
+  #
+  # If the last argument is a hash, it becomes trailing argument +options+
+  # in each call to Process.spawn;
+  # see {Execution Options}[rdoc-ref:Process@Execution+Options].
+  #
+  # Each remaining argument in +cmds+ is one of:
+  #
+  # - A +command_line+: a string that begins with a shell reserved word
+  #   or special built-in, or contains one or more metacharacters.
+  # - An +exe_path+: the string path to an executable to be called.
+  # - An array containing a +command_line+ or an +exe_path+,
+  #   along with zero or more string arguments for the command.
+  #
   def pipeline_rw(*cmds, &block)
     if Hash === cmds.last
       opts = cmds.pop.dup
@@ -970,7 +1006,9 @@ module Open3
   #   by calling Process.spawn.
   # - Pipes the +stdout+ from each child to the +stdin+ of the next child,
   #   or, for the last child, to the caller's +stdout+.
-  # - Waits for all child processes to exit.
+  #
+  # The method does not wait for child processes to exit,
+  # so the caller must do so.
   #
   # With no block given, returns a 2-element array containing:
   #
@@ -979,30 +1017,37 @@ module Open3
   #
   # Example:
   #
-  #   Open3.pipeline_r('ls', 'grep R')
-  #   # => [#<IO:fd 5>, [#<Process::Waiter:0x00005638280167b8 sleep>, #<Process::Waiter:0x0000563828015480 dead>]]
-  #
-  # With a block given, calls the block with the +stdout+ stream
-  # of the last child process,
-  # and an array of the wait processes:
-  #
-  #   Open3.pipeline_r('ls', 'grep R') do |x, ts|
-  #     puts x.read
-  #     p ts
+  #   last_stdout, wait_threads = Open3.pipeline_r('ls', 'grep R')
+  #   # => [#<IO:fd 5>, [#<Process::Waiter:0x000055e8de2f9898 dead>, #<Process::Waiter:0x000055e8de2f94b0 sleep>]]
+  #   puts last_stdout.read
+  #   wait_threads.each do |wait_thread|
+  #     wait_thread.join
   #   end
   #
   # Output:
   #
   #   Rakefile
   #   README.md
-  #   [#<Process::Waiter:0x000055f1d78d76f0 sleep>, #<Process::Waiter:0x000055f1d78d7358 dead>]
+  #
+  # With a block given, calls the block with the +stdout+ stream
+  # of the last child process,
+  # and an array of the wait processes:
+  #
+  #   Open3.pipeline_r('ls', 'grep R') do |last_stdout, wait_threads|
+  #     puts last_stdout.read
+  #     wait_threads.each do |wait_thread|
+  #       wait_thread.join
+  #     end
+  #   end
+  #
+  # Output:
+  #
+  #   Rakefile
+  #   README.md
   #
   # Like Process.spawn, this method has potential security vulnerabilities
   # if called with untrusted input;
   # see {Command Injection}[rdoc-ref:command_injection.rdoc].
-  #
-  # Unlike Process.spawn, this method waits for the child processes to exit
-  # before returning, so the caller need not do so.
   #
   # If the first argument is a hash, it becomes leading argument +env+
   # in each call to Process.spawn;
@@ -1046,7 +1091,9 @@ module Open3
   #   by calling Process.spawn.
   # - Pipes the +stdout+ from each child to the +stdin+ of the next child,
   #   or, for the first child, pipes the caller's +stdout+ to the child's +stdin+.
-  # - Waits for all child processes to exit.
+  #
+  # The method does not wait for child processes to exit,
+  # so the caller must do so.
   #
   # With no block given, returns a 2-element array containing:
   #
@@ -1055,35 +1102,41 @@ module Open3
   #
   # Example:
   #
-  #   p Open3.pipeline_r(
-  #     ['ruby', '-e', 'print "Foo"'],
-  #     ['ruby', '-e', 'print STDIN.read + "Bar"']
-  #   )
-  #   [#<IO:fd 5>, [#<Process::Waiter:0x00005568cad44a08 sleep>, #<Process::Waiter:0x00005568cad44508 run>]]
+  #   first_stdin, wait_threads = Open3.pipeline_w('sort', 'cat -n')
+  #   # => [#<IO:fd 7>, [#<Process::Waiter:0x000055e8de928278 run>, #<Process::Waiter:0x000055e8de923e80 run>]]
+  #   first_stdin.puts("foo\nbar\nbaz")
+  #   first_stdin.close # Send EOF to sort.
+  #   wait_threads.each do |wait_thread|
+  #     wait_thread.join
+  #   end
+  #
+  # Output:
+  #
+  #   1	bar
+  #   2	baz
+  #   3	foo
   #
   # With a block given, calls the block with the +stdin+ stream
   # of the first child process,
   # and an array of the wait processes:
   #
-  #   Open3.pipeline_r(
-  #     ['ruby', '-e', 'print "Foo"'],
-  #     ['ruby', '-e', 'print STDIN.read + "Bar"']
-  #   ) do |x, ts|
-  #     puts x.read
-  #     p ts
+  #   Open3.pipeline_w('sort', 'cat -n') do |first_stdin, wait_threads|
+  #     first_stdin.puts("foo\nbar\nbaz")
+  #     first_stdin.close # Send EOF to sort.
+  #     wait_threads.each do |wait_thread|
+  #       wait_thread.join
+  #     end
   #   end
   #
   # Output:
   #
-  #   FooBar
-  #   [#<Process::Waiter:0x000055628e2ebbc0 dead>, #<Process::Waiter:0x000055628e2eb7b0 sleep>]
+  #   1	bar
+  #   2	baz
+  #   3	foo
   #
   # Like Process.spawn, this method has potential security vulnerabilities
   # if called with untrusted input;
   # see {Command Injection}[rdoc-ref:command_injection.rdoc].
-  #
-  # Unlike Process.spawn, this method waits for the child processes to exit
-  # before returning, so the caller need not do so.
   #
   # If the first argument is a hash, it becomes leading argument +env+
   # in each call to Process.spawn;
@@ -1116,49 +1169,65 @@ module Open3
   end
   module_function :pipeline_w
 
-  # Open3.pipeline_start starts a list of commands as a pipeline.
-  # No pipes are created for stdin of the first command and
-  # stdout of the last command.
+  # :call-seq:
+  #   Open3.pipeline_start([env, ] *cmds, options = {}) -> [wait_threads]
   #
-  #   Open3.pipeline_start(cmd1, cmd2, ... [, opts]) {|wait_threads|
-  #     ...
-  #   }
+  # Basically a wrapper for
+  # {Process.spawn}[rdoc-ref:Process.spawn]
+  # that:
   #
-  #   wait_threads = Open3.pipeline_start(cmd1, cmd2, ... [, opts])
-  #   ...
+  # - Creates a child process for each of the given +cmds+
+  #   by calling Process.spawn.
+  # - Does not wait for child processes to exit.
   #
-  # Each cmd is a string or an array.
-  # If it is an array, the elements are passed to Process.spawn.
-  #
-  #   cmd:
-  #     commandline                              command line string which is passed to a shell
-  #     [env, commandline, opts]                 command line string which is passed to a shell
-  #     [env, cmdname, arg1, ..., opts]          command name and one or more arguments (no shell)
-  #     [env, [cmdname, argv0], arg1, ..., opts] command name and arguments including argv[0] (no shell)
-  #
-  #   Note that env and opts are optional, as for Process.spawn.
+  # With no block given, returns an array of the wait threads
+  # for all of the child processes.
   #
   # Example:
   #
-  #   # Run xeyes in 10 seconds.
-  #   Open3.pipeline_start("xeyes") {|ts|
-  #     sleep 10
-  #     t = ts[0]
-  #     Process.kill("TERM", t.pid)
-  #     p t.value #=> #<Process::Status: pid 911 SIGTERM (signal 15)>
-  #   }
+  #   wait_threads = Open3.pipeline_start('ls', 'grep R')
+  #   # => [#<Process::Waiter:0x000055e8de9d2bb0 run>, #<Process::Waiter:0x000055e8de9d2890 run>]
+  #   wait_threads.each do |wait_thread|
+  #     wait_thread.join
+  #   end
   #
-  #   # Convert pdf to ps and send it to a printer.
-  #   # Collect error message of pdftops and lpr.
-  #   pdf_file = "paper.pdf"
-  #   printer = "printer-name"
-  #   err_r, err_w = IO.pipe
-  #   Open3.pipeline_start(["pdftops", pdf_file, "-"],
-  #                        ["lpr", "-P#{printer}"],
-  #                        :err=>err_w) {|ts|
-  #     err_w.close
-  #     p err_r.read # error messages of pdftops and lpr.
-  #   }
+  # Output:
+  #
+  #   Rakefile
+  #   README.md
+  #
+  # With a block given, calls the block with an array of the wait processes:
+  #
+  #   Open3.pipeline_start('ls', 'grep R') do |wait_threads|
+  #     wait_threads.each do |wait_thread|
+  #       wait_thread.join
+  #     end
+  #   end
+  #
+  # Output:
+  #
+  #   Rakefile
+  #   README.md
+  #
+  # Like Process.spawn, this method has potential security vulnerabilities
+  # if called with untrusted input;
+  # see {Command Injection}[rdoc-ref:command_injection.rdoc].
+  #
+  # If the first argument is a hash, it becomes leading argument +env+
+  # in each call to Process.spawn;
+  # see {Execution Environment}[rdoc-ref:Process@Execution+Environment].
+  #
+  # If the last argument is a hash, it becomes trailing argument +options+
+  # in each call to Process.spawn;
+  # see {Execution Options}[rdoc-ref:Process@Execution+Options].
+  #
+  # Each remaining argument in +cmds+ is one of:
+  #
+  # - A +command_line+: a string that begins with a shell reserved word
+  #   or special built-in, or contains one or more metacharacters.
+  # - An +exe_path+: the string path to an executable to be called.
+  # - An array containing a +command_line+ or an +exe_path+,
+  #   along with zero or more string arguments for the command.
   #
   def pipeline_start(*cmds, &block)
     if Hash === cmds.last
@@ -1187,27 +1256,22 @@ module Open3
   #   by calling Process.spawn.
   # - Pipes the +stdout+ from each child to the +stdin+ of the next child,
   #   or, for the last child, to the caller's +stdout+.
-  # - Waits for all child processes to exit.
+  # - Waits for the child processes to exit.
   # - Returns an array of Process::Status objects (one for each child).
   #
-  # A simple example:
+  # Example:
   #
-  #   Open3.pipeline('ls', 'grep [A-Z]')
-  #   # => [#<Process::Status: pid 1343895 exit 0>, #<Process::Status: pid 1343897 exit 0>]
+  #   wait_threads = Open3.pipeline('ls', 'grep R')
+  #   # => [#<Process::Status: pid 2139200 exit 0>, #<Process::Status: pid 2139202 exit 0>]
   #
   # Output:
   #
-  #   Gemfile
-  #   LICENSE.txt
   #   Rakefile
   #   README.md
   #
   # Like Process.spawn, this method has potential security vulnerabilities
   # if called with untrusted input;
   # see {Command Injection}[rdoc-ref:command_injection.rdoc].
-  #
-  # Unlike Process.spawn, this method waits for the child process to exit
-  # before returning, so the caller need not do so.
   #
   # If the first argument is a hash, it becomes leading argument +env+
   # in each call to Process.spawn;
