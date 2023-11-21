@@ -1379,7 +1379,7 @@ rb_obj_convert_to_too_complex(VALUE obj, st_table *table)
         RB_VM_LOCK_ENTER();
         {
             struct st_table *gen_ivs = generic_ivtbl_no_ractor_check(obj);
-            st_lookup(gen_ivs, (st_data_t)&obj, (st_data_t *)&old_ivptr);
+            st_lookup(gen_ivs, (st_data_t)obj, (st_data_t *)&old_ivptr);
 
             struct gen_ivtbl *ivtbl = xmalloc(sizeof(struct gen_ivtbl));
             ivtbl->as.complex.table = table;

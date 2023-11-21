@@ -517,6 +517,30 @@ class TestShapes < Test::Unit::TestCase
     end;
   end
 
+  def test_evacuate_generic_ivar_memory_leak
+    assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+      o = []
+      o.instance_variable_set(:@a, 1)
+
+      i = 0
+      o = Object.new
+      while RubyVM::Shape.shapes_available > 0
+        o.instance_variable_set(:"@i#{i}", 1)
+        i += 1
+      end
+
+      ary = 1_000_000.times.map { [] }
+    begin;
+      ary.each do |o|
+        o.instance_variable_set(:@a, 1)
+        o.instance_variable_set(:@b, 1)
+      end
+      ary.clear
+      ary = nil
+      GC.start
+    end;
+  end
+
   def test_use_all_shapes_module
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
