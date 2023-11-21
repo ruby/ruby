@@ -16782,10 +16782,7 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, pm_diagn
         PM_NODE_TYPE_P(node, PM_PRE_EXECUTION_NODE) || PM_NODE_TYPE_P(node, PM_POST_EXECUTION_NODE) ||
         PM_NODE_TYPE_P(node, PM_ALIAS_GLOBAL_VARIABLE_NODE) || PM_NODE_TYPE_P(node, PM_ALIAS_METHOD_NODE) ||
         PM_NODE_TYPE_P(node, PM_UNDEF_NODE);
-    // TODO: the right condition should `pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER_RESCUE` instead.
-    // However, it does not work because of the `rescue` modifier's binding power trick.
-    // After getting to merge #1879, this TODO can be removed.
-    if (is_statement && pm_binding_powers[parser->current.type].right > PM_BINDING_POWER_MODIFIER_RESCUE + 1) {
+    if (is_statement && pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER_RESCUE) {
         return node;
     }
 
