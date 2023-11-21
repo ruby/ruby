@@ -11146,15 +11146,13 @@ pinned_list_mark(void *ptr)
     }
 }
 
-static size_t
-pinned_list_memsize(const void *ptr)
-{
-    return 0;
-}
-
 static const rb_data_type_t pinned_list_type = {
     "pinned_list",
-    {pinned_list_mark, RUBY_DEFAULT_FREE, pinned_list_memsize,},
+    {
+        pinned_list_mark,
+        RUBY_DEFAULT_FREE,
+        NULL, // No external memory to report,
+    },
     0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
