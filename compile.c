@@ -13188,14 +13188,13 @@ ibf_dump_free(void *ptr)
         st_free_table(dump->iseq_table);
         dump->iseq_table = 0;
     }
-    ruby_xfree(dump);
 }
 
 static size_t
 ibf_dump_memsize(const void *ptr)
 {
     struct ibf_dump *dump = (struct ibf_dump *)ptr;
-    size_t size = sizeof(*dump);
+    size_t size = 0;
     if (dump->iseq_table) size += st_memsize(dump->iseq_table);
     if (dump->global_buffer.obj_table) size += st_memsize(dump->global_buffer.obj_table);
     return size;
@@ -13204,7 +13203,7 @@ ibf_dump_memsize(const void *ptr)
 static const rb_data_type_t ibf_dump_type = {
     "ibf_dump",
     {ibf_dump_mark, ibf_dump_free, ibf_dump_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
 static void
@@ -13267,8 +13266,6 @@ rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
     ibf_dump_overwrite(dump, &header, sizeof(header), 0);
 
     str = dump->global_buffer.str;
-    ibf_dump_free(dump);
-    DATA_PTR(dump_obj) = NULL;
     RB_GC_GUARD(dump_obj);
     return str;
 }
