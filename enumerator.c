@@ -311,6 +311,7 @@ static const rb_data_type_t proc_entry_data_type = {
         proc_entry_memsize,
         proc_entry_compact,
     },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
 static struct proc_entry *
