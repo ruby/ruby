@@ -113,7 +113,8 @@ matrix:
     # Allow failures for the unstable jobs.
     # - name: arm64-linux
     # - name: ppc64le-linux
-    # - name: s390x-linux
+    # The s390x build is sometimes not starting.
+    - name: s390x-linux
     # The 2nd arm64 pipeline may be unstable.
     # - name: arm32-linux
   fast_finish: true
