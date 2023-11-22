@@ -564,6 +564,7 @@ impl Assembler
                         // If we're attempting to load into a memory operand, then
                         // we'll switch over to the store instruction.
                         (Opnd::Mem(_), _) => {
+                            let opnd0 = split_memory_address(asm, *dest);
                             let value = match *src {
                                 // If the first operand is zero, then we can just use
                                 // the zero register.
@@ -579,7 +580,6 @@ impl Assembler
                                 _ => split_bitmask_immediate(asm, *src, dest.rm_num_bits())
                             };
 
-                            let opnd0 = split_memory_address(asm, *dest);
                             asm.store(opnd0, value);
                         },
                         // If we're loading a memory operand into a register, then
