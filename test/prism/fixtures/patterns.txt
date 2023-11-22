@@ -193,3 +193,8 @@ foo in A[
 
 foo in bar => baz
 foo => bar => baz
+
+foo, bar, baz = 1, 2
+foo do
+  [1, 2] => [foo, bar] => baz
+end

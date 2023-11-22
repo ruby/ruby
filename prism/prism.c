@@ -4137,6 +4137,22 @@ pm_local_variable_target_node_create(pm_parser_t *parser, const pm_token_t *name
 }
 
 /**
+ * Allocate and initialize a new LocalVariableTargetNode node with the given depth.
+ */
+static pm_local_variable_target_node_t *
+pm_local_variable_target_node_create_depth(pm_parser_t *parser, const pm_token_t *name, uint32_t depth) {
+    pm_refute_numbered_parameter(parser, name->start, name->end);
+
+    return pm_local_variable_target_node_create_values(
+        parser,
+        &(pm_location_t) { .start = name->start, .end = name->end },
+        pm_parser_constant_id_token(parser, name),
+        depth
+    );
+}
+
+
+/**
  * Allocate and initialize a new MatchPredicateNode node.
  */
 static pm_match_predicate_node_t *
@@ -13003,8 +13019,13 @@ parse_pattern_primitive(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
         case PM_TOKEN_IDENTIFIER:
         case PM_TOKEN_METHOD_NAME: {
             parser_lex(parser);
-            pm_parser_local_add_token(parser, &parser->previous);
-            return (pm_node_t *) pm_local_variable_target_node_create(parser, &parser->previous);
+            pm_token_t name = parser->previous;
+            int depth = pm_parser_local_depth(parser, &name);
+            if (depth < 0) {
+                depth = 0;
+                pm_parser_local_add_token(parser, &name);
+            }
+            return (pm_node_t *) pm_local_variable_target_node_create_depth(parser, &name, (uint32_t) depth);
         }
         case PM_TOKEN_BRACKET_LEFT_ARRAY: {
             pm_token_t opening = parser->current;
@@ -13321,9 +13342,13 @@ parse_pattern_primitives(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
 
         expect1(parser, PM_TOKEN_IDENTIFIER, PM_ERR_PATTERN_IDENT_AFTER_HROCKET);
         pm_token_t identifier = parser->previous;
-        pm_parser_local_add_token(parser, &identifier);
+        int depth = pm_parser_local_depth(parser, &identifier);
+        if (depth < 0) {
+            depth = 0;
+            pm_parser_local_add_token(parser, &identifier);
+        }
 
-        pm_node_t *target = (pm_node_t *) pm_local_variable_target_node_create(parser, &identifier);
+        pm_node_t *target = (pm_node_t *) pm_local_variable_target_node_create_depth(parser, &identifier, (uint32_t) depth);
         node = (pm_node_t *) pm_capture_pattern_node_create(parser, node, target, &operator);
     }
 
