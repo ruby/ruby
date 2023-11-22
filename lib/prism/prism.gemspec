@@ -29,6 +29,7 @@ Gem::Specification.new do |spec|
     "docs/fuzzing.md",
     "docs/heredocs.md",
     "docs/javascript.md",
+    "docs/local_variable_depth.md",
     "docs/mapping.md",
     "docs/releasing.md",
     "docs/ripper.md",
