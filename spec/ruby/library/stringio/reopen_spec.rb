@@ -23,17 +23,6 @@ describe "StringIO#reopen when passed [Object, Integer]" do
     @io.string.should == "reopened, another time"
   end
 
-  ruby_version_is ""..."3.0" do
-    # NOTE: WEIRD!
-    it "does not taint self when the passed Object was tainted" do
-      @io.reopen("reopened".taint, IO::RDONLY)
-      @io.tainted?.should be_false
-
-      @io.reopen("reopened".taint, IO::WRONLY)
-      @io.tainted?.should be_false
-    end
-  end
-
   it "tries to convert the passed Object to a String using #to_str" do
     obj = mock("to_str")
     obj.should_receive(:to_str).and_return("to_str")
@@ -90,17 +79,6 @@ describe "StringIO#reopen when passed [Object, Object]" do
   it "truncates the passed String when opened in truncate mode" do
     @io.reopen(str = "reopened", "w")
     str.should == ""
-  end
-
-  ruby_version_is ""..."3.0" do
-    # NOTE: WEIRD!
-    it "does not taint self when the passed Object was tainted" do
-      @io.reopen("reopened".taint, "r")
-      @io.tainted?.should be_false
-
-      @io.reopen("reopened".taint, "w")
-      @io.tainted?.should be_false
-    end
   end
 
   it "tries to convert the passed Object to a String using #to_str" do
@@ -162,14 +140,6 @@ describe "StringIO#reopen when passed [String]" do
     @io.closed_read?.should be_false
 
     @io.string.should == "reopened"
-  end
-
-  ruby_version_is ""..."3.0" do
-    # NOTE: WEIRD!
-    it "does not taint self when the passed Object was tainted" do
-      @io.reopen("reopened".taint)
-      @io.tainted?.should be_false
-    end
   end
 
   it "resets self's position to 0" do

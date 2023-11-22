@@ -14,10 +14,8 @@ ruby_version_is ""..."3.1" do
       Matrix[[0, Complex(0, 1)], [Complex(0, 1), 0]].should.unitary?
     end
 
-    version_is((Matrix::const_defined?(:VERSION) ? Matrix::VERSION : "0.1.0"), "0.3.0") do
-      it "returns true for unitary matrices with a Complex and a negative #imag" do
-        Matrix[[0, Complex(0, 1)], [Complex(0, -1), 0]].should.unitary?
-      end
+    it "returns true for unitary matrices with a Complex and a negative #imag" do
+      Matrix[[0, Complex(0, 1)], [Complex(0, -1), 0]].should.unitary?
     end
 
     it "raises an error for rectangular matrices" do

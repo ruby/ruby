@@ -1,0 +1,50 @@
+@ ProgramNode (location: (1,0)-(3,3))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(3,3))
+    └── body: (length: 1)
+        └── @ CaseMatchNode (location: (1,0)-(3,3))
+            ├── predicate:
+            │   @ ArrayNode (location: (1,5)-(1,13))
+            │   ├── elements: (length: 2)
+            │   │   ├── @ SymbolNode (location: (1,6)-(1,8))
+            │   │   │   ├── opening_loc: (1,6)-(1,7) = ":"
+            │   │   │   ├── value_loc: (1,7)-(1,8) = "a"
+            │   │   │   ├── closing_loc: ∅
+            │   │   │   └── unescaped: "a"
+            │   │   └── @ SymbolNode (location: (1,10)-(1,12))
+            │   │       ├── opening_loc: (1,10)-(1,11) = ":"
+            │   │       ├── value_loc: (1,11)-(1,12) = "b"
+            │   │       ├── closing_loc: ∅
+            │   │       └── unescaped: "b"
+            │   ├── opening_loc: (1,5)-(1,6) = "["
+            │   ├── closing_loc: (1,12)-(1,13) = "]"
+            │   └── flags: ∅
+            ├── conditions: (length: 1)
+            │   └── @ InNode (location: (2,0)-(2,25))
+            │       ├── pattern:
+            │       │   @ ArrayPatternNode (location: (2,3)-(2,16))
+            │       │   ├── constant: ∅
+            │       │   ├── requireds: (length: 0)
+            │       │   ├── rest:
+            │       │   │   @ SplatNode (location: (2,3)-(2,4))
+            │       │   │   ├── operator_loc: (2,3)-(2,4) = "*"
+            │       │   │   └── expression: ∅
+            │       │   ├── posts: (length: 1)
+            │       │   │   └── @ ConstantPathNode (location: (2,6)-(2,16))
+            │       │   │       ├── parent: ∅
+            │       │   │       ├── child:
+            │       │   │       │   @ ConstantReadNode (location: (2,8)-(2,16))
+            │       │   │       │   └── name: :NilClass
+            │       │   │       └── delimiter_loc: (2,6)-(2,8) = "::"
+            │       │   ├── opening_loc: ∅
+            │       │   └── closing_loc: ∅
+            │       ├── statements:
+            │       │   @ StatementsNode (location: (2,22)-(2,25))
+            │       │   └── body: (length: 1)
+            │       │       └── @ NilNode (location: (2,22)-(2,25))
+            │       ├── in_loc: (2,0)-(2,2) = "in"
+            │       └── then_loc: (2,17)-(2,21) = "then"
+            ├── consequent: ∅
+            ├── case_keyword_loc: (1,0)-(1,4) = "case"
+            └── end_keyword_loc: (3,0)-(3,3) = "end"

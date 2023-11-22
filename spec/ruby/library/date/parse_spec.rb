@@ -93,7 +93,7 @@ describe "Date#parse with '.' separator" do
     @sep = '.'
   end
 
-  it_should_behave_like "date_parse"
+  it_should_behave_like :date_parse
 end
 
 describe "Date#parse with '/' separator" do
@@ -101,7 +101,7 @@ describe "Date#parse with '/' separator" do
     @sep = '/'
   end
 
-  it_should_behave_like "date_parse"
+  it_should_behave_like :date_parse
 end
 
 describe "Date#parse with ' ' separator" do
@@ -109,7 +109,7 @@ describe "Date#parse with ' ' separator" do
     @sep = ' '
   end
 
-  it_should_behave_like "date_parse"
+  it_should_behave_like :date_parse
 end
 
 describe "Date#parse with '/' separator US-style" do
@@ -117,7 +117,7 @@ describe "Date#parse with '/' separator US-style" do
     @sep = '/'
   end
 
-  it_should_behave_like "date_parse_us"
+  it_should_behave_like :date_parse_us
 end
 
 describe "Date#parse with '-' separator EU-style" do
@@ -125,7 +125,7 @@ describe "Date#parse with '-' separator EU-style" do
     @sep = '-'
   end
 
-  it_should_behave_like "date_parse_eu"
+  it_should_behave_like :date_parse_eu
 end
 
 describe "Date#parse(.)" do

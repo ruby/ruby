@@ -19,7 +19,7 @@ typedef struct {
     struct __rb_wasm_asyncify_jmp_buf setjmp_buf;
     // Internal Asyncify buffer space used while unwinding from longjmp
     // but never used for rewinding.
-    struct __rb_wasm_asyncify_jmp_buf longjmp_buf;
+    struct __rb_wasm_asyncify_jmp_buf *longjmp_buf_ptr;
     // Used to save top address of Asyncify stack `setjmp_buf`, which is
     // overwritten during first rewind.
     void *dst_buf_top;

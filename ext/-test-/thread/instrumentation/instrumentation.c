@@ -8,24 +8,22 @@ static rb_atomic_t resumed_count = 0;
 static rb_atomic_t suspended_count = 0;
 static rb_atomic_t exited_count = 0;
 
-#if __STDC_VERSION__ >= 201112
-  #define RB_THREAD_LOCAL_SPECIFIER _Thread_local
-#elif defined(__GNUC__) && !defined(RB_THREAD_LOCAL_SPECIFIER_IS_UNSUPPORTED)
-  /* note that ICC (linux) and Clang are covered by __GNUC__ */
-  #define RB_THREAD_LOCAL_SPECIFIER __thread
-#else
-  #define RB_THREAD_LOCAL_SPECIFIER
+#ifndef RB_THREAD_LOCAL_SPECIFIER
+#  define RB_THREAD_LOCAL_SPECIFIER
 #endif
 
 static RB_THREAD_LOCAL_SPECIFIER unsigned int local_ready_count = 0;
 static RB_THREAD_LOCAL_SPECIFIER unsigned int local_resumed_count = 0;
 static RB_THREAD_LOCAL_SPECIFIER unsigned int local_suspended_count = 0;
 
+static VALUE last_thread = Qnil;
+
 static void
 ex_callback(rb_event_flag_t event, const rb_internal_thread_event_data_t *event_data, void *user_data)
 {
     switch (event) {
       case RUBY_INTERNAL_THREAD_EVENT_STARTED:
+        last_thread = event_data->thread;
         RUBY_ATOMIC_INC(started_count);
         break;
       case RUBY_INTERNAL_THREAD_EVENT_READY:
@@ -127,15 +125,31 @@ thread_register_and_unregister_callback(VALUE thread)
     return Qtrue;
 }
 
+static VALUE
+thread_last_spawned(VALUE mod)
+{
+    return last_thread;
+}
+
+static VALUE
+thread_set_last_spawned(VALUE mod, VALUE value)
+{
+    return last_thread = value;
+}
+
 void
 Init_instrumentation(void)
 {
     VALUE mBug = rb_define_module("Bug");
     VALUE klass = rb_define_module_under(mBug, "ThreadInstrumentation");
+    rb_global_variable(&last_thread);
     rb_define_singleton_method(klass, "counters", thread_counters, 0);
     rb_define_singleton_method(klass, "local_counters", thread_local_counters, 0);
     rb_define_singleton_method(klass, "reset_counters", thread_reset_counters, 0);
     rb_define_singleton_method(klass, "register_callback", thread_register_callback, 0);
     rb_define_singleton_method(klass, "unregister_callback", thread_unregister_callback, 0);
     rb_define_singleton_method(klass, "register_and_unregister_callbacks", thread_register_and_unregister_callback, 0);
+
+    rb_define_singleton_method(klass, "last_spawned_thread", thread_last_spawned, 0);
+    rb_define_singleton_method(klass, "last_spawned_thread=", thread_set_last_spawned, 1);
 }

@@ -519,7 +519,7 @@ RSpec.describe "major deprecations" do
 
   context "when `bundler/deployment` is required in a ruby script" do
     before do
-      ruby(<<-RUBY, :env => env_for_missing_prerelease_default_gem_activation)
+      ruby <<-RUBY
         require 'bundler/deployment'
       RUBY
     end
@@ -587,7 +587,7 @@ RSpec.describe "major deprecations" do
     pending "fails with a helpful message", :bundler => "3"
   end
 
-  context "bundle viz" do
+  context "bundle viz", :realworld do
     before do
       realworld_system_gems "ruby-graphviz --version 1.2.5"
       create_file "gems.rb", "source \"#{file_uri_for(gem_repo1)}\""

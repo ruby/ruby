@@ -59,8 +59,8 @@ USE_RUBYGEMS = $(USE_RUBYGEMS)
 !if defined(ENABLE_DEBUG_ENV)
 ENABLE_DEBUG_ENV = $(ENABLE_DEBUG_ENV)
 !endif
-!if defined(MJIT_SUPPORT)
-MJIT_SUPPORT = $(MJIT_SUPPORT)
+!if defined(RJIT_SUPPORT)
+RJIT_SUPPORT = $(RJIT_SUPPORT)
 !endif
 
 # TOOLS
@@ -163,9 +163,10 @@ main(void)
 }
 <<
 	@( \
-	  ($(CC) -O2 -DNO_ASSUME $@.c && .\$@ && $(CC) -O2 $@.c) && \
-	  (.\$@ || echo>>$(MAKEFILE) VS2022_FP_BUG=1) \
-	) & $(WIN32DIR:/=\)\rm.bat $@.*
+	  $(CC) -O2 $@.c && .\$@ || \
+	  set bug=%ERRORLEVEL% \
+	  echo This compiler has an optimization bug \
+	) & $(WIN32DIR:/=\)\rm.bat $@.* & exit /b %bug%
 
 -version-: nul verconf.mk
 

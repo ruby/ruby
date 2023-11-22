@@ -73,6 +73,8 @@
  *   puts %w[foo bar baz].map.with_index { |w, i| "#{i}:#{w}" }
  *   # => ["0:foo", "1:bar", "2:baz"]
  *
+ * == External Iteration
+ *
  * An Enumerator can also be used as an external iterator.
  * For example, Enumerator#next returns the next value of the iterator
  * or raises StopIteration if the Enumerator is at the end.
@@ -83,15 +85,49 @@
  *   puts e.next   # => 3
  *   puts e.next   # raises StopIteration
  *
- * Note that enumeration sequence by +next+, +next_values+, +peek+ and
- * +peek_values+ do not affect other non-external
- * enumeration methods, unless the underlying iteration method itself has
- * side-effect, e.g. IO#each_line.
+ * +next+, +next_values+, +peek+, and +peek_values+ are the only methods
+ * which use external iteration (and Array#zip(Enumerable-not-Array) which uses +next+ internally).
  *
- * Moreover, implementation typically uses fibers so performance could be
- * slower and exception stacktraces different than expected.
+ * These methods do not affect other internal enumeration methods,
+ * unless the underlying iteration method itself has side-effect, e.g. IO#each_line.
  *
- * You can use this to implement an internal iterator as follows:
+ * FrozenError will be raised if these methods are called against a frozen enumerator.
+ * Since +rewind+ and +feed+ also change state for external iteration,
+ * these methods may raise FrozenError too.
+ *
+ * External iteration differs *significantly* from internal iteration
+ * due to using a Fiber:
+ * - The Fiber adds some overhead compared to internal enumeration.
+ * - The stacktrace will only include the stack from the Enumerator, not above.
+ * - Fiber-local variables are *not* inherited inside the Enumerator Fiber,
+ *   which instead starts with no Fiber-local variables.
+ * - Fiber storage variables *are* inherited and are designed
+ *   to handle Enumerator Fibers. Assigning to a Fiber storage variable
+ *   only affects the current Fiber, so if you want to change state
+ *   in the caller Fiber of the Enumerator Fiber, you need to use an
+ *   extra indirection (e.g., use some object in the Fiber storage
+ *   variable and mutate some ivar of it).
+ *
+ * Concretely:
+ *
+ *   Thread.current[:fiber_local] = 1
+ *   Fiber[:storage_var] = 1
+ *   e = Enumerator.new do |y|
+ *     p Thread.current[:fiber_local] # for external iteration: nil, for internal iteration: 1
+ *     p Fiber[:storage_var] # => 1, inherited
+ *     Fiber[:storage_var] += 1
+ *     y << 42
+ *   end
+ *
+ *   p e.next # => 42
+ *   p Fiber[:storage_var] # => 1 (it ran in a different Fiber)
+ *
+ *   e.each { p _1 }
+ *   p Fiber[:storage_var] # => 2 (it ran in the same Fiber/"stack" as the current Fiber)
+ *
+ * == Convert External Iteration to Internal Iteration
+ *
+ * You can use an external iterator to implement an internal iterator as follows:
  *
  *   def ext_each(e)
  *     while true
@@ -133,7 +169,10 @@ static VALUE sym_each, sym_cycle, sym_yield;
 
 static VALUE lazy_use_super_method;
 
+extern ID ruby_static_id_cause;
+
 #define id_call idCall
+#define id_cause ruby_static_id_cause
 #define id_each idEach
 #define id_eqq idEqq
 #define id_initialize idInitialize
@@ -155,6 +194,18 @@ struct enumerator {
     rb_enumerator_size_func *size_fn;
     int kw_splat;
 };
+
+RUBY_REFERENCES_START(enumerator_refs)
+    REF_EDGE(enumerator, obj),
+    REF_EDGE(enumerator, args),
+    REF_EDGE(enumerator, fib),
+    REF_EDGE(enumerator, dst),
+    REF_EDGE(enumerator, lookahead),
+    REF_EDGE(enumerator, feedvalue),
+    REF_EDGE(enumerator, stop_exc),
+    REF_EDGE(enumerator, size),
+    REF_EDGE(enumerator, procs),
+RUBY_REFERENCES_END
 
 static VALUE rb_cGenerator, rb_cYielder, rb_cEnumProducer;
 
@@ -205,56 +256,15 @@ struct enum_product {
 
 VALUE rb_cArithSeq;
 
-/*
- * Enumerator
- */
-static void
-enumerator_mark(void *p)
-{
-    struct enumerator *ptr = p;
-    rb_gc_mark_movable(ptr->obj);
-    rb_gc_mark_movable(ptr->args);
-    rb_gc_mark_movable(ptr->fib);
-    rb_gc_mark_movable(ptr->dst);
-    rb_gc_mark_movable(ptr->lookahead);
-    rb_gc_mark_movable(ptr->feedvalue);
-    rb_gc_mark_movable(ptr->stop_exc);
-    rb_gc_mark_movable(ptr->size);
-    rb_gc_mark_movable(ptr->procs);
-}
-
-static void
-enumerator_compact(void *p)
-{
-    struct enumerator *ptr = p;
-    ptr->obj = rb_gc_location(ptr->obj);
-    ptr->args = rb_gc_location(ptr->args);
-    ptr->fib = rb_gc_location(ptr->fib);
-    ptr->dst = rb_gc_location(ptr->dst);
-    ptr->lookahead = rb_gc_location(ptr->lookahead);
-    ptr->feedvalue = rb_gc_location(ptr->feedvalue);
-    ptr->stop_exc = rb_gc_location(ptr->stop_exc);
-    ptr->size = rb_gc_location(ptr->size);
-    ptr->procs = rb_gc_location(ptr->procs);
-}
-
-#define enumerator_free RUBY_TYPED_DEFAULT_FREE
-
-static size_t
-enumerator_memsize(const void *p)
-{
-    return sizeof(struct enumerator);
-}
-
 static const rb_data_type_t enumerator_data_type = {
     "enumerator",
     {
-        enumerator_mark,
-        enumerator_free,
-        enumerator_memsize,
-        enumerator_compact,
+        REFS_LIST_PTR(enumerator_refs),
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL, // Nothing allocated externally, so don't need a memsize function
+        NULL,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, NULL, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct enumerator *
@@ -767,8 +777,7 @@ next_init(VALUE obj, struct enumerator *e)
 {
     VALUE curr = rb_fiber_current();
     e->dst = curr;
-    // We inherit the fiber storage by reference, not by copy, by specifying Qfalse here.
-    e->fib = rb_fiber_new_storage(next_i, obj, Qfalse);
+    e->fib = rb_fiber_new(next_i, obj);
     e->lookahead = Qundef;
 }
 
@@ -777,8 +786,16 @@ get_next_values(VALUE obj, struct enumerator *e)
 {
     VALUE curr, vs;
 
-    if (e->stop_exc)
-        rb_exc_raise(e->stop_exc);
+    if (e->stop_exc) {
+        VALUE exc = e->stop_exc;
+        VALUE result = rb_attr_get(exc, id_result);
+        VALUE mesg = rb_attr_get(exc, idMesg);
+        if (!NIL_P(mesg)) mesg = rb_str_dup(mesg);
+        VALUE stop_exc = rb_exc_new_str(rb_eStopIteration, mesg);
+        rb_ivar_set(stop_exc, id_cause, exc);
+        rb_ivar_set(stop_exc, id_result, result);
+        rb_exc_raise(stop_exc);
+    }
 
     curr = rb_fiber_current();
 
@@ -848,6 +865,8 @@ enumerator_next_values(VALUE obj)
     struct enumerator *e = enumerator_ptr(obj);
     VALUE vs;
 
+    rb_check_frozen(obj);
+
     if (!UNDEF_P(e->lookahead)) {
         vs = e->lookahead;
         e->lookahead = Qundef;
@@ -908,6 +927,8 @@ static VALUE
 enumerator_peek_values(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
+
+    rb_check_frozen(obj);
 
     if (UNDEF_P(e->lookahead)) {
         e->lookahead = get_next_values(obj, e);
@@ -1033,6 +1054,8 @@ enumerator_feed(VALUE obj, VALUE v)
 {
     struct enumerator *e = enumerator_ptr(obj);
 
+    rb_check_frozen(obj);
+
     if (!UNDEF_P(e->feedvalue)) {
         rb_raise(rb_eTypeError, "feed value already set");
     }
@@ -1054,6 +1077,8 @@ static VALUE
 enumerator_rewind(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
+
+    rb_check_frozen(obj);
 
     rb_check_funcall(e->obj, id_rewind, 0, 0);
 
@@ -1268,23 +1293,15 @@ yielder_compact(void *p)
     ptr->proc = rb_gc_location(ptr->proc);
 }
 
-#define yielder_free RUBY_TYPED_DEFAULT_FREE
-
-static size_t
-yielder_memsize(const void *p)
-{
-    return sizeof(struct yielder);
-}
-
 static const rb_data_type_t yielder_data_type = {
     "yielder",
     {
         yielder_mark,
-        yielder_free,
-        yielder_memsize,
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL,
         yielder_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct yielder *
@@ -1408,23 +1425,15 @@ generator_compact(void *p)
     ptr->obj = rb_gc_location(ptr->obj);
 }
 
-#define generator_free RUBY_TYPED_DEFAULT_FREE
-
-static size_t
-generator_memsize(const void *p)
-{
-    return sizeof(struct generator);
-}
-
 static const rb_data_type_t generator_data_type = {
     "generator",
     {
         generator_mark,
-        generator_free,
-        generator_memsize,
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL,
         generator_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct generator *
@@ -1876,7 +1885,7 @@ lazy_add_method(VALUE obj, int argc, VALUE *argv, VALUE args, VALUE memo,
     rb_ary_push(new_procs, entry_obj);
 
     new_obj = enumerator_init_copy(enumerator_allocate(rb_cLazy), obj);
-    new_e = DATA_PTR(new_obj);
+    new_e = RTYPEDDATA_GET_DATA(new_obj);
     new_e->obj = new_generator;
     new_e->procs = new_procs;
 
@@ -2359,7 +2368,6 @@ lazy_zip_arrays_func(VALUE proc_entry, struct MEMO *result, VALUE memos, long me
         rb_ary_push(ary, rb_ary_entry(RARRAY_AREF(arrays, i), count));
     }
     LAZY_MEMO_SET_VALUE(result, ary);
-    LAZY_MEMO_SET_PACKED(result);
     rb_ary_store(memos, memo_index, LONG2NUM(++count));
     return result;
 }
@@ -2934,7 +2942,7 @@ static const rb_data_type_t producer_data_type = {
         producer_memsize,
         producer_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct producer *
@@ -3404,7 +3412,7 @@ enumerator_plus(VALUE obj, VALUE eobj)
  *
  * The method used against each enumerable object is `each_entry`
  * instead of `each` so that the product of N enumerable objects
- * yields exactly N arguments in each iteration.
+ * yields an array of exactly N elements in each iteration.
  *
  * When no enumerator is given, it calls a given block once yielding
  * an empty argument list.
@@ -3597,7 +3605,7 @@ product_each(VALUE obj, struct product_state *pstate)
         rb_block_call(eobj, id_each_entry, 0, NULL, product_each_i, (VALUE)pstate);
     }
     else {
-        rb_funcallv(pstate->block, id_call, pstate->argc, pstate->argv);
+        rb_funcall(pstate->block, id_call, 1, rb_ary_new_from_values(pstate->argc, pstate->argv));
     }
 
     return obj;
@@ -3695,6 +3703,7 @@ enum_product_inspect(VALUE obj)
 /*
  * call-seq:
  *   Enumerator.product(*enums) -> enumerator
+ *   Enumerator.product(*enums) { |elts| ... } -> enumerator
  *
  * Generates a new enumerator object that generates a Cartesian
  * product of given enumerable objects.  This is equivalent to
@@ -3703,6 +3712,9 @@ enum_product_inspect(VALUE obj)
  *   e = Enumerator.product(1..3, [4, 5])
  *   e.to_a #=> [[1, 4], [1, 5], [2, 4], [2, 5], [3, 4], [3, 5]]
  *   e.size #=> 6
+ *
+ * When a block is given, calls the block with each N-element array
+ * generated and returns +nil+.
  */
 static VALUE
 enumerator_s_product(int argc, VALUE *argv, VALUE klass)
@@ -3717,9 +3729,12 @@ enumerator_s_product(int argc, VALUE *argv, VALUE klass)
 
     VALUE obj = enum_product_initialize(argc, argv, enum_product_allocate(rb_cEnumProduct));
 
-    if (NIL_P(block)) return obj;
+    if (!NIL_P(block)) {
+        enum_product_run(obj, block);
+        return Qnil;
+    }
 
-    return enum_product_run(obj, block);
+    return obj;
 }
 
 /*

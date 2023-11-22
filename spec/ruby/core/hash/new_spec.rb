@@ -33,4 +33,17 @@ describe "Hash.new" do
     -> { Hash.new(5) { 0 }   }.should raise_error(ArgumentError)
     -> { Hash.new(nil) { 0 } }.should raise_error(ArgumentError)
   end
+
+  ruby_version_is "3.3" do
+    it "emits a deprecation warning if keyword arguments are passed" do
+      -> { Hash.new(unknown: true) }.should complain(
+        Regexp.new(Regexp.escape("Calling Hash.new with keyword arguments is deprecated and will be removed in Ruby 3.4; use Hash.new({ key: value }) instead"))
+      )
+
+      -> { Hash.new(1, unknown: true) }.should raise_error(ArgumentError)
+      -> { Hash.new(unknown: true) { 0 } }.should raise_error(ArgumentError)
+
+      Hash.new({ unknown: true }).default.should == { unknown: true }
+    end
+  end
 end

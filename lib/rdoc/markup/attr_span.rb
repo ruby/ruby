@@ -33,4 +33,3 @@ class RDoc::Markup::AttrSpan
   end
 
 end
-

@@ -1,5 +1,4 @@
 require_relative '../../spec_helper'
-require_relative 'shared/quo'
 
 describe "Numeric#fdiv" do
   it "coerces self with #to_f" do

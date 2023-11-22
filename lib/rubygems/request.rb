@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require "net/http"
 require_relative "user_interaction"
 
@@ -35,8 +36,13 @@ class Gem::Request
     @connection_pool = pool
   end
 
-  def proxy_uri; @connection_pool.proxy_uri; end
-  def cert_files; @connection_pool.cert_files; end
+  def proxy_uri
+    @connection_pool.proxy_uri
+  end
+
+  def cert_files
+    @connection_pool.cert_files
+  end
 
   def self.get_cert_files
     pattern = File.expand_path("./ssl_certs/*/*.pem", __dir__)
@@ -159,23 +165,22 @@ class Gem::Request
   # environment variables.
 
   def self.get_proxy_from_env(scheme = "http")
-    _scheme = scheme.downcase
-    _SCHEME = scheme.upcase
-    env_proxy = ENV["#{_scheme}_proxy"] || ENV["#{_SCHEME}_PROXY"]
+    downcase_scheme = scheme.downcase
+    upcase_scheme = scheme.upcase
+    env_proxy = ENV["#{downcase_scheme}_proxy"] || ENV["#{upcase_scheme}_PROXY"]
 
     no_env_proxy = env_proxy.nil? || env_proxy.empty?
 
     if no_env_proxy
-      return (_scheme == "https" || _scheme == "http") ?
-        :no_proxy : get_proxy_from_env("http")
+      return ["https", "http"].include?(downcase_scheme) ? :no_proxy : get_proxy_from_env("http")
     end
 
     require "uri"
     uri = URI(Gem::UriFormatter.new(env_proxy).normalize)
 
     if uri && uri.user.nil? && uri.password.nil?
-      user     = ENV["#{_scheme}_proxy_user"] || ENV["#{_SCHEME}_PROXY_USER"]
-      password = ENV["#{_scheme}_proxy_pass"] || ENV["#{_SCHEME}_PROXY_PASS"]
+      user     = ENV["#{downcase_scheme}_proxy_user"] || ENV["#{upcase_scheme}_PROXY_USER"]
+      password = ENV["#{downcase_scheme}_proxy_pass"] || ENV["#{upcase_scheme}_PROXY_PASS"]
 
       uri.user     = Gem::UriFormatter.new(user).escape
       uri.password = Gem::UriFormatter.new(password).escape
@@ -223,7 +228,6 @@ class Gem::Request
       end
 
       verbose "#{response.code} #{response.message}"
-
     rescue Net::HTTPBadResponse
       verbose "bad response"
 
@@ -237,7 +241,7 @@ class Gem::Request
       verbose "fatal error"
 
       raise Gem::RemoteFetcher::FetchError.new("fatal error", @uri)
-    # HACK work around EOFError bug in Net::HTTP
+    # HACK: work around EOFError bug in Net::HTTP
     # NOTE Errno::ECONNABORTED raised a lot on Windows, and make impossible
     # to install gems.
     rescue EOFError, Timeout::Error,
@@ -278,7 +282,7 @@ class Gem::Request
     ua << " Ruby/#{ruby_version} (#{RUBY_RELEASE_DATE}"
     if RUBY_PATCHLEVEL >= 0
       ua << " patchlevel #{RUBY_PATCHLEVEL}"
-    elsif defined?(RUBY_REVISION)
+    else
       ua << " revision #{RUBY_REVISION}"
     end
     ua << ")"

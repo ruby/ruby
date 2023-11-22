@@ -7,11 +7,7 @@
 require 'strscan'
 require 'test/unit'
 
-class TestStringScanner < Test::Unit::TestCase
-  def create_string_scanner(string, *args)
-    StringScanner.new(string, *args)
-  end
-
+module StringScannerTests
   def test_s_new
     s = create_string_scanner('test string')
     assert_instance_of StringScanner, s
@@ -155,8 +151,10 @@ class TestStringScanner < Test::Unit::TestCase
   end
 
   def test_string
-    s = create_string_scanner('test')
-    assert_equal 'test', s.string
+    s = create_string_scanner('test string')
+    assert_equal 'test string', s.string
+    s.scan(/test/)
+    assert_equal 'test string', s.string
     s.string = 'a'
     assert_equal 'a', s.string
     s.scan(/a/)
@@ -467,7 +465,10 @@ class TestStringScanner < Test::Unit::TestCase
     assert_equal 'foo', s['a']
     assert_equal 'bar', s['b']
     assert_raise(IndexError) { s['c'] }
-    assert_raise_with_message(IndexError, /\u{30c6 30b9 30c8}/) { s["\u{30c6 30b9 30c8}"] }
+    # see https://github.com/jruby/jruby/issues/7644
+    unless RUBY_ENGINE == "jruby" && RbConfig::CONFIG['host_os'] =~ /mswin|win32|mingw/
+      assert_raise_with_message(IndexError, /\u{30c6 30b9 30c8}/) { s["\u{30c6 30b9 30c8}"] }
+    end
   end
 
   def test_pre_match
@@ -751,19 +752,6 @@ class TestStringScanner < Test::Unit::TestCase
     assert_nil(s.values_at(0, -1, 5, 2))
   end
 
-  def test_fixed_anchor_true
-    assert_equal(true,  StringScanner.new("a", fixed_anchor: true).fixed_anchor?)
-  end
-
-  def test_fixed_anchor_false
-    assert_equal(false, StringScanner.new("a").fixed_anchor?)
-    assert_equal(false, StringScanner.new("a", true).fixed_anchor?)
-    assert_equal(false, StringScanner.new("a", false).fixed_anchor?)
-    assert_equal(false, StringScanner.new("a", {}).fixed_anchor?)
-    assert_equal(false, StringScanner.new("a", fixed_anchor: nil).fixed_anchor?)
-    assert_equal(false, StringScanner.new("a", fixed_anchor: false).fixed_anchor?)
-  end
-
   def test_scan_aref_repeatedly
     s = StringScanner.new('test string')
     assert_equal "test",   s.scan(/\w(\w)(\w*)/)
@@ -787,12 +775,36 @@ class TestStringScanner < Test::Unit::TestCase
   def test_named_captures
     omit("not implemented on TruffleRuby") if ["truffleruby"].include?(RUBY_ENGINE)
     scan = StringScanner.new("foobarbaz")
+    assert_equal({}, scan.named_captures)
     assert_equal(9, scan.match?(/(?<f>foo)(?<r>bar)(?<z>baz)/))
     assert_equal({"f" => "foo", "r" => "bar", "z" => "baz"}, scan.named_captures)
   end
 end
 
-class TestStringScannerFixedAnchor < TestStringScanner
+class TestStringScanner < Test::Unit::TestCase
+  include StringScannerTests
+
+  def create_string_scanner(string, *args)
+    StringScanner.new(string, *args)
+  end
+
+  def test_fixed_anchor_true
+    assert_equal(true,  StringScanner.new("a", fixed_anchor: true).fixed_anchor?)
+  end
+
+  def test_fixed_anchor_false
+    assert_equal(false, StringScanner.new("a").fixed_anchor?)
+    assert_equal(false, StringScanner.new("a", true).fixed_anchor?)
+    assert_equal(false, StringScanner.new("a", false).fixed_anchor?)
+    assert_equal(false, StringScanner.new("a", {}).fixed_anchor?)
+    assert_equal(false, StringScanner.new("a", fixed_anchor: nil).fixed_anchor?)
+    assert_equal(false, StringScanner.new("a", fixed_anchor: false).fixed_anchor?)
+  end
+end
+
+class TestStringScannerFixedAnchor < Test::Unit::TestCase
+  include StringScannerTests
+
   def create_string_scanner(string, *args)
     StringScanner.new(string, fixed_anchor: true)
   end

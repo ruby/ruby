@@ -1,0 +1,9 @@
+@ ProgramNode (location: (1,0)-(1,2))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,2))
+    └── body: (length: 1)
+        └── @ ParenthesesNode (location: (1,0)-(1,2))
+            ├── body: ∅
+            ├── opening_loc: (1,0)-(1,1) = "("
+            └── closing_loc: (1,1)-(1,2) = ")"

@@ -3,6 +3,7 @@ require "reline"
 
 class Reline::TestKey < Reline::TestCase
   def setup
+    Reline.test_mode
   end
 
   def teardown

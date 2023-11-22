@@ -101,7 +101,7 @@ CC = cl -nologo
 CPP = $(CC) -E
 !endif
 !if !defined(YACC)
-YACC = bison
+YACC = $(BASERUBY) $(top_srcdir)/tool/lrama/exe/lrama
 !endif
 AR = lib -nologo
 PURIFY =
@@ -350,8 +350,8 @@ CPPFLAGS = $(DEFS) $(ARCHDEFS) $(CPPFLAGS)
 !if "$(USE_RUBYGEMS)" == "no"
 CPPFLAGS = -DDISABLE_RUBYGEMS $(CPPFLAGS)
 !endif
-!ifndef MJIT_SUPPORT
-MJIT_SUPPORT = no
+!ifndef RJIT_SUPPORT
+RJIT_SUPPORT = no
 !endif
 
 POSTLINK =
@@ -433,8 +433,10 @@ THREAD_IMPL_SRC = thread_$(THREAD_MODEL).c
 
 !if "$(CROSS_COMPILING)" == "yes"
 PREP          = $(arch)-fake.rb
+BUILTIN_BINARY = no
 !else
 PREP          = miniruby$(EXEEXT)
+BUILTIN_BINARY = yes
 !endif
 
 !if !defined(EXTSTATIC)
@@ -545,8 +547,9 @@ GOLF_PRELUDE_C = golf_prelude.c
 RBCONFIG      = ./.rbconfig.time
 
 !if "$(GITHUB_ACTIONS)" == "true"
-ACTIONS_GROUP = @echo ^#^#[group]$(@:yes-=)
-ACTIONS_ENDGROUP = @echo ^#^#[endgroup]
+# 93(bright yellow) is copied from .github/workflows/mingw.yml
+ACTIONS_GROUP = @echo ::group::[93m$(@:yes-=)[m
+ACTIONS_ENDGROUP = @echo ::endgroup::
 !else
 ACTIONS_GROUP = @:: $(empty)
 ACTIONS_ENDGROUP = @::
@@ -579,7 +582,9 @@ ABI_VERSION_HDR = $(hdrdir)/ruby/internal/abi.h
 
 scriptbin: $(SCRIPTPROGRAMS)
 
+!if "$(SCRIPTPROGRAMS)" != ""
 $(SCRIPTPROGRAMS): $(STUBPROGRAM)
+!endif
 
 update-src::
 	@cd "$(srcdir:/=\)" && set LC_TIME=C && $(VCSUP)
@@ -728,22 +733,14 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define ALWAYS_INLINE(x) __forceinline x
 #define WARN_UNUSED_RESULT(x) x
 #define MAYBE_UNUSED(x) x
-!if !defined(VS2022_FP_BUG)
 #define HAVE___ASSUME 1
-!endif
 #define FUNC_STDCALL(x) __stdcall x
 #define FUNC_CDECL(x) __cdecl x
 #define FUNC_FASTCALL(x) __fastcall x
 !if $(MSC_VER) >= 1500
 #define RUBY_FUNCTION_NAME_STRING __FUNCTION__
-#define PACKED_STRUCT(x) __pragma(pack(push, 1)) x __pragma(pack(pop))
-!else
-#define PACKED_STRUCT(x) x
-!endif
-!if "$(MACHINE)" == "x86" || "$(ARCH)" == "x64"
-#define PACKED_STRUCT_UNALIGNED(x) PACKED_STRUCT(x)
-!else
-#define PACKED_STRUCT_UNALIGNED(x) x
+#define RBIMPL_ATTR_PACKED_STRUCT_BEGIN() __pragma(pack(push, 1))
+#define RBIMPL_ATTR_PACKED_STRUCT_END() __pragma(pack(pop))
 !endif
 #define RUBY_EXTERN extern __declspec(dllimport)
 #define RUBY_ALIGNAS(n) __declspec(align(n))
@@ -938,7 +935,7 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub $(win_srcdir)/Makefile.sub
 #define RUBY_COREDLL "$(RT)"
 #define RUBY_PLATFORM "$(arch)"
 #define RUBY_SITEARCH "$(sitearch)"
-#define USE_MJIT 0
+#define USE_RJIT 0
 #endif /* $(guard) */
 <<
 
@@ -1131,7 +1128,7 @@ s,@srcdir@,$(srcdir),;t t
 s,@top_srcdir@,$(srcdir),;t t
 s,@try_header@,try_compile,;t t
 s,@ruby_pc@,$(ruby_pc),;t t
-s,@MJIT_SUPPORT@,$(MJIT_SUPPORT),;t t
+s,@RJIT_SUPPORT@,$(RJIT_SUPPORT),;t t
 <<KEEP
 
 !if "$(HAVE_BASERUBY)" != "yes" || "$(CROSS_COMPILING)" == "yes"
@@ -1284,6 +1281,15 @@ $(ruby_pc): $(RBCONFIG)
 	$(ECHO) assembling $(<:\=/)
 	$(Q) $(AS) $(ASFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(<:\=/)
 
+{$(srcdir)/prism}.c.obj:
+	$(ECHO) compiling $(<:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
+{$(srcdir)/prism/enc}.c.obj:
+	$(ECHO) compiling $(<:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
+{$(srcdir)/prism/util}.c.obj:
+	$(ECHO) compiling $(<:\=/)
+	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
 {$(srcdir)/enc/trans}.c.obj:
 	$(ECHO) compiling $(<:\=/)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $(CSRCFLAG)$(<:\=/)
@@ -1360,8 +1366,8 @@ probes.h: {$(VPATH)}probes.dmyh
 #include "$(*F).dmyh"
 <<KEEP
 
-INSNS	= opt_sc.inc optinsn.inc optunifs.inc insns.inc insns_info.inc \
-	  vmtc.inc vm.inc mjit_sp_inc.inc
+INSNS	= optinsn.inc optunifs.inc insns.inc insns_info.inc \
+	  vmtc.inc vm.inc
 
 !if [exit > insns_rules.mk]
 !else if [for %I in ($(INSNS)) do \
@@ -1385,3 +1391,33 @@ loadpath: verconf.h
 	@$(CPP) $(XCFLAGS) $(CPPFLAGS) $(srcdir)/loadpath.c | \
 	sed -e '1,/^const char ruby_initial_load_paths/d;/;/,$$d' \
 	    -e '/^^ /!d;s/ *"\\\\0"$$//;s/" *"//g'
+
+RUBYSPEC_CAPIEXT_SRCDIR = $(srcdir)/$(RUBYSPEC_CAPIEXT)
+RUBYSPEC_CAPIEXT_DEPS = $(RUBYSPEC_CAPIEXT_SRCDIR)/rubyspec.h $(RUBY_H_INCLUDES) $(LIBRUBY)
+RUBYSPEC_CAPIEXT_EXTS =
+
+!if [echo>rubyspec-capiext.mk RUBYSPEC_CAPIEXT_EXTS = \]
+!else if [for %I in ($(RUBYSPEC_CAPIEXT_SRCDIR)\*_spec.c) do \
+	@echo. $$(RUBYSPEC_CAPIEXT)/%~nI.so \>>rubyspec-capiext.mk]
+!else if [echo. $$(empty)>>rubyspec-capiext.mk]
+!else
+! include rubyspec-capiext.mk
+! if [del rubyspec-capiext.mk > nul]
+! endif
+!endif
+
+$(RUBYSPEC_CAPIEXT_EXTS): $(RUBYSPEC_CAPIEXT_DEPS)
+rubyspec-capiext: $(RUBYSPEC_CAPIEXT_EXTS)
+	@ $(NULLCMD)
+
+{$(RUBYSPEC_CAPIEXT_SRCDIR)}.c{$(RUBYSPEC_CAPIEXT)}.so:
+	$(ECHO) building $(@F)
+	$(Q)$(MAKEDIRS) $(@D)
+	$(Q)echo> $*.def EXPORTS
+	$(Q)echo>> $*.def Init_$(*F)
+	$(Q)$(LDSHARED) -Fe$(@) $(INCFLAGS) $(CFLAGS) $(CPPFLAGS) $< $(LIBRUBYARG) -link $(DLDFLAGS) $(LIBS) $(LOCAL_LIBS) -implib:$*.lib -pdb:$*.pdb -def:$*.def
+	$(Q)$(LDSHARED_0)
+	$(Q)$(LDSHARED_1)
+	$(Q)$(LDSHARED_2)
+
+exts: rubyspec-capiext

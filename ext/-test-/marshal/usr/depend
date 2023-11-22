@@ -52,6 +52,7 @@ usrmarshal.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 usrmarshal.o: $(hdrdir)/ruby/internal/attr/noinline.h
 usrmarshal.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 usrmarshal.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+usrmarshal.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 usrmarshal.o: $(hdrdir)/ruby/internal/attr/pure.h
 usrmarshal.o: $(hdrdir)/ruby/internal/attr/restrict.h
 usrmarshal.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ usrmarshal.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 usrmarshal.o: $(hdrdir)/ruby/internal/intern/error.h
 usrmarshal.o: $(hdrdir)/ruby/internal/intern/eval.h
 usrmarshal.o: $(hdrdir)/ruby/internal/intern/file.h
-usrmarshal.o: $(hdrdir)/ruby/internal/intern/gc.h
 usrmarshal.o: $(hdrdir)/ruby/internal/intern/hash.h
 usrmarshal.o: $(hdrdir)/ruby/internal/intern/io.h
 usrmarshal.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ usrmarshal.o: $(hdrdir)/ruby/internal/memory.h
 usrmarshal.o: $(hdrdir)/ruby/internal/method.h
 usrmarshal.o: $(hdrdir)/ruby/internal/module.h
 usrmarshal.o: $(hdrdir)/ruby/internal/newobj.h
-usrmarshal.o: $(hdrdir)/ruby/internal/rgengc.h
 usrmarshal.o: $(hdrdir)/ruby/internal/scan_args.h
 usrmarshal.o: $(hdrdir)/ruby/internal/special_consts.h
 usrmarshal.o: $(hdrdir)/ruby/internal/static_assert.h

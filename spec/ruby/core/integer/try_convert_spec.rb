@@ -28,7 +28,17 @@ ruby_version_is "3.1" do
     it "sends #to_int to the argument and raises TypeError if it's not a kind of Integer" do
       obj = mock("to_int")
       obj.should_receive(:to_int).and_return(Object.new)
-      -> { Integer.try_convert obj }.should raise_error(TypeError)
+      -> {
+        Integer.try_convert obj
+      }.should raise_error(TypeError, "can't convert MockObject to Integer (MockObject#to_int gives Object)")
+    end
+
+    it "responds with a different error message when it raises a TypeError, depending on the type of the non-Integer object :to_int returns" do
+      obj = mock("to_int")
+      obj.should_receive(:to_int).and_return("A String")
+      -> {
+        Integer.try_convert obj
+      }.should raise_error(TypeError, "can't convert MockObject to Integer (MockObject#to_int gives String)")
     end
 
     it "does not rescue exceptions raised by #to_int" do

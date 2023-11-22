@@ -172,7 +172,7 @@ RSpec.describe "bundle check" do
           rack (1.0.0)
 
       PLATFORMS
-        #{local}
+        #{generic_local_platform}
         #{not_local}
 
       DEPENDENCIES
@@ -203,7 +203,7 @@ RSpec.describe "bundle check" do
           rack (1.0.0)
 
       PLATFORMS
-        #{local}
+        #{generic_local_platform}
         #{not_local}
 
       DEPENDENCIES
@@ -351,7 +351,7 @@ RSpec.describe "bundle check" do
 
         PLATFORMS
           ruby
-          #{specific_local_platform}
+          #{local_platform}
 
         DEPENDENCIES
           rack
@@ -425,6 +425,10 @@ RSpec.describe "bundle check" do
         DEPENDENCIES
           depends_on_rack!
 
+        CHECKSUMS
+          depends_on_rack (1.0)
+          rack (1.0)
+
         BUNDLED WITH
            #{Bundler::VERSION}
       L
@@ -487,6 +491,11 @@ RSpec.describe "bundle check" do
         DEPENDENCIES
           bundle-check-issue!
           dex-dispatch-engine!
+
+        CHECKSUMS
+          #{checksum_for_repo_gem gem_repo4, "awesome_print", "1.0"}
+          bundle-check-issue (9999)
+          #{checksum_for_repo_gem gem_repo2, "dex-dispatch-engine", "1.0"}
 
         BUNDLED WITH
            #{Bundler::VERSION}

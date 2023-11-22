@@ -53,7 +53,7 @@ class Gem::Source::Git < Gem::Source
     @uri = Gem::Uri.parse(repository)
     @name            = name
     @repository      = repository
-    @reference       = reference
+    @reference       = reference || "HEAD"
     @need_submodules = submodules
 
     @remote   = true
@@ -70,8 +70,6 @@ class Gem::Source::Git < Gem::Source
       -1
     when Gem::Source then
       1
-    else
-      nil
     end
   end
 

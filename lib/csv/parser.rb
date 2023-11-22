@@ -101,7 +101,7 @@ class CSV
         position = @scanner.pos
         offset = 0
         n_row_separator_chars = row_separator.size
-        # trace(__method__, :start, line, input)
+        # trace(__method__, :start, input)
         while true
           input.each_line(row_separator) do |line|
             @scanner.pos += line.bytesize
@@ -157,6 +157,7 @@ class CSV
         # trace(__method__, pattern, :done, :last, value) if @last_scanner
         return value if @last_scanner
 
+        # trace(__method__, pattern, :done, :nil) if value.nil?
         return nil if value.nil?
         while @scanner.eos? and read_chunk and (sub_value = @scanner.scan(pattern))
           # trace(__method__, pattern, :sub, sub_value)
@@ -200,7 +201,8 @@ class CSV
           # trace(__method__, :rescan, start, buffer)
           string = @scanner.string
           if scanner == @scanner
-            keep = string.byteslice(start, string.bytesize - start)
+            keep = string.byteslice(start,
+                                    string.bytesize - @scanner.pos - start)
           else
             keep = string
           end
@@ -412,8 +414,7 @@ class CSV
         else
           lineno = @lineno + 1
         end
-        message = "Invalid byte sequence in #{@encoding}"
-        raise MalformedCSVError.new(message, lineno)
+        raise InvalidEncodingError.new(@encoding, lineno)
       rescue UnexpectedError => error
         if @scanner
           ignore_broken_line
@@ -485,7 +486,6 @@ class CSV
           message = ":quote_char has to be nil or a single character String"
           raise ArgumentError, message
         end
-        @double_quote_character = @quote_character * 2
         @escaped_quote_character = Regexp.escape(@quote_character)
         @escaped_quote = Regexp.new(@escaped_quote_character)
       end
@@ -875,8 +875,7 @@ class CSV
               !line.valid_encoding?
             end
             if index
-              message = "Invalid byte sequence in #{@encoding}"
-              raise MalformedCSVError.new(message, @lineno + index + 1)
+              raise InvalidEncodingError.new(@encoding, @lineno + index + 1)
             end
           end
           Scanner.new(string)

@@ -92,33 +92,6 @@ RSpec.describe MSpecMain, "#run" do
   end
 end
 
-RSpec.describe "The --warnings option" do
-  before :each do
-    @options, @config = new_option
-    allow(MSpecOptions).to receive(:new).and_return(@options)
-    @script = MSpecMain.new
-    allow(@script).to receive(:config).and_return(@config)
-  end
-
-  it "is enabled by #options" do
-    allow(@options).to receive(:on)
-    expect(@options).to receive(:on).with("--warnings", an_instance_of(String))
-    @script.options
-  end
-
-  it "sets flags to -w" do
-    @config[:flags] = []
-    @script.options ["--warnings"]
-    expect(@config[:flags]).to include("-w")
-  end
-
-  it "set OUTPUT_WARNINGS = '1' in the environment" do
-    ENV['OUTPUT_WARNINGS'] = '0'
-    @script.options ["--warnings"]
-    expect(ENV['OUTPUT_WARNINGS']).to eq('1')
-  end
-end
-
 RSpec.describe "The -j, --multi option" do
   before :each do
     @options, @config = new_option

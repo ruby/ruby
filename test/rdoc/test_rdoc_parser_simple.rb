@@ -113,4 +113,3 @@ contents of a string.
   end
 
 end
-

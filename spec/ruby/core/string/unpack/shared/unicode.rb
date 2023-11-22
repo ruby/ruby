@@ -50,8 +50,20 @@ describe :string_unpack_unicode, shared: true do
     "\xc2\x80".unpack("UUUU").should == [0x80]
   end
 
-  it "ignores NULL bytes between directives" do
-    "\x01\x02".unpack("U\x00U").should == [1, 2]
+  ruby_version_is ""..."3.3" do
+    it "ignores NULL bytes between directives" do
+      suppress_warning do
+        "\x01\x02".unpack("U\x00U").should == [1, 2]
+      end
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "raise ArgumentError for NULL bytes between directives" do
+      -> {
+        "\x01\x02".unpack("U\x00U")
+      }.should raise_error(ArgumentError, /unknown unpack directive/)
+    end
   end
 
   it "ignores spaces between directives" do

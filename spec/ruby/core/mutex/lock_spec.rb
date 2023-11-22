@@ -1,10 +1,6 @@
 require_relative '../../spec_helper'
 
 describe "Mutex#lock" do
-  before :each do
-    ScratchPad.clear
-  end
-
   it "returns self" do
     m = Mutex.new
     m.lock.should == m

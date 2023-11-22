@@ -34,6 +34,11 @@ module Bundler
     end
     module_function :local_platform
 
+    def generic_local_platform_is_ruby?
+      generic_local_platform == Gem::Platform::RUBY
+    end
+    module_function :generic_local_platform_is_ruby?
+
     def platform_specificity_match(spec_platform, user_platform)
       spec_platform = Gem::Platform.new(spec_platform)
 
@@ -47,6 +52,13 @@ module Bundler
       sort_best_platform_match(matching, platform)
     end
     module_function :select_best_platform_match
+
+    def force_ruby_platform(specs)
+      matching = specs.select {|spec| spec.match_platform(Gem::Platform::RUBY) && spec.force_ruby_platform! }
+
+      sort_best_platform_match(matching, Gem::Platform::RUBY)
+    end
+    module_function :force_ruby_platform
 
     def sort_best_platform_match(matching, platform)
       exact = matching.select {|spec| spec.platform == platform }
@@ -107,8 +119,6 @@ module Bundler
 
     def same_deps(spec, exemplary_spec)
       same_runtime_deps = spec.dependencies.sort == exemplary_spec.dependencies.sort
-      return same_runtime_deps unless spec.is_a?(Gem::Specification) && exemplary_spec.is_a?(Gem::Specification)
-
       same_metadata_deps = spec.required_ruby_version == exemplary_spec.required_ruby_version && spec.required_rubygems_version == exemplary_spec.required_rubygems_version
       same_runtime_deps && same_metadata_deps
     end

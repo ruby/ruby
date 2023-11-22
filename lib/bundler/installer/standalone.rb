@@ -12,6 +12,7 @@ module Bundler
       end
       File.open File.join(bundler_path, "setup.rb"), "w" do |file|
         file.puts "require 'rbconfig'"
+        file.puts prevent_gem_activation
         file.puts define_path_helpers
         file.puts reverse_rubygems_kernel_mixin
         paths.each do |path|
@@ -52,14 +53,27 @@ module Bundler
 
     def gem_path(path, spec)
       full_path = Pathname.new(path).absolute? ? path : File.join(spec.full_gem_path, path)
-      if spec.source.instance_of?(Source::Path)
+      if spec.source.instance_of?(Source::Path) && spec.source.path.absolute?
         full_path
       else
-        Pathname.new(full_path).relative_path_from(Bundler.root.join(bundler_path)).to_s
+        SharedHelpers.relative_path_to(full_path, :from => Bundler.root.join(bundler_path))
       end
     rescue TypeError
       error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
       raise Gem::InvalidSpecificationException.new(error_message)
+    end
+
+    def prevent_gem_activation
+      <<~'END'
+        module Kernel
+          remove_method(:gem) if private_method_defined?(:gem)
+
+          def gem(*)
+          end
+
+          private :gem
+        end
+      END
     end
 
     def define_path_helpers
@@ -84,13 +98,16 @@ module Bundler
 
     def reverse_rubygems_kernel_mixin
       <<~END
-      kernel = (class << ::Kernel; self; end)
-      [kernel, ::Kernel].each do |k|
-        if k.private_method_defined?(:gem_original_require)
-          private_require = k.private_method_defined?(:require)
-          k.send(:remove_method, :require)
-          k.send(:define_method, :require, k.instance_method(:gem_original_require))
-          k.send(:private, :require) if private_require
+      if Gem.respond_to?(:discover_gems_on_require=)
+        Gem.discover_gems_on_require = false
+      else
+        [::Kernel.singleton_class, ::Kernel].each do |k|
+          if k.private_method_defined?(:gem_original_require)
+            private_require = k.private_method_defined?(:require)
+            k.send(:remove_method, :require)
+            k.send(:define_method, :require, k.instance_method(:gem_original_require))
+            k.send(:private, :require) if private_require
+          end
         end
       end
       END

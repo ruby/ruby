@@ -9,12 +9,14 @@ module IRB # :nodoc:
     BOLD      = 1
     UNDERLINE = 4
     REVERSE   = 7
+    BLACK     = 30
     RED       = 31
     GREEN     = 32
     YELLOW    = 33
     BLUE      = 34
     MAGENTA   = 35
     CYAN      = 36
+    WHITE     = 37
 
     TOKEN_KEYWORDS = {
       on_kw: ['nil', 'self', 'true', 'false', '__FILE__', '__LINE__', '__ENCODING__'],
@@ -197,15 +199,9 @@ module IRB # :nodoc:
             end
           end
 
-          if lexer.respond_to?(:scan) # Ruby 2.7+
-            lexer.scan.each do |elem|
-              next if allow_last_error and /meets end of file|unexpected end-of-input/ =~ elem.message
-              on_scan.call(elem)
-            end
-          else
-            lexer.parse.sort_by(&:pos).each do |elem|
-              on_scan.call(elem)
-            end
+          lexer.scan.each do |elem|
+            next if allow_last_error and /meets end of file|unexpected end-of-input/ =~ elem.message
+            on_scan.call(elem)
           end
           # yield uncolorable DATA section
           yield(nil, inner_code.byteslice(byte_pos...inner_code.bytesize), nil) if byte_pos < inner_code.bytesize
@@ -242,7 +238,7 @@ module IRB # :nodoc:
         case token
         when :on_symbeg, :on_symbols_beg, :on_qsymbols_beg
           @stack << true
-        when :on_ident, :on_op, :on_const, :on_ivar, :on_cvar, :on_gvar, :on_kw
+        when :on_ident, :on_op, :on_const, :on_ivar, :on_cvar, :on_gvar, :on_kw, :on_backtick
           if @stack.last # Pop only when it's Symbol
             @stack.pop
             return prev_state

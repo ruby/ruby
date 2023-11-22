@@ -1,0 +1,4 @@
+<<END\
+blah
+END
+.strip

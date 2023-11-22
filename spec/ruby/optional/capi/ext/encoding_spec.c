@@ -12,7 +12,7 @@ static VALUE encoding_spec_MBCLEN_CHARFOUND_P(VALUE self, VALUE obj) {
 }
 
 static VALUE encoding_spec_ENC_CODERANGE_ASCIIONLY(VALUE self, VALUE obj) {
-  if(ENC_CODERANGE_ASCIIONLY(obj)) {
+  if (ENC_CODERANGE_ASCIIONLY(obj)) {
     return Qtrue;
   } else {
     return Qfalse;
@@ -61,13 +61,13 @@ static VALUE encoding_spec_rb_filesystem_encindex(VALUE self) {
 
 static VALUE encoding_spec_rb_default_internal_encoding(VALUE self) {
   rb_encoding* enc = rb_default_internal_encoding();
-  if(enc == 0) return Qnil;
+  if (enc == 0) return Qnil;
   return rb_str_new2(enc->name);
 }
 
 static VALUE encoding_spec_rb_default_external_encoding(VALUE self) {
   rb_encoding* enc = rb_default_external_encoding();
-  if(enc == 0) return Qnil;
+  if (enc == 0) return Qnil;
   return rb_str_new2(enc->name);
 }
 
@@ -86,7 +86,7 @@ static VALUE encoding_spec_rb_enc_associate_index(VALUE self, VALUE obj, VALUE i
 static VALUE encoding_spec_rb_enc_compatible(VALUE self, VALUE a, VALUE b) {
   rb_encoding* enc = rb_enc_compatible(a, b);
 
-  if(!enc) return INT2FIX(0);
+  if (!enc) return INT2FIX(0);
 
   return rb_enc_from_encoding(enc);
 }
@@ -271,6 +271,13 @@ static VALUE encoding_spec_rb_enc_str_asciionly_p(VALUE self, VALUE str) {
   }
 }
 
+static VALUE encoding_spec_rb_enc_raise(VALUE self, VALUE encoding, VALUE exception_class, VALUE format) {
+  rb_encoding *e = rb_to_encoding(encoding);
+  const char *f = RSTRING_PTR(format);
+
+  rb_enc_raise(e, exception_class, "%s", f);
+}
+
 static VALUE encoding_spec_rb_uv_to_utf8(VALUE self, VALUE buf, VALUE num) {
   int len = rb_uv_to_utf8(RSTRING_PTR(buf), NUM2INT(num));
   RB_ENC_CODERANGE_CLEAR(buf);
@@ -305,6 +312,12 @@ static VALUE encoding_spec_rb_enc_strlen(VALUE self, VALUE str, VALUE length, VA
   char *e = p + l;
 
   return LONG2FIX(rb_enc_strlen(p, e, rb_to_encoding(encoding)));
+}
+
+static VALUE encoding_spec_rb_enc_left_char_head(VALUE self, VALUE str, VALUE offset) {
+  char *ptr = RSTRING_PTR(str);
+  char *result = rb_enc_left_char_head(ptr, ptr + NUM2INT(offset), RSTRING_END(str), rb_enc_get(str));
+  return LONG2NUM(result - ptr);
 }
 
 void Init_encoding_spec(void) {
@@ -362,8 +375,10 @@ void Init_encoding_spec(void) {
   rb_define_method(cls, "rb_enc_nth", encoding_spec_rb_enc_nth, 2);
   rb_define_method(cls, "rb_enc_codepoint_len", encoding_spec_rb_enc_codepoint_len, 1);
   rb_define_method(cls, "rb_enc_str_asciionly_p", encoding_spec_rb_enc_str_asciionly_p, 1);
+  rb_define_method(cls, "rb_enc_raise", encoding_spec_rb_enc_raise, 3);
   rb_define_method(cls, "rb_uv_to_utf8", encoding_spec_rb_uv_to_utf8, 2);
   rb_define_method(cls, "ONIGENC_MBC_CASE_FOLD", encoding_spec_ONIGENC_MBC_CASE_FOLD, 1);
+  rb_define_method(cls, "rb_enc_left_char_head", encoding_spec_rb_enc_left_char_head, 2);
 }
 
 #ifdef __cplusplus

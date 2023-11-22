@@ -107,7 +107,7 @@ Rather than printing "true" you receive a NameError, "undefined local variable
 or method `a'".  Since ruby parses the bare +a+ left of the +if+ first and has
 not yet seen an assignment to +a+ it assumes you wish to call a method.  Ruby
 then sees the assignment to +a+ and will assume you are referencing a local
-method.
+variable.
 
 The confusion comes from the out-of-order execution of the expression.  First
 the local variable is assigned-to then you attempt to call a nonexistent
@@ -402,6 +402,10 @@ assigning.  This is similar to multiple assignment:
   a = *[1, 2, 3]
 
   p a # prints [1, 2, 3]
+
+  b = *1
+
+  p b # prints [1]
 
 You can splat anywhere in the right-hand side of the assignment:
 

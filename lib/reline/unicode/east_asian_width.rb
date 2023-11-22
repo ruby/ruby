@@ -1,6 +1,6 @@
 class Reline::Unicode::EastAsianWidth
   # This is based on EastAsianWidth.txt
-  # EastAsianWidth.txt
+  # UNICODE_VERSION = '15.1.0'
 
   # Fullwidth
   TYPE_F = /^[#{ %W(
@@ -60,14 +60,14 @@ class Reline::Unicode::EastAsianWidth
     \u{2E80}-\u{2E99}
     \u{2E9B}-\u{2EF3}
     \u{2F00}-\u{2FD5}
-    \u{2FF0}-\u{2FFB}
+    \u{2FF0}-\u{2FFF}
     \u{3001}-\u{303E}
     \u{3041}-\u{3096}
     \u{3099}-\u{30FF}
     \u{3105}-\u{312F}
     \u{3131}-\u{318E}
     \u{3190}-\u{31E3}
-    \u{31F0}-\u{321E}
+    \u{31EF}-\u{321E}
     \u{3220}-\u{3247}
     \u{3250}-\u{4DBF}
     \u{4E00}-\u{A48C}
@@ -84,8 +84,13 @@ class Reline::Unicode::EastAsianWidth
     \u{17000}-\u{187F7}
     \u{18800}-\u{18CD5}
     \u{18D00}-\u{18D08}
-    \u{1B000}-\u{1B11E}
+    \u{1AFF0}-\u{1AFF3}
+    \u{1AFF5}-\u{1AFFB}
+    \u{1AFFD}-\u{1AFFE}
+    \u{1B000}-\u{1B122}
+    \u{1B132}
     \u{1B150}-\u{1B152}
+    \u{1B155}
     \u{1B164}-\u{1B167}
     \u{1B170}-\u{1B2FB}
     \u{1F004}
@@ -119,21 +124,21 @@ class Reline::Unicode::EastAsianWidth
     \u{1F6CC}
     \u{1F6D0}-\u{1F6D2}
     \u{1F6D5}-\u{1F6D7}
+    \u{1F6DC}-\u{1F6DF}
     \u{1F6EB}-\u{1F6EC}
     \u{1F6F4}-\u{1F6FC}
     \u{1F7E0}-\u{1F7EB}
+    \u{1F7F0}
     \u{1F90C}-\u{1F93A}
     \u{1F93C}-\u{1F945}
-    \u{1F947}-\u{1F978}
-    \u{1F97A}-\u{1F9CB}
-    \u{1F9CD}-\u{1F9FF}
-    \u{1FA70}-\u{1FA74}
-    \u{1FA78}-\u{1FA7A}
-    \u{1FA80}-\u{1FA86}
-    \u{1FA90}-\u{1FAA8}
-    \u{1FAB0}-\u{1FAB6}
-    \u{1FAC0}-\u{1FAC2}
-    \u{1FAD0}-\u{1FAD6}
+    \u{1F947}-\u{1F9FF}
+    \u{1FA70}-\u{1FA7C}
+    \u{1FA80}-\u{1FA88}
+    \u{1FA90}-\u{1FABD}
+    \u{1FABF}-\u{1FAC5}
+    \u{1FACE}-\u{1FADB}
+    \u{1FAE0}-\u{1FAE8}
+    \u{1FAF0}-\u{1FAF8}
     \u{20000}-\u{2FFFD}
     \u{30000}-\u{3FFFD}
   ).join }]/
@@ -403,8 +408,7 @@ class Reline::Unicode::EastAsianWidth
     \u{0591}-\u{05C7}
     \u{05D0}-\u{05EA}
     \u{05EF}-\u{05F4}
-    \u{0600}-\u{061C}
-    \u{061E}-\u{070D}
+    \u{0600}-\u{070D}
     \u{070F}-\u{074A}
     \u{074D}-\u{07B1}
     \u{07C0}-\u{07FA}
@@ -413,9 +417,9 @@ class Reline::Unicode::EastAsianWidth
     \u{0840}-\u{085B}
     \u{085E}
     \u{0860}-\u{086A}
-    \u{08A0}-\u{08B4}
-    \u{08B6}-\u{08C7}
-    \u{08D3}-\u{0983}
+    \u{0870}-\u{088E}
+    \u{0890}-\u{0891}
+    \u{0898}-\u{0983}
     \u{0985}-\u{098C}
     \u{098F}-\u{0990}
     \u{0993}-\u{09A8}
@@ -493,11 +497,12 @@ class Reline::Unicode::EastAsianWidth
     \u{0C0E}-\u{0C10}
     \u{0C12}-\u{0C28}
     \u{0C2A}-\u{0C39}
-    \u{0C3D}-\u{0C44}
+    \u{0C3C}-\u{0C44}
     \u{0C46}-\u{0C48}
     \u{0C4A}-\u{0C4D}
     \u{0C55}-\u{0C56}
     \u{0C58}-\u{0C5A}
+    \u{0C5D}
     \u{0C60}-\u{0C63}
     \u{0C66}-\u{0C6F}
     \u{0C77}-\u{0C8C}
@@ -509,10 +514,10 @@ class Reline::Unicode::EastAsianWidth
     \u{0CC6}-\u{0CC8}
     \u{0CCA}-\u{0CCD}
     \u{0CD5}-\u{0CD6}
-    \u{0CDE}
+    \u{0CDD}-\u{0CDE}
     \u{0CE0}-\u{0CE3}
     \u{0CE6}-\u{0CEF}
-    \u{0CF1}-\u{0CF2}
+    \u{0CF1}-\u{0CF3}
     \u{0D00}-\u{0D0C}
     \u{0D0E}-\u{0D10}
     \u{0D12}-\u{0D44}
@@ -542,7 +547,7 @@ class Reline::Unicode::EastAsianWidth
     \u{0EA7}-\u{0EBD}
     \u{0EC0}-\u{0EC4}
     \u{0EC6}
-    \u{0EC8}-\u{0ECD}
+    \u{0EC8}-\u{0ECE}
     \u{0ED0}-\u{0ED9}
     \u{0EDC}-\u{0EDF}
     \u{0F00}-\u{0F47}
@@ -577,9 +582,8 @@ class Reline::Unicode::EastAsianWidth
     \u{13F8}-\u{13FD}
     \u{1400}-\u{169C}
     \u{16A0}-\u{16F8}
-    \u{1700}-\u{170C}
-    \u{170E}-\u{1714}
-    \u{1720}-\u{1736}
+    \u{1700}-\u{1715}
+    \u{171F}-\u{1736}
     \u{1740}-\u{1753}
     \u{1760}-\u{176C}
     \u{176E}-\u{1770}
@@ -587,8 +591,7 @@ class Reline::Unicode::EastAsianWidth
     \u{1780}-\u{17DD}
     \u{17E0}-\u{17E9}
     \u{17F0}-\u{17F9}
-    \u{1800}-\u{180E}
-    \u{1810}-\u{1819}
+    \u{1800}-\u{1819}
     \u{1820}-\u{1878}
     \u{1880}-\u{18AA}
     \u{18B0}-\u{18F5}
@@ -607,9 +610,9 @@ class Reline::Unicode::EastAsianWidth
     \u{1A7F}-\u{1A89}
     \u{1A90}-\u{1A99}
     \u{1AA0}-\u{1AAD}
-    \u{1AB0}-\u{1AC0}
-    \u{1B00}-\u{1B4B}
-    \u{1B50}-\u{1B7C}
+    \u{1AB0}-\u{1ACE}
+    \u{1B00}-\u{1B4C}
+    \u{1B50}-\u{1B7E}
     \u{1B80}-\u{1BF3}
     \u{1BFC}-\u{1C37}
     \u{1C3B}-\u{1C49}
@@ -617,8 +620,7 @@ class Reline::Unicode::EastAsianWidth
     \u{1C90}-\u{1CBA}
     \u{1CBD}-\u{1CC7}
     \u{1CD0}-\u{1CFA}
-    \u{1D00}-\u{1DF9}
-    \u{1DFB}-\u{1F15}
+    \u{1D00}-\u{1F15}
     \u{1F18}-\u{1F1D}
     \u{1F20}-\u{1F45}
     \u{1F48}-\u{1F4D}
@@ -653,7 +655,7 @@ class Reline::Unicode::EastAsianWidth
     \u{2090}-\u{209C}
     \u{20A0}-\u{20A8}
     \u{20AA}-\u{20AB}
-    \u{20AD}-\u{20BF}
+    \u{20AD}-\u{20C0}
     \u{20D0}-\u{20F0}
     \u{2100}-\u{2102}
     \u{2104}
@@ -767,9 +769,7 @@ class Reline::Unicode::EastAsianWidth
     \u{2B51}-\u{2B54}
     \u{2B5A}-\u{2B73}
     \u{2B76}-\u{2B95}
-    \u{2B97}-\u{2C2E}
-    \u{2C30}-\u{2C5E}
-    \u{2C60}-\u{2CF3}
+    \u{2B97}-\u{2CF3}
     \u{2CF9}-\u{2D25}
     \u{2D27}
     \u{2D2D}
@@ -784,14 +784,16 @@ class Reline::Unicode::EastAsianWidth
     \u{2DC8}-\u{2DCE}
     \u{2DD0}-\u{2DD6}
     \u{2DD8}-\u{2DDE}
-    \u{2DE0}-\u{2E52}
+    \u{2DE0}-\u{2E5D}
     \u{303F}
     \u{4DC0}-\u{4DFF}
     \u{A4D0}-\u{A62B}
     \u{A640}-\u{A6F7}
-    \u{A700}-\u{A7BF}
-    \u{A7C2}-\u{A7CA}
-    \u{A7F5}-\u{A82C}
+    \u{A700}-\u{A7CA}
+    \u{A7D0}-\u{A7D1}
+    \u{A7D3}
+    \u{A7D5}-\u{A7D9}
+    \u{A7F2}-\u{A82C}
     \u{A830}-\u{A839}
     \u{A840}-\u{A877}
     \u{A880}-\u{A8C5}
@@ -823,11 +825,11 @@ class Reline::Unicode::EastAsianWidth
     \u{FB3E}
     \u{FB40}-\u{FB41}
     \u{FB43}-\u{FB44}
-    \u{FB46}-\u{FBC1}
-    \u{FBD3}-\u{FD3F}
-    \u{FD50}-\u{FD8F}
+    \u{FB46}-\u{FBC2}
+    \u{FBD3}-\u{FD8F}
     \u{FD92}-\u{FDC7}
-    \u{FDF0}-\u{FDFD}
+    \u{FDCF}
+    \u{FDF0}-\u{FDFF}
     \u{FE20}-\u{FE2F}
     \u{FE70}-\u{FE74}
     \u{FE76}-\u{FEFC}
@@ -861,10 +863,20 @@ class Reline::Unicode::EastAsianWidth
     \u{104D8}-\u{104FB}
     \u{10500}-\u{10527}
     \u{10530}-\u{10563}
-    \u{1056F}
+    \u{1056F}-\u{1057A}
+    \u{1057C}-\u{1058A}
+    \u{1058C}-\u{10592}
+    \u{10594}-\u{10595}
+    \u{10597}-\u{105A1}
+    \u{105A3}-\u{105B1}
+    \u{105B3}-\u{105B9}
+    \u{105BB}-\u{105BC}
     \u{10600}-\u{10736}
     \u{10740}-\u{10755}
     \u{10760}-\u{10767}
+    \u{10780}-\u{10785}
+    \u{10787}-\u{107B0}
+    \u{107B2}-\u{107BA}
     \u{10800}-\u{10805}
     \u{10808}
     \u{1080A}-\u{10835}
@@ -906,13 +918,14 @@ class Reline::Unicode::EastAsianWidth
     \u{10E80}-\u{10EA9}
     \u{10EAB}-\u{10EAD}
     \u{10EB0}-\u{10EB1}
-    \u{10F00}-\u{10F27}
+    \u{10EFD}-\u{10F27}
     \u{10F30}-\u{10F59}
+    \u{10F70}-\u{10F89}
     \u{10FB0}-\u{10FCB}
     \u{10FE0}-\u{10FF6}
     \u{11000}-\u{1104D}
-    \u{11052}-\u{1106F}
-    \u{1107F}-\u{110C1}
+    \u{11052}-\u{11075}
+    \u{1107F}-\u{110C2}
     \u{110CD}
     \u{110D0}-\u{110E8}
     \u{110F0}-\u{110F9}
@@ -922,7 +935,7 @@ class Reline::Unicode::EastAsianWidth
     \u{11180}-\u{111DF}
     \u{111E1}-\u{111F4}
     \u{11200}-\u{11211}
-    \u{11213}-\u{1123E}
+    \u{11213}-\u{11241}
     \u{11280}-\u{11286}
     \u{11288}
     \u{1128A}-\u{1128D}
@@ -954,11 +967,11 @@ class Reline::Unicode::EastAsianWidth
     \u{11600}-\u{11644}
     \u{11650}-\u{11659}
     \u{11660}-\u{1166C}
-    \u{11680}-\u{116B8}
+    \u{11680}-\u{116B9}
     \u{116C0}-\u{116C9}
     \u{11700}-\u{1171A}
     \u{1171D}-\u{1172B}
-    \u{11730}-\u{1173F}
+    \u{11730}-\u{11746}
     \u{11800}-\u{1183B}
     \u{118A0}-\u{118F2}
     \u{118FF}-\u{11906}
@@ -974,7 +987,8 @@ class Reline::Unicode::EastAsianWidth
     \u{119DA}-\u{119E4}
     \u{11A00}-\u{11A47}
     \u{11A50}-\u{11AA2}
-    \u{11AC0}-\u{11AF8}
+    \u{11AB0}-\u{11AF8}
+    \u{11B00}-\u{11B09}
     \u{11C00}-\u{11C08}
     \u{11C0A}-\u{11C36}
     \u{11C38}-\u{11C45}
@@ -996,19 +1010,23 @@ class Reline::Unicode::EastAsianWidth
     \u{11D93}-\u{11D98}
     \u{11DA0}-\u{11DA9}
     \u{11EE0}-\u{11EF8}
+    \u{11F00}-\u{11F10}
+    \u{11F12}-\u{11F3A}
+    \u{11F3E}-\u{11F59}
     \u{11FB0}
     \u{11FC0}-\u{11FF1}
     \u{11FFF}-\u{12399}
     \u{12400}-\u{1246E}
     \u{12470}-\u{12474}
     \u{12480}-\u{12543}
-    \u{13000}-\u{1342E}
-    \u{13430}-\u{13438}
+    \u{12F90}-\u{12FF2}
+    \u{13000}-\u{13455}
     \u{14400}-\u{14646}
     \u{16800}-\u{16A38}
     \u{16A40}-\u{16A5E}
     \u{16A60}-\u{16A69}
-    \u{16A6E}-\u{16A6F}
+    \u{16A6E}-\u{16ABE}
+    \u{16AC0}-\u{16AC9}
     \u{16AD0}-\u{16AED}
     \u{16AF0}-\u{16AF5}
     \u{16B00}-\u{16B45}
@@ -1025,10 +1043,14 @@ class Reline::Unicode::EastAsianWidth
     \u{1BC80}-\u{1BC88}
     \u{1BC90}-\u{1BC99}
     \u{1BC9C}-\u{1BCA3}
+    \u{1CF00}-\u{1CF2D}
+    \u{1CF30}-\u{1CF46}
+    \u{1CF50}-\u{1CFC3}
     \u{1D000}-\u{1D0F5}
     \u{1D100}-\u{1D126}
-    \u{1D129}-\u{1D1E8}
+    \u{1D129}-\u{1D1EA}
     \u{1D200}-\u{1D245}
+    \u{1D2C0}-\u{1D2D3}
     \u{1D2E0}-\u{1D2F3}
     \u{1D300}-\u{1D356}
     \u{1D360}-\u{1D378}
@@ -1055,17 +1077,27 @@ class Reline::Unicode::EastAsianWidth
     \u{1D7CE}-\u{1DA8B}
     \u{1DA9B}-\u{1DA9F}
     \u{1DAA1}-\u{1DAAF}
+    \u{1DF00}-\u{1DF1E}
+    \u{1DF25}-\u{1DF2A}
     \u{1E000}-\u{1E006}
     \u{1E008}-\u{1E018}
     \u{1E01B}-\u{1E021}
     \u{1E023}-\u{1E024}
     \u{1E026}-\u{1E02A}
+    \u{1E030}-\u{1E06D}
+    \u{1E08F}
     \u{1E100}-\u{1E12C}
     \u{1E130}-\u{1E13D}
     \u{1E140}-\u{1E149}
     \u{1E14E}-\u{1E14F}
+    \u{1E290}-\u{1E2AE}
     \u{1E2C0}-\u{1E2F9}
     \u{1E2FF}
+    \u{1E4D0}-\u{1E4F9}
+    \u{1E7E0}-\u{1E7E6}
+    \u{1E7E8}-\u{1E7EB}
+    \u{1E7ED}-\u{1E7EE}
+    \u{1E7F0}-\u{1E7FE}
     \u{1E800}-\u{1E8C4}
     \u{1E8C7}-\u{1E8D6}
     \u{1E900}-\u{1E94B}
@@ -1142,8 +1174,8 @@ class Reline::Unicode::EastAsianWidth
     \u{1F6D3}-\u{1F6D4}
     \u{1F6E0}-\u{1F6EA}
     \u{1F6F0}-\u{1F6F3}
-    \u{1F700}-\u{1F773}
-    \u{1F780}-\u{1F7D8}
+    \u{1F700}-\u{1F776}
+    \u{1F77B}-\u{1F7D9}
     \u{1F800}-\u{1F80B}
     \u{1F810}-\u{1F847}
     \u{1F850}-\u{1F859}

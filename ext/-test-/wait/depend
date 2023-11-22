@@ -52,6 +52,7 @@ wait.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 wait.o: $(hdrdir)/ruby/internal/attr/noinline.h
 wait.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 wait.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+wait.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 wait.o: $(hdrdir)/ruby/internal/attr/pure.h
 wait.o: $(hdrdir)/ruby/internal/attr/restrict.h
 wait.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -120,7 +121,6 @@ wait.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 wait.o: $(hdrdir)/ruby/internal/intern/error.h
 wait.o: $(hdrdir)/ruby/internal/intern/eval.h
 wait.o: $(hdrdir)/ruby/internal/intern/file.h
-wait.o: $(hdrdir)/ruby/internal/intern/gc.h
 wait.o: $(hdrdir)/ruby/internal/intern/hash.h
 wait.o: $(hdrdir)/ruby/internal/intern/io.h
 wait.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -151,7 +151,6 @@ wait.o: $(hdrdir)/ruby/internal/memory.h
 wait.o: $(hdrdir)/ruby/internal/method.h
 wait.o: $(hdrdir)/ruby/internal/module.h
 wait.o: $(hdrdir)/ruby/internal/newobj.h
-wait.o: $(hdrdir)/ruby/internal/rgengc.h
 wait.o: $(hdrdir)/ruby/internal/scan_args.h
 wait.o: $(hdrdir)/ruby/internal/special_consts.h
 wait.o: $(hdrdir)/ruby/internal/static_assert.h

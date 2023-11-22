@@ -87,6 +87,9 @@ RSpec.describe "real source plugins" do
         DEPENDENCIES
           a-path-gem!
 
+        CHECKSUMS
+          a-path-gem (1.0)
+
         BUNDLED WITH
            #{Bundler::VERSION}
       G
@@ -353,6 +356,9 @@ RSpec.describe "real source plugins" do
 
         DEPENDENCIES
           ma-gitp-gem!
+
+        CHECKSUMS
+          ma-gitp-gem (1.0)
 
         BUNDLED WITH
            #{Bundler::VERSION}

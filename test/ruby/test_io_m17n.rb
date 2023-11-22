@@ -1158,6 +1158,78 @@ EOT
     end
   end
 
+  def test_set_encoding_argument_parsing
+    File.open(File::NULL) do |f|
+      f.set_encoding('binary')
+      assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding(Encoding.find('binary'))
+      assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding('binary:utf-8')
+      assert_equal(nil, f.internal_encoding)
+      assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding('binary', 'utf-8')
+      assert_equal(nil, f.internal_encoding)
+      assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding(Encoding.find('binary'), Encoding.find('utf-8'))
+      assert_equal(nil, f.internal_encoding)
+      assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding('binary', Encoding.find('utf-8'))
+      assert_equal(nil, f.internal_encoding)
+      assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding(Encoding.find('binary'), 'utf-8')
+      assert_equal(nil, f.internal_encoding)
+      assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding('iso-8859-1:utf-8')
+      assert_equal(Encoding::UTF_8, f.internal_encoding)
+      assert_equal(Encoding::ISO_8859_1, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding('iso-8859-1', 'utf-8')
+      assert_equal(Encoding::UTF_8, f.internal_encoding)
+      assert_equal(Encoding::ISO_8859_1, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding(Encoding.find('iso-8859-1'), Encoding.find('utf-8'))
+      assert_equal(Encoding::UTF_8, f.internal_encoding)
+      assert_equal(Encoding::ISO_8859_1, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding('iso-8859-1', Encoding.find('utf-8'))
+      assert_equal(Encoding::UTF_8, f.internal_encoding)
+      assert_equal(Encoding::ISO_8859_1, f.external_encoding)
+    end
+
+    File.open(File::NULL) do |f|
+      f.set_encoding(Encoding.find('iso-8859-1'), 'utf-8')
+      assert_equal(Encoding::UTF_8, f.internal_encoding)
+      assert_equal(Encoding::ISO_8859_1, f.external_encoding)
+    end
+  end
+
   def test_textmode_twice
     assert_raise(ArgumentError) {
       open(__FILE__, "rt", textmode: true) {|f|
@@ -1324,23 +1396,27 @@ EOT
   end
 
   def test_open_pipe_r_enc
-    open("|#{EnvUtil.rubybin} -e 'putc 255'", "r:ascii-8bit") {|f|
-      assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
-      assert_equal(nil, f.internal_encoding)
-      s = f.read
-      assert_equal(Encoding::ASCII_8BIT, s.encoding)
-      assert_equal("\xff".force_encoding("ascii-8bit"), s)
-    }
+    EnvUtil.suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+      open("|#{EnvUtil.rubybin} -e 'putc 255'", "r:ascii-8bit") {|f|
+        assert_equal(Encoding::ASCII_8BIT, f.external_encoding)
+        assert_equal(nil, f.internal_encoding)
+        s = f.read
+        assert_equal(Encoding::ASCII_8BIT, s.encoding)
+        assert_equal("\xff".force_encoding("ascii-8bit"), s)
+      }
+    end
   end
 
   def test_open_pipe_r_enc2
-    open("|#{EnvUtil.rubybin} -e 'putc \"\\u3042\"'", "r:UTF-8") {|f|
-      assert_equal(Encoding::UTF_8, f.external_encoding)
-      assert_equal(nil, f.internal_encoding)
-      s = f.read
-      assert_equal(Encoding::UTF_8, s.encoding)
-      assert_equal("\u3042", s)
-    }
+    EnvUtil.suppress_warning do # https://bugs.ruby-lang.org/issues/19630
+      open("|#{EnvUtil.rubybin} -e 'putc \"\\u3042\"'", "r:UTF-8") {|f|
+        assert_equal(Encoding::UTF_8, f.external_encoding)
+        assert_equal(nil, f.internal_encoding)
+        s = f.read
+        assert_equal(Encoding::UTF_8, s.encoding)
+        assert_equal("\u3042", s)
+      }
+    end
   end
 
   def test_s_foreach_enc

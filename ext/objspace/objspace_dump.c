@@ -12,12 +12,13 @@
 
 **********************************************************************/
 
-#include "gc.h"
 #include "id_table.h"
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/class.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
+#include "internal/io.h"
 #include "internal/string.h"
 #include "internal/sanitizers.h"
 #include "symbol.h"
@@ -27,6 +28,7 @@
 #include "ruby/debug.h"
 #include "ruby/util.h"
 #include "ruby/io.h"
+#include "vm_callinfo.h"
 #include "vm_core.h"
 
 RUBY_EXTERN const char ruby_hexdigits[];
@@ -166,10 +168,8 @@ dump_append_c(struct dump_config *dc, unsigned char c)
 }
 
 static void
-dump_append_ref(struct dump_config *dc, VALUE ref)
+dump_append_ptr(struct dump_config *dc, VALUE ref)
 {
-    RUBY_ASSERT(ref > 0);
-
     char buffer[roomof(sizeof(VALUE) * CHAR_BIT, 4) + rb_strlen_lit("\"0x\"")];
     char *buffer_start, *buffer_end;
 
@@ -184,6 +184,14 @@ dump_append_ref(struct dump_config *dc, VALUE ref)
     *--buffer_start = '"';
     buffer_append(dc, buffer_start, buffer_end - buffer_start);
 }
+
+static void
+dump_append_ref(struct dump_config *dc, VALUE ref)
+{
+    RUBY_ASSERT(ref > 0);
+    dump_append_ptr(dc, ref);
+}
+
 
 static void
 dump_append_string_value(struct dump_config *dc, VALUE obj)
@@ -358,8 +366,9 @@ dump_append_string_content(struct dump_config *dc, VALUE obj)
 static inline void
 dump_append_id(struct dump_config *dc, ID id)
 {
-    if (is_instance_id(id)) {
-        dump_append_string_value(dc, rb_sym2str(ID2SYM(id)));
+    VALUE str = rb_sym2str(ID2SYM(id));
+    if (RTEST(str)) {
+        dump_append_string_value(dc, str);
     }
     else {
         dump_append(dc, "\"ID_INTERNAL(");
@@ -377,6 +386,7 @@ dump_object(VALUE obj, struct dump_config *dc)
     rb_io_t *fptr;
     ID flags[RB_OBJ_GC_FLAGS_MAX];
     size_t n, i;
+    ID mid;
 
     if (SPECIAL_CONST_P(obj)) {
         dump_append_special_const(dc, obj);
@@ -428,6 +438,33 @@ dump_object(VALUE obj, struct dump_config *dc)
         dump_append(dc, ", \"imemo_type\":\"");
         dump_append(dc, rb_imemo_name(imemo_type(obj)));
         dump_append(dc, "\"");
+
+        switch (imemo_type(obj)) {
+          case imemo_callinfo:
+            mid = vm_ci_mid((const struct rb_callinfo *)obj);
+            if (mid != 0) {
+                dump_append(dc, ", \"mid\":");
+                dump_append_id(dc, mid);
+            }
+            break;
+
+          case imemo_callcache:
+            mid = vm_cc_cme((const struct rb_callcache *)obj)->called_id;
+            if (mid != 0) {
+                dump_append(dc, ", \"called_id\":");
+                dump_append_id(dc, mid);
+
+                VALUE klass = ((const struct rb_callcache *)obj)->klass;
+                if (klass != 0) {
+                    dump_append(dc, ", \"receiver_class\":");
+                    dump_append_ref(dc, klass);
+                }
+            }
+            break;
+
+          default:
+            break;
+        }
         break;
 
       case T_SYMBOL:
@@ -544,6 +581,10 @@ dump_object(VALUE obj, struct dump_config *dc)
         break;
 
       case T_OBJECT:
+        if (FL_TEST(obj, ROBJECT_EMBED)) {
+            dump_append(dc, ", \"embedded\":true");
+        }
+
         dump_append(dc, ", \"ivars\":");
         dump_append_lu(dc, ROBJECT_IV_COUNT(obj));
         if (rb_shape_obj_too_complex(obj)) {
@@ -750,16 +791,6 @@ shape_i(rb_shape_t *shape, void *data)
         break;
       case SHAPE_FROZEN:
         dump_append(dc, "\"FROZEN\"");
-        break;
-      case SHAPE_CAPACITY_CHANGE:
-        dump_append(dc, "\"CAPACITY_CHANGE\"");
-        dump_append(dc, ", \"capacity\":");
-        dump_append_sizet(dc, shape->capacity);
-        break;
-      case SHAPE_INITIAL_CAPACITY:
-        dump_append(dc, "\"INITIAL_CAPACITY\"");
-        dump_append(dc, ", \"capacity\":");
-        dump_append_sizet(dc, shape->capacity);
         break;
       case SHAPE_T_OBJECT:
         dump_append(dc, "\"T_OBJECT\"");

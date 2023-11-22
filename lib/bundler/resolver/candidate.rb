@@ -26,9 +26,8 @@ module Bundler
 
       def initialize(version, specs: [])
         @spec_group = Resolver::SpecGroup.new(specs)
-        @platforms = specs.map(&:platform).sort_by(&:to_s).uniq
         @version = Gem::Version.new(version)
-        @ruby_only = @platforms == [Gem::Platform::RUBY]
+        @ruby_only = specs.map(&:platform).uniq == [Gem::Platform::RUBY]
       end
 
       def dependencies
@@ -39,6 +38,18 @@ module Bundler
         return [] if package.meta?
 
         @spec_group.to_specs(package.force_ruby_platform?)
+      end
+
+      def generic!
+        @ruby_only = true
+
+        self
+      end
+
+      def platform_specific!
+        @ruby_only = false
+
+        self
       end
 
       def prerelease?
@@ -53,27 +64,20 @@ module Bundler
         [@version, @ruby_only ? -1 : 1]
       end
 
-      def canonical?
-        !@spec_group.empty?
-      end
-
       def <=>(other)
         return unless other.is_a?(self.class)
-        return @version <=> other.version unless canonical? && other.canonical?
 
         sort_obj <=> other.sort_obj
       end
 
       def ==(other)
         return unless other.is_a?(self.class)
-        return @version == other.version unless canonical? && other.canonical?
 
         sort_obj == other.sort_obj
       end
 
       def eql?(other)
         return unless other.is_a?(self.class)
-        return @version.eql?(other.version) unless canonical? || other.canonical?
 
         sort_obj.eql?(other.sort_obj)
       end
@@ -83,9 +87,7 @@ module Bundler
       end
 
       def to_s
-        return @version.to_s if @platforms.empty? || @ruby_only
-
-        "#{@version} (#{@platforms.join(", ")})"
+        @version.to_s
       end
     end
   end

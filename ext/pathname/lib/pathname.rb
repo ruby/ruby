@@ -14,6 +14,8 @@ require 'pathname.so'
 
 class Pathname
 
+  VERSION = "0.3.0"
+
   # :stopdoc:
 
   # to_path is implemented so Pathname objects are usable with File.open, etc.

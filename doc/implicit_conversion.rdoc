@@ -1,4 +1,4 @@
-== Implicit Conversions
+= Implicit Conversions
 
 Some Ruby methods accept one or more objects
 that can be either:
@@ -15,7 +15,7 @@ a specific conversion method:
 * Integer: +to_int+
 * String: +to_str+
 
-=== Array-Convertible Objects
+== Array-Convertible Objects
 
 An <i>Array-convertible object</i> is an object that:
 
@@ -69,7 +69,7 @@ This class is not Array-convertible (method +to_ary+ returns non-Array):
     # Raises TypeError (can't convert NotArrayConvertible to Array (NotArrayConvertible#to_ary gives Symbol))
     a.replace(NotArrayConvertible.new)
 
-=== Hash-Convertible Objects
+== Hash-Convertible Objects
 
 A <i>Hash-convertible object</i> is an object that:
 
@@ -123,7 +123,7 @@ This class is not Hash-convertible (method +to_hash+ returns non-Hash):
     # Raises TypeError (can't convert NotHashConvertible to Hash (ToHashReturnsNonHash#to_hash gives Symbol))
     h.merge(NotHashConvertible.new)
 
-=== Integer-Convertible Objects
+== Integer-Convertible Objects
 
 An <i>Integer-convertible object</i> is an object that:
 
@@ -171,7 +171,7 @@ This class is not Integer-convertible (method +to_int+ returns non-Integer):
     # Raises TypeError (can't convert NotIntegerConvertible to Integer (NotIntegerConvertible#to_int gives Symbol))
     Array.new(NotIntegerConvertible.new)
 
-=== String-Convertible Objects
+== String-Convertible Objects
 
 A <i>String-convertible object</i> is an object that:
 * Has instance method +to_str+.

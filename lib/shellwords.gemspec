@@ -1,6 +1,14 @@
+name = File.basename(__FILE__, ".gemspec")
+version = ["lib", Array.new(name.count("-")+1).join("/")].find do |dir|
+  break File.foreach(File.join(__dir__, dir, "#{name.tr('-', '/')}.rb")) do |line|
+    /^\s*VERSION\s*=\s*"(.*)"/ =~ line and break $1
+  end rescue nil
+end
+
+
 Gem::Specification.new do |spec|
-  spec.name          = "shellwords"
-  spec.version       = "0.1.0"
+  spec.name          = name
+  spec.version       = version
   spec.authors       = ["Akinori MUSHA"]
   spec.email         = ["knu@idaemons.org"]
 

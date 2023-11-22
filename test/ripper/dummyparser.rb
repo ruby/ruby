@@ -4,8 +4,9 @@
 #
 
 require 'ripper'
+module TestRipper; end
 
-class Node
+class TestRipper::Node
   def initialize(name, *nodes)
     @name = name
     @children = nodes
@@ -14,7 +15,7 @@ class Node
   attr_reader :name, :children
 
   def to_s
-    "#{@name}(#{Node.trim_nil(@children).map {|n| n.to_s }.join(',')})"
+    "#{@name}(#{TestRipper::Node.trim_nil(@children).map {|n| n.to_s }.join(',')})"
   end
 
   def self.trim_nil(list)
@@ -36,7 +37,7 @@ class Node
   end
 end
 
-class NodeList
+class TestRipper::NodeList
   def initialize(list = [])
     @list = list
   end
@@ -62,7 +63,7 @@ class NodeList
   end
 end
 
-class DummyParser < Ripper
+class TestRipper::DummyParser < Ripper
   def hook(*names)
     class << self; self; end.class_eval do
       names.each do |name|
@@ -81,7 +82,7 @@ class DummyParser < Ripper
   end
 
   def on_stmts_new
-    NodeList.new
+    TestRipper::NodeList.new
   end
 
   def on_stmts_add(stmts, st)
@@ -90,23 +91,23 @@ class DummyParser < Ripper
   end
 
   def on_void_stmt
-    Node.new('void')
+    TestRipper::Node.new('void')
   end
 
   def on_var_ref(name)
-    Node.new('ref', name)
+    TestRipper::Node.new('ref', name)
   end
 
   def on_var_alias(a, b)
-    Node.new('valias', a, b)
+    TestRipper::Node.new('valias', a, b)
   end
 
   def on_assign_error(mesg = nil, a)
-    Node.new('assign_error', a)
+    TestRipper::Node.new('assign_error', a)
   end
 
   def on_alias_error(mesg = nil, a)
-    Node.new('aliaserr', a)
+    TestRipper::Node.new('aliaserr', a)
   end
 
   def on_arg_paren(args)
@@ -114,7 +115,7 @@ class DummyParser < Ripper
   end
 
   def on_args_new
-    NodeList.new
+    TestRipper::NodeList.new
   end
 
   def on_args_add(list, arg)
@@ -156,7 +157,7 @@ class DummyParser < Ripper
   end
 
   def on_brace_block(params, code)
-    Node.new('block', params, code)
+    TestRipper::Node.new('block', params, code)
   end
 
   def on_block_var(params, shadow)
@@ -176,7 +177,7 @@ class DummyParser < Ripper
   end
 
   def on_params(required, optional, rest, more, keyword, keyword_rest, block)
-    args = NodeList.new
+    args = TestRipper::NodeList.new
 
     required.each do |req|
       args.push(req)
@@ -197,15 +198,15 @@ class DummyParser < Ripper
   end
 
   def on_assoc_new(a, b)
-    Node.new('assoc', a, b)
+    TestRipper::Node.new('assoc', a, b)
   end
 
   def on_bare_assoc_hash(assoc_list)
-    Node.new('assocs', *assoc_list)
+    TestRipper::Node.new('assocs', *assoc_list)
   end
 
   def on_assoclist_from_args(a)
-    Node.new('assocs', *a)
+    TestRipper::Node.new('assocs', *a)
   end
 
   def on_word_new
@@ -217,7 +218,7 @@ class DummyParser < Ripper
   end
 
   def on_words_new
-    NodeList.new
+    TestRipper::NodeList.new
   end
 
   def on_words_add(words, word)
@@ -225,7 +226,7 @@ class DummyParser < Ripper
   end
 
   def on_qwords_new
-    NodeList.new
+    TestRipper::NodeList.new
   end
 
   def on_qwords_add(words, word)
@@ -233,27 +234,27 @@ class DummyParser < Ripper
   end
 
   def on_symbols_new
-    NodeList.new
+    TestRipper::NodeList.new
   end
 
   def on_symbols_add(symbols, symbol)
-    symbols.push Node::Sym.new(symbol)
+    symbols.push TestRipper::Node::Sym.new(symbol)
   end
 
   def on_qsymbols_new
-    NodeList.new
+    TestRipper::NodeList.new
   end
 
   def on_qsymbols_add(symbols, symbol)
-    symbols.push Node::Sym.new(symbol)
+    symbols.push TestRipper::Node::Sym.new(symbol)
   end
 
   def on_mlhs_new
-    NodeList.new
+    TestRipper::NodeList.new
   end
 
   def on_mlhs_paren(list)
-    Node.new(:mlhs, list)
+    TestRipper::Node.new(:mlhs, list)
   end
 
   def on_mlhs_add(list, node)
@@ -277,12 +278,12 @@ class DummyParser < Ripper
   end
 
   def on_rescue(exc, *rest)
-    Node.new('rescue', (exc && NodeList.new(exc)), *rest)
+    TestRipper::Node.new('rescue', (exc && TestRipper::NodeList.new(exc)), *rest)
   end
 
   (Ripper::PARSER_EVENTS.map(&:to_s) - instance_methods(false).map {|n|n.to_s.sub(/^on_/, '')}).each do |event|
     define_method(:"on_#{event}") do |*args|
-      Node.new(event, *args)
+      TestRipper::Node.new(event, *args)
     end
   end
 end

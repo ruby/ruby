@@ -62,7 +62,7 @@ VALUE string_spec_rb_str_buf_new(VALUE self, VALUE len, VALUE str) {
 
   buf = rb_str_buf_new(NUM2LONG(len));
 
-  if(RTEST(str)) {
+  if (RTEST(str)) {
     snprintf(RSTRING_PTR(buf), NUM2LONG(len), "%s", RSTRING_PTR(str));
   }
 
@@ -129,7 +129,7 @@ VALUE string_spec_rb_str_conv_enc(VALUE self, VALUE str, VALUE from, VALUE to) {
 
   from_enc = rb_to_encoding(from);
 
-  if(NIL_P(to)) {
+  if (NIL_P(to)) {
     to_enc = 0;
   } else {
     to_enc = rb_to_encoding(to);
@@ -139,14 +139,13 @@ VALUE string_spec_rb_str_conv_enc(VALUE self, VALUE str, VALUE from, VALUE to) {
 }
 
 VALUE string_spec_rb_str_conv_enc_opts(VALUE self, VALUE str, VALUE from, VALUE to,
-                                       VALUE ecflags, VALUE ecopts)
-{
+                                       VALUE ecflags, VALUE ecopts) {
   rb_encoding* from_enc;
   rb_encoding* to_enc;
 
   from_enc = rb_to_encoding(from);
 
-  if(NIL_P(to)) {
+  if (NIL_P(to)) {
     to_enc = 0;
   } else {
     to_enc = rb_to_encoding(to);
@@ -200,7 +199,7 @@ VALUE string_spec_rb_str_new_offset(VALUE self, VALUE str, VALUE offset, VALUE l
 }
 
 VALUE string_spec_rb_str_new2(VALUE self, VALUE str) {
-  if(NIL_P(str)) {
+  if (NIL_P(str)) {
     return rb_str_new2("");
   } else {
     return rb_str_new2(RSTRING_PTR(str));
@@ -216,7 +215,7 @@ VALUE string_spec_rb_str_export_to_enc(VALUE self, VALUE str, VALUE enc) {
 }
 
 VALUE string_spec_rb_str_new_cstr(VALUE self, VALUE str) {
-  if(NIL_P(str)) {
+  if (NIL_P(str)) {
     return rb_str_new_cstr("");
   } else {
     return rb_str_new_cstr(RSTRING_PTR(str));
@@ -390,7 +389,7 @@ VALUE string_spec_RSTRING_PTR_set(VALUE self, VALUE str, VALUE i, VALUE chr) {
 
 VALUE string_spec_RSTRING_PTR_after_funcall(VALUE self, VALUE str, VALUE cb) {
   /* Silence gcc 4.3.2 warning about computed value not used */
-  if(RSTRING_PTR(str)) { /* force it out */
+  if (RSTRING_PTR(str)) { /* force it out */
     rb_funcall(cb, rb_intern("call"), 1, str);
   }
 
@@ -573,7 +572,7 @@ static VALUE string_spec_rb_utf8_str_new_cstr(VALUE self) {
 }
 
 PRINTF_ARGS(static VALUE call_rb_str_vcatf(VALUE mesg, const char *fmt, ...), 2, 3);
-static VALUE call_rb_str_vcatf(VALUE mesg, const char *fmt, ...){
+static VALUE call_rb_str_vcatf(VALUE mesg, const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
   VALUE result = rb_str_vcatf(mesg, fmt, ap);

@@ -1,0 +1,4 @@
+__ENCODING__
+__FILE__
+__LINE__
+__dir__

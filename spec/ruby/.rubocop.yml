@@ -1,7 +1,7 @@
 inherit_from: .rubocop_todo.yml
 
 AllCops:
-  TargetRubyVersion: 2.7
+  TargetRubyVersion: 3.0
   DisplayCopNames: true
   Exclude:
     - command_line/fixtures/bad_syntax.rb
@@ -32,6 +32,10 @@ Lint/AssignmentInCondition:
 
 Lint/BooleanSymbol:
   Enabled: false
+
+Lint/DeprecatedOpenSSLConstant:
+  Exclude:
+    - library/openssl/digest/**/*.rb
 
 Lint/InterpolationCheck:
   Enabled: false

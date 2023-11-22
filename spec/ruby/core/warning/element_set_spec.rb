@@ -8,18 +8,24 @@ describe "Warning.[]=" do
 
   describe ":experimental" do
     before do
-      ruby_version_is ""..."3.0" do
-        @src = 'case [0, 1]; in [a, b]; end'
-      end
-
-      ruby_version_is "3.0" do
-        @src = 'warn "This is experimental warning.", category: :experimental'
-      end
+      @src = 'warn "This is experimental warning.", category: :experimental'
     end
 
     it "emits and suppresses warnings for :experimental" do
       ruby_exe("Warning[:experimental] = true; eval('#{@src}')", args: "2>&1").should =~ /is experimental/
       ruby_exe("Warning[:experimental] = false; eval('#{@src}')", args: "2>&1").should == ""
+    end
+  end
+
+  ruby_version_is '3.3' do
+    it "enables or disables performance warnings" do
+      original = Warning[:performance]
+      begin
+        Warning[:performance] = !original
+        Warning[:performance].should == !original
+      ensure
+        Warning[:performance] = original
+      end
     end
   end
 

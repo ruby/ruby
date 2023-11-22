@@ -113,7 +113,7 @@ module DidYouMean
   correct_error LoadError, RequirePathChecker if RUBY_VERSION >= '2.8.0'
   correct_error NoMatchingPatternKeyError, PatternKeyNameChecker if defined?(::NoMatchingPatternKeyError)
 
-  # TODO: Remove on 3.3:
+  # TODO: Remove on the 3.4 development start:
   class DeprecatedMapping # :nodoc:
     def []=(key, value)
       warn "Calling `DidYouMean::SPELL_CHECKERS[#{key.to_s}] = #{value.to_s}' has been deprecated. " \
@@ -132,7 +132,7 @@ module DidYouMean
     end
   end
 
-  # TODO: Remove on 3.3:
+  # TODO: Remove on the 3.4 development start:
   SPELL_CHECKERS = DeprecatedMapping.new
   deprecate_constant :SPELL_CHECKERS
   private_constant :DeprecatedMapping

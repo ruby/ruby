@@ -26,7 +26,7 @@ class OpenSSL::TestEngine < OpenSSL::TestCase
     with_openssl <<-'end;'
       orig = OpenSSL::Engine.engines
       pend "'openssl' is already loaded" if orig.any? { |e| e.id == "openssl" }
-      engine = get_engine
+      engine = OpenSSL::Engine.by_id("openssl")
       assert_not_nil(engine)
       assert_equal(1, OpenSSL::Engine.engines.size - orig.size)
     end;
@@ -34,7 +34,7 @@ class OpenSSL::TestEngine < OpenSSL::TestCase
 
   def test_openssl_engine_id_name_inspect
     with_openssl <<-'end;'
-      engine = get_engine
+      engine = OpenSSL::Engine.by_id("openssl")
       assert_equal("openssl", engine.id)
       assert_not_nil(engine.name)
       assert_not_nil(engine.inspect)
@@ -43,7 +43,7 @@ class OpenSSL::TestEngine < OpenSSL::TestCase
 
   def test_openssl_engine_digest_sha1
     with_openssl <<-'end;'
-      engine = get_engine
+      engine = OpenSSL::Engine.by_id("openssl")
       digest = engine.digest("SHA1")
       assert_not_nil(digest)
       data = "test"
@@ -59,12 +59,21 @@ class OpenSSL::TestEngine < OpenSSL::TestCase
     end
 
     with_openssl(<<-'end;', ignore_stderr: true)
-      engine = get_engine
+      engine = OpenSSL::Engine.by_id("openssl")
       algo = "RC4"
       data = "a" * 1000
       key = OpenSSL::Random.random_bytes(16)
-      encrypted = crypt_data(data, key, :encrypt) { engine.cipher(algo) }
-      decrypted = crypt_data(encrypted, key, :decrypt) { OpenSSL::Cipher.new(algo) }
+
+      cipher = engine.cipher(algo)
+      cipher.encrypt
+      cipher.key = key
+      encrypted = cipher.update(data) + cipher.final
+
+      cipher = OpenSSL::Cipher.new(algo)
+      cipher.decrypt
+      cipher.key = key
+      decrypted = cipher.update(encrypted) + cipher.final
+
       assert_equal(data, decrypted)
     end;
   end
@@ -73,24 +82,9 @@ class OpenSSL::TestEngine < OpenSSL::TestCase
 
   # this is required because OpenSSL::Engine methods change global state
   def with_openssl(code, **opts)
-    assert_separately([{ "OSSL_MDEBUG" => nil }, "-ropenssl"], <<~"end;", **opts)
-      require #{__FILE__.dump}
-      include OpenSSL::TestEngine::Utils
+    assert_separately(["-ropenssl"], <<~"end;", **opts)
       #{code}
     end;
-  end
-
-  module Utils
-    def get_engine
-      OpenSSL::Engine.by_id("openssl")
-    end
-
-    def crypt_data(data, key, mode)
-      cipher = yield
-      cipher.send mode
-      cipher.key = key
-      cipher.update(data) + cipher.final
-    end
   end
 end
 

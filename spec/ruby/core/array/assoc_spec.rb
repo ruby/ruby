@@ -6,7 +6,7 @@ describe "Array#assoc" do
     s1 = ["colors", "red", "blue", "green"]
     s2 = [:letters, "a", "b", "c"]
     s3 = [4]
-    s4 = ["colors", "cyan", "yellow", "magenda"]
+    s4 = ["colors", "cyan", "yellow", "magenta"]
     s5 = [:letters, "a", "i", "u"]
     s_nil = [nil, nil]
     a = [s1, s2, s3, s4, s5, s_nil]

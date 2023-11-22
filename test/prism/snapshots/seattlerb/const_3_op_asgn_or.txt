@@ -1,0 +1,17 @@
+@ ProgramNode (location: (1,0)-(1,9))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,9))
+    └── body: (length: 1)
+        └── @ ConstantPathOrWriteNode (location: (1,0)-(1,9))
+            ├── target:
+            │   @ ConstantPathNode (location: (1,0)-(1,3))
+            │   ├── parent: ∅
+            │   ├── child:
+            │   │   @ ConstantReadNode (location: (1,2)-(1,3))
+            │   │   └── name: :X
+            │   └── delimiter_loc: (1,0)-(1,2) = "::"
+            ├── operator_loc: (1,4)-(1,7) = "||="
+            └── value:
+                @ IntegerNode (location: (1,8)-(1,9))
+                └── flags: decimal

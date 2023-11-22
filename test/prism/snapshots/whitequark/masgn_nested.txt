@@ -1,0 +1,68 @@
+@ ProgramNode (location: (1,0)-(3,15))
+├── locals: [:b, :a, :c]
+└── statements:
+    @ StatementsNode (location: (1,0)-(3,15))
+    └── body: (length: 2)
+        ├── @ MultiWriteNode (location: (1,0)-(1,13))
+        │   ├── lefts: (length: 1)
+        │   │   └── @ MultiTargetNode (location: (1,1)-(1,6))
+        │   │       ├── lefts: (length: 1)
+        │   │       │   └── @ LocalVariableTargetNode (location: (1,2)-(1,3))
+        │   │       │       ├── name: :b
+        │   │       │       └── depth: 0
+        │   │       ├── rest:
+        │   │       │   @ SplatNode (location: (1,3)-(1,4))
+        │   │       │   ├── operator_loc: (1,3)-(1,4) = ","
+        │   │       │   └── expression: ∅
+        │   │       ├── rights: (length: 0)
+        │   │       ├── lparen_loc: (1,1)-(1,2) = "("
+        │   │       └── rparen_loc: (1,5)-(1,6) = ")"
+        │   ├── rest: ∅
+        │   ├── rights: (length: 0)
+        │   ├── lparen_loc: (1,0)-(1,1) = "("
+        │   ├── rparen_loc: (1,6)-(1,7) = ")"
+        │   ├── operator_loc: (1,8)-(1,9) = "="
+        │   └── value:
+        │       @ CallNode (location: (1,10)-(1,13))
+        │       ├── receiver: ∅
+        │       ├── call_operator_loc: ∅
+        │       ├── name: :foo
+        │       ├── message_loc: (1,10)-(1,13) = "foo"
+        │       ├── opening_loc: ∅
+        │       ├── arguments: ∅
+        │       ├── closing_loc: ∅
+        │       ├── block: ∅
+        │       └── flags: variable_call
+        └── @ MultiWriteNode (location: (3,0)-(3,15))
+            ├── lefts: (length: 2)
+            │   ├── @ LocalVariableTargetNode (location: (3,0)-(3,1))
+            │   │   ├── name: :a
+            │   │   └── depth: 0
+            │   └── @ MultiTargetNode (location: (3,3)-(3,9))
+            │       ├── lefts: (length: 2)
+            │       │   ├── @ LocalVariableTargetNode (location: (3,4)-(3,5))
+            │       │   │   ├── name: :b
+            │       │   │   └── depth: 0
+            │       │   └── @ LocalVariableTargetNode (location: (3,7)-(3,8))
+            │       │       ├── name: :c
+            │       │       └── depth: 0
+            │       ├── rest: ∅
+            │       ├── rights: (length: 0)
+            │       ├── lparen_loc: (3,3)-(3,4) = "("
+            │       └── rparen_loc: (3,8)-(3,9) = ")"
+            ├── rest: ∅
+            ├── rights: (length: 0)
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── operator_loc: (3,10)-(3,11) = "="
+            └── value:
+                @ CallNode (location: (3,12)-(3,15))
+                ├── receiver: ∅
+                ├── call_operator_loc: ∅
+                ├── name: :foo
+                ├── message_loc: (3,12)-(3,15) = "foo"
+                ├── opening_loc: ∅
+                ├── arguments: ∅
+                ├── closing_loc: ∅
+                ├── block: ∅
+                └── flags: variable_call

@@ -1,0 +1,49 @@
+@ ProgramNode (location: (1,0)-(1,21))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,21))
+    └── body: (length: 1)
+        └── @ CallNode (location: (1,0)-(1,21))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── name: :a
+            ├── message_loc: (1,0)-(1,1) = "a"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block:
+            │   @ BlockNode (location: (1,2)-(1,21))
+            │   ├── locals: [:b, :c, :d, :e]
+            │   ├── parameters:
+            │   │   @ BlockParametersNode (location: (1,4)-(1,19))
+            │   │   ├── parameters:
+            │   │   │   @ ParametersNode (location: (1,5)-(1,18))
+            │   │   │   ├── requireds: (length: 1)
+            │   │   │   │   └── @ RequiredParameterNode (location: (1,5)-(1,6))
+            │   │   │   │       └── name: :b
+            │   │   │   ├── optionals: (length: 1)
+            │   │   │   │   └── @ OptionalParameterNode (location: (1,8)-(1,11))
+            │   │   │   │       ├── name: :c
+            │   │   │   │       ├── name_loc: (1,8)-(1,9) = "c"
+            │   │   │   │       ├── operator_loc: (1,9)-(1,10) = "="
+            │   │   │   │       └── value:
+            │   │   │   │           @ IntegerNode (location: (1,10)-(1,11))
+            │   │   │   │           └── flags: decimal
+            │   │   │   ├── rest: ∅
+            │   │   │   ├── posts: (length: 1)
+            │   │   │   │   └── @ RequiredParameterNode (location: (1,13)-(1,14))
+            │   │   │   │       └── name: :d
+            │   │   │   ├── keywords: (length: 0)
+            │   │   │   ├── keyword_rest: ∅
+            │   │   │   └── block:
+            │   │   │       @ BlockParameterNode (location: (1,16)-(1,18))
+            │   │   │       ├── name: :e
+            │   │   │       ├── name_loc: (1,17)-(1,18) = "e"
+            │   │   │       └── operator_loc: (1,16)-(1,17) = "&"
+            │   │   ├── locals: (length: 0)
+            │   │   ├── opening_loc: (1,4)-(1,5) = "|"
+            │   │   └── closing_loc: (1,18)-(1,19) = "|"
+            │   ├── body: ∅
+            │   ├── opening_loc: (1,2)-(1,3) = "{"
+            │   └── closing_loc: (1,20)-(1,21) = "}"
+            └── flags: ∅

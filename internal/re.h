@@ -22,9 +22,7 @@ VALUE rb_reg_equal(VALUE re1, VALUE re2);
 void rb_backref_set_string(VALUE string, long pos, long len);
 void rb_match_unbusy(VALUE);
 int rb_match_count(VALUE match);
-int rb_match_nth_defined(int nth, VALUE match);
-MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_reg_new_ary(VALUE ary, int options);
-MJIT_SYMBOL_EXPORT_END
+VALUE rb_reg_last_defined(VALUE match);
 
 #endif /* INTERNAL_RE_H */

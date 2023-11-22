@@ -569,3 +569,71 @@ evaluated on the following iteration:
 Here, the flip-flop turns on when +value+ equals 2, but doesn't turn off on the
 same iteration.  The `off' condition isn't evaluated until the following
 iteration and +value+ will never be two again.
+
+== throw/catch
+
++throw+ and +catch+ are used to implement non-local control flow in Ruby. They
+operate similarly to exceptions, allowing control to pass directly from the
+place where +throw+ is called to the place where the matching +catch+ is
+called. The main difference between +throw+/+catch+ and the use of exceptions
+is that +throw+/+catch+ are designed for expected non-local control flow,
+while exceptions are designed for exceptional control flow situations, such
+as handling unexpected errors.
+
+When using +throw+, you provide 1-2 arguments.  The first argument is the
+value for the matching +catch+.  The second argument is optional (defaults to
++nil+), and will be the value that +catch+ returns if there is a matching
++throw+ inside the +catch+ block.  If no matching +throw+ method is called
+inside a +catch+ block, the +catch+ method returns the return value of the
+block passed to it.
+
+  def a(n)
+    throw :d, :a if n == 0
+    b(n)
+  end
+
+  def b(n)
+    throw :d, :b if n == 1
+    c(n)
+  end
+
+  def c(n)
+    throw :d if n == 2
+  end
+
+  4.times.map do |i|
+    catch(:d) do
+      a(i)
+      :default
+    end
+  end
+  # => [:a, :b, nil, :default]
+
+If the first argument you pass to +throw+ is not handled by a matching
++catch+, an UncaughtThrowError exception will be raised.  This is because
++throw+/+catch+ should only be used for expected control flow changes, so
+using a value that is not already expected is an error.
+
++throw+/+catch+ are implemented as Kernel methods (Kernel#throw and
+Kernel#catch), not as keywords. So they are not usable directly if you are
+in a BasicObject context.  You can use Kernel.throw and Kernel.catch in
+this case:
+
+  BasicObject.new.instance_exec do
+    def a
+      b
+    end
+
+    def b
+      c
+    end
+
+    def c
+      ::Kernel.throw :d, :e
+    end
+
+    result = ::Kernel.catch(:d) do
+      a
+    end
+    result # => :e
+  end

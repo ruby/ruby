@@ -1,4 +1,4 @@
-describe :stringio_sysread_length, :shared => true do
+describe :stringio_sysread_length, shared: true do
   before :each do
     @io = StringIO.new("example")
   end

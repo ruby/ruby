@@ -30,6 +30,13 @@ RSpec.describe "bundle install with git sources" do
       expect(Dir["#{default_bundle_path}/cache/bundler/git/foo-1.0-*"]).to have_attributes :size => 1
     end
 
+    it "does not write to cache on bundler/setup" do
+      cache_path = default_bundle_path.join("cache")
+      FileUtils.rm_rf(cache_path)
+      ruby "require 'bundler/setup'"
+      expect(cache_path).not_to exist
+    end
+
     it "caches the git repo globally and properly uses the cached repo on the next invocation" do
       simulate_new_machine
       bundle "config set global_gem_cache true"
@@ -193,6 +200,7 @@ RSpec.describe "bundle install with git sources" do
           gem "foo"
         end
       G
+      expect(err).to be_empty
 
       run <<-RUBY
         require 'foo'
@@ -233,6 +241,29 @@ RSpec.describe "bundle install with git sources" do
           gem "foo"
         end
       G
+    end
+
+    it "works when a tag that does not look like a commit hash is used as the value of :ref" do
+      build_git "foo"
+      @remote = build_git("bar", :bare => true)
+      update_git "foo", :remote => file_uri_for(@remote.path)
+      update_git "foo", :push => "main"
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem 'foo', :git => "#{@remote.path}"
+      G
+
+      # Create a new tag on the remote that needs fetching
+      update_git "foo", :tag => "v1.0.0"
+      update_git "foo", :push => "v1.0.0"
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem 'foo', :git => "#{@remote.path}", :ref => "v1.0.0"
+      G
+
+      expect(err).to be_empty
     end
 
     it "works when the revision is a non-head ref" do
@@ -541,7 +572,7 @@ RSpec.describe "bundle install with git sources" do
 
       bundle %(config set local.rack #{lib_path("local-rack")})
       bundle :install, :raise_on_error => false
-      expect(err).to match(/Cannot use local override for rack-0.8 because #{Regexp.escape(lib_path('local-rack').to_s)} does not exist/)
+      expect(err).to match(/Cannot use local override for rack-0.8 because #{Regexp.escape(lib_path("local-rack").to_s)} does not exist/)
 
       solution = "config unset local.rack"
       expect(err).to match(/Run `bundle #{solution}` to remove the local override/)
@@ -563,7 +594,7 @@ RSpec.describe "bundle install with git sources" do
 
       bundle %(config set local.rack #{lib_path("local-rack")})
       bundle :install, :raise_on_error => false
-      expect(err).to match(/Cannot use local override for rack-0.8 at #{Regexp.escape(lib_path('local-rack').to_s)} because :branch is not specified in Gemfile/)
+      expect(err).to match(/Cannot use local override for rack-0.8 at #{Regexp.escape(lib_path("local-rack").to_s)} because :branch is not specified in Gemfile/)
 
       solution = "config unset local.rack"
       expect(err).to match(/Specify a branch or run `bundle #{solution}` to remove the local override/)
@@ -1120,6 +1151,17 @@ RSpec.describe "bundle install with git sources" do
       G
       expect(err).to include("Revision deadbeef does not exist in the repository")
     end
+
+    it "gives a helpful error message when the remote branch no longer exists" do
+      build_git "foo"
+
+      install_gemfile <<-G, :env => { "LANG" => "en" }, :raise_on_error => false
+        source "#{file_uri_for(gem_repo1)}"
+        gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}", :branch => "deadbeef"
+      G
+
+      expect(err).to include("Revision deadbeef does not exist in the repository")
+    end
   end
 
   describe "bundle install with deployment mode configured and git sources" do
@@ -1457,8 +1499,6 @@ In Gemfile:
 
   describe "without git installed" do
     it "prints a better error message when installing" do
-      build_git "foo"
-
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
 

@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 #--
 # Copyright 2006 by Chad Fowler, Rich Kilmer, Jim Weirich and others.
 # All rights reserved.
@@ -187,10 +188,10 @@ class Gem::ConfigFile
     operating_system_config = Marshal.load Marshal.dump(OPERATING_SYSTEM_DEFAULTS)
     platform_config = Marshal.load Marshal.dump(PLATFORM_DEFAULTS)
     system_config = load_file SYSTEM_WIDE_CONFIG_FILE
-    user_config = load_file config_file_name.dup.tap(&Gem::UNTAINT)
+    user_config = load_file config_file_name
 
-    environment_config = (ENV["GEMRC"] || "")
-      .split(File::PATH_SEPARATOR).inject({}) do |result, file|
+    environment_config = (ENV["GEMRC"] || "").
+      split(File::PATH_SEPARATOR).inject({}) do |result, file|
         result.merge load_file file
       end
 
@@ -201,7 +202,7 @@ class Gem::ConfigFile
       @hash = @hash.merge environment_config
     end
 
-    # HACK these override command-line args, which is bad
+    # HACK: these override command-line args, which is bad
     @backtrace                   = @hash[:backtrace]                   if @hash.key? :backtrace
     @bulk_threshold              = @hash[:bulk_threshold]              if @hash.key? :bulk_threshold
     @home                        = @hash[:gemhome]                     if @hash.key? :gemhome
@@ -240,9 +241,9 @@ class Gem::ConfigFile
     return if Gem.win_platform? # windows doesn't write 0600 as 0600
     return unless File.exist? credentials_path
 
-    existing_permissions = File.stat(credentials_path).mode & 0777
+    existing_permissions = File.stat(credentials_path).mode & 0o777
 
-    return if existing_permissions == 0600
+    return if existing_permissions == 0o600
 
     alert_error <<-ERROR
 Your gem push credentials file located at:
@@ -323,11 +324,9 @@ if you believe they were disclosed to a third party.
     require "fileutils"
     FileUtils.mkdir_p(dirname)
 
-    Gem.load_yaml
-
-    permissions = 0600 & (~File.umask)
+    permissions = 0o600 & (~File.umask)
     File.open(credentials_path, "w", permissions) do |f|
-      f.write config.to_yaml
+      f.write self.class.dump_with_rubygems_yaml(config)
     end
 
     load_api_keys # reload
@@ -343,20 +342,18 @@ if you believe they were disclosed to a third party.
   end
 
   def load_file(filename)
-    Gem.load_yaml
-
     yaml_errors = [ArgumentError]
-    yaml_errors << Psych::SyntaxError if defined?(Psych::SyntaxError)
 
     return {} unless filename && !filename.empty? && File.exist?(filename)
 
     begin
-      content = Gem::SafeYAML.load(File.read(filename))
-      unless content.kind_of? Hash
+      config = self.class.load_with_rubygems_config_hash(File.read(filename))
+      if config.keys.any? {|k| k.to_s.gsub(%r{https?:\/\/}, "").include?(": ") }
         warn "Failed to load #{filename} because it doesn't contain valid YAML hash"
         return {}
+      else
+        return config
       end
-      return content
     rescue *yaml_errors => e
       warn "Failed to load #{filename}, #{e}"
     rescue Errno::EACCES
@@ -476,17 +473,17 @@ if you believe they were disclosed to a third party.
     yaml_hash[:ssl_client_cert] =
       @hash[:ssl_client_cert] if @hash.key? :ssl_client_cert
 
-    keys = yaml_hash.keys.map {|key| key.to_s }
+    keys = yaml_hash.keys.map(&:to_s)
     keys << "debug"
     re = Regexp.union(*keys)
 
     @hash.each do |key, value|
       key = key.to_s
-      next if key =~ re
+      next if key&.match?(re)
       yaml_hash[key.to_s] = value
     end
 
-    yaml_hash.to_yaml
+    self.class.dump_with_rubygems_yaml(yaml_hash)
   end
 
   # Writes out this config file, replacing its source.
@@ -521,6 +518,57 @@ if you believe they were disclosed to a third party.
   attr_reader :hash
   protected :hash
 
+  def self.dump_with_rubygems_yaml(content)
+    content.transform_keys! do |k|
+      k.is_a?(Symbol) ? ":#{k}" : k
+    end
+
+    require_relative "yaml_serializer"
+    Gem::YAMLSerializer.dump(content)
+  end
+
+  def self.load_with_rubygems_config_hash(yaml)
+    require_relative "yaml_serializer"
+
+    content = Gem::YAMLSerializer.load(yaml)
+
+    content.transform_keys! do |k|
+      if k.match?(/\A:(.*)\Z/)
+        k[1..-1].to_sym
+      elsif k.include?("__") || k.match?(%r{/\Z})
+        if k.is_a?(Symbol)
+          k.to_s.gsub(/__/,".").gsub(%r{/\Z}, "").to_sym
+        else
+          k.dup.gsub(/__/,".").gsub(%r{/\Z}, "")
+        end
+      else
+        k
+      end
+    end
+
+    content.transform_values! do |v|
+      if v.is_a?(String)
+        if v.match?(/\A:(.*)\Z/)
+          v[1..-1].to_sym
+        elsif v.match?(/\A[+-]?\d+\Z/)
+          v.to_i
+        elsif v.match?(/\Atrue|false\Z/)
+          v == "true"
+        elsif v.empty?
+          nil
+        else
+          v
+        end
+      elsif v.is_a?(Hash) && v.empty?
+        nil
+      else
+        v
+      end
+    end
+
+    content
+  end
+
   private
 
   def set_config_file_name(args)
@@ -533,7 +581,7 @@ if you believe they were disclosed to a third party.
         need_config_file_name = false
       elsif arg =~ /^--config-file=(.*)/
         @config_file_name = $1
-      elsif arg =~ /^--config-file$/
+      elsif /^--config-file$/.match?(arg)
         need_config_file_name = true
       end
     end

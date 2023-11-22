@@ -1,0 +1,7 @@
+@ ProgramNode (location: (1,0)-(1,2))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,2))
+    └── body: (length: 1)
+        └── @ BackReferenceReadNode (location: (1,0)-(1,2))
+            └── name: :$+

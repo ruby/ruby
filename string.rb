@@ -76,7 +76,7 @@
 #  - <tt>\n</tt> (_n_ a non-negative integer) refers to <tt>$n</tt>.
 #  - <tt>\k<name></tt> refers to the named capture +name+.
 #
-#  See rdoc-ref:regexp.rdoc for details.
+#  See Regexp for details.
 #
 #  Note that within the string +replacement+, a character combination
 #  such as <tt>$&</tt> is treated as ordinary text, and not as
@@ -90,10 +90,10 @@
 #    which contains string after match.
 #  - <tt>\`</tt> corresponds to <tt>$`</tt>,
 #    which contains string before match.
-#  - <tt>\+</tt> corresponds to <tt>$+</tt>,
+#  - <tt>\\+</tt> corresponds to <tt>$+</tt>,
 #    which contains last capture group.
 #
-#  See rdoc-ref:regexp.rdoc for details.
+#  See Regexp for details.
 #
 #  Note that <tt>\\\\</tt> is interpreted as an escape, i.e., a single backslash.
 #
@@ -265,7 +265,7 @@
 #
 #  <b><tt>string[regexp, capture = 0]</tt></b>
 #
-#  When the \Regexp argument +regexp+ is given,
+#  When the Regexp argument +regexp+ is given,
 #  and the +capture+ argument is <tt>0</tt>,
 #  the slice is the first matching substring found in +self+:
 #
@@ -278,7 +278,7 @@
 #  If argument +capture+ is given and not <tt>0</tt>,
 #  it should be either an capture group index (integer)
 #  or a capture group name (string or symbol);
-#  the slice is the specified capture (see Regexp@Capturing):
+#  the slice is the specified capture (see Regexp@Groups+and+Captures):
 #
 #    s = 'hello there'
 #    s[/[aeiou](.)\1/, 1] # => "l"

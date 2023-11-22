@@ -1,6 +1,6 @@
 require 'bigdecimal'
 
-describe :bigdecimal_to_int , shared: true do
+describe :bigdecimal_to_int, shared: true do
   it "raises FloatDomainError if BigDecimal is infinity or NaN" do
     -> { BigDecimal("Infinity").send(@method) }.should raise_error(FloatDomainError)
     -> { BigDecimal("NaN").send(@method) }.should raise_error(FloatDomainError)

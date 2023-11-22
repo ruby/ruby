@@ -335,6 +335,8 @@ if defined?(WIN32OLE)
     end
 
     def test_s_codepage_changed
+      omit if RUBY_PLATFORM.match("mswin")
+
       cp = WIN32OLE.codepage
       fso = WIN32OLE.new("Scripting.FileSystemObject")
       fname = fso.getTempName

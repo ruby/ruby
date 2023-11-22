@@ -152,7 +152,7 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     lock = Thread::Mutex.new
     nr = 0
     x = 2
-    y = 1000
+    y = 400
     begin
       s1.send_io(nil)
     rescue NotImplementedError
@@ -420,9 +420,10 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
       s1.recv_nonblock(10)
       fail
     rescue => e
-      assert(IO::EAGAINWaitReadable === e)
-      assert(IO::WaitReadable === e)
+      assert_kind_of(IO::EWOULDBLOCKWaitReadable, e)
+      assert_kind_of(IO::WaitReadable, e)
     end
+
     s2.send("", 0)
     s2.send("haha", 0)
     s2.send("", 0)
@@ -440,6 +441,67 @@ class TestSocket_UNIXSocket < Test::Unit::TestCase
     assert_equal buf.object_id, rv.object_id
     assert_equal "BBBBBB", rv
   rescue Errno::EPROTOTYPE => error
+    omit error.message
+  ensure
+    s1.close if s1
+    s2.close if s2
+  end
+
+  def test_stream_pair
+    s1, s2 = UNIXSocket.pair(Socket::SOCK_STREAM)
+    begin
+      s1.recv_nonblock(10)
+      fail
+    rescue => e
+      assert_kind_of(IO::EWOULDBLOCKWaitReadable, e)
+      assert_kind_of(IO::WaitReadable, e)
+    end
+
+    s2.send("", 0)
+    s2.send("haha", 0)
+    assert_equal("haha", s1.recv(10))
+    assert_raise(IO::EWOULDBLOCKWaitReadable) { s1.recv_nonblock(10) }
+
+    buf = "".dup
+    s2.send("BBBBBB", 0)
+    IO.select([s1])
+    rv = s1.recv(100, 0, buf)
+    assert_equal buf.object_id, rv.object_id
+    assert_equal "BBBBBB", rv
+
+    s2.close
+    assert_nil(s1.recv(10))
+  rescue Errno::EPROTOTYPE => error
+    omit error.message
+  ensure
+    s1.close if s1
+    s2.close if s2
+  end
+
+  def test_seqpacket_pair
+    s1, s2 = UNIXSocket.pair(Socket::SOCK_SEQPACKET)
+    begin
+      s1.recv_nonblock(10)
+      fail
+    rescue => e
+      assert_kind_of(IO::EWOULDBLOCKWaitReadable, e)
+      assert_kind_of(IO::WaitReadable, e)
+    end
+
+    s2.send("haha", 0)
+    assert_equal("haha", s1.recv(10))
+    assert_raise(IO::EWOULDBLOCKWaitReadable) { s1.recv_nonblock(10) }
+
+    buf = "".dup
+    s2.send("BBBBBB", 0)
+    IO.select([s1])
+    rv = s1.recv(100, 0, buf)
+    assert_equal buf.object_id, rv.object_id
+    assert_equal "BBBBBB", rv
+
+    s2.close
+    assert_nil(s1.recv(10))
+  rescue Errno::EPROTOTYPE, Errno::EPROTONOSUPPORT => error
     omit error.message
   ensure
     s1.close if s1

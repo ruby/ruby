@@ -430,7 +430,9 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
 
   def parseable? text
     verbose, $VERBOSE = $VERBOSE, nil
-    eval("BEGIN {return true}\n#{text}")
+    catch(:valid) do
+      eval("BEGIN { throw :valid, true }\n#{text}")
+    end
   rescue SyntaxError
     false
   ensure
@@ -445,4 +447,3 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   end
 
 end
-

@@ -52,6 +52,7 @@ enumerator_kw.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/attr/noinline.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+enumerator_kw.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/attr/pure.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/attr/restrict.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ enumerator_kw.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/intern/error.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/intern/eval.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/intern/file.h
-enumerator_kw.o: $(hdrdir)/ruby/internal/intern/gc.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/intern/hash.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/intern/io.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ enumerator_kw.o: $(hdrdir)/ruby/internal/memory.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/method.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/module.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/newobj.h
-enumerator_kw.o: $(hdrdir)/ruby/internal/rgengc.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/scan_args.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/special_consts.h
 enumerator_kw.o: $(hdrdir)/ruby/internal/static_assert.h

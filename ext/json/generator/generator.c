@@ -478,6 +478,7 @@ static VALUE mFloat_to_json(int argc, VALUE *argv, VALUE self)
  */
 static VALUE mString_included_s(VALUE self, VALUE modul) {
     VALUE result = rb_funcall(modul, i_extend, 1, mString_Extend);
+    rb_call_super(1, &modul);
     return result;
 }
 

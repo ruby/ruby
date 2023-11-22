@@ -1,0 +1,54 @@
+@ ProgramNode (location: (1,0)-(1,22))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,22))
+    └── body: (length: 1)
+        └── @ CallNode (location: (1,0)-(1,22))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── name: :f
+            ├── message_loc: (1,0)-(1,1) = "f"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            ├── block:
+            │   @ BlockNode (location: (1,2)-(1,22))
+            │   ├── locals: [:a, :b, :c, :d]
+            │   ├── parameters:
+            │   │   @ BlockParametersNode (location: (1,4)-(1,20))
+            │   │   ├── parameters:
+            │   │   │   @ ParametersNode (location: (1,5)-(1,19))
+            │   │   │   ├── requireds: (length: 2)
+            │   │   │   │   ├── @ MultiTargetNode (location: (1,5)-(1,16))
+            │   │   │   │   │   ├── lefts: (length: 2)
+            │   │   │   │   │   │   ├── @ MultiTargetNode (location: (1,6)-(1,12))
+            │   │   │   │   │   │   │   ├── lefts: (length: 2)
+            │   │   │   │   │   │   │   │   ├── @ RequiredParameterNode (location: (1,7)-(1,8))
+            │   │   │   │   │   │   │   │   │   └── name: :a
+            │   │   │   │   │   │   │   │   └── @ RequiredParameterNode (location: (1,10)-(1,11))
+            │   │   │   │   │   │   │   │       └── name: :b
+            │   │   │   │   │   │   │   ├── rest: ∅
+            │   │   │   │   │   │   │   ├── rights: (length: 0)
+            │   │   │   │   │   │   │   ├── lparen_loc: (1,6)-(1,7) = "("
+            │   │   │   │   │   │   │   └── rparen_loc: (1,11)-(1,12) = ")"
+            │   │   │   │   │   │   └── @ RequiredParameterNode (location: (1,14)-(1,15))
+            │   │   │   │   │   │       └── name: :c
+            │   │   │   │   │   ├── rest: ∅
+            │   │   │   │   │   ├── rights: (length: 0)
+            │   │   │   │   │   ├── lparen_loc: (1,5)-(1,6) = "("
+            │   │   │   │   │   └── rparen_loc: (1,15)-(1,16) = ")"
+            │   │   │   │   └── @ RequiredParameterNode (location: (1,18)-(1,19))
+            │   │   │   │       └── name: :d
+            │   │   │   ├── optionals: (length: 0)
+            │   │   │   ├── rest: ∅
+            │   │   │   ├── posts: (length: 0)
+            │   │   │   ├── keywords: (length: 0)
+            │   │   │   ├── keyword_rest: ∅
+            │   │   │   └── block: ∅
+            │   │   ├── locals: (length: 0)
+            │   │   ├── opening_loc: (1,4)-(1,5) = "|"
+            │   │   └── closing_loc: (1,19)-(1,20) = "|"
+            │   ├── body: ∅
+            │   ├── opening_loc: (1,2)-(1,3) = "{"
+            │   └── closing_loc: (1,21)-(1,22) = "}"
+            └── flags: ∅

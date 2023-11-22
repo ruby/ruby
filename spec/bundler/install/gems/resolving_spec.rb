@@ -106,7 +106,7 @@ RSpec.describe "bundle install with install-time dependencies" do
     path = "#{gem_repo2}/#{Gem::MARSHAL_SPEC_DIR}/actionpack-2.3.2.gemspec.rz"
     spec = Marshal.load(Bundler.rubygems.inflate(File.binread(path)))
     spec.dependencies.each do |d|
-      d.instance_variable_set(:@type, :fail)
+      d.instance_variable_set(:@type, "fail")
     end
     File.open(path, "wb") do |f|
       f.write Gem.deflate(Marshal.dump(spec))
@@ -190,7 +190,7 @@ RSpec.describe "bundle install with install-time dependencies" do
         expect(out).to include(" net_b").
           and include("Resolving dependencies...").
           and include("Solution found after 1 attempts:").
-          and include("selecting net_b 1.0")
+          and include("selected net_b 1.0")
       end
     end
   end
@@ -288,6 +288,9 @@ RSpec.describe "bundle install with install-time dependencies" do
             DEPENDENCIES
               parallel_tests
 
+            CHECKSUMS
+              #{checksum_for_repo_gem gem_repo2, "parallel_tests", "3.7.0"}
+
             BUNDLED WITH
                #{Bundler::VERSION}
           L
@@ -368,6 +371,10 @@ RSpec.describe "bundle install with install-time dependencies" do
             DEPENDENCIES
               rubocop
 
+            CHECKSUMS
+              #{checksum_for_repo_gem gem_repo2, "rubocop", "1.28.2"}
+              #{checksum_for_repo_gem gem_repo2, "rubocop-ast", "1.17.0"}
+
             BUNDLED WITH
                #{Bundler::VERSION}
           L
@@ -415,11 +422,67 @@ RSpec.describe "bundle install with install-time dependencies" do
             bundle "install", :raise_on_error => false
           end
 
-          nice_error = strip_whitespace(<<-E).strip
-            Could not find gem 'sorbet-static (= 0.5.10554)' with platforms 'arm64-darwin-21', 'aarch64-linux' in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally.
+          nice_error = <<~E.strip
+            Could not find gems matching 'sorbet-static (= 0.5.10554)' valid for all resolution platforms (arm64-darwin-21, aarch64-linux) in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally.
 
             The source contains the following gems matching 'sorbet-static (= 0.5.10554)':
               * sorbet-static-0.5.10554-universal-darwin-21
+          E
+          expect(err).to end_with(nice_error)
+        end
+      end
+
+      context "when adding a new gem that does not resolve under all locked platforms" do
+        before do
+          simulate_platform "x86_64-linux" do
+            build_repo4 do
+              build_gem "nokogiri", "1.14.0" do |s|
+                s.platform = "x86_64-linux"
+              end
+              build_gem "nokogiri", "1.14.0" do |s|
+                s.platform = "arm-linux"
+              end
+
+              build_gem "sorbet-static", "0.5.10696" do |s|
+                s.platform = "x86_64-linux"
+              end
+            end
+
+            lockfile <<~L
+              GEM
+                remote: #{file_uri_for(gem_repo4)}/
+                specs:
+                  nokogiri (1.14.0-arm-linux)
+                  nokogiri (1.14.0-x86_64-linux)
+
+              PLATFORMS
+                arm-linux
+                x86_64-linux
+
+              DEPENDENCIES
+                nokogiri
+
+              BUNDLED WITH
+                 #{Bundler::VERSION}
+            L
+
+            gemfile <<~G
+              source "#{file_uri_for(gem_repo4)}"
+
+              gem "nokogiri"
+              gem "sorbet-static"
+            G
+
+            bundle "lock", :raise_on_error => false
+          end
+        end
+
+        it "raises a proper error" do
+          nice_error = <<~E.strip
+            Could not find gems matching 'sorbet-static' valid for all resolution platforms (arm-linux, x86_64-linux) in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally.
+
+            The source contains the following gems matching 'sorbet-static':
+              * sorbet-static-0.5.10696-x86_64-linux
           E
           expect(err).to end_with(nice_error)
         end
@@ -521,7 +584,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
         expect(out).to_not include("Gem::InstallError: require_ruby requires Ruby version > 9000")
 
-        nice_error = strip_whitespace(<<-E).strip
+        nice_error = <<~E.strip
           Could not find compatible versions
 
           Because every version of require_ruby depends on Ruby > 9000
@@ -543,7 +606,7 @@ RSpec.describe "bundle install with install-time dependencies" do
 
           expect(out).to_not include("Gem::InstallError: require_ruby requires Ruby version > 9000")
 
-          nice_error = strip_whitespace(<<-E).strip
+          nice_error = <<~E.strip
             Could not find compatible versions
 
             Because every version of require_ruby depends on Ruby > 9000
@@ -587,7 +650,7 @@ RSpec.describe "bundle install with install-time dependencies" do
       G
 
       expect(err).to_not include("Gem::InstallError: require_rubygems requires RubyGems version > 9000")
-      nice_error = strip_whitespace(<<-E).strip
+      nice_error = <<~E.strip
         Because every version of require_rubygems depends on RubyGems > 9000
           and Gemfile depends on require_rubygems >= 0,
           RubyGems > 9000 is required.

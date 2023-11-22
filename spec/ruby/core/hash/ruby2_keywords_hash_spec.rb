@@ -56,4 +56,28 @@ describe "Hash.ruby2_keywords_hash" do
   it "raises TypeError for non-Hash" do
     -> { Hash.ruby2_keywords_hash(nil) }.should raise_error(TypeError)
   end
+
+  it "retains the default value" do
+    hash = Hash.new(1)
+    Hash.ruby2_keywords_hash(hash).default.should == 1
+    hash[:a] = 1
+    Hash.ruby2_keywords_hash(hash).default.should == 1
+  end
+
+  it "retains the default_proc" do
+    pr = proc { |h, k| h[k] = [] }
+    hash = Hash.new(&pr)
+    Hash.ruby2_keywords_hash(hash).default_proc.should == pr
+    hash[:a] = 1
+    Hash.ruby2_keywords_hash(hash).default_proc.should == pr
+  end
+
+  ruby_version_is '3.3' do
+    it "retains compare_by_identity_flag" do
+      hash = {}.compare_by_identity
+      Hash.ruby2_keywords_hash(hash).compare_by_identity?.should == true
+      hash[:a] = 1
+      Hash.ruby2_keywords_hash(hash).compare_by_identity?.should == true
+    end
+  end
 end

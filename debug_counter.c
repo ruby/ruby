@@ -25,10 +25,8 @@ const char *const rb_debug_counter_names[] = {
 #undef RB_DEBUG_COUNTER
 };
 
-MJIT_SYMBOL_EXPORT_BEGIN
 size_t rb_debug_counter[numberof(rb_debug_counter_names)];
 void rb_debug_counter_add_atomic(enum rb_debug_counter_type type, int add);
-MJIT_SYMBOL_EXPORT_END
 
 static rb_nativethread_lock_t debug_counter_lock;
 

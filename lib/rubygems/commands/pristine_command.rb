@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 require_relative "../package"
 require_relative "../installer"
@@ -32,6 +33,11 @@ class Gem::Commands::PristineCommand < Gem::Command
                "in addition to regular gems") do |value, options|
       options[:extensions_set] = true
       options[:extensions]     = value
+    end
+
+    add_option("--only-missing-extensions",
+               "Only restore gems with missing extensions") do |value, options|
+      options[:only_missing_extensions] = value
     end
 
     add_option("--only-executables",
@@ -107,13 +113,15 @@ extensions will be restored.
       Gem::Specification.select do |spec|
         spec.extensions && !spec.extensions.empty?
       end
+    elsif options[:only_missing_extensions]
+      Gem::Specification.select(&:missing_extensions?)
     else
       get_all_gem_names.sort.map do |gem_name|
         Gem::Specification.find_all_by_name(gem_name, options[:version]).reverse
       end.flatten
     end
 
-    specs = specs.select {|spec| RUBY_ENGINE == spec.platform || Gem::Platform.local === spec.platform || spec.platform == Gem::Platform::RUBY }
+    specs = specs.select {|spec| spec.platform == RUBY_ENGINE || Gem::Platform.local === spec.platform || spec.platform == Gem::Platform::RUBY }
 
     if specs.to_a.empty?
       raise Gem::Exception,
@@ -128,7 +136,7 @@ extensions will be restored.
         next
       end
 
-      if options.has_key? :skip
+      if options.key? :skip
         if options[:skip].include? spec.name
           say "Skipped #{spec.full_name}, it was given through options"
           next

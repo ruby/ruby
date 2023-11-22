@@ -85,20 +85,10 @@ describe :string_each_line, shared: true do
     end
   end
 
-  ruby_version_is ''...'3.0' do
-    it "yields subclass instances for subclasses" do
-      a = []
-      StringSpecs::MyString.new("hello\nworld").send(@method) { |s| a << s.class }
-      a.should == [StringSpecs::MyString, StringSpecs::MyString]
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "yields String instances for subclasses" do
-      a = []
-      StringSpecs::MyString.new("hello\nworld").send(@method) { |s| a << s.class }
-      a.should == [String, String]
-    end
+  it "yields String instances for subclasses" do
+    a = []
+    StringSpecs::MyString.new("hello\nworld").send(@method) { |s| a << s.class }
+    a.should == [String, String]
   end
 
   it "returns self" do
@@ -120,6 +110,12 @@ describe :string_each_line, shared: true do
     out = []
     str.send(@method){|x| out << x; str[-1] = '!' }.should == "hello\nworld!"
     out.should == ["hello\n", "world."]
+  end
+
+  it "returns Strings in the same encoding as self" do
+    "one\ntwo\r\nthree".encode("US-ASCII").send(@method) do |s|
+      s.encoding.should == Encoding::US_ASCII
+    end
   end
 
   it "raises a TypeError when the separator can't be converted to a string" do

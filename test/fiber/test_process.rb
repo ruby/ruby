@@ -34,6 +34,27 @@ class TestFiberProcess < Test::Unit::TestCase
     end.join
   end
 
+  def test_system_faulty_process_wait
+    Thread.new do
+      scheduler = Scheduler.new
+
+      def scheduler.process_wait(pid, flags)
+        Fiber.blocking{Process.wait(pid, flags)}
+
+        # Don't return `Process::Status` instance.
+        return false
+      end
+
+      Fiber.set_scheduler scheduler
+
+      Fiber.schedule do
+        assert_raise TypeError do
+          system("true")
+        end
+      end
+    end.join
+  end
+
   def test_fork
     omit 'fork not supported' unless Process.respond_to?(:fork)
     Thread.new do

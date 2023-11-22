@@ -5,7 +5,7 @@ use crate::cruby::*;
 use std::slice;
 
 /// Trait for casting to [usize] that allows you to say `.as_usize()`.
-/// Implementation conditional on the the cast preserving the numeric value on
+/// Implementation conditional on the cast preserving the numeric value on
 /// all inputs and being inexpensive.
 ///
 /// [usize] is only guaranteed to be more than 16-bit wide, so we can't use
@@ -51,6 +51,20 @@ impl IntoUsize for u8 {
     }
 }
 
+/// The [Into<u64>] Rust does not provide.
+/// Convert to u64 with assurance that the value is preserved.
+/// Currently, `usize::BITS == 64` holds for all platforms we support.
+pub(crate) trait IntoU64 {
+    fn as_u64(self) -> u64;
+}
+
+#[cfg(target_pointer_width = "64")]
+impl IntoU64 for usize {
+    fn as_u64(self) -> u64 {
+        self as u64
+    }
+}
+
 /// Compute an offset in bytes of a given struct field
 #[allow(unused)]
 macro_rules! offset_of {
@@ -73,7 +87,7 @@ pub(crate) use offset_of;
 // Convert a CRuby UTF-8-encoded RSTRING into a Rust string.
 // This should work fine on ASCII strings and anything else
 // that is considered legal UTF-8, including embedded nulls.
-fn ruby_str_to_rust(v: VALUE) -> String {
+pub fn ruby_str_to_rust(v: VALUE) -> String {
     let str_ptr = unsafe { rb_RSTRING_PTR(v) } as *mut u8;
     let str_len: usize = unsafe { rb_RSTRING_LEN(v) }.try_into().unwrap();
     let str_slice: &[u8] = unsafe { slice::from_raw_parts(str_ptr, str_len) };
@@ -86,21 +100,24 @@ fn ruby_str_to_rust(v: VALUE) -> String {
 // Location is the file defining the method, colon, method name.
 // Filenames are sometimes internal strings supplied to eval,
 // so be careful with them.
-pub fn iseq_get_location(iseq: IseqPtr) -> String {
+pub fn iseq_get_location(iseq: IseqPtr, pos: u16) -> String {
+    let iseq_label = unsafe { rb_iseq_label(iseq) };
     let iseq_path = unsafe { rb_iseq_path(iseq) };
-    let iseq_method = unsafe { rb_iseq_method_name(iseq) };
+    let iseq_lineno = unsafe { rb_iseq_line_no(iseq, pos as usize) };
 
-    let mut s = if iseq_path == Qnil {
+    let mut s = if iseq_label == Qnil {
         "None".to_string()
     } else {
-        ruby_str_to_rust(iseq_path)
+        ruby_str_to_rust(iseq_label)
     };
-    s.push_str(":");
-    if iseq_method == Qnil {
+    s.push_str("@");
+    if iseq_path == Qnil {
         s.push_str("None");
     } else {
-        s.push_str(& ruby_str_to_rust(iseq_method));
+        s.push_str(&ruby_str_to_rust(iseq_path));
     }
+    s.push_str(":");
+    s.push_str(&iseq_lineno.to_string());
     s
 }
 
@@ -216,7 +233,7 @@ pub fn print_str(asm: &mut Assembler, str: &str) {
     asm.bake_string(str);
     asm.write_label(after_string);
 
-    let opnd = asm.lea_label(string_data);
+    let opnd = asm.lea_jump_target(string_data);
     asm.ccall(print_str_cfun as *const u8, vec![opnd, Opnd::UImm(str.len() as u64)]);
 
     asm.cpop_all();
@@ -260,7 +277,7 @@ mod tests {
         let mut cb = CodeBlock::new_dummy(1024);
 
         print_int(&mut asm, Opnd::Imm(42));
-        asm.compile(&mut cb);
+        asm.compile(&mut cb, None).unwrap();
     }
 
     #[test]
@@ -269,6 +286,6 @@ mod tests {
         let mut cb = CodeBlock::new_dummy(1024);
 
         print_str(&mut asm, "Hello, world!");
-        asm.compile(&mut cb);
+        asm.compile(&mut cb, None).unwrap();
     }
 }

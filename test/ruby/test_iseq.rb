@@ -497,7 +497,8 @@ class TestISeq < Test::Unit::TestCase
                                   [7, :line],
                                   [9, :return]]],
                        [["ensure in foo@2", [[7, :line]]]],
-                       [["rescue in foo@4", [[5, :line]]]]]],
+                       [["rescue in foo@4", [[5, :line],
+                                             [5, :rescue]]]]]],
                    [["<class:D>@17", [[17, :class],
                                       [18, :end]]]]], collect_iseq.call(sample_iseq)
   end
@@ -637,6 +638,8 @@ class TestISeq < Test::Unit::TestCase
     }
 
     lines
+  ensure
+    Object.send(:remove_const, :A) rescue nil
   end
 
   def test_to_binary_line_tracepoint
@@ -756,5 +759,36 @@ class TestISeq < Test::Unit::TestCase
       }
       assert_equal :new, r.take
     RUBY
+  end
+
+  def test_ever_condition_loop
+    assert_ruby_status([], "BEGIN {exit}; while true && true; end")
+  end
+
+  def test_unreachable_syntax_error
+    mesg = /Invalid break/
+    assert_syntax_error("false and break", mesg)
+    assert_syntax_error("if false and break; end", mesg)
+  end
+
+  def test_unreachable_pattern_matching
+    assert_in_out_err([], "#{<<~"begin;"}\n#{<<~'end;'}", %w[1])
+    begin;
+      if true or {a: 0} in {a:}
+        p 1
+      else
+        p a
+      end
+    end;
+  end
+
+  def test_loading_kwargs_memory_leak
+    assert_no_memory_leak([], "#{<<~"begin;"}", "#{<<~'end;'}", rss: true)
+    a = RubyVM::InstructionSequence.compile("foo(bar: :baz)").to_binary
+    begin;
+      1_000_000.times do
+        RubyVM::InstructionSequence.load_from_binary(a)
+      end
+    end;
   end
 end

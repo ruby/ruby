@@ -1,8 +1,10 @@
 *.md
 *.rb
-*.rdoc
+[^_]*.rdoc
 contributing
 NEWS
 syntax
 optparse
 rdoc
+regexp
+yjit

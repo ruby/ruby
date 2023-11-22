@@ -170,6 +170,12 @@ math_tan(VALUE unused_obj, VALUE x)
     return DBL2NUM(tan(Get_Double(x)));
 }
 
+#define math_arc(num, func) \
+    double d; \
+    d = Get_Double((num)); \
+    domain_check_range(d, -1.0, 1.0, #func); \
+    return DBL2NUM(func(d));
+
 /*
  *  call-seq:
  *     Math.acos(x) -> float
@@ -190,11 +196,7 @@ math_tan(VALUE unused_obj, VALUE x)
 static VALUE
 math_acos(VALUE unused_obj, VALUE x)
 {
-    double d;
-
-    d = Get_Double(x);
-    domain_check_range(d, -1.0, 1.0, "acos");
-    return DBL2NUM(acos(d));
+    math_arc(x, acos)
 }
 
 /*
@@ -217,11 +219,7 @@ math_acos(VALUE unused_obj, VALUE x)
 static VALUE
 math_asin(VALUE unused_obj, VALUE x)
 {
-    double d;
-
-    d = Get_Double(x);
-    domain_check_range(d, -1.0, 1.0, "asin");
-    return DBL2NUM(asin(d));
+    math_arc(x, asin)
 }
 
 /*
@@ -476,7 +474,6 @@ math_exp(VALUE unused_obj, VALUE x)
 # define M_LN10 2.30258509299404568401799145468436421
 #endif
 
-static double math_log1(VALUE x);
 FUNC_MINIMIZED(static VALUE math_log(int, const VALUE *, VALUE));
 
 /*
@@ -511,20 +508,6 @@ math_log(int argc, const VALUE *argv, VALUE unused_obj)
     return rb_math_log(argc, argv);
 }
 
-VALUE
-rb_math_log(int argc, const VALUE *argv)
-{
-    VALUE x, base;
-    double d;
-
-    rb_scan_args(argc, argv, "11", &x, &base);
-    d = math_log1(x);
-    if (argc == 2) {
-        d /= math_log1(base);
-    }
-    return DBL2NUM(d);
-}
-
 static double
 get_double_rshift(VALUE x, size_t *pnumbits)
 {
@@ -543,16 +526,51 @@ get_double_rshift(VALUE x, size_t *pnumbits)
 }
 
 static double
-math_log1(VALUE x)
+math_log_split(VALUE x, size_t *numbits)
 {
-    size_t numbits;
-    double d = get_double_rshift(x, &numbits);
+    double d = get_double_rshift(x, numbits);
 
     domain_check_min(d, 0.0, "log");
-    /* check for pole error */
-    if (d == 0.0) return -HUGE_VAL;
+    return d;
+}
 
-    return log(d) + numbits * M_LN2; /* log(d * 2 ** numbits) */
+#if defined(log2) || defined(HAVE_LOG2)
+# define log_intermediate log2
+#else
+# define log_intermediate log10
+double log2(double x);
+#endif
+
+VALUE
+rb_math_log(int argc, const VALUE *argv)
+{
+    VALUE x, base;
+    double d;
+    size_t numbits;
+
+    argc = rb_scan_args(argc, argv, "11", &x, &base);
+    d = math_log_split(x, &numbits);
+    if (argc == 2) {
+        size_t numbits_2;
+        double b = math_log_split(base, &numbits_2);
+        /* check for pole error */
+        if (d == 0.0) {
+            // Already DomainError if b < 0.0
+            return b ? DBL2NUM(-HUGE_VAL) : DBL2NUM(NAN);
+        }
+        else if (b == 0.0) {
+            return DBL2NUM(-0.0);
+        }
+        d = log_intermediate(d) / log_intermediate(b);
+        d += (numbits - numbits_2) / log2(b);
+    }
+    else {
+        /* check for pole error */
+        if (d == 0.0) return DBL2NUM(-HUGE_VAL);
+        d = log(d);
+        d += numbits * M_LN2;
+    }
+    return DBL2NUM(d);
 }
 
 #ifndef log2
@@ -713,7 +731,7 @@ rb_math_sqrt(VALUE x)
  *    cbrt(1.0)       # => 1.0
  *    cbrt(0.0)       # => 0.0
  *    cbrt(1.0)       # => 1.0
-      cbrt(2.0)       # => 1.2599210498948732
+ *    cbrt(2.0)       # => 1.2599210498948732
  *    cbrt(8.0)       # => 2.0
  *    cbrt(27.0)      # => 3.0
  *    cbrt(INFINITY)  # => Infinity

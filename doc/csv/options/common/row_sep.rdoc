@@ -89,12 +89,3 @@ if any of the following is true:
 * The stream is only available for output.
 
 Obviously, discovery takes a little time. Set manually if speed is important. Also note that IO objects should be opened in binary mode on Windows if this feature will be used as the line-ending translation can cause problems with resetting the document position to where it was before the read ahead.
-
----
-
-Raises an exception if the given value is not String-convertible:
-  row_sep = BasicObject.new
-  # Raises NoMethodError (undefined method `to_s' for #<BasicObject:>)
-  CSV.generate(ary, row_sep: row_sep)
-  # Raises NoMethodError (undefined method `to_s' for #<BasicObject:>)
-  CSV.parse(str, row_sep: row_sep)

@@ -67,7 +67,7 @@ class OpenSSL::TestDigest < OpenSSL::TestCase
   end
 
   def encode16(str)
-    str.unpack("H*").first
+    str.unpack1("H*")
   end
 
   def test_sha2

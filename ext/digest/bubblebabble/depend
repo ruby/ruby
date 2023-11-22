@@ -52,6 +52,7 @@ bubblebabble.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 bubblebabble.o: $(hdrdir)/ruby/internal/attr/noinline.h
 bubblebabble.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 bubblebabble.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+bubblebabble.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 bubblebabble.o: $(hdrdir)/ruby/internal/attr/pure.h
 bubblebabble.o: $(hdrdir)/ruby/internal/attr/restrict.h
 bubblebabble.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ bubblebabble.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 bubblebabble.o: $(hdrdir)/ruby/internal/intern/error.h
 bubblebabble.o: $(hdrdir)/ruby/internal/intern/eval.h
 bubblebabble.o: $(hdrdir)/ruby/internal/intern/file.h
-bubblebabble.o: $(hdrdir)/ruby/internal/intern/gc.h
 bubblebabble.o: $(hdrdir)/ruby/internal/intern/hash.h
 bubblebabble.o: $(hdrdir)/ruby/internal/intern/io.h
 bubblebabble.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ bubblebabble.o: $(hdrdir)/ruby/internal/memory.h
 bubblebabble.o: $(hdrdir)/ruby/internal/method.h
 bubblebabble.o: $(hdrdir)/ruby/internal/module.h
 bubblebabble.o: $(hdrdir)/ruby/internal/newobj.h
-bubblebabble.o: $(hdrdir)/ruby/internal/rgengc.h
 bubblebabble.o: $(hdrdir)/ruby/internal/scan_args.h
 bubblebabble.o: $(hdrdir)/ruby/internal/special_consts.h
 bubblebabble.o: $(hdrdir)/ruby/internal/static_assert.h

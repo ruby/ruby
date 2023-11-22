@@ -63,6 +63,7 @@ module Bundler
       opts = options.dup
       opts["update"] = true
       opts["local"] = options[:local]
+      opts["force"] = options[:redownload]
 
       Bundler.settings.set_command_option_if_given :jobs, opts["jobs"]
 

@@ -51,6 +51,7 @@ class2name.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 class2name.o: $(hdrdir)/ruby/internal/attr/noinline.h
 class2name.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 class2name.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+class2name.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 class2name.o: $(hdrdir)/ruby/internal/attr/pure.h
 class2name.o: $(hdrdir)/ruby/internal/attr/restrict.h
 class2name.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -110,7 +111,6 @@ class2name.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 class2name.o: $(hdrdir)/ruby/internal/intern/error.h
 class2name.o: $(hdrdir)/ruby/internal/intern/eval.h
 class2name.o: $(hdrdir)/ruby/internal/intern/file.h
-class2name.o: $(hdrdir)/ruby/internal/intern/gc.h
 class2name.o: $(hdrdir)/ruby/internal/intern/hash.h
 class2name.o: $(hdrdir)/ruby/internal/intern/io.h
 class2name.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -141,7 +141,6 @@ class2name.o: $(hdrdir)/ruby/internal/memory.h
 class2name.o: $(hdrdir)/ruby/internal/method.h
 class2name.o: $(hdrdir)/ruby/internal/module.h
 class2name.o: $(hdrdir)/ruby/internal/newobj.h
-class2name.o: $(hdrdir)/ruby/internal/rgengc.h
 class2name.o: $(hdrdir)/ruby/internal/scan_args.h
 class2name.o: $(hdrdir)/ruby/internal/special_consts.h
 class2name.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -211,6 +210,7 @@ init.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 init.o: $(hdrdir)/ruby/internal/attr/noinline.h
 init.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 init.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+init.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 init.o: $(hdrdir)/ruby/internal/attr/pure.h
 init.o: $(hdrdir)/ruby/internal/attr/restrict.h
 init.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -270,7 +270,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -301,7 +300,6 @@ init.o: $(hdrdir)/ruby/internal/memory.h
 init.o: $(hdrdir)/ruby/internal/method.h
 init.o: $(hdrdir)/ruby/internal/module.h
 init.o: $(hdrdir)/ruby/internal/newobj.h
-init.o: $(hdrdir)/ruby/internal/rgengc.h
 init.o: $(hdrdir)/ruby/internal/scan_args.h
 init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h

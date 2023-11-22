@@ -21,9 +21,10 @@ module SyntaxSuggest
             filename: file
           )
         end
-        debug_display(io.string)
-        debug_display(benchmark)
       end
+
+      debug_display(io.string)
+      debug_display(benchmark)
 
       expect(io.string).to include(<<~'EOM')
              6  class SyntaxTree < Ripper
@@ -115,9 +116,6 @@ module SyntaxSuggest
       expect(io.string).to include(<<~'EOM')
            5  module DerailedBenchmarks
            6    class RequireTree
-           7      REQUIRED_BY = {}
-           9      attr_reader   :name
-          10      attr_writer   :cost
         > 13      def initialize(name)
         > 18      def self.reset!
         > 25      end
@@ -160,7 +158,6 @@ module SyntaxSuggest
       out = io.string
       expect(out).to include(<<~EOM)
            16  class Rexe
-           18    VERSION = '1.5.1'
         >  77    class Lookups
         > 140      def format_requires
         > 148    end
@@ -205,6 +202,37 @@ module SyntaxSuggest
         > 1  class Dog
         > 2    def bark
         > 4  end
+      EOM
+    end
+
+    it "empty else" do
+      source = <<~'EOM'
+        class Foo
+          def foo
+            if cond?
+              foo
+            else
+
+            end
+          end
+
+          # ...
+
+          def bar
+            if @recv
+            end_is_missing_here
+          end
+        end
+      EOM
+
+      io = StringIO.new
+      SyntaxSuggest.call(
+        io: io,
+        source: source
+      )
+      out = io.string
+      expect(out).to include(<<~EOM)
+        end_is_missing_here
       EOM
     end
   end

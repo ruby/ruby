@@ -1,3 +1,5 @@
+require_relative '../../array/shared/iterable_and_tolerating_size_increasing'
+
 describe :enumerable_inject, shared: true do
   it "with argument takes a block with an accumulator (with argument as initial value) and the current element. Value of block becomes new accumulator" do
     a = []
@@ -17,8 +19,22 @@ describe :enumerable_inject, shared: true do
   end
 
   it "ignores the block if two arguments" do
-    EnumerableSpecs::Numerous.new(1, 2, 3).send(@method, 10, :-) { raise "we never get here"}.should == 4
-    [].send(@method, 3, :+) { raise "we never get here"}.should == 3
+    -> {
+      EnumerableSpecs::Numerous.new(1, 2, 3).send(@method, 10, :-) { raise "we never get here"}.should == 4
+    }.should complain(/#{__FILE__}:#{__LINE__-1}: warning: given block not used/, verbose: true)
+
+    -> {
+      [1, 2, 3].send(@method, 10, :-) { raise "we never get here"}.should == 4
+    }.should complain(/#{__FILE__}:#{__LINE__-1}: warning: given block not used/, verbose: true)
+  end
+
+  it "does not warn when given a Symbol with $VERBOSE true" do
+    -> {
+      [1, 2].send(@method, 0, :+)
+      [1, 2].send(@method, :+)
+      EnumerableSpecs::Numerous.new(1, 2).send(@method, 0, :+)
+      EnumerableSpecs::Numerous.new(1, 2).send(@method, :+)
+    }.should_not complain(verbose: true)
   end
 
   it "can take a symbol argument" do
@@ -31,10 +47,10 @@ describe :enumerable_inject, shared: true do
     a.should == [[2, 5], [5, 3], [3, 6], [6, 1], [1, 4]]
   end
 
-   it "gathers whole arrays as elements when each yields multiple" do
-     multi = EnumerableSpecs::YieldsMulti.new
-     multi.send(@method, []) {|acc, e| acc << e }.should == [[1, 2], [3, 4, 5], [6, 7, 8, 9]]
-   end
+  it "gathers whole arrays as elements when each yields multiple" do
+    multi = EnumerableSpecs::YieldsMulti.new
+    multi.send(@method, []) {|acc, e| acc << e }.should == [[1, 2], [3, 4, 5], [6, 7, 8, 9]]
+  end
 
   it "with inject arguments(legacy rubycon)" do
     # with inject argument
@@ -66,6 +82,22 @@ describe :enumerable_inject, shared: true do
 
   it "returns nil when fails(legacy rubycon)" do
     EnumerableSpecs::EachDefiner.new().send(@method) {|acc,x| 999 }.should == nil
+  end
+
+  it "tolerates increasing a collection size during iterating Array" do
+    array = [:a, :b, :c]
+    ScratchPad.record []
+    i = 0
+
+    array.send(@method, nil) do |_, e|
+      ScratchPad << e
+      array << i if i < 100
+      i += 1
+    end
+
+    actual = ScratchPad.recorded
+    expected = [:a, :b, :c] + (0..99).to_a
+    actual.sort_by(&:to_s).should == expected.sort_by(&:to_s)
   end
 
   ruby_bug '#18635', ''...'3.2' do

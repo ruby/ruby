@@ -62,26 +62,49 @@ describe "NoMethodError#message" do
       NoMethodErrorSpecs::NoMethodErrorC.new.a_private_method
     rescue Exception => e
       e.should be_kind_of(NoMethodError)
-      e.message.lines[0].should =~ /private method `a_private_method' called for #<NoMethodErrorSpecs::NoMethodErrorC:0x[\h]+>/
+      e.message.lines[0].should =~ /private method `a_private_method' called for /
     end
   end
 
-  it "calls receiver.inspect only when calling Exception#message" do
-    ScratchPad.record []
-    test_class = Class.new do
-      def inspect
-        ScratchPad << :inspect_called
-        "<inspect>"
+  ruby_version_is ""..."3.3" do
+    it "calls receiver.inspect only when calling Exception#message" do
+      ScratchPad.record []
+      test_class = Class.new do
+        def inspect
+          ScratchPad << :inspect_called
+          "<inspect>"
+        end
+      end
+      instance = test_class.new
+      begin
+        instance.bar
+      rescue Exception => e
+        e.name.should == :bar
+        ScratchPad.recorded.should == []
+        e.message.should =~ /undefined method.+\bbar\b/
+        ScratchPad.recorded.should == [:inspect_called]
       end
     end
-    instance = test_class.new
-    begin
-      instance.bar
-    rescue Exception => e
-      e.name.should == :bar
-      ScratchPad.recorded.should == []
-      e.message.should =~ /undefined method.+\bbar\b/
-      ScratchPad.recorded.should == [:inspect_called]
+  end
+
+  ruby_version_is "3.3" do
+    it "does not call receiver.inspect even when calling Exception#message" do
+      ScratchPad.record []
+      test_class = Class.new do
+        def inspect
+          ScratchPad << :inspect_called
+          "<inspect>"
+        end
+      end
+      instance = test_class.new
+      begin
+        instance.bar
+      rescue Exception => e
+        e.name.should == :bar
+        ScratchPad.recorded.should == []
+        e.message.should =~ /undefined method.+\bbar\b/
+        ScratchPad.recorded.should == []
+      end
     end
   end
 
@@ -102,21 +125,19 @@ describe "NoMethodError#message" do
     end
   end
 
-  ruby_version_is "3.0" do
-    it "uses #name to display the receiver if it is a class or a module" do
-      klass = Class.new { def self.name; "MyClass"; end }
-      begin
-        klass.foo
-      rescue NoMethodError => error
-        error.message.lines.first.chomp.should == "undefined method `foo' for MyClass:Class"
-      end
+  it "uses #name to display the receiver if it is a class or a module" do
+    klass = Class.new { def self.name; "MyClass"; end }
+    begin
+      klass.foo
+    rescue NoMethodError => error
+      error.message.lines.first.chomp.should =~ /^undefined method `foo' for /
+    end
 
-      mod = Module.new { def self.name; "MyModule"; end }
-      begin
-        mod.foo
-      rescue NoMethodError => error
-        error.message.lines.first.chomp.should == "undefined method `foo' for MyModule:Module"
-      end
+    mod = Module.new { def self.name; "MyModule"; end }
+    begin
+      mod.foo
+    rescue NoMethodError => error
+      error.message.lines.first.chomp.should =~ /^undefined method `foo' for /
     end
   end
 end

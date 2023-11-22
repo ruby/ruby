@@ -14,8 +14,8 @@ class HeapPageCommand(RbBaseCommand):
         page = self._get_page(self.frame.EvaluateExpression(command))
         page.Cast(self.t_heap_page_ptr)
 
-        self._append_command_output(debugger, "p (struct heap_page *) %0#x" % page.GetValueAsUnsigned(), result)
-        self._append_command_output(debugger, "p *(struct heap_page *) %0#x" % page.GetValueAsUnsigned(), result)
+        self._append_expression(debugger, "(struct heap_page *) %0#x" % page.GetValueAsUnsigned(), result)
+        self._append_expression(debugger, "*(struct heap_page *) %0#x" % page.GetValueAsUnsigned(), result)
 
     def _get_page(self, val):
         addr = val.GetValueAsUnsigned()

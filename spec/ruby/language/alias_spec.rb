@@ -52,6 +52,15 @@ describe "The alias keyword" do
     @obj.a.should == 5
   end
 
+  it "works with an interpolated symbol with non-literal embedded expression on the left-hand side" do
+    @meta.class_eval do
+      eval %Q{
+        alias :"#{'a' + ''.to_s}" value
+      }
+    end
+    @obj.a.should == 5
+  end
+
   it "works with a simple symbol on the right-hand side" do
     @meta.class_eval do
       alias a :value
@@ -76,6 +85,15 @@ describe "The alias keyword" do
   it "works with an interpolated symbol on the right-hand side" do
     @meta.class_eval do
       alias a :"#{'value'}"
+    end
+    @obj.a.should == 5
+  end
+
+  it "works with an interpolated symbol with non-literal embedded expression on the right-hand side" do
+    @meta.class_eval do
+      eval %Q{
+        alias a :"#{'value' + ''.to_s}"
+      }
     end
     @obj.a.should == 5
   end
@@ -234,7 +252,7 @@ describe "The alias keyword" do
 
   it "on top level defines the alias on Object" do
     # because it defines on the default definee / current module
-    ruby_exe("def foo; end; alias bla foo; print method(:bla).owner", escape: true).should == "Object"
+    ruby_exe("def foo; end; alias bla foo; print method(:bla).owner").should == "Object"
   end
 
   it "raises a NameError when passed a missing name" do

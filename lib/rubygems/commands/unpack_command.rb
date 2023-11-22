@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "../command"
 require_relative "../version_option"
 require_relative "../security_option"
@@ -28,7 +29,7 @@ class Gem::Commands::UnpackCommand < Gem::Command
       options[:target] = value
     end
 
-    add_option("--spec", "unpack the gem specification") do |value, options|
+    add_option("--spec", "unpack the gem specification") do |_value, options|
       options[:spec] = true
     end
 
@@ -95,12 +96,10 @@ command help for an example.
 
         FileUtils.mkdir_p @options[:target] if @options[:target]
 
-        destination = begin
-          if @options[:target]
-            File.join @options[:target], spec_file
-          else
-            spec_file
-          end
+        destination = if @options[:target]
+          File.join @options[:target], spec_file
+        else
+          spec_file
         end
 
         File.open destination, "w" do |io|
@@ -131,7 +130,7 @@ command help for an example.
       return this_path if File.exist? this_path
     end
 
-    return nil
+    nil
   end
 
   ##
@@ -152,16 +151,16 @@ command help for an example.
   # source directories?
 
   def get_path(dependency)
-    return dependency.name if dependency.name =~ /\.gem$/i
+    return dependency.name if /\.gem$/i.match?(dependency.name)
 
     specs = dependency.matching_specs
 
-    selected = specs.max_by {|s| s.version }
+    selected = specs.max_by(&:version)
 
     return Gem::RemoteFetcher.fetcher.download_to_cache(dependency) unless
       selected
 
-    return unless dependency.name =~ /^#{selected.name}$/i
+    return unless /^#{selected.name}$/i.match?(dependency.name)
 
     # We expect to find (basename).gem in the 'cache' directory.  Furthermore,
     # the name match must be exact (ignoring case).

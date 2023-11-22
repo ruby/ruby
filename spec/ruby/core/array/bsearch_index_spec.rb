@@ -63,10 +63,6 @@ describe "Array#bsearch_index" do
       @array.bsearch_index { |x| -1 }.should be_nil
     end
 
-    it "returns the middle element when block always returns zero" do
-      @array.bsearch_index { |x| 0 }.should == 2
-    end
-
     context "magnitude does not effect the result" do
       it "returns the index of any matched elements where element is between 4n <= xn < 8n" do
         [1, 2].should include(@array.bsearch_index { |x| (1 - x / 4) * (2**100) })

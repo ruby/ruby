@@ -30,7 +30,7 @@ describe "File#flock" do
   it "returns false if trying to lock an exclusively locked file" do
     @file.flock File::LOCK_EX
 
-    ruby_exe(<<-END_OF_CODE, escape: true).should == "false"
+    ruby_exe(<<-END_OF_CODE).should == "false"
       File.open('#{@name}', "w") do |f2|
         print f2.flock(File::LOCK_EX | File::LOCK_NB).to_s
       end
@@ -40,7 +40,7 @@ describe "File#flock" do
   it "blocks if trying to lock an exclusively locked file" do
     @file.flock File::LOCK_EX
 
-    out = ruby_exe(<<-END_OF_CODE, escape: true)
+    out = ruby_exe(<<-END_OF_CODE)
       running = false
 
       t = Thread.new do

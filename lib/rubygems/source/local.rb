@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # The local source finds gems in the current directory for fulfilling
 # dependencies.
@@ -23,14 +24,12 @@ class Gem::Source::Local < Gem::Source
       0
     when Gem::Source then
       1
-    else
-      nil
     end
   end
 
   def inspect # :nodoc:
     keys = @specs ? @specs.keys.sort : "NOT LOADED"
-    "#<%s specs: %p>" % [self.class, keys]
+    format("#<%s specs: %p>", self.class, keys)
   end
 
   def load_specs(type) # :nodoc:
@@ -40,36 +39,35 @@ class Gem::Source::Local < Gem::Source
       @specs = {}
 
       Dir["*.gem"].each do |file|
-        begin
-          pkg = Gem::Package.new(file)
-        rescue SystemCallError, Gem::Package::FormatError
-          # ignore
-        else
-          tup = pkg.spec.name_tuple
-          @specs[tup] = [File.expand_path(file), pkg]
+        pkg = Gem::Package.new(file)
+        spec = pkg.spec
+      rescue SystemCallError, Gem::Package::FormatError
+        # ignore
+      else
+        tup = spec.name_tuple
+        @specs[tup] = [File.expand_path(file), pkg]
 
-          case type
-          when :released
-            unless pkg.spec.version.prerelease?
-              names << pkg.spec.name_tuple
-            end
-          when :prerelease
-            if pkg.spec.version.prerelease?
-              names << pkg.spec.name_tuple
-            end
-          when :latest
-            tup = pkg.spec.name_tuple
-
-            cur = names.find {|x| x.name == tup.name }
-            if !cur
-              names << tup
-            elsif cur.version < tup.version
-              names.delete cur
-              names << tup
-            end
-          else
+        case type
+        when :released
+          unless pkg.spec.version.prerelease?
             names << pkg.spec.name_tuple
           end
+        when :prerelease
+          if pkg.spec.version.prerelease?
+            names << pkg.spec.name_tuple
+          end
+        when :latest
+          tup = pkg.spec.name_tuple
+
+          cur = names.find {|x| x.name == tup.name }
+          if !cur
+            names << tup
+          elsif cur.version < tup.version
+            names.delete cur
+            names << tup
+          end
+        else
+          names << pkg.spec.name_tuple
         end
       end
 
@@ -77,27 +75,25 @@ class Gem::Source::Local < Gem::Source
     end
   end
 
-  def find_gem(gem_name, version = Gem::Requirement.default, # :nodoc:
-               prerelease = false)
+  def find_gem(gem_name, version = Gem::Requirement.default, prerelease = false) # :nodoc:
     load_specs :complete
 
     found = []
 
     @specs.each do |n, data|
-      if n.name == gem_name
-        s = data[1].spec
+      next unless n.name == gem_name
+      s = data[1].spec
 
-        if version.satisfied_by?(s.version)
-          if prerelease
-            found << s
-          elsif !s.version.prerelease? || version.prerelease?
-            found << s
-          end
+      if version.satisfied_by?(s.version)
+        if prerelease
+          found << s
+        elsif !s.version.prerelease? || version.prerelease?
+          found << s
         end
       end
     end
 
-    found.max_by {|s| s.version }
+    found.max_by(&:version)
   end
 
   def fetch_spec(name) # :nodoc:
@@ -113,7 +109,7 @@ class Gem::Source::Local < Gem::Source
   def download(spec, cache_dir = nil) # :nodoc:
     load_specs :complete
 
-    @specs.each do |name, data|
+    @specs.each do |_name, data|
       return data[0] if data[1].spec == spec
     end
 

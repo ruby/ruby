@@ -98,6 +98,16 @@ RSpec.describe Bundler::Fetcher::Downloader do
       end
     end
 
+    context "when the request response is a Net::HTTPForbidden" do
+      let(:http_response) { Net::HTTPForbidden.new("1.1", 403, "Forbidden") }
+      let(:uri) { Bundler::URI("http://user:password@www.uri-to-fetch.com") }
+
+      it "should raise a Bundler::Fetcher::AuthenticationForbiddenError with the uri host" do
+        expect { subject.fetch(uri, options, counter) }.to raise_error(Bundler::Fetcher::AuthenticationForbiddenError,
+          /Access token could not be authenticated for www.uri-to-fetch.com/)
+      end
+    end
+
     context "when the request response is a Net::HTTPNotFound" do
       let(:http_response) { Net::HTTPNotFound.new("1.1", 404, "Not Found") }
 

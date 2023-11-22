@@ -219,7 +219,7 @@ describe "CApiObject" do
     end
 
     it "requires a ruby file" do
-      $:.unshift File.dirname(__FILE__)
+      $:.unshift __dir__
       @o.rb_require()
       $foo.should == 7
     end
@@ -993,13 +993,19 @@ describe "CApiObject" do
       end
 
       it "calls the callback function for each cvar and ivar on a class" do
+        exp = [:@@cvar, :foo, :@@cvar2, :bar, :@ivar, :baz]
+        exp.unshift(:__classpath__, 'CApiObjectSpecs::CVars') if RUBY_VERSION < "3.3"
+
         ary = @o.rb_ivar_foreach(CApiObjectSpecs::CVars)
-        ary.should == [:__classpath__, 'CApiObjectSpecs::CVars', :@@cvar, :foo, :@@cvar2, :bar, :@ivar, :baz]
+        ary.should == exp
       end
 
       it "calls the callback function for each cvar and ivar on a module" do
+        exp = [:@@mvar, :foo, :@@mvar2, :bar, :@ivar, :baz]
+        exp.unshift(:__classpath__, 'CApiObjectSpecs::MVars') if RUBY_VERSION < "3.3"
+
         ary = @o.rb_ivar_foreach(CApiObjectSpecs::MVars)
-        ary.should == [:__classpath__, 'CApiObjectSpecs::MVars', :@@mvar, :foo, :@@mvar2, :bar, :@ivar, :baz]
+        ary.should == exp
       end
 
     end

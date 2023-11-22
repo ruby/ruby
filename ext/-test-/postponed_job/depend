@@ -53,6 +53,7 @@ postponed_job.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 postponed_job.o: $(hdrdir)/ruby/internal/attr/noinline.h
 postponed_job.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 postponed_job.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+postponed_job.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 postponed_job.o: $(hdrdir)/ruby/internal/attr/pure.h
 postponed_job.o: $(hdrdir)/ruby/internal/attr/restrict.h
 postponed_job.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -112,7 +113,6 @@ postponed_job.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/error.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/eval.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/file.h
-postponed_job.o: $(hdrdir)/ruby/internal/intern/gc.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/hash.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/io.h
 postponed_job.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -143,7 +143,6 @@ postponed_job.o: $(hdrdir)/ruby/internal/memory.h
 postponed_job.o: $(hdrdir)/ruby/internal/method.h
 postponed_job.o: $(hdrdir)/ruby/internal/module.h
 postponed_job.o: $(hdrdir)/ruby/internal/newobj.h
-postponed_job.o: $(hdrdir)/ruby/internal/rgengc.h
 postponed_job.o: $(hdrdir)/ruby/internal/scan_args.h
 postponed_job.o: $(hdrdir)/ruby/internal/special_consts.h
 postponed_job.o: $(hdrdir)/ruby/internal/static_assert.h

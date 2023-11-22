@@ -799,4 +799,3 @@ class RDoc::ClassModule < RDoc::Context
   end
 
 end
-

@@ -1,803 +1,314 @@
-# NEWS for Ruby 3.2.0
+# NEWS for Ruby 3.3.0
 
 This document is a list of user-visible feature changes
-since the **3.1.0** release, except for bug fixes.
+since the **3.2.0** release, except for bug fixes.
 
 Note that each entry is kept to a minimum, see links for details.
 
 ## Language changes
 
-* Anonymous rest and keyword rest arguments can now be passed as
-  arguments, instead of just used in method parameters.
-  [[Feature #18351]]
+## Command line options
 
-    ```ruby
-    def foo(*)
-      bar(*)
-    end
-    def baz(**)
-      quux(**)
-    end
-    ```
-
-* A proc that accepts a single positional argument and keywords will
-  no longer autosplat. [[Bug #18633]]
-
-    ```ruby
-    proc{|a, **k| a}.call([1, 2])
-    # Ruby 3.1 and before
-    # => 1
-    # Ruby 3.2 and after
-    # => [1, 2]
-    ```
-
-* Constant assignment evaluation order for constants set on explicit
-  objects has been made consistent with single attribute assignment
-  evaluation order. With this code:
-
-    ```ruby
-    foo::BAR = baz
-    ```
-
-    `foo` is now called before `baz`. Similarly, for multiple assignments
-    to constants,  left-to-right evaluation order is used. With this
-    code:
-
-    ```ruby
-    foo1::BAR1, foo2::BAR2 = baz1, baz2
-    ```
-
-    The following evaluation order is now used:
-
-    1. `foo1`
-    2. `foo2`
-    3. `baz1`
-    4. `baz2`
-
-    [[Bug #15928]]
-
-* "Find pattern" is no longer experimental.
-  [[Feature #18585]]
-
-* Methods taking a rest parameter (like `*args`) and wishing to delegate keyword
-  arguments through `foo(*args)` must now be marked with `ruby2_keywords`
-  (if not already the case). In other words, all methods wishing to delegate
-  keyword arguments through `*args` must now be marked with `ruby2_keywords`,
-  with no exception. This will make it easier to transition to other ways of
-  delegation once a library can require Ruby 3+. Previously, the `ruby2_keywords`
-  flag was kept if the receiving method took `*args`, but this was a bug and an
-  inconsistency. A good technique to find the potentially-missing `ruby2_keywords`
-  is to run the test suite, for where it fails find the last method which must
-  receive keyword arguments, use `puts nil, caller, nil` there, and check each
-  method/block on the call chain which must delegate keywords is correctly marked
-  as `ruby2_keywords`. [[Bug #18625]] [[Bug #16466]]
-
-    ```ruby
-    def target(**kw)
-    end
-
-    # Accidentally worked without ruby2_keywords in Ruby 2.7-3.1, ruby2_keywords
-    # needed in 3.2+. Just like (*args, **kwargs) or (...) would be needed on
-    # both #foo and #bar when migrating away from ruby2_keywords.
-    ruby2_keywords def bar(*args)
-      target(*args)
-    end
-
-    ruby2_keywords def foo(*args)
-      bar(*args)
-    end
-
-    foo(k: 1)
-    ```
+* A new `performance` warning category was introduced.
+  They are not displayed by default even in verbose mode.
+  Turn them on with `-W:performance` or `Warning[:performance] = true`. [[Feature #19538]]
+* The `RUBY_GC_HEAP_INIT_SLOTS` environment variable has been deprecated and
+  removed. Environment variables `RUBY_GC_HEAP_%d_INIT_SLOTS` should be
+  used instead.  [[Feature #19785]]
 
 ## Core classes updates
 
 Note: We're only listing outstanding class updates.
 
-* Fiber
+* Array
 
-    * Introduce Fiber.[] and Fiber.[]= for inheritable fiber storage.
-      Introduce Fiber#storage and Fiber#storage= (experimental) for
-      getting and resetting the current storage.  Introduce
-      `Fiber.new(storage:)` for setting the storage when creating a
-      fiber. [[Feature #19078]]
+    * Array#pack now raises ArgumentError for unknown directives. [[Bug #19150]]
 
-        Existing Thread and Fiber local variables can be tricky to use.
-        Thread local variables are shared between all fibers, making it
-        hard to isolate, while Fiber local variables can be hard to
-        share.  It is often desirable to define unit of execution
-        ("execution context") such that some state is shared between all
-        fibers and threads created in that context.  This is what Fiber
-        storage provides.
+* Dir
 
-        ```ruby
-        def log(message)
-          puts "#{Fiber[:request_id]}: #{message}"
-        end
-
-        def handle_requests
-          while request = read_request
-            Fiber.schedule do
-              Fiber[:request_id] = SecureRandom.uuid
-
-              request.messages.each do |message|
-                Fiber.schedule do
-                  log("Handling #{message}") # Log includes inherited request_id.
-                end
-              end
-            end
-          end
-        end
-        ```
-
-        You should generally consider Fiber storage for any state which
-        you want to be shared implicitly between all fibers and threads
-        created in a given context, e.g. a connection pool, a request
-        id, a logger level, environment variables, configuration, etc.
-
-* Fiber::Scheduler
-
-    * Introduce `Fiber::Scheduler#io_select` for non-blocking IO.select.
-      [[Feature #19060]]
-
-* IO
-
-    * Introduce IO#timeout= and IO#timeout which can cause
-      IO::TimeoutError to be raised if a blocking operation exceeds the
-      specified timeout. [[Feature #18630]]
-
-        ```ruby
-        STDIN.timeout = 1
-        STDIN.read # => Blocking operation timed out! (IO::TimeoutError)
-        ```
-
-    * Introduce `IO.new(..., path:)` and promote `File#path` to `IO#path`.
-      [[Feature #19036]]
-
-* Class
-
-    * Class#attached_object, which returns the object for which
-      the receiver is the singleton class. Raises TypeError if the
-      receiver is not a singleton class.
-      [[Feature #12084]]
-
-        ```ruby
-        class Foo; end
-
-        Foo.singleton_class.attached_object        #=> Foo
-        Foo.new.singleton_class.attached_object    #=> #<Foo:0x000000010491a370>
-        Foo.attached_object                        #=> TypeError: `Foo' is not a singleton class
-        nil.singleton_class.attached_object        #=> TypeError: `NilClass' is not a singleton class
-        ```
-
-* Data
-
-    * New core class to represent simple immutable value object. The class is
-      similar to Struct and partially shares an implementation, but has more
-      lean and strict API. [[Feature #16122]]
-
-        ```ruby
-        Measure = Data.define(:amount, :unit)
-        distance = Measure.new(100, 'km')            #=> #<data Measure amount=100, unit="km">
-        weight = Measure.new(amount: 50, unit: 'kg') #=> #<data Measure amount=50, unit="kg">
-        weight.amount                                #=> 50
-        weight.amount = 40                           #=> NoMethodError: undefined method `amount='
-        ```
-
-* Encoding
-
-    * Encoding#replicate has been deprecated and will be removed in 3.3. [[Feature #18949]]
-    * The dummy `Encoding::UTF_16` and `Encoding::UTF_32` encodings no longer
-      try to dynamically guess the endian based on a byte order mark.
-      Use `Encoding::UTF_16BE`/`UTF_16LE` and `Encoding::UTF_32BE`/`UTF_32LE` instead.
-      This change speeds up getting the encoding of a String. [[Feature #18949]]
-    * Limit maximum encoding set size by 256.
-      If exceeding maximum size, `EncodingError` will be raised. [[Feature #18949]]
-
-* Enumerator
-
-    * Enumerator.product has been added.  Enumerator::Product is the implementation. [[Feature #18685]]
-
-* Exception
-
-    * Exception#detailed_message has been added.
-      The default error printer calls this method on the Exception object
-      instead of #message. [[Feature #18564]]
-
-* Hash
-
-    * Hash#shift now always returns nil if the hash is
-      empty, instead of returning the default value or
-      calling the default proc. [[Bug #16908]]
-
-* Integer
-
-    * Integer#ceildiv has been added. [[Feature #18809]]
-
-* Kernel
-
-    * Kernel#binding raises RuntimeError if called from a non-Ruby frame
-      (such as a method defined in C). [[Bug #18487]]
+    * Dir.for_fd added for returning a Dir object for the directory specified
+      by the provided directory file descriptor. [[Feature #19347]]
+    * Dir.fchdir added for changing the directory to the directory specified
+      by the provided directory file descriptor. [[Feature #19347]]
+    * Dir#chdir added for changing the directory to the directory specified by
+      the provided `Dir` object. [[Feature #19347]]
 
 * MatchData
 
-    * MatchData#byteoffset has been added. [[Feature #13110]]
-    * MatchData#deconstruct has been added. [[Feature #18821]]
-    * MatchData#deconstruct_keys has been added. [[Feature #18821]]
+    * MatchData#named_captures now accepts optional `symbolize_names`
+      keyword. [[Feature #19591]]
 
 * Module
 
-    * Module.used_refinements has been added. [[Feature #14332]]
-    * Module#refinements has been added. [[Feature #12737]]
-    * Module#const_added has been added. [[Feature #17881]]
-    * Module#undefined_instance_methods has been added. [[Feature #12655]]
+    * Module#set_temporary_name added for setting a temporary name for a
+      module. [[Feature #19521]]
+
+* ObjectSpace::WeakKeyMap
+
+    * New core class to build collections with weak references.
+      The class use equality semantic to lookup keys like a regular hash,
+      but it doesn't hold strong references on the keys. [[Feature #18498]]
 
 * Proc
+    * Now Proc#dup and Proc#clone call `#initialize_dup` and `#initialize_clone`
+      hooks respectively.  [[Feature #19362]]
 
-    * Proc#dup returns an instance of subclass. [[Bug #17545]]
-    * Proc#parameters now accepts lambda keyword. [[Feature #15357]]
+* Process.warmup
 
-* Process
-    * Added `RLIMIT_NPTS` constant to FreeBSD platform
+    * Notify the Ruby virtual machine that the boot sequence is finished,
+      and that now is a good time to optimize the application. This is useful
+      for long running applications. The actual optimizations performed are entirely
+      implementation specific and may change in the future without notice. [[Feature #18885]]
 
-* Regexp
+* Process::Status
 
-    * The cache-based optimization is introduced.
-      Many (but not all) Regexp matching is now in linear time, which
-      will prevent regular expression denial of service (ReDoS)
-      vulnearbility. [[Feature #19104]]
+    * Process::Status#& and Process::Status#>> are deprecated. [[Bug #19868]]
 
-    * Regexp.linear_time? is introduced. [[Feature #19194]]
+* Range
 
-    * Regexp.new now supports passing the regexp flags not only as an Integer,
-      but also as a String.  Unknown flags raise ArgumentError.
-      Otherwise, anything other than `true`, `false`, `nil` or Integer will be warned.
-      [[Feature #18788]]
-
-    * Regexp.timeout= has been added. Also, Regexp.new new supports timeout keyword.
-      See [[Feature #17837]]
+    * Range#reverse_each can now process beginless ranges with an Integer endpoint. [[Feature #18515]]
 
 * Refinement
 
-    * Refinement#refined_class has been added. [[Feature #12737]]
-
-* RubyVM::AbstractSyntaxTree
-
-    * Add `error_tolerant` option for `parse`, `parse_file` and `of`. [[Feature #19013]]
-      With this option
-
-        1. SyntaxError is suppressed
-        2. AST is returned for invalid input
-        3. `end` is complemented when a parser reaches to the end of input but `end` is insufficient
-        4. `end` is treated as keyword based on indent
-
-        ```ruby
-        # Without error_tolerant option
-        root = RubyVM::AbstractSyntaxTree.parse(<<~RUBY)
-        def m
-          a = 10
-          if
-        end
-        RUBY
-        # => <internal:ast>:33:in `parse': syntax error, unexpected `end' (SyntaxError)
-
-        # With error_tolerant option
-        root = RubyVM::AbstractSyntaxTree.parse(<<~RUBY, error_tolerant: true)
-        def m
-          a = 10
-          if
-        end
-        RUBY
-        p root # => #<RubyVM::AbstractSyntaxTree::Node:SCOPE@1:0-4:3>
-
-        # `end` is treated as keyword based on indent
-        root = RubyVM::AbstractSyntaxTree.parse(<<~RUBY, error_tolerant: true)
-        module Z
-          class Foo
-            foo.
-          end
-
-          def bar
-          end
-        end
-        RUBY
-        p root.children[-1].children[-1].children[-1].children[-2..-1]
-        # => [#<RubyVM::AbstractSyntaxTree::Node:CLASS@2:2-4:5>, #<RubyVM::AbstractSyntaxTree::Node:DEFN@6:2-7:5>]
-        ```
-
-    * Add `keep_tokens` option for `parse`, `parse_file` and `of`. Add `#tokens` and `#all_tokens`
-      for RubyVM::AbstractSyntaxTree::Node [[Feature #19070]]
-
-        ```ruby
-        root = RubyVM::AbstractSyntaxTree.parse("x = 1 + 2", keep_tokens: true)
-        root.tokens # => [[0, :tIDENTIFIER, "x", [1, 0, 1, 1]], [1, :tSP, " ", [1, 1, 1, 2]], ...]
-        root.tokens.map{_1[2]}.join # => "x = 1 + 2"
-        ```
-
-* Set
-
-    * Set is now available as a built-in class without the need for `require "set"`. [[Feature #16989]]
-      It is currently autoloaded via the Set constant or a call to Enumerable#to_set.
+    * Add Refinement#target as an alternative of Refinement#refined_class.
+      Refinement#refined_class is deprecated and will be removed in Ruby
+      3.4.  [[Feature #19714]]
 
 * String
 
-    * String#byteindex and String#byterindex have been added. [[Feature #13110]]
-    * Update Unicode to Version 15.0.0 and Emoji Version 15.0. [[Feature #18639]]
-      (also applies to Regexp)
-    * String#bytesplice has been added.  [[Feature #18598]]
-    * String#dedup has been added as an alias to String#-@.  [[Feature #18595]]
-
-* Struct
-
-    * A Struct class can also be initialized with keyword arguments
-      without `keyword_init: true` on Struct.new [[Feature #16806]]
-
-        ```ruby
-        Post = Struct.new(:id, :name)
-        Post.new(1, "hello") #=> #<struct Post id=1, name="hello">
-        # From Ruby 3.2, the following code also works without keyword_init: true.
-        Post.new(id: 1, name: "hello") #=> #<struct Post id=1, name="hello">
-        ```
-
-* Thread
-
-    * Thread#each_caller_location is added. [[Feature #16663]]
-
-* Thread::Queue
-
-    * Thread::Queue.pop(timeout: sec) is added. [[Feature #18774]]
-
-* Thread::SizedQueue
-
-    * Thread::SizedQueue.pop(timeout: sec) is added. [[Feature #18774]]
-    * Thread::SizedQueue.push(timeout: sec) is added. [[Feature #18944]]
-
-* Time
-
-    * Time#deconstruct_keys is added, allowing to use Time instances
-      in pattern-matching expressions [[Feature #19071]]
-
-    * Time.new now can parse a string like generated by Time#inspect
-      and return a Time instance based on the given argument.
-      [[Feature #18033]]
-
-* SyntaxError
-    * SyntaxError#path has been added.  [[Feature #19138]]
+    * String#unpack now raises ArgumentError for unknown directives. [[Bug #19150]]
+    * String#bytesplice now accepts new arguments index/length or range of the
+      source string to be copied.  [[Feature #19314]]
 
 * TracePoint
 
-    * TracePoint#binding now returns `nil` for `c_call`/`c_return` TracePoints.
-      [[Bug #18487]]
-    * TracePoint#enable `target_thread` keyword argument now defaults to the
-      current thread if `target` and `target_line` keyword arguments are not
-      passed. [[Bug #16889]]
-
-* UnboundMethod
-
-    * `UnboundMethod#==` returns `true` if the actual method is same. For example,
-      `String.instance_method(:object_id) == Array.instance_method(:object_id)`
-      returns `true`. [[Feature #18798]]
-
-    * `UnboundMethod#inspect` does not show the receiver of `instance_method`.
-      For example `String.instance_method(:object_id).inspect` returns
-      `"#<UnboundMethod: Kernel#object_id()>"`
-      (was `"#<UnboundMethod: String(Kernel)#object_id()>"`).
-
-* GC
-
-    * Expose `need_major_gc` via `GC.latest_gc_info`. [[GH-6791]]
-
-* ObjectSpace
-
-    * `ObjectSpace.dump_all` dump shapes as well. [[GH-6868]]
+    * TracePoint supports `rescue` event. When the raised exception was rescued,
+      the TracePoint will fire the hook. `rescue` event only supports Ruby-level
+      `rescue`. [[Feature #19572]]
 
 ## Stdlib updates
 
-* Bundler
+* RubyGems and Bundler warn if users require gem that is scheduled to become the bundled gems
+  in the future version of Ruby. [[Feature #19351]] [[Feature #19776]] [[Feature #19843]]
 
-    * Bundler now uses [[PubGrub]] resolver instead of [[Molinillo]] for performance improvement.
-    * Add support for `bundle gem --ext=rust` command. [[GH-rubygems-6149]]
+  Targeted libraries are:
+    * abbrev
+    * base64
+    * bigdecimal
+    * csv
+    * drb
+    * getoptlong
+    * mutex_m
+    * nkf
+    * observer
+    * racc
+    * resolv-replace
+    * rinda
+    * syslog
 
-* CGI
+* Socket#recv and Socket#recv_nonblock returns `nil` instead of an empty string on closed
+  connections. Socket#recvmsg and Socket#recvmsg_nonblock returns `nil` instead of an empty packet on closed
+  connections. [[Bug #19012]]
 
-    * `CGI.escapeURIComponent` and `CGI.unescapeURIComponent` are added.
-      [[Feature #18822]]
+* Random::Formatter#alphanumeric is extended to accept optional `chars`
+  keyword argument. [[Feature #18183]]
 
-* Coverage
+The following default gem is added.
 
-    * `Coverage.setup` now accepts `eval: true`. By this, `eval` and related methods are
-      able to generate code coverage. [[Feature #19008]]
+* prism 0.18.0
 
-    * `Coverage.supported?(mode)` enables detection of what coverage modes are
-      supported. [[Feature #19026]]
+The following default gems are updated.
 
-* Date
+* RubyGems 3.5.0.dev
+* base64 0.2.0
+* benchmark 0.3.0
+* bigdecimal 3.1.5
+* bundler 2.5.0.dev
+* cgi 0.4.0
+* csv 3.2.8
+* date 3.3.4
+* delegate 0.3.1
+* drb 2.2.0
+* english 0.8.0
+* erb 4.0.3
+* etc 1.4.3.dev.1
+* fcntl 1.1.0
+* fiddle 1.1.2
+* fileutils 1.7.2
+* find 0.2.0
+* getoptlong 0.2.1
+* io-console 0.6.1.dev.1
+* irb 1.9.1
+* logger 1.6.0
+* mutex_m 0.2.0
+* net-http 0.4.0
+* net-protocol 0.2.2
+* nkf 0.1.3
+* observer 0.1.2
+* open-uri 0.4.0
+* open3 0.2.0
+* openssl 3.2.0
+* optparse 0.4.0
+* ostruct 0.6.0
+* pathname 0.3.0
+* pp 0.5.0
+* prettyprint 0.2.0
+* pstore 0.1.3
+* psych 5.1.1.1
+* rdoc 6.6.0
+* reline 0.4.0
+* rinda 0.2.0
+* securerandom 0.3.0
+* shellwords 0.2.0
+* singleton 0.2.0
+* stringio 3.1.0
+* strscan 3.0.8
+* syntax_suggest 1.1.0
+* tempfile 0.2.0
+* time 0.3.0
+* timeout 0.4.1
+* tmpdir 0.2.0
+* tsort 0.2.0
+* un 0.3.0
+* uri 0.13.0
+* weakref 0.1.3
+* win32ole 1.8.10
+* yaml 0.3.0
+* zlib 3.1.0
 
-    * Added `Date#deconstruct_keys` and `DateTime#deconstruct_keys` same as [[Feature #19071]]
+The following bundled gem is promoted from default gems.
 
-* ERB
+* racc 1.7.3
 
-    * `ERB::Util.html_escape` is made faster than `CGI.escapeHTML`.
-        * It no longer allocates a String object when no character needs to be escaped.
-        * It skips calling `#to_s` method when an argument is already a String.
-        * `ERB::Escape.html_escape` is added as an alias to `ERB::Util.html_escape`,
-          which has not been monkey-patched by Rails.
-    * `ERB::Util.url_encode` is made faster using `CGI.escapeURIComponent`.
-    * `-S` option is removed from `erb` command.
+The following bundled gems are updated.
 
-* FileUtils
+* minitest 5.20.0
+* rake 13.1.0
+* test-unit 3.6.1
+* rexml 3.2.6
+* rss 0.3.0
+* net-imap 0.4.6
+* net-smtp 0.4.0
+* rbs 3.3.2
+* typeprof 0.21.8
+* debug 1.8.0
 
-    * Add FileUtils.ln_sr method and `relative:` option to FileUtils.ln_s.
-      [[Feature #18925]]
-
-* IRB
-
-    * Added many of new commands and improvements. see [[ruby-3-2-irb]]
-
-* Net::Protocol
-
-    * Improve `Net::BufferedIO` performance. [[GH-net-protocol-14]]
-
-* Pathname
-
-    * Added `Pathname#lutime`. [[GH-pathname-20]]
-
-* Socket
-
-    * Added the following constants for supported platforms.
-        * `SO_INCOMING_CPU`
-        * `SO_INCOMING_NAPI_ID`
-        * `SO_RTABLE`
-        * `SO_SETFIB`
-        * `SO_USER_COOKIE`
-        * `TCP_KEEPALIVE`
-        * `TCP_CONNECTION_INFO`
-
-* SyntaxSuggest
-
-    * The feature of `syntax_suggest` formerly `dead_end` is integrated in Ruby.
-      [[Feature #18159]]
-
-* UNIXSocket
-
-    * Add support for UNIXSocket on Windows. Emulate anonymous sockets. Add
-      support for File.socket? and File::Stat#socket? where possible.
-      [[Feature #19135]]
-
-*   The following default gems are updated.
-
-    * RubyGems 3.4.0.dev
-    * abbrev 0.1.1
-    * benchmark 0.2.1
-    * bigdecimal 3.1.3
-    * bundler 2.4.0.dev
-    * cgi 0.3.6
-    * csv 3.2.6
-    * date 3.3.3
-    * delegate 0.3.0
-    * did_you_mean 1.6.3
-    * digest 3.1.1
-    * drb 2.1.1
-    * english 0.7.2
-    * erb 4.0.2
-    * error_highlight 0.5.1
-    * etc 1.4.2
-    * fcntl 1.0.2
-    * fiddle 1.1.1
-    * fileutils 1.7.0
-    * forwardable 1.3.3
-    * getoptlong 0.2.0
-    * io-console 0.6.0
-    * io-nonblock 0.2.0
-    * io-wait 0.3.0
-    * ipaddr 1.2.5
-    * irb 1.6.1
-    * json 2.6.3
-    * logger 1.5.3
-    * mutex_m 0.1.2
-    * net-http 0.3.2
-    * net-protocol 0.2.1
-    * nkf 0.1.2
-    * open-uri 0.3.0
-    * open3 0.1.2
-    * openssl 3.1.0.pre
-    * optparse 0.3.0
-    * ostruct 0.5.5
-    * pathname 0.2.1
-    * pp 0.4.0
-    * pstore 0.1.2
-    * psych 5.0.1
-    * racc 1.6.1
-    * rdoc 6.5.0
-    * readline-ext 0.1.5
-    * reline 0.3.2
-    * resolv 0.2.2
-    * resolv-replace 0.1.1
-    * securerandom 0.2.2
-    * set 1.0.3
-    * stringio 3.0.4
-    * strscan 3.0.5
-    * syntax_suggest 1.0.2
-    * syslog 0.1.1
-    * tempfile 0.1.3
-    * time 0.2.1
-    * timeout 0.3.1
-    * tmpdir 0.1.3
-    * tsort 0.1.1
-    * un 0.2.1
-    * uri 0.12.0
-    * weakref 0.1.2
-    * win32ole 1.8.9
-    * yaml 0.2.1
-    * zlib 3.0.0
-
-*   The following bundled gems are updated.
-
-    * minitest 5.16.3
-    * power_assert 2.0.2
-    * test-unit 3.5.7
-    * net-ftp 0.2.0
-    * net-imap 0.3.2
-    * net-pop 0.1.2
-    * net-smtp 0.3.3
-    * rbs 2.8.1
-    * typeprof 0.21.3
-    * debug 1.7.0
-
-*   The following default gems are now bundled gems.
+See GitHub releases like [Logger](https://github.com/ruby/logger/releases) or
+changelog for details of the default gems or bundled gems.
 
 ## Supported platforms
 
-* WebAssembly/WASI is added. See [[wasm/README.md]] and [[ruby.wasm]] for more details. [[Feature #18462]]
-
 ## Compatibility issues
-
-* `String#to_c` currently treat a sequence of underscores as an end of Complex
-  string. [[Bug #19087]]
-
-* Now `ENV.clone` raises `TypeError` as well as `ENV.dup` [[Bug #17767]]
-
-### Removed constants
-
-The following deprecated constants are removed.
-
-* `Fixnum` and `Bignum` [[Feature #12005]]
-* `Random::DEFAULT` [[Feature #17351]]
-* `Struct::Group`
-* `Struct::Passwd`
-
-### Removed methods
-
-The following deprecated methods are removed.
-
-* `Dir.exists?` [[Feature #17391]]
-* `File.exists?` [[Feature #17391]]
-* `Kernel#=~` [[Feature #15231]]
-* `Kernel#taint`, `Kernel#untaint`, `Kernel#tainted?`
-  [[Feature #16131]]
-* `Kernel#trust`, `Kernel#untrust`, `Kernel#untrusted?`
-  [[Feature #16131]]
-* `Method#public?`, `Method#private?`, `Method#protected?`,
-  `UnboundMethod#public?`, `UnboundMethod#private?`, `UnboundMethod#protected?`
-  [[Bug #18729]] [[Bug #18751]] [[Bug #18435]]
-
-### Source code incompatibility of extension libraries
-
-* Extension libraries provide PRNG, subclasses of Random, need updates.
-  See [PRNG update] below for more information. [[Bug #19100]]
-
-### Error printer
-
-* Ruby no longer escapes control characters and backslashes in an
-  error message. [[Feature #18367]]
-
-### Constant lookup when defining a class/module
-
-* When defining a class/module directly under the Object class by class/module
-  statement, if there is already a class/module with the same name, the statement
-  was handled as "open class" in Ruby 3.1 or before. Since Ruby 3.2, a new class
-  is defined instead. [[Feature #18832]]
 
 ## Stdlib compatibility issues
 
-* Psych no longer bundles libyaml sources.
-  And also Fiddle no longer bundles libffi sources.
-  Users need to install the libyaml/libffi library themselves via the package
-  manager like apt, yum, brew, etc.
-
-    Psych and fiddle supported the static build with specific version of libyaml
-    and libffi sources. You can build psych with libyaml-0.2.5 like this.
-
-    ```bash
-    $ ./configure --with-libyaml-source-dir=/path/to/libyaml-0.2.5
-    ```
-
-    And you can build fiddle with libffi-3.4.4 like this.
-
-    ```bash
-    $ ./configure --with-libffi-source-dir=/path/to/libffi-3.4.4
-    ```
-
-    [[Feature #18571]]
-
-* Check cookie name/path/domain characters in `CGI::Cookie`. [[CVE-2021-33621]]
-
-* `URI.parse` return empty string in host instead of nil. [[sec-156615]]
+* `racc` is promoted to bundled gems.
+  * You need to add `racc` to your `Gemfile` if you use `racc` under bundler environment.
+* `ext/readline` is retired
+  * We have `reline` that is pure Ruby implementation compatible with `ext/readline` API. We rely on `reline` in the future. If you need to use `ext/readline`, you can install `ext/readline` via rubygems.org with `gem install readline-ext`.
+  * We no longer need to install libraries like `libreadline` or `libedit`.
 
 ## C API updates
 
-### Updated C APIs
-
-The following APIs are updated.
-
-* PRNG update
-
-    `rb_random_interface_t` updated and versioned.
-    Extension libraries which use this interface and built for older versions.
-    Also `init_int32` function needs to be defined.
-
-### Added C APIs
-
-* `VALUE rb_hash_new_capa(long capa)` was added to created hashes with the desired capacity.
-* `rb_internal_thread_add_event_hook` and `rb_internal_thread_add_event_hook` were added to instrument threads scheduling.
-  The following events are available:
-    * `RUBY_INTERNAL_THREAD_EVENT_STARTED`
-    * `RUBY_INTERNAL_THREAD_EVENT_READY`
-    * `RUBY_INTERNAL_THREAD_EVENT_RESUMED`
-    * `RUBY_INTERNAL_THREAD_EVENT_SUSPENDED`
-    * `RUBY_INTERNAL_THREAD_EVENT_EXITED`
-
-### Removed C APIs
-
-The following deprecated APIs are removed.
-
-* `rb_cData` variable.
-* "taintedness" and "trustedness" functions. [[Feature #16131]]
-
 ## Implementation improvements
 
-* Fixed several race conditions in Kernel#autoload. [[Bug #18782]]
-* Cache invalidation for expressions referencing constants is now
-  more fine-grained. `RubyVM.stat(:global_constant_state)` was
-  removed because it was closely tied to the previous caching scheme
-  where setting any constant invalidates all caches in the system.
-  New keys, `:constant_cache_invalidations` and `:constant_cache_misses`,
-  were introduced to help with use cases for `:global_constant_state`.
-  [[Feature #18589]]
-* The cache-based optimization for Regexp matching is introduced.
-  [[Feature #19104]]
-* Variable Width Allocation is now enabled by default.
-  [[Feature #18239]].
-* Added a new instance variable caching mechanism, called object shapes, which
-  improves inline cache hits for most objects and allows us to generate very
-  efficient JIT code. Objects whose instance variables are defined in a
-  consistent order will see the most performance benefits.
-  [[Feature #18776]]
-* Speed up marking instruction sequences by using a bitmap to find "markable"
-  objects.  This change results in faster major collections.
-  [[Feature #18875]]
-
-## JIT
+* `defined?(@ivar)` is optimized with Object Shapes.
+* Name resolution such as `Socket.getaddrinfo` can now be interrupted. [[Feature #19965]]
 
 ### YJIT
 
-* YJIT is no longer experimental
-    * Has been tested on production workloads for over a year and proven to be quite stable.
-* YJIT now supports both x86-64 and arm64/aarch64 CPUs on Linux, MacOS, BSD and other UNIX platforms.
-    * This release brings support for Mac M1/M2, AWS Graviton and Raspberry Pi 4.
-* Building YJIT now requires Rust 1.58.0+. [[Feature #18481]]
-    * In order to ensure that CRuby is built with YJIT, please install `rustc` >= 1.58.0
-      before running `./configure`
-    * Please reach out to the YJIT team should you run into any issues.
-* Physical memory for JIT code is lazily allocated. Unlike Ruby 3.1,
-  the RSS of a Ruby process is minimized because virtual memory pages
-  allocated by `--yjit-exec-mem-size` will not be mapped to physical
-  memory pages until actually utilized by JIT code.
-* Introduce Code GC that frees all code pages when the memory consumption
-  by JIT code reaches `--yjit-exec-mem-size`.
-    * `RubyVM::YJIT.runtime_stats` returns Code GC metrics in addition to
-      existing `inline_code_size` and `outlined_code_size` keys:
-      `code_gc_count`, `live_page_count`, `freed_page_count`, and `freed_code_size`.
-* Most of the statistics produced by `RubyVM::YJIT.runtime_stats` are now available in release builds.
-    * Simply run ruby with `--yjit-stats` to compute and dump stats (incurs some run-time overhead).
-* YJIT is now optimized to take advantage of object shapes. [[Feature #18776]]
-* Take advantage of finer-grained constant invalidation to invalidate less code when defining new constants. [[Feature #18589]]
-* The default `--yjit-exec-mem-size` is changed to 64 (MiB).
-* The default `--yjit-call-threshold` is changed to 30.
+* Major performance improvements over 3.2
+  * Support for splat and rest arguments has been improved.
+  * Registers are allocated for stack operations of the virtual machine.
+  * More calls with optional arguments are compiled.
+  * Exception handlers are also compiled.
+  * Instance variables no longer exit to the interpreter
+    with megamorphic object shapes.
+  * Unsupported call types no longer exit to the interpreter.
+  * `Integer#!=`, `String#!=`, `Kernel#block_given?`, `Kernel#is_a?`,
+    `Kernel#instance_of?`, `Module#===` are specially optimized.
+  * Now more than 3x faster than the interpreter on optcarrot!
+* Significantly improved memory usage over 3.2
+    * Metadata for compiled code uses a lot less memory.
+    * Generate more compact code on ARM64
+* Compilation speed is now slightly faster than 3.2.
+* Add `RubyVM::YJIT.enable` that can enable YJIT later
+  * You can start YJIT without modifying command-line arguments or environment variables.
+  * This can also be used to enable YJIT only once your application is
+    done booting. `--yjit-disable` can be used if you want to use other
+    YJIT options while disabling YJIT at boot.
+* Code GC now disabled by default, with `--yjit-exec-mem-size` treated as a hard limit
+  * Can produce better copy-on-write behavior on forking web servers such as `unicorn`
+  * Use the `--yjit-code-gc` option to automatically run code GC when YJIT reaches the size limit
+* `ratio_in_yjit` stat produced by `--yjit-stats` is now available in release builds,
+  a special stats or dev build is no longer required to access most stats.
+* Exit tracing option now supports sampling
+  * `--trace-exits-sample-rate=N`
+* More thorough testing and multiple bug fixes
+* `--yjit-stats=quiet` is added to avoid printing stats on exit.
+* `--yjit-perf` is added to facilitate profiling with Linux perf.
 
 ### MJIT
 
-* The MJIT compiler is re-implemented in Ruby as a standard library `mjit`.
-* MJIT compiler is executed under a forked Ruby process instead of
-  doing it in a native thread called MJIT worker. [[Feature #18968]]
-    * As a result, Microsoft Visual Studio (MSWIN) is no longer supported.
-* MinGW is no longer supported. [[Feature #18824]]
-* Rename `--mjit-min-calls` to `--mjit-call-threshold`.
-* Change default `--mjit-max-cache` back from 10000 to 100.
+* MJIT is removed.
+  * `--disable-jit-support` is removed. Consider using `--disable-yjit --disable-rjit` instead.
 
-[Feature #12005]: https://bugs.ruby-lang.org/issues/12005
-[Feature #12084]: https://bugs.ruby-lang.org/issues/12084
-[Feature #12655]: https://bugs.ruby-lang.org/issues/12655
-[Feature #12737]: https://bugs.ruby-lang.org/issues/12737
-[Feature #13110]: https://bugs.ruby-lang.org/issues/13110
-[Feature #14332]: https://bugs.ruby-lang.org/issues/14332
-[Feature #15231]: https://bugs.ruby-lang.org/issues/15231
-[Feature #15357]: https://bugs.ruby-lang.org/issues/15357
-[Bug #15928]:     https://bugs.ruby-lang.org/issues/15928
-[Feature #16122]: https://bugs.ruby-lang.org/issues/16122
-[Feature #16131]: https://bugs.ruby-lang.org/issues/16131
-[Bug #16466]:     https://bugs.ruby-lang.org/issues/16466
-[Feature #16663]: https://bugs.ruby-lang.org/issues/16663
-[Feature #16806]: https://bugs.ruby-lang.org/issues/16806
-[Bug #16889]:     https://bugs.ruby-lang.org/issues/16889
-[Bug #16908]:     https://bugs.ruby-lang.org/issues/16908
-[Feature #16989]: https://bugs.ruby-lang.org/issues/16989
-[Feature #17351]: https://bugs.ruby-lang.org/issues/17351
-[Feature #17391]: https://bugs.ruby-lang.org/issues/17391
-[Bug #17545]:     https://bugs.ruby-lang.org/issues/17545
-[Bug #17767]:     https://bugs.ruby-lang.org/issues/17767
-[Feature #17837]: https://bugs.ruby-lang.org/issues/17837
-[Feature #17881]: https://bugs.ruby-lang.org/issues/17881
-[Feature #18033]: https://bugs.ruby-lang.org/issues/18033
-[Feature #18159]: https://bugs.ruby-lang.org/issues/18159
-[Feature #18239]: https://bugs.ruby-lang.org/issues/18239#note-17
-[Feature #18351]: https://bugs.ruby-lang.org/issues/18351
-[Feature #18367]: https://bugs.ruby-lang.org/issues/18367
-[Bug #18435]:     https://bugs.ruby-lang.org/issues/18435
-[Feature #18462]: https://bugs.ruby-lang.org/issues/18462
-[Feature #18481]: https://bugs.ruby-lang.org/issues/18481
-[Bug #18487]:     https://bugs.ruby-lang.org/issues/18487
-[Feature #18564]: https://bugs.ruby-lang.org/issues/18564
-[Feature #18571]: https://bugs.ruby-lang.org/issues/18571
-[Feature #18585]: https://bugs.ruby-lang.org/issues/18585
-[Feature #18589]: https://bugs.ruby-lang.org/issues/18589
-[Feature #18595]: https://bugs.ruby-lang.org/issues/18595
-[Feature #18598]: https://bugs.ruby-lang.org/issues/18598
-[Bug #18625]:     https://bugs.ruby-lang.org/issues/18625
-[Feature #18630]: https://bugs.ruby-lang.org/issues/18630
-[Bug #18633]:     https://bugs.ruby-lang.org/issues/18633
-[Feature #18639]: https://bugs.ruby-lang.org/issues/18639
-[Feature #18685]: https://bugs.ruby-lang.org/issues/18685
-[Bug #18729]:     https://bugs.ruby-lang.org/issues/18729
-[Bug #18751]:     https://bugs.ruby-lang.org/issues/18751
-[Feature #18774]: https://bugs.ruby-lang.org/issues/18774
-[Feature #18776]: https://bugs.ruby-lang.org/issues/18776
-[Bug #18782]:     https://bugs.ruby-lang.org/issues/18782
-[Feature #18788]: https://bugs.ruby-lang.org/issues/18788
-[Feature #18798]: https://bugs.ruby-lang.org/issues/18798
-[Feature #18809]: https://bugs.ruby-lang.org/issues/18809
-[Feature #18821]: https://bugs.ruby-lang.org/issues/18821
-[Feature #18822]: https://bugs.ruby-lang.org/issues/18822
-[Feature #18824]: https://bugs.ruby-lang.org/issues/18824
-[Feature #18832]: https://bugs.ruby-lang.org/issues/18832
-[Feature #18875]: https://bugs.ruby-lang.org/issues/18875
-[Feature #18925]: https://bugs.ruby-lang.org/issues/18925
-[Feature #18944]: https://bugs.ruby-lang.org/issues/18944
-[Feature #18949]: https://bugs.ruby-lang.org/issues/18949
-[Feature #18968]: https://bugs.ruby-lang.org/issues/18968
-[Feature #19008]: https://bugs.ruby-lang.org/issues/19008
-[Feature #19013]: https://bugs.ruby-lang.org/issues/19013
-[Feature #19026]: https://bugs.ruby-lang.org/issues/19026
-[Feature #19036]: https://bugs.ruby-lang.org/issues/19036
-[Feature #19060]: https://bugs.ruby-lang.org/issues/19060
-[Feature #19070]: https://bugs.ruby-lang.org/issues/19070
-[Feature #19071]: https://bugs.ruby-lang.org/issues/19071
-[Feature #19078]: https://bugs.ruby-lang.org/issues/19078
-[Bug #19087]:     https://bugs.ruby-lang.org/issues/19087
-[Bug #19100]:     https://bugs.ruby-lang.org/issues/19100
-[Feature #19104]: https://bugs.ruby-lang.org/issues/19104
-[Feature #19135]: https://bugs.ruby-lang.org/issues/19135
-[Feature #19138]: https://bugs.ruby-lang.org/issues/19138
-[Feature #19194]: https://bugs.ruby-lang.org/issues/19194
-[Molinillo]:      https://github.com/CocoaPods/Molinillo
-[PubGrub]:        https://github.com/jhawthorn/pub_grub
-[GH-net-protocol-14]: https://github.com/ruby/net-protocol/pull/14
-[GH-pathname-20]: https://github.com/ruby/pathname/pull/20
-[GH-6791]:        https://github.com/ruby/ruby/pull/6791
-[GH-6868]:        https://github.com/ruby/ruby/pull/6868
-[GH-rubygems-5175]: https://github.com/rubygems/rubygems/pull/6149
-[sec-156615]:     https://hackerone.com/reports/156615
-[ruby-3-2-irb]:   https://st0012.dev/whats-new-in-ruby-3-2-irb
-[CVE-2021-33621]: https://www.ruby-lang.org/en/news/2022/11/22/http-response-splitting-in-cgi-cve-2021-33621/
-[wasm/README.md]: https://github.com/ruby/ruby/blob/master/wasm/README.md
-[ruby.wasm]:      https://github.com/ruby/ruby.wasm
+### RJIT
+
+* Introduced a pure-Ruby JIT compiler RJIT.
+  * RJIT supports only x86\_64 architecture on Unix platforms.
+  * Unlike MJIT, it doesn't require a C compiler at runtime.
+* RJIT exists only for experimental purposes.
+  * You should keep using YJIT in production.
+
+### M:N Therad scheduler
+
+* M:N Thread scheduler is introduced. [[Feature #19842]]
+  * Background: Ruby 1.8 and before, M:1 thread scheduler (M Ruby threads
+    with 1 native thread. Called as User level threads or Green threads)
+    is used. Ruby 1.9 and later, 1:1 thread scheduler (1 Ruby thread with
+    1 native thread). M:1 threads takes lower resources compare with 1:1
+    threads because it needs only 1 native threads. However it is difficult
+    to support context switching for all of blocking operation so 1:1
+    threads are employed from Ruby 1.9. M:N thread scheduler uses N native
+    threads for M Ruby threads (N is small number in general). It doesn't
+    need same number of native threads as Ruby threads (similar to the M:1
+    thread scheduler). Also our M:N threads supports blocking operations
+    well same as 1:1 threads. See the ticket for more details.
+    Our M:N thread scheduler refers on the gorotuine scheduler in the
+    Go language.
+  * In a ractor, only 1 thread can run in a same time because of
+    implementation. Therefore, applications that use only one Ractor
+    (most applications) M:N thread scheduler works as M:1 thread scheduler
+    with further extension from Ruby 1.8.
+  * M:N thread scheduler can introduce incompatibility for C-extensions,
+    so it is disabled by default on the main Ractors.
+    `RUBY_MN_THREADS=1` environment variable will enable it.
+    On non-main Ractors, M:N thread scheduler is enabled (and can not
+    disable it now).
+  * `N` (the number of native threads) can be specified with `RUBY_MAX_CPU`
+    environment variable. The default is 8.
+    Note that more than `N` native threads are used to support many kind of
+    blocking operations.
+
+[Feature #18183]: https://bugs.ruby-lang.org/issues/18183
+[Feature #18498]: https://bugs.ruby-lang.org/issues/18498
+[Feature #18515]: https://bugs.ruby-lang.org/issues/18515
+[Feature #18885]: https://bugs.ruby-lang.org/issues/18885
+[Bug #19012]:     https://bugs.ruby-lang.org/issues/19012
+[Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
+[Feature #19314]: https://bugs.ruby-lang.org/issues/19314
+[Feature #19347]: https://bugs.ruby-lang.org/issues/19347
+[Feature #19351]: https://bugs.ruby-lang.org/issues/19351
+[Feature #19362]: https://bugs.ruby-lang.org/issues/19362
+[Feature #19521]: https://bugs.ruby-lang.org/issues/19521
+[Feature #19538]: https://bugs.ruby-lang.org/issues/19538
+[Feature #19572]: https://bugs.ruby-lang.org/issues/19572
+[Feature #19591]: https://bugs.ruby-lang.org/issues/19591
+[Feature #19714]: https://bugs.ruby-lang.org/issues/19714
+[Feature #19776]: https://bugs.ruby-lang.org/issues/19776
+[Feature #19785]: https://bugs.ruby-lang.org/issues/19785
+[Feature #19842]: https://bugs.ruby-lang.org/issues/19842
+[Feature #19843]: https://bugs.ruby-lang.org/issues/19843
+[Bug #19868]:     https://bugs.ruby-lang.org/issues/19868
+[Feature #19965]: https://bugs.ruby-lang.org/issues/19965

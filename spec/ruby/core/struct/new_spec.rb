@@ -47,6 +47,11 @@ describe "Struct.new" do
     Struct.const_defined?("Animal2").should be_false
   end
 
+  it "allows non-ASCII member name" do
+    name = "r\xe9sum\xe9".force_encoding(Encoding::ISO_8859_1).to_sym
+    struct = Struct.new(name)
+    struct.new("foo").send(name).should == "foo"
+  end
 
   it "fails with invalid constant name as first argument" do
     -> { Struct.new('animal', :name, :legs, :eyeballs) }.should raise_error(NameError)
@@ -75,6 +80,20 @@ describe "Struct.new" do
   ruby_version_is "3.2" do
     it "raises a TypeError if passed a Hash with an unknown key" do
       -> { Struct.new(:animal, { name: 'chris' }) }.should raise_error(TypeError)
+    end
+  end
+
+  ruby_version_is ""..."3.3" do
+    it "raises ArgumentError if not provided any arguments" do
+      -> { Struct.new }.should raise_error(ArgumentError)
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "works when not provided any arguments" do
+      c = Struct.new
+      c.should be_kind_of(Class)
+      c.superclass.should == Struct
     end
   end
 

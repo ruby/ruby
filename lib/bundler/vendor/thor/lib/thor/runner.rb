@@ -2,12 +2,10 @@ require_relative "../thor"
 require_relative "group"
 
 require "yaml"
-require "digest/md5"
+require "digest/sha2"
 require "pathname"
 
-class Bundler::Thor::Runner < Bundler::Thor #:nodoc: # rubocop:disable ClassLength
-  autoload :OpenURI, "open-uri"
-
+class Bundler::Thor::Runner < Bundler::Thor #:nodoc:
   map "-T" => :list, "-i" => :install, "-u" => :update, "-v" => :version
 
   def self.banner(command, all = false, subcommand = false)
@@ -25,7 +23,7 @@ class Bundler::Thor::Runner < Bundler::Thor #:nodoc: # rubocop:disable ClassLeng
       initialize_thorfiles(meth)
       klass, command = Bundler::Thor::Util.find_class_and_command_by_namespace(meth)
       self.class.handle_no_command_error(command, false) if klass.nil?
-      klass.start(["-h", command].compact, :shell => shell)
+      klass.start(["-h", command].compact, shell: shell)
     else
       super
     end
@@ -40,30 +38,42 @@ class Bundler::Thor::Runner < Bundler::Thor #:nodoc: # rubocop:disable ClassLeng
     klass, command = Bundler::Thor::Util.find_class_and_command_by_namespace(meth)
     self.class.handle_no_command_error(command, false) if klass.nil?
     args.unshift(command) if command
-    klass.start(args, :shell => shell)
+    klass.start(args, shell: shell)
   end
 
   desc "install NAME", "Install an optionally named Bundler::Thor file into your system commands"
-  method_options :as => :string, :relative => :boolean, :force => :boolean
-  def install(name) # rubocop:disable MethodLength
+  method_options as: :string, relative: :boolean, force: :boolean
+  def install(name) # rubocop:disable Metrics/MethodLength
     initialize_thorfiles
 
-    # If a directory name is provided as the argument, look for a 'main.thor'
-    # command in said directory.
-    begin
-      if File.directory?(File.expand_path(name))
-        base = File.join(name, "main.thor")
-        package = :directory
-        contents = open(base, &:read)
-      else
-        base = name
-        package = :file
-        contents = open(name, &:read)
+    is_uri  = name =~ %r{^https?\://}
+
+    if is_uri
+      base = name
+      package = :file
+      require "open-uri"
+      begin
+        contents = URI.open(name, &:read)
+      rescue OpenURI::HTTPError
+        raise Error, "Error opening URI '#{name}'"
       end
-    rescue OpenURI::HTTPError
-      raise Error, "Error opening URI '#{name}'"
-    rescue Errno::ENOENT
-      raise Error, "Error opening file '#{name}'"
+    else
+      # If a directory name is provided as the argument, look for a 'main.thor'
+      # command in said directory.
+      begin
+        if File.directory?(File.expand_path(name))
+          base = File.join(name, "main.thor")
+          package = :directory
+          contents = File.open(base, &:read)
+        else
+          base = name
+          package = :file
+          require "open-uri"
+          contents = URI.open(name, &:read)
+        end
+      rescue Errno::ENOENT
+        raise Error, "Error opening file '#{name}'"
+      end
     end
 
     say "Your Thorfile contains:"
@@ -84,16 +94,16 @@ class Bundler::Thor::Runner < Bundler::Thor #:nodoc: # rubocop:disable ClassLeng
       as = basename if as.empty?
     end
 
-    location = if options[:relative] || name =~ %r{^https?://}
+    location = if options[:relative] || is_uri
       name
     else
       File.expand_path(name)
     end
 
     thor_yaml[as] = {
-      :filename   => Digest::MD5.hexdigest(name + as),
-      :location   => location,
-      :namespaces => Bundler::Thor::Util.namespaces_in_content(contents, base)
+      filename: Digest::SHA256.hexdigest(name + as),
+      location: location,
+      namespaces: Bundler::Thor::Util.namespaces_in_content(contents, base)
     }
 
     save_yaml(thor_yaml)
@@ -154,14 +164,14 @@ class Bundler::Thor::Runner < Bundler::Thor #:nodoc: # rubocop:disable ClassLeng
   end
 
   desc "installed", "List the installed Bundler::Thor modules and commands"
-  method_options :internal => :boolean
+  method_options internal: :boolean
   def installed
     initialize_thorfiles(nil, true)
     display_klasses(true, options["internal"])
   end
 
   desc "list [SEARCH]", "List the available thor commands (--substring means .*SEARCH)"
-  method_options :substring => :boolean, :group => :string, :all => :boolean, :debug => :boolean
+  method_options substring: :boolean, group: :string, all: :boolean, debug: :boolean
   def list(search = "")
     initialize_thorfiles
 
@@ -303,7 +313,7 @@ private
     say shell.set_color(namespace, :blue, true)
     say "-" * namespace.size
 
-    print_table(list, :truncate => true)
+    print_table(list, truncate: true)
     say
   end
   alias_method :display_tasks, :display_commands

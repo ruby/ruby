@@ -215,7 +215,7 @@ RSpec.describe "bundle info" do
       G
 
       bundle "info rac"
-      expect(out).to match(/\A1 : rack\n2 : rack-obama\n0 : - exit -(\n>)?\z/)
+      expect(out).to match(/\A1 : rack\n2 : rack-obama\n0 : - exit -(\n>.*)?\z/)
     end
   end
 

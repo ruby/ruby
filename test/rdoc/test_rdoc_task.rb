@@ -50,6 +50,7 @@ class TestRDocTask < RDoc::TestCase
     assert Rake::Task[:rdoc]
     assert Rake::Task[:clobber_rdoc]
     assert Rake::Task[:rerdoc]
+    assert Rake::Task[:"rdoc:coverage"]
     assert_equal ["html/created.rid"], Rake::Task[:rdoc].prerequisites
   end
 
@@ -58,6 +59,7 @@ class TestRDocTask < RDoc::TestCase
     assert Rake::Task[:rdoc_dev]
     assert Rake::Task[:clobber_rdoc_dev]
     assert Rake::Task[:rerdoc_dev]
+    assert Rake::Task[:"rdoc_dev:coverage"]
     assert_equal :rdoc_dev, rd.name
   end
 
@@ -110,11 +112,16 @@ class TestRDocTask < RDoc::TestCase
     assert_equal 'Rebuild RDoc HTML files', @t.rerdoc_task_description
   end
 
+  def test_coverage_task_description
+    assert_equal 'Print RDoc coverage report', @t.coverage_task_description
+  end
+
   def test_tasks_creation_with_custom_name_string
     rd = RDoc::Task.new("rdoc_dev")
     assert Rake::Task[:rdoc_dev]
     assert Rake::Task[:clobber_rdoc_dev]
     assert Rake::Task[:rerdoc_dev]
+    assert Rake::Task[:"rdoc_dev:coverage"]
     assert_equal "rdoc_dev", rd.name
   end
 
@@ -131,6 +138,7 @@ class TestRDocTask < RDoc::TestCase
     assert Rake::Task[:"rdoc"]
     assert Rake::Task[:"rdoc:clean"]
     assert Rake::Task[:"rdoc:force"]
+    assert Rake::Task[:"rdoc:coverage"]
     assert_raise(RuntimeError) { Rake::Task[:clobber_rdoc] }
     assert_equal options, rd.name
   end
@@ -140,6 +148,7 @@ class TestRDocTask < RDoc::TestCase
     assert Rake::Task[:rdoc]
     assert Rake::Task[:"rdoc:clean"]
     assert Rake::Task[:rerdoc]
+    assert Rake::Task[:"rdoc:coverage"]
   end
 
   def test_tasks_creation_with_custom_name_hash_raises_exception_if_invalid_option_given

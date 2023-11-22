@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require_relative "utils"
 
-if defined?(OpenSSL)
+if defined?(OpenSSL::SSL)
 
 class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   def test_bad_socket
@@ -478,6 +478,40 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
       ensure
         ssl.close
       end
+    }
+  end
+
+  def test_ca_file
+    start_server(ignore_listener_error: true) { |port|
+      # X509_STORE is shared; setting ca_file to SSLContext affects store
+      store = OpenSSL::X509::Store.new
+      assert_equal false, store.verify(@svr_cert)
+
+      ctx = Tempfile.create("ca_cert.pem") { |f|
+        f.puts(@ca_cert.to_pem)
+        f.close
+
+        ctx = OpenSSL::SSL::SSLContext.new
+        ctx.verify_mode = OpenSSL::SSL::VERIFY_PEER
+        ctx.cert_store = store
+        ctx.ca_file = f.path
+        ctx.setup
+        ctx
+      }
+      assert_nothing_raised {
+        server_connect(port, ctx) { |ssl| ssl.puts("abc"); ssl.gets }
+      }
+      assert_equal true, store.verify(@svr_cert)
+    }
+  end
+
+  def test_ca_file_not_found
+    path = Tempfile.create("ca_cert.pem") { |f| f.path }
+    ctx = OpenSSL::SSL::SSLContext.new
+    ctx.ca_file = path
+    # OpenSSL >= 1.1.0: /no certificate or crl found/
+    assert_raise(OpenSSL::SSL::SSLError) {
+      ctx.setup
     }
   end
 
@@ -1379,9 +1413,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_npn_protocol_selection_ary
-    pend "NPN is not supported" unless \
-      OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
-    pend "LibreSSL 2.6 has broken NPN functions" if libressl?(2, 6, 1)
+    return unless OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
 
     advertised = ["http/1.1", "spdy/2"]
     ctx_proc = proc { |ctx| ctx.npn_protocols = advertised }
@@ -1399,9 +1431,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_npn_protocol_selection_enum
-    pend "NPN is not supported" unless \
-      OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
-    pend "LibreSSL 2.6 has broken NPN functions" if libressl?(2, 6, 1)
+    return unless OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
 
     advertised = Object.new
     def advertised.each
@@ -1423,9 +1453,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_npn_protocol_selection_cancel
-    pend "NPN is not supported" unless \
-      OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
-    pend "LibreSSL 2.6 has broken NPN functions" if libressl?(2, 6, 1)
+    return unless OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
 
     ctx_proc = Proc.new { |ctx| ctx.npn_protocols = ["http/1.1"] }
     start_server_version(:TLSv1_2, ctx_proc) { |port|
@@ -1436,9 +1464,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_npn_advertised_protocol_too_long
-    pend "NPN is not supported" unless \
-      OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
-    pend "LibreSSL 2.6 has broken NPN functions" if libressl?(2, 6, 1)
+    return unless OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
 
     ctx_proc = Proc.new { |ctx| ctx.npn_protocols = ["a" * 256] }
     start_server_version(:TLSv1_2, ctx_proc) { |port|
@@ -1449,9 +1475,7 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
   end
 
   def test_npn_selected_protocol_too_long
-    pend "NPN is not supported" unless \
-      OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
-    pend "LibreSSL 2.6 has broken NPN functions" if libressl?(2, 6, 1)
+    return unless OpenSSL::SSL::SSLContext.method_defined?(:npn_select_cb)
 
     ctx_proc = Proc.new { |ctx| ctx.npn_protocols = ["http/1.1"] }
     start_server_version(:TLSv1_2, ctx_proc) { |port|

@@ -50,6 +50,9 @@ require 'rake/tasklib'
 # [rerdoc]
 #   Rebuild the rdoc files from scratch, even if they are not out of date.
 #
+# [rdoc:coverage]
+#   Print RDoc coverage report for all rdoc files.
+#
 # Simple Example:
 #
 #   require 'rdoc/task'
@@ -90,8 +93,8 @@ require 'rake/tasklib'
 #   RDoc::Task.new(:rdoc => "rdoc", :clobber_rdoc => "rdoc:clean",
 #                  :rerdoc => "rdoc:force")
 #
-# This will create the tasks <tt>:rdoc</tt>, <tt>:rdoc:clean</tt> and
-# <tt>:rdoc:force</tt>.
+# This will create the tasks <tt>:rdoc</tt>, <tt>:rdoc:clean</tt>,
+# <tt>:rdoc:force</tt>, and <tt>:rdoc:coverage</tt>.
 
 class RDoc::Task < Rake::TaskLib
 
@@ -248,6 +251,18 @@ class RDoc::Task < Rake::TaskLib
       RDoc::RDoc.new.document args
     end
 
+    namespace rdoc_task_name do
+      desc coverage_task_description
+      task coverage_task_name do
+        @before_running_rdoc.call if @before_running_rdoc
+        opts = option_list << "-C"
+        args = opts + @rdoc_files
+
+        $stderr.puts "rdoc #{args.join ' '}" if Rake.application.options.trace
+        RDoc::RDoc.new.document args
+      end
+    end
+
     self
   end
 
@@ -288,6 +303,13 @@ class RDoc::Task < Rake::TaskLib
     "Rebuild RDoc HTML files"
   end
 
+  ##
+  # Task description for the coverage task or its renamed description
+
+  def coverage_task_description
+    "Print RDoc coverage report"
+  end
+
   private
 
   def rdoc_target
@@ -313,6 +335,10 @@ class RDoc::Task < Rake::TaskLib
     when Hash then (name[:rerdoc] || "rerdoc").to_s
     else           "re#{name}"
     end
+  end
+
+  def coverage_task_name
+    "coverage"
   end
 
 end

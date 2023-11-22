@@ -23,13 +23,13 @@ module Bundler
       #   specified must match the version.
 
       @versions = Array(versions).map do |v|
-        op, v = Gem::Requirement.parse(v)
+        op, v = Gem::Requirement.parse(normalize_version(v))
         op == "=" ? v.to_s : "#{op} #{v}"
       end
 
       @gem_version        = Gem::Requirement.create(@versions.first).requirements.first.last
-      @input_engine       = engine && engine.to_s
-      @engine             = engine && engine.to_s || "ruby"
+      @input_engine       = engine&.to_s
+      @engine             = engine&.to_s || "ruby"
       @engine_versions    = (engine_version && Array(engine_version)) || @versions
       @engine_gem_version = Gem::Requirement.create(@engine_versions.first).requirements.first.last
       @patchlevel         = patchlevel || (@gem_version.prerelease? ? "-1" : nil)
@@ -49,7 +49,7 @@ module Bundler
       (\d+\.\d+\.\d+(?:\.\S+)?) # ruby version
       (?:p(-?\d+))? # optional patchlevel
       (?:\s\((\S+)\s(.+)\))? # optional engine info
-    /xo.freeze
+    /xo
 
     # Returns a RubyVersion from the given string.
     # @param [String] the version string to match.
@@ -107,10 +107,17 @@ module Bundler
       ruby_engine_version = RUBY_ENGINE == "ruby" ? ruby_version : RUBY_ENGINE_VERSION.dup
       patchlevel = RUBY_PATCHLEVEL.to_s
 
-      @ruby_version ||= RubyVersion.new(ruby_version, patchlevel, ruby_engine, ruby_engine_version)
+      @system ||= RubyVersion.new(ruby_version, patchlevel, ruby_engine, ruby_engine_version)
     end
 
     private
+
+    # Ruby's official preview version format uses a `-`: Example: 3.3.0-preview2
+    # However, RubyGems recognizes preview version format with a `.`: Example: 3.3.0.preview2
+    # Returns version string after replacing `-` with `.`
+    def normalize_version(version)
+      version.tr("-", ".")
+    end
 
     def matches?(requirements, version)
       # Handles RUBY_PATCHLEVEL of -1 for instances like ruby-head

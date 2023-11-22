@@ -97,6 +97,12 @@ describe "TCPServer.new" do
     addr[1].should be_kind_of(Integer)
   end
 
+  it "does not use the given block and warns to use TCPServer::open" do
+    -> {
+      @server = TCPServer.new(0) { raise }
+    }.should complain(/warning: TCPServer::new\(\) does not take block; use TCPServer::open\(\) instead/)
+  end
+
   it "raises Errno::EADDRNOTAVAIL when the address is unknown" do
     -> { TCPServer.new("1.2.3.4", 0) }.should raise_error(Errno::EADDRNOTAVAIL)
   end

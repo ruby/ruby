@@ -40,4 +40,3 @@ class RDoc::Markup::Include
   end
 
 end
-

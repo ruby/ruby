@@ -1,0 +1,23 @@
+@ ProgramNode (location: (1,0)-(1,18))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,18))
+    └── body: (length: 1)
+        └── @ IfNode (location: (1,0)-(1,18))
+            ├── if_keyword_loc: (1,0)-(1,2) = "if"
+            ├── predicate:
+            │   @ IntegerNode (location: (1,3)-(1,4))
+            │   └── flags: decimal
+            ├── then_keyword_loc: ∅
+            ├── statements: ∅
+            ├── consequent:
+            │   @ IfNode (location: (1,6)-(1,18))
+            │   ├── if_keyword_loc: (1,6)-(1,11) = "elsif"
+            │   ├── predicate:
+            │   │   @ IntegerNode (location: (1,12)-(1,13))
+            │   │   └── flags: decimal
+            │   ├── then_keyword_loc: ∅
+            │   ├── statements: ∅
+            │   ├── consequent: ∅
+            │   └── end_keyword_loc: (1,15)-(1,18) = "end"
+            └── end_keyword_loc: (1,15)-(1,18) = "end"

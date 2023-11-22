@@ -36,6 +36,27 @@ class Reline::KeyStroke::Test < Reline::TestCase
     assert_equal(:matched, stroke.match_status("abzwabk".bytes))
   end
 
+  def test_match_unknown
+    config = Reline::Config.new
+    config.add_default_key_binding("\e[9abc".bytes, 'x')
+    stroke = Reline::KeyStroke.new(config)
+    sequences = [
+      "\e[9abc",
+      "\e[9d",
+      "\e[A", # Up
+      "\e[1;1R", # Cursor position report
+      "\e[15~", # F5
+      "\eOP", # F1
+      "\e\e[A" # Option+Up
+    ]
+    sequences.each do |seq|
+      assert_equal(:matched, stroke.match_status(seq.bytes))
+      (1...seq.size).each do |i|
+        assert_equal(:matching, stroke.match_status(seq.bytes.take(i)))
+      end
+    end
+  end
+
   def test_expand
     config = Reline::Config.new
     {
@@ -45,6 +66,11 @@ class Reline::KeyStroke::Test < Reline::TestCase
     end
     stroke = Reline::KeyStroke.new(config)
     assert_equal('123'.bytes, stroke.expand('abc'.bytes))
+    # CSI sequence
+    assert_equal([:ed_unassigned] + 'bc'.bytes, stroke.expand("\e[1;2;3;4;5abc".bytes))
+    assert_equal([:ed_unassigned] + 'BC'.bytes, stroke.expand("\e\e[ABC".bytes))
+    # SS3 sequence
+    assert_equal([:ed_unassigned] + 'QR'.bytes, stroke.expand("\eOPQR".bytes))
   end
 
   def test_oneshot_key_bindings

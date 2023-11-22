@@ -39,16 +39,7 @@ module Bundler
   environment_preserver.replace_with_backup
   SUDO_MUTEX = Thread::Mutex.new
 
-  SAFE_MARSHAL_CLASSES = [Symbol, TrueClass, String, Array, Hash].freeze
-  SAFE_MARSHAL_ERROR = "Unexpected class %s present in marshaled data. Only %s are allowed.".freeze
-  SAFE_MARSHAL_PROC = proc do |object|
-    object.tap do
-      unless SAFE_MARSHAL_CLASSES.include?(object.class)
-        raise TypeError, format(SAFE_MARSHAL_ERROR, object.class, SAFE_MARSHAL_CLASSES.join(", "))
-      end
-    end
-  end
-
+  autoload :Checksum,               File.expand_path("bundler/checksum", __dir__)
   autoload :Definition,             File.expand_path("bundler/definition", __dir__)
   autoload :Dependency,             File.expand_path("bundler/dependency", __dir__)
   autoload :Deprecate,              File.expand_path("bundler/deprecate", __dir__)
@@ -85,10 +76,12 @@ module Bundler
   autoload :StubSpecification,      File.expand_path("bundler/stub_specification", __dir__)
   autoload :UI,                     File.expand_path("bundler/ui", __dir__)
   autoload :URICredentialsFilter,   File.expand_path("bundler/uri_credentials_filter", __dir__)
+  autoload :URINormalizer,          File.expand_path("bundler/uri_normalizer", __dir__)
+  autoload :SafeMarshal,            File.expand_path("bundler/safe_marshal", __dir__)
 
   class << self
     def configure
-      @configured ||= configure_gem_home_and_path
+      @configure ||= configure_gem_home_and_path
     end
 
     def ui
@@ -218,9 +211,10 @@ module Bundler
     end
 
     def frozen_bundle?
-      frozen = settings[:deployment]
-      frozen ||= settings[:frozen]
-      frozen
+      frozen = settings[:frozen]
+      return frozen unless frozen.nil?
+
+      settings[:deployment]
     end
 
     def locked_gems
@@ -337,14 +331,6 @@ module Bundler
 
     def rm_rf(path)
       FileUtils.remove_entry_secure(path) if path && File.exist?(path)
-    rescue ArgumentError
-      message = <<EOF
-It is a security vulnerability to allow your home directory to be world-writable, and bundler cannot continue.
-You should probably consider fixing this issue by running `chmod o-w ~` on *nix.
-Please refer to https://ruby-doc.org/stdlib-3.1.2/libdoc/fileutils/rdoc/FileUtils.html#method-c-remove_entry_secure for details.
-EOF
-      File.world_writable?(path) ? Bundler.ui.warn(message) : raise
-      raise PathError, "Please fix the world-writable issue with your #{path} directory"
     end
 
     def settings
@@ -463,7 +449,7 @@ EOF
     end
 
     def local_platform
-      return Gem::Platform::RUBY if settings[:force_ruby_platform] || Gem.platforms == [Gem::Platform::RUBY]
+      return Gem::Platform::RUBY if settings[:force_ruby_platform]
       Gem::Platform.local
     end
 
@@ -506,7 +492,7 @@ EOF
       if File.file?(executable) && File.executable?(executable)
         executable
       elsif paths = ENV["PATH"]
-        quote = '"'.freeze
+        quote = '"'
         paths.split(File::PATH_SEPARATOR).find do |path|
           path = path[1..-2] if path.start_with?(quote) && path.end_with?(quote)
           executable_path = File.expand_path(executable, path)
@@ -522,13 +508,16 @@ EOF
     end
 
     def safe_load_marshal(data)
-      load_marshal(data, :marshal_proc => SAFE_MARSHAL_PROC)
-    end
-
-    def load_marshal(data, marshal_proc: nil)
-      Marshal.load(data, marshal_proc)
-    rescue TypeError => e
-      raise MarshalError, "#{e.class}: #{e.message}"
+      if Gem.respond_to?(:load_safe_marshal)
+        Gem.load_safe_marshal
+        begin
+          Gem::SafeMarshal.safe_load(data)
+        rescue Gem::SafeMarshal::Reader::Error, Gem::SafeMarshal::Visitors::ToRuby::Error => e
+          raise MarshalError, "#{e.class}: #{e.message}"
+        end
+      else
+        load_marshal(data, :marshal_proc => SafeMarshal.proc)
+      end
     end
 
     def load_gemspec(file, validate = false)
@@ -537,7 +526,7 @@ EOF
       @gemspec_cache[key] ||= load_gemspec_uncached(file, validate)
       # Protect against caching side-effected gemspecs by returning a
       # new instance each time.
-      @gemspec_cache[key].dup if @gemspec_cache[key]
+      @gemspec_cache[key]&.dup
     end
 
     def load_gemspec_uncached(file, validate = false)
@@ -586,7 +575,7 @@ EOF
       @bin_path = nil
       @bundler_major_version = nil
       @bundle_path = nil
-      @configured = nil
+      @configure = nil
       @configured_bundle_path = nil
       @definition = nil
       @load = nil
@@ -618,6 +607,12 @@ EOF
     end
 
     private
+
+    def load_marshal(data, marshal_proc: nil)
+      Marshal.load(data, marshal_proc)
+    rescue TypeError => e
+      raise MarshalError, "#{e.class}: #{e.message}"
+    end
 
     def eval_yaml_gemspec(path, contents)
       Kernel.require "psych"

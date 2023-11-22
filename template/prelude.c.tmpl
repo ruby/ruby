@@ -43,7 +43,10 @@ class Prelude
     lineno = 0
     result = [@preludes.size, @vpath.strip(filename), lines, sub]
     @vpath.foreach(filename) do |line|
-      line.force_encoding("ASCII-8BIT") if line.respond_to?(:force_encoding)
+      if line.respond_to?(:force_encoding)
+        enc = line.encoding
+        line.force_encoding("ASCII-8BIT")
+      end
       line.rstrip!
       lineno += 1
       @preludes[filename] ||= result
@@ -71,6 +74,7 @@ class Prelude
           orig
         end
       end
+      comment.force_encoding(enc) if enc and comment
       lines << [line, comment]
     end
     result << (start_line || 1)
@@ -86,6 +90,7 @@ Prelude.new(output, ARGV, vpath).instance_eval do
 */
 %unless @preludes.empty?
 #include "internal.h"
+#include "internal/ruby_parser.h"
 #include "internal/warnings.h"
 #include "iseq.h"
 #include "ruby/ruby.h"
@@ -140,8 +145,8 @@ static rb_ast_t *
 prelude_ast(VALUE name, VALUE code, int line)
 {
     rb_ast_t *ast = rb_parser_compile_string_path(rb_parser_new(), name, code, line);
-    if (!ast->body.root) {
-        rb_ast_dispose(ast);
+    if (!ast || !ast->body.root) {
+        if (ast) rb_ast_dispose(ast);
         rb_exc_raise(rb_errinfo());
     }
     return ast;
@@ -179,15 +184,14 @@ static void
 prelude_eval(VALUE code, VALUE name, int line)
 {
     static const rb_compile_option_t optimization = {
-        TRUE, /* int inline_const_cache; */
-        TRUE, /* int peephole_optimization; */
-        FALSE,/* int tailcall_optimization; */
-        TRUE, /* int specialized_instruction; */
-        TRUE, /* int operands_unification; */
-        TRUE, /* int instructions_unification; */
-        TRUE, /* int stack_caching; */
-        TRUE, /* int frozen_string_literal; */
-        FALSE, /* int debug_frozen_string_literal; */
+        TRUE, /* unsigned int inline_const_cache; */
+        TRUE, /* unsigned int peephole_optimization; */
+        FALSE,/* unsigned int tailcall_optimization; */
+        TRUE, /* unsigned int specialized_instruction; */
+        TRUE, /* unsigned int operands_unification; */
+        TRUE, /* unsigned int instructions_unification; */
+        TRUE, /* unsigned int frozen_string_literal; */
+        FALSE, /* unsigned int debug_frozen_string_literal; */
         FALSE, /* unsigned int coverage_enabled; */
         0, /* int debug_level; */
     };
@@ -208,7 +212,7 @@ Init_<%=init_name%><%=%>(void)
 %unless @prelude_count.zero?
 % preludes.each do |i, prelude, lines, sub, start_line|
 %   next if sub
-    prelude_eval(PRELUDE_CODE(<%=i%><%=%>), PRELUDE_NAME(<%=i%><%=%>), <%=start_line%>);
+    prelude_eval(PRELUDE_CODE(<%=i%><%=%>), PRELUDE_NAME(<%=i%><%=%>), <%=start_line%><%=%>);
 % end
 
 #if 0

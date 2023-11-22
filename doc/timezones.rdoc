@@ -1,6 +1,6 @@
-== Timezones
+= Timezones
 
-=== Timezone Specifiers
+== Timezone Specifiers
 
 Certain \Time methods accept arguments that specify timezones:
 
@@ -18,7 +18,7 @@ The value given with any of these must be one of the following
 - {Integer offset}[rdoc-ref:timezones.rdoc@Integer+Offsets].
 - {Timezone object}[rdoc-ref:timezones.rdoc@Timezone+Objects].
 
-==== Hours/Minutes Offsets
+=== Hours/Minutes Offsets
 
 The zone value may be a string offset from UTC
 in the form <tt>'+HH:MM'</tt> or <tt>'-HH:MM'</tt>,
@@ -33,7 +33,7 @@ Examples:
   Time.at(t, in: '-23:59')            # => 1999-12-31 20:16:01 -2359
   Time.at(t, in: '+23:59')            # => 2000-01-02 20:14:01 +2359
 
-==== Single-Letter Offsets
+=== Single-Letter Offsets
 
 The zone value may be a  letter in the range <tt>'A'..'I'</tt>
 or <tt>'K'..'Z'</tt>;
@@ -46,7 +46,7 @@ see {List of military time zones}[https://en.wikipedia.org/wiki/List_of_military
   Time.at(t, in: 'Y')                 # => 2000-01-01 08:15:01 -1200
   Time.at(t, in: 'Z')                 # => 2000-01-01 20:15:01 UTC
 
-==== \Integer Offsets
+=== \Integer Offsets
 
 The zone value may be an integer number of seconds
 in the range <tt>-86399..86399</tt>:
@@ -55,15 +55,9 @@ in the range <tt>-86399..86399</tt>:
   Time.at(t, in: -86399)              # => 1999-12-31 20:15:02 -235959
   Time.at(t, in: 86399)               # => 2000-01-02 20:15:00 +235959
 
-==== Timezone Objects
+=== Timezone Objects
 
-In most cases, the zone value may be an object
-responding to certain timezone methods.
-
-\Exceptions (timezone object not allowed):
-
-- Time.new with positional argument +zone+.
-- Time.now with keyword argument +in:+.
+The zone value may be an object responding to certain timezone methods.
 
 The timezone methods are:
 
@@ -103,6 +97,6 @@ which will be called if defined:
 
 - +name+:
 
-  - Called when <tt>Marshal.dump(t) is invoked
+  - Called when <tt>Marshal.dump(t)</tt> is invoked
   - Argument: none.
   - Returns: the string name of the timezone.

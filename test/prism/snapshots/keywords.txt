@@ -1,0 +1,12 @@
+@ ProgramNode (location: (1,0)-(11,8))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(11,8))
+    └── body: (length: 6)
+        ├── @ RedoNode (location: (1,0)-(1,4))
+        ├── @ RetryNode (location: (3,0)-(3,5))
+        ├── @ SelfNode (location: (5,0)-(5,4))
+        ├── @ SourceEncodingNode (location: (7,0)-(7,12))
+        ├── @ SourceFileNode (location: (9,0)-(9,8))
+        │   └── filepath: "keywords.txt"
+        └── @ SourceLineNode (location: (11,0)-(11,8))

@@ -979,6 +979,10 @@ describe "Global variable $VERBOSE" do
     $VERBOSE = @verbose
   end
 
+  it "is false by default" do
+    $VERBOSE.should be_false
+  end
+
   it "converts truthy values to true" do
     [true, 1, 0, [], ""].each do |true_value|
       $VERBOSE = true_value
@@ -1033,7 +1037,7 @@ describe "Global variable $0" do
 
   it "is the path given as the main script and the same as __FILE__" do
     script = "fixtures/dollar_zero.rb"
-    Dir.chdir(File.dirname(__FILE__)) do
+    Dir.chdir(__dir__) do
       ruby_exe(script).should == "#{script}\n#{script}\nOK"
     end
   end
@@ -1157,47 +1161,20 @@ end
 
 describe "The predefined global constants" do
   describe "TRUE" do
-    ruby_version_is "3.0" do
-      it "is no longer defined" do
-        Object.const_defined?(:TRUE).should == false
-      end
-    end
-
-    ruby_version_is ""..."3.0" do
-      it "includes TRUE" do
-        Object.const_defined?(:TRUE).should == true
-        -> { TRUE }.should complain(/constant ::TRUE is deprecated/)
-      end
+    it "is no longer defined" do
+      Object.const_defined?(:TRUE).should == false
     end
   end
 
   describe "FALSE" do
-    ruby_version_is "3.0" do
-      it "is no longer defined" do
-        Object.const_defined?(:FALSE).should == false
-      end
-    end
-
-    ruby_version_is ""..."3.0" do
-      it "includes FALSE" do
-        Object.const_defined?(:FALSE).should == true
-        -> { FALSE }.should complain(/constant ::FALSE is deprecated/)
-      end
+    it "is no longer defined" do
+      Object.const_defined?(:FALSE).should == false
     end
   end
 
   describe "NIL" do
-    ruby_version_is "3.0" do
-      it "is no longer defined" do
-        Object.const_defined?(:NIL).should == false
-      end
-    end
-
-    ruby_version_is ""..."3.0" do
-      it "includes NIL" do
-        Object.const_defined?(:NIL).should == true
-        -> { NIL }.should complain(/constant ::NIL is deprecated/)
-      end
+    it "is no longer defined" do
+      Object.const_defined?(:NIL).should == false
     end
   end
 

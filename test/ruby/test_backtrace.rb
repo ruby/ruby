@@ -215,15 +215,15 @@ class TestBacktrace < Test::Unit::TestCase
       @res = caller_locations(2, 1).inspect
     end
     @line = __LINE__ + 1
-    1.times.map { 1.times.map { foo } }
-    assert_equal("[\"#{__FILE__}:#{@line}:in `times'\"]", @res)
+    [1].map.map { [1].map.map { foo } }
+    assert_equal("[\"#{__FILE__}:#{@line}:in `map'\"]", @res)
   end
 
   def test_caller_location_path_cfunc_iseq_no_pc
     def self.foo
       @res = caller_locations(2, 1)[0].path
     end
-    1.times.map { 1.times.map { foo } }
+    [1].map.map { [1].map.map { foo } }
     assert_equal(__FILE__, @res)
   end
 

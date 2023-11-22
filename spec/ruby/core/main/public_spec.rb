@@ -22,13 +22,11 @@ describe "main#public" do
     end
   end
 
-  ruby_version_is "3.0" do
-    context "when single argument is passed and is an array" do
-      it "sets the visibility of the given methods to public" do
-        eval "public [:main_private_method, :main_private_method2]", TOPLEVEL_BINDING
-        Object.should_not have_private_method(:main_private_method)
-        Object.should_not have_private_method(:main_private_method2)
-      end
+  context "when single argument is passed and is an array" do
+    it "sets the visibility of the given methods to public" do
+      eval "public [:main_private_method, :main_private_method2]", TOPLEVEL_BINDING
+      Object.should_not have_private_method(:main_private_method)
+      Object.should_not have_private_method(:main_private_method2)
     end
   end
 

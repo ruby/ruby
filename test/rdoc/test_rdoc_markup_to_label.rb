@@ -110,4 +110,3 @@ class TestRDocMarkupToLabel < RDoc::Markup::FormatterTestCase
   end
 
 end
-

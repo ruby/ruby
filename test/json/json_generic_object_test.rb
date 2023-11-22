@@ -1,5 +1,5 @@
 #frozen_string_literal: false
-require 'test_helper'
+require_relative 'test_helper'
 
 class JSONGenericObjectTest < Test::Unit::TestCase
   include JSON

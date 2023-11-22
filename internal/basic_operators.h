@@ -31,6 +31,7 @@ enum ruby_basic_operators {
     BOP_UMINUS,
     BOP_MAX,
     BOP_MIN,
+    BOP_HASH,
     BOP_CALL,
     BOP_AND,
     BOP_OR,
@@ -40,9 +41,7 @@ enum ruby_basic_operators {
     BOP_LAST_
 };
 
-MJIT_SYMBOL_EXPORT_BEGIN
 RUBY_EXTERN short ruby_vm_redefined_flag[BOP_LAST_];
-MJIT_SYMBOL_EXPORT_END
 
 /* optimize insn */
 #define INTEGER_REDEFINED_OP_FLAG (1 << 0)

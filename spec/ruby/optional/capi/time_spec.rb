@@ -283,6 +283,11 @@ describe "CApiTimeSpecs" do
       -> { @s.rb_time_timespec_new(1447087832, 476451125, 86400) }.should raise_error(ArgumentError)
       -> { @s.rb_time_timespec_new(1447087832, 476451125, -86400) }.should raise_error(ArgumentError)
     end
+
+    it "doesn't call Time.at directly" do
+      Time.should_not_receive(:at)
+      @s.rb_time_timespec_new(1447087832, 476451125, 32400).should be_kind_of(Time)
+    end
   end
 
   describe "rb_timespec_now" do

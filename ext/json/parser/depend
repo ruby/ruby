@@ -56,6 +56,7 @@ parser.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 parser.o: $(hdrdir)/ruby/internal/attr/noinline.h
 parser.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 parser.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+parser.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 parser.o: $(hdrdir)/ruby/internal/attr/pure.h
 parser.o: $(hdrdir)/ruby/internal/attr/restrict.h
 parser.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -124,7 +125,6 @@ parser.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 parser.o: $(hdrdir)/ruby/internal/intern/error.h
 parser.o: $(hdrdir)/ruby/internal/intern/eval.h
 parser.o: $(hdrdir)/ruby/internal/intern/file.h
-parser.o: $(hdrdir)/ruby/internal/intern/gc.h
 parser.o: $(hdrdir)/ruby/internal/intern/hash.h
 parser.o: $(hdrdir)/ruby/internal/intern/io.h
 parser.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -155,7 +155,6 @@ parser.o: $(hdrdir)/ruby/internal/memory.h
 parser.o: $(hdrdir)/ruby/internal/method.h
 parser.o: $(hdrdir)/ruby/internal/module.h
 parser.o: $(hdrdir)/ruby/internal/newobj.h
-parser.o: $(hdrdir)/ruby/internal/rgengc.h
 parser.o: $(hdrdir)/ruby/internal/scan_args.h
 parser.o: $(hdrdir)/ruby/internal/special_consts.h
 parser.o: $(hdrdir)/ruby/internal/static_assert.h

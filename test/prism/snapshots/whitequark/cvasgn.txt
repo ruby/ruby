@@ -1,0 +1,12 @@
+@ ProgramNode (location: (1,0)-(1,10))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,10))
+    └── body: (length: 1)
+        └── @ ClassVariableWriteNode (location: (1,0)-(1,10))
+            ├── name: :@@var
+            ├── name_loc: (1,0)-(1,5) = "@@var"
+            ├── value:
+            │   @ IntegerNode (location: (1,8)-(1,10))
+            │   └── flags: decimal
+            └── operator_loc: (1,6)-(1,7) = "="

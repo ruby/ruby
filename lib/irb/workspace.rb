@@ -1,13 +1,7 @@
 # frozen_string_literal: false
 #
 #   irb/workspace-binding.rb -
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
-#
-# --
-#
-#
 #
 
 require "delegate"
@@ -114,8 +108,12 @@ EOF
     # <code>IRB.conf[:__MAIN__]</code>
     attr_reader :main
 
+    def load_commands_to_main
+      main.extend ExtendCommandBundle
+    end
+
     # Evaluate the given +statements+ within the  context of this workspace.
-    def evaluate(context, statements, file = __FILE__, line = __LINE__)
+    def evaluate(statements, file = __FILE__, line = __LINE__)
       eval(statements, @binding, file, line)
     end
 
@@ -128,6 +126,8 @@ EOF
     end
 
     # error message manipulator
+    # WARN: Rails patches this method to filter its own backtrace. Be cautious when changing it.
+    # See: https://github.com/rails/rails/blob/main/railties/lib/rails/commands/console/console_command.rb#L8:~:text=def,filter_backtrace
     def filter_backtrace(bt)
       return nil if bt =~ /\/irb\/.*\.rb/
       return nil if bt =~ /\/irb\.rb/
@@ -142,11 +142,7 @@ EOF
     end
 
     def code_around_binding
-      if @binding.respond_to?(:source_location)
-        file, pos = @binding.source_location
-      else
-        file, pos = @binding.eval('[__FILE__, __LINE__]')
-      end
+      file, pos = @binding.source_location
 
       if defined?(::SCRIPT_LINES__[file]) && lines = ::SCRIPT_LINES__[file]
         code = ::SCRIPT_LINES__[file].join('')
@@ -172,9 +168,6 @@ EOF
       end.join("")
 
       "\nFrom: #{file} @ line #{pos + 1} :\n\n#{body}#{Color.clear}\n"
-    end
-
-    def IRB.delete_caller
     end
   end
 end

@@ -184,4 +184,3 @@ class RDoc::Constant < RDoc::CodeObject
   end
 
 end
-

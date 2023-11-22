@@ -17,7 +17,7 @@ RSpec.describe "fetching dependencies with a mirrored source", :realworld => tru
     @t.join
   end
 
-  it "sets the 'X-Gemfile-Source' header and bundles successfully" do
+  it "sets the 'X-Gemfile-Source' and 'User-Agent' headers and bundles successfully" do
     gemfile <<-G
       source "#{mirror}"
       gem 'weakling'

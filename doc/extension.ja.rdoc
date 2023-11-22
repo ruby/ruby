@@ -888,12 +888,12 @@ dbm.cではTypedData_Make_Structを以下のように使っています．
 
   obj = TypedData_Make_Struct(klass, struct dbmdata, &dbm_type, dbmp);
 
-ここではdbmdata構造体へのポインタをDataにカプセル化してい
-ます．DBM*を直接カプセル化しないのはclose()した時の処理を考
-えてのことです．
+ここではdbmdata構造体へのポインタをRubyオブジェクトにカプセ
+ル化しています．DBM*を直接カプセル化しないのはclose()した時
+の処理を考えてのことです．
 
-Dataオブジェクトからdbmstruct構造体のポインタを取り出すため
-に以下のマクロを使っています．
+Rubyオブジェクトからdbmdata構造体のポインタを取り出すために
+以下のマクロを使っています．
 
   #define GetDBM(obj, dbmp) do {\
       TypedData_Get_Struct((obj), struct dbmdata, &dbm_type, (dbmp));\

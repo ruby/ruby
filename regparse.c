@@ -142,7 +142,7 @@ static void
 bbuf_free(BBuf* bbuf)
 {
   if (IS_NOT_NULL(bbuf)) {
-    if (IS_NOT_NULL(bbuf->p)) xfree(bbuf->p);
+    xfree(bbuf->p);
     xfree(bbuf);
   }
 }
@@ -251,7 +251,7 @@ bitset_copy(BitSetRef dest, BitSetRef bs)
 
 #if defined(USE_NAMED_GROUP) && !defined(USE_ST_LIBRARY)
 extern int
-onig_strncmp(const UChar* s1, const UChar* s2, int n)
+onig_strncmp(const UChar* s1, const UChar* s2, size_t n)
 {
   int x;
 
@@ -275,7 +275,7 @@ onig_strcpy(UChar* dest, const UChar* src, const UChar* end)
 
 #ifdef USE_NAMED_GROUP
 static UChar*
-strdup_with_null(OnigEncoding enc, UChar* s, UChar* end)
+strdup_with_null(OnigEncoding enc, const UChar* s, const UChar* end)
 {
   ptrdiff_t slen;
   int term_len, i;
@@ -476,8 +476,11 @@ typedef st_data_t HashDataType;   /* 1.6 st.h doesn't define st_data_t type */
 
 #  ifdef ONIG_DEBUG
 static int
-i_print_name_entry(UChar* key, NameEntry* e, void* arg)
+i_print_name_entry(HashDataType key_, HashDataType e_, HashDataType arg_)
 {
+  UChar* key = (UChar *)key_;
+  NameEntry* e = (NameEntry *)e_;
+  void* arg = (void *)arg_;
   int i;
   FILE* fp = (FILE* )arg;
 
@@ -503,7 +506,7 @@ onig_print_names(FILE* fp, regex_t* reg)
 
   if (IS_NOT_NULL(t)) {
     fprintf(fp, "name table\n");
-    onig_st_foreach(t, (st_foreach_callback_func *)i_print_name_entry, (HashDataType )fp);
+    onig_st_foreach(t, i_print_name_entry, (HashDataType )fp);
     fputs("\n", fp);
   }
   return 0;
@@ -511,10 +514,12 @@ onig_print_names(FILE* fp, regex_t* reg)
 #  endif /* ONIG_DEBUG */
 
 static int
-i_free_name_entry(UChar* key, NameEntry* e, void* arg ARG_UNUSED)
+i_free_name_entry(HashDataType key_, HashDataType e_, HashDataType arg_ ARG_UNUSED)
 {
+  UChar* key = (UChar *)key_;
+  NameEntry* e = (NameEntry *)e_;
   xfree(e->name);
-  if (IS_NOT_NULL(e->back_refs)) xfree(e->back_refs);
+  xfree(e->back_refs);
   xfree(key);
   xfree(e);
   return ST_DELETE;
@@ -526,7 +531,7 @@ names_clear(regex_t* reg)
   NameTable* t = (NameTable* )reg->name_table;
 
   if (IS_NOT_NULL(t)) {
-    onig_st_foreach(t, (st_foreach_callback_func *)i_free_name_entry, 0);
+    onig_st_foreach(t, i_free_name_entry, 0);
   }
   return 0;
 }
@@ -543,6 +548,58 @@ onig_names_free(regex_t* reg)
   t = (NameTable* )reg->name_table;
   if (IS_NOT_NULL(t)) onig_st_free_table(t);
   reg->name_table = (void* )NULL;
+  return 0;
+}
+
+static int
+copy_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
+          int back_num, int *back_refs, OnigRegex regex, void *arg)
+{
+    NameTable *copy_table = (NameTable *)arg;
+    NameEntry *entry_copy = (NameEntry* )xmalloc(sizeof(NameEntry));
+    if (IS_NULL(entry_copy)) return -1;
+
+    entry_copy->name_len   = name_end - name;
+    entry_copy->back_num   = back_num;
+    entry_copy->back_alloc = back_num;
+    entry_copy->back_ref1 = back_refs[0];
+    entry_copy->back_refs = xmalloc(back_num * (sizeof(int*)));
+    if (IS_NULL(entry_copy->back_refs)) {
+      xfree(entry_copy);
+      return -1;
+    }
+    memcpy(entry_copy->back_refs, back_refs, back_num * sizeof(back_refs[0]));
+
+    UChar *new_name = strdup_with_null(regex->enc, name, name_end);
+    if (IS_NULL(new_name)) {
+      xfree(entry_copy->back_refs);
+      xfree(entry_copy);
+      return -1;
+    }
+    entry_copy->name = new_name;
+
+    if (onig_st_insert_strend(copy_table, new_name, (new_name + entry_copy->name_len), (hash_data_type)entry_copy)) {
+      xfree(entry_copy->name);
+      xfree(entry_copy->back_refs);
+      xfree(entry_copy);
+      return -1;
+    }
+    return 0;
+}
+
+extern int
+onig_names_copy(regex_t* reg, regex_t* oreg)
+{
+  NameTable* table = oreg->name_table;
+  if (table) {
+    NameTable * t = onig_st_init_strend_table_with_size(onig_number_of_names(oreg));
+    CHECK_NULL_RETURN_MEMERR(t);
+    if (onig_foreach_name(oreg, copy_named_captures_iter, (void*)t)) {
+      onig_st_free_table(t);
+      return ONIGERR_MEMORY;
+    }
+    reg->name_table = t;
+  }
   return 0;
 }
 
@@ -568,8 +625,10 @@ typedef struct {
 } INamesArg;
 
 static int
-i_names(UChar* key ARG_UNUSED, NameEntry* e, INamesArg* arg)
+i_names(HashDataType key_ ARG_UNUSED, HashDataType e_, HashDataType arg_)
 {
+  NameEntry* e = (NameEntry *)e_;
+  INamesArg* arg = (INamesArg *)arg_;
   int r = (*(arg->func))(e->name,
 			 e->name + e->name_len,
 			 e->back_num,
@@ -595,14 +654,16 @@ onig_foreach_name(regex_t* reg,
     narg.reg  = reg;
     narg.arg  = arg;
     narg.enc  = reg->enc; /* should be pattern encoding. */
-    onig_st_foreach(t, (st_foreach_callback_func *)i_names, (HashDataType )&narg);
+    onig_st_foreach(t, i_names, (HashDataType )&narg);
   }
   return narg.ret;
 }
 
 static int
-i_renumber_name(UChar* key ARG_UNUSED, NameEntry* e, GroupNumRemap* map)
+i_renumber_name(HashDataType key_ ARG_UNUSED, HashDataType e_, HashDataType map_)
 {
+  NameEntry* e = (NameEntry *)e_;
+  GroupNumRemap* map = (GroupNumRemap *)map_;
   int i;
 
   if (e->back_num > 1) {
@@ -623,7 +684,7 @@ onig_renumber_name_table(regex_t* reg, GroupNumRemap* map)
   NameTable* t = (NameTable* )reg->name_table;
 
   if (IS_NOT_NULL(t)) {
-    onig_st_foreach(t, (st_foreach_callback_func *)i_renumber_name, (HashDataType )map);
+    onig_st_foreach(t, i_renumber_name, (HashDataType )map);
   }
   return 0;
 }
@@ -699,7 +760,7 @@ names_clear(regex_t* reg)
 	e->name_len   = 0;
 	e->back_num   = 0;
 	e->back_alloc = 0;
-	if (IS_NOT_NULL(e->back_refs)) xfree(e->back_refs);
+	xfree(e->back_refs);
 	e->back_refs = (int* )NULL;
       }
     }
@@ -722,15 +783,57 @@ onig_names_free(regex_t* reg)
   if (r) return r;
 
   t = (NameTable* )reg->name_table;
-  if (IS_NOT_NULL(t)) xfree(t);
+  xfree(t);
   reg->name_table = NULL;
+  return 0;
+}
+
+extern int
+onig_names_copy(regex_t* reg, regex_t* oreg)
+{
+  NameTable* ot = oreg->name_table;
+  if (ot) {
+    OnigEncoding enc = oreg->enc;
+    int i, num = ot->num;
+    NameTable* t = xmalloc(sizeof(*t));
+    CHECK_NULL_RETURN_MEMERR(t);
+    *t = *ot;
+    t->e = xmalloc(t->alloc * sizeof(t->e[0]));
+    if (IS_NULL(t->e)) {
+      xfree(t);
+      return ONIGERR_MEMORY;
+    }
+    t->num = 0;
+    reg->name_table = t;
+    for (i = 0; i < num; t->num = ++i) {
+      NameEntry* oe = &(ot->e[i]);
+      NameEntry* e = &(t->e[i]);
+      *e = *oe;
+      e->name = NULL;
+      e->back_refs = NULL;
+      e->name = strdup_with_null(enc, oe->name, oe->name + e->name_len);
+      if (IS_NULL(e->name)) {
+        onig_names_free(reg);
+        return ONIGERR_MEMORY;
+      }
+      e->back_refs = xmalloc(e->back_alloc * sizeof(e->back_refs[0]));
+      if (IS_NULL(e->back_refs)) {
+        xfree(e->name);
+        onig_names_free(reg);
+        return ONIGERR_MEMORY;
+      }
+      memcpy(e->back_refs, oe->back_refs, e->back_num * sizeof(e->back_refs[0]));
+      e->back_ref1 = e->back_refs[0];
+    }
+  }
   return 0;
 }
 
 static NameEntry*
 name_find(regex_t* reg, const UChar* name, const UChar* name_end)
 {
-  int i, len;
+  int i;
+  size_t len;
   NameEntry* e;
   NameTable* t = (NameTable* )reg->name_table;
 
@@ -760,6 +863,30 @@ onig_foreach_name(regex_t* reg,
 		  (e->back_num > 1 ? e->back_refs : &(e->back_ref1)),
 		  reg, arg);
       if (r != 0) return r;
+    }
+  }
+  return 0;
+}
+
+extern int
+onig_renumber_name_table(regex_t* reg, GroupNumRemap* map)
+{
+  int i, j;
+  NameEntry* e;
+  NameTable* t = (NameTable* )reg->name_table;
+
+  if (IS_NOT_NULL(t)) {
+    for (i = 0; i < t->num; i++) {
+      e = &(t->e[i]);
+
+      if (e->back_num > 1) {
+        for (j = 0; j < e->back_num; j++) {
+          e->back_refs[j] = map[e->back_refs[j]].new_val;
+        }
+      }
+      else if (e->back_num == 1) {
+        e->back_ref1 = map[e->back_ref1].new_val;
+      }
     }
   }
   return 0;
@@ -967,6 +1094,12 @@ onig_number_of_names(const regex_t* reg)
 {
   return 0;
 }
+
+extern int
+onig_names_copy(regex_t* reg, regex_t* oreg)
+{
+  return 0;
+}
 #endif /* else USE_NAMED_GROUP */
 
 extern int
@@ -1098,29 +1231,24 @@ onig_node_free(Node* node)
     {
       CClassNode* cc = NCCLASS(node);
 
-      if (cc->mbuf)
-	bbuf_free(cc->mbuf);
+      bbuf_free(cc->mbuf);
     }
     break;
 
   case NT_QTFR:
-    if (NQTFR(node)->target)
-      onig_node_free(NQTFR(node)->target);
+    onig_node_free(NQTFR(node)->target);
     break;
 
   case NT_ENCLOSE:
-    if (NENCLOSE(node)->target)
-      onig_node_free(NENCLOSE(node)->target);
+    onig_node_free(NENCLOSE(node)->target);
     break;
 
   case NT_BREF:
-    if (IS_NOT_NULL(NBREF(node)->back_dynamic))
-      xfree(NBREF(node)->back_dynamic);
+    xfree(NBREF(node)->back_dynamic);
     break;
 
   case NT_ANCHOR:
-    if (NANCHOR(node)->target)
-      onig_node_free(NANCHOR(node)->target);
+    onig_node_free(NANCHOR(node)->target);
     break;
   }
 

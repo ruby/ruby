@@ -19,6 +19,7 @@ module Bundler
       add_sources
       add_platforms
       add_dependencies
+      add_checksums
       add_locked_ruby_version
       add_bundled_with
 
@@ -45,7 +46,7 @@ module Bundler
       # gems with the same name, but different platform
       # are ordered consistently
       specs.sort_by(&:full_name).each do |spec|
-        next if spec.name == "bundler".freeze
+        next if spec.name == "bundler"
         out << spec.to_lock
       end
     end
@@ -65,13 +66,20 @@ module Bundler
       end
     end
 
+    def add_checksums
+      checksums = definition.resolve.map do |spec|
+        spec.source.checksum_store.to_lock(spec)
+      end
+      add_section("CHECKSUMS", checksums)
+    end
+
     def add_locked_ruby_version
       return unless locked_ruby_version = definition.locked_ruby_version
       add_section("RUBY VERSION", locked_ruby_version.to_s)
     end
 
     def add_bundled_with
-      add_section("BUNDLED WITH", Bundler::VERSION)
+      add_section("BUNDLED WITH", definition.bundler_version_to_lock.to_s)
     end
 
     def add_section(name, value)

@@ -194,7 +194,7 @@ module Bundler
       end
       current_version = "#{current_spec.version}#{current_spec.git_version}"
 
-      if dependency && dependency.specific?
+      if dependency&.specific?
         dependency_version = %(, requested #{dependency.requirement})
       end
 

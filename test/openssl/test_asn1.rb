@@ -323,14 +323,9 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     assert_raise(OpenSSL::ASN1::ASN1Error) { OpenSSL::ASN1::ObjectId.new("3.0".b).to_der }
     assert_raise(OpenSSL::ASN1::ASN1Error) { OpenSSL::ASN1::ObjectId.new("0.40".b).to_der }
 
-    begin
-      oid = (0...100).to_a.join(".").b
-      obj = OpenSSL::ASN1::ObjectId.new(oid)
-      assert_equal oid, obj.oid
-    rescue OpenSSL::ASN1::ASN1Error
-      pend "OBJ_obj2txt() not working (LibreSSL?)" if $!.message =~ /OBJ_obj2txt/
-      raise
-    end
+    oid = (0...100).to_a.join(".").b
+    obj = OpenSSL::ASN1::ObjectId.new(oid)
+    assert_equal oid, obj.oid
 
     aki = [
       OpenSSL::ASN1::ObjectId.new("authorityKeyIdentifier"),
@@ -404,9 +399,6 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
   def test_utctime
     encode_decode_test B(%w{ 17 0D }) + "160908234339Z".b,
       OpenSSL::ASN1::UTCTime.new(Time.utc(2016, 9, 8, 23, 43, 39))
-    # Seconds is omitted
-    decode_test B(%w{ 17 0B }) + "1609082343Z".b,
-      OpenSSL::ASN1::UTCTime.new(Time.utc(2016, 9, 8, 23, 43, 0))
     begin
       # possible range of UTCTime is 1969-2068 currently
       encode_decode_test B(%w{ 17 0D }) + "690908234339Z".b,
@@ -414,6 +406,10 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
     rescue OpenSSL::ASN1::ASN1Error
       pend "No negative time_t support?"
     end
+    # Seconds is omitted. LibreSSL 3.6.0 requires it
+    return if libressl?
+    decode_test B(%w{ 17 0B }) + "1609082343Z".b,
+      OpenSSL::ASN1::UTCTime.new(Time.utc(2016, 9, 8, 23, 43, 0))
     # not implemented
     # decode_test B(%w{ 17 11 }) + "500908234339+0930".b,
     #   OpenSSL::ASN1::UTCTime.new(Time.new(1950, 9, 8, 23, 43, 39, "+09:30"))
@@ -432,6 +428,8 @@ class  OpenSSL::TestASN1 < OpenSSL::TestCase
       OpenSSL::ASN1::GeneralizedTime.new(Time.utc(2016, 12, 8, 19, 34, 29))
     encode_decode_test B(%w{ 18 0F }) + "99990908234339Z".b,
       OpenSSL::ASN1::GeneralizedTime.new(Time.utc(9999, 9, 8, 23, 43, 39))
+    # LibreSSL 3.6.0 requires the seconds element
+    return if libressl?
     decode_test B(%w{ 18 0D }) + "201612081934Z".b,
       OpenSSL::ASN1::GeneralizedTime.new(Time.utc(2016, 12, 8, 19, 34, 0))
     # not implemented

@@ -67,6 +67,14 @@ describe "Encoding#replicate" do
     end
   end
 
+  ruby_version_is "3.2"..."3.3" do
+    it "warns about deprecation" do
+      -> {
+        Encoding::US_ASCII.replicate('MY-US-ASCII')
+      }.should complain(/warning: Encoding#replicate is deprecated and will be removed in Ruby 3.3; use the original encoding instead/)
+    end
+  end
+
   ruby_version_is "3.3" do
     it "has been removed" do
       Encoding::US_ASCII.should_not.respond_to?(:replicate, true)

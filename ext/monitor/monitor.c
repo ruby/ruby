@@ -102,7 +102,7 @@ monitor_exit(VALUE monitor)
 
     struct rb_monitor *mc = monitor_ptr(monitor);
 
-    if (mc->count <= 0) rb_bug("monitor_exit: count:%d\n", (int)mc->count);
+    if (mc->count <= 0) rb_bug("monitor_exit: count:%d", (int)mc->count);
     mc->count--;
 
     if (mc->count == 0) {

@@ -1,6 +1,14 @@
 # frozen_string_literal: true
 
 module SyntaxSuggest
+  module Capture
+  end
+end
+
+require_relative "capture/falling_indent_lines"
+require_relative "capture/before_after_keyword_ends"
+
+module SyntaxSuggest
   # Turns a "invalid block(s)" into useful context
   #
   # There are three main phases in the algorithm:
@@ -55,6 +63,10 @@ module SyntaxSuggest
         capture_falling_indent(block)
       end
 
+      sorted_lines
+    end
+
+    def sorted_lines
       @lines_to_output.select!(&:not_empty?)
       @lines_to_output.uniq!
       @lines_to_output.sort!
@@ -76,12 +88,11 @@ module SyntaxSuggest
     #     end
     #   end
     #
-    #
     def capture_falling_indent(block)
-      AroundBlockScan.new(
+      Capture::FallingIndentLines.new(
         block: block,
         code_lines: @code_lines
-      ).on_falling_indent do |line|
+      ).call do |line|
         @lines_to_output << line
       end
     end
@@ -116,9 +127,10 @@ module SyntaxSuggest
     def capture_before_after_kws(block)
       return unless block.visible_lines.count == 1
 
-      around_lines = AroundBlockScan.new(code_lines: @code_lines, block: block)
-        .start_at_next_line
-        .capture_neighbor_context
+      around_lines = Capture::BeforeAfterKeywordEnds.new(
+        code_lines: @code_lines,
+        block: block
+      ).call
 
       around_lines -= block.lines
 

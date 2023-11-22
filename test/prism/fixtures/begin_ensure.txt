@@ -1,0 +1,21 @@
+begin
+a
+ensure
+b
+end
+
+begin; a; ensure; b; end
+
+begin a
+ ensure b
+ end
+
+begin a; ensure b; end
+
+begin begin:s.l begin ensure Module.new do
+  begin
+    break
+    ensure Module.new do
+    end
+  end
+end end end end

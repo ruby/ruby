@@ -112,6 +112,10 @@
             <%- end -%>
           </div>
           <%-   end -%>
+          <%- elsif method.has_call_seq? then -%>
+          <div class="method-heading">
+            <span class="method-name"><%= h method.name %></span>
+          </div>
           <%- else -%>
           <div class="method-heading">
             <span class="method-name"><%= h method.name %></span><span
@@ -123,6 +127,7 @@
           <%- end -%>
         </div>
 
+        <%- unless method.skip_description? then -%>
         <div class="method-description">
           <%- if method.comment then -%>
           <%= method.description.strip %>
@@ -145,6 +150,7 @@
           </div>
           <%- end -%>
         </div>
+        <%- end -%>
 
         <%- unless method.aliases.empty? then -%>
         <div class="aliases">

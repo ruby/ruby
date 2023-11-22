@@ -1,20 +1,26 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 
 class TestGemGemRunner < Gem::TestCase
   def setup
-    super
-
     require "rubygems/command"
     @orig_args = Gem::Command.build_args
     @orig_specific_extra_args = Gem::Command.specific_extra_args_hash.dup
     @orig_extra_args = Gem::Command.extra_args.dup
+
+    super
+
+    @orig_gem_home = ENV["GEM_HOME"]
+    ENV["GEM_HOME"] = @gemhome
 
     require "rubygems/gem_runner"
     @runner = Gem::GemRunner.new
   end
 
   def teardown
+    ENV["GEM_HOME"] = @orig_gem_home
+
     super
 
     Gem::Command.build_args = @orig_args

@@ -90,7 +90,7 @@ class RDoc::Markup::Formatter
 
   def add_regexp_handling_TIDYLINK
     @markup.add_regexp_handling(/(?:
-                                  \{.*?\} |    # multi-word label
+                                  \{[^{}]*\} | # multi-word label
                                   \b[^\s{}]+? # single-word label
                                  )
 
@@ -263,4 +263,3 @@ class RDoc::Markup::Formatter
   end
 
 end
-

@@ -30,20 +30,20 @@ describe "Process.exec" do
   end
 
   it "raises Errno::EACCES when passed a directory" do
-    -> { Process.exec File.dirname(__FILE__) }.should raise_error(Errno::EACCES)
+    -> { Process.exec __dir__ }.should raise_error(Errno::EACCES)
   end
 
   it "runs the specified command, replacing current process" do
-    ruby_exe('Process.exec "echo hello"; puts "fail"', escape: true).should == "hello\n"
+    ruby_exe('Process.exec "echo hello"; puts "fail"').should == "hello\n"
   end
 
   it "sets the current directory when given the :chdir option" do
     tmpdir = tmp("")[0..-2]
     platform_is_not :windows do
-      ruby_exe("Process.exec(\"pwd\", chdir: #{tmpdir.inspect})", escape: true).should == "#{tmpdir}\n"
+      ruby_exe("Process.exec(\"pwd\", chdir: #{tmpdir.inspect})").should == "#{tmpdir}\n"
     end
     platform_is :windows do
-      ruby_exe("Process.exec(\"cd\", chdir: #{tmpdir.inspect})", escape: true).tr('\\', '/').should == "#{tmpdir}\n"
+      ruby_exe("Process.exec(\"cd\", chdir: #{tmpdir.inspect})").tr('\\', '/').should == "#{tmpdir}\n"
     end
   end
 
@@ -73,13 +73,13 @@ describe "Process.exec" do
     platform_is_not :windows do
       it "subjects the specified command to shell expansion" do
         result = Dir.chdir(@dir) do
-          ruby_exe('Process.exec "echo *"', escape: true)
+          ruby_exe('Process.exec "echo *"')
         end
         result.chomp.should == @name
       end
 
       it "creates an argument array with shell parsing semantics for whitespace" do
-        ruby_exe('Process.exec "echo a b  c   d"', escape: true).should == "a b c d\n"
+        ruby_exe('Process.exec "echo a b  c   d"').should == "a b c d\n"
       end
     end
 
@@ -87,13 +87,13 @@ describe "Process.exec" do
       # There is no shell expansion on Windows
       it "does not subject the specified command to shell expansion on Windows" do
         result = Dir.chdir(@dir) do
-          ruby_exe('Process.exec "echo *"', escape: true)
+          ruby_exe('Process.exec "echo *"')
         end
         result.should == "*\n"
       end
 
       it "does not create an argument array with shell parsing semantics for whitespace on Windows" do
-        ruby_exe('Process.exec "echo a b  c   d"', escape: true).should == "a b  c   d\n"
+        ruby_exe('Process.exec "echo a b  c   d"').should == "a b  c   d\n"
       end
     end
 
@@ -105,7 +105,7 @@ describe "Process.exec" do
       platform_is :windows do
         cmd = '"cmd.exe", "/C", "echo", "*"'
       end
-      ruby_exe("Process.exec #{cmd}", escape: true).should == "*\n"
+      ruby_exe("Process.exec #{cmd}").should == "*\n"
     end
   end
 
@@ -124,29 +124,29 @@ describe "Process.exec" do
     end
 
     it "sets environment variables in the child environment" do
-      ruby_exe('Process.exec({"FOO" => "BAR"}, "echo ' + var + '")', escape: true).should == "BAR\n"
+      ruby_exe('Process.exec({"FOO" => "BAR"}, "echo ' + var + '")').should == "BAR\n"
     end
 
     it "unsets environment variables whose value is nil" do
       platform_is_not :windows do
-        ruby_exe('Process.exec({"FOO" => nil}, "echo ' + var + '")', escape: true).should == "\n"
+        ruby_exe('Process.exec({"FOO" => nil}, "echo ' + var + '")').should == "\n"
       end
       platform_is :windows do
         # On Windows, echo-ing a non-existent env var is treated as echo-ing any other string of text
-        ruby_exe('Process.exec({"FOO" => nil}, "echo ' + var + '")', escape: true).should == var + "\n"
+        ruby_exe('Process.exec({"FOO" => nil}, "echo ' + var + '")').should == var + "\n"
       end
     end
 
     it "coerces environment argument using to_hash" do
-      ruby_exe('o = Object.new; def o.to_hash; {"FOO" => "BAR"}; end; Process.exec(o, "echo ' + var + '")', escape: true).should == "BAR\n"
+      ruby_exe('o = Object.new; def o.to_hash; {"FOO" => "BAR"}; end; Process.exec(o, "echo ' + var + '")').should == "BAR\n"
     end
 
     it "unsets other environment variables when given a true :unsetenv_others option" do
       platform_is_not :windows do
-        ruby_exe('Process.exec("echo ' + var + '", unsetenv_others: true)', escape: true).should == "\n"
+        ruby_exe('Process.exec("echo ' + var + '", unsetenv_others: true)').should == "\n"
       end
       platform_is :windows do
-        ruby_exe('Process.exec("' + ENV['COMSPEC'].gsub('\\', '\\\\\\') + ' /C echo ' + var + '", unsetenv_others: true)', escape: true).should == var + "\n"
+        ruby_exe('Process.exec("' + ENV['COMSPEC'].gsub('\\', '\\\\\\') + ' /C echo ' + var + '", unsetenv_others: true)').should == var + "\n"
       end
     end
   end
@@ -154,19 +154,19 @@ describe "Process.exec" do
   describe "with a command array" do
     it "uses the first element as the command name and the second as the argv[0] value" do
       platform_is_not :windows do
-        ruby_exe('Process.exec(["/bin/sh", "argv_zero"], "-c", "echo $0")', escape: true).should == "argv_zero\n"
+        ruby_exe('Process.exec(["/bin/sh", "argv_zero"], "-c", "echo $0")').should == "argv_zero\n"
       end
       platform_is :windows do
-        ruby_exe('Process.exec(["cmd.exe", "/C"], "/C", "echo", "argv_zero")', escape: true).should == "argv_zero\n"
+        ruby_exe('Process.exec(["cmd.exe", "/C"], "/C", "echo", "argv_zero")').should == "argv_zero\n"
       end
     end
 
     it "coerces the argument using to_ary" do
       platform_is_not :windows do
-        ruby_exe('o = Object.new; def o.to_ary; ["/bin/sh", "argv_zero"]; end; Process.exec(o, "-c", "echo $0")', escape: true).should == "argv_zero\n"
+        ruby_exe('o = Object.new; def o.to_ary; ["/bin/sh", "argv_zero"]; end; Process.exec(o, "-c", "echo $0")').should == "argv_zero\n"
       end
       platform_is :windows do
-        ruby_exe('o = Object.new; def o.to_ary; ["cmd.exe", "/C"]; end; Process.exec(o, "/C", "echo", "argv_zero")', escape: true).should == "argv_zero\n"
+        ruby_exe('o = Object.new; def o.to_ary; ["cmd.exe", "/C"]; end; Process.exec(o, "/C", "echo", "argv_zero")').should == "argv_zero\n"
       end
     end
 
@@ -200,7 +200,7 @@ describe "Process.exec" do
             end
             EOC
 
-          ruby_exe(cmd, escape: true)
+          ruby_exe(cmd)
           child_fd = IO.read(@child_fd_file).to_i
           child_fd.to_i.should > STDERR.fileno
 
@@ -216,7 +216,7 @@ describe "Process.exec" do
             Process.exec("#{ruby_cmd(map_fd_fixture)} \#{f.fileno}", f.fileno => f.fileno)
             EOC
 
-          output = ruby_exe(cmd, escape: true)
+          output = ruby_exe(cmd)
           child_fd, close_on_exec = output.split
 
           child_fd.to_i.should > STDERR.fileno
@@ -232,7 +232,7 @@ describe "Process.exec" do
             puts(f.close_on_exec?)
             EOC
 
-          output = ruby_exe(cmd, escape: true)
+          output = ruby_exe(cmd)
           output.split.should == ['true', 'false']
         end
       end

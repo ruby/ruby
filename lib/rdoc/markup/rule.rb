@@ -18,4 +18,3 @@ class RDoc::Markup::Rule < Struct.new :weight
   end
 
 end
-

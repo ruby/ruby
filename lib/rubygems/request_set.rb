@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "tsort"
 
 ##
@@ -107,7 +108,7 @@ class Gem::RequestSet
     @requests            = []
     @sets                = []
     @soft_missing        = false
-    @sorted              = nil
+    @sorted_requests     = nil
     @specs               = nil
     @vendor_set          = nil
     @source_set          = nil
@@ -159,7 +160,7 @@ class Gem::RequestSet
     end
 
     # Create N threads in a pool, have them download all the gems
-    threads = Gem.configuration.concurrent_downloads.times.map do
+    threads = Array.new(Gem.configuration.concurrent_downloads) do
       # When a thread pops this item, it knows to stop running. The symbol
       # is queued here so that there will be one symbol per thread.
       download_queue << :stop
@@ -254,7 +255,8 @@ class Gem::RequestSet
   end
 
   def install_into(dir, force = true, options = {})
-    gem_home, ENV["GEM_HOME"] = ENV["GEM_HOME"], dir
+    gem_home = ENV["GEM_HOME"]
+    ENV["GEM_HOME"] = dir
 
     existing = force ? [] : specs_in(dir)
     existing.delete_if {|s| @always_install.include? s }
@@ -322,7 +324,7 @@ class Gem::RequestSet
 
     @git_set.root_dir = @install_dir
 
-    lock_file = "#{File.expand_path(path)}.lock".dup.tap(&Gem::UNTAINT)
+    lock_file = "#{File.expand_path(path)}.lock"
     begin
       tokenizer = Gem::RequestSet::Lockfile::Tokenizer.from_file lock_file
       parser = tokenizer.make_parser self, []
@@ -374,7 +376,7 @@ class Gem::RequestSet
       q.text "sets:"
 
       q.breakable
-      q.pp @sets.map {|set| set.class }
+      q.pp @sets.map(&:class)
     end
   end
 
@@ -424,11 +426,11 @@ class Gem::RequestSet
   end
 
   def sorted_requests
-    @sorted ||= strongly_connected_components.flatten
+    @sorted_requests ||= strongly_connected_components.flatten
   end
 
   def specs
-    @specs ||= @requests.map {|r| r.full_spec }
+    @specs ||= @requests.map(&:full_spec)
   end
 
   def specs_in(dir)
@@ -446,7 +448,7 @@ class Gem::RequestSet
       next if dep.type == :development && !@development
 
       match = @requests.find do |r|
-        dep.match? r.spec.name, r.spec.version, r.spec.is_a?(Gem::Resolver::InstalledSpecification) || @prerelease
+        dep.match?(r.spec.name, r.spec.version, r.spec.is_a?(Gem::Resolver::InstalledSpecification) || @prerelease)
       end
 
       unless match

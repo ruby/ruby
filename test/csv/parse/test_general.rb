@@ -7,7 +7,7 @@ require_relative "../helper"
 
 #
 # Following tests are my interpretation of the
-# {CSV RCF}[http://www.ietf.org/rfc/rfc4180.txt].  I only deviate from that
+# {CSV RCF}[https://www.ietf.org/rfc/rfc4180.txt].  I only deviate from that
 # document in one place (intentionally) and that is to make the default row
 # separator <tt>$/</tt>.
 #
@@ -75,7 +75,7 @@ class TestCSVParseGeneral < Test::Unit::TestCase
     end
   end
 
-  # From:  http://ruby-talk.org/cgi-bin/scat.rb/ruby/ruby-core/6496
+  # From: [ruby-core:6496]
   def test_aras_edge_cases
     [ [%Q{a,b},               ["a", "b"]],
       [%Q{a,"""b"""},         ["a", "\"b\""]],
@@ -323,15 +323,22 @@ line,5,jkl
   end
 
   private
-  def assert_parse_errors_out(data, **options)
+
+  {
+    "YJIT"=>1,              # for --yjit-call-threshold=1
+    "MJIT"=>5, "RJIT"=>5,   # for --jit-wait
+  }.any? do |jit, timeout|
+    if (RubyVM.const_defined?(jit) and
+        jit = RubyVM.const_get(jit) and
+        jit.respond_to?(:enabled?) and
+        jit.enabled?)
+      PARSE_ERROR_TIMEOUT = timeout
+    end
+  end
+  PARSE_ERROR_TIMEOUT ||= 0.2
+
+  def assert_parse_errors_out(data, timeout: PARSE_ERROR_TIMEOUT, **options)
     assert_raise(CSV::MalformedCSVError) do
-      timeout = 0.2
-      if defined?(RubyVM::YJIT.enabled?) and RubyVM::YJIT.enabled?
-        timeout = 1  # for --yjit-call-threshold=1
-      end
-      if defined?(RubyVM::MJIT.enabled?) and RubyVM::MJIT.enabled?
-        timeout = 5  # for --jit-wait
-      end
       Timeout.timeout(timeout) do
         CSV.parse(data, **options)
         fail("Parse didn't error out")

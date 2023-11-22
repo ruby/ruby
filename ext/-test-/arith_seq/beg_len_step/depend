@@ -51,6 +51,7 @@ beg_len_step.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 beg_len_step.o: $(hdrdir)/ruby/internal/attr/noinline.h
 beg_len_step.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 beg_len_step.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+beg_len_step.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 beg_len_step.o: $(hdrdir)/ruby/internal/attr/pure.h
 beg_len_step.o: $(hdrdir)/ruby/internal/attr/restrict.h
 beg_len_step.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -110,7 +111,6 @@ beg_len_step.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 beg_len_step.o: $(hdrdir)/ruby/internal/intern/error.h
 beg_len_step.o: $(hdrdir)/ruby/internal/intern/eval.h
 beg_len_step.o: $(hdrdir)/ruby/internal/intern/file.h
-beg_len_step.o: $(hdrdir)/ruby/internal/intern/gc.h
 beg_len_step.o: $(hdrdir)/ruby/internal/intern/hash.h
 beg_len_step.o: $(hdrdir)/ruby/internal/intern/io.h
 beg_len_step.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -141,7 +141,6 @@ beg_len_step.o: $(hdrdir)/ruby/internal/memory.h
 beg_len_step.o: $(hdrdir)/ruby/internal/method.h
 beg_len_step.o: $(hdrdir)/ruby/internal/module.h
 beg_len_step.o: $(hdrdir)/ruby/internal/newobj.h
-beg_len_step.o: $(hdrdir)/ruby/internal/rgengc.h
 beg_len_step.o: $(hdrdir)/ruby/internal/scan_args.h
 beg_len_step.o: $(hdrdir)/ruby/internal/special_consts.h
 beg_len_step.o: $(hdrdir)/ruby/internal/static_assert.h

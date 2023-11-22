@@ -53,14 +53,8 @@ const union {
     rb_econv_result_t           econv_result;
     enum ruby_preserved_encindex encoding_index;
     enum ruby_robject_flags     robject_flags;
-#if !USE_RVARGC
-    enum ruby_robject_consts    robject_consts;
-#endif
     enum ruby_rmodule_flags     rmodule_flags;
     enum ruby_rstring_flags     rstring_flags;
-#if !USE_RVARGC
-    enum ruby_rstring_consts    rstring_consts;
-#endif
     enum ruby_rarray_flags      rarray_flags;
     enum ruby_rarray_consts     rarray_consts;
     enum {
@@ -76,7 +70,7 @@ const union {
         RUBY_FMODE_NOREVLOOKUP		= 0x00000100,
         RUBY_FMODE_TRUNC		= FMODE_TRUNC,
         RUBY_FMODE_TEXTMODE		= FMODE_TEXTMODE,
-        RUBY_FMODE_PREP 		= 0x00010000,
+        RUBY_FMODE_EXTERNAL		= 0x00010000,
         RUBY_FMODE_SETENC_BY_BOM	= FMODE_SETENC_BY_BOM,
         RUBY_FMODE_UNIX 		= 0x00200000,
         RUBY_FMODE_INET 		= 0x00400000,
@@ -118,7 +112,7 @@ ruby_debug_printf(const char *format, ...)
     va_end(ap);
 }
 
-#include "gc.h"
+#include "internal/gc.h"
 
 VALUE
 ruby_debug_print_value(int level, int debug_level, const char *header, VALUE obj)
@@ -291,12 +285,20 @@ static const char *dlf_type_names[] = {
     "func",
 };
 
+#ifdef MAX_PATH
+#define DEBUG_LOG_MAX_PATH (MAX_PATH-1)
+#else
+#define DEBUG_LOG_MAX_PATH 255
+#endif
+
 static struct {
     char *mem;
     unsigned int cnt;
     struct debug_log_filter filters[MAX_DEBUG_LOG_FILTER_NUM];
     unsigned int filters_num;
+    bool show_pid;
     rb_nativethread_lock_t lock;
+    char output_file[DEBUG_LOG_MAX_PATH+1];
     FILE *output;
 } debug_log;
 
@@ -398,7 +400,39 @@ setup_debug_log(void)
         }
         else {
             ruby_debug_log_mode |= ruby_debug_log_file;
-            if ((debug_log.output = fopen(log_config, "w")) == NULL) {
+
+            // pid extension with %p
+            unsigned long len = strlen(log_config);
+
+            for (unsigned long i=0, j=0; i<len; i++) {
+                const char c = log_config[i];
+
+                if (c == '%') {
+                    i++;
+                    switch (log_config[i]) {
+                      case '%':
+                        debug_log.output_file[j++] = '%';
+                        break;
+                      case 'p':
+                        snprintf(debug_log.output_file + j, DEBUG_LOG_MAX_PATH - j, "%d", getpid());
+                        j = strlen(debug_log.output_file);
+                        break;
+                      default:
+                        fprintf(stderr, "can not parse RUBY_DEBUG_LOG filename: %s\n", log_config);
+                        exit(1);
+                    }
+                }
+                else {
+                    debug_log.output_file[j++] = c;
+                }
+
+                if (j >= DEBUG_LOG_MAX_PATH) {
+                    fprintf(stderr, "RUBY_DEBUG_LOG=%s is too long\n", log_config);
+                    exit(1);
+                }
+            }
+
+            if ((debug_log.output = fopen(debug_log.output_file, "w")) == NULL) {
                 fprintf(stderr, "can not open %s for RUBY_DEBUG_LOG\n", log_config);
                 exit(1);
             }
@@ -409,9 +443,17 @@ setup_debug_log(void)
                 (ruby_debug_log_mode & ruby_debug_log_memory) ? "[mem]" : "",
                 (ruby_debug_log_mode & ruby_debug_log_stderr) ? "[stderr]" : "",
                 (ruby_debug_log_mode & ruby_debug_log_file)   ? "[file]" : "");
+        if (debug_log.output_file[0]) {
+            fprintf(stderr, "RUBY_DEBUG_LOG filename=%s\n", debug_log.output_file);
+        }
+
         rb_nativethread_lock_initialize(&debug_log.lock);
 
         setup_debug_log_filter();
+
+        if (getenv("RUBY_DEBUG_LOG_PID")) {
+            debug_log.show_pid = true;
+        }
     }
 }
 
@@ -450,7 +492,7 @@ check_filter(const char *str, const struct debug_log_filter *filter, bool *state
 //   (func_name or file_name) contains baz or boo
 //
 // RUBY_DEBUG_LOG_FILTER=foo,bar,-baz,-boo
-// retunrs true if
+// returns true if
 //   (func_name or file_name) contains foo or bar
 // or
 //   (func_name or file_name) doesn't contain baz and
@@ -507,10 +549,16 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
     int len = 0;
     int r = 0;
 
+    if (debug_log.show_pid) {
+        r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN, "pid:%d\t", getpid());
+        if (r < 0) rb_bug("ruby_debug_log returns %d", r);
+        len += r;
+    }
+
     // message title
     if (func_name && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
         r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN, "%s\t", func_name);
-        if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
+        if (r < 0) rb_bug("ruby_debug_log returns %d", r);
         len += r;
     }
 
@@ -529,41 +577,67 @@ ruby_debug_log(const char *file, int line, const char *func_name, const char *fm
     // C location
     if (file && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
         r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN, "\t%s:%d", pretty_filename(file), line);
-        if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
+        if (r < 0) rb_bug("ruby_debug_log returns %d", r);
         len += r;
     }
 
-    if (rb_current_execution_context(false)) {
-        // Ruby location
-        int ruby_line;
-        const char *ruby_file = rb_source_location_cstr(&ruby_line);
-        if (len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-            if (ruby_file) {
-                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t%s:%d", pretty_filename(ruby_file), ruby_line);
-            }
-            else {
-                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t");
-            }
-            if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
-            len += r;
+    rb_execution_context_t *ec = rb_current_execution_context(false);
+
+    // Ruby location
+    int ruby_line;
+    const char *ruby_file = ec ? rb_source_location_cstr(&ruby_line) : NULL;
+
+    if (len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+        if (ruby_file) {
+            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t%s:%d", pretty_filename(ruby_file), ruby_line);
         }
+        else {
+            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\t");
+        }
+        if (r < 0) rb_bug("ruby_debug_log returns %d", r);
+        len += r;
+    }
+
+#ifdef RUBY_NT_SERIAL
+    // native thread information
+    if (len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+        r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tnt:%d", ruby_nt_serial);
+        if (r < 0) rb_bug("ruby_debug_log returns %d", r);
+        len += r;
+    }
+#endif
+
+    if (ec) {
+        rb_thread_t *th = ec ? rb_ec_thread_ptr(ec) : NULL;
 
         // ractor information
         if (ruby_single_main_ractor == NULL) {
-            rb_ractor_t *cr = GET_RACTOR();
+            rb_ractor_t *cr = th ? th->ractor : NULL;
+            rb_vm_t *vm = GET_VM();
+
             if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tr:#%u/%u",
-                             (unsigned int)rb_ractor_id(cr), GET_VM()->ractor.cnt);
-                if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
+                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tr:#%d/%u (%u)",
+                             cr ? (int)rb_ractor_id(cr) : -1, vm->ractor.cnt, vm->ractor.sched.running_cnt);
+
+                if (r < 0) rb_bug("ruby_debug_log returns %d", r);
                 len += r;
             }
         }
 
         // thread information
-        const rb_thread_t *th = GET_THREAD();
-        if (r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
-            r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tth:%u", rb_th_serial(th));
-            if (r < 0) rb_bug("ruby_debug_log returns %d\n", r);
+        if (th && r && len < MAX_DEBUG_LOG_MESSAGE_LEN) {
+            rb_execution_context_t *rec = th->ractor ? th->ractor->threads.running_ec : NULL;
+            const rb_thread_t *rth = rec ? rec->thread_ptr : NULL;
+            const rb_thread_t *sth = th->ractor ? th->ractor->threads.sched.running : NULL;
+
+            if (rth != th || sth != th) {
+                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tth:%u (rth:%d,sth:%d)",
+                             rb_th_serial(th), rth ? (int)rb_th_serial(rth) : -1, sth ? (int)rb_th_serial(sth) : -1);
+            }
+            else {
+                r = snprintf(buff + len, MAX_DEBUG_LOG_MESSAGE_LEN - len, "\tth:%u", rb_th_serial(th));
+            }
+            if (r < 0) rb_bug("ruby_debug_log returns %d", r);
             len += r;
         }
     }

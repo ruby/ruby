@@ -5,7 +5,7 @@ require "fileutils"
 require_relative "helper"
 
 module TestIRB
-  class TestInit < TestCase
+  class InitTest < TestCase
     def setup
       # IRBRC is for RVM...
       @backup_env = %w[HOME XDG_CONFIG_HOME IRBRC].each_with_object({}) do |env, hash|
@@ -118,6 +118,50 @@ module TestIRB
     ensure
       ENV["IRB_USE_AUTOCOMPLETE"] = orig_use_autocomplete_env
       IRB.conf[:USE_AUTOCOMPLETE] = orig_use_autocomplete_conf
+    end
+
+    def test_completor_environment_variable
+      orig_use_autocomplete_env = ENV['IRB_COMPLETOR']
+      orig_use_autocomplete_conf = IRB.conf[:COMPLETOR]
+
+      ENV['IRB_COMPLETOR'] = nil
+      IRB.setup(__FILE__)
+      assert_equal(:regexp, IRB.conf[:COMPLETOR])
+
+      ENV['IRB_COMPLETOR'] = 'regexp'
+      IRB.setup(__FILE__)
+      assert_equal(:regexp, IRB.conf[:COMPLETOR])
+
+      ENV['IRB_COMPLETOR'] = 'type'
+      IRB.setup(__FILE__)
+      assert_equal(:type, IRB.conf[:COMPLETOR])
+
+      ENV['IRB_COMPLETOR'] = 'regexp'
+      IRB.setup(__FILE__, argv: ['--type-completor'])
+      assert_equal :type, IRB.conf[:COMPLETOR]
+
+      ENV['IRB_COMPLETOR'] = 'type'
+      IRB.setup(__FILE__, argv: ['--regexp-completor'])
+      assert_equal :regexp, IRB.conf[:COMPLETOR]
+    ensure
+      ENV['IRB_COMPLETOR'] = orig_use_autocomplete_env
+      IRB.conf[:COMPLETOR] = orig_use_autocomplete_conf
+    end
+
+    def test_completor_setup_with_argv
+      orig_completor_conf = IRB.conf[:COMPLETOR]
+
+      # Default is :regexp
+      IRB.setup(__FILE__, argv: [])
+      assert_equal :regexp, IRB.conf[:COMPLETOR]
+
+      IRB.setup(__FILE__, argv: ['--type-completor'])
+      assert_equal :type, IRB.conf[:COMPLETOR]
+
+      IRB.setup(__FILE__, argv: ['--regexp-completor'])
+      assert_equal :regexp, IRB.conf[:COMPLETOR]
+    ensure
+      IRB.conf[:COMPLETOR] = orig_completor_conf
     end
 
     def test_noscript

@@ -132,20 +132,10 @@ describe "String#slice! with index, length" do
     "hello".slice!(obj, obj).should == "ll"
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances" do
-      s = StringSpecs::MyString.new("hello")
-      s.slice!(0, 0).should be_an_instance_of(StringSpecs::MyString)
-      s.slice!(0, 4).should be_an_instance_of(StringSpecs::MyString)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns String instances" do
-      s = StringSpecs::MyString.new("hello")
-      s.slice!(0, 0).should be_an_instance_of(String)
-      s.slice!(0, 4).should be_an_instance_of(String)
-    end
+  it "returns String instances" do
+    s = StringSpecs::MyString.new("hello")
+    s.slice!(0, 0).should be_an_instance_of(String)
+    s.slice!(0, 4).should be_an_instance_of(String)
   end
 
   it "returns the substring given by the character offsets" do
@@ -185,20 +175,10 @@ describe "String#slice! Range" do
     b.should == "hello"
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances" do
-      s = StringSpecs::MyString.new("hello")
-      s.slice!(0...0).should be_an_instance_of(StringSpecs::MyString)
-      s.slice!(0..4).should be_an_instance_of(StringSpecs::MyString)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns String instances" do
-      s = StringSpecs::MyString.new("hello")
-      s.slice!(0...0).should be_an_instance_of(String)
-      s.slice!(0..4).should be_an_instance_of(String)
-    end
+  it "returns String instances" do
+    s = StringSpecs::MyString.new("hello")
+    s.slice!(0...0).should be_an_instance_of(String)
+    s.slice!(0..4).should be_an_instance_of(String)
   end
 
   it "calls to_int on range arguments" do
@@ -274,20 +254,10 @@ describe "String#slice! with Regexp" do
     s.should == "this is a string"
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances" do
-      s = StringSpecs::MyString.new("hello")
-      s.slice!(//).should be_an_instance_of(StringSpecs::MyString)
-      s.slice!(/../).should be_an_instance_of(StringSpecs::MyString)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns String instances" do
-      s = StringSpecs::MyString.new("hello")
-      s.slice!(//).should be_an_instance_of(String)
-      s.slice!(/../).should be_an_instance_of(String)
-    end
+  it "returns String instances" do
+    s = StringSpecs::MyString.new("hello")
+    s.slice!(//).should be_an_instance_of(String)
+    s.slice!(/../).should be_an_instance_of(String)
   end
 
   it "returns the matching portion of self with a multi byte character" do
@@ -344,20 +314,10 @@ describe "String#slice! with Regexp, index" do
     "har".slice!(/(.)(.)(.)/, obj).should == "a"
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances" do
-      s = StringSpecs::MyString.new("hello")
-      s.slice!(/(.)(.)/, 0).should be_an_instance_of(StringSpecs::MyString)
-      s.slice!(/(.)(.)/, 1).should be_an_instance_of(StringSpecs::MyString)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns String instances" do
-      s = StringSpecs::MyString.new("hello")
-      s.slice!(/(.)(.)/, 0).should be_an_instance_of(String)
-      s.slice!(/(.)(.)/, 1).should be_an_instance_of(String)
-    end
+  it "returns String instances" do
+    s = StringSpecs::MyString.new("hello")
+    s.slice!(/(.)(.)/, 0).should be_an_instance_of(String)
+    s.slice!(/(.)(.)/, 1).should be_an_instance_of(String)
   end
 
   it "returns the encoding aware capture for the given index" do
@@ -415,22 +375,11 @@ describe "String#slice! with String" do
     -> { "hello".slice!(o) }.should raise_error(TypeError)
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns a subclass instance when given a subclass instance" do
-      s = StringSpecs::MyString.new("el")
-      r = "hello".slice!(s)
-      r.should == "el"
-      r.should be_an_instance_of(StringSpecs::MyString)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns a subclass instance when given a subclass instance" do
-      s = StringSpecs::MyString.new("el")
-      r = "hello".slice!(s)
-      r.should == "el"
-      r.should be_an_instance_of(String)
-    end
+  it "returns a subclass instance when given a subclass instance" do
+    s = StringSpecs::MyString.new("el")
+    r = "hello".slice!(s)
+    r.should == "el"
+    r.should be_an_instance_of(String)
   end
 
   it "raises a FrozenError if self is frozen" do

@@ -540,7 +540,7 @@ unix_peeraddr(VALUE sock)
  *
  * Creates a pair of sockets connected to each other.
  *
- * _socktype_ should be a socket type such as: :STREAM, :DGRAM, :RAW, etc.
+ * _type_ should be a socket type such as: :STREAM, :DGRAM, :RAW, etc.
  *
  * _protocol_ should be a protocol defined in the domain.
  * 0 is default protocol for the domain.

@@ -57,4 +57,3 @@ class RDoc::Stats::Quiet
   def done_adding(*) end
 
 end
-

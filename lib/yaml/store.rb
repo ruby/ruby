@@ -65,7 +65,7 @@ class YAML::Store < PStore
   end
 
   def load(content)
-    table = YAML.unsafe_load(content)
+    table = YAML.respond_to?(:unsafe_load) ? YAML.unsafe_load(content) : YAML.load(content)
     if table == false
       {}
     else

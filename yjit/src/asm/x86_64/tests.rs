@@ -68,7 +68,7 @@ fn test_call_ptr() {
     // calling a lower address
     check_bytes("e8fbffffff", |cb| {
         let ptr = cb.get_write_ptr();
-        call_ptr(cb, RAX, ptr.raw_ptr());
+        call_ptr(cb, RAX, ptr.raw_ptr(cb));
     });
 }
 
@@ -103,6 +103,15 @@ fn test_cmp() {
 #[test]
 fn test_cqo() {
     check_bytes("4899", |cb| cqo(cb));
+}
+
+#[test]
+fn test_imul() {
+    check_bytes("480fafc3", |cb| imul(cb, RAX, RBX));
+    check_bytes("480faf10", |cb| imul(cb, RDX, mem_opnd(64, RAX, 0)));
+
+    // Operands flipped for encoding since multiplication is commutative
+    check_bytes("480faf10", |cb| imul(cb, mem_opnd(64, RAX, 0), RDX));
 }
 
 #[test]
@@ -340,6 +349,7 @@ fn test_sal() {
     check_bytes("d1e1", |cb| sal(cb, ECX, uimm_opnd(1)));
     check_bytes("c1e505", |cb| sal(cb, EBP, uimm_opnd(5)));
     check_bytes("d1642444", |cb| sal(cb, mem_opnd(32, RSP, 68), uimm_opnd(1)));
+    check_bytes("48d3e1", |cb| sal(cb, RCX, CL));
 }
 
 #[test]
@@ -361,7 +371,7 @@ fn test_sub() {
 #[test]
 #[should_panic]
 fn test_sub_uimm_too_large() {
-    // This immedaite becomes a different value after
+    // This immediate becomes a different value after
     // sign extension, so not safe to encode.
     check_bytes("ff", |cb| sub(cb, RCX, uimm_opnd(0x8000_0000)));
 }
@@ -432,15 +442,15 @@ fn basic_capstone_usage() -> std::result::Result<(), capstone::Error> {
 fn block_comments() {
     let mut cb = super::CodeBlock::new_dummy(4096);
 
-    let first_write_ptr = cb.get_write_ptr().into_usize();
+    let first_write_ptr = cb.get_write_ptr().raw_addr(&cb);
     cb.add_comment("Beginning");
     xor(&mut cb, EAX, EAX); // 2 bytes long
-    let second_write_ptr = cb.get_write_ptr().into_usize();
+    let second_write_ptr = cb.get_write_ptr().raw_addr(&cb);
     cb.add_comment("Two bytes in");
     cb.add_comment("Still two bytes in");
     cb.add_comment("Still two bytes in"); // Duplicate, should be ignored
     test(&mut cb, mem_opnd(64, RSI, 64), imm_opnd(!0x08)); // 8 bytes long
-    let third_write_ptr = cb.get_write_ptr().into_usize();
+    let third_write_ptr = cb.get_write_ptr().raw_addr(&cb);
     cb.add_comment("Ten bytes in");
 
     assert_eq!(&vec!( "Beginning".to_string() ), cb.comments_at(first_write_ptr).unwrap());

@@ -1,0 +1,41 @@
+== \Regexp Methods
+
+Each of these Ruby core methods can accept a regexp as an argument:
+
+- Enumerable#all?
+- Enumerable#any?
+- Enumerable#grep
+- Enumerable#grep_v
+- Enumerable#none?
+- Enumerable#one?
+- Enumerable#slice_after
+- Enumerable#slice_before
+- Regexp#=~
+- Regexp#match
+- Regexp#match?
+- Regexp.new
+- Regexp.union
+- String#=~
+- String#[]=
+- String#byteindex
+- String#byterindex
+- String#gsub
+- String#gsub!
+- String#index
+- String#match
+- String#match?
+- String#partition
+- String#rindex
+- String#rpartition
+- String#scan
+- String#slice
+- String#slice!
+- String#split
+- String#start_with?
+- String#sub
+- String#sub!
+- Symbol#=~
+- Symbol#match
+- Symbol#match?
+- Symbol#slice
+- Symbol#start_with?

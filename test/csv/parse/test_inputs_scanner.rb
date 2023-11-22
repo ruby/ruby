@@ -1,7 +1,7 @@
 require_relative "../helper"
 
 class TestCSVParseInputsScanner < Test::Unit::TestCase
-  include Helper
+  include CSVHelper
 
   def test_scan_keep_over_chunks_nested_back
     input = CSV::Parser::UnoptimizedStringIO.new("abcdefghijklmnl")

@@ -1,0 +1,13 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    matrix (0.4.2)
+
+PLATFORMS
+  x86_64-darwin-20
+
+DEPENDENCIES
+  matrix
+
+BUNDLED WITH
+   2.3.3

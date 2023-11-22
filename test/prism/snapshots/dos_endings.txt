@@ -1,0 +1,107 @@
+@ ProgramNode (location: (1,0)-(17,20))
+├── locals: [:x, :a]
+└── statements:
+    @ StatementsNode (location: (1,0)-(17,20))
+    └── body: (length: 5)
+        ├── @ CallNode (location: (1,0)-(2,12))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :puts
+        │   ├── message_loc: (1,0)-(1,4) = "puts"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (1,5)-(2,12))
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ InterpolatedStringNode (location: (1,5)-(2,12))
+        │   │   │       ├── opening_loc: ∅
+        │   │   │       ├── parts: (length: 2)
+        │   │   │       │   ├── @ StringNode (location: (1,5)-(1,9))
+        │   │   │       │   │   ├── flags: ∅
+        │   │   │       │   │   ├── opening_loc: (1,5)-(1,6) = "\""
+        │   │   │       │   │   ├── content_loc: (1,6)-(1,8) = "hi"
+        │   │   │       │   │   ├── closing_loc: (1,8)-(1,9) = "\""
+        │   │   │       │   │   └── unescaped: "hi"
+        │   │   │       │   └── @ StringNode (location: (2,5)-(2,12))
+        │   │   │       │       ├── flags: ∅
+        │   │   │       │       ├── opening_loc: (2,5)-(2,6) = "\""
+        │   │   │       │       ├── content_loc: (2,6)-(2,11) = "there"
+        │   │   │       │       ├── closing_loc: (2,11)-(2,12) = "\""
+        │   │   │       │       └── unescaped: "there"
+        │   │   │       └── closing_loc: ∅
+        │   │   └── flags: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   └── flags: ∅
+        ├── @ ArrayNode (location: (4,0)-(5,2))
+        │   ├── elements: (length: 1)
+        │   │   └── @ SymbolNode (location: (4,3)-(5,1))
+        │   │       ├── opening_loc: ∅
+        │   │       ├── value_loc: (4,3)-(5,1) = "a\\\r\nb"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "a\nb"
+        │   ├── opening_loc: (4,0)-(4,3) = "%I{"
+        │   ├── closing_loc: (5,1)-(5,2) = "}"
+        │   └── flags: ∅
+        ├── @ StringNode (location: (7,0)-(7,4))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (7,0)-(7,4) = "<<-E"
+        │   ├── content_loc: (8,0)-(11,0) = "    1 \\\r\n    2\r\n    3\r\n"
+        │   ├── closing_loc: (11,0)-(12,0) = "E\r\n"
+        │   └── unescaped: "    1     2\r\n    3\r\n"
+        ├── @ LocalVariableWriteNode (location: (13,0)-(15,0))
+        │   ├── name: :x
+        │   ├── depth: 0
+        │   ├── name_loc: (13,0)-(13,1) = "x"
+        │   ├── value:
+        │   │   @ StringNode (location: (13,4)-(15,0))
+        │   │   ├── flags: ∅
+        │   │   ├── opening_loc: (13,4)-(14,0) = "%\r\n"
+        │   │   ├── content_loc: (14,0)-(14,0) = ""
+        │   │   ├── closing_loc: (14,0)-(15,0) = "\r\n"
+        │   │   └── unescaped: ""
+        │   └── operator_loc: (13,2)-(13,3) = "="
+        └── @ LocalVariableWriteNode (location: (17,0)-(17,20))
+            ├── name: :a
+            ├── depth: 0
+            ├── name_loc: (17,0)-(17,1) = "a"
+            ├── value:
+            │   @ CallNode (location: (17,4)-(17,20))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── name: :foo
+            │   ├── message_loc: (17,4)-(17,7) = "foo"
+            │   ├── opening_loc: (17,7)-(17,8) = "("
+            │   ├── arguments:
+            │   │   @ ArgumentsNode (location: (17,8)-(17,19))
+            │   │   ├── arguments: (length: 1)
+            │   │   │   └── @ CallNode (location: (17,8)-(17,19))
+            │   │   │       ├── receiver:
+            │   │   │       │   @ InterpolatedStringNode (location: (17,8)-(17,14))
+            │   │   │       │   ├── opening_loc: (17,8)-(17,14) = "<<~EOF"
+            │   │   │       │   ├── parts: (length: 2)
+            │   │   │       │   │   ├── @ StringNode (location: (18,0)-(19,0))
+            │   │   │       │   │   │   ├── flags: ∅
+            │   │   │       │   │   │   ├── opening_loc: ∅
+            │   │   │       │   │   │   ├── content_loc: (18,0)-(19,0) = "\r\n"
+            │   │   │       │   │   │   ├── closing_loc: ∅
+            │   │   │       │   │   │   └── unescaped: "\n"
+            │   │   │       │   │   └── @ StringNode (location: (19,0)-(20,0))
+            │   │   │       │   │       ├── flags: ∅
+            │   │   │       │   │       ├── opening_loc: ∅
+            │   │   │       │   │       ├── content_loc: (19,0)-(20,0) = "    baz\r\n"
+            │   │   │       │   │       ├── closing_loc: ∅
+            │   │   │       │   │       └── unescaped: "baz\r\n"
+            │   │   │       │   └── closing_loc: (20,0)-(21,0) = "  EOF\r\n"
+            │   │   │       ├── call_operator_loc: (17,14)-(17,15) = "."
+            │   │   │       ├── name: :chop
+            │   │   │       ├── message_loc: (17,15)-(17,19) = "chop"
+            │   │   │       ├── opening_loc: ∅
+            │   │   │       ├── arguments: ∅
+            │   │   │       ├── closing_loc: ∅
+            │   │   │       ├── block: ∅
+            │   │   │       └── flags: ∅
+            │   │   └── flags: ∅
+            │   ├── closing_loc: (17,19)-(17,20) = ")"
+            │   ├── block: ∅
+            │   └── flags: ∅
+            └── operator_loc: (17,2)-(17,3) = "="

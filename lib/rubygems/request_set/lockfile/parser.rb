@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 class Gem::RequestSet::Lockfile::Parser
   ###
   # Parses lockfiles
@@ -47,7 +48,7 @@ class Gem::RequestSet::Lockfile::Parser
     if expected_types && !Array(expected_types).include?(token.type)
       unget token
 
-      message = "unexpected token [#{token.type.inspect}, #{token.value.inspect}], " +
+      message = "unexpected token [#{token.type.inspect}, #{token.value.inspect}], " \
                 "expected #{expected_types.inspect}"
 
       raise Gem::RequestSet::Lockfile::ParseError.new message, token.column, token.line, @filename
@@ -56,8 +57,8 @@ class Gem::RequestSet::Lockfile::Parser
     if expected_value && expected_value != token.value
       unget token
 
-      message = "unexpected token [#{token.type.inspect}, #{token.value.inspect}], " +
-                "expected [#{expected_types.inspect}, " +
+      message = "unexpected token [#{token.type.inspect}, #{token.value.inspect}], " \
+                "expected [#{expected_types.inspect}, " \
                 "#{expected_value.inspect}]"
 
       raise Gem::RequestSet::Lockfile::ParseError.new message, token.column, token.line, @filename
@@ -67,7 +68,7 @@ class Gem::RequestSet::Lockfile::Parser
   end
 
   def parse_DEPENDENCIES # :nodoc:
-    while !@tokens.empty? && :text == peek.type do
+    while !@tokens.empty? && peek.type == :text do
       token = get :text
 
       requirements = []
@@ -110,7 +111,7 @@ class Gem::RequestSet::Lockfile::Parser
   def parse_GEM # :nodoc:
     sources = []
 
-    while [:entry, "remote"] == peek.first(2) do
+    while peek.first(2) == [:entry, "remote"] do
       get :entry, "remote"
       data = get(:text).value
       skip :newline
@@ -127,7 +128,7 @@ class Gem::RequestSet::Lockfile::Parser
     set = Gem::Resolver::LockSet.new sources
     last_specs = nil
 
-    while !@tokens.empty? && :text == peek.type do
+    while !@tokens.empty? && peek.type == :text do
       token = get :text
       name = token.value
       column = token.column
@@ -199,7 +200,7 @@ class Gem::RequestSet::Lockfile::Parser
 
     last_spec = nil
 
-    while !@tokens.empty? && :text == peek.type do
+    while !@tokens.empty? && peek.type == :text do
       token = get :text
       name = token.value
       column = token.column
@@ -246,7 +247,7 @@ class Gem::RequestSet::Lockfile::Parser
     set = Gem::Resolver::VendorSet.new
     last_spec = nil
 
-    while !@tokens.empty? && :text == peek.first do
+    while !@tokens.empty? && peek.first == :text do
       token = get :text
       name = token.value
       column = token.column
@@ -281,7 +282,7 @@ class Gem::RequestSet::Lockfile::Parser
   end
 
   def parse_PLATFORMS # :nodoc:
-    while !@tokens.empty? && :text == peek.first do
+    while !@tokens.empty? && peek.first == :text do
       name = get(:text).value
 
       @platforms << name
@@ -331,7 +332,7 @@ class Gem::RequestSet::Lockfile::Parser
       set.find_all(requirement)
     end.compact.first
 
-    specification && specification.version
+    specification&.version
   end
 
   ##

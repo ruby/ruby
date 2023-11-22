@@ -145,9 +145,10 @@ describe :time_params, shared: true do
   end
 
   it "raises an ArgumentError for out of range month" do
+    # For some reason MRI uses a different message for month in 13-15 and month>=16
     -> {
-      Time.send(@method, 2008, 13, 31, 23, 59, 59)
-    }.should raise_error(ArgumentError)
+      Time.send(@method, 2008, 16, 31, 23, 59, 59)
+    }.should raise_error(ArgumentError, /(mon|argument) out of range/)
   end
 
   it "raises an ArgumentError for out of range day" do
@@ -169,9 +170,13 @@ describe :time_params, shared: true do
   end
 
   it "raises an ArgumentError for out of range second" do
+    # For some reason MRI uses different messages for seconds 61-63 and seconds >= 64
     -> {
       Time.send(@method, 2008, 12, 31, 23, 59, 61)
-    }.should raise_error(ArgumentError)
+    }.should raise_error(ArgumentError, /(sec|argument) out of range/)
+    -> {
+      Time.send(@method, 2008, 12, 31, 23, 59, -1)
+    }.should raise_error(ArgumentError, "argument out of range")
   end
 
   it "raises ArgumentError when given 9 arguments" do

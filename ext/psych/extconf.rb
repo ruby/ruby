@@ -22,7 +22,7 @@ if yaml_source
   args = [
     yaml_configure,
     "--enable-#{shared ? 'shared' : 'static'}",
-    "--host=#{RbConfig::CONFIG['host'].sub(/-unknown-/, '-')}",
+    "--host=#{RbConfig::CONFIG['host'].sub(/-unknown-/, '-').sub(/arm64/, 'arm')}",
     "CC=#{RbConfig::CONFIG['CC']}",
     *(["CFLAGS=-w"] if RbConfig::CONFIG["GCC"] == "yes"),
   ]

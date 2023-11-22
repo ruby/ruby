@@ -426,6 +426,26 @@ class TC_Operator < Test::Unit::TestCase
     assert_equal(true,  IPAddr.new('fc84:8bf7:e905::1').private?)
     assert_equal(true,  IPAddr.new('fd84:8bf7:e905::1').private?)
     assert_equal(false, IPAddr.new('fe84:8bf7:e905::1').private?)
+
+    assert_equal(false, IPAddr.new('::ffff:0.0.0.0').private?)
+    assert_equal(false, IPAddr.new('::ffff:127.0.0.1').private?)
+
+    assert_equal(false, IPAddr.new('::ffff:8.8.8.8').private?)
+    assert_equal(true,  IPAddr.new('::ffff:10.0.0.0').private?)
+    assert_equal(true,  IPAddr.new('::ffff:10.255.255.255').private?)
+    assert_equal(false, IPAddr.new('::ffff:11.255.1.1').private?)
+
+    assert_equal(false, IPAddr.new('::ffff:172.15.255.255').private?)
+    assert_equal(true,  IPAddr.new('::ffff:172.16.0.0').private?)
+    assert_equal(true,  IPAddr.new('::ffff:172.31.255.255').private?)
+    assert_equal(false, IPAddr.new('::ffff:172.32.0.0').private?)
+
+    assert_equal(false, IPAddr.new('::ffff:190.168.0.0').private?)
+    assert_equal(true,  IPAddr.new('::ffff:192.168.0.0').private?)
+    assert_equal(true,  IPAddr.new('::ffff:192.168.255.255').private?)
+    assert_equal(false, IPAddr.new('::ffff:192.169.0.0').private?)
+
+    assert_equal(false, IPAddr.new('::ffff:169.254.0.1').private?)
   end
 
   def test_link_local?

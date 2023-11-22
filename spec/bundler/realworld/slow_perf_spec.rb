@@ -28,6 +28,6 @@ RSpec.describe "bundle install with complex dependencies", :realworld => true do
       gem 'rspec-rails'
     G
 
-    expect { bundle "lock" }.to take_less_than(18) # seconds
+    expect { bundle "lock" }.to take_less_than(30) # seconds
   end
 end

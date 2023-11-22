@@ -115,27 +115,29 @@ describe "C-API Util function" do
       ScratchPad.recorded.should == [1, nil]
     end
 
-    ruby_version_is ''...'3.0' do
-      it "assigns required and Hash arguments with nil Hash" do
-        suppress_warning do
-          @o.rb_scan_args([1, nil], "1:", 2, @acc).should == 1
-        end
-        ScratchPad.recorded.should == [1, nil]
-      end
-    end
-
-    ruby_version_is '3.0' do
-      it "rejects the use of nil as a hash" do
-        -> {
-          @o.rb_scan_args([1, nil], "1:", 2, @acc).should == 1
-        }.should raise_error(ArgumentError)
-        ScratchPad.recorded.should == []
-      end
+    it "rejects the use of nil as a hash" do
+      -> {
+        @o.rb_scan_args([1, nil], "1:", 2, @acc).should == 1
+      }.should raise_error(ArgumentError)
+      ScratchPad.recorded.should == []
     end
 
     it "assigns required and optional arguments with no hash argument given" do
       @o.rb_scan_args([1, 7, 4], "21:", 3, @acc).should == 3
       ScratchPad.recorded.should == [1, 7, 4]
+    end
+
+    it "assigns optional arguments with no hash argument given" do
+      @o.rb_scan_args([1, 7], "02:", 3, @acc).should == 2
+      ScratchPad.recorded.should == [1, 7, nil]
+    end
+
+    it "assigns optional arguments with no hash argument given and rejects the use of optional nil argument as a hash" do
+      -> {
+        @o.rb_scan_args([1, nil], "02:", 3, @acc).should == 2
+      }.should_not complain
+
+      ScratchPad.recorded.should == [1, nil, nil]
     end
 
     it "assigns required, optional, splat, post-splat, Hash and block arguments" do
@@ -144,55 +146,22 @@ describe "C-API Util function" do
       ScratchPad.recorded.should == [1, 2, [3, 4], 5, h, @prc]
     end
 
-    ruby_version_is ''...'3.0' do
-      # r43934
-      it "rejects non-keyword arguments" do
-        h = {1 => 2, 3 => 4}
-        -> {
-          suppress_warning do
-            @o.rb_scan_args([h], "k0:", 1, @acc)
-          end
-        }.should raise_error(ArgumentError)
-        ScratchPad.recorded.should == []
-      end
-
-      it "rejects required and non-keyword arguments" do
-        h = {1 => 2, 3 => 4}
-        -> {
-          suppress_warning do
-            @o.rb_scan_args([1, h], "k1:", 2, @acc)
-          end
-        }.should raise_error(ArgumentError)
-        ScratchPad.recorded.should == []
-      end
-
-      it "considers the hash as a post argument when there is a splat" do
-        h = {1 => 2, 3 => 4}
-        suppress_warning do
-          @o.rb_scan_args([1, 2, 3, 4, 5, h], "k11*1:&", 6, @acc, &@prc).should == 6
-        end
-        ScratchPad.recorded.should == [1, 2, [3, 4, 5], h, nil, @prc]
-      end
+    it "does not reject non-symbol keys in keyword arguments" do
+      h = {1 => 2, 3 => 4}
+      @o.rb_scan_args([h], "k0:", 1, @acc).should == 0
+      ScratchPad.recorded.should == [h]
     end
 
-    ruby_version_is '3.0' do
-      it "does not reject non-symbol keys in keyword arguments" do
-        h = {1 => 2, 3 => 4}
-        @o.rb_scan_args([h], "k0:", 1, @acc).should == 0
-        ScratchPad.recorded.should == [h]
-      end
+    it "does not reject non-symbol keys in keyword arguments with required argument" do
+      h = {1 => 2, 3 => 4}
+      @o.rb_scan_args([1, h], "k1:", 2, @acc).should == 1
+      ScratchPad.recorded.should == [1, h]
+    end
 
-      it "does not reject non-symbol keys in keyword arguments with required argument" do
-        h = {1 => 2, 3 => 4}
-        @o.rb_scan_args([1, h], "k1:", 2, @acc).should == 1
-        ScratchPad.recorded.should == [1, h]
-      end
-
-      it "considers keyword arguments with non-symbol keys as keywords when using splat and post arguments" do
-        h = {1 => 2, 3 => 4}
-        @o.rb_scan_args([1, 2, 3, 4, 5, h], "k11*1:&", 6, @acc, &@prc).should == 5
-        ScratchPad.recorded.should == [1, 2, [3, 4], 5, h, @prc]
-      end
+    it "considers keyword arguments with non-symbol keys as keywords when using splat and post arguments" do
+      h = {1 => 2, 3 => 4}
+      @o.rb_scan_args([1, 2, 3, 4, 5, h], "k11*1:&", 6, @acc, &@prc).should == 5
+      ScratchPad.recorded.should == [1, 2, [3, 4], 5, h, @prc]
     end
   end
 

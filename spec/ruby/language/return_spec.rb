@@ -435,6 +435,21 @@ describe "The return keyword" do
       end
     end
 
+    describe "within BEGIN" do
+      it "is allowed" do
+        File.write(@filename, <<-END_OF_CODE)
+          BEGIN {
+            ScratchPad << "before call"
+            return
+            ScratchPad << "after call"
+          }
+        END_OF_CODE
+
+        load @filename
+        ScratchPad.recorded.should == ["before call"]
+      end
+    end
+
     describe "file loading" do
       it "stops file loading and execution" do
         File.write(@filename, <<-END_OF_CODE)

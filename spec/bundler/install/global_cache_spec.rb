@@ -193,10 +193,8 @@ RSpec.describe "global gem caching" do
         bundle :install, :artifice => "compact_index_no_gem", :dir => bundled_app2
 
         # activesupport is installed and both are in the global cache
-        simulate_bundler_version_when_missing_prerelease_default_gem_activation do
-          expect(the_bundle).not_to include_gems "rack 1.0.0", :dir => bundled_app2
-          expect(the_bundle).to include_gems "activesupport 2.3.5", :dir => bundled_app2
-        end
+        expect(the_bundle).not_to include_gems "rack 1.0.0", :dir => bundled_app2
+        expect(the_bundle).to include_gems "activesupport 2.3.5", :dir => bundled_app2
 
         expect(source_global_cache("rack-1.0.0.gem")).to exist
         expect(source_global_cache("activesupport-2.3.5.gem")).to exist
@@ -220,9 +218,9 @@ RSpec.describe "global gem caching" do
         gem "very_simple_path_binary", :path => "#{lib_path("very_simple_path_binary-1.0")}"
       G
 
-      gem_binary_cache = home(".bundle", "cache", "extensions", specific_local_platform.to_s, Bundler.ruby_scope,
+      gem_binary_cache = home(".bundle", "cache", "extensions", local_platform.to_s, Bundler.ruby_scope,
         Digest(:MD5).hexdigest("#{gem_repo1}/"), "very_simple_binary-1.0")
-      git_binary_cache = home(".bundle", "cache", "extensions", specific_local_platform.to_s, Bundler.ruby_scope,
+      git_binary_cache = home(".bundle", "cache", "extensions", local_platform.to_s, Bundler.ruby_scope,
         "very_simple_git_binary-1.0-#{revision}", "very_simple_git_binary-1.0")
 
       cached_extensions = Pathname.glob(home(".bundle", "cache", "extensions", "*", "*", "*", "*", "*")).sort

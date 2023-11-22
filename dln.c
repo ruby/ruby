@@ -392,6 +392,12 @@ dln_open(const char *file)
                 dln_fatalerror("%s - %s", incompatible, file);
             }
             else {
+                if (libruby_name) {
+                    const size_t len = strlen(libruby_name);
+                    char *const tmp = ALLOCA_N(char, len + 1);
+                    if (tmp) memcpy(tmp, libruby_name, len + 1);
+                    libruby_name = tmp;
+                }
                 dlclose(handle);
                 if (libruby_name) {
                     dln_loaderror("linked to incompatible %s - %s", libruby_name, file);
@@ -457,8 +463,10 @@ dln_load(const char *file)
     void *handle = dln_open(file);
 
 #ifdef RUBY_DLN_CHECK_ABI
-    unsigned long long (*abi_version_fct)(void) = (unsigned long long(*)(void))dln_sym(handle, "ruby_abi_version");
-    unsigned long long binary_abi_version = (*abi_version_fct)();
+    typedef unsigned long long abi_version_number;
+    typedef abi_version_number abi_version_func(void);
+    abi_version_func *abi_version_fct = (abi_version_func *)dln_sym(handle, EXTERNAL_PREFIX "ruby_abi_version");
+    abi_version_number binary_abi_version = (*abi_version_fct)();
     if (binary_abi_version != ruby_abi_version() && abi_check_enabled_p()) {
         dln_loaderror("incompatible ABI version of binary - %s", file);
     }

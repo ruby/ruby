@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/dependency"
 
@@ -105,8 +106,13 @@ class TestGemDependency < Gem::TestCase
 
   def test_equals_tilde_object
     o = Object.new
-    def o.name    ; "a" end
-    def o.version ; "0" end
+    def o.name
+      "a"
+    end
+
+    def o.version
+      "0"
+    end
 
     assert_match dep("a"), o
   end
@@ -357,6 +363,8 @@ class TestGemDependency < Gem::TestCase
     dep = Gem::Dependency.new "bundler", ">= 0.a"
 
     assert_equal [b, b_1], dep.to_specs
+
+    require "rubygems/bundler_version_finder"
 
     Gem::BundlerVersionFinder.stub(:bundler_version, Gem::Version.new("1")) do
       assert_equal [b_1, b], dep.to_specs

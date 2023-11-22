@@ -1,9 +1,8 @@
 require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
-describe "UNIXSocket#send_io" do
-
-  platform_is_not :windows do
+with_feature :unix_socket do
+  describe "UNIXSocket#send_io" do
     before :each do
       @path = SocketSpecs.socket_path
       @server = UNIXServer.open(@path)
@@ -32,9 +31,7 @@ describe "UNIXSocket#send_io" do
       @io.read.should == File.read(@send_io_path)
     end
   end
-end
 
-with_feature :unix_socket do
   describe 'UNIXSocket#send_io' do
     before do
       @file = File.open('/dev/null', 'w')

@@ -55,7 +55,7 @@ static const rb_data_type_t ossl_x509ext_type = {
     {
 	0, ossl_x509ext_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 /*
@@ -108,7 +108,7 @@ static const rb_data_type_t ossl_x509extfactory_type = {
     {
 	0, ossl_x509extfactory_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -209,15 +209,16 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
     int nid;
     VALUE rconf;
     CONF *conf;
+    const char *oid_cstr = NULL;
 
     rb_scan_args(argc, argv, "21", &oid, &value, &critical);
-    StringValueCStr(oid);
     StringValue(value);
     if(NIL_P(critical)) critical = Qfalse;
 
-    nid = OBJ_ln2nid(RSTRING_PTR(oid));
-    if(!nid) nid = OBJ_sn2nid(RSTRING_PTR(oid));
-    if(!nid) ossl_raise(eX509ExtError, "unknown OID `%"PRIsVALUE"'", oid);
+    oid_cstr = StringValueCStr(oid);
+    nid = OBJ_ln2nid(oid_cstr);
+    if (nid != NID_undef)
+      oid_cstr = OBJ_nid2sn(nid);
 
     valstr = rb_str_new2(RTEST(critical) ? "critical," : "");
     rb_str_append(valstr, value);
@@ -228,7 +229,12 @@ ossl_x509extfactory_create_ext(int argc, VALUE *argv, VALUE self)
     rconf = rb_iv_get(self, "@config");
     conf = NIL_P(rconf) ? NULL : GetConfig(rconf);
     X509V3_set_nconf(ctx, conf);
-    ext = X509V3_EXT_nconf_nid(conf, ctx, nid, RSTRING_PTR(valstr));
+
+#if OSSL_OPENSSL_PREREQ(1, 1, 0) || OSSL_IS_LIBRESSL
+    ext = X509V3_EXT_nconf(conf, ctx, oid_cstr, RSTRING_PTR(valstr));
+#else
+    ext = X509V3_EXT_nconf(conf, ctx, (char *)oid_cstr, RSTRING_PTR(valstr));
+#endif
     X509V3_set_ctx_nodb(ctx);
     if (!ext){
 	ossl_raise(eX509ExtError, "%"PRIsVALUE" = %"PRIsVALUE, oid, valstr);

@@ -1,7 +1,7 @@
 require_relative '../../../../spec_helper'
 require 'openssl'
 
-describe :openssl_random_bytes, shared: true do |cmd|
+describe :openssl_random_bytes, shared: true do
   it "generates a random binary string of specified length" do
     (1..64).each do |idx|
       bytes = OpenSSL::Random.send(@method, idx)

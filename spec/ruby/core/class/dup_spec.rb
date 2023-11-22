@@ -61,4 +61,7 @@ describe "Class#dup" do
     CoreClassSpecs::RecordCopy.name.should == "CoreClassSpecs::RecordCopy"
   end
 
+  it "raises TypeError if called on BasicObject" do
+    -> { BasicObject.dup }.should raise_error(TypeError, "can't copy the root class")
+  end
 end

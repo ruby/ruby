@@ -60,55 +60,53 @@ describe "ObjectSpace.define_finalizer" do
     ruby_exe(code, :args => "2>&1").should include("finalizer run\n")
   end
 
-  ruby_version_is "3.0" do
-    it "warns if the finalizer has the object as the receiver" do
-      code = <<-RUBY
-        class CapturesSelf
-          def initialize
-            ObjectSpace.define_finalizer(self, proc {
-              puts "finalizer run"
-            })
-          end
+  it "warns if the finalizer has the object as the receiver" do
+    code = <<-RUBY
+      class CapturesSelf
+        def initialize
+          ObjectSpace.define_finalizer(self, proc {
+            puts "finalizer run"
+          })
         end
-        CapturesSelf.new
-        exit 0
-      RUBY
+      end
+      CapturesSelf.new
+      exit 0
+    RUBY
 
-      ruby_exe(code, :args => "2>&1").should include("warning: finalizer references object to be finalized\n")
-    end
+    ruby_exe(code, :args => "2>&1").should include("warning: finalizer references object to be finalized\n")
+  end
 
-    it "warns if the finalizer is a method bound to the receiver" do
-      code = <<-RUBY
-        class CapturesSelf
-          def initialize
-            ObjectSpace.define_finalizer(self, method(:finalize))
-          end
-          def finalize(id)
+  it "warns if the finalizer is a method bound to the receiver" do
+    code = <<-RUBY
+      class CapturesSelf
+        def initialize
+          ObjectSpace.define_finalizer(self, method(:finalize))
+        end
+        def finalize(id)
+          puts "finalizer run"
+        end
+      end
+      CapturesSelf.new
+      exit 0
+    RUBY
+
+    ruby_exe(code, :args => "2>&1").should include("warning: finalizer references object to be finalized\n")
+  end
+
+  it "warns if the finalizer was a block in the receiver" do
+    code = <<-RUBY
+      class CapturesSelf
+        def initialize
+          ObjectSpace.define_finalizer(self) do
             puts "finalizer run"
           end
         end
-        CapturesSelf.new
-        exit 0
-      RUBY
+      end
+      CapturesSelf.new
+      exit 0
+    RUBY
 
-      ruby_exe(code, :args => "2>&1").should include("warning: finalizer references object to be finalized\n")
-    end
-
-    it "warns if the finalizer was a block in the receiver" do
-      code = <<-RUBY
-        class CapturesSelf
-          def initialize
-            ObjectSpace.define_finalizer(self) do
-              puts "finalizer run"
-            end
-          end
-        end
-        CapturesSelf.new
-        exit 0
-      RUBY
-
-      ruby_exe(code, :args => "2>&1").should include("warning: finalizer references object to be finalized\n")
-    end
+    ruby_exe(code, :args => "2>&1").should include("warning: finalizer references object to be finalized\n")
   end
 
   it "calls a finalizer at exit even if it is self-referencing" do
@@ -168,5 +166,27 @@ describe "ObjectSpace.define_finalizer" do
     RUBY
 
     ruby_exe(code).lines.sort.should == ["finalized1\n", "finalized2\n"]
+  end
+
+  ruby_version_is "3.1" do
+    describe "when $VERBOSE is not nil" do
+      it "warns if an exception is raised in finalizer" do
+        code = <<-RUBY
+          ObjectSpace.define_finalizer(Object.new) { raise "finalizing" }
+        RUBY
+
+        ruby_exe(code, args: "2>&1").should include("warning: Exception in finalizer", "finalizing")
+      end
+    end
+
+    describe "when $VERBOSE is nil" do
+      it "does not warn even if an exception is raised in finalizer" do
+        code = <<-RUBY
+          ObjectSpace.define_finalizer(Object.new) { raise "finalizing" }
+        RUBY
+
+        ruby_exe(code, args: "2>&1", options: "-W0").should == ""
+      end
+    end
   end
 end

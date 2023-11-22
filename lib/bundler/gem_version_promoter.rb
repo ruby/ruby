@@ -93,7 +93,7 @@ module Bundler
       locked_version = package.locked_version
 
       result = specs.sort do |a, b|
-        unless locked_version && (package.prerelease_specified? || pre?)
+        unless package.prerelease_specified? || pre?
           a_pre = a.prerelease?
           b_pre = b.prerelease?
 
@@ -101,7 +101,7 @@ module Bundler
           next  1 if b_pre && !a_pre
         end
 
-        if major?
+        if major? || locked_version.nil?
           a <=> b
         elsif either_version_older_than_locked?(a, b, locked_version)
           a <=> b
@@ -117,7 +117,7 @@ module Bundler
     end
 
     def either_version_older_than_locked?(a, b, locked_version)
-      locked_version && (a.version < locked_version || b.version < locked_version)
+      a.version < locked_version || b.version < locked_version
     end
 
     def segments_do_not_match?(a, b, level)

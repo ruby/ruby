@@ -1,5 +1,5 @@
 #frozen_string_literal: false
-require 'test_helper'
+require_relative 'test_helper'
 require 'json/add/core'
 require 'json/add/complex'
 require 'json/add/rational'
@@ -183,7 +183,7 @@ class JSONAdditionTest < Test::Unit::TestCase
   def test_bigdecimal
     assert_equal BigDecimal('3.141', 23), JSON(JSON(BigDecimal('3.141', 23)), :create_additions => true)
     assert_equal BigDecimal('3.141', 666), JSON(JSON(BigDecimal('3.141', 666)), :create_additions => true)
-  end
+  end if defined?(::BigDecimal)
 
   def test_ostruct
     o = OpenStruct.new

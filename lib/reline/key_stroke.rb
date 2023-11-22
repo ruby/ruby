@@ -1,4 +1,8 @@
 class Reline::KeyStroke
+  ESC_BYTE = 27
+  CSI_PARAMETER_BYTES_RANGE = 0x30..0x3f
+  CSI_INTERMEDIATE_BYTES_RANGE = (0x20..0x2f)
+
   def initialize(config)
     @config = config
   end
@@ -73,17 +77,26 @@ class Reline::KeyStroke
       return :matched  if it.max_by(&:size)&.size&.< input.size
       return :matching if it.size > 1
     }
-    key_mapping.keys.select { |lhs|
-      start_with?(input, lhs)
-    }.tap { |it|
-      return it.size > 0 ? :matched : :unmatched
-    }
+    if key_mapping.keys.any? { |lhs| start_with?(input, lhs) }
+      :matched
+    else
+      match_unknown_escape_sequence(input).first
+    end
   end
 
   def expand(input)
-    input = compress_meta_key(input)
     lhs = key_mapping.keys.select { |item| start_with?(input, item) }.sort_by(&:size).last
-    return input unless lhs
+    unless lhs
+      status, size = match_unknown_escape_sequence(input)
+      case status
+      when :matched
+        return [:ed_unassigned] + expand(input.drop(size))
+      when :matching
+        return [:ed_unassigned]
+      else
+        return input
+      end
+    end
     rhs = key_mapping[lhs]
 
     case rhs
@@ -98,6 +111,36 @@ class Reline::KeyStroke
   end
 
   private
+
+  # returns match status of CSI/SS3 sequence and matched length
+  def match_unknown_escape_sequence(input)
+    idx = 0
+    return [:unmatched, nil] unless input[idx] == ESC_BYTE
+    idx += 1
+    idx += 1 if input[idx] == ESC_BYTE
+
+    case input[idx]
+    when nil
+      return [:matching, nil]
+    when 91 # == '['.ord
+      # CSI sequence
+      idx += 1
+      idx += 1 while idx < input.size && CSI_PARAMETER_BYTES_RANGE.cover?(input[idx])
+      idx += 1 while idx < input.size && CSI_INTERMEDIATE_BYTES_RANGE.cover?(input[idx])
+      input[idx] ? [:matched, idx + 1] : [:matching, nil]
+    when 79 # == 'O'.ord
+      # SS3 sequence
+      input[idx + 1] ? [:matched, idx + 2] : [:matching, nil]
+    else
+      if idx == 1
+        # `ESC char`, make it :unmatched so that it will be handled correctly in `read_2nd_character_of_key_sequence`
+        [:unmatched, nil]
+      else
+        # `ESC ESC char`
+        [:matched, idx + 1]
+      end
+    end
+  end
 
   def key_mapping
     @config.key_bindings

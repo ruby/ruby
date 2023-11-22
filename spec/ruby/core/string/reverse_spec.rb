@@ -10,20 +10,10 @@ describe "String#reverse" do
     "".reverse.should == ""
   end
 
-  ruby_version_is '3.0' do
-    it "returns String instances when called on a subclass" do
-      StringSpecs::MyString.new("stressed").reverse.should be_an_instance_of(String)
-      StringSpecs::MyString.new("m").reverse.should be_an_instance_of(String)
-      StringSpecs::MyString.new("").reverse.should be_an_instance_of(String)
-    end
-  end
-
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances when called on a subclass" do
-      StringSpecs::MyString.new("stressed").reverse.should be_an_instance_of(StringSpecs::MyString)
-      StringSpecs::MyString.new("m").reverse.should be_an_instance_of(StringSpecs::MyString)
-      StringSpecs::MyString.new("").reverse.should be_an_instance_of(StringSpecs::MyString)
-    end
+  it "returns String instances when called on a subclass" do
+    StringSpecs::MyString.new("stressed").reverse.should be_an_instance_of(String)
+    StringSpecs::MyString.new("m").reverse.should be_an_instance_of(String)
+    StringSpecs::MyString.new("").reverse.should be_an_instance_of(String)
   end
 
   it "reverses a string with multi byte characters" do
@@ -36,6 +26,10 @@ describe "String#reverse" do
     str.valid_encoding?.should be_false
 
     str.reverse.should == "體黑正\xDE\xDF軟微"
+  end
+
+  it "returns a String in the same encoding as self" do
+    "stressed".encode("US-ASCII").reverse.encoding.should == Encoding::US_ASCII
   end
 end
 

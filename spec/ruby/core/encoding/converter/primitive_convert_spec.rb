@@ -14,6 +14,10 @@ describe "Encoding::Converter#primitive_convert" do
     -> { @ec.primitive_convert("","") }.should_not raise_error
   end
 
+  it "raises FrozenError when the destination buffer is a frozen String" do
+    -> { @ec.primitive_convert("", "".freeze) }.should raise_error(FrozenError)
+  end
+
   it "accepts nil for the destination byte offset" do
     -> { @ec.primitive_convert("","", nil) }.should_not raise_error
   end

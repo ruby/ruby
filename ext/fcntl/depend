@@ -52,6 +52,7 @@ fcntl.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 fcntl.o: $(hdrdir)/ruby/internal/attr/noinline.h
 fcntl.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 fcntl.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+fcntl.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 fcntl.o: $(hdrdir)/ruby/internal/attr/pure.h
 fcntl.o: $(hdrdir)/ruby/internal/attr/restrict.h
 fcntl.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ fcntl.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/error.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/eval.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/file.h
-fcntl.o: $(hdrdir)/ruby/internal/intern/gc.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/hash.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/io.h
 fcntl.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ fcntl.o: $(hdrdir)/ruby/internal/memory.h
 fcntl.o: $(hdrdir)/ruby/internal/method.h
 fcntl.o: $(hdrdir)/ruby/internal/module.h
 fcntl.o: $(hdrdir)/ruby/internal/newobj.h
-fcntl.o: $(hdrdir)/ruby/internal/rgengc.h
 fcntl.o: $(hdrdir)/ruby/internal/scan_args.h
 fcntl.o: $(hdrdir)/ruby/internal/special_consts.h
 fcntl.o: $(hdrdir)/ruby/internal/static_assert.h

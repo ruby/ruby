@@ -23,6 +23,14 @@ Socket:: Access underlying OS socket implementations
 
 = Default gems
 
+* default gems are shipped with Ruby releases and also available as rubygems.
+* default gems are not uninstallable from Ruby installation.
+* default gems can be updated used by rubygems.
+    * e.g. `gem update json`
+* default gems can be used with bundler environment like `unbundled_env`.
+* default gems can be used any version on Gemfile.
+    * e.g. `gem "json", ">= 2.6"`
+
 == Libraries
 
 Abbrev:: Calculates a set of unique abbreviations for a given set of strings
@@ -53,6 +61,7 @@ OpenStruct:: Class to build custom data structures, similar to a Hash
 OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
 PP:: Provides a PrettyPrinter for Ruby objects
 PrettyPrinter:: Implements a pretty printing algorithm for readable structure
+Prism:: A portable, error-tolerant Ruby parser
 PStore:: Implements a file based persistence mechanism based on a Hash
 Readline:: Wrapper for Readline extencion and Reline
 Reline:: GNU Readline and Editline by pure Ruby implementation.
@@ -89,8 +98,6 @@ NKF:: Ruby extension for Network Kanji Filter
 OpenSSL:: Provides SSL, TLS and general purpose cryptography for Ruby
 Pathname:: Representation of the name of a file or directory on the filesystem
 Psych:: A YAML parser and emitter for Ruby
-Racc:: A LALR(1) parser generator written in Ruby.
-Readline:: Provides an interface for GNU Readline and Edit Line (libedit)
 StringIO:: Pseudo I/O on String objects
 StringScanner:: Provides lexical scanning operations on a String
 Syslog:: Ruby interface for the POSIX system logging facility
@@ -98,6 +105,12 @@ WIN32OLE:: Provides an interface for OLE Automation in Ruby
 Zlib:: Ruby interface for the zlib compression/decompression library
 
 = Bundled gems
+
+* bundled gems are shipped with Ruby releases and also available as rubygems.
+* bundled gems are same as normal gems like `rails`, `rack`.
+    * They are only bundled with Ruby releases.
+    * They can be uninstallable from Ruby installation.
+    * They are needed to declare in Gemfile when use with bundler.
 
 == Libraries
 
@@ -116,3 +129,4 @@ Prime:: Prime numbers and factorization library
 RBS:: RBS is a language to describe the structure of Ruby programs
 TypeProf:: A type analysis tool for Ruby code based on abstract interpretation
 DEBUGGER__:: Debugging functionality for Ruby
+Racc:: A LALR(1) parser generator written in Ruby.

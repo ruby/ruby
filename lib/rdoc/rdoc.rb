@@ -119,7 +119,7 @@ class RDoc::RDoc
   # +files+.
 
   def gather_files files
-    files = ["."] if files.empty?
+    files = [@options.root.to_s] if files.empty?
 
     file_list = normalized_file_list files, true, @options.exclude
 
@@ -429,9 +429,7 @@ The internal error was:
     files.reject do |file, *|
       file =~ /\.(?:class|eps|erb|scpt\.txt|svg|ttf|yml)$/i or
         (file =~ /tags$/i and
-         File.open(file, 'rb') { |io|
-           io.read(100) =~ /\A(\f\n[^,]+,\d+$|!_TAG_)/
-         })
+         /\A(\f\n[^,]+,\d+$|!_TAG_)/.match?(File.binread(file, 100)))
     end
   end
 

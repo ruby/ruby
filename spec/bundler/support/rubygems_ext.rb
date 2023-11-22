@@ -118,6 +118,7 @@ module Spec
     end
 
     def gem_activate(gem_name)
+      require_relative "activate"
       require "bundler"
       gem_requirement = Bundler::LockfileParser.new(File.read(dev_lockfile)).specs.find {|spec| spec.name == gem_name }.version
       gem gem_name, gem_requirement

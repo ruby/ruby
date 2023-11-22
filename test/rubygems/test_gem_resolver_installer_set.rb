@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 
 class TestGemResolverInstallerSet < Gem::TestCase
@@ -14,7 +15,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     set.add_always_install dep("a")
 
-    assert_equal %w[a-2], set.always_install.map {|s| s.full_name }
+    assert_equal %w[a-2], set.always_install.map(&:full_name)
 
     e = assert_raise Gem::UnsatisfiableDependencyError do
       set.add_always_install dep("b")
@@ -48,7 +49,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     set.add_always_install dep("a")
 
-    assert_equal %w[a-1], set.always_install.map {|s| s.full_name }
+    assert_equal %w[a-1], set.always_install.map(&:full_name)
   end
 
   def test_add_always_install_platform_if_gem_platforms_modified_by_platform_flag
@@ -67,7 +68,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     set.add_always_install dep("a")
 
-    assert_equal %w[a-1-x86-freebsd-9], set.always_install.map {|s| s.full_name }
+    assert_equal %w[a-1-x86-freebsd-9], set.always_install.map(&:full_name)
   end
 
   def test_add_always_install_index_spec_platform
@@ -80,7 +81,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
     set = Gem::Resolver::InstallerSet.new :both
     set.add_always_install dep("a")
 
-    assert_equal [Gem::Platform.local], set.always_install.map {|s| s.platform }
+    assert_equal [Gem::Platform.local], set.always_install.map(&:platform)
   end
 
   def test_add_always_install_prerelease
@@ -93,7 +94,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     set.add_always_install dep("a")
 
-    assert_equal %w[a-1], set.always_install.map {|s| s.full_name }
+    assert_equal %w[a-1], set.always_install.map(&:full_name)
   end
 
   def test_add_always_install_prerelease_github_problem
@@ -111,7 +112,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     set.add_always_install dep("a")
 
-    assert_equal %w[a-1], set.always_install.map {|s| s.full_name }
+    assert_equal %w[a-1], set.always_install.map(&:full_name)
   end
 
   def test_add_always_install_prerelease_only
@@ -142,7 +143,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     req = Gem::Resolver::DependencyRequest.new dep("a"), nil
 
-    assert_equal %w[a-1], set.find_all(req).map {|spec| spec.full_name }
+    assert_equal %w[a-1], set.find_all(req).map(&:full_name)
   end
 
   def test_consider_local_eh
@@ -198,7 +199,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     req = Gem::Resolver::DependencyRequest.new dep("a"), nil
 
-    assert_equal %w[a-2], set.find_all(req).map {|spec| spec.full_name }
+    assert_equal %w[a-2], set.find_all(req).map(&:full_name)
   end
 
   def test_find_all_prerelease
@@ -211,12 +212,12 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     req = Gem::Resolver::DependencyRequest.new dep("a"), nil
 
-    assert_equal %w[a-1], set.find_all(req).map {|spec| spec.full_name }
+    assert_equal %w[a-1], set.find_all(req).map(&:full_name)
 
     req = Gem::Resolver::DependencyRequest.new dep("a", ">= 0.a"), nil
 
     assert_equal %w[a-1 a-1.a],
-                 set.find_all(req).map {|spec| spec.full_name }.sort
+                 set.find_all(req).map(&:full_name).sort
   end
 
   def test_find_all_prerelease_dependencies_with_add_local
@@ -228,7 +229,7 @@ class TestGemResolverInstallerSet < Gem::TestCase
 
     req = Gem::Resolver::DependencyRequest.new dep("activesupport", ">= 4.2.0"), nil
 
-    assert_equal %w[activesupport-7.1.0.alpha], set.find_all(req).map {|spec| spec.full_name }
+    assert_equal %w[activesupport-7.1.0.alpha], set.find_all(req).map(&:full_name)
   end
 
   def test_load_spec

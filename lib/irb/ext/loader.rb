@@ -1,15 +1,8 @@
 # frozen_string_literal: false
 #
 #   loader.rb -
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
-
 
 module IRB # :nodoc:
   # Raised in the event of an exception in a file loaded from an Irb session
@@ -31,31 +24,8 @@ module IRB # :nodoc:
       load_file(path, priv)
     end
 
-    if File.respond_to?(:absolute_path?)
-      def absolute_path?(path)
-        File.absolute_path?(path)
-      end
-    else
-      separator =
-        if File::ALT_SEPARATOR
-          "[#{Regexp.quote(File::SEPARATOR + File::ALT_SEPARATOR)}]"
-        else
-          File::SEPARATOR
-        end
-      ABSOLUTE_PATH_PATTERN = # :nodoc:
-        case Dir.pwd
-        when /\A\w:/, /\A#{separator}{2}/
-          /\A(?:\w:|#{separator})#{separator}/
-        else
-          /\A#{separator}/
-        end
-      def absolute_path?(path)
-        ABSOLUTE_PATH_PATTERN =~ path
-      end
-    end
-
     def search_file_from_ruby_path(fn) # :nodoc:
-      if absolute_path?(fn)
+      if File.absolute_path?(fn)
         return fn if File.exist?(fn)
         return nil
       end
@@ -72,6 +42,7 @@ module IRB # :nodoc:
     #
     # See Irb#suspend_input_method for more information.
     def source_file(path)
+      irb = irb_context.irb
       irb.suspend_name(path, File.basename(path)) do
         FileInputMethod.open(path) do |io|
           irb.suspend_input_method(io) do
@@ -96,6 +67,7 @@ module IRB # :nodoc:
     #
     # See Irb#suspend_input_method for more information.
     def load_file(path, priv = nil)
+      irb = irb_context.irb
       irb.suspend_name(path, File.basename(path)) do
 
         if priv

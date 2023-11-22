@@ -1,25 +1,26 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 require 'test/unit'
 
 class TestRequireLib < Test::Unit::TestCase
-  TEST_RATIO = ENV["TEST_REQUIRE_THREAD_RATIO"]&.tap {|s|break s.to_f} || 0.05 # testing all files needs too long time...
+  libdir = __dir__ + '/../../lib'
 
-  Dir.glob(File.expand_path('../../lib/**/*.rb', __dir__)).each do |lib|
-    # skip some problems
-    next if %r!/lib/(?:bundler|rubygems)\b! =~ lib
-    next if %r!/lib/(?:debug|mkmf)\.rb\z! =~ lib
-    next if %r!/lib/irb/ext/tracer\.rb\z! =~ lib
-    # skip many files that almost use no threads
-    next if TEST_RATIO < rand(0.0..1.0)
+  # .rb files at lib
+  scripts = Dir.glob('*.rb', base: libdir).map {|f| f.chomp('.rb')}
+
+  # .rb files in subdirectories of lib without same name script
+  dirs = Dir.glob('*/', base: libdir).map {|d| d.chomp('/')}
+  dirs -= scripts
+  scripts.concat(Dir.glob(dirs.map {|d| d + '/*.rb'}, base: libdir).map {|f| f.chomp('.rb')})
+
+  # skip some problems
+  scripts -= %w[bundler bundled_gems rubygems mkmf]
+
+  scripts.each do |lib|
     define_method "test_thread_size:#{lib}" do
-      assert_separately(['--disable-gems', '-W0'], "#{<<~"begin;"}\n#{<<~"end;"}")
+      assert_separately(['-W0'], "#{<<~"begin;"}\n#{<<~"end;"}")
       begin;
         n = Thread.list.size
-        begin
-          require #{lib.dump}
-        rescue Exception
-          omit $!
-        end
+        require #{lib.dump}
         assert_equal n, Thread.list.size
       end;
     end

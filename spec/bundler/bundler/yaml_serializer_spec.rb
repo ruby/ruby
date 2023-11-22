@@ -9,7 +9,7 @@ RSpec.describe Bundler::YAMLSerializer do
     it "works for simple hash" do
       hash = { "Q" => "Where does Thursday come before Wednesday? In the dictionary. :P" }
 
-      expected = strip_whitespace <<-YAML
+      expected = <<~YAML
           ---
           Q: "Where does Thursday come before Wednesday? In the dictionary. :P"
       YAML
@@ -24,7 +24,7 @@ RSpec.describe Bundler::YAMLSerializer do
         },
       }
 
-      expected = strip_whitespace <<-YAML
+      expected = <<~YAML
           ---
           nice-one:
             read_ahead: "All generalizations are false, including this one"
@@ -45,7 +45,7 @@ RSpec.describe Bundler::YAMLSerializer do
         },
       }
 
-      expected = strip_whitespace <<-YAML
+      expected = <<~YAML
         ---
         nested_hash:
           contains_array:
@@ -57,11 +57,24 @@ RSpec.describe Bundler::YAMLSerializer do
 
       expect(serializer.dump(hash)).to eq(expected)
     end
+
+    it "handles empty array" do
+      hash = {
+        "empty_array" => [],
+      }
+
+      expected = <<~YAML
+        ---
+        empty_array: []
+      YAML
+
+      expect(serializer.dump(hash)).to eq(expected)
+    end
   end
 
   describe "#load" do
     it "works for simple hash" do
-      yaml = strip_whitespace <<-YAML
+      yaml = <<~YAML
         ---
         Jon: "Air is free dude!"
         Jack: "Yes.. until you buy a bag of chips!"
@@ -76,7 +89,7 @@ RSpec.describe Bundler::YAMLSerializer do
     end
 
     it "works for nested hash" do
-      yaml = strip_whitespace <<-YAML
+      yaml = <<~YAML
         ---
         baa:
           baa: "black sheep"
@@ -98,7 +111,7 @@ RSpec.describe Bundler::YAMLSerializer do
     end
 
     it "handles colon in key/value" do
-      yaml = strip_whitespace <<-YAML
+      yaml = <<~YAML
         BUNDLE_MIRROR__HTTPS://RUBYGEMS__ORG/: http://rubygems-mirror.org
       YAML
 
@@ -106,7 +119,7 @@ RSpec.describe Bundler::YAMLSerializer do
     end
 
     it "handles arrays inside hashes" do
-      yaml = strip_whitespace <<-YAML
+      yaml = <<~YAML
         ---
         nested_hash:
           contains_array:
@@ -127,7 +140,7 @@ RSpec.describe Bundler::YAMLSerializer do
     end
 
     it "handles windows-style CRLF line endings" do
-      yaml = strip_whitespace(<<-YAML).gsub("\n", "\r\n")
+      yaml = <<~YAML.gsub("\n", "\r\n")
         ---
         nested_hash:
           contains_array:
@@ -144,6 +157,19 @@ RSpec.describe Bundler::YAMLSerializer do
             "oh so silly",
           ],
         },
+      }
+
+      expect(serializer.load(yaml)).to eq(hash)
+    end
+
+    it "handles empty array" do
+      yaml = <<~YAML
+        ---
+        empty_array: []
+      YAML
+
+      hash = {
+        "empty_array" => [],
       }
 
       expect(serializer.load(yaml)).to eq(hash)

@@ -165,18 +165,30 @@ module Fiddle
           raise(RuntimeError, "unsupported type: #{ty}")
         end
         return TYPE_ULONG_LONG
-      when /\A(?:signed\s+)?long(?:\s+int\s+)?(?:\s+\w+)?\z/
-        return TYPE_LONG
-      when /\Aunsigned\s+long(?:\s+int\s+)?(?:\s+\w+)?\z/
+      when /\Aunsigned\s+long(?:\s+int\s+)?(?:\s+\w+)?\z/,
+           /\Aunsigned\s+int\s+long(?:\s+\w+)?\z/,
+           /\Along(?:\s+int)?\s+unsigned(?:\s+\w+)?\z/,
+           /\Aint\s+unsigned\s+long(?:\s+\w+)?\z/,
+           /\A(?:int\s+)?long\s+unsigned(?:\s+\w+)?\z/
         return TYPE_ULONG
+      when /\A(?:signed\s+)?long(?:\s+int\s+)?(?:\s+\w+)?\z/,
+           /\A(?:signed\s+)?int\s+long(?:\s+\w+)?\z/,
+           /\Along(?:\s+int)?\s+signed(?:\s+\w+)?\z/
+        return TYPE_LONG
+      when /\Aunsigned\s+short(?:\s+int\s+)?(?:\s+\w+)?\z/,
+           /\Aunsigned\s+int\s+short(?:\s+\w+)?\z/,
+           /\Ashort(?:\s+int)?\s+unsigned(?:\s+\w+)?\z/,
+           /\Aint\s+unsigned\s+short(?:\s+\w+)?\z/,
+           /\A(?:int\s+)?short\s+unsigned(?:\s+\w+)?\z/
+        return TYPE_USHORT
+      when /\A(?:signed\s+)?short(?:\s+int\s+)?(?:\s+\w+)?\z/,
+           /\A(?:signed\s+)?int\s+short(?:\s+\w+)?\z/,
+           /\Aint\s+(?:signed\s+)?short(?:\s+\w+)?\z/
+        return TYPE_SHORT
       when /\A(?:signed\s+)?int(?:\s+\w+)?\z/
         return TYPE_INT
       when /\A(?:unsigned\s+int|uint)(?:\s+\w+)?\z/
         return TYPE_UINT
-      when /\A(?:signed\s+)?short(?:\s+int\s+)?(?:\s+\w+)?\z/
-        return TYPE_SHORT
-      when /\Aunsigned\s+short(?:\s+int\s+)?(?:\s+\w+)?\z/
-        return TYPE_USHORT
       when /\A(?:signed\s+)?char(?:\s+\w+)?\z/
         return TYPE_CHAR
       when /\Aunsigned\s+char(?:\s+\w+)?\z/
@@ -235,6 +247,8 @@ module Fiddle
         return TYPE_INTPTR_T
       when /\Auintptr_t(?:\s+\w+)?\z/
         return TYPE_UINTPTR_T
+      when "bool"
+        return TYPE_BOOL
       when /\*/, /\[[\s\d]*\]/
         return TYPE_VOIDP
       when "..."

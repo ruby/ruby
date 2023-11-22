@@ -10,7 +10,7 @@ module Bundler
 
     AUTO_INSTALL_CMDS = %w[show binstubs outdated exec open console licenses clean].freeze
     PARSEABLE_COMMANDS = %w[check config help exec platform show version].freeze
-    EXTENSIONS = ["c"].freeze
+    EXTENSIONS = ["c", "rust"].freeze
 
     COMMAND_ALIASES = {
       "check" => "c",
@@ -156,6 +156,7 @@ module Bundler
       dependency listed in the gemspec file to the newly created Gemfile.
     D
     method_option "gemspec", :type => :string, :banner => "Use the specified .gemspec to create the Gemfile"
+    method_option "gemfile", :type => :string, :banner => "Use the specified name for the gemfile instead of 'Gemfile'"
     def init
       require_relative "cli/init"
       Init.new(options.dup).run
@@ -509,6 +510,7 @@ module Bundler
     subcommand "config", Config
 
     desc "open GEM", "Opens the source directory of the given bundled gem"
+    method_option "path", :type => :string, :lazy_default => "", :banner => "Open relative path of the gem source."
     def open(name)
       require_relative "cli/open"
       Open.new(options, name).run
@@ -762,14 +764,14 @@ module Bundler
       # when deprecated version of `--ext` is called
       # print out deprecation warning and pretend `--ext=c` was provided
       if deprecated_ext_value?(arguments)
-        SharedHelpers.major_deprecation 2, "Option `--ext` without explicit value is deprecated. Please pass value like `--ext=c` for C extension. Pretending `--ext=c` was used for now."
+        SharedHelpers.major_deprecation 2, "Extensions can now be generated using C or Rust, so `--ext` with no arguments has been deprecated. Please select a language, e.g. `--ext=rust` to generate a Rust extension. This gem will now be generated as if `--ext=c` was used."
         arguments[arguments.index("--ext")] = "--ext=c"
       end
     end
 
     def self.deprecated_ext_value?(arguments)
       index = arguments.index("--ext")
-      next_argument = arguments[index+1]
+      next_argument = arguments[index + 1]
 
       # it is ok when --ext is followed with valid extension value
       # for example `bundle gem hello --ext c`
@@ -842,7 +844,7 @@ module Bundler
       return unless SharedHelpers.md5_available?
 
       latest = Fetcher::CompactIndex.
-               new(nil, Source::Rubygems::Remote.new(Bundler::URI("https://rubygems.org")), nil).
+               new(nil, Source::Rubygems::Remote.new(Bundler::URI("https://rubygems.org")), nil, nil).
                send(:compact_index_client).
                instance_variable_get(:@cache).
                dependencies("bundler").

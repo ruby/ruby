@@ -10,12 +10,15 @@ AC_DEFUN([RUBY_WASM_TOOLS],
     : ${wasmoptflags=-O3}
 
     AC_MSG_CHECKING([wheather \$WASI_SDK_PATH is set])
-    AS_IF([test x"${WASI_SDK_PATH}" = x], [AC_MSG_RESULT([no])], [
+    AS_IF([test x"${WASI_SDK_PATH}" = x], [
+        AC_MSG_RESULT([no])
+	AC_MSG_ERROR([WASI_SDK_PATH environment variable is required])
+    ], [
         AC_MSG_RESULT([yes])
-        CC="${WASI_SDK_PATH}/bin/clang"
-        LD="${WASI_SDK_PATH}/bin/clang"
-        AR="${WASI_SDK_PATH}/bin/llvm-ar"
-        RANLIB="${WASI_SDK_PATH}/bin/llvm-ranlib"
+        CC="${CC:-${WASI_SDK_PATH}/bin/clang}"
+        LD="${LD:-${WASI_SDK_PATH}/bin/clang}"
+        AR="${AR:-${WASI_SDK_PATH}/bin/llvm-ar}"
+        RANLIB="${RANLIB:-${WASI_SDK_PATH}/bin/llvm-ranlib}"
     ])
 ])
 ])dnl

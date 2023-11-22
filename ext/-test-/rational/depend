@@ -56,6 +56,7 @@ rat.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 rat.o: $(hdrdir)/ruby/internal/attr/noinline.h
 rat.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 rat.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+rat.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 rat.o: $(hdrdir)/ruby/internal/attr/pure.h
 rat.o: $(hdrdir)/ruby/internal/attr/restrict.h
 rat.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -115,7 +116,6 @@ rat.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 rat.o: $(hdrdir)/ruby/internal/intern/error.h
 rat.o: $(hdrdir)/ruby/internal/intern/eval.h
 rat.o: $(hdrdir)/ruby/internal/intern/file.h
-rat.o: $(hdrdir)/ruby/internal/intern/gc.h
 rat.o: $(hdrdir)/ruby/internal/intern/hash.h
 rat.o: $(hdrdir)/ruby/internal/intern/io.h
 rat.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -146,7 +146,6 @@ rat.o: $(hdrdir)/ruby/internal/memory.h
 rat.o: $(hdrdir)/ruby/internal/method.h
 rat.o: $(hdrdir)/ruby/internal/module.h
 rat.o: $(hdrdir)/ruby/internal/newobj.h
-rat.o: $(hdrdir)/ruby/internal/rgengc.h
 rat.o: $(hdrdir)/ruby/internal/scan_args.h
 rat.o: $(hdrdir)/ruby/internal/special_consts.h
 rat.o: $(hdrdir)/ruby/internal/static_assert.h

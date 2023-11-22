@@ -3,14 +3,14 @@
 #include "iseq.h"
 #include "builtin.h"
 
-#ifdef CROSS_COMPILING
+#include "builtin_binary.inc"
+
+#ifndef BUILTIN_BINARY_SIZE
 
 #define INCLUDED_BY_BUILTIN_C 1
 #include "mini_builtin.c"
 
 #else
-
-#include "builtin_binary.inc"
 
 static const unsigned char *
 bin4feature(const struct builtin_binary *bb, const char *feature, size_t *psize)
@@ -39,7 +39,7 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
     size_t size;
     const unsigned char *bin = builtin_lookup(feature_name, &size);
     if (! bin) {
-        rb_bug("builtin_lookup: can not find %s\n", feature_name);
+        rb_bug("builtin_lookup: can not find %s", feature_name);
     }
 
     // load binary
@@ -48,6 +48,7 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
     vm->builtin_function_table = table;
     vm->builtin_inline_index = 0;
     const rb_iseq_t *iseq = rb_iseq_ibf_load_bytes((const char *)bin, size);
+    ASSUME(iseq); // otherwise an exception should have raised
     vm->builtin_function_table = NULL;
 
     // exec

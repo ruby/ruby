@@ -58,7 +58,7 @@ class Bundler::Thor
       def initialize(base, source, destination = nil, config = {}, &block)
         @source = File.expand_path(Dir[Util.escape_globs(base.find_in_source_paths(source.to_s))].first)
         @block  = block
-        super(base, destination, {:recursive => true}.merge(config))
+        super(base, destination, {recursive: true}.merge(config))
       end
 
       def invoke!

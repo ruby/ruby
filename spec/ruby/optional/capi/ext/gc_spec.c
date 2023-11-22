@@ -28,8 +28,8 @@ static VALUE get_registered_before_rb_global_variable(VALUE self) {
 }
 
 static VALUE gc_spec_rb_gc_register_address(VALUE self) {
-  rb_gc_register_address_outside_init = rb_str_new_cstr("rb_gc_register_address() outside Init_");
   rb_gc_register_address(&rb_gc_register_address_outside_init);
+  rb_gc_register_address_outside_init = rb_str_new_cstr("rb_gc_register_address() outside Init_");
   return rb_gc_register_address_outside_init;
 }
 
@@ -51,7 +51,7 @@ static VALUE gc_spec_rb_gc(VALUE self) {
   return Qnil;
 }
 
-static VALUE gc_spec_rb_gc_latest_gc_info(VALUE self, VALUE hash_or_key){
+static VALUE gc_spec_rb_gc_latest_gc_info(VALUE self, VALUE hash_or_key) {
   return rb_gc_latest_gc_info(hash_or_key);
 }
 
@@ -67,14 +67,14 @@ static VALUE gc_spec_rb_gc_register_mark_object(VALUE self, VALUE obj) {
 
 void Init_gc_spec(void) {
   VALUE cls = rb_define_class("CApiGCSpecs", rb_cObject);
-  registered_tagged_value    = INT2NUM(10);
-  registered_reference_value = rb_str_new2("Globally registered data");
 
   rb_gc_register_address(&registered_tagged_value);
   rb_gc_register_address(&registered_reference_value);
   rb_gc_register_address(&registered_before_rb_gc_register_address);
   rb_global_variable(&registered_before_rb_global_variable);
 
+  registered_tagged_value    = INT2NUM(10);
+  registered_reference_value = rb_str_new2("Globally registered data");
   registered_before_rb_gc_register_address = rb_str_new_cstr("registered before rb_gc_register_address()");
   registered_before_rb_global_variable = rb_str_new_cstr("registered before rb_global_variable()");
 

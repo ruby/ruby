@@ -526,6 +526,71 @@ class Complex_Test < Test::Unit::TestCase
     r = c ** Rational(-2,3)
     assert_in_delta(0.432, r.real, 0.001)
     assert_in_delta(-0.393, r.imag, 0.001)
+  end
+
+  def test_expt_for_special_angle
+    c = Complex(1, 0) ** 100000000000000000000000000000000
+    assert_equal(Complex(1, 0), c)
+
+    c = Complex(-1, 0) ** 10000000000000000000000000000000
+    assert_equal(Complex(1, 0), c)
+
+    c = Complex(-1, 0) ** 10000000000000000000000000000001
+    assert_equal(Complex(-1, 0), c)
+
+    c = Complex(0, 1) ** 100000000000000000000000000000000
+    assert_equal(Complex(1, 0), c)
+
+    c = Complex(0, 1) ** 100000000000000000000000000000001
+    assert_equal(Complex(0, 1), c)
+
+    c = Complex(0, 1) ** 100000000000000000000000000000002
+    assert_equal(Complex(-1, 0), c)
+
+    c = Complex(0, 1) ** 100000000000000000000000000000003
+    assert_equal(Complex(0, -1), c)
+
+    c = Complex(0, -1) ** 100000000000000000000000000000000
+    assert_equal(Complex(1, 0), c)
+
+    c = Complex(0, -1) ** 100000000000000000000000000000001
+    assert_equal(Complex(0, -1), c)
+
+    c = Complex(0, -1) ** 100000000000000000000000000000002
+    assert_equal(Complex(-1, 0), c)
+
+    c = Complex(0, -1) ** 100000000000000000000000000000003
+    assert_equal(Complex(0, 1), c)
+
+    c = Complex(1, 1) ** 1
+    assert_equal(Complex(1, 1), c)
+
+    c = Complex(1, 1) ** 2
+    assert_equal(Complex(0, 2), c)
+
+    c = Complex(1, 1) ** 3
+    assert_equal(Complex(-2, 2), c)
+
+    c = Complex(1, 1) ** 4
+    assert_equal(Complex(-4, 0), c)
+
+    c = Complex(1, 1) ** 5
+    assert_equal(Complex(-4, -4), c)
+
+    c = Complex(1, 1) ** 6
+    assert_equal(Complex(0, -8), c)
+
+    c = Complex(1, 1) ** 7
+    assert_equal(Complex(8, -8), c)
+
+    c = Complex(-2, -2) ** 3
+    assert_equal(Complex(16, -16), c)
+
+    c = Complex(2, -2) ** 3
+    assert_equal(Complex(-16, -16), c)
+
+    c = Complex(-2, 2) ** 3
+    assert_equal(Complex(16, 16), c)
 
     c = Complex(0.0, -888888888888888.0)**8888
     assert_not_predicate(c.real, :nan?)

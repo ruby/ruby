@@ -29,8 +29,10 @@ Gem::Specification.new do |s|
     "source_code_uri" => "https://github.com/rubygems/rubygems/tree/master/bundler",
   }
 
-  s.required_ruby_version     = ">= 2.6.0"
-  s.required_rubygems_version = ">= 3.0.1"
+  s.required_ruby_version     = ">= 3.0.0"
+
+  # It should match the RubyGems version shipped with `required_ruby_version` above
+  s.required_rubygems_version = ">= 3.2.3"
 
   s.files = Dir.glob("lib/bundler{.rb,/**/*}", File::FNM_DOTMATCH).reject {|f| File.directory?(f) }
 

@@ -42,13 +42,7 @@
 
 /** @cond INTERNAL_MACRO */
 #define RSTRING_NOEMBED         RSTRING_NOEMBED
-#if !USE_RVARGC
-#define RSTRING_EMBED_LEN_MASK  RSTRING_EMBED_LEN_MASK
-#define RSTRING_EMBED_LEN_SHIFT RSTRING_EMBED_LEN_SHIFT
-#define RSTRING_EMBED_LEN_MAX   RSTRING_EMBED_LEN_MAX
-#endif
 #define RSTRING_FSTR            RSTRING_FSTR
-#define RSTRING_EMBED_LEN RSTRING_EMBED_LEN
 #define RSTRING_LEN       RSTRING_LEN
 #define RSTRING_LENINT    RSTRING_LENINT
 #define RSTRING_PTR       RSTRING_PTR
@@ -162,21 +156,6 @@ enum ruby_rstring_flags {
      */
     RSTRING_NOEMBED         = RUBY_FL_USER1,
 
-#if !USE_RVARGC
-    /**
-     * When a  string employs embedded strategy  (see ::RSTRING_NOEMBED), these
-     * bits  are  used to  store  the  number  of  bytes actually  filled  into
-     * ::RString::ary.
-     *
-     * @internal
-     *
-     * 3rd parties must  not be aware that  there even is more than  one way to
-     * store a string.  Might better be hidden.
-     */
-    RSTRING_EMBED_LEN_MASK  = RUBY_FL_USER2 | RUBY_FL_USER3 | RUBY_FL_USER4 |
-                              RUBY_FL_USER5 | RUBY_FL_USER6,
-#endif
-
     /* Actually,  string  encodings are  also  encoded  into the  flags,  using
      * remaining bits.*/
 
@@ -202,20 +181,6 @@ enum ruby_rstring_flags {
     RSTRING_FSTR            = RUBY_FL_USER17
 };
 
-#if !USE_RVARGC
-/**
- * This is an enum because GDB wants it (rather than a macro).  People need not
- * bother.
- */
-enum ruby_rstring_consts {
-    /** Where ::RSTRING_EMBED_LEN_MASK resides. */
-    RSTRING_EMBED_LEN_SHIFT = RUBY_FL_USHIFT + 2,
-
-    /** Max possible number of characters that can be embedded. */
-    RSTRING_EMBED_LEN_MAX   = RBIMPL_EMBED_LEN_MAX_OF(char) - 1
-};
-#endif
-
 /**
  * Ruby's String.  A string in ruby conceptually has these information:
  *
@@ -233,6 +198,13 @@ struct RString {
     /** Basic part, including flags and class. */
     struct RBasic basic;
 
+    /**
+     * Length of the string, not including terminating NUL character.
+     *
+     * @note  This is in bytes.
+     */
+    long len;
+
     /** String's specific fields. */
     union {
 
@@ -241,14 +213,6 @@ struct RString {
          * pattern.
          */
         struct {
-
-            /**
-             * Length of the string, not including terminating NUL character.
-             *
-             * @note  This is in bytes.
-             */
-            long len;
-
             /**
              * Pointer to  the contents of  the string.   In the old  days each
              * string had  dedicated memory  regions.  That  is no  longer true
@@ -279,24 +243,12 @@ struct RString {
 
         /** Embedded contents. */
         struct {
-#if USE_RVARGC
-            long len;
             /* This is a length 1 array because:
              *   1. GCC has a bug that does not optimize C flexible array members
              *      (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=102452)
              *   2. Zero length arrays are not supported by all compilers
              */
             char ary[1];
-#else
-            /**
-             * When a  string is short enough,  it uses this area  to store the
-             * contents themselves.  This was  impractical in the 20th century,
-             * but these days 64 bit machines can typically hold 24 bytes here.
-             * Could be sufficiently large.  In this case the length is encoded
-             * into the flags.
-             */
-            char ary[RSTRING_EMBED_LEN_MAX + 1];
-#endif
         } embed;
     } as;
 };
@@ -409,31 +361,12 @@ RBIMPL_ATTR_ARTIFICIAL()
  *
  * @param[in]  str  String in question.
  * @return     Its length, in bytes.
- * @pre        `str`  must  be an  instance  of  ::RString,  and must  has  its
- *             ::RSTRING_NOEMBED flag off.
- *
- * @internal
- *
- * This was a macro  before.  It was inevitable to be  public, since macros are
- * global constructs.   But should it be  forever?  Now that it  is a function,
- * @shyouhei thinks  it could  just be  eliminated, hidden  into implementation
- * details.
+ * @pre        `str` must be an instance of ::RString.
  */
 static inline long
-RSTRING_EMBED_LEN(VALUE str)
+RSTRING_LEN(VALUE str)
 {
-    RBIMPL_ASSERT_TYPE(str, RUBY_T_STRING);
-    RBIMPL_ASSERT_OR_ASSUME(! RB_FL_ANY_RAW(str, RSTRING_NOEMBED));
-
-#if USE_RVARGC
-    long f = RSTRING(str)->as.embed.len;
-    return f;
-#else
-    VALUE f = RBASIC(str)->flags;
-    f &= RSTRING_EMBED_LEN_MASK;
-    f >>= RSTRING_EMBED_LEN_SHIFT;
-    return RBIMPL_CAST((long)f);
-#endif
+    return RSTRING(str)->len;
 }
 
 RBIMPL_WARNING_PUSH()
@@ -463,28 +396,13 @@ rbimpl_rstring_getmem(VALUE str)
     else {
         /* Expecting compilers to optimize this on-stack struct away. */
         struct RString retval;
-        retval.as.heap.len = RSTRING_EMBED_LEN(str);
+        retval.len = RSTRING_LEN(str);
         retval.as.heap.ptr = RSTRING(str)->as.embed.ary;
         return retval;
     }
 }
 
 RBIMPL_WARNING_POP()
-
-RBIMPL_ATTR_PURE_UNLESS_DEBUG()
-RBIMPL_ATTR_ARTIFICIAL()
-/**
- * Queries the length of the string.
- *
- * @param[in]  str  String in question.
- * @return     Its length, in bytes.
- * @pre        `str` must be an instance of ::RString.
- */
-static inline long
-RSTRING_LEN(VALUE str)
-{
-    return rbimpl_rstring_getmem(str).as.heap.len;
-}
 
 RBIMPL_ATTR_ARTIFICIAL()
 /**
@@ -499,13 +417,9 @@ RSTRING_PTR(VALUE str)
 {
     char *ptr = rbimpl_rstring_getmem(str).as.heap.ptr;
 
-    if (RB_UNLIKELY(! ptr)) {
+    if (RUBY_DEBUG && RB_UNLIKELY(! ptr)) {
         /* :BEWARE: @shyouhei thinks  that currently, there are  rooms for this
-         * function to return  NULL.  In the 20th century that  was a pointless
-         * concern.  However struct RString can hold fake strings nowadays.  It
-         * seems no  check against NULL  are exercised around handling  of them
-         * (one  of  such   usages  is  located  in   marshal.c,  which  scares
-         * @shyouhei).  Better check here for maximum safety.
+         * function to return  NULL.  Better check here for maximum safety.
          *
          * Also,  this is  not rb_warn()  because RSTRING_PTR()  can be  called
          * during GC (see  what obj_info() does).  rb_warn()  needs to allocate
@@ -529,12 +443,12 @@ RSTRING_END(VALUE str)
 {
     struct RString buf = rbimpl_rstring_getmem(str);
 
-    if (RB_UNLIKELY(! buf.as.heap.ptr)) {
+    if (RUBY_DEBUG && RB_UNLIKELY(! buf.as.heap.ptr)) {
         /* Ditto. */
         rb_debug_rstring_null_ptr("RSTRING_END");
     }
 
-    return &buf.as.heap.ptr[buf.as.heap.len];
+    return &buf.as.heap.ptr[buf.len];
 }
 
 RBIMPL_ATTR_ARTIFICIAL()
@@ -568,7 +482,7 @@ RSTRING_LENINT(VALUE str)
     __extension__ ({ \
         struct RString rbimpl_str = rbimpl_rstring_getmem(str); \
         (ptrvar) = rbimpl_str.as.heap.ptr; \
-        (lenvar) = rbimpl_str.as.heap.len; \
+        (lenvar) = rbimpl_str.len; \
     })
 #else
 # define RSTRING_GETMEM(str, ptrvar, lenvar) \

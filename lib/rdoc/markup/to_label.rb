@@ -72,4 +72,3 @@ class RDoc::Markup::ToLabel < RDoc::Markup::Formatter
   alias start_accepting           ignore
 
 end
-

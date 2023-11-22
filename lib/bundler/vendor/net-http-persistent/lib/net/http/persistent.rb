@@ -174,7 +174,7 @@ class Bundler::Persistent::Net::HTTP::Persistent
   ##
   # The version of Bundler::Persistent::Net::HTTP::Persistent you are using
 
-  VERSION = '4.0.1'
+  VERSION = '4.0.2'
 
   ##
   # Error class for errors raised by Bundler::Persistent::Net::HTTP::Persistent.  Various

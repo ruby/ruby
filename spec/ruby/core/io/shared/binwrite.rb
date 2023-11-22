@@ -21,6 +21,14 @@ describe :io_binwrite, shared: true do
     IO.send(@method, @filename, "abcde").should == 5
   end
 
+  it "accepts options as a keyword argument" do
+    IO.send(@method, @filename, "hi", 0, flags: File::CREAT).should == 2
+
+    -> {
+      IO.send(@method, @filename, "hi", 0, {flags: File::CREAT})
+    }.should raise_error(ArgumentError, "wrong number of arguments (given 4, expected 2..3)")
+  end
+
   it "creates a file if missing" do
     fn = @filename + "xxx"
     begin
@@ -65,6 +73,11 @@ describe :io_binwrite, shared: true do
     File.read(@filename).should == "012345678901234567890123456789hello, world!"
     IO.send(@method, @filename, "foo", 2, mode: 'w')
     File.read(@filename).should == "\0\0foo"
+  end
+
+  it "accepts a :flags option without :mode one" do
+    IO.send(@method, @filename, "hello, world!", flags: File::CREAT)
+    File.read(@filename).should == "hello, world!"
   end
 
   it "raises an error if readonly mode is specified" do

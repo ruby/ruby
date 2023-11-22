@@ -70,7 +70,15 @@ describe :start_with, shared: true do
     $1.should be_nil
   end
 
-  it "does not check that we are not matching part of a character" do
-    "\xC3\xA9".send(@method).should.start_with?("\xC3")
+  ruby_version_is ""..."3.3" do
+    it "does not check that we are not matching part of a character" do
+      "\xC3\xA9".send(@method).should.start_with?("\xC3")
+    end
+  end
+
+  ruby_version_is "3.3" do # #19784
+    it "checks that we are not matching part of a character" do
+      "\xC3\xA9".send(@method).should_not.start_with?("\xC3")
+    end
   end
 end

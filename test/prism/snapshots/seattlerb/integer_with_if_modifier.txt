@@ -1,0 +1,17 @@
+@ ProgramNode (location: (1,0)-(1,12))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,12))
+    └── body: (length: 1)
+        └── @ IfNode (location: (1,0)-(1,12))
+            ├── if_keyword_loc: (1,5)-(1,7) = "if"
+            ├── predicate:
+            │   @ TrueNode (location: (1,8)-(1,12))
+            ├── then_keyword_loc: ∅
+            ├── statements:
+            │   @ StatementsNode (location: (1,0)-(1,5))
+            │   └── body: (length: 1)
+            │       └── @ IntegerNode (location: (1,0)-(1,5))
+            │           └── flags: decimal
+            ├── consequent: ∅
+            └── end_keyword_loc: ∅

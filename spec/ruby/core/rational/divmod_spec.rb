@@ -1,3 +1,4 @@
+require_relative "../../spec_helper"
 require_relative '../../shared/rational/divmod'
 
 describe "Rational#divmod when passed a Rational" do

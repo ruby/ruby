@@ -74,17 +74,6 @@ enum ruby_robject_flags {
     ROBJECT_EMBED = RUBY_FL_USER1
 };
 
-#if !USE_RVARGC
-/**
- * This is an enum because GDB wants it (rather than a macro).  People need not
- * bother.
- */
-enum ruby_robject_consts {
-    /** Max possible number of instance variables that can be embedded. */
-    ROBJECT_EMBED_LEN_MAX = RBIMPL_EMBED_LEN_MAX_OF(VALUE)
-};
-#endif
-
 struct st_table;
 
 /**
@@ -118,7 +107,6 @@ struct RObject {
             struct rb_id_table *iv_index_tbl;
         } heap;
 
-#if USE_RVARGC
         /* Embedded instance variables. When an object is small enough, it
          * uses this area to store the instance variables.
          *
@@ -128,22 +116,8 @@ struct RObject {
          *   2. Zero length arrays are not supported by all compilers
          */
         VALUE ary[1];
-#else
-        /**
-        * Embedded instance  variables.  When  an object  is small  enough, it
-        * uses this area to store the instance variables.
-        */
-        VALUE ary[ROBJECT_EMBED_LEN_MAX];
-#endif
     } as;
 };
-
-/* Offsets for YJIT */
-#ifndef __cplusplus
-static const int32_t ROBJECT_OFFSET_AS_HEAP_IVPTR = offsetof(struct RObject, as.heap.ivptr);
-static const int32_t ROBJECT_OFFSET_AS_HEAP_IV_INDEX_TBL = offsetof(struct RObject, as.heap.iv_index_tbl);
-static const int32_t ROBJECT_OFFSET_AS_ARY = offsetof(struct RObject, as.ary);
-#endif
 
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()

@@ -1,0 +1,59 @@
+== \Regexps Based on Unicode Properties
+
+The properties shown here are those currently supported in Ruby.
+Older versions may not support all of these.
+<%
+# Generate a documentation file for the unicode properties.
+#
+# Usage:
+#
+# Get PropertyAliases.txt, PropertyValueAliases.txt from unicode.org
+# (http://unicode.org/Public/UNIDATA/) and run
+# ```
+# ruby tool/generic_erb.rb template/unicode_properties.rdoc.tmpl data_dir name2ctype.h
+# ```
+
+data_dir = ARGV.shift&.tap { |d| Dir.exist?(d) } ||
+  abort("Usage: #{$0} data_directory [name2ctype.h]")
+
+# Map group names, given as last argument to #make_const in enc-unicode.rb,
+# to sections in the doc. The order in this hash controls the order in the doc.
+map = {
+  /\[\[:/            => 'POSIX brackets',
+  '-'                => 'Special',
+  /.+ Category/      => 'Major and General Categories',
+  'Binary Property'  => 'Prop List',
+  /Derived Property/ => 'Derived Core Properties',
+  'Script'           => 'Scripts',
+  'Block'            => 'Blocks',
+  'Emoji'            => 'Emoji',
+  /Grapheme/         => 'Graphemes',
+  /Derived Age/      => 'Derived Ages',
+}
+
+# aliases in the form { short => long }, e.g. { 'Hex' => 'Hex_Digit', 'L' => 'Letter' }
+aliases = (
+  File.binread(File.join(data_dir, 'PropertyAliases.txt')).scan(/^(\w+)\s*; (\w+)/) +
+  File.binread(File.join(data_dir, 'PropertyValueAliases.txt')).scan(/^(?:gc|sc)\s*; (\w+)\s*; (\w+)/)
+).to_h
+
+props_by_section = {}
+ARGF.each_line do |line|
+  next unless /'(?<prop>[^']+)': (?<name>.+) \*/ =~ line
+  next if prop == 'NEWLINE' # ignore custom internal prop
+
+  section = map.find { |k, v| k === name }&.last || warn("no doc section for #{name}")
+
+  # normalize prop names - the header file uses a mix of short and long names
+  long_prop_name = aliases[prop] || prop
+  (props_by_section[section] ||= []) << long_prop_name
+end
+
+map.each_value do |section| -%>
+
+=== <%=section%>
+
+%   props_by_section[section].sort.each do |prop|
+- <%= [prop, aliases.key(prop)].compact.uniq.map { |v| "<tt>\\p{#{v}}</tt>" }.join(', ') %>
+%   end
+% end

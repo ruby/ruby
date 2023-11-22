@@ -7,15 +7,7 @@ describe "Integer#zero?" do
     -1.should_not.zero?
   end
 
-  ruby_version_is "3.0" do
-    it "Integer#zero? overrides Numeric#zero?" do
-      42.method(:zero?).owner.should == Integer
-    end
-  end
-
-  ruby_version_is ""..."3.0" do
-    it "Integer#zero? uses Numeric#zero?" do
-      42.method(:zero?).owner.should == Numeric
-    end
+  it "Integer#zero? overrides Numeric#zero?" do
+    42.method(:zero?).owner.should == Integer
   end
 end

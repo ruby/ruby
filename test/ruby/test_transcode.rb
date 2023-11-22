@@ -10,9 +10,9 @@ class TestTranscode < Test::Unit::TestCase
     assert_raise(Encoding::ConverterNotFoundError) { 'abc'.encode!('foo', 'bar') }
     assert_raise(Encoding::ConverterNotFoundError) { 'abc'.force_encoding('utf-8').encode('foo') }
     assert_raise(Encoding::ConverterNotFoundError) { 'abc'.force_encoding('utf-8').encode!('foo') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x80".encode('utf-8','ASCII-8BIT') }
-    assert_raise(Encoding::InvalidByteSequenceError) { "\x80".encode('utf-8','US-ASCII') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA5".encode('utf-8','iso-8859-3') }
+    assert_undefined_in("\x80", 'ASCII-8BIT')
+    assert_invalid_in("\x80", 'US-ASCII')
+    assert_undefined_in("\xA5", 'iso-8859-3')
     assert_raise(FrozenError) { 'hello'.freeze.encode!('iso-8859-1') }
     assert_raise(FrozenError) { '\u3053\u3093\u306b\u3061\u306f'.freeze.encode!('iso-8859-1') } # こんにちは
   end
@@ -50,16 +50,6 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("\u20AC"*2000, ("\xA4"*2000).encode!('utf-8', 'iso-8859-15'))
     assert_equal("\u20AC"*200000, ("\xA4"*200000).encode('utf-8', 'iso-8859-15'))
     assert_equal("\u20AC"*200000, ("\xA4"*200000).encode!('utf-8', 'iso-8859-15'))
-  end
-
-  def check_both_ways(utf8, raw, encoding)
-    assert_equal(utf8.force_encoding('utf-8'), raw.encode('utf-8', encoding),utf8.dump+raw.dump)
-    assert_equal(raw.force_encoding(encoding), utf8.encode(encoding, 'utf-8'))
-  end
-
-  def check_both_ways2(str1, enc1, str2, enc2)
-    assert_equal(str1.force_encoding(enc1), str2.encode(enc1, enc2))
-    assert_equal(str2.force_encoding(enc2), str1.encode(enc2, enc1))
   end
 
   def test_encoding_of_ascii_originating_from_binary
@@ -188,16 +178,16 @@ class TestTranscode < Test::Unit::TestCase
 
   def test_windows_874
     check_both_ways("\u20AC", "\x80", 'windows-874') # €
-    assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-874') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x84".encode("utf-8", 'windows-874') }
+    assert_undefined_in("\x81", 'windows-874')
+    assert_undefined_in("\x84", 'windows-874')
     check_both_ways("\u2026", "\x85", 'windows-874') # …
-    assert_raise(Encoding::UndefinedConversionError) { "\x86".encode("utf-8", 'windows-874') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x8F".encode("utf-8", 'windows-874') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'windows-874') }
+    assert_undefined_in("\x86", 'windows-874')
+    assert_undefined_in("\x8F", 'windows-874')
+    assert_undefined_in("\x90", 'windows-874')
     check_both_ways("\u2018", "\x91", 'windows-874') # ‘
     check_both_ways("\u2014", "\x97", 'windows-874') # —
-    assert_raise(Encoding::UndefinedConversionError) { "\x98".encode("utf-8", 'windows-874') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x9F".encode("utf-8", 'windows-874') }
+    assert_undefined_in("\x98", 'windows-874')
+    assert_undefined_in("\x9F", 'windows-874')
     check_both_ways("\u00A0", "\xA0", 'windows-874') # non-breaking space
     check_both_ways("\u0E0F", "\xAF", 'windows-874') # ฏ
     check_both_ways("\u0E10", "\xB0", 'windows-874') # ฐ
@@ -206,31 +196,31 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u0E2F", "\xCF", 'windows-874') # ฯ
     check_both_ways("\u0E30", "\xD0", 'windows-874') # ะ
     check_both_ways("\u0E3A", "\xDA", 'windows-874') # ฺ
-    assert_raise(Encoding::UndefinedConversionError) { "\xDB".encode("utf-8", 'windows-874') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xDE".encode("utf-8", 'windows-874') }
+    assert_undefined_in("\xDB", 'windows-874')
+    assert_undefined_in("\xDE", 'windows-874')
     check_both_ways("\u0E3F", "\xDF", 'windows-874') # ฿
     check_both_ways("\u0E40", "\xE0", 'windows-874') # เ
     check_both_ways("\u0E4F", "\xEF", 'windows-874') # ๏
     check_both_ways("\u0E50", "\xF0", 'windows-874') # ๐
     check_both_ways("\u0E5B", "\xFB", 'windows-874') # ๛
-    assert_raise(Encoding::UndefinedConversionError) { "\xFC".encode("utf-8", 'windows-874') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xFF".encode("utf-8", 'windows-874') }
+    assert_undefined_in("\xFC", 'windows-874')
+    assert_undefined_in("\xFF", 'windows-874')
   end
 
   def test_windows_1250
     check_both_ways("\u20AC", "\x80", 'windows-1250') # €
-    assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-1250') }
+    assert_undefined_in("\x81", 'windows-1250')
     check_both_ways("\u201A", "\x82", 'windows-1250') # ‚
-    assert_raise(Encoding::UndefinedConversionError) { "\x83".encode("utf-8", 'windows-1250') }
+    assert_undefined_in("\x83", 'windows-1250')
     check_both_ways("\u201E", "\x84", 'windows-1250') # „
     check_both_ways("\u2021", "\x87", 'windows-1250') # ‡
-    assert_raise(Encoding::UndefinedConversionError) { "\x88".encode("utf-8", 'windows-1250') }
+    assert_undefined_in("\x88", 'windows-1250')
     check_both_ways("\u2030", "\x89", 'windows-1250') # ‰
     check_both_ways("\u0179", "\x8F", 'windows-1250') # Ź
-    assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'windows-1250') }
+    assert_undefined_in("\x90", 'windows-1250')
     check_both_ways("\u2018", "\x91", 'windows-1250') # ‘
     check_both_ways("\u2014", "\x97", 'windows-1250') # —
-    assert_raise(Encoding::UndefinedConversionError) { "\x98".encode("utf-8", 'windows-1250') }
+    assert_undefined_in("\x98", 'windows-1250')
     check_both_ways("\u2122", "\x99", 'windows-1250') # ™
     check_both_ways("\u00A0", "\xA0", 'windows-1250') # non-breaking space
     check_both_ways("\u017B", "\xAF", 'windows-1250') # Ż
@@ -251,7 +241,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u20AC", "\x88", 'windows-1251') # €
     check_both_ways("\u040F", "\x8F", 'windows-1251') # Џ
     check_both_ways("\u0452", "\x90", 'windows-1251') # ђ
-    assert_raise(Encoding::UndefinedConversionError) { "\x98".encode("utf-8", 'windows-1251') }
+    assert_undefined_in("\x98", 'windows-1251')
     check_both_ways("\u045F", "\x9F", 'windows-1251') # џ
     check_both_ways("\u00A0", "\xA0", 'windows-1251') # non-breaking space
     check_both_ways("\u0407", "\xAF", 'windows-1251') # Ї
@@ -269,16 +259,16 @@ class TestTranscode < Test::Unit::TestCase
 
   def test_windows_1252
     check_both_ways("\u20AC", "\x80", 'windows-1252') # €
-    assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-1252') }
+    assert_undefined_in("\x81", 'windows-1252')
     check_both_ways("\u201A", "\x82", 'windows-1252') # ‚
     check_both_ways("\u0152", "\x8C", 'windows-1252') # >Œ
-    assert_raise(Encoding::UndefinedConversionError) { "\x8D".encode("utf-8", 'windows-1252') }
+    assert_undefined_in("\x8D", 'windows-1252')
     check_both_ways("\u017D", "\x8E", 'windows-1252') # Ž
-    assert_raise(Encoding::UndefinedConversionError) { "\x8F".encode("utf-8", 'windows-1252') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'windows-1252') }
+    assert_undefined_in("\x8F", 'windows-1252')
+    assert_undefined_in("\x90", 'windows-1252')
     check_both_ways("\u2018", "\x91", 'windows-1252') #‘
     check_both_ways("\u0153", "\x9C", 'windows-1252') # œ
-    assert_raise(Encoding::UndefinedConversionError) { "\x9D".encode("utf-8", 'windows-1252') }
+    assert_undefined_in("\x9D", 'windows-1252')
     check_both_ways("\u017E", "\x9E", 'windows-1252') # ž
     check_both_ways("\u00A0", "\xA0", 'windows-1252') # non-breaking space
     check_both_ways("\u00AF", "\xAF", 'windows-1252') # ¯
@@ -296,24 +286,24 @@ class TestTranscode < Test::Unit::TestCase
 
   def test_windows_1253
     check_both_ways("\u20AC", "\x80", 'windows-1253') # €
-    assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-1253') }
+    assert_undefined_in("\x81", 'windows-1253')
     check_both_ways("\u201A", "\x82", 'windows-1253') # ‚
     check_both_ways("\u2021", "\x87", 'windows-1253') # ‡
-    assert_raise(Encoding::UndefinedConversionError) { "\x88".encode("utf-8", 'windows-1253') }
+    assert_undefined_in("\x88", 'windows-1253')
     check_both_ways("\u2030", "\x89", 'windows-1253') # ‰
-    assert_raise(Encoding::UndefinedConversionError) { "\x8A".encode("utf-8", 'windows-1253') }
+    assert_undefined_in("\x8A", 'windows-1253')
     check_both_ways("\u2039", "\x8B", 'windows-1253') # ‹
-    assert_raise(Encoding::UndefinedConversionError) { "\x8C".encode("utf-8", 'windows-1253') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x8F".encode("utf-8", 'windows-1253') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'windows-1253') }
+    assert_undefined_in("\x8C", 'windows-1253')
+    assert_undefined_in("\x8F", 'windows-1253')
+    assert_undefined_in("\x90", 'windows-1253')
     check_both_ways("\u2018", "\x91", 'windows-1253') # ‘
     check_both_ways("\u2014", "\x97", 'windows-1253') # —
-    assert_raise(Encoding::UndefinedConversionError) { "\x98".encode("utf-8", 'windows-1253') }
+    assert_undefined_in("\x98", 'windows-1253')
     check_both_ways("\u2122", "\x99", 'windows-1253') # ™
-    assert_raise(Encoding::UndefinedConversionError) { "\x9A".encode("utf-8", 'windows-1253') }
+    assert_undefined_in("\x9A", 'windows-1253')
     check_both_ways("\u203A", "\x9B", 'windows-1253') # ›
-    assert_raise(Encoding::UndefinedConversionError) { "\x9C".encode("utf-8", 'windows-1253') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x9F".encode("utf-8", 'windows-1253') }
+    assert_undefined_in("\x9C", 'windows-1253')
+    assert_undefined_in("\x9F", 'windows-1253')
     check_both_ways("\u00A0", "\xA0", 'windows-1253') # non-breaking space
     check_both_ways("\u2015", "\xAF", 'windows-1253') # ―
     check_both_ways("\u00B0", "\xB0", 'windows-1253') # °
@@ -322,28 +312,28 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u039F", "\xCF", 'windows-1253') # Ο
     check_both_ways("\u03A0", "\xD0", 'windows-1253') # Π
     check_both_ways("\u03A1", "\xD1", 'windows-1253') # Ρ
-    assert_raise(Encoding::UndefinedConversionError) { "\xD2".encode("utf-8", 'windows-1253') }
+    assert_undefined_in("\xD2", 'windows-1253')
     check_both_ways("\u03A3", "\xD3", 'windows-1253') # Σ
     check_both_ways("\u03AF", "\xDF", 'windows-1253') # ί
     check_both_ways("\u03B0", "\xE0", 'windows-1253') # ΰ
     check_both_ways("\u03BF", "\xEF", 'windows-1253') # ο
     check_both_ways("\u03C0", "\xF0", 'windows-1253') # π
     check_both_ways("\u03CE", "\xFE", 'windows-1253') # ώ
-    assert_raise(Encoding::UndefinedConversionError) { "\xFF".encode("utf-8", 'windows-1253') }
+    assert_undefined_in("\xFF", 'windows-1253')
   end
 
   def test_windows_1254
     check_both_ways("\u20AC", "\x80", 'windows-1254') # €
-    assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-1254') }
+    assert_undefined_in("\x81", 'windows-1254')
     check_both_ways("\u201A", "\x82", 'windows-1254') # ‚
     check_both_ways("\u0152", "\x8C", 'windows-1254') # Œ
-    assert_raise(Encoding::UndefinedConversionError) { "\x8D".encode("utf-8", 'windows-1254') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x8F".encode("utf-8", 'windows-1254') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'windows-1254') }
+    assert_undefined_in("\x8D", 'windows-1254')
+    assert_undefined_in("\x8F", 'windows-1254')
+    assert_undefined_in("\x90", 'windows-1254')
     check_both_ways("\u2018", "\x91", 'windows-1254') # ‘
     check_both_ways("\u0153", "\x9C", 'windows-1254') # œ
-    assert_raise(Encoding::UndefinedConversionError) { "\x9D".encode("utf-8", 'windows-1254') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x9E".encode("utf-8", 'windows-1254') }
+    assert_undefined_in("\x9D", 'windows-1254')
+    assert_undefined_in("\x9E", 'windows-1254')
     check_both_ways("\u0178", "\x9F", 'windows-1254') # Ÿ
     check_both_ways("\u00A0", "\xA0", 'windows-1254') # non-breaking space
     check_both_ways("\u00AF", "\xAF", 'windows-1254') # ¯
@@ -361,20 +351,20 @@ class TestTranscode < Test::Unit::TestCase
 
   def test_windows_1255
     check_both_ways("\u20AC", "\x80", 'windows-1255') # €
-    assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-1255') }
+    assert_undefined_in("\x81", 'windows-1255')
     check_both_ways("\u201A", "\x82", 'windows-1255') # ‚
     check_both_ways("\u2030", "\x89", 'windows-1255') # ‰
-    assert_raise(Encoding::UndefinedConversionError) { "\x8A".encode("utf-8", 'windows-1255') }
+    assert_undefined_in("\x8A", 'windows-1255')
     check_both_ways("\u2039", "\x8B", 'windows-1255') # ‹
-    assert_raise(Encoding::UndefinedConversionError) { "\x8C".encode("utf-8", 'windows-1255') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x8F".encode("utf-8", 'windows-1255') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'windows-1255') }
+    assert_undefined_in("\x8C", 'windows-1255')
+    assert_undefined_in("\x8F", 'windows-1255')
+    assert_undefined_in("\x90", 'windows-1255')
     check_both_ways("\u2018", "\x91", 'windows-1255') # ‘
     check_both_ways("\u2122", "\x99", 'windows-1255') # ™
-    assert_raise(Encoding::UndefinedConversionError) { "\x9A".encode("utf-8", 'windows-1255') }
+    assert_undefined_in("\x9A", 'windows-1255')
     check_both_ways("\u203A", "\x9B", 'windows-1255') # ›
-    assert_raise(Encoding::UndefinedConversionError) { "\x9C".encode("utf-8", 'windows-1255') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x9F".encode("utf-8", 'windows-1255') }
+    assert_undefined_in("\x9C", 'windows-1255')
+    assert_undefined_in("\x9F", 'windows-1255')
     check_both_ways("\u00A0", "\xA0", 'windows-1255') # non-breaking space
     check_both_ways("\u00A1", "\xA1", 'windows-1255') # ¡
     check_both_ways("\u00D7", "\xAA", 'windows-1255') # ×
@@ -391,17 +381,17 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u05C0", "\xD0", 'windows-1255') # ׀
     check_both_ways("\u05F3", "\xD7", 'windows-1255') # ׳
     check_both_ways("\u05F4", "\xD8", 'windows-1255') # ״
-    assert_raise(Encoding::UndefinedConversionError) { "\xD9".encode("utf-8", 'windows-1255') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xDF".encode("utf-8", 'windows-1255') }
+    assert_undefined_in("\xD9", 'windows-1255')
+    assert_undefined_in("\xDF", 'windows-1255')
     check_both_ways("\u05D0", "\xE0", 'windows-1255') # א
     check_both_ways("\u05DF", "\xEF", 'windows-1255') # ן
     check_both_ways("\u05E0", "\xF0", 'windows-1255') # נ
     check_both_ways("\u05EA", "\xFA", 'windows-1255') # ת
-    assert_raise(Encoding::UndefinedConversionError) { "\xFB".encode("utf-8", 'windows-1255') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xFC".encode("utf-8", 'windows-1255') }
+    assert_undefined_in("\xFB", 'windows-1255')
+    assert_undefined_in("\xFC", 'windows-1255')
     check_both_ways("\u200E", "\xFD", 'windows-1255') # left-to-right mark
     check_both_ways("\u200F", "\xFE", 'windows-1255') # right-to-left mark
-    assert_raise(Encoding::UndefinedConversionError) { "\xFF".encode("utf-8", 'windows-1255') }
+    assert_undefined_in("\xFF", 'windows-1255')
   end
 
   def test_windows_1256
@@ -429,35 +419,35 @@ class TestTranscode < Test::Unit::TestCase
 
   def test_windows_1257
     check_both_ways("\u20AC", "\x80", 'windows-1257') # €
-    assert_raise(Encoding::UndefinedConversionError) { "\x81".encode("utf-8", 'windows-1257') }
+    assert_undefined_in("\x81", 'windows-1257')
     check_both_ways("\u201A", "\x82", 'windows-1257') # ‚
-    assert_raise(Encoding::UndefinedConversionError) { "\x83".encode("utf-8", 'windows-1257') }
+    assert_undefined_in("\x83", 'windows-1257')
     check_both_ways("\u201E", "\x84", 'windows-1257') # „
     check_both_ways("\u2021", "\x87", 'windows-1257') # ‡
-    assert_raise(Encoding::UndefinedConversionError) { "\x88".encode("utf-8", 'windows-1257') }
+    assert_undefined_in("\x88", 'windows-1257')
     check_both_ways("\u2030", "\x89", 'windows-1257') # ‰
-    assert_raise(Encoding::UndefinedConversionError) { "\x8A".encode("utf-8", 'windows-1257') }
+    assert_undefined_in("\x8A", 'windows-1257')
     check_both_ways("\u2039", "\x8B", 'windows-1257') # ‹
-    assert_raise(Encoding::UndefinedConversionError) { "\x8C".encode("utf-8", 'windows-1257') }
+    assert_undefined_in("\x8C", 'windows-1257')
     check_both_ways("\u00A8", "\x8D", 'windows-1257') # ¨
     check_both_ways("\u02C7", "\x8E", 'windows-1257') # ˇ
     check_both_ways("\u00B8", "\x8F", 'windows-1257') # ¸
-    assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'windows-1257') }
+    assert_undefined_in("\x90", 'windows-1257')
     check_both_ways("\u2018", "\x91", 'windows-1257') # ‘
     check_both_ways("\u2014", "\x97", 'windows-1257') # —
-    assert_raise(Encoding::UndefinedConversionError) { "\x98".encode("utf-8", 'windows-1257') }
+    assert_undefined_in("\x98", 'windows-1257')
     check_both_ways("\u2122", "\x99", 'windows-1257') # ™
-    assert_raise(Encoding::UndefinedConversionError) { "\x9A".encode("utf-8", 'windows-1257') }
+    assert_undefined_in("\x9A", 'windows-1257')
     check_both_ways("\u203A", "\x9B", 'windows-1257') # ›
-    assert_raise(Encoding::UndefinedConversionError) { "\x9C".encode("utf-8", 'windows-1257') }
+    assert_undefined_in("\x9C", 'windows-1257')
     check_both_ways("\u00AF", "\x9D", 'windows-1257') # ¯
     check_both_ways("\u02DB", "\x9E", 'windows-1257') # ˛
-    assert_raise(Encoding::UndefinedConversionError) { "\x9F".encode("utf-8", 'windows-1257') }
+    assert_undefined_in("\x9F", 'windows-1257')
     check_both_ways("\u00A0", "\xA0", 'windows-1257') # non-breaking space
-    assert_raise(Encoding::UndefinedConversionError) { "\xA1".encode("utf-8", 'windows-1257') }
+    assert_undefined_in("\xA1", 'windows-1257')
     check_both_ways("\u00A2", "\xA2", 'windows-1257') # ¢
     check_both_ways("\u00A4", "\xA4", 'windows-1257') # ¤
-    assert_raise(Encoding::UndefinedConversionError) { "\xA5".encode("utf-8", 'windows-1257') }
+    assert_undefined_in("\xA5", 'windows-1257')
     check_both_ways("\u00A6", "\xA6", 'windows-1257') # ¦
     check_both_ways("\u00C6", "\xAF", 'windows-1257') # Æ
     check_both_ways("\u00B0", "\xB0", 'windows-1257') # °
@@ -492,9 +482,9 @@ class TestTranscode < Test::Unit::TestCase
   end
 
   def test_IBM720
-    assert_raise(Encoding::UndefinedConversionError) { "\x80".encode("utf-8", 'IBM720') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x8F".encode("utf-8", 'IBM720') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'IBM720') }
+    assert_undefined_in("\x80", 'IBM720')
+    assert_undefined_in("\x8F", 'IBM720')
+    assert_undefined_in("\x90", 'IBM720')
     check_both_ways("\u0627", "\x9F", 'IBM720') # ا
     check_both_ways("\u0628", "\xA0", 'IBM720') # ب
     check_both_ways("\u00BB", "\xAF", 'IBM720') # »
@@ -580,17 +570,17 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u00A4", "\xCF", 'IBM857') # ¤
     check_both_ways("\u00BA", "\xD0", 'IBM857') # º
     check_both_ways("\u00C8", "\xD4", 'IBM857') # È
-    assert_raise(Encoding::UndefinedConversionError) { "\xD5".encode("utf-8", 'IBM857') }
+    assert_undefined_in("\xD5", 'IBM857')
     check_both_ways("\u00CD", "\xD6", 'IBM857') # Í
     check_both_ways("\u2580", "\xDF", 'IBM857') # ▀
     check_both_ways("\u00D3", "\xE0", 'IBM857') # Ó
     check_both_ways("\u00B5", "\xE6", 'IBM857') # µ
-    assert_raise(Encoding::UndefinedConversionError) { "\xE7".encode("utf-8", 'IBM857') }
+    assert_undefined_in("\xE7", 'IBM857')
     check_both_ways("\u00D7", "\xE8", 'IBM857') # ×
     check_both_ways("\u00B4", "\xEF", 'IBM857') # ´
     check_both_ways("\u00AD", "\xF0", 'IBM857') # soft hyphen
     check_both_ways("\u00B1", "\xF1", 'IBM857') # ±
-    assert_raise(Encoding::UndefinedConversionError) { "\xF2".encode("utf-8", 'IBM857') }
+    assert_undefined_in("\xF2", 'IBM857')
     check_both_ways("\u00BE", "\xF3", 'IBM857') # ¾
     check_both_ways("\u00A0", "\xFF", 'IBM857') # non-breaking space
   end
@@ -710,16 +700,16 @@ class TestTranscode < Test::Unit::TestCase
   end
 
   def test_IBM869
-    assert_raise(Encoding::UndefinedConversionError) { "\x80".encode("utf-8", 'IBM869') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x85".encode("utf-8", 'IBM869') }
+    assert_undefined_in("\x80", 'IBM869')
+    assert_undefined_in("\x85", 'IBM869')
     check_both_ways("\u0386", "\x86", 'IBM869') # Ά
-    assert_raise(Encoding::UndefinedConversionError) { "\x87".encode("utf-8", 'IBM869') }
+    assert_undefined_in("\x87", 'IBM869')
     check_both_ways("\u00B7", "\x88", 'IBM869') # ·
     check_both_ways("\u0389", "\x8F", 'IBM869') # Ή
     check_both_ways("\u038A", "\x90", 'IBM869') # Ί
     check_both_ways("\u038C", "\x92", 'IBM869') # Ό
-    assert_raise(Encoding::UndefinedConversionError) { "\x93".encode("utf-8", 'IBM869') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x94".encode("utf-8", 'IBM869') }
+    assert_undefined_in("\x93", 'IBM869')
+    assert_undefined_in("\x94", 'IBM869')
     check_both_ways("\u038E", "\x95", 'IBM869') # Ύ
     check_both_ways("\u03AF", "\x9F", 'IBM869') # ί
     check_both_ways("\u03CA", "\xA0", 'IBM869') # ϊ
@@ -808,7 +798,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u03BF", "\xEF", 'macGreek') # ο
     check_both_ways("\u03C0", "\xF0", 'macGreek') # π
     check_both_ways("\u03B0", "\xFE", 'macGreek') # ΰ
-    assert_raise(Encoding::UndefinedConversionError) { "\xFF".encode("utf-8", 'macGreek') }
+    assert_undefined_in("\xFF", 'macGreek')
   end
 
   def test_macIceland
@@ -887,7 +877,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u00D4", "\xEF", 'macTurkish') # Ô
     #check_both_ways("\uF8FF", "\xF0", 'macTurkish') # Apple logo
     check_both_ways("\u00D9", "\xF4", 'macTurkish') # Ù
-    assert_raise(Encoding::UndefinedConversionError) { "\xF5".encode("utf-8", 'macTurkish') }
+    assert_undefined_in("\xF5", 'macTurkish')
     check_both_ways("\u02C6", "\xF6", 'macTurkish') # ˆ
     check_both_ways("\u02C7", "\xFF", 'macTurkish') # ˇ
   end
@@ -958,11 +948,11 @@ class TestTranscode < Test::Unit::TestCase
   end
 
   def test_TIS_620
-    assert_raise(Encoding::UndefinedConversionError) { "\x80".encode("utf-8", 'TIS-620') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x8F".encode("utf-8", 'TIS-620') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x90".encode("utf-8", 'TIS-620') }
-    assert_raise(Encoding::UndefinedConversionError) { "\x9F".encode("utf-8", 'TIS-620') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA0".encode("utf-8", 'TIS-620') }
+    assert_undefined_in("\x80", 'TIS-620')
+    assert_undefined_in("\x8F", 'TIS-620')
+    assert_undefined_in("\x90", 'TIS-620')
+    assert_undefined_in("\x9F", 'TIS-620')
+    assert_undefined_in("\xA0", 'TIS-620')
     check_both_ways("\u0E01", "\xA1", 'TIS-620') # ก
     check_both_ways("\u0E0F", "\xAF", 'TIS-620') # ฏ
     check_both_ways("\u0E10", "\xB0", 'TIS-620') # ฐ
@@ -971,15 +961,15 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u0E2F", "\xCF", 'TIS-620') # ฯ
     check_both_ways("\u0E30", "\xD0", 'TIS-620') # ะ
     check_both_ways("\u0E3A", "\xDA", 'TIS-620') #  ฺ
-    assert_raise(Encoding::UndefinedConversionError) { "\xDB".encode("utf-8", 'TIS-620') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xDE".encode("utf-8", 'TIS-620') }
+    assert_undefined_in("\xDB", 'TIS-620')
+    assert_undefined_in("\xDE", 'TIS-620')
     check_both_ways("\u0E3F", "\xDF", 'TIS-620') # ฿
     check_both_ways("\u0E40", "\xE0", 'TIS-620') # เ
     check_both_ways("\u0E4F", "\xEF", 'TIS-620') # ๏
     check_both_ways("\u0E50", "\xF0", 'TIS-620') # ๐
     check_both_ways("\u0E5B", "\xFB", 'TIS-620') # ๛
-    assert_raise(Encoding::UndefinedConversionError) { "\xFC".encode("utf-8", 'TIS-620') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xFF".encode("utf-8", 'TIS-620') }
+    assert_undefined_in("\xFC", 'TIS-620')
+    assert_undefined_in("\xFF", 'TIS-620')
   end
 
   def test_CP850
@@ -1182,15 +1172,15 @@ class TestTranscode < Test::Unit::TestCase
     expected = "\u{3042}\u{3044}\u{20bb7}"
     assert_equal(expected, %w/fffe4230443042d8b7df/.pack("H*").encode("UTF-8","UTF-16"))
     check_both_ways(expected, %w/feff30423044d842dfb7/.pack("H*"), "UTF-16")
-    assert_raise(Encoding::InvalidByteSequenceError){%w/feffdfb7/.pack("H*").encode("UTF-8","UTF-16")}
-    assert_raise(Encoding::InvalidByteSequenceError){%w/fffeb7df/.pack("H*").encode("UTF-8","UTF-16")}
+    assert_invalid_in(%w/feffdfb7/.pack("H*"), "UTF-16")
+    assert_invalid_in(%w/fffeb7df/.pack("H*"), "UTF-16")
   end
 
   def test_utf_32_bom
     expected = "\u{3042}\u{3044}\u{20bb7}"
     assert_equal(expected, %w/fffe00004230000044300000b70b0200/.pack("H*").encode("UTF-8","UTF-32"))
     check_both_ways(expected, %w/0000feff000030420000304400020bb7/.pack("H*"), "UTF-32")
-    assert_raise(Encoding::InvalidByteSequenceError){%w/0000feff00110000/.pack("H*").encode("UTF-8","UTF-32")}
+    assert_invalid_in(%w/0000feff00110000/.pack("H*"), "UTF-32")
   end
 
   def check_utf_32_both_ways(utf8, raw)
@@ -1372,24 +1362,24 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u71FC", "\xE0\x9E", 'shift_jis') # 燼
     check_both_ways("\u71F9", "\xE0\x9F", 'shift_jis') # 燹
     check_both_ways("\u73F1", "\xE0\xFC", 'shift_jis') # 珱
-    assert_raise(Encoding::UndefinedConversionError) { "\xEF\x40".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xEF\x7E".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xEF\x80".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xEF\x9E".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xEF\x9F".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xEF\xFC".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xF0\x40".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xF0\x7E".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xF0\x80".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xF0\x9E".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xF0\x9F".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xF0\xFC".encode("utf-8", 'shift_jis') }
+    assert_undefined_in("\xEF\x40", 'shift_jis')
+    assert_undefined_in("\xEF\x7E", 'shift_jis')
+    assert_undefined_in("\xEF\x80", 'shift_jis')
+    assert_undefined_in("\xEF\x9E", 'shift_jis')
+    assert_undefined_in("\xEF\x9F", 'shift_jis')
+    assert_undefined_in("\xEF\xFC", 'shift_jis')
+    assert_undefined_in("\xF0\x40", 'shift_jis')
+    assert_undefined_in("\xF0\x7E", 'shift_jis')
+    assert_undefined_in("\xF0\x80", 'shift_jis')
+    assert_undefined_in("\xF0\x9E", 'shift_jis')
+    assert_undefined_in("\xF0\x9F", 'shift_jis')
+    assert_undefined_in("\xF0\xFC", 'shift_jis')
     #check_both_ways("\u9ADC", "\xFC\x40", 'shift_jis') # 髜 (IBM extended)
-    assert_raise(Encoding::UndefinedConversionError) { "\xFC\x7E".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xFC\x80".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xFC\x9E".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xFC\x9F".encode("utf-8", 'shift_jis') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xFC\xFC".encode("utf-8", 'shift_jis') }
+    assert_undefined_in("\xFC\x7E", 'shift_jis')
+    assert_undefined_in("\xFC\x80", 'shift_jis')
+    assert_undefined_in("\xFC\x9E", 'shift_jis')
+    assert_undefined_in("\xFC\x9F", 'shift_jis')
+    assert_undefined_in("\xFC\xFC", 'shift_jis')
     check_both_ways("\u677E\u672C\u884C\u5F18", "\x8f\xbc\x96\x7b\x8d\x73\x8d\x4f", 'shift_jis') # 松本行弘
     check_both_ways("\u9752\u5C71\u5B66\u9662\u5927\u5B66", "\x90\xC2\x8E\x52\x8A\x77\x89\x40\x91\xE5\x8A\x77", 'shift_jis') # 青山学院大学
     check_both_ways("\u795E\u6797\u7FA9\u535A", "\x90\x5F\x97\xD1\x8B\x60\x94\x8E", 'shift_jis') # 神林義博
@@ -1409,34 +1399,34 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u00F7", "\xA1\xE0", 'euc-jp') # ÷
     check_both_ways("\u25C7", "\xA1\xFE", 'euc-jp') # ◇
     check_both_ways("\u25C6", "\xA2\xA1", 'euc-jp') # ◆
-    assert_raise(Encoding::UndefinedConversionError) { "\xA2\xAF".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA2\xB9".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA2\xC2".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA2\xC9".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA2\xD1".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA2\xDB".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA2\xEB".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA2\xF1".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA2\xFA".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA2\xFD".encode("utf-8", 'euc-jp') }
+    assert_undefined_in("\xA2\xAF", 'euc-jp')
+    assert_undefined_in("\xA2\xB9", 'euc-jp')
+    assert_undefined_in("\xA2\xC2", 'euc-jp')
+    assert_undefined_in("\xA2\xC9", 'euc-jp')
+    assert_undefined_in("\xA2\xD1", 'euc-jp')
+    assert_undefined_in("\xA2\xDB", 'euc-jp')
+    assert_undefined_in("\xA2\xEB", 'euc-jp')
+    assert_undefined_in("\xA2\xF1", 'euc-jp')
+    assert_undefined_in("\xA2\xFA", 'euc-jp')
+    assert_undefined_in("\xA2\xFD", 'euc-jp')
     check_both_ways("\u25EF", "\xA2\xFE", 'euc-jp') # ◯
-    assert_raise(Encoding::UndefinedConversionError) { "\xA3\xAF".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA3\xBA".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA3\xC0".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA3\xDB".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA3\xE0".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA3\xFB".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA4\xF4".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA5\xF7".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA6\xB9".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA6\xC0".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA6\xD9".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA7\xC2".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA7\xD0".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA7\xF2".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA8\xC1".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xCF\xD4".encode("utf-8", 'euc-jp') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xCF\xFE".encode("utf-8", 'euc-jp') }
+    assert_undefined_in("\xA3\xAF", 'euc-jp')
+    assert_undefined_in("\xA3\xBA", 'euc-jp')
+    assert_undefined_in("\xA3\xC0", 'euc-jp')
+    assert_undefined_in("\xA3\xDB", 'euc-jp')
+    assert_undefined_in("\xA3\xE0", 'euc-jp')
+    assert_undefined_in("\xA3\xFB", 'euc-jp')
+    assert_undefined_in("\xA4\xF4", 'euc-jp')
+    assert_undefined_in("\xA5\xF7", 'euc-jp')
+    assert_undefined_in("\xA6\xB9", 'euc-jp')
+    assert_undefined_in("\xA6\xC0", 'euc-jp')
+    assert_undefined_in("\xA6\xD9", 'euc-jp')
+    assert_undefined_in("\xA7\xC2", 'euc-jp')
+    assert_undefined_in("\xA7\xD0", 'euc-jp')
+    assert_undefined_in("\xA7\xF2", 'euc-jp')
+    assert_undefined_in("\xA8\xC1", 'euc-jp')
+    assert_undefined_in("\xCF\xD4", 'euc-jp')
+    assert_undefined_in("\xCF\xFE", 'euc-jp')
     check_both_ways("\u6A97", "\xDD\xA1", 'euc-jp') # 檗
     check_both_ways("\u6BEF", "\xDD\xDF", 'euc-jp') # 毯
     check_both_ways("\u9EBE", "\xDD\xE0", 'euc-jp') # 麾
@@ -1449,7 +1439,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u71FC", "\xDF\xFE", 'euc-jp') # 燼
     check_both_ways("\u71F9", "\xE0\xA1", 'euc-jp') # 燹
     check_both_ways("\u73F1", "\xE0\xFE", 'euc-jp') # 珱
-    assert_raise(Encoding::UndefinedConversionError) { "\xF4\xA7".encode("utf-8", 'euc-jp') }
+    assert_undefined_in("\xF4\xA7", 'euc-jp')
     #check_both_ways("\u9ADC", "\xFC\xE3", 'euc-jp') # 髜 (IBM extended)
 
     check_both_ways("\u677E\u672C\u884C\u5F18", "\xBE\xBE\xCB\xDC\xB9\xD4\xB9\xB0", 'euc-jp') # 松本行弘
@@ -1481,7 +1471,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u2127", "\xA3\xE0", 'euc-jis-2004') # ℧
     check_both_ways("\u30A0", "\xA3\xFB", 'euc-jis-2004') # ゠
     check_both_ways("\uFF54", "\xA3\xF4", 'euc-jis-2004') # ｔ
-    assert_raise(Encoding::UndefinedConversionError) { "\xA5\xF7".encode("utf-8", 'euc-jis-2004') }
+    assert_undefined_in("\xA5\xF7", 'euc-jis-2004')
     check_both_ways("\u2664", "\xA6\xB9", 'euc-jis-2004') # ♤
     check_both_ways("\u2663", "\xA6\xC0", 'euc-jis-2004') # ♣
     check_both_ways("\u03C2", "\xA6\xD9", 'euc-jis-2004') # ς
@@ -1566,33 +1556,33 @@ class TestTranscode < Test::Unit::TestCase
   end
 
   def test_eucjp_sjis_undef
-    assert_raise(Encoding::UndefinedConversionError) { "\x8e\xe0".encode("Shift_JIS", "EUC-JP") }
-    assert_raise(Encoding::UndefinedConversionError) { "\x8e\xfe".encode("Shift_JIS", "EUC-JP") }
-    assert_raise(Encoding::UndefinedConversionError) { "\x8f\xa1\xa1".encode("Shift_JIS", "EUC-JP") }
-    assert_raise(Encoding::UndefinedConversionError) { "\x8f\xa1\xfe".encode("Shift_JIS", "EUC-JP") }
-    assert_raise(Encoding::UndefinedConversionError) { "\x8f\xfe\xa1".encode("Shift_JIS", "EUC-JP") }
-    assert_raise(Encoding::UndefinedConversionError) { "\x8f\xfe\xfe".encode("Shift_JIS", "EUC-JP") }
+    assert_undefined_conversion("\x8e\xe0", "Shift_JIS", "EUC-JP")
+    assert_undefined_conversion("\x8e\xfe", "Shift_JIS", "EUC-JP")
+    assert_undefined_conversion("\x8f\xa1\xa1", "Shift_JIS", "EUC-JP")
+    assert_undefined_conversion("\x8f\xa1\xfe", "Shift_JIS", "EUC-JP")
+    assert_undefined_conversion("\x8f\xfe\xa1", "Shift_JIS", "EUC-JP")
+    assert_undefined_conversion("\x8f\xfe\xfe", "Shift_JIS", "EUC-JP")
 
-    assert_raise(Encoding::UndefinedConversionError) { "\xf0\x40".encode("EUC-JP", "Shift_JIS") }
-    assert_raise(Encoding::UndefinedConversionError) { "\xf0\x7e".encode("EUC-JP", "Shift_JIS") }
-    assert_raise(Encoding::UndefinedConversionError) { "\xf0\x80".encode("EUC-JP", "Shift_JIS") }
-    assert_raise(Encoding::UndefinedConversionError) { "\xf0\xfc".encode("EUC-JP", "Shift_JIS") }
-    assert_raise(Encoding::UndefinedConversionError) { "\xfc\x40".encode("EUC-JP", "Shift_JIS") }
-    assert_raise(Encoding::UndefinedConversionError) { "\xfc\x7e".encode("EUC-JP", "Shift_JIS") }
-    assert_raise(Encoding::UndefinedConversionError) { "\xfc\x80".encode("EUC-JP", "Shift_JIS") }
-    assert_raise(Encoding::UndefinedConversionError) { "\xfc\xfc".encode("EUC-JP", "Shift_JIS") }
+    assert_undefined_conversion("\xf0\x40", "EUC-JP", "Shift_JIS")
+    assert_undefined_conversion("\xf0\x7e", "EUC-JP", "Shift_JIS")
+    assert_undefined_conversion("\xf0\x80", "EUC-JP", "Shift_JIS")
+    assert_undefined_conversion("\xf0\xfc", "EUC-JP", "Shift_JIS")
+    assert_undefined_conversion("\xfc\x40", "EUC-JP", "Shift_JIS")
+    assert_undefined_conversion("\xfc\x7e", "EUC-JP", "Shift_JIS")
+    assert_undefined_conversion("\xfc\x80", "EUC-JP", "Shift_JIS")
+    assert_undefined_conversion("\xfc\xfc", "EUC-JP", "Shift_JIS")
   end
 
   def test_iso_2022_jp
-    assert_raise(Encoding::InvalidByteSequenceError) { "\x1b(A".encode("utf-8", "iso-2022-jp") }
-    assert_raise(Encoding::InvalidByteSequenceError) { "\x1b$(A".encode("utf-8", "iso-2022-jp") }
-    assert_raise(Encoding::InvalidByteSequenceError) { "\x1b$C".encode("utf-8", "iso-2022-jp") }
-    assert_raise(Encoding::InvalidByteSequenceError) { "\x0e".encode("utf-8", "iso-2022-jp") }
-    assert_raise(Encoding::InvalidByteSequenceError) { "\x80".encode("utf-8", "iso-2022-jp") }
-    assert_raise(Encoding::InvalidByteSequenceError) { "\x1b$(Dd!\x1b(B".encode("utf-8", "iso-2022-jp") }
-    assert_raise(Encoding::UndefinedConversionError) { "\u9299".encode("iso-2022-jp") }
-    assert_raise(Encoding::UndefinedConversionError) { "\uff71\uff72\uff73\uff74\uff75".encode("iso-2022-jp") }
-    assert_raise(Encoding::InvalidByteSequenceError) { "\x1b(I12345\x1b(B".encode("utf-8", "iso-2022-jp") }
+    assert_invalid_in("\x1b(A", "iso-2022-jp")
+    assert_invalid_in("\x1b$(A", "iso-2022-jp")
+    assert_invalid_in("\x1b$C", "iso-2022-jp")
+    assert_invalid_in("\x0e", "iso-2022-jp")
+    assert_invalid_in("\x80", "iso-2022-jp")
+    assert_invalid_in("\x1b$(Dd!\x1b(B", "iso-2022-jp")
+    assert_undefined_conversion("\u9299", "iso-2022-jp")
+    assert_undefined_conversion("\uff71\uff72\uff73\uff74\uff75", "iso-2022-jp")
+    assert_invalid_in("\x1b(I12345\x1b(B", "iso-2022-jp")
     assert_equal("\xA1\xA1".force_encoding("euc-jp"),
                  "\e$B!!\e(B".encode("EUC-JP", "ISO-2022-JP"))
     assert_equal("\e$B!!\e(B".force_encoding("ISO-2022-JP"),
@@ -1655,11 +1645,11 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("\u005C", "\e(J\x5C\e(B".encode("UTF-8", "ISO-2022-JP"))
     assert_equal("\u005C", "\x5C".encode("stateless-ISO-2022-JP", "ISO-2022-JP"))
     assert_equal("\u005C", "\e(J\x5C\e(B".encode("stateless-ISO-2022-JP", "ISO-2022-JP"))
-    assert_raise(Encoding::UndefinedConversionError) { "\u00A5".encode("Shift_JIS") }
-    assert_raise(Encoding::UndefinedConversionError) { "\u00A5".encode("Windows-31J") }
-    assert_raise(Encoding::UndefinedConversionError) { "\u00A5".encode("EUC-JP") }
-    assert_raise(Encoding::UndefinedConversionError) { "\u00A5".encode("eucJP-ms") }
-    assert_raise(Encoding::UndefinedConversionError) { "\u00A5".encode("CP51932") }
+    assert_undefined_conversion("\u00A5", "Shift_JIS")
+    assert_undefined_conversion("\u00A5", "Windows-31J")
+    assert_undefined_conversion("\u00A5", "EUC-JP")
+    assert_undefined_conversion("\u00A5", "eucJP-ms")
+    assert_undefined_conversion("\u00A5", "CP51932")
 
     # FULLWIDTH REVERSE SOLIDUS
     check_both_ways("\uFF3C", "\x81\x5F", "Shift_JIS")
@@ -1680,21 +1670,21 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("\u007E", "\e(J\x7E\e(B".encode("UTF-8", "ISO-2022-JP"))
     assert_equal("\u007E", "\x7E".encode("stateless-ISO-2022-JP", "ISO-2022-JP"))
     assert_equal("\u007E", "\e(J\x7E\e(B".encode("stateless-ISO-2022-JP", "ISO-2022-JP"))
-    assert_raise(Encoding::UndefinedConversionError) { "\u203E".encode("Shift_JIS") }
-    assert_raise(Encoding::UndefinedConversionError) { "\u203E".encode("Windows-31J") }
-    assert_raise(Encoding::UndefinedConversionError) { "\u203E".encode("EUC-JP") }
-    assert_raise(Encoding::UndefinedConversionError) { "\u203E".encode("eucJP-ms") }
-    assert_raise(Encoding::UndefinedConversionError) { "\u203E".encode("CP51932") }
+    assert_undefined_conversion("\u203E", "Shift_JIS")
+    assert_undefined_conversion("\u203E", "Windows-31J")
+    assert_undefined_conversion("\u203E", "EUC-JP")
+    assert_undefined_conversion("\u203E", "eucJP-ms")
+    assert_undefined_conversion("\u203E", "CP51932")
   end
 
   def test_gb2312
     check_both_ways("\u3000", "\xA1\xA1", 'GB2312') # full-width space
     check_both_ways("\u3013", "\xA1\xFE", 'GB2312') # 〓
-    assert_raise(Encoding::UndefinedConversionError) { "\xA2\xB0".encode("utf-8", 'GB2312') }
+    assert_undefined_in("\xA2\xB0", 'GB2312')
     check_both_ways("\u2488", "\xA2\xB1", 'GB2312') # ⒈
-    assert_raise(Encoding::UndefinedConversionError) { "\xA2\xE4".encode("utf-8", 'GB2312') }
+    assert_undefined_in("\xA2\xE4", 'GB2312')
     check_both_ways("\u3220", "\xA2\xE5", 'GB2312') # ㈠
-    assert_raise(Encoding::UndefinedConversionError) { "\xA2\xF0".encode("utf-8", 'GB2312') }
+    assert_undefined_in("\xA2\xF0", 'GB2312')
     check_both_ways("\u2160", "\xA2\xF1", 'GB2312') # Ⅰ
     check_both_ways("\uFF01", "\xA3\xA1", 'GB2312') # ！
     check_both_ways("\uFFE3", "\xA3\xFE", 'GB2312') # ￣
@@ -1705,9 +1695,9 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u0410", "\xA7\xA1", 'GB2312') # А
     check_both_ways("\u0430", "\xA7\xD1", 'GB2312') # а
     check_both_ways("\u0101", "\xA8\xA1", 'GB2312') # ā
-    assert_raise(Encoding::UndefinedConversionError) { "\xA8\xC4".encode("utf-8", 'GB2312') }
+    assert_undefined_in("\xA8\xC4", 'GB2312')
     check_both_ways("\u3105", "\xA8\xC5", 'GB2312') # ㄅ
-    assert_raise(Encoding::UndefinedConversionError) { "\xA9\xA3".encode("utf-8", 'GB2312') }
+    assert_undefined_in("\xA9\xA3", 'GB2312')
     check_both_ways("\u2500", "\xA9\xA4", 'GB2312') # ─
     check_both_ways("\u554A", "\xB0\xA1", 'GB2312') # 啊
     check_both_ways("\u5265", "\xB0\xFE", 'GB2312') # 剥
@@ -1721,7 +1711,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u7384", "\xD0\xFE", 'GB2312') # 玄
     check_both_ways("\u4F4F", "\xD7\xA1", 'GB2312') # 住
     check_both_ways("\u5EA7", "\xD7\xF9", 'GB2312') # 座
-    assert_raise(Encoding::UndefinedConversionError) { "\xD7\xFA".encode("utf-8", 'GB2312') }
+    assert_undefined_in("\xD7\xFA", 'GB2312')
     check_both_ways("\u647A", "\xDF\xA1", 'GB2312') # 摺
     check_both_ways("\u553C", "\xDF\xFE", 'GB2312') # 唼
     check_both_ways("\u5537", "\xE0\xA1", 'GB2312') # 唷
@@ -1759,48 +1749,48 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u3000", "\xA1\xA1", 'GBK') # full-width space
     check_both_ways("\u3001", "\xA1\xA2", 'GBK') # 、
     check_both_ways("\u3013", "\xA1\xFE", 'GBK') # 〓
-    assert_raise(Encoding::UndefinedConversionError) { "\xA2\xA0".encode("utf-8", 'GBK') }
+    assert_undefined_in("\xA2\xA0", 'GBK')
     check_both_ways("\u2170", "\xA2\xA1", 'GBK') # ⅰ
-    assert_raise(Encoding::UndefinedConversionError) { "\xA2\xB0".encode("utf-8", 'GBK') }
+    assert_undefined_in("\xA2\xB0", 'GBK')
     check_both_ways("\u2488", "\xA2\xB1", 'GBK') # ⒈
-    assert_raise(Encoding::UndefinedConversionError) { "\xA2\xE4".encode("utf-8", 'GBK') }
+    assert_undefined_in("\xA2\xE4", 'GBK')
     check_both_ways("\u3220", "\xA2\xE5", 'GBK') # ㈠
-    assert_raise(Encoding::UndefinedConversionError) { "\xA2\xF0".encode("utf-8", 'GBK') }
+    assert_undefined_in("\xA2\xF0", 'GBK')
     check_both_ways("\u2160", "\xA2\xF1", 'GBK') # Ⅰ
-    assert_raise(Encoding::UndefinedConversionError) { "\xA3\xA0".encode("utf-8", 'GBK') }
+    assert_undefined_in("\xA3\xA0", 'GBK')
     check_both_ways("\uFF01", "\xA3\xA1", 'GBK') # ！
     check_both_ways("\uFFE3", "\xA3\xFE", 'GBK') # ￣
-    assert_raise(Encoding::UndefinedConversionError) { "\xA4\xA0".encode("utf-8", 'GBK') }
+    assert_undefined_in("\xA4\xA0", 'GBK')
     check_both_ways("\u3041", "\xA4\xA1", 'GBK') # ぁ
-    assert_raise(Encoding::UndefinedConversionError) { "\xA5\xA0".encode("utf-8", 'GBK') }
+    assert_undefined_in("\xA5\xA0", 'GBK')
     check_both_ways("\u30A1", "\xA5\xA1", 'GBK') # ァ
     check_both_ways("\u0391", "\xA6\xA1", 'GBK') # Α
     check_both_ways("\u03B1", "\xA6\xC1", 'GBK') # α
-    assert_raise(Encoding::UndefinedConversionError) { "\xA6\xED".encode("utf-8", 'GBK') }
+    assert_undefined_in("\xA6\xED", 'GBK')
     check_both_ways("\uFE3B", "\xA6\xEE", 'GBK') # ︻
     check_both_ways("\u0410", "\xA7\xA1", 'GBK') # А
     check_both_ways("\u0430", "\xA7\xD1", 'GBK') # а
     check_both_ways("\u02CA", "\xA8\x40", 'GBK') # ˊ
     check_both_ways("\u2587", "\xA8\x7E", 'GBK') # ▇
-    assert_raise(Encoding::UndefinedConversionError) { "\xA8\x96".encode("utf-8", 'GBK') }
+    assert_undefined_in("\xA8\x96", 'GBK')
     check_both_ways("\u0101", "\xA8\xA1", 'GBK') # ā
-    assert_raise(Encoding::UndefinedConversionError) { "\xA8\xBC".encode("utf-8", 'GBK') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA8\xBF".encode("utf-8", 'GBK') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA8\xC4".encode("utf-8", 'GBK') }
+    assert_undefined_in("\xA8\xBC", 'GBK')
+    assert_undefined_in("\xA8\xBF", 'GBK')
+    assert_undefined_in("\xA8\xC4", 'GBK')
     check_both_ways("\u3105", "\xA8\xC5", 'GBK') # ㄅ
     check_both_ways("\u3021", "\xA9\x40", 'GBK') # 〡
-    assert_raise(Encoding::UndefinedConversionError) { "\xA9\x58".encode("utf-8", 'GBK') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA9\x5B".encode("utf-8", 'GBK') }
-    assert_raise(Encoding::UndefinedConversionError) { "\xA9\x5D".encode("utf-8", 'GBK') }
+    assert_undefined_in("\xA9\x58", 'GBK')
+    assert_undefined_in("\xA9\x5B", 'GBK')
+    assert_undefined_in("\xA9\x5D", 'GBK')
     check_both_ways("\u3007", "\xA9\x96", 'GBK') # 〇
-    assert_raise(Encoding::UndefinedConversionError) { "\xA9\xA3".encode("utf-8", 'GBK') }
+    assert_undefined_in("\xA9\xA3", 'GBK')
     check_both_ways("\u2500", "\xA9\xA4", 'GBK') # ─
-    assert_raise(Encoding::UndefinedConversionError) { "\xA9\xF0".encode("utf-8", 'GBK') }
+    assert_undefined_in("\xA9\xF0", 'GBK')
     check_both_ways("\u7588", "\xAF\x40", 'GBK') # 疈
     check_both_ways("\u7607", "\xAF\x7E", 'GBK') # 瘇
     check_both_ways("\u7608", "\xAF\x80", 'GBK') # 瘈
     check_both_ways("\u7644", "\xAF\xA0", 'GBK') # 癄
-    assert_raise(Encoding::UndefinedConversionError) { "\xAF\xA1".encode("utf-8", 'GBK') }
+    assert_undefined_in("\xAF\xA1", 'GBK')
     check_both_ways("\u7645", "\xB0\x40", 'GBK') # 癅
     check_both_ways("\u769B", "\xB0\x7E", 'GBK') # 皛
     check_both_ways("\u769C", "\xB0\x80", 'GBK') # 皜
@@ -1841,10 +1831,10 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u9F78", "\xFD\x7E", 'GBK') # 齸
     check_both_ways("\u9F79", "\xFD\x80", 'GBK') # 齹
     check_both_ways("\uF9F1", "\xFD\xA0", 'GBK') # 隣
-    assert_raise(Encoding::UndefinedConversionError) { "\xFD\xA1".encode("utf-8", 'GBK') }
+    assert_undefined_in("\xFD\xA1", 'GBK')
     check_both_ways("\uFA0C", "\xFE\x40", 'GBK') # 兀
     check_both_ways("\uFA29", "\xFE\x4F", 'GBK') # 﨩
-    assert_raise(Encoding::UndefinedConversionError) { "\xFE\x50".encode("utf-8", 'GBK') }
+    assert_undefined_in("\xFE\x50", 'GBK')
     check_both_ways("\u9752\u5C71\u5B66\u9662\u5927\u5B66", "\xC7\xE0\xC9\xBD\xD1\xA7\xD4\xBA\xB4\xF3\xD1\xA7", 'GBK') # 青山学院大学
     check_both_ways("\u795E\u6797\u7FA9\u535A", "\xC9\xF1\xC1\xD6\xC1\x78\xB2\xA9", 'GBK') # 神林義博
   end
@@ -1880,48 +1870,48 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u3000", "\xA1\xA1", 'GB18030') # full-width space
     check_both_ways("\u3001", "\xA1\xA2", 'GB18030') #
     check_both_ways("\u3013", "\xA1\xFE", 'GB18030') #
-    #assert_raise(Encoding::UndefinedConversionError) { "\xA2\xA0".encode("utf-8", 'GB18030') }
+    #assert_undefined_in("\xA2\xA0", 'GB18030')
     check_both_ways("\u2170", "\xA2\xA1", 'GB18030') # ⅰ
-    #assert_raise(Encoding::UndefinedConversionError) { "\xA2\xB0".encode("utf-8", 'GB18030') }
+    #assert_undefined_in("\xA2\xB0", 'GB18030')
     check_both_ways("\u2488", "\xA2\xB1", 'GB18030') #
-    #assert_raise(Encoding::UndefinedConversionError) { "\xA2\xE4".encode("utf-8", 'GB18030') }
+    #assert_undefined_in("\xA2\xE4", 'GB18030')
     check_both_ways("\u3220", "\xA2\xE5", 'GB18030') # ㈠
-    #assert_raise(Encoding::UndefinedConversionError) { "\xA2\xF0".encode("utf-8", 'GB18030') }
+    #assert_undefined_in("\xA2\xF0", 'GB18030')
     check_both_ways("\u2160", "\xA2\xF1", 'GB18030') # Ⅰ
-    #assert_raise(Encoding::UndefinedConversionError) { "\xA3\xA0".encode("utf-8", 'GB18030') }
+    #assert_undefined_in("\xA3\xA0", 'GB18030')
     check_both_ways("\uFF01", "\xA3\xA1", 'GB18030') # E
     check_both_ways("\uFFE3", "\xA3\xFE", 'GB18030') # E
-    #assert_raise(Encoding::UndefinedConversionError) { "\xA4\xA0".encode("utf-8", 'GB18030') }
+    #assert_undefined_in("\xA4\xA0", 'GB18030')
     check_both_ways("\u3041", "\xA4\xA1", 'GB18030') #
-    #assert_raise(Encoding::UndefinedConversionError) { "\xA5\xA0".encode("utf-8", 'GB18030') }
+    #assert_undefined_in("\xA5\xA0", 'GB18030')
     check_both_ways("\u30A1", "\xA5\xA1", 'GB18030') # ァ
     check_both_ways("\u0391", "\xA6\xA1", 'GB18030') #
     check_both_ways("\u03B1", "\xA6\xC1", 'GB18030') # α
-    #assert_raise(Encoding::UndefinedConversionError) { "\xA6\xED".encode("utf-8", 'GB18030') }
+    #assert_undefined_in("\xA6\xED", 'GB18030')
     check_both_ways("\uFE3B", "\xA6\xEE", 'GB18030') # E
     check_both_ways("\u0410", "\xA7\xA1", 'GB18030') #
     check_both_ways("\u0430", "\xA7\xD1", 'GB18030') # а
     check_both_ways("\u02CA", "\xA8\x40", 'GB18030') #
     check_both_ways("\u2587", "\xA8\x7E", 'GB18030') #
-    #assert_raise(Encoding::UndefinedConversionError) { "\xA8\x96".encode("utf-8", 'GB18030') }
+    #assert_undefined_in("\xA8\x96", 'GB18030')
     check_both_ways("\u0101", "\xA8\xA1", 'GB18030') #
-    #assert_raise(Encoding::UndefinedConversionError) { "\xA8\xBC".encode("utf-8", 'GB18030') }
-    #assert_raise(Encoding::UndefinedConversionError) { "\xA8\xBF".encode("utf-8", 'GB18030') }
-    #assert_raise(Encoding::UndefinedConversionError) { "\xA8\xC4".encode("utf-8", 'GB18030') }
+    #assert_undefined_in("\xA8\xBC", 'GB18030')
+    #assert_undefined_in("\xA8\xBF", 'GB18030')
+    #assert_undefined_in("\xA8\xC4", 'GB18030')
     check_both_ways("\u3105", "\xA8\xC5", 'GB18030') #
     check_both_ways("\u3021", "\xA9\x40", 'GB18030') # 〡
-    #assert_raise(Encoding::UndefinedConversionError) { "\xA9\x58".encode("utf-8", 'GB18030') }
-    #assert_raise(Encoding::UndefinedConversionError) { "\xA9\x5B".encode("utf-8", 'GB18030') }
-    #assert_raise(Encoding::UndefinedConversionError) { "\xA9\x5D".encode("utf-8", 'GB18030') }
+    #assert_undefined_in("\xA9\x58", 'GB18030')
+    #assert_undefined_in("\xA9\x5B", 'GB18030')
+    #assert_undefined_in("\xA9\x5D", 'GB18030')
     check_both_ways("\u3007", "\xA9\x96", 'GB18030') #
-    #assert_raise(Encoding::UndefinedConversionError) { "\xA9\xA3".encode("utf-8", 'GB18030') }
+    #assert_undefined_in("\xA9\xA3", 'GB18030')
     check_both_ways("\u2500", "\xA9\xA4", 'GB18030') # ─
-    #assert_raise(Encoding::UndefinedConversionError) { "\xA9\xF0".encode("utf-8", 'GB18030') }
+    #assert_undefined_in("\xA9\xF0", 'GB18030')
     check_both_ways("\u7588", "\xAF\x40", 'GB18030') #
     check_both_ways("\u7607", "\xAF\x7E", 'GB18030') #
     check_both_ways("\u7608", "\xAF\x80", 'GB18030') #
     check_both_ways("\u7644", "\xAF\xA0", 'GB18030') #
-    #assert_raise(Encoding::UndefinedConversionError) { "\xAF\xA1".encode("utf-8", 'GB18030') }
+    #assert_undefined_in("\xAF\xA1", 'GB18030')
     check_both_ways("\u7645", "\xB0\x40", 'GB18030') #
     check_both_ways("\u769B", "\xB0\x7E", 'GB18030') #
     check_both_ways("\u769C", "\xB0\x80", 'GB18030') #
@@ -1962,10 +1952,10 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u9F78", "\xFD\x7E", 'GB18030') # 齸
     check_both_ways("\u9F79", "\xFD\x80", 'GB18030') # 齹
     check_both_ways("\uF9F1", "\xFD\xA0", 'GB18030') # E
-    #assert_raise(Encoding::UndefinedConversionError) { "\xFD\xA1".encode("utf-8", 'GB18030') }
+    #assert_undefined_in("\xFD\xA1", 'GB18030')
     check_both_ways("\uFA0C", "\xFE\x40", 'GB18030') # E
     check_both_ways("\uFA29", "\xFE\x4F", 'GB18030') # E
-    #assert_raise(Encoding::UndefinedConversionError) { "\xFE\x50".encode("utf-8", 'GB18030') }
+    #assert_undefined_in("\xFE\x50", 'GB18030')
     check_both_ways("\u9752\u5C71\u5B66\u9662\u5927\u5B66", "\xC7\xE0\xC9\xBD\xD1\xA7\xD4\xBA\xB4\xF3\xD1\xA7", 'GB18030') # 青山学院大学
     check_both_ways("\u795E\u6797\u7FA9\u535A", "\xC9\xF1\xC1\xD6\xC1\x78\xB2\xA9", 'GB18030') # 神林義
 
@@ -2020,7 +2010,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u310F", "\xA3\x7E", 'Big5') # ㄏ
     check_both_ways("\u3110", "\xA3\xA1", 'Big5') # ㄐ
     check_both_ways("\u02CB", "\xA3\xBF", 'Big5') # ˋ
-    assert_raise(Encoding::UndefinedConversionError) { "\xA3\xC0".encode("utf-8", 'Big5') }
+    assert_undefined_in("\xA3\xC0", 'Big5')
     check_both_ways("\u6D6C", "\xAF\x40", 'Big5') # 浬
     check_both_ways("\u7837", "\xAF\x7E", 'Big5') # 砷
     check_both_ways("\u7825", "\xAF\xA1", 'Big5') # 砥
@@ -2039,9 +2029,9 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u77AC", "\xC0\xFE", 'Big5') # 瞬
     check_both_ways("\u8B96", "\xC6\x40", 'Big5') # 讖
     check_both_ways("\u7C72", "\xC6\x7E", 'Big5') # 籲
-    #assert_raise(Encoding::UndefinedConversionError) { "\xC6\xA1".encode("utf-8", 'Big5') }
-    #assert_raise(Encoding::UndefinedConversionError) { "\xC7\x40".encode("utf-8", 'Big5') }
-    #assert_raise(Encoding::UndefinedConversionError) { "\xC8\x40".encode("utf-8", 'Big5') }
+    #assert_undefined_in("\xC6\xA1", 'Big5')
+    #assert_undefined_in("\xC7\x40", 'Big5')
+    #assert_undefined_in("\xC8\x40", 'Big5')
     check_both_ways("\u4E42", "\xC9\x40", 'Big5') # 乂
     check_both_ways("\u6C15", "\xC9\x7E", 'Big5') # 氕
     check_both_ways("\u6C36", "\xC9\xA1", 'Big5') # 氶
@@ -2074,7 +2064,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u9F0A", "\xF9\x7E", 'Big5') # 鼊
     check_both_ways("\u9FA4", "\xF9\xA1", 'Big5') # 龤
     check_both_ways("\u9F98", "\xF9\xD5", 'Big5') # 龘
-    #assert_raise(Encoding::UndefinedConversionError) { "\xF9\xD6".encode("utf-8", 'Big5') }
+    #assert_undefined_in("\xF9\xD6", 'Big5')
     check_both_ways("\u795E\u6797\u7FA9\u535A", "\xAF\xAB\xAA\x4C\xB8\x71\xB3\xD5", 'Big5') # 神林義博
   end
 
@@ -2087,7 +2077,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u310F", "\xA3\x7E", 'Big5-HKSCS') # ㄏ
     check_both_ways("\u3110", "\xA3\xA1", 'Big5-HKSCS') # ㄐ
     check_both_ways("\u02CB", "\xA3\xBF", 'Big5-HKSCS') # ˋ
-    #assert_raise(Encoding::UndefinedConversionError) { "\xA3\xC0".encode("utf-8", 'Big5-HKSCS') }
+    #assert_undefined_in("\xA3\xC0", 'Big5-HKSCS')
     check_both_ways("\u6D6C", "\xAF\x40", 'Big5-HKSCS') # 浬
     check_both_ways("\u7837", "\xAF\x7E", 'Big5-HKSCS') # 砷
     check_both_ways("\u7825", "\xAF\xA1", 'Big5-HKSCS') # 砥
@@ -2106,9 +2096,9 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u77AC", "\xC0\xFE", 'Big5-HKSCS') # 瞬
     check_both_ways("\u8B96", "\xC6\x40", 'Big5-HKSCS') # 讖
     check_both_ways("\u7C72", "\xC6\x7E", 'Big5-HKSCS') # 籲
-    #assert_raise(Encoding::UndefinedConversionError) { "\xC6\xA1".encode("utf-8", 'Big5-HKSCS') }
-    #assert_raise(Encoding::UndefinedConversionError) { "\xC7\x40".encode("utf-8", 'Big5-HKSCS') }
-    #assert_raise(Encoding::UndefinedConversionError) { "\xC8\x40".encode("utf-8", 'Big5-HKSCS') }
+    #assert_undefined_in("\xC6\xA1", 'Big5-HKSCS')
+    #assert_undefined_in("\xC7\x40", 'Big5-HKSCS')
+    #assert_undefined_in("\xC8\x40", 'Big5-HKSCS')
     check_both_ways("\u4E42", "\xC9\x40", 'Big5-HKSCS') # 乂
     check_both_ways("\u6C15", "\xC9\x7E", 'Big5-HKSCS') # 氕
     check_both_ways("\u6C36", "\xC9\xA1", 'Big5-HKSCS') # 氶
@@ -2142,7 +2132,7 @@ class TestTranscode < Test::Unit::TestCase
     check_both_ways("\u9FA4", "\xF9\xA1", 'Big5-HKSCS') # 龤
     check_both_ways("\u9F98", "\xF9\xD5", 'Big5-HKSCS') # 龘
     #check_both_ways("\u{23ED7}", "\x8E\x40", 'Big5-HKSCS') # 𣻗
-    #assert_raise(Encoding::UndefinedConversionError) { "\xF9\xD6".encode("utf-8", 'Big5-HKSCS') }
+    #assert_undefined_in("\xF9\xD6", 'Big5-HKSCS')
     check_both_ways("\u795E\u6797\u7FA9\u535A", "\xAF\xAB\xAA\x4C\xB8\x71\xB3\xD5", 'Big5-HKSCS') # 神林義博
   end
 
@@ -2307,5 +2297,35 @@ class TestTranscode < Test::Unit::TestCase
     assert_equal("A\r\nB\r\r\nC", s.encode(usascii, newline: :crlf))
     assert_equal("A\nB\nC", s.encode(usascii, lf_newline: true))
     assert_equal("A\nB\nC", s.encode(usascii, newline: :lf))
+  end
+
+  private
+
+  def assert_conversion_both_ways_utf8(utf8, raw, encoding)
+    assert_conversion_both_ways(utf8, 'utf-8', raw, encoding)
+  end
+  alias check_both_ways assert_conversion_both_ways_utf8
+
+  def assert_conversion_both_ways(str1, enc1, str2, enc2)
+    message = str1.dump+str2.dump
+    assert_equal(str1.force_encoding(enc1), str2.encode(enc1, enc2), message)
+    assert_equal(str2.force_encoding(enc2), str1.encode(enc2, enc1), message)
+  end
+  alias check_both_ways2 assert_conversion_both_ways
+
+  def assert_undefined_conversion(str, to, from = nil)
+    assert_raise(Encoding::UndefinedConversionError) { str.encode(to, from) }
+  end
+
+  def assert_undefined_in(str, encoding)
+    assert_undefined_conversion(str, 'utf-8', encoding)
+  end
+
+  def assert_invalid_byte_sequence(str, to, from = nil)
+    assert_raise(Encoding::InvalidByteSequenceError) { str.encode(to, from) }
+  end
+
+  def assert_invalid_in(str, encoding)
+    assert_invalid_byte_sequence(str, 'utf-8', encoding)
   end
 end

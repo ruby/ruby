@@ -1,0 +1,25 @@
+@ ProgramNode (location: (1,0)-(7,6))
+├── locals: [:c, :d]
+└── statements:
+    @ StatementsNode (location: (1,0)-(7,6))
+    └── body: (length: 2)
+        ├── @ LocalVariableWriteNode (location: (1,0)-(1,11))
+        │   ├── name: :c
+        │   ├── depth: 0
+        │   ├── name_loc: (1,0)-(1,1) = "c"
+        │   ├── value:
+        │   │   @ StringNode (location: (1,4)-(1,11))
+        │   │   ├── flags: ∅
+        │   │   ├── opening_loc: (1,4)-(1,11) = "<<'CCC'"
+        │   │   ├── content_loc: (2,0)-(5,0) = "line2\nline3\nline4\n"
+        │   │   ├── closing_loc: (5,0)-(6,0) = "CCC\n"
+        │   │   └── unescaped: "line2\nline3\nline4\n"
+        │   └── operator_loc: (1,2)-(1,3) = "="
+        └── @ LocalVariableWriteNode (location: (7,0)-(7,6))
+            ├── name: :d
+            ├── depth: 0
+            ├── name_loc: (7,0)-(7,1) = "d"
+            ├── value:
+            │   @ IntegerNode (location: (7,4)-(7,6))
+            │   └── flags: decimal
+            └── operator_loc: (7,2)-(7,3) = "="

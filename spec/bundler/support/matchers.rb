@@ -162,7 +162,7 @@ module Spec
           end
           if exitstatus == 65
             actual_platform = out.split("\n").last
-            next "#{name} was expected to be of platform #{platform} but was #{actual_platform}"
+            next "#{name} was expected to be of platform #{platform || "ruby"} but was #{actual_platform || "ruby"}"
           end
           if exitstatus == 66
             actual_source = out.split("\n").last

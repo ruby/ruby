@@ -1,6 +1,9 @@
 # frozen_string_literal: true
 require_relative 'helper'
-require 'bigdecimal'
+begin
+  require 'bigdecimal'
+rescue LoadError
+end
 
 module Psych
   ###
@@ -29,13 +32,13 @@ module Psych
     def test_big_decimal_tag
       decimal = BigDecimal("12.34")
       assert_match "!ruby/object:BigDecimal", Psych.dump(decimal)
-    end
+    end if defined?(BigDecimal)
 
     def test_big_decimal_round_trip
       decimal = BigDecimal("12.34")
       $DEBUG = false
       assert_cycle decimal
-    end
+    end if defined?(BigDecimal)
 
     def test_does_not_attempt_numeric
       str = Psych.load('--- 4 roses')

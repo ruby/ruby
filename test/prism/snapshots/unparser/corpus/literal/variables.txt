@@ -1,0 +1,53 @@
+@ ProgramNode (location: (1,0)-(10,17))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(10,17))
+    └── body: (length: 10)
+        ├── @ CallNode (location: (1,0)-(1,1))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :a
+        │   ├── message_loc: (1,0)-(1,1) = "a"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   └── flags: variable_call
+        ├── @ InstanceVariableReadNode (location: (2,0)-(2,2))
+        │   └── name: :@a
+        ├── @ ClassVariableReadNode (location: (3,0)-(3,3))
+        │   └── name: :@@a
+        ├── @ GlobalVariableReadNode (location: (4,0)-(4,2))
+        │   └── name: :$a
+        ├── @ NumberedReferenceReadNode (location: (5,0)-(5,2))
+        │   └── number: 1
+        ├── @ BackReferenceReadNode (location: (6,0)-(6,2))
+        │   └── name: :$`
+        ├── @ ConstantReadNode (location: (7,0)-(7,5))
+        │   └── name: :CONST
+        ├── @ ConstantPathNode (location: (8,0)-(8,13))
+        │   ├── parent:
+        │   │   @ ConstantReadNode (location: (8,0)-(8,6))
+        │   │   └── name: :SCOPED
+        │   ├── child:
+        │   │   @ ConstantReadNode (location: (8,8)-(8,13))
+        │   │   └── name: :CONST
+        │   └── delimiter_loc: (8,6)-(8,8) = "::"
+        ├── @ ConstantPathNode (location: (9,0)-(9,10))
+        │   ├── parent: ∅
+        │   ├── child:
+        │   │   @ ConstantReadNode (location: (9,2)-(9,10))
+        │   │   └── name: :TOPLEVEL
+        │   └── delimiter_loc: (9,0)-(9,2) = "::"
+        └── @ ConstantPathNode (location: (10,0)-(10,17))
+            ├── parent:
+            │   @ ConstantPathNode (location: (10,0)-(10,10))
+            │   ├── parent: ∅
+            │   ├── child:
+            │   │   @ ConstantReadNode (location: (10,2)-(10,10))
+            │   │   └── name: :TOPLEVEL
+            │   └── delimiter_loc: (10,0)-(10,2) = "::"
+            ├── child:
+            │   @ ConstantReadNode (location: (10,12)-(10,17))
+            │   └── name: :CONST
+            └── delimiter_loc: (10,10)-(10,12) = "::"

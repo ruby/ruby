@@ -459,6 +459,8 @@ VALUE rsock_write_nonblock(VALUE sock, VALUE buf, VALUE ex);
 
 void rsock_make_fd_nonblock(int fd);
 
+int rsock_is_dgram(rb_io_t *fptr);
+
 #if !defined HAVE_INET_NTOP && ! defined _WIN32
 const char *inet_ntop(int, const void *, char *, size_t);
 #elif defined __MINGW32__

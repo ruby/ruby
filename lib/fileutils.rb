@@ -3,7 +3,7 @@
 begin
   require 'rbconfig'
 rescue LoadError
-  # for make mjit-headers
+  # for make rjit-headers
 end
 
 # Namespace for file utility methods for copying, moving, removing, etc.
@@ -180,7 +180,7 @@ end
 # - {CVE-2004-0452}[https://cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2004-0452].
 #
 module FileUtils
-  VERSION = "1.7.0"
+  VERSION = "1.7.2"
 
   def self.private_module_function(name)   #:nodoc:
     module_function name
@@ -191,8 +191,6 @@ module FileUtils
   # Returns a string containing the path to the current directory:
   #
   #   FileUtils.pwd # => "/rdoc/fileutils"
-  #
-  # FileUtils.getwd is an alias for FileUtils.pwd.
   #
   # Related: FileUtils.cd.
   #
@@ -234,8 +232,6 @@ module FileUtils
   #
   #     cd ..
   #     cd fileutils
-  #
-  # FileUtils.chdir is an alias for FileUtils.cd.
   #
   # Related: FileUtils.pwd.
   #
@@ -515,8 +511,6 @@ module FileUtils
   # Raises an exception if +dest+ is the path to an existing file
   # and keyword argument +force+ is not +true+.
   #
-  # FileUtils#link is an alias for FileUtils#ln.
-  #
   # Related: FileUtils.link_entry (has different options).
   #
   def ln(src, dest, force: nil, noop: nil, verbose: nil)
@@ -707,8 +701,6 @@ module FileUtils
   #     ln -sf src2.txt dest2.txt
   #     ln -s srcdir3/src0.txt srcdir3/src1.txt destdir3
   #
-  # FileUtils.symlink is an alias for FileUtils.ln_s.
-  #
   # Related: FileUtils.ln_sf.
   #
   def ln_s(src, dest, force: nil, relative: false, target_directory: true, noop: nil, verbose: nil)
@@ -875,8 +867,6 @@ module FileUtils
   #     cp src2.txt src2.dat dest2
   #
   # Raises an exception if +src+ is a directory.
-  #
-  # FileUtils.copy is an alias for FileUtils.cp.
   #
   # Related: {methods for copying}[rdoc-ref:FileUtils@Copying].
   #
@@ -1164,8 +1154,6 @@ module FileUtils
   #     mv src0 dest0
   #     mv src1.txt src1 dest1
   #
-  # FileUtils.move is an alias for FileUtils.mv.
-  #
   def mv(src, dest, force: nil, noop: nil, verbose: nil, secure: nil)
     fu_output_message "mv#{force ? ' -f' : ''} #{[src,dest].flatten.join ' '}" if verbose
     return if noop
@@ -1223,8 +1211,6 @@ module FileUtils
   #
   #     rm src0.dat src0.txt
   #
-  # FileUtils.remove is an alias for FileUtils.rm.
-  #
   # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
   #
   def rm(list, force: nil, noop: nil, verbose: nil)
@@ -1249,8 +1235,6 @@ module FileUtils
   # should be {interpretable as paths}[rdoc-ref:FileUtils@Path+Arguments].
   #
   # See FileUtils.rm for keyword arguments.
-  #
-  # FileUtils.safe_unlink is an alias for FileUtils.rm_f.
   #
   # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
   #
@@ -1338,8 +1322,6 @@ module FileUtils
   # see {Avoiding the TOCTTOU Vulnerability}[rdoc-ref:FileUtils@Avoiding+the+TOCTTOU+Vulnerability].
   #
   # See FileUtils.rm_r for keyword arguments.
-  #
-  # FileUtils.rmtree is an alias for FileUtils.rm_rf.
   #
   # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
   #
@@ -1642,7 +1624,13 @@ module FileUtils
       st = File.stat(s)
       unless File.exist?(d) and compare_file(s, d)
         remove_file d, true
-        copy_file s, d
+        if d.end_with?('/')
+          mkdir_p d
+          copy_file s, d + File.basename(s)
+        else
+          mkdir_p File.expand_path('..', d)
+          copy_file s, d
+        end
         File.utime st.atime, st.mtime, d if preserve
         File.chmod fu_mode(mode, st), d if mode
         File.chown uid, gid, d if uid or gid

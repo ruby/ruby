@@ -3,7 +3,7 @@
 ; Some relevant examples: https://github.com/gcc-mirror/gcc/blob/master/libphobos/libdruntime/config/powerpc/switchcontext.S
 ; https://github.com/gcc-mirror/gcc/blob/master/libgcc/config/rs6000/darwin-gpsave.S
 ; https://www.ibm.com/docs/en/aix/7.2?topic=epilogs-saving-gprs-only
-; ppc32 version may be re-written compactly with stmw/lwm, but the code wonʼt be faster, see: https://github.com/ruby/ruby/pull/5927#issuecomment-1139730541
+; ppc32 version may be re-written compactly with stmw/lwm, but the code won't be faster, see: https://github.com/ruby/ruby/pull/5927#issuecomment-1139730541
 
 ; Notice that this code is only for Darwin (macOS). Darwin ABI differs from AIX and ELF.
 ; To add support for AIX, *BSD or *Linux, please make separate implementations.

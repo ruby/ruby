@@ -1,5 +1,7 @@
 require_relative '../../spec_helper'
 require 'time'
+require 'date'
+date_version = defined?(Date::VERSION) ? Date::VERSION : '3.1.0'
 
 describe "Time#to_datetime" do
   it "returns a DateTime representing the same instant" do
@@ -13,8 +15,7 @@ describe "Time#to_datetime" do
     datetime.sec.should == 59
   end
 
-  date_version = defined?(Date::VERSION) ? Date::VERSION : '0.0.0'
-  version_is(date_version, '3.2.3') do
+  version_is date_version, '3.2.3' do #ruby_version_is '3.2' do
     it "returns a DateTime representing the same instant before Gregorian" do
       time = Time.utc(1582, 10, 14, 23, 58, 59)
       datetime = time.to_datetime

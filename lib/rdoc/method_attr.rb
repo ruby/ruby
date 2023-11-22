@@ -416,4 +416,3 @@ class RDoc::MethodAttr < RDoc::CodeObject
   end
 
 end
-

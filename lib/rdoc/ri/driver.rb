@@ -34,9 +34,9 @@ class RDoc::RI::Driver
 
   class NotFoundError < Error
 
-    def initialize(klass, suggestions = nil) # :nodoc:
+    def initialize(klass, suggestion_proc = nil) # :nodoc:
       @klass = klass
-      @suggestions = suggestions
+      @suggestion_proc = suggestion_proc
     end
 
     ##
@@ -48,8 +48,9 @@ class RDoc::RI::Driver
 
     def message # :nodoc:
       str = "Nothing known about #{@klass}"
-      if @suggestions and !@suggestions.empty?
-        str += "\nDid you mean?  #{@suggestions.join("\n               ")}"
+      suggestions = @suggestion_proc&.call
+      if suggestions and !suggestions.empty?
+        str += "\nDid you mean?  #{suggestions.join("\n               ")}"
       end
       str
     end
@@ -948,8 +949,8 @@ or the PAGER environment variable.
     ary = class_names.grep(Regexp.new("\\A#{klass.gsub(/(?=::|\z)/, '[^:]*')}\\z"))
     if ary.length != 1 && ary.first != klass
       if check_did_you_mean
-        suggestions = DidYouMean::SpellChecker.new(dictionary: class_names).correct(klass)
-        raise NotFoundError.new(klass, suggestions)
+        suggestion_proc = -> { DidYouMean::SpellChecker.new(dictionary: class_names).correct(klass) }
+        raise NotFoundError.new(klass, suggestion_proc)
       else
         raise NotFoundError, klass
       end
@@ -1237,8 +1238,8 @@ or the PAGER environment variable.
           methods.push(*store.instance_methods[klass]) if [:instance, :both].include? types
         end
         methods = methods.uniq
-        suggestions = DidYouMean::SpellChecker.new(dictionary: methods).correct(method_name)
-        raise NotFoundError.new(name, suggestions)
+        suggestion_proc = -> { DidYouMean::SpellChecker.new(dictionary: methods).correct(method_name) }
+        raise NotFoundError.new(name, suggestion_proc)
       else
         raise NotFoundError, name
       end

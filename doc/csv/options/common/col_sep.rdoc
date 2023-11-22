@@ -55,9 +55,3 @@ Raises an exception if parsing with the empty \String:
   # Raises ArgumentError (:col_sep must be 1 or more characters: "")
   CSV.parse("foo0\nbar1\nbaz2\n", col_sep: col_sep)
 
-Raises an exception if the given value is not String-convertible:
-  col_sep = BasicObject.new
-  # Raises NoMethodError (undefined method `to_s' for #<BasicObject:>)
-  CSV.generate(line, col_sep: col_sep)
-  # Raises NoMethodError (undefined method `to_s' for #<BasicObject:>)
-  CSV.parse(str, col_sep: col_sep)

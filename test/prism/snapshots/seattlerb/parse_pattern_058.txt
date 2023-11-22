@@ -1,0 +1,65 @@
+@ ProgramNode (location: (1,0)-(4,3))
+├── locals: [:a, :rest]
+└── statements:
+    @ StatementsNode (location: (1,0)-(4,3))
+    └── body: (length: 1)
+        └── @ CaseMatchNode (location: (1,0)-(4,3))
+            ├── predicate:
+            │   @ HashNode (location: (1,5)-(1,11))
+            │   ├── opening_loc: (1,5)-(1,6) = "{"
+            │   ├── elements: (length: 1)
+            │   │   └── @ AssocNode (location: (1,6)-(1,10))
+            │   │       ├── key:
+            │   │       │   @ SymbolNode (location: (1,6)-(1,8))
+            │   │       │   ├── opening_loc: ∅
+            │   │       │   ├── value_loc: (1,6)-(1,7) = "a"
+            │   │       │   ├── closing_loc: (1,7)-(1,8) = ":"
+            │   │       │   └── unescaped: "a"
+            │   │       ├── value:
+            │   │       │   @ IntegerNode (location: (1,9)-(1,10))
+            │   │       │   └── flags: decimal
+            │   │       └── operator_loc: ∅
+            │   └── closing_loc: (1,10)-(1,11) = "}"
+            ├── conditions: (length: 1)
+            │   └── @ InNode (location: (2,0)-(3,11))
+            │       ├── pattern:
+            │       │   @ HashPatternNode (location: (2,3)-(2,15))
+            │       │   ├── constant: ∅
+            │       │   ├── elements: (length: 2)
+            │       │   │   ├── @ AssocNode (location: (2,4)-(2,6))
+            │       │   │   │   ├── key:
+            │       │   │   │   │   @ SymbolNode (location: (2,4)-(2,6))
+            │       │   │   │   │   ├── opening_loc: ∅
+            │       │   │   │   │   ├── value_loc: (2,4)-(2,5) = "a"
+            │       │   │   │   │   ├── closing_loc: (2,5)-(2,6) = ":"
+            │       │   │   │   │   └── unescaped: "a"
+            │       │   │   │   ├── value: ∅
+            │       │   │   │   └── operator_loc: ∅
+            │       │   │   └── @ AssocSplatNode (location: (2,8)-(2,14))
+            │       │   │       ├── value:
+            │       │   │       │   @ LocalVariableTargetNode (location: (2,10)-(2,14))
+            │       │   │       │   ├── name: :rest
+            │       │   │       │   └── depth: 0
+            │       │   │       └── operator_loc: (2,8)-(2,10) = "**"
+            │       │   ├── rest: ∅
+            │       │   ├── opening_loc: (2,3)-(2,4) = "{"
+            │       │   └── closing_loc: (2,14)-(2,15) = "}"
+            │       ├── statements:
+            │       │   @ StatementsNode (location: (3,2)-(3,11))
+            │       │   └── body: (length: 1)
+            │       │       └── @ ArrayNode (location: (3,2)-(3,11))
+            │       │           ├── elements: (length: 2)
+            │       │           │   ├── @ LocalVariableReadNode (location: (3,3)-(3,4))
+            │       │           │   │   ├── name: :a
+            │       │           │   │   └── depth: 0
+            │       │           │   └── @ LocalVariableReadNode (location: (3,6)-(3,10))
+            │       │           │       ├── name: :rest
+            │       │           │       └── depth: 0
+            │       │           ├── opening_loc: (3,2)-(3,3) = "["
+            │       │           ├── closing_loc: (3,10)-(3,11) = "]"
+            │       │           └── flags: ∅
+            │       ├── in_loc: (2,0)-(2,2) = "in"
+            │       └── then_loc: ∅
+            ├── consequent: ∅
+            ├── case_keyword_loc: (1,0)-(1,4) = "case"
+            └── end_keyword_loc: (4,0)-(4,3) = "end"

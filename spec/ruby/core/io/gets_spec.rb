@@ -24,6 +24,12 @@ describe "IO#gets" do
     end
   end
 
+  it "sets $_ to nil after the last line has been read" do
+    while @io.gets
+    end
+    $_.should be_nil
+  end
+
   it "returns nil if called at the end of the stream" do
     IOSpecs.lines.length.times { @io.gets }
     @io.gets.should == nil
@@ -113,6 +119,35 @@ describe "IO#gets" do
         $..should == @count += 1
       end
     end
+
+    describe "that consists of multiple bytes" do
+      platform_is_not :windows do
+        it "should match the separator even if the buffer is filled over successive reads" do
+          IO.pipe do |read, write|
+
+            # Write part of the string with the separator split between two write calls. We want
+            # the read to intertwine such that when the read starts the full data isn't yet
+            # available in the buffer.
+            write.write("Aquí está la línea tres\r\n")
+
+            t = Thread.new do
+              # Continue reading until the separator is encountered or the pipe is closed.
+              read.gets("\r\n\r\n")
+            end
+
+            # Write the other half of the separator, which should cause the `gets` call to now
+            # match. Explicitly close the pipe for good measure so a bug in `gets` doesn't block forever.
+            Thread.pass until t.stop?
+
+            write.write("\r\nelse\r\n\r\n")
+            write.close
+
+            t.value.bytes.should == "Aquí está la línea tres\r\n\r\n".bytes
+            read.read(8).bytes.should == "else\r\n\r\n".bytes
+          end
+        end
+      end
+    end
   end
 
   describe "when passed chomp" do
@@ -120,14 +155,12 @@ describe "IO#gets" do
       @io.gets(chomp: true).should == IOSpecs.lines_without_newline_characters[0]
     end
 
-    ruby_version_is "3.0" do
-      it "raises exception when options passed as Hash" do
-        -> { @io.gets({ chomp: true }) }.should raise_error(TypeError)
+    it "raises exception when options passed as Hash" do
+      -> { @io.gets({ chomp: true }) }.should raise_error(TypeError)
 
-        -> {
-          @io.gets("\n", 1, { chomp: true })
-        }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 0..2)")
-      end
+      -> {
+        @io.gets("\n", 1, { chomp: true })
+      }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 0..2)")
     end
   end
 end
@@ -216,6 +249,10 @@ describe "IO#gets" do
     @io.gets(nil, 0).should == ""
     @io.gets("", 0).should == ""
   end
+
+  it "does not accept limit that doesn't fit in a C off_t" do
+    -> { @io.gets(2**128) }.should raise_error(RangeError)
+  end
 end
 
 describe "IO#gets" do
@@ -301,11 +338,23 @@ describe "IO#gets" do
     @io.gets.encoding.should == Encoding::BINARY
   end
 
-  it "transcodes to internal encoding if the IO object's external encoding is BINARY" do
-    Encoding.default_external = Encoding::BINARY
-    Encoding.default_internal = Encoding::UTF_8
-    @io = new_io @name, 'r'
-    @io.set_encoding Encoding::BINARY, Encoding::UTF_8
-    @io.gets.encoding.should == Encoding::UTF_8
+  ruby_version_is ''...'3.3' do
+    it "transcodes to internal encoding if the IO object's external encoding is BINARY" do
+      Encoding.default_external = Encoding::BINARY
+      Encoding.default_internal = Encoding::UTF_8
+      @io = new_io @name, 'r'
+      @io.set_encoding Encoding::BINARY, Encoding::UTF_8
+      @io.gets.encoding.should == Encoding::UTF_8
+    end
+  end
+
+  ruby_version_is '3.3' do
+    it "ignores the internal encoding if the IO object's external encoding is BINARY" do
+      Encoding.default_external = Encoding::BINARY
+      Encoding.default_internal = Encoding::UTF_8
+      @io = new_io @name, 'r'
+      @io.set_encoding Encoding::BINARY, Encoding::UTF_8
+      @io.gets.encoding.should == Encoding::BINARY
+    end
   end
 end

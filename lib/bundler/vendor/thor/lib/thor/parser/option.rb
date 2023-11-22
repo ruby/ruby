@@ -11,7 +11,7 @@ class Bundler::Thor
       super
       @lazy_default   = options[:lazy_default]
       @group          = options[:group].to_s.capitalize if options[:group]
-      @aliases        = Array(options[:aliases])
+      @aliases        = normalize_aliases(options[:aliases])
       @hide           = options[:hide]
     end
 
@@ -58,7 +58,7 @@ class Bundler::Thor
         default = nil
         if VALID_TYPES.include?(value)
           value
-        elsif required = (value == :required) # rubocop:disable AssignmentInCondition
+        elsif required = (value == :required) # rubocop:disable Lint/AssignmentInCondition
           :string
         end
       when TrueClass, FalseClass
@@ -69,7 +69,7 @@ class Bundler::Thor
         value.class.name.downcase.to_sym
       end
 
-      new(name.to_s, :required => required, :type => type, :default => default, :aliases => aliases)
+      new(name.to_s, required: required, type: type, default: default, aliases: aliases)
     end
 
     def switch_name
@@ -90,13 +90,26 @@ class Bundler::Thor
       sample = "[#{sample}]".dup unless required?
 
       if boolean?
-        sample << ", [#{dasherize('no-' + human_name)}]" unless (name == "force") || name.start_with?("no-")
+        sample << ", [#{dasherize('no-' + human_name)}]" unless (name == "force") || name.match(/\Ano[\-_]/)
       end
 
+      aliases_for_usage.ljust(padding) + sample
+    end
+
+    def aliases_for_usage
       if aliases.empty?
-        (" " * padding) << sample
+        ""
       else
-        "#{aliases.join(', ')}, #{sample}"
+        "#{aliases.join(', ')}, "
+      end
+    end
+
+    def show_default?
+      case default
+      when TrueClass, FalseClass
+        true
+      else
+        super
       end
     end
 
@@ -138,8 +151,8 @@ class Bundler::Thor
           raise ArgumentError, err
         elsif @check_default_type == nil
           Bundler::Thor.deprecation_warning "#{err}.\n" +
-            'This will be rejected in the future unless you explicitly pass the options `check_default_type: false`' +
-            ' or call `allow_incompatible_default_type!` in your code'
+            "This will be rejected in the future unless you explicitly pass the options `check_default_type: false`" +
+            " or call `allow_incompatible_default_type!` in your code"
         end
       end
     end
@@ -154,6 +167,12 @@ class Bundler::Thor
 
     def dasherize(str)
       (str.length > 1 ? "--" : "-") + str.tr("_", "-")
+    end
+
+  private
+
+    def normalize_aliases(aliases)
+      Array(aliases).map { |short| short.to_s.sub(/^(?!\-)/, "-") }
     end
   end
 end

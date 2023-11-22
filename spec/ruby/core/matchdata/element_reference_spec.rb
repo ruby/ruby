@@ -22,6 +22,11 @@ describe "MatchData#[]" do
 
     # length argument larger than number of match values is capped to match value length
     /(.)(.)(\d+)(\d)/.match("THX1138.")[3, 10].should == %w|113 8|
+
+    /(.)(.)(\d+)(\d)/.match("THX1138.")[3, 0].should == []
+
+    /(.)(.)(\d+)(\d)/.match("THX1138.")[3, -1].should == nil
+    /(.)(.)(\d+)(\d)/.match("THX1138.")[3, -30].should == nil
   end
 
   it "supports ranges [start..end]" do
@@ -43,11 +48,9 @@ describe "MatchData#[]" do
     /(.)(.)(\d+)(\d)/.match("THX1138.")[nil..nil].should == %w|HX1138 H X 113 8|
   end
 
-  ruby_version_is "3.0" do
-    it "returns instances of String when given a String subclass" do
-      str = MatchDataSpecs::MyString.new("THX1138.")
-      /(.)(.)(\d+)(\d)/.match(str)[0..-1].each { |m| m.should be_an_instance_of(String) }
-    end
+  it "returns instances of String when given a String subclass" do
+    str = MatchDataSpecs::MyString.new("THX1138.")
+    /(.)(.)(\d+)(\d)/.match(str)[0..-1].each { |m| m.should be_an_instance_of(String) }
   end
 end
 

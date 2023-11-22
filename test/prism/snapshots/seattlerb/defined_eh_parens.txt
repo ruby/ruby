@@ -1,0 +1,12 @@
+@ ProgramNode (location: (1,0)-(1,12))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,12))
+    └── body: (length: 1)
+        └── @ DefinedNode (location: (1,0)-(1,12))
+            ├── lparen_loc: (1,8)-(1,9) = "("
+            ├── value:
+            │   @ IntegerNode (location: (1,9)-(1,11))
+            │   └── flags: decimal
+            ├── rparen_loc: (1,11)-(1,12) = ")"
+            └── keyword_loc: (1,0)-(1,8) = "defined?"

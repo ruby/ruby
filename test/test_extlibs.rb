@@ -65,9 +65,7 @@ class TestExtLibs < Test::Unit::TestCase
   check_existence "pathname"
   check_existence "psych"
   check_existence "pty"
-  check_existence "racc/cparse"
   check_existence "rbconfig/sizeof"
-  #check_existence "readline" # depend on libreadline
   check_existence "ripper"
   check_existence "socket"
   check_existence "stringio"

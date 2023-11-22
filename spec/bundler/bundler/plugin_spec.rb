@@ -225,7 +225,7 @@ RSpec.describe Bundler::Plugin do
     end
   end
 
-  describe "#source_from_lock" do
+  describe "#from_lock" do
     it "returns instance of registered class initialized with locked opts" do
       opts = { "type" => "l_source", "remote" => "xyz", "other" => "random" }
       allow(index).to receive(:source_plugin).with("l_source") { "plugin_name" }
@@ -236,7 +236,7 @@ RSpec.describe Bundler::Plugin do
 
       expect(SClass).to receive(:new).
         with(hash_including("type" => "l_source", "uri" => "xyz", "other" => "random")) { s_instance }
-      expect(subject.source_from_lock(opts)).to be(s_instance)
+      expect(subject.from_lock(opts)).to be(s_instance)
     end
   end
 

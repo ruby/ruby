@@ -1,0 +1,223 @@
+@ ProgramNode (location: (1,0)-(11,34))
+├── locals: [:a, :b, :value]
+└── statements:
+    @ StatementsNode (location: (1,0)-(11,34))
+    └── body: (length: 12)
+        ├── @ MatchRequiredNode (location: (1,0)-(1,14))
+        │   ├── value:
+        │   │   @ ArrayNode (location: (1,0)-(1,6))
+        │   │   ├── elements: (length: 2)
+        │   │   │   ├── @ IntegerNode (location: (1,1)-(1,2))
+        │   │   │   │   └── flags: decimal
+        │   │   │   └── @ IntegerNode (location: (1,4)-(1,5))
+        │   │   │       └── flags: decimal
+        │   │   ├── opening_loc: (1,0)-(1,1) = "["
+        │   │   ├── closing_loc: (1,5)-(1,6) = "]"
+        │   │   └── flags: ∅
+        │   ├── pattern:
+        │   │   @ ArrayPatternNode (location: (1,10)-(1,14))
+        │   │   ├── constant: ∅
+        │   │   ├── requireds: (length: 2)
+        │   │   │   ├── @ LocalVariableTargetNode (location: (1,10)-(1,11))
+        │   │   │   │   ├── name: :a
+        │   │   │   │   └── depth: 0
+        │   │   │   └── @ LocalVariableTargetNode (location: (1,13)-(1,14))
+        │   │   │       ├── name: :b
+        │   │   │       └── depth: 0
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── opening_loc: ∅
+        │   │   └── closing_loc: ∅
+        │   └── operator_loc: (1,7)-(1,9) = "=>"
+        ├── @ LocalVariableReadNode (location: (1,16)-(1,17))
+        │   ├── name: :a
+        │   └── depth: 0
+        ├── @ MatchPredicateNode (location: (3,0)-(3,14))
+        │   ├── value:
+        │   │   @ ArrayNode (location: (3,0)-(3,6))
+        │   │   ├── elements: (length: 2)
+        │   │   │   ├── @ IntegerNode (location: (3,1)-(3,2))
+        │   │   │   │   └── flags: decimal
+        │   │   │   └── @ IntegerNode (location: (3,4)-(3,5))
+        │   │   │       └── flags: decimal
+        │   │   ├── opening_loc: (3,0)-(3,1) = "["
+        │   │   ├── closing_loc: (3,5)-(3,6) = "]"
+        │   │   └── flags: ∅
+        │   ├── pattern:
+        │   │   @ ArrayPatternNode (location: (3,10)-(3,14))
+        │   │   ├── constant: ∅
+        │   │   ├── requireds: (length: 2)
+        │   │   │   ├── @ LocalVariableTargetNode (location: (3,10)-(3,11))
+        │   │   │   │   ├── name: :a
+        │   │   │   │   └── depth: 0
+        │   │   │   └── @ LocalVariableTargetNode (location: (3,13)-(3,14))
+        │   │   │       ├── name: :b
+        │   │   │       └── depth: 0
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── opening_loc: ∅
+        │   │   └── closing_loc: ∅
+        │   └── operator_loc: (3,7)-(3,9) = "in"
+        ├── @ LocalVariableReadNode (location: (3,16)-(3,17))
+        │   ├── name: :a
+        │   └── depth: 0
+        ├── @ MatchRequiredNode (location: (5,0)-(5,12))
+        │   ├── value:
+        │   │   @ HashNode (location: (5,0)-(5,6))
+        │   │   ├── opening_loc: (5,0)-(5,1) = "{"
+        │   │   ├── elements: (length: 1)
+        │   │   │   └── @ AssocNode (location: (5,1)-(5,5))
+        │   │   │       ├── key:
+        │   │   │       │   @ SymbolNode (location: (5,1)-(5,3))
+        │   │   │       │   ├── opening_loc: ∅
+        │   │   │       │   ├── value_loc: (5,1)-(5,2) = "a"
+        │   │   │       │   ├── closing_loc: (5,2)-(5,3) = ":"
+        │   │   │       │   └── unescaped: "a"
+        │   │   │       ├── value:
+        │   │   │       │   @ IntegerNode (location: (5,4)-(5,5))
+        │   │   │       │   └── flags: decimal
+        │   │   │       └── operator_loc: ∅
+        │   │   └── closing_loc: (5,5)-(5,6) = "}"
+        │   ├── pattern:
+        │   │   @ HashPatternNode (location: (5,10)-(5,12))
+        │   │   ├── constant: ∅
+        │   │   ├── elements: (length: 1)
+        │   │   │   └── @ AssocNode (location: (5,10)-(5,12))
+        │   │   │       ├── key:
+        │   │   │       │   @ SymbolNode (location: (5,10)-(5,12))
+        │   │   │       │   ├── opening_loc: ∅
+        │   │   │       │   ├── value_loc: (5,10)-(5,11) = "a"
+        │   │   │       │   ├── closing_loc: (5,11)-(5,12) = ":"
+        │   │   │       │   └── unescaped: "a"
+        │   │   │       ├── value: ∅
+        │   │   │       └── operator_loc: ∅
+        │   │   ├── rest: ∅
+        │   │   ├── opening_loc: ∅
+        │   │   └── closing_loc: ∅
+        │   └── operator_loc: (5,7)-(5,9) = "=>"
+        ├── @ LocalVariableReadNode (location: (5,14)-(5,15))
+        │   ├── name: :a
+        │   └── depth: 0
+        ├── @ MatchPredicateNode (location: (7,0)-(7,12))
+        │   ├── value:
+        │   │   @ HashNode (location: (7,0)-(7,6))
+        │   │   ├── opening_loc: (7,0)-(7,1) = "{"
+        │   │   ├── elements: (length: 1)
+        │   │   │   └── @ AssocNode (location: (7,1)-(7,5))
+        │   │   │       ├── key:
+        │   │   │       │   @ SymbolNode (location: (7,1)-(7,3))
+        │   │   │       │   ├── opening_loc: ∅
+        │   │   │       │   ├── value_loc: (7,1)-(7,2) = "a"
+        │   │   │       │   ├── closing_loc: (7,2)-(7,3) = ":"
+        │   │   │       │   └── unescaped: "a"
+        │   │   │       ├── value:
+        │   │   │       │   @ IntegerNode (location: (7,4)-(7,5))
+        │   │   │       │   └── flags: decimal
+        │   │   │       └── operator_loc: ∅
+        │   │   └── closing_loc: (7,5)-(7,6) = "}"
+        │   ├── pattern:
+        │   │   @ HashPatternNode (location: (7,10)-(7,12))
+        │   │   ├── constant: ∅
+        │   │   ├── elements: (length: 1)
+        │   │   │   └── @ AssocNode (location: (7,10)-(7,12))
+        │   │   │       ├── key:
+        │   │   │       │   @ SymbolNode (location: (7,10)-(7,12))
+        │   │   │       │   ├── opening_loc: ∅
+        │   │   │       │   ├── value_loc: (7,10)-(7,11) = "a"
+        │   │   │       │   ├── closing_loc: (7,11)-(7,12) = ":"
+        │   │   │       │   └── unescaped: "a"
+        │   │   │       ├── value: ∅
+        │   │   │       └── operator_loc: ∅
+        │   │   ├── rest: ∅
+        │   │   ├── opening_loc: ∅
+        │   │   └── closing_loc: ∅
+        │   └── operator_loc: (7,7)-(7,9) = "in"
+        ├── @ LocalVariableReadNode (location: (7,14)-(7,15))
+        │   ├── name: :a
+        │   └── depth: 0
+        ├── @ MatchRequiredNode (location: (9,0)-(9,27))
+        │   ├── value:
+        │   │   @ HashNode (location: (9,0)-(9,13))
+        │   │   ├── opening_loc: (9,0)-(9,1) = "{"
+        │   │   ├── elements: (length: 1)
+        │   │   │   └── @ AssocNode (location: (9,1)-(9,12))
+        │   │   │       ├── key:
+        │   │   │       │   @ SymbolNode (location: (9,1)-(9,5))
+        │   │   │       │   ├── opening_loc: ∅
+        │   │   │       │   ├── value_loc: (9,1)-(9,4) = "key"
+        │   │   │       │   ├── closing_loc: (9,4)-(9,5) = ":"
+        │   │   │       │   └── unescaped: "key"
+        │   │   │       ├── value:
+        │   │   │       │   @ SymbolNode (location: (9,6)-(9,12))
+        │   │   │       │   ├── opening_loc: (9,6)-(9,7) = ":"
+        │   │   │       │   ├── value_loc: (9,7)-(9,12) = "value"
+        │   │   │       │   ├── closing_loc: ∅
+        │   │   │       │   └── unescaped: "value"
+        │   │   │       └── operator_loc: ∅
+        │   │   └── closing_loc: (9,12)-(9,13) = "}"
+        │   ├── pattern:
+        │   │   @ HashPatternNode (location: (9,17)-(9,27))
+        │   │   ├── constant: ∅
+        │   │   ├── elements: (length: 1)
+        │   │   │   └── @ AssocNode (location: (9,17)-(9,27))
+        │   │   │       ├── key:
+        │   │   │       │   @ SymbolNode (location: (9,17)-(9,21))
+        │   │   │       │   ├── opening_loc: ∅
+        │   │   │       │   ├── value_loc: (9,17)-(9,20) = "key"
+        │   │   │       │   ├── closing_loc: (9,20)-(9,21) = ":"
+        │   │   │       │   └── unescaped: "key"
+        │   │   │       ├── value:
+        │   │   │       │   @ LocalVariableTargetNode (location: (9,22)-(9,27))
+        │   │   │       │   ├── name: :value
+        │   │   │       │   └── depth: 0
+        │   │   │       └── operator_loc: ∅
+        │   │   ├── rest: ∅
+        │   │   ├── opening_loc: ∅
+        │   │   └── closing_loc: ∅
+        │   └── operator_loc: (9,14)-(9,16) = "=>"
+        ├── @ LocalVariableReadNode (location: (9,29)-(9,34))
+        │   ├── name: :value
+        │   └── depth: 0
+        ├── @ MatchPredicateNode (location: (11,0)-(11,27))
+        │   ├── value:
+        │   │   @ HashNode (location: (11,0)-(11,13))
+        │   │   ├── opening_loc: (11,0)-(11,1) = "{"
+        │   │   ├── elements: (length: 1)
+        │   │   │   └── @ AssocNode (location: (11,1)-(11,12))
+        │   │   │       ├── key:
+        │   │   │       │   @ SymbolNode (location: (11,1)-(11,5))
+        │   │   │       │   ├── opening_loc: ∅
+        │   │   │       │   ├── value_loc: (11,1)-(11,4) = "key"
+        │   │   │       │   ├── closing_loc: (11,4)-(11,5) = ":"
+        │   │   │       │   └── unescaped: "key"
+        │   │   │       ├── value:
+        │   │   │       │   @ SymbolNode (location: (11,6)-(11,12))
+        │   │   │       │   ├── opening_loc: (11,6)-(11,7) = ":"
+        │   │   │       │   ├── value_loc: (11,7)-(11,12) = "value"
+        │   │   │       │   ├── closing_loc: ∅
+        │   │   │       │   └── unescaped: "value"
+        │   │   │       └── operator_loc: ∅
+        │   │   └── closing_loc: (11,12)-(11,13) = "}"
+        │   ├── pattern:
+        │   │   @ HashPatternNode (location: (11,17)-(11,27))
+        │   │   ├── constant: ∅
+        │   │   ├── elements: (length: 1)
+        │   │   │   └── @ AssocNode (location: (11,17)-(11,27))
+        │   │   │       ├── key:
+        │   │   │       │   @ SymbolNode (location: (11,17)-(11,21))
+        │   │   │       │   ├── opening_loc: ∅
+        │   │   │       │   ├── value_loc: (11,17)-(11,20) = "key"
+        │   │   │       │   ├── closing_loc: (11,20)-(11,21) = ":"
+        │   │   │       │   └── unescaped: "key"
+        │   │   │       ├── value:
+        │   │   │       │   @ LocalVariableTargetNode (location: (11,22)-(11,27))
+        │   │   │       │   ├── name: :value
+        │   │   │       │   └── depth: 0
+        │   │   │       └── operator_loc: ∅
+        │   │   ├── rest: ∅
+        │   │   ├── opening_loc: ∅
+        │   │   └── closing_loc: ∅
+        │   └── operator_loc: (11,14)-(11,16) = "in"
+        └── @ LocalVariableReadNode (location: (11,29)-(11,34))
+            ├── name: :value
+            └── depth: 0

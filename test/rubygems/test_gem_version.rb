@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/version"
 
@@ -43,7 +44,7 @@ class TestGemVersion < Gem::TestCase
 
     assert_equal v("5.1"), Gem::Version.create("5.1")
 
-    ver = "1.1".freeze
+    ver = "1.1"
     assert_equal v("1.1"), Gem::Version.create(ver)
   end
 
@@ -88,7 +89,7 @@ class TestGemVersion < Gem::TestCase
   end
 
   def test_initialize
-    ["1.0", "1.0 ", " 1.0 ", "1.0\n", "\n1.0\n", "1.0".freeze].each do |good|
+    ["1.0", "1.0 ", " 1.0 ", "1.0\n", "\n1.0\n", "1.0"].each do |good|
       assert_version_equal "1.0", good
     end
 
@@ -268,7 +269,8 @@ class TestGemVersion < Gem::TestCase
   # Assert that two versions are eql?. Checks both directions.
 
   def assert_version_eql(first, second)
-    first, second = v(first), v(second)
+    first = v(first)
+    second = v(second)
     assert first.eql?(second), "#{first} is eql? #{second}"
     assert second.eql?(first), "#{second} is eql? #{first}"
   end
@@ -289,7 +291,8 @@ class TestGemVersion < Gem::TestCase
   # directions.
 
   def refute_version_eql(first, second)
-    first, second = v(first), v(second)
+    first = v(first)
+    second = v(second)
     refute first.eql?(second), "#{first} is NOT eql? #{second}"
     refute second.eql?(first), "#{second} is NOT eql? #{first}"
   end

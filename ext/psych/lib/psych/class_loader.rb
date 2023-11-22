@@ -35,7 +35,7 @@ module Psych
 
     constants.each do |const|
       konst = const_get const
-      class_eval <<~RUBY
+      class_eval <<~RUBY, __FILE__, __LINE__ + 1
         def #{const.to_s.downcase}
           load #{konst.inspect}
         end

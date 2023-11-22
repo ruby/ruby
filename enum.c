@@ -354,7 +354,7 @@ find_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
  *   {foo: 0, bar: 1, baz: 2}.find {|key, value| key.start_with?('b') }            # => [:bar, 1]
  *   {foo: 0, bar: 1, baz: 2}.find(proc {[]}) {|key, value| key.start_with?('c') } # => []
  *
- * With no block given, returns an \Enumerator.
+ * With no block given, returns an Enumerator.
  *
  */
 static VALUE
@@ -424,7 +424,7 @@ find_index_iter_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, memop))
  *   ['a', 'b', 'c', 'b'].find_index {|element| element.start_with?('b') } # => 1
  *   {foo: 0, bar: 1, baz: 2}.find_index {|key, value| value > 1 }         # => 2
  *
- * With no argument and no block given, returns an \Enumerator.
+ * With no argument and no block given, returns an Enumerator.
  *
  */
 
@@ -501,7 +501,7 @@ enum_size_over_p(VALUE obj, long n)
  *   a = {foo: 0, bar: 1, baz: 2}.select {|key, value| key.start_with?('b') }
  *   a # => {:bar=>1, :baz=>2}
  *
- * With no block given, returns an \Enumerator.
+ * With no block given, returns an Enumerator.
  *
  * Related: #reject.
  */
@@ -543,7 +543,7 @@ filter_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
  *   (0..9).filter_map {|i| i * 2 if i.even? }                              # => [0, 4, 8, 12, 16]
  *   {foo: 0, bar: 1, baz: 2}.filter_map {|key, value| key if value.even? } # => [:foo, :baz]
  *
- * When no block given, returns an \Enumerator.
+ * When no block given, returns an Enumerator.
  *
  */
 static VALUE
@@ -584,7 +584,7 @@ reject_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
  *   (0..9).reject {|i| i * 2 if i.even? }                             # => [1, 3, 5, 7, 9]
  *   {foo: 0, bar: 1, baz: 2}.reject {|key, value| key if value.odd? } # => {:foo=>0, :baz=>2}
  *
- * When no block given, returns an \Enumerator.
+ * When no block given, returns an Enumerator.
  *
  * Related: #select.
  */
@@ -631,7 +631,7 @@ collect_all(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
  *   (0..4).map {|i| i*i }                               # => [0, 1, 4, 9, 16]
  *   {foo: 0, bar: 1, baz: 2}.map {|key, value| value*2} # => [0, 2, 4]
  *
- * With no block given, returns an \Enumerator.
+ * With no block given, returns an Enumerator.
  *
  */
 static VALUE
@@ -681,7 +681,7 @@ flat_map_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, ary))
  *   [[0, 1], [2, 3]].flat_map {|e| e + [100] }                     # => [0, 1, 100, 2, 3, 100]
  *   {foo: 0, bar: 1, baz: 2}.flat_map {|key, value| [key, value] } # => [:foo, 0, :bar, 1, :baz, 2]
  *
- * With no block given, returns an \Enumerator.
+ * With no block given, returns an Enumerator.
  *
  * Alias: #collect_concat.
  */
@@ -700,13 +700,12 @@ enum_flat_map(VALUE obj)
 
 /*
  *  call-seq:
- *    to_a -> array
+ *    to_a(*args) -> array
  *
  *  Returns an array containing the items in +self+:
  *
  *    (0..4).to_a # => [0, 1, 2, 3, 4]
  *
- *  Enumerable#entries is an alias for Enumerable#to_a.
  */
 static VALUE
 enum_to_a(int argc, VALUE *argv, VALUE obj)
@@ -746,8 +745,8 @@ enum_to_h_ii(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
 
 /*
  *  call-seq:
- *    to_h -> hash
- *    to_h {|element| ... }  -> hash
+ *    to_h(*args) -> hash
+ *    to_h(*args) {|element| ... }  -> hash
  *
  *  When +self+ consists of 2-element arrays,
  *  returns a hash each of whose entries is the key-value pair
@@ -1000,7 +999,6 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  *    "Memo: 3; element: 3"
  *    "Memo: 6; element: 4"
  *
- *  Enumerable#reduce is an alias for Enumerable#inject.
  *
  */
 static VALUE
@@ -1336,10 +1334,12 @@ enum_sort(VALUE obj)
 }
 
 #define SORT_BY_BUFSIZE 16
+#define SORT_BY_UNIFORMED(num, flo, fix) (((num&1)<<2)|((flo&1)<<1)|fix)
 struct sort_by_data {
     const VALUE ary;
     const VALUE buf;
-    long n;
+    uint8_t n;
+    uint8_t primitive_uniformed;
 };
 
 static VALUE
@@ -1360,6 +1360,11 @@ sort_by_i(RB_BLOCK_CALL_FUNC_ARGLIST(i, _data))
         rb_raise(rb_eRuntimeError, "sort_by reentered");
     }
 
+    if (data->primitive_uniformed) {
+        data->primitive_uniformed &= SORT_BY_UNIFORMED((FIXNUM_P(v)) || (RB_FLOAT_TYPE_P(v)),
+                                                        RB_FLOAT_TYPE_P(v),
+                                                        FIXNUM_P(v));
+    }
     RARRAY_ASET(data->buf, data->n*2, v);
     RARRAY_ASET(data->buf, data->n*2+1, i);
     data->n++;
@@ -1386,6 +1391,179 @@ sort_by_cmp(const void *ap, const void *bp, void *data)
 
     return OPTIMIZED_CMP(a, b);
 }
+
+
+/*
+    This is parts of uniform sort
+*/
+
+#define uless rb_uniform_is_less
+#define UNIFORM_SWAP(a,b)\
+    do{struct rb_uniform_sort_data tmp = a; a = b; b = tmp;}  while(0)
+
+struct rb_uniform_sort_data {
+    VALUE v;
+    VALUE i;
+};
+
+static inline bool
+rb_uniform_is_less(VALUE a, VALUE b)
+{
+
+    if (FIXNUM_P(a) && FIXNUM_P(b)) {
+        return (SIGNED_VALUE)a < (SIGNED_VALUE)b;
+    }
+    else if (FIXNUM_P(a)) {
+        RUBY_ASSERT(RB_FLOAT_TYPE_P(b));
+        return rb_float_cmp(b, a) > 0;
+    }
+    else {
+        RUBY_ASSERT(RB_FLOAT_TYPE_P(a));
+        return rb_float_cmp(a, b) < 0;
+    }
+}
+
+static inline bool
+rb_uniform_is_larger(VALUE a, VALUE b)
+{
+
+    if (FIXNUM_P(a) && FIXNUM_P(b)) {
+        return (SIGNED_VALUE)a > (SIGNED_VALUE)b;
+    }
+    else if (FIXNUM_P(a)) {
+        RUBY_ASSERT(RB_FLOAT_TYPE_P(b));
+        return rb_float_cmp(b, a) < 0;
+    }
+    else {
+        RUBY_ASSERT(RB_FLOAT_TYPE_P(a));
+        return rb_float_cmp(a, b) > 0;
+    }
+}
+
+#define med3_val(a,b,c) (uless(a,b)?(uless(b,c)?b:uless(c,a)?a:c):(uless(c,b)?b:uless(a,c)?a:c))
+
+static void
+rb_uniform_insertionsort_2(struct rb_uniform_sort_data* ptr_begin,
+                           struct rb_uniform_sort_data* ptr_end)
+{
+    if ((ptr_end - ptr_begin) < 2) return;
+    struct rb_uniform_sort_data tmp, *j, *k,
+                                *index = ptr_begin+1;
+    for (; index < ptr_end; index++) {
+        tmp = *index;
+        j = k = index;
+        if (uless(tmp.v, ptr_begin->v)) {
+            while (ptr_begin < j) {
+                *j = *(--k);
+                j = k;
+            }
+        }
+        else {
+            while (uless(tmp.v, (--k)->v)) {
+                *j = *k;
+                j = k;
+            }
+        }
+        *j = tmp;
+    }
+}
+
+static inline void
+rb_uniform_heap_down_2(struct rb_uniform_sort_data* ptr_begin,
+                       size_t offset, size_t len)
+{
+    size_t c;
+    struct rb_uniform_sort_data tmp = ptr_begin[offset];
+    while ((c = (offset<<1)+1) <= len) {
+        if (c < len && uless(ptr_begin[c].v, ptr_begin[c+1].v)) {
+            c++;
+        }
+        if (!uless(tmp.v, ptr_begin[c].v)) break;
+        ptr_begin[offset] = ptr_begin[c];
+        offset = c;
+    }
+    ptr_begin[offset] = tmp;
+}
+
+static void
+rb_uniform_heapsort_2(struct rb_uniform_sort_data* ptr_begin,
+                      struct rb_uniform_sort_data* ptr_end)
+{
+    size_t n = ptr_end - ptr_begin;
+    if (n < 2) return;
+
+    for (size_t offset = n>>1; offset > 0;) {
+        rb_uniform_heap_down_2(ptr_begin, --offset, n-1);
+    }
+    for (size_t offset = n-1; offset > 0;) {
+        UNIFORM_SWAP(*ptr_begin, ptr_begin[offset]);
+        rb_uniform_heap_down_2(ptr_begin, 0, --offset);
+    }
+}
+
+
+static void
+rb_uniform_quicksort_intro_2(struct rb_uniform_sort_data* ptr_begin,
+                             struct rb_uniform_sort_data* ptr_end, size_t d)
+{
+
+    if (ptr_end - ptr_begin <= 16) {
+        rb_uniform_insertionsort_2(ptr_begin, ptr_end);
+        return;
+    }
+    if (d == 0) {
+        rb_uniform_heapsort_2(ptr_begin, ptr_end);
+        return;
+    }
+
+    VALUE x = med3_val(ptr_begin->v,
+                       ptr_begin[(ptr_end - ptr_begin)>>1].v,
+                       ptr_end[-1].v);
+    struct rb_uniform_sort_data *i = ptr_begin;
+    struct rb_uniform_sort_data *j = ptr_end-1;
+
+    do {
+        while (uless(i->v, x)) i++;
+        while (uless(x, j->v)) j--;
+        if (i <= j) {
+            UNIFORM_SWAP(*i, *j);
+            i++;
+            j--;
+        }
+    } while (i <= j);
+    j++;
+    if (ptr_end - j > 1)   rb_uniform_quicksort_intro_2(j, ptr_end, d-1);
+    if (i - ptr_begin > 1) rb_uniform_quicksort_intro_2(ptr_begin, i, d-1);
+}
+
+/**
+ * Direct primitive data compare sort. Implement with intro sort.
+ * @param[in]     ptr_begin  The begin address of target rb_ary's raw pointer.
+ * @param[in]     ptr_end    The end address of target rb_ary's raw pointer.
+**/
+static void
+rb_uniform_intro_sort_2(struct rb_uniform_sort_data* ptr_begin,
+                        struct rb_uniform_sort_data* ptr_end)
+{
+    size_t n = ptr_end - ptr_begin;
+    size_t d = CHAR_BIT * sizeof(n) - nlz_intptr(n) - 1;
+    bool sorted_flag = true;
+
+    for (struct rb_uniform_sort_data* ptr = ptr_begin+1; ptr < ptr_end; ptr++) {
+        if (rb_uniform_is_larger((ptr-1)->v, (ptr)->v)) {
+            sorted_flag = false;
+            break;
+        }
+    }
+
+    if (sorted_flag) {
+        return;
+    }
+    rb_uniform_quicksort_intro_2(ptr_begin, ptr_end, d<<1);
+}
+
+#undef uless
+
 
 /*
  *  call-seq:
@@ -1493,6 +1671,9 @@ enum_sort_by(VALUE obj)
     RB_OBJ_WRITE(memo, &data->ary, ary);
     RB_OBJ_WRITE(memo, &data->buf, buf);
     data->n = 0;
+    data->primitive_uniformed = SORT_BY_UNIFORMED((CMP_OPTIMIZABLE(FLOAT) && CMP_OPTIMIZABLE(INTEGER)),
+                                                  CMP_OPTIMIZABLE(FLOAT),
+                                                  CMP_OPTIMIZABLE(INTEGER));
     rb_block_call(obj, id_each, 0, 0, sort_by_i, (VALUE)memo);
     ary = data->ary;
     buf = data->buf;
@@ -1501,9 +1682,16 @@ enum_sort_by(VALUE obj)
         rb_ary_concat(ary, buf);
     }
     if (RARRAY_LEN(ary) > 2) {
-        RARRAY_PTR_USE(ary, ptr,
-                       ruby_qsort(ptr, RARRAY_LEN(ary)/2, 2*sizeof(VALUE),
-                                  sort_by_cmp, (void *)ary));
+        if (data->primitive_uniformed) {
+            RARRAY_PTR_USE(ary, ptr,
+                           rb_uniform_intro_sort_2((struct rb_uniform_sort_data*)ptr,
+                                                   (struct rb_uniform_sort_data*)(ptr + RARRAY_LEN(ary))));
+        }
+        else {
+            RARRAY_PTR_USE(ary, ptr,
+                           ruby_qsort(ptr, RARRAY_LEN(ary)/2, 2*sizeof(VALUE),
+                                      sort_by_cmp, (void *)ary));
+        }
     }
     if (RBASIC(ary)->klass) {
         rb_raise(rb_eRuntimeError, "sort_by reentered");
@@ -1569,6 +1757,9 @@ DEFINE_ENUMFUNCS(all)
  *
  *  Returns whether every element meets a given criterion.
  *
+ *  If +self+ has no element, returns +true+ and argument or block
+ *  are not used.
+ *
  *  With no argument and no block,
  *  returns whether every element is truthy:
  *
@@ -1630,6 +1821,9 @@ DEFINE_ENUMFUNCS(any)
  *
  *  Returns whether any element meets a given criterion.
  *
+ *  If +self+ has no element, returns +false+ and argument or block
+ *  are not used.
+ *
  *  With no argument and no block,
  *  returns whether any element is truthy:
  *
@@ -1659,7 +1853,6 @@ DEFINE_ENUMFUNCS(any)
  *    (1..4).any? {|element| element < 1 }                    # => false
  *    {foo: 0, bar: 1, baz: 2}.any? {|key, value| value < 1 } # => true
  *    {foo: 0, bar: 1, baz: 2}.any? {|key, value| value < 0 } # => false
- *
  *
  *  Related: #all?, #none?, #one?.
  */
@@ -2721,8 +2914,6 @@ member_i(RB_BLOCK_CALL_FUNC_ARGLIST(iter, args))
  *    {foo: 0, bar: 1, baz: 2}.include?(:foo)  # => true
  *    {foo: 0, bar: 1, baz: 2}.include?('foo') # => false
  *    {foo: 0, bar: 1, baz: 2}.include?(0)     # => false
- *
- *  Enumerable#member? is an alias for Enumerable#include?.
  *
  */
 
@@ -4633,13 +4824,13 @@ uniq_iter(RB_BLOCK_CALL_FUNC_ARGLIST(i, hash))
  *    %w[a b c c b a a b c].uniq       # => ["a", "b", "c"]
  *    [0, 1, 2, 2, 1, 0, 0, 1, 2].uniq # => [0, 1, 2]
  *
- *  With a block, returns a new array containing only for which the block
+ *  With a block, returns a new array containing elements only for which the block
  *  returns a unique value:
  *
  *    a = [0, 1, 2, 3, 4, 5, 5, 4, 3, 2, 1]
  *    a.uniq {|i| i.even? ? i : 0 } # => [0, 2, 4]
  *    a = %w[a b c d e e d c b a a b c d e]
-      a.uniq {|c| c < 'c' }         # => ["a", "c"]
+ *    a.uniq {|c| c < 'c' }         # => ["a", "c"]
  *
  */
 
@@ -4698,7 +4889,7 @@ enum_compact(VALUE obj)
  *
  * - {Querying}[rdoc-ref:Enumerable@Methods+for+Querying]
  * - {Fetching}[rdoc-ref:Enumerable@Methods+for+Fetching]
- * - {Searching}[rdoc-ref:Enumerable@Methods+for+Searching]
+ * - {Searching and Filtering}[rdoc-ref:Enumerable@Methods+for+Searching+and+Filtering]
  * - {Sorting}[rdoc-ref:Enumerable@Methods+for+Sorting]
  * - {Iterating}[rdoc-ref:Enumerable@Methods+for+Iterating]
  * - {And more....}[rdoc-ref:Enumerable@Other+Methods]
@@ -4714,7 +4905,7 @@ enum_compact(VALUE obj)
  * - #one?: Returns +true+ if exactly one element meets a specified criterion; +false+ otherwise.
  * - #count: Returns the count of elements,
  *   based on an argument or block criterion, if given.
- * - #tally: Returns a new \Hash containing the counts of occurrences of each element.
+ * - #tally: Returns a new Hash containing the counts of occurrences of each element.
  *
  * === Methods for Fetching
  *
@@ -4735,21 +4926,21 @@ enum_compact(VALUE obj)
  *   as determined by <tt><=></tt> or a given block.
  * - #max: Returns the elements whose values are largest among the elements,
  *   as determined by <tt><=></tt> or a given block.
- * - #minmax: Returns a 2-element \Array containing the smallest and largest elements.
+ * - #minmax: Returns a 2-element Array containing the smallest and largest elements.
  * - #min_by: Returns the smallest element, as determined by the given block.
  * - #max_by: Returns the largest element, as determined by the given block.
  * - #minmax_by: Returns the smallest and largest elements, as determined by the given block.
  *
  * <i>Groups, slices, and partitions</i>:
  *
- * - #group_by: Returns a \Hash that partitions the elements into groups.
+ * - #group_by: Returns a Hash that partitions the elements into groups.
  * - #partition: Returns elements partitioned into two new Arrays, as determined by the given block.
- * - #slice_after: Returns a new \Enumerator whose entries are a partition of +self+,
-     based either on a given +object+ or a given block.
- * - #slice_before: Returns a new \Enumerator whose entries are a partition of +self+,
-     based either on a given +object+ or a given block.
- * - #slice_when: Returns a new \Enumerator whose entries are a partition of +self+
-     based on the given block.
+ * - #slice_after: Returns a new Enumerator whose entries are a partition of +self+,
+ *   based either on a given +object+ or a given block.
+ * - #slice_before: Returns a new Enumerator whose entries are a partition of +self+,
+ *   based either on a given +object+ or a given block.
+ * - #slice_when: Returns a new Enumerator whose entries are a partition of +self+
+ *   based on the given block.
  * - #chunk: Returns elements organized into chunks as specified by the given block.
  * - #chunk_while: Returns elements organized into chunks as specified by the given block.
  *
@@ -4849,18 +5040,18 @@ enum_compact(VALUE obj)
  *
  * Virtually all methods in \Enumerable call method +#each+ in the including class:
  *
- * - <tt>Hash#each</tt> yields the next key-value pair as a 2-element \Array.
- * - <tt>Struct#each</tt> yields the next name-value pair as a 2-element \Array.
+ * - <tt>Hash#each</tt> yields the next key-value pair as a 2-element Array.
+ * - <tt>Struct#each</tt> yields the next name-value pair as a 2-element Array.
  * - For the other classes above, +#each+ yields the next object from the collection.
  *
  * == About the Examples
  *
  * The example code snippets for the \Enumerable methods:
  *
- * - Always show the use of one or more \Array-like classes (often \Array itself).
- * - Sometimes show the use of a \Hash-like class.
+ * - Always show the use of one or more Array-like classes (often Array itself).
+ * - Sometimes show the use of a Hash-like class.
  *   For some methods, though, the usage would not make sense,
- *   and so it is not shown.  Example: #tally would find exactly one of each \Hash entry.
+ *   and so it is not shown.  Example: #tally would find exactly one of each Hash entry.
  *
  */
 

@@ -1,4 +1,5 @@
 #include <fiddle.h>
+#include <stdbool.h>
 #include <ruby/thread.h>
 
 int ruby_thread_has_gvl_p(void); /* from internal.h */
@@ -54,10 +55,13 @@ closure_memsize(const void * ptr)
 }
 
 const rb_data_type_t closure_data_type = {
-    "fiddle/closure",
-    {0, dealloc, closure_memsize,},
-    0, 0,
-    RUBY_TYPED_FREE_IMMEDIATELY,
+    .wrap_struct_name = "fiddle/closure",
+    .function = {
+        .dmark = 0,
+        .dfree = dealloc,
+        .dsize = closure_memsize
+    },
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 struct callback_args {
@@ -136,6 +140,20 @@ with_gvl_callback(void *ptr)
 	    rb_ary_push(params,
                         rb_str_new_cstr(*((const char **)(x->args[i]))));
 	    break;
+	  case TYPE_BOOL:
+            if (sizeof(bool) == sizeof(char)) {
+                rb_ary_push(params, CBOOL2RBBOOL(*(unsigned char *)x->args[i]));
+            } else if (sizeof(bool) == sizeof(short)) {
+                rb_ary_push(params, CBOOL2RBBOOL(*(unsigned short *)x->args[i]));
+            } else if (sizeof(bool) == sizeof(int)) {
+                rb_ary_push(params, CBOOL2RBBOOL(*(unsigned int *)x->args[i]));
+            } else if (sizeof(bool) == sizeof(long)) {
+                rb_ary_push(params, CBOOL2RBBOOL(*(unsigned long *)x->args[i]));
+            } else {
+                rb_raise(rb_eNotImpError, "bool isn't supported: %u",
+                         (unsigned int)sizeof(bool));
+            }
+	    break;
 	  default:
 	    rb_raise(rb_eRuntimeError, "closure args: %d", type);
         }
@@ -184,6 +202,13 @@ with_gvl_callback(void *ptr)
       case TYPE_CONST_STRING:
         /* Dangerous. Callback must keep reference of the String. */
         *((const char **)(x->resp)) = StringValueCStr(ret);
+        break;
+      case TYPE_BOOL:
+        if (sizeof(bool) == sizeof(long)) {
+            *(unsigned long *)x->resp = RB_TEST(ret);
+        } else {
+            *(ffi_arg *)x->resp = RB_TEST(ret);
+        }
         break;
       default:
 	rb_raise(rb_eRuntimeError, "closure retval: %d", type);

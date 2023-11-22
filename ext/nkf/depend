@@ -56,6 +56,7 @@ nkf.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 nkf.o: $(hdrdir)/ruby/internal/attr/noinline.h
 nkf.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 nkf.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+nkf.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 nkf.o: $(hdrdir)/ruby/internal/attr/pure.h
 nkf.o: $(hdrdir)/ruby/internal/attr/restrict.h
 nkf.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -124,7 +125,6 @@ nkf.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 nkf.o: $(hdrdir)/ruby/internal/intern/error.h
 nkf.o: $(hdrdir)/ruby/internal/intern/eval.h
 nkf.o: $(hdrdir)/ruby/internal/intern/file.h
-nkf.o: $(hdrdir)/ruby/internal/intern/gc.h
 nkf.o: $(hdrdir)/ruby/internal/intern/hash.h
 nkf.o: $(hdrdir)/ruby/internal/intern/io.h
 nkf.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -155,7 +155,6 @@ nkf.o: $(hdrdir)/ruby/internal/memory.h
 nkf.o: $(hdrdir)/ruby/internal/method.h
 nkf.o: $(hdrdir)/ruby/internal/module.h
 nkf.o: $(hdrdir)/ruby/internal/newobj.h
-nkf.o: $(hdrdir)/ruby/internal/rgengc.h
 nkf.o: $(hdrdir)/ruby/internal/scan_args.h
 nkf.o: $(hdrdir)/ruby/internal/special_consts.h
 nkf.o: $(hdrdir)/ruby/internal/static_assert.h

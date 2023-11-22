@@ -3,6 +3,7 @@
 require 'test/unit'
 require "rbconfig/sizeof"
 require "timeout"
+require "fiddle"
 
 class TestThread < Test::Unit::TestCase
   class Thread < ::Thread
@@ -323,7 +324,7 @@ class TestThread < Test::Unit::TestCase
       s += 1
     end
     Thread.pass until t.stop?
-    sleep 1 if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # t.stop? behaves unexpectedly with --jit-wait
+    sleep 1 if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # t.stop? behaves unexpectedly with --jit-wait
     assert_equal(1, s)
     t.wakeup
     Thread.pass while t.alive?
@@ -395,7 +396,7 @@ class TestThread < Test::Unit::TestCase
       end
     INPUT
 
-    assert_in_out_err(%w(--disable-gems -d), <<-INPUT, %w(false 2), %r".+")
+    assert_in_out_err(%w(-d), <<-INPUT, %w(false 2), %r".+")
       p Thread.abort_on_exception
       begin
         t = Thread.new { raise }
@@ -1434,7 +1435,8 @@ q.pop
     Thread.pass until th1.stop?
 
     # After a thread starts (and execute `sleep`), it returns native_thread_id
-    assert_instance_of Integer, th1.native_thread_id
+    native_tid = th1.native_thread_id
+    assert_instance_of Integer, native_tid if native_tid # it can be nil
 
     th1.wakeup
     Thread.pass while th1.alive?
@@ -1443,11 +1445,40 @@ q.pop
     assert_nil th1.native_thread_id
   end
 
+  def test_thread_native_thread_id_across_fork_on_linux
+    rtld_default = Fiddle.dlopen(nil)
+    omit "this test is only for Linux" unless rtld_default.sym_defined?('gettid')
+
+    gettid = Fiddle::Function.new(rtld_default['gettid'], [], Fiddle::TYPE_INT)
+
+    parent_thread_id = Thread.main.native_thread_id
+    real_parent_thread_id = gettid.call
+
+    assert_equal real_parent_thread_id, parent_thread_id
+
+    child_lines = nil
+    IO.popen('-') do |pipe|
+      if pipe
+        # parent
+        child_lines = pipe.read.lines
+      else
+        # child
+        puts Thread.main.native_thread_id
+        puts gettid.call
+      end
+    end
+    child_thread_id = child_lines[0].chomp.to_i
+    real_child_thread_id = child_lines[1].chomp.to_i
+
+    assert_equal real_child_thread_id, child_thread_id
+    refute_equal parent_thread_id, child_thread_id
+  end
+
   def test_thread_interrupt_for_killed_thread
     opts = { timeout: 5, timeout_error: nil }
 
-    # prevent SIGABRT from slow shutdown with MJIT
-    opts[:reprieve] = 3 if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled?
+    # prevent SIGABRT from slow shutdown with RJIT
+    opts[:reprieve] = 3 if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
 
     assert_normal_exit(<<-_end, '[Bug #8996]', **opts)
       Thread.report_on_exception = false

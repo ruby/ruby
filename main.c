@@ -23,6 +23,7 @@
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
 #endif
+
 #if defined RUBY_DEVEL && !defined RUBY_DEBUG_ENV
 # define RUBY_DEBUG_ENV 1
 #endif
@@ -46,7 +47,7 @@ int rb_wasm_rt_start(int (main)(int argc, char **argv), int argc, char **argv);
 int
 main(int argc, char **argv)
 {
-#ifdef RUBY_DEBUG_ENV
+#if defined(RUBY_DEBUG_ENV) || USE_RUBY_DEBUG_LOG
     ruby_set_debug_option(getenv("RUBY_DEBUG"));
 #endif
 #ifdef HAVE_LOCALE_H

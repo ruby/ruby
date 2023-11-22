@@ -2,6 +2,8 @@
 
 require "pathname"
 
+require "rubygems" unless defined?(Gem)
+
 require "rubygems/specification"
 
 # We can't let `Gem::Source` be autoloaded in the `Gem::Specification#source`
@@ -16,6 +18,7 @@ require "rubygems/specification"
 require "rubygems/source"
 
 require_relative "match_metadata"
+require_relative "force_platform"
 require_relative "match_platform"
 
 # Cherry-pick fixes to `Gem.ruby_version` to be useful for modern Bundler
@@ -45,7 +48,7 @@ module Gem
 
     def full_gem_path
       if source.respond_to?(:root)
-        Pathname.new(loaded_from).dirname.expand_path(source.root).to_s.tap {|x| x.untaint if RUBY_VERSION < "2.7" }
+        Pathname.new(loaded_from).dirname.expand_path(source.root).to_s
       else
         rg_full_gem_path
       end
@@ -65,7 +68,9 @@ module Gem
 
     alias_method :rg_extension_dir, :extension_dir
     def extension_dir
-      @bundler_extension_dir ||= if source.respond_to?(:extension_dir_name)
+      # following instance variable is already used in original method
+      # and that is the reason to prefix it with bundler_ and add rubocop exception
+      @bundler_extension_dir ||= if source.respond_to?(:extension_dir_name) # rubocop:disable Naming/MemoizedInstanceVariableName
         unique_extension_dir = [source.extension_dir_name, File.basename(full_gem_path)].uniq.join("-")
         File.expand_path(File.join(extensions_dir, unique_extension_dir))
       else
@@ -73,7 +78,25 @@ module Gem
       end
     end
 
-    remove_method :gem_dir if instance_methods(false).include?(:gem_dir)
+    alias_method :rg_missing_extensions?, :missing_extensions?
+    def missing_extensions?
+      # When we use this methods with local gemspec, we don't handle
+      # build status of extension correctly. So We need to find extension
+      # files in require_paths.
+      # TODO: Gem::Specification couldn't access extension name from extconf.rb
+      #       so we find them with heuristic way. We should improve it.
+      if source.respond_to?(:root)
+        return false if raw_require_paths.any? do |path|
+          ext_dir = File.join(full_gem_path, path)
+          File.exist?(File.join(ext_dir, "#{name}.#{RbConfig::CONFIG["DLEXT"]}")) ||
+          !Dir.glob(File.join(ext_dir, name, "*.#{RbConfig::CONFIG["DLEXT"]}")).empty?
+        end
+      end
+
+      rg_missing_extensions?
+    end
+
+    remove_method :gem_dir
     def gem_dir
       full_gem_path
     end
@@ -114,17 +137,6 @@ module Gem
       gemfile
     end
 
-    # Backfill missing YAML require when not defined. Fixed since 3.1.0.pre1.
-    module YamlBackfiller
-      def to_yaml(opts = {})
-        Gem.load_yaml unless defined?(::YAML)
-
-        super(opts)
-      end
-    end
-
-    prepend YamlBackfiller
-
     def nondevelopment_dependencies
       dependencies - development_dependencies
     end
@@ -153,12 +165,16 @@ module Gem
   end
 
   class Dependency
+    include ::Bundler::ForcePlatform
+
     attr_accessor :source, :groups
 
     alias_method :eql?, :==
 
     def force_ruby_platform
-      false
+      return @force_ruby_platform if defined?(@force_ruby_platform) && !@force_ruby_platform.nil?
+
+      @force_ruby_platform = default_force_ruby_platform
     end
 
     def encode_with(coder)
@@ -198,9 +214,9 @@ module Gem
         protected
 
         def _requirements_sorted?
-          return @_are_requirements_sorted if defined?(@_are_requirements_sorted)
+          return @_requirements_sorted if defined?(@_requirements_sorted)
           strings = as_list
-          @_are_requirements_sorted = strings == strings.sort
+          @_requirements_sorted = strings == strings.sort
         end
 
         def _with_sorted_requirements
@@ -277,6 +293,10 @@ module Gem
         without_gnu_nor_abi_modifiers
       end
     end
+
+    if RUBY_ENGINE == "truffleruby" && !defined?(REUSE_AS_BINARY_ON_TRUFFLERUBY)
+      REUSE_AS_BINARY_ON_TRUFFLERUBY = %w[libv8 libv8-node sorbet-static].freeze
+    end
   end
 
   Platform.singleton_class.module_eval do
@@ -309,7 +329,7 @@ module Gem
   end
 
   # On universal Rubies, resolve the "universal" arch to the real CPU arch, without changing the extension directory.
-  class Specification
+  class BasicSpecification
     if /^universal\.(?<arch>.*?)-/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
       local_platform = Platform.local
       if local_platform.cpu == "universal"
@@ -322,20 +342,38 @@ module Gem
         end
 
         def extensions_dir
-          Gem.default_ext_dir_for(base_dir) ||
-            File.join(base_dir, "extensions", ORIGINAL_LOCAL_PLATFORM,
-                      Gem.extension_api_version)
+          @extensions_dir ||=
+            Gem.default_ext_dir_for(base_dir) || File.join(base_dir, "extensions", ORIGINAL_LOCAL_PLATFORM, Gem.extension_api_version)
         end
       end
+    end
+  end
+
+  require "rubygems/name_tuple"
+
+  class NameTuple
+    def self.new(name, version, platform="ruby")
+      if Gem::Platform === platform
+        super(name, version, platform.to_s)
+      else
+        super
+      end
+    end
+
+    def lock_name
+      @lock_name ||=
+        if platform == Gem::Platform::RUBY
+          "#{name} (#{version})"
+        else
+          "#{name} (#{version}-#{platform})"
+        end
     end
   end
 
   require "rubygems/util"
 
   Util.singleton_class.module_eval do
-    if Util.singleton_methods.include?(:glob_files_in_dir) # since 3.0.0.beta.2
-      remove_method :glob_files_in_dir
-    end
+    remove_method :glob_files_in_dir
 
     def glob_files_in_dir(glob, base_path)
       Dir.glob(glob, :base => base_path).map! {|f| File.expand_path(f, base_path) }

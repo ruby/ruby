@@ -282,4 +282,3 @@ class RDoc::Markup::ToHtmlSnippet < RDoc::Markup::ToHtml
   end
 
 end
-

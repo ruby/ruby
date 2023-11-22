@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/indexer"
 
@@ -9,7 +10,7 @@ class TestGemIndexer < Gem::TestCase
     util_make_gems
 
     @d2_0 = util_spec "d", "2.0" do |s|
-      s.date = Gem::Specification::TODAY - 86400 * 3
+      s.date = Gem::Specification::TODAY - 86_400 * 3
     end
     util_build_gem @d2_0
 
@@ -48,7 +49,7 @@ class TestGemIndexer < Gem::TestCase
   def test_initialize
     assert_equal @indexerdir, @indexer.dest_directory
     Dir.mktmpdir("gem_generate_index") do |tmpdir|
-      assert_match %r{#{tmpdir.match(/.*-/)}}, @indexer.directory
+      assert_match(%r{#{tmpdir.match(/.*-/)}}, @indexer.directory) # rubocop:disable Style/RegexpLiteral
     end
 
     with_indexer(@indexerdir) do |indexer|
@@ -160,8 +161,8 @@ class TestGemIndexer < Gem::TestCase
     assert_indexed marshal_quickdir, "#{File.basename(@a1.spec_file)}.rz"
     assert_indexed marshal_quickdir, "#{File.basename(@a2.spec_file)}.rz"
 
-    refute_indexed quickdir, "#{File.basename(@c1_2.spec_file)}"
-    refute_indexed marshal_quickdir, "#{File.basename(@c1_2.spec_file)}"
+    refute_indexed quickdir, File.basename(@c1_2.spec_file).to_s
+    refute_indexed marshal_quickdir, File.basename(@c1_2.spec_file).to_s
 
     assert_indexed @indexerdir, "specs.#{@marshal_version}"
     assert_indexed @indexerdir, "specs.#{@marshal_version}.gz"
@@ -205,15 +206,14 @@ class TestGemIndexer < Gem::TestCase
       @indexer.generate_index
     end
 
-    assert_match %r{^\.\.\.\.\.\.\.\.\.\.\.\.$}, @ui.output
-    assert_match %r{^Generating Marshal quick index gemspecs for 12 gems$},
-                 @ui.output
-    assert_match %r{^Complete$}, @ui.output
-    assert_match %r{^Generating specs index$}, @ui.output
-    assert_match %r{^Generating latest specs index$}, @ui.output
-    assert_match %r{^Generating prerelease specs index$}, @ui.output
-    assert_match %r{^Complete$}, @ui.output
-    assert_match %r{^Compressing indices$}, @ui.output
+    assert_match(/^\.\.\.\.\.\.\.\.\.\.\.\.$/, @ui.output)
+    assert_match(/^Generating Marshal quick index gemspecs for 12 gems$/, @ui.output)
+    assert_match(/^Complete$/, @ui.output)
+    assert_match(/^Generating specs index$/, @ui.output)
+    assert_match(/^Generating latest specs index$/, @ui.output)
+    assert_match(/^Generating prerelease specs index$/, @ui.output)
+    assert_match(/^Complete$/, @ui.output)
+    assert_match(/^Compressing indices$/, @ui.output)
 
     assert_equal "", @ui.error
   end

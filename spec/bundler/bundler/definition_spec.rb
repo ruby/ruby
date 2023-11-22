@@ -77,6 +77,10 @@ RSpec.describe Bundler::Definition do
         DEPENDENCIES
           foo!
 
+        CHECKSUMS
+          #{gem_no_checksum "foo", "1.0"}
+          #{checksum_for_repo_gem gem_repo1, "rack", "1.0.0"}
+
         BUNDLED WITH
            #{Bundler::VERSION}
       G
@@ -132,6 +136,10 @@ RSpec.describe Bundler::Definition do
         DEPENDENCIES
           foo!
 
+        CHECKSUMS
+          #{gem_no_checksum "foo", "1.0"}
+          #{checksum_for_repo_gem gem_repo1, "rack", "1.0.0"}
+
         BUNDLED WITH
            #{Bundler::VERSION}
       G
@@ -154,10 +162,13 @@ RSpec.describe Bundler::Definition do
             only_java (1.1-java)
 
         PLATFORMS
-          #{lockfile_platforms_for(["java", specific_local_platform])}
+          #{lockfile_platforms("java")}
 
         DEPENDENCIES
           only_java
+
+        CHECKSUMS
+          only_java (1.1-java)
 
         BUNDLED WITH
            #{Bundler::VERSION}
@@ -184,6 +195,9 @@ RSpec.describe Bundler::Definition do
 
         DEPENDENCIES
           foo
+
+        CHECKSUMS
+          #{checksum_for_repo_gem gem_repo1, "foo", "1.0"}
 
         BUNDLED WITH
            #{Bundler::VERSION}

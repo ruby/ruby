@@ -98,18 +98,26 @@ module IRB
       end
     end
 
+    private def easter_egg_logo(type)
+      @easter_egg_logos ||= File.read(File.join(__dir__, 'ruby_logo.aa'), encoding: 'UTF-8:UTF-8')
+        .split(/TYPE: ([A-Z]+)\n/)[1..]
+        .each_slice(2)
+        .to_h
+      @easter_egg_logos[type.to_s.upcase]
+    end
+
     private def easter_egg(type = nil)
       type ||= [:logo, :dancing].sample
       case type
       when :logo
-        File.open(File.join(__dir__, 'ruby_logo.aa')) do |f|
-          require "rdoc"
-          RDoc::RI::Driver.new.page do |io|
-            IO.copy_stream(f, io)
-          end
+        require "rdoc"
+        RDoc::RI::Driver.new.page do |io|
+          io.write easter_egg_logo(:large)
         end
       when :dancing
-        begin
+        STDOUT.cooked do
+          interrupted = false
+          prev_trap = trap("SIGINT") { interrupted = true }
           canvas = Canvas.new(Reline.get_screen_size)
           Reline::IOGate.set_winch_handler do
             canvas = Canvas.new(Reline.get_screen_size)
@@ -125,10 +133,12 @@ module IRB
             buff[0, 20] = "\e[0mPress Ctrl+C to stop\e[31m\e[1m"
             print "\e[H" + buff
             sleep 0.05
+            break if interrupted
           end
         rescue Interrupt
         ensure
           print "\e[0m\e[?1049l"
+          trap("SIGINT", prev_trap)
         end
       end
     end

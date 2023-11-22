@@ -52,6 +52,7 @@ recursion.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 recursion.o: $(hdrdir)/ruby/internal/attr/noinline.h
 recursion.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 recursion.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+recursion.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 recursion.o: $(hdrdir)/ruby/internal/attr/pure.h
 recursion.o: $(hdrdir)/ruby/internal/attr/restrict.h
 recursion.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ recursion.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 recursion.o: $(hdrdir)/ruby/internal/intern/error.h
 recursion.o: $(hdrdir)/ruby/internal/intern/eval.h
 recursion.o: $(hdrdir)/ruby/internal/intern/file.h
-recursion.o: $(hdrdir)/ruby/internal/intern/gc.h
 recursion.o: $(hdrdir)/ruby/internal/intern/hash.h
 recursion.o: $(hdrdir)/ruby/internal/intern/io.h
 recursion.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ recursion.o: $(hdrdir)/ruby/internal/memory.h
 recursion.o: $(hdrdir)/ruby/internal/method.h
 recursion.o: $(hdrdir)/ruby/internal/module.h
 recursion.o: $(hdrdir)/ruby/internal/newobj.h
-recursion.o: $(hdrdir)/ruby/internal/rgengc.h
 recursion.o: $(hdrdir)/ruby/internal/scan_args.h
 recursion.o: $(hdrdir)/ruby/internal/special_consts.h
 recursion.o: $(hdrdir)/ruby/internal/static_assert.h

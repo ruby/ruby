@@ -1,0 +1,39 @@
+@ ProgramNode (location: (1,0)-(1,20))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,20))
+    └── body: (length: 1)
+        └── @ InterpolatedStringNode (location: (1,0)-(1,20))
+            ├── opening_loc: (1,0)-(1,2) = "%{"
+            ├── parts: (length: 3)
+            │   ├── @ StringNode (location: (1,2)-(1,5))
+            │   │   ├── flags: ∅
+            │   │   ├── opening_loc: ∅
+            │   │   ├── content_loc: (1,2)-(1,5) = " { "
+            │   │   ├── closing_loc: ∅
+            │   │   └── unescaped: " { "
+            │   ├── @ EmbeddedStatementsNode (location: (1,5)-(1,16))
+            │   │   ├── opening_loc: (1,5)-(1,7) = "\#{"
+            │   │   ├── statements:
+            │   │   │   @ StatementsNode (location: (1,8)-(1,14))
+            │   │   │   └── body: (length: 1)
+            │   │   │       └── @ InterpolatedStringNode (location: (1,8)-(1,14))
+            │   │   │           ├── opening_loc: (1,8)-(1,9) = "\""
+            │   │   │           ├── parts: (length: 1)
+            │   │   │           │   └── @ EmbeddedStatementsNode (location: (1,9)-(1,13))
+            │   │   │           │       ├── opening_loc: (1,9)-(1,11) = "\#{"
+            │   │   │           │       ├── statements:
+            │   │   │           │       │   @ StatementsNode (location: (1,11)-(1,12))
+            │   │   │           │       │   └── body: (length: 1)
+            │   │   │           │       │       └── @ IntegerNode (location: (1,11)-(1,12))
+            │   │   │           │       │           └── flags: decimal
+            │   │   │           │       └── closing_loc: (1,12)-(1,13) = "}"
+            │   │   │           └── closing_loc: (1,13)-(1,14) = "\""
+            │   │   └── closing_loc: (1,15)-(1,16) = "}"
+            │   └── @ StringNode (location: (1,16)-(1,19))
+            │       ├── flags: ∅
+            │       ├── opening_loc: ∅
+            │       ├── content_loc: (1,16)-(1,19) = " } "
+            │       ├── closing_loc: ∅
+            │       └── unescaped: " } "
+            └── closing_loc: (1,19)-(1,20) = "}"

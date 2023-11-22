@@ -53,6 +53,7 @@ stringio.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 stringio.o: $(hdrdir)/ruby/internal/attr/noinline.h
 stringio.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 stringio.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+stringio.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 stringio.o: $(hdrdir)/ruby/internal/attr/pure.h
 stringio.o: $(hdrdir)/ruby/internal/attr/restrict.h
 stringio.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -121,7 +122,6 @@ stringio.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 stringio.o: $(hdrdir)/ruby/internal/intern/error.h
 stringio.o: $(hdrdir)/ruby/internal/intern/eval.h
 stringio.o: $(hdrdir)/ruby/internal/intern/file.h
-stringio.o: $(hdrdir)/ruby/internal/intern/gc.h
 stringio.o: $(hdrdir)/ruby/internal/intern/hash.h
 stringio.o: $(hdrdir)/ruby/internal/intern/io.h
 stringio.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -152,7 +152,6 @@ stringio.o: $(hdrdir)/ruby/internal/memory.h
 stringio.o: $(hdrdir)/ruby/internal/method.h
 stringio.o: $(hdrdir)/ruby/internal/module.h
 stringio.o: $(hdrdir)/ruby/internal/newobj.h
-stringio.o: $(hdrdir)/ruby/internal/rgengc.h
 stringio.o: $(hdrdir)/ruby/internal/scan_args.h
 stringio.o: $(hdrdir)/ruby/internal/special_consts.h
 stringio.o: $(hdrdir)/ruby/internal/static_assert.h

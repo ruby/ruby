@@ -1,0 +1,11 @@
+@ ProgramNode (location: (1,0)-(1,7))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,7))
+    └── body: (length: 1)
+        └── @ StringNode (location: (1,0)-(1,7))
+            ├── flags: ∅
+            ├── opening_loc: (1,0)-(1,7) = "<<'eot'"
+            ├── content_loc: (2,0)-(3,0) = "body\r\n"
+            ├── closing_loc: (3,0)-(4,0) = "eot\n"
+            └── unescaped: "body\r\n"

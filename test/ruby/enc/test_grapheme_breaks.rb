@@ -44,7 +44,7 @@ class TestGraphemeBreaksFromFile < Test::Unit::TestCase
   if file_available?
     def read_data
       tests = []
-      IO.foreach(GRAPHEME_BREAK_TEST_FILE, encoding: Encoding::UTF_8) do |line|
+      File.foreach(GRAPHEME_BREAK_TEST_FILE, encoding: Encoding::UTF_8) do |line|
         if $. == 1 and not line.start_with?("# GraphemeBreakTest-#{UNICODE_VERSION}.txt")
           raise "File Version Mismatch"
         end

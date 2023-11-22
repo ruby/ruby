@@ -36,8 +36,8 @@ module SyntaxSuggest
     # Builds blocks from bottom up
     def each_neighbor_block(target_line)
       scan = AroundBlockScan.new(code_lines: code_lines, block: CodeBlock.new(lines: target_line))
-        .skip(:empty?)
-        .skip(:hidden?)
+        .force_add_empty
+        .force_add_hidden
         .scan_while { |line| line.indent >= target_line.indent }
 
       neighbors = scan.code_block.lines

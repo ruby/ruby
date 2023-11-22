@@ -21,6 +21,9 @@ Usage:  irb.rb [options] [programfile] [arguments]
   --nocolorize	    色付けを利用しない.
   --autocomplete    オートコンプリートを利用する.
   --noautocomplete  オートコンプリートを利用しない.
+  --regexp-completor
+                    補完に正規表現を利用する.
+  --type-completor  補完に型情報を利用する.
   --prompt prompt-mode/--prompt-mode prompt-mode
 		    プロンプトモードを切替えます. 現在定義されているプ
 		    ロンプトモードは, default, simple, xmp, inf-rubyが

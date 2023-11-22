@@ -227,6 +227,12 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(-3.5, (-11.5).remainder(-4))
     assert_predicate(Float::NAN.remainder(4), :nan?)
     assert_predicate(4.remainder(Float::NAN), :nan?)
+
+    ten = Object.new
+    def ten.coerce(other)
+      [other, 10]
+    end
+    assert_equal(4, 14.0.remainder(ten))
   end
 
   def test_to_s
@@ -484,6 +490,17 @@ class TestFloat < Test::Unit::TestCase
     assert_equal(-5.02, -5.015.round(2))
     assert_equal(+1.26, +1.255.round(2))
     assert_equal(-1.26, -1.255.round(2))
+  end
+
+  def test_round_half_even_with_precision
+    assert_equal(767573.18759, 767573.1875850001.round(5, half: :even))
+    assert_equal(767573.18758, 767573.187585.round(5, half: :even))
+    assert_equal(767573.18758, 767573.1875849998.round(5, half: :even))
+    assert_equal(767573.18758, 767573.187575.round(5, half: :even))
+    assert_equal(-767573.18759, -767573.1875850001.round(5, half: :even))
+    assert_equal(-767573.18758, -767573.187585.round(5, half: :even))
+    assert_equal(-767573.18758, -767573.1875849998.round(5, half: :even))
+    assert_equal(-767573.18758, -767573.187575.round(5, half: :even))
   end
 
   def test_floor_with_precision

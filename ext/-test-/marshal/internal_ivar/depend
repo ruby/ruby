@@ -52,6 +52,7 @@ internal_ivar.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 internal_ivar.o: $(hdrdir)/ruby/internal/attr/noinline.h
 internal_ivar.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 internal_ivar.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+internal_ivar.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 internal_ivar.o: $(hdrdir)/ruby/internal/attr/pure.h
 internal_ivar.o: $(hdrdir)/ruby/internal/attr/restrict.h
 internal_ivar.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ internal_ivar.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 internal_ivar.o: $(hdrdir)/ruby/internal/intern/error.h
 internal_ivar.o: $(hdrdir)/ruby/internal/intern/eval.h
 internal_ivar.o: $(hdrdir)/ruby/internal/intern/file.h
-internal_ivar.o: $(hdrdir)/ruby/internal/intern/gc.h
 internal_ivar.o: $(hdrdir)/ruby/internal/intern/hash.h
 internal_ivar.o: $(hdrdir)/ruby/internal/intern/io.h
 internal_ivar.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ internal_ivar.o: $(hdrdir)/ruby/internal/memory.h
 internal_ivar.o: $(hdrdir)/ruby/internal/method.h
 internal_ivar.o: $(hdrdir)/ruby/internal/module.h
 internal_ivar.o: $(hdrdir)/ruby/internal/newobj.h
-internal_ivar.o: $(hdrdir)/ruby/internal/rgengc.h
 internal_ivar.o: $(hdrdir)/ruby/internal/scan_args.h
 internal_ivar.o: $(hdrdir)/ruby/internal/special_consts.h
 internal_ivar.o: $(hdrdir)/ruby/internal/static_assert.h

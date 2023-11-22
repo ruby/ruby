@@ -37,56 +37,46 @@ pub extern "C" fn rb_yjit_disasm_iseq(_ec: EcPtr, _ruby_self: VALUE, iseqw: VALU
 
         // This will truncate disassembly of methods with 10k+ bytecodes.
         // That's a good thing - this prints to console.
-        let out_string = disasm_iseq_insn_range(iseq, 0, 9999);
+        let out_string = with_vm_lock(src_loc!(), || disasm_iseq_insn_range(iseq, 0, 9999));
 
         return rust_str_to_ruby(&out_string);
     }
 }
 
+/// Only call while holding the VM lock.
 #[cfg(feature = "disasm")]
-pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> String {
+pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u16, end_idx: u16) -> String {
     let mut out = String::from("");
 
     // Get a list of block versions generated for this iseq
-    let mut block_list = get_or_create_iseq_block_list(iseq);
+    let block_list = get_or_create_iseq_block_list(iseq);
+    let mut block_list: Vec<&Block> = block_list.into_iter().map(|blockref| {
+        // SAFETY: We have the VM lock here and all the blocks on iseqs are valid.
+        unsafe { blockref.as_ref() }
+    }).collect();
 
     // Get a list of codeblocks relevant to this iseq
     let global_cb = crate::codegen::CodegenGlobals::get_inline_cb();
 
     // Sort the blocks by increasing start addresses
-    block_list.sort_by(|a, b| {
-        use std::cmp::Ordering;
-
-        // Get the start addresses for each block
-        let addr_a = a.borrow().get_start_addr().unwrap().raw_ptr();
-        let addr_b = b.borrow().get_start_addr().unwrap().raw_ptr();
-
-        if addr_a < addr_b {
-            Ordering::Less
-        } else if addr_a == addr_b {
-            Ordering::Equal
-        } else {
-            Ordering::Greater
-        }
-    });
+    block_list.sort_by_key(|block| block.get_start_addr().as_offset());
 
     // Compute total code size in bytes for all blocks in the function
     let mut total_code_size = 0;
     for blockref in &block_list {
-        total_code_size += blockref.borrow().code_size();
+        total_code_size += blockref.code_size();
     }
 
     writeln!(out, "NUM BLOCK VERSIONS: {}", block_list.len()).unwrap();
     writeln!(out,  "TOTAL INLINE CODE SIZE: {} bytes", total_code_size).unwrap();
 
     // For each block, sorted by increasing start address
-    for block_idx in 0..block_list.len() {
-        let block = block_list[block_idx].borrow();
+    for (block_idx, block) in block_list.iter().enumerate() {
         let blockid = block.get_blockid();
         if blockid.idx >= start_idx && blockid.idx < end_idx {
             let end_idx = block.get_end_idx();
-            let start_addr = block.get_start_addr().unwrap();
-            let end_addr = block.get_end_addr().unwrap();
+            let start_addr = block.get_start_addr();
+            let end_addr = block.get_end_addr();
             let code_size = block.code_size();
 
             // Write some info about the current block
@@ -110,9 +100,9 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u32, end_idx: u32) -> St
             // If this is not the last block
             if block_idx < block_list.len() - 1 {
                 // Compute the size of the gap between this block and the next
-                let next_block = block_list[block_idx + 1].borrow();
-                let next_start_addr = next_block.get_start_addr().unwrap();
-                let gap_size = next_start_addr.into_usize() - end_addr.into_usize();
+                let next_block = block_list[block_idx + 1];
+                let next_start_addr = next_block.get_start_addr();
+                let gap_size = next_start_addr.as_offset() - end_addr.as_offset();
 
                 // Log the size of the gap between the blocks if nonzero
                 if gap_size > 0 {
@@ -171,6 +161,9 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
     // Disassemble the instructions
     let code_size = end_addr - start_addr;
     let code_slice = unsafe { std::slice::from_raw_parts(start_addr as _, code_size) };
+    // Stabilize output for cargo test
+    #[cfg(test)]
+    let start_addr = 0;
     let insns = cs.disasm_all(code_slice, start_addr as u64).unwrap();
 
     // For each instruction in this block
@@ -178,13 +171,90 @@ pub fn disasm_addr_range(cb: &CodeBlock, start_addr: usize, end_addr: usize) -> 
         // Comments for this block
         if let Some(comment_list) = cb.comments_at(insn.address() as usize) {
             for comment in comment_list {
-                writeln!(&mut out, "  \x1b[1m# {}\x1b[0m", comment).unwrap();
+                if cb.outlined {
+                    write!(&mut out, "\x1b[34m").unwrap(); // Make outlined code blue
+                }
+                writeln!(&mut out, "  \x1b[1m# {comment}\x1b[22m").unwrap(); // Make comments bold
             }
         }
-        writeln!(&mut out, "  {}", insn).unwrap();
+        if cb.outlined {
+            write!(&mut out, "\x1b[34m").unwrap(); // Make outlined code blue
+        }
+        writeln!(&mut out, "  {insn}").unwrap();
+        if cb.outlined {
+            write!(&mut out, "\x1b[0m").unwrap(); // Disable blue
+        }
     }
 
     return out;
+}
+
+/// Assert that CodeBlock has the code specified with hex. In addition, if tested with
+/// `cargo test --all-features`, it also checks it generates the specified disasm.
+#[cfg(test)]
+macro_rules! assert_disasm {
+    ($cb:expr, $hex:expr, $disasm:expr) => {
+        #[cfg(feature = "disasm")]
+        {
+            let disasm = disasm_addr_range(
+                &$cb,
+                $cb.get_ptr(0).raw_addr(&$cb),
+                $cb.get_write_ptr().raw_addr(&$cb),
+            );
+            assert_eq!(unindent(&disasm, false), unindent(&$disasm, true));
+        }
+        assert_eq!(format!("{:x}", $cb), $hex);
+    };
+}
+#[cfg(test)]
+pub(crate) use assert_disasm;
+
+/// Remove the minimum indent from every line, skipping the first line if `skip_first`.
+#[cfg(all(feature = "disasm", test))]
+pub fn unindent(string: &str, trim_lines: bool) -> String {
+    fn split_lines(string: &str) -> Vec<String> {
+        let mut result: Vec<String> = vec![];
+        let mut buf: Vec<u8> = vec![];
+        for byte in string.as_bytes().iter() {
+            buf.push(*byte);
+            if *byte == b'\n' {
+                result.push(String::from_utf8(buf).unwrap());
+                buf = vec![];
+            }
+        }
+        if !buf.is_empty() {
+            result.push(String::from_utf8(buf).unwrap());
+        }
+        result
+    }
+
+    // Break up a string into multiple lines
+    let mut lines = split_lines(string);
+    if trim_lines { // raw string literals come with extra lines
+        lines.remove(0);
+        lines.remove(lines.len() - 1);
+    }
+
+    // Count the minimum number of spaces
+    let spaces = lines.iter().filter_map(|line| {
+        for (i, ch) in line.as_bytes().iter().enumerate() {
+            if *ch != b' ' {
+                return Some(i);
+            }
+        }
+        None
+    }).min().unwrap_or(0);
+
+    // Join lines, removing spaces
+    let mut unindented: Vec<u8> = vec![];
+    for line in lines.iter() {
+        if line.len() > spaces {
+            unindented.extend_from_slice(&line.as_bytes()[spaces..]);
+        } else {
+            unindented.extend_from_slice(&line.as_bytes());
+        }
+    }
+    String::from_utf8(unindented).unwrap()
 }
 
 /// Primitive called in yjit.rb
@@ -231,7 +301,7 @@ pub extern "C" fn rb_yjit_insns_compiled(_ec: EcPtr, _ruby_self: VALUE, iseqw: V
     }
 }
 
-fn insns_compiled(iseq: IseqPtr) -> Vec<(String, u32)> {
+fn insns_compiled(iseq: IseqPtr) -> Vec<(String, u16)> {
     let mut insn_vec = Vec::new();
 
     // Get a list of block versions generated for this iseq
@@ -239,16 +309,18 @@ fn insns_compiled(iseq: IseqPtr) -> Vec<(String, u32)> {
 
     // For each block associated with this iseq
     for blockref in &block_list {
-        let block = blockref.borrow();
+        // SAFETY: Called as part of a Ruby method, which ensures the graph is
+        // well connected for the given iseq.
+        let block = unsafe { blockref.as_ref() };
         let start_idx = block.get_blockid().idx;
         let end_idx = block.get_end_idx();
-        assert!(end_idx <= unsafe { get_iseq_encoded_size(iseq) });
+        assert!(u32::from(end_idx) <= unsafe { get_iseq_encoded_size(iseq) });
 
         // For each YARV instruction in the block
         let mut insn_idx = start_idx;
         while insn_idx < end_idx {
             // Get the current pc and opcode
-            let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
+            let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx.into()) };
             // try_into() call below is unfortunate. Maybe pick i32 instead of usize for opcodes.
             let opcode: usize = unsafe { rb_iseq_opcode_at_pc(iseq, pc) }
                 .try_into()
@@ -261,7 +333,7 @@ fn insns_compiled(iseq: IseqPtr) -> Vec<(String, u32)> {
             insn_vec.push((op_name, insn_idx));
 
             // Move to the next instruction
-            insn_idx += insn_len(opcode);
+            insn_idx += insn_len(opcode) as u16;
         }
     }
 

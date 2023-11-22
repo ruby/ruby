@@ -52,6 +52,7 @@ digest.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 digest.o: $(hdrdir)/ruby/internal/attr/noinline.h
 digest.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 digest.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+digest.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 digest.o: $(hdrdir)/ruby/internal/attr/pure.h
 digest.o: $(hdrdir)/ruby/internal/attr/restrict.h
 digest.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ digest.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 digest.o: $(hdrdir)/ruby/internal/intern/error.h
 digest.o: $(hdrdir)/ruby/internal/intern/eval.h
 digest.o: $(hdrdir)/ruby/internal/intern/file.h
-digest.o: $(hdrdir)/ruby/internal/intern/gc.h
 digest.o: $(hdrdir)/ruby/internal/intern/hash.h
 digest.o: $(hdrdir)/ruby/internal/intern/io.h
 digest.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ digest.o: $(hdrdir)/ruby/internal/memory.h
 digest.o: $(hdrdir)/ruby/internal/method.h
 digest.o: $(hdrdir)/ruby/internal/module.h
 digest.o: $(hdrdir)/ruby/internal/newobj.h
-digest.o: $(hdrdir)/ruby/internal/rgengc.h
 digest.o: $(hdrdir)/ruby/internal/scan_args.h
 digest.o: $(hdrdir)/ruby/internal/special_consts.h
 digest.o: $(hdrdir)/ruby/internal/static_assert.h

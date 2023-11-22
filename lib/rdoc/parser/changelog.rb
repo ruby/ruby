@@ -332,4 +332,3 @@ class RDoc::Parser::ChangeLog < RDoc::Parser
     end
   end
 end
-

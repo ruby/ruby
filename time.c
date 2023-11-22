@@ -62,10 +62,6 @@ static VALUE sym_hour, sym_min, sym_sec, sym_subsec, sym_dst, sym_zone;
 #define id_name idName
 #define UTC_ZONE Qundef
 
-#ifndef TM_IS_TIME
-#define TM_IS_TIME 1
-#endif
-
 #define NDIV(x,y) (-(-((x)+1)/(y))-1)
 #define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
 #define DIV(n,d) ((n)<0 ? NDIV((n),(d)) : (n)/(d))
@@ -1322,9 +1318,6 @@ gmtimew(wideval_t timew, struct vtm *result)
     result->wday = tm.tm_wday;
     result->yday = tm.tm_yday+1;
     result->isdst = tm.tm_isdst;
-#if 0
-    result->zone = rb_fstring_lit("UTC");
-#endif
 
     return result;
 }
@@ -1761,39 +1754,39 @@ localtimew(wideval_t timew, struct vtm *result)
 #define TIME_TZMODE_FIXOFF 2
 #define TIME_TZMODE_UNINITIALIZED 3
 
-PACKED_STRUCT_UNALIGNED(struct time_object {
+struct time_object {
     wideval_t timew; /* time_t value * TIME_SCALE.  possibly Rational. */
     struct vtm vtm;
-    unsigned int tzmode:3; /* 0:localtime 1:utc 2:fixoff 3:uninitialized */
-    unsigned int tm_got:1;
-});
+};
 
 #define GetTimeval(obj, tobj) ((tobj) = get_timeval(obj))
 #define GetNewTimeval(obj, tobj) ((tobj) = get_new_timeval(obj))
 
 #define IsTimeval(obj) rb_typeddata_is_kind_of((obj), &time_data_type)
-#define TIME_INIT_P(tobj) ((tobj)->tzmode != TIME_TZMODE_UNINITIALIZED)
+#define TIME_INIT_P(tobj) ((tobj)->vtm.tzmode != TIME_TZMODE_UNINITIALIZED)
 
-#define TZMODE_UTC_P(tobj) ((tobj)->tzmode == TIME_TZMODE_UTC)
-#define TZMODE_SET_UTC(tobj) ((tobj)->tzmode = TIME_TZMODE_UTC)
+#define TZMODE_UTC_P(tobj) ((tobj)->vtm.tzmode == TIME_TZMODE_UTC)
+#define TZMODE_SET_UTC(tobj) ((tobj)->vtm.tzmode = TIME_TZMODE_UTC)
 
-#define TZMODE_LOCALTIME_P(tobj) ((tobj)->tzmode == TIME_TZMODE_LOCALTIME)
-#define TZMODE_SET_LOCALTIME(tobj) ((tobj)->tzmode = TIME_TZMODE_LOCALTIME)
+#define TZMODE_LOCALTIME_P(tobj) ((tobj)->vtm.tzmode == TIME_TZMODE_LOCALTIME)
+#define TZMODE_SET_LOCALTIME(tobj) ((tobj)->vtm.tzmode = TIME_TZMODE_LOCALTIME)
 
-#define TZMODE_FIXOFF_P(tobj) ((tobj)->tzmode == TIME_TZMODE_FIXOFF)
-#define TZMODE_SET_FIXOFF(tobj, off) \
-    ((tobj)->tzmode = TIME_TZMODE_FIXOFF, \
-     (tobj)->vtm.utc_offset = (off))
+#define TZMODE_FIXOFF_P(tobj) ((tobj)->vtm.tzmode == TIME_TZMODE_FIXOFF)
+#define TZMODE_SET_FIXOFF(time, tobj, off) do { \
+    (tobj)->vtm.tzmode = TIME_TZMODE_FIXOFF; \
+    RB_OBJ_WRITE_UNALIGNED(time, &(tobj)->vtm.utc_offset, off); \
+} while (0)
 
 #define TZMODE_COPY(tobj1, tobj2) \
-    ((tobj1)->tzmode = (tobj2)->tzmode, \
+    ((tobj1)->vtm.tzmode = (tobj2)->vtm.tzmode, \
      (tobj1)->vtm.utc_offset = (tobj2)->vtm.utc_offset, \
      (tobj1)->vtm.zone = (tobj2)->vtm.zone)
 
+static int zone_localtime(VALUE zone, VALUE time);
 static VALUE time_get_tm(VALUE, struct time_object *);
 #define MAKE_TM(time, tobj) \
   do { \
-    if ((tobj)->tm_got == 0) { \
+    if ((tobj)->vtm.tm_got == 0) { \
         time_get_tm((time), (tobj)); \
     } \
   } while (0)
@@ -1801,10 +1794,40 @@ static VALUE time_get_tm(VALUE, struct time_object *);
     do { \
         MAKE_TM(time, tobj); \
         if (!(cond)) { \
-            VALUE zone = (tobj)->vtm.zone; \
-            if (!NIL_P(zone)) zone_localtime(zone, (time)); \
+            force_make_tm(time, tobj); \
         } \
     } while (0)
+
+static void
+time_set_timew(VALUE time, struct time_object *tobj, wideval_t timew)
+{
+    tobj->timew = timew;
+    if (!FIXWV_P(timew)) {
+        RB_OBJ_WRITTEN(time, Qnil, w2v(timew));
+    }
+}
+
+static void
+time_set_vtm(VALUE time, struct time_object *tobj, struct vtm vtm)
+{
+    tobj->vtm = vtm;
+
+    RB_OBJ_WRITTEN(time, Qnil, tobj->vtm.year);
+    RB_OBJ_WRITTEN(time, Qnil, tobj->vtm.subsecx);
+    RB_OBJ_WRITTEN(time, Qnil, tobj->vtm.utc_offset);
+    RB_OBJ_WRITTEN(time, Qnil, tobj->vtm.zone);
+}
+
+static inline void
+force_make_tm(VALUE time, struct time_object *tobj)
+{
+    VALUE zone = tobj->vtm.zone;
+    if (!NIL_P(zone) && zone != str_empty && zone != str_utc) {
+        if (zone_localtime(zone, time)) return;
+    }
+    tobj->vtm.tm_got = 0;
+    time_get_tm(time, tobj);
+}
 
 static void
 time_mark(void *ptr)
@@ -1818,17 +1841,15 @@ time_mark(void *ptr)
     rb_gc_mark(tobj->vtm.zone);
 }
 
-static size_t
-time_memsize(const void *tobj)
-{
-    return sizeof(struct time_object);
-}
-
 static const rb_data_type_t time_data_type = {
     "time",
-    {time_mark, RUBY_TYPED_DEFAULT_FREE, time_memsize,},
+    {
+        time_mark,
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL, // No external memory to report,
+    },
     0, 0,
-    (RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE),
+    (RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE),
 };
 
 static VALUE
@@ -1838,9 +1859,9 @@ time_s_alloc(VALUE klass)
     struct time_object *tobj;
 
     obj = TypedData_Make_Struct(klass, struct time_object, &time_data_type, tobj);
-    tobj->tzmode = TIME_TZMODE_UNINITIALIZED;
-    tobj->tm_got=0;
-    tobj->timew = WINT2FIXWV(0);
+    tobj->vtm.tzmode = TIME_TZMODE_UNINITIALIZED;
+    tobj->vtm.tm_got = 0;
+    time_set_timew(obj, tobj, WINT2FIXWV(0));
     tobj->vtm.zone = Qnil;
 
     return obj;
@@ -1946,10 +1967,9 @@ time_init_now(rb_execution_context_t *ec, VALUE time, VALUE zone)
     time_modify(time);
     GetNewTimeval(time, tobj);
     TZMODE_SET_LOCALTIME(tobj);
-    tobj->tm_got=0;
-    tobj->timew = WINT2FIXWV(0);
+    tobj->vtm.tm_got=0;
     rb_timespec_now(&ts);
-    tobj->timew = timenano2timew(ts.tv_sec, ts.tv_nsec);
+    time_set_timew(time, tobj, timenano2timew(ts.tv_sec, ts.tv_nsec));
 
     if (!NIL_P(zone)) {
         time_zonelocal(time, zone);
@@ -1973,9 +1993,9 @@ time_set_utc_offset(VALUE time, VALUE off)
     time_modify(time);
     GetTimeval(time, tobj);
 
-    tobj->tm_got = 0;
+    tobj->vtm.tm_got = 0;
     tobj->vtm.zone = Qnil;
-    TZMODE_SET_FIXOFF(tobj, off);
+    TZMODE_SET_FIXOFF(time, tobj, off);
 
     return time;
 }
@@ -2070,19 +2090,20 @@ vtm_add_day(struct vtm *vtm, int day)
                 vtm->mday = 31;
                 vtm->mon = 12; /* December */
                 vtm->year = subv(vtm->year, INT2FIX(1));
-                vtm->yday = leap_year_v_p(vtm->year) ? 366 : 365;
+                if (vtm->yday != 0)
+                    vtm->yday = leap_year_v_p(vtm->year) ? 366 : 365;
             }
             else if (vtm->mday == 1) {
                 const int8_t *days_in_month = days_in_month_in_v(vtm->year);
                 vtm->mon--;
                 vtm->mday = days_in_month[vtm->mon-1];
-                vtm->yday--;
+                if (vtm->yday != 0) vtm->yday--;
             }
             else {
                 vtm->mday--;
-                vtm->yday--;
+                if (vtm->yday != 0) vtm->yday--;
             }
-            vtm->wday = (vtm->wday + 6) % 7;
+            if (vtm->wday != VTM_WDAY_INITVAL) vtm->wday = (vtm->wday + 6) % 7;
         }
         else {
             int leap = leap_year_v_p(vtm->year);
@@ -2095,13 +2116,13 @@ vtm_add_day(struct vtm *vtm, int day)
             else if (vtm->mday == days_in_month_of(leap)[vtm->mon-1]) {
                 vtm->mon++;
                 vtm->mday = 1;
-                vtm->yday++;
+                if (vtm->yday != 0) vtm->yday++;
             }
             else {
                 vtm->mday++;
-                vtm->yday++;
+                if (vtm->yday != 0) vtm->yday++;
             }
-            vtm->wday = (vtm->wday + 1) % 7;
+            if (vtm->wday != VTM_WDAY_INITVAL) vtm->wday = (vtm->wday + 1) % 7;
         }
     }
 }
@@ -2227,10 +2248,12 @@ extract_time(VALUE time)
     } while (0)
 
     if (rb_typeddata_is_kind_of(time, &time_data_type)) {
-        struct time_object *tobj = DATA_PTR(time);
+        struct time_object *tobj = RTYPEDDATA_GET_DATA(time);
 
         time_gmtime(time); /* ensure tm got */
         t = rb_time_unmagnify(tobj->timew);
+
+        RB_GC_GUARD(time);
     }
     else if (RB_TYPE_P(time, T_STRUCT)) {
 #define AREF(x) rb_struct_aref(time, ID2SYM(id_##x))
@@ -2248,10 +2271,11 @@ extract_time(VALUE time)
 }
 
 static wideval_t
-extract_vtm(VALUE time, struct vtm *vtm, VALUE subsecx)
+extract_vtm(VALUE time, VALUE orig_time, struct time_object *orig_tobj, VALUE subsecx)
 {
     wideval_t t;
     const ID id_to_i = idTo_i;
+    struct vtm *vtm = &orig_tobj->vtm;
 
 #define EXTRACT_VTM() do { \
         VALUE subsecx; \
@@ -2267,13 +2291,15 @@ extract_vtm(VALUE time, struct vtm *vtm, VALUE subsecx)
     } while (0)
 
     if (rb_typeddata_is_kind_of(time, &time_data_type)) {
-        struct time_object *tobj = DATA_PTR(time);
+        struct time_object *tobj = RTYPEDDATA_GET_DATA(time);
 
         time_get_tm(time, tobj);
-        *vtm = tobj->vtm;
+        time_set_vtm(orig_time, orig_tobj, tobj->vtm);
         t = rb_time_unmagnify(tobj->timew);
         if (TZMODE_FIXOFF_P(tobj) && vtm->utc_offset != INT2FIX(0))
             t = wadd(t, v2w(vtm->utc_offset));
+
+        RB_GC_GUARD(time);
     }
     else if (RB_TYPE_P(time, T_STRUCT)) {
 #define AREF(x) rb_struct_aref(time, ID2SYM(id_##x))
@@ -2282,7 +2308,9 @@ extract_vtm(VALUE time, struct vtm *vtm, VALUE subsecx)
     }
     else if (rb_integer_type_p(time)) {
         t = v2w(time);
-        GMTIMEW(rb_time_magnify(t), vtm);
+        struct vtm temp_vtm = *vtm;
+        GMTIMEW(rb_time_magnify(t), &temp_vtm);
+        time_set_vtm(orig_time, orig_tobj, temp_vtm);
     }
     else {
 #define AREF(x) rb_funcallv(time, id_##x, 0, 0)
@@ -2290,7 +2318,9 @@ extract_vtm(VALUE time, struct vtm *vtm, VALUE subsecx)
 #undef AREF
     }
 #undef EXTRACT_VTM
-    vtm->subsecx = subsecx;
+
+    RB_OBJ_WRITE_UNALIGNED(orig_time, &vtm->subsecx, subsecx);
+
     validate_vtm(vtm);
     return t;
 }
@@ -2309,7 +2339,7 @@ static int
 zone_timelocal(VALUE zone, VALUE time)
 {
     VALUE utc, tm;
-    struct time_object *tobj = DATA_PTR(time);
+    struct time_object *tobj = RTYPEDDATA_GET_DATA(time);
     wideval_t t, s;
 
     t = rb_time_unmagnify(tobj->timew);
@@ -2323,8 +2353,12 @@ zone_timelocal(VALUE zone, VALUE time)
     if (tobj->vtm.subsecx != INT2FIX(0)) {
         s = wadd(s, v2w(tobj->vtm.subsecx));
     }
-    tobj->timew = s;
+    time_set_timew(time, tobj, s);
+
     zone_set_dst(zone, tobj, tm);
+
+    RB_GC_GUARD(time);
+
     return 1;
 }
 
@@ -2332,7 +2366,7 @@ static int
 zone_localtime(VALUE zone, VALUE time)
 {
     VALUE local, tm, subsecx;
-    struct time_object *tobj = DATA_PTR(time);
+    struct time_object *tobj = RTYPEDDATA_GET_DATA(time);
     wideval_t t, s;
 
     split_second(tobj->timew, &t, &subsecx);
@@ -2341,10 +2375,13 @@ zone_localtime(VALUE zone, VALUE time)
     local = rb_check_funcall(zone, id_utc_to_local, 1, &tm);
     if (UNDEF_P(local)) return 0;
 
-    s = extract_vtm(local, &tobj->vtm, subsecx);
-    tobj->tm_got = 1;
+    s = extract_vtm(local, time, tobj, subsecx);
+    tobj->vtm.tm_got = 1;
     zone_set_offset(zone, tobj, s, t);
     zone_set_dst(zone, tobj, tm);
+
+    RB_GC_GUARD(time);
+
     return 1;
 }
 
@@ -2433,10 +2470,10 @@ time_init_vtm(VALUE time, struct vtm vtm, VALUE zone)
     GetNewTimeval(time, tobj);
 
     if (!NIL_P(zone)) {
-        tobj->timew = timegmw(&vtm);
+        time_set_timew(time, tobj, timegmw(&vtm));
         vtm_day_wraparound(&vtm);
-        tobj->vtm = vtm;
-        tobj->tm_got = 1;
+        time_set_vtm(time, tobj, vtm);
+        tobj->vtm.tm_got = 1;
         TZMODE_SET_LOCALTIME(tobj);
         if (zone_timelocal(zone, time)) {
             return time;
@@ -2448,27 +2485,29 @@ time_init_vtm(VALUE time, struct vtm vtm, VALUE zone)
     }
 
     if (utc == UTC_ZONE) {
-        tobj->timew = timegmw(&vtm);
+        time_set_timew(time, tobj, timegmw(&vtm));
+        vtm.isdst = 0; /* No DST in UTC */
         vtm_day_wraparound(&vtm);
-        tobj->vtm = vtm;
-        tobj->tm_got = 1;
+        time_set_vtm(time, tobj, vtm);
+        tobj->vtm.tm_got = 1;
         TZMODE_SET_UTC(tobj);
         return time;
     }
 
     TZMODE_SET_LOCALTIME(tobj);
-    tobj->tm_got=0;
-    tobj->timew = WINT2FIXWV(0);
+    tobj->vtm.tm_got=0;
 
     if (!NIL_P(vtm.utc_offset)) {
         VALUE off = vtm.utc_offset;
         vtm_add_offset(&vtm, off, -1);
         vtm.utc_offset = Qnil;
-        tobj->timew = timegmw(&vtm);
+        time_set_timew(time, tobj, timegmw(&vtm));
+
         return time_set_utc_offset(time, off);
     }
     else {
-        tobj->timew = timelocalw(&vtm);
+        time_set_timew(time, tobj, timelocalw(&vtm));
+
         return time_localtime(time);
     }
 }
@@ -2514,7 +2553,9 @@ time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, 
     size_t ndigits;
     size_t prec = NIL_P(precision) ? SIZE_MAX : NUM2SIZET(precision);
 
-    while ((ptr < end) && ISSPACE(*ptr)) ptr++;
+    if ((ptr < end) && (ISSPACE(*ptr) || ISSPACE(*(end-1)))) {
+        rb_raise(rb_eArgError, "can't parse: %+"PRIsVALUE, str);
+    }
     year = parse_int(ptr, end, &ptr, &ndigits, true);
     if (NIL_P(year)) {
         rb_raise(rb_eArgError, "can't parse: %+"PRIsVALUE, str);
@@ -2522,17 +2563,22 @@ time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, 
     else if (ndigits < 4) {
         rb_raise(rb_eArgError, "year must be 4 or more digits: %.*s", (int)ndigits, ptr - ndigits);
     }
+    else if (ptr == end) {
+        goto only_year;
+    }
     do {
 #define peekable_p(n) ((ptrdiff_t)(n) < (end - ptr))
 #define peek_n(c, n) (peekable_p(n) && ((unsigned char)ptr[n] == (c)))
 #define peek(c) peek_n(c, 0)
 #define peekc_n(n) (peekable_p(n) ? (int)(unsigned char)ptr[n] : -1)
 #define peekc() peekc_n(0)
-#define expect_two_digits(x) (x = two_digits(ptr + 1, end, &ptr, #x))
+#define expect_two_digits(x, bits) \
+        (((unsigned int)(x = two_digits(ptr + 1, end, &ptr, #x)) > (1U << bits) - 1) ? \
+         rb_raise(rb_eArgError, #x" out of range") : (void)0)
         if (!peek('-')) break;
-        expect_two_digits(mon);
+        expect_two_digits(mon, 4);
         if (!peek('-')) break;
-        expect_two_digits(mday);
+        expect_two_digits(mday, 5);
         if (!peek(' ') && !peek('T')) break;
         const char *const time_part = ptr + 1;
         if (!ISDIGIT(peekc_n(1))) break;
@@ -2546,13 +2592,13 @@ time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, 
             rb_raise(rb_eArgError, "missing " #x " part: %.*s", \
                      (int)(ptr + 1 - time_part), time_part); \
         }
-        expect_two_digits(hour);
+        expect_two_digits(hour, 5);
         nofraction(hour);
         need_colon(min);
-        expect_two_digits(min);
+        expect_two_digits(min, 6);
         nofraction(min);
         need_colon(sec);
-        expect_two_digits(sec);
+        expect_two_digits(sec, 6);
         if (peek('.')) {
             ptr++;
             for (ndigits = 0; ndigits < prec && ISDIGIT(peekc_n(ndigits)); ++ndigits);
@@ -2580,6 +2626,9 @@ time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, 
     if (zend > zstr) {
         zone = rb_str_subseq(str, zstr - begin, zend - zstr);
     }
+    else if (hour == -1) {
+        rb_raise(rb_eArgError, "no time information");
+    }
     if (!NIL_P(subsec)) {
         /* subseconds is the last using ndigits */
         static const size_t TIME_SCALE_NUMDIGITS =
@@ -2595,6 +2644,9 @@ time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, 
             subsec = rb_rational_new(subsec, num);
         }
     }
+
+only_year:
+    ;
 
     struct vtm vtm = {
         .wday = VTM_WDAY_INITVAL,
@@ -2658,9 +2710,9 @@ time_new_timew(VALUE klass, wideval_t timew)
     VALUE time = time_s_alloc(klass);
     struct time_object *tobj;
 
-    tobj = DATA_PTR(time);	/* skip type check */
+    tobj = RTYPEDDATA_GET_DATA(time);	/* skip type check */
     TZMODE_SET_LOCALTIME(tobj);
-    tobj->timew = timew;
+    time_set_timew(time, tobj, timew);
 
     return time;
 }
@@ -2687,7 +2739,7 @@ rb_time_timespec_new(const struct timespec *ts, int offset)
 
     if (-86400 < offset && offset <  86400) { /* fixoff */
         GetTimeval(time, tobj);
-        TZMODE_SET_FIXOFF(tobj, INT2FIX(offset));
+        TZMODE_SET_FIXOFF(time, tobj, INT2FIX(offset));
     }
     else if (offset == INT_MAX) { /* localtime */
     }
@@ -3593,7 +3645,7 @@ tmcmp(struct tm *a, struct tm *b)
  *     Time.utc(Float(0.0), Rational(1, 1), 1.0, 0.0, 0.0, 0.0, 0.0)
  *     # => 0000-01-01 00:00:00 UTC
  *
- * - \String integers:
+ * - String integers:
  *
  *     a = %w[0 1 1 0 0 0 0 0]
  *     # => ["0", "1", "1", "0", "0", "0", "0", "0"]
@@ -3623,8 +3675,6 @@ tmcmp(struct tm *a, struct tm *b)
  *
  * Raises an exception if the number of arguments is eight, nine,
  * or greater than ten.
- *
- * Time.gm is an alias for Time.utc.
  *
  * Related: Time.local.
  *
@@ -3676,8 +3726,6 @@ time_s_mktime(int argc, VALUE *argv, VALUE klass)
  *    Time.utc(1970, 1, 1, 0, 0, 0, 999999).to_i # => 0
  *    Time.utc(1950, 1, 1, 0, 0, 0).to_i         # => -631152000
  *    Time.utc(1990, 1, 1, 0, 0, 0).to_i         # => 631152000
- *
- *  Time#tv_sec is an alias for Time#to_i.
  *
  *  Related: Time#to_f Time#to_r.
  */
@@ -3758,8 +3806,6 @@ time_to_r(VALUE time)
  *    t.usec       # => 548469
  *
  *  Related: Time#subsec (returns exact subseconds).
- *
- *  Time#tv_usec is an alias for Time#usec.
  */
 
 static VALUE
@@ -3787,8 +3833,6 @@ time_usec(VALUE time)
  *    t.nsec       # => 321963700
  *
  *  Related: Time#subsec (returns exact subseconds).
- *
- *  Time#tv_nsec is an alias for Time#usec.
  */
 
 static VALUE
@@ -3907,8 +3951,6 @@ time_eql(VALUE time1, VALUE time2)
  *    # => 2000-01-01 20:15:01 UTC
  *    utc.utc? # => true
  *
- *  Time#gmt? is an alias for Time#utc?.
- *
  *  Related: Time.utc.
  */
 
@@ -3970,7 +4012,7 @@ time_localtime(VALUE time)
 
     GetTimeval(time, tobj);
     if (TZMODE_LOCALTIME_P(tobj)) {
-        if (tobj->tm_got)
+        if (tobj->vtm.tm_got)
             return time;
     }
     else {
@@ -3984,9 +4026,9 @@ time_localtime(VALUE time)
 
     if (!localtimew(tobj->timew, &vtm))
         rb_raise(rb_eArgError, "localtime error");
-    tobj->vtm = vtm;
+    time_set_vtm(time, tobj, vtm);
 
-    tobj->tm_got = 1;
+    tobj->vtm.tm_got = 1;
     TZMODE_SET_LOCALTIME(tobj);
     return time;
 }
@@ -4060,8 +4102,6 @@ time_localtime_m(int argc, VALUE *argv, VALUE time)
  *    t.utc              # => 2000-01-01 06:00:00 UTC
  *    t.utc?             # => true
  *
- *  Time#gmtime is an alias for Time#utc.
- *
  *  Related: Time#getutc (returns a new converted \Time object).
  */
 
@@ -4073,7 +4113,7 @@ time_gmtime(VALUE time)
 
     GetTimeval(time, tobj);
     if (TZMODE_UTC_P(tobj)) {
-        if (tobj->tm_got)
+        if (tobj->vtm.tm_got)
             return time;
     }
     else {
@@ -4082,9 +4122,9 @@ time_gmtime(VALUE time)
 
     vtm.zone = str_utc;
     GMTIMEW(tobj->timew, &vtm);
-    tobj->vtm = vtm;
+    time_set_vtm(time, tobj, vtm);
 
-    tobj->tm_got = 1;
+    tobj->vtm.tm_got = 1;
     TZMODE_SET_UTC(tobj);
     return time;
 }
@@ -4098,7 +4138,7 @@ time_fixoff(VALUE time)
 
     GetTimeval(time, tobj);
     if (TZMODE_FIXOFF_P(tobj)) {
-       if (tobj->tm_got)
+       if (tobj->vtm.tm_got)
            return time;
     }
     else {
@@ -4113,12 +4153,13 @@ time_fixoff(VALUE time)
     GMTIMEW(tobj->timew, &vtm);
 
     zone = tobj->vtm.zone;
-    tobj->vtm = vtm;
-    tobj->vtm.zone = zone;
-    vtm_add_offset(&tobj->vtm, off, +1);
+    vtm_add_offset(&vtm, off, +1);
 
-    tobj->tm_got = 1;
-    TZMODE_SET_FIXOFF(tobj, off);
+    time_set_vtm(time, tobj, vtm);
+    RB_OBJ_WRITE_UNALIGNED(time, &tobj->vtm.zone, zone);
+
+    tobj->vtm.tm_got = 1;
+    TZMODE_SET_FIXOFF(time, tobj, off);
     return time;
 }
 
@@ -4184,7 +4225,6 @@ time_getlocaltime(int argc, VALUE *argv, VALUE time)
  *    utc.utc?                 # => true
  *    utc == local             # => true
  *
- *  Time#getgm is an alias for Time#getutc.
  */
 
 static VALUE
@@ -4217,8 +4257,6 @@ static VALUE strftime_cstr(const char *fmt, size_t len, VALUE time, rb_encoding 
  *    t.ctime                      # => "Sun Dec 31 23:59:59 2000"
  *    t.strftime('%a %b %e %T %Y') # => "Sun Dec 31 23:59:59 2000"
  *    t.strftime('%c')             # => "Sun Dec 31 23:59:59 2000"
- *
- *  Time#asctime is an alias for Time#ctime.
  *
  *  Related: Time#to_s, Time#inspect:
  *
@@ -4380,7 +4418,7 @@ time_plus(VALUE time1, VALUE time2)
  *
  *  When +other_time+ is given,
  *  returns a Float whose value is the difference
- *  of the numeric values of +self+ and +other_time+:
+ *  of the numeric values of +self+ and +other_time+ in seconds:
  *
  *    t - t # => 0.0
  *
@@ -4645,8 +4683,6 @@ time_hour(VALUE time)
  *    # => 2000-01-02 03:04:05 +000006
  *    t.mday # => 2
  *
- *  Time#day is an alias for Time#mday.
- *
  *  Related: Time#year, Time#hour, Time#min.
  */
 
@@ -4670,8 +4706,6 @@ time_mday(VALUE time)
  *    t = Time.new(2000, 1, 2, 3, 4, 5, 6)
  *    # => 2000-01-02 03:04:05 +000006
  *    t.mon # => 1
- *
- *  Time#month is an alias for Time#mday.
  *
  *  Related: Time#year, Time#hour, Time#min.
  */
@@ -4897,7 +4931,6 @@ time_yday(VALUE time)
  *    t.zone                     # => "Central Daylight Time"
  *    t.dst?                     # => true
  *
- *    Time#isdst is an alias for Time#dst?.
  */
 
 static VALUE
@@ -4953,7 +4986,6 @@ time_zone(VALUE time)
  *    Time.utc(2000, 1, 1).utc_offset   # => 0
  *    Time.local(2000, 1, 1).utc_offset # => -21600 # -6*3600, or minus six hours.
  *
- *  Time#gmt_offset and Time#gmtoff are aliases for Time#utc_offset.
  */
 
 VALUE
@@ -5012,7 +5044,9 @@ time_to_a(VALUE time)
  *    deconstruct_keys(array_of_names_or_nil) -> hash
  *
  *  Returns a hash of the name/value pairs, to use in pattern matching.
- *  Possible keys are the same as returned by #to_h.
+ *  Possible keys are: <tt>:year</tt>, <tt>:month</tt>, <tt>:day</tt>,
+ *  <tt>:yday</tt>, <tt>:wday</tt>, <tt>:hour</tt>, <tt>:min</tt>, <tt>:sec</tt>,
+ *  <tt>:subsec</tt>, <tt>:dst</tt>, <tt>:zone</tt>.
  *
  *  Possible usages:
  *
@@ -5478,8 +5512,9 @@ end_submicro: ;
 
     GetNewTimeval(time, tobj);
     TZMODE_SET_LOCALTIME(tobj);
-    tobj->tm_got = 0;
-    tobj->timew = timew;
+    tobj->vtm.tm_got = 0;
+    time_set_timew(time, tobj, timew);
+
     if (gmt) {
         TZMODE_SET_UTC(tobj);
     }
@@ -5529,45 +5564,22 @@ tm_from_time(VALUE klass, VALUE time)
 {
     struct time_object *tobj;
     struct vtm vtm, *v;
-#if TM_IS_TIME
     VALUE tm;
     struct time_object *ttm;
 
     GetTimeval(time, tobj);
     tm = time_s_alloc(klass);
-    ttm = DATA_PTR(tm);
+    ttm = RTYPEDDATA_GET_DATA(tm);
     v = &vtm;
     GMTIMEW(ttm->timew = tobj->timew, v);
     ttm->timew = wsub(ttm->timew, v->subsecx);
     v->subsecx = INT2FIX(0);
     v->zone = Qnil;
-    ttm->vtm = *v;
-    ttm->tm_got = 1;
+    time_set_vtm(tm, ttm, *v);
+
+    ttm->vtm.tm_got = 1;
     TZMODE_SET_UTC(ttm);
     return tm;
-#else
-    VALUE args[8];
-    int i = 0;
-
-    GetTimeval(time, tobj);
-    if (tobj->tm_got && TZMODE_UTC_P(tobj))
-        v = &tobj->vtm;
-    else
-        GMTIMEW(tobj->timew, v = &vtm);
-    args[i++] = v->year;
-    args[i++] = INT2FIX(v->mon);
-    args[i++] = INT2FIX(v->mday);
-    args[i++] = INT2FIX(v->hour);
-    args[i++] = INT2FIX(v->min);
-    args[i++] = INT2FIX(v->sec);
-    switch (v->isdst) {
-      case 0: args[i++] = Qfalse; break;
-      case 1: args[i++] = Qtrue; break;
-      default: args[i++] = Qnil; break;
-    }
-    args[i++] = w2v(rb_time_unmagnify(tobj->timew));
-    return rb_class_new_instance(i, args, klass);
-#endif
 }
 
 /*
@@ -5579,7 +5591,7 @@ tm_from_time(VALUE klass, VALUE time)
  */
 
 static VALUE
-tm_initialize(int argc, VALUE *argv, VALUE tm)
+tm_initialize(int argc, VALUE *argv, VALUE time)
 {
     struct vtm vtm;
     wideval_t t;
@@ -5587,24 +5599,12 @@ tm_initialize(int argc, VALUE *argv, VALUE tm)
     if (rb_check_arity(argc, 1, 7) > 6) argc = 6;
     time_arg(argc, argv, &vtm);
     t = timegmw(&vtm);
-    {
-#if TM_IS_TIME
-        struct time_object *tobj = DATA_PTR(tm);
-        TZMODE_SET_UTC(tobj);
-        tobj->timew = t;
-        tobj->vtm = vtm;
-#else
-        int i = 0;
-        RSTRUCT_SET(tm, i++, INT2FIX(vtm.sec));
-        RSTRUCT_SET(tm, i++, INT2FIX(vtm.min));
-        RSTRUCT_SET(tm, i++, INT2FIX(vtm.hour));
-        RSTRUCT_SET(tm, i++, INT2FIX(vtm.mday));
-        RSTRUCT_SET(tm, i++, INT2FIX(vtm.mon));
-        RSTRUCT_SET(tm, i++, vtm.year);
-        RSTRUCT_SET(tm, i++, w2v(rb_time_unmagnify(t)));
-#endif
-    }
-    return tm;
+    struct time_object *tobj = RTYPEDDATA_GET_DATA(time);
+    TZMODE_SET_UTC(tobj);
+    time_set_timew(time, tobj, t);
+    time_set_vtm(time, tobj, vtm);
+
+    return time;
 }
 
 /* call-seq:
@@ -5617,51 +5617,13 @@ tm_initialize(int argc, VALUE *argv, VALUE tm)
 static VALUE
 tm_to_time(VALUE tm)
 {
-#if TM_IS_TIME
     struct time_object *torig = get_timeval(tm);
     VALUE dup = time_s_alloc(rb_cTime);
-    struct time_object *tobj = DATA_PTR(dup);
+    struct time_object *tobj = RTYPEDDATA_GET_DATA(dup);
     *tobj = *torig;
     return dup;
-#else
-    VALUE t[6];
-    const VALUE *p = RSTRUCT_CONST_PTR(tm);
-    int i;
-
-    for (i = 0; i < numberof(t); ++i) {
-        t[i] = p[numberof(t) - 1 - i];
-    }
-    return time_s_mkutc(numberof(t), t, rb_cTime);
-#endif
 }
 
-#if !TM_IS_TIME
-static VALUE
-tm_zero(VALUE tm)
-{
-    return INT2FIX(0);
-}
-
-#define tm_subsec tm_zero
-#define tm_utc_offset tm_zero
-
-static VALUE
-tm_isdst(VALUE tm)
-{
-    return Qfalse;
-}
-
-static VALUE
-tm_to_s(VALUE tm)
-{
-    const VALUE *p = RSTRUCT_CONST_PTR(tm);
-
-    return rb_sprintf("%.4"PRIsVALUE"-%.2"PRIsVALUE"-%.2"PRIsVALUE" "
-                      "%.2"PRIsVALUE":%.2"PRIsVALUE":%.2"PRIsVALUE" "
-                      "UTC",
-                      p[5], p[4], p[3], p[2], p[1], p[0]);
-}
-#else
 static VALUE
 tm_plus(VALUE tm, VALUE offset)
 {
@@ -5673,14 +5635,12 @@ tm_minus(VALUE tm, VALUE offset)
 {
     return time_add0(rb_obj_class(tm), get_timeval(tm), tm, offset, -1);
 }
-#endif
 
 static VALUE
 Init_tm(VALUE outer, const char *name)
 {
     /* :stopdoc:*/
     VALUE tm;
-#if TM_IS_TIME
     tm = rb_define_class_under(outer, name, rb_cObject);
     rb_define_alloc_func(tm, time_s_alloc);
     rb_define_method(tm, "sec", time_sec, 0);
@@ -5713,18 +5673,6 @@ Init_tm(VALUE outer, const char *name)
     rb_define_method(tm, "to_r", time_to_r, 0);
     rb_define_method(tm, "+", tm_plus, 1);
     rb_define_method(tm, "-", tm_minus, 1);
-#else
-    tm = rb_struct_define_under(outer,  "tm",
-                                        "sec", "min", "hour",
-                                        "mday", "mon", "year",
-                                        "to_i", NULL);
-    rb_define_method(tm, "subsec", tm_subsec, 0);
-    rb_define_method(tm, "utc_offset", tm_utc_offset, 0);
-    rb_define_method(tm, "to_s", tm_to_s, 0);
-    rb_define_method(tm, "inspect", tm_to_s, 0);
-    rb_define_method(tm, "isdst", tm_isdst, 0);
-    rb_define_method(tm, "dst?", tm_isdst, 0);
-#endif
     rb_define_method(tm, "initialize", tm_initialize, -1);
     rb_define_method(tm, "utc", tm_to_time, 0);
     rb_alias(tm, rb_intern_const("to_time"), rb_intern_const("utc"));
@@ -5896,15 +5844,10 @@ Init_Time(void)
     /* methods for marshaling */
     rb_define_private_method(rb_cTime, "_dump", time_dump, -1);
     rb_define_private_method(scTime, "_load", time_load, 1);
-#if 0
-    /* Time will support marshal_dump and marshal_load in the future (1.9 maybe) */
-    rb_define_private_method(rb_cTime, "marshal_dump", time_mdump, 0);
-    rb_define_private_method(rb_cTime, "marshal_load", time_mload, 1);
-#endif
 
     if (debug_find_time_numguess) {
         rb_define_hooked_variable("$find_time_numguess", (VALUE *)&find_time_numguess,
-                                  find_time_numguess_getter, NULL);
+                                  find_time_numguess_getter, 0);
     }
 
     rb_cTimeTM = Init_tm(rb_cTime, "tm");

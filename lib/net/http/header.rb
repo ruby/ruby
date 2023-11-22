@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # The \HTTPHeader module provides access to \HTTP headers.
 #
@@ -179,6 +179,8 @@
 # - #each_value: Passes each string field value to the block.
 #
 module Net::HTTPHeader
+  MAX_KEY_LENGTH = 1024
+  MAX_FIELD_LENGTH = 65536
 
   def initialize_http_header(initheader) #:nodoc:
     @header = {}
@@ -189,6 +191,12 @@ module Net::HTTPHeader
         warn "net/http: nil HTTP header: #{key}", uplevel: 3 if $VERBOSE
       else
         value = value.strip # raise error for invalid byte sequences
+        if key.to_s.bytesize > MAX_KEY_LENGTH
+          raise ArgumentError, "too long (#{key.bytesize} bytes) header: #{key[0, 30].inspect}..."
+        end
+        if value.to_s.bytesize > MAX_FIELD_LENGTH
+          raise ArgumentError, "header #{key} has too long field value: #{value.bytesize}"
+        end
         if value.count("\r\n") > 0
           raise ArgumentError, "header #{key} has field value #{value.inspect}, this cannot include CR/LF"
         end
@@ -691,10 +699,14 @@ module Net::HTTPHeader
   #   res.content_type    # => "application/json"
   #
   def content_type
-    return nil unless main_type()
-    if sub_type()
-    then "#{main_type()}/#{sub_type()}"
-    else main_type()
+    main = main_type()
+    return nil unless main
+
+    sub = sub_type()
+    if sub
+      "#{main}/#{sub}"
+    else
+      main
     end
   end
 
@@ -763,19 +775,38 @@ module Net::HTTPHeader
 
   alias content_type= set_content_type
 
-  # Set header fields and a body from HTML form data.
-  # +params+ should be an Array of Arrays or
-  # a Hash containing HTML form data.
-  # Optional argument +sep+ means data record separator.
+  # Sets the request body to a URL-encoded string derived from argument +params+,
+  # and sets request header field <tt>'Content-Type'</tt>
+  # to <tt>'application/x-www-form-urlencoded'</tt>.
   #
-  # Values are URL encoded as necessary and the content-type is set to
-  # application/x-www-form-urlencoded
+  # The resulting request is suitable for HTTP request +POST+ or +PUT+.
   #
-  # Example:
+  # Argument +params+ must be suitable for use as argument +enum+ to
+  # {URI.encode_www_form}[rdoc-ref:URI.encode_www_form].
   #
-  #    http.form_data = {"q" => "ruby", "lang" => "en"}
-  #    http.form_data = {"q" => ["ruby", "perl"], "lang" => "en"}
-  #    http.set_form_data({"q" => "ruby", "lang" => "en"}, ';')
+  # With only argument +params+ given,
+  # sets the body to a URL-encoded string with the default separator <tt>'&'</tt>:
+  #
+  #   req = Net::HTTP::Post.new('example.com')
+  #
+  #   req.set_form_data(q: 'ruby', lang: 'en')
+  #   req.body            # => "q=ruby&lang=en"
+  #   req['Content-Type'] # => "application/x-www-form-urlencoded"
+  #
+  #   req.set_form_data([['q', 'ruby'], ['lang', 'en']])
+  #   req.body            # => "q=ruby&lang=en"
+  #
+  #   req.set_form_data(q: ['ruby', 'perl'], lang: 'en')
+  #   req.body            # => "q=ruby&q=perl&lang=en"
+  #
+  #   req.set_form_data([['q', 'ruby'], ['q', 'perl'], ['lang', 'en']])
+  #   req.body            # => "q=ruby&q=perl&lang=en"
+  #
+  # With string argument +sep+ also given,
+  # uses that string as the separator:
+  #
+  #   req.set_form_data({q: 'ruby', lang: 'en'}, '|')
+  #   req.body # => "q=ruby|lang=en"
   #
   # Net::HTTPHeader#form_data= is an alias for Net::HTTPHeader#set_form_data.
   def set_form_data(params, sep = '&')
@@ -787,56 +818,108 @@ module Net::HTTPHeader
 
   alias form_data= set_form_data
 
-  # Set an HTML form data set.
-  # +params+ :: The form data to set, which should be an enumerable.
-  #             See below for more details.
-  # +enctype+ :: The content type to use to encode the form submission,
-  #              which should be application/x-www-form-urlencoded or
-  #              multipart/form-data.
-  # +formopt+ :: An options hash, supporting the following options:
-  #              :boundary :: The boundary of the multipart message. If
-  #                           not given, a random boundary will be used.
-  #              :charset :: The charset of the form submission. All
-  #                          field names and values of non-file fields
-  #                          should be encoded with this charset.
+  # Stores form data to be used in a +POST+ or +PUT+ request.
   #
-  # Each item of params should respond to +each+ and yield 2-3 arguments,
-  # or an array of 2-3 elements. The arguments yielded should be:
+  # The form data given in +params+ consists of zero or more fields;
+  # each field is:
   #
-  # - The name of the field.
-  # - The value of the field, it should be a String or a File or IO-like.
-  # - An options hash, supporting the following options
-  #   (used only for file uploads); entries:
+  # - A scalar value.
+  # - A name/value pair.
+  # - An IO stream opened for reading.
   #
-  #   - +:filename+: The name of the file to use.
-  #   - +:content_type+: The content type of the uploaded file.
+  # Argument +params+ should be an
+  # {Enumerable}[rdoc-ref:Enumerable@Enumerable+in+Ruby+Classes]
+  # (method <tt>params.map</tt> will be called),
+  # and is often an array or hash.
   #
-  # Each item is a file field or a normal field.
-  # If +value+ is a File object or the +opt+ hash has a :filename key,
-  # the item is treated as a file field.
+  # First, we set up a request:
   #
-  # If Transfer-Encoding is set as chunked, this sends the request using
-  # chunked encoding. Because chunked encoding is HTTP/1.1 feature,
-  # you should confirm that the server supports HTTP/1.1 before using
-  # chunked encoding.
+  #   _uri = uri.dup
+  #   _uri.path ='/posts'
+  #   req = Net::HTTP::Post.new(_uri)
   #
-  # Example:
+  # <b>Argument +params+ As an Array</b>
   #
-  #    req.set_form([["q", "ruby"], ["lang", "en"]])
+  # When +params+ is an array,
+  # each of its elements is a subarray that defines a field;
+  # the subarray may contain:
   #
-  #    req.set_form({"f"=>File.open('/path/to/filename')},
-  #                 "multipart/form-data",
-  #                 charset: "UTF-8",
-  #    )
+  # - One string:
   #
-  #    req.set_form([["f",
-  #                   File.open('/path/to/filename.bar'),
-  #                   {filename: "other-filename.foo"}
-  #                 ]],
-  #                 "multipart/form-data",
-  #    )
+  #     req.set_form([['foo'], ['bar'], ['baz']])
   #
-  # See also RFC 2388, RFC 2616, HTML 4.01, and HTML5
+  # - Two strings:
+  #
+  #     req.set_form([%w[foo 0], %w[bar 1], %w[baz 2]])
+  #
+  # - When argument +enctype+ (see below) is given as
+  #   <tt>'multipart/form-data'</tt>:
+  #
+  #   - A string name and an IO stream opened for reading:
+  #
+  #       require 'stringio'
+  #       req.set_form([['file', StringIO.new('Ruby is cool.')]])
+  #
+  #   - A string name, an IO stream opened for reading,
+  #     and an options hash, which may contain these entries:
+  #
+  #     - +:filename+: The name of the file to use.
+  #     - +:content_type+: The content type of the uploaded file.
+  #
+  #     Example:
+  #
+  #       req.set_form([['file', file, {filename: "other-filename.foo"}]]
+  #
+  # The various forms may be mixed:
+  #
+  #   req.set_form(['foo', %w[bar 1], ['file', file]])
+  #
+  # <b>Argument +params+ As a Hash</b>
+  #
+  # When +params+ is a hash,
+  # each of its entries is a name/value pair that defines a field:
+  #
+  # - The name is a string.
+  # - The value may be:
+  #
+  #   - +nil+.
+  #   - Another string.
+  #   - An IO stream opened for reading
+  #     (only when argument +enctype+ -- see below -- is given as
+  #     <tt>'multipart/form-data'</tt>).
+  #
+  # Examples:
+  #
+  #   # Nil-valued fields.
+  #   req.set_form({'foo' => nil, 'bar' => nil, 'baz' => nil})
+  #
+  #   # String-valued fields.
+  #   req.set_form({'foo' => 0, 'bar' => 1, 'baz' => 2})
+  #
+  #   # IO-valued field.
+  #   require 'stringio'
+  #   req.set_form({'file' => StringIO.new('Ruby is cool.')})
+  #
+  #   # Mixture of fields.
+  #   req.set_form({'foo' => nil, 'bar' => 1, 'file' => file})
+  #
+  # Optional argument +enctype+ specifies the value to be given
+  # to field <tt>'Content-Type'</tt>, and must be one of:
+  #
+  # - <tt>'application/x-www-form-urlencoded'</tt> (the default).
+  # - <tt>'multipart/form-data'</tt>;
+  #   see {RFC 7578}[https://www.rfc-editor.org/rfc/rfc7578].
+  #
+  # Optional argument +formopt+ is a hash of options
+  # (applicable only when argument +enctype+
+  # is <tt>'multipart/form-data'</tt>)
+  # that may include the following entries:
+  #
+  # - +:boundary+: The value is the boundary string for the multipart message.
+  #   If not given, the boundary is a random string.
+  #   See {Boundary}[https://www.rfc-editor.org/rfc/rfc7578#section-4.1].
+  # - +:charset+: Value is the character set for the form submission.
+  #   Field names and values of non-file fields should be encoded with this charset.
   #
   def set_form(params, enctype='application/x-www-form-urlencoded', formopt={})
     @body_data = params
@@ -852,12 +935,24 @@ module Net::HTTPHeader
     end
   end
 
-  # Set the Authorization: header for "Basic" authorization.
+  # Sets header <tt>'Authorization'</tt> using the given
+  # +account+ and +password+ strings:
+  #
+  #   req.basic_auth('my_account', 'my_password')
+  #   req['Authorization']
+  #   # => "Basic bXlfYWNjb3VudDpteV9wYXNzd29yZA=="
+  #
   def basic_auth(account, password)
     @header['authorization'] = [basic_encode(account, password)]
   end
 
-  # Set Proxy-Authorization: header for "Basic" authorization.
+  # Sets header <tt>'Proxy-Authorization'</tt> using the given
+  # +account+ and +password+ strings:
+  #
+  #   req.proxy_basic_auth('my_account', 'my_password')
+  #   req['Proxy-Authorization']
+  #   # => "Basic bXlfYWNjb3VudDpteV9wYXNzd29yZA=="
+  #
   def proxy_basic_auth(account, password)
     @header['proxy-authorization'] = [basic_encode(account, password)]
   end
@@ -867,6 +962,7 @@ module Net::HTTPHeader
   end
   private :basic_encode
 
+# Returns whether the HTTP session is to be closed.
   def connection_close?
     token = /(?:\A|,)\s*close\s*(?:\z|,)/i
     @header['connection']&.grep(token) {return true}
@@ -874,6 +970,7 @@ module Net::HTTPHeader
     false
   end
 
+# Returns whether the HTTP session is to be kept alive.
   def connection_keep_alive?
     token = /(?:\A|,)\s*keep-alive\s*(?:\z|,)/i
     @header['connection']&.grep(token) {return true}

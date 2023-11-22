@@ -175,7 +175,7 @@ eot
         [:aryptn,
           nil,
           [[:var_field, [:@ident, "a", [1, 11]]]],
-          [:var_field, nil],
+          nil,
           nil],
         [[:void_stmt]],
         nil]],
@@ -407,6 +407,14 @@ eot
         [[:void_stmt]],
         nil]],
 
+    [__LINE__, %q{ case 0; in [a,]; end }] =>
+    [:case,
+      [:@int, "0", [1, 5]],
+      [:in,
+        [:aryptn, nil, [[:var_field, [:@ident, "a", [1, 12]]]], nil, nil],
+        [[:void_stmt]],
+          nil]],
+
     [__LINE__, %q{ case 0; in []; end }] =>
     [:case,
       [:@int, "0", [1, 5]],
@@ -486,6 +494,22 @@ eot
         [:begin, [:binary, [:@int, "0", [1, 13]], :+, [:@int, "0", [1, 15]]]],
         [[:void_stmt]],
         nil]],
+
+    [__LINE__, %q{ case 0; in [*a]; a; end } ] =>
+    [:case,
+      [:@int, "0", [1, 5]],
+      [:in,
+        [:aryptn, nil, nil, [:var_field, [:@ident, "a", [1, 13]]], nil],
+        [[:var_ref, [:@ident, "a", [1, 17]]]],
+        nil]],
+
+    [__LINE__, %q{ case 0; in {a:}; a; end } ] =>
+    [:case,
+      [:@int, "0", [1, 5]],
+      [:in,
+        [:hshptn, nil, [[[:@label, "a:", [1, 12]], nil]], nil],
+        [[:var_ref, [:@ident, "a", [1, 17]]]],
+          nil]],
   }
   pattern_matching_data.each do |(i, src), expected|
     define_method(:"test_pattern_matching_#{i}") do

@@ -91,4 +91,3 @@ class RDoc::Markup::ToAnsi < RDoc::Markup::ToRdoc
   end
 
 end
-

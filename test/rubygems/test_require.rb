@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems"
 
@@ -91,12 +92,10 @@ class TestGemRequire < Gem::TestCase
 
   def create_sync_thread
     Thread.new do
-      begin
-        yield
-      ensure
-        FILE_ENTERED_LATCH.release
-        FILE_EXIT_LATCH.await
-      end
+      yield
+    ensure
+      FILE_ENTERED_LATCH.release
+      FILE_EXIT_LATCH.await
     end
   end
 
@@ -226,7 +225,7 @@ class TestGemRequire < Gem::TestCase
     pend "Not sure what's going on. If another spec creates a 'a' gem before
       this test, somehow require will load the benchmark in b, and ignore that the
       stdlib one is already in $LOADED_FEATURES?. Reproducible by running the
-      spaceship_specific_file test before this one" if java_platform?
+      spaceship_specific_file test before this one" if Gem.java_platform?
 
     pend "not installed yet" unless RbConfig::TOPDIR
 
@@ -383,8 +382,8 @@ class TestGemRequire < Gem::TestCase
 
     # Remove an old default gem version directly from disk as if someone ran
     # gem cleanup.
-    FileUtils.rm_rf(File.join @gemhome, "#{b1.full_name}")
-    FileUtils.rm_rf(File.join @gemhome, "specifications", "default", "#{b1.full_name}.gemspec")
+    FileUtils.rm_rf(File.join(@gemhome, b1.full_name.to_s))
+    FileUtils.rm_rf(File.join(@gemhome, "specifications", "default", "#{b1.full_name}.gemspec"))
 
     # Require gems that have not been removed.
     assert_require "a/b"
@@ -425,7 +424,7 @@ class TestGemRequire < Gem::TestCase
 
     times_called = 0
 
-    Kernel.stub(:gem, ->(name, requirement) { times_called += 1 }) do
+    Kernel.stub(:gem, ->(_name, _requirement) { times_called += 1 }) do
       refute_require "default/gem"
     end
 
@@ -472,11 +471,11 @@ class TestGemRequire < Gem::TestCase
     File.write(path, code)
 
     output = Gem::Util.popen({ "GEM_HOME" => @gemhome }, *ruby_with_rubygems_in_load_path, path).strip
-    assert $?.success?
     refute_empty output
     assert_equal "999.99.9", output.lines[0].chomp
     # Make sure only files from the newer json gem are loaded, and no files from the default json gem
     assert_equal ["#{@gemhome}/gems/json-999.99.9/lib/json.rb"], output.lines.grep(%r{/gems/json-}).map(&:chomp)
+    assert $?.success?
   end
 
   def test_default_gem_and_normal_gem
@@ -541,8 +540,10 @@ class TestGemRequire < Gem::TestCase
   def test_try_activate_error_unlocks_require_monitor
     silence_warnings do
       class << ::Gem
-        alias old_try_activate try_activate
-        def try_activate(*); raise "raised from try_activate"; end
+        alias_method :old_try_activate, :try_activate
+        def try_activate(*)
+          raise "raised from try_activate"
+        end
       end
     end
 
@@ -553,7 +554,7 @@ class TestGemRequire < Gem::TestCase
   ensure
     silence_warnings do
       class << ::Gem
-        alias try_activate old_try_activate
+        alias_method :try_activate, :old_try_activate
       end
     end
     Kernel::RUBYGEMS_ACTIVATION_MONITOR.exit
@@ -664,6 +665,23 @@ class TestGemRequire < Gem::TestCase
       end
       assert_match(/main\.rb:2: warning: This is a deprecated method$/, err)
     end
+  end
+
+  def test_require_does_not_crash_when_utilizing_bundler_version_finder
+    a1 = util_spec "a", "1.1", { "bundler" => ">= 0" }
+    a2 = util_spec "a", "1.2", { "bundler" => ">= 0" }
+    b1 = util_spec "bundler", "2.3.7"
+    b2 = util_spec "bundler", "2.3.24"
+    c = util_spec "c", "1", { "a" => [">= 1.1", "< 99.0"] }, "lib/test_gem_require_c.rb"
+
+    install_specs a1, a2, b1, b2, c
+
+    cmd = <<-RUBY
+      require "test_gem_require_c"
+      require "json"
+    RUBY
+    out = Gem::Util.popen({ "GEM_HOME" => @gemhome }, *ruby_with_rubygems_in_load_path, "-e", cmd)
+    assert_predicate $?, :success?, "Require failed due to #{out}"
   end
 
   private

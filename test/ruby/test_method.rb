@@ -771,6 +771,14 @@ class TestMethod < Test::Unit::TestCase
     assert_raise(NoMethodError) { (self).mv2 }
     assert_nothing_raised { self.mv3 }
 
+    class << (obj = Object.new)
+      private def [](x) x end
+      def mv1(x) self[x] end
+      def mv2(x) (self)[x] end
+    end
+    assert_nothing_raised { obj.mv1(0) }
+    assert_raise(NoMethodError) { obj.mv2(0) }
+
     v = Visibility.new
 
     assert_equal('method', defined?(v.mv1))
@@ -1423,25 +1431,25 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_argument_error_location
-    body = <<-'END_OF_BODY'
-    eval <<-'EOS'
-    $line_lambda = __LINE__; $f = lambda do
-      _x = 1
-    end
-    $line_method = __LINE__; def foo
-      _x = 1
-    end
-    begin
-      $f.call(1)
-    rescue ArgumentError => e
-      assert_equal "(eval):#{$line_lambda.to_s}:in `block in <main>'", e.backtrace.first
-    end
-    begin
-      foo(1)
-    rescue ArgumentError => e
-      assert_equal "(eval):#{$line_method}:in `foo'", e.backtrace.first
-    end
-    EOS
+    body = <<~'END_OF_BODY'
+      eval <<~'EOS', nil, "main.rb"
+        $line_lambda = __LINE__; $f = lambda do
+          _x = 1
+        end
+        $line_method = __LINE__; def foo
+          _x = 1
+        end
+        begin
+          $f.call(1)
+        rescue ArgumentError => e
+          assert_equal "main.rb:#{$line_lambda}:in `block in <main>'", e.backtrace.first
+        end
+        begin
+          foo(1)
+        rescue ArgumentError => e
+          assert_equal "main.rb:#{$line_method}:in `foo'", e.backtrace.first
+        end
+      EOS
     END_OF_BODY
 
     assert_separately [], body
@@ -1450,7 +1458,7 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_zsuper_private_override_instance_method
-    assert_separately(%w(--disable-gems), <<-'end;', timeout: 30)
+    assert_separately([], <<-'end;', timeout: 30)
       # Bug #16942 [ruby-core:98691]
       module M
         def x
@@ -1471,7 +1479,7 @@ class TestMethod < Test::Unit::TestCase
   end
 
   def test_override_optimized_method_on_class_using_prepend
-    assert_separately(%w(--disable-gems), <<-'end;', timeout: 30)
+    assert_separately([], <<-'end;', timeout: 30)
       # Bug #17725 [ruby-core:102884]
       $VERBOSE = nil
       String.prepend(Module.new)

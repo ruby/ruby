@@ -17,4 +17,3 @@ class TestRDocMarkupInclude < RDoc::TestCase
   end
 
 end
-

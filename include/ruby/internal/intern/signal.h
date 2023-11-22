@@ -113,12 +113,6 @@ RBIMPL_ATTR_NONNULL(())
  */
 VALUE rb_f_kill(int argc, const VALUE *argv);
 
-/* This must be private, @shyouhei guesses. */
-#ifdef POSIX_SIGNAL
-#define posix_signal ruby_posix_signal
-void (*posix_signal(int, void (*)(int)))(int);
-#endif
-
 RBIMPL_ATTR_PURE()
 /**
  * Queries  the name  of  the signal.   It returns  for  instance `"KILL"`  for

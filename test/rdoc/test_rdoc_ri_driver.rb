@@ -6,17 +6,13 @@ class TestRDocRIDriver < RDoc::TestCase
   def setup
     super
 
-    @tmpdir = File.join Dir.tmpdir, "test_rdoc_ri_driver_#{$$}"
-    @home_ri = File.join @tmpdir, 'dot_ri'
+    @home_ri = File.join @test_home, 'dot_ri'
 
-    FileUtils.mkdir_p @tmpdir
     FileUtils.mkdir_p @home_ri
 
-    @orig_ri = ENV['RI']
-    ENV['HOME'] = @tmpdir
-    @rdoc_home = File.join ENV["HOME"], ".rdoc"
+    @orig_ri = ENV.delete('RI')
+    @rdoc_home = File.join @test_home, ".rdoc"
     FileUtils.mkdir_p @rdoc_home
-    ENV.delete 'RI'
 
     @options = RDoc::RI::Driver.default_options
     @options[:use_system] = false
@@ -24,7 +20,7 @@ class TestRDocRIDriver < RDoc::TestCase
     @options[:use_home]   = false
     @options[:use_gems]   = false
 
-    @options[:home]       = @tmpdir
+    @options[:home]       = @rdoc_home
     @options[:use_stdout] = true
     @options[:formatter]  = @RM::ToRdoc
 
@@ -33,7 +29,6 @@ class TestRDocRIDriver < RDoc::TestCase
 
   def teardown
     defined?(@orig_ri) and ENV['RI'] = @orig_ri
-    defined?(@tmpdir) and FileUtils.rm_rf @tmpdir
 
     super
   end
@@ -603,7 +598,7 @@ class TestRDocRIDriver < RDoc::TestCase
     assert_match %r%^= Attributes:%, out
     assert_match %r%^  attr_accessor attr%, out
 
-    assert_equal 1, out.scan(/-\n/).length
+    assert_equal 1, out.scan(/^-{50,}$/).length, out
 
     refute_match %r%Foo::Bar#blah%, out
   end
@@ -627,7 +622,7 @@ class TestRDocRIDriver < RDoc::TestCase
     assert_match %r%^= Attributes:%, out
     assert_match %r%^  attr_accessor attr%, out
 
-    assert_equal 6, out.scan(/-\n/).length
+    assert_equal 6, out.scan(/^-{50,}$/).length, out
 
     assert_match %r%Foo::Bar#blah%, out
   end

@@ -40,17 +40,15 @@
 #
 module Mutex_m
 
-  VERSION = "0.1.2"
+  VERSION = "0.2.0"
   Ractor.make_shareable(VERSION) if defined?(Ractor)
 
   def Mutex_m.define_aliases(cl) # :nodoc:
-    cl.module_eval %q{
-      alias locked? mu_locked?
-      alias lock mu_lock
-      alias unlock mu_unlock
-      alias try_lock mu_try_lock
-      alias synchronize mu_synchronize
-    }
+    cl.alias_method(:locked?, :mu_locked?)
+    cl.alias_method(:lock, :mu_lock)
+    cl.alias_method(:unlock, :mu_unlock)
+    cl.alias_method(:try_lock, :mu_try_lock)
+    cl.alias_method(:synchronize, :mu_synchronize)
   end
 
   def Mutex_m.append_features(cl) # :nodoc:

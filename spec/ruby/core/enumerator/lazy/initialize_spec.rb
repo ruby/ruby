@@ -56,8 +56,8 @@ describe "Enumerator::Lazy#initialize" do
   end
 
   describe "on frozen instance" do
-    it "raises a RuntimeError" do
-      -> {  @uninitialized.freeze.send(:initialize, @receiver) {} }.should raise_error(RuntimeError)
+    it "raises a FrozenError" do
+      -> {  @uninitialized.freeze.send(:initialize, @receiver) {} }.should raise_error(FrozenError)
     end
   end
 end

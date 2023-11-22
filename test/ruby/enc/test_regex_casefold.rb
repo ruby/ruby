@@ -19,7 +19,7 @@ class TestCaseFold < Test::Unit::TestCase
   end
 
   def read_tests
-    IO.readlines("#{UNICODE_DATA_PATH}/CaseFolding.txt", encoding: Encoding::ASCII_8BIT)
+    File.readlines("#{UNICODE_DATA_PATH}/CaseFolding.txt", encoding: Encoding::ASCII_8BIT)
     .collect.with_index { |linedata, linenumber| [linenumber.to_i+1, linedata.chomp] }
     .reject { |number, data| data =~ /^(#|$)/ }
     .collect do |linenumber, linedata|

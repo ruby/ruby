@@ -52,6 +52,7 @@ rb_call_super_kw.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/attr/noinline.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+rb_call_super_kw.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/attr/pure.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/attr/restrict.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/error.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/eval.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/file.h
-rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/gc.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/hash.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/io.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ rb_call_super_kw.o: $(hdrdir)/ruby/internal/memory.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/method.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/module.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/newobj.h
-rb_call_super_kw.o: $(hdrdir)/ruby/internal/rgengc.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/scan_args.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/special_consts.h
 rb_call_super_kw.o: $(hdrdir)/ruby/internal/static_assert.h

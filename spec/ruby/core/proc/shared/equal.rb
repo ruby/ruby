@@ -81,20 +81,3 @@ describe :proc_equal, shared: true do
     p.send(@method, p2).should be_false
   end
 end
-
-describe :proc_equal_undefined, shared: true do
-  it "is not defined" do
-    Proc.should_not have_instance_method(@method, false)
-  end
-
-  it "returns false if other is a dup of the original" do
-    p = proc { :foo }
-    p.send(@method, p.dup).should be_false
-
-    p = Proc.new { :foo }
-    p.send(@method, p.dup).should be_false
-
-    p = -> { :foo }
-    p.send(@method, p.dup).should be_false
-  end
-end

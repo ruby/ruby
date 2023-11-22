@@ -1,0 +1,108 @@
+@ ProgramNode (location: (1,0)-(67,5))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(67,5))
+    └── body: (length: 34)
+        ├── @ IntegerNode (location: (1,0)-(1,1))
+        │   └── flags: decimal
+        ├── @ IntegerNode (location: (3,0)-(3,1))
+        │   └── flags: decimal
+        ├── @ FloatNode (location: (5,0)-(5,3))
+        ├── @ IntegerNode (location: (7,0)-(7,1))
+        │   └── flags: decimal
+        ├── @ IntegerNode (location: (9,0)-(9,3))
+        │   └── flags: binary
+        ├── @ IntegerNode (location: (11,0)-(11,3))
+        │   └── flags: binary
+        ├── @ IntegerNode (location: (13,0)-(13,4))
+        │   └── flags: binary
+        ├── @ IntegerNode (location: (15,0)-(15,3))
+        │   └── flags: decimal
+        ├── @ IntegerNode (location: (17,0)-(17,3))
+        │   └── flags: decimal
+        ├── @ IntegerNode (location: (19,0)-(19,3))
+        │   └── flags: decimal
+        ├── @ IntegerNode (location: (21,0)-(21,2))
+        │   └── flags: octal
+        ├── @ IntegerNode (location: (23,0)-(23,2))
+        │   └── flags: octal
+        ├── @ IntegerNode (location: (25,0)-(25,2))
+        │   └── flags: octal
+        ├── @ IntegerNode (location: (27,0)-(27,3))
+        │   └── flags: octal
+        ├── @ IntegerNode (location: (29,0)-(29,3))
+        │   └── flags: octal
+        ├── @ IntegerNode (location: (31,0)-(31,3))
+        │   └── flags: octal
+        ├── @ IntegerNode (location: (33,0)-(33,3))
+        │   └── flags: hexadecimal
+        ├── @ IntegerNode (location: (35,0)-(35,3))
+        │   └── flags: hexadecimal
+        ├── @ IntegerNode (location: (37,0)-(37,3))
+        │   └── flags: hexadecimal
+        ├── @ ImaginaryNode (location: (39,0)-(39,2))
+        │   └── numeric:
+        │       @ IntegerNode (location: (39,0)-(39,1))
+        │       └── flags: decimal
+        ├── @ RationalNode (location: (41,0)-(41,2))
+        │   └── numeric:
+        │       @ IntegerNode (location: (41,0)-(41,1))
+        │       └── flags: decimal
+        ├── @ IntegerNode (location: (43,0)-(43,2))
+        │   └── flags: decimal
+        ├── @ ImaginaryNode (location: (45,0)-(45,3))
+        │   └── numeric:
+        │       @ RationalNode (location: (45,0)-(45,2))
+        │       └── numeric:
+        │           @ IntegerNode (location: (45,0)-(45,1))
+        │           └── flags: decimal
+        ├── @ RationalNode (location: (47,0)-(47,4))
+        │   └── numeric:
+        │       @ FloatNode (location: (47,0)-(47,3))
+        ├── @ ImaginaryNode (location: (49,0)-(49,5))
+        │   └── numeric:
+        │       @ RationalNode (location: (49,0)-(49,4))
+        │       └── numeric:
+        │           @ FloatNode (location: (49,0)-(49,3))
+        ├── @ ImaginaryNode (location: (51,0)-(51,4))
+        │   └── numeric:
+        │       @ RationalNode (location: (51,0)-(51,3))
+        │       └── numeric:
+        │           @ IntegerNode (location: (51,0)-(51,2))
+        │           └── flags: decimal
+        ├── @ RationalNode (location: (53,0)-(53,5))
+        │   └── numeric:
+        │       @ FloatNode (location: (53,0)-(53,4))
+        ├── @ ImaginaryNode (location: (55,0)-(55,6))
+        │   └── numeric:
+        │       @ RationalNode (location: (55,0)-(55,5))
+        │       └── numeric:
+        │           @ FloatNode (location: (55,0)-(55,4))
+        ├── @ RationalNode (location: (57,0)-(57,4))
+        │   └── numeric:
+        │       @ IntegerNode (location: (57,0)-(57,3))
+        │       └── flags: octal
+        ├── @ ImaginaryNode (location: (59,0)-(59,4))
+        │   └── numeric:
+        │       @ IntegerNode (location: (59,0)-(59,3))
+        │       └── flags: octal
+        ├── @ ImaginaryNode (location: (61,0)-(61,5))
+        │   └── numeric:
+        │       @ RationalNode (location: (61,0)-(61,4))
+        │       └── numeric:
+        │           @ IntegerNode (location: (61,0)-(61,3))
+        │           └── flags: octal
+        ├── @ RationalNode (location: (63,0)-(63,4))
+        │   └── numeric:
+        │       @ IntegerNode (location: (63,0)-(63,3))
+        │       └── flags: decimal
+        ├── @ ImaginaryNode (location: (65,0)-(65,4))
+        │   └── numeric:
+        │       @ IntegerNode (location: (65,0)-(65,3))
+        │       └── flags: decimal
+        └── @ ImaginaryNode (location: (67,0)-(67,5))
+            └── numeric:
+                @ RationalNode (location: (67,0)-(67,4))
+                └── numeric:
+                    @ IntegerNode (location: (67,0)-(67,3))
+                    └── flags: binary

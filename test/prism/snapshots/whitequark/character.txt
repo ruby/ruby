@@ -1,0 +1,11 @@
+@ ProgramNode (location: (1,0)-(1,2))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,2))
+    └── body: (length: 1)
+        └── @ StringNode (location: (1,0)-(1,2))
+            ├── flags: ∅
+            ├── opening_loc: (1,0)-(1,1) = "?"
+            ├── content_loc: (1,1)-(1,2) = "a"
+            ├── closing_loc: ∅
+            └── unescaped: "a"

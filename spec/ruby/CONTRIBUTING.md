@@ -138,12 +138,12 @@ Here is a list of the most commonly-used guards:
 #### Version guards
 
 ```ruby
-ruby_version_is ""..."2.6" do
-  # Specs for RUBY_VERSION < 2.6
+ruby_version_is ""..."3.2" do
+  # Specs for RUBY_VERSION < 3.2
 end
 
-ruby_version_is "2.6" do
-  # Specs for RUBY_VERSION >= 2.6
+ruby_version_is "3.2" do
+  # Specs for RUBY_VERSION >= 3.2
 end
 ```
 
@@ -179,6 +179,7 @@ In case there is a bug in MRI and the fix will be backported to previous version
 If it is not backported or not likely, use `ruby_version_is` instead.
 First, file a bug at https://bugs.ruby-lang.org/.
 The problem is `ruby_bug` would make non-MRI implementations fail this spec while MRI itself does not pass it, so it should only be used if the bug is/will be fixed and backported.
+Otherwise, non-MRI implementations would have to choose between being incompatible with the latest release of MRI to pass the spec or fail the spec, both which make no sense.
 
 ```ruby
 ruby_bug '#13669', ''...'3.2' do
@@ -191,11 +192,11 @@ end
 #### Combining guards
 
 ```ruby
-guard -> { platform_is :windows and ruby_version_is ""..."2.6" } do
-  # Windows and RUBY_VERSION < 2.6
+guard -> { platform_is :windows and ruby_version_is ""..."3.2" } do
+  # Windows and RUBY_VERSION < 3.2
 end
 
-guard_not -> { platform_is :windows and ruby_version_is ""..."2.6" } do
+guard_not -> { platform_is :windows and ruby_version_is ""..."3.2" } do
   # The opposite
 end
 ```

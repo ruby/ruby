@@ -116,6 +116,9 @@ static void
 ossl_x509store_mark(void *ptr)
 {
     X509_STORE *store = ptr;
+    // Note: this reference is stored as @verify_callback so we don't need to mark it.
+    // However we do need to ensure GC compaction won't move it, hence why
+    // we call rb_gc_mark here.
     rb_gc_mark((VALUE)X509_STORE_get_ex_data(store, store_ex_verify_cb_idx));
 }
 
@@ -130,7 +133,7 @@ static const rb_data_type_t ossl_x509store_type = {
     {
         ossl_x509store_mark, ossl_x509store_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 /*
@@ -187,8 +190,9 @@ ossl_x509store_set_vfy_cb(VALUE self, VALUE cb)
     X509_STORE *store;
 
     GetX509Store(self, store);
-    X509_STORE_set_ex_data(store, store_ex_verify_cb_idx, (void *)cb);
     rb_iv_set(self, "@verify_callback", cb);
+    // We don't need to trigger a write barrier because `rb_iv_set` did it.
+    X509_STORE_set_ex_data(store, store_ex_verify_cb_idx, (void *)cb);
 
     return cb;
 }
@@ -507,6 +511,9 @@ static void
 ossl_x509stctx_mark(void *ptr)
 {
     X509_STORE_CTX *ctx = ptr;
+    // Note: this reference is stored as @verify_callback so we don't need to mark it.
+    // However we do need to ensure GC compaction won't move it, hence why
+    // we call rb_gc_mark here.
     rb_gc_mark((VALUE)X509_STORE_CTX_get_ex_data(ctx, stctx_ex_verify_cb_idx));
 }
 
@@ -526,7 +533,7 @@ static const rb_data_type_t ossl_x509stctx_type = {
     {
         ossl_x509stctx_mark, ossl_x509stctx_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 static VALUE
@@ -614,8 +621,8 @@ ossl_x509stctx_verify(VALUE self)
     X509_STORE_CTX *ctx;
 
     GetX509StCtx(self, ctx);
-    X509_STORE_CTX_set_ex_data(ctx, stctx_ex_verify_cb_idx,
-			       (void *)rb_iv_get(self, "@verify_callback"));
+    VALUE cb = rb_iv_get(self, "@verify_callback");
+    X509_STORE_CTX_set_ex_data(ctx, stctx_ex_verify_cb_idx, (void *)cb);
 
     switch (X509_verify_cert(ctx)) {
       case 1:

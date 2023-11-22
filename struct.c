@@ -18,7 +18,6 @@
 #include "internal/proc.h"
 #include "internal/struct.h"
 #include "internal/symbol.h"
-#include "transient_heap.h"
 #include "vm_core.h"
 #include "builtin.h"
 
@@ -413,18 +412,15 @@ struct_make_members_list(va_list ar)
 {
     char *mem;
     VALUE ary, list = rb_ident_hash_new();
-    st_table *tbl = RHASH_TBL_RAW(list);
-
     RBASIC_CLEAR_CLASS(list);
-    OBJ_WB_UNPROTECT(list);
     while ((mem = va_arg(ar, char*)) != 0) {
         VALUE sym = rb_sym_intern_ascii_cstr(mem);
-        if (st_insert(tbl, sym, Qtrue)) {
+        if (RTEST(rb_hash_has_key(list, sym))) {
             rb_raise(rb_eArgError, "duplicate member: %s", mem);
         }
+        rb_hash_aset(list, sym, Qtrue);
     }
     ary = rb_hash_keys(list);
-    st_clear(tbl);
     RBASIC_CLEAR_CLASS(ary);
     OBJ_FREEZE_RAW(ary);
     return ary;
@@ -515,8 +511,8 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
 
 /*
  *  call-seq:
- *    Struct.new(*member_names, keyword_init: false){|Struct_subclass| ... } -> Struct_subclass
- *    Struct.new(class_name, *member_names, keyword_init: false){|Struct_subclass| ... } -> Struct_subclass
+ *    Struct.new(*member_names, keyword_init: nil){|Struct_subclass| ... } -> Struct_subclass
+ *    Struct.new(class_name, *member_names, keyword_init: nil){|Struct_subclass| ... } -> Struct_subclass
  *    Struct_subclass.new(*member_names) -> Struct_subclass_instance
  *    Struct_subclass.new(**member_names) -> Struct_subclass_instance
  *
@@ -524,8 +520,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *
  *  - May be anonymous, or may have the name given by +class_name+.
  *  - May have members as given by +member_names+.
- *  - May have initialization via ordinary arguments (unless
- *    <tt>keyword_init: true</tt> is given), or via keyword arguments
+ *  - May have initialization via ordinary arguments, or via keyword arguments
  *
  *  The new subclass has its own method <tt>::new</tt>; thus:
  *
@@ -566,7 +561,7 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *
  *  <b>Member Names</b>
  *
- *  \Symbol arguments +member_names+
+ *  Symbol arguments +member_names+
  *  determines the members of the new subclass:
  *
  *    Struct.new(:foo, :bar).members        # => [:foo, :bar]
@@ -594,7 +589,11 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *      Foo.new(0, 1)    # => #<struct Struct::Foo foo=0, bar=1>
  *      Foo.new(0, 1, 2) # Raises ArgumentError: struct size differs
  *
- *    \Method <tt>::[]</tt> is an alias for method <tt>::new</tt>.
+ *      # Initialization with keyword arguments:
+ *      Foo.new(foo: 0)         # => #<struct Struct::Foo foo=0, bar=nil>
+ *      Foo.new(foo: 0, bar: 1) # => #<struct Struct::Foo foo=0, bar=1>
+ *      Foo.new(foo: 0, bar: 1, baz: 2)
+ *      # Raises ArgumentError: unknown keywords: baz
  *
  *  - \Method <tt>:inspect</tt> returns a string representation of the subclass:
  *
@@ -608,37 +607,43 @@ rb_struct_define_under(VALUE outer, const char *name, ...)
  *  <b>Keyword Argument</b>
  *
  *  By default, the arguments for initializing an instance of the new subclass
- *  are ordinary arguments (not keyword arguments).
- *  With optional keyword argument <tt>keyword_init: true</tt>,
- *  the new subclass must be initialized with keyword arguments:
+ *  can be both positional and keyword arguments.
  *
- *    # Without keyword_init: true.
- *    Foo = Struct.new('Foo', :foo, :bar)
- *    Foo                     # => Struct::Foo
- *    Foo.new(0, 1)           # => #<struct Struct::Foo foo=0, bar=1>
- *    # With keyword_init: true.
- *    Bar = Struct.new(:foo, :bar, keyword_init: true)
- *    Bar # =>                # => Bar(keyword_init: true)
- *    Bar.new(bar: 1, foo: 0) # => #<struct Bar foo=0, bar=1>
- *    Bar.new(0, 1)           # Raises ArgumentError: wrong number of arguments
+ *  Optional keyword argument <tt>keyword_init:</tt> allows to force only one
+ *  type of arguments to be accepted:
  *
+ *    KeywordsOnly = Struct.new(:foo, :bar, keyword_init: true)
+ *    KeywordsOnly.new(bar: 1, foo: 0)
+ *    # => #<struct KeywordsOnly foo=0, bar=1>
+ *    KeywordsOnly.new(0, 1)
+ *    # Raises ArgumentError: wrong number of arguments
+ *
+ *    PositionalOnly = Struct.new(:foo, :bar, keyword_init: false)
+ *    PositionalOnly.new(0, 1)
+ *    # => #<struct PositionalOnly foo=0, bar=1>
+ *    PositionalOnly.new(bar: 1, foo: 0)
+ *    # => #<struct PositionalOnly foo={:foo=>1, :bar=>2}, bar=nil>
+ *    # Note that no error is raised, but arguments treated as one hash value
+ *
+ *    # Same as not providing keyword_init:
+ *    Any = Struct.new(:foo, :bar, keyword_init: nil)
+ *    Any.new(foo: 1, bar: 2)
+ *    # => #<struct Any foo=1, bar=2>
+ *    Any.new(1, 2)
+ *    # => #<struct Any foo=1, bar=2>
  */
 
 static VALUE
 rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 {
-    VALUE name, rest, keyword_init = Qnil;
+    VALUE name = Qnil, rest, keyword_init = Qnil;
     long i;
     VALUE st;
-    st_table *tbl;
     VALUE opt;
 
-    argc = rb_scan_args(argc, argv, "1*:", NULL, NULL, &opt);
-    name = argv[0];
-    if (SYMBOL_P(name)) {
-        name = Qnil;
-    }
-    else {
+    argc = rb_scan_args(argc, argv, "0*:", NULL, &opt);
+    if (argc >= 1 && !SYMBOL_P(argv[0])) {
+        name = argv[0];
         --argc;
         ++argv;
     }
@@ -660,19 +665,17 @@ rb_struct_s_def(int argc, VALUE *argv, VALUE klass)
 
     rest = rb_ident_hash_new();
     RBASIC_CLEAR_CLASS(rest);
-    OBJ_WB_UNPROTECT(rest);
-    tbl = RHASH_TBL_RAW(rest);
     for (i=0; i<argc; i++) {
         VALUE mem = rb_to_symbol(argv[i]);
         if (rb_is_attrset_sym(mem)) {
             rb_raise(rb_eArgError, "invalid struct member: %"PRIsVALUE, mem);
         }
-        if (st_insert(tbl, mem, Qtrue)) {
+        if (RTEST(rb_hash_has_key(rest, mem))) {
             rb_raise(rb_eArgError, "duplicate member: %"PRIsVALUE, mem);
         }
+        rb_hash_aset(rest, mem, Qtrue);
     }
     rest = rb_hash_keys(rest);
-    st_clear(tbl);
     RBASIC_CLEAR_CLASS(rest);
     OBJ_FREEZE_RAW(rest);
     if (NIL_P(name)) {
@@ -794,60 +797,34 @@ rb_struct_initialize(VALUE self, VALUE values)
 static VALUE *
 struct_heap_alloc(VALUE st, size_t len)
 {
-    VALUE *ptr = rb_transient_heap_alloc((VALUE)st, sizeof(VALUE) * len);
-
-    if (ptr) {
-        RSTRUCT_TRANSIENT_SET(st);
-        return ptr;
-    }
-    else {
-        RSTRUCT_TRANSIENT_UNSET(st);
-        return ALLOC_N(VALUE, len);
-    }
+    return ALLOC_N(VALUE, len);
 }
-
-#if USE_TRANSIENT_HEAP
-void
-rb_struct_transient_heap_evacuate(VALUE obj, int promote)
-{
-    if (RSTRUCT_TRANSIENT_P(obj)) {
-        const VALUE *old_ptr = rb_struct_const_heap_ptr(obj);
-        VALUE *new_ptr;
-        long len = RSTRUCT_LEN(obj);
-
-        if (promote) {
-            new_ptr = ALLOC_N(VALUE, len);
-            FL_UNSET_RAW(obj, RSTRUCT_TRANSIENT_FLAG);
-        }
-        else {
-            new_ptr = struct_heap_alloc(obj, len);
-        }
-        MEMCPY(new_ptr, old_ptr, VALUE, len);
-        RSTRUCT(obj)->as.heap.ptr = new_ptr;
-    }
-}
-#endif
 
 static VALUE
 struct_alloc(VALUE klass)
 {
-    long n;
-    NEWOBJ_OF(st, struct RStruct, klass, T_STRUCT | (RGENGC_WB_PROTECTED_STRUCT ? FL_WB_PROTECTED : 0));
+    long n = num_members(klass);
+    size_t embedded_size = offsetof(struct RStruct, as.ary) + (sizeof(VALUE) * n);
+    VALUE flags = T_STRUCT | (RGENGC_WB_PROTECTED_STRUCT ? FL_WB_PROTECTED : 0);
 
-    n = num_members(klass);
+    if (n > 0 && rb_gc_size_allocatable_p(embedded_size)) {
+        flags |= n << RSTRUCT_EMBED_LEN_SHIFT;
 
-    if (0 < n && n <= RSTRUCT_EMBED_LEN_MAX) {
-        RBASIC(st)->flags &= ~RSTRUCT_EMBED_LEN_MASK;
-        RBASIC(st)->flags |= n << RSTRUCT_EMBED_LEN_SHIFT;
+        NEWOBJ_OF(st, struct RStruct, klass, flags, embedded_size, 0);
+
         rb_mem_clear((VALUE *)st->as.ary, n);
+
+        return (VALUE)st;
     }
     else {
+        NEWOBJ_OF(st, struct RStruct, klass, flags, sizeof(struct RStruct), 0);
+
         st->as.heap.ptr = struct_heap_alloc((VALUE)st, n);
         rb_mem_clear((VALUE *)st->as.heap.ptr, n);
         st->as.heap.len = n;
-    }
 
-    return (VALUE)st;
+        return (VALUE)st;
+    }
 }
 
 VALUE
@@ -1020,8 +997,6 @@ inspect_struct(VALUE s, VALUE prefix, int recur)
  *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *    joe.inspect # => "#<struct Customer name=\"Joe Smith\", address=\"123 Maple, Anytown NC\", zip=12345>"
  *
- *  Struct#to_s is an alias for Struct#inspect.
- *
  */
 
 static VALUE
@@ -1039,8 +1014,6 @@ rb_struct_inspect(VALUE s)
  *    Customer = Struct.new(:name, :address, :zip)
  *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *    joe.to_a # => ["Joe Smith", "123 Maple, Anytown NC", 12345]
- *
- *  Struct#values and Struct#deconstruct are aliases for Struct#to_a.
  *
  *  Related: #members.
  */
@@ -1363,8 +1336,6 @@ rb_struct_values_at(int argc, VALUE *argv, VALUE s)
  *    a # => [12345]
  *
  *  With no block given, returns an Enumerator.
- *
- *  Struct#filter is an alias for Struct#select.
  */
 
 static VALUE
@@ -1523,7 +1494,6 @@ rb_struct_eql(VALUE s, VALUE s2)
  *    joe = Customer.new("Joe Smith", "123 Maple, Anytown NC", 12345)
  *    joe.size #=> 3
  *
- *  Struct#length is an alias for Struct#size.
  */
 
 VALUE
@@ -1605,7 +1575,7 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
  *     distance.unit #=> "km"
  *
  *  Constructed object also has a reasonable definitions of #==
- *  operator, #to_h hash conversion, and #deconstruct/#deconstruct_keys
+ *  operator, #to_h hash conversion, and #deconstruct / #deconstruct_keys
  *  to be used in pattern matching.
  *
  *  ::define method accepts an optional block and evaluates it in
@@ -1647,11 +1617,9 @@ rb_struct_dig(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *   define(name, *symbols) -> class
  *   define(*symbols) -> class
  *
- *  Defines a new \Data class. If the first argument is a string, the class
- *  is stored in <tt>Data::<name></tt> constant.
+ *  Defines a new \Data class.
  *
  *     measure = Data.define(:amount, :unit)
  *     #=> #<Class:0x00007f70c6868498>
@@ -1697,23 +1665,20 @@ rb_data_s_def(int argc, VALUE *argv, VALUE klass)
     VALUE rest;
     long i;
     VALUE data_class;
-    st_table *tbl;
 
     rest = rb_ident_hash_new();
     RBASIC_CLEAR_CLASS(rest);
-    OBJ_WB_UNPROTECT(rest);
-    tbl = RHASH_TBL_RAW(rest);
     for (i=0; i<argc; i++) {
         VALUE mem = rb_to_symbol(argv[i]);
         if (rb_is_attrset_sym(mem)) {
             rb_raise(rb_eArgError, "invalid data member: %"PRIsVALUE, mem);
         }
-        if (st_insert(tbl, mem, Qtrue)) {
+        if (RTEST(rb_hash_has_key(rest, mem))) {
             rb_raise(rb_eArgError, "duplicate member: %"PRIsVALUE, mem);
         }
+        rb_hash_aset(rest, mem, Qtrue);
     }
     rest = rb_hash_keys(rest);
-    st_clear(tbl);
     RBASIC_CLEAR_CLASS(rest);
     OBJ_FREEZE_RAW(rest);
     data_class = anonymous_struct(klass);
@@ -1723,6 +1688,18 @@ rb_data_s_def(int argc, VALUE *argv, VALUE klass)
     }
 
     return data_class;
+}
+
+VALUE
+rb_data_define(VALUE super, ...)
+{
+    va_list ar;
+    VALUE ary;
+    va_start(ar, super);
+    ary = struct_make_members_list(ar);
+    va_end(ar);
+    if (!super) super = rb_cData;
+    return setup_data(anonymous_struct(super), ary);
 }
 
 /*
@@ -1756,7 +1733,7 @@ rb_data_s_def(int argc, VALUE *argv, VALUE klass)
  *     Measure.new(amount: 1, unit: 'km')
  *     #=> #<data Measure amount=1, unit="km">
  *
- *     # Alternative shorter intialization with []
+ *     # Alternative shorter initialization with []
  *     Measure[1, 'km']
  *     #=> #<data Measure amount=1, unit="km">
  *     Measure[amount: 1, unit: 'km']
@@ -1816,10 +1793,12 @@ rb_data_initialize_m(int argc, const VALUE *argv, VALUE self)
     arg.self = self;
     arg.unknown_keywords = Qnil;
     rb_hash_foreach(argv[0], struct_hash_set_i, (VALUE)&arg);
+    // Freeze early before potentially raising, so that we don't leave an
+    // unfrozen copy on the heap, which could get exposed via ObjectSpace.
+    OBJ_FREEZE_RAW(self);
     if (arg.unknown_keywords != Qnil) {
         rb_exc_raise(rb_keyword_error_new("unknown", arg.unknown_keywords));
     }
-    OBJ_FREEZE_RAW(self);
     return Qnil;
 }
 
@@ -1830,6 +1809,50 @@ rb_data_init_copy(VALUE copy, VALUE s)
     copy = rb_struct_init_copy(copy, s);
     RB_OBJ_FREEZE_RAW(copy);
     return copy;
+}
+
+/*
+ *  call-seq:
+ *   with(**kwargs) -> instance
+ *
+ *  Returns a shallow copy of +self+ --- the instance variables of
+ *  +self+ are copied, but not the objects they reference.
+ *
+ *  If the method is supplied any keyword arguments, the copy will
+ *  be created with the respective field values updated to use the
+ *  supplied keyword argument values. Note that it is an error to
+ *  supply a keyword that the Data class does not have as a member.
+ *
+ *    Point = Data.define(:x, :y)
+ *
+ *    origin = Point.new(x: 0, y: 0)
+ *
+ *    up = origin.with(x: 1)
+ *    right = origin.with(y: 1)
+ *    up_and_right = up.with(y: 1)
+ *
+ *    p origin       # #<data Point x=0, y=0>
+ *    p up           # #<data Point x=1, y=0>
+ *    p right        # #<data Point x=0, y=1>
+ *    p up_and_right # #<data Point x=1, y=1>
+ *
+ *    out = origin.with(z: 1) # ArgumentError: unknown keyword: :z
+ *    some_point = origin.with(1, 2) # ArgumentError: expected keyword arguments, got positional arguments
+ *
+ */
+
+static VALUE
+rb_data_with(int argc, const VALUE *argv, VALUE self)
+{
+    VALUE kwargs;
+    rb_scan_args(argc, argv, "0:", &kwargs);
+    if (NIL_P(kwargs)) {
+        return self;
+    }
+
+    VALUE h = rb_struct_to_h(self);
+    rb_hash_update_by(h, kwargs, 0);
+    return rb_class_new_instance_kw(1, &h, rb_obj_class(self), TRUE);
 }
 
 /*
@@ -2205,6 +2228,8 @@ InitVM_Struct(void)
 
     rb_define_method(rb_cData, "deconstruct", rb_data_deconstruct, 0);
     rb_define_method(rb_cData, "deconstruct_keys", rb_data_deconstruct_keys, 1);
+
+    rb_define_method(rb_cData, "with", rb_data_with, -1);
 }
 
 #undef rb_intern

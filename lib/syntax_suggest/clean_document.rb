@@ -110,7 +110,7 @@ module SyntaxSuggest
       @document.join
     end
 
-    # Remove comments and whitespace only lines
+    # Remove comments
     #
     # replace with empty newlines
     #
@@ -155,8 +155,10 @@ module SyntaxSuggest
     #    ).to eq(2)
     #
     def clean_sweep(source:)
+      # Match comments, but not HEREDOC strings with #{variable} interpolation
+      # https://rubular.com/r/HPwtW9OYxKUHXQ
       source.lines.map do |line|
-        if line.match?(/^\s*(#[^{].*)?$/) # https://rubular.com/r/LLE10D8HKMkJvs
+        if line.match?(/^\s*#([^{].*|)$/)
           $/
         else
           line

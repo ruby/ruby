@@ -28,10 +28,6 @@ enum ruby_rhash_flags {
     RHASH_AR_TABLE_BOUND_MASK = (FL_USER8|FL_USER9|FL_USER10|FL_USER11), /* FL 8..11 */
     RHASH_AR_TABLE_BOUND_SHIFT = (FL_USHIFT+8),
 
-#if USE_TRANSIENT_HEAP
-    RHASH_TRANSIENT_FLAG = FL_USER12,                                    /* FL 12 */
-#endif
-
     // we can not put it in "enum" because it can exceed "int" range.
 #define RHASH_LEV_MASK (FL_USER13 | FL_USER14 | FL_USER15 |                /* FL 13..19 */ \
                         FL_USER16 | FL_USER17 | FL_USER18 | FL_USER19)
@@ -40,17 +36,23 @@ enum ruby_rhash_flags {
     RHASH_LEV_MAX = 127, /* 7 bits */
 };
 
-struct RHash {
-    struct RBasic basic;
-    union {
-        st_table *st;
-        struct ar_table_struct *ar; /* possibly 0 */
-    } as;
-    const VALUE ifnone;
+typedef struct ar_table_pair_struct {
+    VALUE key;
+    VALUE val;
+} ar_table_pair;
+
+typedef struct ar_table_struct {
     union {
         ar_hint_t ary[RHASH_AR_TABLE_MAX_SIZE];
         VALUE word;
     } ar_hint;
+    /* 64bit CPU: 8B * 2 * 8 = 128B */
+    ar_table_pair pairs[RHASH_AR_TABLE_MAX_SIZE];
+} ar_table;
+
+struct RHash {
+    struct RBasic basic;
+    const VALUE ifnone;
 };
 
 #define RHASH(obj) ((struct RHash *)(obj))
@@ -73,6 +75,8 @@ VALUE rb_hash_default_value(VALUE hash, VALUE key);
 VALUE rb_hash_set_default_proc(VALUE hash, VALUE proc);
 long rb_dbl_long_hash(double d);
 st_table *rb_init_identtable(void);
+st_index_t rb_any_hash(VALUE a);
+int rb_any_cmp(VALUE a, VALUE b);
 VALUE rb_to_hash_type(VALUE obj);
 VALUE rb_hash_key_str(VALUE);
 VALUE rb_hash_values(VALUE hash);
@@ -82,8 +86,8 @@ VALUE rb_hash_set_pair(VALUE hash, VALUE pair);
 int rb_hash_stlike_delete(VALUE hash, st_data_t *pkey, st_data_t *pval);
 int rb_hash_stlike_foreach_with_replace(VALUE hash, st_foreach_check_callback_func *func, st_update_callback_func *replace, st_data_t arg);
 int rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *func, st_data_t arg);
-extern st_table *rb_hash_st_table(VALUE hash);
 VALUE rb_ident_hash_new_with_size(st_index_t size);
+void rb_hash_free(VALUE hash);
 
 static inline unsigned RHASH_AR_TABLE_SIZE_RAW(VALUE h);
 static inline VALUE RHASH_IFNONE(VALUE h);
@@ -95,9 +99,6 @@ static inline struct ar_table_struct *RHASH_AR_TABLE(VALUE h);
 static inline st_table *RHASH_ST_TABLE(VALUE h);
 static inline size_t RHASH_ST_SIZE(VALUE h);
 static inline void RHASH_ST_CLEAR(VALUE h);
-static inline bool RHASH_TRANSIENT_P(VALUE h);
-static inline void RHASH_SET_TRANSIENT_FLAG(VALUE h);
-static inline void RHASH_UNSET_TRANSIENT_FLAG(VALUE h);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* hash.c (export) */
@@ -106,7 +107,6 @@ VALUE rb_ident_hash_new(void);
 int rb_hash_stlike_foreach(VALUE hash, st_foreach_callback_func *func, st_data_t arg);
 RUBY_SYMBOL_EXPORT_END
 
-MJIT_SYMBOL_EXPORT_BEGIN
 VALUE rb_hash_new_with_size(st_index_t size);
 VALUE rb_hash_resurrect(VALUE hash);
 int rb_hash_stlike_lookup(VALUE hash, st_data_t key, st_data_t *pval);
@@ -116,33 +116,8 @@ VALUE rb_hash_compare_by_id_p(VALUE hash);
 
 st_table *rb_hash_tbl_raw(VALUE hash, const char *file, int line);
 #define RHASH_TBL_RAW(h) rb_hash_tbl_raw(h, __FILE__, __LINE__)
-MJIT_SYMBOL_EXPORT_END
 
 VALUE rb_hash_compare_by_id(VALUE hash);
-
-#if 0 /* for debug */
-
-static inline bool
-RHASH_AR_TABLE_P(VALUE h)
-{
-    extern int rb_hash_ar_table_p(VALUE hash);
-    return rb_hash_ar_table_p(h)
-}
-
-static inline struct ar_table_struct *
-RHASH_AR_TABLE(VALUE h)
-{
-    extern struct ar_table_struct *rb_hash_ar_table(VALUE hash);
-    return rb_hash_ar_table(h)
-}
-
-static inline st_table *
-RHASH_ST_TABLE(VALUE h)
-{
-    return rb_hash_st_table(h)
-}
-
-#else
 
 static inline bool
 RHASH_AR_TABLE_P(VALUE h)
@@ -150,19 +125,19 @@ RHASH_AR_TABLE_P(VALUE h)
     return ! FL_TEST_RAW(h, RHASH_ST_TABLE_FLAG);
 }
 
+RBIMPL_ATTR_RETURNS_NONNULL()
 static inline struct ar_table_struct *
 RHASH_AR_TABLE(VALUE h)
 {
-    return RHASH(h)->as.ar;
+    return (struct ar_table_struct *)((uintptr_t)h + sizeof(struct RHash));
 }
 
+RBIMPL_ATTR_RETURNS_NONNULL()
 static inline st_table *
 RHASH_ST_TABLE(VALUE h)
 {
-    return RHASH(h)->as.st;
+    return (st_table *)((uintptr_t)h + sizeof(struct RHash));
 }
-
-#endif
 
 static inline VALUE
 RHASH_IFNONE(VALUE h)
@@ -202,8 +177,7 @@ RHASH_ST_SIZE(VALUE h)
 static inline void
 RHASH_ST_CLEAR(VALUE h)
 {
-    FL_UNSET_RAW(h, RHASH_ST_TABLE_FLAG);
-    RHASH(h)->as.ar = NULL;
+    memset(RHASH_ST_TABLE(h), 0, sizeof(st_table));
 }
 
 static inline unsigned
@@ -212,32 +186,6 @@ RHASH_AR_TABLE_SIZE_RAW(VALUE h)
     VALUE ret = FL_TEST_RAW(h, RHASH_AR_TABLE_SIZE_MASK);
     ret >>= RHASH_AR_TABLE_SIZE_SHIFT;
     return (unsigned)ret;
-}
-
-static inline bool
-RHASH_TRANSIENT_P(VALUE h)
-{
-#if USE_TRANSIENT_HEAP
-    return FL_TEST_RAW(h, RHASH_TRANSIENT_FLAG);
-#else
-    return false;
-#endif
-}
-
-static inline void
-RHASH_SET_TRANSIENT_FLAG(VALUE h)
-{
-#if USE_TRANSIENT_HEAP
-    FL_SET_RAW(h, RHASH_TRANSIENT_FLAG);
-#endif
-}
-
-static inline void
-RHASH_UNSET_TRANSIENT_FLAG(VALUE h)
-{
-#if USE_TRANSIENT_HEAP
-    FL_UNSET_RAW(h, RHASH_TRANSIENT_FLAG);
-#endif
 }
 
 #endif /* INTERNAL_HASH_H */

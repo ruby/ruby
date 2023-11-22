@@ -173,7 +173,7 @@ struct dump_arg {
     st_table *data;
     st_table *compat_tbl;
     st_table *encodings;
-    unsigned long num_entries;
+    st_index_t num_entries;
 };
 
 struct dump_call_arg {
@@ -228,19 +228,24 @@ static void
 free_dump_arg(void *ptr)
 {
     clear_dump_arg(ptr);
-    xfree(ptr);
 }
 
 static size_t
 memsize_dump_arg(const void *ptr)
 {
-    return sizeof(struct dump_arg);
+    const struct dump_arg *p = (struct dump_arg *)ptr;
+    size_t memsize = 0;
+    if (p->symbols) memsize += rb_st_memsize(p->symbols);
+    if (p->data) memsize += rb_st_memsize(p->data);
+    if (p->compat_tbl) memsize += rb_st_memsize(p->compat_tbl);
+    if (p->encodings) memsize += rb_st_memsize(p->encodings);
+    return memsize;
 }
 
 static const rb_data_type_t dump_arg_data = {
     "dump_arg",
     {mark_dump_arg, free_dump_arg, memsize_dump_arg,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE
@@ -523,7 +528,7 @@ hash_each(VALUE key, VALUE value, VALUE v)
 
 #define SINGLETON_DUMP_UNABLE_P(klass) \
     (rb_id_table_size(RCLASS_M_TBL(klass)) > 0 || \
-     rb_ivar_count(klass) > 1)
+     rb_ivar_count(klass) > 0)
 
 static void
 w_extended(VALUE klass, struct dump_arg *arg, int check)
@@ -1272,19 +1277,24 @@ static void
 free_load_arg(void *ptr)
 {
     clear_load_arg(ptr);
-    xfree(ptr);
 }
 
 static size_t
 memsize_load_arg(const void *ptr)
 {
-    return sizeof(struct load_arg);
+    const struct load_arg *p = (struct load_arg *)ptr;
+    size_t memsize = 0;
+    if (p->symbols) memsize += rb_st_memsize(p->symbols);
+    if (p->data) memsize += rb_st_memsize(p->data);
+    if (p->partial_objects) memsize += rb_st_memsize(p->partial_objects);
+    if (p->compat_tbl) memsize += rb_st_memsize(p->compat_tbl);
+    return memsize;
 }
 
 static const rb_data_type_t load_arg_data = {
     "load_arg",
     {mark_load_arg, free_load_arg, memsize_load_arg,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
 #define r_entry(v, arg) r_entry0((v), (arg)->data->num_entries, (arg))
@@ -1826,7 +1836,6 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
       case TYPE_IVAR:
         {
             int ivar = TRUE;
-
             v = r_object0(arg, true, &ivar, extmod);
             if (ivar) r_ivar(v, NULL, arg);
             v = r_leave(v, arg, partial);
@@ -1865,6 +1874,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                     rb_extend_object(v, m);
                 }
             }
+            v = r_leave(v, arg, partial);
         }
         break;
 
@@ -2019,7 +2029,10 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                 }
                 rb_str_set_len(str, dst - ptr);
             }
-            v = r_entry0(rb_reg_new_str(str, options), idx, arg);
+            VALUE regexp = rb_reg_new_str(str, options);
+            r_copy_ivar(regexp, str);
+
+            v = r_entry0(regexp, idx, arg);
             v = r_leave(v, arg, partial);
         }
         break;
@@ -2138,7 +2151,12 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                 marshal_compat_t *compat = (marshal_compat_t*)d;
                 v = compat->loader(klass, v);
             }
-            if (!partial) v = r_post_proc(v, arg);
+            if (!partial) {
+                if (arg->freeze) {
+                    OBJ_FREEZE(v);
+                }
+                v = r_post_proc(v, arg);
+            }
         }
         break;
 
@@ -2163,6 +2181,9 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
             load_funcall(arg, v, s_mload, 1, &data);
             v = r_fixup_compat(v, arg);
             v = r_copy_ivar(v, data);
+            if (arg->freeze) {
+                OBJ_FREEZE(v);
+            }
             v = r_post_proc(v, arg);
             if (!NIL_P(extmod)) {
                 if (oldclass) append_extmod(v, extmod);

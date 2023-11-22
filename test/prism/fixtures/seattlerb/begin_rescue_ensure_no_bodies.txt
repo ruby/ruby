@@ -1,0 +1,4 @@
+begin
+rescue
+ensure
+end

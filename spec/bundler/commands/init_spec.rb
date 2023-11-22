@@ -191,4 +191,17 @@ RSpec.describe "bundle init" do
       end
     end
   end
+
+  describe "using the --gemfile" do
+    it "should use the --gemfile value to name the gemfile" do
+      custom_gemfile_name = "NiceGemfileName"
+
+      bundle :init, :gemfile => custom_gemfile_name
+
+      expect(out).to include("Writing new #{custom_gemfile_name}")
+      used_template = File.read("#{source_root}/lib/bundler/templates/Gemfile")
+      generated_gemfile = bundled_app(custom_gemfile_name).read
+      expect(generated_gemfile).to eq(used_template)
+    end
+  end
 end

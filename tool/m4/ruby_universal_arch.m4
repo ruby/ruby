@@ -17,7 +17,7 @@ AS_IF([test ${target_archs+set}], [
 	    cpu=$archs
 	    cpu=`echo $cpu | sed 's/-.*-.*//'`
 	    universal_binary="${universal_binary+$universal_binary,}$cpu"
-	    universal_archnames="${universal_archnames} ${archs}=${cpu}"
+	    universal_archnames="${universal_archnames:+$universal_archnames }${archs}=${cpu}"
 	    ARCH_FLAG="${ARCH_FLAG+$ARCH_FLAG }-arch $archs"
 	    ])
     done
@@ -73,7 +73,7 @@ EOF
 	    sed -n 's/^"processor-name=\(.*\)"/\1/p'`
 	    target="$target_cpu${target}"
 	    AC_MSG_RESULT([$target_cpu])
-	    ])
+	])
     ])
     target_archs="$target_cpu"
 ])

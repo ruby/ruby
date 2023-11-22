@@ -359,7 +359,7 @@ class Time
   #     Time.new(Float(0.0), Rational(1, 1), 1.0, 0.0, 0.0, 0.0)
   #     # => 0000-01-01 00:00:00 -0600
   #
-  # - \String integers:
+  # - String integers:
   #
   #     a = %w[0 1 1 0 0 0]
   #     # => ["0", "1", "1", "0", "0", "0"]

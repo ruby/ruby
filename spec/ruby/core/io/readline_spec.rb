@@ -51,6 +51,10 @@ describe "IO#readline" do
     it "returns an empty string when passed 0 as a limit" do
       @io.readline(0).should == ""
     end
+
+    it "does not accept Integers that don't fit in a C off_t" do
+      -> { @io.readline(2**128) }.should raise_error(RangeError)
+    end
   end
 
   describe "when passed separator and limit" do
@@ -69,14 +73,12 @@ describe "IO#readline" do
       @io.readline(chomp: true).should == IOSpecs.lines_without_newline_characters[0]
     end
 
-    ruby_version_is "3.0" do
-      it "raises exception when options passed as Hash" do
-        -> { @io.readline({ chomp: true }) }.should raise_error(TypeError)
+    it "raises exception when options passed as Hash" do
+      -> { @io.readline({ chomp: true }) }.should raise_error(TypeError)
 
-        -> {
-          @io.readline("\n", 1, { chomp: true })
-        }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 0..2)")
-      end
+      -> {
+        @io.readline("\n", 1, { chomp: true })
+      }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 0..2)")
     end
   end
 end

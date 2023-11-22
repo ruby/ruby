@@ -29,14 +29,36 @@
 #define rb_raise_static(e, m) \
     rb_raise_cstr_i((e), rb_str_new_static((m), rb_strlen_lit(m)))
 #ifdef RUBY_FUNCTION_NAME_STRING
-# define rb_sys_fail_path(path) rb_sys_fail_path_in(RUBY_FUNCTION_NAME_STRING, path)
 # define rb_syserr_fail_path(err, path) rb_syserr_fail_path_in(RUBY_FUNCTION_NAME_STRING, (err), (path))
 # define rb_syserr_new_path(err, path) rb_syserr_new_path_in(RUBY_FUNCTION_NAME_STRING, (err), (path))
 #else
-# define rb_sys_fail_path(path) rb_sys_fail_str(path)
 # define rb_syserr_fail_path(err, path) rb_syserr_fail_str((err), (path))
 # define rb_syserr_new_path(err, path) rb_syserr_new_str((err), (path))
 #endif
+
+#define rb_sys_fail(mesg) \
+do { \
+    int errno_to_fail = errno; \
+    rb_syserr_fail(errno_to_fail, (mesg)); \
+} while (0)
+
+#define rb_sys_fail_str(mesg) \
+do { \
+    int errno_to_fail = errno; \
+    rb_syserr_fail_str(errno_to_fail, (mesg)); \
+} while (0)
+
+#define rb_sys_fail_path(path) \
+do { \
+    int errno_to_fail = errno; \
+    rb_syserr_fail_path(errno_to_fail, (path)); \
+} while (0)
+
+#define rb_sys_fail_sprintf(...) \
+do { \
+    int errno_to_fail = errno; \
+    rb_syserr_fail_str(errno_to_fail, rb_sprintf("" __VA_ARGS__)); \
+} while (0)
 
 /* error.c */
 extern long rb_backtrace_length_limit;

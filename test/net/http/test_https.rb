@@ -148,7 +148,7 @@ class TestNetHTTPS < Test::Unit::TestCase
       # support session resuse.  Limiting the version to the TLSv1.2 stack allows
       # this test to continue to work on LibreSSL 3.2+.  LibreSSL may eventually
       # support session reuse, but there are no current plans to do so.
-      http.ssl_version = :TLSv1
+      http.ssl_version = :TLSv1_2
     end
 
     http.start

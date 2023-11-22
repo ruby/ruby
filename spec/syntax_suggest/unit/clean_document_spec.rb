@@ -72,6 +72,24 @@ module SyntaxSuggest
       EOM
     end
 
+    it "joins multi-line chained methods when separated by comments" do
+      source = <<~EOM
+        User.
+          # comment
+          where(name: 'schneems').
+          # another comment
+          first
+      EOM
+
+      doc = CleanDocument.new(source: source).join_consecutive!
+      code_lines = doc.lines
+
+      expect(code_lines[0].to_s.count($/)).to eq(5)
+      code_lines[1..-1].each do |line|
+        expect(line.to_s.strip.length).to eq(0)
+      end
+    end
+
     it "helper method: take_while_including" do
       source = <<~EOM
         User
@@ -92,27 +110,10 @@ module SyntaxSuggest
           # yolo
       EOM
 
-      out = CleanDocument.new(source: source).lines.join
-      expect(out.to_s).to eq(<<~EOM)
-
-        puts "what"
-
-      EOM
-    end
-
-    it "whitespace: removes whitespace" do
-      source = "  \n" + <<~EOM
-        puts "what"
-      EOM
-
-      out = CleanDocument.new(source: source).lines.join
-      expect(out.to_s).to eq(<<~EOM)
-
-        puts "what"
-      EOM
-
-      expect(source.lines.first.to_s).to_not eq("\n")
-      expect(out.lines.first.to_s).to eq("\n")
+      lines = CleanDocument.new(source: source).lines
+      expect(lines[0].to_s).to eq($/)
+      expect(lines[1].to_s).to eq('puts "what"' + $/)
+      expect(lines[2].to_s).to eq($/)
     end
 
     it "trailing slash: does not join trailing do" do

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 require_relative "utils"
 
-if defined?(OpenSSL)
+if defined?(OpenSSL::SSL)
 
 class OpenSSL::TestSSLSession < OpenSSL::SSLTestCase
   def test_session
@@ -22,7 +22,7 @@ class OpenSSL::TestSSLSession < OpenSSL::SSLTestCase
         assert_match(/\A-----BEGIN SSL SESSION PARAMETERS-----/, pem)
         assert_match(/-----END SSL SESSION PARAMETERS-----\Z/, pem)
         pem.gsub!(/-----(BEGIN|END) SSL SESSION PARAMETERS-----/, '').gsub!(/[\r\n]+/m, '')
-        assert_equal(session.to_der, pem.unpack('m*')[0])
+        assert_equal(session.to_der, pem.unpack1('m'))
         assert_not_nil(session.to_text)
       }
     end

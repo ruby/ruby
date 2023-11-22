@@ -12,18 +12,33 @@ describe "File.dirname" do
   end
 
   ruby_version_is '3.1' do
-    it "returns all the components of filename except the last parts by the level" do
-      File.dirname('/home/jason', 2).should == '/'
-      File.dirname('/home/jason/poot.txt', 2).should == '/home'
-    end
+    context "when level is passed" do
+      it "returns all the components of filename except the last parts by the level" do
+        File.dirname('/home/jason', 2).should == '/'
+        File.dirname('/home/jason/poot.txt', 2).should == '/home'
+      end
 
-    it "returns the same string if the level is 0" do
-      File.dirname('poot.txt', 0).should == 'poot.txt'
-      File.dirname('/', 0).should == '/'
-    end
+      it "returns the same String if the level is 0" do
+        File.dirname('poot.txt', 0).should == 'poot.txt'
+        File.dirname('/', 0).should == '/'
+      end
 
-    it "raises ArgumentError if the level is negative" do
-      -> {File.dirname('/home/jason', -1)}.should raise_error(ArgumentError)
+      it "raises ArgumentError if the level is negative" do
+        -> {
+          File.dirname('/home/jason', -1)
+        }.should raise_error(ArgumentError, "negative level: -1")
+      end
+
+      it "returns '/' when level exceeds the number of segments in the path" do
+        File.dirname("/home/jason", 100).should == '/'
+      end
+
+      it "calls #to_int if passed not numeric value" do
+        object = Object.new
+        def object.to_int; 2; end
+
+        File.dirname("/a/b/c/d", object).should == '/a/b'
+      end
     end
   end
 

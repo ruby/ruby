@@ -411,36 +411,18 @@ describe "Invoking a method" do
     specs.rest_len(0,*a,4,*5,6,7,*c,-1).should == 11
   end
 
-  ruby_version_is ""..."3.0" do
-    it "expands the Array elements from the splat after executing the arguments and block if no other arguments follow the splat" do
-      def self.m(*args, &block)
-        [args, block]
-      end
-
-      args = [1, nil]
-      m(*args, &args.pop).should == [[1], nil]
-
-      args = [1, nil]
-      order = []
-      m(*(order << :args; args), &(order << :block; args.pop)).should == [[1], nil]
-      order.should == [:args, :block]
+  it "expands the Array elements from the splat before applying block argument operations" do
+    def self.m(*args, &block)
+      [args, block]
     end
-  end
 
-  ruby_version_is "3.0" do
-    it "expands the Array elements from the splat before applying block argument operations" do
-      def self.m(*args, &block)
-        [args, block]
-      end
+    args = [1, nil]
+    m(*args, &args.pop).should == [[1, nil], nil]
 
-      args = [1, nil]
-      m(*args, &args.pop).should == [[1, nil], nil]
-
-      args = [1, nil]
-      order = []
-      m(*(order << :args; args), &(order << :block; args.pop)).should == [[1, nil], nil]
-      order.should == [:args, :block]
-    end
+    args = [1, nil]
+    order = []
+    m(*(order << :args; args), &(order << :block; args.pop)).should == [[1, nil], nil]
+    order.should == [:args, :block]
   end
 
   it "evaluates the splatted arguments before the block if there are other arguments after the splat" do

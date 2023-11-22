@@ -118,4 +118,3 @@ class RDoc::Markup::ToTtOnly < RDoc::Markup::Formatter
   end
 
 end
-

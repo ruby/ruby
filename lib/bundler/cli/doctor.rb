@@ -6,8 +6,8 @@ require "fiddle"
 
 module Bundler
   class CLI::Doctor
-    DARWIN_REGEX = /\s+(.+) \(compatibility /.freeze
-    LDD_REGEX = /\t\S+ => (\S+) \(\S+\)/.freeze
+    DARWIN_REGEX = /\s+(.+) \(compatibility /
+    LDD_REGEX = /\t\S+ => (\S+) \(\S+\)/
 
     attr_reader :options
 

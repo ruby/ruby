@@ -4,6 +4,32 @@ require_relative "../spec_helper"
 
 module SyntaxSuggest
   RSpec.describe CaptureCodeContext do
+    it "capture_before_after_kws two" do
+      source = <<~'EOM'
+        class OH
+
+          def hello
+
+          def hai
+          end
+        end
+      EOM
+
+      code_lines = CleanDocument.new(source: source).call.lines
+      block = CodeBlock.new(lines: code_lines[2])
+
+      display = CaptureCodeContext.new(
+        blocks: [block],
+        code_lines: code_lines
+      )
+      display.capture_before_after_kws(block)
+      expect(display.sorted_lines.join).to eq(<<~'EOM'.indent(2))
+        def hello
+        def hai
+        end
+      EOM
+    end
+
     it "capture_before_after_kws" do
       source = <<~'EOM'
         def sit
@@ -16,13 +42,14 @@ module SyntaxSuggest
       EOM
 
       code_lines = CleanDocument.new(source: source).call.lines
-      block = CodeBlock.new(lines: code_lines[0])
+      block = CodeBlock.new(lines: code_lines[3])
 
       display = CaptureCodeContext.new(
         blocks: [block],
         code_lines: code_lines
       )
-      lines = display.call
+
+      lines = display.capture_before_after_kws(block).sort
       expect(lines.join).to eq(<<~'EOM')
         def sit
         end

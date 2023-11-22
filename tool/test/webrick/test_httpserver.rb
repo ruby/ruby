@@ -253,7 +253,7 @@ class TestWEBrickHTTPServer < Test::Unit::TestCase
       server.virtual_host(WEBrick::HTTPServer.new(vhost_config))
 
       Thread.pass while server.status != :Running
-      sleep 1 if defined?(RubyVM::MJIT) && RubyVM::MJIT.enabled? # server.status behaves unexpectedly with --jit-wait
+      sleep 1 if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # server.status behaves unexpectedly with --jit-wait
       assert_equal(1, started, log.call)
       assert_equal(0, stopped, log.call)
       assert_equal(0, accepted, log.call)

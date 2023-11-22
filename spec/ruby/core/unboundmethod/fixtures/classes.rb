@@ -22,6 +22,7 @@ module UnboundMethodSpecs
 
   module Mod
     def from_mod; end
+    def foo_super; super; end
   end
 
   class Methods
@@ -63,6 +64,9 @@ module UnboundMethodSpecs
 
   class Parent
     def foo; end
+    def foo_super
+      true
+    end
     def self.class_method
       "I am #{name}"
     end

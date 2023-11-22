@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 
 # HTTP/1.1 methods --- RFC2616
 
@@ -12,6 +12,8 @@
 #   res = Net::HTTP.start(hostname) do |http|
 #     http.request(req)
 #   end
+#
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Properties:
 #
@@ -42,6 +44,8 @@ end
 #   res = Net::HTTP.start(hostname) do |http|
 #     http.request(req)
 #   end
+#
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Properties:
 #
@@ -74,6 +78,8 @@ end
 #   res = Net::HTTP.start(hostname) do |http|
 #     http.request(req)
 #   end
+#
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Properties:
 #
@@ -108,6 +114,8 @@ end
 #     http.request(req)
 #   end
 #
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
+#
 # Properties:
 #
 # - Request body: yes.
@@ -133,6 +141,8 @@ end
 #   res = Net::HTTP.start(hostname) do |http|
 #     http.request(req)
 #   end
+#
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Properties:
 #
@@ -163,6 +173,8 @@ end
 #     http.request(req)
 #   end
 #
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
+#
 # Properties:
 #
 # - Request body: optional.
@@ -191,6 +203,8 @@ end
 #   res = Net::HTTP.start(hostname) do |http|
 #     http.request(req)
 #   end
+#
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Properties:
 #
@@ -223,6 +237,8 @@ end
 #   res = Net::HTTP.start(hostname) do |http|
 #     http.request(req)
 #   end
+#
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Properties:
 #
@@ -257,6 +273,8 @@ end
 #     http.request(req)
 #   end
 #
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
+#
 # Related:
 #
 # - Net::HTTP#propfind: sends +PROPFIND+ request, returns response object.
@@ -277,6 +295,8 @@ end
 #   res = Net::HTTP.start(hostname) do |http|
 #     http.request(req)
 #   end
+#
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Related:
 #
@@ -299,6 +319,8 @@ end
 #     http.request(req)
 #   end
 #
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
+#
 # Related:
 #
 # - Net::HTTP#mkcol: sends +MKCOL+ request, returns response object.
@@ -319,6 +341,8 @@ end
 #   res = Net::HTTP.start(hostname) do |http|
 #     http.request(req)
 #   end
+#
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Related:
 #
@@ -341,6 +365,8 @@ end
 #     http.request(req)
 #   end
 #
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
+#
 # Related:
 #
 # - Net::HTTP#move: sends +MOVE+ request, returns response object.
@@ -362,6 +388,8 @@ end
 #     http.request(req)
 #   end
 #
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
+#
 # Related:
 #
 # - Net::HTTP#lock: sends +LOCK+ request, returns response object.
@@ -382,6 +410,8 @@ end
 #   res = Net::HTTP.start(hostname) do |http|
 #     http.request(req)
 #   end
+#
+# See {Request Headers}[rdoc-ref:Net::HTTPRequest@Request+Headers].
 #
 # Related:
 #

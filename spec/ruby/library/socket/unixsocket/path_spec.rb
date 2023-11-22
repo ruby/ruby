@@ -1,9 +1,8 @@
 require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
-describe "UNIXSocket#path" do
-
-  platform_is_not :windows do
+with_feature :unix_socket do
+  describe "UNIXSocket#path" do
     before :each do
       @path = SocketSpecs.socket_path
       @server = UNIXServer.open(@path)
@@ -24,5 +23,4 @@ describe "UNIXSocket#path" do
       @client.path.should == ""
     end
   end
-
 end

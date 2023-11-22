@@ -97,4 +97,3 @@ class RDoc::Markup::ListItem
   end
 
 end
-

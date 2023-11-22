@@ -1,0 +1,11 @@
+@ ProgramNode (location: (1,0)-(1,10))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,10))
+    └── body: (length: 1)
+        └── @ RegularExpressionNode (location: (1,0)-(1,10))
+            ├── opening_loc: (1,0)-(1,1) = "/"
+            ├── content_loc: (1,1)-(1,7) = "source"
+            ├── closing_loc: (1,7)-(1,10) = "/im"
+            ├── unescaped: "source"
+            └── flags: ignore_case, multi_line

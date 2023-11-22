@@ -102,7 +102,7 @@ static rb_encoding *global_enc_ascii,
 static const rb_data_type_t encoding_data_type = {
     "encoding",
     {0, 0, 0,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
 };
 
 #define is_data_encoding(obj) (RTYPEDDATA_P(obj) && RTYPEDDATA_TYPE(obj) == &encoding_data_type)
@@ -503,37 +503,6 @@ enc_replicate(struct enc_table *enc_table, const char *name, rb_encoding *encodi
     set_base_encoding(enc_table, idx, encoding);
     set_encoding_const(name, rb_enc_from_index(idx));
     return idx;
-}
-
-int
-rb_enc_replicate(const char *name, rb_encoding *encoding)
-{
-    int r;
-
-    GLOBAL_ENC_TABLE_EVAL(enc_table,
-                          r = enc_replicate(enc_table, name, encoding));
-
-    return r;
-}
-
-/*
- * call-seq:
- *   enc.replicate(name) -> encoding
- *
- * Returns a replicated encoding of _enc_ whose name is _name_.
- * The new encoding should have the same byte structure of _enc_.
- * If _name_ is used by another encoding, raise ArgumentError.
- *
- */
-static VALUE
-enc_replicate_m(VALUE encoding, VALUE name)
-{
-    int idx;
-    rb_warn_deprecated_to_remove("3.3", "Encoding#replicate", "the original encoding");
-
-    idx = rb_enc_replicate(name_for_encoding(&name), rb_to_encoding(encoding));
-    RB_GC_GUARD(name);
-    return rb_enc_from_encoding_index(idx);
 }
 
 static int
@@ -1914,7 +1883,6 @@ Init_Encoding(void)
     rb_define_method(rb_cEncoding, "names", enc_names, 0);
     rb_define_method(rb_cEncoding, "dummy?", enc_dummy_p, 0);
     rb_define_method(rb_cEncoding, "ascii_compatible?", enc_ascii_compatible_p, 0);
-    rb_define_method(rb_cEncoding, "replicate", enc_replicate_m, 1);
     rb_define_singleton_method(rb_cEncoding, "list", enc_list, 0);
     rb_define_singleton_method(rb_cEncoding, "name_list", rb_enc_name_list, 0);
     rb_define_singleton_method(rb_cEncoding, "aliases", rb_enc_aliases, 0);

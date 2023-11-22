@@ -220,7 +220,7 @@ static VALUE kernel_spec_rb_eval_string_protect(VALUE self, VALUE str, VALUE ary
 
 VALUE kernel_spec_rb_sys_fail(VALUE self, VALUE msg) {
   errno = 1;
-  if(msg == Qnil) {
+  if (msg == Qnil) {
     rb_sys_fail(0);
   } else if (self != Qundef) {
     rb_sys_fail(StringValuePtr(msg));
@@ -229,7 +229,7 @@ VALUE kernel_spec_rb_sys_fail(VALUE self, VALUE msg) {
 }
 
 VALUE kernel_spec_rb_syserr_fail(VALUE self, VALUE err, VALUE msg) {
-  if(msg == Qnil) {
+  if (msg == Qnil) {
     rb_syserr_fail(NUM2INT(err), NULL);
   } else if (self != Qundef) {
     rb_syserr_fail(NUM2INT(err), StringValuePtr(msg));
@@ -292,9 +292,9 @@ static VALUE kernel_spec_rb_yield_values2(VALUE self, VALUE ary) {
 }
 
 static VALUE do_rec(VALUE obj, VALUE arg, int is_rec) {
-  if(is_rec) {
+  if (is_rec) {
     return obj;
-  } else if(arg == Qtrue) {
+  } else if (arg == Qtrue) {
     return rb_exec_recursive(do_rec, obj, Qnil);
   } else {
     return Qnil;
@@ -340,8 +340,12 @@ static VALUE kernel_spec_rb_funcallv_public(VALUE self, VALUE obj, VALUE method)
   return rb_funcallv_public(obj, SYM2ID(method), 0, NULL);
 }
 
-static VALUE kernel_spec_rb_funcall_with_block(VALUE self, VALUE obj, VALUE method, VALUE block) {
-  return rb_funcall_with_block(obj, SYM2ID(method), 0, NULL, block);
+static VALUE kernel_spec_rb_funcall_with_block(VALUE self, VALUE obj, VALUE method, VALUE args, VALUE block) {
+  return rb_funcall_with_block(obj, SYM2ID(method), RARRAY_LENINT(args), RARRAY_PTR(args), block);
+}
+
+static VALUE kernel_spec_rb_funcall_with_block_kw(VALUE self, VALUE obj, VALUE method, VALUE args, VALUE block) {
+  return rb_funcall_with_block_kw(obj, SYM2ID(method), RARRAY_LENINT(args), RARRAY_PTR(args), block, RB_PASS_KEYWORDS);
 }
 
 static VALUE kernel_spec_rb_funcall_many_args(VALUE self, VALUE obj, VALUE method) {
@@ -397,7 +401,8 @@ void Init_kernel_spec(void) {
 #endif
   rb_define_method(cls, "rb_funcallv_public", kernel_spec_rb_funcallv_public, 2);
   rb_define_method(cls, "rb_funcall_many_args", kernel_spec_rb_funcall_many_args, 2);
-  rb_define_method(cls, "rb_funcall_with_block", kernel_spec_rb_funcall_with_block, 3);
+  rb_define_method(cls, "rb_funcall_with_block", kernel_spec_rb_funcall_with_block, 4);
+  rb_define_method(cls, "rb_funcall_with_block_kw", kernel_spec_rb_funcall_with_block_kw, 4);
 }
 
 #ifdef __cplusplus

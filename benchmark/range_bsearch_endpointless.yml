@@ -1,0 +1,21 @@
+prelude: |
+  re = (1..)
+  rb = (..0)
+
+benchmark:
+  'endless 10**0': re.bsearch { |x| x >= 1 }
+  'endless 10**1': re.bsearch { |x| x >= 10 }
+  'endless 10**2': re.bsearch { |x| x >= 100 }
+  'endless 10**3': re.bsearch { |x| x >= 1000 }
+  'endless 10**4': re.bsearch { |x| x >= 10000 }
+  'endless 10**5': re.bsearch { |x| x >= 100000 }
+  'endless 10**10': re.bsearch { |x| x >= 10000000000 }
+  'endless 10**100': re.bsearch { |x| x >= 10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 }
+  'beginless -10**0': rb.bsearch { |x| x >= -1 }
+  'beginless -10**1': rb.bsearch { |x| x >= -10 }
+  'beginless -10**2': rb.bsearch { |x| x >= -100 }
+  'beginless -10**3': rb.bsearch { |x| x >= -1000 }
+  'beginless -10**4': rb.bsearch { |x| x >= -10000 }
+  'beginless -10**5': rb.bsearch { |x| x >= -100000 }
+  'beginless -10**10': rb.bsearch { |x| x >= -10000000000 }
+  'beginless -10**100': rb.bsearch { |x| x >= -10000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 }

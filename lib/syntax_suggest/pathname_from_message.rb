@@ -13,7 +13,7 @@ module SyntaxSuggest
   #    # => "/tmp/scratch.rb"
   #
   class PathnameFromMessage
-    EVAL_RE = /^\(eval\):\d+/
+    EVAL_RE = /^\(eval.*\):\d+/
     STREAMING_RE = /^-:\d+/
     attr_reader :name
 

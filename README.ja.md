@@ -1,5 +1,5 @@
 [![Actions Status: MinGW](https://github.com/ruby/ruby/workflows/MinGW/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"MinGW")
-[![Actions Status: MJIT](https://github.com/ruby/ruby/workflows/MJIT/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"MJIT")
+[![Actions Status: RJIT](https://github.com/ruby/ruby/workflows/RJIT/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"RJIT")
 [![Actions Status: Ubuntu](https://github.com/ruby/ruby/workflows/Ubuntu/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Ubuntu")
 [![Actions Status: Windows](https://github.com/ruby/ruby/workflows/Windows/badge.svg)](https://github.com/ruby/ruby/actions?query=workflow%3A"Windows")
 [![AppVeyor status](https://ci.appveyor.com/api/projects/status/0sy8rrxut4o0k960/branch/master?svg=true)](https://ci.appveyor.com/project/ruby/ruby/branch/master)
@@ -26,7 +26,7 @@ Rubyはテキスト処理関係の能力などに優れ，Perlと同じくらい
 *   ダイナミックローディング (アーキテクチャによる)
 *   移植性が高い．多くのUnix-like/POSIX互換プラットフォーム上で動くだけでなく，Windows， macOS，
     Haikuなどの上でも動く cf.
-    https://github.com/ruby/ruby/blob/master/doc/contributing.rdoc#platform-maintainers
+    https://docs.ruby-lang.org/en/master/maintainers_md.html#label-Platform+Maintainers
 
 
 ## 入手法
@@ -50,17 +50,6 @@ https://www.ruby-lang.org/ja/downloads/
 Rubyリポジトリの本来のmasterは https://git.ruby-lang.org/ruby.git にあります．
 コミッタはこちらを使います．
 
-### Subversion
-
-古いRubyのバージョンのソースコードは次のコマンドでも取得できます．
-
-    $ svn co https://svn.ruby-lang.org/repos/ruby/branches/ruby_2_6/ ruby
-
-他のブランチの一覧は次のコマンドで見られます．
-
-    $ svn ls https://svn.ruby-lang.org/repos/ruby/branches/
-
-
 ## ホームページ
 
 RubyのホームページのURLは
@@ -71,20 +60,20 @@ https://www.ruby-lang.org/
 
 ## メーリングリスト
 
-Rubyのメーリングリストがあります．参加希望の方は [ruby-list-request@ruby-lang.org] まで本文に
+Rubyのメーリングリストがあります．参加希望の方は [ruby-list-request@ml.ruby-lang.org] まで件名に
 
-    subscribe
+    join
 
 と書いて送って下さい．
 
 Ruby開発者向けメーリングリストもあります．こちらではrubyのバグ，将来の仕様拡張など実装上の問題について議論されています．
-参加希望の方は [ruby-dev-request@ruby-lang.org] までruby-listと同様の方法でメールしてください．
+参加希望の方は [ruby-dev-request@ml.ruby-lang.org] までruby-listと同様の方法でメールしてください．
 
 Ruby拡張モジュールについて話し合うruby-extメーリングリストと数学関係の話題について話し合うruby-mathメーリングリストと
 英語でrubyについて話し合うruby-talkメーリングリストもあります．参加方法はどれも同じです．
 
-[ruby-list-request@ruby-lang.org]: mailto:ruby-list-request@ruby-lang.org?subject=Join%20Ruby%20Mailing%20List&body=subscribe
-[ruby-dev-request@ruby-lang.org]: mailto:ruby-dev-request@ruby-lang.org?subject=Join%20Ruby%20Mailing%20List&body=subscribe
+[ruby-list-request@ml.ruby-lang.org]: mailto:ruby-list-request@ml.ruby-lang.org?subject=join
+[ruby-dev-request@ml.ruby-lang.org]: mailto:ruby-dev-request@ml.ruby-lang.org?subject=join
 
 ## コンパイル・インストール
 
@@ -163,7 +152,7 @@ UNIXであれば `configure` がほとんどの差異を吸収してくれるは
 
 ## 配布条件
 
-[COPYING.ja](COPYING.ja) ファイルを参照してください．
+[COPYING.ja](https://docs.ruby-lang.org/en/master/COPYING_ja.html) ファイルを参照してください．
 
 ## フィードバック
 

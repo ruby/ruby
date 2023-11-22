@@ -1,0 +1,27 @@
+@ ProgramNode (location: (1,0)-(1,12))
+├── locals: [:a]
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,12))
+    └── body: (length: 1)
+        └── @ LocalVariableWriteNode (location: (1,0)-(1,12))
+            ├── name: :a
+            ├── depth: 0
+            ├── name_loc: (1,0)-(1,1) = "a"
+            ├── value:
+            │   @ InterpolatedStringNode (location: (1,4)-(1,12))
+            │   ├── opening_loc: (1,4)-(1,12) = "<<~\"EOF\""
+            │   ├── parts: (length: 2)
+            │   │   ├── @ StringNode (location: (2,0)-(3,0))
+            │   │   │   ├── flags: ∅
+            │   │   │   ├── opening_loc: ∅
+            │   │   │   ├── content_loc: (2,0)-(3,0) = "        blah blah\n"
+            │   │   │   ├── closing_loc: ∅
+            │   │   │   └── unescaped: "blah blah\n"
+            │   │   └── @ StringNode (location: (3,0)-(4,0))
+            │   │       ├── flags: ∅
+            │   │       ├── opening_loc: ∅
+            │   │       ├── content_loc: (3,0)-(4,0) = "\t blah blah\n"
+            │   │       ├── closing_loc: ∅
+            │   │       └── unescaped: " blah blah\n"
+            │   └── closing_loc: (4,0)-(5,0) = "  EOF\n"
+            └── operator_loc: (1,2)-(1,3) = "="

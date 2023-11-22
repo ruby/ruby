@@ -1,0 +1,23 @@
+@ ProgramNode (location: (1,0)-(7,4))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(7,4))
+    └── body: (length: 4)
+        ├── @ ImaginaryNode (location: (1,0)-(1,5))
+        │   └── numeric:
+        │       @ FloatNode (location: (1,0)-(1,4))
+        ├── @ ImaginaryNode (location: (3,0)-(3,6))
+        │   └── numeric:
+        │       @ RationalNode (location: (3,0)-(3,5))
+        │       └── numeric:
+        │           @ FloatNode (location: (3,0)-(3,4))
+        ├── @ ImaginaryNode (location: (5,0)-(5,3))
+        │   └── numeric:
+        │       @ IntegerNode (location: (5,0)-(5,2))
+        │       └── flags: decimal
+        └── @ ImaginaryNode (location: (7,0)-(7,4))
+            └── numeric:
+                @ RationalNode (location: (7,0)-(7,3))
+                └── numeric:
+                    @ IntegerNode (location: (7,0)-(7,2))
+                    └── flags: decimal

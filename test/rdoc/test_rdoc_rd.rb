@@ -28,4 +28,3 @@ class TestRDocRd < RDoc::TestCase
   end
 
 end
-

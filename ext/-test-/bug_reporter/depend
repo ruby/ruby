@@ -52,6 +52,7 @@ bug_reporter.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 bug_reporter.o: $(hdrdir)/ruby/internal/attr/noinline.h
 bug_reporter.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 bug_reporter.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+bug_reporter.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 bug_reporter.o: $(hdrdir)/ruby/internal/attr/pure.h
 bug_reporter.o: $(hdrdir)/ruby/internal/attr/restrict.h
 bug_reporter.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ bug_reporter.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 bug_reporter.o: $(hdrdir)/ruby/internal/intern/error.h
 bug_reporter.o: $(hdrdir)/ruby/internal/intern/eval.h
 bug_reporter.o: $(hdrdir)/ruby/internal/intern/file.h
-bug_reporter.o: $(hdrdir)/ruby/internal/intern/gc.h
 bug_reporter.o: $(hdrdir)/ruby/internal/intern/hash.h
 bug_reporter.o: $(hdrdir)/ruby/internal/intern/io.h
 bug_reporter.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ bug_reporter.o: $(hdrdir)/ruby/internal/memory.h
 bug_reporter.o: $(hdrdir)/ruby/internal/method.h
 bug_reporter.o: $(hdrdir)/ruby/internal/module.h
 bug_reporter.o: $(hdrdir)/ruby/internal/newobj.h
-bug_reporter.o: $(hdrdir)/ruby/internal/rgengc.h
 bug_reporter.o: $(hdrdir)/ruby/internal/scan_args.h
 bug_reporter.o: $(hdrdir)/ruby/internal/special_consts.h
 bug_reporter.o: $(hdrdir)/ruby/internal/static_assert.h

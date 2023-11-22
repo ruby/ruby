@@ -12,14 +12,13 @@
 
 **********************************************************************/
 
-#include "gc.h"
 #include "internal.h"
 #include "internal/class.h"
 #include "internal/compilers.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/imemo.h"
 #include "internal/sanitizers.h"
-#include "node.h"
 #include "ruby/io.h"
 #include "ruby/re.h"
 #include "ruby/st.h"
@@ -337,17 +336,6 @@ count_symbols(int argc, VALUE *argv, VALUE os)
     return hash;
 }
 
-static void
-cn_i(VALUE v, void *n)
-{
-    size_t *nodes = (size_t *)n;
-
-    if (BUILTIN_TYPE(v) == T_NODE) {
-        size_t s = nd_type((NODE *)v);
-        nodes[s]++;
-    }
-}
-
 /*
  *  call-seq:
  *     ObjectSpace.count_nodes([result_hash]) -> hash
@@ -374,135 +362,7 @@ cn_i(VALUE v, void *n)
 static VALUE
 count_nodes(int argc, VALUE *argv, VALUE os)
 {
-    size_t nodes[NODE_LAST+1];
-    enum node_type i;
-    VALUE hash = setup_hash(argc, argv);
-
-    for (i = 0; i <= NODE_LAST; i++) {
-        nodes[i] = 0;
-    }
-
-    each_object_with_flags(cn_i, &nodes[0]);
-
-    for (i=0; i<NODE_LAST; i++) {
-        if (nodes[i] != 0) {
-            VALUE node;
-            switch (i) {
-#define COUNT_NODE(n) case n: node = ID2SYM(rb_intern(#n)); goto set
-                COUNT_NODE(NODE_SCOPE);
-                COUNT_NODE(NODE_BLOCK);
-                COUNT_NODE(NODE_IF);
-                COUNT_NODE(NODE_UNLESS);
-                COUNT_NODE(NODE_CASE);
-                COUNT_NODE(NODE_CASE2);
-                COUNT_NODE(NODE_CASE3);
-                COUNT_NODE(NODE_WHEN);
-                COUNT_NODE(NODE_IN);
-                COUNT_NODE(NODE_WHILE);
-                COUNT_NODE(NODE_UNTIL);
-                COUNT_NODE(NODE_ITER);
-                COUNT_NODE(NODE_FOR);
-                COUNT_NODE(NODE_FOR_MASGN);
-                COUNT_NODE(NODE_BREAK);
-                COUNT_NODE(NODE_NEXT);
-                COUNT_NODE(NODE_REDO);
-                COUNT_NODE(NODE_RETRY);
-                COUNT_NODE(NODE_BEGIN);
-                COUNT_NODE(NODE_RESCUE);
-                COUNT_NODE(NODE_RESBODY);
-                COUNT_NODE(NODE_ENSURE);
-                COUNT_NODE(NODE_AND);
-                COUNT_NODE(NODE_OR);
-                COUNT_NODE(NODE_MASGN);
-                COUNT_NODE(NODE_LASGN);
-                COUNT_NODE(NODE_DASGN);
-                COUNT_NODE(NODE_GASGN);
-                COUNT_NODE(NODE_IASGN);
-                COUNT_NODE(NODE_CDECL);
-                COUNT_NODE(NODE_CVASGN);
-                COUNT_NODE(NODE_OP_ASGN1);
-                COUNT_NODE(NODE_OP_ASGN2);
-                COUNT_NODE(NODE_OP_ASGN_AND);
-                COUNT_NODE(NODE_OP_ASGN_OR);
-                COUNT_NODE(NODE_OP_CDECL);
-                COUNT_NODE(NODE_CALL);
-                COUNT_NODE(NODE_OPCALL);
-                COUNT_NODE(NODE_FCALL);
-                COUNT_NODE(NODE_VCALL);
-                COUNT_NODE(NODE_QCALL);
-                COUNT_NODE(NODE_SUPER);
-                COUNT_NODE(NODE_ZSUPER);
-                COUNT_NODE(NODE_LIST);
-                COUNT_NODE(NODE_ZLIST);
-                COUNT_NODE(NODE_VALUES);
-                COUNT_NODE(NODE_HASH);
-                COUNT_NODE(NODE_RETURN);
-                COUNT_NODE(NODE_YIELD);
-                COUNT_NODE(NODE_LVAR);
-                COUNT_NODE(NODE_DVAR);
-                COUNT_NODE(NODE_GVAR);
-                COUNT_NODE(NODE_IVAR);
-                COUNT_NODE(NODE_CONST);
-                COUNT_NODE(NODE_CVAR);
-                COUNT_NODE(NODE_NTH_REF);
-                COUNT_NODE(NODE_BACK_REF);
-                COUNT_NODE(NODE_MATCH);
-                COUNT_NODE(NODE_MATCH2);
-                COUNT_NODE(NODE_MATCH3);
-                COUNT_NODE(NODE_LIT);
-                COUNT_NODE(NODE_STR);
-                COUNT_NODE(NODE_DSTR);
-                COUNT_NODE(NODE_XSTR);
-                COUNT_NODE(NODE_DXSTR);
-                COUNT_NODE(NODE_EVSTR);
-                COUNT_NODE(NODE_DREGX);
-                COUNT_NODE(NODE_ONCE);
-                COUNT_NODE(NODE_ARGS);
-                COUNT_NODE(NODE_ARGS_AUX);
-                COUNT_NODE(NODE_OPT_ARG);
-                COUNT_NODE(NODE_KW_ARG);
-                COUNT_NODE(NODE_POSTARG);
-                COUNT_NODE(NODE_ARGSCAT);
-                COUNT_NODE(NODE_ARGSPUSH);
-                COUNT_NODE(NODE_SPLAT);
-                COUNT_NODE(NODE_BLOCK_PASS);
-                COUNT_NODE(NODE_DEFN);
-                COUNT_NODE(NODE_DEFS);
-                COUNT_NODE(NODE_ALIAS);
-                COUNT_NODE(NODE_VALIAS);
-                COUNT_NODE(NODE_UNDEF);
-                COUNT_NODE(NODE_CLASS);
-                COUNT_NODE(NODE_MODULE);
-                COUNT_NODE(NODE_SCLASS);
-                COUNT_NODE(NODE_COLON2);
-                COUNT_NODE(NODE_COLON3);
-                COUNT_NODE(NODE_DOT2);
-                COUNT_NODE(NODE_DOT3);
-                COUNT_NODE(NODE_FLIP2);
-                COUNT_NODE(NODE_FLIP3);
-                COUNT_NODE(NODE_SELF);
-                COUNT_NODE(NODE_NIL);
-                COUNT_NODE(NODE_TRUE);
-                COUNT_NODE(NODE_FALSE);
-                COUNT_NODE(NODE_ERRINFO);
-                COUNT_NODE(NODE_DEFINED);
-                COUNT_NODE(NODE_POSTEXE);
-                COUNT_NODE(NODE_DSYM);
-                COUNT_NODE(NODE_ATTRASGN);
-                COUNT_NODE(NODE_LAMBDA);
-                COUNT_NODE(NODE_ARYPTN);
-                COUNT_NODE(NODE_FNDPTN);
-                COUNT_NODE(NODE_HSHPTN);
-                COUNT_NODE(NODE_ERROR);
-#undef COUNT_NODE
-              case NODE_LAST: break;
-            }
-            UNREACHABLE;
-          set:
-            rb_hash_aset(hash, node, SIZET2NUM(nodes[i]));
-        }
-    }
-    return hash;
+    return setup_hash(argc, argv);
 }
 
 static void
@@ -954,7 +814,7 @@ void Init_objspace_dump(VALUE rb_mObjSpace);
  *
  * You need to <code>require 'objspace'</code> to use this extension module.
  *
- * Generally, you *SHOULD NOT* use this library if you do not know
+ * Generally, you *SHOULD* *NOT* use this library if you do not know
  * about the MRI implementation.  Mainly, this library is for (memory)
  * profiler developers and MRI developers who need to know about MRI
  * memory usage.

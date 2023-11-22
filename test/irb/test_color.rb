@@ -6,7 +6,7 @@ require 'stringio'
 require_relative "helper"
 
 module TestIRB
-  class TestColor < TestCase
+  class ColorTest < TestCase
     CLEAR     = "\e[0m"
     BOLD      = "\e[1m"
     UNDERLINE = "\e[4m"
@@ -17,6 +17,20 @@ module TestIRB
     BLUE      = "\e[34m"
     MAGENTA   = "\e[35m"
     CYAN      = "\e[36m"
+
+    def setup
+      super
+      if IRB.respond_to?(:conf)
+        @colorize, IRB.conf[:USE_COLORIZE] = IRB.conf[:USE_COLORIZE], true
+      end
+    end
+
+    def teardown
+      if instance_variable_defined?(:@colorize)
+        IRB.conf[:USE_COLORIZE] = @colorize
+      end
+      super
+    end
 
     def test_colorize
       text = "text"
@@ -76,6 +90,7 @@ module TestIRB
         ":class" => "#{YELLOW}:#{CLEAR}#{YELLOW}class#{CLEAR}",
         "[:end, 2]" => "[#{YELLOW}:#{CLEAR}#{YELLOW}end#{CLEAR}, #{BLUE}#{BOLD}2#{CLEAR}]",
         "[:>, 3]" => "[#{YELLOW}:#{CLEAR}#{YELLOW}>#{CLEAR}, #{BLUE}#{BOLD}3#{CLEAR}]",
+        "[:`, 4]" => "[#{YELLOW}:#{CLEAR}#{YELLOW}`#{CLEAR}, #{BLUE}#{BOLD}4#{CLEAR}]",
         ":Hello ? world : nil" => "#{YELLOW}:#{CLEAR}#{YELLOW}Hello#{CLEAR} ? world : #{CYAN}#{BOLD}nil#{CLEAR}",
         'raise "foo#{bar}baz"' => "raise #{RED}#{BOLD}\"#{CLEAR}#{RED}foo#{CLEAR}#{RED}\#{#{CLEAR}bar#{RED}}#{CLEAR}#{RED}baz#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}",
         '["#{obj.inspect}"]' => "[#{RED}#{BOLD}\"#{CLEAR}#{RED}\#{#{CLEAR}obj.inspect#{RED}}#{CLEAR}#{RED}#{BOLD}\"#{CLEAR}]",
@@ -94,14 +109,11 @@ module TestIRB
         "<<A+1\nA" => "#{RED}<<A#{CLEAR}+#{BLUE}#{BOLD}1#{CLEAR}\n#{RED}A#{CLEAR}",
       }
 
-      # specific to Ruby 2.7+
-      if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.7.0')
-        tests.merge!({
-          "4.5.6" => "#{MAGENTA}#{BOLD}4.5#{CLEAR}#{RED}#{REVERSE}.6#{CLEAR}",
-          "\e[0m\n" => "#{RED}#{REVERSE}^[#{CLEAR}[#{BLUE}#{BOLD}0#{CLEAR}#{RED}#{REVERSE}m#{CLEAR}\n",
-          "<<EOS\nhere\nEOS" => "#{RED}<<EOS#{CLEAR}\n#{RED}here#{CLEAR}\n#{RED}EOS#{CLEAR}",
-        })
-      end
+      tests.merge!({
+        "4.5.6" => "#{MAGENTA}#{BOLD}4.5#{CLEAR}#{RED}#{REVERSE}.6#{CLEAR}",
+        "\e[0m\n" => "#{RED}#{REVERSE}^[#{CLEAR}[#{BLUE}#{BOLD}0#{CLEAR}#{RED}#{REVERSE}m#{CLEAR}\n",
+        "<<EOS\nhere\nEOS" => "#{RED}<<EOS#{CLEAR}\n#{RED}here#{CLEAR}\n#{RED}EOS#{CLEAR}",
+      })
 
       # specific to Ruby 3.0+
       if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.0.0')
@@ -121,18 +133,9 @@ module TestIRB
           })
         end
       else
-        if Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.7.0')
-          tests.merge!({
-            "[1]]]\u0013" => "[#{BLUE}#{BOLD}1#{CLEAR}]#{RED}#{REVERSE}]#{CLEAR}]^S",
-            "def req(true) end" => "#{GREEN}def#{CLEAR} #{BLUE}#{BOLD}req#{CLEAR}(#{RED}#{REVERSE}true#{CLEAR}) end",
-          })
-        else
-          tests.merge!({
-            "[1]]]\u0013" => "[#{BLUE}#{BOLD}1#{CLEAR}]]]^S",
-            "def req(true) end" => "#{GREEN}def#{CLEAR} #{BLUE}#{BOLD}req#{CLEAR}(#{CYAN}#{BOLD}true#{CLEAR}) end",
-          })
-        end
         tests.merge!({
+          "[1]]]\u0013" => "[#{BLUE}#{BOLD}1#{CLEAR}]#{RED}#{REVERSE}]#{CLEAR}]^S",
+          "def req(true) end" => "#{GREEN}def#{CLEAR} #{BLUE}#{BOLD}req#{CLEAR}(#{RED}#{REVERSE}true#{CLEAR}) end",
           "nil = 1" => "#{CYAN}#{BOLD}nil#{CLEAR} = #{BLUE}#{BOLD}1#{CLEAR}",
           "alias $x $1" => "#{GREEN}alias#{CLEAR} #{GREEN}#{BOLD}$x#{CLEAR} $1",
           "class bad; end" => "#{GREEN}class#{CLEAR} bad; #{GREEN}end#{CLEAR}",
@@ -169,10 +172,6 @@ module TestIRB
     end
 
     def test_colorize_code_complete_true
-      unless complete_option_supported?
-        pend '`complete: true` is the same as `complete: false` in Ruby 2.6-'
-      end
-
       # `complete: true` behaviors. Warn end-of-file.
       {
         "'foo' + 'bar" => "#{RED}#{BOLD}'#{CLEAR}#{RED}foo#{CLEAR}#{RED}#{BOLD}'#{CLEAR} + #{RED}#{BOLD}'#{CLEAR}#{RED}#{REVERSE}bar#{CLEAR}",
@@ -201,16 +200,6 @@ module TestIRB
         assert_equal_with_term(code, code, complete: false, colorable: false)
 
         assert_equal_with_term(result, code, complete: false, tty: false, colorable: true)
-
-        unless complete_option_supported?
-          assert_equal_with_term(result, code, complete: true)
-
-          assert_equal_with_term(code, code, complete: true, tty: false)
-
-          assert_equal_with_term(code, code, complete: true, colorable: false)
-
-          assert_equal_with_term(result, code, complete: true, tty: false, colorable: true)
-        end
       end
     end
 
@@ -235,11 +224,6 @@ module TestIRB
     end
 
     private
-
-    # `complete: true` is the same as `complete: false` in Ruby 2.6-
-    def complete_option_supported?
-      Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('2.7.0')
-    end
 
     def with_term(tty: true)
       stdout = $stdout

@@ -1,5 +1,6 @@
 require_relative '../../spec_helper'
 require_relative 'fixtures/classes'
+require_relative 'shared/iterable_and_tolerating_size_increasing'
 
 describe "Array#uniq" do
   it "returns an array with no duplicates" do
@@ -84,16 +85,8 @@ describe "Array#uniq" do
     [false, nil, 42].uniq { :bar }.should == [false]
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instance on Array subclasses" do
-      ArraySpecs::MyArray[1, 2, 3].uniq.should be_an_instance_of(ArraySpecs::MyArray)
-    end
-  end
-
-  ruby_version_is '3.0' do
-    it "returns Array instance on Array subclasses" do
-      ArraySpecs::MyArray[1, 2, 3].uniq.should be_an_instance_of(Array)
-    end
+  it "returns Array instance on Array subclasses" do
+    ArraySpecs::MyArray[1, 2, 3].uniq.should be_an_instance_of(Array)
   end
 
   it "properly handles an identical item even when its #eql? isn't reflexive" do
@@ -129,6 +122,11 @@ describe "Array#uniq" do
       a.uniq.should == [basic.new(3), basic.new(2), basic.new(1), basic.new(4)]
     end
   end
+end
+
+describe "Array#uniq" do
+  @value_to_return = -> e { e }
+  it_behaves_like :array_iterable_and_tolerating_size_increasing, :uniq
 end
 
 describe "Array#uniq!" do
@@ -214,4 +212,32 @@ describe "Array#uniq!" do
     a.uniq!
     a.should == [x]
   end
+
+  it "does not truncate the array is the block raises an exception" do
+    a = [1, 2, 3]
+    begin
+      a.send(@method) { raise StandardError, 'Oops' }
+    rescue
+    end
+
+    a.should == [1, 2, 3]
+  end
+
+  it "doesn't change array if error is raised" do
+    a = [1, 1, 2, 2, 3, 3, 4, 4]
+    begin
+      a.send(@method) do |e|
+        raise StandardError, 'Oops' if e == 3
+        e
+      end
+    rescue StandardError
+    end
+
+    a.should == [1, 1, 2, 2, 3, 3, 4, 4]
+  end
+end
+
+describe "Array#uniq!" do
+  @value_to_return = -> e { e }
+  it_behaves_like :array_iterable_and_tolerating_size_increasing, :uniq!
 end

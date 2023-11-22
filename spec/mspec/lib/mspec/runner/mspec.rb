@@ -38,9 +38,10 @@ module MSpec
   @expectation  = nil
   @expectations = false
   @skips = []
+  @subprocesses = []
 
   class << self
-    attr_reader :file, :include, :exclude, :skips
+    attr_reader :file, :include, :exclude, :skips, :subprocesses
     attr_writer :repeat, :randomize
     attr_accessor :formatter
   end
@@ -395,7 +396,7 @@ module MSpec
     desc = tag.escape(tag.description)
     file = tags_file
     if File.exist? file
-      lines = IO.readlines(file)
+      lines = File.readlines(file)
       File.open(file, "w:utf-8") do |f|
         lines.each do |line|
           line = line.chomp

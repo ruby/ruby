@@ -38,8 +38,7 @@ describe "Method#<<" do
       double = proc { |x| x + x }
 
       (pow_2 << double).is_a?(Proc).should == true
-      ruby_version_is(''...'3.0') { (pow_2 << double).should.lambda? }
-      ruby_version_is('3.0') { (pow_2 << double).should_not.lambda? }
+      (pow_2 << double).should_not.lambda?
     end
 
     it "may accept multiple arguments" do

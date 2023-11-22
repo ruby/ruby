@@ -1,8 +1,8 @@
 require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
-describe "UNIXSocket#inspect" do
-  platform_is_not :windows do
+with_feature :unix_socket do
+  describe "UNIXSocket#inspect" do
     it "returns sockets fd for unnamed sockets" do
       begin
         s1, s2 = UNIXSocket.socketpair

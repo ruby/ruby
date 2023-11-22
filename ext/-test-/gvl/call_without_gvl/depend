@@ -51,6 +51,7 @@ call_without_gvl.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/attr/noinline.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+call_without_gvl.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/attr/pure.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/attr/restrict.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -110,7 +111,6 @@ call_without_gvl.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/intern/error.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/intern/eval.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/intern/file.h
-call_without_gvl.o: $(hdrdir)/ruby/internal/intern/gc.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/intern/hash.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/intern/io.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -141,7 +141,6 @@ call_without_gvl.o: $(hdrdir)/ruby/internal/memory.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/method.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/module.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/newobj.h
-call_without_gvl.o: $(hdrdir)/ruby/internal/rgengc.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/scan_args.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/special_consts.h
 call_without_gvl.o: $(hdrdir)/ruby/internal/static_assert.h

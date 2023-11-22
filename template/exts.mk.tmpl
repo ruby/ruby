@@ -27,7 +27,7 @@ contpat = /(?>(?>[^\\\n]|\\.)*\\\n)*(?>[^\\\n]|\\.)*/
 Dir.glob("{ext,.bundle/gems}/*/exts.mk") do |e|
   gem = e.start_with?(".bundle/gems/")
   s = File.read(e)
-  s.scan(/^(extensions|SUBMAKEOPTS|EXT[A-Z]+|MFLAGS|NOTE_[A-Z]+)[ \t]*=[ \t]*(#{contpat})$/o) do |n, v|
+  s.scan(/^(extensions|SUBMAKEOPTS|EXT[A-Z]+|MFLAGS|MESSAGE_(?:BEGIN|END)|NOTE_[A-Z]+)[ \t]*=[ \t]*(#{contpat})$/o) do |n, v|
     v.gsub!(/\\\n[ \t]*/, ' ')
     next if v.empty?
     n = "old_extensions" if n == "extensions" and !confexts.include?(e)

@@ -124,12 +124,7 @@ module RDoc::Encoding
     if text.kind_of? RDoc::Comment
       text.encode! encoding
     else
-      # TODO: Remove this condition after Ruby 2.2 EOL
-      if RUBY_VERSION < '2.3.0'
-        text.force_encoding encoding
-      else
-        String.new text, encoding: encoding
-      end
+      String.new text, encoding: encoding
     end
   end
 

@@ -1,4 +1,4 @@
-== Formats for Dates and Times
+= Formats for Dates and Times
 
 Several Ruby time-related classes have instance method +strftime+,
 which returns a formatted string representing all or part of a date or time:
@@ -32,9 +32,9 @@ It consists of:
 Except for the leading percent character,
 the only required part is the conversion specifier, so we begin with that.
 
-=== Conversion Specifiers
+== Conversion Specifiers
 
-==== \Date (Year, Month, Day)
+=== \Date (Year, Month, Day)
 
 - <tt>%Y</tt> - Year including century, zero-padded:
 
@@ -87,7 +87,7 @@ the only required part is the conversion specifier, so we begin with that.
     Time.new(2002, 1, 1).strftime('%j')   # => "001"
     Time.new(2002, 12, 31).strftime('%j') # => "365"
 
-==== \Time (Hour, Minute, Second, Subsecond)
+=== \Time (Hour, Minute, Second, Subsecond)
 
 - <tt>%H</tt> - Hour of the day, in range (0..23), zero-padded:
 
@@ -152,7 +152,7 @@ the only required part is the conversion specifier, so we begin with that.
 
     Time.now.strftime('%s') # => "1656505136"
 
-==== Timezone
+=== Timezone
 
 - <tt>%z</tt> - Timezone as hour and minute offset from UTC:
 
@@ -162,7 +162,7 @@ the only required part is the conversion specifier, so we begin with that.
 
     Time.now.strftime('%Z') # => "Central Daylight Time"
 
-==== Weekday
+=== Weekday
 
 - <tt>%A</tt> - Full weekday name:
 
@@ -184,7 +184,7 @@ the only required part is the conversion specifier, so we begin with that.
     t.strftime('%a')          # => "Sun"
     t.strftime('%w')          # => "0"
 
-==== Week Number
+=== Week Number
 
 - <tt>%U</tt> - Week number of the year, in range (0..53), zero-padded,
   where each week begins on a Sunday:
@@ -200,7 +200,7 @@ the only required part is the conversion specifier, so we begin with that.
     t.strftime('%a')          # => "Sun"
     t.strftime('%W')          # => "25"
 
-==== Week Dates
+=== Week Dates
 
 See {ISO 8601 week dates}[https://en.wikipedia.org/wiki/ISO_8601#Week_dates].
 
@@ -223,7 +223,7 @@ See {ISO 8601 week dates}[https://en.wikipedia.org/wiki/ISO_8601#Week_dates].
     t0.strftime('%V') # => "52"
     t1.strftime('%V') # => "01"
 
-==== Literals
+=== Literals
 
 - <tt>%n</tt> - Newline character "\n":
 
@@ -237,7 +237,7 @@ See {ISO 8601 week dates}[https://en.wikipedia.org/wiki/ISO_8601#Week_dates].
 
     Time.now.strftime('%%') # => "%"
 
-==== Shorthand Conversion Specifiers
+=== Shorthand Conversion Specifiers
 
 Each shorthand specifier here is shown with its corresponding
 longhand specifier.
@@ -294,14 +294,14 @@ longhand specifier.
     DateTime.now.strftime('%a %b %e %H:%M:%S %Z %Y')
     # => "Wed Jun 29 08:32:18 -05:00 2022"
 
-=== Flags
+== Flags
 
 Flags may affect certain formatting specifications.
 
 Multiple flags may be given with a single conversion specified;
 order does not matter.
 
-==== Padding Flags
+=== Padding Flags
 
 - <tt>0</tt> - Pad with zeroes:
 
@@ -315,7 +315,7 @@ order does not matter.
 
     Time.new(10).strftime('%-Y') # => "10"
 
-==== Casing Flags
+=== Casing Flags
 
 - <tt>^</tt> - Upcase result:
 
@@ -328,7 +328,7 @@ order does not matter.
     Time.now.strftime('%^p') # => "AM"
     Time.now.strftime('%#p') # => "am"
 
-==== Timezone Flags
+=== Timezone Flags
 
 - <tt>:</tt> - Put timezone as colon-separated hours and minutes:
 
@@ -338,7 +338,7 @@ order does not matter.
 
     Time.now.strftime('%::z') # => "-05:00:00"
 
-=== Width Specifiers
+== Width Specifiers
 
 The integer width specifier gives a minimum width for the returned string:
 
@@ -348,12 +348,12 @@ The integer width specifier gives a minimum width for the returned string:
   Time.new(2002, 12).strftime('%10B') # => "  December"
   Time.new(2002, 12).strftime('%3B')  # => "December" # Ignored if too small.
 
-== Specialized Format Strings
+= Specialized Format Strings
 
 Here are a few specialized format strings,
 each based on an external standard.
 
-=== HTTP Format
+== HTTP Format
 
 The HTTP date format is based on
 {RFC 2616}[https://datatracker.ietf.org/doc/html/rfc2616],
@@ -368,7 +368,7 @@ and treats dates in the format <tt>'%a, %d %b %Y %T GMT'</tt>:
   Date._httpdate(httpdate)
   # => {:wday=>6, :mday=>3, :mon=>2, :year=>2001, :hour=>0, :min=>0, :sec=>0, :zone=>"GMT", :offset=>0}
 
-=== RFC 3339 Format
+== RFC 3339 Format
 
 The RFC 3339 date format is based on
 {RFC 3339}[https://datatracker.ietf.org/doc/html/rfc3339]:
@@ -382,7 +382,7 @@ The RFC 3339 date format is based on
   Date._rfc3339(rfc3339)
   # => {:year=>2001, :mon=>2, :mday=>3, :hour=>0, :min=>0, :sec=>0, :zone=>"+00:00", :offset=>0}
 
-=== RFC 2822 Format
+== RFC 2822 Format
 
 The RFC 2822 date format is based on
 {RFC 2822}[https://datatracker.ietf.org/doc/html/rfc2822],
@@ -397,7 +397,7 @@ and treats dates in the format <tt>'%a, %-d %b %Y %T %z'</tt>]:
   Date._rfc2822(rfc2822)
   # => {:wday=>6, :mday=>3, :mon=>2, :year=>2001, :hour=>0, :min=>0, :sec=>0, :zone=>"+0000", :offset=>0}
 
-=== JIS X 0301 Format
+== JIS X 0301 Format
 
 The JIS X 0301 format includes the
 {Japanese era name}[https://en.wikipedia.org/wiki/Japanese_era_name],
@@ -412,7 +412,7 @@ with the first letter of the romanized era name prefixed:
   # Return hash parsed from 0301-formatted string.
   Date._jisx0301(jisx0301) # => {:year=>2001, :mon=>2, :mday=>3}
 
-=== ISO 8601 Format Specifications
+== ISO 8601 Format Specifications
 
 This section shows format specifications that are compatible with
 {ISO 8601}[https://en.wikipedia.org/wiki/ISO_8601].
@@ -422,7 +422,7 @@ Examples in this section assume:
 
   t = Time.now # => 2022-06-29 16:49:25.465246 -0500
 
-==== Dates
+=== Dates
 
 See {ISO 8601 dates}[https://en.wikipedia.org/wiki/ISO_8601#Dates].
 
@@ -473,7 +473,7 @@ See {ISO 8601 dates}[https://en.wikipedia.org/wiki/ISO_8601#Dates].
 
       t.strftime('%Y-%j') # => "2022-180"
 
-==== Times
+=== Times
 
 See {ISO 8601 times}[https://en.wikipedia.org/wiki/ISO_8601#Times].
 
@@ -514,7 +514,7 @@ See {ISO 8601 times}[https://en.wikipedia.org/wiki/ISO_8601#Times].
     - {Coordinated Universal Time (UTC)}[https://en.wikipedia.org/wiki/ISO_8601#Coordinated_Universal_Time_(UTC)].
     - {Time offsets from UTC}[https://en.wikipedia.org/wiki/ISO_8601#Time_offsets_from_UTC].
 
-==== Combined \Date and \Time
+=== Combined \Date and \Time
 
 See {ISO 8601 Combined date and time representations}[https://en.wikipedia.org/wiki/ISO_8601#Combined_date_and_time_representations].
 

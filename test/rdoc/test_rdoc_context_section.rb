@@ -144,4 +144,3 @@ class TestRDocContextSection < RDoc::TestCase
   end
 
 end
-

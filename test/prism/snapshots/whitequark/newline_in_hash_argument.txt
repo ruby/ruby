@@ -1,0 +1,143 @@
+@ ProgramNode (location: (1,0)-(14,1))
+├── locals: [:a, :b]
+└── statements:
+    @ StatementsNode (location: (1,0)-(14,1))
+    └── body: (length: 3)
+        ├── @ CaseMatchNode (location: (1,0)-(8,3))
+        │   ├── predicate:
+        │   │   @ CallNode (location: (1,5)-(1,8))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :foo
+        │   │   ├── message_loc: (1,5)-(1,8) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   └── flags: variable_call
+        │   ├── conditions: (length: 2)
+        │   │   ├── @ InNode (location: (2,0)-(4,4))
+        │   │   │   ├── pattern:
+        │   │   │   │   @ HashPatternNode (location: (2,3)-(2,5))
+        │   │   │   │   ├── constant: ∅
+        │   │   │   │   ├── elements: (length: 1)
+        │   │   │   │   │   └── @ AssocNode (location: (2,3)-(2,5))
+        │   │   │   │   │       ├── key:
+        │   │   │   │   │       │   @ SymbolNode (location: (2,3)-(2,5))
+        │   │   │   │   │       │   ├── opening_loc: ∅
+        │   │   │   │   │       │   ├── value_loc: (2,3)-(2,4) = "a"
+        │   │   │   │   │       │   ├── closing_loc: (2,4)-(2,5) = ":"
+        │   │   │   │   │       │   └── unescaped: "a"
+        │   │   │   │   │       ├── value: ∅
+        │   │   │   │   │       └── operator_loc: ∅
+        │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── opening_loc: ∅
+        │   │   │   │   └── closing_loc: ∅
+        │   │   │   ├── statements:
+        │   │   │   │   @ StatementsNode (location: (3,0)-(4,4))
+        │   │   │   │   └── body: (length: 2)
+        │   │   │   │       ├── @ IntegerNode (location: (3,0)-(3,1))
+        │   │   │   │       │   └── flags: decimal
+        │   │   │   │       └── @ TrueNode (location: (4,0)-(4,4))
+        │   │   │   ├── in_loc: (2,0)-(2,2) = "in"
+        │   │   │   └── then_loc: ∅
+        │   │   └── @ InNode (location: (5,0)-(7,4))
+        │   │       ├── pattern:
+        │   │       │   @ HashPatternNode (location: (5,3)-(5,7))
+        │   │       │   ├── constant: ∅
+        │   │       │   ├── elements: (length: 1)
+        │   │       │   │   └── @ AssocNode (location: (5,3)-(5,7))
+        │   │       │   │       ├── key:
+        │   │       │   │       │   @ SymbolNode (location: (5,3)-(5,7))
+        │   │       │   │       │   ├── opening_loc: (5,3)-(5,4) = "\""
+        │   │       │   │       │   ├── value_loc: (5,4)-(5,5) = "b"
+        │   │       │   │       │   ├── closing_loc: (5,5)-(5,7) = "\":"
+        │   │       │   │       │   └── unescaped: "b"
+        │   │       │   │       ├── value: ∅
+        │   │       │   │       └── operator_loc: ∅
+        │   │       │   ├── rest: ∅
+        │   │       │   ├── opening_loc: ∅
+        │   │       │   └── closing_loc: ∅
+        │   │       ├── statements:
+        │   │       │   @ StatementsNode (location: (6,0)-(7,4))
+        │   │       │   └── body: (length: 2)
+        │   │       │       ├── @ IntegerNode (location: (6,0)-(6,1))
+        │   │       │       │   └── flags: decimal
+        │   │       │       └── @ TrueNode (location: (7,0)-(7,4))
+        │   │       ├── in_loc: (5,0)-(5,2) = "in"
+        │   │       └── then_loc: ∅
+        │   ├── consequent: ∅
+        │   ├── case_keyword_loc: (1,0)-(1,4) = "case"
+        │   └── end_keyword_loc: (8,0)-(8,3) = "end"
+        ├── @ CallNode (location: (10,0)-(11,1))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (10,0)-(10,3))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :obj
+        │   │   ├── message_loc: (10,0)-(10,3) = "obj"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   └── flags: variable_call
+        │   ├── call_operator_loc: (10,3)-(10,4) = "."
+        │   ├── name: :set
+        │   ├── message_loc: (10,4)-(10,7) = "set"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (10,8)-(11,1))
+        │   │   ├── arguments: (length: 1)
+        │   │   │   └── @ KeywordHashNode (location: (10,8)-(11,1))
+        │   │   │       └── elements: (length: 1)
+        │   │   │           └── @ AssocNode (location: (10,8)-(11,1))
+        │   │   │               ├── key:
+        │   │   │               │   @ SymbolNode (location: (10,8)-(10,14))
+        │   │   │               │   ├── opening_loc: (10,8)-(10,9) = "\""
+        │   │   │               │   ├── value_loc: (10,9)-(10,12) = "foo"
+        │   │   │               │   ├── closing_loc: (10,12)-(10,14) = "\":"
+        │   │   │               │   └── unescaped: "foo"
+        │   │   │               ├── value:
+        │   │   │               │   @ IntegerNode (location: (11,0)-(11,1))
+        │   │   │               │   └── flags: decimal
+        │   │   │               └── operator_loc: ∅
+        │   │   └── flags: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   └── flags: ∅
+        └── @ CallNode (location: (13,0)-(14,1))
+            ├── receiver:
+            │   @ CallNode (location: (13,0)-(13,3))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── name: :obj
+            │   ├── message_loc: (13,0)-(13,3) = "obj"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   └── flags: variable_call
+            ├── call_operator_loc: (13,3)-(13,4) = "."
+            ├── name: :set
+            ├── message_loc: (13,4)-(13,7) = "set"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (13,8)-(14,1))
+            │   ├── arguments: (length: 1)
+            │   │   └── @ KeywordHashNode (location: (13,8)-(14,1))
+            │   │       └── elements: (length: 1)
+            │   │           └── @ AssocNode (location: (13,8)-(14,1))
+            │   │               ├── key:
+            │   │               │   @ SymbolNode (location: (13,8)-(13,12))
+            │   │               │   ├── opening_loc: ∅
+            │   │               │   ├── value_loc: (13,8)-(13,11) = "foo"
+            │   │               │   ├── closing_loc: (13,11)-(13,12) = ":"
+            │   │               │   └── unescaped: "foo"
+            │   │               ├── value:
+            │   │               │   @ IntegerNode (location: (14,0)-(14,1))
+            │   │               │   └── flags: decimal
+            │   │               └── operator_loc: ∅
+            │   └── flags: ∅
+            ├── closing_loc: ∅
+            ├── block: ∅
+            └── flags: ∅

@@ -368,7 +368,7 @@ class RDoc::Parser::RipperStateLex
   private def get_symbol_tk(tk)
     is_symbol = true
     symbol_tk = Token.new(tk.line_no, tk.char_no, :on_symbol)
-    if ":'" == tk[:text] or ':"' == tk[:text]
+    if ":'" == tk[:text] or ':"' == tk[:text] or tk[:text].start_with?('%s')
       tk1 = get_string_tk(tk)
       symbol_tk[:text] = tk1[:text]
       symbol_tk[:state] = tk1[:state]

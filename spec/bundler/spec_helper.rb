@@ -17,6 +17,7 @@ require "rspec/support/differ"
 
 require_relative "support/builders"
 require_relative "support/build_metadata"
+require_relative "support/checksums"
 require_relative "support/filters"
 require_relative "support/helpers"
 require_relative "support/indexes"
@@ -34,6 +35,7 @@ end
 
 RSpec.configure do |config|
   config.include Spec::Builders
+  config.include Spec::Checksums
   config.include Spec::Helpers
   config.include Spec::Indexes
   config.include Spec::Matchers
@@ -45,6 +47,9 @@ RSpec.configure do |config|
   config.example_status_persistence_file_path = ".rspec_status"
 
   config.silence_filter_announcements = !ENV["TEST_ENV_NUMBER"].nil?
+
+  config.backtrace_exclusion_patterns <<
+    %r{./spec/(spec_helper\.rb|support/.+)}
 
   config.disable_monkey_patching!
 
@@ -72,7 +77,6 @@ RSpec.configure do |config|
     require_relative "support/rubygems_ext"
     Spec::Rubygems.test_setup
     ENV["BUNDLER_SPEC_RUN"] = "true"
-    ENV["BUNDLER_NO_OLD_RUBYGEMS_WARNING"] = "true"
     ENV["BUNDLE_USER_CONFIG"] = ENV["BUNDLE_USER_CACHE"] = ENV["BUNDLE_USER_PLUGIN"] = nil
     ENV["BUNDLE_APP_CONFIG"] = nil
     ENV["BUNDLE_SILENCE_ROOT_WARNING"] = nil
@@ -114,6 +118,6 @@ RSpec.configure do |config|
   end
 
   config.after :suite do
-    FileUtils.rm_r Spec::Path.pristine_system_gem_path
+    FileUtils.rm_rf Spec::Path.pristine_system_gem_path
   end
 end

@@ -30,4 +30,3 @@ class TestRDocMarkupToJoinedParagraph < RDoc::TestCase
   end
 
 end
-

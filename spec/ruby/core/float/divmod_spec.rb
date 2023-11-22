@@ -23,7 +23,7 @@ describe "Float#divmod" do
 
   # Behaviour established as correct in r23953
   it "raises a FloatDomainError if other is NaN" do
-    -> { 1.divmod(nan_value) }.should raise_error(FloatDomainError)
+    -> { 1.0.divmod(nan_value) }.should raise_error(FloatDomainError)
   end
 
   # Behaviour established as correct in r23953

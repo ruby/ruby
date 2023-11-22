@@ -1,14 +1,9 @@
 # frozen_string_literal: false
 #
 #   irb/locale.rb - internationalization module
-#   	$Release Version: 0.9.6$
-#   	$Revision$
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-# --
-#
-#
-#
+
 module IRB # :nodoc:
   class Locale
 
@@ -20,7 +15,11 @@ module IRB # :nodoc:
     ]x
     LOCALE_DIR = "/lc/"
 
-    @@legacy_encoding_alias_map = {}.freeze
+    LEGACY_ENCODING_ALIAS_MAP = {
+      'ujis' => Encoding::EUC_JP,
+      'euc' => Encoding::EUC_JP
+    }
+
     @@loaded = []
 
     def initialize(locale = nil)
@@ -31,11 +30,11 @@ module IRB # :nodoc:
         @lang, @territory, @encoding_name, @modifier = m[:language], m[:territory], m[:codeset], m[:modifier]
 
         if @encoding_name
-          begin load 'irb/encoding_aliases.rb'; rescue LoadError; end
-          if @encoding = @@legacy_encoding_alias_map[@encoding_name]
+          if @encoding = LEGACY_ENCODING_ALIAS_MAP[@encoding_name]
             warn(("%s is obsolete. use %s" % ["#{@lang}_#{@territory}.#{@encoding_name}", "#{@lang}_#{@territory}.#{@encoding.name}"]), uplevel: 1)
+          else
+            @encoding = Encoding.find(@encoding_name) rescue nil
           end
-          @encoding = Encoding.find(@encoding_name) rescue nil
         end
       end
       @encoding ||= (Encoding.find('locale') rescue Encoding::ASCII_8BIT)
@@ -83,39 +82,12 @@ module IRB # :nodoc:
       super(*ary)
     end
 
-    def require(file, priv = nil)
-      rex = Regexp.new("lc/#{Regexp.quote(file)}\.(so|o|sl|rb)?")
-      return false if $".find{|f| f =~ rex}
-
-      case file
-      when /\.rb$/
-        begin
-          load(file, priv)
-          $".push file
-          return true
-        rescue LoadError
-        end
-      when /\.(so|o|sl)$/
-        return super
-      end
-
-      begin
-        load(f = file + ".rb")
-        $".push f  #"
-        return true
-      rescue LoadError
-        return ruby_require(file)
-      end
-    end
-
-    alias toplevel_load load
-
-    def load(file, priv=nil)
+    def load(file)
       found = find(file)
       if found
         unless @@loaded.include?(found)
           @@loaded << found # cache
-          return real_load(found, priv)
+          Kernel.load(found)
         end
       else
         raise LoadError, "No such file to load -- #{file}"
@@ -131,16 +103,6 @@ module IRB # :nodoc:
         return each_localized_path(dir, base).find{|full_path| File.readable? full_path}
       else
         return search_file(paths, dir, base)
-      end
-    end
-
-    private
-    def real_load(path, priv)
-      src = MagicFile.open(path){|f| f.read}
-      if priv
-        eval("self", TOPLEVEL_BINDING).extend(Module.new {eval(src, nil, path)})
-      else
-        eval(src, TOPLEVEL_BINDING, path)
       end
     end
 

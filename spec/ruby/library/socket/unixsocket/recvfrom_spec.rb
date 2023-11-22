@@ -1,8 +1,8 @@
 require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
-describe "UNIXSocket#recvfrom" do
-  platform_is_not :windows do
+with_feature :unix_socket do
+  describe "UNIXSocket#recvfrom" do
     before :each do
       @path = SocketSpecs.socket_path
       @server = UNIXServer.open(@path)
@@ -42,10 +42,7 @@ describe "UNIXSocket#recvfrom" do
       sock.close
     end
   end
-end
 
-
-with_feature :unix_socket do
   describe 'UNIXSocket#recvfrom' do
     describe 'using a socket pair' do
       before do

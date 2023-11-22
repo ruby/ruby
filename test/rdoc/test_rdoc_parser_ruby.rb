@@ -3205,6 +3205,14 @@ RUBY
     assert_nil @parser.parse_symbol_in_arg
   end
 
+  def test_parse_percent_symbol
+    content = '%s[foo bar]'
+    util_parser content
+    tk = @parser.get_tk
+    assert_equal :on_symbol, tk[:kind]
+    assert_equal content, tk[:text]
+  end
+
   def test_parse_statements_alias_method
     content = <<-CONTENT
 class A
@@ -3348,6 +3356,13 @@ end
     assert_equal 'test', value
 
     assert_equal :on_const, parser.get_tk[:kind]
+  end
+
+  def test_read_directive_linear_performance
+    pre = ->(i) {util_parser '# ' + '0'*i + '=000:'}
+    assert_linear_performance((1..5).map{|i|10**i}, pre: pre) do |parser|
+      assert_nil parser.read_directive []
+    end
   end
 
   def test_read_documentation_modifiers

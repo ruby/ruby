@@ -270,6 +270,7 @@ class Downloader
     end
     dest = (cache_save && cache && !cache.exist? ? cache : file)
     dest.parent.mkpath
+    dest.unlink if dest.symlink? && !dest.exist?
     dest.open("wb", 0600) do |f|
       f.write(data)
       f.chmod(mode_for(data))

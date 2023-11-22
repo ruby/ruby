@@ -1,0 +1,104 @@
+@ ProgramNode (location: (1,6)-(11,9))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,6)-(11,9))
+    └── body: (length: 3)
+        ├── @ DefNode (location: (1,6)-(3,9))
+        │   ├── name: :f
+        │   ├── name_loc: (1,10)-(1,11) = "f"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (2,8)-(2,17))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (2,8)-(2,17))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :g
+        │   │           ├── message_loc: (2,8)-(2,9) = "g"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (2,10)-(2,17))
+        │   │           │   ├── arguments: (length: 2)
+        │   │           │   │   ├── @ ParenthesesNode (location: (2,10)-(2,14))
+        │   │           │   │   │   ├── body:
+        │   │           │   │   │   │   @ StatementsNode (location: (2,12)-(2,13))
+        │   │           │   │   │   │   └── body: (length: 1)
+        │   │           │   │   │   │       └── @ IntegerNode (location: (2,12)-(2,13))
+        │   │           │   │   │   │           └── flags: decimal
+        │   │           │   │   │   ├── opening_loc: (2,10)-(2,11) = "("
+        │   │           │   │   │   └── closing_loc: (2,13)-(2,14) = ")"
+        │   │           │   │   └── @ IntegerNode (location: (2,16)-(2,17))
+        │   │           │   │       └── flags: decimal
+        │   │           │   └── flags: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           └── flags: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (1,6)-(1,9) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (3,6)-(3,9) = "end"
+        ├── @ DefNode (location: (6,6)-(8,9))
+        │   ├── name: :f
+        │   ├── name_loc: (6,10)-(6,11) = "f"
+        │   ├── receiver: ∅
+        │   ├── parameters: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (7,8)-(7,16))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (7,8)-(7,16))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :g
+        │   │           ├── message_loc: (7,8)-(7,9) = "g"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (7,10)-(7,16))
+        │   │           │   ├── arguments: (length: 2)
+        │   │           │   │   ├── @ ParenthesesNode (location: (7,10)-(7,13))
+        │   │           │   │   │   ├── body:
+        │   │           │   │   │   │   @ StatementsNode (location: (7,11)-(7,12))
+        │   │           │   │   │   │   └── body: (length: 1)
+        │   │           │   │   │   │       └── @ IntegerNode (location: (7,11)-(7,12))
+        │   │           │   │   │   │           └── flags: decimal
+        │   │           │   │   │   ├── opening_loc: (7,10)-(7,11) = "("
+        │   │           │   │   │   └── closing_loc: (7,12)-(7,13) = ")"
+        │   │           │   │   └── @ IntegerNode (location: (7,15)-(7,16))
+        │   │           │   │       └── flags: decimal
+        │   │           │   └── flags: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           └── flags: ∅
+        │   ├── locals: []
+        │   ├── def_keyword_loc: (6,6)-(6,9) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (6,11)-(6,12) = "("
+        │   ├── rparen_loc: (6,12)-(6,13) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (8,6)-(8,9) = "end"
+        └── @ CallNode (location: (11,0)-(11,9))
+            ├── receiver: ∅
+            ├── call_operator_loc: ∅
+            ├── name: :g
+            ├── message_loc: (11,0)-(11,1) = "g"
+            ├── opening_loc: ∅
+            ├── arguments:
+            │   @ ArgumentsNode (location: (11,2)-(11,9))
+            │   ├── arguments: (length: 2)
+            │   │   ├── @ ParenthesesNode (location: (11,2)-(11,6))
+            │   │   │   ├── body:
+            │   │   │   │   @ StatementsNode (location: (11,4)-(11,5))
+            │   │   │   │   └── body: (length: 1)
+            │   │   │   │       └── @ IntegerNode (location: (11,4)-(11,5))
+            │   │   │   │           └── flags: decimal
+            │   │   │   ├── opening_loc: (11,2)-(11,3) = "("
+            │   │   │   └── closing_loc: (11,5)-(11,6) = ")"
+            │   │   └── @ IntegerNode (location: (11,8)-(11,9))
+            │   │       └── flags: decimal
+            │   └── flags: ∅
+            ├── closing_loc: ∅
+            ├── block: ∅
+            └── flags: ∅

@@ -1,62 +1,56 @@
 class Numeric
-  #
+
   #  call-seq:
-  #     num.real?  ->  true or false
+  #    real? -> true or false
   #
-  #  Returns +true+ if +num+ is a real number (i.e. not Complex).
+  #  Returns +true+ if +self+ is a real number (i.e. not Complex).
   #
   def real?
     true
   end
 
-  #
   # call-seq:
-  #    num.real  ->  self
+  #   real -> self
   #
-  # Returns self.
+  # Returns +self+.
   #
   def real
     self
   end
 
-  #
   #  call-seq:
-  #     num.integer?  ->  true or false
+  #    integer? -> true or false
   #
-  #  Returns +true+ if +num+ is an Integer.
+  #  Returns +true+ if +self+ is an Integer.
   #
-  #      1.0.integer?   #=> false
-  #      1.integer?     #=> true
+  #    1.0.integer? # => false
+  #    1.integer?   # => true
   #
   def integer?
     false
   end
 
-  #
   #  call-seq:
-  #     num.finite?  ->  true or false
+  #    finite? -> true or false
   #
-  #  Returns +true+ if +num+ is a finite number, otherwise returns +false+.
+  #  Returns +true+ if +self+ is a finite number, +false+ otherwise.
   #
   def finite?
     true
   end
 
-  #
   #  call-seq:
-  #     num.infinite?  ->  -1, 1, or nil
+  #    infinite? -> -1, 1, or nil
   #
-  #  Returns +nil+, -1, or 1 depending on whether the value is
-  #  finite, <code>-Infinity</code>, or <code>+Infinity</code>.
+  #  Returns +nil+, -1, or 1 depending on whether +self+ is
+  #  finite, <tt>-Infinity</tt>, or <tt>+Infinity</tt>.
   #
   def infinite?
     nil
   end
 
-  #
   # call-seq:
-  #    num.imag       ->  0
-  #    num.imaginary  ->  0
+  #   imag -> 0
   #
   # Returns zero.
   #
@@ -66,12 +60,10 @@ class Numeric
 
   alias imag imaginary
 
-  #
   # call-seq:
-  #    num.conj       ->  self
-  #    num.conjugate  ->  self
+  #   conj -> self
   #
-  # Returns self.
+  # Returns +self+.
   #
   def conjugate
     self
@@ -82,323 +74,298 @@ end
 
 class Integer
   # call-seq:
-  #    -int  ->  integer
+  #    -int -> integer
   #
-  # Returns +int+, negated.
+  # Returns +self+, negated.
   def -@
-    Primitive.attr! 'inline'
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_int_uminus(self)'
   end
 
   # call-seq:
-  #   ~int  ->  integer
+  #   ~int -> integer
   #
-  # One's complement: returns a number where each bit is flipped.
+  # One's complement:
+  # returns the value of +self+ with each bit inverted.
   #
-  # Inverts the bits in an Integer. As integers are conceptually of
-  # infinite length, the result acts as if it had an infinite number of
-  # one bits to the left. In hex representations, this is displayed
-  # as two periods to the left of the digits.
+  # Because an integer value is conceptually of infinite length,
+  # the result acts as if it had an infinite number of
+  # one bits to the left.
+  # In hex representations, this is displayed
+  # as two periods to the left of the digits:
   #
-  #   sprintf("%X", ~0x1122334455)    #=> "..FEEDDCCBBAA"
+  #   sprintf("%X", ~0x1122334455)    # => "..FEEDDCCBBAA"
+  #
   def ~
-    Primitive.attr! 'inline'
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_int_comp(self)'
   end
 
   # call-seq:
-  #    int.abs        ->  integer
-  #    int.magnitude  ->  integer
+  #   abs -> integer
   #
-  # Returns the absolute value of +int+.
+  # Returns the absolute value of +self+.
   #
-  #    (-12345).abs   #=> 12345
-  #    -12345.abs     #=> 12345
-  #    12345.abs      #=> 12345
+  #   (-12345).abs # => 12345
+  #   -12345.abs   # => 12345
+  #   12345.abs    # => 12345
   #
-  # Integer#magnitude is an alias for Integer#abs.
   def abs
-    Primitive.attr! 'inline'
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_int_abs(self)'
   end
 
   # call-seq:
-  #    int.bit_length  ->  integer
+  #   bit_length -> integer
   #
-  # Returns the number of bits of the value of +int+.
-  #
-  # "Number of bits" means the bit position of the highest bit
-  # which is different from the sign bit
+  # Returns the number of bits of the value of +self+,
+  # which is the bit position of the highest-order bit
+  # that is different from the sign bit
   # (where the least significant bit has bit position 1).
-  # If there is no such bit (zero or minus one), zero is returned.
+  # If there is no such bit (zero or minus one), returns zero.
   #
-  # I.e. this method returns <i>ceil(log2(int < 0 ? -int : int+1))</i>.
+  # This method returns <tt>ceil(log2(self < 0 ? -self : self + 1))</tt>>.
   #
-  #    (-2**1000-1).bit_length   #=> 1001
-  #    (-2**1000).bit_length     #=> 1000
-  #    (-2**1000+1).bit_length   #=> 1000
-  #    (-2**12-1).bit_length     #=> 13
-  #    (-2**12).bit_length       #=> 12
-  #    (-2**12+1).bit_length     #=> 12
-  #    -0x101.bit_length         #=> 9
-  #    -0x100.bit_length         #=> 8
-  #    -0xff.bit_length          #=> 8
-  #    -2.bit_length             #=> 1
-  #    -1.bit_length             #=> 0
-  #    0.bit_length              #=> 0
-  #    1.bit_length              #=> 1
-  #    0xff.bit_length           #=> 8
-  #    0x100.bit_length          #=> 9
-  #    (2**12-1).bit_length      #=> 12
-  #    (2**12).bit_length        #=> 13
-  #    (2**12+1).bit_length      #=> 13
-  #    (2**1000-1).bit_length    #=> 1000
-  #    (2**1000).bit_length      #=> 1001
-  #    (2**1000+1).bit_length    #=> 1001
+  #   (-2**1000-1).bit_length   # => 1001
+  #   (-2**1000).bit_length     # => 1000
+  #   (-2**1000+1).bit_length   # => 1000
+  #   (-2**12-1).bit_length     # => 13
+  #   (-2**12).bit_length       # => 12
+  #   (-2**12+1).bit_length     # => 12
+  #   -0x101.bit_length         # => 9
+  #   -0x100.bit_length         # => 8
+  #   -0xff.bit_length          # => 8
+  #   -2.bit_length             # => 1
+  #   -1.bit_length             # => 0
+  #   0.bit_length              # => 0
+  #   1.bit_length              # => 1
+  #   0xff.bit_length           # => 8
+  #   0x100.bit_length          # => 9
+  #   (2**12-1).bit_length      # => 12
+  #   (2**12).bit_length        # => 13
+  #   (2**12+1).bit_length      # => 13
+  #   (2**1000-1).bit_length    # => 1000
+  #   (2**1000).bit_length      # => 1001
+  #   (2**1000+1).bit_length    # => 1001
   #
-  # This method can be used to detect overflow in Array#pack as follows:
+  # For \Integer _n_,
+  # this method can be used to detect overflow in Array#pack:
   #
-  #    if n.bit_length < 32
-  #      [n].pack("l") # no overflow
-  #    else
-  #      raise "overflow"
-  #    end
+  #   if n.bit_length < 32
+  #     [n].pack('l') # No overflow.
+  #   else
+  #     raise 'Overflow'
+  #   end
+  #
   def bit_length
-    Primitive.attr! 'inline'
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_int_bit_length(self)'
   end
 
   #  call-seq:
-  #     int.even?  ->  true or false
+  #    even? -> true or false
   #
-  #  Returns +true+ if +int+ is an even number.
+  #  Returns +true+ if +self+ is an even number, +false+ otherwise.
   def even?
-    Primitive.attr! 'inline'
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_int_even_p(self)'
   end
 
   #  call-seq:
-  #     int.integer?  ->  true
+  #    integer? -> true
   #
-  #  Since +int+ is already an Integer, this always returns +true+.
+  #  Since +self+ is already an \Integer, always returns +true+.
   def integer?
     true
   end
 
   alias magnitude abs
-=begin
-  def magnitude
-    Primitive.attr! 'inline'
-    Primitive.cexpr! 'rb_int_abs(self)'
-  end
-=end
 
   #  call-seq:
-  #     int.odd?  ->  true or false
+  #    odd? -> true or false
   #
-  #  Returns +true+ if +int+ is an odd number.
+  #  Returns +true+ if +self+ is an odd number, +false+ otherwise.
   def odd?
-    Primitive.attr! 'inline'
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_int_odd_p(self)'
   end
 
   #  call-seq:
-  #     int.ord  ->  self
+  #    ord -> self
   #
-  #  Returns the +int+ itself.
-  #
-  #     97.ord   #=> 97
-  #
-  #  This method is intended for compatibility to character literals
-  #  in Ruby 1.9.
-  #
-  #  For example, <code>?a.ord</code> returns 97 both in 1.8 and 1.9.
+  #  Returns +self+;
+  #  intended for compatibility to character literals in Ruby 1.9.
   def ord
     self
   end
 
-  #
-  #  Document-method: Integer#size
   #  call-seq:
-  #     int.size  ->  int
+  #    size -> integer
   #
-  #  Returns the number of bytes in the machine representation of +int+
-  #  (machine dependent).
+  #  Returns the number of bytes in the machine representation of +self+;
+  #  the value is system-dependent:
   #
-  #     1.size               #=> 8
-  #     -1.size              #=> 8
-  #     2147483647.size      #=> 8
-  #     (256**10 - 1).size   #=> 10
-  #     (256**20 - 1).size   #=> 20
-  #     (256**40 - 1).size   #=> 40
+  #    1.size             # => 8
+  #    -1.size            # => 8
+  #    2147483647.size    # => 8
+  #    (256**10 - 1).size # => 10
+  #    (256**20 - 1).size # => 20
+  #    (256**40 - 1).size # => 40
   #
   def size
-    Primitive.attr! 'inline'
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_int_size(self)'
   end
 
+  # call-seq:
+  #   times {|i| ... } -> self
+  #   times            -> enumerator
+  #
+  # Calls the given block +self+ times with each integer in <tt>(0..self-1)</tt>:
+  #
+  #   a = []
+  #   5.times {|i| a.push(i) } # => 5
+  #   a                        # => [0, 1, 2, 3, 4]
+  #
+  # With no block given, returns an Enumerator.
+  def times
+    unless block_given?
+      return to_enum(:times) { self < 0 ? 0 : self }
+    end
+    i = 0
+    while i < self
+      yield i
+      i = i.succ
+    end
+    self
+  end
+
   #  call-seq:
-  #     int.to_i    ->  integer
+  #    to_i -> self
   #
-  #  Since +int+ is already an Integer, returns +self+.
-  #
-  #  #to_int is an alias for #to_i.
+  #  Returns +self+ (which is already an \Integer).
   def to_i
     self
   end
 
   #  call-seq:
-  #     int.to_int  ->  integer
+  #    to_int -> self
   #
-  #  Since +int+ is already an Integer, returns +self+.
+  #  Returns +self+ (which is already an \Integer).
   def to_int
     self
   end
 
   # call-seq:
-  #    int.zero? -> true or false
+  #   zero? -> true or false
   #
-  # Returns +true+ if +int+ has a zero value.
+  # Returns +true+ if +self+ has a zero value, +false+ otherwise.
   def zero?
-    Primitive.attr! 'inline'
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_int_zero_p(self)'
   end
 
   #  call-seq:
-  #    ceildiv(other) -> integer
+  #    ceildiv(numeric) -> integer
   #
-  #  Returns the result of division +self+ by +other+. The result is rounded up to the nearest integer.
+  #  Returns the result of division +self+ by +numeric+.
+  #  rounded up to the nearest integer.
   #
-  #    3.ceildiv(3) # => 1
-  #    4.ceildiv(3) # => 2
+  #    3.ceildiv(3)   # => 1
+  #    4.ceildiv(3)   # => 2
   #
-  #    4.ceildiv(-3) # => -1
-  #    -4.ceildiv(3) # => -1
+  #    4.ceildiv(-3)  # => -1
+  #    -4.ceildiv(3)  # => -1
   #    -4.ceildiv(-3) # => 2
   #
   #    3.ceildiv(1.2) # => 3
+  #
   def ceildiv(other)
-    -div(-other)
+    -div(0 - other)
   end
 
   #
   # call-seq:
-  #    int.numerator  ->  self
+  #   numerator -> self
   #
-  # Returns self.
+  # Returns +self+.
   #
   def numerator
     self
   end
 
-  #
   # call-seq:
-  #    int.denominator  ->  1
+  #   denominator -> 1
   #
-  # Returns 1.
-  #
+  # Returns +1+.
   def denominator
     1
   end
 end
 
-#  call-seq:
-#    Integer.try_convert(object) -> object, integer, or nil
-#
-#  If +object+ is an \Integer object, returns +object+.
-#    Integer.try_convert(1) # => 1
-#
-#  Otherwise if +object+ responds to <tt>:to_int</tt>,
-#  calls <tt>object.to_int</tt> and returns the result.
-#    Integer.try_convert(1.25) # => 1
-#
-#  Returns +nil+ if +object+ does not respond to <tt>:to_int</tt>
-#    Integer.try_convert([]) # => nil
-#
-#  Raises an exception unless <tt>object.to_int</tt> returns an \Integer object.
-#
-def Integer.try_convert(num)
-=begin
-  Primitive.attr! 'inline'
-  Primitive.cexpr! 'rb_check_integer_type(num)'
-=end
-end if false
-
 class Float
-  #
+
   # call-seq:
-  #    float.to_f  ->  self
+  #   to_f -> self
   #
-  # Since +float+ is already a Float, returns +self+.
-  #
+  #  Returns +self+ (which is already a \Float).
   def to_f
     self
   end
 
-  #
   #  call-seq:
-  #     float.abs        ->  float
-  #     float.magnitude  ->  float
+  #    float.abs ->  float
   #
-  #  Returns the absolute value of +float+.
+  #  Returns the absolute value of +self+:
   #
-  #     (-34.56).abs   #=> 34.56
-  #     -34.56.abs     #=> 34.56
-  #     34.56.abs      #=> 34.56
-  #
-  #  Float#magnitude is an alias for Float#abs.
+  #    (-34.56).abs # => 34.56
+  #    -34.56.abs   # => 34.56
+  #    34.56.abs    # => 34.56
   #
   def abs
-    Primitive.attr! 'inline'
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_float_abs(self)'
   end
 
   def magnitude
-    Primitive.attr! 'inline'
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_float_abs(self)'
   end
 
-  #
   # call-seq:
-  #    -float  ->  float
+  #   -float -> float
   #
-  # Returns +float+, negated.
+  # Returns +self+, negated.
   #
   def -@
-    Primitive.attr! 'inline'
+    Primitive.attr! :leaf
     Primitive.cexpr! 'rb_float_uminus(self)'
   end
 
-  #
   #  call-seq:
-  #     float.zero?  ->  true or false
+  #    zero? -> true or false
   #
-  #  Returns +true+ if +float+ is 0.0.
-  #
+  #  Returns +true+ if +self+ is 0.0, +false+ otherwise.
   def zero?
-    Primitive.attr! 'inline'
+    Primitive.attr! :leaf
     Primitive.cexpr! 'RBOOL(FLOAT_ZERO_P(self))'
   end
 
-  #
   #  call-seq:
-  #     float.positive?  ->  true or false
+  #    positive? -> true or false
   #
-  #  Returns +true+ if +float+ is greater than 0.
-  #
+  #  Returns +true+ if +self+ is greater than 0, +false+ otherwise.
   def positive?
-    Primitive.attr! 'inline'
+    Primitive.attr! :leaf
     Primitive.cexpr! 'RBOOL(RFLOAT_VALUE(self) > 0.0)'
   end
 
-  #
   #  call-seq:
-  #     float.negative?  ->  true or false
+  #    negative? -> true or false
   #
-  #  Returns +true+ if +float+ is less than 0.
-  #
+  #  Returns +true+ if +self+ is less than 0, +false+ otherwise.
   def negative?
-    Primitive.attr! 'inline'
+    Primitive.attr! :leaf
     Primitive.cexpr! 'RBOOL(RFLOAT_VALUE(self) < 0.0)'
   end
 

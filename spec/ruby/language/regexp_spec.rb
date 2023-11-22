@@ -18,10 +18,8 @@ describe "Literal Regexps" do
     /Hello/.should be_kind_of(Regexp)
   end
 
-  ruby_version_is "3.0" do
-    it "is frozen" do
-      /Hello/.should.frozen?
-    end
+  it "is frozen" do
+    /Hello/.should.frozen?
   end
 
   it "caches the Regexp object" do
@@ -114,7 +112,7 @@ describe "Literal Regexps" do
     /foo.(?<=\d)/.match("fooA foo1").to_a.should == ["foo1"]
   end
 
-  ruby_bug "#13671", ""..."3.3" do # https://bugs.ruby-lang.org/issues/13671
+  ruby_bug "#13671", ""..."3.4" do # https://bugs.ruby-lang.org/issues/13671
     it "handles a lookbehind with ss characters" do
       r =  Regexp.new("(?<!dss)", Regexp::IGNORECASE)
       r.should =~ "✨"

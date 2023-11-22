@@ -3,10 +3,7 @@ require 'test/unit'
 require 'uri/https'
 require 'uri/wss'
 
-module URI
-
-
-class TestWSS < Test::Unit::TestCase
+class URI::TestWSS < Test::Unit::TestCase
   def setup
   end
 
@@ -65,7 +62,4 @@ class TestWSS < Test::Unit::TestCase
       u.select(:scheme, :host, :not_exist, :port)
     end
   end
-end
-
-
 end

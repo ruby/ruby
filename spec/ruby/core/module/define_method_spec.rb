@@ -133,6 +133,17 @@ describe "Module#define_method when name is not a special private name" do
         klass.should have_public_instance_method(:baz)
       end
     end
+
+    it "sets the method owner for a dynamically added method with a different original owner" do
+      mixin_module = Module.new do
+        def bar; end
+      end
+
+      foo = Object.new
+      foo.singleton_class.define_method(:bar, mixin_module.instance_method(:bar))
+
+      foo.method(:bar).owner.should == foo.singleton_class
+    end
   end
 
   describe "passed a block" do
@@ -488,6 +499,33 @@ describe "Module#define_method" do
       Class.new { define_method :bar, m }
     }.should raise_error(TypeError, /can't bind singleton method to a different class/)
   end
+
+  it "defines a new method with public visibility when a Method passed and the class/module of the context isn't equal to the receiver of #define_method" do
+    c = Class.new do
+      private def foo
+        "public"
+      end
+    end
+
+    object = c.new
+    object.singleton_class.define_method(:bar, object.method(:foo))
+
+    object.bar.should == "public"
+  end
+
+  it "defines the new method according to the scope visibility when a Method passed and the class/module of the context is equal to the receiver of #define_method" do
+    c = Class.new do
+      def foo; end
+    end
+
+    object = c.new
+    object.singleton_class.class_eval do
+      private
+      define_method(:bar, c.new.method(:foo))
+    end
+
+    -> { object.bar }.should raise_error(NoMethodError)
+  end
 end
 
 describe "Module#define_method" do
@@ -686,7 +724,7 @@ describe "Module#define_method" do
   end
 end
 
-describe "Method#define_method when passed a Method object" do
+describe "Module#define_method when passed a Method object" do
   before :each do
     @klass = Class.new do
       def m(a, b, *c)
@@ -711,7 +749,7 @@ describe "Method#define_method when passed a Method object" do
   end
 end
 
-describe "Method#define_method when passed an UnboundMethod object" do
+describe "Module#define_method when passed an UnboundMethod object" do
   before :each do
     @klass = Class.new do
       def m(a, b, *c)
@@ -736,7 +774,7 @@ describe "Method#define_method when passed an UnboundMethod object" do
   end
 end
 
-describe "Method#define_method when passed a Proc object" do
+describe "Module#define_method when passed a Proc object" do
   describe "and a method is defined inside" do
     it "defines the nested method in the default definee where the Proc was created" do
       prc = nil
@@ -761,7 +799,7 @@ describe "Method#define_method when passed a Proc object" do
   end
 end
 
-describe "Method#define_method when passed a block" do
+describe "Module#define_method when passed a block" do
   describe "behaves exactly like a lambda" do
     it "for return" do
       Class.new do

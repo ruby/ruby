@@ -1,0 +1,27 @@
+@ ProgramNode (location: (1,0)-(8,4))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(8,4))
+    └── body: (length: 2)
+        ├── @ StringNode (location: (1,0)-(1,4))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (1,0)-(1,4) = "<<-E"
+        │   ├── content_loc: (2,0)-(5,0) = "    1 \\\n    2\n    3\n"
+        │   ├── closing_loc: (5,0)-(6,0) = "E\n"
+        │   └── unescaped: "    1     2\n    3\n"
+        └── @ InterpolatedStringNode (location: (8,0)-(8,4))
+            ├── opening_loc: (8,0)-(8,4) = "<<~E"
+            ├── parts: (length: 2)
+            │   ├── @ StringNode (location: (9,0)-(11,0))
+            │   │   ├── flags: ∅
+            │   │   ├── opening_loc: ∅
+            │   │   ├── content_loc: (9,0)-(11,0) = "    1 \\\n    2\n"
+            │   │   ├── closing_loc: ∅
+            │   │   └── unescaped: "1     2\n"
+            │   └── @ StringNode (location: (11,0)-(12,0))
+            │       ├── flags: ∅
+            │       ├── opening_loc: ∅
+            │       ├── content_loc: (11,0)-(12,0) = "    3\n"
+            │       ├── closing_loc: ∅
+            │       └── unescaped: "3\n"
+            └── closing_loc: (12,0)-(13,0) = "E\n"

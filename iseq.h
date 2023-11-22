@@ -11,6 +11,7 @@
 
 **********************************************************************/
 #include "internal/gc.h"
+#include "shape.h"
 #include "vm_core.h"
 
 RUBY_EXTERN const int ruby_api_version[];
@@ -82,9 +83,10 @@ ISEQ_ORIGINAL_ISEQ_ALLOC(const rb_iseq_t *iseq, long size)
                            RUBY_EVENT_CALL  | \
                            RUBY_EVENT_RETURN| \
                            RUBY_EVENT_C_CALL| \
-                           RUBY_EVENT_C_RETURN| \
-                           RUBY_EVENT_B_CALL| \
-                           RUBY_EVENT_B_RETURN| \
+                           RUBY_EVENT_C_RETURN | \
+                           RUBY_EVENT_B_CALL   | \
+                           RUBY_EVENT_B_RETURN | \
+                           RUBY_EVENT_RESCUE   | \
                            RUBY_EVENT_COVERAGE_LINE| \
                            RUBY_EVENT_COVERAGE_BRANCH)
 
@@ -125,6 +127,7 @@ struct iseq_compile_data {
     struct rb_id_table *ivar_cache_table;
     const struct rb_builtin_function *builtin_function_table;
     const NODE *root_node;
+    bool catch_except_p; // If a frame of this ISeq may catch exception, set true.
 #if OPT_SUPPORT_JOKE
     st_table *labels_table;
 #endif
@@ -186,7 +189,7 @@ VALUE *rb_iseq_original_iseq(const rb_iseq_t *iseq);
 void rb_iseq_build_from_ary(rb_iseq_t *iseq, VALUE misc,
                             VALUE locals, VALUE args,
                             VALUE exception, VALUE body);
-void rb_iseq_mark_insn_storage(struct iseq_compile_data_storage *arena);
+void rb_iseq_mark_and_move_insn_storage(struct iseq_compile_data_storage *arena);
 
 VALUE rb_iseq_load(VALUE data, VALUE parent, VALUE opt);
 VALUE rb_iseq_parameters(const rb_iseq_t *iseq, int is_proc);
@@ -224,7 +227,6 @@ struct rb_compile_option_struct {
     unsigned int specialized_instruction: 1;
     unsigned int operands_unification: 1;
     unsigned int instructions_unification: 1;
-    unsigned int stack_caching: 1;
     unsigned int frozen_string_literal: 1;
     unsigned int debug_frozen_string_literal: 1;
     unsigned int coverage_enabled: 1;
@@ -270,10 +272,11 @@ struct iseq_catch_table_entry {
     unsigned int sp;
 };
 
-PACKED_STRUCT_UNALIGNED(struct iseq_catch_table {
+RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_BEGIN()
+struct iseq_catch_table {
     unsigned int size;
     struct iseq_catch_table_entry entries[FLEX_ARY_LEN];
-});
+} RBIMPL_ATTR_PACKED_STRUCT_UNALIGNED_END();
 
 static inline int
 iseq_catch_table_bytes(int n)
@@ -323,6 +326,8 @@ VALUE rb_iseq_defined_string(enum defined_type type);
 
 /* vm.c */
 VALUE rb_iseq_local_variables(const rb_iseq_t *iseq);
+
+attr_index_t rb_estimate_iv_count(VALUE klass, const rb_iseq_t * initialize_iseq);
 
 RUBY_SYMBOL_EXPORT_END
 

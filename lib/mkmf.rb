@@ -89,26 +89,16 @@ module MakeMakefile
 
   unless defined? $configure_args
     $configure_args = {}
-    args = CONFIG["configure_args"]
-    if ENV["CONFIGURE_ARGS"]
-      args << " " << ENV["CONFIGURE_ARGS"]
+    args = CONFIG["configure_args"].shellsplit
+    if arg = ENV["CONFIGURE_ARGS"]
+      args.push(*arg.shellsplit)
     end
-    for arg in Shellwords::shellwords(args)
+    args.delete_if {|a| /\A--(?:top(?:src)?|src|cur)dir(?=\z|=)/ =~ a}
+    for arg in args.concat(ARGV)
       arg, val = arg.split('=', 2)
       next unless arg
       arg.tr!('_', '-')
-      if arg.sub!(/^(?!--)/, '--')
-        val or next
-        arg.downcase!
-      end
-      next if /^--(?:top|topsrc|src|cur)dir$/ =~ arg
-      $configure_args[arg] = val || true
-    end
-    for arg in ARGV
-      arg, val = arg.split('=', 2)
-      next unless arg
-      arg.tr!('_', '-')
-      if arg.sub!(/^(?!--)/, '--')
+      if arg.sub!(/\A(?!--)/, '--')
         val or next
         arg.downcase!
       end
@@ -981,7 +971,11 @@ SRC
   # Internal use only.
   #
   def checking_for(m, fmt = nil)
-    f = caller[0][/in `([^<].*)'$/, 1] and f << ": " #` for vim #'
+    if f = caller_locations(1, 1).first.base_label and /\A\w/ =~ f
+      f += ": "
+    else
+      f = ""
+    end
     m = "checking #{/\Acheck/ =~ f ? '' : 'for '}#{m}... "
     message "%s", m
     a = r = nil
@@ -1798,7 +1792,8 @@ SRC
   # application.
   #
   def dir_config(target, idefault=nil, ldefault=nil)
-    if conf = $config_dirs[target]
+    key = [target, idefault, ldefault].compact.join("\0")
+    if conf = $config_dirs[key]
       return conf
     end
 
@@ -1808,9 +1803,13 @@ SRC
     end
 
     idir = with_config(target + "-include", idefault)
-    $arg_config.last[1] ||= "${#{target}-dir}/include"
+    if conf = $arg_config.assoc("--with-#{target}-include")
+      conf[1] ||= "${#{target}-dir}/include"
+    end
     ldir = with_config(target + "-lib", ldefault)
-    $arg_config.last[1] ||= "${#{target}-dir}/#{_libdir_basename}"
+    if conf = $arg_config.assoc("--with-#{target}-lib")
+      conf[1] ||= "${#{target}-dir}/#{_libdir_basename}"
+    end
 
     idirs = idir ? Array === idir ? idir.dup : idir.split(File::PATH_SEPARATOR) : []
     if defaults
@@ -1832,7 +1831,7 @@ SRC
     end
     $LIBPATH = ldirs | $LIBPATH
 
-    $config_dirs[target] = [idir, ldir]
+    $config_dirs[key] = [idir, ldir]
   end
 
   # Returns compile/link information about an installed library in a tuple of <code>[cflags,
@@ -1855,66 +1854,73 @@ SRC
   # invoked with the options and a stripped output string is returned without
   # modifying any of the global values mentioned above.
   def pkg_config(pkg, *options)
-    _, ldir = dir_config(pkg)
-    if ldir
-      pkg_config_path = "#{ldir}/pkgconfig"
-      if File.directory?(pkg_config_path)
-        Logging.message("PKG_CONFIG_PATH = %s\n", pkg_config_path)
-        envs = ["PKG_CONFIG_PATH"=>[pkg_config_path, ENV["PKG_CONFIG_PATH"]].compact.join(File::PATH_SEPARATOR)]
-      end
+    fmt = "not found"
+    def fmt.%(x)
+      x ? x.inspect : self
     end
-    if pkgconfig = with_config("#{pkg}-config") and find_executable0(pkgconfig)
-      # if and only if package specific config command is given
-    elsif ($PKGCONFIG ||=
-           (pkgconfig = with_config("pkg-config") {config_string("PKG_CONFIG") || "pkg-config"}) &&
-           find_executable0(pkgconfig) && pkgconfig) and
-        xsystem([*envs, $PKGCONFIG, "--exists", pkg])
-      # default to pkg-config command
-      pkgconfig = $PKGCONFIG
-      args = [pkg]
-    elsif find_executable0(pkgconfig = "#{pkg}-config")
-      # default to package specific config command, as a last resort.
-    else
-      pkgconfig = nil
-    end
-    if pkgconfig
-      get = proc {|opts|
-        opts = Array(opts).map { |o| "--#{o}" }
-        opts = xpopen([*envs, pkgconfig, *opts, *args], err:[:child, :out], &:read)
-        Logging.open {puts opts.each_line.map{|s|"=> #{s.inspect}"}}
-        opts.strip if $?.success?
-      }
-    end
-    orig_ldflags = $LDFLAGS
-    if get and !options.empty?
-      get[options]
-    elsif get and try_ldflags(ldflags = get['libs'])
-      if incflags = get['cflags-only-I']
-        $INCFLAGS << " " << incflags
-        cflags = get['cflags-only-other']
-      else
-        cflags = get['cflags']
-      end
-      libs = get['libs-only-l']
-      if cflags
-        $CFLAGS += " " << cflags
-        $CXXFLAGS += " " << cflags
-      end
-      if libs
-        ldflags = (Shellwords.shellwords(ldflags) - Shellwords.shellwords(libs)).quote.join(" ")
-      else
-        libs, ldflags = Shellwords.shellwords(ldflags).partition {|s| s =~ /-l([^ ]+)/ }.map {|l|l.quote.join(" ")}
-      end
-      $libs += " " << libs
 
-      $LDFLAGS = [orig_ldflags, ldflags].join(' ')
-      Logging::message "package configuration for %s\n", pkg
-      Logging::message "incflags: %s\ncflags: %s\nldflags: %s\nlibs: %s\n\n",
-                       incflags, cflags, ldflags, libs
-      [[incflags, cflags].join(' '), ldflags, libs]
-    else
-      Logging::message "package configuration for %s is not found\n", pkg
-      nil
+    checking_for "pkg-config for #{pkg}", fmt do
+      _, ldir = dir_config(pkg)
+      if ldir
+        pkg_config_path = "#{ldir}/pkgconfig"
+        if File.directory?(pkg_config_path)
+          Logging.message("PKG_CONFIG_PATH = %s\n", pkg_config_path)
+          envs = ["PKG_CONFIG_PATH"=>[pkg_config_path, ENV["PKG_CONFIG_PATH"]].compact.join(File::PATH_SEPARATOR)]
+        end
+      end
+      if pkgconfig = with_config("#{pkg}-config") and find_executable0(pkgconfig)
+      # if and only if package specific config command is given
+      elsif ($PKGCONFIG ||=
+             (pkgconfig = with_config("pkg-config") {config_string("PKG_CONFIG") || "pkg-config"}) &&
+             find_executable0(pkgconfig) && pkgconfig) and
+           xsystem([*envs, $PKGCONFIG, "--exists", pkg])
+        # default to pkg-config command
+        pkgconfig = $PKGCONFIG
+        args = [pkg]
+      elsif find_executable0(pkgconfig = "#{pkg}-config")
+      # default to package specific config command, as a last resort.
+      else
+        pkgconfig = nil
+      end
+      if pkgconfig
+        get = proc {|opts|
+          opts = Array(opts).map { |o| "--#{o}" }
+          opts = xpopen([*envs, pkgconfig, *opts, *args], err:[:child, :out], &:read)
+          Logging.open {puts opts.each_line.map{|s|"=> #{s.inspect}"}}
+          opts.strip if $?.success?
+        }
+      end
+      orig_ldflags = $LDFLAGS
+      if get and !options.empty?
+        get[options]
+      elsif get and try_ldflags(ldflags = get['libs'])
+        if incflags = get['cflags-only-I']
+          $INCFLAGS << " " << incflags
+          cflags = get['cflags-only-other']
+        else
+          cflags = get['cflags']
+        end
+        libs = get['libs-only-l']
+        if cflags
+          $CFLAGS += " " << cflags
+          $CXXFLAGS += " " << cflags
+        end
+        if libs
+          ldflags = (Shellwords.shellwords(ldflags) - Shellwords.shellwords(libs)).quote.join(" ")
+        else
+          libs, ldflags = Shellwords.shellwords(ldflags).partition {|s| s =~ /-l([^ ]+)/ }.map {|l|l.quote.join(" ")}
+        end
+        $libs += " " << libs
+
+        $LDFLAGS = [orig_ldflags, ldflags].join(' ')
+        Logging::message "package configuration for %s\n", pkg
+        Logging::message "incflags: %s\ncflags: %s\nldflags: %s\nlibs: %s\n\n",
+                         incflags, cflags, ldflags, libs
+        [[incflags, cflags].join(' '), ldflags, libs]
+      else
+        Logging::message "package configuration for %s is not found\n", pkg
+        nil
+      end
     end
   end
 
@@ -1964,14 +1970,14 @@ SRC
 
   def configuration(srcdir)
     mk = []
-    CONFIG['MKMF_VERBOSE'] ||= "0"
+    verbose = with_config('verbose') ?  "1" : (CONFIG['MKMF_VERBOSE'] || "0")
     vpath = $VPATH.dup
     CONFIG["hdrdir"] ||= $hdrdir
     mk << %{
 SHELL = /bin/sh
 
 # V=0 quiet, V=1 verbose.  other values don't work.
-V = #{CONFIG['MKMF_VERBOSE']}
+V = #{verbose}
 V0 = $(V:0=)
 Q1 = $(V:1=)
 Q = $(Q1:0=@)
@@ -2698,7 +2704,7 @@ MESSAGE
   when $mswin
     $nmake = ?m if /nmake/i =~ make
   end
-  $ignore_error = $nmake ? '' : ' 2> /dev/null || true'
+  $ignore_error = " 2> #{File::NULL} || #{$mswin ? 'exit /b0' : 'true'}"
 
   RbConfig::CONFIG["srcdir"] = CONFIG["srcdir"] =
     $srcdir = arg_config("--srcdir", File.dirname($0))

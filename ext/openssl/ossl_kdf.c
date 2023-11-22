@@ -21,7 +21,7 @@ static VALUE mKDF, eKDF;
  * (https://tools.ietf.org/html/rfc2898#section-5.2).
  *
  * === Parameters
- * pass       :: The passphrase.
+ * pass       :: The password.
  * salt       :: The salt. Salts prevent attacks based on dictionaries of common
  *               passwords and attacks based on rainbow tables. It is a public
  *               value that can be safely stored along with the password (e.g.

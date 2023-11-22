@@ -28,6 +28,10 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
   s.homepage = "https://ruby.github.io/rdoc"
   s.licenses = ["Ruby"]
 
+  s.metadata["homepage_uri"] = s.homepage
+  s.metadata["source_code_uri"] = "https://github.com/ruby/rdoc"
+  s.metadata["changelog_uri"] = "#{s.metadata["source_code_uri"]}/releases"
+
   s.bindir = "exe"
   s.executables = ["rdoc", "ri"]
   s.require_paths = ["lib"]
@@ -226,7 +230,7 @@ RDoc includes the +rdoc+ and +ri+ tools for generating and displaying documentat
   s.rdoc_options = ["--main", "README.rdoc"]
   s.extra_rdoc_files += s.files.grep(%r[\A[^\/]+\.(?:rdoc|md)\z])
 
-  s.required_ruby_version = Gem::Requirement.new(">= 2.5.0")
+  s.required_ruby_version = Gem::Requirement.new(">= 2.6.0")
   s.required_rubygems_version = Gem::Requirement.new(">= 2.2")
 
   s.add_dependency 'psych', '>= 4.0.0'

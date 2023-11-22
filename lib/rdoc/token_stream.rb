@@ -105,7 +105,7 @@ module RDoc::TokenStream
   # Current token stream
 
   def token_stream
-    @token_stream
+    @token_stream || []
   end
 
   ##
@@ -116,4 +116,3 @@ module RDoc::TokenStream
   end
 
 end
-

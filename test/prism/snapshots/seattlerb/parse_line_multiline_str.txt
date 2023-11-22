@@ -1,0 +1,13 @@
+@ ProgramNode (location: (1,0)-(3,1))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(3,1))
+    └── body: (length: 2)
+        ├── @ StringNode (location: (1,0)-(2,2))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (1,0)-(1,1) = "\""
+        │   ├── content_loc: (1,1)-(2,1) = "a\nb"
+        │   ├── closing_loc: (2,1)-(2,2) = "\""
+        │   └── unescaped: "a\nb"
+        └── @ IntegerNode (location: (3,0)-(3,1))
+            └── flags: decimal

@@ -63,6 +63,9 @@ class TestOptionParser < Test::Unit::TestCase
     assert_equal(/foo/i, @reopt)
     assert_equal(%w"", no_error {@opt.parse!(%w"--regexp=/foo/n")})
     assert_equal(/foo/n, @reopt)
+    assert_equal(%w"", no_error {@opt.parse!(%W"--regexp=/\u{3042}/s")})
+    assert_equal(Encoding::Windows_31J, @reopt.encoding)
+    assert_equal("\x82\xa0".force_encoding(Encoding::Windows_31J), @reopt.source)
   end
 
   def test_into

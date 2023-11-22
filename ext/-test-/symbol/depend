@@ -52,6 +52,7 @@ init.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 init.o: $(hdrdir)/ruby/internal/attr/noinline.h
 init.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 init.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+init.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 init.o: $(hdrdir)/ruby/internal/attr/pure.h
 init.o: $(hdrdir)/ruby/internal/attr/restrict.h
 init.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 init.o: $(hdrdir)/ruby/internal/intern/error.h
 init.o: $(hdrdir)/ruby/internal/intern/eval.h
 init.o: $(hdrdir)/ruby/internal/intern/file.h
-init.o: $(hdrdir)/ruby/internal/intern/gc.h
 init.o: $(hdrdir)/ruby/internal/intern/hash.h
 init.o: $(hdrdir)/ruby/internal/intern/io.h
 init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ init.o: $(hdrdir)/ruby/internal/memory.h
 init.o: $(hdrdir)/ruby/internal/method.h
 init.o: $(hdrdir)/ruby/internal/module.h
 init.o: $(hdrdir)/ruby/internal/newobj.h
-init.o: $(hdrdir)/ruby/internal/rgengc.h
 init.o: $(hdrdir)/ruby/internal/scan_args.h
 init.o: $(hdrdir)/ruby/internal/special_consts.h
 init.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -212,6 +211,7 @@ type.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 type.o: $(hdrdir)/ruby/internal/attr/noinline.h
 type.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 type.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+type.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 type.o: $(hdrdir)/ruby/internal/attr/pure.h
 type.o: $(hdrdir)/ruby/internal/attr/restrict.h
 type.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -271,7 +271,6 @@ type.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 type.o: $(hdrdir)/ruby/internal/intern/error.h
 type.o: $(hdrdir)/ruby/internal/intern/eval.h
 type.o: $(hdrdir)/ruby/internal/intern/file.h
-type.o: $(hdrdir)/ruby/internal/intern/gc.h
 type.o: $(hdrdir)/ruby/internal/intern/hash.h
 type.o: $(hdrdir)/ruby/internal/intern/io.h
 type.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -302,7 +301,6 @@ type.o: $(hdrdir)/ruby/internal/memory.h
 type.o: $(hdrdir)/ruby/internal/method.h
 type.o: $(hdrdir)/ruby/internal/module.h
 type.o: $(hdrdir)/ruby/internal/newobj.h
-type.o: $(hdrdir)/ruby/internal/rgengc.h
 type.o: $(hdrdir)/ruby/internal/scan_args.h
 type.o: $(hdrdir)/ruby/internal/special_consts.h
 type.o: $(hdrdir)/ruby/internal/static_assert.h

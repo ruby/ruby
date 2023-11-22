@@ -48,4 +48,8 @@ describe "Pathname#relative_path_from" do
     relative_path_str('..', '..').should == '.'
     relative_path_str('..', '.').should == '..'
   end
+
+  it 'converts string argument to Pathname' do
+    Pathname.new('/usr/bin/ls').relative_path_from('/usr').to_s.should == 'bin/ls'
+  end
 end

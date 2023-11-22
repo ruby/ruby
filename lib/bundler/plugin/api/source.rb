@@ -39,7 +39,7 @@ module Bundler
       #     is present to be compatible with `Definition` and is used by
       #     rubygems source.
       module Source
-        attr_reader :uri, :options, :name
+        attr_reader :uri, :options, :name, :checksum_store
         attr_accessor :dependency_names
 
         def initialize(opts)
@@ -48,6 +48,7 @@ module Bundler
           @uri = opts["uri"]
           @type = opts["type"]
           @name = opts["name"] || "#{@type} at #{@uri}"
+          @checksum_store = Checksum::Store.new
         end
 
         # This is used by the default `spec` method to constructs the

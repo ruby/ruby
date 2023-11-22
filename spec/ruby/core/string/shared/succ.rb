@@ -59,20 +59,14 @@ describe :string_succ, shared: true do
     "\xFF\xFF".send(@method).should == "\x01\x00\x00"
   end
 
-  ruby_version_is ''...'3.0' do
-    it "returns subclass instances when called on a subclass" do
-      StringSpecs::MyString.new("").send(@method).should be_an_instance_of(StringSpecs::MyString)
-      StringSpecs::MyString.new("a").send(@method).should be_an_instance_of(StringSpecs::MyString)
-      StringSpecs::MyString.new("z").send(@method).should be_an_instance_of(StringSpecs::MyString)
-    end
+  it "returns String instances when called on a subclass" do
+    StringSpecs::MyString.new("").send(@method).should be_an_instance_of(String)
+    StringSpecs::MyString.new("a").send(@method).should be_an_instance_of(String)
+    StringSpecs::MyString.new("z").send(@method).should be_an_instance_of(String)
   end
 
-  ruby_version_is '3.0' do
-    it "returns String instances when called on a subclass" do
-      StringSpecs::MyString.new("").send(@method).should be_an_instance_of(String)
-      StringSpecs::MyString.new("a").send(@method).should be_an_instance_of(String)
-      StringSpecs::MyString.new("z").send(@method).should be_an_instance_of(String)
-    end
+  it "returns a String in the same encoding as self" do
+    "z".encode("US-ASCII").send(@method).encoding.should == Encoding::US_ASCII
   end
 end
 

@@ -24,7 +24,7 @@ describe "BigDecimal#add" do
   end
 
   it "returns a + b with given precision" do
-    # documentation states, that precision ist optional, but it ain't,
+    # documentation states that precision is optional, but it ain't,
     @two.add(@one, 1).should == @three
     @one .add(@two, 1).should == @three
     @one.add(@one_minus, 1).should == @zero
@@ -60,7 +60,7 @@ describe "BigDecimal#add" do
   end
 
 #  TODO:
-#  http://blade.nagaokaut.ac.jp/cgi-bin/scat.rb/ruby/ruby-core/17374
+#  https://blade.ruby-lang.org/ruby-core/17374
 #
 #  This doesn't work on MRI and looks like a bug to me:
 #  one can use BigDecimal + Float, but not Bigdecimal.add(Float)

@@ -29,6 +29,10 @@ describe "Array#sample" do
     [4].sample(random: Random.new(42)).should equal(4)
   end
 
+  it "returns a single value when not passed a count and a Random class is given" do
+    [4].sample(random: Random).should equal(4)
+  end
+
   it "returns an empty Array when passed zero" do
     [4].sample(0).should == []
   end

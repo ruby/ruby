@@ -326,7 +326,7 @@ require "digest"
 #  end
 #
 class PStore
-  VERSION = "0.1.2"
+  VERSION = "0.1.3"
 
   RDWR_ACCESS = {mode: IO::RDWR | IO::CREAT | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
   RD_ACCESS = {mode: IO::RDONLY | IO::BINARY, encoding: Encoding::ASCII_8BIT}.freeze
@@ -487,8 +487,6 @@ class PStore
   #   end
   #
   # Raises an exception if called outside a transaction block.
-  #
-  # PStore#roots is an alias for PStore#keys.
   def keys
     in_transaction
     @table.keys
@@ -504,8 +502,6 @@ class PStore
   #   end
   #
   # Raises an exception if called outside a transaction block.
-  #
-  # PStore#root? is an alias for PStore#key?.
   def key?(key)
     in_transaction
     @table.key? key
@@ -521,8 +517,8 @@ class PStore
   end
 
   # Exits the current transaction block, committing any changes
-  # specified in the transaction block.
-  # See {Committing or Aborting}[rdoc-ref:PStore@Committing+or+Aborting].
+  # specified in the
+  # {transaction block}[rdoc-ref:PStore@The+Transaction+Block].
   #
   # Raises an exception if called outside a transaction block.
   def commit
@@ -532,8 +528,8 @@ class PStore
   end
 
   # Exits the current transaction block, discarding any changes
-  # specified in the transaction block.
-  # See {Committing or Aborting}[rdoc-ref:PStore@Committing+or+Aborting].
+  # specified in the
+  # {transaction block}[rdoc-ref:PStore@The+Transaction+Block].
   #
   # Raises an exception if called outside a transaction block.
   def abort

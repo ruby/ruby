@@ -9,6 +9,7 @@ while /\A(\w+)=(.*)/ =~ ARGV[0]
 end
 if inc = arg['i']
   src = inc == '-' ? STDIN.read : File.read(inc)
+  src.gsub!(/^#.*\n/, '')
 else
   src = ""
 end
@@ -23,7 +24,7 @@ File.read(File.join(arg['srcdir'], 'version.c')).
   scan(/rb_define_global_const\("(RUBY_\w+)",[^;]*?\bMK(?:INT|(STR))\(([^()]*)\)/m) do |n, s, v|
   version[n] = arg[v] || src.value(v) || (s ? v : 0)
 end
-arg['RUBY_DESCRIPTION_WITH_MJIT'] = src.value('description_with_mjit') || 'description_with_mjit'
+arg['RUBY_DESCRIPTION_WITH_RJIT'] = src.value('description_with_rjit') || 'description_with_rjit'
 arg['RUBY_DESCRIPTION_WITH_YJIT'] = src.value('description_with_yjit') || 'description_with_yjit'
 %>baseruby="<%=arg['BASERUBY']%>"
 _\
@@ -41,8 +42,8 @@ class Object
   constants.grep(/^RUBY_/) {|n| remove_const n}
 % arg['versions'].each {|n, v|
   <%=n%> = <%if n=='RUBY_DESCRIPTION' %>case
-    when RubyVM.const_defined?(:MJIT) && RubyVM::MJIT.enabled?
-      <%=arg['RUBY_DESCRIPTION_WITH_MJIT'].inspect%>
+    when RubyVM.const_defined?(:RJIT) && RubyVM::RJIT.enabled?
+      <%=arg['RUBY_DESCRIPTION_WITH_RJIT'].inspect%>
     when RubyVM.const_defined?(:YJIT) && RubyVM::YJIT.enabled?
       <%=arg['RUBY_DESCRIPTION_WITH_YJIT'].inspect%>
     else
@@ -51,6 +52,9 @@ class Object
 % }
 end
 builddir = File.dirname(File.expand_path(__FILE__))
+libpathenv = libpathenv = "<%=arg['LIBPATHENV']%>"
+preloadenv = preloadenv = "<%=arg['PRELOADENV']%>"
+libruby_so = libruby_so = "<%=arg['LIBRUBY_SO']%>"
 srcdir = "<%=arg['srcdir']%>"
 top_srcdir = File.realpath(srcdir, builddir)
 fake = File.join(top_srcdir, "tool/fake.rb")

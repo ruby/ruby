@@ -34,7 +34,7 @@ module Psych
         v << "hello world"
         v.finish
 
-        assert_match "hello world", io.string
+        assert_include io.string, "hello world"
       end
 
       def test_binary_formatting
@@ -167,9 +167,9 @@ module Psych
       end
 
       def test_string
-        assert_match(/'017'/, Psych.dump({'a' => '017'}))
-        assert_match(/'019'/, Psych.dump({'a' => '019'}))
-        assert_match(/'01818'/, Psych.dump({'a' => '01818'}))
+        assert_include(Psych.dump({'a' => '017'}), "'017'")
+        assert_include(Psych.dump({'a' => '019'}), "'019'")
+        assert_include(Psych.dump({'a' => '01818'}), "'01818'")
       end
 
       # http://yaml.org/type/null.html

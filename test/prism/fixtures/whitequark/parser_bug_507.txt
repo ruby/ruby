@@ -1,0 +1,1 @@
+m = -> *args do end

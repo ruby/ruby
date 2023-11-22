@@ -1,0 +1,26 @@
+@ ProgramNode (location: (1,0)-(1,5))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,5))
+    └── body: (length: 1)
+        └── @ InterpolatedStringNode (location: (1,0)-(1,5))
+            ├── opening_loc: (1,0)-(1,5) = "<<EOS"
+            ├── parts: (length: 3)
+            │   ├── @ StringNode (location: (2,0)-(2,5))
+            │   │   ├── flags: ∅
+            │   │   ├── opening_loc: ∅
+            │   │   ├── content_loc: (2,0)-(2,5) = "foo\\r"
+            │   │   ├── closing_loc: ∅
+            │   │   └── unescaped: "foo\r"
+            │   ├── @ EmbeddedVariableNode (location: (2,5)-(2,10))
+            │   │   ├── operator_loc: (2,5)-(2,6) = "#"
+            │   │   └── variable:
+            │   │       @ InstanceVariableReadNode (location: (2,6)-(2,10))
+            │   │       └── name: :@bar
+            │   └── @ StringNode (location: (2,10)-(3,0))
+            │       ├── flags: ∅
+            │       ├── opening_loc: ∅
+            │       ├── content_loc: (2,10)-(3,0) = "\r\n"
+            │       ├── closing_loc: ∅
+            │       └── unescaped: "\r\n"
+            └── closing_loc: (3,0)-(4,0) = "EOS\r\n"

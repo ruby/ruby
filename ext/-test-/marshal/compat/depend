@@ -52,6 +52,7 @@ usrcompat.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 usrcompat.o: $(hdrdir)/ruby/internal/attr/noinline.h
 usrcompat.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 usrcompat.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+usrcompat.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 usrcompat.o: $(hdrdir)/ruby/internal/attr/pure.h
 usrcompat.o: $(hdrdir)/ruby/internal/attr/restrict.h
 usrcompat.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ usrcompat.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 usrcompat.o: $(hdrdir)/ruby/internal/intern/error.h
 usrcompat.o: $(hdrdir)/ruby/internal/intern/eval.h
 usrcompat.o: $(hdrdir)/ruby/internal/intern/file.h
-usrcompat.o: $(hdrdir)/ruby/internal/intern/gc.h
 usrcompat.o: $(hdrdir)/ruby/internal/intern/hash.h
 usrcompat.o: $(hdrdir)/ruby/internal/intern/io.h
 usrcompat.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ usrcompat.o: $(hdrdir)/ruby/internal/memory.h
 usrcompat.o: $(hdrdir)/ruby/internal/method.h
 usrcompat.o: $(hdrdir)/ruby/internal/module.h
 usrcompat.o: $(hdrdir)/ruby/internal/newobj.h
-usrcompat.o: $(hdrdir)/ruby/internal/rgengc.h
 usrcompat.o: $(hdrdir)/ruby/internal/scan_args.h
 usrcompat.o: $(hdrdir)/ruby/internal/special_consts.h
 usrcompat.o: $(hdrdir)/ruby/internal/static_assert.h

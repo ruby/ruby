@@ -2,7 +2,10 @@
 unless defined?(::JSON::JSON_LOADED) and ::JSON::JSON_LOADED
   require 'json'
 end
-defined?(::BigDecimal) or require 'bigdecimal'
+begin
+  require 'bigdecimal'
+rescue LoadError
+end
 
 class BigDecimal
   # Import a JSON Marshalled object.
@@ -26,4 +29,4 @@ class BigDecimal
   def to_json(*args)
     as_json.to_json(*args)
   end
-end
+end if defined?(::BigDecimal)

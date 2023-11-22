@@ -1,0 +1,11 @@
+@ ProgramNode (location: (1,0)-(1,5))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,5))
+    └── body: (length: 1)
+        └── @ ConstantPathNode (location: (1,0)-(1,5))
+            ├── parent: ∅
+            ├── child:
+            │   @ ConstantReadNode (location: (1,2)-(1,5))
+            │   └── name: :Foo
+            └── delimiter_loc: (1,0)-(1,2) = "::"

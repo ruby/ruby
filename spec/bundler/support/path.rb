@@ -71,10 +71,6 @@ module Spec
       @spec_dir ||= source_root.join(ruby_core? ? "spec/bundler" : "spec")
     end
 
-    def api_request_limit_hack_file
-      spec_dir.join("support/api_request_limit_hax.rb")
-    end
-
     def man_dir
       @man_dir ||= lib_dir.join("bundler/man")
     end
@@ -295,15 +291,15 @@ module Spec
     end
 
     def rubocop_gemfile_basename
-      source_root.join("tool/bundler/rubocop_gems.rb")
+      tool_dir.join("rubocop_gems.rb")
     end
 
     def standard_gemfile_basename
-      source_root.join("tool/bundler/standard_gems.rb")
+      tool_dir.join("standard_gems.rb")
     end
 
     def tool_dir
-      source_root.join("tool/bundler")
+      ruby_core? ? source_root.join("tool/bundler") : source_root.join("../tool/bundler")
     end
 
     def templates_dir

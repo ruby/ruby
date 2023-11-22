@@ -92,7 +92,7 @@
 #    p a.strip #  => nil
 #
 module Singleton
-  VERSION = "0.1.1"
+  VERSION = "0.2.0"
 
   # Raises a TypeError to prevent cloning.
   def clone
@@ -121,12 +121,7 @@ module Singleton
     end
 
     def instance # :nodoc:
-      return @singleton__instance__ if @singleton__instance__
-      @singleton__mutex__.synchronize {
-        return @singleton__instance__ if @singleton__instance__
-        @singleton__instance__ = new()
-      }
-      @singleton__instance__
+      @singleton__instance__ || @singleton__mutex__.synchronize { @singleton__instance__ ||= new }
     end
 
     private

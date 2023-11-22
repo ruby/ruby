@@ -1,30 +1,26 @@
 require 'ripper'
-require 'irb/ruby-lex'
 
-class TerminationChecker < RubyLex
-  def terminated?(code)
-    code.gsub!(/\n*$/, '').concat("\n")
-    @tokens = self.class.ripper_lex_without_warning(code)
-    continue = process_continue
-    code_block_open = check_code_block(code)
-    indent = process_nesting_level
-    ltype = process_literal_type
-    if code_block_open or ltype or continue or indent > 0
-      false
-    else
-      true
-    end
+module TerminationChecker
+  def self.terminated?(code)
+    Ripper.sexp(code) ? true : false
   end
 end
 
-class AutoIndent < RubyLex
-  def initialize
-    context = Struct.new("MockIRBContext", :auto_indent_mode, :workspace, :local_variables).new(true, nil, [])
-    set_input(self, context: context)
-    set_auto_indent(context)
+module AutoIndent
+  def self.calculate_indent(lines, line_index, byte_pointer, is_newline)
+    if is_newline
+      2 * nesting_level(lines[0..line_index - 1])
+    else
+      lines = lines.dup
+      lines[line_index] = lines[line_index]&.byteslice(0, byte_pointer)
+      prev_level = nesting_level(lines[0..line_index - 1])
+      level = nesting_level(lines[0..line_index])
+      2 * level if level < prev_level
+    end
   end
 
-  def auto_indent(&block)
-    Reline.auto_indent_proc = block
+  def self.nesting_level(lines)
+    code = lines.join("\n")
+    code.scan(/if|def|\(|\[|\{/).size - code.scan(/end|\)|\]|\}/).size
   end
 end

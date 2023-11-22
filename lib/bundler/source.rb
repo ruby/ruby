@@ -11,6 +11,8 @@ module Bundler
 
     attr_accessor :dependency_names
 
+    attr_reader :checksum_store
+
     def unmet_deps
       specs.unmet_dependency_names
     end
@@ -100,7 +102,7 @@ module Bundler
     end
 
     def print_using_message(message)
-      if !message.include?("(was ") && Bundler.feature_flag.suppress_install_using_messages?
+      if !message.include?("(was ")
         Bundler.ui.debug message
       else
         Bundler.ui.info message

@@ -154,8 +154,7 @@ class VCS
   alias dryrun? dryrun
   alias debug? debug
 
-  NullDevice = defined?(IO::NULL) ? IO::NULL :
-    %w[/dev/null NUL NIL: NL:].find {|dev| File.exist?(dev)}
+  NullDevice = IO::NULL
 
   # returns
   # * the last revision of the current branch
@@ -195,6 +194,7 @@ class VCS
       rescue ArgumentError
         modified = Time.utc(*$~[1..6]) + $7.to_i * 3600 + $8.to_i * 60
       end
+      modified = modified.getlocal(@zone)
     end
     return last, changed, modified, *rest
   end
@@ -698,15 +698,41 @@ class VCS
               fix = $1
               s = s.lines
               fix.each_line do |x|
+                next unless x.sub!(/^(\s+)(?:(\d+)|\$(?:-\d+)?)/, '')
+                b = ($2&.to_i || (s.size - 1 + $3.to_i))
+                sp = $1
+                if x.sub!(/^,(?:(\d+)|\$(?:-\d+)?)/, '')
+                  range = b..($1&.to_i || (s.size - 1 + $2.to_i))
+                else
+                  range = b..b
+                end
                 case x
-                when %r[^ +(\d+)s([#{LOG_FIX_REGEXP_SEPARATORS}])(.+)\2(.*)\2]o
-                  n = $1.to_i
-                  wrong = $3
-                  correct = $4
-                  begin
-                    s[n][wrong] = correct
-                  rescue IndexError
-                    message = ["format_changelog failed to replace #{wrong.dump} with #{correct.dump} at #$1\n"]
+                when %r[^s([#{LOG_FIX_REGEXP_SEPARATORS}])(.+)\1(.*)\1([gr]+)?]o
+                  wrong = $2
+                  correct = $3
+                  if opt = $4 and opt.include?("r") # regexp
+                    wrong = Regexp.new(wrong)
+                    correct.gsub!(/(?<!\\)(?:\\\\)*\K(?:\\n)+/) {"\n" * ($&.size / 2)}
+                    sub = opt.include?("g") ? :gsub! : :sub!
+                  else
+                    sub = false
+                  end
+                  range.each do |n|
+                    if sub
+                      ss = s[n].sub(/^#{sp}/, "") # un-indent for /^/
+                      if ss.__send__(sub, wrong, correct)
+                        s[n, 1] = ss.lines.map {|l| "#{sp}#{l}"}
+                        next
+                      end
+                    else
+                      begin
+                        s[n][wrong] = correct
+                      rescue IndexError
+                      else
+                        next
+                      end
+                    end
+                    message = ["format_changelog failed to replace #{wrong.dump} with #{correct.dump} at #{n}\n"]
                     from = [1, n-2].max
                     to = [s.size-1, n+2].min
                     s.each_with_index do |e, i|
@@ -716,12 +742,13 @@ class VCS
                     end
                     raise message.join('')
                   end
-                when %r[^( +)(\d+)i([#{LOG_FIX_REGEXP_SEPARATORS}])(.*)\3]o
-                  s[$2.to_i, 0] = "#{$1}#{$4}\n"
-                when %r[^ +(\d+)(?:,(\d+))?d]
-                  n = $1.to_i
-                  e = $2
-                  s[n..(e ? e.to_i : n)] = []
+                when %r[^i([#{LOG_FIX_REGEXP_SEPARATORS}])(.*)\1]o
+                  insert = "#{sp}#{$2}\n"
+                  range.reverse_each do |n|
+                    s[n, 0] = insert
+                  end
+                when %r[^d]
+                  s[range] = []
                 end
               end
               s = s.join('')

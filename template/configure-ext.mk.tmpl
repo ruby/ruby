@@ -23,7 +23,7 @@ exts = {}
 end
 %>
 MINIRUBY = <%=miniruby%>
-SCRIPT_ARGS = <%=script_args.gsub("#", "\\#")%>
+SCRIPT_ARGS = <%=script_args.gsub("#", "\\#").gsub(/\A|[\s"']\K--jobserver-auth=[^\s'"]*/, "")%>
 EXTMK_ARGS = $(SCRIPT_ARGS) --gnumake=$(gnumake) --extflags="$(EXTLDFLAGS)" \
 	   --make-flags="MINIRUBY='$(MINIRUBY)'"
 

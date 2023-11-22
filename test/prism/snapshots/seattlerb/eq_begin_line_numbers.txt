@@ -1,0 +1,9 @@
+@ ProgramNode (location: (1,0)-(6,1))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(6,1))
+    └── body: (length: 2)
+        ├── @ IntegerNode (location: (1,0)-(1,1))
+        │   └── flags: decimal
+        └── @ IntegerNode (location: (6,0)-(6,1))
+            └── flags: decimal

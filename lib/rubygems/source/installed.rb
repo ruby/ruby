@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # Represents an installed gem.  This is used for dependency resolution.
 
@@ -20,8 +21,6 @@ class Gem::Source::Installed < Gem::Source
       0
     when Gem::Source then
       1
-    else
-      nil
     end
   end
 

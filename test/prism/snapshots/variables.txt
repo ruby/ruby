@@ -1,0 +1,381 @@
+@ ProgramNode (location: (1,0)-(47,17))
+├── locals: [:abc, :foo, :bar, :baz, :a, :b, :c, :d]
+└── statements:
+    @ StatementsNode (location: (1,0)-(47,17))
+    └── body: (length: 25)
+        ├── @ ClassVariableReadNode (location: (1,0)-(1,5))
+        │   └── name: :@@abc
+        ├── @ ClassVariableWriteNode (location: (3,0)-(3,9))
+        │   ├── name: :@@abc
+        │   ├── name_loc: (3,0)-(3,5) = "@@abc"
+        │   ├── value:
+        │   │   @ IntegerNode (location: (3,8)-(3,9))
+        │   │   └── flags: decimal
+        │   └── operator_loc: (3,6)-(3,7) = "="
+        ├── @ MultiWriteNode (location: (5,0)-(5,16))
+        │   ├── lefts: (length: 2)
+        │   │   ├── @ ClassVariableTargetNode (location: (5,0)-(5,5))
+        │   │   │   └── name: :@@foo
+        │   │   └── @ ClassVariableTargetNode (location: (5,7)-(5,12))
+        │   │       └── name: :@@bar
+        │   ├── rest: ∅
+        │   ├── rights: (length: 0)
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── operator_loc: (5,13)-(5,14) = "="
+        │   └── value:
+        │       @ IntegerNode (location: (5,15)-(5,16))
+        │       └── flags: decimal
+        ├── @ ClassVariableWriteNode (location: (7,0)-(7,12))
+        │   ├── name: :@@foo
+        │   ├── name_loc: (7,0)-(7,5) = "@@foo"
+        │   ├── value:
+        │   │   @ ArrayNode (location: (7,8)-(7,12))
+        │   │   ├── elements: (length: 2)
+        │   │   │   ├── @ IntegerNode (location: (7,8)-(7,9))
+        │   │   │   │   └── flags: decimal
+        │   │   │   └── @ IntegerNode (location: (7,11)-(7,12))
+        │   │   │       └── flags: decimal
+        │   │   ├── opening_loc: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   └── flags: ∅
+        │   └── operator_loc: (7,6)-(7,7) = "="
+        ├── @ GlobalVariableWriteNode (location: (9,0)-(9,8))
+        │   ├── name: :$abc
+        │   ├── name_loc: (9,0)-(9,4) = "$abc"
+        │   ├── value:
+        │   │   @ IntegerNode (location: (9,7)-(9,8))
+        │   │   └── flags: decimal
+        │   └── operator_loc: (9,5)-(9,6) = "="
+        ├── @ GlobalVariableReadNode (location: (11,0)-(11,4))
+        │   └── name: :$abc
+        ├── @ InstanceVariableReadNode (location: (13,0)-(13,4))
+        │   └── name: :@abc
+        ├── @ InstanceVariableWriteNode (location: (15,0)-(15,8))
+        │   ├── name: :@abc
+        │   ├── name_loc: (15,0)-(15,4) = "@abc"
+        │   ├── value:
+        │   │   @ IntegerNode (location: (15,7)-(15,8))
+        │   │   └── flags: decimal
+        │   └── operator_loc: (15,5)-(15,6) = "="
+        ├── @ CallNode (location: (17,0)-(17,1))
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :a
+        │   ├── message_loc: (17,0)-(17,1) = "a"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   ├── block: ∅
+        │   └── flags: variable_call
+        ├── @ LocalVariableWriteNode (location: (19,0)-(19,7))
+        │   ├── name: :abc
+        │   ├── depth: 0
+        │   ├── name_loc: (19,0)-(19,3) = "abc"
+        │   ├── value:
+        │   │   @ IntegerNode (location: (19,6)-(19,7))
+        │   │   └── flags: decimal
+        │   └── operator_loc: (19,4)-(19,5) = "="
+        ├── @ MultiWriteNode (location: (21,0)-(21,14))
+        │   ├── lefts: (length: 2)
+        │   │   ├── @ GlobalVariableTargetNode (location: (21,0)-(21,4))
+        │   │   │   └── name: :$foo
+        │   │   └── @ GlobalVariableTargetNode (location: (21,6)-(21,10))
+        │   │       └── name: :$bar
+        │   ├── rest: ∅
+        │   ├── rights: (length: 0)
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── operator_loc: (21,11)-(21,12) = "="
+        │   └── value:
+        │       @ IntegerNode (location: (21,13)-(21,14))
+        │       └── flags: decimal
+        ├── @ GlobalVariableWriteNode (location: (23,0)-(23,11))
+        │   ├── name: :$foo
+        │   ├── name_loc: (23,0)-(23,4) = "$foo"
+        │   ├── value:
+        │   │   @ ArrayNode (location: (23,7)-(23,11))
+        │   │   ├── elements: (length: 2)
+        │   │   │   ├── @ IntegerNode (location: (23,7)-(23,8))
+        │   │   │   │   └── flags: decimal
+        │   │   │   └── @ IntegerNode (location: (23,10)-(23,11))
+        │   │   │       └── flags: decimal
+        │   │   ├── opening_loc: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   └── flags: ∅
+        │   └── operator_loc: (23,5)-(23,6) = "="
+        ├── @ MultiWriteNode (location: (25,0)-(25,14))
+        │   ├── lefts: (length: 2)
+        │   │   ├── @ InstanceVariableTargetNode (location: (25,0)-(25,4))
+        │   │   │   └── name: :@foo
+        │   │   └── @ InstanceVariableTargetNode (location: (25,6)-(25,10))
+        │   │       └── name: :@bar
+        │   ├── rest: ∅
+        │   ├── rights: (length: 0)
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── operator_loc: (25,11)-(25,12) = "="
+        │   └── value:
+        │       @ IntegerNode (location: (25,13)-(25,14))
+        │       └── flags: decimal
+        ├── @ InstanceVariableWriteNode (location: (27,0)-(27,11))
+        │   ├── name: :@foo
+        │   ├── name_loc: (27,0)-(27,4) = "@foo"
+        │   ├── value:
+        │   │   @ ArrayNode (location: (27,7)-(27,11))
+        │   │   ├── elements: (length: 2)
+        │   │   │   ├── @ IntegerNode (location: (27,7)-(27,8))
+        │   │   │   │   └── flags: decimal
+        │   │   │   └── @ IntegerNode (location: (27,10)-(27,11))
+        │   │   │       └── flags: decimal
+        │   │   ├── opening_loc: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   └── flags: ∅
+        │   └── operator_loc: (27,5)-(27,6) = "="
+        ├── @ LocalVariableWriteNode (location: (29,0)-(29,7))
+        │   ├── name: :foo
+        │   ├── depth: 0
+        │   ├── name_loc: (29,0)-(29,3) = "foo"
+        │   ├── value:
+        │   │   @ IntegerNode (location: (29,6)-(29,7))
+        │   │   └── flags: decimal
+        │   └── operator_loc: (29,4)-(29,5) = "="
+        ├── @ LocalVariableWriteNode (location: (29,9)-(29,19))
+        │   ├── name: :foo
+        │   ├── depth: 0
+        │   ├── name_loc: (29,9)-(29,12) = "foo"
+        │   ├── value:
+        │   │   @ ArrayNode (location: (29,15)-(29,19))
+        │   │   ├── elements: (length: 2)
+        │   │   │   ├── @ IntegerNode (location: (29,15)-(29,16))
+        │   │   │   │   └── flags: decimal
+        │   │   │   └── @ IntegerNode (location: (29,18)-(29,19))
+        │   │   │       └── flags: decimal
+        │   │   ├── opening_loc: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   └── flags: ∅
+        │   └── operator_loc: (29,13)-(29,14) = "="
+        ├── @ LocalVariableWriteNode (location: (31,0)-(31,10))
+        │   ├── name: :foo
+        │   ├── depth: 0
+        │   ├── name_loc: (31,0)-(31,3) = "foo"
+        │   ├── value:
+        │   │   @ ArrayNode (location: (31,6)-(31,10))
+        │   │   ├── elements: (length: 2)
+        │   │   │   ├── @ IntegerNode (location: (31,6)-(31,7))
+        │   │   │   │   └── flags: decimal
+        │   │   │   └── @ IntegerNode (location: (31,9)-(31,10))
+        │   │   │       └── flags: decimal
+        │   │   ├── opening_loc: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   └── flags: ∅
+        │   └── operator_loc: (31,4)-(31,5) = "="
+        ├── @ MultiWriteNode (location: (33,0)-(33,13))
+        │   ├── lefts: (length: 1)
+        │   │   └── @ LocalVariableTargetNode (location: (33,0)-(33,3))
+        │   │       ├── name: :foo
+        │   │       └── depth: 0
+        │   ├── rest:
+        │   │   @ SplatNode (location: (33,5)-(33,6))
+        │   │   ├── operator_loc: (33,5)-(33,6) = "*"
+        │   │   └── expression: ∅
+        │   ├── rights: (length: 0)
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── operator_loc: (33,7)-(33,8) = "="
+        │   └── value:
+        │       @ ArrayNode (location: (33,9)-(33,13))
+        │       ├── elements: (length: 2)
+        │       │   ├── @ IntegerNode (location: (33,9)-(33,10))
+        │       │   │   └── flags: decimal
+        │       │   └── @ IntegerNode (location: (33,12)-(33,13))
+        │       │       └── flags: decimal
+        │       ├── opening_loc: ∅
+        │       ├── closing_loc: ∅
+        │       └── flags: ∅
+        ├── @ MultiWriteNode (location: (35,0)-(35,11))
+        │   ├── lefts: (length: 1)
+        │   │   └── @ LocalVariableTargetNode (location: (35,0)-(35,3))
+        │   │       ├── name: :foo
+        │   │       └── depth: 0
+        │   ├── rest:
+        │   │   @ SplatNode (location: (35,3)-(35,4))
+        │   │   ├── operator_loc: (35,3)-(35,4) = ","
+        │   │   └── expression: ∅
+        │   ├── rights: (length: 0)
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── operator_loc: (35,5)-(35,6) = "="
+        │   └── value:
+        │       @ ArrayNode (location: (35,7)-(35,11))
+        │       ├── elements: (length: 2)
+        │       │   ├── @ IntegerNode (location: (35,7)-(35,8))
+        │       │   │   └── flags: decimal
+        │       │   └── @ IntegerNode (location: (35,10)-(35,11))
+        │       │       └── flags: decimal
+        │       ├── opening_loc: ∅
+        │       ├── closing_loc: ∅
+        │       └── flags: ∅
+        ├── @ MultiWriteNode (location: (37,0)-(37,16))
+        │   ├── lefts: (length: 1)
+        │   │   └── @ LocalVariableTargetNode (location: (37,0)-(37,3))
+        │   │       ├── name: :foo
+        │   │       └── depth: 0
+        │   ├── rest:
+        │   │   @ SplatNode (location: (37,5)-(37,9))
+        │   │   ├── operator_loc: (37,5)-(37,6) = "*"
+        │   │   └── expression:
+        │   │       @ LocalVariableTargetNode (location: (37,6)-(37,9))
+        │   │       ├── name: :bar
+        │   │       └── depth: 0
+        │   ├── rights: (length: 0)
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── operator_loc: (37,10)-(37,11) = "="
+        │   └── value:
+        │       @ ArrayNode (location: (37,12)-(37,16))
+        │       ├── elements: (length: 2)
+        │       │   ├── @ IntegerNode (location: (37,12)-(37,13))
+        │       │   │   └── flags: decimal
+        │       │   └── @ IntegerNode (location: (37,15)-(37,16))
+        │       │       └── flags: decimal
+        │       ├── opening_loc: ∅
+        │       ├── closing_loc: ∅
+        │       └── flags: ∅
+        ├── @ MultiWriteNode (location: (39,0)-(39,27))
+        │   ├── lefts: (length: 2)
+        │   │   ├── @ LocalVariableTargetNode (location: (39,0)-(39,3))
+        │   │   │   ├── name: :foo
+        │   │   │   └── depth: 0
+        │   │   └── @ MultiTargetNode (location: (39,5)-(39,15))
+        │   │       ├── lefts: (length: 2)
+        │   │       │   ├── @ LocalVariableTargetNode (location: (39,6)-(39,9))
+        │   │       │   │   ├── name: :bar
+        │   │       │   │   └── depth: 0
+        │   │       │   └── @ LocalVariableTargetNode (location: (39,11)-(39,14))
+        │   │       │       ├── name: :baz
+        │   │       │       └── depth: 0
+        │   │       ├── rest: ∅
+        │   │       ├── rights: (length: 0)
+        │   │       ├── lparen_loc: (39,5)-(39,6) = "("
+        │   │       └── rparen_loc: (39,14)-(39,15) = ")"
+        │   ├── rest: ∅
+        │   ├── rights: (length: 0)
+        │   ├── lparen_loc: ∅
+        │   ├── rparen_loc: ∅
+        │   ├── operator_loc: (39,16)-(39,17) = "="
+        │   └── value:
+        │       @ ArrayNode (location: (39,18)-(39,27))
+        │       ├── elements: (length: 2)
+        │       │   ├── @ IntegerNode (location: (39,18)-(39,19))
+        │       │   │   └── flags: decimal
+        │       │   └── @ ArrayNode (location: (39,21)-(39,27))
+        │       │       ├── elements: (length: 2)
+        │       │       │   ├── @ IntegerNode (location: (39,22)-(39,23))
+        │       │       │   │   └── flags: decimal
+        │       │       │   └── @ IntegerNode (location: (39,25)-(39,26))
+        │       │       │       └── flags: decimal
+        │       │       ├── opening_loc: (39,21)-(39,22) = "["
+        │       │       ├── closing_loc: (39,26)-(39,27) = "]"
+        │       │       └── flags: ∅
+        │       ├── opening_loc: ∅
+        │       ├── closing_loc: ∅
+        │       └── flags: ∅
+        ├── @ LocalVariableWriteNode (location: (41,0)-(41,10))
+        │   ├── name: :foo
+        │   ├── depth: 0
+        │   ├── name_loc: (41,0)-(41,3) = "foo"
+        │   ├── value:
+        │   │   @ ArrayNode (location: (41,6)-(41,10))
+        │   │   ├── elements: (length: 1)
+        │   │   │   └── @ SplatNode (location: (41,6)-(41,10))
+        │   │   │       ├── operator_loc: (41,6)-(41,7) = "*"
+        │   │   │       └── expression:
+        │   │   │           @ LocalVariableReadNode (location: (41,7)-(41,10))
+        │   │   │           ├── name: :bar
+        │   │   │           └── depth: 0
+        │   │   ├── opening_loc: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   └── flags: contains_splat
+        │   └── operator_loc: (41,4)-(41,5) = "="
+        ├── @ ConstantWriteNode (location: (43,0)-(43,10))
+        │   ├── name: :Foo
+        │   ├── name_loc: (43,0)-(43,3) = "Foo"
+        │   ├── value:
+        │   │   @ ArrayNode (location: (43,6)-(43,10))
+        │   │   ├── elements: (length: 2)
+        │   │   │   ├── @ IntegerNode (location: (43,6)-(43,7))
+        │   │   │   │   └── flags: decimal
+        │   │   │   └── @ IntegerNode (location: (43,9)-(43,10))
+        │   │   │       └── flags: decimal
+        │   │   ├── opening_loc: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   └── flags: ∅
+        │   └── operator_loc: (43,4)-(43,5) = "="
+        ├── @ ParenthesesNode (location: (45,0)-(45,9))
+        │   ├── body:
+        │   │   @ StatementsNode (location: (45,1)-(45,8))
+        │   │   └── body: (length: 3)
+        │   │       ├── @ CallNode (location: (45,1)-(45,2))
+        │   │       │   ├── receiver: ∅
+        │   │       │   ├── call_operator_loc: ∅
+        │   │       │   ├── name: :a
+        │   │       │   ├── message_loc: (45,1)-(45,2) = "a"
+        │   │       │   ├── opening_loc: ∅
+        │   │       │   ├── arguments: ∅
+        │   │       │   ├── closing_loc: ∅
+        │   │       │   ├── block: ∅
+        │   │       │   └── flags: variable_call
+        │   │       ├── @ CallNode (location: (45,4)-(45,5))
+        │   │       │   ├── receiver: ∅
+        │   │       │   ├── call_operator_loc: ∅
+        │   │       │   ├── name: :b
+        │   │       │   ├── message_loc: (45,4)-(45,5) = "b"
+        │   │       │   ├── opening_loc: ∅
+        │   │       │   ├── arguments: ∅
+        │   │       │   ├── closing_loc: ∅
+        │   │       │   ├── block: ∅
+        │   │       │   └── flags: variable_call
+        │   │       └── @ CallNode (location: (45,7)-(45,8))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :c
+        │   │           ├── message_loc: (45,7)-(45,8) = "c"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           └── flags: variable_call
+        │   ├── opening_loc: (45,0)-(45,1) = "("
+        │   └── closing_loc: (45,8)-(45,9) = ")"
+        └── @ MultiWriteNode (location: (47,0)-(47,17))
+            ├── lefts: (length: 3)
+            │   ├── @ LocalVariableTargetNode (location: (47,0)-(47,1))
+            │   │   ├── name: :a
+            │   │   └── depth: 0
+            │   ├── @ MultiTargetNode (location: (47,3)-(47,9))
+            │   │   ├── lefts: (length: 2)
+            │   │   │   ├── @ LocalVariableTargetNode (location: (47,4)-(47,5))
+            │   │   │   │   ├── name: :b
+            │   │   │   │   └── depth: 0
+            │   │   │   └── @ LocalVariableTargetNode (location: (47,7)-(47,8))
+            │   │   │       ├── name: :c
+            │   │   │       └── depth: 0
+            │   │   ├── rest: ∅
+            │   │   ├── rights: (length: 0)
+            │   │   ├── lparen_loc: (47,3)-(47,4) = "("
+            │   │   └── rparen_loc: (47,8)-(47,9) = ")"
+            │   └── @ LocalVariableTargetNode (location: (47,11)-(47,12))
+            │       ├── name: :d
+            │       └── depth: 0
+            ├── rest: ∅
+            ├── rights: (length: 0)
+            ├── lparen_loc: ∅
+            ├── rparen_loc: ∅
+            ├── operator_loc: (47,13)-(47,14) = "="
+            └── value:
+                @ ArrayNode (location: (47,15)-(47,17))
+                ├── elements: (length: 0)
+                ├── opening_loc: (47,15)-(47,16) = "["
+                ├── closing_loc: (47,16)-(47,17) = "]"
+                └── flags: ∅

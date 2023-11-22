@@ -1,0 +1,20 @@
+#include <string.h>
+
+#include "prism/ast.h"
+
+/**
+ * Returns a string representation of the given token type.
+ */
+PRISM_EXPORTED_FUNCTION const char *
+pm_token_type_to_str(pm_token_type_t token_type)
+{
+    switch (token_type) {
+<%- tokens.each do |token| -%>
+        case PM_TOKEN_<%= token.name %>:
+            return "<%= token.name %>";
+<%- end -%>
+        case PM_TOKEN_MAXIMUM:
+            return "MAXIMUM";
+    }
+    return "\0";
+}

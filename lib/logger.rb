@@ -10,6 +10,7 @@
 #
 # A simple system for logging messages.  See Logger for more documentation.
 
+require 'fiber'
 require 'monitor'
 require 'rbconfig'
 
@@ -264,8 +265,7 @@ require_relative 'logger/errors'
 #   logger.error! # => 3
 #   logger.fatal! # => 4
 #
-# You can retrieve the log level with method
-# {level}[Logger.html#attribute-i-level]:
+# You can retrieve the log level with method #level.
 #
 #   logger.level = Logger::ERROR
 #   logger.level # => 3
@@ -380,7 +380,9 @@ class Logger
   include Severity
 
   # Logging severity threshold (e.g. <tt>Logger::INFO</tt>).
-  attr_reader :level
+  def level
+    @level_override[Fiber.current] || @level
+  end
 
   # Sets the log level; returns +severity+.
   # See {Log Level}[rdoc-ref:Logger@Log+Level].
@@ -395,24 +397,23 @@ class Logger
   # Logger#sev_threshold= is an alias for Logger#level=.
   #
   def level=(severity)
-    if severity.is_a?(Integer)
-      @level = severity
-    else
-      case severity.to_s.downcase
-      when 'debug'
-        @level = DEBUG
-      when 'info'
-        @level = INFO
-      when 'warn'
-        @level = WARN
-      when 'error'
-        @level = ERROR
-      when 'fatal'
-        @level = FATAL
-      when 'unknown'
-        @level = UNKNOWN
+    @level = Severity.coerce(severity)
+  end
+
+  # Adjust the log level during the block execution for the current Fiber only
+  #
+  #   logger.with_level(:debug) do
+  #     logger.debug { "Hello" }
+  #   end
+  def with_level(severity)
+    prev, @level_override[Fiber.current] = level, Severity.coerce(severity)
+    begin
+      yield
+    ensure
+      if prev
+        @level_override[Fiber.current] = prev
       else
-        raise ArgumentError, "invalid log level: #{severity}"
+        @level_override.delete(Fiber.current)
       end
     end
   end
@@ -583,6 +584,7 @@ class Logger
     self.datetime_format = datetime_format
     self.formatter = formatter
     @logdev = nil
+    @level_override = {}
     if logdev && logdev != File::NULL
       @logdev = LogDevice.new(logdev, shift_age: shift_age,
         shift_size: shift_size,

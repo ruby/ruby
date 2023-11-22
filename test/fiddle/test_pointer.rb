@@ -10,6 +10,22 @@ module Fiddle
       Fiddle.dlwrap arg
     end
 
+    def test_can_read_write_memory
+      # Allocate some memory
+      address = Fiddle.malloc(Fiddle::SIZEOF_VOIDP)
+
+      bytes_to_write = Fiddle::SIZEOF_VOIDP.times.to_a.pack("C*")
+
+      # Write to the memory
+      Fiddle::Pointer.write(address, bytes_to_write)
+
+      # Read the bytes out again
+      bytes = Fiddle::Pointer.read(address, Fiddle::SIZEOF_VOIDP)
+      assert_equal bytes_to_write, bytes
+    ensure
+      Fiddle.free address
+    end
+
     def test_cptr_to_int
       null = Fiddle::NULL
       assert_equal(null.to_i, null.to_int)

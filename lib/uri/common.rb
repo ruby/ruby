@@ -68,16 +68,32 @@ module URI
   end
   private_constant :Schemes
 
+  # Registers the given +klass+ as the class to be instantiated
+  # when parsing a \URI with the given +scheme+:
   #
-  # Register the given +klass+ to be instantiated when parsing URLs with the given +scheme+.
-  # Note that currently only schemes which after .upcase are valid constant names
-  # can be registered (no -/+/. allowed).
+  #   URI.register_scheme('MS_SEARCH', URI::Generic) # => URI::Generic
+  #   URI.scheme_list['MS_SEARCH']                   # => URI::Generic
   #
+  # Note that after calling String#upcase on +scheme+, it must be a valid
+  # constant name.
   def self.register_scheme(scheme, klass)
     Schemes.const_set(scheme.to_s.upcase, klass)
   end
 
-  # Returns a Hash of the defined schemes.
+  # Returns a hash of the defined schemes:
+  #
+  #   URI.scheme_list
+  #   # =>
+  #   {"MAILTO"=>URI::MailTo,
+  #    "LDAPS"=>URI::LDAPS,
+  #    "WS"=>URI::WS,
+  #    "HTTP"=>URI::HTTP,
+  #    "HTTPS"=>URI::HTTPS,
+  #    "LDAP"=>URI::LDAP,
+  #    "FILE"=>URI::File,
+  #    "FTP"=>URI::FTP}
+  #
+  # Related: URI.register_scheme.
   def self.scheme_list
     Schemes.constants.map { |name|
       [name.to_s.upcase, Schemes.const_get(name)]
@@ -88,9 +104,21 @@ module URI
   private_constant :INITIAL_SCHEMES
   Ractor.make_shareable(INITIAL_SCHEMES) if defined?(Ractor)
 
+  # Returns a new object constructed from the given +scheme+, +arguments+,
+  # and +default+:
   #
-  # Construct a URI instance, using the scheme to detect the appropriate class
-  # from +URI.scheme_list+.
+  # - The new object is an instance of <tt>URI.scheme_list[scheme.upcase]</tt>.
+  # - The object is initialized by calling the class initializer
+  #   using +scheme+ and +arguments+.
+  #   See URI::Generic.new.
+  #
+  # Examples:
+  #
+  #   values = ['john.doe', 'www.example.com', '123', nil, '/forum/questions/', nil, 'tag=networking&order=newest', 'top']
+  #   URI.for('https', *values)
+  #   # => #<URI::HTTPS https://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top>
+  #   URI.for('foo', *values, default: URI::HTTP)
+  #   # => #<URI::HTTP foo://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top>
   #
   def self.for(scheme, *arguments, default: Generic)
     const_name = scheme.to_s.upcase
@@ -121,95 +149,49 @@ module URI
   #
   class BadURIError < Error; end
 
+  # Returns a 9-element array representing the parts of the \URI
+  # formed from the string +uri+;
+  # each array element is a string or +nil+:
   #
-  # == Synopsis
-  #
-  #   URI::split(uri)
-  #
-  # == Args
-  #
-  # +uri+::
-  #   String with URI.
-  #
-  # == Description
-  #
-  # Splits the string on following parts and returns array with result:
-  #
-  # * Scheme
-  # * Userinfo
-  # * Host
-  # * Port
-  # * Registry
-  # * Path
-  # * Opaque
-  # * Query
-  # * Fragment
-  #
-  # == Usage
-  #
-  #   require 'uri'
-  #
-  #   URI.split("http://www.ruby-lang.org/")
-  #   # => ["http", nil, "www.ruby-lang.org", nil, nil, "/", nil, nil, nil]
+  #   names = %w[scheme userinfo host port registry path opaque query fragment]
+  #   values = URI.split('https://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top')
+  #   names.zip(values)
+  #   # =>
+  #   [["scheme", "https"],
+  #    ["userinfo", "john.doe"],
+  #    ["host", "www.example.com"],
+  #    ["port", "123"],
+  #    ["registry", nil],
+  #    ["path", "/forum/questions/"],
+  #    ["opaque", nil],
+  #    ["query", "tag=networking&order=newest"],
+  #    ["fragment", "top"]]
   #
   def self.split(uri)
     RFC3986_PARSER.split(uri)
   end
 
+  # Returns a new \URI object constructed from the given string +uri+:
   #
-  # == Synopsis
+  #   URI.parse('https://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top')
+  #   # => #<URI::HTTPS https://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top>
+  #   URI.parse('http://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top')
+  #   # => #<URI::HTTP http://john.doe@www.example.com:123/forum/questions/?tag=networking&order=newest#top>
   #
-  #   URI::parse(uri_str)
-  #
-  # == Args
-  #
-  # +uri_str+::
-  #   String with URI.
-  #
-  # == Description
-  #
-  # Creates one of the URI's subclasses instance from the string.
-  #
-  # == Raises
-  #
-  # URI::InvalidURIError::
-  #   Raised if URI given is not a correct one.
-  #
-  # == Usage
-  #
-  #   require 'uri'
-  #
-  #   uri = URI.parse("http://www.ruby-lang.org/")
-  #   # => #<URI::HTTP http://www.ruby-lang.org/>
-  #   uri.scheme
-  #   # => "http"
-  #   uri.host
-  #   # => "www.ruby-lang.org"
-  #
-  # It's recommended to first ::escape the provided +uri_str+ if there are any
-  # invalid URI characters.
+  # It's recommended to first ::escape string +uri+
+  # if it may contain invalid URI characters.
   #
   def self.parse(uri)
     RFC3986_PARSER.parse(uri)
   end
 
+  # Merges the given URI strings +str+
+  # per {RFC 2396}[https://www.rfc-editor.org/rfc/rfc2396.html].
   #
-  # == Synopsis
+  # Each string in +str+ is converted to an
+  # {RFC3986 URI}[https://www.rfc-editor.org/rfc/rfc3986.html] before being merged.
   #
-  #   URI::join(str[, str, ...])
-  #
-  # == Args
-  #
-  # +str+::
-  #   String(s) to work with, will be converted to RFC3986 URIs before merging.
-  #
-  # == Description
-  #
-  # Joins URIs.
-  #
-  # == Usage
-  #
-  #   require 'uri'
+  # Examples:
   #
   #   URI.join("http://example.com/","main.rbx")
   #   # => #<URI::HTTP http://example.com/main.rbx>
@@ -254,7 +236,7 @@ module URI
   #   URI.extract("text here http://foo.example.org/bla and here mailto:test@example.com and here also.")
   #   # => ["http://foo.example.com/bla", "mailto:test@example.com"]
   #
-  def self.extract(str, schemes = nil, &block)
+  def self.extract(str, schemes = nil, &block) # :nodoc:
     warn "URI.extract is obsolete", uplevel: 1 if $VERBOSE
     DEFAULT_PARSER.extract(str, schemes, &block)
   end
@@ -291,7 +273,7 @@ module URI
   #     p $&
   #   end
   #
-  def self.regexp(schemes = nil)
+  def self.regexp(schemes = nil)# :nodoc:
     warn "URI.regexp is obsolete", uplevel: 1 if $VERBOSE
     DEFAULT_PARSER.make_regexp(schemes)
   end
@@ -314,40 +296,86 @@ module URI
   TBLDECWWWCOMP_['+'] = ' '
   TBLDECWWWCOMP_.freeze
 
-  # Encodes given +str+ to URL-encoded form data.
+  # Returns a URL-encoded string derived from the given string +str+.
   #
-  # This method doesn't convert *, -, ., 0-9, A-Z, _, a-z, but does convert SP
-  # (ASCII space) to + and converts others to %XX.
+  # The returned string:
   #
-  # If +enc+ is given, convert +str+ to the encoding before percent encoding.
+  # - Preserves:
   #
-  # This is an implementation of
-  # https://www.w3.org/TR/2013/CR-html5-20130806/forms.html#url-encoded-form-data.
+  #   - Characters <tt>'*'</tt>, <tt>'.'</tt>, <tt>'-'</tt>, and <tt>'_'</tt>.
+  #   - Character in ranges <tt>'a'..'z'</tt>, <tt>'A'..'Z'</tt>,
+  #     and <tt>'0'..'9'</tt>.
   #
-  # See URI.decode_www_form_component, URI.encode_www_form.
+  #   Example:
+  #
+  #     URI.encode_www_form_component('*.-_azAZ09')
+  #     # => "*.-_azAZ09"
+  #
+  # - Converts:
+  #
+  #   - Character <tt>' '</tt> to character <tt>'+'</tt>.
+  #   - Any other character to "percent notation";
+  #     the percent notation for character <i>c</i> is <tt>'%%%X' % c.ord</tt>.
+  #
+  #   Example:
+  #
+  #     URI.encode_www_form_component('Here are some punctuation characters: ,;?:')
+  #     # => "Here+are+some+punctuation+characters%3A+%2C%3B%3F%3A"
+  #
+  # Encoding:
+  #
+  # - If +str+ has encoding Encoding::ASCII_8BIT, argument +enc+ is ignored.
+  # - Otherwise +str+ is converted first to Encoding::UTF_8
+  #   (with suitable character replacements),
+  #   and then to encoding +enc+.
+  #
+  # In either case, the returned string has forced encoding Encoding::US_ASCII.
+  #
+  # Related: URI.encode_uri_component (encodes <tt>' '</tt> as <tt>'%20'</tt>).
   def self.encode_www_form_component(str, enc=nil)
     _encode_uri_component(/[^*\-.0-9A-Z_a-z]/, TBLENCWWWCOMP_, str, enc)
   end
 
-  # Decodes given +str+ of URL-encoded form data.
+  # Returns a string decoded from the given \URL-encoded string +str+.
   #
-  # This decodes + to SP.
+  # The given string is first encoded as Encoding::ASCII-8BIT (using String#b),
+  # then decoded (as below), and finally force-encoded to the given encoding +enc+.
   #
-  # See URI.encode_www_form_component, URI.decode_www_form.
+  # The returned string:
+  #
+  # - Preserves:
+  #
+  #   - Characters <tt>'*'</tt>, <tt>'.'</tt>, <tt>'-'</tt>, and <tt>'_'</tt>.
+  #   - Character in ranges <tt>'a'..'z'</tt>, <tt>'A'..'Z'</tt>,
+  #     and <tt>'0'..'9'</tt>.
+  #
+  #   Example:
+  #
+  #     URI.decode_www_form_component('*.-_azAZ09')
+  #     # => "*.-_azAZ09"
+  #
+  # - Converts:
+  #
+  #   - Character <tt>'+'</tt> to character <tt>' '</tt>.
+  #   - Each "percent notation" to an ASCII character.
+  #
+  #   Example:
+  #
+  #     URI.decode_www_form_component('Here+are+some+punctuation+characters%3A+%2C%3B%3F%3A')
+  #     # => "Here are some punctuation characters: ,;?:"
+  #
+  # Related: URI.decode_uri_component (preserves <tt>'+'</tt>).
   def self.decode_www_form_component(str, enc=Encoding::UTF_8)
     _decode_uri_component(/\+|%\h\h/, str, enc)
   end
 
-  # Encodes +str+ using URL encoding
-  #
-  # This encodes SP to %20 instead of +.
+  # Like URI.encode_www_form_component, except that <tt>' '</tt> (space)
+  # is encoded as <tt>'%20'</tt> (instead of <tt>'+'</tt>).
   def self.encode_uri_component(str, enc=nil)
     _encode_uri_component(/[^*\-.0-9A-Z_a-z]/, TBLENCURICOMP_, str, enc)
   end
 
-  # Decodes given +str+ of URL-encoded data.
-  #
-  # This does not decode + to SP.
+  # Like URI.decode_www_form_component, except that <tt>'+'</tt> is preserved.
   def self.decode_uri_component(str, enc=Encoding::UTF_8)
     _decode_uri_component(/%\h\h/, str, enc)
   end
@@ -372,33 +400,104 @@ module URI
   end
   private_class_method :_decode_uri_component
 
-  # Generates URL-encoded form data from given +enum+.
+  # Returns a URL-encoded string derived from the given
+  # {Enumerable}[rdoc-ref:Enumerable@Enumerable+in+Ruby+Classes]
+  # +enum+.
   #
-  # This generates application/x-www-form-urlencoded data defined in HTML5
-  # from given an Enumerable object.
+  # The result is suitable for use as form data
+  # for an \HTTP request whose <tt>Content-Type</tt> is
+  # <tt>'application/x-www-form-urlencoded'</tt>.
   #
-  # This internally uses URI.encode_www_form_component(str).
+  # The returned string consists of the elements of +enum+,
+  # each converted to one or more URL-encoded strings,
+  # and all joined with character <tt>'&'</tt>.
   #
-  # This method doesn't convert the encoding of given items, so convert them
-  # before calling this method if you want to send data as other than original
-  # encoding or mixed encoding data. (Strings which are encoded in an HTML5
-  # ASCII incompatible encoding are converted to UTF-8.)
+  # Simple examples:
   #
-  # This method doesn't handle files.  When you send a file, use
-  # multipart/form-data.
+  #   URI.encode_www_form([['foo', 0], ['bar', 1], ['baz', 2]])
+  #   # => "foo=0&bar=1&baz=2"
+  #   URI.encode_www_form({foo: 0, bar: 1, baz: 2})
+  #   # => "foo=0&bar=1&baz=2"
   #
-  # This refers https://url.spec.whatwg.org/#concept-urlencoded-serializer
+  # The returned string is formed using method URI.encode_www_form_component,
+  # which converts certain characters:
   #
-  #    URI.encode_www_form([["q", "ruby"], ["lang", "en"]])
-  #    #=> "q=ruby&lang=en"
-  #    URI.encode_www_form("q" => "ruby", "lang" => "en")
-  #    #=> "q=ruby&lang=en"
-  #    URI.encode_www_form("q" => ["ruby", "perl"], "lang" => "en")
-  #    #=> "q=ruby&q=perl&lang=en"
-  #    URI.encode_www_form([["q", "ruby"], ["q", "perl"], ["lang", "en"]])
-  #    #=> "q=ruby&q=perl&lang=en"
+  #   URI.encode_www_form('f#o': '/', 'b-r': '$', 'b z': '@')
+  #   # => "f%23o=%2F&b-r=%24&b+z=%40"
   #
-  # See URI.encode_www_form_component, URI.decode_www_form.
+  # When +enum+ is Array-like, each element +ele+ is converted to a field:
+  #
+  # - If +ele+ is an array of two or more elements,
+  #   the field is formed from its first two elements
+  #   (and any additional elements are ignored):
+  #
+  #     name = URI.encode_www_form_component(ele[0], enc)
+  #     value = URI.encode_www_form_component(ele[1], enc)
+  #     "#{name}=#{value}"
+  #
+  #   Examples:
+  #
+  #     URI.encode_www_form([%w[foo bar], %w[baz bat bah]])
+  #     # => "foo=bar&baz=bat"
+  #     URI.encode_www_form([['foo', 0], ['bar', :baz, 'bat']])
+  #     # => "foo=0&bar=baz"
+  #
+  # - If +ele+ is an array of one element,
+  #   the field is formed from <tt>ele[0]</tt>:
+  #
+  #     URI.encode_www_form_component(ele[0])
+  #
+  #   Example:
+  #
+  #     URI.encode_www_form([['foo'], [:bar], [0]])
+  #     # => "foo&bar&0"
+  #
+  # - Otherwise the field is formed from +ele+:
+  #
+  #     URI.encode_www_form_component(ele)
+  #
+  #   Example:
+  #
+  #     URI.encode_www_form(['foo', :bar, 0])
+  #     # => "foo&bar&0"
+  #
+  # The elements of an Array-like +enum+ may be mixture:
+  #
+  #   URI.encode_www_form([['foo', 0], ['bar', 1, 2], ['baz'], :bat])
+  #   # => "foo=0&bar=1&baz&bat"
+  #
+  # When +enum+ is Hash-like,
+  # each +key+/+value+ pair is converted to one or more fields:
+  #
+  # - If +value+ is
+  #   {Array-convertible}[rdoc-ref:implicit_conversion.rdoc@Array-Convertible+Objects],
+  #   each element +ele+ in +value+ is paired with +key+ to form a field:
+  #
+  #     name = URI.encode_www_form_component(key, enc)
+  #     value = URI.encode_www_form_component(ele, enc)
+  #     "#{name}=#{value}"
+  #
+  #   Example:
+  #
+  #     URI.encode_www_form({foo: [:bar, 1], baz: [:bat, :bam, 2]})
+  #     # => "foo=bar&foo=1&baz=bat&baz=bam&baz=2"
+  #
+  # - Otherwise, +key+ and +value+ are paired to form a field:
+  #
+  #     name = URI.encode_www_form_component(key, enc)
+  #     value = URI.encode_www_form_component(value, enc)
+  #     "#{name}=#{value}"
+  #
+  #   Example:
+  #
+  #     URI.encode_www_form({foo: 0, bar: 1, baz: 2})
+  #     # => "foo=0&bar=1&baz=2"
+  #
+  # The elements of a Hash-like +enum+ may be mixture:
+  #
+  #   URI.encode_www_form({foo: [0, 1], bar: 2})
+  #   # => "foo=0&foo=1&bar=2"
+  #
   def self.encode_www_form(enum, enc=nil)
     enum.map do |k,v|
       if v.nil?
@@ -419,22 +518,39 @@ module URI
     end.join('&')
   end
 
-  # Decodes URL-encoded form data from given +str+.
+  # Returns name/value pairs derived from the given string +str+,
+  # which must be an ASCII string.
   #
-  # This decodes application/x-www-form-urlencoded data
-  # and returns an array of key-value arrays.
+  # The method may be used to decode the body of Net::HTTPResponse object +res+
+  # for which <tt>res['Content-Type']</tt> is <tt>'application/x-www-form-urlencoded'</tt>.
   #
-  # This refers http://url.spec.whatwg.org/#concept-urlencoded-parser,
-  # so this supports only &-separator, and doesn't support ;-separator.
+  # The returned data is an array of 2-element subarrays;
+  # each subarray is a name/value pair (both are strings).
+  # Each returned string has encoding +enc+,
+  # and has had invalid characters removed via
+  # {String#scrub}[rdoc-ref:String#scrub].
   #
-  #    ary = URI.decode_www_form("a=1&a=2&b=3")
-  #    ary                   #=> [['a', '1'], ['a', '2'], ['b', '3']]
-  #    ary.assoc('a').last   #=> '1'
-  #    ary.assoc('b').last   #=> '3'
-  #    ary.rassoc('a').last  #=> '2'
-  #    Hash[ary]             #=> {"a"=>"2", "b"=>"3"}
+  # A simple example:
   #
-  # See URI.decode_www_form_component, URI.encode_www_form.
+  #   URI.decode_www_form('foo=0&bar=1&baz')
+  #   # => [["foo", "0"], ["bar", "1"], ["baz", ""]]
+  #
+  # The returned strings have certain conversions,
+  # similar to those performed in URI.decode_www_form_component:
+  #
+  #   URI.decode_www_form('f%23o=%2F&b-r=%24&b+z=%40')
+  #   # => [["f#o", "/"], ["b-r", "$"], ["b z", "@"]]
+  #
+  # The given string may contain consecutive separators:
+  #
+  #   URI.decode_www_form('foo=0&&bar=1&&baz=2')
+  #   # => [["foo", "0"], ["", ""], ["bar", "1"], ["", ""], ["baz", "2"]]
+  #
+  # A different separator may be specified:
+  #
+  #   URI.decode_www_form('foo=0--bar=1--baz', separator: '--')
+  #   # => [["foo", "0"], ["bar", "1"], ["baz", ""]]
+  #
   def self.decode_www_form(str, enc=Encoding::UTF_8, separator: '&', use__charset_: false, isindex: false)
     raise ArgumentError, "the input of #{self.name}.#{__method__} must be ASCII only string" unless str.ascii_only?
     ary = []
@@ -713,7 +829,15 @@ end # module URI
 module Kernel
 
   #
-  # Returns +uri+ converted to an URI object.
+  # Returns a \URI object derived from the given +uri+,
+  # which may be a \URI string or an existing \URI object:
+  #
+  #   # Returns a new URI.
+  #   uri = URI('http://github.com/ruby/ruby')
+  #   # => #<URI::HTTP http://github.com/ruby/ruby>
+  #   # Returns the given URI.
+  #   URI(uri)
+  #   # => #<URI::HTTP http://github.com/ruby/ruby>
   #
   def URI(uri)
     if uri.is_a?(URI::Generic)

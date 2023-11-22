@@ -5,7 +5,7 @@ require_relative '../fixtures/classes'
 # To be able to do it, the @step ivar must contain a Proc that transforms
 # the step call arguments passed as positional arguments to the style of
 # arguments pretended to test.
-describe :numeric_step, :shared => true do
+describe :numeric_step, shared: true do
   before :each do
     ScratchPad.record []
     @prc = -> x { ScratchPad << x }
@@ -257,12 +257,6 @@ describe :numeric_step, :shared => true do
 
   describe "when no block is given" do
     step_enum_class = Enumerator::ArithmeticSequence
-
-    ruby_version_is ""..."3.0" do
-      it "returns an #{step_enum_class} when step is 0" do
-        @step.call(1, 2, 0).should be_an_instance_of(step_enum_class)
-      end
-    end
 
     it "returns an #{step_enum_class} when not passed a block and self > stop" do
       @step.call(1, 0, 2).should be_an_instance_of(step_enum_class)

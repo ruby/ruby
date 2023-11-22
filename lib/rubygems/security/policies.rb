@@ -1,6 +1,6 @@
 # frozen_string_literal: true
-module Gem::Security
 
+module Gem::Security
   ##
   # No security policy: all package signature checks are disabled.
 
@@ -111,5 +111,4 @@ module Gem::Security
     "HighSecurity" => HighSecurity,
     # SigningPolicy is not intended for use by `gem -P` so do not list it
   }.freeze
-
 end

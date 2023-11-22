@@ -41,7 +41,7 @@ static const rb_data_type_t ossl_x509rev_type = {
     {
 	0, ossl_x509rev_free,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY,
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 /*

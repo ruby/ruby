@@ -1,0 +1,50 @@
+module Prism
+  # A class that knows how to walk down the tree. None of the individual visit
+  # methods are implemented on this visitor, so it forces the consumer to
+  # implement each one that they need. For a default implementation that
+  # continues walking the tree, see the Visitor class.
+  class BasicVisitor
+    # Calls `accept` on the given node if it is not `nil`, which in turn should
+    # call back into this visitor by calling the appropriate `visit_*` method.
+    def visit(node)
+      node&.accept(self)
+    end
+
+    # Visits each node in `nodes` by calling `accept` on each one.
+    def visit_all(nodes)
+      nodes.each { |node| node&.accept(self) }
+    end
+
+    # Visits the child nodes of `node` by calling `accept` on each one.
+    def visit_child_nodes(node)
+      node.compact_child_nodes.each { |node| node.accept(self) }
+    end
+  end
+
+  # A visitor is a class that provides a default implementation for every accept
+  # method defined on the nodes. This means it can walk a tree without the
+  # caller needing to define any special handling. This allows you to handle a
+  # subset of the tree, while still walking the whole tree.
+  #
+  # For example, to find all of the method calls that call the `foo` method, you
+  # could write:
+  #
+  #     class FooCalls < Prism::Visitor
+  #       def visit_call_node(node)
+  #         if node.name == "foo"
+  #           # Do something with the node
+  #         end
+  #
+  #         # Call super so that the visitor continues walking the tree
+  #         super
+  #       end
+  #     end
+  #
+  class Visitor < BasicVisitor
+    <%- nodes.each_with_index do |node, index| -%>
+<%= "\n" if index != 0 -%>
+    # Visit a <%= node.name %> node
+    alias visit_<%= node.human %> visit_child_nodes
+    <%- end -%>
+  end
+end

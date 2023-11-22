@@ -3,10 +3,7 @@ require 'test/unit'
 require 'envutil'
 require 'uri'
 
-module URI
-
-
-class TestCommon < Test::Unit::TestCase
+class URI::TestCommon < Test::Unit::TestCase
   def setup
   end
 
@@ -110,6 +107,17 @@ class TestCommon < Test::Unit::TestCase
     assert_equal(expected, URI("http://www.ruby-lang.org/"))
     assert_equal(expected, Kernel::URI("http://www.ruby-lang.org/"))
     assert_raise(NoMethodError) { Object.new.URI("http://www.ruby-lang.org/") }
+  end
+
+  def test_parse_timeout
+    pre = ->(n) {
+      'https://example.com/dir/' + 'a' * (n * 100) + '/##.jpg'
+    }
+    assert_linear_performance((1..3).map {|i| 10**i}, rehearsal: 1000, pre: pre) do |uri|
+      assert_raise(URI::InvalidURIError) do
+        URI.parse(uri)
+      end
+    end
   end
 
   def test_encode_www_form_component
@@ -280,7 +288,4 @@ class TestCommon < Test::Unit::TestCase
 
   private
   def s(str) str.force_encoding(Encoding::Windows_31J); end
-end
-
-
 end

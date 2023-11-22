@@ -33,10 +33,6 @@ describe :io_each, shared: true do
       $_.should == "test"
     end
 
-    it "returns self" do
-      @io.send(@method) { |l| l }.should equal(@io)
-    end
-
     it "raises an IOError when self is not readable" do
       -> { IOSpecs.closed_io.send(@method) {} }.should raise_error(IOError)
     end
@@ -76,6 +72,10 @@ describe :io_each, shared: true do
         # must pass block so Enumerator is evaluated and raises
         -> { @io.send(@method, 0){} }.should raise_error(ArgumentError)
       end
+    end
+
+    it "does not accept Integers that don't fit in a C off_t" do
+      -> { @io.send(@method, 2**128){} }.should raise_error(RangeError)
     end
   end
 
@@ -176,16 +176,14 @@ describe :io_each, shared: true do
       ScratchPad.recorded.should == IOSpecs.lines_without_newline_characters
     end
 
-    ruby_version_is "3.0" do
-      it "raises exception when options passed as Hash" do
-        -> {
-          @io.send(@method, { chomp: true }) { |s| }
-        }.should raise_error(TypeError)
+    it "raises exception when options passed as Hash" do
+      -> {
+        @io.send(@method, { chomp: true }) { |s| }
+      }.should raise_error(TypeError)
 
-        -> {
-          @io.send(@method, "\n", 1, { chomp: true }) { |s| }
-        }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 0..2)")
-      end
+      -> {
+        @io.send(@method, "\n", 1, { chomp: true }) { |s| }
+      }.should raise_error(ArgumentError, "wrong number of arguments (given 3, expected 0..2)")
     end
   end
 

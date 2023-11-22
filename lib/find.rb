@@ -27,6 +27,8 @@
 #
 module Find
 
+  VERSION = "0.2.0"
+
   #
   # Calls the associated block with the name of every file and directory listed
   # as arguments, then recursively on their subdirectories, and so on.

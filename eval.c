@@ -18,12 +18,12 @@
 #endif
 
 #include "eval_intern.h"
-#include "gc.h"
 #include "internal.h"
 #include "internal/class.h"
 #include "internal/cont.h"
 #include "internal/error.h"
 #include "internal/eval.h"
+#include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/inits.h"
 #include "internal/io.h"
@@ -32,7 +32,7 @@
 #include "internal/variable.h"
 #include "ruby/fiber/scheduler.h"
 #include "iseq.h"
-#include "mjit.h"
+#include "rjit.h"
 #include "probes.h"
 #include "probes_helper.h"
 #include "ruby/vm.h"
@@ -257,8 +257,6 @@ rb_ec_cleanup(rb_execution_context_t *ec, enum ruby_tag_type ex)
         }
     }
 
-    mjit_finish(true); // We still need ISeqs here, so it's before rb_ec_finalize().
-
     rb_ec_finalize(ec);
 
     /* unlock again if finalizer took mutexes. */
@@ -441,7 +439,7 @@ rb_class_modify_check(VALUE klass)
 
         if (FL_TEST(klass, FL_SINGLETON)) {
             desc = "object";
-            klass = rb_ivar_get(klass, id__attached__);
+            klass = RCLASS_ATTACHED_OBJECT(klass);
             if (!SPECIAL_CONST_P(klass)) {
                 switch (BUILTIN_TYPE(klass)) {
                   case T_MODULE:
@@ -647,6 +645,10 @@ rb_ec_setup_exception(const rb_execution_context_t *ec, VALUE mesg, VALUE cause)
         cause = get_ec_errinfo(ec);
     }
     if (cause != mesg) {
+        if (THROW_DATA_P(cause)) {
+            cause = Qnil;
+        }
+
         rb_ivar_set(mesg, id_cause, cause);
     }
 }
@@ -1339,14 +1341,14 @@ rb_using_module(const rb_cref_t *cref, VALUE module)
 {
     Check_Type(module, T_MODULE);
     using_module_recursive(cref, module);
-    rb_clear_method_cache_all();
+    rb_clear_all_refinement_method_cache();
 }
 
 /*
  *  call-seq:
- *     refined_class    -> class
+ *     target    -> class
  *
- *  Return the class refined by the receiver.
+ *  Return the class or module refined by the receiver.
  */
 VALUE
 rb_refinement_module_get_refined_class(VALUE module)
@@ -1355,6 +1357,19 @@ rb_refinement_module_get_refined_class(VALUE module)
 
     CONST_ID(id_refined_class, "__refined_class__");
     return rb_attr_get(module, id_refined_class);
+}
+
+/*
+ *  call-seq:
+ *     refined_class    -> class
+ *
+ *  Return the class refined by the receiver.
+ */
+static VALUE
+rb_refinement_refined_class(VALUE module)
+{
+    rb_warn_deprecated_to_remove("3.4", "Refinement#refined_class", "Refinement#target");
+    return rb_refinement_module_get_refined_class(module);
 }
 
 static void
@@ -2065,7 +2080,8 @@ Init_eval(void)
                                rb_mod_s_used_refinements, 0);
     rb_undef_method(rb_cClass, "refine");
     rb_define_private_method(rb_cRefinement, "import_methods", refinement_import_methods, -1);
-    rb_define_method(rb_cRefinement, "refined_class", rb_refinement_module_get_refined_class, 0);
+    rb_define_method(rb_cRefinement, "target", rb_refinement_module_get_refined_class, 0);
+    rb_define_method(rb_cRefinement, "refined_class", rb_refinement_refined_class, 0);
     rb_undef_method(rb_cRefinement, "append_features");
     rb_undef_method(rb_cRefinement, "prepend_features");
     rb_undef_method(rb_cRefinement, "extend_object");
@@ -2093,4 +2109,22 @@ Init_eval(void)
 
     id_signo = rb_intern_const("signo");
     id_status = rb_intern_const("status");
+}
+
+int
+rb_errno(void)
+{
+    return *rb_orig_errno_ptr();
+}
+
+void
+rb_errno_set(int e)
+{
+    *rb_orig_errno_ptr() = e;
+}
+
+int *
+rb_errno_ptr(void)
+{
+    return rb_orig_errno_ptr();
 }

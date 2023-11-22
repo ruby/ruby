@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 require_relative "helper"
 require "rubygems/platform"
 require "rbconfig"
@@ -27,7 +28,7 @@ class TestGemPlatform < Gem::TestCase
   end
 
   def test_self_match_spec?
-    make_spec = -> platform do
+    make_spec = ->(platform) do
       util_spec "mygem-for-platform-match_spec", "1" do |s|
         s.platform = platform
       end
@@ -40,7 +41,7 @@ class TestGemPlatform < Gem::TestCase
   end
 
   def test_self_match_spec_with_match_gem_override
-    make_spec = -> name, platform do
+    make_spec = ->(name, platform) do
       util_spec name, "1" do |s|
         s.platform = platform
       end
@@ -70,7 +71,7 @@ class TestGemPlatform < Gem::TestCase
       Gem.platforms = platforms
       class << Gem::Platform
         remove_method :match_gem?
-        alias_method :match_gem?, :original_match_gem? # rubocop:disable Lint/DuplicateMethods
+        alias_method :match_gem?, :original_match_gem?
         remove_method :original_match_gem?
       end
     end
@@ -174,7 +175,7 @@ class TestGemPlatform < Gem::TestCase
   end
 
   def test_initialize_mswin32_vc6
-    orig_RUBY_SO_NAME = RbConfig::CONFIG["RUBY_SO_NAME"]
+    orig_ruby_so_name = RbConfig::CONFIG["RUBY_SO_NAME"]
     RbConfig::CONFIG["RUBY_SO_NAME"] = "msvcrt-ruby18"
 
     expected = ["x86", "mswin32", nil]
@@ -183,8 +184,8 @@ class TestGemPlatform < Gem::TestCase
 
     assert_equal expected, platform.to_a, "i386-mswin32 VC6"
   ensure
-    if orig_RUBY_SO_NAME
-      RbConfig::CONFIG["RUBY_SO_NAME"] = orig_RUBY_SO_NAME
+    if orig_ruby_so_name
+      RbConfig::CONFIG["RUBY_SO_NAME"] = orig_ruby_so_name
     else
       RbConfig::CONFIG.delete "RUBY_SO_NAME"
     end
@@ -211,7 +212,7 @@ class TestGemPlatform < Gem::TestCase
   end
 
   def test_to_s
-    if win_platform?
+    if Gem.win_platform?
       assert_equal "x86-mswin32-60", Gem::Platform.local.to_s
     else
       assert_equal "x86-darwin-8", Gem::Platform.local.to_s
@@ -231,7 +232,7 @@ class TestGemPlatform < Gem::TestCase
     my = Gem::Platform.new %w[cpu my_platform 1]
     other = Gem::Platform.new %w[cpu other_platform 1]
 
-    assert(my === my)
+    assert(my === my) # rubocop:disable Lint/BinaryOperatorWithIdenticalOperands
     refute(other === my)
     refute(my === other)
   end
@@ -482,8 +483,10 @@ class TestGemPlatform < Gem::TestCase
   def test_gem_platform_match_with_string_argument
     util_set_arch "x86_64-linux-musl"
 
-    assert(Gem::Platform.match(Gem::Platform.new("x86_64-linux")), "should match Gem::Platform")
-    assert(Gem::Platform.match("x86_64-linux"), "should match String platform")
+    Gem::Deprecate.skip_during do
+      assert(Gem::Platform.match(Gem::Platform.new("x86_64-linux")), "should match Gem::Platform")
+      assert(Gem::Platform.match("x86_64-linux"), "should match String platform")
+    end
   end
 
   def assert_local_match(name)

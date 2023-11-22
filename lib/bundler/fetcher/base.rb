@@ -6,12 +6,14 @@ module Bundler
       attr_reader :downloader
       attr_reader :display_uri
       attr_reader :remote
+      attr_reader :gem_remote_fetcher
 
-      def initialize(downloader, remote, display_uri)
+      def initialize(downloader, remote, display_uri, gem_remote_fetcher)
         raise "Abstract class" if self.class == Base
         @downloader = downloader
         @remote = remote
         @display_uri = display_uri
+        @gem_remote_fetcher = gem_remote_fetcher
       end
 
       def remote_uri
@@ -38,9 +40,9 @@ module Bundler
 
       private
 
-      def log_specs(debug_msg)
+      def log_specs(&block)
         if Bundler.ui.debug?
-          Bundler.ui.debug debug_msg
+          Bundler.ui.debug yield
         else
           Bundler.ui.info ".", false
         end

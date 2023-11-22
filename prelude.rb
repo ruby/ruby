@@ -27,5 +27,5 @@ module Enumerable
   # Makes a set from the enumerable object with given arguments.
   def to_set(klass = Set, *args, &block)
     klass.new(self, *args, &block)
-  end
+  end unless instance_methods.include?(:to_set) # RJIT could already load this from builtin prelude
 end

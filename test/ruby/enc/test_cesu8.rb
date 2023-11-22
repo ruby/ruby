@@ -106,4 +106,8 @@ EOT
       assert_equal chr, ord.chr("cesu-8")
     end
   end
+
+  def test_cesu8_left_adjust_char_head
+    assert_equal("", "\u{10000}".encode("cesu-8").chop)
+  end
 end

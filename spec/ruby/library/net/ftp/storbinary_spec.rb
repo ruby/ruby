@@ -9,7 +9,7 @@ ruby_version_is ""..."3.1" do
       @server = NetFTPSpecs::DummyFTP.new
       @server.serve_once
 
-      @local_fixture_file  = File.dirname(__FILE__) + "/fixtures/putbinaryfile"
+      @local_fixture_file  = __dir__ + "/fixtures/putbinaryfile"
       @tmp_file = tmp("binaryfile", false)
 
       @ftp = Net::FTP.new

@@ -7,6 +7,8 @@ describe "UnboundMethod#bind" do
     @parent_um = UnboundMethodSpecs::Parent.new.method(:foo).unbind
     @child1_um = UnboundMethodSpecs::Child1.new.method(:foo).unbind
     @child2_um = UnboundMethodSpecs::Child2.new.method(:foo).unbind
+    @normal_um_super = UnboundMethodSpecs::Mod.instance_method(:foo_super)
+    @parent_um_super = UnboundMethodSpecs::Parent.new.method(:foo_super).unbind
   end
 
   it "raises TypeError if object is not kind_of? the Module the method defined in" do
@@ -57,5 +59,11 @@ describe "UnboundMethod#bind" do
     end
     um = p.method(:singleton_method).unbind
     ->{ um.bind(other) }.should raise_error(TypeError)
+  end
+
+  it "allows calling super for module methods bound to hierarchies that do not already have that module" do
+    p = UnboundMethodSpecs::Parent.new
+
+    @normal_um_super.bind(p).call.should == true
   end
 end

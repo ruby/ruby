@@ -1,4 +1,4 @@
-== Command Injection
+= Command Injection
 
 Some Ruby core methods accept string data
 that includes text to be executed as a system command.
@@ -8,6 +8,7 @@ They should not be called with unknown or unsanitized commands.
 These methods include:
 
 - Kernel.system
+- Kernel.open
 - {\`command` (backtick method)}[rdoc-ref:Kernel#`]
   (also called by the expression <tt>%x[command]</tt>).
 - IO.popen(command).
@@ -17,6 +18,7 @@ These methods include:
 - IO.binwrite(command).
 - IO.readlines(command).
 - IO.foreach(command).
+- URI.open(command).
 
 Note that some of these methods do not execute commands when called
 from subclass \File:

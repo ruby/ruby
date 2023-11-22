@@ -1,0 +1,45 @@
+@ ProgramNode (location: (1,0)-(1,38))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,38))
+    └── body: (length: 1)
+        └── @ CaseNode (location: (1,0)-(1,38))
+            ├── predicate: ∅
+            ├── conditions: (length: 1)
+            │   └── @ WhenNode (location: (1,6)-(1,21))
+            │       ├── keyword_loc: (1,6)-(1,10) = "when"
+            │       ├── conditions: (length: 1)
+            │       │   └── @ CallNode (location: (1,11)-(1,14))
+            │       │       ├── receiver: ∅
+            │       │       ├── call_operator_loc: ∅
+            │       │       ├── name: :foo
+            │       │       ├── message_loc: (1,11)-(1,14) = "foo"
+            │       │       ├── opening_loc: ∅
+            │       │       ├── arguments: ∅
+            │       │       ├── closing_loc: ∅
+            │       │       ├── block: ∅
+            │       │       └── flags: variable_call
+            │       └── statements:
+            │           @ StatementsNode (location: (1,16)-(1,21))
+            │           └── body: (length: 1)
+            │               └── @ StringNode (location: (1,16)-(1,21))
+            │                   ├── flags: ∅
+            │                   ├── opening_loc: (1,16)-(1,17) = "'"
+            │                   ├── content_loc: (1,17)-(1,20) = "foo"
+            │                   ├── closing_loc: (1,20)-(1,21) = "'"
+            │                   └── unescaped: "foo"
+            ├── consequent:
+            │   @ ElseNode (location: (1,23)-(1,38))
+            │   ├── else_keyword_loc: (1,23)-(1,27) = "else"
+            │   ├── statements:
+            │   │   @ StatementsNode (location: (1,28)-(1,33))
+            │   │   └── body: (length: 1)
+            │   │       └── @ StringNode (location: (1,28)-(1,33))
+            │   │           ├── flags: ∅
+            │   │           ├── opening_loc: (1,28)-(1,29) = "'"
+            │   │           ├── content_loc: (1,29)-(1,32) = "bar"
+            │   │           ├── closing_loc: (1,32)-(1,33) = "'"
+            │   │           └── unescaped: "bar"
+            │   └── end_keyword_loc: (1,35)-(1,38) = "end"
+            ├── case_keyword_loc: (1,0)-(1,4) = "case"
+            └── end_keyword_loc: (1,35)-(1,38) = "end"

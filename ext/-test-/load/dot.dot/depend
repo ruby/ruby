@@ -52,6 +52,7 @@ dot.dot.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 dot.dot.o: $(hdrdir)/ruby/internal/attr/noinline.h
 dot.dot.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 dot.dot.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+dot.dot.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 dot.dot.o: $(hdrdir)/ruby/internal/attr/pure.h
 dot.dot.o: $(hdrdir)/ruby/internal/attr/restrict.h
 dot.dot.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -111,7 +112,6 @@ dot.dot.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 dot.dot.o: $(hdrdir)/ruby/internal/intern/error.h
 dot.dot.o: $(hdrdir)/ruby/internal/intern/eval.h
 dot.dot.o: $(hdrdir)/ruby/internal/intern/file.h
-dot.dot.o: $(hdrdir)/ruby/internal/intern/gc.h
 dot.dot.o: $(hdrdir)/ruby/internal/intern/hash.h
 dot.dot.o: $(hdrdir)/ruby/internal/intern/io.h
 dot.dot.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -142,7 +142,6 @@ dot.dot.o: $(hdrdir)/ruby/internal/memory.h
 dot.dot.o: $(hdrdir)/ruby/internal/method.h
 dot.dot.o: $(hdrdir)/ruby/internal/module.h
 dot.dot.o: $(hdrdir)/ruby/internal/newobj.h
-dot.dot.o: $(hdrdir)/ruby/internal/rgengc.h
 dot.dot.o: $(hdrdir)/ruby/internal/scan_args.h
 dot.dot.o: $(hdrdir)/ruby/internal/special_consts.h
 dot.dot.o: $(hdrdir)/ruby/internal/static_assert.h

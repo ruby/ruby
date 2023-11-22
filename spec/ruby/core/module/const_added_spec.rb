@@ -121,5 +121,40 @@ describe "Module#const_added" do
 
       ScratchPad.recorded.should == [line + 2, line + 4, line + 7, line + 11]
     end
+
+    it "is called when the constant is already assigned a value" do
+      ScratchPad.record []
+
+      mod = Module.new do
+        def self.const_added(name)
+          ScratchPad.record const_get(name)
+        end
+      end
+
+      mod.module_eval(<<-RUBY, __FILE__, __LINE__ + 1)
+        TEST = 123
+      RUBY
+
+      ScratchPad.recorded.should == 123
+    end
+
+    it "records re-definition of existing constants" do
+      ScratchPad.record []
+
+      mod = Module.new do
+        def self.const_added(name)
+          ScratchPad << const_get(name)
+        end
+      end
+
+      -> {
+        mod.module_eval(<<-RUBY, __FILE__, __LINE__ + 1)
+          TEST = 123
+          TEST = 456
+        RUBY
+      }.should complain(/warning: already initialized constant .+::TEST/)
+
+      ScratchPad.recorded.should == [123, 456]
+    end
   end
 end

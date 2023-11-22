@@ -13,13 +13,13 @@ module Bundler
     def root
       gemfile = find_gemfile
       raise GemfileNotFound, "Could not locate Gemfile" unless gemfile
-      Pathname.new(gemfile).tap {|x| x.untaint if RUBY_VERSION < "2.7" }.expand_path.parent
+      Pathname.new(gemfile).expand_path.parent
     end
 
     def default_gemfile
       gemfile = find_gemfile
       raise GemfileNotFound, "Could not locate Gemfile" unless gemfile
-      Pathname.new(gemfile).tap {|x| x.untaint if RUBY_VERSION < "2.7" }.expand_path
+      Pathname.new(gemfile).expand_path
     end
 
     def default_lockfile
@@ -28,7 +28,7 @@ module Bundler
       case gemfile.basename.to_s
       when "gems.rb" then Pathname.new(gemfile.sub(/.rb$/, ".locked"))
       else Pathname.new("#{gemfile}.lock")
-      end.tap {|x| x.untaint if RUBY_VERSION < "2.7" }
+      end
     end
 
     def default_bundle_dir
@@ -100,7 +100,7 @@ module Bundler
     #
     # @see {Bundler::PermissionError}
     def filesystem_access(path, action = :write, &block)
-      yield(path.dup.tap {|x| x.untaint if RUBY_VERSION < "2.7" })
+      yield(path.dup)
     rescue Errno::EACCES
       raise PermissionError.new(path, action)
     rescue Errno::EAGAIN
@@ -160,7 +160,7 @@ module Bundler
         " (was expecting #{old_deps.map(&:to_s)}, but the real spec has #{new_deps.map(&:to_s)})"
       raise APIResponseMismatchError,
         "Downloading #{spec.full_name} revealed dependencies not in the API or the lockfile (#{extra_deps.join(", ")})." \
-        "\nEither installing with `--full-index` or running `bundle update #{spec.name}` should fix the problem."
+        "\nRunning `bundle update #{spec.name}` should fix the problem."
     end
 
     def pretty_dependency(dep)
@@ -195,6 +195,21 @@ module Bundler
 
     def write_to_gemfile(gemfile_path, contents)
       filesystem_access(gemfile_path) {|g| File.open(g, "w") {|file| file.puts contents } }
+    end
+
+    def relative_gemfile_path
+      relative_path_to(Bundler.default_gemfile)
+    end
+
+    def relative_lockfile_path
+      relative_path_to(Bundler.default_lockfile)
+    end
+
+    def relative_path_to(destination, from: pwd)
+      Pathname.new(destination).relative_path_from(from).to_s
+    rescue ArgumentError
+      # on Windows, if source and destination are on different drivers, there's no relative path from one to the other
+      destination
     end
 
     private
@@ -235,7 +250,7 @@ module Bundler
 
     def search_up(*names)
       previous = nil
-      current  = File.expand_path(SharedHelpers.pwd).tap {|x| x.untaint if RUBY_VERSION < "2.7" }
+      current  = File.expand_path(SharedHelpers.pwd)
 
       until !File.directory?(current) || current == previous
         if ENV["BUNDLER_SPEC_RUN"]
@@ -297,7 +312,7 @@ module Bundler
     def set_rubyopt
       rubyopt = [ENV["RUBYOPT"]].compact
       setup_require = "-r#{File.expand_path("setup", __dir__)}"
-      return if !rubyopt.empty? && rubyopt.first =~ /#{setup_require}/
+      return if !rubyopt.empty? && rubyopt.first =~ /#{Regexp.escape(setup_require)}/
       rubyopt.unshift setup_require
       Bundler::SharedHelpers.set_env "RUBYOPT", rubyopt.join(" ")
     end

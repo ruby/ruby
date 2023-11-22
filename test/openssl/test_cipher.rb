@@ -205,7 +205,7 @@ class OpenSSL::TestCipher < OpenSSL::TestCase
     assert_raise(OpenSSL::Cipher::CipherError) { cipher.update(ct2) }
   end if has_cipher?("aes-128-ccm") &&
          OpenSSL::Cipher.new("aes-128-ccm").authenticated? &&
-         OpenSSL::OPENSSL_VERSION_NUMBER >= 0x1010103f # version >= 1.1.1c
+         openssl?(1, 1, 1, 0x03, 0xf) # version >= 1.1.1c
 
   def test_aes_gcm
     # GCM spec Appendix B Test Case 4

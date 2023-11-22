@@ -149,13 +149,7 @@ describe 'TracePoint#enable' do
 
   describe "when nested" do
     before do
-      ruby_version_is ""..."3.0" do
-        @path_prefix = '@'
-      end
-
-      ruby_version_is "3.0" do
-        @path_prefix = ' '
-      end
+      @path_prefix = ' '
     end
 
     it "enables both TracePoints but only calls the respective callbacks" do

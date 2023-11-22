@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 #include <fiddle.h>
 
 VALUE mFiddle;
@@ -58,18 +60,16 @@ rb_fiddle_free(VALUE self, VALUE addr)
 /*
  * call-seq: Fiddle.dlunwrap(addr)
  *
- * Returns the hexadecimal representation of a memory pointer address +addr+
+ * Returns the Ruby object stored at the memory address +addr+
  *
  * Example:
  *
- *   lib = Fiddle.dlopen('/lib64/libc-2.15.so')
- *   => #<Fiddle::Handle:0x00000001342460>
- *
- *   lib['strcpy'].to_s(16)
- *   => "7f59de6dd240"
- *
- *   Fiddle.dlunwrap(Fiddle.dlwrap(lib['strcpy'].to_s(16)))
- *   => "7f59de6dd240"
+ *    x = Object.new
+ *    # => #<Object:0x0000000107c7d870>
+ *    Fiddle.dlwrap(x)
+ *    # => 4425504880
+ *    Fiddle.dlunwrap(_)
+ *    # => #<Object:0x0000000107c7d870>
  */
 VALUE
 rb_fiddle_ptr2value(VALUE self, VALUE addr)
@@ -80,15 +80,22 @@ rb_fiddle_ptr2value(VALUE self, VALUE addr)
 /*
  * call-seq: Fiddle.dlwrap(val)
  *
- * Returns a memory pointer of a function's hexadecimal address location +val+
+ * Returns the memory address of the Ruby object stored at +val+
  *
  * Example:
  *
- *   lib = Fiddle.dlopen('/lib64/libc-2.15.so')
- *   => #<Fiddle::Handle:0x00000001342460>
+ *    x = Object.new
+ *    # => #<Object:0x0000000107c7d870>
+ *    Fiddle.dlwrap(x)
+ *    # => 4425504880
  *
- *   Fiddle.dlwrap(lib['strcpy'].to_s(16))
- *   => 25522520
+ * In the case +val+ is not a heap allocated object, this method will return
+ * the tagged pointer value.
+ *
+ * Example:
+ *
+ *    Fiddle.dlwrap(123)
+ *    # => 247
  */
 static VALUE
 rb_fiddle_value2ptr(VALUE self, VALUE val)
@@ -352,6 +359,12 @@ Init_fiddle(void)
      */
     rb_define_const(mFiddleTypes, "UINTPTR_T",  INT2NUM(TYPE_UINTPTR_T));
 
+    /* Document-const: Fiddle::Types::BOOL
+     *
+     * C type - bool
+     */
+    rb_define_const(mFiddleTypes, "BOOL" , INT2NUM(TYPE_BOOL));
+
     /* Document-const: ALIGN_VOIDP
      *
      * The alignment size of a void*
@@ -455,6 +468,12 @@ Init_fiddle(void)
      * The alignment size of a uintptr_t
      */
     rb_define_const(mFiddle, "ALIGN_UINTPTR_T", INT2NUM(ALIGN_OF(uintptr_t)));
+
+    /* Document-const: ALIGN_BOOL
+     *
+     * The alignment size of a bool
+     */
+    rb_define_const(mFiddle, "ALIGN_BOOL", INT2NUM(ALIGN_OF(bool)));
 
     /* Document-const: WINDOWS
      *
@@ -629,6 +648,12 @@ Init_fiddle(void)
      * size of a const char*
      */
     rb_define_const(mFiddle, "SIZEOF_CONST_STRING", INT2NUM(sizeof(const char*)));
+
+    /* Document-const: SIZEOF_BOOL
+     *
+     * size of a bool
+     */
+    rb_define_const(mFiddle, "SIZEOF_BOOL", INT2NUM(sizeof(bool)));
 
     /* Document-const: RUBY_FREE
      *

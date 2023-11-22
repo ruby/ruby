@@ -1,10 +1,10 @@
 == Tutorial
 
-=== Why \OptionParser?
+=== Why +OptionParser+?
 
 When a Ruby program executes, it captures its command-line arguments
 and options into variable ARGV.
-This simple program just prints its \ARGV:
+This simple program just prints its +ARGV+:
 
   :include: ruby/argv.rb
 
@@ -18,7 +18,7 @@ the command-line options.
 
 OptionParser offers methods for parsing and handling those options.
 
-With \OptionParser, you can define options so that for each option:
+With +OptionParser+, you can define options so that for each option:
 
 - The code that defines the option and code that handles that option
   are in the same place.
@@ -55,7 +55,7 @@ The class also has method #help, which displays automatically-generated help tex
 - {Argument Converters}[#label-Argument+Converters]
 - {Help}[#label-Help]
 - {Top List and Base List}[#label-Top+List+and+Base+List]
-- {Defining Options}[#label-Defining+Options]
+- {Methods for Defining Options}[#label-Methods+for+Defining+Options]
 - {Parsing}[#label-Parsing]
   - {Method parse!}[#label-Method+parse-21]
   - {Method parse}[#label-Method+parse]
@@ -66,10 +66,10 @@ The class also has method #help, which displays automatically-generated help tex
 
 === To Begin With
 
-To use \OptionParser:
+To use +OptionParser+:
 
-1. Require the \OptionParser code.
-2. Create an \OptionParser object.
+1. Require the +OptionParser+ code.
+2. Create an +OptionParser+ object.
 3. Define one or more options.
 4. Parse the command line.
 
@@ -92,9 +92,9 @@ the block defined for the option is called with the argument value.
 An invalid option raises an exception.
 
 Method #parse!, which is used most often in this tutorial,
-removes from \ARGV the options and arguments it finds,
+removes from +ARGV+ the options and arguments it finds,
 leaving other non-option arguments for the program to handle on its own.
-The method returns the possibly-reduced \ARGV array.
+The method returns the possibly-reduced +ARGV+ array.
 
 Executions:
 
@@ -115,7 +115,7 @@ Executions:
 
 === Defining Options
 
-A common way to define an option in \OptionParser
+A common way to define an option in +OptionParser+
 is with instance method OptionParser#on.
 
 The method may be called with any number of arguments
@@ -522,11 +522,11 @@ Executions:
 === Argument Converters
 
 An option can specify that its argument is to be converted
-from the default \String to an instance of another class.
+from the default +String+ to an instance of another class.
 There are a number of built-in converters.
 
 Example: File +date.rb+
-defines an option whose argument is to be converted to a \Date object.
+defines an option whose argument is to be converted to a +Date+ object.
 The argument is converted by method Date#parse.
 
   :include: ruby/date.rb
@@ -546,7 +546,7 @@ for both built-in and custom converters.
 
 === Help
 
-\OptionParser makes automatically generated help text available.
++OptionParser+ makes automatically generated help text available.
 
 The help text consists of:
 
@@ -614,49 +614,49 @@ Execution:
 
 === Top List and Base List
 
-An \OptionParser object maintains a stack of \OptionParser::List objects,
+An +OptionParser+ object maintains a stack of OptionParser::List objects,
 each of which has a collection of zero or more options.
 It is unlikely that you'll need to add or take away from that stack.
 
 The stack includes:
 
-- The <em>top list</em>, given by \OptionParser#top.
-- The <em>base list</em>, given by \OptionParser#base.
+- The <em>top list</em>, given by OptionParser#top.
+- The <em>base list</em>, given by OptionParser#base.
 
-When \OptionParser builds its help text, the options in the top list
+When +OptionParser+ builds its help text, the options in the top list
 precede those in the base list.
 
-=== Defining Options
+=== Methods for Defining Options
 
 Option-defining methods allow you to create an option, and also append/prepend it
 to the top list or append it to the base list.
 
 Each of these next three methods accepts a sequence of parameter arguments and a block,
-creates an option object using method \Option#make_switch (see below),
+creates an option object using method OptionParser#make_switch (see below),
 and returns the created option:
 
-- \Method \OptionParser#define appends the created option to the top list.
+- \Method OptionParser#define appends the created option to the top list.
 
-- \Method \OptionParser#define_head prepends the created option to the top list.
+- \Method OptionParser#define_head prepends the created option to the top list.
 
-- \Method \OptionParser#define_tail appends the created option to the base list.
+- \Method OptionParser#define_tail appends the created option to the base list.
 
 These next three methods are identical to the three above,
 except for their return values:
 
-- \Method \OptionParser#on is identical to method \OptionParser#define,
+- \Method OptionParser#on is identical to method OptionParser#define,
   except that it returns the parser object +self+.
 
-- \Method \OptionParser#on_head is identical to method \OptionParser#define_head,
+- \Method OptionParser#on_head is identical to method OptionParser#define_head,
   except that it returns the parser object +self+.
 
-- \Method \OptionParser#on_tail is identical to method \OptionParser#define_tail,
+- \Method OptionParser#on_tail is identical to method OptionParser#define_tail,
   except that it returns the parser object +self+.
 
 Though you may never need to call it directly,
 here's the core method for defining an option:
 
-- \Method \OptionParser#make_switch accepts an array of parameters and a block.
+- \Method OptionParser#make_switch accepts an array of parameters and a block.
   See {Parameters for New Options}[optparse/option_params.rdoc].
   This method is unlike others here in that it:
   - Accepts an <em>array of parameters</em>;
@@ -668,7 +668,7 @@ here's the core method for defining an option:
 
 === Parsing
 
-\OptionParser has six instance methods for parsing.
++OptionParser+ has six instance methods for parsing.
 
 Three have names ending with a "bang" (<tt>!</tt>):
 
@@ -699,9 +699,9 @@ Each of these methods:
   (see {Keyword Argument into}[#label-Keyword+Argument+into]).
 - Returns +argv+, possibly with some elements removed.
 
-==== \Method parse!
+==== \Method +parse!+
 
-\Method parse!:
+\Method +parse!+:
 
 - Accepts an optional array of string arguments +argv+;
   if not given, +argv+ defaults to the value of OptionParser#default_argv,
@@ -756,9 +756,9 @@ Processing ended by non-option found when +POSIXLY_CORRECT+ is defined:
   ["--xxx", true]
   Returned: ["input_file.txt", "output_file.txt", "-yyy", "FOO"] (Array)
 
-==== \Method parse
+==== \Method +parse+
 
-\Method parse:
+\Method +parse+:
 
 - Accepts an array of string arguments
   _or_ zero or more string arguments.
@@ -810,25 +810,25 @@ Processing ended by non-option found when +POSIXLY_CORRECT+ is defined:
   ["--xxx", true]
   Returned: ["input_file.txt", "output_file.txt", "-yyy", "FOO"] (Array)
 
-==== \Method order!
+==== \Method +order!+
 
 Calling method OptionParser#order! gives exactly the same result as
 calling method OptionParser#parse! with environment variable
 +POSIXLY_CORRECT+ defined.
 
-==== \Method order
+==== \Method +order+
 
 Calling method OptionParser#order gives exactly the same result as
 calling method OptionParser#parse with environment variable
 +POSIXLY_CORRECT+ defined.
 
-==== \Method permute!
+==== \Method +permute!+
 
 Calling method OptionParser#permute! gives exactly the same result as
 calling method OptionParser#parse! with environment variable
 +POSIXLY_CORRECT+ _not_ defined.
 
-==== \Method permute
+==== \Method +permute+
 
 Calling method OptionParser#permute gives exactly the same result as
 calling method OptionParser#parse with environment variable

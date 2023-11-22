@@ -40,3 +40,19 @@ describe "IO#getbyte" do
     @io.getbyte.should == nil
   end
 end
+
+describe "IO#getbyte" do
+  before :each do
+    @name = tmp("io_getbyte.txt")
+    @io = new_io(@name, 'w')
+  end
+
+  after :each do
+    @io.close if @io
+    rm_r @name if @name
+  end
+
+  it "raises an IOError if the stream is not readable" do
+    -> { @io.getbyte }.should raise_error(IOError)
+  end
+end

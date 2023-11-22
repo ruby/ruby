@@ -104,9 +104,9 @@ describe "Module#include" do
       class A; include M; end
       class B < A; include M; end
 
-      all = [A,B,M]
+      all = [A, B, M]
 
-      (B.ancestors & all).should == [B, A, M]
+      (B.ancestors.filter { |a| all.include?(a) }).should == [B, A, M]
     end
   end
 

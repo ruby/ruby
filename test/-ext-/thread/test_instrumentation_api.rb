@@ -22,6 +22,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
   def teardown
     return if /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
     Bug::ThreadInstrumentation::unregister_callback
+    Bug::ThreadInstrumentation.last_spawned_thread = nil
   end
 
   THREADS_COUNT = 3
@@ -66,6 +67,12 @@ class TestThreadInstrumentation < Test::Unit::TestCase
   def test_thread_instrumentation_unregister
     Bug::ThreadInstrumentation::unregister_callback
     assert Bug::ThreadInstrumentation::register_and_unregister_callbacks
+  end
+
+  def test_thread_instrumentation_event_data
+    assert_nil Bug::ThreadInstrumentation.last_spawned_thread
+    thr = Thread.new{ }.join
+    assert_same thr, Bug::ThreadInstrumentation.last_spawned_thread
   end
 
   private

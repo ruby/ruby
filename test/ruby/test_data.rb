@@ -97,6 +97,7 @@ class TestData < Test::Unit::TestCase
 
     # Missing arguments can be fixed in initialize
     assert_equal([[], {foo: 1}], klass.new(foo: 1).passed)
+    assert_equal([[], {foo: 42}], klass.new(42).passed)
 
     # Extra keyword arguments can be dropped in initialize
     assert_equal([[], {foo: 1, bar: 2, baz: 3}], klass.new(foo: 1, bar: 2, baz: 3).passed)
@@ -156,6 +157,81 @@ class TestData < Test::Unit::TestCase
     o3 = klass2.new(1)
     assert_operator(o1, :eql?, o2)
     assert_not_operator(o1, :eql?, o3)
+  end
+
+  def test_with
+    klass = Data.define(:foo, :bar)
+    source = klass.new(foo: 1, bar: 2)
+
+    # Simple
+    test = source.with
+    assert_equal(source.object_id, test.object_id)
+
+    # Changes
+    test = source.with(foo: 10)
+
+    assert_equal(1, source.foo)
+    assert_equal(2, source.bar)
+    assert_equal(source, klass.new(foo: 1, bar: 2))
+
+    assert_equal(10, test.foo)
+    assert_equal(2, test.bar)
+    assert_equal(test, klass.new(foo: 10, bar: 2))
+
+    test = source.with(foo: 10, bar: 20)
+
+    assert_equal(1, source.foo)
+    assert_equal(2, source.bar)
+    assert_equal(source, klass.new(foo: 1, bar: 2))
+
+    assert_equal(10, test.foo)
+    assert_equal(20, test.bar)
+    assert_equal(test, klass.new(foo: 10, bar: 20))
+
+    # Keyword splat
+    changes = { foo: 10, bar: 20 }
+    test = source.with(**changes)
+
+    assert_equal(1, source.foo)
+    assert_equal(2, source.bar)
+    assert_equal(source, klass.new(foo: 1, bar: 2))
+
+    assert_equal(10, test.foo)
+    assert_equal(20, test.bar)
+    assert_equal(test, klass.new(foo: 10, bar: 20))
+
+    # Wrong protocol
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given 1, expected 0)") do
+      source.with(10)
+    end
+    assert_raise_with_message(ArgumentError, "unknown keywords: :baz, :quux") do
+      source.with(foo: 1, bar: 2, baz: 3, quux: 4)
+    end
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given 1, expected 0)") do
+      source.with(1, bar: 2)
+    end
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given 2, expected 0)") do
+      source.with(1, 2)
+    end
+    assert_raise_with_message(ArgumentError, "wrong number of arguments (given 1, expected 0)") do
+      source.with({ bar: 2 })
+    end
+  end
+
+  def test_with_initialize
+    oddclass = Data.define(:odd) do
+      def initialize(odd:)
+        raise ArgumentError, "Not odd" unless odd.odd?
+        super(odd: odd)
+      end
+    end
+    assert_raise_with_message(ArgumentError, "Not odd") {
+      oddclass.new(odd: 0)
+    }
+    odd = oddclass.new(odd: 1)
+    assert_raise_with_message(ArgumentError, "Not odd") {
+      odd.with(odd: 2)
+    }
   end
 
   def test_memberless

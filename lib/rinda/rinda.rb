@@ -18,6 +18,8 @@ require 'drb/drb'
 
 module Rinda
 
+  VERSION = "0.2.0"
+
   ##
   # Rinda error base class
 

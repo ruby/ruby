@@ -1,4 +1,5 @@
 # frozen_string_literal: true
+
 ##
 # A ComposedSet allows multiple sets to be queried like a single set.
 #
@@ -43,7 +44,7 @@ class Gem::Resolver::ComposedSet < Gem::Resolver::Set
   end
 
   def errors
-    @errors + @sets.map {|set| set.errors }.flatten
+    @errors + @sets.map(&:errors).flatten
   end
 
   ##

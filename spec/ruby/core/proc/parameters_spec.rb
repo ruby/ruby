@@ -115,4 +115,30 @@ describe "Proc#parameters" do
       local_is_not_parameter = {}
     end.parameters.should == [[:rest, :args], [:block, :blk]]
   end
+
+  it "returns all parameters defined with the name _ as _" do
+    proc = proc {|_, _, _ = 1, *_, _:, _: 2, **_, &_| }
+    proc.parameters.should == [
+      [:opt, :_],
+      [:opt, :_],
+      [:opt, :_],
+      [:rest, :_],
+      [:keyreq, :_],
+      [:key, :_],
+      [:keyrest, :_],
+      [:block, :_]
+    ]
+
+    lambda = -> _, _, _ = 1, *_, _:, _: 2, **_, &_ {}
+    lambda.parameters.should == [
+      [:req, :_],
+      [:req, :_],
+      [:opt, :_],
+      [:rest, :_],
+      [:keyreq, :_],
+      [:key, :_],
+      [:keyrest, :_],
+      [:block, :_]
+    ]
+  end
 end

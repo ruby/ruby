@@ -1,3 +1,4 @@
+require_relative "../../spec_helper"
 require_relative 'shared/name'
 
 describe "Encoding#to_s" do

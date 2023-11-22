@@ -35,8 +35,20 @@ describe :string_unpack_8bit, shared: true do
     ].should be_computed_by(:unpack, unpack_format(3))
   end
 
-  it "ignores NULL bytes between directives" do
-    "abc".unpack(unpack_format("\000", 2)).should == [97, 98]
+  ruby_version_is ""..."3.3" do
+    it "ignores NULL bytes between directives" do
+      suppress_warning do
+        "abc".unpack(unpack_format("\000", 2)).should == [97, 98]
+      end
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "raise ArgumentError for NULL bytes between directives" do
+      -> {
+        "abc".unpack(unpack_format("\000", 2))
+      }.should raise_error(ArgumentError, /unknown unpack directive/)
+    end
   end
 
   it "ignores spaces between directives" do

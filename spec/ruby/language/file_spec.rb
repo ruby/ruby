@@ -7,8 +7,16 @@ describe "The __FILE__ pseudo-variable" do
     -> { eval("__FILE__ = 1") }.should raise_error(SyntaxError)
   end
 
-  it "equals (eval) inside an eval" do
-    eval("__FILE__").should == "(eval)"
+  ruby_version_is ""..."3.3" do
+    it "equals (eval) inside an eval" do
+      eval("__FILE__").should == "(eval)"
+    end
+  end
+
+  ruby_version_is "3.3" do
+    it "equals (eval at __FILE__:__LINE__) inside an eval" do
+      eval("__FILE__").should == "(eval at #{__FILE__}:#{__LINE__})"
+    end
   end
 end
 

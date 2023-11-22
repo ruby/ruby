@@ -55,6 +55,7 @@ sha1.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 sha1.o: $(hdrdir)/ruby/internal/attr/noinline.h
 sha1.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 sha1.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+sha1.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 sha1.o: $(hdrdir)/ruby/internal/attr/pure.h
 sha1.o: $(hdrdir)/ruby/internal/attr/restrict.h
 sha1.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -114,7 +115,6 @@ sha1.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 sha1.o: $(hdrdir)/ruby/internal/intern/error.h
 sha1.o: $(hdrdir)/ruby/internal/intern/eval.h
 sha1.o: $(hdrdir)/ruby/internal/intern/file.h
-sha1.o: $(hdrdir)/ruby/internal/intern/gc.h
 sha1.o: $(hdrdir)/ruby/internal/intern/hash.h
 sha1.o: $(hdrdir)/ruby/internal/intern/io.h
 sha1.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -145,7 +145,6 @@ sha1.o: $(hdrdir)/ruby/internal/memory.h
 sha1.o: $(hdrdir)/ruby/internal/method.h
 sha1.o: $(hdrdir)/ruby/internal/module.h
 sha1.o: $(hdrdir)/ruby/internal/newobj.h
-sha1.o: $(hdrdir)/ruby/internal/rgengc.h
 sha1.o: $(hdrdir)/ruby/internal/scan_args.h
 sha1.o: $(hdrdir)/ruby/internal/special_consts.h
 sha1.o: $(hdrdir)/ruby/internal/static_assert.h
@@ -217,6 +216,7 @@ sha1init.o: $(hdrdir)/ruby/internal/attr/noexcept.h
 sha1init.o: $(hdrdir)/ruby/internal/attr/noinline.h
 sha1init.o: $(hdrdir)/ruby/internal/attr/nonnull.h
 sha1init.o: $(hdrdir)/ruby/internal/attr/noreturn.h
+sha1init.o: $(hdrdir)/ruby/internal/attr/packed_struct.h
 sha1init.o: $(hdrdir)/ruby/internal/attr/pure.h
 sha1init.o: $(hdrdir)/ruby/internal/attr/restrict.h
 sha1init.o: $(hdrdir)/ruby/internal/attr/returns_nonnull.h
@@ -276,7 +276,6 @@ sha1init.o: $(hdrdir)/ruby/internal/intern/enumerator.h
 sha1init.o: $(hdrdir)/ruby/internal/intern/error.h
 sha1init.o: $(hdrdir)/ruby/internal/intern/eval.h
 sha1init.o: $(hdrdir)/ruby/internal/intern/file.h
-sha1init.o: $(hdrdir)/ruby/internal/intern/gc.h
 sha1init.o: $(hdrdir)/ruby/internal/intern/hash.h
 sha1init.o: $(hdrdir)/ruby/internal/intern/io.h
 sha1init.o: $(hdrdir)/ruby/internal/intern/load.h
@@ -307,7 +306,6 @@ sha1init.o: $(hdrdir)/ruby/internal/memory.h
 sha1init.o: $(hdrdir)/ruby/internal/method.h
 sha1init.o: $(hdrdir)/ruby/internal/module.h
 sha1init.o: $(hdrdir)/ruby/internal/newobj.h
-sha1init.o: $(hdrdir)/ruby/internal/rgengc.h
 sha1init.o: $(hdrdir)/ruby/internal/scan_args.h
 sha1init.o: $(hdrdir)/ruby/internal/special_consts.h
 sha1init.o: $(hdrdir)/ruby/internal/static_assert.h

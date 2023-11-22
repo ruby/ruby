@@ -40,11 +40,11 @@ module Bundler
 
         out << "\n## Gemfile\n"
         gemfiles.each do |gemfile|
-          out << "\n### #{Pathname.new(gemfile).relative_path_from(SharedHelpers.pwd)}\n\n"
+          out << "\n### #{SharedHelpers.relative_path_to(gemfile)}\n\n"
           out << "```ruby\n" << read_file(gemfile).chomp << "\n```\n"
         end
 
-        out << "\n### #{Bundler.default_lockfile.relative_path_from(SharedHelpers.pwd)}\n\n"
+        out << "\n### #{SharedHelpers.relative_path_to(Bundler.default_lockfile)}\n\n"
         out << "```\n" << read_file(Bundler.default_lockfile).chomp << "\n```\n"
       end
 
@@ -69,9 +69,7 @@ module Bundler
     end
 
     def self.ruby_version
-      str = String.new(RUBY_VERSION)
-      str << "p#{RUBY_PATCHLEVEL}" if defined? RUBY_PATCHLEVEL
-      str << " (#{RUBY_RELEASE_DATE} revision #{RUBY_REVISION}) [#{Gem::Platform.local}]"
+      "#{RUBY_VERSION}p#{RUBY_PATCHLEVEL} (#{RUBY_RELEASE_DATE} revision #{RUBY_REVISION}) [#{Gem::Platform.local}]"
     end
 
     def self.git_version
@@ -122,7 +120,7 @@ module Bundler
         specs = Bundler.rubygems.find_name(name)
         out << ["  #{name}", "(#{specs.map(&:version).join(",")})"] unless specs.empty?
       end
-      if (exe = caller.last.split(":").first) && exe =~ %r{(exe|bin)/bundler?\z}
+      if (exe = caller.last.split(":").first)&.match? %r{(exe|bin)/bundler?\z}
         shebang = File.read(exe).lines.first
         shebang.sub!(/^#!\s*/, "")
         unless shebang.start_with?(Gem.ruby, "/usr/bin/env ruby")

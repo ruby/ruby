@@ -17,10 +17,10 @@ describe "Enumerator::Generator#initialize" do
   end
 
   describe "on frozen instance" do
-    it "raises a RuntimeError" do
+    it "raises a FrozenError" do
       -> {
         @uninitialized.freeze.send(:initialize) {}
-      }.should raise_error(RuntimeError)
+      }.should raise_error(FrozenError)
     end
   end
 end

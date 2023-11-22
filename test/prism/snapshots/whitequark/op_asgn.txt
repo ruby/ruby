@@ -1,0 +1,71 @@
+@ ProgramNode (location: (1,0)-(5,11))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(5,11))
+    └── body: (length: 3)
+        ├── @ CallOperatorWriteNode (location: (1,0)-(1,10))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (1,0)-(1,3))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :foo
+        │   │   ├── message_loc: (1,0)-(1,3) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   └── flags: variable_call
+        │   ├── call_operator_loc: (1,3)-(1,4) = "."
+        │   ├── message_loc: (1,4)-(1,5) = "A"
+        │   ├── flags: ∅
+        │   ├── read_name: :A
+        │   ├── write_name: :A=
+        │   ├── operator: :+
+        │   ├── operator_loc: (1,6)-(1,8) = "+="
+        │   └── value:
+        │       @ IntegerNode (location: (1,9)-(1,10))
+        │       └── flags: decimal
+        ├── @ CallOperatorWriteNode (location: (3,0)-(3,10))
+        │   ├── receiver:
+        │   │   @ CallNode (location: (3,0)-(3,3))
+        │   │   ├── receiver: ∅
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :foo
+        │   │   ├── message_loc: (3,0)-(3,3) = "foo"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments: ∅
+        │   │   ├── closing_loc: ∅
+        │   │   ├── block: ∅
+        │   │   └── flags: variable_call
+        │   ├── call_operator_loc: (3,3)-(3,4) = "."
+        │   ├── message_loc: (3,4)-(3,5) = "a"
+        │   ├── flags: ∅
+        │   ├── read_name: :a
+        │   ├── write_name: :a=
+        │   ├── operator: :+
+        │   ├── operator_loc: (3,6)-(3,8) = "+="
+        │   └── value:
+        │       @ IntegerNode (location: (3,9)-(3,10))
+        │       └── flags: decimal
+        └── @ CallOperatorWriteNode (location: (5,0)-(5,11))
+            ├── receiver:
+            │   @ CallNode (location: (5,0)-(5,3))
+            │   ├── receiver: ∅
+            │   ├── call_operator_loc: ∅
+            │   ├── name: :foo
+            │   ├── message_loc: (5,0)-(5,3) = "foo"
+            │   ├── opening_loc: ∅
+            │   ├── arguments: ∅
+            │   ├── closing_loc: ∅
+            │   ├── block: ∅
+            │   └── flags: variable_call
+            ├── call_operator_loc: (5,3)-(5,5) = "::"
+            ├── message_loc: (5,5)-(5,6) = "a"
+            ├── flags: ∅
+            ├── read_name: :a
+            ├── write_name: :a=
+            ├── operator: :+
+            ├── operator_loc: (5,7)-(5,9) = "+="
+            └── value:
+                @ IntegerNode (location: (5,10)-(5,11))
+                └── flags: decimal

@@ -180,6 +180,32 @@ describe "The defined? keyword when called with a method name" do
       ScratchPad.recorded.should == :defined_specs_fixnum_method
     end
   end
+
+  describe "having a throw in the receiver" do
+    it "escapes defined? and performs the throw semantics as normal" do
+      defined_returned = false
+      catch(:out) {
+        # NOTE: defined? behaves differently if it is called in a void context, see below
+        defined?(throw(:out, 42).foo).should == :unreachable
+        defined_returned = true
+      }.should == 42
+      defined_returned.should == false
+    end
+  end
+
+  describe "in a void context" do
+    it "does not execute the receiver" do
+      ScratchPad.record :not_executed
+      defined?(DefinedSpecs.side_effects / 2)
+      ScratchPad.recorded.should == :not_executed
+    end
+
+    it "warns about the void context when parsing it" do
+      -> {
+        eval "defined?(DefinedSpecs.side_effects / 2); 42"
+      }.should complain(/warning: possibly useless use of defined\? in void context/, verbose: true)
+    end
+  end
 end
 
 describe "The defined? keyword for an expression" do

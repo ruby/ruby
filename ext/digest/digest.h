@@ -40,7 +40,8 @@ rb_digest_##name##_update(void *ctx, unsigned char *ptr, size_t size) \
     for (; size > stride; size -= stride, ptr += stride) { \
         name##_Update(ctx, ptr, stride); \
     } \
-    if (size > 0) name##_Update(ctx, ptr, size); \
+    /* Since size <= stride, size should fit into an unsigned int */ \
+    if (size > 0) name##_Update(ctx, ptr, (unsigned int)size); \
 }
 
 #define DEFINE_FINISH_FUNC_FROM_FINAL(name) \
