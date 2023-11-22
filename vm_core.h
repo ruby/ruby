@@ -913,13 +913,13 @@ typedef rb_jmpbuf_t *rb_vm_tag_jmpbuf_t;
 static inline void
 rb_vm_tag_jmpbuf_init(rb_vm_tag_jmpbuf_t *jmpbuf)
 {
-    *jmpbuf = malloc(sizeof(rb_jmpbuf_t));
+    *jmpbuf = ruby_xmalloc(sizeof(rb_jmpbuf_t));
 }
 
 static inline void
 rb_vm_tag_jmpbuf_deinit(const rb_vm_tag_jmpbuf_t *jmpbuf)
 {
-    free(*jmpbuf);
+    ruby_xfree(*jmpbuf);
 }
 #else
 typedef rb_jmpbuf_t rb_vm_tag_jmpbuf_t;
