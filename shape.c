@@ -1062,7 +1062,7 @@ rb_shape_exhaust(int argc, VALUE *argv, VALUE self)
 {
     rb_check_arity(argc, 0, 1);
     int offset = argc == 1 ? NUM2INT(argv[0]) : 0;
-    GET_SHAPE_TREE()->next_shape_id = MAX_SHAPE_ID - offset;
+    GET_SHAPE_TREE()->next_shape_id = MAX_SHAPE_ID - offset + 1;
     return Qnil;
 }
 
