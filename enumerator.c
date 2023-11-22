@@ -1295,18 +1295,12 @@ yielder_compact(void *p)
 
 #define yielder_free RUBY_TYPED_DEFAULT_FREE
 
-static size_t
-yielder_memsize(const void *p)
-{
-    return sizeof(struct yielder);
-}
-
 static const rb_data_type_t yielder_data_type = {
     "yielder",
     {
         yielder_mark,
         yielder_free,
-        yielder_memsize,
+        NULL,
         yielder_compact,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
@@ -1435,18 +1429,12 @@ generator_compact(void *p)
 
 #define generator_free RUBY_TYPED_DEFAULT_FREE
 
-static size_t
-generator_memsize(const void *p)
-{
-    return sizeof(struct generator);
-}
-
 static const rb_data_type_t generator_data_type = {
     "generator",
     {
         generator_mark,
         generator_free,
-        generator_memsize,
+        NULL,
         generator_compact,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
