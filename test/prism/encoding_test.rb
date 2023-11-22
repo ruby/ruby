@@ -44,6 +44,7 @@ module Prism
       Encoding::ISO_8859_15 =>  0x00...0x100,
       Encoding::ISO_8859_16 =>  0x00...0x100,
       Encoding::KOI8_R =>       0x00...0x100,
+      Encoding::KOI8_U =>       0x00...0x100,
       Encoding::MACCENTEURO =>  0x00...0x100,
       Encoding::MACCROATIAN =>  0x00...0x100,
       Encoding::MACCYRILLIC =>  0x00...0x100,

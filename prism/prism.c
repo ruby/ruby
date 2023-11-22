@@ -6223,6 +6223,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
                 break;
             case 'K': case 'k':
                 ENCODING1("KOI8-R", pm_encoding_koi8_r);
+                ENCODING1("KOI8-U", pm_encoding_koi8_u);
                 break;
             case 'L': case 'l':
                 ENCODING1("locale", pm_encoding_utf_8);

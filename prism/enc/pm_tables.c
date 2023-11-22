@@ -866,6 +866,30 @@ static uint8_t pm_encoding_koi8_r_table[256] = {
 
 /**
  * Each element of the following table contains a bitfield that indicates a
+ * piece of information about the corresponding KOI8-U character.
+ */
+static uint8_t pm_encoding_koi8_u_table[256] = {
+//  0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 0x
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 1x
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 2x
+    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, // 3x
+    0, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // 4x
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 0, 0, 0, 0, 0, // 5x
+    0, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // 6x
+    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 0, 0, 0, 0, 0, // 7x
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 8x
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, // 9x
+    0, 0, 0, 3, 3, 0, 3, 3, 0, 0, 0, 0, 0, 3, 0, 0, // Ax
+    0, 0, 0, 7, 7, 0, 7, 7, 0, 0, 0, 0, 0, 7, 0, 0, // Bx
+    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Cx
+    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, // Dx
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Ex
+    7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, // Fx
+};
+
+/**
+ * Each element of the following table contains a bitfield that indicates a
  * piece of information about the corresponding macCentEuro character.
  */
 static uint8_t pm_encoding_mac_cent_euro_table[256] = {
@@ -1418,7 +1442,7 @@ pm_encoding_single_char_width(PRISM_ATTRIBUTE_UNUSED const uint8_t *b, PRISM_ATT
  * checking if it's a valid codepoint in KOI-8 and if it is returning 1.
  */
 static size_t
-pm_encoding_koi8_r_char_width(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {
+pm_encoding_koi8_char_width(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {
     return ((*b >= 0x20 && *b <= 0x7E) || (*b >= 0x80)) ? 1 : 0;
 }
 
@@ -1468,6 +1492,7 @@ PRISM_ENCODING_TABLE(iso_8859_14)
 PRISM_ENCODING_TABLE(iso_8859_15)
 PRISM_ENCODING_TABLE(iso_8859_16)
 PRISM_ENCODING_TABLE(koi8_r)
+PRISM_ENCODING_TABLE(koi8_u)
 PRISM_ENCODING_TABLE(mac_cent_euro)
 PRISM_ENCODING_TABLE(mac_croatian)
 PRISM_ENCODING_TABLE(mac_cyrillic)
@@ -1855,10 +1880,20 @@ pm_encoding_t pm_encoding_iso_8859_16 = {
 /** KOI8-R */
 pm_encoding_t pm_encoding_koi8_r = {
     .name = "KOI8-R",
-    .char_width = pm_encoding_koi8_r_char_width,
+    .char_width = pm_encoding_koi8_char_width,
     .alnum_char = pm_encoding_koi8_r_alnum_char,
     .alpha_char = pm_encoding_koi8_r_alpha_char,
     .isupper_char = pm_encoding_koi8_r_isupper_char,
+    .multibyte = false
+};
+
+/** KOI8-U */
+pm_encoding_t pm_encoding_koi8_u = {
+    .name = "KOI8-U",
+    .char_width = pm_encoding_koi8_char_width,
+    .alnum_char = pm_encoding_koi8_u_alnum_char,
+    .alpha_char = pm_encoding_koi8_u_alpha_char,
+    .isupper_char = pm_encoding_koi8_u_isupper_char,
     .multibyte = false
 };
 
