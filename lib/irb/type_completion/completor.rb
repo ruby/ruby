@@ -26,8 +26,8 @@ module IRB
       end
 
       def completion_candidates(preposing, target, _postposing, bind:)
-        @preposing = preposing
         verbose, $VERBOSE = $VERBOSE, nil
+        @preposing = preposing
         code = "#{preposing}#{target}"
         @result = analyze code, bind
         name, candidates = candidates_from_result(@result)
@@ -36,8 +36,7 @@ module IRB
         candidates.map(&:to_s).select { !_1.match?(all_symbols_pattern) && _1.start_with?(name) }.uniq.sort.map do
           target + _1[name.size..]
         end
-      rescue SyntaxError, StandardError => e
-        Completor.last_completion_error = e
+      rescue Exception => e
         handle_error(e)
         []
       ensure
@@ -45,6 +44,7 @@ module IRB
       end
 
       def doc_namespace(preposing, matched, postposing, bind:)
+        verbose, $VERBOSE = $VERBOSE, nil
         name = matched[/[a-zA-Z_0-9]*[!?=]?\z/]
         method_doc = -> type do
           type = type.types.find { _1.all_methods.include? name.to_sym }
@@ -102,6 +102,11 @@ module IRB
           end
         else
         end
+      rescue Exception => e
+        handle_error(e)
+        nil
+      ensure
+        $VERBOSE = verbose
       end
 
       def candidates_from_result(result)
@@ -229,6 +234,7 @@ module IRB
       end
 
       def handle_error(e)
+        Completor.last_completion_error = e
       end
     end
   end
