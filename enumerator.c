@@ -2945,7 +2945,7 @@ static const rb_data_type_t producer_data_type = {
         producer_memsize,
         producer_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct producer *
@@ -2985,8 +2985,8 @@ producer_init(VALUE obj, VALUE init, VALUE proc)
         rb_raise(rb_eArgError, "unallocated producer");
     }
 
-    ptr->init = init;
-    ptr->proc = proc;
+    RB_OBJ_WRITE(obj, &ptr->init, init);
+    RB_OBJ_WRITE(obj, &ptr->proc, proc);
 
     return obj;
 }
