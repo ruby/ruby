@@ -779,16 +779,14 @@ tp_mark(void *ptr)
     if (tp->target_th) rb_gc_mark(tp->target_th->self);
 }
 
-static size_t
-tp_memsize(const void *ptr)
-{
-    return sizeof(rb_tp_t);
-}
-
 static const rb_data_type_t tp_data_type = {
     "tracepoint",
-    {tp_mark, RUBY_TYPED_DEFAULT_FREE, tp_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    {
+        tp_mark,
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL, // Nothing allocated externally, so don't need a memsize function
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE
