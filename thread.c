@@ -4693,16 +4693,14 @@ struct thgroup {
     int enclosed;
 };
 
-static size_t
-thgroup_memsize(const void *ptr)
-{
-    return sizeof(struct thgroup);
-}
-
 static const rb_data_type_t thgroup_data_type = {
     "thgroup",
-    {0, RUBY_TYPED_DEFAULT_FREE, thgroup_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    {
+        0,
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL, // No external memory to report
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 /*
