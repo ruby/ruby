@@ -4244,3 +4244,10 @@ assert_equal 'true', %q{
   def entry = yield
   entry { true }
 }
+
+assert_normal_exit %q{
+  ivars = 1024.times.map { |i| "@iv_#{i} = #{i}\n" }.join
+  Foo = Class.new
+  Foo.class_eval "def initialize() #{ivars} end"
+  Foo.new
+}
