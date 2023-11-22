@@ -16768,22 +16768,25 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, pm_diagn
     pm_token_t recovery = parser->previous;
     pm_node_t *node = parse_expression_prefix(parser, binding_power);
 
-    // If we found a syntax error, then the type of node returned by
-    // parse_expression_prefix is going to be a missing node. In that case we need
-    // to add the error message to the parser's error list.
-    if (PM_NODE_TYPE_P(node, PM_MISSING_NODE)) {
-        pm_parser_err(parser, recovery.end, recovery.end, diag_id);
-        return node;
-    }
-
-    // The statements BEGIN { ... }, END { ... }, alias ..., and undef ... are statement.
-    // They cannot follow operators, but they can follow modifiers.
-    bool is_statement =
-        PM_NODE_TYPE_P(node, PM_PRE_EXECUTION_NODE) || PM_NODE_TYPE_P(node, PM_POST_EXECUTION_NODE) ||
-        PM_NODE_TYPE_P(node, PM_ALIAS_GLOBAL_VARIABLE_NODE) || PM_NODE_TYPE_P(node, PM_ALIAS_METHOD_NODE) ||
-        PM_NODE_TYPE_P(node, PM_UNDEF_NODE);
-    if (is_statement && pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER_RESCUE) {
-        return node;
+    switch (PM_NODE_TYPE(node)) {
+        case PM_MISSING_NODE:
+            // If we found a syntax error, then the type of node returned by
+            // parse_expression_prefix is going to be a missing node. In that
+            // case we need to add the error message to the parser's error list.
+            pm_parser_err(parser, recovery.end, recovery.end, diag_id);
+            return node;
+        case PM_PRE_EXECUTION_NODE:
+        case PM_POST_EXECUTION_NODE:
+        case PM_ALIAS_GLOBAL_VARIABLE_NODE:
+        case PM_ALIAS_METHOD_NODE:
+        case PM_UNDEF_NODE:
+            // These expressions are statements, and cannot be followed by
+            // operators (except modifiers).
+            if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER_RESCUE) {
+                return node;
+            }
+        default:
+            break;
     }
 
     // Otherwise we'll look and see if the next token can be parsed as an infix
