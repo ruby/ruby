@@ -703,15 +703,27 @@ module IRB
       end
 
       def evaluate_case_node(node, scope)
-        target = evaluate(node.predicate, scope) if node.predicate
+        evaluate(node.predicate, scope) if node.predicate
         # TODO
         branches = node.conditions.map do |condition|
-          ->(s) { evaluate_case_match target, condition, s }
+          ->(s) { evaluate_case_when_condition condition, s }
         end
         if node.consequent
           branches << ->(s) { evaluate node.consequent, s }
-        elsif node.conditions.any? { _1.is_a? Prism::WhenNode }
+        else
           branches << ->(_s) { Types::NIL }
+        end
+        Types::UnionType[*scope.run_branches(*branches)]
+      end
+
+      def evaluate_case_match_node(node, scope)
+        target = evaluate(node.predicate, scope)
+        # TODO
+        branches = node.conditions.map do |condition|
+          ->(s) { evaluate_case_in_condition target, condition, s }
+        end
+        if node.consequent
+          branches << ->(s) { evaluate node.consequent, s }
         end
         Types::UnionType[*scope.run_branches(*branches)]
       end
@@ -765,7 +777,8 @@ module IRB
       def evaluate_match_write_node(node, scope)
         # /(?<a>)(?<b>)/ =~ string
         evaluate node.call, scope
-        node.locals.each { scope[_1.to_s] = Types::UnionType[Types::STRING, Types::NIL] }
+        locals = node.targets.map(&:name)
+        locals.each { scope[_1.to_s] = Types::UnionType[Types::STRING, Types::NIL] }
         Types::BOOLEAN
       end
 
@@ -948,21 +961,20 @@ module IRB
         end
       end
 
-      def evaluate_case_match(target, node, scope)
-        case node
-        when Prism::WhenNode
-          node.conditions.each { evaluate _1, scope }
-          node.statements ? evaluate(node.statements, scope) : Types::NIL
-        when Prism::InNode
-          pattern = node.pattern
-          if pattern.is_a?(Prism::IfNode) || pattern.is_a?(Prism::UnlessNode)
-            cond_node = pattern.predicate
-            pattern = pattern.statements.body.first
-          end
-          evaluate_match_pattern(target, pattern, scope)
-          evaluate cond_node, scope if cond_node # TODO: conditional branch
-          node.statements ? evaluate(node.statements, scope) : Types::NIL
+      def evaluate_case_when_condition(node, scope)
+        node.conditions.each { evaluate _1, scope }
+        node.statements ? evaluate(node.statements, scope) : Types::NIL
+      end
+
+      def evaluate_case_in_condition(target, node, scope)
+        pattern = node.pattern
+        if pattern.is_a?(Prism::IfNode) || pattern.is_a?(Prism::UnlessNode)
+          cond_node = pattern.predicate
+          pattern = pattern.statements.body.first
         end
+        evaluate_match_pattern(target, pattern, scope)
+        evaluate cond_node, scope if cond_node # TODO: conditional branch
+        node.statements ? evaluate(node.statements, scope) : Types::NIL
       end
 
       def evaluate_match_pattern(value, pattern, scope)

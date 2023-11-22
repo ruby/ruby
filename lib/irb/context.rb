@@ -164,7 +164,7 @@ module IRB
       RegexpCompletor.new
     end
 
-    TYPE_COMPLETION_REQUIRED_PRISM_VERSION = '0.17.1'
+    TYPE_COMPLETION_REQUIRED_PRISM_VERSION = '0.18.0'
 
     private def build_type_completor
       unless Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.0.0') && RUBY_ENGINE != 'truffleruby'
