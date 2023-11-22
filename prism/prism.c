@@ -4151,7 +4151,6 @@ pm_local_variable_target_node_create_depth(pm_parser_t *parser, const pm_token_t
     );
 }
 
-
 /**
  * Allocate and initialize a new MatchPredicateNode node.
  */
