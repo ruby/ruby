@@ -1293,13 +1293,11 @@ yielder_compact(void *p)
     ptr->proc = rb_gc_location(ptr->proc);
 }
 
-#define yielder_free RUBY_TYPED_DEFAULT_FREE
-
 static const rb_data_type_t yielder_data_type = {
     "yielder",
     {
         yielder_mark,
-        yielder_free,
+        RUBY_TYPED_DEFAULT_FREE,
         NULL,
         yielder_compact,
     },
@@ -1427,13 +1425,11 @@ generator_compact(void *p)
     ptr->obj = rb_gc_location(ptr->obj);
 }
 
-#define generator_free RUBY_TYPED_DEFAULT_FREE
-
 static const rb_data_type_t generator_data_type = {
     "generator",
     {
         generator_mark,
-        generator_free,
+        RUBY_TYPED_DEFAULT_FREE,
         NULL,
         generator_compact,
     },
