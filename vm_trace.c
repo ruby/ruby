@@ -1195,6 +1195,10 @@ rb_tracepoint_enable(VALUE tpval)
         rb_raise(rb_eArgError, "can't nest-enable a targeting TracePoint");
     }
 
+    if (tp->tracing) {
+        return Qundef;
+    }
+
     if (tp->target_th) {
         rb_thread_add_event_hook2(tp->target_th->self, (rb_event_hook_func_t)tp_call_trace, tp->events, tpval,
                                   RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
