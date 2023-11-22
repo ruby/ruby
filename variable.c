@@ -1379,7 +1379,23 @@ rb_obj_convert_to_too_complex(VALUE obj, st_table *table)
         RB_VM_LOCK_ENTER();
         {
             struct st_table *gen_ivs = generic_ivtbl_no_ractor_check(obj);
-            st_lookup(gen_ivs, (st_data_t)obj, (st_data_t *)&old_ivptr);
+
+            struct gen_ivtbl *old_ivtbl = NULL;
+            st_lookup(gen_ivs, (st_data_t)obj, (st_data_t *)&old_ivtbl);
+
+            if (old_ivtbl) {
+                /* We need to modify old_ivtbl to have the too complex shape
+                 * and hold the table because the xmalloc could trigger a GC
+                 * compaction. We want the table to be updated rather than than
+                 * the original ivptr. */
+#if SHAPE_IN_BASIC_FLAGS
+                rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
+#else
+                old_ivtbl->shape_id = OBJ_TOO_COMPLEX_SHAPE_ID;
+#endif
+                old_ivtbl->as.complex.table = table;
+                old_ivptr = (VALUE *)old_ivtbl;
+            }
 
             struct gen_ivtbl *ivtbl = xmalloc(sizeof(struct gen_ivtbl));
             ivtbl->as.complex.table = table;
@@ -1627,7 +1643,9 @@ rb_ensure_iv_list_size(VALUE obj, uint32_t current_capacity, uint32_t new_capaci
 int
 rb_obj_copy_ivs_to_hash_table_i(ID key, VALUE val, st_data_t arg)
 {
-    st_insert((st_table *)arg, (st_data_t)key, (st_data_t)val);
+    RUBY_ASSERT(!st_lookup((st_table *)arg, (st_data_t)key, NULL));
+
+    st_add_direct((st_table *)arg, (st_data_t)key, (st_data_t)val);
     return ST_CONTINUE;
 }
 
