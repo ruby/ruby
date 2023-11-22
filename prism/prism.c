@@ -6165,6 +6165,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
                 ENCODING1("CP863", pm_encoding_ibm863);
                 ENCODING2("CP932", "csWindows31J", pm_encoding_windows_31j);
                 ENCODING1("CP936", pm_encoding_gbk);
+                ENCODING1("CP949", pm_encoding_cp949);
                 ENCODING1("CP1250", pm_encoding_windows_1250);
                 ENCODING1("CP1251", pm_encoding_windows_1251);
                 ENCODING1("CP1252", pm_encoding_windows_1252);
