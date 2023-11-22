@@ -1508,6 +1508,8 @@ module Prism
         end
         class A < (return)
         end
+        class << (return)
+        end
         for x in (return)
         end
       RUBY
@@ -1520,6 +1522,7 @@ module Prism
         [message, 80..86],
         [message, 110..116],
         [message, 132..138],
+        [message, 154..160],
       ], compare_ripper: false # Ripper does not check 'void value expression'.
     end
 
