@@ -488,6 +488,13 @@ module Prism
       assert_prism_eval("[1, 2, 3]")
       assert_prism_eval("%i[foo bar baz]")
       assert_prism_eval("%w[foo bar baz]")
+      assert_prism_eval("[*1..2]")
+      assert_prism_eval("[*1..2, 3, 4, *5..6, 7, 8]")
+      assert_prism_eval("[*1..2, 3, 4, *5..6, 7, 8, *9..11]")
+      assert_prism_eval("[0, *1..2, 3, 4, *5..6, 7, 8, *9..11]")
+      assert_prism_eval("[-1, true, 0, *1..2, 3, 4, *5..6, 7, 8, *9..11]")
+      assert_prism_eval("a = [1,2]; [0, *a, 3, 4, *5..6, 7, 8, *9..11]")
+      assert_prism_eval("[[*1..2], 3, *4..5]")
     end
 
     def test_AssocNode
