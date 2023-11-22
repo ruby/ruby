@@ -16768,7 +16768,6 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
 static pm_node_t *
 parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, pm_diagnostic_id_t diag_id) {
     pm_token_t recovery = parser->previous;
-    bool is_udot = parser->current.type == PM_TOKEN_UDOT_DOT || parser->current.type == PM_TOKEN_UDOT_DOT_DOT;
     pm_node_t *node = parse_expression_prefix(parser, binding_power);
 
     switch (PM_NODE_TYPE(node)) {
@@ -16788,16 +16787,18 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, pm_diagn
             if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER_RESCUE) {
                 return node;
             }
+            break;
+        case PM_RANGE_NODE:
+            // Range operators are non-associative, so that it does not
+            // associate with other range operators (i.e. `..1..` should be
+            // rejected.) For this reason, we check such a case for unary ranges
+            // here, and if so, it returns the node immediately,
+            if ((((pm_range_node_t *) node)->left == NULL) && pm_binding_powers[parser->current.type].left >= PM_BINDING_POWER_RANGE) {
+                return node;
+            }
+            break;
         default:
             break;
-    }
-
-    // Range operators are non-associative, so that it does not associate with
-    // other range operators (i.e. `..1..` should be rejected.)
-    // For this reason, we check such a case for unary ranges here, and if so,
-    // it returns the node immediately,
-    if (is_udot && pm_binding_powers[parser->current.type].left >= PM_BINDING_POWER_RANGE) {
-        return node;
     }
 
     // Otherwise we'll look and see if the next token can be parsed as an infix
