@@ -1045,7 +1045,7 @@ complex_pow_for_special_angle(VALUE self, VALUE other)
     };
     int z_dir = FIX2INT(rb_int_modulo(rb_int_mul(INT2FIX(dir), other), INT2FIX(8)));
 
-    VALUE zr, zi;
+    VALUE zr = Qfalse, zi = Qfalse;
     switch (dirs[z_dir][0]) {
       case 0: zr = zero_for(zx); break;
       case 1: zr = zx; break;
