@@ -295,23 +295,15 @@ proc_entry_compact(void *p)
     ptr->memo = rb_gc_location(ptr->memo);
 }
 
-#define proc_entry_free RUBY_TYPED_DEFAULT_FREE
-
-static size_t
-proc_entry_memsize(const void *p)
-{
-    return p ? sizeof(struct proc_entry) : 0;
-}
-
 static const rb_data_type_t proc_entry_data_type = {
     "proc_entry",
     {
         proc_entry_mark,
-        proc_entry_free,
-        proc_entry_memsize,
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL, // Nothing allocated externally, so don't need a memsize function
         proc_entry_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct proc_entry *
