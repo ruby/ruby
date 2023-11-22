@@ -563,7 +563,7 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_dump_callinfo_includes_mid
-    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+    assert_in_out_err(%w[-robjspace --disable-gems], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
       begin;
         class Foo
           def foo
@@ -579,7 +579,7 @@ class TestObjSpace < Test::Unit::TestCase
       end;
       assert_empty error
       assert(output.count > 1)
-      assert_equal 1, output.count { |l| l.include?('"mid":"baz"') }
+      assert_includes output.grep(/"imemo_type":"callinfo"/).join("\n"), '"mid":"baz"'
     end
   end
 
