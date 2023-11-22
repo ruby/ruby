@@ -1302,7 +1302,7 @@ static const rb_data_type_t yielder_data_type = {
         NULL,
         yielder_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct yielder *
@@ -1341,7 +1341,7 @@ yielder_init(VALUE obj, VALUE proc)
         rb_raise(rb_eArgError, "unallocated yielder");
     }
 
-    ptr->proc = proc;
+    RB_OBJ_WRITE(obj, &ptr->proc, proc);
 
     return obj;
 }
