@@ -264,7 +264,7 @@ static const rb_data_type_t enumerator_data_type = {
         NULL, // Nothing allocated externally, so don't need a memsize function
         NULL,
     },
-    0, NULL, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
+    0, NULL, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_DECL_MARKING | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct enumerator *
@@ -395,7 +395,7 @@ obj_to_enum(int argc, VALUE *argv, VALUE obj)
     }
     enumerator = rb_enumeratorize_with_size(obj, meth, argc, argv, 0);
     if (rb_block_given_p()) {
-        enumerator_ptr(enumerator)->size = rb_block_proc();
+        RB_OBJ_WRITE(enumerator, &enumerator_ptr(enumerator)->size, rb_block_proc());
     }
     return enumerator;
 }
@@ -424,15 +424,15 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, const VALUE *ar
         rb_raise(rb_eArgError, "unallocated enumerator");
     }
 
-    ptr->obj  = obj;
+    RB_OBJ_WRITE(enum_obj, &ptr->obj, obj);
     ptr->meth = rb_to_id(meth);
-    if (argc) ptr->args = rb_ary_new4(argc, argv);
+    if (argc) RB_OBJ_WRITE(enum_obj, &ptr->args, rb_ary_new4(argc, argv));
     ptr->fib = 0;
     ptr->dst = Qnil;
     ptr->lookahead = Qundef;
     ptr->feedvalue = Qundef;
     ptr->stop_exc = Qfalse;
-    ptr->size = size;
+    RB_OBJ_WRITE(enum_obj, &ptr->size, size);
     ptr->size_fn = size_fn;
     ptr->kw_splat = kw_splat;
 
@@ -511,13 +511,13 @@ enumerator_init_copy(VALUE obj, VALUE orig)
         rb_raise(rb_eArgError, "unallocated enumerator");
     }
 
-    ptr1->obj  = ptr0->obj;
-    ptr1->meth = ptr0->meth;
-    ptr1->args = ptr0->args;
+    RB_OBJ_WRITE(obj, &ptr1->obj, ptr0->obj);
+    RB_OBJ_WRITE(obj, &ptr1->meth, ptr0->meth);
+    RB_OBJ_WRITE(obj, &ptr1->args, ptr0->args);
     ptr1->fib  = 0;
     ptr1->lookahead  = Qundef;
     ptr1->feedvalue  = Qundef;
-    ptr1->size  = ptr0->size;
+    RB_OBJ_WRITE(obj, &ptr1->size, ptr0->size);
     ptr1->size_fn  = ptr0->size_fn;
 
     return obj;
@@ -626,7 +626,7 @@ enumerator_each(int argc, VALUE *argv, VALUE obj)
         else {
             args = rb_ary_new4(argc, argv);
         }
-        e->args = args;
+        RB_OBJ_WRITE(obj, &e->args, args);
         e->size = Qnil;
         e->size_fn = 0;
     }
@@ -767,7 +767,7 @@ next_i(RB_BLOCK_CALL_FUNC_ARGLIST(_, obj))
     VALUE result;
 
     result = rb_block_call(obj, id_each, 0, 0, next_ii, obj);
-    e->stop_exc = rb_exc_new2(rb_eStopIteration, "iteration reached an end");
+    RB_OBJ_WRITE(obj, &e->stop_exc, rb_exc_new2(rb_eStopIteration, "iteration reached an end"));
     rb_ivar_set(e->stop_exc, id_result, result);
     return rb_fiber_yield(1, &nil);
 }
@@ -776,8 +776,8 @@ static void
 next_init(VALUE obj, struct enumerator *e)
 {
     VALUE curr = rb_fiber_current();
-    e->dst = curr;
-    e->fib = rb_fiber_new(next_i, obj);
+    RB_OBJ_WRITE(obj, &e->dst, curr);
+    RB_OBJ_WRITE(obj, &e->fib, rb_fiber_new(next_i, obj));
     e->lookahead = Qundef;
 }
 
@@ -931,8 +931,9 @@ enumerator_peek_values(VALUE obj)
     rb_check_frozen(obj);
 
     if (UNDEF_P(e->lookahead)) {
-        e->lookahead = get_next_values(obj, e);
+        RB_OBJ_WRITE(obj, &e->lookahead, get_next_values(obj, e));
     }
+
     return e->lookahead;
 }
 
@@ -1059,7 +1060,7 @@ enumerator_feed(VALUE obj, VALUE v)
     if (!UNDEF_P(e->feedvalue)) {
         rb_raise(rb_eTypeError, "feed value already set");
     }
-    e->feedvalue = v;
+    RB_OBJ_WRITE(obj, &e->feedvalue, v);
 
     return Qnil;
 }
@@ -1886,8 +1887,8 @@ lazy_add_method(VALUE obj, int argc, VALUE *argv, VALUE args, VALUE memo,
 
     new_obj = enumerator_init_copy(enumerator_allocate(rb_cLazy), obj);
     new_e = RTYPEDDATA_GET_DATA(new_obj);
-    new_e->obj = new_generator;
-    new_e->procs = new_procs;
+    RB_OBJ_WRITE(new_obj, &new_e->obj, new_generator);
+    RB_OBJ_WRITE(new_obj, &new_e->procs, new_procs);
 
     if (argc > 0) {
         new_e->meth = rb_to_id(*argv++);
@@ -1896,7 +1897,9 @@ lazy_add_method(VALUE obj, int argc, VALUE *argv, VALUE args, VALUE memo,
     else {
         new_e->meth = id_each;
     }
-    new_e->args = rb_ary_new4(argc, argv);
+
+    RB_OBJ_WRITE(new_obj, &new_e->args, rb_ary_new4(argc, argv));
+
     return new_obj;
 }
 
@@ -1982,7 +1985,7 @@ lazy_to_enum(int argc, VALUE *argv, VALUE self)
     }
     lazy = lazy_to_enum_i(self, meth, argc, argv, 0, rb_keyword_given_p());
     if (rb_block_given_p()) {
-        enumerator_ptr(lazy)->size = rb_block_proc();
+        RB_OBJ_WRITE(lazy, &enumerator_ptr(lazy)->size, rb_block_proc());
     }
     return lazy;
 }
