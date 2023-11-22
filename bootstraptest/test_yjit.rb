@@ -278,6 +278,33 @@ assert_equal '["instance-variable", 5]', %q{
   Foo.new.foo
 }
 
+# getinstancevariable with shape too complex
+assert_normal_exit %q{
+  class Foo
+    def initialize
+      @a = 1
+    end
+
+    def getter
+      @foobar
+    end
+  end
+
+  # Initialize ivars in changing order, making the Foo
+  # class have shape too complex
+  100.times do |x|
+    foo = Foo.new
+    foo.instance_variable_set(:"@a#{x}", 1)
+    foo.instance_variable_set(:"@foobar", 777)
+
+    # The getter method eventually sees shape too complex
+    r = foo.getter
+    if r != 777
+      raise "error"
+    end
+  end
+}
+
 assert_equal '0', %q{
   # This is a regression test for incomplete invalidation from
   # opt_setinlinecache. This test might be brittle, so
