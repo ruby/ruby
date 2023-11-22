@@ -1433,7 +1433,7 @@ static const rb_data_type_t generator_data_type = {
         NULL,
         generator_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static struct generator *
@@ -1473,7 +1473,7 @@ generator_init(VALUE obj, VALUE proc)
         rb_raise(rb_eArgError, "unallocated generator");
     }
 
-    ptr->proc = proc;
+    RB_OBJ_WRITE(obj, &ptr->proc, proc);
 
     return obj;
 }
@@ -1521,7 +1521,7 @@ generator_init_copy(VALUE obj, VALUE orig)
         rb_raise(rb_eArgError, "unallocated generator");
     }
 
-    ptr1->proc = ptr0->proc;
+    RB_OBJ_WRITE(obj, &ptr1->proc, ptr0->proc);
 
     return obj;
 }
@@ -1688,7 +1688,7 @@ lazy_generator_init(VALUE enumerator, VALUE procs)
                   lazy_init_block, rb_ary_new3(2, obj, procs));
 
     gen_ptr = generator_ptr(generator);
-    gen_ptr->obj = obj;
+    RB_OBJ_WRITE(generator, &gen_ptr->obj, obj);
 
     return generator;
 }
