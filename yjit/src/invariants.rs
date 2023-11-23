@@ -526,14 +526,15 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
         for patch in &patches {
             assert!(last_patch_end <= patch.inline_patch_pos.raw_ptr(cb), "patches should not overlap");
 
-            let mut asm = crate::backend::ir::Assembler::new();
-            asm.jmp(patch.outlined_target_pos.as_side_exit());
-
             cb.set_write_ptr(patch.inline_patch_pos);
             cb.set_dropped_bytes(false);
-            if asm.compile(cb, None).is_none() {
-                panic!("Failed to apply patch at {:?}", patch.inline_patch_pos);
-            }
+            cb.without_page_end_reserve(|cb| {
+                let mut asm = crate::backend::ir::Assembler::new();
+                asm.jmp(patch.outlined_target_pos.as_side_exit());
+                if asm.compile(cb, None).is_none() {
+                    panic!("Failed to apply patch at {:?}", patch.inline_patch_pos);
+                }
+            });
             last_patch_end = cb.get_write_ptr().raw_ptr(cb);
         }
         cb.set_pos(old_pos);
