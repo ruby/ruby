@@ -50,10 +50,14 @@ rsock_raise_socket_error(const char *reason, int error)
     VALUE msg = rb_sprintf("%s: ", reason);
     if (!enc) enc = rb_default_internal_encoding();
     rb_str_concat(msg, rb_w32_conv_from_wchar(gai_strerrorW(error), enc));
-    rb_exc_raise(rb_exc_new_str(rb_eSocket, msg));
 #else
-    rb_raise(rb_eSocket, "%s: %s", reason, gai_strerror(error));
+    VALUE msg = rb_sprintf("%s: %s", reason, gai_strerror(error));
 #endif
+
+    StringValue(msg);
+    VALUE self = rb_class_new_instance(1, &msg, rb_eResolution);
+    rb_ivar_set(self, id_error_code, INT2NUM(error));
+    rb_exc_raise(self);
 }
 
 #if defined __APPLE__
