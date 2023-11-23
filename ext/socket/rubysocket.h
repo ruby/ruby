@@ -285,6 +285,7 @@ extern VALUE rb_cAddrinfo;
 extern VALUE rb_cSockOpt;
 
 extern VALUE rb_eSocket;
+extern VALUE rb_eResolution;
 
 #ifdef SOCKS
 extern VALUE rb_cSOCKSSocket;
