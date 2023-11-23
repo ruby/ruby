@@ -25,9 +25,9 @@ RSpec.describe "double checking sources", :realworld => true do
     RUBY
 
     cmd = <<-RUBY
-      require "#{entrypoint}"
+      require "bundler"
       require "#{spec_dir}/support/artifice/vcr"
-      require "#{entrypoint}/inline"
+      require "bundler/inline"
       gemfile(true) do
         source "https://rubygems.org"
         gem "rails", path: "."

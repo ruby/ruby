@@ -443,7 +443,7 @@ E
       expect(err).to be_empty
 
       ruby(<<~RUBY)
-        require "#{entrypoint}"
+        require "bundler"
         print Bundler.settings.mirror_for("https://rails-assets.org")
       RUBY
       expect(out).to eq("https://rails-assets.org/")
@@ -451,7 +451,7 @@ E
 
       bundle "config set mirror.all http://localhost:9293"
       ruby(<<~RUBY)
-        require "#{entrypoint}"
+        require "bundler"
         print Bundler.settings.mirror_for("https://rails-assets.org")
       RUBY
       expect(out).to eq("http://localhost:9293/")

@@ -22,7 +22,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
     ruby <<-R
       begin
-        require '#{entrypoint}'
+        require 'bundler'
         Bundler.ui.silence { Bundler.setup }
       rescue Bundler::GemNotFound => e
         puts "WIN"

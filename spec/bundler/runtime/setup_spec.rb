@@ -194,7 +194,7 @@ RSpec.describe "Bundler.setup" do
     G
 
     ruby <<-R
-      require '#{entrypoint}'
+      require 'bundler'
 
       begin
         Bundler.setup
@@ -441,7 +441,7 @@ RSpec.describe "Bundler.setup" do
       break_git!
 
       ruby <<-R
-        require "#{entrypoint}"
+        require "bundler"
 
         begin
           Bundler.setup
@@ -1187,7 +1187,7 @@ end
     context "is not present" do
       it "does not change the lock" do
         lockfile lock_with(nil)
-        ruby "require '#{entrypoint}/setup'"
+        ruby "require 'bundler/setup'"
         expect(lockfile).to eq lock_with(nil)
       end
     end
@@ -1206,7 +1206,7 @@ end
       it "does not change the lock" do
         system_gems "bundler-1.10.1"
         lockfile lock_with("1.10.1")
-        ruby "require '#{entrypoint}/setup'"
+        ruby "require 'bundler/setup'"
         expect(lockfile).to eq lock_with("1.10.1")
       end
     end
@@ -1304,7 +1304,7 @@ end
       bundle :install
 
       ruby <<-RUBY
-        require '#{entrypoint}/setup'
+        require 'bundler/setup'
         puts defined?(::Digest) ? "Digest defined" : "Digest undefined"
         require 'digest'
       RUBY
@@ -1314,7 +1314,7 @@ end
     it "does not load Psych" do
       gemfile "source \"#{file_uri_for(gem_repo1)}\""
       ruby <<-RUBY
-        require '#{entrypoint}/setup'
+        require 'bundler/setup'
         puts defined?(Psych::VERSION) ? Psych::VERSION : "undefined"
         require 'psych'
         puts Psych::VERSION

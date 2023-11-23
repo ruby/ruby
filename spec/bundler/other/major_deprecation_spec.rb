@@ -503,7 +503,7 @@ RSpec.describe "major deprecations" do
       G
 
       ruby <<-RUBY
-        require '#{entrypoint}'
+        require 'bundler'
 
         Bundler.setup
         Bundler.setup

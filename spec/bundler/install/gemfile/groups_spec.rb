@@ -349,7 +349,7 @@ RSpec.describe "bundle install with groups" do
       G
 
       ruby <<-R
-        require "#{entrypoint}"
+        require "bundler"
         Bundler.setup :default
         Bundler.require :default
         puts RACK
