@@ -1385,47 +1385,19 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
 #if OPT_IC_FOR_IVAR
     RB_DEBUG_COUNTER_INC(ivar_set_ic_miss);
 
-    switch (BUILTIN_TYPE(obj)) {
-      case T_OBJECT:
-        {
-            rb_check_frozen_internal(obj);
+    if (BUILTIN_TYPE(obj) == T_OBJECT) {
+        rb_check_frozen_internal(obj);
 
-            attr_index_t index = rb_obj_ivar_set(obj, id, val);
+        attr_index_t index = rb_obj_ivar_set(obj, id, val);
 
-            shape_id_t next_shape_id = ROBJECT_SHAPE_ID(obj);
+        shape_id_t next_shape_id = ROBJECT_SHAPE_ID(obj);
 
-            if (next_shape_id != OBJ_TOO_COMPLEX_SHAPE_ID) {
-                populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
-            }
-
-            RB_DEBUG_COUNTER_INC(ivar_set_obj_miss);
-            return val;
+        if (next_shape_id != OBJ_TOO_COMPLEX_SHAPE_ID) {
+            populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
         }
-      case T_CLASS:
-      case T_MODULE:
-        break;
-      default:
-        {
-            rb_ivar_set(obj, id, val);
-            shape_id_t next_shape_id = rb_shape_get_shape_id(obj);
-            if (next_shape_id != OBJ_TOO_COMPLEX_SHAPE_ID) {
-                rb_shape_t *next_shape = rb_shape_get_shape_by_id(next_shape_id);
-                attr_index_t index;
 
-                if (rb_shape_get_iv_index(next_shape, id, &index)) { // based off the hash stored in the transition tree
-                    if (index >= MAX_IVARS) {
-                        rb_raise(rb_eArgError, "too many instance variables");
-                    }
-
-                    populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
-                }
-                else {
-                    rb_bug("vm_setivar_slowpath: didn't find ivar %s in shape", rb_id2name(id));
-                }
-            }
-
-            return val;
-        }
+        RB_DEBUG_COUNTER_INC(ivar_set_obj_miss);
+        return val;
     }
 #endif
     return rb_ivar_set(obj, id, val);
