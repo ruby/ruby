@@ -5398,6 +5398,8 @@ fn gen_send_cfunc(
         return None;
     }
 
+    gen_counter_incr(asm, Counter::num_send_cfunc);
+
     // Delegate to codegen for C methods if we have it.
     if kw_arg.is_null() && flags & VM_CALL_OPT_SEND == 0 && flags & VM_CALL_ARGS_SPLAT == 0 && (cfunc_argc == -1 || argc == cfunc_argc) {
         let codegen_p = lookup_cfunc_codegen(unsafe { (*cme).def });
@@ -5405,7 +5407,7 @@ fn gen_send_cfunc(
         if let Some(known_cfunc_codegen) = codegen_p {
             if known_cfunc_codegen(jit, asm, ocb, ci, cme, block, argc, recv_known_klass) {
                 assert_eq!(expected_stack_after, asm.ctx.get_stack_size() as i32);
-                gen_counter_incr(asm, Counter::num_send_known_cfunc);
+                gen_counter_incr(asm, Counter::num_send_cfunc_inline);
                 // cfunc codegen generated code. Terminate the block so
                 // there isn't multiple calls in the same block.
                 jump_to_next_insn(jit, asm, ocb);
@@ -5432,7 +5434,6 @@ fn gen_send_cfunc(
     } else {
         argc - kw_arg_num + 1
     };
-
 
     // If the argument count doesn't match
     if cfunc_argc >= 0 && cfunc_argc != passed_argc && flags & VM_CALL_ARGS_SPLAT == 0 {

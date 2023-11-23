@@ -304,7 +304,8 @@ module RubyVM::YJIT
       out.puts "num_send_dynamic:      " + format_number_pct(13, stats[:num_send_dynamic], stats[:num_send])
       out.puts "num_send_inline:       " + format_number_pct(13, stats[:num_send_inline], stats[:num_send])
       out.puts "num_send_leaf_builtin: " + format_number_pct(13, stats[:num_send_leaf_builtin], stats[:num_send])
-      out.puts "num_send_known_cfunc:  " + format_number_pct(13, stats[:num_send_known_cfunc], stats[:num_send])
+      out.puts "num_send_cfunc:        " + format_number_pct(13, stats[:num_send_cfunc], stats[:num_send])
+      out.puts "num_send_cfunc_inline: " + format_number_pct(13, stats[:num_send_cfunc_inline], stats[:num_send_cfunc])
       if stats[:num_send_x86_rel32] != 0 || stats[:num_send_x86_reg] != 0
         out.puts "num_send_x86_rel32:    " + format_number(13,  stats[:num_send_x86_rel32])
         out.puts "num_send_x86_reg:      " + format_number(13, stats[:num_send_x86_reg])
