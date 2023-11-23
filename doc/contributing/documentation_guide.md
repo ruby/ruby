@@ -205,14 +205,14 @@ When writing an explicit link, follow these guidelines.
 
 #### +rdoc-ref+ Scheme
 
-Prefer the +rdoc-ref+ scheme for:
+Use the +rdoc-ref+ scheme for:
 
 - A link in core documentation to other core documentation.
 - A link in core documentation to documentation in a standard library package.
 - A link in a standard library package to other documentation in that same
   standard library package.
 
-See section "+rdoc-ref+ Scheme" in {Links}[https://docs.ruby-lang.org/en/master/RDoc/MarkupReference.html#class-RDoc::MarkupReference-label-Links].
+See section "+rdoc-ref+ Scheme" in {Links}[rdoc-ref:RDoc::MarkupReference@Links].
 
 #### URL-Based Link
 
