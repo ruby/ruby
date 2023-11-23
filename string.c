@@ -209,6 +209,22 @@ str_enc_fastpath(VALUE str)
 static inline long str_embed_capa(VALUE str);
 static inline int str_dependent_p(VALUE str);
 
+static inline VALUE
+// Return the object that actually holds the content of `str`.
+// For embedded strings, it is the string itself;
+// For heap strings, it is the backing strbuf.
+rb_mmtk_string_content_holder(VALUE str)
+{
+    RBIMPL_ASSERT_TYPE(str, RUBY_T_STRING);
+
+    if (STR_EMBED_P(str)) {
+        return str;
+    }
+    else {
+        return RSTRING_EXT(str)->strbuf;
+    }
+}
+
 void
 rb_mmtk_str_set_strbuf(VALUE str, VALUE strbuf)
 {
@@ -216,19 +232,25 @@ rb_mmtk_str_set_strbuf(VALUE str, VALUE strbuf)
     RB_OBJ_WRITE(str, RSTRING_EXT(str), strbuf);
 }
 
-// Attach a heap string with a newly allocated imemo:mmtk_strbuf and memcpy the given content.
-// Note that `str` may be an existing string and `src` may point into `str` or its existing
-// buffer.  Do not modify `str` until the new strbuf is fully written.
+// Attach a heap string `str` with a newly allocated imemo:mmtk_strbuf of a given capacity `capa`.
+// The first `copy_size` bytes of the new buffer is copied from `src`, and `copy_size` must not
+// exceed `capa`.
+//
+// `src` may point to an element of another heap object, in which case `src_obj` must point to the
+// object into which `src` is pointed, and `src_obj` will be pinned during the execution of this
+// function.  If `src` does not point into another heap object, `src_obj` may be 0.
 static inline void
-rb_mmtk_str_new_strbuf_copy(VALUE str, size_t capa, const char *src, size_t copy_size)
+rb_mmtk_str_new_strbuf_copy(VALUE str, size_t capa, VALUE src_obj, const char *src, size_t copy_size)
 {
     RUBY_ASSERT(rb_mmtk_enabled_p());
 
     // When using MMTk, as.heap.ptr points to the ary field of a rb_mmtk_strbuf_t
     // which is allocated in the heap as an imemo:mmtk_strbuf.
-    rb_mmtk_strbuf_t *strbuf = rb_mmtk_new_strbuf(capa);
+    rb_mmtk_strbuf_t *strbuf = rb_mmtk_new_strbuf(capa); // This may trigger GC, causing objects to be moved.
     char *chars = rb_mmtk_strbuf_to_chars(strbuf);
 
+    // Note that `str` may be an existing string and `src` may point into `str` or its existing
+    // buffer.  Do not modify `str` until the new strbuf is fully written.
     if (src != NULL) {
         RUBY_ASSERT(capa >= copy_size);
         memcpy(chars, src, copy_size);
@@ -236,13 +258,16 @@ rb_mmtk_str_new_strbuf_copy(VALUE str, size_t capa, const char *src, size_t copy
 
     RSTRING(str)->as.heap.ptr = chars;
     rb_mmtk_str_set_strbuf(str, (VALUE)strbuf);
+
+    // Keep `src_obj` alive and pinned until the function exits.
+    RB_GC_GUARD(src_obj);
 }
 
 // Attach a heap string with a newly allocated empty imemo:mmtk_strbuf.
 static inline void
 rb_mmtk_str_new_strbuf(VALUE str, size_t capa)
 {
-    rb_mmtk_str_new_strbuf_copy(str, capa, NULL, 0);
+    rb_mmtk_str_new_strbuf_copy(str, capa, 0, NULL, 0);
 }
 
 static inline void
@@ -253,7 +278,12 @@ rb_mmtk_resize_capa_term(VALUE str, size_t capacity, size_t termlen)
     if (STR_EMBED_P(str)) {
         if ((size_t)str_embed_capa(str) < capacity + termlen) {
             const long tlen = RSTRING_LEN(str);
-            rb_mmtk_str_new_strbuf_copy(str, (size_t)(capacity) + (termlen), RSTRING_PTR(str), tlen);
+            rb_mmtk_str_new_strbuf_copy(
+                str,
+                (size_t)(capacity) + (termlen),
+                str,
+                RSTRING_PTR(str),
+                tlen);
             RSTRING(str)->len = tlen;
             STR_SET_NOEMBED(str);
             RSTRING(str)->as.heap.aux.capa = (capacity);
@@ -264,6 +294,7 @@ rb_mmtk_resize_capa_term(VALUE str, size_t capacity, size_t termlen)
         rb_mmtk_str_new_strbuf_copy(
             str,
             (size_t)(capacity) + (termlen),
+            RSTRING_EXT(str)->strbuf,
             RSTRING(str)->as.heap.ptr,
             STR_HEAP_SIZE(str));
         RSTRING(str)->as.heap.aux.capa = (capacity);
@@ -285,6 +316,7 @@ rb_mmtk_str_sized_realloc_n(VALUE str, size_t new_size)
     rb_mmtk_str_new_strbuf_copy(
         str,
         new_size,
+        RSTRING_EXT(str)->strbuf,
         RSTRING(str)->as.heap.ptr,
         copy_size);
     RSTRING(str)->as.heap.aux.capa = new_size;
@@ -1855,6 +1887,7 @@ str_shared_replace(VALUE str, VALUE str2)
                 rb_mmtk_str_new_strbuf_copy(
                     str2,
                     len + termlen,
+                    str2,
                     RSTRING(str2)->as.embed.ary,
                     len + termlen);
             }
@@ -2148,6 +2181,7 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
                     rb_mmtk_str_new_strbuf_copy(
                         str,
                         (size_t)capa + termlen,
+                        str,
                         RSTRING(str)->as.embed.ary,
                         RSTRING_LEN(str) + 1);
                 }
@@ -2168,6 +2202,7 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
                     rb_mmtk_str_new_strbuf_copy(
                         str,
                         (size_t)capa + termlen,
+                        RSTRING_EXT(str)->strbuf,
                         old_ptr,
                         osize < size ? osize : size);
                 }
@@ -2799,6 +2834,7 @@ str_make_independent_expand(VALUE str, long len, long expand, const int termlen)
         rb_mmtk_str_new_strbuf_copy(
             str,
             (size_t)capa + termlen,
+            rb_mmtk_string_content_holder(str),
             oldptr,
             len);
         ptr = RSTRING(str)->as.heap.ptr;
@@ -8436,6 +8472,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
             rb_mmtk_str_new_strbuf_copy(
                 str,
                 max + termlen,
+                0,
                 (char *)buf,
                 max + termlen);
         }
@@ -8527,6 +8564,7 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
             rb_mmtk_str_new_strbuf_copy(
                 str,
                 max + termlen,
+                0,
                 (char *)buf,
                 max + termlen);
         }

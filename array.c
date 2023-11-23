@@ -245,21 +245,28 @@ rb_mmtk_ary_copy_objbuf(VALUE dst_ary, VALUE src_ary)
     rb_mmtk_ary_set_objbuf(dst_ary, RARRAY_EXT(src_ary)->objbuf);
 }
 
-// Attach a heap array with a newly allocated imemo:mmtk_objbuf and copy over the contents
-// Note that `ary` may be an existing array and `src` may point into `ary` or its existing
-// buffer.  Do not modify `ary` until the new strbuf is fully written.
+// Attach a heap array `ary` with a newly allocated imemo:mmtk_objbuf of the given capacity `capa`.
+// The frst `copy_len` elements of the new objbuf is copied from `src`, and `copy_len` must not
+// exceed `capa`.
+//
+// `src` may point to an element of another heap object, in which case `src_obj` must point to the
+// object into which `src` is pointed, and `src_obj` will be pinned during the execution of this
+// function.  If `src` does not point into another heap object, `src_obj` may be 0.
+//
 // Note: capa is the number of elements in the newly created buffer.
 //       copy_len is the number of elements to copy, not the number of bytes.
 static inline void
-rb_mmtk_ary_new_objbuf_copy(VALUE ary, size_t capa, const VALUE *src, size_t copy_len)
+rb_mmtk_ary_new_objbuf_copy(VALUE ary, size_t capa, VALUE src_obj, const VALUE *src, size_t copy_len)
 {
     RUBY_ASSERT(rb_mmtk_enabled_p());
 
     // When using MMTk, as.heap.ptr points to the ary field of a rb_mmtk_objbuf_t
     // which is allocated in the heap as an imemo:mmtk_objbuf.
-    rb_mmtk_objbuf_t *objbuf = rb_mmtk_new_objbuf(capa);
+    rb_mmtk_objbuf_t *objbuf = rb_mmtk_new_objbuf(capa); // This may trigger GC, causing objects to be moved.
     VALUE *elems = rb_mmtk_objbuf_to_elems(objbuf);
 
+    // Note that `ary` may be an existing array and `src` may point into `ary` or its existing
+    // buffer.  Do not modify `ary` until the new strbuf is fully written.
     if (src != NULL) {
         RUBY_ASSERT(capa >= copy_len);
         for (size_t i = 0; i < copy_len; i++) {
@@ -270,13 +277,16 @@ rb_mmtk_ary_new_objbuf_copy(VALUE ary, size_t capa, const VALUE *src, size_t cop
 
     RARRAY(ary)->as.heap.ptr = elems;
     rb_mmtk_ary_set_objbuf(ary, (VALUE)objbuf);
+
+    // Keep `src_obj` alive and pinned until the function exits.
+    RB_GC_GUARD(src_obj);
 }
 
 // Attach a heap array with a newly allocated empty imemo:mmtk_objbuf.
 static inline void
 rb_mmtk_ary_new_objbuf(VALUE ary, size_t capa)
 {
-    rb_mmtk_ary_new_objbuf_copy(ary, capa, NULL, 0);
+    rb_mmtk_ary_new_objbuf_copy(ary, capa, 0, NULL, 0);
 }
 
 #endif
@@ -459,7 +469,7 @@ ary_heap_realloc(VALUE ary, size_t new_capa)
     } else {
         size_t old_capa = ARY_HEAP_CAPA(ary);
         size_t copy_len = new_capa < old_capa ? new_capa : old_capa;
-        rb_mmtk_ary_new_objbuf_copy(ary, new_capa, ARY_HEAP_PTR(ary), copy_len);
+        rb_mmtk_ary_new_objbuf_copy(ary, new_capa, RARRAY_EXT(ary)->objbuf, ARY_HEAP_PTR(ary), copy_len);
     }
 #endif
 
@@ -506,7 +516,7 @@ ary_resize_capa(VALUE ary, long capacity)
             ARY_SET_PTR(ary, ptr);
 #if USE_MMTK
             } else {
-                rb_mmtk_ary_new_objbuf_copy(ary, capacity, ARY_EMBED_PTR(ary), len);
+                rb_mmtk_ary_new_objbuf_copy(ary, capacity, ary, ARY_EMBED_PTR(ary), len);
                 FL_UNSET_EMBED(ary);
             }
 #endif
@@ -673,7 +683,7 @@ rb_ary_cancel_sharing(VALUE ary)
             ARY_SET_PTR(ary, ptr);
 #if USE_MMTK
             } else {
-                rb_mmtk_ary_new_objbuf_copy(ary, len, ARY_HEAP_PTR(ary), len);
+                rb_mmtk_ary_new_objbuf_copy(ary, len, RARRAY_EXT(ary)->objbuf, ARY_HEAP_PTR(ary), len);
             }
 #endif
             rb_ary_unshare(ary);
@@ -1115,7 +1125,10 @@ ary_make_shared(VALUE ary)
             ARY_SET_PTR(ary, ptr);
 #if USE_MMTK
             } else {
-                rb_mmtk_ary_new_objbuf_copy(shared, capa, RARRAY_CONST_PTR(ary), len);
+                rb_mmtk_ary_new_objbuf_copy(shared, capa,
+                                            rb_mmtk_array_content_holder(ary),
+                                            RARRAY_CONST_PTR(ary),
+                                            len);
                 FL_UNSET_EMBED(ary);
                 ARY_SET_PTR(ary, ARY_HEAP_PTR(shared));
                 rb_mmtk_ary_copy_objbuf(ary, shared);
@@ -4799,7 +4812,7 @@ rb_ary_replace(VALUE copy, VALUE orig)
         ary_memcpy(copy, 0, len, RARRAY_CONST_PTR(orig));
 #if USE_MMTK
         } else {
-            rb_mmtk_ary_new_objbuf_copy(copy, len, ARY_EMBED_PTR(orig), len);
+            rb_mmtk_ary_new_objbuf_copy(copy, len, orig, ARY_EMBED_PTR(orig), len);
             FL_UNSET_EMBED(copy);
             ARY_SET_LEN(copy, len);
             ARY_SET_CAPA(copy, len);

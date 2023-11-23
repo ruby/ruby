@@ -314,12 +314,32 @@ rb_array_const_ptr(VALUE a)
     }
 }
 
+#if USE_MMTK
 /**
  * @private
  *
- * This is an  implementation detail of #RARRAY_PTR_USE.  People do  not use it
- * directly.
+ * Return the object that holds the content of the array.
+ * Only relevant when using MMTk.
+ * For embedded arrays, it is the array itself;
+ * for heap arrays, it is the the underlying imemo:mmtk_objbuf
+ *
+ * @param[in]  a  An object of ::RArray.
+ * @return     The object holding its backend storage.
  */
+static inline VALUE
+rb_mmtk_array_content_holder(VALUE a)
+{
+    RBIMPL_ASSERT_TYPE(a, RUBY_T_ARRAY);
+
+    if (RB_FL_ANY_RAW(a, RARRAY_EMBED_FLAG)) {
+        return a;
+    }
+    else {
+        return RARRAY_EXT(a)->objbuf;
+    }
+}
+#endif
+
 #if USE_MMTK
 // Defined in mmtk_support.c
 bool rb_mmtk_enabled_p(void);
@@ -343,6 +363,12 @@ void rb_mmtk_pin_array_buffer(VALUE array, volatile VALUE *stack_slot);
     rb_mmtk_impl_pinned = 0;                                    \
 } while (0)
 #else
+/**
+ * @private
+ *
+ * This is an  implementation detail of #RARRAY_PTR_USE.  People do  not use it
+ * directly.
+ */
 #define RBIMPL_RARRAY_STMT(ary, var, expr) do {        \
     RBIMPL_ASSERT_TYPE((ary), RUBY_T_ARRAY);                 \
     const VALUE rbimpl_ary = (ary);                          \
