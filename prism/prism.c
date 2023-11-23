@@ -4040,11 +4040,22 @@ pm_local_variable_or_write_node_create(pm_parser_t *parser, pm_node_t *target, c
     return node;
 }
 
+static bool context_p(pm_parser_t *parser, pm_context_t context);
+
 /**
  * Allocate a new LocalVariableReadNode node.
  */
 static pm_local_variable_read_node_t *
 pm_local_variable_read_node_create(pm_parser_t *parser, const pm_token_t *name, uint32_t depth) {
+    pm_constant_id_t name_id = pm_parser_constant_id_token(parser, name);
+
+    if (
+        context_p(parser, PM_CONTEXT_DEFAULT_PARAMS) &&
+        parser->current_param_name == name_id
+    ) {
+        pm_parser_err_token(parser, name, PM_ERR_PARAMETER_CIRCULAR);
+    }
+
     pm_local_variable_read_node_t *node = PM_ALLOC_NODE(parser, pm_local_variable_read_node_t);
 
     *node = (pm_local_variable_read_node_t) {
@@ -4052,7 +4063,7 @@ pm_local_variable_read_node_create(pm_parser_t *parser, const pm_token_t *name, 
             .type = PM_LOCAL_VARIABLE_READ_NODE,
             .location = PM_LOCATION_TOKEN_VALUE(name)
         },
-        .name = pm_parser_constant_id_token(parser, name),
+        .name = name_id,
         .depth = depth
     };
 
@@ -11596,10 +11607,14 @@ parse_parameters(
                 if (accept1(parser, PM_TOKEN_EQUAL)) {
                     pm_token_t operator = parser->previous;
                     context_push(parser, PM_CONTEXT_DEFAULT_PARAMS);
+                    pm_constant_id_t old_param_name = parser->current_param_name;
+                    parser->current_param_name = pm_parser_constant_id_token(parser, &name);
                     pm_node_t *value = parse_value_expression(parser, binding_power, PM_ERR_PARAMETER_NO_DEFAULT);
 
                     pm_optional_parameter_node_t *param = pm_optional_parameter_node_create(parser, &name, &operator, value);
                     pm_parameters_node_optionals_append(params, param);
+
+                    parser->current_param_name = old_param_name;
                     context_pop(parser);
 
                     // If parsing the value of the parameter resulted in error recovery,
@@ -11655,7 +11670,10 @@ parse_parameters(
 
                         if (token_begins_expression_p(parser->current.type)) {
                             context_push(parser, PM_CONTEXT_DEFAULT_PARAMS);
+                            pm_constant_id_t old_param_name = parser->current_param_name;
+                            parser->current_param_name = pm_parser_constant_id_token(parser, &local);
                             pm_node_t *value = parse_value_expression(parser, binding_power, PM_ERR_PARAMETER_NO_DEFAULT_KW);
+                            parser->current_param_name = old_param_name;
                             context_pop(parser);
                             param = (pm_node_t *) pm_optional_keyword_parameter_node_create(parser, &name, value);
                         }

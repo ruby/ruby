@@ -676,6 +676,13 @@ struct pm_parser {
     bool in_keyword_arg;
 
     /**
+     * The current parameter name id on parsing its default value.
+     * Since this is used for detecting circular references, this is available
+     * only on `PM_CONTEXT_DEFAULT_PARAM`.
+     */
+    pm_constant_id_t current_param_name;
+
+    /**
      * Whether or not the parser has seen a token that has semantic meaning
      * (i.e., a token that is not a comment or whitespace).
      */

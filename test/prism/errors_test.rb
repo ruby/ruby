@@ -1829,6 +1829,22 @@ module Prism
       ]
     end
 
+    def test_circular_param
+      source = <<~RUBY
+        def foo(bar = bar) = 42
+        def foo(bar: bar) = 42
+        proc { |foo = foo| }
+        proc { |foo: foo| }
+      RUBY
+      message = 'Invalid circular reference in a default parameter'
+      assert_errors expression(source), source, [
+        [message, 14..17],
+        [message, 37..40],
+        [message, 61..64],
+        [message, 81..84],
+      ], compare_ripper: false # Ripper does not check 'circular reference'.
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")
