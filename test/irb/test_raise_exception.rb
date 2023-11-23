@@ -4,13 +4,34 @@ require "tmpdir"
 require_relative "helper"
 
 module TestIRB
-  class RaiseNoBacktraceExceptionTest < TestCase
-    def test_raise_exception
+  class RaiseExceptionTest < TestCase
+    def test_raise_exception_with_nil_backtrace
       bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []
       assert_in_out_err(bundle_exec + %w[-rirb -W0 -e IRB.start(__FILE__) -- -f --], <<-IRB, /Exception: foo/, [])
       e = Exception.new("foo")
       puts e.inspect
       def e.backtrace; nil; end
+      raise e
+IRB
+    end
+
+    def test_raise_exception_with_message_exception
+      bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []
+      expected = /#<Exception: foo>\nbacktraces are hidden because bar was raised when processing them/
+      assert_in_out_err(bundle_exec + %w[-rirb -W0 -e IRB.start(__FILE__) -- -f --], <<-IRB, expected, [])
+      e = Exception.new("foo")
+      def e.message; raise 'bar'; end
+      raise e
+IRB
+    end
+
+    def test_raise_exception_with_message_inspect_exception
+      bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []
+      expected = /Uninspectable exception occurred/
+      assert_in_out_err(bundle_exec + %w[-rirb -W0 -e IRB.start(__FILE__) -- -f --], <<-IRB, expected, [])
+      e = Exception.new("foo")
+      def e.message; raise; end
+      def e.inspect; raise; end
       raise e
 IRB
     end

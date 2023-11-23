@@ -743,7 +743,14 @@ module IRB
         message = message.gsub(/\(irb\):(?<num>\d+):in `<(?<frame>top \(required\))>'/)  { "(irb):#{$~[:num]}:in `<main>'" }
         puts message
       end
-      print "Maybe IRB bug!\n" if irb_bug
+      puts 'Maybe IRB bug!' if irb_bug
+    rescue Exception => handler_exc
+      begin
+        puts exc.inspect
+        puts "backtraces are hidden because #{handler_exc} was raised when processing them"
+      rescue Exception
+        puts 'Uninspectable exception occurred'
+      end
     end
 
     # Evaluates the given block using the given +path+ as the Context#irb_path
