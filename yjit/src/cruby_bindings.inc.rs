@@ -632,7 +632,8 @@ pub const VM_CALL_SUPER_bit: vm_call_flag_bits = 8;
 pub const VM_CALL_ZSUPER_bit: vm_call_flag_bits = 9;
 pub const VM_CALL_OPT_SEND_bit: vm_call_flag_bits = 10;
 pub const VM_CALL_KW_SPLAT_MUT_bit: vm_call_flag_bits = 11;
-pub const VM_CALL__END: vm_call_flag_bits = 12;
+pub const VM_CALL_ARGS_SPLAT_MUT_bit: vm_call_flag_bits = 12;
+pub const VM_CALL__END: vm_call_flag_bits = 13;
 pub type vm_call_flag_bits = u32;
 #[repr(C)]
 pub struct rb_callinfo {

@@ -510,7 +510,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     args = &args_body;
     given_argc = args->argc = calling->argc;
     args->argv = locals;
-    args->rest_dupped = FALSE;
+    args->rest_dupped = vm_ci_flag(ci) & VM_CALL_ARGS_SPLAT_MUT;
 
     if (kw_flag & VM_CALL_KWARG) {
         args->kw_arg = vm_ci_kwarg(ci);
