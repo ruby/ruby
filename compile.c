@@ -3185,6 +3185,30 @@ ci_argc_set(const rb_iseq_t *iseq, const struct rb_callinfo *ci, int argc)
     return nci;
 }
 
+static bool
+optimize_args_splat_no_copy(rb_iseq_t *iseq, INSN *insn, LINK_ELEMENT *niobj,
+                                 unsigned int set_flags, unsigned int unset_flags)
+{
+    LINK_ELEMENT *iobj = (LINK_ELEMENT *)insn;
+    if (!IS_NEXT_INSN_ID(niobj, send)) {
+        return false;
+    }
+    niobj = niobj->next;
+
+    const struct rb_callinfo *ci = (const struct rb_callinfo *)OPERAND_AT(niobj, 0);
+    unsigned int flags = vm_ci_flag(ci);
+    if ((flags & set_flags) == set_flags && !(flags & unset_flags)) {
+        RUBY_ASSERT(flags & VM_CALL_ARGS_SPLAT_MUT);
+        OPERAND_AT(iobj, 0) = Qfalse;
+        const struct rb_callinfo *nci = vm_ci_new(vm_ci_mid(ci),
+            flags & ~VM_CALL_ARGS_SPLAT_MUT, vm_ci_argc(ci), vm_ci_kwarg(ci));
+        RB_OBJ_WRITTEN(iseq, ci, nci);
+        OPERAND_AT(niobj, 0) = (VALUE)nci;
+        return true;
+    }
+    return false;
+}
+
 static int
 iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcallopt)
 {
@@ -3874,58 +3898,46 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
         *  splatarray false
         *  send
         */
-        if (IS_NEXT_INSN_ID(niobj, send)) {
-            niobj = niobj->next;
-            unsigned int flag = vm_ci_flag((const struct rb_callinfo *)OPERAND_AT(niobj, 0));
-            if ((flag & VM_CALL_ARGS_SPLAT) && !(flag & (VM_CALL_KW_SPLAT|VM_CALL_ARGS_BLOCKARG))) {
-                OPERAND_AT(iobj, 0) = Qfalse;
-            }
-        }
-        else if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable)) {
+        if (optimize_args_splat_no_copy(iseq, iobj, niobj,
+            VM_CALL_ARGS_SPLAT, VM_CALL_KW_SPLAT|VM_CALL_ARGS_BLOCKARG)) goto optimized_splat;
+
+        if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable)) {
             niobj = niobj->next;
 
-            if (IS_NEXT_INSN_ID(niobj, send)) {
-                niobj = niobj->next;
-                unsigned int flag = vm_ci_flag((const struct rb_callinfo *)OPERAND_AT(niobj, 0));
+            /*
+            * Eliminate array allocation for f(1, *a, &lvar) and f(1, *a, &@iv)
+            *
+            *  splatarray true
+            *  getlocal / getinstancevariable
+            *  send ARGS_SPLAT|ARGS_BLOCKARG and not KW_SPLAT
+            * =>
+            *  splatarray false
+            *  getlocal / getinstancevariable
+            *  send
+            */
+            if (optimize_args_splat_no_copy(iseq, iobj, niobj,
+                VM_CALL_ARGS_SPLAT|VM_CALL_ARGS_BLOCKARG, VM_CALL_KW_SPLAT)) goto optimized_splat;
 
-                if ((flag & VM_CALL_ARGS_SPLAT)) {
-                    /*
-                    * Eliminate array allocation for f(1, *a, &lvar) and f(1, *a, &@iv)
-                    *
-                    *  splatarray true
-                    *  getlocal / getinstancevariable
-                    *  send ARGS_SPLAT|ARGS_BLOCKARG and not KW_SPLAT
-                    * =>
-                    *  splatarray false
-                    *  getlocal / getinstancevariable
-                    *  send
-                    */
-                    if ((flag & VM_CALL_ARGS_BLOCKARG) && !(flag & VM_CALL_KW_SPLAT)) {
-                        OPERAND_AT(iobj, 0) = Qfalse;
-                    }
+            /*
+            * Eliminate array allocation for f(*a, **lvar) and f(*a, **@iv)
+            *
+            *  splatarray true
+            *  getlocal / getinstancevariable
+            *  send ARGS_SPLAT|KW_SPLAT and not ARGS_BLOCKARG
+            * =>
+            *  splatarray false
+            *  getlocal / getinstancevariable
+            *  send
+            */
+            if (optimize_args_splat_no_copy(iseq, iobj, niobj,
+                VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT, VM_CALL_ARGS_BLOCKARG)) goto optimized_splat;
 
-                    /*
-                    * Eliminate array allocation for f(*a, **lvar) and f(*a, **@iv)
-                    *
-                    *  splatarray true
-                    *  getlocal / getinstancevariable
-                    *  send ARGS_SPLAT|KW_SPLAT and not ARGS_BLOCKARG
-                    * =>
-                    *  splatarray false
-                    *  getlocal / getinstancevariable
-                    *  send
-                    */
-                    else if (!(flag & VM_CALL_ARGS_BLOCKARG) && (flag & VM_CALL_KW_SPLAT)) {
-                        OPERAND_AT(iobj, 0) = Qfalse;
-                    }
-                }
-            }
-            else if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable) ||
-                   IS_NEXT_INSN_ID(niobj, getblockparamproxy)) {
+            if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable) ||
+                    IS_NEXT_INSN_ID(niobj, getblockparamproxy)) {
                 niobj = niobj->next;
 
                 /*
-                * Eliminate array allocation for f(*a, **lvar, &lvar) and f(*a, **@iv, &@iv)
+                * Eliminate array allocation for f(*a, **lvar, &{arg,lvar,@iv})
                 *
                 *  splatarray true
                 *  getlocal / getinstancevariable
@@ -3937,40 +3949,24 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 *  getlocal / getinstancevariable / getblockparamproxy
                 *  send
                 */
-                if (IS_NEXT_INSN_ID(niobj, send)) {
-                    niobj = niobj->next;
-                    unsigned int flag = vm_ci_flag((const struct rb_callinfo *)OPERAND_AT(niobj, 0));
-
-                    if ((flag & VM_CALL_ARGS_SPLAT) && (flag & VM_CALL_KW_SPLAT) && (flag & VM_CALL_ARGS_BLOCKARG)) {
-                        OPERAND_AT(iobj, 0) = Qfalse;
-                    }
-                }
+                optimize_args_splat_no_copy(iseq, iobj, niobj,
+                    VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT|VM_CALL_ARGS_BLOCKARG, 0);
             }
-        }
-        else if (IS_NEXT_INSN_ID(niobj, getblockparamproxy)) {
-            niobj = niobj->next;
-
-            if (IS_NEXT_INSN_ID(niobj, send)) {
-                niobj = niobj->next;
-                unsigned int flag = vm_ci_flag((const struct rb_callinfo *)OPERAND_AT(niobj, 0));
-
-                /*
-                * Eliminate array allocation for f(1, *a, &arg)
-                *
-                *  splatarray true
-                *  getblockparamproxy
-                *  send ARGS_SPLAT|ARGS_BLOCKARG and not KW_SPLAT
-                * =>
-                *  splatarray false
-                *  getblockparamproxy
-                *  send
-                */
-                if ((flag & VM_CALL_ARGS_BLOCKARG) & (flag & VM_CALL_ARGS_SPLAT) && !(flag & VM_CALL_KW_SPLAT)) {
-                        OPERAND_AT(iobj, 0) = Qfalse;
-                }
-            }
-        }
-        else if (IS_NEXT_INSN_ID(niobj, duphash)) {
+        } else if (IS_NEXT_INSN_ID(niobj, getblockparamproxy)) {
+            /*
+            * Eliminate array allocation for f(1, *a, &arg)
+            *
+            *  splatarray true
+            *  getblockparamproxy
+            *  send ARGS_SPLAT|ARGS_BLOCKARG and not KW_SPLAT
+            * =>
+            *  splatarray false
+            *  getblockparamproxy
+            *  send
+            */
+            optimize_args_splat_no_copy(iseq, iobj, niobj,
+                VM_CALL_ARGS_SPLAT|VM_CALL_ARGS_BLOCKARG, VM_CALL_KW_SPLAT);
+        } else if (IS_NEXT_INSN_ID(niobj, duphash)) {
             niobj = niobj->next;
 
             /*
@@ -3984,21 +3980,13 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
             *  duphash
             *  send
             */
-            if (IS_NEXT_INSN_ID(niobj, send)) {
-                niobj = niobj->next;
-                unsigned int flag = vm_ci_flag((const struct rb_callinfo *)OPERAND_AT(niobj, 0));
+            if (optimize_args_splat_no_copy(iseq, iobj, niobj->next,
+                VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT|VM_CALL_KW_SPLAT_MUT, VM_CALL_ARGS_BLOCKARG)) goto optimized_splat;
 
-                if ((flag & VM_CALL_ARGS_SPLAT) && (flag & VM_CALL_KW_SPLAT) &&
-                        (flag & VM_CALL_KW_SPLAT_MUT) && !(flag & VM_CALL_ARGS_BLOCKARG)) {
-                    OPERAND_AT(iobj, 0) = Qfalse;
-                }
-            }
-            else if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable) ||
-                   IS_NEXT_INSN_ID(niobj, getblockparamproxy)) {
-                niobj = niobj->next;
-
+            if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable) ||
+                    IS_NEXT_INSN_ID(niobj, getblockparamproxy)) {
                 /*
-                * Eliminate array allocation for f(*a, kw: 1, &lvar) and f(*a, kw: 1, &@iv)
+                * Eliminate array allocation for f(*a, kw: 1, &{arg,lvar,@iv})
                 *
                 *  splatarray true
                 *  duphash
@@ -4010,18 +3998,12 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 *  getlocal / getinstancevariable / getblockparamproxy
                 *  send
                 */
-                if (IS_NEXT_INSN_ID(niobj, send)) {
-                    niobj = niobj->next;
-                    unsigned int flag = vm_ci_flag((const struct rb_callinfo *)OPERAND_AT(niobj, 0));
-
-                    if ((flag & VM_CALL_ARGS_SPLAT) && (flag & VM_CALL_KW_SPLAT) &&
-                            (flag & VM_CALL_KW_SPLAT_MUT) && (flag & VM_CALL_ARGS_BLOCKARG)) {
-                        OPERAND_AT(iobj, 0) = Qfalse;
-                    }
-                }
+                optimize_args_splat_no_copy(iseq, iobj, niobj->next,
+                    VM_CALL_ARGS_SPLAT|VM_CALL_KW_SPLAT|VM_CALL_KW_SPLAT_MUT|VM_CALL_ARGS_BLOCKARG, 0);
             }
         }
     }
+  optimized_splat:
 
     return COMPILE_OK;
 }
@@ -6160,12 +6142,15 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
         // f(*a)
         NO_CHECK(COMPILE(args, "args (splat)", RNODE_SPLAT(argn)->nd_head));
         ADD_INSN1(args, argn, splatarray, RBOOL(dup_rest));
-        if (flag_ptr) *flag_ptr |= VM_CALL_ARGS_SPLAT;
+        if (flag_ptr)  {
+            *flag_ptr |= VM_CALL_ARGS_SPLAT;
+            if (dup_rest) *flag_ptr |= VM_CALL_ARGS_SPLAT_MUT;
+        }
         RUBY_ASSERT(flag_ptr == NULL || (*flag_ptr & VM_CALL_KW_SPLAT) == 0);
         return 1;
       }
       case NODE_ARGSCAT: {
-        if (flag_ptr) *flag_ptr |= VM_CALL_ARGS_SPLAT;
+        if (flag_ptr) *flag_ptr |= VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_SPLAT_MUT;
         int argc = setup_args_core(iseq, args, RNODE_ARGSCAT(argn)->nd_head, 1, NULL, NULL);
 
         if (nd_type_p(RNODE_ARGSCAT(argn)->nd_body, NODE_LIST)) {
@@ -6199,7 +6184,7 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
         return argc;
       }
       case NODE_ARGSPUSH: {
-        if (flag_ptr) *flag_ptr |= VM_CALL_ARGS_SPLAT;
+        if (flag_ptr) *flag_ptr |= VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_SPLAT_MUT;
         int argc = setup_args_core(iseq, args, RNODE_ARGSPUSH(argn)->nd_head, 1, NULL, NULL);
 
         if (nd_type_p(RNODE_ARGSPUSH(argn)->nd_body, NODE_LIST)) {
@@ -9040,7 +9025,7 @@ compile_op_asgn1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
     }
     ADD_INSN1(ret, node, dupn, INT2FIX(dup_argn));
     flag |= asgnflag;
-    ADD_SEND_R(ret, node, idAREF, argc, NULL, INT2FIX(flag & ~VM_CALL_KW_SPLAT_MUT), keywords);
+    ADD_SEND_R(ret, node, idAREF, argc, NULL, INT2FIX(flag & ~(VM_CALL_ARGS_SPLAT_MUT|VM_CALL_KW_SPLAT_MUT)), keywords);
 
     if (id == idOROP || id == idANDOP) {
         /* a[x] ||= y  or  a[x] &&= y
