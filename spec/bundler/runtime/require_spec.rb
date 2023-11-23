@@ -199,7 +199,7 @@ RSpec.describe "Bundler.require" do
       G
 
       cmd = <<-RUBY
-        require '#{entrypoint}'
+        require 'bundler'
         Bundler.require
       RUBY
       ruby(cmd)
