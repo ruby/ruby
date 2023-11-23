@@ -125,7 +125,7 @@ RSpec.describe "major deprecations" do
       expect(deprecations).to include(
         "The `--path` flag is deprecated because it relies on being " \
         "remembered across bundler invocations, which bundler will no " \
-        "longer do in future versions. Instead please use `bundle config set --local " \
+        "longer do in future versions. Instead please use `bundle config set " \
         "path 'vendor/bundle'`, and stop using this flag"
       )
     end
@@ -147,7 +147,7 @@ RSpec.describe "major deprecations" do
       expect(deprecations).to include(
         "The `--path` flag is deprecated because it relies on being " \
         "remembered across bundler invocations, which bundler will no " \
-        "longer do in future versions. Instead please use `bundle config set --local " \
+        "longer do in future versions. Instead please use `bundle config set " \
         "path 'vendor/bundle'`, and stop using this flag"
       )
     end
@@ -395,7 +395,7 @@ RSpec.describe "major deprecations" do
             "The `#{flag_name}` flag is deprecated because it relies on " \
             "being remembered across bundler invocations, which bundler " \
             "will no longer do in future versions. Instead please use " \
-            "`bundle config set --local #{option_name} '#{value}'`, and stop using this flag"
+            "`bundle config set #{option_name} '#{value}'`, and stop using this flag"
           )
         end
 
