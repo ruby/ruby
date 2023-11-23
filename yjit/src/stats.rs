@@ -52,6 +52,63 @@ unsafe impl GlobalAlloc for StatsAlloc {
     }
 }
 
+
+
+use std::collections::HashMap;
+static mut CFUNC_NAME_TO_IDX: Option<HashMap<String, usize>> = None;
+
+static mut CFUNC_CALL_COUNT: Option<Vec<u64>> = None;
+
+/// Assign an index to a given cfunc name string
+pub fn get_cfunc_idx(name: &str) -> usize
+{
+    println!("{}", name);
+
+    unsafe {
+        if CFUNC_NAME_TO_IDX.is_none() {
+            CFUNC_NAME_TO_IDX = Some(HashMap::default());
+        }
+
+        if CFUNC_CALL_COUNT.is_none() {
+            CFUNC_CALL_COUNT = Some(Vec::default());
+        }
+
+        let name_to_idx = CFUNC_NAME_TO_IDX.as_mut().unwrap();
+
+        match name_to_idx.get(name) {
+            Some(idx) => *idx,
+            None => {
+                let idx = name_to_idx.len();
+                name_to_idx.insert(name.to_string(), idx);
+
+                // Resize the call count vector
+                let cfunc_call_count = CFUNC_CALL_COUNT.as_mut().unwrap();
+                if idx >= cfunc_call_count.len() {
+                    cfunc_call_count.resize(idx + 1, 0);
+                }
+
+                idx
+            }
+        }
+    }
+}
+
+// Increment the counter for a C function
+pub extern "C" fn incr_cfunc_counter(idx: usize)
+{
+    unsafe {
+        let cfunc_call_count = CFUNC_CALL_COUNT.as_mut().unwrap();
+        assert!(idx < cfunc_call_count.len());
+        cfunc_call_count[idx] += 1;
+    }
+}
+
+
+
+
+
+
+
 // YJIT exit counts for each instruction type
 const VM_INSTRUCTION_SIZE_USIZE: usize = VM_INSTRUCTION_SIZE as usize;
 static mut EXIT_OP_COUNT: [u64; VM_INSTRUCTION_SIZE_USIZE] = [0; VM_INSTRUCTION_SIZE_USIZE];
