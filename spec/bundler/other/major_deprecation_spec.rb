@@ -377,7 +377,7 @@ RSpec.describe "major deprecations" do
       "no-prune" => ["no_prune", "true"],
       "path" => ["path", "'vendor/bundle'"],
       "shebang" => ["shebang", "'ruby27'"],
-      "system" => ["system", "true"],
+      "system" => ["path.system", "true"],
       "without" => ["without", "'development'"],
       "with" => ["with", "'development'"],
     }.each do |name, expectations|
