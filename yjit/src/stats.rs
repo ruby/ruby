@@ -62,7 +62,7 @@ static mut CFUNC_CALL_COUNT: Option<Vec<u64>> = None;
 /// Assign an index to a given cfunc name string
 pub fn get_cfunc_idx(name: &str) -> usize
 {
-    println!("{}", name);
+    //println!("{}", name);
 
     unsafe {
         if CFUNC_NAME_TO_IDX.is_none() {
@@ -720,7 +720,6 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
         return hash;
     }
 
-    // If the stats feature is enabled
     unsafe {
         // Indicate that the complete set of stats is available
         rb_hash_aset(hash, rust_str_to_sym("all_stats"), Qtrue);
@@ -745,6 +744,23 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
             let key = rust_str_to_sym(&key_string);
             let value = VALUE::fixnum_from_usize(EXIT_OP_COUNT[op_idx] as usize);
             rb_hash_aset(hash, key, value);
+        }
+
+        // Create a hash for the cfunc call counts
+        if let Some(cfunc_name_to_idx) = CFUNC_NAME_TO_IDX.as_mut() {
+            let call_counts = CFUNC_CALL_COUNT.as_mut().unwrap();
+            let calls_hash = rb_hash_new();
+
+            for (name, idx) in cfunc_name_to_idx {
+                let count = call_counts[*idx];
+                println!("{}: {}", name, count);
+
+                let key = rust_str_to_sym(name);
+                let value = VALUE::fixnum_from_usize(count as usize);
+                rb_hash_aset(calls_hash, key, value);
+            }
+
+            rb_hash_aset(hash, rust_str_to_sym("cfunc_calls"), calls_hash);
         }
     }
 
