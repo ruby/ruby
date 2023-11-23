@@ -1302,7 +1302,7 @@ total_freed_objects(rb_objspace_t *objspace)
 }
 
 #define gc_mode(objspace)                gc_mode_verify((enum gc_mode)(objspace)->flags.mode)
-#define gc_mode_set(objspace, mode)      ((objspace)->flags.mode = (unsigned int)gc_mode_verify(mode))
+#define gc_mode_set(objspace, m)         ((objspace)->flags.mode = (unsigned int)gc_mode_verify(m))
 
 #define is_marking(objspace)             (gc_mode(objspace) == gc_mode_marking)
 #define is_sweeping(objspace)            (gc_mode(objspace) == gc_mode_sweeping)
@@ -4511,6 +4511,36 @@ gc_finalize_deferred_register(rb_objspace_t *objspace)
     }
 }
 
+static int pop_mark_stack(mark_stack_t *stack, VALUE *data);
+
+static void
+gc_abort(rb_objspace_t *objspace)
+{
+    if (is_incremental_marking(objspace)) {
+        /* Remove all objects from the mark stack. */
+        VALUE obj;
+        while (pop_mark_stack(&objspace->mark_stack, &obj));
+
+        objspace->flags.during_incremental_marking = FALSE;
+    }
+
+    if (is_lazy_sweeping(objspace)) {
+        for (int i = 0; i < SIZE_POOL_COUNT; i++) {
+            rb_size_pool_t *size_pool = &size_pools[i];
+            rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
+
+            heap->sweeping_page = NULL;
+            struct heap_page *page = NULL;
+
+            ccan_list_for_each(&heap->pages, page, page_node) {
+                page->flags.before_sweep = false;
+            }
+        }
+    }
+
+    gc_mode_set(objspace, gc_mode_none);
+}
+
 struct force_finalize_list {
     VALUE obj;
     VALUE table;
@@ -4539,15 +4569,12 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
 #if RGENGC_CHECK_MODE >= 2
     gc_verify_internal_consistency(objspace);
 #endif
-    gc_rest(objspace);
-
     if (ATOMIC_EXCHANGE(finalizing, 1)) return;
 
     /* run finalizers */
     finalize_deferred(objspace);
     GC_ASSERT(heap_pages_deferred_final == 0);
 
-    gc_rest(objspace);
     /* prohibit incremental GC */
     objspace->flags.dont_incremental = 1;
 
@@ -4564,6 +4591,9 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
             xfree(curr);
         }
     }
+
+    /* Abort incremental marking and lazy sweeping to speed up shutdown. */
+    gc_abort(objspace);
 
     /* prohibit GC because force T_DATA finalizers can break an object graph consistency */
     dont_gc_on();
