@@ -17,31 +17,56 @@ static RB_THREAD_LOCAL_SPECIFIER unsigned int local_resumed_count = 0;
 static RB_THREAD_LOCAL_SPECIFIER unsigned int local_suspended_count = 0;
 
 static VALUE last_thread = Qnil;
+static VALUE events_by_thread = Qnil;
+static VALUE events_by_thread_mutex = Qnil;
+
+static void append_to_events(VALUE thread, char *event_name) {
+    rb_mutex_lock(events_by_thread_mutex);
+    VALUE key = rb_obj_id(thread);
+    VALUE existing = rb_hash_aref(events_by_thread, key);
+    VALUE value = rb_str_new_cstr(event_name);
+    if (existing == Qnil) {
+        existing = rb_ary_new2(10);
+    }
+    rb_ary_push(existing, value);
+    rb_hash_aset(events_by_thread, key, existing);
+    rb_mutex_unlock(events_by_thread_mutex);
+}
 
 static void
 ex_callback(rb_event_flag_t event, const rb_internal_thread_event_data_t *event_data, void *user_data)
 {
+    const char *event_name;
+    const VALUE current_thread = event_data->thread;
+
     switch (event) {
       case RUBY_INTERNAL_THREAD_EVENT_STARTED:
         last_thread = event_data->thread;
+        event_name = "started";
         RUBY_ATOMIC_INC(started_count);
         break;
       case RUBY_INTERNAL_THREAD_EVENT_READY:
+        event_name = "ready";
         RUBY_ATOMIC_INC(ready_count);
         local_ready_count++;
         break;
       case RUBY_INTERNAL_THREAD_EVENT_RESUMED:
+        event_name = "resumed";
         RUBY_ATOMIC_INC(resumed_count);
         local_resumed_count++;
         break;
       case RUBY_INTERNAL_THREAD_EVENT_SUSPENDED:
+        event_name = "suspended";
         RUBY_ATOMIC_INC(suspended_count);
         local_suspended_count++;
         break;
       case RUBY_INTERNAL_THREAD_EVENT_EXITED:
+        event_name = "exited";
         RUBY_ATOMIC_INC(exited_count);
         break;
     }
+
+    append_to_events(current_thread, event_name);
 }
 
 static rb_internal_thread_event_hook_t * single_hook = NULL;
@@ -56,6 +81,17 @@ thread_counters(VALUE thread)
     rb_ary_push(array, UINT2NUM(suspended_count));
     rb_ary_push(array, UINT2NUM(exited_count));
     return array;
+}
+
+static VALUE
+thread_events_fired(VALUE thread, VALUE a_thread)
+{
+    VALUE thread_id = rb_obj_id(a_thread);
+    VALUE existing = rb_hash_aref(events_by_thread, thread_id);
+    if (existing == Qnil) {
+        existing = rb_ary_new2(0);
+    }
+    return existing;
 }
 
 static VALUE
@@ -79,6 +115,8 @@ thread_reset_counters(VALUE thread)
     local_ready_count = 0;
     local_resumed_count = 0;
     local_suspended_count = 0;
+    events_by_thread = rb_hash_new();
+    rb_global_variable(&events_by_thread);
     return Qtrue;
 }
 
@@ -100,7 +138,7 @@ thread_register_callback(VALUE thread)
 
 static VALUE
 thread_unregister_callback(VALUE thread)
-{
+{    
     if (single_hook) {
         rb_internal_thread_remove_event_hook(single_hook);
         single_hook = NULL;
@@ -143,7 +181,12 @@ Init_instrumentation(void)
     VALUE mBug = rb_define_module("Bug");
     VALUE klass = rb_define_module_under(mBug, "ThreadInstrumentation");
     rb_global_variable(&last_thread);
+    events_by_thread = rb_hash_new();
+    events_by_thread_mutex = rb_mutex_new();
+    rb_global_variable(&events_by_thread);
+    rb_global_variable(&events_by_thread_mutex);
     rb_define_singleton_method(klass, "counters", thread_counters, 0);
+    rb_define_singleton_method(klass, "events_fired", thread_events_fired, 1);
     rb_define_singleton_method(klass, "local_counters", thread_local_counters, 0);
     rb_define_singleton_method(klass, "reset_counters", thread_reset_counters, 0);
     rb_define_singleton_method(klass, "register_callback", thread_register_callback, 0);

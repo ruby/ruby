@@ -42,6 +42,17 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     assert_join_counters(Bug::ThreadInstrumentation.local_counters)
   end
 
+  def test_order_of_events
+    expected_order = %w[started ready resumed suspended exited]
+    threads = threaded_cpu_work
+
+    assert_equal [false] * THREADS_COUNT, threads.map(&:status)
+    threads.each do |thread|
+      actual_order = Bug::ThreadInstrumentation.events_fired(thread)
+      assert_equal expected_order, actual_order
+    end
+  end
+
   def test_thread_instrumentation_fork_safe
     skip "No fork()" unless Process.respond_to?(:fork)
 
