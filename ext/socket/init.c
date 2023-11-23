@@ -27,6 +27,7 @@ VALUE rb_cSocket;
 VALUE rb_cAddrinfo;
 
 VALUE rb_eSocket;
+VALUE rb_eResolution;
 
 #ifdef SOCKS
 VALUE rb_cSOCKSSocket;
@@ -34,6 +35,7 @@ VALUE rb_cSOCKSSocket;
 
 int rsock_do_not_reverse_lookup = 1;
 static VALUE sym_wait_readable;
+static ID id_error_code;
 
 void
 rsock_raise_socket_error(const char *reason, int error)
@@ -772,6 +774,12 @@ rsock_getfamily(rb_io_t *fptr)
     return ss.addr.sa_family;
 }
 
+static VALUE
+sock_resolv_error_code(VALUE self)
+{
+  return rb_attr_get(self, id_error_code);
+}
+
 void
 rsock_init_socket_init(void)
 {
@@ -779,6 +787,8 @@ rsock_init_socket_init(void)
      * SocketError is the error class for socket.
      */
     rb_eSocket = rb_define_class("SocketError", rb_eStandardError);
+    rb_eResolution = rb_define_class_under(rb_cSocket, "ResolutionError", rb_eSocket);
+    rb_define_method(rb_eResolution, "error_code", sock_resolv_error_code, 0);
     rsock_init_ipsocket();
     rsock_init_tcpsocket();
     rsock_init_tcpserver();
@@ -791,6 +801,8 @@ rsock_init_socket_init(void)
     rsock_init_addrinfo();
     rsock_init_sockifaddr();
     rsock_init_socket_constants();
+
+    id_error_code = rb_intern_const("error_code");
 
 #undef rb_intern
     sym_wait_readable = ID2SYM(rb_intern("wait_readable"));
