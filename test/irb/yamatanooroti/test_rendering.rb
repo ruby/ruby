@@ -379,6 +379,48 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     assert_match(/foobar/, screen)
   end
 
+  def test_debug_integration_hints_debugger_commands
+    write_irbrc <<~'LINES'
+      IRB.conf[:USE_COLORIZE] = false
+    LINES
+    script = Tempfile.create(["debug", ".rb"])
+    script.write <<~RUBY
+      puts 'start IRB'
+      binding.irb
+    RUBY
+    script.close
+    start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{script.to_path}}, startup_message: 'start IRB')
+    write("debug\n")
+    write("n")
+    close
+
+    screen = result.join("\n").sub(/\n*\z/, "\n")
+    assert_include(screen, "irb:rdbg(main):002> n # debug command")
+  ensure
+    File.unlink(script) if script
+  end
+
+  def test_debug_integration_doesnt_hint_non_debugger_commands
+    write_irbrc <<~'LINES'
+      IRB.conf[:USE_COLORIZE] = false
+    LINES
+    script = Tempfile.create(["debug", ".rb"])
+    script.write <<~RUBY
+      puts 'start IRB'
+      binding.irb
+    RUBY
+    script.close
+    start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{script.to_path}}, startup_message: 'start IRB')
+    write("debug\n")
+    write("foo")
+    close
+
+    screen = result.join("\n").sub(/\n*\z/, "\n")
+    assert_include(screen, "irb:rdbg(main):002> foo\n")
+  ensure
+    File.unlink(script) if script
+  end
+
   private
 
   def write_irbrc(content)

@@ -57,6 +57,24 @@ module IRB
           DEBUGGER__::ThreadClient.prepend(SkipPathHelperForIRB)
         end
 
+        if !@output_modifier_defined && !DEBUGGER__::CONFIG[:no_hint]
+          irb_output_modifier_proc = Reline.output_modifier_proc
+
+          Reline.output_modifier_proc = proc do |output, complete:|
+            unless output.strip.empty?
+              cmd = output.split(/\s/, 2).first
+
+              if DEBUGGER__.commands.key?(cmd)
+                output = output.sub(/\n$/, " # debug command\n")
+              end
+            end
+
+            irb_output_modifier_proc.call(output, complete: complete)
+          end
+
+          @output_modifier_defined = true
+        end
+
         true
       end
 
