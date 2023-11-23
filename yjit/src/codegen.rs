@@ -5407,7 +5407,7 @@ fn gen_send_cfunc(
         if let Some(known_cfunc_codegen) = codegen_p {
             if known_cfunc_codegen(jit, asm, ocb, ci, cme, block, argc, recv_known_klass) {
                 assert_eq!(expected_stack_after, asm.ctx.get_stack_size() as i32);
-                gen_counter_incr(asm, Counter::num_send_known_cfunc);
+                gen_counter_incr(asm, Counter::num_send_cfunc_inline);
                 // cfunc codegen generated code. Terminate the block so
                 // there isn't multiple calls in the same block.
                 jump_to_next_insn(jit, asm, ocb);
