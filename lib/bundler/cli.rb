@@ -884,12 +884,13 @@ module Bundler
 
       value = options[name]
       value = value.join(" ").to_s if option.type == :array
+      value = "'#{value}'" unless option.type == :boolean
 
       Bundler::SharedHelpers.major_deprecation 2,
         "The `#{flag_name}` flag is deprecated because it relies on being " \
         "remembered across bundler invocations, which bundler will no longer " \
         "do in future versions. Instead please use `bundle config set #{name.tr("-", "_")} " \
-        "'#{value}'`, and stop using this flag"
+        "#{value}`, and stop using this flag"
     end
   end
 end
