@@ -205,7 +205,7 @@ When writing an explicit link, follow these guidelines.
 
 #### +rdoc-ref+ Scheme
 
-Use the +rdoc-ref+ scheme for:
+Prefer the +rdoc-ref+ scheme for:
 
 - A link in core documentation to other core documentation.
 - A link in core documentation to documentation in a standard library package.
