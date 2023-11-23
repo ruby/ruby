@@ -7269,7 +7269,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         mark_cvc_tbl(objspace, obj);
         cc_table_mark(objspace, obj);
         if (rb_shape_obj_too_complex(obj)) {
-            mark_tbl(objspace, (st_table *)RCLASS_IVPTR(obj));
+            mark_tbl_no_pin(objspace, (st_table *)RCLASS_IVPTR(obj));
         }
         else {
             for (attr_index_t i = 0; i < RCLASS_IV_COUNT(obj); i++) {
@@ -10610,7 +10610,10 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         update_cvc_tbl(objspace, obj);
         update_superclasses(objspace, obj);
 
-        if (!rb_shape_obj_too_complex(obj)) {
+        if (rb_shape_obj_too_complex(obj)) {
+            gc_ref_update_table_values_only(objspace, RCLASS_IV_HASH(obj));
+        }
+        else {
             for (attr_index_t i = 0; i < RCLASS_IV_COUNT(obj); i++) {
                 UPDATE_IF_MOVED(objspace, RCLASS_IVPTR(obj)[i]);
             }
