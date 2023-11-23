@@ -13737,14 +13737,20 @@ rb_raw_obj_info_buitin_type(char *const buff, const size_t buff_size, const VALU
             }
           case T_OBJECT:
             {
-                uint32_t len = ROBJECT_IV_CAPACITY(obj);
-
-                if (RANY(obj)->as.basic.flags & ROBJECT_EMBED) {
-                    APPEND_F("(embed) len:%d", len);
+                if (rb_shape_obj_too_complex(obj)) {
+                    size_t hash_len = rb_st_table_size(ROBJECT_IV_HASH(obj));
+                    APPEND_F("(too_complex) len:%zu", hash_len);
                 }
                 else {
-                    VALUE *ptr = ROBJECT_IVPTR(obj);
-                    APPEND_F("len:%d ptr:%p", len, (void *)ptr);
+                    uint32_t len = ROBJECT_IV_CAPACITY(obj);
+
+                    if (RANY(obj)->as.basic.flags & ROBJECT_EMBED) {
+                        APPEND_F("(embed) len:%d", len);
+                    }
+                    else {
+                        VALUE *ptr = ROBJECT_IVPTR(obj);
+                        APPEND_F("len:%d ptr:%p", len, (void *)ptr);
+                    }
                 }
             }
             break;
