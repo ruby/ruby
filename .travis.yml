@@ -104,8 +104,7 @@ matrix:
   include:
     - <<: *arm64-linux
     - <<: *ppc64le-linux
-    # The s390x builds are not starting.
-    # - <<: *s390x-linux
+    - <<: *s390x-linux
     # FIXME: lib/rubygems/util.rb:104 glob_files_in_dir -
     # <internal:dir>:411:in glob: File name too long - (Errno::ENAMETOOLONG)
     # https://github.com/rubygems/rubygems/issues/7132
@@ -114,7 +113,7 @@ matrix:
     # Allow failures for the unstable jobs.
     # - name: arm64-linux
     # - name: ppc64le-linux
-    - name: s390x-linux
+    # - name: s390x-linux
     # The 2nd arm64 pipeline may be unstable.
     # - name: arm32-linux
   fast_finish: true
