@@ -1288,4 +1288,14 @@ RSpec.describe "bundle install with gem sources" do
       expect(err).to include("Could not find compatible versions")
     end
   end
+
+  context "when --jobs option given" do
+    before do
+      install_gemfile "source \"#{file_uri_for(gem_repo1)}\"", :jobs => 1
+    end
+
+    it "does not save the flag to config" do
+      expect(bundled_app(".bundle/config")).not_to exist
+    end
+  end
 end
