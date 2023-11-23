@@ -308,7 +308,7 @@ VALUE rsock_sockaddr_string_value_with_addrinfo(volatile VALUE *v, VALUE *ai_ret
 
 VALUE rb_check_sockaddr_string_type(VALUE);
 
-NORETURN(void rsock_raise_socket_error(const char *, int));
+NORETURN(void rsock_raise_resolution_error(const char *, int));
 
 int rsock_family_arg(VALUE domain);
 int rsock_socktype_arg(VALUE type);

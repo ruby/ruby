@@ -38,7 +38,7 @@ static VALUE sym_wait_readable;
 static ID id_error_code;
 
 void
-rsock_raise_socket_error(const char *reason, int error)
+rsock_raise_resolution_error(const char *reason, int error)
 {
 #ifdef EAI_SYSTEM
     int e;

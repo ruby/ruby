@@ -766,7 +766,7 @@ make_ipaddr0(struct sockaddr *addr, socklen_t addrlen, char *buf, size_t buflen)
 
     error = rb_getnameinfo(addr, addrlen, buf, buflen, NULL, 0, NI_NUMERICHOST);
     if (error) {
-        rsock_raise_socket_error("getnameinfo", error);
+        rsock_raise_resolution_error("getnameinfo", error);
     }
 }
 
@@ -975,7 +975,7 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
         if (hostp && hostp[strlen(hostp)-1] == '\n') {
             rb_raise(rb_eSocket, "newline at the end of hostname");
         }
-        rsock_raise_socket_error("getaddrinfo", error);
+        rsock_raise_resolution_error("getaddrinfo", error);
     }
 
     return res;
@@ -1034,7 +1034,7 @@ rsock_ipaddr(struct sockaddr *sockaddr, socklen_t sockaddrlen, int norevlookup)
     error = rb_getnameinfo(sockaddr, sockaddrlen, hbuf, sizeof(hbuf),
                            pbuf, sizeof(pbuf), NI_NUMERICHOST | NI_NUMERICSERV);
     if (error) {
-        rsock_raise_socket_error("getnameinfo", error);
+        rsock_raise_resolution_error("getnameinfo", error);
     }
     addr2 = rb_str_new2(hbuf);
     if (addr1 == Qnil) {
@@ -1672,7 +1672,7 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
                                        hbuf, (socklen_t)sizeof(hbuf), NULL, 0,
                                        NI_NUMERICHOST|NI_NUMERICSERV);
                 if (error) {
-                    rsock_raise_socket_error("getnameinfo", error);
+                    rsock_raise_resolution_error("getnameinfo", error);
                 }
                 if (addr->sin6_port == 0) {
                     rb_str_cat2(ret, hbuf);
@@ -2040,7 +2040,7 @@ addrinfo_mdump(VALUE self)
                                hbuf, (socklen_t)sizeof(hbuf), pbuf, (socklen_t)sizeof(pbuf),
                                NI_NUMERICHOST|NI_NUMERICSERV);
         if (error) {
-            rsock_raise_socket_error("getnameinfo", error);
+            rsock_raise_resolution_error("getnameinfo", error);
         }
         sockaddr = rb_assoc_new(rb_str_new_cstr(hbuf), rb_str_new_cstr(pbuf));
         break;
@@ -2386,7 +2386,7 @@ addrinfo_getnameinfo(int argc, VALUE *argv, VALUE self)
                            hbuf, (socklen_t)sizeof(hbuf), pbuf, (socklen_t)sizeof(pbuf),
                            flags);
     if (error) {
-        rsock_raise_socket_error("getnameinfo", error);
+        rsock_raise_resolution_error("getnameinfo", error);
     }
 
     return rb_assoc_new(rb_str_new2(hbuf), rb_str_new2(pbuf));
