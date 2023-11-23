@@ -10123,13 +10123,15 @@ gc_ref_update_array(rb_objspace_t * objspace, VALUE v)
     }
 }
 
+static void gc_ref_update_table_values_only(rb_objspace_t *objspace, st_table *tbl);
+
 static void
 gc_ref_update_object(rb_objspace_t *objspace, VALUE v)
 {
     VALUE *ptr = ROBJECT_IVPTR(v);
 
     if (rb_shape_obj_too_complex(v)) {
-        rb_gc_update_tbl_refs(ROBJECT_IV_HASH(v));
+        gc_ref_update_table_values_only(objspace, ROBJECT_IV_HASH(v));
         return;
     }
 
@@ -10207,7 +10209,7 @@ hash_foreach_replace_value(st_data_t key, st_data_t value, st_data_t argp, int e
 }
 
 static void
-gc_update_tbl_refs(rb_objspace_t * objspace, st_table *tbl)
+gc_ref_update_table_values_only(rb_objspace_t *objspace, st_table *tbl)
 {
     if (!tbl || tbl->num_entries == 0) return;
 
@@ -10226,7 +10228,7 @@ gc_update_table_refs(rb_objspace_t * objspace, st_table *tbl)
     }
 }
 
-/* Update MOVED references in an st_table */
+/* Update MOVED references in a VALUE=>VALUE st_table */
 void
 rb_gc_update_tbl_refs(st_table *ptr)
 {
@@ -10846,7 +10848,7 @@ gc_update_references(rb_objspace_t *objspace)
     rb_gc_update_global_tbl();
     global_symbols.ids = rb_gc_location(global_symbols.ids);
     global_symbols.dsymbol_fstr_hash = rb_gc_location(global_symbols.dsymbol_fstr_hash);
-    gc_update_tbl_refs(objspace, objspace->obj_to_id_tbl);
+    gc_ref_update_table_values_only(objspace, objspace->obj_to_id_tbl);
     gc_update_table_refs(objspace, objspace->id_to_obj_tbl);
     gc_update_table_refs(objspace, global_symbols.str_sym);
     gc_update_table_refs(objspace, finalizer_table);
