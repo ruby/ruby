@@ -62,7 +62,7 @@ module IRB
           pager = Shellwords.split(pager)
           next if pager.empty?
 
-          if pager.first == 'less' || pager.first == 'more'
+          if pager.first == 'less'
             pager << '-R' unless pager.include?('-R')
           end
 
