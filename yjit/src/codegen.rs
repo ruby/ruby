@@ -5398,6 +5398,8 @@ fn gen_send_cfunc(
         return None;
     }
 
+    gen_counter_incr(asm, Counter::num_send_cfunc);
+
     // Delegate to codegen for C methods if we have it.
     if kw_arg.is_null() && flags & VM_CALL_OPT_SEND == 0 && flags & VM_CALL_ARGS_SPLAT == 0 && (cfunc_argc == -1 || argc == cfunc_argc) {
         let codegen_p = lookup_cfunc_codegen(unsafe { (*cme).def });
@@ -5432,7 +5434,6 @@ fn gen_send_cfunc(
     } else {
         argc - kw_arg_num + 1
     };
-
 
     // If the argument count doesn't match
     if cfunc_argc >= 0 && cfunc_argc != passed_argc && flags & VM_CALL_ARGS_SPLAT == 0 {

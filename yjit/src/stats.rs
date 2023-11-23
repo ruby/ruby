@@ -482,6 +482,7 @@ make_counters! {
     num_send_dynamic,
     num_send_inline,
     num_send_leaf_builtin,
+    num_send_cfunc,
     num_send_known_cfunc,
 
     num_getivar_megamorphic,
