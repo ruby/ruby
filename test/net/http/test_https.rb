@@ -164,7 +164,7 @@ class TestNetHTTPS < Test::Unit::TestCase
     http.finish
   end
 
-  def test_session_reuse_but_expire
+  def test_session_reuse_with_timeout
     # FIXME: The new_session_cb is known broken for clients in OpenSSL 1.1.0h.
     omit if OpenSSL::OPENSSL_LIBRARY_VERSION.include?('OpenSSL 1.1.0h')
 
@@ -172,10 +172,36 @@ class TestNetHTTPS < Test::Unit::TestCase
     http.use_ssl = true
     http.cert_store = TEST_STORE
 
-    http.ssl_timeout = -1
+    http.ssl_timeout = 2
     http.start
     http.get("/")
     http.finish
+
+    sleep 1
+
+    http.start
+    http.get("/")
+
+    socket = http.instance_variable_get(:@socket).io
+    assert_equal true, socket.session_reused?
+
+    http.finish
+  end
+
+  def test_session_reuse_with_expired_timeout
+    # FIXME: The new_session_cb is known broken for clients in OpenSSL 1.1.0h.
+    omit if OpenSSL::OPENSSL_LIBRARY_VERSION.include?('OpenSSL 1.1.0h')
+
+    http = Net::HTTP.new(HOST, config("port"))
+    http.use_ssl = true
+    http.cert_store = TEST_STORE
+
+    http.ssl_timeout = 1
+    http.start
+    http.get("/")
+    http.finish
+
+    sleep 1.5
 
     http.start
     http.get("/")
