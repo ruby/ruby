@@ -1490,6 +1490,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
     int lineno = (int)pm_newline_list_line_column(&newline_list, node->location.start).line;
     NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
 
+    if (node->flags & PM_NODE_FLAG_NEWLINE &&
+        ISEQ_COMPILE_DATA(iseq)->last_line != lineno) {
+        int event = RUBY_EVENT_LINE;
+
+        ISEQ_COMPILE_DATA(iseq)->last_line = lineno;
+        if (ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
+            event |= RUBY_EVENT_COVERAGE_LINE;
+        }
+        ADD_TRACE(ret, event);
+    }
+
     switch (PM_NODE_TYPE(node)) {
       case PM_ALIAS_GLOBAL_VARIABLE_NODE: {
         pm_alias_global_variable_node_t *alias_node = (pm_alias_global_variable_node_t *) node;
