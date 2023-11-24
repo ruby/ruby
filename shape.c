@@ -759,48 +759,72 @@ rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value,
     return rb_shape_get_iv_index(shape, id, value);
 }
 
+static bool
+shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
+{
+    while (shape->parent_id != INVALID_SHAPE_ID) {
+        if (shape->edge_name == id) {
+            enum shape_type shape_type;
+            shape_type = (enum shape_type)shape->type;
+
+            switch (shape_type) {
+              case SHAPE_IVAR:
+                RUBY_ASSERT(shape->next_iv_index > 0);
+                *value = shape->next_iv_index - 1;
+                return true;
+              case SHAPE_ROOT:
+              case SHAPE_T_OBJECT:
+                return false;
+              case SHAPE_OBJ_TOO_COMPLEX:
+              case SHAPE_FROZEN:
+                rb_bug("Ivar should not exist on transition");
+            }
+        }
+
+        shape = rb_shape_get_parent(shape);
+    }
+
+    return false;
+}
+
+static bool
+shape_cache_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
+{
+    if (shape->ancestor_index && shape->next_iv_index >= ANCESTOR_CACHE_THRESHOLD) {
+        redblack_node_t *node = redblack_find(shape->ancestor_index, id);
+        if (node) {
+            rb_shape_t *shape = redblack_value(node);
+            *value = shape->next_iv_index - 1;
+
+#if RUBY_DEBUG
+            attr_index_t shape_tree_index;
+            RUBY_ASSERT(shape_get_iv_index(shape, id, &shape_tree_index));
+            RUBY_ASSERT(shape_tree_index == *value);
+#endif
+
+            return true;
+        }
+
+        /* Verify the cache is correct by checking that this instance variable
+        * does not exist in the shape tree either. */
+        RUBY_ASSERT(!shape_get_iv_index(shape, id, value));
+    }
+
+    return false;
+}
+
 bool
-rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t *value)
+rb_shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
 {
     // It doesn't make sense to ask for the index of an IV that's stored
     // on an object that is "too complex" as it uses a hash for storing IVs
     RUBY_ASSERT(rb_shape_id(shape) != OBJ_TOO_COMPLEX_SHAPE_ID);
 
-    while (shape->parent_id != INVALID_SHAPE_ID) {
-        // Try the ancestor cache if it's available
-        if (shape->ancestor_index && shape->next_iv_index >= ANCESTOR_CACHE_THRESHOLD) {
-            redblack_node_t * node = redblack_find(shape->ancestor_index, id);
-            if (node) {
-                rb_shape_t * shape = redblack_value(node);
-                *value = shape->next_iv_index - 1;
-                return true;
-            }
-            else {
-                return false;
-            }
-        }
-        else {
-            if (shape->edge_name == id) {
-                enum shape_type shape_type;
-                shape_type = (enum shape_type)shape->type;
-
-                switch (shape_type) {
-                  case SHAPE_IVAR:
-                    RUBY_ASSERT(shape->next_iv_index > 0);
-                    *value = shape->next_iv_index - 1;
-                    return true;
-                  case SHAPE_ROOT:
-                  case SHAPE_T_OBJECT:
-                    return false;
-                  case SHAPE_OBJ_TOO_COMPLEX:
-                  case SHAPE_FROZEN:
-                    rb_bug("Ivar should not exist on transition");
-                }
-            }
-        }
-        shape = rb_shape_get_parent(shape);
+    if (!shape_cache_get_iv_index(shape, id, value)) {
+        return shape_get_iv_index(shape, id, value);
     }
-    return false;
+
+    return true;
 }
 
 void
