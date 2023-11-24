@@ -380,6 +380,12 @@ class Time
   #   Time.new(in: '-12:00')
   #   # => 2022-08-23 08:49:26.1941467 -1200
   #
+  # Since +in:+ keyword argument just provides the default, so if the
+  # first argument in single string form contains time zone information,
+  # this keyword argument will be silently ignored.
+  #
+  #   Time.new('2000-01-01 00:00:00 +0100', in: '-0500').utc_offset  # => 3600
+  #
   # - +precision+: maximum effective digits in sub-second part, default is 9.
   #   More digits will be truncated, as other operations of \Time.
   #   Ignored unless the first argument is a string.
