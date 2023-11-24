@@ -750,7 +750,7 @@ class Resolv
               next if @socks_hash[bind_host]
               begin
                 sock = UDPSocket.new(af)
-              rescue Errno::EAFNOSUPPORT
+              rescue Errno::EAFNOSUPPORT, Errno::EPROTONOSUPPORT
                 next # The kernel doesn't support the address family.
               end
               @socks << sock
