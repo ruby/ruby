@@ -165,8 +165,6 @@ MMTk_ObjectReference mmtk_get_forwarded_object(MMTk_ObjectReference object);
 
 bool mmtk_is_mmtk_object(MMTk_Address addr);
 
-void mmtk_modify_check(MMTk_ObjectReference object);
-
 void mmtk_handle_user_collection_request(MMTk_VMMutatorThread tls);
 
 void mmtk_harness_begin(MMTk_VMMutatorThread tls);
