@@ -1066,17 +1066,34 @@ gen_ivtbl_resize(struct gen_ivtbl *old, uint32_t n)
 }
 
 void
-rb_mark_and_update_generic_ivar(VALUE obj)
+rb_mark_generic_ivar(VALUE obj)
 {
     struct gen_ivtbl *ivtbl;
 
     if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
         if (rb_shape_obj_too_complex(obj)) {
-            rb_mark_tbl(ivtbl->as.complex.table);
+            rb_mark_tbl_no_pin(ivtbl->as.complex.table);
         }
         else {
             for (uint32_t i = 0; i < ivtbl->as.shape.numiv; i++) {
-                rb_gc_mark_and_move(&ivtbl->as.shape.ivptr[i]);
+                rb_gc_mark_movable(ivtbl->as.shape.ivptr[i]);
+            }
+        }
+    }
+}
+
+void
+rb_ref_update_generic_ivar(VALUE obj)
+{
+    struct gen_ivtbl *ivtbl;
+
+    if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
+        if (rb_shape_obj_too_complex(obj)) {
+            rb_gc_ref_update_table_values_only(ivtbl->as.complex.table);
+        }
+        else {
+            for (uint32_t i = 0; i < ivtbl->as.shape.numiv; i++) {
+                ivtbl->as.shape.ivptr[i] = rb_gc_location(ivtbl->as.shape.ivptr[i]);
             }
         }
     }
