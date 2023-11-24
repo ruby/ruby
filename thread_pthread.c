@@ -266,7 +266,34 @@ rb_native_cond_timedwait(rb_nativethread_cond_t *cond, pthread_mutex_t *mutex, u
 
 static rb_internal_thread_event_hook_t *rb_internal_thread_event_hooks = NULL;
 static void rb_thread_execute_hooks(rb_event_flag_t event, rb_thread_t *th);
-#define RB_INTERNAL_THREAD_HOOK(event, th) if (rb_internal_thread_event_hooks) { rb_thread_execute_hooks(event, th); }
+
+#if 0
+static const char *
+event_name(rb_event_flag_t event)
+{
+    switch (event) {
+      case RUBY_INTERNAL_THREAD_EVENT_STARTED:
+        return "STARTED";
+      case RUBY_INTERNAL_THREAD_EVENT_READY:
+        return "READY";
+      case RUBY_INTERNAL_THREAD_EVENT_RESUMED:
+        return "RESUMED";
+      case RUBY_INTERNAL_THREAD_EVENT_SUSPENDED:
+        return "SUSPENDED";
+      case RUBY_INTERNAL_THREAD_EVENT_EXITED:
+        return "EXITED";
+    }
+    return "no-event";
+}
+
+#define RB_INTERNAL_THREAD_HOOK(event, th) \
+    if (UNLIKELY(rb_internal_thread_event_hooks)) { \
+        fprintf(stderr, "[thread=%"PRIxVALUE"] %s in %s (%s:%d)\n", th->self, event_name(event), __func__, __FILE__, __LINE__); \
+        rb_thread_execute_hooks(event, th); \
+    }
+#else
+#define RB_INTERNAL_THREAD_HOOK(event, th) if (UNLIKELY(rb_internal_thread_event_hooks)) { rb_thread_execute_hooks(event, th); }
+#endif
 
 static rb_serial_t current_fork_gen = 1; /* We can't use GET_VM()->fork_gen */
 
@@ -958,9 +985,7 @@ thread_sched_wakeup_next_thread(struct rb_thread_sched *sched, rb_thread_t *th, 
 static void
 thread_sched_to_waiting_common0(struct rb_thread_sched *sched, rb_thread_t *th, bool to_dead)
 {
-    if (rb_internal_thread_event_hooks) {
-        rb_thread_execute_hooks(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
-    }
+    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
 
     if (!to_dead) native_thread_dedicated_inc(th->vm, th->ractor, th->nt);
 
@@ -975,9 +1000,8 @@ static void
 thread_sched_to_dead_common(struct rb_thread_sched *sched, rb_thread_t *th)
 {
     RUBY_DEBUG_LOG("dedicated:%d", th->nt->dedicated);
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_EXITED, th);
-
     thread_sched_to_waiting_common0(sched, th, true);
+    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_EXITED, th);
 }
 
 // running -> dead
@@ -1007,8 +1031,6 @@ thread_sched_to_waiting_common(struct rb_thread_sched *sched, rb_thread_t *th)
 static void
 thread_sched_to_waiting(struct rb_thread_sched *sched, rb_thread_t *th)
 {
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
-
     thread_sched_lock(sched, th);
     {
         thread_sched_to_waiting_common(sched, th);
@@ -1046,6 +1068,7 @@ ubf_waiting(void *ptr)
             // not sleeping yet.
         }
         else {
+            RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
             thread_sched_to_ready_common(sched, th, true, false);
         }
     }
@@ -1089,6 +1112,7 @@ thread_sched_yield(struct rb_thread_sched *sched, rb_thread_t *th)
     thread_sched_lock(sched, th);
     {
         if (!ccan_list_empty(&sched->readyq)) {
+            RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
             thread_sched_wakeup_next_thread(sched, th, !th_has_dedicated_nt(th));
             bool can_direct_transfer = !th_has_dedicated_nt(th);
             thread_sched_to_ready_common(sched, th, false, can_direct_transfer);
@@ -2148,8 +2172,6 @@ native_thread_create_dedicated(rb_thread_t *th)
 static void
 call_thread_start_func_2(rb_thread_t *th)
 {
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_STARTED, th);
-
 #if defined USE_NATIVE_THREAD_INIT
     native_thread_init_stack(th);
     thread_start_func_2(th, th->ec->machine.stack_start);
@@ -2309,6 +2331,7 @@ native_thread_create(rb_thread_t *th)
 {
     VM_ASSERT(th->nt == 0);
     RUBY_DEBUG_LOG("th:%d has_dnt:%d", th->serial, th->has_dedicated_nt);
+    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_STARTED, th);
 
     if (!th->ractor->threads.sched.enable_mn_threads) {
         th->has_dedicated_nt = 1;
@@ -3232,7 +3255,6 @@ static void
 native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
 {
     struct rb_thread_sched *sched = TH_SCHED(th);
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
 
     RUBY_DEBUG_LOG("rel:%d", rel ? (int)*rel : 0);
     if (rel) {
@@ -3248,7 +3270,6 @@ native_sleep(rb_thread_t *th, rb_hrtime_t *rel)
     }
 
     RUBY_DEBUG_LOG("wakeup");
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_READY, th);
 }
 
 // thread internal event hooks (only for pthread)
