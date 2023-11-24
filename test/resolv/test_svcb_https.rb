@@ -83,7 +83,6 @@ class TestResolvSvcbHttps < Test::Unit::TestCase
     assert_equal expected, msg.encode
   end
 
-
   ## Test vectors from [RFC9460]
 
   def test_alias_mode
@@ -198,6 +197,34 @@ class TestResolvSvcbHttps < Test::Unit::TestCase
     assert_equal Resolv::DNS::Name.create('foo.example.org.'), rr.target
     assert_equal 1, rr.params.count
     assert_equal ['f\oo,bar', 'h2'], rr.params[:alpn].protocol_ids
+
+    assert_equal wire, msg.encode
+  end
+
+  ## For [RFC9461]
+
+  def test_dohpath
+    wire = wrap_rdata 64, 1, "\x00\x01\x03one\x03one\x03one\x03one\x00" +
+      "\x00\x01\x00\x03\x02h2" +
+      "\x00\x03\x00\x02\x01\xbb" +
+      "\x00\x04\x00\x08\x01\x01\x01\x01\x01\x00\x00\x01" +
+      "\x00\x06\x00\x20" +
+      ("\x26\x06\x47\x00\x47\x00\x00\x00\x00\x00\x00\x00\x00\x00\x11\x11" +
+       "\x26\x06\x47\x00\x47\x00\x00\x00\x00\x00\x00\x00\x00\x00\x10\x01") +
+      "\x00\x07\x00\x10/dns-query{?dns}"
+    msg = Resolv::DNS::Message.decode(wire)
+    _, _, rr = msg.answer.first
+
+    assert_equal 1, rr.priority
+    assert_equal Resolv::DNS::Name.create('one.one.one.one.'), rr.target
+    assert_equal 5, rr.params.count
+    assert_equal ['h2'], rr.params[:alpn].protocol_ids
+    assert_equal 443, rr.params[:port].port
+    assert_equal [Resolv::IPv4.create('1.1.1.1'), Resolv::IPv4.create('1.0.0.1')],
+      rr.params[:ipv4hint].addresses
+    assert_equal [Resolv::IPv6.create('2606:4700:4700::1111'), Resolv::IPv6.create('2606:4700:4700::1001')],
+      rr.params[:ipv6hint].addresses
+    assert_equal '/dns-query{?dns}', rr.params[:dohpath].template
 
     assert_equal wire, msg.encode
   end

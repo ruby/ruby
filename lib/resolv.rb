@@ -2027,6 +2027,35 @@ class Resolv
         end
       end
 
+      ##
+      # "dohpath" SvcParam -- DNS over HTTPS path template [RFC9461]
+
+      class DoHPath < SvcParam
+        KeyName = :dohpath
+        KeyNumber = 7
+        ClassHash[KeyName] = ClassHash[KeyNumber] = self # :nodoc:
+
+        ##
+        # URI template for DoH queries.
+
+        attr_reader :template
+
+        ##
+        # Initialize "dohpath" ScvParam.
+
+        def initialize(template)
+          @template = template.encode('utf-8')
+        end
+
+        def encode(msg) # :nodoc:
+          msg.put_bytes(@template)
+        end
+
+        def self.decode(msg) # :nodoc:
+          template = msg.get_bytes.force_encoding('utf-8')
+          return self.new(template)
+        end
+      end
     end
 
     ##
