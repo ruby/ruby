@@ -506,12 +506,9 @@ AS_CASE(["$target_os"],
     ])
     rb_cv_binary_elf=no
     : ${enable_shared=yes}
+    AS_IF([$WINDRES --version | grep LLVM > /dev/null], [USE_LLVM_WINDRES=yes], [USE_LLVM_WINDRES=no])
     ],
 [hiuxmpp*], [AC_DEFINE(__HIUX_MPP__)])    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
-
-USE_LLVM_WINDRES=no
-windres_version=`windres --version | grep LLVM`
-test -z "$windres_version" || USE_LLVM_WINDRES=yes
 
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
