@@ -132,17 +132,12 @@ class TestShapes < Test::Unit::TestCase
     begin;
       class Hi; end
 
-      obj = Hi.new
-      i = 0
-      while RubyVM::Shape.shapes_available > 2
-        obj.instance_variable_set(:"@a#{i}", 1)
-        i += 1
-      end
+      RubyVM::Shape.exhaust_shapes(2)
 
       obj = Hi.new
-      obj.instance_variable_set(:"@b", 1)
-      obj.instance_variable_set(:"@c", 1)
-      obj.instance_variable_set(:"@d", 1)
+      obj.instance_variable_set(:@b, 1)
+      obj.instance_variable_set(:@c, 1)
+      obj.instance_variable_set(:@d, 1)
 
       assert_predicate RubyVM::Shape.of(obj), :too_complex?
     end;
