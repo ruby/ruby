@@ -287,6 +287,9 @@ class Time
     end
   end
 
+  # call-seq:
+  #   Time.new(year = nil, mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil, precision: 9)
+  #
   # Returns a new \Time object based on the given arguments,
   # by default in the local timezone.
   #
