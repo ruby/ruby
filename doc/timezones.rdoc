@@ -17,6 +17,7 @@ The value given with any of these must be one of the following
 - {Single-letter offset}[rdoc-ref:timezones.rdoc@Single-Letter+Offsets].
 - {Integer offset}[rdoc-ref:timezones.rdoc@Integer+Offsets].
 - {Timezone object}[rdoc-ref:timezones.rdoc@Timezone+Objects].
+- {Timezone name}[rdoc-ref:timezones.rdoc@Timezone+Names].
 
 === Hours/Minutes Offsets
 
@@ -102,3 +103,29 @@ which will be called if defined:
   - Called when <tt>Marshal.dump(t)</tt> is invoked
   - Argument: none.
   - Returns: the string name of the timezone.
+
+=== Timezone Names
+
+If the class (the receiver of class methods, or the class of the receiver
+of instance methods) has `find_timezone` singleton method, this method is
+called to achieve the corresponding timezone object from a timezone name.
+
+For example, using {Timezone}[https://github.com/panthomakos/timezone]:
+    class TimeWithTimezone < Time
+      require 'timezone'
+      def self.find_timezone(z) = Timezone[z]
+    end
+
+    TimeWithTimezone.now(in: "America/New_York")        #=> 2023-12-25 00:00:00 -0500
+    TimeWithTimezone.new("2023-12-25 America/New_York") #=> 2023-12-25 00:00:00 -0500
+
+Or, using {TZInfo}[https://tzinfo.github.io]:
+    class TimeWithTZInfo < Time
+      require 'tzinfo'
+      def self.find_timezone(z) = TZInfo::Timezone.get(z)
+    end
+
+    TimeWithTZInfo.now(in: "America/New_York")          #=> 2023-12-25 00:00:00 -0500
+    TimeWithTZInfo.new("2023-12-25 America/New_York")   #=> 2023-12-25 00:00:00 -0500
+
+You can define this method per subclasses, or on the toplevel `Time` class.
