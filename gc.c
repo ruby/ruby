@@ -7254,7 +7254,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
     gc_mark_set_parent(objspace, obj);
 
     if (FL_TEST(obj, FL_EXIVAR)) {
-        rb_mark_and_update_generic_ivar(obj);
+        rb_mark_generic_ivar(obj);
     }
 
     switch (BUILTIN_TYPE(obj)) {
@@ -10248,6 +10248,12 @@ gc_ref_update_table_values_only(rb_objspace_t *objspace, st_table *tbl)
     }
 }
 
+void
+rb_gc_ref_update_table_values_only(st_table *tbl)
+{
+    gc_ref_update_table_values_only(&rb_objspace, tbl);
+}
+
 static void
 gc_update_table_refs(rb_objspace_t * objspace, st_table *tbl)
 {
@@ -10622,7 +10628,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
     gc_report(4, objspace, "update-refs: %p ->\n", (void *)obj);
 
     if (FL_TEST(obj, FL_EXIVAR)) {
-        rb_mark_and_update_generic_ivar(obj);
+        rb_ref_update_generic_ivar(obj);
     }
 
     switch (BUILTIN_TYPE(obj)) {
