@@ -654,12 +654,19 @@ rb_shape_get_next_iv_shape(rb_shape_t* shape, ID id)
 }
 
 rb_shape_t *
-rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id)
+rb_shape_get_next(rb_shape_t *shape, VALUE obj, ID id)
 {
     RUBY_ASSERT(!is_instance_id(id) || RTEST(rb_sym2str(ID2SYM(id))));
     if (UNLIKELY(shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
         return shape;
     }
+
+#if RUBY_DEBUG
+    attr_index_t index;
+    if (rb_shape_get_iv_index(shape, id, &index)) {
+        rb_bug("rb_shape_get_next: trying to create ivar that already exists at index %u", index);
+    }
+#endif
 
     bool allow_new_shape = true;
 
