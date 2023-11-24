@@ -910,11 +910,25 @@ rb_sym2id(VALUE sym)
                 RSYMBOL(sym)->id = id |= num;
                 /* make it permanent object */
 
+#if USE_MMTK
+                if (rb_mmtk_enabled_p()) {
+                    // Symbols with associated ID are implicitly pinned (see gc_is_moveable_obj).
+                    // When using MMTk, we need to inform MMTk not to move the object.
+                    mmtk_pin_object((MMTk_ObjectReference)sym);
+                }
+#endif
+
                 set_id_entry(symbols, rb_id_to_serial(num), fstr, sym);
                 rb_hash_delete_entry(symbols->dsymbol_fstr_hash, fstr);
             }
         }
         GLOBAL_SYMBOLS_LEAVE();
+#if USE_MMTK && RUBY_DEBUG
+        if (rb_mmtk_enabled_p()) {
+            // Assert that all dynamic symbols returned from this function are pinned.
+            RUBY_ASSERT(mmtk_is_pinned((MMTk_ObjectReference)sym));
+        }
+#endif
     }
     else {
         rb_raise(rb_eTypeError, "wrong argument type %s (expected Symbol)",

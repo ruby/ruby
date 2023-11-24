@@ -197,4 +197,10 @@ void mmtk_gc_poll(MMTk_VMMutatorThread tls);
 
 size_t mmtk_get_immix_bump_ptr_offset(void);
 
+bool mmtk_pin_object(MMTk_ObjectReference object);
+
+bool mmtk_unpin_object(MMTk_ObjectReference object);
+
+bool mmtk_is_pinned(MMTk_ObjectReference object);
+
 #endif /* MMTK_H */
