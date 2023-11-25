@@ -697,7 +697,7 @@ module IRB
     end
 
     def handle_exception(exc)
-      if exc.backtrace && exc.backtrace[0] =~ /\/irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/ &&
+      if exc.backtrace[0] =~ /\/irb(2)?(\/.*|-.*|\.rb)?:/ && exc.class.to_s !~ /^IRB/ &&
          !(SyntaxError === exc) && !(EncodingError === exc)
         # The backtrace of invalid encoding hash (ex. {"\xAE": 1}) raises EncodingError without lineno.
         irb_bug = true
@@ -705,44 +705,41 @@ module IRB
         irb_bug = false
       end
 
-      if exc.backtrace
-        order = nil
-        if RUBY_VERSION < '3.0.0'
-          if STDOUT.tty?
-            message = exc.full_message(order: :bottom)
-            order = :bottom
-          else
-            message = exc.full_message(order: :top)
-            order = :top
-          end
-        else # '3.0.0' <= RUBY_VERSION
+      if RUBY_VERSION < '3.0.0'
+        if STDOUT.tty?
+          message = exc.full_message(order: :bottom)
+          order = :bottom
+        else
           message = exc.full_message(order: :top)
           order = :top
         end
-        message = convert_invalid_byte_sequence(message, exc.message.encoding)
-        message = encode_with_invalid_byte_sequence(message, IRB.conf[:LC_MESSAGES].encoding) unless message.encoding.to_s.casecmp?(IRB.conf[:LC_MESSAGES].encoding.to_s)
-        message = message.gsub(/((?:^\t.+$\n)+)/)  { |m|
-          case order
-          when :top
-            lines = m.split("\n")
-          when :bottom
-            lines = m.split("\n").reverse
-          end
-          unless irb_bug
-            lines = lines.map { |l| @context.workspace.filter_backtrace(l) }.compact
-            if lines.size > @context.back_trace_limit
-              omit = lines.size - @context.back_trace_limit
-              lines = lines[0..(@context.back_trace_limit - 1)]
-              lines << "\t... %d levels..." % omit
-            end
-          end
-          lines = lines.reverse if order == :bottom
-          lines.map{ |l| l + "\n" }.join
-        }
-        # The "<top (required)>" in "(irb)" may be the top level of IRB so imitate the main object.
-        message = message.gsub(/\(irb\):(?<num>\d+):in `<(?<frame>top \(required\))>'/)  { "(irb):#{$~[:num]}:in `<main>'" }
-        puts message
+      else # '3.0.0' <= RUBY_VERSION
+        message = exc.full_message(order: :top)
+        order = :top
       end
+      message = convert_invalid_byte_sequence(message, exc.message.encoding)
+      message = encode_with_invalid_byte_sequence(message, IRB.conf[:LC_MESSAGES].encoding) unless message.encoding.to_s.casecmp?(IRB.conf[:LC_MESSAGES].encoding.to_s)
+      message = message.gsub(/((?:^\t.+$\n)+)/) { |m|
+        case order
+        when :top
+          lines = m.split("\n")
+        when :bottom
+          lines = m.split("\n").reverse
+        end
+        unless irb_bug
+          lines = lines.map { |l| @context.workspace.filter_backtrace(l) }.compact
+          if lines.size > @context.back_trace_limit
+            omit = lines.size - @context.back_trace_limit
+            lines = lines[0..(@context.back_trace_limit - 1)]
+            lines << "\t... %d levels..." % omit
+          end
+        end
+        lines = lines.reverse if order == :bottom
+        lines.map{ |l| l + "\n" }.join
+      }
+      # The "<top (required)>" in "(irb)" may be the top level of IRB so imitate the main object.
+      message = message.gsub(/\(irb\):(?<num>\d+):in `<(?<frame>top \(required\))>'/) { "(irb):#{$~[:num]}:in `<main>'" }
+      puts message
       puts 'Maybe IRB bug!' if irb_bug
     rescue Exception => handler_exc
       begin

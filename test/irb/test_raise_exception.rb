@@ -7,11 +7,8 @@ module TestIRB
   class RaiseExceptionTest < TestCase
     def test_raise_exception_with_nil_backtrace
       bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []
-      assert_in_out_err(bundle_exec + %w[-rirb -W0 -e IRB.start(__FILE__) -- -f --], <<-IRB, /Exception: foo/, [])
-      e = Exception.new("foo")
-      puts e.inspect
-      def e.backtrace; nil; end
-      raise e
+      assert_in_out_err(bundle_exec + %w[-rirb -W0 -e IRB.start(__FILE__) -- -f --], <<-IRB, /#<Exception: foo>/, [])
+      raise Exception.new("foo").tap {|e| def e.backtrace; nil; end }
 IRB
     end
 
