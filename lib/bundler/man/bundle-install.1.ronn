@@ -14,6 +14,7 @@ bundle-install(1) -- Install the dependencies specified in your Gemfile
                  [--no-cache]
                  [--no-prune]
                  [--path PATH]
+                 [--prefer-local]
                  [--quiet]
                  [--redownload]
                  [--retry=NUMBER]
