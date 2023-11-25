@@ -791,4 +791,11 @@ class TestISeq < Test::Unit::TestCase
       end
     end;
   end
+
+  def test_ibf_bignum
+    iseq = RubyVM::InstructionSequence.compile("0x0"+"_0123_4567_89ab_cdef"*5)
+    expected = iseq.eval
+    result = RubyVM::InstructionSequence.load_from_binary(iseq.to_binary).eval
+    assert_equal expected, result, proc {sprintf("expected: %x, result: %x", expected, result)}
+  end
 end

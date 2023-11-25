@@ -12859,8 +12859,12 @@ ibf_load_object_bignum(const struct ibf_load *load, const struct ibf_object_head
     const struct ibf_object_bignum *bignum = IBF_OBJBODY(struct ibf_object_bignum, offset);
     int sign = bignum->slen > 0;
     ssize_t len = sign > 0 ? bignum->slen : -1 * bignum->slen;
-    VALUE obj = rb_integer_unpack(bignum->digits, len * 2, 2, 0,
-                                  INTEGER_PACK_LITTLE_ENDIAN | (sign == 0 ? INTEGER_PACK_NEGATIVE : 0));
+    const int big_unpack_flags = /* c.f. rb_big_unpack() */
+        INTEGER_PACK_LSWORD_FIRST |
+        INTEGER_PACK_NATIVE_BYTE_ORDER;
+    VALUE obj = rb_integer_unpack(bignum->digits, len, sizeof(BDIGIT), 0,
+                                  big_unpack_flags |
+                                  (sign == 0 ? INTEGER_PACK_NEGATIVE : 0));
     if (header->internal) rb_obj_hide(obj);
     if (header->frozen)   rb_obj_freeze(obj);
     return obj;
