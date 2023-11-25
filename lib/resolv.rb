@@ -79,9 +79,22 @@ class Resolv
 
   ##
   # Creates a new Resolv using +resolvers+.
+  #
+  # If +resolvers+ is not given, a hash, or +nil+, uses a Hosts resolver and
+  # and a DNS resolver.  If +resolvers+ is a hash, uses the hash as
+  # configuration for the DNS resolver.
 
-  def initialize(resolvers=nil, use_ipv6: nil)
-    @resolvers = resolvers || [Hosts.new, DNS.new(DNS::Config.default_config_hash.merge(use_ipv6: use_ipv6))]
+  def initialize(resolvers=(arg_not_set = true; nil), use_ipv6: (keyword_not_set = true; nil))
+    if !keyword_not_set && !arg_not_set
+      warn "Support for separate use_ipv6 keyword is deprecated, as it is ignored if an argument is provided. Do not provide a positional argument if using the use_ipv6 keyword argument.", uplevel: 1
+    end
+
+    @resolvers = case resolvers
+    when Hash, nil
+      [Hosts.new, DNS.new(DNS::Config.default_config_hash.merge(resolvers || {}))]
+    else
+      resolvers
+    end
   end
 
   ##
