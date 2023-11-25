@@ -6168,8 +6168,7 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
             argc += 1;
         }
         else {
-            ADD_INSN1(args, argn, splatarray, Qfalse);
-            ADD_INSN(args, argn, concatarray);
+            ADD_INSN(args, argn, concattoarray);
         }
 
         // f(..., *a, ..., k1:1, ...) #=> f(..., *[*a, ...], **{k1:1, ...})
