@@ -2457,6 +2457,8 @@ pm_constant_path_or_write_node_create(pm_parser_t *parser, pm_constant_path_node
  */
 static pm_constant_path_node_t *
 pm_constant_path_node_create(pm_parser_t *parser, pm_node_t *parent, const pm_token_t *delimiter, pm_node_t *child) {
+    pm_assert_value_expression(parser, parent);
+
     pm_constant_path_node_t *node = PM_ALLOC_NODE(parser, pm_constant_path_node_t);
 
     *node = (pm_constant_path_node_t) {
