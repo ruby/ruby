@@ -10333,6 +10333,14 @@ match3(const pm_parser_t *parser, pm_token_type_t type1, pm_token_type_t type2, 
 }
 
 /**
+ * Returns true if the current token is any of the four given types.
+ */
+static inline bool
+match4(const pm_parser_t *parser, pm_token_type_t type1, pm_token_type_t type2, pm_token_type_t type3, pm_token_type_t type4) {
+    return match1(parser, type1) || match1(parser, type2) || match1(parser, type3) || match1(parser, type4);
+}
+
+/**
  * Returns true if the current token is any of the five given types.
  */
 static inline bool
@@ -11216,7 +11224,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 parser_lex(parser);
                 pm_token_t operator = parser->previous;
 
-                if (match3(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_COMMA, PM_TOKEN_SEMICOLON)) {
+                if (match4(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_TOKEN_COMMA, PM_TOKEN_SEMICOLON, PM_TOKEN_BRACKET_RIGHT)) {
                     if (pm_parser_local_depth(parser, &parser->previous) == -1) {
                         pm_parser_err_token(parser, &operator, PM_ERR_ARGUMENT_NO_FORWARDING_STAR);
                     }

@@ -124,3 +124,19 @@ foo.foo[bar, &baz] += 1
 foo.foo[bar, &baz] ||= 1
 
 foo.foo[bar, &baz] &&= 1
+
+def f(*); a[*]; end
+
+def f(*); a[1, *]; end
+
+def f(*); a[*] = 1; end
+
+def f(*); a[1, *] = 1; end
+
+def f(*); a[*] += 1; end
+
+def f(*); a[1, *] &&= 1; end
+
+def f(*); rescue => a[*]; end
+
+def f(*); rescue => a[1, *]; end
