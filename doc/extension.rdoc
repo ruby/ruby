@@ -779,26 +779,26 @@ approach to marking and reference updating is provided, by declaring offset
 references to the VALUES in your struct.
 
 Doing this allows the Ruby GC to support marking these references and GC
-compaction without the need to define the `dmark` and `dcompact` callbacks.
+compaction without the need to define the +dmark+ and +dcompact+ callbacks.
 
 You must define a static list of VALUE pointers to the offsets within your
 struct where the references are located, and set the "data" member to point to
-this reference list. The reference list must end with `END_REFS`
+this reference list. The reference list must end with +RUBY_END_REFS+.
 
 Some Macros have been provided to make edge referencing easier:
 
-* <code>RUBY_TYPED_DECL_MARKING</code> =A flag that can be set on the `ruby_data_type_t` to indicate that references are being declared as edges.
+* <code>RUBY_TYPED_DECL_MARKING</code> =A flag that can be set on the +ruby_data_type_t+ to indicate that references are being declared as edges.
 
-* <code>RUBY_REFERENCES_START(ref_list_name)</code> - Define `ref_list_name` as a list of references
+* <code>RUBY_REFERENCES_START(ref_list_name)</code> - Define _ref_list_name_ as a list of references
 
 * <code>RUBY_REFERENCES_END</code> - Mark the end of the references list. This will take care of terminating the list correctly
 
-* <code>RUBY_REF_EDGE\(struct, member\)</code> - Declare `member` as a VALUE edge from `struct`. Use this after `RUBY_REFERENCES_START`
+* <code>RUBY_REF_EDGE(struct, member)</code> - Declare _member_ as a VALUE edge from _struct_. Use this after +RUBY_REFERENCES_START+
 
 * +REFS_LIST_PTR+ - Coerce the reference list into a format that can be
-  accepted by the existing `dmark` interface.
+  accepted by the existing +dmark+ interface.
 
-The example below is from `Dir` (defined in `dir.c`)
+The example below is from Dir (defined in +dir.c+)
 
   // The struct being wrapped. Notice this contains 3 members of which the second
   // is a VALUE reference to another ruby object.
