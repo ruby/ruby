@@ -653,5 +653,7 @@ class TestResolvDNS < Test::Unit::TestCase
     config[:raise_timeout_errors] = true
     r = Resolv.new([Resolv::DNS.new(config)])
     assert_raise(Resolv::ResolvError) { r.getaddresses('www.google.com') }
+  ensure
+    sock&.close
   end
 end
