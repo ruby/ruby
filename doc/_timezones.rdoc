@@ -1,6 +1,6 @@
 == Timezone Specifiers
 
-Certain \Time methods accept arguments that specify timezones:
+Certain +Time+ methods accept arguments that specify timezones:
 
 - Time.at: keyword argument +in:+.
 - Time.new: positional argument +zone+ or keyword argument +in:+.

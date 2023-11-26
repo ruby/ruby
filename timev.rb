@@ -1,4 +1,4 @@
-# A \Time object represents a date and time:
+# A +Time+ object represents a date and time:
 #
 #   Time.new(2000, 1, 1, 0, 0, 0) # => 2000-01-01 00:00:00 -0600
 #
@@ -41,7 +41,7 @@
 #
 # == \Time Resolution
 #
-# A \Time object derived from the system clock
+# A +Time+ object derived from the system clock
 # (for example, by method Time.now)
 # has the resolution supported by the system.
 #
@@ -49,7 +49,7 @@
 #
 # All of these examples were done using the EST timezone which is GMT-5.
 #
-# === Creating a New \Time Instance
+# === Creating a New +Time+ Instance
 #
 # You can create a new instance of Time with Time.new. This will use the
 # current system time. Time.now is an alias for this. You can also
@@ -81,7 +81,7 @@
 #
 #   Time.at(628232400) #=> 1989-11-28 00:00:00 -0500
 #
-# === Working with an Instance of \Time
+# === Working with an Instance of +Time+
 #
 # Once you have an instance of Time there is a multitude of things you can
 # do with it. Below are some examples. For all of the following examples, we
@@ -123,19 +123,19 @@
 #
 # == What's Here
 #
-# First, what's elsewhere. \Class \Time:
+# First, what's elsewhere. \Class +Time+:
 #
 # - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
 # - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
 #
-# Here, class \Time provides methods that are useful for:
+# Here, class +Time+ provides methods that are useful for:
 #
-# - {Creating \Time objects}[rdoc-ref:Time@Methods+for+Creating].
-# - {Fetching \Time values}[rdoc-ref:Time@Methods+for+Fetching].
-# - {Querying a \Time object}[rdoc-ref:Time@Methods+for+Querying].
-# - {Comparing \Time objects}[rdoc-ref:Time@Methods+for+Comparing].
-# - {Converting a \Time object}[rdoc-ref:Time@Methods+for+Converting].
-# - {Rounding a \Time}[rdoc-ref:Time@Methods+for+Rounding].
+# - {Creating +Time+ objects}[rdoc-ref:Time@Methods+for+Creating].
+# - {Fetching +Time+ values}[rdoc-ref:Time@Methods+for+Fetching].
+# - {Querying a +Time+ object}[rdoc-ref:Time@Methods+for+Querying].
+# - {Comparing +Time+ objects}[rdoc-ref:Time@Methods+for+Comparing].
+# - {Converting a +Time+ object}[rdoc-ref:Time@Methods+for+Converting].
+# - {Rounding a +Time+}[rdoc-ref:Time@Methods+for+Rounding].
 #
 # === Methods for Creating
 #
@@ -214,7 +214,7 @@
 #
 # :include: doc/_timezones.rdoc
 class Time
-  # Creates a new \Time object from the current system time.
+  # Creates a new +Time+ object from the current system time.
   # This is the same as Time.new without arguments.
   #
   #    Time.now               # => 2009-06-24 12:39:54 +0900
@@ -226,11 +226,11 @@ class Time
     Primitive.time_s_now(Primitive.arg!(:in))
   end
 
-  # Returns a new \Time object based on the given arguments.
+  # Returns a new +Time+ object based on the given arguments.
   #
   # Required argument +time+ may be either of:
   #
-  # - A \Time object, whose value is the basis for the returned time;
+  # - A +Time+ object, whose value is the basis for the returned time;
   #   also influenced by optional keyword argument +in:+ (see below).
   # - A numeric number of
   #   {Epoch seconds}[rdoc-ref:Time@Epoch+Seconds]
@@ -292,7 +292,7 @@ class Time
   # call-seq:
   #   Time.new(year = nil, mon = nil, mday = nil, hour = nil, min = nil, sec = nil, zone = nil, in: nil, precision: 9)
   #
-  # Returns a new \Time object based on the given arguments,
+  # Returns a new +Time+ object based on the given arguments,
   # by default in the local timezone.
   #
   # With no positional arguments, returns the value of Time.now:
@@ -300,7 +300,7 @@ class Time
   #   Time.new # => 2021-04-24 17:27:46.0512465 -0500
   #
   # With one string argument that represents a time, returns a new
-  # \Time object based on the given argument, in the local timezone.
+  # +Time+ object based on the given argument, in the local timezone.
   #
   #   Time.new('2000-12-31 23:59:59.5')              # => 2000-12-31 23:59:59.5 -0600
   #   Time.new('2000-12-31 23:59:59.5 +0900')        # => 2000-12-31 23:59:59.5 +0900
@@ -308,7 +308,7 @@ class Time
   #   Time.new('2000-12-31 23:59:59.5')              # => 2000-12-31 23:59:59.5 -0600
   #   Time.new('2000-12-31 23:59:59.56789', precision: 3) # => 2000-12-31 23:59:59.567 -0600
   #
-  # With one to six arguments, returns a new \Time object
+  # With one to six arguments, returns a new +Time+ object
   # based on the given arguments, in the local timezone.
   #
   #   Time.new(2000, 1, 2, 3, 4, 5) # => 2000-01-02 03:04:05 -0600
@@ -371,7 +371,7 @@ class Time
   #     Time.new(*a) # => 0000-01-01 00:00:00 -0600
   #
   # When positional argument +zone+ or keyword argument +in:+ is given,
-  # the new \Time object is in the specified timezone.
+  # the new +Time+ object is in the specified timezone.
   # For the forms of argument +zone+, see
   # {Timezone Specifiers}[rdoc-ref:Time@Timezone+Specifiers]:
   #
@@ -389,7 +389,7 @@ class Time
   #   Time.new('2000-01-01 00:00:00 +0100', in: '-0500').utc_offset  # => 3600
   #
   # - +precision+: maximum effective digits in sub-second part, default is 9.
-  #   More digits will be truncated, as other operations of \Time.
+  #   More digits will be truncated, as other operations of +Time+.
   #   Ignored unless the first argument is a string.
   #
   def initialize(year = (now = true), mon = (str = year; nil), mday = nil, hour = nil, min = nil, sec = nil, zone = nil,
