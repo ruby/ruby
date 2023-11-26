@@ -117,12 +117,29 @@ class TestData < Test::Unit::TestCase
     assert_equal({foo: 1, bar: 2}, test.to_h)
     assert_equal({"foo"=>"1", "bar"=>"2"}, test.to_h { [_1.to_s, _2.to_s] })
 
+    assert_equal([1, 2], test.deconstruct)
     assert_equal({foo: 1, bar: 2}, test.deconstruct_keys(nil))
     assert_equal({foo: 1}, test.deconstruct_keys(%i[foo]))
     assert_equal({foo: 1}, test.deconstruct_keys(%i[foo baz]))
+    assert_equal({}, test.deconstruct_keys(%i[foo bar baz]))
     assert_raise(TypeError) { test.deconstruct_keys(0) }
 
     assert_kind_of(Integer, test.hash)
+  end
+
+  def test_hash
+    measure = Data.define(:amount, :unit)
+
+    assert_equal(measure[1, 'km'].hash, measure[1, 'km'].hash)
+    assert_not_equal(measure[1, 'km'].hash, measure[10, 'km'].hash)
+    assert_not_equal(measure[1, 'km'].hash, measure[1, 'm'].hash)
+    assert_not_equal(measure[1, 'km'].hash, measure[1.0, 'km'].hash)
+
+    # Structurally similar data class, but shouldn't be considered
+    # the same hash key
+    measurement = Data.define(:amount, :unit)
+
+    assert_not_equal(measure[1, 'km'].hash, measurement[1, 'km'].hash)
   end
 
   def test_inspect
