@@ -196,15 +196,15 @@ struct enumerator {
 };
 
 RUBY_REFERENCES_START(enumerator_refs)
-    REF_EDGE(enumerator, obj),
-    REF_EDGE(enumerator, args),
-    REF_EDGE(enumerator, fib),
-    REF_EDGE(enumerator, dst),
-    REF_EDGE(enumerator, lookahead),
-    REF_EDGE(enumerator, feedvalue),
-    REF_EDGE(enumerator, stop_exc),
-    REF_EDGE(enumerator, size),
-    REF_EDGE(enumerator, procs),
+    RUBY_REF_EDGE(struct enumerator, obj),
+    RUBY_REF_EDGE(struct enumerator, args),
+    RUBY_REF_EDGE(struct enumerator, fib),
+    RUBY_REF_EDGE(struct enumerator, dst),
+    RUBY_REF_EDGE(struct enumerator, lookahead),
+    RUBY_REF_EDGE(struct enumerator, feedvalue),
+    RUBY_REF_EDGE(struct enumerator, stop_exc),
+    RUBY_REF_EDGE(struct enumerator, size),
+    RUBY_REF_EDGE(struct enumerator, procs),
 RUBY_REFERENCES_END
 
 static VALUE rb_cGenerator, rb_cYielder, rb_cEnumProducer;
@@ -259,7 +259,7 @@ VALUE rb_cArithSeq;
 static const rb_data_type_t enumerator_data_type = {
     "enumerator",
     {
-        REFS_LIST_PTR(enumerator_refs),
+        RUBY_REFS_LIST_PTR(enumerator_refs),
         RUBY_TYPED_DEFAULT_FREE,
         NULL, // Nothing allocated externally, so don't need a memsize function
         NULL,
