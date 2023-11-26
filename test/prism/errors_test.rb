@@ -1256,6 +1256,33 @@ module Prism
       ]
     end
 
+    def test_index_call_with_block_and_write
+      source = "foo[1] {} &&= 1"
+      assert_errors expression(source), source, [
+        ["Unexpected write target", 0..9],
+        ["Unexpected operator after a call with arguments", 10..13],
+        ["Unexpected operator after a call with a block", 10..13]
+      ]
+    end
+
+    def test_index_call_with_block_or_write
+      source = "foo[1] {} ||= 1"
+      assert_errors expression(source), source, [
+        ["Unexpected write target", 0..9],
+        ["Unexpected operator after a call with arguments", 10..13],
+        ["Unexpected operator after a call with a block", 10..13]
+      ]
+    end
+
+    def test_index_call_with_block_operator_write
+      source = "foo[1] {} += 1"
+      assert_errors expression(source), source, [
+        ["Unexpected write target", 0..9],
+        ["Unexpected operator after a call with arguments", 10..12],
+        ["Unexpected operator after a call with a block", 10..12]
+      ]
+    end
+
     def test_writing_numbered_parameter
       assert_errors expression("-> { _1 = 0 }"), "-> { _1 = 0 }", [
         ["_1 is reserved for a numbered parameter", 5..7]

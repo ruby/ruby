@@ -1840,8 +1840,8 @@ pm_call_node_variable_call_p(pm_call_node_t *node) {
 }
 
 /**
- * Returns whether or not this call is to the [] method in the index form (as
- * opposed to `foo.[]`).
+ * Returns whether or not this call is to the [] method in the index form without a block (as
+ * opposed to `foo.[]` and `foo[] { }`).
  */
 static inline bool
 pm_call_node_index_p(pm_call_node_t *node) {
@@ -1849,7 +1849,8 @@ pm_call_node_index_p(pm_call_node_t *node) {
         (node->call_operator_loc.start == NULL) &&
         (node->message_loc.start != NULL) &&
         (node->message_loc.start[0] == '[') &&
-        (node->message_loc.end[-1] == ']')
+        (node->message_loc.end[-1] == ']') &&
+        (node->block == NULL || PM_NODE_TYPE_P(node->block, PM_BLOCK_ARGUMENT_NODE))
     );
 }
 
@@ -10827,13 +10828,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
             // If there is no call operator and the message is "[]" then this is
             // an aref expression, and we can transform it into an aset
             // expression.
-            if (
-                (call->call_operator_loc.start == NULL) &&
-                (call->message_loc.start != NULL) &&
-                (call->message_loc.start[0] == '[') &&
-                (call->message_loc.end[-1] == ']') &&
-                (call->block == NULL)
-            ) {
+            if (pm_call_node_index_p(call)) {
                 if (call->arguments == NULL) {
                     call->arguments = pm_arguments_node_create(parser);
                 }

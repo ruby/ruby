@@ -81,6 +81,14 @@ foo[bar] = baz
 
 %w[\C:]
 
+foo[&bar] = 1
+
+foo.foo[&bar] = 1
+
+def foo(&)
+  bar[&] = 1
+end
+
 foo[] += 1
 
 foo[] ||= 1
