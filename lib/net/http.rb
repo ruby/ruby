@@ -1481,23 +1481,6 @@ module Net   #:nodoc:
       @use_ssl = flag
     end
 
-    SSL_IVNAMES = [
-      :@ca_file,
-      :@ca_path,
-      :@cert,
-      :@cert_store,
-      :@ciphers,
-      :@extra_chain_cert,
-      :@key,
-      :@ssl_timeout,
-      :@ssl_version,
-      :@min_version,
-      :@max_version,
-      :@verify_callback,
-      :@verify_depth,
-      :@verify_mode,
-      :@verify_hostname,
-    ] # :nodoc:
     SSL_ATTRIBUTES = [
       :ca_file,
       :ca_path,
@@ -1515,6 +1498,8 @@ module Net   #:nodoc:
       :verify_mode,
       :verify_hostname,
     ] # :nodoc:
+
+    SSL_IVNAMES = SSL_ATTRIBUTES.map { |a| "@#{a}".to_sym } # :nodoc:
 
     # Sets or returns the path to a CA certification file in PEM format.
     attr_accessor :ca_file
