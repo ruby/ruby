@@ -66,7 +66,7 @@
 #
 #   Time.new(2002, 10, 31, 2, 2, 2, "+02:00") #=> 2002-10-31 02:02:02 +0200
 #
-# Or {a timezone object}[rdoc-ref:timezones.rdoc@Timezone+Objects]:
+# Or {a timezone object}[rdoc-ref:Time@Timezone+Objects]:
 #
 #   zone = timezone("Europe/Athens")      # Eastern European Time, UTC+2
 #   Time.new(2002, 10, 31, 2, 2, 2, zone) #=> 2002-10-31 02:02:02 +0200
@@ -210,7 +210,9 @@
 # - #floor: Returns a new time with subseconds lowered to a floor.
 #
 # For the forms of argument +zone+, see
-# {Timezone Specifiers}[rdoc-ref:timezones.rdoc].
+# {Timezone Specifiers}[rdoc-ref:Time@Timezone+Specifiers].
+#
+# :include: doc/_timezones.rdoc
 class Time
   # Creates a new \Time object from the current system time.
   # This is the same as Time.new without arguments.
@@ -219,7 +221,7 @@ class Time
   #    Time.now(in: '+04:00') # => 2009-06-24 07:39:54 +0400
   #
   # For forms of argument +zone+, see
-  # {Timezone Specifiers}[rdoc-ref:timezones.rdoc].
+  # {Timezone Specifiers}[rdoc-ref:Time@Timezone+Specifiers].
   def self.now(in: nil)
     Primitive.time_s_now(Primitive.arg!(:in))
   end
@@ -277,7 +279,7 @@ class Time
   #   Time.at(secs, in: '-12:00') # => 2000-12-31 17:59:59 -1200
   #
   # For the forms of argument +zone+, see
-  # {Timezone Specifiers}[rdoc-ref:timezones.rdoc].
+  # {Timezone Specifiers}[rdoc-ref:Time@Timezone+Specifiers].
   #
   def self.at(time, subsec = false, unit = :microsecond, in: nil)
     if Primitive.mandatory_only?
@@ -371,7 +373,7 @@ class Time
   # When positional argument +zone+ or keyword argument +in:+ is given,
   # the new \Time object is in the specified timezone.
   # For the forms of argument +zone+, see
-  # {Timezone Specifiers}[rdoc-ref:timezones.rdoc]:
+  # {Timezone Specifiers}[rdoc-ref:Time@Timezone+Specifiers]:
   #
   #   Time.new(2000, 1, 1, 0, 0, 0, '+12:00')
   #   # => 2000-01-01 00:00:00 +1200

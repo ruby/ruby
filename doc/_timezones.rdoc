@@ -1,5 +1,3 @@
-= Timezones
-
 == Timezone Specifiers
 
 Certain \Time methods accept arguments that specify timezones:
@@ -13,11 +11,11 @@ Certain \Time methods accept arguments that specify timezones:
 The value given with any of these must be one of the following
 (each detailed below):
 
-- {Hours/minutes offset}[rdoc-ref:timezones.rdoc@Hours-2FMinutes+Offsets].
-- {Single-letter offset}[rdoc-ref:timezones.rdoc@Single-Letter+Offsets].
-- {Integer offset}[rdoc-ref:timezones.rdoc@Integer+Offsets].
-- {Timezone object}[rdoc-ref:timezones.rdoc@Timezone+Objects].
-- {Timezone name}[rdoc-ref:timezones.rdoc@Timezone+Names].
+- {Hours/minutes offset}[rdoc-ref:Time@Hours-2FMinutes+Offsets].
+- {Single-letter offset}[rdoc-ref:Time@Single-Letter+Offsets].
+- {Integer offset}[rdoc-ref:Time@Integer+Offsets].
+- {Timezone object}[rdoc-ref:Time@Timezone+Objects].
+- {Timezone name}[rdoc-ref:Time@Timezone+Names].
 
 === Hours/Minutes Offsets
 
