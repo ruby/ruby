@@ -270,7 +270,7 @@ class Time
   #     Time.at(secs, -1000000000, :nanosecond) # => 2000-12-31 23:59:58 -0600
   #
   #
-  # Optional keyword argument <tt>+in: zone</tt> specifies the timezone
+  # Optional keyword argument <tt>in: zone</tt> specifies the timezone
   # for the returned time:
   #
   #   Time.at(secs, in: '+12:00') # => 2001-01-01 17:59:59 +1200
