@@ -23,9 +23,6 @@ module TestIRB
       save_encodings
       IRB.instance_variable_get(:@CONF).clear
       @is_win = (RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/)
-      STDIN.singleton_class.define_method :tty? do
-        false
-      end
     end
 
     def teardown
@@ -34,13 +31,13 @@ module TestIRB
       Dir.chdir(@pwd)
       FileUtils.rm_rf(@tmpdir)
       restore_encodings
-      STDIN.singleton_class.remove_method :tty?
     end
 
     def execute_lines(*lines, conf: {}, main: self, irb_path: nil)
       IRB.init_config(nil)
       IRB.conf[:VERBOSE] = false
       IRB.conf[:PROMPT_MODE] = :SIMPLE
+      IRB.conf[:USE_PAGER] = false
       IRB.conf.merge!(conf)
       input = TestInputMethod.new(lines)
       irb = IRB::Irb.new(IRB::WorkSpace.new(main), input)

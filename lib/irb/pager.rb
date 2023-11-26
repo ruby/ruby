@@ -18,7 +18,7 @@ module IRB
       end
 
       def page
-        if STDIN.tty? && pager = setup_pager
+        if IRB.conf[:USE_PAGER] && STDIN.tty? && pager = setup_pager
           begin
             pid = pager.pid
             yield pager

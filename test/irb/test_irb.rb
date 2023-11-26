@@ -7,8 +7,7 @@ module TestIRB
   class InputTest < IntegrationTestCase
     def test_symbol_aliases_are_handled_correctly
       write_rc <<~RUBY
-        # disable pager
-        STDIN.singleton_class.define_method(:tty?) { false }
+        IRB.conf[:USE_PAGER] = false
       RUBY
 
       write_ruby <<~'RUBY'
@@ -27,8 +26,7 @@ module TestIRB
 
     def test_symbol_aliases_are_handled_correctly_with_singleline_mode
       write_rc <<~RUBY
-        # disable pager
-        STDIN.singleton_class.define_method(:tty?) { false }
+        IRB.conf[:USE_PAGER] = false
         IRB.conf[:USE_SINGLELINE] = true
       RUBY
 
