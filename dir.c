@@ -473,9 +473,10 @@ dir_free(void *ptr)
     if (dir->dir) closedir(dir->dir);
 }
 
-RUBY_REFERENCES_START(dir_refs)
+RUBY_REFERENCES(dir_refs) = {
     RUBY_REF_EDGE(struct dir_data, path),
-RUBY_REFERENCES_END
+    RUBY_REF_END
+};
 
 static const rb_data_type_t dir_data_type = {
     "dir",
