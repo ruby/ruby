@@ -189,10 +189,6 @@ module IRB # :nodoc:
       # Symbol aliases
       :'$' => :show_source,
       :'@' => :whereami,
-      # Keyword aliases
-      :break => :irb_break,
-      :catch => :irb_catch,
-      :next => :irb_next,
     }
   end
 

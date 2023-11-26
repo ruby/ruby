@@ -680,6 +680,16 @@ module TestIRB
       assert_match(/List all available commands and their description/, out)
       assert_match(/Start the debugger of debug\.gem/, out)
     end
+
+    def test_show_cmds_list_user_aliases
+      out, err = execute_lines(
+        "show_cmds\n"
+      )
+
+      assert_empty err
+      assert_match(/\$\s+Alias for `show_source`/, out)
+      assert_match(/@\s+Alias for `whereami`/, out)
+    end
   end
 
   class LsTest < CommandTestCase
