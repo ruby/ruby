@@ -44,8 +44,8 @@
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
 
-#define REF_EDGE(s, p) (offsetof(struct s, p))
-#define REFS_LIST_PTR(l) ((RUBY_DATA_FUNC)l)
+#define RUBY_REF_EDGE(s, p) offsetof(s, p)
+#define RUBY_REFS_LIST_PTR(l) (RUBY_DATA_FUNC)(l)
 #define RUBY_REF_END SIZE_MAX
 #define RUBY_REFERENCES_START(t) static const size_t t[] = {
 #define RUBY_REFERENCES_END RUBY_REF_END, };

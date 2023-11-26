@@ -474,13 +474,13 @@ dir_free(void *ptr)
 }
 
 RUBY_REFERENCES_START(dir_refs)
-    REF_EDGE(dir_data, path),
+    RUBY_REF_EDGE(struct dir_data, path),
 RUBY_REFERENCES_END
 
 static const rb_data_type_t dir_data_type = {
     "dir",
     {
-        REFS_LIST_PTR(dir_refs),
+        RUBY_REFS_LIST_PTR(dir_refs),
         dir_free,
         NULL, // Nothing allocated externally, so don't need a memsize function
     },
