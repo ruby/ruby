@@ -789,9 +789,9 @@ Some Macros have been provided to make edge referencing easier:
 
 * <code>RUBY_TYPED_DECL_MARKING</code> =A flag that can be set on the +ruby_data_type_t+ to indicate that references are being declared as edges.
 
-* <code>RUBY_REFERENCES_START(ref_list_name)</code> - Define _ref_list_name_ as a list of references
+* <code>RUBY_REFERENCES(ref_list_name)</code> - Define _ref_list_name_ as a list of references
 
-* <code>RUBY_REFERENCES_END</code> - Mark the end of the references list. This will take care of terminating the list correctly
+* <code>RUBY_REF_END</code> - The end mark of the references list.
 
 * <code>RUBY_REF_EDGE(struct, member)</code> - Declare _member_ as a VALUE edge from _struct_. Use this after +RUBY_REFERENCES_START+
 
@@ -808,11 +808,12 @@ The example below is from Dir (defined in +dir.c+)
       rb_encoding *enc;
   }
 
-  // Define a reference list `dir_refs` containing a single entry to `path`, and
-  // terminating with RUBY_REF_END
-  RUBY_REFERENCES_START(dir_refs)
+  // Define a reference list `dir_refs` containing a single entry to `path`.
+  // Needs terminating with RUBY_REF_END
+  RUBY_REFERENCES(dir_refs) = {
       RUBY_REF_EDGE(dir_data, path),
-  RUBY_REFERENCES_END
+      RUBY_REF_END
+  };
 
   // Override the "dmark" field with the defined reference list now that we
   // no longer need a marking callback and add RUBY_TYPED_DECL_MARKING to the

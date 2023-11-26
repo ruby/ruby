@@ -195,7 +195,7 @@ struct enumerator {
     int kw_splat;
 };
 
-RUBY_REFERENCES_START(enumerator_refs)
+RUBY_REFERENCES(enumerator_refs) = {
     RUBY_REF_EDGE(struct enumerator, obj),
     RUBY_REF_EDGE(struct enumerator, args),
     RUBY_REF_EDGE(struct enumerator, fib),
@@ -205,7 +205,8 @@ RUBY_REFERENCES_START(enumerator_refs)
     RUBY_REF_EDGE(struct enumerator, stop_exc),
     RUBY_REF_EDGE(struct enumerator, size),
     RUBY_REF_EDGE(struct enumerator, procs),
-RUBY_REFERENCES_END
+    RUBY_REF_END
+};
 
 static VALUE rb_cGenerator, rb_cYielder, rb_cEnumProducer;
 
