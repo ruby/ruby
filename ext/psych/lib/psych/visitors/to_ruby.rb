@@ -101,7 +101,7 @@ module Psych
           source  = $1
           options = 0
           lang    = nil
-          ($2 || '').split('').each do |option|
+          $2&.each_char do |option|
             case option
             when 'x' then options |= Regexp::EXTENDED
             when 'i' then options |= Regexp::IGNORECASE
