@@ -107,7 +107,7 @@ which will be called if defined:
 === Timezone Names
 
 If the class (the receiver of class methods, or the class of the receiver
-of instance methods) has `find_timezone` singleton method, this method is
+of instance methods) has +find_timezone+ singleton method, this method is
 called to achieve the corresponding timezone object from a timezone name.
 
 For example, using {Timezone}[https://github.com/panthomakos/timezone]:
@@ -128,4 +128,4 @@ Or, using {TZInfo}[https://tzinfo.github.io]:
     TimeWithTZInfo.now(in: "America/New_York")          #=> 2023-12-25 00:00:00 -0500
     TimeWithTZInfo.new("2023-12-25 America/New_York")   #=> 2023-12-25 00:00:00 -0500
 
-You can define this method per subclasses, or on the toplevel `Time` class.
+You can define this method per subclasses, or on the toplevel Time class.
