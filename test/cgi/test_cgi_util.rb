@@ -186,6 +186,22 @@ class CGIUtilTest < Test::Unit::TestCase
     assert_equal('&<&amp>&quot&abcdefghijklmn', CGI.unescapeHTML('&&lt;&amp&gt;&quot&abcdefghijklmn'))
   end
 
+  module UnescapeHTMLTests
+    def test_cgi_unescapeHTML_following_known_first_letter
+      assert_equal('&a>&q>&l>&g>', CGI.unescapeHTML('&a&gt;&q&gt;&l&gt;&g&gt;'))
+    end
+
+    def test_cgi_unescapeHTML_following_number_sign
+      assert_equal('&#>&#x>', CGI.unescapeHTML('&#&gt;&#x&gt;'))
+    end
+
+    def test_cgi_unescapeHTML_following_invalid_numeric
+      assert_equal('&#1114112>&#x110000>', CGI.unescapeHTML('&#1114112&gt;&#x110000&gt;'))
+    end
+  end
+
+  include UnescapeHTMLTests
+
   Encoding.list.each do |enc|
     begin
       escaped = "&#39;&amp;&quot;&gt;&lt;".encode(enc)
@@ -282,6 +298,8 @@ class CGIUtilPureRubyTest < Test::Unit::TestCase
       remove_method :_unescapeHTML
     end if defined?(CGI::Escape)
   end
+
+  include CGIUtilTest::UnescapeHTMLTests
 
   def test_cgi_escapeHTML_with_invalid_byte_sequence
     assert_equal("&lt;\xA4??&gt;", CGI.escapeHTML(%[<\xA4??>]))
