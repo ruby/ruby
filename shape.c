@@ -806,7 +806,7 @@ shape_cache_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
         }
 
         /* Verify the cache is correct by checking that this instance variable
-        * does not exist in the shape tree either. */
+         * does not exist in the shape tree either. */
         RUBY_ASSERT(!shape_get_iv_index(shape, id, value));
     }
 
