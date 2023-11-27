@@ -5419,8 +5419,7 @@ fn gen_send_cfunc(
 
     // Log the name of the method we're calling to,
     // note that we intentionally don't do this for inlined cfuncs
-    #[cfg(feature = "stats")]
-    {
+    if get_option!(gen_stats) {
         // TODO: extract code to get method name string into its own function
 
         // Assemble the method name string
@@ -7875,7 +7874,6 @@ fn gen_invokesuper_specialized(
             gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, None, cme, Some(block), ci_flags, argc, None)
         }
         VM_METHOD_TYPE_CFUNC => {
-            // FIXME: why do we put unknown comptime class here?
             gen_send_cfunc(jit, asm, ocb, ci, cme, Some(block), ptr::null(), ci_flags, argc)
         }
         _ => unreachable!(),
