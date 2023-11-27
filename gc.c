@@ -11059,6 +11059,39 @@ gc_compact(VALUE self)
 #endif
 
 #if GC_CAN_COMPILE_COMPACTION
+
+struct desired_compaction_pages_i_data {
+    rb_objspace_t *objspace;
+    size_t required_slots[SIZE_POOL_COUNT];
+};
+
+static int
+desired_compaction_pages_i(struct heap_page *page, void *data)
+{
+    struct desired_compaction_pages_i_data *tdata = data;
+    rb_objspace_t *objspace = tdata->objspace;
+    VALUE vstart = (VALUE)page->start;
+    VALUE vend = vstart + (VALUE)(page->total_slots * page->size_pool->slot_size);
+
+
+    for (VALUE v = vstart; v != vend; v += page->size_pool->slot_size) {
+        /* skip T_NONEs; they won't be moved */
+        void *poisoned = asan_unpoison_object_temporary(v);
+        if (BUILTIN_TYPE(v) == T_NONE) {
+            if (poisoned) {
+                asan_poison_object(v);
+            }
+            continue;
+        }
+
+        rb_size_pool_t *dest_pool = gc_compact_destination_pool(objspace, page->size_pool, v);
+        size_t dest_pool_idx = dest_pool - size_pools;
+        tdata->required_slots[dest_pool_idx]++;
+    }
+
+    return 0;
+}
+
 static VALUE
 gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE double_heap, VALUE expand_heap, VALUE toward_empty)
 {
@@ -11076,18 +11109,55 @@ gc_verify_compaction_references(rb_execution_context_t *ec, VALUE self, VALUE do
         gc_rest(objspace);
 
         /* if both double_heap and expand_heap are set, expand_heap takes precedence */
-        if (RTEST(double_heap) || RTEST(expand_heap)) {
+        if (RTEST(expand_heap)) {
+            struct desired_compaction_pages_i_data desired_compaction = {
+                .objspace = objspace,
+                .required_slots = {0},
+            };
+            /* Work out how many objects want to be in each size pool, taking account of moves */
+            objspace_each_pages(objspace, desired_compaction_pages_i, &desired_compaction, TRUE);
+
+            /* Find out which pool has the most pages */
+            size_t max_existing_pages = 0;
+            for(int i = 0; i < SIZE_POOL_COUNT; i++) {
+                rb_size_pool_t *size_pool = &size_pools[i];
+                rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
+                max_existing_pages = MAX(max_existing_pages, heap->total_pages);
+            }
+            /* Add pages to each size pool so that compaction is guaranteed to move every object */
             for (int i = 0; i < SIZE_POOL_COUNT; i++) {
                 rb_size_pool_t *size_pool = &size_pools[i];
                 rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
 
-                size_t minimum_pages = 0;
-                if (RTEST(expand_heap)) {
-                    minimum_pages = minimum_pages_for_size_pool(objspace, size_pool);
-                }
+                size_t pages_to_add = 0;
+                /*
+                 * Step 1: Make sure every pool has the same number of pages, by adding empty pages
+                 * to smaller pools. This is required to make sure the compact cursor can advance
+                 * through all of the pools in `gc_sweep_compact` without hitting the "sweep &
+                 * compact cursors met" condition on some pools before fully compacting others
+                 */
+                pages_to_add += max_existing_pages - heap->total_pages;
+                /*
+                 * Step 2: Now add additional free pages to each size pool sufficient to hold all objects
+                 * that want to be in that size pool, whether moved into it or moved within it
+                 */
+                pages_to_add += slots_to_pages_for_size_pool(objspace, size_pool, desired_compaction.required_slots[i]);
+                /*
+                 * Step 3: Add two more pages so that the compact & sweep cursors will meet _after_ all objects
+                 * have been moved, and not on the last iteration of the `gc_sweep_compact` loop
+                 */
+                pages_to_add += 2;
 
-                heap_add_pages(objspace, size_pool, heap, MAX(minimum_pages, heap->total_pages));
+                heap_add_pages(objspace, size_pool, heap, pages_to_add);
             }
+        }
+        else if (RTEST(double_heap)) {
+            for (int i = 0; i < SIZE_POOL_COUNT; i++) {
+                rb_size_pool_t *size_pool = &size_pools[i];
+                rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
+                heap_add_pages(objspace, size_pool, heap, heap->total_pages);
+            }
+
         }
 
         if (RTEST(toward_empty)) {
