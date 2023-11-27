@@ -85,4 +85,16 @@ describe "CApiWrappedTypedStruct" do
       -> { @s.rb_check_typeddata_different_type(a) }.should raise_error(TypeError)
     end
   end
+
+  describe "RTYPEDDATA_P" do
+    it "returns true for a typed data" do
+      a = @s.typed_wrap_struct(1024)
+      @s.RTYPEDDATA_P(a).should == true
+    end
+
+    it "returns false for an untyped data object" do
+      a = @s.untyped_wrap_struct(1024)
+      @s.RTYPEDDATA_P(a).should == false
+    end
+  end
 end

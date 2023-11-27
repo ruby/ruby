@@ -82,6 +82,19 @@ describe "Numbered parameters" do
     lambda { _9 }.arity.should == 9
   end
 
+  it "affects block parameters" do
+    -> { _1 }.parameters.should == [[:req, :_1]]
+    -> { _2 }.parameters.should == [[:req, :_1], [:req, :_2]]
+
+    proc { _1 }.parameters.should == [[:opt, :_1]]
+    proc { _2 }.parameters.should == [[:opt, :_1], [:opt, :_2]]
+  end
+
+  it "affects binding local variables" do
+    -> { _1; binding.local_variables }.call("a").should == [:_1]
+    -> { _2; binding.local_variables }.call("a", "b").should == [:_1, :_2]
+  end
+
   it "does not work in methods" do
     obj = Object.new
     def obj.foo; _1 end

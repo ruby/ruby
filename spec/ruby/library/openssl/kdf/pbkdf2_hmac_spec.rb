@@ -154,23 +154,6 @@ describe "OpenSSL::KDF.pbkdf2_hmac" do
     }.should raise_error(ArgumentError, 'missing keywords: :salt, :iterations, :length, :hash')
   end
 
-=begin
-  guard -> { OpenSSL::OPENSSL_VERSION_NUMBER < 0x30000000 } do
-    it "treats 0 or less iterations as a single iteration" do
-      salt = "\x00".b * 16
-      length = 16
-      hash = "sha1"
-
-      # "Any iter less than 1 is treated as a single iteration."
-      key0 = OpenSSL::KDF.pbkdf2_hmac("secret", **@defaults, iterations: 0)
-      key_negative = OpenSSL::KDF.pbkdf2_hmac("secret", **@defaults, iterations: -1)
-      key1 = OpenSSL::KDF.pbkdf2_hmac("secret", **@defaults, iterations: 1)
-      key0.should == key1
-      key_negative.should == key1
-    end
-  end
-=end
-
   guard -> { OpenSSL::OPENSSL_VERSION_NUMBER >= 0x30000000 } do
     it "raises an OpenSSL::KDF::KDFError for 0 or less iterations" do
       -> {

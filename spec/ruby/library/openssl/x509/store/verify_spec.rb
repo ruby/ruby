@@ -1,7 +1,7 @@
 require_relative '../../../../spec_helper'
 require 'openssl'
 
-describe "OpenSSL::X509::Name.verify" do
+describe "OpenSSL::X509::Store#verify" do
   it "returns true for valid certificate" do
     key = OpenSSL::PKey::RSA.new 2048
     cert = OpenSSL::X509::Certificate.new

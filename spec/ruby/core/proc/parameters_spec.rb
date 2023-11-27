@@ -21,7 +21,7 @@ describe "Proc#parameters" do
   end
 
   ruby_version_is "3.2" do
-    it "sets the first element of each sub-Array to :req if argument would be required if a lambda if lambda keyword used" do
+    it "sets the first element of each sub-Array to :req for required argument if lambda keyword used" do
       proc {|x| }.parameters(lambda: true).first.first.should == :req
       proc {|y,*x| }.parameters(lambda: true).first.first.should == :req
     end
@@ -91,19 +91,33 @@ describe "Proc#parameters" do
     proc {|&block| }.parameters.first.last.should == :block
   end
 
-  it "ignores unnamed rest args" do
+  it "ignores unnamed rest arguments" do
     -> x {}.parameters.should == [[:req, :x]]
   end
 
   ruby_version_is '3.2' do
-    it "adds * rest arg for \"star\" argument" do
-      -> x, * {}.parameters.should == [[:req, :x], [:rest, :*]]
+    it "adds rest arg with name * for \"star\" argument" do
+      -> * {}.parameters.should == [[:rest, :*]]
+    end
+
+    it "adds keyrest arg with ** as a name for \"double star\" argument" do
+      -> ** {}.parameters.should == [[:keyrest, :**]]
     end
   end
 
   ruby_version_is ''...'3.2' do
     it "adds nameless rest arg for \"star\" argument" do
-      -> x, * {}.parameters.should == [[:req, :x], [:rest]]
+      -> * {}.parameters.should == [[:rest]]
+    end
+
+    it "adds nameless keyrest arg for \"double star\" argument" do
+      -> ** {}.parameters.should == [[:keyrest]]
+    end
+  end
+
+  ruby_version_is '3.1' do
+    it "adds block arg with name & for anonymous block argument" do
+      eval('-> & {}.parameters').should == [[:block, :&]]
     end
   end
 

@@ -120,7 +120,7 @@ describe :sizedqueue_enq, shared: true do
         q << 1
 
         t = Thread.new {
-          -> { q.send(@method, 1, timeout: 0.1) }.should raise_error(ClosedQueueError, "queue closed")
+          -> { q.send(@method, 1, timeout: 10) }.should raise_error(ClosedQueueError, "queue closed")
         }
 
         Thread.pass until q.num_waiting == 1

@@ -46,6 +46,49 @@ describe "Exception#full_message" do
     full_message[0].should.end_with?("': Some runtime error (RuntimeError)\n")
   end
 
+  describe "includes details about whether an exception was handled" do
+    describe "RuntimeError" do
+      it "should report as unhandled if message is empty" do
+        err = RuntimeError.new("")
+
+        err.full_message.should =~ /unhandled exception/
+        err.full_message(highlight: true).should =~ /unhandled exception/
+        err.full_message(highlight: false).should =~ /unhandled exception/
+      end
+
+      it "should not report as unhandled if the message is not empty" do
+        err = RuntimeError.new("non-empty")
+
+        err.full_message.should !~ /unhandled exception/
+        err.full_message(highlight: true).should !~ /unhandled exception/
+        err.full_message(highlight: false).should !~ /unhandled exception/
+      end
+
+      it "should not report as unhandled if the message is nil" do
+        err = RuntimeError.new(nil)
+
+        err.full_message.should !~ /unhandled exception/
+        err.full_message(highlight: true).should !~ /unhandled exception/
+        err.full_message(highlight: false).should !~ /unhandled exception/
+      end
+
+      it "should not report as unhandled if the message is not specified" do
+        err = RuntimeError.new()
+
+        err.full_message.should !~ /unhandled exception/
+        err.full_message(highlight: true).should !~ /unhandled exception/
+        err.full_message(highlight: false).should !~ /unhandled exception/
+      end
+    end
+
+    describe "generic Error" do
+      it "should not report as unhandled in any event" do
+        StandardError.new("").full_message.should !~ /unhandled exception/
+        StandardError.new("non-empty").full_message.should !~ /unhandled exception/
+      end
+    end
+  end
+
   it "shows the exception class at the end of the first line of the message when the message contains multiple lines" do
     begin
       line = __LINE__; raise "first line\nsecond line"
