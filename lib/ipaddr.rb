@@ -110,8 +110,13 @@ class IPAddr
 
   # Convert a network byte ordered string form of an IP address into
   # human readable form.
+  # It expects the string to be encoded in Encoding::ASCII_8BIT (BINARY).
   def self.ntop(addr)
-    case addr.size
+    if addr.is_a?(String) && addr.encoding != Encoding::BINARY
+      raise InvalidAddressError, "invalid encoding (given #{addr.encoding}, expected BINARY)"
+    end
+
+    case addr.bytesize
     when 4
       addr.unpack('C4').join('.')
     when 16
