@@ -836,6 +836,245 @@ pm_compile_call_and_or_write_node(bool and_node, pm_node_t *receiver, pm_node_t 
     return;
 }
 
+static int
+pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinfo_kwarg **kw_arg, rb_iseq_t *iseq, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, pm_scope_node_t *scope_node, NODE dummy_line_node, pm_parser_t *parser)
+{
+    int orig_argc = 0;
+    if (arguments_node == NULL) {
+        if (*flags & VM_CALL_FCALL) {
+            *flags |= VM_CALL_VCALL;
+        }
+    }
+    else {
+        pm_node_list_t arguments_node_list = arguments_node->arguments;
+
+        bool has_keyword_splat = (arguments_node->base.flags & PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT);
+        bool has_splat = false;
+
+        // We count the number of elements post the splat node that are not keyword elements to
+        // eventually pass as an argument to newarray
+        int post_splat_counter = 0;
+
+        for (size_t index = 0; index < arguments_node_list.size; index++) {
+            pm_node_t *argument = arguments_node_list.nodes[index];
+
+            switch (PM_NODE_TYPE(argument)) {
+                // A keyword hash node contains all keyword arguments as AssocNodes and AssocSplatNodes
+              case PM_KEYWORD_HASH_NODE: {
+                  pm_keyword_hash_node_t *keyword_arg = (pm_keyword_hash_node_t *)argument;
+                  size_t len = keyword_arg->elements.size;
+
+                  if (has_keyword_splat) {
+                      int cur_hash_size = 0;
+                      orig_argc++;
+
+                      bool new_hash_emitted = false;
+                      for (size_t i = 0; i < len; i++) {
+                          pm_node_t *cur_node = keyword_arg->elements.nodes[i];
+
+                          pm_node_type_t cur_type = PM_NODE_TYPE(cur_node);
+
+                          switch (PM_NODE_TYPE(cur_node)) {
+                            case PM_ASSOC_NODE: {
+                                pm_assoc_node_t *assoc = (pm_assoc_node_t *)cur_node;
+
+                                PM_COMPILE_NOT_POPPED(assoc->key);
+                                PM_COMPILE_NOT_POPPED(assoc->value);
+                                cur_hash_size++;
+
+                                // If we're at the last keyword arg, or the last assoc node of this "set",
+                                // then we want to either construct a newhash or merge onto previous hashes
+                                if (i == (len - 1) || !PM_NODE_TYPE_P(keyword_arg->elements.nodes[i + 1], cur_type)) {
+                                    if (new_hash_emitted) {
+                                        ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(cur_hash_size * 2 + 1));
+                                    }
+                                    else {
+                                        ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(cur_hash_size * 2));
+                                        cur_hash_size = 0;
+                                        new_hash_emitted = true;
+                                    }
+                                }
+
+                                break;
+                            }
+                            case PM_ASSOC_SPLAT_NODE: {
+                                if (len > 1) {
+                                    ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                                    if (i == 0) {
+                                        ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(0));
+                                        new_hash_emitted = true;
+                                    }
+                                    else {
+                                        PM_SWAP;
+                                    }
+                                }
+
+                                pm_assoc_splat_node_t *assoc_splat = (pm_assoc_splat_node_t *)cur_node;
+                                PM_COMPILE_NOT_POPPED(assoc_splat->value);
+
+                                *flags |= VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT;
+
+                                if (len > 1) {
+                                    ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_kwd, INT2FIX(2));
+                                }
+
+                                if ((i < len - 1) && !PM_NODE_TYPE_P(keyword_arg->elements.nodes[i + 1], cur_type)) {
+                                    ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                                    PM_SWAP;
+                                }
+
+                                cur_hash_size = 0;
+                                break;
+                            }
+                            default: {
+                                rb_bug("Unknown type");
+                            }
+                          }
+                      }
+                      break;
+                  }
+                  else {
+                      *kw_arg = rb_xmalloc_mul_add(len, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
+                      *flags = VM_CALL_KWARG;
+                      (*kw_arg)->keyword_len = (int) len;
+
+                      // TODO: Method callers like `foo(a => b)`
+                      for (size_t i = 0; i < len; i++) {
+                          pm_assoc_node_t *assoc = (pm_assoc_node_t *)keyword_arg->elements.nodes[i];
+                          (*kw_arg)->keywords[i] = pm_static_literal_value(assoc->key, scope_node, parser);
+                          PM_COMPILE_NOT_POPPED(assoc->value);
+                      }
+                  }
+                  break;
+              }
+              case PM_SPLAT_NODE: {
+                  *flags |= VM_CALL_ARGS_SPLAT;
+                  pm_splat_node_t *splat_node = (pm_splat_node_t *)argument;
+                  if (splat_node->expression) {
+                      orig_argc++;
+                      PM_COMPILE_NOT_POPPED(splat_node->expression);
+                  }
+
+                  ADD_INSN1(ret, &dummy_line_node, splatarray, popped ? Qfalse : Qtrue);
+
+                  has_splat = true;
+                  post_splat_counter = 0;
+
+                  break;
+              }
+              case PM_FORWARDING_ARGUMENTS_NODE: {
+                  orig_argc++;
+                  *flags |= VM_CALL_ARGS_BLOCKARG | VM_CALL_ARGS_SPLAT;
+                  ADD_GETLOCAL(ret, &dummy_line_node, 3, 0);
+                  ADD_INSN1(ret, &dummy_line_node, splatarray, RBOOL(arguments_node_list.size > 1));
+                  ADD_INSN2(ret, &dummy_line_node, getblockparamproxy, INT2FIX(4), INT2FIX(0));
+                  break;
+              }
+              default: {
+                  orig_argc++;
+                  post_splat_counter++;
+                  PM_COMPILE_NOT_POPPED(argument);
+
+                  if (has_splat) {
+                      // If the next node starts the keyword section of parameters
+                      if ((index < arguments_node_list.size - 1) && PM_NODE_TYPE_P(arguments_node_list.nodes[index + 1], PM_KEYWORD_HASH_NODE)) {
+
+                          ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
+                          ADD_INSN1(ret, &dummy_line_node, splatarray, Qfalse);
+                          ADD_INSN(ret, &dummy_line_node, concatarray);
+                      }
+                      // If it's the final node
+                      else if (index == arguments_node_list.size - 1) {
+                          ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
+                          ADD_INSN(ret, &dummy_line_node, concatarray);
+                      }
+                  }
+              }
+            }
+        }
+    }
+    return orig_argc;
+}
+
+static void
+pm_compile_index_and_or_write_node(bool and_node, pm_node_t *receiver, pm_node_t *value, pm_arguments_node_t *arguments, pm_node_t *block, LINK_ANCHOR *const ret, rb_iseq_t *iseq, int lineno, const uint8_t * src, bool popped, pm_scope_node_t *scope_node, pm_parser_t *parser)
+{
+    NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
+    PM_PUTNIL_UNLESS_POPPED;
+
+    PM_COMPILE_NOT_POPPED(receiver);
+
+    int flag = 0;
+    struct rb_callinfo_kwarg *keywords = NULL;
+    int argc_int = 0;
+
+    if (arguments) {
+        argc_int = pm_setup_args(arguments, &flag, &keywords, iseq, ret, src, popped, scope_node, dummy_line_node, parser);
+    }
+
+    VALUE argc = INT2FIX(argc_int);
+    int boff = 0;
+
+    if (block) {
+        PM_COMPILE_NOT_POPPED(block);
+        flag |= VM_CALL_ARGS_BLOCKARG;
+        boff = 1;
+    }
+
+    ADD_INSN1(ret, &dummy_line_node, dupn, FIXNUM_INC(argc, 1 + boff));
+
+    ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idAREF, argc, INT2FIX(flag));
+
+    LABEL *label = NEW_LABEL(lineno);
+    LABEL *lfin = NEW_LABEL(lineno);
+
+    PM_DUP;
+
+    if (and_node) {
+        ADD_INSNL(ret, &dummy_line_node, branchunless, label);
+    }
+    else {
+        // ornode
+        ADD_INSNL(ret, &dummy_line_node, branchif, label);
+    }
+
+    PM_POP;
+
+    PM_COMPILE_NOT_POPPED(value);
+
+    if (!popped) {
+        ADD_INSN1(ret, &dummy_line_node, setn, FIXNUM_INC(argc, 2 + boff));
+    }
+    if (flag & VM_CALL_ARGS_SPLAT) {
+        ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(1));
+        if (boff > 0) {
+            ADD_INSN1(ret, &dummy_line_node, dupn, INT2FIX(3));
+            ADD_INSN(ret, &dummy_line_node, swap);
+            ADD_INSN(ret, &dummy_line_node, pop);
+        }
+        ADD_INSN(ret, &dummy_line_node, concatarray);
+        if (boff > 0) {
+            ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(3));
+            PM_POP;
+        }
+        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idASET, argc, INT2FIX(flag));
+    }
+    else {
+        if (boff > 0)
+            ADD_INSN(ret, &dummy_line_node, swap);
+        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idASET, FIXNUM_INC(argc, 1), INT2FIX(flag));
+    }
+    PM_POP;
+    ADD_INSNL(ret, &dummy_line_node, jump, lfin);
+    ADD_LABEL(ret, label);
+    if (!popped) {
+        ADD_INSN1(ret, &dummy_line_node, setn, FIXNUM_INC(argc, 2 + boff));
+    }
+    ADD_INSN1(ret, &dummy_line_node, adjuststack, FIXNUM_INC(argc, 2 + boff));
+    ADD_LABEL(ret, lfin);
+    return;
+}
+
 /**
  * In order to properly compile multiple-assignment, some preprocessing needs to
  * be performed in the case of call or constant path targets. This is when they
@@ -1310,166 +1549,6 @@ pm_compile_defined_expr(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *con
         ADD_LABEL(ret, lfinish[1]);
     }
     ADD_LABEL(ret, lfinish[0]);
-}
-
-static int
-pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinfo_kwarg **kw_arg, rb_iseq_t *iseq, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, pm_scope_node_t *scope_node, NODE dummy_line_node, pm_parser_t *parser)
-{
-    int orig_argc = 0;
-    if (arguments_node == NULL) {
-        if (*flags & VM_CALL_FCALL) {
-            *flags |= VM_CALL_VCALL;
-        }
-    }
-    else {
-        pm_node_list_t arguments_node_list = arguments_node->arguments;
-
-        bool has_keyword_splat = (arguments_node->base.flags & PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT);
-        bool has_splat = false;
-
-        // We count the number of elements post the splat node that are not keyword elements to
-        // eventually pass as an argument to newarray
-        int post_splat_counter = 0;
-
-        for (size_t index = 0; index < arguments_node_list.size; index++) {
-            pm_node_t *argument = arguments_node_list.nodes[index];
-
-            switch (PM_NODE_TYPE(argument)) {
-                // A keyword hash node contains all keyword arguments as AssocNodes and AssocSplatNodes
-              case PM_KEYWORD_HASH_NODE: {
-                  pm_keyword_hash_node_t *keyword_arg = (pm_keyword_hash_node_t *)argument;
-                  size_t len = keyword_arg->elements.size;
-
-                  if (has_keyword_splat) {
-                      int cur_hash_size = 0;
-                      orig_argc++;
-
-                      bool new_hash_emitted = false;
-                      for (size_t i = 0; i < len; i++) {
-                          pm_node_t *cur_node = keyword_arg->elements.nodes[i];
-
-                          pm_node_type_t cur_type = PM_NODE_TYPE(cur_node);
-
-                          switch (PM_NODE_TYPE(cur_node)) {
-                            case PM_ASSOC_NODE: {
-                                pm_assoc_node_t *assoc = (pm_assoc_node_t *)cur_node;
-
-                                PM_COMPILE_NOT_POPPED(assoc->key);
-                                PM_COMPILE_NOT_POPPED(assoc->value);
-                                cur_hash_size++;
-
-                                // If we're at the last keyword arg, or the last assoc node of this "set",
-                                // then we want to either construct a newhash or merge onto previous hashes
-                                if (i == (len - 1) || !PM_NODE_TYPE_P(keyword_arg->elements.nodes[i + 1], cur_type)) {
-                                    if (new_hash_emitted) {
-                                        ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(cur_hash_size * 2 + 1));
-                                    }
-                                    else {
-                                        ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(cur_hash_size * 2));
-                                        cur_hash_size = 0;
-                                        new_hash_emitted = true;
-                                    }
-                                }
-
-                                break;
-                            }
-                            case PM_ASSOC_SPLAT_NODE: {
-                                if (len > 1) {
-                                    ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                                    if (i == 0) {
-                                        ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(0));
-                                        new_hash_emitted = true;
-                                    }
-                                    else {
-                                        PM_SWAP;
-                                    }
-                                }
-
-                                pm_assoc_splat_node_t *assoc_splat = (pm_assoc_splat_node_t *)cur_node;
-                                PM_COMPILE_NOT_POPPED(assoc_splat->value);
-
-                                *flags |= VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT;
-
-                                if (len > 1) {
-                                    ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_kwd, INT2FIX(2));
-                                }
-
-                                if ((i < len - 1) && !PM_NODE_TYPE_P(keyword_arg->elements.nodes[i + 1], cur_type)) {
-                                    ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                                    PM_SWAP;
-                                }
-
-                                cur_hash_size = 0;
-                                break;
-                            }
-                            default: {
-                                rb_bug("Unknown type");
-                            }
-                          }
-                      }
-                      break;
-                  }
-                  else {
-                      *kw_arg = rb_xmalloc_mul_add(len, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
-                      *flags = VM_CALL_KWARG;
-                      (*kw_arg)->keyword_len = (int) len;
-
-                      // TODO: Method callers like `foo(a => b)`
-                      for (size_t i = 0; i < len; i++) {
-                          pm_assoc_node_t *assoc = (pm_assoc_node_t *)keyword_arg->elements.nodes[i];
-                          (*kw_arg)->keywords[i] = pm_static_literal_value(assoc->key, scope_node, parser);
-                          PM_COMPILE_NOT_POPPED(assoc->value);
-                      }
-                  }
-                  break;
-              }
-              case PM_SPLAT_NODE: {
-                  *flags |= VM_CALL_ARGS_SPLAT;
-                  pm_splat_node_t *splat_node = (pm_splat_node_t *)argument;
-                  if (splat_node->expression) {
-                      orig_argc++;
-                      PM_COMPILE_NOT_POPPED(splat_node->expression);
-                  }
-
-                  ADD_INSN1(ret, &dummy_line_node, splatarray, popped ? Qfalse : Qtrue);
-
-                  has_splat = true;
-                  post_splat_counter = 0;
-
-                  break;
-              }
-              case PM_FORWARDING_ARGUMENTS_NODE: {
-                  orig_argc++;
-                  *flags |= VM_CALL_ARGS_BLOCKARG | VM_CALL_ARGS_SPLAT;
-                  ADD_GETLOCAL(ret, &dummy_line_node, 3, 0);
-                  ADD_INSN1(ret, &dummy_line_node, splatarray, RBOOL(arguments_node_list.size > 1));
-                  ADD_INSN2(ret, &dummy_line_node, getblockparamproxy, INT2FIX(4), INT2FIX(0));
-                  break;
-              }
-              default: {
-                  orig_argc++;
-                  post_splat_counter++;
-                  PM_COMPILE_NOT_POPPED(argument);
-
-                  if (has_splat) {
-                      // If the next node starts the keyword section of parameters
-                      if ((index < arguments_node_list.size - 1) && PM_NODE_TYPE_P(arguments_node_list.nodes[index + 1], PM_KEYWORD_HASH_NODE)) {
-
-                          ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
-                          ADD_INSN1(ret, &dummy_line_node, splatarray, Qfalse);
-                          ADD_INSN(ret, &dummy_line_node, concatarray);
-                      }
-                      // If it's the final node
-                      else if (index == arguments_node_list.size - 1) {
-                          ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
-                          ADD_INSN(ret, &dummy_line_node, concatarray);
-                      }
-                  }
-              }
-            }
-        }
-    }
-    return orig_argc;
 }
 
 /*
@@ -2652,73 +2731,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PM_COMPILE(cast->value);
         return;
       }
+      case PM_INDEX_AND_WRITE_NODE: {
+        pm_index_and_write_node_t *index_and_write_node = (pm_index_and_write_node_t *)node;
+
+        pm_compile_index_and_or_write_node(true, index_and_write_node->receiver, index_and_write_node->value, index_and_write_node->arguments, index_and_write_node->block, ret, iseq, lineno, src, popped, scope_node, parser);
+        return;
+      }
       case PM_INDEX_OR_WRITE_NODE: {
         pm_index_or_write_node_t *index_or_write_node = (pm_index_or_write_node_t *)node;
 
-        PM_PUTNIL_UNLESS_POPPED;
-
-        PM_COMPILE_NOT_POPPED(index_or_write_node->receiver);
-
-        int flag = 0;
-        struct rb_callinfo_kwarg *keywords = NULL;
-        int argc_int = 0;
-
-        if (index_or_write_node->arguments) {
-            argc_int = pm_setup_args(index_or_write_node->arguments, &flag, &keywords, iseq, ret, src, popped, scope_node, dummy_line_node, parser);
-        }
-
-        VALUE argc = INT2FIX(argc_int);
-        int boff = 0;
-
-        if (index_or_write_node->block) {
-            PM_COMPILE_NOT_POPPED(index_or_write_node->block);
-            flag |= VM_CALL_ARGS_BLOCKARG;
-            boff = 1;
-        }
-
-        ADD_INSN1(ret, &dummy_line_node, dupn, FIXNUM_INC(argc, 1 + boff));
-
-        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idAREF, argc, INT2FIX(flag));
-
-        LABEL *label = NEW_LABEL(lineno);
-        LABEL *lfin = NEW_LABEL(lineno);
-
-        PM_DUP;
-        ADD_INSNL(ret, &dummy_line_node, branchif, label);
-        PM_POP;
-
-        PM_COMPILE_NOT_POPPED(index_or_write_node->value);
-
-        if (!popped) {
-            ADD_INSN1(ret, &dummy_line_node, setn, FIXNUM_INC(argc, 2 + boff));
-        }
-        if (flag & VM_CALL_ARGS_SPLAT) {
-            ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(1));
-            if (boff > 0) {
-                ADD_INSN1(ret, &dummy_line_node, dupn, INT2FIX(3));
-                ADD_INSN(ret, &dummy_line_node, swap);
-                ADD_INSN(ret, &dummy_line_node, pop);
-            }
-            ADD_INSN(ret, &dummy_line_node, concatarray);
-            if (boff > 0) {
-                ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(3));
-                PM_POP;
-            }
-            ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idASET, argc, INT2FIX(flag));
-        }
-        else {
-            if (boff > 0)
-                ADD_INSN(ret, &dummy_line_node, swap);
-            ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idASET, FIXNUM_INC(argc, 1), INT2FIX(flag));
-        }
-        PM_POP;
-        ADD_INSNL(ret, &dummy_line_node, jump, lfin);
-        ADD_LABEL(ret, label);
-        if (!popped) {
-            ADD_INSN1(ret, &dummy_line_node, setn, FIXNUM_INC(argc, 2 + boff));
-        }
-        ADD_INSN1(ret, &dummy_line_node, adjuststack, FIXNUM_INC(argc, 2 + boff));
-        ADD_LABEL(ret, lfin);
+        pm_compile_index_and_or_write_node(false, index_or_write_node->receiver, index_or_write_node->value, index_or_write_node->arguments, index_or_write_node->block, ret, iseq, lineno, src, popped, scope_node, parser);
         return;
       }
       case PM_INSTANCE_VARIABLE_AND_WRITE_NODE: {
