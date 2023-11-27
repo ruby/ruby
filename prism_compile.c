@@ -997,6 +997,37 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
 }
 
 static void
+pm_compile_index_write_nodes_add_send(bool popped, LINK_ANCHOR *const ret, rb_iseq_t *iseq, NODE dummy_line_node, VALUE argc, int flag, int boff)
+{
+    if (!popped) {
+        ADD_INSN1(ret, &dummy_line_node, setn, FIXNUM_INC(argc, 2 + boff));
+    }
+
+    if (flag & VM_CALL_ARGS_SPLAT) {
+        ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(1));
+        if (boff > 0) {
+            ADD_INSN1(ret, &dummy_line_node, dupn, INT2FIX(3));
+            ADD_INSN(ret, &dummy_line_node, swap);
+            ADD_INSN(ret, &dummy_line_node, pop);
+        }
+        ADD_INSN(ret, &dummy_line_node, concatarray);
+        if (boff > 0) {
+            ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(3));
+            PM_POP;
+        }
+        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idASET, argc, INT2FIX(flag));
+    }
+    else {
+        if (boff > 0)
+            ADD_INSN(ret, &dummy_line_node, swap);
+        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idASET, FIXNUM_INC(argc, 1), INT2FIX(flag));
+    }
+
+    PM_POP;
+    return;
+}
+
+static void
 pm_compile_index_and_or_write_node(bool and_node, pm_node_t *receiver, pm_node_t *value, pm_arguments_node_t *arguments, pm_node_t *block, LINK_ANCHOR *const ret, rb_iseq_t *iseq, int lineno, const uint8_t * src, bool popped, pm_scope_node_t *scope_node, pm_parser_t *parser)
 {
     NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
@@ -1042,29 +1073,8 @@ pm_compile_index_and_or_write_node(bool and_node, pm_node_t *receiver, pm_node_t
 
     PM_COMPILE_NOT_POPPED(value);
 
-    if (!popped) {
-        ADD_INSN1(ret, &dummy_line_node, setn, FIXNUM_INC(argc, 2 + boff));
-    }
-    if (flag & VM_CALL_ARGS_SPLAT) {
-        ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(1));
-        if (boff > 0) {
-            ADD_INSN1(ret, &dummy_line_node, dupn, INT2FIX(3));
-            ADD_INSN(ret, &dummy_line_node, swap);
-            ADD_INSN(ret, &dummy_line_node, pop);
-        }
-        ADD_INSN(ret, &dummy_line_node, concatarray);
-        if (boff > 0) {
-            ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(3));
-            PM_POP;
-        }
-        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idASET, argc, INT2FIX(flag));
-    }
-    else {
-        if (boff > 0)
-            ADD_INSN(ret, &dummy_line_node, swap);
-        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idASET, FIXNUM_INC(argc, 1), INT2FIX(flag));
-    }
-    PM_POP;
+    pm_compile_index_write_nodes_add_send(popped, ret, iseq, dummy_line_node, argc, flag, boff);
+
     ADD_INSNL(ret, &dummy_line_node, jump, lfin);
     ADD_LABEL(ret, label);
     if (!popped) {
@@ -2741,6 +2751,43 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_index_or_write_node_t *index_or_write_node = (pm_index_or_write_node_t *)node;
 
         pm_compile_index_and_or_write_node(false, index_or_write_node->receiver, index_or_write_node->value, index_or_write_node->arguments, index_or_write_node->block, ret, iseq, lineno, src, popped, scope_node, parser);
+        return;
+      }
+      case PM_INDEX_OPERATOR_WRITE_NODE: {
+        pm_index_operator_write_node_t *index_operator_write_node = (pm_index_operator_write_node_t *)node;
+
+        PM_PUTNIL_UNLESS_POPPED;
+
+        PM_COMPILE_NOT_POPPED(index_operator_write_node->receiver);
+
+        int flag = 0;
+        struct rb_callinfo_kwarg *keywords = NULL;
+        int argc_int = 0;
+
+        if (index_operator_write_node->arguments) {
+            argc_int = pm_setup_args(index_operator_write_node->arguments, &flag, &keywords, iseq, ret, src, popped, scope_node, dummy_line_node, parser);
+        }
+
+        VALUE argc = INT2FIX(argc_int);
+        int boff = 0;
+
+        if (index_operator_write_node->block) {
+            PM_COMPILE_NOT_POPPED(index_operator_write_node->block);
+            flag |= VM_CALL_ARGS_BLOCKARG;
+            boff = 1;
+        }
+
+        ADD_INSN1(ret, &dummy_line_node, dupn, FIXNUM_INC(argc, 1 + boff));
+
+        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idAREF, argc, INT2FIX(flag));
+
+        PM_COMPILE_NOT_POPPED(index_operator_write_node->value);
+
+        ID method_id = pm_constant_id_lookup(scope_node, index_operator_write_node->operator);
+        ADD_SEND(ret, &dummy_line_node, method_id, INT2FIX(1));
+
+        pm_compile_index_write_nodes_add_send(popped, ret, iseq, dummy_line_node, argc, flag, boff);
+
         return;
       }
       case PM_INSTANCE_VARIABLE_AND_WRITE_NODE: {

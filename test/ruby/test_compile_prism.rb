@@ -281,6 +281,31 @@ module Prism
       CODE
     end
 
+    def test_IndexOperatorWriteNode
+      assert_prism_eval("[0][0] += 1")
+
+      # Testing `[]` with a block passed in
+      assert_prism_eval(<<-CODE)
+        class CustomHash < Hash
+          def [](key, &block)
+            block ? super(block.call(key)) : super(key)
+          end
+
+          def []=(key, value, &block)
+            block ? super(block.call(key), value) : super(key, value)
+          end
+        end
+
+        hash = CustomHash.new
+
+        # Call the custom method with a block that modifies
+        # the key before assignment
+        hash["KEY"] = "test"
+        hash["key", &(Proc.new { _1.upcase })] &&= "value"
+        hash
+      CODE
+    end
+
     def test_InstanceVariableAndWriteNode
       assert_prism_eval("@pit = 0; @pit &&= 1")
     end
