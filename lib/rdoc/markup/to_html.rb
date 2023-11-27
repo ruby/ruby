@@ -202,7 +202,9 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   def accept_paragraph paragraph
     @res << "\n<p>"
     text = paragraph.text @hard_break
-    text = text.gsub(/\r?\n/, ' ')
+    text = text.gsub(/(#{SPACE_SEPARATED_LETTER_CLASS})?\K\r?\n(?=(?(1)(#{SPACE_SEPARATED_LETTER_CLASS})?))/o) {
+      defined?($2) && ' '
+    }
     @res << to_html(text)
     @res << "</p>\n"
   end

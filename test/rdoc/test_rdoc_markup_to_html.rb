@@ -257,7 +257,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   end
 
   def accept_paragraph_break
-    assert_equal "\n<p>hello<br> world</p>\n", @to.res.join
+    assert_equal "\n<p>hello<br>world</p>\n", @to.res.join
   end
 
   def accept_paragraph_i
@@ -391,11 +391,31 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   end
 
   def test_accept_paragraph_newline
+    hellos = ["hello", "\u{393 3b5 3b9 3ac} \u{3c3 3bf 3c5}"]
+    worlds = ["world", "\u{3ba 3cc 3c3 3bc 3bf 3c2}"]
+    ohayo, sekai = %W"\u{304a 306f 3088 3046} \u{4e16 754c}"
+
+    hellos.product(worlds) do |hello, world|
+      @to.start_accepting
+      @to.accept_paragraph para("#{hello}\n", "#{world}\n")
+      assert_equal "\n<p>#{hello} #{world}</p>\n", @to.res.join
+    end
+
+    hellos.each do |hello|
+      @to.start_accepting
+      @to.accept_paragraph para("#{hello}\n", "#{sekai}\n")
+      assert_equal "\n<p>#{hello}#{sekai}</p>\n", @to.res.join
+    end
+
+    worlds.each do |world|
+      @to.start_accepting
+      @to.accept_paragraph para("#{ohayo}\n", "#{world}\n")
+      assert_equal "\n<p>#{ohayo}#{world}</p>\n", @to.res.join
+    end
+
     @to.start_accepting
-
-    @to.accept_paragraph para("hello\n", "world\n")
-
-    assert_equal "\n<p>hello world </p>\n", @to.res.join
+    @to.accept_paragraph para("#{ohayo}\n", "#{sekai}\n")
+    assert_equal "\n<p>#{ohayo}#{sekai}</p>\n", @to.res.join
   end
 
   def test_accept_heading_output_decoration
