@@ -12,7 +12,7 @@ In C, variables have types and data do not have types.  In contrast,
 Ruby variables do not have a static type, and data themselves have
 types, so data will need to be converted between the languages.
 
-Objects in Ruby are represented by the C type `VALUE'.  Each VALUE
+Objects in Ruby are represented by the C type `+VALUE+'.  Each VALUE
 data has its data type.
 
 To retrieve C data from a VALUE, you need to:
@@ -138,8 +138,8 @@ For example, to access an entry of array, use rb_ary_entry(ary, offset)
 and rb_ary_store(ary, offset, obj).
 
 There are some accessing macros for structure members, for example
-`RSTRING_LEN(str)' to get the size of the Ruby String object.  The
-allocated region can be accessed by `RSTRING_PTR(str)'.
+<code>RSTRING_LEN(str)</code> to get the size of the Ruby String object.  The
+allocated region can be accessed by <code>RSTRING_PTR(str)</code>.
 
 Notice: Do not change the value of the structure directly, unless you
 are responsible for the result.  This ends up being the cause of
@@ -374,25 +374,25 @@ To define methods or singleton methods, use these functions:
   void rb_define_singleton_method(VALUE object, const char *name,
                                   VALUE (*func)(ANYARGS), int argc)
 
-The `argc' represents the number of the arguments to the C function,
+The _argc_ represents the number of the arguments to the C function,
 which must be less than 17.  But I doubt you'll need that many.
 
-If `argc' is negative, it specifies the calling sequence, not number of
+If _argc_ is negative, it specifies the calling sequence, not number of
 the arguments.
 
-If argc is -1, the function will be called as:
+If _argc_ is -1, the function will be called as:
 
   VALUE func(int argc, VALUE *argv, VALUE obj)
 
-where argc is the actual number of arguments, argv is the C array of
-the arguments, and obj is the receiver.
+where _argc_ is the actual number of arguments, _argv_ is the C array of
+the arguments, and _obj_ is the receiver.
 
-If argc is -2, the arguments are passed in a Ruby array. The function
+If _argc_ is -2, the arguments are passed in a Ruby array. The function
 will be called like:
 
   VALUE func(VALUE obj, VALUE args)
 
-where obj is the receiver, and args is the Ruby array containing
+where _obj_ is the receiver, and _args_ is the Ruby array containing
 actual arguments.
 
 There are some more functions to define methods. One takes an ID
@@ -408,9 +408,9 @@ There are two functions to define private/protected methods:
   void rb_define_protected_method(VALUE klass, const char *name,
                                   VALUE (*func)(ANYARGS), int argc)
 
-At last, rb_define_module_function defines a module function,
+At last, `rb_define_module_function` defines a module function,
 which are private AND singleton methods of the module.
-For example, sqrt is a module function defined in the Math module.
+For example, `sqrt` is a module function defined in the Math module.
 It can be called in the following way:
 
   Math.sqrt(4)
@@ -438,12 +438,12 @@ To define a reader/writer for an attribute,
 
   void rb_define_attr(VALUE klass, const char *name, int read, int write)
 
-To define and undefine the `allocate' class method,
+To define and undefine the +allocate+ class method,
 
   void rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE klass));
   void rb_undef_alloc_func(VALUE klass);
 
-func has to take the klass as the argument and return a newly
+_func_ has to take the _klass_ as the argument and return a newly
 allocated instance.  This instance should be as empty as possible,
 without any expensive (including external) resources.
 
@@ -456,8 +456,8 @@ To specify whether keyword arguments are passed when calling super:
 
   VALUE rb_call_super_kw(int argc, const VALUE *argv, int kw_splat)
 
-+kw_splat+ can have these possible values (used by all methods that accept
-+kw_splat+ argument):
+_kw_splat_ can have these possible values (used by all methods that accept
+_kw_splat_ argument):
 
 RB_NO_KEYWORDS :: Do not pass keywords
 RB_PASS_KEYWORDS :: Pass keywords, final argument should be a hash of keywords
@@ -498,8 +498,8 @@ function:
 
   VALUE rb_eval_string_protect(const char *str, int *state)
 
-It returns nil when an error occurred. Moreover, *state is zero if str was
-successfully evaluated, or nonzero otherwise.
+It returns nil when an error occurred. Moreover, <code>*state</code> is
+zero if _str_ was successfully evaluated, or nonzero otherwise.
 
 ==== ID or Symbol
 
@@ -527,12 +527,12 @@ argument by using
   rb_check_id(volatile VALUE *name)
   rb_check_id_cstr(const char *name, long len, rb_encoding *enc)
 
-These functions try to convert the argument to a String if it was not
-a Symbol nor a String.  The second function stores the converted
-result into *name, and returns 0 if the string is not a known symbol.
-After this function returned a non-zero value, *name is always a
-Symbol or a String, otherwise it is a String if the result is 0.
-The third function takes NUL-terminated C string, not Ruby VALUE.
+These functions try to convert the argument to a String if it was not a
+Symbol nor a String.  The second function stores the converted result into
+<code>*name</code>, and returns 0 if the string is not a known symbol.
+After this function returned a non-zero value, <code>*name</code> is
+always a Symbol or a String, otherwise it is a String if the result is 0.
+The third function takes C string and its length, not Ruby VALUE.
 
 You can retrieve Symbol from Ruby object (Symbol or String) given as
 an argument by using
@@ -559,7 +559,7 @@ To invoke methods directly, you can use the function below
   VALUE rb_funcall(VALUE recv, ID mid, int argc, ...)
 
 This function invokes a method on the recv, with the method name
-specified by the symbol mid.
+specified by the symbol _mid_.
 
 ==== Accessing the variables and constants
 
@@ -572,7 +572,7 @@ The functions to access/modify instance variables are below:
   VALUE rb_ivar_get(VALUE obj, ID id)
   VALUE rb_ivar_set(VALUE obj, ID id, VALUE val)
 
-id must be the symbol, which can be retrieved by rb_intern().
+_id_ must be the symbol, which can be retrieved by +rb_intern()+.
 
 To access the constants of the class/module:
 
@@ -604,8 +604,8 @@ variables.  To define them, you can use functions listed below:
   void rb_define_variable(const char *name, VALUE *var)
 
 This function defines the variable which is shared by both environments.
-The value of the global variable pointed to by `var' can be accessed
-through Ruby's global variable named `name'.
+The value of the global variable pointed to by _var_ can be accessed
+through Ruby's global variable named _name_.
 
 You can define read-only (from Ruby, of course) variables using the
 function below.
@@ -787,9 +787,9 @@ RUBY_TYPED_EMBEDDABLE ::
     +rb_define_method+ and similar.
 
   * The +DATA_PTR+ and +RTYPEDDATA_DATA+ macro can't be used.
-    Only +RTYPEDDATA_GET_DATA+` or +TypedData_Get_Struct+ macros can be used
+    Only +RTYPEDDATA_GET_DATA+ or +TypedData_Get_Struct+ macros can be used
     with embeddable objects.
-    Accessing `RDATA(obj)->data` or `RTYPEDDATA(obj)->data` is invalid too.
+    Accessing <tt>RDATA(obj)->data</tt> or <tt>RTYPEDDATA(obj)->data</tt> is invalid too.
 
   * The +dfree+ function MUST NOT free the C struct itself.
     Setting +dfree+ to +RUBY_DEFAULT_FREE+ is fine.
@@ -843,7 +843,7 @@ this reference list. The reference list must end with +RUBY_END_REFS+.
 
 Some Macros have been provided to make edge referencing easier:
 
-* <code>RUBY_TYPED_DECL_MARKING</code> =A flag that can be set on the +ruby_data_type_t+ to indicate that references are being declared as edges.
+* <code>RUBY_TYPED_DECL_MARKING</code> - A flag that can be set on the +ruby_data_type_t+ to indicate that references are being declared as edges.
 
 * <code>RUBY_REFERENCES(ref_list_name)</code> - Define _ref_list_name_ as a list of references
 
@@ -922,9 +922,9 @@ Note that some functions in mkmf library described below generate
 a file ``conftest.c'' for checking with compilation.  You shouldn't
 choose ``conftest.c'' as a name of a source file.
 
-Ruby will execute the initializing function named ``Init_LIBRARY'' in
-the library.  For example, ``Init_dbm()'' will be executed when loading
-the library.
+Ruby will execute the initializing function named ``+Init_LIBRARY+'' in the
+library.  For example, ``<code>Init_dbm()</code>'' will be executed when
+loading the library.
 
 Here's the example of an initializing function.
 
@@ -1109,7 +1109,7 @@ source files, but you must define them explicitly if any sources will
 be generated while building.
 
 If a compilation condition is not fulfilled, you should not call
-``create_makefile''.  The Makefile will not be generated, compilation will
+``+create_makefile+''.  The Makefile will not be generated, compilation will
 not be done.
 
 === Prepare depend (Optional)
@@ -1540,9 +1540,9 @@ void rb_define_global_const(const char *name, VALUE val) ::
 rb_define_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc) ::
 
   Defines a method for the class.  func is the function pointer.  argc
-  is the number of arguments.  if argc is -1, the function will receive
-  3 arguments: argc, argv, and self.  if argc is -2, the function will
-  receive 2 arguments, self and args, where args is a Ruby array of
+  is the number of arguments.  if _argc_ is -1, the function will receive
+  3 arguments: _argc_, _argv_, and _self_.  if _argc_ is -2, the function will
+  receive 2 arguments, _self_ and _args_, where _args_ is a Ruby array of
   the method arguments.
 
 rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc) ::
@@ -1716,7 +1716,7 @@ int rb_respond_to(VALUE obj, ID id) ::
 VALUE rb_iv_get(VALUE obj, const char *name) ::
 
   Retrieve the value of the instance variable.  If the name is not
-  prefixed by `@', that variable shall be inaccessible from Ruby.
+  prefixed by `<code>@</code>', that variable shall be inaccessible from Ruby.
 
 VALUE rb_iv_set(VALUE obj, const char *name, VALUE val) ::
 
@@ -1990,7 +1990,7 @@ void rb_add_event_hook(rb_event_hook_func_t func, rb_event_flag_t events, VALUE 
     typedef void (*rb_event_hook_func_t)(rb_event_t event, VALUE data,
                                          VALUE self, ID id, VALUE klass)
 
-  The third argument `data' to rb_add_event_hook() is passed to the hook
+  The third argument `_data_' to rb_add_event_hook() is passed to the hook
   function as the second argument, which was the pointer to the current
   NODE in 1.8.  See RB_EVENT_HOOKS_HAVE_CALLBACK_DATA below.
 
@@ -2050,7 +2050,7 @@ HAVE_RUBY_*_H ::
 
 RB_EVENT_HOOKS_HAVE_CALLBACK_DATA ::
 
-  Means that rb_add_event_hook() takes the third argument `data', to be
+  Means that rb_add_event_hook() takes the third argument `_data_', to be
   passed to the given event hook function.
 
 === Defining backward compatible macros for keyword argument functions
@@ -2131,7 +2131,7 @@ VALUE rb_obj_hide(VALUE obj) ::
 VALUE rb_obj_reveal(VALUE obj, VALUE klass) ::
 
   Reset RBasic::klass to be klass.
-  We expect the `klass' is hidden class by rb_obj_hide().
+  We expect the _klass_ is hidden class by rb_obj_hide().
 
 === Write barriers
 
@@ -2227,13 +2227,13 @@ RB_GC_GUARD is only effective on the VALUE data type, not converted C
 data types.
 
 RB_GC_GUARD would not be necessary at all in the above example if
-non-inlined function calls are made on the `s' VALUE after sptr is
+non-inlined function calls are made on the _s_ VALUE after sptr is
 dereferenced.  Thus, in the above example, calling any un-inlined
-function on `s' such as:
+function on _s_ such as:
 
   rb_str_modify(s);
 
-Will ensure `s' stays on the stack or register to prevent a
+Will ensure _s_ stays on the stack or register to prevent a
 GC invocation from prematurely freeing it.
 
 Using the RB_GC_GUARD macro is preferable to using the "volatile"
