@@ -805,7 +805,7 @@ module Bundler
 
       begin
         Bundler.definition.specs
-      rescue GemNotFound
+      rescue GemNotFound, GitError
         Bundler.ui.info "Automatically installing missing gems."
         Bundler.reset!
         invoke :install, []

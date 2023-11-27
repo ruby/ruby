@@ -615,6 +615,23 @@ RSpec.describe "bundle exec" do
     expect(out).to include("Installing foo 1.0")
   end
 
+  it "performs an automatic bundle install with git gems" do
+    build_git "foo" do |s|
+      s.executables = "foo"
+    end
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      gem "rack", "0.9.1"
+      gem "foo", :git => "#{lib_path("foo-1.0")}"
+    G
+
+    bundle "config set auto_install 1"
+    bundle "exec foo"
+    expect(out).to include("Fetching rack 0.9.1")
+    expect(out).to include("Fetching #{lib_path("foo-1.0")}")
+    expect(out.lines).to end_with("1.0")
+  end
+
   it "loads the correct optparse when `auto_install` is set, and optparse is a dependency" do
     if Gem.rubygems_version < Gem::Version.new("3.3.0.a")
       skip "optparse is a default gem, and rubygems loads it during install"
