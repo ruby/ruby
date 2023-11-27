@@ -9409,14 +9409,6 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
     /* reason may be clobbered, later, so keep set immediate_sweep here */
     objspace->flags.immediate_sweep = !!(reason & GPR_FLAG_IMMEDIATE_SWEEP);
 
-    /* Explicitly enable compaction (GC.compact) */
-    if (do_full_mark && ruby_enable_autocompact) {
-        objspace->flags.during_compacting = TRUE;
-    }
-    else {
-        objspace->flags.during_compacting = !!(reason & GPR_FLAG_COMPACT);
-    }
-
     if (!heap_allocated_pages) return FALSE; /* heap is not ready */
     if (!(reason & GPR_FLAG_METHOD) && !ready_to_gc(objspace)) return TRUE; /* GC is not allowed */
 
@@ -9462,6 +9454,14 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
     }
     else {
         objspace->flags.during_incremental_marking = do_full_mark;
+    }
+
+    /* Explicitly enable compaction (GC.compact) */
+    if (do_full_mark && ruby_enable_autocompact) {
+        objspace->flags.during_compacting = TRUE;
+    }
+    else {
+        objspace->flags.during_compacting = !!(reason & GPR_FLAG_COMPACT);
     }
 
     if (!GC_ENABLE_LAZY_SWEEP || objspace->flags.dont_incremental) {
