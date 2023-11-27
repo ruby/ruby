@@ -1622,6 +1622,10 @@ CODE
     assert_equal(%w[1 2 3], S("a1 a2 a3").scan(/a\K./))
   end
 
+  def test_scan_gc_compact_stress
+    EnvUtil.under_gc_compact_stress { assert_equal([["1a"], ["2b"], ["3c"]], S("1a2b3c").scan(/(\d.)/)) }
+  end
+
   def test_scan_segv
     bug19159 = '[Bug #19159]'
     assert_nothing_raised(Exception, bug19159) do
