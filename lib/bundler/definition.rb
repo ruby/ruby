@@ -245,8 +245,9 @@ module Bundler
     end
 
     def filter_relevant(dependencies)
+      platforms_array = [generic_local_platform].freeze
       dependencies.select do |d|
-        d.should_include? && !d.gem_platforms([generic_local_platform]).empty?
+        d.should_include? && !d.gem_platforms(platforms_array).empty?
       end
     end
 
@@ -270,9 +271,15 @@ module Bundler
 
     def dependencies_for(groups)
       groups.map!(&:to_sym)
-      current_dependencies.reject do |d|
-        (d.groups & groups).empty?
+      deps = current_dependencies # always returns a new array
+      deps.select! do |d|
+        if RUBY_VERSION >= "3.1"
+          d.groups.intersect?(groups)
+        else
+          !(d.groups & groups).empty?
+        end
       end
+      deps
     end
 
     # Resolve all the dependencies specified in Gemfile. It ensures that

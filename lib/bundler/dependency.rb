@@ -48,10 +48,13 @@ module Bundler
       @autorequire = Array(options["require"] || []) if options.key?("require")
     end
 
+    RUBY_PLATFORM_ARRAY = [Gem::Platform::RUBY].freeze
+    private_constant :RUBY_PLATFORM_ARRAY
+
     # Returns the platforms this dependency is valid for, in the same order as
     # passed in the `valid_platforms` parameter
     def gem_platforms(valid_platforms)
-      return [Gem::Platform::RUBY] if force_ruby_platform
+      return RUBY_PLATFORM_ARRAY if force_ruby_platform
       return valid_platforms if @platforms.empty?
 
       valid_platforms.select {|p| expanded_platforms.include?(GemHelpers.generic(p)) }
