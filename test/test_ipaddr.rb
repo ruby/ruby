@@ -133,18 +133,37 @@ class TC_IPAddr < Test::Unit::TestCase
 
   def test_ntop
     # IPv4
-    assert_equal("192.168.1.1", IPAddr.ntop("\xC0\xA8\x01\x01"))
+    assert_equal("192.168.1.1", IPAddr.ntop("\xC0\xA8\x01\x01".b))
+    assert_equal("10.231.140.171", IPAddr.ntop("\x0A\xE7\x8C\xAB".b))
     # IPv6
     assert_equal("0000:0000:0000:0000:0000:0000:0000:0001",
-                 IPAddr.ntop("\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01"))
+                 IPAddr.ntop("\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01".b))
+    assert_equal("fe80:0000:0000:0000:f09f:9985:f09f:9986",
+                 IPAddr.ntop("\xFE\x80\x00\x00\x00\x00\x00\x00\xF0\x9F\x99\x85\xF0\x9F\x99\x86".b))
 
     # Invalid parameters
+    ## wrong length
     assert_raise(IPAddr::AddressFamilyError) {
+      IPAddr.ntop("192.168.1.1".b)
+    }
+    assert_raise(IPAddr::AddressFamilyError) {
+      IPAddr.ntop("\xC0\xA8\x01\xFF1".b)
+    }
+    ## UTF-8
+    assert_raise(IPAddr::InvalidAddressError) {
       IPAddr.ntop("192.168.1.1")
     }
-
-    assert_raise(IPAddr::AddressFamilyError) {
-      IPAddr.ntop("\xC0\xA8\x01\xFF1")
+    assert_raise(IPAddr::InvalidAddressError) {
+      IPAddr.ntop("\x0A\x0A\x0A\x0A")
+    }
+    assert_raise(IPAddr::InvalidAddressError) {
+      IPAddr.ntop("\x0A\xE7\x8C\xAB")
+    }
+    assert_raise(IPAddr::InvalidAddressError) {
+      IPAddr.ntop("\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01")
+    }
+    assert_raise(IPAddr::InvalidAddressError) {
+      IPAddr.ntop("\xFE\x80\x00\x00\x00\x00\x00\x00\xF0\x9F\x99\x85\xF0\x9F\x99\x86")
     }
   end
 
