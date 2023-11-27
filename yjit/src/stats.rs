@@ -6,6 +6,7 @@
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
+use std::collections::HashMap;
 
 use crate::codegen::CodegenGlobals;
 use crate::core::Context;
@@ -49,6 +50,58 @@ unsafe impl GlobalAlloc for StatsAlloc {
             self.alloc_size.fetch_sub(layout.size() - new_size, Ordering::SeqCst);
         }
         System.realloc(ptr, layout, new_size)
+    }
+}
+
+/// Mapping of C function name to integer indices
+/// This is accessed at compilation time only (protected by a lock)
+static mut CFUNC_NAME_TO_IDX: Option<HashMap<String, usize>> = None;
+
+/// Vector of call counts for each C function index
+/// This is modified (but not resized) by JITted code
+static mut CFUNC_CALL_COUNT: Option<Vec<u64>> = None;
+
+/// Assign an index to a given cfunc name string
+pub fn get_cfunc_idx(name: &str) -> usize
+{
+    //println!("{}", name);
+
+    unsafe {
+        if CFUNC_NAME_TO_IDX.is_none() {
+            CFUNC_NAME_TO_IDX = Some(HashMap::default());
+        }
+
+        if CFUNC_CALL_COUNT.is_none() {
+            CFUNC_CALL_COUNT = Some(Vec::default());
+        }
+
+        let name_to_idx = CFUNC_NAME_TO_IDX.as_mut().unwrap();
+
+        match name_to_idx.get(name) {
+            Some(idx) => *idx,
+            None => {
+                let idx = name_to_idx.len();
+                name_to_idx.insert(name.to_string(), idx);
+
+                // Resize the call count vector
+                let cfunc_call_count = CFUNC_CALL_COUNT.as_mut().unwrap();
+                if idx >= cfunc_call_count.len() {
+                    cfunc_call_count.resize(idx + 1, 0);
+                }
+
+                idx
+            }
+        }
+    }
+}
+
+// Increment the counter for a C function
+pub extern "C" fn incr_cfunc_counter(idx: usize)
+{
+    unsafe {
+        let cfunc_call_count = CFUNC_CALL_COUNT.as_mut().unwrap();
+        assert!(idx < cfunc_call_count.len());
+        cfunc_call_count[idx] += 1;
     }
 }
 
@@ -663,7 +716,6 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
         return hash;
     }
 
-    // If the stats feature is enabled
     unsafe {
         // Indicate that the complete set of stats is available
         rb_hash_aset(hash, rust_str_to_sym("all_stats"), Qtrue);
@@ -688,6 +740,23 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
             let key = rust_str_to_sym(&key_string);
             let value = VALUE::fixnum_from_usize(EXIT_OP_COUNT[op_idx] as usize);
             rb_hash_aset(hash, key, value);
+        }
+
+        // Create a hash for the cfunc call counts
+        if let Some(cfunc_name_to_idx) = CFUNC_NAME_TO_IDX.as_mut() {
+            let call_counts = CFUNC_CALL_COUNT.as_mut().unwrap();
+            let calls_hash = rb_hash_new();
+
+            for (name, idx) in cfunc_name_to_idx {
+                let count = call_counts[*idx];
+                println!("{}: {}", name, count);
+
+                let key = rust_str_to_sym(name);
+                let value = VALUE::fixnum_from_usize(count as usize);
+                rb_hash_aset(calls_hash, key, value);
+            }
+
+            rb_hash_aset(hash, rust_str_to_sym("cfunc_calls"), calls_hash);
         }
     }
 

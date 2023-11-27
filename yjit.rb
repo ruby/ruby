@@ -369,6 +369,35 @@ module RubyVM::YJIT
       out.puts "avg_len_in_yjit:       " + ("%13.1f" % stats[:avg_len_in_yjit])
 
       print_sorted_exit_counts(stats, out: out, prefix: "exit_")
+
+      print_sorted_cfunc_calls(stats, out:out)
+    end
+
+    def print_sorted_cfunc_calls(stats, out:, how_many: 20, left_pad: 4) # :nodoc:
+      calls = stats[:cfunc_calls]
+      #puts calls
+
+      # Total number of cfunc calls
+      num_send_cfunc = stats[:num_send_cfunc]
+
+      # Sort calls by decreasing frequency and keep the top N
+      pairs = calls.map { |k,v| [k, v] }
+      pairs.sort_by! {|pair| pair[1] }
+      pairs.reverse!
+      pairs = pairs[0...how_many]
+
+      top_n_total = pairs.sum { |name, count| count }
+      top_n_pct = 100.0 * top_n_total / num_send_cfunc
+      longest_name_len = pairs.max_by { |name, count| name.length }.first.length
+
+      out.puts "Top-#{pairs.size} most frequent C calls (#{"%.1f" % top_n_pct}% of C calls):"
+
+      pairs.each do |name, count|
+        padding = longest_name_len + left_pad
+        padded_name = "%#{padding}s" % name
+        padded_count = format_number_pct(10, count, num_send_cfunc)
+        out.puts("#{padded_name}: #{padded_count}")
+      end
     end
 
     def print_sorted_exit_counts(stats, out:, prefix:, how_many: 20, left_pad: 4) # :nodoc:

@@ -5398,6 +5398,7 @@ fn gen_send_cfunc(
         return None;
     }
 
+    // Increment total cfunc send count
     gen_counter_incr(asm, Counter::num_send_cfunc);
 
     // Delegate to codegen for C methods if we have it.
@@ -5414,6 +5415,32 @@ fn gen_send_cfunc(
                 return Some(EndBlock);
             }
         }
+    }
+
+    // Log the name of the method we're calling to,
+    // note that we intentionally don't do this for inlined cfuncs
+    if get_option!(gen_stats) {
+        // TODO: extract code to get method name string into its own function
+
+        // Assemble the method name string
+        let mid = unsafe { vm_ci_mid(ci) };
+        let class_name = if recv_known_klass != ptr::null() {
+            unsafe { cstr_to_rust_string(rb_class2name(*recv_known_klass)) }.unwrap()
+        } else {
+            "Unknown".to_string()
+        };
+        let method_name = if mid != 0 {
+            unsafe { cstr_to_rust_string(rb_id2name(mid)) }.unwrap()
+        } else {
+            "Unknown".to_string()
+        };
+        let name_str = format!("{}#{}", class_name, method_name);
+
+        // Get an index for this cfunc name
+        let cfunc_idx = get_cfunc_idx(&name_str);
+
+        // Increment the counter for this cfunc
+        asm.ccall(incr_cfunc_counter as *const u8, vec![cfunc_idx.into()]);
     }
 
     // Check for interrupts
