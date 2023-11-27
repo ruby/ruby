@@ -3890,6 +3890,7 @@ Init_gc_stress(void)
 }
 
 typedef int each_obj_callback(void *, void *, size_t, void *);
+typedef int each_page_callback(struct heap_page *, void *);
 
 static void objspace_each_objects(rb_objspace_t *objspace, each_obj_callback *callback, void *data, bool protected);
 static void objspace_reachable_objects_from_root(rb_objspace_t *, void (func)(const char *, VALUE, void *), void *);
@@ -3898,7 +3899,8 @@ struct each_obj_data {
     rb_objspace_t *objspace;
     bool reenable_incremental;
 
-    each_obj_callback *callback;
+    each_obj_callback *each_obj_callback;
+    each_page_callback *each_page_callback;
     void *data;
 
     struct heap_page **pages[SIZE_POOL_COUNT];
@@ -3972,9 +3974,15 @@ objspace_each_objects_try(VALUE arg)
             uintptr_t pstart = (uintptr_t)page->start;
             uintptr_t pend = pstart + (page->total_slots * size_pool->slot_size);
 
-            if (!__asan_region_is_poisoned((void *)pstart, pend - pstart) &&
-                (*data->callback)((void *)pstart, (void *)pend, size_pool->slot_size, data->data)) {
-                break;
+            if (!__asan_region_is_poisoned((void *)pstart, pend - pstart)) {
+                if (data->each_obj_callback &&
+                    (*data->each_obj_callback)((void *)pstart, (void *)pend, size_pool->slot_size, data->data)) {
+                    break;
+                }
+                if (data->each_page_callback &&
+                    (*data->each_page_callback)(page, data->data)) {
+                    break;
+                }
             }
 
             page = ccan_list_next(&SIZE_POOL_EDEN_HEAP(size_pool)->pages, page, page_node);
@@ -4029,9 +4037,10 @@ rb_objspace_each_objects(each_obj_callback *callback, void *data)
 }
 
 static void
-objspace_each_objects(rb_objspace_t *objspace, each_obj_callback *callback, void *data, bool protected)
+objspace_each_exec(bool protected, struct each_obj_data *each_obj_data)
 {
     /* Disable incremental GC */
+    rb_objspace_t *objspace = each_obj_data->objspace;
     bool reenable_incremental = FALSE;
     if (protected) {
         reenable_incremental = !objspace->flags.dont_incremental;
@@ -4040,18 +4049,35 @@ objspace_each_objects(rb_objspace_t *objspace, each_obj_callback *callback, void
         objspace->flags.dont_incremental = TRUE;
     }
 
+    each_obj_data->reenable_incremental = reenable_incremental;
+    memset(&each_obj_data->pages, 0, sizeof(each_obj_data->pages));
+    memset(&each_obj_data->pages_counts, 0, sizeof(each_obj_data->pages_counts));
+    rb_ensure(objspace_each_objects_try, (VALUE)each_obj_data,
+              objspace_each_objects_ensure, (VALUE)each_obj_data);
+}
+
+static void
+objspace_each_objects(rb_objspace_t *objspace, each_obj_callback *callback, void *data, bool protected)
+{
     struct each_obj_data each_obj_data = {
         .objspace = objspace,
-        .reenable_incremental = reenable_incremental,
-
-        .callback = callback,
+        .each_obj_callback = callback,
+        .each_page_callback = NULL,
         .data = data,
-
-        .pages = {NULL},
-        .pages_counts = {0},
     };
-    rb_ensure(objspace_each_objects_try, (VALUE)&each_obj_data,
-              objspace_each_objects_ensure, (VALUE)&each_obj_data);
+    objspace_each_exec(protected, &each_obj_data);
+}
+
+static void
+objspace_each_pages(rb_objspace_t *objspace, each_page_callback *callback, void *data, bool protected)
+{
+    struct each_obj_data each_obj_data = {
+        .objspace = objspace,
+        .each_obj_callback = NULL,
+        .each_page_callback = callback,
+        .data = data,
+    };
+    objspace_each_exec(protected, &each_obj_data);
 }
 
 void
