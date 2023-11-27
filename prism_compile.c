@@ -2652,6 +2652,75 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PM_COMPILE(cast->value);
         return;
       }
+      case PM_INDEX_OR_WRITE_NODE: {
+        pm_index_or_write_node_t *index_or_write_node = (pm_index_or_write_node_t *)node;
+
+        PM_PUTNIL_UNLESS_POPPED;
+
+        PM_COMPILE_NOT_POPPED(index_or_write_node->receiver);
+
+        int flag = 0;
+        struct rb_callinfo_kwarg *keywords = NULL;
+        int argc_int = 0;
+
+        if (index_or_write_node->arguments) {
+            argc_int = pm_setup_args(index_or_write_node->arguments, &flag, &keywords, iseq, ret, src, popped, scope_node, dummy_line_node, parser);
+        }
+
+        VALUE argc = INT2FIX(argc_int);
+        int boff = 0;
+
+        if (index_or_write_node->block) {
+            PM_COMPILE_NOT_POPPED(index_or_write_node->block);
+            flag |= VM_CALL_ARGS_BLOCKARG;
+            boff = 1;
+        }
+
+        ADD_INSN1(ret, &dummy_line_node, dupn, FIXNUM_INC(argc, 1 + boff));
+
+        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idAREF, argc, INT2FIX(flag));
+
+        LABEL *label = NEW_LABEL(lineno);
+        LABEL *lfin = NEW_LABEL(lineno);
+
+        PM_DUP;
+        ADD_INSNL(ret, &dummy_line_node, branchif, label);
+        PM_POP;
+
+        PM_COMPILE_NOT_POPPED(index_or_write_node->value);
+
+        if (!popped) {
+            ADD_INSN1(ret, &dummy_line_node, setn, FIXNUM_INC(argc, 2 + boff));
+        }
+        if (flag & VM_CALL_ARGS_SPLAT) {
+            ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(1));
+            if (boff > 0) {
+                ADD_INSN1(ret, &dummy_line_node, dupn, INT2FIX(3));
+                ADD_INSN(ret, &dummy_line_node, swap);
+                ADD_INSN(ret, &dummy_line_node, pop);
+            }
+            ADD_INSN(ret, &dummy_line_node, concatarray);
+            if (boff > 0) {
+                ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(3));
+                PM_POP;
+            }
+            ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idASET, argc, INT2FIX(flag));
+        }
+        else {
+            if (boff > 0)
+                ADD_INSN(ret, &dummy_line_node, swap);
+            ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idASET, FIXNUM_INC(argc, 1), INT2FIX(flag));
+        }
+        PM_POP;
+        ADD_INSNL(ret, &dummy_line_node, jump, lfin);
+        ADD_LABEL(ret, label);
+        if (!popped) {
+            ADD_INSN1(ret, &dummy_line_node, setn, FIXNUM_INC(argc, 2 + boff));
+        }
+        ADD_INSN1(ret, &dummy_line_node, adjuststack, FIXNUM_INC(argc, 2 + boff));
+        ADD_LABEL(ret, lfin);
+        return;
+      }
       case PM_INSTANCE_VARIABLE_AND_WRITE_NODE: {
         pm_instance_variable_and_write_node_t *instance_variable_and_write_node = (pm_instance_variable_and_write_node_t*) node;
 
