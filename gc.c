@@ -9404,7 +9404,6 @@ static int
 gc_start(rb_objspace_t *objspace, unsigned int reason)
 {
     unsigned int do_full_mark = !!(reason & GPR_FLAG_FULL_MARK);
-    unsigned int immediate_mark = reason & GPR_FLAG_IMMEDIATE_MARK;
 
     /* reason may be clobbered, later, so keep set immediate_sweep here */
     objspace->flags.immediate_sweep = !!(reason & GPR_FLAG_IMMEDIATE_SWEEP);
@@ -9449,7 +9448,9 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
         reason |= GPR_FLAG_MAJOR_BY_FORCE; /* GC by CAPI, METHOD, and so on. */
     }
 
-    if (objspace->flags.dont_incremental || immediate_mark) {
+    if (objspace->flags.dont_incremental ||
+            reason & GPR_FLAG_IMMEDIATE_MARK ||
+            ruby_gc_stressful) {
         objspace->flags.during_incremental_marking = FALSE;
     }
     else {
