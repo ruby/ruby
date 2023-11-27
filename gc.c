@@ -1427,6 +1427,7 @@ static inline void gc_prof_set_heap_info(rb_objspace_t *);
 #endif
 PRINTF_ARGS(static void gc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...), 3, 4);
 static const char *obj_info(VALUE obj);
+static const char *obj_info_basic(VALUE obj);
 static const char *obj_type_name(VALUE obj);
 
 static void gc_finalize_deferred(void *dmy);
@@ -2638,7 +2639,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     GC_ASSERT(!SPECIAL_CONST_P(obj)); /* check alignment */
 #endif
 
-    gc_report(5, objspace, "newobj: %s\n", obj_info(obj));
+    gc_report(5, objspace, "newobj: %s\n", obj_info_basic(obj));
 
     // RUBY_DEBUG_LOG("obj:%p (%s)", (void *)obj, obj_type_name(obj));
     return obj;
@@ -14099,6 +14100,17 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
     return buff;
 }
 
+const char *
+rb_raw_obj_info_basic(char *const buff, const size_t buff_size, VALUE obj)
+{
+    asan_unpoisoning_object(obj) {
+        size_t pos = rb_raw_obj_info_common(buff, buff_size, obj);
+        if (pos >= buff_size) {} // truncated
+    }
+
+    return buff;
+}
+
 #undef APPEND_S
 #undef APPEND_F
 #undef BUFF_ARGS
@@ -14130,12 +14142,27 @@ obj_info(VALUE obj)
     char *const buff = obj_info_buffers[index];
     return rb_raw_obj_info(buff, OBJ_INFO_BUFFERS_SIZE, obj);
 }
+
+static const char *
+obj_info_basic(VALUE obj)
+{
+    rb_atomic_t index = atomic_inc_wraparound(&obj_info_buffers_index, OBJ_INFO_BUFFERS_NUM);
+    char *const buff = obj_info_buffers[index];
+    return rb_raw_obj_info_basic(buff, OBJ_INFO_BUFFERS_SIZE, obj);
+}
 #else
 static const char *
 obj_info(VALUE obj)
 {
     return obj_type_name(obj);
 }
+
+static const char *
+obj_info_basic(VALUE obj)
+{
+    return obj_type_name(obj);
+}
+
 #endif
 
 const char *
