@@ -1693,6 +1693,10 @@ class TestArray < Test::Unit::TestCase
     assert_equal([100], a.slice(-1, 1_000_000_000))
   end
 
+  def test_slice_gc_compact_stress
+    EnvUtil.under_gc_compact_stress { assert_equal([1, 2, 3, 4, 5], (0..10).to_a[1, 5]) }
+  end
+
   def test_slice!
     a = @cls[1, 2, 3, 4, 5]
     assert_equal(3, a.slice!(2))

@@ -1204,7 +1204,10 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
     else {
         VALUE shared = ary_make_shared(ary);
 
-        assert(!ARY_EMBED_P(result));
+        /* The ary_make_shared call may allocate, which can trigger a GC
+         * compaction. This can cause the array to be embedded because it has
+         * a length of 0. */
+        FL_UNSET_EMBED(result);
 
         ARY_SET_PTR(result, RARRAY_CONST_PTR(ary));
         ARY_SET_LEN(result, RARRAY_LEN(ary));
