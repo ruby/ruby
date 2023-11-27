@@ -5421,10 +5421,20 @@ fn gen_send_cfunc(
     // note that we intentionally don't do this for inlined cfuncs
     #[cfg(feature = "stats")]
     {
+        // TODO: extract code to get method name string into its own function
+
         // Assemble the method name string
         let mid = unsafe { vm_ci_mid(ci) };
-        let class_name = unsafe { cstr_to_rust_string(rb_class2name(*recv_known_klass)) }.unwrap();
-        let method_name = unsafe { cstr_to_rust_string(rb_id2name(mid)) }.unwrap();
+        let class_name = if recv_known_klass != ptr::null() {
+            unsafe { cstr_to_rust_string(rb_class2name(*recv_known_klass)) }.unwrap()
+        } else {
+            "Unknown".to_string()
+        };
+        let method_name = if mid != 0 {
+            unsafe { cstr_to_rust_string(rb_id2name(mid)) }.unwrap()
+        } else {
+            "Unknown".to_string()
+        };
         let name_str = format!("{}#{}", class_name, method_name);
 
         // Get an index for this cfunc name
@@ -7865,6 +7875,7 @@ fn gen_invokesuper_specialized(
             gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, None, cme, Some(block), ci_flags, argc, None)
         }
         VM_METHOD_TYPE_CFUNC => {
+            // FIXME: why do we put unknown comptime class here?
             gen_send_cfunc(jit, asm, ocb, ci, cme, Some(block), ptr::null(), ci_flags, argc)
         }
         _ => unreachable!(),
