@@ -317,14 +317,16 @@ class TestGCCompact < Test::Unit::TestCase
 
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      arys = ARY_COUNT.times.map do
-        ary = "abbbbbbbbbb".chars
-        ary.uniq!
-      end
+      Fiber.new {
+        $arys = ARY_COUNT.times.map do
+          ary = "abbbbbbbbbb".chars
+          ary.uniq!
+        end
+      }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
       assert_operator(stats.dig(:moved_down, :T_ARRAY) || 0, :>=, ARY_COUNT)
-      refute_empty(arys.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
+      refute_empty($arys.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
@@ -337,16 +339,18 @@ class TestGCCompact < Test::Unit::TestCase
 
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      ary = "hello".chars
-      arys = ARY_COUNT.times.map do
-        x = []
-        ary.each { |e| x << e }
-        x
-      end
+      Fiber.new {
+        ary = "hello".chars
+        $arys = ARY_COUNT.times.map do
+          x = []
+          ary.each { |e| x << e }
+          x
+        end
+      }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
       assert_operator(stats.dig(:moved_up, :T_ARRAY) || 0, :>=, ARY_COUNT)
-      refute_empty(arys.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
+      refute_empty($arys.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
@@ -367,16 +371,18 @@ class TestGCCompact < Test::Unit::TestCase
 
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      ary = OBJ_COUNT.times.map { Foo.new }
-      ary.each(&:add_ivars)
+      Fiber.new {
+        $ary = OBJ_COUNT.times.map { Foo.new }
+        $ary.each(&:add_ivars)
 
-      GC.start
-      Foo.new.add_ivars
+        GC.start
+        Foo.new.add_ivars
+      }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
       assert_operator(stats.dig(:moved_up, :T_OBJECT) || 0, :>=, OBJ_COUNT)
-      refute_empty(ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
+      refute_empty($ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
@@ -389,13 +395,15 @@ class TestGCCompact < Test::Unit::TestCase
 
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      str = "a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
-      ary = STR_COUNT.times.map { "" << str }
+      Fiber.new {
+        str = "a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
+        $ary = STR_COUNT.times.map { "" << str }
+      }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
       assert_operator(stats[:moved_up][:T_STRING], :>=, STR_COUNT)
-      refute_empty(ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
+      refute_empty($ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
@@ -408,12 +416,14 @@ class TestGCCompact < Test::Unit::TestCase
 
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      ary = STR_COUNT.times.map { ("a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]).squeeze! }
+      Fiber.new {
+        $ary = STR_COUNT.times.map { ("a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]).squeeze! }
+      }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
       assert_operator(stats[:moved_down][:T_STRING], :>=, STR_COUNT)
-      refute_empty(ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
+      refute_empty($ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
