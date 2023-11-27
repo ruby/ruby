@@ -9973,11 +9973,11 @@ rb_str_strip(VALUE str)
 static VALUE
 scan_once(VALUE str, VALUE pat, long *start, int set_backref_str)
 {
-    VALUE result, match;
-    struct re_registers *regs;
-    int i;
+    VALUE result = Qnil;
     long end, pos = rb_pat_search(pat, str, *start, set_backref_str);
     if (pos >= 0) {
+        VALUE match;
+        struct re_registers *regs;
         if (BUILTIN_TYPE(pat) == T_STRING) {
             regs = NULL;
             end = pos + RSTRING_LEN(pat);
@@ -9988,6 +9988,7 @@ scan_once(VALUE str, VALUE pat, long *start, int set_backref_str)
             pos = BEG(0);
             end = END(0);
         }
+
         if (pos == end) {
             rb_encoding *enc = STR_ENC_GET(str);
             /*
@@ -10002,22 +10003,27 @@ scan_once(VALUE str, VALUE pat, long *start, int set_backref_str)
         else {
             *start = end;
         }
+
         if (!regs || regs->num_regs == 1) {
             result = rb_str_subseq(str, pos, end - pos);
             return result;
         }
-        result = rb_ary_new2(regs->num_regs);
-        for (i=1; i < regs->num_regs; i++) {
-            VALUE s = Qnil;
-            if (BEG(i) >= 0) {
-                s = rb_str_subseq(str, BEG(i), END(i)-BEG(i));
+        else {
+            result = rb_ary_new2(regs->num_regs);
+            for (int i = 1; i < regs->num_regs; i++) {
+                VALUE s = Qnil;
+                if (BEG(i) >= 0) {
+                    s = rb_str_subseq(str, BEG(i), END(i)-BEG(i));
+                }
+
+                rb_ary_push(result, s);
             }
-            rb_ary_push(result, s);
         }
 
-        return result;
+        RB_GC_GUARD(match);
     }
-    return Qnil;
+
+    return result;
 }
 
 
