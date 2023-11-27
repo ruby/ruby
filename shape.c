@@ -409,6 +409,14 @@ redblack_cache_ancestors(rb_shape_t * shape)
 
         if (shape->type == SHAPE_IVAR) {
             shape->ancestor_index = redblack_insert(parent_index, shape->edge_name, shape);
+
+#if RUBY_DEBUG
+            if (shape->ancestor_index) {
+                redblack_node_t *inserted_node = redblack_find(shape->ancestor_index, shape->edge_name);
+                RUBY_ASSERT(inserted_node);
+                RUBY_ASSERT(redblack_value(inserted_node) == shape);
+            }
+#endif
         }
         else {
             shape->ancestor_index = parent_index;
