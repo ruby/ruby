@@ -389,11 +389,15 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     script.close
     start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{script.to_path}}, startup_message: 'start IRB')
     write("debug\n")
-    write("n")
+    write("pp 1\n")
+    write("pp 1")
     close
 
     screen = result.join("\n").sub(/\n*\z/, "\n")
-    assert_include(screen, "irb:rdbg(main):002> n # debug command")
+    # submitted input shouldn't contain hint
+    assert_include(screen, "irb:rdbg(main):002> pp 1\n")
+    # unsubmitted input should contain hint
+    assert_include(screen, "irb:rdbg(main):003> pp 1 # debug command\n")
   ensure
     File.unlink(script) if script
   end

@@ -64,7 +64,7 @@ module IRB
             unless output.strip.empty?
               cmd = output.split(/\s/, 2).first
 
-              if DEBUGGER__.commands.key?(cmd)
+              if !complete && DEBUGGER__.commands.key?(cmd)
                 output = output.sub(/\n$/, " # debug command\n")
               end
             end
