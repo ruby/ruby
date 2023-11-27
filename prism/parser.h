@@ -361,8 +361,7 @@ typedef struct pm_context_node {
 /** This is the type of a comment that we've found while parsing. */
 typedef enum {
     PM_COMMENT_INLINE,
-    PM_COMMENT_EMBDOC,
-    PM_COMMENT___END__
+    PM_COMMENT_EMBDOC
 } pm_comment_type_t;
 
 /**
@@ -570,6 +569,9 @@ struct pm_parser {
 
     /** The list of magic comments that have been found while parsing. */
     pm_list_t magic_comment_list;
+
+    /** The optional location of the __END__ keyword and its contents. */
+    pm_location_t data_loc;
 
     /** The list of warnings that have been found while parsing. */
     pm_list_t warning_list;

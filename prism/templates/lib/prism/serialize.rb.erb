@@ -95,9 +95,10 @@ module Prism
       def load_metadata
         comments = load_comments
         magic_comments = load_varint.times.map { MagicComment.new(load_location, load_location) }
+        data_loc = load_optional_location
         errors = load_varint.times.map { ParseError.new(load_embedded_string, load_location) }
         warnings = load_varint.times.map { ParseWarning.new(load_embedded_string, load_location) }
-        [comments, magic_comments, errors, warnings]
+        [comments, magic_comments, data_loc, errors, warnings]
       end
 
       def load_tokens
@@ -117,11 +118,11 @@ module Prism
         tokens = load_tokens
         encoding = load_encoding
         load_start_line
-        comments, magic_comments, errors, warnings = load_metadata
+        comments, magic_comments, data_loc, errors, warnings = load_metadata
         tokens.each { |token,| token.value.force_encoding(encoding) }
 
         raise "Expected to consume all bytes while deserializing" unless @io.eof?
-        Prism::ParseResult.new(tokens, comments, magic_comments, errors, warnings, @source)
+        Prism::ParseResult.new(tokens, comments, magic_comments, data_loc, errors, warnings, @source)
       end
 
       def load_nodes
@@ -129,17 +130,17 @@ module Prism
         load_encoding
         load_start_line
 
-        comments, magic_comments, errors, warnings = load_metadata
+        comments, magic_comments, data_loc, errors, warnings = load_metadata
 
         @constant_pool_offset = io.read(4).unpack1("L")
         @constant_pool = Array.new(load_varint, nil)
 
-        [load_node, comments, magic_comments, errors, warnings]
+        [load_node, comments, magic_comments, data_loc, errors, warnings]
       end
 
       def load_result
-        node, comments, magic_comments, errors, warnings = load_nodes
-        Prism::ParseResult.new(node, comments, magic_comments, errors, warnings, @source)
+        node, comments, magic_comments, data_loc, errors, warnings = load_nodes
+        Prism::ParseResult.new(node, comments, magic_comments, data_loc, errors, warnings, @source)
       end
 
       private

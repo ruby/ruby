@@ -9248,8 +9248,8 @@ parser_lex(pm_parser_t *parser) {
                         parser->current.type = PM_TOKEN___END__;
                         parser_lex_callback(parser);
 
-                        pm_comment_t *comment = parser_comment(parser, PM_COMMENT___END__);
-                        pm_list_append(&parser->comment_list, (pm_list_node_t *) comment);
+                        parser->data_loc.start = parser->current.start;
+                        parser->data_loc.end = parser->current.end;
 
                         LEX(PM_TOKEN_EOF);
                     }

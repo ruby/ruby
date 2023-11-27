@@ -12,7 +12,6 @@ VALUE rb_cPrismLocation;
 VALUE rb_cPrismComment;
 VALUE rb_cPrismInlineComment;
 VALUE rb_cPrismEmbDocComment;
-VALUE rb_cPrismDATAComment;
 VALUE rb_cPrismMagicComment;
 VALUE rb_cPrismParseError;
 VALUE rb_cPrismParseWarning;
@@ -320,22 +319,7 @@ parser_comments(pm_parser_t *parser, VALUE source) {
             LONG2FIX(comment->end - comment->start)
         };
 
-        VALUE type;
-        switch (comment->type) {
-            case PM_COMMENT_INLINE:
-                type = rb_cPrismInlineComment;
-                break;
-            case PM_COMMENT_EMBDOC:
-                type = rb_cPrismEmbDocComment;
-                break;
-            case PM_COMMENT___END__:
-                type = rb_cPrismDATAComment;
-                break;
-            default:
-                type = rb_cPrismInlineComment;
-                break;
-        }
-
+        VALUE type = (comment->type == PM_COMMENT_EMBDOC) ? rb_cPrismEmbDocComment : rb_cPrismInlineComment;
         VALUE comment_argv[] = { rb_class_new_instance(3, location_argv, rb_cPrismLocation) };
         rb_ary_push(comments, rb_class_new_instance(1, comment_argv, type));
     }
@@ -372,6 +356,25 @@ parser_magic_comments(pm_parser_t *parser, VALUE source) {
     }
 
     return magic_comments;
+}
+
+/**
+ * Extract out the data location from the parser into a Location instance if one
+ * exists.
+ */
+static VALUE
+parser_data_loc(const pm_parser_t *parser, VALUE source) {
+    if (parser->data_loc.end == NULL) {
+        return Qnil;
+    } else {
+        VALUE argv[] = {
+            source,
+            LONG2FIX(parser->data_loc.start - parser->start),
+            LONG2FIX(parser->data_loc.end - parser->data_loc.start)
+        };
+
+        return rb_class_new_instance(3, argv, rb_cPrismLocation);
+    }
 }
 
 /**
@@ -531,6 +534,7 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
         value,
         parser_comments(&parser, source),
         parser_magic_comments(&parser, source),
+        parser_data_loc(&parser, source),
         parser_errors(&parser, parse_lex_data.encoding, source),
         parser_warnings(&parser, parse_lex_data.encoding, source),
         source
@@ -538,7 +542,7 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
 
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
-    return rb_class_new_instance(6, result_argv, rb_cPrismParseResult);
+    return rb_class_new_instance(7, result_argv, rb_cPrismParseResult);
 }
 
 /**
@@ -601,12 +605,13 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
         pm_ast_new(&parser, node, encoding),
         parser_comments(&parser, source),
         parser_magic_comments(&parser, source),
+        parser_data_loc(&parser, source),
         parser_errors(&parser, encoding, source),
         parser_warnings(&parser, encoding, source),
         source
     };
 
-    VALUE result = rb_class_new_instance(6, result_argv, rb_cPrismParseResult);
+    VALUE result = rb_class_new_instance(7, result_argv, rb_cPrismParseResult);
 
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
@@ -938,7 +943,6 @@ Init_prism(void) {
     rb_cPrismComment = rb_define_class_under(rb_cPrism, "Comment", rb_cObject);
     rb_cPrismInlineComment = rb_define_class_under(rb_cPrism, "InlineComment", rb_cPrismComment);
     rb_cPrismEmbDocComment = rb_define_class_under(rb_cPrism, "EmbDocComment", rb_cPrismComment);
-    rb_cPrismDATAComment = rb_define_class_under(rb_cPrism, "DATAComment", rb_cPrismComment);
     rb_cPrismMagicComment = rb_define_class_under(rb_cPrism, "MagicComment", rb_cObject);
     rb_cPrismParseError = rb_define_class_under(rb_cPrism, "ParseError", rb_cObject);
     rb_cPrismParseWarning = rb_define_class_under(rb_cPrism, "ParseWarning", rb_cObject);

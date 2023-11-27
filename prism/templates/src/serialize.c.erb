@@ -15,7 +15,7 @@ pm_sizet_to_u32(size_t value) {
 }
 
 static void
-pm_serialize_location(pm_parser_t *parser, pm_location_t *location, pm_buffer_t *buffer) {
+pm_serialize_location(const pm_parser_t *parser, const pm_location_t *location, pm_buffer_t *buffer) {
     assert(location->start);
     assert(location->end);
     assert(location->start <= location->end);
@@ -171,6 +171,16 @@ pm_serialize_magic_comment_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_
 }
 
 static void
+pm_serialize_data_loc(const pm_parser_t *parser, pm_buffer_t *buffer) {
+    if (parser->data_loc.end == NULL) {
+        pm_buffer_append_byte(buffer, 0);
+    } else {
+        pm_buffer_append_byte(buffer, 1);
+        pm_serialize_location(parser, &parser->data_loc, buffer);
+    }
+}
+
+static void
 pm_serialize_diagnostic(pm_parser_t *parser, pm_diagnostic_t *diagnostic, pm_buffer_t *buffer) {
     // serialize message
     size_t message_length = strlen(diagnostic->message);
@@ -214,6 +224,7 @@ pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) 
     pm_serialize_comment_list(parser, &parser->comment_list, buffer);
 <%- end -%>
     pm_serialize_magic_comment_list(parser, &parser->magic_comment_list, buffer);
+    pm_serialize_data_loc(parser, buffer);
     pm_serialize_diagnostic_list(parser, &parser->error_list, buffer);
     pm_serialize_diagnostic_list(parser, &parser->warning_list, buffer);
 
@@ -310,6 +321,7 @@ pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const 
     pm_buffer_append_varint(buffer, parser.start_line);
     pm_serialize_comment_list(&parser, &parser.comment_list, buffer);
     pm_serialize_magic_comment_list(&parser, &parser.magic_comment_list, buffer);
+    pm_serialize_data_loc(&parser, buffer);
     pm_serialize_diagnostic_list(&parser, &parser.error_list, buffer);
     pm_serialize_diagnostic_list(&parser, &parser.warning_list, buffer);
 
