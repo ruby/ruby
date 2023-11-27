@@ -6,6 +6,7 @@
 use std::alloc::{GlobalAlloc, Layout, System};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;
+use std::collections::HashMap;
 
 use crate::codegen::CodegenGlobals;
 use crate::core::Context;
@@ -52,11 +53,12 @@ unsafe impl GlobalAlloc for StatsAlloc {
     }
 }
 
-
-
-use std::collections::HashMap;
+/// Mapping of C function name to integer indices
+/// This is accessed at compilation time only (protected by a lock)
 static mut CFUNC_NAME_TO_IDX: Option<HashMap<String, usize>> = None;
 
+/// Vector of call counts for each C function index
+/// This is modified (but not resized) by JITted code
 static mut CFUNC_CALL_COUNT: Option<Vec<u64>> = None;
 
 /// Assign an index to a given cfunc name string
@@ -102,12 +104,6 @@ pub extern "C" fn incr_cfunc_counter(idx: usize)
         cfunc_call_count[idx] += 1;
     }
 }
-
-
-
-
-
-
 
 // YJIT exit counts for each instruction type
 const VM_INSTRUCTION_SIZE_USIZE: usize = VM_INSTRUCTION_SIZE as usize;
