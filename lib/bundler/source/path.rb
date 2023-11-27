@@ -226,7 +226,7 @@ module Bundler
         # Some gem authors put absolute paths in their gemspec
         # and we have to save them from themselves
         spec.files = spec.files.map do |path|
-          next path unless /\A#{Pathname::SEPARATOR_PAT}/.match?(path)
+          next path unless /\A#{Pathname::SEPARATOR_PAT}/o.match?(path)
           next if File.directory?(path)
           begin
             Pathname.new(path).relative_path_from(gem_dir).to_s
