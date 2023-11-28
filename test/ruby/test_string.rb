@@ -1249,6 +1249,10 @@ CODE
     assert_raise(ArgumentError) { S("foo").gsub }
   end
 
+  def test_gsub_gc_compact_stress
+    EnvUtil.under_gc_compact_stress { assert_equal(S("h<e>ll<o>"), S("hello").gsub(/([aeiou])/, S('<\1>'))) }
+  end
+
   def test_gsub_encoding
     a = S("hello world")
     a.force_encoding Encoding::UTF_8
@@ -1290,6 +1294,14 @@ CODE
 
     a = S("hello")
     assert_nil(a.sub!(S('X'), S('Y')))
+  end
+
+  def test_gsub_bang_gc_compact_stress
+    EnvUtil.under_gc_compact_stress do
+      a = S("hello")
+      a.gsub!(/([aeiou])/, S('<\1>'))
+      assert_equal(S("h<e>ll<o>"), a)
+    end
   end
 
   def test_sub_hash
