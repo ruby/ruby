@@ -229,25 +229,28 @@ redblack_insert_aux(redblack_node_t * tree, ID key, rb_shape_t * value)
         return redblack_new(RED, key, value, LEAF, LEAF);
     }
     else {
+        redblack_node_t *left, *right;
         if (key < tree->key) {
-            return redblack_balance(redblack_color(tree),
-                    tree->key,
-                    redblack_value(tree),
-                    redblack_insert_aux(redblack_left(tree), key, value),
-                    redblack_right(tree));
+            left = redblack_insert_aux(redblack_left(tree), key, value);
+            RUBY_ASSERT(left != LEAF);
+            right = redblack_right(tree);
+        }
+        else if (key > tree->key) {
+            left = redblack_left(tree);
+            right = redblack_insert_aux(redblack_right(tree), key, value);
+            RUBY_ASSERT(right != LEAF);
         }
         else {
-            if (key > tree->key) {
-                return redblack_balance(redblack_color(tree),
-                        tree->key,
-                        redblack_value(tree),
-                        redblack_left(tree),
-                        redblack_insert_aux(redblack_right(tree), key, value));
-            }
-            else {
-                return tree;
-            }
+            return tree;
         }
+
+        return redblack_balance(
+            redblack_color(tree),
+            tree->key,
+            redblack_value(tree),
+            left,
+            right
+        );
     }
 }
 
