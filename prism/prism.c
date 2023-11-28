@@ -6303,6 +6303,8 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
                 ENCODING1("macCyrillic", pm_encoding_mac_cyrillic);
                 ENCODING1("macGreek", pm_encoding_mac_greek);
                 ENCODING1("macIceland", pm_encoding_mac_iceland);
+                ENCODING1("MacJapanese", pm_encoding_mac_japanese);
+                ENCODING1("MacJapan", pm_encoding_mac_japanese);
                 ENCODING1("macRoman", pm_encoding_mac_roman);
                 ENCODING1("macRomania", pm_encoding_mac_romania);
                 ENCODING1("macThai", pm_encoding_mac_thai);

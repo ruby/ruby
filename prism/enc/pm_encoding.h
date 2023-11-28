@@ -206,6 +206,7 @@ extern pm_encoding_t pm_encoding_mac_croatian;
 extern pm_encoding_t pm_encoding_mac_cyrillic;
 extern pm_encoding_t pm_encoding_mac_greek;
 extern pm_encoding_t pm_encoding_mac_iceland;
+extern pm_encoding_t pm_encoding_mac_japanese;
 extern pm_encoding_t pm_encoding_mac_roman;
 extern pm_encoding_t pm_encoding_mac_romania;
 extern pm_encoding_t pm_encoding_mac_thai;
