@@ -161,7 +161,7 @@ The following default gems are updated.
 * securerandom 0.3.0
 * shellwords 0.2.0
 * singleton 0.2.0
-* stringio 3.1.0
+* stringio 3.1.1
 * strscan 3.0.8
 * syntax_suggest 1.1.0
 * tempfile 0.2.0
