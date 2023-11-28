@@ -36,7 +36,7 @@ describe "Array#rassoc" do
     [[1, :foobar, o], [2, o, 1], [3, mock('foo')]].rassoc(key).should == [2, o, 1]
   end
 
-  it "does not call to_ary on non-array elements" do
+  it "calls to_ary on non-array elements" do
     s1 = [1, 2]
     s2 = ArraySpecs::ArrayConvertible.new(2, 3)
     a = [s1, s2]
@@ -44,7 +44,7 @@ describe "Array#rassoc" do
     s1.should_not_receive(:to_ary)
     a.rassoc(2).should equal(s1)
 
-    s2.should_not_receive(:to_ary)
-    a.rassoc(3).should equal(nil)
+    a.rassoc(3).should == [2, 3]
+    s2.called.should equal(:to_ary)
   end
 end
