@@ -375,7 +375,7 @@ module RubyVM::YJIT
 
     def print_sorted_cfunc_calls(stats, out:, how_many: 20, left_pad: 4) # :nodoc:
       calls = stats[:cfunc_calls]
-      if calls.size == 0
+      if calls.empty?
         return
       end
 
