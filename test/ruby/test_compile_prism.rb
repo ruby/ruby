@@ -596,7 +596,17 @@ module Prism
     end
 
     def test_SplatNode
-      assert_prism_eval("*b = []")
+      assert_prism_eval("*b = []; b")
+      assert_prism_eval("*b = [1, 2, 3]; b")
+      assert_prism_eval("a, *b = [1, 2, 3]; a")
+      assert_prism_eval("a, *b = [1, 2, 3]; b")
+      assert_prism_eval("a, *b, c = [1, 2, 3]; a")
+      assert_prism_eval("a, *b, c = [1, 2, 3]; b")
+      assert_prism_eval("a, *b, c = [1, 2, 3]; c")
+      assert_prism_eval("*b, c = [1, 2, 3]; b")
+      assert_prism_eval("*b, c = [1, 2, 3]; c")
+      assert_prism_eval("a, *, c = [1, 2, 3]; a")
+      assert_prism_eval("a, *, c = [1, 2, 3]; c")
     end
 
     ############################################################################
