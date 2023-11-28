@@ -168,7 +168,7 @@ YJIT supports all command-line options supported by upstream CRuby, but also add
 - `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function (default 30)
 - `--yjit-cold-threshold=N`: number of global calls after which an ISEQ is considered cold and not
 compiled, lower values mean less code is compiled (default 200000)
-- `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 64 MiB in Ruby 3.2, 128 MiB in Ruby 3.3+)
+- `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 64 MiB)
 - `--yjit-stats`: print statistics after the execution of a program (incurs a run-time cost)
 - `--yjit-stats=quiet`: gather statistics while running a program but don't print them. Stats are accessible through `RubyVM::YJIT.runtime_stats`. (incurs a run-time cost)
 - `--yjit-trace-exits`: produce a Marshal dump of backtraces from specific exits. Automatically enables `--yjit-stats`
