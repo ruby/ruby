@@ -1,8 +1,8 @@
-@ ProgramNode (location: (1,0)-(182,3))
+@ ProgramNode (location: (1,0)-(184,42))
 ├── locals: [:a, :c, :foo]
 └── statements:
-    @ StatementsNode (location: (1,0)-(182,3))
-    └── body: (length: 68)
+    @ StatementsNode (location: (1,0)-(184,42))
+    └── body: (length: 69)
         ├── @ DefNode (location: (1,0)-(2,3))
         │   ├── name: :foo
         │   ├── name_loc: (1,4)-(1,7) = "foo"
@@ -1850,40 +1850,106 @@
         │   ├── rparen_loc: ∅
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (178,17)-(178,20) = "end"
-        └── @ DefNode (location: (180,0)-(182,3))
+        ├── @ DefNode (location: (180,0)-(182,3))
+        │   ├── name: :foo
+        │   ├── name_loc: (180,4)-(180,7) = "foo"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (180,8)-(180,11))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest: ∅
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest:
+        │   │   │   @ ForwardingParameterNode (location: (180,8)-(180,11))
+        │   │   └── block: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (181,2)-(181,7))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (181,2)-(181,7))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :bar
+        │   │           ├── message_loc: (181,2)-(181,5) = "bar"
+        │   │           ├── opening_loc: (181,5)-(181,6) = "("
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: (181,7)-(181,8) = ")"
+        │   │           ├── block:
+        │   │           │   @ BlockArgumentNode (location: (181,6)-(181,7))
+        │   │           │   ├── expression: ∅
+        │   │           │   └── operator_loc: (181,6)-(181,7) = "&"
+        │   │           └── flags: ∅
+        │   ├── locals: [:"..."]
+        │   ├── def_keyword_loc: (180,0)-(180,3) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (180,7)-(180,8) = "("
+        │   ├── rparen_loc: (180,11)-(180,12) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (182,0)-(182,3) = "end"
+        └── @ DefNode (location: (184,0)-(184,42))
             ├── name: :foo
-            ├── name_loc: (180,4)-(180,7) = "foo"
+            ├── name_loc: (184,4)-(184,7) = "foo"
             ├── receiver: ∅
             ├── parameters:
-            │   @ ParametersNode (location: (180,8)-(180,11))
+            │   @ ParametersNode (location: (184,8)-(184,37))
             │   ├── requireds: (length: 0)
-            │   ├── optionals: (length: 0)
+            │   ├── optionals: (length: 1)
+            │   │   └── @ OptionalParameterNode (location: (184,8)-(184,37))
+            │   │       ├── name: :bar
+            │   │       ├── name_loc: (184,8)-(184,11) = "bar"
+            │   │       ├── operator_loc: (184,12)-(184,13) = "="
+            │   │       └── value:
+            │   │           @ ParenthesesNode (location: (184,14)-(184,37))
+            │   │           ├── body:
+            │   │           │   @ StatementsNode (location: (184,15)-(184,36))
+            │   │           │   └── body: (length: 2)
+            │   │           │       ├── @ DefNode (location: (184,15)-(184,33))
+            │   │           │       │   ├── name: :baz
+            │   │           │       │   ├── name_loc: (184,19)-(184,22) = "baz"
+            │   │           │       │   ├── receiver: ∅
+            │   │           │       │   ├── parameters:
+            │   │           │       │   │   @ ParametersNode (location: (184,23)-(184,26))
+            │   │           │       │   │   ├── requireds: (length: 1)
+            │   │           │       │   │   │   └── @ RequiredParameterNode (location: (184,23)-(184,26))
+            │   │           │       │   │   │       └── name: :bar
+            │   │           │       │   │   ├── optionals: (length: 0)
+            │   │           │       │   │   ├── rest: ∅
+            │   │           │       │   │   ├── posts: (length: 0)
+            │   │           │       │   │   ├── keywords: (length: 0)
+            │   │           │       │   │   ├── keyword_rest: ∅
+            │   │           │       │   │   └── block: ∅
+            │   │           │       │   ├── body:
+            │   │           │       │   │   @ StatementsNode (location: (184,30)-(184,33))
+            │   │           │       │   │   └── body: (length: 1)
+            │   │           │       │   │       └── @ LocalVariableReadNode (location: (184,30)-(184,33))
+            │   │           │       │   │           ├── name: :bar
+            │   │           │       │   │           └── depth: 0
+            │   │           │       │   ├── locals: [:bar]
+            │   │           │       │   ├── def_keyword_loc: (184,15)-(184,18) = "def"
+            │   │           │       │   ├── operator_loc: ∅
+            │   │           │       │   ├── lparen_loc: (184,22)-(184,23) = "("
+            │   │           │       │   ├── rparen_loc: (184,26)-(184,27) = ")"
+            │   │           │       │   ├── equal_loc: (184,28)-(184,29) = "="
+            │   │           │       │   └── end_keyword_loc: ∅
+            │   │           │       └── @ IntegerNode (location: (184,35)-(184,36))
+            │   │           │           └── flags: decimal
+            │   │           ├── opening_loc: (184,14)-(184,15) = "("
+            │   │           └── closing_loc: (184,36)-(184,37) = ")"
             │   ├── rest: ∅
             │   ├── posts: (length: 0)
             │   ├── keywords: (length: 0)
-            │   ├── keyword_rest:
-            │   │   @ ForwardingParameterNode (location: (180,8)-(180,11))
+            │   ├── keyword_rest: ∅
             │   └── block: ∅
             ├── body:
-            │   @ StatementsNode (location: (181,2)-(181,7))
+            │   @ StatementsNode (location: (184,41)-(184,42))
             │   └── body: (length: 1)
-            │       └── @ CallNode (location: (181,2)-(181,7))
-            │           ├── receiver: ∅
-            │           ├── call_operator_loc: ∅
-            │           ├── name: :bar
-            │           ├── message_loc: (181,2)-(181,5) = "bar"
-            │           ├── opening_loc: (181,5)-(181,6) = "("
-            │           ├── arguments: ∅
-            │           ├── closing_loc: (181,7)-(181,8) = ")"
-            │           ├── block:
-            │           │   @ BlockArgumentNode (location: (181,6)-(181,7))
-            │           │   ├── expression: ∅
-            │           │   └── operator_loc: (181,6)-(181,7) = "&"
-            │           └── flags: ∅
-            ├── locals: [:"..."]
-            ├── def_keyword_loc: (180,0)-(180,3) = "def"
+            │       └── @ IntegerNode (location: (184,41)-(184,42))
+            │           └── flags: decimal
+            ├── locals: [:bar]
+            ├── def_keyword_loc: (184,0)-(184,3) = "def"
             ├── operator_loc: ∅
-            ├── lparen_loc: (180,7)-(180,8) = "("
-            ├── rparen_loc: (180,11)-(180,12) = ")"
-            ├── equal_loc: ∅
-            └── end_keyword_loc: (182,0)-(182,3) = "end"
+            ├── lparen_loc: (184,7)-(184,8) = "("
+            ├── rparen_loc: (184,37)-(184,38) = ")"
+            ├── equal_loc: (184,39)-(184,40) = "="
+            └── end_keyword_loc: ∅
