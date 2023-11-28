@@ -6182,11 +6182,13 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
       case NODE_ARGSCAT: {
         if (flag_ptr) *flag_ptr |= VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_SPLAT_MUT;
         int argc = setup_args_core(iseq, args, RNODE_ARGSCAT(argn)->nd_head, 1, NULL, NULL);
+        bool args_pushed = false;
 
         if (nd_type_p(RNODE_ARGSCAT(argn)->nd_body, NODE_LIST)) {
             int rest_len = compile_args(iseq, args, RNODE_ARGSCAT(argn)->nd_body, &kwnode);
             if (kwnode) rest_len--;
-            ADD_INSN1(args, argn, newarray, INT2FIX(rest_len));
+            ADD_INSN1(args, argn, pushtoarray, INT2FIX(rest_len));
+            args_pushed = true;
         }
         else {
             RUBY_ASSERT(!check_keyword(RNODE_ARGSCAT(argn)->nd_body));
@@ -6197,7 +6199,7 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
             ADD_INSN1(args, argn, splatarray, Qtrue);
             argc += 1;
         }
-        else {
+        else if (!args_pushed) {
             ADD_INSN(args, argn, concattoarray);
         }
 
@@ -6220,8 +6222,7 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
             int rest_len = compile_args(iseq, args, RNODE_ARGSPUSH(argn)->nd_body, &kwnode);
             if (kwnode) rest_len--;
             ADD_INSN1(args, argn, newarray, INT2FIX(rest_len));
-            ADD_INSN1(args, argn, newarray, INT2FIX(1));
-            ADD_INSN(args, argn, concatarray);
+            ADD_INSN1(args, argn, pushtoarray, INT2FIX(1));
         }
         else {
             if (keyword_node_p(RNODE_ARGSPUSH(argn)->nd_body)) {
@@ -6229,8 +6230,7 @@ setup_args_core(rb_iseq_t *iseq, LINK_ANCHOR *const args, const NODE *argn,
             }
             else {
                 NO_CHECK(COMPILE(args, "args (cat: splat)", RNODE_ARGSPUSH(argn)->nd_body));
-                ADD_INSN1(args, argn, newarray, INT2FIX(1));
-                ADD_INSN(args, argn, concatarray);
+                ADD_INSN1(args, argn, pushtoarray, INT2FIX(1));
             }
         }
 
