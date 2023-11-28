@@ -112,7 +112,7 @@ module RDoc::TokenStream
   # Returns a string representation of the token stream
 
   def tokens_to_s
-    Array(token_stream).compact.map { |token| token[:text] }.join ''
+    (token_stream or return '').compact.map { |token| token[:text] }.join ''
   end
 
 end
