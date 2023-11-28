@@ -1836,7 +1836,7 @@ module Prism
         proc { |foo = foo| }
         proc { |foo: foo| }
       RUBY
-      message = 'Parameter default value references itself'
+      message = 'parameter default value references itself'
       assert_errors expression(source), source, [
         [message, 14..17],
         [message, 37..40],
