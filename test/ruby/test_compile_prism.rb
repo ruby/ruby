@@ -756,6 +756,7 @@ module Prism
       assert_prism_eval("def self.prism_test_def_node() 1 end; prism_test_def_node()")
       assert_prism_eval("def self.prism_test_def_node(a,b) [a, b] end; prism_test_def_node(1,2)")
       assert_prism_eval("def self.prism_test_def_node(a,x=7,y=1) x end; prism_test_def_node(7,1)")
+      assert_prism_eval("def self.prism_test_def_node(a = 1); x = 2; end; prism_test_def_node")
 
       # rest argument
       assert_prism_eval("def self.prism_test_def_node(*a) a end; prism_test_def_node().inspect")

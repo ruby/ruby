@@ -710,13 +710,13 @@ pm_lookup_local_index(rb_iseq_t *iseq, pm_scope_node_t *scope_node, pm_constant_
 {
     st_data_t local_index;
 
-    int num_params = ISEQ_BODY(iseq)->param.size;
+    int locals_size = (int) scope_node->locals.size;
 
     if (!st_lookup(scope_node->index_lookup_table, constant_id, &local_index)) {
         rb_bug("This local does not exist");
     }
 
-    return num_params - (int)local_index;
+    return locals_size - (int)local_index;
 }
 
 static int
@@ -3592,7 +3592,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         VALUE idtmp = 0;
         rb_ast_id_table_t *tbl = ALLOCV(idtmp, sizeof(rb_ast_id_table_t) + locals_size * sizeof(ID));
         tbl->size = (int) locals_size;
-        body->param.size = (int) locals_size;
 
         for (size_t i = 0; i < locals_size; i++) {
             pm_constant_id_t constant_id = locals->ids[i];
@@ -3738,6 +3737,22 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 body->param.block_start = (int) locals_size - 1;
                 body->param.flags.has_block = true;
             }
+        }
+
+        iseq_calc_param_size(iseq);
+
+        // Calculating the parameter size above does not account for numbered parameters
+        // We can _only_ have numbered parameters if we don't have non numbered parameters
+        // We verify this through asserts, and add the numbered_parameters size accordingly
+        if (PM_NODE_TYPE_P(scope_node->ast_node, PM_BLOCK_NODE)) {
+            uint32_t numbered_parameters = ((pm_block_node_t *)(scope_node->ast_node))->numbered_parameters;
+            RUBY_ASSERT(!body->param.size || !numbered_parameters);
+            body->param.size += numbered_parameters;
+        }
+        else if (PM_NODE_TYPE_P(scope_node->ast_node, PM_LAMBDA_NODE)) {
+            uint32_t numbered_parameters = ((pm_lambda_node_t *)(scope_node->ast_node))->numbered_parameters;
+            RUBY_ASSERT(!body->param.size || !numbered_parameters);
+            body->param.size += numbered_parameters;
         }
 
         iseq_set_local_table(iseq, tbl);
