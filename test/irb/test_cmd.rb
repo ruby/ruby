@@ -466,6 +466,144 @@ module TestIRB
       assert_match(%r[/irb\/init\.rb], out)
     end
 
+    def test_show_source_method_s
+      code = <<~RUBY
+        class Baz
+          def foo
+          end
+        end
+      
+        class Bar < Baz
+          def foo
+            super
+          end
+        end
+      RUBY
+      File.write("#{@tmpdir}/bazbar.rb", code)
+      out, err = execute_lines(
+        "irb_load '#{@tmpdir}/bazbar.rb'\n",
+        "show_source Bar#foo -s",
+      )
+      assert_match(%r[bazbar.rb:2\n\n  def foo\n  end\n\n=> nil\n], out)
+      File.delete("#{@tmpdir}/bazbar.rb")
+    end
+
+    def test_show_source_method_multiple_s
+      code = <<~RUBY
+        class Baz
+          def fob
+          end
+        end
+      
+        class Bar < Baz
+          def fob
+            super
+          end
+        end
+
+        class Bob < Bar
+          def fob
+            super
+          end
+        end
+      RUBY
+      File.write("#{@tmpdir}/bazbarbob.rb", code)
+      out, err = execute_lines(
+        "irb_load '#{@tmpdir}/bazbarbob.rb'\n",
+        "show_source Bob#fob -ss",
+      )
+      assert_match(%r[bazbarbob.rb:2\n\n  def fob\n  end\n\n=> nil\n], out)
+      File.delete("#{@tmpdir}/bazbarbob.rb")
+    end
+
+    def test_show_source_method_no_instance_method
+      code = <<~RUBY
+        class Baz
+        end
+      
+        class Bar < Baz
+          def fee
+            super
+          end
+        end
+      RUBY
+      File.write("#{@tmpdir}/bazbar.rb", code)
+      out, err = execute_lines(
+        "irb_load '#{@tmpdir}/bazbar.rb'\n",
+        "show_source Bar#fee -s",
+      )
+      assert_match(%r[Error: Couldn't locate a super definition for Bar#fee\n], out)
+      File.delete("#{@tmpdir}/bazbar.rb")
+    end
+
+    def test_show_source_method_exceeds_super_chain
+      code = <<~RUBY
+        class Baz
+          def fow
+          end
+        end
+      
+        class Bar < Baz
+          def fow
+            super
+          end
+        end
+      RUBY
+      File.write("#{@tmpdir}/bazbar.rb", code)
+      out, err = execute_lines(
+        "irb_load '#{@tmpdir}/bazbar.rb'\n",
+        "show_source Bar#fow -ss",
+      )
+      assert_match(%r[Error: Couldn't locate a super definition for Bar#fow\n], out)
+      File.delete("#{@tmpdir}/bazbar.rb")
+    end
+
+    def test_show_source_method_accidental_characters
+      code = <<~RUBY
+        class Baz
+          def fol
+          end
+        end
+      
+        class Bar < Baz
+          def fol
+            super
+          end
+        end
+      RUBY
+      File.write("#{@tmpdir}/bazbar.rb", code)
+      out, err = execute_lines(
+        "irb_load '#{@tmpdir}/bazbar.rb'\n",
+        "show_source Bar#fol -sddddd",
+      )
+
+      assert_match(%r[bazbar.rb:2\n\n  def fol\n  end\n\n=> nil\n], out)
+      File.delete("#{@tmpdir}/bazbar.rb")
+    end
+
+    def test_show_source_receiver_super
+      code = <<~RUBY
+        class Baz
+          def fot
+          end
+        end
+      
+        class Bar < Baz
+          def fot
+            super
+          end
+        end
+      RUBY
+      File.write("#{@tmpdir}/bazbar.rb", code)
+      out, err = execute_lines(
+        "irb_load '#{@tmpdir}/bazbar.rb'\n",
+        "bar = Bar.new",
+        "show_source bar.fot -s"
+      )
+      assert_match(%r[bazbar.rb:2\n\n  def fot\n  end\n\n=> nil\n], out)
+      File.delete("#{@tmpdir}/bazbar.rb")
+    end
+
     def test_show_source_string
       out, err = execute_lines(
         "show_source 'IRB.conf'\n",
