@@ -77,6 +77,8 @@ module IRB
         target_method = target_method.super_method if target_method
       end
       target_method.nil? ? nil : target_method.source_location
+    rescue NameError
+      nil
     end
   end
 end
