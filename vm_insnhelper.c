@@ -4379,6 +4379,8 @@ vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, st
     const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
     VALUE v;
 
+    VM_ASSERT(! METHOD_ENTRY_INVALIDATED(cme));
+
     switch (cme->def->type) {
       case VM_METHOD_TYPE_ISEQ:
         CC_SET_FASTPATH(cc, vm_call_iseq_setup, TRUE);
