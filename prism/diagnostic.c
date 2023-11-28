@@ -198,6 +198,7 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_OPERATOR_WRITE_BLOCK]               = "unexpected operator after a call with a block",
     [PM_ERR_PARAMETER_ASSOC_SPLAT_MULTI]        = "unexpected multiple `**` splat parameters",
     [PM_ERR_PARAMETER_BLOCK_MULTI]              = "multiple block parameters; only one block is allowed",
+    [PM_ERR_PARAMETER_CIRCULAR]                 = "parameter default value references itself",
     [PM_ERR_PARAMETER_METHOD_NAME]              = "unexpected name for a parameter",
     [PM_ERR_PARAMETER_NAME_REPEAT]              = "repeated parameter name",
     [PM_ERR_PARAMETER_NO_DEFAULT]               = "expected a default value for the parameter",
