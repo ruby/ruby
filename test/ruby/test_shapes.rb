@@ -621,6 +621,24 @@ class TestShapes < Test::Unit::TestCase
     end;
   end
 
+  def test_too_complex_obj_ivar_ractor_share
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = nil
+
+      RubyVM::Shape.exhaust_shapes
+
+      r = Ractor.new do
+        o = Object.new
+        o.instance_variable_set(:@a, "hello")
+        Ractor.yield(o)
+      end
+
+      o = r.take
+      assert_equal "hello", o.instance_variable_get(:@a)
+    end;
+  end
+
   def test_too_complex_generic_ivar_ractor_share
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
