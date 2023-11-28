@@ -799,6 +799,7 @@ thread_sched_to_ready_common(struct rb_thread_sched *sched, rb_thread_t *th, boo
 
     VM_ASSERT(sched->running != th);
     VM_ASSERT(!thread_sched_readyq_contain_p(sched, th));
+    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_READY, th);
 
     if (sched->running == NULL) {
         thread_sched_set_running(sched, th);
@@ -807,8 +808,6 @@ thread_sched_to_ready_common(struct rb_thread_sched *sched, rb_thread_t *th, boo
     else {
         thread_sched_enq(sched, th);
     }
-
-    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_READY, th);
 }
 
 // waiting -> ready
@@ -1068,7 +1067,6 @@ ubf_waiting(void *ptr)
             // not sleeping yet.
         }
         else {
-            RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
             thread_sched_to_ready_common(sched, th, true, false);
         }
     }
@@ -1085,6 +1083,8 @@ thread_sched_to_waiting_until_wakeup(struct rb_thread_sched *sched, rb_thread_t 
 
     RB_VM_SAVE_MACHINE_CONTEXT(th);
     setup_ubf(th, ubf_waiting, (void *)th);
+
+    RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
 
     thread_sched_lock(sched, th);
     {

@@ -29,18 +29,44 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     thread&.kill
   end
 
+  def test_thread_pass_single_thread
+    full_timeline = record do
+      Thread.pass
+    end
+    assert_equal [], timeline_for(Thread.current, full_timeline)
+  end
+
+  def test_thread_pass_multi_thread
+    thread = Thread.new do
+      cpu_bound_work(0.5)
+    end
+
+    full_timeline = record do
+      Thread.pass
+    end
+
+    assert_equal %i(suspended ready resumed), timeline_for(Thread.current, full_timeline)
+  ensure
+    thread&.kill
+    thread&.join
+  end
+
   def test_muti_thread_timeline
     threads = nil
     full_timeline = record do
-      threads = threaded_cpu_work
-      fib(20)
+      threads = threaded_cpu_bound_work(1.0)
+      expected = cpu_bound_work(1.0)
+      results = threads.map(&:value)
+      results.each do |r|
+        refute_equal false, r
+      end
       assert_equal [false] * THREADS_COUNT, threads.map(&:status)
     end
-
 
     threads.each do |thread|
       timeline = timeline_for(thread, full_timeline)
       assert_consistent_timeline(timeline)
+      assert timeline.count(:suspended) > 1, "Expected threads to yield suspended at least once: #{timeline.inspect}"
     end
 
     timeline = timeline_for(Thread.current, full_timeline)
@@ -105,7 +131,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     assert_equal %i(started ready resumed suspended ready resumed suspended exited), timeline
   end
 
-  def test_thread_blocked_forever
+  def test_thread_blocked_forever_on_mutex
     mutex = Mutex.new
     mutex.lock
     thread = nil
@@ -123,7 +149,30 @@ class TestThreadInstrumentation < Test::Unit::TestCase
 
     timeline = timeline_for(thread, full_timeline)
     assert_consistent_timeline(timeline)
-    assert_equal %i(started ready resumed), timeline
+    assert_equal %i(started ready resumed suspended), timeline
+  end
+
+  def test_thread_blocked_temporarily_on_mutex
+    mutex = Mutex.new
+    mutex.lock
+    thread = nil
+
+    full_timeline = record do
+      thread = Thread.new do
+        mutex.lock
+      end
+      10.times { Thread.pass }
+      sleep 0.1
+      mutex.unlock
+      10.times { Thread.pass }
+      sleep 0.1
+    end
+
+    thread.join
+
+    timeline = timeline_for(thread, full_timeline)
+    assert_consistent_timeline(timeline)
+    assert_equal %i(started ready resumed suspended ready resumed suspended exited), timeline
   end
 
   def test_thread_instrumentation_fork_safe
@@ -135,7 +184,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
         thread_statuses = Marshal.load(read_pipe)
         full_timeline = Marshal.load(read_pipe)
       else
-        threads = threaded_cpu_work
+        threads = threaded_cpu_bound_work.each(&:join)
         Marshal.dump(threads.map(&:status), STDOUT)
         full_timeline = Bug::ThreadInstrumentation.unregister_callback.map { |t, e| [t.to_s, e ] }
         Marshal.dump(full_timeline, STDOUT)
@@ -157,7 +206,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
   private
 
   def record
-    Bug::ThreadInstrumentation.register_callback
+    Bug::ThreadInstrumentation.register_callback(!ENV["GVL_DEBUG"])
     yield
   ensure
     timeline = Bug::ThreadInstrumentation.unregister_callback
@@ -202,13 +251,27 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     timeline.select { |t, _| t == thread }.map(&:last)
   end
 
-  def fib(n = 20)
+  def fib(n = 30)
     return n if n <= 1
     fib(n-1) + fib(n-2)
   end
 
-  def threaded_cpu_work(size = 20)
-    THREADS_COUNT.times.map { Thread.new { fib(size) } }.each(&:join)
+  def cpu_bound_work(duration)
+    deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + duration
+    i = 0
+    while deadline > Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      fib(25)
+      i += 1
+    end
+    i > 0 ? i : false
+  end
+
+  def threaded_cpu_bound_work(duration = 0.5)
+    THREADS_COUNT.times.map do
+      Thread.new do
+        cpu_bound_work(duration)
+      end
+    end
   end
 
   def cleanup_threads
