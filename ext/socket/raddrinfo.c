@@ -461,6 +461,20 @@ cancel_getaddrinfo(void *ptr)
 }
 
 static int
+do_pthread_create(pthread_t *th, const pthread_attr_t *attr, void *(*start_routine) (void *), void *arg)
+{
+    int limit = 3, ret;
+    do {
+        // It is said that pthread_create may fail spuriously, so we follow the JDK and retry several times.
+        //
+        // https://bugs.openjdk.org/browse/JDK-8268605
+        // https://github.com/openjdk/jdk/commit/e35005d5ce383ddd108096a3079b17cb0bcf76f1
+        ret = pthread_create(th, attr, start_routine, arg);
+    } while (ret == EAGAIN && limit-- > 0);
+    return ret;
+}
+
+static int
 rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai)
 {
     int retry;
@@ -491,7 +505,7 @@ start:
 #endif
 
     pthread_t th;
-    if (pthread_create(&th, &attr, do_getaddrinfo, arg) != 0) {
+    if (do_pthread_create(&th, &attr, do_getaddrinfo, arg) != 0) {
         free_getaddrinfo_arg(arg);
         return EAI_AGAIN;
     }
@@ -718,7 +732,7 @@ start:
 #endif
 
     pthread_t th;
-    if (pthread_create(&th, 0, do_getnameinfo, arg) != 0) {
+    if (do_pthread_create(&th, 0, do_getnameinfo, arg) != 0) {
         free_getnameinfo_arg(arg);
         return EAI_AGAIN;
     }

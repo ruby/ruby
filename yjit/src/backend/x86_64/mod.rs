@@ -827,7 +827,7 @@ impl Assembler
             // No bytes dropped, so the pos markers point to valid code
             for (insn_idx, pos) in pos_markers {
                 if let Insn::PosMarker(callback) = self.insns.get(insn_idx).unwrap() {
-                    callback(pos);
+                    callback(pos, &cb);
                 } else {
                     panic!("non-PosMarker in pos_markers insn_idx={insn_idx} {self:?}");
                 }

@@ -930,9 +930,11 @@ module IRB
         when "N"
           @context.irb_name
         when "m"
-          truncate_prompt_main(@context.main.to_s)
+          main_str = @context.main.to_s rescue "!#{$!.class}"
+          truncate_prompt_main(main_str)
         when "M"
-          truncate_prompt_main(@context.main.inspect)
+          main_str = @context.main.inspect rescue "!#{$!.class}"
+          truncate_prompt_main(main_str)
         when "l"
           ltype
         when "i"

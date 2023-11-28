@@ -1803,8 +1803,8 @@ ivar_set(VALUE obj, ID id, VALUE val)
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
       {
-          rb_obj_ivar_set(obj, id, val);
-          break;
+        rb_obj_ivar_set(obj, id, val);
+        break;
       }
       case T_CLASS:
       case T_MODULE:

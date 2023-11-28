@@ -254,10 +254,10 @@ module Prism
         loader = Serialize::Loader.new(source, buffer.read)
 
         tokens = loader.load_tokens
-        node, comments, magic_comments, errors, warnings = loader.load_nodes
+        node, comments, magic_comments, data_loc, errors, warnings = loader.load_nodes
         tokens.each { |token,| token.value.force_encoding(loader.encoding) }
 
-        ParseResult.new([node, tokens], comments, magic_comments, errors, warnings, source)
+        ParseResult.new([node, tokens], comments, magic_comments, data_loc, errors, warnings, source)
       end
     end
 

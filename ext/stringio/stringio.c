@@ -13,7 +13,7 @@
 **********************************************************************/
 
 static const char *const
-STRINGIO_VERSION = "3.1.0";
+STRINGIO_VERSION = "3.1.1";
 
 #include "ruby.h"
 #include "ruby/io.h"

@@ -524,7 +524,11 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
         patches.sort_by_cached_key(|patch| patch.inline_patch_pos.raw_ptr(cb));
         let mut last_patch_end = std::ptr::null();
         for patch in &patches {
-            assert!(last_patch_end <= patch.inline_patch_pos.raw_ptr(cb), "patches should not overlap");
+            let patch_pos = patch.inline_patch_pos.raw_ptr(cb);
+            assert!(
+                last_patch_end <= patch_pos,
+                "patches should not overlap (last_patch_end: {last_patch_end:?}, patch_pos: {patch_pos:?})",
+            );
 
             cb.set_write_ptr(patch.inline_patch_pos);
             cb.set_dropped_bytes(false);

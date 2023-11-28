@@ -180,3 +180,5 @@ def foo x:%(xx); end
 def foo(...)
   bar(&)
 end
+
+def foo(bar = (def baz(bar) = bar; 1)) = 2

@@ -16,7 +16,7 @@ module IRB
       @irb_context = irb_context
     end
 
-    def find_source(signature)
+    def find_source(signature, s_count = nil)
       context_binding = @irb_context.workspace.binding
       case signature
       when /\A[A-Z]\w*(::[A-Z]\w*)*\z/ # Const::Name
@@ -26,14 +26,13 @@ module IRB
       when /\A(?<owner>[A-Z]\w*(::[A-Z]\w*)*)#(?<method>[^ :.]+)\z/ # Class#method
         owner = eval(Regexp.last_match[:owner], context_binding)
         method = Regexp.last_match[:method]
-        if owner.respond_to?(:instance_method)
-          methods = owner.instance_methods + owner.private_instance_methods
-          file, line = owner.instance_method(method).source_location if methods.include?(method.to_sym)
-        end
+        return unless owner.respond_to?(:instance_method)
+        file, line = method_target(owner, s_count, method, "owner")
       when /\A((?<receiver>.+)(\.|::))?(?<method>[^ :.]+)\z/ # method, receiver.method, receiver::method
         receiver = eval(Regexp.last_match[:receiver] || 'self', context_binding)
         method = Regexp.last_match[:method]
-        file, line = receiver.method(method).source_location if receiver.respond_to?(method, true)
+        return unless receiver.respond_to?(method, true)
+        file, line = method_target(receiver, s_count, method, "receiver")
       end
       if file && line && File.exist?(file)
         Source.new(file: file, first_line: line, last_line: find_end(file, line))
@@ -59,6 +58,27 @@ module IRB
         end
       end
       first_line
+    end
+
+    def method_target(owner_receiver, s_count, method, type)
+      case type
+      when "owner"
+        target_method = owner_receiver.instance_method(method)
+        return target_method.source_location unless s_count
+      when "receiver"
+        if s_count
+          target_method = owner_receiver.class.instance_method(method)
+        else
+          target_method = method
+          return owner_receiver.method(method).source_location
+        end
+      end
+      s_count.times do |s|
+        target_method = target_method.super_method if target_method
+      end
+      target_method.nil? ? nil : target_method.source_location
+    rescue NameError
+      nil
     end
   end
 end

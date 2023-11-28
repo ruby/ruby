@@ -67,6 +67,7 @@ Note: We're only listing outstanding class updates.
 * Range
 
     * Range#reverse_each can now process beginless ranges with an Integer endpoint. [[Feature #18515]]
+    * Range#reverse_each now raises TypeError for endless ranges. [[Feature #18551]]
 
 * Refinement
 
@@ -161,7 +162,7 @@ The following default gems are updated.
 * securerandom 0.3.0
 * shellwords 0.2.0
 * singleton 0.2.0
-* stringio 3.1.0
+* stringio 3.1.1
 * strscan 3.0.8
 * syntax_suggest 1.1.0
 * tempfile 0.2.0
@@ -294,6 +295,7 @@ changelog for details of the default gems or bundled gems.
 [Feature #18183]: https://bugs.ruby-lang.org/issues/18183
 [Feature #18498]: https://bugs.ruby-lang.org/issues/18498
 [Feature #18515]: https://bugs.ruby-lang.org/issues/18515
+[Feature #18551]: https://bugs.ruby-lang.org/issues/18551
 [Feature #18885]: https://bugs.ruby-lang.org/issues/18885
 [Bug #19012]:     https://bugs.ruby-lang.org/issues/19012
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150

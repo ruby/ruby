@@ -318,7 +318,7 @@ fn test_no_pos_marker_callback_when_compile_fails() {
     let mut asm = Assembler::new();
 
     // Markers around code to exhaust memory limit
-    let fail_if_called = |_code_ptr| panic!("pos_marker callback should not be called");
+    let fail_if_called = |_code_ptr, _cb: &_| panic!("pos_marker callback should not be called");
     asm.pos_marker(fail_if_called);
     let zero = asm.load(0.into());
     let sum = asm.add(zero, 500.into());

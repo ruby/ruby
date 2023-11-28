@@ -361,8 +361,7 @@ typedef struct pm_context_node {
 /** This is the type of a comment that we've found while parsing. */
 typedef enum {
     PM_COMMENT_INLINE,
-    PM_COMMENT_EMBDOC,
-    PM_COMMENT___END__
+    PM_COMMENT_EMBDOC
 } pm_comment_type_t;
 
 /**
@@ -571,6 +570,9 @@ struct pm_parser {
     /** The list of magic comments that have been found while parsing. */
     pm_list_t magic_comment_list;
 
+    /** The optional location of the __END__ keyword and its contents. */
+    pm_location_t data_loc;
+
     /** The list of warnings that have been found while parsing. */
     pm_list_t warning_list;
 
@@ -672,6 +674,9 @@ struct pm_parser {
 
     /** This flag indicates that we are currently parsing a keyword argument. */
     bool in_keyword_arg;
+
+    /** The current parameter name id on parsing its default value. */
+    pm_constant_id_t current_param_name;
 
     /**
      * Whether or not the parser has seen a token that has semantic meaning

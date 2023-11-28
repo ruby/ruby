@@ -631,6 +631,15 @@ module TestIRB
       assert_equal('irb("aaaaaaaaaaaaaaaaaaaaaaaaaaaa...)>', irb.send(:format_prompt, 'irb(%M)>', nil, 1, 1))
     end
 
+    def test_prompt_main_raise
+      main = Object.new
+      def main.to_s; raise TypeError; end
+      def main.inspect; raise ArgumentError; end
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main), TestInputMethod.new)
+      assert_equal("irb(!TypeError)>", irb.send(:format_prompt, 'irb(%m)>', nil, 1, 1))
+      assert_equal("irb(!ArgumentError)>", irb.send(:format_prompt, 'irb(%M)>', nil, 1, 1))
+    end
+
     def test_lineno
       input = TestInputMethod.new([
         "\n",

@@ -2842,7 +2842,7 @@ impl Assembler
         // so that we can move the closure below
         let entryref = entryref.clone();
 
-        self.pos_marker(move |code_ptr| {
+        self.pos_marker(move |code_ptr, _| {
             entryref.start_addr.set(Some(code_ptr));
         });
     }
@@ -2853,7 +2853,7 @@ impl Assembler
         // so that we can move the closure below
         let entryref = entryref.clone();
 
-        self.pos_marker(move |code_ptr| {
+        self.pos_marker(move |code_ptr, _| {
             entryref.end_addr.set(Some(code_ptr));
         });
     }
@@ -2865,7 +2865,7 @@ impl Assembler
         // so that we can move the closure below
         let branchref = branchref.clone();
 
-        self.pos_marker(move |code_ptr| {
+        self.pos_marker(move |code_ptr, _| {
             branchref.start_addr.set(Some(code_ptr));
         });
     }
@@ -2877,7 +2877,7 @@ impl Assembler
         // so that we can move the closure below
         let branchref = branchref.clone();
 
-        self.pos_marker(move |code_ptr| {
+        self.pos_marker(move |code_ptr, _| {
             branchref.end_addr.set(Some(code_ptr));
         });
     }
