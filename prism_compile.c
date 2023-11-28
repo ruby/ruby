@@ -3307,8 +3307,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PM_COMPILE_NOT_POPPED(multi_write_node->value);
         PM_DUP_UNLESS_POPPED;
 
+        pm_node_t *rest_expression = NULL;
+        if (multi_write_node->rest) {
+            RUBY_ASSERT(PM_NODE_TYPE_P(multi_write_node->rest, PM_SPLAT_NODE));
+
+            pm_splat_node_t *rest_splat = ((pm_splat_node_t *)multi_write_node->rest);
+            rest_expression = rest_splat->expression;
+        }
+
+
         if (lefts->size) {
-            ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(lefts->size), INT2FIX((int) (bool) rights->size));
+            ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(lefts->size), INT2FIX((int) (bool) (rights->size || rest_expression)));
             for (size_t index = 0; index < lefts->size; index++) {
                 pm_node_t *considered_node = lefts->nodes[index];
 
@@ -3333,21 +3342,21 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
         }
 
-        if (multi_write_node->rest) {
-            RUBY_ASSERT(PM_NODE_TYPE_P(multi_write_node->rest, PM_SPLAT_NODE));
-
-            pm_splat_node_t *rest_splat = ((pm_splat_node_t *)multi_write_node->rest);
-            if (rest_splat->expression) {
-                ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(0), INT2FIX(1));
-                PM_COMPILE(rest_splat->expression);
-            }
-        }
-
         if (rights->size) {
-            ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(rights->size), INT2FIX(2));
+            if (rest_expression) {
+                ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(rights->size), INT2FIX(3));
+                PM_COMPILE(rest_expression);
+            }
+            else {
+                ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(rights->size), INT2FIX(2));
+            }
+
             for (size_t index = 0; index < rights->size; index++) {
                 PM_COMPILE(rights->nodes[index]);
             }
+        }
+        else if (rest_expression) {
+            PM_COMPILE(rest_expression);
         }
 
         return;
