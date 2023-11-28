@@ -388,24 +388,20 @@ module Prism
     end
 
     def test_ConstantPathTargetNode
-      verbose = $VERBOSE
-      # Create some temporary nested constants
-      Object.send(:const_set, "MyFoo", Object)
-      Object.const_get("MyFoo").send(:const_set, "Bar", Object)
+      assert_separately([], <<~'RUBY')
+        verbose = $VERBOSE
+        # Create some temporary nested constants
+        Object.send(:const_set, "MyFoo", Object)
+        Object.const_get("MyFoo").send(:const_set, "Bar", Object)
 
-      constant_names = ["MyBar", "MyFoo::Bar", "MyFoo::Bar::Baz"]
-      source = "#{constant_names.join(",")} = Object"
-      iseq = RubyVM::InstructionSequence.compile_prism(source)
-      $VERBOSE = nil
-      prism_eval = iseq.eval
-      $VERBOSE = verbose
-      assert_equal prism_eval, Object
-    ensure
-      ## Teardown temp constants
-      Object.const_get("MyFoo").send(:remove_const, "Bar")
-      Object.send(:remove_const, "MyFoo")
-      Object.send(:remove_const, "MyBar")
-      $VERBOSE = verbose
+        constant_names = ["MyBar", "MyFoo::Bar", "MyFoo::Bar::Baz"]
+        source = "#{constant_names.join(",")} = Object"
+        iseq = RubyVM::InstructionSequence.compile_prism(source)
+        $VERBOSE = nil
+        prism_eval = iseq.eval
+        $VERBOSE = verbose
+        assert_equal prism_eval, Object
+      RUBY
     end
 
     def test_GlobalVariableTargetNode
