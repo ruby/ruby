@@ -240,6 +240,13 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                 vm_cme_invalidate((rb_callable_method_entry_t *)cme);
                 RB_DEBUG_COUNTER_INC(cc_invalidate_tree_cme);
 
+                // In case of refinement ME, also invalidate the wrapped ME that
+                // could be cached at some callsite and is unreachable from any
+                // RCLASS_CC_TBL.
+                if (cme->def->type == VM_METHOD_TYPE_REFINED && cme->def->body.refined.orig_me) {
+                    vm_cme_invalidate((rb_callable_method_entry_t *)cme->def->body.refined.orig_me);
+                }
+
                 if (cme->def->iseq_overload) {
                     rb_callable_method_entry_t *monly_cme = (rb_callable_method_entry_t *)lookup_overloaded_cme(cme);
                     if (monly_cme) {
@@ -676,12 +683,36 @@ rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, r
     return me;
 }
 
+// Return a cloned ME that's not invalidated (MEs are disposable for caching).
 const rb_method_entry_t *
 rb_method_entry_clone(const rb_method_entry_t *src_me)
 {
     rb_method_entry_t *me = rb_method_entry_alloc(src_me->called_id, src_me->owner, src_me->defined_class, src_me->def, METHOD_ENTRY_COMPLEMENTED(src_me));
 
     METHOD_ENTRY_FLAGS_COPY(me, src_me);
+
+    // Also clone inner ME in case of refinement ME
+    if (src_me->def &&
+            src_me->def->type == VM_METHOD_TYPE_REFINED &&
+            src_me->def->body.refined.orig_me) {
+        const rb_method_entry_t *orig_me = src_me->def->body.refined.orig_me;
+        VM_ASSERT(orig_me->def->type != VM_METHOD_TYPE_REFINED);
+
+        rb_method_entry_t *orig_clone = rb_method_entry_alloc(orig_me->called_id,
+                orig_me->owner, orig_me->defined_class, orig_me->def, METHOD_ENTRY_COMPLEMENTED(orig_me));
+        METHOD_ENTRY_FLAGS_COPY(orig_clone, orig_me);
+
+        // Clone definition, since writing a VALUE to a shared definition
+        // can create reference edges we can't run WBs for.
+        rb_method_definition_t *clone_def =
+            rb_method_definition_create(VM_METHOD_TYPE_REFINED, src_me->called_id);
+
+        rb_method_refined_t refined = {
+            .owner = src_me->def->body.refined.owner,
+            .orig_me = orig_clone,
+        };
+        rb_method_definition_set(me, clone_def, &refined);
+    }
     return me;
 }
 
