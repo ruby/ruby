@@ -9,9 +9,7 @@
             │       ├── name: :a
             │       └── depth: 0
             ├── rest:
-            │   @ SplatNode (location: (1,1)-(1,2))
-            │   ├── operator_loc: (1,1)-(1,2) = ","
-            │   └── expression: ∅
+            │   @ ImplicitRestNode (location: (1,1)-(1,2))
             ├── rights: (length: 0)
             ├── lparen_loc: ∅
             ├── rparen_loc: ∅

@@ -428,6 +428,22 @@ module Prism
       end
     end
 
+    def test_ImplicitRestNode
+      assert_location(ImplicitRestNode, "foo, = bar", 3..4, &:rest)
+
+      assert_location(ImplicitRestNode, "for foo, in bar do end", 7..8) do |node|
+        node.index.rest
+      end
+
+      assert_location(ImplicitRestNode, "foo { |bar,| }", 10..11) do |node|
+        node.block.parameters.parameters.rest
+      end
+
+      assert_location(ImplicitRestNode, "foo in [bar,]", 11..12) do |node|
+        node.pattern.rest
+      end
+    end
+
     def test_InNode
       assert_location(InNode, "case foo; in bar; end", 10...16) do |node|
         node.conditions.first

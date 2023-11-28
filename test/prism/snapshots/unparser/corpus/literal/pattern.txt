@@ -54,7 +54,8 @@
         │   │   │   │   │   │   └── flags: decimal
         │   │   │   │   │   └── @ IntegerNode (location: (4,7)-(4,8))
         │   │   │   │   │       └── flags: decimal
-        │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── rest:
+        │   │   │   │   │   @ ImplicitRestNode (location: (4,8)-(4,9))
         │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── opening_loc: (4,3)-(4,4) = "["
         │   │   │   │   └── closing_loc: (4,10)-(4,11) = "]"

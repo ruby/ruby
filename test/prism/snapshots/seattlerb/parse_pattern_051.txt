@@ -26,7 +26,8 @@
             │       │   │   │   └── flags: decimal
             │       │   │   └── @ IntegerNode (location: (2,7)-(2,8))
             │       │   │       └── flags: decimal
-            │       │   ├── rest: ∅
+            │       │   ├── rest:
+            │       │   │   @ ImplicitRestNode (location: (2,8)-(2,9))
             │       │   ├── posts: (length: 0)
             │       │   ├── opening_loc: (2,3)-(2,4) = "["
             │       │   └── closing_loc: (2,9)-(2,10) = "]"

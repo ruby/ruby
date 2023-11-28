@@ -1455,6 +1455,21 @@ nodes:
 
           { Foo: }
             ^^^^
+  - name: ImplicitRestNode
+    comment: |
+      Represents using a trailing comma to indicate an implicit rest parameter.
+
+          foo { |bar,| }
+                    ^
+
+          foo in [bar,]
+                     ^
+
+          for foo, in bar do end
+                 ^
+
+          foo, = bar
+             ^
   - name: InNode
     fields:
       - name: pattern
@@ -2071,7 +2086,6 @@ nodes:
         type: node[]
       - name: rest
         type: node?
-        kind: RestParameterNode
       - name: posts
         type: node[]
       - name: keywords

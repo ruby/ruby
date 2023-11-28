@@ -1197,7 +1197,7 @@ pm_array_pattern_node_node_list_create(pm_parser_t *parser, pm_node_list_t *node
     for (size_t index = 0; index < nodes->size; index++) {
         pm_node_t *child = nodes->nodes[index];
 
-        if (!found_rest && PM_NODE_TYPE_P(child, PM_SPLAT_NODE)) {
+        if (!found_rest && (PM_NODE_TYPE_P(child, PM_SPLAT_NODE) || PM_NODE_TYPE_P(child, PM_IMPLICIT_REST_NODE))) {
             node->rest = child;
             found_rest = true;
         } else if (found_rest) {
@@ -3425,6 +3425,25 @@ pm_implicit_node_create(pm_parser_t *parser, pm_node_t *value) {
 }
 
 /**
+ * Allocate and initialize a new ImplicitRestNode node.
+ */
+static pm_implicit_rest_node_t *
+pm_implicit_rest_node_create(pm_parser_t *parser, const pm_token_t *token) {
+    assert(token->type == PM_TOKEN_COMMA);
+
+    pm_implicit_rest_node_t *node = PM_ALLOC_NODE(parser, pm_implicit_rest_node_t);
+
+    *node = (pm_implicit_rest_node_t) {
+        {
+            .type = PM_IMPLICIT_REST_NODE,
+            .location = PM_LOCATION_TOKEN_VALUE(token)
+        }
+    };
+
+    return node;
+}
+
+/**
  * Allocate and initialize a new IntegerNode node.
  */
 static pm_integer_node_t *
@@ -4285,7 +4304,7 @@ pm_multi_target_node_create(pm_parser_t *parser) {
  */
 static void
 pm_multi_target_node_targets_append(pm_parser_t *parser, pm_multi_target_node_t *node, pm_node_t *target) {
-    if (PM_NODE_TYPE_P(target, PM_SPLAT_NODE)) {
+    if (PM_NODE_TYPE_P(target, PM_SPLAT_NODE) || PM_NODE_TYPE_P(target, PM_IMPLICIT_REST_NODE)) {
         if (node->rest == NULL) {
             node->rest = target;
         } else {
@@ -4561,9 +4580,8 @@ pm_parameters_node_posts_append(pm_parameters_node_t *params, pm_node_t *param) 
  * Set the rest parameter on a ParametersNode node.
  */
 static void
-pm_parameters_node_rest_set(pm_parameters_node_t *params, pm_rest_parameter_node_t *param) {
-    assert(params->rest == NULL);
-    pm_parameters_node_location_set(params, (pm_node_t *) param);
+pm_parameters_node_rest_set(pm_parameters_node_t *params, pm_node_t *param) {
+    pm_parameters_node_location_set(params, param);
     params->rest = param;
 }
 
@@ -10918,7 +10936,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
  */
 static pm_node_t *
 parse_targets(pm_parser_t *parser, pm_node_t *first_target, pm_binding_power_t binding_power) {
-    bool has_splat = PM_NODE_TYPE_P(first_target, PM_SPLAT_NODE);
+    bool has_rest = PM_NODE_TYPE_P(first_target, PM_SPLAT_NODE);
 
     pm_multi_target_node_t *result = pm_multi_target_node_create(parser);
     pm_multi_target_node_targets_append(parser, result, parse_target(parser, first_target));
@@ -10928,7 +10946,7 @@ parse_targets(pm_parser_t *parser, pm_node_t *first_target, pm_binding_power_t b
             // Here we have a splat operator. It can have a name or be
             // anonymous. It can be the final target or be in the middle if
             // there haven't been any others yet.
-            if (has_splat) {
+            if (has_rest) {
                 pm_parser_err_previous(parser, PM_ERR_MULTI_ASSIGN_MULTI_SPLATS);
             }
 
@@ -10942,7 +10960,7 @@ parse_targets(pm_parser_t *parser, pm_node_t *first_target, pm_binding_power_t b
 
             pm_node_t *splat = (pm_node_t *) pm_splat_node_create(parser, &star_operator, name);
             pm_multi_target_node_targets_append(parser, result, splat);
-            has_splat = true;
+            has_rest = true;
         } else if (token_begins_expression_p(parser->current.type)) {
             pm_node_t *target = parse_expression(parser, binding_power, PM_ERR_EXPECT_EXPRESSION_AFTER_COMMA);
             target = parse_target(parser, target);
@@ -10950,10 +10968,10 @@ parse_targets(pm_parser_t *parser, pm_node_t *first_target, pm_binding_power_t b
             pm_multi_target_node_targets_append(parser, result, target);
         } else if (!match1(parser, PM_TOKEN_EOF)) {
             // If we get here, then we have a trailing , in a multi target node.
-            // We need to indicate this somehow in the tree, so we'll add an
-            // anonymous splat.
-            pm_node_t *splat = (pm_node_t *) pm_splat_node_create(parser, &parser->previous, NULL);
-            pm_multi_target_node_targets_append(parser, result, splat);
+            // We'll set the implicit rest flag to indicate this.
+            pm_node_t *rest = (pm_node_t *) pm_implicit_rest_node_create(parser, &parser->previous);
+            pm_multi_target_node_targets_append(parser, result, rest);
+            has_rest = true;
             break;
         }
     }
@@ -11382,11 +11400,14 @@ parse_required_destructured_parameter(pm_parser_t *parser) {
     do {
         pm_node_t *param;
 
-        // If we get here then we have a trailing comma. In this case we'll
-        // create an implicit splat node.
+        // If we get here then we have a trailing comma, which isn't allowed in
+        // the grammar. In other places, multi targets _do_ allow trailing
+        // commas, so here we'll assume this is a mistake of the user not
+        // knowing it's not allowed here.
         if (node->lefts.size > 0 && match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
-            param = (pm_node_t *) pm_splat_node_create(parser, &parser->previous, NULL);
+            param = (pm_node_t *) pm_implicit_rest_node_create(parser, &parser->previous);
             pm_multi_target_node_targets_append(parser, node, param);
+            pm_parser_err_current(parser, PM_ERR_PARAMETER_WILD_LOOSE_COMMA);
             break;
         }
 
@@ -11726,12 +11747,12 @@ parse_parameters(
                     }
                 }
 
-                pm_rest_parameter_node_t *param = pm_rest_parameter_node_create(parser, &operator, &name);
+                pm_node_t *param = (pm_node_t *) pm_rest_parameter_node_create(parser, &operator, &name);
                 if (params->rest == NULL) {
                     pm_parameters_node_rest_set(params, param);
                 } else {
-                    pm_parser_err_node(parser, (pm_node_t *) param, PM_ERR_PARAMETER_SPLAT_MULTI);
-                    pm_parameters_node_posts_append(params, (pm_node_t *) param);
+                    pm_parser_err_node(parser, param, PM_ERR_PARAMETER_SPLAT_MULTI);
+                    pm_parameters_node_posts_append(params, param);
                 }
 
                 break;
@@ -11776,11 +11797,9 @@ parse_parameters(
             default:
                 if (parser->previous.type == PM_TOKEN_COMMA) {
                     if (allows_trailing_comma) {
-                        // If we get here, then we have a trailing comma in a block
-                        // parameter list. We need to create an anonymous rest parameter to
-                        // represent it.
-                        pm_token_t name = not_provided(parser);
-                        pm_rest_parameter_node_t *param = pm_rest_parameter_node_create(parser, &parser->previous, &name);
+                        // If we get here, then we have a trailing comma in a
+                        // block parameter list.
+                        pm_node_t *param = (pm_node_t *) pm_implicit_rest_node_create(parser, &parser->previous);
 
                         if (params->rest == NULL) {
                             pm_parameters_node_rest_set(params, param);
@@ -13466,6 +13485,8 @@ parse_pattern(pm_parser_t *parser, bool top_pattern, pm_diagnostic_id_t diag_id)
         while (accept1(parser, PM_TOKEN_COMMA)) {
             // Break early here in case we have a trailing comma.
             if (match5(parser, PM_TOKEN_KEYWORD_THEN, PM_TOKEN_BRACE_RIGHT, PM_TOKEN_BRACKET_RIGHT, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON)) {
+                node = (pm_node_t *) pm_implicit_rest_node_create(parser, &parser->previous);
+                pm_node_list_append(&nodes, node);
                 break;
             }
 

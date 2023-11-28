@@ -121,7 +121,7 @@ module Prism
                 end
               end,
               *params.optionals.map(&:name),
-              *((params.rest.name || :*) if params.rest && params.rest.operator != ","),
+              *((params.rest.name || :*) if params.rest && !params.rest.is_a?(ImplicitRestNode)),
               *params.posts.map do |post|
                 if post.is_a?(RequiredParameterNode)
                   post.name

@@ -199,9 +199,7 @@
         │   │       ├── name: :foo
         │   │       └── depth: 0
         │   ├── rest:
-        │   │   @ SplatNode (location: (35,3)-(35,4))
-        │   │   ├── operator_loc: (35,3)-(35,4) = ","
-        │   │   └── expression: ∅
+        │   │   @ ImplicitRestNode (location: (35,3)-(35,4))
         │   ├── rights: (length: 0)
         │   ├── lparen_loc: ∅
         │   ├── rparen_loc: ∅
