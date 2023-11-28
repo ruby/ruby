@@ -73,53 +73,51 @@ event_name(rb_event_flag_t event)
     return "no-event";
 }
 
-NORETURN(static void unexpected(const char *format, const char *event_name, VALUE thread));
-
 static void
-unexpected(const char *format, const char *event_name, VALUE thread)
+unexpected(bool strict, const char *format, VALUE thread, rb_event_flag_t last_event)
 {
-#if 0
-    fprintf(stderr, "----------------\n");
-    fprintf(stderr, format, event_name, thread);
-    fprintf(stderr, "\n");
-    rb_backtrace();
-    fprintf(stderr, "----------------\n");
-#else
-    rb_bug(format, event_name, thread);
-#endif
+     const char *last_event_name = event_name(last_event);
+    if (strict) {
+        rb_bug(format, thread, last_event_name);
+    }
+    else {
+        fprintf(stderr, format, thread, last_event_name);
+        fprintf(stderr, "\n");
+    }
 }
 
 static void
 ex_callback(rb_event_flag_t event, const rb_internal_thread_event_data_t *event_data, void *user_data)
 {
     rb_event_flag_t last_event = find_last_event(event_data->thread);
+    bool strict = (bool)user_data;
 
-    switch (event) {
-      case RUBY_INTERNAL_THREAD_EVENT_STARTED:
-        if (last_event != 0) {
-            unexpected("TestThreadInstrumentation: `started` event can't be preceded by `%s` (thread=%"PRIxVALUE")", event_name(last_event), event_data->thread);
+    if (last_event != 0) {
+        switch (event) {
+          case RUBY_INTERNAL_THREAD_EVENT_STARTED:
+            unexpected(strict, "[thread=%"PRIxVALUE"] `started` event can't be preceded by `%s`", event_data->thread, last_event);
+            break;
+          case RUBY_INTERNAL_THREAD_EVENT_READY:
+            if (last_event != RUBY_INTERNAL_THREAD_EVENT_STARTED && last_event != RUBY_INTERNAL_THREAD_EVENT_SUSPENDED) {
+                unexpected(strict, "[thread=%"PRIxVALUE"] `ready` must be preceded by `started` or `suspended`, got: `%s`", event_data->thread, last_event);
+            }
+            break;
+          case RUBY_INTERNAL_THREAD_EVENT_RESUMED:
+            if (last_event != RUBY_INTERNAL_THREAD_EVENT_READY) {
+                unexpected(strict, "[thread=%"PRIxVALUE"] `resumed` must be preceded by `ready`, got: `%s`", event_data->thread, last_event);
+            }
+            break;
+          case RUBY_INTERNAL_THREAD_EVENT_SUSPENDED:
+            if (last_event != RUBY_INTERNAL_THREAD_EVENT_RESUMED) {
+                unexpected(strict, "[thread=%"PRIxVALUE"] `suspended` must be preceded by `resumed`, got: `%s`", event_data->thread, last_event);
+            }
+            break;
+          case RUBY_INTERNAL_THREAD_EVENT_EXITED:
+            if (last_event != RUBY_INTERNAL_THREAD_EVENT_RESUMED && last_event != RUBY_INTERNAL_THREAD_EVENT_SUSPENDED) {
+                unexpected(strict, "[thread=%"PRIxVALUE"] `exited` must be preceded by `resumed` or `suspended`, got: `%s`", event_data->thread, last_event);
+            }
+            break;
         }
-        break;
-      case RUBY_INTERNAL_THREAD_EVENT_READY:
-        if (last_event != 0 && last_event != RUBY_INTERNAL_THREAD_EVENT_STARTED && last_event != RUBY_INTERNAL_THREAD_EVENT_SUSPENDED) {
-            unexpected("TestThreadInstrumentation: `ready` must be preceded by `started` or `suspended`, got: `%s` (thread=%"PRIxVALUE")", event_name(last_event), event_data->thread);
-        }
-        break;
-      case RUBY_INTERNAL_THREAD_EVENT_RESUMED:
-        if (last_event != 0 && last_event != RUBY_INTERNAL_THREAD_EVENT_READY) {
-            unexpected("TestThreadInstrumentation: `resumed` must be preceded by `ready`, got: `%s` (thread=%"PRIxVALUE")", event_name(last_event), event_data->thread);
-        }
-        break;
-      case RUBY_INTERNAL_THREAD_EVENT_SUSPENDED:
-        if (last_event != 0 && last_event != RUBY_INTERNAL_THREAD_EVENT_RESUMED) {
-            unexpected("TestThreadInstrumentation: `suspended` must be preceded by `resumed`, got: `%s` (thread=%"PRIxVALUE")", event_name(last_event), event_data->thread);
-        }
-        break;
-      case RUBY_INTERNAL_THREAD_EVENT_EXITED:
-        if (last_event != 0 && last_event != RUBY_INTERNAL_THREAD_EVENT_RESUMED && last_event != RUBY_INTERNAL_THREAD_EVENT_SUSPENDED) {
-            unexpected("TestThreadInstrumentation: `exited` must be preceded by `resumed` or `suspended`, got: `%s` (thread=%"PRIxVALUE")", event_name(last_event), event_data->thread);
-        }
-        break;
     }
 
     rb_atomic_t cursor = RUBY_ATOMIC_FETCH_ADD(timeline_cursor, 1);
@@ -134,7 +132,7 @@ ex_callback(rb_event_flag_t event, const rb_internal_thread_event_data_t *event_
 static rb_internal_thread_event_hook_t * single_hook = NULL;
 
 static VALUE
-thread_register_callback(VALUE thread)
+thread_register_callback(VALUE thread, VALUE strict)
 {
     single_hook = rb_internal_thread_add_event_hook(
         ex_callback,
@@ -143,7 +141,7 @@ thread_register_callback(VALUE thread)
         RUBY_INTERNAL_THREAD_EVENT_RESUMED |
         RUBY_INTERNAL_THREAD_EVENT_SUSPENDED |
         RUBY_INTERNAL_THREAD_EVENT_EXITED,
-        NULL
+        (void *)RTEST(strict)
     );
 
     return Qnil;
@@ -216,7 +214,7 @@ Init_instrumentation(void)
     timeline_value = TypedData_Wrap_Struct(0, &event_timeline_type, 0);
 
     rb_global_variable(&last_thread);
-    rb_define_singleton_method(klass, "register_callback", thread_register_callback, 0);
+    rb_define_singleton_method(klass, "register_callback", thread_register_callback, 1);
     rb_define_singleton_method(klass, "unregister_callback", thread_unregister_callback, 0);
     rb_define_singleton_method(klass, "register_and_unregister_callbacks", thread_register_and_unregister_callback, 0);
 }
