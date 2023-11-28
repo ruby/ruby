@@ -254,7 +254,8 @@
             │   │   │           ├── name: :pair
             │   │   │           └── depth: 0
             │   │   ├── opening_loc: (31,7)-(31,8) = "{"
-            │   │   └── closing_loc: (33,0)-(33,1) = "}"
+            │   │   ├── closing_loc: (33,0)-(33,1) = "}"
+            │   │   └── numbered_parameters: 0
             │   └── flags: ∅
             ├── then_keyword_loc: ∅
             ├── statements:

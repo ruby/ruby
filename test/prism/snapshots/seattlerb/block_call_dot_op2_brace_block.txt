@@ -54,7 +54,8 @@
             │   │   │           ├── block: ∅
             │   │   │           └── flags: variable_call
             │   │   ├── opening_loc: (1,8)-(1,10) = "do"
-            │   │   └── closing_loc: (1,13)-(1,16) = "end"
+            │   │   ├── closing_loc: (1,13)-(1,16) = "end"
+            │   │   └── numbered_parameters: 0
             │   └── flags: ∅
             ├── call_operator_loc: (1,16)-(1,17) = "."
             ├── name: :e
@@ -95,5 +96,6 @@
             │   │           ├── block: ∅
             │   │           └── flags: variable_call
             │   ├── opening_loc: (1,19)-(1,21) = "do"
-            │   └── closing_loc: (1,28)-(1,31) = "end"
+            │   ├── closing_loc: (1,28)-(1,31) = "end"
+            │   └── numbered_parameters: 0
             └── flags: ∅

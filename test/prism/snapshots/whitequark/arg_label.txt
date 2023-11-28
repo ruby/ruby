@@ -108,5 +108,6 @@
             │   │           ├── block: ∅
             │   │           └── flags: ∅
             │   ├── opening_loc: (6,2)-(6,3) = "{"
-            │   └── closing_loc: (6,11)-(6,12) = "}"
+            │   ├── closing_loc: (6,11)-(6,12) = "}"
+            │   └── numbered_parameters: 0
             └── flags: ∅

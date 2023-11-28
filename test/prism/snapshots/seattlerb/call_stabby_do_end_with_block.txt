@@ -18,11 +18,12 @@
             │   │       ├── opening_loc: (1,5)-(1,7) = "do"
             │   │       ├── closing_loc: (1,10)-(1,13) = "end"
             │   │       ├── parameters: ∅
-            │   │       └── body:
-            │   │           @ StatementsNode (location: (1,8)-(1,9))
-            │   │           └── body: (length: 1)
-            │   │               └── @ IntegerNode (location: (1,8)-(1,9))
-            │   │                   └── flags: decimal
+            │   │       ├── body:
+            │   │       │   @ StatementsNode (location: (1,8)-(1,9))
+            │   │       │   └── body: (length: 1)
+            │   │       │       └── @ IntegerNode (location: (1,8)-(1,9))
+            │   │       │           └── flags: decimal
+            │   │       └── numbered_parameters: 0
             │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block:
@@ -35,5 +36,6 @@
             │   │       └── @ IntegerNode (location: (1,17)-(1,18))
             │   │           └── flags: decimal
             │   ├── opening_loc: (1,14)-(1,16) = "do"
-            │   └── closing_loc: (1,19)-(1,22) = "end"
+            │   ├── closing_loc: (1,19)-(1,22) = "end"
+            │   └── numbered_parameters: 0
             └── flags: ∅

@@ -62,5 +62,6 @@
             │   │           ├── closing_loc: (1,32)-(1,33) = "]"
             │   │           └── flags: ∅
             │   ├── opening_loc: (1,2)-(1,3) = "{"
-            │   └── closing_loc: (1,34)-(1,35) = "}"
+            │   ├── closing_loc: (1,34)-(1,35) = "}"
+            │   └── numbered_parameters: 0
             └── flags: ∅

@@ -29,7 +29,8 @@
             │   │       │       │   ├── parameters: ∅
             │   │       │       │   ├── body: ∅
             │   │       │       │   ├── opening_loc: (1,11)-(1,13) = "do"
-            │   │       │       │   └── closing_loc: (1,14)-(1,17) = "end"
+            │   │       │       │   ├── closing_loc: (1,14)-(1,17) = "end"
+            │   │       │       │   └── numbered_parameters: 0
             │   │       │       └── flags: ∅
             │   │       ├── opening_loc: (1,2)-(1,3) = "["
             │   │       ├── closing_loc: (1,18)-(1,19) = "]"

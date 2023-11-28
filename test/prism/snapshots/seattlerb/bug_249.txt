@@ -49,7 +49,8 @@
             │   │   │   │   │           │   │           ├── equal_loc: ∅
             │   │   │   │   │           │   │           └── end_keyword_loc: (3,0)-(3,3) = "end"
             │   │   │   │   │           │   ├── opening_loc: (1,17)-(1,19) = "do"
-            │   │   │   │   │           │   └── closing_loc: (4,1)-(4,4) = "end"
+            │   │   │   │   │           │   ├── closing_loc: (4,1)-(4,4) = "end"
+            │   │   │   │   │           │   └── numbered_parameters: 0
             │   │   │   │   │           └── flags: ∅
             │   │   │   │   ├── opening_loc: (1,6)-(1,7) = "("
             │   │   │   │   └── closing_loc: (4,4)-(4,5) = ")"

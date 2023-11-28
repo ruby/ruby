@@ -43,5 +43,6 @@
             │   │   ├── ensure_clause: ∅
             │   │   └── end_keyword_loc: (4,0)-(4,3) = "end"
             │   ├── opening_loc: (1,5)-(1,7) = "do"
-            │   └── closing_loc: (4,0)-(4,3) = "end"
+            │   ├── closing_loc: (4,0)-(4,3) = "end"
+            │   └── numbered_parameters: 0
             └── flags: ∅

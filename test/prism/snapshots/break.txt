@@ -151,7 +151,8 @@
         │   │   │   │           │   └── flags: ∅
         │   │   │   │           └── keyword_loc: (23,6)-(23,11) = "break"
         │   │   │   ├── opening_loc: (23,4)-(23,5) = "{"
-        │   │   │   └── closing_loc: (23,15)-(23,16) = "}"
+        │   │   │   ├── closing_loc: (23,15)-(23,16) = "}"
+        │   │   │   └── numbered_parameters: 0
         │   │   └── flags: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :==
@@ -202,7 +203,8 @@
             │   │   │           ├── arguments: ∅
             │   │   │           └── keyword_loc: (25,10)-(25,15) = "break"
             │   │   ├── opening_loc: (25,4)-(25,5) = "{"
-            │   │   └── closing_loc: (25,16)-(25,17) = "}"
+            │   │   ├── closing_loc: (25,16)-(25,17) = "}"
+            │   │   └── numbered_parameters: 0
             │   └── flags: ∅
             ├── call_operator_loc: ∅
             ├── name: :==

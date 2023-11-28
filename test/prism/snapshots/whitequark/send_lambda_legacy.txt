@@ -9,4 +9,5 @@
             ├── opening_loc: (1,2)-(1,3) = "{"
             ├── closing_loc: (1,4)-(1,5) = "}"
             ├── parameters: ∅
-            └── body: ∅
+            ├── body: ∅
+            └── numbered_parameters: 0

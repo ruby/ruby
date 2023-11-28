@@ -42,7 +42,8 @@
             │   │   ├── parameters: ∅
             │   │   ├── body: ∅
             │   │   ├── opening_loc: (1,6)-(1,8) = "do"
-            │   │   └── closing_loc: (1,9)-(1,12) = "end"
+            │   │   ├── closing_loc: (1,9)-(1,12) = "end"
+            │   │   └── numbered_parameters: 0
             │   └── flags: ∅
             ├── call_operator_loc: (1,12)-(1,14) = "::"
             ├── name: :d

@@ -468,11 +468,12 @@ typedef struct pm_scope {
     bool explicit_params;
 
     /**
-     * A boolean indicating whether or not this scope has numbered parameters.
+     * An integer indicating the number of numbered parameters on this scope.
      * This is necessary to determine if child blocks are allowed to use
-     * numbered parameters.
+     * numbered parameters, and to pass information to consumers of the AST
+     * about how many numbered parameters exist.
      */
-    bool numbered_params;
+    uint32_t numbered_parameters;
 
     /**
      * A transparent scope is a scope that cannot have locals set on itself.

@@ -1465,7 +1465,7 @@ pm_block_argument_node_create(pm_parser_t *parser, const pm_token_t *operator, p
  * Allocate and initialize a new BlockNode node.
  */
 static pm_block_node_t *
-pm_block_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, const pm_token_t *opening, pm_block_parameters_node_t *parameters, pm_node_t *body, const pm_token_t *closing) {
+pm_block_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, const pm_token_t *opening, pm_block_parameters_node_t *parameters, pm_node_t *body, const pm_token_t *closing, uint32_t numbered_parameters) {
     pm_block_node_t *node = PM_ALLOC_NODE(parser, pm_block_node_t);
 
     *node = (pm_block_node_t) {
@@ -1476,6 +1476,7 @@ pm_block_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, const p
         .locals = *locals,
         .parameters = parameters,
         .body = body,
+        .numbered_parameters = numbered_parameters,
         .opening_loc = PM_LOCATION_TOKEN_VALUE(opening),
         .closing_loc = PM_LOCATION_TOKEN_VALUE(closing)
     };
@@ -3937,7 +3938,8 @@ pm_lambda_node_create(
     const pm_token_t *opening,
     const pm_token_t *closing,
     pm_block_parameters_node_t *parameters,
-    pm_node_t *body
+    pm_node_t *body,
+    uint32_t numbered_parameters
 ) {
     pm_lambda_node_t *node = PM_ALLOC_NODE(parser, pm_lambda_node_t);
 
@@ -3954,7 +3956,8 @@ pm_lambda_node_create(
         .opening_loc = PM_LOCATION_TOKEN_VALUE(opening),
         .closing_loc = PM_LOCATION_TOKEN_VALUE(closing),
         .parameters = parameters,
-        .body = body
+        .body = body,
+        .numbered_parameters = numbered_parameters
     };
 
     return node;
@@ -5746,7 +5749,7 @@ pm_parser_scope_push(pm_parser_t *parser, bool closed) {
         .previous = parser->current_scope,
         .closed = closed,
         .explicit_params = false,
-        .numbered_params = false,
+        .numbered_parameters = 0,
         .transparent = false
     };
 
@@ -5768,7 +5771,7 @@ pm_parser_scope_push_transparent(pm_parser_t *parser) {
         .previous = parser->current_scope,
         .closed = false,
         .explicit_params = false,
-        .numbered_params = false,
+        .numbered_parameters = 0,
         .transparent = true
     };
 
@@ -5819,6 +5822,18 @@ pm_parser_local_add(pm_parser_t *parser, pm_constant_id_t constant_id) {
     if (!pm_constant_id_list_includes(&scope->locals, constant_id)) {
         pm_constant_id_list_append(&scope->locals, constant_id);
     }
+}
+
+/**
+ * Add a constant id to the local table of the current scope.
+ */
+static inline void
+pm_parser_numbered_parameters_set(pm_parser_t *parser, uint32_t numbered_parameters) {
+    pm_scope_t *scope = parser->current_scope;
+    while (scope && scope->transparent) scope = scope->previous;
+
+    assert(scope != NULL);
+    scope->numbered_parameters = numbered_parameters;
 }
 
 /**
@@ -12052,9 +12067,10 @@ parse_block(pm_parser_t *parser) {
     }
 
     pm_constant_id_list_t locals = parser->current_scope->locals;
+    uint32_t numbered_parameters = parser->current_scope->numbered_parameters;
     pm_parser_scope_pop(parser);
     pm_accepts_block_stack_pop(parser);
-    return pm_block_node_create(parser, &locals, &opening, parameters, statements, &parser->previous);
+    return pm_block_node_create(parser, &locals, &opening, parameters, statements, &parser->previous, numbered_parameters);
 }
 
 /**
@@ -12625,9 +12641,9 @@ parse_alias_argument(pm_parser_t *parser, bool first) {
  * numbered parameters.
  */
 static bool
-outer_scope_using_numbered_params_p(pm_parser_t *parser) {
+outer_scope_using_numbered_parameters_p(pm_parser_t *parser) {
     for (pm_scope_t *scope = parser->current_scope->previous; scope != NULL && !scope->closed; scope = scope->previous) {
-        if (scope->numbered_params) return true;
+        if (scope->numbered_parameters) return true;
     }
 
     return false;
@@ -12647,25 +12663,32 @@ parse_variable_call(pm_parser_t *parser) {
         }
 
         if (!parser->current_scope->closed && pm_token_is_numbered_parameter(parser->previous.start, parser->previous.end)) {
-            // Indicate that this scope is using numbered params so that child
-            // scopes cannot.
-            parser->current_scope->numbered_params = true;
-
             // Now that we know we have a numbered parameter, we need to check
             // if it's allowed in this context. If it is, then we will create a
             // local variable read. If it's not, then we'll create a normal call
             // node but add an error.
             if (parser->current_scope->explicit_params) {
                 pm_parser_err_previous(parser, PM_ERR_NUMBERED_PARAMETER_NOT_ALLOWED);
-            } else if (outer_scope_using_numbered_params_p(parser)) {
+            } else if (outer_scope_using_numbered_parameters_p(parser)) {
                 pm_parser_err_previous(parser, PM_ERR_NUMBERED_PARAMETER_OUTER_SCOPE);
             } else {
+                // Indicate that this scope is using numbered params so that child
+                // scopes cannot.
+                uint8_t number = parser->previous.start[1];
+
+                // We subtract the value for the character '0' to get the actual
+                // integer value of the number (only _1 through _9 are valid)
+                uint32_t number_as_int = (uint32_t) (number - '0');
+                if (number_as_int > parser->current_scope->numbered_parameters) {
+                    parser->current_scope->numbered_parameters = number_as_int;
+                    pm_parser_numbered_parameters_set(parser, number_as_int);
+                }
+
                 // When you use a numbered parameter, it implies the existence
                 // of all of the locals that exist before it. For example,
                 // referencing _2 means that _1 must exist. Therefore here we
                 // loop through all of the possibilities and add them into the
                 // constant pool.
-                uint8_t number = parser->previous.start[1];
                 uint8_t current = '1';
                 uint8_t *value;
 
@@ -15856,9 +15879,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
             }
 
             pm_constant_id_list_t locals = parser->current_scope->locals;
+            uint32_t numbered_parameters = parser->current_scope->numbered_parameters;
             pm_parser_scope_pop(parser);
             pm_accepts_block_stack_pop(parser);
-            return (pm_node_t *) pm_lambda_node_create(parser, &locals, &operator, &opening, &parser->previous, params, body);
+            return (pm_node_t *) pm_lambda_node_create(parser, &locals, &operator, &opening, &parser->previous, params, body, numbered_parameters);
         }
         case PM_TOKEN_UPLUS: {
             parser_lex(parser);

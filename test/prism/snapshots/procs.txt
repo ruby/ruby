@@ -30,97 +30,102 @@
         │   │   │       └── name: :d
         │   │   ├── opening_loc: (1,3)-(1,4) = "("
         │   │   └── closing_loc: (1,14)-(1,15) = ")"
-        │   └── body:
-        │       @ StatementsNode (location: (1,18)-(1,19))
-        │       └── body: (length: 1)
-        │           └── @ LocalVariableReadNode (location: (1,18)-(1,19))
-        │               ├── name: :b
-        │               └── depth: 0
+        │   ├── body:
+        │   │   @ StatementsNode (location: (1,18)-(1,19))
+        │   │   └── body: (length: 1)
+        │   │       └── @ LocalVariableReadNode (location: (1,18)-(1,19))
+        │   │           ├── name: :b
+        │   │           └── depth: 0
+        │   └── numbered_parameters: 0
         ├── @ LambdaNode (location: (3,0)-(5,3))
         │   ├── locals: []
         │   ├── operator_loc: (3,0)-(3,2) = "->"
         │   ├── opening_loc: (3,3)-(3,5) = "do"
         │   ├── closing_loc: (5,0)-(5,3) = "end"
         │   ├── parameters: ∅
-        │   └── body:
-        │       @ BeginNode (location: (4,0)-(5,3))
-        │       ├── begin_keyword_loc: ∅
-        │       ├── statements: ∅
-        │       ├── rescue_clause: ∅
-        │       ├── else_clause: ∅
-        │       ├── ensure_clause:
-        │       │   @ EnsureNode (location: (4,0)-(5,3))
-        │       │   ├── ensure_keyword_loc: (4,0)-(4,6) = "ensure"
-        │       │   ├── statements: ∅
-        │       │   └── end_keyword_loc: (5,0)-(5,3) = "end"
-        │       └── end_keyword_loc: (5,0)-(5,3) = "end"
+        │   ├── body:
+        │   │   @ BeginNode (location: (4,0)-(5,3))
+        │   │   ├── begin_keyword_loc: ∅
+        │   │   ├── statements: ∅
+        │   │   ├── rescue_clause: ∅
+        │   │   ├── else_clause: ∅
+        │   │   ├── ensure_clause:
+        │   │   │   @ EnsureNode (location: (4,0)-(5,3))
+        │   │   │   ├── ensure_keyword_loc: (4,0)-(4,6) = "ensure"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── end_keyword_loc: (5,0)-(5,3) = "end"
+        │   │   └── end_keyword_loc: (5,0)-(5,3) = "end"
+        │   └── numbered_parameters: 0
         ├── @ LambdaNode (location: (7,0)-(11,3))
         │   ├── locals: []
         │   ├── operator_loc: (7,0)-(7,2) = "->"
         │   ├── opening_loc: (7,3)-(7,5) = "do"
         │   ├── closing_loc: (11,0)-(11,3) = "end"
         │   ├── parameters: ∅
-        │   └── body:
-        │       @ BeginNode (location: (8,0)-(11,3))
-        │       ├── begin_keyword_loc: ∅
-        │       ├── statements: ∅
-        │       ├── rescue_clause:
-        │       │   @ RescueNode (location: (8,0)-(8,6))
-        │       │   ├── keyword_loc: (8,0)-(8,6) = "rescue"
-        │       │   ├── exceptions: (length: 0)
-        │       │   ├── operator_loc: ∅
-        │       │   ├── reference: ∅
-        │       │   ├── statements: ∅
-        │       │   └── consequent: ∅
-        │       ├── else_clause:
-        │       │   @ ElseNode (location: (9,0)-(10,6))
-        │       │   ├── else_keyword_loc: (9,0)-(9,4) = "else"
-        │       │   ├── statements: ∅
-        │       │   └── end_keyword_loc: (10,0)-(10,6) = "ensure"
-        │       ├── ensure_clause:
-        │       │   @ EnsureNode (location: (10,0)-(11,3))
-        │       │   ├── ensure_keyword_loc: (10,0)-(10,6) = "ensure"
-        │       │   ├── statements: ∅
-        │       │   └── end_keyword_loc: (11,0)-(11,3) = "end"
-        │       └── end_keyword_loc: (11,0)-(11,3) = "end"
+        │   ├── body:
+        │   │   @ BeginNode (location: (8,0)-(11,3))
+        │   │   ├── begin_keyword_loc: ∅
+        │   │   ├── statements: ∅
+        │   │   ├── rescue_clause:
+        │   │   │   @ RescueNode (location: (8,0)-(8,6))
+        │   │   │   ├── keyword_loc: (8,0)-(8,6) = "rescue"
+        │   │   │   ├── exceptions: (length: 0)
+        │   │   │   ├── operator_loc: ∅
+        │   │   │   ├── reference: ∅
+        │   │   │   ├── statements: ∅
+        │   │   │   └── consequent: ∅
+        │   │   ├── else_clause:
+        │   │   │   @ ElseNode (location: (9,0)-(10,6))
+        │   │   │   ├── else_keyword_loc: (9,0)-(9,4) = "else"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── end_keyword_loc: (10,0)-(10,6) = "ensure"
+        │   │   ├── ensure_clause:
+        │   │   │   @ EnsureNode (location: (10,0)-(11,3))
+        │   │   │   ├── ensure_keyword_loc: (10,0)-(10,6) = "ensure"
+        │   │   │   ├── statements: ∅
+        │   │   │   └── end_keyword_loc: (11,0)-(11,3) = "end"
+        │   │   └── end_keyword_loc: (11,0)-(11,3) = "end"
+        │   └── numbered_parameters: 0
         ├── @ LambdaNode (location: (13,0)-(13,10))
         │   ├── locals: []
         │   ├── operator_loc: (13,0)-(13,2) = "->"
         │   ├── opening_loc: (13,3)-(13,4) = "{"
         │   ├── closing_loc: (13,9)-(13,10) = "}"
         │   ├── parameters: ∅
-        │   └── body:
-        │       @ StatementsNode (location: (13,5)-(13,8))
-        │       └── body: (length: 1)
-        │           └── @ CallNode (location: (13,5)-(13,8))
-        │               ├── receiver: ∅
-        │               ├── call_operator_loc: ∅
-        │               ├── name: :foo
-        │               ├── message_loc: (13,5)-(13,8) = "foo"
-        │               ├── opening_loc: ∅
-        │               ├── arguments: ∅
-        │               ├── closing_loc: ∅
-        │               ├── block: ∅
-        │               └── flags: variable_call
+        │   ├── body:
+        │   │   @ StatementsNode (location: (13,5)-(13,8))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (13,5)-(13,8))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :foo
+        │   │           ├── message_loc: (13,5)-(13,8) = "foo"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           └── flags: variable_call
+        │   └── numbered_parameters: 0
         ├── @ LambdaNode (location: (15,0)-(15,15))
         │   ├── locals: []
         │   ├── operator_loc: (15,0)-(15,2) = "->"
         │   ├── opening_loc: (15,3)-(15,5) = "do"
         │   ├── closing_loc: (15,12)-(15,15) = "end"
         │   ├── parameters: ∅
-        │   └── body:
-        │       @ StatementsNode (location: (15,7)-(15,10))
-        │       └── body: (length: 1)
-        │           └── @ CallNode (location: (15,7)-(15,10))
-        │               ├── receiver: ∅
-        │               ├── call_operator_loc: ∅
-        │               ├── name: :foo
-        │               ├── message_loc: (15,7)-(15,10) = "foo"
-        │               ├── opening_loc: ∅
-        │               ├── arguments: ∅
-        │               ├── closing_loc: ∅
-        │               ├── block: ∅
-        │               └── flags: variable_call
+        │   ├── body:
+        │   │   @ StatementsNode (location: (15,7)-(15,10))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (15,7)-(15,10))
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :foo
+        │   │           ├── message_loc: (15,7)-(15,10) = "foo"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           └── flags: variable_call
+        │   └── numbered_parameters: 0
         ├── @ LambdaNode (location: (17,0)-(17,29))
         │   ├── locals: [:a, :b, :c, :d, :e]
         │   ├── operator_loc: (17,0)-(17,2) = "->"
@@ -159,12 +164,13 @@
         │   │   ├── locals: (length: 0)
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
-        │   └── body:
-        │       @ StatementsNode (location: (17,26)-(17,27))
-        │       └── body: (length: 1)
-        │           └── @ LocalVariableReadNode (location: (17,26)-(17,27))
-        │               ├── name: :a
-        │               └── depth: 0
+        │   ├── body:
+        │   │   @ StatementsNode (location: (17,26)-(17,27))
+        │   │   └── body: (length: 1)
+        │   │       └── @ LocalVariableReadNode (location: (17,26)-(17,27))
+        │   │           ├── name: :a
+        │   │           └── depth: 0
+        │   └── numbered_parameters: 0
         ├── @ LambdaNode (location: (19,0)-(19,40))
         │   ├── locals: [:a, :b, :c, :d, :e, :f, :g]
         │   ├── operator_loc: (19,0)-(19,2) = "->"
@@ -211,12 +217,13 @@
         │   │   ├── locals: (length: 0)
         │   │   ├── opening_loc: (19,3)-(19,4) = "("
         │   │   └── closing_loc: (19,33)-(19,34) = ")"
-        │   └── body:
-        │       @ StatementsNode (location: (19,37)-(19,38))
-        │       └── body: (length: 1)
-        │           └── @ LocalVariableReadNode (location: (19,37)-(19,38))
-        │               ├── name: :a
-        │               └── depth: 0
+        │   ├── body:
+        │   │   @ StatementsNode (location: (19,37)-(19,38))
+        │   │   └── body: (length: 1)
+        │   │       └── @ LocalVariableReadNode (location: (19,37)-(19,38))
+        │   │           ├── name: :a
+        │   │           └── depth: 0
+        │   └── numbered_parameters: 0
         ├── @ LambdaNode (location: (21,0)-(23,3))
         │   ├── locals: [:a, :b, :c, :d, :e, :f, :g]
         │   ├── operator_loc: (21,0)-(21,2) = "->"
@@ -263,12 +270,13 @@
         │   │   ├── locals: (length: 0)
         │   │   ├── opening_loc: (21,3)-(21,4) = "("
         │   │   └── closing_loc: (21,33)-(21,34) = ")"
-        │   └── body:
-        │       @ StatementsNode (location: (22,2)-(22,3))
-        │       └── body: (length: 1)
-        │           └── @ LocalVariableReadNode (location: (22,2)-(22,3))
-        │               ├── name: :a
-        │               └── depth: 0
+        │   ├── body:
+        │   │   @ StatementsNode (location: (22,2)-(22,3))
+        │   │   └── body: (length: 1)
+        │   │       └── @ LocalVariableReadNode (location: (22,2)-(22,3))
+        │   │           ├── name: :a
+        │   │           └── depth: 0
+        │   └── numbered_parameters: 0
         ├── @ LambdaNode (location: (25,0)-(25,25))
         │   ├── locals: [:a]
         │   ├── operator_loc: (25,0)-(25,2) = "->"
@@ -290,52 +298,54 @@
         │   │   ├── locals: (length: 0)
         │   │   ├── opening_loc: (25,3)-(25,4) = "("
         │   │   └── closing_loc: (25,5)-(25,6) = ")"
-        │   └── body:
-        │       @ StatementsNode (location: (25,9)-(25,23))
-        │       └── body: (length: 1)
-        │           └── @ LambdaNode (location: (25,9)-(25,23))
-        │               ├── locals: [:b]
-        │               ├── operator_loc: (25,9)-(25,11) = "->"
-        │               ├── opening_loc: (25,14)-(25,15) = "{"
-        │               ├── closing_loc: (25,22)-(25,23) = "}"
-        │               ├── parameters:
-        │               │   @ BlockParametersNode (location: (25,12)-(25,13))
-        │               │   ├── parameters:
-        │               │   │   @ ParametersNode (location: (25,12)-(25,13))
-        │               │   │   ├── requireds: (length: 1)
-        │               │   │   │   └── @ RequiredParameterNode (location: (25,12)-(25,13))
-        │               │   │   │       └── name: :b
-        │               │   │   ├── optionals: (length: 0)
-        │               │   │   ├── rest: ∅
-        │               │   │   ├── posts: (length: 0)
-        │               │   │   ├── keywords: (length: 0)
-        │               │   │   ├── keyword_rest: ∅
-        │               │   │   └── block: ∅
-        │               │   ├── locals: (length: 0)
-        │               │   ├── opening_loc: ∅
-        │               │   └── closing_loc: ∅
-        │               └── body:
-        │                   @ StatementsNode (location: (25,16)-(25,21))
-        │                   └── body: (length: 1)
-        │                       └── @ CallNode (location: (25,16)-(25,21))
-        │                           ├── receiver:
-        │                           │   @ LocalVariableReadNode (location: (25,16)-(25,17))
-        │                           │   ├── name: :a
-        │                           │   └── depth: 1
-        │                           ├── call_operator_loc: ∅
-        │                           ├── name: :*
-        │                           ├── message_loc: (25,18)-(25,19) = "*"
-        │                           ├── opening_loc: ∅
-        │                           ├── arguments:
-        │                           │   @ ArgumentsNode (location: (25,20)-(25,21))
-        │                           │   ├── arguments: (length: 1)
-        │                           │   │   └── @ LocalVariableReadNode (location: (25,20)-(25,21))
-        │                           │   │       ├── name: :b
-        │                           │   │       └── depth: 0
-        │                           │   └── flags: ∅
-        │                           ├── closing_loc: ∅
-        │                           ├── block: ∅
-        │                           └── flags: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (25,9)-(25,23))
+        │   │   └── body: (length: 1)
+        │   │       └── @ LambdaNode (location: (25,9)-(25,23))
+        │   │           ├── locals: [:b]
+        │   │           ├── operator_loc: (25,9)-(25,11) = "->"
+        │   │           ├── opening_loc: (25,14)-(25,15) = "{"
+        │   │           ├── closing_loc: (25,22)-(25,23) = "}"
+        │   │           ├── parameters:
+        │   │           │   @ BlockParametersNode (location: (25,12)-(25,13))
+        │   │           │   ├── parameters:
+        │   │           │   │   @ ParametersNode (location: (25,12)-(25,13))
+        │   │           │   │   ├── requireds: (length: 1)
+        │   │           │   │   │   └── @ RequiredParameterNode (location: (25,12)-(25,13))
+        │   │           │   │   │       └── name: :b
+        │   │           │   │   ├── optionals: (length: 0)
+        │   │           │   │   ├── rest: ∅
+        │   │           │   │   ├── posts: (length: 0)
+        │   │           │   │   ├── keywords: (length: 0)
+        │   │           │   │   ├── keyword_rest: ∅
+        │   │           │   │   └── block: ∅
+        │   │           │   ├── locals: (length: 0)
+        │   │           │   ├── opening_loc: ∅
+        │   │           │   └── closing_loc: ∅
+        │   │           ├── body:
+        │   │           │   @ StatementsNode (location: (25,16)-(25,21))
+        │   │           │   └── body: (length: 1)
+        │   │           │       └── @ CallNode (location: (25,16)-(25,21))
+        │   │           │           ├── receiver:
+        │   │           │           │   @ LocalVariableReadNode (location: (25,16)-(25,17))
+        │   │           │           │   ├── name: :a
+        │   │           │           │   └── depth: 1
+        │   │           │           ├── call_operator_loc: ∅
+        │   │           │           ├── name: :*
+        │   │           │           ├── message_loc: (25,18)-(25,19) = "*"
+        │   │           │           ├── opening_loc: ∅
+        │   │           │           ├── arguments:
+        │   │           │           │   @ ArgumentsNode (location: (25,20)-(25,21))
+        │   │           │           │   ├── arguments: (length: 1)
+        │   │           │           │   │   └── @ LocalVariableReadNode (location: (25,20)-(25,21))
+        │   │           │           │   │       ├── name: :b
+        │   │           │           │   │       └── depth: 0
+        │   │           │           │   └── flags: ∅
+        │   │           │           ├── closing_loc: ∅
+        │   │           │           ├── block: ∅
+        │   │           │           └── flags: ∅
+        │   │           └── numbered_parameters: 0
+        │   └── numbered_parameters: 0
         └── @ LambdaNode (location: (27,0)-(27,19))
             ├── locals: [:a, :b, :c]
             ├── operator_loc: (27,0)-(27,2) = "->"
@@ -369,4 +379,5 @@
             │   ├── locals: (length: 0)
             │   ├── opening_loc: (27,3)-(27,4) = "("
             │   └── closing_loc: (27,14)-(27,15) = ")"
-            └── body: ∅
+            ├── body: ∅
+            └── numbered_parameters: 0

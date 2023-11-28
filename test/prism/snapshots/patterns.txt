@@ -485,12 +485,13 @@
         │   │   ├── opening_loc: (26,10)-(26,11) = "{"
         │   │   ├── closing_loc: (26,16)-(26,17) = "}"
         │   │   ├── parameters: ∅
-        │   │   └── body:
-        │   │       @ StatementsNode (location: (26,12)-(26,15))
-        │   │       └── body: (length: 1)
-        │   │           └── @ LocalVariableReadNode (location: (26,12)-(26,15))
-        │   │               ├── name: :bar
-        │   │               └── depth: 1
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (26,12)-(26,15))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ LocalVariableReadNode (location: (26,12)-(26,15))
+        │   │   │           ├── name: :bar
+        │   │   │           └── depth: 1
+        │   │   └── numbered_parameters: 0
         │   └── operator_loc: (26,4)-(26,6) = "=>"
         ├── @ MatchRequiredNode (location: (28,0)-(28,13))
         │   ├── value:
@@ -1189,12 +1190,13 @@
         │   │   │   ├── opening_loc: (52,10)-(52,11) = "{"
         │   │   │   ├── closing_loc: (52,16)-(52,17) = "}"
         │   │   │   ├── parameters: ∅
-        │   │   │   └── body:
-        │   │   │       @ StatementsNode (location: (52,12)-(52,15))
-        │   │   │       └── body: (length: 1)
-        │   │   │           └── @ LocalVariableReadNode (location: (52,12)-(52,15))
-        │   │   │               ├── name: :bar
-        │   │   │               └── depth: 1
+        │   │   │   ├── body:
+        │   │   │   │   @ StatementsNode (location: (52,12)-(52,15))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ LocalVariableReadNode (location: (52,12)-(52,15))
+        │   │   │   │           ├── name: :bar
+        │   │   │   │           └── depth: 1
+        │   │   │   └── numbered_parameters: 0
         │   │   ├── right:
         │   │   │   @ LambdaNode (location: (52,21)-(52,31))
         │   │   │   ├── locals: []
@@ -1202,12 +1204,13 @@
         │   │   │   ├── opening_loc: (52,24)-(52,25) = "{"
         │   │   │   ├── closing_loc: (52,30)-(52,31) = "}"
         │   │   │   ├── parameters: ∅
-        │   │   │   └── body:
-        │   │   │       @ StatementsNode (location: (52,26)-(52,29))
-        │   │   │       └── body: (length: 1)
-        │   │   │           └── @ LocalVariableReadNode (location: (52,26)-(52,29))
-        │   │   │               ├── name: :bar
-        │   │   │               └── depth: 1
+        │   │   │   ├── body:
+        │   │   │   │   @ StatementsNode (location: (52,26)-(52,29))
+        │   │   │   │   └── body: (length: 1)
+        │   │   │   │       └── @ LocalVariableReadNode (location: (52,26)-(52,29))
+        │   │   │   │           ├── name: :bar
+        │   │   │   │           └── depth: 1
+        │   │   │   └── numbered_parameters: 0
         │   │   ├── operator_loc: (52,18)-(52,20) = ".."
         │   │   └── flags: ∅
         │   └── operator_loc: (52,4)-(52,6) = "=>"
@@ -2787,12 +2790,13 @@
         │   │   ├── opening_loc: (125,10)-(125,11) = "{"
         │   │   ├── closing_loc: (125,16)-(125,17) = "}"
         │   │   ├── parameters: ∅
-        │   │   └── body:
-        │   │       @ StatementsNode (location: (125,12)-(125,15))
-        │   │       └── body: (length: 1)
-        │   │           └── @ LocalVariableReadNode (location: (125,12)-(125,15))
-        │   │               ├── name: :bar
-        │   │               └── depth: 1
+        │   │   ├── body:
+        │   │   │   @ StatementsNode (location: (125,12)-(125,15))
+        │   │   │   └── body: (length: 1)
+        │   │   │       └── @ LocalVariableReadNode (location: (125,12)-(125,15))
+        │   │   │           ├── name: :bar
+        │   │   │           └── depth: 1
+        │   │   └── numbered_parameters: 0
         │   └── operator_loc: (125,4)-(125,6) = "in"
         ├── @ CaseMatchNode (location: (127,0)-(127,25))
         │   ├── predicate:
@@ -3453,12 +3457,13 @@
         │   │       │   ├── opening_loc: (152,16)-(152,17) = "{"
         │   │       │   ├── closing_loc: (152,22)-(152,23) = "}"
         │   │       │   ├── parameters: ∅
-        │   │       │   └── body:
-        │   │       │       @ StatementsNode (location: (152,18)-(152,21))
-        │   │       │       └── body: (length: 1)
-        │   │       │           └── @ LocalVariableReadNode (location: (152,18)-(152,21))
-        │   │       │               ├── name: :bar
-        │   │       │               └── depth: 1
+        │   │       │   ├── body:
+        │   │       │   │   @ StatementsNode (location: (152,18)-(152,21))
+        │   │       │   │   └── body: (length: 1)
+        │   │       │   │       └── @ LocalVariableReadNode (location: (152,18)-(152,21))
+        │   │       │   │           ├── name: :bar
+        │   │       │   │           └── depth: 1
+        │   │       │   └── numbered_parameters: 0
         │   │       ├── statements: ∅
         │   │       ├── in_loc: (152,10)-(152,12) = "in"
         │   │       └── then_loc: (152,24)-(152,28) = "then"
@@ -4434,12 +4439,13 @@
         │   │       │   │           ├── opening_loc: (179,16)-(179,17) = "{"
         │   │       │   │           ├── closing_loc: (179,22)-(179,23) = "}"
         │   │       │   │           ├── parameters: ∅
-        │   │       │   │           └── body:
-        │   │       │   │               @ StatementsNode (location: (179,18)-(179,21))
-        │   │       │   │               └── body: (length: 1)
-        │   │       │   │                   └── @ LocalVariableReadNode (location: (179,18)-(179,21))
-        │   │       │   │                       ├── name: :bar
-        │   │       │   │                       └── depth: 1
+        │   │       │   │           ├── body:
+        │   │       │   │           │   @ StatementsNode (location: (179,18)-(179,21))
+        │   │       │   │           │   └── body: (length: 1)
+        │   │       │   │           │       └── @ LocalVariableReadNode (location: (179,18)-(179,21))
+        │   │       │   │           │           ├── name: :bar
+        │   │       │   │           │           └── depth: 1
+        │   │       │   │           └── numbered_parameters: 0
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       ├── statements: ∅
@@ -4674,5 +4680,6 @@
             │   │           │   └── operator_loc: (199,23)-(199,25) = "=>"
             │   │           └── operator_loc: (199,9)-(199,11) = "=>"
             │   ├── opening_loc: (198,4)-(198,6) = "do"
-            │   └── closing_loc: (200,0)-(200,3) = "end"
+            │   ├── closing_loc: (200,0)-(200,3) = "end"
+            │   └── numbered_parameters: 0
             └── flags: ∅

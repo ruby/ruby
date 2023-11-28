@@ -14,4 +14,5 @@
             │   ├── locals: (length: 0)
             │   ├── opening_loc: (1,2)-(1,3) = "("
             │   └── closing_loc: (1,3)-(1,4) = ")"
-            └── body: ∅
+            ├── body: ∅
+            └── numbered_parameters: 0

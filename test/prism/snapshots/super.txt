@@ -72,7 +72,8 @@
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (13,6)-(13,7) = "{"
-        │       └── closing_loc: (13,7)-(13,8) = "}"
+        │       ├── closing_loc: (13,7)-(13,8) = "}"
+        │       └── numbered_parameters: 0
         ├── @ SuperNode (location: (15,0)-(15,17))
         │   ├── keyword_loc: (15,0)-(15,5) = "super"
         │   ├── lparen_loc: (15,5)-(15,6) = "("
@@ -93,7 +94,8 @@
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (15,15)-(15,16) = "{"
-        │       └── closing_loc: (15,16)-(15,17) = "}"
+        │       ├── closing_loc: (15,16)-(15,17) = "}"
+        │       └── numbered_parameters: 0
         └── @ SuperNode (location: (17,0)-(17,21))
             ├── keyword_loc: (17,0)-(17,5) = "super"
             ├── lparen_loc: (17,5)-(17,6) = "("

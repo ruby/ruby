@@ -351,5 +351,6 @@
             │   │           │       └── operator_loc: ∅
             │   │           └── closing_loc: (25,19)-(25,20) = "}"
             │   ├── opening_loc: (23,4)-(23,6) = "do"
-            │   └── closing_loc: (26,0)-(26,3) = "end"
+            │   ├── closing_loc: (26,0)-(26,3) = "end"
+            │   └── numbered_parameters: 0
             └── flags: ∅

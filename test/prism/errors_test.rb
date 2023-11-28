@@ -452,7 +452,8 @@ module Prism
               nil,
               StatementsNode([ModuleNode([], Location(), ConstantReadNode(:Foo), nil, Location(), :Foo)]),
               Location(),
-              Location()
+              Location(),
+              0
             ),
             0
           )]
@@ -616,7 +617,8 @@ module Prism
           Location(),
           Location()
         ),
-        nil
+        nil,
+        0
       )
       assert_errors expected, "-> (a, b, ) {}", [
         ["unexpected `,` in parameters", 8..9]
@@ -992,7 +994,8 @@ module Prism
         Location(),
         Location(),
         BlockParametersNode(ParametersNode([], [], nil, [], [], ForwardingParameterNode(), nil), [], Location(), Location()),
-        nil
+        nil,
+        0
       )
 
       assert_errors expected, "->(...) {}", [
@@ -1014,7 +1017,8 @@ module Prism
           BlockParametersNode(ParametersNode([], [], nil, [], [], ForwardingParameterNode(), nil), [], Location(), Location()),
           nil,
           Location(),
-          Location()
+          Location(),
+          0
         ),
         0
       )

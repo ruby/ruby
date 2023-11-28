@@ -38,7 +38,8 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (1,12)-(1,13) = "{"
-        │   │   └── closing_loc: (1,13)-(1,14) = "}"
+        │   │   ├── closing_loc: (1,13)-(1,14) = "}"
+        │   │   └── numbered_parameters: 0
         │   └── flags: ∅
         ├── @ CallNode (location: (3,0)-(3,15))
         │   ├── receiver:
@@ -75,7 +76,8 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (3,13)-(3,14) = "{"
-        │   │   └── closing_loc: (3,14)-(3,15) = "}"
+        │   │   ├── closing_loc: (3,14)-(3,15) = "}"
+        │   │   └── numbered_parameters: 0
         │   └── flags: ∅
         └── @ CallNode (location: (5,0)-(5,10))
             ├── receiver: ∅
@@ -102,5 +104,6 @@
             │   ├── parameters: ∅
             │   ├── body: ∅
             │   ├── opening_loc: (5,8)-(5,9) = "{"
-            │   └── closing_loc: (5,9)-(5,10) = "}"
+            │   ├── closing_loc: (5,9)-(5,10) = "}"
+            │   └── numbered_parameters: 0
             └── flags: ∅

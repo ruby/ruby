@@ -62,7 +62,8 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (1,14)-(1,16) = "do"
-        │   │   └── closing_loc: (1,17)-(1,20) = "end"
+        │   │   ├── closing_loc: (1,17)-(1,20) = "end"
+        │   │   └── numbered_parameters: 0
         │   └── flags: ∅
         ├── @ CallNode (location: (3,0)-(3,20))
         │   ├── receiver: ∅
@@ -123,7 +124,8 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (3,14)-(3,16) = "do"
-        │   │   └── closing_loc: (3,17)-(3,20) = "end"
+        │   │   ├── closing_loc: (3,17)-(3,20) = "end"
+        │   │   └── numbered_parameters: 0
         │   └── flags: ∅
         ├── @ CallNode (location: (5,0)-(5,21))
         │   ├── receiver: ∅
@@ -184,7 +186,8 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (5,15)-(5,17) = "do"
-        │   │   └── closing_loc: (5,18)-(5,21) = "end"
+        │   │   ├── closing_loc: (5,18)-(5,21) = "end"
+        │   │   └── numbered_parameters: 0
         │   └── flags: ∅
         ├── @ CallNode (location: (7,0)-(7,21))
         │   ├── receiver: ∅
@@ -245,7 +248,8 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (7,15)-(7,17) = "do"
-        │   │   └── closing_loc: (7,18)-(7,21) = "end"
+        │   │   ├── closing_loc: (7,18)-(7,21) = "end"
+        │   │   └── numbered_parameters: 0
         │   └── flags: ∅
         ├── @ CallNode (location: (9,0)-(9,21))
         │   ├── receiver: ∅
@@ -306,7 +310,8 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (9,15)-(9,17) = "do"
-        │   │   └── closing_loc: (9,18)-(9,21) = "end"
+        │   │   ├── closing_loc: (9,18)-(9,21) = "end"
+        │   │   └── numbered_parameters: 0
         │   └── flags: ∅
         ├── @ CallNode (location: (11,0)-(11,22))
         │   ├── receiver: ∅
@@ -367,7 +372,8 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (11,16)-(11,18) = "do"
-        │   │   └── closing_loc: (11,19)-(11,22) = "end"
+        │   │   ├── closing_loc: (11,19)-(11,22) = "end"
+        │   │   └── numbered_parameters: 0
         │   └── flags: ∅
         ├── @ CallNode (location: (13,0)-(13,20))
         │   ├── receiver: ∅
@@ -417,7 +423,8 @@
         │   │   │   │   │   │           ├── block: ∅
         │   │   │   │   │   │           └── flags: ∅
         │   │   │   │   │   ├── opening_loc: (13,3)-(13,4) = "{"
-        │   │   │   │   │   └── closing_loc: (13,7)-(13,8) = "}"
+        │   │   │   │   │   ├── closing_loc: (13,7)-(13,8) = "}"
+        │   │   │   │   │   └── numbered_parameters: 0
         │   │   │   │   └── flags: ∅
         │   │   │   └── @ StringNode (location: (13,10)-(13,13))
         │   │   │       ├── flags: ∅
@@ -433,7 +440,8 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (13,14)-(13,16) = "do"
-        │   │   └── closing_loc: (13,17)-(13,20) = "end"
+        │   │   ├── closing_loc: (13,17)-(13,20) = "end"
+        │   │   └── numbered_parameters: 0
         │   └── flags: ∅
         ├── @ CallNode (location: (15,0)-(15,20))
         │   ├── receiver: ∅
@@ -483,7 +491,8 @@
         │   │   │   │   │   │           ├── block: ∅
         │   │   │   │   │   │           └── flags: ∅
         │   │   │   │   │   ├── opening_loc: (15,3)-(15,4) = "{"
-        │   │   │   │   │   └── closing_loc: (15,7)-(15,8) = "}"
+        │   │   │   │   │   ├── closing_loc: (15,7)-(15,8) = "}"
+        │   │   │   │   │   └── numbered_parameters: 0
         │   │   │   │   └── flags: ∅
         │   │   │   └── @ RegularExpressionNode (location: (15,10)-(15,13))
         │   │   │       ├── opening_loc: (15,10)-(15,11) = "/"
@@ -499,7 +508,8 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (15,14)-(15,16) = "do"
-        │   │   └── closing_loc: (15,17)-(15,20) = "end"
+        │   │   ├── closing_loc: (15,17)-(15,20) = "end"
+        │   │   └── numbered_parameters: 0
         │   └── flags: ∅
         ├── @ CallNode (location: (17,0)-(17,21))
         │   ├── receiver: ∅
@@ -549,7 +559,8 @@
         │   │   │   │   │   │           ├── block: ∅
         │   │   │   │   │   │           └── flags: ∅
         │   │   │   │   │   ├── opening_loc: (17,3)-(17,4) = "{"
-        │   │   │   │   │   └── closing_loc: (17,7)-(17,8) = "}"
+        │   │   │   │   │   ├── closing_loc: (17,7)-(17,8) = "}"
+        │   │   │   │   │   └── numbered_parameters: 0
         │   │   │   │   └── flags: ∅
         │   │   │   └── @ RegularExpressionNode (location: (17,10)-(17,14))
         │   │   │       ├── opening_loc: (17,10)-(17,11) = "/"
@@ -565,7 +576,8 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (17,15)-(17,17) = "do"
-        │   │   └── closing_loc: (17,18)-(17,21) = "end"
+        │   │   ├── closing_loc: (17,18)-(17,21) = "end"
+        │   │   └── numbered_parameters: 0
         │   └── flags: ∅
         ├── @ CallNode (location: (19,0)-(19,21))
         │   ├── receiver: ∅
@@ -615,7 +627,8 @@
         │   │   │   │   │   │           ├── block: ∅
         │   │   │   │   │   │           └── flags: ∅
         │   │   │   │   │   ├── opening_loc: (19,3)-(19,4) = "{"
-        │   │   │   │   │   └── closing_loc: (19,8)-(19,9) = "}"
+        │   │   │   │   │   ├── closing_loc: (19,8)-(19,9) = "}"
+        │   │   │   │   │   └── numbered_parameters: 0
         │   │   │   │   └── flags: ∅
         │   │   │   └── @ StringNode (location: (19,11)-(19,14))
         │   │   │       ├── flags: ∅
@@ -631,7 +644,8 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (19,15)-(19,17) = "do"
-        │   │   └── closing_loc: (19,18)-(19,21) = "end"
+        │   │   ├── closing_loc: (19,18)-(19,21) = "end"
+        │   │   └── numbered_parameters: 0
         │   └── flags: ∅
         ├── @ CallNode (location: (21,0)-(21,21))
         │   ├── receiver: ∅
@@ -681,7 +695,8 @@
         │   │   │   │   │   │           ├── block: ∅
         │   │   │   │   │   │           └── flags: ∅
         │   │   │   │   │   ├── opening_loc: (21,3)-(21,4) = "{"
-        │   │   │   │   │   └── closing_loc: (21,8)-(21,9) = "}"
+        │   │   │   │   │   ├── closing_loc: (21,8)-(21,9) = "}"
+        │   │   │   │   │   └── numbered_parameters: 0
         │   │   │   │   └── flags: ∅
         │   │   │   └── @ RegularExpressionNode (location: (21,11)-(21,14))
         │   │   │       ├── opening_loc: (21,11)-(21,12) = "/"
@@ -697,7 +712,8 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (21,15)-(21,17) = "do"
-        │   │   └── closing_loc: (21,18)-(21,21) = "end"
+        │   │   ├── closing_loc: (21,18)-(21,21) = "end"
+        │   │   └── numbered_parameters: 0
         │   └── flags: ∅
         └── @ CallNode (location: (23,0)-(23,22))
             ├── receiver: ∅
@@ -747,7 +763,8 @@
             │   │   │   │   │           ├── block: ∅
             │   │   │   │   │           └── flags: ∅
             │   │   │   │   ├── opening_loc: (23,3)-(23,4) = "{"
-            │   │   │   │   └── closing_loc: (23,8)-(23,9) = "}"
+            │   │   │   │   ├── closing_loc: (23,8)-(23,9) = "}"
+            │   │   │   │   └── numbered_parameters: 0
             │   │   │   └── flags: ∅
             │   │   └── @ RegularExpressionNode (location: (23,11)-(23,15))
             │   │       ├── opening_loc: (23,11)-(23,12) = "/"
@@ -763,5 +780,6 @@
             │   ├── parameters: ∅
             │   ├── body: ∅
             │   ├── opening_loc: (23,16)-(23,18) = "do"
-            │   └── closing_loc: (23,19)-(23,22) = "end"
+            │   ├── closing_loc: (23,19)-(23,22) = "end"
+            │   └── numbered_parameters: 0
             └── flags: ∅

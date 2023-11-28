@@ -142,7 +142,8 @@
         │   │   │       │   │           ├── block: ∅
         │   │   │       │   │           └── flags: variable_call
         │   │   │       │   ├── opening_loc: (7,8)-(7,9) = "{"
-        │   │   │       │   └── closing_loc: (9,0)-(9,1) = "}"
+        │   │   │       │   ├── closing_loc: (9,0)-(9,1) = "}"
+        │   │   │       │   └── numbered_parameters: 0
         │   │   │       └── flags: ∅
         │   │   └── flags: ∅
         │   ├── rparen_loc: (9,1)-(9,2) = ")"
@@ -166,7 +167,8 @@
         │       │           ├── block: ∅
         │       │           └── flags: variable_call
         │       ├── opening_loc: (10,6)-(10,7) = "{"
-        │       └── closing_loc: (12,0)-(12,1) = "}"
+        │       ├── closing_loc: (12,0)-(12,1) = "}"
+        │       └── numbered_parameters: 0
         ├── @ SuperNode (location: (13,0)-(15,1))
         │   ├── keyword_loc: (13,0)-(13,5) = "super"
         │   ├── lparen_loc: (13,5)-(13,6) = "("
@@ -203,7 +205,8 @@
         │       │           ├── block: ∅
         │       │           └── flags: variable_call
         │       ├── opening_loc: (13,9)-(13,10) = "{"
-        │       └── closing_loc: (15,0)-(15,1) = "}"
+        │       ├── closing_loc: (15,0)-(15,1) = "}"
+        │       └── numbered_parameters: 0
         ├── @ SuperNode (location: (16,0)-(18,1))
         │   ├── keyword_loc: (16,0)-(16,5) = "super"
         │   ├── lparen_loc: (16,5)-(16,6) = "("
@@ -227,7 +230,8 @@
         │       │           ├── block: ∅
         │       │           └── flags: variable_call
         │       ├── opening_loc: (16,8)-(16,9) = "{"
-        │       └── closing_loc: (18,0)-(18,1) = "}"
+        │       ├── closing_loc: (18,0)-(18,1) = "}"
+        │       └── numbered_parameters: 0
         └── @ SuperNode (location: (19,0)-(21,1))
             ├── keyword_loc: (19,0)-(19,5) = "super"
             ├── lparen_loc: (19,5)-(19,6) = "("
@@ -274,4 +278,5 @@
                 │           ├── block: ∅
                 │           └── flags: variable_call
                 ├── opening_loc: (19,12)-(19,13) = "{"
-                └── closing_loc: (21,0)-(21,1) = "}"
+                ├── closing_loc: (21,0)-(21,1) = "}"
+                └── numbered_parameters: 0

@@ -10,7 +10,8 @@
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (1,6)-(1,8) = "do"
-        │       └── closing_loc: (1,9)-(1,12) = "end"
+        │       ├── closing_loc: (1,9)-(1,12) = "end"
+        │       └── numbered_parameters: 0
         └── @ SuperNode (location: (3,0)-(3,21))
             ├── keyword_loc: (3,0)-(3,5) = "super"
             ├── lparen_loc: ∅
@@ -45,4 +46,5 @@
                 ├── parameters: ∅
                 ├── body: ∅
                 ├── opening_loc: (3,15)-(3,17) = "do"
-                └── closing_loc: (3,18)-(3,21) = "end"
+                ├── closing_loc: (3,18)-(3,21) = "end"
+                └── numbered_parameters: 0

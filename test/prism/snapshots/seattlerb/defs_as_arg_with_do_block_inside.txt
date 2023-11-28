@@ -45,7 +45,8 @@
             │   │       │           │   ├── parameters: ∅
             │   │       │           │   ├── body: ∅
             │   │       │           │   ├── opening_loc: (1,18)-(1,20) = "do"
-            │   │       │           │   └── closing_loc: (1,22)-(1,25) = "end"
+            │   │       │           │   ├── closing_loc: (1,22)-(1,25) = "end"
+            │   │       │           │   └── numbered_parameters: 0
             │   │       │           └── flags: ∅
             │   │       ├── locals: []
             │   │       ├── def_keyword_loc: (1,2)-(1,5) = "def"

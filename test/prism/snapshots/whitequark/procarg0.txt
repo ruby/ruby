@@ -40,7 +40,8 @@
         │   │   │   └── closing_loc: (1,15)-(1,16) = "|"
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (1,2)-(1,3) = "{"
-        │   │   └── closing_loc: (1,17)-(1,18) = "}"
+        │   │   ├── closing_loc: (1,17)-(1,18) = "}"
+        │   │   └── numbered_parameters: 0
         │   └── flags: ∅
         └── @ CallNode (location: (3,0)-(3,11))
             ├── receiver: ∅
@@ -71,5 +72,6 @@
             │   │   └── closing_loc: (3,8)-(3,9) = "|"
             │   ├── body: ∅
             │   ├── opening_loc: (3,2)-(3,3) = "{"
-            │   └── closing_loc: (3,10)-(3,11) = "}"
+            │   ├── closing_loc: (3,10)-(3,11) = "}"
+            │   └── numbered_parameters: 0
             └── flags: ∅

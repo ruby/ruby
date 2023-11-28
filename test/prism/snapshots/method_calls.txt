@@ -956,7 +956,8 @@
         │   │   │           ├── block: ∅
         │   │   │           └── flags: ∅
         │   │   ├── opening_loc: (64,16)-(64,18) = "do"
-        │   │   └── closing_loc: (64,33)-(64,36) = "end"
+        │   │   ├── closing_loc: (64,33)-(64,36) = "end"
+        │   │   └── numbered_parameters: 0
         │   └── flags: ∅
         ├── @ CallNode (location: (66,0)-(66,17))
         │   ├── receiver: ∅
@@ -1348,7 +1349,8 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (93,7)-(93,8) = "{"
-        │   │   └── closing_loc: (93,9)-(93,10) = "}"
+        │   │   ├── closing_loc: (93,9)-(93,10) = "}"
+        │   │   └── numbered_parameters: 0
         │   └── flags: ∅
         ├── @ CallNode (location: (95,0)-(95,14))
         │   ├── receiver:
@@ -1378,7 +1380,8 @@
         │   │   │       └── @ BackReferenceReadNode (location: (95,10)-(95,12))
         │   │   │           └── name: :$&
         │   │   ├── opening_loc: (95,8)-(95,9) = "{"
-        │   │   └── closing_loc: (95,13)-(95,14) = "}"
+        │   │   ├── closing_loc: (95,13)-(95,14) = "}"
+        │   │   └── numbered_parameters: 0
         │   └── flags: ∅
         ├── @ CallNode (location: (97,0)-(97,12))
         │   ├── receiver:
@@ -1462,7 +1465,8 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (101,14)-(101,15) = "{"
-        │   │   └── closing_loc: (101,16)-(101,17) = "}"
+        │   │   ├── closing_loc: (101,16)-(101,17) = "}"
+        │   │   └── numbered_parameters: 0
         │   └── flags: ∅
         ├── @ CallNode (location: (103,0)-(103,12))
         │   ├── receiver: ∅
@@ -1534,7 +1538,8 @@
         │   │   │               │   │       │   │   ├── parameters: ∅
         │   │   │               │   │       │   │   ├── body: ∅
         │   │   │               │   │       │   │   ├── opening_loc: (105,20)-(105,22) = "do"
-        │   │   │               │   │       │   │   └── closing_loc: (105,23)-(105,26) = "end"
+        │   │   │               │   │       │   │   ├── closing_loc: (105,23)-(105,26) = "end"
+        │   │   │               │   │       │   │   └── numbered_parameters: 0
         │   │   │               │   │       │   └── flags: ∅
         │   │   │               │   │       └── operator_loc: ∅
         │   │   │               │   └── closing_loc: (105,27)-(105,28) = "}"
@@ -1581,7 +1586,8 @@
         │   │   │               │   │       │   │   ├── parameters: ∅
         │   │   │               │   │       │   │   ├── body: ∅
         │   │   │               │   │       │   │   ├── opening_loc: (107,16)-(107,18) = "do"
-        │   │   │               │   │       │   │   └── closing_loc: (107,19)-(107,22) = "end"
+        │   │   │               │   │       │   │   ├── closing_loc: (107,19)-(107,22) = "end"
+        │   │   │               │   │       │   │   └── numbered_parameters: 0
         │   │   │               │   │       │   └── flags: ∅
         │   │   │               │   │       └── operator_loc: (107,11)-(107,13) = "**"
         │   │   │               │   └── closing_loc: (107,23)-(107,24) = "}"
@@ -1639,7 +1645,8 @@
         │   │   │       │       │           │   │           ├── closing_loc: (109,22)-(109,23) = "\""
         │   │   │       │       │           │   │           └── unescaped: "baz"
         │   │   │       │       │           │   ├── opening_loc: (109,15)-(109,17) = "do"
-        │   │   │       │       │           │   └── closing_loc: (109,24)-(109,27) = "end"
+        │   │   │       │       │           │   ├── closing_loc: (109,24)-(109,27) = "end"
+        │   │   │       │       │           │   └── numbered_parameters: 0
         │   │   │       │       │           └── flags: ∅
         │   │   │       │       └── closing_loc: (109,27)-(109,28) = "}"
         │   │   │       └── closing_loc: (109,28)-(109,29) = "\""
@@ -1651,7 +1658,8 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (109,30)-(109,32) = "do"
-        │   │   └── closing_loc: (109,33)-(109,36) = "end"
+        │   │   ├── closing_loc: (109,33)-(109,36) = "end"
+        │   │   └── numbered_parameters: 0
         │   └── flags: ∅
         ├── @ CallNode (location: (111,0)-(111,28))
         │   ├── receiver: ∅
@@ -1687,7 +1695,8 @@
         │   │   │       │           │   ├── parameters: ∅
         │   │   │       │           │   ├── body: ∅
         │   │   │       │           │   ├── opening_loc: (111,18)-(111,20) = "do"
-        │   │   │       │           │   └── closing_loc: (111,21)-(111,24) = "end"
+        │   │   │       │           │   ├── closing_loc: (111,21)-(111,24) = "end"
+        │   │   │       │           │   └── numbered_parameters: 0
         │   │   │       │           └── flags: ∅
         │   │   │       ├── end_keyword_loc: (111,25)-(111,28) = "end"
         │   │   │       └── name: :Bar
@@ -1727,7 +1736,8 @@
         │   │   │       │           │   ├── parameters: ∅
         │   │   │       │           │   ├── body: ∅
         │   │   │       │           │   ├── opening_loc: (113,19)-(113,21) = "do"
-        │   │   │       │           │   └── closing_loc: (113,22)-(113,25) = "end"
+        │   │   │       │           │   ├── closing_loc: (113,22)-(113,25) = "end"
+        │   │   │       │           │   └── numbered_parameters: 0
         │   │   │       │           └── flags: ∅
         │   │   │       ├── end_keyword_loc: (113,26)-(113,29) = "end"
         │   │   │       └── name: :Bar
@@ -1760,7 +1770,8 @@
         │   │   │       │       │   ├── parameters: ∅
         │   │   │       │       │   ├── body: ∅
         │   │   │       │       │   ├── opening_loc: (115,9)-(115,11) = "do"
-        │   │   │       │       │   └── closing_loc: (115,12)-(115,15) = "end"
+        │   │   │       │       │   ├── closing_loc: (115,12)-(115,15) = "end"
+        │   │   │       │       │   └── numbered_parameters: 0
         │   │   │       │       └── flags: ∅
         │   │   │       ├── opening_loc: (115,4)-(115,5) = "["
         │   │   │       ├── closing_loc: (115,15)-(115,16) = "]"
@@ -1803,7 +1814,8 @@
         │   │   │       │           │   │       └── @ IntegerNode (location: (117,19)-(117,20))
         │   │   │       │           │   │           └── flags: decimal
         │   │   │       │           │   ├── opening_loc: (117,16)-(117,18) = "do"
-        │   │   │       │           │   └── closing_loc: (117,21)-(117,24) = "end"
+        │   │   │       │           │   ├── closing_loc: (117,21)-(117,24) = "end"
+        │   │   │       │           │   └── numbered_parameters: 0
         │   │   │       │           └── flags: ∅
         │   │   │       ├── rescue_clause: ∅
         │   │   │       ├── else_clause: ∅
@@ -1878,7 +1890,8 @@
         │   │   │       │           │   │           ├── name: :a
         │   │   │       │           │   │           └── depth: 0
         │   │   │       │           │   ├── opening_loc: (121,8)-(121,10) = "do"
-        │   │   │       │           │   └── closing_loc: (123,4)-(123,7) = "end"
+        │   │   │       │           │   ├── closing_loc: (123,4)-(123,7) = "end"
+        │   │   │       │           │   └── numbered_parameters: 0
         │   │   │       │           └── flags: ∅
         │   │   │       ├── consequent: ∅
         │   │   │       └── end_keyword_loc: (124,2)-(124,5) = "end"
@@ -1951,7 +1964,8 @@
         │   │   │   │   │           │   │           ├── name: :a
         │   │   │   │   │           │   │           └── depth: 0
         │   │   │   │   │           │   ├── opening_loc: (128,8)-(128,10) = "do"
-        │   │   │   │   │           │   └── closing_loc: (130,4)-(130,7) = "end"
+        │   │   │   │   │           │   ├── closing_loc: (130,4)-(130,7) = "end"
+        │   │   │   │   │           │   └── numbered_parameters: 0
         │   │   │   │   │           └── flags: ∅
         │   │   │   │   └── flags: ∅
         │   │   │   └── @ UntilNode (location: (132,2)-(135,5))
@@ -1985,7 +1999,8 @@
         │   │   │       │           │   ├── parameters: ∅
         │   │   │       │           │   ├── body: ∅
         │   │   │       │           │   ├── opening_loc: (133,8)-(133,10) = "do"
-        │   │   │       │           │   └── closing_loc: (134,4)-(134,7) = "end"
+        │   │   │       │           │   ├── closing_loc: (134,4)-(134,7) = "end"
+        │   │   │       │           │   └── numbered_parameters: 0
         │   │   │       │           └── flags: ∅
         │   │   │       └── flags: ∅
         │   │   └── flags: ∅
@@ -2019,7 +2034,8 @@
         │   │   │       │   ├── parameters: ∅
         │   │   │       │   ├── body: ∅
         │   │   │       │   ├── opening_loc: (137,7)-(137,8) = "{"
-        │   │   │       │   └── closing_loc: (137,8)-(137,9) = "}"
+        │   │   │       │   ├── closing_loc: (137,8)-(137,9) = "}"
+        │   │   │       │   └── numbered_parameters: 0
         │   │   │       └── flags: ∅
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
@@ -2072,7 +2088,8 @@
         │   │   │       │   │           ├── name: :a
         │   │   │       │   │           └── depth: 0
         │   │   │       │   ├── opening_loc: (139,7)-(139,8) = "{"
-        │   │   │       │   └── closing_loc: (139,15)-(139,16) = "}"
+        │   │   │       │   ├── closing_loc: (139,15)-(139,16) = "}"
+        │   │   │       │   └── numbered_parameters: 0
         │   │   │       └── flags: ∅
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
@@ -2094,7 +2111,8 @@
         │   │   │   ├── parameters: ∅
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (141,2)-(141,3) = "{"
-        │   │   │   └── closing_loc: (141,3)-(141,4) = "}"
+        │   │   │   ├── closing_loc: (141,3)-(141,4) = "}"
+        │   │   │   └── numbered_parameters: 0
         │   │   └── flags: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :+
@@ -2117,7 +2135,8 @@
         │   │   │       │   ├── parameters: ∅
         │   │   │       │   ├── body: ∅
         │   │   │       │   ├── opening_loc: (141,9)-(141,10) = "{"
-        │   │   │       │   └── closing_loc: (141,10)-(141,11) = "}"
+        │   │   │       │   ├── closing_loc: (141,10)-(141,11) = "}"
+        │   │   │       │   └── numbered_parameters: 0
         │   │   │       └── flags: ∅
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
@@ -2156,7 +2175,8 @@
         │   │   │       │   ├── parameters: ∅
         │   │   │       │   ├── body: ∅
         │   │   │       │   ├── opening_loc: (143,9)-(143,10) = "{"
-        │   │   │       │   └── closing_loc: (143,10)-(143,11) = "}"
+        │   │   │       │   ├── closing_loc: (143,10)-(143,11) = "}"
+        │   │   │       │   └── numbered_parameters: 0
         │   │   │       └── flags: ∅
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅

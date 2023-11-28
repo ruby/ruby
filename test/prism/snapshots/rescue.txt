@@ -241,7 +241,8 @@
         │   │   │               ├── block: ∅
         │   │   │               └── flags: ∅
         │   │   ├── opening_loc: (18,4)-(18,6) = "do"
-        │   │   └── closing_loc: (20,0)-(20,3) = "end"
+        │   │   ├── closing_loc: (20,0)-(20,3) = "end"
+        │   │   └── numbered_parameters: 0
         │   └── flags: ∅
         ├── @ IfNode (location: (22,0)-(24,3))
         │   ├── if_keyword_loc: (22,0)-(22,2) = "if"

@@ -49,7 +49,8 @@
             │   │       │   │   └── closing_loc: (1,21)-(1,22) = "|"
             │   │       │   ├── body: ∅
             │   │       │   ├── opening_loc: (1,14)-(1,16) = "do"
-            │   │       │   └── closing_loc: (1,23)-(1,26) = "end"
+            │   │       │   ├── closing_loc: (1,23)-(1,26) = "end"
+            │   │       │   └── numbered_parameters: 0
             │   │       └── flags: ∅
             │   └── flags: ∅
             └── keyword_loc: (1,0)-(1,5) = "break"

@@ -373,7 +373,8 @@
         │   │   │   ├── parameters: ∅
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (33,5)-(33,6) = "{"
-        │   │   │   └── closing_loc: (34,0)-(34,1) = "}"
+        │   │   │   ├── closing_loc: (34,0)-(34,1) = "}"
+        │   │   │   └── numbered_parameters: 0
         │   │   └── flags: ∅
         │   ├── call_operator_loc: (34,1)-(34,2) = "."
         │   ├── name: :bar

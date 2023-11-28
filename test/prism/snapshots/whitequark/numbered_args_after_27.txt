@@ -9,56 +9,58 @@
         │   ├── opening_loc: (1,3)-(1,5) = "do"
         │   ├── closing_loc: (1,14)-(1,17) = "end"
         │   ├── parameters: ∅
-        │   └── body:
-        │       @ StatementsNode (location: (1,6)-(1,13))
-        │       └── body: (length: 1)
-        │           └── @ CallNode (location: (1,6)-(1,13))
-        │               ├── receiver:
-        │               │   @ LocalVariableReadNode (location: (1,6)-(1,8))
-        │               │   ├── name: :_1
-        │               │   └── depth: 0
-        │               ├── call_operator_loc: ∅
-        │               ├── name: :+
-        │               ├── message_loc: (1,9)-(1,10) = "+"
-        │               ├── opening_loc: ∅
-        │               ├── arguments:
-        │               │   @ ArgumentsNode (location: (1,11)-(1,13))
-        │               │   ├── arguments: (length: 1)
-        │               │   │   └── @ LocalVariableReadNode (location: (1,11)-(1,13))
-        │               │   │       ├── name: :_9
-        │               │   │       └── depth: 0
-        │               │   └── flags: ∅
-        │               ├── closing_loc: ∅
-        │               ├── block: ∅
-        │               └── flags: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (1,6)-(1,13))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (1,6)-(1,13))
+        │   │           ├── receiver:
+        │   │           │   @ LocalVariableReadNode (location: (1,6)-(1,8))
+        │   │           │   ├── name: :_1
+        │   │           │   └── depth: 0
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :+
+        │   │           ├── message_loc: (1,9)-(1,10) = "+"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (1,11)-(1,13))
+        │   │           │   ├── arguments: (length: 1)
+        │   │           │   │   └── @ LocalVariableReadNode (location: (1,11)-(1,13))
+        │   │           │   │       ├── name: :_9
+        │   │           │   │       └── depth: 0
+        │   │           │   └── flags: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           └── flags: ∅
+        │   └── numbered_parameters: 9
         ├── @ LambdaNode (location: (3,0)-(3,13))
         │   ├── locals: [:_1, :_2, :_3, :_4, :_5, :_6, :_7, :_8, :_9]
         │   ├── operator_loc: (3,0)-(3,2) = "->"
         │   ├── opening_loc: (3,3)-(3,4) = "{"
         │   ├── closing_loc: (3,12)-(3,13) = "}"
         │   ├── parameters: ∅
-        │   └── body:
-        │       @ StatementsNode (location: (3,5)-(3,12))
-        │       └── body: (length: 1)
-        │           └── @ CallNode (location: (3,5)-(3,12))
-        │               ├── receiver:
-        │               │   @ LocalVariableReadNode (location: (3,5)-(3,7))
-        │               │   ├── name: :_1
-        │               │   └── depth: 0
-        │               ├── call_operator_loc: ∅
-        │               ├── name: :+
-        │               ├── message_loc: (3,8)-(3,9) = "+"
-        │               ├── opening_loc: ∅
-        │               ├── arguments:
-        │               │   @ ArgumentsNode (location: (3,10)-(3,12))
-        │               │   ├── arguments: (length: 1)
-        │               │   │   └── @ LocalVariableReadNode (location: (3,10)-(3,12))
-        │               │   │       ├── name: :_9
-        │               │   │       └── depth: 0
-        │               │   └── flags: ∅
-        │               ├── closing_loc: ∅
-        │               ├── block: ∅
-        │               └── flags: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (3,5)-(3,12))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (3,5)-(3,12))
+        │   │           ├── receiver:
+        │   │           │   @ LocalVariableReadNode (location: (3,5)-(3,7))
+        │   │           │   ├── name: :_1
+        │   │           │   └── depth: 0
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :+
+        │   │           ├── message_loc: (3,8)-(3,9) = "+"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (3,10)-(3,12))
+        │   │           │   ├── arguments: (length: 1)
+        │   │           │   │   └── @ LocalVariableReadNode (location: (3,10)-(3,12))
+        │   │           │   │       ├── name: :_9
+        │   │           │   │       └── depth: 0
+        │   │           │   └── flags: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           ├── block: ∅
+        │   │           └── flags: ∅
+        │   └── numbered_parameters: 9
         ├── @ CallNode (location: (5,0)-(5,16))
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
@@ -94,7 +96,8 @@
         │   │   │           ├── block: ∅
         │   │   │           └── flags: ∅
         │   │   ├── opening_loc: (5,2)-(5,4) = "do"
-        │   │   └── closing_loc: (5,13)-(5,16) = "end"
+        │   │   ├── closing_loc: (5,13)-(5,16) = "end"
+        │   │   └── numbered_parameters: 9
         │   └── flags: ∅
         └── @ CallNode (location: (7,0)-(7,13))
             ├── receiver: ∅
@@ -131,5 +134,6 @@
             │   │           ├── block: ∅
             │   │           └── flags: ∅
             │   ├── opening_loc: (7,2)-(7,3) = "{"
-            │   └── closing_loc: (7,12)-(7,13) = "}"
+            │   ├── closing_loc: (7,12)-(7,13) = "}"
+            │   └── numbered_parameters: 9
             └── flags: ∅

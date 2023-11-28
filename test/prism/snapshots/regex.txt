@@ -366,5 +366,6 @@
             │   │                   ├── name: :a
             │   │                   └── depth: 1
             │   ├── opening_loc: (40,4)-(40,5) = "{"
-            │   └── closing_loc: (40,23)-(40,24) = "}"
+            │   ├── closing_loc: (40,23)-(40,24) = "}"
+            │   └── numbered_parameters: 0
             └── flags: ∅

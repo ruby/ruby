@@ -25,7 +25,8 @@
         │   │   ├── locals: (length: 0)
         │   │   ├── opening_loc: (1,2)-(1,3) = "("
         │   │   └── closing_loc: (1,8)-(1,9) = ")"
-        │   └── body: ∅
+        │   ├── body: ∅
+        │   └── numbered_parameters: 0
         ├── @ DefNode (location: (3,0)-(3,17))
         │   ├── name: :f
         │   ├── name_loc: (3,4)-(3,5) = "f"
@@ -80,5 +81,6 @@
             │   │   └── closing_loc: (5,10)-(5,11) = "|"
             │   ├── body: ∅
             │   ├── opening_loc: (5,2)-(5,3) = "{"
-            │   └── closing_loc: (5,12)-(5,13) = "}"
+            │   ├── closing_loc: (5,12)-(5,13) = "}"
+            │   └── numbered_parameters: 0
             └── flags: ∅

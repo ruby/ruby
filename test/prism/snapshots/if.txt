@@ -364,7 +364,8 @@
             │           │   │   └── closing_loc: (34,14)-(34,15) = "|"
             │           │   ├── body: ∅
             │           │   ├── opening_loc: (34,9)-(34,11) = "do"
-            │           │   └── closing_loc: (35,2)-(35,5) = "end"
+            │           │   ├── closing_loc: (35,2)-(35,5) = "end"
+            │           │   └── numbered_parameters: 0
             │           └── flags: ∅
             ├── consequent:
             │   @ IfNode (location: (36,0)-(42,3))
@@ -405,7 +406,8 @@
             │   │           │   │   └── closing_loc: (37,14)-(37,15) = "|"
             │   │           │   ├── body: ∅
             │   │           │   ├── opening_loc: (37,9)-(37,11) = "do"
-            │   │           │   └── closing_loc: (38,2)-(38,5) = "end"
+            │   │           │   ├── closing_loc: (38,2)-(38,5) = "end"
+            │   │           │   └── numbered_parameters: 0
             │   │           └── flags: ∅
             │   ├── consequent:
             │   │   @ ElseNode (location: (39,0)-(42,3))
@@ -442,7 +444,8 @@
             │   │   │           │   │   └── closing_loc: (40,14)-(40,15) = "|"
             │   │   │           │   ├── body: ∅
             │   │   │           │   ├── opening_loc: (40,9)-(40,11) = "do"
-            │   │   │           │   └── closing_loc: (41,2)-(41,5) = "end"
+            │   │   │           │   ├── closing_loc: (41,2)-(41,5) = "end"
+            │   │   │           │   └── numbered_parameters: 0
             │   │   │           └── flags: ∅
             │   │   └── end_keyword_loc: (42,0)-(42,3) = "end"
             │   └── end_keyword_loc: (42,0)-(42,3) = "end"

@@ -29,5 +29,6 @@
             │   │           ├── name: :a
             │   │           └── depth: 0
             │   ├── opening_loc: (1,6)-(1,7) = "{"
-            │   └── closing_loc: (1,12)-(1,13) = "}"
+            │   ├── closing_loc: (1,12)-(1,13) = "}"
+            │   └── numbered_parameters: 0
             └── flags: ∅
