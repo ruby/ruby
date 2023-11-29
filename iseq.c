@@ -1399,7 +1399,12 @@ iseqw_s_compile_prism_compile(pm_parser_t *parser, VALUE opt, rb_iseq_t *iseq, V
 
     rb_compile_option_t option;
     make_compile_option(&option, opt);
-    prepare_iseq_build(iseq, rb_fstring_lit("<compiled>"), file, path, first_lineno, &code_location, -1, NULL, 0, ISEQ_TYPE_TOP, Qnil, &option);
+
+    rb_iseq_t *parent = 0;
+
+    prepare_iseq_build(iseq, rb_fstring_lit("<compiled>"), file, path,
+                       first_lineno, &code_location, -1, parent, 0,
+                       ISEQ_TYPE_TOP, Qnil, &option);
 
     pm_scope_node_t scope_node;
     pm_scope_node_init(node, &scope_node, NULL, parser);
