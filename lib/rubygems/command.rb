@@ -23,6 +23,15 @@ class Gem::Command
   Gem::OptionParser.accept Symbol, &:to_sym
 
   ##
+  # Names of commands that should print "Defaulting to user installation"
+  # warning.
+
+  COMMANDS_WITH_AUTO_INSTALL_DIR_WARNING = [
+    "install",
+    "update",
+  ].freeze
+
+  ##
   # The name of the command.
 
   attr_reader :command
@@ -323,7 +332,8 @@ class Gem::Command
     elsif @when_invoked
       @when_invoked.call options
     else
-      if Gem.paths.auto_user_install && !options[:install_dir] && !options[:user_install]
+      if COMMANDS_WITH_AUTO_INSTALL_DIR_WARNING.include?(@command) && \
+         Gem.paths.auto_user_install && !options[:install_dir] && !options[:user_install]
         self.ui.say "Defaulting to user installation because default installation directory (#{Gem.default_dir}) is not writable."
       end
 
