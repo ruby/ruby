@@ -11,6 +11,8 @@ when ENV['RUNRUBY_USE_GDB'] == 'true'
   debugger = :gdb
 when ENV['RUNRUBY_USE_LLDB'] == 'true'
   debugger = :lldb
+when ENV['RUNRUBY_USE_RR'] == 'true'
+  debugger = :rr
 when ENV['RUNRUBY_YJIT_STATS']
   use_yjit_stat = true
 end
@@ -156,6 +158,8 @@ if debugger
       debugger.push('-s', lldb)
     end
     debugger << '--'
+  when :rr
+    debugger = ['rr', 'record']
   end
 
   if idx = precommand.index(:debugger)
