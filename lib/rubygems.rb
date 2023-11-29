@@ -1290,6 +1290,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   MARSHAL_SPEC_DIR = "quick/Marshal.#{Gem.marshal_version}/".freeze
 
   autoload :ConfigFile,         File.expand_path("rubygems/config_file", __dir__)
+  autoload :CIDetector,         File.expand_path("rubygems/ci_detector", __dir__)
   autoload :Dependency,         File.expand_path("rubygems/dependency", __dir__)
   autoload :DependencyList,     File.expand_path("rubygems/dependency_list", __dir__)
   autoload :Installer,          File.expand_path("rubygems/installer", __dir__)
