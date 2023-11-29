@@ -700,6 +700,38 @@ module Prism
     def test_EnsureNode
       assert_prism_eval("begin; 1; ensure; 2; end")
       assert_prism_eval("begin; 1; begin; 3; ensure; 4; end; ensure; 2; end")
+      assert_prism_eval(<<-CODE)
+        begin
+          a = 2
+        ensure
+        end
+      CODE
+      assert_prism_eval(<<-CODE)
+        begin
+          a = 2
+        ensure
+          a = 3
+        end
+        a
+      CODE
+      assert_prism_eval(<<-CODE)
+        a = 1
+        begin
+          a = 2
+        ensure
+          a = 3
+        end
+        a
+      CODE
+      assert_prism_eval(<<-CODE)
+        a = 1
+        begin
+          b = 2
+        ensure
+          c = 3
+        end
+        a + b + c
+      CODE
     end
 
     def test_NextNode
