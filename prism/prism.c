@@ -6324,6 +6324,9 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
             case 'U': case 'u':
                 ENCODING1("US-ASCII", pm_encoding_ascii);
                 ENCODING2("UTF8-MAC", "UTF-8-HFS", pm_encoding_utf8_mac);
+                ENCODING1("UTF8-DoCoMo", pm_encoding_utf8_docomo);
+                ENCODING1("UTF8-KDDI", pm_encoding_utf8_kddi);
+                ENCODING1("UTF8-SoftBank", pm_encoding_utf8_softbank);
                 break;
             case 'W': case 'w':
                 ENCODING1("Windows-31J", pm_encoding_windows_31j);
