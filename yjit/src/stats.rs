@@ -750,8 +750,6 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
 
             for (name, idx) in cfunc_name_to_idx {
                 let count = call_counts[*idx];
-                println!("{}: {}", name, count);
-
                 let key = rust_str_to_sym(name);
                 let value = VALUE::fixnum_from_usize(count as usize);
                 rb_hash_aset(calls_hash, key, value);
