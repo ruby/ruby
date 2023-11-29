@@ -71,14 +71,13 @@ module Prism
       Encoding::Big5_UAO =>      0x00...0x10000,
       Encoding::CP949 =>         0x00...0x10000,
       Encoding::CP950 =>         0x00...0x10000,
-      Encoding::CP51932 =>       0x00...0x10000,
       Encoding::GBK =>           0x00...0x10000,
       Encoding::MACJAPANESE =>   0x00...0x10000,
       Encoding::Shift_JIS =>     0x00...0x10000,
       Encoding::SJIS_DoCoMo =>   0x00...0x10000,
       Encoding::SJIS_KDDI =>     0x00...0x10000,
       Encoding::SJIS_SoftBank => 0x00...0x10000,
-      Encoding::Windows_31J =>   0x00...0x10000
+      Encoding::Windows_31J =>   0x00...0x10000,
     }
 
     # By default we don't test every codepoint in these encodings because they
@@ -86,7 +85,8 @@ module Prism
     # suite.
     if ENV["PRISM_TEST_ALL_ENCODINGS"]
       encodings.merge!(
-        Encoding::EUC_JP =>        0x00...0x1000000,
+        Encoding::CP51932 =>       [*(0x00...0x10000), *(0x00...0x10000).map { |bytes| bytes | 0x8F0000 }],
+        Encoding::EUC_JP =>        [*(0x00...0x10000), *(0x00...0x10000).map { |bytes| bytes | 0x8F0000 }],
         Encoding::UTF_8 =>         0x00...0x110000,
         Encoding::UTF8_MAC =>      0x00...0x110000,
         Encoding::UTF8_DoCoMo =>   0x00...0x110000,

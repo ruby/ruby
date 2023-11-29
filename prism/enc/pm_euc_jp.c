@@ -67,3 +67,13 @@ pm_encoding_t pm_encoding_euc_jp = {
     .isupper_char = pm_encoding_euc_jp_isupper_char,
     .multibyte = true
 };
+
+/** CP51932 encoding */
+pm_encoding_t pm_encoding_cp51932 = {
+    .name = "CP51932",
+    .char_width = pm_encoding_euc_jp_char_width,
+    .alnum_char = pm_encoding_euc_jp_alnum_char,
+    .alpha_char = pm_encoding_euc_jp_alpha_char,
+    .isupper_char = pm_encoding_euc_jp_isupper_char,
+    .multibyte = true
+};
