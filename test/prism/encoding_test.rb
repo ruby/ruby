@@ -74,6 +74,7 @@ module Prism
       Encoding::Big5_UAO =>      codepoints_2bytes,
       Encoding::CP949 =>         codepoints_2bytes,
       Encoding::CP950 =>         codepoints_2bytes,
+      Encoding::CP951 =>         codepoints_2bytes,
       Encoding::EUC_KR =>        codepoints_2bytes,
       Encoding::GBK =>           codepoints_2bytes,
       Encoding::GB12345 =>       codepoints_2bytes,
@@ -93,7 +94,6 @@ module Prism
       codepoints_eucjp = [*(0x00...0x10000), *(0x00...0x10000).map { |bytes| bytes | 0x8F0000 }]
       codepoints_unicode = 0x00...0x110000
 
-      encodings.clear
       encodings.merge!(
         Encoding::CP51932 =>       codepoints_eucjp,
         Encoding::EUC_JP =>        codepoints_eucjp,
