@@ -6248,6 +6248,8 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
                 break;
             case 'E': case 'e':
                 ENCODING2("EUC-JP", "eucJP", pm_encoding_euc_jp);
+                ENCODING2("eucJP-ms", "euc-jp-ms", pm_encoding_euc_jp_ms);
+                ENCODING2("EUC-JIS-2004", "EUC-JISX0213", pm_encoding_euc_jis_2004);
                 ENCODING1("external", pm_encoding_utf_8);
                 break;
             case 'F': case 'f':
