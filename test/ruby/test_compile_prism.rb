@@ -435,6 +435,7 @@ module Prism
 
     def test_MultiWriteNode
       assert_prism_eval("foo, bar = [1, 2]")
+      assert_prism_eval("foo, = [1, 2]")
       assert_prism_eval("foo, *, bar = [1, 2]")
       assert_prism_eval("foo, bar = 1, 2")
       assert_prism_eval("foo, *, bar = 1, 2")
@@ -679,8 +680,9 @@ module Prism
       assert_prism_eval("for @i in [1,2] do; @i; end")
       assert_prism_eval("for $i in [1,2] do; $i; end")
 
-      # TODO: multiple assignment in ForNode index
-      #assert_prism_eval("for i, j in {a: 'b'} do; i; j; end")
+      assert_prism_eval("for foo, in  [1,2,3] do end")
+
+      assert_prism_eval("for i, j in {a: 'b'} do; i; j; end")
     end
 
     ############################################################################
@@ -734,6 +736,8 @@ module Prism
       assert_prism_eval("[1, 2, 3].each { |num| num }")
 
       assert_prism_eval("[].tap { _1 }")
+
+      assert_prism_eval("[].each { |a,| }")
     end
 
     def test_ClassNode
