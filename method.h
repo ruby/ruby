@@ -153,7 +153,6 @@ typedef struct rb_method_alias_struct {
 
 typedef struct rb_method_refined_struct {
     struct rb_method_entry_struct * orig_me;
-    VALUE owner;
 } rb_method_refined_t;
 
 typedef struct rb_method_bmethod_struct {
