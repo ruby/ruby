@@ -6250,14 +6250,18 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
                 ENCODING2("EUC-JP", "eucJP", pm_encoding_euc_jp);
                 ENCODING2("eucJP-ms", "euc-jp-ms", pm_encoding_euc_jp_ms);
                 ENCODING2("EUC-JIS-2004", "EUC-JISX0213", pm_encoding_euc_jis_2004);
+                ENCODING2("EUC-KR", "eucKR", pm_encoding_euc_kr);
+                ENCODING2("EUC-CN", "eucCN", pm_encoding_gb2312);
                 ENCODING1("external", pm_encoding_utf_8);
                 break;
             case 'F': case 'f':
                 ENCODING1("filesystem", pm_encoding_utf_8);
                 break;
             case 'G': case 'g':
-                ENCODING1("GB1988", pm_encoding_gb1988);
                 ENCODING1("GBK", pm_encoding_gbk);
+                ENCODING1("GB12345", pm_encoding_gb12345);
+                ENCODING1("GB1988", pm_encoding_gb1988);
+                ENCODING1("GB2312", pm_encoding_gb2312);
                 break;
             case 'I': case 'i':
                 ENCODING1("IBM437", pm_encoding_ibm437);
