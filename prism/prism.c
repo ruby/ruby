@@ -5843,7 +5843,7 @@ pm_parser_local_add(pm_parser_t *parser, pm_constant_id_t constant_id) {
 }
 
 /**
- * Add a constant id to the local table of the current scope.
+ * Set the numbered_parameters value of the current scope.
  */
 static inline void
 pm_parser_numbered_parameters_set(pm_parser_t *parser, uint32_t numbered_parameters) {
