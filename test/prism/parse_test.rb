@@ -46,6 +46,22 @@ module Prism
       assert_equal filepath, find_source_file_node(result.value).filepath
     end
 
+    def test_parse_takes_line
+      line = 4
+      result = Prism.parse("def foo\n __FILE__\nend", line: line)
+
+      assert_equal line, result.value.location.start_line
+      assert_equal line + 1, find_source_file_node(result.value).location.start_line
+    end
+
+    def test_parse_takes_negative_lines
+      line = -2
+      result = Prism.parse("def foo\n __FILE__\nend", line: line)
+
+      assert_equal line, result.value.location.start_line
+      assert_equal line + 1, find_source_file_node(result.value).location.start_line
+    end
+
     def test_parse_lex
       node, tokens = Prism.parse_lex("def foo; end").value
 

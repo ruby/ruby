@@ -17067,9 +17067,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         parser->filepath_string = options->filepath;
 
         // line option
-        if (options->line > 0) {
-            parser->start_line = options->line;
-        }
+        parser->start_line = options->line;
 
         // encoding option
         size_t encoding_length = pm_string_length(&options->encoding);
@@ -17238,7 +17236,7 @@ pm_serialize(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
 PRISM_EXPORTED_FUNCTION void
 pm_serialize_parse(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data) {
     pm_options_t options = { 0 };
-    if (data != NULL) pm_options_read(&options, data);
+    pm_options_read(&options, data);
 
     pm_parser_t parser;
     pm_parser_init(&parser, source, size, &options);
@@ -17260,7 +17258,7 @@ pm_serialize_parse(pm_buffer_t *buffer, const uint8_t *source, size_t size, cons
 PRISM_EXPORTED_FUNCTION void
 pm_serialize_parse_comments(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data) {
     pm_options_t options = { 0 };
-    if (data != NULL) pm_options_read(&options, data);
+    pm_options_read(&options, data);
 
     pm_parser_t parser;
     pm_parser_init(&parser, source, size, &options);
@@ -17268,7 +17266,7 @@ pm_serialize_parse_comments(pm_buffer_t *buffer, const uint8_t *source, size_t s
     pm_node_t *node = pm_parse(&parser);
     pm_serialize_header(buffer);
     pm_serialize_encoding(&parser.encoding, buffer);
-    pm_buffer_append_varuint(buffer, parser.start_line);
+    pm_buffer_append_varsint(buffer, parser.start_line);
     pm_serialize_comment_list(&parser, &parser.comment_list, buffer);
 
     pm_node_destroy(&parser, node);

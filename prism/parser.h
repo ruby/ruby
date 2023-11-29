@@ -661,7 +661,7 @@ struct pm_parser {
      * The line number at the start of the parse. This will be used to offset
      * the line numbers of all of the locations.
      */
-    uint32_t start_line;
+    int32_t start_line;
 
     /** Whether or not we're at the beginning of a command. */
     bool command_start;

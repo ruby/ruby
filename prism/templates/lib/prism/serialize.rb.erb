@@ -79,7 +79,7 @@ module Prism
       end
 
       def load_start_line
-        source.start_line = load_varuint
+        source.start_line = load_varsint
       end
 
       def load_comments
@@ -159,6 +159,11 @@ module Prism
           end
           n + (b << (shift + 7))
         end
+      end
+
+      def load_varsint
+        n = load_varuint
+        (n >> 1) ^ (-(n & 1))
       end
 
       def load_serialized_length
