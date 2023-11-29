@@ -6208,7 +6208,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
             case 'B': case 'b':
                 ENCODING1("BINARY", pm_encoding_ascii_8bit);
                 ENCODING1("Big5", pm_encoding_big5);
-                ENCODING1("Big5-HKSCS", pm_encoding_big5_hkscs);
+                ENCODING2("Big5-HKSCS", "Big5-HKSCS:2008", pm_encoding_big5_hkscs);
                 ENCODING1("Big5-UAO", pm_encoding_big5_uao);
                 break;
             case 'C': case 'c':
@@ -6234,6 +6234,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
                 ENCODING1("CP936", pm_encoding_gbk);
                 ENCODING1("CP949", pm_encoding_cp949);
                 ENCODING1("CP950", pm_encoding_cp950);
+                ENCODING1("CP951", pm_encoding_cp951);
                 ENCODING1("CP1250", pm_encoding_windows_1250);
                 ENCODING1("CP1251", pm_encoding_windows_1251);
                 ENCODING1("CP1252", pm_encoding_windows_1252);
