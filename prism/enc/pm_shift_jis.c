@@ -48,7 +48,57 @@ pm_encoding_shift_jis_isupper_char(const uint8_t *b, ptrdiff_t n) {
 
 /** Shift_JIS encoding */
 pm_encoding_t pm_encoding_shift_jis = {
-    .name = "shift_jis",
+    .name = "Shift_JIS",
+    .char_width = pm_encoding_shift_jis_char_width,
+    .alnum_char = pm_encoding_shift_jis_alnum_char,
+    .alpha_char = pm_encoding_shift_jis_alpha_char,
+    .isupper_char = pm_encoding_shift_jis_isupper_char,
+    .multibyte = true
+};
+
+/** SJIS-DoCoMo encoding */
+pm_encoding_t pm_encoding_sjis_docomo = {
+    .name = "SJIS-DoCoMo",
+    .char_width = pm_encoding_shift_jis_char_width,
+    .alnum_char = pm_encoding_shift_jis_alnum_char,
+    .alpha_char = pm_encoding_shift_jis_alpha_char,
+    .isupper_char = pm_encoding_shift_jis_isupper_char,
+    .multibyte = true
+};
+
+/** SJIS-KDDI encoding */
+pm_encoding_t pm_encoding_sjis_kddi = {
+    .name = "SJIS-KDDI",
+    .char_width = pm_encoding_shift_jis_char_width,
+    .alnum_char = pm_encoding_shift_jis_alnum_char,
+    .alpha_char = pm_encoding_shift_jis_alpha_char,
+    .isupper_char = pm_encoding_shift_jis_isupper_char,
+    .multibyte = true
+};
+
+/** SJIS-SoftBank encoding */
+pm_encoding_t pm_encoding_sjis_softbank = {
+    .name = "SJIS-SoftBank",
+    .char_width = pm_encoding_shift_jis_char_width,
+    .alnum_char = pm_encoding_shift_jis_alnum_char,
+    .alpha_char = pm_encoding_shift_jis_alpha_char,
+    .isupper_char = pm_encoding_shift_jis_isupper_char,
+    .multibyte = true
+};
+
+/** MacJapanese encoding */
+pm_encoding_t pm_encoding_mac_japanese = {
+    .name = "MacJapanese",
+    .char_width = pm_encoding_shift_jis_char_width,
+    .alnum_char = pm_encoding_shift_jis_alnum_char,
+    .alpha_char = pm_encoding_shift_jis_alpha_char,
+    .isupper_char = pm_encoding_shift_jis_isupper_char,
+    .multibyte = true
+};
+
+/** Windows-31J */
+pm_encoding_t pm_encoding_windows_31j = {
+    .name = "Windows-31J",
     .char_width = pm_encoding_shift_jis_char_width,
     .alnum_char = pm_encoding_shift_jis_alnum_char,
     .alpha_char = pm_encoding_shift_jis_alpha_char,

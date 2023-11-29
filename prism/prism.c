@@ -6317,6 +6317,9 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
             case 'S': case 's':
                 ENCODING1("Shift_JIS", pm_encoding_shift_jis);
                 ENCODING1("SJIS", pm_encoding_windows_31j);
+                ENCODING1("SJIS-DoCoMo", pm_encoding_sjis_docomo);
+                ENCODING1("SJIS-KDDI", pm_encoding_sjis_kddi);
+                ENCODING1("SJIS-SoftBank", pm_encoding_sjis_softbank);
                 break;
             case 'T': case 't':
                 ENCODING1("TIS-620", pm_encoding_tis_620);
