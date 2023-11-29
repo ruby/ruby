@@ -1304,6 +1304,8 @@ rb_ractor_sched_sleep(rb_execution_context_t *ec, rb_ractor_t *cr, rb_unblock_fu
                 RB_VM_SAVE_MACHINE_CONTEXT(th);
                 th->status = THREAD_STOPPED_FOREVER;
 
+                RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
+
                 bool can_direct_transfer = !th_has_dedicated_nt(th);
                 thread_sched_wakeup_next_thread(sched, th, can_direct_transfer);
                 thread_sched_wait_running_turn(sched, th, can_direct_transfer);
