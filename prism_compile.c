@@ -1545,7 +1545,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
         dtype = DEFINED_ASGN;
         break;
       default:
-        assert(0 && "TODO");
+        rb_bug("Unsupported node %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
     }
 
     assert(dtype != DEFINED_NOT_DEFINED);
@@ -1568,10 +1568,27 @@ pm_compile_defined_expr(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *con
     }
 
     if (lfinish[1]) {
+        struct rb_iseq_new_with_callback_callback_func *ifunc =
+            rb_iseq_new_with_callback_new_callback(build_defined_rescue_iseq, NULL);
+
+        LABEL *lstart = NEW_LABEL(lineno);
+        LABEL *lend = NEW_LABEL(lineno);
+
+        const rb_iseq_t *rescue = new_child_iseq_with_callback(iseq, ifunc,
+                                              rb_str_concat(rb_str_new2("defined guard in "),
+                                                            ISEQ_BODY(iseq)->location.label),
+                                              iseq, ISEQ_TYPE_RESCUE, 0);
+
+        lstart->rescued = LABEL_RESCUE_BEG;
+        lend->rescued = LABEL_RESCUE_END;
+
         ELEM_INSERT_NEXT(last, &new_insn_body(iseq, &dummy_line_node, BIN(putnil), 0)->link);
         ADD_INSN(ret, &dummy_line_node, swap);
         ADD_INSN(ret, &dummy_line_node, pop);
         ADD_LABEL(ret, lfinish[1]);
+        APPEND_LABEL(ret, last, lstart);
+        ADD_LABEL(ret, lend);
+        ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, rescue, lfinish[1]);
     }
     ADD_LABEL(ret, lfinish[0]);
 }

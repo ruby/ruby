@@ -88,6 +88,8 @@ module Prism
       assert_prism_eval("Prism")
     end
 
+    Z = 1
+
     def test_DefinedNode
       assert_prism_eval("defined? nil")
       assert_prism_eval("defined? self")
@@ -105,6 +107,7 @@ module Prism
       assert_prism_eval("defined? ::A")
       assert_prism_eval("defined? A::B")
       assert_prism_eval("defined? A::B::C")
+      assert_prism_eval("defined? #{self.class.name}::Z::A")
       assert_prism_eval("defined? yield")
       assert_prism_eval("defined? super")
 
