@@ -142,7 +142,7 @@ ENV.update env
 
 if debugger
   case debugger
-  when :gdb, nil
+  when :gdb
     debugger = %W'gdb -x #{srcdir}/.gdbinit'
     if File.exist?(gdb = 'run.gdb') or
       File.exist?(gdb = File.join(abs_archdir, 'run.gdb'))
