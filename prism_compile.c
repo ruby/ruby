@@ -1663,9 +1663,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // is popped, then we know we don't need to do anything since it's
             // statically known.
             if (!popped) {
-                VALUE value = pm_static_literal_value(node, scope_node, parser);
-                ADD_INSN1(ret, &dummy_line_node, duparray, value);
-                RB_OBJ_WRITTEN(iseq, Qundef, value);
+                pm_array_node_t *cast = (pm_array_node_t *) node;
+                if (cast->elements.size) {
+                    VALUE value = pm_static_literal_value(node, scope_node, parser);
+                    ADD_INSN1(ret, &dummy_line_node, duparray, value);
+                    RB_OBJ_WRITTEN(iseq, Qundef, value);
+                }
+                else {
+                    ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(0));
+                }
             }
         } else {
             // Here since we know there are possible side-effects inside the
