@@ -11,8 +11,8 @@ pm_encoding_euc_jp_char_width(const uint8_t *b, ptrdiff_t n) {
     if (
         (n > 1) &&
         (
-            ((b[0] == 0x8E) && (b[1] >= 0xA1 && b[1] <= 0xFE)) ||
-            ((b[0] >= 0xA1 && b[0] <= 0xFE) && (b[1] >= 0xA1 && b[1] <= 0xFE))
+            ((b[0] == 0x8E) || (b[0] >= 0xA1 && b[0] <= 0xFE)) &&
+            (b[1] >= 0xA1 && b[1] <= 0xFE)
         )
     ) {
         return 2;
@@ -60,7 +60,27 @@ pm_encoding_euc_jp_isupper_char(const uint8_t *b, ptrdiff_t n) {
 
 /** EUC-JP encoding */
 pm_encoding_t pm_encoding_euc_jp = {
-    .name = "euc-jp",
+    .name = "EUC-JP",
+    .char_width = pm_encoding_euc_jp_char_width,
+    .alnum_char = pm_encoding_euc_jp_alnum_char,
+    .alpha_char = pm_encoding_euc_jp_alpha_char,
+    .isupper_char = pm_encoding_euc_jp_isupper_char,
+    .multibyte = true
+};
+
+/** eucJP-ms encoding */
+pm_encoding_t pm_encoding_euc_jp_ms = {
+    .name = "eucJP-ms",
+    .char_width = pm_encoding_euc_jp_char_width,
+    .alnum_char = pm_encoding_euc_jp_alnum_char,
+    .alpha_char = pm_encoding_euc_jp_alpha_char,
+    .isupper_char = pm_encoding_euc_jp_isupper_char,
+    .multibyte = true
+};
+
+/** EUC-JIS-2004 encoding */
+pm_encoding_t pm_encoding_euc_jis_2004 = {
+    .name = "EUC-JIS-2004",
     .char_width = pm_encoding_euc_jp_char_width,
     .alnum_char = pm_encoding_euc_jp_alnum_char,
     .alpha_char = pm_encoding_euc_jp_alpha_char,
