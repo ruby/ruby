@@ -2350,7 +2350,7 @@ pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
 
 /** UTF-8 */
 pm_encoding_t pm_encoding_utf_8 = {
-    .name = "utf-8",
+    .name = "UTF-8",
     .char_width = pm_encoding_utf_8_char_width,
     .alnum_char = pm_encoding_utf_8_alnum_char,
     .alpha_char = pm_encoding_utf_8_alpha_char,
@@ -2358,9 +2358,39 @@ pm_encoding_t pm_encoding_utf_8 = {
     .multibyte = true
 };
 
-/** UTF8-mac */
+/** UTF8-MAC */
 pm_encoding_t pm_encoding_utf8_mac = {
-    .name = "utf8-mac",
+    .name = "UTF8-MAC",
+    .char_width = pm_encoding_utf_8_char_width,
+    .alnum_char = pm_encoding_utf_8_alnum_char,
+    .alpha_char = pm_encoding_utf_8_alpha_char,
+    .isupper_char = pm_encoding_utf_8_isupper_char,
+    .multibyte = true
+};
+
+/** UTF8-DoCoMo */
+pm_encoding_t pm_encoding_utf8_docomo = {
+    .name = "UTF8-DoCoMo",
+    .char_width = pm_encoding_utf_8_char_width,
+    .alnum_char = pm_encoding_utf_8_alnum_char,
+    .alpha_char = pm_encoding_utf_8_alpha_char,
+    .isupper_char = pm_encoding_utf_8_isupper_char,
+    .multibyte = true
+};
+
+/** UTF8-KDDI */
+pm_encoding_t pm_encoding_utf8_kddi = {
+    .name = "UTF8-KDDI",
+    .char_width = pm_encoding_utf_8_char_width,
+    .alnum_char = pm_encoding_utf_8_alnum_char,
+    .alpha_char = pm_encoding_utf_8_alpha_char,
+    .isupper_char = pm_encoding_utf_8_isupper_char,
+    .multibyte = true
+};
+
+/** UTF8-SoftBank */
+pm_encoding_t pm_encoding_utf8_softbank = {
+    .name = "UTF8-SoftBank",
     .char_width = pm_encoding_utf_8_char_width,
     .alnum_char = pm_encoding_utf_8_alnum_char,
     .alpha_char = pm_encoding_utf_8_alpha_char,

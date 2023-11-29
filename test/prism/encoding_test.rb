@@ -54,6 +54,7 @@ module Prism
       Encoding::MACROMANIA =>   0x00...0x100,
       Encoding::MACTHAI =>      0x00...0x100,
       Encoding::MACTURKISH =>   0x00...0x100,
+      Encoding::MACUKRAINE =>   0x00...0x100,
       Encoding::TIS_620 =>      0x00...0x100,
       Encoding::Windows_1250 => 0x00...0x100,
       Encoding::Windows_1251 => 0x00...0x100,
@@ -82,9 +83,12 @@ module Prism
     # suite.
     if ENV["PRISM_TEST_ALL_ENCODINGS"]
       encodings.merge!(
-        Encoding::EUC_JP =>   0x00...0x1000000,
-        Encoding::UTF_8 =>    0x00...0x110000,
-        Encoding::UTF8_MAC => 0x00...0x110000
+        Encoding::EUC_JP =>        0x00...0x1000000,
+        Encoding::UTF_8 =>         0x00...0x110000,
+        Encoding::UTF8_MAC =>      0x00...0x110000,
+        Encoding::UTF8_DoCoMo =>   0x00...0x110000,
+        Encoding::UTF8_KDDI =>     0x00...0x110000,
+        Encoding::UTF8_SoftBank => 0x00...0x110000
       )
     end
 
