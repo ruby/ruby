@@ -3313,13 +3313,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PM_DUP_UNLESS_POPPED;
 
         pm_node_t *rest_expression = NULL;
-        if (multi_write_node->rest) {
-            RUBY_ASSERT(PM_NODE_TYPE_P(multi_write_node->rest, PM_SPLAT_NODE));
-
+        if (multi_write_node->rest && PM_NODE_TYPE_P(multi_write_node->rest, PM_SPLAT_NODE)) {
             pm_splat_node_t *rest_splat = ((pm_splat_node_t *)multi_write_node->rest);
             rest_expression = rest_splat->expression;
         }
-
 
         if (lefts->size) {
             ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(lefts->size), INT2FIX((int) (bool) (rights->size || rest_expression)));
