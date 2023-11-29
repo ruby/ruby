@@ -1022,8 +1022,16 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                       }
                       // If it's the final node
                       else if (index == arguments_node_list.size - 1) {
-                          ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
-                          ADD_INSN(ret, &dummy_line_node, concatarray);
+                          if (post_splat_counter > 1) {
+                              ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
+                              ADD_INSN1(ret, &dummy_line_node, splatarray, Qfalse);
+                              ADD_INSN(ret, &dummy_line_node, concatarray);
+                          }
+                          else {
+                              ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
+                              ADD_INSN(ret, &dummy_line_node, concatarray);
+                          }
+                          orig_argc = 1;
                       }
                   }
               }
