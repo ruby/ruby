@@ -1719,6 +1719,17 @@ eom
     assert_valid_syntax("p { [_1 **2] }")
   end
 
+  def test_it
+    assert_no_warning(/`it`/) {eval('if false; it; end')}
+    assert_no_warning(/`it`/) {eval('def foo; it; end')}
+    assert_warn(/`it`/)       {eval('0.times { it }')}
+    assert_no_warning(/`it`/) {eval('0.times { || it }')}
+    assert_no_warning(/`it`/) {eval('0.times { |_n| it }')}
+    assert_warn(/`it`/)       {eval('0.times { it; it = 1; it }')}
+    assert_no_warning(/`it`/) {eval('0.times { it = 1; it }')}
+    assert_no_warning(/`it`/) {eval('it = 1; 0.times { it }')}
+  end
+
   def test_value_expr_in_condition
     mesg = /void value expression/
     assert_syntax_error("tap {a = (true ? next : break)}", mesg)
