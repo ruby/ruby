@@ -215,7 +215,8 @@ class TestShapes < Test::Unit::TestCase
         i += 1
       end
       obj.freeze
-      obj.frozen?
+
+      assert obj.frozen?
     end;
   end
 
