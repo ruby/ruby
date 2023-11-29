@@ -1770,16 +1770,52 @@ eom
   end
 
   def test_it
-    assert_no_warning(/`it`/) {eval('if false; it; end')}
-    assert_no_warning(/`it`/) {eval('def foo; it; end')}
-    assert_warn(/`it`/)       {eval('0.times { it }')}
-    assert_no_warning(/`it`/) {eval('0.times { || it }')}
-    assert_no_warning(/`it`/) {eval('0.times { |_n| it }')}
-    assert_warn(/`it`/)       {eval('0.times { it; it = 1; it }')}
-    assert_no_warning(/`it`/) {eval('0.times { it = 1; it }')}
-    assert_no_warning(/`it`/) {eval('it = 1; 0.times { it }')}
-  ensure
-    self.class.remove_method(:foo)
+    assert_valid_syntax('proc {it}')
+    assert_syntax_error('[1,2].then {it+_2}', /`it` is already used/)
+    assert_syntax_error('[1,2].then {_2+it}', /numbered parameter is already used/)
+    assert_equal([1, 2], eval('[1,2].then {it}'))
+    assert_syntax_error('[1,2].then {"#{it}#{_2}"}', /`it` is already used/)
+    assert_syntax_error('[1,2].then {"#{_2}#{it}"}', /numbered parameter is already used/)
+    assert_syntax_error('->{it+_2}.call(1,2)', /`it` is already used/)
+    assert_syntax_error('->{_2+it}.call(1,2)', /numbered parameter is already used/)
+    assert_equal(4, eval('->(a=->{it}){a}.call.call(4)'))
+    assert_equal(5, eval('-> a: ->{it} {a}.call.call(5)'))
+    assert_syntax_error('proc {|| it}', /ordinary parameter is defined/)
+    assert_syntax_error('proc {|;a| it}', /ordinary parameter is defined/)
+    assert_syntax_error("proc {|\n| it}", /ordinary parameter is defined/)
+    assert_syntax_error('proc {|x| it}', /ordinary parameter is defined/)
+    assert_equal([1, 2], eval('1.then {[it, 2.then {_1}]}'))
+    assert_equal([2, 1], eval('1.then {[2.then {_1}, it]}'))
+    assert_syntax_error('->(){it}', /ordinary parameter is defined/)
+    assert_syntax_error('->(x){it}', /ordinary parameter is defined/)
+    assert_syntax_error('->x{it}', /ordinary parameter is defined/)
+    assert_syntax_error('->x:_1{}', /ordinary parameter is defined/)
+    assert_syntax_error('->x=it{}', /ordinary parameter is defined/)
+    assert_valid_syntax('-> {it; -> {_2}}')
+    assert_valid_syntax('-> {-> {it}; _2}')
+    assert_equal([1, nil], eval('proc {that=it; it=nil; [that, it]}.call(1)'))
+    assert_equal(1, eval('proc {it = 1}.call'))
+    assert_equal(2, eval('a=Object.new; def a.foo; it = 2; end; a.foo'))
+    assert_equal(3, eval('proc {|it| it}.call(3)'))
+    assert_equal(4, eval('a=Object.new; def a.foo(it); it; end; a.foo(4)'))
+    assert_equal(5, eval('a=Object.new; def a.it; 5; end; a.it'))
+    assert_equal(6, eval('a=Class.new; a.class_eval{ def it; 6; end }; a.new.it'))
+    assert_raise_with_message(NameError, /undefined local variable or method `it'/) do
+      eval('it')
+    end
+    ['class C', 'class << C', 'module M', 'def m', 'def o.m'].each do |c|
+      assert_valid_syntax("->{#{c};->{it};end;it}\n")
+      assert_valid_syntax("->{it;#{c};->{it};end}\n")
+    end
+    1.times do
+      [
+        assert_equal(0, it),
+        assert_equal([:a], eval('[:a].map{it}')),
+        assert_raise(NameError) {eval('it')},
+      ]
+    end
+    assert_valid_syntax('proc {def foo(_);end;it}')
+    assert_syntax_error('p { [it **2] }', /unexpected \*\*arg/)
   end
 
   def test_value_expr_in_condition
