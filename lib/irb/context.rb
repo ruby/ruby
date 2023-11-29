@@ -176,26 +176,22 @@ module IRB
       RegexpCompletor.new
     end
 
-    TYPE_COMPLETION_REQUIRED_PRISM_VERSION = '0.18.0'
-
     private def build_type_completor
-      unless Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.0.0') && RUBY_ENGINE != 'truffleruby'
-        warn 'TypeCompletion requires RUBY_VERSION >= 3.0.0'
+      if RUBY_ENGINE == 'truffleruby'
+        # Avoid SynatxError. truffleruby does not support endless method definition yet.
+        warn 'TypeCompletor is not supported on TruffleRuby yet'
         return
       end
+
       begin
-        require 'prism'
+        require 'repl_type_completor'
       rescue LoadError => e
-        warn "TypeCompletion requires Prism: #{e.message}"
+        warn "TypeCompletor requires `gem repl_type_completor`: #{e.message}"
         return
       end
-      unless Gem::Version.new(Prism::VERSION) >= Gem::Version.new(TYPE_COMPLETION_REQUIRED_PRISM_VERSION)
-        warn "TypeCompletion requires Prism::VERSION >= #{TYPE_COMPLETION_REQUIRED_PRISM_VERSION}"
-        return
-      end
-      require 'irb/type_completion/completor'
-      TypeCompletion::Types.preload_in_thread
-      TypeCompletion::Completor.new
+
+      ReplTypeCompletor.preload_rbs
+      TypeCompletor.new(self)
     end
 
     def save_history=(val)
