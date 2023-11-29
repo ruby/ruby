@@ -428,7 +428,7 @@ module Prism
       )
 
       assert_errors expected, "def foo;module A;end;end", [
-        ["unexpected module definition in a method body", 8..14]
+        ["unexpected module definition in a method definition", 8..14]
       ]
     end
 
@@ -467,13 +467,27 @@ module Prism
         Location()
       )
 
-      assert_errors expected, <<~RUBY, [["unexpected module definition in a method body", 21..27]]
+      assert_errors expected, <<~RUBY, [["unexpected module definition in a method definition", 21..27]]
         def foo
           bar do
             module Foo;end
           end
         end
       RUBY
+    end
+
+    def test_module_definition_in_method_defs
+      source = <<~RUBY
+        def foo(bar = module A;end);end
+        def foo;rescue;module A;end;end
+        def foo;ensure;module A;end;end
+      RUBY
+      message = "unexpected module definition in a method definition"
+      assert_errors expression(source), source, [
+        [message, 14..20],
+        [message, 47..53],
+        [message, 79..85],
+      ]
     end
 
     def test_class_definition_in_method_body
@@ -504,7 +518,21 @@ module Prism
       )
 
       assert_errors expected, "def foo;class A;end;end", [
-        ["unexpected class definition in a method body", 8..13]
+        ["unexpected class definition in a method definition", 8..13]
+      ]
+    end
+
+    def test_class_definition_in_method_defs
+      source = <<~RUBY
+        def foo(bar = class A;end);end
+        def foo;rescue;class A;end;end
+        def foo;ensure;class A;end;end
+      RUBY
+      message = "unexpected class definition in a method definition"
+      assert_errors expression(source), source, [
+        [message, 14..19],
+        [message, 46..51],
+        [message, 77..82],
       ]
     end
 

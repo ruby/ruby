@@ -297,6 +297,9 @@ typedef enum {
     /** an ensure statement */
     PM_CONTEXT_ENSURE,
 
+    /** an ensure statement within a method definition */
+    PM_CONTEXT_ENSURE_DEF,
+
     /** a for loop */
     PM_CONTEXT_FOR,
 
@@ -333,8 +336,14 @@ typedef enum {
     /** a rescue else statement */
     PM_CONTEXT_RESCUE_ELSE,
 
+    /** a rescue else statement within a method definition */
+    PM_CONTEXT_RESCUE_ELSE_DEF,
+
     /** a rescue statement */
     PM_CONTEXT_RESCUE,
+
+    /** a rescue statement within a method definition */
+    PM_CONTEXT_RESCUE_DEF,
 
     /** a singleton class definition */
     PM_CONTEXT_SCLASS,
