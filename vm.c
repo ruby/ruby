@@ -918,8 +918,6 @@ static VALUE
 vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *const cfp)
 {
     const VALUE * const ep = cfp->ep;
-    const rb_env_t *env;
-    const rb_iseq_t *env_iseq;
     VALUE *env_body, *env_ep;
     int local_size, env_size;
 
@@ -971,8 +969,25 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
 
     env_size = local_size +
                1 /* envval */;
+
+    // Careful with order in the following sequence. Each allocation can move objects.
     env_body = ALLOC_N(VALUE, env_size);
+    rb_env_t *env = (rb_env_t *)rb_imemo_new(imemo_env, 0, 0, 0, 0);
+
+    // Set up env without WB since it's brand new (similar to newobj_init(), newobj_fill())
     MEMCPY(env_body, ep - (local_size - 1 /* specval */), VALUE, local_size);
+
+    env_ep = &env_body[local_size - 1 /* specval */];
+    env_ep[VM_ENV_DATA_INDEX_ENV] = (VALUE)env;
+
+    env->iseq = (rb_iseq_t *)(VM_FRAME_RUBYFRAME_P(cfp) ? cfp->iseq : NULL);
+    env->ep = env_ep;
+    env->env = env_body;
+    env->env_size = env_size;
+
+    cfp->ep = env_ep;
+    VM_ENV_FLAGS_SET(env_ep, VM_ENV_FLAG_ESCAPED | VM_ENV_FLAG_WB_REQUIRED);
+    VM_STACK_ENV_WRITE(ep, 0, (VALUE)env);		/* GC mark */
 
 #if 0
     for (i = 0; i < local_size; i++) {
@@ -983,14 +998,6 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
     }
 #endif
 
-    env_iseq = VM_FRAME_RUBYFRAME_P(cfp) ? cfp->iseq : NULL;
-    env_ep = &env_body[local_size - 1 /* specval */];
-
-    env = vm_env_new(env_ep, env_body, env_size, env_iseq);
-
-    cfp->ep = env_ep;
-    VM_ENV_FLAGS_SET(env_ep, VM_ENV_FLAG_ESCAPED | VM_ENV_FLAG_WB_REQUIRED);
-    VM_STACK_ENV_WRITE(ep, 0, (VALUE)env);		/* GC mark */
     return (VALUE)env;
 }
 
