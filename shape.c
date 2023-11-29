@@ -81,6 +81,9 @@ redblack_find(redblack_node_t * tree, ID key)
         return LEAF;
     }
     else {
+        RUBY_ASSERT(redblack_left(tree) == LEAF || redblack_left(tree)->key < tree->key);
+        RUBY_ASSERT(redblack_right(tree) == LEAF || redblack_right(tree)->key > tree->key);
+
         if (tree->key == key) {
             return tree;
         }
@@ -136,6 +139,10 @@ redblack_new(char color, ID key, rb_shape_t * value, redblack_node_t * left, red
         // We're out of cache, just quit
         return LEAF;
     }
+
+    RUBY_ASSERT(left == LEAF || left->key < key);
+    RUBY_ASSERT(right == LEAF || right->key > key);
+
     redblack_node_t * redblack_nodes = GET_SHAPE_TREE()->shape_cache;
     redblack_node_t * node = &redblack_nodes[(GET_SHAPE_TREE()->cache_size)++];
     node->key = key;
@@ -234,9 +241,11 @@ redblack_insert_aux(redblack_node_t * tree, ID key, rb_shape_t * value)
             left = redblack_insert_aux(redblack_left(tree), key, value);
             RUBY_ASSERT(left != LEAF);
             right = redblack_right(tree);
+            RUBY_ASSERT(right == LEAF || right->key > tree->key);
         }
         else if (key > tree->key) {
             left = redblack_left(tree);
+            RUBY_ASSERT(left == LEAF || left->key < tree->key);
             right = redblack_insert_aux(redblack_right(tree), key, value);
             RUBY_ASSERT(right != LEAF);
         }
