@@ -17268,7 +17268,7 @@ pm_serialize_parse_comments(pm_buffer_t *buffer, const uint8_t *source, size_t s
     pm_node_t *node = pm_parse(&parser);
     pm_serialize_header(buffer);
     pm_serialize_encoding(&parser.encoding, buffer);
-    pm_buffer_append_varint(buffer, parser.start_line);
+    pm_buffer_append_varuint(buffer, parser.start_line);
     pm_serialize_comment_list(&parser, &parser.comment_list, buffer);
 
     pm_node_destroy(&parser, node);
