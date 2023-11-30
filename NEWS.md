@@ -12,9 +12,6 @@ Note that each entry is kept to a minimum, see links for details.
 * A new `performance` warning category was introduced.
   They are not displayed by default even in verbose mode.
   Turn them on with `-W:performance` or `Warning[:performance] = true`. [[Feature #19538]]
-* The `RUBY_GC_HEAP_INIT_SLOTS` environment variable has been deprecated and
-  removed. Environment variables `RUBY_GC_HEAP_%d_INIT_SLOTS` should be
-  used instead.  [[Feature #19785]]
 
 ## Core classes updates
 
@@ -200,6 +197,10 @@ changelog for details of the default gems or bundled gems.
 ## Supported platforms
 
 ## Compatibility issues
+
+* The `RUBY_GC_HEAP_INIT_SLOTS` environment variable has been deprecated and
+  removed. Environment variables `RUBY_GC_HEAP_%d_INIT_SLOTS` should be
+  used instead.  [[Feature #19785]]
 
 ## Stdlib compatibility issues
 
