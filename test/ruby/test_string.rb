@@ -896,6 +896,17 @@ CODE
     }
   end
 
+  def test_undump_gc_compact_stress
+    a = S("Test") << 1 << 2 << 3 << 9 << 13 << 10
+    EnvUtil.under_gc_compact_stress do
+      assert_equal(a, S('"Test\\x01\\x02\\x03\\t\\r\\n"').undump)
+    end
+
+    EnvUtil.under_gc_compact_stress do
+      assert_equal(S("\u{ABCDE 10ABCD}"), S('"\\u{ABCDE 10ABCD}"').undump)
+    end
+  end
+
   def test_dup
     for frozen in [ false, true ]
       a = S("hello")

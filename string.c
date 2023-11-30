@@ -7231,6 +7231,8 @@ str_undump(VALUE str)
         }
     }
 
+    RB_GC_GUARD(str);
+
     return undumped;
 invalid_format:
     rb_raise(rb_eRuntimeError, "invalid dumped string; not wrapped with '\"' nor '\"...\".force_encoding(\"...\")' form");
