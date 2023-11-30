@@ -207,6 +207,15 @@ changelog for details of the default gems or bundled gems.
 
 ## Compatibility issues
 
+* Subprocess creation/forking via the following file open methods is deprecated. [[Feature #19630]]
+  * Kernel#open
+  * URI.open
+  * IO.binread
+  * IO.foreach
+  * IO.readlines
+  * IO.read
+  * IO.write
+
 * The `RUBY_GC_HEAP_INIT_SLOTS` environment variable has been deprecated and
   removed. Environment variables `RUBY_GC_HEAP_%d_INIT_SLOTS` should be
   used instead.  [[Feature #19785]]
@@ -318,6 +327,7 @@ changelog for details of the default gems or bundled gems.
 [Feature #19561]: https://bugs.ruby-lang.org/issues/19561
 [Feature #19572]: https://bugs.ruby-lang.org/issues/19572
 [Feature #19591]: https://bugs.ruby-lang.org/issues/19591
+[Feature #19630]: https://bugs.ruby-lang.org/issues/19630
 [Feature #19714]: https://bugs.ruby-lang.org/issues/19714
 [Feature #19776]: https://bugs.ruby-lang.org/issues/19776
 [Feature #19785]: https://bugs.ruby-lang.org/issues/19785
