@@ -167,3 +167,48 @@ pm_encoding_t pm_encoding_stateless_iso_2022_jp_kddi = {
     .isupper_char = pm_encoding_emacs_mule_isupper_char,
     .multibyte = true
 };
+
+static size_t
+pm_encoding_gb18030_char_width(const uint8_t *b, ptrdiff_t n) {
+    // These are the 1 byte characters.
+    if (*b < 0x80) {
+        return 1;
+    }
+
+    // These are the 2 byte characters.
+    if ((n > 1) && (b[0] >= 0x81 && b[0] <= 0xFE) && (b[1] >= 0x40 && b[1] <= 0xFE && b[1] != 0x7F)) {
+        return 2;
+    }
+
+    // These are the 4 byte characters.
+    if ((n > 3) && ((b[0] >= 0x81 && b[0] <= 0xFE) && (b[1] >= 0x30 && b[1] <= 0x39) && (b[2] >= 0x81 && b[2] <= 0xFE) && (b[3] >= 0x30 && b[3] <= 0x39))) {
+        return 4;
+    }
+
+    return 0;
+}
+
+static size_t
+pm_encoding_gb18030_alpha_char(const uint8_t *b, ptrdiff_t n) {
+    return (pm_encoding_gb18030_char_width(b, n) == 1) ? pm_encoding_ascii_alpha_char(b, n) : 0;
+}
+
+static size_t
+pm_encoding_gb18030_alnum_char(const uint8_t *b, ptrdiff_t n) {
+    return (pm_encoding_gb18030_char_width(b, n) == 1) ? pm_encoding_ascii_alnum_char(b, n) : 0;
+}
+
+static bool
+pm_encoding_gb18030_isupper_char(const uint8_t *b, ptrdiff_t n) {
+    return (pm_encoding_gb18030_char_width(b, n) == 1) && pm_encoding_ascii_isupper_char(b, n);
+}
+
+/** GB18030 encoding */
+pm_encoding_t pm_encoding_gb18030 = {
+    .name = "GB18030",
+    .char_width = pm_encoding_gb18030_char_width,
+    .alnum_char = pm_encoding_gb18030_alnum_char,
+    .alpha_char = pm_encoding_gb18030_alpha_char,
+    .isupper_char = pm_encoding_gb18030_isupper_char,
+    .multibyte = true
+};

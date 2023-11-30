@@ -91,8 +91,13 @@ module Prism
     # are 3 and 4 byte representations so it can drastically slow down the test
     # suite.
     if ENV["PRISM_TEST_ALL_ENCODINGS"]
-      codepoints_eucjp = [*(0...0x10000), *(0...0x10000).map { |bytes| bytes | 0x8F0000 }]
-      codepoints_unicode = 0...0x110000
+      codepoints_unicode = (0...0x110000)
+
+      codepoints_eucjp = [
+        *(0...0x10000),
+        *(0...0x10000).map { |bytes| bytes | 0x8F0000 }
+      ]
+
       codepoints_emacs_mule = [
         *(0...0x80),
         *((0x81...0x90).flat_map { |byte1| (0x90...0x100).map { |byte2| byte1 << 8 | byte2 } }),
@@ -100,20 +105,26 @@ module Prism
         *((0xF0...0xF5).flat_map { |byte2| (0xA0...0x100).flat_map { |byte3| (0xA0...0x100).flat_map { |byte4| 0x9C << 24 | byte3 << 16 | byte3 << 8 | byte4 } } }),
       ]
 
-      encodings.clear
+      codepoints_gb18030 = [
+        *(0...0x80),
+        *((0x81..0xFE).flat_map { |byte1| (0x40...0x100).map { |byte2| byte1 << 8 | byte2 } }),
+        *((0x81..0xFE).flat_map { |byte1| (0x30...0x40).flat_map { |byte2| (0x81..0xFE).flat_map { |byte3| (0x2F...0x41).map { |byte4| byte1 << 24 | byte2 << 16 | byte3 << 8 | byte4 } } } }),
+      ]
+
       encodings.merge!(
-        Encoding::CP51932 =>                    codepoints_eucjp,
-        Encoding::EUC_JP =>                     codepoints_eucjp,
-        Encoding::EUCJP_MS =>                   codepoints_eucjp,
-        Encoding::EUC_JIS_2004 =>               codepoints_eucjp,
         Encoding::UTF_8 =>                      codepoints_unicode,
         Encoding::UTF8_MAC =>                   codepoints_unicode,
         Encoding::UTF8_DoCoMo =>                codepoints_unicode,
         Encoding::UTF8_KDDI =>                  codepoints_unicode,
         Encoding::UTF8_SoftBank =>              codepoints_unicode,
+        Encoding::CP51932 =>                    codepoints_eucjp,
+        Encoding::EUC_JP =>                     codepoints_eucjp,
+        Encoding::EUCJP_MS =>                   codepoints_eucjp,
+        Encoding::EUC_JIS_2004 =>               codepoints_eucjp,
         Encoding::EMACS_MULE =>                 codepoints_emacs_mule,
         Encoding::STATELESS_ISO_2022_JP =>      codepoints_emacs_mule,
         Encoding::STATELESS_ISO_2022_JP_KDDI => codepoints_emacs_mule,
+        Encoding::GB18030 =>                    codepoints_gb18030
       )
     end
 
