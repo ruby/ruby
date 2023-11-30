@@ -1,5 +1,5 @@
 /**
- * @file pm_encoding.h
+ * @file encoding.h
  *
  * The encoding interface and implementations used by the parser.
  */

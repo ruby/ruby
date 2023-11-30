@@ -8,7 +8,7 @@
 
 #include "prism/ast.h"
 #include "prism/defines.h"
-#include "prism/enc/pm_encoding.h"
+#include "prism/encoding.h"
 #include "prism/util/pm_constant_pool.h"
 #include "prism/util/pm_list.h"
 #include "prism/util/pm_newline_list.h"

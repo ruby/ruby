@@ -7,7 +7,7 @@
 #define PRISM_MEMCHR_H
 
 #include "prism/defines.h"
-#include "prism/enc/pm_encoding.h"
+#include "prism/encoding.h"
 
 #include <stddef.h>
 
