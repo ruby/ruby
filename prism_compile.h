@@ -13,6 +13,11 @@ typedef struct pm_scope_node {
 
     ID *constants;
     st_table *index_lookup_table;
+
+    // Some locals are defined at higher scopes than they are used. We can use
+    // this offset to control which parent scopes local table we should be
+    // referencing from the current scope.
+    unsigned int local_depth_offset;
 } pm_scope_node_t;
 
 void pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous, pm_parser_t *parser);

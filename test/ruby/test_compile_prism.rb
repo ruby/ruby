@@ -737,6 +737,16 @@ module Prism
         end
         a + b + c
       CODE
+      assert_prism_eval(<<~CODE)
+        foo = 1
+        begin
+        ensure
+          begin
+          ensure
+            foo.nil?
+          end
+        end
+      CODE
     end
 
     def test_NextNode
