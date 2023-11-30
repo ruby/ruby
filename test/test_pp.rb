@@ -149,6 +149,9 @@ class PPCycleTest < Test::Unit::TestCase
       a = D.new("aaa", "bbb")
       assert_equal("#<data PPTestModule::PPCycleTest::D\n aaa=\"aaa\",\n bbb=\"bbb\">\n", PP.pp(a, ''.dup, 20))
       assert_equal("#{a.inspect}\n", PP.pp(a, ''.dup))
+
+      b = Data.define(:a).new(42)
+      assert_equal("#{b.inspect}\n", PP.pp(b, ''.dup))
     end
   end
 
