@@ -569,8 +569,9 @@ impl BranchGenFn {
             }
             BranchGenFn::JITReturn => {
                 asm_comment!(asm, "update cfp->jit_return");
+                let jit_return = RUBY_OFFSET_CFP_JIT_RETURN - RUBY_SIZEOF_CONTROL_FRAME as i32;
                 let raw_ptr = asm.lea_jump_target(target0);
-                asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN), raw_ptr);
+                asm.mov(Opnd::mem(64, CFP, jit_return), raw_ptr);
             }
         }
     }

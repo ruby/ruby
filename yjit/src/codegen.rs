@@ -5216,13 +5216,12 @@ struct ControlFrame {
 //   * Provided sp should point to the new frame's sp, immediately following locals and the environment
 //   * At entry, CFP points to the caller (not callee) frame
 //   * At exit, ec->cfp is updated to the pushed CFP
-//   * CFP and SP registers are updated only if set_sp_cfp is set
+//   * SP register is updated only if frame.iseq is set
 //   * Stack overflow is not checked (should be done by the caller)
 //   * Interrupts are not checked (should be done by the caller)
 fn gen_push_frame(
     jit: &mut JITState,
     asm: &mut Assembler,
-    set_sp_cfp: bool, // if true CFP and SP will be switched to the callee
     frame: ControlFrame,
 ) {
     let sp = frame.sp;
@@ -5314,7 +5313,7 @@ fn gen_push_frame(
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SELF), frame.recv);
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
 
-    if set_sp_cfp {
+    if frame.iseq.is_some() {
         // Spill stack temps to let the callee use them (must be done before changing the SP register)
         asm.spill_temps();
 
@@ -5324,16 +5323,6 @@ fn gen_push_frame(
     }
     let ep = asm.sub(sp, SIZEOF_VALUE.into());
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_EP), ep);
-
-    let new_cfp = asm.lea(cfp_opnd(0));
-    if set_sp_cfp {
-        asm_comment!(asm, "switch to new CFP");
-        asm.mov(CFP, new_cfp);
-        asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
-    } else {
-        asm_comment!(asm, "set ec->cfp");
-        asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), new_cfp);
-    }
 }
 
 fn gen_send_cfunc(
@@ -5561,7 +5550,7 @@ fn gen_send_cfunc(
         frame_type |= VM_FRAME_FLAG_CFRAME_KW
     }
 
-    gen_push_frame(jit, asm, false, ControlFrame {
+    gen_push_frame(jit, asm, ControlFrame {
         frame_type,
         specval,
         cme,
@@ -5574,6 +5563,10 @@ fn gen_send_cfunc(
         },
         iseq: None,
     });
+
+    asm_comment!(asm, "set ec->cfp");
+    let new_cfp = asm.lea(Opnd::mem(64, CFP, -(RUBY_SIZEOF_CONTROL_FRAME as i32)));
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), new_cfp);
 
     if !kw_arg.is_null() {
         // Build a hash from all kwargs passed
@@ -6659,7 +6652,7 @@ fn gen_send_iseq(
     };
 
     // Setup the new frame
-    gen_push_frame(jit, asm, true, ControlFrame {
+    gen_push_frame(jit, asm, ControlFrame {
         frame_type,
         specval,
         cme,
@@ -6720,6 +6713,12 @@ fn gen_send_iseq(
         None,
         BranchGenFn::JITReturn,
     );
+
+    // ec->cfp is updated after cfp->jit_return for rb_profile_frames() safety
+    asm_comment!(asm, "switch to new CFP");
+    let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    asm.mov(CFP, new_cfp);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
     // Directly jump to the entry point of the callee
     gen_direct_jump(
