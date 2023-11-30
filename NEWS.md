@@ -315,14 +315,14 @@ changelog for details of the default gems or bundled gems.
 [Feature #19362]: https://bugs.ruby-lang.org/issues/19362
 [Feature #19521]: https://bugs.ruby-lang.org/issues/19521
 [Feature #19538]: https://bugs.ruby-lang.org/issues/19538
+[Feature #19561]: https://bugs.ruby-lang.org/issues/19561
 [Feature #19572]: https://bugs.ruby-lang.org/issues/19572
 [Feature #19591]: https://bugs.ruby-lang.org/issues/19591
 [Feature #19714]: https://bugs.ruby-lang.org/issues/19714
 [Feature #19776]: https://bugs.ruby-lang.org/issues/19776
 [Feature #19785]: https://bugs.ruby-lang.org/issues/19785
+[Feature #19790]: https://bugs.ruby-lang.org/issues/19790
 [Feature #19842]: https://bugs.ruby-lang.org/issues/19842
 [Feature #19843]: https://bugs.ruby-lang.org/issues/19843
 [Bug #19868]:     https://bugs.ruby-lang.org/issues/19868
 [Feature #19965]: https://bugs.ruby-lang.org/issues/19965
-[Feature #19790]: https://bugs.ruby-lang.org/issues/19790
-[Feature #19561]: https://bugs.ruby-lang.org/issues/19561
