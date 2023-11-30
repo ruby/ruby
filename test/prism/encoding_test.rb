@@ -84,7 +84,7 @@ module Prism
       Encoding::SJIS_DoCoMo =>   codepoints_2bytes,
       Encoding::SJIS_KDDI =>     codepoints_2bytes,
       Encoding::SJIS_SoftBank => codepoints_2bytes,
-      Encoding::Windows_31J =>   codepoints_2bytes,
+      Encoding::Windows_31J =>   codepoints_2bytes
     }
 
     # By default we don't test every codepoint in these encodings because they
@@ -123,6 +123,7 @@ module Prism
         Encoding::UTF8_DoCoMo =>                codepoints_unicode,
         Encoding::UTF8_KDDI =>                  codepoints_unicode,
         Encoding::UTF8_SoftBank =>              codepoints_unicode,
+        Encoding::CESU_8 =>                     codepoints_unicode,
         Encoding::CP51932 =>                    codepoints_eucjp,
         Encoding::EUC_JP =>                     codepoints_eucjp,
         Encoding::EUCJP_MS =>                   codepoints_eucjp,
@@ -131,7 +132,7 @@ module Prism
         Encoding::STATELESS_ISO_2022_JP =>      codepoints_emacs_mule,
         Encoding::STATELESS_ISO_2022_JP_KDDI => codepoints_emacs_mule,
         Encoding::GB18030 =>                    codepoints_gb18030,
-        Encoding::EUC_TW =>                     codepoints_euc_tw,
+        Encoding::EUC_TW =>                     codepoints_euc_tw
       )
     end
 
@@ -258,7 +259,7 @@ module Prism
       # themselves as lowercase, their case fold is different. I have reported
       # this bug upstream.
       case encoding
-      when Encoding::UTF_8, Encoding::UTF_8_MAC
+      when Encoding::UTF_8, Encoding::UTF_8_MAC, Encoding::UTF8_DoCoMo, Encoding::UTF8_KDDI, Encoding::UTF8_SoftBank, Encoding::CESU_8
         range = range.to_a - [
           0x01c5, 0x01c8, 0x01cb, 0x01f2, 0x1f88, 0x1f89, 0x1f8a, 0x1f8b,
           0x1f8c, 0x1f8d, 0x1f8e, 0x1f8f, 0x1f98, 0x1f99, 0x1f9a, 0x1f9b,

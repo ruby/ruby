@@ -6212,6 +6212,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
                 ENCODING1("Big5-UAO", pm_encoding_big5_uao);
                 break;
             case 'C': case 'c':
+                ENCODING1("CESU-8", pm_encoding_cesu_8);
                 ENCODING1("CP437", pm_encoding_ibm437);
                 ENCODING1("CP720", pm_encoding_ibm720);
                 ENCODING1("CP737", pm_encoding_ibm737);
