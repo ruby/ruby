@@ -1918,6 +1918,8 @@ module Prism
         ! ! a b
         def f a = b c; end
         def f(a = b c); end
+        a = b rescue c d
+        def a = b rescue c d
         ->a=b c{}
         ->(a=b c){}
         case; when a b; end
