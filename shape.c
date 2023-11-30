@@ -156,74 +156,74 @@ static redblack_node_t *
 redblack_balance(char color, ID key, rb_shape_t * value, redblack_node_t * left, redblack_node_t * right)
 {
     if (color == BLACK) {
-        ID z, y, x;
-        rb_shape_t * z_, * y_, * x_;
-        redblack_node_t * a, * b, * c, * d;
+        ID new_key, new_left_key, new_right_key;
+        rb_shape_t *new_value, *new_left_value, *new_right_value;
+        redblack_node_t *new_left_left, *new_left_right, *new_right_left, *new_right_right;
 
         if (redblack_red_p(left) && redblack_red_p(redblack_left(left))) {
-            z = key;
-            z_ = value;
-            d = right;
+            new_right_key = key;
+            new_right_value = value;
+            new_right_right = right;
 
-            y = left->key;
-            y_ = redblack_value(left);
-            c = redblack_right(left);
+            new_key = left->key;
+            new_value = redblack_value(left);
+            new_right_left = redblack_right(left);
 
-            x = redblack_left(left)->key;
-            x_ = redblack_value(redblack_left(left));
+            new_left_key = redblack_left(left)->key;
+            new_left_value = redblack_value(redblack_left(left));
 
-            a = redblack_left(redblack_left(left));
-            b = redblack_right(redblack_left(left));
+            new_left_left = redblack_left(redblack_left(left));
+            new_left_right = redblack_right(redblack_left(left));
         }
         else if (redblack_red_p(left) && redblack_red_p(redblack_right(left))) {
-            z = key;
-            z_ = value;
-            d = right;
+            new_right_key = key;
+            new_right_value = value;
+            new_right_right = right;
 
-            x = left->key;
-            x_ = redblack_value(left);
-            a = redblack_left(left);
+            new_left_key = left->key;
+            new_left_value = redblack_value(left);
+            new_left_left = redblack_left(left);
 
-            y = redblack_right(left)->key;
-            y_ = redblack_value(redblack_right(left));
-            b = redblack_left(redblack_right(left));
-            c = redblack_right(redblack_right(left));
+            new_key = redblack_right(left)->key;
+            new_value = redblack_value(redblack_right(left));
+            new_left_right = redblack_left(redblack_right(left));
+            new_right_left = redblack_right(redblack_right(left));
         }
         else if (redblack_red_p(right) && redblack_red_p(redblack_left(right))) {
-            x = key;
-            x_ = value;
-            a = left;
+            new_left_key = key;
+            new_left_value = value;
+            new_left_left = left;
 
-            z = right->key;
-            z_ = redblack_value(right);
-            d = redblack_right(right);
+            new_right_key = right->key;
+            new_right_value = redblack_value(right);
+            new_right_right = redblack_right(right);
 
-            y = redblack_left(right)->key;
-            y_ = redblack_value(redblack_left(right));
-            b = redblack_left(redblack_left(right));
-            c = redblack_right(redblack_left(right));
+            new_key = redblack_left(right)->key;
+            new_value = redblack_value(redblack_left(right));
+            new_left_right = redblack_left(redblack_left(right));
+            new_right_left = redblack_right(redblack_left(right));
         }
         else if (redblack_red_p(right) && redblack_red_p(redblack_right(right))) {
-            x = key;
-            x_ = value;
-            a = left;
+            new_left_key = key;
+            new_left_value = value;
+            new_left_left = left;
 
-            y = right->key;
-            y_ = redblack_value(right);
-            b = redblack_left(right);
+            new_key = right->key;
+            new_value = redblack_value(right);
+            new_left_right = redblack_left(right);
 
-            z = redblack_right(right)->key;
-            z_ = redblack_value(redblack_right(right));
-            c = redblack_left(redblack_right(right));
-            d = redblack_right(redblack_right(right));
+            new_right_key = redblack_right(right)->key;
+            new_right_value = redblack_value(redblack_right(right));
+            new_right_left = redblack_left(redblack_right(right));
+            new_right_right = redblack_right(redblack_right(right));
         }
         else {
             return redblack_new(color, key, value, left, right);
         }
         return redblack_new(
-                RED, y, y_,
-                redblack_new(BLACK, x, x_, a, b),
-                redblack_new(BLACK, z, z_, c, d));
+                RED, new_key, new_value,
+                redblack_new(BLACK, new_left_key, new_left_value, new_left_left, new_left_right),
+                redblack_new(BLACK, new_right_key, new_right_value, new_right_left, new_right_right));
     }
 
     return redblack_new(color, key, value, left, right);
