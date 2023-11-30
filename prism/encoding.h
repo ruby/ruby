@@ -121,11 +121,106 @@ bool pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n);
 extern const uint8_t pm_encoding_unicode_table[256];
 
 /**
- * This is the default encoding for Ruby source files. We keep a specific
- * visible pointer around to it so that prism.c can compare it against the
- * default.
+ * These are all of the encodings that prisms supports.
  */
-extern pm_encoding_t pm_encoding_utf_8;
+typedef enum {
+    PM_ENCODING_UTF_8 = 0,
+    PM_ENCODING_ASCII,
+    PM_ENCODING_ASCII_8BIT,
+    PM_ENCODING_BIG5,
+    PM_ENCODING_BIG5_HKSCS,
+    PM_ENCODING_BIG5_UAO,
+    PM_ENCODING_CESU_8,
+    PM_ENCODING_CP51932,
+    PM_ENCODING_CP850,
+    PM_ENCODING_CP852,
+    PM_ENCODING_CP855,
+    PM_ENCODING_CP949,
+    PM_ENCODING_CP950,
+    PM_ENCODING_CP951,
+    PM_ENCODING_EMACS_MULE,
+    PM_ENCODING_EUC_JP,
+    PM_ENCODING_EUC_JP_MS,
+    PM_ENCODING_EUC_JIS_2004,
+    PM_ENCODING_EUC_KR,
+    PM_ENCODING_EUC_TW,
+    PM_ENCODING_GB12345,
+    PM_ENCODING_GB18030,
+    PM_ENCODING_GB1988,
+    PM_ENCODING_GB2312,
+    PM_ENCODING_GBK,
+    PM_ENCODING_IBM437,
+    PM_ENCODING_IBM720,
+    PM_ENCODING_IBM737,
+    PM_ENCODING_IBM775,
+    PM_ENCODING_IBM852,
+    PM_ENCODING_IBM855,
+    PM_ENCODING_IBM857,
+    PM_ENCODING_IBM860,
+    PM_ENCODING_IBM861,
+    PM_ENCODING_IBM862,
+    PM_ENCODING_IBM863,
+    PM_ENCODING_IBM864,
+    PM_ENCODING_IBM865,
+    PM_ENCODING_IBM866,
+    PM_ENCODING_IBM869,
+    PM_ENCODING_ISO_8859_1,
+    PM_ENCODING_ISO_8859_2,
+    PM_ENCODING_ISO_8859_3,
+    PM_ENCODING_ISO_8859_4,
+    PM_ENCODING_ISO_8859_5,
+    PM_ENCODING_ISO_8859_6,
+    PM_ENCODING_ISO_8859_7,
+    PM_ENCODING_ISO_8859_8,
+    PM_ENCODING_ISO_8859_9,
+    PM_ENCODING_ISO_8859_10,
+    PM_ENCODING_ISO_8859_11,
+    PM_ENCODING_ISO_8859_13,
+    PM_ENCODING_ISO_8859_14,
+    PM_ENCODING_ISO_8859_15,
+    PM_ENCODING_ISO_8859_16,
+    PM_ENCODING_KOI8_R,
+    PM_ENCODING_KOI8_U,
+    PM_ENCODING_MAC_CENT_EURO,
+    PM_ENCODING_MAC_CROATIAN,
+    PM_ENCODING_MAC_CYRILLIC,
+    PM_ENCODING_MAC_GREEK,
+    PM_ENCODING_MAC_ICELAND,
+    PM_ENCODING_MAC_JAPANESE,
+    PM_ENCODING_MAC_ROMAN,
+    PM_ENCODING_MAC_ROMANIA,
+    PM_ENCODING_MAC_THAI,
+    PM_ENCODING_MAC_TURKISH,
+    PM_ENCODING_MAC_UKRAINE,
+    PM_ENCODING_SHIFT_JIS,
+    PM_ENCODING_SJIS_DOCOMO,
+    PM_ENCODING_SJIS_KDDI,
+    PM_ENCODING_SJIS_SOFTBANK,
+    PM_ENCODING_STATELESS_ISO_2022_JP,
+    PM_ENCODING_STATELESS_ISO_2022_JP_KDDI,
+    PM_ENCODING_TIS_620,
+    PM_ENCODING_UTF8_MAC,
+    PM_ENCODING_UTF8_DOCOMO,
+    PM_ENCODING_UTF8_KDDI,
+    PM_ENCODING_UTF8_SOFTBANK,
+    PM_ENCODING_WINDOWS_1250,
+    PM_ENCODING_WINDOWS_1251,
+    PM_ENCODING_WINDOWS_1252,
+    PM_ENCODING_WINDOWS_1253,
+    PM_ENCODING_WINDOWS_1254,
+    PM_ENCODING_WINDOWS_1255,
+    PM_ENCODING_WINDOWS_1256,
+    PM_ENCODING_WINDOWS_1257,
+    PM_ENCODING_WINDOWS_1258,
+    PM_ENCODING_WINDOWS_31J,
+    PM_ENCODING_WINDOWS_874,
+    PM_ENCODING_MAXIMUM
+} pm_encoding_type_t;
+
+/**
+ * This is the default UTF-8 encoding. We need it to quickly create parsers.
+ */
+extern const pm_encoding_t *pm_encoding_utf_8;
 
 /**
  * Parse the given name of an encoding and return a pointer to the corresponding
@@ -133,8 +228,8 @@ extern pm_encoding_t pm_encoding_utf_8;
  *
  * @param start A pointer to the first byte of the name.
  * @param end A pointer to the last byte of the name.
- * @returns A pointer to the encoding it finds, otherwise NULL.
+ * @returns A pointer to the encoding struct if one is found, otherwise NULL.
  */
-pm_encoding_t * pm_encoding_find(const uint8_t *start, const uint8_t *end);
+const pm_encoding_t * pm_encoding_find(const uint8_t *start, const uint8_t *end);
 
 #endif

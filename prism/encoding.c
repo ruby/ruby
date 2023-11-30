@@ -4211,911 +4211,742 @@ pm_encoding_shift_jis_char_width(const uint8_t *b, ptrdiff_t n) {
     return 0;
 }
 
-/** US-ASCII encoding */
-static pm_encoding_t pm_encoding_ascii = {
-    .name = "US-ASCII",
-    .char_width = pm_encoding_ascii_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char,
-    .alpha_char = pm_encoding_ascii_alpha_char,
-    .isupper_char = pm_encoding_ascii_isupper_char,
-    .multibyte = false
-};
-
-/** ASCII-8BIT encoding */
-static pm_encoding_t pm_encoding_ascii_8bit = {
-    .name = "ASCII-8BIT",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char,
-    .alpha_char = pm_encoding_ascii_alpha_char,
-    .isupper_char = pm_encoding_ascii_isupper_char,
-    .multibyte = false
-};
-
-/** CP850 */
-static pm_encoding_t pm_encoding_cp850 = {
-    .name = "CP850",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_cp850_alnum_char,
-    .alpha_char = pm_encoding_cp850_alpha_char,
-    .isupper_char = pm_encoding_cp850_isupper_char,
-    .multibyte = false
-};
-
-/** CP852 */
-static pm_encoding_t pm_encoding_cp852 = {
-    .name = "CP852",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_cp852_alnum_char,
-    .alpha_char = pm_encoding_cp852_alpha_char,
-    .isupper_char = pm_encoding_cp852_isupper_char,
-    .multibyte = false
-};
-
-/** CP855 */
-static pm_encoding_t pm_encoding_cp855 = {
-    .name = "CP855",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_cp855_alnum_char,
-    .alpha_char = pm_encoding_cp855_alpha_char,
-    .isupper_char = pm_encoding_cp855_isupper_char,
-    .multibyte = false
-};
-
-/** GB1988 */
-static pm_encoding_t pm_encoding_gb1988 = {
-    .name = "GB1988",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_gb1988_alnum_char,
-    .alpha_char = pm_encoding_gb1988_alpha_char,
-    .isupper_char = pm_encoding_gb1988_isupper_char,
-    .multibyte = false
-};
-
-/** IBM437 */
-static pm_encoding_t pm_encoding_ibm437 = {
-    .name = "IBM437",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_ibm437_alnum_char,
-    .alpha_char = pm_encoding_ibm437_alpha_char,
-    .isupper_char = pm_encoding_ibm437_isupper_char,
-    .multibyte = false
-};
-
-/** IBM720 */
-static pm_encoding_t pm_encoding_ibm720 = {
-    .name = "IBM720",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_ibm720_alnum_char,
-    .alpha_char = pm_encoding_ibm720_alpha_char,
-    .isupper_char = pm_encoding_ibm720_isupper_char,
-    .multibyte = false
-};
-
-/** IBM737 */
-static pm_encoding_t pm_encoding_ibm737 = {
-    .name = "IBM737",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_ibm737_alnum_char,
-    .alpha_char = pm_encoding_ibm737_alpha_char,
-    .isupper_char = pm_encoding_ibm737_isupper_char,
-    .multibyte = false
-};
-
-/** IBM775 */
-static pm_encoding_t pm_encoding_ibm775 = {
-    .name = "IBM775",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_ibm775_alnum_char,
-    .alpha_char = pm_encoding_ibm775_alpha_char,
-    .isupper_char = pm_encoding_ibm775_isupper_char,
-    .multibyte = false
-};
-
-/** IBM850 */
-static pm_encoding_t pm_encoding_ibm852 = {
-    .name = "IBM852",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_ibm852_alnum_char,
-    .alpha_char = pm_encoding_ibm852_alpha_char,
-    .isupper_char = pm_encoding_ibm852_isupper_char,
-    .multibyte = false
-};
-
-/** IBM855 */
-static pm_encoding_t pm_encoding_ibm855 = {
-    .name = "IBM855",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_ibm855_alnum_char,
-    .alpha_char = pm_encoding_ibm855_alpha_char,
-    .isupper_char = pm_encoding_ibm855_isupper_char,
-    .multibyte = false
-};
-
-/** IBM857 */
-static pm_encoding_t pm_encoding_ibm857 = {
-    .name = "IBM857",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_ibm857_alnum_char,
-    .alpha_char = pm_encoding_ibm857_alpha_char,
-    .isupper_char = pm_encoding_ibm857_isupper_char,
-    .multibyte = false
-};
-
-/** IBM860 */
-static pm_encoding_t pm_encoding_ibm860 = {
-    .name = "IBM860",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_ibm860_alnum_char,
-    .alpha_char = pm_encoding_ibm860_alpha_char,
-    .isupper_char = pm_encoding_ibm860_isupper_char,
-    .multibyte = false
-};
-
-/** IBM861 */
-static pm_encoding_t pm_encoding_ibm861 = {
-    .name = "IBM861",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_ibm861_alnum_char,
-    .alpha_char = pm_encoding_ibm861_alpha_char,
-    .isupper_char = pm_encoding_ibm861_isupper_char,
-    .multibyte = false
-};
-
-/** IBM862 */
-static pm_encoding_t pm_encoding_ibm862 = {
-    .name = "IBM862",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_ibm862_alnum_char,
-    .alpha_char = pm_encoding_ibm862_alpha_char,
-    .isupper_char = pm_encoding_ibm862_isupper_char,
-    .multibyte = false
-};
-
-/** IBM863 */
-static pm_encoding_t pm_encoding_ibm863 = {
-    .name = "IBM863",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_ibm863_alnum_char,
-    .alpha_char = pm_encoding_ibm863_alpha_char,
-    .isupper_char = pm_encoding_ibm863_isupper_char,
-    .multibyte = false
-};
-
-/** IBM864 */
-static pm_encoding_t pm_encoding_ibm864 = {
-    .name = "IBM864",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_ibm864_alnum_char,
-    .alpha_char = pm_encoding_ibm864_alpha_char,
-    .isupper_char = pm_encoding_ibm864_isupper_char,
-    .multibyte = false
-};
-
-/** IBM866 */
-static pm_encoding_t pm_encoding_ibm865 = {
-    .name = "IBM865",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_ibm865_alnum_char,
-    .alpha_char = pm_encoding_ibm865_alpha_char,
-    .isupper_char = pm_encoding_ibm865_isupper_char,
-    .multibyte = false
-};
-
-/** IBM866 */
-static pm_encoding_t pm_encoding_ibm866 = {
-    .name = "IBM866",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_ibm866_alnum_char,
-    .alpha_char = pm_encoding_ibm866_alpha_char,
-    .isupper_char = pm_encoding_ibm866_isupper_char,
-    .multibyte = false
-};
-
-/** IBM869 */
-static pm_encoding_t pm_encoding_ibm869 = {
-    .name = "IBM869",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_ibm869_alnum_char,
-    .alpha_char = pm_encoding_ibm869_alpha_char,
-    .isupper_char = pm_encoding_ibm869_isupper_char,
-    .multibyte = false
-};
-
-/** ISO-8859-1 */
-static pm_encoding_t pm_encoding_iso_8859_1 = {
-    .name = "ISO-8859-1",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_iso_8859_1_alnum_char,
-    .alpha_char = pm_encoding_iso_8859_1_alpha_char,
-    .isupper_char = pm_encoding_iso_8859_1_isupper_char,
-    .multibyte = false
-};
-
-/** ISO-8859-2 */
-static pm_encoding_t pm_encoding_iso_8859_2 = {
-    .name = "ISO-8859-2",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_iso_8859_2_alnum_char,
-    .alpha_char = pm_encoding_iso_8859_2_alpha_char,
-    .isupper_char = pm_encoding_iso_8859_2_isupper_char,
-    .multibyte = false
-};
-
-/** ISO-8859-3 */
-static pm_encoding_t pm_encoding_iso_8859_3 = {
-    .name = "ISO-8859-3",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_iso_8859_3_alnum_char,
-    .alpha_char = pm_encoding_iso_8859_3_alpha_char,
-    .isupper_char = pm_encoding_iso_8859_3_isupper_char,
-    .multibyte = false
-};
-
-/** ISO-8859-4 */
-static pm_encoding_t pm_encoding_iso_8859_4 = {
-    .name = "ISO-8859-4",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_iso_8859_4_alnum_char,
-    .alpha_char = pm_encoding_iso_8859_4_alpha_char,
-    .isupper_char = pm_encoding_iso_8859_4_isupper_char,
-    .multibyte = false
-};
-
-/** ISO-8859-5 */
-static pm_encoding_t pm_encoding_iso_8859_5 = {
-    .name = "ISO-8859-5",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_iso_8859_5_alnum_char,
-    .alpha_char = pm_encoding_iso_8859_5_alpha_char,
-    .isupper_char = pm_encoding_iso_8859_5_isupper_char,
-    .multibyte = false
-};
-
-/** ISO-8859-6 */
-static pm_encoding_t pm_encoding_iso_8859_6 = {
-    .name = "ISO-8859-6",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_iso_8859_6_alnum_char,
-    .alpha_char = pm_encoding_iso_8859_6_alpha_char,
-    .isupper_char = pm_encoding_iso_8859_6_isupper_char,
-    .multibyte = false
-};
-
-/** ISO-8859-7 */
-static pm_encoding_t pm_encoding_iso_8859_7 = {
-    .name = "ISO-8859-7",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_iso_8859_7_alnum_char,
-    .alpha_char = pm_encoding_iso_8859_7_alpha_char,
-    .isupper_char = pm_encoding_iso_8859_7_isupper_char,
-    .multibyte = false
-};
-
-/** ISO-8859-8 */
-static pm_encoding_t pm_encoding_iso_8859_8 = {
-    .name = "ISO-8859-8",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_iso_8859_8_alnum_char,
-    .alpha_char = pm_encoding_iso_8859_8_alpha_char,
-    .isupper_char = pm_encoding_iso_8859_8_isupper_char,
-    .multibyte = false
-};
-
-/** ISO-8859-9 */
-static pm_encoding_t pm_encoding_iso_8859_9 = {
-    .name = "ISO-8859-9",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_iso_8859_9_alnum_char,
-    .alpha_char = pm_encoding_iso_8859_9_alpha_char,
-    .isupper_char = pm_encoding_iso_8859_9_isupper_char,
-    .multibyte = false
-};
-
-/** ISO-8859-10 */
-static pm_encoding_t pm_encoding_iso_8859_10 = {
-    .name = "ISO-8859-10",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_iso_8859_10_alnum_char,
-    .alpha_char = pm_encoding_iso_8859_10_alpha_char,
-    .isupper_char = pm_encoding_iso_8859_10_isupper_char,
-    .multibyte = false
-};
-
-/** ISO-8859-11 */
-static pm_encoding_t pm_encoding_iso_8859_11 = {
-    .name = "ISO-8859-11",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_iso_8859_11_alnum_char,
-    .alpha_char = pm_encoding_iso_8859_11_alpha_char,
-    .isupper_char = pm_encoding_iso_8859_11_isupper_char,
-    .multibyte = false
-};
-
-/** ISO-8859-13 */
-static pm_encoding_t pm_encoding_iso_8859_13 = {
-    .name = "ISO-8859-13",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_iso_8859_13_alnum_char,
-    .alpha_char = pm_encoding_iso_8859_13_alpha_char,
-    .isupper_char = pm_encoding_iso_8859_13_isupper_char,
-    .multibyte = false
-};
-
-/** ISO-8859-14 */
-static pm_encoding_t pm_encoding_iso_8859_14 = {
-    .name = "ISO-8859-14",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_iso_8859_14_alnum_char,
-    .alpha_char = pm_encoding_iso_8859_14_alpha_char,
-    .isupper_char = pm_encoding_iso_8859_14_isupper_char,
-    .multibyte = false
-};
-
-/** ISO-8859-15 */
-static pm_encoding_t pm_encoding_iso_8859_15 = {
-    .name = "ISO-8859-15",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_iso_8859_15_alnum_char,
-    .alpha_char = pm_encoding_iso_8859_15_alpha_char,
-    .isupper_char = pm_encoding_iso_8859_15_isupper_char,
-    .multibyte = false
-};
-
-/** ISO-8859-16 */
-static pm_encoding_t pm_encoding_iso_8859_16 = {
-    .name = "ISO-8859-16",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_iso_8859_16_alnum_char,
-    .alpha_char = pm_encoding_iso_8859_16_alpha_char,
-    .isupper_char = pm_encoding_iso_8859_16_isupper_char,
-    .multibyte = false
-};
-
-/** KOI8-R */
-static pm_encoding_t pm_encoding_koi8_r = {
-    .name = "KOI8-R",
-    .char_width = pm_encoding_koi8_char_width,
-    .alnum_char = pm_encoding_koi8_r_alnum_char,
-    .alpha_char = pm_encoding_koi8_r_alpha_char,
-    .isupper_char = pm_encoding_koi8_r_isupper_char,
-    .multibyte = false
-};
-
-/** KOI8-U */
-static pm_encoding_t pm_encoding_koi8_u = {
-    .name = "KOI8-U",
-    .char_width = pm_encoding_koi8_char_width,
-    .alnum_char = pm_encoding_koi8_u_alnum_char,
-    .alpha_char = pm_encoding_koi8_u_alpha_char,
-    .isupper_char = pm_encoding_koi8_u_isupper_char,
-    .multibyte = false
-};
-
-/** macCentEuro */
-static pm_encoding_t pm_encoding_mac_cent_euro = {
-    .name = "macCentEuro",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_mac_cent_euro_alnum_char,
-    .alpha_char = pm_encoding_mac_cent_euro_alpha_char,
-    .isupper_char = pm_encoding_mac_cent_euro_isupper_char,
-    .multibyte = false
-};
-
-/** macCroatian */
-static pm_encoding_t pm_encoding_mac_croatian = {
-    .name = "macCroatian",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_mac_croatian_alnum_char,
-    .alpha_char = pm_encoding_mac_croatian_alpha_char,
-    .isupper_char = pm_encoding_mac_croatian_isupper_char,
-    .multibyte = false
-};
-
-/** macCyrillic */
-static pm_encoding_t pm_encoding_mac_cyrillic = {
-    .name = "macCyrillic",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_mac_cyrillic_alnum_char,
-    .alpha_char = pm_encoding_mac_cyrillic_alpha_char,
-    .isupper_char = pm_encoding_mac_cyrillic_isupper_char,
-    .multibyte = false
-};
-
-/** macGreek */
-static pm_encoding_t pm_encoding_mac_greek = {
-    .name = "macGreek",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_mac_greek_alnum_char,
-    .alpha_char = pm_encoding_mac_greek_alpha_char,
-    .isupper_char = pm_encoding_mac_greek_isupper_char,
-    .multibyte = false
-};
-
-/** macIceland */
-static pm_encoding_t pm_encoding_mac_iceland = {
-    .name = "macIceland",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_mac_iceland_alnum_char,
-    .alpha_char = pm_encoding_mac_iceland_alpha_char,
-    .isupper_char = pm_encoding_mac_iceland_isupper_char,
-    .multibyte = false
-};
-
-/** macRoman */
-static pm_encoding_t pm_encoding_mac_roman = {
-    .name = "macRoman",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_mac_roman_alnum_char,
-    .alpha_char = pm_encoding_mac_roman_alpha_char,
-    .isupper_char = pm_encoding_mac_roman_isupper_char,
-    .multibyte = false
-};
-
-/** macRomania */
-static pm_encoding_t pm_encoding_mac_romania = {
-    .name = "macRomania",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_mac_romania_alnum_char,
-    .alpha_char = pm_encoding_mac_romania_alpha_char,
-    .isupper_char = pm_encoding_mac_romania_isupper_char,
-    .multibyte = false
-};
-
-/** macThai */
-static pm_encoding_t pm_encoding_mac_thai = {
-    .name = "macThai",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_mac_thai_alnum_char,
-    .alpha_char = pm_encoding_mac_thai_alpha_char,
-    .isupper_char = pm_encoding_mac_thai_isupper_char,
-    .multibyte = false
-};
-
-/** macTurkish */
-static pm_encoding_t pm_encoding_mac_turkish = {
-    .name = "macTurkish",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_mac_turkish_alnum_char,
-    .alpha_char = pm_encoding_mac_turkish_alpha_char,
-    .isupper_char = pm_encoding_mac_turkish_isupper_char,
-    .multibyte = false
-};
-
-/** macUkraine */
-static pm_encoding_t pm_encoding_mac_ukraine = {
-    .name = "macUkraine",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_mac_ukraine_alnum_char,
-    .alpha_char = pm_encoding_mac_ukraine_alpha_char,
-    .isupper_char = pm_encoding_mac_ukraine_isupper_char,
-    .multibyte = false
-};
-
-/** TIS-620 */
-static pm_encoding_t pm_encoding_tis_620 = {
-    .name = "TIS-620",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_tis_620_alnum_char,
-    .alpha_char = pm_encoding_tis_620_alpha_char,
-    .isupper_char = pm_encoding_tis_620_isupper_char,
-    .multibyte = false
-};
-
-/** Windows-1250 */
-static pm_encoding_t pm_encoding_windows_1250 = {
-    .name = "Windows-1250",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_windows_1250_alnum_char,
-    .alpha_char = pm_encoding_windows_1250_alpha_char,
-    .isupper_char = pm_encoding_windows_1250_isupper_char,
-    .multibyte = false
-};
-
-/** Windows-1251 */
-static pm_encoding_t pm_encoding_windows_1251 = {
-    .name = "Windows-1251",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_windows_1251_alnum_char,
-    .alpha_char = pm_encoding_windows_1251_alpha_char,
-    .isupper_char = pm_encoding_windows_1251_isupper_char,
-    .multibyte = false
-};
-
-/** Windows-1252 */
-static pm_encoding_t pm_encoding_windows_1252 = {
-    .name = "Windows-1252",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_windows_1252_alnum_char,
-    .alpha_char = pm_encoding_windows_1252_alpha_char,
-    .isupper_char = pm_encoding_windows_1252_isupper_char,
-    .multibyte = false
-};
-
-/** Windows-1253 */
-static pm_encoding_t pm_encoding_windows_1253 = {
-    .name = "Windows-1253",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_windows_1253_alnum_char,
-    .alpha_char = pm_encoding_windows_1253_alpha_char,
-    .isupper_char = pm_encoding_windows_1253_isupper_char,
-    .multibyte = false
-};
-
-/** Windows-1254 */
-static pm_encoding_t pm_encoding_windows_1254 = {
-    .name = "Windows-1254",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_windows_1254_alnum_char,
-    .alpha_char = pm_encoding_windows_1254_alpha_char,
-    .isupper_char = pm_encoding_windows_1254_isupper_char,
-    .multibyte = false
-};
-
-/** Windows-1255 */
-static pm_encoding_t pm_encoding_windows_1255 = {
-    .name = "Windows-1255",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_windows_1255_alnum_char,
-    .alpha_char = pm_encoding_windows_1255_alpha_char,
-    .isupper_char = pm_encoding_windows_1255_isupper_char,
-    .multibyte = false
-};
-
-/** Windows-1256 */
-static pm_encoding_t pm_encoding_windows_1256 = {
-    .name = "Windows-1256",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_windows_1256_alnum_char,
-    .alpha_char = pm_encoding_windows_1256_alpha_char,
-    .isupper_char = pm_encoding_windows_1256_isupper_char,
-    .multibyte = false
-};
-
-/** Windows-1257 */
-static pm_encoding_t pm_encoding_windows_1257 = {
-    .name = "Windows-1257",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_windows_1257_alnum_char,
-    .alpha_char = pm_encoding_windows_1257_alpha_char,
-    .isupper_char = pm_encoding_windows_1257_isupper_char,
-    .multibyte = false
-};
-
-/** Windows-1258 */
-static pm_encoding_t pm_encoding_windows_1258 = {
-    .name = "Windows-1258",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_windows_1258_alnum_char,
-    .alpha_char = pm_encoding_windows_1258_alpha_char,
-    .isupper_char = pm_encoding_windows_1258_isupper_char,
-    .multibyte = false
-};
-
-/** Windows-874 */
-static pm_encoding_t pm_encoding_windows_874 = {
-    .name = "Windows-874",
-    .char_width = pm_encoding_single_char_width,
-    .alnum_char = pm_encoding_windows_874_alnum_char,
-    .alpha_char = pm_encoding_windows_874_alpha_char,
-    .isupper_char = pm_encoding_windows_874_isupper_char,
-    .multibyte = false
-};
-
-/** Big5 encoding */
-static pm_encoding_t pm_encoding_big5 = {
-    .name = "Big5",
-    .char_width = pm_encoding_big5_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** CP950 encoding */
-static pm_encoding_t pm_encoding_cp950 = {
-    .name = "CP950",
-    .char_width = pm_encoding_big5_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** Big5-HKSCS encoding */
-static pm_encoding_t pm_encoding_big5_hkscs = {
-    .name = "Big5-HKSCS",
-    .char_width = pm_encoding_big5_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** CP951 encoding */
-static pm_encoding_t pm_encoding_cp951 = {
-    .name = "CP951",
-    .char_width = pm_encoding_big5_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** Big5-UAO encoding */
-static pm_encoding_t pm_encoding_big5_uao = {
-    .name = "Big5-UAO",
-    .char_width = pm_encoding_big5_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** Emacs-Mule encoding */
-static pm_encoding_t pm_encoding_emacs_mule = {
-    .name = "Emacs-Mule",
-    .char_width = pm_encoding_emacs_mule_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** stateless-ISO-2022-JP encoding */
-static pm_encoding_t pm_encoding_stateless_iso_2022_jp = {
-    .name = "stateless-ISO-2022-JP",
-    .char_width = pm_encoding_emacs_mule_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** stateless-ISO-2022-JP-KDDI encoding */
-static pm_encoding_t pm_encoding_stateless_iso_2022_jp_kddi = {
-    .name = "stateless-ISO-2022-JP-KDDI",
-    .char_width = pm_encoding_emacs_mule_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** GB18030 encoding */
-static pm_encoding_t pm_encoding_gb18030 = {
-    .name = "GB18030",
-    .char_width = pm_encoding_gb18030_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** EUC-JP encoding */
-static pm_encoding_t pm_encoding_euc_jp = {
-    .name = "EUC-JP",
-    .char_width = pm_encoding_euc_jp_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** eucJP-ms encoding */
-static pm_encoding_t pm_encoding_euc_jp_ms = {
-    .name = "eucJP-ms",
-    .char_width = pm_encoding_euc_jp_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** EUC-JIS-2004 encoding */
-static pm_encoding_t pm_encoding_euc_jis_2004 = {
-    .name = "EUC-JIS-2004",
-    .char_width = pm_encoding_euc_jp_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** CP51932 encoding */
-static pm_encoding_t pm_encoding_cp51932 = {
-    .name = "CP51932",
-    .char_width = pm_encoding_euc_jp_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** EUC-KR encoding */
-static pm_encoding_t pm_encoding_euc_kr = {
-    .name = "EUC-KR",
-    .char_width = pm_encoding_euc_kr_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** GB2312 encoding */
-static pm_encoding_t pm_encoding_gb2312 = {
-    .name = "GB2312",
-    .char_width = pm_encoding_euc_kr_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** GB12345 encoding */
-static pm_encoding_t pm_encoding_gb12345 = {
-    .name = "GB12345",
-    .char_width = pm_encoding_euc_kr_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** EUC-TW encoding */
-static pm_encoding_t pm_encoding_euc_tw = {
-    .name = "EUC-TW",
-    .char_width = pm_encoding_euc_tw_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** GBK encoding */
-static pm_encoding_t pm_encoding_gbk = {
-    .name = "GBK",
-    .char_width = pm_encoding_gbk_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** CP949 encoding */
-static pm_encoding_t pm_encoding_cp949 = {
-    .name = "CP949",
-    .char_width = pm_encoding_cp949_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** Shift_JIS encoding */
-static pm_encoding_t pm_encoding_shift_jis = {
-    .name = "Shift_JIS",
-    .char_width = pm_encoding_shift_jis_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** SJIS-DoCoMo encoding */
-static pm_encoding_t pm_encoding_sjis_docomo = {
-    .name = "SJIS-DoCoMo",
-    .char_width = pm_encoding_shift_jis_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** SJIS-KDDI encoding */
-static pm_encoding_t pm_encoding_sjis_kddi = {
-    .name = "SJIS-KDDI",
-    .char_width = pm_encoding_shift_jis_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** SJIS-SoftBank encoding */
-static pm_encoding_t pm_encoding_sjis_softbank = {
-    .name = "SJIS-SoftBank",
-    .char_width = pm_encoding_shift_jis_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** MacJapanese encoding */
-static pm_encoding_t pm_encoding_mac_japanese = {
-    .name = "MacJapanese",
-    .char_width = pm_encoding_shift_jis_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** Windows-31J */
-static pm_encoding_t pm_encoding_windows_31j = {
-    .name = "Windows-31J",
-    .char_width = pm_encoding_shift_jis_char_width,
-    .alnum_char = pm_encoding_ascii_alnum_char_7bit,
-    .alpha_char = pm_encoding_ascii_alpha_char_7bit,
-    .isupper_char = pm_encoding_ascii_isupper_char_7bit,
-    .multibyte = true
-};
-
-/** UTF-8 */
-pm_encoding_t pm_encoding_utf_8 = {
-    .name = "UTF-8",
-    .char_width = pm_encoding_utf_8_char_width,
-    .alnum_char = pm_encoding_utf_8_alnum_char,
-    .alpha_char = pm_encoding_utf_8_alpha_char,
-    .isupper_char = pm_encoding_utf_8_isupper_char,
-    .multibyte = true
-};
-
-/** UTF8-MAC */
-static pm_encoding_t pm_encoding_utf8_mac = {
-    .name = "UTF8-MAC",
-    .char_width = pm_encoding_utf_8_char_width,
-    .alnum_char = pm_encoding_utf_8_alnum_char,
-    .alpha_char = pm_encoding_utf_8_alpha_char,
-    .isupper_char = pm_encoding_utf_8_isupper_char,
-    .multibyte = true
-};
-
-/** UTF8-DoCoMo */
-static pm_encoding_t pm_encoding_utf8_docomo = {
-    .name = "UTF8-DoCoMo",
-    .char_width = pm_encoding_utf_8_char_width,
-    .alnum_char = pm_encoding_utf_8_alnum_char,
-    .alpha_char = pm_encoding_utf_8_alpha_char,
-    .isupper_char = pm_encoding_utf_8_isupper_char,
-    .multibyte = true
-};
-
-/** UTF8-KDDI */
-static pm_encoding_t pm_encoding_utf8_kddi = {
-    .name = "UTF8-KDDI",
-    .char_width = pm_encoding_utf_8_char_width,
-    .alnum_char = pm_encoding_utf_8_alnum_char,
-    .alpha_char = pm_encoding_utf_8_alpha_char,
-    .isupper_char = pm_encoding_utf_8_isupper_char,
-    .multibyte = true
-};
-
-/** UTF8-SoftBank */
-static pm_encoding_t pm_encoding_utf8_softbank = {
-    .name = "UTF8-SoftBank",
-    .char_width = pm_encoding_utf_8_char_width,
-    .alnum_char = pm_encoding_utf_8_alnum_char,
-    .alpha_char = pm_encoding_utf_8_alpha_char,
-    .isupper_char = pm_encoding_utf_8_isupper_char,
-    .multibyte = true
-};
-
-/** CESU-8 */
-static pm_encoding_t pm_encoding_cesu_8 = {
-    .name = "CESU-8",
-    .char_width = pm_encoding_cesu_8_char_width,
-    .alnum_char = pm_encoding_cesu_8_alnum_char,
-    .alpha_char = pm_encoding_cesu_8_alpha_char,
-    .isupper_char = pm_encoding_cesu_8_isupper_char,
-    .multibyte = true
-};
+/**
+ * This is the definition of all of the encodings that we support.
+ */
+static const pm_encoding_t pm_encodings[PM_ENCODING_MAXIMUM] = {
+    [PM_ENCODING_UTF_8] = {
+        .name = "UTF-8",
+        .char_width = pm_encoding_utf_8_char_width,
+        .alnum_char = pm_encoding_utf_8_alnum_char,
+        .alpha_char = pm_encoding_utf_8_alpha_char,
+        .isupper_char = pm_encoding_utf_8_isupper_char,
+        .multibyte = true
+    },
+    [PM_ENCODING_ASCII] = {
+        .name = "US-ASCII",
+        .char_width = pm_encoding_ascii_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char,
+        .alpha_char = pm_encoding_ascii_alpha_char,
+        .isupper_char = pm_encoding_ascii_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_ASCII_8BIT] = {
+        .name = "ASCII-8BIT",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char,
+        .alpha_char = pm_encoding_ascii_alpha_char,
+        .isupper_char = pm_encoding_ascii_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_BIG5] = {
+        .name = "Big5",
+        .char_width = pm_encoding_big5_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_BIG5_HKSCS] = {
+        .name = "Big5-HKSCS",
+        .char_width = pm_encoding_big5_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_BIG5_UAO] = {
+        .name = "Big5-UAO",
+        .char_width = pm_encoding_big5_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_CESU_8] = {
+        .name = "CESU-8",
+        .char_width = pm_encoding_cesu_8_char_width,
+        .alnum_char = pm_encoding_cesu_8_alnum_char,
+        .alpha_char = pm_encoding_cesu_8_alpha_char,
+        .isupper_char = pm_encoding_cesu_8_isupper_char,
+        .multibyte = true
+    },
+    [PM_ENCODING_CP51932] = {
+        .name = "CP51932",
+        .char_width = pm_encoding_euc_jp_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_CP850] = {
+        .name = "CP850",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_cp850_alnum_char,
+        .alpha_char = pm_encoding_cp850_alpha_char,
+        .isupper_char = pm_encoding_cp850_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_CP852] = {
+        .name = "CP852",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_cp852_alnum_char,
+        .alpha_char = pm_encoding_cp852_alpha_char,
+        .isupper_char = pm_encoding_cp852_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_CP855] = {
+        .name = "CP855",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_cp855_alnum_char,
+        .alpha_char = pm_encoding_cp855_alpha_char,
+        .isupper_char = pm_encoding_cp855_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_CP949] = {
+        .name = "CP949",
+        .char_width = pm_encoding_cp949_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_CP950] = {
+        .name = "CP950",
+        .char_width = pm_encoding_big5_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_CP951] = {
+        .name = "CP951",
+        .char_width = pm_encoding_big5_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_EMACS_MULE] = {
+        .name = "Emacs-Mule",
+        .char_width = pm_encoding_emacs_mule_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_EUC_JP] = {
+        .name = "EUC-JP",
+        .char_width = pm_encoding_euc_jp_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_EUC_JP_MS] = {
+        .name = "eucJP-ms",
+        .char_width = pm_encoding_euc_jp_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_EUC_JIS_2004] = {
+        .name = "EUC-JIS-2004",
+        .char_width = pm_encoding_euc_jp_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_EUC_KR] = {
+        .name = "EUC-KR",
+        .char_width = pm_encoding_euc_kr_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_EUC_TW] = {
+        .name = "EUC-TW",
+        .char_width = pm_encoding_euc_tw_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_GB12345] = {
+        .name = "GB12345",
+        .char_width = pm_encoding_euc_kr_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_GB18030] = {
+        .name = "GB18030",
+        .char_width = pm_encoding_gb18030_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_GB1988] = {
+        .name = "GB1988",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_gb1988_alnum_char,
+        .alpha_char = pm_encoding_gb1988_alpha_char,
+        .isupper_char = pm_encoding_gb1988_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_GB2312] = {
+        .name = "GB2312",
+        .char_width = pm_encoding_euc_kr_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_GBK] = {
+        .name = "GBK",
+        .char_width = pm_encoding_gbk_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_IBM437] = {
+        .name = "IBM437",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_ibm437_alnum_char,
+        .alpha_char = pm_encoding_ibm437_alpha_char,
+        .isupper_char = pm_encoding_ibm437_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_IBM720] = {
+        .name = "IBM720",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_ibm720_alnum_char,
+        .alpha_char = pm_encoding_ibm720_alpha_char,
+        .isupper_char = pm_encoding_ibm720_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_IBM737] = {
+        .name = "IBM737",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_ibm737_alnum_char,
+        .alpha_char = pm_encoding_ibm737_alpha_char,
+        .isupper_char = pm_encoding_ibm737_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_IBM775] = {
+        .name = "IBM775",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_ibm775_alnum_char,
+        .alpha_char = pm_encoding_ibm775_alpha_char,
+        .isupper_char = pm_encoding_ibm775_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_IBM852] = {
+        .name = "IBM852",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_ibm852_alnum_char,
+        .alpha_char = pm_encoding_ibm852_alpha_char,
+        .isupper_char = pm_encoding_ibm852_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_IBM855] = {
+        .name = "IBM855",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_ibm855_alnum_char,
+        .alpha_char = pm_encoding_ibm855_alpha_char,
+        .isupper_char = pm_encoding_ibm855_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_IBM857] = {
+        .name = "IBM857",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_ibm857_alnum_char,
+        .alpha_char = pm_encoding_ibm857_alpha_char,
+        .isupper_char = pm_encoding_ibm857_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_IBM860] = {
+        .name = "IBM860",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_ibm860_alnum_char,
+        .alpha_char = pm_encoding_ibm860_alpha_char,
+        .isupper_char = pm_encoding_ibm860_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_IBM861] = {
+        .name = "IBM861",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_ibm861_alnum_char,
+        .alpha_char = pm_encoding_ibm861_alpha_char,
+        .isupper_char = pm_encoding_ibm861_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_IBM862] = {
+        .name = "IBM862",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_ibm862_alnum_char,
+        .alpha_char = pm_encoding_ibm862_alpha_char,
+        .isupper_char = pm_encoding_ibm862_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_IBM863] = {
+        .name = "IBM863",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_ibm863_alnum_char,
+        .alpha_char = pm_encoding_ibm863_alpha_char,
+        .isupper_char = pm_encoding_ibm863_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_IBM864] = {
+        .name = "IBM864",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_ibm864_alnum_char,
+        .alpha_char = pm_encoding_ibm864_alpha_char,
+        .isupper_char = pm_encoding_ibm864_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_IBM865] = {
+        .name = "IBM865",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_ibm865_alnum_char,
+        .alpha_char = pm_encoding_ibm865_alpha_char,
+        .isupper_char = pm_encoding_ibm865_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_IBM866] = {
+        .name = "IBM866",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_ibm866_alnum_char,
+        .alpha_char = pm_encoding_ibm866_alpha_char,
+        .isupper_char = pm_encoding_ibm866_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_IBM869] = {
+        .name = "IBM869",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_ibm869_alnum_char,
+        .alpha_char = pm_encoding_ibm869_alpha_char,
+        .isupper_char = pm_encoding_ibm869_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_ISO_8859_1] = {
+        .name = "ISO-8859-1",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_iso_8859_1_alnum_char,
+        .alpha_char = pm_encoding_iso_8859_1_alpha_char,
+        .isupper_char = pm_encoding_iso_8859_1_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_ISO_8859_2] = {
+        .name = "ISO-8859-2",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_iso_8859_2_alnum_char,
+        .alpha_char = pm_encoding_iso_8859_2_alpha_char,
+        .isupper_char = pm_encoding_iso_8859_2_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_ISO_8859_3] = {
+        .name = "ISO-8859-3",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_iso_8859_3_alnum_char,
+        .alpha_char = pm_encoding_iso_8859_3_alpha_char,
+        .isupper_char = pm_encoding_iso_8859_3_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_ISO_8859_4] = {
+        .name = "ISO-8859-4",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_iso_8859_4_alnum_char,
+        .alpha_char = pm_encoding_iso_8859_4_alpha_char,
+        .isupper_char = pm_encoding_iso_8859_4_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_ISO_8859_5] = {
+        .name = "ISO-8859-5",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_iso_8859_5_alnum_char,
+        .alpha_char = pm_encoding_iso_8859_5_alpha_char,
+        .isupper_char = pm_encoding_iso_8859_5_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_ISO_8859_6] = {
+        .name = "ISO-8859-6",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_iso_8859_6_alnum_char,
+        .alpha_char = pm_encoding_iso_8859_6_alpha_char,
+        .isupper_char = pm_encoding_iso_8859_6_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_ISO_8859_7] = {
+        .name = "ISO-8859-7",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_iso_8859_7_alnum_char,
+        .alpha_char = pm_encoding_iso_8859_7_alpha_char,
+        .isupper_char = pm_encoding_iso_8859_7_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_ISO_8859_8] = {
+        .name = "ISO-8859-8",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_iso_8859_8_alnum_char,
+        .alpha_char = pm_encoding_iso_8859_8_alpha_char,
+        .isupper_char = pm_encoding_iso_8859_8_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_ISO_8859_9] = {
+        .name = "ISO-8859-9",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_iso_8859_9_alnum_char,
+        .alpha_char = pm_encoding_iso_8859_9_alpha_char,
+        .isupper_char = pm_encoding_iso_8859_9_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_ISO_8859_10] = {
+        .name = "ISO-8859-10",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_iso_8859_10_alnum_char,
+        .alpha_char = pm_encoding_iso_8859_10_alpha_char,
+        .isupper_char = pm_encoding_iso_8859_10_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_ISO_8859_11] = {
+        .name = "ISO-8859-11",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_iso_8859_11_alnum_char,
+        .alpha_char = pm_encoding_iso_8859_11_alpha_char,
+        .isupper_char = pm_encoding_iso_8859_11_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_ISO_8859_13] = {
+        .name = "ISO-8859-13",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_iso_8859_13_alnum_char,
+        .alpha_char = pm_encoding_iso_8859_13_alpha_char,
+        .isupper_char = pm_encoding_iso_8859_13_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_ISO_8859_14] = {
+        .name = "ISO-8859-14",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_iso_8859_14_alnum_char,
+        .alpha_char = pm_encoding_iso_8859_14_alpha_char,
+        .isupper_char = pm_encoding_iso_8859_14_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_ISO_8859_15] = {
+        .name = "ISO-8859-15",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_iso_8859_15_alnum_char,
+        .alpha_char = pm_encoding_iso_8859_15_alpha_char,
+        .isupper_char = pm_encoding_iso_8859_15_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_ISO_8859_16] = {
+        .name = "ISO-8859-16",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_iso_8859_16_alnum_char,
+        .alpha_char = pm_encoding_iso_8859_16_alpha_char,
+        .isupper_char = pm_encoding_iso_8859_16_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_KOI8_R] = {
+        .name = "KOI8-R",
+        .char_width = pm_encoding_koi8_char_width,
+        .alnum_char = pm_encoding_koi8_r_alnum_char,
+        .alpha_char = pm_encoding_koi8_r_alpha_char,
+        .isupper_char = pm_encoding_koi8_r_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_KOI8_U] = {
+        .name = "KOI8-U",
+        .char_width = pm_encoding_koi8_char_width,
+        .alnum_char = pm_encoding_koi8_u_alnum_char,
+        .alpha_char = pm_encoding_koi8_u_alpha_char,
+        .isupper_char = pm_encoding_koi8_u_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_MAC_CENT_EURO] = {
+        .name = "macCentEuro",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_mac_cent_euro_alnum_char,
+        .alpha_char = pm_encoding_mac_cent_euro_alpha_char,
+        .isupper_char = pm_encoding_mac_cent_euro_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_MAC_CROATIAN] = {
+        .name = "macCroatian",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_mac_croatian_alnum_char,
+        .alpha_char = pm_encoding_mac_croatian_alpha_char,
+        .isupper_char = pm_encoding_mac_croatian_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_MAC_CYRILLIC] = {
+        .name = "macCyrillic",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_mac_cyrillic_alnum_char,
+        .alpha_char = pm_encoding_mac_cyrillic_alpha_char,
+        .isupper_char = pm_encoding_mac_cyrillic_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_MAC_GREEK] = {
+        .name = "macGreek",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_mac_greek_alnum_char,
+        .alpha_char = pm_encoding_mac_greek_alpha_char,
+        .isupper_char = pm_encoding_mac_greek_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_MAC_ICELAND] = {
+        .name = "macIceland",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_mac_iceland_alnum_char,
+        .alpha_char = pm_encoding_mac_iceland_alpha_char,
+        .isupper_char = pm_encoding_mac_iceland_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_MAC_JAPANESE] = {
+        .name = "MacJapanese",
+        .char_width = pm_encoding_shift_jis_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_MAC_ROMAN] = {
+        .name = "macRoman",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_mac_roman_alnum_char,
+        .alpha_char = pm_encoding_mac_roman_alpha_char,
+        .isupper_char = pm_encoding_mac_roman_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_MAC_ROMANIA] = {
+        .name = "macRomania",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_mac_romania_alnum_char,
+        .alpha_char = pm_encoding_mac_romania_alpha_char,
+        .isupper_char = pm_encoding_mac_romania_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_MAC_THAI] = {
+        .name = "macThai",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_mac_thai_alnum_char,
+        .alpha_char = pm_encoding_mac_thai_alpha_char,
+        .isupper_char = pm_encoding_mac_thai_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_MAC_TURKISH] = {
+        .name = "macTurkish",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_mac_turkish_alnum_char,
+        .alpha_char = pm_encoding_mac_turkish_alpha_char,
+        .isupper_char = pm_encoding_mac_turkish_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_MAC_UKRAINE] = {
+        .name = "macUkraine",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_mac_ukraine_alnum_char,
+        .alpha_char = pm_encoding_mac_ukraine_alpha_char,
+        .isupper_char = pm_encoding_mac_ukraine_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_SHIFT_JIS] = {
+        .name = "Shift_JIS",
+        .char_width = pm_encoding_shift_jis_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_SJIS_DOCOMO] = {
+        .name = "SJIS-DoCoMo",
+        .char_width = pm_encoding_shift_jis_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_SJIS_KDDI] = {
+        .name = "SJIS-KDDI",
+        .char_width = pm_encoding_shift_jis_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_SJIS_SOFTBANK] = {
+        .name = "SJIS-SoftBank",
+        .char_width = pm_encoding_shift_jis_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_STATELESS_ISO_2022_JP] = {
+        .name = "stateless-ISO-2022-JP",
+        .char_width = pm_encoding_emacs_mule_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_STATELESS_ISO_2022_JP_KDDI] = {
+        .name = "stateless-ISO-2022-JP-KDDI",
+        .char_width = pm_encoding_emacs_mule_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_TIS_620] = {
+        .name = "TIS-620",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_tis_620_alnum_char,
+        .alpha_char = pm_encoding_tis_620_alpha_char,
+        .isupper_char = pm_encoding_tis_620_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_UTF8_MAC] = {
+        .name = "UTF8-MAC",
+        .char_width = pm_encoding_utf_8_char_width,
+        .alnum_char = pm_encoding_utf_8_alnum_char,
+        .alpha_char = pm_encoding_utf_8_alpha_char,
+        .isupper_char = pm_encoding_utf_8_isupper_char,
+        .multibyte = true
+    },
+    [PM_ENCODING_UTF8_DOCOMO] = {
+        .name = "UTF8-DoCoMo",
+        .char_width = pm_encoding_utf_8_char_width,
+        .alnum_char = pm_encoding_utf_8_alnum_char,
+        .alpha_char = pm_encoding_utf_8_alpha_char,
+        .isupper_char = pm_encoding_utf_8_isupper_char,
+        .multibyte = true
+    },
+    [PM_ENCODING_UTF8_KDDI] = {
+        .name = "UTF8-KDDI",
+        .char_width = pm_encoding_utf_8_char_width,
+        .alnum_char = pm_encoding_utf_8_alnum_char,
+        .alpha_char = pm_encoding_utf_8_alpha_char,
+        .isupper_char = pm_encoding_utf_8_isupper_char,
+        .multibyte = true
+    },
+    [PM_ENCODING_UTF8_SOFTBANK] = {
+        .name = "UTF8-SoftBank",
+        .char_width = pm_encoding_utf_8_char_width,
+        .alnum_char = pm_encoding_utf_8_alnum_char,
+        .alpha_char = pm_encoding_utf_8_alpha_char,
+        .isupper_char = pm_encoding_utf_8_isupper_char,
+        .multibyte = true
+    },
+    [PM_ENCODING_WINDOWS_1250] = {
+        .name = "Windows-1250",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_windows_1250_alnum_char,
+        .alpha_char = pm_encoding_windows_1250_alpha_char,
+        .isupper_char = pm_encoding_windows_1250_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_WINDOWS_1251] = {
+        .name = "Windows-1251",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_windows_1251_alnum_char,
+        .alpha_char = pm_encoding_windows_1251_alpha_char,
+        .isupper_char = pm_encoding_windows_1251_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_WINDOWS_1252] = {
+        .name = "Windows-1252",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_windows_1252_alnum_char,
+        .alpha_char = pm_encoding_windows_1252_alpha_char,
+        .isupper_char = pm_encoding_windows_1252_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_WINDOWS_1253] = {
+        .name = "Windows-1253",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_windows_1253_alnum_char,
+        .alpha_char = pm_encoding_windows_1253_alpha_char,
+        .isupper_char = pm_encoding_windows_1253_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_WINDOWS_1254] = {
+        .name = "Windows-1254",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_windows_1254_alnum_char,
+        .alpha_char = pm_encoding_windows_1254_alpha_char,
+        .isupper_char = pm_encoding_windows_1254_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_WINDOWS_1255] = {
+        .name = "Windows-1255",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_windows_1255_alnum_char,
+        .alpha_char = pm_encoding_windows_1255_alpha_char,
+        .isupper_char = pm_encoding_windows_1255_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_WINDOWS_1256] = {
+        .name = "Windows-1256",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_windows_1256_alnum_char,
+        .alpha_char = pm_encoding_windows_1256_alpha_char,
+        .isupper_char = pm_encoding_windows_1256_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_WINDOWS_1257] = {
+        .name = "Windows-1257",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_windows_1257_alnum_char,
+        .alpha_char = pm_encoding_windows_1257_alpha_char,
+        .isupper_char = pm_encoding_windows_1257_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_WINDOWS_1258] = {
+        .name = "Windows-1258",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_windows_1258_alnum_char,
+        .alpha_char = pm_encoding_windows_1258_alpha_char,
+        .isupper_char = pm_encoding_windows_1258_isupper_char,
+        .multibyte = false
+    },
+    [PM_ENCODING_WINDOWS_31J] = {
+        .name = "Windows-31J",
+        .char_width = pm_encoding_shift_jis_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char_7bit,
+        .alpha_char = pm_encoding_ascii_alpha_char_7bit,
+        .isupper_char = pm_encoding_ascii_isupper_char_7bit,
+        .multibyte = true
+    },
+    [PM_ENCODING_WINDOWS_874] = {
+        .name = "Windows-874",
+        .char_width = pm_encoding_single_char_width,
+        .alnum_char = pm_encoding_windows_874_alnum_char,
+        .alpha_char = pm_encoding_windows_874_alpha_char,
+        .isupper_char = pm_encoding_windows_874_isupper_char,
+        .multibyte = false
+    }
+};
+
+/**
+ * This is the default UTF-8 encoding. We need it to quickly create parsers.
+ */
+const pm_encoding_t *pm_encoding_utf_8 = pm_encodings;
 
 /**
  * Parse the given name of an encoding and return a pointer to the corresponding
  * encoding struct if one can be found, otherwise return NULL.
  */
-pm_encoding_t *
+const pm_encoding_t *
 pm_encoding_find(const uint8_t *start, const uint8_t *end) {
     size_t width = (size_t) (end - start);
 
@@ -5126,181 +4957,179 @@ pm_encoding_find(const uint8_t *start, const uint8_t *end) {
         // We need to explicitly handle UTF-8-HFS, as that one needs to switch
         // over to being UTF8-MAC.
         if (width == 9 && (pm_strncasecmp(start + 5, (const uint8_t *) "-HFS", 4) == 0)) {
-            return &pm_encoding_utf8_mac;
+            return &pm_encodings[PM_ENCODING_UTF8_MAC];
         }
 
         // Otherwise we'll return the default UTF-8 encoding.
-        return &pm_encoding_utf_8;
+        return pm_encoding_utf_8;
     }
 
     // Next, we're going to loop through each of the encodings that we handle
     // explicitly. If we found one that we understand, we'll use that value.
-#define ENCODING1(value, prebuilt) if (width == sizeof(value) - 1 && pm_strncasecmp(start, (const uint8_t *) value, width) == 0) return &prebuilt;
-
-    // A convenience macros for comparing two aliases for the same encoding.
-#define ENCODING2(value1, value2, prebuilt) ENCODING1(value1, prebuilt) ENCODING1(value2, prebuilt)
+#define ENCODING1(name, encoding) if (width == sizeof(name) - 1 && pm_strncasecmp(start, (const uint8_t *) name, width) == 0) return &pm_encodings[encoding];
+#define ENCODING2(name1, name2, encoding) ENCODING1(name1, encoding) ENCODING1(name2, encoding)
 
     if (width >= 3) {
         switch (*start) {
             case 'A': case 'a':
-                ENCODING1("ASCII", pm_encoding_ascii);
-                ENCODING1("ASCII-8BIT", pm_encoding_ascii_8bit);
-                ENCODING1("ANSI_X3.4-1968", pm_encoding_ascii);
+                ENCODING1("ASCII", PM_ENCODING_ASCII);
+                ENCODING1("ASCII-8BIT", PM_ENCODING_ASCII_8BIT);
+                ENCODING1("ANSI_X3.4-1968", PM_ENCODING_ASCII);
                 break;
             case 'B': case 'b':
-                ENCODING1("BINARY", pm_encoding_ascii_8bit);
-                ENCODING1("Big5", pm_encoding_big5);
-                ENCODING2("Big5-HKSCS", "Big5-HKSCS:2008", pm_encoding_big5_hkscs);
-                ENCODING1("Big5-UAO", pm_encoding_big5_uao);
+                ENCODING1("BINARY", PM_ENCODING_ASCII_8BIT);
+                ENCODING1("Big5", PM_ENCODING_BIG5);
+                ENCODING2("Big5-HKSCS", "Big5-HKSCS:2008", PM_ENCODING_BIG5_HKSCS);
+                ENCODING1("Big5-UAO", PM_ENCODING_BIG5_UAO);
                 break;
             case 'C': case 'c':
-                ENCODING1("CESU-8", pm_encoding_cesu_8);
-                ENCODING1("CP437", pm_encoding_ibm437);
-                ENCODING1("CP720", pm_encoding_ibm720);
-                ENCODING1("CP737", pm_encoding_ibm737);
-                ENCODING1("CP775", pm_encoding_ibm775);
-                ENCODING1("CP850", pm_encoding_cp850);
-                ENCODING1("CP852", pm_encoding_cp852);
-                ENCODING1("CP855", pm_encoding_cp855);
-                ENCODING1("CP857", pm_encoding_ibm857);
-                ENCODING1("CP860", pm_encoding_ibm860);
-                ENCODING1("CP861", pm_encoding_ibm861);
-                ENCODING1("CP862", pm_encoding_ibm862);
-                ENCODING1("CP864", pm_encoding_ibm864);
-                ENCODING1("CP865", pm_encoding_ibm865);
-                ENCODING1("CP866", pm_encoding_ibm866);
-                ENCODING1("CP869", pm_encoding_ibm869);
-                ENCODING1("CP874", pm_encoding_windows_874);
-                ENCODING1("CP878", pm_encoding_koi8_r);
-                ENCODING1("CP863", pm_encoding_ibm863);
-                ENCODING2("CP932", "csWindows31J", pm_encoding_windows_31j);
-                ENCODING1("CP936", pm_encoding_gbk);
-                ENCODING1("CP949", pm_encoding_cp949);
-                ENCODING1("CP950", pm_encoding_cp950);
-                ENCODING1("CP951", pm_encoding_cp951);
-                ENCODING1("CP1250", pm_encoding_windows_1250);
-                ENCODING1("CP1251", pm_encoding_windows_1251);
-                ENCODING1("CP1252", pm_encoding_windows_1252);
-                ENCODING1("CP1253", pm_encoding_windows_1253);
-                ENCODING1("CP1254", pm_encoding_windows_1254);
-                ENCODING1("CP1255", pm_encoding_windows_1255);
-                ENCODING1("CP1256", pm_encoding_windows_1256);
-                ENCODING1("CP1257", pm_encoding_windows_1257);
-                ENCODING1("CP1258", pm_encoding_windows_1258);
-                ENCODING1("CP51932", pm_encoding_cp51932);
-                ENCODING1("CP65001", pm_encoding_utf_8);
+                ENCODING1("CESU-8", PM_ENCODING_CESU_8);
+                ENCODING1("CP437", PM_ENCODING_IBM437);
+                ENCODING1("CP720", PM_ENCODING_IBM720);
+                ENCODING1("CP737", PM_ENCODING_IBM737);
+                ENCODING1("CP775", PM_ENCODING_IBM775);
+                ENCODING1("CP850", PM_ENCODING_CP850);
+                ENCODING1("CP852", PM_ENCODING_CP852);
+                ENCODING1("CP855", PM_ENCODING_CP855);
+                ENCODING1("CP857", PM_ENCODING_IBM857);
+                ENCODING1("CP860", PM_ENCODING_IBM860);
+                ENCODING1("CP861", PM_ENCODING_IBM861);
+                ENCODING1("CP862", PM_ENCODING_IBM862);
+                ENCODING1("CP864", PM_ENCODING_IBM864);
+                ENCODING1("CP865", PM_ENCODING_IBM865);
+                ENCODING1("CP866", PM_ENCODING_IBM866);
+                ENCODING1("CP869", PM_ENCODING_IBM869);
+                ENCODING1("CP874", PM_ENCODING_WINDOWS_874);
+                ENCODING1("CP878", PM_ENCODING_KOI8_R);
+                ENCODING1("CP863", PM_ENCODING_IBM863);
+                ENCODING2("CP932", "csWindows31J", PM_ENCODING_WINDOWS_31J);
+                ENCODING1("CP936", PM_ENCODING_GBK);
+                ENCODING1("CP949", PM_ENCODING_CP949);
+                ENCODING1("CP950", PM_ENCODING_CP950);
+                ENCODING1("CP951", PM_ENCODING_CP951);
+                ENCODING1("CP1250", PM_ENCODING_WINDOWS_1250);
+                ENCODING1("CP1251", PM_ENCODING_WINDOWS_1251);
+                ENCODING1("CP1252", PM_ENCODING_WINDOWS_1252);
+                ENCODING1("CP1253", PM_ENCODING_WINDOWS_1253);
+                ENCODING1("CP1254", PM_ENCODING_WINDOWS_1254);
+                ENCODING1("CP1255", PM_ENCODING_WINDOWS_1255);
+                ENCODING1("CP1256", PM_ENCODING_WINDOWS_1256);
+                ENCODING1("CP1257", PM_ENCODING_WINDOWS_1257);
+                ENCODING1("CP1258", PM_ENCODING_WINDOWS_1258);
+                ENCODING1("CP51932", PM_ENCODING_CP51932);
+                ENCODING1("CP65001", PM_ENCODING_UTF_8);
                 break;
             case 'E': case 'e':
-                ENCODING2("EUC-JP", "eucJP", pm_encoding_euc_jp);
-                ENCODING2("eucJP-ms", "euc-jp-ms", pm_encoding_euc_jp_ms);
-                ENCODING2("EUC-JIS-2004", "EUC-JISX0213", pm_encoding_euc_jis_2004);
-                ENCODING2("EUC-KR", "eucKR", pm_encoding_euc_kr);
-                ENCODING2("EUC-CN", "eucCN", pm_encoding_gb2312);
-                ENCODING2("EUC-TW", "eucTW", pm_encoding_euc_tw);
-                ENCODING1("Emacs-Mule", pm_encoding_emacs_mule);
-                ENCODING1("external", pm_encoding_utf_8);
+                ENCODING2("EUC-JP", "eucJP", PM_ENCODING_EUC_JP);
+                ENCODING2("eucJP-ms", "euc-jp-ms", PM_ENCODING_EUC_JP_MS);
+                ENCODING2("EUC-JIS-2004", "EUC-JISX0213", PM_ENCODING_EUC_JIS_2004);
+                ENCODING2("EUC-KR", "eucKR", PM_ENCODING_EUC_KR);
+                ENCODING2("EUC-CN", "eucCN", PM_ENCODING_GB2312);
+                ENCODING2("EUC-TW", "eucTW", PM_ENCODING_EUC_TW);
+                ENCODING1("Emacs-Mule", PM_ENCODING_EMACS_MULE);
+                ENCODING1("external", PM_ENCODING_UTF_8);
                 break;
             case 'F': case 'f':
-                ENCODING1("filesystem", pm_encoding_utf_8);
+                ENCODING1("filesystem", PM_ENCODING_UTF_8);
                 break;
             case 'G': case 'g':
-                ENCODING1("GBK", pm_encoding_gbk);
-                ENCODING1("GB12345", pm_encoding_gb12345);
-                ENCODING1("GB18030", pm_encoding_gb18030);
-                ENCODING1("GB1988", pm_encoding_gb1988);
-                ENCODING1("GB2312", pm_encoding_gb2312);
+                ENCODING1("GBK", PM_ENCODING_GBK);
+                ENCODING1("GB12345", PM_ENCODING_GB12345);
+                ENCODING1("GB18030", PM_ENCODING_GB18030);
+                ENCODING1("GB1988", PM_ENCODING_GB1988);
+                ENCODING1("GB2312", PM_ENCODING_GB2312);
                 break;
             case 'I': case 'i':
-                ENCODING1("IBM437", pm_encoding_ibm437);
-                ENCODING1("IBM720", pm_encoding_ibm720);
-                ENCODING1("IBM737", pm_encoding_ibm737);
-                ENCODING1("IBM775", pm_encoding_ibm775);
-                ENCODING1("IBM850", pm_encoding_cp850);
-                ENCODING1("IBM852", pm_encoding_ibm852);
-                ENCODING1("IBM855", pm_encoding_ibm855);
-                ENCODING1("IBM857", pm_encoding_ibm857);
-                ENCODING1("IBM860", pm_encoding_ibm860);
-                ENCODING1("IBM861", pm_encoding_ibm861);
-                ENCODING1("IBM862", pm_encoding_ibm862);
-                ENCODING1("IBM863", pm_encoding_ibm863);
-                ENCODING1("IBM864", pm_encoding_ibm864);
-                ENCODING1("IBM865", pm_encoding_ibm865);
-                ENCODING1("IBM866", pm_encoding_ibm866);
-                ENCODING1("IBM869", pm_encoding_ibm869);
-                ENCODING2("ISO-8859-1", "ISO8859-1", pm_encoding_iso_8859_1);
-                ENCODING2("ISO-8859-2", "ISO8859-2", pm_encoding_iso_8859_2);
-                ENCODING2("ISO-8859-3", "ISO8859-3", pm_encoding_iso_8859_3);
-                ENCODING2("ISO-8859-4", "ISO8859-4", pm_encoding_iso_8859_4);
-                ENCODING2("ISO-8859-5", "ISO8859-5", pm_encoding_iso_8859_5);
-                ENCODING2("ISO-8859-6", "ISO8859-6", pm_encoding_iso_8859_6);
-                ENCODING2("ISO-8859-7", "ISO8859-7", pm_encoding_iso_8859_7);
-                ENCODING2("ISO-8859-8", "ISO8859-8", pm_encoding_iso_8859_8);
-                ENCODING2("ISO-8859-9", "ISO8859-9", pm_encoding_iso_8859_9);
-                ENCODING2("ISO-8859-10", "ISO8859-10", pm_encoding_iso_8859_10);
-                ENCODING2("ISO-8859-11", "ISO8859-11", pm_encoding_iso_8859_11);
-                ENCODING2("ISO-8859-13", "ISO8859-13", pm_encoding_iso_8859_13);
-                ENCODING2("ISO-8859-14", "ISO8859-14", pm_encoding_iso_8859_14);
-                ENCODING2("ISO-8859-15", "ISO8859-15", pm_encoding_iso_8859_15);
-                ENCODING2("ISO-8859-16", "ISO8859-16", pm_encoding_iso_8859_16);
+                ENCODING1("IBM437", PM_ENCODING_IBM437);
+                ENCODING1("IBM720", PM_ENCODING_IBM720);
+                ENCODING1("IBM737", PM_ENCODING_IBM737);
+                ENCODING1("IBM775", PM_ENCODING_IBM775);
+                ENCODING1("IBM850", PM_ENCODING_CP850);
+                ENCODING1("IBM852", PM_ENCODING_IBM852);
+                ENCODING1("IBM855", PM_ENCODING_IBM855);
+                ENCODING1("IBM857", PM_ENCODING_IBM857);
+                ENCODING1("IBM860", PM_ENCODING_IBM860);
+                ENCODING1("IBM861", PM_ENCODING_IBM861);
+                ENCODING1("IBM862", PM_ENCODING_IBM862);
+                ENCODING1("IBM863", PM_ENCODING_IBM863);
+                ENCODING1("IBM864", PM_ENCODING_IBM864);
+                ENCODING1("IBM865", PM_ENCODING_IBM865);
+                ENCODING1("IBM866", PM_ENCODING_IBM866);
+                ENCODING1("IBM869", PM_ENCODING_IBM869);
+                ENCODING2("ISO-8859-1", "ISO8859-1", PM_ENCODING_ISO_8859_1);
+                ENCODING2("ISO-8859-2", "ISO8859-2", PM_ENCODING_ISO_8859_2);
+                ENCODING2("ISO-8859-3", "ISO8859-3", PM_ENCODING_ISO_8859_3);
+                ENCODING2("ISO-8859-4", "ISO8859-4", PM_ENCODING_ISO_8859_4);
+                ENCODING2("ISO-8859-5", "ISO8859-5", PM_ENCODING_ISO_8859_5);
+                ENCODING2("ISO-8859-6", "ISO8859-6", PM_ENCODING_ISO_8859_6);
+                ENCODING2("ISO-8859-7", "ISO8859-7", PM_ENCODING_ISO_8859_7);
+                ENCODING2("ISO-8859-8", "ISO8859-8", PM_ENCODING_ISO_8859_8);
+                ENCODING2("ISO-8859-9", "ISO8859-9", PM_ENCODING_ISO_8859_9);
+                ENCODING2("ISO-8859-10", "ISO8859-10", PM_ENCODING_ISO_8859_10);
+                ENCODING2("ISO-8859-11", "ISO8859-11", PM_ENCODING_ISO_8859_11);
+                ENCODING2("ISO-8859-13", "ISO8859-13", PM_ENCODING_ISO_8859_13);
+                ENCODING2("ISO-8859-14", "ISO8859-14", PM_ENCODING_ISO_8859_14);
+                ENCODING2("ISO-8859-15", "ISO8859-15", PM_ENCODING_ISO_8859_15);
+                ENCODING2("ISO-8859-16", "ISO8859-16", PM_ENCODING_ISO_8859_16);
                 break;
             case 'K': case 'k':
-                ENCODING1("KOI8-R", pm_encoding_koi8_r);
-                ENCODING1("KOI8-U", pm_encoding_koi8_u);
+                ENCODING1("KOI8-R", PM_ENCODING_KOI8_R);
+                ENCODING1("KOI8-U", PM_ENCODING_KOI8_U);
                 break;
             case 'L': case 'l':
-                ENCODING1("locale", pm_encoding_utf_8);
+                ENCODING1("locale", PM_ENCODING_UTF_8);
                 break;
             case 'M': case 'm':
-                ENCODING1("macCentEuro", pm_encoding_mac_cent_euro);
-                ENCODING1("macCroatian", pm_encoding_mac_croatian);
-                ENCODING1("macCyrillic", pm_encoding_mac_cyrillic);
-                ENCODING1("macGreek", pm_encoding_mac_greek);
-                ENCODING1("macIceland", pm_encoding_mac_iceland);
-                ENCODING1("MacJapanese", pm_encoding_mac_japanese);
-                ENCODING1("MacJapan", pm_encoding_mac_japanese);
-                ENCODING1("macRoman", pm_encoding_mac_roman);
-                ENCODING1("macRomania", pm_encoding_mac_romania);
-                ENCODING1("macThai", pm_encoding_mac_thai);
-                ENCODING1("macTurkish", pm_encoding_mac_turkish);
-                ENCODING1("macUkraine", pm_encoding_mac_ukraine);
+                ENCODING1("macCentEuro", PM_ENCODING_MAC_CENT_EURO);
+                ENCODING1("macCroatian", PM_ENCODING_MAC_CROATIAN);
+                ENCODING1("macCyrillic", PM_ENCODING_MAC_CYRILLIC);
+                ENCODING1("macGreek", PM_ENCODING_MAC_GREEK);
+                ENCODING1("macIceland", PM_ENCODING_MAC_ICELAND);
+                ENCODING1("MacJapanese", PM_ENCODING_MAC_JAPANESE);
+                ENCODING1("MacJapan", PM_ENCODING_MAC_JAPANESE);
+                ENCODING1("macRoman", PM_ENCODING_MAC_ROMAN);
+                ENCODING1("macRomania", PM_ENCODING_MAC_ROMANIA);
+                ENCODING1("macThai", PM_ENCODING_MAC_THAI);
+                ENCODING1("macTurkish", PM_ENCODING_MAC_TURKISH);
+                ENCODING1("macUkraine", PM_ENCODING_MAC_UKRAINE);
                 break;
             case 'P': case 'p':
-                ENCODING1("PCK", pm_encoding_windows_31j);
+                ENCODING1("PCK", PM_ENCODING_WINDOWS_31J);
                 break;
             case 'S': case 's':
-                ENCODING1("Shift_JIS", pm_encoding_shift_jis);
-                ENCODING1("SJIS", pm_encoding_windows_31j);
-                ENCODING1("SJIS-DoCoMo", pm_encoding_sjis_docomo);
-                ENCODING1("SJIS-KDDI", pm_encoding_sjis_kddi);
-                ENCODING1("SJIS-SoftBank", pm_encoding_sjis_softbank);
-                ENCODING1("stateless-ISO-2022-JP", pm_encoding_stateless_iso_2022_jp);
-                ENCODING1("stateless-ISO-2022-JP-KDDI", pm_encoding_stateless_iso_2022_jp_kddi);
+                ENCODING1("Shift_JIS", PM_ENCODING_SHIFT_JIS);
+                ENCODING1("SJIS", PM_ENCODING_WINDOWS_31J);
+                ENCODING1("SJIS-DoCoMo", PM_ENCODING_SJIS_DOCOMO);
+                ENCODING1("SJIS-KDDI", PM_ENCODING_SJIS_KDDI);
+                ENCODING1("SJIS-SoftBank", PM_ENCODING_SJIS_SOFTBANK);
+                ENCODING1("stateless-ISO-2022-JP", PM_ENCODING_STATELESS_ISO_2022_JP);
+                ENCODING1("stateless-ISO-2022-JP-KDDI", PM_ENCODING_STATELESS_ISO_2022_JP_KDDI);
                 break;
             case 'T': case 't':
-                ENCODING1("TIS-620", pm_encoding_tis_620);
+                ENCODING1("TIS-620", PM_ENCODING_TIS_620);
                 break;
             case 'U': case 'u':
-                ENCODING1("US-ASCII", pm_encoding_ascii);
-                ENCODING2("UTF8-MAC", "UTF-8-HFS", pm_encoding_utf8_mac);
-                ENCODING1("UTF8-DoCoMo", pm_encoding_utf8_docomo);
-                ENCODING1("UTF8-KDDI", pm_encoding_utf8_kddi);
-                ENCODING1("UTF8-SoftBank", pm_encoding_utf8_softbank);
+                ENCODING1("US-ASCII", PM_ENCODING_ASCII);
+                ENCODING2("UTF8-MAC", "UTF-8-HFS", PM_ENCODING_UTF8_MAC);
+                ENCODING1("UTF8-DoCoMo", PM_ENCODING_UTF8_DOCOMO);
+                ENCODING1("UTF8-KDDI", PM_ENCODING_UTF8_KDDI);
+                ENCODING1("UTF8-SoftBank", PM_ENCODING_UTF8_SOFTBANK);
                 break;
             case 'W': case 'w':
-                ENCODING1("Windows-31J", pm_encoding_windows_31j);
-                ENCODING1("Windows-874", pm_encoding_windows_874);
-                ENCODING1("Windows-1250", pm_encoding_windows_1250);
-                ENCODING1("Windows-1251", pm_encoding_windows_1251);
-                ENCODING1("Windows-1252", pm_encoding_windows_1252);
-                ENCODING1("Windows-1253", pm_encoding_windows_1253);
-                ENCODING1("Windows-1254", pm_encoding_windows_1254);
-                ENCODING1("Windows-1255", pm_encoding_windows_1255);
-                ENCODING1("Windows-1256", pm_encoding_windows_1256);
-                ENCODING1("Windows-1257", pm_encoding_windows_1257);
-                ENCODING1("Windows-1258", pm_encoding_windows_1258);
+                ENCODING1("Windows-31J", PM_ENCODING_WINDOWS_31J);
+                ENCODING1("Windows-874", PM_ENCODING_WINDOWS_874);
+                ENCODING1("Windows-1250", PM_ENCODING_WINDOWS_1250);
+                ENCODING1("Windows-1251", PM_ENCODING_WINDOWS_1251);
+                ENCODING1("Windows-1252", PM_ENCODING_WINDOWS_1252);
+                ENCODING1("Windows-1253", PM_ENCODING_WINDOWS_1253);
+                ENCODING1("Windows-1254", PM_ENCODING_WINDOWS_1254);
+                ENCODING1("Windows-1255", PM_ENCODING_WINDOWS_1255);
+                ENCODING1("Windows-1256", PM_ENCODING_WINDOWS_1256);
+                ENCODING1("Windows-1257", PM_ENCODING_WINDOWS_1257);
+                ENCODING1("Windows-1258", PM_ENCODING_WINDOWS_1258);
                 break;
             case '6':
-                ENCODING1("646", pm_encoding_ascii);
+                ENCODING1("646", PM_ENCODING_ASCII);
                 break;
         }
     }

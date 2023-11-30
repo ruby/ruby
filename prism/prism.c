@@ -6153,10 +6153,10 @@ next_newline(const uint8_t *cursor, ptrdiff_t length) {
  */
 static bool
 parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
-    pm_encoding_t *encoding = pm_encoding_find(start, end);
+    const pm_encoding_t *encoding = pm_encoding_find(start, end);
 
     if (encoding != NULL) {
-        if (encoding != &pm_encoding_utf_8) {
+        if (encoding != pm_encoding_utf_8) {
             parser->encoding = *encoding;
             parser->encoding_changed = true;
             if (parser->encoding_changed_callback != NULL) parser->encoding_changed_callback(parser);
@@ -16836,7 +16836,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         .error_list = { 0 },
         .current_scope = NULL,
         .current_context = NULL,
-        .encoding = pm_encoding_utf_8,
+        .encoding = *pm_encoding_utf_8,
         .encoding_changed_callback = NULL,
         .encoding_comment_start = source,
         .lex_callback = NULL,
