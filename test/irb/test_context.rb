@@ -11,6 +11,7 @@ module TestIRB
       IRB.init_config(nil)
       IRB.conf[:USE_SINGLELINE] = false
       IRB.conf[:VERBOSE] = false
+      IRB.conf[:USE_PAGER] = false
       workspace = IRB::WorkSpace.new(Object.new)
       @context = IRB::Context.new(nil, workspace, TestInputMethod.new)
 

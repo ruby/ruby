@@ -346,10 +346,6 @@ module TestIRB
     end
 
     def test_show_cmds_display_different_content_when_debugger_is_enabled
-      write_rc <<~RUBY
-        IRB.conf[:USE_PAGER] = false
-      RUBY
-
       write_ruby <<~'ruby'
         binding.irb
       ruby

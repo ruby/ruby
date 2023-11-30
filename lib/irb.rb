@@ -20,6 +20,7 @@ require_relative "irb/color"
 require_relative "irb/version"
 require_relative "irb/easter-egg"
 require_relative "irb/debug"
+require_relative "irb/pager"
 
 # IRB stands for "interactive Ruby" and is a tool to interactively execute Ruby
 # expressions read from the standard input.
@@ -859,11 +860,12 @@ module IRB
           end
         end
       end
+
       if multiline_p && @context.newline_before_multiline_output?
-        printf @context.return_format, "\n#{str}"
-      else
-        printf @context.return_format, str
+        str = "\n" + str
       end
+
+      Pager.page_content(format(@context.return_format, str), retain_content: true)
     end
 
     # Outputs the local variables to this current session, including

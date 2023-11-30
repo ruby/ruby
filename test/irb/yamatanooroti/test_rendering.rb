@@ -10,6 +10,8 @@ end
 
 class IRB::RenderingTest < Yamatanooroti::TestCase
   def setup
+    @original_term = ENV['TERM']
+    ENV['TERM'] = "xterm-256color"
     @pwd = Dir.pwd
     suffix = '%010d' % Random.rand(0..65535)
     @tmpdir = File.join(File.expand_path(Dir.tmpdir), "test_irb_#{$$}_#{suffix}")
@@ -27,6 +29,7 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
   def teardown
     FileUtils.rm_rf(@tmpdir)
     ENV['IRBRC'] = @irbrc_backup
+    ENV['TERM'] = @original_term
     ENV.delete('RELINE_TEST_PROMPT') if ENV['RELINE_TEST_PROMPT']
   end
 
@@ -375,6 +378,40 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     assert_match(/a{80}/, screen)
     # because pager is not invoked, foobar will be evaluated
     assert_match(/foobar/, screen)
+  end
+
+  def test_long_evaluation_output_is_paged
+    write_irbrc <<~'LINES'
+      puts 'start IRB'
+      require "irb/pager"
+    LINES
+    start_terminal(10, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+    write("'a' * 80 * 11\n")
+    write("'foo' + 'bar'\n") # eval something to make sure IRB resumes
+    close
+
+    screen = result.join("\n").sub(/\n*\z/, "\n")
+    assert_match(/(a{80}\n){8}/, screen)
+    # because pager is invoked, foobar will not be evaluated
+    assert_not_match(/foobar/, screen)
+  end
+
+  def test_long_evaluation_output_is_preserved_after_paging
+    write_irbrc <<~'LINES'
+      puts 'start IRB'
+      require "irb/pager"
+    LINES
+    start_terminal(10, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+    write("'a' * 80 * 11\n")
+    write("q") # quit pager
+    write("'foo' + 'bar'\n") # eval something to make sure IRB resumes
+    close
+
+    screen = result.join("\n").sub(/\n*\z/, "\n")
+    # confirm pager has exited
+    assert_match(/foobar/, screen)
+    # confirm output is preserved
+    assert_match(/(a{80}\n){6}/, screen)
   end
 
   def test_debug_integration_hints_debugger_commands

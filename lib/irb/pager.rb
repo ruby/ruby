@@ -7,9 +7,9 @@ module IRB
     PAGE_COMMANDS = [ENV['RI_PAGER'], ENV['PAGER'], 'less', 'more'].compact.uniq
 
     class << self
-      def page_content(content)
+      def page_content(content, **options)
         if content_exceeds_screen_height?(content)
-          page do |io|
+          page(**options) do |io|
             io.puts content
           end
         else
@@ -17,8 +17,8 @@ module IRB
         end
       end
 
-      def page
-        if IRB.conf[:USE_PAGER] && STDIN.tty? && pager = setup_pager
+      def page(retain_content: false)
+        if IRB.conf[:USE_PAGER] && STDIN.tty? && pager = setup_pager(retain_content: retain_content)
           begin
             pid = pager.pid
             yield pager
@@ -55,19 +55,20 @@ module IRB
           pageable_height * screen_width < Reline::Unicode.calculate_width(content, true)
       end
 
-      def setup_pager
+      def setup_pager(retain_content:)
         require 'shellwords'
 
-        PAGE_COMMANDS.each do |pager|
-          pager = Shellwords.split(pager)
-          next if pager.empty?
+        PAGE_COMMANDS.each do |pager_cmd|
+          cmd = Shellwords.split(pager_cmd)
+          next if cmd.empty?
 
-          if pager.first == 'less'
-            pager << '-R' unless pager.include?('-R')
+          if cmd.first == 'less'
+            cmd << '-R' unless cmd.include?('-R')
+            cmd << '-X' if retain_content && !cmd.include?('-X')
           end
 
           begin
-            io = IO.popen(pager, 'w')
+            io = IO.popen(cmd, 'w')
           rescue
             next
           end
