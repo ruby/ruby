@@ -1435,9 +1435,9 @@ class TestYJIT < Test::Unit::TestCase
       end
 
       def add_pages(num_jits)
-        pages = RubyVM::YJIT.runtime_stats[:compiled_page_count]
+        pages = RubyVM::YJIT.runtime_stats[:live_page_count]
         num_jits.times { return false unless eval('compiles { nil.to_i }') }
-        pages.nil? || pages < RubyVM::YJIT.runtime_stats[:compiled_page_count]
+        pages.nil? || pages < RubyVM::YJIT.runtime_stats[:live_page_count]
       end
     RUBY
   end
