@@ -422,14 +422,6 @@ typedef struct {
 typedef void (*pm_encoding_changed_callback_t)(pm_parser_t *parser);
 
 /**
- * When an encoding is encountered that isn't understood by prism, we provide
- * the ability here to call out to a user-defined function to get an encoding
- * struct. If the function returns something that isn't NULL, we set that to
- * our encoding and use it to parse identifiers.
- */
-typedef pm_encoding_t *(*pm_encoding_decode_callback_t)(pm_parser_t *parser, const uint8_t *name, size_t width);
-
-/**
  * When you are lexing through a file, the lexer needs all of the information
  * that the parser additionally provides (for example, the local table). So if
  * you want to properly lex Ruby, you need to actually lex it in the context of
@@ -607,14 +599,6 @@ struct pm_parser {
      * function.
      */
     pm_encoding_changed_callback_t encoding_changed_callback;
-
-    /**
-     * When an encoding is encountered that isn't understood by prism, we
-     * provide the ability here to call out to a user-defined function to get an
-     * encoding struct. If the function returns something that isn't NULL, we
-     * set that to our encoding and use it to parse identifiers.
-     */
-    pm_encoding_decode_callback_t encoding_decode_callback;
 
     /**
      * This pointer indicates where a comment must start if it is to be

@@ -62,18 +62,6 @@ PRISM_EXPORTED_FUNCTION void pm_parser_init(pm_parser_t *parser, const uint8_t *
 PRISM_EXPORTED_FUNCTION void pm_parser_register_encoding_changed_callback(pm_parser_t *parser, pm_encoding_changed_callback_t callback);
 
 /**
- * Register a callback that will be called when prism encounters a magic comment
- * with an encoding referenced that it doesn't understand. The callback should
- * return NULL if it also doesn't understand the encoding or it should return a
- * pointer to a pm_encoding_t struct that contains the functions necessary to
- * parse identifiers.
- *
- * @param parser The parser to register the callback with.
- * @param callback The callback to register.
- */
-PRISM_EXPORTED_FUNCTION void pm_parser_register_encoding_decode_callback(pm_parser_t *parser, pm_encoding_decode_callback_t callback);
-
-/**
  * Free any memory associated with the given parser.
  *
  * @param parser The parser to free.
