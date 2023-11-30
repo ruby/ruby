@@ -883,6 +883,8 @@ module Prism
       assert_prism_eval("END { 1 }")
       assert_prism_eval("END { @b }; @b = 1")
       assert_prism_eval("END { @b; 0 }; @b = 1")
+      assert_prism_eval("foo = 1; END { foo.nil? }")
+      assert_prism_eval("foo = 1; END { END { foo.nil? }}")
     end
 
     def test_ProgramNode
