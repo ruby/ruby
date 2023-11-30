@@ -70,6 +70,10 @@ Note: We're only listing outstanding class updates.
 
     * Process::Status#& and Process::Status#>> are deprecated. [[Bug #19868]]
 
+* Queue
+
+    * Queue#freeze now raises TypeError. [[Bug #17146]]
+
 * Range
 
     * Range#reverse_each can now process beginless ranges with an Integer endpoint. [[Feature #18515]]
@@ -80,6 +84,10 @@ Note: We're only listing outstanding class updates.
     * Add Refinement#target as an alternative of Refinement#refined_class.
       Refinement#refined_class is deprecated and will be removed in Ruby
       3.4.  [[Feature #19714]]
+
+* SizedQueue
+
+    * SizedQueue#freeze now raises TypeError. [[Bug #17146]]
 
 * String
 
@@ -330,6 +338,7 @@ changelog for details of the default gems or bundled gems.
     Note that more than `N` native threads are used to support many kind of
     blocking operations.
 
+[Bug #17146]:     https://bugs.ruby-lang.org/issues/17146
 [Feature #18183]: https://bugs.ruby-lang.org/issues/18183
 [Feature #18498]: https://bugs.ruby-lang.org/issues/18498
 [Feature #18515]: https://bugs.ruby-lang.org/issues/18515
