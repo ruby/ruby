@@ -7346,7 +7346,16 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
 
       case T_STRING:
         if (STR_SHARED_P(obj)) {
-            gc_mark(objspace, any->as.string.as.heap.aux.shared);
+            if (STR_EMBED_P(any->as.string.as.heap.aux.shared)) {
+                /* Embedded shared strings cannot be moved because this string
+                 * points into the slot of the shared string. There may be code
+                 * using the RSTRING_PTR on the stack, which would pin this
+                 * string but not pin the shared string, causing it to move. */
+                gc_mark_and_pin(objspace, any->as.string.as.heap.aux.shared);
+            }
+            else {
+                gc_mark(objspace, any->as.string.as.heap.aux.shared);
+            }
         }
         break;
 
@@ -10701,7 +10710,6 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
                 VALUE old_root = any->as.string.as.heap.aux.shared;
                 UPDATE_IF_MOVED(objspace, any->as.string.as.heap.aux.shared);
                 VALUE new_root = any->as.string.as.heap.aux.shared;
-                rb_str_update_shared_ary(obj, old_root, new_root);
             }
 
             /* If, after move the string is not embedded, and can fit in the
