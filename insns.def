@@ -498,10 +498,11 @@ expandarray
 (rb_num_t num, rb_num_t flag)
 (..., VALUE ary)
 (...)
+// attr bool handles_sp = true;
 // attr bool leaf = false; /* has rb_check_array_type() */
 // attr rb_snum_t sp_inc = (rb_snum_t)num - 1 + (flag & 1 ? 1 : 0);
 {
-    vm_expandarray(GET_SP(), ary, num, (int)flag);
+    vm_expandarray(GET_CFP(), ary, num, (int)flag);
 }
 
 /* concat two arrays */
