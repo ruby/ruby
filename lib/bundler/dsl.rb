@@ -427,9 +427,13 @@ module Bundler
     def normalize_source(source)
       case source
       when :gemcutter, :rubygems, :rubyforge
-        Bundler::SharedHelpers.major_deprecation 2, "The source :#{source} is deprecated because HTTP " \
-          "requests are insecure.\nPlease change your source to 'https://" \
-          "rubygems.org' if possible, or 'http://rubygems.org' if not."
+        message =
+          "The source :#{source} is deprecated because HTTP requests are insecure.\n" \
+          "Please change your source to 'https://rubygems.org' if possible, or 'http://rubygems.org' if not."
+        removed_message =
+          "The source :#{source} is disallowed because HTTP requests are insecure.\n" \
+          "Please change your source to 'https://rubygems.org' if possible, or 'http://rubygems.org' if not."
+        Bundler::SharedHelpers.major_deprecation 2, message, :removed_message => removed_message
         "http://rubygems.org"
       when String
         source
@@ -474,10 +478,17 @@ module Bundler
           "should come from that source"
         raise GemfileEvalError, msg
       else
-        Bundler::SharedHelpers.major_deprecation 2, "Your Gemfile contains multiple global sources. " \
+        message =
+          "Your Gemfile contains multiple global sources. " \
           "Using `source` more than once without a block is a security risk, and " \
           "may result in installing unexpected gems. To resolve this warning, use " \
           "a block to indicate which gems should come from the secondary source."
+        removed_message =
+          "Your Gemfile contains multiple global sources. " \
+          "Using `source` more than once without a block is a security risk, and " \
+          "may result in installing unexpected gems. To resolve this error, use " \
+          "a block to indicate which gems should come from the secondary source."
+        Bundler::SharedHelpers.major_deprecation 2, message, :removed_message => removed_message
       end
     end
 

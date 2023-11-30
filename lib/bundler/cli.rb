@@ -190,7 +190,12 @@ module Bundler
     method_option "install", :type => :boolean, :banner =>
       "Runs 'bundle install' after removing the gems from the Gemfile"
     def remove(*gems)
-      SharedHelpers.major_deprecation(2, "The `--install` flag has been deprecated. `bundle install` is triggered by default.") if ARGV.include?("--install")
+      if ARGV.include?("--install")
+        message = "The `--install` flag has been deprecated. `bundle install` is triggered by default."
+        removed_message = "The `--install` flag has been removed. `bundle install` is triggered by default."
+        SharedHelpers.major_deprecation(2, message, :removed_message => removed_message)
+      end
+
       require_relative "cli/remove"
       Remove.new(gems, options).run
     end
@@ -324,7 +329,11 @@ module Bundler
     method_option "outdated", :type => :boolean,
                               :banner => "Show verbose output including whether gems are outdated."
     def show(gem_name = nil)
-      SharedHelpers.major_deprecation(2, "the `--outdated` flag to `bundle show` was undocumented and will be removed without replacement") if ARGV.include?("--outdated")
+      if ARGV.include?("--outdated")
+        message = "the `--outdated` flag to `bundle show` was undocumented and will be removed without replacement"
+        removed_message = "the `--outdated` flag to `bundle show` was undocumented and has been removed without replacement"
+        SharedHelpers.major_deprecation(2, message, :removed_message => removed_message)
+      end
       require_relative "cli/show"
       Show.new(options, gem_name).run
     end
@@ -462,11 +471,18 @@ module Bundler
     def cache
       print_remembered_flag_deprecation("--all", "cache_all", "true") if ARGV.include?("--all")
 
-      SharedHelpers.major_deprecation 2,
-        "The `--path` flag is deprecated because its semantics are unclear. " \
-        "Use `bundle config cache_path` to configure the path of your cache of gems, " \
-        "and `bundle config path` to configure the path where your gems are installed, " \
-        "and stop using this flag" if ARGV.include?("--path")
+      if ARGV.include?("--path")
+        message =
+          "The `--path` flag is deprecated because its semantics are unclear. " \
+          "Use `bundle config cache_path` to configure the path of your cache of gems, " \
+          "and `bundle config path` to configure the path where your gems are installed, " \
+          "and stop using this flag"
+        removed_message =
+          "The `--path` flag has been removed because its semantics were unclear. " \
+          "Use `bundle config cache_path` to configure the path of your cache of gems, " \
+          "and `bundle config path` to configure the path where your gems are installed."
+        SharedHelpers.major_deprecation 2, message, :removed_message => removed_message
+      end
 
       require_relative "cli/cache"
       Cache.new(options).run
@@ -484,7 +500,9 @@ module Bundler
     D
     def exec(*args)
       if ARGV.include?("--no-keep-file-descriptors")
-        SharedHelpers.major_deprecation(2, "The `--no-keep-file-descriptors` has been deprecated. `bundle exec` no longer mess with your file descriptors. Close them in the exec'd script if you need to")
+        message = "The `--no-keep-file-descriptors` has been deprecated. `bundle exec` no longer mess with your file descriptors. Close them in the exec'd script if you need to"
+        removed_message = "The `--no-keep-file-descriptors` has been removed. `bundle exec` no longer mess with your file descriptors. Close them in the exec'd script if you need to"
+        SharedHelpers.major_deprecation(2, message, :removed_message => removed_message)
       end
 
       require_relative "cli/exec"
@@ -763,7 +781,9 @@ module Bundler
       # when deprecated version of `--ext` is called
       # print out deprecation warning and pretend `--ext=c` was provided
       if deprecated_ext_value?(arguments)
-        SharedHelpers.major_deprecation 2, "Extensions can now be generated using C or Rust, so `--ext` with no arguments has been deprecated. Please select a language, e.g. `--ext=rust` to generate a Rust extension. This gem will now be generated as if `--ext=c` was used."
+        message = "Extensions can now be generated using C or Rust, so `--ext` with no arguments has been deprecated. Please select a language, e.g. `--ext=rust` to generate a Rust extension. This gem will now be generated as if `--ext=c` was used."
+        removed_message = "Extensions can now be generated using C or Rust, so `--ext` with no arguments has been removed. Please select a language, e.g. `--ext=rust` to generate a Rust extension."
+        SharedHelpers.major_deprecation 2, message, :removed_message => removed_message
         arguments[arguments.index("--ext")] = "--ext=c"
       end
     end
@@ -888,11 +908,17 @@ module Bundler
     end
 
     def print_remembered_flag_deprecation(flag_name, option_name, option_value)
-      Bundler::SharedHelpers.major_deprecation 2,
+      message =
         "The `#{flag_name}` flag is deprecated because it relies on being " \
         "remembered across bundler invocations, which bundler will no longer " \
         "do in future versions. Instead please use `bundle config set #{option_name} " \
         "#{option_value}`, and stop using this flag"
+      removed_message =
+        "The `#{flag_name}` flag has been removed because it relied on being " \
+        "remembered across bundler invocations, which bundler will no longer " \
+        "do. Instead please use `bundle config set #{option_name} " \
+        "#{option_value}`, and stop using this flag"
+      Bundler::SharedHelpers.major_deprecation 2, message, :removed_message => removed_message
     end
   end
 end
