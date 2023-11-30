@@ -991,7 +991,7 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                       PM_COMPILE_NOT_POPPED(splat_node->expression);
                   }
 
-                  ADD_INSN1(ret, &dummy_line_node, splatarray, popped ? Qfalse : Qtrue);
+                  ADD_INSN1(ret, &dummy_line_node, splatarray, Qfalse);
 
                   has_splat = true;
                   post_splat_counter = 0;
@@ -3798,9 +3798,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
 
         if (parameters_node && parameters_node->rest) {
-            body->param.rest_start = arg_size++;
-            body->param.flags.has_rest = true;
-            assert(body->param.rest_start != -1);
+            // If there's a trailing comma, we'll have an implicit rest node,
+            // and we don't want it to impact the rest variables on param
+            if (!(PM_NODE_TYPE_P(parameters_node->rest, PM_IMPLICIT_REST_NODE))) {
+                body->param.rest_start = arg_size++;
+                body->param.flags.has_rest = true;
+                assert(body->param.rest_start != -1);
+            }
         }
 
         if (posts_list && posts_list->size) {
@@ -3906,6 +3910,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 body->param.block_start = arg_size;
                 body->param.flags.has_block = true;
             }
+        }
+
+        // If there's only one required element in the parameters
+        // CRuby needs to recognize it as an ambiguous parameter
+        if (body->type == ISEQ_TYPE_BLOCK && arg_size == 1 && requireds_list && requireds_list->size == 1) {
+            body->param.flags.ambiguous_param0 = true;
         }
 
         iseq_calc_param_size(iseq);
