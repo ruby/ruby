@@ -6253,6 +6253,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
                 ENCODING2("EUC-JIS-2004", "EUC-JISX0213", pm_encoding_euc_jis_2004);
                 ENCODING2("EUC-KR", "eucKR", pm_encoding_euc_kr);
                 ENCODING2("EUC-CN", "eucCN", pm_encoding_gb2312);
+                ENCODING1("Emacs-Mule", pm_encoding_emacs_mule);
                 ENCODING1("external", pm_encoding_utf_8);
                 break;
             case 'F': case 'f':
@@ -6327,6 +6328,8 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
                 ENCODING1("SJIS-DoCoMo", pm_encoding_sjis_docomo);
                 ENCODING1("SJIS-KDDI", pm_encoding_sjis_kddi);
                 ENCODING1("SJIS-SoftBank", pm_encoding_sjis_softbank);
+                ENCODING1("stateless-ISO-2022-JP", pm_encoding_stateless_iso_2022_jp);
+                ENCODING1("stateless-ISO-2022-JP-KDDI", pm_encoding_stateless_iso_2022_jp_kddi);
                 break;
             case 'T': case 't':
                 ENCODING1("TIS-620", pm_encoding_tis_620);

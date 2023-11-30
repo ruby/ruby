@@ -6,8 +6,8 @@ require_relative "test_helper"
 
 module Prism
   class EncodingTest < TestCase
-    codepoints_1byte = 0x00...0x100
-    codepoints_2bytes = 0x00...0x10000
+    codepoints_1byte = 0...0x100
+    codepoints_2bytes = 0...0x10000
 
     encodings = {
       Encoding::ASCII =>         codepoints_1byte,
@@ -91,19 +91,29 @@ module Prism
     # are 3 and 4 byte representations so it can drastically slow down the test
     # suite.
     if ENV["PRISM_TEST_ALL_ENCODINGS"]
-      codepoints_eucjp = [*(0x00...0x10000), *(0x00...0x10000).map { |bytes| bytes | 0x8F0000 }]
-      codepoints_unicode = 0x00...0x110000
+      codepoints_eucjp = [*(0...0x10000), *(0...0x10000).map { |bytes| bytes | 0x8F0000 }]
+      codepoints_unicode = 0...0x110000
+      codepoints_emacs_mule = [
+        *(0...0x80),
+        *((0x81...0x90).flat_map { |byte1| (0x90...0x100).map { |byte2| byte1 << 8 | byte2 } }),
+        *((0x90...0x9C).flat_map { |byte1| (0xA0...0x100).flat_map { |byte2| (0xA0...0x100).flat_map { |byte3| byte1 << 16 | byte2 << 8 | byte3 } } }),
+        *((0xF0...0xF5).flat_map { |byte2| (0xA0...0x100).flat_map { |byte3| (0xA0...0x100).flat_map { |byte4| 0x9C << 24 | byte3 << 16 | byte3 << 8 | byte4 } } }),
+      ]
 
+      encodings.clear
       encodings.merge!(
-        Encoding::CP51932 =>       codepoints_eucjp,
-        Encoding::EUC_JP =>        codepoints_eucjp,
-        Encoding::EUCJP_MS =>      codepoints_eucjp,
-        Encoding::EUC_JIS_2004 =>  codepoints_eucjp,
-        Encoding::UTF_8 =>         codepoints_unicode,
-        Encoding::UTF8_MAC =>      codepoints_unicode,
-        Encoding::UTF8_DoCoMo =>   codepoints_unicode,
-        Encoding::UTF8_KDDI =>     codepoints_unicode,
-        Encoding::UTF8_SoftBank => codepoints_unicode
+        Encoding::CP51932 =>                    codepoints_eucjp,
+        Encoding::EUC_JP =>                     codepoints_eucjp,
+        Encoding::EUCJP_MS =>                   codepoints_eucjp,
+        Encoding::EUC_JIS_2004 =>               codepoints_eucjp,
+        Encoding::UTF_8 =>                      codepoints_unicode,
+        Encoding::UTF8_MAC =>                   codepoints_unicode,
+        Encoding::UTF8_DoCoMo =>                codepoints_unicode,
+        Encoding::UTF8_KDDI =>                  codepoints_unicode,
+        Encoding::UTF8_SoftBank =>              codepoints_unicode,
+        Encoding::EMACS_MULE =>                 codepoints_emacs_mule,
+        Encoding::STATELESS_ISO_2022_JP =>      codepoints_emacs_mule,
+        Encoding::STATELESS_ISO_2022_JP_KDDI => codepoints_emacs_mule,
       )
     end
 
