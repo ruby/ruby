@@ -84,7 +84,7 @@ module Prism
         assert_includes(symbols, "pm_version")
       end
       names(local_nm_symbols(@libprism_so)).tap do |symbols|
-        assert_includes(symbols, "pm_encoding_shift_jis_isupper_char")
+        assert_includes(symbols, "pm_encoding_utf_8_isupper_char")
       end
       # TODO: someone who uses this library needs to finish this test
     end

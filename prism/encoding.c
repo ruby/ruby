@@ -4214,7 +4214,7 @@ pm_encoding_shift_jis_char_width(const uint8_t *b, ptrdiff_t n) {
 /**
  * This is the definition of all of the encodings that we support.
  */
-static const pm_encoding_t pm_encodings[PM_ENCODING_MAXIMUM] = {
+static const pm_encoding_t pm_encodings[] = {
     [PM_ENCODING_UTF_8] = {
         .name = "UTF-8",
         .char_width = pm_encoding_utf_8_char_width,
