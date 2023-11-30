@@ -21,17 +21,17 @@ pm_encoding_big5_char_width(const uint8_t *b, ptrdiff_t n) {
 
 static size_t
 pm_encoding_big5_alpha_char(const uint8_t *b, ptrdiff_t n) {
-    return (pm_encoding_big5_char_width(b, n) == 1) ? pm_encoding_ascii_alpha_char(b, n) : 0;
+    return (*b < 0x80) ? pm_encoding_ascii_alpha_char(b, n) : 0;
 }
 
 static size_t
 pm_encoding_big5_alnum_char(const uint8_t *b, ptrdiff_t n) {
-    return (pm_encoding_big5_char_width(b, n) == 1) ? pm_encoding_ascii_alnum_char(b, n) : 0;
+    return (*b < 0x80) ? pm_encoding_ascii_alnum_char(b, n) : 0;
 }
 
 static bool
 pm_encoding_big5_isupper_char(const uint8_t *b, ptrdiff_t n) {
-    return (pm_encoding_big5_char_width(b, n) == 1) && pm_encoding_ascii_isupper_char(b, n);
+    return (*b < 0x80) && pm_encoding_ascii_isupper_char(b, n);
 }
 
 /** Big5 encoding */
@@ -125,17 +125,17 @@ pm_encoding_emacs_mule_char_width(const uint8_t *b, ptrdiff_t n) {
 
 static size_t
 pm_encoding_emacs_mule_alpha_char(const uint8_t *b, ptrdiff_t n) {
-    return (pm_encoding_emacs_mule_char_width(b, n) == 1) ? pm_encoding_ascii_alpha_char(b, n) : 0;
+    return (*b < 0x80) ? pm_encoding_ascii_alpha_char(b, n) : 0;
 }
 
 static size_t
 pm_encoding_emacs_mule_alnum_char(const uint8_t *b, ptrdiff_t n) {
-    return (pm_encoding_emacs_mule_char_width(b, n) == 1) ? pm_encoding_ascii_alnum_char(b, n) : 0;
+    return (*b < 0x80) ? pm_encoding_ascii_alnum_char(b, n) : 0;
 }
 
 static bool
 pm_encoding_emacs_mule_isupper_char(const uint8_t *b, ptrdiff_t n) {
-    return (pm_encoding_emacs_mule_char_width(b, n) == 1) && pm_encoding_ascii_isupper_char(b, n);
+    return (*b < 0x80) && pm_encoding_ascii_isupper_char(b, n);
 }
 
 /** Emacs-Mule encoding */
@@ -190,17 +190,17 @@ pm_encoding_gb18030_char_width(const uint8_t *b, ptrdiff_t n) {
 
 static size_t
 pm_encoding_gb18030_alpha_char(const uint8_t *b, ptrdiff_t n) {
-    return (pm_encoding_gb18030_char_width(b, n) == 1) ? pm_encoding_ascii_alpha_char(b, n) : 0;
+    return (*b < 0x80) ? pm_encoding_ascii_alpha_char(b, n) : 0;
 }
 
 static size_t
 pm_encoding_gb18030_alnum_char(const uint8_t *b, ptrdiff_t n) {
-    return (pm_encoding_gb18030_char_width(b, n) == 1) ? pm_encoding_ascii_alnum_char(b, n) : 0;
+    return (*b < 0x80) ? pm_encoding_ascii_alnum_char(b, n) : 0;
 }
 
 static bool
 pm_encoding_gb18030_isupper_char(const uint8_t *b, ptrdiff_t n) {
-    return (pm_encoding_gb18030_char_width(b, n) == 1) && pm_encoding_ascii_isupper_char(b, n);
+    return (*b < 0x80) && pm_encoding_ascii_isupper_char(b, n);
 }
 
 /** GB18030 encoding */
