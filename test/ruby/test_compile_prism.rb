@@ -847,6 +847,15 @@ module Prism
       assert_prism_eval("[].tap { _1 }")
 
       assert_prism_eval("[].each { |a,| }")
+
+      assert_prism_eval("[[]].map { |a| a }")
+      assert_prism_eval("[[]].map { |a| a }")
+      assert_prism_eval("[[]].map { |a, &block| a }")
+      assert_prism_eval("[[]].map { |a, &block| a }")
+      assert_prism_eval("[{}].map { |a,| }")
+      assert_prism_eval("[[]].map { |a,b=1| a }")
+      assert_prism_eval("[{}].map { |a,| }")
+      assert_prism_eval("[{}].map { |a| a }")
     end
 
     def test_ClassNode
