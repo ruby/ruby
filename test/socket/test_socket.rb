@@ -774,7 +774,7 @@ class TestSocket < Test::Unit::TestCase
     begin
       Socket.getaddrinfo("www.kame.net", 80, "AF_UNIX")
     rescue => e
-      assert_equal(e.error_code, Socket::EAI_FAMILY)
+      assert_equal(Socket::EAI_FAMILY, e.error_code)
     end
   end
 
