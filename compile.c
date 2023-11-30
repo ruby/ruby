@@ -3892,7 +3892,9 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                         OPERAND_AT(iobj, 0) = Qfalse;
                     }
                 }
-            } else if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable)) {
+            }
+            else if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable) ||
+                   IS_NEXT_INSN_ID(niobj, getblockparamproxy)) {
                 niobj = niobj->next;
 
                 /*
@@ -3900,12 +3902,12 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 *
                 *  splatarray true
                 *  getlocal / getinstancevariable
-                *  getlocal / getinstancevariable
+                *  getlocal / getinstancevariable / getblockparamproxy
                 *  send ARGS_SPLAT|KW_SPLAT|ARGS_BLOCKARG
                 * =>
                 *  splatarray false
                 *  getlocal / getinstancevariable
-                *  getlocal / getinstancevariable
+                *  getlocal / getinstancevariable / getblockparamproxy
                 *  send
                 */
                 if (IS_NEXT_INSN_ID(niobj, send)) {
@@ -3917,7 +3919,31 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                     }
                 }
             }
-        } else if (IS_NEXT_INSN_ID(niobj, duphash)) {
+        }
+        else if (IS_NEXT_INSN_ID(niobj, getblockparamproxy)) {
+            niobj = niobj->next;
+
+            if (IS_NEXT_INSN_ID(niobj, send)) {
+                niobj = niobj->next;
+                unsigned int flag = vm_ci_flag((const struct rb_callinfo *)OPERAND_AT(niobj, 0));
+
+                /*
+                * Eliminate array allocation for f(1, *a, &arg)
+                *
+                *  splatarray true
+                *  getblockparamproxy
+                *  send ARGS_SPLAT|ARGS_BLOCKARG and not KW_SPLAT
+                * =>
+                *  splatarray false
+                *  getblockparamproxy
+                *  send
+                */
+                if ((flag & VM_CALL_ARGS_BLOCKARG) & (flag & VM_CALL_ARGS_SPLAT) && !(flag & VM_CALL_KW_SPLAT)) {
+                        OPERAND_AT(iobj, 0) = Qfalse;
+                }
+            }
+        }
+        else if (IS_NEXT_INSN_ID(niobj, duphash)) {
             niobj = niobj->next;
 
             /*
@@ -3940,7 +3966,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                     OPERAND_AT(iobj, 0) = Qfalse;
                 }
             }
-            else if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable)) {
+            else if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable) ||
+                   IS_NEXT_INSN_ID(niobj, getblockparamproxy)) {
                 niobj = niobj->next;
 
                 /*
@@ -3948,12 +3975,12 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
                 *
                 *  splatarray true
                 *  duphash
-                *  getlocal / getinstancevariable
+                *  getlocal / getinstancevariable / getblockparamproxy
                 *  send ARGS_SPLAT|KW_SPLAT|KW_SPLAT_MUT|ARGS_BLOCKARG
                 * =>
                 *  splatarray false
                 *  duphash
-                *  getlocal / getinstancevariable
+                *  getlocal / getinstancevariable / getblockparamproxy
                 *  send
                 */
                 if (IS_NEXT_INSN_ID(niobj, send)) {
