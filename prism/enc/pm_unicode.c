@@ -2344,6 +2344,100 @@ pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
     }
 }
 
+static pm_unicode_codepoint_t
+pm_cesu_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
+    if (b[0] < 0x80) {
+        *width = 1;
+        return (pm_unicode_codepoint_t) b[0];
+    }
+
+    if (n > 1 && b[0] >= 0xC2 && b[0] <= 0xDF && b[1] >= 0x80 && b[1] <= 0xBF) {
+        *width = 2;
+
+        // 110xxxxx 10xxxxxx
+        return (pm_unicode_codepoint_t) (((b[0] & 0x1F) << 6) | (b[1] & 0x3F));
+    }
+
+    if (n > 5 && b[0] == 0xED && b[1] >= 0xA0 && b[1] <= 0xAF && b[2] >= 0x80 && b[2] <= 0xBF && b[3] == 0xED && b[4] >= 0xB0 && b[4] <= 0xBF && b[5] >= 0x80 && b[5] <= 0xBF) {
+        *width = 6;
+
+        // 11101101 1010xxxx 10xxxxxx 11101101 1011xxxx 10xxxxxx
+        return (pm_unicode_codepoint_t) (0x10000 + (((b[1] & 0xF) << 16) | ((b[2] & 0x3F) << 10) | ((b[4] & 0xF) << 6) | (b[5] & 0x3F)));
+    }
+
+    if (n > 2 && b[0] == 0xED && b[1] >= 0xA0 && b[1] <= 0xBF) {
+        *width = 3;
+
+        // 11101101 1010xxxx 10xxxxx
+        return (pm_unicode_codepoint_t) (0x10000 + (((b[0] & 0x03) << 16) | ((b[1] & 0x3F) << 10) | (b[2] & 0x3F)));
+    }
+
+    if (n > 2 && ((b[0] == 0xE0 && b[1] >= 0xA0) || (b[0] >= 0xE1 && b[0] <= 0xEF && b[1] >= 0x80)) && b[1] <= 0xBF && b[2] >= 0x80 && b[2] <= 0xBF) {
+        *width = 3;
+
+        // 1110xxxx 10xxxxxx 10xxxxx
+        return (pm_unicode_codepoint_t) (((b[0] & 0xF) << 12) | ((b[1] & 0x3F) << 6) | (b[2] & 0x3F));
+    }
+
+    *width = 0;
+    return 0;
+}
+
+static size_t
+pm_encoding_cesu_8_char_width(const uint8_t *b, ptrdiff_t n) {
+    size_t width;
+    pm_cesu_8_codepoint(b, n, &width);
+    return width;
+}
+
+static size_t
+pm_encoding_cesu_8_alpha_char(const uint8_t *b, ptrdiff_t n) {
+    if (*b < 0x80) {
+        return (pm_encoding_unicode_table[*b] & PRISM_ENCODING_ALPHABETIC_BIT) ? 1 : 0;
+    }
+
+    size_t width;
+    pm_unicode_codepoint_t codepoint = pm_cesu_8_codepoint(b, n, &width);
+
+    if (codepoint <= 0xFF) {
+        return (pm_encoding_unicode_table[(uint8_t) codepoint] & PRISM_ENCODING_ALPHABETIC_BIT) ? width : 0;
+    } else {
+        return pm_unicode_codepoint_match(codepoint, unicode_alpha_codepoints, UNICODE_ALPHA_CODEPOINTS_LENGTH) ? width : 0;
+    }
+}
+
+static size_t
+pm_encoding_cesu_8_alnum_char(const uint8_t *b, ptrdiff_t n) {
+    if (*b < 0x80) {
+        return (pm_encoding_unicode_table[*b] & (PRISM_ENCODING_ALPHANUMERIC_BIT)) ? 1 : 0;
+    }
+
+    size_t width;
+    pm_unicode_codepoint_t codepoint = pm_cesu_8_codepoint(b, n, &width);
+
+    if (codepoint <= 0xFF) {
+        return (pm_encoding_unicode_table[(uint8_t) codepoint] & (PRISM_ENCODING_ALPHANUMERIC_BIT)) ? width : 0;
+    } else {
+        return pm_unicode_codepoint_match(codepoint, unicode_alnum_codepoints, UNICODE_ALNUM_CODEPOINTS_LENGTH) ? width : 0;
+    }
+}
+
+bool
+pm_encoding_cesu_8_isupper_char(const uint8_t *b, ptrdiff_t n) {
+    if (*b < 0x80) {
+        return (pm_encoding_unicode_table[*b] & PRISM_ENCODING_UPPERCASE_BIT) ? true : false;
+    }
+
+    size_t width;
+    pm_unicode_codepoint_t codepoint = pm_cesu_8_codepoint(b, n, &width);
+
+    if (codepoint <= 0xFF) {
+        return (pm_encoding_unicode_table[(uint8_t) codepoint] & PRISM_ENCODING_UPPERCASE_BIT) ? true : false;
+    } else {
+        return pm_unicode_codepoint_match(codepoint, unicode_isupper_codepoints, UNICODE_ISUPPER_CODEPOINTS_LENGTH) ? true : false;
+    }
+}
+
 #undef UNICODE_ALPHA_CODEPOINTS_LENGTH
 #undef UNICODE_ALNUM_CODEPOINTS_LENGTH
 #undef UNICODE_ISUPPER_CODEPOINTS_LENGTH
@@ -2395,5 +2489,15 @@ pm_encoding_t pm_encoding_utf8_softbank = {
     .alnum_char = pm_encoding_utf_8_alnum_char,
     .alpha_char = pm_encoding_utf_8_alpha_char,
     .isupper_char = pm_encoding_utf_8_isupper_char,
+    .multibyte = true
+};
+
+/** CESU-8 */
+pm_encoding_t pm_encoding_cesu_8 = {
+    .name = "CESU-8",
+    .char_width = pm_encoding_cesu_8_char_width,
+    .alnum_char = pm_encoding_cesu_8_alnum_char,
+    .alpha_char = pm_encoding_cesu_8_alpha_char,
+    .isupper_char = pm_encoding_cesu_8_isupper_char,
     .multibyte = true
 };
