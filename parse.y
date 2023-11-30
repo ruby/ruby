@@ -1149,8 +1149,16 @@ set_embraced_location(NODE *node, const rb_code_location_t *beg, const rb_code_l
 static NODE *
 last_expr_node(NODE *expr)
 {
-    if (nd_type_p(expr, NODE_BLOCK)) {
-        expr = RNODE_BLOCK(RNODE_BLOCK(expr)->nd_end)->nd_head;
+    while (expr) {
+        if (nd_type_p(expr, NODE_BLOCK)) {
+            expr = RNODE_BLOCK(RNODE_BLOCK(expr)->nd_end)->nd_head;
+        }
+        else if (nd_type_p(expr, NODE_BEGIN)) {
+            expr = RNODE_BEGIN(expr)->nd_body;
+        }
+        else {
+            break;
+        }
     }
     return expr;
 }
@@ -3887,7 +3895,7 @@ primary		: literal
                     {
                     /*%%%*/
                         if (nd_type_p($2, NODE_SELF)) RNODE_SELF($2)->nd_state = 0;
-                        $$ = $2;
+                        $$ = NEW_BEGIN($2, &@$);
                     /*% %*/
                     /*% ripper: paren!($2) %*/
                     }
@@ -12600,8 +12608,6 @@ static NODE*
 last_expr_once_body(NODE *node)
 {
     if (!node) return 0;
-    node = last_expr_node(node);
-    if (!node) return 0;
     return nd_once_body(node);
 }
 
@@ -14096,6 +14102,10 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
     assign_in_cond(p, node);
 
     switch (nd_type(node)) {
+      case NODE_BEGIN:
+        RNODE_BEGIN(node)->nd_body = cond0(p, RNODE_BEGIN(node)->nd_body, type, loc);
+        break;
+
       case NODE_DSTR:
       case NODE_EVSTR:
       case NODE_STR:
