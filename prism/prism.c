@@ -6262,6 +6262,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
             case 'G': case 'g':
                 ENCODING1("GBK", pm_encoding_gbk);
                 ENCODING1("GB12345", pm_encoding_gb12345);
+                ENCODING1("GB18030", pm_encoding_gb18030);
                 ENCODING1("GB1988", pm_encoding_gb1988);
                 ENCODING1("GB2312", pm_encoding_gb2312);
                 break;
