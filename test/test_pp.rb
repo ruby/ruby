@@ -143,7 +143,7 @@ class PPCycleTest < Test::Unit::TestCase
     assert_equal("#{a.inspect}\n", PP.pp(a, ''.dup))
   end
 
-  if "3.2" <= RUBY_VERSION
+  if defined?(Data.define)
     D = Data.define(:aaa, :bbb)
     def test_data
       a = D.new("aaa", "bbb")
