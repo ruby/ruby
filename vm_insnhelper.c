@@ -1866,11 +1866,9 @@ rb_vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_nu
 }
 
 static inline void
-vm_expandarray(VALUE *sp, VALUE ary, rb_num_t num, int flag)
+vm_expandarray(struct rb_control_frame_struct *cfp, VALUE ary, rb_num_t num, int flag)
 {
     int is_splat = flag & 0x01;
-    rb_num_t space_size = num + is_splat;
-    VALUE *base = sp - 1;
     const VALUE *ptr;
     rb_num_t len;
     const VALUE obj = ary;
@@ -1885,7 +1883,7 @@ vm_expandarray(VALUE *sp, VALUE ary, rb_num_t num, int flag)
         len = (rb_num_t)RARRAY_LEN(ary);
     }
 
-    if (space_size == 0) {
+    if (num + is_splat == 0) {
         /* no space left on stack */
     }
     else if (flag & 0x02) {
@@ -1893,41 +1891,48 @@ vm_expandarray(VALUE *sp, VALUE ary, rb_num_t num, int flag)
         rb_num_t i = 0, j;
 
         if (len < num) {
-            for (i=0; i<num-len; i++) {
-                *base++ = Qnil;
+            for (i = 0; i < num - len; i++) {
+                *cfp->sp++ = Qnil;
             }
         }
-        for (j=0; i<num; i++, j++) {
+
+        for (j = 0; i < num; i++, j++) {
             VALUE v = ptr[len - j - 1];
-            *base++ = v;
+            *cfp->sp++ = v;
         }
+
         if (is_splat) {
-            *base = rb_ary_new4(len - j, ptr);
+            *cfp->sp++ = rb_ary_new4(len - j, ptr);
         }
     }
     else {
         /* normal: ary[num..-1], ary[num-2], ary[num-3], ..., ary[0] # top */
-        rb_num_t i;
-        VALUE *bptr = &base[space_size - 1];
-
-        for (i=0; i<num; i++) {
-            if (len <= i) {
-                for (; i<num; i++) {
-                    *bptr-- = Qnil;
-                }
-                break;
-            }
-            *bptr-- = ptr[i];
-        }
         if (is_splat) {
             if (num > len) {
-                *bptr = rb_ary_new();
+                *cfp->sp++ = rb_ary_new();
             }
             else {
-                *bptr = rb_ary_new4(len - num, ptr + num);
+                *cfp->sp++ = rb_ary_new4(len - num, ptr + num);
+            }
+        }
+
+        if (num > len) {
+            rb_num_t i = 0;
+            for (; i < num - len; i++) {
+                *cfp->sp++ = Qnil;
+            }
+
+            for (rb_num_t j = 0; i < num; i++, j++) {
+                *cfp->sp++ = ptr[len - j - 1];
+            }
+        }
+        else {
+            for (rb_num_t j = 0; j < num; j++) {
+                *cfp->sp++ = ptr[num - j - 1];
             }
         }
     }
+
     RB_GC_GUARD(ary);
 }
 
