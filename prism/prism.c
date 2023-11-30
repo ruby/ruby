@@ -10981,7 +10981,6 @@ parse_targets(pm_parser_t *parser, pm_node_t *first_target, pm_binding_power_t b
             // We'll set the implicit rest flag to indicate this.
             pm_node_t *rest = (pm_node_t *) pm_implicit_rest_node_create(parser, &parser->previous);
             pm_multi_target_node_targets_append(parser, result, rest);
-            has_rest = true;
             break;
         }
     }
