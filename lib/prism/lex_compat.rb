@@ -729,16 +729,31 @@ module Prism
             # comment and there is still whitespace after the comment, then
             # Ripper will append a on_nl token (even though there isn't
             # necessarily a newline). We mirror that here.
-            start_offset = previous_token.location.end_offset
-            end_offset = token.location.start_offset
+            if previous_token.type == :COMMENT
+              # If the token before the comment was a heredoc end, then
+              # the comment's end_offset is before the heredoc end token.
+              # This is not the correct offset to use for figuring out if
+              # there is trailing whitespace after the comment.
+              # Use the end_offset of the heredoc end instead.
+              before_comment = result_value[index - 2]
+              before_comment &&= before_comment[0]
 
-            if previous_token.type == :COMMENT && start_offset < end_offset
-              if bom
-                start_offset += 3
-                end_offset += 3
+              if before_comment&.type == :HEREDOC_END
+                start_offset = before_comment.location.end_offset
+              else
+                start_offset = previous_token.location.end_offset
               end
 
-              tokens << Token.new([[lineno, 0], :on_nl, source.byteslice(start_offset...end_offset), lex_state])
+              end_offset = token.location.start_offset
+
+              if start_offset < end_offset
+                if bom
+                  start_offset += 3
+                  end_offset += 3
+                end
+
+                tokens << Token.new([[lineno, 0], :on_nl, source.byteslice(start_offset...end_offset), lex_state])
+              end
             end
 
             Token.new([[lineno, column], event, value, lex_state])
