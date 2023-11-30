@@ -32,7 +32,7 @@ module Bundler
         lines(versions_path).each do |line|
           name, versions_string, info_checksum = line.split(" ", 3)
           info_checksums_by_name[name] = info_checksum || ""
-          versions_string.split(",").each do |version|
+          versions_string.split(",") do |version|
             delete = version.delete_prefix!("-")
             version = version.split("-", 2).unshift(name)
             if delete
