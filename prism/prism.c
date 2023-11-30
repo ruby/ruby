@@ -6155,19 +6155,7 @@ static bool
 parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
     size_t width = (size_t) (end - start);
 
-    // First, we're going to call out to a user-defined callback if one was
-    // provided. If they return an encoding struct that we can use, then we'll
-    // use that here.
-    if (parser->encoding_decode_callback != NULL) {
-        pm_encoding_t *encoding = parser->encoding_decode_callback(parser, start, width);
-
-        if (encoding != NULL) {
-            parser->encoding = *encoding;
-            return true;
-        }
-    }
-
-    // Next, we're going to check for UTF-8. This is the most common encoding.
+    // First, we're going to check for UTF-8. This is the most common encoding.
     // utf-8 can contain extra information at the end about the platform it is
     // encoded on, such as utf-8-mac or utf-8-unix. We'll ignore those suffixes.
     if ((start + 5 <= end) && (pm_strncasecmp(start, (const uint8_t *) "utf-8", 5) == 0)) {
@@ -17039,7 +17027,6 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         .current_context = NULL,
         .encoding = pm_encoding_utf_8,
         .encoding_changed_callback = NULL,
-        .encoding_decode_callback = NULL,
         .encoding_comment_start = source,
         .lex_callback = NULL,
         .filepath_string = { 0 },
@@ -17152,18 +17139,6 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
 PRISM_EXPORTED_FUNCTION void
 pm_parser_register_encoding_changed_callback(pm_parser_t *parser, pm_encoding_changed_callback_t callback) {
     parser->encoding_changed_callback = callback;
-}
-
-/**
- * Register a callback that will be called when prism encounters a magic comment
- * with an encoding referenced that it doesn't understand. The callback should
- * return NULL if it also doesn't understand the encoding or it should return a
- * pointer to a pm_encoding_t struct that contains the functions necessary to
- * parse identifiers.
- */
-PRISM_EXPORTED_FUNCTION void
-pm_parser_register_encoding_decode_callback(pm_parser_t *parser, pm_encoding_decode_callback_t callback) {
-    parser->encoding_decode_callback = callback;
 }
 
 /**
