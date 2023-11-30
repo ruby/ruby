@@ -1324,6 +1324,36 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_return_to_invalidated_frame
+    assert_compiles(code_gc_helpers + <<~RUBY, exits: :any, result: :ok)
+      def jump
+        [] # something not inlined
+      end
+
+      def entry(code_gc)
+        jit_exception(code_gc)
+        jump # faulty jump after code GC. #jit_exception should not come back.
+      end
+
+      def jit_exception(code_gc)
+        if code_gc
+          tap do
+            RubyVM::YJIT.code_gc
+            break # jit_exec_exception catches TAG_BREAK and re-enters JIT code
+          end
+        end
+      end
+
+      add_pages(100)
+      jump           # Compile #jump in a non-first page
+      add_pages(100)
+      entry(false)   # Compile #entry and its call to #jump in another page
+      entry(true)    # Free #jump but not #entry
+
+      :ok
+    RUBY
+  end
+
   def test_setivar_on_class
     # Bug in https://github.com/ruby/ruby/pull/8152
     assert_compiles(<<~RUBY, result: :ok)

@@ -11,6 +11,7 @@ use crate::utils::IntoUsize;
 use crate::yjit::yjit_enabled_p;
 
 use std::collections::{HashMap, HashSet};
+use std::os::raw::c_void;
 use std::mem;
 
 // Invariants to track:
@@ -516,6 +517,17 @@ pub extern "C" fn rb_yjit_tracing_invalidate_all() {
         });
 
         let cb = CodegenGlobals::get_inline_cb();
+
+        // Prevent on-stack frames from jumping to the caller on jit_exec_exception
+        extern "C" {
+            fn rb_yjit_cancel_jit_return(leave_exit: *mut c_void, leave_exception: *mut c_void) -> VALUE;
+        }
+        unsafe {
+            rb_yjit_cancel_jit_return(
+                CodegenGlobals::get_leave_exit_code().raw_ptr(cb) as _,
+                CodegenGlobals::get_leave_exception_code().raw_ptr(cb) as _,
+            );
+        }
 
         // Apply patches
         let old_pos = cb.get_write_pos();

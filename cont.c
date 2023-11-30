@@ -1291,17 +1291,35 @@ rb_jit_cont_each_iseq(rb_iseq_callback callback, void *data)
             continue;
 
         const rb_control_frame_t *cfp;
-        for (cfp = RUBY_VM_END_CONTROL_FRAME(cont->ec) - 1; ; cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+        for (cfp = RUBY_VM_END_CONTROL_FRAME(cont->ec) - 1; cfp >= cont->ec->cfp; cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
             const rb_iseq_t *iseq;
             if (cfp->pc && (iseq = cfp->iseq) != NULL && imemo_type((VALUE)iseq) == imemo_iseq) {
                 callback(iseq, data);
             }
-
-            if (cfp == cont->ec->cfp)
-                break; // reached the most recent cfp
         }
     }
 }
+
+#if USE_YJIT
+// Update the jit_return of all CFPs to leave_exit unless it's leave_exception or not set.
+// This prevents jit_exec_exception from jumping to the caller after invalidation.
+void
+rb_yjit_cancel_jit_return(void *leave_exit, void *leave_exception)
+{
+    struct rb_jit_cont *cont;
+    for (cont = first_jit_cont; cont != NULL; cont = cont->next) {
+        if (cont->ec->vm_stack == NULL)
+            continue;
+
+        const rb_control_frame_t *cfp;
+        for (cfp = RUBY_VM_END_CONTROL_FRAME(cont->ec) - 1; cfp >= cont->ec->cfp; cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
+            if (cfp->jit_return && cfp->jit_return != leave_exception) {
+                ((rb_control_frame_t *)cfp)->jit_return = leave_exit;
+            }
+        }
+    }
+}
+#endif
 
 // Finish working with jit_cont.
 void
