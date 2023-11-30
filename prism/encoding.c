@@ -3918,7 +3918,7 @@ pm_encoding_ascii_char_width(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t 
  * Return the size of the next character in the ASCII encoding if it is an
  * alphabetical character.
  */
-size_t
+static size_t
 pm_encoding_ascii_alpha_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {
     return (pm_encoding_ascii_table[*b] & PRISM_ENCODING_ALPHABETIC_BIT);
 }
@@ -3937,7 +3937,7 @@ pm_encoding_ascii_alpha_char_7bit(const uint8_t *b, ptrdiff_t n) {
  * Return the size of the next character in the ASCII encoding if it is an
  * alphanumeric character.
  */
-size_t
+static size_t
 pm_encoding_ascii_alnum_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {
     return (pm_encoding_ascii_table[*b] & PRISM_ENCODING_ALPHANUMERIC_BIT) ? 1 : 0;
 }
@@ -3956,7 +3956,7 @@ pm_encoding_ascii_alnum_char_7bit(const uint8_t *b, ptrdiff_t n) {
  * Return true if the next character in the ASCII encoding if it is an uppercase
  * character.
  */
-bool
+static bool
 pm_encoding_ascii_isupper_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {
     return (pm_encoding_ascii_table[*b] & PRISM_ENCODING_UPPERCASE_BIT);
 }

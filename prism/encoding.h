@@ -79,39 +79,6 @@ typedef struct {
 #define PRISM_ENCODING_UPPERCASE_BIT 1 << 2
 
 /**
- * Return the size of the next character in the ASCII encoding if it is an
- * alphabetical character.
- *
- * @param b The bytes to read.
- * @param n The number of bytes that can be read.
- * @returns The number of bytes that the next character takes if it is valid in
- *     the encoding, or 0 if it is not.
- */
-size_t pm_encoding_ascii_alpha_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n);
-
-/**
- * Return the size of the next character in the ASCII encoding if it is an
- * alphanumeric character.
- *
- * @param b The bytes to read.
- * @param n The number of bytes that can be read.
- * @returns The number of bytes that the next character takes if it is valid in
- *     the encoding, or 0 if it is not.
- */
-size_t pm_encoding_ascii_alnum_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n);
-
-/**
- * Return true if the next character in the ASCII encoding if it is an uppercase
- * character.
- *
- * @param b The bytes to read.
- * @param n The number of bytes that can be read.
- * @returns True if the next character is valid in the encoding and is an
- *     uppercase character, or false if it is not.
- */
-bool pm_encoding_ascii_isupper_char(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n);
-
-/**
  * Return the size of the next character in the UTF-8 encoding if it is an
  * alphabetical character.
  *
