@@ -4949,6 +4949,31 @@ fn jit_rb_ary_empty_p(
     return true;
 }
 
+// Codegen for rb_ary_length()
+fn jit_rb_ary_length(
+    _jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    let array_opnd = asm.stack_pop(1);
+    let array_reg = asm.load(array_opnd);
+    let len_opnd = get_array_len(asm, array_reg);
+
+    // Convert the length to a fixnum
+    let shifted_val = asm.lshift(len_opnd, Opnd::UImm(1));
+    let out_val = asm.or(shifted_val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+
+    let out_opnd = asm.stack_push(Type::Fixnum);
+    asm.store(out_opnd, out_val);
+
+    return true;
+}
+
 fn jit_rb_ary_push(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -8792,6 +8817,8 @@ pub fn yjit_reg_method_codegen_fns() {
         yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
 
         yjit_reg_method(rb_cArray, "empty?", jit_rb_ary_empty_p);
+        yjit_reg_method(rb_cArray, "length", jit_rb_ary_length);
+        yjit_reg_method(rb_cArray, "size", jit_rb_ary_length);
         yjit_reg_method(rb_cArray, "<<", jit_rb_ary_push);
 
         yjit_reg_method(rb_mKernel, "respond_to?", jit_obj_respond_to);
@@ -8877,7 +8904,6 @@ impl CodegenGlobals {
     pub fn init() {
         // Executable memory and code page size in bytes
         let mem_size = get_option!(exec_mem_size);
-
 
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {
