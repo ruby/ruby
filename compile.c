@@ -2068,6 +2068,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
         if (rest_id) {
             body->param.rest_start = arg_size++;
             body->param.flags.has_rest = TRUE;
+            if (rest_id == '*') body->param.flags.anon_rest = TRUE;
             assert(body->param.rest_start != -1);
         }
 
@@ -2086,10 +2087,15 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
             arg_size = iseq_set_arguments_keywords(iseq, optargs, args, arg_size);
         }
         else if (args->kw_rest_arg) {
+            ID kw_id = iseq->body->local_table[arg_size];
             struct rb_iseq_param_keyword *keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
             keyword->rest_start = arg_size++;
             body->param.keyword = keyword;
             body->param.flags.has_kwrest = TRUE;
+
+            static ID anon_kwrest = 0;
+            if (!anon_kwrest) anon_kwrest = rb_intern("**");
+            if (kw_id == anon_kwrest) body->param.flags.anon_kwrest = TRUE;
         }
         else if (args->no_kwarg) {
             body->param.flags.accepts_no_kwarg = TRUE;
@@ -12801,6 +12807,8 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->param.flags.ambiguous_param0 = (param_flags >> 7) & 1;
     load_body->param.flags.accepts_no_kwarg = (param_flags >> 8) & 1;
     load_body->param.flags.ruby2_keywords = (param_flags >> 9) & 1;
+    load_body->param.flags.anon_rest = (param_flags >> 10) & 1;
+    load_body->param.flags.anon_kwrest = (param_flags >> 11) & 1;
     load_body->param.size = param_size;
     load_body->param.lead_num = param_lead_num;
     load_body->param.opt_num = param_opt_num;
