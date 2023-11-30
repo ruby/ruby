@@ -1915,6 +1915,7 @@ module Prism
         a, b = c = d f
         a ? b c : d e
         defined? a b
+        ! ! a b
         def f a = b c; end
         def f(a = b c); end
         ->a=b c{}

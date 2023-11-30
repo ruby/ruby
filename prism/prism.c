@@ -15058,7 +15058,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     }
                 }
             } else {
-                receiver = parse_expression(parser, PM_BINDING_POWER_DEFINED, PM_ERR_NOT_EXPRESSION, true);
+                receiver = parse_expression(parser, PM_BINDING_POWER_NOT, PM_ERR_NOT_EXPRESSION, true);
                 pm_conditional_predicate(receiver);
             }
 
@@ -15707,7 +15707,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             parser_lex(parser);
 
             pm_token_t operator = parser->previous;
-            pm_node_t *receiver = parse_expression(parser, pm_binding_powers[parser->previous.type].right, PM_ERR_UNARY_RECEIVER_BANG, binding_power < PM_BINDING_POWER_COMPOSITION);
+            pm_node_t *receiver = parse_expression(parser, pm_binding_powers[parser->previous.type].right, PM_ERR_UNARY_RECEIVER_BANG, binding_power < PM_BINDING_POWER_MATCH);
             pm_call_node_t *node = pm_call_node_unary_create(parser, &operator, receiver, "!");
 
             pm_conditional_predicate(receiver);
@@ -15870,7 +15870,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
 static inline pm_node_t *
 parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_power, pm_binding_power_t binding_power, pm_diagnostic_id_t diag_id, bool accepts_command_call) {
-    pm_node_t *value = parse_value_expression(parser, binding_power, diag_id, previous_binding_power == PM_BINDING_POWER_ASSIGNMENT ? accepts_command_call : previous_binding_power < PM_BINDING_POWER_COMPOSITION);
+    pm_node_t *value = parse_value_expression(parser, binding_power, diag_id, previous_binding_power == PM_BINDING_POWER_ASSIGNMENT ? accepts_command_call : previous_binding_power < PM_BINDING_POWER_MATCH);
 
     // Contradicting binding powers, the right-hand-side value of rthe assignment allows the `rescue` modifier.
     if (match1(parser, PM_TOKEN_KEYWORD_RESCUE_MODIFIER)) {
@@ -15887,7 +15887,7 @@ parse_assignment_value(pm_parser_t *parser, pm_binding_power_t previous_binding_
 
 static inline pm_node_t *
 parse_assignment_values(pm_parser_t *parser, pm_binding_power_t previous_binding_power, pm_binding_power_t binding_power, pm_diagnostic_id_t diag_id, bool accepts_command_call) {
-    pm_node_t *value = parse_starred_expression(parser, binding_power, diag_id, previous_binding_power == PM_BINDING_POWER_ASSIGNMENT ? accepts_command_call : previous_binding_power < PM_BINDING_POWER_COMPOSITION);
+    pm_node_t *value = parse_starred_expression(parser, binding_power, diag_id, previous_binding_power == PM_BINDING_POWER_ASSIGNMENT ? accepts_command_call : previous_binding_power < PM_BINDING_POWER_MATCH);
 
     bool is_single_value = true;
     if (previous_binding_power == PM_BINDING_POWER_STATEMENT && (PM_NODE_TYPE_P(value, PM_SPLAT_NODE) || match1(parser, PM_TOKEN_COMMA))) {
@@ -16898,12 +16898,12 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, pm_diagn
                         !(
                             cast->call_operator_loc.start != NULL &&
                             cast->arguments == NULL &&
+                            cast->block == NULL &&
                             cast->opening_loc.start == NULL
                         ) &&
                         // (3) foo.bar(1)
                         !(
                             cast->call_operator_loc.start != NULL &&
-                            cast->arguments != NULL &&
                             cast->opening_loc.start != NULL
                         ) &&
                         // (4) foo.bar do end

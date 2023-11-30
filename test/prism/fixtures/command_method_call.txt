@@ -29,3 +29,11 @@ def foo = bar 1
 1.foo[2].bar 3
 
 1.foo(2).bar 3
+
+1.foo(&2).bar 3
+
+!foo 1 and !bar 2
+
+!foo 1 or !bar 2
+
+not !foo 1
