@@ -280,26 +280,6 @@ rb_str_make_embedded(VALUE str)
 }
 
 void
-rb_str_update_shared_ary(VALUE str, VALUE old_root, VALUE new_root)
-{
-    // if the root location hasn't changed, we don't need to update
-    if (new_root == old_root) {
-        return;
-    }
-
-    // if the root string isn't embedded, we don't need to touch the pointer.
-    // it already points to the shame shared buffer
-    if (!STR_EMBED_P(new_root)) {
-        return;
-    }
-
-    size_t offset = (size_t)((uintptr_t)RSTRING(str)->as.heap.ptr - (uintptr_t)RSTRING(old_root)->as.embed.ary);
-
-    RUBY_ASSERT(RSTRING(str)->as.heap.ptr >= RSTRING(old_root)->as.embed.ary);
-    RSTRING(str)->as.heap.ptr = RSTRING(new_root)->as.embed.ary + offset;
-}
-
-void
 rb_debug_rstring_null_ptr(const char *func)
 {
     fprintf(stderr, "%s is returning NULL!! "

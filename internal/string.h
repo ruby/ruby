@@ -64,7 +64,6 @@ VALUE rb_str_upto_endless_each(VALUE, int (*each)(VALUE, VALUE), VALUE);
 void rb_str_make_embedded(VALUE);
 size_t rb_str_size_as_embedded(VALUE);
 bool rb_str_reembeddable_p(VALUE);
-void rb_str_update_shared_ary(VALUE str, VALUE old_root, VALUE new_root);
 RUBY_SYMBOL_EXPORT_END
 
 VALUE rb_fstring_new(const char *ptr, long len);
