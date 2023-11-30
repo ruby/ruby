@@ -815,7 +815,17 @@ module Prism
       assert_prism_eval("def self.prism_test_def_node(x,y,z=7,*a) a end; prism_test_def_node(7,7).inspect")
       assert_prism_eval("def self.prism_test_def_node(x,y,z=7,zz=7,*a) a end; prism_test_def_node(7,7,7).inspect")
 
-      # block argument
+      # keyword arguments
+      assert_prism_eval("def self.prism_test_def_node(a: 1, b: 2, c: 4) a + b + c; end; prism_test_def_node(a: 2)")
+      assert_prism_eval("def self.prism_test_def_node(a: 1, b: 2, c: 4) a + b + c; end; prism_test_def_node(b: 3)")
+      assert_prism_eval(<<-CODE)
+        def self.prism_test_def_node(x = 1, y, a: 8, b: 2, c: 4)
+          a + b + c + x + y
+        end
+        prism_test_def_node(10, b: 3)
+      CODE
+
+      # block arguments
       assert_prism_eval("def self.prism_test_def_node(&block) block end; prism_test_def_node{}.class")
       assert_prism_eval("def self.prism_test_def_node(&block) block end; prism_test_def_node().inspect")
       assert_prism_eval("def self.prism_test_def_node(a,b=7,*c,&block) b end; prism_test_def_node(7,1).inspect")
@@ -846,6 +856,27 @@ module Prism
     def test_method_parameters
       assert_prism_eval(<<-CODE)
         def self.prism_test_method_parameters(a, b=1, *c, d:, e: 2, **f, &g)
+        end
+
+        method(:prism_test_method_parameters).parameters
+      CODE
+
+      assert_prism_eval(<<-CODE)
+        def self.prism_test_method_parameters(d:, e: 2, **f, &g)
+        end
+
+        method(:prism_test_method_parameters).parameters
+      CODE
+
+      assert_prism_eval(<<-CODE)
+        def self.prism_test_method_parameters(**f, &g)
+        end
+
+        method(:prism_test_method_parameters).parameters
+      CODE
+
+      assert_prism_eval(<<-CODE)
+        def self.prism_test_method_parameters(&g)
         end
 
         method(:prism_test_method_parameters).parameters

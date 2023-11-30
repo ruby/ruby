@@ -11,6 +11,14 @@ typedef struct pm_scope_node {
     pm_constant_id_list_t locals;
     pm_parser_t *parser;
 
+    // There are sometimes when we need to track
+    // hidden variables that we have put on
+    // the local table for the stack to use, so
+    // that we properly account for them when giving
+    // local indexes. We do this with the
+    // hidden_variable_count
+    int hidden_variable_count;
+
     ID *constants;
     st_table *index_lookup_table;
 
