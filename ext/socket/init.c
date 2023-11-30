@@ -418,7 +418,7 @@ rsock_write_nonblock(VALUE sock, VALUE str, VALUE ex)
         if (e == EWOULDBLOCK || e == EAGAIN) {
             if (ex == Qfalse) return sym_wait_writable;
             rb_readwrite_syserr_fail(RB_IO_WAIT_WRITABLE, e,
-                                    "write would block");
+                                     "write would block");
         }
         rb_syserr_fail_path(e, fptr->pathv);
     }
@@ -459,9 +459,9 @@ rsock_socket(int domain, int type, int proto)
 
     fd = rsock_socket0(domain, type, proto);
     if (fd < 0) {
-       if (rb_gc_for_fd(errno)) {
-           fd = rsock_socket0(domain, type, proto);
-       }
+        if (rb_gc_for_fd(errno)) {
+            fd = rsock_socket0(domain, type, proto);
+        }
     }
     if (0 <= fd)
         rb_update_max_fd(fd);
@@ -518,10 +518,10 @@ wait_connectable(int fd, struct timeval *timeout)
 
     switch (sockerr) {
       case 0:
-      /*
-       * be defensive in case some platforms set SO_ERROR on the original,
-       * interrupted connect()
-       */
+        /*
+         * be defensive in case some platforms set SO_ERROR on the original,
+         * interrupted connect()
+         */
 
         /* when the connection timed out, no errno is set and revents is 0. */
         if (timeout && revents == 0) {
@@ -707,9 +707,9 @@ rsock_s_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len)
     RB_IO_POINTER(io, fptr);
 
     struct accept_arg accept_arg = {
-      .fd = fptr->fd,
-      .sockaddr = sockaddr,
-      .len = len
+        .fd = fptr->fd,
+        .sockaddr = sockaddr,
+        .len = len
     };
 
     int retry = 0, peer;
@@ -756,10 +756,10 @@ rsock_getfamily(rb_io_t *fptr)
     if (cached) {
         switch (cached) {
 #ifdef AF_UNIX
-            case FMODE_UNIX: return AF_UNIX;
+          case FMODE_UNIX: return AF_UNIX;
 #endif
-            case FMODE_INET: return AF_INET;
-            case FMODE_INET6: return AF_INET6;
+          case FMODE_INET: return AF_INET;
+          case FMODE_INET6: return AF_INET6;
         }
     }
 
@@ -781,7 +781,7 @@ rsock_getfamily(rb_io_t *fptr)
 static VALUE
 sock_resolv_error_code(VALUE self)
 {
-  return rb_attr_get(self, id_error_code);
+    return rb_attr_get(self, id_error_code);
 }
 
 void
