@@ -172,6 +172,7 @@ extern pm_encoding_t pm_encoding_euc_jp;
 extern pm_encoding_t pm_encoding_euc_jp_ms;
 extern pm_encoding_t pm_encoding_euc_jis_2004;
 extern pm_encoding_t pm_encoding_euc_kr;
+extern pm_encoding_t pm_encoding_euc_tw;
 extern pm_encoding_t pm_encoding_gb12345;
 extern pm_encoding_t pm_encoding_gb18030;
 extern pm_encoding_t pm_encoding_gb1988;

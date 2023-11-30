@@ -6253,6 +6253,7 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
                 ENCODING2("EUC-JIS-2004", "EUC-JISX0213", pm_encoding_euc_jis_2004);
                 ENCODING2("EUC-KR", "eucKR", pm_encoding_euc_kr);
                 ENCODING2("EUC-CN", "eucCN", pm_encoding_gb2312);
+                ENCODING2("EUC-TW", "eucTW", pm_encoding_euc_tw);
                 ENCODING1("Emacs-Mule", pm_encoding_emacs_mule);
                 ENCODING1("external", pm_encoding_utf_8);
                 break;

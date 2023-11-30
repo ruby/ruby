@@ -111,6 +111,12 @@ module Prism
         *((0x81..0xFE).flat_map { |byte1| (0x30...0x40).flat_map { |byte2| (0x81..0xFE).flat_map { |byte3| (0x2F...0x41).map { |byte4| byte1 << 24 | byte2 << 16 | byte3 << 8 | byte4 } } } }),
       ]
 
+      codepoints_euc_tw = [
+        *(0..0x7F),
+        *(0xA1..0xFF).flat_map { |byte1| (0xA1..0xFF).map { |byte2| (byte1 << 8) | byte2 } },
+        *(0xA1..0xB0).flat_map { |byte2| (0xA1..0xFF).flat_map { |byte3| (0xA1..0xFF).flat_map { |byte4| 0x8E << 24 | byte2 << 16 | byte3 << 8 | byte4 } } }
+      ]
+
       encodings.merge!(
         Encoding::UTF_8 =>                      codepoints_unicode,
         Encoding::UTF8_MAC =>                   codepoints_unicode,
@@ -124,7 +130,8 @@ module Prism
         Encoding::EMACS_MULE =>                 codepoints_emacs_mule,
         Encoding::STATELESS_ISO_2022_JP =>      codepoints_emacs_mule,
         Encoding::STATELESS_ISO_2022_JP_KDDI => codepoints_emacs_mule,
-        Encoding::GB18030 =>                    codepoints_gb18030
+        Encoding::GB18030 =>                    codepoints_gb18030,
+        Encoding::EUC_TW =>                     codepoints_euc_tw,
       )
     end
 
