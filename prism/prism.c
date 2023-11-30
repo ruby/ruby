@@ -11078,7 +11078,7 @@ parse_statements(pm_parser_t *parser, pm_context_t context) {
 }
 
 /**
- * Parse all of the elements of a hash. eturns true if a double splat was found.
+ * Parse all of the elements of a hash. returns true if a double splat was found.
  */
 static bool
 parse_assocs(pm_parser_t *parser, pm_node_t *node) {
