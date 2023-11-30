@@ -7,6 +7,7 @@
 #define PRISM_ENCODING_H
 
 #include "prism/defines.h"
+#include "prism/util/pm_strncasecmp.h"
 
 #include <assert.h>
 #include <stdbool.h>
@@ -119,98 +120,21 @@ bool pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n);
  */
 extern const uint8_t pm_encoding_unicode_table[256];
 
-// Below are the encodings that are supported by the parser. They are defined in
-// their own files in the src/enc directory.
-
-extern pm_encoding_t pm_encoding_ascii;
-extern pm_encoding_t pm_encoding_ascii_8bit;
-extern pm_encoding_t pm_encoding_big5;
-extern pm_encoding_t pm_encoding_big5_hkscs;
-extern pm_encoding_t pm_encoding_big5_uao;
-extern pm_encoding_t pm_encoding_cesu_8;
-extern pm_encoding_t pm_encoding_cp51932;
-extern pm_encoding_t pm_encoding_cp850;
-extern pm_encoding_t pm_encoding_cp852;
-extern pm_encoding_t pm_encoding_cp855;
-extern pm_encoding_t pm_encoding_cp949;
-extern pm_encoding_t pm_encoding_cp950;
-extern pm_encoding_t pm_encoding_cp951;
-extern pm_encoding_t pm_encoding_emacs_mule;
-extern pm_encoding_t pm_encoding_euc_jp;
-extern pm_encoding_t pm_encoding_euc_jp_ms;
-extern pm_encoding_t pm_encoding_euc_jis_2004;
-extern pm_encoding_t pm_encoding_euc_kr;
-extern pm_encoding_t pm_encoding_euc_tw;
-extern pm_encoding_t pm_encoding_gb12345;
-extern pm_encoding_t pm_encoding_gb18030;
-extern pm_encoding_t pm_encoding_gb1988;
-extern pm_encoding_t pm_encoding_gb2312;
-extern pm_encoding_t pm_encoding_gbk;
-extern pm_encoding_t pm_encoding_ibm437;
-extern pm_encoding_t pm_encoding_ibm720;
-extern pm_encoding_t pm_encoding_ibm737;
-extern pm_encoding_t pm_encoding_ibm775;
-extern pm_encoding_t pm_encoding_ibm852;
-extern pm_encoding_t pm_encoding_ibm855;
-extern pm_encoding_t pm_encoding_ibm857;
-extern pm_encoding_t pm_encoding_ibm860;
-extern pm_encoding_t pm_encoding_ibm861;
-extern pm_encoding_t pm_encoding_ibm862;
-extern pm_encoding_t pm_encoding_ibm863;
-extern pm_encoding_t pm_encoding_ibm864;
-extern pm_encoding_t pm_encoding_ibm865;
-extern pm_encoding_t pm_encoding_ibm866;
-extern pm_encoding_t pm_encoding_ibm869;
-extern pm_encoding_t pm_encoding_iso_8859_1;
-extern pm_encoding_t pm_encoding_iso_8859_2;
-extern pm_encoding_t pm_encoding_iso_8859_3;
-extern pm_encoding_t pm_encoding_iso_8859_4;
-extern pm_encoding_t pm_encoding_iso_8859_5;
-extern pm_encoding_t pm_encoding_iso_8859_6;
-extern pm_encoding_t pm_encoding_iso_8859_7;
-extern pm_encoding_t pm_encoding_iso_8859_8;
-extern pm_encoding_t pm_encoding_iso_8859_9;
-extern pm_encoding_t pm_encoding_iso_8859_10;
-extern pm_encoding_t pm_encoding_iso_8859_11;
-extern pm_encoding_t pm_encoding_iso_8859_13;
-extern pm_encoding_t pm_encoding_iso_8859_14;
-extern pm_encoding_t pm_encoding_iso_8859_15;
-extern pm_encoding_t pm_encoding_iso_8859_16;
-extern pm_encoding_t pm_encoding_koi8_r;
-extern pm_encoding_t pm_encoding_koi8_u;
-extern pm_encoding_t pm_encoding_mac_cent_euro;
-extern pm_encoding_t pm_encoding_mac_croatian;
-extern pm_encoding_t pm_encoding_mac_cyrillic;
-extern pm_encoding_t pm_encoding_mac_greek;
-extern pm_encoding_t pm_encoding_mac_iceland;
-extern pm_encoding_t pm_encoding_mac_japanese;
-extern pm_encoding_t pm_encoding_mac_roman;
-extern pm_encoding_t pm_encoding_mac_romania;
-extern pm_encoding_t pm_encoding_mac_thai;
-extern pm_encoding_t pm_encoding_mac_turkish;
-extern pm_encoding_t pm_encoding_mac_ukraine;
-extern pm_encoding_t pm_encoding_shift_jis;
-extern pm_encoding_t pm_encoding_sjis_docomo;
-extern pm_encoding_t pm_encoding_sjis_kddi;
-extern pm_encoding_t pm_encoding_sjis_softbank;
-extern pm_encoding_t pm_encoding_stateless_iso_2022_jp;
-extern pm_encoding_t pm_encoding_stateless_iso_2022_jp_kddi;
-extern pm_encoding_t pm_encoding_tis_620;
+/**
+ * This is the default encoding for Ruby source files. We keep a specific
+ * visible pointer around to it so that prism.c can compare it against the
+ * default.
+ */
 extern pm_encoding_t pm_encoding_utf_8;
-extern pm_encoding_t pm_encoding_utf8_mac;
-extern pm_encoding_t pm_encoding_utf8_docomo;
-extern pm_encoding_t pm_encoding_utf8_kddi;
-extern pm_encoding_t pm_encoding_utf8_softbank;
-extern pm_encoding_t pm_encoding_windows_1250;
-extern pm_encoding_t pm_encoding_windows_1251;
-extern pm_encoding_t pm_encoding_windows_1252;
-extern pm_encoding_t pm_encoding_windows_1253;
-extern pm_encoding_t pm_encoding_windows_1254;
-extern pm_encoding_t pm_encoding_windows_1255;
-extern pm_encoding_t pm_encoding_windows_1256;
-extern pm_encoding_t pm_encoding_windows_1257;
-extern pm_encoding_t pm_encoding_windows_1258;
-extern pm_encoding_t pm_encoding_windows_31j;
-extern pm_encoding_t pm_encoding_windows_874;
+
+/**
+ * Parse the given name of an encoding and return a pointer to the corresponding
+ * encoding struct if one can be found, otherwise return NULL.
+ *
+ * @param start A pointer to the first byte of the name.
+ * @param end A pointer to the last byte of the name.
+ * @returns A pointer to the encoding it finds, otherwise NULL.
+ */
+pm_encoding_t * pm_encoding_find(const uint8_t *start, const uint8_t *end);
 
 #endif
