@@ -235,6 +235,25 @@ changelog for details of the default gems or bundled gems.
 * `defined?(@ivar)` is optimized with Object Shapes.
 * Name resolution such as `Socket.getaddrinfo` can now be interrupted. [[Feature #19965]]
 
+### GC
+
+* Major performance improvements over 3.2
+    * Young objects referenced by old objects are no longer immediately
+      promoted to the old generation. This significantly reduces the frequency of
+      major GC collections. [[Feature #19678]]
+    * A new `REMEMBERED_WB_UNPROTECTED_OBJECTS_LIMIT_RATIO` tuning variable was
+      introduced to control the number of unprotected objects cause a major GC
+      collection to trigger. The default is set to `0.01` (1%). This significantly
+      reduces the frequency of major GC collection. [[Feature #19571]]
+    * Write Barriers were implemented for many core types that were missing them,
+      notably `Time`, `Enumerator`, `MatchData`, `Method`, `File::Stat`, `BigDecimal`
+      and several others. This significantly reduces minor GC collection time and major
+      GC collection frequency.
+    * Most core classes are now using Variable Width Allocation, notably `Hash`, `Time`,
+      `Thread::Backtrace`, `Thread::Backtrace::Location`, `File::Stat`, `Method`.
+      This makes these classes faster to allocate and free, use less memory and reduce
+      heap fragmentation.
+
 ### YJIT
 
 * Major performance improvements over 3.2
@@ -336,3 +355,5 @@ changelog for details of the default gems or bundled gems.
 [Feature #19843]: https://bugs.ruby-lang.org/issues/19843
 [Bug #19868]:     https://bugs.ruby-lang.org/issues/19868
 [Feature #19965]: https://bugs.ruby-lang.org/issues/19965
+[Feature #19571]: https://bugs.ruby-lang.org/issues/19571
+[Feature #19678]: https://bugs.ruby-lang.org/issues/19678
