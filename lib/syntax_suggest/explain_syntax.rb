@@ -3,6 +3,16 @@
 require_relative "left_right_lex_count"
 
 module SyntaxSuggest
+  class GetParseErrors
+    def self.errors(source)
+      if SyntaxSuggest.use_prism_parser?
+        Prism.parse(source).errors.map(&:message)
+      else
+        RipperErrors.new(source).call.errors
+      end
+    end
+  end
+
   # Explains syntax errors based on their source
   #
   # example:
@@ -94,7 +104,7 @@ module SyntaxSuggest
     # on the original ripper error messages
     def errors
       if missing.empty?
-        return RipperErrors.new(@code_lines.map(&:original).join).call.errors
+        return GetParseErrors.errors(@code_lines.map(&:original).join)
       end
 
       missing.map { |miss| why(miss) }

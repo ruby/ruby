@@ -14,7 +14,11 @@ module SyntaxSuggest
       ).call
 
       expect(explain.missing).to eq([])
-      expect(explain.errors.join).to include("unterminated string")
+      if SyntaxSuggest.use_prism_parser?
+        expect(explain.errors.join).to include("Expected a closing delimiter for the interpolated string")
+      else
+        expect(explain.errors.join).to include("unterminated string")
+      end
     end
 
     it "handles %w[]" do
@@ -191,7 +195,7 @@ module SyntaxSuggest
       ).call
 
       expect(explain.missing).to eq([])
-      expect(explain.errors).to eq(RipperErrors.new(source).call.errors)
+      expect(explain.errors).to eq(GetParseErrors.errors(source))
     end
 
     it "handles an unexpected rescue" do

@@ -11,8 +11,8 @@ module SyntaxSuggest
     include Enumerable
 
     def initialize(source:, source_lines: nil)
-      @lex = Ripper::Lexer.new(source, "-", 1).parse.sort_by(&:pos)
-      lineno = @lex.last.pos.first + 1
+      @lex = self.class.lex(source, 1)
+      lineno = @lex.last[0][0] + 1
       source_lines ||= source.lines
       last_lineno = source_lines.length
 
@@ -20,16 +20,30 @@ module SyntaxSuggest
         lines = source_lines[lineno..]
 
         @lex.concat(
-          Ripper::Lexer.new(lines.join, "-", lineno + 1).parse.sort_by(&:pos)
+          self.class.lex(lines.join, lineno + 1)
         )
-        lineno = @lex.last.pos.first + 1
+
+        lineno = @lex.last[0].first + 1
       end
 
       last_lex = nil
       @lex.map! { |elem|
-        last_lex = LexValue.new(elem.pos.first, elem.event, elem.tok, elem.state, last_lex)
+        last_lex = LexValue.new(elem[0].first, elem[1], elem[2], elem[3], last_lex)
       }
     end
+
+    # rubocop:disable Style/IdenticalConditionalBranches
+    if SyntaxSuggest.use_prism_parser?
+      def self.lex(source, line_number)
+        # Prism.lex_compat(source, line: line_number).value.sort_by {|values| values[0] }
+        Ripper::Lexer.new(source, "-", line_number).parse.sort_by(&:pos)
+      end
+    else
+      def self.lex(source, line_number)
+        Ripper::Lexer.new(source, "-", line_number).parse.sort_by(&:pos)
+      end
+    end
+    # rubocop:enable Style/IdenticalConditionalBranches
 
     def to_a
       @lex
