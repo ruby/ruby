@@ -393,7 +393,14 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
     else if (FL_TEST_RAW((VALUE)iseq, ISEQ_USE_COMPILE_DATA)) {
         const struct iseq_compile_data *const compile_data = ISEQ_COMPILE_DATA(iseq);
 
-        rb_iseq_mark_and_move_insn_storage(compile_data->insn.storage_head);
+        if (!reference_updating) {
+            /* The operands in each instruction needs to be pinned because
+             * if auto-compaction runs in iseq_set_sequence, then the objects
+             * could exist on the generated_iseq buffer, which would not be
+             * reference updated which can lead to T_MOVED (and subsequently
+             * T_NONE) objects on the iseq. */
+            rb_iseq_mark_and_pin_insn_storage(compile_data->insn.storage_head);
+        }
 
         rb_gc_mark_and_move((VALUE *)&compile_data->err_info);
         rb_gc_mark_and_move((VALUE *)&compile_data->catch_table_ary);

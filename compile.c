@@ -1375,7 +1375,7 @@ new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line)
 }
 
 static void
-iseq_insn_each_markable_object(INSN *insn, void (*func)(VALUE *, VALUE), VALUE data)
+iseq_insn_each_markable_object(INSN *insn, void (*func)(VALUE, VALUE), VALUE data)
 {
     const char *types = insn_op_types(insn->insn_id);
     for (int j = 0; types[j]; j++) {
@@ -1386,7 +1386,7 @@ iseq_insn_each_markable_object(INSN *insn, void (*func)(VALUE *, VALUE), VALUE d
           case TS_VALUE:
           case TS_IC: // constant path array
           case TS_CALLDATA: // ci is stored.
-            func(&OPERAND_AT(insn, j), data);
+            func(OPERAND_AT(insn, j), data);
             break;
           default:
             break;
@@ -1395,9 +1395,9 @@ iseq_insn_each_markable_object(INSN *insn, void (*func)(VALUE *, VALUE), VALUE d
 }
 
 static void
-iseq_insn_each_object_write_barrier(VALUE *obj_ptr, VALUE iseq)
+iseq_insn_each_object_write_barrier(VALUE obj, VALUE iseq)
 {
-    RB_OBJ_WRITTEN(iseq, Qundef, *obj_ptr);
+    RB_OBJ_WRITTEN(iseq, Qundef, obj);
 }
 
 static INSN *
@@ -10877,13 +10877,13 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
 }
 
 static void
-iseq_insn_each_object_mark_and_move(VALUE *obj_ptr, VALUE _)
+iseq_insn_each_object_mark_and_pin(VALUE obj, VALUE _)
 {
-    rb_gc_mark_and_move(obj_ptr);
+    rb_gc_mark(obj);
 }
 
 void
-rb_iseq_mark_and_move_insn_storage(struct iseq_compile_data_storage *storage)
+rb_iseq_mark_and_pin_insn_storage(struct iseq_compile_data_storage *storage)
 {
     INSN *iobj = 0;
     size_t size = sizeof(INSN);
@@ -10908,7 +10908,7 @@ rb_iseq_mark_and_move_insn_storage(struct iseq_compile_data_storage *storage)
             iobj = (INSN *)&storage->buff[pos];
 
             if (iobj->operands) {
-                iseq_insn_each_markable_object(iobj, iseq_insn_each_object_mark_and_move, (VALUE)0);
+                iseq_insn_each_markable_object(iobj, iseq_insn_each_object_mark_and_pin, (VALUE)0);
             }
             pos += (int)size;
         }
