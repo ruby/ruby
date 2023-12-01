@@ -268,6 +268,11 @@ RSpec.describe "bundle flex_install" do
     it "should work when you install" do
       bundle "install"
 
+      checksums = checksums_section_when_existing do |c|
+        c.checksum gem_repo1, "rack", "0.9.1"
+        c.checksum gem_repo1, "rack-obama", "1.0"
+      end
+
       expect(lockfile).to eq <<~L
         GEM
           remote: #{file_uri_for(gem_repo1)}/
@@ -282,11 +287,7 @@ RSpec.describe "bundle flex_install" do
         DEPENDENCIES
           rack (= 0.9.1)
           rack-obama
-
-        CHECKSUMS
-          #{checksum_for_repo_gem gem_repo1, "rack", "0.9.1"}
-          #{checksum_for_repo_gem gem_repo1, "rack-obama", "1.0"}
-
+        #{checksums}
         BUNDLED WITH
            #{Bundler::VERSION}
       L
@@ -312,6 +313,10 @@ RSpec.describe "bundle flex_install" do
         gem "rack"
       G
 
+      checksums = checksums_section_when_existing do |c|
+        c.checksum gem_repo1, "rack", "1.0.0"
+      end
+
       expect(lockfile).to eq <<~L
         GEM
           remote: #{file_uri_for(gem_repo1)}/
@@ -327,10 +332,7 @@ RSpec.describe "bundle flex_install" do
 
         DEPENDENCIES
           rack
-
-        CHECKSUMS
-          #{checksum_for_repo_gem gem_repo1, "rack", "1.0.0"}
-
+        #{checksums}
         BUNDLED WITH
            #{Bundler::VERSION}
       L

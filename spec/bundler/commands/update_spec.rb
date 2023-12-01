@@ -275,6 +275,11 @@ RSpec.describe "bundle update" do
         gem "countries"
       G
 
+      checksums = checksums_section_when_existing do |c|
+        c.checksum(gem_repo4, "countries", "3.1.0")
+        c.checksum(gem_repo4, "country_select", "5.1.0")
+      end
+
       lockfile <<~L
         GEM
           remote: #{file_uri_for(gem_repo4)}/
@@ -289,11 +294,7 @@ RSpec.describe "bundle update" do
         DEPENDENCIES
           countries
           country_select
-
-        CHECKSUMS
-          #{checksum_for_repo_gem(gem_repo4, "countries", "3.1.0")}
-          #{checksum_for_repo_gem(gem_repo4, "country_select", "5.1.0")}
-
+        #{checksums}
         BUNDLED WITH
            #{Bundler::VERSION}
       L
@@ -509,9 +510,9 @@ RSpec.describe "bundle update" do
 
       original_lockfile = lockfile
 
-      expected_checksums = checksum_section do |c|
-        c.repo_gem gem_repo4, "activesupport", "6.0.4.1"
-        c.repo_gem gem_repo4, "tzinfo", "1.2.9"
+      checksums = checksums_section_when_existing do |c|
+        c.checksum gem_repo4, "activesupport", "6.0.4.1"
+        c.checksum gem_repo4, "tzinfo", "1.2.9"
       end
 
       expected_lockfile = <<~L
@@ -527,10 +528,7 @@ RSpec.describe "bundle update" do
 
         DEPENDENCIES
           activesupport (~> 6.0.0)
-
-        CHECKSUMS
-          #{expected_checksums}
-
+        #{checksums}
         BUNDLED WITH
            #{Bundler::VERSION}
       L
@@ -1152,9 +1150,10 @@ RSpec.describe "bundle update --ruby" do
       G
 
       gemfile <<-G
-          source "#{file_uri_for(gem_repo1)}"
+        source "#{file_uri_for(gem_repo1)}"
       G
     end
+
     it "removes the Ruby from the Gemfile.lock" do
       bundle "update --ruby"
 
@@ -1167,8 +1166,6 @@ RSpec.describe "bundle update --ruby" do
          #{lockfile_platforms}
 
        DEPENDENCIES
-
-       CHECKSUMS
 
        BUNDLED WITH
           #{Bundler::VERSION}
@@ -1184,30 +1181,29 @@ RSpec.describe "bundle update --ruby" do
       G
 
       gemfile <<-G
-          ruby '~> #{current_ruby_minor}'
-          source "#{file_uri_for(gem_repo1)}"
+        ruby '~> #{current_ruby_minor}'
+        source "#{file_uri_for(gem_repo1)}"
       G
     end
+
     it "updates the Gemfile.lock with the latest version" do
       bundle "update --ruby"
 
       expect(lockfile).to eq <<~L
-       GEM
-         remote: #{file_uri_for(gem_repo1)}/
-         specs:
+        GEM
+          remote: #{file_uri_for(gem_repo1)}/
+          specs:
 
-       PLATFORMS
-         #{lockfile_platforms}
+        PLATFORMS
+          #{lockfile_platforms}
 
-       DEPENDENCIES
+        DEPENDENCIES
 
-       CHECKSUMS
+        RUBY VERSION
+           #{Bundler::RubyVersion.system}
 
-       RUBY VERSION
-          #{Bundler::RubyVersion.system}
-
-       BUNDLED WITH
-          #{Bundler::VERSION}
+        BUNDLED WITH
+           #{Bundler::VERSION}
       L
     end
   end
@@ -1257,6 +1253,7 @@ RSpec.describe "bundle update --ruby" do
           source "#{file_uri_for(gem_repo1)}"
       G
     end
+
     it "updates the Gemfile.lock with the latest version" do
       bundle "update --ruby"
 
@@ -1288,11 +1285,14 @@ RSpec.describe "bundle update --bundler" do
       build_gem "rack", "1.0"
     end
 
+    checksums = checksums_section_when_existing do |c|
+      c.checksum(gem_repo4, "rack", "1.0")
+    end
+
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo4)}"
       gem "rack"
     G
-    expected_checksum = checksum_for_repo_gem(gem_repo4, "rack", "1.0")
     expect(lockfile).to eq <<~L
       GEM
         remote: #{file_uri_for(gem_repo4)}/
@@ -1304,10 +1304,7 @@ RSpec.describe "bundle update --bundler" do
 
       DEPENDENCIES
         rack
-
-      CHECKSUMS
-        #{expected_checksum}
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     L
@@ -1327,10 +1324,7 @@ RSpec.describe "bundle update --bundler" do
 
       DEPENDENCIES
         rack
-
-      CHECKSUMS
-        #{expected_checksum}
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     L
@@ -1351,6 +1345,10 @@ RSpec.describe "bundle update --bundler" do
     G
     lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, "2.3.9")
 
+    checksums = checksums_section_when_existing do |c|
+      c.checksum(gem_repo4, "rack", "1.0")
+    end
+
     bundle :update, :bundler => true, :artifice => "compact_index", :verbose => true
     expect(out).to include("Using bundler #{Bundler::VERSION}")
 
@@ -1365,10 +1363,7 @@ RSpec.describe "bundle update --bundler" do
 
       DEPENDENCIES
         rack
-
-      CHECKSUMS
-        #{checksum_for_repo_gem(gem_repo4, "rack", "1.0")}
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     L
@@ -1458,8 +1453,11 @@ RSpec.describe "bundle update --bundler" do
     bundle :update, :bundler => "2.3.0.dev", :verbose => "true"
 
     # Only updates properly on modern RubyGems.
-
     if Gem.rubygems_version >= Gem::Version.new("3.3.0.dev")
+      checksums = checksums_section_when_existing do |c|
+        c.checksum(gem_repo4, "rack", "1.0")
+      end
+
       expect(lockfile).to eq <<~L
         GEM
           remote: #{file_uri_for(gem_repo4)}/
@@ -1471,10 +1469,7 @@ RSpec.describe "bundle update --bundler" do
 
         DEPENDENCIES
           rack
-
-        CHECKSUMS
-          #{checksum_for_repo_gem(gem_repo4, "rack", "1.0")}
-
+        #{checksums}
         BUNDLED WITH
            2.3.0.dev
       L
@@ -1500,6 +1495,9 @@ RSpec.describe "bundle update --bundler" do
     expect(out).not_to include("Fetching gem metadata from https://rubygems.org/")
 
     # Only updates properly on modern RubyGems.
+    checksums = checksums_section_when_existing do |c|
+      c.checksum(gem_repo4, "rack", "1.0")
+    end
 
     if Gem.rubygems_version >= Gem::Version.new("3.3.0.dev")
       expect(lockfile).to eq <<~L
@@ -1513,10 +1511,7 @@ RSpec.describe "bundle update --bundler" do
 
         DEPENDENCIES
           rack
-
-        CHECKSUMS
-          #{checksum_for_repo_gem(gem_repo4, "rack", "1.0")}
-
+        #{checksums}
         BUNDLED WITH
            2.3.9
       L

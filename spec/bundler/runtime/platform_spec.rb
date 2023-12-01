@@ -73,6 +73,13 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
       build_gem "racca", "1.5.2"
     end
 
+    checksums = checksums_section do |c|
+      c.checksum gem_repo4, "mini_portile2", "2.5.0"
+      c.checksum gem_repo4, "nokogiri", "1.11.1"
+      c.checksum gem_repo4, "nokogiri", "1.11.1", Bundler.local_platform
+      c.checksum gem_repo4, "racca", "1.5.2"
+    end
+
     good_lockfile = <<~L
       GEM
         remote: #{file_uri_for(gem_repo4)}/
@@ -90,13 +97,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
       DEPENDENCIES
         nokogiri (~> 1.11)
-
-      CHECKSUMS
-        #{checksum_for_repo_gem gem_repo4, "mini_portile2", "2.5.0"}
-        #{checksum_for_repo_gem gem_repo4, "nokogiri", "1.11.1"}
-        #{checksum_for_repo_gem gem_repo4, "nokogiri", "1.11.1", Bundler.local_platform}
-        #{checksum_for_repo_gem gem_repo4, "racca", "1.5.2"}
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     L

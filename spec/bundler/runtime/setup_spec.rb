@@ -1216,6 +1216,10 @@ end
     let(:ruby_version) { nil }
 
     def lock_with(ruby_version = nil)
+      checksums = checksums_section do |c|
+        c.checksum gem_repo1, "rack", "1.0.0"
+      end
+
       lock = <<~L
         GEM
           remote: #{file_uri_for(gem_repo1)}/
@@ -1227,9 +1231,7 @@ end
 
         DEPENDENCIES
           rack
-
-        CHECKSUMS
-          #{checksum_for_repo_gem gem_repo1, "rack", "1.0.0"}
+        #{checksums}
       L
 
       if ruby_version

@@ -406,6 +406,12 @@ RSpec.describe "bundle check" do
     it "returns success when the Gemfile is satisfied and generates a correct lockfile" do
       system_gems "depends_on_rack-1.0", "rack-1.0", :gem_repo => gem_repo4, :path => default_bundle_path
       bundle :check
+
+      checksums = checksums_section_when_existing do |c|
+        c.no_checksum "depends_on_rack", "1.0"
+        c.no_checksum "rack", "1.0"
+      end
+
       expect(out).to include("The Gemfile's dependencies are satisfied")
       expect(lockfile).to eq <<~L
         GEM
@@ -424,11 +430,7 @@ RSpec.describe "bundle check" do
 
         DEPENDENCIES
           depends_on_rack!
-
-        CHECKSUMS
-          depends_on_rack (1.0)
-          rack (1.0)
-
+        #{checksums}
         BUNDLED WITH
            #{Bundler::VERSION}
       L
@@ -468,6 +470,12 @@ RSpec.describe "bundle check" do
 
       bundle "check --verbose", :dir => tmp.join("bundle-check-issue")
 
+      checksums = checksums_section_when_existing do |c|
+        c.checksum gem_repo4, "awesome_print", "1.0"
+        c.no_checksum "bundle-check-issue", "9999"
+        c.checksum gem_repo2, "dex-dispatch-engine", "1.0"
+      end
+
       expect(File.read(tmp.join("bundle-check-issue/Gemfile.lock"))).to eq <<~L
         PATH
           remote: .
@@ -491,12 +499,7 @@ RSpec.describe "bundle check" do
         DEPENDENCIES
           bundle-check-issue!
           dex-dispatch-engine!
-
-        CHECKSUMS
-          #{checksum_for_repo_gem gem_repo4, "awesome_print", "1.0"}
-          bundle-check-issue (9999)
-          #{checksum_for_repo_gem gem_repo2, "dex-dispatch-engine", "1.0"}
-
+        #{checksums}
         BUNDLED WITH
            #{Bundler::VERSION}
       L

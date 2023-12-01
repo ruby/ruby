@@ -9,6 +9,18 @@ module Bundler
     private_constant :DEFAULT_BLOCK_SIZE
 
     class << self
+      def from_gem_package(gem_package, algo = DEFAULT_ALGORITHM)
+        return if Bundler.settings[:disable_checksum_validation]
+        return unless source = gem_package.instance_variable_get(:@gem)
+        return unless source.respond_to?(:with_read_io)
+
+        source.with_read_io do |io|
+          from_gem(io, source.path)
+        ensure
+          io.rewind
+        end
+      end
+
       def from_gem(io, pathname, algo = DEFAULT_ALGORITHM)
         digest = Bundler::SharedHelpers.digest(algo.upcase).new
         buf = String.new(:capacity => DEFAULT_BLOCK_SIZE)
@@ -17,6 +29,7 @@ module Bundler
       end
 
       def from_api(digest, source_uri, algo = DEFAULT_ALGORITHM)
+        return if Bundler.settings[:disable_checksum_validation]
         Checksum.new(algo, to_hexdigest(digest, algo), Source.new(:api, source_uri))
       end
 
@@ -177,7 +190,6 @@ module Bundler
       # This ensures a mismatch error where there are multiple top level sources
       # that contain the same gem with different checksums.
       def replace(spec, checksum)
-        return if Bundler.settings[:disable_checksum_validation]
         return unless checksum
 
         name_tuple = spec.name_tuple
@@ -193,7 +205,6 @@ module Bundler
       end
 
       def register(spec, checksum)
-        return if Bundler.settings[:disable_checksum_validation]
         return unless checksum
         register_checksum(spec.name_tuple, checksum)
       end

@@ -18,7 +18,8 @@ module Bundler
       :platforms,
       :ruby_version,
       :lockfile,
-      :gemfiles
+      :gemfiles,
+      :locked_checksums
     )
 
     # Given a gemfile and lockfile creates a Bundler definition
@@ -92,6 +93,7 @@ module Bundler
         @locked_bundler_version = @locked_gems.bundler_version
         @locked_ruby_version = @locked_gems.ruby_version
         @originally_locked_specs = SpecSet.new(@locked_gems.specs)
+        @locked_checksums = @locked_gems.checksums
 
         if unlock != true
           @locked_deps    = @locked_gems.dependencies
@@ -112,6 +114,7 @@ module Bundler
         @originally_locked_specs = @locked_specs
         @locked_sources = []
         @locked_platforms = []
+        @locked_checksums = nil
       end
 
       locked_gem_sources = @locked_sources.select {|s| s.is_a?(Source::Rubygems) }
@@ -767,7 +770,7 @@ module Bundler
       sources.all_sources.each do |source|
         # has to be done separately, because we want to keep the locked checksum
         # store for a source, even when doing a full update
-        if @locked_gems && locked_source = @locked_gems.sources.find {|s| s == source && !s.equal?(source) }
+        if @locked_checksums && @locked_gems && locked_source = @locked_gems.sources.find {|s| s == source && !s.equal?(source) }
           source.checksum_store.merge!(locked_source.checksum_store)
         end
         # If the source is unlockable and the current command allows an unlock of
