@@ -50,7 +50,7 @@ module Lrama
         end
 
         def lhs
-          (@rule.original_rule || @rule).lhs
+          @rule.lhs
         end
 
         def raise_tag_not_found_error(ref)

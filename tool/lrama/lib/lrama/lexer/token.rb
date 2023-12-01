@@ -1,8 +1,21 @@
+require 'lrama/lexer/token/char'
+require 'lrama/lexer/token/ident'
+require 'lrama/lexer/token/parameterizing'
+require 'lrama/lexer/token/tag'
+require 'lrama/lexer/token/user_code'
+
 module Lrama
   class Lexer
-    class Token < Struct.new(:s_value, :alias_name, :location, keyword_init: true)
+    class Token
+      attr_reader :s_value, :location
+      attr_accessor :alias_name, :referred
 
-      attr_accessor :referred
+      def initialize(s_value:, alias_name: nil, location: nil)
+        s_value.freeze
+        @s_value = s_value
+        @alias_name = alias_name
+        @location = location
+      end
 
       def to_s
         "#{super} location: #{location}"
@@ -36,9 +49,3 @@ module Lrama
     end
   end
 end
-
-require 'lrama/lexer/token/char'
-require 'lrama/lexer/token/ident'
-require 'lrama/lexer/token/parameterizing'
-require 'lrama/lexer/token/tag'
-require 'lrama/lexer/token/user_code'
