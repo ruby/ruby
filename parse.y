@@ -7631,6 +7631,14 @@ add_delayed_token(struct parser_params *p, const char *tok, const char *end, int
 #endif
 
     if (tok < end) {
+        if (has_delayed_token(p)) {
+            bool next_line = end_with_newline_p(p, p->delayed.token);
+            int end_line = (next_line ? 1 : 0) + p->delayed.end_line;
+            int end_col = (next_line ? 0 : p->delayed.end_col);
+            if (end_line != p->ruby_sourceline || end_col != tok - p->lex.pbeg) {
+                dispatch_delayed_token(p, tSTRING_CONTENT);
+            }
+        }
         if (!has_delayed_token(p)) {
             p->delayed.token = rb_str_buf_new(end - tok);
             rb_enc_associate(p->delayed.token, p->enc);
