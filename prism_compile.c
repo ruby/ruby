@@ -3903,7 +3903,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
 
             if (parameters_node->block) {
-                body->param.block_start = arg_size;//(int) locals_size - 1;
+                body->param.block_start = arg_size;
                 body->param.flags.has_block = true;
             }
         }
