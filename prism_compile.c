@@ -3658,9 +3658,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_GETLOCAL(ret, &dummy_line_node, LVAR_ERRINFO, 0);
             PM_COMPILE((pm_node_t *)rescue_node->reference);
         }
+
         if (rescue_node->statements) {
             PM_COMPILE((pm_node_t *)rescue_node->statements);
         }
+        else {
+            PM_PUTNIL;
+        }
+
         ADD_INSN(ret, &dummy_line_node, leave);
         ADD_LABEL(ret, rescue_end);
 
