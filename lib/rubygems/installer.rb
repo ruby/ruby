@@ -676,7 +676,14 @@ class Gem::Installer
     @build_args = options[:build_args]
 
     @gem_home = @install_dir
-    @gem_home ||= options[:user_install] ? Gem.user_dir : Gem.dir
+    @gem_home ||= if options[:user_install]
+      Gem.user_dir
+    elsif !ENV.key?("GEM_HOME") && (File.exist?(Gem.dir) && !File.writable?(Gem.dir))
+      say "Defaulting to user installation because default installation directory (#{Gem.dir}) is not writable."
+      Gem.user_dir
+    else
+      Gem.dir
+    end
 
     # If the user has asked for the gem to be installed in a directory that is
     # the system gem directory, then use the system bin directory, else create
