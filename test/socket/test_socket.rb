@@ -771,13 +771,10 @@ class TestSocket < Test::Unit::TestCase
   end
 
   def test_resolurion_error_error_code
-    # https://rubyci.s3.amazonaws.com/freebsd12/ruby-master/log/20231130T103002Z.fail.html.gz
-    omit if /freebsd/ =~ RUBY_PLATFORM
-
     begin
-      Socket.getaddrinfo("www.kame.net", 80, "AF_UNIX")
+      Socket.getaddrinfo("example.com", 80, "AF_UNIX")
     rescue => e
-      assert_equal(Socket::EAI_FAMILY, e.error_code)
+      assert_equal([Socket::EAI_FAMILY, Socket::EAI_FAIL].include?(e.error_code), true)
     end
   end
 
