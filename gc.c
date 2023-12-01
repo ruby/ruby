@@ -10707,9 +10707,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
       case T_STRING:
         {
             if (STR_SHARED_P(obj)) {
-                VALUE old_root = any->as.string.as.heap.aux.shared;
                 UPDATE_IF_MOVED(objspace, any->as.string.as.heap.aux.shared);
-                VALUE new_root = any->as.string.as.heap.aux.shared;
             }
 
             /* If, after move the string is not embedded, and can fit in the
