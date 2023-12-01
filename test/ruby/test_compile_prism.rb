@@ -794,6 +794,12 @@ module Prism
       CODE
       assert_prism_eval(<<~CODE)
         begin
+          raise StandardError
+        rescue StandardError => e
+        end
+      CODE
+      assert_prism_eval(<<~CODE)
+        begin
           1
         rescue StandardError => e
           e
