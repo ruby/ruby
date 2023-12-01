@@ -110,25 +110,25 @@ module Prism
 
     def test_unterminated_i_list
       assert_errors expression("%i["), "%i[", [
-        ["expected a closing delimiter for the `%i` list", 3..3]
+        ["expected a closing delimiter for the `%i` list", 0..3]
       ]
     end
 
     def test_unterminated_w_list
       assert_errors expression("%w["), "%w[", [
-        ["expected a closing delimiter for the `%w` list", 3..3]
+        ["expected a closing delimiter for the `%w` list", 0..3]
       ]
     end
 
     def test_unterminated_W_list
       assert_errors expression("%W["), "%W[", [
-        ["expected a closing delimiter for the `%W` list", 3..3]
+        ["expected a closing delimiter for the `%W` list", 0..3]
       ]
     end
 
     def test_unterminated_regular_expression
       assert_errors expression("/hello"), "/hello", [
-        ["expected a closing delimiter for the regular expression", 1..1]
+        ["expected a closing delimiter for the regular expression", 0..1]
       ]
     end
 
@@ -136,19 +136,19 @@ module Prism
       source = "<<-END + /b\nEND\n"
 
       assert_errors expression(source), source, [
-        ["expected a closing delimiter for the regular expression", 16..16]
+        ["expected a closing delimiter for the regular expression", 9..10]
       ]
     end
 
     def test_unterminated_xstring
       assert_errors expression("`hello"), "`hello", [
-        ["expected a closing delimiter for the `%x` or backtick string", 1..1]
+        ["expected a closing delimiter for the `%x` or backtick string", 0..1]
       ]
     end
 
     def test_unterminated_string
       assert_errors expression('"hello'), '"hello', [
-        ["expected a closing delimiter for the interpolated string", 1..1]
+        ["expected a closing delimiter for the interpolated string", 0..1]
       ]
     end
 
@@ -161,7 +161,7 @@ module Prism
 
     def test_unterminated_s_symbol
       assert_errors expression("%s[abc"), "%s[abc", [
-        ["expected a closing delimiter for the dynamic symbol", 3..3]
+        ["expected a closing delimiter for the dynamic symbol", 0..3]
       ]
     end
 
