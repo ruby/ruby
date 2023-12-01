@@ -56,10 +56,8 @@
             │   │           │   ├── parameters: ∅
             │   │           │   ├── body: ∅
             │   │           │   ├── opening_loc: (1,21)-(1,23) = "do"
-            │   │           │   ├── closing_loc: (1,24)-(1,27) = "end"
-            │   │           │   └── numbered_parameters: 0
+            │   │           │   └── closing_loc: (1,24)-(1,27) = "end"
             │   │           └── flags: ∅
             │   ├── opening_loc: (1,12)-(1,14) = "do"
-            │   ├── closing_loc: (1,29)-(1,32) = "end"
-            │   └── numbered_parameters: 0
+            │   └── closing_loc: (1,29)-(1,32) = "end"
             └── flags: ∅

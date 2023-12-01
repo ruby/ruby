@@ -1467,7 +1467,7 @@ pm_block_argument_node_create(pm_parser_t *parser, const pm_token_t *operator, p
  * Allocate and initialize a new BlockNode node.
  */
 static pm_block_node_t *
-pm_block_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, const pm_token_t *opening, pm_block_parameters_node_t *parameters, pm_node_t *body, const pm_token_t *closing, uint32_t numbered_parameters) {
+pm_block_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, const pm_token_t *opening, pm_node_t *parameters, pm_node_t *body, const pm_token_t *closing) {
     pm_block_node_t *node = PM_ALLOC_NODE(parser, pm_block_node_t);
 
     *node = (pm_block_node_t) {
@@ -1478,7 +1478,6 @@ pm_block_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, const p
         .locals = *locals,
         .parameters = parameters,
         .body = body,
-        .numbered_parameters = numbered_parameters,
         .opening_loc = PM_LOCATION_TOKEN_VALUE(opening),
         .closing_loc = PM_LOCATION_TOKEN_VALUE(closing)
     };
@@ -3958,9 +3957,8 @@ pm_lambda_node_create(
     const pm_token_t *operator,
     const pm_token_t *opening,
     const pm_token_t *closing,
-    pm_block_parameters_node_t *parameters,
-    pm_node_t *body,
-    uint32_t numbered_parameters
+    pm_node_t *parameters,
+    pm_node_t *body
 ) {
     pm_lambda_node_t *node = PM_ALLOC_NODE(parser, pm_lambda_node_t);
 
@@ -3977,8 +3975,7 @@ pm_lambda_node_create(
         .opening_loc = PM_LOCATION_TOKEN_VALUE(opening),
         .closing_loc = PM_LOCATION_TOKEN_VALUE(closing),
         .parameters = parameters,
-        .body = body,
-        .numbered_parameters = numbered_parameters
+        .body = body
     };
 
     return node;
@@ -4442,7 +4439,25 @@ pm_no_keywords_parameter_node_create(pm_parser_t *parser, const pm_token_t *oper
 }
 
 /**
- * Allocate a new NthReferenceReadNode node.
+ * Allocate and initialize a new NumberedParametersNode node.
+ */
+static pm_numbered_parameters_node_t *
+pm_numbered_parameters_node_create(pm_parser_t *parser, const pm_location_t *location, uint8_t maximum) {
+    pm_numbered_parameters_node_t *node = PM_ALLOC_NODE(parser, pm_numbered_parameters_node_t);
+
+    *node = (pm_numbered_parameters_node_t) {
+        {
+            .type = PM_NUMBERED_PARAMETERS_NODE,
+            .location = *location
+        },
+        .maximum = maximum
+    };
+
+    return node;
+}
+
+/**
+ * Allocate and initialize a new NthReferenceReadNode node.
  */
 static pm_numbered_reference_read_node_t *
 pm_numbered_reference_read_node_create(pm_parser_t *parser, const pm_token_t *name) {
@@ -5822,7 +5837,7 @@ pm_parser_local_add(pm_parser_t *parser, pm_constant_id_t constant_id) {
  * Set the numbered_parameters value of the current scope.
  */
 static inline void
-pm_parser_numbered_parameters_set(pm_parser_t *parser, uint32_t numbered_parameters) {
+pm_parser_numbered_parameters_set(pm_parser_t *parser, uint8_t numbered_parameters) {
     parser->current_scope->numbered_parameters = numbered_parameters;
 }
 
@@ -11845,24 +11860,24 @@ parse_block(pm_parser_t *parser) {
 
     pm_accepts_block_stack_push(parser, true);
     pm_parser_scope_push(parser, false);
-    pm_block_parameters_node_t *parameters = NULL;
+    pm_block_parameters_node_t *block_parameters = NULL;
 
     if (accept1(parser, PM_TOKEN_PIPE)) {
         parser->current_scope->explicit_params = true;
         pm_token_t block_parameters_opening = parser->previous;
 
         if (match1(parser, PM_TOKEN_PIPE)) {
-            parameters = pm_block_parameters_node_create(parser, NULL, &block_parameters_opening);
+            block_parameters = pm_block_parameters_node_create(parser, NULL, &block_parameters_opening);
             parser->command_start = true;
             parser_lex(parser);
         } else {
-            parameters = parse_block_parameters(parser, true, &block_parameters_opening, false);
+            block_parameters = parse_block_parameters(parser, true, &block_parameters_opening, false);
             accept1(parser, PM_TOKEN_NEWLINE);
             parser->command_start = true;
             expect1(parser, PM_TOKEN_PIPE, PM_ERR_BLOCK_PARAM_PIPE_TERM);
         }
 
-        pm_block_parameters_node_closing_set(parameters, &parser->previous);
+        pm_block_parameters_node_closing_set(block_parameters, &parser->previous);
     }
 
     accept1(parser, PM_TOKEN_NEWLINE);
@@ -11891,11 +11906,17 @@ parse_block(pm_parser_t *parser) {
         expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_BLOCK_TERM_END);
     }
 
+    pm_node_t *parameters = (pm_node_t *) block_parameters;
+    uint8_t maximum = parser->current_scope->numbered_parameters;
+
+    if (parameters == NULL && (maximum > 0)) {
+        parameters = (pm_node_t *) pm_numbered_parameters_node_create(parser, &(pm_location_t) { .start = opening.start, .end = parser->previous.end }, maximum);
+    }
+
     pm_constant_id_list_t locals = parser->current_scope->locals;
-    uint32_t numbered_parameters = parser->current_scope->numbered_parameters;
     pm_parser_scope_pop(parser);
     pm_accepts_block_stack_pop(parser);
-    return pm_block_node_create(parser, &locals, &opening, parameters, statements, &parser->previous, numbered_parameters);
+    return pm_block_node_create(parser, &locals, &opening, parameters, statements, &parser->previous);
 }
 
 /**
@@ -12511,10 +12532,10 @@ parse_variable_call(pm_parser_t *parser) {
 
                 // We subtract the value for the character '0' to get the actual
                 // integer value of the number (only _1 through _9 are valid)
-                uint32_t number_as_int = (uint32_t) (number - '0');
-                if (number_as_int > parser->current_scope->numbered_parameters) {
-                    parser->current_scope->numbered_parameters = number_as_int;
-                    pm_parser_numbered_parameters_set(parser, number_as_int);
+                uint8_t numbered_parameters = (uint8_t) (number - '0');
+                if (numbered_parameters > parser->current_scope->numbered_parameters) {
+                    parser->current_scope->numbered_parameters = numbered_parameters;
+                    pm_parser_numbered_parameters_set(parser, numbered_parameters);
                 }
 
                 // When you use a numbered parameter, it implies the existence
@@ -15707,7 +15728,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
 
             pm_token_t operator = parser->previous;
             pm_parser_scope_push(parser, false);
-            pm_block_parameters_node_t *params;
+            pm_block_parameters_node_t *block_parameters;
 
             switch (parser->current.type) {
                 case PM_TOKEN_PARENTHESIS_LEFT: {
@@ -15716,27 +15737,27 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                     parser_lex(parser);
 
                     if (match1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
-                        params = pm_block_parameters_node_create(parser, NULL, &opening);
+                        block_parameters = pm_block_parameters_node_create(parser, NULL, &opening);
                     } else {
-                        params = parse_block_parameters(parser, false, &opening, true);
+                        block_parameters = parse_block_parameters(parser, false, &opening, true);
                     }
 
                     accept1(parser, PM_TOKEN_NEWLINE);
                     expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_EXPECT_RPAREN);
 
-                    pm_block_parameters_node_closing_set(params, &parser->previous);
+                    pm_block_parameters_node_closing_set(block_parameters, &parser->previous);
                     break;
                 }
                 case PM_CASE_PARAMETER: {
                     parser->current_scope->explicit_params = true;
                     pm_accepts_block_stack_push(parser, false);
                     pm_token_t opening = not_provided(parser);
-                    params = parse_block_parameters(parser, false, &opening, true);
+                    block_parameters = parse_block_parameters(parser, false, &opening, true);
                     pm_accepts_block_stack_pop(parser);
                     break;
                 }
                 default: {
-                    params = NULL;
+                    block_parameters = NULL;
                     break;
                 }
             }
@@ -15770,11 +15791,17 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power) {
                 expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_LAMBDA_TERM_END);
             }
 
+            pm_node_t *parameters = (pm_node_t *) block_parameters;
+            uint8_t maximum = parser->current_scope->numbered_parameters;
+
+            if (parameters == NULL && (maximum > 0)) {
+                parameters = (pm_node_t *) pm_numbered_parameters_node_create(parser, &(pm_location_t) { .start = operator.start, .end = parser->previous.end }, maximum);
+            }
+
             pm_constant_id_list_t locals = parser->current_scope->locals;
-            uint32_t numbered_parameters = parser->current_scope->numbered_parameters;
             pm_parser_scope_pop(parser);
             pm_accepts_block_stack_pop(parser);
-            return (pm_node_t *) pm_lambda_node_create(parser, &locals, &operator, &opening, &parser->previous, params, body, numbered_parameters);
+            return (pm_node_t *) pm_lambda_node_create(parser, &locals, &operator, &opening, &parser->previous, parameters, body);
         }
         case PM_TOKEN_UPLUS: {
             parser_lex(parser);

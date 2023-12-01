@@ -18,8 +18,7 @@
         │   │   │       ├── opening_loc: (1,5)-(1,7) = "do"
         │   │   │       ├── closing_loc: (1,8)-(1,11) = "end"
         │   │   │       ├── parameters: ∅
-        │   │   │       ├── body: ∅
-        │   │   │       └── numbered_parameters: 0
+        │   │   │       └── body: ∅
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
@@ -39,8 +38,7 @@
         │   │   │       ├── opening_loc: (3,5)-(3,6) = "{"
         │   │   │       ├── closing_loc: (3,6)-(3,7) = "}"
         │   │   │       ├── parameters: ∅
-        │   │   │       ├── body: ∅
-        │   │   │       └── numbered_parameters: 0
+        │   │   │       └── body: ∅
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
@@ -65,8 +63,7 @@
         │   │   │       │   ├── locals: (length: 0)
         │   │   │       │   ├── opening_loc: (5,4)-(5,5) = "("
         │   │   │       │   └── closing_loc: (5,5)-(5,6) = ")"
-        │   │   │       ├── body: ∅
-        │   │   │       └── numbered_parameters: 0
+        │   │   │       └── body: ∅
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
@@ -91,8 +88,7 @@
             │   │       │   ├── locals: (length: 0)
             │   │       │   ├── opening_loc: (7,4)-(7,5) = "("
             │   │       │   └── closing_loc: (7,5)-(7,6) = ")"
-            │   │       ├── body: ∅
-            │   │       └── numbered_parameters: 0
+            │   │       └── body: ∅
             │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅

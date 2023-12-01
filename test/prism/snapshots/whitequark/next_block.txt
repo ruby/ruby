@@ -34,8 +34,7 @@
             │   │       │   ├── parameters: ∅
             │   │       │   ├── body: ∅
             │   │       │   ├── opening_loc: (1,13)-(1,15) = "do"
-            │   │       │   ├── closing_loc: (1,16)-(1,19) = "end"
-            │   │       │   └── numbered_parameters: 0
+            │   │       │   └── closing_loc: (1,16)-(1,19) = "end"
             │   │       └── flags: ∅
             │   └── flags: ∅
             └── keyword_loc: (1,0)-(1,4) = "next"

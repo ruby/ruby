@@ -24,6 +24,5 @@
             │   │   └── closing_loc: (1,7)-(1,8) = "|"
             │   ├── body: ∅
             │   ├── opening_loc: (1,2)-(1,3) = "{"
-            │   ├── closing_loc: (1,9)-(1,10) = "}"
-            │   └── numbered_parameters: 0
+            │   └── closing_loc: (1,9)-(1,10) = "}"
             └── flags: ∅

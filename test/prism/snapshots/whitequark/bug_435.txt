@@ -32,7 +32,6 @@
             │       │           │   ├── locals: (length: 0)
             │       │           │   ├── opening_loc: ∅
             │       │           │   └── closing_loc: ∅
-            │       │           ├── body: ∅
-            │       │           └── numbered_parameters: 0
+            │       │           └── body: ∅
             │       └── closing_loc: (1,12)-(1,13) = "}"
             └── closing_loc: (1,13)-(1,14) = "\""

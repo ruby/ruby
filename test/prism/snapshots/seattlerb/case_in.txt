@@ -539,11 +539,10 @@
         │   │       │   │   │   │   ├── locals: (length: 0)
         │   │       │   │   │   │   ├── opening_loc: (70,6)-(70,7) = "("
         │   │       │   │   │   │   └── closing_loc: (70,8)-(70,9) = ")"
-        │   │       │   │   │   ├── body:
-        │   │       │   │   │   │   @ StatementsNode (location: (70,12)-(70,16))
-        │   │       │   │   │   │   └── body: (length: 1)
-        │   │       │   │   │   │       └── @ TrueNode (location: (70,12)-(70,16))
-        │   │       │   │   │   └── numbered_parameters: 0
+        │   │       │   │   │   └── body:
+        │   │       │   │   │       @ StatementsNode (location: (70,12)-(70,16))
+        │   │       │   │   │       └── body: (length: 1)
+        │   │       │   │   │           └── @ TrueNode (location: (70,12)-(70,16))
         │   │       │   │   └── @ LocalVariableTargetNode (location: (70,20)-(70,21))
         │   │       │   │       ├── name: :c
         │   │       │   │       └── depth: 0

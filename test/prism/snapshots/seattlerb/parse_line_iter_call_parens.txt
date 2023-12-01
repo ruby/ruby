@@ -68,6 +68,5 @@
             │   │           ├── block: ∅
             │   │           └── flags: ∅
             │   ├── opening_loc: (1,5)-(1,7) = "do"
-            │   ├── closing_loc: (3,0)-(3,3) = "end"
-            │   └── numbered_parameters: 0
+            │   └── closing_loc: (3,0)-(3,3) = "end"
             └── flags: ∅

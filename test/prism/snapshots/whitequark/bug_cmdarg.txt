@@ -76,27 +76,25 @@
             │   │               │   ├── opening_loc: (5,8)-(5,10) = "do"
             │   │               │   ├── closing_loc: (5,23)-(5,26) = "end"
             │   │               │   ├── parameters: ∅
-            │   │               │   ├── body:
-            │   │               │   │   @ StatementsNode (location: (5,11)-(5,22))
-            │   │               │   │   └── body: (length: 1)
-            │   │               │   │       └── @ CallNode (location: (5,11)-(5,22))
-            │   │               │   │           ├── receiver: ∅
-            │   │               │   │           ├── call_operator_loc: ∅
-            │   │               │   │           ├── name: :meth
-            │   │               │   │           ├── message_loc: (5,11)-(5,15) = "meth"
-            │   │               │   │           ├── opening_loc: ∅
-            │   │               │   │           ├── arguments: ∅
-            │   │               │   │           ├── closing_loc: ∅
-            │   │               │   │           ├── block:
-            │   │               │   │           │   @ BlockNode (location: (5,16)-(5,22))
-            │   │               │   │           │   ├── locals: []
-            │   │               │   │           │   ├── parameters: ∅
-            │   │               │   │           │   ├── body: ∅
-            │   │               │   │           │   ├── opening_loc: (5,16)-(5,18) = "do"
-            │   │               │   │           │   ├── closing_loc: (5,19)-(5,22) = "end"
-            │   │               │   │           │   └── numbered_parameters: 0
-            │   │               │   │           └── flags: ∅
-            │   │               │   └── numbered_parameters: 0
+            │   │               │   └── body:
+            │   │               │       @ StatementsNode (location: (5,11)-(5,22))
+            │   │               │       └── body: (length: 1)
+            │   │               │           └── @ CallNode (location: (5,11)-(5,22))
+            │   │               │               ├── receiver: ∅
+            │   │               │               ├── call_operator_loc: ∅
+            │   │               │               ├── name: :meth
+            │   │               │               ├── message_loc: (5,11)-(5,15) = "meth"
+            │   │               │               ├── opening_loc: ∅
+            │   │               │               ├── arguments: ∅
+            │   │               │               ├── closing_loc: ∅
+            │   │               │               ├── block:
+            │   │               │               │   @ BlockNode (location: (5,16)-(5,22))
+            │   │               │               │   ├── locals: []
+            │   │               │               │   ├── parameters: ∅
+            │   │               │               │   ├── body: ∅
+            │   │               │               │   ├── opening_loc: (5,16)-(5,18) = "do"
+            │   │               │               │   └── closing_loc: (5,19)-(5,22) = "end"
+            │   │               │               └── flags: ∅
             │   │               └── operator_loc: ∅
             │   └── flags: ∅
             ├── closing_loc: ∅

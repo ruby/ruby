@@ -17,8 +17,7 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (1,7)-(1,8) = "{"
-        │   │   ├── closing_loc: (2,0)-(2,1) = "}"
-        │   │   └── numbered_parameters: 0
+        │   │   └── closing_loc: (2,0)-(2,1) = "}"
         │   └── flags: ∅
         ├── @ CallNode (location: (3,0)-(5,1))
         │   ├── receiver: ∅
@@ -56,8 +55,7 @@
         │   │   │           ├── name: :a
         │   │   │           └── depth: 0
         │   │   ├── opening_loc: (3,7)-(3,8) = "{"
-        │   │   ├── closing_loc: (5,0)-(5,1) = "}"
-        │   │   └── numbered_parameters: 0
+        │   │   └── closing_loc: (5,0)-(5,1) = "}"
         │   └── flags: ∅
         ├── @ LambdaNode (location: (6,0)-(7,1))
         │   ├── locals: []
@@ -70,8 +68,7 @@
         │   │   ├── locals: (length: 0)
         │   │   ├── opening_loc: (6,2)-(6,3) = "("
         │   │   └── closing_loc: (6,3)-(6,4) = ")"
-        │   ├── body: ∅
-        │   └── numbered_parameters: 0
+        │   └── body: ∅
         ├── @ LambdaNode (location: (8,0)-(9,1))
         │   ├── locals: [:a]
         │   ├── operator_loc: (8,0)-(8,2) = "->"
@@ -93,8 +90,7 @@
         │   │   ├── locals: (length: 0)
         │   │   ├── opening_loc: (8,2)-(8,3) = "("
         │   │   └── closing_loc: (8,4)-(8,5) = ")"
-        │   ├── body: ∅
-        │   └── numbered_parameters: 0
+        │   └── body: ∅
         ├── @ LambdaNode (location: (10,0)-(11,1))
         │   ├── locals: [:a, :b]
         │   ├── operator_loc: (10,0)-(10,2) = "->"
@@ -118,8 +114,7 @@
         │   │   ├── locals: (length: 0)
         │   │   ├── opening_loc: (10,2)-(10,3) = "("
         │   │   └── closing_loc: (10,7)-(10,8) = ")"
-        │   ├── body: ∅
-        │   └── numbered_parameters: 0
+        │   └── body: ∅
         └── @ LambdaNode (location: (12,0)-(13,1))
             ├── locals: [:a, :b, :c]
             ├── operator_loc: (12,0)-(12,2) = "->"
@@ -145,5 +140,4 @@
             │   │       └── name: :c
             │   ├── opening_loc: (12,2)-(12,3) = "("
             │   └── closing_loc: (12,10)-(12,11) = ")"
-            ├── body: ∅
-            └── numbered_parameters: 0
+            └── body: ∅

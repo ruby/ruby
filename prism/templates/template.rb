@@ -198,6 +198,21 @@ module Prism
   end
 
   # This represents an integer field.
+  class UInt8Field < Field
+    def rbs_class
+      "Integer"
+    end
+
+    def rbi_class
+      "Integer"
+    end
+
+    def java_type
+      "int"
+    end
+  end
+
+  # This represents an integer field.
   class UInt32Field < Field
     def rbs_class
       "Integer"
@@ -282,6 +297,7 @@ module Prism
       when "constant[]" then ConstantListField
       when "location"   then LocationField
       when "location?"  then OptionalLocationField
+      when "uint8"      then UInt8Field
       when "uint32"     then UInt32Field
       when "flags"      then FlagsField
       else raise("Unknown field type: #{name.inspect}")

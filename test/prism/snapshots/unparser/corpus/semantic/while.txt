@@ -21,8 +21,7 @@
         │   │   │   ├── parameters: ∅
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (1,11)-(1,12) = "{"
-        │   │   │   ├── closing_loc: (1,12)-(1,13) = "}"
-        │   │   │   └── numbered_parameters: 0
+        │   │   │   └── closing_loc: (1,12)-(1,13) = "}"
         │   │   └── flags: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (1,0)-(1,1))
@@ -56,8 +55,7 @@
         │   │   │   ├── parameters: ∅
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (3,9)-(3,10) = "{"
-        │   │   │   ├── closing_loc: (3,10)-(3,11) = "}"
-        │   │   │   └── numbered_parameters: 0
+        │   │   │   └── closing_loc: (3,10)-(3,11) = "}"
         │   │   └── flags: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (4,2)-(4,3))
@@ -131,8 +129,7 @@
         │   │   │   │   ├── parameters: ∅
         │   │   │   │   ├── body: ∅
         │   │   │   │   ├── opening_loc: (9,15)-(9,16) = "{"
-        │   │   │   │   ├── closing_loc: (9,17)-(9,18) = "}"
-        │   │   │   │   └── numbered_parameters: 0
+        │   │   │   │   └── closing_loc: (9,17)-(9,18) = "}"
         │   │   │   └── flags: ∅
         │   │   └── operator_loc: (9,10)-(9,12) = "&&"
         │   ├── statements:
@@ -215,8 +212,7 @@
         │   │   │   │           ├── block: ∅
         │   │   │   │           └── flags: variable_call
         │   │   │   ├── opening_loc: (15,18)-(15,20) = "do"
-        │   │   │   ├── closing_loc: (18,0)-(18,3) = "end"
-        │   │   │   └── numbered_parameters: 0
+        │   │   │   └── closing_loc: (18,0)-(18,3) = "end"
         │   │   └── flags: ∅
         │   ├── statements:
         │   │   @ StatementsNode (location: (15,0)-(15,1))

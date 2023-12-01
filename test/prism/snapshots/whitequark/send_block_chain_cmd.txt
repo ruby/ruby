@@ -24,8 +24,7 @@
         │   │   │   ├── parameters: ∅
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (1,7)-(1,9) = "do"
-        │   │   │   ├── closing_loc: (1,10)-(1,13) = "end"
-        │   │   │   └── numbered_parameters: 0
+        │   │   │   └── closing_loc: (1,10)-(1,13) = "end"
         │   │   └── flags: ∅
         │   ├── call_operator_loc: (1,13)-(1,14) = "."
         │   ├── name: :fun
@@ -69,8 +68,7 @@
         │   │   │   ├── parameters: ∅
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (3,7)-(3,9) = "do"
-        │   │   │   ├── closing_loc: (3,10)-(3,13) = "end"
-        │   │   │   └── numbered_parameters: 0
+        │   │   │   └── closing_loc: (3,10)-(3,13) = "end"
         │   │   └── flags: ∅
         │   ├── call_operator_loc: (3,13)-(3,14) = "."
         │   ├── name: :fun
@@ -97,8 +95,7 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (3,22)-(3,24) = "do"
-        │   │   ├── closing_loc: (3,25)-(3,28) = "end"
-        │   │   └── numbered_parameters: 0
+        │   │   └── closing_loc: (3,25)-(3,28) = "end"
         │   └── flags: ∅
         ├── @ CallNode (location: (5,0)-(5,20))
         │   ├── receiver:
@@ -121,8 +118,7 @@
         │   │   │   ├── parameters: ∅
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (5,7)-(5,9) = "do"
-        │   │   │   ├── closing_loc: (5,10)-(5,13) = "end"
-        │   │   │   └── numbered_parameters: 0
+        │   │   │   └── closing_loc: (5,10)-(5,13) = "end"
         │   │   └── flags: ∅
         │   ├── call_operator_loc: (5,13)-(5,14) = "."
         │   ├── name: :fun
@@ -136,8 +132,7 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (5,18)-(5,19) = "{"
-        │   │   ├── closing_loc: (5,19)-(5,20) = "}"
-        │   │   └── numbered_parameters: 0
+        │   │   └── closing_loc: (5,19)-(5,20) = "}"
         │   └── flags: ∅
         ├── @ CallNode (location: (7,0)-(7,22))
         │   ├── receiver:
@@ -160,8 +155,7 @@
         │   │   │   ├── parameters: ∅
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (7,7)-(7,9) = "do"
-        │   │   │   ├── closing_loc: (7,10)-(7,13) = "end"
-        │   │   │   └── numbered_parameters: 0
+        │   │   │   └── closing_loc: (7,10)-(7,13) = "end"
         │   │   └── flags: ∅
         │   ├── call_operator_loc: (7,13)-(7,14) = "."
         │   ├── name: :fun
@@ -205,8 +199,7 @@
         │   │   │   ├── parameters: ∅
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (9,7)-(9,9) = "do"
-        │   │   │   ├── closing_loc: (9,10)-(9,13) = "end"
-        │   │   │   └── numbered_parameters: 0
+        │   │   │   └── closing_loc: (9,10)-(9,13) = "end"
         │   │   └── flags: ∅
         │   ├── call_operator_loc: (9,13)-(9,14) = "."
         │   ├── name: :fun
@@ -233,8 +226,7 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (9,23)-(9,24) = "{"
-        │   │   ├── closing_loc: (9,24)-(9,25) = "}"
-        │   │   └── numbered_parameters: 0
+        │   │   └── closing_loc: (9,24)-(9,25) = "}"
         │   └── flags: ∅
         ├── @ CallNode (location: (11,0)-(11,22))
         │   ├── receiver:
@@ -257,8 +249,7 @@
         │   │   │   ├── parameters: ∅
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (11,7)-(11,9) = "do"
-        │   │   │   ├── closing_loc: (11,10)-(11,13) = "end"
-        │   │   │   └── numbered_parameters: 0
+        │   │   │   └── closing_loc: (11,10)-(11,13) = "end"
         │   │   └── flags: ∅
         │   ├── call_operator_loc: (11,13)-(11,15) = "::"
         │   ├── name: :fun
@@ -302,8 +293,7 @@
             │   │   ├── parameters: ∅
             │   │   ├── body: ∅
             │   │   ├── opening_loc: (13,7)-(13,9) = "do"
-            │   │   ├── closing_loc: (13,10)-(13,13) = "end"
-            │   │   └── numbered_parameters: 0
+            │   │   └── closing_loc: (13,10)-(13,13) = "end"
             │   └── flags: ∅
             ├── call_operator_loc: (13,13)-(13,15) = "::"
             ├── name: :fun

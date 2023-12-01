@@ -27,6 +27,5 @@
             │   ├── parameters: ∅
             │   ├── body: ∅
             │   ├── opening_loc: (1,9)-(1,10) = "{"
-            │   ├── closing_loc: (1,10)-(1,11) = "}"
-            │   └── numbered_parameters: 0
+            │   └── closing_loc: (1,10)-(1,11) = "}"
             └── flags: safe_navigation

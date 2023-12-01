@@ -31,6 +31,5 @@
             │   │   ├── locals: (length: 0)
             │   │   ├── opening_loc: ∅
             │   │   └── closing_loc: ∅
-            │   ├── body: ∅
-            │   └── numbered_parameters: 0
+            │   └── body: ∅
             └── operator_loc: (1,2)-(1,3) = "="

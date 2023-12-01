@@ -28,8 +28,7 @@
         │   │   ├── locals: (length: 0)
         │   │   ├── opening_loc: ∅
         │   │   └── closing_loc: ∅
-        │   ├── body: ∅
-        │   └── numbered_parameters: 0
+        │   └── body: ∅
         └── @ LambdaNode (location: (3,0)-(3,9))
             ├── locals: [:a]
             ├── operator_loc: (3,0)-(3,2) = "->"
@@ -52,5 +51,4 @@
             │   ├── locals: (length: 0)
             │   ├── opening_loc: ∅
             │   └── closing_loc: ∅
-            ├── body: ∅
-            └── numbered_parameters: 0
+            └── body: ∅

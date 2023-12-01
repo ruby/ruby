@@ -253,6 +253,7 @@ module Prism
               when Prism::ConstantListField then "Array.new(load_varuint) { load_required_constant }"
               when Prism::LocationField then "load_location"
               when Prism::OptionalLocationField then "load_optional_location"
+              when Prism::UInt8Field then "io.getbyte"
               when Prism::UInt32Field, Prism::FlagsField then "load_varuint"
               else raise
               end
@@ -286,6 +287,7 @@ module Prism
                 when Prism::ConstantListField then "Array.new(load_varuint) { load_required_constant }"
                 when Prism::LocationField then "load_location"
                 when Prism::OptionalLocationField then "load_optional_location"
+                when Prism::UInt8Field then "io.getbyte"
                 when Prism::UInt32Field, Prism::FlagsField then "load_varuint"
                 else raise
                 end

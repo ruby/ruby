@@ -39,6 +39,5 @@
             │   │           ├── name: :kwargs
             │   │           └── depth: 0
             │   ├── opening_loc: (1,2)-(1,3) = "{"
-            │   ├── closing_loc: (1,22)-(1,23) = "}"
-            │   └── numbered_parameters: 0
+            │   └── closing_loc: (1,22)-(1,23) = "}"
             └── flags: ∅

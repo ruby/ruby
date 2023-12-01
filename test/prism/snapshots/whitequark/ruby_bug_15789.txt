@@ -33,14 +33,15 @@
         │   │   │       │   │   │           ├── operator_loc: (1,9)-(1,11) = "->"
         │   │   │       │   │   │           ├── opening_loc: (1,11)-(1,12) = "{"
         │   │   │       │   │   │           ├── closing_loc: (1,14)-(1,15) = "}"
-        │   │   │       │   │   │           ├── parameters: ∅
-        │   │   │       │   │   │           ├── body:
-        │   │   │       │   │   │           │   @ StatementsNode (location: (1,12)-(1,14))
-        │   │   │       │   │   │           │   └── body: (length: 1)
-        │   │   │       │   │   │           │       └── @ LocalVariableReadNode (location: (1,12)-(1,14))
-        │   │   │       │   │   │           │           ├── name: :_1
-        │   │   │       │   │   │           │           └── depth: 0
-        │   │   │       │   │   │           └── numbered_parameters: 1
+        │   │   │       │   │   │           ├── parameters:
+        │   │   │       │   │   │           │   @ NumberedParametersNode (location: (1,9)-(1,15))
+        │   │   │       │   │   │           │   └── maximum: 1
+        │   │   │       │   │   │           └── body:
+        │   │   │       │   │   │               @ StatementsNode (location: (1,12)-(1,14))
+        │   │   │       │   │   │               └── body: (length: 1)
+        │   │   │       │   │   │                   └── @ LocalVariableReadNode (location: (1,12)-(1,14))
+        │   │   │       │   │   │                       ├── name: :_1
+        │   │   │       │   │   │                       └── depth: 0
         │   │   │       │   │   ├── rest: ∅
         │   │   │       │   │   ├── posts: (length: 0)
         │   │   │       │   │   ├── keywords: (length: 0)
@@ -49,13 +50,12 @@
         │   │   │       │   ├── locals: (length: 0)
         │   │   │       │   ├── opening_loc: (1,4)-(1,5) = "("
         │   │   │       │   └── closing_loc: (1,15)-(1,16) = ")"
-        │   │   │       ├── body:
-        │   │   │       │   @ StatementsNode (location: (1,18)-(1,19))
-        │   │   │       │   └── body: (length: 1)
-        │   │   │       │       └── @ LocalVariableReadNode (location: (1,18)-(1,19))
-        │   │   │       │           ├── name: :a
-        │   │   │       │           └── depth: 0
-        │   │   │       └── numbered_parameters: 0
+        │   │   │       └── body:
+        │   │   │           @ StatementsNode (location: (1,18)-(1,19))
+        │   │   │           └── body: (length: 1)
+        │   │   │               └── @ LocalVariableReadNode (location: (1,18)-(1,19))
+        │   │   │                   ├── name: :a
+        │   │   │                   └── depth: 0
         │   │   └── flags: ∅
         │   ├── closing_loc: ∅
         │   ├── block: ∅
@@ -92,26 +92,26 @@
             │   │       │   │   │           ├── operator_loc: (3,8)-(3,10) = "->"
             │   │       │   │   │           ├── opening_loc: (3,10)-(3,11) = "{"
             │   │       │   │   │           ├── closing_loc: (3,13)-(3,14) = "}"
-            │   │       │   │   │           ├── parameters: ∅
-            │   │       │   │   │           ├── body:
-            │   │       │   │   │           │   @ StatementsNode (location: (3,11)-(3,13))
-            │   │       │   │   │           │   └── body: (length: 1)
-            │   │       │   │   │           │       └── @ LocalVariableReadNode (location: (3,11)-(3,13))
-            │   │       │   │   │           │           ├── name: :_1
-            │   │       │   │   │           │           └── depth: 0
-            │   │       │   │   │           └── numbered_parameters: 1
+            │   │       │   │   │           ├── parameters:
+            │   │       │   │   │           │   @ NumberedParametersNode (location: (3,8)-(3,14))
+            │   │       │   │   │           │   └── maximum: 1
+            │   │       │   │   │           └── body:
+            │   │       │   │   │               @ StatementsNode (location: (3,11)-(3,13))
+            │   │       │   │   │               └── body: (length: 1)
+            │   │       │   │   │                   └── @ LocalVariableReadNode (location: (3,11)-(3,13))
+            │   │       │   │   │                       ├── name: :_1
+            │   │       │   │   │                       └── depth: 0
             │   │       │   │   ├── keyword_rest: ∅
             │   │       │   │   └── block: ∅
             │   │       │   ├── locals: (length: 0)
             │   │       │   ├── opening_loc: (3,4)-(3,5) = "("
             │   │       │   └── closing_loc: (3,14)-(3,15) = ")"
-            │   │       ├── body:
-            │   │       │   @ StatementsNode (location: (3,17)-(3,18))
-            │   │       │   └── body: (length: 1)
-            │   │       │       └── @ LocalVariableReadNode (location: (3,17)-(3,18))
-            │   │       │           ├── name: :a
-            │   │       │           └── depth: 0
-            │   │       └── numbered_parameters: 0
+            │   │       └── body:
+            │   │           @ StatementsNode (location: (3,17)-(3,18))
+            │   │           └── body: (length: 1)
+            │   │               └── @ LocalVariableReadNode (location: (3,17)-(3,18))
+            │   │                   ├── name: :a
+            │   │                   └── depth: 0
             │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅

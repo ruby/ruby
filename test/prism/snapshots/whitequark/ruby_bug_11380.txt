@@ -18,15 +18,14 @@
             │   │   │   ├── opening_loc: (1,5)-(1,6) = "{"
             │   │   │   ├── closing_loc: (1,14)-(1,15) = "}"
             │   │   │   ├── parameters: ∅
-            │   │   │   ├── body:
-            │   │   │   │   @ StatementsNode (location: (1,7)-(1,13))
-            │   │   │   │   └── body: (length: 1)
-            │   │   │   │       └── @ SymbolNode (location: (1,7)-(1,13))
-            │   │   │   │           ├── opening_loc: (1,7)-(1,8) = ":"
-            │   │   │   │           ├── value_loc: (1,8)-(1,13) = "hello"
-            │   │   │   │           ├── closing_loc: ∅
-            │   │   │   │           └── unescaped: "hello"
-            │   │   │   └── numbered_parameters: 0
+            │   │   │   └── body:
+            │   │   │       @ StatementsNode (location: (1,7)-(1,13))
+            │   │   │       └── body: (length: 1)
+            │   │   │           └── @ SymbolNode (location: (1,7)-(1,13))
+            │   │   │               ├── opening_loc: (1,7)-(1,8) = ":"
+            │   │   │               ├── value_loc: (1,8)-(1,13) = "hello"
+            │   │   │               ├── closing_loc: ∅
+            │   │   │               └── unescaped: "hello"
             │   │   └── @ KeywordHashNode (location: (1,17)-(1,21))
             │   │       └── elements: (length: 1)
             │   │           └── @ AssocNode (location: (1,17)-(1,21))
@@ -48,6 +47,5 @@
             │   ├── parameters: ∅
             │   ├── body: ∅
             │   ├── opening_loc: (1,22)-(1,24) = "do"
-            │   ├── closing_loc: (1,25)-(1,28) = "end"
-            │   └── numbered_parameters: 0
+            │   └── closing_loc: (1,25)-(1,28) = "end"
             └── flags: ∅

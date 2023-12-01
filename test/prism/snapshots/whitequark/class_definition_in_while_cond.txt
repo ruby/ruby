@@ -35,8 +35,7 @@
         │   │   │           │   │   ├── parameters: ∅
         │   │   │           │   │   ├── body: ∅
         │   │   │           │   │   ├── opening_loc: (1,29)-(1,31) = "do"
-        │   │   │           │   │   ├── closing_loc: (1,32)-(1,35) = "end"
-        │   │   │           │   │   └── numbered_parameters: 0
+        │   │   │           │   │   └── closing_loc: (1,32)-(1,35) = "end"
         │   │   │           │   └── flags: ∅
         │   │   │           └── operator_loc: (1,23)-(1,24) = "="
         │   │   └── end_keyword_loc: (1,37)-(1,40) = "end"
@@ -74,8 +73,7 @@
         │   │   │           │   ├── parameters: ∅
         │   │   │           │   ├── body: ∅
         │   │   │           │   ├── opening_loc: (3,25)-(3,27) = "do"
-        │   │   │           │   ├── closing_loc: (3,28)-(3,31) = "end"
-        │   │   │           │   └── numbered_parameters: 0
+        │   │   │           │   └── closing_loc: (3,28)-(3,31) = "end"
         │   │   │           └── flags: ∅
         │   │   └── end_keyword_loc: (3,33)-(3,36) = "end"
         │   ├── statements:
@@ -119,8 +117,7 @@
         │   │   │           │   │   ├── parameters: ∅
         │   │   │           │   │   ├── body: ∅
         │   │   │           │   │   ├── opening_loc: (5,24)-(5,26) = "do"
-        │   │   │           │   │   ├── closing_loc: (5,27)-(5,30) = "end"
-        │   │   │           │   │   └── numbered_parameters: 0
+        │   │   │           │   │   └── closing_loc: (5,27)-(5,30) = "end"
         │   │   │           │   └── flags: ∅
         │   │   │           └── operator_loc: (5,18)-(5,19) = "="
         │   │   ├── end_keyword_loc: (5,32)-(5,35) = "end"
@@ -161,8 +158,7 @@
             │   │           │   ├── parameters: ∅
             │   │           │   ├── body: ∅
             │   │           │   ├── opening_loc: (7,21)-(7,23) = "do"
-            │   │           │   ├── closing_loc: (7,24)-(7,27) = "end"
-            │   │           │   └── numbered_parameters: 0
+            │   │           │   └── closing_loc: (7,24)-(7,27) = "end"
             │   │           └── flags: ∅
             │   ├── end_keyword_loc: (7,29)-(7,32) = "end"
             │   └── name: :Foo

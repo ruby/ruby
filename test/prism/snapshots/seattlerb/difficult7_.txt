@@ -75,8 +75,7 @@
             │   │   │   │   │           │   └── end_keyword_loc: ∅
             │   │   │   │   │           └── end_keyword_loc: ∅
             │   │   │   │   ├── opening_loc: (2,18)-(2,19) = "{"
-            │   │   │   │   ├── closing_loc: (2,32)-(2,33) = "}"
-            │   │   │   │   └── numbered_parameters: 0
+            │   │   │   │   └── closing_loc: (2,32)-(2,33) = "}"
             │   │   │   └── flags: ∅
             │   │   └── operator_loc: ∅
             │   └── @ AssocNode (location: (3,8)-(3,14))

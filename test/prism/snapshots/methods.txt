@@ -1583,8 +1583,7 @@
         │   │           │   │       │   ├── parameters: ∅
         │   │           │   │       │   ├── body: ∅
         │   │           │   │       │   ├── opening_loc: (161,12)-(161,13) = "{"
-        │   │           │   │       │   ├── closing_loc: (161,13)-(161,14) = "}"
-        │   │           │   │       │   └── numbered_parameters: 0
+        │   │           │   │       │   └── closing_loc: (161,13)-(161,14) = "}"
         │   │           │   │       └── flags: ∅
         │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
