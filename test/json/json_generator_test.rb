@@ -150,6 +150,7 @@ EOT
       :buffer_initial_length => 1024,
       :depth                 => 0,
       :script_safe           => false,
+      :strict                => false,
       :indent                => "  ",
       :max_nesting           => 100,
       :object_nl             => "\n",
@@ -167,6 +168,7 @@ EOT
       :buffer_initial_length => 1024,
       :depth                 => 0,
       :script_safe           => false,
+      :strict                => false,
       :indent                => "",
       :max_nesting           => 100,
       :object_nl             => "",
@@ -184,6 +186,7 @@ EOT
       :buffer_initial_length => 1024,
       :depth                 => 0,
       :script_safe           => false,
+      :strict                => false,
       :indent                => "",
       :max_nesting           => 0,
       :object_nl             => "",
@@ -336,7 +339,13 @@ EOT
 
   def test_json_generate
     assert_raise JSON::GeneratorError do
-      assert_equal true, generate(["\xea"])
+      generate(["\xea"])
+    end
+  end
+
+  def test_json_generate_unsupported_types
+    assert_raise JSON::GeneratorError do
+      generate(Object.new, strict: true)
     end
   end
 

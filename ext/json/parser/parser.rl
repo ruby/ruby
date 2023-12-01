@@ -797,7 +797,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
         json->max_nesting = 100;
         json->allow_nan = 0;
         json->create_additions = 0;
-        json->create_id = rb_funcall(mJSON, i_create_id, 0);
+        json->create_id = Qnil;
         json->object_class = Qnil;
         json->array_class = Qnil;
         json->decimal_class = Qnil;
