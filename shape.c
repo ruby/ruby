@@ -180,7 +180,9 @@ redblack_balance(char color, ID key, rb_shape_t * value, redblack_node_t * left,
             RUBY_ASSERT(new_right_key > new_key);
             RUBY_ASSERT(new_left_left == LEAF || new_left_left->key < new_left_key);
             RUBY_ASSERT(new_left_right == LEAF || new_left_right->key > new_left_key);
+            RUBY_ASSERT(new_left_right == LEAF || new_left_right->key < new_key);
             RUBY_ASSERT(new_right_left == LEAF || new_right_left->key < new_right_key);
+            RUBY_ASSERT(new_right_left == LEAF || new_right_left->key > new_key);
             RUBY_ASSERT(new_right_right == LEAF || new_right_right->key > new_right_key);
         }
         else if (redblack_red_p(left) && redblack_red_p(redblack_right(left))) {
@@ -202,7 +204,9 @@ redblack_balance(char color, ID key, rb_shape_t * value, redblack_node_t * left,
             RUBY_ASSERT(new_right_key > new_key);
             RUBY_ASSERT(new_left_left == LEAF || new_left_left->key < new_left_key);
             RUBY_ASSERT(new_left_right == LEAF || new_left_right->key > new_left_key);
+            RUBY_ASSERT(new_left_right == LEAF || new_left_right->key < new_key);
             RUBY_ASSERT(new_right_left == LEAF || new_right_left->key < new_right_key);
+            RUBY_ASSERT(new_right_left == LEAF || new_right_left->key > new_key);
             RUBY_ASSERT(new_right_right == LEAF || new_right_right->key > new_right_key);
         }
         else if (redblack_red_p(right) && redblack_red_p(redblack_left(right))) {
@@ -224,7 +228,9 @@ redblack_balance(char color, ID key, rb_shape_t * value, redblack_node_t * left,
             RUBY_ASSERT(new_right_key > new_key);
             RUBY_ASSERT(new_left_left == LEAF || new_left_left->key < new_left_key);
             RUBY_ASSERT(new_left_right == LEAF || new_left_right->key > new_left_key);
+            RUBY_ASSERT(new_left_right == LEAF || new_left_right->key < new_key);
             RUBY_ASSERT(new_right_left == LEAF || new_right_left->key < new_right_key);
+            RUBY_ASSERT(new_right_left == LEAF || new_right_left->key > new_key);
             RUBY_ASSERT(new_right_right == LEAF || new_right_right->key > new_right_key);
         }
         else if (redblack_red_p(right) && redblack_red_p(redblack_right(right))) {
@@ -246,7 +252,9 @@ redblack_balance(char color, ID key, rb_shape_t * value, redblack_node_t * left,
             RUBY_ASSERT(new_right_key > new_key);
             RUBY_ASSERT(new_left_left == LEAF || new_left_left->key < new_left_key);
             RUBY_ASSERT(new_left_right == LEAF || new_left_right->key > new_left_key);
+            RUBY_ASSERT(new_left_right == LEAF || new_left_right->key < new_key);
             RUBY_ASSERT(new_right_left == LEAF || new_right_left->key < new_right_key);
+            RUBY_ASSERT(new_right_left == LEAF || new_right_left->key > new_key);
             RUBY_ASSERT(new_right_right == LEAF || new_right_right->key > new_right_key);
         }
         else {
