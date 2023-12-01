@@ -8607,7 +8607,7 @@ parse_string(struct parser_params *p, rb_strterm_literal_t *quote)
     }
     newtok(p);
     if ((func & STR_FUNC_EXPAND) && c == '#') {
-        int t = parser_peek_variable_name(p);
+        enum yytokentype t = parser_peek_variable_name(p);
         if (t) return t;
         tokadd(p, '#');
         c = nextc(p);
@@ -9081,7 +9081,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
         /*	int mb = ENC_CODERANGE_7BIT, *mbp = &mb;*/
         newtok(p);
         if (c == '#') {
-            int t = parser_peek_variable_name(p);
+            enum yytokentype t = parser_peek_variable_name(p);
             if (p->heredoc_line_indent != -1) {
                 if (p->heredoc_indent > p->heredoc_line_indent) {
                     p->heredoc_indent = p->heredoc_line_indent;
@@ -10663,7 +10663,7 @@ parser_yylex(struct parser_params *p)
             !IS_lex_state(EXPR_DOT | EXPR_CLASS) &&
             !IS_END() &&
             (!IS_ARG() || IS_lex_state(EXPR_LABELED) || space_seen)) {
-            int token = heredoc_identifier(p);
+            enum  yytokentype token = heredoc_identifier(p);
             if (token) return token < 0 ? 0 : token;
         }
         if (IS_AFTER_OPERATOR()) {
