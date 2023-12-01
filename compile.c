@@ -4213,11 +4213,28 @@ compile_dstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
 }
 
 static int
-compile_dregx(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
+compile_dregx(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
     int cnt;
+
+    if (!RNODE_DREGX(node)->nd_next) {
+        VALUE match = RNODE_DREGX(node)->nd_lit;
+        if (RB_TYPE_P(match, T_REGEXP)) {
+            if (!popped) {
+                ADD_INSN1(ret, node, putobject, match);
+                RB_OBJ_WRITTEN(iseq, Qundef, match);
+            }
+            return COMPILE_OK;
+        }
+    }
+
     CHECK(compile_dstr_fragments(iseq, ret, node, &cnt));
     ADD_INSN2(ret, node, toregexp, INT2FIX(RNODE_DREGX(node)->nd_cflag), INT2FIX(cnt));
+
+    if (popped) {
+        ADD_INSN(ret, node, pop);
+    }
+
     return COMPILE_OK;
 }
 
@@ -9901,14 +9918,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       case NODE_EVSTR:
         CHECK(compile_evstr(iseq, ret, RNODE_EVSTR(node)->nd_body, popped));
         break;
-      case NODE_DREGX:{
-        compile_dregx(iseq, ret, node);
-
-        if (popped) {
-            ADD_INSN(ret, node, pop);
-        }
+      case NODE_DREGX:
+        compile_dregx(iseq, ret, node, popped);
         break;
-      }
       case NODE_ONCE:{
         int ic_index = body->ise_size++;
         const rb_iseq_t *block_iseq;

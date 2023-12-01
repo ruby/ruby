@@ -12891,8 +12891,8 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
         }
         if (!RNODE_DREGX(node)->nd_next) {
             VALUE src = RNODE_DREGX(node)->nd_lit;
-            nd_set_type(node, NODE_LIT);
-            RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(node)->nd_lit = reg_compile(p, src, options));
+            VALUE re = reg_compile(p, src, options);
+            RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_DREGX(node)->nd_lit = re);
         }
         if (options & RE_OPTION_ONCE) {
             node = NEW_ONCE(node, loc);
