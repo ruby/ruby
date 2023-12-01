@@ -1465,9 +1465,16 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
           ADD_INSNL(ret, &dummy_line_node, branchunless, lfinish[1]);
         }
       }
-      case PM_STRING_NODE:
       case PM_AND_NODE:
+      case PM_FLOAT_NODE:
+      case PM_HASH_NODE:
+      case PM_INTEGER_NODE:
+      case PM_LAMBDA_NODE:
       case PM_OR_NODE:
+      case PM_RANGE_NODE:
+      case PM_REGULAR_EXPRESSION_NODE:
+      case PM_STRING_NODE:
+      case PM_SYMBOL_NODE:
         dtype = DEFINED_EXPR;
         break;
       case PM_LOCAL_VARIABLE_READ_NODE:
