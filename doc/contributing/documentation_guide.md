@@ -296,7 +296,7 @@ Guidelines:
   to their "What's Here" sections if those exist.
 - All methods mentioned in the left-pane table of contents
   should be listed (including any methods extended from another class).
-- Local attributes (which are not included in the TOC) may also be listed.
+- Attributes (which are not included in the TOC) may also be listed.
 - Display methods as items in one or more bullet lists:
 
     - Begin each item with the method name, followed by a colon
