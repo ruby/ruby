@@ -774,7 +774,7 @@ class TestSocket < Test::Unit::TestCase
     begin
       Socket.getaddrinfo("example.com", 80, "AF_UNIX")
     rescue => e
-      assert_equal([Socket::EAI_FAMILY, Socket::EAI_FAIL].include?(e.error_code), true)
+      assert_include([Socket::EAI_FAMILY, Socket::EAI_FAIL], e.error_code)
     end
   end
 
