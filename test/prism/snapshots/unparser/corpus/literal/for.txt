@@ -16,7 +16,7 @@
         │   │   │       ├── index:
         │   │   │       │   @ LocalVariableTargetNode (location: (1,8)-(1,9))
         │   │   │       │   ├── name: :a
-        │   │   │       │   └── depth: 1
+        │   │   │       │   └── depth: 0
         │   │   │       ├── collection:
         │   │   │       │   @ CallNode (location: (1,13)-(1,16))
         │   │   │       │   ├── receiver: ∅
@@ -53,7 +53,7 @@
         │   ├── index:
         │   │   @ LocalVariableTargetNode (location: (4,4)-(4,5))
         │   │   ├── name: :a
-        │   │   └── depth: 1
+        │   │   └── depth: 0
         │   ├── collection:
         │   │   @ CallNode (location: (4,9)-(4,12))
         │   │   ├── receiver: ∅
@@ -88,14 +88,14 @@
         │   │   ├── lefts: (length: 1)
         │   │   │   └── @ LocalVariableTargetNode (location: (7,5)-(7,6))
         │   │   │       ├── name: :a
-        │   │   │       └── depth: 1
+        │   │   │       └── depth: 0
         │   │   ├── rest:
         │   │   │   @ SplatNode (location: (7,8)-(7,10))
         │   │   │   ├── operator_loc: (7,8)-(7,9) = "*"
         │   │   │   └── expression:
         │   │   │       @ LocalVariableTargetNode (location: (7,9)-(7,10))
         │   │   │       ├── name: :b
-        │   │   │       └── depth: 1
+        │   │   │       └── depth: 0
         │   │   ├── rights: (length: 0)
         │   │   ├── lparen_loc: (7,4)-(7,5) = "("
         │   │   └── rparen_loc: (7,10)-(7,11) = ")"
@@ -133,10 +133,10 @@
             │   ├── lefts: (length: 2)
             │   │   ├── @ LocalVariableTargetNode (location: (10,5)-(10,6))
             │   │   │   ├── name: :a
-            │   │   │   └── depth: 1
+            │   │   │   └── depth: 0
             │   │   └── @ LocalVariableTargetNode (location: (10,8)-(10,9))
             │   │       ├── name: :b
-            │   │       └── depth: 1
+            │   │       └── depth: 0
             │   ├── rest: ∅
             │   ├── rights: (length: 0)
             │   ├── lparen_loc: (10,4)-(10,5) = "("
