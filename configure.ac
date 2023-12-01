@@ -507,7 +507,10 @@ AS_CASE(["$target_os"],
     rb_cv_binary_elf=no
     : ${enable_shared=yes}
     AS_IF([$WINDRES --version | grep LLVM > /dev/null], [USE_LLVM_WINDRES=yes], [USE_LLVM_WINDRES=no])
-    ],
+],
+[darwin*], [
+    : ${enable_shared=yes}
+],
 [hiuxmpp*], [AC_DEFINE(__HIUX_MPP__)])    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
 
 AC_PROG_LN_S
