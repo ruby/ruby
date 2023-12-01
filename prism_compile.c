@@ -1348,7 +1348,9 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
     switch (PM_NODE_TYPE(node)) {
         case PM_BLOCK_NODE: {
             pm_block_node_t *cast = (pm_block_node_t *) node;
-            if (cast->parameters) scope->parameters = cast->parameters->parameters;
+            if (cast->parameters != NULL && PM_NODE_TYPE_P(cast->parameters, PM_BLOCK_PARAMETERS_NODE)) {
+                scope->parameters = ((pm_block_parameters_node_t *) cast->parameters)->parameters;
+            }
             scope->body = cast->body;
             scope->locals = cast->locals;
             break;
@@ -1385,7 +1387,9 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
         }
         case PM_LAMBDA_NODE: {
             pm_lambda_node_t *cast = (pm_lambda_node_t *) node;
-            if (cast->parameters) scope->parameters = cast->parameters->parameters;
+            if (cast->parameters != NULL && PM_NODE_TYPE_P(cast->parameters, PM_BLOCK_PARAMETERS_NODE)) {
+                scope->parameters = ((pm_block_parameters_node_t *) cast->parameters)->parameters;
+            }
             scope->body = cast->body;
             scope->locals = cast->locals;
             break;
@@ -3869,18 +3873,28 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         iseq_calc_param_size(iseq);
 
-        // Calculating the parameter size above does not account for numbered parameters
-        // We can _only_ have numbered parameters if we don't have non numbered parameters
-        // We verify this through asserts, and add the numbered_parameters size accordingly
-        if (PM_NODE_TYPE_P(scope_node->ast_node, PM_BLOCK_NODE)) {
-            uint32_t numbered_parameters = ((pm_block_node_t *)(scope_node->ast_node))->numbered_parameters;
-            RUBY_ASSERT(!body->param.size || !numbered_parameters);
-            body->param.size += numbered_parameters;
+        // Calculating the parameter size above does not account for numbered
+        // parameters. We can _only_ have numbered parameters if we don't have
+        // non numbered parameters. We verify this through asserts, and add the
+        // maximum numbered parameter size accordingly.
+        pm_node_t *block_parameters = NULL;
+        switch (PM_NODE_TYPE(scope_node->ast_node)) {
+          case PM_BLOCK_NODE: {
+            block_parameters = ((pm_block_node_t *) scope_node->ast_node)->parameters;
+            break;
+          }
+          case PM_LAMBDA_NODE: {
+            block_parameters = ((pm_lambda_node_t *) scope_node->ast_node)->parameters;
+            break;
+          }
+          default:
+            RUBY_ASSERT("unreachable");
+            break;
         }
-        else if (PM_NODE_TYPE_P(scope_node->ast_node, PM_LAMBDA_NODE)) {
-            uint32_t numbered_parameters = ((pm_lambda_node_t *)(scope_node->ast_node))->numbered_parameters;
-            RUBY_ASSERT(!body->param.size || !numbered_parameters);
-            body->param.size += numbered_parameters;
+
+        if (block_parameters != NULL && PM_NODE_TYPE_P(block_parameters, PM_NUMBERED_PARAMETERS_NODE)) {
+            RUBY_ASSERT(body->param.size == 0);
+            body->param.size += ((pm_numbered_parameters_node_t *) block_parameters)->maximum;
         }
 
         iseq_set_local_table(iseq, tbl);
