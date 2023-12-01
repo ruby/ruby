@@ -3,7 +3,10 @@
 
 require_relative 'test_helper'
 
-require_relative './lib/helper'
+begin
+  require_relative './lib/helper'
+rescue LoadError
+end
 
 class JSONInRactorTest < Test::Unit::TestCase
   def test_generate
