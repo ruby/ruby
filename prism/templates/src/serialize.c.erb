@@ -134,8 +134,7 @@ pm_serialize_comment(pm_parser_t *parser, pm_comment_t *comment, pm_buffer_t *bu
     pm_buffer_append_byte(buffer, (uint8_t) comment->type);
 
     // serialize location
-    pm_buffer_append_varuint(buffer, pm_ptrdifft_to_u32(comment->start - parser->start));
-    pm_buffer_append_varuint(buffer, pm_ptrdifft_to_u32(comment->end - comment->start));
+    pm_serialize_location(parser, &comment->location, buffer);
 }
 
 /**
@@ -190,8 +189,7 @@ pm_serialize_diagnostic(pm_parser_t *parser, pm_diagnostic_t *diagnostic, pm_buf
     pm_buffer_append_string(buffer, diagnostic->message, message_length);
 
     // serialize location
-    pm_buffer_append_varuint(buffer, pm_ptrdifft_to_u32(diagnostic->start - parser->start));
-    pm_buffer_append_varuint(buffer, pm_ptrdifft_to_u32(diagnostic->end - diagnostic->start));
+    pm_serialize_location(parser, &diagnostic->location, buffer);
 }
 
 static void

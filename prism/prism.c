@@ -7704,8 +7704,7 @@ parser_comment(pm_parser_t *parser, pm_comment_type_t type) {
 
     *comment = (pm_comment_t) {
         .type = type,
-        .start = parser->current.start,
-        .end = parser->current.end
+        .location = { parser->current.start, parser->current.end }
     };
 
     return comment;
@@ -7756,7 +7755,7 @@ lex_embdoc(pm_parser_t *parser) {
             parser->current.type = PM_TOKEN_EMBDOC_END;
             parser_lex_callback(parser);
 
-            comment->end = parser->current.end;
+            comment->location.end = parser->current.end;
             pm_list_append(&parser->comment_list, (pm_list_node_t *) comment);
 
             return PM_TOKEN_EMBDOC_END;
@@ -7779,7 +7778,7 @@ lex_embdoc(pm_parser_t *parser) {
 
     pm_parser_err_current(parser, PM_ERR_EMBDOC_TERM);
 
-    comment->end = parser->current.end;
+    comment->location.end = parser->current.end;
     pm_list_append(&parser->comment_list, (pm_list_node_t *) comment);
 
     return PM_TOKEN_EOF;

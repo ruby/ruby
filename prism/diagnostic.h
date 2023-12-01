@@ -6,6 +6,7 @@
 #ifndef PRISM_DIAGNOSTIC_H
 #define PRISM_DIAGNOSTIC_H
 
+#include "prism/ast.h"
 #include "prism/defines.h"
 #include "prism/util/pm_list.h"
 
@@ -22,11 +23,8 @@ typedef struct {
     /** The embedded base node. */
     pm_list_node_t node;
 
-    /** A pointer to the start of the source that generated the diagnostic. */
-    const uint8_t *start;
-
-    /** A pointer to the end of the source that generated the diagnostic. */
-    const uint8_t *end;
+    /** The location of the diagnostic in the source. */
+    pm_location_t location;
 
     /** The message associated with the diagnostic. */
     const char *message;

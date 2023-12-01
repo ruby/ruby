@@ -316,8 +316,8 @@ parser_comments(pm_parser_t *parser, VALUE source) {
     for (pm_comment_t *comment = (pm_comment_t *) parser->comment_list.head; comment != NULL; comment = (pm_comment_t *) comment->node.next) {
         VALUE location_argv[] = {
             source,
-            LONG2FIX(comment->start - parser->start),
-            LONG2FIX(comment->end - comment->start)
+            LONG2FIX(comment->location.start - parser->start),
+            LONG2FIX(comment->location.end - comment->location.start)
         };
 
         VALUE type = (comment->type == PM_COMMENT_EMBDOC) ? rb_cPrismEmbDocComment : rb_cPrismInlineComment;
@@ -389,8 +389,8 @@ parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
     for (error = (pm_diagnostic_t *) parser->error_list.head; error != NULL; error = (pm_diagnostic_t *) error->node.next) {
         VALUE location_argv[] = {
             source,
-            LONG2FIX(error->start - parser->start),
-            LONG2FIX(error->end - error->start)
+            LONG2FIX(error->location.start - parser->start),
+            LONG2FIX(error->location.end - error->location.start)
         };
 
         VALUE error_argv[] = {
@@ -415,8 +415,8 @@ parser_warnings(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
     for (warning = (pm_diagnostic_t *) parser->warning_list.head; warning != NULL; warning = (pm_diagnostic_t *) warning->node.next) {
         VALUE location_argv[] = {
             source,
-            LONG2FIX(warning->start - parser->start),
-            LONG2FIX(warning->end - warning->start)
+            LONG2FIX(warning->location.start - parser->start),
+            LONG2FIX(warning->location.end - warning->location.start)
         };
 
         VALUE warning_argv[] = {

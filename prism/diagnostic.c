@@ -283,8 +283,7 @@ pm_diagnostic_list_append(pm_list_t *list, const uint8_t *start, const uint8_t *
     if (diagnostic == NULL) return false;
 
     *diagnostic = (pm_diagnostic_t) {
-        .start = start,
-        .end = end,
+        .location = { start, end },
         .message = pm_diagnostic_message(diag_id),
         .owned = false
     };
@@ -327,8 +326,7 @@ pm_diagnostic_list_append_format(pm_list_t *list, const uint8_t *start, const ui
     va_end(arguments);
 
     *diagnostic = (pm_diagnostic_t) {
-        .start = start,
-        .end = end,
+        .location = { start, end },
         .message = message,
         .owned = true
     };

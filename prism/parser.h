@@ -382,11 +382,8 @@ typedef struct pm_comment {
     /** The embedded base node. */
     pm_list_node_t node;
 
-    /** A pointer to the start of the comment in the source. */
-    const uint8_t *start;
-
-    /** A pointer to the end of the comment in the source. */
-    const uint8_t *end;
+    /** The location of the comment in the source. */
+    pm_location_t location;
 
     /** The type of comment that we've found. */
     pm_comment_type_t type;
