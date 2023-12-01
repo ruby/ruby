@@ -916,6 +916,9 @@ static inline void
 RB_OBJ_FREEZE_RAW(VALUE obj)
 {
     RB_FL_SET_RAW(obj, RUBY_FL_FREEZE);
+    if (TYPE(obj) == T_STRING) {
+        RB_FL_UNSET_RAW(obj, FL_USER3); // STR_CHILLED
+    }
 }
 
 RUBY_SYMBOL_EXPORT_BEGIN

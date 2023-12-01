@@ -4679,6 +4679,37 @@ assert_equal '[0, {1=>1}]', %q{
   test(KwInit, [Hash.ruby2_keywords_hash({1 => 1})])
 }
 
+# Chilled string setivar trigger warning
+assert_equal 'literal string will be frozen in the future', %q{
+  Warning[:deprecated] = true
+  $VERBOSE = true
+  $warning = "no-warning"
+  module ::Warning
+    def self.warn(message)
+      $warning = message.split("warning: ").last.strip
+    end
+  end
+
+  class String
+    def setivar!
+      @ivar = 42
+    end
+  end
+
+  def setivar!(str)
+    str.setivar!
+  end
+
+  10.times { setivar!("mutable".dup) }
+  10.times do
+    setivar!("frozen".freeze)
+  rescue FrozenError
+  end
+
+  setivar!("chilled") # Emit warning
+  $warning
+}
+
 # arity=-2 cfuncs
 assert_equal '["", "1/2", [0, [:ok, 1]]]', %q{
   def test_cases(file, chain)

@@ -47,6 +47,7 @@ typedef struct {
     bool parsed;
 } pm_parse_result_t;
 
+void pm_options_frozen_string_literal_init(pm_parse_result_t *result, int frozen_string_literal);
 VALUE pm_load_file(pm_parse_result_t *result, VALUE filepath);
 VALUE pm_parse_file(pm_parse_result_t *result, VALUE filepath);
 VALUE pm_load_parse_file(pm_parse_result_t *result, VALUE filepath);

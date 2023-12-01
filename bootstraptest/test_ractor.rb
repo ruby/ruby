@@ -1792,3 +1792,14 @@ assert_equal 'ok', %q{
 }
 
 end # if !ENV['GITHUB_WORKFLOW']
+
+# Chilled strings are not shareable
+assert_equal 'false', %q{
+  Ractor.shareable?("chilled")
+}
+
+# Chilled strings can be made shareable
+assert_equal 'true', %q{
+  shareable = Ractor.make_shareable("chilled")
+  shareable == "chilled" && Ractor.shareable?(shareable)
+}

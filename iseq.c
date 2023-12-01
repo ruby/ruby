@@ -720,18 +720,20 @@ finish_iseq_build(rb_iseq_t *iseq)
 }
 
 static rb_compile_option_t COMPILE_OPTION_DEFAULT = {
-    OPT_INLINE_CONST_CACHE, /* int inline_const_cache; */
-    OPT_PEEPHOLE_OPTIMIZATION, /* int peephole_optimization; */
-    OPT_TAILCALL_OPTIMIZATION, /* int tailcall_optimization */
-    OPT_SPECIALISED_INSTRUCTION, /* int specialized_instruction; */
-    OPT_OPERANDS_UNIFICATION, /* int operands_unification; */
-    OPT_INSTRUCTIONS_UNIFICATION, /* int instructions_unification; */
-    OPT_FROZEN_STRING_LITERAL,
-    OPT_DEBUG_FROZEN_STRING_LITERAL,
-    TRUE,			/* coverage_enabled */
+    .inline_const_cache = OPT_INLINE_CONST_CACHE,
+    .peephole_optimization = OPT_PEEPHOLE_OPTIMIZATION,
+    .tailcall_optimization = OPT_TAILCALL_OPTIMIZATION,
+    .specialized_instruction = OPT_SPECIALISED_INSTRUCTION,
+    .operands_unification = OPT_OPERANDS_UNIFICATION,
+    .instructions_unification = OPT_INSTRUCTIONS_UNIFICATION,
+    .frozen_string_literal = OPT_FROZEN_STRING_LITERAL,
+    .debug_frozen_string_literal = OPT_DEBUG_FROZEN_STRING_LITERAL,
+    .coverage_enabled = TRUE,
 };
 
-static const rb_compile_option_t COMPILE_OPTION_FALSE = {0};
+static const rb_compile_option_t COMPILE_OPTION_FALSE = {
+    .frozen_string_literal = -1, // unspecified
+};
 
 int
 rb_iseq_opt_frozen_string_literal(void)
@@ -770,9 +772,11 @@ set_compile_option_from_ast(rb_compile_option_t *option, const rb_ast_body_t *as
 {
 #define SET_COMPILE_OPTION(o, a, mem) \
     ((a)->mem < 0 ? 0 : ((o)->mem = (a)->mem > 0))
-    SET_COMPILE_OPTION(option, ast, frozen_string_literal);
     SET_COMPILE_OPTION(option, ast, coverage_enabled);
 #undef SET_COMPILE_OPTION
+    if (ast->frozen_string_literal >= 0) {
+        option->frozen_string_literal = ast->frozen_string_literal;
+    }
     return option;
 }
 
@@ -814,13 +818,14 @@ make_compile_option_value(rb_compile_option_t *option)
         SET_COMPILE_OPTION(option, opt, specialized_instruction);
         SET_COMPILE_OPTION(option, opt, operands_unification);
         SET_COMPILE_OPTION(option, opt, instructions_unification);
-        SET_COMPILE_OPTION(option, opt, frozen_string_literal);
         SET_COMPILE_OPTION(option, opt, debug_frozen_string_literal);
         SET_COMPILE_OPTION(option, opt, coverage_enabled);
         SET_COMPILE_OPTION_NUM(option, opt, debug_level);
     }
 #undef SET_COMPILE_OPTION
 #undef SET_COMPILE_OPTION_NUM
+    VALUE frozen_string_literal = option->frozen_string_literal == -1 ? Qnil : RBOOL(option->frozen_string_literal);
+    rb_hash_aset(opt, ID2SYM(rb_intern("frozen_string_literal")), frozen_string_literal);
     return opt;
 }
 
@@ -1248,7 +1253,7 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
     pm_parse_result_t result = { 0 };
     pm_options_line_set(&result.options, NUM2INT(line));
 
-    pm_options_frozen_string_literal_set(&result.options, option.frozen_string_literal);
+    pm_options_frozen_string_literal_init(&result, option.frozen_string_literal);
 
     VALUE error;
     if (RB_TYPE_P(src, T_FILE)) {

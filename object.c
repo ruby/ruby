@@ -502,7 +502,10 @@ rb_obj_clone_setup(VALUE obj, VALUE clone, VALUE kwfreeze)
       case Qnil:
         rb_funcall(clone, id_init_clone, 1, obj);
         RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;
-        if (RB_OBJ_FROZEN(obj)) {
+        if (CHILLED_STRING_P(obj)) {
+            STR_CHILL_RAW(clone);
+        }
+        else if (RB_OBJ_FROZEN(obj)) {
             rb_shape_t * next_shape = rb_shape_transition_shape_frozen(clone);
             if (!rb_shape_obj_too_complex(clone) && next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
                 rb_evict_ivars_to_hash(clone);

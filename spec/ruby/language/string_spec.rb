@@ -232,8 +232,8 @@ describe "Ruby String literals" do
     end
 
     it "produce different objects for literals with the same content in different files if the other file doesn't have the comment" do
-      frozen_literals_by_default = eval("'test'").frozen?
-      ruby_exe(fixture(__FILE__, "freeze_magic_comment_across_files_no_comment.rb")).chomp.should == (!frozen_literals_by_default).to_s
+      frozen_string_literal = "test".frozen? && "test".equal?("test")
+      ruby_exe(fixture(__FILE__, "freeze_magic_comment_across_files_no_comment.rb")).chomp.should == (!frozen_string_literal).to_s
     end
 
     it "produce different objects for literals with the same content in different files if they have different encodings" do
