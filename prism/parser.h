@@ -475,13 +475,6 @@ typedef struct pm_scope {
      * about how many numbered parameters exist.
      */
     uint32_t numbered_parameters;
-
-    /**
-     * A transparent scope is a scope that cannot have locals set on itself.
-     * When a local is set on this scope, it will instead be set on the parent
-     * scope's local table.
-     */
-    bool transparent;
 } pm_scope_t;
 
 /**

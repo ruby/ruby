@@ -7,7 +7,7 @@
         │   ├── index:
         │   │   @ LocalVariableTargetNode (location: (1,4)-(1,5))
         │   │   ├── name: :a
-        │   │   └── depth: 1
+        │   │   └── depth: 0
         │   ├── collection:
         │   │   @ CallNode (location: (1,9)-(1,12))
         │   │   ├── receiver: ∅
@@ -33,7 +33,7 @@
         │   │           │   ├── arguments: (length: 1)
         │   │           │   │   └── @ LocalVariableReadNode (location: (1,18)-(1,19))
         │   │           │   │       ├── name: :a
-        │   │           │   │       └── depth: 1
+        │   │           │   │       └── depth: 0
         │   │           │   └── flags: ∅
         │   │           ├── closing_loc: ∅
         │   │           ├── block: ∅
@@ -46,7 +46,7 @@
             ├── index:
             │   @ LocalVariableTargetNode (location: (3,4)-(3,5))
             │   ├── name: :a
-            │   └── depth: 1
+            │   └── depth: 0
             ├── collection:
             │   @ CallNode (location: (3,9)-(3,12))
             │   ├── receiver: ∅
@@ -72,7 +72,7 @@
             │           │   ├── arguments: (length: 1)
             │           │   │   └── @ LocalVariableReadNode (location: (3,16)-(3,17))
             │           │   │       ├── name: :a
-            │           │   │       └── depth: 1
+            │           │   │       └── depth: 0
             │           │   └── flags: ∅
             │           ├── closing_loc: ∅
             │           ├── block: ∅
