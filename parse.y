@@ -562,6 +562,12 @@ static void numparam_name(struct parser_params *p, ID id);
 #define TOK_INTERN() intern_cstr(tok(p), toklen(p), p->enc)
 #define VALID_SYMNAME_P(s, l, enc, type) (rb_enc_symname_type(s, l, enc, (1U<<(type))) == (int)(type))
 
+static inline bool
+end_with_newline_p(struct parser_params *p, VALUE str)
+{
+    return RSTRING_LEN(str) > 0 && RSTRING_END(str)[-1] == '\n';
+}
+
 static void
 pop_pvtbl(struct parser_params *p, st_table *tbl)
 {
@@ -15965,7 +15971,7 @@ rb_parser_printf(struct parser_params *p, const char *fmt, ...)
     va_start(ap, fmt);
     rb_str_vcatf(mesg, fmt, ap);
     va_end(ap);
-    if (RSTRING_END(mesg)[-1] == '\n') {
+    if (end_with_newline_p(p, mesg)) {
         rb_io_write(p->debug_output, mesg);
         p->debug_buffer = Qnil;
     }
