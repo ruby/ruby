@@ -3680,7 +3680,7 @@ AS_IF([test "$EXEEXT" = .exe], [
 
 AS_CASE("$cross_compiling:${LIBPATHENV}", [yes:* | no:], [], [
     AC_MSG_CHECKING(whether wrapper for $LIBPATHENV is needed)
-    AS_IF([test x"$enable_shared" = xno],
+    AS_CASE(["$enable_shared:$target_os"], [no:*|*:mingw*|*:cygwin],
 	[AC_MSG_RESULT(no)],
 	[AC_SUBST(XRUBY_LIBPATHENV_WRAPPER, 'exe/$(PROGRAM)')
 	AC_MSG_RESULT(yes)]
