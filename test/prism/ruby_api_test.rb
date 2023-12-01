@@ -103,6 +103,18 @@ module Prism
       assert_equal 7, location.end_character_column
     end
 
+    def test_heredoc?
+      refute parse_expression("\"foo\"").heredoc?
+      refute parse_expression("\"foo \#{1}\"").heredoc?
+      refute parse_expression("`foo`").heredoc?
+      refute parse_expression("`foo \#{1}`").heredoc?
+
+      assert parse_expression("<<~HERE\nfoo\nHERE\n").heredoc?
+      assert parse_expression("<<~HERE\nfoo \#{1}\nHERE\n").heredoc?
+      assert parse_expression("<<~`HERE`\nfoo\nHERE\n").heredoc?
+      assert parse_expression("<<~`HERE`\nfoo \#{1}\nHERE\n").heredoc?
+    end
+
     private
 
     def parse_expression(source)
