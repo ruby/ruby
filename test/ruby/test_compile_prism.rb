@@ -914,6 +914,14 @@ module Prism
       assert_prism_eval("begin; rescue; end")
     end
 
+    def test_RescueModiferNode
+      assert_prism_eval("1.nil? rescue false")
+      assert_prism_eval("1.nil? rescue 1")
+      assert_prism_eval("raise 'bang' rescue nil")
+      assert_prism_eval("raise 'bang' rescue a = 1; a.nil?")
+      assert_prism_eval("a = 0 rescue (a += 1 && retry if a <= 1)")
+    end
+
     def test_RetryNode
       assert_prism_eval(<<~CODE)
         a = 1
@@ -944,7 +952,6 @@ module Prism
         end
       CODE
     end
-
 
     def test_ReturnNode
       assert_prism_eval("def return_node; return 1; end")
