@@ -610,6 +610,7 @@ module Prism
       result = Prism.lex(source, **options)
       result_value = result.value
       previous_state = nil
+      last_heredoc_end = nil
 
       # In previous versions of Ruby, Ripper wouldn't flush the bom before the
       # first token, so we had to have a hack in place to account for that. This
@@ -664,6 +665,7 @@ module Prism
           when :on_heredoc_end
             # Heredoc end tokens can be emitted in an odd order, so we don't
             # want to bother comparing the state on them.
+            last_heredoc_end = token.location.end_offset
             IgnoreStateToken.new([[lineno, column], event, value, lex_state])
           when :on_ident
             if lex_state == Ripper::EXPR_END
@@ -730,20 +732,13 @@ module Prism
             # Ripper will append a on_nl token (even though there isn't
             # necessarily a newline). We mirror that here.
             if previous_token.type == :COMMENT
-              # If the token before the comment was a heredoc end, then
-              # the comment's end_offset is before the heredoc end token.
+              # If the comment is at the start of a heredoc: <<HEREDOC # comment
+              # then the comment's end_offset is up near the heredoc_beg.
               # This is not the correct offset to use for figuring out if
-              # there is trailing whitespace after the comment.
-              # Use the end_offset of the heredoc end instead.
-              before_comment = result_value[index - 2]
-              before_comment &&= before_comment[0]
-
-              if before_comment&.type == :HEREDOC_END
-                start_offset = before_comment.location.end_offset
-              else
-                start_offset = previous_token.location.end_offset
-              end
-
+              # there is trailing whitespace after the last token.
+              # Use the greater offset of the two to determine the start of
+              # the trailing whitespace.
+              start_offset = [previous_token.location.end_offset, last_heredoc_end].compact.max
               end_offset = token.location.start_offset
 
               if start_offset < end_offset
