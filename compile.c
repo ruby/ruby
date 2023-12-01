@@ -4723,7 +4723,7 @@ frozen_string_literal_p(const rb_iseq_t *iseq)
     return ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal > 0;
 }
 
-static inline int
+static inline bool
 static_literal_node_p(const NODE *node, const rb_iseq_t *iseq, bool hash_key)
 {
     switch (nd_type(node)) {
@@ -10365,12 +10365,18 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         debugp_param("nd_lit", get_string_value(node));
         if (!popped) {
             VALUE lit = get_string_value(node);
-            if (!frozen_string_literal_p(iseq)) {
+            switch (ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal) {
+              case ISEQ_FROZEN_STRING_LITERAL_UNSET:
+                lit = rb_fstring(lit);
+                ADD_INSN1(ret, node, putchilledstring, lit);
+                RB_OBJ_WRITTEN(iseq, Qundef, lit);
+                break;
+              case ISEQ_FROZEN_STRING_LITERAL_DISABLED:
                 lit = rb_fstring(lit);
                 ADD_INSN1(ret, node, putstring, lit);
                 RB_OBJ_WRITTEN(iseq, Qundef, lit);
-            }
-            else {
+                break;
+              case ISEQ_FROZEN_STRING_LITERAL_ENABLED:
                 if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
                     VALUE debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX(line));
                     lit = rb_str_dup(lit);
@@ -10382,6 +10388,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
                 }
                 ADD_INSN1(ret, node, putobject, lit);
                 RB_OBJ_WRITTEN(iseq, Qundef, lit);
+                break;
+              default:
+                rb_bug("invalid frozen_string_literal");
             }
         }
         break;

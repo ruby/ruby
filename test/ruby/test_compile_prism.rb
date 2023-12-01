@@ -592,22 +592,16 @@ module Prism
       assert_prism_eval('$pit = 1; "1 #$pit 1"')
       assert_prism_eval('"1 #{1 + 2} 1"')
       assert_prism_eval('"Prism" "::" "TestCompilePrism"')
-      assert_prism_eval('("a""b").frozen?')
-      assert_prism_eval(<<-CODE)
+      assert_prism_eval(<<-'RUBY')
         # frozen_string_literal: true
 
-        ("a""b").frozen?
-      CODE
-      assert_prism_eval(<<-CODE)
+        !("a""b""#{1}").frozen?
+      RUBY
+      assert_prism_eval(<<-'RUBY')
         # frozen_string_literal: true
 
-        ("a""b""#{1}").frozen?
-      CODE
-      assert_prism_eval(<<-CODE)
-        # frozen_string_literal: true
-
-        ("a""#{1}""b").frozen?
-      CODE
+        !("a""#{1}""b").frozen?
+      RUBY
 
       # Test encoding of interpolated strings
       assert_prism_eval(<<~'RUBY')
@@ -618,6 +612,15 @@ module Prism
         b = "#{a}" << "Bar"
         [a, b, b.encoding]
       RUBY
+    end
+
+    def test_concatenated_StringNode
+      assert_prism_eval('("a""b").frozen?')
+      assert_prism_eval(<<-CODE)
+        # frozen_string_literal: true
+
+        ("a""b").frozen?
+      CODE
     end
 
     def test_InterpolatedSymbolNode
@@ -673,7 +676,9 @@ module Prism
     def test_StringNode
       assert_prism_eval('"pit"')
       assert_prism_eval('"a".frozen?')
+    end
 
+    def test_StringNode_frozen_string_literal_true
       [
         # Test that string literal is frozen
         <<~RUBY,
@@ -688,6 +693,31 @@ module Prism
       ].each do |src|
         assert_prism_eval(src, raw: true)
       end
+    end
+
+    def test_StringNode_frozen_string_literal_false
+      [
+        # Test that string literal is frozen
+        <<~RUBY,
+          # frozen_string_literal: false
+          !"a".frozen?
+        RUBY
+        # Test that two string literals with the same contents are the same string
+        <<~RUBY,
+          # frozen_string_literal: false
+          !"hello".equal?("hello")
+        RUBY
+      ].each do |src|
+        assert_prism_eval(src, raw: true)
+      end
+    end
+
+    def test_StringNode_frozen_string_literal_default
+      # Test that string literal is chilled
+      assert_prism_eval('"a".frozen?')
+
+      # Test that two identical chilled string literals aren't the same object
+      assert_prism_eval('!"hello".equal?("hello")')
     end
 
     def test_SymbolNode
@@ -2620,27 +2650,28 @@ end
 
     private
 
-    def compare_eval(source, raw:)
+    def compare_eval(source, raw:, location:)
       source = raw ? source : "class Prism::TestCompilePrism\n#{source}\nend"
 
       ruby_eval = RubyVM::InstructionSequence.compile(source).eval
       prism_eval = RubyVM::InstructionSequence.compile_prism(source).eval
 
       if ruby_eval.is_a? Proc
-        assert_equal ruby_eval.class, prism_eval.class
+        assert_equal ruby_eval.class, prism_eval.class, "@#{location.path}:#{location.lineno}"
       else
-        assert_equal ruby_eval, prism_eval
+        assert_equal ruby_eval, prism_eval, "@#{location.path}:#{location.lineno}"
       end
     end
 
     def assert_prism_eval(source, raw: false)
+      location = caller_locations(1, 1).first
       $VERBOSE, verbose_bak = nil, $VERBOSE
 
       begin
-        compare_eval(source, raw:)
+        compare_eval(source, raw:, location:)
 
         # Test "popped" functionality
-        compare_eval("#{source}; 1", raw:)
+        compare_eval("#{source}; 1", raw:, location:)
       ensure
         $VERBOSE = verbose_bak
       end

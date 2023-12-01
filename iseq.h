@@ -47,6 +47,10 @@ extern const ID rb_iseq_shared_exc_local_tbl[];
 
 #define ISEQ_FLIP_CNT(iseq) ISEQ_BODY(iseq)->variable.flip_count
 
+#define ISEQ_FROZEN_STRING_LITERAL_ENABLED 1
+#define ISEQ_FROZEN_STRING_LITERAL_DISABLED 0
+#define ISEQ_FROZEN_STRING_LITERAL_UNSET -1
+
 static inline rb_snum_t
 ISEQ_FLIP_CNT_INCREMENT(const rb_iseq_t *iseq)
 {
@@ -227,7 +231,7 @@ struct rb_compile_option_struct {
     unsigned int specialized_instruction: 1;
     unsigned int operands_unification: 1;
     unsigned int instructions_unification: 1;
-    unsigned int frozen_string_literal: 1;
+    signed int frozen_string_literal: 2; /* -1: not specified, 0: false, 1: true */
     unsigned int debug_frozen_string_literal: 1;
     unsigned int coverage_enabled: 1;
     int debug_level;

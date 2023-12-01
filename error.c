@@ -3860,6 +3860,12 @@ void
 rb_error_frozen_object(VALUE frozen_obj)
 {
     rb_yjit_lazy_push_frame(GET_EC()->cfp->pc);
+
+    if (CHILLED_STRING_P(frozen_obj)) {
+        CHILLED_STRING_MUTATED(frozen_obj);
+        return;
+    }
+
     VALUE debug_info;
     const ID created_info = id_debug_created_info;
     VALUE mesg = rb_sprintf("can't modify frozen %"PRIsVALUE": ",

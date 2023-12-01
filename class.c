@@ -2244,7 +2244,10 @@ singleton_class_of(VALUE obj)
         return klass;
 
       case T_STRING:
-        if (FL_TEST_RAW(obj, RSTRING_FSTR)) {
+        if (CHILLED_STRING_P(obj)) {
+            CHILLED_STRING_MUTATED(obj);
+        }
+        else if (FL_TEST_RAW(obj, RSTRING_FSTR)) {
             rb_raise(rb_eTypeError, "can't define singleton");
         }
     }

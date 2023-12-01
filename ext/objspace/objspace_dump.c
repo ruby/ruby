@@ -476,6 +476,8 @@ dump_object(VALUE obj, struct dump_config *dc)
             dump_append(dc, ", \"embedded\":true");
         if (FL_TEST(obj, RSTRING_FSTR))
             dump_append(dc, ", \"fstring\":true");
+        if (CHILLED_STRING_P(obj))
+            dump_append(dc, ", \"chilled\":true");
         if (STR_SHARED_P(obj))
             dump_append(dc, ", \"shared\":true");
         else

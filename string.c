@@ -380,8 +380,9 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
             OBJ_FREEZE_RAW(str);
         }
         else {
-            if (!OBJ_FROZEN(str))
+            if (!OBJ_FROZEN(str) || CHILLED_STRING_P(str)) {
                 str = str_new_frozen(rb_cString, str);
+            }
             if (STR_SHARED_P(str)) { /* str should not be shared */
                 /* shared substring  */
                 str_make_independent(str);
@@ -422,7 +423,7 @@ rb_fstring(VALUE str)
         }
     }
 
-    if (!FL_TEST_RAW(str, FL_FREEZE | STR_NOFREE))
+    if (!FL_TEST_RAW(str, FL_FREEZE | STR_NOFREE | STR_CHILLED))
         rb_str_resize(str, RSTRING_LEN(str));
 
     fstr = register_fstring(str, FALSE);
@@ -1822,10 +1823,14 @@ rb_str_resurrect(VALUE str)
 }
 
 VALUE
-rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str)
+rb_ec_str_resurrect(struct rb_execution_context_struct *ec, VALUE str, bool chilled)
 {
     RUBY_DTRACE_CREATE_HOOK(STRING, RSTRING_LEN(str));
-    return ec_str_duplicate(ec, rb_cString, str);
+    VALUE new_str = ec_str_duplicate(ec, rb_cString, str);
+    if (chilled) {
+        STR_CHILL_RAW(new_str);
+    }
+    return new_str;
 }
 
 /*
@@ -3019,11 +3024,14 @@ str_substr(VALUE str, long beg, long len, int empty)
 VALUE
 rb_str_freeze(VALUE str)
 {
+    if (CHILLED_STRING_P(str)) {
+        FL_UNSET_RAW(str, STR_CHILLED);
+    }
+
     if (OBJ_FROZEN(str)) return str;
     rb_str_resize(str, RSTRING_LEN(str));
     return rb_obj_freeze(str);
 }
-
 
 /*
  * call-seq:

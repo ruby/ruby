@@ -787,6 +787,44 @@ pm_interpolated_node_compile(pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_
     if (parts_size > 0) {
         VALUE current_string = Qnil;
 
+        bool literal = true;
+        for (size_t index = 0; index < parts_size; index++) {
+            const pm_node_t *part = parts->nodes[index];
+
+            if (!PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
+                literal = false;
+                break;
+            }
+        }
+
+        if (literal) {
+            for (size_t index = 0; index < parts_size; index++) {
+                const pm_node_t *part = parts->nodes[index];
+                const pm_string_node_t *string_node = (const pm_string_node_t *)part;
+                VALUE string_value = parse_string_encoded(scope_node, (pm_node_t *)string_node, &string_node->unescaped);
+
+                if (RTEST(current_string)) {
+                    current_string = rb_str_concat(current_string, string_value);
+                }
+                else {
+                    current_string = string_value;
+                }
+            }
+
+            const pm_node_t *part = parts->nodes[0];
+            current_string = rb_fstring(current_string);
+            if (PM_NODE_FLAG_P(part, PM_STRING_FLAGS_FROZEN)) {
+                ADD_INSN1(ret, &dummy_line_node, putobject, current_string);
+            }
+            else if (PM_NODE_FLAG_P(part, PM_STRING_FLAGS_MUTABLE)) {
+                ADD_INSN1(ret, &dummy_line_node, putstring, current_string);
+            }
+            else {
+                ADD_INSN1(ret, &dummy_line_node, putchilledstring, current_string);
+            }
+            return 1;
+        }
+
         for (size_t index = 0; index < parts_size; index++) {
             const pm_node_t *part = parts->nodes[index];
 
@@ -820,12 +858,7 @@ pm_interpolated_node_compile(pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_
                     current_string = rb_enc_str_new(NULL, 0, scope_node->encoding);
                 }
 
-                if (frozen_string_literal_p(iseq)) {
-                    ADD_INSN1(ret, &dummy_line_node, putobject, rb_str_freeze(current_string));
-                }
-                else {
-                    ADD_INSN1(ret, &dummy_line_node, putstring, rb_str_freeze(current_string));
-                }
+                ADD_INSN1(ret, &dummy_line_node, putobject, rb_fstring(current_string));
 
                 current_string = Qnil;
                 number_of_items_pushed++;
@@ -841,14 +874,7 @@ pm_interpolated_node_compile(pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_
 
         if (RTEST(current_string)) {
             current_string = rb_fstring(current_string);
-
-            if (frozen_string_literal_p(iseq)) {
-                ADD_INSN1(ret, &dummy_line_node, putobject, current_string);
-            }
-            else {
-                ADD_INSN1(ret, &dummy_line_node, putstring, current_string);
-            }
-
+            ADD_INSN1(ret, &dummy_line_node, putobject, current_string);
             current_string = Qnil;
             number_of_items_pushed++;
         }
@@ -7925,8 +7951,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             if (PM_NODE_FLAG_P(cast, PM_STRING_FLAGS_FROZEN)) {
                 PUSH_INSN1(ret, location, putobject, string);
             }
-            else {
+            else if (PM_NODE_FLAG_P(cast, PM_STRING_FLAGS_MUTABLE)) {
                 PUSH_INSN1(ret, location, putstring, string);
+            }
+            else {
+                PUSH_INSN1(ret, location, putchilledstring, string);
             }
         }
         return;
@@ -7979,8 +8008,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             if (PM_NODE_FLAG_P(node, PM_STRING_FLAGS_FROZEN)) {
                 PUSH_INSN1(ret, location, putobject, value);
             }
-            else {
+            else if (PM_NODE_FLAG_P(node, PM_STRING_FLAGS_MUTABLE)) {
                 PUSH_INSN1(ret, location, putstring, value);
+            }
+            else {
+                PUSH_INSN1(ret, location, putchilledstring, value);
             }
         }
         return;
@@ -8352,6 +8384,24 @@ pm_parse_file_script_lines(const pm_scope_node_t *scope_node, const pm_parser_t 
     }
 
     return lines;
+}
+
+void
+pm_options_frozen_string_literal_init(pm_parse_result_t *result, int frozen_string_literal)
+{
+    switch (frozen_string_literal) {
+      case ISEQ_FROZEN_STRING_LITERAL_UNSET:
+        break;
+      case ISEQ_FROZEN_STRING_LITERAL_DISABLED:
+        pm_options_frozen_string_literal_set(&result->options, false);
+        break;
+      case ISEQ_FROZEN_STRING_LITERAL_ENABLED:
+        pm_options_frozen_string_literal_set(&result->options, true);
+        break;
+      default:
+        rb_bug("pm_options_frozen_string_literal_init: invalid frozen_string_literal=%d", frozen_string_literal);
+        break;
+    }
 }
 
 /**

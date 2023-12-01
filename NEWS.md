@@ -7,6 +7,12 @@ Note that each entry is kept to a minimum, see links for details.
 
 ## Language changes
 
+* String literals in files without a `frozen_string_literal` comment now behave
+  as if they were frozen. If they are mutated a deprecation warning is emited.
+  These warnings can be enabled with `-W:deprecated` or by setting `Warning[:deprecated] = true`.
+  To disable this change you can run Ruby with the `--disable-frozen-string-literal` command line
+  argument. [Feature #20205]
+
 * `it` is added to reference a block parameter. [[Feature #18980]]
 
 * Keyword splatting `nil` when calling methods is now supported.

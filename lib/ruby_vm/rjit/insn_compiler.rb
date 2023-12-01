@@ -57,6 +57,7 @@ module RubyVM::RJIT
       when :putobject then putobject(jit, ctx, asm)
       when :putspecialobject then putspecialobject(jit, ctx, asm)
       when :putstring then putstring(jit, ctx, asm)
+      when :putchilledstring then putchilledstring(jit, ctx, asm)
       when :concatstrings then concatstrings(jit, ctx, asm)
       when :anytostring then anytostring(jit, ctx, asm)
       when :toregexp then toregexp(jit, ctx, asm)
@@ -776,6 +777,27 @@ module RubyVM::RJIT
 
       asm.mov(C_ARGS[0], EC)
       asm.mov(C_ARGS[1], to_value(put_val))
+      asm.mov(C_ARGS[2], 0)
+      asm.call(C.rb_ec_str_resurrect)
+
+      stack_top = ctx.stack_push(Type::TString)
+      asm.mov(stack_top, C_RET)
+
+      KeepCompiling
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
+    def putchilledstring(jit, ctx, asm)
+      put_val = jit.operand(0, ruby: true)
+
+      # Save the PC and SP because the callee will allocate
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      asm.mov(C_ARGS[0], EC)
+      asm.mov(C_ARGS[1], to_value(put_val))
+      asm.mov(C_ARGS[2], 1)
       asm.call(C.rb_ec_str_resurrect)
 
       stack_top = ctx.stack_push(Type::TString)
