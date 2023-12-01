@@ -313,7 +313,7 @@ changelog for details of the default gems or bundled gems.
 * RJIT exists only for experimental purposes.
     * You should keep using YJIT in production.
 
-### M:N Therad scheduler
+### M:N Thread scheduler
 
 * M:N Thread scheduler is introduced. [[Feature #19842]]
     * Background: Ruby 1.8 and before, M:1 thread scheduler (M Ruby threads
@@ -327,7 +327,7 @@ changelog for details of the default gems or bundled gems.
       need same number of native threads as Ruby threads (similar to the M:1
       thread scheduler). Also our M:N threads supports blocking operations
       well same as 1:1 threads. See the ticket for more details.
-      Our M:N thread scheduler refers on the gorotuine scheduler in the
+      Our M:N thread scheduler refers on the goroutine scheduler in the
       Go language.
     * In a ractor, only 1 thread can run in a same time because of
       implementation. Therefore, applications that use only one Ractor
