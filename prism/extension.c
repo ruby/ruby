@@ -798,6 +798,64 @@ parse_lex_file(int argc, VALUE *argv, VALUE self) {
     return value;
 }
 
+/**
+ * Parse the given input and return true if it parses without errors or
+ * warnings.
+ */
+static VALUE
+parse_input_success_p(pm_string_t *input, const pm_options_t *options) {
+    pm_parser_t parser;
+    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
+
+    pm_node_t *node = pm_parse(&parser);
+    pm_node_destroy(&parser, node);
+
+    VALUE result = parser.error_list.size == 0 && parser.warning_list.size == 0 ? Qtrue : Qfalse;
+    pm_parser_free(&parser);
+
+    return result;
+}
+
+/**
+ * call-seq:
+ *   Prism::parse_success?(source, **options) -> Array
+ *
+ * Parse the given string and return true if it parses without errors or
+ * warnings. For supported options, see Prism::parse.
+ */
+static VALUE
+parse_success_p(int argc, VALUE *argv, VALUE self) {
+    pm_string_t input;
+    pm_options_t options = { 0 };
+    string_options(argc, argv, &input, &options);
+
+    VALUE result = parse_input_success_p(&input, &options);
+    pm_string_free(&input);
+    pm_options_free(&options);
+
+    return result;
+}
+
+/**
+ * call-seq:
+ *   Prism::parse_file_success?(filepath, **options) -> Array
+ *
+ * Parse the given file and return true if it parses without errors or warnings.
+ * For supported options, see Prism::parse.
+ */
+static VALUE
+parse_file_success_p(int argc, VALUE *argv, VALUE self) {
+    pm_string_t input;
+    pm_options_t options = { 0 };
+    if (!file_options(argc, argv, &input, &options)) return Qnil;
+
+    VALUE result = parse_input_success_p(&input, &options);
+    pm_string_free(&input);
+    pm_options_free(&options);
+
+    return result;
+}
+
 /******************************************************************************/
 /* Utility functions exposed to make testing easier                           */
 /******************************************************************************/
@@ -981,6 +1039,8 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrism, "parse_file_comments", parse_file_comments, -1);
     rb_define_singleton_method(rb_cPrism, "parse_lex", parse_lex, -1);
     rb_define_singleton_method(rb_cPrism, "parse_lex_file", parse_lex_file, -1);
+    rb_define_singleton_method(rb_cPrism, "parse_success?", parse_success_p, -1);
+    rb_define_singleton_method(rb_cPrism, "parse_file_success?", parse_file_success_p, -1);
 
     // Next, the functions that will be called by the parser to perform various
     // internal tasks. We expose these to make them easier to test.

@@ -64,6 +64,22 @@ module Prism
   def self.load(source, serialized)
     Serialize.load(source, serialized)
   end
+
+  # :call-seq:
+  #   Prism::parse_failure?(source, **options) -> bool
+  #
+  # Returns true if the source is invalid Ruby code.
+  def self.parse_failure?(source, **options)
+    !parse_success?(source, **options)
+  end
+
+  # :call-seq:
+  #   Prism::parse_file_failure?(filepath, **options) -> bool
+  #
+  # Returns true if the file at filepath is invalid Ruby code.
+  def self.parse_file_failure?(filepath, **options)
+    !parse_file_success?(filepath, **options)
+  end
 end
 
 require_relative "prism/node"

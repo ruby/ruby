@@ -20,6 +20,18 @@ module Prism
       assert_equal_nodes ast2, ast3
     end
 
+    def test_parse_success?
+      assert Prism.parse_success?("1")
+      refute Prism.parse_success?("<>")
+
+      assert Prism.parse_success?("m //", verbose: false)
+      refute Prism.parse_success?("m //", verbose: true)
+    end
+
+    def test_parse_file_success?
+      assert Prism.parse_file_success?(__FILE__)
+    end
+
     def test_options
       assert_equal "", Prism.parse("__FILE__").value.statements.body[0].filepath
       assert_equal "foo.rb", Prism.parse("__FILE__", filepath: "foo.rb").value.statements.body[0].filepath

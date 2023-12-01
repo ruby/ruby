@@ -153,6 +153,16 @@ PRISM_EXPORTED_FUNCTION void pm_serialize_lex(pm_buffer_t *buffer, const uint8_t
 PRISM_EXPORTED_FUNCTION void pm_serialize_parse_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data);
 
 /**
+ * Parse the source and return true if it parses without errors or warnings.
+ *
+ * @param source The source to parse.
+ * @param size The size of the source.
+ * @param data The optional data to pass to the parser.
+ * @return True if the source parses without errors or warnings.
+ */
+PRISM_EXPORTED_FUNCTION bool pm_parse_success_p(const uint8_t *source, size_t size, const char *data);
+
+/**
  * Returns a string representation of the given token type.
  *
  * @param token_type The token type to convert to a string.
