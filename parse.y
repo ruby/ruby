@@ -7791,7 +7791,7 @@ tok_hex(struct parser_params *p, size_t *numlen)
     c = (int)ruby_scan_hex(p->lex.pcur, 2, numlen);
     if (!*numlen) {
         yyerror0("invalid hex escape");
-        token_flush(p);
+        dispatch_scan_event(p, tSTRING_CONTENT);
         return 0;
     }
     p->lex.pcur += *numlen;

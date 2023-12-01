@@ -997,13 +997,15 @@ class TestRipper::ScannerEvents < Test::Unit::TestCase
     assert_equal [:on_parse_error, "Invalid escape character syntax", "\\C-\u{3042}"], err
   end
 
-  def test_invalid_hex_escape
+  def test_invalid_hex_escape_string
     err = nil
-    assert_equal ['U'], scan('tstring_content', '"\\xU"') {|*e| err = e}
+    assert_equal ['\\x', 'U'], scan('tstring_content', '"\\xU"') {|*e| err = e}
     assert_equal [:on_parse_error, "invalid hex escape", "\\x"], err
+  end
 
+  def test_invalid_hex_escape_regexp
     err = nil
-    assert_equal ['U'], scan('tstring_content', '/\\xU/') {|*e| err = e}
+    assert_equal ['\\x', 'U'], scan('tstring_content', '/\\xU/') {|*e| err = e}
     assert_equal [:on_parse_error, "invalid hex escape", "\\x"], err
   end
 
