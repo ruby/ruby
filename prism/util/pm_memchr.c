@@ -8,7 +8,7 @@
  * of a multibyte character.
  */
 void *
-pm_memchr(const void *memory, int character, size_t number, bool encoding_changed, pm_encoding_t *encoding) {
+pm_memchr(const void *memory, int character, size_t number, bool encoding_changed, const pm_encoding_t *encoding) {
     if (encoding_changed && encoding->multibyte && character >= PRISM_MEMCHR_TRAILING_BYTE_MINIMUM) {
         const uint8_t *source = (const uint8_t *) memory;
         size_t index = 0;

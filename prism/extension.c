@@ -814,7 +814,7 @@ static VALUE
 named_captures(VALUE self, VALUE source) {
     pm_string_list_t string_list = { 0 };
 
-    if (!pm_regexp_named_capture_group_names((const uint8_t *) RSTRING_PTR(source), RSTRING_LEN(source), &string_list, false, &pm_encoding_utf_8)) {
+    if (!pm_regexp_named_capture_group_names((const uint8_t *) RSTRING_PTR(source), RSTRING_LEN(source), &string_list, false, pm_encoding_utf_8)) {
         pm_string_list_free(&string_list);
         return Qnil;
     }
