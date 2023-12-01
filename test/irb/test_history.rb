@@ -148,6 +148,23 @@ module TestIRB
       ENV["IRBRC"] = backup_irbrc
     end
 
+    def test_history_different_encodings
+      backup_default_external = Encoding.default_external
+      IRB.conf[:SAVE_HISTORY] = 2
+      Encoding.default_external = Encoding::US_ASCII
+      locale = IRB::Locale.new("C")
+      assert_history(<<~EXPECTED_HISTORY.encode(Encoding::US_ASCII), <<~INITIAL_HISTORY.encode(Encoding::UTF_8), <<~INPUT, locale: locale)
+        ????
+        exit
+      EXPECTED_HISTORY
+        😀
+      INITIAL_HISTORY
+        exit
+      INPUT
+    ensure
+      Encoding.default_external = backup_default_external
+    end
+
     private
 
     def history_concurrent_use_for_input_method(input_method)
@@ -179,11 +196,11 @@ module TestIRB
       end
     end
 
-    def assert_history(expected_history, initial_irb_history, input, input_method = TestInputMethodWithRelineHistory)
+    def assert_history(expected_history, initial_irb_history, input, input_method = TestInputMethodWithRelineHistory, locale: IRB::Locale.new)
       backup_verbose, $VERBOSE = $VERBOSE, nil
       backup_home = ENV["HOME"]
       backup_xdg_config_home = ENV.delete("XDG_CONFIG_HOME")
-      IRB.conf[:LC_MESSAGES] = IRB::Locale.new
+      IRB.conf[:LC_MESSAGES] = locale
       actual_history = nil
       Dir.mktmpdir("test_irb_history_") do |tmpdir|
         ENV["HOME"] = tmpdir
