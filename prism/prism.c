@@ -776,8 +776,7 @@ pm_conditional_predicate(pm_node_t *node) {
  * parentheses. In these cases we set the token to the "not provided" type. For
  * example:
  *
- *     pm_token_t token;
- *     not_provided(&token, parser->previous.end);
+ *     pm_token_t token = not_provided(parser);
  */
 static inline pm_token_t
 not_provided(pm_parser_t *parser) {
