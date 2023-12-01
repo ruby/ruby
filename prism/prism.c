@@ -9761,24 +9761,43 @@ parser_lex(pm_parser_t *parser) {
             // terminator, then we need to return the ending of the heredoc.
             if (current_token_starts_line(parser)) {
                 const uint8_t *start = parser->current.start;
-                size_t whitespace = pm_heredoc_strspn_inline_whitespace(parser, &start, lex_mode->as.heredoc.indent);
-
-                if ((start + ident_length <= parser->end) && (memcmp(start, ident_start, ident_length) == 0)) {
-                    bool matched = true;
+                if (start + ident_length <= parser->end) {
                     bool at_end = false;
+                    const uint8_t *newline = next_newline(start, parser->end - start);
+                    const uint8_t *ident_end = newline;
+                    const uint8_t *terminator_end = newline;
 
-                    size_t eol_length = match_eol_at(parser, start + ident_length);
-                    if (eol_length) {
-                        parser->current.end = start + ident_length + eol_length;
-                        pm_newline_list_append(&parser->newline_list, parser->current.end - 1);
-                    } else if (parser->end == (start + ident_length)) {
-                        parser->current.end = start + ident_length;
+                    if (newline == NULL) {
+                        terminator_end = parser->end;
+                        ident_end = parser->end;
                         at_end = true;
                     } else {
-                        matched = false;
+                        terminator_end++;
+                        if (newline[-1] == '\r') {
+                            ident_end--; // Remove \r
+                        }
                     }
 
-                    if (matched) {
+                    const uint8_t *terminator_start = ident_end - ident_length;
+                    const uint8_t *cursor = start;
+
+                    if (
+                        lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_DASH ||
+                        lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_TILDE
+                    ) {
+                        while (cursor < terminator_start && pm_char_is_inline_whitespace(*cursor)) {
+                            cursor++;
+                        }
+                    }
+
+                    if (
+                        (cursor == terminator_start) &&
+                        (memcmp(terminator_start, ident_start, ident_length) == 0)
+                    ) {
+                        if (newline != NULL) {
+                            pm_newline_list_append(&parser->newline_list, newline);
+                        }
+                        parser->current.end = terminator_end;
                         if (*lex_mode->as.heredoc.next_start == '\\') {
                             parser->next_start = NULL;
                         } else {
@@ -9794,7 +9813,7 @@ parser_lex(pm_parser_t *parser) {
                         LEX(PM_TOKEN_HEREDOC_END);
                     }
                 }
-
+                size_t whitespace = pm_heredoc_strspn_inline_whitespace(parser, &start, lex_mode->as.heredoc.indent);
                 if (
                     lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_TILDE &&
                     (lex_mode->as.heredoc.common_whitespace > whitespace) &&
@@ -9838,6 +9857,42 @@ parser_lex(pm_parser_t *parser) {
                         // If we have a - or ~ heredoc, then we can match after
                         // some leading whitespace.
                         const uint8_t *start = breakpoint + 1;
+
+                        if (!was_escaped_newline && (start + ident_length <= parser->end)) {
+                            // We want to match the terminator starting from the end of the line in case
+                            // there is whitespace in the ident such as <<-'   DOC' or <<~'   DOC'.
+                            const uint8_t *newline = next_newline(start, parser->end - start);
+
+                            if (newline == NULL) {
+                                newline = parser->end;
+                            } else if (newline[-1] == '\r') {
+                                newline--; // Remove \r
+                            }
+
+                            // Start of a possible terminator.
+                            const uint8_t *terminator_start = newline - ident_length;
+
+                            // Cursor to check for the leading whitespace. We skip the
+                            // leading whitespace if we have a - or ~ heredoc.
+                            const uint8_t *cursor = start;
+
+                            if (lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_DASH ||
+                                lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_TILDE) {
+                                while (cursor < terminator_start && pm_char_is_inline_whitespace(*cursor)) {
+                                    cursor++;
+                                }
+                            }
+
+                            if (
+                                cursor == terminator_start &&
+                                (memcmp(terminator_start, ident_start, ident_length) == 0)
+                            ) {
+                                parser->current.end = breakpoint + 1;
+                                pm_token_buffer_flush(parser, &token_buffer);
+                                LEX(PM_TOKEN_STRING_CONTENT);
+                            }
+                        }
+
                         size_t whitespace = pm_heredoc_strspn_inline_whitespace(parser, &start, lex_mode->as.heredoc.indent);
 
                         // If we have hit a newline that is followed by a valid
@@ -9845,22 +9900,6 @@ parser_lex(pm_parser_t *parser) {
                         // heredoc here as string content. Then, the next time a
                         // token is lexed, it will match again and return the
                         // end of the heredoc.
-                        if (
-                            !was_escaped_newline &&
-                            (start + ident_length <= parser->end) &&
-                            (memcmp(start, ident_start, ident_length) == 0)
-                        ) {
-                            // Heredoc terminators must be followed by a
-                            // newline, CRLF, or EOF to be valid.
-                            if (
-                                start + ident_length == parser->end ||
-                                match_eol_at(parser, start + ident_length)
-                            ) {
-                                parser->current.end = breakpoint + 1;
-                                pm_token_buffer_flush(parser, &token_buffer);
-                                LEX(PM_TOKEN_STRING_CONTENT);
-                            }
-                        }
 
                         if (lex_mode->as.heredoc.indent == PM_HEREDOC_INDENT_TILDE) {
                             if ((lex_mode->as.heredoc.common_whitespace > whitespace) && peek_at(parser, start) != '\n') {
