@@ -13,14 +13,7 @@
 
 require "mkmf"
 
-ssl_dirs = nil
-if defined?(::TruffleRuby)
-  # Always respect the openssl prefix chosen by truffle/openssl-prefix
-  require 'truffle/openssl-prefix'
-  ssl_dirs = dir_config("openssl", ENV["OPENSSL_PREFIX"])
-else
-  ssl_dirs = dir_config("openssl")
-end
+ssl_dirs = dir_config("openssl")
 dir_config_given = ssl_dirs.any?
 
 _, ssl_ldir = ssl_dirs
