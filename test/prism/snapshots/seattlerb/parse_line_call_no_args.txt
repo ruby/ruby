@@ -55,6 +55,5 @@
             │   │           ├── block: ∅
             │   │           └── flags: ∅
             │   ├── opening_loc: (1,2)-(1,4) = "do"
-            │   ├── closing_loc: (3,0)-(3,3) = "end"
-            │   └── numbered_parameters: 0
+            │   └── closing_loc: (3,0)-(3,3) = "end"
             └── flags: ∅

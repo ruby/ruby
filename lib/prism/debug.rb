@@ -103,9 +103,14 @@ module Prism
         case node
         when BlockNode, DefNode, LambdaNode
           names = node.locals
-
-          params = node.parameters
-          params = params&.parameters unless node.is_a?(DefNode)
+          params =
+            if node.is_a?(DefNode)
+              node.parameters
+            elsif node.parameters.is_a?(NumberedParametersNode)
+              nil
+            else
+              node.parameters&.parameters
+            end
 
           # prism places parameters in the same order that they appear in the
           # source. CRuby places them in the order that they need to appear

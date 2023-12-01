@@ -17,8 +17,7 @@
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (1,4)-(1,6) = "do"
-        │   │   ├── closing_loc: (2,0)-(2,3) = "end"
-        │   │   └── numbered_parameters: 0
+        │   │   └── closing_loc: (2,0)-(2,3) = "end"
         │   └── flags: ∅
         ├── @ CallNode (location: (4,0)-(6,3))
         │   ├── receiver: ∅
@@ -48,8 +47,7 @@
         │   │   │   ├── ensure_clause: ∅
         │   │   │   └── end_keyword_loc: (6,0)-(6,3) = "end"
         │   │   ├── opening_loc: (4,4)-(4,6) = "do"
-        │   │   ├── closing_loc: (6,0)-(6,3) = "end"
-        │   │   └── numbered_parameters: 0
+        │   │   └── closing_loc: (6,0)-(6,3) = "end"
         │   └── flags: ∅
         ├── @ CallNode (location: (8,0)-(11,3))
         │   ├── receiver: ∅
@@ -74,8 +72,7 @@
         │   │   │       │       @ NilNode (location: (9,13)-(9,16))
         │   │   │       └── @ NilNode (location: (10,2)-(10,5))
         │   │   ├── opening_loc: (8,4)-(8,6) = "do"
-        │   │   ├── closing_loc: (11,0)-(11,3) = "end"
-        │   │   └── numbered_parameters: 0
+        │   │   └── closing_loc: (11,0)-(11,3) = "end"
         │   └── flags: ∅
         ├── @ CallNode (location: (13,0)-(14,3))
         │   ├── receiver: ∅
@@ -106,8 +103,7 @@
         │   │   │   └── closing_loc: (13,9)-(13,10) = "|"
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (13,4)-(13,6) = "do"
-        │   │   ├── closing_loc: (14,0)-(14,3) = "end"
-        │   │   └── numbered_parameters: 0
+        │   │   └── closing_loc: (14,0)-(14,3) = "end"
         │   └── flags: ∅
         ├── @ CallNode (location: (16,0)-(20,3))
         │   ├── receiver: ∅
@@ -152,8 +148,7 @@
         │   │   │           ├── name: :a
         │   │   │           └── depth: 0
         │   │   ├── opening_loc: (16,12)-(16,14) = "do"
-        │   │   ├── closing_loc: (20,0)-(20,3) = "end"
-        │   │   └── numbered_parameters: 0
+        │   │   └── closing_loc: (20,0)-(20,3) = "end"
         │   └── flags: ∅
         └── @ CallNode (location: (22,0)-(26,3))
             ├── receiver: ∅
@@ -190,6 +185,5 @@
             │   │           ├── block: ∅
             │   │           └── flags: variable_call
             │   ├── opening_loc: (22,12)-(22,14) = "do"
-            │   ├── closing_loc: (26,0)-(26,3) = "end"
-            │   └── numbered_parameters: 0
+            │   └── closing_loc: (26,0)-(26,3) = "end"
             └── flags: ∅

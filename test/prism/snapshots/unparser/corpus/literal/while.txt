@@ -70,8 +70,7 @@
         │   │           │   │           │           └── operator_loc: (4,10)-(4,11) = "="
         │   │           │   │           └── flags: ∅
         │   │           │   ├── opening_loc: (2,6)-(2,7) = "{"
-        │   │           │   ├── closing_loc: (6,2)-(6,3) = "}"
-        │   │           │   └── numbered_parameters: 0
+        │   │           │   └── closing_loc: (6,2)-(6,3) = "}"
         │   │           └── flags: ∅
         │   ├── end_keyword_loc: (7,0)-(7,3) = "end"
         │   └── name: :A
@@ -335,8 +334,7 @@
         │   │           │   │           │           └── operator_loc: (30,10)-(30,11) = "="
         │   │           │   │           └── flags: ∅
         │   │           │   ├── opening_loc: (28,7)-(28,8) = "{"
-        │   │           │   ├── closing_loc: (32,2)-(32,3) = "}"
-        │   │           │   └── numbered_parameters: 0
+        │   │           │   └── closing_loc: (32,2)-(32,3) = "}"
         │   │           └── flags: ∅
         │   ├── end_keyword_loc: (33,0)-(33,3) = "end"
         │   └── name: :A
@@ -407,8 +405,7 @@
         │   │           │   │           │           └── operator_loc: (38,10)-(38,11) = "="
         │   │           │   │           └── flags: ∅
         │   │           │   ├── opening_loc: (36,7)-(36,8) = "{"
-        │   │           │   ├── closing_loc: (40,2)-(40,3) = "}"
-        │   │           │   └── numbered_parameters: 0
+        │   │           │   └── closing_loc: (40,2)-(40,3) = "}"
         │   │           └── flags: ∅
         │   ├── end_keyword_loc: (41,0)-(41,3) = "end"
         │   └── name: :A
@@ -632,8 +629,7 @@
         │   │   │           │   ├── parameters: ∅
         │   │   │           │   ├── body: ∅
         │   │   │           │   ├── opening_loc: (61,11)-(61,12) = "{"
-        │   │   │           │   ├── closing_loc: (62,0)-(62,1) = "}"
-        │   │   │           │   └── numbered_parameters: 0
+        │   │   │           │   └── closing_loc: (62,0)-(62,1) = "}"
         │   │   │           └── flags: ∅
         │   │   ├── opening_loc: (61,6)-(61,7) = "("
         │   │   └── closing_loc: (62,1)-(62,2) = ")"
@@ -686,8 +682,7 @@
             │   │           │   ├── parameters: ∅
             │   │           │   ├── body: ∅
             │   │           │   ├── opening_loc: (70,11)-(70,12) = "{"
-            │   │           │   ├── closing_loc: (71,0)-(71,1) = "}"
-            │   │           │   └── numbered_parameters: 0
+            │   │           │   └── closing_loc: (71,0)-(71,1) = "}"
             │   │           └── flags: ∅
             │   ├── opening_loc: (70,6)-(70,7) = "("
             │   └── closing_loc: (71,1)-(71,2) = ")"

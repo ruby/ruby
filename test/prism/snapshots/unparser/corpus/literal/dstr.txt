@@ -335,6 +335,5 @@
             │   │   └── closing_loc: (34,20)-(34,21) = "|"
             │   ├── body: ∅
             │   ├── opening_loc: (34,16)-(34,17) = "{"
-            │   ├── closing_loc: (37,0)-(37,1) = "}"
-            │   └── numbered_parameters: 0
+            │   └── closing_loc: (37,0)-(37,1) = "}"
             └── flags: ∅

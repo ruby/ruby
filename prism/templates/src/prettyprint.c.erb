@@ -152,7 +152,7 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                     prettyprint_source(output_buffer, location->start, (size_t) (location->end - location->start));
                     pm_buffer_append_string(output_buffer, "\"\n", 2);
                 }
-            <%- when Prism::UInt32Field -%>
+            <%- when Prism::UInt8Field, Prism::UInt32Field -%>
                 pm_buffer_append_format(output_buffer, " %d\n", cast-><%= field.name %>);
             <%- when Prism::FlagsField -%>
                 bool found = false;

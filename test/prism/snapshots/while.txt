@@ -134,8 +134,7 @@
         │   │   │   │           │   ├── parameters: ∅
         │   │   │   │           │   ├── body: ∅
         │   │   │   │           │   ├── opening_loc: (13,27)-(13,29) = "do"
-        │   │   │   │           │   ├── closing_loc: (13,30)-(13,33) = "end"
-        │   │   │   │           │   └── numbered_parameters: 0
+        │   │   │   │           │   └── closing_loc: (13,30)-(13,33) = "end"
         │   │   │   │           └── flags: ∅
         │   │   │   ├── rest: ∅
         │   │   │   ├── posts: (length: 0)
@@ -191,8 +190,7 @@
         │   │   │           │   │   ├── parameters: ∅
         │   │   │           │   │   ├── body: ∅
         │   │   │           │   │   ├── opening_loc: (15,24)-(15,26) = "do"
-        │   │   │           │   │   ├── closing_loc: (15,27)-(15,30) = "end"
-        │   │   │           │   │   └── numbered_parameters: 0
+        │   │   │           │   │   └── closing_loc: (15,27)-(15,30) = "end"
         │   │   │           │   └── flags: ∅
         │   │   │           └── operator_loc: (15,18)-(15,19) = "="
         │   │   ├── end_keyword_loc: (15,32)-(15,35) = "end"
@@ -231,8 +229,7 @@
         │   │   │           │   ├── parameters: ∅
         │   │   │           │   ├── body: ∅
         │   │   │           │   ├── opening_loc: (17,25)-(17,27) = "do"
-        │   │   │           │   ├── closing_loc: (17,28)-(17,31) = "end"
-        │   │   │           │   └── numbered_parameters: 0
+        │   │   │           │   └── closing_loc: (17,28)-(17,31) = "end"
         │   │   │           └── flags: ∅
         │   │   └── end_keyword_loc: (17,33)-(17,36) = "end"
         │   ├── statements:
@@ -274,8 +271,7 @@
         │   │   │           │   │   ├── parameters: ∅
         │   │   │           │   │   ├── body: ∅
         │   │   │           │   │   ├── opening_loc: (19,29)-(19,31) = "do"
-        │   │   │           │   │   ├── closing_loc: (19,32)-(19,35) = "end"
-        │   │   │           │   │   └── numbered_parameters: 0
+        │   │   │           │   │   └── closing_loc: (19,32)-(19,35) = "end"
         │   │   │           │   └── flags: ∅
         │   │   │           └── operator_loc: (19,23)-(19,24) = "="
         │   │   └── end_keyword_loc: (19,37)-(19,40) = "end"
@@ -312,8 +308,7 @@
         │   │   │           │   ├── parameters: ∅
         │   │   │           │   ├── body: ∅
         │   │   │           │   ├── opening_loc: (21,20)-(21,22) = "do"
-        │   │   │           │   ├── closing_loc: (21,23)-(21,26) = "end"
-        │   │   │           │   └── numbered_parameters: 0
+        │   │   │           │   └── closing_loc: (21,23)-(21,26) = "end"
         │   │   │           └── flags: ∅
         │   │   ├── locals: []
         │   │   ├── def_keyword_loc: (21,6)-(21,9) = "def"

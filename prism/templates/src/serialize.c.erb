@@ -107,6 +107,8 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
                 pm_serialize_location(parser, &((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
             }
             <%- end -%>
+            <%- when Prism::UInt8Field -%>
+            pm_buffer_append_byte(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
             <%- when Prism::UInt32Field -%>
             pm_buffer_append_varuint(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
             <%- when Prism::FlagsField -%>

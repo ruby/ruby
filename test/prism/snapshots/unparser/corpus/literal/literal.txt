@@ -1081,8 +1081,7 @@
         │   │   │           │       └── unescaped: "\na"
         │   │   │           └── closing_loc: (85,6)-(85,7) = "\""
         │   │   ├── opening_loc: (83,4)-(83,5) = "{"
-        │   │   ├── closing_loc: (86,0)-(86,1) = "}"
-        │   │   └── numbered_parameters: 0
+        │   │   └── closing_loc: (86,0)-(86,1) = "}"
         │   └── flags: ∅
         ├── @ SymbolNode (location: (87,0)-(88,2))
         │   ├── opening_loc: (87,0)-(87,2) = ":\""

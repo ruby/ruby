@@ -41,8 +41,7 @@
             │   │       │           │   ├── parameters: ∅
             │   │       │           │   ├── body: ∅
             │   │       │           │   ├── opening_loc: (2,4)-(2,6) = "do"
-            │   │       │           │   ├── closing_loc: (2,7)-(2,10) = "end"
-            │   │       │           │   └── numbered_parameters: 0
+            │   │       │           │   └── closing_loc: (2,7)-(2,10) = "end"
             │   │       │           └── flags: ∅
             │   │       ├── rescue_clause: ∅
             │   │       ├── else_clause: ∅

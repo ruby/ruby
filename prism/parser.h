@@ -474,7 +474,7 @@ typedef struct pm_scope {
      * numbered parameters, and to pass information to consumers of the AST
      * about how many numbered parameters exist.
      */
-    uint32_t numbered_parameters;
+    uint8_t numbered_parameters;
 } pm_scope_t;
 
 /**

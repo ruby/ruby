@@ -190,7 +190,7 @@ module Prism
         inspector << "<%= pointer %><%= field.name %>:\n"
         inspector << <%= field.name %>.inspect(inspector.child_inspector("<%= preadd %>")).delete_prefix(inspector.prefix)
       end
-      <%- when Prism::ConstantField, Prism::StringField, Prism::UInt32Field -%>
+      <%- when Prism::ConstantField, Prism::StringField, Prism::UInt8Field, Prism::UInt32Field -%>
       inspector << "<%= pointer %><%= field.name %>: #{<%= field.name %>.inspect}\n"
       <%- when Prism::OptionalConstantField -%>
       if (<%= field.name %> = self.<%= field.name %>).nil?

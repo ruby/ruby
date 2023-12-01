@@ -50,6 +50,5 @@
             │   │           ├── block: ∅
             │   │           └── flags: variable_call
             │   ├── opening_loc: (1,9)-(1,10) = "{"
-            │   ├── closing_loc: (1,11)-(1,12) = "}"
-            │   └── numbered_parameters: 0
+            │   └── closing_loc: (1,11)-(1,12) = "}"
             └── flags: ∅

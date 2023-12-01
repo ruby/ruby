@@ -36,6 +36,5 @@
             │   │   └── closing_loc: (1,12)-(1,13) = "|"
             │   ├── body: ∅
             │   ├── opening_loc: (1,5)-(1,6) = "{"
-            │   ├── closing_loc: (1,14)-(1,15) = "}"
-            │   └── numbered_parameters: 0
+            │   └── closing_loc: (1,14)-(1,15) = "}"
             └── flags: ∅

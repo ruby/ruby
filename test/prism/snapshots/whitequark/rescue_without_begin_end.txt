@@ -55,6 +55,5 @@
             │   │   ├── ensure_clause: ∅
             │   │   └── end_keyword_loc: (1,27)-(1,30) = "end"
             │   ├── opening_loc: (1,5)-(1,7) = "do"
-            │   ├── closing_loc: (1,27)-(1,30) = "end"
-            │   └── numbered_parameters: 0
+            │   └── closing_loc: (1,27)-(1,30) = "end"
             └── flags: ∅

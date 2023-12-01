@@ -50,7 +50,6 @@
                 │       │   │   └── closing_loc: (1,22)-(1,23) = "|"
                 │       │   ├── body: ∅
                 │       │   ├── opening_loc: (1,15)-(1,17) = "do"
-                │       │   ├── closing_loc: (1,24)-(1,27) = "end"
-                │       │   └── numbered_parameters: 0
+                │       │   └── closing_loc: (1,24)-(1,27) = "end"
                 │       └── flags: ∅
                 └── flags: ∅

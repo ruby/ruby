@@ -227,14 +227,12 @@
             │           │           │   │       │   │           │   │           │   │           │   ├── parameters: ∅
             │           │           │   │       │   │           │   │           │   │           │   ├── body: ∅
             │           │           │   │       │   │           │   │           │   │           │   ├── opening_loc: (18,22)-(18,24) = "do"
-            │           │           │   │       │   │           │   │           │   │           │   ├── closing_loc: (19,4)-(19,7) = "end"
-            │           │           │   │       │   │           │   │           │   │           │   └── numbered_parameters: 0
+            │           │           │   │       │   │           │   │           │   │           │   └── closing_loc: (19,4)-(19,7) = "end"
             │           │           │   │       │   │           │   │           │   │           └── flags: ∅
             │           │           │   │       │   │           │   │           │   └── end_keyword_loc: (20,2)-(20,5) = "end"
             │           │           │   │       │   │           │   │           └── end_keyword_loc: (20,2)-(20,5) = "end"
             │           │           │   │       │   │           │   ├── opening_loc: (15,40)-(15,42) = "do"
-            │           │           │   │       │   │           │   ├── closing_loc: (21,0)-(21,3) = "end"
-            │           │           │   │       │   │           │   └── numbered_parameters: 0
+            │           │           │   │       │   │           │   └── closing_loc: (21,0)-(21,3) = "end"
             │           │           │   │       │   │           └── flags: ∅
             │           │           │   │       │   └── end_keyword_loc: (21,4)-(21,7) = "end"
             │           │           │   │       └── end_keyword_loc: (21,4)-(21,7) = "end"

@@ -23,27 +23,25 @@
             │   │       │   ├── locals: (length: 0)
             │   │       │   ├── opening_loc: (1,4)-(1,5) = "("
             │   │       │   └── closing_loc: (1,5)-(1,6) = ")"
-            │   │       ├── body:
-            │   │       │   @ StatementsNode (location: (1,9)-(1,17))
-            │   │       │   └── body: (length: 1)
-            │   │       │       └── @ CallNode (location: (1,9)-(1,17))
-            │   │       │           ├── receiver: ∅
-            │   │       │           ├── call_operator_loc: ∅
-            │   │       │           ├── name: :g
-            │   │       │           ├── message_loc: (1,9)-(1,10) = "g"
-            │   │       │           ├── opening_loc: ∅
-            │   │       │           ├── arguments: ∅
-            │   │       │           ├── closing_loc: ∅
-            │   │       │           ├── block:
-            │   │       │           │   @ BlockNode (location: (1,11)-(1,17))
-            │   │       │           │   ├── locals: []
-            │   │       │           │   ├── parameters: ∅
-            │   │       │           │   ├── body: ∅
-            │   │       │           │   ├── opening_loc: (1,11)-(1,13) = "do"
-            │   │       │           │   ├── closing_loc: (1,14)-(1,17) = "end"
-            │   │       │           │   └── numbered_parameters: 0
-            │   │       │           └── flags: ∅
-            │   │       └── numbered_parameters: 0
+            │   │       └── body:
+            │   │           @ StatementsNode (location: (1,9)-(1,17))
+            │   │           └── body: (length: 1)
+            │   │               └── @ CallNode (location: (1,9)-(1,17))
+            │   │                   ├── receiver: ∅
+            │   │                   ├── call_operator_loc: ∅
+            │   │                   ├── name: :g
+            │   │                   ├── message_loc: (1,9)-(1,10) = "g"
+            │   │                   ├── opening_loc: ∅
+            │   │                   ├── arguments: ∅
+            │   │                   ├── closing_loc: ∅
+            │   │                   ├── block:
+            │   │                   │   @ BlockNode (location: (1,11)-(1,17))
+            │   │                   │   ├── locals: []
+            │   │                   │   ├── parameters: ∅
+            │   │                   │   ├── body: ∅
+            │   │                   │   ├── opening_loc: (1,11)-(1,13) = "do"
+            │   │                   │   └── closing_loc: (1,14)-(1,17) = "end"
+            │   │                   └── flags: ∅
             │   └── flags: ∅
             ├── closing_loc: ∅
             ├── block: ∅

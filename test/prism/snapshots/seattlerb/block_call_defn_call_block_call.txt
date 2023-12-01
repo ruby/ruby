@@ -75,6 +75,5 @@
             │   ├── parameters: ∅
             │   ├── body: ∅
             │   ├── opening_loc: (4,5)-(4,7) = "do"
-            │   ├── closing_loc: (4,8)-(4,11) = "end"
-            │   └── numbered_parameters: 0
+            │   └── closing_loc: (4,8)-(4,11) = "end"
             └── flags: ∅

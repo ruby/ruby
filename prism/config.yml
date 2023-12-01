@@ -589,15 +589,12 @@ nodes:
         type: constant[]
       - name: parameters
         type: node?
-        kind: BlockParametersNode
       - name: body
         type: node?
       - name: opening_loc
         type: location
       - name: closing_loc
         type: location
-      - name: numbered_parameters
-        type: uint32
     comment: |
       Represents a block of ruby code.
 
@@ -1772,11 +1769,8 @@ nodes:
         type: location
       - name: parameters
         type: node?
-        kind: BlockParametersNode
       - name: body
         type: node?
-      - name: numbered_parameters
-        type: uint32
     comment: |
       Represents using a lambda literal (not the lambda method call).
 
@@ -2026,6 +2020,16 @@ nodes:
           def a(**nil)
                 ^^^^^
           end
+  - name: NumberedParametersNode
+    fields:
+      - name: maximum
+        type: uint8
+    comment: |
+      Represents an implicit set of parameters through the use of numbered
+      parameters within a block or lambda.
+
+          -> { _1 + _2 }
+          ^^^^^^^^^^^^^^
   - name: NumberedReferenceReadNode
     fields:
       - name: number

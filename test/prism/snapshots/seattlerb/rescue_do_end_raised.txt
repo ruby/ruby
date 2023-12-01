@@ -47,6 +47,5 @@
             │   │   │   └── end_keyword_loc: (5,0)-(5,3) = "end"
             │   │   └── end_keyword_loc: (5,0)-(5,3) = "end"
             │   ├── opening_loc: (1,4)-(1,6) = "do"
-            │   ├── closing_loc: (5,0)-(5,3) = "end"
-            │   └── numbered_parameters: 0
+            │   └── closing_loc: (5,0)-(5,3) = "end"
             └── flags: ∅

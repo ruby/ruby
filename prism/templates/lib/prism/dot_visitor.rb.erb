@@ -129,7 +129,7 @@ module Prism
 
       digraph.edge("#{id}:<%= field.name %> -> #{waypoint};")
       node.<%= field.name %>.each { |child| digraph.edge("#{waypoint} -> #{node_id(child)};") }
-      <%- when Prism::StringField, Prism::ConstantField, Prism::OptionalConstantField, Prism::UInt32Field, Prism::ConstantListField -%>
+      <%- when Prism::StringField, Prism::ConstantField, Prism::OptionalConstantField, Prism::UInt8Field, Prism::UInt32Field, Prism::ConstantListField -%>
       table.field("<%= field.name %>", node.<%= field.name %>.inspect)
       <%- when Prism::LocationField -%>
       table.field("<%= field.name %>", location_inspect(node.<%= field.name %>))
