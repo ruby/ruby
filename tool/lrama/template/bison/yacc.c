@@ -72,7 +72,6 @@
 <%- if output.aux.prologue -%>
 /* First part of user prologue.  */
 #line <%= output.aux.prologue_first_lineno %> "<%= output.grammar_file_path %>"
-
 <%= output.aux.prologue %>
 #line [@oline@] [@ofile@]
 <%- end -%>
@@ -2048,7 +2047,6 @@ yyreturnlab:
 <%# b4_percent_code_get([[epilogue]]) -%>
 <%- if output.aux.epilogue -%>
 #line <%= output.aux.epilogue_first_lineno - 1 %> "<%= output.grammar_file_path %>"
-
 <%= output.aux.epilogue -%>
 <%- end -%>
 
