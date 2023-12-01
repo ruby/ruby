@@ -66,6 +66,10 @@ EOT
     assert_equal '{"a":1,"b":2}', dump(a: 1, b: 2)
   end
 
+  def test_dump_strict
+    assert_equal '{}', dump({}, strict: true)
+  end
+
   def test_generate_pretty
     json = pretty_generate({})
     assert_equal(<<'EOT'.chomp, json)

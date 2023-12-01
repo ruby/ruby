@@ -615,13 +615,17 @@ module JSON
     if anIO and limit.nil?
       anIO = anIO.to_io if anIO.respond_to?(:to_io)
       unless anIO.respond_to?(:write)
-        limit = anIO
+        if kwargs.nil? and anIO.is_a?(Hash)
+          kwargs = anIO
+        else
+          limit = anIO
+        end
         anIO = nil
       end
     end
     opts = JSON.dump_default_options
     opts = opts.merge(:max_nesting => limit) if limit
-    merge_dump_options(opts, **kwargs) if kwargs
+    opts = merge_dump_options(opts, **kwargs) if kwargs
     result = generate(obj, opts)
     if anIO
       anIO.write result
@@ -641,7 +645,8 @@ module JSON
   private
 
   def merge_dump_options(opts, strict: NOT_SET)
-    opts[:strict] = strict if NOT_SET != strict
+    opts = opts.merge(strict: strict) if NOT_SET != strict
+    opts
   end
 end
 
