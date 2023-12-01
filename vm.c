@@ -4188,6 +4188,13 @@ rb_ruby_verbose_ptr(void)
     return &cr->verbose;
 }
 
+bool *
+rb_ruby_prism_ptr(void)
+{
+    rb_ractor_t *cr = GET_RACTOR();
+    return &cr->prism;
+}
+
 VALUE *
 rb_ruby_debug_ptr(void)
 {
