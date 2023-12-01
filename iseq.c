@@ -1487,6 +1487,22 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
     return iseqw_new(iseq);
 }
 
+rb_iseq_t *
+rb_iseq_new_main_prism(pm_string_t *input, pm_options_t *options, VALUE path) {
+    pm_parser_t parser;
+    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
+
+    if (NIL_P(path)) path = rb_fstring_lit("<compiled>");
+    int start_line = 0;
+    pm_options_line_set(options, start_line);
+
+    rb_iseq_t *iseq = iseq_alloc();
+    iseqw_s_compile_prism_compile(&parser, Qnil, iseq, path, path, start_line);
+
+    pm_parser_free(&parser);
+    return iseq;
+}
+
 /*
  *  call-seq:
  *      InstructionSequence.compile_file(file[, options]) -> iseq
