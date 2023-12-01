@@ -150,6 +150,8 @@ module Prism
       assert_prism_eval("x = 1; defined? x ||= 1")
 
       assert_prism_eval("if defined? A; end")
+
+      assert_prism_eval("defined?(())")
     end
 
     def test_GlobalVariableReadNode
