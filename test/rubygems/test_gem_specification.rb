@@ -3644,6 +3644,38 @@ Did you mean 'Ruby'?
     end
   end
 
+  def test_metadata_link_validation_warns_for_duplicates
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @m2 = quick_gem "m", "2" do |s|
+        s.files = %w[lib/code.rb]
+        s.licenses = "BSD-2-Clause"
+        s.metadata = {
+          "source_code_uri" => "http://example.com",
+          "homepage_uri" => "http://example.com",
+          "changelog_uri" => "http://example.com/changelog",
+        }
+      end
+
+      use_ui @ui do
+        @m2.validate
+      end
+
+      expected = <<~EXPECTED
+        #{w}:  You have specified the uri:
+          http://example.com
+        for all of the following keys:
+          homepage_uri
+          source_code_uri
+        Only the first one will be shown on rubygems.org
+        #{w}:  See https://guides.rubygems.org/specification-reference/ for help
+      EXPECTED
+
+      assert_equal expected, @ui.error, "warning"
+    end
+  end
+
   def test_metadata_specs
     @m1 = quick_gem "m", "1" do |s|
       s.files = %w[lib/code.rb]
