@@ -62,6 +62,10 @@ EOT
     assert_equal '666', generate(666)
   end
 
+  def test_dump_unenclosed_hash
+    assert_equal '{"a":1,"b":2}', dump(a: 1, b: 2)
+  end
+
   def test_generate_pretty
     json = pretty_generate({})
     assert_equal(<<'EOT'.chomp, json)
