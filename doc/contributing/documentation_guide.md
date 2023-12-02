@@ -294,7 +294,10 @@ Guidelines:
 - Consider listing the parent class and any included modules; consider
   [links](rdoc-ref:RDoc::MarkupReference@Links)
   to their "What's Here" sections if those exist.
-- List methods as a bullet list:
+- All methods mentioned in the left-pane table of contents
+  should be listed (including any methods extended from another class).
+- Attributes (which are not included in the TOC) may also be listed.
+- Display methods as items in one or more bullet lists:
 
     - Begin each item with the method name, followed by a colon
       and a short description.
