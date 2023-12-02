@@ -95,6 +95,7 @@ module Bundler
     self.max_retries    = Bundler.settings[:retry] # How many retries for the API call
 
     def initialize(remote)
+      @cis = nil
       @remote = remote
 
       Socket.do_not_reverse_lookup = true
@@ -242,20 +243,7 @@ module Bundler
     end
 
     def cis
-      env_cis = {
-        "TRAVIS" => "travis",
-        "CIRCLECI" => "circle",
-        "SEMAPHORE" => "semaphore",
-        "JENKINS_URL" => "jenkins",
-        "BUILDBOX" => "buildbox",
-        "GO_SERVER_URL" => "go",
-        "SNAP_CI" => "snap",
-        "GITLAB_CI" => "gitlab",
-        "GITHUB_ACTIONS" => "github",
-        "CI_NAME" => ENV["CI_NAME"],
-        "CI" => "ci",
-      }
-      env_cis.find_all {|env, _| ENV[env] }.map {|_, ci| ci }
+      @cis ||= Bundler::CIDetector.ci_strings
     end
 
     def connection
