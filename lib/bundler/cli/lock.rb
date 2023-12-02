@@ -64,7 +64,6 @@ module Bundler
           file = file ? File.expand_path(file) : Bundler.default_lockfile
           puts "Writing lockfile to #{file}"
           definition.lock(file)
-          FileUtils.touch(file)
         end
       end
 
