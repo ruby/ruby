@@ -146,10 +146,22 @@ module Prism
       ]
     end
 
-    def test_unterminated_string
-      assert_errors expression('"hello'), '"hello', [
+    def test_unterminated_interpolated_string
+      expr = expression('"hello')
+      assert_errors expr, '"hello', [
         ["expected a closing delimiter for the interpolated string", 0..1]
       ]
+      assert_equal expr.parts[0].unescaped, "hello"
+      assert_equal expr.closing, ""
+    end
+
+    def test_unterminated_string
+      expr = expression("'hello")
+      assert_errors expr, "'hello", [
+        ["expected a closing delimiter for the string literal", 0..1]
+      ]
+      assert_equal expr.unescaped, "hello"
+      assert_equal expr.closing, ""
     end
 
     def test_incomplete_instance_var_string
