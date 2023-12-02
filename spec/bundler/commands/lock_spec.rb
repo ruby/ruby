@@ -95,6 +95,22 @@ RSpec.describe "bundle lock" do
     expect(out).to eq(remove_checksums_from_lockfile(@lockfile).chomp)
   end
 
+  it "touches the lockfile when there is an existing lockfile that does not need changes" do
+    lockfile @lockfile
+
+    expect do
+      bundle "lock"
+    end.to change { bundled_app_lock.mtime }
+  end
+
+  it "does not touch lockfile with --print" do
+    lockfile @lockfile
+
+    expect do
+      bundle "lock --print"
+    end.not_to change { bundled_app_lock.mtime }
+  end
+
   it "writes a lockfile when there is an outdated lockfile using --update" do
     lockfile remove_checksums_from_lockfile(@lockfile.gsub("2.3.2", "2.3.1"), " (2.3.1)")
 
