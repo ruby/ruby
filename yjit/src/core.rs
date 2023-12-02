@@ -1174,28 +1174,52 @@ pub extern "C" fn rb_yjit_iseq_mark(payload: *mut c_void) {
         for block in versions {
             // SAFETY: all blocks inside version_map are initialized.
             let block = unsafe { block.as_ref() };
+            mark_block(block, cb, false);
+        }
+    }
+    // Mark dead blocks, since there could be stubs pointing at them
+    for blockref in &payload.dead_blocks {
+        // SAFETY: dead blocks come from version_map, which only have initialized blocks
+        let block = unsafe { blockref.as_ref() };
+        mark_block(block, cb, true);
+    }
 
-            unsafe { rb_gc_mark_movable(block.iseq.get().into()) };
+    return;
 
-            // Mark method entry dependencies
-            for cme_dep in block.cme_dependencies.iter() {
-                unsafe { rb_gc_mark_movable(cme_dep.get().into()) };
-            }
+    fn mark_block(block: &Block, cb: &CodeBlock, dead: bool) {
+        unsafe { rb_gc_mark_movable(block.iseq.get().into()) };
 
-            // Mark outgoing branch entries
-            for branch in block.outgoing.iter() {
-                let branch = unsafe { branch.as_ref() };
-                for target in branch.targets.iter() {
-                    // SAFETY: no mutation inside unsafe
-                    let target_iseq = unsafe { target.ref_unchecked().as_ref().map(|target| target.get_blockid().iseq) };
+        // Mark method entry dependencies
+        for cme_dep in block.cme_dependencies.iter() {
+            unsafe { rb_gc_mark_movable(cme_dep.get().into()) };
+        }
 
-                    if let Some(target_iseq) = target_iseq {
-                        unsafe { rb_gc_mark_movable(target_iseq.into()) };
-                    }
+        // Mark outgoing branch entries
+        for branch in block.outgoing.iter() {
+            let branch = unsafe { branch.as_ref() };
+            for target in branch.targets.iter() {
+                // SAFETY: no mutation inside unsafe
+                let target_iseq = unsafe {
+                    target.ref_unchecked().as_ref().and_then(|target| {
+                        // Avoid get_blockid() on blockref. Can be dangling on dead blocks,
+                        // and the iseq housing the block already naturally handles it.
+                        if target.get_block().is_some() {
+                            None
+                        } else {
+                            Some(target.get_blockid().iseq)
+                        }
+                    })
+                };
+
+                if let Some(target_iseq) = target_iseq {
+                    unsafe { rb_gc_mark_movable(target_iseq.into()) };
                 }
             }
+        }
 
-            // Walk over references to objects in generated code.
+        // Mark references to objects in generated code.
+        // Skip for dead blocks since they shouldn't run.
+        if !dead {
             for offset in block.gc_obj_offsets.iter() {
                 let value_address: *const u8 = cb.get_ptr(offset.as_usize()).raw_ptr(cb);
                 // Creating an unaligned pointer is well defined unlike in C.
@@ -1241,17 +1265,66 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
         for version in versions {
             // SAFETY: all blocks inside version_map are initialized
             let block = unsafe { version.as_ref() };
+            block_update_references(block, cb, false);
+        }
+    }
+    // Update dead blocks, since there could be stubs pointing at them
+    for blockref in &payload.dead_blocks {
+        // SAFETY: dead blocks come from version_map, which only have initialized blocks
+        let block = unsafe { blockref.as_ref() };
+        block_update_references(block, cb, true);
+    }
 
-            block.iseq.set(unsafe { rb_gc_location(block.iseq.get().into()) }.as_iseq());
+    // Note that we would have returned already if YJIT is off.
+    cb.mark_all_executable();
 
-            // Update method entry dependencies
-            for cme_dep in block.cme_dependencies.iter() {
-                let cur_cme: VALUE = cme_dep.get().into();
-                let new_cme = unsafe { rb_gc_location(cur_cme) }.as_cme();
-                cme_dep.set(new_cme);
+    CodegenGlobals::get_outlined_cb()
+        .unwrap()
+        .mark_all_executable();
+
+    return;
+
+    fn block_update_references(block: &Block, cb: &mut CodeBlock, dead: bool) {
+        block.iseq.set(unsafe { rb_gc_location(block.iseq.get().into()) }.as_iseq());
+
+        // Update method entry dependencies
+        for cme_dep in block.cme_dependencies.iter() {
+            let cur_cme: VALUE = cme_dep.get().into();
+            let new_cme = unsafe { rb_gc_location(cur_cme) }.as_cme();
+            cme_dep.set(new_cme);
+        }
+
+        // Update outgoing branch entries
+        for branch in block.outgoing.iter() {
+            let branch = unsafe { branch.as_ref() };
+            for target in branch.targets.iter() {
+                // SAFETY: no mutation inside unsafe
+                let current_iseq = unsafe {
+                    target.ref_unchecked().as_ref().and_then(|target| {
+                        // Avoid get_blockid() on blockref. Can be dangling on dead blocks,
+                        // and the iseq housing the block already naturally handles it.
+                        if target.get_block().is_some() {
+                            None
+                        } else {
+                            Some(target.get_blockid().iseq)
+                        }
+                    })
+                };
+
+                if let Some(current_iseq) = current_iseq {
+                    let updated_iseq = unsafe { rb_gc_location(current_iseq.into()) }
+                        .as_iseq();
+                    // SAFETY: the Cell::set is not on the reference given out
+                    // by ref_unchecked.
+                    unsafe { target.ref_unchecked().as_ref().unwrap().set_iseq(updated_iseq) };
+                }
             }
+        }
 
-            // Walk over references to objects in generated code.
+        // Update references to objects in generated code.
+        // Skip for dead blocks since they shouldn't run and
+        // so there is no potential of writing over invalidation jumps
+        if !dead {
             for offset in block.gc_obj_offsets.iter() {
                 let offset_to_value = offset.as_usize();
                 let value_code_ptr = cb.get_ptr(offset_to_value);
@@ -1272,32 +1345,9 @@ pub extern "C" fn rb_yjit_iseq_update_references(payload: *mut c_void) {
                     }
                 }
             }
-
-            // Update outgoing branch entries
-            for branch in block.outgoing.iter() {
-                let branch = unsafe { branch.as_ref() };
-                for target in branch.targets.iter() {
-                    // SAFETY: no mutation inside unsafe
-                    let current_iseq = unsafe { target.ref_unchecked().as_ref().map(|target| target.get_blockid().iseq) };
-
-                    if let Some(current_iseq) = current_iseq {
-                        let updated_iseq = unsafe { rb_gc_location(current_iseq.into()) }
-                            .as_iseq();
-                        // SAFETY: the Cell::set is not on the reference given out
-                        // by ref_unchecked.
-                        unsafe { target.ref_unchecked().as_ref().unwrap().set_iseq(updated_iseq) };
-                    }
-                }
-            }
         }
+
     }
-
-    // Note that we would have returned already if YJIT is off.
-    cb.mark_all_executable();
-
-    CodegenGlobals::get_outlined_cb()
-        .unwrap()
-        .mark_all_executable();
 }
 
 /// Get all blocks for a particular place in an iseq.
@@ -3268,9 +3318,9 @@ pub fn invalidate_block_version(blockref: &BlockRef) {
 // invalidated branch pointers. Example:
 //   def foo(n)
 //     if n == 2
-//       # 1.times{} to use a cfunc to avoid exiting from the
-//       # frame which will use the retained return address
-//       return 1.times { Object.define_method(:foo) {} }
+//       # 1.times.each to create a cfunc frame to preserve the JIT frame
+//       # which will return to a stub housed in an invalidated block
+//       return 1.times.each { Object.define_method(:foo) {} }
 //     end
 //
 //     foo(n + 1)

@@ -1,3 +1,25 @@
+# regression test for GC marking stubs in invalidated code
+assert_normal_exit %q{
+  garbage = Array.new(10_000) { [] } # create garbage to cause iseq movement
+  eval(<<~RUBY)
+  def foo(n, garbage)
+    if n == 2
+      # 1.times.each to create a cfunc frame to preserve the JIT frame
+      # which will return to a stub housed in an invalidated block
+      return 1.times.each do
+        Object.define_method(:foo) {}
+        garbage.clear
+        GC.verify_compaction_references(toward: :empty, expand_heap: true)
+      end
+    end
+
+    foo(n + 1, garbage)
+  end
+  RUBY
+
+  foo(1, garbage)
+}
+
 # regression test for callee block handler overlapping with arguments
 assert_equal '3', %q{
   def foo(_req, *args) = args.last
