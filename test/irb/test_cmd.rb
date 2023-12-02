@@ -888,4 +888,68 @@ module TestIRB
       assert_match("command: ': code2'", out)
     end
   end
+
+  class HistoryCmdTest < CommandTestCase
+    def teardown
+      TestInputMethod.send(:remove_const, "HISTORY") if defined?(TestInputMethod::HISTORY)
+      super
+    end
+
+    def test_history
+      TestInputMethod.const_set("HISTORY", %w[foo bar baz])
+
+      out, err = without_rdoc do
+        execute_lines("history")
+      end
+
+      assert_include(out, <<~EOF)
+        2: baz
+        1: bar
+        0: foo
+      EOF
+      assert_empty err
+    end
+
+    def test_multiline_history_with_truncation
+      TestInputMethod.const_set("HISTORY", ["foo", "bar", <<~INPUT])
+        [].each do |x|
+          puts x
+        end
+      INPUT
+
+      out, err = without_rdoc do
+        execute_lines("hist")
+      end
+
+      assert_include(out, <<~EOF)
+        2: [].each do |x|
+             puts x
+           ...
+        1: bar
+        0: foo
+      EOF
+      assert_empty err
+    end
+
+    def test_history_grep
+      TestInputMethod.const_set("HISTORY", ["foo", "bar", <<~INPUT])
+        [].each do |x|
+          puts x
+        end
+      INPUT
+
+      out, err = without_rdoc do
+        execute_lines("hist -g each\n")
+      end
+
+      assert_include(out, <<~EOF)
+        2: [].each do |x|
+             puts x
+           ...
+      EOF
+      assert_empty err
+    end
+
+  end
+
 end
