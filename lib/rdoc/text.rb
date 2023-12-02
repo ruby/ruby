@@ -313,6 +313,6 @@ module RDoc::Text
   # Character class to be separated by a space when concatenating
   # lines.
 
-  SPACE_SEPARATED_LETTER_CLASS = /[\p{Nd}\p{Lc}\p{Pc}]/
+  SPACE_SEPARATED_LETTER_CLASS = /[\p{Nd}\p{Lc}\p{Pc}]|[!-~&&\W]/
 
 end

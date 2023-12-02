@@ -257,7 +257,7 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
   end
 
   def accept_paragraph_break
-    assert_equal "\n<p>hello<br>world</p>\n", @to.res.join
+    assert_equal "\n<p>hello<br> world</p>\n", @to.res.join
   end
 
   def accept_paragraph_i
@@ -416,6 +416,18 @@ class TestRDocMarkupToHtml < RDoc::Markup::FormatterTestCase
     @to.start_accepting
     @to.accept_paragraph para("#{ohayo}\n", "#{sekai}\n")
     assert_equal "\n<p>#{ohayo}#{sekai}</p>\n", @to.res.join
+
+    @to.start_accepting
+    @to.accept_paragraph para("+hello+\n", "world\n")
+    assert_equal "\n<p><code>hello</code> world</p>\n", @to.res.join
+
+    @to.start_accepting
+    @to.accept_paragraph para("hello\n", "+world+\n")
+    assert_equal "\n<p>hello <code>world</code></p>\n", @to.res.join
+
+    @to.start_accepting
+    @to.accept_paragraph para("+hello+\n", "+world+\n")
+    assert_equal "\n<p><code>hello</code> <code>world</code></p>\n", @to.res.join
   end
 
   def test_accept_heading_output_decoration
