@@ -41,8 +41,7 @@ jobs:
         id: setup-msys2
         with:
           update: true
-          install: >-
-          bison patch
+          install: bison patch
       - name: patch path
         shell: msys2 {0}
         run: echo PATCH=$(cygpath -wa $(command -v patch)) >> $GITHUB_ENV
