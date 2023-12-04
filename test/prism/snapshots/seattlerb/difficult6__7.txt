@@ -35,6 +35,7 @@
             ├── block:
             │   @ BlockNode (location: (1,8)-(1,11))
             │   ├── locals: []
+            │   ├── locals_body_index: 0
             │   ├── parameters: ∅
             │   ├── body:
             │   │   @ StatementsNode (location: (1,9)-(1,10))

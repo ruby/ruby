@@ -1467,7 +1467,7 @@ pm_block_argument_node_create(pm_parser_t *parser, const pm_token_t *operator, p
  * Allocate and initialize a new BlockNode node.
  */
 static pm_block_node_t *
-pm_block_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, const pm_token_t *opening, pm_node_t *parameters, pm_node_t *body, const pm_token_t *closing) {
+pm_block_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, uint32_t locals_body_index, const pm_token_t *opening, pm_node_t *parameters, pm_node_t *body, const pm_token_t *closing) {
     pm_block_node_t *node = PM_ALLOC_NODE(parser, pm_block_node_t);
 
     *node = (pm_block_node_t) {
@@ -1476,6 +1476,7 @@ pm_block_node_create(pm_parser_t *parser, pm_constant_id_list_t *locals, const p
             .location = { .start = opening->start, .end = closing->end },
         },
         .locals = *locals,
+        .locals_body_index = locals_body_index,
         .parameters = parameters,
         .body = body,
         .opening_loc = PM_LOCATION_TOKEN_VALUE(opening),
@@ -2631,6 +2632,7 @@ pm_def_node_create(
     pm_parameters_node_t *parameters,
     pm_node_t *body,
     pm_constant_id_list_t *locals,
+    uint32_t locals_body_index,
     const pm_token_t *def_keyword,
     const pm_token_t *operator,
     const pm_token_t *lparen,
@@ -2658,6 +2660,7 @@ pm_def_node_create(
         .parameters = parameters,
         .body = body,
         .locals = *locals,
+        .locals_body_index = locals_body_index,
         .def_keyword_loc = PM_LOCATION_TOKEN_VALUE(def_keyword),
         .operator_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(operator),
         .lparen_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(lparen),
@@ -3954,6 +3957,7 @@ static pm_lambda_node_t *
 pm_lambda_node_create(
     pm_parser_t *parser,
     pm_constant_id_list_t *locals,
+    uint32_t locals_body_index,
     const pm_token_t *operator,
     const pm_token_t *opening,
     const pm_token_t *closing,
@@ -3971,6 +3975,7 @@ pm_lambda_node_create(
             },
         },
         .locals = *locals,
+        .locals_body_index = locals_body_index,
         .operator_loc = PM_LOCATION_TOKEN_VALUE(operator),
         .opening_loc = PM_LOCATION_TOKEN_VALUE(opening),
         .closing_loc = PM_LOCATION_TOKEN_VALUE(closing),
@@ -11915,6 +11920,12 @@ parse_block(pm_parser_t *parser) {
         pm_block_parameters_node_closing_set(block_parameters, &parser->previous);
     }
 
+    uint32_t locals_body_index = 0;
+
+    if (block_parameters) {
+        locals_body_index = (uint32_t) parser->current_scope->locals.size;
+    }
+
     accept1(parser, PM_TOKEN_NEWLINE);
     pm_node_t *statements = NULL;
 
@@ -11946,12 +11957,13 @@ parse_block(pm_parser_t *parser) {
 
     if (parameters == NULL && (maximum > 0)) {
         parameters = (pm_node_t *) pm_numbered_parameters_node_create(parser, &(pm_location_t) { .start = opening.start, .end = parser->previous.end }, maximum);
+        locals_body_index = maximum;
     }
 
     pm_constant_id_list_t locals = parser->current_scope->locals;
     pm_parser_scope_pop(parser);
     pm_accepts_block_stack_pop(parser);
-    return pm_block_node_create(parser, &locals, &opening, parameters, statements, &parser->previous);
+    return pm_block_node_create(parser, &locals, locals_body_index, &opening, parameters, statements, &parser->previous);
 }
 
 /**
@@ -14807,6 +14819,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 }
             }
 
+            uint32_t locals_body_index = (uint32_t) parser->current_scope->locals.size;
+
             context_pop(parser);
             pm_node_t *statements = NULL;
             pm_token_t equal;
@@ -14877,6 +14891,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 params,
                 statements,
                 &locals,
+                locals_body_index,
                 &def_keyword,
                 &operator,
                 &lparen,
@@ -15798,6 +15813,12 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 }
             }
 
+            uint32_t locals_body_index = 0;
+
+            if (block_parameters) {
+                locals_body_index = (uint32_t) parser->current_scope->locals.size;
+            }
+
             pm_token_t opening;
             pm_node_t *body = NULL;
             parser->lambda_enclosure_nesting = previous_lambda_enclosure_nesting;
@@ -15832,12 +15853,13 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
             if (parameters == NULL && (maximum > 0)) {
                 parameters = (pm_node_t *) pm_numbered_parameters_node_create(parser, &(pm_location_t) { .start = operator.start, .end = parser->previous.end }, maximum);
+                locals_body_index = maximum;
             }
 
             pm_constant_id_list_t locals = parser->current_scope->locals;
             pm_parser_scope_pop(parser);
             pm_accepts_block_stack_pop(parser);
-            return (pm_node_t *) pm_lambda_node_create(parser, &locals, &operator, &opening, &parser->previous, parameters, body);
+            return (pm_node_t *) pm_lambda_node_create(parser, &locals, locals_body_index, &operator, &opening, &parser->previous, parameters, body);
         }
         case PM_TOKEN_UPLUS: {
             parser_lex(parser);

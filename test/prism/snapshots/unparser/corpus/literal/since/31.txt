@@ -37,6 +37,7 @@
         │   │           │   └── operator_loc: (2,6)-(2,7) = "&"
         │   │           └── flags: ∅
         │   ├── locals: [:&]
+        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (1,7)-(1,8) = "("
@@ -79,6 +80,7 @@
             │           │   └── operator_loc: (6,6)-(6,7) = "&"
             │           └── flags: ∅
             ├── locals: [:a, :&]
+            ├── locals_body_index: 2
             ├── def_keyword_loc: (5,0)-(5,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (5,7)-(5,8) = "("
