@@ -110,6 +110,17 @@ module Prism
       assert_prism_eval("defined? a && b")
       assert_prism_eval("defined? a || b")
 
+      assert_prism_eval("defined? %[1,2,3]")
+      assert_prism_eval("defined? %q[1,2,3]")
+      assert_prism_eval("defined? %Q[1,2,3]")
+      assert_prism_eval("defined? %r[1,2,3]")
+      assert_prism_eval("defined? %i[1,2,3]")
+      assert_prism_eval("defined? %I[1,2,3]")
+      assert_prism_eval("defined? %w[1,2,3]")
+      assert_prism_eval("defined? %W[1,2,3]")
+      assert_prism_eval("defined? %s[1,2,3]")
+      assert_prism_eval("defined? %x[1,2,3]")
+
       assert_prism_eval("defined? @a")
       assert_prism_eval("defined? $a")
       assert_prism_eval("defined? @@a")
