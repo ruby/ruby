@@ -60,6 +60,7 @@
         │   │               @ IntegerNode (location: (7,15)-(7,16))
         │   │               └── flags: decimal
         │   ├── locals: []
+        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (7,0)-(7,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -88,6 +89,7 @@
             │               @ IntegerNode (location: (9,19)-(9,20))
             │               └── flags: decimal
             ├── locals: []
+            ├── locals_body_index: 0
             ├── def_keyword_loc: (9,0)-(9,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: ∅

@@ -39,6 +39,7 @@
         │   │           │           ├── block: ∅
         │   │           │           └── flags: ∅
         │   │           ├── locals: [:"..."]
+        │   │           ├── locals_body_index: 1
         │   │           ├── def_keyword_loc: (1,1)-(1,4) = "def"
         │   │           ├── operator_loc: ∅
         │   │           ├── lparen_loc: ∅
@@ -83,6 +84,7 @@
         │   │           │           ├── block: ∅
         │   │           │           └── flags: ∅
         │   │           ├── locals: [:"..."]
+        │   │           ├── locals_body_index: 1
         │   │           ├── def_keyword_loc: (5,1)-(5,4) = "def"
         │   │           ├── operator_loc: ∅
         │   │           ├── lparen_loc: ∅
@@ -107,6 +109,7 @@
         │   │   └── block: ∅
         │   ├── body: ∅
         │   ├── locals: [:"..."]
+        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (7,0)-(7,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -145,6 +148,7 @@
         │   │           ├── block: ∅
         │   │           └── flags: ∅
         │   ├── locals: [:"..."]
+        │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (10,0)-(10,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -185,6 +189,7 @@
         │   │           ├── block: ∅
         │   │           └── flags: ∅
         │   ├── locals: [:a, :"..."]
+        │   ├── locals_body_index: 2
         │   ├── def_keyword_loc: (12,0)-(12,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -225,6 +230,7 @@
         │   │           ├── block: ∅
         │   │           └── flags: ∅
         │   ├── locals: [:a, :"..."]
+        │   ├── locals_body_index: 2
         │   ├── def_keyword_loc: (16,0)-(16,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -256,6 +262,7 @@
         │   │   └── block: ∅
         │   ├── body: ∅
         │   ├── locals: [:a, :b, :"..."]
+        │   ├── locals_body_index: 3
         │   ├── def_keyword_loc: (18,0)-(18,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -301,6 +308,7 @@
         │   │           ├── block: ∅
         │   │           └── flags: ∅
         │   ├── locals: [:b, :"..."]
+        │   ├── locals_body_index: 2
         │   ├── def_keyword_loc: (21,0)-(21,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -346,6 +354,7 @@
         │   │           ├── block: ∅
         │   │           └── flags: ∅
         │   ├── locals: [:b, :"..."]
+        │   ├── locals_body_index: 2
         │   ├── def_keyword_loc: (25,0)-(25,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -386,6 +395,7 @@
             │           ├── block: ∅
             │           └── flags: ∅
             ├── locals: [:a, :"..."]
+            ├── locals_body_index: 2
             ├── def_keyword_loc: (27,0)-(27,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (27,7)-(27,8) = "("

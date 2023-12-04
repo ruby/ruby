@@ -47,6 +47,7 @@
         │   │           ├── block: ∅
         │   │           └── flags: ∅
         │   ├── locals: [:argument, :**]
+        │   ├── locals_body_index: 2
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (1,7)-(1,8) = "("
@@ -95,6 +96,7 @@
             │           ├── block: ∅
             │           └── flags: ∅
             ├── locals: [:argument, :*]
+            ├── locals_body_index: 2
             ├── def_keyword_loc: (5,0)-(5,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (5,7)-(5,8) = "("

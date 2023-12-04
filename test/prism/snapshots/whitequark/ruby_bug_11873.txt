@@ -59,6 +59,7 @@
         │   ├── block:
         │   │   @ BlockNode (location: (1,14)-(1,20))
         │   │   ├── locals: []
+        │   │   ├── locals_body_index: 0
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (1,14)-(1,16) = "do"
@@ -120,6 +121,7 @@
         │   ├── block:
         │   │   @ BlockNode (location: (3,14)-(3,20))
         │   │   ├── locals: []
+        │   │   ├── locals_body_index: 0
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (3,14)-(3,16) = "do"
@@ -181,6 +183,7 @@
         │   ├── block:
         │   │   @ BlockNode (location: (5,15)-(5,21))
         │   │   ├── locals: []
+        │   │   ├── locals_body_index: 0
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (5,15)-(5,17) = "do"
@@ -242,6 +245,7 @@
         │   ├── block:
         │   │   @ BlockNode (location: (7,15)-(7,21))
         │   │   ├── locals: []
+        │   │   ├── locals_body_index: 0
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (7,15)-(7,17) = "do"
@@ -303,6 +307,7 @@
         │   ├── block:
         │   │   @ BlockNode (location: (9,15)-(9,21))
         │   │   ├── locals: []
+        │   │   ├── locals_body_index: 0
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (9,15)-(9,17) = "do"
@@ -364,6 +369,7 @@
         │   ├── block:
         │   │   @ BlockNode (location: (11,16)-(11,22))
         │   │   ├── locals: []
+        │   │   ├── locals_body_index: 0
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (11,16)-(11,18) = "do"
@@ -389,6 +395,7 @@
         │   │   │   │   ├── block:
         │   │   │   │   │   @ BlockNode (location: (13,3)-(13,8))
         │   │   │   │   │   ├── locals: []
+        │   │   │   │   │   ├── locals_body_index: 0
         │   │   │   │   │   ├── parameters: ∅
         │   │   │   │   │   ├── body:
         │   │   │   │   │   │   @ StatementsNode (location: (13,4)-(13,7))
@@ -430,6 +437,7 @@
         │   ├── block:
         │   │   @ BlockNode (location: (13,14)-(13,20))
         │   │   ├── locals: []
+        │   │   ├── locals_body_index: 0
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (13,14)-(13,16) = "do"
@@ -455,6 +463,7 @@
         │   │   │   │   ├── block:
         │   │   │   │   │   @ BlockNode (location: (15,3)-(15,8))
         │   │   │   │   │   ├── locals: []
+        │   │   │   │   │   ├── locals_body_index: 0
         │   │   │   │   │   ├── parameters: ∅
         │   │   │   │   │   ├── body:
         │   │   │   │   │   │   @ StatementsNode (location: (15,4)-(15,7))
@@ -496,6 +505,7 @@
         │   ├── block:
         │   │   @ BlockNode (location: (15,14)-(15,20))
         │   │   ├── locals: []
+        │   │   ├── locals_body_index: 0
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (15,14)-(15,16) = "do"
@@ -521,6 +531,7 @@
         │   │   │   │   ├── block:
         │   │   │   │   │   @ BlockNode (location: (17,3)-(17,8))
         │   │   │   │   │   ├── locals: []
+        │   │   │   │   │   ├── locals_body_index: 0
         │   │   │   │   │   ├── parameters: ∅
         │   │   │   │   │   ├── body:
         │   │   │   │   │   │   @ StatementsNode (location: (17,4)-(17,7))
@@ -562,6 +573,7 @@
         │   ├── block:
         │   │   @ BlockNode (location: (17,15)-(17,21))
         │   │   ├── locals: []
+        │   │   ├── locals_body_index: 0
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (17,15)-(17,17) = "do"
@@ -587,6 +599,7 @@
         │   │   │   │   ├── block:
         │   │   │   │   │   @ BlockNode (location: (19,3)-(19,9))
         │   │   │   │   │   ├── locals: []
+        │   │   │   │   │   ├── locals_body_index: 0
         │   │   │   │   │   ├── parameters: ∅
         │   │   │   │   │   ├── body:
         │   │   │   │   │   │   @ StatementsNode (location: (19,4)-(19,8))
@@ -628,6 +641,7 @@
         │   ├── block:
         │   │   @ BlockNode (location: (19,15)-(19,21))
         │   │   ├── locals: []
+        │   │   ├── locals_body_index: 0
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (19,15)-(19,17) = "do"
@@ -653,6 +667,7 @@
         │   │   │   │   ├── block:
         │   │   │   │   │   @ BlockNode (location: (21,3)-(21,9))
         │   │   │   │   │   ├── locals: []
+        │   │   │   │   │   ├── locals_body_index: 0
         │   │   │   │   │   ├── parameters: ∅
         │   │   │   │   │   ├── body:
         │   │   │   │   │   │   @ StatementsNode (location: (21,4)-(21,8))
@@ -694,6 +709,7 @@
         │   ├── block:
         │   │   @ BlockNode (location: (21,15)-(21,21))
         │   │   ├── locals: []
+        │   │   ├── locals_body_index: 0
         │   │   ├── parameters: ∅
         │   │   ├── body: ∅
         │   │   ├── opening_loc: (21,15)-(21,17) = "do"
@@ -719,6 +735,7 @@
             │   │   │   ├── block:
             │   │   │   │   @ BlockNode (location: (23,3)-(23,9))
             │   │   │   │   ├── locals: []
+            │   │   │   │   ├── locals_body_index: 0
             │   │   │   │   ├── parameters: ∅
             │   │   │   │   ├── body:
             │   │   │   │   │   @ StatementsNode (location: (23,4)-(23,8))
@@ -760,6 +777,7 @@
             ├── block:
             │   @ BlockNode (location: (23,16)-(23,22))
             │   ├── locals: []
+            │   ├── locals_body_index: 0
             │   ├── parameters: ∅
             │   ├── body: ∅
             │   ├── opening_loc: (23,16)-(23,18) = "do"
