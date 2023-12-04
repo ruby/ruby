@@ -108,7 +108,7 @@ module SyntaxSuggest
     # on the original error messages
     def errors
       if missing.empty?
-        return GetParseErrors.errors(@code_lines.map(&:original).join)
+        return GetParseErrors.errors(@code_lines.map(&:original).join).uniq
       end
 
       missing.map { |miss| why(miss) }
