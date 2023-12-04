@@ -11737,8 +11737,11 @@ prism/api_pack.$(OBJEXT): {$(VPATH)}subst.h
 prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/diagnostic.c
 prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
+prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
 prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+prism/diagnostic.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
 prism/diagnostic.$(OBJEXT): {$(VPATH)}config.h
+prism/diagnostic.$(OBJEXT): {$(VPATH)}prism/ast.h
 prism/encoding.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/encoding.$(OBJEXT): $(top_srcdir)/prism/encoding.c
 prism/encoding.$(OBJEXT): $(top_srcdir)/prism/encoding.h
