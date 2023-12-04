@@ -796,6 +796,7 @@
         │   ├── closing_loc: (64,16)-(64,17) = "#"
         │   └── flags: ∅
         ├── @ XStringNode (location: (66,0)-(66,17))
+        │   ├── flags: ∅
         │   ├── opening_loc: (66,0)-(66,3) = "%x#"
         │   ├── content_loc: (66,3)-(66,16) = "one two three"
         │   ├── closing_loc: (66,16)-(66,17) = "#"
@@ -844,6 +845,7 @@
         │   ├── closing_loc: (71,16)-(71,17) = "@"
         │   └── flags: ∅
         ├── @ XStringNode (location: (73,0)-(73,17))
+        │   ├── flags: ∅
         │   ├── opening_loc: (73,0)-(73,3) = "%x@"
         │   ├── content_loc: (73,3)-(73,16) = "one two three"
         │   ├── closing_loc: (73,16)-(73,17) = "@"
@@ -892,6 +894,7 @@
         │   ├── closing_loc: (78,16)-(78,17) = "}"
         │   └── flags: ∅
         ├── @ XStringNode (location: (80,0)-(80,17))
+        │   ├── flags: ∅
         │   ├── opening_loc: (80,0)-(80,3) = "%x{"
         │   ├── content_loc: (80,3)-(80,16) = "one two three"
         │   ├── closing_loc: (80,16)-(80,17) = "}"

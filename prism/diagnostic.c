@@ -185,6 +185,7 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_LIST_W_UPPER_ELEMENT]               = "expected a string in a `%W` list",
     [PM_ERR_LIST_W_UPPER_TERM]                  = "expected a closing delimiter for the `%W` list",
     [PM_ERR_MALLOC_FAILED]                      = "failed to allocate memory",
+    [PM_ERR_MIXED_ENCODING]                     = "UTF-8 mixed within %s source",
     [PM_ERR_MODULE_IN_METHOD]                   = "unexpected module definition in a method definition",
     [PM_ERR_MODULE_NAME]                        = "expected a constant name after `module`",
     [PM_ERR_MODULE_TERM]                        = "expected an `end` to close the `module` statement",

@@ -659,7 +659,7 @@ module Prism
     end
 
     def test_do_not_allow_multiple_codepoints_in_a_single_character_literal
-      expected = StringNode(0, Location(), Location(), nil, "\u0001\u0002")
+      expected = StringNode(StringFlags::FORCED_UTF8_ENCODING, Location(), Location(), nil, "\u0001\u0002")
 
       assert_errors expected, '?\u{0001 0002}', [
         ["invalid Unicode escape sequence; multiple codepoints are not allowed in a character literal", 9..12]

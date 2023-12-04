@@ -206,7 +206,7 @@ pm_serialize_diagnostic_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_t *
  * Serialize the name of the encoding to the buffer.
  */
 void
-pm_serialize_encoding(pm_encoding_t *encoding, pm_buffer_t *buffer) {
+pm_serialize_encoding(const pm_encoding_t *encoding, pm_buffer_t *buffer) {
     size_t encoding_length = strlen(encoding->name);
     pm_buffer_append_varuint(buffer, pm_sizet_to_u32(encoding_length));
     pm_buffer_append_string(buffer, encoding->name, encoding_length);
@@ -218,7 +218,7 @@ pm_serialize_encoding(pm_encoding_t *encoding, pm_buffer_t *buffer) {
  */
 void
 pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
-    pm_serialize_encoding(&parser->encoding, buffer);
+    pm_serialize_encoding(parser->encoding, buffer);
     pm_buffer_append_varsint(buffer, parser->start_line);
 <%- unless Prism::SERIALIZE_ONLY_SEMANTICS_FIELDS -%>
     pm_serialize_comment_list(parser, &parser->comment_list, buffer);
@@ -317,7 +317,7 @@ pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const 
     // Append 0 to mark end of tokens.
     pm_buffer_append_byte(buffer, 0);
 
-    pm_serialize_encoding(&parser.encoding, buffer);
+    pm_serialize_encoding(parser.encoding, buffer);
     pm_buffer_append_varsint(buffer, parser.start_line);
     pm_serialize_comment_list(&parser, &parser.comment_list, buffer);
     pm_serialize_magic_comment_list(&parser, &parser.magic_comment_list, buffer);

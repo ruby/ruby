@@ -29,7 +29,7 @@
             │   │   │           └── flags: variable_call
             │   │   └── closing_loc: (1,6)-(1,7) = "}"
             │   └── @ StringNode (location: (1,7)-(1,15))
-            │       ├── flags: ∅
+            │       ├── flags: forced_utf8_encoding
             │       ├── opening_loc: ∅
             │       ├── content_loc: (1,7)-(1,15) = "\\302\\275"
             │       ├── closing_loc: ∅

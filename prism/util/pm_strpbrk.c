@@ -4,7 +4,7 @@
  * This is the slow path that does care about the encoding.
  */
 static inline const uint8_t *
-pm_strpbrk_multi_byte(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, size_t maximum) {
+pm_strpbrk_multi_byte(const pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, size_t maximum) {
     size_t index = 0;
 
     while (index < maximum) {
@@ -12,7 +12,7 @@ pm_strpbrk_multi_byte(pm_parser_t *parser, const uint8_t *source, const uint8_t 
             return source + index;
         }
 
-        size_t width = parser->encoding.char_width(source + index, (ptrdiff_t) (maximum - index));
+        size_t width = parser->encoding->char_width(source + index, (ptrdiff_t) (maximum - index));
         if (width == 0) {
             return NULL;
         }
@@ -61,10 +61,10 @@ pm_strpbrk_single_byte(const uint8_t *source, const uint8_t *charset, size_t max
  * need to take a slower path and iterate one multi-byte character at a time.
  */
 const uint8_t *
-pm_strpbrk(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, ptrdiff_t length) {
+pm_strpbrk(const pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, ptrdiff_t length) {
     if (length <= 0) {
         return NULL;
-    } else if (parser->encoding_changed && parser->encoding.multibyte) {
+    } else if (parser->encoding_changed && parser->encoding->multibyte) {
         return pm_strpbrk_multi_byte(parser, source, charset, (size_t) length);
     } else {
         return pm_strpbrk_single_byte(source, charset, (size_t) length);
