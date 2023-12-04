@@ -1488,6 +1488,27 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
                   ID2SYM(id), get_ivar_ic_value(iseq, id), PUSH_VAL(DEFINED_IVAR));
         return;
       }
+      case PM_BACK_REFERENCE_READ_NODE: {
+        char *char_ptr = (char *)(node->location.start) + 1;
+        ID backref_val = INT2FIX(rb_intern2(char_ptr, 1)) << 1 | 1;
+
+        PM_PUTNIL;
+        ADD_INSN3(ret, &dummy_line_node, defined, INT2FIX(DEFINED_REF),
+                  backref_val,
+                  PUSH_VAL(DEFINED_GVAR));
+
+        return;
+      }
+      case PM_NUMBERED_REFERENCE_READ_NODE: {
+        uint32_t reference_number = ((pm_numbered_reference_read_node_t *)node)->number;
+
+        PM_PUTNIL;
+        ADD_INSN3(ret, &dummy_line_node, defined, INT2FIX(DEFINED_REF),
+                  INT2FIX(reference_number << 1),
+                  PUSH_VAL(DEFINED_GVAR));
+
+        return;
+      }
       case PM_GLOBAL_VARIABLE_READ_NODE: {
         pm_global_variable_read_node_t *glabal_variable_read_node = (pm_global_variable_read_node_t *)node;
         PM_PUTNIL;
