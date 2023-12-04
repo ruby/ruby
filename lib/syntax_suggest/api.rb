@@ -5,23 +5,27 @@ require_relative "version"
 require "tmpdir"
 require "stringio"
 require "pathname"
+require "timeout"
 
-# rubocop:disable Style/IdenticalConditionalBranches
-if ENV["SYNTAX_SUGGEST_DISABLE_PRISM"] # For testing dual ripper/prism support
-  require "ripper"
+# We need Ripper loaded for `Prism.lex_compat` even if we're using Prism
+# for lexing and parsing
+require "ripper"
+
+# Prism is the new parser, replacing Ripper
+#
+# We need to "dual boot" both for now because syntax_suggest
+# supports older rubies that do not ship with syntax suggest.
+#
+# We also need the ability to control loading of this library
+# so we can test that both modes work correctly in CI.
+if (value = ENV["SYNTAX_SUGGEST_DISABLE_PRISM"])
+  warn "Skipping loading prism due to SYNTAX_SUGGEST_DISABLE_PRISM=#{value}"
 else
-  # TODO remove require
-  # Allow both to be loaded to enable more atomic commits
-  require "ripper"
   begin
     require "prism"
   rescue LoadError
-    require "ripper"
   end
 end
-# rubocop:enable Style/IdenticalConditionalBranches
-
-require "timeout"
 
 module SyntaxSuggest
   # Used to indicate a default value that cannot

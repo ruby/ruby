@@ -32,18 +32,15 @@ module SyntaxSuggest
       }
     end
 
-    # rubocop:disable Style/IdenticalConditionalBranches
     if SyntaxSuggest.use_prism_parser?
       def self.lex(source, line_number)
-        # Prism.lex_compat(source, line: line_number).value.sort_by {|values| values[0] }
-        Ripper::Lexer.new(source, "-", line_number).parse.sort_by(&:pos)
+        Prism.lex_compat(source, line: line_number).value.sort_by { |values| values[0] }
       end
     else
       def self.lex(source, line_number)
         Ripper::Lexer.new(source, "-", line_number).parse.sort_by(&:pos)
       end
     end
-    # rubocop:enable Style/IdenticalConditionalBranches
 
     def to_a
       @lex
