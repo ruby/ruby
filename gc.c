@@ -2577,8 +2577,9 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     p->as.basic.flags = flags;
     *((VALUE *)&p->as.basic.klass) = klass;
 
+    // Pretenure Class, IClass, Module, and callcache objects. These will become old after surviving a single GC.
     int t = flags & RUBY_T_MASK;
-    if (t == T_CLASS || t == T_MODULE || t == T_ICLASS) {
+    if (t == T_CLASS || t == T_MODULE || t == T_ICLASS || (t == T_IMEMO && ((flags >> FL_USHIFT) & IMEMO_MASK) == imemo_callcache)) {
         RVALUE_AGE_SET_CANDIDATE(objspace, obj);
     }
 
