@@ -1657,7 +1657,7 @@ rb_ensure_iv_list_size(VALUE obj, uint32_t current_capacity, uint32_t new_capaci
     }
 }
 
-int
+static int
 rb_obj_copy_ivs_to_hash_table_i(ID key, VALUE val, st_data_t arg)
 {
     RUBY_ASSERT(!st_lookup((st_table *)arg, (st_data_t)key, NULL));
