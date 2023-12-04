@@ -102,6 +102,7 @@ module Prism
       assert_prism_eval("defined? [1, 2, 3]")
       assert_prism_eval("defined?({ a: 1 })")
       assert_prism_eval("defined? 'str'")
+      assert_prism_eval('defined?("#{expr}")')
       assert_prism_eval("defined? :sym")
       assert_prism_eval("defined? /foo/")
       assert_prism_eval("defined? -> { 1 + 1 }")
