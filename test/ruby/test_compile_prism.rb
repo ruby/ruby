@@ -105,6 +105,7 @@ module Prism
       assert_prism_eval('defined?("#{expr}")')
       assert_prism_eval("defined? :sym")
       assert_prism_eval("defined? /foo/")
+      assert_prism_eval('defined?(/#{1}/)')
       assert_prism_eval("defined? -> { 1 + 1 }")
       assert_prism_eval("defined? a && b")
       assert_prism_eval("defined? a || b")
