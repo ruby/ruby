@@ -1857,7 +1857,7 @@ export_dup(VALUE str)
 # define EXPORT_DUP(str) rb_str_dup(str)
 #endif
 
-#if !defined(HAVE_WORKING_FORK) && defined(HAVE_SPAWNV)
+#if defined(HAVE_SPAWNV)
 # define USE_SPAWNV 1
 #else
 # define USE_SPAWNV 0
