@@ -612,16 +612,13 @@ module JSON
   # Output:
   #   {"foo":[0,1],"bar":{"baz":2,"bat":3},"bam":"bad"}
   def dump(obj, anIO = nil, limit = nil, kwargs = nil)
-    if anIO and limit.nil?
-      anIO = anIO.to_io if anIO.respond_to?(:to_io)
-      unless anIO.respond_to?(:write)
-        if kwargs.nil? and anIO.is_a?(Hash)
-          kwargs = anIO
-        else
-          limit = anIO
-        end
-        anIO = nil
-      end
+    io_limit_opt = [anIO, limit, kwargs].compact
+    kwargs = io_limit_opt.pop if io_limit_opt.last.is_a?(Hash)
+    anIO, limit = io_limit_opt
+    if anIO.respond_to?(:to_io)
+      anIO = anIO.to_io
+    elsif limit.nil? && !anIO.respond_to?(:write)
+      anIO, limit = nil, anIO
     end
     opts = JSON.dump_default_options
     opts = opts.merge(:max_nesting => limit) if limit
@@ -642,11 +639,13 @@ module JSON
     string.encode(to, from)
   end
 
-  private
-
   def merge_dump_options(opts, strict: NOT_SET)
     opts = opts.merge(strict: strict) if NOT_SET != strict
     opts
+  end
+
+  class << self
+    private :merge_dump_options
   end
 end
 
