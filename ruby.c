@@ -22,7 +22,7 @@
 # include <sys/cygwin.h>
 #endif
 
-#if (defined(LOAD_RELATIVE) || defined(__MACH__)) && defined(HAVE_DLADDR)
+#if defined(LOAD_RELATIVE) && defined(HAVE_DLADDR)
 # include <dlfcn.h>
 #endif
 
@@ -598,7 +598,7 @@ str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
 
 void ruby_init_loadpath(void);
 
-#if defined(LOAD_RELATIVE) || defined(__MACH__)
+#if defined(LOAD_RELATIVE)
 static VALUE
 runtime_libruby_path(void)
 {
@@ -675,10 +675,6 @@ runtime_libruby_path(void)
 #define INITIAL_LOAD_PATH_MARK rb_intern_const("@gem_prelude_index")
 
 VALUE ruby_archlibdir_path, ruby_prefix_path;
-#if defined(__MACH__)
-// A path to libruby.dylib itself or where it's statically linked to.
-VALUE rb_libruby_selfpath;
-#endif
 
 void
 ruby_init_loadpath(void)
@@ -686,19 +682,6 @@ ruby_init_loadpath(void)
     VALUE load_path, archlibdir = 0;
     ID id_initial_load_path_mark;
     const char *paths = ruby_initial_load_paths;
-#if defined(LOAD_RELATIVE) || defined(__MACH__)
-    VALUE libruby_path = runtime_libruby_path();
-# if defined(__MACH__)
-    VALUE selfpath = libruby_path;
-#   if defined(LOAD_RELATIVE)
-    selfpath = rb_str_dup(selfpath);
-#   endif
-    rb_obj_hide(selfpath);
-    OBJ_FREEZE_RAW(selfpath);
-    rb_gc_register_address(&rb_libruby_selfpath);
-    rb_libruby_selfpath = selfpath;
-# endif
-#endif
 
 #if defined LOAD_RELATIVE
 #if !defined ENABLE_MULTIARCH
@@ -713,7 +696,7 @@ ruby_init_loadpath(void)
     size_t baselen;
     const char *p;
 
-    sopath = libruby_path;
+    sopath = runtime_libruby_path();
     libpath = RSTRING_PTR(sopath);
 
     p = strrchr(libpath, '/');
