@@ -815,18 +815,33 @@ module Prism
     end
 
     def test_RedoNode
-      # TODO:
-      # assert_prism_eval(<<-CODE
-      # counter = 0
+      assert_prism_eval(<<-CODE)
+        counter = 0
 
-      # 5.times do |i|
-      #   counter += 1
-      #   if i == 2 && counter < 3
-      #     redo
-      #   end
-      # end
-      # CODE
-      # )
+        5.times do |i|
+          counter += 1
+          if i == 2 && counter < 3
+            redo
+          end
+        end
+      CODE
+
+      assert_prism_eval(<<-CODE)
+        for i in 1..5
+          if i == 3
+            i = 0
+            redo
+          end
+        end
+      CODE
+
+      assert_prism_eval(<<-CODE)
+        i = 0
+        begin
+          i += 1
+          redo if i == 3
+        end while i < 5
+      CODE
     end
 
     def test_RescueNode
