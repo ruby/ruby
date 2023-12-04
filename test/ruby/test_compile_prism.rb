@@ -125,6 +125,12 @@ module Prism
       assert_prism_eval("defined? X &= 1")
       assert_prism_eval("defined? X ||= 1")
 
+      assert_prism_eval("defined? $1")
+      assert_prism_eval("defined? $2")
+      assert_prism_eval("defined? $`")
+      assert_prism_eval("defined? $'")
+      assert_prism_eval("defined? $+")
+
       assert_prism_eval("defined? $X = 1")
       assert_prism_eval("defined? $X *= 1")
       assert_prism_eval("defined? $X /= 1")
