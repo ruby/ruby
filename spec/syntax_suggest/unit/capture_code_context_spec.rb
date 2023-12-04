@@ -94,7 +94,7 @@ module SyntaxSuggest
       code_lines = CleanDocument.new(source: source).call.lines
 
       code_lines[0..75].each(&:mark_invisible)
-      code_lines[77..-1].each(&:mark_invisible)
+      code_lines[77..].each(&:mark_invisible)
       expect(code_lines.join.strip).to eq("class Lookups")
 
       block = CodeBlock.new(lines: code_lines[76..149])
@@ -123,7 +123,7 @@ module SyntaxSuggest
 
       code_lines = CleanDocument.new(source: source).call.lines
       block = CodeBlock.new(lines: code_lines)
-      code_lines[1..-1].each(&:mark_invisible)
+      code_lines[1..].each(&:mark_invisible)
 
       expect(block.to_s.strip).to eq("class Dog")
 

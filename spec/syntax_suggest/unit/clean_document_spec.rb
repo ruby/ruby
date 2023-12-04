@@ -85,7 +85,7 @@ module SyntaxSuggest
       code_lines = doc.lines
 
       expect(code_lines[0].to_s.count($/)).to eq(5)
-      code_lines[1..-1].each do |line|
+      code_lines[1..].each do |line|
         expect(line.to_s.strip.length).to eq(0)
       end
     end

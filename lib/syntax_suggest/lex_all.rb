@@ -17,7 +17,7 @@ module SyntaxSuggest
       last_lineno = source_lines.length
 
       until lineno >= last_lineno
-        lines = source_lines[lineno..-1]
+        lines = source_lines[lineno..]
 
         @lex.concat(
           Ripper::Lexer.new(lines.join, "-", lineno + 1).parse.sort_by(&:pos)
