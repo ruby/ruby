@@ -8,7 +8,7 @@ module SyntaxSuggest
       source = fixtures_dir.join("this_project_extra_def.rb.txt").read
       code_lines = CleanDocument.new(source: source).call.lines
 
-      expect(code_lines[18 - 1].to_s).to eq(<<-'EOL')
+      expect(code_lines[18 - 1].to_s).to eq(<<-EOL)
       @io.puts <<~EOM
 
         SyntaxSuggest: A syntax error was detected
@@ -54,7 +54,7 @@ module SyntaxSuggest
         DisplayCodeWithLineNumbers.new(
           lines: lines
         ).call
-      ).to eq(<<~'EOM'.indent(2))
+      ).to eq(<<~EOM.indent(2))
         1  User
         2    .where(name: 'schneems')
         3    .first
@@ -65,7 +65,7 @@ module SyntaxSuggest
           lines: lines,
           highlight_lines: lines[0]
         ).call
-      ).to eq(<<~'EOM')
+      ).to eq(<<~EOM)
         > 1  User
         > 2    .where(name: 'schneems')
         > 3    .first
