@@ -75,6 +75,7 @@
         │   ├── closing_loc: (26,1)-(26,2) = "}"
         │   └── flags: ∅
         ├── @ XStringNode (location: (28,0)-(29,2))
+        │   ├── flags: ∅
         │   ├── opening_loc: (28,0)-(28,3) = "%x{"
         │   ├── content_loc: (28,3)-(29,1) = "a\\\nb"
         │   ├── closing_loc: (29,1)-(29,2) = "}"
@@ -120,11 +121,13 @@
         │   ├── closing_loc: (54,0)-(55,0) = "HERE\n"
         │   └── unescaped: "a\\\nb\n"
         ├── @ XStringNode (location: (56,0)-(56,9))
+        │   ├── flags: ∅
         │   ├── opening_loc: (56,0)-(56,9) = "<<-`HERE`"
         │   ├── content_loc: (57,0)-(59,0) = "a\\\nb\n"
         │   ├── closing_loc: (59,0)-(60,0) = "HERE\n"
         │   └── unescaped: "ab\n"
         └── @ XStringNode (location: (61,0)-(62,2))
+            ├── flags: ∅
             ├── opening_loc: (61,0)-(61,1) = "`"
             ├── content_loc: (61,1)-(62,1) = "a\\\nb"
             ├── closing_loc: (62,1)-(62,2) = "`"

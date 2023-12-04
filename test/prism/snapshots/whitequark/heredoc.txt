@@ -16,6 +16,7 @@
         │   ├── closing_loc: (9,0)-(10,0) = "HERE\n"
         │   └── unescaped: "foo\nbar\n"
         └── @ XStringNode (location: (11,0)-(11,8))
+            ├── flags: ∅
             ├── opening_loc: (11,0)-(11,8) = "<<`HERE`"
             ├── content_loc: (12,0)-(14,0) = "foo\nbar\n"
             ├── closing_loc: (14,0)-(15,0) = "HERE\n"

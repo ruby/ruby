@@ -469,7 +469,7 @@ parse_lex_token(void *data, pm_parser_t *parser, pm_token_t *token) {
 static void
 parse_lex_encoding_changed_callback(pm_parser_t *parser) {
     parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) parser->lex_callback->data;
-    parse_lex_data->encoding = rb_enc_find(parser->encoding.name);
+    parse_lex_data->encoding = rb_enc_find(parser->encoding->name);
 
     // Since the encoding changed, we need to go back and change the encoding of
     // the tokens that were already lexed. This is only going to end up being
@@ -599,7 +599,7 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
     pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
 
     pm_node_t *node = pm_parse(&parser);
-    rb_encoding *encoding = rb_enc_find(parser.encoding.name);
+    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
 
     VALUE source = pm_source_new(&parser, encoding);
     VALUE result_argv[] = {
@@ -693,7 +693,7 @@ parse_input_comments(pm_string_t *input, const pm_options_t *options) {
     pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
 
     pm_node_t *node = pm_parse(&parser);
-    rb_encoding *encoding = rb_enc_find(parser.encoding.name);
+    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
 
     VALUE source = pm_source_new(&parser, encoding);
     VALUE comments = parser_comments(&parser, source);
@@ -872,7 +872,7 @@ static VALUE
 named_captures(VALUE self, VALUE source) {
     pm_string_list_t string_list = { 0 };
 
-    if (!pm_regexp_named_capture_group_names((const uint8_t *) RSTRING_PTR(source), RSTRING_LEN(source), &string_list, false, pm_encoding_utf_8)) {
+    if (!pm_regexp_named_capture_group_names((const uint8_t *) RSTRING_PTR(source), RSTRING_LEN(source), &string_list, false, PM_ENCODING_UTF_8_ENTRY)) {
         pm_string_list_free(&string_list);
         return Qnil;
     }
@@ -962,7 +962,7 @@ inspect_node(VALUE self, VALUE source) {
 
     pm_prettyprint(&buffer, &parser, node);
 
-    rb_encoding *encoding = rb_enc_find(parser.encoding.name);
+    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
     VALUE string = rb_enc_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer), encoding);
 
     pm_buffer_free(&buffer);

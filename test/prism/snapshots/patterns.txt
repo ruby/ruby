@@ -178,6 +178,7 @@
         │   │   └── flags: variable_call
         │   ├── pattern:
         │   │   @ XStringNode (location: (10,7)-(10,12))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (10,7)-(10,8) = "`"
         │   │   ├── content_loc: (10,8)-(10,11) = "foo"
         │   │   ├── closing_loc: (10,11)-(10,12) = "`"
@@ -197,6 +198,7 @@
         │   │   └── flags: variable_call
         │   ├── pattern:
         │   │   @ XStringNode (location: (11,7)-(11,14))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (11,7)-(11,10) = "%x["
         │   │   ├── content_loc: (11,10)-(11,13) = "foo"
         │   │   ├── closing_loc: (11,13)-(11,14) = "]"
@@ -725,12 +727,14 @@
         │   │   @ RangeNode (location: (36,7)-(36,21))
         │   │   ├── left:
         │   │   │   @ XStringNode (location: (36,7)-(36,12))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (36,7)-(36,8) = "`"
         │   │   │   ├── content_loc: (36,8)-(36,11) = "foo"
         │   │   │   ├── closing_loc: (36,11)-(36,12) = "`"
         │   │   │   └── unescaped: "foo"
         │   │   ├── right:
         │   │   │   @ XStringNode (location: (36,16)-(36,21))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (36,16)-(36,17) = "`"
         │   │   │   ├── content_loc: (36,17)-(36,20) = "foo"
         │   │   │   ├── closing_loc: (36,20)-(36,21) = "`"
@@ -754,12 +758,14 @@
         │   │   @ RangeNode (location: (37,7)-(37,25))
         │   │   ├── left:
         │   │   │   @ XStringNode (location: (37,7)-(37,14))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (37,7)-(37,10) = "%x["
         │   │   │   ├── content_loc: (37,10)-(37,13) = "foo"
         │   │   │   ├── closing_loc: (37,13)-(37,14) = "]"
         │   │   │   └── unescaped: "foo"
         │   │   ├── right:
         │   │   │   @ XStringNode (location: (37,18)-(37,25))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (37,18)-(37,21) = "%x["
         │   │   │   ├── content_loc: (37,21)-(37,24) = "foo"
         │   │   │   ├── closing_loc: (37,24)-(37,25) = "]"
@@ -2483,6 +2489,7 @@
         │   │   └── flags: variable_call
         │   ├── pattern:
         │   │   @ XStringNode (location: (109,7)-(109,12))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (109,7)-(109,8) = "`"
         │   │   ├── content_loc: (109,8)-(109,11) = "foo"
         │   │   ├── closing_loc: (109,11)-(109,12) = "`"
@@ -2502,6 +2509,7 @@
         │   │   └── flags: variable_call
         │   ├── pattern:
         │   │   @ XStringNode (location: (110,7)-(110,14))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (110,7)-(110,10) = "%x["
         │   │   ├── content_loc: (110,10)-(110,13) = "foo"
         │   │   ├── closing_loc: (110,13)-(110,14) = "]"
@@ -3038,6 +3046,7 @@
         │   │   └── @ InNode (location: (136,10)-(136,23))
         │   │       ├── pattern:
         │   │       │   @ XStringNode (location: (136,13)-(136,18))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── opening_loc: (136,13)-(136,14) = "`"
         │   │       │   ├── content_loc: (136,14)-(136,17) = "foo"
         │   │       │   ├── closing_loc: (136,17)-(136,18) = "`"
@@ -3064,6 +3073,7 @@
         │   │   └── @ InNode (location: (137,10)-(137,25))
         │   │       ├── pattern:
         │   │       │   @ XStringNode (location: (137,13)-(137,20))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── opening_loc: (137,13)-(137,16) = "%x["
         │   │       │   ├── content_loc: (137,16)-(137,19) = "foo"
         │   │       │   ├── closing_loc: (137,19)-(137,20) = "]"
@@ -3828,6 +3838,7 @@
         │   │       │   │   @ StatementsNode (location: (163,13)-(163,18))
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ XStringNode (location: (163,13)-(163,18))
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           ├── opening_loc: (163,13)-(163,14) = "`"
         │   │       │   │           ├── content_loc: (163,14)-(163,17) = "foo"
         │   │       │   │           ├── closing_loc: (163,17)-(163,18) = "`"
@@ -3866,6 +3877,7 @@
         │   │       │   │   @ StatementsNode (location: (164,13)-(164,20))
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ XStringNode (location: (164,13)-(164,20))
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           ├── opening_loc: (164,13)-(164,16) = "%x["
         │   │       │   │           ├── content_loc: (164,16)-(164,19) = "foo"
         │   │       │   │           ├── closing_loc: (164,19)-(164,20) = "]"

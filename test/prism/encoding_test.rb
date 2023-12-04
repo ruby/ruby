@@ -7,90 +7,16 @@ require_relative "test_helper"
 module Prism
   class EncodingTest < TestCase
     codepoints_1byte = 0...0x100
-    codepoints_2bytes = 0...0x10000
-
     encodings = {
-      Encoding::ASCII =>         codepoints_1byte,
-      Encoding::ASCII_8BIT =>    codepoints_1byte,
-      Encoding::CP850 =>         codepoints_1byte,
-      Encoding::CP852 =>         codepoints_1byte,
-      Encoding::CP855 =>         codepoints_1byte,
-      Encoding::GB1988 =>        codepoints_1byte,
-      Encoding::IBM437 =>        codepoints_1byte,
-      Encoding::IBM720 =>        codepoints_1byte,
-      Encoding::IBM737 =>        codepoints_1byte,
-      Encoding::IBM775 =>        codepoints_1byte,
-      Encoding::IBM852 =>        codepoints_1byte,
-      Encoding::IBM855 =>        codepoints_1byte,
-      Encoding::IBM857 =>        codepoints_1byte,
-      Encoding::IBM860 =>        codepoints_1byte,
-      Encoding::IBM861 =>        codepoints_1byte,
-      Encoding::IBM862 =>        codepoints_1byte,
-      Encoding::IBM863 =>        codepoints_1byte,
-      Encoding::IBM864 =>        codepoints_1byte,
-      Encoding::IBM865 =>        codepoints_1byte,
-      Encoding::IBM866 =>        codepoints_1byte,
-      Encoding::IBM869 =>        codepoints_1byte,
-      Encoding::ISO_8859_1 =>    codepoints_1byte,
-      Encoding::ISO_8859_2 =>    codepoints_1byte,
-      Encoding::ISO_8859_3 =>    codepoints_1byte,
-      Encoding::ISO_8859_4 =>    codepoints_1byte,
-      Encoding::ISO_8859_5 =>    codepoints_1byte,
-      Encoding::ISO_8859_6 =>    codepoints_1byte,
-      Encoding::ISO_8859_7 =>    codepoints_1byte,
-      Encoding::ISO_8859_8 =>    codepoints_1byte,
-      Encoding::ISO_8859_9 =>    codepoints_1byte,
-      Encoding::ISO_8859_10 =>   codepoints_1byte,
-      Encoding::ISO_8859_11 =>   codepoints_1byte,
-      Encoding::ISO_8859_13 =>   codepoints_1byte,
-      Encoding::ISO_8859_14 =>   codepoints_1byte,
-      Encoding::ISO_8859_15 =>   codepoints_1byte,
-      Encoding::ISO_8859_16 =>   codepoints_1byte,
-      Encoding::KOI8_R =>        codepoints_1byte,
-      Encoding::KOI8_U =>        codepoints_1byte,
-      Encoding::MACCENTEURO =>   codepoints_1byte,
-      Encoding::MACCROATIAN =>   codepoints_1byte,
-      Encoding::MACCYRILLIC =>   codepoints_1byte,
-      Encoding::MACGREEK =>      codepoints_1byte,
-      Encoding::MACICELAND =>    codepoints_1byte,
-      Encoding::MACROMAN =>      codepoints_1byte,
-      Encoding::MACROMANIA =>    codepoints_1byte,
-      Encoding::MACTHAI =>       codepoints_1byte,
-      Encoding::MACTURKISH =>    codepoints_1byte,
-      Encoding::MACUKRAINE =>    codepoints_1byte,
-      Encoding::TIS_620 =>       codepoints_1byte,
-      Encoding::Windows_1250 =>  codepoints_1byte,
-      Encoding::Windows_1251 =>  codepoints_1byte,
-      Encoding::Windows_1252 =>  codepoints_1byte,
-      Encoding::Windows_1253 =>  codepoints_1byte,
-      Encoding::Windows_1254 =>  codepoints_1byte,
-      Encoding::Windows_1255 =>  codepoints_1byte,
-      Encoding::Windows_1256 =>  codepoints_1byte,
-      Encoding::Windows_1257 =>  codepoints_1byte,
-      Encoding::Windows_1258 =>  codepoints_1byte,
-      Encoding::Windows_874 =>   codepoints_1byte,
-      Encoding::Big5 =>          codepoints_2bytes,
-      Encoding::Big5_HKSCS =>    codepoints_2bytes,
-      Encoding::Big5_UAO =>      codepoints_2bytes,
-      Encoding::CP949 =>         codepoints_2bytes,
-      Encoding::CP950 =>         codepoints_2bytes,
-      Encoding::CP951 =>         codepoints_2bytes,
-      Encoding::EUC_KR =>        codepoints_2bytes,
-      Encoding::GBK =>           codepoints_2bytes,
-      Encoding::GB12345 =>       codepoints_2bytes,
-      Encoding::GB2312 =>        codepoints_2bytes,
-      Encoding::MACJAPANESE =>   codepoints_2bytes,
-      Encoding::Shift_JIS =>     codepoints_2bytes,
-      Encoding::SJIS_DoCoMo =>   codepoints_2bytes,
-      Encoding::SJIS_KDDI =>     codepoints_2bytes,
-      Encoding::SJIS_SoftBank => codepoints_2bytes,
-      Encoding::Windows_31J =>   codepoints_2bytes
+      Encoding::ASCII_8BIT =>   codepoints_1byte,
+      Encoding::US_ASCII =>     codepoints_1byte,
+      Encoding::Windows_1253 => codepoints_1byte
     }
 
-    # By default we don't test every codepoint in these encodings because they
-    # are 3 and 4 byte representations so it can drastically slow down the test
-    # suite.
+    # By default we don't test every codepoint in these encodings because it
+    # takes a very long time.
     if ENV["PRISM_TEST_ALL_ENCODINGS"]
+      codepoints_2bytes = 0...0x10000
       codepoints_unicode = (0...0x110000)
 
       codepoints_eucjp = [
@@ -118,6 +44,78 @@ module Prism
       ]
 
       encodings.merge!(
+        Encoding::CP850 =>                      codepoints_1byte,
+        Encoding::CP852 =>                      codepoints_1byte,
+        Encoding::CP855 =>                      codepoints_1byte,
+        Encoding::GB1988 =>                     codepoints_1byte,
+        Encoding::IBM437 =>                     codepoints_1byte,
+        Encoding::IBM720 =>                     codepoints_1byte,
+        Encoding::IBM737 =>                     codepoints_1byte,
+        Encoding::IBM775 =>                     codepoints_1byte,
+        Encoding::IBM852 =>                     codepoints_1byte,
+        Encoding::IBM855 =>                     codepoints_1byte,
+        Encoding::IBM857 =>                     codepoints_1byte,
+        Encoding::IBM860 =>                     codepoints_1byte,
+        Encoding::IBM861 =>                     codepoints_1byte,
+        Encoding::IBM862 =>                     codepoints_1byte,
+        Encoding::IBM863 =>                     codepoints_1byte,
+        Encoding::IBM864 =>                     codepoints_1byte,
+        Encoding::IBM865 =>                     codepoints_1byte,
+        Encoding::IBM866 =>                     codepoints_1byte,
+        Encoding::IBM869 =>                     codepoints_1byte,
+        Encoding::ISO_8859_1 =>                 codepoints_1byte,
+        Encoding::ISO_8859_2 =>                 codepoints_1byte,
+        Encoding::ISO_8859_3 =>                 codepoints_1byte,
+        Encoding::ISO_8859_4 =>                 codepoints_1byte,
+        Encoding::ISO_8859_5 =>                 codepoints_1byte,
+        Encoding::ISO_8859_6 =>                 codepoints_1byte,
+        Encoding::ISO_8859_7 =>                 codepoints_1byte,
+        Encoding::ISO_8859_8 =>                 codepoints_1byte,
+        Encoding::ISO_8859_9 =>                 codepoints_1byte,
+        Encoding::ISO_8859_10 =>                codepoints_1byte,
+        Encoding::ISO_8859_11 =>                codepoints_1byte,
+        Encoding::ISO_8859_13 =>                codepoints_1byte,
+        Encoding::ISO_8859_14 =>                codepoints_1byte,
+        Encoding::ISO_8859_15 =>                codepoints_1byte,
+        Encoding::ISO_8859_16 =>                codepoints_1byte,
+        Encoding::KOI8_R =>                     codepoints_1byte,
+        Encoding::KOI8_U =>                     codepoints_1byte,
+        Encoding::MACCENTEURO =>                codepoints_1byte,
+        Encoding::MACCROATIAN =>                codepoints_1byte,
+        Encoding::MACCYRILLIC =>                codepoints_1byte,
+        Encoding::MACGREEK =>                   codepoints_1byte,
+        Encoding::MACICELAND =>                 codepoints_1byte,
+        Encoding::MACROMAN =>                   codepoints_1byte,
+        Encoding::MACROMANIA =>                 codepoints_1byte,
+        Encoding::MACTHAI =>                    codepoints_1byte,
+        Encoding::MACTURKISH =>                 codepoints_1byte,
+        Encoding::MACUKRAINE =>                 codepoints_1byte,
+        Encoding::TIS_620 =>                    codepoints_1byte,
+        Encoding::Windows_1250 =>               codepoints_1byte,
+        Encoding::Windows_1251 =>               codepoints_1byte,
+        Encoding::Windows_1252 =>               codepoints_1byte,
+        Encoding::Windows_1254 =>               codepoints_1byte,
+        Encoding::Windows_1255 =>               codepoints_1byte,
+        Encoding::Windows_1256 =>               codepoints_1byte,
+        Encoding::Windows_1257 =>               codepoints_1byte,
+        Encoding::Windows_1258 =>               codepoints_1byte,
+        Encoding::Windows_874 =>                codepoints_1byte,
+        Encoding::Big5 =>                       codepoints_2bytes,
+        Encoding::Big5_HKSCS =>                 codepoints_2bytes,
+        Encoding::Big5_UAO =>                   codepoints_2bytes,
+        Encoding::CP949 =>                      codepoints_2bytes,
+        Encoding::CP950 =>                      codepoints_2bytes,
+        Encoding::CP951 =>                      codepoints_2bytes,
+        Encoding::EUC_KR =>                     codepoints_2bytes,
+        Encoding::GBK =>                        codepoints_2bytes,
+        Encoding::GB12345 =>                    codepoints_2bytes,
+        Encoding::GB2312 =>                     codepoints_2bytes,
+        Encoding::MACJAPANESE =>                codepoints_2bytes,
+        Encoding::Shift_JIS =>                  codepoints_2bytes,
+        Encoding::SJIS_DoCoMo =>                codepoints_2bytes,
+        Encoding::SJIS_KDDI =>                  codepoints_2bytes,
+        Encoding::SJIS_SoftBank =>              codepoints_2bytes,
+        Encoding::Windows_31J =>                codepoints_2bytes,
         Encoding::UTF_8 =>                      codepoints_unicode,
         Encoding::UTF8_MAC =>                   codepoints_unicode,
         Encoding::UTF8_DoCoMo =>                codepoints_unicode,
@@ -136,6 +134,8 @@ module Prism
       )
     end
 
+    # These test that we're correctly parsing codepoints for each alias of each
+    # encoding that prism supports.
     encodings.each do |encoding, range|
       encoding.names.each do |name|
         next if name == "locale"
@@ -143,6 +143,17 @@ module Prism
         define_method(:"test_encoding_#{name}") do
           assert_encoding(encoding, name, range)
         end
+      end
+    end
+
+    # These test that we're correctly setting the flags on strings for each
+    # encoding that prism supports.
+    escapes = ["\\x00", "\\x7F", "\\x80", "\\xFF", "\\u{00}", "\\u{7F}", "\\u{80}", "\\M-\\C-?"]
+    escapes = escapes.concat(escapes.product(escapes).map(&:join))
+
+    encodings.each_key do |encoding|
+      define_method(:"test_encoding_flags_#{encoding.name}") do
+        assert_encoding_flags(encoding, escapes)
       end
     end
 
@@ -290,6 +301,48 @@ module Prism
       rescue RangeError
         source = "# encoding: #{name}\n\\x#{codepoint.to_s(16)}"
         refute Prism.parse(source).success?
+      end
+    end
+
+    def assert_encoding_flags(encoding, escapes)
+      escapes.each do |escaped|
+        source = "# encoding: #{encoding.name}\n\"#{escaped}\""
+
+        expected =
+          begin
+            eval(source).encoding
+          rescue SyntaxError => error
+            if error.message.include?("UTF-8 mixed within")
+              error.message[/: (.+?)\n/, 1]
+            else
+              raise
+            end
+          end
+
+        actual =
+          Prism.parse(source).then do |result|
+            if result.success?
+              string = result.value.statements.body.first
+
+              if string.forced_utf8_encoding?
+                Encoding::UTF_8
+              elsif string.forced_binary_encoding?
+                Encoding::ASCII_8BIT
+              else
+                encoding
+              end
+            else
+              error = result.errors.first
+
+              if error.message.include?("mixed")
+                error.message
+              else
+                raise error.message
+              end
+            end
+          end
+
+        assert_equal expected, actual
       end
     end
   end

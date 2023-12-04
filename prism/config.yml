@@ -346,6 +346,13 @@ flags:
       - name: VARIABLE_CALL
         comment: "a call that could have been a local variable"
     comment: Flags for call nodes.
+  - name: EncodingFlags
+    values:
+      - name: FORCED_UTF8_ENCODING
+        comment: "internal bytes forced the encoding to UTF-8"
+      - name: FORCED_BINARY_ENCODING
+        comment: "internal bytes forced the encoding to binary"
+    comment: Flags for nodes that have unescaped content.
   - name: IntegerBaseFlags
     values:
       - name: BINARY
@@ -388,6 +395,10 @@ flags:
     comment: Flags for regular expression and match last line nodes.
   - name: StringFlags
     values:
+      - name: FORCED_UTF8_ENCODING
+        comment: "internal bytes forced the encoding to UTF-8"
+      - name: FORCED_BINARY_ENCODING
+        comment: "internal bytes forced the encoding to binary"
       - name: FROZEN
         comment: "frozen by virtue of a `frozen_string_literal` comment"
     comment: Flags for string nodes.
@@ -2576,6 +2587,9 @@ nodes:
           ^^^^^^^^^^^^^^^^^^^^
   - name: XStringNode
     fields:
+      - name: flags
+        type: flags
+        kind: EncodingFlags
       - name: opening_loc
         type: location
       - name: content_loc
