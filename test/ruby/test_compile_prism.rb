@@ -760,8 +760,38 @@ module Prism
     end
 
     def test_NextNode
-      # TODO:
-      # assert_prism_eval("2.times do |i|; next if i == 1; end")
+      assert_prism_eval("2.times do |i|; next if i == 1; end")
+
+      assert_prism_eval(<<-CODE)
+        res = []
+        i = 0
+        while i < 5
+          i += 1
+          next if i == 3
+          res << i
+        end
+        res
+      CODE
+
+      assert_prism_eval(<<-CODE)
+        res = []
+        (1..5).each do |i|
+          next if i.even?
+          res << i
+        end
+        res
+      CODE
+
+      assert_prism_eval(<<-CODE)
+        res = []
+        i = 0
+        begin
+          i += 1
+          next if i == 3
+          res << i
+        end while i < 5
+        res
+      CODE
     end
 
     def test_RedoNode
