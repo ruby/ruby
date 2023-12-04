@@ -1443,9 +1443,18 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
     enum defined_type dtype = DEFINED_NOT_DEFINED;
     switch (PM_NODE_TYPE(node)) {
       case PM_NIL_NODE:
-      case PM_PARENTHESES_NODE:
         dtype = DEFINED_NIL;
         break;
+      case PM_PARENTHESES_NODE: {
+          pm_parentheses_node_t *parentheses_node = (pm_parentheses_node_t *) node;
+
+          if (parentheses_node->body == NULL) {
+              dtype = DEFINED_NIL;
+          } else {
+              dtype = DEFINED_EXPR;
+          }
+          break;
+      }
       case PM_SELF_NODE:
         dtype = DEFINED_SELF;
         break;
