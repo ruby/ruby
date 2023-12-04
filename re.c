@@ -3853,6 +3853,10 @@ reg_copy(VALUE copy, VALUE orig)
     RB_OBJ_WRITE(copy, &RREGEXP(copy)->src, RREGEXP(orig)->src);
     RREGEXP_PTR(copy)->timelimit = RREGEXP_PTR(orig)->timelimit;
     rb_enc_copy(copy, orig);
+
+    if (RB_FL_TEST(orig, KCODE_FIXED)) RB_FL_SET(copy, KCODE_FIXED);
+    if (RB_FL_TEST(orig, REG_ENCODING_NONE)) RB_FL_SET(copy, REG_ENCODING_NONE);
+
     return copy;
 }
 
