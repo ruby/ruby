@@ -3,10 +3,18 @@
 module SyntaxSuggest
   # Ripper.lex is not guaranteed to lex the entire source document
   #
-  # lex = LexAll.new(source: source)
-  # lex.each do |value|
-  #   puts value.line
-  # end
+  # This class guarantees the whole document is lex-ed by iteratively
+  # lexing the document where ripper stopped.
+  #
+  # Prism likely doesn't have the same problem. Once ripper support is removed
+  # we can likely reduce the complexity here if not remove the whole concept.
+  #
+  # Example usage:
+  #
+  #   lex = LexAll.new(source: source)
+  #   lex.each do |value|
+  #     puts value.line
+  #   end
   class LexAll
     include Enumerable
 

@@ -2,6 +2,10 @@
 
 require_relative "left_right_lex_count"
 
+if !SyntaxSuggest.use_prism_parser?
+  require_relative "ripper_errors"
+end
+
 module SyntaxSuggest
   class GetParseErrors
     def self.errors(source)
@@ -25,8 +29,8 @@ module SyntaxSuggest
   #   # => "Unmatched keyword, missing `end' ?"
   #
   # When the error cannot be determined by lexical counting
-  # then ripper is run against the input and the raw ripper
-  # errors returned.
+  # then the parser is run against the input and the raw
+  # errors are returned.
   #
   # Example:
   #
@@ -101,7 +105,7 @@ module SyntaxSuggest
     # Returns an array of syntax error messages
     #
     # If no missing pairs are found it falls back
-    # on the original ripper error messages
+    # on the original error messages
     def errors
       if missing.empty?
         return GetParseErrors.errors(@code_lines.map(&:original).join)

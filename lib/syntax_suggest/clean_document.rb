@@ -47,9 +47,9 @@ module SyntaxSuggest
   # ## Heredocs
   #
   # A heredoc is an way of defining a multi-line string. They can cause many
-  # problems. If left as a single line, Ripper would try to parse the contents
+  # problems. If left as a single line, the parser would try to parse the contents
   # as ruby code rather than as a string. Even without this problem, we still
-  # hit an issue with indentation
+  # hit an issue with indentation:
   #
   #    1 foo = <<~HEREDOC
   #    2  "Be yourself; everyone else is already taken.""

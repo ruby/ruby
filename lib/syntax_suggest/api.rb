@@ -227,9 +227,6 @@ require_relative "lex_all"
 require_relative "code_line"
 require_relative "code_block"
 require_relative "block_expand"
-if !SyntaxSuggest.use_prism_parser?
-  require_relative "ripper_errors"
-end
 require_relative "priority_queue"
 require_relative "unvisited_lines"
 require_relative "around_block_scan"
