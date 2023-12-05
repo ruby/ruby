@@ -1,4 +1,3 @@
-# encoding: utf-8
 #frozen_string_literal: false
 require_relative 'test_helper'
 
