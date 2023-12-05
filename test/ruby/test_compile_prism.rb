@@ -181,6 +181,33 @@ module Prism
 
       assert_prism_eval("defined?(())")
       assert_prism_eval("defined?(('1'))")
+
+      # method chain starting with self that's truthy
+      assert_prism_eval("defined?(self.itself.itself.itself)")
+
+      # method chain starting with self that's false (exception swallowed)
+      assert_prism_eval("defined?(self.itself.itself.neat)")
+
+      # single self with method, truthy
+      assert_prism_eval("defined?(self.itself)")
+
+      # single self with method, false
+      assert_prism_eval("defined?(self.neat!)")
+
+      # method chain implicit self that's truthy
+      assert_prism_eval("defined?(itself.itself.itself)")
+
+      # method chain implicit self that's false
+      assert_prism_eval("defined?(itself.neat.itself)")
+
+      ## single method implicit self that's truthy
+      assert_prism_eval("defined?(itself)")
+
+      ## single method implicit self that's false
+      assert_prism_eval("defined?(neatneat)")
+
+      assert_prism_eval("defined?(a(itself))")
+      assert_prism_eval("defined?(itself(itself))")
     end
 
     def test_GlobalVariableReadNode
