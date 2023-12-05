@@ -70,7 +70,7 @@ class Gem::Package::Old < Gem::Package
           file_data << line
         end
 
-        file_data = file_data.strip.unpack("m")[0]
+        file_data = file_data.strip.unpack1("m")
         file_data = Zlib::Inflate.inflate file_data
 
         raise Gem::Package::FormatError, "#{full_name} in #{@gem} is corrupt" if

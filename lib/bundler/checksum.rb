@@ -43,8 +43,7 @@ module Bundler
         return digest if digest.match?(/\A[0-9a-f]{64}\z/i)
         if digest.match?(%r{\A[-0-9a-z_+/]{43}={0,2}\z}i)
           digest = digest.tr("-_", "+/") # fix urlsafe base64
-          # transform to hex. Use unpack1 when we drop older rubies
-          return digest.unpack("m0").first.unpack("H*").first
+          return digest.unpack1("m0").unpack1("H*")
         end
         raise ArgumentError, "#{digest.inspect} is not a valid SHA256 hex or base64 digest"
       end
