@@ -14900,6 +14900,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 if (parser->recovering) {
                     rparen = not_provided(parser);
                 } else {
+                    accept1(parser, PM_TOKEN_NEWLINE);
                     expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_EXPECT_RPAREN);
                     rparen = parser->previous;
                 }
