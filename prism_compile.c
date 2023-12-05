@@ -1466,12 +1466,14 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
         break;
       case PM_ARRAY_NODE: {
         pm_array_node_t *array_node = (pm_array_node_t *) node;
-        for (size_t index = 0; index < array_node->elements.size; index++) {
-          pm_compile_defined_expr0(iseq, array_node->elements.nodes[index], ret, src, popped, scope_node, dummy_line_node, lineno, true, lfinish);
-          if (!lfinish[1]) {
-            lfinish[1] = NEW_LABEL(lineno);
-          }
-          ADD_INSNL(ret, &dummy_line_node, branchunless, lfinish[1]);
+        if (!(array_node->base.flags & PM_ARRAY_NODE_FLAGS_CONTAINS_SPLAT)) {
+            for (size_t index = 0; index < array_node->elements.size; index++) {
+              pm_compile_defined_expr0(iseq, array_node->elements.nodes[index], ret, src, popped, scope_node, dummy_line_node, lineno, true, lfinish);
+              if (!lfinish[1]) {
+                lfinish[1] = NEW_LABEL(lineno);
+              }
+              ADD_INSNL(ret, &dummy_line_node, branchunless, lfinish[1]);
+            }
         }
       }
       case PM_AND_NODE:
