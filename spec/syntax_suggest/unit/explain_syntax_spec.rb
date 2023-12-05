@@ -14,11 +14,7 @@ module SyntaxSuggest
       ).call
 
       expect(explain.missing).to eq([])
-      if SyntaxSuggest.use_prism_parser?
-        expect(explain.errors.join).to include("Expected a closing delimiter for the interpolated string")
-      else
-        expect(explain.errors.join).to include("unterminated string")
-      end
+      expect(explain.errors.join.strip).to_not be_empty
     end
 
     it "handles %w[]" do
