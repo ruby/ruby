@@ -460,6 +460,41 @@ RSpec.describe "bundle install with gem sources" do
       expect(the_bundle).to include_gems("rubocop 1.37.1")
     end
 
+    it "does not warn if a gem is added once in Gemfile and also inside a gemspec as a development dependency, with same requirements, and different sources" do
+      build_lib "my-gem", :path => bundled_app do |s|
+        s.add_development_dependency "activesupport"
+      end
+
+      build_repo4 do
+        build_gem "activesupport"
+      end
+
+      build_git "activesupport", "1.0", :path => lib_path("activesupport")
+
+      install_gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gemspec
+
+        gem "activesupport", :git => "#{file_uri_for(lib_path("activesupport"))}"
+      G
+
+      expect(err).to be_empty
+      expect(the_bundle).to include_gems "activesupport 1.0", :source => "git@#{lib_path("activesupport")}"
+
+      # if the Gemfile dependency is specified first
+      install_gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "activesupport", :git => "#{file_uri_for(lib_path("activesupport"))}"
+
+        gemspec
+      G
+
+      expect(err).to be_empty
+      expect(the_bundle).to include_gems "activesupport 1.0", :source => "git@#{lib_path("activesupport")}"
+    end
+
     it "considers both dependencies for resolution if a gem is added once in Gemfile and also inside a local gemspec as a runtime dependency, with different requirements" do
       build_lib "my-gem", :path => bundled_app do |s|
         s.add_dependency "rubocop", "~> 1.36.0"

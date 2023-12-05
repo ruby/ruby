@@ -102,12 +102,13 @@ module Bundler
 
       # if there's already a dependency with this name we try to prefer one
       if current = @dependencies.find {|d| d.name == dep.name }
+        # Always prefer the dependency from the Gemfile
+        deleted_dep = @dependencies.delete(current) if current.type == :development
+
         if current.requirement != dep.requirement
           current_requirement_open = current.requirements_list.include?(">= 0")
 
           if current.type == :development
-            @dependencies.delete(current)
-
             unless current_requirement_open || dep.type == :development
               Bundler.ui.warn "A gemspec development dependency (#{dep.name}, #{current.requirement}) is being overridden by a Gemfile dependency (#{dep.name}, #{dep.requirement}).\n" \
                               "This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement\n" \
@@ -129,12 +130,13 @@ module Bundler
                            "You specified: #{current.name} (#{current.requirement}) and #{dep.name} (#{dep.requirement})" \
                            "#{update_prompt}"
           end
+        elsif current.type == :development || dep.type == :development
+          return if deleted_dep.nil?
         elsif current.source != dep.source
-          return if dep.type == :development
           raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
                           "You specified that #{dep.name} (#{dep.requirement}) should come from " \
                           "#{current.source || "an unspecified source"} and #{dep.source}\n"
-        elsif current.type != :development && dep.type != :development
+        else
           Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
                           "You should probably keep only one of them.\n" \
                           "Remove any duplicate entries and specify the gem only once.\n" \

@@ -1862,47 +1862,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         LABEL *lend = NEW_LABEL(lineno);
         LABEL *lcont = NEW_LABEL(lineno);
 
-        if (begin_node->ensure_clause) {
-            ADD_LABEL(ret, lstart);
-            if (begin_node->statements) {
-                PM_COMPILE((pm_node_t *)begin_node->statements);
-            }
-            else {
-                PM_PUTNIL_UNLESS_POPPED;
-            }
-            ADD_LABEL(ret, lend);
-            pm_statements_node_t *statements = begin_node->ensure_clause->statements;
-            if (statements) {
-                PM_COMPILE((pm_node_t *)statements);
-                PM_POP_UNLESS_POPPED;
-            }
-
-            struct ensure_range er;
-            struct iseq_compile_data_ensure_node_stack enl;
-            struct ensure_range *erange;
-
-            er.begin = lstart;
-            er.end = lend;
-            er.next = 0;
-            push_ensure_entry(iseq, &enl, &er, (void *)&begin_node->ensure_clause);
-
-            pm_scope_node_t next_scope_node;
-            pm_scope_node_init((pm_node_t *)begin_node->ensure_clause, &next_scope_node, scope_node, parser);
-
-            child_iseq = NEW_CHILD_ISEQ(next_scope_node,
-                    rb_str_new2("ensure in"),
-                    ISEQ_TYPE_ENSURE, lineno);
-            ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq;
-
-            ADD_LABEL(ret, lcont);
-            erange = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->erange;
-            if (lstart->link.next != &lend->link) {
-                while (erange) {
-                    ADD_CATCH_ENTRY(CATCH_TYPE_ENSURE, erange->begin, erange->end, child_iseq, lcont);
-                    erange = erange->next;
-                }
-            }
-        }
 
         if (begin_node->rescue_clause) {
             pm_scope_node_t rescue_scope_node;
@@ -1915,7 +1874,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             lstart->rescued = LABEL_RESCUE_BEG;
             lend->rescued = LABEL_RESCUE_END;
             ADD_LABEL(ret, lstart);
-
             bool prev_in_rescue = ISEQ_COMPILE_DATA(iseq)->in_rescue;
             ISEQ_COMPILE_DATA(iseq)->in_rescue = true;
             if (begin_node->statements) {
@@ -1938,6 +1896,54 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PM_POP_IF_POPPED;
             ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, rescue_iseq, lcont);
             ADD_CATCH_ENTRY(CATCH_TYPE_RETRY, lend, lcont, NULL, lstart);
+        }
+        if (begin_node->ensure_clause) {
+            LABEL *estart = NEW_LABEL(lineno);
+            LABEL *eend = NEW_LABEL(lineno);
+            LABEL *econt = NEW_LABEL(lineno);
+            ADD_LABEL(ret, estart);
+            if (!begin_node->rescue_clause) {
+                if (begin_node->statements) {
+                    PM_COMPILE((pm_node_t *)begin_node->statements);
+                }
+                else {
+                    PM_PUTNIL_UNLESS_POPPED;
+                }
+            }
+            ADD_LABEL(ret, eend);
+            ADD_INSN(ret, &dummy_line_node, nop);
+            pm_statements_node_t *statements = begin_node->ensure_clause->statements;
+            if (statements) {
+                PM_COMPILE((pm_node_t *)statements);
+                ADD_LABEL(ret, econt);
+                PM_POP_UNLESS_POPPED;
+            }
+
+            struct ensure_range er;
+            struct iseq_compile_data_ensure_node_stack enl;
+            struct ensure_range *erange;
+
+            er.begin = estart;
+            er.end = eend;
+            er.next = 0;
+            push_ensure_entry(iseq, &enl, &er, (void *)&begin_node->ensure_clause);
+
+            pm_scope_node_t next_scope_node;
+            pm_scope_node_init((pm_node_t *)begin_node->ensure_clause, &next_scope_node, scope_node, parser);
+
+            child_iseq = NEW_CHILD_ISEQ(next_scope_node,
+                    rb_str_new2("ensure in"),
+                    ISEQ_TYPE_ENSURE, lineno);
+            ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq;
+
+
+            erange = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->erange;
+            if (estart->link.next != &eend->link) {
+                while (erange) {
+                    ADD_CATCH_ENTRY(CATCH_TYPE_ENSURE, erange->begin, erange->end, child_iseq, econt);
+                    erange = erange->next;
+                }
+            }
         }
 
         if (!begin_node->rescue_clause && !begin_node->ensure_clause) {
@@ -3851,6 +3857,18 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         if (!popped) {
             PM_PUTNIL;
+        }
+        return;
+      }
+      case PM_RETRY_NODE: {
+        if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_RESCUE) {
+            PM_PUTNIL;
+            ADD_INSN1(ret, &dummy_line_node, throw, INT2FIX(TAG_RETRY));
+
+            PM_POP_IF_POPPED;
+        } else {
+            COMPILE_ERROR(ERROR_ARGS "Invalid retry");
+            rb_bug("Invalid retry");
         }
         return;
       }

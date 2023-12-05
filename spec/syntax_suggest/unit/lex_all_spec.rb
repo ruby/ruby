@@ -17,9 +17,6 @@ module SyntaxSuggest
         end            # 9
       EOM
 
-      # raw_lex = Ripper.lex(source)
-      # expect(raw_lex.to_s).to_not include("dog")
-
       lex = LexAll.new(source: source)
       expect(lex.map(&:token).to_s).to include("dog")
       expect(lex.first.line).to eq(1)

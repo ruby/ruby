@@ -1,5 +1,4 @@
 #!/usr/bin/env ruby
-# encoding: utf-8
 # frozen_string_literal: false
 
 require_relative 'test_helper'
@@ -60,6 +59,14 @@ EOT
     parsed_json = parse(json)
     assert_equal({"1"=>2}, parsed_json)
     assert_equal '666', generate(666)
+  end
+
+  def test_dump_unenclosed_hash
+    assert_equal '{"a":1,"b":2}', dump(a: 1, b: 2)
+  end
+
+  def test_dump_strict
+    assert_equal '{}', dump({}, strict: true)
   end
 
   def test_generate_pretty

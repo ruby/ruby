@@ -914,6 +914,38 @@ module Prism
       assert_prism_eval("begin; rescue; end")
     end
 
+    def test_RetryNode
+      assert_prism_eval(<<~CODE)
+        a = 1
+        begin
+          a
+          raise "boom"
+        rescue
+          a += 1
+          retry unless a > 1
+        ensure
+          a = 3
+        end
+      CODE
+
+      assert_prism_eval(<<~CODE)
+        begin
+        rescue
+          foo = 2
+          retry
+        end
+      CODE
+
+      assert_prism_eval(<<~CODE)
+        begin
+          a = 2
+        rescue
+          retry
+        end
+      CODE
+    end
+
+
     def test_ReturnNode
       assert_prism_eval("def return_node; return 1; end")
     end

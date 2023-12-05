@@ -351,6 +351,9 @@ class Gem::Installer
     run_post_install_hooks
 
     spec
+  rescue Errno::EACCES => e
+    # Permission denied - /path/to/foo
+    raise Gem::FilePermissionError, e.message.split(" - ").last
   end
 
   def run_pre_install_hooks # :nodoc:
@@ -716,7 +719,6 @@ class Gem::Installer
 
   def verify_gem_home # :nodoc:
     FileUtils.mkdir_p gem_home, :mode => options[:dir_mode] && 0o755
-    raise Gem::FilePermissionError, gem_home unless File.writable?(gem_home)
   end
 
   def verify_spec

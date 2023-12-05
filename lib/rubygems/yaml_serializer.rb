@@ -55,7 +55,7 @@ module Gem
       stack = [res]
       last_hash = nil
       last_empty_key = nil
-      str.split(/\r?\n/).each do |line|
+      str.split(/\r?\n/) do |line|
         if match = HASH_REGEX.match(line)
           indent, key, quote, val = match.captures
           convert_to_backward_compatible_key!(key)

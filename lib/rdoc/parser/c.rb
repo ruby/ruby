@@ -575,19 +575,18 @@ class RDoc::Parser::C < RDoc::Parser
     table = {}
     file_content.scan(%r{
       ((?>/\*.*?\*/\s*)?)
-      ((?:(?:\w+)\s+)?
-        (?:intern\s+)?VALUE\s+(\w+)
-        \s*(?:\([^)]*\))(?:[^\);]|$))
+      ((?:\w+\s+){0,2} VALUE\s+(\w+)
+        \s*(?:\([^\)]*\))(?:[^\);]|$))
     | ((?>/\*.*?\*/\s*))^\s*(\#\s*define\s+(\w+)\s+(\w+))
     | ^\s*\#\s*define\s+(\w+)\s+(\w+)
     }xm) do
       case
-      when $1
-        table[$3] = [:func_def, $1, $2, $~.offset(2)] if !table[$3] || table[$3][0] != :func_def
-      when $4
-        table[$6] = [:macro_def, $4, $5, $~.offset(5), $7] if !table[$6] || table[$6][0] == :macro_alias
-      when $8
-        table[$8] ||= [:macro_alias, $9]
+      when name = $3
+        table[name] = [:func_def, $1, $2, $~.offset(2)] if !(t = table[name]) || t[0] != :func_def
+      when name = $6
+        table[name] = [:macro_def, $4, $5, $~.offset(5), $7] if !(t = table[name]) || t[0] == :macro_alias
+      when name = $8
+        table[name] ||= [:macro_alias, $9]
       end
     end
     table

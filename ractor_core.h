@@ -186,6 +186,7 @@ struct rb_ractor_struct {
     VALUE r_stderr;
     VALUE verbose;
     VALUE debug;
+    bool prism;
 
     rb_ractor_newobj_cache_t newobj_cache;
 

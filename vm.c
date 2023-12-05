@@ -1218,6 +1218,13 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
 
     VALUE *env_body = ZALLOC_N(VALUE, src_env->env_size); // fill with Qfalse
     VALUE *ep = &env_body[src_env->env_size - 2];
+    ep[VM_ENV_DATA_INDEX_ME_CREF] = src_ep[VM_ENV_DATA_INDEX_ME_CREF];
+    ep[VM_ENV_DATA_INDEX_FLAGS]   = src_ep[VM_ENV_DATA_INDEX_FLAGS] | VM_ENV_FLAG_ISOLATED;
+    if (!VM_ENV_LOCAL_P(src_ep)) {
+        VM_ENV_FLAGS_SET(ep, VM_ENV_FLAG_LOCAL);
+    }
+
+    const rb_env_t *copied_env = vm_env_new(ep, env_body, src_env->env_size, src_env->iseq);
     volatile VALUE prev_env = Qnil;
 
     if (read_only_variables) {
@@ -1237,7 +1244,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
                             rb_str_cat_cstr(msg, "a hidden variable");
                         rb_exc_raise(rb_exc_new_str(rb_eRactorIsolationError, msg));
                     }
-                    env_body[j] = v;
+                    RB_OBJ_WRITE((VALUE)copied_env, &env_body[j], v);
                     rb_ary_delete_at(read_only_variables, i);
                     break;
                 }
@@ -1245,20 +1252,17 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
         }
     }
 
-    ep[VM_ENV_DATA_INDEX_ME_CREF] = src_ep[VM_ENV_DATA_INDEX_ME_CREF];
-    ep[VM_ENV_DATA_INDEX_FLAGS]   = src_ep[VM_ENV_DATA_INDEX_FLAGS] | VM_ENV_FLAG_ISOLATED;
-
     if (!VM_ENV_LOCAL_P(src_ep)) {
         const VALUE *prev_ep = VM_ENV_PREV_EP(src_env->ep);
         const rb_env_t *new_prev_env = env_copy(prev_ep, read_only_variables);
         prev_env = (VALUE)new_prev_env;
         ep[VM_ENV_DATA_INDEX_SPECVAL] = VM_GUARDED_PREV_EP(new_prev_env->ep);
+        VM_ENV_FLAGS_UNSET(ep, VM_ENV_FLAG_LOCAL);
     }
     else {
         ep[VM_ENV_DATA_INDEX_SPECVAL] = VM_BLOCK_HANDLER_NONE;
     }
 
-    const rb_env_t *copied_env = vm_env_new(ep, env_body, src_env->env_size, src_env->iseq);
     RB_GC_GUARD(prev_env);
     return copied_env;
 }
@@ -4186,6 +4190,13 @@ rb_ruby_verbose_ptr(void)
 {
     rb_ractor_t *cr = GET_RACTOR();
     return &cr->verbose;
+}
+
+bool *
+rb_ruby_prism_ptr(void)
+{
+    rb_ractor_t *cr = GET_RACTOR();
+    return &cr->prism;
 }
 
 VALUE *

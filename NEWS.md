@@ -139,7 +139,7 @@ The following default gems are updated.
 * benchmark 0.3.0
 * bigdecimal 3.1.5
 * bundler 2.5.0.dev
-* cgi 0.4.0
+* cgi 0.4.1
 * csv 3.2.8
 * date 3.3.4
 * delegate 0.3.1
@@ -153,8 +153,8 @@ The following default gems are updated.
 * find 0.2.0
 * getoptlong 0.2.1
 * io-console 0.6.1.dev.1
-* irb 1.10.0
-* json 2.7.0
+* irb 1.10.1
+* json 2.7.1
 * logger 1.6.0
 * mutex_m 0.2.0
 * net-http 0.4.0
@@ -171,7 +171,7 @@ The following default gems are updated.
 * prettyprint 0.2.0
 * pstore 0.1.3
 * psych 5.1.1.1
-* rdoc 6.6.0
+* rdoc 6.6.1
 * reline 0.4.0
 * rinda 0.2.0
 * securerandom 0.3.0
@@ -180,7 +180,7 @@ The following default gems are updated.
 * stringio 3.1.1
 * strscan 3.0.8
 * syntax_suggest 1.1.0
-* tempfile 0.2.0
+* tempfile 0.2.1
 * time 0.3.0
 * timeout 0.4.1
 * tmpdir 0.2.0

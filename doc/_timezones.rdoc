@@ -66,8 +66,8 @@ The timezone methods are:
 
   - Called when Time.new is invoked with +tz+
     as the value of positional argument +zone+ or keyword argument +in:+.
-  - Argument: a <tt>Time::tm</tt> object.
-  - Returns: a \Time-like object in the UTC timezone.
+  - Argument: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
+  - Returns: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects] in the UTC timezone.
 
 - +utc_to_local+:
 
@@ -75,8 +75,8 @@ The timezone methods are:
     as the value for keyword argument +in:+,
     and when Time#getlocal or Time#localtime is called with +tz+
     as the value for positional argument +zone+.
-  - Argument: a <tt>Time::tm</tt> object.
-  - Returns: a \Time-like object in the local timezone.
+  - Argument: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
+  - Returns: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects] in the local timezone.
 
 A custom timezone class may have these instance methods,
 which will be called if defined:
@@ -84,7 +84,7 @@ which will be called if defined:
 - +abbr+:
 
   - Called when Time#strftime is invoked with a format involving <tt>%Z</tt>.
-  - Argument: a <tt>Time::tm</tt> object.
+  - Argument: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
   - Returns: a string abbreviation for the timezone name.
 
 - +dst?+:
@@ -93,7 +93,7 @@ which will be called if defined:
     as the value for keyword argument +in:+,
     and when Time#getlocal or Time#localtime is called with +tz+
     as the value for positional argument +zone+.
-  - Argument: a <tt>Time::tm</tt> object.
+  - Argument: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
   - Returns: whether the time is daylight saving time.
 
 - +name+:
@@ -101,6 +101,33 @@ which will be called if defined:
   - Called when <tt>Marshal.dump(t)</tt> is invoked
   - Argument: none.
   - Returns: the string name of the timezone.
+
+==== +Time+-Like Objects
+
+A +Time+-like object is a container object capable of interfacing with
+timezone libraries for timezone conversion.
+
+The argument to the timezone conversion methods above will have attributes
+similar to Time, except that timezone related attributes are meaningless.
+
+The objects returned by +local_to_utc+ and +utc_to_local+ methods of the
+timezone object may be of the same class as their arguments, of arbitrary
+object classes, or of class Integer.
+
+For a returned class other than +Integer+, the class must have the
+following methods:
+
+- +year+
+- +mon+
+- +mday+
+- +hour+
+- +min+
+- +sec+
+- +isdst+
+- +to_i+
+
+For a returned +Integer+, its components, decomposed in UTC, are
+interpreted as times in the specified timezone.
 
 === Timezone Names
 

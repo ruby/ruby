@@ -1895,6 +1895,45 @@ module Prism
       ], compare_ripper: false # Ripper does not check 'circular reference'.
     end
 
+    def test_command_calls
+      sources = <<~RUBY.lines
+        [a b]
+        {a: b c}
+        ...a b
+        if ...a b; end
+        a b, c d
+        a(b, c d)
+        a(*b c)
+        a(**b c)
+        a(&b c)
+        +a b
+        a + b c
+        a && b c
+        a =~ b c
+        a = b, c d
+        a = *b c
+        a, b = c = d f
+        a ? b c : d e
+        defined? a b
+        ! ! a b
+        def f a = b c; end
+        def f(a = b c); end
+        a = b rescue c d
+        def a = b rescue c d
+        ->a=b c{}
+        ->(a=b c){}
+        case; when a b; end
+        case; in a if a b; end
+        case; in a unless a b; end
+        begin; rescue a b; end
+        begin; rescue a b => c; end
+      RUBY
+      sources.each do |source|
+        assert_nil Ripper.sexp_raw(source)
+        assert_false(Prism.parse(source).success?)
+      end
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")
