@@ -16,7 +16,7 @@
 #include "probes.h"
 #include "darray.h"
 #include "ruby/encoding.h"
-#include "prism/prism.h"
+#include "prism_compile.h"
 #include "ruby/util.h"
 
 static VALUE ruby_dln_librefs;
