@@ -1,6 +1,10 @@
+version = File.foreach(File.join(__dir__, "lib/json/version.rb")) do |line|
+  /^\s*VERSION\s*=\s*'(.*)'/ =~ line and break $1
+end rescue nil
+
 Gem::Specification.new do |s|
   s.name = "json"
-  s.version = File.read(File.expand_path('../VERSION', __FILE__)).chomp
+  s.version = version
 
   s.summary = "JSON Implementation for Ruby"
   s.description = "This is a JSON implementation as a Ruby extension in C."
