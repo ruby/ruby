@@ -127,6 +127,7 @@ module Prism
 
       assert_prism_eval("defined? [*b]")
       assert_prism_eval("defined? [[*1..2], 3, *4..5]")
+      assert_prism_eval("defined? [a: [:b, :c]]")
 
       assert_prism_eval("defined? @a")
       assert_prism_eval("defined? $a")
