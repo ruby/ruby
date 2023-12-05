@@ -96,6 +96,7 @@ module Prism
       assert_prism_eval("defined? true")
       assert_prism_eval("defined? false")
       assert_prism_eval("defined? 1")
+      assert_prism_eval("defined? 1i")
       assert_prism_eval("defined? 1.0")
       assert_prism_eval("defined? 1..2")
       assert_prism_eval("defined? [A, B, C]")
