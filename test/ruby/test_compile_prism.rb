@@ -112,6 +112,7 @@ module Prism
       assert_prism_eval("defined? a || b")
       assert_prism_eval("defined? __ENCODING__")
       assert_prism_eval("defined? __FILE__")
+      assert_prism_eval("defined? __LINE__")
 
       assert_prism_eval("defined? %[1,2,3]")
       assert_prism_eval("defined? %q[1,2,3]")
