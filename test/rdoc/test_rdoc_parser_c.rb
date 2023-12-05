@@ -1373,6 +1373,36 @@ Init_Foo(void) {
     assert_equal "DLL_LOCAL VALUE\nother_function() {\n}", code
   end
 
+  def test_find_body_static_inline
+    content = <<-EOF
+/*
+ * a comment for other_function
+ */
+static inline VALUE
+other_function() {
+}
+
+void
+Init_Foo(void) {
+    VALUE foo = rb_define_class("Foo", rb_cObject);
+
+    rb_define_method(foo, "my_method", other_function, 0);
+}
+    EOF
+
+    klass = util_get_class content, 'foo'
+    other_function = klass.method_list.first
+
+    assert_equal 'my_method', other_function.name
+    assert_equal "a comment for other_function",
+                 other_function.comment.text
+    assert_equal '()', other_function.params
+
+    code = other_function.token_stream.first[:text]
+
+    assert_equal "static inline VALUE\nother_function() {\n}", code
+  end
+
   def test_find_modifiers_call_seq
     comment = RDoc::Comment.new <<-COMMENT
 call-seq:

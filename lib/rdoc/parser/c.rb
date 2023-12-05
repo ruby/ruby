@@ -575,9 +575,8 @@ class RDoc::Parser::C < RDoc::Parser
     table = {}
     file_content.scan(%r{
       ((?>/\*.*?\*/\s*)?)
-      ((?:(?:\w+)\s+)?
-        (?:intern\s+)?VALUE\s+(\w+)
-        \s*(?:\([^)]*\))(?:[^\);]|$))
+      ((?:\w+\s+){0,2} VALUE\s+(\w+)
+        \s*(?:\([^\)]*\))(?:[^\);]|$))
     | ((?>/\*.*?\*/\s*))^\s*(\#\s*define\s+(\w+)\s+(\w+))
     | ^\s*\#\s*define\s+(\w+)\s+(\w+)
     }xm) do
