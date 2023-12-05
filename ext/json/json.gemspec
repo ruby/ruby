@@ -19,7 +19,6 @@ Gem::Specification.new do |s|
     "CHANGES.md",
     "LICENSE",
     "README.md",
-    "VERSION",
     "ext/json/ext/fbuffer/fbuffer.h",
     "ext/json/ext/generator/depend",
     "ext/json/ext/generator/extconf.rb",
