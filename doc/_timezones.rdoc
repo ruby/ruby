@@ -66,8 +66,8 @@ The timezone methods are:
 
   - Called when Time.new is invoked with +tz+
     as the value of positional argument +zone+ or keyword argument +in:+.
-  - Argument: a {Time-like object}[rdoc-ref:Time@Time-like+Objects].
-  - Returns: a {Time-like object}[rdoc-ref:Time@Time-like+Objects] in the UTC timezone.
+  - Argument: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
+  - Returns: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects] in the UTC timezone.
 
 - +utc_to_local+:
 
@@ -75,8 +75,8 @@ The timezone methods are:
     as the value for keyword argument +in:+,
     and when Time#getlocal or Time#localtime is called with +tz+
     as the value for positional argument +zone+.
-  - Argument: a {Time-like object}[rdoc-ref:Time@Time-like+Objects].
-  - Returns: a {Time-like object}[rdoc-ref:Time@Time-like+Objects] in the local timezone.
+  - Argument: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
+  - Returns: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects] in the local timezone.
 
 A custom timezone class may have these instance methods,
 which will be called if defined:
@@ -84,7 +84,7 @@ which will be called if defined:
 - +abbr+:
 
   - Called when Time#strftime is invoked with a format involving <tt>%Z</tt>.
-  - Argument: a {Time-like object}[rdoc-ref:Time@Time-like+Objects].
+  - Argument: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
   - Returns: a string abbreviation for the timezone name.
 
 - +dst?+:
@@ -93,7 +93,7 @@ which will be called if defined:
     as the value for keyword argument +in:+,
     and when Time#getlocal or Time#localtime is called with +tz+
     as the value for positional argument +zone+.
-  - Argument: a {Time-like object}[rdoc-ref:Time@Time-like+Objects].
+  - Argument: a {Time-like object}[rdoc-ref:Time@Time-Like+Objects].
   - Returns: whether the time is daylight saving time.
 
 - +name+:
@@ -102,19 +102,20 @@ which will be called if defined:
   - Argument: none.
   - Returns: the string name of the timezone.
 
-==== +Time+-like Objects
+==== +Time+-Like Objects
 
-A +Time+-like object means a container object to interface with
+A +Time+-like object is a container object capable of interfacing with
 timezone libraries for timezone conversion.
 
-An argument object to the timezone conversion methods above will have
-attributes similar to Time, except for that timezone related attributes
-are meaningless.
+The argument to the timezone conversion methods above will have attributes
+similar to Time, except that timezone related attributes are meaningless.
 
 The objects returned by +local_to_utc+ and +utc_to_local+ methods of the
-timezone object may be of the same class as their arguments, arbitrary
-object classes, or Integer class.  The others than +Integer+ just must
-have the following attributes:
+timezone object may be of the same class as their arguments, of arbitrary
+object classes, or of class Integer.
+
+For a returned class other than +Integer+, the class must have the
+following methods:
 
 - +year+
 - +mon+
@@ -125,8 +126,8 @@ have the following attributes:
 - +isdst+
 - +to_i+
 
-In the case an +Integer+ is returned, its components, decomposed in UTC,
-are interpreted as times in the specified timezone.
+For a returned +Integer+, its components, decomposed in UTC, are
+interpreted as times in the specified timezone.
 
 === Timezone Names
 
