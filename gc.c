@@ -13264,7 +13264,7 @@ gc_profile_record_get(VALUE _)
         gc_profile_record *record = &objspace->profile.records[i];
 
         prof = rb_hash_new();
-        rb_hash_aset(prof, ID2SYM(rb_intern("GC_FLAGS")), gc_info_decode(0, rb_hash_new(), record->flags));
+        rb_hash_aset(prof, ID2SYM(rb_intern("GC_FLAGS")), gc_info_decode(objspace, rb_hash_new(), record->flags));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_TIME")), DBL2NUM(record->gc_time));
         rb_hash_aset(prof, ID2SYM(rb_intern("GC_INVOKE_TIME")), DBL2NUM(record->gc_invoke_time));
         rb_hash_aset(prof, ID2SYM(rb_intern("HEAP_USE_SIZE")), SIZET2NUM(record->heap_use_size));
