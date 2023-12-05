@@ -41,7 +41,7 @@ module IRB
       private
 
       def should_page?
-        IRB.conf[:USE_PAGER] && STDIN.tty? && ENV["TERM"] != "dumb"
+        IRB.conf[:USE_PAGER] && STDIN.tty? && (ENV.key?("TERM") && ENV["TERM"] != "dumb")
       end
 
       def content_exceeds_screen_height?(content)
