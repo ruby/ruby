@@ -2127,9 +2127,8 @@ rb_ivar_count(VALUE obj)
 }
 
 static int
-ivar_i(st_data_t k, st_data_t v, st_data_t a)
+ivar_i(ID key, VALUE v, st_data_t a)
 {
-    ID key = (ID)k;
     VALUE ary = (VALUE)a;
 
     if (rb_is_instance_id(key)) {
@@ -3999,9 +3998,8 @@ rb_define_class_variable(VALUE klass, const char *name, VALUE val)
 }
 
 static int
-cv_i(st_data_t k, st_data_t v, st_data_t a)
+cv_i(ID key, VALUE v, st_data_t a)
 {
-    ID key = (ID)k;
     st_table *tbl = (st_table *)a;
 
     if (rb_is_class_id(key)) {
@@ -4216,9 +4214,9 @@ rb_class_ivar_set(VALUE obj, ID id, VALUE val)
 }
 
 static int
-tbl_copy_i(st_data_t key, st_data_t val, st_data_t dest)
+tbl_copy_i(ID key, VALUE val, st_data_t dest)
 {
-    rb_class_ivar_set(dest, key, val);
+    rb_class_ivar_set((VALUE)dest, key, val);
 
     return ST_CONTINUE;
 }
