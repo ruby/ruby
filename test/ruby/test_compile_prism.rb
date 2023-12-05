@@ -948,6 +948,14 @@ module Prism
 
     def test_ReturnNode
       assert_prism_eval("def return_node; return 1; end")
+      assert_prism_eval(<<-CODE)
+        def self.prism_test_return_node
+          [1].each do |e|
+            return true
+          end
+        end
+        prism_test_return_node
+      CODE
     end
 
     ############################################################################
