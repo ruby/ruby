@@ -139,7 +139,7 @@ The following default gems are updated.
 * benchmark 0.3.0
 * bigdecimal 3.1.5
 * bundler 2.5.0.dev
-* cgi 0.4.0
+* cgi 0.4.1
 * csv 3.2.8
 * date 3.3.4
 * delegate 0.3.1
