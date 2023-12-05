@@ -189,22 +189,21 @@ impl CodeBlock {
         // but you need to waste some space for keeping write_pos for every single page.
         // It doesn't seem necessary for performance either. So we're currently not doing it.
         let dst_pos = self.get_page_pos(page_idx);
-        if self.page_size * page_idx < self.mem_size && self.write_pos < dst_pos {
+        if self.write_pos < dst_pos {
+            // Fail if next page is out of bounds
+            if dst_pos >= self.mem_size {
+                return false;
+            }
+
             // Reset dropped_bytes
             self.dropped_bytes = false;
 
-            // Convert dst_pos to dst_ptr
-            let src_pos = self.write_pos;
-            self.write_pos = dst_pos;
-            let dst_ptr = self.get_write_ptr();
-            self.write_pos = src_pos;
-            self.without_page_end_reserve(|cb| assert!(cb.has_capacity(cb.jmp_ptr_bytes())));
-
             // Generate jmp_ptr from src_pos to dst_pos
+            let dst_ptr = self.get_ptr(dst_pos);
             self.without_page_end_reserve(|cb| {
+                assert!(cb.has_capacity(cb.jmp_ptr_bytes()));
                 cb.add_comment("jump to next page");
                 jmp_ptr(cb, dst_ptr);
-                assert!(!cb.has_dropped_bytes());
             });
 
             // Update past_page_bytes for code_size() if this is a new page
