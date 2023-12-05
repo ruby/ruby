@@ -180,7 +180,7 @@ The following default gems are updated.
 * stringio 3.1.1
 * strscan 3.0.8
 * syntax_suggest 1.1.0
-* tempfile 0.2.0
+* tempfile 0.2.1
 * time 0.3.0
 * timeout 0.4.1
 * tmpdir 0.2.0
