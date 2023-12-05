@@ -136,6 +136,10 @@ impl CodeBlock {
         };
         cb.page_end_reserve = cb.jmp_ptr_bytes();
         cb.write_pos = cb.page_start();
+
+        #[cfg(not(test))]
+        assert_eq!(0, mem_size % page_size, "partially in-bounds code pages should be impossible");
+
         cb
     }
 
