@@ -2028,21 +2028,22 @@ module FileUtils
 
   private
 
-  module StreamUtils_
+  module StreamUtils_ # :nodoc:
+
     private
 
     case (defined?(::RbConfig) ? ::RbConfig::CONFIG['host_os'] : ::RUBY_PLATFORM)
     when /mswin|mingw/
-      def fu_windows?; true end
+      def fu_windows?; true end #:nodoc:
     else
-      def fu_windows?; false end
+      def fu_windows?; false end #:nodoc:
     end
 
     def fu_copy_stream0(src, dest, blksize = nil)   #:nodoc:
       IO.copy_stream(src, dest)
     end
 
-    def fu_stream_blksize(*streams)
+    def fu_stream_blksize(*streams) #:nodoc:
       streams.each do |s|
         next unless s.respond_to?(:stat)
         size = fu_blksize(s.stat)
@@ -2051,14 +2052,14 @@ module FileUtils
       fu_default_blksize()
     end
 
-    def fu_blksize(st)
+    def fu_blksize(st) #:nodoc:
       s = st.blksize
       return nil unless s
       return nil if s == 0
       s
     end
 
-    def fu_default_blksize
+    def fu_default_blksize #:nodoc:
       1024
     end
   end
@@ -2503,7 +2504,7 @@ module FileUtils
   end
   private_module_function :fu_output_message
 
-  def fu_split_path(path)
+  def fu_split_path(path) #:nodoc:
     path = File.path(path)
     list = []
     until (parent, base = File.split(path); parent == path or parent == ".")
@@ -2524,7 +2525,7 @@ module FileUtils
   end
   private_module_function :fu_relative_components_from
 
-  def fu_clean_components(*comp)
+  def fu_clean_components(*comp) #:nodoc:
     comp.shift while comp.first == "."
     return comp if comp.empty?
     clean = [comp.shift]
@@ -2543,11 +2544,11 @@ module FileUtils
   private_module_function :fu_clean_components
 
   if fu_windows?
-    def fu_starting_path?(path)
+    def fu_starting_path?(path) #:nodoc:
       path&.start_with?(%r(\w:|/))
     end
   else
-    def fu_starting_path?(path)
+    def fu_starting_path?(path) #:nodoc:
       path&.start_with?("/")
     end
   end
