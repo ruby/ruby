@@ -10674,6 +10674,7 @@ static pm_node_t *
 parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_node_t *value) {
     switch (PM_NODE_TYPE(target)) {
         case PM_MISSING_NODE:
+            pm_node_destroy(parser, value);
             return target;
         case PM_CLASS_VARIABLE_READ_NODE: {
             pm_class_variable_write_node_t *node = pm_class_variable_write_node_create(parser, (pm_class_variable_read_node_t *) target, operator, value);
@@ -16094,6 +16095,8 @@ parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *
                 if (memory == NULL) abort();
 
                 memcpy(memory, source, length);
+                // This silences clang analyzer warning about leak of memory pointed by `memory`.
+                // NOLINTNEXTLINE(clang-analyzer-*)
                 name = pm_parser_constant_id_owned(parser, (const uint8_t *) memory, length);
 
                 if (pm_token_is_numbered_parameter(source, source + length)) {
