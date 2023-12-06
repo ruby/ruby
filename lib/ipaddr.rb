@@ -437,7 +437,7 @@ class IPAddr
     when Integer
       mask!(prefix)
     else
-      raise InvalidPrefixError, "prefix must be an integer: #{@addr}"
+      raise InvalidPrefixError, "prefix must be an integer"
     end
   end
 
@@ -511,11 +511,11 @@ class IPAddr
     case family[0] ? family[0] : @family
     when Socket::AF_INET
       if addr < 0 || addr > IN4MASK
-        raise InvalidAddressError, "invalid address: #{@addr}"
+        raise InvalidAddressError, "invalid address: #{addr}"
       end
     when Socket::AF_INET6
       if addr < 0 || addr > IN6MASK
-        raise InvalidAddressError, "invalid address: #{@addr}"
+        raise InvalidAddressError, "invalid address: #{addr}"
       end
     else
       raise AddressFamilyError, "unsupported address family"
@@ -542,12 +542,12 @@ class IPAddr
       else
         m = IPAddr.new(mask)
         if m.family != @family
-          raise InvalidPrefixError, "address family is not same: #{@addr}"
+          raise InvalidPrefixError, "address family is not same"
         end
         @mask_addr = m.to_i
         n = @mask_addr ^ m.instance_variable_get(:@mask_addr)
         unless ((n + 1) & n).zero?
-          raise InvalidPrefixError, "invalid mask #{mask}: #{@addr}"
+          raise InvalidPrefixError, "invalid mask #{mask}"
         end
         @addr &= @mask_addr
         return self
@@ -558,13 +558,13 @@ class IPAddr
     case @family
     when Socket::AF_INET
       if prefixlen < 0 || prefixlen > 32
-        raise InvalidPrefixError, "invalid length: #{@addr}"
+        raise InvalidPrefixError, "invalid length"
       end
       masklen = 32 - prefixlen
       @mask_addr = ((IN4MASK >> masklen) << masklen)
     when Socket::AF_INET6
       if prefixlen < 0 || prefixlen > 128
-        raise InvalidPrefixError, "invalid length: #{@addr}"
+        raise InvalidPrefixError, "invalid length"
       end
       masklen = 128 - prefixlen
       @mask_addr = ((IN6MASK >> masklen) << masklen)
