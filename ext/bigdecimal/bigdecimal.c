@@ -4372,7 +4372,7 @@ BigDecimal_negative_zero(void)
  * - {#to_json}[rdoc-ref:BigDecimal#to_json]:
  *   Returns a \JSON string representing +self+.
  *
- * To make these methods available:
+ * These methods are provided by the {JSON gem}[https://github.com/flori/json]. To make these methods available:
  *
  *   require 'json/add/bigdecimal'
  *
