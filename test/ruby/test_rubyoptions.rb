@@ -287,6 +287,11 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   end
 
+  def test_prism_flag
+    assert_in_out_err(%w(--prism -e) + ["puts :hi"], "", %w(hi), [])
+    assert_norun_with_rflag('--prism', '--version')
+  end
+
   def test_eval
     assert_in_out_err(%w(-e), "", [], /no code specified for -e \(RuntimeError\)/)
   end
@@ -1127,6 +1132,10 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_norun_with_rflag('--dump=parsetree', '-e', '#frozen-string-literal: true')
     assert_norun_with_rflag('--dump=parsetree+error_tolerant')
     assert_norun_with_rflag('--dump=parse+error_tolerant')
+  end
+
+  def test_dump_prism_parsetree
+    assert_norun_with_rflag('--dump=prism_parsetree')
   end
 
   def test_dump_insns_with_rflag
