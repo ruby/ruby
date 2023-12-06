@@ -121,7 +121,7 @@ bool pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n);
 extern const uint8_t pm_encoding_unicode_table[256];
 
 /**
- * These are all of the encodings that prisms supports.
+ * These are all of the encodings that prism supports.
  */
 typedef enum {
     PM_ENCODING_UTF_8 = 0,
@@ -218,7 +218,7 @@ typedef enum {
 } pm_encoding_type_t;
 
 /**
- * This is the table of all of the encodings that prisms supports.
+ * This is the table of all of the encodings that prism supports.
  */
 extern const pm_encoding_t pm_encodings[PM_ENCODING_MAXIMUM];
 

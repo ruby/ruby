@@ -4212,7 +4212,7 @@ pm_encoding_shift_jis_char_width(const uint8_t *b, ptrdiff_t n) {
 }
 
 /**
- * This is the table of all of the encodings that prisms supports.
+ * This is the table of all of the encodings that prism supports.
  */
 const pm_encoding_t pm_encodings[] = {
     [PM_ENCODING_UTF_8] = {
