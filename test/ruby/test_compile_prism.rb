@@ -950,6 +950,14 @@ module Prism
           end
         end
       CODE
+      assert_prism_eval(<<~CODE)
+        10.times do
+          begin
+          rescue
+            break
+          end
+        end
+      CODE
     end
 
     def test_RescueModiferNode
