@@ -54,6 +54,9 @@
 #define PM_SWAP_UNLESS_POPPED \
     if (!popped) PM_SWAP;
 
+#define PM_NOP \
+    ADD_INSN(ret, &dummy_line_node, nop);
+
 /**
  * We're using the top most bit of a pm_constant_id_t as a tag to represent an
  * anonymous local. When a child iseq is created and needs access to a value
@@ -1904,7 +1907,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
 
             ADD_LABEL(ret, lend);
-            ADD_INSN(ret, &dummy_line_node, nop);
+            PM_NOP;
             ADD_LABEL(ret, lcont);
 
             PM_POP_IF_POPPED;
@@ -1925,7 +1928,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 }
             }
             ADD_LABEL(ret, eend);
-            ADD_INSN(ret, &dummy_line_node, nop);
+            PM_NOP;
             pm_statements_node_t *statements = begin_node->ensure_clause->statements;
             if (statements) {
                 PM_COMPILE((pm_node_t *)statements);
@@ -3875,7 +3878,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         ADD_LABEL(ret, lstart);
         PM_COMPILE_NOT_POPPED((pm_node_t *)rescue_node->expression);
         ADD_LABEL(ret, lend);
-        ADD_INSN(ret, &dummy_line_node, nop);
+        PM_NOP;
         ADD_LABEL(ret, lcont);
 
         PM_POP_IF_POPPED;
@@ -4181,7 +4184,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             ADD_TRACE(ret, RUBY_EVENT_B_CALL);
             NODE dummy_line_node = generate_dummy_line_node(body->location.first_lineno, -1);
-            ADD_INSN (ret, &dummy_line_node, nop);
+            PM_NOP;
             ADD_LABEL(ret, start);
 
             if (scope_node->body) {
@@ -4205,7 +4208,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
                     ADD_GETLOCAL(ret, &dummy_line_node, 1, 0);
                     PM_COMPILE(for_node->index);
-                    ADD_INSN(ret, &dummy_line_node, nop);
+                    PM_NOP;
                     pm_compile_node(iseq, (pm_node_t *)(scope_node->body), ret, src, popped, scope_node);
                     break;
                   }
