@@ -6,18 +6,15 @@ typedef struct pm_scope_node {
     pm_node_t base;
     struct pm_scope_node *previous;
     pm_node_t *ast_node;
-    struct pm_parameters_node *parameters;
+    pm_node_t *parameters;
     pm_node_t *body;
     pm_constant_id_list_t locals;
     pm_parser_t *parser;
 
-    // There are sometimes when we need to track
-    // hidden variables that we have put on
-    // the local table for the stack to use, so
-    // that we properly account for them when giving
-    // local indexes. We do this with the
-    // hidden_variable_count
-    int hidden_variable_count;
+    // The size of the local table
+    // on the iseq which includes
+    // locals and hidden variables
+    int local_table_for_iseq_size;
 
     ID *constants;
     st_table *index_lookup_table;
