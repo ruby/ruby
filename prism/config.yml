@@ -587,6 +587,8 @@ nodes:
     fields:
       - name: locals
         type: constant[]
+      - name: locals_body_index
+        type: uint32
       - name: parameters
         type: node?
       - name: body
@@ -1103,6 +1105,8 @@ nodes:
         type: node?
       - name: locals
         type: constant[]
+      - name: locals_body_index
+        type: uint32
       - name: def_keyword_loc
         type: location
       - name: operator_loc
@@ -1761,6 +1765,8 @@ nodes:
     fields:
       - name: locals
         type: constant[]
+      - name: locals_body_index
+        type: uint32
       - name: operator_loc
         type: location
       - name: opening_loc

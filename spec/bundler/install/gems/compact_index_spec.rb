@@ -961,8 +961,25 @@ RSpec.describe "compact index api" do
   end
 
   describe "checksum validation" do
+    before do
+      lockfile <<-L
+        GEM
+          remote: #{source_uri}
+          specs:
+            rack (1.0.0)
+
+        PLATFORMS
+          ruby
+
+        DEPENDENCIES
+        #{checksums_section}
+        BUNDLED WITH
+            #{Bundler::VERSION}
+      L
+    end
+
     it "handles checksums from the server in base64" do
-      api_checksum = checksum_for_repo_gem(gem_repo1, "rack", "1.0.0").split("sha256=").last
+      api_checksum = checksum_digest(gem_repo1, "rack", "1.0.0")
       rack_checksum = [[api_checksum].pack("H*")].pack("m0")
       install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_RACK_CHECKSUM" => rack_checksum }
         source "#{source_uri}"
@@ -979,8 +996,6 @@ RSpec.describe "compact index api" do
         gem "rack"
       G
 
-      api_checksum = checksum_for_repo_gem(gem_repo1, "rack", "1.0.0").split("sha256=").last
-
       gem_path = if Bundler.feature_flag.global_gem_cache?
         default_cache_path.dirname.join("cache", "gems", "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "rack-1.0.0.gem")
       else
@@ -992,7 +1007,7 @@ RSpec.describe "compact index api" do
         Bundler found mismatched checksums. This is a potential security risk.
           rack (1.0.0) sha256=2222222222222222222222222222222222222222222222222222222222222222
             from the API at http://localgemserver.test/
-          rack (1.0.0) sha256=#{api_checksum}
+          #{checksum_to_lock(gem_repo1, "rack", "1.0.0")}
             from the gem at #{gem_path}
 
         If you trust the API at http://localgemserver.test/, to resolve this issue you can:
@@ -1057,6 +1072,7 @@ Running `bundle update rails` should fix the problem.
     G
     gem_command "uninstall activemerchant"
     bundle "update rails", :artifice => "compact_index"
-    expect(lockfile.scan(/activemerchant \(/).size).to eq(2) # Once in the specs, and once in CHECKSUMS
+    count = lockfile.match?("CHECKSUMS") ? 2 : 1 # Once in the specs, and once in CHECKSUMS
+    expect(lockfile.scan(/activemerchant \(/).size).to eq(count)
   end
 end

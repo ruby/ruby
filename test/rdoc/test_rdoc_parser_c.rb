@@ -460,7 +460,7 @@ VALUE mFoo = rb_define_module_under(rb_mKernel, "Foo");
   end
 
   def test_do_constants
-    content = <<-EOF
+    content = <<-'EOF'
 #include <ruby.h>
 
 void Init_foo(){
@@ -474,6 +474,9 @@ void Init_foo(){
 
    /* TEST\:TEST: Checking to see if escaped colon works */
    rb_define_const(cFoo, "TEST", rb_str_new2("TEST:TEST"));
+
+   /* TEST: TEST:Checking to see if only word-ending colon works */
+   rb_define_const(cFoo, "TEST2", rb_str_new2("TEST:TEST"));
 
    /* \\: The file separator on MS Windows */
    rb_define_const(cFoo, "MSEPARATOR", rb_str_new2("\\"));
@@ -537,6 +540,9 @@ void Init_foo(){
                  constants.shift
     assert_equal ['TEST', 'TEST:TEST',
                   'Checking to see if escaped colon works   '],
+                 constants.shift
+    assert_equal ['TEST2', 'TEST',
+                  'TEST:Checking to see if only word-ending colon works   '],
                  constants.shift
     assert_equal ['MSEPARATOR', '\\',
                   'The file separator on MS Windows   '],

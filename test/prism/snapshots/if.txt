@@ -346,6 +346,7 @@
             │           ├── block:
             │           │   @ BlockNode (location: (34,9)-(35,5))
             │           │   ├── locals: [:_]
+            │           │   ├── locals_body_index: 1
             │           │   ├── parameters:
             │           │   │   @ BlockParametersNode (location: (34,12)-(34,15))
             │           │   │   ├── parameters:
@@ -387,6 +388,7 @@
             │   │           ├── block:
             │   │           │   @ BlockNode (location: (37,9)-(38,5))
             │   │           │   ├── locals: [:_]
+            │   │           │   ├── locals_body_index: 1
             │   │           │   ├── parameters:
             │   │           │   │   @ BlockParametersNode (location: (37,12)-(37,15))
             │   │           │   │   ├── parameters:
@@ -424,6 +426,7 @@
             │   │   │           ├── block:
             │   │   │           │   @ BlockNode (location: (40,9)-(41,5))
             │   │   │           │   ├── locals: [:_]
+            │   │   │           │   ├── locals_body_index: 1
             │   │   │           │   ├── parameters:
             │   │   │           │   │   @ BlockParametersNode (location: (40,12)-(40,15))
             │   │   │           │   │   ├── parameters:

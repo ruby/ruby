@@ -1419,6 +1419,12 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
             scope->local_depth_offset += 1;
             break;
         }
+        case PM_RESCUE_MODIFIER_NODE: {
+            pm_rescue_modifier_node_t *cast = (pm_rescue_modifier_node_t *)node;
+            scope->body = (pm_node_t *)cast->rescue_expression;
+            scope->local_depth_offset += 1;
+            break;
+        }
         case PM_SINGLETON_CLASS_NODE: {
             pm_singleton_class_node_t *cast = (pm_singleton_class_node_t *) node;
             scope->body = cast->body;
@@ -1466,24 +1472,32 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
         break;
       case PM_ARRAY_NODE: {
         pm_array_node_t *array_node = (pm_array_node_t *) node;
-        for (size_t index = 0; index < array_node->elements.size; index++) {
-          pm_compile_defined_expr0(iseq, array_node->elements.nodes[index], ret, src, popped, scope_node, dummy_line_node, lineno, true, lfinish);
-          if (!lfinish[1]) {
-            lfinish[1] = NEW_LABEL(lineno);
-          }
-          ADD_INSNL(ret, &dummy_line_node, branchunless, lfinish[1]);
+        if (!(array_node->base.flags & PM_ARRAY_NODE_FLAGS_CONTAINS_SPLAT)) {
+            for (size_t index = 0; index < array_node->elements.size; index++) {
+              pm_compile_defined_expr0(iseq, array_node->elements.nodes[index], ret, src, popped, scope_node, dummy_line_node, lineno, true, lfinish);
+              if (!lfinish[1]) {
+                lfinish[1] = NEW_LABEL(lineno);
+              }
+              ADD_INSNL(ret, &dummy_line_node, branchunless, lfinish[1]);
+            }
         }
       }
       case PM_AND_NODE:
       case PM_FLOAT_NODE:
       case PM_HASH_NODE:
+      case PM_IMAGINARY_NODE:
       case PM_INTEGER_NODE:
       case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE:
       case PM_INTERPOLATED_STRING_NODE:
+      case PM_KEYWORD_HASH_NODE:
       case PM_LAMBDA_NODE:
+      case PM_MATCH_PREDICATE_NODE:
       case PM_OR_NODE:
       case PM_RANGE_NODE:
       case PM_REGULAR_EXPRESSION_NODE:
+      case PM_SOURCE_ENCODING_NODE:
+      case PM_SOURCE_FILE_NODE:
+      case PM_SOURCE_LINE_NODE:
       case PM_STRING_NODE:
       case PM_SYMBOL_NODE:
       case PM_X_STRING_NODE:
@@ -3842,6 +3856,34 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         return;
       }
+      case PM_RESCUE_MODIFIER_NODE: {
+        pm_scope_node_t rescue_scope_node;
+        pm_rescue_modifier_node_t *rescue_node = (pm_rescue_modifier_node_t *)node;
+        pm_scope_node_init((pm_node_t *)rescue_node, &rescue_scope_node, scope_node, parser);
+
+        rb_iseq_t *rescue_iseq = NEW_CHILD_ISEQ(rescue_scope_node,
+                                                rb_str_concat(rb_str_new2("rescue in"),
+                                                              ISEQ_BODY(iseq)->location.label),
+                                                ISEQ_TYPE_RESCUE, 1);
+
+        LABEL *lstart = NEW_LABEL(lineno);
+        LABEL *lend = NEW_LABEL(lineno);
+        LABEL *lcont = NEW_LABEL(lineno);
+
+        lstart->rescued = LABEL_RESCUE_BEG;
+        lend->rescued = LABEL_RESCUE_END;
+        ADD_LABEL(ret, lstart);
+        PM_COMPILE_NOT_POPPED((pm_node_t *)rescue_node->expression);
+        ADD_LABEL(ret, lend);
+        ADD_INSN(ret, &dummy_line_node, nop);
+        ADD_LABEL(ret, lcont);
+
+        PM_POP_IF_POPPED;
+
+        ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, rescue_iseq, lcont);
+        ADD_CATCH_ENTRY(CATCH_TYPE_RETRY, lend, lcont, NULL, lstart);
+        return;
+      }
       case PM_RETURN_NODE: {
         pm_arguments_node_t *arguments = ((pm_return_node_t *)node)->arguments;
 
@@ -4211,7 +4253,23 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         case ISEQ_TYPE_RESCUE: {
             iseq_set_exception_local_table(iseq);
-            PM_COMPILE((pm_node_t *)scope_node->ast_node);
+            if (PM_NODE_TYPE_P(scope_node->ast_node, PM_RESCUE_MODIFIER_NODE)) {
+                LABEL *lab = NEW_LABEL(lineno);
+                LABEL *rescue_end = NEW_LABEL(lineno);
+                ADD_GETLOCAL(ret, &dummy_line_node, LVAR_ERRINFO, 0);
+                ADD_INSN1(ret, &dummy_line_node, putobject, rb_eStandardError);
+                ADD_INSN1(ret, &dummy_line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
+                ADD_INSN1(ret, &dummy_line_node, branchif, lab);
+                ADD_INSN1(ret, &dummy_line_node, jump, rescue_end);
+                ADD_LABEL(ret, lab);
+                PM_COMPILE((pm_node_t *)scope_node->body);
+                ADD_INSN(ret, &dummy_line_node, leave);
+                ADD_LABEL(ret, rescue_end);
+                ADD_GETLOCAL(ret, &dummy_line_node, LVAR_ERRINFO, 0);
+            }
+            else {
+                PM_COMPILE((pm_node_t *)scope_node->ast_node);
+            }
             ADD_INSN1(ret, &dummy_line_node, throw, INT2FIX(0));
 
             return;

@@ -4,10 +4,10 @@
 #include "symbol.h"
 #include "id_table.h"
 #include "internal/class.h"
+#include "internal/error.h"
 #include "internal/gc.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
-#include "internal/error.h"
 #include "variable.h"
 #include <stdbool.h>
 

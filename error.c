@@ -3248,9 +3248,9 @@ exception_dumper(VALUE exc)
 }
 
 static int
-ivar_copy_i(st_data_t key, st_data_t val, st_data_t exc)
+ivar_copy_i(ID key, VALUE val, st_data_t exc)
 {
-    rb_ivar_set((VALUE) exc, (ID) key, (VALUE) val);
+    rb_ivar_set((VALUE)exc, key, val);
     return ST_CONTINUE;
 }
 

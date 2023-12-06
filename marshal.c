@@ -610,10 +610,8 @@ struct w_ivar_arg {
 };
 
 static int
-w_obj_each(st_data_t key, st_data_t val, st_data_t a)
+w_obj_each(ID id, VALUE value, st_data_t a)
 {
-    ID id = (ID)key;
-    VALUE value = (VALUE)val;
     struct w_ivar_arg *ivarg = (struct w_ivar_arg *)a;
     struct dump_call_arg *arg = ivarg->dump;
 
@@ -635,9 +633,8 @@ w_obj_each(st_data_t key, st_data_t val, st_data_t a)
 }
 
 static int
-obj_count_ivars(st_data_t key, st_data_t val, st_data_t a)
+obj_count_ivars(ID id, VALUE val, st_data_t a)
 {
-    ID id = (ID)key;
     if (!to_be_skipped_id(id) && UNLIKELY(!++*(st_index_t *)a)) {
         rb_raise(rb_eRuntimeError, "too many instance variables");
     }
@@ -1683,10 +1680,9 @@ r_leave(VALUE v, struct load_arg *arg, bool partial)
 }
 
 static int
-copy_ivar_i(st_data_t key, st_data_t val, st_data_t arg)
+copy_ivar_i(ID vid, VALUE value, st_data_t arg)
 {
-    VALUE obj = (VALUE)arg, value = (VALUE)val;
-    ID vid = (ID)key;
+    VALUE obj = (VALUE)arg;
 
     if (!rb_ivar_defined(obj, vid))
         rb_ivar_set(obj, vid, value);

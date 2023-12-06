@@ -70,6 +70,10 @@ RSpec.describe "real source plugins" do
     it "writes to lock file" do
       bundle "install"
 
+      checksums = checksums_section_when_existing do |c|
+        c.no_checksum "a-path-gem", "1.0"
+      end
+
       expect(lockfile).to eq <<~G
         PLUGIN SOURCE
           remote: #{lib_path("a-path-gem-1.0")}
@@ -86,10 +90,7 @@ RSpec.describe "real source plugins" do
 
         DEPENDENCIES
           a-path-gem!
-
-        CHECKSUMS
-          a-path-gem (1.0)
-
+        #{checksums}
         BUNDLED WITH
            #{Bundler::VERSION}
       G
@@ -339,6 +340,10 @@ RSpec.describe "real source plugins" do
       revision = revision_for(lib_path("ma-gitp-gem-1.0"))
       bundle "install"
 
+      checksums = checksums_section_when_existing do |c|
+        c.no_checksum "ma-gitp-gem", "1.0"
+      end
+
       expect(lockfile).to eq <<~G
         PLUGIN SOURCE
           remote: #{file_uri_for(lib_path("ma-gitp-gem-1.0"))}
@@ -356,10 +361,7 @@ RSpec.describe "real source plugins" do
 
         DEPENDENCIES
           ma-gitp-gem!
-
-        CHECKSUMS
-          ma-gitp-gem (1.0)
-
+        #{checksums}
         BUNDLED WITH
            #{Bundler::VERSION}
       G

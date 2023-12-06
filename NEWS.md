@@ -34,6 +34,29 @@ Note: We're only listing outstanding class updates.
     * Dir#chdir added for changing the directory to the directory specified by
       the provided `Dir` object. [[Feature #19347]]
 
+* Encoding
+
+    * Encoding#replicate has been removed, it was already deprecated.  [[Feature #18949]]
+
+* Fiber
+
+    * Introduce Fiber#kill, similar to Thread#kill. [[Bug #595]]
+      ```ruby
+      fiber = Fiber.new do
+        while true
+          puts "Yielding..."
+          Fiber.yield
+        end
+      ensure
+        puts "Exiting..."
+      end
+
+      fiber.resume
+      # Yielding...
+      fiber.kill
+      # Exiting...
+      ```
+
 * MatchData
 
     * MatchData#named_captures now accepts optional `symbolize_names`
@@ -103,10 +126,10 @@ Note: We're only listing outstanding class updates.
 
 ## Stdlib updates
 
-* RubyGems and Bundler warn if users require gem that is scheduled to become the bundled gems
-  in the future version of Ruby. [[Feature #19351]] [[Feature #19776]] [[Feature #19843]]
-
-  Targeted libraries are:
+* RubyGems and Bundler warn if users do `require` the following gems without adding them to Gemfile or gemspec.
+  This is because they will become the bundled gems in the future version of Ruby.
+  Note that `bundle exec ruby` does not print a warning due to implementation limitation.
+  [[Feature #19351]] [[Feature #19776]] [[Feature #19843]]
     * abbrev
     * base64
     * bigdecimal
@@ -153,7 +176,7 @@ The following default gems are updated.
 * find 0.2.0
 * getoptlong 0.2.1
 * io-console 0.6.1.dev.1
-* irb 1.10.0
+* irb 1.10.1
 * json 2.7.1
 * logger 1.6.0
 * mutex_m 0.2.0
@@ -344,12 +367,14 @@ changelog for details of the default gems or bundled gems.
       Note that more than `N` native threads are used to support many kind of
       blocking operations.
 
+[Bug #595]:       https://bugs.ruby-lang.org/issues/595
 [Bug #17146]:     https://bugs.ruby-lang.org/issues/17146
 [Feature #18183]: https://bugs.ruby-lang.org/issues/18183
 [Feature #18498]: https://bugs.ruby-lang.org/issues/18498
 [Feature #18515]: https://bugs.ruby-lang.org/issues/18515
 [Feature #18551]: https://bugs.ruby-lang.org/issues/18551
 [Feature #18885]: https://bugs.ruby-lang.org/issues/18885
+[Feature #18949]: https://bugs.ruby-lang.org/issues/18949
 [Bug #19012]:     https://bugs.ruby-lang.org/issues/19012
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
 [Feature #19314]: https://bugs.ruby-lang.org/issues/19314

@@ -2453,6 +2453,7 @@ rb_file_ctime(VALUE obj)
     return stat_ctime(&st);
 }
 
+#if defined(HAVE_STAT_BIRTHTIME)
 /*
  *  call-seq:
  *     File.birthtime(file_name)  -> time
@@ -2467,7 +2468,6 @@ rb_file_ctime(VALUE obj)
  *
  */
 
-#if defined(HAVE_STAT_BIRTHTIME)
 RUBY_FUNC_EXPORTED VALUE
 rb_file_s_birthtime(VALUE klass, VALUE fname)
 {
@@ -2513,16 +2513,6 @@ rb_file_birthtime(VALUE obj)
 # define rb_file_birthtime rb_f_notimplement
 #endif
 
-/*
- *  call-seq:
- *     file.size    -> integer
- *
- *  Returns the size of <i>file</i> in bytes.
- *
- *     File.new("testfile").size   #=> 66
- *
- */
-
 rb_off_t
 rb_file_size(VALUE file)
 {
@@ -2545,6 +2535,16 @@ rb_file_size(VALUE file)
         return NUM2OFFT(rb_funcall(file, idSize, 0));
     }
 }
+
+/*
+ *  call-seq:
+ *     file.size    -> integer
+ *
+ *  Returns the size of <i>file</i> in bytes.
+ *
+ *     File.new("testfile").size   #=> 66
+ *
+ */
 
 static VALUE
 file_size(VALUE self)

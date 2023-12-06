@@ -96,6 +96,7 @@ module Prism
       assert_prism_eval("defined? true")
       assert_prism_eval("defined? false")
       assert_prism_eval("defined? 1")
+      assert_prism_eval("defined? 1i")
       assert_prism_eval("defined? 1.0")
       assert_prism_eval("defined? 1..2")
       assert_prism_eval("defined? [A, B, C]")
@@ -109,6 +110,9 @@ module Prism
       assert_prism_eval("defined? -> { 1 + 1 }")
       assert_prism_eval("defined? a && b")
       assert_prism_eval("defined? a || b")
+      assert_prism_eval("defined? __ENCODING__")
+      assert_prism_eval("defined? __FILE__")
+      assert_prism_eval("defined? __LINE__")
 
       assert_prism_eval("defined? %[1,2,3]")
       assert_prism_eval("defined? %q[1,2,3]")
@@ -120,6 +124,11 @@ module Prism
       assert_prism_eval("defined? %W[1,2,3]")
       assert_prism_eval("defined? %s[1,2,3]")
       assert_prism_eval("defined? %x[1,2,3]")
+
+      assert_prism_eval("defined? [*b]")
+      assert_prism_eval("defined? [[*1..2], 3, *4..5]")
+      assert_prism_eval("defined? [a: [:b, :c]]")
+      assert_prism_eval("defined? 1 in 1")
 
       assert_prism_eval("defined? @a")
       assert_prism_eval("defined? $a")
@@ -914,6 +923,14 @@ module Prism
       assert_prism_eval("begin; rescue; end")
     end
 
+    def test_RescueModiferNode
+      assert_prism_eval("1.nil? rescue false")
+      assert_prism_eval("1.nil? rescue 1")
+      assert_prism_eval("raise 'bang' rescue nil")
+      assert_prism_eval("raise 'bang' rescue a = 1; a.nil?")
+      assert_prism_eval("a = 0 rescue (a += 1 && retry if a <= 1)")
+    end
+
     def test_RetryNode
       assert_prism_eval(<<~CODE)
         a = 1
@@ -944,7 +961,6 @@ module Prism
         end
       CODE
     end
-
 
     def test_ReturnNode
       assert_prism_eval("def return_node; return 1; end")

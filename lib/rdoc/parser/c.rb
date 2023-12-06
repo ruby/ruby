@@ -938,14 +938,13 @@ class RDoc::Parser::C < RDoc::Parser
     # "/* definition: comment */" form.  The literal ':' and '\' characters
     # can be escaped with a backslash.
     if type.downcase == 'const' then
-      no_match, new_definition, new_comment = comment.text.split(/(\A.*):/)
+      if /\A(.+?)?:(?!\S)/ =~ comment.text
+        new_definition, new_comment = $1, $'
 
-      if no_match and no_match.empty? then
-        if new_definition.empty? then # Default to literal C definition
+        if !new_definition # Default to literal C definition
           new_definition = definition
         else
-          new_definition = new_definition.gsub("\:", ":")
-          new_definition = new_definition.gsub("\\", '\\')
+          new_definition = new_definition.gsub(/\\([\\:])/, '\1')
         end
 
         new_definition.sub!(/\A(\s+)/, '')

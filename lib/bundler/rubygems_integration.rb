@@ -374,6 +374,11 @@ module Bundler
       specs_by_name = add_default_gems_to(specs)
 
       reverse_rubygems_kernel_mixin
+      begin
+        # bundled_gems only provide with Ruby 3.3 or later
+        require "bundled_gems"
+      rescue LoadError
+      end unless defined?(::Gem::BUNDLED_GEMS)
       replace_require(specs) if defined?(::Gem::BUNDLED_GEMS)
       replace_gem(specs, specs_by_name)
       stub_rubygems(specs)

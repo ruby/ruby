@@ -18,6 +18,7 @@
         │   │   ├── block:
         │   │   │   @ BlockNode (location: (1,11)-(1,13))
         │   │   │   ├── locals: []
+        │   │   │   ├── locals_body_index: 0
         │   │   │   ├── parameters: ∅
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (1,11)-(1,12) = "{"
@@ -52,6 +53,7 @@
         │   │   ├── block:
         │   │   │   @ BlockNode (location: (3,9)-(3,11))
         │   │   │   ├── locals: []
+        │   │   │   ├── locals_body_index: 0
         │   │   │   ├── parameters: ∅
         │   │   │   ├── body: ∅
         │   │   │   ├── opening_loc: (3,9)-(3,10) = "{"
@@ -126,6 +128,7 @@
         │   │   │   ├── block:
         │   │   │   │   @ BlockNode (location: (9,15)-(9,18))
         │   │   │   │   ├── locals: []
+        │   │   │   │   ├── locals_body_index: 0
         │   │   │   │   ├── parameters: ∅
         │   │   │   │   ├── body: ∅
         │   │   │   │   ├── opening_loc: (9,15)-(9,16) = "{"
@@ -197,6 +200,7 @@
         │   │   ├── block:
         │   │   │   @ BlockNode (location: (15,18)-(18,3))
         │   │   │   ├── locals: []
+        │   │   │   ├── locals_body_index: 0
         │   │   │   ├── parameters: ∅
         │   │   │   ├── body:
         │   │   │   │   @ StatementsNode (location: (17,2)-(17,3))

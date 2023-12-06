@@ -702,10 +702,8 @@ rb_inspect(VALUE obj)
 }
 
 static int
-inspect_i(st_data_t k, st_data_t v, st_data_t a)
+inspect_i(ID id, VALUE value, st_data_t a)
 {
-    ID id = (ID)k;
-    VALUE value = (VALUE)v;
     VALUE str = (VALUE)a;
 
     /* need not to show internal data */

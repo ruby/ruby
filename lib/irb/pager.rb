@@ -18,7 +18,7 @@ module IRB
       end
 
       def page(retain_content: false)
-        if IRB.conf[:USE_PAGER] && STDIN.tty? && pager = setup_pager(retain_content: retain_content)
+        if should_page? && pager = setup_pager(retain_content: retain_content)
           begin
             pid = pager.pid
             yield pager
@@ -39,6 +39,10 @@ module IRB
       end
 
       private
+
+      def should_page?
+        IRB.conf[:USE_PAGER] && STDIN.tty? && (ENV.key?("TERM") && ENV["TERM"] != "dumb")
+      end
 
       def content_exceeds_screen_height?(content)
         screen_height, screen_width = begin

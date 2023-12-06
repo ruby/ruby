@@ -39,6 +39,7 @@
             │           ├── block: ∅
             │           └── flags: ∅
             ├── locals: [:cmd]
+            ├── locals_body_index: 1
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: (1,8)-(1,9) = "."
             ├── lparen_loc: (1,13)-(1,14) = "("

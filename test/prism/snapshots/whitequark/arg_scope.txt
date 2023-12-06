@@ -14,6 +14,7 @@
             ├── block:
             │   @ BlockNode (location: (1,6)-(1,13))
             │   ├── locals: [:a]
+            │   ├── locals_body_index: 1
             │   ├── parameters:
             │   │   @ BlockParametersNode (location: (1,7)-(1,11))
             │   │   ├── parameters: ∅
