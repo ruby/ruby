@@ -140,7 +140,6 @@ extern "C" {
 // Renames
 pub use rb_insn_name as raw_insn_name;
 pub use rb_insn_len as raw_insn_len;
-pub use rb_yarv_class_of as CLASS_OF;
 pub use rb_get_ec_cfp as get_ec_cfp;
 pub use rb_get_cfp_iseq as get_cfp_iseq;
 pub use rb_get_cfp_pc as get_cfp_pc;
@@ -406,7 +405,13 @@ impl VALUE {
     }
 
     pub fn class_of(self) -> VALUE {
-        unsafe { CLASS_OF(self) }
+        if !self.special_const_p() {
+            let builtin_type = self.builtin_type();
+            assert_ne!(builtin_type, RUBY_T_NONE, "YJIT should only see live objects");
+            assert_ne!(builtin_type, RUBY_T_MOVED, "YJIT should only see live objects");
+        }
+
+        unsafe { rb_yarv_class_of(self) }
     }
 
     pub fn is_frozen(self) -> bool {
