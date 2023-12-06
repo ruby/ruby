@@ -34,6 +34,25 @@ Note: We're only listing outstanding class updates.
     * Dir#chdir added for changing the directory to the directory specified by
       the provided `Dir` object. [[Feature #19347]]
 
+* Fiber
+
+    * Introduce Fiber#kill, similar to Thread#kill. [[Bug #595]]
+      ```ruby
+      fiber = Fiber.new do
+        while true
+          puts "Yielding..."
+          Fiber.yield
+        end
+      ensure
+        puts "Exiting..."
+      end
+
+      fiber.resume
+      # Yielding...
+      fiber.kill
+      # Exiting...
+      ```
+
 * MatchData
 
     * MatchData#named_captures now accepts optional `symbolize_names`
@@ -344,6 +363,7 @@ changelog for details of the default gems or bundled gems.
       Note that more than `N` native threads are used to support many kind of
       blocking operations.
 
+[Bug #595]:       https://bugs.ruby-lang.org/issues/595
 [Bug #17146]:     https://bugs.ruby-lang.org/issues/17146
 [Feature #18183]: https://bugs.ruby-lang.org/issues/18183
 [Feature #18498]: https://bugs.ruby-lang.org/issues/18498
