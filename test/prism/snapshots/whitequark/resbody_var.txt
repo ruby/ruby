@@ -9,6 +9,7 @@
         │   │   @ StatementsNode (location: (1,7)-(1,11))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (1,7)-(1,11))
+        │   │           ├── flags: variable_call
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :meth
@@ -16,8 +17,7 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           └── flags: variable_call
+        │   │           └── block: ∅
         │   ├── rescue_clause:
         │   │   @ RescueNode (location: (1,13)-(1,31))
         │   │   ├── keyword_loc: (1,13)-(1,19) = "rescue"
@@ -30,6 +30,7 @@
         │   │   │   @ StatementsNode (location: (1,28)-(1,31))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (1,28)-(1,31))
+        │   │   │           ├── flags: variable_call
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :bar
@@ -37,8 +38,7 @@
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
-        │   │   │           ├── block: ∅
-        │   │   │           └── flags: variable_call
+        │   │   │           └── block: ∅
         │   │   └── consequent: ∅
         │   ├── else_clause: ∅
         │   ├── ensure_clause: ∅
@@ -49,6 +49,7 @@
             │   @ StatementsNode (location: (3,7)-(3,11))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (3,7)-(3,11))
+            │           ├── flags: variable_call
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :meth
@@ -56,8 +57,7 @@
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
-            │           ├── block: ∅
-            │           └── flags: variable_call
+            │           └── block: ∅
             ├── rescue_clause:
             │   @ RescueNode (location: (3,13)-(3,30))
             │   ├── keyword_loc: (3,13)-(3,19) = "rescue"
@@ -71,6 +71,7 @@
             │   │   @ StatementsNode (location: (3,27)-(3,30))
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (3,27)-(3,30))
+            │   │           ├── flags: variable_call
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :bar
@@ -78,8 +79,7 @@
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
-            │   │           ├── block: ∅
-            │   │           └── flags: variable_call
+            │   │           └── block: ∅
             │   └── consequent: ∅
             ├── else_clause: ∅
             ├── ensure_clause: ∅

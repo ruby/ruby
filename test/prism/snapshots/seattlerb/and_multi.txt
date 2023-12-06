@@ -10,6 +10,7 @@
             │   │   @ TrueNode (location: (1,0)-(1,4))
             │   ├── right:
             │   │   @ CallNode (location: (2,0)-(2,9))
+            │   │   ├── flags: ∅
             │   │   ├── receiver:
             │   │   │   @ FalseNode (location: (2,4)-(2,9))
             │   │   ├── call_operator_loc: ∅
@@ -18,8 +19,7 @@
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
-            │   │   ├── block: ∅
-            │   │   └── flags: ∅
+            │   │   └── block: ∅
             │   └── operator_loc: (1,5)-(1,8) = "and"
             ├── right:
             │   @ TrueNode (location: (3,0)-(3,4))

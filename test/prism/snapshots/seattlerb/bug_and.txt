@@ -14,8 +14,8 @@
             │   @ TrueNode (location: (4,0)-(4,4))
             ├── right:
             │   @ ArrayNode (location: (4,9)-(4,11))
+            │   ├── flags: ∅
             │   ├── elements: (length: 0)
             │   ├── opening_loc: (4,9)-(4,10) = "["
-            │   ├── closing_loc: (4,10)-(4,11) = "]"
-            │   └── flags: ∅
+            │   └── closing_loc: (4,10)-(4,11) = "]"
             └── operator_loc: (4,5)-(4,8) = "and"

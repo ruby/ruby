@@ -26,6 +26,7 @@
         │   │   │   @ StatementsNode (location: (2,2)-(2,13))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (2,2)-(2,13))
+        │   │   │           ├── flags: ∅
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :system
@@ -33,14 +34,13 @@
         │   │   │           ├── opening_loc: (2,8)-(2,9) = "("
         │   │   │           ├── arguments:
         │   │   │           │   @ ArgumentsNode (location: (2,9)-(2,12))
-        │   │   │           │   ├── arguments: (length: 1)
-        │   │   │           │   │   └── @ LocalVariableReadNode (location: (2,9)-(2,12))
-        │   │   │           │   │       ├── name: :cmd
-        │   │   │           │   │       └── depth: 0
-        │   │   │           │   └── flags: ∅
+        │   │   │           │   ├── flags: ∅
+        │   │   │           │   └── arguments: (length: 1)
+        │   │   │           │       └── @ LocalVariableReadNode (location: (2,9)-(2,12))
+        │   │   │           │           ├── name: :cmd
+        │   │   │           │           └── depth: 0
         │   │   │           ├── closing_loc: (2,12)-(2,13) = ")"
-        │   │   │           ├── block: ∅
-        │   │   │           └── flags: ∅
+        │   │   │           └── block: ∅
         │   │   ├── rescue_clause:
         │   │   │   @ RescueNode (location: (3,0)-(4,5))
         │   │   │   ├── keyword_loc: (3,0)-(3,6) = "rescue"
@@ -85,6 +85,7 @@
         │   │       └── @ RescueModifierNode (location: (9,2)-(9,24))
         │   │           ├── expression:
         │   │           │   @ CallNode (location: (9,2)-(9,13))
+        │   │           │   ├── flags: ∅
         │   │           │   ├── receiver: ∅
         │   │           │   ├── call_operator_loc: ∅
         │   │           │   ├── name: :system
@@ -92,14 +93,13 @@
         │   │           │   ├── opening_loc: (9,8)-(9,9) = "("
         │   │           │   ├── arguments:
         │   │           │   │   @ ArgumentsNode (location: (9,9)-(9,12))
-        │   │           │   │   ├── arguments: (length: 1)
-        │   │           │   │   │   └── @ LocalVariableReadNode (location: (9,9)-(9,12))
-        │   │           │   │   │       ├── name: :cmd
-        │   │           │   │   │       └── depth: 0
-        │   │           │   │   └── flags: ∅
+        │   │           │   │   ├── flags: ∅
+        │   │           │   │   └── arguments: (length: 1)
+        │   │           │   │       └── @ LocalVariableReadNode (location: (9,9)-(9,12))
+        │   │           │   │           ├── name: :cmd
+        │   │           │   │           └── depth: 0
         │   │           │   ├── closing_loc: (9,12)-(9,13) = ")"
-        │   │           │   ├── block: ∅
-        │   │           │   └── flags: ∅
+        │   │           │   └── block: ∅
         │   │           ├── keyword_loc: (9,14)-(9,20) = "rescue"
         │   │           └── rescue_expression:
         │   │               @ NilNode (location: (9,21)-(9,24))
@@ -133,6 +133,7 @@
             │       └── @ RescueModifierNode (location: (13,21)-(13,43))
             │           ├── expression:
             │           │   @ CallNode (location: (13,21)-(13,32))
+            │           │   ├── flags: ∅
             │           │   ├── receiver: ∅
             │           │   ├── call_operator_loc: ∅
             │           │   ├── name: :system
@@ -140,14 +141,13 @@
             │           │   ├── opening_loc: (13,27)-(13,28) = "("
             │           │   ├── arguments:
             │           │   │   @ ArgumentsNode (location: (13,28)-(13,31))
-            │           │   │   ├── arguments: (length: 1)
-            │           │   │   │   └── @ LocalVariableReadNode (location: (13,28)-(13,31))
-            │           │   │   │       ├── name: :cmd
-            │           │   │   │       └── depth: 0
-            │           │   │   └── flags: ∅
+            │           │   │   ├── flags: ∅
+            │           │   │   └── arguments: (length: 1)
+            │           │   │       └── @ LocalVariableReadNode (location: (13,28)-(13,31))
+            │           │   │           ├── name: :cmd
+            │           │   │           └── depth: 0
             │           │   ├── closing_loc: (13,31)-(13,32) = ")"
-            │           │   ├── block: ∅
-            │           │   └── flags: ∅
+            │           │   └── block: ∅
             │           ├── keyword_loc: (13,33)-(13,39) = "rescue"
             │           └── rescue_expression:
             │               @ NilNode (location: (13,40)-(13,43))

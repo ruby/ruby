@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,13))
     └── body: (length: 1)
         └── @ ArrayNode (location: (1,0)-(1,13))
+            ├── flags: ∅
             ├── elements: (length: 3)
             │   ├── @ ImaginaryNode (location: (1,1)-(1,3))
             │   │   └── numeric:
@@ -20,5 +21,4 @@
             │               @ IntegerNode (location: (1,9)-(1,10))
             │               └── flags: decimal
             ├── opening_loc: (1,0)-(1,1) = "["
-            ├── closing_loc: (1,12)-(1,13) = "]"
-            └── flags: ∅
+            └── closing_loc: (1,12)-(1,13) = "]"

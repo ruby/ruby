@@ -4,68 +4,70 @@
     @ StatementsNode (location: (1,0)-(23,20))
     └── body: (length: 12)
         ├── @ WhileNode (location: (1,0)-(1,18))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (1,0)-(1,5) = "while"
         │   ├── closing_loc: (1,15)-(1,18) = "end"
         │   ├── predicate:
         │   │   @ TrueNode (location: (1,6)-(1,10))
-        │   ├── statements:
-        │   │   @ StatementsNode (location: (1,12)-(1,13))
-        │   │   └── body: (length: 1)
-        │   │       └── @ IntegerNode (location: (1,12)-(1,13))
-        │   │           └── flags: decimal
-        │   └── flags: ∅
+        │   └── statements:
+        │       @ StatementsNode (location: (1,12)-(1,13))
+        │       └── body: (length: 1)
+        │           └── @ IntegerNode (location: (1,12)-(1,13))
+        │               └── flags: decimal
         ├── @ WhileNode (location: (3,0)-(3,12))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (3,2)-(3,7) = "while"
         │   ├── closing_loc: ∅
         │   ├── predicate:
         │   │   @ TrueNode (location: (3,8)-(3,12))
-        │   ├── statements:
-        │   │   @ StatementsNode (location: (3,0)-(3,1))
-        │   │   └── body: (length: 1)
-        │   │       └── @ IntegerNode (location: (3,0)-(3,1))
-        │   │           └── flags: decimal
-        │   └── flags: ∅
+        │   └── statements:
+        │       @ StatementsNode (location: (3,0)-(3,1))
+        │       └── body: (length: 1)
+        │           └── @ IntegerNode (location: (3,0)-(3,1))
+        │               └── flags: decimal
         ├── @ WhileNode (location: (5,0)-(5,16))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (5,6)-(5,11) = "while"
         │   ├── closing_loc: ∅
         │   ├── predicate:
         │   │   @ TrueNode (location: (5,12)-(5,16))
-        │   ├── statements:
-        │   │   @ StatementsNode (location: (5,0)-(5,5))
-        │   │   └── body: (length: 1)
-        │   │       └── @ BreakNode (location: (5,0)-(5,5))
-        │   │           ├── arguments: ∅
-        │   │           └── keyword_loc: (5,0)-(5,5) = "break"
-        │   └── flags: ∅
+        │   └── statements:
+        │       @ StatementsNode (location: (5,0)-(5,5))
+        │       └── body: (length: 1)
+        │           └── @ BreakNode (location: (5,0)-(5,5))
+        │               ├── arguments: ∅
+        │               └── keyword_loc: (5,0)-(5,5) = "break"
         ├── @ WhileNode (location: (7,0)-(7,15))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (7,5)-(7,10) = "while"
         │   ├── closing_loc: ∅
         │   ├── predicate:
         │   │   @ TrueNode (location: (7,11)-(7,15))
-        │   ├── statements:
-        │   │   @ StatementsNode (location: (7,0)-(7,4))
-        │   │   └── body: (length: 1)
-        │   │       └── @ NextNode (location: (7,0)-(7,4))
-        │   │           ├── arguments: ∅
-        │   │           └── keyword_loc: (7,0)-(7,4) = "next"
-        │   └── flags: ∅
+        │   └── statements:
+        │       @ StatementsNode (location: (7,0)-(7,4))
+        │       └── body: (length: 1)
+        │           └── @ NextNode (location: (7,0)-(7,4))
+        │               ├── arguments: ∅
+        │               └── keyword_loc: (7,0)-(7,4) = "next"
         ├── @ WhileNode (location: (9,0)-(9,17))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (9,7)-(9,12) = "while"
         │   ├── closing_loc: ∅
         │   ├── predicate:
         │   │   @ TrueNode (location: (9,13)-(9,17))
-        │   ├── statements:
-        │   │   @ StatementsNode (location: (9,0)-(9,6))
-        │   │   └── body: (length: 1)
-        │   │       └── @ ReturnNode (location: (9,0)-(9,6))
-        │   │           ├── keyword_loc: (9,0)-(9,6) = "return"
-        │   │           └── arguments: ∅
-        │   └── flags: ∅
+        │   └── statements:
+        │       @ StatementsNode (location: (9,0)-(9,6))
+        │       └── body: (length: 1)
+        │           └── @ ReturnNode (location: (9,0)-(9,6))
+        │               ├── keyword_loc: (9,0)-(9,6) = "return"
+        │               └── arguments: ∅
         ├── @ WhileNode (location: (11,0)-(11,21))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (11,11)-(11,16) = "while"
         │   ├── closing_loc: ∅
         │   ├── predicate:
         │   │   @ CallNode (location: (11,17)-(11,21))
+        │   │   ├── flags: ∅
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :bar?
@@ -73,36 +75,35 @@
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
-        │   │   ├── block: ∅
-        │   │   └── flags: ∅
-        │   ├── statements:
-        │   │   @ StatementsNode (location: (11,0)-(11,10))
-        │   │   └── body: (length: 1)
-        │   │       └── @ CallNode (location: (11,0)-(11,10))
-        │   │           ├── receiver: ∅
-        │   │           ├── call_operator_loc: ∅
-        │   │           ├── name: :foo
-        │   │           ├── message_loc: (11,0)-(11,3) = "foo"
-        │   │           ├── opening_loc: ∅
-        │   │           ├── arguments:
-        │   │           │   @ ArgumentsNode (location: (11,4)-(11,10))
-        │   │           │   ├── arguments: (length: 2)
-        │   │           │   │   ├── @ SymbolNode (location: (11,4)-(11,6))
-        │   │           │   │   │   ├── opening_loc: (11,4)-(11,5) = ":"
-        │   │           │   │   │   ├── value_loc: (11,5)-(11,6) = "a"
-        │   │           │   │   │   ├── closing_loc: ∅
-        │   │           │   │   │   └── unescaped: "a"
-        │   │           │   │   └── @ SymbolNode (location: (11,8)-(11,10))
-        │   │           │   │       ├── opening_loc: (11,8)-(11,9) = ":"
-        │   │           │   │       ├── value_loc: (11,9)-(11,10) = "b"
-        │   │           │   │       ├── closing_loc: ∅
-        │   │           │   │       └── unescaped: "b"
-        │   │           │   └── flags: ∅
-        │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           └── flags: ∅
-        │   └── flags: ∅
+        │   │   └── block: ∅
+        │   └── statements:
+        │       @ StatementsNode (location: (11,0)-(11,10))
+        │       └── body: (length: 1)
+        │           └── @ CallNode (location: (11,0)-(11,10))
+        │               ├── flags: ∅
+        │               ├── receiver: ∅
+        │               ├── call_operator_loc: ∅
+        │               ├── name: :foo
+        │               ├── message_loc: (11,0)-(11,3) = "foo"
+        │               ├── opening_loc: ∅
+        │               ├── arguments:
+        │               │   @ ArgumentsNode (location: (11,4)-(11,10))
+        │               │   ├── flags: ∅
+        │               │   └── arguments: (length: 2)
+        │               │       ├── @ SymbolNode (location: (11,4)-(11,6))
+        │               │       │   ├── opening_loc: (11,4)-(11,5) = ":"
+        │               │       │   ├── value_loc: (11,5)-(11,6) = "a"
+        │               │       │   ├── closing_loc: ∅
+        │               │       │   └── unescaped: "a"
+        │               │       └── @ SymbolNode (location: (11,8)-(11,10))
+        │               │           ├── opening_loc: (11,8)-(11,9) = ":"
+        │               │           ├── value_loc: (11,9)-(11,10) = "b"
+        │               │           ├── closing_loc: ∅
+        │               │           └── unescaped: "b"
+        │               ├── closing_loc: ∅
+        │               └── block: ∅
         ├── @ WhileNode (location: (13,0)-(13,50))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (13,0)-(13,5) = "while"
         │   ├── closing_loc: (13,47)-(13,50) = "end"
         │   ├── predicate:
@@ -121,6 +122,7 @@
         │   │   │   │       ├── operator_loc: (13,21)-(13,22) = "="
         │   │   │   │       └── value:
         │   │   │   │           @ CallNode (location: (13,23)-(13,33))
+        │   │   │   │           ├── flags: ∅
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :tap
@@ -128,15 +130,14 @@
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           ├── block:
-        │   │   │   │           │   @ BlockNode (location: (13,27)-(13,33))
-        │   │   │   │           │   ├── locals: []
-        │   │   │   │           │   ├── locals_body_index: 0
-        │   │   │   │           │   ├── parameters: ∅
-        │   │   │   │           │   ├── body: ∅
-        │   │   │   │           │   ├── opening_loc: (13,27)-(13,29) = "do"
-        │   │   │   │           │   └── closing_loc: (13,30)-(13,33) = "end"
-        │   │   │   │           └── flags: ∅
+        │   │   │   │           └── block:
+        │   │   │   │               @ BlockNode (location: (13,27)-(13,33))
+        │   │   │   │               ├── locals: []
+        │   │   │   │               ├── locals_body_index: 0
+        │   │   │   │               ├── parameters: ∅
+        │   │   │   │               ├── body: ∅
+        │   │   │   │               ├── opening_loc: (13,27)-(13,29) = "do"
+        │   │   │   │               └── closing_loc: (13,30)-(13,33) = "end"
         │   │   │   ├── rest: ∅
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 0)
@@ -151,14 +152,14 @@
         │   │   ├── rparen_loc: ∅
         │   │   ├── equal_loc: ∅
         │   │   └── end_keyword_loc: (13,35)-(13,38) = "end"
-        │   ├── statements:
-        │   │   @ StatementsNode (location: (13,40)-(13,45))
-        │   │   └── body: (length: 1)
-        │   │       └── @ BreakNode (location: (13,40)-(13,45))
-        │   │           ├── arguments: ∅
-        │   │           └── keyword_loc: (13,40)-(13,45) = "break"
-        │   └── flags: ∅
+        │   └── statements:
+        │       @ StatementsNode (location: (13,40)-(13,45))
+        │       └── body: (length: 1)
+        │           └── @ BreakNode (location: (13,40)-(13,45))
+        │               ├── arguments: ∅
+        │               └── keyword_loc: (13,40)-(13,45) = "break"
         ├── @ WhileNode (location: (15,0)-(15,47))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (15,0)-(15,5) = "while"
         │   ├── closing_loc: (15,44)-(15,47) = "end"
         │   ├── predicate:
@@ -179,6 +180,7 @@
         │   │   │           ├── name_loc: (15,16)-(15,17) = "a"
         │   │   │           ├── value:
         │   │   │           │   @ CallNode (location: (15,20)-(15,30))
+        │   │   │           │   ├── flags: ∅
         │   │   │           │   ├── receiver: ∅
         │   │   │           │   ├── call_operator_loc: ∅
         │   │   │           │   ├── name: :tap
@@ -186,26 +188,25 @@
         │   │   │           │   ├── opening_loc: ∅
         │   │   │           │   ├── arguments: ∅
         │   │   │           │   ├── closing_loc: ∅
-        │   │   │           │   ├── block:
-        │   │   │           │   │   @ BlockNode (location: (15,24)-(15,30))
-        │   │   │           │   │   ├── locals: []
-        │   │   │           │   │   ├── locals_body_index: 0
-        │   │   │           │   │   ├── parameters: ∅
-        │   │   │           │   │   ├── body: ∅
-        │   │   │           │   │   ├── opening_loc: (15,24)-(15,26) = "do"
-        │   │   │           │   │   └── closing_loc: (15,27)-(15,30) = "end"
-        │   │   │           │   └── flags: ∅
+        │   │   │           │   └── block:
+        │   │   │           │       @ BlockNode (location: (15,24)-(15,30))
+        │   │   │           │       ├── locals: []
+        │   │   │           │       ├── locals_body_index: 0
+        │   │   │           │       ├── parameters: ∅
+        │   │   │           │       ├── body: ∅
+        │   │   │           │       ├── opening_loc: (15,24)-(15,26) = "do"
+        │   │   │           │       └── closing_loc: (15,27)-(15,30) = "end"
         │   │   │           └── operator_loc: (15,18)-(15,19) = "="
         │   │   ├── end_keyword_loc: (15,32)-(15,35) = "end"
         │   │   └── name: :Foo
-        │   ├── statements:
-        │   │   @ StatementsNode (location: (15,37)-(15,42))
-        │   │   └── body: (length: 1)
-        │   │       └── @ BreakNode (location: (15,37)-(15,42))
-        │   │           ├── arguments: ∅
-        │   │           └── keyword_loc: (15,37)-(15,42) = "break"
-        │   └── flags: ∅
+        │   └── statements:
+        │       @ StatementsNode (location: (15,37)-(15,42))
+        │       └── body: (length: 1)
+        │           └── @ BreakNode (location: (15,37)-(15,42))
+        │               ├── arguments: ∅
+        │               └── keyword_loc: (15,37)-(15,42) = "break"
         ├── @ WhileNode (location: (17,0)-(17,48))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (17,0)-(17,5) = "while"
         │   ├── closing_loc: (17,45)-(17,48) = "end"
         │   ├── predicate:
@@ -219,6 +220,7 @@
         │   │   │   @ StatementsNode (location: (17,21)-(17,31))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (17,21)-(17,31))
+        │   │   │           ├── flags: ∅
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :tap
@@ -226,24 +228,23 @@
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
-        │   │   │           ├── block:
-        │   │   │           │   @ BlockNode (location: (17,25)-(17,31))
-        │   │   │           │   ├── locals: []
-        │   │   │           │   ├── locals_body_index: 0
-        │   │   │           │   ├── parameters: ∅
-        │   │   │           │   ├── body: ∅
-        │   │   │           │   ├── opening_loc: (17,25)-(17,27) = "do"
-        │   │   │           │   └── closing_loc: (17,28)-(17,31) = "end"
-        │   │   │           └── flags: ∅
+        │   │   │           └── block:
+        │   │   │               @ BlockNode (location: (17,25)-(17,31))
+        │   │   │               ├── locals: []
+        │   │   │               ├── locals_body_index: 0
+        │   │   │               ├── parameters: ∅
+        │   │   │               ├── body: ∅
+        │   │   │               ├── opening_loc: (17,25)-(17,27) = "do"
+        │   │   │               └── closing_loc: (17,28)-(17,31) = "end"
         │   │   └── end_keyword_loc: (17,33)-(17,36) = "end"
-        │   ├── statements:
-        │   │   @ StatementsNode (location: (17,38)-(17,43))
-        │   │   └── body: (length: 1)
-        │   │       └── @ BreakNode (location: (17,38)-(17,43))
-        │   │           ├── arguments: ∅
-        │   │           └── keyword_loc: (17,38)-(17,43) = "break"
-        │   └── flags: ∅
+        │   └── statements:
+        │       @ StatementsNode (location: (17,38)-(17,43))
+        │       └── body: (length: 1)
+        │           └── @ BreakNode (location: (17,38)-(17,43))
+        │               ├── arguments: ∅
+        │               └── keyword_loc: (17,38)-(17,43) = "break"
         ├── @ WhileNode (location: (19,0)-(19,52))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (19,0)-(19,5) = "while"
         │   ├── closing_loc: (19,49)-(19,52) = "end"
         │   ├── predicate:
@@ -262,6 +263,7 @@
         │   │   │           ├── name_loc: (19,21)-(19,22) = "a"
         │   │   │           ├── value:
         │   │   │           │   @ CallNode (location: (19,25)-(19,35))
+        │   │   │           │   ├── flags: ∅
         │   │   │           │   ├── receiver: ∅
         │   │   │           │   ├── call_operator_loc: ∅
         │   │   │           │   ├── name: :tap
@@ -269,25 +271,24 @@
         │   │   │           │   ├── opening_loc: ∅
         │   │   │           │   ├── arguments: ∅
         │   │   │           │   ├── closing_loc: ∅
-        │   │   │           │   ├── block:
-        │   │   │           │   │   @ BlockNode (location: (19,29)-(19,35))
-        │   │   │           │   │   ├── locals: []
-        │   │   │           │   │   ├── locals_body_index: 0
-        │   │   │           │   │   ├── parameters: ∅
-        │   │   │           │   │   ├── body: ∅
-        │   │   │           │   │   ├── opening_loc: (19,29)-(19,31) = "do"
-        │   │   │           │   │   └── closing_loc: (19,32)-(19,35) = "end"
-        │   │   │           │   └── flags: ∅
+        │   │   │           │   └── block:
+        │   │   │           │       @ BlockNode (location: (19,29)-(19,35))
+        │   │   │           │       ├── locals: []
+        │   │   │           │       ├── locals_body_index: 0
+        │   │   │           │       ├── parameters: ∅
+        │   │   │           │       ├── body: ∅
+        │   │   │           │       ├── opening_loc: (19,29)-(19,31) = "do"
+        │   │   │           │       └── closing_loc: (19,32)-(19,35) = "end"
         │   │   │           └── operator_loc: (19,23)-(19,24) = "="
         │   │   └── end_keyword_loc: (19,37)-(19,40) = "end"
-        │   ├── statements:
-        │   │   @ StatementsNode (location: (19,42)-(19,47))
-        │   │   └── body: (length: 1)
-        │   │       └── @ BreakNode (location: (19,42)-(19,47))
-        │   │           ├── arguments: ∅
-        │   │           └── keyword_loc: (19,42)-(19,47) = "break"
-        │   └── flags: ∅
+        │   └── statements:
+        │       @ StatementsNode (location: (19,42)-(19,47))
+        │       └── body: (length: 1)
+        │           └── @ BreakNode (location: (19,42)-(19,47))
+        │               ├── arguments: ∅
+        │               └── keyword_loc: (19,42)-(19,47) = "break"
         ├── @ WhileNode (location: (21,0)-(21,31))
+        │   ├── flags: ∅
         │   ├── keyword_loc: (21,0)-(21,5) = "while"
         │   ├── closing_loc: (21,28)-(21,31) = "end"
         │   ├── predicate:
@@ -300,6 +301,7 @@
         │   │   │   @ StatementsNode (location: (21,16)-(21,26))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (21,16)-(21,26))
+        │   │   │           ├── flags: ∅
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :bar
@@ -307,15 +309,14 @@
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
-        │   │   │           ├── block:
-        │   │   │           │   @ BlockNode (location: (21,20)-(21,26))
-        │   │   │           │   ├── locals: []
-        │   │   │           │   ├── locals_body_index: 0
-        │   │   │           │   ├── parameters: ∅
-        │   │   │           │   ├── body: ∅
-        │   │   │           │   ├── opening_loc: (21,20)-(21,22) = "do"
-        │   │   │           │   └── closing_loc: (21,23)-(21,26) = "end"
-        │   │   │           └── flags: ∅
+        │   │   │           └── block:
+        │   │   │               @ BlockNode (location: (21,20)-(21,26))
+        │   │   │               ├── locals: []
+        │   │   │               ├── locals_body_index: 0
+        │   │   │               ├── parameters: ∅
+        │   │   │               ├── body: ∅
+        │   │   │               ├── opening_loc: (21,20)-(21,22) = "do"
+        │   │   │               └── closing_loc: (21,23)-(21,26) = "end"
         │   │   ├── locals: []
         │   │   ├── locals_body_index: 0
         │   │   ├── def_keyword_loc: (21,6)-(21,9) = "def"
@@ -324,15 +325,16 @@
         │   │   ├── rparen_loc: ∅
         │   │   ├── equal_loc: (21,14)-(21,15) = "="
         │   │   └── end_keyword_loc: ∅
-        │   ├── statements: ∅
-        │   └── flags: ∅
+        │   └── statements: ∅
         └── @ WhileNode (location: (23,0)-(23,20))
+            ├── flags: ∅
             ├── keyword_loc: (23,4)-(23,9) = "while"
             ├── closing_loc: ∅
             ├── predicate:
             │   @ MatchPredicateNode (location: (23,10)-(23,20))
             │   ├── value:
             │   │   @ CallNode (location: (23,10)-(23,13))
+            │   │   ├── flags: variable_call
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
             │   │   ├── name: :bar
@@ -340,24 +342,22 @@
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
-            │   │   ├── block: ∅
-            │   │   └── flags: variable_call
+            │   │   └── block: ∅
             │   ├── pattern:
             │   │   @ LocalVariableTargetNode (location: (23,17)-(23,20))
             │   │   ├── name: :baz
             │   │   └── depth: 0
             │   └── operator_loc: (23,14)-(23,16) = "in"
-            ├── statements:
-            │   @ StatementsNode (location: (23,0)-(23,3))
-            │   └── body: (length: 1)
-            │       └── @ CallNode (location: (23,0)-(23,3))
-            │           ├── receiver: ∅
-            │           ├── call_operator_loc: ∅
-            │           ├── name: :foo
-            │           ├── message_loc: (23,0)-(23,3) = "foo"
-            │           ├── opening_loc: ∅
-            │           ├── arguments: ∅
-            │           ├── closing_loc: ∅
-            │           ├── block: ∅
-            │           └── flags: variable_call
-            └── flags: ∅
+            └── statements:
+                @ StatementsNode (location: (23,0)-(23,3))
+                └── body: (length: 1)
+                    └── @ CallNode (location: (23,0)-(23,3))
+                        ├── flags: variable_call
+                        ├── receiver: ∅
+                        ├── call_operator_loc: ∅
+                        ├── name: :foo
+                        ├── message_loc: (23,0)-(23,3) = "foo"
+                        ├── opening_loc: ∅
+                        ├── arguments: ∅
+                        ├── closing_loc: ∅
+                        └── block: ∅

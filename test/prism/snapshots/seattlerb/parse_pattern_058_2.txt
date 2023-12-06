@@ -45,13 +45,13 @@
             │       │   @ StatementsNode (location: (3,2)-(3,5))
             │       │   └── body: (length: 1)
             │       │       └── @ ArrayNode (location: (3,2)-(3,5))
+            │       │           ├── flags: ∅
             │       │           ├── elements: (length: 1)
             │       │           │   └── @ LocalVariableReadNode (location: (3,3)-(3,4))
             │       │           │       ├── name: :a
             │       │           │       └── depth: 0
             │       │           ├── opening_loc: (3,2)-(3,3) = "["
-            │       │           ├── closing_loc: (3,4)-(3,5) = "]"
-            │       │           └── flags: ∅
+            │       │           └── closing_loc: (3,4)-(3,5) = "]"
             │       ├── in_loc: (2,0)-(2,2) = "in"
             │       └── then_loc: ∅
             ├── consequent: ∅

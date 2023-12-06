@@ -25,6 +25,7 @@
         │   │           │   @ StatementsNode (location: (2,2)-(2,10))
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ CallNode (location: (2,2)-(2,10))
+        │   │           │           ├── flags: ∅
         │   │           │           ├── receiver: ∅
         │   │           │           ├── call_operator_loc: ∅
         │   │           │           ├── name: :bar
@@ -32,12 +33,11 @@
         │   │           │           ├── opening_loc: (2,5)-(2,6) = "("
         │   │           │           ├── arguments:
         │   │           │           │   @ ArgumentsNode (location: (2,6)-(2,9))
-        │   │           │           │   ├── arguments: (length: 1)
-        │   │           │           │   │   └── @ ForwardingArgumentsNode (location: (2,6)-(2,9))
-        │   │           │           │   └── flags: ∅
+        │   │           │           │   ├── flags: ∅
+        │   │           │           │   └── arguments: (length: 1)
+        │   │           │           │       └── @ ForwardingArgumentsNode (location: (2,6)-(2,9))
         │   │           │           ├── closing_loc: (2,9)-(2,10) = ")"
-        │   │           │           ├── block: ∅
-        │   │           │           └── flags: ∅
+        │   │           │           └── block: ∅
         │   │           ├── locals: [:"..."]
         │   │           ├── locals_body_index: 1
         │   │           ├── def_keyword_loc: (1,1)-(1,4) = "def"
@@ -70,6 +70,7 @@
         │   │           │   @ StatementsNode (location: (5,14)-(5,22))
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ CallNode (location: (5,14)-(5,22))
+        │   │           │           ├── flags: ∅
         │   │           │           ├── receiver: ∅
         │   │           │           ├── call_operator_loc: ∅
         │   │           │           ├── name: :bar
@@ -77,12 +78,11 @@
         │   │           │           ├── opening_loc: (5,17)-(5,18) = "("
         │   │           │           ├── arguments:
         │   │           │           │   @ ArgumentsNode (location: (5,18)-(5,21))
-        │   │           │           │   ├── arguments: (length: 1)
-        │   │           │           │   │   └── @ ForwardingArgumentsNode (location: (5,18)-(5,21))
-        │   │           │           │   └── flags: ∅
+        │   │           │           │   ├── flags: ∅
+        │   │           │           │   └── arguments: (length: 1)
+        │   │           │           │       └── @ ForwardingArgumentsNode (location: (5,18)-(5,21))
         │   │           │           ├── closing_loc: (5,21)-(5,22) = ")"
-        │   │           │           ├── block: ∅
-        │   │           │           └── flags: ∅
+        │   │           │           └── block: ∅
         │   │           ├── locals: [:"..."]
         │   │           ├── locals_body_index: 1
         │   │           ├── def_keyword_loc: (5,1)-(5,4) = "def"
@@ -134,6 +134,7 @@
         │   │   @ StatementsNode (location: (10,13)-(10,21))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (10,13)-(10,21))
+        │   │           ├── flags: ∅
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -141,12 +142,11 @@
         │   │           ├── opening_loc: (10,16)-(10,17) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (10,17)-(10,20))
-        │   │           │   ├── arguments: (length: 1)
-        │   │           │   │   └── @ ForwardingArgumentsNode (location: (10,17)-(10,20))
-        │   │           │   └── flags: ∅
+        │   │           │   ├── flags: ∅
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ ForwardingArgumentsNode (location: (10,17)-(10,20))
         │   │           ├── closing_loc: (10,20)-(10,21) = ")"
-        │   │           ├── block: ∅
-        │   │           └── flags: ∅
+        │   │           └── block: ∅
         │   ├── locals: [:"..."]
         │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (10,0)-(10,3) = "def"
@@ -175,6 +175,7 @@
         │   │   @ StatementsNode (location: (13,2)-(13,10))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (13,2)-(13,10))
+        │   │           ├── flags: ∅
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -182,12 +183,11 @@
         │   │           ├── opening_loc: (13,5)-(13,6) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (13,6)-(13,9))
-        │   │           │   ├── arguments: (length: 1)
-        │   │           │   │   └── @ ForwardingArgumentsNode (location: (13,6)-(13,9))
-        │   │           │   └── flags: ∅
+        │   │           │   ├── flags: ∅
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ ForwardingArgumentsNode (location: (13,6)-(13,9))
         │   │           ├── closing_loc: (13,9)-(13,10) = ")"
-        │   │           ├── block: ∅
-        │   │           └── flags: ∅
+        │   │           └── block: ∅
         │   ├── locals: [:a, :"..."]
         │   ├── locals_body_index: 2
         │   ├── def_keyword_loc: (12,0)-(12,3) = "def"
@@ -216,6 +216,7 @@
         │   │   @ StatementsNode (location: (16,16)-(16,24))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (16,16)-(16,24))
+        │   │           ├── flags: ∅
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -223,12 +224,11 @@
         │   │           ├── opening_loc: (16,19)-(16,20) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (16,20)-(16,23))
-        │   │           │   ├── arguments: (length: 1)
-        │   │           │   │   └── @ ForwardingArgumentsNode (location: (16,20)-(16,23))
-        │   │           │   └── flags: ∅
+        │   │           │   ├── flags: ∅
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ ForwardingArgumentsNode (location: (16,20)-(16,23))
         │   │           ├── closing_loc: (16,23)-(16,24) = ")"
-        │   │           ├── block: ∅
-        │   │           └── flags: ∅
+        │   │           └── block: ∅
         │   ├── locals: [:a, :"..."]
         │   ├── locals_body_index: 2
         │   ├── def_keyword_loc: (16,0)-(16,3) = "def"
@@ -294,6 +294,7 @@
         │   │   @ StatementsNode (location: (22,2)-(22,10))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (22,2)-(22,10))
+        │   │           ├── flags: ∅
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -301,12 +302,11 @@
         │   │           ├── opening_loc: (22,5)-(22,6) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (22,6)-(22,9))
-        │   │           │   ├── arguments: (length: 1)
-        │   │           │   │   └── @ ForwardingArgumentsNode (location: (22,6)-(22,9))
-        │   │           │   └── flags: ∅
+        │   │           │   ├── flags: ∅
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ ForwardingArgumentsNode (location: (22,6)-(22,9))
         │   │           ├── closing_loc: (22,9)-(22,10) = ")"
-        │   │           ├── block: ∅
-        │   │           └── flags: ∅
+        │   │           └── block: ∅
         │   ├── locals: [:b, :"..."]
         │   ├── locals_body_index: 2
         │   ├── def_keyword_loc: (21,0)-(21,3) = "def"
@@ -340,6 +340,7 @@
         │   │   @ StatementsNode (location: (25,20)-(25,28))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (25,20)-(25,28))
+        │   │           ├── flags: ∅
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -347,12 +348,11 @@
         │   │           ├── opening_loc: (25,23)-(25,24) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (25,24)-(25,27))
-        │   │           │   ├── arguments: (length: 1)
-        │   │           │   │   └── @ ForwardingArgumentsNode (location: (25,24)-(25,27))
-        │   │           │   └── flags: ∅
+        │   │           │   ├── flags: ∅
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ ForwardingArgumentsNode (location: (25,24)-(25,27))
         │   │           ├── closing_loc: (25,27)-(25,28) = ")"
-        │   │           ├── block: ∅
-        │   │           └── flags: ∅
+        │   │           └── block: ∅
         │   ├── locals: [:b, :"..."]
         │   ├── locals_body_index: 2
         │   ├── def_keyword_loc: (25,0)-(25,3) = "def"
@@ -381,6 +381,7 @@
             │   @ StatementsNode (location: (27,16)-(27,24))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (27,16)-(27,24))
+            │           ├── flags: ∅
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :bar
@@ -388,12 +389,11 @@
             │           ├── opening_loc: (27,19)-(27,20) = "("
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (27,20)-(27,23))
-            │           │   ├── arguments: (length: 1)
-            │           │   │   └── @ ForwardingArgumentsNode (location: (27,20)-(27,23))
-            │           │   └── flags: ∅
+            │           │   ├── flags: ∅
+            │           │   └── arguments: (length: 1)
+            │           │       └── @ ForwardingArgumentsNode (location: (27,20)-(27,23))
             │           ├── closing_loc: (27,23)-(27,24) = ")"
-            │           ├── block: ∅
-            │           └── flags: ∅
+            │           └── block: ∅
             ├── locals: [:a, :"..."]
             ├── locals_body_index: 2
             ├── def_keyword_loc: (27,0)-(27,3) = "def"

@@ -27,6 +27,7 @@
         │   │   └── closing_loc: (1,8)-(1,9) = ")"
         │   └── body: ∅
         └── @ CallNode (location: (1,14)-(1,19))
+            ├── flags: variable_call
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :scope
@@ -34,5 +35,4 @@
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
-            ├── block: ∅
-            └── flags: variable_call
+            └── block: ∅

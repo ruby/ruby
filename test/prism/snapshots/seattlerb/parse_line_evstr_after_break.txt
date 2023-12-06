@@ -21,6 +21,7 @@
             │       │       │   @ StatementsNode (location: (2,3)-(2,4))
             │       │       │   └── body: (length: 1)
             │       │       │       └── @ CallNode (location: (2,3)-(2,4))
+            │       │       │           ├── flags: variable_call
             │       │       │           ├── receiver: ∅
             │       │       │           ├── call_operator_loc: ∅
             │       │       │           ├── name: :b
@@ -28,8 +29,7 @@
             │       │       │           ├── opening_loc: ∅
             │       │       │           ├── arguments: ∅
             │       │       │           ├── closing_loc: ∅
-            │       │       │           ├── block: ∅
-            │       │       │           └── flags: variable_call
+            │       │       │           └── block: ∅
             │       │       └── closing_loc: (2,4)-(2,5) = "}"
             │       └── closing_loc: (2,5)-(2,6) = "\""
             └── closing_loc: ∅

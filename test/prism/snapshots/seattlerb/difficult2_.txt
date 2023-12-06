@@ -13,6 +13,7 @@
         │   │   @ StatementsNode (location: (1,4)-(1,9))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (1,4)-(1,9))
+        │   │           ├── flags: ∅
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :b
@@ -20,17 +21,16 @@
         │   │           ├── opening_loc: (1,5)-(1,6) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (1,6)-(1,8))
-        │   │           │   ├── arguments: (length: 1)
-        │   │           │   │   └── @ StringNode (location: (1,6)-(1,8))
-        │   │           │   │       ├── flags: ∅
-        │   │           │   │       ├── opening_loc: (1,6)-(1,7) = "'"
-        │   │           │   │       ├── content_loc: (1,7)-(1,7) = ""
-        │   │           │   │       ├── closing_loc: (1,7)-(1,8) = "'"
-        │   │           │   │       └── unescaped: ""
-        │   │           │   └── flags: ∅
+        │   │           │   ├── flags: ∅
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ StringNode (location: (1,6)-(1,8))
+        │   │           │           ├── flags: ∅
+        │   │           │           ├── opening_loc: (1,6)-(1,7) = "'"
+        │   │           │           ├── content_loc: (1,7)-(1,7) = ""
+        │   │           │           ├── closing_loc: (1,7)-(1,8) = "'"
+        │   │           │           └── unescaped: ""
         │   │           ├── closing_loc: (1,8)-(1,9) = ")"
-        │   │           ├── block: ∅
-        │   │           └── flags: ∅
+        │   │           └── block: ∅
         │   ├── consequent:
         │   │   @ ElseNode (location: (1,10)-(1,13))
         │   │   ├── else_keyword_loc: (1,10)-(1,11) = ":"
@@ -42,6 +42,7 @@
         │   │   └── end_keyword_loc: ∅
         │   └── end_keyword_loc: ∅
         └── @ CallNode (location: (2,0)-(2,6))
+            ├── flags: ∅
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :a
@@ -49,21 +50,20 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (2,2)-(2,6))
-            │   ├── arguments: (length: 1)
-            │   │   └── @ KeywordHashNode (location: (2,2)-(2,6))
-            │   │       └── elements: (length: 1)
-            │   │           └── @ AssocNode (location: (2,2)-(2,6))
-            │   │               ├── key:
-            │   │               │   @ SymbolNode (location: (2,2)-(2,4))
-            │   │               │   ├── opening_loc: ∅
-            │   │               │   ├── value_loc: (2,2)-(2,3) = "d"
-            │   │               │   ├── closing_loc: (2,3)-(2,4) = ":"
-            │   │               │   └── unescaped: "d"
-            │   │               ├── value:
-            │   │               │   @ IntegerNode (location: (2,5)-(2,6))
-            │   │               │   └── flags: decimal
-            │   │               └── operator_loc: ∅
-            │   └── flags: ∅
+            │   ├── flags: ∅
+            │   └── arguments: (length: 1)
+            │       └── @ KeywordHashNode (location: (2,2)-(2,6))
+            │           └── elements: (length: 1)
+            │               └── @ AssocNode (location: (2,2)-(2,6))
+            │                   ├── key:
+            │                   │   @ SymbolNode (location: (2,2)-(2,4))
+            │                   │   ├── opening_loc: ∅
+            │                   │   ├── value_loc: (2,2)-(2,3) = "d"
+            │                   │   ├── closing_loc: (2,3)-(2,4) = ":"
+            │                   │   └── unescaped: "d"
+            │                   ├── value:
+            │                   │   @ IntegerNode (location: (2,5)-(2,6))
+            │                   │   └── flags: decimal
+            │                   └── operator_loc: ∅
             ├── closing_loc: ∅
-            ├── block: ∅
-            └── flags: ∅
+            └── block: ∅

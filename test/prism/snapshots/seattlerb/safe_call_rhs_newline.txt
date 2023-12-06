@@ -9,8 +9,10 @@
             ├── name_loc: (1,0)-(1,1) = "c"
             ├── value:
             │   @ CallNode (location: (1,4)-(1,8))
+            │   ├── flags: safe_navigation
             │   ├── receiver:
             │   │   @ CallNode (location: (1,4)-(1,5))
+            │   │   ├── flags: variable_call
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
             │   │   ├── name: :a
@@ -18,14 +20,12 @@
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
-            │   │   ├── block: ∅
-            │   │   └── flags: variable_call
+            │   │   └── block: ∅
             │   ├── call_operator_loc: (1,5)-(1,7) = "&."
             │   ├── name: :b
             │   ├── message_loc: (1,7)-(1,8) = "b"
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
-            │   ├── block: ∅
-            │   └── flags: safe_navigation
+            │   └── block: ∅
             └── operator_loc: (1,2)-(1,3) = "="

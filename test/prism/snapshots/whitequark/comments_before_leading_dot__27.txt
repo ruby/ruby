@@ -4,8 +4,10 @@
     @ StatementsNode (location: (1,0)-(18,4))
     └── body: (length: 4)
         ├── @ CallNode (location: (1,0)-(3,5))
+        │   ├── flags: safe_navigation
         │   ├── receiver:
         │   │   @ CallNode (location: (1,0)-(1,1))
+        │   │   ├── flags: variable_call
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :a
@@ -13,19 +15,19 @@
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
-        │   │   ├── block: ∅
-        │   │   └── flags: variable_call
+        │   │   └── block: ∅
         │   ├── call_operator_loc: (3,0)-(3,2) = "&."
         │   ├── name: :foo
         │   ├── message_loc: (3,2)-(3,5) = "foo"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── block: ∅
-        │   └── flags: safe_navigation
+        │   └── block: ∅
         ├── @ CallNode (location: (6,0)-(8,4))
+        │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ CallNode (location: (6,0)-(6,1))
+        │   │   ├── flags: variable_call
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :a
@@ -33,19 +35,19 @@
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
-        │   │   ├── block: ∅
-        │   │   └── flags: variable_call
+        │   │   └── block: ∅
         │   ├── call_operator_loc: (8,0)-(8,1) = "."
         │   ├── name: :foo
         │   ├── message_loc: (8,1)-(8,4) = "foo"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── block: ∅
-        │   └── flags: ∅
+        │   └── block: ∅
         ├── @ CallNode (location: (11,0)-(13,5))
+        │   ├── flags: safe_navigation
         │   ├── receiver:
         │   │   @ CallNode (location: (11,0)-(11,1))
+        │   │   ├── flags: variable_call
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :a
@@ -53,19 +55,19 @@
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
-        │   │   ├── block: ∅
-        │   │   └── flags: variable_call
+        │   │   └── block: ∅
         │   ├── call_operator_loc: (13,0)-(13,2) = "&."
         │   ├── name: :foo
         │   ├── message_loc: (13,2)-(13,5) = "foo"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── block: ∅
-        │   └── flags: safe_navigation
+        │   └── block: ∅
         └── @ CallNode (location: (16,0)-(18,4))
+            ├── flags: ∅
             ├── receiver:
             │   @ CallNode (location: (16,0)-(16,1))
+            │   ├── flags: variable_call
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :a
@@ -73,13 +75,11 @@
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
-            │   ├── block: ∅
-            │   └── flags: variable_call
+            │   └── block: ∅
             ├── call_operator_loc: (18,0)-(18,1) = "."
             ├── name: :foo
             ├── message_loc: (18,1)-(18,4) = "foo"
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
-            ├── block: ∅
-            └── flags: ∅
+            └── block: ∅

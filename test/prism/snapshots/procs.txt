@@ -97,6 +97,7 @@
         │       @ StatementsNode (location: (13,5)-(13,8))
         │       └── body: (length: 1)
         │           └── @ CallNode (location: (13,5)-(13,8))
+        │               ├── flags: variable_call
         │               ├── receiver: ∅
         │               ├── call_operator_loc: ∅
         │               ├── name: :foo
@@ -104,8 +105,7 @@
         │               ├── opening_loc: ∅
         │               ├── arguments: ∅
         │               ├── closing_loc: ∅
-        │               ├── block: ∅
-        │               └── flags: variable_call
+        │               └── block: ∅
         ├── @ LambdaNode (location: (15,0)-(15,15))
         │   ├── locals: []
         │   ├── locals_body_index: 0
@@ -117,6 +117,7 @@
         │       @ StatementsNode (location: (15,7)-(15,10))
         │       └── body: (length: 1)
         │           └── @ CallNode (location: (15,7)-(15,10))
+        │               ├── flags: variable_call
         │               ├── receiver: ∅
         │               ├── call_operator_loc: ∅
         │               ├── name: :foo
@@ -124,8 +125,7 @@
         │               ├── opening_loc: ∅
         │               ├── arguments: ∅
         │               ├── closing_loc: ∅
-        │               ├── block: ∅
-        │               └── flags: variable_call
+        │               └── block: ∅
         ├── @ LambdaNode (location: (17,0)-(17,29))
         │   ├── locals: [:a, :b, :c, :d, :e]
         │   ├── locals_body_index: 5
@@ -328,6 +328,7 @@
         │                   @ StatementsNode (location: (25,16)-(25,21))
         │                   └── body: (length: 1)
         │                       └── @ CallNode (location: (25,16)-(25,21))
+        │                           ├── flags: ∅
         │                           ├── receiver:
         │                           │   @ LocalVariableReadNode (location: (25,16)-(25,17))
         │                           │   ├── name: :a
@@ -338,14 +339,13 @@
         │                           ├── opening_loc: ∅
         │                           ├── arguments:
         │                           │   @ ArgumentsNode (location: (25,20)-(25,21))
-        │                           │   ├── arguments: (length: 1)
-        │                           │   │   └── @ LocalVariableReadNode (location: (25,20)-(25,21))
-        │                           │   │       ├── name: :b
-        │                           │   │       └── depth: 0
-        │                           │   └── flags: ∅
+        │                           │   ├── flags: ∅
+        │                           │   └── arguments: (length: 1)
+        │                           │       └── @ LocalVariableReadNode (location: (25,20)-(25,21))
+        │                           │           ├── name: :b
+        │                           │           └── depth: 0
         │                           ├── closing_loc: ∅
-        │                           ├── block: ∅
-        │                           └── flags: ∅
+        │                           └── block: ∅
         └── @ LambdaNode (location: (27,0)-(27,19))
             ├── locals: [:a, :b, :c]
             ├── locals_body_index: 3

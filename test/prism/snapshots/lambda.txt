@@ -60,6 +60,7 @@
         │   │   │   │           │       │   @ StatementsNode (location: (5,10)-(5,11))
         │   │   │   │           │       │   └── body: (length: 1)
         │   │   │   │           │       │       └── @ CallNode (location: (5,10)-(5,11))
+        │   │   │   │           │       │           ├── flags: variable_call
         │   │   │   │           │       │           ├── receiver: ∅
         │   │   │   │           │       │           ├── call_operator_loc: ∅
         │   │   │   │           │       │           ├── name: :a
@@ -67,8 +68,7 @@
         │   │   │   │           │       │           ├── opening_loc: ∅
         │   │   │   │           │       │           ├── arguments: ∅
         │   │   │   │           │       │           ├── closing_loc: ∅
-        │   │   │   │           │       │           ├── block: ∅
-        │   │   │   │           │       │           └── flags: variable_call
+        │   │   │   │           │       │           └── block: ∅
         │   │   │   │           │       └── closing_loc: (5,11)-(5,12) = "}"
         │   │   │   │           └── closing_loc: (5,12)-(5,13) = "\""
         │   │   │   ├── keyword_rest: ∅
@@ -97,8 +97,10 @@
         │   │   │   │       ├── name_loc: (7,3)-(7,5) = "a:"
         │   │   │   │       └── value:
         │   │   │   │           @ CallNode (location: (7,6)-(7,11))
+        │   │   │   │           ├── flags: ∅
         │   │   │   │           ├── receiver:
         │   │   │   │           │   @ CallNode (location: (7,6)-(7,7))
+        │   │   │   │           │   ├── flags: variable_call
         │   │   │   │           │   ├── receiver: ∅
         │   │   │   │           │   ├── call_operator_loc: ∅
         │   │   │   │           │   ├── name: :b
@@ -106,21 +108,19 @@
         │   │   │   │           │   ├── opening_loc: ∅
         │   │   │   │           │   ├── arguments: ∅
         │   │   │   │           │   ├── closing_loc: ∅
-        │   │   │   │           │   ├── block: ∅
-        │   │   │   │           │   └── flags: variable_call
+        │   │   │   │           │   └── block: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :*
         │   │   │   │           ├── message_loc: (7,8)-(7,9) = "*"
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments:
         │   │   │   │           │   @ ArgumentsNode (location: (7,10)-(7,11))
-        │   │   │   │           │   ├── arguments: (length: 1)
-        │   │   │   │           │   │   └── @ IntegerNode (location: (7,10)-(7,11))
-        │   │   │   │           │   │       └── flags: decimal
-        │   │   │   │           │   └── flags: ∅
+        │   │   │   │           │   ├── flags: ∅
+        │   │   │   │           │   └── arguments: (length: 1)
+        │   │   │   │           │       └── @ IntegerNode (location: (7,10)-(7,11))
+        │   │   │   │           │           └── flags: decimal
         │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           ├── block: ∅
-        │   │   │   │           └── flags: ∅
+        │   │   │   │           └── block: ∅
         │   │   │   ├── keyword_rest: ∅
         │   │   │   └── block: ∅
         │   │   ├── locals: (length: 0)
@@ -145,6 +145,7 @@
         │   │   │   │       ├── operator_loc: (9,7)-(9,8) = "="
         │   │   │   │       └── value:
         │   │   │   │           @ CallNode (location: (9,9)-(9,12))
+        │   │   │   │           ├── flags: variable_call
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :bar
@@ -152,8 +153,7 @@
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           ├── block: ∅
-        │   │   │   │           └── flags: variable_call
+        │   │   │   │           └── block: ∅
         │   │   │   ├── rest: ∅
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 0)
@@ -183,6 +183,7 @@
             │   │   │       ├── name_loc: (11,3)-(11,7) = "foo:"
             │   │   │       └── value:
             │   │   │           @ CallNode (location: (11,8)-(11,11))
+            │   │   │           ├── flags: variable_call
             │   │   │           ├── receiver: ∅
             │   │   │           ├── call_operator_loc: ∅
             │   │   │           ├── name: :bar
@@ -190,8 +191,7 @@
             │   │   │           ├── opening_loc: ∅
             │   │   │           ├── arguments: ∅
             │   │   │           ├── closing_loc: ∅
-            │   │   │           ├── block: ∅
-            │   │   │           └── flags: variable_call
+            │   │   │           └── block: ∅
             │   │   ├── keyword_rest: ∅
             │   │   └── block: ∅
             │   ├── locals: (length: 0)

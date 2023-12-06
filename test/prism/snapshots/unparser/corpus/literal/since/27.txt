@@ -16,6 +16,7 @@
         │       @ StatementsNode (location: (2,2)-(2,9))
         │       └── body: (length: 1)
         │           └── @ CallNode (location: (2,2)-(2,9))
+        │               ├── flags: ∅
         │               ├── receiver:
         │               │   @ LocalVariableReadNode (location: (2,2)-(2,4))
         │               │   ├── name: :_1
@@ -26,24 +27,23 @@
         │               ├── opening_loc: ∅
         │               ├── arguments:
         │               │   @ ArgumentsNode (location: (2,7)-(2,9))
-        │               │   ├── arguments: (length: 1)
-        │               │   │   └── @ LocalVariableReadNode (location: (2,7)-(2,9))
-        │               │   │       ├── name: :_2
-        │               │   │       └── depth: 0
-        │               │   └── flags: ∅
+        │               │   ├── flags: ∅
+        │               │   └── arguments: (length: 1)
+        │               │       └── @ LocalVariableReadNode (location: (2,7)-(2,9))
+        │               │           ├── name: :_2
+        │               │           └── depth: 0
         │               ├── closing_loc: ∅
-        │               ├── block: ∅
-        │               └── flags: ∅
+        │               └── block: ∅
         └── @ ParenthesesNode (location: (4,0)-(4,5))
             ├── body:
             │   @ StatementsNode (location: (4,1)-(4,4))
             │   └── body: (length: 1)
             │       └── @ RangeNode (location: (4,1)-(4,4))
+            │           ├── flags: ∅
             │           ├── left: ∅
             │           ├── right:
             │           │   @ IntegerNode (location: (4,3)-(4,4))
             │           │   └── flags: decimal
-            │           ├── operator_loc: (4,1)-(4,3) = ".."
-            │           └── flags: ∅
+            │           └── operator_loc: (4,1)-(4,3) = ".."
             ├── opening_loc: (4,0)-(4,1) = "("
             └── closing_loc: (4,4)-(4,5) = ")"

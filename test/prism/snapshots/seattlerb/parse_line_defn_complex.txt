@@ -22,6 +22,7 @@
             │   @ StatementsNode (location: (2,2)-(4,10))
             │   └── body: (length: 3)
             │       ├── @ CallNode (location: (2,2)-(2,6))
+            │       │   ├── flags: ∅
             │       │   ├── receiver: ∅
             │       │   ├── call_operator_loc: ∅
             │       │   ├── name: :p
@@ -29,14 +30,13 @@
             │       │   ├── opening_loc: (2,3)-(2,4) = "("
             │       │   ├── arguments:
             │       │   │   @ ArgumentsNode (location: (2,4)-(2,5))
-            │       │   │   ├── arguments: (length: 1)
-            │       │   │   │   └── @ LocalVariableReadNode (location: (2,4)-(2,5))
-            │       │   │   │       ├── name: :y
-            │       │   │   │       └── depth: 0
-            │       │   │   └── flags: ∅
+            │       │   │   ├── flags: ∅
+            │       │   │   └── arguments: (length: 1)
+            │       │   │       └── @ LocalVariableReadNode (location: (2,4)-(2,5))
+            │       │   │           ├── name: :y
+            │       │   │           └── depth: 0
             │       │   ├── closing_loc: (2,5)-(2,6) = ")"
-            │       │   ├── block: ∅
-            │       │   └── flags: ∅
+            │       │   └── block: ∅
             │       ├── @ LocalVariableOperatorWriteNode (location: (3,2)-(3,8))
             │       │   ├── name_loc: (3,2)-(3,3) = "y"
             │       │   ├── operator_loc: (3,4)-(3,6) = "*="
@@ -50,11 +50,11 @@
             │           ├── keyword_loc: (4,2)-(4,8) = "return"
             │           └── arguments:
             │               @ ArgumentsNode (location: (4,9)-(4,10))
-            │               ├── arguments: (length: 1)
-            │               │   └── @ LocalVariableReadNode (location: (4,9)-(4,10))
-            │               │       ├── name: :y
-            │               │       └── depth: 0
-            │               └── flags: ∅
+            │               ├── flags: ∅
+            │               └── arguments: (length: 1)
+            │                   └── @ LocalVariableReadNode (location: (4,9)-(4,10))
+            │                       ├── name: :y
+            │                       └── depth: 0
             ├── locals: [:y]
             ├── locals_body_index: 1
             ├── def_keyword_loc: (1,0)-(1,3) = "def"

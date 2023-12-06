@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(2,5))
     └── body: (length: 2)
         ├── @ CallNode (location: (1,0)-(1,3))
+        │   ├── flags: variable_call
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -11,12 +12,11 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── block: ∅
-        │   └── flags: variable_call
+        │   └── block: ∅
         └── @ RangeNode (location: (2,0)-(2,5))
+            ├── flags: ∅
             ├── left: ∅
             ├── right:
             │   @ IntegerNode (location: (2,2)-(2,5))
             │   └── flags: decimal
-            ├── operator_loc: (2,0)-(2,2) = ".."
-            └── flags: ∅
+            └── operator_loc: (2,0)-(2,2) = ".."

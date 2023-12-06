@@ -19,6 +19,7 @@
             │   │   @ StatementsNode (location: (1,5)-(1,8))
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (1,5)-(1,8))
+            │   │           ├── flags: variable_call
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :foo
@@ -26,8 +27,7 @@
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
-            │   │           ├── block: ∅
-            │   │           └── flags: variable_call
+            │   │           └── block: ∅
             │   ├── opening_loc: (1,4)-(1,5) = "("
             │   └── closing_loc: (1,8)-(1,9) = ")"
             ├── then_keyword_loc: (1,9)-(1,10) = "?"

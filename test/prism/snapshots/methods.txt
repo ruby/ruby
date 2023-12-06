@@ -116,6 +116,7 @@
         │   │   @ ParenthesesNode (location: (10,4)-(10,7))
         │   │   ├── body:
         │   │   │   @ CallNode (location: (10,5)-(10,6))
+        │   │   │   ├── flags: variable_call
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :b
@@ -123,8 +124,7 @@
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
-        │   │   │   ├── block: ∅
-        │   │   │   └── flags: variable_call
+        │   │   │   └── block: ∅
         │   │   ├── opening_loc: (10,4)-(10,5) = "("
         │   │   └── closing_loc: (10,6)-(10,7) = ")"
         │   ├── parameters: ∅
@@ -144,6 +144,7 @@
         │   │   @ ParenthesesNode (location: (13,4)-(13,7))
         │   │   ├── body:
         │   │   │   @ CallNode (location: (13,5)-(13,6))
+        │   │   │   ├── flags: variable_call
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :a
@@ -151,8 +152,7 @@
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
-        │   │   │   ├── block: ∅
-        │   │   │   └── flags: variable_call
+        │   │   │   └── block: ∅
         │   │   ├── opening_loc: (13,4)-(13,5) = "("
         │   │   └── closing_loc: (13,6)-(13,7) = ")"
         │   ├── parameters: ∅
@@ -224,6 +224,7 @@
         │   ├── name_loc: (25,6)-(25,7) = "b"
         │   ├── receiver:
         │   │   @ CallNode (location: (25,4)-(25,5))
+        │   │   ├── flags: variable_call
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :a
@@ -231,8 +232,7 @@
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
-        │   │   ├── block: ∅
-        │   │   └── flags: variable_call
+        │   │   └── block: ∅
         │   ├── parameters: ∅
         │   ├── body: ∅
         │   ├── locals: []
@@ -812,13 +812,13 @@
         │   │       │   │           ├── keyword_loc: (99,0)-(99,6) = "return"
         │   │       │   │           └── arguments:
         │   │       │   │               @ ArgumentsNode (location: (99,7)-(99,10))
-        │   │       │   │               ├── arguments: (length: 1)
-        │   │       │   │               │   └── @ SymbolNode (location: (99,7)-(99,10))
-        │   │       │   │               │       ├── opening_loc: (99,7)-(99,8) = ":"
-        │   │       │   │               │       ├── value_loc: (99,8)-(99,10) = "hi"
-        │   │       │   │               │       ├── closing_loc: ∅
-        │   │       │   │               │       └── unescaped: "hi"
-        │   │       │   │               └── flags: ∅
+        │   │       │   │               ├── flags: ∅
+        │   │       │   │               └── arguments: (length: 1)
+        │   │       │   │                   └── @ SymbolNode (location: (99,7)-(99,10))
+        │   │       │   │                       ├── opening_loc: (99,7)-(99,8) = ":"
+        │   │       │   │                       ├── value_loc: (99,8)-(99,10) = "hi"
+        │   │       │   │                       ├── closing_loc: ∅
+        │   │       │   │                       └── unescaped: "hi"
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       └── @ SymbolNode (location: (100,0)-(100,4))
@@ -937,6 +937,7 @@
         │   │   @ StatementsNode (location: (110,10)-(110,14))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (110,10)-(110,14))
+        │   │           ├── flags: ∅
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :b
@@ -944,14 +945,13 @@
         │   │           ├── opening_loc: (110,11)-(110,12) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (110,12)-(110,13))
-        │   │           │   ├── arguments: (length: 1)
-        │   │           │   │   └── @ SplatNode (location: (110,12)-(110,13))
-        │   │           │   │       ├── operator_loc: (110,12)-(110,13) = "*"
-        │   │           │   │       └── expression: ∅
-        │   │           │   └── flags: ∅
+        │   │           │   ├── flags: ∅
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ SplatNode (location: (110,12)-(110,13))
+        │   │           │           ├── operator_loc: (110,12)-(110,13) = "*"
+        │   │           │           └── expression: ∅
         │   │           ├── closing_loc: (110,13)-(110,14) = ")"
-        │   │           ├── block: ∅
-        │   │           └── flags: ∅
+        │   │           └── block: ∅
         │   ├── locals: [:*]
         │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (110,0)-(110,3) = "def"
@@ -978,6 +978,7 @@
         │   │   @ StatementsNode (location: (112,12)-(112,18))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (112,12)-(112,18))
+        │   │           ├── flags: ∅
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :b
@@ -985,12 +986,11 @@
         │   │           ├── opening_loc: (112,13)-(112,14) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (112,14)-(112,17))
-        │   │           │   ├── arguments: (length: 1)
-        │   │           │   │   └── @ ForwardingArgumentsNode (location: (112,14)-(112,17))
-        │   │           │   └── flags: ∅
+        │   │           │   ├── flags: ∅
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ ForwardingArgumentsNode (location: (112,14)-(112,17))
         │   │           ├── closing_loc: (112,17)-(112,18) = ")"
-        │   │           ├── block: ∅
-        │   │           └── flags: ∅
+        │   │           └── block: ∅
         │   ├── locals: [:"..."]
         │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (112,0)-(112,3) = "def"
@@ -1017,6 +1017,7 @@
         │   │   @ StatementsNode (location: (114,12)-(114,24))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (114,12)-(114,24))
+        │   │           ├── flags: ∅
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :b
@@ -1024,16 +1025,15 @@
         │   │           ├── opening_loc: (114,13)-(114,14) = "("
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (114,14)-(114,23))
-        │   │           │   ├── arguments: (length: 3)
-        │   │           │   │   ├── @ IntegerNode (location: (114,14)-(114,15))
-        │   │           │   │   │   └── flags: decimal
-        │   │           │   │   ├── @ IntegerNode (location: (114,17)-(114,18))
-        │   │           │   │   │   └── flags: decimal
-        │   │           │   │   └── @ ForwardingArgumentsNode (location: (114,20)-(114,23))
-        │   │           │   └── flags: ∅
+        │   │           │   ├── flags: ∅
+        │   │           │   └── arguments: (length: 3)
+        │   │           │       ├── @ IntegerNode (location: (114,14)-(114,15))
+        │   │           │       │   └── flags: decimal
+        │   │           │       ├── @ IntegerNode (location: (114,17)-(114,18))
+        │   │           │       │   └── flags: decimal
+        │   │           │       └── @ ForwardingArgumentsNode (location: (114,20)-(114,23))
         │   │           ├── closing_loc: (114,23)-(114,24) = ")"
-        │   │           ├── block: ∅
-        │   │           └── flags: ∅
+        │   │           └── block: ∅
         │   ├── locals: [:"..."]
         │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (114,0)-(114,3) = "def"
@@ -1054,6 +1054,7 @@
         │   │   │   ├── name_loc: (116,5)-(116,6) = "c"
         │   │   │   ├── value:
         │   │   │   │   @ CallNode (location: (116,9)-(116,10))
+        │   │   │   │   ├── flags: variable_call
         │   │   │   │   ├── receiver: ∅
         │   │   │   │   ├── call_operator_loc: ∅
         │   │   │   │   ├── name: :b
@@ -1061,8 +1062,7 @@
         │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   ├── arguments: ∅
         │   │   │   │   ├── closing_loc: ∅
-        │   │   │   │   ├── block: ∅
-        │   │   │   │   └── flags: variable_call
+        │   │   │   │   └── block: ∅
         │   │   │   └── operator_loc: (116,7)-(116,8) = "="
         │   │   ├── opening_loc: (116,4)-(116,5) = "("
         │   │   └── closing_loc: (116,10)-(116,11) = ")"
@@ -1156,6 +1156,7 @@
         │   │   │   ├── name_loc: (128,5)-(128,6) = "a"
         │   │   │   ├── value:
         │   │   │   │   @ CallNode (location: (128,9)-(128,10))
+        │   │   │   │   ├── flags: variable_call
         │   │   │   │   ├── receiver: ∅
         │   │   │   │   ├── call_operator_loc: ∅
         │   │   │   │   ├── name: :b
@@ -1163,8 +1164,7 @@
         │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   ├── arguments: ∅
         │   │   │   │   ├── closing_loc: ∅
-        │   │   │   │   ├── block: ∅
-        │   │   │   │   └── flags: variable_call
+        │   │   │   │   └── block: ∅
         │   │   │   └── operator_loc: (128,7)-(128,8) = "="
         │   │   ├── opening_loc: (128,4)-(128,5) = "("
         │   │   └── closing_loc: (128,10)-(128,11) = ")"
@@ -1248,6 +1248,7 @@
         │   │           │       │   @ StatementsNode (location: (136,18)-(136,24))
         │   │           │       │   └── body: (length: 1)
         │   │           │       │       └── @ CallNode (location: (136,18)-(136,24))
+        │   │           │       │           ├── flags: ∅
         │   │           │       │           ├── receiver: ∅
         │   │           │       │           ├── call_operator_loc: ∅
         │   │           │       │           ├── name: :b
@@ -1255,12 +1256,11 @@
         │   │           │       │           ├── opening_loc: (136,19)-(136,20) = "("
         │   │           │       │           ├── arguments:
         │   │           │       │           │   @ ArgumentsNode (location: (136,20)-(136,23))
-        │   │           │       │           │   ├── arguments: (length: 1)
-        │   │           │       │           │   │   └── @ ForwardingArgumentsNode (location: (136,20)-(136,23))
-        │   │           │       │           │   └── flags: ∅
+        │   │           │       │           │   ├── flags: ∅
+        │   │           │       │           │   └── arguments: (length: 1)
+        │   │           │       │           │       └── @ ForwardingArgumentsNode (location: (136,20)-(136,23))
         │   │           │       │           ├── closing_loc: (136,23)-(136,24) = ")"
-        │   │           │       │           ├── block: ∅
-        │   │           │       │           └── flags: ∅
+        │   │           │       │           └── block: ∅
         │   │           │       └── closing_loc: (136,24)-(136,25) = "}"
         │   │           └── closing_loc: (136,25)-(136,26) = "\""
         │   ├── locals: [:"..."]
@@ -1280,6 +1280,7 @@
         │   │   @ StatementsNode (location: (139,2)-(139,30))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (139,2)-(139,30))
+        │   │           ├── flags: ∅
         │   │           ├── receiver:
         │   │           │   @ HashNode (location: (139,2)-(139,4))
         │   │           │   ├── opening_loc: (139,2)-(139,3) = "{"
@@ -1291,52 +1292,51 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (139,11)-(139,30))
-        │   │           │   ├── arguments: (length: 1)
-        │   │           │   │   └── @ KeywordHashNode (location: (139,11)-(139,30))
-        │   │           │   │       └── elements: (length: 3)
-        │   │           │   │           ├── @ AssocSplatNode (location: (139,11)-(139,16))
-        │   │           │   │           │   ├── value:
-        │   │           │   │           │   │   @ CallNode (location: (139,13)-(139,16))
-        │   │           │   │           │   │   ├── receiver: ∅
-        │   │           │   │           │   │   ├── call_operator_loc: ∅
-        │   │           │   │           │   │   ├── name: :bar
-        │   │           │   │           │   │   ├── message_loc: (139,13)-(139,16) = "bar"
-        │   │           │   │           │   │   ├── opening_loc: ∅
-        │   │           │   │           │   │   ├── arguments: ∅
-        │   │           │   │           │   │   ├── closing_loc: ∅
-        │   │           │   │           │   │   ├── block: ∅
-        │   │           │   │           │   │   └── flags: variable_call
-        │   │           │   │           │   └── operator_loc: (139,11)-(139,13) = "**"
-        │   │           │   │           ├── @ AssocSplatNode (location: (139,18)-(139,23))
-        │   │           │   │           │   ├── value:
-        │   │           │   │           │   │   @ CallNode (location: (139,20)-(139,23))
-        │   │           │   │           │   │   ├── receiver: ∅
-        │   │           │   │           │   │   ├── call_operator_loc: ∅
-        │   │           │   │           │   │   ├── name: :baz
-        │   │           │   │           │   │   ├── message_loc: (139,20)-(139,23) = "baz"
-        │   │           │   │           │   │   ├── opening_loc: ∅
-        │   │           │   │           │   │   ├── arguments: ∅
-        │   │           │   │           │   │   ├── closing_loc: ∅
-        │   │           │   │           │   │   ├── block: ∅
-        │   │           │   │           │   │   └── flags: variable_call
-        │   │           │   │           │   └── operator_loc: (139,18)-(139,20) = "**"
-        │   │           │   │           └── @ AssocSplatNode (location: (139,25)-(139,30))
-        │   │           │   │               ├── value:
-        │   │           │   │               │   @ CallNode (location: (139,27)-(139,30))
-        │   │           │   │               │   ├── receiver: ∅
-        │   │           │   │               │   ├── call_operator_loc: ∅
-        │   │           │   │               │   ├── name: :qux
-        │   │           │   │               │   ├── message_loc: (139,27)-(139,30) = "qux"
-        │   │           │   │               │   ├── opening_loc: ∅
-        │   │           │   │               │   ├── arguments: ∅
-        │   │           │   │               │   ├── closing_loc: ∅
-        │   │           │   │               │   ├── block: ∅
-        │   │           │   │               │   └── flags: variable_call
-        │   │           │   │               └── operator_loc: (139,25)-(139,27) = "**"
-        │   │           │   └── flags: contains_keyword_splat
+        │   │           │   ├── flags: contains_keyword_splat
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ KeywordHashNode (location: (139,11)-(139,30))
+        │   │           │           └── elements: (length: 3)
+        │   │           │               ├── @ AssocSplatNode (location: (139,11)-(139,16))
+        │   │           │               │   ├── value:
+        │   │           │               │   │   @ CallNode (location: (139,13)-(139,16))
+        │   │           │               │   │   ├── flags: variable_call
+        │   │           │               │   │   ├── receiver: ∅
+        │   │           │               │   │   ├── call_operator_loc: ∅
+        │   │           │               │   │   ├── name: :bar
+        │   │           │               │   │   ├── message_loc: (139,13)-(139,16) = "bar"
+        │   │           │               │   │   ├── opening_loc: ∅
+        │   │           │               │   │   ├── arguments: ∅
+        │   │           │               │   │   ├── closing_loc: ∅
+        │   │           │               │   │   └── block: ∅
+        │   │           │               │   └── operator_loc: (139,11)-(139,13) = "**"
+        │   │           │               ├── @ AssocSplatNode (location: (139,18)-(139,23))
+        │   │           │               │   ├── value:
+        │   │           │               │   │   @ CallNode (location: (139,20)-(139,23))
+        │   │           │               │   │   ├── flags: variable_call
+        │   │           │               │   │   ├── receiver: ∅
+        │   │           │               │   │   ├── call_operator_loc: ∅
+        │   │           │               │   │   ├── name: :baz
+        │   │           │               │   │   ├── message_loc: (139,20)-(139,23) = "baz"
+        │   │           │               │   │   ├── opening_loc: ∅
+        │   │           │               │   │   ├── arguments: ∅
+        │   │           │               │   │   ├── closing_loc: ∅
+        │   │           │               │   │   └── block: ∅
+        │   │           │               │   └── operator_loc: (139,18)-(139,20) = "**"
+        │   │           │               └── @ AssocSplatNode (location: (139,25)-(139,30))
+        │   │           │                   ├── value:
+        │   │           │                   │   @ CallNode (location: (139,27)-(139,30))
+        │   │           │                   │   ├── flags: variable_call
+        │   │           │                   │   ├── receiver: ∅
+        │   │           │                   │   ├── call_operator_loc: ∅
+        │   │           │                   │   ├── name: :qux
+        │   │           │                   │   ├── message_loc: (139,27)-(139,30) = "qux"
+        │   │           │                   │   ├── opening_loc: ∅
+        │   │           │                   │   ├── arguments: ∅
+        │   │           │                   │   ├── closing_loc: ∅
+        │   │           │                   │   └── block: ∅
+        │   │           │                   └── operator_loc: (139,25)-(139,27) = "**"
         │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           └── flags: ∅
+        │   │           └── block: ∅
         │   ├── locals: []
         │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (138,0)-(138,3) = "def"
@@ -1365,14 +1365,14 @@
         │   │   │           │   @ StatementsNode (location: (142,12)-(142,18))
         │   │   │           │   └── body: (length: 1)
         │   │   │           │       └── @ RangeNode (location: (142,12)-(142,18))
+        │   │   │           │           ├── flags: exclude_end
         │   │   │           │           ├── left:
         │   │   │           │           │   @ IntegerNode (location: (142,12)-(142,13))
         │   │   │           │           │   └── flags: decimal
         │   │   │           │           ├── right:
         │   │   │           │           │   @ IntegerNode (location: (142,16)-(142,18))
         │   │   │           │           │   └── flags: decimal
-        │   │   │           │           ├── operator_loc: (142,13)-(142,16) = "..."
-        │   │   │           │           └── flags: exclude_end
+        │   │   │           │           └── operator_loc: (142,13)-(142,16) = "..."
         │   │   │           ├── opening_loc: (142,11)-(142,12) = "("
         │   │   │           └── closing_loc: (142,18)-(142,19) = ")"
         │   │   ├── keyword_rest: ∅
@@ -1406,12 +1406,12 @@
         │   │   │           │   @ StatementsNode (location: (145,12)-(145,17))
         │   │   │           │   └── body: (length: 1)
         │   │   │           │       └── @ RangeNode (location: (145,12)-(145,17))
+        │   │   │           │           ├── flags: exclude_end
         │   │   │           │           ├── left: ∅
         │   │   │           │           ├── right:
         │   │   │           │           │   @ IntegerNode (location: (145,15)-(145,17))
         │   │   │           │           │   └── flags: decimal
-        │   │   │           │           ├── operator_loc: (145,12)-(145,15) = "..."
-        │   │   │           │           └── flags: exclude_end
+        │   │   │           │           └── operator_loc: (145,12)-(145,15) = "..."
         │   │   │           ├── opening_loc: (145,11)-(145,12) = "("
         │   │   │           └── closing_loc: (145,17)-(145,18) = ")"
         │   │   ├── keyword_rest: ∅
@@ -1445,12 +1445,12 @@
         │   │   │           │   @ StatementsNode (location: (148,12)-(148,16))
         │   │   │           │   └── body: (length: 1)
         │   │   │           │       └── @ RangeNode (location: (148,12)-(148,16))
+        │   │   │           │           ├── flags: exclude_end
         │   │   │           │           ├── left:
         │   │   │           │           │   @ IntegerNode (location: (148,12)-(148,13))
         │   │   │           │           │   └── flags: decimal
         │   │   │           │           ├── right: ∅
-        │   │   │           │           ├── operator_loc: (148,13)-(148,16) = "..."
-        │   │   │           │           └── flags: exclude_end
+        │   │   │           │           └── operator_loc: (148,13)-(148,16) = "..."
         │   │   │           ├── opening_loc: (148,11)-(148,12) = "("
         │   │   │           └── closing_loc: (148,16)-(148,17) = ")"
         │   │   ├── keyword_rest: ∅
@@ -1482,14 +1482,14 @@
         │   │   │           │   @ StatementsNode (location: (151,13)-(151,19))
         │   │   │           │   └── body: (length: 1)
         │   │   │           │       └── @ RangeNode (location: (151,13)-(151,19))
+        │   │   │           │           ├── flags: exclude_end
         │   │   │           │           ├── left:
         │   │   │           │           │   @ IntegerNode (location: (151,13)-(151,14))
         │   │   │           │           │   └── flags: decimal
         │   │   │           │           ├── right:
         │   │   │           │           │   @ IntegerNode (location: (151,17)-(151,19))
         │   │   │           │           │   └── flags: decimal
-        │   │   │           │           ├── operator_loc: (151,14)-(151,17) = "..."
-        │   │   │           │           └── flags: exclude_end
+        │   │   │           │           └── operator_loc: (151,14)-(151,17) = "..."
         │   │   │           ├── opening_loc: (151,12)-(151,13) = "("
         │   │   │           └── closing_loc: (151,19)-(151,20) = ")"
         │   │   ├── rest: ∅
@@ -1524,12 +1524,12 @@
         │   │   │           │   @ StatementsNode (location: (154,13)-(154,18))
         │   │   │           │   └── body: (length: 1)
         │   │   │           │       └── @ RangeNode (location: (154,13)-(154,18))
+        │   │   │           │           ├── flags: exclude_end
         │   │   │           │           ├── left: ∅
         │   │   │           │           ├── right:
         │   │   │           │           │   @ IntegerNode (location: (154,16)-(154,18))
         │   │   │           │           │   └── flags: decimal
-        │   │   │           │           ├── operator_loc: (154,13)-(154,16) = "..."
-        │   │   │           │           └── flags: exclude_end
+        │   │   │           │           └── operator_loc: (154,13)-(154,16) = "..."
         │   │   │           ├── opening_loc: (154,12)-(154,13) = "("
         │   │   │           └── closing_loc: (154,18)-(154,19) = ")"
         │   │   ├── rest: ∅
@@ -1564,12 +1564,12 @@
         │   │   │           │   @ StatementsNode (location: (157,13)-(157,17))
         │   │   │           │   └── body: (length: 1)
         │   │   │           │       └── @ RangeNode (location: (157,13)-(157,17))
+        │   │   │           │           ├── flags: exclude_end
         │   │   │           │           ├── left:
         │   │   │           │           │   @ IntegerNode (location: (157,13)-(157,14))
         │   │   │           │           │   └── flags: decimal
         │   │   │           │           ├── right: ∅
-        │   │   │           │           ├── operator_loc: (157,14)-(157,17) = "..."
-        │   │   │           │           └── flags: exclude_end
+        │   │   │           │           └── operator_loc: (157,14)-(157,17) = "..."
         │   │   │           ├── opening_loc: (157,12)-(157,13) = "("
         │   │   │           └── closing_loc: (157,17)-(157,18) = ")"
         │   │   ├── rest: ∅
@@ -1605,8 +1605,10 @@
         │   │   @ StatementsNode (location: (161,2)-(161,14))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (161,2)-(161,14))
+        │   │           ├── flags: ∅
         │   │           ├── receiver:
         │   │           │   @ CallNode (location: (161,2)-(161,6))
+        │   │           │   ├── flags: variable_call
         │   │           │   ├── receiver: ∅
         │   │           │   ├── call_operator_loc: ∅
         │   │           │   ├── name: :item
@@ -1614,36 +1616,34 @@
         │   │           │   ├── opening_loc: ∅
         │   │           │   ├── arguments: ∅
         │   │           │   ├── closing_loc: ∅
-        │   │           │   ├── block: ∅
-        │   │           │   └── flags: variable_call
+        │   │           │   └── block: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :>>
         │   │           ├── message_loc: (161,7)-(161,9) = ">>"
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (161,10)-(161,14))
-        │   │           │   ├── arguments: (length: 1)
-        │   │           │   │   └── @ CallNode (location: (161,10)-(161,14))
-        │   │           │   │       ├── receiver: ∅
-        │   │           │   │       ├── call_operator_loc: ∅
-        │   │           │   │       ├── name: :a
-        │   │           │   │       ├── message_loc: (161,10)-(161,11) = "a"
-        │   │           │   │       ├── opening_loc: ∅
-        │   │           │   │       ├── arguments: ∅
-        │   │           │   │       ├── closing_loc: ∅
-        │   │           │   │       ├── block:
-        │   │           │   │       │   @ BlockNode (location: (161,12)-(161,14))
-        │   │           │   │       │   ├── locals: []
-        │   │           │   │       │   ├── locals_body_index: 0
-        │   │           │   │       │   ├── parameters: ∅
-        │   │           │   │       │   ├── body: ∅
-        │   │           │   │       │   ├── opening_loc: (161,12)-(161,13) = "{"
-        │   │           │   │       │   └── closing_loc: (161,13)-(161,14) = "}"
-        │   │           │   │       └── flags: ∅
-        │   │           │   └── flags: ∅
+        │   │           │   ├── flags: ∅
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ CallNode (location: (161,10)-(161,14))
+        │   │           │           ├── flags: ∅
+        │   │           │           ├── receiver: ∅
+        │   │           │           ├── call_operator_loc: ∅
+        │   │           │           ├── name: :a
+        │   │           │           ├── message_loc: (161,10)-(161,11) = "a"
+        │   │           │           ├── opening_loc: ∅
+        │   │           │           ├── arguments: ∅
+        │   │           │           ├── closing_loc: ∅
+        │   │           │           └── block:
+        │   │           │               @ BlockNode (location: (161,12)-(161,14))
+        │   │           │               ├── locals: []
+        │   │           │               ├── locals_body_index: 0
+        │   │           │               ├── parameters: ∅
+        │   │           │               ├── body: ∅
+        │   │           │               ├── opening_loc: (161,12)-(161,13) = "{"
+        │   │           │               └── closing_loc: (161,13)-(161,14) = "}"
         │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           └── flags: ∅
+        │   │           └── block: ∅
         │   ├── locals: [:a]
         │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (160,0)-(160,3) = "def"
@@ -1728,13 +1728,13 @@
         │   │   @ StatementsNode (location: (170,10)-(170,13))
         │   │   └── body: (length: 1)
         │   │       └── @ ArrayNode (location: (170,10)-(170,13))
+        │   │           ├── flags: contains_splat
         │   │           ├── elements: (length: 1)
         │   │           │   └── @ SplatNode (location: (170,11)-(170,12))
         │   │           │       ├── operator_loc: (170,11)-(170,12) = "*"
         │   │           │       └── expression: ∅
         │   │           ├── opening_loc: (170,10)-(170,11) = "["
-        │   │           ├── closing_loc: (170,12)-(170,13) = "]"
-        │   │           └── flags: contains_splat
+        │   │           └── closing_loc: (170,12)-(170,13) = "]"
         │   ├── locals: [:*]
         │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (170,0)-(170,3) = "def"
@@ -1759,8 +1759,10 @@
         │   │   │       ├── name_loc: (172,6)-(172,8) = "x:"
         │   │   │       └── value:
         │   │   │           @ CallNode (location: (172,8)-(172,10))
+        │   │   │           ├── flags: ∅
         │   │   │           ├── receiver:
         │   │   │           │   @ CallNode (location: (172,9)-(172,10))
+        │   │   │           │   ├── flags: variable_call
         │   │   │           │   ├── receiver: ∅
         │   │   │           │   ├── call_operator_loc: ∅
         │   │   │           │   ├── name: :a
@@ -1768,16 +1770,14 @@
         │   │   │           │   ├── opening_loc: ∅
         │   │   │           │   ├── arguments: ∅
         │   │   │           │   ├── closing_loc: ∅
-        │   │   │           │   ├── block: ∅
-        │   │   │           │   └── flags: variable_call
+        │   │   │           │   └── block: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :-@
         │   │   │           ├── message_loc: (172,8)-(172,9) = "-"
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
-        │   │   │           ├── block: ∅
-        │   │   │           └── flags: ∅
+        │   │   │           └── block: ∅
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
         │   ├── body: ∅
@@ -1805,8 +1805,10 @@
         │   │   │       ├── name_loc: (174,6)-(174,8) = "x:"
         │   │   │       └── value:
         │   │   │           @ CallNode (location: (174,8)-(174,10))
+        │   │   │           ├── flags: ∅
         │   │   │           ├── receiver:
         │   │   │           │   @ CallNode (location: (174,9)-(174,10))
+        │   │   │           │   ├── flags: variable_call
         │   │   │           │   ├── receiver: ∅
         │   │   │           │   ├── call_operator_loc: ∅
         │   │   │           │   ├── name: :a
@@ -1814,16 +1816,14 @@
         │   │   │           │   ├── opening_loc: ∅
         │   │   │           │   ├── arguments: ∅
         │   │   │           │   ├── closing_loc: ∅
-        │   │   │           │   ├── block: ∅
-        │   │   │           │   └── flags: variable_call
+        │   │   │           │   └── block: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :+@
         │   │   │           ├── message_loc: (174,8)-(174,9) = "+"
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
-        │   │   │           ├── block: ∅
-        │   │   │           └── flags: ∅
+        │   │   │           └── block: ∅
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
         │   ├── body: ∅
@@ -1851,8 +1851,10 @@
         │   │   │       ├── name_loc: (176,6)-(176,8) = "x:"
         │   │   │       └── value:
         │   │   │           @ CallNode (location: (176,8)-(176,10))
+        │   │   │           ├── flags: ∅
         │   │   │           ├── receiver:
         │   │   │           │   @ CallNode (location: (176,9)-(176,10))
+        │   │   │           │   ├── flags: variable_call
         │   │   │           │   ├── receiver: ∅
         │   │   │           │   ├── call_operator_loc: ∅
         │   │   │           │   ├── name: :a
@@ -1860,16 +1862,14 @@
         │   │   │           │   ├── opening_loc: ∅
         │   │   │           │   ├── arguments: ∅
         │   │   │           │   ├── closing_loc: ∅
-        │   │   │           │   ├── block: ∅
-        │   │   │           │   └── flags: variable_call
+        │   │   │           │   └── block: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :!
         │   │   │           ├── message_loc: (176,8)-(176,9) = "!"
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
-        │   │   │           ├── block: ∅
-        │   │   │           └── flags: ∅
+        │   │   │           └── block: ∅
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
         │   ├── body: ∅
@@ -1931,6 +1931,7 @@
         │   │   @ StatementsNode (location: (181,2)-(181,7))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (181,2)-(181,7))
+        │   │           ├── flags: ∅
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -1938,11 +1939,10 @@
         │   │           ├── opening_loc: (181,5)-(181,6) = "("
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: (181,7)-(181,8) = ")"
-        │   │           ├── block:
-        │   │           │   @ BlockArgumentNode (location: (181,6)-(181,7))
-        │   │           │   ├── expression: ∅
-        │   │           │   └── operator_loc: (181,6)-(181,7) = "&"
-        │   │           └── flags: ∅
+        │   │           └── block:
+        │   │               @ BlockArgumentNode (location: (181,6)-(181,7))
+        │   │               ├── expression: ∅
+        │   │               └── operator_loc: (181,6)-(181,7) = "&"
         │   ├── locals: [:"..."]
         │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (180,0)-(180,3) = "def"

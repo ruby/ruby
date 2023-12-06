@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(9,17))
     └── body: (length: 5)
         ├── @ CallNode (location: (1,0)-(1,2))
+        │   ├── flags: variable_call
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :_1
@@ -11,14 +12,14 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── block: ∅
-        │   └── flags: variable_call
+        │   └── block: ∅
         ├── @ SingletonClassNode (location: (3,0)-(3,21))
         │   ├── locals: []
         │   ├── class_keyword_loc: (3,0)-(3,5) = "class"
         │   ├── operator_loc: (3,6)-(3,8) = "<<"
         │   ├── expression:
         │   │   @ CallNode (location: (3,9)-(3,12))
+        │   │   ├── flags: variable_call
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -26,12 +27,12 @@
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
-        │   │   ├── block: ∅
-        │   │   └── flags: variable_call
+        │   │   └── block: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (3,14)-(3,16))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (3,14)-(3,16))
+        │   │           ├── flags: variable_call
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :_1
@@ -39,8 +40,7 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           └── flags: variable_call
+        │   │           └── block: ∅
         │   └── end_keyword_loc: (3,18)-(3,21) = "end"
         ├── @ ClassNode (location: (5,0)-(5,16))
         │   ├── locals: []
@@ -54,6 +54,7 @@
         │   │   @ StatementsNode (location: (5,9)-(5,11))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (5,9)-(5,11))
+        │   │           ├── flags: variable_call
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :_1
@@ -61,8 +62,7 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           └── flags: variable_call
+        │   │           └── block: ∅
         │   ├── end_keyword_loc: (5,13)-(5,16) = "end"
         │   └── name: :A
         ├── @ DefNode (location: (7,0)-(7,19))
@@ -75,6 +75,7 @@
         │   │   @ StatementsNode (location: (7,12)-(7,14))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (7,12)-(7,14))
+        │   │           ├── flags: variable_call
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :_1
@@ -82,8 +83,7 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           └── flags: variable_call
+        │   │           └── block: ∅
         │   ├── locals: []
         │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (7,0)-(7,3) = "def"
@@ -102,6 +102,7 @@
             │   @ StatementsNode (location: (9,10)-(9,12))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (9,10)-(9,12))
+            │           ├── flags: variable_call
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :_1
@@ -109,7 +110,6 @@
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
-            │           ├── block: ∅
-            │           └── flags: variable_call
+            │           └── block: ∅
             ├── end_keyword_loc: (9,14)-(9,17) = "end"
             └── name: :A

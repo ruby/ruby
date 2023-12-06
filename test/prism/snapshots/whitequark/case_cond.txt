@@ -10,6 +10,7 @@
             │       ├── keyword_loc: (1,6)-(1,10) = "when"
             │       ├── conditions: (length: 1)
             │       │   └── @ CallNode (location: (1,11)-(1,14))
+            │       │       ├── flags: variable_call
             │       │       ├── receiver: ∅
             │       │       ├── call_operator_loc: ∅
             │       │       ├── name: :foo
@@ -17,8 +18,7 @@
             │       │       ├── opening_loc: ∅
             │       │       ├── arguments: ∅
             │       │       ├── closing_loc: ∅
-            │       │       ├── block: ∅
-            │       │       └── flags: variable_call
+            │       │       └── block: ∅
             │       └── statements:
             │           @ StatementsNode (location: (1,16)-(1,21))
             │           └── body: (length: 1)

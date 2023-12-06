@@ -7,6 +7,7 @@
             ├── if_keyword_loc: (1,4)-(1,6) = "if"
             ├── predicate:
             │   @ CallNode (location: (1,7)-(1,10))
+            │   ├── flags: variable_call
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :foo
@@ -14,13 +15,13 @@
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
-            │   ├── block: ∅
-            │   └── flags: variable_call
+            │   └── block: ∅
             ├── then_keyword_loc: ∅
             ├── statements:
             │   @ StatementsNode (location: (1,0)-(1,3))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,0)-(1,3))
+            │           ├── flags: variable_call
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :bar
@@ -28,7 +29,6 @@
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
-            │           ├── block: ∅
-            │           └── flags: variable_call
+            │           └── block: ∅
             ├── consequent: ∅
             └── end_keyword_loc: ∅

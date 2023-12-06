@@ -6,6 +6,7 @@
         └── @ CaseNode (location: (1,0)-(1,25))
             ├── predicate:
             │   @ CallNode (location: (1,5)-(1,6))
+            │   ├── flags: variable_call
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :a
@@ -13,8 +14,7 @@
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
-            │   ├── block: ∅
-            │   └── flags: variable_call
+            │   └── block: ∅
             ├── conditions: (length: 1)
             │   └── @ WhenNode (location: (1,8)-(1,15))
             │       ├── keyword_loc: (1,8)-(1,12) = "when"
@@ -23,6 +23,7 @@
             │       │       ├── operator_loc: (1,13)-(1,14) = "*"
             │       │       └── expression:
             │       │           @ CallNode (location: (1,14)-(1,15))
+            │       │           ├── flags: variable_call
             │       │           ├── receiver: ∅
             │       │           ├── call_operator_loc: ∅
             │       │           ├── name: :b
@@ -30,8 +31,7 @@
             │       │           ├── opening_loc: ∅
             │       │           ├── arguments: ∅
             │       │           ├── closing_loc: ∅
-            │       │           ├── block: ∅
-            │       │           └── flags: variable_call
+            │       │           └── block: ∅
             │       └── statements: ∅
             ├── consequent: ∅
             ├── case_keyword_loc: (1,0)-(1,4) = "case"

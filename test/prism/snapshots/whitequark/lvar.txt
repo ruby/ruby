@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,3))
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,3))
+            ├── flags: variable_call
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :foo
@@ -11,5 +12,4 @@
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
-            ├── block: ∅
-            └── flags: variable_call
+            └── block: ∅

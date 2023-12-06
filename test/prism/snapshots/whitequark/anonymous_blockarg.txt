@@ -24,6 +24,7 @@
             │   @ StatementsNode (location: (1,12)-(1,17))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,12)-(1,17))
+            │           ├── flags: ∅
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :bar
@@ -31,11 +32,10 @@
             │           ├── opening_loc: (1,15)-(1,16) = "("
             │           ├── arguments: ∅
             │           ├── closing_loc: (1,17)-(1,18) = ")"
-            │           ├── block:
-            │           │   @ BlockArgumentNode (location: (1,16)-(1,17))
-            │           │   ├── expression: ∅
-            │           │   └── operator_loc: (1,16)-(1,17) = "&"
-            │           └── flags: ∅
+            │           └── block:
+            │               @ BlockArgumentNode (location: (1,16)-(1,17))
+            │               ├── expression: ∅
+            │               └── operator_loc: (1,16)-(1,17) = "&"
             ├── locals: [:&]
             ├── locals_body_index: 1
             ├── def_keyword_loc: (1,0)-(1,3) = "def"

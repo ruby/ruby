@@ -12,6 +12,7 @@
         │   │   ├── operator_loc: (1,7)-(1,9) = "+="
         │   │   ├── value:
         │   │   │   @ CallNode (location: (1,10)-(1,18))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :raise
@@ -19,16 +20,15 @@
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments:
         │   │   │   │   @ ArgumentsNode (location: (1,16)-(1,18))
-        │   │   │   │   ├── arguments: (length: 1)
-        │   │   │   │   │   └── @ SymbolNode (location: (1,16)-(1,18))
-        │   │   │   │   │       ├── opening_loc: (1,16)-(1,17) = ":"
-        │   │   │   │   │       ├── value_loc: (1,17)-(1,18) = "x"
-        │   │   │   │   │       ├── closing_loc: ∅
-        │   │   │   │   │       └── unescaped: "x"
-        │   │   │   │   └── flags: ∅
+        │   │   │   │   ├── flags: ∅
+        │   │   │   │   └── arguments: (length: 1)
+        │   │   │   │       └── @ SymbolNode (location: (1,16)-(1,18))
+        │   │   │   │           ├── opening_loc: (1,16)-(1,17) = ":"
+        │   │   │   │           ├── value_loc: (1,17)-(1,18) = "x"
+        │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │           └── unescaped: "x"
         │   │   │   ├── closing_loc: ∅
-        │   │   │   ├── block: ∅
-        │   │   │   └── flags: ∅
+        │   │   │   └── block: ∅
         │   │   ├── name: :b
         │   │   ├── operator: :+
         │   │   └── depth: 0
@@ -45,6 +45,7 @@
         │   │   ├── name_loc: (3,5)-(3,6) = "b"
         │   │   ├── value:
         │   │   │   @ CallNode (location: (3,9)-(3,17))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :raise
@@ -52,16 +53,15 @@
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments:
         │   │   │   │   @ ArgumentsNode (location: (3,15)-(3,17))
-        │   │   │   │   ├── arguments: (length: 1)
-        │   │   │   │   │   └── @ SymbolNode (location: (3,15)-(3,17))
-        │   │   │   │   │       ├── opening_loc: (3,15)-(3,16) = ":"
-        │   │   │   │   │       ├── value_loc: (3,16)-(3,17) = "x"
-        │   │   │   │   │       ├── closing_loc: ∅
-        │   │   │   │   │       └── unescaped: "x"
-        │   │   │   │   └── flags: ∅
+        │   │   │   │   ├── flags: ∅
+        │   │   │   │   └── arguments: (length: 1)
+        │   │   │   │       └── @ SymbolNode (location: (3,15)-(3,17))
+        │   │   │   │           ├── opening_loc: (3,15)-(3,16) = ":"
+        │   │   │   │           ├── value_loc: (3,16)-(3,17) = "x"
+        │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │           └── unescaped: "x"
         │   │   │   ├── closing_loc: ∅
-        │   │   │   ├── block: ∅
-        │   │   │   └── flags: ∅
+        │   │   │   └── block: ∅
         │   │   └── operator_loc: (3,7)-(3,8) = "="
         │   ├── name: :a
         │   ├── operator: :+
@@ -76,6 +76,7 @@
         │   │   ├── operator_loc: (5,6)-(5,8) = "+="
         │   │   ├── value:
         │   │   │   @ CallNode (location: (5,9)-(5,17))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :raise
@@ -83,16 +84,15 @@
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments:
         │   │   │   │   @ ArgumentsNode (location: (5,15)-(5,17))
-        │   │   │   │   ├── arguments: (length: 1)
-        │   │   │   │   │   └── @ SymbolNode (location: (5,15)-(5,17))
-        │   │   │   │   │       ├── opening_loc: (5,15)-(5,16) = ":"
-        │   │   │   │   │       ├── value_loc: (5,16)-(5,17) = "x"
-        │   │   │   │   │       ├── closing_loc: ∅
-        │   │   │   │   │       └── unescaped: "x"
-        │   │   │   │   └── flags: ∅
+        │   │   │   │   ├── flags: ∅
+        │   │   │   │   └── arguments: (length: 1)
+        │   │   │   │       └── @ SymbolNode (location: (5,15)-(5,17))
+        │   │   │   │           ├── opening_loc: (5,15)-(5,16) = ":"
+        │   │   │   │           ├── value_loc: (5,16)-(5,17) = "x"
+        │   │   │   │           ├── closing_loc: ∅
+        │   │   │   │           └── unescaped: "x"
         │   │   │   ├── closing_loc: ∅
-        │   │   │   ├── block: ∅
-        │   │   │   └── flags: ∅
+        │   │   │   └── block: ∅
         │   │   ├── name: :b
         │   │   ├── operator: :+
         │   │   └── depth: 0
@@ -108,6 +108,7 @@
             │   ├── name_loc: (7,4)-(7,5) = "b"
             │   ├── value:
             │   │   @ CallNode (location: (7,8)-(7,16))
+            │   │   ├── flags: ∅
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
             │   │   ├── name: :raise
@@ -115,15 +116,14 @@
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments:
             │   │   │   @ ArgumentsNode (location: (7,14)-(7,16))
-            │   │   │   ├── arguments: (length: 1)
-            │   │   │   │   └── @ SymbolNode (location: (7,14)-(7,16))
-            │   │   │   │       ├── opening_loc: (7,14)-(7,15) = ":"
-            │   │   │   │       ├── value_loc: (7,15)-(7,16) = "x"
-            │   │   │   │       ├── closing_loc: ∅
-            │   │   │   │       └── unescaped: "x"
-            │   │   │   └── flags: ∅
+            │   │   │   ├── flags: ∅
+            │   │   │   └── arguments: (length: 1)
+            │   │   │       └── @ SymbolNode (location: (7,14)-(7,16))
+            │   │   │           ├── opening_loc: (7,14)-(7,15) = ":"
+            │   │   │           ├── value_loc: (7,15)-(7,16) = "x"
+            │   │   │           ├── closing_loc: ∅
+            │   │   │           └── unescaped: "x"
             │   │   ├── closing_loc: ∅
-            │   │   ├── block: ∅
-            │   │   └── flags: ∅
+            │   │   └── block: ∅
             │   └── operator_loc: (7,6)-(7,7) = "="
             └── operator_loc: (7,2)-(7,3) = "="

@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(6,5))
     └── body: (length: 2)
         ├── @ CallNode (location: (1,0)-(4,8))
+        │   ├── flags: ∅
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :puts
@@ -11,20 +12,21 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (1,5)-(4,8))
-        │   │   ├── arguments: (length: 1)
-        │   │   │   └── @ StringNode (location: (1,5)-(4,8))
-        │   │   │       ├── flags: ∅
-        │   │   │       ├── opening_loc: (1,5)-(1,6) = "\""
-        │   │   │       ├── content_loc: (1,6)-(4,7) = "hello\\\n my\\\n dear\\\n friend"
-        │   │   │       ├── closing_loc: (4,7)-(4,8) = "\""
-        │   │   │       └── unescaped: "hello my dear friend"
-        │   │   └── flags: ∅
+        │   │   ├── flags: ∅
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ StringNode (location: (1,5)-(4,8))
+        │   │           ├── flags: ∅
+        │   │           ├── opening_loc: (1,5)-(1,6) = "\""
+        │   │           ├── content_loc: (1,6)-(4,7) = "hello\\\n my\\\n dear\\\n friend"
+        │   │           ├── closing_loc: (4,7)-(4,8) = "\""
+        │   │           └── unescaped: "hello my dear friend"
         │   ├── closing_loc: ∅
-        │   ├── block: ∅
-        │   └── flags: ∅
+        │   └── block: ∅
         └── @ CallNode (location: (6,0)-(6,5))
+            ├── flags: ∅
             ├── receiver:
             │   @ CallNode (location: (6,0)-(6,1))
+            │   ├── flags: variable_call
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :a
@@ -32,26 +34,24 @@
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
-            │   ├── block: ∅
-            │   └── flags: variable_call
+            │   └── block: ∅
             ├── call_operator_loc: ∅
             ├── name: :+
             ├── message_loc: (6,2)-(6,3) = "+"
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (6,4)-(6,5))
-            │   ├── arguments: (length: 1)
-            │   │   └── @ CallNode (location: (6,4)-(6,5))
-            │   │       ├── receiver: ∅
-            │   │       ├── call_operator_loc: ∅
-            │   │       ├── name: :b
-            │   │       ├── message_loc: (6,4)-(6,5) = "b"
-            │   │       ├── opening_loc: ∅
-            │   │       ├── arguments: ∅
-            │   │       ├── closing_loc: ∅
-            │   │       ├── block: ∅
-            │   │       └── flags: variable_call
-            │   └── flags: ∅
+            │   ├── flags: ∅
+            │   └── arguments: (length: 1)
+            │       └── @ CallNode (location: (6,4)-(6,5))
+            │           ├── flags: variable_call
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── name: :b
+            │           ├── message_loc: (6,4)-(6,5) = "b"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           └── block: ∅
             ├── closing_loc: ∅
-            ├── block: ∅
-            └── flags: ∅
+            └── block: ∅

@@ -4,16 +4,18 @@
     @ StatementsNode (location: (1,0)-(3,3))
     └── body: (length: 3)
         ├── @ RangeNode (location: (1,0)-(1,4))
+        │   ├── flags: ∅
         │   ├── left: ∅
         │   ├── right:
         │   │   @ IntegerNode (location: (1,2)-(1,4))
         │   │   └── flags: decimal
-        │   ├── operator_loc: (1,0)-(1,2) = ".."
-        │   └── flags: ∅
+        │   └── operator_loc: (1,0)-(1,2) = ".."
         ├── @ RangeNode (location: (2,2)-(2,5))
+        │   ├── flags: ∅
         │   ├── left: ∅
         │   ├── right:
         │   │   @ CallNode (location: (2,4)-(2,5))
+        │   │   ├── flags: variable_call
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :a
@@ -21,11 +23,10 @@
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
-        │   │   ├── block: ∅
-        │   │   └── flags: variable_call
-        │   ├── operator_loc: (2,2)-(2,4) = ".."
-        │   └── flags: ∅
+        │   │   └── block: ∅
+        │   └── operator_loc: (2,2)-(2,4) = ".."
         └── @ CallNode (location: (3,2)-(3,3))
+            ├── flags: variable_call
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :c
@@ -33,5 +34,4 @@
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
-            ├── block: ∅
-            └── flags: variable_call
+            └── block: ∅

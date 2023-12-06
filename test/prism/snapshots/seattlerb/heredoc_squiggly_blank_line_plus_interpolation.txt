@@ -9,6 +9,7 @@
             ├── name_loc: (1,0)-(1,1) = "a"
             ├── value:
             │   @ CallNode (location: (1,4)-(1,20))
+            │   ├── flags: ∅
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :foo
@@ -16,51 +17,50 @@
             │   ├── opening_loc: (1,7)-(1,8) = "("
             │   ├── arguments:
             │   │   @ ArgumentsNode (location: (1,8)-(1,19))
-            │   │   ├── arguments: (length: 1)
-            │   │   │   └── @ CallNode (location: (1,8)-(1,19))
-            │   │   │       ├── receiver:
-            │   │   │       │   @ InterpolatedStringNode (location: (1,8)-(1,14))
-            │   │   │       │   ├── opening_loc: (1,8)-(1,14) = "<<~EOF"
-            │   │   │       │   ├── parts: (length: 3)
-            │   │   │       │   │   ├── @ StringNode (location: (2,0)-(3,0))
-            │   │   │       │   │   │   ├── flags: ∅
-            │   │   │       │   │   │   ├── opening_loc: ∅
-            │   │   │       │   │   │   ├── content_loc: (2,0)-(3,0) = "\n"
-            │   │   │       │   │   │   ├── closing_loc: ∅
-            │   │   │       │   │   │   └── unescaped: "\n"
-            │   │   │       │   │   ├── @ EmbeddedStatementsNode (location: (3,4)-(3,10))
-            │   │   │       │   │   │   ├── opening_loc: (3,4)-(3,6) = "\#{"
-            │   │   │       │   │   │   ├── statements:
-            │   │   │       │   │   │   │   @ StatementsNode (location: (3,6)-(3,9))
-            │   │   │       │   │   │   │   └── body: (length: 1)
-            │   │   │       │   │   │   │       └── @ CallNode (location: (3,6)-(3,9))
-            │   │   │       │   │   │   │           ├── receiver: ∅
-            │   │   │       │   │   │   │           ├── call_operator_loc: ∅
-            │   │   │       │   │   │   │           ├── name: :bar
-            │   │   │       │   │   │   │           ├── message_loc: (3,6)-(3,9) = "bar"
-            │   │   │       │   │   │   │           ├── opening_loc: ∅
-            │   │   │       │   │   │   │           ├── arguments: ∅
-            │   │   │       │   │   │   │           ├── closing_loc: ∅
-            │   │   │       │   │   │   │           ├── block: ∅
-            │   │   │       │   │   │   │           └── flags: variable_call
-            │   │   │       │   │   │   └── closing_loc: (3,9)-(3,10) = "}"
-            │   │   │       │   │   └── @ StringNode (location: (3,10)-(4,0))
-            │   │   │       │   │       ├── flags: ∅
-            │   │   │       │   │       ├── opening_loc: ∅
-            │   │   │       │   │       ├── content_loc: (3,10)-(4,0) = "baz\n"
-            │   │   │       │   │       ├── closing_loc: ∅
-            │   │   │       │   │       └── unescaped: "baz\n"
-            │   │   │       │   └── closing_loc: (4,0)-(5,0) = "  EOF\n"
-            │   │   │       ├── call_operator_loc: (1,14)-(1,15) = "."
-            │   │   │       ├── name: :chop
-            │   │   │       ├── message_loc: (1,15)-(1,19) = "chop"
-            │   │   │       ├── opening_loc: ∅
-            │   │   │       ├── arguments: ∅
-            │   │   │       ├── closing_loc: ∅
-            │   │   │       ├── block: ∅
-            │   │   │       └── flags: ∅
-            │   │   └── flags: ∅
+            │   │   ├── flags: ∅
+            │   │   └── arguments: (length: 1)
+            │   │       └── @ CallNode (location: (1,8)-(1,19))
+            │   │           ├── flags: ∅
+            │   │           ├── receiver:
+            │   │           │   @ InterpolatedStringNode (location: (1,8)-(1,14))
+            │   │           │   ├── opening_loc: (1,8)-(1,14) = "<<~EOF"
+            │   │           │   ├── parts: (length: 3)
+            │   │           │   │   ├── @ StringNode (location: (2,0)-(3,0))
+            │   │           │   │   │   ├── flags: ∅
+            │   │           │   │   │   ├── opening_loc: ∅
+            │   │           │   │   │   ├── content_loc: (2,0)-(3,0) = "\n"
+            │   │           │   │   │   ├── closing_loc: ∅
+            │   │           │   │   │   └── unescaped: "\n"
+            │   │           │   │   ├── @ EmbeddedStatementsNode (location: (3,4)-(3,10))
+            │   │           │   │   │   ├── opening_loc: (3,4)-(3,6) = "\#{"
+            │   │           │   │   │   ├── statements:
+            │   │           │   │   │   │   @ StatementsNode (location: (3,6)-(3,9))
+            │   │           │   │   │   │   └── body: (length: 1)
+            │   │           │   │   │   │       └── @ CallNode (location: (3,6)-(3,9))
+            │   │           │   │   │   │           ├── flags: variable_call
+            │   │           │   │   │   │           ├── receiver: ∅
+            │   │           │   │   │   │           ├── call_operator_loc: ∅
+            │   │           │   │   │   │           ├── name: :bar
+            │   │           │   │   │   │           ├── message_loc: (3,6)-(3,9) = "bar"
+            │   │           │   │   │   │           ├── opening_loc: ∅
+            │   │           │   │   │   │           ├── arguments: ∅
+            │   │           │   │   │   │           ├── closing_loc: ∅
+            │   │           │   │   │   │           └── block: ∅
+            │   │           │   │   │   └── closing_loc: (3,9)-(3,10) = "}"
+            │   │           │   │   └── @ StringNode (location: (3,10)-(4,0))
+            │   │           │   │       ├── flags: ∅
+            │   │           │   │       ├── opening_loc: ∅
+            │   │           │   │       ├── content_loc: (3,10)-(4,0) = "baz\n"
+            │   │           │   │       ├── closing_loc: ∅
+            │   │           │   │       └── unescaped: "baz\n"
+            │   │           │   └── closing_loc: (4,0)-(5,0) = "  EOF\n"
+            │   │           ├── call_operator_loc: (1,14)-(1,15) = "."
+            │   │           ├── name: :chop
+            │   │           ├── message_loc: (1,15)-(1,19) = "chop"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments: ∅
+            │   │           ├── closing_loc: ∅
+            │   │           └── block: ∅
             │   ├── closing_loc: (1,19)-(1,20) = ")"
-            │   ├── block: ∅
-            │   └── flags: ∅
+            │   └── block: ∅
             └── operator_loc: (1,2)-(1,3) = "="

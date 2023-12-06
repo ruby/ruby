@@ -6,6 +6,7 @@
         └── @ CaseMatchNode (location: (1,0)-(4,3))
             ├── predicate:
             │   @ CallNode (location: (1,5)-(1,8))
+            │   ├── flags: variable_call
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :obj
@@ -13,8 +14,7 @@
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
-            │   ├── block: ∅
-            │   └── flags: variable_call
+            │   └── block: ∅
             ├── conditions: (length: 1)
             │   └── @ InNode (location: (2,0)-(3,6))
             │       ├── pattern:

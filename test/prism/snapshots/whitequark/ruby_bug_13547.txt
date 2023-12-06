@@ -4,8 +4,10 @@
     @ StatementsNode (location: (1,0)-(1,9))
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,9))
+            ├── flags: ∅
             ├── receiver:
             │   @ CallNode (location: (1,0)-(1,4))
+            │   ├── flags: variable_call
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :meth
@@ -13,20 +15,18 @@
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
-            │   ├── block: ∅
-            │   └── flags: variable_call
+            │   └── block: ∅
             ├── call_operator_loc: ∅
             ├── name: :[]
             ├── message_loc: (1,4)-(1,6) = "[]"
             ├── opening_loc: (1,4)-(1,5) = "["
             ├── arguments: ∅
             ├── closing_loc: (1,5)-(1,6) = "]"
-            ├── block:
-            │   @ BlockNode (location: (1,7)-(1,9))
-            │   ├── locals: []
-            │   ├── locals_body_index: 0
-            │   ├── parameters: ∅
-            │   ├── body: ∅
-            │   ├── opening_loc: (1,7)-(1,8) = "{"
-            │   └── closing_loc: (1,8)-(1,9) = "}"
-            └── flags: ∅
+            └── block:
+                @ BlockNode (location: (1,7)-(1,9))
+                ├── locals: []
+                ├── locals_body_index: 0
+                ├── parameters: ∅
+                ├── body: ∅
+                ├── opening_loc: (1,7)-(1,8) = "{"
+                └── closing_loc: (1,8)-(1,9) = "}"

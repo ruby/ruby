@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(10,17))
     └── body: (length: 10)
         ├── @ CallNode (location: (1,0)-(1,1))
+        │   ├── flags: variable_call
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -11,8 +12,7 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── block: ∅
-        │   └── flags: variable_call
+        │   └── block: ∅
         ├── @ InstanceVariableReadNode (location: (2,0)-(2,2))
         │   └── name: :@a
         ├── @ ClassVariableReadNode (location: (3,0)-(3,3))

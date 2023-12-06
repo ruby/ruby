@@ -9,6 +9,7 @@
             │   @ StatementsNode (location: (1,7)-(1,11))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,7)-(1,11))
+            │           ├── flags: variable_call
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :meth
@@ -16,8 +17,7 @@
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
-            │           ├── block: ∅
-            │           └── flags: variable_call
+            │           └── block: ∅
             ├── rescue_clause:
             │   @ RescueNode (location: (1,13)-(1,24))
             │   ├── keyword_loc: (1,13)-(1,19) = "rescue"
@@ -28,6 +28,7 @@
             │   │   @ StatementsNode (location: (1,21)-(1,24))
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (1,21)-(1,24))
+            │   │           ├── flags: variable_call
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :foo
@@ -35,8 +36,7 @@
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
-            │   │           ├── block: ∅
-            │   │           └── flags: variable_call
+            │   │           └── block: ∅
             │   └── consequent: ∅
             ├── else_clause:
             │   @ ElseNode (location: (1,26)-(1,40))
@@ -45,6 +45,7 @@
             │   │   @ StatementsNode (location: (1,32)-(1,35))
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (1,32)-(1,35))
+            │   │           ├── flags: variable_call
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :bar
@@ -52,8 +53,7 @@
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
-            │   │           ├── block: ∅
-            │   │           └── flags: variable_call
+            │   │           └── block: ∅
             │   └── end_keyword_loc: (1,37)-(1,40) = "end"
             ├── ensure_clause: ∅
             └── end_keyword_loc: (1,37)-(1,40) = "end"

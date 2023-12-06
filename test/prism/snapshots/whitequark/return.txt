@@ -10,47 +10,47 @@
         │   ├── keyword_loc: (3,0)-(3,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (3,7)-(3,10))
-        │       ├── arguments: (length: 1)
-        │       │   └── @ CallNode (location: (3,7)-(3,10))
-        │       │       ├── receiver: ∅
-        │       │       ├── call_operator_loc: ∅
-        │       │       ├── name: :foo
-        │       │       ├── message_loc: (3,7)-(3,10) = "foo"
-        │       │       ├── opening_loc: ∅
-        │       │       ├── arguments: ∅
-        │       │       ├── closing_loc: ∅
-        │       │       ├── block: ∅
-        │       │       └── flags: variable_call
-        │       └── flags: ∅
+        │       ├── flags: ∅
+        │       └── arguments: (length: 1)
+        │           └── @ CallNode (location: (3,7)-(3,10))
+        │               ├── flags: variable_call
+        │               ├── receiver: ∅
+        │               ├── call_operator_loc: ∅
+        │               ├── name: :foo
+        │               ├── message_loc: (3,7)-(3,10) = "foo"
+        │               ├── opening_loc: ∅
+        │               ├── arguments: ∅
+        │               ├── closing_loc: ∅
+        │               └── block: ∅
         ├── @ ReturnNode (location: (5,0)-(5,8))
         │   ├── keyword_loc: (5,0)-(5,6) = "return"
         │   └── arguments:
         │       @ ArgumentsNode (location: (5,6)-(5,8))
-        │       ├── arguments: (length: 1)
-        │       │   └── @ ParenthesesNode (location: (5,6)-(5,8))
-        │       │       ├── body: ∅
-        │       │       ├── opening_loc: (5,6)-(5,7) = "("
-        │       │       └── closing_loc: (5,7)-(5,8) = ")"
-        │       └── flags: ∅
+        │       ├── flags: ∅
+        │       └── arguments: (length: 1)
+        │           └── @ ParenthesesNode (location: (5,6)-(5,8))
+        │               ├── body: ∅
+        │               ├── opening_loc: (5,6)-(5,7) = "("
+        │               └── closing_loc: (5,7)-(5,8) = ")"
         └── @ ReturnNode (location: (7,0)-(7,11))
             ├── keyword_loc: (7,0)-(7,6) = "return"
             └── arguments:
                 @ ArgumentsNode (location: (7,6)-(7,11))
-                ├── arguments: (length: 1)
-                │   └── @ ParenthesesNode (location: (7,6)-(7,11))
-                │       ├── body:
-                │       │   @ StatementsNode (location: (7,7)-(7,10))
-                │       │   └── body: (length: 1)
-                │       │       └── @ CallNode (location: (7,7)-(7,10))
-                │       │           ├── receiver: ∅
-                │       │           ├── call_operator_loc: ∅
-                │       │           ├── name: :foo
-                │       │           ├── message_loc: (7,7)-(7,10) = "foo"
-                │       │           ├── opening_loc: ∅
-                │       │           ├── arguments: ∅
-                │       │           ├── closing_loc: ∅
-                │       │           ├── block: ∅
-                │       │           └── flags: variable_call
-                │       ├── opening_loc: (7,6)-(7,7) = "("
-                │       └── closing_loc: (7,10)-(7,11) = ")"
-                └── flags: ∅
+                ├── flags: ∅
+                └── arguments: (length: 1)
+                    └── @ ParenthesesNode (location: (7,6)-(7,11))
+                        ├── body:
+                        │   @ StatementsNode (location: (7,7)-(7,10))
+                        │   └── body: (length: 1)
+                        │       └── @ CallNode (location: (7,7)-(7,10))
+                        │           ├── flags: variable_call
+                        │           ├── receiver: ∅
+                        │           ├── call_operator_loc: ∅
+                        │           ├── name: :foo
+                        │           ├── message_loc: (7,7)-(7,10) = "foo"
+                        │           ├── opening_loc: ∅
+                        │           ├── arguments: ∅
+                        │           ├── closing_loc: ∅
+                        │           └── block: ∅
+                        ├── opening_loc: (7,6)-(7,7) = "("
+                        └── closing_loc: (7,10)-(7,11) = ")"

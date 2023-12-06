@@ -37,6 +37,7 @@
         │   │   │   │   @ StatementsNode (location: (3,9)-(3,12))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (3,9)-(3,12))
+        │   │   │   │           ├── flags: variable_call
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :bbb
@@ -44,8 +45,7 @@
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           ├── block: ∅
-        │   │   │   │           └── flags: variable_call
+        │   │   │   │           └── block: ∅
         │   │   │   └── closing_loc: (3,12)-(3,13) = "}"
         │   │   └── @ StringNode (location: (3,13)-(3,17))
         │   │       ├── flags: ∅
@@ -61,6 +61,7 @@
         │   │   @ ConstantPathNode (location: (5,7)-(5,11))
         │   │   ├── parent:
         │   │   │   @ CallNode (location: (5,7)-(5,8))
+        │   │   │   ├── flags: variable_call
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :m
@@ -68,8 +69,7 @@
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
-        │   │   │   ├── block: ∅
-        │   │   │   └── flags: variable_call
+        │   │   │   └── block: ∅
         │   │   ├── child:
         │   │   │   @ ConstantReadNode (location: (5,10)-(5,11))
         │   │   │   └── name: :M
@@ -130,6 +130,7 @@
         │   │   @ ConstantPathNode (location: (14,7)-(14,13))
         │   │   ├── parent:
         │   │   │   @ CallNode (location: (14,7)-(14,10))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── receiver:
         │   │   │   │   @ ConstantReadNode (location: (14,7)-(14,8))
         │   │   │   │   └── name: :A
@@ -139,8 +140,7 @@
         │   │   │   ├── opening_loc: (14,8)-(14,9) = "["
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: (14,9)-(14,10) = "]"
-        │   │   │   ├── block: ∅
-        │   │   │   └── flags: ∅
+        │   │   │   └── block: ∅
         │   │   ├── child:
         │   │   │   @ ConstantReadNode (location: (14,12)-(14,13))
         │   │   │   └── name: :B
@@ -155,6 +155,7 @@
             │   @ ConstantPathNode (location: (17,7)-(17,14))
             │   ├── parent:
             │   │   @ CallNode (location: (17,7)-(17,11))
+            │   │   ├── flags: ∅
             │   │   ├── receiver:
             │   │   │   @ ConstantReadNode (location: (17,7)-(17,8))
             │   │   │   └── name: :A
@@ -164,13 +165,12 @@
             │   │   ├── opening_loc: (17,8)-(17,9) = "["
             │   │   ├── arguments:
             │   │   │   @ ArgumentsNode (location: (17,9)-(17,10))
-            │   │   │   ├── arguments: (length: 1)
-            │   │   │   │   └── @ IntegerNode (location: (17,9)-(17,10))
-            │   │   │   │       └── flags: decimal
-            │   │   │   └── flags: ∅
+            │   │   │   ├── flags: ∅
+            │   │   │   └── arguments: (length: 1)
+            │   │   │       └── @ IntegerNode (location: (17,9)-(17,10))
+            │   │   │           └── flags: decimal
             │   │   ├── closing_loc: (17,10)-(17,11) = "]"
-            │   │   ├── block: ∅
-            │   │   └── flags: ∅
+            │   │   └── block: ∅
             │   ├── child:
             │   │   @ ConstantReadNode (location: (17,13)-(17,14))
             │   │   └── name: :B

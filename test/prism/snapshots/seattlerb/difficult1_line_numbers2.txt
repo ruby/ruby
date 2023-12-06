@@ -12,6 +12,7 @@
         │   │   @ StatementsNode (location: (2,2)-(5,6))
         │   │   └── body: (length: 4)
         │   │       ├── @ CallNode (location: (2,2)-(2,8))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
         │   │       │   ├── name: :p
@@ -19,17 +20,16 @@
         │   │       │   ├── opening_loc: (2,3)-(2,4) = "("
         │   │       │   ├── arguments:
         │   │       │   │   @ ArgumentsNode (location: (2,4)-(2,7))
-        │   │       │   │   ├── arguments: (length: 1)
-        │   │       │   │   │   └── @ StringNode (location: (2,4)-(2,7))
-        │   │       │   │   │       ├── flags: ∅
-        │   │       │   │   │       ├── opening_loc: (2,4)-(2,5) = "\""
-        │   │       │   │   │       ├── content_loc: (2,5)-(2,6) = "a"
-        │   │       │   │   │       ├── closing_loc: (2,6)-(2,7) = "\""
-        │   │       │   │   │       └── unescaped: "a"
-        │   │       │   │   └── flags: ∅
+        │   │       │   │   ├── flags: ∅
+        │   │       │   │   └── arguments: (length: 1)
+        │   │       │   │       └── @ StringNode (location: (2,4)-(2,7))
+        │   │       │   │           ├── flags: ∅
+        │   │       │   │           ├── opening_loc: (2,4)-(2,5) = "\""
+        │   │       │   │           ├── content_loc: (2,5)-(2,6) = "a"
+        │   │       │   │           ├── closing_loc: (2,6)-(2,7) = "\""
+        │   │       │   │           └── unescaped: "a"
         │   │       │   ├── closing_loc: (2,7)-(2,8) = ")"
-        │   │       │   ├── block: ∅
-        │   │       │   └── flags: ∅
+        │   │       │   └── block: ∅
         │   │       ├── @ LocalVariableWriteNode (location: (3,2)-(3,7))
         │   │       │   ├── name: :b
         │   │       │   ├── depth: 0
@@ -39,6 +39,7 @@
         │   │       │   │   └── flags: decimal
         │   │       │   └── operator_loc: (3,4)-(3,5) = "="
         │   │       ├── @ CallNode (location: (4,2)-(4,5))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
         │   │       │   ├── name: :p
@@ -46,14 +47,13 @@
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── arguments:
         │   │       │   │   @ ArgumentsNode (location: (4,4)-(4,5))
-        │   │       │   │   ├── arguments: (length: 1)
-        │   │       │   │   │   └── @ LocalVariableReadNode (location: (4,4)-(4,5))
-        │   │       │   │   │       ├── name: :b
-        │   │       │   │   │       └── depth: 0
-        │   │       │   │   └── flags: ∅
+        │   │       │   │   ├── flags: ∅
+        │   │       │   │   └── arguments: (length: 1)
+        │   │       │   │       └── @ LocalVariableReadNode (location: (4,4)-(4,5))
+        │   │       │   │           ├── name: :b
+        │   │       │   │           └── depth: 0
         │   │       │   ├── closing_loc: ∅
-        │   │       │   ├── block: ∅
-        │   │       │   └── flags: ∅
+        │   │       │   └── block: ∅
         │   │       └── @ LocalVariableWriteNode (location: (5,2)-(5,6))
         │   │           ├── name: :c
         │   │           ├── depth: 0
@@ -65,6 +65,7 @@
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (6,0)-(6,3) = "end"
         └── @ CallNode (location: (7,0)-(7,1))
+            ├── flags: variable_call
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :a
@@ -72,5 +73,4 @@
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
-            ├── block: ∅
-            └── flags: variable_call
+            └── block: ∅

@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(3,13))
     └── body: (length: 2)
         ├── @ ArrayNode (location: (1,0)-(1,10))
+        │   ├── flags: ∅
         │   ├── elements: (length: 1)
         │   │   └── @ KeywordHashNode (location: (1,2)-(1,8))
         │   │       └── elements: (length: 1)
@@ -16,9 +17,9 @@
         │   │               │   └── flags: decimal
         │   │               └── operator_loc: (1,4)-(1,6) = "=>"
         │   ├── opening_loc: (1,0)-(1,1) = "["
-        │   ├── closing_loc: (1,9)-(1,10) = "]"
-        │   └── flags: ∅
+        │   └── closing_loc: (1,9)-(1,10) = "]"
         └── @ ArrayNode (location: (3,0)-(3,13))
+            ├── flags: ∅
             ├── elements: (length: 2)
             │   ├── @ IntegerNode (location: (3,2)-(3,3))
             │   │   └── flags: decimal
@@ -33,5 +34,4 @@
             │               │   └── flags: decimal
             │               └── operator_loc: (3,7)-(3,9) = "=>"
             ├── opening_loc: (3,0)-(3,1) = "["
-            ├── closing_loc: (3,12)-(3,13) = "]"
-            └── flags: ∅
+            └── closing_loc: (3,12)-(3,13) = "]"

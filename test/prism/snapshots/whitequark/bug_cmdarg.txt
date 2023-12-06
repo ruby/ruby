@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(5,26))
     └── body: (length: 3)
         ├── @ CallNode (location: (1,0)-(1,15))
+        │   ├── flags: ∅
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :assert
@@ -11,24 +12,24 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (1,7)-(1,15))
-        │   │   ├── arguments: (length: 1)
-        │   │   │   └── @ KeywordHashNode (location: (1,7)-(1,15))
-        │   │   │       └── elements: (length: 1)
-        │   │   │           └── @ AssocNode (location: (1,7)-(1,15))
-        │   │   │               ├── key:
-        │   │   │               │   @ SymbolNode (location: (1,7)-(1,10))
-        │   │   │               │   ├── opening_loc: ∅
-        │   │   │               │   ├── value_loc: (1,7)-(1,9) = "do"
-        │   │   │               │   ├── closing_loc: (1,9)-(1,10) = ":"
-        │   │   │               │   └── unescaped: "do"
-        │   │   │               ├── value:
-        │   │   │               │   @ TrueNode (location: (1,11)-(1,15))
-        │   │   │               └── operator_loc: ∅
-        │   │   └── flags: ∅
+        │   │   ├── flags: ∅
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ KeywordHashNode (location: (1,7)-(1,15))
+        │   │           └── elements: (length: 1)
+        │   │               └── @ AssocNode (location: (1,7)-(1,15))
+        │   │                   ├── key:
+        │   │                   │   @ SymbolNode (location: (1,7)-(1,10))
+        │   │                   │   ├── opening_loc: ∅
+        │   │                   │   ├── value_loc: (1,7)-(1,9) = "do"
+        │   │                   │   ├── closing_loc: (1,9)-(1,10) = ":"
+        │   │                   │   └── unescaped: "do"
+        │   │                   ├── value:
+        │   │                   │   @ TrueNode (location: (1,11)-(1,15))
+        │   │                   └── operator_loc: ∅
         │   ├── closing_loc: ∅
-        │   ├── block: ∅
-        │   └── flags: ∅
+        │   └── block: ∅
         ├── @ CallNode (location: (3,0)-(3,11))
+        │   ├── flags: ∅
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :assert
@@ -36,22 +37,22 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (3,7)-(3,11))
-        │   │   ├── arguments: (length: 1)
-        │   │   │   └── @ CallNode (location: (3,7)-(3,11))
-        │   │   │       ├── receiver: ∅
-        │   │   │       ├── call_operator_loc: ∅
-        │   │   │       ├── name: :dogs
-        │   │   │       ├── message_loc: (3,7)-(3,11) = "dogs"
-        │   │   │       ├── opening_loc: ∅
-        │   │   │       ├── arguments: ∅
-        │   │   │       ├── closing_loc: ∅
-        │   │   │       ├── block: ∅
-        │   │   │       └── flags: variable_call
-        │   │   └── flags: ∅
+        │   │   ├── flags: ∅
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ CallNode (location: (3,7)-(3,11))
+        │   │           ├── flags: variable_call
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :dogs
+        │   │           ├── message_loc: (3,7)-(3,11) = "dogs"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           └── block: ∅
         │   ├── closing_loc: ∅
-        │   ├── block: ∅
-        │   └── flags: ∅
+        │   └── block: ∅
         └── @ CallNode (location: (5,0)-(5,26))
+            ├── flags: ∅
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :f
@@ -59,46 +60,45 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (5,2)-(5,26))
-            │   ├── arguments: (length: 1)
-            │   │   └── @ KeywordHashNode (location: (5,2)-(5,26))
-            │   │       └── elements: (length: 1)
-            │   │           └── @ AssocNode (location: (5,2)-(5,26))
-            │   │               ├── key:
-            │   │               │   @ SymbolNode (location: (5,2)-(5,4))
-            │   │               │   ├── opening_loc: ∅
-            │   │               │   ├── value_loc: (5,2)-(5,3) = "x"
-            │   │               │   ├── closing_loc: (5,3)-(5,4) = ":"
-            │   │               │   └── unescaped: "x"
-            │   │               ├── value:
-            │   │               │   @ LambdaNode (location: (5,5)-(5,26))
-            │   │               │   ├── locals: []
-            │   │               │   ├── locals_body_index: 0
-            │   │               │   ├── operator_loc: (5,5)-(5,7) = "->"
-            │   │               │   ├── opening_loc: (5,8)-(5,10) = "do"
-            │   │               │   ├── closing_loc: (5,23)-(5,26) = "end"
-            │   │               │   ├── parameters: ∅
-            │   │               │   └── body:
-            │   │               │       @ StatementsNode (location: (5,11)-(5,22))
-            │   │               │       └── body: (length: 1)
-            │   │               │           └── @ CallNode (location: (5,11)-(5,22))
-            │   │               │               ├── receiver: ∅
-            │   │               │               ├── call_operator_loc: ∅
-            │   │               │               ├── name: :meth
-            │   │               │               ├── message_loc: (5,11)-(5,15) = "meth"
-            │   │               │               ├── opening_loc: ∅
-            │   │               │               ├── arguments: ∅
-            │   │               │               ├── closing_loc: ∅
-            │   │               │               ├── block:
-            │   │               │               │   @ BlockNode (location: (5,16)-(5,22))
-            │   │               │               │   ├── locals: []
-            │   │               │               │   ├── locals_body_index: 0
-            │   │               │               │   ├── parameters: ∅
-            │   │               │               │   ├── body: ∅
-            │   │               │               │   ├── opening_loc: (5,16)-(5,18) = "do"
-            │   │               │               │   └── closing_loc: (5,19)-(5,22) = "end"
-            │   │               │               └── flags: ∅
-            │   │               └── operator_loc: ∅
-            │   └── flags: ∅
+            │   ├── flags: ∅
+            │   └── arguments: (length: 1)
+            │       └── @ KeywordHashNode (location: (5,2)-(5,26))
+            │           └── elements: (length: 1)
+            │               └── @ AssocNode (location: (5,2)-(5,26))
+            │                   ├── key:
+            │                   │   @ SymbolNode (location: (5,2)-(5,4))
+            │                   │   ├── opening_loc: ∅
+            │                   │   ├── value_loc: (5,2)-(5,3) = "x"
+            │                   │   ├── closing_loc: (5,3)-(5,4) = ":"
+            │                   │   └── unescaped: "x"
+            │                   ├── value:
+            │                   │   @ LambdaNode (location: (5,5)-(5,26))
+            │                   │   ├── locals: []
+            │                   │   ├── locals_body_index: 0
+            │                   │   ├── operator_loc: (5,5)-(5,7) = "->"
+            │                   │   ├── opening_loc: (5,8)-(5,10) = "do"
+            │                   │   ├── closing_loc: (5,23)-(5,26) = "end"
+            │                   │   ├── parameters: ∅
+            │                   │   └── body:
+            │                   │       @ StatementsNode (location: (5,11)-(5,22))
+            │                   │       └── body: (length: 1)
+            │                   │           └── @ CallNode (location: (5,11)-(5,22))
+            │                   │               ├── flags: ∅
+            │                   │               ├── receiver: ∅
+            │                   │               ├── call_operator_loc: ∅
+            │                   │               ├── name: :meth
+            │                   │               ├── message_loc: (5,11)-(5,15) = "meth"
+            │                   │               ├── opening_loc: ∅
+            │                   │               ├── arguments: ∅
+            │                   │               ├── closing_loc: ∅
+            │                   │               └── block:
+            │                   │                   @ BlockNode (location: (5,16)-(5,22))
+            │                   │                   ├── locals: []
+            │                   │                   ├── locals_body_index: 0
+            │                   │                   ├── parameters: ∅
+            │                   │                   ├── body: ∅
+            │                   │                   ├── opening_loc: (5,16)-(5,18) = "do"
+            │                   │                   └── closing_loc: (5,19)-(5,22) = "end"
+            │                   └── operator_loc: ∅
             ├── closing_loc: ∅
-            ├── block: ∅
-            └── flags: ∅
+            └── block: ∅

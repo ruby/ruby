@@ -6,14 +6,14 @@
         ├── @ MatchRequiredNode (location: (1,0)-(1,14))
         │   ├── value:
         │   │   @ ArrayNode (location: (1,0)-(1,6))
+        │   │   ├── flags: ∅
         │   │   ├── elements: (length: 2)
         │   │   │   ├── @ IntegerNode (location: (1,1)-(1,2))
         │   │   │   │   └── flags: decimal
         │   │   │   └── @ IntegerNode (location: (1,4)-(1,5))
         │   │   │       └── flags: decimal
         │   │   ├── opening_loc: (1,0)-(1,1) = "["
-        │   │   ├── closing_loc: (1,5)-(1,6) = "]"
-        │   │   └── flags: ∅
+        │   │   └── closing_loc: (1,5)-(1,6) = "]"
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (1,10)-(1,14))
         │   │   ├── constant: ∅
@@ -35,14 +35,14 @@
         ├── @ MatchPredicateNode (location: (3,0)-(3,14))
         │   ├── value:
         │   │   @ ArrayNode (location: (3,0)-(3,6))
+        │   │   ├── flags: ∅
         │   │   ├── elements: (length: 2)
         │   │   │   ├── @ IntegerNode (location: (3,1)-(3,2))
         │   │   │   │   └── flags: decimal
         │   │   │   └── @ IntegerNode (location: (3,4)-(3,5))
         │   │   │       └── flags: decimal
         │   │   ├── opening_loc: (3,0)-(3,1) = "["
-        │   │   ├── closing_loc: (3,5)-(3,6) = "]"
-        │   │   └── flags: ∅
+        │   │   └── closing_loc: (3,5)-(3,6) = "]"
         │   ├── pattern:
         │   │   @ ArrayPatternNode (location: (3,10)-(3,14))
         │   │   ├── constant: ∅

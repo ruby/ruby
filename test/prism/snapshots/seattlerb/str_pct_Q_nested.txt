@@ -18,6 +18,7 @@
             │   │   │   @ StatementsNode (location: (1,13)-(1,17))
             │   │   │   └── body: (length: 1)
             │   │   │       └── @ CallNode (location: (1,13)-(1,17))
+            │   │   │           ├── flags: variable_call
             │   │   │           ├── receiver: ∅
             │   │   │           ├── call_operator_loc: ∅
             │   │   │           ├── name: :nest
@@ -25,8 +26,7 @@
             │   │   │           ├── opening_loc: ∅
             │   │   │           ├── arguments: ∅
             │   │   │           ├── closing_loc: ∅
-            │   │   │           ├── block: ∅
-            │   │   │           └── flags: variable_call
+            │   │   │           └── block: ∅
             │   │   └── closing_loc: (1,17)-(1,18) = "}"
             │   └── @ StringNode (location: (1,18)-(1,25))
             │       ├── flags: ∅

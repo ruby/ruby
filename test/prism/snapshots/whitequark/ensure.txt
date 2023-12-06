@@ -9,6 +9,7 @@
             │   @ StatementsNode (location: (1,7)-(1,11))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,7)-(1,11))
+            │           ├── flags: variable_call
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :meth
@@ -16,8 +17,7 @@
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
-            │           ├── block: ∅
-            │           └── flags: variable_call
+            │           └── block: ∅
             ├── rescue_clause: ∅
             ├── else_clause: ∅
             ├── ensure_clause:
@@ -27,6 +27,7 @@
             │   │   @ StatementsNode (location: (1,21)-(1,24))
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (1,21)-(1,24))
+            │   │           ├── flags: variable_call
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :bar
@@ -34,7 +35,6 @@
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
-            │   │           ├── block: ∅
-            │   │           └── flags: variable_call
+            │   │           └── block: ∅
             │   └── end_keyword_loc: (1,26)-(1,29) = "end"
             └── end_keyword_loc: (1,26)-(1,29) = "end"

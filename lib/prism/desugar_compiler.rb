@@ -157,15 +157,15 @@ module Prism
         *arguments,
         node.name_loc,
         CallNode.new(
+          0,
           read_class.new(*arguments, node.name_loc),
           nil,
           node.operator_loc.slice.chomp("="),
           node.operator_loc.copy(length: node.operator_loc.length - 1),
           nil,
-          ArgumentsNode.new([node.value], 0, node.value.location),
+          ArgumentsNode.new(0, [node.value], node.value.location),
           nil,
           nil,
-          0,
           node.location
         ),
         node.operator_loc.copy(start_offset: node.operator_loc.end_offset - 1, length: 1),
