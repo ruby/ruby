@@ -92,6 +92,12 @@ static VALUE rb_cFalseClass_to_s;
 
 /*! \endcond */
 
+size_t
+rb_obj_embedded_size(uint32_t numiv)
+{
+    return offsetof(struct RObject, as.ary) + (sizeof(VALUE) * numiv);
+}
+
 VALUE
 rb_obj_hide(VALUE obj)
 {

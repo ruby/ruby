@@ -2960,12 +2960,6 @@ rb_newobj(void)
     return newobj_of(GET_RACTOR(), 0, T_NONE, 0, 0, 0, FALSE, RVALUE_SIZE);
 }
 
-static size_t
-rb_obj_embedded_size(uint32_t numiv)
-{
-    return offsetof(struct RObject, as.ary) + (sizeof(VALUE) * numiv);
-}
-
 static VALUE
 rb_class_instance_allocate_internal(VALUE klass, VALUE flags, bool wb_protected)
 {
