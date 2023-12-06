@@ -40,7 +40,7 @@ Note: We're only listing outstanding class updates.
 
 * Fiber
 
-    * Introduce Fiber#kill, similar to Thread#kill. [[Bug #595]]
+    * Introduce Fiber#kill. [[Bug #595]]
       ```ruby
       fiber = Fiber.new do
         while true

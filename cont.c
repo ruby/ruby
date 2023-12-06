@@ -3259,6 +3259,8 @@ rb_fiber_raise(VALUE fiber, int argc, const VALUE *argv)
  *  the exception, and the third parameter is an array of callback information.
  *  Exceptions are caught by the +rescue+ clause of <code>begin...end</code>
  *  blocks.
+ *
+ *  Raises +FiberError+ if called on a Fiber belonging to another +Thread+.
  */
 static VALUE
 rb_fiber_m_raise(int argc, VALUE *argv, VALUE self)
@@ -3270,12 +3272,18 @@ rb_fiber_m_raise(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *     fiber.kill -> nil
  *
- *  Terminates +fiber+ by raising an uncatchable exception, returning
- *  the terminated Fiber.
+ *  Terminates +fiber+ by raising an uncatchable exception.
+ *  It only terminates the given Fiber and no other Fiber, returning +nil+ to
+ *  another Fiber if that Fiber was calling +fiber.resume+ or +fiber.transfer+.
+ *
+ *  +Fiber#kill+ only interrupts another Fiber when it is in +Fiber.yield+.
+ *  If called on the current Fiber then it raises that exception at the +Fiber#kill+ call site.
  *
  *  If the fiber has not been started, transition directly to the terminated state.
  *
  *  If the fiber is already terminated, does nothing.
+ *
+ *  Raises +FiberError+ if called on a Fiber belonging to another +Thread+.
  */
 static VALUE
 rb_fiber_m_kill(VALUE self)
