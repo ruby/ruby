@@ -472,6 +472,7 @@
         │   ├── closing_loc: (37,9)-(37,10) = "\""
         │   └── unescaped: "foo\nbar"
         ├── @ XStringNode (location: (38,0)-(38,5))
+        │   ├── flags: ∅
         │   ├── opening_loc: (38,0)-(38,1) = "`"
         │   ├── content_loc: (38,1)-(38,4) = "foo"
         │   ├── closing_loc: (38,4)-(38,5) = "`"
@@ -495,16 +496,19 @@
         │   │       └── closing_loc: (39,10)-(39,11) = "}"
         │   └── closing_loc: (39,11)-(39,12) = "`"
         ├── @ XStringNode (location: (40,0)-(40,3))
+        │   ├── flags: ∅
         │   ├── opening_loc: (40,0)-(40,1) = "`"
         │   ├── content_loc: (40,1)-(40,2) = ")"
         │   ├── closing_loc: (40,2)-(40,3) = "`"
         │   └── unescaped: ")"
         ├── @ XStringNode (location: (41,0)-(41,4))
+        │   ├── flags: ∅
         │   ├── opening_loc: (41,0)-(41,1) = "`"
         │   ├── content_loc: (41,1)-(41,3) = "\\`"
         │   ├── closing_loc: (41,3)-(41,4) = "`"
         │   └── unescaped: "`"
         ├── @ XStringNode (location: (42,0)-(42,3))
+        │   ├── flags: ∅
         │   ├── opening_loc: (42,0)-(42,1) = "`"
         │   ├── content_loc: (42,1)-(42,2) = "\""
         │   ├── closing_loc: (42,2)-(42,3) = "`"

@@ -121,11 +121,10 @@ bool pm_encoding_utf_8_isupper_char(const uint8_t *b, ptrdiff_t n);
 extern const uint8_t pm_encoding_unicode_table[256];
 
 /**
- * These are all of the encodings that prisms supports.
+ * These are all of the encodings that prism supports.
  */
 typedef enum {
     PM_ENCODING_UTF_8 = 0,
-    PM_ENCODING_ASCII,
     PM_ENCODING_ASCII_8BIT,
     PM_ENCODING_BIG5,
     PM_ENCODING_BIG5_HKSCS,
@@ -199,6 +198,7 @@ typedef enum {
     PM_ENCODING_STATELESS_ISO_2022_JP,
     PM_ENCODING_STATELESS_ISO_2022_JP_KDDI,
     PM_ENCODING_TIS_620,
+    PM_ENCODING_US_ASCII,
     PM_ENCODING_UTF8_MAC,
     PM_ENCODING_UTF8_DOCOMO,
     PM_ENCODING_UTF8_KDDI,
@@ -213,13 +213,27 @@ typedef enum {
     PM_ENCODING_WINDOWS_1257,
     PM_ENCODING_WINDOWS_1258,
     PM_ENCODING_WINDOWS_31J,
-    PM_ENCODING_WINDOWS_874
+    PM_ENCODING_WINDOWS_874,
+    PM_ENCODING_MAXIMUM
 } pm_encoding_type_t;
 
 /**
- * This is the default UTF-8 encoding. We need it to quickly create parsers.
+ * This is the table of all of the encodings that prism supports.
  */
-extern const pm_encoding_t *pm_encoding_utf_8;
+extern const pm_encoding_t pm_encodings[PM_ENCODING_MAXIMUM];
+
+/**
+ * This is the default UTF-8 encoding. We need a reference to it to quickly
+ * create parsers.
+ */
+#define PM_ENCODING_UTF_8_ENTRY (&pm_encodings[PM_ENCODING_UTF_8])
+
+/**
+ * This is the US-ASCII encoding. We need a reference to it to be able to
+ * compare against it when a string is being created because it could possibly
+ * need to fall back to ASCII-8BIT.
+ */
+#define PM_ENCODING_US_ASCII_ENTRY (&pm_encodings[PM_ENCODING_US_ASCII])
 
 /**
  * Parse the given name of an encoding and return a pointer to the corresponding

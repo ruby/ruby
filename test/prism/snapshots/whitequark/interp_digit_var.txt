@@ -146,11 +146,13 @@
         │   ├── closing_loc: (35,10)-(35,11) = "]"
         │   └── flags: ∅
         ├── @ XStringNode (location: (37,1)-(37,8))
+        │   ├── flags: ∅
         │   ├── opening_loc: (37,1)-(37,4) = "%x{"
         │   ├── content_loc: (37,4)-(37,7) = "\#@1"
         │   ├── closing_loc: (37,7)-(37,8) = "}"
         │   └── unescaped: "\#@1"
         ├── @ XStringNode (location: (39,1)-(39,9))
+        │   ├── flags: ∅
         │   ├── opening_loc: (39,1)-(39,4) = "%x{"
         │   ├── content_loc: (39,4)-(39,8) = "\#@@1"
         │   ├── closing_loc: (39,8)-(39,9) = "}"
@@ -212,11 +214,13 @@
         │   ├── closing_loc: (59,7)-(59,8) = "'"
         │   └── unescaped: "\#@@1"
         ├── @ XStringNode (location: (61,1)-(61,6))
+        │   ├── flags: ∅
         │   ├── opening_loc: (61,1)-(61,2) = "`"
         │   ├── content_loc: (61,2)-(61,5) = "\#@1"
         │   ├── closing_loc: (61,5)-(61,6) = "`"
         │   └── unescaped: "\#@1"
         ├── @ XStringNode (location: (63,1)-(63,7))
+        │   ├── flags: ∅
         │   ├── opening_loc: (63,1)-(63,2) = "`"
         │   ├── content_loc: (63,2)-(63,6) = "\#@@1"
         │   ├── closing_loc: (63,6)-(63,7) = "`"
@@ -246,11 +250,13 @@
         │   ├── closing_loc: (79,0)-(80,0) = "HERE\n"
         │   └── unescaped: "\#@@1\n"
         ├── @ XStringNode (location: (81,0)-(81,9))
+        │   ├── flags: ∅
         │   ├── opening_loc: (81,0)-(81,9) = "<<-`HERE`"
         │   ├── content_loc: (82,0)-(83,0) = "\#@1\n"
         │   ├── closing_loc: (83,0)-(84,0) = "HERE\n"
         │   └── unescaped: "\#@1\n"
         └── @ XStringNode (location: (85,0)-(85,9))
+            ├── flags: ∅
             ├── opening_loc: (85,0)-(85,9) = "<<-`HERE`"
             ├── content_loc: (86,0)-(87,0) = "\#@@1\n"
             ├── closing_loc: (87,0)-(88,0) = "HERE\n"

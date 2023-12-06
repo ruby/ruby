@@ -4212,9 +4212,9 @@ pm_encoding_shift_jis_char_width(const uint8_t *b, ptrdiff_t n) {
 }
 
 /**
- * This is the definition of all of the encodings that we support.
+ * This is the table of all of the encodings that prism supports.
  */
-static const pm_encoding_t pm_encodings[] = {
+const pm_encoding_t pm_encodings[] = {
     [PM_ENCODING_UTF_8] = {
         .name = "UTF-8",
         .char_width = pm_encoding_utf_8_char_width,
@@ -4222,14 +4222,6 @@ static const pm_encoding_t pm_encodings[] = {
         .alpha_char = pm_encoding_utf_8_alpha_char,
         .isupper_char = pm_encoding_utf_8_isupper_char,
         .multibyte = true
-    },
-    [PM_ENCODING_ASCII] = {
-        .name = "US-ASCII",
-        .char_width = pm_encoding_ascii_char_width,
-        .alnum_char = pm_encoding_ascii_alnum_char,
-        .alpha_char = pm_encoding_ascii_alpha_char,
-        .isupper_char = pm_encoding_ascii_isupper_char,
-        .multibyte = false
     },
     [PM_ENCODING_ASCII_8BIT] = {
         .name = "ASCII-8BIT",
@@ -4815,6 +4807,14 @@ static const pm_encoding_t pm_encodings[] = {
         .isupper_char = pm_encoding_tis_620_isupper_char,
         .multibyte = false
     },
+    [PM_ENCODING_US_ASCII] = {
+        .name = "US-ASCII",
+        .char_width = pm_encoding_ascii_char_width,
+        .alnum_char = pm_encoding_ascii_alnum_char,
+        .alpha_char = pm_encoding_ascii_alpha_char,
+        .isupper_char = pm_encoding_ascii_isupper_char,
+        .multibyte = false
+    },
     [PM_ENCODING_UTF8_MAC] = {
         .name = "UTF8-MAC",
         .char_width = pm_encoding_utf_8_char_width,
@@ -4938,11 +4938,6 @@ static const pm_encoding_t pm_encodings[] = {
 };
 
 /**
- * This is the default UTF-8 encoding. We need it to quickly create parsers.
- */
-const pm_encoding_t *pm_encoding_utf_8 = pm_encodings;
-
-/**
  * Parse the given name of an encoding and return a pointer to the corresponding
  * encoding struct if one can be found, otherwise return NULL.
  */
@@ -4961,7 +4956,7 @@ pm_encoding_find(const uint8_t *start, const uint8_t *end) {
         }
 
         // Otherwise we'll return the default UTF-8 encoding.
-        return pm_encoding_utf_8;
+        return PM_ENCODING_UTF_8_ENTRY;
     }
 
     // Next, we're going to loop through each of the encodings that we handle
@@ -4972,9 +4967,9 @@ pm_encoding_find(const uint8_t *start, const uint8_t *end) {
     if (width >= 3) {
         switch (*start) {
             case 'A': case 'a':
-                ENCODING1("ASCII", PM_ENCODING_ASCII);
+                ENCODING1("ASCII", PM_ENCODING_US_ASCII);
                 ENCODING1("ASCII-8BIT", PM_ENCODING_ASCII_8BIT);
-                ENCODING1("ANSI_X3.4-1968", PM_ENCODING_ASCII);
+                ENCODING1("ANSI_X3.4-1968", PM_ENCODING_US_ASCII);
                 break;
             case 'B': case 'b':
                 ENCODING1("BINARY", PM_ENCODING_ASCII_8BIT);
@@ -5109,7 +5104,7 @@ pm_encoding_find(const uint8_t *start, const uint8_t *end) {
                 ENCODING1("TIS-620", PM_ENCODING_TIS_620);
                 break;
             case 'U': case 'u':
-                ENCODING1("US-ASCII", PM_ENCODING_ASCII);
+                ENCODING1("US-ASCII", PM_ENCODING_US_ASCII);
                 ENCODING2("UTF8-MAC", "UTF-8-HFS", PM_ENCODING_UTF8_MAC);
                 ENCODING1("UTF8-DoCoMo", PM_ENCODING_UTF8_DOCOMO);
                 ENCODING1("UTF8-KDDI", PM_ENCODING_UTF8_KDDI);
@@ -5129,7 +5124,7 @@ pm_encoding_find(const uint8_t *start, const uint8_t *end) {
                 ENCODING1("Windows-1258", PM_ENCODING_WINDOWS_1258);
                 break;
             case '6':
-                ENCODING1("646", PM_ENCODING_ASCII);
+                ENCODING1("646", PM_ENCODING_US_ASCII);
                 break;
         }
     }

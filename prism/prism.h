@@ -91,7 +91,7 @@ void pm_serialize_comment_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_t
  * @param encoding The encoding to serialize.
  * @param buffer The buffer to serialize to.
  */
-void pm_serialize_encoding(pm_encoding_t *encoding, pm_buffer_t *buffer);
+void pm_serialize_encoding(const pm_encoding_t *encoding, pm_buffer_t *buffer);
 
 /**
  * Serialize the encoding, metadata, nodes, and constant pool.

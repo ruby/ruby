@@ -143,18 +143,20 @@ RSpec.describe Bundler::Fetcher do
 
     describe "include CI information" do
       it "from one CI" do
-        with_env_vars("JENKINS_URL" => "foo") do
+        with_env_vars("CI" => nil, "JENKINS_URL" => "foo") do
           ci_part = fetcher.user_agent.split(" ").find {|x| x.start_with?("ci/") }
-          expect(ci_part).to match("jenkins")
+          cis = ci_part.split("/").last.split(",")
+          expect(cis).to include("jenkins")
+          expect(cis).not_to include("ci")
         end
       end
 
       it "from many CI" do
-        with_env_vars("TRAVIS" => "foo", "GITLAB_CI" => "gitlab", "CI_NAME" => "my_ci") do
+        with_env_vars("CI" => "true", "SEMAPHORE" => nil, "TRAVIS" => "foo", "GITLAB_CI" => "gitlab", "CI_NAME" => "MY_ci") do
           ci_part = fetcher.user_agent.split(" ").find {|x| x.start_with?("ci/") }
-          expect(ci_part).to match("travis")
-          expect(ci_part).to match("gitlab")
-          expect(ci_part).to match("my_ci")
+          cis = ci_part.split("/").last.split(",")
+          expect(cis).to include("ci", "gitlab", "my_ci", "travis")
+          expect(cis).not_to include("semaphore")
         end
       end
     end

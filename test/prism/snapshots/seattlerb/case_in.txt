@@ -806,6 +806,7 @@
         │   │   └── @ InNode (location: (98,0)-(98,12))
         │   │       ├── pattern:
         │   │       │   @ XStringNode (location: (98,3)-(98,12))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── opening_loc: (98,3)-(98,4) = "`"
         │   │       │   ├── content_loc: (98,4)-(98,11) = "echo hi"
         │   │       │   ├── closing_loc: (98,11)-(98,12) = "`"
