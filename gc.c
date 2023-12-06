@@ -9460,18 +9460,17 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
 
         objspace->flags.immediate_sweep = !(flag & (1<<gc_stress_no_immediate_sweep));
     }
-    else {
-        if (objspace->rgengc.need_major_gc) {
-            reason |= objspace->rgengc.need_major_gc;
-            do_full_mark = TRUE;
-        }
-        else if (RGENGC_FORCE_MAJOR_GC) {
-            reason = GPR_FLAG_MAJOR_BY_FORCE;
-            do_full_mark = TRUE;
-        }
 
-        objspace->rgengc.need_major_gc = GPR_FLAG_NONE;
+    if (objspace->rgengc.need_major_gc) {
+        reason |= objspace->rgengc.need_major_gc;
+        do_full_mark = TRUE;
     }
+    else if (RGENGC_FORCE_MAJOR_GC) {
+        reason = GPR_FLAG_MAJOR_BY_FORCE;
+        do_full_mark = TRUE;
+    }
+
+    objspace->rgengc.need_major_gc = GPR_FLAG_NONE;
 
     if (do_full_mark && (reason & GPR_FLAG_MAJOR_MASK) == 0) {
         reason |= GPR_FLAG_MAJOR_BY_FORCE; /* GC by CAPI, METHOD, and so on. */
