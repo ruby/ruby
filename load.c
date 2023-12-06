@@ -16,7 +16,6 @@
 #include "probes.h"
 #include "darray.h"
 #include "ruby/encoding.h"
-#include "prism/prism.h"
 #include "ruby/util.h"
 
 static VALUE ruby_dln_librefs;
@@ -718,39 +717,23 @@ static inline void
 load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
 {
     const rb_iseq_t *iseq = rb_iseq_load_iseq(fname);
+
     if (!iseq) {
-        if (*rb_ruby_prism_ptr()) {
-            pm_string_t input;
-            pm_options_t options = { 0 };
+        rb_execution_context_t *ec = GET_EC();
+        VALUE v = rb_vm_push_frame_fname(ec, fname);
+        rb_ast_t *ast;
+        VALUE parser = rb_parser_new();
+        rb_parser_set_context(parser, NULL, FALSE);
+        ast = (rb_ast_t *)rb_parser_load_file(parser, fname);
 
-            pm_string_mapped_init(&input, RSTRING_PTR(fname));
-            pm_options_filepath_set(&options, RSTRING_PTR(fname));
+        rb_thread_t *th = rb_ec_thread_ptr(ec);
+        VALUE realpath_map = get_loaded_features_realpath_map(th->vm);
 
-            pm_parser_t parser;
-            pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), &options);
-
-            iseq = rb_iseq_new_main_prism(&input, &options, fname);
-
-            pm_string_free(&input);
-            pm_options_free(&options);
-        }
-        else {
-            rb_execution_context_t *ec = GET_EC();
-            VALUE v = rb_vm_push_frame_fname(ec, fname);
-            rb_ast_t *ast;
-            VALUE parser = rb_parser_new();
-            rb_parser_set_context(parser, NULL, FALSE);
-            ast = (rb_ast_t *)rb_parser_load_file(parser, fname);
-
-            rb_thread_t *th = rb_ec_thread_ptr(ec);
-            VALUE realpath_map = get_loaded_features_realpath_map(th->vm);
-
-            iseq = rb_iseq_new_top(&ast->body, rb_fstring_lit("<top (required)>"),
-                                   fname, realpath_internal_cached(realpath_map, fname), NULL);
-            rb_ast_dispose(ast);
-            rb_vm_pop_frame(ec);
-            RB_GC_GUARD(v);
-        }
+        iseq = rb_iseq_new_top(&ast->body, rb_fstring_lit("<top (required)>"),
+                               fname, realpath_internal_cached(realpath_map, fname), NULL);
+        rb_ast_dispose(ast);
+        rb_vm_pop_frame(ec);
+        RB_GC_GUARD(v);
     }
     rb_exec_event_hook_script_compiled(ec, iseq, Qnil);
     rb_iseq_eval(iseq);

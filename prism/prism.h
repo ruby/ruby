@@ -42,17 +42,6 @@
  */
 PRISM_EXPORTED_FUNCTION const char * pm_version(void);
 
-
-/**
- * @private
- *
- * This is used to decide of the prism parser should be used.
- *
- * @retval  true       Use Prism to parse files
- * @retval  false      Use standard parser
- */
-bool *rb_ruby_prism_ptr(void);
-
 /**
  * Initialize a parser with the given start and end pointers.
  *
