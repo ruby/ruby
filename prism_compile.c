@@ -182,14 +182,34 @@ parse_imaginary(pm_imaginary_node_t *node)
 static inline VALUE
 parse_string(pm_string_t *string, const pm_parser_t *parser)
 {
-    rb_encoding *enc = rb_enc_from_index(rb_enc_find_index(parser->encoding.name));
+    rb_encoding *enc = rb_enc_from_index(rb_enc_find_index(parser->encoding->name));
     return rb_enc_str_new((const char *) pm_string_source(string), pm_string_length(string), enc);
+}
+
+/**
+ * Certain strings can have their encoding differ from the parser's encoding due
+ * to bytes or escape sequences that have the top bit set. This function handles
+ * creating those strings based on the flags set on the owning node.
+ */
+static inline VALUE
+parse_string_encoded(const pm_node_t *node, const pm_string_t *string, const pm_parser_t *parser) {
+    rb_encoding *encoding;
+
+    if (node->flags & PM_ENCODING_FLAGS_FORCED_BINARY_ENCODING) {
+        encoding = rb_ascii8bit_encoding();
+    } else if (node->flags & PM_ENCODING_FLAGS_FORCED_UTF8_ENCODING) {
+        encoding = rb_utf8_encoding();
+    } else {
+        encoding = rb_enc_from_index(rb_enc_find_index(parser->encoding->name));
+    }
+
+    return rb_enc_str_new((const char *) pm_string_source(string), pm_string_length(string), encoding);
 }
 
 static inline ID
 parse_symbol(const uint8_t *start, const uint8_t *end, pm_parser_t *parser)
 {
-    rb_encoding *enc = rb_enc_from_index(rb_enc_find_index(parser->encoding.name));
+    rb_encoding *enc = rb_enc_from_index(rb_enc_find_index(parser->encoding->name));
     return rb_intern3((const char *) start, end - start, enc);
 }
 
@@ -278,7 +298,7 @@ pm_reg_enc(const pm_regular_expression_node_t *node, const pm_parser_t *parser) 
         return rb_utf8_encoding();
     }
 
-    return rb_enc_from_index(rb_enc_find_index(parser->encoding.name));
+    return rb_enc_from_index(rb_enc_find_index(parser->encoding->name));
 }
 
 /**
@@ -362,7 +382,7 @@ pm_static_literal_value(const pm_node_t *node, pm_scope_node_t *scope_node, pm_p
         return pm_new_regex(cast, parser);
       }
       case PM_SOURCE_ENCODING_NODE: {
-        rb_encoding *encoding = rb_find_encoding(rb_str_new_cstr(scope_node->parser->encoding.name));
+        rb_encoding *encoding = rb_find_encoding(rb_str_new_cstr(scope_node->parser->encoding->name));
         if (!encoding) rb_bug("Encoding not found!");
         return rb_enc_from_encoding(encoding);
       }
@@ -4431,8 +4451,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_STRING_NODE: {
         if (!popped) {
-            pm_string_node_t *string_node = (pm_string_node_t *) node;
-            ADD_INSN1(ret, &dummy_line_node, putstring, parse_string(&string_node->unescaped, parser));
+            pm_string_node_t *cast = (pm_string_node_t *) node;
+            VALUE value = parse_string_encoded(node, &cast->unescaped, parser);
+            ADD_INSN1(ret, &dummy_line_node, putstring, value);
         }
         return;
       }
@@ -4553,9 +4574,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_X_STRING_NODE: {
-        pm_x_string_node_t *xstring_node = (pm_x_string_node_t *) node;
+        pm_x_string_node_t *cast = (pm_x_string_node_t *) node;
+        VALUE value = parse_string_encoded(node, &cast->unescaped, parser);
+
         PM_PUTSELF;
-        ADD_INSN1(ret, &dummy_line_node, putobject, parse_string(&xstring_node->unescaped, parser));
+        ADD_INSN1(ret, &dummy_line_node, putobject, value);
         ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idBackquote, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
 
         PM_POP_IF_POPPED;
@@ -4599,7 +4622,7 @@ rb_translate_prism(pm_parser_t *parser, rb_iseq_t *iseq, pm_scope_node_t *scope_
     RUBY_ASSERT(ISEQ_COMPILE_DATA(iseq));
 
     ID *constants = calloc(parser->constant_pool.size, sizeof(ID));
-    rb_encoding *encoding = rb_enc_find(parser->encoding.name);
+    rb_encoding *encoding = rb_enc_find(parser->encoding->name);
     for (uint32_t index = 0; index < parser->constant_pool.size; index++) {
         pm_constant_t *constant = &parser->constant_pool.constants[index];
         constants[index] = rb_intern3((const char *) constant->start, constant->length, encoding);
