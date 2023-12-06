@@ -428,12 +428,12 @@ impl RegTemps {
 
     /// Return true if there's a register that conflicts with a given stack_idx.
     pub fn conflicts_with(&self, stack_idx: u8) -> bool {
-        let mut other_idx = stack_idx as isize - get_option!(num_temp_regs) as isize;
-        while other_idx >= 0 {
-            if self.get(other_idx as u8) {
+        let mut other_idx = stack_idx as usize % get_option!(num_temp_regs);
+        while other_idx < MAX_REG_TEMPS as usize {
+            if stack_idx as usize != other_idx && self.get(other_idx as u8) {
                 return true;
             }
-            other_idx -= get_option!(num_temp_regs) as isize;
+            other_idx += get_option!(num_temp_regs);
         }
         false
     }
@@ -3450,7 +3450,7 @@ mod tests {
             assert_eq!(reg_temps.get(stack_idx), false);
         }
 
-        // Set 0, 2, 7
+        // Set 0, 2, 7 (RegTemps: 10100001)
         reg_temps.set(0, true);
         reg_temps.set(2, true);
         reg_temps.set(3, true);
@@ -3466,6 +3466,17 @@ mod tests {
         assert_eq!(reg_temps.get(5), false);
         assert_eq!(reg_temps.get(6), false);
         assert_eq!(reg_temps.get(7), true);
+
+        // Test conflicts
+        assert_eq!(5, get_option!(num_temp_regs));
+        assert_eq!(reg_temps.conflicts_with(0), false); // already set, but no conflict
+        assert_eq!(reg_temps.conflicts_with(1), false);
+        assert_eq!(reg_temps.conflicts_with(2), true); // already set, and conflicts with 7
+        assert_eq!(reg_temps.conflicts_with(3), false);
+        assert_eq!(reg_temps.conflicts_with(4), false);
+        assert_eq!(reg_temps.conflicts_with(5), true); // not set, and will conflict with 0
+        assert_eq!(reg_temps.conflicts_with(6), false);
+        assert_eq!(reg_temps.conflicts_with(7), true); // already set, and conflicts with 2
     }
 
     #[test]

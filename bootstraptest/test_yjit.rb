@@ -4273,3 +4273,21 @@ assert_normal_exit %q{
   Foo.class_eval "def initialize() #{ivars} end"
   Foo.new
 }
+
+assert_equal '0', %q{
+  def spill
+    1.to_i # not inlined
+  end
+
+  def inline(_stack1, _stack2, _stack3, _stack4, _stack5)
+    0 # inlined
+  end
+
+  def entry
+    # RegTemps is 00111110 prior to the #inline call.
+    # Its return value goes to stack_idx=0, which conflicts with stack_idx=5.
+    inline(spill, 2, 3, 4, 5)
+  end
+
+  entry
+}
