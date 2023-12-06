@@ -34,6 +34,10 @@ Note: We're only listing outstanding class updates.
     * Dir#chdir added for changing the directory to the directory specified by
       the provided `Dir` object. [[Feature #19347]]
 
+* Encoding
+
+    * Encoding#replicate has been removed, it was already deprecated.  [[Feature #18949]]
+
 * Fiber
 
     * Introduce Fiber#kill, similar to Thread#kill. [[Bug #595]]
@@ -370,6 +374,7 @@ changelog for details of the default gems or bundled gems.
 [Feature #18515]: https://bugs.ruby-lang.org/issues/18515
 [Feature #18551]: https://bugs.ruby-lang.org/issues/18551
 [Feature #18885]: https://bugs.ruby-lang.org/issues/18885
+[Feature #18949]: https://bugs.ruby-lang.org/issues/18949
 [Bug #19012]:     https://bugs.ruby-lang.org/issues/19012
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
 [Feature #19314]: https://bugs.ruby-lang.org/issues/19314
