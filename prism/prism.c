@@ -10685,6 +10685,9 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
             return (pm_node_t *) pm_constant_path_write_node_create(parser, (pm_constant_path_node_t *) target, operator, value);
         case PM_CONSTANT_READ_NODE: {
             pm_constant_write_node_t *node = pm_constant_write_node_create(parser, (pm_constant_read_node_t *) target, operator, value);
+            if (context_def_p(parser)) {
+                pm_parser_err_node(parser, (pm_node_t *) node, PM_ERR_WRITE_TARGET_IN_METHOD);
+            }
             pm_node_destroy(parser, target);
             return (pm_node_t *) node;
         }

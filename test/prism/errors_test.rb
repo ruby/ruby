@@ -1971,6 +1971,13 @@ module Prism
       end
     end
 
+    def test_constant_assignment_in_method
+      source = 'def foo();A=1;end'
+      assert_errors expression(source), source, [
+        ['dynamic constant assignment', 10..13]
+      ]
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")
