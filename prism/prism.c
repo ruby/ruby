@@ -13594,10 +13594,10 @@ parse_strings(pm_parser_t *parser, pm_node_t *current) {
             pm_string_t unescaped = parser->current_string;
             parser_lex(parser);
 
-            if (match1(parser, PM_TOKEN_STRING_END)) {
+            if (match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
                 node = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &content, &parser->current, &unescaped);
                 node->flags |= parse_unescaped_encoding(parser);
-                parser_lex(parser);
+                expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_LITERAL_TERM);
             } else if (accept1(parser, PM_TOKEN_LABEL_END)) {
                 node = (pm_node_t *) pm_symbol_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
             } else {

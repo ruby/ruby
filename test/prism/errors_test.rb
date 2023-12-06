@@ -149,9 +149,9 @@ module Prism
     def test_unterminated_interpolated_string
       expr = expression('"hello')
       assert_errors expr, '"hello', [
-        ["expected a closing delimiter for the interpolated string", 0..1]
+        ["expected a closing delimiter for the string literal", 6..6]
       ]
-      assert_equal expr.parts[0].unescaped, "hello"
+      assert_equal expr.unescaped, "hello"
       assert_equal expr.closing, ""
     end
 
