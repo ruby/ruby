@@ -460,7 +460,7 @@ VALUE mFoo = rb_define_module_under(rb_mKernel, "Foo");
   end
 
   def test_do_constants
-    content = <<-EOF
+    content = <<-'EOF'
 #include <ruby.h>
 
 void Init_foo(){
