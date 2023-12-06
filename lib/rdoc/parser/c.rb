@@ -944,8 +944,7 @@ class RDoc::Parser::C < RDoc::Parser
         if new_definition.empty? then # Default to literal C definition
           new_definition = definition
         else
-          new_definition = new_definition.gsub("\:", ":")
-          new_definition = new_definition.gsub("\\", '\\')
+          new_definition = new_definition.gsub(/\\([\\:])/, '\1')
         end
 
         new_definition.sub!(/\A(\s+)/, '')
