@@ -19,132 +19,226 @@ def format_number(pad, number)
   s.rjust(pad, ' ')
 end
 
-def gen_random_method()
-  # Choose how many positional arguments to use, and how many are optional
-  num_pargs = rand(10)
-  opt_parg_idx = rand(num_pargs)
-  num_opt_pargs = rand( num_pargs + 1 - opt_parg_idx)
-  pargs = []
-  num_pargs.times { |i| pargs.push("p#{i}") }
-  opt_pargs = pargs[opt_parg_idx...opt_parg_idx + num_opt_pargs]
-
-  # Choose how many kwargs to use, and how many are optional
-  num_kwargs = rand(10)
-  num_opt_kwargs = rand(num_kwargs + 1)
-  kwargs = []
-  num_kwargs.times { |i| kwargs.push("k#{i}") }
-  opt_kwargs = kwargs.sample(num_opt_kwargs)
-
-  # Choose whether to have a block argument and splats or not
-  block_arg = rand() < 0.25
-  has_rest = num_opt_pargs == 0 && rand() < 0.5
-  has_kwrest = rand() < 0.25
-
-  #
-  # Generate a method definitions
-  #
-  m_str = "def m("
-
-  pargs.each_with_index do |name, i|
-    if !m_str.end_with?("(")
-      m_str += ", "
-    end
-    m_str += "#{name}"
-
-    # If this has a default value
-    if opt_pargs.include?(name)
-      m_str += " = #{i}"
-    end
+# List of parameters/arguments for a method
+class ParamList
+  def initialize()
+    self.sample_params()
+    self.sample_args()
   end
 
-  if has_rest
-    if !m_str.end_with?("(")
-      m_str += ", "
-    end
-    m_str += "*rest"
-  end
-
-  kwargs.each_with_index do |name, i|
-    if !m_str.end_with?("(")
-      m_str += ", "
-    end
-    m_str += "#{name}:"
-
-    # If this has a default value
-    if opt_kwargs.include?(name)
-      m_str += " #{i}"
-    end
-  end
-
-  if has_kwrest
-    if !m_str.end_with?("(")
-      m_str += ", "
-    end
-    m_str += "**kwrest"
-  end
-
-  if block_arg
-    if !m_str.end_with?("(")
-      m_str += ", "
-    end
-    m_str += "&block"
-  end
-
-  m_str += ")\n"
-  if block_arg
-    m_str += "if block; block.call; end\n"
-  end
-  m_str += "if block_given?; yield; end\n"
-
-  if has_rest
-    m_str += "raise 'rest is not array' unless rest.kind_of?(Array)\n"
-    m_str += "raise 'rest size not integer' unless rest.size.kind_of?(Integer)\n"
-  end
-
-  if has_kwrest
-    m_str += "raise 'kwrest is not a hash' unless kwrest.kind_of?(Hash)\n"
-    m_str += "raise 'kwrest size not integer' unless kwrest.size.kind_of?(Integer)\n"
-  end
-
-  m_str += "777\n"
-  m_str += "end"
-
-  #
-  # Generate a random call to the method
-  #
-  c_str = "m("
-
-  pargs.each_with_index do |name, i|
-    if !c_str.end_with?("(")
-      c_str += ", "
+  # Sample/generate a random set of parameters for a method
+  def sample_params()
+    # Choose how many positional arguments to use, and how many are optional
+    num_pargs = rand(10)
+    @opt_parg_idx = rand(num_pargs)
+    @num_opt_pargs = rand(num_pargs + 1 - @opt_parg_idx)
+    @num_pargs_req = num_pargs - @num_opt_pargs
+    @pargs = (0...num_pargs).map do |i|
+      {
+        :name => "p#{i}",
+        :optional => (i >= @opt_parg_idx && i < @opt_parg_idx + @num_opt_pargs)
+      }
     end
 
-    c_str += "#{i}"
-
-    # TODO: don't always pass optional positional args
-  end
-
-  kwargs.each_with_index do |name, i|
-    # Don't always pass optional kwargs
-    if opt_kwargs.include?(name) && rand() < 0.5
-      next
+    # Choose how many kwargs to use, and how many are optional
+    num_kwargs = rand(10)
+    @kwargs = (0...num_kwargs).map do |i|
+      {
+        :name => "k#{i}",
+        :optional => rand() < 0.5
+      }
     end
 
-    if !c_str.end_with?("(")
-      c_str += ", "
+    # Choose whether to have rest parameters or not
+    @has_rest = @num_opt_pargs == 0 && rand() < 0.5
+    @has_kwrest = rand() < 0.25
+
+    # Choose whether to have a named block parameter or not
+    @has_block_param = rand() < 0.25
+  end
+
+  # TODO
+  # TODO: method to generate random argument value, integer or string or object?
+  # TODO
+
+  # Sample/generate a random set of arguments corresponding to the parameters
+  def sample_args()
+    # Choose how many positional args to pass
+    num_pargs_passed = rand(@num_pargs_req..@pargs.size)
+
+    # How many optional arguments will be filled
+    opt_pargs_filled = num_pargs_passed - @num_pargs_req
+
+    @pargs.each_with_index do |parg, i|
+      if parg[:optional]
+        parg[:default] = rand(100)
+      end
+
+      if !parg[:optional] || i < @opt_parg_idx + opt_pargs_filled
+        parg[:argval] = rand(100)
+      end
     end
 
-    c_str += "#{name}: #{i}"
+    @kwargs.each_with_index do |kwarg, i|
+      if kwarg[:optional]
+        kwarg[:default] = rand(100)
+      end
+
+      if !kwarg[:optional] || rand() < 0.5
+        kwarg[:argval] = rand(100)
+      end
+    end
+
+    # Randomly pass a block or not
+    @block_arg = nil
+    if rand() < 0.5
+      @block_arg = rand(100)
+    end
   end
 
-  c_str += ")"
+  # Compute the expected checksum of arguments ahead of time
+  def compute_checksum()
+    checksum = 0
 
-  # Randomly pass a block or not
-  if rand() < 0.5
-    c_str += " { 1 }"
+    @pargs.each_with_index do |arg, i|
+      value = (arg.key? :argval)? arg[:argval]:arg[:default]
+      checksum += i * value
+    end
+
+    @kwargs.each_with_index do |arg, i|
+      value = (arg.key? :argval)? arg[:argval]:arg[:default]
+      checksum += i * value
+    end
+
+    if @block_arg
+      checksum += @block_arg
+    end
+
+    checksum
   end
 
-  [m_str, c_str]
+  # Generate code for the method signature and method body
+  def gen_method_str()
+    m_str = "def m("
+
+    @pargs.each do |arg|
+      if !m_str.end_with?("(")
+        m_str += ", "
+      end
+
+      m_str += arg[:name]
+
+      # If this has a default value
+      if arg[:optional]
+        m_str += " = #{arg[:default]}"
+      end
+    end
+
+    if @has_rest
+      if !m_str.end_with?("(")
+        m_str += ", "
+      end
+      m_str += "*rest"
+    end
+
+    @kwargs.each do |arg|
+      if !m_str.end_with?("(")
+        m_str += ", "
+      end
+
+      m_str += "#{arg[:name]}:"
+
+      # If this has a default value
+      if arg[:optional]
+        m_str += " #{arg[:default]}"
+      end
+    end
+
+    if @has_kwrest
+      if !m_str.end_with?("(")
+        m_str += ", "
+      end
+      m_str += "**kwrest"
+    end
+
+    if @has_block_param
+      if !m_str.end_with?("(")
+        m_str += ", "
+      end
+
+      m_str += "&block"
+    end
+
+    m_str += ")\n"
+    m_str += "checksum = 0\n"
+
+    @pargs.each_with_index do |arg, i|
+      m_str += "checksum += #{i} * #{arg[:name]}\n"
+    end
+
+    @kwargs.each_with_index do |arg, i|
+      m_str += "checksum += #{i} * #{arg[:name]}\n"
+    end
+
+    #if @has_block_param
+    #  m_str += "if block; r = block.call; raise 'block result is not integer' unless r.kind_of?Integer; end\n"
+    #end
+
+    m_str += "if block_given?; r = yield; checksum += r; end\n"
+
+    if @has_rest
+      m_str += "raise 'rest is not array' unless rest.kind_of?(Array)\n"
+      m_str += "raise 'rest size not integer' unless rest.size.kind_of?(Integer)\n"
+    end
+
+    if @has_kwrest
+      m_str += "raise 'kwrest is not a hash' unless kwrest.kind_of?(Hash)\n"
+      m_str += "raise 'kwrest size not integer' unless kwrest.size.kind_of?(Integer)\n"
+    end
+
+    m_str += "checksum\n"
+    m_str += "end"
+
+    m_str
+  end
+
+  # Generate code to call into the method and pass the arguments
+  def gen_call_str()
+    c_str = "m("
+
+    @pargs.each_with_index do |arg, i|
+      if !arg.key? :argval
+        next
+      end
+
+      if !c_str.end_with?("(")
+        c_str += ", "
+      end
+
+      c_str += "#{arg[:argval]}"
+    end
+
+    @kwargs.each_with_index do |arg, i|
+      if !arg.key? :argval
+        next
+      end
+
+      if !c_str.end_with?("(")
+        c_str += ", "
+      end
+
+      c_str += "#{arg[:name]}: #{arg[:argval]}"
+    end
+
+    c_str += ")"
+
+    # Randomly pass a block or not
+    if @block_arg
+      c_str += " { #{@block_arg} }"
+    end
+
+    c_str
+  end
 end
 
 iseqs_compiled_start = RubyVM::YJIT.runtime_stats[:compiled_iseq_entry]
@@ -152,11 +246,12 @@ iseqs_compiled_start = RubyVM::YJIT.runtime_stats[:compiled_iseq_entry]
 num_iters.times do |i|
   puts "Iteration #{i}"
 
-  m_str, c_str = gen_random_method()
+  lst = ParamList.new()
+  m_str = lst.gen_method_str()
+  c_str = lst.gen_call_str()
+  checksum = lst.compute_checksum()
 
-  eval("class Foo; end")
-
-  f = Foo.new()
+  f = Object.new
 
   # Define the method on f
   puts "Defining"
@@ -169,13 +264,15 @@ num_iters.times do |i|
   r = eval(c_str)
   p r
 
-  if r != 777
-    raise "incorrect return value"
+  if r != checksum
+    raise "return value #{r} doesn't match checksum #{checksum}"
   end
 
   puts ""
 end
 
+# Make sure that YJIT actually compiled the tests we ran
+# Should be run with --yjit-call-threshold=1
 iseqs_compiled_end = RubyVM::YJIT.runtime_stats[:compiled_iseq_entry]
 if iseqs_compiled_end - iseqs_compiled_start < num_iters
   raise "YJIT did not compile enough ISEQs"
