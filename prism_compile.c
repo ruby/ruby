@@ -3851,6 +3851,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         LABEL *excep_match = NEW_LABEL(lineno);
         LABEL *rescue_end = NEW_LABEL(lineno);
 
+        ISEQ_COMPILE_DATA(iseq)->end_label = rescue_end;
+
         pm_rescue_node_t *rescue_node = (pm_rescue_node_t *)node;
         iseq_set_exception_local_table(iseq);
 
