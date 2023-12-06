@@ -1354,6 +1354,7 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
             }
             scope->body = cast->body;
             scope->locals = cast->locals;
+            scope->local_depth_offset = 0;
             break;
         }
         case PM_CLASS_NODE: {
