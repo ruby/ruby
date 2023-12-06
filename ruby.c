@@ -2333,7 +2333,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         if (opt->e_script) {
             pm_string_constant_init(&input, RSTRING_PTR(opt->e_script), RSTRING_LEN(opt->e_script));
             pm_options_filepath_set(&options, "-e");
-        } else {
+        }
+        else {
             pm_string_mapped_init(&input, RSTRING_PTR(opt->script_name));
             pm_options_filepath_set(&options, RSTRING_PTR(opt->script_name));
         }
@@ -2387,7 +2388,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             if (opt->e_script) {
                 pm_string_constant_init(&input, RSTRING_PTR(opt->e_script), RSTRING_LEN(opt->e_script));
                 pm_options_filepath_set(&options, "-e");
-            } else {
+            }
+            else {
                 pm_string_mapped_init(&input, RSTRING_PTR(opt->script_name));
                 pm_options_filepath_set(&options, RSTRING_PTR(opt->script_name));
             }
@@ -2396,7 +2398,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
             pm_string_free(&input);
             pm_options_free(&options);
-        } else {
+        }
+        else {
             rb_binding_t *toplevel_binding;
             GetBindingPtr(rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING")),
                           toplevel_binding);
