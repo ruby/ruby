@@ -6,10 +6,18 @@ num_iters = 10_000
 
 # Parse the command-line options
 OptionParser.new do |opts|
-  opts.on("--num_iters=N") do |n|
+  opts.on("--num-iters=N") do |n|
     num_iters = n.to_i
   end
 end.parse!
+
+# Format large numbers with comma separators for readability
+def format_number(pad, number)
+  s = number.to_s
+  i = s.index('.') || s.size
+  s.insert(i -= 3, ',') while i > 3
+  s.rjust(pad, ' ')
+end
 
 def gen_random_method()
   # Choose how many positional arguments to use, and how many are optional
@@ -28,11 +36,13 @@ def gen_random_method()
   opt_kwargs = kwargs.sample(num_opt_kwargs)
 
   # Choose whether to have a block argument and splats or not
-  block_arg = rand() < 0.5
+  block_arg = rand() < 0.25
   has_rest = num_opt_pargs == 0 && rand() < 0.5
-  has_kwrest = rand() < 0.5
+  has_kwrest = rand() < 0.25
 
+  #
   # Generate a method definitions
+  #
   m_str = "def m("
 
   pargs.each_with_index do |name, i|
@@ -85,10 +95,23 @@ def gen_random_method()
     m_str += "if block; block.call; end\n"
   end
   m_str += "if block_given?; yield; end\n"
+
+  if has_rest
+    m_str += "raise 'rest is not array' unless rest.kind_of?(Array)\n"
+    m_str += "raise 'rest size not integer' unless rest.size.kind_of?(Integer)\n"
+  end
+
+  if has_kwrest
+    m_str += "raise 'kwrest is not a hash' unless kwrest.kind_of?(Hash)\n"
+    m_str += "raise 'kwrest size not integer' unless kwrest.size.kind_of?(Integer)\n"
+  end
+
   m_str += "777\n"
   m_str += "end"
 
+  #
   # Generate a random call to the method
+  #
   c_str = "m("
 
   pargs.each_with_index do |name, i|
@@ -157,3 +180,5 @@ iseqs_compiled_end = RubyVM::YJIT.runtime_stats[:compiled_iseq_entry]
 if iseqs_compiled_end - iseqs_compiled_start < num_iters
   raise "YJIT did not compile enough ISEQs"
 end
+
+puts "Code region size: #{ format_number(0, RubyVM::YJIT.runtime_stats[:code_region_size]) }"
