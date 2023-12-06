@@ -101,6 +101,7 @@ Note: We're only listing outstanding class updates.
 
     * Range#reverse_each can now process beginless ranges with an Integer endpoint. [[Feature #18515]]
     * Range#reverse_each now raises TypeError for endless ranges. [[Feature #18551]]
+    * Range#overlap? added for checking if two ranges overlap. [[Feature #19839]]
 
 * Refinement
 
@@ -398,3 +399,4 @@ changelog for details of the default gems or bundled gems.
 [Feature #19843]: https://bugs.ruby-lang.org/issues/19843
 [Bug #19868]:     https://bugs.ruby-lang.org/issues/19868
 [Feature #19965]: https://bugs.ruby-lang.org/issues/19965
+[Feature #19839]: https://bugs.ruby-lang.org/issues/19839
