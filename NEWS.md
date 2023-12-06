@@ -122,10 +122,10 @@ Note: We're only listing outstanding class updates.
 
 ## Stdlib updates
 
-* RubyGems and Bundler warn if users require gem that is scheduled to become the bundled gems
-  in the future version of Ruby. [[Feature #19351]] [[Feature #19776]] [[Feature #19843]]
-
-  Targeted libraries are:
+* RubyGems and Bundler warn if users do `require` the following gems without adding them to Gemfile or gemspec.
+  This is because they will become the bundled gems in the future version of Ruby.
+  Note that `bundle exec ruby` does not print a warning due to implementation limitation.
+  [[Feature #19351]] [[Feature #19776]] [[Feature #19843]]
     * abbrev
     * base64
     * bigdecimal
