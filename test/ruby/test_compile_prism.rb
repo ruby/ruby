@@ -253,15 +253,18 @@ module Prism
     def test_ConstantPathAndWriteNode
       assert_prism_eval("Prism::CPAWN = 1; Prism::CPAWN &&= 2")
       assert_prism_eval("Prism::CPAWN &&= 1")
+      assert_prism_eval("::CPAWN = 1; ::CPAWN &&= 2")
     end
 
     def test_ConstantPathOrWriteNode
       assert_prism_eval("Prism::CPOrWN = nil; Prism::CPOrWN ||= 1")
       assert_prism_eval("Prism::CPOrWN ||= 1")
+      assert_prism_eval("::CPOrWN = nil; ::CPOrWN ||= 1")
     end
 
     def test_ConstantPathOperatorWriteNode
       assert_prism_eval("Prism::CPOWN = 0; Prism::CPOWN += 1")
+      assert_prism_eval("::CPOWN = 0; ::CPOWN += 1")
     end
 
     def test_GlobalVariableAndWriteNode
