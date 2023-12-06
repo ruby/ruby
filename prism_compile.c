@@ -993,16 +993,49 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                       break;
                   }
                   else {
-                      *kw_arg = rb_xmalloc_mul_add(len, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
-                      *flags = VM_CALL_KWARG;
-                      (*kw_arg)->keyword_len = (int) len;
+                    // We need to first figure out if all elements of the KeywordHashNode are AssocNodes
+                    // with static literal keys.
+                    // TODO: Figure this out from flags on the KeywordHashNode when Prism supports it
+                    bool all_keys_static_literals = true;
 
-                      // TODO: Method callers like `foo(a => b)`
-                      for (size_t i = 0; i < len; i++) {
-                          pm_assoc_node_t *assoc = (pm_assoc_node_t *)keyword_arg->elements.nodes[i];
-                          (*kw_arg)->keywords[i] = pm_static_literal_value(assoc->key, scope_node, parser);
-                          PM_COMPILE_NOT_POPPED(assoc->value);
-                      }
+                    for (size_t i = 0; i < len; i++) {
+                        pm_assoc_node_t *assoc = (pm_assoc_node_t *)keyword_arg->elements.nodes[i];
+                        pm_node_t *key = assoc->key;
+
+                        if (!key || !PM_NODE_TYPE_P(key, PM_ASSOC_NODE) || !pm_static_literal_p(key)) {
+                            all_keys_static_literals = false;
+                            break;
+                        }
+                    }
+
+                    if (all_keys_static_literals) {
+                        // If they are all static literal keys then we can pass them as keyword arguments.
+                        *kw_arg = rb_xmalloc_mul_add(len, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
+                        *flags = VM_CALL_KWARG;
+                        VALUE *keywords = (*kw_arg)->keywords;
+                        (*kw_arg)->references = 0;
+                        (*kw_arg)->keyword_len = (int)len;
+
+                        for (size_t i = 0; i < len; i++) {
+                            pm_assoc_node_t *assoc = (pm_assoc_node_t *)keyword_arg->elements.nodes[i];
+                            pm_node_t *key = assoc->key;
+                            keywords[i] = pm_static_literal_value(key, scope_node, parser);
+                            PM_COMPILE_NOT_POPPED(assoc->value);
+                        }
+                    } else {
+                        // If they aren't all static literal keys then we need to construct a new hash
+                        // and pass that as an argument.
+                        orig_argc++;
+                        *flags |= VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT;
+
+                        for (size_t i = 0; i < len; i++) {
+                            pm_assoc_node_t *assoc = (pm_assoc_node_t *)keyword_arg->elements.nodes[i];
+                            PM_COMPILE_NOT_POPPED(assoc->key);
+                            PM_COMPILE_NOT_POPPED(assoc->value);
+                        }
+
+                        ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(len * 2));
+                    }
                   }
                   break;
               }

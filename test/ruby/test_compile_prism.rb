@@ -1329,6 +1329,16 @@ module Prism
         end
         foo(1)
       CODE
+
+      assert_prism_eval(<<-CODE)
+        def self.prism_opt_var_trail_hash(a = nil, *b, c, **d); end
+        prism_opt_var_trail_hash("a")
+        prism_opt_var_trail_hash("a", c: 1)
+        prism_opt_var_trail_hash("a", "b")
+        prism_opt_var_trail_hash("a", "b", "c")
+        prism_opt_var_trail_hash("a", "b", "c", c: 1)
+        prism_opt_var_trail_hash("a", "b", "c", "c" => 0, c: 1)
+      CODE
     end
 
     def test_CallAndWriteNode
