@@ -196,7 +196,7 @@ is_constant_path(VALUE name)
  *    n::M.name #=> "fake_name::M"
  *    N = n
  *
- *    N.name #=> "nested_fake_name"
+ *    N.name #=> "N"
  *    N::M.name #=> "N::M"
  */
 
