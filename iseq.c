@@ -954,7 +954,8 @@ VALUE rb_iseq_compile_prism_node(rb_iseq_t * iseq, pm_scope_node_t *scope_node, 
  * Initialize an rb_code_location_t with a prism location.
  */
 static void
-pm_code_location(rb_code_location_t *code_location, const pm_newline_list_t *newline_list, const pm_location_t *location) {
+pm_code_location(rb_code_location_t *code_location, const pm_newline_list_t *newline_list, const pm_location_t *location)
+{
     pm_line_column_t start = pm_newline_list_line_column(newline_list, location->start);
     pm_line_column_t end = pm_newline_list_line_column(newline_list, location->end);
 
@@ -1399,7 +1400,8 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
 }
 
 static void
-iseqw_s_compile_prism_compile(pm_parser_t *parser, VALUE opt, rb_iseq_t *iseq, VALUE file, VALUE path, int first_lineno) {
+iseqw_s_compile_prism_compile(pm_parser_t *parser, VALUE opt, rb_iseq_t *iseq, VALUE file, VALUE path, int first_lineno)
+{
     pm_node_t *node = pm_parse(parser);
     rb_code_location_t code_location;
     pm_code_location(&code_location, &parser->newline_list, &node->location);
