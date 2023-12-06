@@ -7097,6 +7097,8 @@ fn gen_send_general(
     let recv_idx = argc + if flags & VM_CALL_ARGS_BLOCKARG != 0 { 1 } else { 0 };
     let comptime_recv = jit.peek_at_stack(&asm.ctx, recv_idx as isize);
     let comptime_recv_klass = comptime_recv.class_of();
+    assert_eq!(RUBY_T_CLASS, comptime_recv_klass.builtin_type(),
+        "objects visible to ruby code should have a T_CLASS in their klass field");
 
     // Points to the receiver operand on the stack
     let recv = asm.stack_opnd(recv_idx);
