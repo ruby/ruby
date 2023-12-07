@@ -14108,7 +14108,7 @@ enum cond_type {
     } \
 } while (0)
 
-static NODE *cond0(struct parser_params*,NODE*,enum cond_type,const YYLTYPE*);
+static NODE *cond0(struct parser_params*,NODE*,enum cond_type,const YYLTYPE*,bool);
 
 static NODE*
 range_op(struct parser_params *p, NODE *node, const YYLTYPE *loc)
@@ -14124,11 +14124,11 @@ range_op(struct parser_params *p, NODE *node, const YYLTYPE *loc)
         ID lineno = rb_intern("$.");
         return NEW_CALL(node, tEQ, NEW_LIST(NEW_GVAR(lineno, loc), loc), loc);
     }
-    return cond0(p, node, COND_IN_FF, loc);
+    return cond0(p, node, COND_IN_FF, loc, true);
 }
 
 static NODE*
-cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *loc)
+cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *loc, bool top)
 {
     if (node == 0) return 0;
     if (!(node = nd_once_body(node))) return 0;
@@ -14136,7 +14136,7 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
 
     switch (nd_type(node)) {
       case NODE_BEGIN:
-        RNODE_BEGIN(node)->nd_body = cond0(p, RNODE_BEGIN(node)->nd_body, type, loc);
+        RNODE_BEGIN(node)->nd_body = cond0(p, RNODE_BEGIN(node)->nd_body, type, loc, top);
         break;
 
       case NODE_DSTR:
@@ -14151,17 +14151,18 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
         return NEW_MATCH2(node, NEW_GVAR(idLASTLINE, loc), loc);
 
       case NODE_BLOCK:
-        RNODE_BLOCK(RNODE_BLOCK(node)->nd_end)->nd_head = cond0(p, RNODE_BLOCK(RNODE_BLOCK(node)->nd_end)->nd_head, type, loc);
+        RNODE_BLOCK(RNODE_BLOCK(node)->nd_end)->nd_head = cond0(p, RNODE_BLOCK(RNODE_BLOCK(node)->nd_end)->nd_head, type, loc, false);
         break;
 
       case NODE_AND:
       case NODE_OR:
-        RNODE_AND(node)->nd_1st = cond0(p, RNODE_AND(node)->nd_1st, COND_IN_COND, loc);
-        RNODE_AND(node)->nd_2nd = cond0(p, RNODE_AND(node)->nd_2nd, COND_IN_COND, loc);
+        RNODE_AND(node)->nd_1st = cond0(p, RNODE_AND(node)->nd_1st, COND_IN_COND, loc, true);
+        RNODE_AND(node)->nd_2nd = cond0(p, RNODE_AND(node)->nd_2nd, COND_IN_COND, loc, true);
         break;
 
       case NODE_DOT2:
       case NODE_DOT3:
+        if (!top) break;
         RNODE_DOT2(node)->nd_beg = range_op(p, RNODE_DOT2(node)->nd_beg, loc);
         RNODE_DOT2(node)->nd_end = range_op(p, RNODE_DOT2(node)->nd_end, loc);
         if (nd_type_p(node, NODE_DOT2)) nd_set_type(node,NODE_FLIP2);
@@ -14198,14 +14199,14 @@ static NODE*
 cond(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 {
     if (node == 0) return 0;
-    return cond0(p, node, COND_IN_COND, loc);
+    return cond0(p, node, COND_IN_COND, loc, true);
 }
 
 static NODE*
 method_cond(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 {
     if (node == 0) return 0;
-    return cond0(p, node, COND_IN_OP, loc);
+    return cond0(p, node, COND_IN_OP, loc, true);
 }
 
 static NODE*
@@ -14219,7 +14220,7 @@ static NODE*
 new_if(struct parser_params *p, NODE *cc, NODE *left, NODE *right, const YYLTYPE *loc)
 {
     if (!cc) return right;
-    cc = cond0(p, cc, COND_IN_COND, loc);
+    cc = cond0(p, cc, COND_IN_COND, loc, true);
     return newline_node(NEW_IF(cc, left, right, loc));
 }
 
@@ -14227,7 +14228,7 @@ static NODE*
 new_unless(struct parser_params *p, NODE *cc, NODE *left, NODE *right, const YYLTYPE *loc)
 {
     if (!cc) return right;
-    cc = cond0(p, cc, COND_IN_COND, loc);
+    cc = cond0(p, cc, COND_IN_COND, loc, true);
     return newline_node(NEW_UNLESS(cc, left, right, loc));
 }
 
