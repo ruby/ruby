@@ -56,6 +56,25 @@ module Gem::BUNDLED_GEMS
   DLEXT = /\.#{Regexp.union(dlext)}\z/
   LIBEXT = /\.#{Regexp.union("rb", *dlext)}\z/
 
+  def self.replace_require(specs)
+    return if [::Kernel.singleton_class, ::Kernel].any? {|klass| klass.respond_to?(:no_warning_require) }
+
+    [::Kernel.singleton_class, ::Kernel].each do |kernel_class|
+      kernel_class.send(:alias_method, :no_warning_require, :require)
+      kernel_class.send(:define_method, :require) do |name|
+        if message = ::Gem::BUNDLED_GEMS.warning?(name, specs: specs) # rubocop:disable Style/HashSyntax
+          warn message, :uplevel => 1
+        end
+        kernel_class.send(:no_warning_require, name)
+      end
+      if kernel_class == ::Kernel
+        kernel_class.send(:private, :require)
+      else
+        kernel_class.send(:public, :require)
+      end
+    end
+  end
+
   def self.find_gem(path)
     if !path
       return
