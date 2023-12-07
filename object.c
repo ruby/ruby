@@ -685,7 +685,7 @@ rb_any_to_s(VALUE obj)
     VALUE str;
     VALUE cname = rb_class_name(CLASS_OF(obj));
 
-    str = rb_sprintf("#<%"PRIsVALUE":%p>", cname, (void*)obj);
+    str = rb_enc_sprintf(rb_usascii_encoding(), "#<%"PRIsVALUE":%p>", cname, (void*)obj);
 
     return str;
 }
