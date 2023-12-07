@@ -9229,6 +9229,9 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
         VALUE vargc = setup_args(iseq, args, RNODE_SUPER(node)->nd_args, &flag, &keywords);
         CHECK(!NIL_P(vargc));
         argc = FIX2INT(vargc);
+        if ((flag & VM_CALL_ARGS_BLOCKARG) && (flag & VM_CALL_KW_SPLAT) && !(flag & VM_CALL_KW_SPLAT_MUT)) {
+            ADD_INSN(args, node, splatkw);
+        }
     }
     else {
         /* NODE_ZSUPER */
