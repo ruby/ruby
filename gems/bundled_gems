@@ -11,7 +11,7 @@ rake            13.1.0  https://github.com/ruby/rake
 test-unit       3.6.1   https://github.com/test-unit/test-unit
 rexml           3.2.6   https://github.com/ruby/rexml
 rss             0.3.0   https://github.com/ruby/rss
-net-ftp         0.2.0   https://github.com/ruby/net-ftp 54a9c289048c17e5037ea806e8d7896093f75263
+net-ftp         0.3.0   https://github.com/ruby/net-ftp
 net-imap        0.4.7   https://github.com/ruby/net-imap
 net-pop         0.1.2   https://github.com/ruby/net-pop
 net-smtp        0.4.0   https://github.com/ruby/net-smtp
