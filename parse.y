@@ -44,8 +44,6 @@
 #define rb_str_coderange_scan_restartable p->config->str_coderange_scan_restartable
 #endif
 
-#define rb_warn_deprecated(fmt, suggest) rb_warn0(fmt " is deprecated; use " suggest " instead")
-
 #else
 
 #include "internal.h"
@@ -12790,7 +12788,7 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
         if (dyna_in_block(p) && id == rb_intern("it")
             && !(DVARS_TERMINAL_P(p->lvtbl->args) || DVARS_TERMINAL_P(p->lvtbl->args->prev))
             && p->max_numparam != ORDINAL_PARAM) {
-            rb_warn_deprecated("calling `it` without arguments in a block", "it() or self.it");
+            rb_warn0("`it` calls without arguments will refer to the first block param in Ruby 3.4; use it() or self.it");
         }
         return NEW_VCALL(id, loc);
       case ID_GLOBAL:
