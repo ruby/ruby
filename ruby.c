@@ -56,7 +56,6 @@
 #include "internal/thread.h"
 #include "internal/ruby_parser.h"
 #include "internal/variable.h"
-#include "prism_compile.h"
 #include "ruby/encoding.h"
 #include "ruby/thread.h"
 #include "ruby/util.h"
@@ -362,6 +361,8 @@ usage(const char *name, int help, int highlight, int columns)
           "enable or disable features. see below for available features"),
         M("--external-encoding=encoding",           ", --internal-encoding=encoding",
           "specify the default external or internal character encoding"),
+        M("--parser={parse.y|prism}",           ", --parser=prism",
+          "the parser used to parse Ruby code (experimental)"),
         M("--backtrace-limit=num",                  "", "limit the maximum length of backtrace"),
         M("--verbose",                              "", "turn on verbose mode and disable script from stdin"),
         M("--version",                              "", "print the version number, then exit"),
@@ -1407,6 +1408,18 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
     else if (is_option_with_arg("external-encoding", Qfalse, Qtrue)) {
         set_external_encoding_once(opt, s, 0);
     }
+    else if (is_option_with_arg("parser", Qfalse, Qtrue)) {
+        if (strcmp("prism", s) == 0) {
+            (*rb_ruby_prism_ptr()) = true;
+            rb_warn("The Prism compiler is currently experimental and compatibility with parse.y is not yet complete. Please report an issues you find on the prism issue tracker.");
+        }
+        else if (strcmp("parse.y", s) == 0) {
+            // default behavior
+        } else {
+            rb_raise(rb_eRuntimeError,
+                     "unknown parser %s", s);
+        }
+    }
 #if defined ALLOW_DEFAULT_SOURCE_ENCODING && ALLOW_DEFAULT_SOURCE_ENCODING
     else if (is_option_with_arg("source-encoding", Qfalse, Qtrue)) {
         set_source_encoding_once(opt, s, 0);
@@ -2244,39 +2257,41 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     ruby_set_argv(argc, argv);
     opt->sflag = process_sflag(opt->sflag);
 
-    if (opt->e_script) {
-        VALUE progname = rb_progname;
-        rb_encoding *eenc;
-        rb_parser_set_context(parser, 0, TRUE);
+    if (!(*rb_ruby_prism_ptr())) {
+        if (opt->e_script) {
+            VALUE progname = rb_progname;
+            rb_encoding *eenc;
+            rb_parser_set_context(parser, 0, TRUE);
 
-        if (opt->src.enc.index >= 0) {
-            eenc = rb_enc_from_index(opt->src.enc.index);
+            if (opt->src.enc.index >= 0) {
+                eenc = rb_enc_from_index(opt->src.enc.index);
+            }
+            else {
+                eenc = lenc;
+#if UTF8_PATH
+                if (ienc) eenc = ienc;
+#endif
+            }
+#if UTF8_PATH
+            if (eenc != uenc) {
+                opt->e_script = str_conv_enc(opt->e_script, uenc, eenc);
+            }
+#endif
+            rb_enc_associate(opt->e_script, eenc);
+            ruby_opt_init(opt);
+            ruby_set_script_name(progname);
+            rb_parser_set_options(parser, opt->do_print, opt->do_loop,
+                                  opt->do_line, opt->do_split);
+            ast = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
         }
         else {
-            eenc = lenc;
-#if UTF8_PATH
-            if (ienc) eenc = ienc;
-#endif
+            VALUE f;
+            int xflag = opt->xflag;
+            f = open_load_file(script_name, &xflag);
+            opt->xflag = xflag != 0;
+            rb_parser_set_context(parser, 0, f == rb_stdin);
+            ast = load_file(parser, opt->script_name, f, 1, opt);
         }
-#if UTF8_PATH
-        if (eenc != uenc) {
-            opt->e_script = str_conv_enc(opt->e_script, uenc, eenc);
-        }
-#endif
-        rb_enc_associate(opt->e_script, eenc);
-        ruby_opt_init(opt);
-        ruby_set_script_name(progname);
-        rb_parser_set_options(parser, opt->do_print, opt->do_loop,
-                              opt->do_line, opt->do_split);
-        ast = rb_parser_compile_string(parser, opt->script, opt->e_script, 1);
-    }
-    else {
-        VALUE f;
-        int xflag = opt->xflag;
-        f = open_load_file(script_name, &xflag);
-        opt->xflag = xflag != 0;
-        rb_parser_set_context(parser, 0, f == rb_stdin);
-        ast = load_file(parser, opt->script_name, f, 1, opt);
     }
     ruby_set_script_name(opt->script_name);
     if (dump & DUMP_BIT(yydebug)) {
@@ -2301,7 +2316,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         rb_enc_set_default_internal(Qnil);
     rb_stdio_set_default_encoding();
 
-    if (!ast->body.root) {
+    if (!(*rb_ruby_prism_ptr()) && !ast->body.root) {
         rb_ast_dispose(ast);
         return Qfalse;
     }
@@ -2378,12 +2393,30 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         }
 
 
-        rb_binding_t *toplevel_binding;
-        GetBindingPtr(rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING")),
-                      toplevel_binding);
-        const struct rb_block *base_block = toplevel_context(toplevel_binding);
-        iseq = rb_iseq_new_main(&ast->body, opt->script_name, path, vm_block_iseq(base_block), !(dump & DUMP_BIT(insns_without_opt)));
-        rb_ast_dispose(ast);
+        if ((*rb_ruby_prism_ptr())) {
+            pm_string_t input;
+            pm_options_t options = { 0 };
+
+            if (opt->e_script) {
+                pm_string_constant_init(&input, RSTRING_PTR(opt->e_script), RSTRING_LEN(opt->e_script));
+                pm_options_filepath_set(&options, "-e");
+            } else {
+                pm_string_mapped_init(&input, RSTRING_PTR(opt->script_name));
+                pm_options_filepath_set(&options, RSTRING_PTR(opt->script_name));
+            }
+
+            iseq = rb_iseq_new_main_prism(&input, &options, path);
+
+            pm_string_free(&input);
+            pm_options_free(&options);
+        } else {
+            rb_binding_t *toplevel_binding;
+            GetBindingPtr(rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING")),
+                          toplevel_binding);
+            const struct rb_block *base_block = toplevel_context(toplevel_binding);
+            iseq = rb_iseq_new_main(&ast->body, opt->script_name, path, vm_block_iseq(base_block), !(dump & DUMP_BIT(insns_without_opt)));
+            rb_ast_dispose(ast);
+        }
     }
 
     if (dump & (DUMP_BIT(insns) | DUMP_BIT(insns_without_opt))) {
@@ -2939,6 +2972,8 @@ ruby_process_options(int argc, char **argv)
     ruby_cmdline_options_t opt;
     VALUE iseq;
     const char *script_name = (argc > 0 && argv[0]) ? argv[0] : ruby_engine;
+
+    (*rb_ruby_prism_ptr()) = false;
 
     if (!origarg.argv || origarg.argc <= 0) {
         origarg.argc = argc;
