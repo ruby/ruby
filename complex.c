@@ -2339,45 +2339,57 @@ float_arg(VALUE self)
 }
 
 /*
- * A complex number can be represented as a paired real number with
- * imaginary unit; a+bi.  Where a is real part, b is imaginary part
- * and i is imaginary unit.  Real a equals complex a+0i
- * mathematically.
+ * A \Complex object houses a pair of values
+ * called, respectively, the _real_ and _imaginary_ parts;
+ * see {Complex number}[https://en.wikipedia.org/wiki/Complex_number].
  *
- * You can create a \Complex object explicitly with:
+ * Note that each of the parts may be a an instance of class Numeric,
+ * or an instance of one of its subclasses:
+ * Complex, Float, Integer, or Rational.
+ *
+ * You can create a \Complex object with:
  *
  * - A {complex literal}[rdoc-ref:syntax/literals.rdoc@Complex+Literals].
+ * - \Method {Kernel#Complex}[https://docs.ruby-lang.org/en/master/Kernel.html#method-i-Complex].
+ * - Methods Complex.rect or Complex.polar.
+ * - Methods Numeric#to_c or String#to_c;
+ *   or (trivially) methods Complex#to_c or NilClass#to_c.
  *
- * You can convert certain objects to \Complex objects with:
+ * == Rectangular Coordinates
  *
- * - \Method #Complex.
+ * Each of the methods above (except Complex.polar) takes two "rectangular" arguments
+ * representing the _real_ and _imaginary_ parts of the created \Complex object;
+ * see {Complex definition}[https://en.wikipedia.org/wiki/Complex_number#Definition].
  *
- * Complex object can be created as literal, and also by using
- * Kernel#Complex, Complex::rect, Complex::polar or to_c method.
+ * The created object stores the two values,
+ * which may be retrieved:
  *
- *    2+1i                 #=> (2+1i)
- *    Complex(1)           #=> (1+0i)
- *    Complex(2, 3)        #=> (2+3i)
- *    Complex.polar(2, 3)  #=> (-1.9799849932008908+0.2822400161197344i)
- *    3.to_c               #=> (3+0i)
+ * - Separately, with methods Complex#real and Complex#imaginary.
+ * - Together, with method Complex#rect.
  *
- * You can also create complex object from floating-point numbers or
- * strings.
+ * The corresponding (computed) polar values may be retrieved:
  *
- *    Complex(0.3)         #=> (0.3+0i)
- *    Complex('0.3-0.5i')  #=> (0.3-0.5i)
- *    Complex('2/3+3/4i')  #=> ((2/3)+(3/4)*i)
- *    Complex('1@2')       #=> (-0.4161468365471424+0.9092974268256817i)
+ * - Separately, with methods Complex#abs and Complex#arg.
+ * - Together, with method Complex#polar.
  *
- *    0.3.to_c             #=> (0.3+0i)
- *    '0.3-0.5i'.to_c      #=> (0.3-0.5i)
- *    '2/3+3/4i'.to_c      #=> ((2/3)+(3/4)*i)
- *    '1@2'.to_c           #=> (-0.4161468365471424+0.9092974268256817i)
+ * == Polar Coordinates
  *
- * A complex object is either an exact or an inexact number.
+ * \Method Complex.polar takes two "polar" arguments,
+ * representing the _modulus_ (or _absolute_) and _argument_ parts
+ * of the created \Complex object;
+ * see {Complex plane}[https://en.wikipedia.org/wiki/Complex_number#Polar_complex_plane].
  *
- *    Complex(1, 1) / 2    #=> ((1/2)+(1/2)*i)
- *    Complex(1, 1) / 2.0  #=> (0.5+0.5i)
+ * The created object stores the two values,
+ * which may be retrieved:
+ *
+ * - Separately, with methods Complex#abs and Complex#arg.
+ * - Together, with method Complex#polar.
+ *
+ * The corresponding (computed) rectangular values may be retrieved:
+ *
+ * - Separately, with methods Complex#real and Complex#imag.
+ * - Together, with method Complex#rect.
+ *
  */
 void
 Init_Complex(void)
@@ -2498,7 +2510,11 @@ Init_Complex(void)
     rb_define_method(rb_cFloat, "phase", float_arg, 0);
 
     /*
-     * The imaginary unit.
+     * Equivalent
+     * to <tt>Complex(0, 1)</tt>:
+     *
+     *   Complex::I # => (0+1i)
+     *
      */
     rb_define_const(rb_cComplex, "I",
                     f_complex_new_bang2(rb_cComplex, ZERO, ONE));
