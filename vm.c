@@ -1225,7 +1225,6 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
     }
 
     const rb_env_t *copied_env = vm_env_new(ep, env_body, src_env->env_size, src_env->iseq);
-    volatile VALUE prev_env = Qnil;
 
     if (read_only_variables) {
         for (int i=RARRAY_LENINT(read_only_variables)-1; i>=0; i--) {
@@ -1255,15 +1254,14 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
     if (!VM_ENV_LOCAL_P(src_ep)) {
         const VALUE *prev_ep = VM_ENV_PREV_EP(src_env->ep);
         const rb_env_t *new_prev_env = env_copy(prev_ep, read_only_variables);
-        prev_env = (VALUE)new_prev_env;
         ep[VM_ENV_DATA_INDEX_SPECVAL] = VM_GUARDED_PREV_EP(new_prev_env->ep);
+        RB_OBJ_WRITTEN(copied_env, Qundef, new_prev_env);
         VM_ENV_FLAGS_UNSET(ep, VM_ENV_FLAG_LOCAL);
     }
     else {
         ep[VM_ENV_DATA_INDEX_SPECVAL] = VM_BLOCK_HANDLER_NONE;
     }
 
-    RB_GC_GUARD(prev_env);
     return copied_env;
 }
 
