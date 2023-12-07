@@ -1009,6 +1009,15 @@ module Prism
         end
         prism_test_return_node
       CODE
+      assert_prism_eval(<<-CODE)
+        def self.prism_test_return_node
+          [1].map do |i|
+            return i if i == 1
+            2
+          end
+        end
+        prism_test_return_node
+      CODE
     end
 
     ############################################################################

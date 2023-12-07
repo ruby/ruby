@@ -3941,7 +3941,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         if (iseq) {
             enum rb_iseq_type type = ISEQ_BODY(iseq)->type;
-            const NODE *retval = RNODE_RETURN(node)->nd_stts;
             LABEL *splabel = 0;
 
             const rb_iseq_t *parent_iseq = iseq;
@@ -3954,7 +3953,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             switch (parent_type) {
               case ISEQ_TYPE_TOP:
               case ISEQ_TYPE_MAIN:
-                if (retval) {
+                if (arguments) {
                     rb_warn("argument of top-level return is ignored");
                 }
                 if (parent_iseq == iseq) {
@@ -3972,7 +3971,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
 
             if (arguments) {
-                PM_COMPILE((pm_node_t *)arguments);
+                PM_COMPILE_NOT_POPPED((pm_node_t *)arguments);
             }
             else {
                 PM_PUTNIL;
