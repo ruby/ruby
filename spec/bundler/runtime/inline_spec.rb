@@ -28,7 +28,7 @@ RSpec.describe "bundler/inline#gemfile" do
       s.write "lib/four.rb", "puts 'four'"
     end
 
-    build_lib "five", "1.0.0", :no_default => true do |s|
+    build_lib "five", "1.0.0", no_default: true do |s|
       s.write "lib/mofive.rb", "puts 'five'"
     end
 
@@ -57,7 +57,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     expect(out).to eq("two")
 
-    script <<-RUBY, :raise_on_error => false
+    script <<-RUBY, raise_on_error: false
       gemfile do
         source "#{file_uri_for(gem_repo1)}"
         path "#{lib_path}" do
@@ -80,7 +80,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     expect(out).to include("Rack's post install message")
 
-    script <<-RUBY, :artifice => "endpoint"
+    script <<-RUBY, artifice: "endpoint"
       gemfile(true) do
         source "https://notaserver.com"
         gem "activesupport", :require => true
@@ -94,7 +94,7 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "lets me use my own ui object" do
-    script <<-RUBY, :artifice => "endpoint"
+    script <<-RUBY, artifice: "endpoint"
       require 'bundler'
       class MyBundlerUI < Bundler::UI::Shell
         def confirm(msg, newline = nil)
@@ -113,7 +113,7 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "has an option for quiet installation" do
-    script <<-RUBY, :artifice => "endpoint"
+    script <<-RUBY, artifice: "endpoint"
       require 'bundler/inline'
 
       gemfile(true, :quiet => true) do
@@ -126,7 +126,7 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "raises an exception if passed unknown arguments" do
-    script <<-RUBY, :raise_on_error => false
+    script <<-RUBY, raise_on_error: false
       gemfile(true, :arglebargle => true) do
         path "#{lib_path}"
         gem "two"
@@ -431,7 +431,7 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "installs inline gems when frozen is set" do
-    script <<-RUBY, :env => { "BUNDLE_FROZEN" => "true" }
+    script <<-RUBY, env: { "BUNDLE_FROZEN" => "true" }
       gemfile do
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
@@ -444,7 +444,7 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "installs inline gems when deployment is set" do
-    script <<-RUBY, :env => { "BUNDLE_DEPLOYMENT" => "true" }
+    script <<-RUBY, env: { "BUNDLE_DEPLOYMENT" => "true" }
       gemfile do
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
@@ -488,7 +488,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
   context "when BUNDLE_PATH is set" do
     it "installs inline gems to the system path regardless" do
-      script <<-RUBY, :env => { "BUNDLE_PATH" => "./vendor/inline" }
+      script <<-RUBY, env: { "BUNDLE_PATH" => "./vendor/inline" }
         gemfile(true) do
           source "#{file_uri_for(gem_repo1)}"
           gem "rack"
@@ -576,7 +576,7 @@ RSpec.describe "bundler/inline#gemfile" do
       s.write "lib/foo.rb", foo_code
     end
 
-    script <<-RUBY, :dir => tmp("path_without_gemfile")
+    script <<-RUBY, dir: tmp("path_without_gemfile")
       gemfile do
         source "#{file_uri_for(gem_repo2)}"
         path "#{lib_path}" do
@@ -592,12 +592,12 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "when requiring fileutils after does not show redefinition warnings", :realworld do
-    dependency_installer_loads_fileutils = ruby "require 'rubygems/dependency_installer'; puts $LOADED_FEATURES.grep(/fileutils/)", :raise_on_error => false
+    dependency_installer_loads_fileutils = ruby "require 'rubygems/dependency_installer'; puts $LOADED_FEATURES.grep(/fileutils/)", raise_on_error: false
     skip "does not work if rubygems/dependency_installer loads fileutils, which happens until rubygems 3.2.0" unless dependency_installer_loads_fileutils.empty?
 
     Dir.mkdir tmp("path_without_gemfile")
 
-    default_fileutils_version = ruby "gem 'fileutils', '< 999999'; require 'fileutils'; puts FileUtils::VERSION", :raise_on_error => false
+    default_fileutils_version = ruby "gem 'fileutils', '< 999999'; require 'fileutils'; puts FileUtils::VERSION", raise_on_error: false
     skip "fileutils isn't a default gem" if default_fileutils_version.empty?
 
     realworld_system_gems "fileutils --version 1.4.1"
@@ -609,7 +609,7 @@ RSpec.describe "bundler/inline#gemfile" do
     # on prerelease rubies, a required_rubygems_version constraint is added by RubyGems to the resolution, causing Molinillo to load the `set` gem
     realworld_system_gems "set --version 1.0.3" if Gem.ruby_version.prerelease?
 
-    script <<-RUBY, :dir => tmp("path_without_gemfile"), :env => { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }
+    script <<-RUBY, dir: tmp("path_without_gemfile"), env: { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }
       require "bundler/inline"
 
       gemfile(true) do

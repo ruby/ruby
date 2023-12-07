@@ -319,7 +319,7 @@ class Gem::Installer
     FileUtils.rm_rf spec.extension_dir
 
     dir_mode = options[:dir_mode]
-    FileUtils.mkdir_p gem_dir, :mode => dir_mode && 0o755
+    FileUtils.mkdir_p gem_dir, mode: dir_mode && 0o755
 
     if @options[:install_as_default]
       extract_bin
@@ -569,7 +569,7 @@ class Gem::Installer
       File.unlink dst
     end
 
-    FileUtils.symlink src, dst, :verbose => Gem.configuration.really_verbose
+    FileUtils.symlink src, dst, verbose: Gem.configuration.really_verbose
   rescue NotImplementedError, SystemCallError
     alert_warning "Unable to use symlinks, installing wrapper"
     generate_bin_script filename, bindir
@@ -654,11 +654,11 @@ class Gem::Installer
 
   def process_options # :nodoc:
     @options = {
-      :bin_dir => nil,
-      :env_shebang => false,
-      :force => false,
-      :only_install_dir => false,
-      :post_install_message => true,
+      bin_dir: nil,
+      env_shebang: false,
+      force: false,
+      only_install_dir: false,
+      post_install_message: true,
     }.merge options
 
     @env_shebang         = options[:env_shebang]
@@ -727,7 +727,7 @@ class Gem::Installer
   end
 
   def verify_gem_home # :nodoc:
-    FileUtils.mkdir_p gem_home, :mode => options[:dir_mode] && 0o755
+    FileUtils.mkdir_p gem_home, mode: options[:dir_mode] && 0o755
   end
 
   def verify_spec
@@ -948,7 +948,7 @@ TEXT
     build_info_dir = File.join gem_home, "build_info"
 
     dir_mode = options[:dir_mode]
-    FileUtils.mkdir_p build_info_dir, :mode => dir_mode && 0o755
+    FileUtils.mkdir_p build_info_dir, mode: dir_mode && 0o755
 
     build_info_file = File.join build_info_dir, "#{spec.full_name}.info"
 

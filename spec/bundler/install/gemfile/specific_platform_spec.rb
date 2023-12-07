@@ -26,9 +26,9 @@ RSpec.describe "bundle install with specific platforms" do
       system_gems "bundler-2.1.4"
 
       # Consistent location to install and look for gems
-      bundle "config set --local path vendor/bundle", :env => { "BUNDLER_VERSION" => "2.1.4" }
+      bundle "config set --local path vendor/bundle", env: { "BUNDLER_VERSION" => "2.1.4" }
 
-      install_gemfile(google_protobuf, :env => { "BUNDLER_VERSION" => "2.1.4" })
+      install_gemfile(google_protobuf, env: { "BUNDLER_VERSION" => "2.1.4" })
 
       # simulate lockfile created with old bundler, which only locks for ruby platform
       lockfile <<-L
@@ -48,7 +48,7 @@ RSpec.describe "bundle install with specific platforms" do
       L
 
       # force strict usage of the lock file by setting frozen mode
-      bundle "config set --local frozen true", :env => { "BUNDLER_VERSION" => "2.1.4" }
+      bundle "config set --local frozen true", env: { "BUNDLER_VERSION" => "2.1.4" }
 
       # make sure the platform that got actually installed with the old bundler is used
       expect(the_bundle).to include_gem("google-protobuf 3.0.0.alpha.5.0.5.1 universal-darwin")
@@ -62,7 +62,7 @@ RSpec.describe "bundle install with specific platforms" do
       system_gems "bundler-2.1.4"
 
       # Consistent location to install and look for gems
-      bundle "config set --local path vendor/bundle", :env => { "BUNDLER_VERSION" => "2.1.4" }
+      bundle "config set --local path vendor/bundle", env: { "BUNDLER_VERSION" => "2.1.4" }
 
       gemfile google_protobuf
 
@@ -87,7 +87,7 @@ RSpec.describe "bundle install with specific platforms" do
            2.1.4
       L
 
-      bundle "update", :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+      bundle "update", env: { "BUNDLER_VERSION" => Bundler::VERSION }
 
       checksums.checksum gem_repo2, "google-protobuf", "3.0.0.alpha.5.0.5.1"
 
@@ -149,12 +149,12 @@ RSpec.describe "bundle install with specific platforms" do
     end
 
     it "still installs the generic RUBY variant if necessary" do
-      bundle "install --verbose", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
       expect(out).to include("Installing nokogiri 1.3.10")
     end
 
     it "still installs the generic RUBY variant if necessary, even in frozen mode" do
-      bundle "install --verbose", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s, "BUNDLE_FROZEN" => "true" }
+      bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s, "BUNDLE_FROZEN" => "true" }
       expect(out).to include("Installing nokogiri 1.3.10")
     end
   end
@@ -173,7 +173,7 @@ RSpec.describe "bundle install with specific platforms" do
       system_gems "bundler-2.1.4"
 
       # Consistent location to install and look for gems
-      bundle "config set --local path vendor/bundle", :env => { "BUNDLER_VERSION" => "2.1.4" }
+      bundle "config set --local path vendor/bundle", env: { "BUNDLER_VERSION" => "2.1.4" }
 
       gemfile <<-G
         source "https://localgemserver.test"
@@ -197,10 +197,10 @@ RSpec.describe "bundle install with specific platforms" do
            2.1.4
       L
 
-      bundle "install --verbose", :artifice => "compact_index", :env => { "BUNDLER_VERSION" => "2.1.4", "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+      bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_VERSION" => "2.1.4", "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
       expect(out).to include("Installing libv8 8.4.255.0 (universal-darwin)")
 
-      bundle "add mini_racer --verbose", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+      bundle "add mini_racer --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
       expect(out).to include("Using libv8 8.4.255.0 (universal-darwin)")
     end
   end
@@ -234,7 +234,7 @@ RSpec.describe "bundle install with specific platforms" do
            #{Bundler::VERSION}
       L
 
-      bundle "install --verbose", :artifice => "compact_index_precompiled_before", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      bundle "install --verbose", artifice: "compact_index_precompiled_before", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
       expect(out).to include("Installing grpc 1.50.0 (universal-darwin)")
     end
   end
@@ -403,7 +403,7 @@ RSpec.describe "bundle install with specific platforms" do
     ERROR
 
     simulate_platform "arm64-darwin-21" do
-      bundle "lock", :raise_on_error => false
+      bundle "lock", raise_on_error: false
     end
 
     expect(err).to include(error_message).once
@@ -411,7 +411,7 @@ RSpec.describe "bundle install with specific platforms" do
     # Make sure it doesn't print error twice in verbose mode
 
     simulate_platform "arm64-darwin-21" do
-      bundle "lock --verbose", :raise_on_error => false
+      bundle "lock --verbose", raise_on_error: false
     end
 
     expect(err).to include(error_message).once
@@ -445,7 +445,7 @@ RSpec.describe "bundle install with specific platforms" do
     ERROR
 
     simulate_platform "arm64-darwin-21" do
-      bundle "lock", :raise_on_error => false
+      bundle "lock", raise_on_error: false
     end
 
     expect(err).to include(error_message).once
@@ -453,7 +453,7 @@ RSpec.describe "bundle install with specific platforms" do
     # Make sure it doesn't print error twice in verbose mode
 
     simulate_platform "arm64-darwin-21" do
-      bundle "lock --verbose", :raise_on_error => false
+      bundle "lock --verbose", raise_on_error: false
     end
 
     expect(err).to include(error_message).once
@@ -470,7 +470,7 @@ RSpec.describe "bundle install with specific platforms" do
       gem "sorbet-static", "0.5.9889"
     G
 
-    bundle "lock", :raise_on_error => false, :env => { "BUNDLE_FORCE_RUBY_PLATFORM" => "true" }
+    bundle "lock", raise_on_error: false, env: { "BUNDLE_FORCE_RUBY_PLATFORM" => "true" }
 
     expect(err).to include <<~ERROR.rstrip
       Could not find gem 'sorbet-static (= 0.5.9889)' with platform 'ruby' in rubygems repository #{file_uri_for(gem_repo4)}/ or installed locally.
@@ -954,7 +954,7 @@ RSpec.describe "bundle install with specific platforms" do
           rack (3.0.7)
 
       PLATFORMS
-        #{lockfile_platforms("ruby", generic_local_platform, :defaults => [])}
+        #{lockfile_platforms("ruby", generic_local_platform, defaults: [])}
 
       DEPENDENCIES
         concurrent-ruby
@@ -1165,7 +1165,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
-  it "does not fail when a platform variant is incompatible with the current ruby and another equivalent platform specific variant is part of the resolution", :rubygems => ">= 3.3.21" do
+  it "does not fail when a platform variant is incompatible with the current ruby and another equivalent platform specific variant is part of the resolution", rubygems: ">= 3.3.21" do
     build_repo4 do
       build_gem "nokogiri", "1.15.5"
 
@@ -1195,7 +1195,7 @@ RSpec.describe "bundle install with specific platforms" do
     end
 
     simulate_platform "x86_64-linux" do
-      bundle "install --verbose", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
 
       # locks all compatible platforms, excluding Java and Windows
       expect(lockfile).to eq(<<~L)

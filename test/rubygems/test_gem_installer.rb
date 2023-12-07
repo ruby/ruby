@@ -299,7 +299,7 @@ gem 'other', version
     end
 
     policy = Gem::Security::HighSecurity
-    installer = Gem::Installer.at a_gem, :security_policy => policy
+    installer = Gem::Installer.at a_gem, security_policy: policy
 
     assert_raise Gem::Security::Exception do
       installer.ensure_loadable_spec
@@ -352,8 +352,8 @@ gem 'other', version
     ENV["PATH"] = [ENV["PATH"], bin_dir].compact.join(File::PATH_SEPARATOR)
 
     options = {
-      :bin_dir => bin_dir,
-      :install_dir => "/non/existent",
+      bin_dir: bin_dir,
+      install_dir: "/non/existent",
     }
 
     inst = Gem::Installer.at "", options
@@ -749,8 +749,8 @@ gem 'other', version
 
     installer = Gem::Installer.at(
       gem_with_dangling_symlink,
-      :user_install => false,
-      :force => true
+      user_install: false,
+      force: true
     )
 
     build_rake_in do
@@ -821,7 +821,7 @@ gem 'other', version
     File.chmod(0o555, Gem.plugindir)
     system_path = File.join(Gem.plugindir, "a_plugin.rb")
     user_path = File.join(Gem.plugindir(Gem.user_dir), "a_plugin.rb")
-    installer = Gem::Installer.at spec.cache_file, :user_install => true, :force => true
+    installer = Gem::Installer.at spec.cache_file, user_install: true, force: true
 
     assert_equal spec, installer.install
 
@@ -846,7 +846,7 @@ gem 'other', version
     build_root = File.join(@tempdir, "build_root")
     build_root_path = File.join(build_root, Gem.plugindir.gsub(/^[a-zA-Z]:/, ""), "a_plugin.rb")
 
-    installer = Gem::Installer.at spec.cache_file, :build_root => build_root
+    installer = Gem::Installer.at spec.cache_file, build_root: build_root
 
     assert_equal spec, installer.install
 
@@ -953,7 +953,7 @@ end
 
     path = Gem::Package.build @spec
 
-    installer = Gem::Installer.at path, :install_dir => "#{@gemhome}3"
+    installer = Gem::Installer.at path, install_dir: "#{@gemhome}3"
     assert_equal @spec, installer.install
   end
 
@@ -977,7 +977,7 @@ end
   def test_initialize_user_install
     @gem = setup_base_gem
 
-    installer = Gem::Installer.at @gem, :user_install => true
+    installer = Gem::Installer.at @gem, user_install: true
 
     assert_equal File.join(Gem.user_dir, "gems", @spec.full_name),
                  installer.gem_dir
@@ -988,7 +988,7 @@ end
     @gem = setup_base_gem
 
     installer =
-      Gem::Installer.at @gem, :user_install => true, :bin_dir => @tempdir
+      Gem::Installer.at @gem, user_install: true, bin_dir: @tempdir
 
     assert_equal File.join(Gem.user_dir, "gems", @spec.full_name),
                  installer.gem_dir
@@ -1001,7 +1001,7 @@ end
     @gem = setup_base_gem
 
     installer =
-      Gem::Installer.at @gem, :install_dir => gemhome2, :user_install => true
+      Gem::Installer.at @gem, install_dir: gemhome2, user_install: true
     installer.install
 
     assert_path_exist File.join(gemhome2, "gems", @spec.full_name)
@@ -1250,7 +1250,7 @@ end
         Gem::Package.build @spec
       end
     end
-    installer = Gem::Installer.at @gem, :force => true
+    installer = Gem::Installer.at @gem, force: true
     build_rake_in do
       use_ui @ui do
         assert_equal @spec, installer.install
@@ -1268,7 +1268,7 @@ end
     end
 
     use_ui @ui do
-      installer = Gem::Installer.at missing_dep_gem, :force => true
+      installer = Gem::Installer.at missing_dep_gem, force: true
       installer.install
     end
 
@@ -1280,7 +1280,7 @@ end
     build_root = File.join(@tempdir, "build_root")
 
     @gem = setup_base_gem
-    installer = Gem::Installer.at @gem, :build_root => build_root
+    installer = Gem::Installer.at @gem, build_root: build_root
 
     assert_equal @spec, installer.install
   end
@@ -1294,7 +1294,7 @@ end
 
     FileUtils.chmod "-w", @gemhome
 
-    installer = Gem::Installer.at @gem, :build_root => build_root
+    installer = Gem::Installer.at @gem, build_root: build_root
 
     assert_equal @spec, installer.install
 
@@ -1429,7 +1429,7 @@ end
     use_ui @ui do
       path = Gem::Package.build @spec
 
-      installer = Gem::Installer.at path, :post_install_message => false
+      installer = Gem::Installer.at path, post_install_message: false
       installer.install
     end
 
@@ -1453,7 +1453,7 @@ end
     use_ui @ui do
       path = Gem::Package.build @spec
 
-      installer = Gem::Installer.at path, :install_dir => gemhome2
+      installer = Gem::Installer.at path, install_dir: gemhome2
       installer.install
     end
 
@@ -1492,7 +1492,7 @@ end
 
     # reinstall the gem, this is also the same as pristine
     use_ui @ui do
-      installer = Gem::Installer.at path, :force => true
+      installer = Gem::Installer.at path, force: true
       installer.install
     end
 
@@ -1518,7 +1518,7 @@ end
     use_ui @ui do
       path = Gem::Package.build @spec
 
-      installer = Gem::Installer.at path, :user_install => true
+      installer = Gem::Installer.at path, user_install: true
       installer.install
     end
 
@@ -1770,7 +1770,7 @@ end
     # that it work everything out on it's own.
     Gem::Specification.reset
 
-    installer = Gem::Installer.at gem, :install_dir => gemhome2
+    installer = Gem::Installer.at gem, install_dir: gemhome2
 
     build_rake_in do
       use_ui @ui do
@@ -1918,9 +1918,9 @@ end
 
     installer = Gem::Installer.at(
       gem_with_ill_formated_platform,
-      :install_dir => @gemhome,
-      :user_install => false,
-      :force => true
+      install_dir: @gemhome,
+      user_install: false,
+      force: true
     )
 
     use_ui @ui do
@@ -1960,7 +1960,7 @@ end
     plugins_dir = File.join(build_root, @gemhome.gsub(/^[a-zA-Z]:/, ""), "plugins")
 
     @gem = setup_base_gem
-    installer = use_ui(@ui) { Gem::Installer.at @gem, :build_root => build_root }
+    installer = use_ui(@ui) { Gem::Installer.at @gem, build_root: build_root }
 
     assert_equal build_root, installer.build_root
     assert_equal bin_dir, installer.bin_dir
@@ -2301,7 +2301,7 @@ end
 
   def test_write_build_info_file_install_dir
     @gem = setup_base_gem
-    installer = Gem::Installer.at @gem, :install_dir => "#{@gemhome}2"
+    installer = Gem::Installer.at @gem, install_dir: "#{@gemhome}2"
 
     installer.build_args = %w[
       --with-libyaml-dir /usr/local/Cellar/libyaml/0.1.4
@@ -2406,7 +2406,7 @@ end
 
   def test_default_gem_loaded_from
     spec = util_spec "a"
-    installer = Gem::Installer.for_spec spec, :install_as_default => true
+    installer = Gem::Installer.for_spec spec, install_as_default: true
     installer.install
     assert_predicate spec, :default_gem?
   end

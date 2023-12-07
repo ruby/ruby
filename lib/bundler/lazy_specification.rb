@@ -102,7 +102,7 @@ module Bundler
 
         installable_candidates = GemHelpers.select_best_platform_match(matching_specs, target_platform)
 
-        specification = __materialize__(installable_candidates, :fallback_to_non_installable => false)
+        specification = __materialize__(installable_candidates, fallback_to_non_installable: false)
         return specification unless specification.nil?
 
         if target_platform != platform

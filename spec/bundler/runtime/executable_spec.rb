@@ -11,7 +11,7 @@ RSpec.describe "Running bin/* commands" do
   it "runs the bundled command when in the bundle" do
     bundle "binstubs rack"
 
-    build_gem "rack", "2.0", :to_system => true do |s|
+    build_gem "rack", "2.0", to_system: true do |s|
       s.executables = "rackup"
     end
 
@@ -20,7 +20,7 @@ RSpec.describe "Running bin/* commands" do
   end
 
   it "allows the location of the gem stubs to be specified" do
-    bundle "binstubs rack", :path => "gbin"
+    bundle "binstubs rack", path: "gbin"
 
     expect(bundled_app("bin")).not_to exist
     expect(bundled_app("gbin/rackup")).to exist
@@ -30,7 +30,7 @@ RSpec.describe "Running bin/* commands" do
   end
 
   it "allows absolute paths as a specification of where to install bin stubs" do
-    bundle "binstubs rack", :path => tmp("bin")
+    bundle "binstubs rack", path: tmp("bin")
 
     gembin tmp("bin/rackup")
     expect(out).to eq("1.0.0")
@@ -42,23 +42,23 @@ RSpec.describe "Running bin/* commands" do
   end
 
   it "allows the name of the shebang executable to be specified" do
-    bundle "binstubs rack", :shebang => "ruby-foo"
+    bundle "binstubs rack", shebang: "ruby-foo"
     expect(File.readlines(bundled_app("bin/rackup")).first).to eq("#!/usr/bin/env ruby-foo\n")
   end
 
   it "runs the bundled command when out of the bundle" do
     bundle "binstubs rack"
 
-    build_gem "rack", "2.0", :to_system => true do |s|
+    build_gem "rack", "2.0", to_system: true do |s|
       s.executables = "rackup"
     end
 
-    gembin "rackup", :dir => tmp
+    gembin "rackup", dir: tmp
     expect(out).to eq("1.0.0")
   end
 
   it "works with gems in path" do
-    build_lib "rack", :path => lib_path("rack") do |s|
+    build_lib "rack", path: lib_path("rack") do |s|
       s.executables = "rackup"
     end
 
@@ -69,7 +69,7 @@ RSpec.describe "Running bin/* commands" do
 
     bundle "binstubs rack"
 
-    build_gem "rack", "2.0", :to_system => true do |s|
+    build_gem "rack", "2.0", to_system: true do |s|
       s.executables = "rackup"
     end
 
@@ -94,7 +94,7 @@ RSpec.describe "Running bin/* commands" do
     expect(bundled_app("bin/rackup")).not_to exist
   end
 
-  it "allows you to stop installing binstubs", :bundler => "< 3" do
+  it "allows you to stop installing binstubs", bundler: "< 3" do
     skip "delete permission error" if Gem.win_platform?
 
     bundle "install --binstubs bin/"
@@ -107,13 +107,13 @@ RSpec.describe "Running bin/* commands" do
     expect(out).to include("You have not configured a value for `bin`")
   end
 
-  it "remembers that the option was specified", :bundler => "< 3" do
+  it "remembers that the option was specified", bundler: "< 3" do
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "activesupport"
     G
 
-    bundle :install, :binstubs => "bin"
+    bundle :install, binstubs: "bin"
 
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"

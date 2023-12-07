@@ -335,11 +335,11 @@ module Bundler
 
     def configs
       @configs ||= {
-        :temporary => @temporary,
-        :local => @local_config,
-        :env => @env_config,
-        :global => @global_config,
-        :default => DEFAULT_CONFIG,
+        temporary: @temporary,
+        local: @local_config,
+        env: @env_config,
+        global: @global_config,
+        default: DEFAULT_CONFIG,
       }
     end
 

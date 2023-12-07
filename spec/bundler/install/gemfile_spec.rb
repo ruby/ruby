@@ -3,7 +3,7 @@
 RSpec.describe "bundle install" do
   context "with duplicated gems" do
     it "will display a warning" do
-      install_gemfile <<-G, :raise_on_error => false
+      install_gemfile <<-G, raise_on_error: false
         source "#{file_uri_for(gem_repo1)}"
 
         gem 'rails', '~> 4.0.0'
@@ -20,7 +20,7 @@ RSpec.describe "bundle install" do
         gem 'rack'
       G
 
-      bundle :install, :gemfile => bundled_app("NotGemfile")
+      bundle :install, gemfile: bundled_app("NotGemfile")
 
       # Specify BUNDLE_GEMFILE for `the_bundle`
       # to retrieve the proper Gemfile
@@ -46,8 +46,8 @@ RSpec.describe "bundle install" do
     end
     it "uses the gemfile while in a subdirectory" do
       bundled_app("subdir").mkpath
-      bundle "install", :dir => bundled_app("subdir")
-      bundle "list", :dir => bundled_app("subdir")
+      bundle "install", dir: bundled_app("subdir")
+      bundle "list", dir: bundled_app("subdir")
 
       expect(out).to include("rack (1.0.0)")
     end
@@ -61,7 +61,7 @@ RSpec.describe "bundle install" do
         gem "rack", :lib => "rack"
       G
 
-      bundle :install, :raise_on_error => false
+      bundle :install, raise_on_error: false
       expect(err).to match(/You passed :lib as an option for gem 'rack', but it is invalid/)
     end
   end

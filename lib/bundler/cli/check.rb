@@ -32,7 +32,7 @@ module Bundler
         Bundler.ui.error "This bundle has been frozen, but there is no #{SharedHelpers.relative_lockfile_path} present"
         exit 1
       else
-        Bundler.load.lock(:preserve_unknown_sections => true) unless options[:"dry-run"]
+        Bundler.load.lock(preserve_unknown_sections: true) unless options[:"dry-run"]
         Bundler.ui.info "The Gemfile's dependencies are satisfied"
       end
     end

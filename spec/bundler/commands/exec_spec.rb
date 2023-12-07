@@ -4,7 +4,7 @@ RSpec.describe "bundle exec" do
   let(:system_gems_to_install) { %w[rack-1.0.0 rack-0.9.1] }
 
   it "works with --gemfile flag" do
-    system_gems(system_gems_to_install, :path => default_bundle_path)
+    system_gems(system_gems_to_install, path: default_bundle_path)
 
     create_file "CustomGemfile", <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -16,7 +16,7 @@ RSpec.describe "bundle exec" do
   end
 
   it "activates the correct gem" do
-    system_gems(system_gems_to_install, :path => default_bundle_path)
+    system_gems(system_gems_to_install, path: default_bundle_path)
 
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -28,14 +28,14 @@ RSpec.describe "bundle exec" do
   end
 
   it "works and prints no warnings when HOME is not writable" do
-    system_gems(system_gems_to_install, :path => default_bundle_path)
+    system_gems(system_gems_to_install, path: default_bundle_path)
 
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       gem "rack", "0.9.1"
     G
 
-    bundle "exec rackup", :env => { "HOME" => "/" }
+    bundle "exec rackup", env: { "HOME" => "/" }
     expect(out).to eq("0.9.1")
     expect(err).to be_empty
   end
@@ -108,7 +108,7 @@ RSpec.describe "bundle exec" do
           2.1.4
     L
 
-    bundle "exec bundle cache", :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+    bundle "exec bundle cache", env: { "BUNDLER_VERSION" => Bundler::VERSION }
 
     expect(out).to include("Updating files in vendor/cache")
   end
@@ -198,7 +198,7 @@ RSpec.describe "bundle exec" do
       gem "rack", "0.9.1"
     G
 
-    install_gemfile bundled_app2("Gemfile"), <<-G, :dir => bundled_app2
+    install_gemfile bundled_app2("Gemfile"), <<-G, dir: bundled_app2
       source "#{file_uri_for(gem_repo2)}"
       gem "rack_two", "1.0.0"
     G
@@ -207,12 +207,12 @@ RSpec.describe "bundle exec" do
 
     expect(out).to eq("0.9.1")
 
-    bundle "exec rackup", :dir => bundled_app2
+    bundle "exec rackup", dir: bundled_app2
     expect(out).to eq("1.0.0")
   end
 
   context "with default gems" do
-    let(:default_irb_version) { ruby "gem 'irb', '< 999999'; require 'irb'; puts IRB::VERSION", :raise_on_error => false }
+    let(:default_irb_version) { ruby "gem 'irb', '< 999999'; require 'irb'; puts IRB::VERSION", raise_on_error: false }
 
     context "when not specified in Gemfile" do
       before do
@@ -299,7 +299,7 @@ RSpec.describe "bundle exec" do
       gem "rack", "0.9.1"
     G
 
-    install_gemfile bundled_app2("Gemfile"), <<-G, :dir => bundled_app2
+    install_gemfile bundled_app2("Gemfile"), <<-G, dir: bundled_app2
       source "#{file_uri_for(gem_repo2)}"
       gem "rack_two", "1.0.0"
     G
@@ -344,7 +344,7 @@ RSpec.describe "bundle exec" do
     bundle "exec 'echo $RUBYOPT'"
     expect(out.split(" ").count(bundler_setup_opt)).to eq(1)
 
-    bundle "exec 'echo $RUBYOPT'", :env => { "RUBYOPT" => rubyopt }
+    bundle "exec 'echo $RUBYOPT'", env: { "RUBYOPT" => rubyopt }
     expect(out.split(" ").count(bundler_setup_opt)).to eq(1)
   end
 
@@ -363,7 +363,7 @@ RSpec.describe "bundle exec" do
     bundle "exec 'echo $RUBYLIB'"
     expect(out).to include(rubylib)
 
-    bundle "exec 'echo $RUBYLIB'", :env => { "RUBYLIB" => rubylib }
+    bundle "exec 'echo $RUBYLIB'", env: { "RUBYLIB" => rubylib }
     expect(out).to include(rubylib)
   end
 
@@ -373,7 +373,7 @@ RSpec.describe "bundle exec" do
       gem "rack"
     G
 
-    bundle "exec foobarbaz", :raise_on_error => false
+    bundle "exec foobarbaz", raise_on_error: false
     expect(exitstatus).to eq(127)
     expect(err).to include("bundler: command not found: foobarbaz")
     expect(err).to include("Install missing gem executables with `bundle install`")
@@ -386,7 +386,7 @@ RSpec.describe "bundle exec" do
     G
 
     bundle "exec touch foo"
-    bundle "exec ./foo", :raise_on_error => false
+    bundle "exec ./foo", raise_on_error: false
     expect(exitstatus).to eq(126)
     expect(err).to include("bundler: not executable: ./foo")
   end
@@ -397,13 +397,13 @@ RSpec.describe "bundle exec" do
       gem "rack"
     G
 
-    bundle "exec", :raise_on_error => false
+    bundle "exec", raise_on_error: false
     expect(exitstatus).to eq(128)
     expect(err).to include("bundler: exec needs a command to run")
   end
 
   it "raises a helpful error when exec'ing to something outside of the bundle" do
-    system_gems(system_gems_to_install, :path => default_bundle_path)
+    system_gems(system_gems_to_install, path: default_bundle_path)
 
     bundle "config set clean false" # want to keep the rackup binstub
     install_gemfile <<-G
@@ -412,7 +412,7 @@ RSpec.describe "bundle exec" do
     G
     [true, false].each do |l|
       bundle "config set disable_exec_load #{l}"
-      bundle "exec rackup", :raise_on_error => false
+      bundle "exec rackup", raise_on_error: false
       expect(err).to include "can't find executable rackup for gem rack. rack is not currently included in the bundle, perhaps you meant to add it to your Gemfile?"
     end
   end
@@ -531,7 +531,7 @@ RSpec.describe "bundle exec" do
 
     describe "from gems bundled via :path" do
       before(:each) do
-        build_lib "fizz", :path => home("fizz") do |s|
+        build_lib "fizz", path: home("fizz") do |s|
           s.executables = "fizz"
         end
 
@@ -580,7 +580,7 @@ RSpec.describe "bundle exec" do
 
     describe "from gems bundled via :git with no gemspec" do
       before(:each) do
-        build_git "fizz_no_gemspec", :gemspec => false do |s|
+        build_git "fizz_no_gemspec", gemspec: false do |s|
           s.executables = "fizz_no_gemspec"
         end
 
@@ -647,7 +647,7 @@ RSpec.describe "bundle exec" do
       build_gem "optparse", "999.999.999"
     end
 
-    system_gems "optparse-999.999.998", :gem_repo => gem_repo4
+    system_gems "optparse-999.999.998", gem_repo: gem_repo4
 
     bundle "config set auto_install 1"
     bundle "config set --local path vendor/bundle"
@@ -683,7 +683,7 @@ RSpec.describe "bundle exec" do
         gem "foo", :path => "#{lib_path("foo-1.0")}"
       G
 
-      bundle "exec irb", :raise_on_error => false
+      bundle "exec irb", raise_on_error: false
 
       expect(err).to match("The gemspec at #{lib_path("foo-1.0").join("foo.gemspec")} is not valid")
       expect(err).to match('"TODO" is not a summary')
@@ -706,7 +706,7 @@ RSpec.describe "bundle exec" do
       G
       bundle "config set path.system true"
       bundle "install"
-      bundle "exec ruby -e '`bundle -v`; puts $?.success?'", :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+      bundle "exec ruby -e '`bundle -v`; puts $?.success?'", env: { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(out).to match("true")
     end
   end
@@ -726,7 +726,7 @@ RSpec.describe "bundle exec" do
     RUBY
 
     before do
-      system_gems(system_gems_to_install, :path => default_bundle_path)
+      system_gems(system_gems_to_install, path: default_bundle_path)
 
       bundled_app(path).open("w") {|f| f << executable }
       bundled_app(path).chmod(0o755)
@@ -749,7 +749,7 @@ RSpec.describe "bundle exec" do
     let(:expected) { [exec, args, rack, process].join("\n") }
     let(:expected_err) { "" }
 
-    subject { bundle "exec #{path} arg1 arg2", :raise_on_error => false }
+    subject { bundle "exec #{path} arg1 arg2", raise_on_error: false }
 
     it "runs" do
       skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
@@ -874,7 +874,7 @@ RSpec.describe "bundle exec" do
       end
     end
 
-    context "when Bundler.setup fails", :bundler => "< 3" do
+    context "when Bundler.setup fails", bundler: "< 3" do
       before do
         gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
@@ -904,7 +904,7 @@ Run `bundle install` to install missing gems.
       end
     end
 
-    context "when Bundler.setup fails", :bundler => "3" do
+    context "when Bundler.setup fails", bundler: "3" do
       before do
         gemfile <<-G
           source "#{file_uri_for(gem_repo1)}"
@@ -1113,7 +1113,7 @@ __FILE__: #{path.to_s.inspect}
           puts `bundle exec echo foo`
         RUBY
         file.chmod(0o777)
-        bundle "exec #{file}", :env => { "PATH" => path }
+        bundle "exec #{file}", env: { "PATH" => path }
         expect(out).to eq("foo")
       end
     end
@@ -1206,7 +1206,7 @@ __FILE__: #{path.to_s.inspect}
 
     context "with a system gem that shadows a default gem" do
       let(:openssl_version) { "99.9.9" }
-      let(:expected) { ruby "gem 'openssl', '< 999999'; require 'openssl'; puts OpenSSL::VERSION", :artifice => nil, :raise_on_error => false }
+      let(:expected) { ruby "gem 'openssl', '< 999999'; require 'openssl'; puts OpenSSL::VERSION", artifice: nil, raise_on_error: false }
 
       it "only leaves the default gem in the stdlib available" do
         skip "https://github.com/rubygems/rubygems/issues/3351" if Gem.win_platform?
@@ -1222,7 +1222,7 @@ __FILE__: #{path.to_s.inspect}
           end
         end
 
-        system_gems("openssl-#{openssl_version}", :gem_repo => gem_repo4)
+        system_gems("openssl-#{openssl_version}", gem_repo: gem_repo4)
 
         file = bundled_app("require_openssl.rb")
         create_file(file, <<-RUBY)
@@ -1235,15 +1235,15 @@ __FILE__: #{path.to_s.inspect}
 
         env = { "PATH" => path }
         aggregate_failures do
-          expect(bundle("exec #{file}", :artifice => nil, :env => env)).to eq(expected)
-          expect(bundle("exec bundle exec #{file}", :artifice => nil, :env => env)).to eq(expected)
-          expect(bundle("exec ruby #{file}", :artifice => nil, :env => env)).to eq(expected)
-          expect(run(file.read, :artifice => nil, :env => env)).to eq(expected)
+          expect(bundle("exec #{file}", artifice: nil, env: env)).to eq(expected)
+          expect(bundle("exec bundle exec #{file}", artifice: nil, env: env)).to eq(expected)
+          expect(bundle("exec ruby #{file}", artifice: nil, env: env)).to eq(expected)
+          expect(run(file.read, artifice: nil, env: env)).to eq(expected)
         end
 
         skip "ruby_core has openssl and rubygems in the same folder, and this test needs rubygems require but default openssl not in a directly added entry in $LOAD_PATH" if ruby_core?
         # sanity check that we get the newer, custom version without bundler
-        sys_exec "#{Gem.ruby} #{file}", :env => env, :raise_on_error => false
+        sys_exec "#{Gem.ruby} #{file}", env: env, raise_on_error: false
         expect(err).to include("custom openssl should not be loaded")
       end
     end

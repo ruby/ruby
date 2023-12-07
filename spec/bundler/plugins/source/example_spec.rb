@@ -421,7 +421,7 @@ RSpec.describe "real source plugins" do
       end
 
       it "updates the deps on change in gemfile" do
-        update_git "ma-gitp-gem", "1.1", :path => lib_path("ma-gitp-gem-1.0"), :gemspec => true
+        update_git "ma-gitp-gem", "1.1", path: lib_path("ma-gitp-gem-1.0"), gemspec: true
         gemfile <<-G
           source "#{file_uri_for(gem_repo2)}" # plugin source
           source "#{file_uri_for(lib_path("ma-gitp-gem-1.0"))}", :type => :gitp do

@@ -56,7 +56,7 @@ class TestGemIndexer < Gem::TestCase
       assert_predicate indexer, :build_modern
     end
 
-    with_indexer(@indexerdir, :build_modern => true) do |indexer|
+    with_indexer(@indexerdir, build_modern: true) do |indexer|
       assert_predicate indexer, :build_modern
     end
   end

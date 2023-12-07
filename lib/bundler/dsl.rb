@@ -76,11 +76,11 @@ module Bundler
 
         @gemspecs << spec
 
-        gem spec.name, :name => spec.name, :path => path, :glob => glob
+        gem spec.name, name: spec.name, path: path, glob: glob
 
         group(development_group) do
           spec.development_dependencies.each do |dep|
-            gem dep.name, *(dep.requirement.as_list + [:type => :development])
+            gem dep.name, *(dep.requirement.as_list + [type: :development])
           end
         end
       when 0
@@ -435,7 +435,7 @@ module Bundler
         removed_message =
           "The source :#{source} is disallowed because HTTP requests are insecure.\n" \
           "Please change your source to 'https://rubygems.org' if possible, or 'http://rubygems.org' if not."
-        Bundler::SharedHelpers.major_deprecation 2, message, :removed_message => removed_message
+        Bundler::SharedHelpers.major_deprecation 2, message, removed_message: removed_message
         "http://rubygems.org"
       when String
         source
@@ -490,7 +490,7 @@ module Bundler
           "Using `source` more than once without a block is a security risk, and " \
           "may result in installing unexpected gems. To resolve this error, use " \
           "a block to indicate which gems should come from the secondary source."
-        Bundler::SharedHelpers.major_deprecation 2, message, :removed_message => removed_message
+        Bundler::SharedHelpers.major_deprecation 2, message, removed_message: removed_message
       end
     end
 

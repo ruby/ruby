@@ -607,14 +607,14 @@ class Gem::TestCase < Test::Unit::TestCase
       gem = File.join(@tempdir, File.basename(gem))
     end
 
-    Gem::Installer.at(gem, options.merge({ :wrappers => true })).install
+    Gem::Installer.at(gem, options.merge({ wrappers: true })).install
   end
 
   ##
   # Builds and installs the Gem::Specification +spec+ into the user dir
 
   def install_gem_user(spec)
-    install_gem spec, :user_install => true
+    install_gem spec, user_install: true
   end
 
   ##
@@ -626,7 +626,7 @@ class Gem::TestCase < Test::Unit::TestCase
       def ask_if_ok(spec)
         true
       end
-    end.new(spec.name, :executables => true, :user_install => true).uninstall
+    end.new(spec.name, executables: true, user_install: true).uninstall
   end
 
   ##
@@ -778,7 +778,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
   def install_specs(*specs)
     specs.each do |spec|
-      Gem::Installer.for_spec(spec, :force => true).install
+      Gem::Installer.for_spec(spec, force: true).install
     end
 
     Gem.searcher = nil
@@ -789,7 +789,7 @@ class Gem::TestCase < Test::Unit::TestCase
 
   def install_default_gems(*specs)
     specs.each do |spec|
-      installer = Gem::Installer.for_spec(spec, :install_as_default => true)
+      installer = Gem::Installer.for_spec(spec, install_as_default: true)
       installer.install
       Gem.register_default_spec(spec)
     end

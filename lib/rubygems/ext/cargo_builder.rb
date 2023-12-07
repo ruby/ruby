@@ -198,7 +198,7 @@ class Gem::Ext::CargoBuilder < Gem::Ext::Builder
 
     output, status =
       begin
-        Open3.capture2e(cargo, "metadata", "--no-deps", "--format-version", "1", :chdir => cargo_dir)
+        Open3.capture2e(cargo, "metadata", "--no-deps", "--format-version", "1", chdir: cargo_dir)
       rescue StandardError => error
         raise Gem::InstallError, "cargo metadata failed #{error.message}"
       end

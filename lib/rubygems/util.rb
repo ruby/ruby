@@ -60,7 +60,7 @@ module Gem::Util
   # Invokes system, but silences all output.
 
   def self.silent_system(*command)
-    opt = { :out => IO::NULL, :err => [:child, :out] }
+    opt = { out: IO::NULL, err: [:child, :out] }
     if Hash === command.last
       opt.update(command.last)
       cmds = command[0...-1]

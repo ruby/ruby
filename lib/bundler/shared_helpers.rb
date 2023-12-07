@@ -203,7 +203,7 @@ module Bundler
       SharedHelpers.filesystem_access(path, :read) do
         File.open(path, "rb") do |f|
           digest = SharedHelpers.digest(digest).new
-          buf = String.new(:capacity => 16_384, :encoding => Encoding::BINARY)
+          buf = String.new(capacity: 16_384, encoding: Encoding::BINARY)
           digest << buf while f.read(16_384, buf)
           digest.hexdigest
         end

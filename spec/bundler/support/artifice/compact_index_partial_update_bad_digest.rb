@@ -23,7 +23,7 @@ class CompactIndexPartialUpdateBadDigest < CompactIndexAPI
       FileUtils.rm_f(file)
       file = CompactIndex::VersionsFile.new(file.to_s)
       file.create(gems)
-      file.contents([], :calculate_info_checksums => true)
+      file.contents([], calculate_info_checksums: true)
     end
   end
 

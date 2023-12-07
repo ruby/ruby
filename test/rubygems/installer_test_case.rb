@@ -163,7 +163,7 @@ class Gem::InstallerTestCase < Gem::TestCase
 
     @user_gem = @user_spec.cache_file
 
-    Gem::Installer.at @user_gem, :user_install => true
+    Gem::Installer.at @user_gem, user_install: true
   end
 
   ##
@@ -215,7 +215,7 @@ class Gem::InstallerTestCase < Gem::TestCase
       end
     end
 
-    Gem::Installer.at @gem, :force => force
+    Gem::Installer.at @gem, force: force
   end
 
   ##
@@ -223,8 +223,8 @@ class Gem::InstallerTestCase < Gem::TestCase
 
   def util_installer(spec, gem_home, force=true)
     Gem::Installer.at(spec.cache_file,
-                       :install_dir => gem_home,
-                       :force => force)
+                       install_dir: gem_home,
+                       force: force)
   end
 
   @@symlink_supported = nil

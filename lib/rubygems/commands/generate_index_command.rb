@@ -12,7 +12,7 @@ class Gem::Commands::GenerateIndexCommand < Gem::Command
   def initialize
     super "generate_index",
           "Generates the index files for a gem server directory",
-          :directory => ".", :build_modern => true
+          directory: ".", build_modern: true
 
     add_option "-d", "--directory=DIRNAME",
                "repository base dir containing gems subdir" do |dir, options|

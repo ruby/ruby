@@ -27,7 +27,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         G
       end
 
-      it "refuses to install mismatched checksum because one gem has been tampered with", :bundler => "< 3" do
+      it "refuses to install mismatched checksum because one gem has been tampered with", bundler: "< 3" do
         lockfile <<~L
           GEM
             remote: https://gem.repo3/
@@ -45,7 +45,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
             #{Bundler::VERSION}
         L
 
-        bundle :install, :artifice => "compact_index", :raise_on_error => false
+        bundle :install, artifice: "compact_index", raise_on_error: false
 
         expect(exitstatus).to eq(37)
         expect(err).to eq <<~E.strip
@@ -71,16 +71,16 @@ RSpec.describe "bundle install with gems on multiple sources" do
           bundle "config set --local disable_checksum_validation true"
         end
 
-        it "warns about ambiguous gems, but installs anyway, prioritizing sources last to first", :bundler => "< 3" do
-          bundle :install, :artifice => "compact_index"
+        it "warns about ambiguous gems, but installs anyway, prioritizing sources last to first", bundler: "< 3" do
+          bundle :install, artifice: "compact_index"
 
           expect(err).to include("Warning: the gem 'rack' was found in multiple sources.")
           expect(err).to include("Installed from: https://gem.repo1")
-          expect(the_bundle).to include_gems("rack-obama 1.0.0", "rack 1.0.0", :source => "remote1")
+          expect(the_bundle).to include_gems("rack-obama 1.0.0", "rack 1.0.0", source: "remote1")
         end
 
-        it "does not use the full index unnecessarily", :bundler => "< 3" do
-          bundle :install, :artifice => "compact_index", :verbose => true
+        it "does not use the full index unnecessarily", bundler: "< 3" do
+          bundle :install, artifice: "compact_index", verbose: true
 
           expect(out).to include("https://gem.repo1/versions")
           expect(out).to include("https://gem.repo3/versions")
@@ -88,8 +88,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
           expect(out).not_to include("https://gem.repo3/quick/Marshal.4.8/")
         end
 
-        it "fails", :bundler => "3" do
-          bundle :install, :artifice => "compact_index", :raise_on_error => false
+        it "fails", bundler: "3" do
+          bundle :install, artifice: "compact_index", raise_on_error: false
           expect(err).to include("Each source after the first must include a block")
           expect(exitstatus).to eq(4)
         end
@@ -108,15 +108,15 @@ RSpec.describe "bundle install with gems on multiple sources" do
         G
       end
 
-      it "warns about ambiguous gems, but installs anyway", :bundler => "< 3" do
-        bundle :install, :artifice => "compact_index"
+      it "warns about ambiguous gems, but installs anyway", bundler: "< 3" do
+        bundle :install, artifice: "compact_index"
         expect(err).to include("Warning: the gem 'rack' was found in multiple sources.")
         expect(err).to include("Installed from: https://gem.repo1")
-        expect(the_bundle).to include_gems("rack-obama 1.0.0", "rack 1.0.0", :source => "remote1")
+        expect(the_bundle).to include_gems("rack-obama 1.0.0", "rack 1.0.0", source: "remote1")
       end
 
-      it "fails", :bundler => "3" do
-        bundle :install, :artifice => "compact_index", :raise_on_error => false
+      it "fails", bundler: "3" do
+        bundle :install, artifice: "compact_index", raise_on_error: false
         expect(err).to include("Each source after the first must include a block")
         expect(exitstatus).to eq(4)
       end
@@ -145,9 +145,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
       G
     end
 
-    it "works in standalone mode", :bundler => "< 3" do
+    it "works in standalone mode", bundler: "< 3" do
       gem_checksum = checksum_digest(gem_repo4, "foo", "1.0")
-      bundle "install --standalone", :artifice => "compact_index", :env => { "BUNDLER_SPEC_FOO_CHECKSUM" => gem_checksum }
+      bundle "install --standalone", artifice: "compact_index", env: { "BUNDLER_SPEC_FOO_CHECKSUM" => gem_checksum }
     end
   end
 
@@ -177,20 +177,20 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       it "installs the gems without any warning" do
-        bundle :install, :artifice => "compact_index"
+        bundle :install, artifice: "compact_index"
         expect(err).not_to include("Warning")
         expect(the_bundle).to include_gems("rack-obama 1.0.0")
-        expect(the_bundle).to include_gems("rack 1.0.0", :source => "remote1")
+        expect(the_bundle).to include_gems("rack 1.0.0", source: "remote1")
       end
 
       it "can cache and deploy" do
-        bundle :cache, :artifice => "compact_index"
+        bundle :cache, artifice: "compact_index"
 
         expect(bundled_app("vendor/cache/rack-1.0.0.gem")).to exist
         expect(bundled_app("vendor/cache/rack-obama-1.0.gem")).to exist
 
         bundle "config set --local deployment true"
-        bundle :install, :artifice => "compact_index"
+        bundle :install, artifice: "compact_index"
 
         expect(the_bundle).to include_gems("rack-obama 1.0.0", "rack 1.0.0")
       end
@@ -210,7 +210,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           end
         end
 
-        install_gemfile <<-G, :artifice => "compact_index"
+        install_gemfile <<-G, artifice: "compact_index"
           source "https://gem.repo3"
           gem "rack-obama" # should come from repo3!
           gem "rack", :source => "https://gem.repo1"
@@ -250,9 +250,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
         end
 
         it "installs from the same source without any warning" do
-          bundle :install, :artifice => "compact_index"
+          bundle :install, artifice: "compact_index"
           expect(err).not_to include("Warning")
-          expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0", :source => "remote3")
+          expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0", source: "remote3")
         end
       end
 
@@ -267,18 +267,18 @@ RSpec.describe "bundle install with gems on multiple sources" do
         end
 
         it "installs from the same source without any warning" do
-          bundle :install, :artifice => "compact_index"
+          bundle :install, artifice: "compact_index"
 
           expect(err).not_to include("Warning: the gem 'rack' was found in multiple sources.")
-          expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0", :source => "remote3")
+          expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0", source: "remote3")
 
           # In https://github.com/bundler/bundler/issues/3585 this failed
           # when there is already a lock file, and the gems are missing, so try again
           system_gems []
-          bundle :install, :artifice => "compact_index"
+          bundle :install, artifice: "compact_index"
 
           expect(err).not_to include("Warning: the gem 'rack' was found in multiple sources.")
-          expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0", :source => "remote3")
+          expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0", source: "remote3")
         end
       end
     end
@@ -300,7 +300,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
       context "and not in any other sources" do
         before do
-          install_gemfile <<-G, :artifice => "compact_index"
+          install_gemfile <<-G, artifice: "compact_index"
             source "https://gem.repo2"
             source "https://gem.repo3" do
               gem "depends_on_rack"
@@ -325,8 +325,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
           G
         end
 
-        it "fails when the two sources don't have the same checksum", :bundler => "< 3" do
-          bundle :install, :artifice => "compact_index", :raise_on_error => false
+        it "fails when the two sources don't have the same checksum", bundler: "< 3" do
+          bundle :install, artifice: "compact_index", raise_on_error: false
 
           expect(err).to eq(<<~E.strip)
             [DEPRECATED] Your Gemfile contains multiple global sources. Using `source` more than once without a block is a security risk, and may result in installing unexpected gems. To resolve this warning, use a block to indicate which gems should come from the secondary source.
@@ -347,9 +347,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
           expect(exitstatus).to eq(37)
         end
 
-        it "fails when the two sources agree, but the local gem calculates a different checksum", :bundler => "< 3" do
+        it "fails when the two sources agree, but the local gem calculates a different checksum", bundler: "< 3" do
           rack_checksum = "c0ffee11" * 8
-          bundle :install, :artifice => "compact_index", :env => { "BUNDLER_SPEC_RACK_CHECKSUM" => rack_checksum }, :raise_on_error => false
+          bundle :install, artifice: "compact_index", env: { "BUNDLER_SPEC_RACK_CHECKSUM" => rack_checksum }, raise_on_error: false
 
           expect(err).to eq(<<~E.strip)
             [DEPRECATED] Your Gemfile contains multiple global sources. Using `source` more than once without a block is a security risk, and may result in installing unexpected gems. To resolve this warning, use a block to indicate which gems should come from the secondary source.
@@ -370,9 +370,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
           expect(exitstatus).to eq(37)
         end
 
-        it "installs from the other source and warns about ambiguous gems when the sources have the same checksum", :bundler => "< 3" do
+        it "installs from the other source and warns about ambiguous gems when the sources have the same checksum", bundler: "< 3" do
           gem_checksum = checksum_digest(gem_repo2, "rack", "1.0.0")
-          bundle :install, :artifice => "compact_index", :env => { "BUNDLER_SPEC_RACK_CHECKSUM" => gem_checksum, "DEBUG" => "1" }
+          bundle :install, artifice: "compact_index", env: { "BUNDLER_SPEC_RACK_CHECKSUM" => gem_checksum, "DEBUG" => "1" }
 
           expect(err).to include("Warning: the gem 'rack' was found in multiple sources.")
           expect(err).to include("Installed from: https://gem.repo2")
@@ -410,9 +410,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
           expect(lockfile).to eq(previous_lockfile)
         end
 
-        it "installs from the other source and warns about ambiguous gems when checksum validation is disabled", :bundler => "< 3" do
+        it "installs from the other source and warns about ambiguous gems when checksum validation is disabled", bundler: "< 3" do
           bundle "config set --local disable_checksum_validation true"
-          bundle :install, :artifice => "compact_index"
+          bundle :install, artifice: "compact_index"
 
           expect(err).to include("Warning: the gem 'rack' was found in multiple sources.")
           expect(err).to include("Installed from: https://gem.repo2")
@@ -450,8 +450,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
           expect(lockfile).to eq(previous_lockfile)
         end
 
-        it "fails", :bundler => "3" do
-          bundle :install, :artifice => "compact_index", :raise_on_error => false
+        it "fails", bundler: "3" do
+          bundle :install, artifice: "compact_index", raise_on_error: false
           expect(err).to include("Each source after the first must include a block")
           expect(exitstatus).to eq(4)
         end
@@ -475,8 +475,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
           G
         end
 
-        it "installs the dependency from the pinned source without warning", :bundler => "< 3" do
-          bundle :install, :artifice => "compact_index"
+        it "installs the dependency from the pinned source without warning", bundler: "< 3" do
+          bundle :install, artifice: "compact_index"
 
           expect(err).not_to include("Warning: the gem 'rack' was found in multiple sources.")
           expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0")
@@ -484,14 +484,14 @@ RSpec.describe "bundle install with gems on multiple sources" do
           # In https://github.com/rubygems/bundler/issues/3585 this failed
           # when there is already a lock file, and the gems are missing, so try again
           system_gems []
-          bundle :install, :artifice => "compact_index"
+          bundle :install, artifice: "compact_index"
 
           expect(err).not_to include("Warning: the gem 'rack' was found in multiple sources.")
           expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0")
         end
 
-        it "fails", :bundler => "3" do
-          bundle :install, :artifice => "compact_index", :raise_on_error => false
+        it "fails", bundler: "3" do
+          bundle :install, artifice: "compact_index", raise_on_error: false
           expect(err).to include("Each source after the first must include a block")
           expect(exitstatus).to eq(4)
         end
@@ -519,12 +519,12 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       it "fails" do
-        bundle :install, :artifice => "compact_index", :raise_on_error => false
+        bundle :install, artifice: "compact_index", raise_on_error: false
         expect(err).to include("Could not find gem 'private_gem_1' in rubygems repository https://gem.repo2/ or installed locally.")
       end
     end
 
-    context "when an indirect dependency can't be found in the aggregate rubygems source", :bundler => "< 3" do
+    context "when an indirect dependency can't be found in the aggregate rubygems source", bundler: "< 3" do
       before do
         build_repo2
 
@@ -544,7 +544,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       it "fails" do
-        bundle :install, :artifice => "compact_index", :raise_on_error => false
+        bundle :install, artifice: "compact_index", raise_on_error: false
         expect(err).to end_with <<~E.strip
           Could not find compatible versions
 
@@ -588,11 +588,11 @@ RSpec.describe "bundle install with gems on multiple sources" do
         end
 
         it "installs the dependency from the top-level source without warning" do
-          bundle :install, :artifice => "compact_index"
+          bundle :install, artifice: "compact_index"
           expect(err).not_to include("Warning")
           expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0", "unrelated_gem 1.0.0")
-          expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0", :source => "remote2")
-          expect(the_bundle).to include_gems("unrelated_gem 1.0.0", :source => "remote3")
+          expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0", source: "remote2")
+          expect(the_bundle).to include_gems("unrelated_gem 1.0.0", source: "remote3")
         end
       end
 
@@ -606,7 +606,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         end
 
         it "does not find the dependency" do
-          bundle :install, :artifice => "compact_index", :raise_on_error => false
+          bundle :install, artifice: "compact_index", raise_on_error: false
           expect(err).to end_with <<~E.strip
             Could not find compatible versions
 
@@ -633,12 +633,12 @@ RSpec.describe "bundle install with gems on multiple sources" do
         end
 
         it "installs the dependency from the top-level source without warning" do
-          bundle :install, :artifice => "compact_index"
+          bundle :install, artifice: "compact_index"
           expect(err).not_to include("Warning")
           expect(run("require 'rack'; puts RACK")).to eq("1.0.0")
           expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0", "unrelated_gem 1.0.0")
-          expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0", :source => "remote2")
-          expect(the_bundle).to include_gems("unrelated_gem 1.0.0", :source => "remote3")
+          expect(the_bundle).to include_gems("depends_on_rack 1.0.1", "rack 1.0.0", source: "remote2")
+          expect(the_bundle).to include_gems("unrelated_gem 1.0.0", source: "remote3")
         end
       end
     end
@@ -672,10 +672,10 @@ RSpec.describe "bundle install with gems on multiple sources" do
         end
 
         it "installs the dependency from the top-level source" do
-          bundle :install, :artifice => "compact_index"
+          bundle :install, artifice: "compact_index"
           expect(the_bundle).to include_gems("depends_on_depends_on_rack 1.0.1", "depends_on_rack 1.0.1", "rack 1.0.0")
-          expect(the_bundle).to include_gems("rack 1.0.0", :source => "remote2")
-          expect(the_bundle).to include_gems("depends_on_depends_on_rack 1.0.1", "depends_on_rack 1.0.1", :source => "remote3")
+          expect(the_bundle).to include_gems("rack 1.0.0", source: "remote2")
+          expect(the_bundle).to include_gems("depends_on_depends_on_rack 1.0.1", "depends_on_rack 1.0.1", source: "remote3")
         end
       end
 
@@ -689,8 +689,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
         end
 
         it "installs the dependency from the pinned source" do
-          bundle :install, :artifice => "compact_index"
-          expect(the_bundle).to include_gems("depends_on_depends_on_rack 1.0.1", "depends_on_rack 1.0.1", "rack 1.0.0", :source => "remote3")
+          bundle :install, artifice: "compact_index"
+          expect(the_bundle).to include_gems("depends_on_depends_on_rack 1.0.1", "depends_on_rack 1.0.1", "rack 1.0.0", source: "remote3")
         end
       end
 
@@ -708,8 +708,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
         end
 
         it "installs the dependency from the pinned source without warning" do
-          bundle :install, :artifice => "compact_index"
-          expect(the_bundle).to include_gems("depends_on_depends_on_rack 1.0.1", "depends_on_rack 1.0.1", "rack 1.0.0", :source => "remote3")
+          bundle :install, artifice: "compact_index"
+          expect(the_bundle).to include_gems("depends_on_depends_on_rack 1.0.1", "depends_on_rack 1.0.1", "rack 1.0.0", source: "remote3")
         end
       end
     end
@@ -841,7 +841,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       it "does not install newer versions but updates the lockfile format when running bundle install in non frozen mode, and doesn't warn" do
-        bundle :install, :artifice => "compact_index"
+        bundle :install, artifice: "compact_index"
         expect(err).to be_empty
 
         expect(the_bundle).to include_gems("activesupport 6.0.3.4")
@@ -896,11 +896,11 @@ RSpec.describe "bundle install with gems on multiple sources" do
         L
       end
 
-      it "does not install newer versions or generate lockfile changes when running bundle install in frozen mode, and warns", :bundler => "< 3" do
+      it "does not install newer versions or generate lockfile changes when running bundle install in frozen mode, and warns", bundler: "< 3" do
         initial_lockfile = lockfile
 
         bundle "config set --local frozen true"
-        bundle :install, :artifice => "compact_index"
+        bundle :install, artifice: "compact_index"
 
         expect(err).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure.")
 
@@ -914,11 +914,11 @@ RSpec.describe "bundle install with gems on multiple sources" do
         expect(lockfile).to eq(initial_lockfile)
       end
 
-      it "fails when running bundle install in frozen mode", :bundler => "3" do
+      it "fails when running bundle install in frozen mode", bundler: "3" do
         initial_lockfile = lockfile
 
         bundle "config set --local frozen true"
-        bundle :install, :artifice => "compact_index", :raise_on_error => false
+        bundle :install, artifice: "compact_index", raise_on_error: false
 
         expect(err).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure.")
 
@@ -926,7 +926,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       it "splits sections and upgrades gems when running bundle update, and doesn't warn" do
-        bundle "update --all", :artifice => "compact_index"
+        bundle "update --all", artifice: "compact_index"
         expect(err).to be_empty
 
         expect(the_bundle).not_to include_gems("activesupport 6.0.3.4")
@@ -987,7 +987,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       it "upgrades the lockfile format and upgrades the requested gem when running bundle update with an argument" do
-        bundle "update concurrent-ruby", :artifice => "compact_index"
+        bundle "update concurrent-ruby", artifice: "compact_index"
         expect(err).to be_empty
 
         expect(the_bundle).to include_gems("activesupport 6.0.3.4")
@@ -1047,8 +1047,8 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
     context "when a top-level gem has an indirect dependency present in the default source, but with a different version from the one resolved" do
       before do
-        build_lib "activesupport", "7.0.0.alpha", :path => lib_path("rails/activesupport")
-        build_lib "rails", "7.0.0.alpha", :path => lib_path("rails") do |s|
+        build_lib "activesupport", "7.0.0.alpha", path: lib_path("rails/activesupport")
+        build_lib "rails", "7.0.0.alpha", path: lib_path("rails") do |s|
           s.add_dependency "activesupport", "= 7.0.0.alpha"
         end
 
@@ -1070,11 +1070,11 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       it "installs all gems without warning" do
-        bundle :install, :artifice => "compact_index"
+        bundle :install, artifice: "compact_index"
         expect(err).not_to include("Warning")
         expect(the_bundle).to include_gems("activesupport 7.0.0.alpha", "rails 7.0.0.alpha")
-        expect(the_bundle).to include_gems("activesupport 7.0.0.alpha", :source => "path@#{lib_path("rails/activesupport")}")
-        expect(the_bundle).to include_gems("rails 7.0.0.alpha", :source => "path@#{lib_path("rails")}")
+        expect(the_bundle).to include_gems("activesupport 7.0.0.alpha", source: "path@#{lib_path("rails/activesupport")}")
+        expect(the_bundle).to include_gems("rails 7.0.0.alpha", source: "path@#{lib_path("rails")}")
       end
     end
 
@@ -1137,20 +1137,20 @@ RSpec.describe "bundle install with gems on multiple sources" do
              #{Bundler::VERSION}
         L
 
-        bundle "install --verbose", :artifice => "compact_index"
+        bundle "install --verbose", artifice: "compact_index"
         expect(err).not_to include("Warning")
         expect(the_bundle).to include_gems("handsoap 0.2.5.5", "nokogiri 1.11.1", "racca 1.5.2")
-        expect(the_bundle).to include_gems("handsoap 0.2.5.5", :source => "remote3")
-        expect(the_bundle).to include_gems("nokogiri 1.11.1", "racca 1.5.2", :source => "remote2")
+        expect(the_bundle).to include_gems("handsoap 0.2.5.5", source: "remote3")
+        expect(the_bundle).to include_gems("nokogiri 1.11.1", "racca 1.5.2", source: "remote2")
         expect(lockfile).to eq(expected_lockfile)
 
         # Even if the gems are already installed
         FileUtils.rm bundled_app_lock
-        bundle "install --verbose", :artifice => "compact_index"
+        bundle "install --verbose", artifice: "compact_index"
         expect(err).not_to include("Warning")
         expect(the_bundle).to include_gems("handsoap 0.2.5.5", "nokogiri 1.11.1", "racca 1.5.2")
-        expect(the_bundle).to include_gems("handsoap 0.2.5.5", :source => "remote3")
-        expect(the_bundle).to include_gems("nokogiri 1.11.1", "racca 1.5.2", :source => "remote2")
+        expect(the_bundle).to include_gems("handsoap 0.2.5.5", source: "remote3")
+        expect(the_bundle).to include_gems("nokogiri 1.11.1", "racca 1.5.2", source: "remote2")
         expect(lockfile).to eq(expected_lockfile)
       end
     end
@@ -1161,7 +1161,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
           build_gem "not_in_repo1", "1.0.0"
         end
 
-        install_gemfile <<-G, :artifice => "compact_index", :raise_on_error => false
+        install_gemfile <<-G, artifice: "compact_index", raise_on_error: false
           source "https://gem.repo3"
           gem "not_in_repo1", :source => "https://gem.repo1"
         G
@@ -1174,7 +1174,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
     context "with an existing lockfile" do
       before do
-        system_gems "rack-0.9.1", "rack-1.0.0", :path => default_bundle_path
+        system_gems "rack-0.9.1", "rack-1.0.0", path: default_bundle_path
 
         lockfile <<-L
           GEM
@@ -1264,21 +1264,21 @@ RSpec.describe "bundle install with gems on multiple sources" do
         lockfile aggregate_gem_section_lockfile
       end
 
-      it "installs the existing lockfile but prints a warning when checksum validation is disabled", :bundler => "< 3" do
+      it "installs the existing lockfile but prints a warning when checksum validation is disabled", bundler: "< 3" do
         bundle "config set --local deployment true"
         bundle "config set --local disable_checksum_validation true"
 
-        bundle "install", :artifice => "compact_index"
+        bundle "install", artifice: "compact_index"
 
         expect(lockfile).to eq(aggregate_gem_section_lockfile)
         expect(err).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure.")
-        expect(the_bundle).to include_gems("rack 0.9.1", :source => "remote3")
+        expect(the_bundle).to include_gems("rack 0.9.1", source: "remote3")
       end
 
-      it "prints a checksum warning when the checksums from both sources do not match", :bundler => "< 3" do
+      it "prints a checksum warning when the checksums from both sources do not match", bundler: "< 3" do
         bundle "config set --local deployment true"
 
-        bundle "install", :artifice => "compact_index", :raise_on_error => false
+        bundle "install", artifice: "compact_index", raise_on_error: false
 
         api_checksum1 = checksum_digest(gem_repo1, "rack", "0.9.1")
         api_checksum3 = checksum_digest(gem_repo3, "rack", "0.9.1")
@@ -1302,10 +1302,10 @@ RSpec.describe "bundle install with gems on multiple sources" do
         E
       end
 
-      it "refuses to install the existing lockfile and prints an error", :bundler => "3" do
+      it "refuses to install the existing lockfile and prints an error", bundler: "3" do
         bundle "config set --local deployment true"
 
-        bundle "install", :artifice => "compact_index", :raise_on_error => false
+        bundle "install", artifice: "compact_index", raise_on_error: false
 
         expect(lockfile).to eq(aggregate_gem_section_lockfile)
         expect(err).to include("Your lockfile contains a single rubygems source section with multiple remotes, which is insecure.")
@@ -1325,7 +1325,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       it "does not unlock the non-path gem after install" do
-        bundle :install, :artifice => "compact_index"
+        bundle :install, artifice: "compact_index"
 
         bundle %(exec ruby -e 'puts "OK"')
 
@@ -1338,7 +1338,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
     before do
       system_gems "rack-0.9.1"
 
-      install_gemfile <<-G, :artifice => "compact_index"
+      install_gemfile <<-G, artifice: "compact_index"
         source "https://gem.repo1"
         gem "rack" # should come from repo1!
       G
@@ -1367,7 +1367,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       G
 
       bundle "config set --local path ../gems/system"
-      bundle :install, :artifice => "compact_index"
+      bundle :install, artifice: "compact_index"
 
       # And then we add some new versions...
       update_repo4 do
@@ -1378,7 +1378,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
     it "allows them to be unlocked separately" do
       # And install this gemfile, updating only foo.
-      install_gemfile <<-G, :artifice => "compact_index"
+      install_gemfile <<-G, artifice: "compact_index"
         source 'https://gem.repo1'
         gem 'rack'
         gem 'foo', '~> 0.2', :source => 'https://gem.repo4'
@@ -1402,7 +1402,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         build_git "git1"
         build_git "git2"
 
-        install_gemfile <<-G, :artifice => "compact_index"
+        install_gemfile <<-G, artifice: "compact_index"
           source "https://gem.repo1"
           gem "rails"
 
@@ -1418,7 +1418,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
 
       it "does not re-resolve" do
-        bundle :install, :artifice => "compact_index", :verbose => true
+        bundle :install, artifice: "compact_index", verbose: true
         expect(out).to include("using resolution from the lockfile")
         expect(out).not_to include("re-resolving dependencies")
       end
@@ -1427,7 +1427,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
   context "when a gem is installed to system gems" do
     before do
-      install_gemfile <<-G, :artifice => "compact_index"
+      install_gemfile <<-G, artifice: "compact_index"
         source "https://gem.repo1"
         gem "rack"
       G
@@ -1441,7 +1441,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         end
 
         # When this gemfile is installed...
-        install_gemfile <<-G, :artifice => "compact_index"
+        install_gemfile <<-G, artifice: "compact_index"
           source "https://gem.repo1"
 
           source "https://gem.repo4" do
@@ -1463,14 +1463,14 @@ RSpec.describe "bundle install with gems on multiple sources" do
         G
 
         # But we should still be able to find rack 2.0.1.1.forked and install it
-        bundle :install, :artifice => "compact_index"
+        bundle :install, artifice: "compact_index"
       end
     end
   end
 
   describe "source changed to one containing a higher version of a dependency" do
     before do
-      install_gemfile <<-G, :artifice => "compact_index"
+      install_gemfile <<-G, artifice: "compact_index"
         source "https://gem.repo1"
 
         gem "rack"
@@ -1484,11 +1484,11 @@ RSpec.describe "bundle install with gems on multiple sources" do
         build_gem "bar"
       end
 
-      build_lib("gemspec_test", :path => tmp.join("gemspec_test")) do |s|
+      build_lib("gemspec_test", path: tmp.join("gemspec_test")) do |s|
         s.add_dependency "bar", "=1.0.0"
       end
 
-      install_gemfile <<-G, :artifice => "compact_index"
+      install_gemfile <<-G, artifice: "compact_index"
         source "https://gem.repo2"
         gem "rack"
         gemspec :path => "#{tmp.join("gemspec_test")}"
@@ -1506,11 +1506,11 @@ RSpec.describe "bundle install with gems on multiple sources" do
         build_gem "bar"
       end
 
-      build_lib("gemspec_test", :path => tmp.join("gemspec_test")) do |s|
+      build_lib("gemspec_test", path: tmp.join("gemspec_test")) do |s|
         s.add_development_dependency "bar"
       end
 
-      install_gemfile <<-G, :artifice => "compact_index"
+      install_gemfile <<-G, artifice: "compact_index"
         source "https://gem.repo1"
 
         source "https://gem.repo4" do
@@ -1535,7 +1535,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       build_gem "example", "1.0.2"
     end
 
-    install_gemfile <<-G, :artifice => "compact_index"
+    install_gemfile <<-G, artifice: "compact_index"
       source "https://gem.repo4"
 
       gem "example", :source => "https://gem.repo2"
@@ -1544,9 +1544,9 @@ RSpec.describe "bundle install with gems on multiple sources" do
     bundle "info example"
     expect(out).to include("example (0.1.0)")
 
-    system_gems "example-1.0.2", :path => default_bundle_path, :gem_repo => gem_repo4
+    system_gems "example-1.0.2", path: default_bundle_path, gem_repo: gem_repo4
 
-    bundle "update example --verbose", :artifice => "compact_index"
+    bundle "update example --verbose", artifice: "compact_index"
     expect(out).not_to include("Using example 1.0.2")
     expect(out).to include("Using example 0.1.0")
   end
@@ -1560,7 +1560,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
     G
 
-    ruby <<~R, :raise_on_error => false
+    ruby <<~R, raise_on_error: false
       require 'bundler/setup'
     R
 
@@ -1577,13 +1577,13 @@ RSpec.describe "bundle install with gems on multiple sources" do
       end
     G
 
-    bundle "install", :artifice => nil, :raise_on_error => false
+    bundle "install", artifice: nil, raise_on_error: false
 
     expect(last_command).to be_failure
     expect(err).to include("Could not reach host gem.repo4. Check your network connection and try again.")
   end
 
-  context "when an indirect dependency is available from multiple ambiguous sources", :bundler => "< 3" do
+  context "when an indirect dependency is available from multiple ambiguous sources", bundler: "< 3" do
     it "succeeds but warns, suggesting a source block" do
       build_repo4 do
         build_gem "depends_on_rack" do |s|
@@ -1592,7 +1592,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         build_gem "rack"
       end
 
-      install_gemfile <<-G, :artifice => "compact_index", :raise_on_error => false
+      install_gemfile <<-G, artifice: "compact_index", raise_on_error: false
         source "#{file_uri_for(gem_repo1)}"
 
         source "https://gem.repo4" do
@@ -1614,7 +1614,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
     end
   end
 
-  context "when an indirect dependency is available from multiple ambiguous sources", :bundler => "3" do
+  context "when an indirect dependency is available from multiple ambiguous sources", bundler: "3" do
     it "raises, suggesting a source block" do
       build_repo4 do
         build_gem "depends_on_rack" do |s|
@@ -1623,7 +1623,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         build_gem "rack"
       end
 
-      install_gemfile <<-G, :artifice => "compact_index", :raise_on_error => false
+      install_gemfile <<-G, artifice: "compact_index", raise_on_error: false
         source "#{file_uri_for(gem_repo1)}"
         source "https://gem.repo4" do
           gem "depends_on_rack"
@@ -1688,7 +1688,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
     end
 
     it "upgrades the lockfile correctly" do
-      bundle "lock --update", :artifice => "compact_index"
+      bundle "lock --update", artifice: "compact_index"
 
       checksums = checksums_section_when_existing do |c|
         c.checksum gem_repo2, "capybara", "2.5.0"
@@ -1747,7 +1747,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
     end
 
     it "handles that fine" do
-      bundle "install", :artifice => "compact_index_extra", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      bundle "install", artifice: "compact_index_extra", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
 
       checksums = checksums_section_when_existing do |c|
         c.checksum gem_repo4, "pdf-writer", "1.1.8"
@@ -1805,7 +1805,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
     end
 
     it "handles that fine" do
-      bundle "install", :artifice => "compact_index_extra", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      bundle "install", artifice: "compact_index_extra", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
 
       checksums = checksums_section_when_existing do |c|
         c.checksum gem_repo4, "pdf-writer", "1.1.8"
@@ -1857,7 +1857,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
     end
 
     it "handles that fine" do
-      bundle "install --verbose", :artifice => "endpoint", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+      bundle "install --verbose", artifice: "endpoint", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
 
       checksums = checksums_section_when_existing do |c|
         c.checksum gem_repo4, "pdf-writer", "1.1.8"
@@ -1893,7 +1893,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
         build_gem "example", "1.0.0"
       end
 
-      install_gemfile <<~G, :artifice => "compact_index"
+      install_gemfile <<~G, artifice: "compact_index"
         source "https://gem.repo2"
 
         source "https://gem.repo4" do
@@ -1913,7 +1913,7 @@ RSpec.describe "bundle install with gems on multiple sources" do
 
     it "shows a proper error message and does not generate a corrupted lockfile" do
       expect do
-        bundle :install, :artifice => "compact_index", :raise_on_error => false, :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+        bundle :install, artifice: "compact_index", raise_on_error: false, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
       end.not_to change { lockfile }
 
       expect(err).to include("Could not find gem 'example' in rubygems repository https://gem.repo4/")

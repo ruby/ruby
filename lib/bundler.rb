@@ -194,7 +194,7 @@ module Bundler
     end
 
     def environment
-      SharedHelpers.major_deprecation 2, "Bundler.environment has been removed in favor of Bundler.load", :print_caller_location => true
+      SharedHelpers.major_deprecation 2, "Bundler.environment has been removed in favor of Bundler.load", print_caller_location: true
       load
     end
 
@@ -353,7 +353,7 @@ module Bundler
       removed_message =
         "`Bundler.clean_env` has been removed in favor of `Bundler.unbundled_env`. " \
         "If you instead want the environment before bundler was originally loaded, use `Bundler.original_env`"
-      Bundler::SharedHelpers.major_deprecation(2, message, :removed_message => removed_message, :print_caller_location => true)
+      Bundler::SharedHelpers.major_deprecation(2, message, removed_message: removed_message, print_caller_location: true)
       unbundled_env
     end
 
@@ -396,7 +396,7 @@ module Bundler
       removed_message =
         "`Bundler.with_clean_env` has been removed in favor of `Bundler.with_unbundled_env`. " \
         "If you instead want the environment before bundler was originally loaded, use `Bundler.with_original_env`"
-      Bundler::SharedHelpers.major_deprecation(2, message, :removed_message => removed_message, :print_caller_location => true)
+      Bundler::SharedHelpers.major_deprecation(2, message, removed_message: removed_message, print_caller_location: true)
       with_env(unbundled_env) { yield }
     end
 
@@ -418,7 +418,7 @@ module Bundler
       removed_message =
         "`Bundler.clean_system` has been removed in favor of `Bundler.unbundled_system`. " \
         "If you instead want to run the command in the environment before bundler was originally loaded, use `Bundler.original_system`"
-      Bundler::SharedHelpers.major_deprecation(2, message, :removed_message => removed_message, :print_caller_location => true)
+      Bundler::SharedHelpers.major_deprecation(2, message, removed_message: removed_message, print_caller_location: true)
       with_env(unbundled_env) { Kernel.system(*args) }
     end
 
@@ -440,7 +440,7 @@ module Bundler
       removed_message =
         "`Bundler.clean_exec` has been removed in favor of `Bundler.unbundled_exec`. " \
         "If you instead want to exec to a command in the environment before bundler was originally loaded, use `Bundler.original_exec`"
-      Bundler::SharedHelpers.major_deprecation(2, message, :removed_message => removed_message, :print_caller_location => true)
+      Bundler::SharedHelpers.major_deprecation(2, message, removed_message: removed_message, print_caller_location: true)
       with_env(unbundled_env) { Kernel.exec(*args) }
     end
 
@@ -517,7 +517,7 @@ module Bundler
           raise MarshalError, "#{e.class}: #{e.message}"
         end
       else
-        load_marshal(data, :marshal_proc => SafeMarshal.proc)
+        load_marshal(data, marshal_proc: SafeMarshal.proc)
       end
     end
 

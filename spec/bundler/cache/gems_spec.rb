@@ -8,7 +8,7 @@ RSpec.describe "bundle cache" do
         gem 'rack'
       G
 
-      system_gems "rack-1.0.0", :path => path
+      system_gems "rack-1.0.0", path: path
       bundle :cache
     end
 
@@ -17,7 +17,7 @@ RSpec.describe "bundle cache" do
     end
 
     it "uses the cache as a source when installing gems" do
-      build_gem "omg", :path => bundled_app("vendor/cache")
+      build_gem "omg", path: bundled_app("vendor/cache")
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
@@ -28,14 +28,14 @@ RSpec.describe "bundle cache" do
     end
 
     it "uses the cache as a source when installing gems with --local" do
-      system_gems [], :path => default_bundle_path
+      system_gems [], path: default_bundle_path
       bundle "install --local"
 
       expect(the_bundle).to include_gems("rack 1.0.0")
     end
 
     it "does not reinstall gems from the cache if they exist on the system" do
-      build_gem "rack", "1.0.0", :path => bundled_app("vendor/cache") do |s|
+      build_gem "rack", "1.0.0", path: bundled_app("vendor/cache") do |s|
         s.write "lib/rack.rb", "RACK = 'FAIL'"
       end
 
@@ -48,18 +48,18 @@ RSpec.describe "bundle cache" do
     end
 
     it "does not reinstall gems from the cache if they exist in the bundle" do
-      system_gems "rack-1.0.0", :path => default_bundle_path
+      system_gems "rack-1.0.0", path: default_bundle_path
 
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "rack"
       G
 
-      build_gem "rack", "1.0.0", :path => bundled_app("vendor/cache") do |s|
+      build_gem "rack", "1.0.0", path: bundled_app("vendor/cache") do |s|
         s.write "lib/rack.rb", "RACK = 'FAIL'"
       end
 
-      bundle :install, :local => true
+      bundle :install, local: true
       expect(the_bundle).to include_gems("rack 1.0.0")
     end
 
@@ -97,12 +97,12 @@ RSpec.describe "bundle cache" do
         build_gem "json", default_json_version
       end
 
-      build_gem "json", default_json_version, :to_system => true, :default => true
+      build_gem "json", default_json_version, to_system: true, default: true
     end
 
     it "uses builtin gems when installing to system gems" do
       bundle "config set path.system true"
-      install_gemfile %(source "#{file_uri_for(gem_repo1)}"; gem 'json', '#{default_json_version}'), :verbose => true
+      install_gemfile %(source "#{file_uri_for(gem_repo1)}"; gem 'json', '#{default_json_version}'), verbose: true
       expect(out).to include("Using json #{default_json_version}")
     end
 
@@ -131,7 +131,7 @@ RSpec.describe "bundle cache" do
     end
 
     it "doesn't make remote request after caching the gem" do
-      build_gem "builtin_gem_2", "1.0.2", :path => bundled_app("vendor/cache") do |s|
+      build_gem "builtin_gem_2", "1.0.2", path: bundled_app("vendor/cache") do |s|
         s.summary = "This builtin_gem is bundled with Ruby"
       end
 
@@ -152,7 +152,7 @@ RSpec.describe "bundle cache" do
         gem 'json', '#{default_json_version}'
       G
 
-      bundle :cache, :raise_on_error => false
+      bundle :cache, raise_on_error: false
       expect(exitstatus).to_not eq(0)
       expect(err).to include("json-#{default_json_version} is built in to Ruby, and can't be cached")
     end
@@ -218,7 +218,7 @@ RSpec.describe "bundle cache" do
         end
       end
 
-      bundle "update", :all => true
+      bundle "update", all: true
       expect(cached_gem("rack-1.2")).to exist
       expect(cached_gem("rack-1.0.0")).not_to exist
     end
@@ -279,8 +279,8 @@ RSpec.describe "bundle cache" do
     it "doesn't remove gems with mismatched :rubygems_version or :date" do
       cached_gem("rack-1.0.0").rmtree
       build_gem "rack", "1.0.0",
-        :path => bundled_app("vendor/cache"),
-        :rubygems_version => "1.3.2"
+        path: bundled_app("vendor/cache"),
+        rubygems_version: "1.3.2"
       # This test is only really valid if the checksum isn't saved. It otherwise can't be the same gem. Tested below.
       bundled_app_lock.write remove_checksums_from_lockfile(bundled_app_lock.read, "rack (1.0.0)")
       simulate_new_machine
@@ -291,7 +291,7 @@ RSpec.describe "bundle cache" do
 
     it "raises an error when the gem is altered and produces a different checksum" do
       cached_gem("rack-1.0.0").rmtree
-      build_gem "rack", "1.0.0", :path => bundled_app("vendor/cache")
+      build_gem "rack", "1.0.0", path: bundled_app("vendor/cache")
 
       checksums = checksums_section do |c|
         c.checksum gem_repo1, "rack", "1.0.0"
@@ -307,7 +307,7 @@ RSpec.describe "bundle cache" do
         #{checksums}
       L
 
-      bundle :install, :raise_on_error => false
+      bundle :install, raise_on_error: false
       expect(exitstatus).to eq(37)
       expect(err).to include("Bundler found mismatched checksums.")
       expect(err).to include("1. remove the gem at #{cached_gem("rack-1.0.0")}")
@@ -320,7 +320,7 @@ RSpec.describe "bundle cache" do
 
     it "installs a modified gem with a non-matching checksum when checksums is not opted in" do
       cached_gem("rack-1.0.0").rmtree
-      build_gem "rack", "1.0.0", :path => bundled_app("vendor/cache")
+      build_gem "rack", "1.0.0", path: bundled_app("vendor/cache")
       simulate_new_machine
 
       lockfile <<-L
@@ -361,7 +361,7 @@ RSpec.describe "bundle cache" do
 
     it "should install gems with the name bundler in them (that aren't bundler)" do
       build_gem "foo-bundler", "1.0",
-        :path => bundled_app("vendor/cache")
+        path: bundled_app("vendor/cache")
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"

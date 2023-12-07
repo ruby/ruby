@@ -183,8 +183,8 @@ RSpec.describe "bundle flex_install" do
     end
 
     it "does not install gems whose dependencies are not met" do
-      bundle :install, :raise_on_error => false
-      ruby <<-RUBY, :raise_on_error => false
+      bundle :install, raise_on_error: false
+      ruby <<-RUBY, raise_on_error: false
         require 'bundler/setup'
       RUBY
       expect(err).to match(/could not find gem 'rack-obama/i)
@@ -203,7 +203,7 @@ RSpec.describe "bundle flex_install" do
           version solving has failed.
       E
 
-      bundle :install, :retry => 0, :raise_on_error => false
+      bundle :install, retry: 0, raise_on_error: false
       expect(err).to end_with(nice_error)
     end
 
@@ -216,7 +216,7 @@ RSpec.describe "bundle flex_install" do
             rack-obama (= 2.0)
       E
 
-      bundle "update rack_middleware", :retry => 0, :raise_on_error => false
+      bundle "update rack_middleware", retry: 0, raise_on_error: false
       expect(err).not_to end_with(bad_error)
     end
   end
@@ -245,7 +245,7 @@ RSpec.describe "bundle flex_install" do
     end
 
     it "discards the conflicting lockfile information and resolves properly" do
-      bundle :update, :raise_on_error => false, :all => true
+      bundle :update, raise_on_error: false, all: true
       expect(err).to be_empty
     end
   end

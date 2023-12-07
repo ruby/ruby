@@ -528,7 +528,7 @@ module Bundler
       @resolution_packages ||= begin
         last_resolve = converge_locked_specs
         remove_invalid_platforms!(current_dependencies)
-        packages = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, :locked_specs => @originally_locked_specs, :unlock => @unlock[:gems], :prerelease => gem_version_promoter.pre?)
+        packages = Resolver::Base.new(source_requirements, expanded_dependencies, last_resolve, @platforms, locked_specs: @originally_locked_specs, unlock: @unlock[:gems], prerelease: gem_version_promoter.pre?)
         additional_base_requirements_for_resolve(packages, last_resolve)
       end
     end
@@ -916,9 +916,9 @@ module Bundler
       source_requirements = if precompute_source_requirements_for_indirect_dependencies?
         all_requirements = source_map.all_requirements
         all_requirements = pin_locally_available_names(all_requirements) if @prefer_local
-        { :default => default_source }.merge(all_requirements)
+        { default: default_source }.merge(all_requirements)
       else
-        { :default => Source::RubygemsAggregate.new(sources, source_map) }.merge(source_map.direct_requirements)
+        { default: Source::RubygemsAggregate.new(sources, source_map) }.merge(source_map.direct_requirements)
       end
       source_requirements.merge!(source_map.locked_requirements) unless @remote
       metadata_dependencies.each do |dep|

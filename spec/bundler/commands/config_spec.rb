@@ -28,7 +28,7 @@ RSpec.describe ".bundle/config" do
 
       context "with env overwrite" do
         it "prints config with env" do
-          bundle "config list --parseable", :env => { "BUNDLE_FOO" => "bar3" }
+          bundle "config list --parseable", env: { "BUNDLE_FOO" => "bar3" }
           expect(out).to include("foo=bar3")
         end
       end
@@ -64,11 +64,11 @@ RSpec.describe ".bundle/config" do
 
       ENV["BUNDLE_APP_CONFIG"] = "../foo"
       bundle "config set --local path vendor/bundle"
-      bundle "install", :dir => bundled_app("omg")
+      bundle "install", dir: bundled_app("omg")
 
       expect(bundled_app(".bundle")).not_to exist
       expect(bundled_app("../foo/config")).to exist
-      expect(the_bundle).to include_gems "rack 1.0.0", :dir => bundled_app("omg")
+      expect(the_bundle).to include_gems "rack 1.0.0", dir: bundled_app("omg")
     end
   end
 
@@ -96,8 +96,8 @@ RSpec.describe ".bundle/config" do
     end
 
     it "can be configured through BUNDLE_USER_CONFIG" do
-      bundle "config set path vendor", :env => { "BUNDLE_USER_CONFIG" => bundle_user_config }
-      bundle "config get path", :env => { "BUNDLE_USER_CONFIG" => bundle_user_config }
+      bundle "config set path vendor", env: { "BUNDLE_USER_CONFIG" => bundle_user_config }
+      bundle "config get path", env: { "BUNDLE_USER_CONFIG" => bundle_user_config }
       expect(out).to include("Set for the current user (#{bundle_user_config}): \"vendor\"")
     end
 
@@ -105,8 +105,8 @@ RSpec.describe ".bundle/config" do
       let(:bundle_user_home) { bundled_app(".bundle").to_s }
 
       it "uses the right location" do
-        bundle "config set path vendor", :env => { "BUNDLE_USER_HOME" => bundle_user_home }
-        bundle "config get path", :env => { "BUNDLE_USER_HOME" => bundle_user_home }
+        bundle "config set path vendor", env: { "BUNDLE_USER_HOME" => bundle_user_home }
+        bundle "config get path", env: { "BUNDLE_USER_HOME" => bundle_user_home }
         expect(out).to include("Set for the current user (#{bundle_user_home}/config): \"vendor\"")
       end
     end
@@ -461,26 +461,26 @@ E
 
   describe "subcommands" do
     it "list" do
-      bundle "config list", :env => { "BUNDLE_FOO" => "bar" }
+      bundle "config list", env: { "BUNDLE_FOO" => "bar" }
       expect(out).to eq "Settings are listed in order of priority. The top value will be used.\nfoo\nSet via BUNDLE_FOO: \"bar\""
 
-      bundle "config list", :env => { "BUNDLE_FOO" => "bar" }, :parseable => true
+      bundle "config list", env: { "BUNDLE_FOO" => "bar" }, parseable: true
       expect(out).to eq "foo=bar"
     end
 
     it "list with credentials" do
-      bundle "config list", :env => { "BUNDLE_GEMS__MYSERVER__COM" => "user:password" }
+      bundle "config list", env: { "BUNDLE_GEMS__MYSERVER__COM" => "user:password" }
       expect(out).to eq "Settings are listed in order of priority. The top value will be used.\ngems.myserver.com\nSet via BUNDLE_GEMS__MYSERVER__COM: \"user:[REDACTED]\""
 
-      bundle "config list", :parseable => true, :env => { "BUNDLE_GEMS__MYSERVER__COM" => "user:password" }
+      bundle "config list", parseable: true, env: { "BUNDLE_GEMS__MYSERVER__COM" => "user:password" }
       expect(out).to eq "gems.myserver.com=user:password"
     end
 
     it "list with API token credentials" do
-      bundle "config list", :env => { "BUNDLE_GEMS__MYSERVER__COM" => "api_token:x-oauth-basic" }
+      bundle "config list", env: { "BUNDLE_GEMS__MYSERVER__COM" => "api_token:x-oauth-basic" }
       expect(out).to eq "Settings are listed in order of priority. The top value will be used.\ngems.myserver.com\nSet via BUNDLE_GEMS__MYSERVER__COM: \"[REDACTED]:x-oauth-basic\""
 
-      bundle "config list", :parseable => true, :env => { "BUNDLE_GEMS__MYSERVER__COM" => "api_token:x-oauth-basic" }
+      bundle "config list", parseable: true, env: { "BUNDLE_GEMS__MYSERVER__COM" => "api_token:x-oauth-basic" }
       expect(out).to eq "gems.myserver.com=api_token:x-oauth-basic"
     end
 
@@ -515,7 +515,7 @@ E
       bundle "config set --local foo 4.1"
       expect(out).to eq "You are replacing the current local value of foo, which is currently \"4\""
 
-      bundle "config set --global --local foo 5", :raise_on_error => false
+      bundle "config set --global --local foo 5", raise_on_error: false
       expect(last_command).to be_failure
       expect(err).to eq "The options global and local were specified. Please only use one of the switches at a time."
     end
@@ -555,7 +555,7 @@ E
       expect(out).to eq ""
       expect(bundle("config get foo")).to eq "Settings for `foo` in order of priority. The top value will be used\nYou have not configured a value for `foo`"
 
-      bundle "config unset foo --local --global", :raise_on_error => false
+      bundle "config unset foo --local --global", raise_on_error: false
       expect(last_command).to be_failure
       expect(err).to eq "The options global and local were specified. Please only use one of the switches at a time."
     end

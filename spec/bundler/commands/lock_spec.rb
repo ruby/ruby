@@ -114,13 +114,13 @@ RSpec.describe "bundle lock" do
   it "writes a lockfile when there is an outdated lockfile and bundle is frozen" do
     lockfile @lockfile.gsub("2.3.2", "2.3.1")
 
-    bundle "lock --update", :env => { "BUNDLE_FROZEN" => "true" }
+    bundle "lock --update", env: { "BUNDLE_FROZEN" => "true" }
 
     expect(read_lockfile).to eq(@lockfile)
   end
 
   it "does not fetch remote specs when using the --local option" do
-    bundle "lock --update --local", :raise_on_error => false
+    bundle "lock --update --local", raise_on_error: false
 
     expect(err).to match(/locally installed gems/)
   end
@@ -255,7 +255,7 @@ RSpec.describe "bundle lock" do
     G
 
     # Change uri format to end with "/" and reinstall
-    install_gemfile <<-G, :verbose => true
+    install_gemfile <<-G, verbose: true
       source "#{file_uri_for(gem_repo1)}"
       gem "foo", :git => "#{file_uri_for(lib_path("foo-1.0"))}/"
     G
@@ -305,7 +305,7 @@ RSpec.describe "bundle lock" do
   it "errors when updating a missing specific gems using --update" do
     lockfile @lockfile
 
-    bundle "lock --update blahblah", :raise_on_error => false
+    bundle "lock --update blahblah", raise_on_error: false
     expect(err).to eq("Could not find gem 'blahblah'.")
 
     expect(read_lockfile).to eq(@lockfile)
@@ -320,7 +320,7 @@ RSpec.describe "bundle lock" do
     G
     bundle "config set without test"
     bundle "config set path vendor/bundle"
-    bundle "lock", :verbose => true
+    bundle "lock", verbose: true
     expect(bundled_app("vendor/bundle")).not_to exist
   end
 
@@ -449,21 +449,21 @@ RSpec.describe "bundle lock" do
       build_gem "bundler", "55"
     end
 
-    system_gems "bundler-55", :gem_repo => gem_repo4
+    system_gems "bundler-55", gem_repo: gem_repo4
 
-    install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
       source "https://gems.repo4"
     G
     lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, '\11.0.0\2')
 
-    bundle "lock --update --bundler --verbose", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    bundle "lock --update --bundler --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
     expect(lockfile).to end_with("BUNDLED WITH\n   55\n")
 
     update_repo4 do
       build_gem "bundler", "99"
     end
 
-    bundle "lock --update --bundler --verbose", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    bundle "lock --update --bundler --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
     expect(lockfile).to end_with("BUNDLED WITH\n   99\n")
   end
 
@@ -588,7 +588,7 @@ RSpec.describe "bundle lock" do
   end
 
   it "errors when removing all platforms" do
-    bundle "lock --remove-platform #{local_platform}", :raise_on_error => false
+    bundle "lock --remove-platform #{local_platform}", raise_on_error: false
     expect(err).to include("Removing all platforms from the bundle is not allowed")
   end
 
@@ -875,7 +875,7 @@ RSpec.describe "bundle lock" do
          #{Bundler::VERSION}
     L
 
-    bundle "lock --add-platform x86_64-linux", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    bundle "lock --add-platform x86_64-linux", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
   end
 
   it "does not crash on conflicting ruby requirements between platform versions in two different gems" do
@@ -931,7 +931,7 @@ RSpec.describe "bundle lock" do
          #{Bundler::VERSION}
     L
 
-    bundle "install --verbose", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s, "DEBUG_RESOLVER" => "1" }
+    bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s, "DEBUG_RESOLVER" => "1" }
   end
 
   it "respects lower bound ruby requirements" do
@@ -963,7 +963,7 @@ RSpec.describe "bundle lock" do
          #{Bundler::VERSION}
     L
 
-    bundle "install", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    bundle "install", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
   end
 
   context "when an update is available" do
@@ -1096,8 +1096,8 @@ RSpec.describe "bundle lock" do
         build_gem "irb", "1.5.0"
       end
 
-      system_gems "irb-1.5.0", :gem_repo => gem_repo4
-      system_gems "debug-1.6.3", :gem_repo => gem_repo4
+      system_gems "irb-1.5.0", gem_repo: gem_repo4
+      system_gems "debug-1.6.3", gem_repo: gem_repo4
 
       # simulate gemspec with wrong empty dependencies
       debug_gemspec_path = system_gem_path("specifications/debug-1.6.3.gemspec")
@@ -1187,7 +1187,7 @@ RSpec.describe "bundle lock" do
       gem "activeadmin", "2.13.1"
     G
 
-    bundle "lock", :raise_on_error => false
+    bundle "lock", raise_on_error: false
 
     expect(err).to eq <<~ERR.strip
       Could not find compatible versions
@@ -1262,7 +1262,7 @@ RSpec.describe "bundle lock" do
          #{Bundler::VERSION}
     L
 
-    bundle "lock", :raise_on_error => false
+    bundle "lock", raise_on_error: false
 
     expect(err).to eq <<~ERR.strip
       Could not find compatible versions
@@ -1290,7 +1290,7 @@ RSpec.describe "bundle lock" do
 
     lockfile lockfile.gsub(/PLATFORMS\n  #{local_platform}/m, "PLATFORMS\n  #{lockfile_platforms("ruby")}")
 
-    bundle "lock", :raise_on_error => false
+    bundle "lock", raise_on_error: false
 
     expect(err).to eq <<~ERR.strip
       Could not find compatible versions
@@ -1383,7 +1383,7 @@ RSpec.describe "bundle lock" do
     G
 
     simulate_platform "universal-java-19" do
-      bundle "lock", :raise_on_error => false
+      bundle "lock", raise_on_error: false
     end
 
     expect(err).to include("Could not find compatible versions")
@@ -1418,7 +1418,7 @@ RSpec.describe "bundle lock" do
 
   context "when resolving platform specific gems as indirect dependencies on truffleruby", :truffleruby_only do
     before do
-      build_lib "foo", :path => bundled_app do |s|
+      build_lib "foo", path: bundled_app do |s|
         s.add_dependency "nokogiri"
       end
 

@@ -22,7 +22,7 @@ RSpec.context "when installing a bundle that includes yanked gems" do
 
     L
 
-    install_gemfile <<-G, :raise_on_error => false
+    install_gemfile <<-G, raise_on_error: false
       source "#{file_uri_for(gem_repo4)}"
       gem "foo", "10.0.0"
     G
@@ -79,7 +79,7 @@ RSpec.context "when installing a bundle that includes yanked gems" do
       let(:source_uri) { file_uri_for(gem_repo4) }
 
       it "reports the yanked gem properly" do
-        bundle "install", :raise_on_error => false
+        bundle "install", raise_on_error: false
 
         expect(err).to include("Your bundle is locked to nokogiri (1.13.8-#{Bundler.local_platform})")
       end
@@ -89,7 +89,7 @@ RSpec.context "when installing a bundle that includes yanked gems" do
       let(:source_uri) { "https://gem.repo4" }
 
       it "reports the yanked gem properly" do
-        bundle "install", :artifice => "compact_index", :raise_on_error => false
+        bundle "install", artifice: "compact_index", raise_on_error: false
 
         expect(err).to include("Your bundle is locked to nokogiri (1.13.8-#{Bundler.local_platform})")
       end
@@ -99,7 +99,7 @@ RSpec.context "when installing a bundle that includes yanked gems" do
   it "throws the original error when only the Gemfile specifies a gem version that doesn't exist" do
     bundle "config set force_ruby_platform true"
 
-    install_gemfile <<-G, :raise_on_error => false
+    install_gemfile <<-G, raise_on_error: false
       source "#{file_uri_for(gem_repo4)}"
       gem "foo", "10.0.0"
     G
@@ -186,7 +186,7 @@ RSpec.context "when using gem before installing" do
         rack (= 0.9.1)
     L
 
-    bundle :list, :raise_on_error => false
+    bundle :list, raise_on_error: false
 
     expect(err).to include("Could not find rack-0.9.1 in locally installed gems")
     expect(err).to_not include("Your bundle is locked to rack (0.9.1) from")
@@ -196,7 +196,7 @@ RSpec.context "when using gem before installing" do
     # Check error message is still correct when multiple platforms are locked
     lockfile lockfile.gsub(/PLATFORMS\n  #{lockfile_platforms}/m, "PLATFORMS\n  #{lockfile_platforms("ruby")}")
 
-    bundle :list, :raise_on_error => false
+    bundle :list, raise_on_error: false
     expect(err).to include("Could not find rack-0.9.1 in locally installed gems")
   end
 
@@ -222,7 +222,7 @@ RSpec.context "when using gem before installing" do
         rack_middleware (1.0)
     L
 
-    bundle :list, :raise_on_error => false
+    bundle :list, raise_on_error: false
 
     expect(err).to include("Could not find rack-0.9.1, rack_middleware-1.0 in locally installed gems")
     expect(err).to include("Install missing gems with `bundle install`.")

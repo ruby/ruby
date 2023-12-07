@@ -73,11 +73,11 @@ module Spec
           s.add_dependency "activesupport", ">= 2.0.0"
         end
 
-        build_gem "rspec", "1.2.7", :no_default => true do |s|
+        build_gem "rspec", "1.2.7", no_default: true do |s|
           s.write "lib/spec.rb", "SPEC = '1.2.7'"
         end
 
-        build_gem "rack-test", :no_default => true do |s|
+        build_gem "rack-test", no_default: true do |s|
           s.write "lib/rack/test.rb", "RACK_TEST = '1.0'"
         end
 
@@ -258,7 +258,7 @@ module Spec
       @_build_repo = File.basename(path)
       yield
       with_gem_path_as Path.base_system_gem_path do
-        gem_command :generate_index, :dir => path
+        gem_command :generate_index, dir: path
       end
     ensure
       @_build_path = nil
@@ -521,7 +521,7 @@ module Spec
         default_branch = options[:default_branch] || "main"
         path = options[:path] || _default_path
         source = options[:source] || "git@#{path}"
-        super(options.merge(:path => path, :source => source))
+        super(options.merge(path: path, source: source))
         @context.git("config --global init.defaultBranch #{default_branch}", path)
         @context.git("init", path)
         @context.git("add *", path)
@@ -535,7 +535,7 @@ module Spec
     class GitBareBuilder < LibBuilder
       def _build(options)
         path = options[:path] || _default_path
-        super(options.merge(:path => path))
+        super(options.merge(path: path))
         @context.git("init --bare", path)
       end
     end
@@ -560,7 +560,7 @@ module Spec
         _default_files.keys.each do |path|
           _default_files[path] += "\n#{Builders.constantize(name)}_PREV_REF = '#{current_ref}'"
         end
-        super(options.merge(:path => libpath, :gemspec => update_gemspec, :source => source))
+        super(options.merge(path: libpath, gemspec: update_gemspec, source: source))
         @context.git("commit -am BUMP", libpath)
       end
     end
@@ -583,7 +583,7 @@ module Spec
     class GemBuilder < LibBuilder
       def _build(opts)
         lib_path = opts[:lib_path] || @context.tmp(".tmp/#{@spec.full_name}")
-        lib_path = super(opts.merge(:path => lib_path, :no_default => opts[:no_default]))
+        lib_path = super(opts.merge(path: lib_path, no_default: opts[:no_default]))
         destination = opts[:path] || _default_path
         FileUtils.mkdir_p(lib_path.join(destination))
 
@@ -592,16 +592,16 @@ module Spec
             Bundler.rubygems.build(@spec, opts[:skip_validation])
           end
         elsif opts[:skip_validation]
-          @context.gem_command "build --force #{@spec.name}", :dir => lib_path
+          @context.gem_command "build --force #{@spec.name}", dir: lib_path
         else
-          @context.gem_command "build #{@spec.name}", :dir => lib_path
+          @context.gem_command "build #{@spec.name}", dir: lib_path
         end
 
         gem_path = File.expand_path("#{@spec.full_name}.gem", lib_path)
         if opts[:to_system]
-          @context.system_gems gem_path, :default => opts[:default]
+          @context.system_gems gem_path, default: opts[:default]
         elsif opts[:to_bundle]
-          @context.system_gems gem_path, :path => @context.default_bundle_path
+          @context.system_gems gem_path, path: @context.default_bundle_path
         else
           FileUtils.mv(gem_path, destination)
         end

@@ -186,7 +186,7 @@ module Gem::InstallUpdateOptions
 
   def install_update_options
     {
-      :document => %w[ri],
+      document: %w[ri],
     }
   end
 

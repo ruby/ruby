@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "bundle console", :bundler => "< 3", :readline => true do
+RSpec.describe "bundle console", bundler: "< 3", readline: true do
   before :each do
     build_repo2 do
       # A minimal fake pry console

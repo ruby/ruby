@@ -4,7 +4,7 @@ require "bundler/fetcher"
 
 RSpec.describe Bundler::Fetcher do
   let(:uri) { Bundler::URI("https://example.com") }
-  let(:remote) { double("remote", :uri => uri, :original_uri => nil) }
+  let(:remote) { double("remote", uri: uri, original_uri: nil) }
 
   subject(:fetcher) { Bundler::Fetcher.new(remote) }
 
@@ -47,7 +47,7 @@ RSpec.describe Bundler::Fetcher do
     context "when a rubygems source mirror is set" do
       let(:orig_uri) { Bundler::URI("http://zombo.com") }
       let(:remote_with_mirror) do
-        double("remote", :uri => uri, :original_uri => orig_uri, :anonymized_uri => uri)
+        double("remote", uri: uri, original_uri: orig_uri, anonymized_uri: uri)
       end
 
       let(:fetcher) { Bundler::Fetcher.new(remote_with_mirror) }
@@ -61,7 +61,7 @@ RSpec.describe Bundler::Fetcher do
 
     context "when there is no rubygems source mirror set" do
       let(:remote_no_mirror) do
-        double("remote", :uri => uri, :original_uri => nil, :anonymized_uri => uri)
+        double("remote", uri: uri, original_uri: nil, anonymized_uri: uri)
       end
 
       let(:fetcher) { Bundler::Fetcher.new(remote_no_mirror) }
@@ -114,9 +114,9 @@ RSpec.describe Bundler::Fetcher do
     context "when gem ssl configuration is set" do
       before do
         allow(Gem.configuration).to receive_messages(
-          :http_proxy => nil,
-          :ssl_client_cert => "cert",
-          :ssl_ca_cert => "ca"
+          http_proxy: nil,
+          ssl_client_cert: "cert",
+          ssl_ca_cert: "ca"
         )
         expect(File).to receive(:read).and_return("")
         expect(OpenSSL::X509::Certificate).to receive(:new).and_return("cert")
@@ -167,7 +167,7 @@ RSpec.describe Bundler::Fetcher do
     let(:version) { "1.3.17" }
     let(:platform) { "platform" }
     let(:downloader) { double("downloader") }
-    let(:body) { double(Net::HTTP::Get, :body => downloaded_data) }
+    let(:body) { double(Net::HTTP::Get, body: downloaded_data) }
 
     context "when attempting to load a Gem::Specification" do
       let(:spec) { Gem::Specification.new(name, version) }
@@ -194,10 +194,10 @@ RSpec.describe Bundler::Fetcher do
 
   describe "#specs_with_retry" do
     let(:downloader)  { double(:downloader) }
-    let(:remote)      { double(:remote, :cache_slug => "slug", :uri => uri, :original_uri => nil, :anonymized_uri => uri) }
-    let(:compact_index) { double(Bundler::Fetcher::CompactIndex, :available? => true, :api_fetcher? => true) }
-    let(:dependency)    { double(Bundler::Fetcher::Dependency, :available? => true, :api_fetcher? => true) }
-    let(:index)         { double(Bundler::Fetcher::Index, :available? => true, :api_fetcher? => false) }
+    let(:remote)      { double(:remote, cache_slug: "slug", uri: uri, original_uri: nil, anonymized_uri: uri) }
+    let(:compact_index) { double(Bundler::Fetcher::CompactIndex, available?: true, api_fetcher?: true) }
+    let(:dependency)    { double(Bundler::Fetcher::Dependency, available?: true, api_fetcher?: true) }
+    let(:index)         { double(Bundler::Fetcher::Index, available?: true, api_fetcher?: false) }
 
     before do
       allow(Bundler::Fetcher::CompactIndex).to receive(:new).and_return(compact_index)
@@ -230,10 +230,10 @@ RSpec.describe Bundler::Fetcher do
 
   describe "#api_fetcher?" do
     let(:downloader)  { double(:downloader) }
-    let(:remote)      { double(:remote, :cache_slug => "slug", :uri => uri, :original_uri => nil, :anonymized_uri => uri) }
-    let(:compact_index) { double(Bundler::Fetcher::CompactIndex, :available? => false, :api_fetcher? => true) }
-    let(:dependency)    { double(Bundler::Fetcher::Dependency, :available? => false, :api_fetcher? => true) }
-    let(:index)         { double(Bundler::Fetcher::Index, :available? => true, :api_fetcher? => false) }
+    let(:remote)      { double(:remote, cache_slug: "slug", uri: uri, original_uri: nil, anonymized_uri: uri) }
+    let(:compact_index) { double(Bundler::Fetcher::CompactIndex, available?: false, api_fetcher?: true) }
+    let(:dependency)    { double(Bundler::Fetcher::Dependency, available?: false, api_fetcher?: true) }
+    let(:index)         { double(Bundler::Fetcher::Index, available?: true, api_fetcher?: false) }
 
     before do
       allow(Bundler::Fetcher::CompactIndex).to receive(:new).and_return(compact_index)

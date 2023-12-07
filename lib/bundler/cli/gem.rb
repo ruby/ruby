@@ -59,23 +59,23 @@ module Bundler
       end
 
       config = {
-        :name => name,
-        :underscored_name => underscored_name,
-        :namespaced_path => namespaced_path,
-        :makefile_path => "#{underscored_name}/#{underscored_name}",
-        :constant_name => constant_name,
-        :constant_array => constant_array,
-        :author => git_author_name.empty? ? "TODO: Write your name" : git_author_name,
-        :email => git_user_email.empty? ? "TODO: Write your email address" : git_user_email,
-        :test => options[:test],
-        :ext => extension,
-        :exe => options[:exe],
-        :bundler_version => bundler_dependency_version,
-        :git => use_git,
-        :github_username => github_username.empty? ? "[USERNAME]" : github_username,
-        :required_ruby_version => required_ruby_version,
-        :rust_builder_required_rubygems_version => rust_builder_required_rubygems_version,
-        :minitest_constant_name => minitest_constant_name,
+        name: name,
+        underscored_name: underscored_name,
+        namespaced_path: namespaced_path,
+        makefile_path: "#{underscored_name}/#{underscored_name}",
+        constant_name: constant_name,
+        constant_array: constant_array,
+        author: git_author_name.empty? ? "TODO: Write your name" : git_author_name,
+        email: git_user_email.empty? ? "TODO: Write your email address" : git_user_email,
+        test: options[:test],
+        ext: extension,
+        exe: options[:exe],
+        bundler_version: bundler_dependency_version,
+        git: use_git,
+        github_username: github_username.empty? ? "[USERNAME]" : github_username,
+        required_ruby_version: required_ruby_version,
+        rust_builder_required_rubygems_version: rust_builder_required_rubygems_version,
+        minitest_constant_name: minitest_constant_name,
       }
       ensure_safe_gem_name(name, constant_array)
 
@@ -236,7 +236,7 @@ module Bundler
       end
 
       if use_git
-        IO.popen(%w[git add .], { :chdir => target }, &:read)
+        IO.popen(%w[git add .], { chdir: target }, &:read)
       end
 
       # Open gemspec in editor
@@ -382,18 +382,18 @@ module Bundler
         if options[:rubocop]
           Bundler::SharedHelpers.major_deprecation 2,
             "--rubocop is deprecated, use --linter=rubocop",
-            :removed_message => "--rubocop has been removed, use --linter=rubocop"
+            removed_message: "--rubocop has been removed, use --linter=rubocop"
           "rubocop"
         else
           Bundler::SharedHelpers.major_deprecation 2,
             "--no-rubocop is deprecated, use --linter",
-            :removed_message => "--no-rubocop has been removed, use --linter"
+            removed_message: "--no-rubocop has been removed, use --linter"
           false
         end
       elsif !Bundler.settings["gem.rubocop"].nil?
         Bundler::SharedHelpers.major_deprecation 2,
           "config gem.rubocop is deprecated; we've updated your config to use gem.linter instead",
-          :removed_message => "config gem.rubocop has been removed; we've updated your config to use gem.linter instead"
+          removed_message: "config gem.rubocop has been removed; we've updated your config to use gem.linter instead"
         Bundler.settings["gem.rubocop"] ? "rubocop" : false
       end
     end

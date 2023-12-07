@@ -9,11 +9,11 @@ RSpec.describe Bundler::Plugin do
   let(:spec2) { double(:spec2) }
 
   before do
-    build_lib "new-plugin", :path => lib_path("new-plugin") do |s|
+    build_lib "new-plugin", path: lib_path("new-plugin") do |s|
       s.write "plugins.rb"
     end
 
-    build_lib "another-plugin", :path => lib_path("another-plugin") do |s|
+    build_lib "another-plugin", path: lib_path("another-plugin") do |s|
       s.write "plugins.rb"
     end
 
@@ -275,7 +275,7 @@ RSpec.describe Bundler::Plugin do
   describe "#hook" do
     before do
       path = lib_path("foo-plugin")
-      build_lib "foo-plugin", :path => path do |s|
+      build_lib "foo-plugin", path: path do |s|
         s.write "plugins.rb", code
       end
 

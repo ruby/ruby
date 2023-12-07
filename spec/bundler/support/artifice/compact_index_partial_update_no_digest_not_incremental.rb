@@ -18,7 +18,7 @@ class CompactIndexPartialUpdateNoDigestNotIncremental < CompactIndexAPI
       FileUtils.rm_f(file)
       file = CompactIndex::VersionsFile.new(file.to_s)
       file.create(gems)
-      lines = file.contents([], :calculate_info_checksums => true).split("\n")
+      lines = file.contents([], calculate_info_checksums: true).split("\n")
       name, versions, checksum = lines.last.split(" ")
 
       # shuffle versions so new versions are not appended to the end

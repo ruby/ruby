@@ -23,7 +23,7 @@ module Bundler
 
       def from_gem(io, pathname, algo = DEFAULT_ALGORITHM)
         digest = Bundler::SharedHelpers.digest(algo.upcase).new
-        buf = String.new(:capacity => DEFAULT_BLOCK_SIZE)
+        buf = String.new(capacity: DEFAULT_BLOCK_SIZE)
         digest << io.readpartial(DEFAULT_BLOCK_SIZE, buf) until io.eof?
         Checksum.new(algo, digest.hexdigest!, Source.new(:gem, pathname))
       end

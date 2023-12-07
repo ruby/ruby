@@ -116,9 +116,9 @@ module Spec
         end
       end.join
 
-      ruby_cmd = build_ruby_cmd({ :load_path => load_path, :requires => requires })
+      ruby_cmd = build_ruby_cmd({ load_path: load_path, requires: requires })
       cmd = "#{ruby_cmd} #{bundle_bin} #{cmd}#{args}"
-      sys_exec(cmd, { :env => env, :dir => dir, :raise_on_error => raise_on_error }, &block)
+      sys_exec(cmd, { env: env, dir: dir, raise_on_error: raise_on_error }, &block)
     end
 
     def bundler(cmd, options = {})
@@ -170,7 +170,7 @@ module Spec
     end
 
     def git(cmd, path, options = {})
-      sys_exec("git #{cmd}", options.merge(:dir => path))
+      sys_exec("git #{cmd}", options.merge(dir: path))
     end
 
     def sys_exec(cmd, options = {})
@@ -181,7 +181,7 @@ module Spec
 
       require "open3"
       require "shellwords"
-      Open3.popen3(env, *cmd.shellsplit, :chdir => dir) do |stdin, stdout, stderr, wait_thr|
+      Open3.popen3(env, *cmd.shellsplit, chdir: dir) do |stdin, stdout, stderr, wait_thr|
         yield stdin, stdout, wait_thr if block_given?
         stdin.close
 
@@ -333,14 +333,14 @@ module Spec
           target_shipped_file = build_path + shipped_file
           target_shipped_dir = File.dirname(target_shipped_file)
           FileUtils.mkdir_p target_shipped_dir unless File.directory?(target_shipped_dir)
-          FileUtils.cp shipped_file, target_shipped_file, :preserve => true
+          FileUtils.cp shipped_file, target_shipped_file, preserve: true
         end
 
-        replace_version_file(version, dir: build_path) # rubocop:disable Style/HashSyntax
+        replace_version_file(version, dir: build_path)
 
-        Spec::BuildMetadata.write_build_metadata(dir: build_path) # rubocop:disable Style/HashSyntax
+        Spec::BuildMetadata.write_build_metadata(dir: build_path)
 
-        gem_command "build #{relative_gemspec}", :dir => build_path
+        gem_command "build #{relative_gemspec}", dir: build_path
 
         yield(bundler_path)
       ensure
@@ -489,7 +489,7 @@ module Spec
     end
 
     def revision_for(path)
-      sys_exec("git rev-parse HEAD", :dir => path).strip
+      sys_exec("git rev-parse HEAD", dir: path).strip
     end
 
     def with_read_only(pattern)

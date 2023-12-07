@@ -65,7 +65,7 @@ class RubygemsVersionManager
   def switch_local_copy_if_needed
     return unless local_copy_switch_needed?
 
-    sys_exec("git checkout #{target_tag}", :dir => local_copy_path)
+    sys_exec("git checkout #{target_tag}", dir: local_copy_path)
 
     ENV["RGV"] = local_copy_path.to_s
   end
@@ -84,7 +84,7 @@ class RubygemsVersionManager
   end
 
   def local_copy_tag
-    sys_exec("git rev-parse --abbrev-ref HEAD", :dir => local_copy_path)
+    sys_exec("git rev-parse --abbrev-ref HEAD", dir: local_copy_path)
   end
 
   def local_copy_path
@@ -97,7 +97,7 @@ class RubygemsVersionManager
     rubygems_path = source_root.join("tmp/rubygems")
 
     unless rubygems_path.directory?
-      sys_exec("git clone .. #{rubygems_path}", :dir => source_root)
+      sys_exec("git clone .. #{rubygems_path}", dir: source_root)
     end
 
     rubygems_path

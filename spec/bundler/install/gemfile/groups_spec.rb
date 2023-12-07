@@ -88,32 +88,32 @@ RSpec.describe "bundle install with groups" do
       it "installs gems in the default group" do
         bundle "config set --local without emo"
         bundle :install
-        expect(the_bundle).to include_gems "rack 1.0.0", :groups => [:default]
+        expect(the_bundle).to include_gems "rack 1.0.0", groups: [:default]
       end
 
       it "respects global `without` configuration, but does not save it locally" do
         bundle "config set --global without emo"
         bundle :install
-        expect(the_bundle).to include_gems "rack 1.0.0", :groups => [:default]
+        expect(the_bundle).to include_gems "rack 1.0.0", groups: [:default]
         bundle "config list"
         expect(out).not_to include("Set for your local app (#{bundled_app(".bundle/config")}): [:emo]")
         expect(out).to include("Set for the current user (#{home(".bundle/config")}): [:emo]")
       end
 
-      it "allows running application where groups where configured by a different user", :bundler => "< 3" do
+      it "allows running application where groups where configured by a different user", bundler: "< 3" do
         bundle "config set without emo"
         bundle :install
-        bundle "exec ruby -e 'puts 42'", :env => { "BUNDLE_USER_HOME" => tmp("new_home").to_s }
+        bundle "exec ruby -e 'puts 42'", env: { "BUNDLE_USER_HOME" => tmp("new_home").to_s }
         expect(out).to include("42")
       end
 
       it "does not install gems from the excluded group" do
         bundle "config set --local without emo"
         bundle :install
-        expect(the_bundle).not_to include_gems "activesupport 2.3.5", :groups => [:default]
+        expect(the_bundle).not_to include_gems "activesupport 2.3.5", groups: [:default]
       end
 
-      it "remembers previous exclusion with `--without`", :bundler => "< 3" do
+      it "remembers previous exclusion with `--without`", bundler: "< 3" do
         bundle "install --without emo"
         expect(the_bundle).not_to include_gems "activesupport 2.3.5"
         bundle :install
@@ -144,7 +144,7 @@ RSpec.describe "bundle install with groups" do
 
         bundle "config set --local without emo"
         bundle :install
-        expect(the_bundle).to include_gems "activesupport 2.3.2", :groups => [:default]
+        expect(the_bundle).to include_gems "activesupport 2.3.2", groups: [:default]
       end
 
       it "still works when BUNDLE_WITHOUT is set" do
@@ -153,20 +153,20 @@ RSpec.describe "bundle install with groups" do
         bundle :install
         expect(out).not_to include("activesupport")
 
-        expect(the_bundle).to include_gems "rack 1.0.0", :groups => [:default]
-        expect(the_bundle).not_to include_gems "activesupport 2.3.5", :groups => [:default]
+        expect(the_bundle).to include_gems "rack 1.0.0", groups: [:default]
+        expect(the_bundle).not_to include_gems "activesupport 2.3.5", groups: [:default]
 
         ENV["BUNDLE_WITHOUT"] = nil
       end
 
-      it "clears --without when passed an empty list", :bundler => "< 3" do
+      it "clears --without when passed an empty list", bundler: "< 3" do
         bundle "install --without emo"
 
         bundle "install --without ''"
         expect(the_bundle).to include_gems "activesupport 2.3.5"
       end
 
-      it "doesn't clear without when nothing is passed", :bundler => "< 3" do
+      it "doesn't clear without when nothing is passed", bundler: "< 3" do
         bundle "install --without emo"
 
         bundle :install
@@ -184,7 +184,7 @@ RSpec.describe "bundle install with groups" do
         expect(the_bundle).to include_gems "thin 1.0"
       end
 
-      it "installs gems from the previously requested group", :bundler => "< 3" do
+      it "installs gems from the previously requested group", bundler: "< 3" do
         bundle "install --with debugging"
         expect(the_bundle).to include_gems "thin 1.0"
         bundle :install
@@ -198,26 +198,26 @@ RSpec.describe "bundle install with groups" do
         ENV["BUNDLE_WITH"] = nil
       end
 
-      it "clears --with when passed an empty list", :bundler => "< 3" do
+      it "clears --with when passed an empty list", bundler: "< 3" do
         bundle "install --with debugging"
         bundle "install --with ''"
         expect(the_bundle).not_to include_gems "thin 1.0"
       end
 
-      it "removes groups from without when passed at --with", :bundler => "< 3" do
+      it "removes groups from without when passed at --with", bundler: "< 3" do
         bundle "config set --local without emo"
         bundle "install --with emo"
         expect(the_bundle).to include_gems "activesupport 2.3.5"
       end
 
-      it "removes groups from with when passed at --without", :bundler => "< 3" do
+      it "removes groups from with when passed at --without", bundler: "< 3" do
         bundle "config set --local with debugging"
-        bundle "install --without debugging", :raise_on_error => false
+        bundle "install --without debugging", raise_on_error: false
         expect(the_bundle).not_to include_gem "thin 1.0"
       end
 
-      it "errors out when passing a group to with and without via CLI flags", :bundler => "< 3" do
-        bundle "install --with emo debugging --without emo", :raise_on_error => false
+      it "errors out when passing a group to with and without via CLI flags", bundler: "< 3" do
+        bundle "install --with emo debugging --without emo", raise_on_error: false
         expect(last_command).to be_failure
         expect(err).to include("The offending groups are: emo")
       end
@@ -235,7 +235,7 @@ RSpec.describe "bundle install with groups" do
         expect(the_bundle).to include_gem "thin 1.0"
       end
 
-      it "can add and remove a group at the same time", :bundler => "< 3" do
+      it "can add and remove a group at the same time", bundler: "< 3" do
         bundle "install --with debugging --without emo"
         expect(the_bundle).to include_gems "thin 1.0"
         expect(the_bundle).not_to include_gems "activesupport 2.3.5"
@@ -396,7 +396,7 @@ RSpec.describe "bundle install with groups" do
     it "does not hit the remote a second time" do
       FileUtils.rm_rf gem_repo2
       bundle "config set --local without rack"
-      bundle :install, :verbose => true
+      bundle :install, verbose: true
       expect(last_command.stdboth).not_to match(/fetching/i)
     end
   end

@@ -21,7 +21,7 @@ RSpec.describe Bundler::Source do
   end
 
   describe "#version_message" do
-    let(:spec) { double(:spec, :name => "nokogiri", :version => ">= 1.6", :platform => rb) }
+    let(:spec) { double(:spec, name: "nokogiri", version: ">= 1.6", platform: rb) }
 
     shared_examples_for "the lockfile specs are not relevant" do
       it "should return a string with the spec name and version" do
@@ -32,19 +32,19 @@ RSpec.describe Bundler::Source do
     context "when there are locked gems" do
       context "that contain the relevant gem spec" do
         context "without a version" do
-          let(:locked_gem) { double(:locked_gem, :name => "nokogiri", :version => nil) }
+          let(:locked_gem) { double(:locked_gem, name: "nokogiri", version: nil) }
 
           it_behaves_like "the lockfile specs are not relevant"
         end
 
         context "with the same version" do
-          let(:locked_gem) { double(:locked_gem, :name => "nokogiri", :version => ">= 1.6") }
+          let(:locked_gem) { double(:locked_gem, name: "nokogiri", version: ">= 1.6") }
 
           it_behaves_like "the lockfile specs are not relevant"
         end
 
         context "with a different version" do
-          let(:locked_gem) { double(:locked_gem, :name => "nokogiri", :version => "< 1.5") }
+          let(:locked_gem) { double(:locked_gem, name: "nokogiri", version: "< 1.5") }
 
           context "with color", :no_color_tty do
             before do
@@ -70,8 +70,8 @@ RSpec.describe Bundler::Source do
         end
 
         context "with a more recent version" do
-          let(:spec) { double(:spec, :name => "nokogiri", :version => "1.6.1", :platform => rb) }
-          let(:locked_gem) { double(:locked_gem, :name => "nokogiri", :version => "1.7.0") }
+          let(:spec) { double(:spec, name: "nokogiri", version: "1.6.1", platform: rb) }
+          let(:locked_gem) { double(:locked_gem, name: "nokogiri", version: "1.7.0") }
 
           context "with color", :no_color_tty do
             before do
@@ -97,8 +97,8 @@ RSpec.describe Bundler::Source do
         end
 
         context "with an older version" do
-          let(:spec) { double(:spec, :name => "nokogiri", :version => "1.7.1", :platform => rb) }
-          let(:locked_gem) { double(:locked_gem, :name => "nokogiri", :version => "1.7.0") }
+          let(:spec) { double(:spec, name: "nokogiri", version: "1.7.1", platform: rb) }
+          let(:locked_gem) { double(:locked_gem, name: "nokogiri", version: "1.7.0") }
 
           context "with color", :no_color_tty do
             before do
@@ -128,7 +128,7 @@ RSpec.describe Bundler::Source do
 
   describe "#can_lock?" do
     context "when the passed spec's source is equivalent" do
-      let(:spec) { double(:spec, :source => subject) }
+      let(:spec) { double(:spec, source: subject) }
 
       it "should return true" do
         expect(subject.can_lock?(spec)).to be_truthy
@@ -136,7 +136,7 @@ RSpec.describe Bundler::Source do
     end
 
     context "when the passed spec's source is not equivalent" do
-      let(:spec) { double(:spec, :source => double(:other_source)) }
+      let(:spec) { double(:spec, source: double(:other_source)) }
 
       it "should return false" do
         expect(subject.can_lock?(spec)).to be_falsey

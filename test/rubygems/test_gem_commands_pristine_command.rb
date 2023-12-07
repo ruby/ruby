@@ -296,7 +296,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     build_args = %w[--with-awesome=true --sweet]
 
-    install_gem a, :build_args => build_args
+    install_gem a, build_args: build_args
 
     @cmd.options[:args] = %w[a]
 

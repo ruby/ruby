@@ -529,16 +529,16 @@ RSpec.describe Bundler::SharedHelpers do
 
     it "prints and raises nothing below the deprecated major version" do
       subject.major_deprecation(38, "Message")
-      subject.major_deprecation(39, "Message", :removed_message => "Removal", :print_caller_location => true)
+      subject.major_deprecation(39, "Message", removed_message: "Removal", print_caller_location: true)
       expect(Bundler.ui).not_to have_received(:warn)
     end
 
     it "prints but does not raise _at_ the deprecated major version" do
       subject.major_deprecation(37, "Message")
-      subject.major_deprecation(37, "Message", :removed_message => "Removal")
+      subject.major_deprecation(37, "Message", removed_message: "Removal")
       expect(Bundler.ui).to have_received(:warn).with("[DEPRECATED] Message").twice
 
-      subject.major_deprecation(37, "Message", :print_caller_location => true)
+      subject.major_deprecation(37, "Message", print_caller_location: true)
       expect(Bundler.ui).to have_received(:warn).
         with(a_string_matching(/^\[DEPRECATED\] Message \(called at .*:\d+\)$/))
     end
@@ -546,9 +546,9 @@ RSpec.describe Bundler::SharedHelpers do
     it "raises the appropriate errors when _past_ the deprecated major version" do
       expect { subject.major_deprecation(36, "Message") }.
         to raise_error(Bundler::DeprecatedError, "[REMOVED] Message")
-      expect { subject.major_deprecation(36, "Message", :removed_message => "Removal") }.
+      expect { subject.major_deprecation(36, "Message", removed_message: "Removal") }.
         to raise_error(Bundler::DeprecatedError, "[REMOVED] Removal")
-      expect { subject.major_deprecation(35, "Message", :removed_message => "Removal", :print_caller_location => true) }.
+      expect { subject.major_deprecation(35, "Message", removed_message: "Removal", print_caller_location: true) }.
         to raise_error(Bundler::DeprecatedError, /^\[REMOVED\] Removal \(called at .*:\d+\)$/)
     end
   end

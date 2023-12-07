@@ -8,7 +8,7 @@ module Bundler
       def initialize(terms, cause:, custom_explanation: nil, extended_explanation: nil)
         @extended_explanation = extended_explanation
 
-        super(terms, :cause => cause, :custom_explanation => custom_explanation)
+        super(terms, cause: cause, custom_explanation: custom_explanation)
       end
     end
   end

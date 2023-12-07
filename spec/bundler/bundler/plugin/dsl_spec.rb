@@ -23,7 +23,7 @@ RSpec.describe Bundler::Plugin::DSL do
     it "adds #source with :type to list and also inferred_plugins list" do
       expect(dsl).to receive(:plugin).with("bundler-source-news").once
 
-      dsl.source("some_random_url", :type => "news") {}
+      dsl.source("some_random_url", type: "news") {}
 
       expect(dsl.inferred_plugins).to eq(["bundler-source-news"])
     end
@@ -31,8 +31,8 @@ RSpec.describe Bundler::Plugin::DSL do
     it "registers a source type plugin only once for multiple declarations" do
       expect(dsl).to receive(:plugin).with("bundler-source-news").and_call_original.once
 
-      dsl.source("some_random_url", :type => "news") {}
-      dsl.source("another_random_url", :type => "news") {}
+      dsl.source("some_random_url", type: "news") {}
+      dsl.source("another_random_url", type: "news") {}
     end
   end
 end

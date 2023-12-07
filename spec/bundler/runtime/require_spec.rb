@@ -21,7 +21,7 @@ RSpec.describe "Bundler.require" do
       s.write "lib/four.rb", "puts 'four'"
     end
 
-    build_lib "five", "1.0.0", :no_default => true do |s|
+    build_lib "five", "1.0.0", no_default: true do |s|
       s.write "lib/mofive.rb", "puts 'five'"
     end
 
@@ -138,7 +138,7 @@ RSpec.describe "Bundler.require" do
       end
     G
 
-    run "Bundler.require", :raise_on_error => false
+    run "Bundler.require", raise_on_error: false
     expect(err).to match("error while trying to load the gem 'faulty'")
     expect(err).to match("Gem Internal Error Message")
   end
@@ -187,7 +187,7 @@ RSpec.describe "Bundler.require" do
     end
 
     it "silently passes if the require fails" do
-      build_lib "bcrypt-ruby", "1.0.0", :no_default => true do |s|
+      build_lib "bcrypt-ruby", "1.0.0", no_default: true do |s|
         s.write "lib/brcrypt.rb", "BCrypt = '1.0.0'"
       end
       gemfile <<-G
@@ -323,7 +323,7 @@ RSpec.describe "Bundler.require" do
 
     describe "a gem with different requires for different envs" do
       before(:each) do
-        build_gem "multi_gem", :to_bundle => true do |s|
+        build_gem "multi_gem", to_bundle: true do |s|
           s.write "lib/one.rb", "puts 'ONE'"
           s.write "lib/two.rb", "puts 'TWO'"
         end
@@ -366,7 +366,7 @@ RSpec.describe "Bundler.require" do
 
     describe "with busted gems" do
       it "should be busted" do
-        build_gem "busted_require", :to_bundle => true do |s|
+        build_gem "busted_require", to_bundle: true do |s|
           s.write "lib/busted_require.rb", "require 'no_such_file_omg'"
         end
 

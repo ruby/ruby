@@ -41,12 +41,12 @@ module Bundler
         # We're doing a full update
         Bundler.definition(true)
       else
-        Bundler.definition(:gems => gems, :sources => sources)
+        Bundler.definition(gems: gems, sources: sources)
       end
 
       Bundler::CLI::Common.configure_gem_version_promoter(
         Bundler.definition,
-        options.merge(:strict => @strict)
+        options.merge(strict: @strict)
       )
 
       definition_resolution = proc do
@@ -90,10 +90,10 @@ module Bundler
         end
 
         outdated_gems << {
-          :active_spec => active_spec,
-          :current_spec => current_spec,
-          :dependency => dependency,
-          :groups => groups,
+          active_spec: active_spec,
+          current_spec: current_spec,
+          dependency: dependency,
+          groups: groups,
         }
       end
 
@@ -105,7 +105,7 @@ module Bundler
         end
       else
         relevant_outdated_gems = if options_include_groups
-          by_group(outdated_gems, :filter => options[:group])
+          by_group(outdated_gems, filter: options[:group])
         else
           outdated_gems
         end
@@ -188,7 +188,7 @@ module Bundler
         )
       end
 
-      data = { :outdated_count => gems_list.count, :outdated_gems => data }
+      data = { outdated_count: gems_list.count, outdated_gems: data }
       Bundler.ui.info data.to_json
     end
 
@@ -233,21 +233,21 @@ module Bundler
 
     def gem_data_for(current_spec, active_spec, dependency, groups)
       {
-        :current_spec => spec_data_for(current_spec),
-        :active_spec => spec_data_for(active_spec),
-        :dependency => dependency&.to_s,
-        :groups => (groups || "").split(", "),
+        current_spec: spec_data_for(current_spec),
+        active_spec: spec_data_for(active_spec),
+        dependency: dependency&.to_s,
+        groups: (groups || "").split(", "),
       }
     end
 
     def spec_data_for(spec)
       {
-        :name => spec.name,
-        :version => spec.version.to_s,
-        :platform => spec.platform,
-        :source => spec.source.to_s,
-        :required_ruby_version => spec.required_ruby_version.to_s,
-        :required_rubygems_version => spec.required_rubygems_version.to_s,
+        name: spec.name,
+        version: spec.version.to_s,
+        platform: spec.platform,
+        source: spec.source.to_s,
+        required_ruby_version: spec.required_ruby_version.to_s,
+        required_rubygems_version: spec.required_rubygems_version.to_s,
       }
     end
 

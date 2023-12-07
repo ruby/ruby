@@ -305,23 +305,23 @@ RSpec.describe "bundle install across platforms" do
 
     aggregate_failures do
       lockfile bad_lockfile
-      bundle :install, :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+      bundle :install, env: { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(lockfile).to eq good_lockfile
 
       lockfile bad_lockfile
-      bundle :update, :all => true, :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+      bundle :update, all: true, env: { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(lockfile).to eq good_lockfile
 
       lockfile bad_lockfile
-      bundle "update ffi", :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+      bundle "update ffi", env: { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(lockfile).to eq good_lockfile
 
       lockfile bad_lockfile
-      bundle "update empyrean", :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+      bundle "update empyrean", env: { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(lockfile).to eq good_lockfile
 
       lockfile bad_lockfile
-      bundle :lock, :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+      bundle :lock, env: { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(lockfile).to eq good_lockfile
     end
   end
@@ -629,7 +629,7 @@ RSpec.describe "when a gem has no architecture" do
       gem "rcov"
     G
 
-    bundle :install, :artifice => "windows", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+    bundle :install, artifice: "windows", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
     expect(the_bundle).to include_gems "rcov 1.0.0"
   end
 end

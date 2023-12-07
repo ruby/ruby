@@ -17,7 +17,7 @@ RSpec.describe "bundle check" do
       gem "rails"
     G
 
-    bundle "check --gemfile bundled_app/Gemfile", :dir => tmp
+    bundle "check --gemfile bundled_app/Gemfile", dir: tmp
     expect(out).to include("The Gemfile's dependencies are satisfied")
   end
 
@@ -55,7 +55,7 @@ RSpec.describe "bundle check" do
       gem "rails"
     G
 
-    bundle :check, :raise_on_error => false
+    bundle :check, raise_on_error: false
     expect(err).to include("Bundler can't satisfy your Gemfile's dependencies.")
   end
 
@@ -65,7 +65,7 @@ RSpec.describe "bundle check" do
       gem "rails"
     G
 
-    bundle :check, :raise_on_error => false
+    bundle :check, raise_on_error: false
     expect(exitstatus).to be > 0
     expect(err).to include("Bundler can't satisfy your Gemfile's dependencies.")
   end
@@ -88,11 +88,11 @@ RSpec.describe "bundle check" do
       gem "rails_pinned_to_old_activesupport"
     G
 
-    bundle :check, :raise_on_error => false
+    bundle :check, raise_on_error: false
     expect(err).to include("Bundler can't satisfy your Gemfile's dependencies.")
   end
 
-  it "remembers --without option from install", :bundler => "< 3" do
+  it "remembers --without option from install", bundler: "< 3" do
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
       group :foo do
@@ -132,7 +132,7 @@ RSpec.describe "bundle check" do
       gem "rack"
     G
 
-    bundle "check", :raise_on_error => false
+    bundle "check", raise_on_error: false
     expect(err).to include("* rack (1.0.0)")
     expect(exitstatus).to eq(1)
   end
@@ -146,9 +146,9 @@ RSpec.describe "bundle check" do
     bundle "config set --local path vendor/bundle"
     bundle :cache
 
-    gem_command "uninstall rack", :env => { "GEM_HOME" => vendored_gems.to_s }
+    gem_command "uninstall rack", env: { "GEM_HOME" => vendored_gems.to_s }
 
-    bundle "check", :raise_on_error => false
+    bundle "check", raise_on_error: false
     expect(err).to include("* rack (1.0.0)")
     expect(exitstatus).to eq(1)
   end
@@ -162,7 +162,7 @@ RSpec.describe "bundle check" do
       end
     G
 
-    system_gems "rack-1.0.0", :path => default_bundle_path
+    system_gems "rack-1.0.0", path: default_bundle_path
 
     lockfile <<-G
       GEM
@@ -193,7 +193,7 @@ RSpec.describe "bundle check" do
       end
     G
 
-    system_gems "rack-1.0.0", :path => default_bundle_path
+    system_gems "rack-1.0.0", path: default_bundle_path
 
     lockfile <<-G
       GEM
@@ -216,13 +216,13 @@ RSpec.describe "bundle check" do
   end
 
   it "outputs an error when the default Gemfile is not found" do
-    bundle :check, :raise_on_error => false
+    bundle :check, raise_on_error: false
     expect(exitstatus).to eq(10)
     expect(err).to include("Could not locate Gemfile")
   end
 
   it "does not output fatal error message" do
-    bundle :check, :raise_on_error => false
+    bundle :check, raise_on_error: false
     expect(exitstatus).to eq(10)
     expect(err).not_to include("Unfortunately, a fatal error has occurred. ")
   end
@@ -237,11 +237,11 @@ RSpec.describe "bundle check" do
     bundle "install"
     FileUtils.rm(bundled_app_lock)
 
-    bundle :check, :raise_on_error => false
+    bundle :check, raise_on_error: false
     expect(last_command).to be_failure
   end
 
-  context "--path", :bundler => "< 3" do
+  context "--path", bundler: "< 3" do
     context "after installing gems in the proper directory" do
       before do
         gemfile <<-G
@@ -271,7 +271,7 @@ RSpec.describe "bundle check" do
           gem "rails"
         G
 
-        bundle "check --path vendor/bundle", :raise_on_error => false
+        bundle "check --path vendor/bundle", raise_on_error: false
       end
 
       it "returns false" do
@@ -298,7 +298,7 @@ RSpec.describe "bundle check" do
 
     it "shows what is missing with the current Gemfile if it is not satisfied" do
       simulate_new_machine
-      bundle :check, :raise_on_error => false
+      bundle :check, raise_on_error: false
       expect(err).to match(/The following gems are missing/)
       expect(err).to include("* rack (1.0")
     end
@@ -326,7 +326,7 @@ RSpec.describe "bundle check" do
     end
 
     it "shows what is missing with the current Gemfile without duplications" do
-      bundle :check, :raise_on_error => false
+      bundle :check, raise_on_error: false
       expect(err).to match(/The following gems are missing/)
       expect(err).to include("* rack (1.0").once
     end
@@ -362,7 +362,7 @@ RSpec.describe "bundle check" do
     end
 
     it "shows what is missing with the current Gemfile without duplications" do
-      bundle :check, :raise_on_error => false
+      bundle :check, raise_on_error: false
       expect(err).to match(/The following gems are missing/)
       expect(err).to include("* rack (1.0").once
     end
@@ -379,7 +379,7 @@ RSpec.describe "bundle check" do
     end
 
     it "returns success when the Gemfile is satisfied" do
-      system_gems "rack-1.0.0", :path => default_bundle_path
+      system_gems "rack-1.0.0", path: default_bundle_path
       bundle :check
       expect(out).to include("The Gemfile's dependencies are satisfied")
     end
@@ -404,7 +404,7 @@ RSpec.describe "bundle check" do
     end
 
     it "returns success when the Gemfile is satisfied and generates a correct lockfile" do
-      system_gems "depends_on_rack-1.0", "rack-1.0", :gem_repo => gem_repo4, :path => default_bundle_path
+      system_gems "depends_on_rack-1.0", "rack-1.0", gem_repo: gem_repo4, path: default_bundle_path
       bundle :check
 
       checksums = checksums_section_when_existing do |c|
@@ -447,7 +447,7 @@ RSpec.describe "bundle check" do
         build_gem "dex-dispatch-engine"
       end
 
-      build_lib("bundle-check-issue", :path => tmp.join("bundle-check-issue")) do |s|
+      build_lib("bundle-check-issue", path: tmp.join("bundle-check-issue")) do |s|
         s.write "Gemfile", <<-G
           source "https://localgemserver.test"
 
@@ -461,14 +461,14 @@ RSpec.describe "bundle check" do
         s.add_dependency "awesome_print"
       end
 
-      bundle "install", :artifice => "compact_index_extra", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }, :dir => tmp.join("bundle-check-issue")
+      bundle "install", artifice: "compact_index_extra", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }, dir: tmp.join("bundle-check-issue")
     end
 
     it "does not corrupt lockfile when changing version" do
       version_file = tmp.join("bundle-check-issue/bundle-check-issue.gemspec")
       File.write(version_file, File.read(version_file).gsub(/s\.version = .+/, "s.version = '9999'"))
 
-      bundle "check --verbose", :dir => tmp.join("bundle-check-issue")
+      bundle "check --verbose", dir: tmp.join("bundle-check-issue")
 
       checksums = checksums_section_when_existing do |c|
         c.checksum gem_repo4, "awesome_print", "1.0"

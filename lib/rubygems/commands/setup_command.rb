@@ -14,12 +14,12 @@ class Gem::Commands::SetupCommand < Gem::Command
 
   def initialize
     super "setup", "Install RubyGems",
-          :format_executable => false, :document => %w[ri],
-          :force => true,
-          :site_or_vendor => "sitelibdir",
-          :destdir => "", :prefix => "", :previous_version => "",
-          :regenerate_binstubs => true,
-          :regenerate_plugins => true
+          format_executable: false, document: %w[ri],
+          force: true,
+          site_or_vendor: "sitelibdir",
+          destdir: "", prefix: "", previous_version: "",
+          regenerate_binstubs: true,
+          regenerate_plugins: true
 
     add_option "--previous-version=VERSION",
                "Previous version of RubyGems",
@@ -265,7 +265,7 @@ By default, this RubyGems will install gem as:
             fp.puts bin.join
           end
 
-          install bin_tmp_file, dest_file, :mode => prog_mode
+          install bin_tmp_file, dest_file, mode: prog_mode
           bin_file_names << dest_file
         ensure
           rm bin_tmp_file
@@ -287,7 +287,7 @@ By default, this RubyGems will install gem as:
   TEXT
           end
 
-          install bin_cmd_file, "#{dest_file}.bat", :mode => prog_mode
+          install bin_cmd_file, "#{dest_file}.bat", mode: prog_mode
         ensure
           rm bin_cmd_file
         end
@@ -369,7 +369,7 @@ By default, this RubyGems will install gem as:
       File.dirname(loaded_from)
     else
       target_specs_dir = File.join(default_dir, "specifications", "default")
-      mkdir_p target_specs_dir, :mode => 0o755
+      mkdir_p target_specs_dir, mode: 0o755
       target_specs_dir
     end
 
@@ -393,7 +393,7 @@ By default, this RubyGems will install gem as:
     end
 
     bundler_bin_dir = bundler_spec.bin_dir
-    mkdir_p bundler_bin_dir, :mode => 0o755
+    mkdir_p bundler_bin_dir, mode: 0o755
     bundler_spec.executables.each do |e|
       cp File.join("bundler", bundler_spec.bindir, e), File.join(bundler_bin_dir, e)
     end
@@ -430,8 +430,8 @@ By default, this RubyGems will install gem as:
       lib_dir, bin_dir = generate_default_dirs
     end
 
-    mkdir_p lib_dir, :mode => 0o755
-    mkdir_p bin_dir, :mode => 0o755
+    mkdir_p lib_dir, mode: 0o755
+    mkdir_p bin_dir, mode: 0o755
 
     [lib_dir, bin_dir]
   end
@@ -576,8 +576,8 @@ abort "#{deprecation_message}"
   def uninstall_old_gemcutter
     require_relative "../uninstaller"
 
-    ui = Gem::Uninstaller.new("gemcutter", :all => true, :ignore => true,
-                                           :version => "< 0.4")
+    ui = Gem::Uninstaller.new("gemcutter", all: true, ignore: true,
+                                           version: "< 0.4")
     ui.uninstall
   rescue Gem::InstallError
   end
@@ -639,10 +639,10 @@ abort "#{deprecation_message}"
     dest_file = File.join dest_dir, file
     dest_dir = File.dirname dest_file
     unless File.directory? dest_dir
-      mkdir_p dest_dir, :mode => 0o755
+      mkdir_p dest_dir, mode: 0o755
     end
 
-    install file, dest_file, :mode => options[:data_mode] || 0o644
+    install file, dest_file, mode: options[:data_mode] || 0o644
   end
 
   def remove_file_list(files, dir)

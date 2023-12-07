@@ -14,7 +14,7 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
   let(:remote_path) { double(:remote_path) }
 
   let(:full_body) { "abc123" }
-  let(:response) { double(:response, :body => full_body, :is_a? => false) }
+  let(:response) { double(:response, body: full_body, is_a?: false) }
   let(:digest) { Digest::SHA256.base64digest(full_body) }
 
   context "when the local path does not exist" do
@@ -105,7 +105,7 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
         allow(response).to receive(:is_a?).with(Net::HTTPPartialContent) { true }
         expect(fetcher).to receive(:call).once.with(remote_path, headers).and_return(response)
 
-        full_response = double(:full_response, :body => full_body, :is_a? => false)
+        full_response = double(:full_response, body: full_body, is_a?: false)
         allow(full_response).to receive(:[]).with("Repr-Digest") { "sha-256=:#{digest}:" }
         allow(full_response).to receive(:[]).with("ETag") { "NewEtag" }
         expect(fetcher).to receive(:call).once.with(remote_path, { "If-None-Match" => "LocalEtag" }).and_return(full_response)
@@ -178,7 +178,7 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
           response
         end
 
-        full_response = double(:full_response, :body => full_body, :is_a? => false)
+        full_response = double(:full_response, body: full_body, is_a?: false)
         allow(full_response).to receive(:[]).with("Repr-Digest") { "sha-256=:#{digest}:" }
         allow(full_response).to receive(:[]).with("ETag") { "NewEtag" }
         expect(fetcher).to receive(:call).once.with(remote_path, { "If-None-Match" => "LocalEtag" }).and_return(full_response)
@@ -193,7 +193,7 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
 
   context "when the ETag header is missing" do
     # Regression test for https://github.com/rubygems/bundler/issues/5463
-    let(:response) { double(:response, :body => full_body) }
+    let(:response) { double(:response, body: full_body) }
 
     it "treats the response as an update" do
       allow(response).to receive(:[]).with("Repr-Digest") { nil }
@@ -206,7 +206,7 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
   end
 
   context "when the download is corrupt" do
-    let(:response) { double(:response, :body => "") }
+    let(:response) { double(:response, body: "") }
 
     it "raises HTTPError" do
       expect(fetcher).to receive(:call).and_raise(Zlib::GzipFile::Error)
@@ -218,7 +218,7 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
   end
 
   context "when receiving non UTF-8 data and default internal encoding set to ASCII" do
-    let(:response) { double(:response, :body => "\x8B".b) }
+    let(:response) { double(:response, body: "\x8B".b) }
 
     it "works just fine" do
       old_verbose = $VERBOSE

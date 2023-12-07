@@ -1337,7 +1337,7 @@ ERROR:  Possible alternatives: non_existent_with_hint
       fetcher.gem "r", "2.0", "q" => nil
     end
 
-    i = Gem::Installer.at specs["q-1.0"].cache_file, :install_dir => "gf-path"
+    i = Gem::Installer.at specs["q-1.0"].cache_file, install_dir: "gf-path"
     i.install
 
     assert File.file?("gf-path/specifications/q-1.0.gemspec"), "not installed"
