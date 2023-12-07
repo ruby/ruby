@@ -1218,13 +1218,14 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
 
     VALUE *env_body = ZALLOC_N(VALUE, src_env->env_size); // fill with Qfalse
     VALUE *ep = &env_body[src_env->env_size - 2];
-    ep[VM_ENV_DATA_INDEX_ME_CREF] = src_ep[VM_ENV_DATA_INDEX_ME_CREF];
-    ep[VM_ENV_DATA_INDEX_FLAGS]   = src_ep[VM_ENV_DATA_INDEX_FLAGS] | VM_ENV_FLAG_ISOLATED;
+    const rb_env_t *copied_env = vm_env_new(ep, env_body, src_env->env_size, src_env->iseq);
+
+    // Copy after allocations above, since they can move objects in src_ep.
+    RB_OBJ_WRITE(copied_env, &ep[VM_ENV_DATA_INDEX_ME_CREF], src_ep[VM_ENV_DATA_INDEX_ME_CREF]);
+    ep[VM_ENV_DATA_INDEX_FLAGS] = src_ep[VM_ENV_DATA_INDEX_FLAGS] | VM_ENV_FLAG_ISOLATED;
     if (!VM_ENV_LOCAL_P(src_ep)) {
         VM_ENV_FLAGS_SET(ep, VM_ENV_FLAG_LOCAL);
     }
-
-    const rb_env_t *copied_env = vm_env_new(ep, env_body, src_env->env_size, src_env->iseq);
 
     if (read_only_variables) {
         for (int i=RARRAY_LENINT(read_only_variables)-1; i>=0; i--) {
