@@ -148,6 +148,9 @@ Note: We're only listing outstanding class updates.
   connections. Socket#recvmsg and Socket#recvmsg_nonblock returns `nil` instead of an empty packet on closed
   connections. [[Bug #19012]]
 
+* Name resolution such as `Socket.getaddrinfo`, `Socket.getnameinfo`, `Addrinfo.getaddrinfo`, etc.
+  can now be interrupted. [[Feature #19965]]
+
 * Random::Formatter#alphanumeric is extended to accept optional `chars`
   keyword argument. [[Feature #18183]]
 
@@ -275,7 +278,6 @@ changelog for details of the default gems or bundled gems.
 ## Implementation improvements
 
 * `defined?(@ivar)` is optimized with Object Shapes.
-* Name resolution such as `Socket.getaddrinfo` can now be interrupted. [[Feature #19965]]
 
 ### GC
 
