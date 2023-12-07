@@ -257,6 +257,10 @@ changelog for details of the default gems or bundled gems.
   removed. Environment variables `RUBY_GC_HEAP_%d_INIT_SLOTS` should be
   used instead.  [[Feature #19785]]
 
+* `it` calls without arguments in a block with no ordinary parameters are
+  deprecated. `it` will be a reference to the first block parameter in Ruby 3.4.
+  [[Feature #18980]]
+
 ## Stdlib compatibility issues
 
 * `racc` is promoted to bundled gems.
@@ -374,6 +378,7 @@ changelog for details of the default gems or bundled gems.
 [Feature #18515]: https://bugs.ruby-lang.org/issues/18515
 [Feature #18551]: https://bugs.ruby-lang.org/issues/18551
 [Feature #18885]: https://bugs.ruby-lang.org/issues/18885
+[Feature #18980]: https://bugs.ruby-lang.org/issues/18980
 [Feature #18949]: https://bugs.ruby-lang.org/issues/18949
 [Bug #19012]:     https://bugs.ruby-lang.org/issues/19012
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
