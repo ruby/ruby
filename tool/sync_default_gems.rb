@@ -149,7 +149,7 @@ module SyncDefaultGems
       gemspec_content = File.readlines("#{upstream}/bundler/bundler.gemspec").map do |line|
         next if line =~ /LICENSE\.md/
 
-        line.gsub("bundler.gemspec", "lib/bundler/bundler.gemspec").gsub('"exe"', '"libexec"')
+        line.gsub("bundler.gemspec", "lib/bundler/bundler.gemspec")
       end.compact.join
       File.write("lib/bundler/bundler.gemspec", gemspec_content)
 

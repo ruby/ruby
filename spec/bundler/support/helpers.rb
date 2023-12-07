@@ -336,7 +336,9 @@ module Spec
 
       begin
         shipped_files.each do |shipped_file|
-          target_shipped_file = build_path + shipped_file
+          target_shipped_file = shipped_file
+          target_shipped_file = shipped_file.sub(/\Alibexec/, "exe") if ruby_core?
+          target_shipped_file = build_path + target_shipped_file
           target_shipped_dir = File.dirname(target_shipped_file)
           FileUtils.mkdir_p target_shipped_dir unless File.directory?(target_shipped_dir)
           FileUtils.cp shipped_file, target_shipped_file, preserve: true
