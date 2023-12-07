@@ -91,7 +91,7 @@ end
 
 module OpenURI
 
-  VERSION = "0.4.0"
+  VERSION = "0.4.1"
 
   Options = {
     :proxy => true,
