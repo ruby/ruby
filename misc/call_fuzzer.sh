@@ -1,8 +1,10 @@
 # Stop at first error
 set -e
 
+# TODO
 # TODO: boost --num-iters to 1M+ for actual test
-export NUM_ITERS=1000
+# TODO
+export NUM_ITERS=2000
 
 # Enable code GC so we don't stop compiling when we hit the code size limit
 ruby --yjit-call-threshold=1 --yjit-code-gc misc/call_fuzzer.rb --num-iters=$NUM_ITERS

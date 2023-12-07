@@ -57,9 +57,23 @@ class ParamList
     @has_block_param = rand() < 0.25
   end
 
+
+
   # TODO
-  # TODO: method to generate random argument value, integer or string or object?
-  # TODO
+  # Generate a random argument value, integer or string or object
+  def sample_arg()
+    raise "unimpl"
+
+
+
+
+  end
+
+
+
+
+
+
 
   # Sample/generate a random set of arguments corresponding to the parameters
   def sample_args()
@@ -174,6 +188,13 @@ class ParamList
     # Add some useless locals
     rand(0...16).times do |i|
       m_str += "local#{i} = #{i}\n"
+    end
+
+    # Add some useless if statements
+    @pargs.each_with_index do |arg, i|
+      if rand() < 50
+        m_str += "if #{arg[:name]} > 4; end\n"
+      end
     end
 
     m_str += "checksum = 0\n"
