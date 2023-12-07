@@ -220,7 +220,7 @@ describe "The ** operator" do
     h.should == { one: 1, two: 2 }
   end
 
-  ruby_version_is "3.3" do
+  ruby_bug "#20012", ""..."3.3" do
     it "makes a copy when calling a method taking a positional Hash" do
       def m(h)
         h.delete(:one); h
