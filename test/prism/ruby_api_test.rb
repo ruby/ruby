@@ -23,9 +23,6 @@ module Prism
     def test_parse_success?
       assert Prism.parse_success?("1")
       refute Prism.parse_success?("<>")
-
-      assert Prism.parse_success?("m //", verbose: false)
-      refute Prism.parse_success?("m //", verbose: true)
     end
 
     def test_parse_file_success?

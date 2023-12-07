@@ -15,6 +15,7 @@
         │   │   │   @ StatementsNode (location: (2,2)-(2,3))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (2,2)-(2,3))
+        │   │   │           ├── flags: variable_call
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :a
@@ -22,8 +23,7 @@
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
-        │   │   │           ├── block: ∅
-        │   │   │           └── flags: variable_call
+        │   │   │           └── block: ∅
         │   │   ├── rescue_clause:
         │   │   │   @ RescueNode (location: (3,0)-(4,3))
         │   │   │   ├── keyword_loc: (3,0)-(3,6) = "rescue"
@@ -34,6 +34,7 @@
         │   │   │   │   @ StatementsNode (location: (4,2)-(4,3))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (4,2)-(4,3))
+        │   │   │   │           ├── flags: variable_call
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :b
@@ -41,8 +42,7 @@
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           ├── block: ∅
-        │   │   │   │           └── flags: variable_call
+        │   │   │   │           └── block: ∅
         │   │   │   └── consequent: ∅
         │   │   ├── else_clause:
         │   │   │   @ ElseNode (location: (5,0)-(7,6))
@@ -51,6 +51,7 @@
         │   │   │   │   @ StatementsNode (location: (6,2)-(6,3))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (6,2)-(6,3))
+        │   │   │   │           ├── flags: variable_call
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :c
@@ -58,8 +59,7 @@
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           ├── block: ∅
-        │   │   │   │           └── flags: variable_call
+        │   │   │   │           └── block: ∅
         │   │   │   └── end_keyword_loc: (7,0)-(7,6) = "ensure"
         │   │   ├── ensure_clause:
         │   │   │   @ EnsureNode (location: (7,0)-(9,3))
@@ -68,6 +68,7 @@
         │   │   │   │   @ StatementsNode (location: (8,2)-(8,3))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (8,2)-(8,3))
+        │   │   │   │           ├── flags: variable_call
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :d
@@ -75,8 +76,7 @@
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           ├── block: ∅
-        │   │   │   │           └── flags: variable_call
+        │   │   │   │           └── block: ∅
         │   │   │   └── end_keyword_loc: (9,0)-(9,3) = "end"
         │   │   └── end_keyword_loc: (9,0)-(9,3) = "end"
         │   ├── locals: []
@@ -101,6 +101,7 @@
         │   │   │       └── @ RescueModifierNode (location: (12,2)-(12,12))
         │   │   │           ├── expression:
         │   │   │           │   @ CallNode (location: (12,2)-(12,3))
+        │   │   │           │   ├── flags: variable_call
         │   │   │           │   ├── receiver: ∅
         │   │   │           │   ├── call_operator_loc: ∅
         │   │   │           │   ├── name: :a
@@ -108,11 +109,11 @@
         │   │   │           │   ├── opening_loc: ∅
         │   │   │           │   ├── arguments: ∅
         │   │   │           │   ├── closing_loc: ∅
-        │   │   │           │   ├── block: ∅
-        │   │   │           │   └── flags: variable_call
+        │   │   │           │   └── block: ∅
         │   │   │           ├── keyword_loc: (12,4)-(12,10) = "rescue"
         │   │   │           └── rescue_expression:
         │   │   │               @ CallNode (location: (12,11)-(12,12))
+        │   │   │               ├── flags: variable_call
         │   │   │               ├── receiver: ∅
         │   │   │               ├── call_operator_loc: ∅
         │   │   │               ├── name: :b
@@ -120,8 +121,7 @@
         │   │   │               ├── opening_loc: ∅
         │   │   │               ├── arguments: ∅
         │   │   │               ├── closing_loc: ∅
-        │   │   │               ├── block: ∅
-        │   │   │               └── flags: variable_call
+        │   │   │               └── block: ∅
         │   │   ├── rescue_clause:
         │   │   │   @ RescueNode (location: (13,0)-(14,3))
         │   │   │   ├── keyword_loc: (13,0)-(13,6) = "rescue"
@@ -132,6 +132,7 @@
         │   │   │   │   @ StatementsNode (location: (14,2)-(14,3))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (14,2)-(14,3))
+        │   │   │   │           ├── flags: variable_call
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :b
@@ -139,8 +140,7 @@
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           ├── block: ∅
-        │   │   │   │           └── flags: variable_call
+        │   │   │   │           └── block: ∅
         │   │   │   └── consequent: ∅
         │   │   ├── else_clause:
         │   │   │   @ ElseNode (location: (15,0)-(17,6))
@@ -149,6 +149,7 @@
         │   │   │   │   @ StatementsNode (location: (16,2)-(16,3))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (16,2)-(16,3))
+        │   │   │   │           ├── flags: variable_call
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :c
@@ -156,8 +157,7 @@
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           ├── block: ∅
-        │   │   │   │           └── flags: variable_call
+        │   │   │   │           └── block: ∅
         │   │   │   └── end_keyword_loc: (17,0)-(17,6) = "ensure"
         │   │   ├── ensure_clause:
         │   │   │   @ EnsureNode (location: (17,0)-(19,3))
@@ -166,6 +166,7 @@
         │   │   │   │   @ StatementsNode (location: (18,2)-(18,3))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (18,2)-(18,3))
+        │   │   │   │           ├── flags: variable_call
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :d
@@ -173,8 +174,7 @@
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           ├── block: ∅
-        │   │   │   │           └── flags: variable_call
+        │   │   │   │           └── block: ∅
         │   │   │   └── end_keyword_loc: (19,0)-(19,3) = "end"
         │   │   └── end_keyword_loc: (19,0)-(19,3) = "end"
         │   ├── locals: []
@@ -236,6 +236,7 @@
         │   │   @ StatementsNode (location: (28,2)-(28,5))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (28,2)-(28,5))
+        │   │           ├── flags: variable_call
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -243,8 +244,7 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           └── flags: variable_call
+        │   │           └── block: ∅
         │   ├── locals: []
         │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (27,0)-(27,3) = "def"
@@ -265,6 +265,7 @@
         │   │   │   @ StatementsNode (location: (32,2)-(32,5))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (32,2)-(32,5))
+        │   │   │           ├── flags: variable_call
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :foo
@@ -272,8 +273,7 @@
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
-        │   │   │           ├── block: ∅
-        │   │   │           └── flags: variable_call
+        │   │   │           └── block: ∅
         │   │   ├── rescue_clause:
         │   │   │   @ RescueNode (location: (33,0)-(34,5))
         │   │   │   ├── keyword_loc: (33,0)-(33,6) = "rescue"
@@ -284,6 +284,7 @@
         │   │   │   │   @ StatementsNode (location: (34,2)-(34,5))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (34,2)-(34,5))
+        │   │   │   │           ├── flags: variable_call
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :bar
@@ -291,8 +292,7 @@
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           ├── block: ∅
-        │   │   │   │           └── flags: variable_call
+        │   │   │   │           └── block: ∅
         │   │   │   └── consequent: ∅
         │   │   ├── else_clause: ∅
         │   │   ├── ensure_clause:
@@ -302,6 +302,7 @@
         │   │   │   │   @ StatementsNode (location: (36,2)-(36,5))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (36,2)-(36,5))
+        │   │   │   │           ├── flags: variable_call
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :baz
@@ -309,8 +310,7 @@
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           ├── block: ∅
-        │   │   │   │           └── flags: variable_call
+        │   │   │   │           └── block: ∅
         │   │   │   └── end_keyword_loc: (37,0)-(37,3) = "end"
         │   │   └── end_keyword_loc: (37,0)-(37,3) = "end"
         │   ├── locals: []
@@ -333,6 +333,7 @@
         │   │   │   @ StatementsNode (location: (40,2)-(40,5))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (40,2)-(40,5))
+        │   │   │           ├── flags: variable_call
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :bar
@@ -340,8 +341,7 @@
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
-        │   │   │           ├── block: ∅
-        │   │   │           └── flags: variable_call
+        │   │   │           └── block: ∅
         │   │   ├── rescue_clause: ∅
         │   │   ├── else_clause: ∅
         │   │   ├── ensure_clause:
@@ -351,6 +351,7 @@
         │   │   │   │   @ StatementsNode (location: (42,2)-(42,5))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (42,2)-(42,5))
+        │   │   │   │           ├── flags: variable_call
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :baz
@@ -358,8 +359,7 @@
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           ├── block: ∅
-        │   │   │   │           └── flags: variable_call
+        │   │   │   │           └── block: ∅
         │   │   │   └── end_keyword_loc: (43,0)-(43,3) = "end"
         │   │   └── end_keyword_loc: (43,0)-(43,3) = "end"
         │   ├── locals: []
@@ -382,6 +382,7 @@
         │   │   │   @ StatementsNode (location: (46,2)-(46,5))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (46,2)-(46,5))
+        │   │   │           ├── flags: variable_call
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :bar
@@ -389,8 +390,7 @@
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
-        │   │   │           ├── block: ∅
-        │   │   │           └── flags: variable_call
+        │   │   │           └── block: ∅
         │   │   ├── rescue_clause:
         │   │   │   @ RescueNode (location: (47,0)-(48,5))
         │   │   │   ├── keyword_loc: (47,0)-(47,6) = "rescue"
@@ -401,6 +401,7 @@
         │   │   │   │   @ StatementsNode (location: (48,2)-(48,5))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (48,2)-(48,5))
+        │   │   │   │           ├── flags: variable_call
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :baz
@@ -408,8 +409,7 @@
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           ├── block: ∅
-        │   │   │   │           └── flags: variable_call
+        │   │   │   │           └── block: ∅
         │   │   │   └── consequent: ∅
         │   │   ├── else_clause: ∅
         │   │   ├── ensure_clause: ∅
@@ -536,6 +536,7 @@
         │   │   │           │   @ StatementsNode (location: (63,15)-(63,23))
         │   │   │           │   └── body: (length: 2)
         │   │   │           │       ├── @ CallNode (location: (63,15)-(63,18))
+        │   │   │           │       │   ├── flags: variable_call
         │   │   │           │       │   ├── receiver: ∅
         │   │   │           │       │   ├── call_operator_loc: ∅
         │   │   │           │       │   ├── name: :baz
@@ -543,8 +544,7 @@
         │   │   │           │       │   ├── opening_loc: ∅
         │   │   │           │       │   ├── arguments: ∅
         │   │   │           │       │   ├── closing_loc: ∅
-        │   │   │           │       │   ├── block: ∅
-        │   │   │           │       │   └── flags: variable_call
+        │   │   │           │       │   └── block: ∅
         │   │   │           │       └── @ NilNode (location: (63,20)-(63,23))
         │   │   │           ├── opening_loc: (63,14)-(63,15) = "("
         │   │   │           └── closing_loc: (63,23)-(63,24) = ")"
@@ -674,6 +674,7 @@
         │   │   │       ├── name_loc: (77,8)-(77,12) = "bar:"
         │   │   │       └── value:
         │   │   │           @ CallNode (location: (77,13)-(77,16))
+        │   │   │           ├── flags: variable_call
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :baz
@@ -681,8 +682,7 @@
         │   │   │           ├── opening_loc: ∅
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: ∅
-        │   │   │           ├── block: ∅
-        │   │   │           └── flags: variable_call
+        │   │   │           └── block: ∅
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
         │   ├── body: ∅
@@ -710,6 +710,7 @@
         │   │   │       ├── name_loc: (80,8)-(80,12) = "bar:"
         │   │   │       └── value:
         │   │   │           @ CallNode (location: (80,13)-(80,18))
+        │   │   │           ├── flags: ∅
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :bar
@@ -717,8 +718,7 @@
         │   │   │           ├── opening_loc: (80,16)-(80,17) = "("
         │   │   │           ├── arguments: ∅
         │   │   │           ├── closing_loc: (80,17)-(80,18) = ")"
-        │   │   │           ├── block: ∅
-        │   │   │           └── flags: ∅
+        │   │   │           └── block: ∅
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
         │   ├── body: ∅
@@ -751,6 +751,7 @@
         │   │   @ StatementsNode (location: (84,2)-(84,5))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (84,2)-(84,5))
+        │   │           ├── flags: variable_call
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -758,8 +759,7 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           └── flags: variable_call
+        │   │           └── block: ∅
         │   ├── locals: [:*]
         │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (83,0)-(83,3) = "def"
@@ -859,6 +859,7 @@
         │   │   @ StatementsNode (location: (96,2)-(96,5))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (96,2)-(96,5))
+        │   │           ├── flags: variable_call
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -866,8 +867,7 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           └── flags: variable_call
+        │   │           └── block: ∅
         │   ├── locals: [:baz, :bor]
         │   ├── locals_body_index: 2
         │   ├── def_keyword_loc: (95,0)-(95,3) = "def"
@@ -907,6 +907,7 @@
         │   │   @ StatementsNode (location: (100,2)-(100,5))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (100,2)-(100,5))
+        │   │           ├── flags: variable_call
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -914,8 +915,7 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           └── flags: variable_call
+        │   │           └── block: ∅
         │   ├── locals: [:baz, :bor, :block]
         │   ├── locals_body_index: 3
         │   ├── def_keyword_loc: (99,0)-(99,3) = "def"
@@ -984,6 +984,7 @@
         │   │   @ StatementsNode (location: (108,2)-(108,5))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (108,2)-(108,5))
+        │   │           ├── flags: variable_call
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -991,8 +992,7 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           └── flags: variable_call
+        │   │           └── block: ∅
         │   ├── locals: [:block]
         │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (107,0)-(107,3) = "def"
@@ -1043,6 +1043,7 @@
         │   │   @ StatementsNode (location: (116,2)-(117,5))
         │   │   └── body: (length: 2)
         │   │       ├── @ CallNode (location: (116,2)-(116,5))
+        │   │       │   ├── flags: variable_call
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
         │   │       │   ├── name: :bar
@@ -1050,9 +1051,9 @@
         │   │       │   ├── opening_loc: ∅
         │   │       │   ├── arguments: ∅
         │   │       │   ├── closing_loc: ∅
-        │   │       │   ├── block: ∅
-        │   │       │   └── flags: variable_call
+        │   │       │   └── block: ∅
         │   │       └── @ CallNode (location: (117,2)-(117,5))
+        │   │           ├── flags: variable_call
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :baz
@@ -1060,8 +1061,7 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           └── flags: variable_call
+        │   │           └── block: ∅
         │   ├── locals: []
         │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (115,0)-(115,3) = "def"

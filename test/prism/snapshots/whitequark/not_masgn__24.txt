@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,13))
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,13))
+            ├── flags: ∅
             ├── receiver:
             │   @ ParenthesesNode (location: (1,1)-(1,13))
             │   ├── body:
@@ -24,6 +25,7 @@
             │   │           ├── operator_loc: (1,7)-(1,8) = "="
             │   │           └── value:
             │   │               @ CallNode (location: (1,9)-(1,12))
+            │   │               ├── flags: variable_call
             │   │               ├── receiver: ∅
             │   │               ├── call_operator_loc: ∅
             │   │               ├── name: :foo
@@ -31,8 +33,7 @@
             │   │               ├── opening_loc: ∅
             │   │               ├── arguments: ∅
             │   │               ├── closing_loc: ∅
-            │   │               ├── block: ∅
-            │   │               └── flags: variable_call
+            │   │               └── block: ∅
             │   ├── opening_loc: (1,1)-(1,2) = "("
             │   └── closing_loc: (1,12)-(1,13) = ")"
             ├── call_operator_loc: ∅
@@ -41,5 +42,4 @@
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
-            ├── block: ∅
-            └── flags: ∅
+            └── block: ∅

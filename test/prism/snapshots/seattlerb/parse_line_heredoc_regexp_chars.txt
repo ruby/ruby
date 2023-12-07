@@ -16,6 +16,7 @@
         │   │   └── unescaped: "        very long string\n"
         │   └── operator_loc: (1,13)-(1,14) = "="
         └── @ CallNode (location: (4,6)-(4,17))
+            ├── flags: ∅
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :puts
@@ -23,11 +24,10 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (4,11)-(4,17))
-            │   ├── arguments: (length: 1)
-            │   │   └── @ LocalVariableReadNode (location: (4,11)-(4,17))
-            │   │       ├── name: :string
-            │   │       └── depth: 0
-            │   └── flags: ∅
+            │   ├── flags: ∅
+            │   └── arguments: (length: 1)
+            │       └── @ LocalVariableReadNode (location: (4,11)-(4,17))
+            │           ├── name: :string
+            │           └── depth: 0
             ├── closing_loc: ∅
-            ├── block: ∅
-            └── flags: ∅
+            └── block: ∅

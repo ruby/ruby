@@ -6,6 +6,7 @@
         ├── @ MultiWriteNode (location: (1,0)-(1,17))
         │   ├── lefts: (length: 2)
         │   │   ├── @ CallNode (location: (1,0)-(1,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── receiver:
         │   │   │   │   @ SelfNode (location: (1,0)-(1,4))
         │   │   │   ├── call_operator_loc: (1,4)-(1,5) = "."
@@ -14,8 +15,7 @@
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
-        │   │   │   ├── block: ∅
-        │   │   │   └── flags: ∅
+        │   │   │   └── block: ∅
         │   │   └── @ LocalVariableTargetNode (location: (1,8)-(1,11))
         │   │       ├── name: :foo
         │   │       └── depth: 0
@@ -31,6 +31,7 @@
         ├── @ MultiWriteNode (location: (3,0)-(3,24))
         │   ├── lefts: (length: 2)
         │   │   ├── @ CallNode (location: (3,0)-(3,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── receiver:
         │   │   │   │   @ SelfNode (location: (3,0)-(3,4))
         │   │   │   ├── call_operator_loc: (3,4)-(3,5) = "."
@@ -39,9 +40,9 @@
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── arguments: ∅
         │   │   │   ├── closing_loc: ∅
-        │   │   │   ├── block: ∅
-        │   │   │   └── flags: ∅
+        │   │   │   └── block: ∅
         │   │   └── @ CallNode (location: (3,8)-(3,18))
+        │   │       ├── flags: ∅
         │   │       ├── receiver:
         │   │       │   @ SelfNode (location: (3,8)-(3,12))
         │   │       ├── call_operator_loc: ∅
@@ -50,15 +51,14 @@
         │   │       ├── opening_loc: (3,12)-(3,13) = "["
         │   │       ├── arguments:
         │   │       │   @ ArgumentsNode (location: (3,13)-(3,17))
-        │   │       │   ├── arguments: (length: 2)
-        │   │       │   │   ├── @ IntegerNode (location: (3,13)-(3,14))
-        │   │       │   │   │   └── flags: decimal
-        │   │       │   │   └── @ IntegerNode (location: (3,16)-(3,17))
-        │   │       │   │       └── flags: decimal
-        │   │       │   └── flags: ∅
+        │   │       │   ├── flags: ∅
+        │   │       │   └── arguments: (length: 2)
+        │   │       │       ├── @ IntegerNode (location: (3,13)-(3,14))
+        │   │       │       │   └── flags: decimal
+        │   │       │       └── @ IntegerNode (location: (3,16)-(3,17))
+        │   │       │           └── flags: decimal
         │   │       ├── closing_loc: (3,17)-(3,18) = "]"
-        │   │       ├── block: ∅
-        │   │       └── flags: ∅
+        │   │       └── block: ∅
         │   ├── rest: ∅
         │   ├── rights: (length: 0)
         │   ├── lparen_loc: ∅
@@ -71,6 +71,7 @@
         └── @ MultiWriteNode (location: (5,0)-(5,18))
             ├── lefts: (length: 2)
             │   ├── @ CallNode (location: (5,0)-(5,7))
+            │   │   ├── flags: ∅
             │   │   ├── receiver:
             │   │   │   @ SelfNode (location: (5,0)-(5,4))
             │   │   ├── call_operator_loc: (5,4)-(5,6) = "::"
@@ -79,8 +80,7 @@
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
-            │   │   ├── block: ∅
-            │   │   └── flags: ∅
+            │   │   └── block: ∅
             │   └── @ LocalVariableTargetNode (location: (5,9)-(5,12))
             │       ├── name: :foo
             │       └── depth: 0

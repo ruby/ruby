@@ -6,6 +6,7 @@
         ├── @ CaseMatchNode (location: (1,0)-(33,3))
         │   ├── predicate:
         │   │   @ CallNode (location: (1,5)-(1,8))
+        │   │   ├── flags: variable_call
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -13,8 +14,7 @@
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
-        │   │   ├── block: ∅
-        │   │   └── flags: variable_call
+        │   │   └── block: ∅
         │   ├── conditions: (length: 15)
         │   │   ├── @ InNode (location: (2,0)-(3,6))
         │   │   │   ├── pattern:
@@ -63,6 +63,7 @@
         │   │   │   │   @ StatementsNode (location: (5,2)-(5,3))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (5,2)-(5,3))
+        │   │   │   │           ├── flags: variable_call
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :y
@@ -70,8 +71,7 @@
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           ├── block: ∅
-        │   │   │   │           └── flags: variable_call
+        │   │   │   │           └── block: ∅
         │   │   │   ├── in_loc: (4,0)-(4,2) = "in"
         │   │   │   └── then_loc: (4,12)-(4,16) = "then"
         │   │   ├── @ InNode (location: (6,0)-(7,6))
@@ -336,6 +336,7 @@
         ├── @ CaseMatchNode (location: (34,0)-(36,3))
         │   ├── predicate:
         │   │   @ CallNode (location: (34,5)-(34,8))
+        │   │   ├── flags: variable_call
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -343,8 +344,7 @@
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
-        │   │   ├── block: ∅
-        │   │   └── flags: variable_call
+        │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (35,0)-(35,17))
         │   │       ├── pattern:
@@ -378,6 +378,7 @@
         ├── @ CaseMatchNode (location: (37,0)-(40,3))
         │   ├── predicate:
         │   │   @ CallNode (location: (37,5)-(37,8))
+        │   │   ├── flags: variable_call
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -385,8 +386,7 @@
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
-        │   │   ├── block: ∅
-        │   │   └── flags: variable_call
+        │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (38,0)-(38,4))
         │   │       ├── pattern:

@@ -789,6 +789,23 @@ module Prism
           end
         end
       CODE
+      assert_prism_eval(<<~CODE)
+        def test
+        ensure
+          {}.each do |key, value|
+            {}[key] = value
+          end
+        end
+      CODE
+      assert_prism_eval(<<~CODE)
+        def test
+          a = 1
+        ensure
+          {}.each do |key, value|
+            {}[key] = a
+          end
+        end
+      CODE
     end
 
     def test_NextNode
@@ -924,6 +941,23 @@ module Prism
         a + b + c
       CODE
       assert_prism_eval("begin; rescue; end")
+
+      assert_prism_eval(<<~CODE)
+        begin
+        rescue
+          args.each do |key, value|
+            tmp[key] = 1
+          end
+        end
+      CODE
+      assert_prism_eval(<<~CODE)
+        10.times do
+          begin
+          rescue
+            break
+          end
+        end
+      CODE
     end
 
     def test_RescueModiferNode

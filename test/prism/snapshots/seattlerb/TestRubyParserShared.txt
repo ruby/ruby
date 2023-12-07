@@ -4,11 +4,12 @@
     @ StatementsNode (location: (1,0)-(92,1))
     └── body: (length: 16)
         ├── @ ArrayNode (location: (1,0)-(4,1))
+        │   ├── flags: ∅
         │   ├── elements: (length: 0)
         │   ├── opening_loc: (1,0)-(1,3) = "%I["
-        │   ├── closing_loc: (4,0)-(4,1) = "]"
-        │   └── flags: ∅
+        │   └── closing_loc: (4,0)-(4,1) = "]"
         ├── @ ArrayNode (location: (6,0)-(9,1))
+        │   ├── flags: ∅
         │   ├── elements: (length: 2)
         │   │   ├── @ SymbolNode (location: (7,0)-(7,5))
         │   │   │   ├── opening_loc: ∅
@@ -21,14 +22,14 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "line3"
         │   ├── opening_loc: (6,0)-(6,3) = "%I["
-        │   ├── closing_loc: (9,0)-(9,1) = "]"
-        │   └── flags: ∅
+        │   └── closing_loc: (9,0)-(9,1) = "]"
         ├── @ ArrayNode (location: (11,0)-(14,1))
+        │   ├── flags: ∅
         │   ├── elements: (length: 0)
         │   ├── opening_loc: (11,0)-(11,3) = "%W["
-        │   ├── closing_loc: (14,0)-(14,1) = "]"
-        │   └── flags: ∅
+        │   └── closing_loc: (14,0)-(14,1) = "]"
         ├── @ ArrayNode (location: (16,0)-(19,1))
+        │   ├── flags: ∅
         │   ├── elements: (length: 2)
         │   │   ├── @ StringNode (location: (17,0)-(17,5))
         │   │   │   ├── flags: ∅
@@ -43,14 +44,14 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "line3"
         │   ├── opening_loc: (16,0)-(16,3) = "%W["
-        │   ├── closing_loc: (19,0)-(19,1) = "]"
-        │   └── flags: ∅
+        │   └── closing_loc: (19,0)-(19,1) = "]"
         ├── @ ArrayNode (location: (21,0)-(24,1))
+        │   ├── flags: ∅
         │   ├── elements: (length: 0)
         │   ├── opening_loc: (21,0)-(21,3) = "%i["
-        │   ├── closing_loc: (24,0)-(24,1) = "]"
-        │   └── flags: ∅
+        │   └── closing_loc: (24,0)-(24,1) = "]"
         ├── @ ArrayNode (location: (26,0)-(29,1))
+        │   ├── flags: ∅
         │   ├── elements: (length: 2)
         │   │   ├── @ SymbolNode (location: (27,0)-(27,5))
         │   │   │   ├── opening_loc: ∅
@@ -63,20 +64,20 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "line3"
         │   ├── opening_loc: (26,0)-(26,3) = "%i["
-        │   ├── closing_loc: (29,0)-(29,1) = "]"
-        │   └── flags: ∅
+        │   └── closing_loc: (29,0)-(29,1) = "]"
         ├── @ RegularExpressionNode (location: (31,0)-(34,1))
+        │   ├── flags: ∅
         │   ├── opening_loc: (31,0)-(31,3) = "%r["
         │   ├── content_loc: (31,3)-(34,0) = "\n\n\n"
         │   ├── closing_loc: (34,0)-(34,1) = "]"
-        │   ├── unescaped: "\n\n\n"
-        │   └── flags: ∅
+        │   └── unescaped: "\n\n\n"
         ├── @ ArrayNode (location: (36,0)-(39,1))
+        │   ├── flags: ∅
         │   ├── elements: (length: 0)
         │   ├── opening_loc: (36,0)-(36,3) = "%w["
-        │   ├── closing_loc: (39,0)-(39,1) = "]"
-        │   └── flags: ∅
+        │   └── closing_loc: (39,0)-(39,1) = "]"
         ├── @ ArrayNode (location: (41,0)-(44,1))
+        │   ├── flags: ∅
         │   ├── elements: (length: 2)
         │   │   ├── @ StringNode (location: (42,0)-(42,5))
         │   │   │   ├── flags: ∅
@@ -91,9 +92,9 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "line3"
         │   ├── opening_loc: (41,0)-(41,3) = "%w["
-        │   ├── closing_loc: (44,0)-(44,1) = "]"
-        │   └── flags: ∅
+        │   └── closing_loc: (44,0)-(44,1) = "]"
         ├── @ ArrayNode (location: (46,0)-(49,1))
+        │   ├── flags: ∅
         │   ├── elements: (length: 2)
         │   │   ├── @ SymbolNode (location: (47,0)-(47,6))
         │   │   │   ├── opening_loc: (47,0)-(47,1) = ":"
@@ -106,8 +107,7 @@
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "line3"
         │   ├── opening_loc: (46,0)-(46,1) = "["
-        │   ├── closing_loc: (49,0)-(49,1) = "]"
-        │   └── flags: ∅
+        │   └── closing_loc: (49,0)-(49,1) = "]"
         ├── @ ClassNode (location: (51,0)-(56,3))
         │   ├── locals: []
         │   ├── class_keyword_loc: (51,0)-(51,5) = "class"
@@ -141,6 +141,7 @@
         │   │           │   @ StatementsNode (location: (54,4)-(54,9))
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ CallNode (location: (54,4)-(54,9))
+        │   │           │           ├── flags: ∅
         │   │           │           ├── receiver:
         │   │           │           │   @ LocalVariableReadNode (location: (54,4)-(54,5))
         │   │           │           │   ├── name: :a
@@ -151,14 +152,13 @@
         │   │           │           ├── opening_loc: ∅
         │   │           │           ├── arguments:
         │   │           │           │   @ ArgumentsNode (location: (54,8)-(54,9))
-        │   │           │           │   ├── arguments: (length: 1)
-        │   │           │           │   │   └── @ LocalVariableReadNode (location: (54,8)-(54,9))
-        │   │           │           │   │       ├── name: :b
-        │   │           │           │   │       └── depth: 0
-        │   │           │           │   └── flags: ∅
+        │   │           │           │   ├── flags: ∅
+        │   │           │           │   └── arguments: (length: 1)
+        │   │           │           │       └── @ LocalVariableReadNode (location: (54,8)-(54,9))
+        │   │           │           │           ├── name: :b
+        │   │           │           │           └── depth: 0
         │   │           │           ├── closing_loc: ∅
-        │   │           │           ├── block: ∅
-        │   │           │           └── flags: ∅
+        │   │           │           └── block: ∅
         │   │           ├── locals: [:a, :b]
         │   │           ├── locals_body_index: 2
         │   │           ├── def_keyword_loc: (52,2)-(52,5) = "def"
@@ -234,6 +234,7 @@
         │   │           │   @ StatementsNode (location: (69,4)-(69,9))
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ CallNode (location: (69,4)-(69,9))
+        │   │           │           ├── flags: ∅
         │   │           │           ├── receiver:
         │   │           │           │   @ LocalVariableReadNode (location: (69,4)-(69,5))
         │   │           │           │   ├── name: :a
@@ -244,14 +245,13 @@
         │   │           │           ├── opening_loc: ∅
         │   │           │           ├── arguments:
         │   │           │           │   @ ArgumentsNode (location: (69,8)-(69,9))
-        │   │           │           │   ├── arguments: (length: 1)
-        │   │           │           │   │   └── @ LocalVariableReadNode (location: (69,8)-(69,9))
-        │   │           │           │   │       ├── name: :b
-        │   │           │           │   │       └── depth: 0
-        │   │           │           │   └── flags: ∅
+        │   │           │           │   ├── flags: ∅
+        │   │           │           │   └── arguments: (length: 1)
+        │   │           │           │       └── @ LocalVariableReadNode (location: (69,8)-(69,9))
+        │   │           │           │           ├── name: :b
+        │   │           │           │           └── depth: 0
         │   │           │           ├── closing_loc: ∅
-        │   │           │           ├── block: ∅
-        │   │           │           └── flags: ∅
+        │   │           │           └── block: ∅
         │   │           ├── locals: [:a, :b]
         │   │           ├── locals_body_index: 2
         │   │           ├── def_keyword_loc: (67,2)-(67,5) = "def"
@@ -276,6 +276,7 @@
         │   │           ├── name_loc: (75,2)-(75,3) = "X"
         │   │           ├── value:
         │   │           │   @ ArrayNode (location: (75,6)-(78,3))
+        │   │           │   ├── flags: ∅
         │   │           │   ├── elements: (length: 2)
         │   │           │   │   ├── @ SymbolNode (location: (76,4)-(76,10))
         │   │           │   │   │   ├── opening_loc: (76,4)-(76,5) = ":"
@@ -288,8 +289,7 @@
         │   │           │   │       ├── closing_loc: ∅
         │   │           │   │       └── unescaped: "line4"
         │   │           │   ├── opening_loc: (75,6)-(75,7) = "["
-        │   │           │   ├── closing_loc: (78,2)-(78,3) = "]"
-        │   │           │   └── flags: ∅
+        │   │           │   └── closing_loc: (78,2)-(78,3) = "]"
         │   │           └── operator_loc: (75,4)-(75,5) = "="
         │   ├── end_keyword_loc: (79,0)-(79,3) = "end"
         │   └── name: :X
@@ -323,6 +323,7 @@
         │   ├── end_keyword_loc: (86,0)-(86,3) = "end"
         │   └── name: :X
         └── @ CallNode (location: (89,0)-(92,1))
+            ├── flags: ∅
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :x
@@ -330,18 +331,17 @@
             ├── opening_loc: (89,1)-(89,2) = "("
             ├── arguments:
             │   @ ArgumentsNode (location: (90,0)-(91,6))
-            │   ├── arguments: (length: 2)
-            │   │   ├── @ SymbolNode (location: (90,0)-(90,6))
-            │   │   │   ├── opening_loc: (90,0)-(90,1) = ":"
-            │   │   │   ├── value_loc: (90,1)-(90,6) = "line2"
-            │   │   │   ├── closing_loc: ∅
-            │   │   │   └── unescaped: "line2"
-            │   │   └── @ SymbolNode (location: (91,0)-(91,6))
-            │   │       ├── opening_loc: (91,0)-(91,1) = ":"
-            │   │       ├── value_loc: (91,1)-(91,6) = "line3"
-            │   │       ├── closing_loc: ∅
-            │   │       └── unescaped: "line3"
-            │   └── flags: ∅
+            │   ├── flags: ∅
+            │   └── arguments: (length: 2)
+            │       ├── @ SymbolNode (location: (90,0)-(90,6))
+            │       │   ├── opening_loc: (90,0)-(90,1) = ":"
+            │       │   ├── value_loc: (90,1)-(90,6) = "line2"
+            │       │   ├── closing_loc: ∅
+            │       │   └── unescaped: "line2"
+            │       └── @ SymbolNode (location: (91,0)-(91,6))
+            │           ├── opening_loc: (91,0)-(91,1) = ":"
+            │           ├── value_loc: (91,1)-(91,6) = "line3"
+            │           ├── closing_loc: ∅
+            │           └── unescaped: "line3"
             ├── closing_loc: (92,0)-(92,1) = ")"
-            ├── block: ∅
-            └── flags: ∅
+            └── block: ∅

@@ -30,6 +30,7 @@
         │   │   @ StatementsNode (location: (3,10)-(3,14))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (3,10)-(3,14))
+        │   │           ├── flags: ∅
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :A
@@ -37,17 +38,16 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (3,12)-(3,14))
-        │   │           │   ├── arguments: (length: 1)
-        │   │           │   │   └── @ StringNode (location: (3,12)-(3,14))
-        │   │           │   │       ├── flags: ∅
-        │   │           │   │       ├── opening_loc: (3,12)-(3,13) = "\""
-        │   │           │   │       ├── content_loc: (3,13)-(3,13) = ""
-        │   │           │   │       ├── closing_loc: (3,13)-(3,14) = "\""
-        │   │           │   │       └── unescaped: ""
-        │   │           │   └── flags: ∅
+        │   │           │   ├── flags: ∅
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ StringNode (location: (3,12)-(3,14))
+        │   │           │           ├── flags: ∅
+        │   │           │           ├── opening_loc: (3,12)-(3,13) = "\""
+        │   │           │           ├── content_loc: (3,13)-(3,13) = ""
+        │   │           │           ├── closing_loc: (3,13)-(3,14) = "\""
+        │   │           │           └── unescaped: ""
         │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           └── flags: ∅
+        │   │           └── block: ∅
         │   ├── locals: []
         │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (3,0)-(3,3) = "def"
@@ -65,8 +65,10 @@
             │   @ StatementsNode (location: (5,13)-(5,22))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (5,13)-(5,22))
+            │           ├── flags: ∅
             │           ├── receiver:
             │           │   @ CallNode (location: (5,13)-(5,18))
+            │           │   ├── flags: ∅
             │           │   ├── receiver:
             │           │   │   @ IntegerNode (location: (5,13)-(5,14))
             │           │   │   └── flags: decimal
@@ -76,26 +78,24 @@
             │           │   ├── opening_loc: ∅
             │           │   ├── arguments:
             │           │   │   @ ArgumentsNode (location: (5,17)-(5,18))
-            │           │   │   ├── arguments: (length: 1)
-            │           │   │   │   └── @ IntegerNode (location: (5,17)-(5,18))
-            │           │   │   │       └── flags: decimal
-            │           │   │   └── flags: ∅
+            │           │   │   ├── flags: ∅
+            │           │   │   └── arguments: (length: 1)
+            │           │   │       └── @ IntegerNode (location: (5,17)-(5,18))
+            │           │   │           └── flags: decimal
             │           │   ├── closing_loc: ∅
-            │           │   ├── block: ∅
-            │           │   └── flags: ∅
+            │           │   └── block: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :+
             │           ├── message_loc: (5,19)-(5,20) = "+"
             │           ├── opening_loc: ∅
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (5,21)-(5,22))
-            │           │   ├── arguments: (length: 1)
-            │           │   │   └── @ IntegerNode (location: (5,21)-(5,22))
-            │           │   │       └── flags: decimal
-            │           │   └── flags: ∅
+            │           │   ├── flags: ∅
+            │           │   └── arguments: (length: 1)
+            │           │       └── @ IntegerNode (location: (5,21)-(5,22))
+            │           │           └── flags: decimal
             │           ├── closing_loc: ∅
-            │           ├── block: ∅
-            │           └── flags: ∅
+            │           └── block: ∅
             ├── locals: []
             ├── locals_body_index: 0
             ├── def_keyword_loc: (5,0)-(5,3) = "def"

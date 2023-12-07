@@ -20,6 +20,7 @@
                 @ RescueModifierNode (location: (1,11)-(1,29))
                 ├── expression:
                 │   @ CallNode (location: (1,11)-(1,15))
+                │   ├── flags: variable_call
                 │   ├── receiver: ∅
                 │   ├── call_operator_loc: ∅
                 │   ├── name: :meth
@@ -27,16 +28,15 @@
                 │   ├── opening_loc: ∅
                 │   ├── arguments: ∅
                 │   ├── closing_loc: ∅
-                │   ├── block: ∅
-                │   └── flags: variable_call
+                │   └── block: ∅
                 ├── keyword_loc: (1,16)-(1,22) = "rescue"
                 └── rescue_expression:
                     @ ArrayNode (location: (1,23)-(1,29))
+                    ├── flags: ∅
                     ├── elements: (length: 2)
                     │   ├── @ IntegerNode (location: (1,24)-(1,25))
                     │   │   └── flags: decimal
                     │   └── @ IntegerNode (location: (1,27)-(1,28))
                     │       └── flags: decimal
                     ├── opening_loc: (1,23)-(1,24) = "["
-                    ├── closing_loc: (1,28)-(1,29) = "]"
-                    └── flags: ∅
+                    └── closing_loc: (1,28)-(1,29) = "]"

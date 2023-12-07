@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,22))
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,22))
+            ├── flags: ∅
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :let
@@ -11,45 +12,44 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (1,4)-(1,8))
-            │   ├── arguments: (length: 1)
-            │   │   └── @ ParenthesesNode (location: (1,4)-(1,8))
-            │   │       ├── body:
-            │   │       │   @ StatementsNode (location: (1,5)-(1,7))
-            │   │       │   └── body: (length: 1)
-            │   │       │       └── @ SymbolNode (location: (1,5)-(1,7))
-            │   │       │           ├── opening_loc: (1,5)-(1,6) = ":"
-            │   │       │           ├── value_loc: (1,6)-(1,7) = "a"
-            │   │       │           ├── closing_loc: ∅
-            │   │       │           └── unescaped: "a"
-            │   │       ├── opening_loc: (1,4)-(1,5) = "("
-            │   │       └── closing_loc: (1,7)-(1,8) = ")"
-            │   └── flags: ∅
+            │   ├── flags: ∅
+            │   └── arguments: (length: 1)
+            │       └── @ ParenthesesNode (location: (1,4)-(1,8))
+            │           ├── body:
+            │           │   @ StatementsNode (location: (1,5)-(1,7))
+            │           │   └── body: (length: 1)
+            │           │       └── @ SymbolNode (location: (1,5)-(1,7))
+            │           │           ├── opening_loc: (1,5)-(1,6) = ":"
+            │           │           ├── value_loc: (1,6)-(1,7) = "a"
+            │           │           ├── closing_loc: ∅
+            │           │           └── unescaped: "a"
+            │           ├── opening_loc: (1,4)-(1,5) = "("
+            │           └── closing_loc: (1,7)-(1,8) = ")"
             ├── closing_loc: ∅
-            ├── block:
-            │   @ BlockNode (location: (1,9)-(1,22))
-            │   ├── locals: []
-            │   ├── locals_body_index: 0
-            │   ├── parameters: ∅
-            │   ├── body:
-            │   │   @ StatementsNode (location: (1,11)-(1,20))
-            │   │   └── body: (length: 1)
-            │   │       └── @ CallNode (location: (1,11)-(1,20))
-            │   │           ├── receiver: ∅
-            │   │           ├── call_operator_loc: ∅
-            │   │           ├── name: :m
-            │   │           ├── message_loc: (1,11)-(1,12) = "m"
-            │   │           ├── opening_loc: ∅
-            │   │           ├── arguments: ∅
-            │   │           ├── closing_loc: ∅
-            │   │           ├── block:
-            │   │           │   @ BlockNode (location: (1,13)-(1,20))
-            │   │           │   ├── locals: []
-            │   │           │   ├── locals_body_index: 0
-            │   │           │   ├── parameters: ∅
-            │   │           │   ├── body: ∅
-            │   │           │   ├── opening_loc: (1,13)-(1,15) = "do"
-            │   │           │   └── closing_loc: (1,17)-(1,20) = "end"
-            │   │           └── flags: ∅
-            │   ├── opening_loc: (1,9)-(1,10) = "{"
-            │   └── closing_loc: (1,21)-(1,22) = "}"
-            └── flags: ∅
+            └── block:
+                @ BlockNode (location: (1,9)-(1,22))
+                ├── locals: []
+                ├── locals_body_index: 0
+                ├── parameters: ∅
+                ├── body:
+                │   @ StatementsNode (location: (1,11)-(1,20))
+                │   └── body: (length: 1)
+                │       └── @ CallNode (location: (1,11)-(1,20))
+                │           ├── flags: ∅
+                │           ├── receiver: ∅
+                │           ├── call_operator_loc: ∅
+                │           ├── name: :m
+                │           ├── message_loc: (1,11)-(1,12) = "m"
+                │           ├── opening_loc: ∅
+                │           ├── arguments: ∅
+                │           ├── closing_loc: ∅
+                │           └── block:
+                │               @ BlockNode (location: (1,13)-(1,20))
+                │               ├── locals: []
+                │               ├── locals_body_index: 0
+                │               ├── parameters: ∅
+                │               ├── body: ∅
+                │               ├── opening_loc: (1,13)-(1,15) = "do"
+                │               └── closing_loc: (1,17)-(1,20) = "end"
+                ├── opening_loc: (1,9)-(1,10) = "{"
+                └── closing_loc: (1,21)-(1,22) = "}"

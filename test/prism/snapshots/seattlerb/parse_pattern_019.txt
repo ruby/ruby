@@ -11,14 +11,14 @@
             │   └── @ InNode (location: (2,0)-(3,6))
             │       ├── pattern:
             │       │   @ RangeNode (location: (2,3)-(2,8))
+            │       │   ├── flags: ∅
             │       │   ├── left:
             │       │   │   @ IntegerNode (location: (2,3)-(2,5))
             │       │   │   └── flags: decimal
             │       │   ├── right:
             │       │   │   @ IntegerNode (location: (2,7)-(2,8))
             │       │   │   └── flags: decimal
-            │       │   ├── operator_loc: (2,5)-(2,7) = ".."
-            │       │   └── flags: ∅
+            │       │   └── operator_loc: (2,5)-(2,7) = ".."
             │       ├── statements:
             │       │   @ StatementsNode (location: (3,2)-(3,6))
             │       │   └── body: (length: 1)

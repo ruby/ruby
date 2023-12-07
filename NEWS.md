@@ -101,6 +101,7 @@ Note: We're only listing outstanding class updates.
 
     * Range#reverse_each can now process beginless ranges with an Integer endpoint. [[Feature #18515]]
     * Range#reverse_each now raises TypeError for endless ranges. [[Feature #18551]]
+    * Range#overlap? added for checking if two ranges overlap. [[Feature #19839]]
 
 * Refinement
 
@@ -128,7 +129,6 @@ Note: We're only listing outstanding class updates.
 
 * RubyGems and Bundler warn if users do `require` the following gems without adding them to Gemfile or gemspec.
   This is because they will become the bundled gems in the future version of Ruby.
-  Note that `bundle exec ruby` does not print a warning due to implementation limitation.
   [[Feature #19351]] [[Feature #19776]] [[Feature #19843]]
     * abbrev
     * base64
@@ -147,6 +147,9 @@ Note: We're only listing outstanding class updates.
 * Socket#recv and Socket#recv_nonblock returns `nil` instead of an empty string on closed
   connections. Socket#recvmsg and Socket#recvmsg_nonblock returns `nil` instead of an empty packet on closed
   connections. [[Bug #19012]]
+
+* Name resolution such as `Socket.getaddrinfo`, `Socket.getnameinfo`, `Addrinfo.getaddrinfo`, etc.
+  can now be interrupted. [[Feature #19965]]
 
 * Random::Formatter#alphanumeric is extended to accept optional `chars`
   keyword argument. [[Feature #18183]]
@@ -184,7 +187,7 @@ The following default gems are updated.
 * net-protocol 0.2.2
 * nkf 0.1.3
 * observer 0.1.2
-* open-uri 0.4.0
+* open-uri 0.4.1
 * open3 0.2.0
 * openssl 3.2.0
 * optparse 0.4.0
@@ -226,6 +229,7 @@ The following bundled gems are updated.
 * test-unit 3.6.1
 * rexml 3.2.6
 * rss 0.3.0
+* net-ftp 0.3.0
 * net-imap 0.4.7
 * net-smtp 0.4.0
 * rbs 3.3.2
@@ -257,6 +261,10 @@ changelog for details of the default gems or bundled gems.
   removed. Environment variables `RUBY_GC_HEAP_%d_INIT_SLOTS` should be
   used instead.  [[Feature #19785]]
 
+* `it` calls without arguments in a block with no ordinary parameters are
+  deprecated. `it` will be a reference to the first block parameter in Ruby 3.4.
+  [[Feature #18980]]
+
 ## Stdlib compatibility issues
 
 * `racc` is promoted to bundled gems.
@@ -270,7 +278,6 @@ changelog for details of the default gems or bundled gems.
 ## Implementation improvements
 
 * `defined?(@ivar)` is optimized with Object Shapes.
-* Name resolution such as `Socket.getaddrinfo` can now be interrupted. [[Feature #19965]]
 
 ### GC
 
@@ -375,6 +382,7 @@ changelog for details of the default gems or bundled gems.
 [Feature #18551]: https://bugs.ruby-lang.org/issues/18551
 [Feature #18885]: https://bugs.ruby-lang.org/issues/18885
 [Feature #18949]: https://bugs.ruby-lang.org/issues/18949
+[Feature #18980]: https://bugs.ruby-lang.org/issues/18980
 [Bug #19012]:     https://bugs.ruby-lang.org/issues/19012
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
 [Feature #19314]: https://bugs.ruby-lang.org/issues/19314
@@ -394,6 +402,7 @@ changelog for details of the default gems or bundled gems.
 [Feature #19777]: https://bugs.ruby-lang.org/issues/19777
 [Feature #19785]: https://bugs.ruby-lang.org/issues/19785
 [Feature #19790]: https://bugs.ruby-lang.org/issues/19790
+[Feature #19839]: https://bugs.ruby-lang.org/issues/19839
 [Feature #19842]: https://bugs.ruby-lang.org/issues/19842
 [Feature #19843]: https://bugs.ruby-lang.org/issues/19843
 [Bug #19868]:     https://bugs.ruby-lang.org/issues/19868

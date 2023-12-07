@@ -193,7 +193,7 @@ class Gem::StreamUI
   # then special operations (like asking for passwords) will use the TTY
   # commands to disable character echo.
 
-  def initialize(in_stream, out_stream, err_stream=STDERR, usetty=true)
+  def initialize(in_stream, out_stream, err_stream=$stderr, usetty=true)
     @ins = in_stream
     @outs = out_stream
     @errs = err_stream
@@ -591,8 +591,8 @@ class Gem::StreamUI
 end
 
 ##
-# Subclass of StreamUI that instantiates the user interaction using STDIN,
-# STDOUT, and STDERR.
+# Subclass of StreamUI that instantiates the user interaction using $stdin,
+# $stdout, and $stderr.
 
 class Gem::ConsoleUI < Gem::StreamUI
   ##
@@ -600,7 +600,7 @@ class Gem::ConsoleUI < Gem::StreamUI
   # stdin, output to stdout and warnings or errors to stderr.
 
   def initialize
-    super STDIN, STDOUT, STDERR, true
+    super $stdin, $stdout, $stderr, true
   end
 end
 

@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,15))
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,15))
+            ├── flags: ∅
             ├── receiver:
             │   @ StringNode (location: (1,0)-(1,9))
             │   ├── flags: ∅
@@ -17,5 +18,4 @@
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
-            ├── block: ∅
-            └── flags: ∅
+            └── block: ∅

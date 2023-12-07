@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,13))
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,13))
+            ├── flags: ∅
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :lambda
@@ -11,24 +12,23 @@
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
-            ├── block:
-            │   @ BlockNode (location: (1,6)-(1,13))
-            │   ├── locals: [:a]
-            │   ├── locals_body_index: 1
-            │   ├── parameters:
-            │   │   @ BlockParametersNode (location: (1,7)-(1,11))
-            │   │   ├── parameters: ∅
-            │   │   ├── locals: (length: 1)
-            │   │   │   └── @ BlockLocalVariableNode (location: (1,9)-(1,10))
-            │   │   │       └── name: :a
-            │   │   ├── opening_loc: (1,7)-(1,8) = "|"
-            │   │   └── closing_loc: (1,10)-(1,11) = "|"
-            │   ├── body:
-            │   │   @ StatementsNode (location: (1,11)-(1,12))
-            │   │   └── body: (length: 1)
-            │   │       └── @ LocalVariableReadNode (location: (1,11)-(1,12))
-            │   │           ├── name: :a
-            │   │           └── depth: 0
-            │   ├── opening_loc: (1,6)-(1,7) = "{"
-            │   └── closing_loc: (1,12)-(1,13) = "}"
-            └── flags: ∅
+            └── block:
+                @ BlockNode (location: (1,6)-(1,13))
+                ├── locals: [:a]
+                ├── locals_body_index: 1
+                ├── parameters:
+                │   @ BlockParametersNode (location: (1,7)-(1,11))
+                │   ├── parameters: ∅
+                │   ├── locals: (length: 1)
+                │   │   └── @ BlockLocalVariableNode (location: (1,9)-(1,10))
+                │   │       └── name: :a
+                │   ├── opening_loc: (1,7)-(1,8) = "|"
+                │   └── closing_loc: (1,10)-(1,11) = "|"
+                ├── body:
+                │   @ StatementsNode (location: (1,11)-(1,12))
+                │   └── body: (length: 1)
+                │       └── @ LocalVariableReadNode (location: (1,11)-(1,12))
+                │           ├── name: :a
+                │           └── depth: 0
+                ├── opening_loc: (1,6)-(1,7) = "{"
+                └── closing_loc: (1,12)-(1,13) = "}"

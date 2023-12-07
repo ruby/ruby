@@ -457,11 +457,11 @@ nodes:
           ^^^^^^^^^^^^^^
   - name: ArgumentsNode
     fields:
-      - name: arguments
-        type: node[]
       - name: flags
         type: flags
         kind: ArgumentsNodeFlags
+      - name: arguments
+        type: node[]
     comment: |
       Represents a set of arguments to a method or a keyword.
 
@@ -469,15 +469,15 @@ nodes:
                  ^^^^^^^^^^^^^
   - name: ArrayNode
     fields:
+      - name: flags
+        type: flags
+        kind: ArrayNodeFlags
       - name: elements
         type: node[]
       - name: opening_loc
         type: location?
       - name: closing_loc
         type: location?
-      - name: flags
-        type: flags
-        kind: ArrayNodeFlags
     comment: |
       Represents an array literal. This can be a regular array using brackets or
       a special array using % like %w or %i.
@@ -661,15 +661,15 @@ nodes:
           ^^^^^^^^^
   - name: CallAndWriteNode
     fields:
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
         type: location?
       - name: message_loc
         type: location?
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: read_name
         type: constant
       - name: write_name
@@ -685,6 +685,9 @@ nodes:
           ^^^^^^^^^^^^^^^^^
   - name: CallNode
     fields:
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
@@ -702,9 +705,6 @@ nodes:
         type: location?
       - name: block
         type: node?
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
     comment: |
       Represents a method call, in all of the various forms that can take.
 
@@ -727,15 +727,15 @@ nodes:
           ^^^^^^^^
   - name: CallOperatorWriteNode
     fields:
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
         type: location?
       - name: message_loc
         type: location?
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: read_name
         type: constant
       - name: write_name
@@ -753,15 +753,15 @@ nodes:
           ^^^^^^^^^^^^^^
   - name: CallOrWriteNode
     fields:
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
         type: location?
       - name: message_loc
         type: location?
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: read_name
         type: constant
       - name: write_name
@@ -1241,15 +1241,15 @@ nodes:
                  ^^^^^^^^^^^^^^^^^^^^
   - name: FlipFlopNode
     fields:
+      - name: flags
+        type: flags
+        kind: RangeFlags
       - name: left
         type: node?
       - name: right
         type: node?
       - name: operator_loc
         type: location
-      - name: flags
-        type: flags
-        kind: RangeFlags
     comment: |
       Represents the use of the `..` or `...` operators to create flip flops.
 
@@ -1500,6 +1500,9 @@ nodes:
                   ^^^^^^^^^^^
   - name: IndexAndWriteNode
     fields:
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
@@ -1513,9 +1516,6 @@ nodes:
         type: location
       - name: block
         type: node?
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: operator_loc
         type: location
       - name: value
@@ -1527,6 +1527,9 @@ nodes:
           ^^^^^^^^^^^^^^^^^^^^^^
   - name: IndexOperatorWriteNode
     fields:
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
@@ -1540,9 +1543,6 @@ nodes:
         type: location
       - name: block
         type: node?
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: operator
         type: constant
       - name: operator_loc
@@ -1556,6 +1556,9 @@ nodes:
           ^^^^^^^^^^^^^^^^^^^^^
   - name: IndexOrWriteNode
     fields:
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
@@ -1569,9 +1572,6 @@ nodes:
         type: location
       - name: block
         type: node?
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: operator_loc
         type: location
       - name: value
@@ -1673,15 +1673,15 @@ nodes:
           ^
   - name: InterpolatedMatchLastLineNode
     fields:
+      - name: flags
+        type: flags
+        kind: RegularExpressionFlags
       - name: opening_loc
         type: location
       - name: parts
         type: node[]
       - name: closing_loc
         type: location
-      - name: flags
-        type: flags
-        kind: RegularExpressionFlags
     newline: parts
     comment: |
       Represents a regular expression literal that contains interpolation that
@@ -1692,15 +1692,15 @@ nodes:
              ^^^^^^^^^^^^^^^^
   - name: InterpolatedRegularExpressionNode
     fields:
+      - name: flags
+        type: flags
+        kind: RegularExpressionFlags
       - name: opening_loc
         type: location
       - name: parts
         type: node[]
       - name: closing_loc
         type: location
-      - name: flags
-        type: flags
-        kind: RegularExpressionFlags
     newline: parts
     comment: |
       Represents a regular expression literal that contains interpolation.
@@ -1889,6 +1889,9 @@ nodes:
           ^^^^^^^
   - name: MatchLastLineNode
     fields:
+      - name: flags
+        type: flags
+        kind: RegularExpressionFlags
       - name: opening_loc
         type: location
       - name: content_loc
@@ -1897,9 +1900,6 @@ nodes:
         type: location
       - name: unescaped
         type: string
-      - name: flags
-        type: flags
-        kind: RegularExpressionFlags
     comment: |
       Represents a regular expression literal used in the predicate of a
       conditional to implicitly match against the last line read by an IO
@@ -2206,15 +2206,15 @@ nodes:
     comment: The top level node of any parse tree.
   - name: RangeNode
     fields:
+      - name: flags
+        type: flags
+        kind: RangeFlags
       - name: left
         type: node?
       - name: right
         type: node?
       - name: operator_loc
         type: location
-      - name: flags
-        type: flags
-        kind: RangeFlags
     comment: |
       Represents the use of the `..` or `...` operators.
 
@@ -2240,6 +2240,9 @@ nodes:
           ^^^^
   - name: RegularExpressionNode
     fields:
+      - name: flags
+        type: flags
+        kind: RegularExpressionFlags
       - name: opening_loc
         type: location
       - name: content_loc
@@ -2248,9 +2251,6 @@ nodes:
         type: location
       - name: unescaped
         type: string
-      - name: flags
-        type: flags
-        kind: RegularExpressionFlags
     comment: |
       Represents a regular expression literal with no interpolation.
 
@@ -2525,6 +2525,9 @@ nodes:
           ^^^^^^^^^^^^^^^^^^^^^^^
   - name: UntilNode
     fields:
+      - name: flags
+        type: flags
+        kind: LoopFlags
       - name: keyword_loc
         type: location
       - name: closing_loc
@@ -2534,9 +2537,6 @@ nodes:
       - name: statements
         type: node?
         kind: StatementsNode
-      - name: flags
-        type: flags
-        kind: LoopFlags
     newline: predicate
     comment: |
       Represents the use of the `until` keyword, either in the block form or the modifier form.
@@ -2564,6 +2564,9 @@ nodes:
           end
   - name: WhileNode
     fields:
+      - name: flags
+        type: flags
+        kind: LoopFlags
       - name: keyword_loc
         type: location
       - name: closing_loc
@@ -2573,9 +2576,6 @@ nodes:
       - name: statements
         type: node?
         kind: StatementsNode
-      - name: flags
-        type: flags
-        kind: LoopFlags
     newline: predicate
     comment: |
       Represents the use of the `while` keyword, either in the block form or the modifier form.

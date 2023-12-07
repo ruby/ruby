@@ -799,8 +799,7 @@ parse_lex_file(int argc, VALUE *argv, VALUE self) {
 }
 
 /**
- * Parse the given input and return true if it parses without errors or
- * warnings.
+ * Parse the given input and return true if it parses without errors.
  */
 static VALUE
 parse_input_success_p(pm_string_t *input, const pm_options_t *options) {
@@ -810,7 +809,7 @@ parse_input_success_p(pm_string_t *input, const pm_options_t *options) {
     pm_node_t *node = pm_parse(&parser);
     pm_node_destroy(&parser, node);
 
-    VALUE result = parser.error_list.size == 0 && parser.warning_list.size == 0 ? Qtrue : Qfalse;
+    VALUE result = parser.error_list.size == 0 ? Qtrue : Qfalse;
     pm_parser_free(&parser);
 
     return result;
@@ -820,8 +819,8 @@ parse_input_success_p(pm_string_t *input, const pm_options_t *options) {
  * call-seq:
  *   Prism::parse_success?(source, **options) -> Array
  *
- * Parse the given string and return true if it parses without errors or
- * warnings. For supported options, see Prism::parse.
+ * Parse the given string and return true if it parses without errors. For
+ * supported options, see Prism::parse.
  */
 static VALUE
 parse_success_p(int argc, VALUE *argv, VALUE self) {
@@ -840,8 +839,8 @@ parse_success_p(int argc, VALUE *argv, VALUE self) {
  * call-seq:
  *   Prism::parse_file_success?(filepath, **options) -> Array
  *
- * Parse the given file and return true if it parses without errors or warnings.
- * For supported options, see Prism::parse.
+ * Parse the given file and return true if it parses without errors. For
+ * supported options, see Prism::parse.
  */
 static VALUE
 parse_file_success_p(int argc, VALUE *argv, VALUE self) {

@@ -81,15 +81,15 @@ module Prism
       expected = PreExecutionNode(
         StatementsNode([
           CallNode(
+            0,
             expression("1"),
             nil,
             :+,
             Location(),
             nil,
-            ArgumentsNode([MissingNode()], 0),
+            ArgumentsNode(0, [MissingNode()]),
             nil,
-            nil,
-            0
+            nil
           )
         ]),
         Location(),
@@ -146,10 +146,22 @@ module Prism
       ]
     end
 
-    def test_unterminated_string
-      assert_errors expression('"hello'), '"hello', [
-        ["expected a closing delimiter for the interpolated string", 0..1]
+    def test_unterminated_interpolated_string
+      expr = expression('"hello')
+      assert_errors expr, '"hello', [
+        ["expected a closing delimiter for the string literal", 6..6]
       ]
+      assert_equal expr.unescaped, "hello"
+      assert_equal expr.closing, ""
+    end
+
+    def test_unterminated_string
+      expr = expression("'hello")
+      assert_errors expr, "'hello", [
+        ["expected a closing delimiter for the string literal", 0..1]
+      ]
+      assert_equal expr.unescaped, "hello"
+      assert_equal expr.closing, ""
     end
 
     def test_incomplete_instance_var_string
@@ -339,18 +351,18 @@ module Prism
 
     def test_double_splat_followed_by_splat_argument
       expected = CallNode(
+        0,
         nil,
         nil,
         :a,
         Location(),
         Location(),
-        ArgumentsNode([
+        ArgumentsNode(1, [
           KeywordHashNode([AssocSplatNode(expression("kwargs"), Location())]),
           SplatNode(Location(), expression("args"))
-        ], 1),
+        ]),
         Location(),
-        nil,
-        0
+        nil
       )
 
       assert_errors expected, "a(**kwargs, *args)", [
@@ -360,15 +372,15 @@ module Prism
 
     def test_arguments_after_block
       expected = CallNode(
+        0,
         nil,
         nil,
         :a,
         Location(),
         Location(),
-        ArgumentsNode([expression("foo")], 0),
+        ArgumentsNode(0, [expression("foo")]),
         Location(),
-        BlockArgumentNode(expression("block"), Location()),
-        0
+        BlockArgumentNode(expression("block"), Location())
       )
 
       assert_errors expected, "a(&block, foo)", [
@@ -386,12 +398,13 @@ module Prism
 
     def test_splat_argument_after_keyword_argument
       expected = CallNode(
+        0,
         nil,
         nil,
         :a,
         Location(),
         Location(),
-        ArgumentsNode([
+        ArgumentsNode(0, [
           KeywordHashNode(
             [AssocNode(
               SymbolNode(nil, Location(), Location(), "foo"),
@@ -400,10 +413,9 @@ module Prism
             )]
           ),
           SplatNode(Location(), expression("args"))
-        ], 0),
+        ]),
         Location(),
-        nil,
-        0
+        nil
       )
 
       assert_errors expected, "a(foo: bar, *args)", [
@@ -441,6 +453,7 @@ module Prism
         nil,
         StatementsNode(
           [CallNode(
+            0,
             nil,
             nil,
             :bar,
@@ -455,8 +468,7 @@ module Prism
               StatementsNode([ModuleNode([], Location(), ConstantReadNode(:Foo), nil, Location(), :Foo)]),
               Location(),
               Location()
-            ),
-            0
+            )
           )]
         ),
         [],
@@ -1049,6 +1061,7 @@ module Prism
 
     def test_do_not_allow_forward_arguments_in_blocks
       expected = CallNode(
+        0,
         nil,
         nil,
         :a,
@@ -1063,8 +1076,7 @@ module Prism
           nil,
           Location(),
           Location()
-        ),
-        0
+        )
       )
 
       assert_errors expected, "a {|...|}", [
@@ -1957,6 +1969,13 @@ module Prism
         assert_nil Ripper.sexp_raw(source)
         assert_false(Prism.parse(source).success?)
       end
+    end
+
+    def test_constant_assignment_in_method
+      source = 'def foo();A=1;end'
+      assert_errors expression(source), source, [
+        ['dynamic constant assignment', 10..13]
+      ]
     end
 
     private

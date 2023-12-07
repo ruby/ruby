@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(3,1))
     └── body: (length: 3)
         ├── @ CallNode (location: (1,0)-(1,1))
+        │   ├── flags: variable_call
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :a
@@ -11,9 +12,9 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── block: ∅
-        │   └── flags: variable_call
+        │   └── block: ∅
         ├── @ CallNode (location: (2,0)-(2,1))
+        │   ├── flags: variable_call
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :b
@@ -21,9 +22,9 @@
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── block: ∅
-        │   └── flags: variable_call
+        │   └── block: ∅
         └── @ CallNode (location: (3,0)-(3,1))
+            ├── flags: variable_call
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :c
@@ -31,5 +32,4 @@
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
-            ├── block: ∅
-            └── flags: variable_call
+            └── block: ∅

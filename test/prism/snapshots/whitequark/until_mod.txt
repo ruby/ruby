@@ -4,10 +4,12 @@
     @ StatementsNode (location: (1,0)-(1,14))
     └── body: (length: 1)
         └── @ UntilNode (location: (1,0)-(1,14))
+            ├── flags: ∅
             ├── keyword_loc: (1,5)-(1,10) = "until"
             ├── closing_loc: ∅
             ├── predicate:
             │   @ CallNode (location: (1,11)-(1,14))
+            │   ├── flags: variable_call
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :foo
@@ -15,19 +17,17 @@
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
-            │   ├── block: ∅
-            │   └── flags: variable_call
-            ├── statements:
-            │   @ StatementsNode (location: (1,0)-(1,4))
-            │   └── body: (length: 1)
-            │       └── @ CallNode (location: (1,0)-(1,4))
-            │           ├── receiver: ∅
-            │           ├── call_operator_loc: ∅
-            │           ├── name: :meth
-            │           ├── message_loc: (1,0)-(1,4) = "meth"
-            │           ├── opening_loc: ∅
-            │           ├── arguments: ∅
-            │           ├── closing_loc: ∅
-            │           ├── block: ∅
-            │           └── flags: variable_call
-            └── flags: ∅
+            │   └── block: ∅
+            └── statements:
+                @ StatementsNode (location: (1,0)-(1,4))
+                └── body: (length: 1)
+                    └── @ CallNode (location: (1,0)-(1,4))
+                        ├── flags: variable_call
+                        ├── receiver: ∅
+                        ├── call_operator_loc: ∅
+                        ├── name: :meth
+                        ├── message_loc: (1,0)-(1,4) = "meth"
+                        ├── opening_loc: ∅
+                        ├── arguments: ∅
+                        ├── closing_loc: ∅
+                        └── block: ∅

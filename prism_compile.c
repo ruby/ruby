@@ -1377,6 +1377,7 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
             }
             scope->body = cast->body;
             scope->locals = cast->locals;
+            scope->local_depth_offset = 0;
             break;
         }
         case PM_CLASS_NODE: {
@@ -1393,8 +1394,7 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
             break;
         }
         case PM_ENSURE_NODE: {
-            pm_ensure_node_t *cast = (pm_ensure_node_t *)node;
-            scope->body = (pm_node_t *)cast->statements;
+            scope->body = (pm_node_t *)node;
             scope->local_depth_offset += 1;
             break;
         }
@@ -2630,6 +2630,18 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_INSN1(ret, &dummy_line_node, putobject, Qfalse);
         }
         return;
+      case PM_ENSURE_NODE: {
+        pm_ensure_node_t *ensure_node = (pm_ensure_node_t *)node;
+
+        LABEL *start = NEW_LABEL(lineno);
+        LABEL *end = NEW_LABEL(lineno);
+        ADD_LABEL(ret, start);
+        if (ensure_node->statements) {
+            ISEQ_COMPILE_DATA(iseq)->end_label = end;
+            PM_COMPILE((pm_node_t *)ensure_node->statements);
+        }
+        ADD_LABEL(ret, end);
+      }
       case PM_ELSE_NODE: {
           pm_else_node_t *cast = (pm_else_node_t *)node;
           if (cast->statements) {
@@ -3849,6 +3861,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_RESCUE_NODE: {
         LABEL *excep_match = NEW_LABEL(lineno);
         LABEL *rescue_end = NEW_LABEL(lineno);
+
+        ISEQ_COMPILE_DATA(iseq)->end_label = rescue_end;
 
         pm_rescue_node_t *rescue_node = (pm_rescue_node_t *)node;
         iseq_set_exception_local_table(iseq);

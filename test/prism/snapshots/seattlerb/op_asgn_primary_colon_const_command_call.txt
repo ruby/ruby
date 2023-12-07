@@ -16,6 +16,7 @@
             ├── operator_loc: (1,5)-(1,7) = "*="
             ├── value:
             │   @ CallNode (location: (1,8)-(1,11))
+            │   ├── flags: ∅
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :c
@@ -23,19 +24,18 @@
             │   ├── opening_loc: ∅
             │   ├── arguments:
             │   │   @ ArgumentsNode (location: (1,10)-(1,11))
-            │   │   ├── arguments: (length: 1)
-            │   │   │   └── @ CallNode (location: (1,10)-(1,11))
-            │   │   │       ├── receiver: ∅
-            │   │   │       ├── call_operator_loc: ∅
-            │   │   │       ├── name: :d
-            │   │   │       ├── message_loc: (1,10)-(1,11) = "d"
-            │   │   │       ├── opening_loc: ∅
-            │   │   │       ├── arguments: ∅
-            │   │   │       ├── closing_loc: ∅
-            │   │   │       ├── block: ∅
-            │   │   │       └── flags: variable_call
-            │   │   └── flags: ∅
+            │   │   ├── flags: ∅
+            │   │   └── arguments: (length: 1)
+            │   │       └── @ CallNode (location: (1,10)-(1,11))
+            │   │           ├── flags: variable_call
+            │   │           ├── receiver: ∅
+            │   │           ├── call_operator_loc: ∅
+            │   │           ├── name: :d
+            │   │           ├── message_loc: (1,10)-(1,11) = "d"
+            │   │           ├── opening_loc: ∅
+            │   │           ├── arguments: ∅
+            │   │           ├── closing_loc: ∅
+            │   │           └── block: ∅
             │   ├── closing_loc: ∅
-            │   ├── block: ∅
-            │   └── flags: ∅
+            │   └── block: ∅
             └── operator: :*

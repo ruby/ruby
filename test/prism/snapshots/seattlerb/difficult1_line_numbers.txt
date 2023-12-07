@@ -12,6 +12,7 @@
             │   @ StatementsNode (location: (2,2)-(11,11))
             │   └── body: (length: 10)
             │       ├── @ CallNode (location: (2,2)-(2,5))
+            │       │   ├── flags: ∅
             │       │   ├── receiver: ∅
             │       │   ├── call_operator_loc: ∅
             │       │   ├── name: :p
@@ -19,16 +20,17 @@
             │       │   ├── opening_loc: ∅
             │       │   ├── arguments:
             │       │   │   @ ArgumentsNode (location: (2,4)-(2,5))
-            │       │   │   ├── arguments: (length: 1)
-            │       │   │   │   └── @ IntegerNode (location: (2,4)-(2,5))
-            │       │   │   │       └── flags: decimal
-            │       │   │   └── flags: ∅
+            │       │   │   ├── flags: ∅
+            │       │   │   └── arguments: (length: 1)
+            │       │   │       └── @ IntegerNode (location: (2,4)-(2,5))
+            │       │   │           └── flags: decimal
             │       │   ├── closing_loc: ∅
-            │       │   ├── block: ∅
-            │       │   └── flags: ∅
+            │       │   └── block: ∅
             │       ├── @ CallNode (location: (3,2)-(3,7))
+            │       │   ├── flags: ∅
             │       │   ├── receiver:
             │       │   │   @ CallNode (location: (3,2)-(3,3))
+            │       │   │   ├── flags: variable_call
             │       │   │   ├── receiver: ∅
             │       │   │   ├── call_operator_loc: ∅
             │       │   │   ├── name: :a
@@ -36,24 +38,24 @@
             │       │   │   ├── opening_loc: ∅
             │       │   │   ├── arguments: ∅
             │       │   │   ├── closing_loc: ∅
-            │       │   │   ├── block: ∅
-            │       │   │   └── flags: variable_call
+            │       │   │   └── block: ∅
             │       │   ├── call_operator_loc: (3,3)-(3,4) = "."
             │       │   ├── name: :b
             │       │   ├── message_loc: (3,4)-(3,5) = "b"
             │       │   ├── opening_loc: ∅
             │       │   ├── arguments:
             │       │   │   @ ArgumentsNode (location: (3,6)-(3,7))
-            │       │   │   ├── arguments: (length: 1)
-            │       │   │   │   └── @ IntegerNode (location: (3,6)-(3,7))
-            │       │   │   │       └── flags: decimal
-            │       │   │   └── flags: ∅
+            │       │   │   ├── flags: ∅
+            │       │   │   └── arguments: (length: 1)
+            │       │   │       └── @ IntegerNode (location: (3,6)-(3,7))
+            │       │   │           └── flags: decimal
             │       │   ├── closing_loc: ∅
-            │       │   ├── block: ∅
-            │       │   └── flags: ∅
+            │       │   └── block: ∅
             │       ├── @ CallNode (location: (4,2)-(4,10))
+            │       │   ├── flags: ∅
             │       │   ├── receiver:
             │       │   │   @ CallNode (location: (4,2)-(4,3))
+            │       │   │   ├── flags: variable_call
             │       │   │   ├── receiver: ∅
             │       │   │   ├── call_operator_loc: ∅
             │       │   │   ├── name: :c
@@ -61,26 +63,26 @@
             │       │   │   ├── opening_loc: ∅
             │       │   │   ├── arguments: ∅
             │       │   │   ├── closing_loc: ∅
-            │       │   │   ├── block: ∅
-            │       │   │   └── flags: variable_call
+            │       │   │   └── block: ∅
             │       │   ├── call_operator_loc: (4,3)-(4,4) = "."
             │       │   ├── name: :d
             │       │   ├── message_loc: (4,4)-(4,5) = "d"
             │       │   ├── opening_loc: ∅
             │       │   ├── arguments:
             │       │   │   @ ArgumentsNode (location: (4,6)-(4,10))
-            │       │   │   ├── arguments: (length: 2)
-            │       │   │   │   ├── @ IntegerNode (location: (4,6)-(4,7))
-            │       │   │   │   │   └── flags: decimal
-            │       │   │   │   └── @ IntegerNode (location: (4,9)-(4,10))
-            │       │   │   │       └── flags: decimal
-            │       │   │   └── flags: ∅
+            │       │   │   ├── flags: ∅
+            │       │   │   └── arguments: (length: 2)
+            │       │   │       ├── @ IntegerNode (location: (4,6)-(4,7))
+            │       │   │       │   └── flags: decimal
+            │       │   │       └── @ IntegerNode (location: (4,9)-(4,10))
+            │       │   │           └── flags: decimal
             │       │   ├── closing_loc: ∅
-            │       │   ├── block: ∅
-            │       │   └── flags: ∅
+            │       │   └── block: ∅
             │       ├── @ CallNode (location: (5,2)-(5,7))
+            │       │   ├── flags: ∅
             │       │   ├── receiver:
             │       │   │   @ CallNode (location: (5,2)-(5,3))
+            │       │   │   ├── flags: variable_call
             │       │   │   ├── receiver: ∅
             │       │   │   ├── call_operator_loc: ∅
             │       │   │   ├── name: :e
@@ -88,24 +90,24 @@
             │       │   │   ├── opening_loc: ∅
             │       │   │   ├── arguments: ∅
             │       │   │   ├── closing_loc: ∅
-            │       │   │   ├── block: ∅
-            │       │   │   └── flags: variable_call
+            │       │   │   └── block: ∅
             │       │   ├── call_operator_loc: (5,3)-(5,4) = "."
             │       │   ├── name: :f
             │       │   ├── message_loc: (5,4)-(5,5) = "f"
             │       │   ├── opening_loc: ∅
             │       │   ├── arguments:
             │       │   │   @ ArgumentsNode (location: (5,6)-(5,7))
-            │       │   │   ├── arguments: (length: 1)
-            │       │   │   │   └── @ IntegerNode (location: (5,6)-(5,7))
-            │       │   │   │       └── flags: decimal
-            │       │   │   └── flags: ∅
+            │       │   │   ├── flags: ∅
+            │       │   │   └── arguments: (length: 1)
+            │       │   │       └── @ IntegerNode (location: (5,6)-(5,7))
+            │       │   │           └── flags: decimal
             │       │   ├── closing_loc: ∅
-            │       │   ├── block: ∅
-            │       │   └── flags: ∅
+            │       │   └── block: ∅
             │       ├── @ CallNode (location: (6,2)-(6,10))
+            │       │   ├── flags: ∅
             │       │   ├── receiver:
             │       │   │   @ CallNode (location: (6,2)-(6,3))
+            │       │   │   ├── flags: variable_call
             │       │   │   ├── receiver: ∅
             │       │   │   ├── call_operator_loc: ∅
             │       │   │   ├── name: :g
@@ -113,24 +115,23 @@
             │       │   │   ├── opening_loc: ∅
             │       │   │   ├── arguments: ∅
             │       │   │   ├── closing_loc: ∅
-            │       │   │   ├── block: ∅
-            │       │   │   └── flags: variable_call
+            │       │   │   └── block: ∅
             │       │   ├── call_operator_loc: (6,3)-(6,4) = "."
             │       │   ├── name: :h
             │       │   ├── message_loc: (6,4)-(6,5) = "h"
             │       │   ├── opening_loc: ∅
             │       │   ├── arguments:
             │       │   │   @ ArgumentsNode (location: (6,6)-(6,10))
-            │       │   │   ├── arguments: (length: 2)
-            │       │   │   │   ├── @ IntegerNode (location: (6,6)-(6,7))
-            │       │   │   │   │   └── flags: decimal
-            │       │   │   │   └── @ IntegerNode (location: (6,9)-(6,10))
-            │       │   │   │       └── flags: decimal
-            │       │   │   └── flags: ∅
+            │       │   │   ├── flags: ∅
+            │       │   │   └── arguments: (length: 2)
+            │       │   │       ├── @ IntegerNode (location: (6,6)-(6,7))
+            │       │   │       │   └── flags: decimal
+            │       │   │       └── @ IntegerNode (location: (6,9)-(6,10))
+            │       │   │           └── flags: decimal
             │       │   ├── closing_loc: ∅
-            │       │   ├── block: ∅
-            │       │   └── flags: ∅
+            │       │   └── block: ∅
             │       ├── @ CallNode (location: (7,2)-(7,6))
+            │       │   ├── flags: ∅
             │       │   ├── receiver: ∅
             │       │   ├── call_operator_loc: ∅
             │       │   ├── name: :p
@@ -138,16 +139,17 @@
             │       │   ├── opening_loc: (7,3)-(7,4) = "("
             │       │   ├── arguments:
             │       │   │   @ ArgumentsNode (location: (7,4)-(7,5))
-            │       │   │   ├── arguments: (length: 1)
-            │       │   │   │   └── @ IntegerNode (location: (7,4)-(7,5))
-            │       │   │   │       └── flags: decimal
-            │       │   │   └── flags: ∅
+            │       │   │   ├── flags: ∅
+            │       │   │   └── arguments: (length: 1)
+            │       │   │       └── @ IntegerNode (location: (7,4)-(7,5))
+            │       │   │           └── flags: decimal
             │       │   ├── closing_loc: (7,5)-(7,6) = ")"
-            │       │   ├── block: ∅
-            │       │   └── flags: ∅
+            │       │   └── block: ∅
             │       ├── @ CallNode (location: (8,2)-(8,8))
+            │       │   ├── flags: ∅
             │       │   ├── receiver:
             │       │   │   @ CallNode (location: (8,2)-(8,3))
+            │       │   │   ├── flags: variable_call
             │       │   │   ├── receiver: ∅
             │       │   │   ├── call_operator_loc: ∅
             │       │   │   ├── name: :a
@@ -155,24 +157,24 @@
             │       │   │   ├── opening_loc: ∅
             │       │   │   ├── arguments: ∅
             │       │   │   ├── closing_loc: ∅
-            │       │   │   ├── block: ∅
-            │       │   │   └── flags: variable_call
+            │       │   │   └── block: ∅
             │       │   ├── call_operator_loc: (8,3)-(8,4) = "."
             │       │   ├── name: :b
             │       │   ├── message_loc: (8,4)-(8,5) = "b"
             │       │   ├── opening_loc: (8,5)-(8,6) = "("
             │       │   ├── arguments:
             │       │   │   @ ArgumentsNode (location: (8,6)-(8,7))
-            │       │   │   ├── arguments: (length: 1)
-            │       │   │   │   └── @ IntegerNode (location: (8,6)-(8,7))
-            │       │   │   │       └── flags: decimal
-            │       │   │   └── flags: ∅
+            │       │   │   ├── flags: ∅
+            │       │   │   └── arguments: (length: 1)
+            │       │   │       └── @ IntegerNode (location: (8,6)-(8,7))
+            │       │   │           └── flags: decimal
             │       │   ├── closing_loc: (8,7)-(8,8) = ")"
-            │       │   ├── block: ∅
-            │       │   └── flags: ∅
+            │       │   └── block: ∅
             │       ├── @ CallNode (location: (9,2)-(9,11))
+            │       │   ├── flags: ∅
             │       │   ├── receiver:
             │       │   │   @ CallNode (location: (9,2)-(9,3))
+            │       │   │   ├── flags: variable_call
             │       │   │   ├── receiver: ∅
             │       │   │   ├── call_operator_loc: ∅
             │       │   │   ├── name: :c
@@ -180,26 +182,26 @@
             │       │   │   ├── opening_loc: ∅
             │       │   │   ├── arguments: ∅
             │       │   │   ├── closing_loc: ∅
-            │       │   │   ├── block: ∅
-            │       │   │   └── flags: variable_call
+            │       │   │   └── block: ∅
             │       │   ├── call_operator_loc: (9,3)-(9,4) = "."
             │       │   ├── name: :d
             │       │   ├── message_loc: (9,4)-(9,5) = "d"
             │       │   ├── opening_loc: (9,5)-(9,6) = "("
             │       │   ├── arguments:
             │       │   │   @ ArgumentsNode (location: (9,6)-(9,10))
-            │       │   │   ├── arguments: (length: 2)
-            │       │   │   │   ├── @ IntegerNode (location: (9,6)-(9,7))
-            │       │   │   │   │   └── flags: decimal
-            │       │   │   │   └── @ IntegerNode (location: (9,9)-(9,10))
-            │       │   │   │       └── flags: decimal
-            │       │   │   └── flags: ∅
+            │       │   │   ├── flags: ∅
+            │       │   │   └── arguments: (length: 2)
+            │       │   │       ├── @ IntegerNode (location: (9,6)-(9,7))
+            │       │   │       │   └── flags: decimal
+            │       │   │       └── @ IntegerNode (location: (9,9)-(9,10))
+            │       │   │           └── flags: decimal
             │       │   ├── closing_loc: (9,10)-(9,11) = ")"
-            │       │   ├── block: ∅
-            │       │   └── flags: ∅
+            │       │   └── block: ∅
             │       ├── @ CallNode (location: (10,2)-(10,8))
+            │       │   ├── flags: ∅
             │       │   ├── receiver:
             │       │   │   @ CallNode (location: (10,2)-(10,3))
+            │       │   │   ├── flags: variable_call
             │       │   │   ├── receiver: ∅
             │       │   │   ├── call_operator_loc: ∅
             │       │   │   ├── name: :e
@@ -207,24 +209,24 @@
             │       │   │   ├── opening_loc: ∅
             │       │   │   ├── arguments: ∅
             │       │   │   ├── closing_loc: ∅
-            │       │   │   ├── block: ∅
-            │       │   │   └── flags: variable_call
+            │       │   │   └── block: ∅
             │       │   ├── call_operator_loc: (10,3)-(10,4) = "."
             │       │   ├── name: :f
             │       │   ├── message_loc: (10,4)-(10,5) = "f"
             │       │   ├── opening_loc: (10,5)-(10,6) = "("
             │       │   ├── arguments:
             │       │   │   @ ArgumentsNode (location: (10,6)-(10,7))
-            │       │   │   ├── arguments: (length: 1)
-            │       │   │   │   └── @ IntegerNode (location: (10,6)-(10,7))
-            │       │   │   │       └── flags: decimal
-            │       │   │   └── flags: ∅
+            │       │   │   ├── flags: ∅
+            │       │   │   └── arguments: (length: 1)
+            │       │   │       └── @ IntegerNode (location: (10,6)-(10,7))
+            │       │   │           └── flags: decimal
             │       │   ├── closing_loc: (10,7)-(10,8) = ")"
-            │       │   ├── block: ∅
-            │       │   └── flags: ∅
+            │       │   └── block: ∅
             │       └── @ CallNode (location: (11,2)-(11,11))
+            │           ├── flags: ∅
             │           ├── receiver:
             │           │   @ CallNode (location: (11,2)-(11,3))
+            │           │   ├── flags: variable_call
             │           │   ├── receiver: ∅
             │           │   ├── call_operator_loc: ∅
             │           │   ├── name: :g
@@ -232,22 +234,20 @@
             │           │   ├── opening_loc: ∅
             │           │   ├── arguments: ∅
             │           │   ├── closing_loc: ∅
-            │           │   ├── block: ∅
-            │           │   └── flags: variable_call
+            │           │   └── block: ∅
             │           ├── call_operator_loc: (11,3)-(11,4) = "."
             │           ├── name: :h
             │           ├── message_loc: (11,4)-(11,5) = "h"
             │           ├── opening_loc: (11,5)-(11,6) = "("
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (11,6)-(11,10))
-            │           │   ├── arguments: (length: 2)
-            │           │   │   ├── @ IntegerNode (location: (11,6)-(11,7))
-            │           │   │   │   └── flags: decimal
-            │           │   │   └── @ IntegerNode (location: (11,9)-(11,10))
-            │           │   │       └── flags: decimal
-            │           │   └── flags: ∅
+            │           │   ├── flags: ∅
+            │           │   └── arguments: (length: 2)
+            │           │       ├── @ IntegerNode (location: (11,6)-(11,7))
+            │           │       │   └── flags: decimal
+            │           │       └── @ IntegerNode (location: (11,9)-(11,10))
+            │           │           └── flags: decimal
             │           ├── closing_loc: (11,10)-(11,11) = ")"
-            │           ├── block: ∅
-            │           └── flags: ∅
+            │           └── block: ∅
             ├── consequent: ∅
             └── end_keyword_loc: (12,0)-(12,3) = "end"

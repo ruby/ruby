@@ -4,8 +4,10 @@
     @ StatementsNode (location: (1,0)-(5,8))
     └── body: (length: 3)
         ├── @ CallNode (location: (1,0)-(1,7))
+        │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ CallNode (location: (1,4)-(1,7))
+        │   │   ├── flags: variable_call
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -13,17 +15,16 @@
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
-        │   │   ├── block: ∅
-        │   │   └── flags: variable_call
+        │   │   └── block: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :!
         │   ├── message_loc: (1,0)-(1,3) = "not"
         │   ├── opening_loc: ∅
         │   ├── arguments: ∅
         │   ├── closing_loc: ∅
-        │   ├── block: ∅
-        │   └── flags: ∅
+        │   └── block: ∅
         ├── @ CallNode (location: (3,0)-(3,5))
+        │   ├── flags: ∅
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :!
@@ -31,11 +32,12 @@
         │   ├── opening_loc: (3,3)-(3,4) = "("
         │   ├── arguments: ∅
         │   ├── closing_loc: (3,4)-(3,5) = ")"
-        │   ├── block: ∅
-        │   └── flags: ∅
+        │   └── block: ∅
         └── @ CallNode (location: (5,0)-(5,8))
+            ├── flags: ∅
             ├── receiver:
             │   @ CallNode (location: (5,4)-(5,7))
+            │   ├── flags: variable_call
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :foo
@@ -43,13 +45,11 @@
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
-            │   ├── block: ∅
-            │   └── flags: variable_call
+            │   └── block: ∅
             ├── call_operator_loc: ∅
             ├── name: :!
             ├── message_loc: (5,0)-(5,3) = "not"
             ├── opening_loc: (5,3)-(5,4) = "("
             ├── arguments: ∅
             ├── closing_loc: (5,7)-(5,8) = ")"
-            ├── block: ∅
-            └── flags: ∅
+            └── block: ∅

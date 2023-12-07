@@ -8,6 +8,7 @@
             ├── operator_loc: (1,4)-(1,6) = "+="
             ├── value:
             │   @ CallNode (location: (1,7)-(1,12))
+            │   ├── flags: ∅
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :m
@@ -15,14 +16,13 @@
             │   ├── opening_loc: ∅
             │   ├── arguments:
             │   │   @ ArgumentsNode (location: (1,9)-(1,12))
-            │   │   ├── arguments: (length: 1)
-            │   │   │   └── @ LocalVariableReadNode (location: (1,9)-(1,12))
-            │   │   │       ├── name: :foo
-            │   │   │       └── depth: 0
-            │   │   └── flags: ∅
+            │   │   ├── flags: ∅
+            │   │   └── arguments: (length: 1)
+            │   │       └── @ LocalVariableReadNode (location: (1,9)-(1,12))
+            │   │           ├── name: :foo
+            │   │           └── depth: 0
             │   ├── closing_loc: ∅
-            │   ├── block: ∅
-            │   └── flags: ∅
+            │   └── block: ∅
             ├── name: :foo
             ├── operator: :+
             └── depth: 0

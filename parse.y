@@ -12785,6 +12785,11 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
         }
 # endif
         /* method call without arguments */
+        if (dyna_in_block(p) && id == rb_intern("it")
+            && !(DVARS_TERMINAL_P(p->lvtbl->args) || DVARS_TERMINAL_P(p->lvtbl->args->prev))
+            && p->max_numparam != ORDINAL_PARAM) {
+            rb_warn0("`it` calls without arguments will refer to the first block param in Ruby 3.4; use it() or self.it");
+        }
         return NEW_VCALL(id, loc);
       case ID_GLOBAL:
         return NEW_GVAR(id, loc);

@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,12))
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,12))
+            ├── flags: ∅
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :p
@@ -11,24 +12,23 @@
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (1,2)-(1,12))
-            │   ├── arguments: (length: 1)
-            │   │   └── @ InterpolatedStringNode (location: (1,2)-(1,12))
-            │   │       ├── opening_loc: ∅
-            │   │       ├── parts: (length: 2)
-            │   │       │   ├── @ StringNode (location: (1,2)-(1,6))
-            │   │       │   │   ├── flags: ∅
-            │   │       │   │   ├── opening_loc: (1,2)-(1,6) = "<<~E"
-            │   │       │   │   ├── content_loc: (2,0)-(3,0) = "  x\n"
-            │   │       │   │   ├── closing_loc: (3,0)-(4,0) = "E\n"
-            │   │       │   │   └── unescaped: "x\n"
-            │   │       │   └── @ StringNode (location: (1,7)-(1,12))
-            │   │       │       ├── flags: ∅
-            │   │       │       ├── opening_loc: (1,7)-(1,8) = "\""
-            │   │       │       ├── content_loc: (1,8)-(1,11) = "  y"
-            │   │       │       ├── closing_loc: (1,11)-(1,12) = "\""
-            │   │       │       └── unescaped: "  y"
-            │   │       └── closing_loc: ∅
-            │   └── flags: ∅
+            │   ├── flags: ∅
+            │   └── arguments: (length: 1)
+            │       └── @ InterpolatedStringNode (location: (1,2)-(1,12))
+            │           ├── opening_loc: ∅
+            │           ├── parts: (length: 2)
+            │           │   ├── @ StringNode (location: (1,2)-(1,6))
+            │           │   │   ├── flags: ∅
+            │           │   │   ├── opening_loc: (1,2)-(1,6) = "<<~E"
+            │           │   │   ├── content_loc: (2,0)-(3,0) = "  x\n"
+            │           │   │   ├── closing_loc: (3,0)-(4,0) = "E\n"
+            │           │   │   └── unescaped: "x\n"
+            │           │   └── @ StringNode (location: (1,7)-(1,12))
+            │           │       ├── flags: ∅
+            │           │       ├── opening_loc: (1,7)-(1,8) = "\""
+            │           │       ├── content_loc: (1,8)-(1,11) = "  y"
+            │           │       ├── closing_loc: (1,11)-(1,12) = "\""
+            │           │       └── unescaped: "  y"
+            │           └── closing_loc: ∅
             ├── closing_loc: ∅
-            ├── block: ∅
-            └── flags: ∅
+            └── block: ∅

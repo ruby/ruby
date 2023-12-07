@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,5))
     └── body: (length: 1)
         └── @ ArrayNode (location: (1,0)-(1,5))
+            ├── flags: ∅
             ├── elements: (length: 0)
             ├── opening_loc: (1,0)-(1,3) = "%i("
-            ├── closing_loc: (1,4)-(1,5) = ")"
-            └── flags: ∅
+            └── closing_loc: (1,4)-(1,5) = ")"

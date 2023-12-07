@@ -18,6 +18,7 @@
         │   ├── operator_loc: (2,2)-(2,3) = "="
         │   └── value:
         │       @ CallNode (location: (2,4)-(2,5))
+        │       ├── flags: variable_call
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
         │       ├── name: :c
@@ -25,9 +26,9 @@
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
-        │       ├── block: ∅
-        │       └── flags: variable_call
+        │       └── block: ∅
         └── @ CallNode (location: (3,0)-(3,1))
+            ├── flags: variable_call
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :d
@@ -35,5 +36,4 @@
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
-            ├── block: ∅
-            └── flags: variable_call
+            └── block: ∅

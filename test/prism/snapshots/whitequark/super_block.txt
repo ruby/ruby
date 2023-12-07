@@ -17,28 +17,28 @@
             ├── lparen_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (3,6)-(3,14))
-            │   ├── arguments: (length: 2)
-            │   │   ├── @ CallNode (location: (3,6)-(3,9))
-            │   │   │   ├── receiver: ∅
-            │   │   │   ├── call_operator_loc: ∅
-            │   │   │   ├── name: :foo
-            │   │   │   ├── message_loc: (3,6)-(3,9) = "foo"
-            │   │   │   ├── opening_loc: ∅
-            │   │   │   ├── arguments: ∅
-            │   │   │   ├── closing_loc: ∅
-            │   │   │   ├── block: ∅
-            │   │   │   └── flags: variable_call
-            │   │   └── @ CallNode (location: (3,11)-(3,14))
-            │   │       ├── receiver: ∅
-            │   │       ├── call_operator_loc: ∅
-            │   │       ├── name: :bar
-            │   │       ├── message_loc: (3,11)-(3,14) = "bar"
-            │   │       ├── opening_loc: ∅
-            │   │       ├── arguments: ∅
-            │   │       ├── closing_loc: ∅
-            │   │       ├── block: ∅
-            │   │       └── flags: variable_call
-            │   └── flags: ∅
+            │   ├── flags: ∅
+            │   └── arguments: (length: 2)
+            │       ├── @ CallNode (location: (3,6)-(3,9))
+            │       │   ├── flags: variable_call
+            │       │   ├── receiver: ∅
+            │       │   ├── call_operator_loc: ∅
+            │       │   ├── name: :foo
+            │       │   ├── message_loc: (3,6)-(3,9) = "foo"
+            │       │   ├── opening_loc: ∅
+            │       │   ├── arguments: ∅
+            │       │   ├── closing_loc: ∅
+            │       │   └── block: ∅
+            │       └── @ CallNode (location: (3,11)-(3,14))
+            │           ├── flags: variable_call
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── name: :bar
+            │           ├── message_loc: (3,11)-(3,14) = "bar"
+            │           ├── opening_loc: ∅
+            │           ├── arguments: ∅
+            │           ├── closing_loc: ∅
+            │           └── block: ∅
             ├── rparen_loc: ∅
             └── block:
                 @ BlockNode (location: (3,15)-(3,21))

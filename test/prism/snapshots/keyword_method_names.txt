@@ -33,6 +33,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (5,0)-(5,3) = "end"
         ├── @ CallNode (location: (7,0)-(10,3))
+        │   ├── flags: ∅
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :private
@@ -40,44 +41,43 @@
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (7,8)-(10,3))
-        │   │   ├── arguments: (length: 1)
-        │   │   │   └── @ DefNode (location: (7,8)-(10,3))
-        │   │   │       ├── name: :foo
-        │   │   │       ├── name_loc: (7,12)-(7,15) = "foo"
-        │   │   │       ├── receiver: ∅
-        │   │   │       ├── parameters: ∅
-        │   │   │       ├── body:
-        │   │   │       │   @ StatementsNode (location: (8,2)-(9,5))
-        │   │   │       │   └── body: (length: 1)
-        │   │   │       │       └── @ CallNode (location: (8,2)-(9,5))
-        │   │   │       │           ├── receiver: ∅
-        │   │   │       │           ├── call_operator_loc: ∅
-        │   │   │       │           ├── name: :bar
-        │   │   │       │           ├── message_loc: (8,2)-(8,5) = "bar"
-        │   │   │       │           ├── opening_loc: ∅
-        │   │   │       │           ├── arguments: ∅
-        │   │   │       │           ├── closing_loc: ∅
-        │   │   │       │           ├── block:
-        │   │   │       │           │   @ BlockNode (location: (8,6)-(9,5))
-        │   │   │       │           │   ├── locals: []
-        │   │   │       │           │   ├── locals_body_index: 0
-        │   │   │       │           │   ├── parameters: ∅
-        │   │   │       │           │   ├── body: ∅
-        │   │   │       │           │   ├── opening_loc: (8,6)-(8,8) = "do"
-        │   │   │       │           │   └── closing_loc: (9,2)-(9,5) = "end"
-        │   │   │       │           └── flags: ∅
-        │   │   │       ├── locals: []
-        │   │   │       ├── locals_body_index: 0
-        │   │   │       ├── def_keyword_loc: (7,8)-(7,11) = "def"
-        │   │   │       ├── operator_loc: ∅
-        │   │   │       ├── lparen_loc: ∅
-        │   │   │       ├── rparen_loc: ∅
-        │   │   │       ├── equal_loc: ∅
-        │   │   │       └── end_keyword_loc: (10,0)-(10,3) = "end"
-        │   │   └── flags: ∅
+        │   │   ├── flags: ∅
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ DefNode (location: (7,8)-(10,3))
+        │   │           ├── name: :foo
+        │   │           ├── name_loc: (7,12)-(7,15) = "foo"
+        │   │           ├── receiver: ∅
+        │   │           ├── parameters: ∅
+        │   │           ├── body:
+        │   │           │   @ StatementsNode (location: (8,2)-(9,5))
+        │   │           │   └── body: (length: 1)
+        │   │           │       └── @ CallNode (location: (8,2)-(9,5))
+        │   │           │           ├── flags: ∅
+        │   │           │           ├── receiver: ∅
+        │   │           │           ├── call_operator_loc: ∅
+        │   │           │           ├── name: :bar
+        │   │           │           ├── message_loc: (8,2)-(8,5) = "bar"
+        │   │           │           ├── opening_loc: ∅
+        │   │           │           ├── arguments: ∅
+        │   │           │           ├── closing_loc: ∅
+        │   │           │           └── block:
+        │   │           │               @ BlockNode (location: (8,6)-(9,5))
+        │   │           │               ├── locals: []
+        │   │           │               ├── locals_body_index: 0
+        │   │           │               ├── parameters: ∅
+        │   │           │               ├── body: ∅
+        │   │           │               ├── opening_loc: (8,6)-(8,8) = "do"
+        │   │           │               └── closing_loc: (9,2)-(9,5) = "end"
+        │   │           ├── locals: []
+        │   │           ├── locals_body_index: 0
+        │   │           ├── def_keyword_loc: (7,8)-(7,11) = "def"
+        │   │           ├── operator_loc: ∅
+        │   │           ├── lparen_loc: ∅
+        │   │           ├── rparen_loc: ∅
+        │   │           ├── equal_loc: ∅
+        │   │           └── end_keyword_loc: (10,0)-(10,3) = "end"
         │   ├── closing_loc: ∅
-        │   ├── block: ∅
-        │   └── flags: ∅
+        │   └── block: ∅
         ├── @ DefNode (location: (12,0)-(13,3))
         │   ├── name: :m
         │   ├── name_loc: (12,4)-(12,5) = "m"

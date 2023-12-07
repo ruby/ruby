@@ -4,8 +4,10 @@
     @ StatementsNode (location: (1,0)-(2,3))
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(2,3))
+            ├── flags: safe_navigation
             ├── receiver:
             │   @ CallNode (location: (1,0)-(1,1))
+            │   ├── flags: variable_call
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :a
@@ -13,13 +15,11 @@
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
-            │   ├── block: ∅
-            │   └── flags: variable_call
+            │   └── block: ∅
             ├── call_operator_loc: (2,0)-(2,2) = "&."
             ├── name: :b
             ├── message_loc: (2,2)-(2,3) = "b"
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
-            ├── block: ∅
-            └── flags: safe_navigation
+            └── block: ∅

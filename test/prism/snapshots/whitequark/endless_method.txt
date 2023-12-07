@@ -40,6 +40,7 @@
         │   │   @ StatementsNode (location: (3,13)-(3,18))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (3,13)-(3,18))
+        │   │           ├── flags: ∅
         │   │           ├── receiver:
         │   │           │   @ LocalVariableReadNode (location: (3,13)-(3,14))
         │   │           │   ├── name: :x
@@ -50,13 +51,12 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments:
         │   │           │   @ ArgumentsNode (location: (3,17)-(3,18))
-        │   │           │   ├── arguments: (length: 1)
-        │   │           │   │   └── @ IntegerNode (location: (3,17)-(3,18))
-        │   │           │   │       └── flags: decimal
-        │   │           │   └── flags: ∅
+        │   │           │   ├── flags: ∅
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ IntegerNode (location: (3,17)-(3,18))
+        │   │           │           └── flags: decimal
         │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           └── flags: ∅
+        │   │           └── block: ∅
         │   ├── locals: [:x]
         │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (3,0)-(3,3) = "def"
@@ -70,6 +70,7 @@
         │   ├── name_loc: (5,8)-(5,11) = "foo"
         │   ├── receiver:
         │   │   @ CallNode (location: (5,4)-(5,7))
+        │   │   ├── flags: variable_call
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :obj
@@ -77,8 +78,7 @@
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
-        │   │   ├── block: ∅
-        │   │   └── flags: variable_call
+        │   │   └── block: ∅
         │   ├── parameters: ∅
         │   ├── body:
         │   │   @ StatementsNode (location: (5,16)-(5,18))
@@ -98,6 +98,7 @@
             ├── name_loc: (7,8)-(7,11) = "inc"
             ├── receiver:
             │   @ CallNode (location: (7,4)-(7,7))
+            │   ├── flags: variable_call
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :obj
@@ -105,8 +106,7 @@
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
-            │   ├── block: ∅
-            │   └── flags: variable_call
+            │   └── block: ∅
             ├── parameters:
             │   @ ParametersNode (location: (7,12)-(7,13))
             │   ├── requireds: (length: 1)
@@ -122,6 +122,7 @@
             │   @ StatementsNode (location: (7,17)-(7,22))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (7,17)-(7,22))
+            │           ├── flags: ∅
             │           ├── receiver:
             │           │   @ LocalVariableReadNode (location: (7,17)-(7,18))
             │           │   ├── name: :x
@@ -132,13 +133,12 @@
             │           ├── opening_loc: ∅
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (7,21)-(7,22))
-            │           │   ├── arguments: (length: 1)
-            │           │   │   └── @ IntegerNode (location: (7,21)-(7,22))
-            │           │   │       └── flags: decimal
-            │           │   └── flags: ∅
+            │           │   ├── flags: ∅
+            │           │   └── arguments: (length: 1)
+            │           │       └── @ IntegerNode (location: (7,21)-(7,22))
+            │           │           └── flags: decimal
             │           ├── closing_loc: ∅
-            │           ├── block: ∅
-            │           └── flags: ∅
+            │           └── block: ∅
             ├── locals: [:x]
             ├── locals_body_index: 1
             ├── def_keyword_loc: (7,0)-(7,3) = "def"

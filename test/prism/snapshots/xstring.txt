@@ -24,6 +24,7 @@
         │   │   │   │   @ StatementsNode (location: (3,7)-(3,10))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (3,7)-(3,10))
+        │   │   │   │           ├── flags: variable_call
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :bar
@@ -31,8 +32,7 @@
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           ├── block: ∅
-        │   │   │   │           └── flags: variable_call
+        │   │   │   │           └── block: ∅
         │   │   │   └── closing_loc: (3,10)-(3,11) = "}"
         │   │   └── @ StringNode (location: (3,11)-(3,15))
         │   │       ├── flags: ∅

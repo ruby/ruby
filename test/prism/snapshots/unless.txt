@@ -90,6 +90,7 @@
             ├── keyword_loc: (14,11)-(14,17) = "unless"
             ├── predicate:
             │   @ CallNode (location: (14,18)-(14,22))
+            │   ├── flags: ∅
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :bar?
@@ -97,13 +98,13 @@
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
-            │   ├── block: ∅
-            │   └── flags: ∅
+            │   └── block: ∅
             ├── then_keyword_loc: ∅
             ├── statements:
             │   @ StatementsNode (location: (14,0)-(14,10))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (14,0)-(14,10))
+            │           ├── flags: ∅
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :foo
@@ -111,20 +112,19 @@
             │           ├── opening_loc: ∅
             │           ├── arguments:
             │           │   @ ArgumentsNode (location: (14,4)-(14,10))
-            │           │   ├── arguments: (length: 2)
-            │           │   │   ├── @ SymbolNode (location: (14,4)-(14,6))
-            │           │   │   │   ├── opening_loc: (14,4)-(14,5) = ":"
-            │           │   │   │   ├── value_loc: (14,5)-(14,6) = "a"
-            │           │   │   │   ├── closing_loc: ∅
-            │           │   │   │   └── unescaped: "a"
-            │           │   │   └── @ SymbolNode (location: (14,8)-(14,10))
-            │           │   │       ├── opening_loc: (14,8)-(14,9) = ":"
-            │           │   │       ├── value_loc: (14,9)-(14,10) = "b"
-            │           │   │       ├── closing_loc: ∅
-            │           │   │       └── unescaped: "b"
-            │           │   └── flags: ∅
+            │           │   ├── flags: ∅
+            │           │   └── arguments: (length: 2)
+            │           │       ├── @ SymbolNode (location: (14,4)-(14,6))
+            │           │       │   ├── opening_loc: (14,4)-(14,5) = ":"
+            │           │       │   ├── value_loc: (14,5)-(14,6) = "a"
+            │           │       │   ├── closing_loc: ∅
+            │           │       │   └── unescaped: "a"
+            │           │       └── @ SymbolNode (location: (14,8)-(14,10))
+            │           │           ├── opening_loc: (14,8)-(14,9) = ":"
+            │           │           ├── value_loc: (14,9)-(14,10) = "b"
+            │           │           ├── closing_loc: ∅
+            │           │           └── unescaped: "b"
             │           ├── closing_loc: ∅
-            │           ├── block: ∅
-            │           └── flags: ∅
+            │           └── block: ∅
             ├── consequent: ∅
             └── end_keyword_loc: ∅

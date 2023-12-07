@@ -6,6 +6,7 @@
         ├── @ CaseMatchNode (location: (1,0)-(8,3))
         │   ├── predicate:
         │   │   @ CallNode (location: (1,5)-(1,8))
+        │   │   ├── flags: variable_call
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -13,8 +14,7 @@
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
-        │   │   ├── block: ∅
-        │   │   └── flags: variable_call
+        │   │   └── block: ∅
         │   ├── conditions: (length: 2)
         │   │   ├── @ InNode (location: (2,0)-(4,4))
         │   │   │   ├── pattern:
@@ -70,8 +70,10 @@
         │   ├── case_keyword_loc: (1,0)-(1,4) = "case"
         │   └── end_keyword_loc: (8,0)-(8,3) = "end"
         ├── @ CallNode (location: (10,0)-(11,1))
+        │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ CallNode (location: (10,0)-(10,3))
+        │   │   ├── flags: variable_call
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :obj
@@ -79,35 +81,35 @@
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
-        │   │   ├── block: ∅
-        │   │   └── flags: variable_call
+        │   │   └── block: ∅
         │   ├── call_operator_loc: (10,3)-(10,4) = "."
         │   ├── name: :set
         │   ├── message_loc: (10,4)-(10,7) = "set"
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (10,8)-(11,1))
-        │   │   ├── arguments: (length: 1)
-        │   │   │   └── @ KeywordHashNode (location: (10,8)-(11,1))
-        │   │   │       └── elements: (length: 1)
-        │   │   │           └── @ AssocNode (location: (10,8)-(11,1))
-        │   │   │               ├── key:
-        │   │   │               │   @ SymbolNode (location: (10,8)-(10,14))
-        │   │   │               │   ├── opening_loc: (10,8)-(10,9) = "\""
-        │   │   │               │   ├── value_loc: (10,9)-(10,12) = "foo"
-        │   │   │               │   ├── closing_loc: (10,12)-(10,14) = "\":"
-        │   │   │               │   └── unescaped: "foo"
-        │   │   │               ├── value:
-        │   │   │               │   @ IntegerNode (location: (11,0)-(11,1))
-        │   │   │               │   └── flags: decimal
-        │   │   │               └── operator_loc: ∅
-        │   │   └── flags: ∅
+        │   │   ├── flags: ∅
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ KeywordHashNode (location: (10,8)-(11,1))
+        │   │           └── elements: (length: 1)
+        │   │               └── @ AssocNode (location: (10,8)-(11,1))
+        │   │                   ├── key:
+        │   │                   │   @ SymbolNode (location: (10,8)-(10,14))
+        │   │                   │   ├── opening_loc: (10,8)-(10,9) = "\""
+        │   │                   │   ├── value_loc: (10,9)-(10,12) = "foo"
+        │   │                   │   ├── closing_loc: (10,12)-(10,14) = "\":"
+        │   │                   │   └── unescaped: "foo"
+        │   │                   ├── value:
+        │   │                   │   @ IntegerNode (location: (11,0)-(11,1))
+        │   │                   │   └── flags: decimal
+        │   │                   └── operator_loc: ∅
         │   ├── closing_loc: ∅
-        │   ├── block: ∅
-        │   └── flags: ∅
+        │   └── block: ∅
         └── @ CallNode (location: (13,0)-(14,1))
+            ├── flags: ∅
             ├── receiver:
             │   @ CallNode (location: (13,0)-(13,3))
+            │   ├── flags: variable_call
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :obj
@@ -115,29 +117,27 @@
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
-            │   ├── block: ∅
-            │   └── flags: variable_call
+            │   └── block: ∅
             ├── call_operator_loc: (13,3)-(13,4) = "."
             ├── name: :set
             ├── message_loc: (13,4)-(13,7) = "set"
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (13,8)-(14,1))
-            │   ├── arguments: (length: 1)
-            │   │   └── @ KeywordHashNode (location: (13,8)-(14,1))
-            │   │       └── elements: (length: 1)
-            │   │           └── @ AssocNode (location: (13,8)-(14,1))
-            │   │               ├── key:
-            │   │               │   @ SymbolNode (location: (13,8)-(13,12))
-            │   │               │   ├── opening_loc: ∅
-            │   │               │   ├── value_loc: (13,8)-(13,11) = "foo"
-            │   │               │   ├── closing_loc: (13,11)-(13,12) = ":"
-            │   │               │   └── unescaped: "foo"
-            │   │               ├── value:
-            │   │               │   @ IntegerNode (location: (14,0)-(14,1))
-            │   │               │   └── flags: decimal
-            │   │               └── operator_loc: ∅
-            │   └── flags: ∅
+            │   ├── flags: ∅
+            │   └── arguments: (length: 1)
+            │       └── @ KeywordHashNode (location: (13,8)-(14,1))
+            │           └── elements: (length: 1)
+            │               └── @ AssocNode (location: (13,8)-(14,1))
+            │                   ├── key:
+            │                   │   @ SymbolNode (location: (13,8)-(13,12))
+            │                   │   ├── opening_loc: ∅
+            │                   │   ├── value_loc: (13,8)-(13,11) = "foo"
+            │                   │   ├── closing_loc: (13,11)-(13,12) = ":"
+            │                   │   └── unescaped: "foo"
+            │                   ├── value:
+            │                   │   @ IntegerNode (location: (14,0)-(14,1))
+            │                   │   └── flags: decimal
+            │                   └── operator_loc: ∅
             ├── closing_loc: ∅
-            ├── block: ∅
-            └── flags: ∅
+            └── block: ∅

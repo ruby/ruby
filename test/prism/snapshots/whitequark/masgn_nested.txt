@@ -22,6 +22,7 @@
         │   ├── operator_loc: (1,8)-(1,9) = "="
         │   └── value:
         │       @ CallNode (location: (1,10)-(1,13))
+        │       ├── flags: variable_call
         │       ├── receiver: ∅
         │       ├── call_operator_loc: ∅
         │       ├── name: :foo
@@ -29,8 +30,7 @@
         │       ├── opening_loc: ∅
         │       ├── arguments: ∅
         │       ├── closing_loc: ∅
-        │       ├── block: ∅
-        │       └── flags: variable_call
+        │       └── block: ∅
         └── @ MultiWriteNode (location: (3,0)-(3,15))
             ├── lefts: (length: 2)
             │   ├── @ LocalVariableTargetNode (location: (3,0)-(3,1))
@@ -55,6 +55,7 @@
             ├── operator_loc: (3,10)-(3,11) = "="
             └── value:
                 @ CallNode (location: (3,12)-(3,15))
+                ├── flags: variable_call
                 ├── receiver: ∅
                 ├── call_operator_loc: ∅
                 ├── name: :foo
@@ -62,5 +63,4 @@
                 ├── opening_loc: ∅
                 ├── arguments: ∅
                 ├── closing_loc: ∅
-                ├── block: ∅
-                └── flags: variable_call
+                └── block: ∅

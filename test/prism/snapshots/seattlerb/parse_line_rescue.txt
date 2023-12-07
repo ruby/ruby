@@ -9,6 +9,7 @@
             │   @ StatementsNode (location: (2,2)-(2,3))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (2,2)-(2,3))
+            │           ├── flags: variable_call
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :a
@@ -16,8 +17,7 @@
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
-            │           ├── block: ∅
-            │           └── flags: variable_call
+            │           └── block: ∅
             ├── rescue_clause:
             │   @ RescueNode (location: (3,0)-(6,3))
             │   ├── keyword_loc: (3,0)-(3,6) = "rescue"
@@ -28,6 +28,7 @@
             │   │   @ StatementsNode (location: (4,2)-(4,3))
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (4,2)-(4,3))
+            │   │           ├── flags: variable_call
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :b
@@ -35,8 +36,7 @@
             │   │           ├── opening_loc: ∅
             │   │           ├── arguments: ∅
             │   │           ├── closing_loc: ∅
-            │   │           ├── block: ∅
-            │   │           └── flags: variable_call
+            │   │           └── block: ∅
             │   └── consequent:
             │       @ RescueNode (location: (5,0)-(6,3))
             │       ├── keyword_loc: (5,0)-(5,6) = "rescue"
@@ -47,6 +47,7 @@
             │       │   @ StatementsNode (location: (6,2)-(6,3))
             │       │   └── body: (length: 1)
             │       │       └── @ CallNode (location: (6,2)-(6,3))
+            │       │           ├── flags: variable_call
             │       │           ├── receiver: ∅
             │       │           ├── call_operator_loc: ∅
             │       │           ├── name: :c
@@ -54,8 +55,7 @@
             │       │           ├── opening_loc: ∅
             │       │           ├── arguments: ∅
             │       │           ├── closing_loc: ∅
-            │       │           ├── block: ∅
-            │       │           └── flags: variable_call
+            │       │           └── block: ∅
             │       └── consequent: ∅
             ├── else_clause: ∅
             ├── ensure_clause: ∅

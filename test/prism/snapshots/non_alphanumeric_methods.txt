@@ -248,6 +248,7 @@
         │   ├── name_loc: (48,6)-(48,7) = "-"
         │   ├── receiver:
         │   │   @ CallNode (location: (48,4)-(48,5))
+        │   │   ├── flags: variable_call
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :a
@@ -255,8 +256,7 @@
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
-        │   │   ├── block: ∅
-        │   │   └── flags: variable_call
+        │   │   └── block: ∅
         │   ├── parameters: ∅
         │   ├── body: ∅
         │   ├── locals: []

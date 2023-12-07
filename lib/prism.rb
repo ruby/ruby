@@ -68,7 +68,7 @@ module Prism
   # :call-seq:
   #   Prism::parse_failure?(source, **options) -> bool
   #
-  # Returns true if the source is invalid Ruby code.
+  # Returns true if the source parses with errors.
   def self.parse_failure?(source, **options)
     !parse_success?(source, **options)
   end
@@ -76,7 +76,7 @@ module Prism
   # :call-seq:
   #   Prism::parse_file_failure?(filepath, **options) -> bool
   #
-  # Returns true if the file at filepath is invalid Ruby code.
+  # Returns true if the file at filepath parses with errors.
   def self.parse_file_failure?(filepath, **options)
     !parse_file_success?(filepath, **options)
   end

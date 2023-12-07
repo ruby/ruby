@@ -255,6 +255,7 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_UNTIL_TERM]                         = "expected an `end` to close the `until` statement",
     [PM_ERR_VOID_EXPRESSION]                    = "unexpected void value expression",
     [PM_ERR_WHILE_TERM]                         = "expected an `end` to close the `while` statement",
+    [PM_ERR_WRITE_TARGET_IN_METHOD]             = "dynamic constant assignment",
     [PM_ERR_WRITE_TARGET_READONLY]              = "immutable variable as a write target",
     [PM_ERR_WRITE_TARGET_UNEXPECTED]            = "unexpected write target",
     [PM_ERR_XSTRING_TERM]                       = "expected a closing delimiter for the `%x` or backtick string",

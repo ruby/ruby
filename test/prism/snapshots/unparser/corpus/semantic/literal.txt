@@ -24,18 +24,19 @@
         │   ├── closing_loc: ∅
         │   └── unescaped: "c"
         ├── @ RegularExpressionNode (location: (9,0)-(9,5))
+        │   ├── flags: ∅
         │   ├── opening_loc: (9,0)-(9,3) = "%r("
         │   ├── content_loc: (9,3)-(9,4) = "/"
         │   ├── closing_loc: (9,4)-(9,5) = ")"
-        │   ├── unescaped: "/"
-        │   └── flags: ∅
+        │   └── unescaped: "/"
         ├── @ RegularExpressionNode (location: (10,0)-(10,6))
+        │   ├── flags: ∅
         │   ├── opening_loc: (10,0)-(10,3) = "%r("
         │   ├── content_loc: (10,3)-(10,5) = "\\)"
         │   ├── closing_loc: (10,5)-(10,6) = ")"
-        │   ├── unescaped: "\\)"
-        │   └── flags: ∅
+        │   └── unescaped: "\\)"
         ├── @ InterpolatedRegularExpressionNode (location: (11,0)-(11,14))
+        │   ├── flags: ∅
         │   ├── opening_loc: (11,0)-(11,3) = "%r("
         │   ├── parts: (length: 2)
         │   │   ├── @ EmbeddedStatementsNode (location: (11,3)-(11,10))
@@ -52,11 +53,11 @@
         │   │       ├── content_loc: (11,10)-(11,13) = "baz"
         │   │       ├── closing_loc: ∅
         │   │       └── unescaped: "baz"
-        │   ├── closing_loc: (11,13)-(11,14) = ")"
-        │   └── flags: ∅
+        │   └── closing_loc: (11,13)-(11,14) = ")"
         ├── @ FloatNode (location: (12,0)-(12,16))
         ├── @ FloatNode (location: (13,0)-(13,17))
         └── @ CallNode (location: (14,0)-(14,10))
+            ├── flags: ∅
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :w
@@ -64,31 +65,30 @@
             ├── opening_loc: (14,1)-(14,2) = "("
             ├── arguments:
             │   @ ArgumentsNode (location: (14,2)-(14,9))
-            │   ├── arguments: (length: 1)
-            │   │   └── @ CallNode (location: (14,2)-(14,9))
-            │   │       ├── receiver: ∅
-            │   │       ├── call_operator_loc: ∅
-            │   │       ├── name: :foo
-            │   │       ├── message_loc: (14,2)-(14,5) = "foo"
-            │   │       ├── opening_loc: ∅
-            │   │       ├── arguments:
-            │   │       │   @ ArgumentsNode (location: (14,6)-(14,9))
-            │   │       │   ├── arguments: (length: 1)
-            │   │       │   │   └── @ CallNode (location: (14,6)-(14,9))
-            │   │       │   │       ├── receiver: ∅
-            │   │       │   │       ├── call_operator_loc: ∅
-            │   │       │   │       ├── name: :bar
-            │   │       │   │       ├── message_loc: (14,6)-(14,9) = "bar"
-            │   │       │   │       ├── opening_loc: ∅
-            │   │       │   │       ├── arguments: ∅
-            │   │       │   │       ├── closing_loc: ∅
-            │   │       │   │       ├── block: ∅
-            │   │       │   │       └── flags: variable_call
-            │   │       │   └── flags: ∅
-            │   │       ├── closing_loc: ∅
-            │   │       ├── block: ∅
-            │   │       └── flags: ∅
-            │   └── flags: ∅
+            │   ├── flags: ∅
+            │   └── arguments: (length: 1)
+            │       └── @ CallNode (location: (14,2)-(14,9))
+            │           ├── flags: ∅
+            │           ├── receiver: ∅
+            │           ├── call_operator_loc: ∅
+            │           ├── name: :foo
+            │           ├── message_loc: (14,2)-(14,5) = "foo"
+            │           ├── opening_loc: ∅
+            │           ├── arguments:
+            │           │   @ ArgumentsNode (location: (14,6)-(14,9))
+            │           │   ├── flags: ∅
+            │           │   └── arguments: (length: 1)
+            │           │       └── @ CallNode (location: (14,6)-(14,9))
+            │           │           ├── flags: variable_call
+            │           │           ├── receiver: ∅
+            │           │           ├── call_operator_loc: ∅
+            │           │           ├── name: :bar
+            │           │           ├── message_loc: (14,6)-(14,9) = "bar"
+            │           │           ├── opening_loc: ∅
+            │           │           ├── arguments: ∅
+            │           │           ├── closing_loc: ∅
+            │           │           └── block: ∅
+            │           ├── closing_loc: ∅
+            │           └── block: ∅
             ├── closing_loc: (14,9)-(14,10) = ")"
-            ├── block: ∅
-            └── flags: ∅
+            └── block: ∅

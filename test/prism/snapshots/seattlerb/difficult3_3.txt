@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,17))
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,17))
+            ├── flags: ∅
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :f
@@ -11,35 +12,34 @@
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
-            ├── block:
-            │   @ BlockNode (location: (1,2)-(1,17))
-            │   ├── locals: [:a, :b, :c]
-            │   ├── locals_body_index: 3
-            │   ├── parameters:
-            │   │   @ BlockParametersNode (location: (1,4)-(1,15))
-            │   │   ├── parameters:
-            │   │   │   @ ParametersNode (location: (1,5)-(1,14))
-            │   │   │   ├── requireds: (length: 0)
-            │   │   │   ├── optionals: (length: 0)
-            │   │   │   ├── rest:
-            │   │   │   │   @ RestParameterNode (location: (1,5)-(1,7))
-            │   │   │   │   ├── name: :a
-            │   │   │   │   ├── name_loc: (1,6)-(1,7) = "a"
-            │   │   │   │   └── operator_loc: (1,5)-(1,6) = "*"
-            │   │   │   ├── posts: (length: 1)
-            │   │   │   │   └── @ RequiredParameterNode (location: (1,9)-(1,10))
-            │   │   │   │       └── name: :b
-            │   │   │   ├── keywords: (length: 0)
-            │   │   │   ├── keyword_rest: ∅
-            │   │   │   └── block:
-            │   │   │       @ BlockParameterNode (location: (1,12)-(1,14))
-            │   │   │       ├── name: :c
-            │   │   │       ├── name_loc: (1,13)-(1,14) = "c"
-            │   │   │       └── operator_loc: (1,12)-(1,13) = "&"
-            │   │   ├── locals: (length: 0)
-            │   │   ├── opening_loc: (1,4)-(1,5) = "|"
-            │   │   └── closing_loc: (1,14)-(1,15) = "|"
-            │   ├── body: ∅
-            │   ├── opening_loc: (1,2)-(1,3) = "{"
-            │   └── closing_loc: (1,16)-(1,17) = "}"
-            └── flags: ∅
+            └── block:
+                @ BlockNode (location: (1,2)-(1,17))
+                ├── locals: [:a, :b, :c]
+                ├── locals_body_index: 3
+                ├── parameters:
+                │   @ BlockParametersNode (location: (1,4)-(1,15))
+                │   ├── parameters:
+                │   │   @ ParametersNode (location: (1,5)-(1,14))
+                │   │   ├── requireds: (length: 0)
+                │   │   ├── optionals: (length: 0)
+                │   │   ├── rest:
+                │   │   │   @ RestParameterNode (location: (1,5)-(1,7))
+                │   │   │   ├── name: :a
+                │   │   │   ├── name_loc: (1,6)-(1,7) = "a"
+                │   │   │   └── operator_loc: (1,5)-(1,6) = "*"
+                │   │   ├── posts: (length: 1)
+                │   │   │   └── @ RequiredParameterNode (location: (1,9)-(1,10))
+                │   │   │       └── name: :b
+                │   │   ├── keywords: (length: 0)
+                │   │   ├── keyword_rest: ∅
+                │   │   └── block:
+                │   │       @ BlockParameterNode (location: (1,12)-(1,14))
+                │   │       ├── name: :c
+                │   │       ├── name_loc: (1,13)-(1,14) = "c"
+                │   │       └── operator_loc: (1,12)-(1,13) = "&"
+                │   ├── locals: (length: 0)
+                │   ├── opening_loc: (1,4)-(1,5) = "|"
+                │   └── closing_loc: (1,14)-(1,15) = "|"
+                ├── body: ∅
+                ├── opening_loc: (1,2)-(1,3) = "{"
+                └── closing_loc: (1,16)-(1,17) = "}"

@@ -4,8 +4,10 @@
     @ StatementsNode (location: (1,0)-(2,1))
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(2,1))
+            ├── flags: ∅
             ├── receiver:
             │   @ CallNode (location: (1,0)-(1,4))
+            │   ├── flags: variable_call
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :_buf
@@ -13,22 +15,20 @@
             │   ├── opening_loc: ∅
             │   ├── arguments: ∅
             │   ├── closing_loc: ∅
-            │   ├── block: ∅
-            │   └── flags: variable_call
+            │   └── block: ∅
             ├── call_operator_loc: ∅
             ├── name: :<<
             ├── message_loc: (1,5)-(1,7) = "<<"
             ├── opening_loc: ∅
             ├── arguments:
             │   @ ArgumentsNode (location: (1,8)-(2,1))
-            │   ├── arguments: (length: 1)
-            │   │   └── @ StringNode (location: (1,8)-(2,1))
-            │   │       ├── flags: ∅
-            │   │       ├── opening_loc: (1,8)-(1,9) = "'"
-            │   │       ├── content_loc: (1,9)-(2,0) = ":\n"
-            │   │       ├── closing_loc: (2,0)-(2,1) = "'"
-            │   │       └── unescaped: ":\n"
-            │   └── flags: ∅
+            │   ├── flags: ∅
+            │   └── arguments: (length: 1)
+            │       └── @ StringNode (location: (1,8)-(2,1))
+            │           ├── flags: ∅
+            │           ├── opening_loc: (1,8)-(1,9) = "'"
+            │           ├── content_loc: (1,9)-(2,0) = ":\n"
+            │           ├── closing_loc: (2,0)-(2,1) = "'"
+            │           └── unescaped: ":\n"
             ├── closing_loc: ∅
-            ├── block: ∅
-            └── flags: ∅
+            └── block: ∅

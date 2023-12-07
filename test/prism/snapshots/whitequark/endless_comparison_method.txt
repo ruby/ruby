@@ -22,6 +22,7 @@
         │   │   @ StatementsNode (location: (1,16)-(1,28))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (1,16)-(1,28))
+        │   │           ├── flags: variable_call
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :do_something
@@ -29,8 +30,7 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           └── flags: variable_call
+        │   │           └── block: ∅
         │   ├── locals: [:other]
         │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
@@ -58,6 +58,7 @@
         │   │   @ StatementsNode (location: (3,16)-(3,28))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (3,16)-(3,28))
+        │   │           ├── flags: variable_call
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :do_something
@@ -65,8 +66,7 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           └── flags: variable_call
+        │   │           └── block: ∅
         │   ├── locals: [:other]
         │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (3,0)-(3,3) = "def"
@@ -94,6 +94,7 @@
         │   │   @ StatementsNode (location: (5,16)-(5,28))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (5,16)-(5,28))
+        │   │           ├── flags: variable_call
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :do_something
@@ -101,8 +102,7 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           └── flags: variable_call
+        │   │           └── block: ∅
         │   ├── locals: [:other]
         │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (5,0)-(5,3) = "def"
@@ -130,6 +130,7 @@
         │   │   @ StatementsNode (location: (7,16)-(7,28))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (7,16)-(7,28))
+        │   │           ├── flags: variable_call
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :do_something
@@ -137,8 +138,7 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           └── flags: variable_call
+        │   │           └── block: ∅
         │   ├── locals: [:other]
         │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (7,0)-(7,3) = "def"
@@ -166,6 +166,7 @@
         │   │   @ StatementsNode (location: (9,17)-(9,29))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (9,17)-(9,29))
+        │   │           ├── flags: variable_call
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :do_something
@@ -173,8 +174,7 @@
         │   │           ├── opening_loc: ∅
         │   │           ├── arguments: ∅
         │   │           ├── closing_loc: ∅
-        │   │           ├── block: ∅
-        │   │           └── flags: variable_call
+        │   │           └── block: ∅
         │   ├── locals: [:other]
         │   ├── locals_body_index: 1
         │   ├── def_keyword_loc: (9,0)-(9,3) = "def"
@@ -202,6 +202,7 @@
             │   @ StatementsNode (location: (11,16)-(11,28))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (11,16)-(11,28))
+            │           ├── flags: variable_call
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :do_something
@@ -209,8 +210,7 @@
             │           ├── opening_loc: ∅
             │           ├── arguments: ∅
             │           ├── closing_loc: ∅
-            │           ├── block: ∅
-            │           └── flags: variable_call
+            │           └── block: ∅
             ├── locals: [:other]
             ├── locals_body_index: 1
             ├── def_keyword_loc: (11,0)-(11,3) = "def"
