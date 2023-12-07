@@ -316,6 +316,7 @@ class ParamList
 end
 
 iseqs_compiled_start = RubyVM::YJIT.runtime_stats[:compiled_iseq_entry]
+start_time = Time.now.to_f
 
 num_iters.times do |i|
   puts "Iteration #{i}"
@@ -355,3 +356,9 @@ if iseqs_compiled_end - iseqs_compiled_start < num_iters
 end
 
 puts "Code region size: #{ format_number(0, RubyVM::YJIT.runtime_stats[:code_region_size]) }"
+
+end_time = Time.now.to_f
+itrs_per_sec = num_iters / (end_time - start_time)
+itrs_per_hour = 3600 * itrs_per_sec
+puts "#{'%.1f' % itrs_per_sec} iterations/s"
+puts "#{format_number(0, itrs_per_hour.round)} iterations/hour"
