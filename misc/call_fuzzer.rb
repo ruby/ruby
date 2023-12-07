@@ -102,12 +102,12 @@ class ParamList
 
     @pargs.each_with_index do |arg, i|
       value = (arg.key? :argval)? arg[:argval]:arg[:default]
-      checksum += i * value
+      checksum += (i+1) * value
     end
 
     @kwargs.each_with_index do |arg, i|
       value = (arg.key? :argval)? arg[:argval]:arg[:default]
-      checksum += i * value
+      checksum += (i+1) * value
     end
 
     if @block_arg
@@ -170,19 +170,21 @@ class ParamList
     end
 
     m_str += ")\n"
+
+    # Add some useless locals
+    rand(0...16).times do |i|
+      m_str += "local#{i} = #{i}\n"
+    end
+
     m_str += "checksum = 0\n"
 
     @pargs.each_with_index do |arg, i|
-      m_str += "checksum += #{i} * #{arg[:name]}\n"
+      m_str += "checksum += #{i+1} * #{arg[:name]}\n"
     end
 
     @kwargs.each_with_index do |arg, i|
-      m_str += "checksum += #{i} * #{arg[:name]}\n"
+      m_str += "checksum += #{i+1} * #{arg[:name]}\n"
     end
-
-    #if @has_block_param
-    #  m_str += "if block; r = block.call; raise 'block result is not integer' unless r.kind_of?Integer; end\n"
-    #end
 
     m_str += "if block_given?; r = yield; checksum += r; end\n"
 
@@ -257,6 +259,8 @@ num_iters.times do |i|
   puts "Defining"
   p m_str
   f.instance_eval(m_str)
+  #puts RubyVM::InstructionSequence.disasm(f.method(:m))
+  #exit 0
 
   puts "Calling"
   c_str = "f.#{c_str}"
