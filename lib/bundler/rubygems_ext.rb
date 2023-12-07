@@ -78,24 +78,6 @@ module Gem
       end
     end
 
-    alias_method :rg_missing_extensions?, :missing_extensions?
-    def missing_extensions?
-      # When we use this methods with local gemspec, we don't handle
-      # build status of extension correctly. So We need to find extension
-      # files in require_paths.
-      # TODO: Gem::Specification couldn't access extension name from extconf.rb
-      #       so we find them with heuristic way. We should improve it.
-      if source.respond_to?(:root)
-        return false if raw_require_paths.any? do |path|
-          ext_dir = File.join(full_gem_path, path)
-          File.exist?(File.join(ext_dir, "#{name}.#{RbConfig::CONFIG["DLEXT"]}")) ||
-          !Dir.glob(File.join(ext_dir, name, "*.#{RbConfig::CONFIG["DLEXT"]}")).empty?
-        end
-      end
-
-      rg_missing_extensions?
-    end
-
     remove_method :gem_dir
     def gem_dir
       full_gem_path
