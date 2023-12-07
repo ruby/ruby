@@ -62,6 +62,10 @@ static const void *const condattr_monotonic = NULL;
 
 #include COROUTINE_H
 
+#ifndef HAVE_SYS_EVENT_H
+#define HAVE_SYS_EVENT_H 0
+#endif
+
 #ifndef HAVE_SYS_EPOLL_H
 #define HAVE_SYS_EPOLL_H 0
 #else
@@ -77,6 +81,9 @@ static const void *const condattr_monotonic = NULL;
     #define USE_MN_THREADS 0
   #elif HAVE_SYS_EPOLL_H
     #include <sys/epoll.h>
+    #define USE_MN_THREADS 1
+  #elif HAVE_SYS_EVENT_H
+    #include <sys/event.h>
     #define USE_MN_THREADS 1
   #else
     #define USE_MN_THREADS 0
@@ -2799,10 +2806,15 @@ static struct {
 
     int comm_fds[2]; // r, w
 
+#if (HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H) && USE_MN_THREADS
+    int event_fd; // kernel event queue fd (epoll/kqueue)
+#endif
 #if HAVE_SYS_EPOLL_H && USE_MN_THREADS
 #define EPOLL_EVENTS_MAX 0x10
-    int epoll_fd;
     struct epoll_event finished_events[EPOLL_EVENTS_MAX];
+#elif HAVE_SYS_EVENT_H && USE_MN_THREADS
+#define KQUEUE_EVENTS_MAX 0x10
+    struct kevent finished_events[KQUEUE_EVENTS_MAX];
 #endif
 
     // waiting threads list
@@ -3088,7 +3100,7 @@ rb_thread_create_timer_thread(void)
 
             CLOSE_INVALIDATE_PAIR(timer_th.comm_fds);
 #if HAVE_SYS_EPOLL_H && USE_MN_THREADS
-            close_invalidate(&timer_th.epoll_fd, "close epoll_fd");
+            close_invalidate(&timer_th.event_fd, "close event_fd");
 #endif
             rb_native_mutex_destroy(&timer_th.waiting_lock);
         }
@@ -3099,8 +3111,8 @@ rb_thread_create_timer_thread(void)
         // open communication channel
         setup_communication_pipe_internal(timer_th.comm_fds);
 
-        // open epoll fd
-        timer_thread_setup_nm();
+        // open event fd
+        timer_thread_setup_mn();
     }
 
     pthread_create(&timer_th.pthread_id, NULL, timer_thread_func, GET_VM());
@@ -3181,8 +3193,8 @@ rb_reserved_fd_p(int fd)
 
     if (fd == timer_th.comm_fds[0] ||
         fd == timer_th.comm_fds[1]
-#if HAVE_SYS_EPOLL_H && USE_MN_THREADS
-        || fd == timer_th.epoll_fd
+#if (HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H) && USE_MN_THREADS
+        || fd == timer_th.event_fd
 #endif
         ) {
         goto check_fork_gen;
