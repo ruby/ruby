@@ -19,6 +19,36 @@ def format_number(pad, number)
   s.rjust(pad, ' ')
 end
 
+# Generate a random argument value, integer or string or object
+def sample_arg()
+  c = ['int', 'string'].sample()
+
+  if c == 'int'
+    return rand(0...100)
+  end
+
+  if c == 'string'
+    return 'f' * rand(0...100)
+  end
+
+  # TODO: object
+
+  raise "should not get here"
+end
+
+# Evaluate the value of an argument with respect to the checksum
+def arg_val(arg)
+  if arg.kind_of? Integer
+    return arg
+  end
+
+  if arg.kind_of? String
+    return arg.length
+  end
+
+  raise "unknown arg type"
+end
+
 # List of parameters/arguments for a method
 class ParamList
   def initialize()
@@ -56,24 +86,6 @@ class ParamList
     # Choose whether to have a named block parameter or not
     @has_block_param = rand() < 0.25
   end
-
-
-
-  # TODO
-  # Generate a random argument value, integer or string or object
-  def sample_arg()
-    raise "unimpl"
-
-
-
-
-  end
-
-
-
-
-
-
 
   # Sample/generate a random set of arguments corresponding to the parameters
   def sample_args()
@@ -116,16 +128,16 @@ class ParamList
 
     @pargs.each_with_index do |arg, i|
       value = (arg.key? :argval)? arg[:argval]:arg[:default]
-      checksum += (i+1) * value
+      checksum += (i+1) * arg_val(value)
     end
 
     @kwargs.each_with_index do |arg, i|
       value = (arg.key? :argval)? arg[:argval]:arg[:default]
-      checksum += (i+1) * value
+      checksum += (i+1) * arg_val(value)
     end
 
     if @block_arg
-      checksum += @block_arg
+      checksum += arg_val(@block_arg)
     end
 
     checksum
@@ -200,14 +212,14 @@ class ParamList
     m_str += "checksum = 0\n"
 
     @pargs.each_with_index do |arg, i|
-      m_str += "checksum += #{i+1} * #{arg[:name]}\n"
+      m_str += "checksum += #{i+1} * arg_val(#{arg[:name]})\n"
     end
 
     @kwargs.each_with_index do |arg, i|
-      m_str += "checksum += #{i+1} * #{arg[:name]}\n"
+      m_str += "checksum += #{i+1} * arg_val(#{arg[:name]})\n"
     end
 
-    m_str += "if block_given?; r = yield; checksum += r; end\n"
+    m_str += "if block_given?; r = yield; checksum += arg_val(r); end\n"
 
     if @has_rest
       m_str += "raise 'rest is not array' unless rest.kind_of?(Array)\n"
