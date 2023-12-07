@@ -742,6 +742,8 @@ module Prism
     def test_BreakNode
       assert_prism_eval("while true; break; end")
       assert_prism_eval("while true; break 1; end")
+      assert_prism_eval("while true; break 1, 2; end")
+
       assert_prism_eval("[].each { break }")
     end
 
@@ -830,6 +832,13 @@ module Prism
           res << i
         end
         res
+      CODE
+
+      assert_prism_eval(<<-CODE)
+        (1..5).map do |i|
+          next i, :even if i.even?
+          i
+        end
       CODE
 
       assert_prism_eval(<<-CODE)
@@ -1001,7 +1010,20 @@ module Prism
     end
 
     def test_ReturnNode
-      assert_prism_eval("def return_node; return 1; end")
+      assert_prism_eval(<<-CODE)
+        def self.prism_test_return_node
+          return 1
+        end
+        prism_test_return_node
+      CODE
+
+      assert_prism_eval(<<-CODE)
+        def self.prism_test_return_node
+          return 1, 2
+        end
+        prism_test_return_node
+      CODE
+
       assert_prism_eval(<<-CODE)
         def self.prism_test_return_node
           [1].each do |e|
@@ -1010,6 +1032,7 @@ module Prism
         end
         prism_test_return_node
       CODE
+
       assert_prism_eval(<<-CODE)
         def self.prism_test_return_node
           [1].map do |i|
