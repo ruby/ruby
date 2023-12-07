@@ -14,9 +14,23 @@ module Lrama
         # * ($1) yyvsp[i]
         # * (@1) yylsp[i]
         #
+        #
+        # Consider a rule like
+        #
+        #   class: keyword_class { $1 } tSTRING { $2 + $3 } keyword_end { $class = $1 + $keyword_end }
+        #
+        # For the semantic action of original rule:
+        #
         # "Rule"                class: keyword_class { $1 } tSTRING { $2 + $3 } keyword_end { $class = $1 + $keyword_end }
-        # "Position in grammar"                   $1    $2      $3          $4          $5                             $6
-        # "Index for yyvsp"                       -4    -3      -2          -1           0
+        # "Position in grammar"                   $1     $2      $3          $4          $5                             $6
+        # "Index for yyvsp"                       -4     -3      -2          -1           0
+        #
+        #
+        # For the first midrule action:
+        #
+        # "Rule"                class: keyword_class { $1 } tSTRING { $2 + $3 } keyword_end { $class = $1 + $keyword_end }
+        # "Position in grammar"                   $1
+        # "Index for yyvsp"                        0
         def reference_to_c(ref)
           case
           when ref.type == :dollar && ref.name == "$" # $$
@@ -45,10 +59,12 @@ module Lrama
           @rule.position_in_original_rule_rhs || @rule.rhs.count
         end
 
+        # If this is midrule action, RHS is a RHS of the original rule.
         def rhs
           (@rule.original_rule || @rule).rhs
         end
 
+        # Unlike `rhs`, LHS is always a LHS of the rule.
         def lhs
           @rule.lhs
         end
