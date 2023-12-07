@@ -124,6 +124,29 @@ module Prism
       assert parse_expression("<<~`HERE`\nfoo \#{1}\nHERE\n").heredoc?
     end
 
+    # Through some bit hackery, we want to allow consumers to use the integer
+    # base flags as the base itself. It has a nice property that the current
+    # alignment provides them in the correct order. So here we test that our
+    # assumption holds so that it doesn't change out from under us.
+    #
+    # In C, this would look something like:
+    #
+    #     ((flags & ~DECIMAL) << 1) || 10
+    #
+    # We have to do some other work in Ruby because 0 is truthy and ~ on an
+    # integer doesn't have a fixed width.
+    def test_integer_base_flags
+      base = -> (node) do
+        value = (node.send(:flags) & (0b1111 - IntegerBaseFlags::DECIMAL)) << 1
+        value == 0 ? 10 : value
+      end
+
+      assert_equal 2, base[parse_expression("0b1")]
+      assert_equal 8, base[parse_expression("0o1")]
+      assert_equal 10, base[parse_expression("0d1")]
+      assert_equal 16, base[parse_expression("0x1")]
+    end
+
     private
 
     def parse_expression(source)

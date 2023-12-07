@@ -357,10 +357,10 @@ flags:
     values:
       - name: BINARY
         comment: "0b prefix"
-      - name: OCTAL
-        comment: "0o or 0 prefix"
       - name: DECIMAL
         comment: "0d or no prefix"
+      - name: OCTAL
+        comment: "0o or 0 prefix"
       - name: HEXADECIMAL
         comment: "0x prefix"
     comment: Flags for integer nodes that correspond to the base of the integer.
