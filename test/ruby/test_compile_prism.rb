@@ -742,6 +742,7 @@ module Prism
     def test_BreakNode
       assert_prism_eval("while true; break; end")
       assert_prism_eval("while true; break 1; end")
+      assert_prism_eval("[].each { break }")
     end
 
     def test_EnsureNode
