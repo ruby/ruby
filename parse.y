@@ -44,6 +44,8 @@
 #define rb_str_coderange_scan_restartable p->config->str_coderange_scan_restartable
 #endif
 
+#define rb_warn_deprecated(fmt, suggest) rb_warn0(fmt " is deprecated; use " suggest " instead")
+
 #else
 
 #include "internal.h"
