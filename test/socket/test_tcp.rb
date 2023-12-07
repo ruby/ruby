@@ -155,7 +155,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
     # The construction of our IPv6-free environment must happen in a child process,
     # which we can put in its own network & mount namespaces.
 
-    omit "this test requires fork" unless Process.respond_to?(:fork)
+    omit "This test is disabled.  It is retained to show the original intent of [ruby-core:110870]"
 
     IO.popen("-") do |test_io|
       if test_io.nil?
