@@ -150,8 +150,11 @@ end
 # If loading library is not part of the default gems and the bundled gems, warn it.
 class LoadError
   def message
-    if !defined?(Bundler) && Gem::BUNDLED_GEMS::SINCE[path] && !Gem::BUNDLED_GEMS::WARNED[path]
-      warn path + Gem::BUNDLED_GEMS.build_message(path)
+    return super unless path
+
+    name = path.tr("/", "-")
+    if !defined?(Bundler) && Gem::BUNDLED_GEMS::SINCE[name] && !Gem::BUNDLED_GEMS::WARNED[name]
+      warn name + Gem::BUNDLED_GEMS.build_message(name)
     end
     super
   end
