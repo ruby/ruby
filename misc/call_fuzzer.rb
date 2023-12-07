@@ -176,6 +176,10 @@ class ParamList
     end
 
     if @block_arg
+      if @has_block_param
+        checksum += arg_val(@block_arg)
+      end
+
       checksum += arg_val(@block_arg)
     end
 
@@ -256,6 +260,10 @@ class ParamList
 
     @kwargs.each_with_index do |arg, i|
       m_str += "checksum += #{i+1} * arg_val(#{arg[:name]})\n"
+    end
+
+    if @has_block_param
+      m_str += "if block; r = block.call; checksum += arg_val(r); end\n"
     end
 
     m_str += "if block_given?; r = yield; checksum += arg_val(r); end\n"
@@ -339,7 +347,7 @@ num_iters.times do |i|
   c_str = "f.#{c_str}"
   p c_str
   r = eval(c_str)
-  p r
+  puts "checksum=#{r}"
 
   if r != checksum
     raise "return value #{r} doesn't match checksum #{checksum}"
