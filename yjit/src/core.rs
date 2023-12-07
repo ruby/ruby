@@ -1095,17 +1095,24 @@ pub fn for_each_on_stack_iseq_payload<F: FnMut(&IseqPayload)>(mut callback: F) {
 
 /// Iterate over all NOT on-stack ISEQ payloads
 pub fn for_each_off_stack_iseq_payload<F: FnMut(&mut IseqPayload)>(mut callback: F) {
-    let mut on_stack_iseqs: Vec<IseqPtr> = vec![];
-    for_each_on_stack_iseq(|iseq| {
-        on_stack_iseqs.push(iseq);
-    });
-    for_each_iseq(|iseq| {
+    // Get all ISEQs on the heap. Note that rb_objspace_each_objects() runs GC first,
+    // which could move ISEQ pointers when GC.auto_compact = true.
+    // So for_each_on_stack_iseq() must be called after this, which doesn't run GC.
+    let mut iseqs: Vec<IseqPtr> = vec![];
+    for_each_iseq(|iseq| iseqs.push(iseq));
+
+    // Get all ISEQs that are on a CFP of existing ECs.
+    let mut on_stack_iseqs: HashSet<IseqPtr> = HashSet::new();
+    for_each_on_stack_iseq(|iseq| { on_stack_iseqs.insert(iseq); });
+
+    // Invoke the callback for iseqs - on_stack_iseqs
+    for iseq in iseqs {
         if !on_stack_iseqs.contains(&iseq) {
             if let Some(iseq_payload) = get_iseq_payload(iseq) {
                 callback(iseq_payload);
             }
         }
-    })
+    }
 }
 
 /// Free the per-iseq payload

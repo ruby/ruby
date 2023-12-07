@@ -1102,6 +1102,31 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_code_gc_with_auto_compact
+    assert_compiles((code_gc_helpers + <<~'RUBY'), exits: :any, result: :ok, mem_size: 1, code_gc: true)
+      # Test ISEQ moves in the middle of code GC
+      GC.auto_compact = true
+
+      fiber = Fiber.new {
+        # Loop to call the same basic block again after Fiber.yield
+        while true
+          Fiber.yield(nil.to_i)
+        end
+      }
+
+      return :not_paged1 unless add_pages(250) # use some pages
+      return :broken_resume1 if fiber.resume != 0 # leave an on-stack code as well
+
+      add_pages(2000) # use a whole lot of pages to run out of 1MiB
+      return :broken_resume2 if fiber.resume != 0 # on-stack code should be callable
+
+      code_gc_count = RubyVM::YJIT.runtime_stats[:code_gc_count]
+      return :"code_gc_#{code_gc_count}" if code_gc_count == 0
+
+      :ok
+    RUBY
+  end
+
   def test_code_gc_partial_last_page
     # call_threshold: 2 to avoid JIT-ing code_gc itself. If code_gc were JITed right before
     # code_gc is called, the last page would be on stack.
