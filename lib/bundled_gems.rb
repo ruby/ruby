@@ -89,10 +89,10 @@ module Gem::BUNDLED_GEMS
   end
 
   def self.warning?(name, specs: nil)
-    name = File.path(name) # name can be a feature name or a file path with String or Pathname
-    return if specs.to_a.map(&:name).include?(name.sub(LIBEXT, ""))
-    name = name.tr("/", "-")
-    _t, path = $:.resolve_feature_path(name)
+    feature = File.path(name) # name can be a feature name or a file path with String or Pathname
+    return if specs.to_a.map(&:name).include?(feature.sub(LIBEXT, ""))
+    _t, path = $:.resolve_feature_path(feature)
+    name = feature.tr("/", "-")
     if gem = find_gem(path)
       caller = caller_locations(3, 3).find {|c| c&.absolute_path}
       return if find_gem(caller&.absolute_path)
@@ -106,11 +106,11 @@ module Gem::BUNDLED_GEMS
     WARNED[name] = true
     if gem == true
       gem = name
-      "#{name} was loaded from the standard library, but"
+      "#{feature} was loaded from the standard library, but"
     elsif gem
       return if WARNED[gem]
       WARNED[gem] = true
-      "#{name} is found in #{gem}, which"
+      "#{feature} is found in #{gem}, which"
     else
       return
     end + build_message(gem)
