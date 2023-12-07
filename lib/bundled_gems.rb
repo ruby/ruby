@@ -106,17 +106,18 @@ module Gem::BUNDLED_GEMS
     WARNED[name] = true
     if gem == true
       gem = name
+      "#{name} was loaded from the standard library, but"
     elsif gem
       return if WARNED[gem]
       WARNED[gem] = true
-      "#{name} is found in #{gem}"
+      "#{name} is found in #{gem}, which"
     else
       return
     end + build_message(gem)
   end
 
   def self.build_message(gem)
-    msg = " which #{RUBY_VERSION < SINCE[gem] ? "will no longer be" : "is not"} part of the default gems since Ruby #{SINCE[gem]}."
+    msg = " #{RUBY_VERSION < SINCE[gem] ? "will no longer be" : "is not"} part of the default gems since Ruby #{SINCE[gem]}."
 
     if defined?(Bundler)
       msg += " Add #{gem} to your Gemfile or gemspec."
