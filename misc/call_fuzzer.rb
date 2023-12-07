@@ -19,9 +19,42 @@ def format_number(pad, number)
   s.rjust(pad, ' ')
 end
 
+# Wrap an integer to pass as argument
+# We use this so we can have some object arguments
+class IntWrapper
+  def initialize(v)
+    # Force the object to have a random shape
+    if rand() < 50
+      @v0 = 1
+    end
+    if rand() < 50
+      @v1 = 1
+    end
+    if rand() < 50
+      @v2 = 1
+    end
+    if rand() < 50
+      @v3 = 1
+    end
+    if rand() < 50
+      @v4 = 1
+    end
+    if rand() < 50
+      @v5 = 1
+    end
+    if rand() < 50
+      @v6 = 1
+    end
+
+    @value = v
+  end
+
+  attr_reader :value
+end
+
 # Generate a random argument value, integer or string or object
 def sample_arg()
-  c = ['int', 'string'].sample()
+  c = ['int', 'string', 'object'].sample()
 
   if c == 'int'
     return rand(0...100)
@@ -31,7 +64,9 @@ def sample_arg()
     return 'f' * rand(0...100)
   end
 
-  # TODO: object
+  if c == 'object'
+    return IntWrapper.new(rand(0...100))
+  end
 
   raise "should not get here"
 end
@@ -44,6 +79,10 @@ def arg_val(arg)
 
   if arg.kind_of? String
     return arg.length
+  end
+
+  if arg.kind_of? Object
+    return arg.value
   end
 
   raise "unknown arg type"
