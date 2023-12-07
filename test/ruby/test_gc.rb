@@ -579,6 +579,14 @@ class TestGc < Test::Unit::TestCase
     RUBY
   end
 
+  def test_profiler_raw_data
+    GC::Profiler.enable
+    GC.start
+    assert GC::Profiler.raw_data
+  ensure
+    GC::Profiler.disable
+  end
+
   def test_profiler_total_time
     GC::Profiler.enable
     GC::Profiler.clear
