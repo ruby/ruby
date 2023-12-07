@@ -2674,19 +2674,12 @@ class Gem::Specification < Gem::BasicSpecification
   rubygems_deprecate :validate_permissions
 
   ##
-  # Set the version to +version+, potentially also setting
-  # required_rubygems_version if +version+ indicates it is a
-  # prerelease.
+  # Set the version to +version+.
 
   def version=(version)
     @version = Gem::Version.create(version)
     return if @version.nil?
 
-    # skip to set required_ruby_version when pre-released rubygems.
-    # It caused to raise CircularDependencyError
-    if @version.prerelease? && (@name.nil? || @name.strip != "rubygems")
-      self.required_rubygems_version = "> 1.3.1"
-    end
     invalidate_memoized_attributes
   end
 
