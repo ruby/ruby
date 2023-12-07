@@ -707,6 +707,7 @@ static rb_callable_method_entry_t *
 check_method_entry(VALUE obj, int can_be_svar)
 {
     if (obj == Qfalse) return NULL;
+    if (obj == Qnil) return NULL;
 
 #if VM_CHECK_MODE > 0
     if (!RB_TYPE_P(obj, T_IMEMO)) rb_bug("check_method_entry: unknown type: %s", rb_obj_info(obj));
