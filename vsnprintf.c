@@ -1255,8 +1255,8 @@ cvt(double value, int ndigits, int flags, char *sign, int *decpt, int ch, int *l
 	}
 	buf[0] = 0; /* rve - digits may be 0 */
 	memcpy(buf, digits, rve - digits);
-	xfree(digits);
 	rve = buf + (rve - digits);
+	free(digits);
 	digits = buf;
 	if (flags & ALT) {	/* Print trailing zeros */
 		bp = digits + ndigits;

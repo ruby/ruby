@@ -466,7 +466,7 @@ w_float(double d, struct dump_arg *arg)
             memcpy(buf + len, p, digs);
             len += digs;
         }
-        xfree(p);
+        free(p);
         w_bytes(buf, len, arg);
     }
 }

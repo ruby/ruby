@@ -1078,7 +1078,7 @@ flo_to_s(VALUE flt)
     s = sign ? rb_usascii_str_new_cstr("-") : rb_usascii_str_new(0, 0);
     if ((digs = (int)(e - p)) >= (int)sizeof(buf)) digs = (int)sizeof(buf) - 1;
     memcpy(buf, p, digs);
-    xfree(p);
+    free(p);
     if (decpt > 0) {
         if (decpt < digs) {
             memmove(buf + decpt + 1, buf + decpt, digs - decpt);
