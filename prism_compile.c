@@ -1762,6 +1762,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         for (size_t index = 0; index < node_list.size; index++) {
             PM_COMPILE(node_list.nodes[index]);
         }
+        if (node_list.size > 1) {
+            ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(node_list.size));
+        }
         return;
       }
       case PM_ARRAY_NODE: {
@@ -3578,7 +3581,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_ADJUST(ret, &dummy_line_node, ISEQ_COMPILE_DATA(iseq)->start_label);
 
             if (next_node->arguments) {
-                PM_COMPILE((pm_node_t *)next_node->arguments);
+                PM_COMPILE_NOT_POPPED((pm_node_t *)next_node->arguments);
             }
             else {
                 PM_PUTNIL;
@@ -3618,7 +3621,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
             if (ip != 0) {
                 if (next_node->arguments) {
-                    PM_COMPILE((pm_node_t *)next_node->arguments);
+                    PM_COMPILE_NOT_POPPED((pm_node_t *)next_node->arguments);
                 }
                 else {
                     PM_PUTNIL;
