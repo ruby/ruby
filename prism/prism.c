@@ -3272,7 +3272,7 @@ pm_hash_node_elements_append(pm_hash_node_t *hash, pm_node_t *element) {
 
     // If the element is not a static literal, then the hash is not a static
     // literal. Turn that flag off.
-    if ((element->flags & PM_NODE_FLAG_STATIC_LITERAL) == 0) {
+    if (PM_NODE_TYPE_P(element, PM_ARRAY_NODE) || PM_NODE_TYPE_P(element, PM_HASH_NODE) || PM_NODE_TYPE_P(element, PM_RANGE_NODE) || (element->flags & PM_NODE_FLAG_STATIC_LITERAL) == 0) {
         hash->base.flags &= (pm_node_flags_t) ~PM_NODE_FLAG_STATIC_LITERAL;
     }
 }
