@@ -381,7 +381,7 @@ class Set
   # Equivalent to Set#flatten, but replaces the receiver with the
   # result in place.  Returns nil if no modifications were made.
   def flatten!
-    replace(flatten()) if any? { |e| e.is_a?(Set) }
+    replace(flatten()) if any?(Set)
   end
 
   # Returns true if the set contains the given object.
@@ -401,7 +401,7 @@ class Set
     when set.instance_of?(self.class) && @hash.respond_to?(:>=)
       @hash >= set.instance_variable_get(:@hash)
     when set.is_a?(Set)
-      size >= set.size && set.all? { |o| include?(o) }
+      size >= set.size && set.all?(self)
     else
       raise ArgumentError, "value must be a set"
     end
@@ -414,7 +414,7 @@ class Set
     when set.instance_of?(self.class) && @hash.respond_to?(:>)
       @hash > set.instance_variable_get(:@hash)
     when set.is_a?(Set)
-      size > set.size && set.all? { |o| include?(o) }
+      size > set.size && set.all?(self)
     else
       raise ArgumentError, "value must be a set"
     end
@@ -427,7 +427,7 @@ class Set
     when set.instance_of?(self.class) && @hash.respond_to?(:<=)
       @hash <= set.instance_variable_get(:@hash)
     when set.is_a?(Set)
-      size <= set.size && all? { |o| set.include?(o) }
+      size <= set.size && all?(set)
     else
       raise ArgumentError, "value must be a set"
     end
@@ -440,7 +440,7 @@ class Set
     when set.instance_of?(self.class) && @hash.respond_to?(:<)
       @hash < set.instance_variable_get(:@hash)
     when set.is_a?(Set)
-      size < set.size && all? { |o| set.include?(o) }
+      size < set.size && all?(set)
     else
       raise ArgumentError, "value must be a set"
     end
@@ -471,12 +471,12 @@ class Set
     case set
     when Set
       if size < set.size
-        any? { |o| set.include?(o) }
+        any?(set)
       else
-        set.any? { |o| include?(o) }
+        set.any?(self)
       end
     when Enumerable
-      set.any? { |o| include?(o) }
+      set.any?(self)
     else
       raise ArgumentError, "value must be enumerable"
     end
