@@ -29,6 +29,7 @@
             │           │           ├── name_loc: (2,49)-(2,54) = "così"
             │           │           ├── value:
             │           │           │   @ SymbolNode (location: (2,57)-(2,63))
+            │           │           │   ├── flags: ∅
             │           │           │   ├── opening_loc: (2,57)-(2,58) = ":"
             │           │           │   ├── value_loc: (2,58)-(2,63) = "però"
             │           │           │   ├── closing_loc: ∅

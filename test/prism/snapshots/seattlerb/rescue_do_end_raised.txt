@@ -42,6 +42,7 @@
                 │   │   │   @ StatementsNode (location: (4,2)-(4,9))
                 │   │   │   └── body: (length: 1)
                 │   │   │       └── @ SymbolNode (location: (4,2)-(4,9))
+                │   │   │           ├── flags: ∅
                 │   │   │           ├── opening_loc: (4,2)-(4,3) = ":"
                 │   │   │           ├── value_loc: (4,3)-(4,9) = "ensure"
                 │   │   │           ├── closing_loc: ∅

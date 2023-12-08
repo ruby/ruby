@@ -284,6 +284,7 @@
         │   │       │   ├── closing_loc: (9,7)-(9,8) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ SymbolNode (location: (9,10)-(9,12))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (9,10)-(9,11) = ":"
         │   │           ├── value_loc: (9,11)-(9,12) = "e"
         │   │           ├── closing_loc: ∅
@@ -578,6 +579,7 @@
         │   │       │   ├── closing_loc: (19,8)-(19,9) = ")"
         │   │       │   └── block: ∅
         │   │       └── @ SymbolNode (location: (19,11)-(19,13))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (19,11)-(19,12) = ":"
         │   │           ├── value_loc: (19,12)-(19,13) = "e"
         │   │           ├── closing_loc: ∅
@@ -902,6 +904,7 @@
         │   │       │       ├── opening_loc: (29,3)-(29,4) = "{"
         │   │       │       └── closing_loc: (29,7)-(29,8) = "}"
         │   │       └── @ SymbolNode (location: (29,10)-(29,12))
+        │   │           ├── flags: ∅
         │   │           ├── opening_loc: (29,10)-(29,11) = ":"
         │   │           ├── value_loc: (29,11)-(29,12) = "e"
         │   │           ├── closing_loc: ∅
@@ -1226,6 +1229,7 @@
             │       │       ├── opening_loc: (39,3)-(39,4) = "{"
             │       │       └── closing_loc: (39,8)-(39,9) = "}"
             │       └── @ SymbolNode (location: (39,11)-(39,13))
+            │           ├── flags: ∅
             │           ├── opening_loc: (39,11)-(39,12) = ":"
             │           ├── value_loc: (39,12)-(39,13) = "e"
             │           ├── closing_loc: ∅

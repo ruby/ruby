@@ -19,6 +19,7 @@
             │           │   @ StatementsNode (location: (1,5)-(1,7))
             │           │   └── body: (length: 1)
             │           │       └── @ SymbolNode (location: (1,5)-(1,7))
+            │           │           ├── flags: ∅
             │           │           ├── opening_loc: (1,5)-(1,6) = ":"
             │           │           ├── value_loc: (1,6)-(1,7) = "a"
             │           │           ├── closing_loc: ∅

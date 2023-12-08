@@ -38,6 +38,7 @@
             │           │   ├── flags: ∅
             │           │   └── arguments: (length: 3)
             │           │       ├── @ SymbolNode (location: (1,23)-(1,27))
+            │           │       │   ├── flags: ∅
             │           │       │   ├── opening_loc: (1,23)-(1,24) = ":"
             │           │       │   ├── value_loc: (1,24)-(1,27) = "get"
             │           │       │   ├── closing_loc: ∅

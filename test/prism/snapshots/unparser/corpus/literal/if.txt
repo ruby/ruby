@@ -267,6 +267,7 @@
             │       │   ├── name_loc: (34,2)-(34,6) = "pair"
             │       │   ├── value:
             │       │   │   @ SymbolNode (location: (34,9)-(34,13))
+            │       │   │   ├── flags: ∅
             │       │   │   ├── opening_loc: (34,9)-(34,10) = ":"
             │       │   │   ├── value_loc: (34,10)-(34,13) = "foo"
             │       │   │   ├── closing_loc: ∅

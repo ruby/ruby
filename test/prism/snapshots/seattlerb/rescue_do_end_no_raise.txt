@@ -24,6 +24,7 @@
                 │   │   @ StatementsNode (location: (2,2)-(2,8))
                 │   │   └── body: (length: 1)
                 │   │       └── @ SymbolNode (location: (2,2)-(2,8))
+                │   │           ├── flags: ∅
                 │   │           ├── opening_loc: (2,2)-(2,3) = ":"
                 │   │           ├── value_loc: (2,3)-(2,8) = "begin"
                 │   │           ├── closing_loc: ∅
@@ -38,6 +39,7 @@
                 │   │   │   @ StatementsNode (location: (4,2)-(4,9))
                 │   │   │   └── body: (length: 1)
                 │   │   │       └── @ SymbolNode (location: (4,2)-(4,9))
+                │   │   │           ├── flags: ∅
                 │   │   │           ├── opening_loc: (4,2)-(4,3) = ":"
                 │   │   │           ├── value_loc: (4,3)-(4,9) = "rescue"
                 │   │   │           ├── closing_loc: ∅
@@ -50,6 +52,7 @@
                 │   │   │   @ StatementsNode (location: (6,2)-(6,7))
                 │   │   │   └── body: (length: 1)
                 │   │   │       └── @ SymbolNode (location: (6,2)-(6,7))
+                │   │   │           ├── flags: ∅
                 │   │   │           ├── opening_loc: (6,2)-(6,3) = ":"
                 │   │   │           ├── value_loc: (6,3)-(6,7) = "else"
                 │   │   │           ├── closing_loc: ∅
@@ -62,6 +65,7 @@
                 │   │   │   @ StatementsNode (location: (8,2)-(8,9))
                 │   │   │   └── body: (length: 1)
                 │   │   │       └── @ SymbolNode (location: (8,2)-(8,9))
+                │   │   │           ├── flags: ∅
                 │   │   │           ├── opening_loc: (8,2)-(8,3) = ":"
                 │   │   │           ├── value_loc: (8,3)-(8,9) = "ensure"
                 │   │   │           ├── closing_loc: ∅

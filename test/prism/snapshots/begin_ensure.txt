@@ -157,6 +157,7 @@
             │           │           ├── flags: ∅
             │           │           ├── receiver:
             │           │           │   @ SymbolNode (location: (15,11)-(15,13))
+            │           │           │   ├── flags: ∅
             │           │           │   ├── opening_loc: (15,11)-(15,12) = ":"
             │           │           │   ├── value_loc: (15,12)-(15,13) = "s"
             │           │           │   ├── closing_loc: ∅
