@@ -933,6 +933,7 @@ typedef struct rb_objspace {
         size_t moved_count_table[T_MASK];
         size_t moved_up_count_table[T_MASK];
         size_t moved_down_count_table[T_MASK];
+        size_t pinned_count_table[T_MASK];
         size_t total_moved;
 
         /* This function will be used, if set, to sort the heap prior to compaction */
@@ -6215,6 +6216,7 @@ gc_compact_start(rb_objspace_t *objspace)
     memset(objspace->rcompactor.moved_count_table, 0, T_MASK * sizeof(size_t));
     memset(objspace->rcompactor.moved_up_count_table, 0, T_MASK * sizeof(size_t));
     memset(objspace->rcompactor.moved_down_count_table, 0, T_MASK * sizeof(size_t));
+    memset(objspace->rcompactor.pinned_count_table, 0, T_MASK * sizeof(size_t));
 
     /* Set up read barrier for pages containing MOVED objects */
     install_handlers();
@@ -8637,7 +8639,7 @@ gc_compact_move(rb_objspace_t *objspace, rb_heap_t *heap, rb_size_pool_t *size_p
 }
 
 static bool
-gc_compact_plane(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap, uintptr_t p, bits_t bitset, struct heap_page *page)
+gc_compact_plane(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *heap, uintptr_t p, bits_t mark_bitset, bits_t pin_bitset, struct heap_page *page)
 {
     short slot_size = page->slot_size;
     short slot_bits = slot_size / BASE_SLOT_SIZE;
@@ -8647,7 +8649,7 @@ gc_compact_plane(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *
         VALUE vp = (VALUE)p;
         GC_ASSERT(vp % sizeof(RVALUE) == 0);
 
-        if (bitset & 1) {
+        if ((mark_bitset & 1) && !(pin_bitset & 1)) {
             objspace->rcompactor.considered_count_table[BUILTIN_TYPE(vp)]++;
 
             if (gc_is_moveable_obj(objspace, vp)) {
@@ -8657,9 +8659,13 @@ gc_compact_plane(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *
                 }
             }
         }
+        else if ((mark_bitset & 1) && (pin_bitset & 1)) {
+            objspace->rcompactor.pinned_count_table[BUILTIN_TYPE(vp)]++;
+        }
         p += slot_size;
-        bitset >>= slot_bits;
-    } while (bitset);
+        mark_bitset >>= slot_bits;
+        pin_bitset >>= slot_bits;
+    } while (mark_bitset);
 
     return true;
 }
@@ -8670,26 +8676,23 @@ gc_compact_page(rb_objspace_t *objspace, rb_size_pool_t *size_pool, rb_heap_t *h
 {
     GC_ASSERT(page == heap->compact_cursor);
 
-    bits_t *mark_bits, *pin_bits;
-    bits_t bitset;
+    bits_t mark_bitset, pin_bitset;
     uintptr_t p = page->start;
 
-    mark_bits = page->mark_bits;
-    pin_bits = page->pinned_bits;
+    mark_bitset = page->mark_bits[0] >> NUM_IN_PAGE(p);
+    pin_bitset = page->pinned_bits[0] >> NUM_IN_PAGE(p);
 
-    // objects that can be moved are marked and not pinned
-    bitset = (mark_bits[0] & ~pin_bits[0]);
-    bitset >>= NUM_IN_PAGE(p);
-    if (bitset) {
-        if (!gc_compact_plane(objspace, size_pool, heap, (uintptr_t)p, bitset, page))
+    if (mark_bitset) {
+        if (!gc_compact_plane(objspace, size_pool, heap, (uintptr_t)p, mark_bitset, pin_bitset, page))
             return false;
     }
     p += (BITS_BITLENGTH - NUM_IN_PAGE(p)) * BASE_SLOT_SIZE;
 
     for (int j = 1; j < HEAP_PAGE_BITMAP_LIMIT; j++) {
-        bitset = (mark_bits[j] & ~pin_bits[j]);
-        if (bitset) {
-            if (!gc_compact_plane(objspace, size_pool, heap, (uintptr_t)p, bitset, page))
+        mark_bitset = page->mark_bits[j];
+        pin_bitset = page->pinned_bits[j];
+        if (mark_bitset) {
+            if (!gc_compact_plane(objspace, size_pool, heap, (uintptr_t)p, mark_bitset, pin_bitset, page))
                 return false;
         }
         p += BITS_BITLENGTH * BASE_SLOT_SIZE;
@@ -10980,6 +10983,7 @@ gc_compact_stats(VALUE self)
     VALUE moved = rb_hash_new();
     VALUE moved_up = rb_hash_new();
     VALUE moved_down = rb_hash_new();
+    VALUE pinned = rb_hash_new();
 
     for (i=0; i<T_MASK; i++) {
         if (objspace->rcompactor.considered_count_table[i]) {
@@ -10997,12 +11001,17 @@ gc_compact_stats(VALUE self)
         if (objspace->rcompactor.moved_down_count_table[i]) {
             rb_hash_aset(moved_down, type_sym(i), SIZET2NUM(objspace->rcompactor.moved_down_count_table[i]));
         }
+
+        if (objspace->rcompactor.pinned_count_table[i]) {
+            rb_hash_aset(pinned, type_sym(i), SIZET2NUM(objspace->rcompactor.pinned_count_table[i]));
+        }
     }
 
     rb_hash_aset(h, ID2SYM(rb_intern("considered")), considered);
     rb_hash_aset(h, ID2SYM(rb_intern("moved")), moved);
     rb_hash_aset(h, ID2SYM(rb_intern("moved_up")), moved_up);
     rb_hash_aset(h, ID2SYM(rb_intern("moved_down")), moved_down);
+    rb_hash_aset(h, ID2SYM(rb_intern("pinned")), pinned);
 
     return h;
 }

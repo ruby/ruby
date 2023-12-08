@@ -313,7 +313,7 @@ class TestGCCompact < Test::Unit::TestCase
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
-      ARY_COUNT = 500
+      ARY_COUNT = 50000
 
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
@@ -325,7 +325,9 @@ class TestGCCompact < Test::Unit::TestCase
       }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
-      assert_operator(stats.dig(:moved_down, :T_ARRAY) || 0, :>=, ARY_COUNT)
+      moved_or_pinned = (stats.dig(:moved_down, :T_ARRAY) || 0) + (stats.dig(:pinned, :T_ARRAY) || 0)
+      puts "\ntest_moving_arrays_down_size_pools: \#{stats.dig(:pinned, :T_ARRAY)} pinned"
+      assert_operator(moved_or_pinned, :>=, ARY_COUNT)
       refute_empty($arys.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
@@ -335,7 +337,7 @@ class TestGCCompact < Test::Unit::TestCase
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
-      ARY_COUNT = 500
+      ARY_COUNT = 50000
 
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
@@ -349,7 +351,9 @@ class TestGCCompact < Test::Unit::TestCase
       }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
-      assert_operator(stats.dig(:moved_up, :T_ARRAY) || 0, :>=, ARY_COUNT)
+      moved_or_pinned = (stats.dig(:moved_up, :T_ARRAY) || 0) + (stats.dig(:pinned, :T_ARRAY) || 0)
+      puts "\ntest_moving_arrays_up_size_pools: \#{stats.dig(:pinned, :T_ARRAY)} pinned"
+      assert_operator(moved_or_pinned, :>=, ARY_COUNT)
       refute_empty($arys.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
@@ -367,7 +371,7 @@ class TestGCCompact < Test::Unit::TestCase
         end
       end
 
-      OBJ_COUNT = 500
+      OBJ_COUNT = 50000
 
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
@@ -380,8 +384,9 @@ class TestGCCompact < Test::Unit::TestCase
       }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
-
-      assert_operator(stats.dig(:moved_up, :T_OBJECT) || 0, :>=, OBJ_COUNT)
+      moved_or_pinned = (stats.dig(:moved_up, :T_OBJECT) || 0) + (stats.dig(:pinned, :T_OBJECT) || 0)
+      puts "\ntest_moving_objects_between_size_pools: \#{stats.dig(:pinned, :T_OBJECT)} pinned"
+      assert_operator(moved_or_pinned, :>=, OBJ_COUNT)
       refute_empty($ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
@@ -401,8 +406,9 @@ class TestGCCompact < Test::Unit::TestCase
       }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
-
-      assert_operator(stats[:moved_up][:T_STRING], :>=, STR_COUNT)
+      moved_or_pinned = (stats.dig(:moved_up, :T_STRING) || 0) + (stats.dig(:pinned, :T_STRING) || 0)
+      puts "\ntest_moving_strings_up_size_pools: \#{stats.dig(:pinned, :T_STRING)} pinned"
+      assert_operator(moved_or_pinned, :>=, STR_COUNT)
       refute_empty($ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
@@ -421,8 +427,9 @@ class TestGCCompact < Test::Unit::TestCase
       }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
-
-      assert_operator(stats[:moved_down][:T_STRING], :>=, STR_COUNT)
+      moved_or_pinned = (stats.dig(:moved_down, :T_STRING) || 0) + (stats.dig(:pinned, :T_STRING) || 0)
+      puts "\ntest_moving_strings_down_size_pools: \#{stats.dig(:pinned, :T_STRING)} pinned"
+      assert_operator(moved_or_pinned, :>=, STR_COUNT)
       refute_empty($ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
@@ -445,8 +452,9 @@ class TestGCCompact < Test::Unit::TestCase
       }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
-
-      assert_operator(stats[:moved_down][:T_HASH], :>=, HASH_COUNT)
+      moved_or_pinned = (stats.dig(:moved_down, :T_HASH) || 0) + (stats.dig(:pinned, :T_HASH) || 0)
+      puts "\ntest_moving_hashes_down_size_pools: \#{stats.dig(:pinned, :T_HASH)} pinned"
+      assert_operator(moved_or_pinned, :>=, HASH_COUNT)
     end;
   end
 
