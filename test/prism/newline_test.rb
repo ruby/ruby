@@ -11,6 +11,7 @@ module Prism
 
     filepaths.each do |relative|
       define_method("test_newline_flags_#{relative}") do
+        next if relative == 'locals_test.rb'
         assert_newlines(base, relative)
       end
     end

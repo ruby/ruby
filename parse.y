@@ -1531,7 +1531,6 @@ static void numparam_pop(struct parser_params *p, NODE *prev_inner);
 #else
 #define arg_FWD_BLOCK idFWD_BLOCK
 #endif
-#define FORWARD_ARGS_WITH_RUBY2_KEYWORDS
 
 #define RE_OPTION_ONCE (1<<16)
 #define RE_OPTION_ENCODING_SHIFT 8
