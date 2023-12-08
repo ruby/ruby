@@ -11,7 +11,7 @@ module Bundler
   class CLI::Gem
     TEST_FRAMEWORK_VERSIONS = {
       "rspec" => "3.0",
-      "minitest" => "5.0",
+      "minitest" => "5.16",
       "test-unit" => "3.0",
     }.freeze
 
