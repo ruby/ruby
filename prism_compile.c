@@ -2255,9 +2255,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PM_POP;
 
             if (case_node->consequent) {
-                if (!popped || !PM_NODE_TYPE_P(((pm_node_t *)case_node->consequent), PM_ELSE_NODE)) {
-                    PM_COMPILE_NOT_POPPED((pm_node_t *)case_node->consequent);
-                }
+                 PM_COMPILE((pm_node_t *)case_node->consequent);
             }
             else {
                 PM_PUTNIL_UNLESS_POPPED;
@@ -2759,7 +2757,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
               PM_COMPILE((pm_node_t *)cast->statements);
           }
           else {
-              PM_PUTNIL;
+              PM_PUTNIL_UNLESS_POPPED;
           }
           return;
       }
