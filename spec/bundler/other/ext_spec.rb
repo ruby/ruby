@@ -63,3 +63,23 @@ RSpec.describe "Gem::SourceIndex#refresh!" do
     run "Gem::SourceIndex.new([]).refresh!", raise_on_error: false
   end
 end
+
+RSpec.describe "Gem::NameTuple" do
+  describe "#initialize" do
+    it "creates a Gem::NameTuple with equality regardless of platform type" do
+      gem_platform = Gem::NameTuple.new "a", v("1"), pl("x86_64-linux")
+      str_platform = Gem::NameTuple.new "a", v("1"), "x86_64-linux"
+      expect(gem_platform).to eq(str_platform)
+      expect(gem_platform.hash).to eq(str_platform.hash)
+      expect(gem_platform.to_a).to eq(str_platform.to_a)
+    end
+  end
+
+  describe "#lock_name" do
+    it "returns the lock name" do
+      expect(Gem::NameTuple.new("a", v("1.0.0"), pl("x86_64-linux")).lock_name).to eq("a (1.0.0-x86_64-linux)")
+      expect(Gem::NameTuple.new("a", v("1.0.0"), "ruby").lock_name).to eq("a (1.0.0)")
+      expect(Gem::NameTuple.new("a", v("1.0.0")).lock_name).to eq("a (1.0.0)")
+    end
+  end
+end
