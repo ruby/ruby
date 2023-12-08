@@ -701,6 +701,17 @@ module Prism
       assert_prism_eval("case; when :a, :b; 1; else; 2 end")
       assert_prism_eval("case :a; when :b; else; end")
       assert_prism_eval("b = 1; case :a; when b; else; end")
+      assert_prism_eval(<<-CODE)
+        def self.prism_test_case_node
+          case :a
+          when :b
+          else
+            return 2
+          end
+          1
+        end
+        prism_test_case_node
+      CODE
     end
 
     def test_ElseNode
