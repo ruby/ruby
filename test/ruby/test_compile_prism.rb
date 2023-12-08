@@ -1301,6 +1301,34 @@ module Prism
       CODE
 
       assert_prism_eval("prism_test_call_node_splat(*[], 1, 2)")
+
+      assert_prism_eval(<<-CODE)
+        class Foo
+          def []=(a, b)
+            1234
+          end
+        end
+
+        def self.foo(i, j)
+          tbl = Foo.new
+          tbl[i] = j
+        end
+        foo(1, 2)
+      CODE
+
+      assert_prism_eval(<<-CODE)
+        class Foo
+          def i=(a)
+            1234
+          end
+        end
+
+        def self.foo(j)
+          tbl = Foo.new
+          tbl.i = j
+        end
+        foo(1)
+      CODE
     end
 
     def test_CallAndWriteNode
