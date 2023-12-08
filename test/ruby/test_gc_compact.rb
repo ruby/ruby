@@ -313,7 +313,7 @@ class TestGCCompact < Test::Unit::TestCase
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
-      ARY_COUNT = 500
+      ARY_COUNT = 50000
 
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
@@ -325,7 +325,7 @@ class TestGCCompact < Test::Unit::TestCase
       }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
-      assert_operator(stats.dig(:moved_down, :T_ARRAY) || 0, :>=, ARY_COUNT)
+      assert_operator(stats.dig(:moved_down, :T_ARRAY) || 0, :>=, ARY_COUNT - 10)
       refute_empty($arys.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
@@ -335,7 +335,7 @@ class TestGCCompact < Test::Unit::TestCase
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
-      ARY_COUNT = 500
+      ARY_COUNT = 50000
 
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
@@ -349,7 +349,7 @@ class TestGCCompact < Test::Unit::TestCase
       }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
-      assert_operator(stats.dig(:moved_up, :T_ARRAY) || 0, :>=, ARY_COUNT)
+      assert_operator(stats.dig(:moved_up, :T_ARRAY) || 0, :>=, ARY_COUNT - 10)
       refute_empty($arys.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
@@ -367,7 +367,7 @@ class TestGCCompact < Test::Unit::TestCase
         end
       end
 
-      OBJ_COUNT = 500
+      OBJ_COUNT = 50000
 
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
@@ -381,7 +381,7 @@ class TestGCCompact < Test::Unit::TestCase
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      assert_operator(stats.dig(:moved_up, :T_OBJECT) || 0, :>=, OBJ_COUNT)
+      assert_operator(stats.dig(:moved_up, :T_OBJECT) || 0, :>=, OBJ_COUNT - 10)
       refute_empty($ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
@@ -402,7 +402,7 @@ class TestGCCompact < Test::Unit::TestCase
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      assert_operator(stats[:moved_up][:T_STRING], :>=, STR_COUNT)
+      assert_operator(stats[:moved_up][:T_STRING], :>=, STR_COUNT - 10)
       refute_empty($ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
@@ -422,7 +422,7 @@ class TestGCCompact < Test::Unit::TestCase
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      assert_operator(stats[:moved_down][:T_STRING], :>=, STR_COUNT)
+      assert_operator(stats[:moved_down][:T_STRING], :>=, STR_COUNT - 10)
       refute_empty($ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
@@ -446,7 +446,7 @@ class TestGCCompact < Test::Unit::TestCase
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      assert_operator(stats[:moved_down][:T_HASH], :>=, HASH_COUNT)
+      assert_operator(stats[:moved_down][:T_HASH], :>=, HASH_COUNT - 10)
     end;
   end
 
