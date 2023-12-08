@@ -144,7 +144,9 @@ wmap_compact(void *ptr)
 {
     struct weakmap *w = ptr;
 
-    st_foreach(w->table, wmap_compact_table_i, (st_data_t)w->table);
+    if (w->table) {
+        st_foreach(w->table, wmap_compact_table_i, (st_data_t)w->table);
+    }
 }
 
 static const rb_data_type_t weakmap_type = {
