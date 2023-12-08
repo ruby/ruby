@@ -361,12 +361,11 @@ module Gem
     end
 
     def lock_name
-      @lock_name ||=
-        if platform == Gem::Platform::RUBY
-          "#{name} (#{version})"
-        else
-          "#{name} (#{version}-#{platform})"
-        end
+      if platform == Gem::Platform::RUBY
+        "#{name} (#{version})"
+      else
+        "#{name} (#{version}-#{platform})"
+      end
     end
   end
 
