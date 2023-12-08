@@ -123,6 +123,10 @@ class TestWeakKeyMap < Test::Unit::TestCase
     end;
   end
 
+  def test_gc_compact_stress
+    EnvUtil.under_gc_compact_stress { ObjectSpace::WeakKeyMap.new }
+  end
+
   private
 
   def assert_weak_include(m, k, n = 100)
