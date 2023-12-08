@@ -201,6 +201,7 @@ The following default gems are updated.
 * reline 0.4.0
 * rinda 0.2.0
 * securerandom 0.3.0
+* set 1.0.4
 * shellwords 0.2.0
 * singleton 0.2.0
 * stringio 3.1.1
