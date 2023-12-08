@@ -2112,6 +2112,63 @@ pm_index_or_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const
 }
 
 /**
+ * Allocate and initialize a new CallTargetNode node from an existing call
+ * node.
+ */
+static pm_call_target_node_t *
+pm_call_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
+    pm_call_target_node_t *node = PM_ALLOC_NODE(parser, pm_call_target_node_t);
+
+    *node = (pm_call_target_node_t) {
+        {
+            .type = PM_CALL_TARGET_NODE,
+            .flags = target->base.flags,
+            .location = target->base.location
+        },
+        .receiver = target->receiver,
+        .call_operator_loc = target->call_operator_loc,
+        .name = target->name,
+        .message_loc = target->message_loc
+    };
+
+    // Here we're going to free the target, since it is no longer necessary.
+    // However, we don't want to call `pm_node_destroy` because we want to keep
+    // around all of its children since we just reused them.
+    free(target);
+
+    return node;
+}
+
+/**
+ * Allocate and initialize a new IndexTargetNode node from an existing call
+ * node.
+ */
+static pm_index_target_node_t *
+pm_index_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
+    pm_index_target_node_t *node = PM_ALLOC_NODE(parser, pm_index_target_node_t);
+
+    *node = (pm_index_target_node_t) {
+        {
+            .type = PM_INDEX_TARGET_NODE,
+            .flags = target->base.flags,
+            .location = target->base.location
+        },
+        .receiver = target->receiver,
+        .opening_loc = target->opening_loc,
+        .arguments = target->arguments,
+        .closing_loc = target->closing_loc,
+        .block = target->block
+    };
+
+    // Here we're going to free the target, since it is no longer necessary.
+    // However, we don't want to call `pm_node_destroy` because we want to keep
+    // around all of its children since we just reused them.
+    free(target);
+
+    return node;
+}
+
+/**
  * Allocate and initialize a new CapturePatternNode node.
  */
 static pm_capture_pattern_node_t *
@@ -10618,23 +10675,15 @@ parse_target(pm_parser_t *parser, pm_node_t *target) {
 
                 if (*call->message_loc.start == '_' || parser->encoding->alnum_char(call->message_loc.start, call->message_loc.end - call->message_loc.start)) {
                     parse_write_name(parser, &call->name);
-                    return (pm_node_t *) call;
+                    return (pm_node_t *) pm_call_target_node_create(parser, call);
                 }
             }
 
             // If there is no call operator and the message is "[]" then this is
             // an aref expression, and we can transform it into an aset
             // expression.
-            if (
-                (call->call_operator_loc.start == NULL) &&
-                (call->message_loc.start != NULL) &&
-                (call->message_loc.start[0] == '[') &&
-                (call->message_loc.end[-1] == ']') &&
-                (call->block == NULL)
-            ) {
-                // Replace the name with "[]=".
-                call->name = pm_parser_constant_id_constant(parser, "[]=", 3);
-                return target;
+            if (pm_call_node_index_p(call)) {
+                return (pm_node_t *) pm_index_target_node_create(parser, call);
             }
         }
         /* fallthrough */

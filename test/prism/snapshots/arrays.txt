@@ -427,7 +427,7 @@
         │   └── block: ∅
         ├── @ MultiWriteNode (location: (41,0)-(41,21))
         │   ├── lefts: (length: 2)
-        │   │   ├── @ CallNode (location: (41,0)-(41,6))
+        │   │   ├── @ IndexTargetNode (location: (41,0)-(41,6))
         │   │   │   ├── flags: ∅
         │   │   │   ├── receiver:
         │   │   │   │   @ CallNode (location: (41,0)-(41,3))
@@ -440,9 +440,6 @@
         │   │   │   │   ├── arguments: ∅
         │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   └── block: ∅
-        │   │   │   ├── call_operator_loc: ∅
-        │   │   │   ├── name: :[]=
-        │   │   │   ├── message_loc: (41,3)-(41,6) = "[0]"
         │   │   │   ├── opening_loc: (41,3)-(41,4) = "["
         │   │   │   ├── arguments:
         │   │   │   │   @ ArgumentsNode (location: (41,4)-(41,5))
@@ -452,7 +449,7 @@
         │   │   │   │           └── flags: decimal
         │   │   │   ├── closing_loc: (41,5)-(41,6) = "]"
         │   │   │   └── block: ∅
-        │   │   └── @ CallNode (location: (41,8)-(41,14))
+        │   │   └── @ IndexTargetNode (location: (41,8)-(41,14))
         │   │       ├── flags: ∅
         │   │       ├── receiver:
         │   │       │   @ CallNode (location: (41,8)-(41,11))
@@ -465,9 +462,6 @@
         │   │       │   ├── arguments: ∅
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block: ∅
-        │   │       ├── call_operator_loc: ∅
-        │   │       ├── name: :[]=
-        │   │       ├── message_loc: (41,11)-(41,14) = "[0]"
         │   │       ├── opening_loc: (41,11)-(41,12) = "["
         │   │       ├── arguments:
         │   │       │   @ ArgumentsNode (location: (41,12)-(41,13))
@@ -2164,7 +2158,7 @@
         │   │   │   ├── exceptions: (length: 0)
         │   │   │   ├── operator_loc: (140,17)-(140,19) = "=>"
         │   │   │   ├── reference:
-        │   │   │   │   @ CallNode (location: (140,20)-(140,24))
+        │   │   │   │   @ IndexTargetNode (location: (140,20)-(140,24))
         │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── receiver:
         │   │   │   │   │   @ CallNode (location: (140,20)-(140,21))
@@ -2177,9 +2171,6 @@
         │   │   │   │   │   ├── arguments: ∅
         │   │   │   │   │   ├── closing_loc: ∅
         │   │   │   │   │   └── block: ∅
-        │   │   │   │   ├── call_operator_loc: ∅
-        │   │   │   │   ├── name: :[]=
-        │   │   │   │   ├── message_loc: (140,21)-(140,24) = "[*]"
         │   │   │   │   ├── opening_loc: (140,21)-(140,22) = "["
         │   │   │   │   ├── arguments:
         │   │   │   │   │   @ ArgumentsNode (location: (140,22)-(140,23))
@@ -2230,7 +2221,7 @@
             │   │   ├── exceptions: (length: 0)
             │   │   ├── operator_loc: (142,17)-(142,19) = "=>"
             │   │   ├── reference:
-            │   │   │   @ CallNode (location: (142,20)-(142,27))
+            │   │   │   @ IndexTargetNode (location: (142,20)-(142,27))
             │   │   │   ├── flags: ∅
             │   │   │   ├── receiver:
             │   │   │   │   @ CallNode (location: (142,20)-(142,21))
@@ -2243,9 +2234,6 @@
             │   │   │   │   ├── arguments: ∅
             │   │   │   │   ├── closing_loc: ∅
             │   │   │   │   └── block: ∅
-            │   │   │   ├── call_operator_loc: ∅
-            │   │   │   ├── name: :[]=
-            │   │   │   ├── message_loc: (142,21)-(142,27) = "[1, *]"
             │   │   │   ├── opening_loc: (142,21)-(142,22) = "["
             │   │   │   ├── arguments:
             │   │   │   │   @ ArgumentsNode (location: (142,22)-(142,26))

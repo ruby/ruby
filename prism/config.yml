@@ -790,6 +790,32 @@ nodes:
 
           foo.bar ||= value
           ^^^^^^^^^^^^^^^^^
+  - name: CallTargetNode
+    fields:
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
+      - name: receiver
+        type: node
+      - name: call_operator_loc
+        type: location
+      - name: name
+        type: constant
+      - name: message_loc
+        type: location
+    comment: |
+      Represents assigning to a method call.
+
+          foo.bar, = 1
+          ^^^^^^^
+
+          begin
+          rescue => foo.bar
+                    ^^^^^^^
+          end
+
+          for foo.bar in baz do end
+              ^^^^^^^
   - name: CapturePatternNode
     fields:
       - name: value
@@ -1596,6 +1622,35 @@ nodes:
 
           foo.bar[baz] ||= value
           ^^^^^^^^^^^^^^^^^^^^^^
+  - name: IndexTargetNode
+    fields:
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
+      - name: receiver
+        type: node
+      - name: opening_loc
+        type: location
+      - name: arguments
+        type: node?
+        kind: ArgumentsNode
+      - name: closing_loc
+        type: location
+      - name: block
+        type: node?
+    comment: |
+      Represents assigning to an index.
+
+          foo[bar], = 1
+          ^^^^^^^^
+
+          begin
+          rescue => foo[bar]
+                    ^^^^^^^^
+          end
+
+          for foo[bar] in baz do end
+              ^^^^^^^^
   - name: InstanceVariableAndWriteNode
     fields:
       - name: name

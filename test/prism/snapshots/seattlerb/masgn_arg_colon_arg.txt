@@ -8,7 +8,7 @@
             │   ├── @ LocalVariableTargetNode (location: (1,0)-(1,1))
             │   │   ├── name: :a
             │   │   └── depth: 0
-            │   └── @ CallNode (location: (1,3)-(1,7))
+            │   └── @ CallTargetNode (location: (1,3)-(1,7))
             │       ├── flags: ∅
             │       ├── receiver:
             │       │   @ CallNode (location: (1,3)-(1,4))
@@ -23,11 +23,7 @@
             │       │   └── block: ∅
             │       ├── call_operator_loc: (1,4)-(1,6) = "::"
             │       ├── name: :c=
-            │       ├── message_loc: (1,6)-(1,7) = "c"
-            │       ├── opening_loc: ∅
-            │       ├── arguments: ∅
-            │       ├── closing_loc: ∅
-            │       └── block: ∅
+            │       └── message_loc: (1,6)-(1,7) = "c"
             ├── rest: ∅
             ├── rights: (length: 0)
             ├── lparen_loc: ∅
