@@ -286,18 +286,10 @@ class Set
     @hash = orig.instance_variable_get(:@hash).dup
   end
 
-  if Kernel.instance_method(:initialize_clone).arity != 1
-    # Clone internal hash.
-    def initialize_clone(orig, **options)
-      super
-      @hash = orig.instance_variable_get(:@hash).clone(**options)
-    end
-  else
-    # Clone internal hash.
-    def initialize_clone(orig)
-      super
-      @hash = orig.instance_variable_get(:@hash).clone
-    end
+  # Clone internal hash.
+  def initialize_clone(orig, **options)
+    super
+    @hash = orig.instance_variable_get(:@hash).clone(**options)
   end
 
   def freeze    # :nodoc:
