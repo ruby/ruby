@@ -181,8 +181,8 @@ RSpec.describe "bundle pristine" do
       bundle "pristine"
 
       makefile_contents = File.read(c_ext_dir.join("Makefile").to_s)
-      expect(makefile_contents).to match(/libpath =.*#{c_ext_dir}/)
-      expect(makefile_contents).to match(/LIBPATH =.*-L#{c_ext_dir}/)
+      expect(makefile_contents).to match(/libpath =.*#{Regexp.escape(c_ext_dir.to_s)}/)
+      expect(makefile_contents).to match(/LIBPATH =.*-L#{Regexp.escape(c_ext_dir.to_s)}/)
     end
   end
 
@@ -198,8 +198,8 @@ RSpec.describe "bundle pristine" do
       bundle "pristine"
 
       makefile_contents = File.read(c_ext_dir.join("Makefile").to_s)
-      expect(makefile_contents).to match(/libpath =.*#{c_ext_dir}/)
-      expect(makefile_contents).to match(/LIBPATH =.*-L#{c_ext_dir}/)
+      expect(makefile_contents).to match(/libpath =.*#{Regexp.escape(c_ext_dir.to_s)}/)
+      expect(makefile_contents).to match(/LIBPATH =.*-L#{Regexp.escape(c_ext_dir.to_s)}/)
     end
   end
 

@@ -44,7 +44,7 @@ RSpec.describe "bundle open" do
       G
 
       bundle "open foo", env: { "EDITOR" => "echo editor", "VISUAL" => "", "BUNDLER_EDITOR" => "" }
-      expect(out).to match("editor #{default_bundle_path.join("bundler/gems/foo-1.0-#{ref}")}")
+      expect(out).to include("editor #{default_bundle_path.join("bundler", "gems", "foo-1.0-#{ref}")}")
     end
 
     it "suggests alternatives for similar-sounding gems" do
@@ -104,7 +104,7 @@ RSpec.describe "bundle open" do
         input.puts "2"
       end
 
-      expect(out).to match(%r{bundler_editor #{default_bundle_path("gems", "activerecord-2.3.2")}/CHANGELOG\.md\z})
+      expect(out).to include("bundler_editor #{default_bundle_path("gems", "activerecord-2.3.2").join("CHANGELOG.md")}")
     end
 
     it "opens deep subpath of the selected matching gem", :readline do
@@ -113,7 +113,7 @@ RSpec.describe "bundle open" do
         input.puts "2"
       end
 
-      expect(out).to match(%r{bundler_editor #{default_bundle_path("gems", "activerecord-2.3.2")}/lib/activerecord/version\.rb\z})
+      expect(out).to include("bundler_editor #{default_bundle_path("gems", "activerecord-2.3.2").join("lib", "activerecord", "version.rb")}")
     end
 
     it "select the gem from many match gems", :readline do
@@ -122,7 +122,7 @@ RSpec.describe "bundle open" do
         input.puts "2"
       end
 
-      expect(out).to match(/bundler_editor #{default_bundle_path("gems", "activerecord-2.3.2")}\z/)
+      expect(out).to include("bundler_editor #{default_bundle_path("gems", "activerecord-2.3.2")}")
     end
 
     it "allows selecting exit from many match gems", :readline do
