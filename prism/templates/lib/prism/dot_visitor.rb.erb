@@ -122,13 +122,17 @@ module Prism
         digraph.edge("#{id}:<%= field.name %> -> #{node_id(<%= field.name %>)};")
       end
       <%- when Prism::NodeListField -%>
-      table.field("<%= field.name %>", port: true)
+      if node.<%= field.name %>.any?
+        table.field("<%= field.name %>", port: true)
 
-      waypoint = "#{id}_<%= field.name %>"
-      digraph.waypoint("#{waypoint};")
+        waypoint = "#{id}_<%= field.name %>"
+        digraph.waypoint("#{waypoint};")
 
-      digraph.edge("#{id}:<%= field.name %> -> #{waypoint};")
-      node.<%= field.name %>.each { |child| digraph.edge("#{waypoint} -> #{node_id(child)};") }
+        digraph.edge("#{id}:<%= field.name %> -> #{waypoint};")
+        node.<%= field.name %>.each { |child| digraph.edge("#{waypoint} -> #{node_id(child)};") }
+      else
+        table.field("<%= field.name %>", "[]")
+      end
       <%- when Prism::StringField, Prism::ConstantField, Prism::OptionalConstantField, Prism::UInt8Field, Prism::UInt32Field, Prism::ConstantListField -%>
       table.field("<%= field.name %>", node.<%= field.name %>.inspect)
       <%- when Prism::LocationField -%>
