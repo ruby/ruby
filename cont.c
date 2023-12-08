@@ -3272,18 +3272,18 @@ rb_fiber_m_raise(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *     fiber.kill -> nil
  *
- *  Terminates +fiber+ by raising an uncatchable exception.
- *  It only terminates the given Fiber and no other Fiber, returning +nil+ to
- *  another Fiber if that Fiber was calling +fiber.resume+ or +fiber.transfer+.
+ *  Terminates the fiber by raising an uncatchable exception.
+ *  It only terminates the given fiber and no other fiber, returning +nil+ to
+ *  another fiber if that fiber was calling #resume or #transfer.
  *
- *  +Fiber#kill+ only interrupts another Fiber when it is in +Fiber.yield+.
- *  If called on the current Fiber then it raises that exception at the +Fiber#kill+ call site.
+ *  <tt>Fiber#kill</tt> only interrupts another fiber when it is in Fiber.yield.
+ *  If called on the current fiber then it raises that exception at the <tt>Fiber#kill</tt> call site.
  *
  *  If the fiber has not been started, transition directly to the terminated state.
  *
  *  If the fiber is already terminated, does nothing.
  *
- *  Raises +FiberError+ if called on a Fiber belonging to another +Thread+.
+ *  Raises FiberError if called on a fiber belonging to another thread.
  */
 static VALUE
 rb_fiber_m_kill(VALUE self)
