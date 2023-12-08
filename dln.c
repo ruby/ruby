@@ -463,8 +463,8 @@ dln_symbol(void *handle, const char *symbol)
     }
     if (handle == NULL) {
 # if defined(USE_DLN_DLOPEN)
-        handle = dlopen(NULL, 0);
-# elif defined(_WIN32) && defined(RUBY_EXPORT)
+        handle = dlopen(NULL, RTLD_LAZY | RTLD_GLOBAL);
+# elif defined(_WIN32)
         handle = rb_libruby_handle();
 # else
         return NULL;
