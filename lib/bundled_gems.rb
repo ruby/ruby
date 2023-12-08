@@ -103,6 +103,9 @@ module Gem::BUNDLED_GEMS
       return
     end
     return if WARNED[name]
+    # Ignore to warn like "bigdecimal/util" feature.
+    # It should be better to warn it, but it is difficult to cover all of target features.
+    return unless SINCE[name]
     WARNED[name] = true
     if gem == true
       gem = name
