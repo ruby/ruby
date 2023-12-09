@@ -137,7 +137,7 @@ static VALUE
 pjob_preregister_and_call_with_sleep(VALUE self, VALUE obj)
 {
     counter = 0;
-    rb_postponed_job_handle_t h = rb_postponed_job_preregister(pjob_preregistered_callback, (void *)obj);
+    rb_postponed_job_handle_t h = rb_postponed_job_preregister(0, pjob_preregistered_callback, (void *)obj);
     counter++;
     rb_postponed_job_trigger(h);
     rb_thread_sleep(0);
@@ -154,7 +154,7 @@ static VALUE
 pjob_preregister_and_call_without_sleep(VALUE self, VALUE obj)
 {
     counter = 0;
-    rb_postponed_job_handle_t h = rb_postponed_job_preregister(pjob_preregistered_callback, (void *)obj);
+    rb_postponed_job_handle_t h = rb_postponed_job_preregister(0, pjob_preregistered_callback, (void *)obj);
     counter = 3;
     rb_postponed_job_trigger(h);
     rb_postponed_job_trigger(h);
@@ -165,9 +165,9 @@ pjob_preregister_and_call_without_sleep(VALUE self, VALUE obj)
 static VALUE
 pjob_preregister_multiple_times(VALUE self)
 {
-    int r1 = rb_postponed_job_preregister(pjob_noop_callback, NULL);
-    int r2 = rb_postponed_job_preregister(pjob_noop_callback, NULL);
-    int r3 = rb_postponed_job_preregister(pjob_noop_callback, NULL);
+    int r1 = rb_postponed_job_preregister(0, pjob_noop_callback, NULL);
+    int r2 = rb_postponed_job_preregister(0, pjob_noop_callback, NULL);
+    int r3 = rb_postponed_job_preregister(0, pjob_noop_callback, NULL);
     VALUE ary = rb_ary_new();
     rb_ary_push(ary, INT2FIX(r1));
     rb_ary_push(ary, INT2FIX(r2));

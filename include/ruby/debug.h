@@ -686,6 +686,7 @@ typedef unsigned int rb_postponed_job_handle_t;
  * version might require that this method be called under the GVL; thus, programs which
  * aim to be forward-compatible should call this method whilst holding the GVL.
  *
+ * @param[in]   flags       Unused and ignored
  * @param[in]   func        The function to be pre-registered
  * @param[in]   data        The data to be pre-registered
  * @retval      POSTPONED_JOB_HANDLE_INVALID    The job table is full; this registration
@@ -693,7 +694,7 @@ typedef unsigned int rb_postponed_job_handle_t;
  *                          the lifetime of the program.
  * @retval      otherwise   A handle which can be passed to `rb_postponed_job_trigger`
  */
-rb_postponed_job_handle_t rb_postponed_job_preregister(rb_postponed_job_func_t func, void *data);
+rb_postponed_job_handle_t rb_postponed_job_preregister(unsigned int flags, rb_postponed_job_func_t func, void *data);
 
 /**
  * Triggers a pre-registered job registered with rb_postponed_job_preregister,

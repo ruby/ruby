@@ -1909,7 +1909,7 @@ rb_objspace_alloc(void)
     rb_objspace_t *objspace = calloc1(sizeof(rb_objspace_t));
     objspace->flags.measure_gc = 1;
     malloc_limit = gc_params.malloc_limit_min;
-    objspace->finalize_deferred_pjob = rb_postponed_job_preregister(gc_finalize_deferred, objspace);
+    objspace->finalize_deferred_pjob = rb_postponed_job_preregister(0, gc_finalize_deferred, objspace);
     if (objspace->finalize_deferred_pjob == POSTPONED_JOB_HANDLE_INVALID) {
         rb_bug("Could not preregister postponed job for GC");
     }

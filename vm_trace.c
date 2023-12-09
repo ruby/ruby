@@ -1741,7 +1741,7 @@ rb_vm_memsize_postponed_job_queue(void)
 
 
 rb_postponed_job_handle_t
-rb_postponed_job_preregister(rb_postponed_job_func_t func, void *data)
+rb_postponed_job_preregister(unsigned int flags, rb_postponed_job_func_t func, void *data)
 {
     /* The doc comments say that this function should be called under the GVL, because
      * that is actually required to get the guarantee that "if a given (func, data) pair
@@ -1789,7 +1789,7 @@ pjob_register_legacy_impl(unsigned int flags, rb_postponed_job_func_t func, void
 {
     /* We _know_ calling preregister from a signal handler like this is racy; what is
      * and is not promised is very exhaustively documented in debug.h */
-    rb_postponed_job_handle_t h = rb_postponed_job_preregister(func, data);
+    rb_postponed_job_handle_t h = rb_postponed_job_preregister(0, func, data);
     if (h == POSTPONED_JOB_HANDLE_INVALID) {
         return 0;
     }
