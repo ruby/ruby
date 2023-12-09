@@ -179,6 +179,8 @@
 # - #each_value: Passes each string field value to the block.
 #
 module Net::HTTPHeader
+  MAX_KEY_LENGTH = 1024
+  MAX_FIELD_LENGTH = 65536
 
   def initialize_http_header(initheader) #:nodoc:
     @header = {}
@@ -189,6 +191,12 @@ module Net::HTTPHeader
         warn "net/http: nil HTTP header: #{key}", uplevel: 3 if $VERBOSE
       else
         value = value.strip # raise error for invalid byte sequences
+        if key.to_s.bytesize > MAX_KEY_LENGTH
+          raise ArgumentError, "too long (#{key.bytesize} bytes) header: #{key[0, 30].inspect}..."
+        end
+        if value.to_s.bytesize > MAX_FIELD_LENGTH
+          raise ArgumentError, "header #{key} has too long field value: #{value.bytesize}"
+        end
         if value.count("\r\n") > 0
           raise ArgumentError, "header #{key} has field value #{value.inspect}, this cannot include CR/LF"
         end
