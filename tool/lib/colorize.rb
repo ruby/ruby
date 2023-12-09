@@ -27,10 +27,15 @@ class Colorize
   end
 
   DEFAULTS = {
-    "pass"=>"32", "fail"=>"31;1", "skip"=>"33;1",
+    # color names
     "black"=>"30", "red"=>"31", "green"=>"32", "yellow"=>"33",
     "blue"=>"34", "magenta"=>"35", "cyan"=>"36", "white"=>"37",
     "bold"=>"1", "underline"=>"4", "reverse"=>"7",
+    "bright_black"=>"90", "bright_red"=>"91", "bright_green"=>"92", "bright_yellow"=>"93",
+    "bright_blue"=>"94", "bright_magenta"=>"95", "bright_cyan"=>"96", "bright_white"=>"97",
+
+    # abstract decorations
+    "pass"=>"green", "fail"=>"red;bold", "skip"=>"yellow;bold", "note"=>"bright_yellow",
   }
 
   def coloring?
@@ -46,9 +51,21 @@ class Colorize
     end
   end
 
-  def resolve_color(name = @color, seen = {})
+  def resolve_color(color = @color, seen = {}, colors = nil)
     return unless @colors
-    @colors[name] || DEFAULTS[name]
+    color.gsub(/\b[a-z][\w ]+/) do |n|
+      n.gsub!(/\W+/, "_")
+      n.downcase!
+      c = seen[n] and next c
+      if colors
+        c = colors[n]
+      elsif (c = (tbl = @colors)[n] || (tbl = DEFAULTS)[n])
+        colors = tbl
+      else
+        next n
+      end
+      seen[n] = resolve_color(c, seen, colors)
+    end
   end
 
   DEFAULTS.each_key do |name|
