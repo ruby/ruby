@@ -96,7 +96,7 @@ unless respond_to?(:ln_sr)
     while c = comp.shift
       if c == ".." and clean.last != ".." and !(fu_have_symlink? && File.symlink?(path))
         clean.pop
-        path.chomp!(%r((?<=\A|/)[^/]+/\z), "")
+        path.sub!(%r((?<=\A|/)[^/]+/\z), "")
       else
         clean << c
         path << c << "/"
