@@ -1423,9 +1423,9 @@ module Prism
     def test_conditional_predicate_closed
       source = "if 0 0; elsif 0 0; end\nunless 0 0; end"
       assert_errors expression(source), source, [
-        ["expected `then` or `;` or '\n" + "'", 5..6],
-        ["expected `then` or `;` or '\n" + "'", 16..17],
-        ["expected `then` or `;` or '\n" + "'", 32..33],
+        ["expected `then` or `;` or '\\n" + "'", 5..6],
+        ["expected `then` or `;` or '\\n" + "'", 16..17],
+        ["expected `then` or `;` or '\\n" + "'", 32..33],
       ]
     end
 
@@ -1463,7 +1463,7 @@ module Prism
     def test_semicolon_after_inheritance_operator
       source = "class Foo < Bar end"
       assert_errors expression(source), source, [
-        ["unexpected `end`, expecting ';' or '\n'", 15..15],
+        ["unexpected `end`, expecting ';' or '\\n'", 15..15],
       ]
     end
 
