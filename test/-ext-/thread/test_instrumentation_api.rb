@@ -172,6 +172,7 @@ class TestThreadInstrumentation < Test::Unit::TestCase
           sleep 0.1
           Thread.current
         }.take
+        sleep 0.1
       end
 
       timeline = timeline_for(thread, full_timeline)
