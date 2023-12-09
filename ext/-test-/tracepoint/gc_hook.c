@@ -106,7 +106,7 @@ Init_gc_hook(VALUE module)
     rb_define_module_function(module, "after_gc_exit_hook=", start_after_gc_exit, 1);
     rb_gc_register_address(&gc_start_proc);
     rb_gc_register_address(&gc_end_proc);
-    invoking_proc_pjob = rb_postponed_job_preregister(invoke_proc, NULL);
+    invoking_proc_pjob = rb_postponed_job_preregister(0, invoke_proc, NULL);
     if (invoking_proc_pjob == POSTPONED_JOB_HANDLE_INVALID) {
         rb_raise(rb_eStandardError, "could not preregister invoke_proc");
     }

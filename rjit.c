@@ -432,7 +432,7 @@ rb_rjit_init(const struct rb_rjit_options *opts)
         rb_rjit_enabled = false;
         return;
     }
-    rjit_iseq_update_references_pjob = rb_postponed_job_preregister(rjit_iseq_update_references, NULL);
+    rjit_iseq_update_references_pjob = rb_postponed_job_preregister(0, rjit_iseq_update_references, NULL);
     if (rjit_iseq_update_references_pjob == POSTPONED_JOB_HANDLE_INVALID) {
         rb_bug("Could not preregister postponed job for RJIT");
     }
