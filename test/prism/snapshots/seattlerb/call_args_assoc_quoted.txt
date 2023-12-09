@@ -60,6 +60,7 @@
         │   │               └── @ AssocNode (location: (3,2)-(3,8))
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (3,2)-(3,6))
+        │   │                   │   ├── flags: ∅
         │   │                   │   ├── opening_loc: (3,2)-(3,3) = "\""
         │   │                   │   ├── value_loc: (3,3)-(3,4) = "k"
         │   │                   │   ├── closing_loc: (3,4)-(3,6) = "\":"
@@ -86,6 +87,7 @@
             │               └── @ AssocNode (location: (5,2)-(5,8))
             │                   ├── key:
             │                   │   @ SymbolNode (location: (5,2)-(5,6))
+            │                   │   ├── flags: ∅
             │                   │   ├── opening_loc: (5,2)-(5,3) = "'"
             │                   │   ├── value_loc: (5,3)-(5,4) = "k"
             │                   │   ├── closing_loc: (5,4)-(5,6) = "':"

@@ -6,6 +6,7 @@
         ├── @ CaseNode (location: (1,0)-(3,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (1,5)-(1,8))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (1,5)-(1,6) = ":"
         │   │   ├── value_loc: (1,6)-(1,8) = "hi"
         │   │   ├── closing_loc: ∅
@@ -15,6 +16,7 @@
         │   │       ├── keyword_loc: (2,0)-(2,4) = "when"
         │   │       ├── conditions: (length: 1)
         │   │       │   └── @ SymbolNode (location: (2,5)-(2,8))
+        │   │       │       ├── flags: ∅
         │   │       │       ├── opening_loc: (2,5)-(2,6) = ":"
         │   │       │       ├── value_loc: (2,6)-(2,8) = "hi"
         │   │       │       ├── closing_loc: ∅
@@ -46,6 +48,7 @@
         │   │   │               │   ├── flags: ∅
         │   │   │               │   └── arguments: (length: 1)
         │   │   │               │       └── @ SymbolNode (location: (5,27)-(5,30))
+        │   │   │               │           ├── flags: ∅
         │   │   │               │           ├── opening_loc: (5,27)-(5,28) = ":"
         │   │   │               │           ├── value_loc: (5,28)-(5,30) = "hi"
         │   │   │               │           ├── closing_loc: ∅
@@ -71,6 +74,7 @@
         │   │                   │   ├── flags: ∅
         │   │                   │   └── arguments: (length: 1)
         │   │                   │       └── @ SymbolNode (location: (5,49)-(5,53))
+        │   │                   │           ├── flags: ∅
         │   │                   │           ├── opening_loc: (5,49)-(5,50) = ":"
         │   │                   │           ├── value_loc: (5,50)-(5,53) = "bye"
         │   │                   │           ├── closing_loc: ∅
@@ -106,6 +110,7 @@
         ├── @ CaseNode (location: (9,0)-(13,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (9,5)-(9,8))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (9,5)-(9,6) = ":"
         │   │   ├── value_loc: (9,6)-(9,8) = "hi"
         │   │   ├── closing_loc: ∅
@@ -115,6 +120,7 @@
         │   │       ├── keyword_loc: (10,0)-(10,4) = "when"
         │   │       ├── conditions: (length: 1)
         │   │       │   └── @ SymbolNode (location: (10,5)-(10,8))
+        │   │       │       ├── flags: ∅
         │   │       │       ├── opening_loc: (10,5)-(10,6) = ":"
         │   │       │       ├── value_loc: (10,6)-(10,8) = "hi"
         │   │       │       ├── closing_loc: ∅
@@ -127,6 +133,7 @@
         │   │   │   @ StatementsNode (location: (12,0)-(12,2))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ SymbolNode (location: (12,0)-(12,2))
+        │   │   │           ├── flags: ∅
         │   │   │           ├── opening_loc: (12,0)-(12,1) = ":"
         │   │   │           ├── value_loc: (12,1)-(12,2) = "b"
         │   │   │           ├── closing_loc: ∅
@@ -242,6 +249,7 @@
         │   │       ├── keyword_loc: (28,3)-(28,7) = "when"
         │   │       ├── conditions: (length: 1)
         │   │       │   └── @ SymbolNode (location: (28,8)-(28,10))
+        │   │       │       ├── flags: ∅
         │   │       │       ├── opening_loc: (28,8)-(28,9) = ":"
         │   │       │       ├── value_loc: (28,9)-(28,10) = "b"
         │   │       │       ├── closing_loc: ∅

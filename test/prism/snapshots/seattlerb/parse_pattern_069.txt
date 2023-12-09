@@ -6,6 +6,7 @@
         └── @ CaseMatchNode (location: (1,0)-(4,3))
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
+            │   ├── flags: ∅
             │   ├── opening_loc: (1,5)-(1,6) = ":"
             │   ├── value_loc: (1,6)-(1,7) = "a"
             │   ├── closing_loc: ∅
@@ -21,6 +22,7 @@
             │       │   │   └── @ AssocNode (location: (2,10)-(2,14))
             │       │   │       ├── key:
             │       │   │       │   @ SymbolNode (location: (2,10)-(2,12))
+            │       │   │       │   ├── flags: ∅
             │       │   │       │   ├── opening_loc: ∅
             │       │   │       │   ├── value_loc: (2,10)-(2,11) = "b"
             │       │   │       │   ├── closing_loc: (2,11)-(2,12) = ":"

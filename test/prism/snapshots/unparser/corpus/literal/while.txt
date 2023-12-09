@@ -643,6 +643,7 @@
         │       @ StatementsNode (location: (63,2)-(63,7))
         │       └── body: (length: 1)
         │           └── @ SymbolNode (location: (63,2)-(63,7))
+        │               ├── flags: ∅
         │               ├── opening_loc: (63,2)-(63,3) = ":"
         │               ├── value_loc: (63,3)-(63,7) = "body"
         │               ├── closing_loc: ∅
@@ -697,6 +698,7 @@
                 @ StatementsNode (location: (72,2)-(72,7))
                 └── body: (length: 1)
                     └── @ SymbolNode (location: (72,2)-(72,7))
+                        ├── flags: ∅
                         ├── opening_loc: (72,2)-(72,3) = ":"
                         ├── value_loc: (72,3)-(72,7) = "body"
                         ├── closing_loc: ∅

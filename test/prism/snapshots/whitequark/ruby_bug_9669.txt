@@ -44,6 +44,7 @@
             │   │   └── @ AssocNode (location: (6,0)-(7,1))
             │   │       ├── key:
             │   │       │   @ SymbolNode (location: (6,0)-(6,2))
+            │   │       │   ├── flags: ∅
             │   │       │   ├── opening_loc: ∅
             │   │       │   ├── value_loc: (6,0)-(6,1) = "a"
             │   │       │   ├── closing_loc: (6,1)-(6,2) = ":"

@@ -12,11 +12,13 @@
         │   ├── flags: ∅
         │   ├── elements: (length: 2)
         │   │   ├── @ SymbolNode (location: (7,0)-(7,5))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── value_loc: (7,0)-(7,5) = "line2"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "line2"
         │   │   └── @ SymbolNode (location: (8,0)-(8,5))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (8,0)-(8,5) = "line3"
         │   │       ├── closing_loc: ∅
@@ -54,11 +56,13 @@
         │   ├── flags: ∅
         │   ├── elements: (length: 2)
         │   │   ├── @ SymbolNode (location: (27,0)-(27,5))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── value_loc: (27,0)-(27,5) = "line2"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "line2"
         │   │   └── @ SymbolNode (location: (28,0)-(28,5))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (28,0)-(28,5) = "line3"
         │   │       ├── closing_loc: ∅
@@ -97,11 +101,13 @@
         │   ├── flags: ∅
         │   ├── elements: (length: 2)
         │   │   ├── @ SymbolNode (location: (47,0)-(47,6))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (47,0)-(47,1) = ":"
         │   │   │   ├── value_loc: (47,1)-(47,6) = "line2"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "line2"
         │   │   └── @ SymbolNode (location: (48,0)-(48,6))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: (48,0)-(48,1) = ":"
         │   │       ├── value_loc: (48,1)-(48,6) = "line3"
         │   │       ├── closing_loc: ∅
@@ -279,11 +285,13 @@
         │   │           │   ├── flags: ∅
         │   │           │   ├── elements: (length: 2)
         │   │           │   │   ├── @ SymbolNode (location: (76,4)-(76,10))
+        │   │           │   │   │   ├── flags: ∅
         │   │           │   │   │   ├── opening_loc: (76,4)-(76,5) = ":"
         │   │           │   │   │   ├── value_loc: (76,5)-(76,10) = "line3"
         │   │           │   │   │   ├── closing_loc: ∅
         │   │           │   │   │   └── unescaped: "line3"
         │   │           │   │   └── @ SymbolNode (location: (77,4)-(77,10))
+        │   │           │   │       ├── flags: ∅
         │   │           │   │       ├── opening_loc: (77,4)-(77,5) = ":"
         │   │           │   │       ├── value_loc: (77,5)-(77,10) = "line4"
         │   │           │   │       ├── closing_loc: ∅
@@ -334,11 +342,13 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 2)
             │       ├── @ SymbolNode (location: (90,0)-(90,6))
+            │       │   ├── flags: ∅
             │       │   ├── opening_loc: (90,0)-(90,1) = ":"
             │       │   ├── value_loc: (90,1)-(90,6) = "line2"
             │       │   ├── closing_loc: ∅
             │       │   └── unescaped: "line2"
             │       └── @ SymbolNode (location: (91,0)-(91,6))
+            │           ├── flags: ∅
             │           ├── opening_loc: (91,0)-(91,1) = ":"
             │           ├── value_loc: (91,1)-(91,6) = "line3"
             │           ├── closing_loc: ∅

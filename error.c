@@ -291,11 +291,11 @@ rb_warning_s_warn(int argc, VALUE *argv, VALUE mod)
  *
  *  Changing the behavior of Warning.warn is useful to customize how warnings are
  *  handled by Ruby, for instance by filtering some warnings, and/or outputting
- *  warnings somewhere other than $stderr.
+ *  warnings somewhere other than <tt>$stderr</tt>.
  *
  *  If you want to change the behavior of Warning.warn you should use
- *  +Warning.extend(MyNewModuleWithWarnMethod)+ and you can use `super`
- *  to get the default behavior of printing the warning to $stderr.
+ *  <tt>Warning.extend(MyNewModuleWithWarnMethod)</tt> and you can use +super+
+ *  to get the default behavior of printing the warning to <tt>$stderr</tt>.
  *
  *  Example:
  *    module MyWarningFilter
@@ -312,7 +312,7 @@ rb_warning_s_warn(int argc, VALUE *argv, VALUE mod)
  *  You should never redefine Warning#warn (the instance method), as that will
  *  then no longer provide a way to use the default behavior.
  *
- *  The +warning+ gem provides convenient ways to customize Warning.warn.
+ *  The warning[https://rubygems.org/gems/warning] gem provides convenient ways to customize Warning.warn.
  */
 
 static VALUE

@@ -392,6 +392,12 @@ flags:
         comment: "s - forces the Windows-31J encoding"
       - name: UTF_8
         comment: "u - forces the UTF-8 encoding"
+      - name: FORCED_UTF8_ENCODING
+        comment: "internal bytes forced the encoding to UTF-8"
+      - name: FORCED_BINARY_ENCODING
+        comment: "internal bytes forced the encoding to binary"
+      - name: FORCED_US_ASCII_ENCODING
+        comment: "internal bytes forced the encoding to US-ASCII"
     comment: Flags for regular expression and match last line nodes.
   - name: StringFlags
     values:
@@ -402,6 +408,15 @@ flags:
       - name: FROZEN
         comment: "frozen by virtue of a `frozen_string_literal` comment"
     comment: Flags for string nodes.
+  - name: SymbolFlags
+    values:
+      - name: FORCED_UTF8_ENCODING
+        comment: "internal bytes forced the encoding to UTF-8"
+      - name: FORCED_BINARY_ENCODING
+        comment: "internal bytes forced the encoding to binary"
+      - name: FORCED_US_ASCII_ENCODING
+        comment: "internal bytes forced the encoding to US-ASCII"
+    comment: Flags for symbol nodes.
 nodes:
   - name: AliasGlobalVariableNode
     fields:
@@ -2465,6 +2480,9 @@ nodes:
           ^^^^^^^^^^^^^^
   - name: SymbolNode
     fields:
+      - name: flags
+        type: flags
+        kind: SymbolFlags
       - name: opening_loc
         type: location?
       - name: value_loc

@@ -17,6 +17,7 @@
         │   │               └── @ AssocNode (location: (1,9)-(1,16))
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (1,9)-(1,11))
+        │   │                   │   ├── flags: ∅
         │   │                   │   ├── opening_loc: (1,9)-(1,10) = ":"
         │   │                   │   ├── value_loc: (1,10)-(1,11) = "z"
         │   │                   │   ├── closing_loc: ∅
@@ -40,6 +41,7 @@
         │   │               ├── @ AssocNode (location: (3,9)-(3,16))
         │   │               │   ├── key:
         │   │               │   │   @ SymbolNode (location: (3,9)-(3,11))
+        │   │               │   │   ├── flags: ∅
         │   │               │   │   ├── opening_loc: (3,9)-(3,10) = ":"
         │   │               │   │   ├── value_loc: (3,10)-(3,11) = "z"
         │   │               │   │   ├── closing_loc: ∅
@@ -51,6 +53,7 @@
         │   │               └── @ AssocNode (location: (3,18)-(3,25))
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (3,18)-(3,20))
+        │   │                   │   ├── flags: ∅
         │   │                   │   ├── opening_loc: (3,18)-(3,19) = ":"
         │   │                   │   ├── value_loc: (3,19)-(3,20) = "w"
         │   │                   │   ├── closing_loc: ∅
@@ -83,6 +86,7 @@
         │   │           │               └── @ AssocNode (location: (5,8)-(5,13))
         │   │           │                   ├── key:
         │   │           │                   │   @ SymbolNode (location: (5,8)-(5,10))
+        │   │           │                   │   ├── flags: ∅
         │   │           │                   │   ├── opening_loc: (5,8)-(5,9) = ":"
         │   │           │                   │   ├── value_loc: (5,9)-(5,10) = "z"
         │   │           │                   │   ├── closing_loc: ∅
@@ -117,6 +121,7 @@
         │   │           │               └── @ AssocNode (location: (7,8)-(7,11))
         │   │           │                   ├── key:
         │   │           │                   │   @ SymbolNode (location: (7,8)-(7,10))
+        │   │           │                   │   ├── flags: ∅
         │   │           │                   │   ├── opening_loc: ∅
         │   │           │                   │   ├── value_loc: (7,8)-(7,9) = "z"
         │   │           │                   │   ├── closing_loc: (7,9)-(7,10) = ":"
@@ -151,6 +156,7 @@
         │   │           │               └── @ AssocNode (location: (9,8)-(9,11))
         │   │           │                   ├── key:
         │   │           │                   │   @ SymbolNode (location: (9,8)-(9,10))
+        │   │           │                   │   ├── flags: ∅
         │   │           │                   │   ├── opening_loc: ∅
         │   │           │                   │   ├── value_loc: (9,8)-(9,9) = "z"
         │   │           │                   │   ├── closing_loc: (9,9)-(9,10) = ":"

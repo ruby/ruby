@@ -172,6 +172,7 @@ The following default gems are updated.
 * drb 2.2.0
 * english 0.8.0
 * erb 4.0.3
+* error_highlight 0.6.0
 * etc 1.4.3.dev.1
 * fcntl 1.1.0
 * fiddle 1.1.2
@@ -206,7 +207,7 @@ The following default gems are updated.
 * singleton 0.2.0
 * stringio 3.1.1
 * strscan 3.0.8
-* syntax_suggest 1.1.0
+* syntax_suggest 2.0.0
 * tempfile 0.2.1
 * time 0.3.0
 * timeout 0.4.1

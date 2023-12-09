@@ -24,6 +24,7 @@
         │   │   │   │   │   └── @ AssocNode (location: (2,3)-(2,5))
         │   │   │   │   │       ├── key:
         │   │   │   │   │       │   @ SymbolNode (location: (2,3)-(2,5))
+        │   │   │   │   │       │   ├── flags: ∅
         │   │   │   │   │       │   ├── opening_loc: ∅
         │   │   │   │   │       │   ├── value_loc: (2,3)-(2,4) = "a"
         │   │   │   │   │       │   ├── closing_loc: (2,4)-(2,5) = ":"
@@ -49,6 +50,7 @@
         │   │       │   │   └── @ AssocNode (location: (5,3)-(5,7))
         │   │       │   │       ├── key:
         │   │       │   │       │   @ SymbolNode (location: (5,3)-(5,7))
+        │   │       │   │       │   ├── flags: ∅
         │   │       │   │       │   ├── opening_loc: (5,3)-(5,4) = "\""
         │   │       │   │       │   ├── value_loc: (5,4)-(5,5) = "b"
         │   │       │   │       │   ├── closing_loc: (5,5)-(5,7) = "\":"
@@ -95,6 +97,7 @@
         │   │               └── @ AssocNode (location: (10,8)-(11,1))
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (10,8)-(10,14))
+        │   │                   │   ├── flags: ∅
         │   │                   │   ├── opening_loc: (10,8)-(10,9) = "\""
         │   │                   │   ├── value_loc: (10,9)-(10,12) = "foo"
         │   │                   │   ├── closing_loc: (10,12)-(10,14) = "\":"
@@ -131,6 +134,7 @@
             │               └── @ AssocNode (location: (13,8)-(14,1))
             │                   ├── key:
             │                   │   @ SymbolNode (location: (13,8)-(13,12))
+            │                   │   ├── flags: ∅
             │                   │   ├── opening_loc: ∅
             │                   │   ├── value_loc: (13,8)-(13,11) = "foo"
             │                   │   ├── closing_loc: (13,11)-(13,12) = ":"

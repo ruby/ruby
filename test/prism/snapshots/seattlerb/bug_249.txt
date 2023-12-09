@@ -70,6 +70,7 @@
             │               └── @ AssocNode (location: (4,11)-(4,28))
             │                   ├── key:
             │                   │   @ SymbolNode (location: (4,11)-(4,14))
+            │                   │   ├── flags: ∅
             │                   │   ├── opening_loc: (4,11)-(4,12) = ":"
             │                   │   ├── value_loc: (4,12)-(4,14) = "at"
             │                   │   ├── closing_loc: ∅

@@ -254,6 +254,7 @@
         │   │           │               └── @ AssocNode (location: (25,4)-(25,6))
         │   │           │                   ├── key:
         │   │           │                   │   @ SymbolNode (location: (25,4)-(25,6))
+        │   │           │                   │   ├── flags: ∅
         │   │           │                   │   ├── opening_loc: ∅
         │   │           │                   │   ├── value_loc: (25,4)-(25,5) = "b"
         │   │           │                   │   ├── closing_loc: (25,5)-(25,6) = ":"

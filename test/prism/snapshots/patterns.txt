@@ -101,6 +101,7 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ SymbolNode (location: (6,7)-(6,11))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (6,7)-(6,8) = ":"
         │   │   ├── value_loc: (6,8)-(6,11) = "foo"
         │   │   ├── closing_loc: ∅
@@ -120,6 +121,7 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ SymbolNode (location: (7,7)-(7,14))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (7,7)-(7,10) = "%s["
         │   │   ├── value_loc: (7,10)-(7,13) = "foo"
         │   │   ├── closing_loc: (7,13)-(7,14) = "]"
@@ -139,6 +141,7 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ SymbolNode (location: (8,7)-(8,13))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (8,7)-(8,9) = ":\""
         │   │   ├── value_loc: (8,9)-(8,12) = "foo"
         │   │   ├── closing_loc: (8,12)-(8,13) = "\""
@@ -221,6 +224,7 @@
         │   │   ├── flags: ∅
         │   │   ├── elements: (length: 1)
         │   │   │   └── @ SymbolNode (location: (12,10)-(12,13))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── value_loc: (12,10)-(12,13) = "foo"
         │   │   │       ├── closing_loc: ∅
@@ -245,6 +249,7 @@
         │   │   ├── flags: ∅
         │   │   ├── elements: (length: 1)
         │   │   │   └── @ SymbolNode (location: (13,10)-(13,13))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── value_loc: (13,10)-(13,13) = "foo"
         │   │   │       ├── closing_loc: ∅
@@ -610,12 +615,14 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ SymbolNode (location: (32,7)-(32,11))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (32,7)-(32,8) = ":"
         │   │   │   ├── value_loc: (32,8)-(32,11) = "foo"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "foo"
         │   │   ├── right:
         │   │   │   @ SymbolNode (location: (32,15)-(32,19))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (32,15)-(32,16) = ":"
         │   │   │   ├── value_loc: (32,16)-(32,19) = "foo"
         │   │   │   ├── closing_loc: ∅
@@ -639,12 +646,14 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ SymbolNode (location: (33,7)-(33,14))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (33,7)-(33,10) = "%s["
         │   │   │   ├── value_loc: (33,10)-(33,13) = "foo"
         │   │   │   ├── closing_loc: (33,13)-(33,14) = "]"
         │   │   │   └── unescaped: "foo"
         │   │   ├── right:
         │   │   │   @ SymbolNode (location: (33,18)-(33,25))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (33,18)-(33,21) = "%s["
         │   │   │   ├── value_loc: (33,21)-(33,24) = "foo"
         │   │   │   ├── closing_loc: (33,24)-(33,25) = "]"
@@ -668,12 +677,14 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ SymbolNode (location: (34,7)-(34,13))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (34,7)-(34,9) = ":\""
         │   │   │   ├── value_loc: (34,9)-(34,12) = "foo"
         │   │   │   ├── closing_loc: (34,12)-(34,13) = "\""
         │   │   │   └── unescaped: "foo"
         │   │   ├── right:
         │   │   │   @ SymbolNode (location: (34,17)-(34,23))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (34,17)-(34,19) = ":\""
         │   │   │   ├── value_loc: (34,19)-(34,22) = "foo"
         │   │   │   ├── closing_loc: (34,22)-(34,23) = "\""
@@ -793,6 +804,7 @@
         │   │   │   ├── flags: ∅
         │   │   │   ├── elements: (length: 1)
         │   │   │   │   └── @ SymbolNode (location: (38,10)-(38,13))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       ├── opening_loc: ∅
         │   │   │   │       ├── value_loc: (38,10)-(38,13) = "foo"
         │   │   │   │       ├── closing_loc: ∅
@@ -804,6 +816,7 @@
         │   │   │   ├── flags: ∅
         │   │   │   ├── elements: (length: 1)
         │   │   │   │   └── @ SymbolNode (location: (38,21)-(38,24))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       ├── opening_loc: ∅
         │   │   │   │       ├── value_loc: (38,21)-(38,24) = "foo"
         │   │   │   │       ├── closing_loc: ∅
@@ -832,6 +845,7 @@
         │   │   │   ├── flags: ∅
         │   │   │   ├── elements: (length: 1)
         │   │   │   │   └── @ SymbolNode (location: (39,10)-(39,13))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       ├── opening_loc: ∅
         │   │   │   │       ├── value_loc: (39,10)-(39,13) = "foo"
         │   │   │   │       ├── closing_loc: ∅
@@ -843,6 +857,7 @@
         │   │   │   ├── flags: ∅
         │   │   │   ├── elements: (length: 1)
         │   │   │   │   └── @ SymbolNode (location: (39,21)-(39,24))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       ├── opening_loc: ∅
         │   │   │   │       ├── value_loc: (39,21)-(39,24) = "foo"
         │   │   │   │       ├── closing_loc: ∅
@@ -2412,6 +2427,7 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ SymbolNode (location: (105,7)-(105,11))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (105,7)-(105,8) = ":"
         │   │   ├── value_loc: (105,8)-(105,11) = "foo"
         │   │   ├── closing_loc: ∅
@@ -2431,6 +2447,7 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ SymbolNode (location: (106,7)-(106,14))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (106,7)-(106,10) = "%s["
         │   │   ├── value_loc: (106,10)-(106,13) = "foo"
         │   │   ├── closing_loc: (106,13)-(106,14) = "]"
@@ -2450,6 +2467,7 @@
         │   │   └── block: ∅
         │   ├── pattern:
         │   │   @ SymbolNode (location: (107,7)-(107,13))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (107,7)-(107,9) = ":\""
         │   │   ├── value_loc: (107,9)-(107,12) = "foo"
         │   │   ├── closing_loc: (107,12)-(107,13) = "\""
@@ -2532,6 +2550,7 @@
         │   │   ├── flags: ∅
         │   │   ├── elements: (length: 1)
         │   │   │   └── @ SymbolNode (location: (111,10)-(111,13))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── value_loc: (111,10)-(111,13) = "foo"
         │   │   │       ├── closing_loc: ∅
@@ -2556,6 +2575,7 @@
         │   │   ├── flags: ∅
         │   │   ├── elements: (length: 1)
         │   │   │   └── @ SymbolNode (location: (112,10)-(112,13))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── opening_loc: ∅
         │   │   │       ├── value_loc: (112,10)-(112,13) = "foo"
         │   │   │       ├── closing_loc: ∅
@@ -2941,6 +2961,7 @@
         │   │   └── @ InNode (location: (132,10)-(132,22))
         │   │       ├── pattern:
         │   │       │   @ SymbolNode (location: (132,13)-(132,17))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── opening_loc: (132,13)-(132,14) = ":"
         │   │       │   ├── value_loc: (132,14)-(132,17) = "foo"
         │   │       │   ├── closing_loc: ∅
@@ -2967,6 +2988,7 @@
         │   │   └── @ InNode (location: (133,10)-(133,25))
         │   │       ├── pattern:
         │   │       │   @ SymbolNode (location: (133,13)-(133,20))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── opening_loc: (133,13)-(133,16) = "%s["
         │   │       │   ├── value_loc: (133,16)-(133,19) = "foo"
         │   │       │   ├── closing_loc: (133,19)-(133,20) = "]"
@@ -2993,6 +3015,7 @@
         │   │   └── @ InNode (location: (134,10)-(134,24))
         │   │       ├── pattern:
         │   │       │   @ SymbolNode (location: (134,13)-(134,19))
+        │   │       │   ├── flags: ∅
         │   │       │   ├── opening_loc: (134,13)-(134,15) = ":\""
         │   │       │   ├── value_loc: (134,15)-(134,18) = "foo"
         │   │       │   ├── closing_loc: (134,18)-(134,19) = "\""
@@ -3103,6 +3126,7 @@
         │   │       │   ├── flags: ∅
         │   │       │   ├── elements: (length: 1)
         │   │       │   │   └── @ SymbolNode (location: (138,16)-(138,19))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── opening_loc: ∅
         │   │       │   │       ├── value_loc: (138,16)-(138,19) = "foo"
         │   │       │   │       ├── closing_loc: ∅
@@ -3134,6 +3158,7 @@
         │   │       │   ├── flags: ∅
         │   │       │   ├── elements: (length: 1)
         │   │       │   │   └── @ SymbolNode (location: (139,16)-(139,19))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── opening_loc: ∅
         │   │       │   │       ├── value_loc: (139,16)-(139,19) = "foo"
         │   │       │   │       ├── closing_loc: ∅
@@ -3685,6 +3710,7 @@
         │   │       │   │   @ StatementsNode (location: (159,13)-(159,17))
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ SymbolNode (location: (159,13)-(159,17))
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           ├── opening_loc: (159,13)-(159,14) = ":"
         │   │       │   │           ├── value_loc: (159,14)-(159,17) = "foo"
         │   │       │   │           ├── closing_loc: ∅
@@ -3723,6 +3749,7 @@
         │   │       │   │   @ StatementsNode (location: (160,13)-(160,20))
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ SymbolNode (location: (160,13)-(160,20))
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           ├── opening_loc: (160,13)-(160,16) = "%s["
         │   │       │   │           ├── value_loc: (160,16)-(160,19) = "foo"
         │   │       │   │           ├── closing_loc: (160,19)-(160,20) = "]"
@@ -3761,6 +3788,7 @@
         │   │       │   │   @ StatementsNode (location: (161,13)-(161,19))
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ SymbolNode (location: (161,13)-(161,19))
+        │   │       │   │           ├── flags: ∅
         │   │       │   │           ├── opening_loc: (161,13)-(161,15) = ":\""
         │   │       │   │           ├── value_loc: (161,15)-(161,18) = "foo"
         │   │       │   │           ├── closing_loc: (161,18)-(161,19) = "\""
@@ -3919,6 +3947,7 @@
         │   │       │   │           ├── flags: ∅
         │   │       │   │           ├── elements: (length: 1)
         │   │       │   │           │   └── @ SymbolNode (location: (165,16)-(165,19))
+        │   │       │   │           │       ├── flags: ∅
         │   │       │   │           │       ├── opening_loc: ∅
         │   │       │   │           │       ├── value_loc: (165,16)-(165,19) = "foo"
         │   │       │   │           │       ├── closing_loc: ∅
@@ -3962,6 +3991,7 @@
         │   │       │   │           ├── flags: ∅
         │   │       │   │           ├── elements: (length: 1)
         │   │       │   │           │   └── @ SymbolNode (location: (166,16)-(166,19))
+        │   │       │   │           │       ├── flags: ∅
         │   │       │   │           │       ├── opening_loc: ∅
         │   │       │   │           │       ├── value_loc: (166,16)-(166,19) = "foo"
         │   │       │   │           │       ├── closing_loc: ∅
@@ -4539,6 +4569,7 @@
         │   │   │   └── @ AssocNode (location: (189,2)-(191,3))
         │   │   │       ├── key:
         │   │   │       │   @ SymbolNode (location: (189,2)-(189,6))
+        │   │   │       │   ├── flags: ∅
         │   │   │       │   ├── opening_loc: ∅
         │   │   │       │   ├── value_loc: (189,2)-(189,5) = "bar"
         │   │   │       │   ├── closing_loc: (189,5)-(189,6) = ":"
@@ -4552,6 +4583,7 @@
         │   │   │       │   │   └── @ AssocNode (location: (190,4)-(190,12))
         │   │   │       │   │       ├── key:
         │   │   │       │   │       │   @ SymbolNode (location: (190,4)-(190,10))
+        │   │   │       │   │       │   ├── flags: ∅
         │   │   │       │   │       │   ├── opening_loc: ∅
         │   │   │       │   │       │   ├── value_loc: (190,4)-(190,9) = "value"
         │   │   │       │   │       │   ├── closing_loc: (190,9)-(190,10) = ":"

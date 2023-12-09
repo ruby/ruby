@@ -46,6 +46,7 @@
         │       @ BlockArgumentNode (location: (9,6)-(9,11))
         │       ├── expression:
         │       │   @ SymbolNode (location: (9,7)-(9,11))
+        │       │   ├── flags: ∅
         │       │   ├── opening_loc: (9,7)-(9,8) = ":"
         │       │   ├── value_loc: (9,8)-(9,11) = "foo"
         │       │   ├── closing_loc: ∅
@@ -60,6 +61,7 @@
         │       @ BlockArgumentNode (location: (11,6)-(11,11))
         │       ├── expression:
         │       │   @ SymbolNode (location: (11,7)-(11,11))
+        │       │   ├── flags: ∅
         │       │   ├── opening_loc: (11,7)-(11,8) = ":"
         │       │   ├── value_loc: (11,8)-(11,11) = "foo"
         │       │   ├── closing_loc: ∅
@@ -114,6 +116,7 @@
                 @ BlockArgumentNode (location: (17,15)-(17,20))
                 ├── expression:
                 │   @ SymbolNode (location: (17,16)-(17,20))
+                │   ├── flags: ∅
                 │   ├── opening_loc: (17,16)-(17,17) = ":"
                 │   ├── value_loc: (17,17)-(17,20) = "foo"
                 │   ├── closing_loc: ∅

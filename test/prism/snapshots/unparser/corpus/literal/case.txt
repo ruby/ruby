@@ -225,6 +225,7 @@
         │   │           @ StatementsNode (location: (20,2)-(20,8))
         │   │           └── body: (length: 1)
         │   │               └── @ SymbolNode (location: (20,2)-(20,8))
+        │   │                   ├── flags: ∅
         │   │                   ├── opening_loc: (20,2)-(20,3) = ":"
         │   │                   ├── value_loc: (20,3)-(20,8) = "other"
         │   │                   ├── closing_loc: ∅
@@ -265,6 +266,7 @@
         │   │           @ StatementsNode (location: (24,2)-(24,8))
         │   │           └── body: (length: 1)
         │   │               └── @ SymbolNode (location: (24,2)-(24,8))
+        │   │                   ├── flags: ∅
         │   │                   ├── opening_loc: (24,2)-(24,3) = ":"
         │   │                   ├── value_loc: (24,3)-(24,8) = "value"
         │   │                   ├── closing_loc: ∅
@@ -318,6 +320,7 @@
         │   │   │   @ StatementsNode (location: (30,2)-(30,6))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ SymbolNode (location: (30,2)-(30,6))
+        │   │   │           ├── flags: ∅
         │   │   │           ├── opening_loc: (30,2)-(30,3) = ":"
         │   │   │           ├── value_loc: (30,3)-(30,6) = "foo"
         │   │   │           ├── closing_loc: ∅

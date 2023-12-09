@@ -6,6 +6,7 @@
         ├── @ CaseMatchNode (location: (1,0)-(3,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (1,5)-(1,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (1,5)-(1,6) = ":"
         │   │   ├── value_loc: (1,6)-(1,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -19,6 +20,7 @@
         │   │       │   │   └── @ AssocNode (location: (2,4)-(2,8))
         │   │       │   │       ├── key:
         │   │       │   │       │   @ SymbolNode (location: (2,4)-(2,8))
+        │   │       │   │       │   ├── flags: ∅
         │   │       │   │       │   ├── opening_loc: (2,4)-(2,5) = "\""
         │   │       │   │       │   ├── value_loc: (2,5)-(2,6) = "b"
         │   │       │   │       │   ├── closing_loc: (2,6)-(2,8) = "\":"
@@ -37,6 +39,7 @@
         ├── @ CaseMatchNode (location: (5,0)-(7,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (5,5)-(5,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (5,5)-(5,6) = ":"
         │   │   ├── value_loc: (5,6)-(5,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -48,11 +51,13 @@
         │   │       │   ├── flags: ∅
         │   │       │   ├── elements: (length: 2)
         │   │       │   │   ├── @ SymbolNode (location: (6,6)-(6,7))
+        │   │       │   │   │   ├── flags: ∅
         │   │       │   │   │   ├── opening_loc: ∅
         │   │       │   │   │   ├── value_loc: (6,6)-(6,7) = "a"
         │   │       │   │   │   ├── closing_loc: ∅
         │   │       │   │   │   └── unescaped: "a"
         │   │       │   │   └── @ SymbolNode (location: (6,8)-(6,9))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── opening_loc: ∅
         │   │       │   │       ├── value_loc: (6,8)-(6,9) = "b"
         │   │       │   │       ├── closing_loc: ∅
@@ -68,6 +73,7 @@
         ├── @ CaseMatchNode (location: (9,0)-(11,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (9,5)-(9,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (9,5)-(9,6) = ":"
         │   │   ├── value_loc: (9,6)-(9,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -101,6 +107,7 @@
         ├── @ CaseMatchNode (location: (13,0)-(15,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (13,5)-(13,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (13,5)-(13,6) = ":"
         │   │   ├── value_loc: (13,6)-(13,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -112,11 +119,13 @@
         │   │       │   ├── flags: ∅
         │   │       │   ├── elements: (length: 2)
         │   │       │   │   ├── @ SymbolNode (location: (14,6)-(14,7))
+        │   │       │   │   │   ├── flags: ∅
         │   │       │   │   │   ├── opening_loc: ∅
         │   │       │   │   │   ├── value_loc: (14,6)-(14,7) = "a"
         │   │       │   │   │   ├── closing_loc: ∅
         │   │       │   │   │   └── unescaped: "a"
         │   │       │   │   └── @ SymbolNode (location: (14,8)-(14,9))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── opening_loc: ∅
         │   │       │   │       ├── value_loc: (14,8)-(14,9) = "b"
         │   │       │   │       ├── closing_loc: ∅
@@ -132,6 +141,7 @@
         ├── @ CaseMatchNode (location: (17,0)-(19,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (17,5)-(17,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (17,5)-(17,6) = ":"
         │   │   ├── value_loc: (17,6)-(17,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -165,6 +175,7 @@
         ├── @ CaseMatchNode (location: (21,0)-(23,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (21,5)-(21,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (21,5)-(21,6) = ":"
         │   │   ├── value_loc: (21,6)-(21,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -188,6 +199,7 @@
         ├── @ CaseMatchNode (location: (25,0)-(27,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (25,5)-(25,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (25,5)-(25,6) = ":"
         │   │   ├── value_loc: (25,6)-(25,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -211,6 +223,7 @@
         ├── @ CaseMatchNode (location: (29,0)-(31,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (29,5)-(29,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (29,5)-(29,6) = ":"
         │   │   ├── value_loc: (29,6)-(29,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -234,6 +247,7 @@
         ├── @ CaseMatchNode (location: (33,0)-(35,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (33,5)-(33,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (33,5)-(33,6) = ":"
         │   │   ├── value_loc: (33,6)-(33,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -259,6 +273,7 @@
         ├── @ CaseMatchNode (location: (37,0)-(39,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (37,5)-(37,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (37,5)-(37,6) = ":"
         │   │   ├── value_loc: (37,6)-(37,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -277,6 +292,7 @@
         ├── @ CaseMatchNode (location: (41,0)-(43,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (41,5)-(41,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (41,5)-(41,6) = ":"
         │   │   ├── value_loc: (41,6)-(41,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -302,6 +318,7 @@
         ├── @ CaseMatchNode (location: (45,0)-(47,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (45,5)-(45,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (45,5)-(45,6) = ":"
         │   │   ├── value_loc: (45,6)-(45,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -324,6 +341,7 @@
         ├── @ CaseMatchNode (location: (49,0)-(51,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (49,5)-(49,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (49,5)-(49,6) = ":"
         │   │   ├── value_loc: (49,6)-(49,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -335,6 +353,7 @@
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 1)
         │   │       │   │   └── @ SymbolNode (location: (50,3)-(50,5))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── opening_loc: (50,3)-(50,4) = ":"
         │   │       │   │       ├── value_loc: (50,4)-(50,5) = "b"
         │   │       │   │       ├── closing_loc: ∅
@@ -348,6 +367,7 @@
         │   │       │   │       └── depth: 0
         │   │       │   ├── posts: (length: 1)
         │   │       │   │   └── @ SymbolNode (location: (50,11)-(50,13))
+        │   │       │   │       ├── flags: ∅
         │   │       │   │       ├── opening_loc: (50,11)-(50,12) = ":"
         │   │       │   │       ├── value_loc: (50,12)-(50,13) = "c"
         │   │       │   │       ├── closing_loc: ∅
@@ -363,6 +383,7 @@
         ├── @ CaseMatchNode (location: (53,0)-(55,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (53,5)-(53,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (53,5)-(53,6) = ":"
         │   │   ├── value_loc: (53,6)-(53,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -374,6 +395,7 @@
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 2)
         │   │       │   │   ├── @ SymbolNode (location: (54,3)-(54,5))
+        │   │       │   │   │   ├── flags: ∅
         │   │       │   │   │   ├── opening_loc: (54,3)-(54,4) = ":"
         │   │       │   │   │   ├── value_loc: (54,4)-(54,5) = "b"
         │   │       │   │   │   ├── closing_loc: ∅
@@ -382,6 +404,7 @@
         │   │       │   │       ├── constant: ∅
         │   │       │   │       ├── requireds: (length: 1)
         │   │       │   │       │   └── @ SymbolNode (location: (54,8)-(54,10))
+        │   │       │   │       │       ├── flags: ∅
         │   │       │   │       │       ├── opening_loc: (54,8)-(54,9) = ":"
         │   │       │   │       │       ├── value_loc: (54,9)-(54,10) = "c"
         │   │       │   │       │       ├── closing_loc: ∅
@@ -403,6 +426,7 @@
         ├── @ CaseMatchNode (location: (57,0)-(59,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (57,5)-(57,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (57,5)-(57,6) = ":"
         │   │   ├── value_loc: (57,6)-(57,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -428,6 +452,7 @@
         ├── @ CaseMatchNode (location: (61,0)-(63,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (61,5)-(61,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (61,5)-(61,6) = ":"
         │   │   ├── value_loc: (61,6)-(61,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -468,6 +493,7 @@
         ├── @ CaseMatchNode (location: (65,0)-(67,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (65,5)-(65,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (65,5)-(65,6) = ":"
         │   │   ├── value_loc: (65,6)-(65,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -508,6 +534,7 @@
         ├── @ CaseMatchNode (location: (69,0)-(71,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (69,5)-(69,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (69,5)-(69,6) = ":"
         │   │   ├── value_loc: (69,6)-(69,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -560,6 +587,7 @@
         ├── @ CaseMatchNode (location: (73,0)-(75,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (73,5)-(73,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (73,5)-(73,6) = ":"
         │   │   ├── value_loc: (73,6)-(73,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -571,6 +599,7 @@
         │   │       │   ├── constant: ∅
         │   │       │   ├── requireds: (length: 4)
         │   │       │   │   ├── @ SymbolNode (location: (74,4)-(74,6))
+        │   │       │   │   │   ├── flags: ∅
         │   │       │   │   │   ├── opening_loc: (74,4)-(74,5) = ":"
         │   │       │   │   │   ├── value_loc: (74,5)-(74,6) = "a"
         │   │       │   │   │   ├── closing_loc: ∅
@@ -585,6 +614,7 @@
         │   │       │   │       ├── constant: ∅
         │   │       │   │       ├── requireds: (length: 1)
         │   │       │   │       │   └── @ SymbolNode (location: (74,15)-(74,17))
+        │   │       │   │       │       ├── flags: ∅
         │   │       │   │       │       ├── opening_loc: (74,15)-(74,16) = ":"
         │   │       │   │       │       ├── value_loc: (74,16)-(74,17) = "d"
         │   │       │   │       │       ├── closing_loc: ∅
@@ -613,6 +643,7 @@
         ├── @ CaseMatchNode (location: (77,0)-(79,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (77,5)-(77,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (77,5)-(77,6) = ":"
         │   │   ├── value_loc: (77,6)-(77,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -643,6 +674,7 @@
         ├── @ CaseMatchNode (location: (81,0)-(83,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (81,5)-(81,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (81,5)-(81,6) = ":"
         │   │   ├── value_loc: (81,6)-(81,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -657,6 +689,7 @@
         │   │       │   │   │   ├── constant: ∅
         │   │       │   │   │   ├── requireds: (length: 2)
         │   │       │   │   │   │   ├── @ SymbolNode (location: (82,5)-(82,7))
+        │   │       │   │   │   │   │   ├── flags: ∅
         │   │       │   │   │   │   │   ├── opening_loc: (82,5)-(82,6) = ":"
         │   │       │   │   │   │   │   ├── value_loc: (82,6)-(82,7) = "b"
         │   │       │   │   │   │   │   ├── closing_loc: ∅
@@ -672,6 +705,7 @@
         │   │       │   │       ├── constant: ∅
         │   │       │   │       ├── requireds: (length: 2)
         │   │       │   │       │   ├── @ SymbolNode (location: (82,14)-(82,16))
+        │   │       │   │       │   │   ├── flags: ∅
         │   │       │   │       │   │   ├── opening_loc: (82,14)-(82,15) = ":"
         │   │       │   │       │   │   ├── value_loc: (82,15)-(82,16) = "d"
         │   │       │   │       │   │   ├── closing_loc: ∅
@@ -699,6 +733,7 @@
         ├── @ CaseMatchNode (location: (85,0)-(87,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (85,5)-(85,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (85,5)-(85,6) = ":"
         │   │   ├── value_loc: (85,6)-(85,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -722,6 +757,7 @@
         ├── @ CaseMatchNode (location: (89,0)-(91,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (89,5)-(89,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (89,5)-(89,6) = ":"
         │   │   ├── value_loc: (89,6)-(89,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -760,6 +796,7 @@
         ├── @ CaseMatchNode (location: (93,0)-(95,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (93,5)-(93,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (93,5)-(93,6) = ":"
         │   │   ├── value_loc: (93,6)-(93,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -798,6 +835,7 @@
         ├── @ CaseMatchNode (location: (97,0)-(99,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (97,5)-(97,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (97,5)-(97,6) = ":"
         │   │   ├── value_loc: (97,6)-(97,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -820,6 +858,7 @@
         ├── @ CaseMatchNode (location: (101,0)-(103,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (101,5)-(101,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (101,5)-(101,6) = ":"
         │   │   ├── value_loc: (101,6)-(101,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -846,6 +885,7 @@
         ├── @ CaseMatchNode (location: (105,0)-(107,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (105,5)-(105,7))
+        │   │   ├── flags: ∅
         │   │   ├── opening_loc: (105,5)-(105,6) = ":"
         │   │   ├── value_loc: (105,6)-(105,7) = "a"
         │   │   ├── closing_loc: ∅
@@ -859,6 +899,7 @@
         │   │       │   │   └── @ AssocNode (location: (106,5)-(106,9))
         │   │       │   │       ├── key:
         │   │       │   │       │   @ SymbolNode (location: (106,5)-(106,9))
+        │   │       │   │       │   ├── flags: ∅
         │   │       │   │       │   ├── opening_loc: (106,5)-(106,6) = "\""
         │   │       │   │       │   ├── value_loc: (106,6)-(106,7) = "b"
         │   │       │   │       │   ├── closing_loc: (106,7)-(106,9) = "\":"
@@ -877,6 +918,7 @@
         └── @ CaseMatchNode (location: (109,0)-(111,3))
             ├── predicate:
             │   @ SymbolNode (location: (109,5)-(109,7))
+            │   ├── flags: ∅
             │   ├── opening_loc: (109,5)-(109,6) = ":"
             │   ├── value_loc: (109,6)-(109,7) = "a"
             │   ├── closing_loc: ∅

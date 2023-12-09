@@ -474,12 +474,19 @@ nucomp_s_canonicalize_internal(VALUE klass, VALUE real, VALUE imag)
 
 /*
  * call-seq:
- *    Complex.rect(real[, imag])         ->  complex
- *    Complex.rectangular(real[, imag])  ->  complex
+ *   Complex.rect(real, imag = 0) -> complex
  *
- * Returns a complex object which denotes the given rectangular form.
+ * Returns a new \Complex object formed from the arguments,
+ * each of which must be an instance of Numeric,
+ * or an instance of one of its subclasses:
+ * \Complex, Float, Integer, Rational;
+ * see {Rectangular Coordinates}[rdoc-ref:Complex@Rectangular+Coordinates]:
  *
- *    Complex.rectangular(1, 2)  #=> (1+2i)
+ *   Complex.rect(3)             # => (3+0i)
+ *   Complex.rect(3, Math::PI)   # => (3+3.141592653589793i)
+ *   Complex.rect(-3, -Math::PI) # => (-3-3.141592653589793i)
+ *
+ * \Complex.rectangular is an alias for \Complex.rect.
  */
 static VALUE
 nucomp_s_new(int argc, VALUE *argv, VALUE klass)
@@ -698,14 +705,18 @@ rb_dbl_complex_new_polar_pi(double abs, double ang)
 
 /*
  * call-seq:
- *    Complex.polar(abs[, arg])  ->  complex
+ *   Complex.polar(abs, arg = 0) -> complex
  *
- * Returns a complex object which denotes the given polar form.
+ * Returns a new \Complex object formed from the arguments,
+ * each of which must be an instance of Numeric,
+ * or an instance of one of its subclasses:
+ * \Complex, Float, Integer, Rational;
+ * see {Polar Coordinates}[rdoc-ref:Complex@Polar+Coordinates]:
  *
- *    Complex.polar(3, 0)            #=> (3.0+0.0i)
- *    Complex.polar(3, Math::PI/2)   #=> (1.836909530733566e-16+3.0i)
- *    Complex.polar(3, Math::PI)     #=> (-3.0+3.673819061467132e-16i)
- *    Complex.polar(3, -Math::PI/2)  #=> (1.836909530733566e-16-3.0i)
+ *   Complex.polar(3)        # => (3+0i)
+ *   Complex.polar(3, 2.0)   # => (-1.2484405096414273+2.727892280477045i)
+ *   Complex.polar(-3, -2.0) # => (1.2484405096414273+2.727892280477045i)
+ *
  */
 static VALUE
 nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
