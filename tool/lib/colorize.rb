@@ -7,7 +7,7 @@ class Colorize
   def initialize(color = nil, opts = ((_, color = color, nil)[0] if Hash === color))
     @colors = @reset = nil
     @color = opts && opts[:color] || color
-    if color or (color == nil && STDOUT.tty? && (ENV["NO_COLOR"] || "").empty?)
+    if color or (color == nil && coloring?)
       if (%w[smso so].any? {|attr| /\A\e\[.*m\z/ =~ IO.popen("tput #{attr}", "r", :err => IO::NULL, &:read)} rescue nil)
         @beg = "\e["
         colors = (colors = ENV['TEST_COLORS']) ? Hash[colors.scan(/(\w+)=([^:\n]*)/)] : {}
@@ -33,15 +33,22 @@ class Colorize
     "bold"=>"1", "underline"=>"4", "reverse"=>"7",
   }
 
-  NO_COLOR = (nc = ENV['NO_COLOR']) && !nc.empty?
+  def coloring?
+    STDOUT.tty? && (!(nc = ENV['NO_COLOR']) || nc.empty?)
+  end
 
   # colorize.decorate(str, name = color_name)
   def decorate(str, name = @color)
-    if !NO_COLOR and @colors and color = (@colors[name] || DEFAULTS[name])
+    if coloring? and color = resolve_color(name)
       "#{@beg}#{color}m#{str}#{@reset}"
     else
       str
     end
+  end
+
+  def resolve_color(name = @color, seen = {})
+    return unless @colors
+    @colors[name] || DEFAULTS[name]
   end
 
   DEFAULTS.each_key do |name|
