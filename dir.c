@@ -1322,7 +1322,7 @@ dir_s_fchdir(VALUE klass, VALUE fd_value)
  *   Dir.pwd # => "/"
  *   dir = Dir.new('example')
  *   dir.chdir
- *   dir.pwd # => "/example"
+ *   Dir.pwd # => "/example"
  *
  */
 static VALUE
