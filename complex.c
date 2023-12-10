@@ -2378,8 +2378,7 @@ float_arg(VALUE self)
  *
  * - A {complex literal}[rdoc-ref:doc/syntax/literals.rdoc@Complex+Literals].
  * - \Method Complex.rect.
- * - \Method {Kernel#Complex}[https://docs.ruby-lang.org/en/master/Kernel.html#method-i-Complex],
- *   either with numeric arguments or with certain string arguments.
+ * - \Method Kernel#Complex, either with numeric arguments or with certain string arguments.
  * - \Method String#to_c, for certain strings.
  *
  * Note that each of the stored parts may be a an instance one of the classes
@@ -2403,8 +2402,7 @@ float_arg(VALUE self)
  * You can create a \Complex object from polar coordinates with:
  *
  * - \Method Complex.polar.
- * - \Method {Kernel#Complex}[https://docs.ruby-lang.org/en/master/Kernel.html#method-i-Complex],
- *   with certain string arguments.
+ * - \Method Kernel#Complex, with certain string arguments.
  * - \Method String#to_c, for certain strings.
  *
  * Note that each of the stored parts may be a an instance one of the classes
