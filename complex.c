@@ -523,39 +523,53 @@ static VALUE nucomp_s_convert(int argc, VALUE *argv, VALUE klass);
 
 /*
  * call-seq:
- *    Complex(x[, y], exception: true)  ->  numeric or nil
+ *   Complex(abs, arg = 0, exception: true) -> complex or nil
+ *   Complex(s, exception: true) -> complex or nil
  *
- * Returns x+i*y;
+ * Returns a new \Complex object if the arguments are valid;
+ * otherwise raises an exception if +exception+ is +true+;
+ * otherwise returns +nil+.
  *
- *    Complex(1, 2)    #=> (1+2i)
- *    Complex('1+2i')  #=> (1+2i)
- *    Complex(nil)     #=> TypeError
- *    Complex(1, nil)  #=> TypeError
+ * With Numeric argument +abs+, returns <tt>Complex.rect(abs, arg)</tt> if the arguments are valid.
  *
- *    Complex(1, nil, exception: false)  #=> nil
- *    Complex('1+2', exception: false)   #=> nil
+ * With string argument +s+, returns a new \Complex object if the argument is valid;
+ * the string may have:
  *
- * Syntax of string form:
+ * - One or two numeric substrings,
+ *   each of which specifies a Complex, Float, Integer, Numeric, or Rational value,
+ *   specifying {rectangular coordinates}[rdoc-ref:Complex@Rectangular+Coordinates]:
  *
- *   string form = extra spaces , complex , extra spaces ;
- *   complex = real part | [ sign ] , imaginary part
- *           | real part , sign , imaginary part
- *           | rational , "@" , rational ;
- *   real part = rational ;
- *   imaginary part = imaginary unit | unsigned rational , imaginary unit ;
- *   rational = [ sign ] , unsigned rational ;
- *   unsigned rational = numerator | numerator , "/" , denominator ;
- *   numerator = integer part | fractional part | integer part , fractional part ;
- *   denominator = digits ;
- *   integer part = digits ;
- *   fractional part = "." , digits , [ ( "e" | "E" ) , [ sign ] , digits ] ;
- *   imaginary unit = "i" | "I" | "j" | "J" ;
- *   sign = "-" | "+" ;
- *   digits = digit , { digit | "_" , digit };
- *   digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
- *   extra spaces = ? \s* ? ;
+ *   - Sign-separated real and imaginary numeric substrings
+ *     (with trailing character <tt>'i'</tt>):
  *
- * See String#to_c.
+ *       Complex('1+2i')  # => (1+2i)
+ *       Complex('+1+2i') # => (1+2i)
+ *       Complex('+1-2i') # => (1-2i)
+ *       Complex('-1+2i') # => (-1+2i)
+ *       Complex('-1-2i') # => (-1-2i)
+ *
+ *   - Real-only numeric string (without trailing character <tt>'i'</tt>):
+ *
+ *       Complex('1')  # => (1+0i)
+ *       Complex('+1') # => (1+0i)
+ *       Complex('-1') # => (-1+0i)
+ *
+ *   - Imaginary-only numeric string (with trailing character <tt>'i'</tt>):
+ *
+ *       Complex('1i')  # => (0+1i)
+ *       Complex('+1i') # => (0+1i)
+ *       Complex('-1i') # => (0-1i)
+ *
+ * - At-sign separated real and imaginary rational substrings,
+ *   each of which specifies a Rational value,
+ *   specifying {polar coordinates}[rdoc-ref:Complex@Polar+Coordinates]:
+ *
+ *     Complex('1/2@3/4')   # => (0.36584443443691045+0.34081938001166706i)
+ *     Complex('+1/2@+3/4') # => (0.36584443443691045+0.34081938001166706i)
+ *     Complex('+1/2@-3/4') # => (0.36584443443691045-0.34081938001166706i)
+ *     Complex('-1/2@+3/4') # => (-0.36584443443691045-0.34081938001166706i)
+ *     Complex('-1/2@-3/4') # => (-0.36584443443691045+0.34081938001166706i)
+ *
  */
 static VALUE
 nucomp_f_complex(int argc, VALUE *argv, VALUE klass)
@@ -2350,30 +2364,26 @@ float_arg(VALUE self)
 }
 
 /*
- * A \Complex object houses a pair of values
- * called, respectively, the _real_ and _imaginary_ parts;
- * see {Complex number}[https://en.wikipedia.org/wiki/Complex_number].
- *
- * Note that each of the parts may be a an instance of class Numeric,
- * or an instance of one of its subclasses:
- * Complex, Float, Integer, or Rational.
- *
- * You can create a \Complex object with:
- *
- * - A {complex literal}[rdoc-ref:syntax/literals.rdoc@Complex+Literals].
- * - \Method {Kernel#Complex}[https://docs.ruby-lang.org/en/master/Kernel.html#method-i-Complex].
- * - Methods Complex.rect or Complex.polar.
- * - Methods Numeric#to_c or String#to_c;
- *   or (trivially) methods Complex#to_c or NilClass#to_c.
+ * A \Complex object houses a pair of values,
+ * given when the object is created as either <i>rectangular coordinates</i>
+ * or <i>polar coordinates</i>.
  *
  * == Rectangular Coordinates
  *
- * Each of the methods above (except Complex.polar) takes two "rectangular" arguments
- * representing the _real_ and _imaginary_ parts of the created \Complex object;
- * see {Complex definition}[https://en.wikipedia.org/wiki/Complex_number#Definition].
+ * The rectangular coordinates of a complex number
+ * are called the _real_ and _imaginary_ parts;
+ * see {Complex number definition}[https://en.wikipedia.org/wiki/Complex_number#Definition].
  *
- * The created object stores the two values,
- * which may be retrieved:
+ * You can create a \Complex object from rectangular coordinates with:
+ *
+ * - A {complex literal}[rdoc-ref:doc/syntax/literals.rdoc@Complex+Literals].
+ * - \Method Complex.rect.
+ * - \Method Kernel#Complex, either with numeric arguments or with certain string arguments.
+ * - \Method String#to_c, for certain strings.
+ *
+ * Note that each of the stored parts may be a an instance one of the classes
+ * Complex, Float, Integer, or Rational;
+ * they may be retrieved:
  *
  * - Separately, with methods Complex#real and Complex#imaginary.
  * - Together, with method Complex#rect.
@@ -2385,13 +2395,19 @@ float_arg(VALUE self)
  *
  * == Polar Coordinates
  *
- * \Method Complex.polar takes two "polar" arguments,
- * representing the _modulus_ (or _absolute_) and _argument_ parts
- * of the created \Complex object;
- * see {Complex plane}[https://en.wikipedia.org/wiki/Complex_number#Polar_complex_plane].
+ * The polar coordinates of a complex number
+ * are called the _absolute_ and _argument_ parts;
+ * see {Complex polar plane}[https://en.wikipedia.org/wiki/Complex_number#Polar_complex_plane].
  *
- * The created object stores the two values,
- * which may be retrieved:
+ * You can create a \Complex object from polar coordinates with:
+ *
+ * - \Method Complex.polar.
+ * - \Method Kernel#Complex, with certain string arguments.
+ * - \Method String#to_c, for certain strings.
+ *
+ * Note that each of the stored parts may be a an instance one of the classes
+ * Complex, Float, Integer, or Rational;
+ * they may be retrieved:
  *
  * - Separately, with methods Complex#abs and Complex#arg.
  * - Together, with method Complex#polar.
