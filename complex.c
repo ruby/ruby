@@ -523,14 +523,15 @@ static VALUE nucomp_s_convert(int argc, VALUE *argv, VALUE klass);
 
 /*
  * call-seq:
- *   Complex(abs, arg = 0, exception: true) -> complex or nil
+ *   Complex(real, imag = 0, exception: true) -> complex or nil
  *   Complex(s, exception: true) -> complex or nil
  *
  * Returns a new \Complex object if the arguments are valid;
  * otherwise raises an exception if +exception+ is +true+;
  * otherwise returns +nil+.
  *
- * With Numeric argument +abs+, returns <tt>Complex.rect(abs, arg)</tt> if the arguments are valid.
+ * With Numeric arguments +real+ and +imag+,
+ * returns <tt>Complex.rect(real, imag)</tt> if the arguments are valid.
  *
  * With string argument +s+, returns a new \Complex object if the argument is valid;
  * the string may have:
