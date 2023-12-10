@@ -528,7 +528,7 @@ static VALUE nucomp_s_convert(int argc, VALUE *argv, VALUE klass);
  *
  * Returns a new \Complex object if the arguments are valid;
  * otherwise raises an exception if +exception+ is +true+;
- * otherwise returns +nil.
+ * otherwise returns +nil+.
  *
  * With Numeric argument +abs+, returns Complex.rect(abs, arg) if the arguments are valid.
  *
