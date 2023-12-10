@@ -263,25 +263,28 @@ cmp_clamp(int argc, VALUE *argv, VALUE x)
  *  <code>==</code>, <code>>=</code>, and <code>></code>) and the
  *  method <code>between?</code>.
  *
- *     class SizeMatters
+ *     class StringSorter
  *       include Comparable
+ *
  *       attr :str
  *       def <=>(other)
  *         str.size <=> other.str.size
  *       end
+ *
  *       def initialize(str)
  *         @str = str
  *       end
+ *
  *       def inspect
  *         @str
  *       end
  *     end
  *
- *     s1 = SizeMatters.new("Z")
- *     s2 = SizeMatters.new("YY")
- *     s3 = SizeMatters.new("XXX")
- *     s4 = SizeMatters.new("WWWW")
- *     s5 = SizeMatters.new("VVVVV")
+ *     s1 = StringSorter.new("Z")
+ *     s2 = StringSorter.new("YY")
+ *     s3 = StringSorter.new("XXX")
+ *     s4 = StringSorter.new("WWWW")
+ *     s5 = StringSorter.new("VVVVV")
  *
  *     s1 < s2                       #=> true
  *     s4.between?(s1, s3)           #=> false
