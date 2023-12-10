@@ -8971,10 +8971,8 @@ compile_op_asgn1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
             ADD_SEND_R(ret, node, idASET, FIXNUM_INC(argc, 1), NULL, INT2FIX(flag), keywords);
         }
         else if (keyword_len) {
-            ADD_INSN(ret, node, dup);
-            ADD_INSN1(ret, node, opt_reverse, INT2FIX(keyword_len+boff+2));
             ADD_INSN1(ret, node, opt_reverse, INT2FIX(keyword_len+boff+1));
-            ADD_INSN(ret, node, pop);
+            ADD_INSN1(ret, node, opt_reverse, INT2FIX(keyword_len+boff+0));
             ADD_SEND_R(ret, node, idASET, FIXNUM_INC(argc, 1), NULL, INT2FIX(flag), keywords);
         }
         else {
