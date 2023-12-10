@@ -750,12 +750,19 @@ nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    cmp.real  ->  real
+ *   real -> numweix
  *
- * Returns the real part.
+ * Returns the real value for +self+:
  *
- *    Complex(7).real      #=> 7
- *    Complex(9, -4).real  #=> 9
+ *   Complex(7).real      #=> 7
+ *   Complex(9, -4).real  #=> 9
+ *
+ * If +self+ was created with
+ * {polar coordinated}[rdoc-ref:Complex@Polar+Coordinates], the returned value
+ * is computed, and may be inexact:
+ *
+ *   Complex.polar(1, Math::PI/4).real # => 0.7071067811865476 # Square root of 2.
+ *
  */
 VALUE
 rb_complex_real(VALUE self)
@@ -766,13 +773,21 @@ rb_complex_real(VALUE self)
 
 /*
  * call-seq:
- *    cmp.imag       ->  real
- *    cmp.imaginary  ->  real
+ *   imag -> numeric
  *
- * Returns the imaginary part.
+ * Returns the imaginary value for +self+:
  *
  *    Complex(7).imaginary      #=> 0
  *    Complex(9, -4).imaginary  #=> -4
+ *
+ * If +self+ was created with
+ * {polar coordinated}[rdoc-ref:Complex@Polar+Coordinates], the returned value
+ * is computed, and may be inexact:
+ *
+ *   Complex.polar(1, Math::PI/4).imag # => 0.7071067811865476 # Square root of 2.
+ *
+ * \Complex#imaginary is an alias for \Complex#imag.
+ *
  */
 VALUE
 rb_complex_imag(VALUE self)
