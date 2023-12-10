@@ -27,17 +27,14 @@ module IRB
           puts "Error: Expected a string but got #{str.inspect}"
           return
         end
-        if str.include? " -s"
-          str, esses = str.split(" -")
-          s_count = esses.count("^s").zero? ? esses.size : 1
-          source = SourceFinder.new(@irb_context).find_source(str, s_count)
-        else
-          source = SourceFinder.new(@irb_context).find_source(str)
-        end
+
+        str, esses = str.split(" -")
+        super_level = esses ? esses.count("s") : 0
+        source = SourceFinder.new(@irb_context).find_source(str, super_level)
 
         if source
           show_source(source)
-        elsif s_count
+        elsif super_level > 0
           puts "Error: Couldn't locate a super definition for #{str}"
         else
           puts "Error: Couldn't locate a definition for #{str}"
