@@ -3711,9 +3711,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_MULTI_TARGET_NODE: {
         pm_multi_target_node_t *cast = (pm_multi_target_node_t *) node;
+        bool has_rest_expression = (cast->rest &&
+                PM_NODE_TYPE_P(cast->rest, PM_SPLAT_NODE) &&
+                (((pm_splat_node_t *)cast->rest)->expression));
 
         if (cast->lefts.size) {
-            int flag = (int) (bool) cast->rights.size;
+            int flag = (int) (bool) cast->rights.size || has_rest_expression;
             ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(cast->lefts.size), INT2FIX(flag));
             for (size_t index = 0; index < cast->lefts.size; index++) {
                 PM_COMPILE_NOT_POPPED(cast->lefts.nodes[index]);
@@ -3725,6 +3728,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             for (size_t index = 0; index < cast->rights.size; index++) {
                 PM_COMPILE_NOT_POPPED(cast->rights.nodes[index]);
             }
+        }
+
+        if (has_rest_expression) {
+            pm_node_t *expression = ((pm_splat_node_t *)cast->rest)->expression;
+            PM_COMPILE_NOT_POPPED(expression);
         }
         return;
       }
