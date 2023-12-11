@@ -625,25 +625,29 @@ VALUE rb_tracearg_object(rb_trace_arg_t *trace_arg);
  * signal handler, deferring a job to collect a Ruby backtrace when it is next safe
  * to do so.
  *
+ * Ruby maintains a small, fixed-size postponed job table. An extension using this
+ * API should first call `rb_postponed_job_preregister` to register a callback
+ * function in this table and obtain a handle of type `rb_postponed_job_handle_t`
+ * to it. Subsequently, the callback can be triggered  by calling
+ * `rb_postponed_job_trigger` with that handle, or the `data` associated with the
+ * callback function can be changed by calling `rb_postponed_job_preregister` again.
+ *
+ * Because the postponed job table is quite small (it only has 32 entries on most
+ * common systems), extensions should generally only preregister one or two `func`
+ * values.
+ *
  * Historically, this API provided two functions `rb_postponed_job_register` and
  * `rb_postponed_job_register_one`, which claimed to be fully async-signal-safe and
  * would call back the provided `func` and `data` at an appropriate time. However,
  * these functions were subject to race conditions which could cause crashes when
- * racing with Ruby's internal use of them.
+ * racing with Ruby's internal use of them. These two functions are still present,
+ * but are marked as deprecated and have slightly changed semantics:
  *
- * Therefore, this API has now been changed, and now requires that jobs scheduled
- * from a signal handler context are pre-registered in advance into a fixed-size
- * table. This table is quite small (it only has 32 entries on most systems)
- * and so gems should generally only preregister one or two funcs. This process is
- * managed by the `rb_postponed_job_preregister` and `rb_postponed_job_trigger`
- * functions.
- *
- * We also provide the old `rb_postponed_job_register` and
- * `rb_postponed_job_register_one` functions for backwards compatability, but with
- * changed semantics; `rb_postponed_job_register` now behaves the same as
- * `rb_postponed_job_register_once`. These changes should remain compatible with all
- * of the observed in-the-wild usages of the postponed job APIs, which almost all
- * use the _one API and pass `0` for data anyway.
+ * * rb_postponed_job_register now works like rb_postponed_job_register_once i.e.
+ *   `func` will only be executed at most one time each time Ruby checks for
+ *   interrupts, no matter how many times it is registered
+ * * They are also called with the last `data` to be registered, not the first
+ *   (which is how rb_postponed_job_register_once previously worked)
  */
 
 
@@ -670,7 +674,7 @@ typedef unsigned int rb_postponed_job_handle_t;
  * cause Ruby to call back into the registered `func` with `data` at a later time, in
  * a context where the GVL is held and it is safe to perform Ruby allocations.
  *
- * If the given func was already pre-registered, this method will overwrite the
+ * If the given `func` was already pre-registered, this function will overwrite the
  * stored data with the newly passed data, and return the same handle instance as
  * was previously returned.
  *
@@ -681,7 +685,7 @@ typedef unsigned int rb_postponed_job_handle_t;
  * `rb_postponed_job_trigger` on the same handle, it's undefined whether `func` will
  * be called with the old data or the new data.
  *
- * Although the current implementation of this method is in fact async-signal-safe and
+ * Although the current implementation of this function is in fact async-signal-safe and
  * has defined semantics when called concurrently on the same `func`, a future Ruby
  * version might require that this method be called under the GVL; thus, programs which
  * aim to be forward-compatible should call this method whilst holding the GVL.
@@ -730,8 +734,9 @@ void rb_postponed_job_trigger(rb_postponed_job_handle_t h);
  * @note    Prevoius versions of Ruby promised that the (`func`, `data`) pairs would
  *          be executed as many times as they were registered with this function; in
  *          reality this was always subject to race conditions and this function no
- *          longer provides this guarantee. Instead, we only promise that `func` will
- *          be called once.
+ *          longer provides this guarantee. Instead, multiple calls to this function
+ *          can be coalesced into a single execution of the passed `func`, with the
+ *          most recent `data` registered at that time passed in.
  *
  * @deprecated  This interface implies that arbitrarily many `func`'s can be enqueued
  *              over the lifetime of the program, whilst in reality the registration
