@@ -3709,6 +3709,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PM_POP_IF_POPPED;
         return;
       }
+      case PM_REQUIRED_PARAMETER_NODE: {
+        pm_required_parameter_node_t *required_parameter_node = (pm_required_parameter_node_t *)node;
+        int index = pm_lookup_local_index(iseq, scope_node, required_parameter_node->name);
+
+        ADD_SETLOCAL(ret, &dummy_line_node, index, 0);
+        return;
+      }
       case PM_MULTI_TARGET_NODE: {
         pm_multi_target_node_t *cast = (pm_multi_target_node_t *) node;
         bool has_rest_expression = (cast->rest &&
@@ -3723,16 +3730,21 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
         }
 
+        if (has_rest_expression) {
+            if (cast->rights.size) {
+                ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(cast->rights.size), INT2FIX(3));
+            }
+            pm_node_t *expression = ((pm_splat_node_t *)cast->rest)->expression;
+            PM_COMPILE_NOT_POPPED(expression);
+        }
+
         if (cast->rights.size) {
-            ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(cast->rights.size), INT2FIX(2));
+            if (!has_rest_expression) {
+                ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(cast->rights.size), INT2FIX(2));
+            }
             for (size_t index = 0; index < cast->rights.size; index++) {
                 PM_COMPILE_NOT_POPPED(cast->rights.nodes[index]);
             }
-        }
-
-        if (has_rest_expression) {
-            pm_node_t *expression = ((pm_splat_node_t *)cast->rest)->expression;
-            PM_COMPILE_NOT_POPPED(expression);
         }
         return;
       }
@@ -4368,6 +4380,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // those anonymous items temporary names (as below)
         int local_index = 0;
 
+        // We will assign these values now, if applicable, and use them for
+        // the ISEQs on these multis
+        int required_multis_hidden_index = 0;
+        int post_multis_hidden_index = 0;
+
         // Here we figure out local table indices and insert them in to the
         // index lookup table and local tables.
         //
@@ -4384,6 +4401,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                   // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
                   //            ^^^^^^^^^^
                   case PM_MULTI_TARGET_NODE: {
+                      required_multis_hidden_index = local_index;
                       local = rb_make_temporary_id(local_index);
                       local_table_for_iseq->ids[local_index] = local;
                       break;
@@ -4453,6 +4471,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                   // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
                   //                                      ^^^^^^^^^^
                   case PM_MULTI_TARGET_NODE: {
+                      post_multis_hidden_index = local_index;
                       local = rb_make_temporary_id(local_index);
                       local_table_for_iseq->ids[local_index] = local;
                       break;
@@ -4638,6 +4657,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // Goal: fill in the names of the parameters in MultiTargetNodes
         //
         // Go through requireds again to set the multis
+
         if (requireds_list && requireds_list->size) {
             for (size_t i = 0; i < requireds_list->size; i++) {
                 // For each MultiTargetNode, we're going to have one
@@ -4755,6 +4775,32 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_LABEL(ret, label);
 
             body->param.opt_table = (const VALUE *)opt_table;
+        }
+
+        if (requireds_list && requireds_list->size) {
+            for (size_t i = 0; i < requireds_list->size; i++) {
+                // For each MultiTargetNode, we're going to have one
+                // additional anonymous local not represented in the locals table
+                // We want to account for this in our table size
+                pm_node_t *required = requireds_list->nodes[i];
+                if (PM_NODE_TYPE_P(required, PM_MULTI_TARGET_NODE)) {
+                    ADD_GETLOCAL(ret, &dummy_line_node, table_size - required_multis_hidden_index, 0);
+                    PM_COMPILE(required);
+                }
+            }
+        }
+
+        if (posts_list && posts_list->size) {
+            for (size_t i = 0; i < posts_list->size; i++) {
+                // For each MultiTargetNode, we're going to have one
+                // additional anonymous local not represented in the locals table
+                // We want to account for this in our table size
+                pm_node_t *post = posts_list->nodes[i];
+                if (PM_NODE_TYPE_P(post, PM_MULTI_TARGET_NODE)) {
+                    ADD_GETLOCAL(ret, &dummy_line_node, table_size - post_multis_hidden_index, 0);
+                    PM_COMPILE(post);
+                }
+            }
         }
 
         switch (body->type) {
