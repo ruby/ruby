@@ -277,6 +277,18 @@ changelog for details of the default gems or bundled gems.
 
 ## C API updates
 
+* `rb_postponed_job` changes
+
+    The postponed job APIs have been changed to address some rare crashes.
+    There are two new methods for managing postponed jobs; `rb_postponed_job_preregister`
+    and `rb_postponed_job_trigger`. These APIs replace `rb_postponed_job_register`
+    and `rb_postponed_job_register_once`, which are now marked as deprecated.
+    The semantics of these functions have also changed slightly; `rb_postponed_job_register`
+    now behaves like the `once` variant in that multiple calls with the same
+    `func` might be coalesced into a single execution of the `func`
+
+    [[Feature #20057]]
+
 ## Implementation improvements
 
 * `defined?(@ivar)` is optimized with Object Shapes.
@@ -409,3 +421,4 @@ changelog for details of the default gems or bundled gems.
 [Feature #19843]: https://bugs.ruby-lang.org/issues/19843
 [Bug #19868]:     https://bugs.ruby-lang.org/issues/19868
 [Feature #19965]: https://bugs.ruby-lang.org/issues/19965
+[Feature #20057]: https://bugs.ruby-lang.org/issues/20057
