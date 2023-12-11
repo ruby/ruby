@@ -1,3 +1,29 @@
+# regression test for arity check with splat
+assert_equal '[:ae, :ae]', %q{
+  def req_one(a_, b_ = 1) = raise
+
+  def test(args)
+    req_one *args
+  rescue ArgumentError
+    :ae
+  end
+
+  [test(Array.new 5), test([])]
+}
+
+# regression test for arity check with splat and send
+assert_equal '[:ae, :ae]', %q{
+  def two_reqs(a, b_, _ = 1) = a.gsub(a, a)
+
+  def test(name, args)
+    send(name, *args)
+  rescue ArgumentError
+    :ae
+  end
+
+  [test(:two_reqs, ["g", nil, nil, nil]), test(:two_reqs, ["g"])]
+}
+
 # regression test for GC marking stubs in invalidated code
 assert_normal_exit %q{
   garbage = Array.new(10_000) { [] } # create garbage to cause iseq movement

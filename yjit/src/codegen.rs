@@ -6116,9 +6116,14 @@ fn gen_send_iseq(
             unsafe { rb_yjit_array_len(array) as u32}
         };
 
-        if opt_num == 0 && required_num != array_length as i32 + argc - 1 && !iseq_has_rest {
-            gen_counter_incr(asm, Counter::send_iseq_splat_arity_error);
-            return None;
+        // Arity check accounting for size of the splat. When callee has rest parameters, we insert
+        // runtime guards later in copy_splat_args_for_rest_callee()
+        if !iseq_has_rest {
+            let supplying = argc - 1 + array_length as i32;
+            if (required_num..=required_num + opt_num).contains(&supplying) == false {
+                gen_counter_incr(asm, Counter::send_iseq_splat_arity_error);
+                return None;
+            }
         }
 
         if iseq_has_rest && opt_num > 0 {
