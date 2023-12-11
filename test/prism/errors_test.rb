@@ -1997,6 +1997,21 @@ module Prism
       end
     end
 
+    def test_command_call_in
+      source = <<~RUBY
+        foo 1 in a
+        a = foo 2 in b
+      RUBY
+      message1 = 'unexpected `in` keyword in arguments'
+      message2 = 'expected a newline or semicolon after the statement'
+      assert_errors expression(source), source, [
+        [message1, 9..10],
+        [message2, 8..8],
+        [message1, 24..25],
+        [message2, 23..23],
+      ]
+    end
+
     def test_constant_assignment_in_method
       source = 'def foo();A=1;end'
       assert_errors expression(source), source, [

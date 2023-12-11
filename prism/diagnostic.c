@@ -62,6 +62,7 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_ARGUMENT_FORMAL_GLOBAL]             = "invalid formal argument; formal argument cannot be a global variable",
     [PM_ERR_ARGUMENT_FORMAL_IVAR]               = "invalid formal argument; formal argument cannot be an instance variable",
     [PM_ERR_ARGUMENT_FORWARDING_UNBOUND]        = "unexpected `...` in an non-parenthesized call",
+    [PM_ERR_ARGUMENT_IN]                        = "unexpected `in` keyword in arguments",
     [PM_ERR_ARGUMENT_NO_FORWARDING_AMP]         = "unexpected `&` when the parent method is not forwarding",
     [PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES]    = "unexpected `...` when the parent method is not forwarding",
     [PM_ERR_ARGUMENT_NO_FORWARDING_STAR]        = "unexpected `*` when the parent method is not forwarding",
