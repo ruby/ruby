@@ -36,10 +36,6 @@ module Bundler
       gem_spec if gem_spec&.default_gem?
     end
 
-    def spec_not_found(gem_name)
-      raise GemNotFound, Bundler::CLI::Common.gem_not_found_message(gem_name, Bundler.definition.dependencies)
-    end
-
     def print_gem_version(spec)
       Bundler.ui.info spec.version.to_s
     end
