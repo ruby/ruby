@@ -262,7 +262,7 @@ rb_io_buffer_type_free(void *_buffer)
 
     io_buffer_free(buffer);
 
-    free(buffer);
+    xfree(buffer);
 }
 
 size_t
