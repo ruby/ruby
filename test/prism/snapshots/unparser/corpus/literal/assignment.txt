@@ -283,7 +283,7 @@
         │       └── depth: 0
         ├── @ MultiWriteNode (location: (14,0)-(14,23))
         │   ├── lefts: (length: 2)
-        │   │   ├── @ CallNode (location: (14,1)-(14,6))
+        │   │   ├── @ CallTargetNode (location: (14,1)-(14,6))
         │   │   │   ├── flags: ∅
         │   │   │   ├── receiver:
         │   │   │   │   @ LocalVariableReadNode (location: (14,1)-(14,2))
@@ -291,12 +291,8 @@
         │   │   │   │   └── depth: 0
         │   │   │   ├── call_operator_loc: (14,2)-(14,3) = "."
         │   │   │   ├── name: :foo=
-        │   │   │   ├── message_loc: (14,3)-(14,6) = "foo"
-        │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── arguments: ∅
-        │   │   │   ├── closing_loc: ∅
-        │   │   │   └── block: ∅
-        │   │   └── @ CallNode (location: (14,8)-(14,13))
+        │   │   │   └── message_loc: (14,3)-(14,6) = "foo"
+        │   │   └── @ CallTargetNode (location: (14,8)-(14,13))
         │   │       ├── flags: ∅
         │   │       ├── receiver:
         │   │       │   @ LocalVariableReadNode (location: (14,8)-(14,9))
@@ -304,11 +300,7 @@
         │   │       │   └── depth: 0
         │   │       ├── call_operator_loc: (14,9)-(14,10) = "."
         │   │       ├── name: :bar=
-        │   │       ├── message_loc: (14,10)-(14,13) = "bar"
-        │   │       ├── opening_loc: ∅
-        │   │       ├── arguments: ∅
-        │   │       ├── closing_loc: ∅
-        │   │       └── block: ∅
+        │   │       └── message_loc: (14,10)-(14,13) = "bar"
         │   ├── rest: ∅
         │   ├── rights: (length: 0)
         │   ├── lparen_loc: (14,0)-(14,1) = "("
@@ -326,15 +318,12 @@
         │       └── closing_loc: (14,22)-(14,23) = "]"
         ├── @ MultiWriteNode (location: (15,0)-(15,24))
         │   ├── lefts: (length: 2)
-        │   │   ├── @ CallNode (location: (15,1)-(15,8))
+        │   │   ├── @ IndexTargetNode (location: (15,1)-(15,8))
         │   │   │   ├── flags: ∅
         │   │   │   ├── receiver:
         │   │   │   │   @ LocalVariableReadNode (location: (15,1)-(15,2))
         │   │   │   │   ├── name: :a
         │   │   │   │   └── depth: 0
-        │   │   │   ├── call_operator_loc: ∅
-        │   │   │   ├── name: :[]=
-        │   │   │   ├── message_loc: (15,2)-(15,8) = "[*foo]"
         │   │   │   ├── opening_loc: (15,2)-(15,3) = "["
         │   │   │   ├── arguments:
         │   │   │   │   @ ArgumentsNode (location: (15,3)-(15,7))
@@ -348,15 +337,12 @@
         │   │   │   │               └── depth: 0
         │   │   │   ├── closing_loc: (15,7)-(15,8) = "]"
         │   │   │   └── block: ∅
-        │   │   └── @ CallNode (location: (15,10)-(15,14))
+        │   │   └── @ IndexTargetNode (location: (15,10)-(15,14))
         │   │       ├── flags: ∅
         │   │       ├── receiver:
         │   │       │   @ LocalVariableReadNode (location: (15,10)-(15,11))
         │   │       │   ├── name: :a
         │   │       │   └── depth: 0
-        │   │       ├── call_operator_loc: ∅
-        │   │       ├── name: :[]=
-        │   │       ├── message_loc: (15,11)-(15,14) = "[1]"
         │   │       ├── opening_loc: (15,11)-(15,12) = "["
         │   │       ├── arguments:
         │   │       │   @ ArgumentsNode (location: (15,12)-(15,13))
@@ -383,15 +369,12 @@
         │       └── closing_loc: (15,23)-(15,24) = "]"
         ├── @ MultiWriteNode (location: (16,0)-(16,21))
         │   ├── lefts: (length: 2)
-        │   │   ├── @ CallNode (location: (16,1)-(16,5))
+        │   │   ├── @ IndexTargetNode (location: (16,1)-(16,5))
         │   │   │   ├── flags: ∅
         │   │   │   ├── receiver:
         │   │   │   │   @ LocalVariableReadNode (location: (16,1)-(16,2))
         │   │   │   │   ├── name: :a
         │   │   │   │   └── depth: 0
-        │   │   │   ├── call_operator_loc: ∅
-        │   │   │   ├── name: :[]=
-        │   │   │   ├── message_loc: (16,2)-(16,5) = "[0]"
         │   │   │   ├── opening_loc: (16,2)-(16,3) = "["
         │   │   │   ├── arguments:
         │   │   │   │   @ ArgumentsNode (location: (16,3)-(16,4))
@@ -401,15 +384,12 @@
         │   │   │   │           └── flags: decimal
         │   │   │   ├── closing_loc: (16,4)-(16,5) = "]"
         │   │   │   └── block: ∅
-        │   │   └── @ CallNode (location: (16,7)-(16,11))
+        │   │   └── @ IndexTargetNode (location: (16,7)-(16,11))
         │   │       ├── flags: ∅
         │   │       ├── receiver:
         │   │       │   @ LocalVariableReadNode (location: (16,7)-(16,8))
         │   │       │   ├── name: :a
         │   │       │   └── depth: 0
-        │   │       ├── call_operator_loc: ∅
-        │   │       ├── name: :[]=
-        │   │       ├── message_loc: (16,8)-(16,11) = "[1]"
         │   │       ├── opening_loc: (16,8)-(16,9) = "["
         │   │       ├── arguments:
         │   │       │   @ ArgumentsNode (location: (16,9)-(16,10))
@@ -440,7 +420,7 @@
         │   │   @ SplatNode (location: (17,1)-(17,7))
         │   │   ├── operator_loc: (17,1)-(17,2) = "*"
         │   │   └── expression:
-        │   │       @ CallNode (location: (17,2)-(17,7))
+        │   │       @ CallTargetNode (location: (17,2)-(17,7))
         │   │       ├── flags: ∅
         │   │       ├── receiver:
         │   │       │   @ LocalVariableReadNode (location: (17,2)-(17,3))
@@ -448,11 +428,7 @@
         │   │       │   └── depth: 0
         │   │       ├── call_operator_loc: (17,3)-(17,4) = "."
         │   │       ├── name: :foo=
-        │   │       ├── message_loc: (17,4)-(17,7) = "foo"
-        │   │       ├── opening_loc: ∅
-        │   │       ├── arguments: ∅
-        │   │       ├── closing_loc: ∅
-        │   │       └── block: ∅
+        │   │       └── message_loc: (17,4)-(17,7) = "foo"
         │   ├── rights: (length: 0)
         │   ├── lparen_loc: (17,0)-(17,1) = "("
         │   ├── rparen_loc: (17,7)-(17,8) = ")"

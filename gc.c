@@ -952,6 +952,7 @@ typedef struct rb_objspace {
 #endif
 
     rb_darray(VALUE *) weak_references;
+    rb_postponed_job_handle_t finalize_deferred_pjob;
 } rb_objspace_t;
 
 
@@ -1424,6 +1425,8 @@ static inline void gc_prof_set_heap_info(rb_objspace_t *);
 PRINTF_ARGS(static void gc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...), 3, 4);
 static const char *obj_info(VALUE obj);
 static const char *obj_type_name(VALUE obj);
+
+static void gc_finalize_deferred(void *dmy);
 
 /*
  * 1 - TSC (H/W Time Stamp Counter)
@@ -1906,6 +1909,10 @@ rb_objspace_alloc(void)
     rb_objspace_t *objspace = calloc1(sizeof(rb_objspace_t));
     objspace->flags.measure_gc = 1;
     malloc_limit = gc_params.malloc_limit_min;
+    objspace->finalize_deferred_pjob = rb_postponed_job_preregister(0, gc_finalize_deferred, objspace);
+    if (objspace->finalize_deferred_pjob == POSTPONED_JOB_HANDLE_INVALID) {
+        rb_bug("Could not preregister postponed job for GC");
+    }
 
     for (int i = 0; i < SIZE_POOL_COUNT; i++) {
         rb_size_pool_t *size_pool = &size_pools[i];
@@ -4527,9 +4534,8 @@ gc_finalize_deferred(void *dmy)
 static void
 gc_finalize_deferred_register(rb_objspace_t *objspace)
 {
-    if (rb_postponed_job_register_one(0, gc_finalize_deferred, objspace) == 0) {
-        rb_bug("gc_finalize_deferred_register: can't register finalizer.");
-    }
+    /* will enqueue a call to gc_finalize_deferred */
+    rb_postponed_job_trigger(objspace->finalize_deferred_pjob);
 }
 
 static int pop_mark_stack(mark_stack_t *stack, VALUE *data);

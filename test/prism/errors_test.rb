@@ -164,6 +164,15 @@ module Prism
       assert_equal expr.closing, ""
     end
 
+    def test_unterminated_empty_string
+      expr = expression('"')
+      assert_errors expr, '"', [
+        ["expected a closing delimiter for the string literal", 1..1]
+      ]
+      assert_equal expr.unescaped, ""
+      assert_equal expr.closing, ""
+    end
+
     def test_incomplete_instance_var_string
       assert_errors expression('%@#@@#'), '%@#@@#', [
         ["incomplete instance variable", 4..5],
@@ -1423,9 +1432,9 @@ module Prism
     def test_conditional_predicate_closed
       source = "if 0 0; elsif 0 0; end\nunless 0 0; end"
       assert_errors expression(source), source, [
-        ["expected `then` or `;` or '\n" + "'", 5..6],
-        ["expected `then` or `;` or '\n" + "'", 16..17],
-        ["expected `then` or `;` or '\n" + "'", 32..33],
+        ["expected `then` or `;` or '\\n" + "'", 5..6],
+        ["expected `then` or `;` or '\\n" + "'", 16..17],
+        ["expected `then` or `;` or '\\n" + "'", 32..33],
       ]
     end
 
@@ -1463,7 +1472,7 @@ module Prism
     def test_semicolon_after_inheritance_operator
       source = "class Foo < Bar end"
       assert_errors expression(source), source, [
-        ["unexpected `end`, expecting ';' or '\n'", 15..15],
+        ["unexpected `end`, expecting ';' or '\\n'", 15..15],
       ]
     end
 
@@ -1964,6 +1973,23 @@ module Prism
         case; in a unless a b; end
         begin; rescue a b; end
         begin; rescue a b => c; end
+      RUBY
+      sources.each do |source|
+        assert_nil Ripper.sexp_raw(source)
+        assert_false(Prism.parse(source).success?)
+      end
+    end
+
+    def test_range_and_bin_op
+      sources = <<~RUBY.lines
+        1..2..3
+        1..2..
+        1.. || 2
+        1.. & 2
+        1.. * 2
+        1.. / 2
+        1.. % 2
+        1.. ** 2
       RUBY
       sources.each do |source|
         assert_nil Ripper.sexp_raw(source)

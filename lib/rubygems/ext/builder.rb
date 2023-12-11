@@ -88,13 +88,20 @@ class Gem::Ext::Builder
       # Set $SOURCE_DATE_EPOCH for the subprocess.
       build_env = { "SOURCE_DATE_EPOCH" => Gem.source_date_epoch_string }.merge(env)
       output, status = begin
-                         Open3.capture2e(build_env, *command, chdir: dir)
+                         Open3.popen2e(build_env, *command, chdir: dir) do |_stdin, stdouterr, wait_thread|
+                           output = String.new
+                           while line = stdouterr.gets
+                             output << line
+                             if verbose
+                               print line
+                             end
+                           end
+                           [output, wait_thread.value]
+                         end
                        rescue StandardError => error
                          raise Gem::InstallError, "#{command_name || class_name} failed#{error.message}"
                        end
-      if verbose
-        puts output
-      else
+      unless verbose
         results << output
       end
     ensure

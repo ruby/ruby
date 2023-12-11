@@ -5,17 +5,13 @@
     └── body: (length: 3)
         ├── @ MultiWriteNode (location: (1,0)-(1,17))
         │   ├── lefts: (length: 2)
-        │   │   ├── @ CallNode (location: (1,0)-(1,6))
+        │   │   ├── @ CallTargetNode (location: (1,0)-(1,6))
         │   │   │   ├── flags: ∅
         │   │   │   ├── receiver:
         │   │   │   │   @ SelfNode (location: (1,0)-(1,4))
         │   │   │   ├── call_operator_loc: (1,4)-(1,5) = "."
         │   │   │   ├── name: :A=
-        │   │   │   ├── message_loc: (1,5)-(1,6) = "A"
-        │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── arguments: ∅
-        │   │   │   ├── closing_loc: ∅
-        │   │   │   └── block: ∅
+        │   │   │   └── message_loc: (1,5)-(1,6) = "A"
         │   │   └── @ LocalVariableTargetNode (location: (1,8)-(1,11))
         │   │       ├── name: :foo
         │   │       └── depth: 0
@@ -30,24 +26,17 @@
         │       └── depth: 0
         ├── @ MultiWriteNode (location: (3,0)-(3,24))
         │   ├── lefts: (length: 2)
-        │   │   ├── @ CallNode (location: (3,0)-(3,6))
+        │   │   ├── @ CallTargetNode (location: (3,0)-(3,6))
         │   │   │   ├── flags: ∅
         │   │   │   ├── receiver:
         │   │   │   │   @ SelfNode (location: (3,0)-(3,4))
         │   │   │   ├── call_operator_loc: (3,4)-(3,5) = "."
         │   │   │   ├── name: :a=
-        │   │   │   ├── message_loc: (3,5)-(3,6) = "a"
-        │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── arguments: ∅
-        │   │   │   ├── closing_loc: ∅
-        │   │   │   └── block: ∅
-        │   │   └── @ CallNode (location: (3,8)-(3,18))
+        │   │   │   └── message_loc: (3,5)-(3,6) = "a"
+        │   │   └── @ IndexTargetNode (location: (3,8)-(3,18))
         │   │       ├── flags: ∅
         │   │       ├── receiver:
         │   │       │   @ SelfNode (location: (3,8)-(3,12))
-        │   │       ├── call_operator_loc: ∅
-        │   │       ├── name: :[]=
-        │   │       ├── message_loc: (3,12)-(3,18) = "[1, 2]"
         │   │       ├── opening_loc: (3,12)-(3,13) = "["
         │   │       ├── arguments:
         │   │       │   @ ArgumentsNode (location: (3,13)-(3,17))
@@ -70,17 +59,13 @@
         │       └── depth: 0
         └── @ MultiWriteNode (location: (5,0)-(5,18))
             ├── lefts: (length: 2)
-            │   ├── @ CallNode (location: (5,0)-(5,7))
+            │   ├── @ CallTargetNode (location: (5,0)-(5,7))
             │   │   ├── flags: ∅
             │   │   ├── receiver:
             │   │   │   @ SelfNode (location: (5,0)-(5,4))
             │   │   ├── call_operator_loc: (5,4)-(5,6) = "::"
             │   │   ├── name: :a=
-            │   │   ├── message_loc: (5,6)-(5,7) = "a"
-            │   │   ├── opening_loc: ∅
-            │   │   ├── arguments: ∅
-            │   │   ├── closing_loc: ∅
-            │   │   └── block: ∅
+            │   │   └── message_loc: (5,6)-(5,7) = "a"
             │   └── @ LocalVariableTargetNode (location: (5,9)-(5,12))
             │       ├── name: :foo
             │       └── depth: 0

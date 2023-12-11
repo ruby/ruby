@@ -39,6 +39,19 @@ module TestIRB
       assert_match(%r[/irb\/init\.rb], out)
     end
 
+    def test_show_source_with_missing_signature
+      write_ruby <<~'RUBY'
+        binding.irb
+      RUBY
+
+      out = run_ruby_file do
+        type "show_source foo"
+        type "exit"
+      end
+
+      assert_match(%r[Couldn't locate a definition for foo], out)
+    end
+
     def test_show_source_string
       write_ruby <<~'RUBY'
         binding.irb

@@ -500,7 +500,7 @@
         │   └── block: ∅
         ├── @ MultiWriteNode (location: (41,0)-(41,23))
         │   ├── lefts: (length: 2)
-        │   │   ├── @ CallNode (location: (41,0)-(41,7))
+        │   │   ├── @ CallTargetNode (location: (41,0)-(41,7))
         │   │   │   ├── flags: ∅
         │   │   │   ├── receiver:
         │   │   │   │   @ CallNode (location: (41,0)-(41,3))
@@ -515,12 +515,8 @@
         │   │   │   │   └── block: ∅
         │   │   │   ├── call_operator_loc: (41,3)-(41,4) = "."
         │   │   │   ├── name: :foo=
-        │   │   │   ├── message_loc: (41,4)-(41,7) = "foo"
-        │   │   │   ├── opening_loc: ∅
-        │   │   │   ├── arguments: ∅
-        │   │   │   ├── closing_loc: ∅
-        │   │   │   └── block: ∅
-        │   │   └── @ CallNode (location: (41,9)-(41,16))
+        │   │   │   └── message_loc: (41,4)-(41,7) = "foo"
+        │   │   └── @ CallTargetNode (location: (41,9)-(41,16))
         │   │       ├── flags: ∅
         │   │       ├── receiver:
         │   │       │   @ CallNode (location: (41,9)-(41,12))
@@ -535,11 +531,7 @@
         │   │       │   └── block: ∅
         │   │       ├── call_operator_loc: (41,12)-(41,13) = "."
         │   │       ├── name: :bar=
-        │   │       ├── message_loc: (41,13)-(41,16) = "bar"
-        │   │       ├── opening_loc: ∅
-        │   │       ├── arguments: ∅
-        │   │       ├── closing_loc: ∅
-        │   │       └── block: ∅
+        │   │       └── message_loc: (41,13)-(41,16) = "bar"
         │   ├── rest: ∅
         │   ├── rights: (length: 0)
         │   ├── lparen_loc: ∅

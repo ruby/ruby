@@ -16,7 +16,7 @@ module IRB
       @irb_context = irb_context
     end
 
-    def find_source(signature, s_count = nil)
+    def find_source(signature, super_level = 0)
       context_binding = @irb_context.workspace.binding
       case signature
       when /\A[A-Z]\w*(::[A-Z]\w*)*\z/ # Const::Name
@@ -27,12 +27,12 @@ module IRB
         owner = eval(Regexp.last_match[:owner], context_binding)
         method = Regexp.last_match[:method]
         return unless owner.respond_to?(:instance_method)
-        file, line = method_target(owner, s_count, method, "owner")
+        file, line = method_target(owner, super_level, method, "owner")
       when /\A((?<receiver>.+)(\.|::))?(?<method>[^ :.]+)\z/ # method, receiver.method, receiver::method
         receiver = eval(Regexp.last_match[:receiver] || 'self', context_binding)
         method = Regexp.last_match[:method]
         return unless receiver.respond_to?(method, true)
-        file, line = method_target(receiver, s_count, method, "receiver")
+        file, line = method_target(receiver, super_level, method, "receiver")
       end
       if file && line && File.exist?(file)
         Source.new(file: file, first_line: line, last_line: find_end(file, line))
@@ -60,20 +60,14 @@ module IRB
       first_line
     end
 
-    def method_target(owner_receiver, s_count, method, type)
+    def method_target(owner_receiver, super_level, method, type)
       case type
       when "owner"
         target_method = owner_receiver.instance_method(method)
-        return target_method.source_location unless s_count
       when "receiver"
-        if s_count
-          target_method = owner_receiver.class.instance_method(method)
-        else
-          target_method = method
-          return owner_receiver.method(method).source_location
-        end
+        target_method = owner_receiver.method(method)
       end
-      s_count.times do |s|
+      super_level.times do |s|
         target_method = target_method.super_method if target_method
       end
       target_method.nil? ? nil : target_method.source_location

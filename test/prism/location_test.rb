@@ -188,6 +188,12 @@ module Prism
       assert_location(CallOrWriteNode, "foo.foo ||= bar")
     end
 
+    def test_CallTargetNode
+      assert_location(CallTargetNode, "foo.bar, = baz", 0...7) do |node|
+        node.lefts.first
+      end
+    end
+
     def test_CapturePatternNode
       assert_location(CapturePatternNode, "case foo; in bar => baz; end", 13...23) do |node|
         node.conditions.first.pattern
@@ -460,6 +466,12 @@ module Prism
 
     def test_IndexOrWriteNode
       assert_location(IndexOrWriteNode, "foo[foo] ||= bar")
+    end
+
+    def test_IndexTargetNode
+      assert_location(IndexTargetNode, "foo[bar, &baz], = qux", 0...14) do |node|
+        node.lefts.first
+      end
     end
 
     def test_InstanceVariableAndWriteNode

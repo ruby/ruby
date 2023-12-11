@@ -1,8 +1,8 @@
-@ ProgramNode (location: (4,0)-(55,13))
+@ ProgramNode (location: (4,0)-(63,2))
 ├── locals: [:a]
 └── statements:
-    @ StatementsNode (location: (4,0)-(55,13))
-    └── body: (length: 10)
+    @ StatementsNode (location: (4,0)-(63,2))
+    └── body: (length: 14)
         ├── @ CallNode (location: (4,0)-(7,7))
         │   ├── flags: ∅
         │   ├── receiver: ∅
@@ -321,45 +321,89 @@
         │   ├── content_loc: (54,0)-(54,0) = ""
         │   ├── closing_loc: (54,0)-(55,0) = "A\n"
         │   └── unescaped: ""
-        └── @ MatchWriteNode (location: (53,5)-(55,13))
-            ├── call:
-            │   @ CallNode (location: (53,5)-(55,13))
-            │   ├── flags: ∅
-            │   ├── receiver:
-            │   │   @ InterpolatedRegularExpressionNode (location: (53,5)-(55,7))
+        ├── @ MatchWriteNode (location: (53,5)-(55,13))
+        │   ├── call:
+        │   │   @ CallNode (location: (53,5)-(55,13))
+        │   │   ├── flags: ∅
+        │   │   ├── receiver:
+        │   │   │   @ InterpolatedRegularExpressionNode (location: (53,5)-(55,7))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: (53,5)-(53,6) = "/"
+        │   │   │   ├── parts: (length: 2)
+        │   │   │   │   ├── @ StringNode (location: (53,6)-(53,7))
+        │   │   │   │   │   ├── flags: ∅
+        │   │   │   │   │   ├── opening_loc: ∅
+        │   │   │   │   │   ├── content_loc: (53,6)-(53,7) = "\\"
+        │   │   │   │   │   ├── closing_loc: ∅
+        │   │   │   │   │   └── unescaped: ""
+        │   │   │   │   └── @ StringNode (location: (55,0)-(55,6))
+        │   │   │   │       ├── flags: ∅
+        │   │   │   │       ├── opening_loc: ∅
+        │   │   │   │       ├── content_loc: (55,0)-(55,6) = "(?<a>)"
+        │   │   │   │       ├── closing_loc: ∅
+        │   │   │   │       └── unescaped: "(?<a>)"
+        │   │   │   └── closing_loc: (55,6)-(55,7) = "/"
+        │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :=~
+        │   │   ├── message_loc: (55,8)-(55,10) = "=~"
+        │   │   ├── opening_loc: ∅
+        │   │   ├── arguments:
+        │   │   │   @ ArgumentsNode (location: (55,11)-(55,13))
+        │   │   │   ├── flags: ∅
+        │   │   │   └── arguments: (length: 1)
+        │   │   │       └── @ StringNode (location: (55,11)-(55,13))
+        │   │   │           ├── flags: ∅
+        │   │   │           ├── opening_loc: (55,11)-(55,12) = "'"
+        │   │   │           ├── content_loc: (55,12)-(55,12) = ""
+        │   │   │           ├── closing_loc: (55,12)-(55,13) = "'"
+        │   │   │           └── unescaped: ""
+        │   │   ├── closing_loc: ∅
+        │   │   └── block: ∅
+        │   └── targets: (length: 1)
+        │       └── @ LocalVariableTargetNode (location: (53,5)-(55,7))
+        │           ├── name: :a
+        │           └── depth: 0
+        ├── @ StringNode (location: (57,0)-(57,3))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (57,0)-(57,3) = "<<A"
+        │   ├── content_loc: (58,0)-(58,0) = ""
+        │   ├── closing_loc: (58,0)-(59,0) = "A\n"
+        │   └── unescaped: ""
+        ├── @ InterpolatedSymbolNode (location: (57,5)-(59,2))
+        │   ├── opening_loc: (57,5)-(57,7) = ":'"
+        │   ├── parts: (length: 2)
+        │   │   ├── @ StringNode (location: (57,7)-(58,0))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: ∅
+        │   │   │   ├── content_loc: (57,7)-(58,0) = "a\n"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "a\n"
+        │   │   └── @ StringNode (location: (59,0)-(59,1))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: ∅
+        │   │       ├── content_loc: (59,0)-(59,1) = "b"
+        │   │       ├── closing_loc: ∅
+        │   │       └── unescaped: "b"
+        │   └── closing_loc: (59,1)-(59,2) = "'"
+        ├── @ StringNode (location: (61,0)-(61,3))
+        │   ├── flags: ∅
+        │   ├── opening_loc: (61,0)-(61,3) = "<<A"
+        │   ├── content_loc: (62,0)-(62,0) = ""
+        │   ├── closing_loc: (62,0)-(63,0) = "A\n"
+        │   └── unescaped: ""
+        └── @ InterpolatedSymbolNode (location: (61,5)-(63,2))
+            ├── opening_loc: (61,5)-(61,7) = ":\""
+            ├── parts: (length: 2)
+            │   ├── @ StringNode (location: (61,7)-(62,0))
             │   │   ├── flags: ∅
-            │   │   ├── opening_loc: (53,5)-(53,6) = "/"
-            │   │   ├── parts: (length: 2)
-            │   │   │   ├── @ StringNode (location: (53,6)-(53,7))
-            │   │   │   │   ├── flags: ∅
-            │   │   │   │   ├── opening_loc: ∅
-            │   │   │   │   ├── content_loc: (53,6)-(53,7) = "\\"
-            │   │   │   │   ├── closing_loc: ∅
-            │   │   │   │   └── unescaped: ""
-            │   │   │   └── @ StringNode (location: (55,0)-(55,6))
-            │   │   │       ├── flags: ∅
-            │   │   │       ├── opening_loc: ∅
-            │   │   │       ├── content_loc: (55,0)-(55,6) = "(?<a>)"
-            │   │   │       ├── closing_loc: ∅
-            │   │   │       └── unescaped: "(?<a>)"
-            │   │   └── closing_loc: (55,6)-(55,7) = "/"
-            │   ├── call_operator_loc: ∅
-            │   ├── name: :=~
-            │   ├── message_loc: (55,8)-(55,10) = "=~"
-            │   ├── opening_loc: ∅
-            │   ├── arguments:
-            │   │   @ ArgumentsNode (location: (55,11)-(55,13))
-            │   │   ├── flags: ∅
-            │   │   └── arguments: (length: 1)
-            │   │       └── @ StringNode (location: (55,11)-(55,13))
-            │   │           ├── flags: ∅
-            │   │           ├── opening_loc: (55,11)-(55,12) = "'"
-            │   │           ├── content_loc: (55,12)-(55,12) = ""
-            │   │           ├── closing_loc: (55,12)-(55,13) = "'"
-            │   │           └── unescaped: ""
-            │   ├── closing_loc: ∅
-            │   └── block: ∅
-            └── targets: (length: 1)
-                └── @ LocalVariableTargetNode (location: (53,5)-(55,7))
-                    ├── name: :a
-                    └── depth: 0
+            │   │   ├── opening_loc: ∅
+            │   │   ├── content_loc: (61,7)-(62,0) = "a\n"
+            │   │   ├── closing_loc: ∅
+            │   │   └── unescaped: "a\n"
+            │   └── @ StringNode (location: (63,0)-(63,1))
+            │       ├── flags: ∅
+            │       ├── opening_loc: ∅
+            │       ├── content_loc: (63,0)-(63,1) = "b"
+            │       ├── closing_loc: ∅
+            │       └── unescaped: "b"
+            └── closing_loc: (63,1)-(63,2) = "\""

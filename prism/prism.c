@@ -2112,6 +2112,63 @@ pm_index_or_write_node_create(pm_parser_t *parser, pm_call_node_t *target, const
 }
 
 /**
+ * Allocate and initialize a new CallTargetNode node from an existing call
+ * node.
+ */
+static pm_call_target_node_t *
+pm_call_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
+    pm_call_target_node_t *node = PM_ALLOC_NODE(parser, pm_call_target_node_t);
+
+    *node = (pm_call_target_node_t) {
+        {
+            .type = PM_CALL_TARGET_NODE,
+            .flags = target->base.flags,
+            .location = target->base.location
+        },
+        .receiver = target->receiver,
+        .call_operator_loc = target->call_operator_loc,
+        .name = target->name,
+        .message_loc = target->message_loc
+    };
+
+    // Here we're going to free the target, since it is no longer necessary.
+    // However, we don't want to call `pm_node_destroy` because we want to keep
+    // around all of its children since we just reused them.
+    free(target);
+
+    return node;
+}
+
+/**
+ * Allocate and initialize a new IndexTargetNode node from an existing call
+ * node.
+ */
+static pm_index_target_node_t *
+pm_index_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
+    pm_index_target_node_t *node = PM_ALLOC_NODE(parser, pm_index_target_node_t);
+
+    *node = (pm_index_target_node_t) {
+        {
+            .type = PM_INDEX_TARGET_NODE,
+            .flags = target->base.flags,
+            .location = target->base.location
+        },
+        .receiver = target->receiver,
+        .opening_loc = target->opening_loc,
+        .arguments = target->arguments,
+        .closing_loc = target->closing_loc,
+        .block = target->block
+    };
+
+    // Here we're going to free the target, since it is no longer necessary.
+    // However, we don't want to call `pm_node_destroy` because we want to keep
+    // around all of its children since we just reused them.
+    free(target);
+
+    return node;
+}
+
+/**
  * Allocate and initialize a new CapturePatternNode node.
  */
 static pm_capture_pattern_node_t *
@@ -7315,57 +7372,57 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
     switch (peek(parser)) {
         case '\\': {
             parser->current.end++;
-            pm_buffer_append_byte(buffer, '\\');
+            escape_write_byte_encoded(parser, buffer, escape_byte('\\', flags));
             return;
         }
         case '\'': {
             parser->current.end++;
-            pm_buffer_append_byte(buffer, '\'');
+            escape_write_byte_encoded(parser, buffer, escape_byte('\'', flags));
             return;
         }
         case 'a': {
             parser->current.end++;
-            pm_buffer_append_byte(buffer, '\a');
+            escape_write_byte_encoded(parser, buffer, escape_byte('\a', flags));
             return;
         }
         case 'b': {
             parser->current.end++;
-            pm_buffer_append_byte(buffer, '\b');
+            escape_write_byte_encoded(parser, buffer, escape_byte('\b', flags));
             return;
         }
         case 'e': {
             parser->current.end++;
-            pm_buffer_append_byte(buffer, '\033');
+            escape_write_byte_encoded(parser, buffer, escape_byte('\033', flags));
             return;
         }
         case 'f': {
             parser->current.end++;
-            pm_buffer_append_byte(buffer, '\f');
+            escape_write_byte_encoded(parser, buffer, escape_byte('\f', flags));
             return;
         }
         case 'n': {
             parser->current.end++;
-            pm_buffer_append_byte(buffer, '\n');
+            escape_write_byte_encoded(parser, buffer, escape_byte('\n', flags));
             return;
         }
         case 'r': {
             parser->current.end++;
-            pm_buffer_append_byte(buffer, '\r');
+            escape_write_byte_encoded(parser, buffer, escape_byte('\r', flags));
             return;
         }
         case 's': {
             parser->current.end++;
-            pm_buffer_append_byte(buffer, ' ');
+            escape_write_byte_encoded(parser, buffer, escape_byte(' ', flags));
             return;
         }
         case 't': {
             parser->current.end++;
-            pm_buffer_append_byte(buffer, '\t');
+            escape_write_byte_encoded(parser, buffer, escape_byte('\t', flags));
             return;
         }
         case 'v': {
             parser->current.end++;
-            pm_buffer_append_byte(buffer, '\v');
+            escape_write_byte_encoded(parser, buffer, escape_byte('\v', flags));
             return;
         }
         case '0': case '1': case '2': case '3': case '4': case '5': case '6': case '7': {
@@ -7599,7 +7656,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
         case '\r': {
             if (peek_offset(parser, 1) == '\n') {
                 parser->current.end += 2;
-                pm_buffer_append_byte(buffer, '\n');
+                escape_write_byte_encoded(parser, buffer, escape_byte('\n', flags));
                 return;
             }
         }
@@ -9478,7 +9535,9 @@ parser_lex(pm_parser_t *parser) {
                         case '\r':
                             parser->current.end++;
                             if (peek(parser) != '\n') {
-                                pm_token_buffer_push(&token_buffer, '\\');
+                                if (lex_mode->as.regexp.terminator != '\r') {
+                                    pm_token_buffer_push(&token_buffer, '\\');
+                                }
                                 pm_token_buffer_push(&token_buffer, '\r');
                                 break;
                             }
@@ -9506,7 +9565,20 @@ parser_lex(pm_parser_t *parser) {
                             escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_REGEXP);
                             break;
                         default:
-                            if (lex_mode->as.regexp.terminator == '/' && peeked == '/') {
+                            if (lex_mode->as.regexp.terminator == peeked) {
+                                // Some characters when they are used as the
+                                // terminator also receive an escape. They are
+                                // enumerated here.
+                                switch (peeked) {
+                                    case '$': case ')': case '*': case '+':
+                                    case '.': case '>': case '?': case ']':
+                                    case '^': case '|': case '}':
+                                        pm_token_buffer_push(&token_buffer, '\\');
+                                        break;
+                                    default:
+                                        break;
+                                }
+
                                 pm_token_buffer_push(&token_buffer, peeked);
                                 parser->current.end++;
                                 break;
@@ -10128,7 +10200,7 @@ typedef struct {
 #define BINDING_POWER_ASSIGNMENT { PM_BINDING_POWER_UNARY, PM_BINDING_POWER_ASSIGNMENT, true, false }
 #define LEFT_ASSOCIATIVE(precedence) { precedence, precedence + 1, true, false }
 #define RIGHT_ASSOCIATIVE(precedence) { precedence, precedence, true, false }
-#define NON_ASSOCIATIVE(precedence) { precedence + 1, precedence + 1, true, true }
+#define NON_ASSOCIATIVE(precedence) { precedence, precedence + 1, true, true }
 #define RIGHT_ASSOCIATIVE_UNARY(precedence) { precedence, precedence, false, false }
 
 pm_binding_powers_t pm_binding_powers[PM_TOKEN_MAXIMUM] = {
@@ -10618,23 +10690,15 @@ parse_target(pm_parser_t *parser, pm_node_t *target) {
 
                 if (*call->message_loc.start == '_' || parser->encoding->alnum_char(call->message_loc.start, call->message_loc.end - call->message_loc.start)) {
                     parse_write_name(parser, &call->name);
-                    return (pm_node_t *) call;
+                    return (pm_node_t *) pm_call_target_node_create(parser, call);
                 }
             }
 
             // If there is no call operator and the message is "[]" then this is
             // an aref expression, and we can transform it into an aset
             // expression.
-            if (
-                (call->call_operator_loc.start == NULL) &&
-                (call->message_loc.start != NULL) &&
-                (call->message_loc.start[0] == '[') &&
-                (call->message_loc.end[-1] == ']') &&
-                (call->block == NULL)
-            ) {
-                // Replace the name with "[]=".
-                call->name = pm_parser_constant_id_constant(parser, "[]=", 3);
-                return target;
+            if (pm_call_node_index_p(call)) {
+                return (pm_node_t *) pm_index_target_node_create(parser, call);
             }
         }
         /* fallthrough */
@@ -12494,6 +12558,34 @@ parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_s
         content = parser->current;
         unescaped = parser->current_string;
         parser_lex(parser);
+
+        // If we have two string contents in a row, then the content of this
+        // symbol is split because of heredoc contents. This looks like:
+        //
+        // <<A; :'a
+        // A
+        // b'
+        //
+        // In this case, the best way we have to represent this is as an
+        // interpolated string node, so that's what we'll do here.
+        if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
+            pm_node_list_t parts = { 0 };
+            pm_token_t bounds = not_provided(parser);
+
+            pm_node_t *part = (pm_node_t *) pm_string_node_create_unescaped(parser, &bounds, &content, &bounds, &unescaped);
+            pm_node_list_append(&parts, part);
+
+            part = (pm_node_t *) pm_string_node_create_unescaped(parser, &bounds, &parser->current, &bounds, &parser->current_string);
+            pm_node_list_append(&parts, part);
+
+            if (next_state != PM_LEX_STATE_NONE) {
+                lex_state_set(parser, next_state);
+            }
+
+            parser_lex(parser);
+            expect1(parser, PM_TOKEN_STRING_END, PM_ERR_SYMBOL_TERM_DYNAMIC);
+            return (pm_node_t *) pm_interpolated_symbol_node_create(parser, &opening, &parts, &parser->previous);
+        }
     } else {
         content = (pm_token_t) { .type = PM_TOKEN_STRING_CONTENT, .start = parser->previous.end, .end = parser->previous.end };
         pm_string_shared_init(&unescaped, content.start, content.end);
@@ -13520,7 +13612,8 @@ parse_strings(pm_parser_t *parser, pm_node_t *current) {
         pm_token_t opening = parser->current;
         parser_lex(parser);
 
-        if (accept1(parser, PM_TOKEN_STRING_END)) {
+        if (match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
+            expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_LITERAL_TERM);
             // If we get here, then we have an end immediately after a
             // start. In that case we'll create an empty content token and
             // return an uninterpolated string.
@@ -16967,11 +17060,18 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
         current_binding_powers.binary
      ) {
         node = parse_expression_infix(parser, node, binding_power, current_binding_powers.right, accepts_command_call);
-        if (
-            current_binding_powers.nonassoc &&
-            current_binding_powers.right <= pm_binding_powers[parser->current.type].left
-        ) {
-            break;
+        if (current_binding_powers.nonassoc) {
+            bool endless_range_p = PM_NODE_TYPE_P(node, PM_RANGE_NODE) && ((pm_range_node_t *) node)->right == NULL;
+            pm_binding_power_t left = endless_range_p ? PM_BINDING_POWER_TERM : current_binding_powers.left;
+            if (
+                left <= pm_binding_powers[parser->current.type].left ||
+                // Exceptionally to operator precedences, '1.. & 2' is rejected.
+                // '1.. || 2' is also an exception, but it is handled by the lexer.
+                // (Here, parser->current is PM_TOKEN_PIPE, not PM_TOKEN_PIPE_PIPE).
+                (endless_range_p && match1(parser, PM_TOKEN_AMPERSAND))
+            ) {
+                break;
+            }
         }
         if (accepts_command_call) {
             // A command-style method call is only accepted on method chains.

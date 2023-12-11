@@ -147,6 +147,43 @@ class TestCall < Test::Unit::TestCase
     assert_equal Hash, f(*[], **o).class
   end
 
+  def test_kwsplat_block_order
+    o = Object.new
+    ary = []
+    o.define_singleton_method(:to_a) {ary << :to_a; []}
+    o.define_singleton_method(:to_hash) {ary << :to_hash; {}}
+    o.define_singleton_method(:to_proc) {ary << :to_proc; lambda{}}
+
+    def self.t(...) end
+
+    t(**o, &o)
+    assert_equal([:to_hash, :to_proc], ary)
+
+    ary.clear
+    t(*o, **o, &o)
+    assert_equal([:to_a, :to_hash, :to_proc], ary)
+  end
+
+  def test_kwsplat_block_order_super
+    def self.t(splat)
+      o = Object.new
+      ary = []
+      o.define_singleton_method(:to_a) {ary << :to_a; []}
+      o.define_singleton_method(:to_hash) {ary << :to_hash; {}}
+      o.define_singleton_method(:to_proc) {ary << :to_proc; lambda{}}
+      if splat
+        super(*o, **o, &o)
+      else
+        super(**o, &o)
+      end
+      ary
+    end
+    extend Module.new{def t(...) end}
+
+    assert_equal([:to_hash, :to_proc], t(false))
+    assert_equal([:to_a, :to_hash, :to_proc], t(true))
+  end
+
   OVER_STACK_LEN = (ENV['RUBY_OVER_STACK_LEN'] || 150).to_i # Greater than VM_ARGC_STACK_MAX
   OVER_STACK_ARGV = OVER_STACK_LEN.times.to_a.freeze
 

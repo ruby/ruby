@@ -1,7 +1,10 @@
 # frozen_string_literal: false
 require 'envutil'
+require_relative "helper"
 
 class TestThreadInstrumentation < Test::Unit::TestCase
+  include ThreadInstrumentation::TestHelper
+
   def setup
     pend("No windows support") if /mswin|mingw|bccwin/ =~ RUBY_PLATFORM
 
@@ -131,6 +134,53 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     assert_equal %i(started ready resumed suspended ready resumed suspended exited), timeline
   end
 
+  def test_blocking_on_ractor
+    assert_ractor(<<-"RUBY", require_relative: "helper", require: "-test-/thread/instrumentation")
+      include ThreadInstrumentation::TestHelper
+
+      ractor = Ractor.new {
+        Ractor.receive # wait until woke
+        Thread.current
+      }
+
+      # Wait for the main thread to block, then wake the ractor
+      Thread.new do
+        while Thread.main.status != "sleep"
+          Thread.pass
+        end
+        ractor.send true
+      end
+
+      full_timeline = record do
+        ractor.take
+      end
+
+      timeline = timeline_for(Thread.current, full_timeline)
+      assert_consistent_timeline(timeline)
+      assert_equal %i(suspended ready resumed), timeline
+    RUBY
+  end
+
+  def test_sleeping_inside_ractor
+    assert_ractor(<<-"RUBY", require_relative: "helper", require: "-test-/thread/instrumentation")
+      include ThreadInstrumentation::TestHelper
+
+      thread = nil
+
+      full_timeline = record do
+        thread = Ractor.new{
+          sleep 0.1
+          Thread.current
+        }.take
+        sleep 0.1
+      end
+
+      timeline = timeline_for(thread, full_timeline)
+      assert_consistent_timeline(timeline)
+      assert_equal %i(started ready resumed suspended ready resumed suspended exited), timeline
+    RUBY
+  end
+
   def test_thread_blocked_forever_on_mutex
     mutex = Mutex.new
     mutex.lock
@@ -204,52 +254,6 @@ class TestThreadInstrumentation < Test::Unit::TestCase
   end
 
   private
-
-  def record
-    Bug::ThreadInstrumentation.register_callback(!ENV["GVL_DEBUG"])
-    yield
-  ensure
-    timeline = Bug::ThreadInstrumentation.unregister_callback
-    if $!
-      raise
-    else
-      return timeline
-    end
-  end
-
-  def assert_consistent_timeline(events)
-    refute_predicate events, :empty?
-
-    previous_event = nil
-    events.each do |event|
-      refute_equal :exited, previous_event, "`exited` must be the final event: #{events.inspect}"
-      case event
-      when :started
-        assert_nil previous_event, "`started` must be the first event: #{events.inspect}"
-      when :ready
-        unless previous_event.nil?
-          assert %i(started suspended).include?(previous_event), "`ready` must be preceded by `started` or `suspended`: #{events.inspect}"
-        end
-      when :resumed
-        unless previous_event.nil?
-          assert_equal :ready, previous_event, "`resumed` must be preceded by `ready`: #{events.inspect}"
-        end
-      when :suspended
-        unless previous_event.nil?
-          assert_equal :resumed, previous_event, "`suspended` must be preceded by `resumed`: #{events.inspect}"
-        end
-      when :exited
-        unless previous_event.nil?
-          assert %i(resumed suspended).include?(previous_event), "`exited` must be preceded by `resumed` or `suspended`: #{events.inspect}"
-        end
-      end
-      previous_event = event
-    end
-  end
-
-  def timeline_for(thread, timeline)
-    timeline.select { |t, _| t == thread }.map(&:last)
-  end
 
   def fib(n = 30)
     return n if n <= 1

@@ -172,6 +172,7 @@ The following default gems are updated.
 * drb 2.2.0
 * english 0.8.0
 * erb 4.0.3
+* error_highlight 0.6.0
 * etc 1.4.3.dev.1
 * fcntl 1.1.0
 * fiddle 1.1.2
@@ -235,7 +236,7 @@ The following bundled gems are updated.
 * net-smtp 0.4.0
 * rbs 3.3.2
 * typeprof 0.21.8
-* debug 1.8.0
+* debug 1.9.0
 
 See GitHub releases like [Logger](https://github.com/ruby/logger/releases) or
 changelog for details of the default gems or bundled gems.
