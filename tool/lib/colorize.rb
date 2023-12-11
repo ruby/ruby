@@ -53,7 +53,7 @@ class Colorize
 
   def resolve_color(color = @color, seen = {}, colors = nil)
     return unless @colors
-    color.gsub(/\b[a-z][\w ]+/) do |n|
+    color.to_s.gsub(/\b[a-z][\w ]+/) do |n|
       n.gsub!(/\W+/, "_")
       n.downcase!
       c = seen[n] and next c
