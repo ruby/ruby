@@ -1852,6 +1852,46 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     PM_POP_IF_POPPED;
 }
 
+// This is exactly the same as add_ensure_iseq, except it compiled
+// the node as a Prism node, and not a CRuby node
+static void
+pm_add_ensure_iseq(LINK_ANCHOR *const ret, rb_iseq_t *iseq, int is_return, const uint8_t *src, pm_scope_node_t *scope_node)
+{
+    assert(can_add_ensure_iseq(iseq));
+
+    struct iseq_compile_data_ensure_node_stack *enlp =
+        ISEQ_COMPILE_DATA(iseq)->ensure_node_stack;
+    struct iseq_compile_data_ensure_node_stack *prev_enlp = enlp;
+    DECL_ANCHOR(ensure);
+
+    INIT_ANCHOR(ensure);
+    while (enlp) {
+        if (enlp->erange != NULL) {
+            DECL_ANCHOR(ensure_part);
+            LABEL *lstart = NEW_LABEL(0);
+            LABEL *lend = NEW_LABEL(0);
+            INIT_ANCHOR(ensure_part);
+
+            add_ensure_range(iseq, enlp->erange, lstart, lend);
+
+            ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = enlp->prev;
+            ADD_LABEL(ensure_part, lstart);
+            bool popped = true;
+            PM_COMPILE_INTO_ANCHOR(ensure_part, (pm_node_t *)enlp->ensure_node);
+            ADD_LABEL(ensure_part, lend);
+            ADD_SEQ(ensure, ensure_part);
+        }
+        else {
+            if (!is_return) {
+                break;
+            }
+        }
+        enlp = enlp->prev;
+    }
+    ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = prev_enlp;
+    ADD_SEQ(ret, ensure);
+}
+
 /*
  * Compiles a prism node into instruction sequences
  *
@@ -2136,7 +2176,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             er.begin = estart;
             er.end = eend;
             er.next = 0;
-            push_ensure_entry(iseq, &enl, &er, (void *)&begin_node->ensure_clause);
+            push_ensure_entry(iseq, &enl, &er, (void *)begin_node->ensure_clause);
 
             pm_scope_node_t next_scope_node;
             pm_scope_node_init((pm_node_t *)begin_node->ensure_clause, &next_scope_node, scope_node, parser);
@@ -3705,7 +3745,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             ADD_LABEL(ret, splabel);
 
-            add_ensure_iseq(ret, iseq, 0);
+            pm_add_ensure_iseq(ret, iseq, 0, src, scope_node);
 
             ADD_ADJUST(ret, &dummy_line_node, ISEQ_COMPILE_DATA(iseq)->redo_label);
             ADD_INSNL(ret, &dummy_line_node, jump, ISEQ_COMPILE_DATA(iseq)->start_label);
@@ -3726,7 +3766,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PM_PUTNIL;
             }
 
-            add_ensure_iseq(ret, iseq, 0);
+            pm_add_ensure_iseq(ret, iseq, 0, src, scope_node);
             ADD_INSNL(ret, &dummy_line_node, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
             ADD_ADJUST_RESTORE(ret, splabel);
             splabel->unremovable = FALSE;
@@ -3935,7 +3975,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             ADD_ADJUST(ret, &dummy_line_node, ISEQ_COMPILE_DATA(iseq)->redo_label);
 
-            add_ensure_iseq(ret, iseq, 0);
+            pm_add_ensure_iseq(ret, iseq, 0, src, scope_node);
             ADD_INSNL(ret, &dummy_line_node, jump, ISEQ_COMPILE_DATA(iseq)->redo_label);
             ADD_ADJUST_RESTORE(ret, splabel);
             PM_PUTNIL_UNLESS_POPPED;
@@ -3944,7 +3984,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             LABEL *splabel = NEW_LABEL(0);
 
             ADD_LABEL(ret, splabel);
-            add_ensure_iseq(ret, iseq, 0);
+            pm_add_ensure_iseq(ret, iseq, 0, src, scope_node);
             ADD_ADJUST(ret, &dummy_line_node, ISEQ_COMPILE_DATA(iseq)->start_label);
             ADD_INSNL(ret, &dummy_line_node, jump, ISEQ_COMPILE_DATA(iseq)->start_label);
             ADD_ADJUST_RESTORE(ret, splabel);
@@ -4114,7 +4154,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
 
             if (type == ISEQ_TYPE_METHOD && can_add_ensure_iseq(iseq)) {
-                add_ensure_iseq(ret, iseq, 1);
+                pm_add_ensure_iseq(ret, iseq, 1, src, scope_node);
                 ADD_TRACE(ret, RUBY_EVENT_RETURN);
                 ADD_INSN(ret, &dummy_line_node, leave);
                 ADD_ADJUST_RESTORE(ret, splabel);

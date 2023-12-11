@@ -847,6 +847,15 @@ module Prism
           end
         end
       CODE
+      assert_prism_eval(<<-CODE)
+        def self.prism_test_ensure_node
+          begin
+          ensure
+          end
+          return
+        end
+        prism_test_ensure_node
+      CODE
     end
 
     def test_NextNode
