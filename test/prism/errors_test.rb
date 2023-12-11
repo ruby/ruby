@@ -164,6 +164,15 @@ module Prism
       assert_equal expr.closing, ""
     end
 
+    def test_unterminated_empty_string
+      expr = expression('"')
+      assert_errors expr, '"', [
+        ["expected a closing delimiter for the string literal", 1..1]
+      ]
+      assert_equal expr.unescaped, ""
+      assert_equal expr.closing, ""
+    end
+
     def test_incomplete_instance_var_string
       assert_errors expression('%@#@@#'), '%@#@@#', [
         ["incomplete instance variable", 4..5],

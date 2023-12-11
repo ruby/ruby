@@ -13520,7 +13520,8 @@ parse_strings(pm_parser_t *parser, pm_node_t *current) {
         pm_token_t opening = parser->current;
         parser_lex(parser);
 
-        if (accept1(parser, PM_TOKEN_STRING_END)) {
+        if (match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
+            expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_LITERAL_TERM);
             // If we get here, then we have an end immediately after a
             // start. In that case we'll create an empty content token and
             // return an uninterpolated string.
