@@ -357,18 +357,21 @@ EOM
 
   def digest(entry) # :nodoc:
     algorithms = if @checksums
-      @checksums.keys
-    else
-      [Gem::Security::DIGEST_NAME].compact
+      @checksums.to_h {|algorithm, _| [algorithm, Gem::Security.create_digest(algorithm)] }
+    elsif Gem::Security::DIGEST_NAME
+      { Gem::Security::DIGEST_NAME => Gem::Security.create_digest(Gem::Security::DIGEST_NAME) }
     end
 
-    algorithms.each do |algorithm|
-      digester = Gem::Security.create_digest(algorithm)
+    return @digests if algorithms.nil? || algorithms.empty?
 
-      digester << entry.readpartial(16_384) until entry.eof?
+    buf = String.new(capacity: 16_384, encoding: Encoding::BINARY)
+    until entry.eof?
+      entry.readpartial(16_384, buf)
+      algorithms.each_value {|digester| digester << buf }
+    end
+    entry.rewind
 
-      entry.rewind
-
+    algorithms.each do |algorithm, digester|
       @digests[algorithm][entry.full_name] = digester
     end
 
@@ -437,8 +440,6 @@ EOM
 
         FileUtils.rm_rf destination
 
-        mkdir_options = {}
-        mkdir_options[:mode] = dir_mode ? 0o755 : (entry.header.mode if entry.directory?)
         mkdir =
           if entry.directory?
             destination
@@ -447,7 +448,7 @@ EOM
           end
 
         unless directories.include?(mkdir)
-          FileUtils.mkdir_p mkdir, **mkdir_options
+          FileUtils.mkdir_p mkdir, mode: dir_mode ? 0o755 : (entry.header.mode if entry.directory?)
           directories << mkdir
         end
 
@@ -707,6 +708,7 @@ EOM
 
   def verify_gz(entry) # :nodoc:
     Zlib::GzipReader.wrap entry do |gzio|
+      # TODO: read into a buffer once zlib supports it
       gzio.read 16_384 until gzio.eof? # gzip checksum verification
     end
   rescue Zlib::GzipFile::Error => e
