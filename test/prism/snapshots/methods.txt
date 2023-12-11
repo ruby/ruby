@@ -1297,6 +1297,7 @@
         │   │           │   ├── flags: contains_keyword_splat
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ KeywordHashNode (location: (139,11)-(139,30))
+        │   │           │           ├── flags: ∅
         │   │           │           └── elements: (length: 3)
         │   │           │               ├── @ AssocSplatNode (location: (139,11)-(139,16))
         │   │           │               │   ├── value:

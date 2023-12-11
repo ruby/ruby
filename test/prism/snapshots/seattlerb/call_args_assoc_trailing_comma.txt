@@ -17,6 +17,7 @@
             │       ├── @ IntegerNode (location: (1,2)-(1,3))
             │       │   └── flags: decimal
             │       └── @ KeywordHashNode (location: (1,5)-(1,9))
+            │           ├── flags: static_keys
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (1,5)-(1,9))
             │                   ├── key:

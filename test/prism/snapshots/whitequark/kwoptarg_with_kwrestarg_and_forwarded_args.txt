@@ -40,6 +40,7 @@
             │           │   ├── flags: contains_keyword_splat
             │           │   └── arguments: (length: 1)
             │           │       └── @ KeywordHashNode (location: (1,21)-(1,23))
+            │           │           ├── flags: ∅
             │           │           └── elements: (length: 1)
             │           │               └── @ AssocSplatNode (location: (1,21)-(1,23))
             │           │                   ├── value: ∅

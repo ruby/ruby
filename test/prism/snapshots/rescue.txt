@@ -343,6 +343,7 @@
             │   │           │   ├── flags: ∅
             │   │           │   └── arguments: (length: 1)
             │   │           │       └── @ KeywordHashNode (location: (29,4)-(29,6))
+            │   │           │           ├── flags: static_keys
             │   │           │           └── elements: (length: 1)
             │   │           │               └── @ AssocNode (location: (29,4)-(29,6))
             │   │           │                   ├── key:
