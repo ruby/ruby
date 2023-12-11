@@ -4328,6 +4328,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
         }
 
+        // When we have a `...` as the keyword_rest, it's a forwarding_parameter_node and
+        // we need to leave space for 2 more locals on the locals table (`*` and `&`)
+        if (parameters_node && parameters_node->keyword_rest &&
+                PM_NODE_TYPE_P(parameters_node->keyword_rest, PM_FORWARDING_PARAMETER_NODE)) {
+            table_size += 2;
+        }
+
         // We can create local_table_for_iseq with the correct size
         VALUE idtmp = 0;
         rb_ast_id_table_t *local_table_for_iseq = ALLOCV(idtmp, sizeof(rb_ast_id_table_t) + table_size * sizeof(ID));
@@ -4549,24 +4556,54 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
             //                                                             ^^^
             if (parameters_node->keyword_rest) {
-                if (PM_NODE_TYPE_P(parameters_node->keyword_rest, PM_NO_KEYWORDS_PARAMETER_NODE)) {
-                    body->param.flags.accepts_no_kwarg = true;
-                }
-                else {
-                    if (body->param.flags.has_kw) {
-                    }
-                    else {
-                        body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
-                    }
+                switch (PM_NODE_TYPE(parameters_node->keyword_rest)) {
+                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **nil, &n)
+                  //                                                             ^^^^^
+                  case PM_NO_KEYWORDS_PARAMETER_NODE: {
 
-                    keyword->rest_start = local_index;
-                    body->param.flags.has_kwrest = true;
+                      body->param.flags.accepts_no_kwarg = true;
+                      break;
+                  }
+                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+                  //                                                             ^^^
+                  case PM_KEYWORD_REST_PARAMETER_NODE: {
+                        if (!body->param.flags.has_kw) {
+                            body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
+                        }
 
-                    pm_constant_id_t constant_id = ((pm_keyword_rest_parameter_node_t *)parameters_node->keyword_rest)->name;
-                    if (constant_id) {
-                        pm_insert_local_index(constant_id, local_index, index_lookup_table, local_table_for_iseq, scope_node);
-                        local_index++;
-                    }
+                        keyword->rest_start = local_index;
+                        body->param.flags.has_kwrest = true;
+
+                        pm_constant_id_t constant_id = ((pm_keyword_rest_parameter_node_t *)parameters_node->keyword_rest)->name;
+                        if (constant_id) {
+                            pm_insert_local_index(constant_id, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                            local_index++;
+                        }
+                        break;
+                  }
+                  // def foo(...)
+                  //         ^^^
+                  case PM_FORWARDING_PARAMETER_NODE: {
+                      body->param.rest_start = local_index;
+                      body->param.flags.has_rest = true;
+                      ID local = idMULT;
+                      local_table_for_iseq->ids[local_index] = local;
+                      local_index++;
+
+                      body->param.block_start = local_index;
+                      body->param.flags.has_block = true;
+                      local = idAnd;
+                      local_table_for_iseq->ids[local_index] = local;
+                      local_index++;
+
+                      local = idDot3;
+                      local_table_for_iseq->ids[local_index] = local;
+                      local_index++;
+                      break;
+                  }
+                  default: {
+                      rb_raise(rb_eArgError, "node type %s not expected as keyword_rest", pm_node_type_to_str(PM_NODE_TYPE(parameters_node->keyword_rest)));
+                  }
                 }
             }
 
