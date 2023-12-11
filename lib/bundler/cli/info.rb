@@ -25,15 +25,8 @@ module Bundler
 
     private
 
-    def spec_for_gem(gem_name)
-      spec = Bundler.definition.specs.find {|s| s.name == gem_name }
-      spec || default_gem_spec(gem_name) || Bundler::CLI::Common.select_spec(gem_name, :regex_match)
-    end
-
-    def default_gem_spec(gem_name)
-      return unless Gem::Specification.respond_to?(:find_all_by_name)
-      gem_spec = Gem::Specification.find_all_by_name(gem_name).last
-      gem_spec if gem_spec&.default_gem?
+    def spec_for_gem(name)
+      Bundler::CLI::Common.select_spec(name, :regex_match)
     end
 
     def print_gem_version(spec)

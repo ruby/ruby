@@ -57,6 +57,9 @@ module Bundler
         specs << spec if regexp && spec.name =~ regexp
       end
 
+      default_spec = default_gem_spec(name)
+      specs << default_spec if default_spec
+
       case specs.count
       when 0
         dep_in_other_group = Bundler.definition.current_dependencies.find {|dep|dep.name == name }
@@ -73,6 +76,12 @@ module Bundler
       end
     rescue RegexpError
       raise GemNotFound, gem_not_found_message(name, Bundler.definition.dependencies)
+    end
+
+    def self.default_gem_spec(name)
+      return unless Gem::Specification.respond_to?(:find_all_by_name)
+      gem_spec = Gem::Specification.find_all_by_name(name).last
+      gem_spec if gem_spec&.default_gem?
     end
 
     def self.ask_for_spec_from(specs)
