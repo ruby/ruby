@@ -759,7 +759,7 @@ nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
  *   Complex(9, -4).real  #=> 9
  *
  * If +self+ was created with
- * {polar coordinated}[rdoc-ref:Complex@Polar+Coordinates], the returned value
+ * {polar coordinates}[rdoc-ref:Complex@Polar+Coordinates], the returned value
  * is computed, and may be inexact:
  *
  *   Complex.polar(1, Math::PI/4).real # => 0.7071067811865476 # Square root of 2.
@@ -782,7 +782,7 @@ rb_complex_real(VALUE self)
  *    Complex(9, -4).imaginary  #=> -4
  *
  * If +self+ was created with
- * {polar coordinated}[rdoc-ref:Complex@Polar+Coordinates], the returned value
+ * {polar coordinates}[rdoc-ref:Complex@Polar+Coordinates], the returned value
  * is computed, and may be inexact:
  *
  *   Complex.polar(1, Math::PI/4).imag # => 0.7071067811865476 # Square root of 2.
