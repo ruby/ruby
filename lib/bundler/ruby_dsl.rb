@@ -32,8 +32,10 @@ module Bundler
     #     ruby   2.5.1# close comment and extra spaces doesn't confuse
     #
     # Intentionally does not support `3.2.1@gemset` since rvm recommends using .ruby-gemset instead
+    #
+    # Loads the file relative to the dirname of the Gemfile itself.
     def normalize_ruby_file(filename)
-      file_content = Bundler.read_file(Bundler.root.join(filename))
+      file_content = Bundler.read_file(gemfile.dirname.join(filename))
       # match "ruby-3.2.2" or "ruby   3.2.2" capturing version string up to the first space or comment
       if /^ruby(-|\s+)([^\s#]+)/.match(file_content)
         $2
