@@ -364,6 +364,11 @@ flags:
       - name: HEXADECIMAL
         comment: "0x prefix"
     comment: Flags for integer nodes that correspond to the base of the integer.
+  - name: KeywordHashNodeFlags
+    values:
+      - name: STATIC_KEYS
+        comment: "a keyword hash which only has `AssocNode` elements all with static literal keys, which means the elements can be treated as keyword arguments"
+    comment: Flags for keyword hash nodes.
   - name: LoopFlags
     values:
       - name: BEGIN_MODIFIER
@@ -1821,6 +1826,9 @@ nodes:
           ^^^^^^^^^^^^^^^^
   - name: KeywordHashNode
     fields:
+      - name: flags
+        type: flags
+        kind: KeywordHashNodeFlags
       - name: elements
         type: node[]
     comment: |
