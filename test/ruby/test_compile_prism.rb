@@ -502,6 +502,9 @@ module Prism
       assert_prism_eval("a, (b, c) = [1, 2, 3]; b")
       assert_prism_eval("a, (b, c) = [1, 2, 3]; c")
       assert_prism_eval("a, (b, c) = [1, [2, 3]]; c")
+      assert_prism_eval("a, (b, *c) = [1, [2, 3]]; c")
+      assert_prism_eval("a, (b, *c) = 1, [2, 3]; c")
+      assert_prism_eval("a, (b, *) = 1, [2, 3]; b")
       assert_prism_eval("(a, (b, c, d, e), f, g), h = [1, [2, 3]], 4, 5, [6, 7]; c")
     end
 
