@@ -24,6 +24,7 @@
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/rational.h"
+#include "internal/string.h"
 #include "ruby_assert.h"
 
 #define ZERO INT2FIX(0)
@@ -2101,23 +2102,14 @@ string_to_c_strict(VALUE self, int raise)
 
     rb_must_asciicompat(self);
 
-    s = RSTRING_PTR(self);
-
-    if (!s || memchr(s, '\0', RSTRING_LEN(self))) {
-        if (!raise) return Qnil;
-        rb_raise(rb_eArgError, "string contains null byte");
+    if (raise) {
+        s = StringValueCStr(self);
+    }
+    else if (!(s = rb_str_to_cstr(self))) {
+        return Qnil;
     }
 
-    if (s && s[RSTRING_LEN(self)]) {
-        rb_str_modify(self);
-        s = RSTRING_PTR(self);
-        s[RSTRING_LEN(self)] = '\0';
-    }
-
-    if (!s)
-        s = (char *)"";
-
-    if (!parse_comp(s, 1, &num)) {
+    if (!parse_comp(s, TRUE, &num)) {
         if (!raise) return Qnil;
         rb_raise(rb_eArgError, "invalid value for convert(): %+"PRIsVALUE,
                  self);
@@ -2158,23 +2150,11 @@ string_to_c_strict(VALUE self, int raise)
 static VALUE
 string_to_c(VALUE self)
 {
-    char *s;
     VALUE num;
 
     rb_must_asciicompat(self);
 
-    s = RSTRING_PTR(self);
-
-    if (s && s[RSTRING_LEN(self)]) {
-        rb_str_modify(self);
-        s = RSTRING_PTR(self);
-        s[RSTRING_LEN(self)] = '\0';
-    }
-
-    if (!s)
-        s = (char *)"";
-
-    (void)parse_comp(s, 0, &num);
+    (void)parse_comp(rb_str_fill_terminator(self, 1), FALSE, &num);
 
     return num;
 }
