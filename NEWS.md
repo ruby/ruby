@@ -236,7 +236,7 @@ The following bundled gems are updated.
 * net-smtp 0.4.0
 * rbs 3.3.2
 * typeprof 0.21.8
-* debug 1.8.0
+* debug 1.9.0
 
 See GitHub releases like [Logger](https://github.com/ruby/logger/releases) or
 changelog for details of the default gems or bundled gems.
