@@ -1281,6 +1281,10 @@ end
 
   describe "with gemified standard libraries" do
     it "does not load Digest", :ruby_repo do
+      build_repo2 do
+        build_gem "digest"
+      end
+
       build_git "bar", gemspec: false do |s|
         s.write "lib/bar/version.rb", %(BAR_VERSION = '1.0')
         s.write "bar.gemspec", <<-G
@@ -1299,7 +1303,7 @@ end
       end
 
       gemfile <<-G
-        source "#{file_uri_for(gem_repo1)}"
+        source "#{file_uri_for(gem_repo2)}"
         gem "bar", :git => "#{lib_path("bar-1.0")}"
       G
 

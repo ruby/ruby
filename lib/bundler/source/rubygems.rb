@@ -225,11 +225,7 @@ module Bundler
         cached_path = cached_path(spec)
         if cached_path.nil?
           remote_spec = remote_specs.search(spec).first
-          if remote_spec
-            cached_path = fetch_gem(remote_spec)
-          else
-            Bundler.ui.warn "#{spec.full_name} is built in to Ruby, and can't be cached because your Gemfile doesn't have any sources that contain it."
-          end
+          cached_path = fetch_gem(remote_spec)
         end
         cached_path
       end

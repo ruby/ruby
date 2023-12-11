@@ -509,7 +509,7 @@ module Bundler
     end
 
     def all_specs
-      Gem::Specification.stubs.map do |stub|
+      Gem::Specification.stubs.reject(&:default_gem?).map do |stub|
         StubSpecification.from_stub(stub)
       end
     end
