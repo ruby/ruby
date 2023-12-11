@@ -12543,6 +12543,34 @@ parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_s
         content = parser->current;
         unescaped = parser->current_string;
         parser_lex(parser);
+
+        // If we have two string contents in a row, then the content of this
+        // symbol is split because of heredoc contents. This looks like:
+        //
+        // <<A; :'a
+        // A
+        // b'
+        //
+        // In this case, the best way we have to represent this is as an
+        // interpolated string node, so that's what we'll do here.
+        if (match1(parser, PM_TOKEN_STRING_CONTENT)) {
+            pm_node_list_t parts = { 0 };
+            pm_token_t bounds = not_provided(parser);
+
+            pm_node_t *part = (pm_node_t *) pm_string_node_create_unescaped(parser, &bounds, &content, &bounds, &unescaped);
+            pm_node_list_append(&parts, part);
+
+            part = (pm_node_t *) pm_string_node_create_unescaped(parser, &bounds, &parser->current, &bounds, &parser->current_string);
+            pm_node_list_append(&parts, part);
+
+            if (next_state != PM_LEX_STATE_NONE) {
+                lex_state_set(parser, next_state);
+            }
+
+            parser_lex(parser);
+            expect1(parser, PM_TOKEN_STRING_END, PM_ERR_SYMBOL_TERM_DYNAMIC);
+            return (pm_node_t *) pm_interpolated_symbol_node_create(parser, &opening, &parts, &parser->previous);
+        }
     } else {
         content = (pm_token_t) { .type = PM_TOKEN_STRING_CONTENT, .start = parser->previous.end, .end = parser->previous.end };
         pm_string_shared_init(&unescaped, content.start, content.end);
