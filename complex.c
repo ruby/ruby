@@ -751,7 +751,7 @@ nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *   real -> numweix
+ *   real -> numeric
  *
  * Returns the real value for +self+:
  *
