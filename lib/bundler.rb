@@ -17,7 +17,7 @@ require_relative "bundler/build_metadata"
 # Bundler provides a consistent environment for Ruby projects by
 # tracking and installing the exact gems and versions that are needed.
 #
-# Since Ruby 2.6, Bundler is a part of Ruby's standard library.
+# Bundler is a part of Ruby's standard library.
 #
 # Bundler is used by creating _gemfiles_ listing all the project dependencies
 # and (optionally) their versions and then using
