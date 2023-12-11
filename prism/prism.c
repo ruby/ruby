@@ -865,6 +865,27 @@ pm_arguments_validate_block(pm_parser_t *parser, pm_arguments_t *arguments, pm_b
 }
 
 /******************************************************************************/
+/* Node flag handling functions                                               */
+/******************************************************************************/
+
+/**
+ * Set the given flag on the given node.
+ */
+static inline void
+pm_node_flag_set(pm_node_t *node, pm_node_flags_t flag) {
+    node->flags |= flag;
+}
+
+/**
+ * Remove the given flag from the given node.
+ */
+static inline void
+pm_node_flag_unset(pm_node_t *node, pm_node_flags_t flag) {
+    node->flags &= (pm_node_flags_t) ~flag;
+}
+
+
+/******************************************************************************/
 /* Node creation functions                                                    */
 /******************************************************************************/
 
