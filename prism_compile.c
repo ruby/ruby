@@ -2269,15 +2269,62 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_BREAK_NODE: {
         pm_break_node_t *break_node = (pm_break_node_t *) node;
-        if (break_node->arguments) {
-            PM_COMPILE_NOT_POPPED((pm_node_t *)break_node->arguments);
-        }
-        else {
-            PM_PUTNIL;
-        }
+        unsigned long throw_flag = 0;
+        if (ISEQ_COMPILE_DATA(iseq)->redo_label != 0 && can_add_ensure_iseq(iseq)) {
+            /* while/until */
+            LABEL *splabel = NEW_LABEL(0);
+            ADD_LABEL(ret, splabel);
+            ADD_ADJUST(ret, &dummy_line_node, ISEQ_COMPILE_DATA(iseq)->redo_label);
+            if (break_node->arguments) {
+                PM_COMPILE_NOT_POPPED((pm_node_t *)break_node->arguments);
+            }
+            else {
+                PM_PUTNIL;
+            }
+            ADD_INSNL(ret, &dummy_line_node, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
+            ADD_ADJUST_RESTORE(ret, splabel);
 
-        ADD_INSNL(ret, &dummy_line_node, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
+            PM_PUTNIL_UNLESS_POPPED;
+        } else {
+            const rb_iseq_t *ip = iseq;
 
+            while (ip) {
+                if (!ISEQ_COMPILE_DATA(ip)) {
+                    ip = 0;
+                    break;
+                }
+
+                if (ISEQ_COMPILE_DATA(ip)->redo_label != 0) {
+                    throw_flag = VM_THROW_NO_ESCAPE_FLAG;
+                }
+                else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_BLOCK) {
+                    throw_flag = 0;
+                }
+                else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_EVAL) {
+                    COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with break");
+                    rb_bug("Can't escape from eval with break");
+                }
+                else {
+                    ip = ISEQ_BODY(ip)->parent_iseq;
+                    continue;
+                }
+
+                /* escape from block */
+                if (break_node->arguments) {
+                    PM_COMPILE_NOT_POPPED((pm_node_t *)break_node->arguments);
+                }
+                else {
+                    PM_PUTNIL;
+                }
+
+                ADD_INSN1(ret, &dummy_line_node, throw, INT2FIX(throw_flag | TAG_BREAK));
+                PM_POP_IF_POPPED;
+
+                return;
+            }
+            COMPILE_ERROR(ERROR_ARGS "Invalid break");
+            rb_bug("");
+        }
         return;
       }
       case PM_CALL_NODE: {
