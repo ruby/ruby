@@ -1971,6 +1971,23 @@ module Prism
       end
     end
 
+    def test_range_and_bin_op
+      sources = <<~RUBY.lines
+        1..2..3
+        1..2..
+        1.. || 2
+        1.. & 2
+        1.. * 2
+        1.. / 2
+        1.. % 2
+        1.. ** 2
+      RUBY
+      sources.each do |source|
+        assert_nil Ripper.sexp_raw(source)
+        assert_false(Prism.parse(source).success?)
+      end
+    end
+
     def test_constant_assignment_in_method
       source = 'def foo();A=1;end'
       assert_errors expression(source), source, [

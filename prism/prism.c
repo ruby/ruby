@@ -10128,7 +10128,7 @@ typedef struct {
 #define BINDING_POWER_ASSIGNMENT { PM_BINDING_POWER_UNARY, PM_BINDING_POWER_ASSIGNMENT, true, false }
 #define LEFT_ASSOCIATIVE(precedence) { precedence, precedence + 1, true, false }
 #define RIGHT_ASSOCIATIVE(precedence) { precedence, precedence, true, false }
-#define NON_ASSOCIATIVE(precedence) { precedence + 1, precedence + 1, true, true }
+#define NON_ASSOCIATIVE(precedence) { precedence, precedence + 1, true, true }
 #define RIGHT_ASSOCIATIVE_UNARY(precedence) { precedence, precedence, false, false }
 
 pm_binding_powers_t pm_binding_powers[PM_TOKEN_MAXIMUM] = {
@@ -16967,11 +16967,18 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
         current_binding_powers.binary
      ) {
         node = parse_expression_infix(parser, node, binding_power, current_binding_powers.right, accepts_command_call);
-        if (
-            current_binding_powers.nonassoc &&
-            current_binding_powers.right <= pm_binding_powers[parser->current.type].left
-        ) {
-            break;
+        if (current_binding_powers.nonassoc) {
+            bool endless_range_p = PM_NODE_TYPE_P(node, PM_RANGE_NODE) && ((pm_range_node_t *) node)->right == NULL;
+            pm_binding_power_t left = endless_range_p ? PM_BINDING_POWER_TERM : current_binding_powers.left;
+            if (
+                left <= pm_binding_powers[parser->current.type].left ||
+                // Exceptionally to operator precedences, '1.. & 2' is rejected.
+                // '1.. || 2' is also an exception, but it is handled by the lexer.
+                // (Here, parser->current is PM_TOKEN_PIPE, not PM_TOKEN_PIPE_PIPE).
+                (endless_range_p && match1(parser, PM_TOKEN_AMPERSAND))
+            ) {
+                break;
+            }
         }
         if (accepts_command_call) {
             // A command-style method call is only accepted on method chains.
