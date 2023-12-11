@@ -9,7 +9,7 @@ assert_equal '[:ae, :ae]', %q{
   end
 
   [test(Array.new 5), test([])]
-}
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT
 
 # regression test for arity check with splat and send
 assert_equal '[:ae, :ae]', %q{
