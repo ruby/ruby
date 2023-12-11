@@ -1483,7 +1483,7 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
     }
 }
 
-static void pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, pm_scope_node_t *scope_node, ID method_id);
+static void pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, pm_scope_node_t *scope_node, ID method_id, LABEL *start);
 
 void
 pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, pm_scope_node_t *scope_node,  NODE dummy_line_node, int lineno, bool in_condition, LABEL **lfinish, bool explicit_receiver)
@@ -1656,7 +1656,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
             if (PM_NODE_TYPE_P(call_node->receiver, PM_CALL_NODE)) {
                 ADD_INSNL(ret, &dummy_line_node, branchunless, lfinish[2]);
                 ID method_id = pm_constant_id_lookup(scope_node, call_node->name);
-                pm_compile_call(iseq, (const pm_call_node_t *)call_node->receiver, ret, src, popped, scope_node, method_id);
+                pm_compile_call(iseq, (const pm_call_node_t *)call_node->receiver, ret, src, popped, scope_node, method_id, NULL);
             }
             else {
                 ADD_INSNL(ret, &dummy_line_node, branchunless, lfinish[1]);
@@ -1784,12 +1784,13 @@ pm_compile_defined_expr(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *con
 }
 
 static void
-pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, pm_scope_node_t *scope_node, ID method_id)
+pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, pm_scope_node_t *scope_node, ID method_id, LABEL *start)
 {
     pm_parser_t *parser = scope_node->parser;
     pm_newline_list_t newline_list = parser->newline_list;
     int lineno = (int)pm_newline_list_line_column(&newline_list, ((pm_node_t *)call_node)->location.start).line;
     NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
+    LABEL *end = NEW_LABEL(lineno);
 
     pm_node_t *pm_node = (pm_node_t *)call_node;
 
@@ -1805,6 +1806,9 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         pm_scope_node_init(call_node->block, &next_scope_node, scope_node, parser);
 
         block_iseq = NEW_CHILD_ISEQ(next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+        if (ISEQ_BODY(block_iseq)->catch_table) {
+            ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, start, end, block_iseq, end);
+        }
         ISEQ_COMPILE_DATA(iseq)->current_block = block_iseq;
     }
     else {
@@ -1834,7 +1838,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     else {
         ADD_SEND_R(ret, &dummy_line_node, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
     }
-
+    ADD_LABEL(ret, end);
 
     PM_POP_IF_POPPED;
 }
@@ -2329,6 +2333,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_CALL_NODE: {
         pm_call_node_t *call_node = (pm_call_node_t *) node;
+        LABEL *start = NEW_LABEL(lineno);
+
+        if (call_node->block) {
+            ADD_LABEL(ret, start);
+        }
 
         ID method_id = pm_constant_id_lookup(scope_node, call_node->name);
         if (node->flags & PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) {
@@ -2341,7 +2350,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PM_COMPILE_NOT_POPPED(call_node->receiver);
         }
 
-        pm_compile_call(iseq, call_node, ret, src, popped, scope_node, method_id);
+        pm_compile_call(iseq, call_node, ret, src, popped, scope_node, method_id, start);
         return;
       }
       case PM_CALL_AND_WRITE_NODE: {
