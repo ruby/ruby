@@ -5720,15 +5720,15 @@ fn get_array_ptr(asm: &mut Assembler, array_reg: Opnd) -> Opnd {
 }
 
 /// Pushes arguments from an array to the stack. Differs from push splat because
-/// the array can have items left over.
-fn move_rest_args_to_stack(array: Opnd, num_args: u32, asm: &mut Assembler) {
-    asm_comment!(asm, "move_rest_args_to_stack");
+/// the array can have items left over. Array is assumed to be T_ARRAY without guards.
+fn copy_splat_args_for_rest_callee(array: Opnd, num_args: u32, asm: &mut Assembler) {
+    asm_comment!(asm, "copy_splat_args_for_rest_callee");
 
     let array_len_opnd = get_array_len(asm, array);
 
-    asm_comment!(asm, "Side exit if length is less than required");
+    asm_comment!(asm, "guard splat array large enough");
     asm.cmp(array_len_opnd, num_args.into());
-    asm.jl(Target::side_exit(Counter::guard_send_iseq_has_rest_and_splat_not_equal));
+    asm.jl(Target::side_exit(Counter::guard_send_iseq_has_rest_and_splat_too_few));
 
     // Unused operands cause the backend to panic
     if num_args == 0 {
@@ -6364,8 +6364,8 @@ fn gen_send_iseq(
                 let diff: u32 = (required_num - non_rest_arg_count + opts_filled)
                     .try_into().unwrap();
 
-                // This moves the arguments onto the stack. But it doesn't modify the array.
-                move_rest_args_to_stack(array, diff, asm);
+                // Copy required arguments to the stack without modifying the array
+                copy_splat_args_for_rest_callee(array, diff, asm);
 
                 // We will now slice the array to give us a new array of the correct size
                 let sliced = asm.ccall(rb_yjit_rb_ary_subseq_length as *const u8, vec![array, Opnd::UImm(diff as u64)]);

@@ -404,7 +404,7 @@ make_counters! {
     guard_send_send_chain,
     guard_send_send_chain_not_string,
     guard_send_send_chain_not_sym,
-    guard_send_iseq_has_rest_and_splat_not_equal,
+    guard_send_iseq_has_rest_and_splat_too_few,
     guard_send_is_a_class_mismatch,
     guard_send_instance_of_class_mismatch,
     guard_send_interrupted,
