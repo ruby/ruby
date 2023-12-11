@@ -4965,7 +4965,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             ADD_TRACE(ret, RUBY_EVENT_B_CALL);
             NODE dummy_line_node = generate_dummy_line_node(body->location.first_lineno, -1);
-            PM_NOP;
+            if (ISEQ_COMPILE_DATA(iseq)->redo_label != 0) {
+                PM_NOP;
+            }
             ADD_LABEL(ret, start);
 
             if (scope_node->body) {
