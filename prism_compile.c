@@ -78,8 +78,8 @@ pm_iseq_new_with_opt(pm_scope_node_t *scope_node, pm_parser_t *parser, VALUE nam
 static VALUE
 parse_integer(const pm_integer_node_t *node)
 {
-    const char *start = (const char *) node->base.location.start;
-    const char *end = (const char *) node->base.location.end;
+    char *start = (char *) node->base.location.start;
+    char *end = (char *) node->base.location.end;
 
     size_t length = end - start;
     int base = -10;
@@ -101,7 +101,7 @@ parse_integer(const pm_integer_node_t *node)
         rb_bug("Unexpected integer base");
     }
 
-    return rb_int_parse_cstr(start, length, NULL, NULL, base, RB_INT_PARSE_DEFAULT);
+    return rb_int_parse_cstr(start, length, &end, NULL, base, RB_INT_PARSE_DEFAULT);
 }
 
 static VALUE
