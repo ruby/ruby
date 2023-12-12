@@ -902,6 +902,15 @@ module Prism
         end while i < 5
         res
       CODE
+
+      assert_prism_eval(<<-CODE)
+        while false
+          begin
+          ensure
+          end
+          next
+        end
+      CODE
     end
 
     def test_RedoNode
