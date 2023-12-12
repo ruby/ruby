@@ -238,7 +238,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (21,0)-(21,11))
-        │   ├── flags: ∅
+        │   ├── flags: attribute_write
         │   ├── receiver:
         │   │   @ CallNode (location: (21,0)-(21,3))
         │   │   ├── flags: variable_call

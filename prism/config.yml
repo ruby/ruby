@@ -345,6 +345,8 @@ flags:
         comment: "&. operator"
       - name: VARIABLE_CALL
         comment: "a call that could have been a local variable"
+      - name: ATTRIBUTE_WRITE
+        comment: "a call that is an attribute write, so the value being written should be returned"
     comment: Flags for call nodes.
   - name: EncodingFlags
     values:

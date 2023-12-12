@@ -1529,7 +1529,7 @@
         │   ├── closing_loc: (68,25)-(68,26) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (69,0)-(69,12))
-        │   ├── flags: ∅
+        │   ├── flags: attribute_write
         │   ├── receiver:
         │   │   @ CallNode (location: (69,0)-(69,3))
         │   │   ├── flags: variable_call
@@ -1773,7 +1773,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (77,0)-(77,13))
-        │   ├── flags: ∅
+        │   ├── flags: attribute_write
         │   ├── receiver:
         │   │   @ SelfNode (location: (77,0)-(77,4))
         │   ├── call_operator_loc: (77,4)-(77,5) = "."

@@ -596,7 +596,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (29,0)-(29,19))
-        │   ├── flags: ∅
+        │   ├── flags: attribute_write
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (29,0)-(29,3))
         │   │   ├── name: :foo
@@ -635,7 +635,7 @@
         │   ├── closing_loc: (29,10)-(29,11) = "]"
         │   └── block: ∅
         ├── @ CallNode (location: (30,0)-(30,17))
-        │   ├── flags: ∅
+        │   ├── flags: attribute_write
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (30,0)-(30,3))
         │   │   ├── name: :foo
@@ -670,7 +670,7 @@
         │   ├── closing_loc: (30,8)-(30,9) = "]"
         │   └── block: ∅
         ├── @ CallNode (location: (31,0)-(31,9))
-        │   ├── flags: ∅
+        │   ├── flags: attribute_write
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (31,0)-(31,3))
         │   │   ├── name: :foo
@@ -688,7 +688,7 @@
         │   ├── closing_loc: (31,4)-(31,5) = "]"
         │   └── block: ∅
         ├── @ CallNode (location: (32,0)-(32,17))
-        │   ├── flags: ∅
+        │   ├── flags: attribute_write
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (32,0)-(32,3))
         │   │   ├── name: :foo
@@ -720,7 +720,7 @@
         │   ├── closing_loc: (32,8)-(32,9) = "]"
         │   └── block: ∅
         ├── @ CallNode (location: (33,0)-(33,18))
-        │   ├── flags: ∅
+        │   ├── flags: attribute_write
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (33,0)-(33,3))
         │   │   ├── name: :foo
@@ -768,7 +768,7 @@
         │   │   └── unescaped: ""
         │   └── operator_loc: (34,2)-(34,3) = "="
         ├── @ CallNode (location: (35,0)-(35,7))
-        │   ├── flags: ∅
+        │   ├── flags: attribute_write
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (35,0)-(35,1))
         │   │   ├── name: :x
@@ -790,7 +790,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (36,0)-(36,12))
-        │   ├── flags: ∅
+        │   ├── flags: attribute_write
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (36,0)-(36,1))
         │   │   ├── name: :x
@@ -891,7 +891,7 @@
         │   │   └── closing_loc: (41,0)-(42,0) = "HEREDOC\n"
         │   └── operator_loc: (39,2)-(39,3) = "="
         ├── @ CallNode (location: (42,0)-(42,14))
-        │   ├── flags: ∅
+        │   ├── flags: attribute_write
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (42,0)-(42,1))
         │   │   ├── name: :x
@@ -927,7 +927,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (45,0)-(45,16))
-        │   ├── flags: ∅
+        │   ├── flags: attribute_write
         │   ├── receiver:
         │   │   @ LocalVariableReadNode (location: (45,0)-(45,1))
         │   │   ├── name: :x
