@@ -191,7 +191,7 @@ class TestGemConfigFile < Gem::TestCase
 
     util_config_file
 
-    assert_equal({ :rubygems => "701229f217cdf23b1344c7b4b54ca97" },
+    assert_equal({ rubygems: "701229f217cdf23b1344c7b4b54ca97" },
                  @cfg.api_keys)
   end
 
@@ -369,7 +369,7 @@ if you believe they were disclosed to a third party.
     assert_equal "x", @cfg.rubygems_api_key
 
     expected = {
-      :rubygems_api_key => "x",
+      rubygems_api_key: "x",
     }
 
     assert_equal expected, load_yaml_file(@cfg.credentials_path)
@@ -393,7 +393,7 @@ if you believe they were disclosed to a third party.
     end
 
     expected = {
-      :rubygems_api_key => "x",
+      rubygems_api_key: "x",
     }
 
     assert_equal expected, load_yaml_file(@cfg.credentials_path)
@@ -542,7 +542,7 @@ if you believe they were disclosed to a third party.
   end
 
   def test_dump_with_rubygems_yaml
-    symbol_key_hash = { :foo => "bar" }
+    symbol_key_hash = { foo: "bar" }
 
     actual = Gem::ConfigFile.dump_with_rubygems_yaml(symbol_key_hash)
 

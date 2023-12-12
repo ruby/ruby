@@ -21,7 +21,7 @@ module Bundler
         require "shellwords"
         command = Shellwords.split(editor) << File.join([root_path, path].compact)
         Bundler.with_original_env do
-          system(*command, { :chdir => root_path })
+          system(*command, { chdir: root_path })
         end || Bundler.ui.info("Could not run '#{command.join(" ")}'")
       end
     end

@@ -5,16 +5,27 @@ end
 
 class Exception
 
-  # Deserializes JSON string by constructing new Exception object with message
-  # <tt>m</tt> and backtrace <tt>b</tt> serialized with <tt>to_json</tt>
+  # See #as_json.
   def self.json_create(object)
     result = new(object['m'])
     result.set_backtrace object['b']
     result
   end
 
-  # Returns a hash, that will be turned into a JSON object and represent this
-  # object.
+  # Methods <tt>Exception#as_json</tt> and +Exception.json_create+ may be used
+  # to serialize and deserialize a \Exception object;
+  # see Marshal[rdoc-ref:Marshal].
+  #
+  # \Method <tt>Exception#as_json</tt> serializes +self+,
+  # returning a 2-element hash representing +self+:
+  #
+  #   require 'json/add/exception'
+  #   x = Exception.new('Foo').as_json # => {"json_class"=>"Exception", "m"=>"Foo", "b"=>nil}
+  #
+  # \Method +JSON.create+ deserializes such a hash, returning a \Exception object:
+  #
+  #   Exception.json_create(x) # => #<Exception: Foo>
+  #
   def as_json(*)
     {
       JSON.create_id => self.class.name,
@@ -23,8 +34,15 @@ class Exception
     }
   end
 
-  # Stores class name (Exception) with message <tt>m</tt> and backtrace array
-  # <tt>b</tt> as JSON string
+  # Returns a JSON string representing +self+:
+  #
+  #   require 'json/add/exception'
+  #   puts Exception.new('Foo').to_json
+  #
+  # Output:
+  #
+  #   {"json_class":"Exception","m":"Foo","b":null}
+  #
   def to_json(*args)
     as_json.to_json(*args)
   end

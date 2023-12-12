@@ -12,5 +12,6 @@
 
 /* random.c */
 int ruby_fill_random_bytes(void *, size_t, int);
+void rb_free_default_rand_key(void);
 
 #endif /* INTERNAL_RANDOM_H */

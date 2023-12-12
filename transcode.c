@@ -181,6 +181,28 @@ typedef struct {
 
 static st_table *transcoder_table;
 
+static int
+free_inner_transcode_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    xfree((void *)val);
+    return ST_DELETE;
+}
+
+static int
+free_transcode_i(st_data_t key, st_data_t val, st_data_t arg)
+{
+    st_foreach((void *)val, free_inner_transcode_i, 0);
+    st_free_table((void *)val);
+    return ST_DELETE;
+}
+
+void
+rb_free_transcoder_table(void)
+{
+    st_foreach(transcoder_table, free_transcode_i, 0);
+    st_free_table(transcoder_table);
+}
+
 static transcoder_entry_t *
 make_transcoder_entry(const char *sname, const char *dname)
 {

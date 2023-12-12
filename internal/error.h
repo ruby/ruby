@@ -169,6 +169,9 @@ VALUE rb_syserr_new_path_in(const char *func_name, int n, VALUE path);
 #endif
 RUBY_SYMBOL_EXPORT_END
 
+/* vm.c */
+void rb_free_warning(void);
+
 static inline void
 rb_raise_cstr_i(VALUE etype, VALUE mesg)
 {

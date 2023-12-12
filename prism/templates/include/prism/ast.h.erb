@@ -168,6 +168,7 @@ typedef struct pm_<%= node.human %> {
     when Prism::ConstantListField then "pm_constant_id_list_t #{field.name}"
     when Prism::StringField then "pm_string_t #{field.name}"
     when Prism::LocationField, Prism::OptionalLocationField then "pm_location_t #{field.name}"
+    when Prism::UInt8Field then "uint8_t #{field.name}"
     when Prism::UInt32Field then "uint32_t #{field.name}"
     else raise field.class.name
     end

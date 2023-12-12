@@ -10468,19 +10468,21 @@ rb_f_readlines(int argc, VALUE *argv, VALUE recv)
 
 /*
  *  call-seq:
- *     ARGF.readlines(sep = $/)     -> array
- *     ARGF.readlines(limit)      -> array
- *     ARGF.readlines(sep, limit) -> array
+ *     ARGF.readlines(sep = $/, chomp: false)   -> array
+ *     ARGF.readlines(limit, chomp: false)      -> array
+ *     ARGF.readlines(sep, limit, chomp: false) -> array
  *
- *     ARGF.to_a(sep = $/)     -> array
- *     ARGF.to_a(limit)      -> array
- *     ARGF.to_a(sep, limit) -> array
+ *     ARGF.to_a(sep = $/, chomp: false)   -> array
+ *     ARGF.to_a(limit, chomp: false)      -> array
+ *     ARGF.to_a(sep, limit, chomp: false) -> array
  *
  *  Reads each file in ARGF in its entirety, returning an Array containing
  *  lines from the files. Lines are assumed to be separated by _sep_.
  *
  *     lines = ARGF.readlines
  *     lines[0]                #=> "This is line one\n"
+ *
+ *  See +IO.readlines+ for a full description of all options.
  */
 static VALUE
 argf_readlines(int argc, VALUE *argv, VALUE argf)

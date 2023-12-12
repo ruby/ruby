@@ -60,21 +60,21 @@ RSpec.describe Bundler::EndpointSpecification do
 
     it "should return the remote spec value when not set on endpoint specification and remote spec has one" do
       remote_value = "remote_value"
-      remote_spec = double(:remote_spec, :required_ruby_version => remote_value, :required_rubygems_version => nil)
+      remote_spec = double(:remote_spec, required_ruby_version: remote_value, required_rubygems_version: nil)
       allow(spec_fetcher).to receive(:fetch_spec).and_return(remote_spec)
 
       expect(spec.required_ruby_version). eql?(remote_value)
     end
 
     it "should use the default Gem Requirement value when not set on endpoint specification and not set on remote spec" do
-      remote_spec = double(:remote_spec, :required_ruby_version => nil, :required_rubygems_version => nil)
+      remote_spec = double(:remote_spec, required_ruby_version: nil, required_rubygems_version: nil)
       allow(spec_fetcher).to receive(:fetch_spec).and_return(remote_spec)
       expect(spec.required_ruby_version). eql?(Gem::Requirement.default)
     end
   end
 
   it "supports equality comparison" do
-    remote_spec = double(:remote_spec, :required_ruby_version => nil, :required_rubygems_version => nil)
+    remote_spec = double(:remote_spec, required_ruby_version: nil, required_rubygems_version: nil)
     allow(spec_fetcher).to receive(:fetch_spec).and_return(remote_spec)
     other_spec = described_class.new("bar", version, platform, spec_fetcher, dependencies, metadata)
     expect(spec).to eql(spec)

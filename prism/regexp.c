@@ -20,14 +20,14 @@ typedef struct {
     bool encoding_changed;
 
     /** The encoding of the source. */
-    pm_encoding_t *encoding;
+    const pm_encoding_t *encoding;
 } pm_regexp_parser_t;
 
 /**
  * This initializes a new parser with the given source.
  */
 static void
-pm_regexp_parser_init(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end, pm_string_list_t *named_captures, bool encoding_changed, pm_encoding_t *encoding) {
+pm_regexp_parser_init(pm_regexp_parser_t *parser, const uint8_t *start, const uint8_t *end, pm_string_list_t *named_captures, bool encoding_changed, const pm_encoding_t *encoding) {
     *parser = (pm_regexp_parser_t) {
         .start = start,
         .cursor = start,
@@ -631,7 +631,7 @@ pm_regexp_parse_pattern(pm_regexp_parser_t *parser) {
  * groups.
  */
 PRISM_EXPORTED_FUNCTION bool
-pm_regexp_named_capture_group_names(const uint8_t *source, size_t size, pm_string_list_t *named_captures, bool encoding_changed, pm_encoding_t *encoding) {
+pm_regexp_named_capture_group_names(const uint8_t *source, size_t size, pm_string_list_t *named_captures, bool encoding_changed, const pm_encoding_t *encoding) {
     pm_regexp_parser_t parser;
     pm_regexp_parser_init(&parser, source, source + size, named_captures, encoding_changed, encoding);
     return pm_regexp_parse_pattern(&parser);

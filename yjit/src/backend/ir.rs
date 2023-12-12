@@ -327,7 +327,7 @@ impl From<CodePtr> for Target {
     }
 }
 
-type PosMarkerFn = Box<dyn Fn(CodePtr)>;
+type PosMarkerFn = Box<dyn Fn(CodePtr, &CodeBlock)>;
 
 /// YJIT IR instruction
 pub enum Insn {
@@ -1893,7 +1893,7 @@ impl Assembler {
     }
 
     //pub fn pos_marker<F: FnMut(CodePtr)>(&mut self, marker_fn: F)
-    pub fn pos_marker(&mut self, marker_fn: impl Fn(CodePtr) + 'static) {
+    pub fn pos_marker(&mut self, marker_fn: impl Fn(CodePtr, &CodeBlock) + 'static) {
         self.push_insn(Insn::PosMarker(Box::new(marker_fn)));
     }
 

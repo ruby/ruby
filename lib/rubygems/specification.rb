@@ -127,35 +127,35 @@ class Gem::Specification < Gem::BasicSpecification
   # Map of attribute names to default values.
 
   @@default_value = {
-    :authors => [],
-    :autorequire => nil,
-    :bindir => "bin",
-    :cert_chain => [],
-    :date => nil,
-    :dependencies => [],
-    :description => nil,
-    :email => nil,
-    :executables => [],
-    :extensions => [],
-    :extra_rdoc_files => [],
-    :files => [],
-    :homepage => nil,
-    :licenses => [],
-    :metadata => {},
-    :name => nil,
-    :platform => Gem::Platform::RUBY,
-    :post_install_message => nil,
-    :rdoc_options => [],
-    :require_paths => ["lib"],
-    :required_ruby_version => Gem::Requirement.default,
-    :required_rubygems_version => Gem::Requirement.default,
-    :requirements => [],
-    :rubygems_version => Gem::VERSION,
-    :signing_key => nil,
-    :specification_version => CURRENT_SPECIFICATION_VERSION,
-    :summary => nil,
-    :test_files => [],
-    :version => nil,
+    authors: [],
+    autorequire: nil,
+    bindir: "bin",
+    cert_chain: [],
+    date: nil,
+    dependencies: [],
+    description: nil,
+    email: nil,
+    executables: [],
+    extensions: [],
+    extra_rdoc_files: [],
+    files: [],
+    homepage: nil,
+    licenses: [],
+    metadata: {},
+    name: nil,
+    platform: Gem::Platform::RUBY,
+    post_install_message: nil,
+    rdoc_options: [],
+    require_paths: ["lib"],
+    required_ruby_version: Gem::Requirement.default,
+    required_rubygems_version: Gem::Requirement.default,
+    requirements: [],
+    rubygems_version: Gem::VERSION,
+    signing_key: nil,
+    specification_version: CURRENT_SPECIFICATION_VERSION,
+    summary: nil,
+    test_files: [],
+    version: nil,
   }.freeze
 
   # rubocop:disable Style/MutableConstant
@@ -2674,19 +2674,12 @@ class Gem::Specification < Gem::BasicSpecification
   rubygems_deprecate :validate_permissions
 
   ##
-  # Set the version to +version+, potentially also setting
-  # required_rubygems_version if +version+ indicates it is a
-  # prerelease.
+  # Set the version to +version+.
 
   def version=(version)
     @version = Gem::Version.create(version)
     return if @version.nil?
 
-    # skip to set required_ruby_version when pre-released rubygems.
-    # It caused to raise CircularDependencyError
-    if @version.prerelease? && (@name.nil? || @name.strip != "rubygems")
-      self.required_rubygems_version = "> 1.3.1"
-    end
     invalidate_memoized_attributes
   end
 

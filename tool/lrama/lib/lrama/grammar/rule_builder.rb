@@ -3,7 +3,7 @@ require 'lrama/grammar/parameterizing_rules/builder'
 module Lrama
   class Grammar
     class RuleBuilder
-      attr_accessor :lhs, :line
+      attr_accessor :lhs, :lhs_tag, :line
       attr_reader :rhs, :user_code, :precedence_sym
 
       def initialize(rule_counter, midrule_action_counter, position_in_original_rule_rhs = nil, skip_preprocess_references: false)
@@ -14,6 +14,7 @@ module Lrama
 
         @lhs = nil
         @rhs = []
+        @lhs_tag = nil
         @user_code = nil
         @precedence_sym = nil
         @line = nil
@@ -81,22 +82,16 @@ module Lrama
       def build_rules
         tokens = @replaced_rhs
 
-        # Expand Parameterizing rules
-        if tokens.any? {|r| r.is_a?(Lrama::Lexer::Token::Parameterizing) }
-          @rules = @parameterizing_rules
-          @midrule_action_rules = []
-        else
-          rule = Rule.new(
-            id: @rule_counter.increment, _lhs: lhs, _rhs: tokens, token_code: user_code,
-            position_in_original_rule_rhs: @position_in_original_rule_rhs, precedence_sym: precedence_sym, lineno: line
-          )
-          @rules = [rule]
-          @midrule_action_rules = @rule_builders_for_derived_rules.map do |rule_builder|
-            rule_builder.rules
-          end.flatten
-          @midrule_action_rules.each do |r|
-            r.original_rule = rule
-          end
+        rule = Rule.new(
+          id: @rule_counter.increment, _lhs: lhs, _rhs: tokens, token_code: user_code,
+          position_in_original_rule_rhs: @position_in_original_rule_rhs, precedence_sym: precedence_sym, lineno: line
+        )
+        @rules = [rule]
+        @midrule_action_rules = @rule_builders_for_derived_rules.map do |rule_builder|
+          rule_builder.rules
+        end.flatten
+        @midrule_action_rules.each do |r|
+          r.original_rule = rule
         end
       end
 
@@ -115,8 +110,11 @@ module Lrama
           when Lrama::Lexer::Token::Ident
             @replaced_rhs << token
           when Lrama::Lexer::Token::Parameterizing
-            @parameterizing_rules = ParameterizingRules::Builder.new(token, @rule_counter, lhs, user_code, precedence_sym, line).build
-            @replaced_rhs << token
+            parameterizing = ParameterizingRules::Builder.new(token, @rule_counter, @lhs_tag, user_code, precedence_sym, line)
+            parameterizing.build.each do |r|
+              @parameterizing_rules << r
+            end
+            @replaced_rhs << parameterizing.build_token
           when Lrama::Lexer::Token::UserCode
             prefix = token.referred ? "@" : "$@"
             new_token = Lrama::Lexer::Token::Ident.new(s_value: prefix + @midrule_action_counter.increment.to_s)

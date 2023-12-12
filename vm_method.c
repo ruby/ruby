@@ -240,6 +240,13 @@ clear_method_cache_by_id_in_class(VALUE klass, ID mid)
                 vm_cme_invalidate((rb_callable_method_entry_t *)cme);
                 RB_DEBUG_COUNTER_INC(cc_invalidate_tree_cme);
 
+                // In case of refinement ME, also invalidate the wrapped ME that
+                // could be cached at some callsite and is unreachable from any
+                // RCLASS_CC_TBL.
+                if (cme->def->type == VM_METHOD_TYPE_REFINED && cme->def->body.refined.orig_me) {
+                    vm_cme_invalidate((rb_callable_method_entry_t *)cme->def->body.refined.orig_me);
+                }
+
                 if (cme->def->iseq_overload) {
                     rb_callable_method_entry_t *monly_cme = (rb_callable_method_entry_t *)lookup_overloaded_cme(cme);
                     if (monly_cme) {
@@ -578,9 +585,7 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
             return;
           case VM_METHOD_TYPE_REFINED:
             {
-                const rb_method_refined_t *refined = (rb_method_refined_t *)opts;
-                RB_OBJ_WRITE(me, &def->body.refined.orig_me, refined->orig_me);
-                RB_OBJ_WRITE(me, &def->body.refined.owner, refined->owner);
+                RB_OBJ_WRITE(me, &def->body.refined.orig_me, (rb_method_entry_t *)opts);
                 return;
             }
           case VM_METHOD_TYPE_ALIAS:
@@ -616,7 +621,6 @@ method_definition_reset(const rb_method_entry_t *me)
         break;
       case VM_METHOD_TYPE_REFINED:
         RB_OBJ_WRITTEN(me, Qundef, def->body.refined.orig_me);
-        RB_OBJ_WRITTEN(me, Qundef, def->body.refined.owner);
         break;
       case VM_METHOD_TYPE_ALIAS:
         RB_OBJ_WRITTEN(me, Qundef, def->body.alias.original_me);
@@ -676,12 +680,31 @@ rb_method_entry_create(ID called_id, VALUE klass, rb_method_visibility_t visi, r
     return me;
 }
 
+// Return a cloned ME that's not invalidated (MEs are disposable for caching).
 const rb_method_entry_t *
 rb_method_entry_clone(const rb_method_entry_t *src_me)
 {
     rb_method_entry_t *me = rb_method_entry_alloc(src_me->called_id, src_me->owner, src_me->defined_class, src_me->def, METHOD_ENTRY_COMPLEMENTED(src_me));
 
     METHOD_ENTRY_FLAGS_COPY(me, src_me);
+
+    // Also clone inner ME in case of refinement ME
+    if (src_me->def &&
+            src_me->def->type == VM_METHOD_TYPE_REFINED &&
+            src_me->def->body.refined.orig_me) {
+        const rb_method_entry_t *orig_me = src_me->def->body.refined.orig_me;
+        VM_ASSERT(orig_me->def->type != VM_METHOD_TYPE_REFINED);
+
+        rb_method_entry_t *orig_clone = rb_method_entry_alloc(orig_me->called_id,
+                orig_me->owner, orig_me->defined_class, orig_me->def, METHOD_ENTRY_COMPLEMENTED(orig_me));
+        METHOD_ENTRY_FLAGS_COPY(orig_clone, orig_me);
+
+        // Clone definition, since writing a VALUE to a shared definition
+        // can create reference edges we can't run WBs for.
+        rb_method_definition_t *clone_def =
+            rb_method_definition_create(VM_METHOD_TYPE_REFINED, src_me->called_id);
+        rb_method_definition_set(me, clone_def, orig_clone);
+    }
     return me;
 }
 
@@ -690,10 +713,7 @@ rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID cal
 {
     rb_method_definition_t *def = src_me->def;
     rb_method_entry_t *me;
-    struct {
-        const struct rb_method_entry_struct *orig_me;
-        VALUE owner;
-    } refined = {0};
+    const rb_method_entry_t *refined_orig_me = NULL;
 
     if (!src_me->defined_class &&
         def->type == VM_METHOD_TYPE_REFINED &&
@@ -701,8 +721,7 @@ rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID cal
         const rb_method_entry_t *orig_me =
             rb_method_entry_clone(def->body.refined.orig_me);
         RB_OBJ_WRITE((VALUE)orig_me, &orig_me->defined_class, defined_class);
-        refined.orig_me = orig_me;
-        refined.owner = orig_me->owner;
+        refined_orig_me = orig_me;
         def = NULL;
     }
 
@@ -711,7 +730,7 @@ rb_method_entry_complement_defined_class(const rb_method_entry_t *src_me, ID cal
     METHOD_ENTRY_COMPLEMENTED_SET(me);
     if (!def) {
         def = rb_method_definition_create(VM_METHOD_TYPE_REFINED, called_id);
-        rb_method_definition_set(me, def, &refined);
+        rb_method_definition_set(me, def, (void *)refined_orig_me);
     }
 
     VM_ASSERT(RB_TYPE_P(me->owner, T_MODULE));
@@ -738,25 +757,19 @@ make_method_entry_refined(VALUE owner, rb_method_entry_t *me)
         return;
     }
     else {
-        struct {
-            struct rb_method_entry_struct *orig_me;
-            VALUE owner;
-        } refined;
         rb_method_definition_t *def;
 
         rb_vm_check_redefinition_opt_method(me, me->owner);
 
-        refined.orig_me =
+        struct rb_method_entry_struct *orig_me =
             rb_method_entry_alloc(me->called_id, me->owner,
-                                  me->defined_class ?
-                                  me->defined_class : owner,
+                                  me->defined_class ? me->defined_class : owner,
                                   me->def,
                                   true);
-        METHOD_ENTRY_FLAGS_COPY(refined.orig_me, me);
-        refined.owner = owner;
+        METHOD_ENTRY_FLAGS_COPY(orig_me, me);
 
         def = rb_method_definition_create(VM_METHOD_TYPE_REFINED, me->called_id);
-        rb_method_definition_set(me, def, (void *)&refined);
+        rb_method_definition_set(me, def, orig_me);
         METHOD_ENTRY_VISI_SET(me, METHOD_VISI_PUBLIC);
     }
 }

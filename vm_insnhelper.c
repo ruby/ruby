@@ -1385,47 +1385,19 @@ vm_setivar_slowpath(VALUE obj, ID id, VALUE val, const rb_iseq_t *iseq, IVC ic, 
 #if OPT_IC_FOR_IVAR
     RB_DEBUG_COUNTER_INC(ivar_set_ic_miss);
 
-    switch (BUILTIN_TYPE(obj)) {
-      case T_OBJECT:
-        {
-            rb_check_frozen_internal(obj);
+    if (BUILTIN_TYPE(obj) == T_OBJECT) {
+        rb_check_frozen_internal(obj);
 
-            attr_index_t index = rb_obj_ivar_set(obj, id, val);
+        attr_index_t index = rb_obj_ivar_set(obj, id, val);
 
-            shape_id_t next_shape_id = ROBJECT_SHAPE_ID(obj);
+        shape_id_t next_shape_id = ROBJECT_SHAPE_ID(obj);
 
-            if (next_shape_id != OBJ_TOO_COMPLEX_SHAPE_ID) {
-                populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
-            }
-
-            RB_DEBUG_COUNTER_INC(ivar_set_obj_miss);
-            return val;
+        if (next_shape_id != OBJ_TOO_COMPLEX_SHAPE_ID) {
+            populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
         }
-      case T_CLASS:
-      case T_MODULE:
-        break;
-      default:
-        {
-            rb_ivar_set(obj, id, val);
-            shape_id_t next_shape_id = rb_shape_get_shape_id(obj);
-            if (next_shape_id != OBJ_TOO_COMPLEX_SHAPE_ID) {
-                rb_shape_t *next_shape = rb_shape_get_shape_by_id(next_shape_id);
-                attr_index_t index;
 
-                if (rb_shape_get_iv_index(next_shape, id, &index)) { // based off the hash stored in the transition tree
-                    if (index >= MAX_IVARS) {
-                        rb_raise(rb_eArgError, "too many instance variables");
-                    }
-
-                    populate_cache(index, next_shape_id, id, iseq, ic, cc, is_attr);
-                }
-                else {
-                    rb_bug("vm_setivar_slowpath: didn't find ivar %s in shape", rb_id2name(id));
-                }
-            }
-
-            return val;
-        }
+        RB_DEBUG_COUNTER_INC(ivar_set_obj_miss);
+        return val;
     }
 #endif
     return rb_ivar_set(obj, id, val);
@@ -1837,7 +1809,16 @@ vm_throw_start(const rb_execution_context_t *ec, rb_control_frame_t *const reg_c
                             }
                         }
                         break;
-                      case ISEQ_TYPE_EVAL:
+                      case ISEQ_TYPE_EVAL: {
+                        const rb_iseq_t *is = escape_cfp->iseq;
+                        enum rb_iseq_type t = ISEQ_BODY(is)->type;
+                        while (t == ISEQ_TYPE_RESCUE || t == ISEQ_TYPE_ENSURE || t == ISEQ_TYPE_EVAL) {
+                            if (!(is = ISEQ_BODY(is)->parent_iseq)) break;
+                            t = ISEQ_BODY(is)->type;
+                        }
+                        toplevel = t == ISEQ_TYPE_TOP || t == ISEQ_TYPE_MAIN;
+                        break;
+                      }
                       case ISEQ_TYPE_CLASS:
                         toplevel = 0;
                         break;
@@ -1894,11 +1875,9 @@ rb_vm_throw(const rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, rb_nu
 }
 
 static inline void
-vm_expandarray(VALUE *sp, VALUE ary, rb_num_t num, int flag)
+vm_expandarray(struct rb_control_frame_struct *cfp, VALUE ary, rb_num_t num, int flag)
 {
     int is_splat = flag & 0x01;
-    rb_num_t space_size = num + is_splat;
-    VALUE *base = sp - 1;
     const VALUE *ptr;
     rb_num_t len;
     const VALUE obj = ary;
@@ -1913,7 +1892,7 @@ vm_expandarray(VALUE *sp, VALUE ary, rb_num_t num, int flag)
         len = (rb_num_t)RARRAY_LEN(ary);
     }
 
-    if (space_size == 0) {
+    if (num + is_splat == 0) {
         /* no space left on stack */
     }
     else if (flag & 0x02) {
@@ -1921,41 +1900,48 @@ vm_expandarray(VALUE *sp, VALUE ary, rb_num_t num, int flag)
         rb_num_t i = 0, j;
 
         if (len < num) {
-            for (i=0; i<num-len; i++) {
-                *base++ = Qnil;
+            for (i = 0; i < num - len; i++) {
+                *cfp->sp++ = Qnil;
             }
         }
-        for (j=0; i<num; i++, j++) {
+
+        for (j = 0; i < num; i++, j++) {
             VALUE v = ptr[len - j - 1];
-            *base++ = v;
+            *cfp->sp++ = v;
         }
+
         if (is_splat) {
-            *base = rb_ary_new4(len - j, ptr);
+            *cfp->sp++ = rb_ary_new4(len - j, ptr);
         }
     }
     else {
         /* normal: ary[num..-1], ary[num-2], ary[num-3], ..., ary[0] # top */
-        rb_num_t i;
-        VALUE *bptr = &base[space_size - 1];
-
-        for (i=0; i<num; i++) {
-            if (len <= i) {
-                for (; i<num; i++) {
-                    *bptr-- = Qnil;
-                }
-                break;
-            }
-            *bptr-- = ptr[i];
-        }
         if (is_splat) {
             if (num > len) {
-                *bptr = rb_ary_new();
+                *cfp->sp++ = rb_ary_new();
             }
             else {
-                *bptr = rb_ary_new4(len - num, ptr + num);
+                *cfp->sp++ = rb_ary_new4(len - num, ptr + num);
+            }
+        }
+
+        if (num > len) {
+            rb_num_t i = 0;
+            for (; i < num - len; i++) {
+                *cfp->sp++ = Qnil;
+            }
+
+            for (rb_num_t j = 0; i < num; i++, j++) {
+                *cfp->sp++ = ptr[len - j - 1];
+            }
+        }
+        else {
+            for (rb_num_t j = 0; j < num; j++) {
+                *cfp->sp++ = ptr[num - j - 1];
             }
         }
     }
+
     RB_GC_GUARD(ary);
 }
 
@@ -4356,36 +4342,6 @@ vm_call_opt_struct_aset(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp,
 NOINLINE(static VALUE vm_call_optimized(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling,
                                         const struct rb_callinfo *ci, const struct rb_callcache *cc));
 
-static VALUE
-vm_call_optimized(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling,
-                  const struct rb_callinfo *ci, const struct rb_callcache *cc)
-{
-    switch (vm_cc_cme(cc)->def->body.optimized.type) {
-      case OPTIMIZED_METHOD_TYPE_SEND:
-        CC_SET_FASTPATH(cc, vm_call_opt_send, TRUE);
-        return vm_call_opt_send(ec, cfp, calling);
-      case OPTIMIZED_METHOD_TYPE_CALL:
-        CC_SET_FASTPATH(cc, vm_call_opt_call, TRUE);
-        return vm_call_opt_call(ec, cfp, calling);
-      case OPTIMIZED_METHOD_TYPE_BLOCK_CALL:
-        CC_SET_FASTPATH(cc, vm_call_opt_block_call, TRUE);
-        return vm_call_opt_block_call(ec, cfp, calling);
-      case OPTIMIZED_METHOD_TYPE_STRUCT_AREF:
-        CALLER_SETUP_ARG(cfp, calling, ci, 0);
-        rb_check_arity(calling->argc, 0, 0);
-        CC_SET_FASTPATH(cc, vm_call_opt_struct_aref, (vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE));
-        return vm_call_opt_struct_aref(ec, cfp, calling);
-
-      case OPTIMIZED_METHOD_TYPE_STRUCT_ASET:
-        CALLER_SETUP_ARG(cfp, calling, ci, 1);
-        rb_check_arity(calling->argc, 1, 1);
-        CC_SET_FASTPATH(cc, vm_call_opt_struct_aset, (vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE));
-        return vm_call_opt_struct_aset(ec, cfp, calling);
-      default:
-        rb_bug("vm_call_method: unsupported optimized method type (%d)", vm_cc_cme(cc)->def->body.optimized.type);
-    }
-}
-
 #define VM_CALL_METHOD_ATTR(var, func, nohook) \
     if (UNLIKELY(ruby_vm_event_flags & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN))) { \
         EXEC_EVENT_HOOK(ec, RUBY_EVENT_C_CALL, calling->recv, vm_cc_cme(cc)->def->original_id, \
@@ -4400,12 +4356,55 @@ vm_call_optimized(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb
     }
 
 static VALUE
+vm_call_optimized(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling,
+                  const struct rb_callinfo *ci, const struct rb_callcache *cc)
+{
+    switch (vm_cc_cme(cc)->def->body.optimized.type) {
+      case OPTIMIZED_METHOD_TYPE_SEND:
+        CC_SET_FASTPATH(cc, vm_call_opt_send, TRUE);
+        return vm_call_opt_send(ec, cfp, calling);
+      case OPTIMIZED_METHOD_TYPE_CALL:
+        CC_SET_FASTPATH(cc, vm_call_opt_call, TRUE);
+        return vm_call_opt_call(ec, cfp, calling);
+      case OPTIMIZED_METHOD_TYPE_BLOCK_CALL:
+        CC_SET_FASTPATH(cc, vm_call_opt_block_call, TRUE);
+        return vm_call_opt_block_call(ec, cfp, calling);
+      case OPTIMIZED_METHOD_TYPE_STRUCT_AREF: {
+        CALLER_SETUP_ARG(cfp, calling, ci, 0);
+        rb_check_arity(calling->argc, 0, 0);
+
+        VALUE v;
+        VM_CALL_METHOD_ATTR(v,
+                            vm_call_opt_struct_aref(ec, cfp, calling),
+                            set_vm_cc_ivar(cc); \
+                            CC_SET_FASTPATH(cc, vm_call_opt_struct_aref, (vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE)))
+        return v;
+      }
+      case OPTIMIZED_METHOD_TYPE_STRUCT_ASET: {
+        CALLER_SETUP_ARG(cfp, calling, ci, 1);
+        rb_check_arity(calling->argc, 1, 1);
+
+        VALUE v;
+        VM_CALL_METHOD_ATTR(v,
+                            vm_call_opt_struct_aset(ec, cfp, calling),
+                            set_vm_cc_ivar(cc); \
+                            CC_SET_FASTPATH(cc, vm_call_opt_struct_aset, (vm_ci_flag(ci) & VM_CALL_ARGS_SIMPLE)))
+        return v;
+      }
+      default:
+        rb_bug("vm_call_method: unsupported optimized method type (%d)", vm_cc_cme(cc)->def->body.optimized.type);
+    }
+}
+
+static VALUE
 vm_call_method_each_type(rb_execution_context_t *ec, rb_control_frame_t *cfp, struct rb_calling_info *calling)
 {
     const struct rb_callinfo *ci = calling->cd->ci;
     const struct rb_callcache *cc = calling->cc;
     const rb_callable_method_entry_t *cme = vm_cc_cme(cc);
     VALUE v;
+
+    VM_ASSERT(! METHOD_ENTRY_INVALIDATED(cme));
 
     switch (cme->def->type) {
       case VM_METHOD_TYPE_ISEQ:

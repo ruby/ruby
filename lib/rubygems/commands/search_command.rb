@@ -8,8 +8,8 @@ class Gem::Commands::SearchCommand < Gem::Command
 
   def initialize
     super "search", "Display remote gems whose name matches REGEXP",
-         :domain => :remote, :details => false, :versions => true,
-         :installed => nil, :version => Gem::Requirement.default
+         domain: :remote, details: false, versions: true,
+         installed: nil, version: Gem::Requirement.default
 
     add_query_options
   end

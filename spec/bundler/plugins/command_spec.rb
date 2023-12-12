@@ -69,7 +69,7 @@ RSpec.describe "command plugins" do
       end
     end
 
-    bundle "plugin install copycat --source #{file_uri_for(gem_repo2)}", :raise_on_error => false
+    bundle "plugin install copycat --source #{file_uri_for(gem_repo2)}", raise_on_error: false
 
     expect(out).not_to include("Installed plugin copycat")
 

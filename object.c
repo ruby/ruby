@@ -92,6 +92,12 @@ static VALUE rb_cFalseClass_to_s;
 
 /*! \endcond */
 
+size_t
+rb_obj_embedded_size(uint32_t numiv)
+{
+    return offsetof(struct RObject, as.ary) + (sizeof(VALUE) * numiv);
+}
+
 VALUE
 rb_obj_hide(VALUE obj)
 {
@@ -702,10 +708,8 @@ rb_inspect(VALUE obj)
 }
 
 static int
-inspect_i(st_data_t k, st_data_t v, st_data_t a)
+inspect_i(ID id, VALUE value, st_data_t a)
 {
-    ID id = (ID)k;
-    VALUE value = (VALUE)v;
     VALUE str = (VALUE)a;
 
     /* need not to show internal data */

@@ -2,7 +2,7 @@
 
 RSpec.describe Bundler::Fetcher::Dependency do
   let(:downloader)  { double(:downloader) }
-  let(:remote)      { double(:remote, :uri => Bundler::URI("http://localhost:5000")) }
+  let(:remote)      { double(:remote, uri: Bundler::URI("http://localhost:5000")) }
   let(:display_uri) { "http://sample_uri.com" }
   let(:gem_remote_fetcher) { nil }
 
@@ -211,7 +211,7 @@ RSpec.describe Bundler::Fetcher::Dependency do
     let(:gem_names)         { [%w[foo bar], %w[bundler rubocop]] }
     let(:dep_api_uri)       { double(:dep_api_uri) }
     let(:unmarshalled_gems) { double(:unmarshalled_gems) }
-    let(:fetch_response)    { double(:fetch_response, :body => double(:body)) }
+    let(:fetch_response)    { double(:fetch_response, body: double(:body)) }
     let(:rubygems_limit)    { 50 }
 
     before { allow(subject).to receive(:dependency_api_uri).with(gem_names).and_return(dep_api_uri) }
@@ -228,20 +228,20 @@ RSpec.describe Bundler::Fetcher::Dependency do
     let(:gem_list) do
       [
         {
-          :dependencies => {
+          dependencies: {
             "resque" => "req3,req4",
           },
-          :name => "typhoeus",
-          :number => "1.0.1",
-          :platform => "ruby",
+          name: "typhoeus",
+          number: "1.0.1",
+          platform: "ruby",
         },
         {
-          :dependencies => {
+          dependencies: {
             "faraday" => "req1,req2",
           },
-          :name => "grape",
-          :number => "2.0.2",
-          :platform => "jruby",
+          name: "grape",
+          number: "2.0.2",
+          platform: "jruby",
         },
       ]
     end

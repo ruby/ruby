@@ -3584,7 +3584,7 @@ tmcmp(struct tm *a, struct tm *b)
  *   Time.utc(year, month = 1, mday = 1, hour = 0, min = 0, sec = 0, usec = 0) -> new_time
  *   Time.utc(sec, min, hour, mday, month, year, dummy, dummy, dummy, dummy) -> new_time
  *
- * Returns a new \Time object based the on given arguments,
+ * Returns a new +Time+ object based the on given arguments,
  * in the UTC timezone.
  *
  * With one to seven arguments given,
@@ -3662,7 +3662,7 @@ tmcmp(struct tm *a, struct tm *b)
  *   # => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
  *   Time.utc(*a) # => 0005-04-03 02:01:00 UTC
  *
- * This form is useful for creating a \Time object from a 10-element
+ * This form is useful for creating a +Time+ object from a 10-element
  * array returned by Time.to_a:
  *
  *   t = Time.new(2000, 1, 2, 3, 4, 5, 6) # => 2000-01-02 03:04:05 +000006
@@ -3693,7 +3693,7 @@ time_s_mkutc(int argc, VALUE *argv, VALUE klass)
  *   Time.local(year, month = 1, mday = 1, hour = 0, min = 0, sec = 0, usec = 0) -> new_time
  *   Time.local(sec, min, hour, mday, month, year, dummy, dummy, dummy, dummy) -> new_time
  *
- * Like Time.utc, except that the returned \Time object
+ * Like Time.utc, except that the returned +Time+ object
  * has the local timezone, not the UTC timezone:
  *
  *   # With seven arguments.
@@ -3922,7 +3922,7 @@ time_cmp(VALUE time1, VALUE time2)
  *   eql?(other_time)
  *
  * Returns +true+ if +self+ and +other_time+ are
- * both \Time objects with the exact same time value.
+ * both +Time+ objects with the exact same time value.
  */
 
 static VALUE
@@ -4062,20 +4062,20 @@ time_zonelocal(VALUE time, VALUE off)
  *  With no argument given:
  *
  *  - Returns +self+ if +self+ is a local time.
- *  - Otherwise returns a new \Time in the user's local timezone:
+ *  - Otherwise returns a new +Time+ in the user's local timezone:
  *
  *      t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
  *      t.localtime                         # => 2000-01-01 14:15:01 -0600
  *
  *  With argument +zone+ given,
- *  returns the new \Time object created by converting
+ *  returns the new +Time+ object created by converting
  *  +self+ to the given time zone:
  *
  *    t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
  *    t.localtime("-09:00")               # => 2000-01-01 11:15:01 -0900
  *
  *  For forms of argument +zone+, see
- *  {Timezone Specifiers}[rdoc-ref:timezones.rdoc].
+ *  {Timezone Specifiers}[rdoc-ref:Time@Timezone+Specifiers].
  *
  */
 
@@ -4102,7 +4102,7 @@ time_localtime_m(int argc, VALUE *argv, VALUE time)
  *    t.utc              # => 2000-01-01 06:00:00 UTC
  *    t.utc?             # => true
  *
- *  Related: Time#getutc (returns a new converted \Time object).
+ *  Related: Time#getutc (returns a new converted +Time+ object).
  */
 
 static VALUE
@@ -4167,7 +4167,7 @@ time_fixoff(VALUE time)
  *  call-seq:
  *    getlocal(zone = nil) -> new_time
  *
- *  Returns a new \Time object representing the value of +self+
+ *  Returns a new +Time+ object representing the value of +self+
  *  converted to a given timezone;
  *  if +zone+ is +nil+, the local timezone is used:
  *
@@ -4176,7 +4176,7 @@ time_fixoff(VALUE time)
  *    t.getlocal('+12:00')                  # => 2000-01-01 12:00:00 +1200
  *
  *  For forms of argument +zone+, see
- *  {Timezone Specifiers}[rdoc-ref:timezones.rdoc].
+ *  {Timezone Specifiers}[rdoc-ref:Time@Timezone+Specifiers].
  *
  */
 
@@ -4216,7 +4216,7 @@ time_getlocaltime(int argc, VALUE *argv, VALUE time)
  *  call-seq:
  *    getutc -> new_time
  *
- *  Returns a new \Time object representing the value of +self+
+ *  Returns a new +Time+ object representing the value of +self+
  *  converted to the UTC timezone:
  *
  *    local = Time.local(2000) # => 2000-01-01 00:00:00 -0600
@@ -4381,7 +4381,7 @@ time_add(const struct time_object *tobj, VALUE torig, VALUE offset, int sign)
  *  call-seq:
  *    self + numeric -> new_time
  *
- *  Returns a new \Time object whose value is the sum of the numeric value
+ *  Returns a new +Time+ object whose value is the sum of the numeric value
  *  of +self+ and the given +numeric+:
  *
  *    t = Time.new(2000) # => 2000-01-01 00:00:00 -0600
@@ -4409,7 +4409,7 @@ time_plus(VALUE time1, VALUE time2)
  *    self - other_time -> float
  *
  *  When +numeric+ is given,
- *  returns a new \Time object whose value is the difference
+ *  returns a new +Time+ object whose value is the difference
  *  of the numeric value of +self+ and +numeric+:
  *
  *    t = Time.new(2000) # => 2000-01-01 00:00:00 -0600
@@ -4459,7 +4459,7 @@ ndigits_denominator(VALUE ndigits)
  * call-seq:
  *   round(ndigits = 0) -> new_time
  *
- * Returns a new \Time object whose numeric value is that of +self+,
+ * Returns a new +Time+ object whose numeric value is that of +self+,
  * with its seconds value rounded to precision +ndigits+:
  *
  *   t = Time.utc(2010, 3, 30, 5, 43, 25.123456789r)
@@ -4508,7 +4508,7 @@ time_round(int argc, VALUE *argv, VALUE time)
  * call-seq:
  *   floor(ndigits = 0) -> new_time
  *
- * Returns a new \Time object whose numerical value
+ * Returns a new +Time+ object whose numerical value
  * is less than or equal to +self+ with its seconds
  * truncated to precision +ndigits+:
  *
@@ -4553,7 +4553,7 @@ time_floor(int argc, VALUE *argv, VALUE time)
  * call-seq:
  *   ceil(ndigits = 0)   -> new_time
  *
- * Returns a new \Time object whose numerical value
+ * Returns a new +Time+ object whose numerical value
  * is greater than or equal to +self+ with its seconds
  * truncated to precision +ndigits+:
  *
@@ -5015,7 +5015,7 @@ rb_time_utc_offset(VALUE time)
  *    #    [sec, min, hour, day, mon, year, wday, yday, dst?,   zone]
  *
  *  The returned array is suitable for use as an argument to Time.utc or Time.local
- *  to create a new \Time object.
+ *  to create a new +Time+ object.
  *
  */
 

@@ -7,7 +7,7 @@ RSpec.describe Bundler::Definition do
     before do
       allow(Bundler).to receive(:settings) { Bundler::Settings.new(".") }
       allow(Bundler::SharedHelpers).to receive(:find_gemfile) { Pathname.new("Gemfile") }
-      allow(Bundler).to receive(:ui) { double("UI", :info => "", :debug => "") }
+      allow(Bundler).to receive(:ui) { double("UI", info: "", debug: "") }
     end
     context "when it's not possible to write to the file" do
       subject { Bundler::Definition.new(nil, [], Bundler::SourceList.new, []) }
@@ -45,18 +45,23 @@ RSpec.describe Bundler::Definition do
 
   describe "detects changes" do
     it "for a path gem with changes" do
-      build_lib "foo", "1.0", :path => lib_path("foo")
+      build_lib "foo", "1.0", path: lib_path("foo")
 
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "foo", :path => "#{lib_path("foo")}"
       G
 
-      build_lib "foo", "1.0", :path => lib_path("foo") do |s|
+      build_lib "foo", "1.0", path: lib_path("foo") do |s|
         s.add_dependency "rack", "1.0"
       end
 
-      bundle :install, :env => { "DEBUG" => "1" }
+      checksums = checksums_section_when_existing do |c|
+        c.no_checksum "foo", "1.0"
+        c.checksum gem_repo1, "rack", "1.0.0"
+      end
+
+      bundle :install, env: { "DEBUG" => "1" }
 
       expect(out).to match(/re-resolving dependencies/)
       expect(lockfile).to eq <<~G
@@ -76,11 +81,7 @@ RSpec.describe Bundler::Definition do
 
         DEPENDENCIES
           foo!
-
-        CHECKSUMS
-          #{gem_no_checksum "foo", "1.0"}
-          #{checksum_for_repo_gem gem_repo1, "rack", "1.0.0"}
-
+        #{checksums}
         BUNDLED WITH
            #{Bundler::VERSION}
       G
@@ -99,15 +100,20 @@ RSpec.describe Bundler::Definition do
 
       bundle "lock --add-platform java"
 
-      bundle "update ffi", :env => { "DEBUG" => "1" }
+      bundle "update ffi", env: { "DEBUG" => "1" }
 
       expect(out).to match(/because bundler is unlocking gems: \(ffi\)/)
     end
 
     it "for a path gem with deps and no changes" do
-      build_lib "foo", "1.0", :path => lib_path("foo") do |s|
+      build_lib "foo", "1.0", path: lib_path("foo") do |s|
         s.add_dependency "rack", "1.0"
         s.add_development_dependency "net-ssh", "1.0"
+      end
+
+      checksums = checksums_section_when_existing do |c|
+        c.no_checksum "foo", "1.0"
+        c.checksum gem_repo1, "rack", "1.0.0"
       end
 
       install_gemfile <<-G
@@ -115,7 +121,7 @@ RSpec.describe Bundler::Definition do
         gem "foo", :path => "#{lib_path("foo")}"
       G
 
-      bundle :check, :env => { "DEBUG" => "1" }
+      bundle :check, env: { "DEBUG" => "1" }
 
       expect(out).to match(/using resolution from the lockfile/)
       expect(lockfile).to eq <<~G
@@ -135,24 +141,24 @@ RSpec.describe Bundler::Definition do
 
         DEPENDENCIES
           foo!
-
-        CHECKSUMS
-          #{gem_no_checksum "foo", "1.0"}
-          #{checksum_for_repo_gem gem_repo1, "rack", "1.0.0"}
-
+        #{checksums}
         BUNDLED WITH
            #{Bundler::VERSION}
       G
     end
 
     it "for a locked gem for another platform" do
+      checksums = checksums_section_when_existing do |c|
+        c.no_checksum "only_java", "1.1", "java"
+      end
+
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "only_java", platform: :jruby
       G
 
       bundle "lock --add-platform java"
-      bundle :check, :env => { "DEBUG" => "1" }
+      bundle :check, env: { "DEBUG" => "1" }
 
       expect(out).to match(/using resolution from the lockfile/)
       expect(lockfile).to eq <<~G
@@ -166,22 +172,23 @@ RSpec.describe Bundler::Definition do
 
         DEPENDENCIES
           only_java
-
-        CHECKSUMS
-          only_java (1.1-java)
-
+        #{checksums}
         BUNDLED WITH
            #{Bundler::VERSION}
       G
     end
 
     it "for a rubygems gem" do
+      checksums = checksums_section_when_existing do |c|
+        c.checksum gem_repo1, "foo", "1.0"
+      end
+
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "foo"
       G
 
-      bundle :check, :env => { "DEBUG" => "1" }
+      bundle :check, env: { "DEBUG" => "1" }
 
       expect(out).to match(/using resolution from the lockfile/)
       expect(lockfile).to eq <<~G
@@ -195,10 +202,7 @@ RSpec.describe Bundler::Definition do
 
         DEPENDENCIES
           foo
-
-        CHECKSUMS
-          #{checksum_for_repo_gem gem_repo1, "foo", "1.0"}
-
+        #{checksums}
         BUNDLED WITH
            #{Bundler::VERSION}
       G
@@ -274,7 +278,7 @@ RSpec.describe Bundler::Definition do
             bundled_app_lock,
             updated_deps_in_gemfile,
             source_list,
-            :gems => ["shared_owner_a"], :conservative => true
+            gems: ["shared_owner_a"], conservative: true
           )
           locked = definition.send(:converge_locked_specs).map(&:name)
           expect(locked).to eq %w[isolated_dep isolated_owner shared_dep shared_owner_b]

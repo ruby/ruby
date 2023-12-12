@@ -238,6 +238,6 @@ RSpec.describe "The library itself" do
   private
 
   def each_line(filename, &block)
-    File.readlines(filename, :encoding => "UTF-8").each_with_index(&block)
+    File.readlines(filename, encoding: "UTF-8").each_with_index(&block)
   end
 end

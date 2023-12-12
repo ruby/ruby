@@ -20,7 +20,7 @@ module Bundler
         # Stringify options that could be set as symbols
         %w[ref branch tag revision].each {|k| options[k] = options[k].to_s if options[k] }
 
-        @uri        = URINormalizer.normalize_suffix(options["uri"] || "", :trailing_slash => false)
+        @uri        = URINormalizer.normalize_suffix(options["uri"] || "", trailing_slash: false)
         @safe_uri   = URICredentialsFilter.credential_filtered_uri(@uri)
         @branch     = options["branch"]
         @ref        = options["ref"] || options["branch"] || options["tag"]
@@ -198,7 +198,7 @@ module Bundler
           @copied = true
         end
 
-        generate_bin_options = { :disable_extensions => !Bundler.rubygems.spec_missing_extensions?(spec), :build_args => options[:build_args] }
+        generate_bin_options = { disable_extensions: !Bundler.rubygems.spec_missing_extensions?(spec), build_args: options[:build_args] }
         generate_bin(spec, generate_bin_options)
 
         requires_checkout? ? spec.post_install_message : nil

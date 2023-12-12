@@ -2,17 +2,17 @@
 
 module Bundler
   class CLI::Config < Thor
-    class_option :parseable, :type => :boolean, :banner => "Use minimal formatting for more parseable output"
+    class_option :parseable, type: :boolean, banner: "Use minimal formatting for more parseable output"
 
     def self.scope_options
-      method_option :global, :type => :boolean, :banner => "Only change the global config"
-      method_option :local, :type => :boolean, :banner => "Only change the local config"
+      method_option :global, type: :boolean, banner: "Only change the global config"
+      method_option :local, type: :boolean, banner: "Only change the local config"
     end
     private_class_method :scope_options
 
-    desc "base NAME [VALUE]", "The Bundler 1 config interface", :hide => true
+    desc "base NAME [VALUE]", "The Bundler 1 config interface", hide: true
     scope_options
-    method_option :delete, :type => :boolean, :banner => "delete"
+    method_option :delete, type: :boolean, banner: "delete"
     def base(name = nil, *value)
       new_args =
         if ARGV.size == 1
@@ -25,8 +25,9 @@ module Bundler
           ["config", "get", ARGV[1]]
         end
 
-      SharedHelpers.major_deprecation 3,
-        "Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle #{new_args.join(" ")}` instead."
+      message = "Using the `config` command without a subcommand [list, get, set, unset] is deprecated and will be removed in the future. Use `bundle #{new_args.join(" ")}` instead."
+      removed_message = "Using the `config` command without a subcommand [list, get, set, unset] is has been removed. Use `bundle #{new_args.join(" ")}` instead."
+      SharedHelpers.major_deprecation 3, message, removed_message: removed_message
 
       Base.new(options, name, value, self).run
     end

@@ -3,7 +3,7 @@
 RSpec.describe "bundle install" do
   describe "with path configured" do
     before :each do
-      build_gem "rack", "1.0.0", :to_system => true do |s|
+      build_gem "rack", "1.0.0", to_system: true do |s|
         s.write "lib/rack.rb", "puts 'FAIL'"
       end
 
@@ -23,7 +23,7 @@ RSpec.describe "bundle install" do
       bundle "config set --local path.system true"
       bundle "config set --global path vendor/bundle"
       bundle :install
-      run "require 'rack'", :raise_on_error => false
+      run "require 'rack'", raise_on_error: false
       expect(out).to include("FAIL")
     end
 
@@ -32,7 +32,7 @@ RSpec.describe "bundle install" do
       dir.mkpath
 
       bundle "config set --local path #{dir.join("vendor/bundle")}"
-      bundle :install, :dir => dir
+      bundle :install, dir: dir
       expect(out).to include("installed into `./vendor/bundle`")
 
       dir.rmtree
@@ -44,13 +44,13 @@ RSpec.describe "bundle install" do
       expect(out).to include("gems are installed into `./vendor/bundle`")
     end
 
-    it "disallows --path vendor/bundle --system", :bundler => "< 3" do
-      bundle "install --path vendor/bundle --system", :raise_on_error => false
+    it "disallows --path vendor/bundle --system", bundler: "< 3" do
+      bundle "install --path vendor/bundle --system", raise_on_error: false
       expect(err).to include("Please choose only one option.")
       expect(exitstatus).to eq(15)
     end
 
-    it "remembers to disable system gems after the first time with bundle --path vendor/bundle", :bundler => "< 3" do
+    it "remembers to disable system gems after the first time with bundle --path vendor/bundle", bundler: "< 3" do
       bundle "install --path vendor/bundle"
       FileUtils.rm_rf bundled_app("vendor")
       bundle "install"
@@ -62,22 +62,22 @@ RSpec.describe "bundle install" do
     context "with path_relative_to_cwd set to true" do
       before { bundle "config set path_relative_to_cwd true" }
 
-      it "installs the bundle relatively to current working directory", :bundler => "< 3" do
-        bundle "install --gemfile='#{bundled_app}/Gemfile' --path vendor/bundle", :dir => bundled_app.parent
+      it "installs the bundle relatively to current working directory", bundler: "< 3" do
+        bundle "install --gemfile='#{bundled_app}/Gemfile' --path vendor/bundle", dir: bundled_app.parent
         expect(out).to include("installed into `./vendor/bundle`")
         expect(bundled_app("../vendor/bundle")).to be_directory
         expect(the_bundle).to include_gems "rack 1.0.0"
       end
 
       it "installs the standalone bundle relative to the cwd" do
-        bundle :install, :gemfile => bundled_app_gemfile, :standalone => true, :dir => bundled_app.parent
+        bundle :install, gemfile: bundled_app_gemfile, standalone: true, dir: bundled_app.parent
         expect(out).to include("installed into `./bundled_app/bundle`")
         expect(bundled_app("bundle")).to be_directory
         expect(bundled_app("bundle/ruby")).to be_directory
 
         bundle "config unset path"
 
-        bundle :install, :gemfile => bundled_app_gemfile, :standalone => true, :dir => bundled_app("subdir").tap(&:mkpath)
+        bundle :install, gemfile: bundled_app_gemfile, standalone: true, dir: bundled_app("subdir").tap(&:mkpath)
         expect(out).to include("installed into `../bundle`")
         expect(bundled_app("bundle")).to be_directory
         expect(bundled_app("bundle/ruby")).to be_directory
@@ -87,7 +87,7 @@ RSpec.describe "bundle install" do
 
   describe "when BUNDLE_PATH or the global path config is set" do
     before :each do
-      build_lib "rack", "1.0.0", :to_system => true do |s|
+      build_lib "rack", "1.0.0", to_system: true do |s|
         s.write "lib/rack.rb", "raise 'FAIL'"
       end
 
@@ -141,7 +141,7 @@ RSpec.describe "bundle install" do
           set_bundle_path(type, "vendor")
 
           FileUtils.mkdir_p bundled_app("lol")
-          bundle :install, :dir => bundled_app("lol")
+          bundle :install, dir: bundled_app("lol")
 
           expect(bundled_app("vendor", Bundler.ruby_scope, "gems/rack-1.0.0")).to be_directory
           expect(the_bundle).to include_gems "rack 1.0.0"
@@ -168,7 +168,7 @@ RSpec.describe "bundle install" do
 
     it "disables system gems when passing a path to install" do
       # This is so that vendored gems can be distributed to others
-      build_gem "rack", "1.1.0", :to_system => true
+      build_gem "rack", "1.1.0", to_system: true
       bundle "config set --local path ./vendor/bundle"
       bundle :install
 
@@ -177,7 +177,7 @@ RSpec.describe "bundle install" do
     end
 
     it "re-installs gems whose extensions have been deleted" do
-      build_lib "very_simple_binary", "1.0.0", :to_system => true do |s|
+      build_lib "very_simple_binary", "1.0.0", to_system: true do |s|
         s.write "lib/very_simple_binary.rb", "raise 'FAIL'"
       end
 
@@ -191,11 +191,11 @@ RSpec.describe "bundle install" do
 
       expect(vendored_gems("gems/very_simple_binary-1.0")).to be_directory
       expect(vendored_gems("extensions")).to be_directory
-      expect(the_bundle).to include_gems "very_simple_binary 1.0", :source => "remote1"
+      expect(the_bundle).to include_gems "very_simple_binary 1.0", source: "remote1"
 
       vendored_gems("extensions").rmtree
 
-      run "require 'very_simple_binary_c'", :raise_on_error => false
+      run "require 'very_simple_binary_c'", raise_on_error: false
       expect(err).to include("Bundler::GemNotFound")
 
       bundle "config set --local path ./vendor/bundle"
@@ -203,7 +203,7 @@ RSpec.describe "bundle install" do
 
       expect(vendored_gems("gems/very_simple_binary-1.0")).to be_directory
       expect(vendored_gems("extensions")).to be_directory
-      expect(the_bundle).to include_gems "very_simple_binary 1.0", :source => "remote1"
+      expect(the_bundle).to include_gems "very_simple_binary 1.0", source: "remote1"
     end
   end
 
@@ -219,7 +219,7 @@ RSpec.describe "bundle install" do
       G
 
       bundle "config set --local path bundle"
-      bundle :install, :raise_on_error => false
+      bundle :install, raise_on_error: false
       expect(err).to include("file already exists")
     end
   end

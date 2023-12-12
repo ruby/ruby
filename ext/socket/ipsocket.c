@@ -54,15 +54,22 @@ init_inetsock_internal(VALUE v)
     VALUE connect_timeout = arg->connect_timeout;
     struct timeval tv_storage;
     struct timeval *tv = NULL;
+    int remote_addrinfo_hints = 0;
 
     if (!NIL_P(connect_timeout)) {
         tv_storage = rb_time_interval(connect_timeout);
         tv = &tv_storage;
     }
 
+    if (type == INET_SERVER) {
+      remote_addrinfo_hints |= AI_PASSIVE;
+    }
+#ifdef HAVE_CONST_AI_ADDRCONFIG
+    remote_addrinfo_hints |= AI_ADDRCONFIG;
+#endif
+
     arg->remote.res = rsock_addrinfo(arg->remote.host, arg->remote.serv,
-                                     family, SOCK_STREAM,
-                                     (type == INET_SERVER) ? AI_PASSIVE : 0);
+                                     family, SOCK_STREAM, remote_addrinfo_hints);
 
 
     /*

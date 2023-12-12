@@ -1,5 +1,9 @@
 gnumake = yes
 
+ifneq ($(filter notintermediate,$(.FEATURES)),)
+DOT_WAIT = .WAIT
+endif
+
 ifeq ($(filter Makefile,$(MAKEFILE_LIST)),)
 include Makefile
 
@@ -13,10 +17,6 @@ override REVISION_FORCE := PHONY
 endif
 
 override order_only := |
-
-ifneq ($(filter notintermediate,$(.FEATURES)),)
-DOT_WAIT = .WAIT
-endif
 
 # Needs the dependency when any Unicode tables data files exist.
 override UNICODE_TABLES_DEPENDENTS = \

@@ -93,6 +93,27 @@ module IRB
     end
   end
 
+  class TypeCompletor < BaseCompletor # :nodoc:
+    def initialize(context)
+      @context = context
+    end
+
+    def inspect
+      ReplTypeCompletor.info
+    end
+
+    def completion_candidates(preposing, target, _postposing, bind:)
+      result = ReplTypeCompletor.analyze(preposing + target, binding: bind, filename: @context.irb_path)
+      return [] unless result
+      result.completion_candidates.map { target + _1 }
+    end
+
+    def doc_namespace(preposing, matched, _postposing, bind:)
+      result = ReplTypeCompletor.analyze(preposing + matched, binding: bind, filename: @context.irb_path)
+      result&.doc_namespace('')
+    end
+  end
+
   class RegexpCompletor < BaseCompletor # :nodoc:
     using Module.new {
       refine ::Binding do

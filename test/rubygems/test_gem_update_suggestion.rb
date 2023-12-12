@@ -40,7 +40,7 @@ class TestUpdateSuggestion < Gem::TestCase
     Gem.ui.stub :tty?, tty do
       Gem.stub :rubygems_version, rubygems_version do
         Gem.stub :latest_rubygems_version, latest_rubygems_version do
-          cmd.stub :ci?, ci do
+          Gem::CIDetector.stub :ci?, ci do
             yield
           end
         end

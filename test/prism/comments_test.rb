@@ -39,37 +39,23 @@ module Prism
       )
     end
 
-    def test_comment___END__
-      source = <<~RUBY
+    def test___END__
+      result = Prism.parse(<<~RUBY)
         __END__
         comment
       RUBY
 
-      assert_comment(
-        source,
-        DATAComment,
-        start_offset: 0,
-        end_offset: 16,
-        start_line: 1,
-        end_line: 3,
-        start_column: 0,
-        end_column: 0
-      )
+      data_loc = result.data_loc
+      assert_equal 0, data_loc.start_offset
+      assert_equal 16, data_loc.end_offset
     end
 
-    def test_comment___END__crlf
-      source = "__END__\r\ncomment\r\n"
+    def test___END__crlf
+      result = Prism.parse("__END__\r\ncomment\r\n")
 
-      assert_comment(
-        source,
-        DATAComment,
-        start_offset: 0,
-        end_offset: 18,
-        start_line: 1,
-        end_line: 3,
-        start_column: 0,
-        end_column: 0
-      )
+      data_loc = result.data_loc
+      assert_equal 0, data_loc.start_offset
+      assert_equal 18, data_loc.end_offset
     end
 
     def test_comment_embedded_document

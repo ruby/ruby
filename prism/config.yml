@@ -345,18 +345,32 @@ flags:
         comment: "&. operator"
       - name: VARIABLE_CALL
         comment: "a call that could have been a local variable"
+      - name: ATTRIBUTE_WRITE
+        comment: "a call that is an attribute write, so the value being written should be returned"
     comment: Flags for call nodes.
+  - name: EncodingFlags
+    values:
+      - name: FORCED_UTF8_ENCODING
+        comment: "internal bytes forced the encoding to UTF-8"
+      - name: FORCED_BINARY_ENCODING
+        comment: "internal bytes forced the encoding to binary"
+    comment: Flags for nodes that have unescaped content.
   - name: IntegerBaseFlags
     values:
       - name: BINARY
         comment: "0b prefix"
-      - name: OCTAL
-        comment: "0o or 0 prefix"
       - name: DECIMAL
         comment: "0d or no prefix"
+      - name: OCTAL
+        comment: "0o or 0 prefix"
       - name: HEXADECIMAL
         comment: "0x prefix"
     comment: Flags for integer nodes that correspond to the base of the integer.
+  - name: KeywordHashNodeFlags
+    values:
+      - name: STATIC_KEYS
+        comment: "a keyword hash which only has `AssocNode` elements all with static literal keys, which means the elements can be treated as keyword arguments"
+    comment: Flags for keyword hash nodes.
   - name: LoopFlags
     values:
       - name: BEGIN_MODIFIER
@@ -385,12 +399,31 @@ flags:
         comment: "s - forces the Windows-31J encoding"
       - name: UTF_8
         comment: "u - forces the UTF-8 encoding"
+      - name: FORCED_UTF8_ENCODING
+        comment: "internal bytes forced the encoding to UTF-8"
+      - name: FORCED_BINARY_ENCODING
+        comment: "internal bytes forced the encoding to binary"
+      - name: FORCED_US_ASCII_ENCODING
+        comment: "internal bytes forced the encoding to US-ASCII"
     comment: Flags for regular expression and match last line nodes.
   - name: StringFlags
     values:
+      - name: FORCED_UTF8_ENCODING
+        comment: "internal bytes forced the encoding to UTF-8"
+      - name: FORCED_BINARY_ENCODING
+        comment: "internal bytes forced the encoding to binary"
       - name: FROZEN
         comment: "frozen by virtue of a `frozen_string_literal` comment"
     comment: Flags for string nodes.
+  - name: SymbolFlags
+    values:
+      - name: FORCED_UTF8_ENCODING
+        comment: "internal bytes forced the encoding to UTF-8"
+      - name: FORCED_BINARY_ENCODING
+        comment: "internal bytes forced the encoding to binary"
+      - name: FORCED_US_ASCII_ENCODING
+        comment: "internal bytes forced the encoding to US-ASCII"
+    comment: Flags for symbol nodes.
 nodes:
   - name: AliasGlobalVariableNode
     fields:
@@ -446,11 +479,11 @@ nodes:
           ^^^^^^^^^^^^^^
   - name: ArgumentsNode
     fields:
-      - name: arguments
-        type: node[]
       - name: flags
         type: flags
         kind: ArgumentsNodeFlags
+      - name: arguments
+        type: node[]
     comment: |
       Represents a set of arguments to a method or a keyword.
 
@@ -458,15 +491,15 @@ nodes:
                  ^^^^^^^^^^^^^
   - name: ArrayNode
     fields:
+      - name: flags
+        type: flags
+        kind: ArrayNodeFlags
       - name: elements
         type: node[]
       - name: opening_loc
         type: location?
       - name: closing_loc
         type: location?
-      - name: flags
-        type: flags
-        kind: ArrayNodeFlags
     comment: |
       Represents an array literal. This can be a regular array using brackets or
       a special array using % like %w or %i.
@@ -587,9 +620,10 @@ nodes:
     fields:
       - name: locals
         type: constant[]
+      - name: locals_body_index
+        type: uint32
       - name: parameters
         type: node?
-        kind: BlockParametersNode
       - name: body
         type: node?
       - name: opening_loc
@@ -649,15 +683,15 @@ nodes:
           ^^^^^^^^^
   - name: CallAndWriteNode
     fields:
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
         type: location?
       - name: message_loc
         type: location?
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: read_name
         type: constant
       - name: write_name
@@ -673,10 +707,15 @@ nodes:
           ^^^^^^^^^^^^^^^^^
   - name: CallNode
     fields:
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
         type: location?
+      - name: name
+        type: constant
       - name: message_loc
         type: location?
       - name: opening_loc
@@ -688,11 +727,6 @@ nodes:
         type: location?
       - name: block
         type: node?
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
-      - name: name
-        type: constant
     comment: |
       Represents a method call, in all of the various forms that can take.
 
@@ -715,15 +749,15 @@ nodes:
           ^^^^^^^^
   - name: CallOperatorWriteNode
     fields:
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
         type: location?
       - name: message_loc
         type: location?
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: read_name
         type: constant
       - name: write_name
@@ -741,15 +775,15 @@ nodes:
           ^^^^^^^^^^^^^^
   - name: CallOrWriteNode
     fields:
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
         type: location?
       - name: message_loc
         type: location?
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: read_name
         type: constant
       - name: write_name
@@ -763,6 +797,32 @@ nodes:
 
           foo.bar ||= value
           ^^^^^^^^^^^^^^^^^
+  - name: CallTargetNode
+    fields:
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
+      - name: receiver
+        type: node
+      - name: call_operator_loc
+        type: location
+      - name: name
+        type: constant
+      - name: message_loc
+        type: location
+    comment: |
+      Represents assigning to a method call.
+
+          foo.bar, = 1
+          ^^^^^^^
+
+          begin
+          rescue => foo.bar
+                    ^^^^^^^
+          end
+
+          for foo.bar in baz do end
+              ^^^^^^^
   - name: CapturePatternNode
     fields:
       - name: value
@@ -1104,6 +1164,8 @@ nodes:
         type: node?
       - name: locals
         type: constant[]
+      - name: locals_body_index
+        type: uint32
       - name: def_keyword_loc
         type: location
       - name: operator_loc
@@ -1227,15 +1289,15 @@ nodes:
                  ^^^^^^^^^^^^^^^^^^^^
   - name: FlipFlopNode
     fields:
+      - name: flags
+        type: flags
+        kind: RangeFlags
       - name: left
         type: node?
       - name: right
         type: node?
       - name: operator_loc
         type: location
-      - name: flags
-        type: flags
-        kind: RangeFlags
     comment: |
       Represents the use of the `..` or `...` operators to create flip flops.
 
@@ -1453,6 +1515,21 @@ nodes:
 
           { Foo: }
             ^^^^
+  - name: ImplicitRestNode
+    comment: |
+      Represents using a trailing comma to indicate an implicit rest parameter.
+
+          foo { |bar,| }
+                    ^
+
+          foo in [bar,]
+                     ^
+
+          for foo, in bar do end
+                 ^
+
+          foo, = bar
+             ^
   - name: InNode
     fields:
       - name: pattern
@@ -1471,6 +1548,9 @@ nodes:
                   ^^^^^^^^^^^
   - name: IndexAndWriteNode
     fields:
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
@@ -1484,9 +1564,6 @@ nodes:
         type: location
       - name: block
         type: node?
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: operator_loc
         type: location
       - name: value
@@ -1498,6 +1575,9 @@ nodes:
           ^^^^^^^^^^^^^^^^^^^^^^
   - name: IndexOperatorWriteNode
     fields:
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
@@ -1511,9 +1591,6 @@ nodes:
         type: location
       - name: block
         type: node?
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: operator
         type: constant
       - name: operator_loc
@@ -1527,6 +1604,9 @@ nodes:
           ^^^^^^^^^^^^^^^^^^^^^
   - name: IndexOrWriteNode
     fields:
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
       - name: receiver
         type: node?
       - name: call_operator_loc
@@ -1540,9 +1620,6 @@ nodes:
         type: location
       - name: block
         type: node?
-      - name: flags
-        type: flags
-        kind: CallNodeFlags
       - name: operator_loc
         type: location
       - name: value
@@ -1552,6 +1629,35 @@ nodes:
 
           foo.bar[baz] ||= value
           ^^^^^^^^^^^^^^^^^^^^^^
+  - name: IndexTargetNode
+    fields:
+      - name: flags
+        type: flags
+        kind: CallNodeFlags
+      - name: receiver
+        type: node
+      - name: opening_loc
+        type: location
+      - name: arguments
+        type: node?
+        kind: ArgumentsNode
+      - name: closing_loc
+        type: location
+      - name: block
+        type: node?
+    comment: |
+      Represents assigning to an index.
+
+          foo[bar], = 1
+          ^^^^^^^^
+
+          begin
+          rescue => foo[bar]
+                    ^^^^^^^^
+          end
+
+          for foo[bar] in baz do end
+              ^^^^^^^^
   - name: InstanceVariableAndWriteNode
     fields:
       - name: name
@@ -1644,15 +1750,15 @@ nodes:
           ^
   - name: InterpolatedMatchLastLineNode
     fields:
+      - name: flags
+        type: flags
+        kind: RegularExpressionFlags
       - name: opening_loc
         type: location
       - name: parts
         type: node[]
       - name: closing_loc
         type: location
-      - name: flags
-        type: flags
-        kind: RegularExpressionFlags
     newline: parts
     comment: |
       Represents a regular expression literal that contains interpolation that
@@ -1663,15 +1769,15 @@ nodes:
              ^^^^^^^^^^^^^^^^
   - name: InterpolatedRegularExpressionNode
     fields:
+      - name: flags
+        type: flags
+        kind: RegularExpressionFlags
       - name: opening_loc
         type: location
       - name: parts
         type: node[]
       - name: closing_loc
         type: location
-      - name: flags
-        type: flags
-        kind: RegularExpressionFlags
     newline: parts
     comment: |
       Represents a regular expression literal that contains interpolation.
@@ -1722,6 +1828,9 @@ nodes:
           ^^^^^^^^^^^^^^^^
   - name: KeywordHashNode
     fields:
+      - name: flags
+        type: flags
+        kind: KeywordHashNodeFlags
       - name: elements
         type: node[]
     comment: |
@@ -1747,6 +1856,8 @@ nodes:
     fields:
       - name: locals
         type: constant[]
+      - name: locals_body_index
+        type: uint32
       - name: operator_loc
         type: location
       - name: opening_loc
@@ -1755,7 +1866,6 @@ nodes:
         type: location
       - name: parameters
         type: node?
-        kind: BlockParametersNode
       - name: body
         type: node?
     comment: |
@@ -1859,6 +1969,9 @@ nodes:
           ^^^^^^^
   - name: MatchLastLineNode
     fields:
+      - name: flags
+        type: flags
+        kind: RegularExpressionFlags
       - name: opening_loc
         type: location
       - name: content_loc
@@ -1867,9 +1980,6 @@ nodes:
         type: location
       - name: unescaped
         type: string
-      - name: flags
-        type: flags
-        kind: RegularExpressionFlags
     comment: |
       Represents a regular expression literal used in the predicate of a
       conditional to implicitly match against the last line read by an IO
@@ -2007,6 +2117,16 @@ nodes:
           def a(**nil)
                 ^^^^^
           end
+  - name: NumberedParametersNode
+    fields:
+      - name: maximum
+        type: uint8
+    comment: |
+      Represents an implicit set of parameters through the use of numbered
+      parameters within a block or lambda.
+
+          -> { _1 + _2 }
+          ^^^^^^^^^^^^^^
   - name: NumberedReferenceReadNode
     fields:
       - name: number
@@ -2067,7 +2187,6 @@ nodes:
         type: node[]
       - name: rest
         type: node?
-        kind: RestParameterNode
       - name: posts
         type: node[]
       - name: keywords
@@ -2167,15 +2286,15 @@ nodes:
     comment: The top level node of any parse tree.
   - name: RangeNode
     fields:
+      - name: flags
+        type: flags
+        kind: RangeFlags
       - name: left
         type: node?
       - name: right
         type: node?
       - name: operator_loc
         type: location
-      - name: flags
-        type: flags
-        kind: RangeFlags
     comment: |
       Represents the use of the `..` or `...` operators.
 
@@ -2201,6 +2320,9 @@ nodes:
           ^^^^
   - name: RegularExpressionNode
     fields:
+      - name: flags
+        type: flags
+        kind: RegularExpressionFlags
       - name: opening_loc
         type: location
       - name: content_loc
@@ -2209,9 +2331,6 @@ nodes:
         type: location
       - name: unescaped
         type: string
-      - name: flags
-        type: flags
-        kind: RegularExpressionFlags
     comment: |
       Represents a regular expression literal with no interpolation.
 
@@ -2426,6 +2545,9 @@ nodes:
           ^^^^^^^^^^^^^^
   - name: SymbolNode
     fields:
+      - name: flags
+        type: flags
+        kind: SymbolFlags
       - name: opening_loc
         type: location?
       - name: value_loc
@@ -2486,6 +2608,9 @@ nodes:
           ^^^^^^^^^^^^^^^^^^^^^^^
   - name: UntilNode
     fields:
+      - name: flags
+        type: flags
+        kind: LoopFlags
       - name: keyword_loc
         type: location
       - name: closing_loc
@@ -2495,9 +2620,6 @@ nodes:
       - name: statements
         type: node?
         kind: StatementsNode
-      - name: flags
-        type: flags
-        kind: LoopFlags
     newline: predicate
     comment: |
       Represents the use of the `until` keyword, either in the block form or the modifier form.
@@ -2525,6 +2647,9 @@ nodes:
           end
   - name: WhileNode
     fields:
+      - name: flags
+        type: flags
+        kind: LoopFlags
       - name: keyword_loc
         type: location
       - name: closing_loc
@@ -2534,9 +2659,6 @@ nodes:
       - name: statements
         type: node?
         kind: StatementsNode
-      - name: flags
-        type: flags
-        kind: LoopFlags
     newline: predicate
     comment: |
       Represents the use of the `while` keyword, either in the block form or the modifier form.
@@ -2548,6 +2670,9 @@ nodes:
           ^^^^^^^^^^^^^^^^^^^^
   - name: XStringNode
     fields:
+      - name: flags
+        type: flags
+        kind: EncodingFlags
       - name: opening_loc
         type: location
       - name: content_loc

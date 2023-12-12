@@ -82,6 +82,7 @@ module IRB # :nodoc:
     @CONF[:USE_LOADER] = false
     @CONF[:IGNORE_SIGINT] = true
     @CONF[:IGNORE_EOF] = false
+    @CONF[:USE_PAGER] = true
     @CONF[:EXTRA_DOC_DIRS] = []
     @CONF[:ECHO] = nil
     @CONF[:ECHO_ON_ASSIGNMENT] = nil
@@ -188,10 +189,6 @@ module IRB # :nodoc:
       # Symbol aliases
       :'$' => :show_source,
       :'@' => :whereami,
-      # Keyword aliases
-      :break => :irb_break,
-      :catch => :irb_catch,
-      :next => :irb_next,
     }
   end
 
@@ -285,6 +282,8 @@ module IRB # :nodoc:
         end
       when "--noinspect"
         @CONF[:INSPECT_MODE] = false
+      when "--no-pager"
+        @CONF[:USE_PAGER] = false
       when "--singleline", "--readline", "--legacy"
         @CONF[:USE_SINGLELINE] = true
       when "--nosingleline", "--noreadline"

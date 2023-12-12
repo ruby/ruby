@@ -88,7 +88,7 @@ RSpec.describe Bundler do
       end
     end
 
-    context "with correct YAML file", :if => defined?(Encoding) do
+    context "with correct YAML file", if: defined?(Encoding) do
       it "can load a gemspec with unicode characters with default ruby encoding" do
         # spec_helper forces the external encoding to UTF-8 but that's not the
         # default until Ruby 2.0
@@ -139,7 +139,7 @@ RSpec.describe Bundler do
             end
           GEMSPEC
         end
-        expect(Bundler.rubygems).to receive(:validate).with have_attributes(:name => "validated")
+        expect(Bundler.rubygems).to receive(:validate).with have_attributes(name: "validated")
         subject
       end
     end

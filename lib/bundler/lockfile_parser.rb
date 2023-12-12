@@ -24,7 +24,15 @@ module Bundler
       end
     end
 
-    attr_reader :sources, :dependencies, :specs, :platforms, :bundler_version, :ruby_version, :checksums
+    attr_reader(
+      :sources,
+      :dependencies,
+      :specs,
+      :platforms,
+      :bundler_version,
+      :ruby_version,
+      :checksums,
+    )
 
     BUNDLED      = "BUNDLED WITH"
     DEPENDENCIES = "DEPENDENCIES"
@@ -111,6 +119,9 @@ module Bundler
         elsif line == DEPENDENCIES
           @parse_method = :parse_dependency
         elsif line == CHECKSUMS
+          # This is a temporary solution to make this feature disabled by default
+          # for all gemfiles that don't already explicitly include the feature.
+          @checksums = true
           @parse_method = :parse_checksum
         elsif line == PLATFORMS
           @parse_method = :parse_platform
@@ -228,8 +239,6 @@ module Bundler
       version = Gem::Version.new(version)
       platform = platform ? Gem::Platform.new(platform) : Gem::Platform::RUBY
       full_name = Gem::NameTuple.new(name, version, platform).full_name
-      # Don't raise exception if there's a checksum for a gem that's not in the lockfile,
-      # we prefer to heal invalid lockfiles
       return unless spec = @specs[full_name]
 
       checksums.split(",") do |lock_checksum|

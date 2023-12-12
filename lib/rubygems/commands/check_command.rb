@@ -10,7 +10,7 @@ class Gem::Commands::CheckCommand < Gem::Command
 
   def initialize
     super "check", "Check a gem repository for added or missing files",
-          :alien => true, :doctor => false, :dry_run => false, :gems => true
+          alien: true, doctor: false, dry_run: false, gems: true
 
     add_option("-a", "--[no-]alien",
                'Report "unmanaged" or rogue files in the',

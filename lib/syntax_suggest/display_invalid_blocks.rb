@@ -14,7 +14,7 @@ module SyntaxSuggest
       @filename = filename
       @code_lines = code_lines
 
-      @terminal = terminal == DEFAULT_VALUE ? io.isatty : terminal
+      @terminal = (terminal == DEFAULT_VALUE) ? io.isatty : terminal
     end
 
     def document_ok?

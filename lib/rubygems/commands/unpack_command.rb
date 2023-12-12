@@ -21,8 +21,8 @@ class Gem::Commands::UnpackCommand < Gem::Command
     require "fileutils"
 
     super "unpack", "Unpack an installed gem to the current directory",
-          :version => Gem::Requirement.default,
-          :target => Dir.pwd
+          version: Gem::Requirement.default,
+          target: Dir.pwd
 
     add_option("--target=DIR",
                "target directory for unpacking") do |value, options|

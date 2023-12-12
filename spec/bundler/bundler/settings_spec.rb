@@ -131,7 +131,7 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
 
       Bundler.settings.set_command_option :no_install, true
 
-      Bundler.settings.temporary(:no_install => false) do
+      Bundler.settings.temporary(no_install: false) do
         expect(Bundler.settings[:no_install]).to eq false
       end
 
@@ -147,12 +147,12 @@ that would suck --ehhh=oh geez it looks like i might have broken bundler somehow
 
     context "when called without a block" do
       it "leaves the setting changed" do
-        Bundler.settings.temporary(:foo => :random)
+        Bundler.settings.temporary(foo: :random)
         expect(Bundler.settings[:foo]).to eq "random"
       end
 
       it "returns nil" do
-        expect(Bundler.settings.temporary(:foo => :bar)).to be_nil
+        expect(Bundler.settings.temporary(foo: :bar)).to be_nil
       end
     end
   end

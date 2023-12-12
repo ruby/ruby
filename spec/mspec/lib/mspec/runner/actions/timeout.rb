@@ -48,11 +48,12 @@ class TimeoutAction
 
               show_backtraces
               if MSpec.subprocesses.empty?
-                exit 2
+                exit! 2
               else
                 # Do not exit but signal the subprocess so we can get their output
                 MSpec.subprocesses.each do |pid|
-                  Process.kill :SIGTERM, pid
+                  kill_wait_one_second :SIGTERM, pid
+                  hard_kill :SIGKILL, pid
                 end
                 @fail = true
                 @current_state = nil
@@ -80,7 +81,7 @@ class TimeoutAction
 
     if @fail
       STDERR.puts "\n\nThe last example #{@error_message}. See above for the subprocess stacktrace."
-      exit 2
+      exit! 2
     end
   end
 
@@ -89,12 +90,28 @@ class TimeoutAction
     @thread.join
   end
 
+  private def hard_kill(signal, pid)
+    begin
+      Process.kill signal, pid
+    rescue Errno::ESRCH
+      # Process already terminated
+    end
+  end
+
+  private def kill_wait_one_second(signal, pid)
+    begin
+      Process.kill signal, pid
+      sleep 1
+    rescue Errno::ESRCH
+      # Process already terminated
+    end
+  end
+
   private def show_backtraces
     java_stacktraces = -> pid {
       if RUBY_ENGINE == 'truffleruby' || RUBY_ENGINE == 'jruby'
         STDERR.puts 'Java stacktraces:'
-        Process.kill :SIGQUIT, pid
-        sleep 1
+        kill_wait_one_second :SIGQUIT, pid
       end
     }
 
@@ -118,8 +135,7 @@ class TimeoutAction
 
         if RUBY_ENGINE == 'truffleruby'
           STDERR.puts "\nRuby backtraces:"
-          Process.kill :SIGALRM, pid
-          sleep 1
+          kill_wait_one_second :SIGALRM, pid
         else
           STDERR.puts "Don't know how to print backtraces of a subprocess on #{RUBY_ENGINE}"
         end

@@ -75,7 +75,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     @fetcher.data["http://gems.example.com/gems/a-10.a.gem"] = p1a_data
 
     dep = Gem::Dependency.new "a"
-    inst = Gem::DependencyInstaller.new :prerelease => true
+    inst = Gem::DependencyInstaller.new prerelease: true
     inst.install dep
 
     assert_equal %w[a-10.a], Gem::Specification.map(&:full_name)
@@ -97,7 +97,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     dep = Gem::Dependency.new "a"
 
-    inst = Gem::DependencyInstaller.new :prerelease => true
+    inst = Gem::DependencyInstaller.new prerelease: true
     inst.install dep
 
     assert_equal %w[a-1.b b-1.b c-1.1.b], Gem::Specification.map(&:full_name)
@@ -132,7 +132,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     @fetcher.data["http://gems.example.com/gems/a-1.gem"] = p1a_data
 
     dep = Gem::Dependency.new "a"
-    inst = Gem::DependencyInstaller.new :prerelease => true
+    inst = Gem::DependencyInstaller.new prerelease: true
     inst.install dep
 
     assert_equal %w[a-1], Gem::Specification.map(&:full_name)
@@ -153,7 +153,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new :ignore_dependencies => true
+      inst = Gem::DependencyInstaller.new ignore_dependencies: true
       inst.install "b"
     end
 
@@ -178,7 +178,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir dir do
-      inst = Gem::DependencyInstaller.new :cache_dir => @tempdir
+      inst = Gem::DependencyInstaller.new cache_dir: @tempdir
       inst.install "b"
     end
 
@@ -274,7 +274,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     FileUtils.mv @b1_gem, @tempdir
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new(:build_docs_in_background => false)
+      inst = Gem::DependencyInstaller.new(build_docs_in_background: false)
       inst.install "b"
     end
 
@@ -294,7 +294,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new(:development => true)
+      inst = Gem::DependencyInstaller.new(development: true)
       inst.install "b"
     end
 
@@ -314,7 +314,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new(:development => true)
+      inst = Gem::DependencyInstaller.new(development: true)
       inst.install "d"
     end
 
@@ -334,7 +334,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new(:development => true, :dev_shallow => true)
+      inst = Gem::DependencyInstaller.new(development: true, dev_shallow: true)
       inst.install "d"
     end
 
@@ -421,7 +421,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new :domain => :local
+      inst = Gem::DependencyInstaller.new domain: :local
       inst.install "a-1.gem"
     end
 
@@ -435,7 +435,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new :domain => :local
+      inst = Gem::DependencyInstaller.new domain: :local
       inst.install "a-1.a.gem"
     end
 
@@ -451,7 +451,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new :domain => :local
+      inst = Gem::DependencyInstaller.new domain: :local
       inst.install "b-1.gem"
     end
 
@@ -469,7 +469,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     Dir.chdir @tempdir do
       Gem::Installer.at("a-1.gem").install
 
-      inst = Gem::DependencyInstaller.new :domain => :local
+      inst = Gem::DependencyInstaller.new domain: :local
       inst.install "b-1.gem"
     end
 
@@ -516,7 +516,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new :domain => :local
+      inst = Gem::DependencyInstaller.new domain: :local
       inst.install "gems/a-1.gem"
     end
 
@@ -542,7 +542,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new :ignore_dependencies => true
+      inst = Gem::DependencyInstaller.new ignore_dependencies: true
       inst.install "b", req("= 1")
     end
 
@@ -550,7 +550,7 @@ class TestGemDependencyInstaller < Gem::TestCase
                  "sanity check"
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new :minimal_deps => true
+      inst = Gem::DependencyInstaller.new minimal_deps: true
       inst.install "e"
     end
 
@@ -576,7 +576,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new :ignore_dependencies => true
+      inst = Gem::DependencyInstaller.new ignore_dependencies: true
       inst.install "b", req("= 1")
     end
 
@@ -584,7 +584,7 @@ class TestGemDependencyInstaller < Gem::TestCase
                  "sanity check"
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new :minimal_deps => false
+      inst = Gem::DependencyInstaller.new minimal_deps: false
       inst.install "e"
     end
 
@@ -601,7 +601,7 @@ class TestGemDependencyInstaller < Gem::TestCase
       assert_empty dep_installer.document
     end
 
-    inst = Gem::DependencyInstaller.new :domain => :local, :document => []
+    inst = Gem::DependencyInstaller.new domain: :local, document: []
 
     inst.install @a1_gem
 
@@ -615,7 +615,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new :env_shebang => true, :wrappers => true, :format_executable => false
+      inst = Gem::DependencyInstaller.new env_shebang: true, wrappers: true, format_executable: false
       inst.install "a"
     end
 
@@ -634,7 +634,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new :force => true
+      inst = Gem::DependencyInstaller.new force: true
       inst.install "b"
     end
 
@@ -649,7 +649,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     build_args = %w[--a --b="c"]
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new(:build_args => build_args)
+      inst = Gem::DependencyInstaller.new(build_args: build_args)
       inst.install "a"
     end
 
@@ -663,7 +663,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new :ignore_dependencies => true
+      inst = Gem::DependencyInstaller.new ignore_dependencies: true
       inst.install "b"
     end
 
@@ -684,7 +684,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new :install_dir => gemhome2
+      inst = Gem::DependencyInstaller.new install_dir: gemhome2
       inst.install "b"
     end
 
@@ -708,7 +708,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new :domain => :both
+      inst = Gem::DependencyInstaller.new domain: :both
       inst.install "b"
     end
 
@@ -732,7 +732,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new :domain => :both
+      inst = Gem::DependencyInstaller.new domain: :both
       inst.install "b"
     end
 
@@ -747,7 +747,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     Dir.chdir @tempdir do
       e = assert_raise Gem::UnsatisfiableDependencyError do
-        inst = Gem::DependencyInstaller.new :domain => :local
+        inst = Gem::DependencyInstaller.new domain: :local
         inst.install "b"
       end
 
@@ -768,7 +768,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     @fetcher.data["http://gems.example.com/gems/a-1.gem"] = a1_data
 
-    inst = Gem::DependencyInstaller.new :domain => :remote
+    inst = Gem::DependencyInstaller.new domain: :remote
     inst.install "a"
 
     assert_equal %w[a-1], inst.installed_gems.map(&:full_name)
@@ -784,7 +784,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     gemhome2 = "#{@gemhome}2"
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new :install_dir => gemhome2
+      inst = Gem::DependencyInstaller.new install_dir: gemhome2
       inst.install "a"
     end
 
@@ -811,7 +811,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     inst = nil
 
     Dir.chdir @tempdir do
-      inst = Gem::DependencyInstaller.new :force => true
+      inst = Gem::DependencyInstaller.new force: true
       inst.install "a"
     end
 
@@ -885,7 +885,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     @fetcher.data["http://gems.example.com/gems/#{a2_o.file_name}"] =
       a2_o_data
 
-    inst = Gem::DependencyInstaller.new :domain => :remote
+    inst = Gem::DependencyInstaller.new domain: :remote
     inst.install "a"
 
     assert_equal %w[a-1], inst.installed_gems.map(&:full_name)
@@ -896,7 +896,7 @@ class TestGemDependencyInstaller < Gem::TestCase
       s.platform = Gem::Platform.new %w[cpu other_platform 1]
     end
 
-    inst = Gem::DependencyInstaller.new :domain => :local
+    inst = Gem::DependencyInstaller.new domain: :local
     inst.install a_gem
 
     assert_equal %w[a-1-cpu-other_platform-1], inst.installed_gems.map(&:full_name)
@@ -915,7 +915,7 @@ class TestGemDependencyInstaller < Gem::TestCase
       @fetcher.data["http://gems.example.com/gems/b-1.gem"] = data
 
       policy = Gem::Security::HighSecurity
-      inst = Gem::DependencyInstaller.new :security_policy => policy
+      inst = Gem::DependencyInstaller.new security_policy: policy
 
       e = assert_raise Gem::Security::Exception do
         inst.install "b"
@@ -935,7 +935,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
       @fetcher.data["http://gems.example.com/gems/a-1.gem"] = read_binary(@a1_gem)
 
-      inst = Gem::DependencyInstaller.new :wrappers => false, :format_executable => false
+      inst = Gem::DependencyInstaller.new wrappers: false, format_executable: false
       inst.install "a"
 
       refute_match(/This file was generated by RubyGems./,
@@ -1155,7 +1155,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     FileUtils.mv @a1_gem, @tempdir
     FileUtils.mv @b1_gem, @tempdir
 
-    inst = Gem::DependencyInstaller.new :ignore_dependencies => true
+    inst = Gem::DependencyInstaller.new ignore_dependencies: true
     request_set = inst.resolve_dependencies "b", req(">= 0")
 
     requests = request_set.sorted_requests.map(&:full_name)

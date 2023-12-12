@@ -103,7 +103,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
   end
 
   def test_error_message
-    e = assert_raise_with_message(SocketError, /getaddrinfo/) do
+    e = assert_raise_with_message(Socket::ResolutionError, /getaddrinfo/) do
       Addrinfo.ip("...")
     end
     m = e.message
@@ -357,7 +357,7 @@ class TestSocketAddrinfo < Test::Unit::TestCase
     ai = Addrinfo.unix("/testdir/sock").family_addrinfo("/testdir/sock2")
     assert_equal("/testdir/sock2", ai.unix_path)
     assert_equal(Socket::SOCK_STREAM, ai.socktype)
-    assert_raise(SocketError) { Addrinfo.tcp("0.0.0.0", 4649).family_addrinfo("::1", 80) }
+    assert_raise(Socket::ResolutionError) { Addrinfo.tcp("0.0.0.0", 4649).family_addrinfo("::1", 80) }
   end
 
   def random_port

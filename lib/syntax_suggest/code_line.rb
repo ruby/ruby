@@ -180,12 +180,19 @@ module SyntaxSuggest
     #     EOM
     #     expect(lines.first.trailing_slash?).to eq(true)
     #
-    def trailing_slash?
-      last = @lex.last
-      return false unless last
-      return false unless last.type == :on_sp
+    if SyntaxSuggest.use_prism_parser?
+      def trailing_slash?
+        last = @lex.last
+        last&.type == :on_tstring_end
+      end
+    else
+      def trailing_slash?
+        last = @lex.last
+        return false unless last
+        return false unless last.type == :on_sp
 
-      last.token == TRAILING_SLASH
+        last.token == TRAILING_SLASH
+      end
     end
 
     # Endless method detection

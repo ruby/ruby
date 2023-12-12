@@ -5,7 +5,7 @@ require_relative "../../spec_helper"
 module SyntaxSuggest
   RSpec.describe Capture::BeforeAfterKeywordEnds do
     it "before after keyword ends" do
-      source = <<~'EOM'
+      source = <<~EOM
         def nope
           print 'not me'
         end
@@ -36,7 +36,7 @@ module SyntaxSuggest
       ).call
       lines.sort!
 
-      expect(lines.join).to include(<<~'EOM')
+      expect(lines.join).to include(<<~EOM)
         def lol
         end
         def yolo

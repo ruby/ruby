@@ -366,8 +366,9 @@ dump_append_string_content(struct dump_config *dc, VALUE obj)
 static inline void
 dump_append_id(struct dump_config *dc, ID id)
 {
-    if (is_instance_id(id)) {
-        dump_append_string_value(dc, rb_sym2str(ID2SYM(id)));
+    VALUE str = rb_sym2str(ID2SYM(id));
+    if (RTEST(str)) {
+        dump_append_string_value(dc, str);
     }
     else {
         dump_append(dc, "\"ID_INTERNAL(");
@@ -443,7 +444,7 @@ dump_object(VALUE obj, struct dump_config *dc)
             mid = vm_ci_mid((const struct rb_callinfo *)obj);
             if (mid != 0) {
                 dump_append(dc, ", \"mid\":");
-                dump_append_string_value(dc, rb_id2str(mid));
+                dump_append_id(dc, mid);
             }
             break;
 
@@ -451,7 +452,7 @@ dump_object(VALUE obj, struct dump_config *dc)
             mid = vm_cc_cme((const struct rb_callcache *)obj)->called_id;
             if (mid != 0) {
                 dump_append(dc, ", \"called_id\":");
-                dump_append_string_value(dc, rb_id2str(mid));
+                dump_append_id(dc, mid);
 
                 VALUE klass = ((const struct rb_callcache *)obj)->klass;
                 if (klass != 0) {

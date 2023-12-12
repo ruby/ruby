@@ -22,7 +22,6 @@ describe "Module#ruby2_keywords" do
     end
 
     h = {a: 1}
-    obj.regular(**h).should.equal?(h)
 
     last = mark(**h).last
     Hash.ruby2_keywords_hash?(last).should == true

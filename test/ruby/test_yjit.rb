@@ -1102,6 +1102,31 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_code_gc_with_auto_compact
+    assert_compiles((code_gc_helpers + <<~'RUBY'), exits: :any, result: :ok, mem_size: 1, code_gc: true)
+      # Test ISEQ moves in the middle of code GC
+      GC.auto_compact = true
+
+      fiber = Fiber.new {
+        # Loop to call the same basic block again after Fiber.yield
+        while true
+          Fiber.yield(nil.to_i)
+        end
+      }
+
+      return :not_paged1 unless add_pages(250) # use some pages
+      return :broken_resume1 if fiber.resume != 0 # leave an on-stack code as well
+
+      add_pages(2000) # use a whole lot of pages to run out of 1MiB
+      return :broken_resume2 if fiber.resume != 0 # on-stack code should be callable
+
+      code_gc_count = RubyVM::YJIT.runtime_stats[:code_gc_count]
+      return :"code_gc_#{code_gc_count}" if code_gc_count == 0
+
+      :ok
+    RUBY
+  end
+
   def test_code_gc_partial_last_page
     # call_threshold: 2 to avoid JIT-ing code_gc itself. If code_gc were JITed right before
     # code_gc is called, the last page would be on stack.
@@ -1324,6 +1349,36 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_return_to_invalidated_frame
+    assert_compiles(code_gc_helpers + <<~RUBY, exits: :any, result: :ok)
+      def jump
+        [] # something not inlined
+      end
+
+      def entry(code_gc)
+        jit_exception(code_gc)
+        jump # faulty jump after code GC. #jit_exception should not come back.
+      end
+
+      def jit_exception(code_gc)
+        if code_gc
+          tap do
+            RubyVM::YJIT.code_gc
+            break # jit_exec_exception catches TAG_BREAK and re-enters JIT code
+          end
+        end
+      end
+
+      add_pages(100)
+      jump           # Compile #jump in a non-first page
+      add_pages(100)
+      entry(false)   # Compile #entry and its call to #jump in another page
+      entry(true)    # Free #jump but not #entry
+
+      :ok
+    RUBY
+  end
+
   def test_setivar_on_class
     # Bug in https://github.com/ruby/ruby/pull/8152
     assert_compiles(<<~RUBY, result: :ok)
@@ -1435,9 +1490,9 @@ class TestYJIT < Test::Unit::TestCase
       end
 
       def add_pages(num_jits)
-        pages = RubyVM::YJIT.runtime_stats[:compiled_page_count]
+        pages = RubyVM::YJIT.runtime_stats[:live_page_count]
         num_jits.times { return false unless eval('compiles { nil.to_i }') }
-        pages.nil? || pages < RubyVM::YJIT.runtime_stats[:compiled_page_count]
+        pages.nil? || pages < RubyVM::YJIT.runtime_stats[:live_page_count]
       end
     RUBY
   end

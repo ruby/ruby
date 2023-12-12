@@ -24,6 +24,7 @@
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/rational.h"
+#include "internal/string.h"
 #include "ruby_assert.h"
 
 #define ZERO INT2FIX(0)
@@ -474,12 +475,19 @@ nucomp_s_canonicalize_internal(VALUE klass, VALUE real, VALUE imag)
 
 /*
  * call-seq:
- *    Complex.rect(real[, imag])         ->  complex
- *    Complex.rectangular(real[, imag])  ->  complex
+ *   Complex.rect(real, imag = 0) -> complex
  *
- * Returns a complex object which denotes the given rectangular form.
+ * Returns a new \Complex object formed from the arguments,
+ * each of which must be an instance of Numeric,
+ * or an instance of one of its subclasses:
+ * \Complex, Float, Integer, Rational;
+ * see {Rectangular Coordinates}[rdoc-ref:Complex@Rectangular+Coordinates]:
  *
- *    Complex.rectangular(1, 2)  #=> (1+2i)
+ *   Complex.rect(3)             # => (3+0i)
+ *   Complex.rect(3, Math::PI)   # => (3+3.141592653589793i)
+ *   Complex.rect(-3, -Math::PI) # => (-3-3.141592653589793i)
+ *
+ * \Complex.rectangular is an alias for \Complex.rect.
  */
 static VALUE
 nucomp_s_new(int argc, VALUE *argv, VALUE klass)
@@ -516,39 +524,54 @@ static VALUE nucomp_s_convert(int argc, VALUE *argv, VALUE klass);
 
 /*
  * call-seq:
- *    Complex(x[, y], exception: true)  ->  numeric or nil
+ *   Complex(real, imag = 0, exception: true) -> complex or nil
+ *   Complex(s, exception: true) -> complex or nil
  *
- * Returns x+i*y;
+ * Returns a new \Complex object if the arguments are valid;
+ * otherwise raises an exception if +exception+ is +true+;
+ * otherwise returns +nil+.
  *
- *    Complex(1, 2)    #=> (1+2i)
- *    Complex('1+2i')  #=> (1+2i)
- *    Complex(nil)     #=> TypeError
- *    Complex(1, nil)  #=> TypeError
+ * With Numeric arguments +real+ and +imag+,
+ * returns <tt>Complex.rect(real, imag)</tt> if the arguments are valid.
  *
- *    Complex(1, nil, exception: false)  #=> nil
- *    Complex('1+2', exception: false)   #=> nil
+ * With string argument +s+, returns a new \Complex object if the argument is valid;
+ * the string may have:
  *
- * Syntax of string form:
+ * - One or two numeric substrings,
+ *   each of which specifies a Complex, Float, Integer, Numeric, or Rational value,
+ *   specifying {rectangular coordinates}[rdoc-ref:Complex@Rectangular+Coordinates]:
  *
- *   string form = extra spaces , complex , extra spaces ;
- *   complex = real part | [ sign ] , imaginary part
- *           | real part , sign , imaginary part
- *           | rational , "@" , rational ;
- *   real part = rational ;
- *   imaginary part = imaginary unit | unsigned rational , imaginary unit ;
- *   rational = [ sign ] , unsigned rational ;
- *   unsigned rational = numerator | numerator , "/" , denominator ;
- *   numerator = integer part | fractional part | integer part , fractional part ;
- *   denominator = digits ;
- *   integer part = digits ;
- *   fractional part = "." , digits , [ ( "e" | "E" ) , [ sign ] , digits ] ;
- *   imaginary unit = "i" | "I" | "j" | "J" ;
- *   sign = "-" | "+" ;
- *   digits = digit , { digit | "_" , digit };
- *   digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
- *   extra spaces = ? \s* ? ;
+ *   - Sign-separated real and imaginary numeric substrings
+ *     (with trailing character <tt>'i'</tt>):
  *
- * See String#to_c.
+ *       Complex('1+2i')  # => (1+2i)
+ *       Complex('+1+2i') # => (1+2i)
+ *       Complex('+1-2i') # => (1-2i)
+ *       Complex('-1+2i') # => (-1+2i)
+ *       Complex('-1-2i') # => (-1-2i)
+ *
+ *   - Real-only numeric string (without trailing character <tt>'i'</tt>):
+ *
+ *       Complex('1')  # => (1+0i)
+ *       Complex('+1') # => (1+0i)
+ *       Complex('-1') # => (-1+0i)
+ *
+ *   - Imaginary-only numeric string (with trailing character <tt>'i'</tt>):
+ *
+ *       Complex('1i')  # => (0+1i)
+ *       Complex('+1i') # => (0+1i)
+ *       Complex('-1i') # => (0-1i)
+ *
+ * - At-sign separated real and imaginary rational substrings,
+ *   each of which specifies a Rational value,
+ *   specifying {polar coordinates}[rdoc-ref:Complex@Polar+Coordinates]:
+ *
+ *     Complex('1/2@3/4')   # => (0.36584443443691045+0.34081938001166706i)
+ *     Complex('+1/2@+3/4') # => (0.36584443443691045+0.34081938001166706i)
+ *     Complex('+1/2@-3/4') # => (0.36584443443691045-0.34081938001166706i)
+ *     Complex('-1/2@+3/4') # => (-0.36584443443691045-0.34081938001166706i)
+ *     Complex('-1/2@-3/4') # => (-0.36584443443691045+0.34081938001166706i)
+ *
  */
 static VALUE
 nucomp_f_complex(int argc, VALUE *argv, VALUE klass)
@@ -698,14 +721,18 @@ rb_dbl_complex_new_polar_pi(double abs, double ang)
 
 /*
  * call-seq:
- *    Complex.polar(abs[, arg])  ->  complex
+ *   Complex.polar(abs, arg = 0) -> complex
  *
- * Returns a complex object which denotes the given polar form.
+ * Returns a new \Complex object formed from the arguments,
+ * each of which must be an instance of Numeric,
+ * or an instance of one of its subclasses:
+ * \Complex, Float, Integer, Rational;
+ * see {Polar Coordinates}[rdoc-ref:Complex@Polar+Coordinates]:
  *
- *    Complex.polar(3, 0)            #=> (3.0+0.0i)
- *    Complex.polar(3, Math::PI/2)   #=> (1.836909530733566e-16+3.0i)
- *    Complex.polar(3, Math::PI)     #=> (-3.0+3.673819061467132e-16i)
- *    Complex.polar(3, -Math::PI/2)  #=> (1.836909530733566e-16-3.0i)
+ *   Complex.polar(3)        # => (3+0i)
+ *   Complex.polar(3, 2.0)   # => (-1.2484405096414273+2.727892280477045i)
+ *   Complex.polar(-3, -2.0) # => (1.2484405096414273+2.727892280477045i)
+ *
  */
 static VALUE
 nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
@@ -725,12 +752,19 @@ nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
 
 /*
  * call-seq:
- *    cmp.real  ->  real
+ *   real -> numeric
  *
- * Returns the real part.
+ * Returns the real value for +self+:
  *
- *    Complex(7).real      #=> 7
- *    Complex(9, -4).real  #=> 9
+ *   Complex(7).real      #=> 7
+ *   Complex(9, -4).real  #=> 9
+ *
+ * If +self+ was created with
+ * {polar coordinates}[rdoc-ref:Complex@Polar+Coordinates], the returned value
+ * is computed, and may be inexact:
+ *
+ *   Complex.polar(1, Math::PI/4).real # => 0.7071067811865476 # Square root of 2.
+ *
  */
 VALUE
 rb_complex_real(VALUE self)
@@ -741,13 +775,21 @@ rb_complex_real(VALUE self)
 
 /*
  * call-seq:
- *    cmp.imag       ->  real
- *    cmp.imaginary  ->  real
+ *   imag -> numeric
  *
- * Returns the imaginary part.
+ * Returns the imaginary value for +self+:
  *
  *    Complex(7).imaginary      #=> 0
  *    Complex(9, -4).imaginary  #=> -4
+ *
+ * If +self+ was created with
+ * {polar coordinates}[rdoc-ref:Complex@Polar+Coordinates], the returned value
+ * is computed, and may be inexact:
+ *
+ *   Complex.polar(1, Math::PI/4).imag # => 0.7071067811865476 # Square root of 2.
+ *
+ * \Complex#imaginary is an alias for \Complex#imag.
+ *
  */
 VALUE
 rb_complex_imag(VALUE self)
@@ -2076,23 +2118,14 @@ string_to_c_strict(VALUE self, int raise)
 
     rb_must_asciicompat(self);
 
-    s = RSTRING_PTR(self);
-
-    if (!s || memchr(s, '\0', RSTRING_LEN(self))) {
-        if (!raise) return Qnil;
-        rb_raise(rb_eArgError, "string contains null byte");
+    if (raise) {
+        s = StringValueCStr(self);
+    }
+    else if (!(s = rb_str_to_cstr(self))) {
+        return Qnil;
     }
 
-    if (s && s[RSTRING_LEN(self)]) {
-        rb_str_modify(self);
-        s = RSTRING_PTR(self);
-        s[RSTRING_LEN(self)] = '\0';
-    }
-
-    if (!s)
-        s = (char *)"";
-
-    if (!parse_comp(s, 1, &num)) {
+    if (!parse_comp(s, TRUE, &num)) {
         if (!raise) return Qnil;
         rb_raise(rb_eArgError, "invalid value for convert(): %+"PRIsVALUE,
                  self);
@@ -2133,23 +2166,11 @@ string_to_c_strict(VALUE self, int raise)
 static VALUE
 string_to_c(VALUE self)
 {
-    char *s;
     VALUE num;
 
     rb_must_asciicompat(self);
 
-    s = RSTRING_PTR(self);
-
-    if (s && s[RSTRING_LEN(self)]) {
-        rb_str_modify(self);
-        s = RSTRING_PTR(self);
-        s[RSTRING_LEN(self)] = '\0';
-    }
-
-    if (!s)
-        s = (char *)"";
-
-    (void)parse_comp(s, 0, &num);
+    (void)parse_comp(rb_str_fill_terminator(self, 1), FALSE, &num);
 
     return num;
 }
@@ -2339,45 +2360,59 @@ float_arg(VALUE self)
 }
 
 /*
- * A complex number can be represented as a paired real number with
- * imaginary unit; a+bi.  Where a is real part, b is imaginary part
- * and i is imaginary unit.  Real a equals complex a+0i
- * mathematically.
+ * A \Complex object houses a pair of values,
+ * given when the object is created as either <i>rectangular coordinates</i>
+ * or <i>polar coordinates</i>.
  *
- * You can create a \Complex object explicitly with:
+ * == Rectangular Coordinates
  *
- * - A {complex literal}[rdoc-ref:syntax/literals.rdoc@Complex+Literals].
+ * The rectangular coordinates of a complex number
+ * are called the _real_ and _imaginary_ parts;
+ * see {Complex number definition}[https://en.wikipedia.org/wiki/Complex_number#Definition].
  *
- * You can convert certain objects to \Complex objects with:
+ * You can create a \Complex object from rectangular coordinates with:
  *
- * - \Method #Complex.
+ * - A {complex literal}[rdoc-ref:doc/syntax/literals.rdoc@Complex+Literals].
+ * - \Method Complex.rect.
+ * - \Method Kernel#Complex, either with numeric arguments or with certain string arguments.
+ * - \Method String#to_c, for certain strings.
  *
- * Complex object can be created as literal, and also by using
- * Kernel#Complex, Complex::rect, Complex::polar or to_c method.
+ * Note that each of the stored parts may be a an instance one of the classes
+ * Complex, Float, Integer, or Rational;
+ * they may be retrieved:
  *
- *    2+1i                 #=> (2+1i)
- *    Complex(1)           #=> (1+0i)
- *    Complex(2, 3)        #=> (2+3i)
- *    Complex.polar(2, 3)  #=> (-1.9799849932008908+0.2822400161197344i)
- *    3.to_c               #=> (3+0i)
+ * - Separately, with methods Complex#real and Complex#imaginary.
+ * - Together, with method Complex#rect.
  *
- * You can also create complex object from floating-point numbers or
- * strings.
+ * The corresponding (computed) polar values may be retrieved:
  *
- *    Complex(0.3)         #=> (0.3+0i)
- *    Complex('0.3-0.5i')  #=> (0.3-0.5i)
- *    Complex('2/3+3/4i')  #=> ((2/3)+(3/4)*i)
- *    Complex('1@2')       #=> (-0.4161468365471424+0.9092974268256817i)
+ * - Separately, with methods Complex#abs and Complex#arg.
+ * - Together, with method Complex#polar.
  *
- *    0.3.to_c             #=> (0.3+0i)
- *    '0.3-0.5i'.to_c      #=> (0.3-0.5i)
- *    '2/3+3/4i'.to_c      #=> ((2/3)+(3/4)*i)
- *    '1@2'.to_c           #=> (-0.4161468365471424+0.9092974268256817i)
+ * == Polar Coordinates
  *
- * A complex object is either an exact or an inexact number.
+ * The polar coordinates of a complex number
+ * are called the _absolute_ and _argument_ parts;
+ * see {Complex polar plane}[https://en.wikipedia.org/wiki/Complex_number#Polar_complex_plane].
  *
- *    Complex(1, 1) / 2    #=> ((1/2)+(1/2)*i)
- *    Complex(1, 1) / 2.0  #=> (0.5+0.5i)
+ * You can create a \Complex object from polar coordinates with:
+ *
+ * - \Method Complex.polar.
+ * - \Method Kernel#Complex, with certain string arguments.
+ * - \Method String#to_c, for certain strings.
+ *
+ * Note that each of the stored parts may be a an instance one of the classes
+ * Complex, Float, Integer, or Rational;
+ * they may be retrieved:
+ *
+ * - Separately, with methods Complex#abs and Complex#arg.
+ * - Together, with method Complex#polar.
+ *
+ * The corresponding (computed) rectangular values may be retrieved:
+ *
+ * - Separately, with methods Complex#real and Complex#imag.
+ * - Together, with method Complex#rect.
+ *
  */
 void
 Init_Complex(void)
@@ -2498,7 +2533,11 @@ Init_Complex(void)
     rb_define_method(rb_cFloat, "phase", float_arg, 0);
 
     /*
-     * The imaginary unit.
+     * Equivalent
+     * to <tt>Complex(0, 1)</tt>:
+     *
+     *   Complex::I # => (0+1i)
+     *
      */
     rb_define_const(rb_cComplex, "I",
                     f_complex_new_bang2(rb_cComplex, ZERO, ONE));

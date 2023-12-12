@@ -9,7 +9,6 @@
 #define SHAPE_IN_BASIC_FLAGS 1
 typedef uint32_t attr_index_t;
 typedef uint32_t shape_id_t;
-typedef uint32_t redblack_id_t;
 # define SHAPE_ID_NUM_BITS 32
 
 #else
@@ -18,10 +17,11 @@ typedef uint32_t redblack_id_t;
 #define SHAPE_IN_BASIC_FLAGS 0
 typedef uint16_t attr_index_t;
 typedef uint16_t shape_id_t;
-typedef uint16_t redblack_id_t;
 # define SHAPE_ID_NUM_BITS 16
 
 #endif
+
+typedef uint32_t redblack_id_t;
 
 #define MAX_IVARS (attr_index_t)(-1)
 

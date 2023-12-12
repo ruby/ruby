@@ -1,0 +1,3 @@
+<<-TARGET.chomp # the heredoc end token doesn't always precede the comment
+  content makes for an obvious error
+TARGET

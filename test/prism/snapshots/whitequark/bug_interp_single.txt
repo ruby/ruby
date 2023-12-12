@@ -16,6 +16,7 @@
         │   │       └── closing_loc: (1,4)-(1,5) = "}"
         │   └── closing_loc: (1,5)-(1,6) = "\""
         └── @ ArrayNode (location: (3,0)-(3,8))
+            ├── flags: ∅
             ├── elements: (length: 1)
             │   └── @ InterpolatedStringNode (location: (3,3)-(3,7))
             │       ├── opening_loc: ∅
@@ -30,5 +31,4 @@
             │       │       └── closing_loc: (3,6)-(3,7) = "}"
             │       └── closing_loc: ∅
             ├── opening_loc: (3,0)-(3,3) = "%W\""
-            ├── closing_loc: (3,7)-(3,8) = "\""
-            └── flags: ∅
+            └── closing_loc: (3,7)-(3,8) = "\""

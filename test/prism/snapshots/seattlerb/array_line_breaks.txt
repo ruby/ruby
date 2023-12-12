@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(4,1))
     └── body: (length: 2)
         ├── @ ArrayNode (location: (1,0)-(3,4))
+        │   ├── flags: ∅
         │   ├── elements: (length: 2)
         │   │   ├── @ StringNode (location: (2,0)-(2,3))
         │   │   │   ├── flags: ∅
@@ -18,7 +19,6 @@
         │   │       ├── closing_loc: (3,2)-(3,3) = "'"
         │   │       └── unescaped: "b"
         │   ├── opening_loc: (1,0)-(1,1) = "["
-        │   ├── closing_loc: (3,3)-(3,4) = "]"
-        │   └── flags: ∅
+        │   └── closing_loc: (3,3)-(3,4) = "]"
         └── @ IntegerNode (location: (4,0)-(4,1))
             └── flags: decimal

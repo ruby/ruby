@@ -291,11 +291,11 @@ rb_warning_s_warn(int argc, VALUE *argv, VALUE mod)
  *
  *  Changing the behavior of Warning.warn is useful to customize how warnings are
  *  handled by Ruby, for instance by filtering some warnings, and/or outputting
- *  warnings somewhere other than $stderr.
+ *  warnings somewhere other than <tt>$stderr</tt>.
  *
  *  If you want to change the behavior of Warning.warn you should use
- *  +Warning.extend(MyNewModuleWithWarnMethod)+ and you can use `super`
- *  to get the default behavior of printing the warning to $stderr.
+ *  <tt>Warning.extend(MyNewModuleWithWarnMethod)</tt> and you can use +super+
+ *  to get the default behavior of printing the warning to <tt>$stderr</tt>.
  *
  *  Example:
  *    module MyWarningFilter
@@ -312,7 +312,7 @@ rb_warning_s_warn(int argc, VALUE *argv, VALUE mod)
  *  You should never redefine Warning#warn (the instance method), as that will
  *  then no longer provide a way to use the default behavior.
  *
- *  The +warning+ gem provides convenient ways to customize Warning.warn.
+ *  The warning[https://rubygems.org/gems/warning] gem provides convenient ways to customize Warning.warn.
  */
 
 static VALUE
@@ -2693,6 +2693,14 @@ syntax_error_with_path(VALUE exc, VALUE path, VALUE *mesg, rb_encoding *enc)
 
 static st_table *syserr_tbl;
 
+void
+rb_free_warning(void)
+{
+    st_free_table(warning_categories.id2enum);
+    st_free_table(warning_categories.enum2id);
+    st_free_table(syserr_tbl);
+}
+
 static VALUE
 set_syserr(int n, const char *name)
 {
@@ -3248,9 +3256,9 @@ exception_dumper(VALUE exc)
 }
 
 static int
-ivar_copy_i(st_data_t key, st_data_t val, st_data_t exc)
+ivar_copy_i(ID key, VALUE val, st_data_t exc)
 {
-    rb_ivar_set((VALUE) exc, (ID) key, (VALUE) val);
+    rb_ivar_set((VALUE)exc, key, val);
     return ST_CONTINUE;
 }
 

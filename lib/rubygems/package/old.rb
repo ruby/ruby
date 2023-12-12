@@ -70,7 +70,7 @@ class Gem::Package::Old < Gem::Package
           file_data << line
         end
 
-        file_data = file_data.strip.unpack("m")[0]
+        file_data = file_data.strip.unpack1("m")
         file_data = Zlib::Inflate.inflate file_data
 
         raise Gem::Package::FormatError, "#{full_name} in #{@gem} is corrupt" if
@@ -78,7 +78,7 @@ class Gem::Package::Old < Gem::Package
 
         FileUtils.rm_rf destination
 
-        FileUtils.mkdir_p File.dirname(destination), :mode => dir_mode && 0o755
+        FileUtils.mkdir_p File.dirname(destination), mode: dir_mode && 0o755
 
         File.open destination, "wb", file_mode(entry["mode"]) do |out|
           out.write file_data

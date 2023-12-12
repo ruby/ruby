@@ -72,11 +72,11 @@ require 'open3/version'
 # Each of the methods above accepts:
 #
 # - An optional hash of environment variable names and values;
-#   see {Execution Environment}[rdoc-ref:Process#Execution+Environment].
+#   see {Execution Environment}[rdoc-ref:Process@Execution+Environment].
 # - A required string argument that is a +command_line+ or +exe_path+;
-#   see {Argument command_line or exe_path}[rdoc-ref:Process#Argument+command_line+or+exe_path].
+#   see {Argument command_line or exe_path}[rdoc-ref:Process@Argument+command_line+or+exe_path].
 # - An optional hash of execution options;
-#   see {Execution Options}[rdoc-ref:Process#Execution+Options].
+#   see {Execution Options}[rdoc-ref:Process@Execution+Options].
 #
 module Open3
 
@@ -135,12 +135,17 @@ module Open3
   #
   # Like Process.spawn, this method has potential security vulnerabilities
   # if called with untrusted input;
-  # see {Command Injection}[rdoc-ref:command_injection.rdoc].
+  # see {Command Injection}[rdoc-ref:command_injection.rdoc@Command+Injection].
   #
   # Unlike Process.spawn, this method waits for the child process to exit
   # before returning, so the caller need not do so.
   #
-  # Argument +options+ is a hash of options for the new process;
+  # If the first argument is a hash, it becomes leading argument +env+
+  # in the call to Process.spawn;
+  # see {Execution Environment}[rdoc-ref:Process@Execution+Environment].
+  #
+  # If the last argument is a hash, it becomes trailing argument +options+
+  # in the call to Process.spawn;
   # see {Execution Options}[rdoc-ref:Process@Execution+Options].
   #
   # The single required argument is one of the following:
@@ -283,12 +288,17 @@ module Open3
   #
   # Like Process.spawn, this method has potential security vulnerabilities
   # if called with untrusted input;
-  # see {Command Injection}[rdoc-ref:command_injection.rdoc].
+  # see {Command Injection}[rdoc-ref:command_injection.rdoc@Command+Injection].
   #
   # Unlike Process.spawn, this method waits for the child process to exit
   # before returning, so the caller need not do so.
   #
-  # Argument +options+ is a hash of options for the new process;
+  # If the first argument is a hash, it becomes leading argument +env+
+  # in the call to Process.spawn;
+  # see {Execution Environment}[rdoc-ref:Process@Execution+Environment].
+  #
+  # If the last argument is a hash, it becomes trailing argument +options+
+  # in the call to Process.spawn;
   # see {Execution Options}[rdoc-ref:Process@Execution+Options].
   #
   # The single required argument is one of the following:
@@ -422,12 +432,17 @@ module Open3
   #
   # Like Process.spawn, this method has potential security vulnerabilities
   # if called with untrusted input;
-  # see {Command Injection}[rdoc-ref:command_injection.rdoc].
+  # see {Command Injection}[rdoc-ref:command_injection.rdoc@Command+Injection].
   #
   # Unlike Process.spawn, this method waits for the child process to exit
   # before returning, so the caller need not do so.
   #
-  # Argument +options+ is a hash of options for the new process;
+  # If the first argument is a hash, it becomes leading argument +env+
+  # in the call to Process.spawn;
+  # see {Execution Environment}[rdoc-ref:Process@Execution+Environment].
+  #
+  # If the last argument is a hash, it becomes trailing argument +options+
+  # in the call to Process.spawn;
   # see {Execution Options}[rdoc-ref:Process@Execution+Options].
   #
   # The single required argument is one of the following:
@@ -555,15 +570,20 @@ module Open3
   #
   # Like Process.spawn, this method has potential security vulnerabilities
   # if called with untrusted input;
-  # see {Command Injection}[rdoc-ref:command_injection.rdoc].
+  # see {Command Injection}[rdoc-ref:command_injection.rdoc@Command+Injection].
   #
   # Unlike Process.spawn, this method waits for the child process to exit
   # before returning, so the caller need not do so.
   #
-  # Argument +options+ is a hash of options for the new process;
+  # If the first argument is a hash, it becomes leading argument +env+
+  # in the call to Open3.popen3;
+  # see {Execution Environment}[rdoc-ref:Process@Execution+Environment].
+  #
+  # If the last argument is a hash, it becomes trailing argument +options+
+  # in the call to Open3.popen3;
   # see {Execution Options}[rdoc-ref:Process@Execution+Options].
   #
-  # The hash +options+ is passed to method Open3.popen3;
+  # The hash +options+ is given;
   # two options have local effect in method Open3.capture3:
   #
   # - If entry <tt>options[:stdin_data]</tt> exists, the entry is removed
@@ -572,7 +592,7 @@ module Open3
   #     Open3.capture3('tee', stdin_data: 'Foo')
   #     # => ["Foo", "", #<Process::Status: pid 2319575 exit 0>]
   #
-  # - If entry <tt>options[:binmode]</tt> exists, the entry is removed
+  # - If entry <tt>options[:binmode]</tt> exists, the entry is removed and
   #   the internal streams are set to binary mode.
   #
   # The single required argument is one of the following:
@@ -676,15 +696,20 @@ module Open3
   #
   # Like Process.spawn, this method has potential security vulnerabilities
   # if called with untrusted input;
-  # see {Command Injection}[rdoc-ref:command_injection.rdoc].
+  # see {Command Injection}[rdoc-ref:command_injection.rdoc@Command+Injection].
   #
   # Unlike Process.spawn, this method waits for the child process to exit
   # before returning, so the caller need not do so.
   #
-  # Argument +options+ is a hash of options for the new process;
+  # If the first argument is a hash, it becomes leading argument +env+
+  # in the call to Open3.popen3;
+  # see {Execution Environment}[rdoc-ref:Process@Execution+Environment].
+  #
+  # If the last argument is a hash, it becomes trailing argument +options+
+  # in the call to Open3.popen3;
   # see {Execution Options}[rdoc-ref:Process@Execution+Options].
   #
-  # The hash +options+ is passed to method Open3.popen3;
+  # The hash +options+ is given;
   # two options have local effect in method Open3.capture2:
   #
   # - If entry <tt>options[:stdin_data]</tt> exists, the entry is removed
@@ -694,6 +719,7 @@ module Open3
   #
   #     # => ["Foo", #<Process::Status: pid 2326087 exit 0>]
   #
+  # - If entry <tt>options[:binmode]</tt> exists, the entry is removed and
   #   the internal streams are set to binary mode.
   #
   # The single required argument is one of the following:
@@ -798,15 +824,20 @@ module Open3
   #
   # Like Process.spawn, this method has potential security vulnerabilities
   # if called with untrusted input;
-  # see {Command Injection}[rdoc-ref:command_injection.rdoc].
+  # see {Command Injection}[rdoc-ref:command_injection.rdoc@Command+Injection].
   #
   # Unlike Process.spawn, this method waits for the child process to exit
   # before returning, so the caller need not do so.
   #
-  # Argument +options+ is a hash of options for the new process;
+  # If the first argument is a hash, it becomes leading argument +env+
+  # in the call to Open3.popen3;
+  # see {Execution Environment}[rdoc-ref:Process@Execution+Environment].
+  #
+  # If the last argument is a hash, it becomes trailing argument +options+
+  # in the call to Open3.popen3;
   # see {Execution Options}[rdoc-ref:Process@Execution+Options].
   #
-  # The hash +options+ is passed to method Open3.popen3;
+  # The hash +options+ is given;
   # two options have local effect in method Open3.capture2e:
   #
   # - If entry <tt>options[:stdin_data]</tt> exists, the entry is removed
@@ -815,6 +846,7 @@ module Open3
   #     Open3.capture2e('tee', stdin_data: 'Foo')
   #     # => ["Foo", #<Process::Status: pid 2371732 exit 0>]
   #
+  # - If entry <tt>options[:binmode]</tt> exists, the entry is removed and
   #   the internal streams are set to binary mode.
   #
   # The single required argument is one of the following:
@@ -959,7 +991,7 @@ module Open3
   #
   # Like Process.spawn, this method has potential security vulnerabilities
   # if called with untrusted input;
-  # see {Command Injection}[rdoc-ref:command_injection.rdoc].
+  # see {Command Injection}[rdoc-ref:command_injection.rdoc@Command+Injection].
   #
   # If the first argument is a hash, it becomes leading argument +env+
   # in each call to Process.spawn;
@@ -976,6 +1008,8 @@ module Open3
   # - An +exe_path+: the string path to an executable to be called.
   # - An array containing a +command_line+ or an +exe_path+,
   #   along with zero or more string arguments for the command.
+  #
+  # See {Argument command_line or exe_path}[rdoc-ref:Process@Argument+command_line+or+exe_path].
   #
   def pipeline_rw(*cmds, &block)
     if Hash === cmds.last
@@ -1047,7 +1081,7 @@ module Open3
   #
   # Like Process.spawn, this method has potential security vulnerabilities
   # if called with untrusted input;
-  # see {Command Injection}[rdoc-ref:command_injection.rdoc].
+  # see {Command Injection}[rdoc-ref:command_injection.rdoc@Command+Injection].
   #
   # If the first argument is a hash, it becomes leading argument +env+
   # in each call to Process.spawn;
@@ -1064,6 +1098,8 @@ module Open3
   # - An +exe_path+: the string path to an executable to be called.
   # - An array containing a +command_line+ or an +exe_path+,
   #   along with zero or more string arguments for the command.
+  #
+  # See {Argument command_line or exe_path}[rdoc-ref:Process@Argument+command_line+or+exe_path].
   #
   def pipeline_r(*cmds, &block)
     if Hash === cmds.last
@@ -1136,7 +1172,7 @@ module Open3
   #
   # Like Process.spawn, this method has potential security vulnerabilities
   # if called with untrusted input;
-  # see {Command Injection}[rdoc-ref:command_injection.rdoc].
+  # see {Command Injection}[rdoc-ref:command_injection.rdoc@Command+Injection].
   #
   # If the first argument is a hash, it becomes leading argument +env+
   # in each call to Process.spawn;
@@ -1153,6 +1189,8 @@ module Open3
   # - An +exe_path+: the string path to an executable to be called.
   # - An array containing a +command_line+ or an +exe_path+,
   #   along with zero or more string arguments for the command.
+  #
+  # See {Argument command_line or exe_path}[rdoc-ref:Process@Argument+command_line+or+exe_path].
   #
   def pipeline_w(*cmds, &block)
     if Hash === cmds.last
@@ -1211,7 +1249,7 @@ module Open3
   #
   # Like Process.spawn, this method has potential security vulnerabilities
   # if called with untrusted input;
-  # see {Command Injection}[rdoc-ref:command_injection.rdoc].
+  # see {Command Injection}[rdoc-ref:command_injection.rdoc@Command+Injection].
   #
   # If the first argument is a hash, it becomes leading argument +env+
   # in each call to Process.spawn;
@@ -1228,6 +1266,8 @@ module Open3
   # - An +exe_path+: the string path to an executable to be called.
   # - An array containing a +command_line+ or an +exe_path+,
   #   along with zero or more string arguments for the command.
+  #
+  # See {Argument command_line or exe_path}[rdoc-ref:Process@Argument+command_line+or+exe_path].
   #
   def pipeline_start(*cmds, &block)
     if Hash === cmds.last
@@ -1271,7 +1311,7 @@ module Open3
   #
   # Like Process.spawn, this method has potential security vulnerabilities
   # if called with untrusted input;
-  # see {Command Injection}[rdoc-ref:command_injection.rdoc].
+  # see {Command Injection}[rdoc-ref:command_injection.rdoc@Command+Injection].
   #
   # If the first argument is a hash, it becomes leading argument +env+
   # in each call to Process.spawn;
@@ -1288,6 +1328,8 @@ module Open3
   # - An +exe_path+: the string path to an executable to be called.
   # - An array containing a +command_line+ or an +exe_path+,
   #   along with zero or more string arguments for the command.
+  #
+  # See {Argument command_line or exe_path}[rdoc-ref:Process@Argument+command_line+or+exe_path].
   #
   def pipeline(*cmds)
     if Hash === cmds.last

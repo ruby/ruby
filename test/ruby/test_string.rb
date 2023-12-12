@@ -896,6 +896,17 @@ CODE
     }
   end
 
+  def test_undump_gc_compact_stress
+    a = S("Test") << 1 << 2 << 3 << 9 << 13 << 10
+    EnvUtil.under_gc_compact_stress do
+      assert_equal(a, S('"Test\\x01\\x02\\x03\\t\\r\\n"').undump)
+    end
+
+    EnvUtil.under_gc_compact_stress do
+      assert_equal(S("\u{ABCDE 10ABCD}"), S('"\\u{ABCDE 10ABCD}"').undump)
+    end
+  end
+
   def test_dup
     for frozen in [ false, true ]
       a = S("hello")
@@ -1249,6 +1260,10 @@ CODE
     assert_raise(ArgumentError) { S("foo").gsub }
   end
 
+  def test_gsub_gc_compact_stress
+    EnvUtil.under_gc_compact_stress { assert_equal(S("h<e>ll<o>"), S("hello").gsub(/([aeiou])/, S('<\1>'))) }
+  end
+
   def test_gsub_encoding
     a = S("hello world")
     a.force_encoding Encoding::UTF_8
@@ -1290,6 +1305,14 @@ CODE
 
     a = S("hello")
     assert_nil(a.sub!(S('X'), S('Y')))
+  end
+
+  def test_gsub_bang_gc_compact_stress
+    EnvUtil.under_gc_compact_stress do
+      a = S("hello")
+      a.gsub!(/([aeiou])/, S('<\1>'))
+      assert_equal(S("h<e>ll<o>"), a)
+    end
   end
 
   def test_sub_hash
@@ -1620,6 +1643,10 @@ CODE
     assert_nil($~)
 
     assert_equal(%w[1 2 3], S("a1 a2 a3").scan(/a\K./))
+  end
+
+  def test_scan_gc_compact_stress
+    EnvUtil.under_gc_compact_stress { assert_equal([["1a"], ["2b"], ["3c"]], S("1a2b3c").scan(/(\d.)/)) }
   end
 
   def test_scan_segv

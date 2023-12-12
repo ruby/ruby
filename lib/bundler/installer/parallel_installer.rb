@@ -42,8 +42,7 @@ module Bundler
 
       # Checks installed dependencies against spec's dependencies to make
       # sure needed dependencies have been installed.
-      def dependencies_installed?(all_specs)
-        installed_specs = all_specs.select(&:installed?).map(&:name)
+      def dependencies_installed?(installed_specs)
         dependencies.all? {|d| installed_specs.include? d.name }
       end
 
@@ -63,20 +62,23 @@ module Bundler
       end
     end
 
-    def self.call(*args)
-      new(*args).call
+    def self.call(*args, **kwargs)
+      new(*args, **kwargs).call
     end
 
     attr_reader :size
 
-    def initialize(installer, all_specs, size, standalone, force)
+    def initialize(installer, all_specs, size, standalone, force, skip: nil)
       @installer = installer
       @size = size
       @standalone = standalone
       @force = force
       @specs = all_specs.map {|s| SpecInstallation.new(s) }
+      @specs.each do |spec_install|
+        spec_install.state = :installed if skip.include?(spec_install.name)
+      end if skip
       @spec_set = all_specs
-      @rake = @specs.find {|s| s.name == "rake" }
+      @rake = @specs.find {|s| s.name == "rake" unless s.installed? }
     end
 
     def call
@@ -183,8 +185,14 @@ module Bundler
     # previously installed specifications. We continue until all specs
     # are installed.
     def enqueue_specs
-      @specs.select(&:ready_to_enqueue?).each do |spec|
-        if spec.dependencies_installed? @specs
+      installed_specs = {}
+      @specs.each do |spec|
+        next unless spec.installed?
+        installed_specs[spec.name] = true
+      end
+
+      @specs.each do |spec|
+        if spec.ready_to_enqueue? && spec.dependencies_installed?(installed_specs)
           spec.state = :enqueued
           worker_pool.enq spec
         end

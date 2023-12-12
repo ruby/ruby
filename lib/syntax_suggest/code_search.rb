@@ -43,7 +43,7 @@ module SyntaxSuggest
 
     def initialize(source, record_dir: DEFAULT_VALUE)
       record_dir = if record_dir == DEFAULT_VALUE
-        ENV["SYNTAX_SUGGEST_RECORD_DIR"] || ENV["SYNTAX_SUGGEST_DEBUG"] ? "tmp" : nil
+        (ENV["SYNTAX_SUGGEST_RECORD_DIR"] || ENV["SYNTAX_SUGGEST_DEBUG"]) ? "tmp" : nil
       else
         record_dir
       end
@@ -73,7 +73,7 @@ module SyntaxSuggest
       if ENV["SYNTAX_SUGGEST_DEBUG"]
         puts "\n\n==== #{filename} ===="
         puts "\n```#{block.starts_at}..#{block.ends_at}"
-        puts block.to_s
+        puts block
         puts "```"
         puts "  block indent:      #{block.current_indent}"
       end

@@ -323,10 +323,6 @@ class Gem::Command
     elsif @when_invoked
       @when_invoked.call options
     else
-      if Gem.paths.auto_user_install && !options[:install_dir] && !options[:user_install]
-        self.ui.say "Defaulting to user installation because default installation directory (#{Gem.default_dir}) is not writable."
-      end
-
       execute
     end
   ensure
@@ -489,7 +485,7 @@ class Gem::Command
 
     @parser.separator nil
     @parser.separator "  Description:"
-    formatted.split("\n").each do |line|
+    formatted.each_line do |line|
       @parser.separator "    #{line.rstrip}"
     end
   end
@@ -516,8 +512,8 @@ class Gem::Command
 
     @parser.separator nil
     @parser.separator "  #{title}:"
-    content.split(/\n/).each do |line|
-      @parser.separator "    #{line}"
+    content.each_line do |line|
+      @parser.separator "    #{line.rstrip}"
     end
   end
 
@@ -526,7 +522,7 @@ class Gem::Command
 
     @parser.separator nil
     @parser.separator "  Summary:"
-    wrap(@summary, 80 - 4).split("\n").each do |line|
+    wrap(@summary, 80 - 4).each_line do |line|
       @parser.separator "    #{line.strip}"
     end
   end

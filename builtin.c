@@ -58,6 +58,12 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
 #endif
 
 void
+rb_free_loaded_builtin_table(void)
+{
+    // do nothing
+}
+
+void
 Init_builtin(void)
 {
     // nothing

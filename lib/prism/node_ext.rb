@@ -14,7 +14,48 @@ module Prism
     end
   end
 
+  class InterpolatedMatchLastLineNode < Node
+    include RegularExpressionOptions
+  end
+
+  class InterpolatedRegularExpressionNode < Node
+    include RegularExpressionOptions
+  end
+
+  class MatchLastLineNode < Node
+    include RegularExpressionOptions
+  end
+
+  class RegularExpressionNode < Node
+    include RegularExpressionOptions
+  end
+
   private_constant :RegularExpressionOptions
+
+  module HeredocQuery # :nodoc:
+    # Returns true if this node was represented as a heredoc in the source code.
+    def heredoc?
+      opening&.start_with?("<<")
+    end
+  end
+
+  class InterpolatedStringNode < Node
+    include HeredocQuery
+  end
+
+  class InterpolatedXStringNode < Node
+    include HeredocQuery
+  end
+
+  class StringNode < Node
+    include HeredocQuery
+  end
+
+  class XStringNode < Node
+    include HeredocQuery
+  end
+
+  private_constant :HeredocQuery
 
   class FloatNode < Node
     # Returns the value of the node as a Ruby Float.
@@ -37,27 +78,11 @@ module Prism
     end
   end
 
-  class InterpolatedMatchLastLineNode < Node
-    include RegularExpressionOptions
-  end
-
-  class InterpolatedRegularExpressionNode < Node
-    include RegularExpressionOptions
-  end
-
-  class MatchLastLineNode < Node
-    include RegularExpressionOptions
-  end
-
   class RationalNode < Node
     # Returns the value of the node as a Ruby Rational.
     def value
       Rational(slice.chomp("r"))
     end
-  end
-
-  class RegularExpressionNode < Node
-    include RegularExpressionOptions
   end
 
   class ConstantReadNode < Node

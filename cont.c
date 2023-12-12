@@ -275,6 +275,12 @@ struct rb_fiber_struct {
 
 static struct fiber_pool shared_fiber_pool = {NULL, NULL, 0, 0, 0, 0};
 
+void
+rb_free_shared_fiber_pool(void)
+{
+    xfree(shared_fiber_pool.allocations);
+}
+
 static ID fiber_initialize_keywords[3] = {0};
 
 /*
@@ -1290,18 +1296,37 @@ rb_jit_cont_each_iseq(rb_iseq_callback callback, void *data)
         if (cont->ec->vm_stack == NULL)
             continue;
 
-        const rb_control_frame_t *cfp;
-        for (cfp = RUBY_VM_END_CONTROL_FRAME(cont->ec) - 1; ; cfp = RUBY_VM_NEXT_CONTROL_FRAME(cfp)) {
-            const rb_iseq_t *iseq;
-            if (cfp->pc && (iseq = cfp->iseq) != NULL && imemo_type((VALUE)iseq) == imemo_iseq) {
-                callback(iseq, data);
+        const rb_control_frame_t *cfp = cont->ec->cfp;
+        while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(cont->ec, cfp)) {
+            if (cfp->pc && cfp->iseq && imemo_type((VALUE)cfp->iseq) == imemo_iseq) {
+                callback(cfp->iseq, data);
             }
-
-            if (cfp == cont->ec->cfp)
-                break; // reached the most recent cfp
+            cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
         }
     }
 }
+
+#if USE_YJIT
+// Update the jit_return of all CFPs to leave_exit unless it's leave_exception or not set.
+// This prevents jit_exec_exception from jumping to the caller after invalidation.
+void
+rb_yjit_cancel_jit_return(void *leave_exit, void *leave_exception)
+{
+    struct rb_jit_cont *cont;
+    for (cont = first_jit_cont; cont != NULL; cont = cont->next) {
+        if (cont->ec->vm_stack == NULL)
+            continue;
+
+        const rb_control_frame_t *cfp = cont->ec->cfp;
+        while (!RUBY_VM_CONTROL_FRAME_STACK_OVERFLOW_P(cont->ec, cfp)) {
+            if (cfp->jit_return && cfp->jit_return != leave_exception) {
+                ((rb_control_frame_t *)cfp)->jit_return = leave_exit;
+            }
+            cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
+        }
+    }
+}
+#endif
 
 // Finish working with jit_cont.
 void
@@ -3234,6 +3259,8 @@ rb_fiber_raise(VALUE fiber, int argc, const VALUE *argv)
  *  the exception, and the third parameter is an array of callback information.
  *  Exceptions are caught by the +rescue+ clause of <code>begin...end</code>
  *  blocks.
+ *
+ *  Raises +FiberError+ if called on a Fiber belonging to another +Thread+.
  */
 static VALUE
 rb_fiber_m_raise(int argc, VALUE *argv, VALUE self)
@@ -3245,12 +3272,18 @@ rb_fiber_m_raise(int argc, VALUE *argv, VALUE self)
  *  call-seq:
  *     fiber.kill -> nil
  *
- *  Terminates +fiber+ by raising an uncatchable exception, returning
- *  the terminated Fiber.
+ *  Terminates the fiber by raising an uncatchable exception.
+ *  It only terminates the given fiber and no other fiber, returning +nil+ to
+ *  another fiber if that fiber was calling #resume or #transfer.
+ *
+ *  <tt>Fiber#kill</tt> only interrupts another fiber when it is in Fiber.yield.
+ *  If called on the current fiber then it raises that exception at the <tt>Fiber#kill</tt> call site.
  *
  *  If the fiber has not been started, transition directly to the terminated state.
  *
  *  If the fiber is already terminated, does nothing.
+ *
+ *  Raises FiberError if called on a fiber belonging to another thread.
  */
 static VALUE
 rb_fiber_m_kill(VALUE self)

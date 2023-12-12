@@ -9,7 +9,7 @@ RSpec.describe "bundler plugin install" do
   end
 
   it "shows proper message when gem in not found in the source" do
-    bundle "plugin install no-foo --source #{file_uri_for(gem_repo1)}", :raise_on_error => false
+    bundle "plugin install no-foo --source #{file_uri_for(gem_repo1)}", raise_on_error: false
 
     expect(err).to include("Could not find")
     plugin_should_not_be_installed("no-foo")
@@ -23,14 +23,14 @@ RSpec.describe "bundler plugin install" do
   end
 
   it "installs from rubygems source in frozen mode" do
-    bundle "plugin install foo --source #{file_uri_for(gem_repo2)}", :env => { "BUNDLE_DEPLOYMENT" => "true" }
+    bundle "plugin install foo --source #{file_uri_for(gem_repo2)}", env: { "BUNDLE_DEPLOYMENT" => "true" }
 
     expect(out).to include("Installed plugin foo")
     plugin_should_be_installed("foo")
   end
 
   it "installs from sources configured as Gem.sources without any flags" do
-    bundle "plugin install foo", :env => { "BUNDLER_SPEC_GEM_SOURCES" => file_uri_for(gem_repo2).to_s }
+    bundle "plugin install foo", env: { "BUNDLER_SPEC_GEM_SOURCES" => file_uri_for(gem_repo2).to_s }
 
     expect(out).to include("Installed plugin foo")
     plugin_should_be_installed("foo")
@@ -105,7 +105,7 @@ RSpec.describe "bundler plugin install" do
   end
 
   it "raises error when both --branch and --ref options are specified" do
-    bundle "plugin install foo --source #{file_uri_for(gem_repo2)} --branch main --ref v1.2.3", :raise_on_error => false
+    bundle "plugin install foo --source #{file_uri_for(gem_repo2)} --branch main --ref v1.2.3", raise_on_error: false
 
     expect(out).not_to include("Installed plugin foo")
 
@@ -152,7 +152,7 @@ RSpec.describe "bundler plugin install" do
         build_gem "charlie"
       end
 
-      bundle "plugin install charlie --source #{file_uri_for(gem_repo2)}", :raise_on_error => false
+      bundle "plugin install charlie --source #{file_uri_for(gem_repo2)}", raise_on_error: false
 
       expect(err).to include("Failed to install plugin `charlie`, due to Bundler::Plugin::MalformattedPlugin (plugins.rb was not found in the plugin.)")
 
@@ -171,7 +171,7 @@ RSpec.describe "bundler plugin install" do
         end
       end
 
-      bundle "plugin install chaplin --source #{file_uri_for(gem_repo2)}", :raise_on_error => false
+      bundle "plugin install chaplin --source #{file_uri_for(gem_repo2)}", raise_on_error: false
 
       expect(global_plugin_gem("chaplin-1.0")).not_to be_directory
 
@@ -203,7 +203,7 @@ RSpec.describe "bundler plugin install" do
     end
 
     it "raises an error when both git and local git sources are specified" do
-      bundle "plugin install foo --local_git /phony/path/project --git git@gitphony.com:/repo/project", :raise_on_error => false
+      bundle "plugin install foo --local_git /phony/path/project --git git@gitphony.com:/repo/project", raise_on_error: false
 
       expect(exitstatus).not_to eq(0)
       expect(err).to eq("Remote and local plugin git sources can't be both specified")
@@ -314,7 +314,7 @@ RSpec.describe "bundler plugin install" do
         end
       RUBY
 
-      ruby code, :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+      ruby code, env: { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(local_plugin_gem("foo-1.0", "plugins.rb")).to exist
     end
   end
@@ -364,7 +364,7 @@ RSpec.describe "bundler plugin install" do
         end
 
         # outside the app
-        bundle "plugin install fubar --source #{file_uri_for(gem_repo2)}", :dir => tmp
+        bundle "plugin install fubar --source #{file_uri_for(gem_repo2)}", dir: tmp
       end
 
       it "inside the app takes precedence over global plugin" do
@@ -373,7 +373,7 @@ RSpec.describe "bundler plugin install" do
       end
 
       it "outside the app global plugin is used" do
-        bundle "shout", :dir => tmp
+        bundle "shout", dir: tmp
         expect(out).to eq("global_one")
       end
     end

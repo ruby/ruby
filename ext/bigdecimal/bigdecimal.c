@@ -4363,7 +4363,20 @@ BigDecimal_negative_zero(void)
  *      (2/3r).to_d(3)  # => 0.667e0
  *      "0.5".to_d      # => 0.5e0
  *
- * == License
+ * == Methods for Working with \JSON
+ *
+ * - {::json_create}[rdoc-ref:BigDecimal.json_create]:
+ *   Returns a new \BigDecimal object constructed from the given object.
+ * - {#as_json}[rdoc-ref:BigDecimal#as_json]:
+ *   Returns a 2-element hash representing +self+.
+ * - {#to_json}[rdoc-ref:BigDecimal#to_json]:
+ *   Returns a \JSON string representing +self+.
+ *
+ * These methods are provided by the {JSON gem}[https://github.com/flori/json]. To make these methods available:
+ *
+ *   require 'json/add/bigdecimal'
+ *
+ * * == License
  *
  * Copyright (C) 2002 by Shigeo Kobayashi <shigeo@tinyforest.gr.jp>.
  *

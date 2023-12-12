@@ -11,6 +11,7 @@
             │   │   └── @ AssocNode (location: (1,6)-(1,10))
             │   │       ├── key:
             │   │       │   @ SymbolNode (location: (1,6)-(1,8))
+            │   │       │   ├── flags: ∅
             │   │       │   ├── opening_loc: ∅
             │   │       │   ├── value_loc: (1,6)-(1,7) = "a"
             │   │       │   ├── closing_loc: (1,7)-(1,8) = ":"
@@ -29,6 +30,7 @@
             │       │   │   ├── @ AssocNode (location: (2,4)-(2,6))
             │       │   │   │   ├── key:
             │       │   │   │   │   @ SymbolNode (location: (2,4)-(2,6))
+            │       │   │   │   │   ├── flags: ∅
             │       │   │   │   │   ├── opening_loc: ∅
             │       │   │   │   │   ├── value_loc: (2,4)-(2,5) = "a"
             │       │   │   │   │   ├── closing_loc: (2,5)-(2,6) = ":"
@@ -48,6 +50,7 @@
             │       │   @ StatementsNode (location: (3,2)-(3,11))
             │       │   └── body: (length: 1)
             │       │       └── @ ArrayNode (location: (3,2)-(3,11))
+            │       │           ├── flags: ∅
             │       │           ├── elements: (length: 2)
             │       │           │   ├── @ LocalVariableReadNode (location: (3,3)-(3,4))
             │       │           │   │   ├── name: :a
@@ -56,8 +59,7 @@
             │       │           │       ├── name: :rest
             │       │           │       └── depth: 0
             │       │           ├── opening_loc: (3,2)-(3,3) = "["
-            │       │           ├── closing_loc: (3,10)-(3,11) = "]"
-            │       │           └── flags: ∅
+            │       │           └── closing_loc: (3,10)-(3,11) = "]"
             │       ├── in_loc: (2,0)-(2,2) = "in"
             │       └── then_loc: ∅
             ├── consequent: ∅

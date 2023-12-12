@@ -88,7 +88,7 @@ require 'tmpdir'
 # mutex.
 class Tempfile < DelegateClass(File)
 
-  VERSION = "0.2.0"
+  VERSION = "0.2.1"
 
   # Creates a file in the underlying file system;
   # returns a new \Tempfile object based on that file.
@@ -288,6 +288,7 @@ class Tempfile < DelegateClass(File)
       "#<#{self.class}:#{path}>"
     end
   end
+  alias to_s inspect
 
   protected
 

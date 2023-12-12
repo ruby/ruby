@@ -72,7 +72,8 @@ module Prism
       "pm_serialize_parse",
       "pm_serialize_parse_comments",
       "pm_serialize_lex",
-      "pm_serialize_parse_lex"
+      "pm_serialize_parse_lex",
+      "pm_parse_success_p"
     )
 
     load_exported_functions_from(
@@ -254,10 +255,10 @@ module Prism
         loader = Serialize::Loader.new(source, buffer.read)
 
         tokens = loader.load_tokens
-        node, comments, magic_comments, errors, warnings = loader.load_nodes
+        node, comments, magic_comments, data_loc, errors, warnings = loader.load_nodes
         tokens.each { |token,| token.value.force_encoding(loader.encoding) }
 
-        ParseResult.new([node, tokens], comments, magic_comments, errors, warnings, source)
+        ParseResult.new([node, tokens], comments, magic_comments, data_loc, errors, warnings, source)
       end
     end
 
@@ -265,6 +266,18 @@ module Prism
     def parse_lex_file(filepath, **options)
       LibRubyParser::PrismString.with(filepath) do |string|
         parse_lex(string.read, **options, filepath: filepath)
+      end
+    end
+
+    # Mirror the Prism.parse_success? API by using the serialization API.
+    def parse_success?(code, **options)
+      LibRubyParser.pm_parse_success_p(code, code.bytesize, dump_options(options))
+    end
+
+    # Mirror the Prism.parse_file_success? API by using the serialization API.
+    def parse_file_success?(filepath, **options)
+      LibRubyParser::PrismString.with(filepath) do |string|
+        parse_success?(string.read, **options, filepath: filepath)
       end
     end
 

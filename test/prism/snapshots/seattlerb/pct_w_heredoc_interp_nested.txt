@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(4,11))
     └── body: (length: 1)
         └── @ ArrayNode (location: (1,0)-(4,11))
+            ├── flags: ∅
             ├── elements: (length: 5)
             │   ├── @ StringNode (location: (1,4)-(1,5))
             │   │   ├── flags: ∅
@@ -46,5 +47,4 @@
             │       ├── closing_loc: ∅
             │       └── unescaped: "5"
             ├── opening_loc: (1,0)-(1,3) = "%W("
-            ├── closing_loc: (4,10)-(4,11) = ")"
-            └── flags: ∅
+            └── closing_loc: (4,10)-(4,11) = ")"

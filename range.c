@@ -1133,6 +1133,11 @@ range_reverse_each(VALUE range)
     VALUE end = RANGE_END(range);
     int excl = EXCL(range);
 
+    if (NIL_P(end)) {
+        rb_raise(rb_eTypeError, "can't iterate from %s",
+                 rb_obj_classname(end));
+    }
+
     if (FIXNUM_P(beg) && FIXNUM_P(end)) {
         if (excl) {
             if (end == LONG2FIX(FIXNUM_MIN)) return range;
@@ -2389,14 +2394,14 @@ empty_region_p(VALUE beg, VALUE end, int excl)
  *  This method assumes that there is no minimum value because
  *  Ruby lacks a standard method for determining minimum values.
  *  This assumption is invalid.
- *  For example, there is no value smaller than +-Float::INFINITY+,
- *  making +(...-Float::INFINITY)+ an empty set.
- *  Consequently, +(...-Float::INFINITY)+ has no elements in common with itself,
- *  yet +(...-Float::INFINITY).overlap?((...-Float::INFINITY))+ returns
- *  true due to this assumption.
- *  In general, if +r = (...minimum); r.overlap?(r)+ returns +true+,
+ *  For example, there is no value smaller than <tt>-Float::INFINITY</tt>,
+ *  making <tt>(...-Float::INFINITY)</tt> an empty set.
+ *  Consequently, <tt>(...-Float::INFINITY)</tt> has no elements in common with itself,
+ *  yet <tt>(...-Float::INFINITY).overlap?((...-Float::INFINITY))<tt> returns
+ *  +true+ due to this assumption.
+ *  In general, if <tt>r = (...minimum); r.overlap?(r)</tt> returns +true+,
  *  where +minimum+ is a value that no value is smaller than.
- *  Such values include +-Float::INFINITY+, +[]+, +""+, and
+ *  Such values include <tt>-Float::INFINITY</tt>, <tt>[]</tt>, <tt>""</tt>, and
  *  classes without subclasses.
  *
  *  Related: Range#cover?.

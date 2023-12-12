@@ -157,8 +157,7 @@ module Lrama
       while !@scanner.eos? do
         case
         when @scanner.scan(/\n/)
-          @line += 1
-          @head = @scanner.pos + 1
+          newline
         when @scanner.scan(/\*\//)
           return
         else

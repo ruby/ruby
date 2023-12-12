@@ -46,7 +46,7 @@ pm_source_new(pm_parser_t *parser, rb_encoding *encoding) {
         rb_ary_push(offsets, INT2FIX(parser->newline_list.offsets[index]));
     }
 
-    VALUE source_argv[] = { source, ULONG2NUM(parser->start_line), offsets };
+    VALUE source_argv[] = { source, LONG2NUM(parser->start_line), offsets };
     return rb_class_new_instance(3, source_argv, rb_cPrismSource);
 }
 
@@ -181,6 +181,9 @@ pm_ast_new(pm_parser_t *parser, pm_node_t *node, rb_encoding *encoding) {
                     <%- when Prism::OptionalLocationField -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = cast-><%= field.name %>.start == NULL ? Qnil : pm_location_new(parser, cast-><%= field.name %>.start, cast-><%= field.name %>.end, source);
+                    <%- when Prism::UInt8Field -%>
+#line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
+                    argv[<%= index %>] = UINT2NUM(cast-><%= field.name %>);
                     <%- when Prism::UInt32Field -%>
 #line <%= __LINE__ + 1 %> "<%= File.basename(__FILE__) %>"
                     argv[<%= index %>] = ULONG2NUM(cast-><%= field.name %>);

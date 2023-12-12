@@ -24,11 +24,11 @@
             ├── operator_loc: (1,9)-(1,10) = "="
             └── value:
                 @ ArrayNode (location: (1,11)-(1,15))
+                ├── flags: ∅
                 ├── elements: (length: 2)
                 │   ├── @ IntegerNode (location: (1,11)-(1,12))
                 │   │   └── flags: decimal
                 │   └── @ IntegerNode (location: (1,14)-(1,15))
                 │       └── flags: decimal
                 ├── opening_loc: ∅
-                ├── closing_loc: ∅
-                └── flags: ∅
+                └── closing_loc: ∅

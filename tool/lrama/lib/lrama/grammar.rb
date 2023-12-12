@@ -9,9 +9,9 @@ require "lrama/grammar/reference"
 require "lrama/grammar/rule"
 require "lrama/grammar/rule_builder"
 require "lrama/grammar/symbol"
+require "lrama/grammar/type"
 require "lrama/grammar/union"
 require "lrama/lexer"
-require "lrama/type"
 
 module Lrama
   # Grammar is the result of parsing an input grammar file
@@ -148,7 +148,7 @@ module Lrama
     def prepare
       normalize_rules
       collect_symbols
-      replace_token_with_symbol
+      set_lhs_and_rhs
       fill_symbol_number
       fill_default_precedence
       fill_sym_to_rules
@@ -391,6 +391,11 @@ module Lrama
           @rules << rule
         end
 
+        builder.parameterizing_rules.each do |rule|
+          add_nterm(id: rule._lhs, tag: rule.lhs_tag)
+          @rules << rule
+        end
+
         builder.midrule_action_rules.each do |rule|
           add_nterm(id: rule._lhs)
         end
@@ -484,7 +489,7 @@ module Lrama
       end
     end
 
-    def replace_token_with_symbol
+    def set_lhs_and_rhs
       @rules.each do |rule|
         rule.lhs = token_to_symbol(rule._lhs) if rule._lhs
 

@@ -13,5 +13,5 @@ require_relative "deployment"
 include Rake::DSL if defined? Rake::DSL
 
 namespace :vlad do
-  Bundler::Deployment.define_task(Rake::RemoteTask, :remote_task, :roles => :app)
+  Bundler::Deployment.define_task(Rake::RemoteTask, :remote_task, roles: :app)
 end

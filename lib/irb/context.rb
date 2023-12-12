@@ -146,8 +146,20 @@ module IRB
         @newline_before_multiline_output = true
       end
 
-      @command_aliases = IRB.conf[:COMMAND_ALIASES]
+      @user_aliases = IRB.conf[:COMMAND_ALIASES].dup
+      @command_aliases = @user_aliases.merge(KEYWORD_ALIASES)
     end
+
+    # because all input will eventually be evaluated as Ruby code,
+    # command names that conflict with Ruby keywords need special workaround
+    # we can remove them once we implemented a better command system for IRB
+    KEYWORD_ALIASES = {
+      :break => :irb_break,
+      :catch => :irb_catch,
+      :next => :irb_next,
+    }.freeze
+
+    private_constant :KEYWORD_ALIASES
 
     private def build_completor
       completor_type = IRB.conf[:COMPLETOR]
@@ -164,26 +176,22 @@ module IRB
       RegexpCompletor.new
     end
 
-    TYPE_COMPLETION_REQUIRED_PRISM_VERSION = '0.17.1'
-
     private def build_type_completor
-      unless Gem::Version.new(RUBY_VERSION) >= Gem::Version.new('3.0.0') && RUBY_ENGINE != 'truffleruby'
-        warn 'TypeCompletion requires RUBY_VERSION >= 3.0.0'
+      if RUBY_ENGINE == 'truffleruby'
+        # Avoid SynatxError. truffleruby does not support endless method definition yet.
+        warn 'TypeCompletor is not supported on TruffleRuby yet'
         return
       end
+
       begin
-        require 'prism'
+        require 'repl_type_completor'
       rescue LoadError => e
-        warn "TypeCompletion requires Prism: #{e.message}"
+        warn "TypeCompletor requires `gem repl_type_completor`: #{e.message}"
         return
       end
-      unless Gem::Version.new(Prism::VERSION) >= Gem::Version.new(TYPE_COMPLETION_REQUIRED_PRISM_VERSION)
-        warn "TypeCompletion requires Prism::VERSION >= #{TYPE_COMPLETION_REQUIRED_PRISM_VERSION}"
-        return
-      end
-      require 'irb/type_completion/completor'
-      TypeCompletion::Types.preload_in_thread
-      TypeCompletion::Completor.new
+
+      ReplTypeCompletor.preload_rbs
+      TypeCompletor.new(self)
     end
 
     def save_history=(val)
@@ -256,15 +264,15 @@ module IRB
     attr_reader :prompt_mode
     # Standard IRB prompt.
     #
-    # See IRB@Customizing+the+IRB+Prompt for more information.
+    # See {Custom Prompts}[rdoc-ref:IRB@Custom+Prompts] for more information.
     attr_accessor :prompt_i
     # IRB prompt for continuated strings.
     #
-    # See IRB@Customizing+the+IRB+Prompt for more information.
+    # See {Custom Prompts}[rdoc-ref:IRB@Custom+Prompts] for more information.
     attr_accessor :prompt_s
     # IRB prompt for continuated statement. (e.g. immediately after an +if+)
     #
-    # See IRB@Customizing+the+IRB+Prompt for more information.
+    # See {Custom Prompts}[rdoc-ref:IRB@Custom+Prompts] for more information.
     attr_accessor :prompt_c
 
     # TODO: Remove this when developing v2.0
@@ -386,8 +394,6 @@ module IRB
     # The default value is 16.
     #
     # Can also be set using the +--back-trace-limit+ command line option.
-    #
-    # See IRB@Command+line+options for more command line options.
     attr_accessor :back_trace_limit
 
     # User-defined IRB command aliases
@@ -455,7 +461,7 @@ module IRB
 
     # Sets the +mode+ of the prompt in this context.
     #
-    # See IRB@Customizing+the+IRB+Prompt for more information.
+    # See {Custom Prompts}[rdoc-ref:IRB@Custom+Prompts] for more information.
     def prompt_mode=(mode)
       @prompt_mode = mode
       pconf = IRB.conf[:PROMPT][mode]
@@ -493,8 +499,6 @@ module IRB
     #
     # Can also be set using the +--inspect+ and +--noinspect+ command line
     # options.
-    #
-    # See IRB@Command+line+options for more command line options.
     def inspect_mode=(opt)
 
       if i = Inspector::INSPECTORS[opt]

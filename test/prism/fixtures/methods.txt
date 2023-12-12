@@ -176,3 +176,11 @@ def f x:+a; end
 def f x:!a; end
 
 def foo x:%(xx); end
+
+def foo(...)
+  bar(&)
+end
+
+def foo(bar = (def baz(bar) = bar; 1)) = 2
+
+def (class Foo; end).foo(bar = 1) = 2

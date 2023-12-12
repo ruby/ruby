@@ -37,22 +37,22 @@
         │   │   @ ConstantPathNode (location: (3,6)-(3,42))
         │   │   ├── parent:
         │   │   │   @ WhileNode (location: (3,6)-(3,34))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── keyword_loc: (3,6)-(3,11) = "while"
         │   │   │   ├── closing_loc: (3,31)-(3,34) = "end"
         │   │   │   ├── predicate:
         │   │   │   │   @ TrueNode (location: (3,12)-(3,16))
-        │   │   │   ├── statements:
-        │   │   │   │   @ StatementsNode (location: (3,18)-(3,30))
-        │   │   │   │   └── body: (length: 1)
-        │   │   │   │       └── @ BreakNode (location: (3,18)-(3,30))
-        │   │   │   │           ├── arguments:
-        │   │   │   │           │   @ ArgumentsNode (location: (3,24)-(3,30))
-        │   │   │   │           │   ├── arguments: (length: 1)
-        │   │   │   │           │   │   └── @ ConstantReadNode (location: (3,24)-(3,30))
-        │   │   │   │           │   │       └── name: :Object
-        │   │   │   │           │   └── flags: ∅
-        │   │   │   │           └── keyword_loc: (3,18)-(3,23) = "break"
-        │   │   │   └── flags: ∅
+        │   │   │   └── statements:
+        │   │   │       @ StatementsNode (location: (3,18)-(3,30))
+        │   │   │       └── body: (length: 1)
+        │   │   │           └── @ BreakNode (location: (3,18)-(3,30))
+        │   │   │               ├── arguments:
+        │   │   │               │   @ ArgumentsNode (location: (3,24)-(3,30))
+        │   │   │               │   ├── flags: ∅
+        │   │   │               │   └── arguments: (length: 1)
+        │   │   │               │       └── @ ConstantReadNode (location: (3,24)-(3,30))
+        │   │   │               │           └── name: :Object
+        │   │   │               └── keyword_loc: (3,18)-(3,23) = "break"
         │   │   ├── child:
         │   │   │   @ ConstantReadNode (location: (3,36)-(3,42))
         │   │   │   └── name: :Kernel
@@ -94,22 +94,22 @@
             │   @ ConstantPathNode (location: (7,7)-(7,43))
             │   ├── parent:
             │   │   @ WhileNode (location: (7,7)-(7,35))
+            │   │   ├── flags: ∅
             │   │   ├── keyword_loc: (7,7)-(7,12) = "while"
             │   │   ├── closing_loc: (7,32)-(7,35) = "end"
             │   │   ├── predicate:
             │   │   │   @ TrueNode (location: (7,13)-(7,17))
-            │   │   ├── statements:
-            │   │   │   @ StatementsNode (location: (7,19)-(7,31))
-            │   │   │   └── body: (length: 1)
-            │   │   │       └── @ BreakNode (location: (7,19)-(7,31))
-            │   │   │           ├── arguments:
-            │   │   │           │   @ ArgumentsNode (location: (7,25)-(7,31))
-            │   │   │           │   ├── arguments: (length: 1)
-            │   │   │           │   │   └── @ ConstantReadNode (location: (7,25)-(7,31))
-            │   │   │           │   │       └── name: :Object
-            │   │   │           │   └── flags: ∅
-            │   │   │           └── keyword_loc: (7,19)-(7,24) = "break"
-            │   │   └── flags: ∅
+            │   │   └── statements:
+            │   │       @ StatementsNode (location: (7,19)-(7,31))
+            │   │       └── body: (length: 1)
+            │   │           └── @ BreakNode (location: (7,19)-(7,31))
+            │   │               ├── arguments:
+            │   │               │   @ ArgumentsNode (location: (7,25)-(7,31))
+            │   │               │   ├── flags: ∅
+            │   │               │   └── arguments: (length: 1)
+            │   │               │       └── @ ConstantReadNode (location: (7,25)-(7,31))
+            │   │               │           └── name: :Object
+            │   │               └── keyword_loc: (7,19)-(7,24) = "break"
             │   ├── child:
             │   │   @ ConstantReadNode (location: (7,37)-(7,43))
             │   │   └── name: :Kernel

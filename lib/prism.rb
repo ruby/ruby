@@ -36,11 +36,11 @@ module Prism
   private_constant :LexRipper
 
   # :call-seq:
-  #   Prism::lex_compat(source, **options) -> Array
+  #   Prism::lex_compat(source, **options) -> ParseResult
   #
-  # Returns an array of tokens that closely resembles that of the Ripper lexer.
-  # The only difference is that since we don't keep track of lexer state in the
-  # same way, it's going to always return the NONE state.
+  # Returns a parse result whose value is an array of tokens that closely
+  # resembles the return value of Ripper::lex. The main difference is that the
+  # `:on_sp` token is not emitted.
   #
   # For supported options, see Prism::parse.
   def self.lex_compat(source, **options)
@@ -63,6 +63,22 @@ module Prism
   # Load the serialized AST using the source as a reference into a tree.
   def self.load(source, serialized)
     Serialize.load(source, serialized)
+  end
+
+  # :call-seq:
+  #   Prism::parse_failure?(source, **options) -> bool
+  #
+  # Returns true if the source parses with errors.
+  def self.parse_failure?(source, **options)
+    !parse_success?(source, **options)
+  end
+
+  # :call-seq:
+  #   Prism::parse_file_failure?(filepath, **options) -> bool
+  #
+  # Returns true if the file at filepath parses with errors.
+  def self.parse_file_failure?(filepath, **options)
+    !parse_file_success?(filepath, **options)
   end
 end
 

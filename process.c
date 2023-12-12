@@ -1836,7 +1836,7 @@ memsize_exec_arg(const void *ptr)
 static const rb_data_type_t exec_arg_data_type = {
     "exec_arg",
     {mark_exec_arg, RUBY_TYPED_DEFAULT_FREE, memsize_exec_arg},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
 #ifdef _WIN32
@@ -2780,6 +2780,7 @@ rb_execarg_setenv(VALUE execarg_obj, VALUE env)
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
     env = !NIL_P(env) ? rb_check_exec_env(env, &eargp->path_env) : Qfalse;
     eargp->env_modification = env;
+    RB_GC_GUARD(execarg_obj);
 }
 
 static int
@@ -2977,6 +2978,7 @@ execarg_parent_end(VALUE execarg_obj)
     }
 
     errno = err;
+    RB_GC_GUARD(execarg_obj);
     return execarg_obj;
 }
 
@@ -4668,7 +4670,7 @@ do_spawn_process(VALUE arg)
 
     rb_execarg_parent_start1(argp->execarg);
 
-    return (VALUE)rb_spawn_process(DATA_PTR(argp->execarg),
+    return (VALUE)rb_spawn_process(rb_execarg_get(argp->execarg),
                                    argp->errmsg.ptr, argp->errmsg.buflen);
 }
 

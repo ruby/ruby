@@ -11,6 +11,8 @@ when ENV['RUNRUBY_USE_GDB'] == 'true'
   debugger = :gdb
 when ENV['RUNRUBY_USE_LLDB'] == 'true'
   debugger = :lldb
+when ENV['RUNRUBY_USE_RR'] == 'true'
+  debugger = :rr
 when ENV['RUNRUBY_YJIT_STATS']
   use_yjit_stat = true
 end
@@ -142,7 +144,7 @@ ENV.update env
 
 if debugger
   case debugger
-  when :gdb, nil
+  when :gdb
     debugger = %W'gdb -x #{srcdir}/.gdbinit'
     if File.exist?(gdb = 'run.gdb') or
       File.exist?(gdb = File.join(abs_archdir, 'run.gdb'))
@@ -156,6 +158,8 @@ if debugger
       debugger.push('-s', lldb)
     end
     debugger << '--'
+  when :rr
+    debugger = ['rr', 'record']
   end
 
   if idx = precommand.index(:debugger)

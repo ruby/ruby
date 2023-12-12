@@ -63,7 +63,7 @@ RSpec.describe Bundler::RubygemsIntegration do
 
     context "when a rubygems source mirror is set" do
       let(:orig_uri) { Bundler::URI("http://zombo.com") }
-      let(:remote_with_mirror) { double("remote", :uri => uri, :original_uri => orig_uri) }
+      let(:remote_with_mirror) { double("remote", uri: uri, original_uri: orig_uri) }
 
       it "sets the 'X-Gemfile-Source' header containing the original source" do
         expect(fetcher).to receive(:fetch_path).with(uri + "specs.4.8.gz").and_return(specs_response)
@@ -74,7 +74,7 @@ RSpec.describe Bundler::RubygemsIntegration do
     end
 
     context "when there is no rubygems source mirror set" do
-      let(:remote_no_mirror) { double("remote", :uri => uri, :original_uri => nil) }
+      let(:remote_no_mirror) { double("remote", uri: uri, original_uri: nil) }
 
       it "does not set the 'X-Gemfile-Source' header" do
         expect(fetcher).to receive(:fetch_path).with(uri + "specs.4.8.gz").and_return(specs_response)
@@ -85,7 +85,7 @@ RSpec.describe Bundler::RubygemsIntegration do
     end
 
     context "when loading an unexpected class" do
-      let(:remote_no_mirror) { double("remote", :uri => uri, :original_uri => nil) }
+      let(:remote_no_mirror) { double("remote", uri: uri, original_uri: nil) }
       let(:unexpected_specs_response) { Marshal.dump(3) }
 
       it "raises a MarshalError error" do

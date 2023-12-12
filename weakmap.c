@@ -144,7 +144,9 @@ wmap_compact(void *ptr)
 {
     struct weakmap *w = ptr;
 
-    st_foreach(w->table, wmap_compact_table_i, (st_data_t)w->table);
+    if (w->table) {
+        st_foreach(w->table, wmap_compact_table_i, (st_data_t)w->table);
+    }
 }
 
 static const rb_data_type_t weakmap_type = {
@@ -607,7 +609,9 @@ wkmap_compact(void *ptr)
 {
     struct weakkeymap *w = ptr;
 
-    st_foreach_with_replace(w->table, wkmap_compact_table_i, wkmap_compact_table_replace, (st_data_t)0);
+    if (w->table) {
+        st_foreach_with_replace(w->table, wkmap_compact_table_i, wkmap_compact_table_replace, (st_data_t)0);
+    }
 }
 
 static const rb_data_type_t weakkeymap_type = {

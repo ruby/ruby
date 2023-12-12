@@ -5,6 +5,7 @@
     └── body: (length: 3)
         ├── @ LambdaNode (location: (1,0)-(1,12))
         │   ├── locals: []
+        │   ├── locals_body_index: 0
         │   ├── operator_loc: (1,0)-(1,2) = "->"
         │   ├── opening_loc: (1,10)-(1,11) = "{"
         │   ├── closing_loc: (1,11)-(1,12) = "}"
@@ -44,6 +45,7 @@
         │   │   └── block: ∅
         │   ├── body: ∅
         │   ├── locals: []
+        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (3,0)-(3,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (3,5)-(3,6) = "("
@@ -51,34 +53,35 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (3,14)-(3,17) = "end"
         └── @ CallNode (location: (5,0)-(5,13))
+            ├── flags: ∅
             ├── receiver: ∅
             ├── call_operator_loc: ∅
+            ├── name: :m
             ├── message_loc: (5,0)-(5,1) = "m"
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
-            ├── block:
-            │   @ BlockNode (location: (5,2)-(5,13))
-            │   ├── locals: []
-            │   ├── parameters:
-            │   │   @ BlockParametersNode (location: (5,4)-(5,11))
-            │   │   ├── parameters:
-            │   │   │   @ ParametersNode (location: (5,5)-(5,10))
-            │   │   │   ├── requireds: (length: 0)
-            │   │   │   ├── optionals: (length: 0)
-            │   │   │   ├── rest: ∅
-            │   │   │   ├── posts: (length: 0)
-            │   │   │   ├── keywords: (length: 0)
-            │   │   │   ├── keyword_rest:
-            │   │   │   │   @ NoKeywordsParameterNode (location: (5,5)-(5,10))
-            │   │   │   │   ├── operator_loc: (5,5)-(5,7) = "**"
-            │   │   │   │   └── keyword_loc: (5,7)-(5,10) = "nil"
-            │   │   │   └── block: ∅
-            │   │   ├── locals: (length: 0)
-            │   │   ├── opening_loc: (5,4)-(5,5) = "|"
-            │   │   └── closing_loc: (5,10)-(5,11) = "|"
-            │   ├── body: ∅
-            │   ├── opening_loc: (5,2)-(5,3) = "{"
-            │   └── closing_loc: (5,12)-(5,13) = "}"
-            ├── flags: ∅
-            └── name: :m
+            └── block:
+                @ BlockNode (location: (5,2)-(5,13))
+                ├── locals: []
+                ├── locals_body_index: 0
+                ├── parameters:
+                │   @ BlockParametersNode (location: (5,4)-(5,11))
+                │   ├── parameters:
+                │   │   @ ParametersNode (location: (5,5)-(5,10))
+                │   │   ├── requireds: (length: 0)
+                │   │   ├── optionals: (length: 0)
+                │   │   ├── rest: ∅
+                │   │   ├── posts: (length: 0)
+                │   │   ├── keywords: (length: 0)
+                │   │   ├── keyword_rest:
+                │   │   │   @ NoKeywordsParameterNode (location: (5,5)-(5,10))
+                │   │   │   ├── operator_loc: (5,5)-(5,7) = "**"
+                │   │   │   └── keyword_loc: (5,7)-(5,10) = "nil"
+                │   │   └── block: ∅
+                │   ├── locals: (length: 0)
+                │   ├── opening_loc: (5,4)-(5,5) = "|"
+                │   └── closing_loc: (5,10)-(5,11) = "|"
+                ├── body: ∅
+                ├── opening_loc: (5,2)-(5,3) = "{"
+                └── closing_loc: (5,12)-(5,13) = "}"
