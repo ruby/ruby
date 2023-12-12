@@ -546,7 +546,7 @@ module Prism
     end
 
     def test_InterpolatedMatchLastLineNode
-      assert_prism_eval("$pit = '.oo'; if /\#$pit/mix; end")
+      assert_prism_eval('$pit = ".oo"; if /"#{$pit}"/mix; end')
     end
 
     def test_InterpolatedRegularExpressionNode

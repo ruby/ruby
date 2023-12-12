@@ -3480,11 +3480,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_INTERPOLATED_MATCH_LAST_LINE_NODE: {
         pm_interpolated_match_last_line_node_t *cast = (pm_interpolated_match_last_line_node_t *) node;
 
+        int parts_size = (int)cast->parts.size;
+        if (parts_size > 0 && !PM_NODE_TYPE_P(cast->parts.nodes[0], PM_STRING_NODE)) {
+            ADD_INSN1(ret, &dummy_line_node, putobject, rb_str_new(0, 0));
+            parts_size++;
+        }
+
         pm_interpolated_node_compile(&cast->parts, iseq, dummy_line_node, ret, src, popped, scope_node, parser);
 
-        ADD_INSN2(ret, &dummy_line_node, toregexp, INT2FIX(pm_reg_flags(node)), INT2FIX((int) (cast->parts.size)));
+        ADD_INSN2(ret, &dummy_line_node, toregexp, INT2FIX(pm_reg_flags(node)), INT2FIX(parts_size));
 
-        ADD_INSN2(ret, &dummy_line_node, getspecial, INT2FIX(0), INT2FIX(0));
+        ADD_INSN1(ret, &dummy_line_node, getglobal, rb_id2sym(idLASTLINE));
         ADD_SEND(ret, &dummy_line_node, idEqTilde, INT2NUM(1));
         PM_POP_IF_POPPED;
 
