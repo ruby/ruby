@@ -79,7 +79,6 @@ module Bundler
     end
 
     def self.default_gem_spec(name)
-      return unless Gem::Specification.respond_to?(:find_all_by_name)
       gem_spec = Gem::Specification.find_all_by_name(name).last
       gem_spec if gem_spec&.default_gem?
     end
