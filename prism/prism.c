@@ -10877,7 +10877,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
                     call->base.location.end = arguments->base.location.end;
 
                     parse_write_name(parser, &call->name);
-                    call->base.flags |= PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE;
+                    pm_node_flag_set((pm_node_t *) call, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE);
                     return (pm_node_t *) call;
                 }
             }
@@ -10895,7 +10895,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
 
                 // Replace the name with "[]=".
                 call->name = pm_parser_constant_id_constant(parser, "[]=", 3);
-                call->base.flags |= PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE;
+                pm_node_flag_set((pm_node_t *) call, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE);
                 return target;
             }
 
