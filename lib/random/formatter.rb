@@ -292,6 +292,7 @@ module Random::Formatter
     end
   end
 
+  # Internal interface to Random; Generate random data _n_ bytes.
   private def gen_random(n)
     self.bytes(n)
   end
@@ -339,7 +340,9 @@ module Random::Formatter
     result
   end
 
+  # The default character list for #alphanumeric.
   ALPHANUMERIC = [*'A'..'Z', *'a'..'z', *'0'..'9']
+
   # Generate a random alphanumeric string.
   #
   # The argument _n_ specifies the length, in characters, of the alphanumeric
