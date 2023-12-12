@@ -4448,9 +4448,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
                 pm_constant_id_t name = ((pm_rest_parameter_node_t *)parameters_node->rest)->name;
                 if (name) {
+                    // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+                    //                               ^^
                     pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
-                    local_index++;
                 }
+                else {
+                    // def foo(a, (b, *c, d), e = 1, *, g, (h, *i, j),  k:, l: 1, **m, &n)
+                    //                               ^
+                    local_table_for_iseq->ids[local_index] = idMULT;
+                }
+                local_index++;
             }
         }
 
