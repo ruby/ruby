@@ -149,10 +149,9 @@ module TestIRB
     end
 
     def test_history_different_encodings
-      verbose_bak = nil
       backup_default_external = Encoding.default_external
       IRB.conf[:SAVE_HISTORY] = 2
-      $VERBOSE = nil
+      verbose_bak, $VERBOSE = $VERBOSE, nil
       Encoding.default_external = Encoding::US_ASCII
       locale = IRB::Locale.new("C")
       assert_history(<<~EXPECTED_HISTORY.encode(Encoding::US_ASCII), <<~INITIAL_HISTORY.encode(Encoding::UTF_8), <<~INPUT, locale: locale)
