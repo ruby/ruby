@@ -4651,6 +4651,14 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
     /* Abort incremental marking and lazy sweeping to speed up shutdown. */
     gc_abort(objspace);
 
+    if (rb_free_on_exit) {
+        for (int i = 0; i < SIZE_POOL_COUNT; i++) {
+            rb_size_pool_t *size_pool = &size_pools[i];
+            rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
+            rgengc_mark_and_rememberset_clear(objspace, heap);
+        }
+    }
+
     /* prohibit GC because force T_DATA finalizers can break an object graph consistency */
     dont_gc_on();
 
