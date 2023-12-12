@@ -1047,6 +1047,7 @@ static VALUE chdir_thread = Qnil;
 struct chdir_data {
     VALUE old_path, new_path;
     int done;
+    bool yield_path;
 };
 
 static VALUE
@@ -1058,7 +1059,7 @@ chdir_yield(VALUE v)
     chdir_blocking++;
     if (NIL_P(chdir_thread))
         chdir_thread = rb_thread_current();
-    return rb_yield(args->new_path);
+    return args->yield_path ? rb_yield(args->new_path) : rb_yield_values2(0, NULL);
 }
 
 static VALUE
@@ -1072,6 +1073,36 @@ chdir_restore(VALUE v)
         dir_chdir0(args->old_path);
     }
     return Qnil;
+}
+
+static VALUE
+chdir_path(VALUE path, bool yield_path)
+{
+    if (chdir_blocking > 0) {
+        if (rb_thread_current() != chdir_thread)
+            rb_raise(rb_eRuntimeError, "conflicting chdir during another chdir block");
+        if (!rb_block_given_p())
+            rb_warn("conflicting chdir during another chdir block");
+    }
+
+    if (rb_block_given_p()) {
+        struct chdir_data args;
+
+        args.old_path = rb_str_encode_ospath(rb_dir_getwd());
+        args.new_path = path;
+        args.done = FALSE;
+        args.yield_path = yield_path;
+        return rb_ensure(chdir_yield, (VALUE)&args, chdir_restore, (VALUE)&args);
+    }
+    else {
+        char *p = RSTRING_PTR(path);
+        int r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_chdir, p,
+                                                        RUBY_UBF_IO, 0);
+        if (r < 0)
+            rb_sys_fail_path(path);
+    }
+
+    return INT2FIX(0);
 }
 
 /*
@@ -1100,7 +1131,7 @@ chdir_restore(VALUE v)
  *
  * - Calls the block with the argument.
  * - Changes to the given directory.
- * - Executes the block
+ * - Executes the block (yielding the new path).
  * - Restores the previous working directory.
  * - Returns the block's return value.
  *
@@ -1154,30 +1185,7 @@ dir_s_chdir(int argc, VALUE *argv, VALUE obj)
         path = rb_str_new2(dist);
     }
 
-    if (chdir_blocking > 0) {
-        if (rb_thread_current() != chdir_thread)
-            rb_raise(rb_eRuntimeError, "conflicting chdir during another chdir block");
-        if (!rb_block_given_p())
-            rb_warn("conflicting chdir during another chdir block");
-    }
-
-    if (rb_block_given_p()) {
-        struct chdir_data args;
-
-        args.old_path = rb_str_encode_ospath(rb_dir_getwd());
-        args.new_path = path;
-        args.done = FALSE;
-        return rb_ensure(chdir_yield, (VALUE)&args, chdir_restore, (VALUE)&args);
-    }
-    else {
-        char *p = RSTRING_PTR(path);
-        int r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_chdir, p,
-                                                        RUBY_UBF_IO, 0);
-        if (r < 0)
-            rb_sys_fail_path(path);
-    }
-
-    return INT2FIX(0);
+    return chdir_path(path, true);
 }
 
 #if defined(HAVE_FCHDIR) && defined(HAVE_DIRFD) && HAVE_FCHDIR && HAVE_DIRFD
@@ -1255,7 +1263,7 @@ fchdir_restore(VALUE v)
  *
  * - Calls the block with the argument.
  * - Changes to the given directory.
- * - Executes the block
+ * - Executes the block (yields no args).
  * - Restores the previous working directory.
  * - Returns the block's return value.
  *
@@ -1315,27 +1323,35 @@ dir_s_fchdir(VALUE klass, VALUE fd_value)
 
 /*
  * call-seq:
- *   chdir -> nil
+ *   chdir -> 0
+ *   chdir { ... } -> object
  *
- * Changes the current working directory to the path of +self+:
+ * Changes the current working directory to +self+:
  *
  *   Dir.pwd # => "/"
  *   dir = Dir.new('example')
  *   dir.chdir
  *   Dir.pwd # => "/example"
  *
+ * With a block, temporarily changes the working directory:
+ *
+ * - Calls the block.
+ * - Changes to the given directory.
+ * - Executes the block (yields no args).
+ * - Restores the previous working directory.
+ * - Returns the block's return value.
+ *
+ * Uses Dir.fchdir if available, and Dir.chdir if not, see those
+ * methods for caveats.
  */
 static VALUE
 dir_chdir(VALUE dir)
 {
 #if defined(HAVE_FCHDIR) && defined(HAVE_DIRFD) && HAVE_FCHDIR && HAVE_DIRFD
-    dir_s_fchdir(rb_cDir, dir_fileno(dir));
+    return dir_s_fchdir(rb_cDir, dir_fileno(dir));
 #else
-    VALUE path = dir_get(dir)->path;
-    dir_s_chdir(1, &path, rb_cDir);
+    return chdir_path(dir_get(dir)->path, false);
 #endif
-
-    return Qnil;
 }
 
 #ifndef _WIN32
