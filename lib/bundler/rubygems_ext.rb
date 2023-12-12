@@ -325,14 +325,4 @@ module Gem
       end
     end
   end
-
-  require "rubygems/util"
-
-  Util.singleton_class.module_eval do
-    remove_method :glob_files_in_dir
-
-    def glob_files_in_dir(glob, base_path)
-      Dir.glob(glob, base: base_path).map! {|f| File.expand_path(f, base_path) }
-    end
-  end
 end
