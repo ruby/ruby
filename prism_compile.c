@@ -1437,6 +1437,7 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
         case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
             RUBY_ASSERT(node->flags & PM_REGULAR_EXPRESSION_FLAGS_ONCE);
             scope->body = (pm_node_t *)node;
+            scope->local_depth_offset += 1;
             break;
         }
         case PM_LAMBDA_NODE: {

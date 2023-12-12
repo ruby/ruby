@@ -601,6 +601,7 @@ module Prism
       assert_prism_eval('/pit/ne')
 
       assert_prism_eval('2.times.map { /#{1}/o }')
+      assert_prism_eval('2.times.map { foo = 1; /#{foo}/o }')
     end
 
     def test_StringNode
