@@ -1987,8 +1987,9 @@ end
 
     FileUtils.chmod 0o000, @gemhome
 
-    use_ui(@ui) { Gem::Installer.at @gem }
+    installer = use_ui(@ui) { Gem::Installer.at @gem }
 
+    assert_equal Gem.user_dir, installer.gem_home
     assert_equal "Defaulting to user installation because default installation directory (#{@gemhome}) is not writable.", @ui.output.strip
   ensure
     FileUtils.chmod 0o755, @gemhome
