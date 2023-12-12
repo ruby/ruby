@@ -682,7 +682,7 @@ class Gem::Installer
       if @build_root.nil?
         if options[:user_install]
           @gem_home = Gem.user_dir
-        elsif !ENV.key?("GEM_HOME") && (File.exist?(Gem.dir) && !File.writable?(Gem.dir))
+        elsif options[:user_install].nil? && !ENV.key?("GEM_HOME") && (File.exist?(Gem.dir) && !File.writable?(Gem.dir))
           say "Defaulting to user installation because default installation directory (#{Gem.dir}) is not writable."
           @gem_home = Gem.user_dir
         end
