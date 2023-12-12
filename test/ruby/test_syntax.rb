@@ -642,6 +642,8 @@ WARN
     assert_equal(42, obj.foo(42))
     assert_equal(42, obj.foo(2, _: 0))
     assert_equal(2, obj.foo(x: 2, _: 0))
+  ensure
+    self.class.remove_method(:foo)
   end
 
   def test_duplicated_opt_kw
@@ -1405,6 +1407,54 @@ eom
     end
   end
 
+  def test_eval_return_toplevel
+    feature4840 = '[ruby-core:36785] [Feature #4840]'
+    line = __LINE__+2
+    code = "#{<<~"begin;"}#{<<~'end;'}"
+    begin;
+      eval "return"; raise
+      begin eval "return"; rescue SystemExit; exit false; end
+      begin eval "return"; ensure puts "ensured"; end #=> ensured
+      begin ensure eval "return"; end
+      begin raise; ensure; eval "return"; end
+      begin raise; rescue; eval "return"; end
+      eval "return false"; raise
+      eval "return 1"; raise
+      "#{eval "return"}"
+      raise((eval "return"; "should not raise"))
+      begin raise; ensure eval "return"; end; self
+      begin raise; ensure eval "return"; end and self
+      eval "return puts('ignored')" #=> ignored
+      BEGIN {eval "return"}
+    end;
+      .split(/\n/).map {|s|[(line+=1), *s.split(/#=> /, 2)]}
+    failed = proc do |n, s|
+      RubyVM::InstructionSequence.compile(s, __FILE__, nil, n).disasm
+    end
+    Tempfile.create(%w"test_return_ .rb") do |lib|
+      lib.close
+      args = %W[-W0 -r#{lib.path}]
+      all_assertions_foreach(feature4840, *[:main, :lib].product([:class, :top], code)) do |main, klass, (n, s, *ex)|
+        if klass == :class
+          s = "class X; #{s}; end"
+          if main == :main
+            assert_in_out_err(%[-W0], s, ex, /return/, proc {failed[n, s]}, success: false)
+          else
+            File.write(lib, s)
+            assert_in_out_err(args, "", ex, /return/, proc {failed[n, s]}, success: false)
+          end
+        else
+          if main == :main
+            assert_in_out_err(%[-W0], s, ex, [], proc {failed[n, s]}, success: true)
+          else
+            File.write(lib, s)
+            assert_in_out_err(args, "", ex, [], proc {failed[n, s]}, success: true)
+          end
+        end
+      end
+    end
+  end
+
   def test_return_toplevel_with_argument
     assert_warn(/argument of top-level return is ignored/) {eval("return 1")}
   end
@@ -1717,6 +1767,19 @@ eom
 
     assert_valid_syntax("proc {def foo(_);end;_1}")
     assert_valid_syntax("p { [_1 **2] }")
+  end
+
+  def test_it
+    assert_no_warning(/`it`/) {eval('if false; it; end')}
+    assert_no_warning(/`it`/) {eval('def foo; it; end')}
+    assert_warn(/`it`/)       {eval('0.times { it }')}
+    assert_no_warning(/`it`/) {eval('0.times { || it }')}
+    assert_no_warning(/`it`/) {eval('0.times { |_n| it }')}
+    assert_warn(/`it`/)       {eval('0.times { it; it = 1; it }')}
+    assert_no_warning(/`it`/) {eval('0.times { it = 1; it }')}
+    assert_no_warning(/`it`/) {eval('it = 1; 0.times { it }')}
+  ensure
+    self.class.remove_method(:foo)
   end
 
   def test_value_expr_in_condition

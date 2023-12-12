@@ -17,9 +17,9 @@ RSpec.describe Bundler::RubyDsl do
   let(:engine_version) { "9000" }
   let(:patchlevel) { "100" }
   let(:options) do
-    { :patchlevel => patchlevel,
-      :engine => engine,
-      :engine_version => engine_version }
+    { patchlevel: patchlevel,
+      engine: engine,
+      engine_version: engine_version }
   end
   let(:project_root) { Pathname.new("/path/to/project") }
   before { allow(Bundler).to receive(:root).and_return(project_root) }
@@ -110,10 +110,10 @@ RSpec.describe Bundler::RubyDsl do
     context "with a file option" do
       let(:file) { ".ruby-version" }
       let(:options) do
-        { :file => file,
-          :patchlevel => patchlevel,
-          :engine => engine,
-          :engine_version => engine_version }
+        { file: file,
+          patchlevel: patchlevel,
+          engine: engine,
+          engine_version: engine_version }
       end
       let(:ruby_version_arg) { nil }
       let(:file_content) { "#{version}\n" }

@@ -12,7 +12,6 @@ VALUE rb_cPrismLocation;
 VALUE rb_cPrismComment;
 VALUE rb_cPrismInlineComment;
 VALUE rb_cPrismEmbDocComment;
-VALUE rb_cPrismDATAComment;
 VALUE rb_cPrismMagicComment;
 VALUE rb_cPrismParseError;
 VALUE rb_cPrismParseWarning;
@@ -127,7 +126,7 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
     } else if (key_id == rb_option_id_encoding) {
         if (!NIL_P(value)) pm_options_encoding_set(options, rb_enc_name(rb_to_encoding(value)));
     } else if (key_id == rb_option_id_line) {
-        if (!NIL_P(value)) pm_options_line_set(options, NUM2UINT(value));
+        if (!NIL_P(value)) pm_options_line_set(options, NUM2INT(value));
     } else if (key_id == rb_option_id_frozen_string_literal) {
         if (!NIL_P(value)) pm_options_frozen_string_literal_set(options, value == Qtrue);
     } else if (key_id == rb_option_id_verbose) {
@@ -167,6 +166,7 @@ build_options(VALUE argument) {
  */
 static void
 extract_options(pm_options_t *options, VALUE filepath, VALUE keywords) {
+    options->line = 1; // default
     if (!NIL_P(keywords)) {
         struct build_options_data data = { .options = options, .keywords = keywords };
         struct build_options_data *argument = &data;
@@ -316,26 +316,11 @@ parser_comments(pm_parser_t *parser, VALUE source) {
     for (pm_comment_t *comment = (pm_comment_t *) parser->comment_list.head; comment != NULL; comment = (pm_comment_t *) comment->node.next) {
         VALUE location_argv[] = {
             source,
-            LONG2FIX(comment->start - parser->start),
-            LONG2FIX(comment->end - comment->start)
+            LONG2FIX(comment->location.start - parser->start),
+            LONG2FIX(comment->location.end - comment->location.start)
         };
 
-        VALUE type;
-        switch (comment->type) {
-            case PM_COMMENT_INLINE:
-                type = rb_cPrismInlineComment;
-                break;
-            case PM_COMMENT_EMBDOC:
-                type = rb_cPrismEmbDocComment;
-                break;
-            case PM_COMMENT___END__:
-                type = rb_cPrismDATAComment;
-                break;
-            default:
-                type = rb_cPrismInlineComment;
-                break;
-        }
-
+        VALUE type = (comment->type == PM_COMMENT_EMBDOC) ? rb_cPrismEmbDocComment : rb_cPrismInlineComment;
         VALUE comment_argv[] = { rb_class_new_instance(3, location_argv, rb_cPrismLocation) };
         rb_ary_push(comments, rb_class_new_instance(1, comment_argv, type));
     }
@@ -375,6 +360,25 @@ parser_magic_comments(pm_parser_t *parser, VALUE source) {
 }
 
 /**
+ * Extract out the data location from the parser into a Location instance if one
+ * exists.
+ */
+static VALUE
+parser_data_loc(const pm_parser_t *parser, VALUE source) {
+    if (parser->data_loc.end == NULL) {
+        return Qnil;
+    } else {
+        VALUE argv[] = {
+            source,
+            LONG2FIX(parser->data_loc.start - parser->start),
+            LONG2FIX(parser->data_loc.end - parser->data_loc.start)
+        };
+
+        return rb_class_new_instance(3, argv, rb_cPrismLocation);
+    }
+}
+
+/**
  * Extract the errors out of the parser into an array.
  */
 static VALUE
@@ -385,8 +389,8 @@ parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
     for (error = (pm_diagnostic_t *) parser->error_list.head; error != NULL; error = (pm_diagnostic_t *) error->node.next) {
         VALUE location_argv[] = {
             source,
-            LONG2FIX(error->start - parser->start),
-            LONG2FIX(error->end - error->start)
+            LONG2FIX(error->location.start - parser->start),
+            LONG2FIX(error->location.end - error->location.start)
         };
 
         VALUE error_argv[] = {
@@ -411,8 +415,8 @@ parser_warnings(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
     for (warning = (pm_diagnostic_t *) parser->warning_list.head; warning != NULL; warning = (pm_diagnostic_t *) warning->node.next) {
         VALUE location_argv[] = {
             source,
-            LONG2FIX(warning->start - parser->start),
-            LONG2FIX(warning->end - warning->start)
+            LONG2FIX(warning->location.start - parser->start),
+            LONG2FIX(warning->location.end - warning->location.start)
         };
 
         VALUE warning_argv[] = {
@@ -465,7 +469,7 @@ parse_lex_token(void *data, pm_parser_t *parser, pm_token_t *token) {
 static void
 parse_lex_encoding_changed_callback(pm_parser_t *parser) {
     parse_lex_data_t *parse_lex_data = (parse_lex_data_t *) parser->lex_callback->data;
-    parse_lex_data->encoding = rb_enc_find(parser->encoding.name);
+    parse_lex_data->encoding = rb_enc_find(parser->encoding->name);
 
     // Since the encoding changed, we need to go back and change the encoding of
     // the tokens that were already lexed. This is only going to end up being
@@ -531,6 +535,7 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
         value,
         parser_comments(&parser, source),
         parser_magic_comments(&parser, source),
+        parser_data_loc(&parser, source),
         parser_errors(&parser, parse_lex_data.encoding, source),
         parser_warnings(&parser, parse_lex_data.encoding, source),
         source
@@ -538,7 +543,7 @@ parse_lex_input(pm_string_t *input, const pm_options_t *options, bool return_nod
 
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
-    return rb_class_new_instance(6, result_argv, rb_cPrismParseResult);
+    return rb_class_new_instance(7, result_argv, rb_cPrismParseResult);
 }
 
 /**
@@ -594,19 +599,20 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
     pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
 
     pm_node_t *node = pm_parse(&parser);
-    rb_encoding *encoding = rb_enc_find(parser.encoding.name);
+    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
 
     VALUE source = pm_source_new(&parser, encoding);
     VALUE result_argv[] = {
         pm_ast_new(&parser, node, encoding),
         parser_comments(&parser, source),
         parser_magic_comments(&parser, source),
+        parser_data_loc(&parser, source),
         parser_errors(&parser, encoding, source),
         parser_warnings(&parser, encoding, source),
         source
     };
 
-    VALUE result = rb_class_new_instance(6, result_argv, rb_cPrismParseResult);
+    VALUE result = rb_class_new_instance(7, result_argv, rb_cPrismParseResult);
 
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
@@ -687,7 +693,7 @@ parse_input_comments(pm_string_t *input, const pm_options_t *options) {
     pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
 
     pm_node_t *node = pm_parse(&parser);
-    rb_encoding *encoding = rb_enc_find(parser.encoding.name);
+    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
 
     VALUE source = pm_source_new(&parser, encoding);
     VALUE comments = parser_comments(&parser, source);
@@ -792,6 +798,63 @@ parse_lex_file(int argc, VALUE *argv, VALUE self) {
     return value;
 }
 
+/**
+ * Parse the given input and return true if it parses without errors.
+ */
+static VALUE
+parse_input_success_p(pm_string_t *input, const pm_options_t *options) {
+    pm_parser_t parser;
+    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
+
+    pm_node_t *node = pm_parse(&parser);
+    pm_node_destroy(&parser, node);
+
+    VALUE result = parser.error_list.size == 0 ? Qtrue : Qfalse;
+    pm_parser_free(&parser);
+
+    return result;
+}
+
+/**
+ * call-seq:
+ *   Prism::parse_success?(source, **options) -> Array
+ *
+ * Parse the given string and return true if it parses without errors. For
+ * supported options, see Prism::parse.
+ */
+static VALUE
+parse_success_p(int argc, VALUE *argv, VALUE self) {
+    pm_string_t input;
+    pm_options_t options = { 0 };
+    string_options(argc, argv, &input, &options);
+
+    VALUE result = parse_input_success_p(&input, &options);
+    pm_string_free(&input);
+    pm_options_free(&options);
+
+    return result;
+}
+
+/**
+ * call-seq:
+ *   Prism::parse_file_success?(filepath, **options) -> Array
+ *
+ * Parse the given file and return true if it parses without errors. For
+ * supported options, see Prism::parse.
+ */
+static VALUE
+parse_file_success_p(int argc, VALUE *argv, VALUE self) {
+    pm_string_t input;
+    pm_options_t options = { 0 };
+    if (!file_options(argc, argv, &input, &options)) return Qnil;
+
+    VALUE result = parse_input_success_p(&input, &options);
+    pm_string_free(&input);
+    pm_options_free(&options);
+
+    return result;
+}
+
 /******************************************************************************/
 /* Utility functions exposed to make testing easier                           */
 /******************************************************************************/
@@ -808,7 +871,7 @@ static VALUE
 named_captures(VALUE self, VALUE source) {
     pm_string_list_t string_list = { 0 };
 
-    if (!pm_regexp_named_capture_group_names((const uint8_t *) RSTRING_PTR(source), RSTRING_LEN(source), &string_list, false, &pm_encoding_utf_8)) {
+    if (!pm_regexp_named_capture_group_names((const uint8_t *) RSTRING_PTR(source), RSTRING_LEN(source), &string_list, false, PM_ENCODING_UTF_8_ENTRY)) {
         pm_string_list_free(&string_list);
         return Qnil;
     }
@@ -898,7 +961,7 @@ inspect_node(VALUE self, VALUE source) {
 
     pm_prettyprint(&buffer, &parser, node);
 
-    rb_encoding *encoding = rb_enc_find(parser.encoding.name);
+    rb_encoding *encoding = rb_enc_find(parser.encoding->name);
     VALUE string = rb_enc_str_new(pm_buffer_value(&buffer), pm_buffer_length(&buffer), encoding);
 
     pm_buffer_free(&buffer);
@@ -938,7 +1001,6 @@ Init_prism(void) {
     rb_cPrismComment = rb_define_class_under(rb_cPrism, "Comment", rb_cObject);
     rb_cPrismInlineComment = rb_define_class_under(rb_cPrism, "InlineComment", rb_cPrismComment);
     rb_cPrismEmbDocComment = rb_define_class_under(rb_cPrism, "EmbDocComment", rb_cPrismComment);
-    rb_cPrismDATAComment = rb_define_class_under(rb_cPrism, "DATAComment", rb_cPrismComment);
     rb_cPrismMagicComment = rb_define_class_under(rb_cPrism, "MagicComment", rb_cObject);
     rb_cPrismParseError = rb_define_class_under(rb_cPrism, "ParseError", rb_cObject);
     rb_cPrismParseWarning = rb_define_class_under(rb_cPrism, "ParseWarning", rb_cObject);
@@ -976,6 +1038,8 @@ Init_prism(void) {
     rb_define_singleton_method(rb_cPrism, "parse_file_comments", parse_file_comments, -1);
     rb_define_singleton_method(rb_cPrism, "parse_lex", parse_lex, -1);
     rb_define_singleton_method(rb_cPrism, "parse_lex_file", parse_lex_file, -1);
+    rb_define_singleton_method(rb_cPrism, "parse_success?", parse_success_p, -1);
+    rb_define_singleton_method(rb_cPrism, "parse_file_success?", parse_file_success_p, -1);
 
     // Next, the functions that will be called by the parser to perform various
     // internal tasks. We expose these to make them easier to test.

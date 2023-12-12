@@ -238,25 +238,6 @@ module Bundler
       end
     end
 
-    def replace_require(specs)
-      return if [::Kernel.singleton_class, ::Kernel].any? {|klass| klass.respond_to?(:no_warning_require) }
-
-      [::Kernel.singleton_class, ::Kernel].each do |kernel_class|
-        kernel_class.send(:alias_method, :no_warning_require, :require)
-        kernel_class.send(:define_method, :require) do |name|
-          if message = ::Gem::BUNDLED_GEMS.warning?(name, specs: specs) # rubocop:disable Style/HashSyntax
-            warn message, :uplevel => 1
-          end
-          kernel_class.send(:no_warning_require, name)
-        end
-        if kernel_class == ::Kernel
-          kernel_class.send(:private, :require)
-        else
-          kernel_class.send(:public, :require)
-        end
-      end
-    end
-
     def replace_gem(specs, specs_by_name)
       executables = nil
 
@@ -374,7 +355,13 @@ module Bundler
       specs_by_name = add_default_gems_to(specs)
 
       reverse_rubygems_kernel_mixin
-      replace_require(specs) if defined?(::Gem::BUNDLED_GEMS)
+      begin
+        # bundled_gems only provide with Ruby 3.3 or later
+        require "bundled_gems"
+      rescue LoadError
+      else
+        Gem::BUNDLED_GEMS.replace_require(specs) if Gem::BUNDLED_GEMS.respond_to?(:replace_require)
+      end
       replace_gem(specs, specs_by_name)
       stub_rubygems(specs)
       replace_bin_path(specs_by_name)

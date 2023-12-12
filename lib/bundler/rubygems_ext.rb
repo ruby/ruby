@@ -78,24 +78,6 @@ module Gem
       end
     end
 
-    alias_method :rg_missing_extensions?, :missing_extensions?
-    def missing_extensions?
-      # When we use this methods with local gemspec, we don't handle
-      # build status of extension correctly. So We need to find extension
-      # files in require_paths.
-      # TODO: Gem::Specification couldn't access extension name from extconf.rb
-      #       so we find them with heuristic way. We should improve it.
-      if source.respond_to?(:root)
-        return false if raw_require_paths.any? do |path|
-          ext_dir = File.join(full_gem_path, path)
-          File.exist?(File.join(ext_dir, "#{name}.#{RbConfig::CONFIG["DLEXT"]}")) ||
-          !Dir.glob(File.join(ext_dir, name, "*.#{RbConfig::CONFIG["DLEXT"]}")).empty?
-        end
-      end
-
-      rg_missing_extensions?
-    end
-
     remove_method :gem_dir
     def gem_dir
       full_gem_path
@@ -352,21 +334,25 @@ module Gem
   require "rubygems/name_tuple"
 
   class NameTuple
-    def self.new(name, version, platform="ruby")
-      if Gem::Platform === platform
-        super(name, version, platform.to_s)
-      else
-        super
+    # Versions of RubyGems before about 3.5.0 don't to_s the platform.
+    unless Gem::NameTuple.new("a", Gem::Version.new("1"), Gem::Platform.new("x86_64-linux")).platform.is_a?(String)
+      alias_method :initialize_with_platform, :initialize
+
+      def initialize(name, version, platform=Gem::Platform::RUBY)
+        if Gem::Platform === platform
+          initialize_with_platform(name, version, platform.to_s)
+        else
+          initialize_with_platform(name, version, platform)
+        end
       end
     end
 
     def lock_name
-      @lock_name ||=
-        if platform == Gem::Platform::RUBY
-          "#{name} (#{version})"
-        else
-          "#{name} (#{version}-#{platform})"
-        end
+      if platform == Gem::Platform::RUBY
+        "#{name} (#{version})"
+      else
+        "#{name} (#{version}-#{platform})"
+      end
     end
   end
 
@@ -376,7 +362,7 @@ module Gem
     remove_method :glob_files_in_dir
 
     def glob_files_in_dir(glob, base_path)
-      Dir.glob(glob, :base => base_path).map! {|f| File.expand_path(f, base_path) }
+      Dir.glob(glob, base: base_path).map! {|f| File.expand_path(f, base_path) }
     end
   end
 end

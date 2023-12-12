@@ -1,5 +1,53 @@
 return if mmtk?
 
+# regression test for arity check with splat
+assert_equal '[:ae, :ae]', %q{
+  def req_one(a_, b_ = 1) = raise
+
+  def test(args)
+    req_one *args
+  rescue ArgumentError
+    :ae
+  end
+
+  [test(Array.new 5), test([])]
+} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT
+
+# regression test for arity check with splat and send
+assert_equal '[:ae, :ae]', %q{
+  def two_reqs(a, b_, _ = 1) = a.gsub(a, a)
+
+  def test(name, args)
+    send(name, *args)
+  rescue ArgumentError
+    :ae
+  end
+
+  [test(:two_reqs, ["g", nil, nil, nil]), test(:two_reqs, ["g"])]
+}
+
+# regression test for GC marking stubs in invalidated code
+assert_normal_exit %q{
+  garbage = Array.new(10_000) { [] } # create garbage to cause iseq movement
+  eval(<<~RUBY)
+  def foo(n, garbage)
+    if n == 2
+      # 1.times.each to create a cfunc frame to preserve the JIT frame
+      # which will return to a stub housed in an invalidated block
+      return 1.times.each do
+        Object.define_method(:foo) {}
+        garbage.clear
+        GC.verify_compaction_references(toward: :empty, expand_heap: true)
+      end
+    end
+
+    foo(n + 1, garbage)
+  end
+  RUBY
+
+  foo(1, garbage)
+}
+
 # regression test for callee block handler overlapping with arguments
 assert_equal '3', %q{
   def foo(_req, *args) = args.last
@@ -278,6 +326,33 @@ assert_equal '["instance-variable", 5]', %q{
   end
 
   Foo.new.foo
+}
+
+# getinstancevariable with shape too complex
+assert_normal_exit %q{
+  class Foo
+    def initialize
+      @a = 1
+    end
+
+    def getter
+      @foobar
+    end
+  end
+
+  # Initialize ivars in changing order, making the Foo
+  # class have shape too complex
+  100.times do |x|
+    foo = Foo.new
+    foo.instance_variable_set(:"@a#{x}", 1)
+    foo.instance_variable_set(:"@foobar", 777)
+
+    # The getter method eventually sees shape too complex
+    r = foo.getter
+    if r != 777
+      raise "error"
+    end
+  end
 }
 
 assert_equal '0', %q{
@@ -4218,4 +4293,29 @@ assert_equal 'false', %q{
 assert_equal 'true', %q{
   def entry = yield
   entry { true }
+}
+
+assert_normal_exit %q{
+  ivars = 1024.times.map { |i| "@iv_#{i} = #{i}\n" }.join
+  Foo = Class.new
+  Foo.class_eval "def initialize() #{ivars} end"
+  Foo.new
+}
+
+assert_equal '0', %q{
+  def spill
+    1.to_i # not inlined
+  end
+
+  def inline(_stack1, _stack2, _stack3, _stack4, _stack5)
+    0 # inlined
+  end
+
+  def entry
+    # RegTemps is 00111110 prior to the #inline call.
+    # Its return value goes to stack_idx=0, which conflicts with stack_idx=5.
+    inline(spill, 2, 3, 4, 5)
+  end
+
+  entry
 }

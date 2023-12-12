@@ -225,13 +225,6 @@ module Spec
       root.join("lib")
     end
 
-    # Sometimes rubygems version under test does not include
-    # https://github.com/rubygems/rubygems/pull/2728 and will not always end up
-    # activating the current bundler. In that case, require bundler absolutely.
-    def entrypoint
-      Gem.rubygems_version < Gem::Version.new("3.1.a") ? "#{lib_dir}/bundler" : "bundler"
-    end
-
     def global_plugin_gem(*args)
       home ".bundle", "plugin", "gems", *args
     end
@@ -271,7 +264,7 @@ module Spec
     def git_ls_files(glob)
       skip "Not running on a git context, since running tests from a tarball" if ruby_core_tarball?
 
-      sys_exec("git ls-files -z -- #{glob}", :dir => source_root).split("\x0")
+      sys_exec("git ls-files -z -- #{glob}", dir: source_root).split("\x0")
     end
 
     def tracked_files_glob

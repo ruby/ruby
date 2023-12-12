@@ -131,9 +131,9 @@ class TestBundlerGem < Gem::TestCase
 
       install_specs a, b, c
 
-      install_gem a, :install_dir => path
-      install_gem b, :install_dir => path
-      install_gem c, :install_dir => path
+      install_gem a, install_dir: path
+      install_gem b, install_dir: path
+      install_gem c, install_dir: path
 
       ENV["GEM_PATH"] = path
 
@@ -183,9 +183,9 @@ class TestBundlerGem < Gem::TestCase
 
       install_specs a, b, c
 
-      install_gem a, :install_dir => path
-      install_gem b, :install_dir => path
-      install_gem c, :install_dir => path
+      install_gem a, install_dir: path
+      install_gem b, install_dir: path
+      install_gem c, install_dir: path
 
       ENV["GEM_PATH"] = path
 
@@ -201,7 +201,7 @@ class TestBundlerGem < Gem::TestCase
           f.puts "gem 'a'"
         end
         out0 = with_path_and_rubyopt(new_path, new_rubyopt) do
-          IO.popen("foo", :chdir => "sub1", &:read).split(/\n/)
+          IO.popen("foo", chdir: "sub1", &:read).split(/\n/)
         end
 
         File.open path, "a" do |f|
@@ -209,7 +209,7 @@ class TestBundlerGem < Gem::TestCase
           f.puts "gem 'c'"
         end
         out = with_path_and_rubyopt(new_path, new_rubyopt) do
-          IO.popen("foo", :chdir => "sub1", &:read).split(/\n/)
+          IO.popen("foo", chdir: "sub1", &:read).split(/\n/)
         end
 
         Dir.rmdir "sub1"

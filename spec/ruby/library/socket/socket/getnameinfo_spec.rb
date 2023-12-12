@@ -70,7 +70,7 @@ describe 'Socket.getnameinfo' do
 
     it 'raises SocketError or TypeError when using an invalid String' do
       -> { Socket.getnameinfo('cats') }.should raise_error(Exception) { |e|
-        [SocketError, TypeError].should include(e.class)
+        (e.is_a?(SocketError) || e.is_a?(TypeError)).should == true
       }
     end
 

@@ -101,7 +101,7 @@ module Bundler
     # @param [Pathname] gemfile path
     # @param [Proc] block that can be evaluated for (inline) Gemfile
     def gemfile_install(gemfile = nil, &inline)
-      Bundler.settings.temporary(:frozen => false, :deployment => false) do
+      Bundler.settings.temporary(frozen: false, deployment: false) do
         builder = DSL.new
         if block_given?
           builder.instance_eval(&inline)

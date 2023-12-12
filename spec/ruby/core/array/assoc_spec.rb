@@ -37,4 +37,16 @@ describe "Array#assoc" do
     a.assoc(s1.first).should equal(s1)
     a.assoc(s2.first).should equal(s2)
   end
+
+  it "calls to_ary on non-array elements" do
+    s1 = [1, 2]
+    s2 = ArraySpecs::ArrayConvertible.new(2, 3)
+    a = [s1, s2]
+
+    s1.should_not_receive(:to_ary)
+    a.assoc(s1.first).should equal(s1)
+
+    a.assoc(2).should == [2, 3]
+    s2.called.should equal(:to_ary)
+  end
 end

@@ -22,7 +22,7 @@
 # include <sys/cygwin.h>
 #endif
 
-#if (defined(LOAD_RELATIVE) || defined(__MACH__)) && defined(HAVE_DLADDR)
+#if defined(LOAD_RELATIVE) && defined(HAVE_DLADDR)
 # include <dlfcn.h>
 #endif
 
@@ -624,7 +624,7 @@ str_conv_enc(VALUE str, rb_encoding *from, rb_encoding *to)
 
 void ruby_init_loadpath(void);
 
-#if defined(LOAD_RELATIVE) || defined(__MACH__)
+#if defined(LOAD_RELATIVE)
 static VALUE
 runtime_libruby_path(void)
 {
@@ -701,10 +701,6 @@ runtime_libruby_path(void)
 #define INITIAL_LOAD_PATH_MARK rb_intern_const("@gem_prelude_index")
 
 VALUE ruby_archlibdir_path, ruby_prefix_path;
-#if defined(__MACH__)
-// A path to libruby.dylib itself or where it's statically linked to.
-VALUE rb_libruby_selfpath;
-#endif
 
 void
 ruby_init_loadpath(void)
@@ -712,19 +708,6 @@ ruby_init_loadpath(void)
     VALUE load_path, archlibdir = 0;
     ID id_initial_load_path_mark;
     const char *paths = ruby_initial_load_paths;
-#if defined(LOAD_RELATIVE) || defined(__MACH__)
-    VALUE libruby_path = runtime_libruby_path();
-# if defined(__MACH__)
-    VALUE selfpath = libruby_path;
-#   if defined(LOAD_RELATIVE)
-    selfpath = rb_str_dup(selfpath);
-#   endif
-    rb_obj_hide(selfpath);
-    OBJ_FREEZE_RAW(selfpath);
-    rb_gc_register_address(&rb_libruby_selfpath);
-    rb_libruby_selfpath = selfpath;
-# endif
-#endif
 
 #if defined LOAD_RELATIVE
 #if !defined ENABLE_MULTIARCH
@@ -739,7 +722,7 @@ ruby_init_loadpath(void)
     size_t baselen;
     const char *p;
 
-    sopath = libruby_path;
+    sopath = runtime_libruby_path();
     libpath = RSTRING_PTR(sopath);
 
     p = strrchr(libpath, '/');
@@ -1807,6 +1790,11 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
                            "environment variables RUBY_GC_HEAP_%d_INIT_SLOTS");
     }
 
+    if (getenv("RUBY_FREE_ON_EXIT")) {
+        rb_warn("Free on exit is experimental and may be unstable");
+        rb_free_on_exit = true;
+    }
+
 #if USE_RJIT
     // rb_call_builtin_inits depends on RubyVM::RJIT.enabled?
     if (opt->rjit.on)
@@ -2381,7 +2369,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         if (opt->e_script) {
             pm_string_constant_init(&input, RSTRING_PTR(opt->e_script), RSTRING_LEN(opt->e_script));
             pm_options_filepath_set(&options, "-e");
-        } else {
+        }
+        else {
             pm_string_mapped_init(&input, RSTRING_PTR(opt->script_name));
             pm_options_filepath_set(&options, RSTRING_PTR(opt->script_name));
         }
@@ -2427,6 +2416,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
                 rb_enc_copy(path, opt->script_name);
             }
         }
+
 
         rb_binding_t *toplevel_binding;
         GetBindingPtr(rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING")),

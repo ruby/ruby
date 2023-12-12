@@ -110,7 +110,7 @@ class RbInspector(LLDBInterface):
 
                 self._append_expression("*(struct RClass*)%0#x" % val.GetValueAsUnsigned())
                 if not val.Cast(tRClass).GetChildMemberWithName("ptr").IsValid():
-                    self._append_command_expression(
+                    self._append_expression(
                         "*(struct rb_classext_struct*)%0#x" %
                         (val.GetValueAsUnsigned() + tRClass.GetByteSize())
                     )

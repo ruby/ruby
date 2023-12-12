@@ -201,9 +201,8 @@ module Random::Formatter
   #
   # The result contains 74 random bits (9.25 random bytes).
   #
-  # Note that this method cannot be made reproducable with Kernel#srand, which
-  # can only affect the random bits.  The sorted bits will still be based on
-  # Process.clock_gettime.
+  # Note that this method cannot be made reproducable because its output
+  # includes not only random bits but also timestamp.
   #
   # See draft-ietf-uuidrev-rfc4122bis[https://datatracker.ietf.org/doc/draft-ietf-uuidrev-rfc4122bis/]
   # for details of UUIDv7.
@@ -293,6 +292,7 @@ module Random::Formatter
     end
   end
 
+  # Internal interface to Random; Generate random data _n_ bytes.
   private def gen_random(n)
     self.bytes(n)
   end
@@ -340,7 +340,9 @@ module Random::Formatter
     result
   end
 
+  # The default character list for #alphanumeric.
   ALPHANUMERIC = [*'A'..'Z', *'a'..'z', *'0'..'9']
+
   # Generate a random alphanumeric string.
   #
   # The argument _n_ specifies the length, in characters, of the alphanumeric

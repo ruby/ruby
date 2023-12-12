@@ -80,13 +80,13 @@ module Bundler
 
         def current_branch
           @current_branch ||= with_path do
-            git_local("rev-parse", "--abbrev-ref", "HEAD", :dir => path).strip
+            git_local("rev-parse", "--abbrev-ref", "HEAD", dir: path).strip
           end
         end
 
         def contains?(commit)
           allowed_with_path do
-            result, status = git_null("branch", "--contains", commit, :dir => path)
+            result, status = git_null("branch", "--contains", commit, dir: path)
             status.success? && result =~ /^\* (.*)$/
           end
         end
@@ -132,18 +132,18 @@ module Bundler
 
           ref = @commit_ref || (locked_to_full_sha? && @revision)
           if ref
-            git "config", "uploadpack.allowAnySHA1InWant", "true", :dir => path.to_s if @commit_ref.nil? && needs_allow_any_sha1_in_want?
+            git "config", "uploadpack.allowAnySHA1InWant", "true", dir: path.to_s if @commit_ref.nil? && needs_allow_any_sha1_in_want?
 
-            git "fetch", "--force", "--quiet", *extra_fetch_args(ref), :dir => destination
+            git "fetch", "--force", "--quiet", *extra_fetch_args(ref), dir: destination
           end
 
-          git "reset", "--hard", @revision, :dir => destination
+          git "reset", "--hard", @revision, dir: destination
 
           if submodules
-            git_retry "submodule", "update", "--init", "--recursive", :dir => destination
+            git_retry "submodule", "update", "--init", "--recursive", dir: destination
           elsif Gem::Version.create(version) >= Gem::Version.create("2.9.0")
             inner_command = "git -C $toplevel submodule deinit --force $sm_path"
-            git_retry "submodule", "foreach", "--quiet", inner_command, :dir => destination
+            git_retry "submodule", "foreach", "--quiet", inner_command, dir: destination
           end
         end
 
@@ -266,32 +266,32 @@ module Bundler
         def git_null(*command, dir: nil)
           check_allowed(command)
 
-          capture(command, dir, :ignore_err => true)
+          capture(command, dir, ignore_err: true)
         end
 
         def git_retry(*command, dir: nil)
           command_with_no_credentials = check_allowed(command)
 
           Bundler::Retry.new("`#{command_with_no_credentials}` at #{dir || SharedHelpers.pwd}").attempts do
-            git(*command, :dir => dir)
+            git(*command, dir: dir)
           end
         end
 
         def git(*command, dir: nil)
-          run_command(*command, :dir => dir) do |unredacted_command|
+          run_command(*command, dir: dir) do |unredacted_command|
             check_allowed(unredacted_command)
           end
         end
 
         def git_local(*command, dir: nil)
-          run_command(*command, :dir => dir) do |unredacted_command|
+          run_command(*command, dir: dir) do |unredacted_command|
             redact_and_check_presence(unredacted_command)
           end
         end
 
         def has_revision_cached?
           return unless @revision && path.exist?
-          git("cat-file", "-e", @revision, :dir => path)
+          git("cat-file", "-e", @revision, dir: path)
           true
         rescue GitError
           false
@@ -314,7 +314,7 @@ module Bundler
         end
 
         def verify(reference)
-          git("rev-parse", "--verify", reference, :dir => path).strip
+          git("rev-parse", "--verify", reference, dir: path).strip
         end
 
         # Adds credentials to the URI
@@ -398,7 +398,7 @@ module Bundler
           if Bundler.feature_flag.bundler_3_mode? || supports_minus_c?
             ["git", "-C", dir.to_s, *cmd]
           else
-            ["git", *cmd, { :chdir => dir.to_s }]
+            ["git", *cmd, { chdir: dir.to_s }]
           end
         end
 

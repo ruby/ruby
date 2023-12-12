@@ -1,12 +1,13 @@
 module Lrama
   class Grammar
     # _rhs holds original RHS element. Use rhs to refer to Symbol.
-    class Rule < Struct.new(:id, :_lhs, :lhs, :_rhs, :rhs, :token_code, :position_in_original_rule_rhs, :nullable, :precedence_sym, :lineno, keyword_init: true)
+    class Rule < Struct.new(:id, :_lhs, :lhs, :lhs_tag, :_rhs, :rhs, :token_code, :position_in_original_rule_rhs, :nullable, :precedence_sym, :lineno, keyword_init: true)
       attr_accessor :original_rule
 
       def ==(other)
         self.class == other.class &&
         self.lhs == other.lhs &&
+        self.lhs_tag == other.lhs_tag &&
         self.rhs == other.rhs &&
         self.token_code == other.token_code &&
         self.position_in_original_rule_rhs == other.position_in_original_rule_rhs &&

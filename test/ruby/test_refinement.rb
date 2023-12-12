@@ -2650,6 +2650,28 @@ class TestRefinement < Test::Unit::TestCase
     end;
   end
 
+  def test_inline_cache_invalidation
+    klass = Class.new do
+      def cached_foo_callsite = foo
+
+      def foo = :v1
+
+      host = self
+      @refinement = Module.new do
+        refine(host) do
+          def foo = :unused
+        end
+      end
+    end
+
+    obj = klass.new
+    obj.cached_foo_callsite # prime cache
+    klass.class_eval do
+      def foo = :v2 # invalidate
+    end
+    assert_equal(:v2, obj.cached_foo_callsite)
+  end
+
   private
 
   def eval_using(mod, s)

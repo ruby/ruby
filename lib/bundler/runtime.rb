@@ -32,7 +32,7 @@ module Bundler
 
       setup_manpath
 
-      lock(:preserve_unknown_sections => true)
+      lock(preserve_unknown_sections: true)
 
       self
     end

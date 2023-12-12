@@ -141,7 +141,9 @@ class TestDir < Test::Unit::TestCase
     setup_envs
 
     ENV["HOME"] = pwd
-    root_dir.chdir do
+    ret = root_dir.chdir do |*a|
+      assert_empty(a)
+
       assert_warning(/conflicting chdir during another chdir block/) { dir.chdir }
       assert_warning(/conflicting chdir during another chdir block/) { root_dir.chdir }
 
@@ -162,10 +164,14 @@ class TestDir < Test::Unit::TestCase
         assert_equal(@root, Dir.pwd)
       end
       assert_equal(pwd, Dir.pwd)
+
+      42
     end
+
+    assert_equal(42, ret)
   ensure
     begin
-      dir.chdir
+      assert_equal(0, dir.chdir)
     rescue
       abort("cannot return the original directory: #{ pwd }")
     end

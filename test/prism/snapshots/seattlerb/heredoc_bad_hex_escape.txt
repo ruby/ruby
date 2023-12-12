@@ -9,7 +9,7 @@
             ├── name_loc: (1,0)-(1,1) = "s"
             ├── value:
             │   @ StringNode (location: (1,4)-(1,9))
-            │   ├── flags: ∅
+            │   ├── flags: forced_utf8_encoding
             │   ├── opening_loc: (1,4)-(1,9) = "<<eos"
             │   ├── content_loc: (2,0)-(3,0) = "a\\xE9b\n"
             │   ├── closing_loc: (3,0)-(4,0) = "eos\n"

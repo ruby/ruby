@@ -276,7 +276,7 @@ typedef struct RNode_FOR_MASGN {
     struct RNode *nd_var;
 } rb_node_for_masgn_t;
 
-/* RNode_BREAK, RNode_NEXT and RNode_RETURN should be same structure */
+/* RNode_BREAK, RNode_NEXT and RNode_REDO should be same structure */
 typedef struct RNode_BREAK {
     NODE node;
 

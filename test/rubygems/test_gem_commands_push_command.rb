@@ -230,7 +230,7 @@ class TestGemCommandsPushCommand < Gem::TestCase
     @api_key = "DOESNTMATTER"
 
     keys = {
-      :rubygems_api_key => @api_key,
+      rubygems_api_key: @api_key,
     }
 
     File.open Gem.configuration.credentials_path, "w" do |f|

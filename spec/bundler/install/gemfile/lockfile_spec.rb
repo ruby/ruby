@@ -11,6 +11,11 @@ RSpec.describe "bundle install with a lockfile present" do
     install_gemfile(gf)
   end
 
+  it "touches the lockfile on install even when nothing has changed" do
+    subject
+    expect { bundle :install }.to change { bundled_app_lock.mtime }
+  end
+
   context "gemfile evaluation" do
     let(:gf) { super() + "\n\n File.open('evals', 'a') {|f| f << %(1\n) } unless ENV['BUNDLER_SPEC_NO_APPEND']" }
 

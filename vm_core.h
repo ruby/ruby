@@ -730,9 +730,8 @@ typedef struct rb_vm_struct {
     /* relation table of ensure - rollback for callcc */
     struct st_table *ensure_rollback_table;
 
-    /* postponed_job (async-signal-safe, NOT thread-safe) */
-    struct rb_postponed_job_struct *postponed_job_buffer;
-    rb_atomic_t postponed_job_index;
+    /* postponed_job (async-signal-safe, and thread-safe) */
+    struct rb_postponed_job_queue *postponed_job_queue;
 
     int src_encoding_index;
 
@@ -917,13 +916,13 @@ typedef rb_jmpbuf_t *rb_vm_tag_jmpbuf_t;
 static inline void
 rb_vm_tag_jmpbuf_init(rb_vm_tag_jmpbuf_t *jmpbuf)
 {
-    *jmpbuf = malloc(sizeof(rb_jmpbuf_t));
+    *jmpbuf = ruby_xmalloc(sizeof(rb_jmpbuf_t));
 }
 
 static inline void
 rb_vm_tag_jmpbuf_deinit(const rb_vm_tag_jmpbuf_t *jmpbuf)
 {
-    free(*jmpbuf);
+    ruby_xfree(*jmpbuf);
 }
 #else
 typedef rb_jmpbuf_t rb_vm_tag_jmpbuf_t;
@@ -1156,6 +1155,7 @@ typedef struct rb_thread_struct {
 
     /* misc */
     VALUE name;
+    void **specific_storage;
 
     struct rb_ext_config ext_config;
 
@@ -2201,6 +2201,10 @@ rb_exec_event_hook_script_compiled(rb_execution_context_t *ec, const rb_iseq_t *
 }
 
 void rb_vm_trap_exit(rb_vm_t *vm);
+void rb_vm_postponed_job_atfork(void); /* vm_trace.c */
+void rb_vm_postponed_job_free(void); /* vm_trace.c */
+size_t rb_vm_memsize_postponed_job_queue(void); /* vm_trace.c */
+void rb_vm_postponed_job_queue_init(rb_vm_t *vm); /* vm_trace.c */
 
 RUBY_SYMBOL_EXPORT_BEGIN
 

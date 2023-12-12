@@ -64,7 +64,7 @@ module Bundler
         valid_platform = lookup.all? do |_, specs|
           spec = specs.first
           matching_specs = spec.source.specs.search([spec.name, spec.version])
-          platform_spec = GemHelpers.select_best_platform_match(matching_specs, platform).first
+          platform_spec = GemHelpers.select_best_platform_match(matching_specs, platform).find(&:matches_current_metadata?)
 
           if platform_spec
             new_specs << LazySpecification.from_spec(platform_spec)

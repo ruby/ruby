@@ -1597,18 +1597,12 @@ bm_mark_and_move(void *ptr)
     rb_gc_mark_and_move_ptr((rb_method_entry_t **)&data->me);
 }
 
-static size_t
-bm_memsize(const void *ptr)
-{
-    return 0;
-}
-
 static const rb_data_type_t method_data_type = {
     "method",
     {
         bm_mark_and_move,
         RUBY_TYPED_DEFAULT_FREE,
-        bm_memsize,
+        NULL, // No external memory to report,
         bm_mark_and_move,
     },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
@@ -3425,9 +3419,15 @@ env_clone(const rb_env_t *env, const rb_cref_t *cref)
     }
 
     new_body = ALLOC_N(VALUE, env->env_size);
-    MEMCPY(new_body, env->env, VALUE, env->env_size);
     new_ep = &new_body[env->ep - env->env];
     new_env = vm_env_new(new_ep, new_body, env->env_size, env->iseq);
+
+    /* The memcpy has to happen after the vm_env_new because it can trigger a
+     * GC compaction which can move the objects in the env. */
+    MEMCPY(new_body, env->env, VALUE, env->env_size);
+    /* VM_ENV_DATA_INDEX_ENV is set in vm_env_new but will get overwritten
+     * by the memcpy above. */
+    new_ep[VM_ENV_DATA_INDEX_ENV] = (VALUE)new_env;
     RB_OBJ_WRITE(new_env, &new_ep[VM_ENV_DATA_INDEX_ME_CREF], (VALUE)cref);
     VM_ASSERT(VM_ENV_ESCAPED_P(new_ep));
     return new_env;

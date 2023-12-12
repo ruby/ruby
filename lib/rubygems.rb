@@ -1290,6 +1290,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   MARSHAL_SPEC_DIR = "quick/Marshal.#{Gem.marshal_version}/".freeze
 
   autoload :ConfigFile,         File.expand_path("rubygems/config_file", __dir__)
+  autoload :CIDetector,         File.expand_path("rubygems/ci_detector", __dir__)
   autoload :Dependency,         File.expand_path("rubygems/dependency", __dir__)
   autoload :DependencyList,     File.expand_path("rubygems/dependency_list", __dir__)
   autoload :Installer,          File.expand_path("rubygems/installer", __dir__)
@@ -1334,6 +1335,17 @@ begin
 
   require "rubygems/defaults/#{RUBY_ENGINE}"
 rescue LoadError
+end
+
+# TruffleRuby >= 24 defines REUSE_AS_BINARY_ON_TRUFFLERUBY in defaults/truffleruby.
+# However, TruffleRuby < 24 defines REUSE_AS_BINARY_ON_TRUFFLERUBY directly in its copy
+# of lib/rubygems/platform.rb, so it is not defined if RubyGems is updated (gem update --system).
+# Instead, we define it here in that case, similar to bundler/lib/bundler/rubygems_ext.rb.
+# We must define it here and not in platform.rb because platform.rb is loaded before defaults/truffleruby.
+class Gem::Platform
+  if RUBY_ENGINE == "truffleruby" && !defined?(REUSE_AS_BINARY_ON_TRUFFLERUBY)
+    REUSE_AS_BINARY_ON_TRUFFLERUBY = %w[libv8 libv8-node sorbet-static].freeze
+  end
 end
 
 ##

@@ -4,10 +4,11 @@
 #include "symbol.h"
 #include "id_table.h"
 #include "internal/class.h"
+#include "internal/error.h"
 #include "internal/gc.h"
+#include "internal/object.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
-#include "internal/error.h"
 #include "variable.h"
 #include <stdbool.h>
 
@@ -81,6 +82,9 @@ redblack_find(redblack_node_t * tree, ID key)
         return LEAF;
     }
     else {
+        RUBY_ASSERT(redblack_left(tree) == LEAF || redblack_left(tree)->key < tree->key);
+        RUBY_ASSERT(redblack_right(tree) == LEAF || redblack_right(tree)->key > tree->key);
+
         if (tree->key == key) {
             return tree;
         }
@@ -136,6 +140,10 @@ redblack_new(char color, ID key, rb_shape_t * value, redblack_node_t * left, red
         // We're out of cache, just quit
         return LEAF;
     }
+
+    RUBY_ASSERT(left == LEAF || left->key < key);
+    RUBY_ASSERT(right == LEAF || right->key > key);
+
     redblack_node_t * redblack_nodes = GET_SHAPE_TREE()->shape_cache;
     redblack_node_t * node = &redblack_nodes[(GET_SHAPE_TREE()->cache_size)++];
     node->key = key;
@@ -149,74 +157,84 @@ static redblack_node_t *
 redblack_balance(char color, ID key, rb_shape_t * value, redblack_node_t * left, redblack_node_t * right)
 {
     if (color == BLACK) {
-        ID z, y, x;
-        rb_shape_t * z_, * y_, * x_;
-        redblack_node_t * a, * b, * c, * d;
+        ID new_key, new_left_key, new_right_key;
+        rb_shape_t *new_value, *new_left_value, *new_right_value;
+        redblack_node_t *new_left_left, *new_left_right, *new_right_left, *new_right_right;
 
         if (redblack_red_p(left) && redblack_red_p(redblack_left(left))) {
-            z = key;
-            z_ = value;
-            d = right;
+            new_right_key = key;
+            new_right_value = value;
+            new_right_right = right;
 
-            y = left->key;
-            y_ = redblack_value(left);
-            c = redblack_right(left);
+            new_key = left->key;
+            new_value = redblack_value(left);
+            new_right_left = redblack_right(left);
 
-            x = redblack_left(left)->key;
-            x_ = redblack_value(redblack_left(left));
+            new_left_key = redblack_left(left)->key;
+            new_left_value = redblack_value(redblack_left(left));
 
-            a = redblack_left(redblack_left(left));
-            b = redblack_right(redblack_left(left));
+            new_left_left = redblack_left(redblack_left(left));
+            new_left_right = redblack_right(redblack_left(left));
         }
         else if (redblack_red_p(left) && redblack_red_p(redblack_right(left))) {
-            z = key;
-            z_ = value;
-            d = right;
+            new_right_key = key;
+            new_right_value = value;
+            new_right_right = right;
 
-            x = left->key;
-            x_ = redblack_value(left);
-            a = redblack_left(left);
+            new_left_key = left->key;
+            new_left_value = redblack_value(left);
+            new_left_left = redblack_left(left);
 
-            y = redblack_right(left)->key;
-            y_ = redblack_value(redblack_right(left));
-            b = redblack_left(redblack_right(left));
-            c = redblack_right(redblack_right(left));
+            new_key = redblack_right(left)->key;
+            new_value = redblack_value(redblack_right(left));
+            new_left_right = redblack_left(redblack_right(left));
+            new_right_left = redblack_right(redblack_right(left));
         }
         else if (redblack_red_p(right) && redblack_red_p(redblack_left(right))) {
-            x = key;
-            x_ = value;
-            a = left;
+            new_left_key = key;
+            new_left_value = value;
+            new_left_left = left;
 
-            z = right->key;
-            z_ = redblack_value(right);
-            d = redblack_right(right);
+            new_right_key = right->key;
+            new_right_value = redblack_value(right);
+            new_right_right = redblack_right(right);
 
-            y = redblack_left(right)->key;
-            y_ = redblack_value(redblack_left(right));
-            b = redblack_left(redblack_left(right));
-            c = redblack_right(redblack_left(right));
+            new_key = redblack_left(right)->key;
+            new_value = redblack_value(redblack_left(right));
+            new_left_right = redblack_left(redblack_left(right));
+            new_right_left = redblack_right(redblack_left(right));
         }
         else if (redblack_red_p(right) && redblack_red_p(redblack_right(right))) {
-            x = key;
-            x_ = value;
-            a = left;
+            new_left_key = key;
+            new_left_value = value;
+            new_left_left = left;
 
-            y = right->key;
-            y_ = redblack_value(right);
-            b = redblack_left(right);
+            new_key = right->key;
+            new_value = redblack_value(right);
+            new_left_right = redblack_left(right);
 
-            z = redblack_right(right)->key;
-            z_ = redblack_value(redblack_right(right));
-            c = redblack_left(redblack_right(right));
-            d = redblack_right(redblack_right(right));
+            new_right_key = redblack_right(right)->key;
+            new_right_value = redblack_value(redblack_right(right));
+            new_right_left = redblack_left(redblack_right(right));
+            new_right_right = redblack_right(redblack_right(right));
         }
         else {
             return redblack_new(color, key, value, left, right);
         }
+
+        RUBY_ASSERT(new_left_key < new_key);
+        RUBY_ASSERT(new_right_key > new_key);
+        RUBY_ASSERT(new_left_left == LEAF || new_left_left->key < new_left_key);
+        RUBY_ASSERT(new_left_right == LEAF || new_left_right->key > new_left_key);
+        RUBY_ASSERT(new_left_right == LEAF || new_left_right->key < new_key);
+        RUBY_ASSERT(new_right_left == LEAF || new_right_left->key < new_right_key);
+        RUBY_ASSERT(new_right_left == LEAF || new_right_left->key > new_key);
+        RUBY_ASSERT(new_right_right == LEAF || new_right_right->key > new_right_key);
+
         return redblack_new(
-                RED, y, y_,
-                redblack_new(BLACK, x, x_, a, b),
-                redblack_new(BLACK, z, z_, c, d));
+                RED, new_key, new_value,
+                redblack_new(BLACK, new_left_key, new_left_value, new_left_left, new_left_right),
+                redblack_new(BLACK, new_right_key, new_right_value, new_right_left, new_right_right));
     }
 
     return redblack_new(color, key, value, left, right);
@@ -229,25 +247,30 @@ redblack_insert_aux(redblack_node_t * tree, ID key, rb_shape_t * value)
         return redblack_new(RED, key, value, LEAF, LEAF);
     }
     else {
+        redblack_node_t *left, *right;
         if (key < tree->key) {
-            return redblack_balance(redblack_color(tree),
-                    tree->key,
-                    redblack_value(tree),
-                    redblack_insert_aux(redblack_left(tree), key, value),
-                    redblack_right(tree));
+            left = redblack_insert_aux(redblack_left(tree), key, value);
+            RUBY_ASSERT(left != LEAF);
+            right = redblack_right(tree);
+            RUBY_ASSERT(right == LEAF || right->key > tree->key);
+        }
+        else if (key > tree->key) {
+            left = redblack_left(tree);
+            RUBY_ASSERT(left == LEAF || left->key < tree->key);
+            right = redblack_insert_aux(redblack_right(tree), key, value);
+            RUBY_ASSERT(right != LEAF);
         }
         else {
-            if (key > tree->key) {
-                return redblack_balance(redblack_color(tree),
-                        tree->key,
-                        redblack_value(tree),
-                        redblack_left(tree),
-                        redblack_insert_aux(redblack_right(tree), key, value));
-            }
-            else {
-                return tree;
-            }
+            return tree;
         }
+
+        return redblack_balance(
+            redblack_color(tree),
+            tree->key,
+            redblack_value(tree),
+            left,
+            right
+        );
     }
 }
 
@@ -409,6 +432,14 @@ redblack_cache_ancestors(rb_shape_t * shape)
 
         if (shape->type == SHAPE_IVAR) {
             shape->ancestor_index = redblack_insert(parent_index, shape->edge_name, shape);
+
+#if RUBY_DEBUG
+            if (shape->ancestor_index) {
+                redblack_node_t *inserted_node = redblack_find(shape->ancestor_index, shape->edge_name);
+                RUBY_ASSERT(inserted_node);
+                RUBY_ASSERT(redblack_value(inserted_node) == shape);
+            }
+#endif
         }
         else {
             shape->ancestor_index = parent_index;
@@ -612,6 +643,17 @@ rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE
         memmove(&ivptr[removed_shape->next_iv_index - 1], &ivptr[removed_shape->next_iv_index],
                 ((new_shape->next_iv_index + 1) - removed_shape->next_iv_index) * sizeof(VALUE));
 
+        // Re-embed objects when instances become small enough
+        // This is necessary because YJIT assumes that objects with the same shape
+        // have the same embeddedness for efficiency (avoid extra checks)
+        if (BUILTIN_TYPE(obj) == T_OBJECT &&
+                !RB_FL_TEST_RAW(obj, ROBJECT_EMBED) &&
+                rb_obj_embedded_size(new_shape->next_iv_index) <= rb_gc_obj_slot_size(obj)) {
+            RB_FL_SET_RAW(obj, ROBJECT_EMBED);
+            memcpy(ROBJECT_IVPTR(obj), ivptr, new_shape->next_iv_index * sizeof(VALUE));
+            xfree(ivptr);
+        }
+
         rb_shape_set_shape(obj, new_shape);
     }
     return true;
@@ -654,12 +696,19 @@ rb_shape_get_next_iv_shape(rb_shape_t* shape, ID id)
 }
 
 rb_shape_t *
-rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id)
+rb_shape_get_next(rb_shape_t *shape, VALUE obj, ID id)
 {
     RUBY_ASSERT(!is_instance_id(id) || RTEST(rb_sym2str(ID2SYM(id))));
     if (UNLIKELY(shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
         return shape;
     }
+
+#if RUBY_DEBUG
+    attr_index_t index;
+    if (rb_shape_get_iv_index(shape, id, &index)) {
+        rb_bug("rb_shape_get_next: trying to create ivar that already exists at index %u", index);
+    }
+#endif
 
     bool allow_new_shape = true;
 
@@ -752,48 +801,72 @@ rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t *value,
     return rb_shape_get_iv_index(shape, id, value);
 }
 
+static bool
+shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
+{
+    while (shape->parent_id != INVALID_SHAPE_ID) {
+        if (shape->edge_name == id) {
+            enum shape_type shape_type;
+            shape_type = (enum shape_type)shape->type;
+
+            switch (shape_type) {
+              case SHAPE_IVAR:
+                RUBY_ASSERT(shape->next_iv_index > 0);
+                *value = shape->next_iv_index - 1;
+                return true;
+              case SHAPE_ROOT:
+              case SHAPE_T_OBJECT:
+                return false;
+              case SHAPE_OBJ_TOO_COMPLEX:
+              case SHAPE_FROZEN:
+                rb_bug("Ivar should not exist on transition");
+            }
+        }
+
+        shape = rb_shape_get_parent(shape);
+    }
+
+    return false;
+}
+
+static bool
+shape_cache_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
+{
+    if (shape->ancestor_index && shape->next_iv_index >= ANCESTOR_CACHE_THRESHOLD) {
+        redblack_node_t *node = redblack_find(shape->ancestor_index, id);
+        if (node) {
+            rb_shape_t *shape = redblack_value(node);
+            *value = shape->next_iv_index - 1;
+
+#if RUBY_DEBUG
+            attr_index_t shape_tree_index;
+            RUBY_ASSERT(shape_get_iv_index(shape, id, &shape_tree_index));
+            RUBY_ASSERT(shape_tree_index == *value);
+#endif
+
+            return true;
+        }
+
+        /* Verify the cache is correct by checking that this instance variable
+         * does not exist in the shape tree either. */
+        RUBY_ASSERT(!shape_get_iv_index(shape, id, value));
+    }
+
+    return false;
+}
+
 bool
-rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t *value)
+rb_shape_get_iv_index(rb_shape_t *shape, ID id, attr_index_t *value)
 {
     // It doesn't make sense to ask for the index of an IV that's stored
     // on an object that is "too complex" as it uses a hash for storing IVs
     RUBY_ASSERT(rb_shape_id(shape) != OBJ_TOO_COMPLEX_SHAPE_ID);
 
-    while (shape->parent_id != INVALID_SHAPE_ID) {
-        // Try the ancestor cache if it's available
-        if (shape->ancestor_index && shape->next_iv_index >= ANCESTOR_CACHE_THRESHOLD) {
-            redblack_node_t * node = redblack_find(shape->ancestor_index, id);
-            if (node) {
-                rb_shape_t * shape = redblack_value(node);
-                *value = shape->next_iv_index - 1;
-                return true;
-            }
-            else {
-                return false;
-            }
-        }
-        else {
-            if (shape->edge_name == id) {
-                enum shape_type shape_type;
-                shape_type = (enum shape_type)shape->type;
-
-                switch (shape_type) {
-                  case SHAPE_IVAR:
-                    RUBY_ASSERT(shape->next_iv_index > 0);
-                    *value = shape->next_iv_index - 1;
-                    return true;
-                  case SHAPE_ROOT:
-                  case SHAPE_T_OBJECT:
-                    return false;
-                  case SHAPE_OBJ_TOO_COMPLEX:
-                  case SHAPE_FROZEN:
-                    rb_bug("Ivar should not exist on transition");
-                }
-            }
-        }
-        shape = rb_shape_get_parent(shape);
+    if (!shape_cache_get_iv_index(shape, id, value)) {
+        return shape_get_iv_index(shape, id, value);
     }
-    return false;
+
+    return true;
 }
 
 void
@@ -1057,6 +1130,15 @@ rb_shape_shapes_available(VALUE self)
     return INT2NUM(MAX_SHAPE_ID - (GET_SHAPE_TREE()->next_shape_id - 1));
 }
 
+static VALUE
+rb_shape_exhaust(int argc, VALUE *argv, VALUE self)
+{
+    rb_check_arity(argc, 0, 1);
+    int offset = argc == 1 ? NUM2INT(argv[0]) : 0;
+    GET_SHAPE_TREE()->next_shape_id = MAX_SHAPE_ID - offset + 1;
+    return Qnil;
+}
+
 VALUE rb_obj_shape(rb_shape_t* shape);
 
 static enum rb_id_table_iterator_result collect_keys_and_values(ID key, VALUE value, void *ref)
@@ -1239,5 +1321,6 @@ Init_shape(void)
     rb_define_singleton_method(rb_cShape, "of", rb_shape_debug_shape, 1);
     rb_define_singleton_method(rb_cShape, "root_shape", rb_shape_root_shape, 0);
     rb_define_singleton_method(rb_cShape, "shapes_available", rb_shape_shapes_available, 0);
+    rb_define_singleton_method(rb_cShape, "exhaust_shapes", rb_shape_exhaust, -1);
 #endif
 }

@@ -13,8 +13,8 @@ class Gem::Commands::SpecificationCommand < Gem::Command
     Gem.load_yaml
 
     super "specification", "Display gem specification (in yaml)",
-          :domain => :local, :version => Gem::Requirement.default,
-          :format => :yaml
+          domain: :local, version: Gem::Requirement.default,
+          format: :yaml
 
     add_version_option("examine")
     add_platform_option

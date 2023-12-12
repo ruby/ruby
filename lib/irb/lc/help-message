@@ -22,6 +22,7 @@ Usage:  irb.rb [options] [programfile] [arguments]
                     Show truncated result on assignment (default).
   --inspect         Use 'inspect' for output.
   --noinspect       Don't use 'inspect' for output.
+  --no-pager        Don't use pager.
   --multiline       Use multiline editor module (default).
   --nomultiline     Don't use multiline editor module.
   --singleline      Use single line editor module.

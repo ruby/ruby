@@ -1181,8 +1181,8 @@ hash_st_free(VALUE hash)
 
     st_table *tab = RHASH_ST_TABLE(hash);
 
-    free(tab->bins);
-    free(tab->entries);
+    xfree(tab->bins);
+    xfree(tab->entries);
 }
 
 static void

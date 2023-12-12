@@ -704,6 +704,14 @@ class TestInteger < Test::Unit::TestCase
   def test_fdiv
     assert_equal(1.0, 1.fdiv(1))
     assert_equal(0.5, 1.fdiv(2))
+
+    m = 50 << Float::MANT_DIG
+    prev = 1.0
+    (1..100).each do |i|
+      val = (m + i).fdiv(m)
+      assert_operator val, :>=, prev, "1+epsilon*(#{i}/100)"
+      prev = val
+    end
   end
 
   def test_obj_fdiv

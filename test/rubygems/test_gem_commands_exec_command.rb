@@ -71,10 +71,10 @@ class TestGemCommandsExecCommand < Gem::TestCase
       assert_equal options, {
         args: ["install", "--no-color", "--help", "--verbose"],
         executable: "pod",
-        :explicit_prerelease => false,
+        explicit_prerelease: false,
         gem_name: "cocoapods",
         prerelease: false,
-        :version => Gem::Requirement.new(["> 1", "< 1.3"]),
+        version: Gem::Requirement.new(["> 1", "< 1.3"]),
         build_args: nil,
       }
     end
@@ -87,7 +87,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
         args: [],
         executable: "rails",
         gem_name: "rails",
-        :version => Gem::Requirement.new([">= 0"]),
+        version: Gem::Requirement.new([">= 0"]),
         build_args: nil,
       }
     end
@@ -100,7 +100,7 @@ class TestGemCommandsExecCommand < Gem::TestCase
         args: [],
         executable: "rails",
         gem_name: "rails",
-        :version => Gem::Requirement.new(["= 7.1"]),
+        version: Gem::Requirement.new(["= 7.1"]),
         build_args: nil,
       }
     end

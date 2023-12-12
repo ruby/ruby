@@ -44,6 +44,16 @@ class TestResolvDNS < Test::Unit::TestCase
     BasicSocket.do_not_reverse_lookup = @save_do_not_reverse_lookup
   end
 
+  def with_tcp(host, port)
+    t = TCPServer.new(host, port)
+    begin
+      t.listen(1)
+      yield t
+    ensure
+      t.close
+    end
+  end
+
   def with_udp(host, port)
     u = UDPSocket.new
     begin
@@ -154,6 +164,168 @@ class TestResolvDNS < Test::Unit::TestCase
         assert_equal("192.0.2.1", rr.address.to_s)
         assert_equal(3600, rr.ttl)
       end
+    }
+  end
+
+  def test_query_ipv4_address_truncated_tcp_fallback
+    begin
+      OpenSSL
+    rescue LoadError
+      skip 'autoload problem. see [ruby-dev:45021][Bug #5786]'
+    end if defined?(OpenSSL)
+
+    num_records = 50
+
+    with_udp('127.0.0.1', 0) {|u|
+      _, server_port, _, server_address = u.addr
+      with_tcp('127.0.0.1', server_port) {|t|
+        client_thread = Thread.new {
+          Resolv::DNS.open(:nameserver_port => [[server_address, server_port]]) {|dns|
+            dns.getresources("foo.example.org", Resolv::DNS::Resource::IN::A)
+          }
+        }
+        udp_server_thread = Thread.new {
+          msg, (_, client_port, _, client_address) = Timeout.timeout(5) {u.recvfrom(4096)}
+          id, word2, qdcount, ancount, nscount, arcount = msg.unpack("nnnnnn")
+          qr =     (word2 & 0x8000) >> 15
+          opcode = (word2 & 0x7800) >> 11
+          aa =     (word2 & 0x0400) >> 10
+          tc =     (word2 & 0x0200) >> 9
+          rd =     (word2 & 0x0100) >> 8
+          ra =     (word2 & 0x0080) >> 7
+          z =      (word2 & 0x0070) >> 4
+          rcode =   word2 & 0x000f
+          rest = msg[12..-1]
+          assert_equal(0, qr) # 0:query 1:response
+          assert_equal(0, opcode) # 0:QUERY 1:IQUERY 2:STATUS
+          assert_equal(0, aa) # Authoritative Answer
+          assert_equal(0, tc) # TrunCation
+          assert_equal(1, rd) # Recursion Desired
+          assert_equal(0, ra) # Recursion Available
+          assert_equal(0, z) # Reserved for future use
+          assert_equal(0, rcode) # 0:No-error 1:Format-error 2:Server-failure 3:Name-Error 4:Not-Implemented 5:Refused
+          assert_equal(1, qdcount) # number of entries in the question section.
+          assert_equal(0, ancount) # number of entries in the answer section.
+          assert_equal(0, nscount) # number of entries in the authority records section.
+          assert_equal(0, arcount) # number of entries in the additional records section.
+          name = [3, "foo", 7, "example", 3, "org", 0].pack("Ca*Ca*Ca*C")
+          assert_operator(rest, :start_with?, name)
+          rest = rest[name.length..-1]
+          assert_equal(4, rest.length)
+          qtype, _ = rest.unpack("nn")
+          assert_equal(1, qtype) # A
+          assert_equal(1, qtype) # IN
+          id = id
+          qr = 1
+          opcode = opcode
+          aa = 0
+          tc = 1
+          rd = rd
+          ra = 1
+          z = 0
+          rcode = 0
+          qdcount = 0
+          ancount = num_records
+          nscount = 0
+          arcount = 0
+          word2 = (qr << 15) |
+                  (opcode << 11) |
+                  (aa << 10) |
+                  (tc << 9) |
+                  (rd << 8) |
+                  (ra << 7) |
+                  (z << 4) |
+                  rcode
+          msg = [id, word2, qdcount, ancount, nscount, arcount].pack("nnnnnn")
+          type = 1
+          klass = 1
+          ttl = 3600
+          rdlength = 4
+          num_records.times do |i|
+            rdata = [192,0,2,i].pack("CCCC") # 192.0.2.x (TEST-NET address) RFC 3330
+            rr = [name, type, klass, ttl, rdlength, rdata].pack("a*nnNna*")
+            msg << rr
+          end
+          u.send(msg[0...512], 0, client_address, client_port)
+        }
+        tcp_server_thread = Thread.new {
+          ct = t.accept
+          msg = ct.recv(512)
+          msg.slice!(0..1) # Size (only for TCP)
+          id, word2, qdcount, ancount, nscount, arcount = msg.unpack("nnnnnn")
+          qr =     (word2 & 0x8000) >> 15
+          opcode = (word2 & 0x7800) >> 11
+          aa =     (word2 & 0x0400) >> 10
+          tc =     (word2 & 0x0200) >> 9
+          rd =     (word2 & 0x0100) >> 8
+          ra =     (word2 & 0x0080) >> 7
+          z =      (word2 & 0x0070) >> 4
+          rcode =   word2 & 0x000f
+          rest = msg[12..-1]
+          assert_equal(0, qr) # 0:query 1:response
+          assert_equal(0, opcode) # 0:QUERY 1:IQUERY 2:STATUS
+          assert_equal(0, aa) # Authoritative Answer
+          assert_equal(0, tc) # TrunCation
+          assert_equal(1, rd) # Recursion Desired
+          assert_equal(0, ra) # Recursion Available
+          assert_equal(0, z) # Reserved for future use
+          assert_equal(0, rcode) # 0:No-error 1:Format-error 2:Server-failure 3:Name-Error 4:Not-Implemented 5:Refused
+          assert_equal(1, qdcount) # number of entries in the question section.
+          assert_equal(0, ancount) # number of entries in the answer section.
+          assert_equal(0, nscount) # number of entries in the authority records section.
+          assert_equal(0, arcount) # number of entries in the additional records section.
+          name = [3, "foo", 7, "example", 3, "org", 0].pack("Ca*Ca*Ca*C")
+          assert_operator(rest, :start_with?, name)
+          rest = rest[name.length..-1]
+          assert_equal(4, rest.length)
+          qtype, _ = rest.unpack("nn")
+          assert_equal(1, qtype) # A
+          assert_equal(1, qtype) # IN
+          id = id
+          qr = 1
+          opcode = opcode
+          aa = 0
+          tc = 0
+          rd = rd
+          ra = 1
+          z = 0
+          rcode = 0
+          qdcount = 0
+          ancount = num_records
+          nscount = 0
+          arcount = 0
+          word2 = (qr << 15) |
+                  (opcode << 11) |
+                  (aa << 10) |
+                  (tc << 9) |
+                  (rd << 8) |
+                  (ra << 7) |
+                  (z << 4) |
+                  rcode
+          msg = [id, word2, qdcount, ancount, nscount, arcount].pack("nnnnnn")
+          type = 1
+          klass = 1
+          ttl = 3600
+          rdlength = 4
+          num_records.times do |i|
+            rdata = [192,0,2,i].pack("CCCC") # 192.0.2.x (TEST-NET address) RFC 3330
+            rr = [name, type, klass, ttl, rdlength, rdata].pack("a*nnNna*")
+            msg << rr
+          end
+          msg = "#{[msg.bytesize].pack("n")}#{msg}" # Prefix with size
+          ct.send(msg, 0)
+          ct.close
+        }
+        result, _ = assert_join_threads([client_thread, udp_server_thread, tcp_server_thread])
+        assert_instance_of(Array, result)
+        assert_equal(50, result.length)
+        result.each_with_index do |rr, i|
+          assert_instance_of(Resolv::DNS::Resource::IN::A, rr)
+          assert_instance_of(Resolv::IPv4, rr.address)
+          assert_equal("192.0.2.#{i}", rr.address.to_s)
+          assert_equal(3600, rr.ttl)
+        end
+      }
     }
   end
 
@@ -374,7 +546,8 @@ class TestResolvDNS < Test::Unit::TestCase
       ["2001:db8::1", "2001:db8::0:1"],
       ["::", "0:0:0:0:0:0:0:0"],
       ["2001::", "2001::0"],
-      ["2001:db8::1:1:1:1:1", "2001:db8:0:1:1:1:1:1"],
+      ["2001:db8:0:1:1:1:1:1", "2001:db8:0:1:1:1:1:1"], # RFC 5952 Section 4.2.2.
+      ["2001:db8::1:1:1:1", "2001:db8:0:0:1:1:1:1"],
       ["1::1:0:0:0:1", "1:0:0:1:0:0:0:1"],
       ["1::1:0:0:1", "1:0:0:0:1:0:0:1"],
     ]
@@ -456,5 +629,31 @@ class TestResolvDNS < Test::Unit::TestCase
       assert_equal('1.0.0.127.in-addr.arpa', ptr.to_s)
     end
     assert_raise(Resolv::ResolvError) { dns.each_name('example.com') }
+  end
+
+  def test_unreachable_server
+    unreachable_ip = '127.0.0.1'
+    sock = UDPSocket.new
+    sock.connect(unreachable_ip, 53)
+    begin
+      sock.send('1', 0)
+    rescue Errno::ENETUNREACH, Errno::EHOSTUNREACH
+    else
+      omit('cannot test unreachable server, as IP used is reachable')
+    end
+
+    config = {
+      :nameserver => [unreachable_ip],
+      :search => ['lan'],
+      :ndots => 1
+    }
+    r = Resolv.new([Resolv::DNS.new(config)])
+    assert_equal([], r.getaddresses('www.google.com'))
+
+    config[:raise_timeout_errors] = true
+    r = Resolv.new([Resolv::DNS.new(config)])
+    assert_raise(Resolv::ResolvError) { r.getaddresses('www.google.com') }
+  ensure
+    sock&.close
   end
 end

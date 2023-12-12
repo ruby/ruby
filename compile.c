@@ -1375,7 +1375,7 @@ new_adjust_body(rb_iseq_t *iseq, LABEL *label, int line)
 }
 
 static void
-iseq_insn_each_markable_object(INSN *insn, void (*func)(VALUE *, VALUE), VALUE data)
+iseq_insn_each_markable_object(INSN *insn, void (*func)(VALUE, VALUE), VALUE data)
 {
     const char *types = insn_op_types(insn->insn_id);
     for (int j = 0; types[j]; j++) {
@@ -1386,7 +1386,7 @@ iseq_insn_each_markable_object(INSN *insn, void (*func)(VALUE *, VALUE), VALUE d
           case TS_VALUE:
           case TS_IC: // constant path array
           case TS_CALLDATA: // ci is stored.
-            func(&OPERAND_AT(insn, j), data);
+            func(OPERAND_AT(insn, j), data);
             break;
           default:
             break;
@@ -1395,9 +1395,9 @@ iseq_insn_each_markable_object(INSN *insn, void (*func)(VALUE *, VALUE), VALUE d
 }
 
 static void
-iseq_insn_each_object_write_barrier(VALUE *obj_ptr, VALUE iseq)
+iseq_insn_each_object_write_barrier(VALUE obj, VALUE iseq)
 {
-    RB_OBJ_WRITTEN(iseq, Qundef, *obj_ptr);
+    RB_OBJ_WRITTEN(iseq, Qundef, obj);
 }
 
 static INSN *
@@ -2796,9 +2796,11 @@ iseq_set_exception_table(rb_iseq_t *iseq)
     struct iseq_catch_table_entry *entry;
 
     ISEQ_BODY(iseq)->catch_table = NULL;
-    if (NIL_P(ISEQ_COMPILE_DATA(iseq)->catch_table_ary)) return COMPILE_OK;
-    tlen = (int)RARRAY_LEN(ISEQ_COMPILE_DATA(iseq)->catch_table_ary);
-    tptr = RARRAY_CONST_PTR(ISEQ_COMPILE_DATA(iseq)->catch_table_ary);
+
+    VALUE catch_table_ary = ISEQ_COMPILE_DATA(iseq)->catch_table_ary;
+    if (NIL_P(catch_table_ary)) return COMPILE_OK;
+    tlen = (int)RARRAY_LEN(catch_table_ary);
+    tptr = RARRAY_CONST_PTR(catch_table_ary);
 
     if (tlen > 0) {
         struct iseq_catch_table *table = xmalloc(iseq_catch_table_bytes(tlen));
@@ -2833,6 +2835,8 @@ iseq_set_exception_table(rb_iseq_t *iseq)
         ISEQ_BODY(iseq)->catch_table = table;
         RB_OBJ_WRITE(iseq, &ISEQ_COMPILE_DATA(iseq)->catch_table_ary, 0); /* free */
     }
+
+    RB_GC_GUARD(catch_table_ary);
 
     return COMPILE_OK;
 }
@@ -3832,6 +3836,166 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
         }
     }
 
+    if (IS_INSN_ID(iobj, splatarray) && OPERAND_AT(iobj, 0) == Qtrue) {
+        LINK_ELEMENT *niobj = &iobj->link;
+
+        /*
+        * Eliminate array allocation for f(1, *a)
+        *
+        *  splatarray true
+        *  send ARGS_SPLAT and not KW_SPLAT|ARGS_BLOCKARG
+        * =>
+        *  splatarray false
+        *  send
+        */
+        if (IS_NEXT_INSN_ID(niobj, send)) {
+            niobj = niobj->next;
+            unsigned int flag = vm_ci_flag((const struct rb_callinfo *)OPERAND_AT(niobj, 0));
+            if ((flag & VM_CALL_ARGS_SPLAT) && !(flag & (VM_CALL_KW_SPLAT|VM_CALL_ARGS_BLOCKARG))) {
+                OPERAND_AT(iobj, 0) = Qfalse;
+            }
+        } else if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable)) {
+            niobj = niobj->next;
+
+            if (IS_NEXT_INSN_ID(niobj, send)) {
+                niobj = niobj->next;
+                unsigned int flag = vm_ci_flag((const struct rb_callinfo *)OPERAND_AT(niobj, 0));
+
+                if ((flag & VM_CALL_ARGS_SPLAT)) {
+                    /*
+                    * Eliminate array allocation for f(1, *a, &lvar) and f(1, *a, &@iv)
+                    *
+                    *  splatarray true
+                    *  getlocal / getinstancevariable
+                    *  send ARGS_SPLAT|ARGS_BLOCKARG and not KW_SPLAT
+                    * =>
+                    *  splatarray false
+                    *  getlocal / getinstancevariable
+                    *  send
+                    */
+                    if ((flag & VM_CALL_ARGS_BLOCKARG) && !(flag & VM_CALL_KW_SPLAT)) {
+                        OPERAND_AT(iobj, 0) = Qfalse;
+                    }
+
+                    /*
+                    * Eliminate array allocation for f(*a, **lvar) and f(*a, **@iv)
+                    *
+                    *  splatarray true
+                    *  getlocal / getinstancevariable
+                    *  send ARGS_SPLAT|KW_SPLAT and not ARGS_BLOCKARG
+                    * =>
+                    *  splatarray false
+                    *  getlocal / getinstancevariable
+                    *  send
+                    */
+                    else if (!(flag & VM_CALL_ARGS_BLOCKARG) && (flag & VM_CALL_KW_SPLAT)) {
+                        OPERAND_AT(iobj, 0) = Qfalse;
+                    }
+                }
+            }
+            else if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable) ||
+                   IS_NEXT_INSN_ID(niobj, getblockparamproxy)) {
+                niobj = niobj->next;
+
+                /*
+                * Eliminate array allocation for f(*a, **lvar, &lvar) and f(*a, **@iv, &@iv)
+                *
+                *  splatarray true
+                *  getlocal / getinstancevariable
+                *  getlocal / getinstancevariable / getblockparamproxy
+                *  send ARGS_SPLAT|KW_SPLAT|ARGS_BLOCKARG
+                * =>
+                *  splatarray false
+                *  getlocal / getinstancevariable
+                *  getlocal / getinstancevariable / getblockparamproxy
+                *  send
+                */
+                if (IS_NEXT_INSN_ID(niobj, send)) {
+                    niobj = niobj->next;
+                    unsigned int flag = vm_ci_flag((const struct rb_callinfo *)OPERAND_AT(niobj, 0));
+
+                    if ((flag & VM_CALL_ARGS_SPLAT) && (flag & VM_CALL_KW_SPLAT) && (flag & VM_CALL_ARGS_BLOCKARG)) {
+                        OPERAND_AT(iobj, 0) = Qfalse;
+                    }
+                }
+            }
+        }
+        else if (IS_NEXT_INSN_ID(niobj, getblockparamproxy)) {
+            niobj = niobj->next;
+
+            if (IS_NEXT_INSN_ID(niobj, send)) {
+                niobj = niobj->next;
+                unsigned int flag = vm_ci_flag((const struct rb_callinfo *)OPERAND_AT(niobj, 0));
+
+                /*
+                * Eliminate array allocation for f(1, *a, &arg)
+                *
+                *  splatarray true
+                *  getblockparamproxy
+                *  send ARGS_SPLAT|ARGS_BLOCKARG and not KW_SPLAT
+                * =>
+                *  splatarray false
+                *  getblockparamproxy
+                *  send
+                */
+                if ((flag & VM_CALL_ARGS_BLOCKARG) & (flag & VM_CALL_ARGS_SPLAT) && !(flag & VM_CALL_KW_SPLAT)) {
+                        OPERAND_AT(iobj, 0) = Qfalse;
+                }
+            }
+        }
+        else if (IS_NEXT_INSN_ID(niobj, duphash)) {
+            niobj = niobj->next;
+
+            /*
+            * Eliminate array allocation for f(*a, kw: 1)
+            *
+            *  splatarray true
+            *  duphash
+            *  send ARGS_SPLAT|KW_SPLAT|KW_SPLAT_MUT and not ARGS_BLOCKARG
+            * =>
+            *  splatarray false
+            *  duphash
+            *  send
+            */
+            if (IS_NEXT_INSN_ID(niobj, send)) {
+                niobj = niobj->next;
+                unsigned int flag = vm_ci_flag((const struct rb_callinfo *)OPERAND_AT(niobj, 0));
+
+                if ((flag & VM_CALL_ARGS_SPLAT) && (flag & VM_CALL_KW_SPLAT) &&
+                        (flag & VM_CALL_KW_SPLAT_MUT) && !(flag & VM_CALL_ARGS_BLOCKARG)) {
+                    OPERAND_AT(iobj, 0) = Qfalse;
+                }
+            }
+            else if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable) ||
+                   IS_NEXT_INSN_ID(niobj, getblockparamproxy)) {
+                niobj = niobj->next;
+
+                /*
+                * Eliminate array allocation for f(*a, kw: 1, &lvar) and f(*a, kw: 1, &@iv)
+                *
+                *  splatarray true
+                *  duphash
+                *  getlocal / getinstancevariable / getblockparamproxy
+                *  send ARGS_SPLAT|KW_SPLAT|KW_SPLAT_MUT|ARGS_BLOCKARG
+                * =>
+                *  splatarray false
+                *  duphash
+                *  getlocal / getinstancevariable / getblockparamproxy
+                *  send
+                */
+                if (IS_NEXT_INSN_ID(niobj, send)) {
+                    niobj = niobj->next;
+                    unsigned int flag = vm_ci_flag((const struct rb_callinfo *)OPERAND_AT(niobj, 0));
+
+                    if ((flag & VM_CALL_ARGS_SPLAT) && (flag & VM_CALL_KW_SPLAT) &&
+                            (flag & VM_CALL_KW_SPLAT_MUT) && (flag & VM_CALL_ARGS_BLOCKARG)) {
+                        OPERAND_AT(iobj, 0) = Qfalse;
+                    }
+                }
+            }
+        }
+    }
+
     return COMPILE_OK;
 }
 
@@ -4209,11 +4373,28 @@ compile_dstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
 }
 
 static int
-compile_dregx(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
+compile_dregx(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int popped)
 {
     int cnt;
+
+    if (!RNODE_DREGX(node)->nd_next) {
+        VALUE match = RNODE_DREGX(node)->nd_lit;
+        if (RB_TYPE_P(match, T_REGEXP)) {
+            if (!popped) {
+                ADD_INSN1(ret, node, putobject, match);
+                RB_OBJ_WRITTEN(iseq, Qundef, match);
+            }
+            return COMPILE_OK;
+        }
+    }
+
     CHECK(compile_dstr_fragments(iseq, ret, node, &cnt));
     ADD_INSN2(ret, node, toregexp, INT2FIX(RNODE_DREGX(node)->nd_cflag), INT2FIX(cnt));
+
+    if (popped) {
+        ADD_INSN(ret, node, pop);
+    }
+
     return COMPILE_OK;
 }
 
@@ -8646,6 +8827,9 @@ compile_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, co
         flag |= VM_CALL_FCALL;
     }
 
+    if ((flag & VM_CALL_ARGS_BLOCKARG) && (flag & VM_CALL_KW_SPLAT) && !(flag & VM_CALL_KW_SPLAT_MUT)) {
+        ADD_INSN(ret, line_node, splatkw);
+    }
     ADD_SEND_R(ret, line_node, mid, argc, parent_block, INT2FIX(flag), keywords);
 
     qcall_branch_end(iseq, ret, else_label, branches, node, line_node);
@@ -9045,6 +9229,9 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
         VALUE vargc = setup_args(iseq, args, RNODE_SUPER(node)->nd_args, &flag, &keywords);
         CHECK(!NIL_P(vargc));
         argc = FIX2INT(vargc);
+        if ((flag & VM_CALL_ARGS_BLOCKARG) && (flag & VM_CALL_KW_SPLAT) && !(flag & VM_CALL_KW_SPLAT_MUT)) {
+            ADD_INSN(args, node, splatkw);
+        }
     }
     else {
         /* NODE_ZSUPER */
@@ -9897,14 +10084,9 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       case NODE_EVSTR:
         CHECK(compile_evstr(iseq, ret, RNODE_EVSTR(node)->nd_body, popped));
         break;
-      case NODE_DREGX:{
-        compile_dregx(iseq, ret, node);
-
-        if (popped) {
-            ADD_INSN(ret, node, pop);
-        }
+      case NODE_DREGX:
+        compile_dregx(iseq, ret, node, popped);
         break;
-      }
       case NODE_ONCE:{
         int ic_index = body->ise_size++;
         const rb_iseq_t *block_iseq;
@@ -10861,13 +11043,13 @@ iseq_build_kw(rb_iseq_t *iseq, VALUE params, VALUE keywords)
 }
 
 static void
-iseq_insn_each_object_mark_and_move(VALUE *obj_ptr, VALUE _)
+iseq_insn_each_object_mark_and_pin(VALUE obj, VALUE _)
 {
-    rb_gc_mark_and_move(obj_ptr);
+    rb_gc_mark(obj);
 }
 
 void
-rb_iseq_mark_and_move_insn_storage(struct iseq_compile_data_storage *storage)
+rb_iseq_mark_and_pin_insn_storage(struct iseq_compile_data_storage *storage)
 {
     INSN *iobj = 0;
     size_t size = sizeof(INSN);
@@ -10892,7 +11074,7 @@ rb_iseq_mark_and_move_insn_storage(struct iseq_compile_data_storage *storage)
             iobj = (INSN *)&storage->buff[pos];
 
             if (iobj->operands) {
-                iseq_insn_each_markable_object(iobj, iseq_insn_each_object_mark_and_move, (VALUE)0);
+                iseq_insn_each_markable_object(iobj, iseq_insn_each_object_mark_and_pin, (VALUE)0);
             }
             pos += (int)size;
         }
@@ -11146,15 +11328,13 @@ pinned_list_mark(void *ptr)
     }
 }
 
-static size_t
-pinned_list_memsize(const void *ptr)
-{
-    return 0;
-}
-
 static const rb_data_type_t pinned_list_type = {
     "pinned_list",
-    {pinned_list_mark, RUBY_DEFAULT_FREE, pinned_list_memsize,},
+    {
+        pinned_list_mark,
+        RUBY_DEFAULT_FREE,
+        NULL, // No external memory to report,
+    },
     0, 0, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
@@ -12861,8 +13041,12 @@ ibf_load_object_bignum(const struct ibf_load *load, const struct ibf_object_head
     const struct ibf_object_bignum *bignum = IBF_OBJBODY(struct ibf_object_bignum, offset);
     int sign = bignum->slen > 0;
     ssize_t len = sign > 0 ? bignum->slen : -1 * bignum->slen;
-    VALUE obj = rb_integer_unpack(bignum->digits, len * 2, 2, 0,
-                                  INTEGER_PACK_LITTLE_ENDIAN | (sign == 0 ? INTEGER_PACK_NEGATIVE : 0));
+    const int big_unpack_flags = /* c.f. rb_big_unpack() */
+        INTEGER_PACK_LSWORD_FIRST |
+        INTEGER_PACK_NATIVE_BYTE_ORDER;
+    VALUE obj = rb_integer_unpack(bignum->digits, len, sizeof(BDIGIT), 0,
+                                  big_unpack_flags |
+                                  (sign == 0 ? INTEGER_PACK_NEGATIVE : 0));
     if (header->internal) rb_obj_hide(obj);
     if (header->frozen)   rb_obj_freeze(obj);
     return obj;
@@ -13190,14 +13374,13 @@ ibf_dump_free(void *ptr)
         st_free_table(dump->iseq_table);
         dump->iseq_table = 0;
     }
-    ruby_xfree(dump);
 }
 
 static size_t
 ibf_dump_memsize(const void *ptr)
 {
     struct ibf_dump *dump = (struct ibf_dump *)ptr;
-    size_t size = sizeof(*dump);
+    size_t size = 0;
     if (dump->iseq_table) size += st_memsize(dump->iseq_table);
     if (dump->global_buffer.obj_table) size += st_memsize(dump->global_buffer.obj_table);
     return size;
@@ -13206,7 +13389,7 @@ ibf_dump_memsize(const void *ptr)
 static const rb_data_type_t ibf_dump_type = {
     "ibf_dump",
     {ibf_dump_mark, ibf_dump_free, ibf_dump_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
 static void
@@ -13269,8 +13452,6 @@ rb_iseq_ibf_dump(const rb_iseq_t *iseq, VALUE opt)
     ibf_dump_overwrite(dump, &header, sizeof(header), 0);
 
     str = dump->global_buffer.str;
-    ibf_dump_free(dump);
-    DATA_PTR(dump_obj) = NULL;
     RB_GC_GUARD(dump_obj);
     return str;
 }

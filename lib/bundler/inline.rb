@@ -48,14 +48,14 @@ def gemfile(install = false, options = {}, &gemfile)
     builder.instance_eval(&gemfile)
     builder.check_primary_source_safety
 
-    Bundler.settings.temporary(:deployment => false, :frozen => false) do
+    Bundler.settings.temporary(deployment: false, frozen: false) do
       definition = builder.to_definition(nil, true)
       def definition.lock(*); end
       definition.validate_runtime!
 
       if install || definition.missing_specs?
-        Bundler.settings.temporary(:inline => true, :no_install => false) do
-          installer = Bundler::Installer.install(Bundler.root, definition, :system => true)
+        Bundler.settings.temporary(inline: true, no_install: false) do
+          installer = Bundler::Installer.install(Bundler.root, definition, system: true)
           installer.post_install_messages.each do |name, message|
             Bundler.ui.info "Post-install message from #{name}:\n#{message}"
           end

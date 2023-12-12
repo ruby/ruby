@@ -11,6 +11,7 @@ module TestIRB
       IRB.init_config(nil)
       IRB.conf[:USE_SINGLELINE] = false
       IRB.conf[:VERBOSE] = false
+      IRB.conf[:USE_PAGER] = false
       workspace = IRB::WorkSpace.new(Object.new)
       @context = IRB::Context.new(nil, workspace, TestInputMethod.new)
 
@@ -631,6 +632,15 @@ module TestIRB
       assert_equal('irb("aaaaaaaaaaaaaaaaaaaaaaaaaaaa...)>', irb.send(:format_prompt, 'irb(%M)>', nil, 1, 1))
     end
 
+    def test_prompt_main_raise
+      main = Object.new
+      def main.to_s; raise TypeError; end
+      def main.inspect; raise ArgumentError; end
+      irb = IRB::Irb.new(IRB::WorkSpace.new(main), TestInputMethod.new)
+      assert_equal("irb(!TypeError)>", irb.send(:format_prompt, 'irb(%m)>', nil, 1, 1))
+      assert_equal("irb(!ArgumentError)>", irb.send(:format_prompt, 'irb(%M)>', nil, 1, 1))
+    end
+
     def test_lineno
       input = TestInputMethod.new([
         "\n",
@@ -657,14 +667,9 @@ module TestIRB
       original_completor = IRB.conf[:COMPLETOR]
       IRB.conf[:COMPLETOR] = :regexp
       assert_equal 'IRB::RegexpCompletor', @context.send(:build_completor).class.name
-      IRB.conf[:COMPLETOR] = :type
-      if RUBY_VERSION >= '3.0.0' && RUBY_ENGINE != 'truffleruby'
-        assert_equal 'IRB::TypeCompletion::Completor', @context.send(:build_completor).class.name
-      else
-        assert_equal 'IRB::RegexpCompletor', @context.send(:build_completor).class.name
-      end
       IRB.conf[:COMPLETOR] = :unknown
       assert_equal 'IRB::RegexpCompletor', @context.send(:build_completor).class.name
+      # :type is tested in test_type_completor.rb
     ensure
       $VERBOSE = verbose
       IRB.conf[:COMPLETOR] = original_completor

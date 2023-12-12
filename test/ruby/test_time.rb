@@ -77,6 +77,7 @@ class TestTime < Test::Unit::TestCase
 
     assert_equal(Time.new(2021), Time.new("2021"))
     assert_equal(Time.new(2021, 12, 25, in: "+09:00"), Time.new("2021-12-25+09:00"))
+    assert_equal(Time.new(2021, 12, 25, in: "+09:00"), Time.new("2021-12-25+09:00", in: "-01:00"))
 
     assert_equal(0.123456r, Time.new("2021-12-25 00:00:00.123456 +09:00").subsec)
     assert_equal(0.123456789r, Time.new("2021-12-25 00:00:00.123456789876 +09:00").subsec)

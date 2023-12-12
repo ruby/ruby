@@ -191,6 +191,12 @@ module IRB # :nodoc:
       [
         :irb_show_cmds, :ShowCmds, "cmd/show_cmds",
         [:show_cmds, NO_OVERRIDE],
+      ],
+
+      [
+        :irb_history, :History, "cmd/history",
+        [:history, NO_OVERRIDE],
+        [:hist, NO_OVERRIDE],
       ]
     ]
 

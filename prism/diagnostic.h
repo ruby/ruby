@@ -6,6 +6,7 @@
 #ifndef PRISM_DIAGNOSTIC_H
 #define PRISM_DIAGNOSTIC_H
 
+#include "prism/ast.h"
 #include "prism/defines.h"
 #include "prism/util/pm_list.h"
 
@@ -22,11 +23,8 @@ typedef struct {
     /** The embedded base node. */
     pm_list_node_t node;
 
-    /** A pointer to the start of the source that generated the diagnostic. */
-    const uint8_t *start;
-
-    /** A pointer to the end of the source that generated the diagnostic. */
-    const uint8_t *end;
+    /** The location of the diagnostic in the source. */
+    pm_location_t location;
 
     /** The message associated with the diagnostic. */
     const char *message;
@@ -179,6 +177,7 @@ typedef enum {
     PM_ERR_LIST_W_UPPER_ELEMENT,
     PM_ERR_LIST_W_UPPER_TERM,
     PM_ERR_MALLOC_FAILED,
+    PM_ERR_MIXED_ENCODING,
     PM_ERR_MODULE_IN_METHOD,
     PM_ERR_MODULE_NAME,
     PM_ERR_MODULE_TERM,
@@ -192,6 +191,7 @@ typedef enum {
     PM_ERR_OPERATOR_WRITE_BLOCK,
     PM_ERR_PARAMETER_ASSOC_SPLAT_MULTI,
     PM_ERR_PARAMETER_BLOCK_MULTI,
+    PM_ERR_PARAMETER_CIRCULAR,
     PM_ERR_PARAMETER_METHOD_NAME,
     PM_ERR_PARAMETER_NAME_REPEAT,
     PM_ERR_PARAMETER_NO_DEFAULT,
@@ -226,6 +226,10 @@ typedef enum {
     PM_ERR_RESCUE_TERM,
     PM_ERR_RESCUE_VARIABLE,
     PM_ERR_RETURN_INVALID,
+    PM_ERR_STATEMENT_ALIAS,
+    PM_ERR_STATEMENT_POSTEXE_END,
+    PM_ERR_STATEMENT_PREEXE_BEGIN,
+    PM_ERR_STATEMENT_UNDEF,
     PM_ERR_STRING_CONCATENATION,
     PM_ERR_STRING_INTERPOLATED_TERM,
     PM_ERR_STRING_LITERAL_TERM,
@@ -243,6 +247,7 @@ typedef enum {
     PM_ERR_UNTIL_TERM,
     PM_ERR_VOID_EXPRESSION,
     PM_ERR_WHILE_TERM,
+    PM_ERR_WRITE_TARGET_IN_METHOD,
     PM_ERR_WRITE_TARGET_READONLY,
     PM_ERR_WRITE_TARGET_UNEXPECTED,
     PM_ERR_XSTRING_TERM,
@@ -250,6 +255,7 @@ typedef enum {
     PM_WARN_AMBIGUOUS_FIRST_ARGUMENT_PLUS,
     PM_WARN_AMBIGUOUS_PREFIX_STAR,
     PM_WARN_AMBIGUOUS_SLASH,
+    PM_WARN_END_IN_METHOD,
 
     /* This must be the last member. */
     PM_DIAGNOSTIC_ID_LEN,

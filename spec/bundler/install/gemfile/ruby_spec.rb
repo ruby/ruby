@@ -112,7 +112,7 @@ RSpec.describe "ruby requirement" do
   end
 
   it "fails gracefully with malformed requirements" do
-    install_gemfile <<-G, :raise_on_error => false
+    install_gemfile <<-G, raise_on_error: false
       source "#{file_uri_for(gem_repo1)}"
       ruby ">= 0", "-.\\0"
       gem "rack"

@@ -41,25 +41,25 @@ module Bundler
         # We're doing a full update
         Bundler.definition(true)
       else
-        Bundler.definition(:gems => gems, :sources => sources)
+        Bundler.definition(gems: gems, sources: sources)
       end
 
       Bundler::CLI::Common.configure_gem_version_promoter(
         Bundler.definition,
-        options.merge(:strict => @strict)
+        options.merge(strict: @strict)
       )
 
       definition_resolution = proc do
         options[:local] ? definition.resolve_with_cache! : definition.resolve_remotely!
       end
 
-      if options[:parseable]
+      if options[:parseable] || options[:json]
         Bundler.ui.silence(&definition_resolution)
       else
         definition_resolution.call
       end
 
-      Bundler.ui.info ""
+      Bundler.ui.info "" unless options[:json]
 
       # Loop through the current specs
       gemfile_specs, dependency_specs = current_specs.partition do |spec|
@@ -90,35 +90,32 @@ module Bundler
         end
 
         outdated_gems << {
-          :active_spec => active_spec,
-          :current_spec => current_spec,
-          :dependency => dependency,
-          :groups => groups,
+          active_spec: active_spec,
+          current_spec: current_spec,
+          dependency: dependency,
+          groups: groups,
         }
       end
 
       if outdated_gems.empty?
-        unless options[:parseable]
+        if options[:json]
+          print_gems_json([])
+        elsif !options[:parseable]
           Bundler.ui.info(nothing_outdated_message)
         end
       else
-        if options_include_groups
-          relevant_outdated_gems = outdated_gems.group_by {|g| g[:groups] }.sort.flat_map do |groups, gems|
-            contains_group = groups.split(", ").include?(options[:group])
-            next unless options[:groups] || contains_group
-
-            gems
-          end.compact
-
-          if options[:parseable]
-            print_gems(relevant_outdated_gems)
-          else
-            print_gems_table(relevant_outdated_gems)
-          end
-        elsif options[:parseable]
-          print_gems(outdated_gems)
+        relevant_outdated_gems = if options_include_groups
+          by_group(outdated_gems, filter: options[:group])
         else
-          print_gems_table(outdated_gems)
+          outdated_gems
+        end
+
+        if options[:json]
+          print_gems_json(relevant_outdated_gems)
+        elsif options[:parseable]
+          print_gems(relevant_outdated_gems)
+        else
+          print_gems_table(relevant_outdated_gems)
         end
 
         exit 1
@@ -162,6 +159,13 @@ module Bundler
       active_specs.last
     end
 
+    def by_group(gems, filter: nil)
+      gems.group_by {|g| g[:groups] }.sort.flat_map do |groups_string, grouped_gems|
+        next if filter && !groups_string.split(", ").include?(filter)
+        grouped_gems
+      end.compact
+    end
+
     def print_gems(gems_list)
       gems_list.each do |gem|
         print_gem(
@@ -171,6 +175,21 @@ module Bundler
           gem[:groups],
         )
       end
+    end
+
+    def print_gems_json(gems_list)
+      require "json"
+      data = gems_list.map do |gem|
+        gem_data_for(
+          gem[:current_spec],
+          gem[:active_spec],
+          gem[:dependency],
+          gem[:groups]
+        )
+      end
+
+      data = { outdated_count: gems_list.count, outdated_gems: data }
+      Bundler.ui.info data.to_json
     end
 
     def print_gems_table(gems_list)
@@ -210,6 +229,26 @@ module Bundler
       end
 
       Bundler.ui.info output_message.rstrip
+    end
+
+    def gem_data_for(current_spec, active_spec, dependency, groups)
+      {
+        current_spec: spec_data_for(current_spec),
+        active_spec: spec_data_for(active_spec),
+        dependency: dependency&.to_s,
+        groups: (groups || "").split(", "),
+      }
+    end
+
+    def spec_data_for(spec)
+      {
+        name: spec.name,
+        version: spec.version.to_s,
+        platform: spec.platform,
+        source: spec.source.to_s,
+        required_ruby_version: spec.required_ruby_version.to_s,
+        required_rubygems_version: spec.required_rubygems_version.to_s,
+      }
     end
 
     def gem_column_for(current_spec, active_spec, dependency, groups)

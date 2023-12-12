@@ -17,7 +17,7 @@ RSpec.describe Bundler::RemoteSpecification do
   end
 
   describe "#fetch_platform" do
-    let(:remote_spec) { double(:remote_spec, :platform => "jruby") }
+    let(:remote_spec) { double(:remote_spec, platform: "jruby") }
 
     before { allow(spec_fetcher).to receive(:fetch_spec).and_return(remote_spec) }
 
@@ -113,7 +113,7 @@ RSpec.describe Bundler::RemoteSpecification do
 
     context "comparing a non sortable object" do
       let(:other) { Object.new }
-      let(:remote_spec) { double(:remote_spec, :platform => "jruby") }
+      let(:remote_spec) { double(:remote_spec, platform: "jruby") }
 
       before do
         allow(spec_fetcher).to receive(:fetch_spec).and_return(remote_spec)
@@ -127,8 +127,8 @@ RSpec.describe Bundler::RemoteSpecification do
   end
 
   describe "#__swap__" do
-    let(:spec) { double(:spec, :dependencies => []) }
-    let(:new_spec) { double(:new_spec, :dependencies => [], :runtime_dependencies => []) }
+    let(:spec) { double(:spec, dependencies: []) }
+    let(:new_spec) { double(:new_spec, dependencies: [], runtime_dependencies: []) }
 
     before { subject.instance_variable_set(:@_remote_specification, spec) }
 
@@ -157,7 +157,7 @@ RSpec.describe Bundler::RemoteSpecification do
 
   describe "method missing" do
     context "and is present in Gem::Specification" do
-      let(:remote_spec) { double(:remote_spec, :authors => "abcd") }
+      let(:remote_spec) { double(:remote_spec, authors: "abcd") }
 
       before do
         allow(subject).to receive(:_remote_specification).and_return(remote_spec)
@@ -172,7 +172,7 @@ RSpec.describe Bundler::RemoteSpecification do
 
   describe "respond to missing?" do
     context "and is present in Gem::Specification" do
-      let(:remote_spec) { double(:remote_spec, :authors => "abcd") }
+      let(:remote_spec) { double(:remote_spec, authors: "abcd") }
 
       before do
         allow(subject).to receive(:_remote_specification).and_return(remote_spec)

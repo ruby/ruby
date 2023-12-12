@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name = "prism"
-  spec.version = "0.17.1"
+  spec.version = "0.18.0"
   spec.authors = ["Shopify"]
   spec.email = ["ruby@shopify.com"]
 
@@ -29,6 +29,7 @@ Gem::Specification.new do |spec|
     "docs/fuzzing.md",
     "docs/heredocs.md",
     "docs/javascript.md",
+    "docs/local_variable_depth.md",
     "docs/mapping.md",
     "docs/releasing.md",
     "docs/ripper.md",
@@ -43,7 +44,7 @@ Gem::Specification.new do |spec|
     "include/prism/ast.h",
     "include/prism/defines.h",
     "include/prism/diagnostic.h",
-    "include/prism/enc/pm_encoding.h",
+    "include/prism/encoding.h",
     "include/prism/node.h",
     "include/prism/options.h",
     "include/prism/pack.h",
@@ -84,14 +85,7 @@ Gem::Specification.new do |spec|
     "lib/prism/parse_result/newlines.rb",
     "lib/prism/visitor.rb",
     "src/diagnostic.c",
-    "src/enc/pm_big5.c",
-    "src/enc/pm_cp51932.c",
-    "src/enc/pm_euc_jp.c",
-    "src/enc/pm_gbk.c",
-    "src/enc/pm_shift_jis.c",
-    "src/enc/pm_tables.c",
-    "src/enc/pm_unicode.c",
-    "src/enc/pm_windows_31j.c",
+    "src/encoding.c",
     "src/node.c",
     "src/pack.c",
     "src/prettyprint.c",

@@ -6,6 +6,7 @@
         └── @ CaseMatchNode (location: (1,0)-(4,3))
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
+            │   ├── flags: ∅
             │   ├── opening_loc: (1,5)-(1,6) = ":"
             │   ├── value_loc: (1,6)-(1,7) = "a"
             │   ├── closing_loc: ∅
@@ -19,6 +20,7 @@
             │       │   │   ├── @ AssocNode (location: (2,5)-(2,20))
             │       │   │   │   ├── key:
             │       │   │   │   │   @ SymbolNode (location: (2,5)-(2,7))
+            │       │   │   │   │   ├── flags: ∅
             │       │   │   │   │   ├── opening_loc: ∅
             │       │   │   │   │   ├── value_loc: (2,5)-(2,6) = "b"
             │       │   │   │   │   ├── closing_loc: (2,6)-(2,7) = ":"
@@ -37,6 +39,7 @@
             │       │   │   ├── @ AssocNode (location: (2,22)-(2,28))
             │       │   │   │   ├── key:
             │       │   │   │   │   @ SymbolNode (location: (2,22)-(2,24))
+            │       │   │   │   │   ├── flags: ∅
             │       │   │   │   │   ├── opening_loc: ∅
             │       │   │   │   │   ├── value_loc: (2,22)-(2,23) = "d"
             │       │   │   │   │   ├── closing_loc: (2,23)-(2,24) = ":"
@@ -52,6 +55,7 @@
             │       │   │   └── @ AssocNode (location: (2,30)-(2,32))
             │       │   │       ├── key:
             │       │   │       │   @ SymbolNode (location: (2,30)-(2,32))
+            │       │   │       │   ├── flags: ∅
             │       │   │       │   ├── opening_loc: ∅
             │       │   │       │   ├── value_loc: (2,30)-(2,31) = "f"
             │       │   │       │   ├── closing_loc: (2,31)-(2,32) = ":"
@@ -65,6 +69,7 @@
             │       │   @ StatementsNode (location: (3,2)-(3,4))
             │       │   └── body: (length: 1)
             │       │       └── @ SymbolNode (location: (3,2)-(3,4))
+            │       │           ├── flags: ∅
             │       │           ├── opening_loc: (3,2)-(3,3) = ":"
             │       │           ├── value_loc: (3,3)-(3,4) = "g"
             │       │           ├── closing_loc: ∅

@@ -220,15 +220,17 @@ describe "The ** operator" do
     h.should == { one: 1, two: 2 }
   end
 
-  it "does not copy when calling a method taking a positional Hash" do
-    def m(h)
-      h.delete(:one); h
-    end
+  ruby_bug "#20012", ""..."3.3" do
+    it "makes a copy when calling a method taking a positional Hash" do
+      def m(h)
+        h.delete(:one); h
+      end
 
-    h = { one: 1, two: 2 }
-    m(**h).should == { two: 2 }
-    m(**h).should.equal?(h)
-    h.should == { two: 2 }
+      h = { one: 1, two: 2 }
+      m(**h).should == { two: 2 }
+      m(**h).should_not.equal?(h)
+      h.should == { one: 1, two: 2 }
+    end
   end
 
   ruby_version_is "3.1" do

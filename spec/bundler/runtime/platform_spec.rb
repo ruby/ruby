@@ -22,7 +22,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
     ruby <<-R
       begin
-        require '#{entrypoint}'
+        require 'bundler'
         Bundler.ui.silence { Bundler.setup }
       rescue Bundler::GemNotFound => e
         puts "WIN"
@@ -73,6 +73,13 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
       build_gem "racca", "1.5.2"
     end
 
+    checksums = checksums_section do |c|
+      c.checksum gem_repo4, "mini_portile2", "2.5.0"
+      c.checksum gem_repo4, "nokogiri", "1.11.1"
+      c.checksum gem_repo4, "nokogiri", "1.11.1", Bundler.local_platform
+      c.checksum gem_repo4, "racca", "1.5.2"
+    end
+
     good_lockfile = <<~L
       GEM
         remote: #{file_uri_for(gem_repo4)}/
@@ -90,13 +97,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
 
       DEPENDENCIES
         nokogiri (~> 1.11)
-
-      CHECKSUMS
-        #{checksum_for_repo_gem gem_repo4, "mini_portile2", "2.5.0"}
-        #{checksum_for_repo_gem gem_repo4, "nokogiri", "1.11.1"}
-        #{checksum_for_repo_gem gem_repo4, "nokogiri", "1.11.1", Bundler.local_platform}
-        #{checksum_for_repo_gem gem_repo4, "racca", "1.5.2"}
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     L
@@ -144,7 +145,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
          #{Bundler::VERSION}
     L
 
-    bundle "install", :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+    bundle "install", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
 
     expect(out).to include("Fetching nokogiri 1.11.1")
     expect(the_bundle).to include_gems "nokogiri 1.11.1"
@@ -358,7 +359,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
     end
 
     simulate_platform "aarch64-linux-musl" do
-      install_gemfile <<-G, :artifice => "compact_index", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }, :verbose => true
+      install_gemfile <<-G, artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }, verbose: true
         source "https://gems.repo4"
         gem "nokogiri"
       G
@@ -385,7 +386,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
   end
 
   it "allows specifying only-ruby-platform on windows with gemspec dependency" do
-    build_lib("foo", "1.0", :path => bundled_app) do |s|
+    build_lib("foo", "1.0", path: bundled_app) do |s|
       s.add_dependency "rack"
     end
 
@@ -426,7 +427,7 @@ RSpec.describe "Bundler.setup with multi platform stuff" do
           requires_platform_specific
       L
 
-      install_gemfile <<-G, :verbose => true
+      install_gemfile <<-G, verbose: true
         source "#{file_uri_for(gem_repo2)}"
         gem "requires_platform_specific"
       G

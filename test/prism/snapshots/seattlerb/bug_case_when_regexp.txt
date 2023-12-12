@@ -6,6 +6,7 @@
         └── @ CaseNode (location: (1,0)-(1,26))
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
+            │   ├── flags: ∅
             │   ├── opening_loc: (1,5)-(1,6) = ":"
             │   ├── value_loc: (1,6)-(1,7) = "x"
             │   ├── closing_loc: ∅
@@ -15,11 +16,11 @@
             │       ├── keyword_loc: (1,9)-(1,13) = "when"
             │       ├── conditions: (length: 1)
             │       │   └── @ RegularExpressionNode (location: (1,14)-(1,17))
+            │       │       ├── flags: ∅
             │       │       ├── opening_loc: (1,14)-(1,15) = "/"
             │       │       ├── content_loc: (1,15)-(1,16) = "x"
             │       │       ├── closing_loc: (1,16)-(1,17) = "/"
-            │       │       ├── unescaped: "x"
-            │       │       └── flags: ∅
+            │       │       └── unescaped: "x"
             │       └── statements: ∅
             ├── consequent: ∅
             ├── case_keyword_loc: (1,0)-(1,4) = "case"

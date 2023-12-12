@@ -105,14 +105,14 @@ module RDoc::TokenStream
   # Current token stream
 
   def token_stream
-    @token_stream || []
+    @token_stream
   end
 
   ##
   # Returns a string representation of the token stream
 
   def tokens_to_s
-    token_stream.compact.map { |token| token[:text] }.join ''
+    (token_stream or return '').compact.map { |token| token[:text] }.join ''
   end
 
 end

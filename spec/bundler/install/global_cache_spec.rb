@@ -16,7 +16,7 @@ RSpec.describe "global gem caching" do
     end
 
     it "caches gems into the global cache on download" do
-      install_gemfile <<-G, :artifice => "compact_index"
+      install_gemfile <<-G, artifice: "compact_index"
         source "#{source}"
         gem "rack"
       G
@@ -29,7 +29,7 @@ RSpec.describe "global gem caching" do
       source_global_cache.mkpath
       FileUtils.cp(gem_repo1("gems/rack-1.0.0.gem"), source_global_cache("rack-1.0.0.gem"))
 
-      install_gemfile <<-G, :artifice => "compact_index_no_gem"
+      install_gemfile <<-G, artifice: "compact_index_no_gem"
         source "#{source}"
         gem "rack"
       G
@@ -41,7 +41,7 @@ RSpec.describe "global gem caching" do
       source_global_cache.mkpath
       FileUtils.touch(source_global_cache("rack-1.0.0.gem"))
 
-      install_gemfile <<-G, :artifice => "compact_index_no_gem", :raise_on_error => false
+      install_gemfile <<-G, artifice: "compact_index_no_gem", raise_on_error: false
         source "#{source}"
         gem "rack"
       G
@@ -51,7 +51,7 @@ RSpec.describe "global gem caching" do
 
     describe "when the same gem from different sources is installed" do
       it "should use the appropriate one from the global cache" do
-        install_gemfile <<-G, :artifice => "compact_index"
+        install_gemfile <<-G, artifice: "compact_index"
           source "#{source}"
           gem "rack"
         G
@@ -61,7 +61,7 @@ RSpec.describe "global gem caching" do
         expect(source_global_cache("rack-1.0.0.gem")).to exist
         # rack 1.0.0 is not installed and it is in the global cache
 
-        install_gemfile <<-G, :artifice => "compact_index"
+        install_gemfile <<-G, artifice: "compact_index"
           source "#{source2}"
           gem "rack", "0.9.1"
         G
@@ -76,7 +76,7 @@ RSpec.describe "global gem caching" do
           gem "rack", "1.0.0"
         G
 
-        bundle :install, :artifice => "compact_index_no_gem"
+        bundle :install, artifice: "compact_index_no_gem"
         # rack 1.0.0 is installed and rack 0.9.1 is not
         expect(the_bundle).to include_gems "rack 1.0.0"
         expect(the_bundle).not_to include_gems "rack 0.9.1"
@@ -87,7 +87,7 @@ RSpec.describe "global gem caching" do
           gem "rack", "0.9.1"
         G
 
-        bundle :install, :artifice => "compact_index_no_gem"
+        bundle :install, artifice: "compact_index_no_gem"
         # rack 0.9.1 is installed and rack 1.0.0 is not
         expect(the_bundle).to include_gems "rack 0.9.1"
         expect(the_bundle).not_to include_gems "rack 1.0.0"
@@ -99,7 +99,7 @@ RSpec.describe "global gem caching" do
           gem "rack"
         G
 
-        bundle :install, :artifice => "compact_index"
+        bundle :install, artifice: "compact_index"
         simulate_new_machine
         expect(the_bundle).not_to include_gems "rack 1.0.0"
         expect(source_global_cache("rack-1.0.0.gem")).to exist
@@ -110,7 +110,7 @@ RSpec.describe "global gem caching" do
           gem "rack", "0.9.1"
         G
 
-        bundle :install, :artifice => "compact_index"
+        bundle :install, artifice: "compact_index"
         simulate_new_machine
         expect(the_bundle).not_to include_gems "rack 0.9.1"
         expect(source2_global_cache("rack-0.9.1.gem")).to exist
@@ -123,7 +123,7 @@ RSpec.describe "global gem caching" do
 
         expect(source_global_cache("rack-1.0.0.gem")).to exist
         expect(source2_global_cache("rack-0.9.1.gem")).to exist
-        bundle :install, :artifice => "compact_index_no_gem", :raise_on_error => false
+        bundle :install, artifice: "compact_index_no_gem", raise_on_error: false
         expect(err).to include("Internal Server Error 500")
         expect(err).not_to include("ERROR REPORT TEMPLATE")
 
@@ -138,7 +138,7 @@ RSpec.describe "global gem caching" do
 
         expect(source_global_cache("rack-1.0.0.gem")).to exist
         expect(source2_global_cache("rack-0.9.1.gem")).to exist
-        bundle :install, :artifice => "compact_index_no_gem", :raise_on_error => false
+        bundle :install, artifice: "compact_index_no_gem", raise_on_error: false
         expect(err).to include("Internal Server Error 500")
         expect(err).not_to include("ERROR REPORT TEMPLATE")
 
@@ -150,7 +150,7 @@ RSpec.describe "global gem caching" do
 
     describe "when installing gems from a different directory" do
       it "uses the global cache as a source" do
-        install_gemfile <<-G, :artifice => "compact_index"
+        install_gemfile <<-G, artifice: "compact_index"
           source "#{source}"
           gem "rack"
           gem "activesupport"
@@ -166,7 +166,7 @@ RSpec.describe "global gem caching" do
         expect(the_bundle).not_to include_gems "rack 1.0.0"
         expect(the_bundle).not_to include_gems "activesupport 2.3.5"
 
-        install_gemfile <<-G, :artifice => "compact_index_no_gem"
+        install_gemfile <<-G, artifice: "compact_index_no_gem"
           source "#{source}"
           gem "rack"
         G
@@ -183,18 +183,18 @@ RSpec.describe "global gem caching" do
         G
 
         # Neither gem is installed and both are in the global cache
-        expect(the_bundle).not_to include_gems "rack 1.0.0", :dir => bundled_app2
-        expect(the_bundle).not_to include_gems "activesupport 2.3.5", :dir => bundled_app2
+        expect(the_bundle).not_to include_gems "rack 1.0.0", dir: bundled_app2
+        expect(the_bundle).not_to include_gems "activesupport 2.3.5", dir: bundled_app2
         expect(source_global_cache("rack-1.0.0.gem")).to exist
         expect(source_global_cache("activesupport-2.3.5.gem")).to exist
 
         # Install using the global cache instead of by downloading the .gem
         # from the server
-        bundle :install, :artifice => "compact_index_no_gem", :dir => bundled_app2
+        bundle :install, artifice: "compact_index_no_gem", dir: bundled_app2
 
         # activesupport is installed and both are in the global cache
-        expect(the_bundle).not_to include_gems "rack 1.0.0", :dir => bundled_app2
-        expect(the_bundle).to include_gems "activesupport 2.3.5", :dir => bundled_app2
+        expect(the_bundle).not_to include_gems "rack 1.0.0", dir: bundled_app2
+        expect(the_bundle).to include_gems "activesupport 2.3.5", dir: bundled_app2
 
         expect(source_global_cache("rack-1.0.0.gem")).to exist
         expect(source_global_cache("activesupport-2.3.5.gem")).to exist

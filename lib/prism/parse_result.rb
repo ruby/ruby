@@ -238,11 +238,6 @@ module Prism
     def deconstruct_keys(keys)
       { location: location }
     end
-
-    # This can only be true for inline comments.
-    def trailing?
-      false
-    end
   end
 
   # InlineComment objects are the most common. They correspond to comments in
@@ -263,18 +258,14 @@ module Prism
   # EmbDocComment objects correspond to comments that are surrounded by =begin
   # and =end.
   class EmbDocComment < Comment
+    # This can only be true for inline comments.
+    def trailing?
+      false
+    end
+
     # Returns a string representation of this comment.
     def inspect
       "#<Prism::EmbDocComment @location=#{location.inspect}>"
-    end
-  end
-
-  # DATAComment objects correspond to comments that are after the __END__
-  # keyword in a source file.
-  class DATAComment < Comment
-    # Returns a string representation of this comment.
-    def inspect
-      "#<Prism::DATAComment @location=#{location.inspect}>"
     end
   end
 
@@ -378,6 +369,11 @@ module Prism
     # The list of magic comments that were encountered during parsing.
     attr_reader :magic_comments
 
+    # An optional location that represents the location of the content after the
+    # __END__ marker. This content is loaded into the DATA constant when the
+    # file being parsed is the main file being executed.
+    attr_reader :data_loc
+
     # The list of errors that were generated during parsing.
     attr_reader :errors
 
@@ -388,10 +384,11 @@ module Prism
     attr_reader :source
 
     # Create a new parse result object with the given values.
-    def initialize(value, comments, magic_comments, errors, warnings, source)
+    def initialize(value, comments, magic_comments, data_loc, errors, warnings, source)
       @value = value
       @comments = comments
       @magic_comments = magic_comments
+      @data_loc = data_loc
       @errors = errors
       @warnings = warnings
       @source = source
@@ -399,7 +396,7 @@ module Prism
 
     # Implement the hash pattern matching interface for ParseResult.
     def deconstruct_keys(keys)
-      { value: value, comments: comments, magic_comments: magic_comments, errors: errors, warnings: warnings }
+      { value: value, comments: comments, magic_comments: magic_comments, data_loc: data_loc, errors: errors, warnings: warnings }
     end
 
     # Returns true if there were no errors during parsing and false if there

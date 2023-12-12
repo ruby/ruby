@@ -136,7 +136,7 @@ module Gem::GemcutterUtilities
                                     sign_in_host, scope: scope) do |request|
       request.basic_auth email, password
       request["OTP"] = otp if otp
-      request.body = URI.encode_www_form({ :api_key => api_key }.merge(update_scope_params))
+      request.body = URI.encode_www_form({ api_key: api_key }.merge(update_scope_params))
     end
 
     with_response response do |_resp|

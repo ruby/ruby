@@ -5,7 +5,7 @@ require_relative "../../spec_helper"
 module SyntaxSuggest
   RSpec.describe Capture::FallingIndentLines do
     it "on_falling_indent" do
-      source = <<~'EOM'
+      source = <<~EOM
         class OH
           def lol
             print 'lol
@@ -33,7 +33,7 @@ module SyntaxSuggest
       end
       lines.sort!
 
-      expect(lines.join).to eq(<<~'EOM')
+      expect(lines.join).to eq(<<~EOM)
         class OH
           def hello
           end

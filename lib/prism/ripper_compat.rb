@@ -3,6 +3,10 @@
 require "ripper"
 
 module Prism
+  # Note: This integration is not finished, and therefore still has many
+  # inconsistencies with Ripper. If you'd like to help out, pull requests would
+  # be greatly appreciated!
+  #
   # This class is meant to provide a compatibility layer between prism and
   # Ripper. It functions by parsing the entire tree first and then walking it
   # and executing each of the Ripper callbacks as it goes.
@@ -10,7 +14,10 @@ module Prism
   # This class is going to necessarily be slower than the native Ripper API. It
   # is meant as a stopgap until developers migrate to using prism. It is also
   # meant as a test harness for the prism parser.
-  class RipperCompat
+  #
+  # To use this class, you treat `Prism::RipperCompat` effectively as you would
+  # treat the `Ripper` class.
+  class RipperCompat < Visitor
     # This class mirrors the ::Ripper::SexpBuilder subclass of ::Ripper that
     # returns the arrays of [type, *children].
     class SexpBuilder < RipperCompat
@@ -77,43 +84,63 @@ module Prism
 
     # True if the parser encountered an error during parsing.
     def error?
-      result.errors.any?
+      result.failure?
     end
 
     # Parse the source and return the result.
     def parse
-      result.value.accept(self) unless error?
+      result.magic_comments.each do |magic_comment|
+        on_magic_comment(magic_comment.key, magic_comment.value)
+      end
+
+      if error?
+        result.errors.each do |error|
+          on_parse_error(error.message)
+        end
+      else
+        result.value.accept(self)
+      end
     end
 
     ############################################################################
     # Visitor methods
     ############################################################################
 
-    # This method is responsible for dispatching to the correct visitor method
-    # based on the type of the node.
-    def visit(node)
-      node&.accept(self)
-    end
-
     # Visit a CallNode node.
     def visit_call_node(node)
-      if !node.opening_loc && node.arguments.arguments.length == 1
-        bounds(node.receiver.location)
+      if !node.message.match?(/^[[:alpha:]_]/) && node.opening_loc.nil? && node.arguments&.arguments&.length == 1
         left = visit(node.receiver)
-
-        bounds(node.arguments.arguments.first.location)
         right = visit(node.arguments.arguments.first)
 
-        on_binary(left, source[node.message_loc.start_offset...node.message_loc.end_offset].to_sym, right)
+        bounds(node.location)
+        on_binary(left, node.name, right)
       else
         raise NotImplementedError
       end
     end
 
+    # Visit a FloatNode node.
+    def visit_float_node(node)
+      bounds(node.location)
+      on_float(node.slice)
+    end
+
+    # Visit a ImaginaryNode node.
+    def visit_imaginary_node(node)
+      bounds(node.location)
+      on_imaginary(node.slice)
+    end
+
     # Visit an IntegerNode node.
     def visit_integer_node(node)
       bounds(node.location)
-      on_int(source[node.location.start_offset...node.location.end_offset])
+      on_int(node.slice)
+    end
+
+    # Visit a RationalNode node.
+    def visit_rational_node(node)
+      bounds(node.location)
+      on_rational(node.slice)
     end
 
     # Visit a StatementsNode node.
@@ -124,24 +151,11 @@ module Prism
       end
     end
 
-    # Visit a token found during parsing.
-    def visit_token(node)
-      bounds(node.location)
-
-      case node.type
-      when :MINUS
-        on_op(node.value)
-      when :PLUS
-        on_op(node.value)
-      else
-        raise NotImplementedError, "Unknown token: #{node.type}"
-      end
-    end
-
     # Visit a ProgramNode node.
     def visit_program_node(node)
+      statements = visit(node.statements)
       bounds(node.location)
-      on_program(visit(node.statements))
+      on_program(statements)
     end
 
     ############################################################################
@@ -166,10 +180,8 @@ module Prism
     # This method could be drastically improved with some caching on the start
     # of every line, but for now it's good enough.
     def bounds(location)
-      start_offset = location.start_offset
-
-      @lineno = source[0..start_offset].count("\n") + 1
-      @column = start_offset - (source.rindex("\n", start_offset) || 0)
+      @lineno = location.start_line
+      @column = location.start_column
     end
 
     # Lazily initialize the parse result.
@@ -184,6 +196,9 @@ module Prism
     def _dispatch4(_, _, _, _); end # :nodoc:
     def _dispatch5(_, _, _, _, _); end # :nodoc:
     def _dispatch7(_, _, _, _, _, _, _); end # :nodoc:
+
+    alias_method :on_parse_error, :_dispatch1
+    alias_method :on_magic_comment, :_dispatch2
 
     (Ripper::SCANNER_EVENT_TABLE.merge(Ripper::PARSER_EVENT_TABLE)).each do |event, arity|
       alias_method :"on_#{event}", :"_dispatch#{arity}"

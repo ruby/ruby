@@ -65,7 +65,7 @@ RSpec.describe "bundle info" do
     end
 
     it "complains if gem not in bundle" do
-      bundle "info missing", :raise_on_error => false
+      bundle "info missing", raise_on_error: false
       expect(err).to eq("Could not find gem 'missing'.")
     end
 
@@ -74,16 +74,16 @@ RSpec.describe "bundle info" do
 
       bundle "info rails --path"
 
-      expect(err).to match(/The gem rails has been deleted/i)
-      expect(err).to match(default_bundle_path("gems", "rails-2.3.2").to_s)
+      expect(err).to include("The gem rails has been deleted.")
+      expect(err).to include(default_bundle_path("gems", "rails-2.3.2").to_s)
 
       bundle "info rail --path"
-      expect(err).to match(/The gem rails has been deleted/i)
-      expect(err).to match(default_bundle_path("gems", "rails-2.3.2").to_s)
+      expect(err).to include("The gem rails has been deleted.")
+      expect(err).to include(default_bundle_path("gems", "rails-2.3.2").to_s)
 
       bundle "info rails"
-      expect(err).to match(/The gem rails has been deleted/i)
-      expect(err).to match(default_bundle_path("gems", "rails-2.3.2").to_s)
+      expect(err).to include("The gem rails has been deleted.")
+      expect(err).to include(default_bundle_path("gems", "rails-2.3.2").to_s)
     end
 
     context "given a default gem shippped in ruby", :ruby_repo do
@@ -167,7 +167,7 @@ RSpec.describe "bundle info" do
     end
 
     it "prints out branch names other than main" do
-      update_git "foo", :branch => "omg" do |s|
+      update_git "foo", branch: "omg" do |s|
         s.write "lib/foo.rb", "FOO = '1.0.omg'"
       end
       @revision = revision_for(lib_path("foo-1.0"))[0...6]
@@ -194,7 +194,7 @@ RSpec.describe "bundle info" do
     end
 
     it "handles when a version is a '-' prerelease" do
-      @git = build_git("foo", "1.0.0-beta.1", :path => lib_path("foo"))
+      @git = build_git("foo", "1.0.0-beta.1", path: lib_path("foo"))
       install_gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "foo", "1.0.0-beta.1", :git => "#{lib_path("foo")}"
@@ -228,7 +228,7 @@ RSpec.describe "bundle info" do
 
       invalid_regexp = "[]"
 
-      bundle "info #{invalid_regexp}", :raise_on_error => false
+      bundle "info #{invalid_regexp}", raise_on_error: false
       expect(err).to include("Could not find gem '#{invalid_regexp}'.")
     end
   end
@@ -242,7 +242,7 @@ RSpec.describe "bundle info" do
         gem "rails", group: :test
       G
 
-      bundle "info rails", :raise_on_error => false
+      bundle "info rails", raise_on_error: false
       expect(err).to include("Could not find gem 'rails', because it's in the group 'test', configured to be ignored.")
     end
   end

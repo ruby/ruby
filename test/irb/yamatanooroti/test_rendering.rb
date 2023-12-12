@@ -10,6 +10,8 @@ end
 
 class IRB::RenderingTest < Yamatanooroti::TestCase
   def setup
+    @original_term = ENV['TERM']
+    ENV['TERM'] = "xterm-256color"
     @pwd = Dir.pwd
     suffix = '%010d' % Random.rand(0..65535)
     @tmpdir = File.join(File.expand_path(Dir.tmpdir), "test_irb_#{$$}_#{suffix}")
@@ -27,6 +29,7 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
   def teardown
     FileUtils.rm_rf(@tmpdir)
     ENV['IRBRC'] = @irbrc_backup
+    ENV['TERM'] = @original_term
     ENV.delete('RELINE_TEST_PROMPT') if ENV['RELINE_TEST_PROMPT']
   end
 
@@ -207,15 +210,13 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     write_irbrc <<~'LINES'
       puts 'start IRB'
     LINES
-    start_terminal(4, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+    start_terminal(3, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
     write("{}.__id_")
     write("\C-i")
     close
-    assert_screen(<<~EOC)
-      start IRB
-      irb(main):001> {}.__id__
-                      }.__id__
-    EOC
+    screen = result.join("\n").sub(/\n*\z/, "\n")
+    # This assertion passes whether showdoc dialog completed or not.
+    assert_match(/start\ IRB\nirb\(main\):001> {}\.__id__\n                }\.__id__(?:Press )?/, screen)
   end
 
   def test_autocomplete_with_showdoc_in_gaps_on_narrow_screen_right
@@ -377,6 +378,86 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     assert_match(/a{80}/, screen)
     # because pager is not invoked, foobar will be evaluated
     assert_match(/foobar/, screen)
+  end
+
+  def test_long_evaluation_output_is_paged
+    write_irbrc <<~'LINES'
+      puts 'start IRB'
+      require "irb/pager"
+    LINES
+    start_terminal(10, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+    write("'a' * 80 * 11\n")
+    write("'foo' + 'bar'\n") # eval something to make sure IRB resumes
+    close
+
+    screen = result.join("\n").sub(/\n*\z/, "\n")
+    assert_match(/(a{80}\n){8}/, screen)
+    # because pager is invoked, foobar will not be evaluated
+    assert_not_match(/foobar/, screen)
+  end
+
+  def test_long_evaluation_output_is_preserved_after_paging
+    write_irbrc <<~'LINES'
+      puts 'start IRB'
+      require "irb/pager"
+    LINES
+    start_terminal(10, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+    write("'a' * 80 * 11\n")
+    write("q") # quit pager
+    write("'foo' + 'bar'\n") # eval something to make sure IRB resumes
+    close
+
+    screen = result.join("\n").sub(/\n*\z/, "\n")
+    # confirm pager has exited
+    assert_match(/foobar/, screen)
+    # confirm output is preserved
+    assert_match(/(a{80}\n){6}/, screen)
+  end
+
+  def test_debug_integration_hints_debugger_commands
+    write_irbrc <<~'LINES'
+      IRB.conf[:USE_COLORIZE] = false
+    LINES
+    script = Tempfile.create(["debug", ".rb"])
+    script.write <<~RUBY
+      puts 'start IRB'
+      binding.irb
+    RUBY
+    script.close
+    start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{script.to_path}}, startup_message: 'start IRB')
+    write("debug\n")
+    write("pp 1\n")
+    write("pp 1")
+    close
+
+    screen = result.join("\n").sub(/\n*\z/, "\n")
+    # submitted input shouldn't contain hint
+    assert_include(screen, "irb:rdbg(main):002> pp 1\n")
+    # unsubmitted input should contain hint
+    assert_include(screen, "irb:rdbg(main):003> pp 1 # debug command\n")
+  ensure
+    File.unlink(script) if script
+  end
+
+  def test_debug_integration_doesnt_hint_non_debugger_commands
+    write_irbrc <<~'LINES'
+      IRB.conf[:USE_COLORIZE] = false
+    LINES
+    script = Tempfile.create(["debug", ".rb"])
+    script.write <<~RUBY
+      puts 'start IRB'
+      binding.irb
+    RUBY
+    script.close
+    start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{script.to_path}}, startup_message: 'start IRB')
+    write("debug\n")
+    write("foo")
+    close
+
+    screen = result.join("\n").sub(/\n*\z/, "\n")
+    assert_include(screen, "irb:rdbg(main):002> foo\n")
+  ensure
+    File.unlink(script) if script
   end
 
   private

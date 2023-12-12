@@ -12,7 +12,7 @@ module Bundler
       @options = options
       @cmd = args.shift
       @args = args
-      @args << { :close_others => !options.keep_file_descriptors? } unless Bundler.current_ruby.jruby?
+      @args << { close_others: !options.keep_file_descriptors? } unless Bundler.current_ruby.jruby?
     end
 
     def run

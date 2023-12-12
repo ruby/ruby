@@ -76,11 +76,11 @@ module Bundler
 
         @gemspecs << spec
 
-        gem spec.name, :name => spec.name, :path => path, :glob => glob
+        gem spec.name, name: spec.name, path: path, glob: glob
 
         group(development_group) do
           spec.development_dependencies.each do |dep|
-            gem dep.name, *(dep.requirement.as_list + [:type => :development])
+            gem dep.name, *(dep.requirement.as_list + [type: :development])
           end
         end
       when 0
@@ -102,12 +102,13 @@ module Bundler
 
       # if there's already a dependency with this name we try to prefer one
       if current = @dependencies.find {|d| d.name == dep.name }
+        # Always prefer the dependency from the Gemfile
+        deleted_dep = @dependencies.delete(current) if current.type == :development
+
         if current.requirement != dep.requirement
           current_requirement_open = current.requirements_list.include?(">= 0")
 
           if current.type == :development
-            @dependencies.delete(current)
-
             unless current_requirement_open || dep.type == :development
               Bundler.ui.warn "A gemspec development dependency (#{dep.name}, #{current.requirement}) is being overridden by a Gemfile dependency (#{dep.name}, #{dep.requirement}).\n" \
                               "This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement\n" \
@@ -129,12 +130,13 @@ module Bundler
                            "You specified: #{current.name} (#{current.requirement}) and #{dep.name} (#{dep.requirement})" \
                            "#{update_prompt}"
           end
+        elsif current.type == :development || dep.type == :development
+          return if deleted_dep.nil?
         elsif current.source != dep.source
-          return if dep.type == :development
           raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
                           "You specified that #{dep.name} (#{dep.requirement}) should come from " \
                           "#{current.source || "an unspecified source"} and #{dep.source}\n"
-        elsif current.type != :development && dep.type != :development
+        else
           Bundler.ui.warn "Your Gemfile lists the gem #{current.name} (#{current.requirement}) more than once.\n" \
                           "You should probably keep only one of them.\n" \
                           "Remove any duplicate entries and specify the gem only once.\n" \
@@ -427,9 +429,13 @@ module Bundler
     def normalize_source(source)
       case source
       when :gemcutter, :rubygems, :rubyforge
-        Bundler::SharedHelpers.major_deprecation 2, "The source :#{source} is deprecated because HTTP " \
-          "requests are insecure.\nPlease change your source to 'https://" \
-          "rubygems.org' if possible, or 'http://rubygems.org' if not."
+        message =
+          "The source :#{source} is deprecated because HTTP requests are insecure.\n" \
+          "Please change your source to 'https://rubygems.org' if possible, or 'http://rubygems.org' if not."
+        removed_message =
+          "The source :#{source} is disallowed because HTTP requests are insecure.\n" \
+          "Please change your source to 'https://rubygems.org' if possible, or 'http://rubygems.org' if not."
+        Bundler::SharedHelpers.major_deprecation 2, message, removed_message: removed_message
         "http://rubygems.org"
       when String
         source
@@ -474,10 +480,17 @@ module Bundler
           "should come from that source"
         raise GemfileEvalError, msg
       else
-        Bundler::SharedHelpers.major_deprecation 2, "Your Gemfile contains multiple global sources. " \
+        message =
+          "Your Gemfile contains multiple global sources. " \
           "Using `source` more than once without a block is a security risk, and " \
           "may result in installing unexpected gems. To resolve this warning, use " \
           "a block to indicate which gems should come from the secondary source."
+        removed_message =
+          "Your Gemfile contains multiple global sources. " \
+          "Using `source` more than once without a block is a security risk, and " \
+          "may result in installing unexpected gems. To resolve this error, use " \
+          "a block to indicate which gems should come from the secondary source."
+        Bundler::SharedHelpers.major_deprecation 2, message, removed_message: removed_message
       end
     end
 

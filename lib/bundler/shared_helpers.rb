@@ -117,16 +117,18 @@ module Bundler
       raise GenericSystemCallError.new(e, "There was an error accessing `#{path}`.")
     end
 
-    def major_deprecation(major_version, message, print_caller_location: false)
+    def major_deprecation(major_version, message, removed_message: nil, print_caller_location: false)
       if print_caller_location
         caller_location = caller_locations(2, 2).first
-        message = "#{message} (called at #{caller_location.path}:#{caller_location.lineno})"
+        suffix = " (called at #{caller_location.path}:#{caller_location.lineno})"
+        message += suffix
+        removed_message += suffix if removed_message
       end
 
       bundler_major_version = Bundler.bundler_major_version
       if bundler_major_version > major_version
         require_relative "errors"
-        raise DeprecatedError, "[REMOVED] #{message}"
+        raise DeprecatedError, "[REMOVED] #{removed_message || message}"
       end
 
       return unless bundler_major_version >= major_version && prints_major_deprecations?
@@ -191,6 +193,21 @@ module Bundler
     def digest(name)
       require "digest"
       Digest(name)
+    end
+
+    def checksum_for_file(path, digest)
+      return unless path.file?
+      # This must use File.read instead of Digest.file().hexdigest
+      # because we need to preserve \n line endings on windows when calculating
+      # the checksum
+      SharedHelpers.filesystem_access(path, :read) do
+        File.open(path, "rb") do |f|
+          digest = SharedHelpers.digest(digest).new
+          buf = String.new(capacity: 16_384, encoding: Encoding::BINARY)
+          digest << buf while f.read(16_384, buf)
+          digest.hexdigest
+        end
+      end
     end
 
     def write_to_gemfile(gemfile_path, contents)

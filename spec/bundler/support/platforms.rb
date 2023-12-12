@@ -100,7 +100,7 @@ module Spec
     end
 
     def lockfile_platforms(*extra, defaults: default_locked_platforms)
-      platforms = default_platform_list(*extra, :defaults => defaults)
+      platforms = default_platform_list(*extra, defaults: defaults)
       platforms.map(&:to_s).sort.join("\n  ")
     end
 

@@ -1,4 +1,4 @@
-use std::{ffi::{CStr, CString}, ptr::null};
+use std::{ffi::{CStr, CString}, ptr::null, fs::File};
 use crate::backend::current::TEMP_REGS;
 use std::os::raw::{c_char, c_int, c_uint};
 
@@ -81,7 +81,7 @@ pub struct Options {
 
 // Initialize the options to default values
 pub static mut OPTIONS: Options = Options {
-    exec_mem_size: 128 * 1024 * 1024,
+    exec_mem_size: 64 * 1024 * 1024,
     no_type_prop: false,
     max_versions: 4,
     num_temp_regs: 5,
@@ -104,7 +104,7 @@ static YJIT_OPTIONS: [(&str, &str); 8] = [
     ("--yjit-stats",                    "Enable collecting YJIT statistics"),
     ("--yjit-trace-exits",              "Record Ruby source location when exiting from generated code"),
     ("--yjit-trace-exits-sample-rate",  "Trace exit locations only every Nth occurrence"),
-    ("--yjit-exec-mem-size=num",        "Size of executable memory block in MiB (default: 128)"),
+    ("--yjit-exec-mem-size=num",        "Size of executable memory block in MiB (default: 64)"),
     ("--yjit-code-gc",                  "Run code GC when the code size reaches the limit"),
     ("--yjit-call-threshold=num",       "Number of calls to trigger JIT"),
     ("--yjit-cold-threshold=num",       "Global call after which ISEQs not compiled (default: 200K)"),
@@ -230,10 +230,14 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("dump-disasm", _) => match opt_val {
             "" => unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::Stdout) },
             directory => {
-                let pid = std::process::id();
-                let path = format!("{directory}/yjit_{pid}.log");
-                eprintln!("YJIT disasm dump: {path}");
-                unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(path)) }
+                let path = format!("{directory}/yjit_{}.log", std::process::id());
+                match File::options().create(true).append(true).open(&path) {
+                    Ok(_) => {
+                        eprintln!("YJIT disasm dump: {path}");
+                        unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(path)) }
+                    }
+                    Err(err) => eprintln!("Failed to create {path}: {err}"),
+                }
             }
          },
 

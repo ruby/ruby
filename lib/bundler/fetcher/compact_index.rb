@@ -13,7 +13,7 @@ module Bundler
         undef_method(method_name)
         define_method(method_name) do |*args, &blk|
           method.bind(self).call(*args, &blk)
-        rescue NetworkDownError, CompactIndexClient::Updater::MisMatchedChecksumError => e
+        rescue NetworkDownError, CompactIndexClient::Updater::MismatchedChecksumError => e
           raise HTTPError, e.message
         rescue AuthenticationRequiredError, BadAuthenticationError
           # Fail since we got a 401 from the server.
@@ -62,7 +62,7 @@ module Bundler
         end
         # Read info file checksums out of /versions, so we can know if gems are up to date
         compact_index_client.update_and_parse_checksums!
-      rescue CompactIndexClient::Updater::MisMatchedChecksumError => e
+      rescue CompactIndexClient::Updater::MismatchedChecksumError => e
         Bundler.ui.debug(e.message)
         nil
       end

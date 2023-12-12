@@ -8,7 +8,7 @@ module SyntaxSuggest
       Dir.mktmpdir do |dir|
         tmpdir = Pathname(dir)
         file = tmpdir.join("file.rb")
-        file.write(<<~'EOM'.strip)
+        file.write(<<~EOM.strip)
           print 'no newline
         EOM
 

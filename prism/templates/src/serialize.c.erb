@@ -15,13 +15,13 @@ pm_sizet_to_u32(size_t value) {
 }
 
 static void
-pm_serialize_location(pm_parser_t *parser, pm_location_t *location, pm_buffer_t *buffer) {
+pm_serialize_location(const pm_parser_t *parser, const pm_location_t *location, pm_buffer_t *buffer) {
     assert(location->start);
     assert(location->end);
     assert(location->start <= location->end);
 
-    pm_buffer_append_varint(buffer, pm_ptrdifft_to_u32(location->start - parser->start));
-    pm_buffer_append_varint(buffer, pm_ptrdifft_to_u32(location->end - location->start));
+    pm_buffer_append_varuint(buffer, pm_ptrdifft_to_u32(location->start - parser->start));
+    pm_buffer_append_varuint(buffer, pm_ptrdifft_to_u32(location->end - location->start));
 }
 
 static void
@@ -29,15 +29,15 @@ pm_serialize_string(pm_parser_t *parser, pm_string_t *string, pm_buffer_t *buffe
     switch (string->type) {
         case PM_STRING_SHARED: {
             pm_buffer_append_byte(buffer, 1);
-            pm_buffer_append_varint(buffer, pm_ptrdifft_to_u32(pm_string_source(string) - parser->start));
-            pm_buffer_append_varint(buffer, pm_sizet_to_u32(pm_string_length(string)));
+            pm_buffer_append_varuint(buffer, pm_ptrdifft_to_u32(pm_string_source(string) - parser->start));
+            pm_buffer_append_varuint(buffer, pm_sizet_to_u32(pm_string_length(string)));
             break;
         }
         case PM_STRING_OWNED:
         case PM_STRING_CONSTANT: {
             uint32_t length = pm_sizet_to_u32(pm_string_length(string));
             pm_buffer_append_byte(buffer, 2);
-            pm_buffer_append_varint(buffer, length);
+            pm_buffer_append_varuint(buffer, length);
             pm_buffer_append_bytes(buffer, pm_string_source(string), length);
             break;
         }
@@ -82,17 +82,17 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
             pm_serialize_string(parser, &((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
             <%- when Prism::NodeListField -%>
             uint32_t <%= field.name %>_size = pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>.size);
-            pm_buffer_append_varint(buffer, <%= field.name %>_size);
+            pm_buffer_append_varuint(buffer, <%= field.name %>_size);
             for (uint32_t index = 0; index < <%= field.name %>_size; index++) {
                 pm_serialize_node(parser, (pm_node_t *) ((pm_<%= node.human %>_t *)node)-><%= field.name %>.nodes[index], buffer);
             }
             <%- when Prism::ConstantField, Prism::OptionalConstantField -%>
-            pm_buffer_append_varint(buffer, pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>));
+            pm_buffer_append_varuint(buffer, pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>));
             <%- when Prism::ConstantListField -%>
             uint32_t <%= field.name %>_size = pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>.size);
-            pm_buffer_append_varint(buffer, <%= field.name %>_size);
+            pm_buffer_append_varuint(buffer, <%= field.name %>_size);
             for (uint32_t index = 0; index < <%= field.name %>_size; index++) {
-                pm_buffer_append_varint(buffer, pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>.ids[index]));
+                pm_buffer_append_varuint(buffer, pm_sizet_to_u32(((pm_<%= node.human %>_t *)node)-><%= field.name %>.ids[index]));
             }
             <%- when Prism::LocationField -%>
             <%- if field.should_be_serialized? -%>
@@ -107,10 +107,12 @@ pm_serialize_node(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
                 pm_serialize_location(parser, &((pm_<%= node.human %>_t *)node)-><%= field.name %>, buffer);
             }
             <%- end -%>
+            <%- when Prism::UInt8Field -%>
+            pm_buffer_append_byte(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
             <%- when Prism::UInt32Field -%>
-            pm_buffer_append_varint(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
+            pm_buffer_append_varuint(buffer, ((pm_<%= node.human %>_t *)node)-><%= field.name %>);
             <%- when Prism::FlagsField -%>
-            pm_buffer_append_varint(buffer, (uint32_t)(node->flags & ~PM_NODE_FLAG_COMMON_MASK));
+            pm_buffer_append_varuint(buffer, (uint32_t)(node->flags & ~PM_NODE_FLAG_COMMON_MASK));
             <%- else -%>
             <%- raise -%>
             <%- end -%>
@@ -132,8 +134,7 @@ pm_serialize_comment(pm_parser_t *parser, pm_comment_t *comment, pm_buffer_t *bu
     pm_buffer_append_byte(buffer, (uint8_t) comment->type);
 
     // serialize location
-    pm_buffer_append_varint(buffer, pm_ptrdifft_to_u32(comment->start - parser->start));
-    pm_buffer_append_varint(buffer, pm_ptrdifft_to_u32(comment->end - comment->start));
+    pm_serialize_location(parser, &comment->location, buffer);
 }
 
 /**
@@ -141,7 +142,7 @@ pm_serialize_comment(pm_parser_t *parser, pm_comment_t *comment, pm_buffer_t *bu
  */
 void
 pm_serialize_comment_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_t *buffer) {
-    pm_buffer_append_varint(buffer, pm_sizet_to_u32(pm_list_size(list)));
+    pm_buffer_append_varuint(buffer, pm_sizet_to_u32(pm_list_size(list)));
 
     pm_comment_t *comment;
     for (comment = (pm_comment_t *) list->head; comment != NULL; comment = (pm_comment_t *) comment->node.next) {
@@ -152,17 +153,17 @@ pm_serialize_comment_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_t *buf
 static void
 pm_serialize_magic_comment(pm_parser_t *parser, pm_magic_comment_t *magic_comment, pm_buffer_t *buffer) {
     // serialize key location
-    pm_buffer_append_varint(buffer, pm_ptrdifft_to_u32(magic_comment->key_start - parser->start));
-    pm_buffer_append_varint(buffer, pm_sizet_to_u32(magic_comment->key_length));
+    pm_buffer_append_varuint(buffer, pm_ptrdifft_to_u32(magic_comment->key_start - parser->start));
+    pm_buffer_append_varuint(buffer, pm_sizet_to_u32(magic_comment->key_length));
 
     // serialize value location
-    pm_buffer_append_varint(buffer, pm_ptrdifft_to_u32(magic_comment->value_start - parser->start));
-    pm_buffer_append_varint(buffer, pm_sizet_to_u32(magic_comment->value_length));
+    pm_buffer_append_varuint(buffer, pm_ptrdifft_to_u32(magic_comment->value_start - parser->start));
+    pm_buffer_append_varuint(buffer, pm_sizet_to_u32(magic_comment->value_length));
 }
 
 static void
 pm_serialize_magic_comment_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_t *buffer) {
-    pm_buffer_append_varint(buffer, pm_sizet_to_u32(pm_list_size(list)));
+    pm_buffer_append_varuint(buffer, pm_sizet_to_u32(pm_list_size(list)));
 
     pm_magic_comment_t *magic_comment;
     for (magic_comment = (pm_magic_comment_t *) list->head; magic_comment != NULL; magic_comment = (pm_magic_comment_t *) magic_comment->node.next) {
@@ -171,20 +172,29 @@ pm_serialize_magic_comment_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_
 }
 
 static void
+pm_serialize_data_loc(const pm_parser_t *parser, pm_buffer_t *buffer) {
+    if (parser->data_loc.end == NULL) {
+        pm_buffer_append_byte(buffer, 0);
+    } else {
+        pm_buffer_append_byte(buffer, 1);
+        pm_serialize_location(parser, &parser->data_loc, buffer);
+    }
+}
+
+static void
 pm_serialize_diagnostic(pm_parser_t *parser, pm_diagnostic_t *diagnostic, pm_buffer_t *buffer) {
     // serialize message
     size_t message_length = strlen(diagnostic->message);
-    pm_buffer_append_varint(buffer, pm_sizet_to_u32(message_length));
+    pm_buffer_append_varuint(buffer, pm_sizet_to_u32(message_length));
     pm_buffer_append_string(buffer, diagnostic->message, message_length);
 
     // serialize location
-    pm_buffer_append_varint(buffer, pm_ptrdifft_to_u32(diagnostic->start - parser->start));
-    pm_buffer_append_varint(buffer, pm_ptrdifft_to_u32(diagnostic->end - diagnostic->start));
+    pm_serialize_location(parser, &diagnostic->location, buffer);
 }
 
 static void
 pm_serialize_diagnostic_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_t *buffer) {
-    pm_buffer_append_varint(buffer, pm_sizet_to_u32(pm_list_size(list)));
+    pm_buffer_append_varuint(buffer, pm_sizet_to_u32(pm_list_size(list)));
 
     pm_diagnostic_t *diagnostic;
     for (diagnostic = (pm_diagnostic_t *) list->head; diagnostic != NULL; diagnostic = (pm_diagnostic_t *) diagnostic->node.next) {
@@ -196,9 +206,9 @@ pm_serialize_diagnostic_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_t *
  * Serialize the name of the encoding to the buffer.
  */
 void
-pm_serialize_encoding(pm_encoding_t *encoding, pm_buffer_t *buffer) {
+pm_serialize_encoding(const pm_encoding_t *encoding, pm_buffer_t *buffer) {
     size_t encoding_length = strlen(encoding->name);
-    pm_buffer_append_varint(buffer, pm_sizet_to_u32(encoding_length));
+    pm_buffer_append_varuint(buffer, pm_sizet_to_u32(encoding_length));
     pm_buffer_append_string(buffer, encoding->name, encoding_length);
 }
 
@@ -208,12 +218,13 @@ pm_serialize_encoding(pm_encoding_t *encoding, pm_buffer_t *buffer) {
  */
 void
 pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) {
-    pm_serialize_encoding(&parser->encoding, buffer);
-    pm_buffer_append_varint(buffer, parser->start_line);
+    pm_serialize_encoding(parser->encoding, buffer);
+    pm_buffer_append_varsint(buffer, parser->start_line);
 <%- unless Prism::SERIALIZE_ONLY_SEMANTICS_FIELDS -%>
     pm_serialize_comment_list(parser, &parser->comment_list, buffer);
 <%- end -%>
     pm_serialize_magic_comment_list(parser, &parser->magic_comment_list, buffer);
+    pm_serialize_data_loc(parser, buffer);
     pm_serialize_diagnostic_list(parser, &parser->error_list, buffer);
     pm_serialize_diagnostic_list(parser, &parser->warning_list, buffer);
 
@@ -223,7 +234,7 @@ pm_serialize_content(pm_parser_t *parser, pm_node_t *node, pm_buffer_t *buffer) 
     pm_buffer_append_zeroes(buffer, 4);
 
     // Next, encode the length of the constant pool.
-    pm_buffer_append_varint(buffer, parser->constant_pool.size);
+    pm_buffer_append_varuint(buffer, parser->constant_pool.size);
 
     // Now we're going to serialize the content of the node.
     pm_serialize_node(parser, node, buffer);
@@ -278,10 +289,10 @@ static void
 serialize_token(void *data, pm_parser_t *parser, pm_token_t *token) {
     pm_buffer_t *buffer = (pm_buffer_t *) data;
 
-    pm_buffer_append_varint(buffer, token->type);
-    pm_buffer_append_varint(buffer, pm_ptrdifft_to_u32(token->start - parser->start));
-    pm_buffer_append_varint(buffer, pm_ptrdifft_to_u32(token->end - token->start));
-    pm_buffer_append_varint(buffer, parser->lex_state);
+    pm_buffer_append_varuint(buffer, token->type);
+    pm_buffer_append_varuint(buffer, pm_ptrdifft_to_u32(token->start - parser->start));
+    pm_buffer_append_varuint(buffer, pm_ptrdifft_to_u32(token->end - token->start));
+    pm_buffer_append_varuint(buffer, parser->lex_state);
 }
 
 /**
@@ -290,7 +301,7 @@ serialize_token(void *data, pm_parser_t *parser, pm_token_t *token) {
 PRISM_EXPORTED_FUNCTION void
 pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data) {
     pm_options_t options = { 0 };
-    if (data != NULL) pm_options_read(&options, data);
+    pm_options_read(&options, data);
 
     pm_parser_t parser;
     pm_parser_init(&parser, source, size, &options);
@@ -306,10 +317,11 @@ pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const 
     // Append 0 to mark end of tokens.
     pm_buffer_append_byte(buffer, 0);
 
-    pm_serialize_encoding(&parser.encoding, buffer);
-    pm_buffer_append_varint(buffer, parser.start_line);
+    pm_serialize_encoding(parser.encoding, buffer);
+    pm_buffer_append_varsint(buffer, parser.start_line);
     pm_serialize_comment_list(&parser, &parser.comment_list, buffer);
     pm_serialize_magic_comment_list(&parser, &parser.magic_comment_list, buffer);
+    pm_serialize_data_loc(&parser, buffer);
     pm_serialize_diagnostic_list(&parser, &parser.error_list, buffer);
     pm_serialize_diagnostic_list(&parser, &parser.warning_list, buffer);
 
@@ -325,7 +337,7 @@ pm_serialize_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const 
 PRISM_EXPORTED_FUNCTION void
 pm_serialize_parse_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data) {
     pm_options_t options = { 0 };
-    if (data != NULL) pm_options_read(&options, data);
+    pm_options_read(&options, data);
 
     pm_parser_t parser;
     pm_parser_init(&parser, source, size, &options);
@@ -344,4 +356,25 @@ pm_serialize_parse_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, 
     pm_node_destroy(&parser, node);
     pm_parser_free(&parser);
     pm_options_free(&options);
+}
+
+/**
+ * Parse the source and return true if it parses without errors or warnings.
+ */
+PRISM_EXPORTED_FUNCTION bool
+pm_parse_success_p(const uint8_t *source, size_t size, const char *data) {
+    pm_options_t options = { 0 };
+    pm_options_read(&options, data);
+
+    pm_parser_t parser;
+    pm_parser_init(&parser, source, size, &options);
+
+    pm_node_t *node = pm_parse(&parser);
+    pm_node_destroy(&parser, node);
+
+    bool result = parser.error_list.size == 0 && parser.warning_list.size == 0;
+    pm_parser_free(&parser);
+    pm_options_free(&options);
+
+    return result;
 }

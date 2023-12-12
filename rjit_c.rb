@@ -1530,6 +1530,7 @@ module RubyVM::RJIT # :nodoc: all
       scheduler: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), scheduler)")],
       blocking: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), blocking)")],
       name: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), name)")],
+      specific_storage: [CType::Pointer.new { CType::Pointer.new { CType::Immediate.parse("void") } }, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), specific_storage)")],
       ext_config: [self.rb_ext_config, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), ext_config)")],
     )
   end

@@ -3,6 +3,6 @@ describe :digest_instance_update, shared: true do
     c = Class.new do
       include Digest::Instance
     end
-    -> { c.new.update("test") }.should raise_error(RuntimeError)
+    -> { c.new.send(@method, "test") }.should raise_error(RuntimeError)
   end
 end

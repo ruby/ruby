@@ -5,7 +5,7 @@ require_relative "../spec_helper"
 module SyntaxSuggest
   RSpec.describe AroundBlockScan do
     it "continues scan from last location even if scan is false" do
-      source = <<~'EOM'
+      source = <<~EOM
         print 'omg'
         print 'lol'
         print 'haha'

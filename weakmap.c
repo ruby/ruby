@@ -88,7 +88,6 @@ wmap_free(void *ptr)
 
     st_foreach(w->table, wmap_free_table_i, 0);
     st_free_table(w->table);
-    xfree(w);
 }
 
 static size_t
@@ -96,7 +95,7 @@ wmap_memsize(const void *ptr)
 {
     const struct weakmap *w = ptr;
 
-    size_t size = sizeof(*w);
+    size_t size = 0;
     size += st_memsize(w->table);
     /* The key and value of the table each take sizeof(VALUE) in size. */
     size += st_table_size(w->table) * (2 * sizeof(VALUE));
@@ -156,7 +155,7 @@ static const rb_data_type_t weakmap_type = {
         wmap_memsize,
         wmap_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static int
@@ -558,7 +557,6 @@ wkmap_free(void *ptr)
 
     st_foreach(w->table, wkmap_free_table_i, 0);
     st_free_table(w->table);
-    xfree(w);
 }
 
 static size_t
@@ -566,7 +564,7 @@ wkmap_memsize(const void *ptr)
 {
     const struct weakkeymap *w = ptr;
 
-    size_t size = sizeof(*w);
+    size_t size = 0;
     size += st_memsize(w->table);
     /* Each key of the table takes sizeof(VALUE) in size. */
     size += st_table_size(w->table) * sizeof(VALUE);
@@ -620,7 +618,7 @@ static const rb_data_type_t weakkeymap_type = {
         wkmap_memsize,
         wkmap_compact,
     },
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 static int

@@ -309,4 +309,10 @@ module RDoc::Text
     res.join.strip
   end
 
+  ##
+  # Character class to be separated by a space when concatenating
+  # lines.
+
+  SPACE_SEPARATED_LETTER_CLASS = /[\p{Nd}\p{Lc}\p{Pc}]|[!-~&&\W]/
+
 end

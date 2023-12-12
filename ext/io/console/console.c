@@ -1152,6 +1152,16 @@ console_scroll(VALUE io, int line)
 # define console_key_pressed_p rb_f_notimplement
 #endif
 
+/*
+ * call-seq:
+ *   io.cursor -> [row, column]
+ *
+ * Returns the current cursor position as a two-element array of integers (row, column)
+ *
+ *   io.cursor # => [3, 5]
+ *
+ * You must require 'io/console' to use this method.
+ */
 static VALUE
 console_cursor_pos(VALUE io)
 {

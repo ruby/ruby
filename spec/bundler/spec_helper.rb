@@ -88,7 +88,7 @@ RSpec.configure do |config|
     ENV["THOR_COLUMNS"] = "10000"
 
     extend(Spec::Helpers)
-    system_gems :bundler, :path => pristine_system_gem_path
+    system_gems :bundler, path: pristine_system_gem_path
   end
 
   config.before :all do

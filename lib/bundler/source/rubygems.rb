@@ -171,14 +171,14 @@ module Bundler
 
         installer = Bundler::RubyGemsGemInstaller.at(
           path,
-          :security_policy => Bundler.rubygems.security_policies[Bundler.settings["trust-policy"]],
-          :install_dir => install_path.to_s,
-          :bin_dir => bin_path.to_s,
-          :ignore_dependencies => true,
-          :wrappers => true,
-          :env_shebang => true,
-          :build_args => options[:build_args],
-          :bundler_extension_cache_path => extension_cache_path(spec)
+          security_policy: Bundler.rubygems.security_policies[Bundler.settings["trust-policy"]],
+          install_dir: install_path.to_s,
+          bin_dir: bin_path.to_s,
+          ignore_dependencies: true,
+          wrappers: true,
+          env_shebang: true,
+          build_args: options[:build_args],
+          bundler_extension_cache_path: extension_cache_path(spec)
         )
 
         if spec.remote

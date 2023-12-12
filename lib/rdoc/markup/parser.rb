@@ -218,7 +218,7 @@ class RDoc::Markup::Parser
 
         break if peek_token.first == :BREAK
 
-        data << ' ' if skip :NEWLINE
+        data << ' ' if skip :NEWLINE and /#{SPACE_SEPARATED_LETTER_CLASS}\z/o.match?(data)
       else
         unget
         break

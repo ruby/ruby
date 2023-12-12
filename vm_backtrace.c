@@ -159,15 +159,13 @@ location_mark_entry(rb_backtrace_location_t *fi)
     }
 }
 
-static size_t
-location_memsize(const void *ptr)
-{
-    return 0;
-}
-
 static const rb_data_type_t location_data_type = {
     "frame_info",
-    {location_mark, RUBY_TYPED_DEFAULT_FREE, location_memsize,},
+    {
+        location_mark,
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL, // No external memory to report,
+    },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
@@ -503,15 +501,14 @@ backtrace_update(void *ptr)
     bt->locary = rb_gc_location(bt->locary);
 }
 
-static size_t
-backtrace_memsize(const void *ptr)
-{
-    return 0;
-}
-
 static const rb_data_type_t backtrace_data_type = {
     "backtrace",
-    {backtrace_mark, RUBY_DEFAULT_FREE, backtrace_memsize, backtrace_update},
+    {
+        backtrace_mark,
+        RUBY_DEFAULT_FREE,
+        NULL, // No external memory to report,
+        backtrace_update,
+    },
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 

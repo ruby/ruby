@@ -27,6 +27,7 @@ VALUE rb_cSocket;
 VALUE rb_cAddrinfo;
 
 VALUE rb_eSocket;
+VALUE rb_eResolution;
 
 #ifdef SOCKS
 VALUE rb_cSOCKSSocket;
@@ -34,9 +35,10 @@ VALUE rb_cSOCKSSocket;
 
 int rsock_do_not_reverse_lookup = 1;
 static VALUE sym_wait_readable;
+static ID id_error_code;
 
 void
-rsock_raise_socket_error(const char *reason, int error)
+rsock_raise_resolution_error(const char *reason, int error)
 {
 #ifdef EAI_SYSTEM
     int e;
@@ -48,10 +50,14 @@ rsock_raise_socket_error(const char *reason, int error)
     VALUE msg = rb_sprintf("%s: ", reason);
     if (!enc) enc = rb_default_internal_encoding();
     rb_str_concat(msg, rb_w32_conv_from_wchar(gai_strerrorW(error), enc));
-    rb_exc_raise(rb_exc_new_str(rb_eSocket, msg));
 #else
-    rb_raise(rb_eSocket, "%s: %s", reason, gai_strerror(error));
+    VALUE msg = rb_sprintf("%s: %s", reason, gai_strerror(error));
 #endif
+
+    StringValue(msg);
+    VALUE self = rb_class_new_instance(1, &msg, rb_eResolution);
+    rb_ivar_set(self, id_error_code, INT2NUM(error));
+    rb_exc_raise(self);
 }
 
 #if defined __APPLE__
@@ -412,7 +418,7 @@ rsock_write_nonblock(VALUE sock, VALUE str, VALUE ex)
         if (e == EWOULDBLOCK || e == EAGAIN) {
             if (ex == Qfalse) return sym_wait_writable;
             rb_readwrite_syserr_fail(RB_IO_WAIT_WRITABLE, e,
-                                    "write would block");
+                                     "write would block");
         }
         rb_syserr_fail_path(e, fptr->pathv);
     }
@@ -453,9 +459,9 @@ rsock_socket(int domain, int type, int proto)
 
     fd = rsock_socket0(domain, type, proto);
     if (fd < 0) {
-       if (rb_gc_for_fd(errno)) {
-           fd = rsock_socket0(domain, type, proto);
-       }
+        if (rb_gc_for_fd(errno)) {
+            fd = rsock_socket0(domain, type, proto);
+        }
     }
     if (0 <= fd)
         rb_update_max_fd(fd);
@@ -512,10 +518,10 @@ wait_connectable(int fd, struct timeval *timeout)
 
     switch (sockerr) {
       case 0:
-      /*
-       * be defensive in case some platforms set SO_ERROR on the original,
-       * interrupted connect()
-       */
+        /*
+         * be defensive in case some platforms set SO_ERROR on the original,
+         * interrupted connect()
+         */
 
         /* when the connection timed out, no errno is set and revents is 0. */
         if (timeout && revents == 0) {
@@ -701,9 +707,9 @@ rsock_s_accept(VALUE klass, VALUE io, struct sockaddr *sockaddr, socklen_t *len)
     RB_IO_POINTER(io, fptr);
 
     struct accept_arg accept_arg = {
-      .fd = fptr->fd,
-      .sockaddr = sockaddr,
-      .len = len
+        .fd = fptr->fd,
+        .sockaddr = sockaddr,
+        .len = len
     };
 
     int retry = 0, peer;
@@ -750,10 +756,10 @@ rsock_getfamily(rb_io_t *fptr)
     if (cached) {
         switch (cached) {
 #ifdef AF_UNIX
-            case FMODE_UNIX: return AF_UNIX;
+          case FMODE_UNIX: return AF_UNIX;
 #endif
-            case FMODE_INET: return AF_INET;
-            case FMODE_INET6: return AF_INET6;
+          case FMODE_INET: return AF_INET;
+          case FMODE_INET6: return AF_INET6;
         }
     }
 
@@ -772,6 +778,12 @@ rsock_getfamily(rb_io_t *fptr)
     return ss.addr.sa_family;
 }
 
+static VALUE
+sock_resolv_error_code(VALUE self)
+{
+    return rb_attr_get(self, id_error_code);
+}
+
 void
 rsock_init_socket_init(void)
 {
@@ -779,6 +791,8 @@ rsock_init_socket_init(void)
      * SocketError is the error class for socket.
      */
     rb_eSocket = rb_define_class("SocketError", rb_eStandardError);
+    rb_eResolution = rb_define_class_under(rb_cSocket, "ResolutionError", rb_eSocket);
+    rb_define_method(rb_eResolution, "error_code", sock_resolv_error_code, 0);
     rsock_init_ipsocket();
     rsock_init_tcpsocket();
     rsock_init_tcpserver();
@@ -791,6 +805,8 @@ rsock_init_socket_init(void)
     rsock_init_addrinfo();
     rsock_init_sockifaddr();
     rsock_init_socket_constants();
+
+    id_error_code = rb_intern_const("error_code");
 
 #undef rb_intern
     sym_wait_readable = ID2SYM(rb_intern("wait_readable"));

@@ -139,6 +139,15 @@ typedef unsigned int rb_atomic_t;
     rbimpl_atomic_cas(&(var), (oldval), (newval))
 
 /**
+ * Atomic load. This loads `var` with an atomic intrinsic and returns
+ * its value.
+ *
+ * @param var  A variable of ::rb_atomic_t
+ * @return     What was stored in `var`j
+ */
+#define RUBY_ATOMIC_LOAD(var) rbimpl_atomic_load(&(var))
+
+/**
  * Identical to #RUBY_ATOMIC_EXCHANGE, except for the return type.
  *
  * @param   var   A variable of ::rb_atomic_t.
@@ -278,6 +287,17 @@ typedef unsigned int rb_atomic_t;
  */
 #define RUBY_ATOMIC_PTR_EXCHANGE(var, val) \
     RBIMPL_CAST(rbimpl_atomic_ptr_exchange((void **)&(var), (void *)val))
+
+/**
+ * Identical to #RUBY_ATOMIC_LOAD, except it expects its arguments are `void*`.
+ * There are cases where ::rb_atomic_t is 32bit while `void*` is 64bit.  This
+ * should be used for size related operations to support such platforms.
+ *
+ * @param   var        A variable of `void*`
+ * @return             The value of `var` (without tearing)
+ */
+#define RUBY_ATOMIC_PTR_LOAD(var) \
+    RBIMPL_CAST(rbimpl_atomic_ptr_load((void **)&var))
 
 /**
  * Identical to #RUBY_ATOMIC_CAS, except it expects its arguments are `void*`.
@@ -749,6 +769,21 @@ rbimpl_atomic_value_exchange(volatile VALUE *ptr, VALUE val)
 RBIMPL_ATTR_ARTIFICIAL()
 RBIMPL_ATTR_NOALIAS()
 RBIMPL_ATTR_NONNULL((1))
+static inline rb_atomic_t
+rbimpl_atomic_load(volatile rb_atomic_t *ptr)
+{
+#if 0
+
+#elif defined(HAVE_GCC_ATOMIC_BUILTINS)
+    return __atomic_load_n(ptr, __ATOMIC_SEQ_CST);
+#else
+    return rbimpl_atomic_fetch_add(ptr, 0);
+#endif
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_NOALIAS()
+RBIMPL_ATTR_NONNULL((1))
 static inline void
 rbimpl_atomic_set(volatile rb_atomic_t *ptr, rb_atomic_t val)
 {
@@ -869,6 +904,22 @@ rbimpl_atomic_ptr_cas(void **ptr, const void *oldval, const void *newval)
     const size_t sret = rbimpl_atomic_size_cas(sptr, sold, snew);
     return RBIMPL_CAST((void *)sret);
 
+#endif
+}
+
+RBIMPL_ATTR_ARTIFICIAL()
+RBIMPL_ATTR_NOALIAS()
+RBIMPL_ATTR_NONNULL((1))
+static inline void *
+rbimpl_atomic_ptr_load(void **ptr)
+{
+#if 0
+
+#elif defined(HAVE_GCC_ATOMIC_BUILTINS)
+    return __atomic_load_n(ptr, __ATOMIC_SEQ_CST);
+#else
+    void *val = *ptr;
+    return rbimpl_atomic_ptr_cas(ptr, val, val);
 #endif
 }
 

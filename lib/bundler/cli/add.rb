@@ -28,9 +28,9 @@ module Bundler
       dependencies = gems.map {|g| Bundler::Dependency.new(g, version, options) }
 
       Injector.inject(dependencies,
-        :conservative_versioning => options[:version].nil?, # Perform conservative versioning only when version is not specified
-        :optimistic => options[:optimistic],
-        :strict => options[:strict])
+        conservative_versioning: options[:version].nil?, # Perform conservative versioning only when version is not specified
+        optimistic: options[:optimistic],
+        strict: options[:strict])
     end
 
     def validate_options!

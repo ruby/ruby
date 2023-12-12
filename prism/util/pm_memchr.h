@@ -7,7 +7,7 @@
 #define PRISM_MEMCHR_H
 
 #include "prism/defines.h"
-#include "prism/enc/pm_encoding.h"
+#include "prism/encoding.h"
 
 #include <stddef.h>
 
@@ -24,6 +24,6 @@
  * @return A pointer to the first occurrence of the character in the source
  *     string, or NULL if no such character exists.
  */
-void * pm_memchr(const void *source, int character, size_t number, bool encoding_changed, pm_encoding_t *encoding);
+void * pm_memchr(const void *source, int character, size_t number, bool encoding_changed, const pm_encoding_t *encoding);
 
 #endif

@@ -420,7 +420,14 @@ rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating)
     else if (FL_TEST_RAW((VALUE)iseq, ISEQ_USE_COMPILE_DATA)) {
         const struct iseq_compile_data *const compile_data = ISEQ_COMPILE_DATA(iseq);
 
-        rb_iseq_mark_and_move_insn_storage(compile_data->insn.storage_head);
+        if (!reference_updating) {
+            /* The operands in each instruction needs to be pinned because
+             * if auto-compaction runs in iseq_set_sequence, then the objects
+             * could exist on the generated_iseq buffer, which would not be
+             * reference updated which can lead to T_MOVED (and subsequently
+             * T_NONE) objects on the iseq. */
+            rb_iseq_mark_and_pin_insn_storage(compile_data->insn.storage_head);
+        }
 
         rb_gc_mark_and_move((VALUE *)&compile_data->err_info);
         rb_gc_mark_and_move((VALUE *)&compile_data->catch_table_ary);
@@ -974,7 +981,8 @@ VALUE rb_iseq_compile_prism_node(rb_iseq_t * iseq, pm_scope_node_t *scope_node, 
  * Initialize an rb_code_location_t with a prism location.
  */
 static void
-pm_code_location(rb_code_location_t *code_location, const pm_newline_list_t *newline_list, const pm_location_t *location) {
+pm_code_location(rb_code_location_t *code_location, const pm_newline_list_t *newline_list, const pm_location_t *location)
+{
     pm_line_column_t start = pm_newline_list_line_column(newline_list, location->start);
     pm_line_column_t end = pm_newline_list_line_column(newline_list, location->end);
 
@@ -1419,7 +1427,8 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
 }
 
 static void
-iseqw_s_compile_prism_compile(pm_parser_t *parser, VALUE opt, rb_iseq_t *iseq, VALUE file, VALUE path, int first_lineno) {
+iseqw_s_compile_prism_compile(pm_parser_t *parser, VALUE opt, rb_iseq_t *iseq, VALUE file, VALUE path, int first_lineno)
+{
     pm_node_t *node = pm_parse(parser);
     rb_code_location_t code_location;
     pm_code_location(&code_location, &parser->newline_list, &node->location);
@@ -3439,6 +3448,12 @@ typedef struct insn_data_struct {
     void *trace_encoded_insn;
 } insn_data_t;
 static insn_data_t insn_data[VM_INSTRUCTION_SIZE/2];
+
+void
+rb_free_encoded_insn_data(void)
+{
+    st_free_table(encoded_insn_data);
+}
 
 void
 rb_vm_encoded_insn_data_table_init(void)

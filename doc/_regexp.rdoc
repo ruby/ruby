@@ -838,13 +838,17 @@ These are also commonly used:
 - <tt>/\p{Emoji}/</tt>: Unicode emoji.
 - <tt>/\p{Graph}/</tt>: Non-blank character
   (excludes spaces, control characters, and similar).
-- <tt>/\p{Word}/</tt>: A member of one of the following Unicode character
-  categories (see below):
+- <tt>/\p{Word}/</tt>: A member in one of these Unicode character
+  categories (see below) or having one of these Unicode properties:
 
-  - +Mark+ (+M+).
-  - +Letter+ (+L+).
-  - +Number+ (+N+)
-  - <tt>Connector Punctuation</tt> (+Pc+).
+  - Unicode categories:
+    - +Mark+ (+M+).
+    - <tt>Decimal Number</tt> (+Nd+)
+    - <tt>Connector Punctuation</tt> (+Pc+).
+
+  - Unicode properties:
+    - +Alpha+
+    - <tt>Join_Control</tt>
 
 - <tt>/\p{ASCII}/</tt>: A character in the ASCII character set.
 - <tt>/\p{Any}/</tt>: Any Unicode character (including unassigned characters).
@@ -993,12 +997,16 @@ Ruby also supports these (non-POSIX) bracket expressions:
 
 - <tt>/[[:ascii:]]/</tt>: Matches a character in the ASCII character set.
 - <tt>/[[:word:]]/</tt>: Matches a character in one of these Unicode character
-  categories (see below):
+  categories or having one of these Unicode properties:
 
-  - +Mark+ (+M+).
-  - +Letter+ (+L+).
-  - +Number+ (+N+)
-  - <tt>Connector Punctuation</tt> (+Pc+).
+  - Unicode categories:
+    - +Mark+ (+M+).
+    - <tt>Decimal Number</tt> (+Nd+)
+    - <tt>Connector Punctuation</tt> (+Pc+).
+
+  - Unicode properties:
+    - +Alpha+
+    - <tt>Join_Control</tt>
 
 === Comments
 

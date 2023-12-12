@@ -16,5 +16,5 @@ gem "rspec-mocks", "~> 3.12"
 gem "uri", "~> 0.12.0"
 
 group :doc do
-  gem "ronn", "~> 0.7.3", :platform => :ruby
+  gem "nronn", "~> 0.11.1", platform: :ruby
 end

@@ -3,6 +3,9 @@ require 'json/version'
 require 'json/generic_object'
 
 module JSON
+  NOT_SET = Object.new.freeze
+  private_constant :NOT_SET
+
   class << self
     # :call-seq:
     #   JSON[object] -> new_array or new_string
@@ -572,13 +575,13 @@ module JSON
     # Sets or returns the default options for the JSON.dump method.
     # Initially:
     #   opts = JSON.dump_default_options
-    #   opts # => {:max_nesting=>false, :allow_nan=>true, :escape_slash=>false}
+    #   opts # => {:max_nesting=>false, :allow_nan=>true, :script_safe=>false}
     attr_accessor :dump_default_options
   end
   self.dump_default_options = {
     :max_nesting => false,
     :allow_nan   => true,
-    :escape_slash => false,
+    :script_safe => false,
   }
 
   # :call-seq:
@@ -608,16 +611,18 @@ module JSON
   #   puts File.read(path)
   # Output:
   #   {"foo":[0,1],"bar":{"baz":2,"bat":3},"bam":"bad"}
-  def dump(obj, anIO = nil, limit = nil)
-    if anIO and limit.nil?
-      anIO = anIO.to_io if anIO.respond_to?(:to_io)
-      unless anIO.respond_to?(:write)
-        limit = anIO
-        anIO = nil
-      end
+  def dump(obj, anIO = nil, limit = nil, kwargs = nil)
+    io_limit_opt = [anIO, limit, kwargs].compact
+    kwargs = io_limit_opt.pop if io_limit_opt.last.is_a?(Hash)
+    anIO, limit = io_limit_opt
+    if anIO.respond_to?(:to_io)
+      anIO = anIO.to_io
+    elsif limit.nil? && !anIO.respond_to?(:write)
+      anIO, limit = nil, anIO
     end
     opts = JSON.dump_default_options
     opts = opts.merge(:max_nesting => limit) if limit
+    opts = merge_dump_options(opts, **kwargs) if kwargs
     result = generate(obj, opts)
     if anIO
       anIO.write result
@@ -632,6 +637,15 @@ module JSON
   # Encodes string using String.encode.
   def self.iconv(to, from, string)
     string.encode(to, from)
+  end
+
+  def merge_dump_options(opts, strict: NOT_SET)
+    opts = opts.merge(strict: strict) if NOT_SET != strict
+    opts
+  end
+
+  class << self
+    private :merge_dump_options
   end
 end
 

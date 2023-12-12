@@ -29,4 +29,7 @@ void rb_enc_set_base(const char *name, const char *orig);
 int rb_enc_set_dummy(int index);
 PUREFUNC(int rb_data_is_encoding(VALUE obj));
 
+/* vm.c */
+void rb_free_global_enc_table(void);
+
 #endif /* INTERNAL_ENCODING_H */

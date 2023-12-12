@@ -89,7 +89,7 @@ RSpec.describe "bundle cache with git" do
     ref = git.ref_for("main", 11)
     expect(ref).not_to eq(old_ref)
 
-    bundle "update", :all => true
+    bundle "update", all: true
     bundle :cache
 
     expect(bundled_app("vendor/cache/foo-1.0-#{ref}")).to exist
@@ -164,8 +164,8 @@ RSpec.describe "bundle cache with git" do
       s.add_dependency "submodule"
     end
 
-    sys_exec "git submodule add #{lib_path("submodule-1.0")} submodule-1.0", :dir => lib_path("has_submodule-1.0")
-    sys_exec "git commit -m \"submodulator\"", :dir => lib_path("has_submodule-1.0")
+    sys_exec "git submodule add #{lib_path("submodule-1.0")} submodule-1.0", dir: lib_path("has_submodule-1.0")
+    sys_exec "git commit -m \"submodulator\"", dir: lib_path("has_submodule-1.0")
 
     install_gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -216,7 +216,7 @@ RSpec.describe "bundle cache with git" do
     simulate_new_machine
     with_path_as "" do
       bundle "config set deployment true"
-      bundle :install, :local => true
+      bundle :install, local: true
       expect(the_bundle).to include_gem "foo 1.0"
     end
   end
@@ -266,8 +266,8 @@ RSpec.describe "bundle cache with git" do
     # Verify that the compilation worked and the result is in $LOAD_PATH by simply attempting
     # to require it; that should make sure this spec does not break if the load path behaviour
     # is changed.
-    bundle :install, :local => true
-    ruby <<~R, :raise_on_error => false
+    bundle :install, local: true
+    ruby <<~R, raise_on_error: false
       require 'bundler/setup'
       require 'foo_c'
     R

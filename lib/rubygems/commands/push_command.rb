@@ -30,7 +30,7 @@ The push command will use ~/.gem/credentials to authenticate to a server, but yo
   end
 
   def initialize
-    super "push", "Push a gem up to the gem server", :host => host
+    super "push", "Push a gem up to the gem server", host: host
 
     @user_defined_host = false
 

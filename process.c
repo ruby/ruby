@@ -594,17 +594,17 @@ struct rb_process_status {
 static const rb_data_type_t rb_process_status_type = {
     .wrap_struct_name = "Process::Status",
     .function = {
+        .dmark = NULL,
         .dfree = RUBY_DEFAULT_FREE,
+        .dsize = NULL,
     },
-    .data = NULL,
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 static VALUE
 rb_process_status_allocate(VALUE klass)
 {
-    struct rb_process_status *data = NULL;
-
+    struct rb_process_status *data;
     return TypedData_Make_Struct(klass, struct rb_process_status, &rb_process_status_type, data);
 }
 
@@ -646,8 +646,7 @@ VALUE
 rb_process_status_new(rb_pid_t pid, int status, int error)
 {
     VALUE last_status = rb_process_status_allocate(rb_cProcessStatus);
-
-    struct rb_process_status *data = RTYPEDDATA_DATA(last_status);
+    struct rb_process_status *data = RTYPEDDATA_GET_DATA(last_status);
     data->pid = pid;
     data->status = status;
     data->error = error;
@@ -660,7 +659,8 @@ static VALUE
 process_status_dump(VALUE status)
 {
     VALUE dump = rb_class_new_instance(0, 0, rb_cObject);
-    struct rb_process_status *data = RTYPEDDATA_DATA(status);
+    struct rb_process_status *data;
+    TypedData_Get_Struct(status, struct rb_process_status, &rb_process_status_type, data);
     if (data->pid) {
         rb_ivar_set(dump, id_status, INT2NUM(data->status));
         rb_ivar_set(dump, id_pid, PIDT2NUM(data->pid));
@@ -698,16 +698,18 @@ rb_last_status_clear(void)
 }
 
 static rb_pid_t
-pst_pid(VALUE pst)
+pst_pid(VALUE status)
 {
-    struct rb_process_status *data = RTYPEDDATA_DATA(pst);
+    struct rb_process_status *data;
+    TypedData_Get_Struct(status, struct rb_process_status, &rb_process_status_type, data);
     return data->pid;
 }
 
 static int
-pst_status(VALUE pst)
+pst_status(VALUE status)
 {
-    struct rb_process_status *data = RTYPEDDATA_DATA(pst);
+    struct rb_process_status *data;
+    TypedData_Get_Struct(status, struct rb_process_status, &rb_process_status_type, data);
     return data->status;
 }
 
@@ -1834,7 +1836,7 @@ memsize_exec_arg(const void *ptr)
 static const rb_data_type_t exec_arg_data_type = {
     "exec_arg",
     {mark_exec_arg, RUBY_TYPED_DEFAULT_FREE, memsize_exec_arg},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
 #ifdef _WIN32
@@ -2778,6 +2780,7 @@ rb_execarg_setenv(VALUE execarg_obj, VALUE env)
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
     env = !NIL_P(env) ? rb_check_exec_env(env, &eargp->path_env) : Qfalse;
     eargp->env_modification = env;
+    RB_GC_GUARD(execarg_obj);
 }
 
 static int
@@ -2975,6 +2978,7 @@ execarg_parent_end(VALUE execarg_obj)
     }
 
     errno = err;
+    RB_GC_GUARD(execarg_obj);
     return execarg_obj;
 }
 
@@ -4666,7 +4670,7 @@ do_spawn_process(VALUE arg)
 
     rb_execarg_parent_start1(argp->execarg);
 
-    return (VALUE)rb_spawn_process(DATA_PTR(argp->execarg),
+    return (VALUE)rb_spawn_process(rb_execarg_get(argp->execarg),
                                    argp->errmsg.ptr, argp->errmsg.buflen);
 }
 
