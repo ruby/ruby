@@ -507,14 +507,8 @@ module Bundler
       Gem::Specification.stubs_for(name).map(&:to_spec)
     end
 
-    if Gem::Specification.respond_to?(:default_stubs)
-      def default_stubs
-        Gem::Specification.default_stubs("*.gemspec")
-      end
-    else
-      def default_stubs
-        Gem::Specification.send(:default_stubs, "*.gemspec")
-      end
+    def default_stubs
+      Gem::Specification.default_stubs("*.gemspec")
     end
   end
 
