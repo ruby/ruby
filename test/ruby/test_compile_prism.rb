@@ -659,6 +659,7 @@ module Prism
       assert_prism_eval("{ to_s: }")
       assert_prism_eval("{ Prism: }")
       assert_prism_eval("[ Prism: [:b, :c]]")
+      assert_prism_eval("{ [] => 1}")
     end
 
     def test_ImplicitNode
