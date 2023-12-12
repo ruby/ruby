@@ -2219,7 +2219,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 }
             }
             ADD_LABEL(ret, eend);
-            PM_NOP;
+            if (!popped) {
+                PM_NOP;
+            }
             pm_statements_node_t *statements = begin_node->ensure_clause->statements;
             if (statements) {
                 PM_COMPILE((pm_node_t *)statements);
@@ -3919,6 +3921,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             ADD_LABEL(ret, splabel);
 
+            if (next_node->arguments) {
+                PM_COMPILE_NOT_POPPED((pm_node_t *)next_node->arguments);
+            }
+            else {
+                PM_PUTNIL;
+            }
             pm_add_ensure_iseq(ret, iseq, 0, src, scope_node);
 
             ADD_ADJUST(ret, &dummy_line_node, ISEQ_COMPILE_DATA(iseq)->redo_label);
