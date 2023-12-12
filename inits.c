@@ -51,7 +51,6 @@ rb_call_inits(void)
     CALL(Dir);
     CALL(Time);
     CALL(Random);
-    CALL(signal);
     CALL(load);
     CALL(Proc);
     CALL(Binding);
@@ -63,6 +62,7 @@ rb_call_inits(void)
     CALL(VM);
     CALL(ISeq);
     CALL(Thread);
+    CALL(signal);
     CALL(Fiber_Scheduler);
     CALL(process);
     CALL(Cont);
