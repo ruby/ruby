@@ -483,7 +483,12 @@ class TestParse < Test::Unit::TestCase
         assert_equal([4,5], eval("(1..9).select {|n| true if #{code}}"))
       else
         assert_raise_with_message(ArgumentError, /bad value for range/, code) {
-          eval("[4].each {|n| true if #{code}}")
+          verbose_bak, $VERBOSE = $VERBOSE, nil # disable "warning: possibly useless use of a literal in void context"
+          begin
+            eval("[4].each {|n| true if #{code}}")
+          ensure
+            $VERBOSE = verbose_bak
+          end
         }
       end
     end
@@ -1081,7 +1086,12 @@ x = __ENCODING__
       if pass
         assert_equal(token, eval("#{code} =~ #{token.dump}; a"))
       else
-        assert_nil(eval("#{code} =~ #{token.dump}; defined?(a)"), code)
+        verbose_bak, $VERBOSE = $VERBOSE, nil # disable "warning: possibly useless use of a literal in void context"
+        begin
+          assert_nil(eval("#{code} =~ #{token.dump}; defined?(a)"), code)
+        ensure
+          $VERBOSE = verbose_bak
+        end
       end
     end
   end
