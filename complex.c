@@ -800,11 +800,13 @@ rb_complex_imag(VALUE self)
 
 /*
  * call-seq:
- *    -cmp  ->  complex
+ *   -complex -> new_complex
  *
- * Returns negation of the value.
+ * Returns the negation of +self+, which is the negation of each of its parts:
  *
- *    -Complex(1, 2)  #=> (-1-2i)
+ *   -Complex(1, 2)   # => (-1-2i)
+ *   -Complex(-1, -2) # => (1+2i)
+ *
  */
 VALUE
 rb_complex_uminus(VALUE self)
@@ -816,15 +818,16 @@ rb_complex_uminus(VALUE self)
 
 /*
  * call-seq:
- *    cmp + numeric  ->  complex
+ *   complex + numeric -> new_complex
  *
- * Performs addition.
+ * Returns the sum of +self+ and +numeric+:
  *
- *    Complex(2, 3)  + Complex(2, 3)   #=> (4+6i)
- *    Complex(900)   + Complex(1)      #=> (901+0i)
- *    Complex(-2, 9) + Complex(-9, 2)  #=> (-11+11i)
- *    Complex(9, 8)  + 4               #=> (13+8i)
- *    Complex(20, 9) + 9.8             #=> (29.8+9i)
+ *   Complex(2, 3)  + Complex(2, 3)  # => (4+6i)
+ *   Complex(900)   + Complex(1)     # => (901+0i)
+ *   Complex(-2, 9) + Complex(-9, 2) # => (-11+11i)
+ *   Complex(9, 8)  + 4              # => (13+8i)
+ *   Complex(20, 9) + 9.8            # => (29.8+9i)
+ *
  */
 VALUE
 rb_complex_plus(VALUE self, VALUE other)
@@ -850,15 +853,16 @@ rb_complex_plus(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    cmp - numeric  ->  complex
+ *   complex - numeric -> new_complex
  *
- * Performs subtraction.
+ * Returns the difference of +self+ and +numeric+:
  *
- *    Complex(2, 3)  - Complex(2, 3)   #=> (0+0i)
- *    Complex(900)   - Complex(1)      #=> (899+0i)
- *    Complex(-2, 9) - Complex(-9, 2)  #=> (7+7i)
- *    Complex(9, 8)  - 4               #=> (5+8i)
- *    Complex(20, 9) - 9.8             #=> (10.2+9i)
+ *   Complex(2, 3)  - Complex(2, 3)  # => (0+0i)
+ *   Complex(900)   - Complex(1)     # => (899+0i)
+ *   Complex(-2, 9) - Complex(-9, 2) # => (7+7i)
+ *   Complex(9, 8)  - 4              # => (5+8i)
+ *   Complex(20, 9) - 9.8            # => (10.2+9i)
+ *
  */
 VALUE
 rb_complex_minus(VALUE self, VALUE other)
@@ -910,15 +914,16 @@ comp_mul(VALUE areal, VALUE aimag, VALUE breal, VALUE bimag, VALUE *real, VALUE 
 
 /*
  * call-seq:
- *    cmp * numeric  ->  complex
+ *   complex * numeric -> new_complex
  *
- * Performs multiplication.
+ * Returns the product of +self+ and +numeric+:
  *
- *    Complex(2, 3)  * Complex(2, 3)   #=> (-5+12i)
- *    Complex(900)   * Complex(1)      #=> (900+0i)
- *    Complex(-2, 9) * Complex(-9, 2)  #=> (0-85i)
- *    Complex(9, 8)  * 4               #=> (36+32i)
- *    Complex(20, 9) * 9.8             #=> (196.0+88.2i)
+ *   Complex(2, 3)  * Complex(2, 3)  # => (-5+12i)
+ *   Complex(900)   * Complex(1)     # => (900+0i)
+ *   Complex(-2, 9) * Complex(-9, 2) # => (0-85i)
+ *   Complex(9, 8)  * 4              # => (36+32i)
+ *   Complex(20, 9) * 9.8            # => (196.0+88.2i)
+ *
  */
 VALUE
 rb_complex_mul(VALUE self, VALUE other)
@@ -985,16 +990,17 @@ f_divide(VALUE self, VALUE other,
 
 /*
  * call-seq:
- *    cmp / numeric     ->  complex
- *    cmp.quo(numeric)  ->  complex
+ *   complex / numeric -> new_complex
  *
- * Performs division.
+ * Returns the quotient of +self+ and +numeric+:
  *
- *    Complex(2, 3)  / Complex(2, 3)   #=> ((1/1)+(0/1)*i)
- *    Complex(900)   / Complex(1)      #=> ((900/1)+(0/1)*i)
- *    Complex(-2, 9) / Complex(-9, 2)  #=> ((36/85)-(77/85)*i)
- *    Complex(9, 8)  / 4               #=> ((9/4)+(2/1)*i)
- *    Complex(20, 9) / 9.8             #=> (2.0408163265306123+0.9183673469387754i)
+ *   Complex(2, 3)  / Complex(2, 3)  # => ((1/1)+(0/1)*i)
+ *   Complex(900)   / Complex(1)     # => ((900/1)+(0/1)*i)
+ *   Complex(-2, 9) / Complex(-9, 2) # => ((36/85)-(77/85)*i)
+ *   Complex(9, 8)  / 4              # => ((9/4)+(2/1)*i)
+ *   Complex(20, 9) / 9.8            # => (2.0408163265306123+0.9183673469387754i)
+ *
+ * Complex#quo is an alias for Complex#/.
  */
 VALUE
 rb_complex_div(VALUE self, VALUE other)
