@@ -642,6 +642,8 @@ WARN
     assert_equal(42, obj.foo(42))
     assert_equal(42, obj.foo(2, _: 0))
     assert_equal(2, obj.foo(x: 2, _: 0))
+  ensure
+    self.class.remove_method(:foo)
   end
 
   def test_duplicated_opt_kw
@@ -1776,6 +1778,8 @@ eom
     assert_warn(/`it`/)       {eval('0.times { it; it = 1; it }')}
     assert_no_warning(/`it`/) {eval('0.times { it = 1; it }')}
     assert_no_warning(/`it`/) {eval('it = 1; 0.times { it }')}
+  ensure
+    self.class.remove_method(:foo)
   end
 
   def test_value_expr_in_condition
