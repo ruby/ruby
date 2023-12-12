@@ -7079,6 +7079,7 @@ gc_pin(rb_objspace_t *objspace, VALUE obj)
     if (UNLIKELY(objspace->flags.during_compacting)) {
         if (LIKELY(during_gc)) {
             if (!MARKED_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj)) {
+                GC_ASSERT(GET_HEAP_PAGE(obj)->pinned_slots <= GET_HEAP_PAGE(obj)->total_slots);
                 GET_HEAP_PAGE(obj)->pinned_slots++;
                 MARK_IN_BITMAP(GET_HEAP_PINNED_BITS(obj), obj);
             }
@@ -8333,6 +8334,14 @@ gc_marks_start(rb_objspace_t *objspace, int full_mark)
             rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
             rgengc_mark_and_rememberset_clear(objspace, heap);
             heap_move_pooled_pages_to_free_pages(heap);
+
+            if (objspace->flags.during_compacting) {
+                struct heap_page *page = NULL;
+
+                ccan_list_for_each(&heap->pages, page, page_node) {
+                    page->pinned_slots = 0;
+                }
+            }
         }
     }
     else {
