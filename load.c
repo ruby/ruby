@@ -963,7 +963,7 @@ static VALUE rb_require_string_internal(VALUE fname, bool resurrect);
  *  found.  If the file named cannot be found, a LoadError will be raised.
  *
  *  For Ruby extensions the filename given may use ".so" or ".o".  For example,
- *  on Windows the socket extension is "socket.dll" and
+ *  on macOS the socket extension is "socket.bundle" and
  *  <code>require 'socket.so'</code> will load the socket extension.
  *
  *  The absolute path of the loaded file is added to
