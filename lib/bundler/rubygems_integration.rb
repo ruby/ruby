@@ -446,7 +446,6 @@ module Bundler
 
         begin
           remote_gem_path = uri + "gems/#{gem_file_name}"
-          remote_gem_path = remote_gem_path.to_s if provides?("< 3.2.0.rc.1")
 
           SharedHelpers.filesystem_access(local_gem_path) do
             fetcher.cache_update_path remote_gem_path, local_gem_path
