@@ -592,9 +592,6 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "when requiring fileutils after does not show redefinition warnings", :realworld do
-    dependency_installer_loads_fileutils = ruby "require 'rubygems/dependency_installer'; puts $LOADED_FEATURES.grep(/fileutils/)", raise_on_error: false
-    skip "does not work if rubygems/dependency_installer loads fileutils, which happens until rubygems 3.2.0" unless dependency_installer_loads_fileutils.empty?
-
     Dir.mkdir tmp("path_without_gemfile")
 
     default_fileutils_version = ruby "gem 'fileutils', '< 999999'; require 'fileutils'; puts FileUtils::VERSION", raise_on_error: false
@@ -605,9 +602,6 @@ RSpec.describe "bundler/inline#gemfile" do
     realworld_system_gems "pathname --version 0.2.0"
 
     realworld_system_gems "timeout uri" # this spec uses net/http which requires these default gems
-
-    # on prerelease rubies, a required_rubygems_version constraint is added by RubyGems to the resolution, causing Molinillo to load the `set` gem
-    realworld_system_gems "set --version 1.0.3" if Gem.ruby_version.prerelease?
 
     script <<-RUBY, dir: tmp("path_without_gemfile"), env: { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }
       require "bundler/inline"
