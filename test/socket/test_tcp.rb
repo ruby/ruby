@@ -260,7 +260,7 @@ class TestSocket_TCPSocket < Test::Unit::TestCase
           # Make a request which will hit our fake DNS swerver - this needs to be in _another_
           # process because glibc will cache resolver info across the fork otherwise.
           load_path_args = $LOAD_PATH.flat_map { ['-I', _1] }
-          _, _, status = Open3.capture3('/proc/self/exe', *load_path_args, '-rsocket', '-e', <<~RUBY)
+          Open3.capture3('/proc/self/exe', *load_path_args, '-rsocket', '-e', <<~RUBY)
             TCPSocket.open('www.example.com', 4444)
           RUBY
 
