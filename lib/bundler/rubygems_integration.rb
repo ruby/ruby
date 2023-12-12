@@ -43,18 +43,6 @@ module Bundler
       Gem.loaded_specs[name]
     end
 
-    def add_to_load_path(paths)
-      return Gem.add_to_load_path(*paths) if Gem.respond_to?(:add_to_load_path)
-
-      if insert_index = Gem.load_path_insert_index
-        # Gem directories must come after -I and ENV['RUBYLIB']
-        $LOAD_PATH.insert(insert_index, *paths)
-      else
-        # We are probably testing in core, -I and RUBYLIB don't apply
-        $LOAD_PATH.unshift(*paths)
-      end
-    end
-
     def mark_loaded(spec)
       if spec.respond_to?(:activated=)
         current = Gem.loaded_specs[spec.name]
@@ -116,16 +104,6 @@ module Bundler
       Gem::Util.inflate(obj)
     end
 
-    def correct_for_windows_path(path)
-      if Gem::Util.respond_to?(:correct_for_windows_path)
-        Gem::Util.correct_for_windows_path(path)
-      elsif path[0].chr == "/" && path[1].chr =~ /[a-z]/i && path[2].chr == ":"
-        path[1..-1]
-      else
-        path
-      end
-    end
-
     def gem_dir
       Gem.dir
     end
@@ -181,18 +159,6 @@ module Bundler
     def loaded_gem_paths
       loaded_gem_paths = Gem.loaded_specs.map {|_, s| s.full_require_paths }
       loaded_gem_paths.flatten
-    end
-
-    def load_plugins
-      Gem.load_plugins if Gem.respond_to?(:load_plugins)
-    end
-
-    def load_plugin_files(files)
-      Gem.load_plugin_files(files) if Gem.respond_to?(:load_plugin_files)
-    end
-
-    def load_env_plugins
-      Gem.load_env_plugins if Gem.respond_to?(:load_env_plugins)
     end
 
     def ui=(obj)
