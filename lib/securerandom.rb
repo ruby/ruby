@@ -53,6 +53,8 @@ module SecureRandom
 
     private
 
+    # :stopdoc:
+
     # Implementation using OpenSSL
     def gen_random_openssl(n)
       return OpenSSL::Random.random_bytes(n)
@@ -83,6 +85,8 @@ module SecureRandom
         alias gen_random gen_random_openssl
       end
     end
+
+    # :startdoc:
 
     # Generate random data bytes for Random::Formatter
     public :gen_random
