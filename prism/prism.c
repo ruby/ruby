@@ -3348,9 +3348,15 @@ static inline void
 pm_hash_node_elements_append(pm_hash_node_t *hash, pm_node_t *element) {
     pm_node_list_append(&hash->elements, element);
 
-    // If the element is not a static literal, then the hash is not a static
-    // literal. Turn that flag off.
-    if (PM_NODE_TYPE_P(element, PM_ARRAY_NODE) || PM_NODE_TYPE_P(element, PM_HASH_NODE) || PM_NODE_TYPE_P(element, PM_RANGE_NODE) || !PM_NODE_FLAG_P(element, PM_NODE_FLAG_STATIC_LITERAL)) {
+    bool static_literal = PM_NODE_TYPE_P(element, PM_ASSOC_NODE);
+    if (static_literal) {
+        pm_assoc_node_t *assoc = (pm_assoc_node_t *) element;
+        static_literal = !PM_NODE_TYPE_P(assoc->key, PM_ARRAY_NODE) && !PM_NODE_TYPE_P(assoc->key, PM_HASH_NODE) && !PM_NODE_TYPE_P(assoc->key, PM_RANGE_NODE);
+        static_literal = static_literal && PM_NODE_FLAG_P(assoc->key, PM_NODE_FLAG_STATIC_LITERAL);
+        static_literal = static_literal && PM_NODE_FLAG_P(assoc, PM_NODE_FLAG_STATIC_LITERAL);
+    }
+
+    if (!static_literal) {
         pm_node_flag_unset((pm_node_t *)hash, PM_NODE_FLAG_STATIC_LITERAL);
     }
 }
