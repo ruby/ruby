@@ -4,17 +4,12 @@ require "rubygems" unless defined?(Gem)
 
 module Bundler
   class RubygemsIntegration
-    if defined?(Gem::Ext::Builder::CHDIR_MONITOR)
-      EXT_LOCK = Gem::Ext::Builder::CHDIR_MONITOR
-    else
-      require "monitor"
+    require "monitor"
 
-      EXT_LOCK = Monitor.new
-    end
+    EXT_LOCK = Monitor.new
 
     def initialize
       @replaced_methods = {}
-      backport_ext_builder_monitor
     end
 
     def version
@@ -476,25 +471,6 @@ module Bundler
     def all_specs
       Gem::Specification.stubs.map do |stub|
         StubSpecification.from_stub(stub)
-      end
-    end
-
-    def backport_ext_builder_monitor
-      # So we can avoid requiring "rubygems/ext" in its entirety
-      Gem.module_eval <<-RUBY, __FILE__, __LINE__ + 1
-        module Ext
-        end
-      RUBY
-
-      require "rubygems/ext/builder"
-
-      Gem::Ext::Builder.class_eval do
-        unless const_defined?(:CHDIR_MONITOR)
-          const_set(:CHDIR_MONITOR, EXT_LOCK)
-        end
-
-        remove_const(:CHDIR_MUTEX) if const_defined?(:CHDIR_MUTEX)
-        const_set(:CHDIR_MUTEX, const_get(:CHDIR_MONITOR))
       end
     end
 
