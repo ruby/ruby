@@ -264,15 +264,15 @@ module IRB
     attr_reader :prompt_mode
     # Standard IRB prompt.
     #
-    # See IRB@Customizing+the+IRB+Prompt for more information.
+    # See {Custom Prompts}[rdoc-ref:IRB@Custom+Prompts] for more information.
     attr_accessor :prompt_i
     # IRB prompt for continuated strings.
     #
-    # See IRB@Customizing+the+IRB+Prompt for more information.
+    # See {Custom Prompts}[rdoc-ref:IRB@Custom+Prompts] for more information.
     attr_accessor :prompt_s
     # IRB prompt for continuated statement. (e.g. immediately after an +if+)
     #
-    # See IRB@Customizing+the+IRB+Prompt for more information.
+    # See {Custom Prompts}[rdoc-ref:IRB@Custom+Prompts] for more information.
     attr_accessor :prompt_c
 
     # TODO: Remove this when developing v2.0
@@ -394,8 +394,6 @@ module IRB
     # The default value is 16.
     #
     # Can also be set using the +--back-trace-limit+ command line option.
-    #
-    # See IRB@Command+line+options for more command line options.
     attr_accessor :back_trace_limit
 
     # User-defined IRB command aliases
@@ -463,7 +461,7 @@ module IRB
 
     # Sets the +mode+ of the prompt in this context.
     #
-    # See IRB@Customizing+the+IRB+Prompt for more information.
+    # See {Custom Prompts}[rdoc-ref:IRB@Custom+Prompts] for more information.
     def prompt_mode=(mode)
       @prompt_mode = mode
       pconf = IRB.conf[:PROMPT][mode]
@@ -501,8 +499,6 @@ module IRB
     #
     # Can also be set using the +--inspect+ and +--noinspect+ command line
     # options.
-    #
-    # See IRB@Command+line+options for more command line options.
     def inspect_mode=(opt)
 
       if i = Inspector::INSPECTORS[opt]
