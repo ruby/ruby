@@ -993,18 +993,7 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                   else {
                     // We need to first figure out if all elements of the KeywordHashNode are AssocNodes
                     // with static literal keys.
-                    // TODO: Figure this out from flags on the KeywordHashNode when Prism supports it
-                    bool all_keys_static_literals = true;
-
-                    for (size_t i = 0; i < len; i++) {
-                        pm_assoc_node_t *assoc = (pm_assoc_node_t *)keyword_arg->elements.nodes[i];
-                        pm_node_t *key = assoc->key;
-
-                        if (!key || !PM_NODE_TYPE_P(key, PM_ASSOC_NODE) || !pm_static_literal_p(key)) {
-                            all_keys_static_literals = false;
-                            break;
-                        }
-                    }
+                    bool all_keys_static_literals = PM_NODE_FLAG_P(keyword_arg, PM_KEYWORD_HASH_NODE_FLAGS_STATIC_KEYS);
 
                     if (all_keys_static_literals) {
                         // If they are all static literal keys then we can pass them as keyword arguments.
