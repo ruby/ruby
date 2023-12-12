@@ -433,7 +433,7 @@ module SyncDefaultGems
       |ext/.*\.java
       |rakelib/.*
       |test/(?:lib|fixtures)/.*
-      |tool/.*
+      |tool/(?!bundler/).*
     )\z]mx
 
     # Gem-specific patterns
