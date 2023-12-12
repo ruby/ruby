@@ -1412,6 +1412,12 @@ module Prism
       CODE
 
       assert_prism_eval(<<-CODE)
+        foo = Object.new
+        def foo.[]=(k,v); 42; end
+        foo.[]=(1,2)
+      CODE
+
+      assert_prism_eval(<<-CODE)
         def self.prism_opt_var_trail_hash(a = nil, *b, c, **d); end
         prism_opt_var_trail_hash("a")
         prism_opt_var_trail_hash("a", c: 1)

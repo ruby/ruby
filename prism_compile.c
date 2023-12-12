@@ -1802,6 +1802,8 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     int lineno = (int)pm_newline_list_line_column(&newline_list, ((pm_node_t *)call_node)->location.start).line;
     NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
 
+    pm_node_t *pm_node = (pm_node_t *)call_node;
+
     int flags = 0;
     struct rb_callinfo_kwarg *kw_arg = NULL;
 
@@ -1817,7 +1819,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         ISEQ_COMPILE_DATA(iseq)->current_block = block_iseq;
     }
     else {
-        if (((pm_node_t *)call_node)->flags & PM_CALL_NODE_FLAGS_VARIABLE_CALL) {
+        if (pm_node->flags & PM_CALL_NODE_FLAGS_VARIABLE_CALL) {
             flags |= VM_CALL_VCALL;
         }
 
@@ -1835,15 +1837,15 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         flags |= VM_CALL_FCALL;
     }
 
-    if (rb_is_attrset_id(method_id)) {
+    if (pm_node->flags & PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) {
         ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(orig_argc + 1));
-    }
-
-    ADD_SEND_R(ret, &dummy_line_node, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
-
-    if (rb_is_attrset_id(method_id)) {
+        ADD_SEND_R(ret, &dummy_line_node, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
         PM_POP;
     }
+    else {
+        ADD_SEND_R(ret, &dummy_line_node, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
+    }
+
 
     PM_POP_IF_POPPED;
 }
@@ -2293,7 +2295,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_call_node_t *call_node = (pm_call_node_t *) node;
 
         ID method_id = pm_constant_id_lookup(scope_node, call_node->name);
-        if (rb_is_attrset_id(method_id)) {
+        if (node->flags & PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) {
             PM_PUTNIL;
         }
 
