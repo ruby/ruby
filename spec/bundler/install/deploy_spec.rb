@@ -237,7 +237,9 @@ RSpec.describe "install in deployment or frozen mode" do
 
     it "installs gems by default to vendor/bundle" do
       bundle "config set deployment true"
-      bundle "install"
+      expect do
+        bundle "install"
+      end.not_to change { bundled_app_lock.mtime }
       expect(out).to include("vendor/bundle")
     end
 
@@ -256,11 +258,15 @@ RSpec.describe "install in deployment or frozen mode" do
 
     it "works with the `frozen` setting" do
       bundle "config set frozen true"
-      bundle "install"
+      expect do
+        bundle "install"
+      end.not_to change { bundled_app_lock.mtime }
     end
 
     it "works with BUNDLE_FROZEN if you didn't change anything" do
-      bundle :install, env: { "BUNDLE_FROZEN" => "true" }
+      expect do
+        bundle :install, env: { "BUNDLE_FROZEN" => "true" }
+      end.not_to change { bundled_app_lock.mtime }
     end
 
     it "explodes with the `deployment` setting if you make a change and don't check in the lockfile" do

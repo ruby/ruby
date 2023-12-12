@@ -343,7 +343,8 @@ module Bundler
       preserve_unknown_sections ||= !updating_major && (Bundler.frozen_bundle? || !(unlocking? || @unlocking_bundler))
 
       if file && File.exist?(file) && lockfiles_equal?(@lockfile_contents, contents, preserve_unknown_sections)
-        SharedHelpers.filesystem_access(file) {|p| FileUtils.touch(p) }
+        return if Bundler.frozen_bundle?
+        SharedHelpers.filesystem_access(file) { FileUtils.touch(file) }
         return
       end
 
