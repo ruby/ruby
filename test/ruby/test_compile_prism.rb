@@ -1543,6 +1543,22 @@ module Prism
     def test_ForwardingSuperNode
       assert_prism_eval("class Forwarding; def to_s; super; end; end")
       assert_prism_eval("class Forwarding; def eval(code); super { code }; end; end")
+      assert_prism_eval(<<-CODE)
+        class A
+          def initialize(a, b)
+          end
+        end
+
+        class B < A
+          attr_reader :res
+          def initialize(a, b, *)
+            super
+            @res = [a, b]
+          end
+        end
+
+        B.new(1, 2).res
+      CODE
     end
 
     def test_KeywordHashNode
