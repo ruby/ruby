@@ -1419,6 +1419,18 @@ module Prism
         prism_opt_var_trail_hash("a", "b", "c", c: 1)
         prism_opt_var_trail_hash("a", "b", "c", "c" => 0, c: 1)
       CODE
+
+      assert_prism_eval(<<-CODE)
+        class PrivateMethod
+          def initialize
+            self.instance_var
+          end
+          private
+          attr_accessor :instance_var
+        end
+        pm = PrivateMethod.new
+        pm.send(:instance_var)
+      CODE
     end
 
     def test_CallAndWriteNode
