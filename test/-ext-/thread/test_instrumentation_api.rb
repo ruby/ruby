@@ -58,7 +58,6 @@ class TestThreadInstrumentation < Test::Unit::TestCase
     threads = nil
     full_timeline = record do
       threads = threaded_cpu_bound_work(1.0)
-      expected = cpu_bound_work(1.0)
       results = threads.map(&:value)
       results.each do |r|
         refute_equal false, r
