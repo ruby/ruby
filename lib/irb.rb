@@ -238,7 +238,7 @@ require_relative "irb/pager"
 # By default, \IRB defines several command aliases:
 #
 #   irb(main):001> conf.command_aliases
-#   => {:"$"=>:show_source, :"@"=>:whereami, :break=>:irb_break, :catch=>:irb_catch, :next=>:irb_next}
+#   => {:"$"=>:show_source, :"@"=>:whereami}
 #
 # You can change the initial aliases in the configuration file with:
 #
@@ -698,45 +698,6 @@ require_relative "irb/pager"
 # and <tt>$DEBUG</tt> to +true+;
 # these have no effect on \IRB output.
 #
-# === Tracer
-#
-# \IRB's tracer feature controls whether a stack trace
-# is to be displayed for each command.
-#
-# Command-line option <tt>-tracer</tt> sets
-# variable <tt>IRB.conf[:USE_TRACER]</tt> to +true+
-# (the default is +false+).
-#
-# You can specify a back trace limit, +n+,
-# which specifies that the back trace for an exception
-# can contain no more than 2 * +n+ entries,
-# consisting at most of the first +n+ and last +n+ entries.
-#
-# The current limit is returned
-# by the configuration method <tt>conf.back_trace_limit</tt>.
-#
-# The initial limit is 16:
-#
-#   irb(main):001> conf.back_trace_limit
-#   => 16
-#
-# You can change the initial limit with command-line option
-# <tt>--back-trace-limit _value_</tt>:
-#
-#   irb --back-trace-limit 32
-#
-# You can also change the initial limit in the configuration file
-# (which overrides the command-line option above):
-#
-#   IRB.conf[:BACK_TRACE_LIMIT] = 24
-#
-# You can change the current limit at any time
-# with configuration method <tt>conf.back_trace_limit=</tt>.
-#
-# Note that the _current_ limit <i>may not</i>
-# be changed by <tt>IRB.conf[:BACK_TRACE_LIMIT] = '_value_'</tt>
-# in the \IRB session.
-#
 # === Warnings
 #
 # Command-line option <tt>-w</tt> suppresses warnings.
@@ -779,12 +740,6 @@ require_relative "irb/pager"
 #     IRB.conf[:LOAD_MODULES] = %w[csv, json]
 #
 # Note that the configuration file entry overrides the command-line options.
-#
-# :stopdoc:
-# === \IRB Loader
-#
-# IRB.conf[:USE_LOADER]
-# :startdoc:
 #
 # === RI Documentation Directories
 #
@@ -850,12 +805,6 @@ require_relative "irb/pager"
 #
 #   IRB.conf[:AP_NAME] = 'my_ap_name'
 #
-# :stopdoc:
-# === \IRB Library Directory
-#
-# IRB.conf[:IRB_LIB_PATH]
-# :startdoc:
-#
 # === Configuration Monitor
 #
 # You can monitor changes to the configuration by assigning a proc
@@ -872,12 +821,6 @@ require_relative "irb/pager"
 # IRB.conf[:LC_MESSAGES]
 # :startdoc:
 #
-# :stopdoc:
-# === Single-IRB Mode
-#
-# IRB.conf[:SINGLE_IRB]
-# :startdoc:
-#
 # === Encodings
 #
 # Command-line option <tt>-E _ex_[:_in_]</tt>
@@ -887,49 +830,7 @@ require_relative "irb/pager"
 #
 # === Commands
 #
-# The following commands are available on IRB.
-#
-# * cwws
-#   * Show the current workspace.
-# * cb, cws, chws
-#   * Change the current workspace to an object.
-# * bindings, workspaces
-#   * Show workspaces.
-# * pushb, pushws
-#   * Push an object to the workspace stack.
-# * popb, popws
-#   * Pop a workspace from the workspace stack.
-# * load
-#   * Load a Ruby file.
-# * require
-#   * Require a Ruby file.
-# * source
-#   * Loads a given file in the current session.
-# * irb
-#   * Start a child IRB.
-# * jobs
-#   * List of current sessions.
-# * fg
-#   * Switches to the session of the given number.
-# * kill
-#   * Kills the session with the given number.
-# * help
-#   * Enter the mode to look up RI documents.
-# * irb_info
-#   * Show information about IRB.
-# * ls
-#   * Show methods, constants, and variables.
-#     -g [query] or -G [query] allows you to filter out the output.
-# * measure
-#   * measure enables the mode to measure processing time. measure :off disables it.
-# * $, show_source
-#   * Show the source code of a given method or constant.
-# * @, whereami
-#   * Show the source code around binding.irb again.
-# * debug
-#   * Start the debugger of debug.gem.
-# * break, delete, next, step, continue, finish, backtrace, info, catch
-#   * Start the debugger of debug.gem and run the command on it.
+# Please use the `show_cmds` command to see the list of available commands.
 #
 # === IRB Sessions
 #
@@ -937,27 +838,6 @@ require_relative "irb/pager"
 #
 # You can create new sessions with Irb.irb, and get a list of current sessions
 # with the +jobs+ command in the prompt.
-#
-# ==== \IRB-Specific Commands
-#
-# JobManager provides commands to handle the current sessions:
-#
-#   jobs    # List of current sessions
-#   fg      # Switches to the session of the given number
-#   kill    # Kills the session with the given number
-#
-# The +exit+ command, or ::irb_exit, will quit the current session and call any
-# exit hooks with IRB.irb_at_exit.
-#
-# A few commands for loading files within the session are also available:
-#
-# +source+::
-#   Loads a given file in the current session and displays the source lines,
-#   see IrbLoader#source_file
-# +irb_load+::
-#   Loads the given file similarly to Kernel#load, see IrbLoader#irb_load
-# +irb_require+::
-#   Loads the given file similarly to Kernel#require
 #
 # ==== Configuration
 #
@@ -985,67 +865,6 @@ require_relative "irb/pager"
 #   Returns the evaluation value at the given line number, +line_no+.
 #   If +line_no+ is a negative, the return value +line_no+ many lines before
 #   the most recent return value.
-#
-# ==== Example using IRB Sessions
-#
-#   # invoke a new session
-#   irb(main):001:0> irb
-#   # list open sessions
-#   irb.1(main):001:0> jobs
-#     #0->irb on main (#<Thread:0x400fb7e4> : stop)
-#     #1->irb#1 on main (#<Thread:0x40125d64> : running)
-#
-#   # change the active session
-#   irb.1(main):002:0> fg 0
-#   # define class Foo in top-level session
-#   irb(main):002:0> class Foo;end
-#   # invoke a new session with the context of Foo
-#   irb(main):003:0> irb Foo
-#   # define Foo#foo
-#   irb.2(Foo):001:0> def foo
-#   irb.2(Foo):002:1>   print 1
-#   irb.2(Foo):003:1> end
-#
-#   # change the active session
-#   irb.2(Foo):004:0> fg 0
-#   # list open sessions
-#   irb(main):004:0> jobs
-#     #0->irb on main (#<Thread:0x400fb7e4> : running)
-#     #1->irb#1 on main (#<Thread:0x40125d64> : stop)
-#     #2->irb#2 on Foo (#<Thread:0x4011d54c> : stop)
-#   # check if Foo#foo is available
-#   irb(main):005:0> Foo.instance_methods #=> [:foo, ...]
-#
-#   # change the active session
-#   irb(main):006:0> fg 2
-#   # define Foo#bar in the context of Foo
-#   irb.2(Foo):005:0> def bar
-#   irb.2(Foo):006:1>  print "bar"
-#   irb.2(Foo):007:1> end
-#   irb.2(Foo):010:0>  Foo.instance_methods #=> [:bar, :foo, ...]
-#
-#   # change the active session
-#   irb.2(Foo):011:0> fg 0
-#   irb(main):007:0> f = Foo.new  #=> #<Foo:0x4010af3c>
-#   # invoke a new session with the context of f (instance of Foo)
-#   irb(main):008:0> irb f
-#   # list open sessions
-#   irb.3(<Foo:0x4010af3c>):001:0> jobs
-#     #0->irb on main (#<Thread:0x400fb7e4> : stop)
-#     #1->irb#1 on main (#<Thread:0x40125d64> : stop)
-#     #2->irb#2 on Foo (#<Thread:0x4011d54c> : stop)
-#     #3->irb#3 on #<Foo:0x4010af3c> (#<Thread:0x4010a1e0> : running)
-#   # evaluate f.foo
-#   irb.3(<Foo:0x4010af3c>):002:0> foo #=> 1 => nil
-#   # evaluate f.bar
-#   irb.3(<Foo:0x4010af3c>):003:0> bar #=> bar => nil
-#   # kill jobs 1, 2, and 3
-#   irb.3(<Foo:0x4010af3c>):004:0> kill 1, 2, 3
-#   # list open sessions, should only include main session
-#   irb(main):009:0> jobs
-#     #0->irb on main (#<Thread:0x400fb7e4> : running)
-#   # quit irb
-#   irb(main):010:0> exit
 #
 # == Restrictions
 #
