@@ -34,6 +34,7 @@ module Prism
       assert_prism_eval("0b10")
       assert_prism_eval("0o10")
       assert_prism_eval("010")
+      assert_prism_eval("(0o00)")
     end
 
     def test_NilNode
