@@ -1680,7 +1680,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
             ADD_INSN3(ret, &dummy_line_node, defined, INT2FIX(DEFINED_METHOD), rb_id2sym(method_id), PUSH_VAL(DEFINED_METHOD));
         }
         else {
-            ADD_INSN(ret, &dummy_line_node, putself);
+            PM_PUTSELF;
             if (explicit_receiver) {
                 PM_DUP;
             }
@@ -1782,11 +1782,11 @@ pm_compile_defined_expr(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *con
 
     if (lfinish[1]) {
         ELEM_INSERT_NEXT(last, &new_insn_body(iseq, &dummy_line_node, BIN(putnil), 0)->link);
-        ADD_INSN(ret, &dummy_line_node, swap);
+        PM_SWAP;
         if (lfinish[2]) {
             ADD_LABEL(ret, lfinish[2]);
         }
-        ADD_INSN(ret, &dummy_line_node, pop);
+        PM_POP;
         ADD_LABEL(ret, lfinish[1]);
 
     }
@@ -2964,7 +2964,105 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)block);
         }
 
-        ADD_INSN2(ret, &dummy_line_node, invokesuper, new_callinfo(iseq, 0, 0, flag, NULL, block != NULL), block);
+        DECL_ANCHOR(args);
+        INIT_ANCHOR(args);
+
+        struct rb_iseq_constant_body *const body = ISEQ_BODY(iseq);
+
+        const rb_iseq_t *local_iseq = body->local_iseq;
+        const struct rb_iseq_constant_body *const local_body = ISEQ_BODY(local_iseq);
+
+        int argc = 0;
+        int depth = get_lvar_level(iseq);
+
+        if (local_body->param.flags.has_lead) {
+            /* required arguments */
+            for (int i = 0; i < local_body->param.lead_num; i++) {
+                int idx = local_body->local_table_size - i;
+                ADD_GETLOCAL(args, &dummy_line_node, idx, depth);
+            }
+            argc += local_body->param.lead_num;
+        }
+
+
+        if (local_body->param.flags.has_opt) {
+            /* optional arguments */
+            for (int j = 0; j < local_body->param.opt_num; j++) {
+                int idx = local_body->local_table_size - (argc + j);
+                ADD_GETLOCAL(args, &dummy_line_node, idx, depth);
+            }
+            argc += local_body->param.opt_num;
+        }
+
+        if (local_body->param.flags.has_rest) {
+            /* rest argument */
+            int idx = local_body->local_table_size - local_body->param.rest_start;
+            ADD_GETLOCAL(args, &dummy_line_node, idx, depth);
+            ADD_INSN1(args, &dummy_line_node, splatarray, Qfalse);
+
+            argc = local_body->param.rest_start + 1;
+            flag |= VM_CALL_ARGS_SPLAT;
+        }
+
+        if (local_body->param.flags.has_post) {
+            /* post arguments */
+            int post_len = local_body->param.post_num;
+            int post_start = local_body->param.post_start;
+
+            int j = 0;
+            for (; j < post_len; j++) {
+                int idx = local_body->local_table_size - (post_start + j);
+                ADD_GETLOCAL(args, &dummy_line_node, idx, depth);
+            }
+
+            if (local_body->param.flags.has_rest) {
+                // argc remains unchanged from rest branch
+                ADD_INSN1(args, &dummy_line_node, newarray, INT2FIX(j));
+                ADD_INSN (args, &dummy_line_node, concatarray);
+            }
+            else {
+                argc = post_len + post_start;
+            }
+        }
+
+        const struct rb_iseq_param_keyword *const local_keyword = local_body->param.keyword;
+        if (local_body->param.flags.has_kw) {
+            int local_size = local_body->local_table_size;
+            argc++;
+
+            ADD_INSN1(args, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+
+            if (local_body->param.flags.has_kwrest) {
+                int idx = local_body->local_table_size - local_keyword->rest_start;
+                ADD_GETLOCAL(args, &dummy_line_node, idx, depth);
+                if (local_keyword->num > 0) {
+                    ADD_SEND(args, &dummy_line_node, rb_intern("dup"), INT2FIX(0));
+                    flag |= VM_CALL_KW_SPLAT_MUT;
+                }
+            }
+            else {
+                ADD_INSN1(args, &dummy_line_node, newhash, INT2FIX(0));
+                flag |= VM_CALL_KW_SPLAT_MUT;
+            }
+            int i = 0;
+            for (; i < local_keyword->num; ++i) {
+                ID id = local_keyword->table[i];
+                int idx = local_size - get_local_var_idx(local_iseq, id);
+                ADD_INSN1(args, &dummy_line_node, putobject, ID2SYM(id));
+                ADD_GETLOCAL(args, &dummy_line_node, idx, depth);
+            }
+            ADD_SEND(args, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(i * 2 + 1));
+            flag |= VM_CALL_KW_SPLAT;
+        }
+        else if (local_body->param.flags.has_kwrest) {
+            int idx = local_body->local_table_size - local_keyword->rest_start;
+            ADD_GETLOCAL(args, &dummy_line_node, idx, depth);
+            argc++;
+            flag |= VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT;
+        }
+
+        ADD_SEQ(ret, args);
+        ADD_INSN2(ret, &dummy_line_node, invokesuper, new_callinfo(iseq, 0, argc, flag, NULL, block != NULL), block);
         PM_POP_IF_POPPED;
         return;
       }
@@ -5031,7 +5129,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         INIT_ANCHOR(args);
         ISEQ_COMPILE_DATA(iseq)->current_block = NULL;
 
-        ADD_INSN(ret, &dummy_line_node, putself);
+        PM_PUTSELF;
 
         int argc = pm_setup_args(super_node->arguments, &flags, &keywords, iseq, ret, src, popped, scope_node, dummy_line_node, parser);
 
