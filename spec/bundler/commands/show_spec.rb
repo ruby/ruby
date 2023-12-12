@@ -57,7 +57,7 @@ RSpec.describe "bundle show", bundler: "< 3" do
     it "prints path of all gems in bundle sorted by name" do
       bundle "show --paths"
 
-      expect(out).to include(default_bundle_path("gems", "rake-13.0.1").to_s)
+      expect(out).to include(default_bundle_path("gems", "rake-#{rake_version}").to_s)
       expect(out).to include(default_bundle_path("gems", "rails-2.3.2").to_s)
 
       # Gem names are the last component of their path.

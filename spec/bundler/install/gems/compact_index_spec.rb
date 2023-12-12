@@ -1050,7 +1050,7 @@ RSpec.describe "compact index api" do
       source "#{source_uri}"
       gem "rails"
     G
-    deps = [Gem::Dependency.new("rake", "= 13.0.1"),
+    deps = [Gem::Dependency.new("rake", "= #{rake_version}"),
             Gem::Dependency.new("actionpack", "= 2.3.2"),
             Gem::Dependency.new("activerecord", "= 2.3.2"),
             Gem::Dependency.new("actionmailer", "= 2.3.2"),

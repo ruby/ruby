@@ -421,11 +421,11 @@ RSpec.describe "bundler/inline#gemfile" do
     script <<-RUBY
       gemfile(true) do
         source "#{file_uri_for(gem_repo1)}"
-        gem "rake", "~> 13.0"
+        gem "rake", "#{rake_version}"
       end
     RUBY
 
-    expect(out).to include("Installing rake 13.0")
+    expect(out).to include("Installing rake #{rake_version}")
     expect(out).not_to include("was 11.3.0")
     expect(err).to be_empty
   end
