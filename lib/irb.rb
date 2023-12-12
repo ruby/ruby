@@ -23,7 +23,7 @@ require_relative "irb/debug"
 require_relative "irb/pager"
 
 # == \IRB
-# 
+#
 # \Module \IRB ("Interactive Ruby") provides a shell-like interface
 # that supports user interaction with the Ruby interpreter.
 #
