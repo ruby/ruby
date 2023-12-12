@@ -201,9 +201,8 @@ module Random::Formatter
   #
   # The result contains 74 random bits (9.25 random bytes).
   #
-  # Note that this method cannot be made reproducable with Kernel#srand, which
-  # can only affect the random bits.  The sorted bits will still be based on
-  # Process.clock_gettime.
+  # Note that this method cannot be made reproducable because its output
+  # includes not only random bits but also timestamp.
   #
   # See draft-ietf-uuidrev-rfc4122bis[https://datatracker.ietf.org/doc/draft-ietf-uuidrev-rfc4122bis/]
   # for details of UUIDv7.
