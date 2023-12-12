@@ -102,6 +102,8 @@ module Gem::BUNDLED_GEMS
     else
       return
     end
+    # Warning feature is not working correctly with Bootsnap
+    return if caller_locations(2,1)[0]&.path.match?(/bootsnap/)
     return if WARNED[name]
     WARNED[name] = true
     if gem == true
