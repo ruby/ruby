@@ -1254,10 +1254,8 @@ fchdir_restore(VALUE v)
  *   Dir.pwd # => "/var/spool/mail"
  *   dir  = Dir.new('/usr')
  *   fd = dir.fileno
- *   Dir.fchdir(fd) do
- *     Dir.pwd # => "/usr"
- *   end
- *   Dir.pwd # => "/var/spool/mail"
+ *   Dir.fchdir(fd)
+ *   Dir.pwd # => "/usr"
  *
  * With a block, temporarily changes the working directory:
  *
@@ -1271,7 +1269,9 @@ fchdir_restore(VALUE v)
  *
  *   Dir.chdir('/var/spool/mail')
  *   Dir.pwd # => "/var/spool/mail"
- *   Dir.chdir('/tmp') do
+ *   dir  = Dir.new('/tmp')
+ *   fd = dir.fileno
+ *   Dir.fchdir(fd) do
  *     Dir.pwd # => "/tmp"
  *   end
  *   Dir.pwd # => "/var/spool/mail"
