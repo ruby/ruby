@@ -4616,7 +4616,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             const VALUE default_values = rb_ary_hidden_new(1);
             const VALUE complex_mark = rb_str_tmp_new(0);
 
-            ID *ids = calloc(keywords_list->size, sizeof(ID));
+            ID *ids = xcalloc(keywords_list->size, sizeof(ID));
 
             for (size_t i = 0; i < keywords_list->size; i++, local_index++) {
                 pm_node_t *keyword_parameter_node = keywords_list->nodes[i];
