@@ -1128,6 +1128,8 @@ module Prism
       assert_prism_eval("[].tap { _1 }")
 
       assert_prism_eval("[].each { |a,| }")
+      assert_prism_eval("[[1, 2, 3]].map { |_, _, a| a }")
+      assert_prism_eval("[[1, 2, 3]].map { |_, a| a }")
 
       assert_prism_eval("[[]].map { |a| a }")
       assert_prism_eval("[[]].map { |a| a }")
