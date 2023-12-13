@@ -3916,26 +3916,26 @@ AC_SUBST(CARGO_BUILD_ARGS)dnl for selecting Rust build profiles
 AC_SUBST(YJIT_LIBS)dnl for optionally building the Rust parts of YJIT
 AC_SUBST(YJIT_OBJ)dnl for optionally building the C parts of YJIT
 
-dnl Currently, RJIT only supports Unix x86_64 platforms.
+dnl RJIT supports only x86_64 platforms, but allows arm64/aarch64 for custom JITs.
 RJIT_TARGET_OK=no
 AS_IF([test "$cross_compiling" = no],
     AS_CASE(["$target_cpu-$target_os"],
         [*android*], [
             RJIT_TARGET_OK=no
         ],
-        [x86_64-darwin*], [
+        [arm64-darwin*|aarch64-darwin*|x86_64-darwin*], [
             RJIT_TARGET_OK=yes
         ],
-        [x86_64-*linux*], [
+        [arm64-*linux*|aarch64-*linux*|x86_64-*linux*], [
             RJIT_TARGET_OK=yes
         ],
-        [x86_64-*bsd*], [
+        [arm64-*bsd*|aarch64-*bsd*|x86_64-*bsd*], [
             RJIT_TARGET_OK=yes
         ]
     )
 )
 
-dnl Build RJIT on Unix x86_64 platforms or if --enable-rjit is specified.
+dnl Build RJIT on supported platforms or if --enable-rjit is specified.
 AC_ARG_ENABLE(rjit,
     AS_HELP_STRING([--enable-rjit],
     [enable pure-Ruby JIT compiler. enabled by default on Unix x86_64 platforms]),
