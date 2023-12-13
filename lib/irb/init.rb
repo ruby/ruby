@@ -215,6 +215,7 @@ module IRB # :nodoc:
       added = [:TIME, IRB.conf[:MEASURE_PROC][:TIME], arg]
     end
     if added
+      IRB.conf[:MEASURE] = true
       found = IRB.conf[:MEASURE_CALLBACKS].find{ |m| m[0] == added[0] && m[2] == added[2] }
       if found
         # already added
@@ -235,6 +236,7 @@ module IRB # :nodoc:
       type_sym = type.upcase.to_sym
       IRB.conf[:MEASURE_CALLBACKS].reject!{ |t, | t == type_sym }
     end
+    IRB.conf[:MEASURE] = nil if IRB.conf[:MEASURE_CALLBACKS].empty?
   end
 
   def IRB.init_error
