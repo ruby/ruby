@@ -4479,6 +4479,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
 
         if (requireds_list) {
+            int number_of_anonymous_locals = 0;
             for (size_t i = 0; i < requireds_list->size; i++) {
                 // For each MultiTargetNode, we're going to have one
                 // additional anonymous local not represented in the locals table
@@ -4487,6 +4488,19 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 if (PM_NODE_TYPE_P(required, PM_MULTI_TARGET_NODE)) {
                     table_size++;
                 }
+                else if (PM_NODE_TYPE_P(required, PM_REQUIRED_PARAMETER_NODE)) {
+                    if (pm_constant_id_lookup(scope_node, ((pm_required_parameter_node_t *)required)->name) == rb_intern("_")) {
+                        number_of_anonymous_locals++;
+                    }
+                }
+            }
+
+            // For each anonymous local we also want to increase the size
+            // of the locals table. Prism's locals table accounts for all
+            // anonymous locals as 1, so we need to increase the table size
+            // by the number of anonymous locals - 1
+            if (number_of_anonymous_locals > 1) {
+                table_size += (number_of_anonymous_locals - 1);
             }
         }
 
