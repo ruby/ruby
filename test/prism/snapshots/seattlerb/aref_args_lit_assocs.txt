@@ -9,7 +9,7 @@
             │   ├── @ IntegerNode (location: (1,1)-(1,2))
             │   │   └── flags: decimal
             │   └── @ KeywordHashNode (location: (1,4)-(1,10))
-            │       ├── flags: static_keys
+            │       ├── flags: ∅
             │       └── elements: (length: 1)
             │           └── @ AssocNode (location: (1,4)-(1,10))
             │               ├── key:

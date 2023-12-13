@@ -3949,7 +3949,7 @@ pm_keyword_hash_node_create(pm_parser_t *parser) {
         .base = {
             .type = PM_KEYWORD_HASH_NODE,
             .location = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
-            .flags = PM_KEYWORD_HASH_NODE_FLAGS_STATIC_KEYS
+            .flags = PM_KEYWORD_HASH_NODE_FLAGS_SYMBOL_KEYS
         },
         .elements = { 0 }
     };
@@ -3962,10 +3962,11 @@ pm_keyword_hash_node_create(pm_parser_t *parser) {
  */
 static void
 pm_keyword_hash_node_elements_append(pm_keyword_hash_node_t *hash, pm_node_t *element) {
-    // If the element being added is not an AssocNode or does not have a static literal key, then
+    // If the element being added is not an AssocNode or does not have a symbol key, then
     // we want to turn the STATIC_KEYS flag off.
-    if (!PM_NODE_TYPE_P(element, PM_ASSOC_NODE) || !PM_NODE_FLAG_P(((pm_assoc_node_t *) element)->key, PM_NODE_FLAG_STATIC_LITERAL)) {
-        pm_node_flag_unset((pm_node_t *)hash, PM_KEYWORD_HASH_NODE_FLAGS_STATIC_KEYS);
+    // TODO: Rename the flag to SYMBOL_KEYS instead.
+    if (!PM_NODE_TYPE_P(element, PM_ASSOC_NODE) || !PM_NODE_TYPE_P(((pm_assoc_node_t *) element)->key, PM_SYMBOL_NODE)) {
+        pm_node_flag_unset((pm_node_t *)hash, PM_KEYWORD_HASH_NODE_FLAGS_SYMBOL_KEYS);
     }
 
     pm_node_list_append(&hash->elements, element);
