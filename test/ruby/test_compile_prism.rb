@@ -1178,6 +1178,12 @@ module Prism
         end
         prism_test_def_node(10, b: 3)
       CODE
+      assert_prism_eval(<<-CODE)
+        def self.prism_test_def_node(a: [])
+          a
+        end
+        prism_test_def_node
+      CODE
 
       # block arguments
       assert_prism_eval("def self.prism_test_def_node(&block) block end; prism_test_def_node{}.class")
