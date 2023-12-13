@@ -1632,6 +1632,7 @@ module Prism
 
     def test_KeywordRestParameterNode
       assert_prism_eval("def prism_test_keyword_rest_parameter_node(a, **b); end")
+      assert_prism_eval("Object.tap { |**| }")
     end
 
     def test_NoKeywordsParameterNode

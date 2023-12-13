@@ -4427,6 +4427,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_node_list_t *posts_list = NULL;
         pm_node_list_t *requireds_list = NULL;
         pm_node_list_t *block_locals = NULL;
+        pm_node_t *block_param_keyword_rest = NULL;
 
         struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
@@ -4436,6 +4437,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 pm_block_parameters_node_t *block_parameters_node = (pm_block_parameters_node_t *)scope_node->parameters;
                 parameters_node = block_parameters_node->parameters;
                 block_locals = &block_parameters_node->locals;
+                if (parameters_node) {
+                    block_param_keyword_rest = parameters_node->keyword_rest;
+                }
                 break;
               }
               case PM_PARAMETERS_NODE: {
@@ -4506,6 +4510,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     table_size++;
                 }
             }
+        }
+
+        if (block_param_keyword_rest) {
+            table_size++;
         }
 
         // When we have a `...` as the keyword_rest, it's a forwarding_parameter_node and
@@ -4761,6 +4769,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                   // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
                   //                                                             ^^^
                   case PM_KEYWORD_REST_PARAMETER_NODE: {
+                        pm_keyword_rest_parameter_node_t *kw_rest_node = (pm_keyword_rest_parameter_node_t *)parameters_node->keyword_rest;
                         if (!body->param.flags.has_kw) {
                             body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
                         }
@@ -4768,11 +4777,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                         keyword->rest_start = local_index;
                         body->param.flags.has_kwrest = true;
 
-                        pm_constant_id_t constant_id = ((pm_keyword_rest_parameter_node_t *)parameters_node->keyword_rest)->name;
+                        pm_constant_id_t constant_id = kw_rest_node->name;
                         if (constant_id) {
                             pm_insert_local_index(constant_id, local_index, index_lookup_table, local_table_for_iseq, scope_node);
-                            local_index++;
                         }
+                        else {
+                            local_table_for_iseq->ids[local_index] = idPow;
+                        }
+                        local_index++;
                         break;
                   }
                   // def foo(...)
