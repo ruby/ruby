@@ -165,15 +165,17 @@ The machine code generated for a given method can be printed by adding `puts Rub
 YJIT supports all command-line options supported by upstream CRuby, but also adds a few YJIT-specific options:
 
 - `--yjit`: enable YJIT (disabled by default)
+- `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 64 MiB)
 - `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function (default 30)
 - `--yjit-cold-threshold=N`: number of global calls after which an ISEQ is considered cold and not
-compiled, lower values mean less code is compiled (default 200K)
-- `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 64 MiB)
-- `--yjit-code-gc`: enable code GC (disabled by default as of Ruby 3.3)
+  compiled, lower values mean less code is compiled (default 200K)
 - `--yjit-stats`: print statistics after the execution of a program (incurs a run-time cost)
 - `--yjit-stats=quiet`: gather statistics while running a program but don't print them. Stats are accessible through `RubyVM::YJIT.runtime_stats`. (incurs a run-time cost)
+- `--yjit-disable`: disable YJIT despite other `--yjit*` flags for lazily enabling it with `RubyVM::YJIT.enable`
+- `--yjit-code-gc`: enable code GC (disabled by default as of Ruby 3.3)
+- `--yjit-perf`: enable frame pointers and profiling with the `perf` tool
 - `--yjit-trace-exits`: produce a Marshal dump of backtraces from specific exits. Automatically enables `--yjit-stats`
-- `--yjit-perf`: Enable frame pointers and profiling with the `perf` tool
+- `--yjit-trace-exits-sample-rate=N`: trace exit locations only every Nth occurrence
 
 Note that there is also an environment variable `RUBY_YJIT_ENABLE` which can be used to enable YJIT.
 This can be useful for some deployment scripts where specifying an extra command-line option to Ruby is not practical.
