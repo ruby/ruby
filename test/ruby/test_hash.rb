@@ -1909,6 +1909,14 @@ class TestHashOnly < Test::Unit::TestCase
     end;
   end
 
+  def test_compare_by_id_memory_leak
+    assert_no_memory_leak([], "", <<~RUBY, rss: true)
+      1_000_000.times do
+        {a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8}.compare_by_identity
+      end
+    RUBY
+  end
+
   def test_try_convert
     assert_equal({1=>2}, Hash.try_convert({1=>2}))
     assert_equal(nil, Hash.try_convert("1=>2"))

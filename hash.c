@@ -4372,6 +4372,7 @@ rb_hash_compare_by_id(VALUE hash)
 
     rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
 
+    rb_hash_free(hash);
     RHASH_ST_TABLE_SET(hash, identtable);
     RHASH_ST_CLEAR(tmp);
 
