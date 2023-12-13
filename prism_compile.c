@@ -4684,21 +4684,21 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     pm_node_t *value = cast->value;
                     name = cast->name;
 
-                    if (pm_static_literal_p(value)) {
-                        rb_ary_push(default_values, pm_static_literal_value(value, scope_node, parser));
-                    }
-                    else {
-                        LABEL *end_label = NEW_LABEL(nd_line(&dummy_line_node));
-
-                        int index = pm_lookup_local_index(iseq, scope_node, name);
-                        int kw_bits_idx = table_size - body->param.keyword->bits_start;
-                        ADD_INSN2(ret, &dummy_line_node, checkkeyword, INT2FIX(kw_bits_idx + VM_ENV_DATA_SIZE - 1), INT2FIX(i - 1));
-                        ADD_INSNL(ret, &dummy_line_node, branchif, end_label);
-                        PM_COMPILE(value);
-                        ADD_SETLOCAL(ret, &dummy_line_node, index, 0);
-
-                        ADD_LABEL(ret, end_label);
+                    switch PM_NODE_TYPE(value) {
+                      case PM_FALSE_NODE:
+                      case PM_FLOAT_NODE:
+                      case PM_INTEGER_NODE:
+                      case PM_IMAGINARY_NODE:
+                      case PM_NIL_NODE:
+                      case PM_RATIONAL_NODE:
+                      case PM_STRING_NODE:
+                      case PM_SYMBOL_NODE:
+                      case PM_TRUE_NODE:
+                       rb_ary_push(default_values, pm_static_literal_value(value, scope_node, parser));
+                       break;
+                      default: {
                         rb_ary_push(default_values, complex_mark);
+                      }
                     }
 
                     break;
@@ -4920,6 +4920,57 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         //********STEP 5************
         // Goal: compile anything that needed to be compiled
+        if (keywords_list && keywords_list->size) {
+            for (size_t i = 0; i < keywords_list->size; i++, local_index++) {
+                pm_node_t *keyword_parameter_node = keywords_list->nodes[i];
+                pm_constant_id_t name;
+
+                switch (PM_NODE_TYPE(keyword_parameter_node)) {
+                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+                  //                                                       ^^^^
+                  case PM_OPTIONAL_KEYWORD_PARAMETER_NODE: {
+                    pm_optional_keyword_parameter_node_t *cast = ((pm_optional_keyword_parameter_node_t *)keyword_parameter_node);
+
+                    pm_node_t *value = cast->value;
+                    name = cast->name;
+
+                    switch PM_NODE_TYPE(value) {
+                      case PM_FALSE_NODE:
+                      case PM_FLOAT_NODE:
+                      case PM_INTEGER_NODE:
+                      case PM_IMAGINARY_NODE:
+                      case PM_NIL_NODE:
+                      case PM_RATIONAL_NODE:
+                      case PM_STRING_NODE:
+                      case PM_SYMBOL_NODE:
+                      case PM_TRUE_NODE:
+                        break;
+                      default: {
+                        LABEL *end_label = NEW_LABEL(nd_line(&dummy_line_node));
+
+                        int index = pm_lookup_local_index(iseq, scope_node, name);
+                        int kw_bits_idx = table_size - body->param.keyword->bits_start;
+                        ADD_INSN2(ret, &dummy_line_node, checkkeyword, INT2FIX(kw_bits_idx + VM_ENV_DATA_SIZE - 1), INT2FIX(i));
+                        ADD_INSNL(ret, &dummy_line_node, branchif, end_label);
+                        PM_COMPILE(value);
+                        ADD_SETLOCAL(ret, &dummy_line_node, index, 0);
+
+                        ADD_LABEL(ret, end_label);
+                      }
+                    }
+                  }
+                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+                  //                                                   ^^
+                  case PM_REQUIRED_KEYWORD_PARAMETER_NODE: {
+                    break;
+                  }
+                  default: {
+                    rb_bug("Unexpected keyword parameter node type");
+                  }
+                }
+            }
+        }
+
         if (optionals_list && optionals_list->size) {
             LABEL **opt_table = (LABEL **)ALLOC_N(VALUE, optionals_list->size + 1);
             LABEL *label;
