@@ -165,8 +165,8 @@ module Bundler
 
       def initialize_copy(other)
         @store = {}
-        other.store.each do |name_tuple, checksums|
-          store[name_tuple] = checksums.dup
+        other.store.each do |lock_name, checksums|
+          store[lock_name] = checksums.dup
         end
       end
 
@@ -175,7 +175,7 @@ module Bundler
       end
 
       def fetch(spec, algo = DEFAULT_ALGORITHM)
-        store[spec.name_tuple]&.fetch(algo, nil)
+        store[spec.name_tuple.lock_name]&.fetch(algo, nil)
       end
 
       # Replace when the new checksum is from the same source.
@@ -191,45 +191,45 @@ module Bundler
       def replace(spec, checksum)
         return unless checksum
 
-        name_tuple = spec.name_tuple
-        checksums = (store[name_tuple] ||= {})
+        lock_name = spec.name_tuple.lock_name
+        checksums = (store[lock_name] ||= {})
         existing = checksums[checksum.algo]
 
         # we assume only one source because this is used while building the index
         if !existing || existing.sources.first == checksum.sources.first
           checksums[checksum.algo] = checksum
         else
-          register_checksum(name_tuple, checksum)
+          register_checksum(lock_name, checksum)
         end
       end
 
       def register(spec, checksum)
         return unless checksum
-        register_checksum(spec.name_tuple, checksum)
+        register_checksum(spec.name_tuple.lock_name, checksum)
       end
 
       def merge!(other)
-        other.store.each do |name_tuple, checksums|
+        other.store.each do |lock_name, checksums|
           checksums.each do |_algo, checksum|
-            register_checksum(name_tuple, checksum)
+            register_checksum(lock_name, checksum)
           end
         end
       end
 
       def to_lock(spec)
-        name_tuple = spec.name_tuple
-        if checksums = store[name_tuple]
-          "#{name_tuple.lock_name} #{checksums.values.map(&:to_lock).sort.join(",")}"
+        lock_name = spec.name_tuple.lock_name
+        if checksums = store[lock_name]
+          "#{lock_name} #{checksums.values.map(&:to_lock).sort.join(",")}"
         else
-          name_tuple.lock_name
+          lock_name
         end
       end
 
       private
 
-      def register_checksum(name_tuple, checksum)
+      def register_checksum(lock_name, checksum)
         return unless checksum
-        checksums = (store[name_tuple] ||= {})
+        checksums = (store[lock_name] ||= {})
         existing = checksums[checksum.algo]
 
         if !existing
@@ -237,7 +237,7 @@ module Bundler
         elsif existing.merge!(checksum)
           checksum
         else
-          raise ChecksumMismatchError.new(name_tuple, existing, checksum)
+          raise ChecksumMismatchError.new(lock_name, existing, checksum)
         end
       end
     end
