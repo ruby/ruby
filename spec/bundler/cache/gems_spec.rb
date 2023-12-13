@@ -102,8 +102,8 @@ RSpec.describe "bundle cache" do
 
     it "uses builtin gems when installing to system gems" do
       bundle "config set path.system true"
-      install_gemfile %(source "#{file_uri_for(gem_repo2)}"; gem 'json', '#{default_json_version}'), verbose: true
-      expect(out).to include("Installing json #{default_json_version}")
+      install_gemfile %(source "#{file_uri_for(gem_repo1)}"; gem 'json', '#{default_json_version}'), verbose: true
+      expect(out).to include("Using json #{default_json_version}")
     end
 
     it "caches remote and builtin gems" do
@@ -142,6 +142,19 @@ RSpec.describe "bundle cache" do
 
       bundle "install --local"
       expect(the_bundle).to include_gems("builtin_gem_2 1.0.2")
+    end
+
+    it "errors if the builtin gem isn't available to cache" do
+      bundle "config set path.system true"
+
+      install_gemfile <<-G
+        source "#{file_uri_for(gem_repo1)}"
+        gem 'json', '#{default_json_version}'
+      G
+
+      bundle :cache, raise_on_error: false
+      expect(exitstatus).to_not eq(0)
+      expect(err).to include("json-#{default_json_version} is built in to Ruby, and can't be cached")
     end
   end
 
