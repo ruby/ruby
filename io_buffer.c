@@ -183,7 +183,7 @@ io_buffer_zero(struct rb_io_buffer *buffer)
 }
 
 static void
-io_buffer_initialize(struct rb_io_buffer *buffer, void *base, size_t size, enum rb_io_buffer_flags flags, VALUE source)
+io_buffer_initialize(VALUE self, struct rb_io_buffer *buffer, void *base, size_t size, enum rb_io_buffer_flags flags, VALUE source)
 {
     if (base) {
         // If we are provided a pointer, we use it.
@@ -209,7 +209,7 @@ io_buffer_initialize(struct rb_io_buffer *buffer, void *base, size_t size, enum 
     buffer->base = base;
     buffer->size = size;
     buffer->flags = flags;
-    buffer->source = source;
+    RB_OBJ_WRITE(self, &buffer->source, source);
 }
 
 static int
@@ -286,7 +286,7 @@ static const rb_data_type_t rb_io_buffer_type = {
         .dsize = rb_io_buffer_type_size,
     },
     .data = NULL,
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED,
 };
 
 // Extract an offset argument, which must be a positive integer.
@@ -420,7 +420,7 @@ static VALUE io_buffer_for_make_instance(VALUE klass, VALUE string, enum rb_io_b
     if (!(flags & RB_IO_BUFFER_READONLY))
         rb_str_modify(string);
 
-    io_buffer_initialize(buffer, RSTRING_PTR(string), RSTRING_LEN(string), flags, string);
+    io_buffer_initialize(instance, buffer, RSTRING_PTR(string), RSTRING_LEN(string), flags, string);
 
     return instance;
 }
@@ -555,7 +555,7 @@ rb_io_buffer_new(void *base, size_t size, enum rb_io_buffer_flags flags)
     struct rb_io_buffer *buffer = NULL;
     TypedData_Get_Struct(instance, struct rb_io_buffer, &rb_io_buffer_type, buffer);
 
-    io_buffer_initialize(buffer, base, size, flags, Qnil);
+    io_buffer_initialize(instance, buffer, base, size, flags, Qnil);
 
     return instance;
 }
@@ -720,7 +720,7 @@ rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
         flags |= io_flags_for_size(size);
     }
 
-    io_buffer_initialize(buffer, NULL, size, flags, Qnil);
+    io_buffer_initialize(self, buffer, NULL, size, flags, Qnil);
 
     return self;
 }
@@ -1278,10 +1278,12 @@ rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_
     slice->size = length;
 
     // The source should be the root buffer:
-    if (buffer->source != Qnil)
-        slice->source = buffer->source;
-    else
-        slice->source = self;
+    if (buffer->source != Qnil) {
+        RB_OBJ_WRITE(instance, &slice->source, buffer->source);
+    }
+    else {
+        RB_OBJ_WRITE(instance, &slice->source, self);
+    }
 
     return instance;
 }
@@ -1478,11 +1480,11 @@ io_buffer_resize_clear(struct rb_io_buffer *buffer, void* base, size_t size)
 }
 
 static void
-io_buffer_resize_copy(struct rb_io_buffer *buffer, size_t size)
+io_buffer_resize_copy(VALUE self, struct rb_io_buffer *buffer, size_t size)
 {
     // Slow path:
     struct rb_io_buffer resized;
-    io_buffer_initialize(&resized, NULL, size, io_flags_for_size(size), Qnil);
+    io_buffer_initialize(self, &resized, NULL, size, io_flags_for_size(size), Qnil);
 
     if (buffer->base) {
         size_t preserve = buffer->size;
@@ -1507,7 +1509,7 @@ rb_io_buffer_resize(VALUE self, size_t size)
     }
 
     if (buffer->base == NULL) {
-        io_buffer_initialize(buffer, NULL, size, io_flags_for_size(size), Qnil);
+        io_buffer_initialize(self, buffer, NULL, size, io_flags_for_size(size), Qnil);
         return;
     }
 
@@ -1552,7 +1554,7 @@ rb_io_buffer_resize(VALUE self, size_t size)
         return;
     }
 
-    io_buffer_resize_copy(buffer, size);
+    io_buffer_resize_copy(self, buffer, size);
 }
 
 /*
@@ -2247,7 +2249,7 @@ rb_io_buffer_initialize_copy(VALUE self, VALUE source)
 
     rb_io_buffer_get_bytes_for_reading(source, &source_base, &source_size);
 
-    io_buffer_initialize(buffer, NULL, source_size, io_flags_for_size(source_size), Qnil);
+    io_buffer_initialize(self, buffer, NULL, source_size, io_flags_for_size(source_size), Qnil);
 
     return io_buffer_copy_from(buffer, source_base, source_size, 0, NULL);
 }
