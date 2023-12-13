@@ -1447,7 +1447,19 @@ iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
     pm_options_line_set(&options, start_line);
 
     pm_parser_t parser;
-    pm_parser_init(&parser, (const uint8_t *) RSTRING_PTR(src), RSTRING_LEN(src), &options);
+
+    if (RB_TYPE_P(src, T_FILE)) {
+        FilePathValue(src);
+        file = rb_fstring(src); /* rb_io_t->pathv gets frozen anyways */
+
+        pm_string_t input;
+        pm_string_mapped_init(&input, RSTRING_PTR(file));
+
+        pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), &options);
+    }
+    else {
+        pm_parser_init(&parser, (const uint8_t *) RSTRING_PTR(src), RSTRING_LEN(src), &options);
+    }
 
     rb_iseq_t *iseq = iseq_alloc();
     iseqw_s_compile_prism_compile(&parser, opt, iseq, file, path, start_line);
