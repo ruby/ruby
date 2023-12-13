@@ -3940,7 +3940,7 @@ AC_ARG_ENABLE(rjit,
     AS_HELP_STRING([--enable-rjit],
     [enable pure-Ruby JIT compiler. enabled by default on Unix x86_64 platforms]),
     [RJIT_SUPPORT=$enableval],
-    [AS_CASE(["$YJIT_TARGET_OK"],
+    [AS_CASE(["$RJIT_TARGET_OK"],
         [yes], [RJIT_SUPPORT=yes],
         [RJIT_SUPPORT=no]
     )]
