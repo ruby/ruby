@@ -173,7 +173,7 @@ The following default gems are updated.
 * english 0.8.0
 * erb 4.0.3
 * error_highlight 0.6.0
-* etc 1.4.3.dev.1
+* etc 1.4.3
 * fcntl 1.1.0
 * fiddle 1.1.2
 * fileutils 1.7.2
