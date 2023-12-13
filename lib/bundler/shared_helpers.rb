@@ -304,6 +304,13 @@ module Bundler
     public :set_env
 
     def set_bundle_variables
+      Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", bundle_bin_path
+      Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", find_gemfile.to_s
+      Bundler::SharedHelpers.set_env "BUNDLER_VERSION", Bundler::VERSION
+      Bundler::SharedHelpers.set_env "BUNDLER_SETUP", File.expand_path("setup", __dir__)
+    end
+
+    def bundle_bin_path
       # bundler exe & lib folders have same root folder, typical gem installation
       exe_file = File.expand_path("../../exe/bundle", __dir__)
 
@@ -313,11 +320,9 @@ module Bundler
       # bundler is a default gem, exe path is separate
       exe_file = Bundler.rubygems.bin_path("bundler", "bundle", VERSION) unless File.exist?(exe_file)
 
-      Bundler::SharedHelpers.set_env "BUNDLE_BIN_PATH", exe_file
-      Bundler::SharedHelpers.set_env "BUNDLE_GEMFILE", find_gemfile.to_s
-      Bundler::SharedHelpers.set_env "BUNDLER_VERSION", Bundler::VERSION
-      Bundler::SharedHelpers.set_env "BUNDLER_SETUP", File.expand_path("setup", __dir__)
+      exe_file
     end
+    public :bundle_bin_path
 
     def set_path
       validate_bundle_path
