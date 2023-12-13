@@ -179,7 +179,7 @@ The following default gems are updated.
 * fileutils 1.7.2
 * find 0.2.0
 * getoptlong 0.2.1
-* io-console 0.6.1.dev.1
+* io-console 0.7.0
 * io-nonblock 0.3.0
 * io-wait 0.3.1
 * irb 1.10.1
