@@ -85,7 +85,7 @@ module Gem::BUNDLED_GEMS
     else
       return
     end
-    EXACT[n] or PREFIXED[n = n[%r[\A[^/]+(?=/)]]] && n
+    (EXACT[n] or PREFIXED[n = n[%r[\A[^/]+(?=/)]]]) && n
   end
 
   def self.warning?(name, specs: nil)
