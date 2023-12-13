@@ -379,7 +379,6 @@ module Bundler
     method_option "filter-minor", type: :boolean, banner: "Only list minor newer versions"
     method_option "filter-patch", type: :boolean, banner: "Only list patch newer versions"
     method_option "parseable", aliases: "--porcelain", type: :boolean, banner: "Use minimal formatting for more parseable output"
-    method_option "json", type: :boolean, banner: "Produce parseable json output"
     method_option "only-explicit", type: :boolean, banner: "Only list gems specified in your Gemfile, not their dependencies"
     def outdated(*gems)
       require_relative "cli/outdated"
