@@ -5395,7 +5395,9 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, 
          * full */
         return false;
     }
+    asan_unlock_freelist(free_page);
     free_page->freelist = RANY(dest)->as.free.next;
+    asan_lock_freelist(free_page);
 
     GC_ASSERT(RB_BUILTIN_TYPE(dest) == T_NONE);
 
