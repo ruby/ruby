@@ -202,6 +202,7 @@ The following default gems are updated.
 * psych 5.1.1.1
 * rdoc 6.6.1
 * reline 0.4.0
+* resolv 0.3.0
 * rinda 0.2.0
 * securerandom 0.3.0
 * set 1.0.4
