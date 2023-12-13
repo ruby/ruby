@@ -281,6 +281,27 @@ class TestCall < Test::Unit::TestCase
     assert_equal([:to_a, :to_hash, :to_proc, :to_proc], ary)
   end
 
+  def test_call_op_asgn_keywords_mutable
+    h = Class.new do
+      attr_reader :get, :set
+      def v; yield; [*@get, *@set] end
+      def [](*a, **b, &c)
+        @get = [a.dup, b.dup]
+        a << :splat_modified
+        b[:kw_splat_modified] = true
+        @set = []
+        3
+      end
+      def []=(*a, **b) @set = [a, b] end
+    end.new
+
+    a = []
+    kw = {}
+    b = lambda{}
+
+    assert_equal([[2], {b: 5}, [2, 4], {b: 5}], h.v{h[*a, 2, b: 5, **kw] += 1})
+  end
+
   def test_call_splat_order
     bug12860 = '[ruby-core:77701] [Bug# 12860]'
     ary = [1, 2]
