@@ -343,7 +343,7 @@ changelog for details of the default gems or bundled gems.
 * `ratio_in_yjit` stat produced by `--yjit-stats` is now available in release builds,
   a special stats or dev build is no longer required to access most stats.
 * Exit tracing option now supports sampling
-    * `--trace-exits-sample-rate=N`
+    * `--yjit-trace-exits-sample-rate=N`
 * More thorough testing and multiple bug fixes
 * `--yjit-stats=quiet` is added to avoid printing stats on exit.
 * `--yjit-perf` is added to facilitate profiling with Linux perf.
