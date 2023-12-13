@@ -211,7 +211,7 @@ PRISM_EXPORTED_FUNCTION const char * pm_token_type_to_str(pm_token_type_t token_
  *     pm_node_t *root = pm_parse(&parser);
  *     printf("PARSED!\n");
  *
- *     pm_node_destroy(root);
+ *     pm_node_destroy(&parser, root);
  *     pm_parser_free(&parser);
  * }
  * ```
@@ -263,7 +263,7 @@ PRISM_EXPORTED_FUNCTION const char * pm_token_type_to_str(pm_token_type_t token_
  *     printf("*.s%\n", (int) buffer.length, buffer.value);
  *
  *     pm_buffer_free(&buffer);
- *     pm_node_destroy(root);
+ *     pm_node_destroy(&parser, root);
  *     pm_parser_free(&parser);
  * }
  * ```
