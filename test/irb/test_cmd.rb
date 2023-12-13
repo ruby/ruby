@@ -357,12 +357,6 @@ module TestIRB
     end
 
     def test_measure_toggle
-      measuring_proc = proc { |line, line_no, &block|
-        time = Time.now
-        result = block.()
-        puts 'custom processing time: %fs' % (Time.now - time) if IRB.conf[:MEASURE]
-        result
-      }
       conf = {
         PROMPT: {
           DEFAULT: {
