@@ -1255,8 +1255,8 @@ nucomp_real_p(VALUE self)
  *
  * - <tt>self.real <=> object.real</tt> if both of the following are true:
  *
- *   - +self+.imag == 0.
- *   - +object+.imag == 0. # Always true if object is numeric but not complex.
+ *   - <tt>self.imag == 0</tt>.
+ *   - <tt>object.imag == 0</tt>. # Always true if object is numeric but not complex.
  *
  * - +nil+ otherwise.
  *
