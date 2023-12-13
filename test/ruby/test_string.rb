@@ -587,6 +587,8 @@ CODE
     assert_equal("foo", s.chomp!("\n"))
     s = "foo\r"
     assert_equal("foo", s.chomp!("\n"))
+
+    assert_raise(ArgumentError) {String.new.chomp!("", "")}
   ensure
     $/ = save
     $VERBOSE = verbose
