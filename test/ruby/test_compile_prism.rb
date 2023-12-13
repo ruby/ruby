@@ -1715,6 +1715,164 @@ module Prism
       assert_prism_eval("1 in 2 | 3")
     end
 
+    def test_ArrayPatternNode
+      assert_prism_eval("[] => []")
+
+      ["in", "=>"].each do |operator|
+        ["", "Array"].each do |constant|
+          assert_prism_eval("[1, 2, 3] #{operator} #{constant}[1, 2, 3]")
+
+          assert_prism_eval("[1, 2, 3] #{operator} #{constant}[*]")
+          assert_prism_eval("[1, 2, 3] #{operator} #{constant}[1, *]")
+          assert_prism_eval("[1, 2, 3] #{operator} #{constant}[1, 2, *]")
+          assert_prism_eval("[1, 2, 3] #{operator} #{constant}[1, 2, 3, *]")
+
+          assert_prism_eval("[1, 2, 3] #{operator} #{constant}[*foo]")
+          assert_prism_eval("[1, 2, 3] #{operator} #{constant}[1, *foo]")
+          assert_prism_eval("[1, 2, 3] #{operator} #{constant}[1, 2, *foo]")
+          assert_prism_eval("[1, 2, 3] #{operator} #{constant}[1, 2, 3, *foo]")
+
+          assert_prism_eval("[1, 2, 3] #{operator} #{constant}[*, 3]")
+          assert_prism_eval("[1, 2, 3] #{operator} #{constant}[*, 2, 3]")
+          assert_prism_eval("[1, 2, 3] #{operator} #{constant}[*, 1, 2, 3]")
+
+          assert_prism_eval("[1, 2, 3] #{operator} #{constant}[*foo, 3]")
+          assert_prism_eval("[1, 2, 3] #{operator} #{constant}[*foo, 2, 3]")
+          assert_prism_eval("[1, 2, 3] #{operator} #{constant}[*foo, 1, 2, 3]")
+        end
+      end
+
+      assert_prism_eval("begin; Object.new => [1, 2, 3]; rescue NoMatchingPatternError; true; end")
+      assert_prism_eval("begin; [1, 2, 3] => Object[1, 2, 3]; rescue NoMatchingPatternError; true; end")
+    end
+
+    def test_CapturePatternNode
+      assert_prism_eval("[1] => [Integer => foo]")
+    end
+
+    def test_CaseMatchNode
+      assert_prism_eval(<<~RUBY)
+        case [1, 2, 3]
+        in [1, 2, 3]
+          4
+        end
+      RUBY
+
+      assert_prism_eval(<<~RUBY)
+        case { a: 5, b: 6 }
+        in [1, 2, 3]
+          4
+        in { a: 5, b: 6 }
+          7
+        end
+      RUBY
+
+      assert_prism_eval(<<~RUBY)
+        case [1, 2, 3, 4]
+        in [1, 2, 3]
+          4
+        in { a: 5, b: 6 }
+          7
+        else
+        end
+      RUBY
+
+      assert_prism_eval(<<~RUBY)
+        case [1, 2, 3, 4]
+        in [1, 2, 3]
+          4
+        in { a: 5, b: 6 }
+          7
+        else
+          8
+        end
+      RUBY
+
+      assert_prism_eval(<<~RUBY)
+        case [1, 2, 3]
+        in [1, 2, 3] unless to_s
+        in [1, 2, 3] if to_s.nil?
+        in [1, 2, 3]
+          true
+        end
+      RUBY
+    end
+
+    def test_FindPatternNode
+      ["in", "=>"].each do |operator|
+        ["", "Array"].each do |constant|
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*, 1, 2, 3, 4, 5, *]")
+
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*, 1, *]")
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*, 3, *]")
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*, 5, *]")
+
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*, 1, 2, *]")
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*, 2, 3, *]")
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*, 3, 4, *]")
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*, 4, 5, *]")
+
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*, 1, 2, 3, *]")
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*, 2, 3, 4, *]")
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*, 3, 4, 5, *]")
+
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*, 1, 2, 3, 4, *]")
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*, 2, 3, 4, 5, *]")
+
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*foo, 3, *]")
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*foo, 3, 4, *]")
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*foo, 3, 4, 5, *]")
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*foo, 1, 2, 3, 4, *]")
+
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*, 3, *foo]")
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*, 3, 4, *foo]")
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*, 3, 4, 5, *foo]")
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*, 1, 2, 3, 4, *foo]")
+
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*foo, 3, *bar]")
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*foo, 3, 4, *bar]")
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*foo, 3, 4, 5, *bar]")
+          assert_prism_eval("[1, 2, 3, 4, 5] #{operator} #{constant}[*foo, 1, 2, 3, 4, *bar]")
+        end
+      end
+
+      assert_prism_eval("[1, [2, [3, [4, [5]]]]] => [*, [*, [*, [*, [*]]]]]")
+      assert_prism_eval("[1, [2, [3, [4, [5]]]]] => [1, [2, [3, [4, [5]]]]]")
+
+      assert_prism_eval("begin; Object.new => [*, 2, *]; rescue NoMatchingPatternError; true; end")
+      assert_prism_eval("begin; [1, 2, 3] => Object[*, 2, *]; rescue NoMatchingPatternError; true; end")
+    end
+
+    def test_HashPatternNode
+      assert_prism_eval("{} => {}")
+
+      [["{ ", " }"], ["Hash[", "]"]].each do |(prefix, suffix)|
+        assert_prism_eval("{} => #{prefix} **nil #{suffix}")
+
+        assert_prism_eval("{ a: 1, b: 2, c: 3 } => #{prefix} a: 1 #{suffix}")
+        assert_prism_eval("{ a: 1, b: 2, c: 3 } => #{prefix} a: 1, b: 2 #{suffix}")
+        assert_prism_eval("{ a: 1, b: 2, c: 3 } => #{prefix} b: 2, c: 3 #{suffix}")
+        assert_prism_eval("{ a: 1, b: 2, c: 3 } => #{prefix} a: 1, b: 2, c: 3 #{suffix}")
+
+        assert_prism_eval("{ a: 1, b: 2, c: 3 } => #{prefix} ** #{suffix}")
+        assert_prism_eval("{ a: 1, b: 2, c: 3 } => #{prefix} a: 1, ** #{suffix}")
+        assert_prism_eval("{ a: 1, b: 2, c: 3 } => #{prefix} a: 1, b: 2, ** #{suffix}")
+        assert_prism_eval("{ a: 1, b: 2, c: 3 } => #{prefix} b: 2, c: 3, ** #{suffix}")
+        assert_prism_eval("{ a: 1, b: 2, c: 3 } => #{prefix} a: 1, b: 2, c: 3, ** #{suffix}")
+
+        assert_prism_eval("{ a: 1, b: 2, c: 3 } => #{prefix} **foo #{suffix}")
+        assert_prism_eval("{ a: 1, b: 2, c: 3 } => #{prefix} a: 1, **foo #{suffix}")
+        assert_prism_eval("{ a: 1, b: 2, c: 3 } => #{prefix} a: 1, b: 2, **foo #{suffix}")
+        assert_prism_eval("{ a: 1, b: 2, c: 3 } => #{prefix} b: 2, c: 3, **foo #{suffix}")
+        assert_prism_eval("{ a: 1, b: 2, c: 3 } => #{prefix} a: 1, b: 2, c: 3, **foo #{suffix}")
+
+        assert_prism_eval("{ a: 1 } => #{prefix} a: 1, **nil #{suffix}")
+        assert_prism_eval("{ a: 1, b: 2, c: 3 } => #{prefix} a: 1, b: 2, c: 3, **nil #{suffix}")
+      end
+
+      assert_prism_eval("{ a: { b: { c: 1 } } } => { a: { b: { c: 1 } } }")
+    end
+
     def test_MatchPredicateNode
       assert_prism_eval("1 in 1")
       assert_prism_eval("1.0 in 1.0")
@@ -1746,6 +1904,33 @@ module Prism
       assert_prism_eval("5 in foo")
 
       assert_prism_eval("1 in 2")
+    end
+
+    def test_MatchRequiredNode
+      assert_prism_eval("1 => 1")
+      assert_prism_eval("1.0 => 1.0")
+      assert_prism_eval("1i => 1i")
+      assert_prism_eval("1r => 1r")
+
+      assert_prism_eval("\"foo\" => \"foo\"")
+      assert_prism_eval("\"foo \#{1}\" => \"foo \#{1}\"")
+
+      assert_prism_eval("false => false")
+      assert_prism_eval("nil => nil")
+      assert_prism_eval("true => true")
+
+      assert_prism_eval("5 => 0..10")
+      assert_prism_eval("5 => 0...10")
+
+      assert_prism_eval("[\"5\"] => %w[5]")
+
+      assert_prism_eval(":prism => :prism")
+      assert_prism_eval("%s[prism\#{1}] => %s[prism\#{1}]")
+      assert_prism_eval("\"foo\" => /.../")
+      assert_prism_eval("\"foo1\" => /...\#{1}/")
+      assert_prism_eval("4 => ->(v) { v.even? }")
+
+      assert_prism_eval("5 => foo")
     end
 
     def test_PinnedExpressionNode
