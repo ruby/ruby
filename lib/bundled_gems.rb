@@ -124,7 +124,7 @@ module Gem::BUNDLED_GEMS
       # We detect the gem name from caller_locations. We need to skip 2 frames like:
       # lib/ruby/3.3.0+0/bundled_gems.rb:90:in `warning?'",
       # lib/ruby/3.3.0+0/bundler/rubygems_integration.rb:247:in `block (2 levels) in replace_require'",
-      location = caller_locations(3,3)[0]&.path
+      location = caller_locations(3,1)[0]&.path
       if File.file?(location) && !location.start_with?(Gem::BUNDLED_GEMS::LIBDIR)
         caller_gem = nil
         Gem.path.each do |path|
