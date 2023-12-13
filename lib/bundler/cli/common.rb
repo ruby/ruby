@@ -54,7 +54,7 @@ module Bundler
 
       Bundler.definition.specs.each do |spec|
         return spec if spec.name == name
-        specs << spec if regexp && spec.name =~ regexp
+        specs << spec if regexp && spec.name.match?(regexp)
       end
 
       default_spec = default_gem_spec(name)

@@ -130,7 +130,7 @@ module Bundler
       def tell_err(message, color = nil, newline = nil)
         return if @shell.send(:stderr).closed?
 
-        newline ||= message.to_s !~ /( |\t)\Z/
+        newline ||= !message.to_s.match?(/( |\t)\Z/)
         message = word_wrap(message) if newline.is_a?(Hash) && newline[:wrap]
 
         color = nil if color && !$stderr.tty?
