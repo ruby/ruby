@@ -395,12 +395,6 @@ By default, this RubyGems will install gem as:
         each {|default_gem| rm_r File.join(bundler_spec.gems_dir, default_gem) }
     end
 
-    bundler_bin_dir = new_bundler_spec.bin_dir
-    mkdir_p bundler_bin_dir, mode: 0o755
-    bundler_spec.executables.each do |e|
-      cp File.join("bundler", new_bundler_spec.bindir, e), File.join(bundler_bin_dir, e)
-    end
-
     require_relative "../installer"
 
     Dir.chdir("bundler") do
