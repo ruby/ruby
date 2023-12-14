@@ -320,35 +320,43 @@ changelog for details of the default gems or bundled gems.
 ### YJIT
 
 * Major performance improvements over 3.2
-    * Support for splat and rest arguments has been improved.
-    * Registers are allocated for stack operations of the virtual machine.
-    * More calls with optional arguments are compiled.
-    * Exception handlers are also compiled.
-    * Instance variables no longer exit to the interpreter
-      with megamorphic object shapes.
-    * Unsupported call types no longer exit to the interpreter.
-    * `Integer#!=`, `String#!=`, `Kernel#block_given?`, `Kernel#is_a?`,
-      `Kernel#instance_of?`, `Module#===` are specially optimized.
-    * Now more than 3x faster than the interpreter on optcarrot!
+  * Support for splat and rest arguments has been improved.
+  * Registers are allocated for stack operations of the virtual machine.
+  * More calls with optional arguments are compiled. Exception handlers are also compiled.
+  * Unsupported call types and megamorphic call sites no longer exit to the interpreter.
+  * Basic methods like Rails `#blank?` and
+    [specialized `#present?`](https://github.com/rails/rails/pull/49909) are inlined.
+  * `Integer#*`, `Integer#!=`, `String#!=`, `String#getbyte`,
+    `Kernel#block_given?`, `Kernel#is_a?`, `Kernel#instance_of?`, and `Module#===`
+    are specially optimized.
+  * Compilation speed is now slightly faster than 3.2.
+  * Now more than 3x faster than the interpreter on Optcarrot!
 * Significantly improved memory usage over 3.2
     * Metadata for compiled code uses a lot less memory.
-    * Generate more compact code on ARM64
-* Compilation speed is now slightly faster than 3.2.
-* Add `RubyVM::YJIT.enable` that can enable YJIT later
-    * You can start YJIT without modifying command-line arguments or environment variables.
-    * This can also be used to enable YJIT only once your application is
-      done booting. `--yjit-disable` can be used if you want to use other
-      YJIT options while disabling YJIT at boot.
-* Code GC now disabled by default, with `--yjit-exec-mem-size` treated as a hard limit
-    * Can produce better copy-on-write behavior on forking web servers such as `unicorn`
-    * Use the `--yjit-code-gc` option to automatically run code GC when YJIT reaches the size limit
-* `ratio_in_yjit` stat produced by `--yjit-stats` is now available in release builds,
-  a special stats or dev build is no longer required to access most stats.
-* Exit tracing option now supports sampling
-    * `--yjit-trace-exits-sample-rate=N`
+    * `--yjit-call-threshold` is automatically raised from 30 to 120
+      when the application has more than 40,000 ISEQs.
+    * `--yjit-cold-threshold` is added to skip compiling cold ISEQs.
+    * More compact code is generated on Arm64.
+* Code GC is now disabled by default
+  * `--yjit-exec-mem-size` is treated as a hard limit where compilation of new code stops.
+  * No sudden drops in performance due to code GC.
+    Better copy-on-write behavior on servers reforking with
+    [Pitchfork](https://github.com/shopify/pitchfork).
+  * You can still enable code GC if desired with `--yjit-code-gc`
+* Add `RubyVM::YJIT.enable` that can enable YJIT at run-time
+  * You can start YJIT without modifying command-line arguments or environment variables.
+    Rails 7.2 will [enable YJIT by default](https://github.com/rails/rails/pull/49947)
+    using this method.
+  * This can also be used to enable YJIT only once your application is
+    done booting. `--yjit-disable` can be used if you want to use other
+    YJIT options while disabling YJIT at boot.
+* Add more profiling capabilities
+  * `ratio_in_yjit` stat produced by `--yjit-stats` is now available in release builds,
+    a special stats or dev build is no longer required to access most stats.
+  * `--yjit-perf` is added to facilitate profiling with Linux perf.
+  * `--yjit-trace-exits` now supports sampling with `--yjit-trace-exits-sample-rate=N`
 * More thorough testing and multiple bug fixes
 * `--yjit-stats=quiet` is added to avoid printing stats on exit.
-* `--yjit-perf` is added to facilitate profiling with Linux perf.
 
 ### MJIT
 
