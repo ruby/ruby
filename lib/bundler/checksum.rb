@@ -63,6 +63,10 @@ module Bundler
 
     alias_method :eql?, :==
 
+    def same_source?(other)
+      sources.include?(other.sources.first)
+    end
+
     def match?(other)
       other.is_a?(self.class) && other.digest == digest && other.algo == algo
     end
@@ -161,6 +165,7 @@ module Bundler
 
       def initialize
         @store = {}
+        @store_mutex = Mutex.new
       end
 
       def inspect
@@ -168,8 +173,9 @@ module Bundler
       end
 
       # Replace when the new checksum is from the same source.
-      # The primary purpose of this registering checksums from gems where there are
+      # The primary purpose is registering checksums from gems where there are
       # duplicates of the same gem (according to full_name) in the index.
+      #
       # In particular, this is when 2 gems have two similar platforms, e.g.
       # "darwin20" and "darwin-20", both of which resolve to darwin-20.
       # In the Index, the later gem replaces the former, so we do that here.
@@ -179,16 +185,14 @@ module Bundler
       # that contain the same gem with different checksums.
       def replace(spec, checksum)
         return unless checksum
-
         lock_name = spec.name_tuple.lock_name
-        checksums = (store[lock_name] ||= {})
-        existing = checksums[checksum.algo]
-
-        # we assume only one source because this is used while building the index
-        if !existing || existing.sources.first == checksum.sources.first
-          checksums[checksum.algo] = checksum
-        else
-          register_checksum(lock_name, checksum)
+        @store_mutex.synchronize do
+          existing = fetch_checksum(lock_name, checksum.algo)
+          if !existing || existing.same_source?(checksum)
+            store_checksum(lock_name, checksum)
+          else
+            merge_checksum(lock_name, checksum, existing)
+          end
         end
       end
 
@@ -207,7 +211,8 @@ module Bundler
 
       def to_lock(spec)
         lock_name = spec.name_tuple.lock_name
-        if checksums = store[lock_name]
+        checksums = @store[lock_name]
+        if checksums
           "#{lock_name} #{checksums.values.map(&:to_lock).sort.join(",")}"
         else
           lock_name
@@ -217,17 +222,26 @@ module Bundler
       private
 
       def register_checksum(lock_name, checksum)
-        return unless checksum
-        checksums = (store[lock_name] ||= {})
-        existing = checksums[checksum.algo]
-
-        if !existing
-          checksums[checksum.algo] = checksum
-        elsif existing.merge!(checksum)
-          checksum
-        else
-          raise ChecksumMismatchError.new(lock_name, existing, checksum)
+        @store_mutex.synchronize do
+          existing = fetch_checksum(lock_name, checksum.algo)
+          if existing
+            merge_checksum(lock_name, checksum, existing)
+          else
+            store_checksum(lock_name, checksum)
+          end
         end
+      end
+
+      def merge_checksum(lock_name, checksum, existing)
+        existing.merge!(checksum) || raise(ChecksumMismatchError.new(lock_name, existing, checksum))
+      end
+
+      def store_checksum(lock_name, checksum)
+        (@store[lock_name] ||= {})[checksum.algo] = checksum
+      end
+
+      def fetch_checksum(lock_name, algo)
+        @store[lock_name]&.fetch(algo, nil)
       end
     end
   end
