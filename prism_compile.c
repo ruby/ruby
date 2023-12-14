@@ -3301,7 +3301,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             const pm_node_t *condition = cast->conditions.nodes[index];
             assert(PM_NODE_TYPE_P(condition, PM_IN_NODE));
 
-            const pm_in_node_t *in_node = (const pm_in_node_t *) cast->conditions.nodes[index];
+            const pm_in_node_t *in_node = (const pm_in_node_t *) condition;
 
             pm_line_node_t in_line;
             pm_line_node(&in_line, scope_node, (const pm_node_t *) in_node);
