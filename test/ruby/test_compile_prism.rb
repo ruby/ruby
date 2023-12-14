@@ -1446,6 +1446,18 @@ module Prism
       CODE
 
       assert_prism_eval(<<-CODE)
+        def self.foo(*args, **kwargs) = [args, kwargs]
+
+        [
+          foo(2 => 3),
+          foo([] => 42),
+          foo(a: 42, b: 61),
+          foo(1, 2, 3, a: 42, "b" => 61),
+          foo(:a => 42, :b => 61),
+        ]
+      CODE
+
+      assert_prism_eval(<<-CODE)
         class PrivateMethod
           def initialize
             self.instance_var

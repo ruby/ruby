@@ -992,13 +992,11 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                   }
                   else {
                     // We need to first figure out if all elements of the KeywordHashNode are AssocNodes
-                    // with static literal keys.
-                    bool all_keys_static_literals = PM_NODE_FLAG_P(keyword_arg, PM_KEYWORD_HASH_NODE_FLAGS_STATIC_KEYS);
-
-                    if (all_keys_static_literals) {
-                        // If they are all static literal keys then we can pass them as keyword arguments.
+                    // with symbol keys.
+                    if (PM_NODE_FLAG_P(keyword_arg, PM_KEYWORD_HASH_NODE_FLAGS_SYMBOL_KEYS)) {
+                        // If they are all symbol keys then we can pass them as keyword arguments.
                         *kw_arg = rb_xmalloc_mul_add(len, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
-                        *flags = VM_CALL_KWARG;
+                        *flags |= VM_CALL_KWARG;
                         VALUE *keywords = (*kw_arg)->keywords;
                         (*kw_arg)->references = 0;
                         (*kw_arg)->keyword_len = (int)len;
@@ -1010,10 +1008,15 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                             PM_COMPILE_NOT_POPPED(assoc->value);
                         }
                     } else {
-                        // If they aren't all static literal keys then we need to construct a new hash
+                        // If they aren't all symbol keys then we need to construct a new hash
                         // and pass that as an argument.
                         orig_argc++;
-                        *flags |= VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT;
+                        *flags |= VM_CALL_KW_SPLAT;
+                        if (len > 1) {
+                            // A new hash will be created for the keyword arguments in this case,
+                            // so mark the method as passing mutable keyword splat.
+                            *flags |= VM_CALL_KW_SPLAT_MUT;
+                        }
 
                         for (size_t i = 0; i < len; i++) {
                             pm_assoc_node_t *assoc = (pm_assoc_node_t *)keyword_arg->elements.nodes[i];
