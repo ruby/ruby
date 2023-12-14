@@ -275,7 +275,9 @@ changelog for details of the default gems or bundled gems.
 * `racc` is promoted to bundled gems.
     * You need to add `racc` to your `Gemfile` if you use `racc` under bundler environment.
 * `ext/readline` is retired
-    * We have `reline` that is pure Ruby implementation compatible with `ext/readline` API. We rely on `reline` in the future. If you need to use `ext/readline`, you can install `ext/readline` via rubygems.org with `gem install readline-ext`.
+    * We have `reline` that is pure Ruby implementation compatible with `ext/readline` API.
+      We rely on `reline` in the future. If you need to use `ext/readline`, you can install
+      `ext/readline` via rubygems.org with `gem install readline-ext`.
     * We no longer need to install libraries like `libreadline` or `libedit`.
 
 ## C API updates
