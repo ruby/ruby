@@ -2771,7 +2771,7 @@ class Resolv
           attr_reader :target
 
           ##
-          # The service paramters for the target host.
+          # The service parameters for the target host.
 
           attr_reader :params
 
