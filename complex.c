@@ -1012,11 +1012,12 @@ rb_complex_div(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    cmp.fdiv(numeric)  ->  complex
+ *   fdiv(numeric) -> new_complex
  *
- * Performs division as each part is a float, never returns a float.
+ * Returns <tt>Complex(self.real/numeric, self.imag/numeric)</tt>:
  *
- *    Complex(11, 22).fdiv(3)  #=> (3.6666666666666665+7.333333333333333i)
+ *   Complex(11, 22).fdiv(3) # => (3.6666666666666665+7.333333333333333i)
+ *
  */
 static VALUE
 nucomp_fdiv(VALUE self, VALUE other)
@@ -1110,12 +1111,13 @@ complex_pow_for_special_angle(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    cmp ** numeric  ->  complex
+ *    complex ** numeric -> new_complex
  *
- * Performs exponentiation.
+ * Returns +self+ raised to power +numeric+:
  *
- *    Complex('i') ** 2              #=> (-1+0i)
- *    Complex(-8) ** Rational(1, 3)  #=> (1.0000000000000002+1.7320508075688772i)
+ *   Complex('i') ** 2             # => (-1+0i)
+ *   Complex(-8) ** Rational(1, 3) # => (1.0000000000000002+1.7320508075688772i)
+ *
  */
 VALUE
 rb_complex_pow(VALUE self, VALUE other)
@@ -1213,15 +1215,13 @@ rb_complex_pow(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    cmp == object  ->  true or false
+ *   complex == object -> true or false
  *
- * Returns true if cmp equals object numerically.
+ * Returns +true+ if <tt>self.real == object.real</tt>
+ * and <tt>self.imag == object.imag</tt>:
  *
- *    Complex(2, 3)  == Complex(2, 3)   #=> true
- *    Complex(5)     == 5               #=> true
- *    Complex(0)     == 0.0             #=> true
- *    Complex('1/3') == 0.33            #=> false
- *    Complex('1/2') == '1/2'           #=> false
+ *   Complex(2, 3)  == Complex(2.0, 3.0)      # => true
+ *
  */
 static VALUE
 nucomp_eqeq_p(VALUE self, VALUE other)
@@ -1249,17 +1249,26 @@ nucomp_real_p(VALUE self)
 
 /*
  * call-seq:
- *    cmp <=> object  ->  0, 1, -1, or nil
+ *   complex <=> object -> -1, 0, 1, or nil
  *
- * If +cmp+'s imaginary part is zero, and +object+ is also a
- * real number (or a Complex number where the imaginary part is zero),
- * compare the real part of +cmp+ to object.  Otherwise, return nil.
+ * Returns:
  *
- *    Complex(2, 3)  <=> Complex(2, 3)   #=> nil
- *    Complex(2, 3)  <=> 1               #=> nil
- *    Complex(2)     <=> 1               #=> 1
- *    Complex(2)     <=> 2               #=> 0
- *    Complex(2)     <=> 3               #=> -1
+ * - <tt>self.real <=> object.real</tt> if both of the following are true:
+ *
+ *   - <tt>self.imag == 0</tt>.
+ *   - <tt>object.imag == 0</tt>. # Always true if object is numeric but not complex.
+ *
+ * - +nil+ otherwise.
+ *
+ * Examples:
+ *
+ *   Complex(2) <=> 3             # => -1
+ *   Complex(2) <=> 2             # => 0
+ *   Complex(2) <=> 1             # => 1
+ *   Complex(2, 1) <=> 1          # => nil # self.imag not zero.
+ *   Complex(1) <=> Complex(1, 1) # => nil # object.imag not zero.
+ *   Complex(1) <=> 'Foo'         # => nil # object.imag not defined.
+ *
  */
 static VALUE
 nucomp_cmp(VALUE self, VALUE other)
