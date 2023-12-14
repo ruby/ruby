@@ -90,13 +90,12 @@ module Gem::BUNDLED_GEMS
 
   def self.warning?(name, specs: nil)
     feature = File.path(name) # name can be a feature name or a file path with String or Pathname
-    return if specs.to_a.map(&:name).include?(feature.sub(LIBEXT, ""))
+    name = feature.tr("/", "-").sub(LIBEXT, "")
+    return if specs.to_a.map(&:name).include?(name)
     _t, path = $:.resolve_feature_path(feature)
-    name = feature.tr("/", "-")
     if gem = find_gem(path)
       caller = caller_locations(3, 3).find {|c| c&.absolute_path}
       return if find_gem(caller&.absolute_path)
-      name = name.sub(LIBEXT, "") # assume "foo.rb"/"foo.so" belongs to "foo" gem
     elsif SINCE[name]
       gem = true
     else
