@@ -2334,8 +2334,8 @@ match_named_captures_iter(const OnigUChar *name, const OnigUChar *name_end,
  *    # => #<MatchData "01" a:"0" a:"1">
  *    m.named_captures #=> {"a" => "1"}
  *
- * If keyword argument +symbolize_names+ is given
- * a true value, the keys in the resulting hash are Symbols:
+ *  If keyword argument +symbolize_names+ is given
+ *  a true value, the keys in the resulting hash are Symbols:
  *
  *    m = /(?<a>.)(?<a>.)/.match("01")
  *    # => #<MatchData "01" a:"0" a:"1">
