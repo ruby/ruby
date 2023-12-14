@@ -2004,6 +2004,33 @@ module Prism
       ]
     end
 
+    def test_non_assoc_equality
+      source = <<~RUBY
+        1 == 2 == 3
+        1 != 2 != 3
+        1 === 2 === 3
+        1 =~ 2 =~ 3
+        1 !~ 2 !~ 3
+        1 <=> 2 <=> 3
+      RUBY
+      message1 = 'expected a newline or semicolon after the statement'
+      message2 = 'cannot parse the expression'
+      assert_errors expression(source), source, [
+        [message1, 6..6],
+        [message2, 6..6],
+        [message1, 18..18],
+        [message2, 18..18],
+        [message1, 31..31],
+        [message2, 31..31],
+        [message1, 44..44],
+        [message2, 44..44],
+        [message1, 56..56],
+        [message2, 56..56],
+        [message1, 69..69],
+        [message2, 69..69],
+      ]
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")
