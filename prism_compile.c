@@ -4684,21 +4684,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     pm_node_t *value = cast->value;
                     name = cast->name;
 
-                    switch PM_NODE_TYPE(value) {
-                      case PM_FALSE_NODE:
-                      case PM_FLOAT_NODE:
-                      case PM_INTEGER_NODE:
-                      case PM_IMAGINARY_NODE:
-                      case PM_NIL_NODE:
-                      case PM_RATIONAL_NODE:
-                      case PM_STRING_NODE:
-                      case PM_SYMBOL_NODE:
-                      case PM_TRUE_NODE:
+                    if (pm_static_literal_p(value) &&
+                            !(PM_NODE_TYPE_P(value, PM_ARRAY_NODE) ||
+                                PM_NODE_TYPE_P(value, PM_HASH_NODE) ||
+                                PM_NODE_TYPE_P(value, PM_RANGE_NODE))) {
+
                        rb_ary_push(default_values, pm_static_literal_value(value, scope_node, parser));
-                       break;
-                      default: {
+                    }
+                    else {
                         rb_ary_push(default_values, complex_mark);
-                      }
                     }
 
                     break;
@@ -4934,18 +4928,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     pm_node_t *value = cast->value;
                     name = cast->name;
 
-                    switch PM_NODE_TYPE(value) {
-                      case PM_FALSE_NODE:
-                      case PM_FLOAT_NODE:
-                      case PM_INTEGER_NODE:
-                      case PM_IMAGINARY_NODE:
-                      case PM_NIL_NODE:
-                      case PM_RATIONAL_NODE:
-                      case PM_STRING_NODE:
-                      case PM_SYMBOL_NODE:
-                      case PM_TRUE_NODE:
-                        break;
-                      default: {
+                    if (!(pm_static_literal_p(value)) ||
+                            PM_NODE_TYPE_P(value, PM_ARRAY_NODE) ||
+                            PM_NODE_TYPE_P(value, PM_HASH_NODE) ||
+                            PM_NODE_TYPE_P(value, PM_RANGE_NODE)) {
                         LABEL *end_label = NEW_LABEL(nd_line(&dummy_line_node));
 
                         int index = pm_lookup_local_index(iseq, scope_node, name);
@@ -4956,8 +4942,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                         ADD_SETLOCAL(ret, &dummy_line_node, index, 0);
 
                         ADD_LABEL(ret, end_label);
-                      }
                     }
+                    break;
                   }
                   // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
                   //                                                   ^^
