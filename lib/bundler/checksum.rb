@@ -163,19 +163,8 @@ module Bundler
         @store = {}
       end
 
-      def initialize_copy(other)
-        @store = {}
-        other.store.each do |lock_name, checksums|
-          store[lock_name] = checksums.dup
-        end
-      end
-
       def inspect
         "#<#{self.class}:#{object_id} size=#{store.size}>"
-      end
-
-      def fetch(spec, algo = DEFAULT_ALGORITHM)
-        store[spec.name_tuple.lock_name]&.fetch(algo, nil)
       end
 
       # Replace when the new checksum is from the same source.
