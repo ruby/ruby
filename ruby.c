@@ -1411,7 +1411,7 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
     else if (is_option_with_arg("parser", Qfalse, Qtrue)) {
         if (strcmp("prism", s) == 0) {
             (*rb_ruby_prism_ptr()) = true;
-            rb_warn("The Prism compiler is currently experimental and compatibility with parse.y is not yet complete. Please report an issues you find on the prism issue tracker.");
+            rb_warn("The compiler based on the Prism parser is currently experimental and compatibility with the compiler based on parse.y is not yet complete. Please report any issues you find on the `ruby/prism` issue tracker.");
         }
         else if (strcmp("parse.y", s) == 0) {
             // default behavior
