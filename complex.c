@@ -2429,7 +2429,7 @@ float_arg(VALUE self)
  * == Polar Coordinates
  *
  * The polar coordinates of a complex number
- * are called the _absolute_ and _argument_ parts.
+ * are called the _absolute_ and _argument_ parts;
  * see {Complex polar plane}[https://en.wikipedia.org/wiki/Complex_number#Polar_complex_plane].
  *
  * In this class, the argument part
