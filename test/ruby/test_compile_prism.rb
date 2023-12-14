@@ -607,6 +607,16 @@ module Prism
 
     def test_StringNode
       assert_prism_eval('"pit"')
+      assert_prism_eval('"a".frozen?')
+
+      frozen_source = <<-CODE
+      # frozen_string_literal: true
+      "a".frozen?
+      CODE
+      ruby_eval = RubyVM::InstructionSequence.compile(frozen_source).eval
+      prism_eval = RubyVM::InstructionSequence.compile_prism(frozen_source).eval
+
+      assert_equal ruby_eval, prism_eval
     end
 
     def test_SymbolNode
