@@ -187,7 +187,7 @@ void mmtk_register_ppp(MMTk_ObjectReference object);
 
 void mmtk_register_ppps(const MMTk_ObjectReference *objects, size_t len);
 
-void *mmtk_get_givtbl(MMTk_ObjectReference object);
+void *mmtk_get_givtbl_during_gc(MMTk_ObjectReference object);
 
 size_t mmtk_get_vo_bit_log_region_size(void);
 

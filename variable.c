@@ -1100,17 +1100,19 @@ void
 rb_mark_generic_ivar(VALUE obj)
 {
     struct gen_ivtbl *ivtbl;
-    int r = 0;
 
 #if USE_MMTK
+    int r = 0;
     if (rb_mmtk_enabled_p()) {
-        ivtbl = mmtk_get_givtbl((MMTk_ObjectReference)obj);
+        ivtbl = mmtk_get_givtbl_during_gc((MMTk_ObjectReference)obj);
         r = (ivtbl != NULL);
     } else {
         r = rb_gen_ivtbl_get(obj, 0, &ivtbl);
     }
-#endif
     if (r) {
+#else
+    if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
+#endif
         if (rb_shape_obj_too_complex(obj)) {
             rb_mark_tbl_no_pin(ivtbl->as.complex.table);
         }
@@ -1127,7 +1129,18 @@ rb_ref_update_generic_ivar(VALUE obj)
 {
     struct gen_ivtbl *ivtbl;
 
+#if USE_MMTK
+    int r = 0;
+    if (rb_mmtk_enabled_p()) {
+        ivtbl = mmtk_get_givtbl_during_gc((MMTk_ObjectReference)obj);
+        r = (ivtbl != NULL);
+    } else {
+        r = rb_gen_ivtbl_get(obj, 0, &ivtbl);
+    }
+    if (r) {
+#else
     if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
+#endif
         if (rb_shape_obj_too_complex(obj)) {
             rb_gc_ref_update_table_values_only(ivtbl->as.complex.table);
         }
