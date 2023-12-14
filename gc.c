@@ -4607,7 +4607,7 @@ rb_objspace_free_objects(rb_objspace_t *objspace)
             VALUE vp = (VALUE)p;
             switch (BUILTIN_TYPE(vp)) {
               case T_DATA: {
-                if (rb_obj_is_mutex(vp) || rb_obj_is_thread(vp)) {
+                if (rb_obj_is_mutex(vp) || rb_obj_is_thread(vp) || rb_obj_is_main_ractor(vp)) {
                     obj_free(objspace, vp);
                 }
                 break;
