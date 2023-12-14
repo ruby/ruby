@@ -2552,6 +2552,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_class_variable_or_write_node_t *class_variable_or_write_node = (pm_class_variable_or_write_node_t*) node;
 
         LABEL *end_label = NEW_LABEL(lineno);
+        LABEL *start_label = NEW_LABEL(lineno);
+
+        ADD_INSN(ret, &dummy_line_node, putnil);
+        ADD_INSN3(ret, &dummy_line_node, defined, INT2FIX(DEFINED_CVAR),
+                ID2SYM(pm_constant_id_lookup(scope_node, class_variable_or_write_node->name)), Qtrue);
+
+        ADD_INSNL(ret, &dummy_line_node, branchunless, start_label);
 
         ID class_variable_name_id = pm_constant_id_lookup(scope_node, class_variable_or_write_node->name);
         VALUE class_variable_name_val = ID2SYM(class_variable_name_id);
@@ -2565,6 +2572,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         ADD_INSNL(ret, &dummy_line_node, branchif, end_label);
 
         PM_POP_UNLESS_POPPED;
+        ADD_LABEL(ret, start_label);
 
         PM_COMPILE_NOT_POPPED(class_variable_or_write_node->value);
 
