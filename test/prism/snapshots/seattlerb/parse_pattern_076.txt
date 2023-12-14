@@ -26,23 +26,23 @@
             │       ├── pattern:
             │       │   @ HashPatternNode (location: (2,3)-(2,16))
             │       │   ├── constant: ∅
-            │       │   ├── elements: (length: 2)
-            │       │   │   ├── @ AssocNode (location: (2,4)-(2,8))
-            │       │   │   │   ├── key:
-            │       │   │   │   │   @ SymbolNode (location: (2,4)-(2,6))
-            │       │   │   │   │   ├── flags: ∅
-            │       │   │   │   │   ├── opening_loc: ∅
-            │       │   │   │   │   ├── value_loc: (2,4)-(2,5) = "a"
-            │       │   │   │   │   ├── closing_loc: (2,5)-(2,6) = ":"
-            │       │   │   │   │   └── unescaped: "a"
-            │       │   │   │   ├── value:
-            │       │   │   │   │   @ IntegerNode (location: (2,7)-(2,8))
-            │       │   │   │   │   └── flags: decimal
-            │       │   │   │   └── operator_loc: ∅
-            │       │   │   └── @ NoKeywordsParameterNode (location: (2,10)-(2,15))
-            │       │   │       ├── operator_loc: (2,10)-(2,12) = "**"
-            │       │   │       └── keyword_loc: (2,12)-(2,15) = "nil"
-            │       │   ├── rest: ∅
+            │       │   ├── elements: (length: 1)
+            │       │   │   └── @ AssocNode (location: (2,4)-(2,8))
+            │       │   │       ├── key:
+            │       │   │       │   @ SymbolNode (location: (2,4)-(2,6))
+            │       │   │       │   ├── flags: ∅
+            │       │   │       │   ├── opening_loc: ∅
+            │       │   │       │   ├── value_loc: (2,4)-(2,5) = "a"
+            │       │   │       │   ├── closing_loc: (2,5)-(2,6) = ":"
+            │       │   │       │   └── unescaped: "a"
+            │       │   │       ├── value:
+            │       │   │       │   @ IntegerNode (location: (2,7)-(2,8))
+            │       │   │       │   └── flags: decimal
+            │       │   │       └── operator_loc: ∅
+            │       │   ├── rest:
+            │       │   │   @ NoKeywordsParameterNode (location: (2,10)-(2,15))
+            │       │   │   ├── operator_loc: (2,10)-(2,12) = "**"
+            │       │   │   └── keyword_loc: (2,12)-(2,15) = "nil"
             │       │   ├── opening_loc: (2,3)-(2,4) = "{"
             │       │   └── closing_loc: (2,15)-(2,16) = "}"
             │       ├── statements:

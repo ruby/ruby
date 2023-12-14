@@ -26,21 +26,21 @@
             │       ├── pattern:
             │       │   @ HashPatternNode (location: (2,3)-(2,11))
             │       │   ├── constant: ∅
-            │       │   ├── elements: (length: 2)
-            │       │   │   ├── @ AssocNode (location: (2,4)-(2,6))
-            │       │   │   │   ├── key:
-            │       │   │   │   │   @ SymbolNode (location: (2,4)-(2,6))
-            │       │   │   │   │   ├── flags: ∅
-            │       │   │   │   │   ├── opening_loc: ∅
-            │       │   │   │   │   ├── value_loc: (2,4)-(2,5) = "a"
-            │       │   │   │   │   ├── closing_loc: (2,5)-(2,6) = ":"
-            │       │   │   │   │   └── unescaped: "a"
-            │       │   │   │   ├── value: ∅
-            │       │   │   │   └── operator_loc: ∅
-            │       │   │   └── @ AssocSplatNode (location: (2,8)-(2,10))
+            │       │   ├── elements: (length: 1)
+            │       │   │   └── @ AssocNode (location: (2,4)-(2,6))
+            │       │   │       ├── key:
+            │       │   │       │   @ SymbolNode (location: (2,4)-(2,6))
+            │       │   │       │   ├── flags: ∅
+            │       │   │       │   ├── opening_loc: ∅
+            │       │   │       │   ├── value_loc: (2,4)-(2,5) = "a"
+            │       │   │       │   ├── closing_loc: (2,5)-(2,6) = ":"
+            │       │   │       │   └── unescaped: "a"
             │       │   │       ├── value: ∅
-            │       │   │       └── operator_loc: (2,8)-(2,10) = "**"
-            │       │   ├── rest: ∅
+            │       │   │       └── operator_loc: ∅
+            │       │   ├── rest:
+            │       │   │   @ AssocSplatNode (location: (2,8)-(2,10))
+            │       │   │   ├── value: ∅
+            │       │   │   └── operator_loc: (2,8)-(2,10) = "**"
             │       │   ├── opening_loc: (2,3)-(2,4) = "{"
             │       │   └── closing_loc: (2,10)-(2,11) = "}"
             │       ├── statements:

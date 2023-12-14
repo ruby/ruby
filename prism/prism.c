@@ -13121,10 +13121,15 @@ parse_pattern_hash(pm_parser_t *parser, pm_node_t *first_assoc) {
             break;
         }
 
-        pm_node_t *assoc;
-
         if (match1(parser, PM_TOKEN_USTAR_STAR)) {
-            assoc = parse_pattern_keyword_rest(parser);
+            pm_node_t *assoc = parse_pattern_keyword_rest(parser);
+
+            if (rest == NULL) {
+                rest = assoc;
+            } else {
+                pm_parser_err_node(parser, assoc, PM_ERR_PATTERN_EXPRESSION_AFTER_REST);
+                pm_node_list_append(&assocs, assoc);
+            }
         } else {
             expect1(parser, PM_TOKEN_LABEL, PM_ERR_PATTERN_LABEL_AFTER_COMMA);
             pm_node_t *key = (pm_node_t *) pm_symbol_node_label_create(parser, &parser->previous);
@@ -13138,10 +13143,14 @@ parse_pattern_hash(pm_parser_t *parser, pm_node_t *first_assoc) {
             }
 
             pm_token_t operator = not_provided(parser);
-            assoc = (pm_node_t *) pm_assoc_node_create(parser, key, &operator, value);
-        }
+            pm_node_t *assoc = (pm_node_t *) pm_assoc_node_create(parser, key, &operator, value);
 
-        pm_node_list_append(&assocs, assoc);
+            if (rest != NULL) {
+                pm_parser_err_node(parser, assoc, PM_ERR_PATTERN_EXPRESSION_AFTER_REST);
+            }
+
+            pm_node_list_append(&assocs, assoc);
+        }
     }
 
     pm_hash_pattern_node_t *node = pm_hash_pattern_node_node_list_create(parser, &assocs, rest);
