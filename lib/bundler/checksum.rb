@@ -189,7 +189,6 @@ module Bundler
       # that contain the same gem with different checksums.
       def replace(spec, checksum)
         return unless checksum
-
         lock_name = spec.name_tuple.lock_name
         @store_mutex.synchronize do
           existing = fetch_checksum(lock_name, checksum.algo)
