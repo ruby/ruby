@@ -1470,6 +1470,16 @@ module Prism
         pm = PrivateMethod.new
         pm.send(:instance_var)
       CODE
+
+      # Testing safe navigation operator
+      assert_prism_eval(<<-CODE)
+        def self.test_prism_call_node
+          if [][0]&.first
+            1
+          end
+        end
+        test_prism_call_node
+      CODE
     end
 
     def test_CallAndWriteNode
@@ -1507,6 +1517,24 @@ module Prism
         self.test_call_and_write_node &&= 1
       CODE
       )
+
+      assert_prism_eval(<<-CODE)
+        def self.test_prism_call_node; end
+        def self.test_prism_call_node=(val)
+          val
+        end
+        self&.test_prism_call_node &&= 1
+      CODE
+
+      assert_prism_eval(<<-CODE)
+        def self.test_prism_call_node
+          2
+        end
+        def self.test_prism_call_node=(val)
+          val
+        end
+        self&.test_prism_call_node &&= 1
+      CODE
     end
 
     def test_CallOrWriteNode
@@ -1544,6 +1572,24 @@ module Prism
         self.test_call_or_write_node ||= 1
       CODE
       )
+
+      assert_prism_eval(<<-CODE)
+        def self.test_prism_call_node
+          2
+        end
+        def self.test_prism_call_node=(val)
+          val
+        end
+        self&.test_prism_call_node ||= 1
+      CODE
+
+      assert_prism_eval(<<-CODE)
+        def self.test_prism_call_node; end
+        def self.test_prism_call_node=(val)
+          val
+        end
+        self&.test_prism_call_node ||= 1
+      CODE
     end
 
     def test_CallOperatorWriteNode
