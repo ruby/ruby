@@ -12974,7 +12974,7 @@ parse_pattern_constant_path(pm_parser_t *parser, pm_node_t *node) {
         case PM_ARRAY_PATTERN_NODE: {
             pm_array_pattern_node_t *pattern_node = (pm_array_pattern_node_t *) inner;
 
-            if (pattern_node->constant == NULL) {
+            if (pattern_node->constant == NULL && pattern_node->opening_loc.start == NULL) {
                 pattern_node->base.location.start = node->location.start;
                 pattern_node->base.location.end = closing.end;
 
@@ -12990,7 +12990,7 @@ parse_pattern_constant_path(pm_parser_t *parser, pm_node_t *node) {
         case PM_FIND_PATTERN_NODE: {
             pm_find_pattern_node_t *pattern_node = (pm_find_pattern_node_t *) inner;
 
-            if (pattern_node->constant == NULL) {
+            if (pattern_node->constant == NULL && pattern_node->opening_loc.start == NULL) {
                 pattern_node->base.location.start = node->location.start;
                 pattern_node->base.location.end = closing.end;
 
@@ -13006,7 +13006,7 @@ parse_pattern_constant_path(pm_parser_t *parser, pm_node_t *node) {
         case PM_HASH_PATTERN_NODE: {
             pm_hash_pattern_node_t *pattern_node = (pm_hash_pattern_node_t *) inner;
 
-            if (pattern_node->constant == NULL) {
+            if (pattern_node->constant == NULL && pattern_node->opening_loc.start == NULL) {
                 pattern_node->base.location.start = node->location.start;
                 pattern_node->base.location.end = closing.end;
 

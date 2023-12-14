@@ -1,8 +1,8 @@
-@ ProgramNode (location: (1,0)-(200,3))
-├── locals: [:bar, :baz, :qux, :b, :a, :foo]
+@ ProgramNode (location: (1,0)-(202,19))
+├── locals: [:bar, :baz, :qux, :b, :a, :foo, :x]
 └── statements:
-    @ StatementsNode (location: (1,0)-(200,3))
-    └── body: (length: 174)
+    @ StatementsNode (location: (1,0)-(202,19))
+    └── body: (length: 175)
         ├── @ MatchRequiredNode (location: (1,0)-(1,10))
         │   ├── value:
         │   │   @ CallNode (location: (1,0)-(1,3))
@@ -4675,55 +4675,87 @@
         │       │       └── flags: decimal
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
-        └── @ CallNode (location: (198,0)-(200,3))
-            ├── flags: ∅
-            ├── receiver: ∅
-            ├── call_operator_loc: ∅
-            ├── name: :foo
-            ├── message_loc: (198,0)-(198,3) = "foo"
-            ├── opening_loc: ∅
-            ├── arguments: ∅
-            ├── closing_loc: ∅
-            └── block:
-                @ BlockNode (location: (198,4)-(200,3))
-                ├── locals: []
-                ├── locals_body_index: 0
-                ├── parameters: ∅
-                ├── body:
-                │   @ StatementsNode (location: (199,2)-(199,29))
-                │   └── body: (length: 1)
-                │       └── @ MatchRequiredNode (location: (199,2)-(199,29))
-                │           ├── value:
-                │           │   @ ArrayNode (location: (199,2)-(199,8))
-                │           │   ├── flags: ∅
-                │           │   ├── elements: (length: 2)
-                │           │   │   ├── @ IntegerNode (location: (199,3)-(199,4))
-                │           │   │   │   └── flags: decimal
-                │           │   │   └── @ IntegerNode (location: (199,6)-(199,7))
-                │           │   │       └── flags: decimal
-                │           │   ├── opening_loc: (199,2)-(199,3) = "["
-                │           │   └── closing_loc: (199,7)-(199,8) = "]"
-                │           ├── pattern:
-                │           │   @ CapturePatternNode (location: (199,12)-(199,29))
-                │           │   ├── value:
-                │           │   │   @ ArrayPatternNode (location: (199,12)-(199,22))
-                │           │   │   ├── constant: ∅
-                │           │   │   ├── requireds: (length: 2)
-                │           │   │   │   ├── @ LocalVariableTargetNode (location: (199,13)-(199,16))
-                │           │   │   │   │   ├── name: :foo
-                │           │   │   │   │   └── depth: 1
-                │           │   │   │   └── @ LocalVariableTargetNode (location: (199,18)-(199,21))
-                │           │   │   │       ├── name: :bar
-                │           │   │   │       └── depth: 1
-                │           │   │   ├── rest: ∅
-                │           │   │   ├── posts: (length: 0)
-                │           │   │   ├── opening_loc: (199,12)-(199,13) = "["
-                │           │   │   └── closing_loc: (199,21)-(199,22) = "]"
-                │           │   ├── target:
-                │           │   │   @ LocalVariableTargetNode (location: (199,26)-(199,29))
-                │           │   │   ├── name: :baz
-                │           │   │   └── depth: 1
-                │           │   └── operator_loc: (199,23)-(199,25) = "=>"
-                │           └── operator_loc: (199,9)-(199,11) = "=>"
-                ├── opening_loc: (198,4)-(198,6) = "do"
-                └── closing_loc: (200,0)-(200,3) = "end"
+        ├── @ CallNode (location: (198,0)-(200,3))
+        │   ├── flags: ∅
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :foo
+        │   ├── message_loc: (198,0)-(198,3) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   └── block:
+        │       @ BlockNode (location: (198,4)-(200,3))
+        │       ├── locals: []
+        │       ├── locals_body_index: 0
+        │       ├── parameters: ∅
+        │       ├── body:
+        │       │   @ StatementsNode (location: (199,2)-(199,29))
+        │       │   └── body: (length: 1)
+        │       │       └── @ MatchRequiredNode (location: (199,2)-(199,29))
+        │       │           ├── value:
+        │       │           │   @ ArrayNode (location: (199,2)-(199,8))
+        │       │           │   ├── flags: ∅
+        │       │           │   ├── elements: (length: 2)
+        │       │           │   │   ├── @ IntegerNode (location: (199,3)-(199,4))
+        │       │           │   │   │   └── flags: decimal
+        │       │           │   │   └── @ IntegerNode (location: (199,6)-(199,7))
+        │       │           │   │       └── flags: decimal
+        │       │           │   ├── opening_loc: (199,2)-(199,3) = "["
+        │       │           │   └── closing_loc: (199,7)-(199,8) = "]"
+        │       │           ├── pattern:
+        │       │           │   @ CapturePatternNode (location: (199,12)-(199,29))
+        │       │           │   ├── value:
+        │       │           │   │   @ ArrayPatternNode (location: (199,12)-(199,22))
+        │       │           │   │   ├── constant: ∅
+        │       │           │   │   ├── requireds: (length: 2)
+        │       │           │   │   │   ├── @ LocalVariableTargetNode (location: (199,13)-(199,16))
+        │       │           │   │   │   │   ├── name: :foo
+        │       │           │   │   │   │   └── depth: 1
+        │       │           │   │   │   └── @ LocalVariableTargetNode (location: (199,18)-(199,21))
+        │       │           │   │   │       ├── name: :bar
+        │       │           │   │   │       └── depth: 1
+        │       │           │   │   ├── rest: ∅
+        │       │           │   │   ├── posts: (length: 0)
+        │       │           │   │   ├── opening_loc: (199,12)-(199,13) = "["
+        │       │           │   │   └── closing_loc: (199,21)-(199,22) = "]"
+        │       │           │   ├── target:
+        │       │           │   │   @ LocalVariableTargetNode (location: (199,26)-(199,29))
+        │       │           │   │   ├── name: :baz
+        │       │           │   │   └── depth: 1
+        │       │           │   └── operator_loc: (199,23)-(199,25) = "=>"
+        │       │           └── operator_loc: (199,9)-(199,11) = "=>"
+        │       ├── opening_loc: (198,4)-(198,6) = "do"
+        │       └── closing_loc: (200,0)-(200,3) = "end"
+        └── @ MatchRequiredNode (location: (202,0)-(202,19))
+            ├── value:
+            │   @ LocalVariableReadNode (location: (202,0)-(202,3))
+            │   ├── name: :foo
+            │   └── depth: 0
+            ├── pattern:
+            │   @ ArrayPatternNode (location: (202,7)-(202,19))
+            │   ├── constant:
+            │   │   @ ConstantReadNode (location: (202,7)-(202,13))
+            │   │   └── name: :Object
+            │   ├── requireds: (length: 1)
+            │   │   └── @ HashPatternNode (location: (202,14)-(202,18))
+            │   │       ├── constant: ∅
+            │   │       ├── elements: (length: 1)
+            │   │       │   └── @ AssocNode (location: (202,15)-(202,17))
+            │   │       │       ├── key:
+            │   │       │       │   @ SymbolNode (location: (202,15)-(202,17))
+            │   │       │       │   ├── flags: ∅
+            │   │       │       │   ├── opening_loc: ∅
+            │   │       │       │   ├── value_loc: (202,15)-(202,16) = "x"
+            │   │       │       │   ├── closing_loc: (202,16)-(202,17) = ":"
+            │   │       │       │   └── unescaped: "x"
+            │   │       │       ├── value: ∅
+            │   │       │       └── operator_loc: ∅
+            │   │       ├── rest: ∅
+            │   │       ├── opening_loc: (202,14)-(202,15) = "{"
+            │   │       └── closing_loc: (202,17)-(202,18) = "}"
+            │   ├── rest: ∅
+            │   ├── posts: (length: 0)
+            │   ├── opening_loc: (202,13)-(202,14) = "["
+            │   └── closing_loc: (202,18)-(202,19) = "]"
+            └── operator_loc: (202,4)-(202,6) = "=>"
