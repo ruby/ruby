@@ -544,6 +544,8 @@ module SyncDefaultGems
         end
         if editor
           system([editor, conflict].join(' '))
+          conflict.delete_if {|f| !File.exist?(f)}
+          return true if conflict.empty?
           return system(*%w"git add --", *conflict)
         end
       end
