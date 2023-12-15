@@ -17185,9 +17185,14 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
 
 static pm_node_t *
 parse_program(pm_parser_t *parser) {
-    pm_parser_scope_push(parser, !parser->current_scope);
-    parser_lex(parser);
+    // If the current scope is NULL, then we want to push a new top level scope.
+    // The current scope could exist in the event that we are parsing an eval
+    // and the user has passed into scopes that already exist.
+    if (parser->current_scope == NULL) {
+        pm_parser_scope_push(parser, true);
+    }
 
+    parser_lex(parser);
     pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_MAIN);
     if (!statements) {
         statements = pm_statements_node_create(parser);
