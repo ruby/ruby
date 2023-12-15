@@ -288,7 +288,7 @@ class TestRubyOptions < Test::Unit::TestCase
   end
 
   def test_parser_flag
-    warning = /The Prism compiler is currently experimental and compatibility with parse.y is not yet complete. Please report an issues you find on the prism issue tracker./
+    warning = /compiler based on the Prism parser is currently experimental/
 
     assert_in_out_err(%w(--parser=prism -e) + ["puts :hi"], "", %w(hi), warning)
 
