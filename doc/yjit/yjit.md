@@ -9,9 +9,9 @@ YJIT - Yet Another Ruby JIT
 ===========================
 
 YJIT is a lightweight, minimalistic Ruby JIT built inside CRuby.
-It lazily compiles code using a Basic Block Versioning (BBV) architecture. The target use case is that of servers running
-Ruby on Rails, an area where MJIT has not yet managed to deliver speedups.
-YJIT is currently supported for macOS and Linux on x86-64 and arm64/aarch64 CPUs.
+It lazily compiles code using a Basic Block Versioning (BBV) architecture.
+The target use case is that of servers running Ruby on Rails.
+YJIT is currently supported for macOS, Linux and BSD on x86-64 and arm64/aarch64 CPUs.
 This project is open source and falls under the same license as CRuby.
 
 <p align="center"><b>
@@ -20,6 +20,8 @@ This project is open source and falls under the same license as CRuby.
  </b></p>
 
 If you wish to learn more about the approach taken, here are some conference talks and publications:
+- RubyKaigi 2022 keynote: [Stories from developing YJIT](https://www.youtube.com/watch?v=EMchdR9C8XM)
+- RubyKaigi 2022 talk: [Building a Lightweight IR and Backend for YJIT](https://www.youtube.com/watch?v=BbLGqTxTRp0)
 - RubyKaigi 2021 talk: [YJIT: Building a New JIT Compiler Inside CRuby](https://www.youtube.com/watch?v=PBVLf3yfMs8)
 - Blog post: [YJIT: Building a New JIT Compiler Inside CRuby](https://pointersgonewild.com/2021/06/02/yjit-building-a-new-jit-compiler-inside-cruby/)
 - VMIL 2021 paper: [YJIT: A Basic Block Versioning JIT Compiler for CRuby](https://dl.acm.org/doi/10.1145/3486606.3486781)
@@ -52,8 +54,7 @@ series = {VMIL 2021}
 
 ## Current Limitations
 
-YJIT may not be suitable for certain applications. It currently only supports macOS and Linux on x86-64 and arm64/aarch64 CPUs. YJIT will use more memory than the Ruby interpreter because the JIT compiler needs to generate machine code in memory and maintain additional state
-information.
+YJIT may not be suitable for certain applications. It currently only supports macOS and Linux on x86-64 and arm64/aarch64 CPUs. YJIT will use more memory than the Ruby interpreter because the JIT compiler needs to generate machine code in memory and maintain additional state information.
 You can change how much executable memory is allocated using [YJIT's command-line options](#command-line-options). There is a slight performance tradeoff because allocating less executable memory could result in the generated machine code being collected more often.
 
 ## Installation
@@ -80,22 +81,31 @@ git clone https://github.com/ruby/ruby yjit
 cd yjit
 ```
 
-The YJIT `ruby` binary can be built with either GCC or Clang. It can be built either in dev (debug) mode or in release mode. For maximum performance, compile YJIT in release mode with GCC. More detailed build instructions are provided in the [Ruby README](https://github.com/ruby/ruby#how-to-compile-and-install).
+The YJIT `ruby` binary can be built with either GCC or Clang. It can be built either in dev (debug) mode or in release mode. For maximum performance, compile YJIT in release mode with GCC. More detailed build instructions are provided in the [Ruby README](https://github.com/ruby/ruby#how-to-build).
 
 ```sh
 # Configure in release mode for maximum performance, build and install
 ./autogen.sh
 ./configure --enable-yjit --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc
-make -j install
+make -j && make install
 ```
 
 or
 
 ```sh
-# Configure in dev (debug) mode for development, build and install
+# Configure in lower-performance dev (debug) mode for development, build and install
 ./autogen.sh
 ./configure --enable-yjit=dev --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc
-make -j install
+make -j && make install
+```
+
+Dev mode includes extended YJIT statistics, but can be slow. For only statistics you can configure in stats mode:
+
+```sh
+# Configure in extended-stats mode without slow runtime checks, build and install
+./autogen.sh
+./configure --enable-yjit=stats --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc
+make -j && make install
 ```
 
 On macOS, you may need to specify where to find some libraries:
@@ -107,7 +117,7 @@ brew install openssl readline libyaml
 # Configure in dev (debug) mode for development, build and install
 ./autogen.sh
 ./configure --enable-yjit=dev --prefix=$HOME/.rubies/ruby-yjit --disable-install-doc --with-opt-dir="$(brew --prefix openssl):$(brew --prefix readline):$(brew --prefix libyaml)"
-make -j install
+make -j && make install
 ```
 
 Typically configure will choose the default C compiler. To specify the C compiler, use
@@ -155,11 +165,9 @@ YJIT supports all command-line options supported by upstream CRuby, but also add
 
 - `--yjit`: enable YJIT (disabled by default)
 - `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function (default 30)
-- `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 128 MiB)
-- `--yjit-stats`: produce statistics after the execution of a program
-- `--yjit-trace-exits`: produce a Marshal dump of backtraces from specific exits. Automatically enables `--yjit-stats` (must configure and build with `--enable-yjit=stats` to use this)
-- `--yjit-max-versions=N`: maximum number of versions to generate per basic block (default 4)
-- `--yjit-greedy-versioning`: greedy versioning mode (disabled by default, may increase code size)
+- `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 64 MiB)
+- `--yjit-stats`: print statistics after the execution of a program (incurs a run-time cost)
+- `--yjit-trace-exits`: produce a Marshal dump of backtraces from specific exits. Automatically enables `--yjit-stats`
 
 Note that there is also an environment variable `RUBY_YJIT_ENABLE` which can be used to enable YJIT.
 This can be useful for some deployment scripts where specifying an extra command-line option to Ruby is not practical.
@@ -168,26 +176,77 @@ This can be useful for some deployment scripts where specifying an extra command
 
 We have collected a set of benchmarks and implemented a simple benchmarking harness in the [yjit-bench](https://github.com/Shopify/yjit-bench) repository. This benchmarking harness is designed to disable CPU frequency scaling, set process affinity and disable address space randomization so that the variance between benchmarking runs will be as small as possible. Please kindly note that we are at an early stage in this project.
 
-### Performance Tips
+## Performance Tips for Production Deployments
 
-This section contains tips on writing Ruby code that will run as fast as possible on YJIT. Some of this advice is based on current limitations of YJIT, while other advice is broadly applicable. It probably won't be practical to apply these tips everywhere in your codebase, but you can profile your code using a tool such as [stackprof](https://github.com/tmm1/stackprof) and refactor the specific methods that make up the largest fractions of the execution time.
+While YJIT options default to what we think would work well for most workloads,
+they might not necessarily be the best configuration for your application.
 
-- Use exceptions for error recovery only, not as part of normal control-flow
+This section covers tips on improving YJIT performance in case YJIT does not
+speed up your application in production.
+
+### Increasing --yjit-exec-mem-size
+
+When JIT code size (`RubyVM::YJIT.runtime_stats[:code_region_size]`) reaches this value,
+YJIT triggers "code GC" that frees all JIT code and starts recompiling everything.
+Compiling code takes some time, so scheduling code GC too frequently slows down your application.
+Increasing `--yjit-exec-mem-size` may speed up your application if `RubyVM::YJIT.runtime_stats[:code_gc_count]` is not 0 or 1.
+
+### Running workers as long as possible
+
+It's helpful to call the same code as many times as possible before a process restarts.
+If a process is killed too frequently, the time taken for compiling methods may outweigh
+the speedup obtained by compiling them.
+
+You should monitor the number of requests each process has served.
+If you're periodically killing worker processes, e.g. with `unicorn-worker-killer` or `puma_worker_killer`,
+you may want to reduce the killing frequency or increase the limit.
+
+## Saving YJIT Memory Usage
+
+YJIT allocates memory for JIT code and metadata. Enabling YJIT generally results in more memory usage.
+
+This section goes over tips on minimizing YJIT memory usage in case it uses more than your capacity.
+
+### Increasing --yjit-call-threshold
+
+As of Ruby 3.2, `--yjit-call-threshold` defaults to 30. With this default, some applications end up
+compiling methods that are used only during the application boot. Increasing this option may help
+you reduce the size of JIT code and metadata. It's worth trying different values like `--yjit-call-threshold=100`.
+
+Note that increasing the value too much may result in compiling code too late.
+You should monitor how many requests each worker processes before it's restarted. For example,
+if each process only handles 1000 requests, `--yjit-call-threshold=1000` might be too large for your application.
+
+### Decreasing --yjit-exec-mem-size
+
+`--yjit-exec-mem-size` specifies the JIT code size, but YJIT also uses memory for its metadata,
+which often consumes more memory than JIT code. Generally, YJIT adds memory overhead by roughly
+3-4x of `--yjit-exec-mem-size` in production as of Ruby 3.2. You should multiply that by the number
+of worker processes to estimate the worst case memory overhead.
+
+Running code GC adds overhead, but it could be still faster than recovering from a whole process killed by OOM.
+
+## Code Optimization Tips
+
+This section contains tips on writing Ruby code that will run as fast as possible on YJIT. Some of this advice is based on current limitations of YJIT, while other advice is broadly applicable. It probably won't be practical to apply these tips everywhere in your codebase. You should ideally start by profiling your application using a tool such as [stackprof](https://github.com/tmm1/stackprof) so that you can determine which methods make up most of the execution time. You can then refactor the specific methods that make up the largest fractions of the execution time. We do not recommend modifying your entire codebase based on the current limitations of YJIT.
+
+- Avoid using `OpenStruct`
 - Avoid redefining basic integer operations (i.e. +, -, <, >, etc.)
 - Avoid redefining the meaning of `nil`, equality, etc.
 - Avoid allocating objects in the hot parts of your code
-- Use while loops if you can, instead of `integer.times`
 - Minimize layers of indirection
   - Avoid classes that wrap objects if you can
   - Avoid methods that just call another method, trivial one liner methods
-- CRuby method calls are costly. Favor larger methods over smaller methods.
 - Try to write code so that the same variables always have the same type
+- Use `while` loops if you can, instead of C methods like `Array#each`
+  - This is not idiomatic Ruby, but could help in hot methods
+- CRuby method calls are costly. Avoid things such as methods that only return a value from a hash or return a constant.
 
 You can also use the `--yjit-stats` command-line option to see which bytecodes cause YJIT to exit, and refactor your code to avoid using these instructions in the hottest methods of your code.
 
 ### Other Statistics
 
-If you compile Ruby with `RUBY_DEBUG` and/or `YJIT_STATS` defined and run with `--yjit --yjit-stats`, YJIT will track and return performance statistics in `RubyVM::YJIT.runtime_stats`.
+If you run `ruby` with `--yjit --yjit-stats`, YJIT will track and return performance statistics in `RubyVM::YJIT.runtime_stats`.
 
 ```rb
 $ RUBYOPT="--yjit --yjit-stats" irb
@@ -205,15 +264,23 @@ irb(main):001:0> RubyVM::YJIT.runtime_stats
 
 Some of the counters include:
 
-:exec_instruction - how many Ruby bytecode instructions have been executed
-:binding_allocations - number of bindings allocated
-:binding_set - number of variables set via a binding
-:vm_insns_count - number of instructions executed by the Ruby interpreter
-:compiled_iseq_count - number of bytecode sequences compiled
+* :exec_instruction - how many Ruby bytecode instructions have been executed
+* :binding_allocations - number of bindings allocated
+* :binding_set - number of variables set via a binding
+* :code_gc_count - number of garbage collections of compiled code since process start
+* :vm_insns_count - number of instructions executed by the Ruby interpreter
+* :compiled_iseq_count - number of bytecode sequences compiled
+* :inline_code_size - size in bytes of compiled YJIT blocks
+* :outline_code_size - size in bytes of YJIT error-handling compiled code
+* :side_exit_count - number of side exits taken at runtime
+* :total_exit_count - number of exits, including side exits, taken at runtime
+* :avg_len_in_yjit - avg. number of instructions in compiled blocks before exiting to interpreter
 
 Counters starting with "exit_" show reasons for YJIT code taking a side exit (return to the interpreter.) See yjit_hacking.md for more details.
 
 Performance counter names are not guaranteed to remain the same between Ruby versions. If you're curious what one does, it's usually best to search the source code for it &mdash; but it may change in a later Ruby version.
+
+The printed text after a --yjit-stats run includes other information that may be named differently than the information in runtime_stats.
 
 ## Contributing
 
@@ -242,8 +309,6 @@ The YJIT source code is divided between:
 - `yjit/src/options.rs`: handling of command-line options
 - `yjit/bindgen/src/main.rs`: C bindings exposed to the Rust codebase through bindgen
 - `yjit/src/cruby.rs`: C bindings manually exposed to the Rust codebase
-- `misc/test_yjit_asm.sh`: script to compile and run the in-memory assembler tests
-- `misc/yjit_asm_tests.c`: tests for the in-memory assembler
 
 The core of CRuby's interpreter logic is found in:
 - `insns.def`: defines Ruby's bytecode instructions (gets compiled into `vm.inc`)
