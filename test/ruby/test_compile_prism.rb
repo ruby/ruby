@@ -534,6 +534,30 @@ module Prism
       assert_prism_eval("_, {}[:foo], _ = 1")
       assert_prism_eval("_,{}[:foo], _, {}[:bar] = 1")
 
+      assert_prism_eval(<<~CODE)
+        class Foo
+          def bar=(x); end
+          def baz=(c); end
+        end
+        foo = Foo.new
+        foo.bar, foo.baz = 1
+      CODE
+      assert_prism_eval(<<~CODE)
+        class Foo
+          def bar=(x); end
+          def baz=(c); end
+        end
+        foo = Foo.new
+        _, foo.bar, foo.baz = 1
+      CODE
+      assert_prism_eval(<<~CODE)
+        class Foo
+          def bar=(x); end
+          def baz=(c); end
+        end
+        foo = Foo.new
+        _, foo.bar, _, foo.baz = 1
+      CODE
     end
 
     ############################################################################
