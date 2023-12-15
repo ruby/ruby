@@ -30,6 +30,7 @@ module Bundler
 
       def from_api(digest, source_uri, algo = DEFAULT_ALGORITHM)
         return if Bundler.settings[:disable_checksum_validation]
+
         Checksum.new(algo, to_hexdigest(digest, algo), Source.new(:api, source_uri))
       end
 
@@ -41,11 +42,13 @@ module Bundler
       def to_hexdigest(digest, algo = DEFAULT_ALGORITHM)
         return digest unless algo == DEFAULT_ALGORITHM
         return digest if digest.match?(/\A[0-9a-f]{64}\z/i)
+
         if digest.match?(%r{\A[-0-9a-z_+/]{43}={0,2}\z}i)
           digest = digest.tr("-_", "+/") # fix urlsafe base64
-          return digest.unpack1("m0").unpack1("H*")
+          digest.unpack1("m0").unpack1("H*")
+        else
+          raise ArgumentError, "#{digest.inspect} is not a valid SHA256 hex or base64 digest"
         end
-        raise ArgumentError, "#{digest.inspect} is not a valid SHA256 hex or base64 digest"
       end
     end
 
@@ -85,6 +88,7 @@ module Bundler
 
     def merge!(other)
       return nil unless match?(other)
+
       @sources.concat(other.sources).uniq!
       self
     end
@@ -185,6 +189,7 @@ module Bundler
       # that contain the same gem with different checksums.
       def replace(spec, checksum)
         return unless checksum
+
         lock_name = spec.name_tuple.lock_name
         @store_mutex.synchronize do
           existing = fetch_checksum(lock_name, checksum.algo)
@@ -198,6 +203,7 @@ module Bundler
 
       def register(spec, checksum)
         return unless checksum
+
         register_checksum(spec.name_tuple.lock_name, checksum)
       end
 
