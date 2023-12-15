@@ -20,7 +20,7 @@ autoload :OpenSSL, 'openssl'
 #
 # Example:
 #
-#   require 'bundler/vendor/net-http/lib/net/http/persistent'
+#   require 'bundler/vendor/net-http-persistent/lib/net/http/persistent'
 #
 #   uri = Bundler::URI 'http://example.com/awesome/web/service'
 #
