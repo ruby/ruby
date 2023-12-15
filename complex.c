@@ -1477,11 +1477,17 @@ nucomp_real_p_m(VALUE self)
 
 /*
  * call-seq:
- *    cmp.denominator  ->  integer
+ *   denominator -> integer
  *
- * Returns the denominator (lcm of both denominator - real and imag).
+ * Returns the denominator of +self+, which is
+ * the {least common multiple}[https://en.wikipedia.org/wiki/Least_common_multiple]
+ * of <tt>self.real.denominator</tt> and <tt>self.imag.denominator</tt>:
  *
- * See numerator.
+ *   Complex.rect(Rational(1, 2), Rational(2, 3)).denominator # => 6
+ *
+ * Note that <tt>n.denominator</tt> of a non-rational numeric is +1+.
+ *
+ * Related: Complex#numerator.
  */
 static VALUE
 nucomp_denominator(VALUE self)
@@ -1492,21 +1498,28 @@ nucomp_denominator(VALUE self)
 
 /*
  * call-seq:
- *    cmp.numerator  ->  numeric
+ *   numerator -> numeric
  *
- * Returns the numerator.
+ * Returns the numerator of +self+:
  *
- *        1   2       3+4i  <-  numerator
- *        - + -i  ->  ----
- *        2   3        6    <-  denominator
+ *   c = Complex(Rational(2, 3), Rational(3, 4)) # => ((2/3)+(3/4)*i)
+ *   c.numerator                                 # => (8+9i)
  *
- *    c = Complex('1/2+2/3i')  #=> ((1/2)+(2/3)*i)
- *    n = c.numerator          #=> (3+4i)
- *    d = c.denominator        #=> 6
- *    n / d                    #=> ((1/2)+(2/3)*i)
- *    Complex(Rational(n.real, d), Rational(n.imag, d))
- *                             #=> ((1/2)+(2/3)*i)
- * See denominator.
+ * This result is computed thus:
+ *
+ *   # Numerators and denominators for c.real and c.imag.
+ *   c.real.numerator   # => 2
+ *   c.real.denominator # => 3
+ *   c.imag.numerator   # => 3
+ *   c.imag.denominator # => 4
+ *   # Real and imaginary parts for new Complex c.numerator.
+ *   result_real = c.real.numerator * c.imag.denominator # => 8
+ *   result_imag = c.imag.numerator * c.real.denominator # => 9
+ *   # New Complex c.numerator (Q.E.D.).
+ *   result = Complex(result_real, result_imag) # => (8+9i)
+ *   c.numerator                                # => (8+9i)
+ *
+ * Related: Complex.denominator.
  */
 static VALUE
 nucomp_numerator(VALUE self)
