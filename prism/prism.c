@@ -1340,6 +1340,11 @@ pm_assoc_node_create(pm_parser_t *parser, pm_node_t *key, const pm_token_t *oper
         flags = key->flags & value->flags & PM_NODE_FLAG_STATIC_LITERAL;
     }
 
+    // Hash string keys should be frozen
+    if (PM_NODE_TYPE_P(key, PM_STRING_NODE)) {
+        key->flags |= PM_STRING_FLAGS_FROZEN;
+    }
+
     *node = (pm_assoc_node_t) {
         {
             .type = PM_ASSOC_NODE,

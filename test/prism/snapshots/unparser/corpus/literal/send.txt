@@ -1310,7 +1310,7 @@
         │   │               └── @ AssocNode (location: (64,13)-(64,25))
         │   │                   ├── key:
         │   │                   │   @ StringNode (location: (64,13)-(64,18))
-        │   │                   │   ├── flags: ∅
+        │   │                   │   ├── flags: frozen
         │   │                   │   ├── opening_loc: (64,13)-(64,14) = "\""
         │   │                   │   ├── content_loc: (64,14)-(64,17) = "baz"
         │   │                   │   ├── closing_loc: (64,17)-(64,18) = "\""
