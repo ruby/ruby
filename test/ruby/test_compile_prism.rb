@@ -589,6 +589,17 @@ module Prism
       assert_prism_eval('$pit = 1; "1 #$pit 1"')
       assert_prism_eval('"1 #{1 + 2} 1"')
       assert_prism_eval('"Prism" "::" "TestCompilePrism"')
+      assert_prism_eval('("a""b").frozen?')
+      assert_prism_eval(<<-CODE)
+        # frozen_string_literal: true
+
+        ("a""b").frozen?
+      CODE
+      assert_prism_eval(<<-CODE)
+        # frozen_string_literal: true
+
+        ("a""b""#{1}").frozen?
+      CODE
     end
 
     def test_InterpolatedSymbolNode
