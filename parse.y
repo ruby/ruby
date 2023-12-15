@@ -1104,6 +1104,7 @@ static rb_node_break_t *rb_node_break_new(struct parser_params *p, NODE *nd_stts
 static rb_node_next_t *rb_node_next_new(struct parser_params *p, NODE *nd_stts, const YYLTYPE *loc);
 static rb_node_redo_t *rb_node_redo_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_node_def_temp_t *rb_node_def_temp_new(struct parser_params *p, const YYLTYPE *loc);
+static rb_node_def_temp_t *def_head_save(struct parser_params *p, rb_node_def_temp_t *n);
 
 #define NEW_BREAK(s,loc) (NODE *)rb_node_break_new(p,s,loc)
 #define NEW_NEXT(s,loc) (NODE *)rb_node_next_new(p,s,loc)
@@ -2694,7 +2695,7 @@ def_name	: fname
 
 defn_head	: k_def def_name
                     {
-                        $$ = $k_def;
+                        $$ = def_head_save(p, $k_def);
                         $$->nd_mid = $def_name;
                     /*%%%*/
                         $$->nd_def = NEW_DEFN($def_name, 0, &@$);
@@ -2712,7 +2713,7 @@ defs_head	: k_def singleton dot_or_colon
                   def_name
                     {
                         SET_LEX_STATE(EXPR_ENDFN|EXPR_LABEL); /* force for args */
-                        $$ = $k_def;
+                        $$ = def_head_save(p, $k_def);
                         $$->nd_mid = $def_name;
                     /*%%%*/
                         $$->nd_def = NEW_DEFS($singleton, $def_name, 0, &@$);
@@ -12260,8 +12261,8 @@ rb_node_def_temp_new(struct parser_params *p, const YYLTYPE *loc)
 {
     rb_node_def_temp_t *n = NODE_NEWNODE((enum node_type)NODE_DEF_TEMP, rb_node_def_temp_t, loc);
     n->save.cur_arg = p->cur_arg;
-    n->save.numparam_save = numparam_push(p);
-    n->save.max_numparam = p->max_numparam;
+    n->save.numparam_save = 0;
+    n->save.max_numparam = 0;
     n->save.ctxt = p->ctxt;
 #ifdef RIPPER
     n->nd_recv = Qnil;
@@ -12272,6 +12273,14 @@ rb_node_def_temp_new(struct parser_params *p, const YYLTYPE *loc)
     n->nd_mid = 0;
 #endif
 
+    return n;
+}
+
+static rb_node_def_temp_t *
+def_head_save(struct parser_params *p, rb_node_def_temp_t *n)
+{
+    n->save.numparam_save = numparam_push(p);
+    n->save.max_numparam = p->max_numparam;
     return n;
 }
 
