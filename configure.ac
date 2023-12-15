@@ -461,7 +461,7 @@ AC_SUBST(CC_VERSION_MESSAGE, $cc_version_message)
 : ${DLDFLAGS="$LDFLAGS"}
 
 RUBY_UNIVERSAL_ARCH
-AS_IF([test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" = no -a "${universal_binary:-no}" = no], [
+AS_IF([test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "${universal_binary:-no}" = no], [
     RUBY_DEFAULT_ARCH("$target_cpu")
 ])
 host_os=$target_os
