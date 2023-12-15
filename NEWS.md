@@ -282,17 +282,47 @@ changelog for details of the default gems or bundled gems.
 
 ## C API updates
 
-* `rb_postponed_job` changes
-
-    The postponed job APIs have been changed to address some rare crashes.
-    There are two new methods for managing postponed jobs; `rb_postponed_job_preregister`
-    and `rb_postponed_job_trigger`. These APIs replace `rb_postponed_job_register`
-    and `rb_postponed_job_register_once`, which are now marked as deprecated.
+* `rb_postponed_job` updates
+  * New APIs and deprecated APIs (see comments for details)
+    * added: `rb_postponed_job_preregister()`
+    * added: `rb_postponed_job_trigger()`
+    * deprecated: `rb_postponed_job_register()` (and semantic change. see below)
+    * deprecated: `rb_postponed_job_register_once()`
+  * The postponed job APIs have been changed to address some rare crashes.
+    To solve the issue, we introduced new two APIs and deprecated current APIs.
     The semantics of these functions have also changed slightly; `rb_postponed_job_register`
     now behaves like the `once` variant in that multiple calls with the same
     `func` might be coalesced into a single execution of the `func`
-
     [[Feature #20057]]
+
+* Some updates for internal thread event hook APIs
+  * `rb_internal_thread_event_data_t` with a target Ruby thread (VALUE)
+    and callback functions (`rb_internal_thread_event_callback`) receive it.
+    https://github.com/ruby/ruby/pull/8885
+  * The following functions are introduced to manipulate Ruby thread local data
+    from internal thread event hook APIs (they are introduced since Ruby 3.2). 
+    https://github.com/ruby/ruby/pull/8936
+    * `rb_internal_thread_specific_key_create()`
+    * `rb_internal_thread_specific_get()`
+    * `rb_internal_thread_specific_set()`
+
+* `rb_profile_thread_frames()` is introduced to get a frames from
+  a specific thread.
+  [[Feature #10602]]
+
+* `rb_data_define()` is introduced to define `Data`. [[Feature #19757]]
+
+* `rb_ext_resolve_symbol()` is introduced to search a function from
+  extension libraries. [[Feature #20005]]
+
+* IO related updates:
+  * The details of `rb_io_t` will be hidden and deprecated attributes
+    are added for each members. [[Feature #19057]]
+  * `rb_io_path(VALUE io)` is introduced to get a path of `io`.
+  * `rb_io_closed_p(VALUE io)` to get opening or closing of `io`.
+  * `rb_io_mode(VALUE io)` to get the mode of `io`.
+  * `rb_io_open_descriptor()` is introduced to make an IO object from a file
+    descriptor.
 
 ## Implementation improvements
 
@@ -402,6 +432,7 @@ changelog for details of the default gems or bundled gems.
       blocking operations.
 
 [Bug #595]:       https://bugs.ruby-lang.org/issues/595
+[Feature #10602]: https://bugs.ruby-lang.org/issues/10602
 [Bug #17146]:     https://bugs.ruby-lang.org/issues/17146
 [Feature #18183]: https://bugs.ruby-lang.org/issues/18183
 [Feature #18498]: https://bugs.ruby-lang.org/issues/18498
@@ -411,6 +442,7 @@ changelog for details of the default gems or bundled gems.
 [Feature #18949]: https://bugs.ruby-lang.org/issues/18949
 [Feature #18980]: https://bugs.ruby-lang.org/issues/18980
 [Bug #19012]:     https://bugs.ruby-lang.org/issues/19012
+[Feature #19057]: https://bugs.ruby-lang.org/issues/19057
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
 [Feature #19314]: https://bugs.ruby-lang.org/issues/19314
 [Feature #19347]: https://bugs.ruby-lang.org/issues/19347
@@ -425,6 +457,7 @@ changelog for details of the default gems or bundled gems.
 [Feature #19630]: https://bugs.ruby-lang.org/issues/19630
 [Feature #19678]: https://bugs.ruby-lang.org/issues/19678
 [Feature #19714]: https://bugs.ruby-lang.org/issues/19714
+[Feature #19757]: https://bugs.ruby-lang.org/issues/19757
 [Feature #19776]: https://bugs.ruby-lang.org/issues/19776
 [Feature #19777]: https://bugs.ruby-lang.org/issues/19777
 [Feature #19785]: https://bugs.ruby-lang.org/issues/19785
@@ -434,4 +467,5 @@ changelog for details of the default gems or bundled gems.
 [Feature #19843]: https://bugs.ruby-lang.org/issues/19843
 [Bug #19868]:     https://bugs.ruby-lang.org/issues/19868
 [Feature #19965]: https://bugs.ruby-lang.org/issues/19965
+[Feature #20005]: https://bugs.ruby-lang.org/issues/20005
 [Feature #20057]: https://bugs.ruby-lang.org/issues/20057
