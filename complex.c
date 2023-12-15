@@ -1431,7 +1431,7 @@ nucomp_rect(VALUE self)
  *
  *   Complex.polar(1, 2).polar # => [1.0, 2.0]
  *
- * See {Polar Coordinate}[rdoc-ref:Complex@Polar+Coordinates].
+ * See {Polar Coordinates}[rdoc-ref:Complex@Polar+Coordinates].
  *
  * If +self+ was created with
  * {rectangular coordinates}[rdoc-ref:Complex@Rectangular+Coordinates], the returned value
