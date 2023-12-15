@@ -2641,9 +2641,11 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     }
 
     if (pm_node->flags & PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) {
-        ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(orig_argc + 1));
+        if (!popped) {
+            ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(orig_argc + 1));
+        }
         ADD_SEND_R(ret, &dummy_line_node, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
-        PM_POP;
+        PM_POP_UNLESS_POPPED;
     }
     else {
         ADD_SEND_R(ret, &dummy_line_node, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
@@ -3156,7 +3158,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         ID method_id = pm_constant_id_lookup(scope_node, call_node->name);
         if (node->flags & PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) {
-            PM_PUTNIL;
+            if (!popped) {
+                PM_PUTNIL;
+            }
         }
 
         if (call_node->receiver == NULL) {
@@ -6182,7 +6186,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ISEQ_COMPILE_DATA(iseq)->last_line = body->location.code_location.end_pos.lineno;
 
             /* wide range catch handler must put at last */
-            ISEQ_COMPILE_DATA(iseq)->catch_except_p = true;
             ADD_CATCH_ENTRY(CATCH_TYPE_REDO, start, end, NULL, start);
             ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, start, end, NULL, end);
             break;
