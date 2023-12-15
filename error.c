@@ -1066,6 +1066,7 @@ rb_bug_for_fatal_signal(ruby_sighandler_t default_sighandler, int sig, const voi
 
     if (default_sighandler) default_sighandler(sig);
 
+    ruby_default_signal(sig);
     die();
 }
 
