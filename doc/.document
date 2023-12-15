@@ -6,3 +6,4 @@ NEWS
 syntax
 optparse
 rdoc
+yjit
