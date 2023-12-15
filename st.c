@@ -108,6 +108,7 @@
 #include "internal/bits.h"
 #include "internal/hash.h"
 #include "internal/sanitizers.h"
+#include "internal/st.h"
 #endif
 
 #include <stdio.h>

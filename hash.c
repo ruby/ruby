@@ -35,6 +35,7 @@
 #include "internal/hash.h"
 #include "internal/object.h"
 #include "internal/proc.h"
+#include "internal/st.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
 #include "internal/time.h"
@@ -757,7 +758,7 @@ ar_force_convert_table(VALUE hash, const char *file, int line)
         // make st
         st_table tab;
         st_table *new_tab = &tab;
-        rb_st_init_existing_table_with_size(new_tab, &objhash, size);
+        st_init_existing_table_with_size(new_tab, &objhash, size);
         ar_each_key(ar, bound, ar_each_key_insert, NULL, new_tab, hashes);
         hash_ar_free_and_clear_table(hash);
         RHASH_ST_TABLE_SET(hash, new_tab);
@@ -1530,7 +1531,7 @@ hash_copy(VALUE ret, VALUE hash)
         }
         else {
             st_table *tab = RHASH_ST_TABLE(ret);
-            rb_st_init_existing_table_with_size(tab, &objhash, RHASH_AR_TABLE_SIZE(hash));
+            st_init_existing_table_with_size(tab, &objhash, RHASH_AR_TABLE_SIZE(hash));
 
             int bound = RHASH_AR_TABLE_BOUND(hash);
             for (int i = 0; i < bound; i++) {
