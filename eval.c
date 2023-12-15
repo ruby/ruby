@@ -1501,7 +1501,7 @@ mod_using(VALUE self, VALUE module)
  *  call-seq:
  *     refinements -> array
  *
- *  Returns an array of modules defined within the receiver.
+ *  Returns an array of +Refinement+ defined within the receiver.
  *
  *     module A
  *       refine Integer do
