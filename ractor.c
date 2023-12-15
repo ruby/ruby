@@ -1476,10 +1476,10 @@ RACTOR_SELECTOR_PTR(VALUE selv)
 // Ractor::Selector.new
 
 static VALUE
-ractor_selector_create(VALUE crv)
+ractor_selector_create(VALUE klass)
 {
     struct rb_ractor_selector *s;
-    VALUE selv = TypedData_Make_Struct(rb_cRactorSelector, struct rb_ractor_selector, &ractor_selector_data_type, s);
+    VALUE selv = TypedData_Make_Struct(klass, struct rb_ractor_selector, &ractor_selector_data_type, s);
     s->take_basket.type.e = basket_type_reserved;
     s->take_ractors = st_init_numtable(); // ractor (ptr) -> take_config
     return selv;
@@ -1488,7 +1488,7 @@ ractor_selector_create(VALUE crv)
 // Ractor::Selector#add(r)
 
 static VALUE
-ractor_selector_add(rb_execution_context_t *ec, VALUE selv, VALUE rv)
+ractor_selector_add(VALUE selv, VALUE rv)
 {
     if (!rb_ractor_p(rv)) {
         rb_raise(rb_eArgError, "Not a ractor object");
@@ -1506,7 +1506,7 @@ ractor_selector_add(rb_execution_context_t *ec, VALUE selv, VALUE rv)
     config->closed = false;
     config->oneshot = false;
 
-    if (ractor_register_take(rb_ec_ractor_ptr(ec), r, &s->take_basket, false, config, true)) {
+    if (ractor_register_take(GET_RACTOR(), r, &s->take_basket, false, config, true)) {
         st_insert(s->take_ractors, (st_data_t)r, (st_data_t)config);
     }
 
@@ -1516,7 +1516,7 @@ ractor_selector_add(rb_execution_context_t *ec, VALUE selv, VALUE rv)
 // Ractor::Selector#remove(r)
 
 static VALUE
-ractor_selector_remove(rb_execution_context_t *ec, VALUE selv, VALUE rv)
+ractor_selector_remove(VALUE selv, VALUE rv)
 {
     if (!rb_ractor_p(rv)) {
         rb_raise(rb_eArgError, "Not a ractor object");
@@ -1549,28 +1549,24 @@ struct ractor_selector_clear_data {
 static int
 ractor_selector_clear_i(st_data_t key, st_data_t val, st_data_t data)
 {
-    struct ractor_selector_clear_data *ptr = (struct ractor_selector_clear_data *)data;
+    VALUE selv = (VALUE)data;
     rb_ractor_t *r = (rb_ractor_t *)key;
-    ractor_selector_remove(ptr->ec, ptr->selv, r->pub.self);
+    ractor_selector_remove(selv, r->pub.self);
     return ST_CONTINUE;
 }
 
 static VALUE
-ractor_selector_clear(rb_execution_context_t *ec, VALUE selv)
+ractor_selector_clear(VALUE selv)
 {
-    struct ractor_selector_clear_data data = {
-        .selv = selv,
-        .ec = ec,
-    };
     struct rb_ractor_selector *s = RACTOR_SELECTOR_PTR(selv);
 
-    st_foreach(s->take_ractors, ractor_selector_clear_i, (st_data_t)&data);
+    st_foreach(s->take_ractors, ractor_selector_clear_i, (st_data_t)selv);
     st_clear(s->take_ractors);
     return selv;
 }
 
 static VALUE
-ractor_selector_empty_p(rb_execution_context_t *ec, VALUE selv)
+ractor_selector_empty_p(VALUE selv)
 {
     struct rb_ractor_selector *s = RACTOR_SELECTOR_PTR(selv);
     return s->take_ractors->num_entries == 0 ? Qtrue : Qfalse;
@@ -1642,8 +1638,9 @@ ractor_selector_wait_cleaup(rb_ractor_t *cr, void *ptr)
 }
 
 static VALUE
-ractor_selector_wait(rb_execution_context_t *ec, VALUE selv, VALUE do_receivev, VALUE do_yieldv, VALUE yield_value, VALUE move)
+ractor_selector__wait(VALUE selv, VALUE do_receivev, VALUE do_yieldv, VALUE yield_value, VALUE move)
 {
+    rb_execution_context_t *ec = GET_EC();
     struct rb_ractor_selector *s = RACTOR_SELECTOR_PTR(selv);
     struct rb_ractor_basket *tb = &s->take_basket;
     struct rb_ractor_basket taken_basket;
@@ -1739,7 +1736,7 @@ ractor_selector_wait(rb_execution_context_t *ec, VALUE selv, VALUE do_receivev, 
       case basket_type_yielding:
         rb_bug("unreachable");
       case basket_type_deleted: {
-          ractor_selector_remove(ec, selv, taken_basket.sender);
+          ractor_selector_remove(selv, taken_basket.sender);
 
           rb_ractor_t *r = RACTOR_PTR(taken_basket.sender);
           if (ractor_take_will_lock(r, &taken_basket)) {
@@ -1755,7 +1752,7 @@ ractor_selector_wait(rb_execution_context_t *ec, VALUE selv, VALUE do_receivev, 
       }
       case basket_type_will:
         // no more messages
-        ractor_selector_remove(ec, selv, taken_basket.sender);
+        ractor_selector_remove(selv, taken_basket.sender);
         break;
       default:
         break;
@@ -1767,6 +1764,60 @@ ractor_selector_wait(rb_execution_context_t *ec, VALUE selv, VALUE do_receivev, 
     ret_r = taken_basket.sender;
   success:
     return rb_ary_new_from_args(2, ret_r, ret_v);
+}
+
+static VALUE
+ractor_selector_wait(int argc, VALUE *argv, VALUE selector)
+{
+    VALUE options;
+    ID keywords[3];
+    VALUE values[3];
+
+    keywords[0] = rb_intern("receive");
+    keywords[1] = rb_intern("yield_value");
+    keywords[2] = rb_intern("move");
+
+    rb_scan_args(argc, argv, "0:", &options);
+    rb_get_kwargs(options, keywords, 0, numberof(values), values);
+    return ractor_selector__wait(selector,
+                                 values[0] == Qundef ? Qfalse : RTEST(values[0]),
+                                 values[1] != Qundef, values[1], values[2]);
+}
+
+static VALUE
+ractor_selector_new(int argc, VALUE *ractors, VALUE klass)
+{
+    VALUE selector = ractor_selector_create(klass);
+
+    for (int i=0; i<argc; i++) {
+        ractor_selector_add(selector, ractors[i]);
+    }
+
+    return selector;
+}
+
+static VALUE
+ractor_select_internal(rb_execution_context_t *ec, VALUE self, VALUE ractors, VALUE do_receive, VALUE do_yield, VALUE yield_value, VALUE move)
+{
+    VALUE selector = ractor_selector_new(RARRAY_LENINT(ractors), (VALUE *)RARRAY_CONST_PTR(ractors), rb_cRactorSelector);
+    VALUE result;
+    int state;
+
+    EC_PUSH_TAG(ec);
+    if ((state = EC_EXEC_TAG() == TAG_NONE)) {
+        result = ractor_selector__wait(selector, do_receive, do_yield, yield_value, move);
+    }
+    else {
+        // ensure
+        ractor_selector_clear(selector);
+
+        // jump
+        EC_JUMP_TAG(ec, state);
+    }
+    EC_POP_TAG();
+
+    RB_GC_GUARD(ractors);
+    return result;
 }
 
 // Ractor#close_incoming
@@ -2439,6 +2490,29 @@ ractor_moved_missing(int argc, VALUE *argv, VALUE self)
     rb_raise(rb_eRactorMovedError, "can not send any methods to a moved object");
 }
 
+#ifndef USE_RACTOR_SELECTOR
+#define USE_RACTOR_SELECTOR 0
+#endif
+
+RUBY_SYMBOL_EXPORT_BEGIN
+void rb_init_ractor_selector(void);
+RUBY_SYMBOL_EXPORT_END
+
+void
+rb_init_ractor_selector(void)
+{
+    rb_cRactorSelector = rb_define_class_under(rb_cRactor, "Selector", rb_cObject);
+    rb_undef_alloc_func(rb_cRactorSelector);
+
+    rb_define_singleton_method(rb_cRactorSelector, "new", ractor_selector_new , -1);
+    rb_define_method(rb_cRactorSelector, "add", ractor_selector_add, 1);
+    rb_define_method(rb_cRactorSelector, "remove", ractor_selector_remove, 1);
+    rb_define_method(rb_cRactorSelector, "clear", ractor_selector_clear, 0);
+    rb_define_method(rb_cRactorSelector, "empty?", ractor_selector_empty_p, 0);
+    rb_define_method(rb_cRactorSelector, "wait", ractor_selector_wait, -1);
+    rb_define_method(rb_cRactorSelector, "_wait", ractor_selector__wait, 4);
+}
+
 /*
  *  Document-class: Ractor::ClosedError
  *
@@ -2559,8 +2633,9 @@ Init_Ractor(void)
     rb_define_method(rb_cRactorMovedObject, "instance_eval", ractor_moved_missing, -1);
     rb_define_method(rb_cRactorMovedObject, "instance_exec", ractor_moved_missing, -1);
 
-    rb_cRactorSelector = rb_define_class_under(rb_cRactor, "Selector", rb_cObject);
-    rb_undef_alloc_func(rb_cRactorSelector);
+#if USE_RACTOR_SELECTOR
+    rb_init_ractor_selector();
+#endif
 }
 
 void
