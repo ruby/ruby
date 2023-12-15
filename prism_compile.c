@@ -1226,6 +1226,12 @@ pm_compile_multi_write_lhs(rb_iseq_t *iseq, NODE dummy_line_node, const uint8_t 
         }
         break;
       }
+      case PM_CALL_TARGET_NODE: {
+        pm_call_target_node_t *cast = (pm_call_target_node_t *)node;
+        PM_COMPILE_NOT_POPPED((pm_node_t *)cast->receiver);
+        pushed++;
+        break;
+      }
       case PM_MULTI_TARGET_NODE: {
         pm_multi_target_node_t *cast = (pm_multi_target_node_t *) node;
         for (size_t index = 0; index < cast->lefts.size; index++) {
@@ -4940,7 +4946,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_multi_write_node_t *multi_write_node = (pm_multi_write_node_t *)node;
         pm_node_list_t *lefts = &multi_write_node->lefts;
         pm_node_list_t *rights = &multi_write_node->rights;
-        size_t argc = 0;
+        size_t argc = 1;
 
         // pre-process the left hand side of multi-assignments.
         uint8_t pushed = 0;
@@ -4995,6 +5001,18 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
                     ADD_SEND(ret, &dummy_line_node, idASET, INT2FIX(argc));
                     PM_POP;
+                    PM_POP;
+                    remainder -= argc;
+
+                } else if (PM_NODE_TYPE_P(considered_node, PM_CALL_TARGET_NODE)) {
+                    pm_call_target_node_t *cast = (pm_call_target_node_t *)considered_node;
+
+                    VALUE vals = INT2FIX(remainder + (lefts->size - index));
+                    ADD_INSN1(ret, &dummy_line_node, topn, vals);
+                    ADD_INSN(ret, &dummy_line_node, swap);
+
+                    ID method_id = pm_constant_id_lookup(scope_node, cast->name);
+                    ADD_SEND(ret, &dummy_line_node, method_id, INT2FIX(argc));
                     PM_POP;
                     remainder -= argc;
                 } else {
