@@ -31,6 +31,7 @@
 #include "internal/object.h"
 #include "internal/struct.h"
 #include "internal/string.h"
+#include "internal/st.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
 #include "variable.h"
