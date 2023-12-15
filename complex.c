@@ -1399,12 +1399,22 @@ rb_complex_arg(VALUE self)
 
 /*
  * call-seq:
- *    cmp.rect         ->  array
- *    cmp.rectangular  ->  array
+ *   rect -> array
  *
- * Returns an array; [cmp.real, cmp.imag].
+ * Returns the array <tt>[self.real, self.imag]</tt>:
  *
- *    Complex(1, 2).rectangular  #=> [1, 2]
+ *   Complex.rect(1, 2).rect # => [1, 2]
+ *
+ * See {Rectangular Coordinate}[rdoc-ref:Complex@Rectangular+Coordinates].
+ *
+ * If +self+ was created with
+ * {polar coordinates}[rdoc-ref:Complex@Polar+Coordinates], the returned value
+ * is computed, and may be inexact:
+ *
+ *   Complex.polar(1.0, 1.0).rect # => [0.5403023058681398, 0.8414709848078965]
+ *
+ *
+ * Complex#rectangular is an alias for Complex#rect.
  */
 static VALUE
 nucomp_rect(VALUE self)
@@ -1415,11 +1425,20 @@ nucomp_rect(VALUE self)
 
 /*
  * call-seq:
- *    cmp.polar  ->  array
+ *   polar -> array
  *
- * Returns an array; [cmp.abs, cmp.arg].
+ * Returns the array <tt>[self.abs, self.arg]</tt>:
  *
- *    Complex(1, 2).polar  #=> [2.23606797749979, 1.1071487177940904]
+ *   Complex.polar(1, 2).polar # => [1.0, 2.0]
+ *
+ * See {Polar Coordinate}[rdoc-ref:Complex@Polar+Coordinates].
+ *
+ * If +self+ was created with
+ * {rectangular coordinates}[rdoc-ref:Complex@Rectangular+Coordinates], the returned value
+ * is computed, and may be inexact:
+ *
+ *   Complex.rect(1, 1).polar # => [1.4142135623730951, 0.7853981633974483]
+ *
  */
 static VALUE
 nucomp_polar(VALUE self)
@@ -1429,12 +1448,13 @@ nucomp_polar(VALUE self)
 
 /*
  * call-seq:
- *    cmp.conj       ->  complex
- *    cmp.conjugate  ->  complex
+ *   conj -> complex
  *
- * Returns the complex conjugate.
+ * Returns the conjugate of +self+, <tt>Complex.rect(self.imag, self.real)</tt>:
  *
- *    Complex(1, 2).conjugate  #=> (1-2i)
+ *   Complex.rect(1, 2).conj # => (1-2i)
+ *
+ * Complex#conjugate is an alias for Complex#conj.
  */
 VALUE
 rb_complex_conjugate(VALUE self)
@@ -1445,10 +1465,9 @@ rb_complex_conjugate(VALUE self)
 
 /*
  * call-seq:
- *    Complex(1).real?     ->  false
- *    Complex(1, 2).real?  ->  false
+ *   real? -> false
  *
- * Returns false, even if the complex number has no imaginary part.
+ * Returns +false+; for compatibility with Numeric#real?.
  */
 static VALUE
 nucomp_real_p_m(VALUE self)
