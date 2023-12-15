@@ -552,8 +552,13 @@ class Assertion < Struct.new(:src, :path, :lineno, :proc)
     filename = "bootstraptest.#{self.path}_#{self.lineno}_#{self.id}.rb"
     File.open(filename, 'w') {|f|
       f.puts "#frozen_string_literal:true" if frozen_string_literal
-      f.puts "GC.stress = true" if $stress
-      f.puts "print(begin; #{self.src}; end)"
+      if $stress
+        f.puts "GC.stress = true" if $stress
+      else
+        f.puts ""
+      end
+      f.puts "class BT_Skip < Exception; end; def skip(msg) = raise(BT_Skip, msg.to_s)"
+      f.puts "print(begin; #{self.src}; rescue BT_Skip; $!.message; end)"
     }
     filename
   end
