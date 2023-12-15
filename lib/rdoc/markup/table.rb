@@ -3,8 +3,16 @@
 # A section of table
 
 class RDoc::Markup::Table
-  attr_accessor :header, :align, :body
+  # headers of each column
+  attr_accessor :header
 
+  # alignments of each column
+  attr_accessor :align
+
+  # body texts of each column
+  attr_accessor :body
+
+  # Creates new instance
   def initialize header, align, body
     @header, @align, @body = header, align, body
   end

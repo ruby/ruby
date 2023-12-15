@@ -10,6 +10,10 @@ require 'strscan'
 
 module RDoc::Text
 
+  ##
+  # The language for this text.  This affects stripping comments
+  # markers.
+
   attr_accessor :language
 
   ##

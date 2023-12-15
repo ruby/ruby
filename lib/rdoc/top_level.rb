@@ -52,6 +52,9 @@ class RDoc::TopLevel < RDoc::Context
     @classes_or_modules = []
   end
 
+  ##
+  # Sets the parser for this toplevel context, also the store.
+
   def parser=(val)
     @parser = val
     @store.update_parser_of_file(absolute_name, val) if @store

@@ -1215,6 +1215,9 @@ class RDoc::Parser::C < RDoc::Parser
     @top_level
   end
 
+  ##
+  # Creates a RDoc::Comment instance.
+
   def new_comment text = nil, location = nil, language = nil
     RDoc::Comment.new(text, location, language).tap do |comment|
       comment.format = @markup

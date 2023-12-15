@@ -180,6 +180,9 @@ class RDoc::Parser::Ruby < RDoc::Parser
     reset
   end
 
+  ##
+  # Return +true+ if +tk+ is a newline.
+
   def tk_nl?(tk)
     :on_nl == tk[:kind] or :on_ignored_nl == tk[:kind]
   end
