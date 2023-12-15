@@ -171,11 +171,17 @@ module Test_SyncDefaultGems
       IO.popen(%W[git log --format=#{format} -1], chdir: dir, &:read)&.chomp
     end
 
-    def assert_sync(commits = true, success: true)
+    def assert_sync(commits = true, success: true, editor: nil)
       result = nil
       out = capture_process_output_to([STDOUT, STDERR]) do
         Dir.chdir("src") do
-          result = SyncDefaultGems.sync_default_gems_with_commits(@target, commits)
+          if editor
+            editor, ENV["GIT_EDITOR"] = ENV["GIT_EDITOR"], editor
+            edit = true
+          end
+          result = SyncDefaultGems.sync_default_gems_with_commits(@target, commits, edit: edit)
+        ensure
+          ENV["GIT_EDITOR"] = editor if edit
         end
       end
       assert_equal(success, result, out)
@@ -264,6 +270,28 @@ module Test_SyncDefaultGems
       assert_equal("# main\n", File.read("src/Gemfile"), out)
       assert_equal(":ok\n""Should.be_merged\n", File.read("src/lib/common.rb"), out)
       assert_not_operator(File, :exist?, "src/.github/workflows/main.yml", out)
+    end
+
+    def test_delete_after_conflict
+      File.write("#@target/lib/bad.rb", "raise\n")
+      git(*%W"add lib/bad.rb", chdir: @target)
+      git(*%W"commit -q -m", "Add bad.rb", chdir: @target)
+      out = assert_sync
+      assert_equal("raise\n", File.read("src/lib/bad.rb"))
+
+      git(*%W"rm lib/bad.rb", chdir: "src", out: IO::NULL)
+      git(*%W"commit -q -m", "Remove bad.rb", chdir: "src")
+
+      File.write("#@target/lib/bad.rb", "raise 'bar'\n")
+      File.write("#@target/lib/common.rb", "Should.be_merged\n", mode: "a")
+      git(*%W"add lib/bad.rb lib/common.rb", chdir: @target)
+      git(*%W"commit -q -m", "Add conflict", chdir: @target)
+
+      head = top_commit("src")
+      out = assert_sync(editor: "git rm -f lib/bad.rb")
+      assert_not_equal(head, top_commit("src"))
+      assert_equal(":ok\n""Should.be_merged\n", File.read("src/lib/common.rb"), out)
+      assert_not_operator(File, :exist?, "src/lib/bad.rb", out)
     end
   end
 end
