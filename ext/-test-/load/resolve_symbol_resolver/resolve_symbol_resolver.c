@@ -38,13 +38,18 @@ rsr_try_resolve_sname(VALUE klass)
 void
 Init_resolve_symbol_resolver(void)
 {
-    VALUE mod = rb_define_module("ResolveSymbolResolver");
-    rb_define_singleton_method(mod, "any_method", rsr_any_method, 0);
-    rb_define_singleton_method(mod, "try_resolve_fname", rsr_try_resolve_fname, 0);
-    rb_define_singleton_method(mod, "try_resolve_sname", rsr_try_resolve_sname, 0);
-
+    /*
+     * Resolving symbols at the head of Init_ because it raises LoadError (in cases).
+     * If the module and methods are defined before raising LoadError, retrying `require "this.so"` will
+     * cause re-defining those methods (and will be warned).
+     */
     rst_any_method = (target_func)rb_ext_resolve_symbol("-test-/load/resolve_symbol_target", "rst_any_method");
     if (rst_any_method == NULL) {
         rb_raise(rb_eLoadError, "resolve_symbol_target is not loaded");
     }
+
+    VALUE mod = rb_define_module("ResolveSymbolResolver");
+    rb_define_singleton_method(mod, "any_method", rsr_any_method, 0);
+    rb_define_singleton_method(mod, "try_resolve_fname", rsr_try_resolve_fname, 0);
+    rb_define_singleton_method(mod, "try_resolve_sname", rsr_try_resolve_sname, 0);
 }
