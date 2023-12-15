@@ -5,6 +5,8 @@ require 'ripper'
 # Wrapper for Ripper lex states
 
 class RDoc::Parser::RipperStateLex
+  # :stopdoc:
+
   # TODO: Remove this constants after Ruby 2.4 EOL
   RIPPER_HAS_LEX_STATE = Ripper::Filter.method_defined?(:state)
 
@@ -567,6 +569,8 @@ class RDoc::Parser::RipperStateLex
     end
     tk
   end
+
+  # :startdoc:
 
   # New lexer for +code+.
   def initialize(code)

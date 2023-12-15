@@ -17,6 +17,7 @@ class RDoc::Markup::Table
     @header, @align, @body = header, align, body
   end
 
+  # :stopdoc:
   def == other
     self.class == other.class and
       @header == other.header and
@@ -28,7 +29,7 @@ class RDoc::Markup::Table
     visitor.accept_table @header, @body, @align
   end
 
-  def pretty_print q # :nodoc:
+  def pretty_print q
     q.group 2, '[Table: ', ']' do
       q.group 2, '[Head: ', ']' do
         q.seplist @header.zip(@align) do |text, align|
