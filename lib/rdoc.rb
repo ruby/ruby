@@ -129,6 +129,7 @@ module RDoc
     if File.directory?(rdoc_dir)
       rdoc_dir
     else
+      require 'fileutils'
       begin
         # XDG
         xdg_data_home = ENV["XDG_DATA_HOME"] || File.join(File.expand_path("~"), '.local', 'share')
