@@ -25,7 +25,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block: ∅
         │   │       └── @ KeywordHashNode (location: (1,9)-(1,18))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (1,9)-(1,18))
         │   │                   ├── key:
@@ -63,7 +63,7 @@
             │       │   ├── closing_loc: ∅
             │       │   └── block: ∅
             │       └── @ KeywordHashNode (location: (3,9)-(3,18))
-            │           ├── flags: static_keys
+            │           ├── flags: symbol_keys
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (3,9)-(3,18))
             │                   ├── key:

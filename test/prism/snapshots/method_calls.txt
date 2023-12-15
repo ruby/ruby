@@ -782,7 +782,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── unescaped: "a"
         │   │       └── @ KeywordHashNode (location: (60,8)-(60,32))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 2)
         │   │               ├── @ AssocNode (location: (60,8)-(60,22))
         │   │               │   ├── key:
@@ -914,7 +914,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── unescaped: "a"
         │   │       └── @ KeywordHashNode (location: (64,8)-(64,15))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (64,8)-(64,15))
         │   │                   ├── key:
@@ -983,7 +983,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (66,3)-(66,17))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (66,3)-(66,17))
         │   │                   ├── key:
@@ -1173,7 +1173,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (74,3)-(74,20))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (74,3)-(74,20))
         │   │                   ├── key:
@@ -1236,7 +1236,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── unescaped: "a"
         │   │       └── @ KeywordHashNode (location: (82,0)-(82,5))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (82,0)-(82,5))
         │   │                   ├── key:
@@ -1287,7 +1287,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (87,4)-(87,21))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 2)
         │   │               ├── @ AssocNode (location: (87,4)-(87,11))
         │   │               │   ├── key:
@@ -1336,7 +1336,7 @@
         │   │       ├── @ IntegerNode (location: (89,10)-(89,11))
         │   │       │   └── flags: decimal
         │   │       └── @ KeywordHashNode (location: (89,13)-(89,21))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (89,13)-(89,21))
         │   │                   ├── key:
@@ -1527,7 +1527,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (103,4)-(103,11))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (103,4)-(103,11))
         │   │                   ├── key:
@@ -1555,7 +1555,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (105,4)-(105,28))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (105,4)-(105,28))
         │   │                   ├── key:
@@ -1612,7 +1612,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (107,4)-(107,24))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (107,4)-(107,24))
         │   │                   ├── key:

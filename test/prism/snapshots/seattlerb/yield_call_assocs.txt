@@ -13,7 +13,7 @@
         │   │       ├── @ IntegerNode (location: (1,6)-(1,7))
         │   │       │   └── flags: decimal
         │   │       └── @ KeywordHashNode (location: (1,9)-(1,16))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (1,9)-(1,16))
         │   │                   ├── key:
@@ -38,7 +38,7 @@
         │   │       ├── @ IntegerNode (location: (3,6)-(3,7))
         │   │       │   └── flags: decimal
         │   │       └── @ KeywordHashNode (location: (3,9)-(3,25))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 2)
         │   │               ├── @ AssocNode (location: (3,9)-(3,16))
         │   │               │   ├── key:
@@ -84,7 +84,7 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ KeywordHashNode (location: (5,8)-(5,13))
-        │   │           │           ├── flags: static_keys
+        │   │           │           ├── flags: symbol_keys
         │   │           │           └── elements: (length: 1)
         │   │           │               └── @ AssocNode (location: (5,8)-(5,13))
         │   │           │                   ├── key:
@@ -120,7 +120,7 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ KeywordHashNode (location: (7,8)-(7,11))
-        │   │           │           ├── flags: static_keys
+        │   │           │           ├── flags: symbol_keys
         │   │           │           └── elements: (length: 1)
         │   │           │               └── @ AssocNode (location: (7,8)-(7,11))
         │   │           │                   ├── key:
@@ -156,7 +156,7 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ KeywordHashNode (location: (9,8)-(9,11))
-        │   │           │           ├── flags: static_keys
+        │   │           │           ├── flags: symbol_keys
         │   │           │           └── elements: (length: 1)
         │   │           │               └── @ AssocNode (location: (9,8)-(9,11))
         │   │           │                   ├── key:
