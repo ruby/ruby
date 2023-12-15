@@ -726,7 +726,8 @@ rb_dbl_complex_new_polar_pi(double abs, double ang)
  * Returns a new \Complex object formed from the arguments,
  * each of which must be an instance of Numeric,
  * or an instance of one of its subclasses:
- * \Complex, Float, Integer, Rational;
+ * \Complex, Float, Integer, Rational.
+ * Argument +arg+ is given in radians;
  * see {Polar Coordinates}[rdoc-ref:Complex@Polar+Coordinates]:
  *
  *   Complex.polar(3)        # => (3+0i)
@@ -1111,7 +1112,7 @@ complex_pow_for_special_angle(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    complex ** numeric -> new_complex
+ *   complex ** numeric -> new_complex
  *
  * Returns +self+ raised to power +numeric+:
  *
@@ -1313,13 +1314,20 @@ nucomp_coerce(VALUE self, VALUE other)
 
 /*
  * call-seq:
- *    cmp.abs        ->  real
- *    cmp.magnitude  ->  real
+ *   abs -> float
  *
- * Returns the absolute part of its polar form.
+ * Returns the absolute value (magnitude) for +self+;
+ * see {polar coordinates}[rdoc-ref:Complex@Polar+Coordinates]:
  *
- *    Complex(-1).abs         #=> 1
- *    Complex(3.0, -4.0).abs  #=> 5.0
+ *   Complex.polar(-1, 0).abs # => 1.0
+ *
+ * If +self+ was created with
+ * {rectangular coordinates}[rdoc-ref:Complex@Rectangular+Coordinates], the returned value
+ * is computed, and may be inexact:
+ *
+ *   Complex.rectangular(1, 1).abs # => 1.4142135623730951 # The square root of 2.
+ *
+ * Complex#magnitude is an alias for Complex#abs.
  */
 VALUE
 rb_complex_abs(VALUE self)
@@ -1343,12 +1351,19 @@ rb_complex_abs(VALUE self)
 
 /*
  * call-seq:
- *    cmp.abs2  ->  real
+ *   abs2 -> float
  *
- * Returns square of the absolute value.
+ * Returns square of the absolute value (magnitude) for +self+;
+ * see {polar coordinates}[rdoc-ref:Complex@Polar+Coordinates]:
  *
- *    Complex(-1).abs2         #=> 1
- *    Complex(3.0, -4.0).abs2  #=> 25.0
+ *   Complex.polar(2, 2).abs2 # => 4.0
+ *
+ * If +self+ was created with
+ * {rectangular coordinates}[rdoc-ref:Complex@Rectangular+Coordinates], the returned value
+ * is computed, and may be inexact:
+ *
+ *   Complex.rectangular(1.0/3, 1.0/3).abs2 # => 0.2222222222222222
+ *
  */
 static VALUE
 nucomp_abs2(VALUE self)
@@ -1360,13 +1375,20 @@ nucomp_abs2(VALUE self)
 
 /*
  * call-seq:
- *    cmp.arg    ->  float
- *    cmp.angle  ->  float
- *    cmp.phase  ->  float
+ *   arg -> float
  *
- * Returns the angle part of its polar form.
+ * Returns the argument (angle) for +self+ in radians;
+ * see {polar coordinates}[rdoc-ref:Complex@Polar+Coordinates]:
  *
- *    Complex.polar(3, Math::PI/2).arg  #=> 1.5707963267948966
+ *   Complex.polar(3, Math::PI/2).arg  # => 1.57079632679489660
+ *
+ * If +self+ was created with
+ * {rectangular coordinates}[rdoc-ref:Complex@Rectangular+Coordinates], the returned value
+ * is computed, and may be inexact:
+ *
+ *   Complex.polar(1, 1.0/3).arg # => 0.33333333333333326
+ *
+ * Complex#angle and Complex#phase are aliases for Complex#arg.
  */
 VALUE
 rb_complex_arg(VALUE self)
@@ -2409,6 +2431,10 @@ float_arg(VALUE self)
  * The polar coordinates of a complex number
  * are called the _absolute_ and _argument_ parts;
  * see {Complex polar plane}[https://en.wikipedia.org/wiki/Complex_number#Polar_complex_plane].
+ *
+ * In this class, the argument part
+ * in expressed {radians}[https://en.wikipedia.org/wiki/Radian]
+ * (not {degrees}[https://en.wikipedia.org/wiki/Degree_(angle)]).
  *
  * You can create a \Complex object from polar coordinates with:
  *
