@@ -192,6 +192,7 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_MODULE_TERM]                        = "expected an `end` to close the `module` statement",
     [PM_ERR_MULTI_ASSIGN_MULTI_SPLATS]          = "multiple splats in multiple assignment",
     [PM_ERR_NOT_EXPRESSION]                     = "expected an expression after `not`",
+    [PM_ERR_NO_LOCAL_VARIABLE]                  = "%.*s: no such local variable",
     [PM_ERR_NUMBER_LITERAL_UNDERSCORE]          = "number literal ending with a `_`",
     [PM_ERR_NUMBERED_PARAMETER_NOT_ALLOWED]     = "numbered parameters are not allowed when an ordinary parameter is defined",
     [PM_ERR_NUMBERED_PARAMETER_OUTER_SCOPE]     = "numbered parameter is already used in outer scope",

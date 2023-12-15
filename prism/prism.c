@@ -13352,8 +13352,15 @@ parse_pattern_primitive(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
             // expression to determine if it's a variable or an expression.
             switch (parser->current.type) {
                 case PM_TOKEN_IDENTIFIER: {
+                    int depth = pm_parser_local_depth(parser, &parser->current);
+
+                    if (depth == -1) {
+                        depth = 0;
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_NO_LOCAL_VARIABLE, (int) (parser->current.end - parser->current.start), parser->current.start);
+                    }
+
+                    pm_node_t *variable = (pm_node_t *) pm_local_variable_read_node_create(parser, &parser->current, (uint32_t) depth);
                     parser_lex(parser);
-                    pm_node_t *variable = (pm_node_t *) pm_local_variable_read_node_create(parser, &parser->previous, 0);
 
                     return (pm_node_t *) pm_pinned_variable_node_create(parser, &operator, variable);
                 }

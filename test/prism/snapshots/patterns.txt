@@ -2,7 +2,7 @@
 ├── locals: [:bar, :baz, :qux, :b, :a, :foo, :x]
 └── statements:
     @ StatementsNode (location: (1,0)-(202,19))
-    └── body: (length: 175)
+    └── body: (length: 176)
         ├── @ MatchRequiredNode (location: (1,0)-(1,10))
         │   ├── value:
         │   │   @ CallNode (location: (1,0)-(1,3))
@@ -1235,26 +1235,34 @@
         │   │   │               └── depth: 1
         │   │   └── operator_loc: (52,18)-(52,20) = ".."
         │   └── operator_loc: (52,4)-(52,6) = "=>"
-        ├── @ MatchRequiredNode (location: (54,0)-(54,11))
+        ├── @ LocalVariableWriteNode (location: (54,0)-(54,7))
+        │   ├── name: :bar
+        │   ├── depth: 0
+        │   ├── name_loc: (54,0)-(54,3) = "bar"
         │   ├── value:
-        │   │   @ CallNode (location: (54,0)-(54,3))
+        │   │   @ IntegerNode (location: (54,6)-(54,7))
+        │   │   └── flags: decimal
+        │   └── operator_loc: (54,4)-(54,5) = "="
+        ├── @ MatchRequiredNode (location: (54,9)-(54,20))
+        │   ├── value:
+        │   │   @ CallNode (location: (54,9)-(54,12))
         │   │   ├── flags: variable_call
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
-        │   │   ├── message_loc: (54,0)-(54,3) = "foo"
+        │   │   ├── message_loc: (54,9)-(54,12) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
         │   │   └── block: ∅
         │   ├── pattern:
-        │   │   @ PinnedVariableNode (location: (54,7)-(54,11))
+        │   │   @ PinnedVariableNode (location: (54,16)-(54,20))
         │   │   ├── variable:
-        │   │   │   @ LocalVariableReadNode (location: (54,8)-(54,11))
+        │   │   │   @ LocalVariableReadNode (location: (54,17)-(54,20))
         │   │   │   ├── name: :bar
         │   │   │   └── depth: 0
-        │   │   └── operator_loc: (54,7)-(54,8) = "^"
-        │   └── operator_loc: (54,4)-(54,6) = "=>"
+        │   │   └── operator_loc: (54,16)-(54,17) = "^"
+        │   └── operator_loc: (54,13)-(54,15) = "=>"
         ├── @ MatchRequiredNode (location: (55,0)-(55,12))
         │   ├── value:
         │   │   @ CallNode (location: (55,0)-(55,3))
