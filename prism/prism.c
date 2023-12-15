@@ -11339,6 +11339,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
 
                     parsed_bare_hash = true;
                 } else if (accept1(parser, PM_TOKEN_KEYWORD_IN)) {
+                    // TODO: Could we solve this with binding powers instead?
                     pm_parser_err_current(parser, PM_ERR_ARGUMENT_IN);
                 }
 
