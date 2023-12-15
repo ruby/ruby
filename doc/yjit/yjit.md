@@ -112,7 +112,7 @@ On macOS, you may need to specify where to find some libraries:
 
 ```sh
 # Install dependencies
-brew install openssl libyaml
+brew install openssl readline libyaml
 
 # Configure in dev (debug) mode for development, build and install
 ./autogen.sh
