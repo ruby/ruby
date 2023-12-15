@@ -285,7 +285,7 @@ class TestCall < Test::Unit::TestCase
     h = Class.new do
       attr_reader :get, :set
       def v; yield; [*@get, *@set] end
-      def [](*a, **b, &c)
+      def [](*a, **b)
         @get = [a.dup, b.dup]
         a << :splat_modified
         b[:kw_splat_modified] = true
@@ -297,7 +297,6 @@ class TestCall < Test::Unit::TestCase
 
     a = []
     kw = {}
-    b = lambda{}
 
     assert_equal([[2], {b: 5}, [2, 4], {b: 5}], h.v{h[*a, 2, b: 5, **kw] += 1})
   end
