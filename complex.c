@@ -1405,7 +1405,7 @@ rb_complex_arg(VALUE self)
  *
  *   Complex.rect(1, 2).rect # => [1, 2]
  *
- * See {Rectangular Coordinate}[rdoc-ref:Complex@Rectangular+Coordinates].
+ * See {Rectangular Coordinates}[rdoc-ref:Complex@Rectangular+Coordinates].
  *
  * If +self+ was created with
  * {polar coordinates}[rdoc-ref:Complex@Polar+Coordinates], the returned value
