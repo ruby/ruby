@@ -883,8 +883,8 @@ timer_thread_polling(rb_vm_t *vm)
             // simply retry
             break;
           default:
-            perror("kq");
-            rb_bug("kq errno:%d", errno);
+            perror("event_wait");
+            rb_bug("event_wait errno:%d", errno);
         }
         break;
 
