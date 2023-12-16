@@ -2074,10 +2074,6 @@ native_thread_init_stack(rb_thread_t *th)
     return 0;
 }
 
-#ifndef __CYGWIN__
-#define USE_NATIVE_THREAD_INIT 1
-#endif
-
 struct nt_param {
     rb_vm_t *vm;
     struct rb_native_thread *nt;
@@ -2186,13 +2182,8 @@ native_thread_create_dedicated(rb_thread_t *th)
 static void
 call_thread_start_func_2(rb_thread_t *th)
 {
-#if defined USE_NATIVE_THREAD_INIT
     native_thread_init_stack(th);
     thread_start_func_2(th, th->ec->machine.stack_start);
-#else
-    VALUE stack_start;
-    thread_start_func_2(th, &stack_start);
-#endif
 }
 
 static void *
