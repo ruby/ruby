@@ -723,7 +723,6 @@ module Net   #:nodoc:
 
     # :stopdoc:
     VERSION = "0.3.2"
-    Revision = %q$Revision$.split[1]
     HTTPVersion = '1.1'
     begin
       require 'zlib'
