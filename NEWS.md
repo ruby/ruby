@@ -160,11 +160,11 @@ The following default gem is added.
 
 The following default gems are updated.
 
-* RubyGems 3.5.0.dev
+* RubyGems 3.5.1
 * base64 0.2.0
 * benchmark 0.3.0
 * bigdecimal 3.1.5
-* bundler 2.5.0.dev
+* bundler 2.5.1
 * cgi 0.4.1
 * csv 3.2.8
 * date 3.3.4
