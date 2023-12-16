@@ -1344,6 +1344,7 @@ CODE
     assert_not_equal(S("a").hash, S("a\0").hash, bug4104)
     bug9172 = '[ruby-core:58658] [Bug #9172]'
     assert_not_equal(S("sub-setter").hash, S("discover").hash, bug9172)
+    assert_equal(S("").hash, S("".encode(Encoding::UTF_32BE)).hash)
   end
 
   def test_hex

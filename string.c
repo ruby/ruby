@@ -3586,7 +3586,7 @@ rb_str_prepend_multi(int argc, VALUE *argv, VALUE str)
 st_index_t
 rb_str_hash(VALUE str)
 {
-    int e = ENCODING_GET(str);
+    int e = RSTRING_LEN(str) ? ENCODING_GET(str) : 0;
     if (e && is_ascii_string(str)) {
         e = 0;
     }
