@@ -75,6 +75,8 @@ getattr(int fd, conmode *t)
 #define SET_LAST_ERROR (0)
 #endif
 
+#define CSI "\x1b\x5b"
+
 static ID id_getc, id_console, id_close;
 static ID id_gets, id_flush, id_chomp_bang;
 
@@ -1142,7 +1144,7 @@ static VALUE
 console_scroll(VALUE io, int line)
 {
     if (line) {
-	VALUE s = rb_sprintf("\x1b[%d%c", line < 0 ? -line : line,
+	VALUE s = rb_sprintf(CSI "%d%c", line < 0 ? -line : line,
 			     line < 0 ? 'T' : 'S');
 	rb_io_write(io, s);
     }
@@ -1204,7 +1206,7 @@ console_goto(VALUE io, VALUE y, VALUE x)
 	rb_syserr_fail(LAST_ERROR, 0);
     }
 #else
-    rb_io_write(io, rb_sprintf("\x1b[%d;%dH", NUM2UINT(y)+1, NUM2UINT(x)+1));
+    rb_io_write(io, rb_sprintf(CSI "%d;%dH", NUM2UINT(y)+1, NUM2UINT(x)+1));
 #endif
     return io;
 }
@@ -1229,8 +1231,8 @@ console_move(VALUE io, int y, int x)
 #else
     if (x || y) {
 	VALUE s = rb_str_new_cstr("");
-	if (y) rb_str_catf(s, "\x1b[%d%c", y < 0 ? -y : y, y < 0 ? 'A' : 'B');
-	if (x) rb_str_catf(s, "\x1b[%d%c", x < 0 ? -x : x, x < 0 ? 'D' : 'C');
+	if (y) rb_str_catf(s, CSI "%d%c", y < 0 ? -y : y, y < 0 ? 'A' : 'B');
+	if (x) rb_str_catf(s, CSI "%d%c", x < 0 ? -x : x, x < 0 ? 'D' : 'C');
 	rb_io_write(io, s);
 	rb_io_flush(io);
     }
@@ -1255,7 +1257,7 @@ console_goto_column(VALUE io, VALUE val)
 	rb_syserr_fail(LAST_ERROR, 0);
     }
 #else
-    rb_io_write(io, rb_sprintf("\x1b[%dG", NUM2UINT(val)+1));
+    rb_io_write(io, rb_sprintf(CSI "%dG", NUM2UINT(val)+1));
 #endif
     return io;
 }
@@ -1290,7 +1292,7 @@ console_erase_line(VALUE io, VALUE val)
     constat_clear(h, ws.wAttributes, w, *pos);
     return io;
 #else
-    rb_io_write(io, rb_sprintf("\x1b[%dK", mode));
+    rb_io_write(io, rb_sprintf(CSI "%dK", mode));
 #endif
     return io;
 }
@@ -1332,7 +1334,7 @@ console_erase_screen(VALUE io, VALUE val)
     }
     constat_clear(h, ws.wAttributes, w, *pos);
 #else
-    rb_io_write(io, rb_sprintf("\x1b[%dJ", mode));
+    rb_io_write(io, rb_sprintf(CSI "%dJ", mode));
 #endif
     return io;
 }
