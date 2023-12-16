@@ -180,7 +180,7 @@ The following default gems are updated.
 * fileutils 1.7.2
 * find 0.2.0
 * getoptlong 0.2.1
-* io-console 0.7.0
+* io-console 0.7.1
 * io-nonblock 0.3.0
 * io-wait 0.3.1
 * ipaddr 1.2.6
@@ -203,7 +203,8 @@ The following default gems are updated.
 * pstore 0.1.3
 * psych 5.1.1.1
 * rdoc 6.6.2
-* reline 0.4.0
+* readline 0.0.4
+* reline 0.4.1
 * resolv 0.3.0
 * rinda 0.2.0
 * securerandom 0.3.1
