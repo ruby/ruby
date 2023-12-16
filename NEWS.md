@@ -191,7 +191,7 @@ The following default gems are updated.
 * nkf 0.1.3
 * observer 0.1.2
 * open-uri 0.4.1
-* open3 0.2.0
+* open3 0.2.1
 * openssl 3.2.0
 * optparse 0.4.0
 * ostruct 0.6.0
