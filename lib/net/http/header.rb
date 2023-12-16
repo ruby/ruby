@@ -699,10 +699,14 @@ module Net::HTTPHeader
   #   res.content_type    # => "application/json"
   #
   def content_type
-    return nil unless main_type()
-    if sub_type()
-    then "#{main_type()}/#{sub_type()}"
-    else main_type()
+    main = main_type()
+    return nil unless main
+
+    sub = sub_type()
+    if sub
+      "#{main}/#{sub}"
+    else
+      main
     end
   end
 
