@@ -4,7 +4,7 @@ require_relative '../http'
 
 if $0 == __FILE__
   require 'open-uri'
-  IO.foreach(__FILE__) do |line|
+  File.foreach(__FILE__) do |line|
     puts line
     break if line.start_with?('end')
   end
