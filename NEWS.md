@@ -183,6 +183,7 @@ The following default gems are updated.
 * io-console 0.7.0
 * io-nonblock 0.3.0
 * io-wait 0.3.1
+* ipaddr 1.2.6
 * irb 1.10.1
 * json 2.7.1
 * logger 1.6.0
