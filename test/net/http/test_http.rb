@@ -126,10 +126,10 @@ class TestNetHTTP < Test::Unit::TestCase
 
   def test_proxy_address_no_proxy
     TestNetHTTPUtils.clean_http_proxy_env do
-      http = Net::HTTP.new 'hostname.example', nil, 'proxy.example', nil, nil, nil, 'example'
+      http = Net::HTTP.new 'hostname.example', nil, 'proxy.com', nil, nil, nil, 'example'
       assert_nil http.proxy_address
 
-      http = Net::HTTP.new '10.224.1.1', nil, 'proxy.example', nil, nil, nil, 'example,10.224.0.0/22'
+      http = Net::HTTP.new '10.224.1.1', nil, 'proxy.com', nil, nil, nil, 'example,10.224.0.0/22'
       assert_nil http.proxy_address
     end
   end
