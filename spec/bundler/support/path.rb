@@ -80,7 +80,13 @@ module Spec
     end
 
     def shipped_files
-      @shipped_files ||= ruby_core? ? loaded_gemspec.files.map{|f| f.gsub(/^exe\//, "libexec/")} : loaded_gemspec.files
+      @shipped_files ||= if ruby_core_tarball?
+        loaded_gemspec.files.map{|f| f.gsub(/^exe\//, "libexec/")}
+      elsif ruby_core?
+        tracked_files
+      else
+        loaded_gemspec.files
+      end
     end
 
     def lib_tracked_files
