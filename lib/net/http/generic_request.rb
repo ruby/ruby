@@ -1,4 +1,4 @@
-# frozen_string_literal: false
+# frozen_string_literal: true
 #
 # \HTTPGenericRequest is the parent of the Net::HTTPRequest class.
 #
@@ -23,7 +23,7 @@ class Net::HTTPGenericRequest
       raise ArgumentError, "no host component for URI" unless (hostname && hostname.length > 0)
       @uri = uri_or_path.dup
       host = @uri.hostname.dup
-      host << ":".freeze << @uri.port.to_s if @uri.port != @uri.default_port
+      host << ":" << @uri.port.to_s if @uri.port != @uri.default_port
       @path = uri_or_path.request_uri
       raise ArgumentError, "no HTTP request path given" unless @path
     else
@@ -212,15 +212,15 @@ class Net::HTTPGenericRequest
     return unless @uri
 
     if ssl
-      scheme = 'https'.freeze
+      scheme = 'https'
       klass = URI::HTTPS
     else
-      scheme = 'http'.freeze
+      scheme = 'http'
       klass = URI::HTTP
     end
 
     if host = self['host']
-      host.sub!(/:.*/m, ''.freeze)
+      host.sub!(/:.*/m, '')
     elsif host = @uri.host
     else
      host = addr
@@ -316,7 +316,7 @@ class Net::HTTPGenericRequest
     boundary ||= SecureRandom.urlsafe_base64(40)
     chunked_p = chunked?
 
-    buf = ''
+    buf = +''
     params.each do |key, value, h={}|
       key = quote_string(key, charset)
       filename =
@@ -401,7 +401,7 @@ class Net::HTTPGenericRequest
     if /[\r\n]/ =~ reqline
       raise ArgumentError, "A Request-Line must not contain CR or LF"
     end
-    buf = ""
+    buf = +''
     buf << reqline << "\r\n"
     each_capitalized do |k,v|
       buf << "#{k}: #{v}\r\n"
