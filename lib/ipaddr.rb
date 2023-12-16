@@ -252,12 +252,17 @@ class IPAddr
   end
 
   # Returns true if the ipaddr is a loopback address.
+  # Loopback IPv4 addresses in the IPv4-mapped IPv6
+  # address range are also considered as loopback addresses.
   def loopback?
     case @family
     when Socket::AF_INET
-      @addr & 0xff000000 == 0x7f000000
+      @addr & 0xff000000 == 0x7f000000 # 127.0.0.1/8
     when Socket::AF_INET6
-      @addr == 1
+      @addr == 1 || # ::1
+        (@addr & 0xffff_0000_0000 == 0xffff_0000_0000 && (
+          @addr & 0xff000000 == 0x7f000000 # ::ffff:127.0.0.1/8
+        ))
     else
       raise AddressFamilyError, "unsupported address family"
     end
@@ -287,15 +292,19 @@ class IPAddr
   end
 
   # Returns true if the ipaddr is a link-local address.  IPv4
-  # addresses in 169.254.0.0/16 reserved by RFC 3927 and Link-Local
+  # addresses in 169.254.0.0/16 reserved by RFC 3927 and link-local
   # IPv6 Unicast Addresses in fe80::/10 reserved by RFC 4291 are
-  # considered link-local.
+  # considered link-local. Link-local IPv4 addresses in the
+  # IPv4-mapped IPv6 address range are also considered link-local.
   def link_local?
     case @family
     when Socket::AF_INET
       @addr & 0xffff0000 == 0xa9fe0000 # 169.254.0.0/16
     when Socket::AF_INET6
-      @addr & 0xffc0_0000_0000_0000_0000_0000_0000_0000 == 0xfe80_0000_0000_0000_0000_0000_0000_0000
+      @addr & 0xffc0_0000_0000_0000_0000_0000_0000_0000 == 0xfe80_0000_0000_0000_0000_0000_0000_0000 || # fe80::/10
+        (@addr & 0xffff_0000_0000 == 0xffff_0000_0000 && (
+          @addr & 0xffff0000 == 0xa9fe0000 # ::ffff:169.254.0.0/16
+        ))
     else
       raise AddressFamilyError, "unsupported address family"
     end
