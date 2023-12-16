@@ -200,7 +200,7 @@ The following default gems are updated.
 * prettyprint 0.2.0
 * pstore 0.1.3
 * psych 5.1.1.1
-* rdoc 6.6.1
+* rdoc 6.6.2
 * reline 0.4.0
 * resolv 0.3.0
 * rinda 0.2.0
