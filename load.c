@@ -751,7 +751,8 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
 
             pm_string_free(&input);
             pm_options_free(&options);
-        } else {
+        }
+        else {
             rb_execution_context_t *ec = GET_EC();
             VALUE v = rb_vm_push_frame_fname(ec, fname);
             rb_ast_t *ast;
