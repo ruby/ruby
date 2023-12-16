@@ -1,6 +1,6 @@
 # frozen_string_literal: false
 
-# This class is the base class for \Net::HTTP request classes.
+# This class is the base class for \Net::HTTP response classes.
 #
 # == About the Examples
 #
