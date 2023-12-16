@@ -80,7 +80,7 @@ module Spec
     end
 
     def shipped_files
-      @shipped_files ||= ruby_core? ? (loaded_gemspec.files - ["exe/bundle", "exe/bundler"] + ["libexec/bundle", "libexec/bundler"]) : loaded_gemspec.files
+      @shipped_files ||= ruby_core? ? loaded_gemspec.files.map{|f| f.gsub(/^exe\//, "libexec/")} : loaded_gemspec.files
     end
 
     def lib_tracked_files
