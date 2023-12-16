@@ -161,6 +161,7 @@ The following default gem is added.
 The following default gems are updated.
 
 * RubyGems 3.5.1
+* abbrev 0.1.2
 * base64 0.2.0
 * benchmark 0.3.0
 * bigdecimal 3.1.5
@@ -211,6 +212,7 @@ The following default gems are updated.
 * stringio 3.1.0
 * strscan 3.0.7
 * syntax_suggest 2.0.0
+* syslog 0.1.2
 * tempfile 0.2.1
 * time 0.3.0
 * timeout 0.4.1
