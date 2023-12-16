@@ -510,7 +510,7 @@ Note: We're only listing outstanding class updates.
     * json 2.6.3
     * logger 1.5.3
     * mutex_m 0.1.2
-    * net-http 0.3.2
+    * net-http 0.4.0
     * net-protocol 0.2.1
     * nkf 0.1.2
     * open-uri 0.3.0
