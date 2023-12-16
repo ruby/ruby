@@ -208,8 +208,8 @@ The following default gems are updated.
 * set 1.0.4
 * shellwords 0.2.0
 * singleton 0.2.0
-* stringio 3.1.1
-* strscan 3.0.8
+* stringio 3.1.0
+* strscan 3.0.7
 * syntax_suggest 2.0.0
 * tempfile 0.2.1
 * time 0.3.0
