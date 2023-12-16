@@ -4265,26 +4265,26 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
     return (int)rb_ensure(do_select, (VALUE)&set, select_set_free, (VALUE)&set);
 }
 
-#ifdef RUBY_THREAD_PTHREAD_H
-
 static bool
-thread_sched_wait_events_timeval(int fd, int events, struct timeval *timeout)
+thread_sched_wait_events_timeval(rb_thread_t *th, int fd, int events, struct timeval *timeout)
 {
-    rb_thread_t *th = GET_THREAD();
-    rb_hrtime_t rel, *prel;
+#ifdef RUBY_THREAD_PTHREAD_H
+    if (!th->nt->dedicated) {
+        rb_hrtime_t rel, *prel;
 
-    if (timeout) {
-        rel = rb_timeval2hrtime(timeout);
-        prel = &rel;
-    }
-    else {
-        prel = NULL;
-    }
+        if (timeout) {
+            rel = rb_timeval2hrtime(timeout);
+            prel = &rel;
+        }
+        else {
+            prel = NULL;
+        }
 
-    return thread_sched_wait_events(TH_SCHED(th), th, fd, waitfd_to_waiting_flag(events), prel);
+        return thread_sched_wait_events(TH_SCHED(th), th, fd, waitfd_to_waiting_flag(events), prel);
+    }
+#endif // RUBY_THREAD_PTHREAD_H
+    return 0;
 }
-
-#endif
 
 #ifdef USE_POLL
 
@@ -4314,13 +4314,9 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     wfd.fd = fd;
     wfd.busy = NULL;
 
-#ifdef RUBY_THREAD_PTHREAD_H
-    if (!th_has_dedicated_nt(th)) {
-        if (thread_sched_wait_events_timeval(fd, events, timeout)) {
-            return 0; // timeout
-        }
+    if (thread_sched_wait_events_timeval(th, fd, events, timeout)) {
+        return 0; // timeout
     }
-#endif
 
     RB_VM_LOCK_ENTER();
     {
@@ -4455,15 +4451,11 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     struct select_args args;
     int r;
     VALUE ptr = (VALUE)&args;
-
-#ifdef RUBY_THREAD_PTHREAD_H
     rb_thread_t *th = GET_THREAD();
-    if (!th_has_dedicated_nt(th)) {
-        if (thread_sched_wait_events_timeval(fd, events, timeout)) {
-            return 0; // timeout
-        }
+
+    if (thread_sched_wait_events_timeval(th, fd, events, timeout)) {
+        return 0; // timeout
     }
-#endif
 
     args.as.fd = fd;
     args.read = (events & RB_WAITFD_IN) ? init_set_fd(fd, &rfds) : NULL;
@@ -4471,7 +4463,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     args.except = (events & RB_WAITFD_PRI) ? init_set_fd(fd, &efds) : NULL;
     args.tv = timeout;
     args.wfd.fd = fd;
-    args.wfd.th = GET_THREAD();
+    args.wfd.th = th;
     args.wfd.busy = NULL;
 
     RB_VM_LOCK_ENTER();
