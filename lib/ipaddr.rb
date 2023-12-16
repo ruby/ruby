@@ -40,7 +40,7 @@ require 'socket'
 #   p ipaddr3                   #=> #<IPAddr: IPv4:192.168.2.0/255.255.255.0>
 
 class IPAddr
-  VERSION = "1.2.5"
+  VERSION = "1.2.6"
 
   # 32 bit mask for IPv4
   IN4MASK = 0xffffffff
