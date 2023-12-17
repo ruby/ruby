@@ -19,6 +19,7 @@ AC_DEFUN([RUBY_WASM_TOOLS],
         LD="${LD:-${WASI_SDK_PATH}/bin/clang}"
         AR="${AR:-${WASI_SDK_PATH}/bin/llvm-ar}"
         RANLIB="${RANLIB:-${WASI_SDK_PATH}/bin/llvm-ranlib}"
+        OBJCOPY="${OBJCOPY:-${WASI_SDK_PATH}/bin/llvm-objcopy}"
     ])
 ])
 ])dnl
