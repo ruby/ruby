@@ -272,13 +272,15 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 static bool
 dln_incompatible_func(void *handle, const char *funcname, void *const fp, const char **libname)
 {
-    Dl_info dli;
     void *ex = dlsym(handle, funcname);
     if (!ex) return false;
     if (ex == fp) return false;
+#  if defined(HAVE_DLADDR)
+    Dl_info dli;
     if (dladdr(ex, &dli)) {
         *libname = dli.dli_fname;
     }
+#  endif
     return true;
 }
 
