@@ -448,13 +448,15 @@ EOM
           end
 
         unless directories.include?(mkdir)
-          FileUtils.mkdir_p mkdir, mode: dir_mode ? 0o755 : (entry.header.mode if entry.directory?)
+          mkdir_mode = 0o755 if dir_mode
+          mkdir_mode ||= entry.header.mode if entry.directory?
+          mkdir_mode &= ~File.umask if mkdir_mode
+          FileUtils.mkdir_p mkdir, mode: mkdir_mode
           directories << mkdir
         end
 
         if entry.file?
-          File.open(destination, "wb") {|out| copy_stream(entry, out) }
-          FileUtils.chmod file_mode(entry.header.mode), destination
+          File.open(destination, "wb", file_mode(entry.header.mode)) {|out| copy_stream(entry, out) }
         end
 
         verbose destination
