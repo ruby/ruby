@@ -51,7 +51,10 @@ DATA.each_line {|s|
     next
   end
   h[name] = default_value
-  COMMENTS[name] = comment if comment
+  if comment
+    # Stop unintentional references
+    COMMENTS[name] = comment.gsub(/\b(Data|Kernel|Process|Set|Socket|Time)\b/, '\\\\\\&')
+  end
 }
 DEFS = h.to_a
 
