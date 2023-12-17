@@ -38,7 +38,7 @@ opt.parse!
 
 
 h = {}
-COMMENTS = Hash.new { |h, name| h[name] = name }
+COMMENTS = Hash.new(":nodoc:")
 
 DATA.each_line {|s|
   name, default_value, comment = s.chomp.split(/\s+/, 3)
