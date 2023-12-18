@@ -31,7 +31,7 @@ Contents:
     - {Long Names with Optional Arguments}[#label-Long+Names+with+Optional+Arguments]
     - {Long Names with Negation}[#label-Long+Names+with+Negation]
   - {Mixed Names}[#label-Mixed+Names]
-- {Argument Styles}[#label-Argument+Styles]
+- {Argument Strings}[#label-Argument+Strings]
 - {Argument Values}[#label-Argument+Values]
   - {Explicit Argument Values}[#label-Explicit+Argument+Values]
     - {Explicit Values in Array}[#label-Explicit+Values+in+Array]
