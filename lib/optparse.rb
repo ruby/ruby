@@ -1129,6 +1129,10 @@ XXX
       default.to_i + 1
     end
   end
+
+  #
+  # See self.inc
+  #
   def inc(*args)
     self.class.inc(*args)
   end
@@ -1167,6 +1171,9 @@ XXX
   def terminate(arg = nil)
     self.class.terminate(arg)
   end
+  #
+  # See #terminate.
+  #
   def self.terminate(arg = nil)
     throw :terminate, arg
   end
@@ -1881,6 +1888,9 @@ XXX
     DidYouMean.formatter.message_for(all_candidates & checker.correct(opt))
   end
 
+  #
+  # Return candidates for +word+.
+  #
   def candidate(word)
     list = []
     case word
@@ -2123,6 +2133,7 @@ XXX
     # Reason which caused the error.
     Reason = 'parse error'
 
+    # :nodoc:
     def initialize(*args, additional: nil)
       @additional = additional
       @arg0, = args
