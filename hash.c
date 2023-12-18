@@ -4377,13 +4377,16 @@ rb_hash_compare_by_id(VALUE hash)
     if (hash_iterating_p(hash)) {
         rb_raise(rb_eRuntimeError, "compare_by_identity during iteration");
     }
-    ar_force_convert_table(hash, __FILE__, __LINE__);
-    HASH_ASSERT(RHASH_ST_TABLE_P(hash));
 
     if (RHASH_TABLE_EMPTY_P(hash)) {
         // Fast path: There's nothing to rehash, so we don't need a `tmp` table.
+        // We're most likely an AR table, so this will need an allocation.
+        ar_force_convert_table(hash, __FILE__, __LINE__);
+        HASH_ASSERT(RHASH_ST_TABLE_P(hash));
+
         RHASH_ST_TABLE(hash)->type = &identhash;
-    } else {
+    }
+    else {
         // Slow path: Need to rehash the members of `self` into a new
         // `tmp` table using the new `identhash` compare/hash functions.
         tmp = hash_alloc(0);
@@ -4391,8 +4394,10 @@ rb_hash_compare_by_id(VALUE hash)
         identtable = RHASH_ST_TABLE(tmp);
 
         rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
-
         rb_hash_free(hash);
+
+        // We know for sure `identtable` is an st table,
+        // so we can skip `ar_force_convert_table` here.
         RHASH_ST_TABLE_SET(hash, identtable);
         RHASH_ST_CLEAR(tmp);
     }
