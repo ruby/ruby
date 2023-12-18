@@ -88,6 +88,7 @@ require 'tmpdir'
 # mutex.
 class Tempfile < DelegateClass(File)
 
+  # The version
   VERSION = "0.2.1"
 
   # Creates a file in the underlying file system;
@@ -165,19 +166,19 @@ class Tempfile < DelegateClass(File)
     super(tmpfile)
   end
 
-  def initialize_dup(other)
+  def initialize_dup(other) # :nodoc:
     initialize_copy_iv(other)
     super(other)
     ObjectSpace.define_finalizer(self, Closer.new(__getobj__))
   end
 
-  def initialize_clone(other)
+  def initialize_clone(other) # :nodoc:
     initialize_copy_iv(other)
     super(other)
     ObjectSpace.define_finalizer(self, Closer.new(__getobj__))
   end
 
-  private def initialize_copy_iv(other)
+  private def initialize_copy_iv(other) # :nodoc:
     @unlinked = other.unlinked
     @mode = other.mode
     @opts = other.opts
