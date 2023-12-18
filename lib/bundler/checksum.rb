@@ -30,6 +30,7 @@ module Bundler
 
       def from_api(digest, source_uri, algo = DEFAULT_ALGORITHM)
         return if Bundler.settings[:disable_checksum_validation]
+
         Checksum.new(algo, to_hexdigest(digest, algo), Source.new(:api, source_uri))
       end
 
@@ -41,11 +42,13 @@ module Bundler
       def to_hexdigest(digest, algo = DEFAULT_ALGORITHM)
         return digest unless algo == DEFAULT_ALGORITHM
         return digest if digest.match?(/\A[0-9a-f]{64}\z/i)
+
         if digest.match?(%r{\A[-0-9a-z_+/]{43}={0,2}\z}i)
           digest = digest.tr("-_", "+/") # fix urlsafe base64
-          return digest.unpack1("m0").unpack1("H*")
+          digest.unpack1("m0").unpack1("H*")
+        else
+          raise ArgumentError, "#{digest.inspect} is not a valid SHA256 hex or base64 digest"
         end
-        raise ArgumentError, "#{digest.inspect} is not a valid SHA256 hex or base64 digest"
       end
     end
 
@@ -62,6 +65,10 @@ module Bundler
     end
 
     alias_method :eql?, :==
+
+    def same_source?(other)
+      sources.include?(other.sources.first)
+    end
 
     def match?(other)
       other.is_a?(self.class) && other.digest == digest && other.algo == algo
@@ -81,6 +88,7 @@ module Bundler
 
     def merge!(other)
       return nil unless match?(other)
+
       @sources.concat(other.sources).uniq!
       self
     end
@@ -161,26 +169,17 @@ module Bundler
 
       def initialize
         @store = {}
-      end
-
-      def initialize_copy(other)
-        @store = {}
-        other.store.each do |lock_name, checksums|
-          store[lock_name] = checksums.dup
-        end
+        @store_mutex = Mutex.new
       end
 
       def inspect
         "#<#{self.class}:#{object_id} size=#{store.size}>"
       end
 
-      def fetch(spec, algo = DEFAULT_ALGORITHM)
-        store[spec.name_tuple.lock_name]&.fetch(algo, nil)
-      end
-
       # Replace when the new checksum is from the same source.
-      # The primary purpose of this registering checksums from gems where there are
+      # The primary purpose is registering checksums from gems where there are
       # duplicates of the same gem (according to full_name) in the index.
+      #
       # In particular, this is when 2 gems have two similar platforms, e.g.
       # "darwin20" and "darwin-20", both of which resolve to darwin-20.
       # In the Index, the later gem replaces the former, so we do that here.
@@ -192,19 +191,19 @@ module Bundler
         return unless checksum
 
         lock_name = spec.name_tuple.lock_name
-        checksums = (store[lock_name] ||= {})
-        existing = checksums[checksum.algo]
-
-        # we assume only one source because this is used while building the index
-        if !existing || existing.sources.first == checksum.sources.first
-          checksums[checksum.algo] = checksum
-        else
-          register_checksum(lock_name, checksum)
+        @store_mutex.synchronize do
+          existing = fetch_checksum(lock_name, checksum.algo)
+          if !existing || existing.same_source?(checksum)
+            store_checksum(lock_name, checksum)
+          else
+            merge_checksum(lock_name, checksum, existing)
+          end
         end
       end
 
       def register(spec, checksum)
         return unless checksum
+
         register_checksum(spec.name_tuple.lock_name, checksum)
       end
 
@@ -218,7 +217,8 @@ module Bundler
 
       def to_lock(spec)
         lock_name = spec.name_tuple.lock_name
-        if checksums = store[lock_name]
+        checksums = @store[lock_name]
+        if checksums
           "#{lock_name} #{checksums.values.map(&:to_lock).sort.join(",")}"
         else
           lock_name
@@ -228,17 +228,26 @@ module Bundler
       private
 
       def register_checksum(lock_name, checksum)
-        return unless checksum
-        checksums = (store[lock_name] ||= {})
-        existing = checksums[checksum.algo]
-
-        if !existing
-          checksums[checksum.algo] = checksum
-        elsif existing.merge!(checksum)
-          checksum
-        else
-          raise ChecksumMismatchError.new(lock_name, existing, checksum)
+        @store_mutex.synchronize do
+          existing = fetch_checksum(lock_name, checksum.algo)
+          if existing
+            merge_checksum(lock_name, checksum, existing)
+          else
+            store_checksum(lock_name, checksum)
+          end
         end
+      end
+
+      def merge_checksum(lock_name, checksum, existing)
+        existing.merge!(checksum) || raise(ChecksumMismatchError.new(lock_name, existing, checksum))
+      end
+
+      def store_checksum(lock_name, checksum)
+        (@store[lock_name] ||= {})[checksum.algo] = checksum
+      end
+
+      def fetch_checksum(lock_name, algo)
+        @store[lock_name]&.fetch(algo, nil)
       end
     end
   end
