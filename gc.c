@@ -1342,6 +1342,9 @@ int ruby_gc_debug_indent = 0;
 VALUE rb_mGC;
 int ruby_disable_gc = 0;
 int ruby_enable_autocompact = 0;
+#if RGENGC_CHECK_MODE
+gc_compact_compare_func ruby_autocompact_compare_func;
+#endif
 
 void rb_iseq_mark_and_move(rb_iseq_t *iseq, bool referece_updating);
 void rb_iseq_free(const rb_iseq_t *iseq);
@@ -9545,6 +9548,9 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
     /* Explicitly enable compaction (GC.compact) */
     if (do_full_mark && ruby_enable_autocompact) {
         objspace->flags.during_compacting = TRUE;
+#if RGENGC_CHECK_MODE
+        objspace->rcompactor.compare_func = ruby_autocompact_compare_func;
+#endif
     }
     else {
         objspace->flags.during_compacting = !!(reason & GPR_FLAG_COMPACT);
@@ -11880,6 +11886,18 @@ gc_set_auto_compact(VALUE _, VALUE v)
     GC_ASSERT(GC_COMPACTION_SUPPORTED);
 
     ruby_enable_autocompact = RTEST(v);
+
+#if RGENGC_CHECK_MODE
+    ruby_autocompact_compare_func = NULL;
+
+    if (SYMBOL_P(v)) {
+        ID id = RB_SYM2ID(v);
+        if (id == rb_intern("empty")) {
+            ruby_autocompact_compare_func = compare_free_slots;
+        }
+    }
+#endif
+
     return v;
 }
 #else
