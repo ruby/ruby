@@ -1,3 +1,7 @@
+# -*- frozen-string-literal: true -*-
+
+# :stopdoc:
+
 module Gem::BUNDLED_GEMS
   SINCE = {
     "rexml" => "3.0.0",
@@ -169,3 +173,5 @@ class LoadError
     super
   end
 end
+
+# :startdoc:
