@@ -3157,6 +3157,7 @@ AC_SUBST(EXTOBJS)
 	[hiuxmpp], [	: ${LDSHARED='$(LD) -r'}],
 	[atheos*], [	: ${LDSHARED='$(CC) -shared'}
 			rb_cv_dlopen=yes],
+	[wasi*], [	: ${LDSHARED='$(LD) -shared -Xlinker --export-dynamic'}],
 	[	: ${LDSHARED='$(LD)'}])
     AC_MSG_RESULT($rb_cv_dlopen)
 }
