@@ -332,7 +332,7 @@ changelog for details of the default gems or bundled gems.
 
 ### GC / Memory management
 
-* Major performance improvements over 3.2
+* Major performance improvements over Ruby 3.2
     * Young objects referenced by old objects are no longer immediately
       promoted to the old generation. This significantly reduces the frequency of
       major GC collections. [[Feature #19678]]
@@ -352,7 +352,7 @@ changelog for details of the default gems or bundled gems.
 
 ### YJIT
 
-* Major performance improvements over 3.2
+* Major performance improvements over Ruby 3.2
   * Support for splat and rest arguments has been improved.
   * Registers are allocated for stack operations of the virtual machine.
   * More calls with optional arguments are compiled. Exception handlers are also compiled.
@@ -362,9 +362,9 @@ changelog for details of the default gems or bundled gems.
   * `Integer#*`, `Integer#!=`, `String#!=`, `String#getbyte`,
     `Kernel#block_given?`, `Kernel#is_a?`, `Kernel#instance_of?`, and `Module#===`
     are specially optimized.
-  * Compilation speed is now slightly faster than 3.2.
+  * Compilation speed is now slightly faster than Ruby 3.2.
   * Now more than 3x faster than the interpreter on Optcarrot!
-* Significantly improved memory usage over 3.2
+* Significantly improved memory usage over Ruby 3.2
     * Metadata for compiled code uses a lot less memory.
     * `--yjit-call-threshold` is automatically raised from 30 to 120
       when the application has more than 40,000 ISEQs.
