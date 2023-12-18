@@ -304,7 +304,7 @@ changelog for details of the default gems or bundled gems.
     and callback functions (`rb_internal_thread_event_callback`) receive it.
     https://github.com/ruby/ruby/pull/8885
   * The following functions are introduced to manipulate Ruby thread local data
-    from internal thread event hook APIs (they are introduced since Ruby 3.2). 
+    from internal thread event hook APIs (they are introduced since Ruby 3.2).
     https://github.com/ruby/ruby/pull/8936
     * `rb_internal_thread_specific_key_create()`
     * `rb_internal_thread_specific_get()`
@@ -330,9 +330,7 @@ changelog for details of the default gems or bundled gems.
 
 ## Implementation improvements
 
-* `defined?(@ivar)` is optimized with Object Shapes.
-
-### GC
+### GC / Memory management
 
 * Major performance improvements over 3.2
     * Young objects referenced by old objects are no longer immediately
@@ -350,6 +348,7 @@ changelog for details of the default gems or bundled gems.
       `Thread::Backtrace`, `Thread::Backtrace::Location`, `File::Stat`, `Method`.
       This makes these classes faster to allocate and free, use less memory and reduce
       heap fragmentation.
+* `defined?(@ivar)` is optimized with Object Shapes.
 
 ### YJIT
 

@@ -778,6 +778,12 @@ rsock_getfamily(rb_io_t *fptr)
     return ss.addr.sa_family;
 }
 
+/*
+ * call-seq:
+ *   error_code     -> integer
+ *
+ * Returns the raw error code occurred at name resolution.
+ */
 static VALUE
 sock_resolv_error_code(VALUE self)
 {
@@ -791,6 +797,9 @@ rsock_init_socket_init(void)
      * SocketError is the error class for socket.
      */
     rb_eSocket = rb_define_class("SocketError", rb_eStandardError);
+    /*
+     * ResolutionError is the error class for socket name resolution.
+     */
     rb_eResolution = rb_define_class_under(rb_cSocket, "ResolutionError", rb_eSocket);
     rb_define_method(rb_eResolution, "error_code", sock_resolv_error_code, 0);
     rsock_init_ipsocket();

@@ -1411,13 +1411,16 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
     else if (is_option_with_arg("parser", Qfalse, Qtrue)) {
         if (strcmp("prism", s) == 0) {
             (*rb_ruby_prism_ptr()) = true;
-            rb_warn("The compiler based on the Prism parser is currently experimental and compatibility with the compiler based on parse.y is not yet complete. Please report any issues you find on the `ruby/prism` issue tracker.");
+            rb_warn("The compiler based on the Prism parser is currently experimental and "
+                    "compatibility with the compiler based on parse.y "
+                    "is not yet complete. Please report any issues you "
+                    "find on the `ruby/prism` issue tracker.");
         }
         else if (strcmp("parse.y", s) == 0) {
             // default behavior
-        } else {
-            rb_raise(rb_eRuntimeError,
-                     "unknown parser %s", s);
+        }
+        else {
+            rb_raise(rb_eRuntimeError, "unknown parser %s", s);
         }
     }
 #if defined ALLOW_DEFAULT_SOURCE_ENCODING && ALLOW_DEFAULT_SOURCE_ENCODING
@@ -2400,7 +2403,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             if (opt->e_script) {
                 pm_string_constant_init(&input, RSTRING_PTR(opt->e_script), RSTRING_LEN(opt->e_script));
                 pm_options_filepath_set(&options, "-e");
-            } else {
+            }
+            else {
                 pm_string_mapped_init(&input, RSTRING_PTR(opt->script_name));
                 pm_options_filepath_set(&options, RSTRING_PTR(opt->script_name));
             }
@@ -2409,7 +2413,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
             pm_string_free(&input);
             pm_options_free(&options);
-        } else {
+        }
+        else {
             rb_binding_t *toplevel_binding;
             GetBindingPtr(rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING")),
                           toplevel_binding);
