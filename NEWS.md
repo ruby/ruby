@@ -383,9 +383,11 @@ changelog for details of the default gems or bundled gems.
   * This can also be used to enable YJIT only once your application is
     done booting. `--yjit-disable` can be used if you want to use other
     YJIT options while disabling YJIT at boot.
-* Add more profiling capabilities
+* More YJIT stats are available by default
+  * `yjit_alloc_size` and several more metadata-related stats are now available by default.
   * `ratio_in_yjit` stat produced by `--yjit-stats` is now available in release builds,
     a special stats or dev build is no longer required to access most stats.
+* Add more profiling capabilities
   * `--yjit-perf` is added to facilitate profiling with Linux perf.
   * `--yjit-trace-exits` now supports sampling with `--yjit-trace-exits-sample-rate=N`
 * More thorough testing and multiple bug fixes
