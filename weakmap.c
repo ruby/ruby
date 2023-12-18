@@ -144,7 +144,9 @@ wmap_compact(void *ptr)
 {
     struct weakmap *w = ptr;
 
-    st_foreach(w->table, wmap_compact_table_i, (st_data_t)w->table);
+    if (w->table) {
+        st_foreach(w->table, wmap_compact_table_i, (st_data_t)w->table);
+    }
 }
 
 static const rb_data_type_t weakmap_type = {
@@ -274,7 +276,14 @@ wmap_each_i(VALUE key, VALUE val, st_data_t _)
     rb_yield_values(2, key, val);
 }
 
-/* Iterates over keys and objects in a weakly referenced object */
+/*
+ * call-seq:
+ *   map.each {|key, val| ... } -> self
+ *
+ * Iterates over keys and values. Note that unlike other collections,
+ * +each+ without block isn't supported.
+ *
+ */
 static VALUE
 wmap_each(VALUE self)
 {
@@ -292,7 +301,14 @@ wmap_each_key_i(VALUE key, VALUE _val, st_data_t _data)
     rb_yield(key);
 }
 
-/* Iterates over keys and objects in a weakly referenced object */
+/*
+ * call-seq:
+ *   map.each_key {|key| ... } -> self
+ *
+ * Iterates over keys. Note that unlike other collections,
+ * +each_key+ without block isn't supported.
+ *
+ */
 static VALUE
 wmap_each_key(VALUE self)
 {
@@ -310,7 +326,14 @@ wmap_each_value_i(VALUE _key, VALUE val, st_data_t _data)
     rb_yield(val);
 }
 
-/* Iterates over keys and objects in a weakly referenced object */
+/*
+ * call-seq:
+ *   map.each_value {|val| ... } -> self
+ *
+ * Iterates over values. Note that unlike other collections,
+ * +each_value+ without block isn't supported.
+ *
+ */
 static VALUE
 wmap_each_value(VALUE self)
 {
@@ -330,7 +353,13 @@ wmap_keys_i(st_data_t key, st_data_t _, st_data_t arg)
     rb_ary_push(ary, key);
 }
 
-/* Iterates over keys and objects in a weakly referenced object */
+/*
+ * call-seq:
+ *   map.keys -> new_array
+ *
+ * Returns a new Array containing all keys in the map.
+ *
+ */
 static VALUE
 wmap_keys(VALUE self)
 {
@@ -351,7 +380,13 @@ wmap_values_i(st_data_t key, st_data_t val, st_data_t arg)
     rb_ary_push(ary, (VALUE)val);
 }
 
-/* Iterates over values and objects in a weakly referenced object */
+/*
+ * call-seq:
+ *   map.values -> new_array
+ *
+ * Returns a new Array containing all values in the map.
+ *
+ */
 static VALUE
 wmap_values(VALUE self)
 {
@@ -398,7 +433,15 @@ wmap_aset_replace(st_data_t *key, st_data_t *val, st_data_t new_key_ptr, int exi
     return ST_CONTINUE;
 }
 
-/* Creates a weak reference from the given key to the given value */
+/*
+ *  call-seq:
+ *    map[key] = value -> value
+ *
+ *  Associates the given +value+ with the given +key+.
+ *
+ *  If the given +key+ exists, replaces its value with the given +value+;
+ *  the ordering is not affected.
+ */
 static VALUE
 wmap_aset(VALUE self, VALUE key, VALUE val)
 {
@@ -432,7 +475,14 @@ wmap_lookup(VALUE self, VALUE key)
     return *(VALUE *)data;
 }
 
-/* Retrieves a weakly referenced object with the given key */
+/*
+ *  call-seq:
+ *    map[key] -> value
+ *
+ *  Returns the value associated with the given +key+ if found.
+ *
+ *  If +key+ is not found, returns +nil+.
+ */
 static VALUE
 wmap_aref(VALUE self, VALUE key)
 {
@@ -440,7 +490,34 @@ wmap_aref(VALUE self, VALUE key)
     return !UNDEF_P(obj) ? obj : Qnil;
 }
 
-/* Delete the given key from the map */
+/*
+ *  call-seq:
+ *    map.delete(key) -> value or nil
+ *    map.delete(key) {|key| ... } -> object
+ *
+ *  Deletes the entry for the given +key+ and returns its associated value.
+ *
+ *  If no block is given and +key+ is found, deletes the entry and returns the associated value:
+ *    m = ObjectSpace::WeakMap.new
+ *    key = "foo"
+ *    m[key] = 1
+ *    m.delete(key) # => 1
+ *    m[key] # => nil
+ *
+ *  If no block is given and +key+ is not found, returns +nil+.
+ *
+ *  If a block is given and +key+ is found, ignores the block,
+ *  deletes the entry, and returns the associated value:
+ *    m = ObjectSpace::WeakMap.new
+ *    key = "foo"
+ *    m[key] = 2
+ *    m.delete(key) { |key| raise 'Will never happen'} # => 2
+ *
+ *  If a block is given and +key+ is not found,
+ *  yields the +key+ to the block and returns the block's return value:
+ *    m = ObjectSpace::WeakMap.new
+ *    m.delete("nosuch") { |key| "Key #{key} not found" } # => "Key nosuch not found"
+ */
 static VALUE
 wmap_delete(VALUE self, VALUE key)
 {
@@ -471,14 +548,24 @@ wmap_delete(VALUE self, VALUE key)
     }
 }
 
-/* Returns +true+ if +key+ is registered */
+/*
+ *  call-seq:
+ *    map.key?(key) -> true or false
+ *
+ *  Returns +true+ if +key+ is a key in +self+, otherwise +false+.
+ */
 static VALUE
 wmap_has_key(VALUE self, VALUE key)
 {
     return RBOOL(!UNDEF_P(wmap_lookup(self, key)));
 }
 
-/* Returns the number of referenced objects */
+/*
+ * call-seq:
+ *   map.size -> number
+ *
+ * Returns the number of referenced objects
+ */
 static VALUE
 wmap_size(VALUE self)
 {
@@ -607,7 +694,9 @@ wkmap_compact(void *ptr)
 {
     struct weakkeymap *w = ptr;
 
-    st_foreach_with_replace(w->table, wkmap_compact_table_i, wkmap_compact_table_replace, (st_data_t)0);
+    if (w->table) {
+        st_foreach_with_replace(w->table, wkmap_compact_table_i, wkmap_compact_table_replace, (st_data_t)0);
+    }
 }
 
 static const rb_data_type_t weakkeymap_type = {
@@ -710,7 +799,7 @@ wkmap_aset_replace(st_data_t *key, st_data_t *val, st_data_t data_args, int exis
  *  call-seq:
  *    map[key] = value -> value
  *
- *  Associates the given +value+ with the given +key+; returns +value+.
+ *  Associates the given +value+ with the given +key+
  *
  *  The reference to +key+ is weak, so when there is no other reference
  *  to +key+ it may be garbage collected.
@@ -751,7 +840,8 @@ wkmap_aset(VALUE self, VALUE key, VALUE val)
  *
  *  If no block is given and +key+ is found, deletes the entry and returns the associated value:
  *    m = ObjectSpace::WeakKeyMap.new
- *    m["foo"] = 1
+ *    key = "foo" # to hold reference to the key
+ *    m[key] = 1
  *    m.delete("foo") # => 1
  *    m["foo"] # => nil
  *
@@ -760,13 +850,14 @@ wkmap_aset(VALUE self, VALUE key, VALUE val)
  *  If a block is given and +key+ is found, ignores the block,
  *  deletes the entry, and returns the associated value:
  *    m = ObjectSpace::WeakKeyMap.new
- *    m["foo"] = 2
- *    h.delete("foo") { |key| raise 'Will never happen'} # => 2
+ *    key = "foo" # to hold reference to the key
+ *    m[key] = 2
+ *    m.delete("foo") { |key| raise 'Will never happen'} # => 2
  *
  *  If a block is given and +key+ is not found,
- *  calls the block and returns the block's return value:
+ *  yields the +key+ to the block and returns the block's return value:
  *    m = ObjectSpace::WeakKeyMap.new
- *    h.delete("nosuch") { |key| "Key #{key} not found" } # => "Key nosuch not found"
+ *    m.delete("nosuch") { |key| "Key #{key} not found" } # => "Key nosuch not found"
  */
 
 static VALUE
@@ -801,6 +892,19 @@ wkmap_delete(VALUE self, VALUE key)
  *    map.getkey(key) -> existing_key or nil
  *
  *  Returns the existing equal key if it exists, otherwise returns +nil+.
+ *
+ *  This might be useful for implementing caches, so that only one copy of
+ *  some object would be used everywhere in the program:
+ *
+ *    value = {amount: 1, currency: 'USD'}
+ *
+ *    # Now if we put this object in a cache:
+ *    cache = ObjectSpace::WeakKeyMap.new
+ *    cache[value] = true
+ *
+ *    # ...we can always extract from there and use the same object:
+ *    copy = cache.getkey({amount: 1, currency: 'USD'})
+ *    copy.object_id == value.object_id #=> true
  */
 static VALUE
 wkmap_getkey(VALUE self, VALUE key)
@@ -816,7 +920,7 @@ wkmap_getkey(VALUE self, VALUE key)
 
 /*
  *  call-seq:
- *    hash.key?(key) -> true or false
+ *    map.key?(key) -> true or false
  *
  *  Returns +true+ if +key+ is a key in +self+, otherwise +false+.
  */
@@ -876,20 +980,101 @@ wkmap_inspect(VALUE self)
 /*
  *  Document-class: ObjectSpace::WeakMap
  *
- *  An ObjectSpace::WeakMap object holds references to
- *  any objects, but those objects can get garbage collected.
+ *  An ObjectSpace::WeakMap is a key-value map that holds weak references
+ *  to its keys and values, so they can be garbage-collected when there are
+ *  no more references left.
  *
- *  This class is mostly used internally by WeakRef, please use
- *  +lib/weakref.rb+ for the public interface.
+ *  Keys in the map are compared by identity.
+ *
+ *     m = ObjectSpace::WeekMap.new
+ *     key1 = "foo"
+ *     val1 = Object.new
+ *     m[key1] = val1
+ *
+ *     key2 = "foo"
+ *     val2 = Object.new
+ *     m[key2] = val2
+ *
+ *     m[key1] #=> #<Object:0x0...>
+ *     m[key2] #=> #<Object:0x0...>
+ *
+ *     val1 = nil # remove the other reference to value
+ *     GC.start
+ *
+ *     m[key1] #=> nil
+ *     m.keys #=> ["bar"]
+ *
+ *     key2 = nil # remove the other reference to key
+ *     GC.start
+ *
+ *     m[key2] #=> nil
+ *     m.keys #=> []
+ *
+ *  (Note that GC.start is used here only for demonstrational purposes and might
+ *  not always lead to demonstrated results.)
+ *
+ *
+ *  See also ObjectSpace::WeakKeyMap map class, which compares keys by value,
+ *  and holds weak references only to the keys.
  */
 
 /*
  *  Document-class: ObjectSpace::WeakKeyMap
  *
- *  An ObjectSpace::WeakKeyMap object holds references to
- *  any objects, but objects uses as keys can be garbage collected.
+ *  An ObjectSpace::WeakKeyMap is a key-value map that holds weak references
+ *  to its keys, so they can be garbage collected when there is no more references.
  *
- *  Objects used as values can't be garbage collected until the key is.
+ *  Unlike ObjectSpace::WeakMap:
+ *
+ *  * references to values are _strong_, so they aren't garbage collected while
+ *    they are in the map;
+ *  * keys are compared by value (using Object#eql?), not by identity;
+ *  * only garbage-collectable objects can be used as keys.
+ *
+ *       map = ObjectSpace::WeakKeyMap.new
+ *       val = Time.new(2023, 12, 7)
+ *       key = "name"
+ *       map[key] = val
+ *
+ *       # Value is fetched by equality: the instance of string "name" is
+ *       # different here, but it is equal to the key
+ *       map["name"] #=> 2023-12-07 00:00:00 +0200
+ *
+ *       val = nil
+ *       GC.start
+ *       # There is no more references to `val`, yet the pair isn't
+ *       # garbage-collected.
+ *       map["name"] #=> 2023-12-07 00:00:00 +0200
+ *
+ *       key = nil
+ *       GC.start
+ *       # There is no more references to `key`, key and value are
+ *       # garbage-collected.
+ *       map["name"] #=> nil
+ *
+ *  (Note that GC.start is used here only for demonstrational purposes and might
+ *  not always lead to demonstrated results.)
+ *
+ *  The collection is especially useful for implementing caches of lightweight value
+ *  objects, so that only one copy of each value representation would be stored in
+ *  memory, but the copies that aren't used would be garbage-collected.
+ *
+ *    CACHE = ObjectSpace::WeakKeyMap
+ *
+ *    def make_value(**)
+ *       val = ValueObject.new(**)
+ *       if (existing = @cache.getkey(val))
+ *          # if the object with this value exists, we return it
+ *          existing
+ *       else
+ *          # otherwise, put it in the cache
+ *          @cache[val] = true
+ *          val
+ *       end
+ *    end
+ *
+ *  This will result in +make_value+ returning the same object for same set of attributes
+ *  always, but the values that aren't needed anymore woudn't be sitting in the cache forever.
  */
 
 void

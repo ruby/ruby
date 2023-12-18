@@ -2459,6 +2459,18 @@ CODE
     assert_equal [:tp1, 1, 2, :tp2, 3], events
   end
 
+  def test_multiple_enable
+    ary = []
+    trace = TracePoint.new(:call) do |tp|
+      ary << tp.method_id
+    end
+    trace.enable
+    trace.enable
+    foo
+    trace.disable
+    assert_equal(1, ary.count(:foo), '[Bug #19114]')
+  end
+
   def test_multiple_tracepoints_same_bmethod
     events = []
     tp1 = TracePoint.new(:return) do |tp|

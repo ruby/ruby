@@ -149,7 +149,7 @@ module SyncDefaultGems
       gemspec_content = File.readlines("#{upstream}/bundler/bundler.gemspec").map do |line|
         next if line =~ /LICENSE\.md/
 
-        line.gsub("bundler.gemspec", "lib/bundler/bundler.gemspec").gsub('"exe"', '"libexec"')
+        line.gsub("bundler.gemspec", "lib/bundler/bundler.gemspec")
       end.compact.join
       File.write("lib/bundler/bundler.gemspec", gemspec_content)
 
@@ -433,7 +433,7 @@ module SyncDefaultGems
       |ext/.*\.java
       |rakelib/.*
       |test/(?:lib|fixtures)/.*
-      |tool/.*
+      |tool/(?!bundler/).*
     )\z]mx
 
     # Gem-specific patterns
@@ -544,6 +544,8 @@ module SyncDefaultGems
         end
         if editor
           system([editor, conflict].join(' '))
+          conflict.delete_if {|f| !File.exist?(f)}
+          return true if conflict.empty?
           return system(*%w"git add --", *conflict)
         end
       end

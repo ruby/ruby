@@ -771,12 +771,12 @@ RSpec.describe "bundle install with explicit source paths" do
 
       build_lib "foo", "1.0", path: lib_path("foo") do |s|
         s.add_dependency "rack"
-        s.add_dependency "rake", "13.0.1"
+        s.add_dependency "rake", rake_version
       end
 
       bundle "install"
 
-      checksums.checksum gem_repo1, "rake", "13.0.1"
+      checksums.checksum gem_repo1, "rake", rake_version
 
       expect(lockfile).to eq <<~G
         PATH
@@ -784,13 +784,13 @@ RSpec.describe "bundle install with explicit source paths" do
           specs:
             foo (1.0)
               rack
-              rake (= 13.0.1)
+              rake (= #{rake_version})
 
         GEM
           remote: #{file_uri_for(gem_repo1)}/
           specs:
             rack (0.9.1)
-            rake (13.0.1)
+            rake (#{rake_version})
 
         PLATFORMS
           #{lockfile_platforms}

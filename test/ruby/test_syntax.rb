@@ -1767,6 +1767,7 @@ eom
 
     assert_valid_syntax("proc {def foo(_);end;_1}")
     assert_valid_syntax("p { [_1 **2] }")
+    assert_valid_syntax("proc {_1;def foo();end;_1}")
   end
 
   def test_it

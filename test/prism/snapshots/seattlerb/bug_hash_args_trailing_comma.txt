@@ -21,6 +21,7 @@
             │       │   ├── closing_loc: ∅
             │       │   └── unescaped: "bar"
             │       └── @ KeywordHashNode (location: (1,10)-(1,18))
+            │           ├── flags: static_keys
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (1,10)-(1,18))
             │                   ├── key:

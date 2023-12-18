@@ -89,7 +89,7 @@ class Gem::Platform
     when String then
       arch = arch.split "-"
 
-      if arch.length > 2 && arch.last !~ /\d+(\.\d+)?$/ # reassemble x86-linux-{libc}
+      if arch.length > 2 && !arch.last.match?(/\d+(\.\d+)?$/) # reassemble x86-linux-{libc}
         extra = arch.pop
         arch.last << "-#{extra}"
       end
@@ -101,7 +101,7 @@ class Gem::Platform
              else cpu
       end
 
-      if arch.length == 2 && arch.last =~ /^\d+(\.\d+)?$/ # for command-line
+      if arch.length == 2 && arch.last.match?(/^\d+(\.\d+)?$/) # for command-line
         @os, @version = arch
         return
       end

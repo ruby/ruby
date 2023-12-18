@@ -178,6 +178,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_stat_heap_all
+    omit "flaky with RJIT, which allocates objects itself" if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
     stat_heap_all = {}
     stat_heap = {}
 

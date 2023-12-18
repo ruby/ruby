@@ -59,10 +59,12 @@ module Gem::BUNDLED_GEMS
   def self.replace_require(specs)
     return if [::Kernel.singleton_class, ::Kernel].any? {|klass| klass.respond_to?(:no_warning_require) }
 
+    spec_names = specs.to_a.each_with_object({}) {|spec, h| h[spec.name] = true }
+
     [::Kernel.singleton_class, ::Kernel].each do |kernel_class|
       kernel_class.send(:alias_method, :no_warning_require, :require)
       kernel_class.send(:define_method, :require) do |name|
-        if message = ::Gem::BUNDLED_GEMS.warning?(name, specs: specs) # rubocop:disable Style/HashSyntax
+        if message = ::Gem::BUNDLED_GEMS.warning?(name, specs: spec_names) # rubocop:disable Style/HashSyntax
           warn message, :uplevel => 1
         end
         kernel_class.send(:no_warning_require, name)
@@ -90,18 +92,25 @@ module Gem::BUNDLED_GEMS
 
   def self.warning?(name, specs: nil)
     feature = File.path(name) # name can be a feature name or a file path with String or Pathname
-    return if specs.to_a.map(&:name).include?(feature.sub(LIBEXT, ""))
-    _t, path = $:.resolve_feature_path(feature)
     name = feature.tr("/", "-")
+    name.sub!(LIBEXT, "")
+    return if specs.include?(name)
+    _t, path = $:.resolve_feature_path(feature)
     if gem = find_gem(path)
+      return if specs.include?(gem)
       caller = caller_locations(3, 3).find {|c| c&.absolute_path}
       return if find_gem(caller&.absolute_path)
-      name = name.sub(LIBEXT, "") # assume "foo.rb"/"foo.so" belongs to "foo" gem
     elsif SINCE[name]
       gem = true
     else
       return
     end
+    # Warning feature is not working correctly with Bootsnap.
+    # caller_locations returns:
+    #   lib/ruby/3.3.0+0/bundled_gems.rb:65:in `block (2 levels) in replace_require'
+    #   $GEM_HOME/gems/bootsnap-1.17.0/lib/bootsnap/load_path_cache/core_ext/kernel_require.rb:32:in `require'"
+    #   ...
+    return if caller_locations(2).find {|c| c&.path.match?(/bootsnap/) }
     return if WARNED[name]
     WARNED[name] = true
     if gem == true
@@ -124,7 +133,7 @@ module Gem::BUNDLED_GEMS
       # We detect the gem name from caller_locations. We need to skip 2 frames like:
       # lib/ruby/3.3.0+0/bundled_gems.rb:90:in `warning?'",
       # lib/ruby/3.3.0+0/bundler/rubygems_integration.rb:247:in `block (2 levels) in replace_require'",
-      location = caller_locations(3,3)[0]&.path
+      location = caller_locations(3,1)[0]&.path
       if File.file?(location) && !location.start_with?(Gem::BUNDLED_GEMS::LIBDIR)
         caller_gem = nil
         Gem.path.each do |path|

@@ -15,6 +15,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ KeywordHashNode (location: (1,2)-(1,6))
+            │           ├── flags: ∅
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (1,2)-(1,6))
             │                   ├── key:

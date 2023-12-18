@@ -53,8 +53,8 @@ module Bundler
   class MarshalError < StandardError; end
 
   class ChecksumMismatchError < SecurityError
-    def initialize(name_tuple, existing, checksum)
-      @name_tuple = name_tuple
+    def initialize(lock_name, existing, checksum)
+      @lock_name = lock_name
       @existing = existing
       @checksum = checksum
     end
@@ -62,9 +62,9 @@ module Bundler
     def message
       <<~MESSAGE
         Bundler found mismatched checksums. This is a potential security risk.
-          #{@name_tuple.lock_name} #{@existing.to_lock}
+          #{@lock_name} #{@existing.to_lock}
             from #{@existing.sources.join("\n    and ")}
-          #{@name_tuple.lock_name} #{@checksum.to_lock}
+          #{@lock_name} #{@checksum.to_lock}
             from #{@checksum.sources.join("\n    and ")}
 
         #{mismatch_resolution_instructions}

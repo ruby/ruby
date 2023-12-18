@@ -206,7 +206,7 @@ RSpec.describe "compact index api" do
     expect(the_bundle).to include_gems "rack 1.0.0"
   end
 
-  it "handles host redirects without Net::HTTP::Persistent" do
+  it "handles host redirects without Gem::Net::HTTP::Persistent" do
     gemfile <<-G
       source "#{source_uri}"
       gem "rack"
@@ -739,7 +739,7 @@ RSpec.describe "compact index api" do
       # Install a monkeypatch that reproduces the effects of openssl raising
       # a certificate validation error when RubyGems tries to connect.
       gemfile <<-G
-        class Net::HTTP
+        class Gem::Net::HTTP
           def start
             raise OpenSSL::SSL::SSLError, "certificate verify failed"
           end
@@ -1050,7 +1050,7 @@ RSpec.describe "compact index api" do
       source "#{source_uri}"
       gem "rails"
     G
-    deps = [Gem::Dependency.new("rake", "= 13.0.1"),
+    deps = [Gem::Dependency.new("rake", "= #{rake_version}"),
             Gem::Dependency.new("actionpack", "= 2.3.2"),
             Gem::Dependency.new("activerecord", "= 2.3.2"),
             Gem::Dependency.new("actionmailer", "= 2.3.2"),

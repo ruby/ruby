@@ -24,6 +24,7 @@
             │           │   │   ├── closing_loc: ∅
             │           │   │   └── unescaped: "b"
             │           │   └── @ KeywordHashNode (location: (1,7)-(1,14))
+            │           │       ├── flags: static_keys
             │           │       └── elements: (length: 1)
             │           │           └── @ AssocNode (location: (1,7)-(1,14))
             │           │               ├── key:

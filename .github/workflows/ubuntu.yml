@@ -40,9 +40,6 @@ jobs:
             configure: '--disable-yjit'
           - test_task: check
             configure: '--enable-shared --enable-load-relative'
-          - test_task: test-all TESTS=--repeat-count=2
-          - test_task: test-all
-            configure: 'cppflags=-DUNIVERSAL_PARSER'
           - test_task: test-bundler-parallel
           - test_task: test-bundled-gems
       fail-fast: false

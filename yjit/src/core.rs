@@ -2180,8 +2180,13 @@ impl Assembler {
         let method_name_index = (self.ctx.stack_size as usize) - argc - 1;
 
         for i in method_name_index..(self.ctx.stack_size - 1) as usize {
-            if i + 1 < MAX_TEMP_TYPES {
-                self.ctx.set_temp_mapping(i, self.ctx.get_temp_mapping(i + 1));
+            if i < MAX_TEMP_TYPES {
+                let next_arg_mapping = if i + 1 < MAX_TEMP_TYPES {
+                    self.ctx.get_temp_mapping(i + 1)
+                } else {
+                    TempMapping::map_to_stack(Type::Unknown)
+                };
+                self.ctx.set_temp_mapping(i, next_arg_mapping);
             }
         }
         self.stack_pop(1);
@@ -3498,6 +3503,26 @@ mod tests {
         assert!(top_type == Type::Fixnum);
 
         // TODO: write more tests for Context type diff
+    }
+
+    #[test]
+    fn shift_stack_for_send() {
+        let mut asm = Assembler::new();
+
+        // Push values to simulate send(:name, arg) with 6 items already on-stack
+        for _ in 0..6 {
+            asm.stack_push(Type::Fixnum);
+        }
+        asm.stack_push(Type::Unknown);
+        asm.stack_push(Type::ImmSymbol);
+        asm.stack_push(Type::Unknown);
+
+        // This method takes argc of the sendee, not argc of send
+        asm.shift_stack(1);
+
+        // The symbol should be gone
+        assert_eq!(Type::Unknown, asm.ctx.get_opnd_type(StackOpnd(0)));
+        assert_eq!(Type::Unknown, asm.ctx.get_opnd_type(StackOpnd(1)));
     }
 
     #[test]

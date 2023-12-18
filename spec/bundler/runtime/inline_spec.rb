@@ -421,11 +421,11 @@ RSpec.describe "bundler/inline#gemfile" do
     script <<-RUBY
       gemfile(true) do
         source "#{file_uri_for(gem_repo1)}"
-        gem "rake", "~> 13.0"
+        gem "rake", "#{rake_version}"
       end
     RUBY
 
-    expect(out).to include("Installing rake 13.0")
+    expect(out).to include("Installing rake #{rake_version}")
     expect(out).not_to include("was 11.3.0")
     expect(err).to be_empty
   end
@@ -592,9 +592,6 @@ RSpec.describe "bundler/inline#gemfile" do
   end
 
   it "when requiring fileutils after does not show redefinition warnings", :realworld do
-    dependency_installer_loads_fileutils = ruby "require 'rubygems/dependency_installer'; puts $LOADED_FEATURES.grep(/fileutils/)", raise_on_error: false
-    skip "does not work if rubygems/dependency_installer loads fileutils, which happens until rubygems 3.2.0" unless dependency_installer_loads_fileutils.empty?
-
     Dir.mkdir tmp("path_without_gemfile")
 
     default_fileutils_version = ruby "gem 'fileutils', '< 999999'; require 'fileutils'; puts FileUtils::VERSION", raise_on_error: false
@@ -604,10 +601,7 @@ RSpec.describe "bundler/inline#gemfile" do
 
     realworld_system_gems "pathname --version 0.2.0"
 
-    realworld_system_gems "timeout uri" # this spec uses net/http which requires these default gems
-
-    # on prerelease rubies, a required_rubygems_version constraint is added by RubyGems to the resolution, causing Molinillo to load the `set` gem
-    realworld_system_gems "set --version 1.0.3" if Gem.ruby_version.prerelease?
+    realworld_system_gems "uri" # this spec uses net/http which requires this default gem
 
     script <<-RUBY, dir: tmp("path_without_gemfile"), env: { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }
       require "bundler/inline"
@@ -620,5 +614,30 @@ RSpec.describe "bundler/inline#gemfile" do
     RUBY
 
     expect(err).to eq("The Gemfile specifies no dependencies")
+  end
+
+  it "does not load default timeout" do
+    default_timeout_version = ruby "gem 'timeout', '< 999999'; require 'timeout'; puts Timeout::VERSION", raise_on_error: false
+    skip "timeout isn't a default gem" if default_timeout_version.empty?
+
+    # This only works on RubyGems 3.5.0 or higher
+    ruby "require 'rubygems/timeout'", raise_on_error: false
+    skip "rubygems under test does not yet vendor timeout" unless last_command.success?
+
+    build_repo4 do
+      build_gem "timeout", "999"
+    end
+
+    script <<-RUBY
+      require "bundler/inline"
+
+      gemfile(true) do
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "timeout"
+      end
+    RUBY
+
+    expect(out).to include("Installing timeout 999")
   end
 end

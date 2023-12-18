@@ -219,6 +219,7 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_PATTERN_EXPRESSION_AFTER_PIN]       = "expected a pattern expression after the `^` pin operator",
     [PM_ERR_PATTERN_EXPRESSION_AFTER_PIPE]      = "expected a pattern expression after the `|` operator",
     [PM_ERR_PATTERN_EXPRESSION_AFTER_RANGE]     = "expected a pattern expression after the range operator",
+    [PM_ERR_PATTERN_EXPRESSION_AFTER_REST]      = "unexpected pattern expression after the `**` expression",
     [PM_ERR_PATTERN_HASH_KEY]                   = "expected a key in the hash pattern",
     [PM_ERR_PATTERN_HASH_KEY_LABEL]             = "expected a label as the key in the hash pattern", // TODO // THIS // AND // ABOVE // IS WEIRD
     [PM_ERR_PATTERN_IDENT_AFTER_HROCKET]        = "expected an identifier after the `=>` operator",

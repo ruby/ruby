@@ -121,7 +121,7 @@ module Bundler
         rescue NetworkDownError => e
           raise unless Bundler.feature_flag.allow_offline_install? && headers["If-None-Match"]
           ui.warn "Using the cached data for the new index because of a network error: #{e}"
-          Net::HTTPNotModified.new(nil, nil, nil)
+          Gem::Net::HTTPNotModified.new(nil, nil, nil)
         end
       end
     end

@@ -55,6 +55,7 @@ RSpec.describe Bundler::Dependency do
         ruby_31: Gem::Platform::RUBY,
         ruby_32: Gem::Platform::RUBY,
         ruby_33: Gem::Platform::RUBY,
+        ruby_34: Gem::Platform::RUBY,
         mri: Gem::Platform::RUBY,
         mri_18: Gem::Platform::RUBY,
         mri_19: Gem::Platform::RUBY,
@@ -70,6 +71,7 @@ RSpec.describe Bundler::Dependency do
         mri_31: Gem::Platform::RUBY,
         mri_32: Gem::Platform::RUBY,
         mri_33: Gem::Platform::RUBY,
+        mri_34: Gem::Platform::RUBY,
         rbx: Gem::Platform::RUBY,
         truffleruby: Gem::Platform::RUBY,
         jruby: Gem::Platform::JAVA,
@@ -89,7 +91,8 @@ RSpec.describe Bundler::Dependency do
         windows_30: Gem::Platform::WINDOWS,
         windows_31: Gem::Platform::WINDOWS,
         windows_32: Gem::Platform::WINDOWS,
-        windows_33: Gem::Platform::WINDOWS }
+        windows_33: Gem::Platform::WINDOWS,
+        windows_34: Gem::Platform::WINDOWS }
     end
 
     let(:deprecated) do
@@ -108,6 +111,7 @@ RSpec.describe Bundler::Dependency do
         mswin_31: Gem::Platform::MSWIN,
         mswin_32: Gem::Platform::MSWIN,
         mswin_33: Gem::Platform::MSWIN,
+        mswin_34: Gem::Platform::MSWIN,
         mswin64: Gem::Platform::MSWIN64,
         mswin64_19: Gem::Platform::MSWIN64,
         mswin64_20: Gem::Platform::MSWIN64,
@@ -122,6 +126,7 @@ RSpec.describe Bundler::Dependency do
         mswin64_31: Gem::Platform::MSWIN64,
         mswin64_32: Gem::Platform::MSWIN64,
         mswin64_33: Gem::Platform::MSWIN64,
+        mswin64_34: Gem::Platform::MSWIN64,
         mingw: Gem::Platform::MINGW,
         mingw_18: Gem::Platform::MINGW,
         mingw_19: Gem::Platform::MINGW,
@@ -137,6 +142,7 @@ RSpec.describe Bundler::Dependency do
         mingw_31: Gem::Platform::MINGW,
         mingw_32: Gem::Platform::MINGW,
         mingw_33: Gem::Platform::MINGW,
+        mingw_34: Gem::Platform::MINGW,
         x64_mingw: Gem::Platform::X64_MINGW,
         x64_mingw_20: Gem::Platform::X64_MINGW,
         x64_mingw_21: Gem::Platform::X64_MINGW,
@@ -149,7 +155,8 @@ RSpec.describe Bundler::Dependency do
         x64_mingw_30: Gem::Platform::X64_MINGW,
         x64_mingw_31: Gem::Platform::X64_MINGW,
         x64_mingw_32: Gem::Platform::X64_MINGW,
-        x64_mingw_33: Gem::Platform::X64_MINGW }
+        x64_mingw_33: Gem::Platform::X64_MINGW,
+        x64_mingw_34: Gem::Platform::X64_MINGW }
     end
     # rubocop:enable Naming/VariableNumber
 

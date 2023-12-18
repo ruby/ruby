@@ -42,6 +42,7 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
     @cross_reference = RDoc::CrossReference.new @context
   end
 
+  # :nodoc:
   def init_link_notation_regexp_handlings
     add_regexp_handling_RDOCLINK
 

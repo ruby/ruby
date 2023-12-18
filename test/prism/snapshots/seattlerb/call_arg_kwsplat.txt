@@ -25,6 +25,7 @@
             │       │   ├── closing_loc: ∅
             │       │   └── block: ∅
             │       └── @ KeywordHashNode (location: (1,5)-(1,8))
+            │           ├── flags: ∅
             │           └── elements: (length: 1)
             │               └── @ AssocSplatNode (location: (1,5)-(1,8))
             │                   ├── value:

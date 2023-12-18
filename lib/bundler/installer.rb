@@ -214,7 +214,7 @@ module Bundler
     end
 
     def load_plugins
-      Bundler.rubygems.load_plugins
+      Gem.load_plugins
 
       requested_path_gems = @definition.requested_specs.select {|s| s.source.is_a?(Source::Path) }
       path_plugin_files = requested_path_gems.map do |spec|
@@ -223,8 +223,8 @@ module Bundler
         error_message = "#{spec.name} #{spec.version} has an invalid gemspec"
         raise Gem::InvalidSpecificationException, error_message
       end.flatten
-      Bundler.rubygems.load_plugin_files(path_plugin_files)
-      Bundler.rubygems.load_env_plugins
+      Gem.load_plugin_files(path_plugin_files)
+      Gem.load_env_plugins
     end
 
     def ensure_specs_are_compatible!

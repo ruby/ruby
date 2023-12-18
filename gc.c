@@ -4565,6 +4565,12 @@ gc_abort(rb_objspace_t *objspace)
         }
     }
 
+    for (int i = 0; i < SIZE_POOL_COUNT; i++) {
+        rb_size_pool_t *size_pool = &size_pools[i];
+        rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
+        rgengc_mark_and_rememberset_clear(objspace, heap);
+    }
+
     gc_mode_set(objspace, gc_mode_none);
 }
 
@@ -4601,8 +4607,8 @@ rb_objspace_free_objects(rb_objspace_t *objspace)
             VALUE vp = (VALUE)p;
             switch (BUILTIN_TYPE(vp)) {
               case T_DATA: {
-                if (rb_obj_is_mutex(vp) || rb_obj_is_thread(vp)) {
-                    rb_data_free(objspace, vp);
+                if (rb_obj_is_mutex(vp) || rb_obj_is_thread(vp) || rb_obj_is_main_ractor(vp)) {
+                    obj_free(objspace, vp);
                 }
                 break;
               }
@@ -4676,12 +4682,10 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
                 if (rb_obj_is_fiber(vp)) break;
                 if (rb_obj_is_main_ractor(vp)) break;
 
-                rb_data_free(objspace, vp);
+                obj_free(objspace, vp);
                 break;
               case T_FILE:
-                if (RANY(p)->as.file.fptr) {
-                    make_io_zombie(objspace, vp);
-                }
+                obj_free(objspace, vp);
                 break;
               case T_SYMBOL:
               case T_ARRAY:
@@ -5387,7 +5391,9 @@ try_move(rb_objspace_t *objspace, rb_heap_t *heap, struct heap_page *free_page, 
          * full */
         return false;
     }
+    asan_unlock_freelist(free_page);
     free_page->freelist = RANY(dest)->as.free.next;
+    asan_lock_freelist(free_page);
 
     GC_ASSERT(RB_BUILTIN_TYPE(dest) == T_NONE);
 

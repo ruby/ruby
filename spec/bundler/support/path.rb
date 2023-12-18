@@ -80,7 +80,13 @@ module Spec
     end
 
     def shipped_files
-      @shipped_files ||= loaded_gemspec.files
+      @shipped_files ||= if ruby_core_tarball?
+        loaded_gemspec.files.map {|f| f.gsub(%r{^exe/}, "libexec/") }
+      elsif ruby_core?
+        tracked_files
+      else
+        loaded_gemspec.files
+      end
     end
 
     def lib_tracked_files
@@ -268,7 +274,7 @@ module Spec
     end
 
     def tracked_files_glob
-      ruby_core? ? "lib/bundler lib/bundler.rb spec/bundler man/bundle*" : ""
+      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb spec/bundler man/bundle*" : "lib exe spec CHANGELOG.md LICENSE.md README.md bundler.gemspec"
     end
 
     def lib_tracked_files_glob

@@ -117,6 +117,7 @@
         │   │   ├── flags: contains_keyword_splat
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (17,4)-(17,9))
+        │   │           ├── flags: ∅
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocSplatNode (location: (17,4)-(17,9))
         │   │                   ├── value:
@@ -198,6 +199,7 @@
         │   │   ├── flags: contains_keyword_splat
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (23,9)-(23,14))
+        │   │           ├── flags: ∅
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocSplatNode (location: (23,9)-(23,14))
         │   │                   ├── value:

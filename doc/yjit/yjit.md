@@ -165,15 +165,20 @@ The machine code generated for a given method can be printed by adding `puts Rub
 YJIT supports all command-line options supported by upstream CRuby, but also adds a few YJIT-specific options:
 
 - `--yjit`: enable YJIT (disabled by default)
-- `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function (default 30)
-- `--yjit-cold-threshold=N`: number of global calls after which an ISEQ is considered cold and not
-compiled, lower values mean less code is compiled (default 200K)
 - `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 64 MiB)
-- `--yjit-code-gc`: enable code GC (disabled by default as of Ruby 3.3)
+- `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function.
+  It defaults to 30, and it's then increased to 120 when the number of ISEQs in the process reaches 40,000.
+- `--yjit-cold-threshold=N`: number of global calls after which an ISEQ is considered cold and not
+  compiled, lower values mean less code is compiled (default 200K)
 - `--yjit-stats`: print statistics after the execution of a program (incurs a run-time cost)
 - `--yjit-stats=quiet`: gather statistics while running a program but don't print them. Stats are accessible through `RubyVM::YJIT.runtime_stats`. (incurs a run-time cost)
+- `--yjit-disable`: disable YJIT despite other `--yjit*` flags for lazily enabling it with `RubyVM::YJIT.enable`
+- `--yjit-code-gc`: enable code GC (disabled by default as of Ruby 3.3).
+  It will cause all machine code to be discarded when the executable memory size limit is hit, meaning JIT compilation will then start over.
+  This can allow you to use a lower executable memory size limit, but may cause a slight drop in performance when the limit is hit.
+- `--yjit-perf`: enable frame pointers and profiling with the `perf` tool
 - `--yjit-trace-exits`: produce a Marshal dump of backtraces from specific exits. Automatically enables `--yjit-stats`
-- `--yjit-perf`: Enable frame pointers and profiling with the `perf` tool
+- `--yjit-trace-exits-sample-rate=N`: trace exit locations only every Nth occurrence
 
 Note that there is also an environment variable `RUBY_YJIT_ENABLE` which can be used to enable YJIT.
 This can be useful for some deployment scripts where specifying an extra command-line option to Ruby is not practical.
@@ -211,12 +216,10 @@ When JIT code size (`RubyVM::YJIT.runtime_stats[:code_region_size]`) reaches thi
 YJIT stops compiling new code. Increasing the executable memory size means more code
 can be optimized by YJIT, at the cost of more memory usage.
 
-Alternatively, you can enable `--yjit-code-gc`, which will cause all machine code to be
-discarded when the executable memory size limit is hit, meaning JIT compilation will
-then start over. This can allow you to use a lower executable memory size limit, but
-may cause a slight drop in performance when the limit is hit.
-Compiling code takes some time, so scheduling code GC too frequently slows down your application.
-Increasing `--yjit-exec-mem-size` may speed up your application if `RubyVM::YJIT.runtime_stats[:code_gc_count]` is not 0 or 1.
+If you start Ruby with `--yjit-stats`, e.g. using an environment variable `RUBYOPT=--yjit-stats`,
+`RubyVM::YJIT.runtime_stats[:ratio_in_yjit]` shows the ratio of YJIT-executed instructions in %.
+Ideally, `ratio_in_yjit` should be as large as 99%, and increasing `--yjit-exec-mem-size` often
+helps improving `ratio_in_yjit`.
 
 ### Running workers as long as possible
 
@@ -233,24 +236,24 @@ you may want to reduce the killing frequency or increase the limit.
 YJIT allocates memory for JIT code and metadata. Enabling YJIT generally results in more memory usage.
 This section goes over tips on minimizing YJIT memory usage in case it uses more than your capacity.
 
-### Increasing --yjit-call-threshold
-
-As of Ruby 3.2, `--yjit-call-threshold` defaults to 30. With this default, some applications end up
-compiling methods that are used only during the application boot. Increasing this option may help
-you reduce the size of JIT code and metadata. It's worth trying different values like `--yjit-call-threshold=100`.
-
-Note that increasing the value too much may result in compiling code too late.
-You should monitor how many requests each worker processes before it's restarted. For example,
-if each process only handles 1000 requests, `--yjit-call-threshold=1000` might be too large for your application.
-
 ### Decreasing --yjit-exec-mem-size
 
 The `--yjit-exec-mem-size` option specifies the JIT code size, but YJIT also uses memory for its metadata,
 which often consumes more memory than JIT code. Generally, YJIT adds memory overhead by roughly
-3-4x of `--yjit-exec-mem-size` in production as of Ruby 3.2. You should multiply that by the number
+3-4x of `--yjit-exec-mem-size` in production as of Ruby 3.3. You should multiply that by the number
 of worker processes to estimate the worst case memory overhead.
 
-Running code GC adds overhead, but it could be still faster than recovering from a whole process killed by OOM.
+We use `--yjit-exec-mem-size=64` for Shopify's Rails monolith, which is Ruby 3.3's default,
+but smaller values like 32 MiB or 48 MiB might make sense for your application.
+While doing so, you may want to monitor `RubyVM::YJIT.runtime_stats[:ratio_in_yjit]` as explained above.
+
+### Enabling YJIT lazily
+
+If you enable YJIT by `--yjit` options or `RUBY_YJIT_ENABLE=1`, YJIT may compile code that is
+used only during the application boot. `RubyVM::YJIT.enable` allows you to enable YJIT from Ruby code,
+and you can call this after your application is initialized, e.g. on Unicorn's `after_fork` hook.
+If you use any YJIT options (`--yjit-*`), YJIT will start at boot by default, but `--yjit-disable`
+allows you to start Ruby with the YJIT-disabled mode while passing YJIT tuning options.
 
 ## Code Optimization Tips
 

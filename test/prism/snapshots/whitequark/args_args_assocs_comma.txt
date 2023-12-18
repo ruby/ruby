@@ -35,6 +35,7 @@
             │       │   ├── closing_loc: ∅
             │       │   └── block: ∅
             │       └── @ KeywordHashNode (location: (1,9)-(1,18))
+            │           ├── flags: static_keys
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (1,9)-(1,18))
             │                   ├── key:

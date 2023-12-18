@@ -345,6 +345,8 @@ flags:
         comment: "&. operator"
       - name: VARIABLE_CALL
         comment: "a call that could have been a local variable"
+      - name: ATTRIBUTE_WRITE
+        comment: "a call that is an attribute write, so the value being written should be returned"
     comment: Flags for call nodes.
   - name: EncodingFlags
     values:
@@ -364,6 +366,11 @@ flags:
       - name: HEXADECIMAL
         comment: "0x prefix"
     comment: Flags for integer nodes that correspond to the base of the integer.
+  - name: KeywordHashNodeFlags
+    values:
+      - name: STATIC_KEYS
+        comment: "a keyword hash which only has `AssocNode` elements all with static literal keys, which means the elements can be treated as keyword arguments"
+    comment: Flags for keyword hash nodes.
   - name: LoopFlags
     values:
       - name: BEGIN_MODIFIER
@@ -1821,6 +1828,9 @@ nodes:
           ^^^^^^^^^^^^^^^^
   - name: KeywordHashNode
     fields:
+      - name: flags
+        type: flags
+        kind: KeywordHashNodeFlags
       - name: elements
         type: node[]
     comment: |

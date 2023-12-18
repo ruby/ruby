@@ -88,16 +88,9 @@ udp_connect(VALUE sock, VALUE host, VALUE port)
 {
     struct udp_arg arg;
     VALUE ret;
-    int addrinfo_hints = 0;
 
     GetOpenFile(sock, arg.fptr);
-
-#ifdef HAVE_CONST_AI_ADDRCONFIG
-    addrinfo_hints |= AI_ADDRCONFIG;
-#endif
-
-    arg.res = rsock_addrinfo(host, port, rsock_fd_family(arg.fptr->fd), SOCK_DGRAM,
-                             addrinfo_hints);
+    arg.res = rsock_addrinfo(host, port, rsock_fd_family(arg.fptr->fd), SOCK_DGRAM, 0);
     ret = rb_ensure(udp_connect_internal, (VALUE)&arg,
                     rsock_freeaddrinfo, (VALUE)arg.res);
     if (!ret) rsock_sys_fail_host_port("connect(2)", host, port);

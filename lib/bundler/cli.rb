@@ -127,8 +127,8 @@ module Bundler
 
       if man_pages.include?(command)
         man_page = man_pages[command]
-        if Bundler.which("man") && man_path !~ %r{^file:/.+!/META-INF/jruby.home/.+}
-          Kernel.exec "man #{man_page}"
+        if Bundler.which("man") && !man_path.match?(%r{^file:/.+!/META-INF/jruby.home/.+})
+          Kernel.exec("man", man_page)
         else
           puts File.read("#{man_path}/#{File.basename(man_page)}.ronn")
         end
@@ -379,7 +379,6 @@ module Bundler
     method_option "filter-minor", type: :boolean, banner: "Only list minor newer versions"
     method_option "filter-patch", type: :boolean, banner: "Only list patch newer versions"
     method_option "parseable", aliases: "--porcelain", type: :boolean, banner: "Use minimal formatting for more parseable output"
-    method_option "json", type: :boolean, banner: "Produce parseable json output"
     method_option "only-explicit", type: :boolean, banner: "Only list gems specified in your Gemfile, not their dependencies"
     def outdated(*gems)
       require_relative "cli/outdated"

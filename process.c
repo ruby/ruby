@@ -576,7 +576,6 @@ proc_get_ppid(VALUE _)
  *    stat = $?       # => #<Process::Status: pid 1262862 exit 99>
  *    stat.class      # => Process::Status
  *    stat.to_i       # => 25344
- *    stat >> 8       # => 99
  *    stat.stopped?   # => false
  *    stat.exited?    # => true
  *    stat.exitstatus # => 99
@@ -878,7 +877,9 @@ pst_equal(VALUE st1, VALUE st2)
  *  call-seq:
  *    stat & mask -> integer
  *
- *  This method is deprecated; use other attribute methods.
+ *  This method is deprecated as #to_i value is system-specific; use
+ *  predicate methods like #exited? or #stopped?, or getters like #exitstatus
+ *  or #stopsig.
  *
  *  Returns the logical AND of the value of #to_i with +mask+:
  *
@@ -930,7 +931,9 @@ pst_bitand(VALUE st1, VALUE st2)
  *  call-seq:
  *    stat >> places -> integer
  *
- *  This method is deprecated; use other predicate methods.
+ *  This method is deprecated as #to_i value is system-specific; use
+ *  predicate methods like #exited? or #stopped?, or getters like #exitstatus
+ *  or #stopsig.
  *
  *  Returns the value of #to_i, shifted +places+ to the right:
  *

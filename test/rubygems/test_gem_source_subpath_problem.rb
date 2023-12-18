@@ -21,7 +21,7 @@ class TestGemSourceSubpathProblem < Gem::TestCase
   end
 
   def test_dependency_resolver_set
-    response = Net::HTTPResponse.new "1.1", 200, "OK"
+    response = Gem::Net::HTTPResponse.new "1.1", 200, "OK"
     response.uri = URI("http://example")
 
     @fetcher.data["#{@gem_repo}/"] = response

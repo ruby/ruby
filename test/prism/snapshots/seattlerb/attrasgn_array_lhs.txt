@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,42))
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,42))
-            ├── flags: ∅
+            ├── flags: attribute_write
             ├── receiver:
             │   @ ArrayNode (location: (1,0)-(1,12))
             │   ├── flags: ∅

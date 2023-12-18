@@ -87,7 +87,7 @@ module Bundler
         def contains?(commit)
           allowed_with_path do
             result, status = git_null("branch", "--contains", commit, dir: path)
-            status.success? && result =~ /^\* (.*)$/
+            status.success? && result.match?(/^\* (.*)$/)
           end
         end
 

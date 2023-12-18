@@ -141,8 +141,6 @@ RSpec.shared_examples "bundle install --standalone" do
 
   describe "with default gems and a lockfile", :ruby_repo do
     before do
-      skip "does not work on rubygems versions where `--install_dir` doesn't respect --default" unless Gem::Installer.for_spec(loaded_gemspec, install_dir: "/foo").default_spec_file == "/foo/specifications/default/bundler-#{Bundler::VERSION}.gemspec" # Since rubygems 3.2.0.rc.2
-
       realworld_system_gems "tsort --version 0.1.0"
 
       necessary_system_gems = ["optparse --version 0.1.1", "psych --version 3.3.2", "logger --version 1.4.3", "etc --version 1.2.0", "stringio --version 3.1.0"]

@@ -865,6 +865,27 @@ pm_arguments_validate_block(pm_parser_t *parser, pm_arguments_t *arguments, pm_b
 }
 
 /******************************************************************************/
+/* Node flag handling functions                                               */
+/******************************************************************************/
+
+/**
+ * Set the given flag on the given node.
+ */
+static inline void
+pm_node_flag_set(pm_node_t *node, pm_node_flags_t flag) {
+    node->flags |= flag;
+}
+
+/**
+ * Remove the given flag from the given node.
+ */
+static inline void
+pm_node_flag_unset(pm_node_t *node, pm_node_flags_t flag) {
+    node->flags &= (pm_node_flags_t) ~flag;
+}
+
+
+/******************************************************************************/
 /* Node creation functions                                                    */
 /******************************************************************************/
 
@@ -1152,12 +1173,12 @@ pm_array_node_elements_append(pm_array_node_t *node, pm_node_t *element) {
 
     // If the element is not a static literal, then the array is not a static
     // literal. Turn that flag off.
-    if (PM_NODE_TYPE_P(element, PM_ARRAY_NODE) || PM_NODE_TYPE_P(element, PM_HASH_NODE) || PM_NODE_TYPE_P(element, PM_RANGE_NODE) || (element->flags & PM_NODE_FLAG_STATIC_LITERAL) == 0) {
-        node->base.flags &= (pm_node_flags_t) ~PM_NODE_FLAG_STATIC_LITERAL;
+    if (PM_NODE_TYPE_P(element, PM_ARRAY_NODE) || PM_NODE_TYPE_P(element, PM_HASH_NODE) || PM_NODE_TYPE_P(element, PM_RANGE_NODE) || !PM_NODE_FLAG_P(element, PM_NODE_FLAG_STATIC_LITERAL)) {
+        pm_node_flag_unset((pm_node_t *)node, PM_NODE_FLAG_STATIC_LITERAL);
     }
 
     if (PM_NODE_TYPE_P(element, PM_SPLAT_NODE)) {
-        node->base.flags |= PM_ARRAY_NODE_FLAGS_CONTAINS_SPLAT;
+        pm_node_flag_set((pm_node_t *)node, PM_ARRAY_NODE_FLAGS_CONTAINS_SPLAT);
     }
 }
 
@@ -1720,7 +1741,7 @@ pm_call_node_call_create(pm_parser_t *parser, pm_node_t *receiver, pm_token_t *o
     node->block = arguments->block;
 
     if (operator->type == PM_TOKEN_AMPERSAND_DOT) {
-        node->base.flags |= PM_CALL_NODE_FLAGS_SAFE_NAVIGATION;
+        pm_node_flag_set((pm_node_t *)node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION);
     }
 
     node->name = pm_parser_constant_id_token(parser, message);
@@ -1794,7 +1815,7 @@ pm_call_node_shorthand_create(pm_parser_t *parser, pm_node_t *receiver, pm_token
     node->block = arguments->block;
 
     if (operator->type == PM_TOKEN_AMPERSAND_DOT) {
-        node->base.flags |= PM_CALL_NODE_FLAGS_SAFE_NAVIGATION;
+        pm_node_flag_set((pm_node_t *)node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION);
     }
 
     node->name = pm_parser_constant_id_constant(parser, "call", 4);
@@ -1841,7 +1862,7 @@ pm_call_node_variable_call_create(pm_parser_t *parser, pm_token_t *message) {
  */
 static inline bool
 pm_call_node_variable_call_p(pm_call_node_t *node) {
-    return node->base.flags & PM_CALL_NODE_FLAGS_VARIABLE_CALL;
+    return PM_NODE_FLAG_P(node, PM_CALL_NODE_FLAGS_VARIABLE_CALL);
 }
 
 /**
@@ -3327,10 +3348,16 @@ static inline void
 pm_hash_node_elements_append(pm_hash_node_t *hash, pm_node_t *element) {
     pm_node_list_append(&hash->elements, element);
 
-    // If the element is not a static literal, then the hash is not a static
-    // literal. Turn that flag off.
-    if (PM_NODE_TYPE_P(element, PM_ARRAY_NODE) || PM_NODE_TYPE_P(element, PM_HASH_NODE) || PM_NODE_TYPE_P(element, PM_RANGE_NODE) || (element->flags & PM_NODE_FLAG_STATIC_LITERAL) == 0) {
-        hash->base.flags &= (pm_node_flags_t) ~PM_NODE_FLAG_STATIC_LITERAL;
+    bool static_literal = PM_NODE_TYPE_P(element, PM_ASSOC_NODE);
+    if (static_literal) {
+        pm_assoc_node_t *assoc = (pm_assoc_node_t *) element;
+        static_literal = !PM_NODE_TYPE_P(assoc->key, PM_ARRAY_NODE) && !PM_NODE_TYPE_P(assoc->key, PM_HASH_NODE) && !PM_NODE_TYPE_P(assoc->key, PM_RANGE_NODE);
+        static_literal = static_literal && PM_NODE_FLAG_P(assoc->key, PM_NODE_FLAG_STATIC_LITERAL);
+        static_literal = static_literal && PM_NODE_FLAG_P(assoc, PM_NODE_FLAG_STATIC_LITERAL);
+    }
+
+    if (!static_literal) {
+        pm_node_flag_unset((pm_node_t *)hash, PM_NODE_FLAG_STATIC_LITERAL);
     }
 }
 
@@ -3787,7 +3814,7 @@ static inline void
 pm_interpolated_regular_expression_node_closing_set(pm_interpolated_regular_expression_node_t *node, const pm_token_t *closing) {
     node->closing_loc = PM_LOCATION_TOKEN_VALUE(closing);
     node->base.location.end = closing->end;
-    node->base.flags |= pm_regular_expression_flags_create(closing);
+    pm_node_flag_set((pm_node_t *)node, pm_regular_expression_flags_create(closing));
 }
 
 /**
@@ -3921,7 +3948,8 @@ pm_keyword_hash_node_create(pm_parser_t *parser) {
     *node = (pm_keyword_hash_node_t) {
         .base = {
             .type = PM_KEYWORD_HASH_NODE,
-            .location = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE
+            .location = PM_OPTIONAL_LOCATION_NOT_PROVIDED_VALUE,
+            .flags = PM_KEYWORD_HASH_NODE_FLAGS_SYMBOL_KEYS
         },
         .elements = { 0 }
     };
@@ -3934,6 +3962,13 @@ pm_keyword_hash_node_create(pm_parser_t *parser) {
  */
 static void
 pm_keyword_hash_node_elements_append(pm_keyword_hash_node_t *hash, pm_node_t *element) {
+    // If the element being added is not an AssocNode or does not have a symbol key, then
+    // we want to turn the STATIC_KEYS flag off.
+    // TODO: Rename the flag to SYMBOL_KEYS instead.
+    if (!PM_NODE_TYPE_P(element, PM_ASSOC_NODE) || !PM_NODE_TYPE_P(((pm_assoc_node_t *) element)->key, PM_SYMBOL_NODE)) {
+        pm_node_flag_unset((pm_node_t *)hash, PM_KEYWORD_HASH_NODE_FLAGS_SYMBOL_KEYS);
+    }
+
     pm_node_list_append(&hash->elements, element);
     if (hash->base.location.start == NULL) {
         hash->base.location.start = element->location.start;
@@ -5254,7 +5289,7 @@ pm_statements_node_body_append(pm_statements_node_t *node, pm_node_t *statement)
     pm_node_list_append(&node->body, statement);
 
     // Every statement gets marked as a place where a newline can occur.
-    statement->flags |= PM_NODE_FLAG_NEWLINE;
+    pm_node_flag_set(statement, PM_NODE_FLAG_NEWLINE);
 }
 
 /**
@@ -10253,12 +10288,12 @@ pm_binding_powers_t pm_binding_powers[PM_TOKEN_MAXIMUM] = {
     [PM_TOKEN_AMPERSAND_AMPERSAND] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_LOGICAL_AND),
 
     // != !~ == === =~ <=>
-    [PM_TOKEN_BANG_EQUAL] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_EQUALITY),
-    [PM_TOKEN_BANG_TILDE] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_EQUALITY),
-    [PM_TOKEN_EQUAL_EQUAL] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_EQUALITY),
-    [PM_TOKEN_EQUAL_EQUAL_EQUAL] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_EQUALITY),
-    [PM_TOKEN_EQUAL_TILDE] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_EQUALITY),
-    [PM_TOKEN_LESS_EQUAL_GREATER] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_EQUALITY),
+    [PM_TOKEN_BANG_EQUAL] = NON_ASSOCIATIVE(PM_BINDING_POWER_EQUALITY),
+    [PM_TOKEN_BANG_TILDE] = NON_ASSOCIATIVE(PM_BINDING_POWER_EQUALITY),
+    [PM_TOKEN_EQUAL_EQUAL] = NON_ASSOCIATIVE(PM_BINDING_POWER_EQUALITY),
+    [PM_TOKEN_EQUAL_EQUAL_EQUAL] = NON_ASSOCIATIVE(PM_BINDING_POWER_EQUALITY),
+    [PM_TOKEN_EQUAL_TILDE] = NON_ASSOCIATIVE(PM_BINDING_POWER_EQUALITY),
+    [PM_TOKEN_LESS_EQUAL_GREATER] = NON_ASSOCIATIVE(PM_BINDING_POWER_EQUALITY),
 
     // > >= < <=
     [PM_TOKEN_GREATER] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_COMPARISON),
@@ -10849,6 +10884,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
                     call->base.location.end = arguments->base.location.end;
 
                     parse_write_name(parser, &call->name);
+                    pm_node_flag_set((pm_node_t *) call, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE);
                     return (pm_node_t *) call;
                 }
             }
@@ -10866,6 +10902,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
 
                 // Replace the name with "[]=".
                 call->name = pm_parser_constant_id_constant(parser, "[]=", 3);
+                pm_node_flag_set((pm_node_t *) call, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE);
                 return target;
             }
 
@@ -11185,7 +11222,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                 parsed_bare_hash = true;
                 parse_arguments_append(parser, arguments, argument);
                 if (contains_keyword_splat) {
-                    arguments->arguments->base.flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT;
+                    pm_node_flag_set((pm_node_t *)arguments->arguments, PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT);
                 }
                 break;
             }
@@ -11305,7 +11342,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
 
                 parse_arguments_append(parser, arguments, argument);
                 if (contains_keyword_splat) {
-                    arguments->arguments->base.flags |= PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT;
+                    pm_node_flag_set((pm_node_t *)arguments->arguments, PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT);
                 }
                 break;
             }
@@ -12373,7 +12410,7 @@ parse_string_part(pm_parser_t *parser) {
             pm_token_t closing = not_provided(parser);
 
             pm_node_t *node = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &parser->current, &closing);
-            node->flags |= parse_unescaped_encoding(parser);
+            pm_node_flag_set(node, parse_unescaped_encoding(parser));
 
             parser_lex(parser);
             return node;
@@ -12758,7 +12795,7 @@ parse_variable_call(pm_parser_t *parser) {
     }
 
     pm_call_node_t *node = pm_call_node_variable_call_create(parser, &parser->previous);
-    node->base.flags |= flags;
+    pm_node_flag_set((pm_node_t *)node, flags);
 
     return (pm_node_t *) node;
 }
@@ -12937,7 +12974,7 @@ parse_pattern_constant_path(pm_parser_t *parser, pm_node_t *node) {
         case PM_ARRAY_PATTERN_NODE: {
             pm_array_pattern_node_t *pattern_node = (pm_array_pattern_node_t *) inner;
 
-            if (pattern_node->constant == NULL) {
+            if (pattern_node->constant == NULL && pattern_node->opening_loc.start == NULL) {
                 pattern_node->base.location.start = node->location.start;
                 pattern_node->base.location.end = closing.end;
 
@@ -12953,7 +12990,7 @@ parse_pattern_constant_path(pm_parser_t *parser, pm_node_t *node) {
         case PM_FIND_PATTERN_NODE: {
             pm_find_pattern_node_t *pattern_node = (pm_find_pattern_node_t *) inner;
 
-            if (pattern_node->constant == NULL) {
+            if (pattern_node->constant == NULL && pattern_node->opening_loc.start == NULL) {
                 pattern_node->base.location.start = node->location.start;
                 pattern_node->base.location.end = closing.end;
 
@@ -12969,7 +13006,7 @@ parse_pattern_constant_path(pm_parser_t *parser, pm_node_t *node) {
         case PM_HASH_PATTERN_NODE: {
             pm_hash_pattern_node_t *pattern_node = (pm_hash_pattern_node_t *) inner;
 
-            if (pattern_node->constant == NULL) {
+            if (pattern_node->constant == NULL && pattern_node->opening_loc.start == NULL) {
                 pattern_node->base.location.start = node->location.start;
                 pattern_node->base.location.end = closing.end;
 
@@ -13085,10 +13122,15 @@ parse_pattern_hash(pm_parser_t *parser, pm_node_t *first_assoc) {
             break;
         }
 
-        pm_node_t *assoc;
-
         if (match1(parser, PM_TOKEN_USTAR_STAR)) {
-            assoc = parse_pattern_keyword_rest(parser);
+            pm_node_t *assoc = parse_pattern_keyword_rest(parser);
+
+            if (rest == NULL) {
+                rest = assoc;
+            } else {
+                pm_parser_err_node(parser, assoc, PM_ERR_PATTERN_EXPRESSION_AFTER_REST);
+                pm_node_list_append(&assocs, assoc);
+            }
         } else {
             expect1(parser, PM_TOKEN_LABEL, PM_ERR_PATTERN_LABEL_AFTER_COMMA);
             pm_node_t *key = (pm_node_t *) pm_symbol_node_label_create(parser, &parser->previous);
@@ -13102,10 +13144,14 @@ parse_pattern_hash(pm_parser_t *parser, pm_node_t *first_assoc) {
             }
 
             pm_token_t operator = not_provided(parser);
-            assoc = (pm_node_t *) pm_assoc_node_create(parser, key, &operator, value);
-        }
+            pm_node_t *assoc = (pm_node_t *) pm_assoc_node_create(parser, key, &operator, value);
 
-        pm_node_list_append(&assocs, assoc);
+            if (rest != NULL) {
+                pm_parser_err_node(parser, assoc, PM_ERR_PATTERN_EXPRESSION_AFTER_REST);
+            }
+
+            pm_node_list_append(&assocs, assoc);
+        }
     }
 
     pm_hash_pattern_node_t *node = pm_hash_pattern_node_node_list_create(parser, &assocs, rest);
@@ -13692,7 +13738,7 @@ parse_strings(pm_parser_t *parser, pm_node_t *current) {
 
             if (match2(parser, PM_TOKEN_STRING_END, PM_TOKEN_EOF)) {
                 node = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &content, &parser->current, &unescaped);
-                node->flags |= parse_unescaped_encoding(parser);
+                pm_node_flag_set(node, parse_unescaped_encoding(parser));
                 expect1(parser, PM_TOKEN_STRING_END, PM_ERR_STRING_LITERAL_TERM);
             } else if (accept1(parser, PM_TOKEN_LABEL_END)) {
                 node = (pm_node_t *) pm_symbol_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
@@ -13704,7 +13750,7 @@ parse_strings(pm_parser_t *parser, pm_node_t *current) {
                 pm_token_t string_closing = not_provided(parser);
 
                 pm_node_t *part = (pm_node_t *) pm_string_node_create_unescaped(parser, &string_opening, &parser->previous, &string_closing, &unescaped);
-                part->flags |= parse_unescaped_encoding(parser);
+                pm_node_flag_set(part, parse_unescaped_encoding(parser));
                 pm_node_list_append(&parts, part);
 
                 while (!match3(parser, PM_TOKEN_STRING_END, PM_TOKEN_LABEL_END, PM_TOKEN_EOF)) {
@@ -14038,7 +14084,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
             pm_token_t closing = not_provided(parser);
             pm_node_t *node = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &content, &closing);
-            node->flags |= parse_unescaped_encoding(parser);
+            pm_node_flag_set(node, parse_unescaped_encoding(parser));
 
             // Characters can be followed by strings in which case they are
             // automatically concatenated.
@@ -14166,7 +14212,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 if (parse_arguments_list(parser, &arguments, true, accepts_command_call)) {
                     // Since we found arguments, we need to turn off the
                     // variable call bit in the flags.
-                    call->base.flags &= (pm_node_flags_t) ~PM_CALL_NODE_FLAGS_VARIABLE_CALL;
+                    pm_node_flag_unset((pm_node_t *)call, PM_CALL_NODE_FLAGS_VARIABLE_CALL);
 
                     call->opening_loc = arguments.opening_loc;
                     call->arguments = arguments.arguments;
@@ -14246,7 +14292,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 // content and we're at the end of the heredoc, so we can return
                 // just a string node with the heredoc opening and closing as
                 // its opening and closing.
-                part->flags |= parse_unescaped_encoding(parser);
+                pm_node_flag_set(part, parse_unescaped_encoding(parser));
                 pm_string_node_t *cast = (pm_string_node_t *) part;
 
                 cast->opening_loc = PM_LOCATION_TOKEN_VALUE(&opening);
@@ -15601,7 +15647,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                         pm_token_t closing = not_provided(parser);
 
                         pm_node_t *string = (pm_node_t *) pm_string_node_create_current_string(parser, &opening, &parser->current, &closing);
-                        string->flags |= parse_unescaped_encoding(parser);
+                        pm_node_flag_set(string, parse_unescaped_encoding(parser));
                         parser_lex(parser);
 
                         if (current == NULL) {
@@ -15820,7 +15866,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
                 if (match1(parser, PM_TOKEN_STRING_END)) {
                     pm_node_t *node = (pm_node_t *) pm_xstring_node_create_unescaped(parser, &opening, &content, &parser->current, &unescaped);
-                    node->flags |= parse_unescaped_encoding(parser);
+                    pm_node_flag_set(node, parse_unescaped_encoding(parser));
                     parser_lex(parser);
                     return node;
                 }
@@ -15833,7 +15879,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 pm_token_t closing = not_provided(parser);
 
                 pm_node_t *part = (pm_node_t *) pm_string_node_create_unescaped(parser, &opening, &parser->previous, &closing, &unescaped);
-                part->flags |= parse_unescaped_encoding(parser);
+                pm_node_flag_set(part, parse_unescaped_encoding(parser));
 
                 pm_interpolated_xstring_node_append(node, part);
             } else {

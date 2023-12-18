@@ -97,7 +97,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (9,0)-(9,17))
-        │   ├── flags: ∅
+        │   ├── flags: attribute_write
         │   ├── receiver:
         │   │   @ ParenthesesNode (location: (9,0)-(9,10))
         │   │   ├── body:

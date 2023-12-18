@@ -1,3 +1,16 @@
+# regression test for send stack shifting
+assert_normal_exit %q{
+  def foo(a, b)
+    a.singleton_methods(b)
+  end
+
+  def call_foo
+    [1, 1, 1, 1, 1, 1, send(:foo, 1, 1)]
+  end
+
+  call_foo
+}
+
 # regression test for arity check with splat
 assert_equal '[:ae, :ae]', %q{
   def req_one(a_, b_ = 1) = raise

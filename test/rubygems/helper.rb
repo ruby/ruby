@@ -582,7 +582,7 @@ class Gem::TestCase < Test::Unit::TestCase
   end
 
   def in_path?(executable) # :nodoc:
-    return true if %r{\A([A-Z]:|/)} =~ executable && File.exist?(executable)
+    return true if %r{\A([A-Z]:|/)}.match?(executable) && File.exist?(executable)
 
     ENV["PATH"].split(File::PATH_SEPARATOR).any? do |directory|
       File.exist? File.join directory, executable

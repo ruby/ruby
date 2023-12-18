@@ -798,4 +798,15 @@ class TestISeq < Test::Unit::TestCase
     result = RubyVM::InstructionSequence.load_from_binary(iseq.to_binary).eval
     assert_equal expected, result, proc {sprintf("expected: %x, result: %x", expected, result)}
   end
+
+  def test_compile_prism_with_file
+    Tempfile.create(%w"test_iseq .rb") do |f|
+      f.puts "name = 'Prism'; puts 'hello"
+      f.close
+
+      assert_nothing_raised(SyntaxError) {
+        RubyVM::InstructionSequence.compile_prism(f.path)
+      }
+    end
+  end
 end

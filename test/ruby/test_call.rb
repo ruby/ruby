@@ -121,6 +121,186 @@ class TestCall < Test::Unit::TestCase
     assert_equal([10], a(10))
   end
 
+  def test_call_op_asgn_keywords
+    h = Class.new do
+      attr_reader :get, :set
+      def v; yield; [*@get, *@set] end
+      def [](*a, **b, &c) @get = [a, b, c]; @set = []; 3 end
+      def []=(*a, **b, &c) @set = [a, b, c] end
+    end.new
+
+    a = []
+    kw = {}
+    b = lambda{}
+
+    # +=, without block, non-popped
+    assert_equal([[], {}, nil, [4], {}, nil], h.v{h[**kw] += 1})
+    assert_equal([[0], {}, nil, [0, 4], {}, nil], h.v{h[0, **kw] += 1})
+    assert_equal([[0], {}, nil, [0, 4], {}, nil], h.v{h[0, *a, **kw] += 1})
+    assert_equal([[], {kw: 5}, nil, [4], {kw: 5}, nil], h.v{h[kw: 5] += 1})
+    assert_equal([[], {kw: 5, a: 2}, nil, [4], {kw: 5, a: 2}, nil], h.v{h[kw: 5, a: 2] += 1})
+    assert_equal([[], {kw: 5, a: 2}, nil, [4], {kw: 5, a: 2}, nil], h.v{h[kw: 5, a: 2] += 1})
+    assert_equal([[0], {kw: 5, a: 2}, nil, [0, 4], {kw: 5, a: 2}, nil], h.v{h[0, kw: 5, a: 2] += 1})
+    assert_equal([[0], {kw: 5, a: 2, nil: 3}, nil, [0, 4], {kw: 5, a: 2, nil: 3}, nil], h.v{h[0, *a, kw: 5, a: 2, nil: 3] += 1})
+
+    # +=, with block, non-popped
+    assert_equal([[], {}, b, [4], {}, b], h.v{h[**kw, &b] += 1})
+    assert_equal([[0], {}, b, [0, 4], {}, b], h.v{h[0, **kw, &b] += 1})
+    assert_equal([[0], {}, b, [0, 4], {}, b], h.v{h[0, *a, **kw, &b] += 1})
+    assert_equal([[], {kw: 5}, b, [4], {kw: 5}, b], h.v{h[kw: 5, &b] += 1})
+    assert_equal([[], {kw: 5, a: 2}, b, [4], {kw: 5, a: 2}, b], h.v{h[kw: 5, a: 2, &b] += 1})
+    assert_equal([[], {kw: 5, a: 2}, b, [4], {kw: 5, a: 2}, b], h.v{h[kw: 5, a: 2, &b] += 1})
+    assert_equal([[0], {kw: 5, a: 2}, b, [0, 4], {kw: 5, a: 2}, b], h.v{h[0, kw: 5, a: 2, &b] += 1})
+    assert_equal([[0], {kw: 5, a: 2, b: 3}, b, [0, 4], {kw: 5, a: 2, b: 3}, b], h.v{h[0, *a, kw: 5, a: 2, b: 3, &b] += 1})
+
+    # +=, without block, popped
+    assert_equal([[], {}, nil, [4], {}, nil], h.v{h[**kw] += 1; nil})
+    assert_equal([[0], {}, nil, [0, 4], {}, nil], h.v{h[0, **kw] += 1; nil})
+    assert_equal([[0], {}, nil, [0, 4], {}, nil], h.v{h[0, *a, **kw] += 1; nil})
+    assert_equal([[], {kw: 5}, nil, [4], {kw: 5}, nil], h.v{h[kw: 5] += 1; nil})
+    assert_equal([[], {kw: 5, a: 2}, nil, [4], {kw: 5, a: 2}, nil], h.v{h[kw: 5, a: 2] += 1; nil})
+    assert_equal([[], {kw: 5, a: 2}, nil, [4], {kw: 5, a: 2}, nil], h.v{h[kw: 5, a: 2] += 1; nil})
+    assert_equal([[0], {kw: 5, a: 2}, nil, [0, 4], {kw: 5, a: 2}, nil], h.v{h[0, kw: 5, a: 2] += 1; nil})
+    assert_equal([[0], {kw: 5, a: 2, nil: 3}, nil, [0, 4], {kw: 5, a: 2, nil: 3}, nil], h.v{h[0, *a, kw: 5, a: 2, nil: 3] += 1; nil})
+
+    # +=, with block, popped
+    assert_equal([[], {}, b, [4], {}, b], h.v{h[**kw, &b] += 1; nil})
+    assert_equal([[0], {}, b, [0, 4], {}, b], h.v{h[0, **kw, &b] += 1; nil})
+    assert_equal([[0], {}, b, [0, 4], {}, b], h.v{h[0, *a, **kw, &b] += 1; nil})
+    assert_equal([[], {kw: 5}, b, [4], {kw: 5}, b], h.v{h[kw: 5, &b] += 1; nil})
+    assert_equal([[], {kw: 5, a: 2}, b, [4], {kw: 5, a: 2}, b], h.v{h[kw: 5, a: 2, &b] += 1; nil})
+    assert_equal([[], {kw: 5, a: 2}, b, [4], {kw: 5, a: 2}, b], h.v{h[kw: 5, a: 2, &b] += 1; nil})
+    assert_equal([[0], {kw: 5, a: 2}, b, [0, 4], {kw: 5, a: 2}, b], h.v{h[0, kw: 5, a: 2, &b] += 1; nil})
+    assert_equal([[0], {kw: 5, a: 2, b: 3}, b, [0, 4], {kw: 5, a: 2, b: 3}, b], h.v{h[0, *a, kw: 5, a: 2, b: 3, &b] += 1; nil})
+
+    # &&=, without block, non-popped
+    assert_equal([[], {}, nil, [1], {}, nil], h.v{h[**kw] &&= 1})
+    assert_equal([[0], {}, nil, [0, 1], {}, nil], h.v{h[0, **kw] &&= 1})
+    assert_equal([[0], {}, nil, [0, 1], {}, nil], h.v{h[0, *a, **kw] &&= 1})
+    assert_equal([[], {kw: 5}, nil, [1], {kw: 5}, nil], h.v{h[kw: 5] &&= 1})
+    assert_equal([[], {kw: 5, a: 2}, nil, [1], {kw: 5, a: 2}, nil], h.v{h[kw: 5, a: 2] &&= 1})
+    assert_equal([[], {kw: 5, a: 2}, nil, [1], {kw: 5, a: 2}, nil], h.v{h[kw: 5, a: 2] &&= 1})
+    assert_equal([[0], {kw: 5, a: 2}, nil, [0, 1], {kw: 5, a: 2}, nil], h.v{h[0, kw: 5, a: 2] &&= 1})
+    assert_equal([[0], {kw: 5, a: 2, nil: 3}, nil, [0, 1], {kw: 5, a: 2, nil: 3}, nil], h.v{h[0, *a, kw: 5, a: 2, nil: 3] &&= 1})
+
+    # &&=, with block, non-popped
+    assert_equal([[], {}, b, [1], {}, b], h.v{h[**kw, &b] &&= 1})
+    assert_equal([[0], {}, b, [0, 1], {}, b], h.v{h[0, **kw, &b] &&= 1})
+    assert_equal([[0], {}, b, [0, 1], {}, b], h.v{h[0, *a, **kw, &b] &&= 1})
+    assert_equal([[], {kw: 5}, b, [1], {kw: 5}, b], h.v{h[kw: 5, &b] &&= 1})
+    assert_equal([[], {kw: 5, a: 2}, b, [1], {kw: 5, a: 2}, b], h.v{h[kw: 5, a: 2, &b] &&= 1})
+    assert_equal([[], {kw: 5, a: 2}, b, [1], {kw: 5, a: 2}, b], h.v{h[kw: 5, a: 2, &b] &&= 1})
+    assert_equal([[0], {kw: 5, a: 2}, b, [0, 1], {kw: 5, a: 2}, b], h.v{h[0, kw: 5, a: 2, &b] &&= 1})
+    assert_equal([[0], {kw: 5, a: 2, b: 3}, b, [0, 1], {kw: 5, a: 2, b: 3}, b], h.v{h[0, *a, kw: 5, a: 2, b: 3, &b] &&= 1})
+
+    # &&=, without block, popped
+    assert_equal([[], {}, nil, [1], {}, nil], h.v{h[**kw] &&= 1; nil})
+    assert_equal([[0], {}, nil, [0, 1], {}, nil], h.v{h[0, **kw] &&= 1; nil})
+    assert_equal([[0], {}, nil, [0, 1], {}, nil], h.v{h[0, *a, **kw] &&= 1; nil})
+    assert_equal([[], {kw: 5}, nil, [1], {kw: 5}, nil], h.v{h[kw: 5] &&= 1; nil})
+    assert_equal([[], {kw: 5, a: 2}, nil, [1], {kw: 5, a: 2}, nil], h.v{h[kw: 5, a: 2] &&= 1; nil})
+    assert_equal([[], {kw: 5, a: 2}, nil, [1], {kw: 5, a: 2}, nil], h.v{h[kw: 5, a: 2] &&= 1; nil})
+    assert_equal([[0], {kw: 5, a: 2}, nil, [0, 1], {kw: 5, a: 2}, nil], h.v{h[0, kw: 5, a: 2] &&= 1; nil})
+    assert_equal([[0], {kw: 5, a: 2, nil: 3}, nil, [0, 1], {kw: 5, a: 2, nil: 3}, nil], h.v{h[0, *a, kw: 5, a: 2, nil: 3] &&= 1; nil})
+
+    # &&=, with block, popped
+    assert_equal([[], {}, b, [1], {}, b], h.v{h[**kw, &b] &&= 1; nil})
+    assert_equal([[0], {}, b, [0, 1], {}, b], h.v{h[0, **kw, &b] &&= 1; nil})
+    assert_equal([[0], {}, b, [0, 1], {}, b], h.v{h[0, *a, **kw, &b] &&= 1; nil})
+    assert_equal([[], {kw: 5}, b, [1], {kw: 5}, b], h.v{h[kw: 5, &b] &&= 1; nil})
+    assert_equal([[], {kw: 5, a: 2}, b, [1], {kw: 5, a: 2}, b], h.v{h[kw: 5, a: 2, &b] &&= 1; nil})
+    assert_equal([[], {kw: 5, a: 2}, b, [1], {kw: 5, a: 2}, b], h.v{h[kw: 5, a: 2, &b] &&= 1; nil})
+    assert_equal([[0], {kw: 5, a: 2}, b, [0, 1], {kw: 5, a: 2}, b], h.v{h[0, kw: 5, a: 2, &b] &&= 1; nil})
+    assert_equal([[0], {kw: 5, a: 2, b: 3}, b, [0, 1], {kw: 5, a: 2, b: 3}, b], h.v{h[0, *a, kw: 5, a: 2, b: 3, &b] &&= 1; nil})
+
+    # ||=, without block, non-popped
+    assert_equal([[], {}, nil], h.v{h[**kw] ||= 1})
+    assert_equal([[0], {}, nil], h.v{h[0, **kw] ||= 1})
+    assert_equal([[0], {}, nil], h.v{h[0, *a, **kw] ||= 1})
+    assert_equal([[], {kw: 5}, nil], h.v{h[kw: 5] ||= 1})
+    assert_equal([[], {kw: 5, a: 2}, nil], h.v{h[kw: 5, a: 2] ||= 1})
+    assert_equal([[], {kw: 5, a: 2}, nil], h.v{h[kw: 5, a: 2] ||= 1})
+    assert_equal([[0], {kw: 5, a: 2}, nil], h.v{h[0, kw: 5, a: 2] ||= 1})
+    assert_equal([[0], {kw: 5, a: 2, nil: 3}, nil], h.v{h[0, *a, kw: 5, a: 2, nil: 3] ||= 1})
+
+    # ||=, with block, non-popped
+    assert_equal([[], {}, b], h.v{h[**kw, &b] ||= 1})
+    assert_equal([[0], {}, b], h.v{h[0, **kw, &b] ||= 1})
+    assert_equal([[0], {}, b], h.v{h[0, *a, **kw, &b] ||= 1})
+    assert_equal([[], {kw: 5}, b], h.v{h[kw: 5, &b] ||= 1})
+    assert_equal([[], {kw: 5, a: 2}, b], h.v{h[kw: 5, a: 2, &b] ||= 1})
+    assert_equal([[], {kw: 5, a: 2}, b], h.v{h[kw: 5, a: 2, &b] ||= 1})
+    assert_equal([[0], {kw: 5, a: 2}, b], h.v{h[0, kw: 5, a: 2, &b] ||= 1})
+    assert_equal([[0], {kw: 5, a: 2, b: 3}, b], h.v{h[0, *a, kw: 5, a: 2, b: 3, &b] ||= 1})
+
+    # ||=, without block, popped
+    assert_equal([[], {}, nil], h.v{h[**kw] ||= 1; nil})
+    assert_equal([[0], {}, nil], h.v{h[0, **kw] ||= 1; nil})
+    assert_equal([[0], {}, nil], h.v{h[0, *a, **kw] ||= 1; nil})
+    assert_equal([[], {kw: 5}, nil], h.v{h[kw: 5] ||= 1; nil})
+    assert_equal([[], {kw: 5, a: 2}, nil], h.v{h[kw: 5, a: 2] ||= 1; nil})
+    assert_equal([[], {kw: 5, a: 2}, nil], h.v{h[kw: 5, a: 2] ||= 1; nil})
+    assert_equal([[0], {kw: 5, a: 2}, nil], h.v{h[0, kw: 5, a: 2] ||= 1; nil})
+    assert_equal([[0], {kw: 5, a: 2, nil: 3}, nil], h.v{h[0, *a, kw: 5, a: 2, nil: 3] ||= 1; nil})
+
+    # ||=, with block, popped
+    assert_equal([[], {}, b], h.v{h[**kw, &b] ||= 1; nil})
+    assert_equal([[0], {}, b], h.v{h[0, **kw, &b] ||= 1; nil})
+    assert_equal([[0], {}, b], h.v{h[0, *a, **kw, &b] ||= 1; nil})
+    assert_equal([[], {kw: 5}, b], h.v{h[kw: 5, &b] ||= 1; nil})
+    assert_equal([[], {kw: 5, a: 2}, b], h.v{h[kw: 5, a: 2, &b] ||= 1; nil})
+    assert_equal([[], {kw: 5, a: 2}, b], h.v{h[kw: 5, a: 2, &b] ||= 1; nil})
+    assert_equal([[0], {kw: 5, a: 2}, b], h.v{h[0, kw: 5, a: 2, &b] ||= 1; nil})
+    assert_equal([[0], {kw: 5, a: 2, b: 3}, b], h.v{h[0, *a, kw: 5, a: 2, b: 3, &b] ||= 1; nil})
+
+  end
+
+  def test_kwsplat_block_order_op_asgn
+    o = Object.new
+    ary = []
+    o.define_singleton_method(:to_a) {ary << :to_a; []}
+    o.define_singleton_method(:to_hash) {ary << :to_hash; {}}
+    o.define_singleton_method(:to_proc) {ary << :to_proc; lambda{}}
+
+    def o.[](...) 2 end
+    def o.[]=(...) end
+
+    o[kw: 1] += 1
+    assert_equal([], ary)
+
+    o[**o] += 1
+    assert_equal([:to_hash], ary)
+
+    ary.clear
+    o[**o, &o] += 1
+    # to_proc called twice because no VM instruction for coercing to proc
+    assert_equal([:to_hash, :to_proc, :to_proc], ary)
+
+    ary.clear
+    o[*o, **o, &o] += 1
+    assert_equal([:to_a, :to_hash, :to_proc, :to_proc], ary)
+  end
+
+  def test_call_op_asgn_keywords_mutable
+    h = Class.new do
+      attr_reader :get, :set
+      def v; yield; [*@get, *@set] end
+      def [](*a, **b)
+        @get = [a.dup, b.dup]
+        a << :splat_modified
+        b[:kw_splat_modified] = true
+        @set = []
+        3
+      end
+      def []=(*a, **b) @set = [a, b] end
+    end.new
+
+    a = []
+    kw = {}
+
+    assert_equal([[2], {b: 5}, [2, 4], {b: 5}], h.v{h[*a, 2, b: 5, **kw] += 1})
+  end
+
   def test_call_splat_order
     bug12860 = '[ruby-core:77701] [Bug# 12860]'
     ary = [1, 2]

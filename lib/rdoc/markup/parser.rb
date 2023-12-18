@@ -420,6 +420,8 @@ class RDoc::Markup::Parser
   # A simple wrapper of StringScanner that is aware of the current column and lineno
 
   class MyStringScanner
+    # :stopdoc:
+
     def initialize(input)
       @line = @column = 0
       @s = StringScanner.new input
@@ -456,6 +458,8 @@ class RDoc::Markup::Parser
     def [](i)
       @s[i]
     end
+
+    #:startdoc:
   end
 
   ##

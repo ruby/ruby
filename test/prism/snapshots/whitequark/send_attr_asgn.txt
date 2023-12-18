@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(7,10))
     └── body: (length: 4)
         ├── @ CallNode (location: (1,0)-(1,9))
-        │   ├── flags: ∅
+        │   ├── flags: attribute_write
         │   ├── receiver:
         │   │   @ CallNode (location: (1,0)-(1,3))
         │   │   ├── flags: variable_call
@@ -29,7 +29,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (3,0)-(3,9))
-        │   ├── flags: ∅
+        │   ├── flags: attribute_write
         │   ├── receiver:
         │   │   @ CallNode (location: (3,0)-(3,3))
         │   │   ├── flags: variable_call
@@ -76,7 +76,7 @@
         │       @ IntegerNode (location: (5,9)-(5,10))
         │       └── flags: decimal
         └── @ CallNode (location: (7,0)-(7,10))
-            ├── flags: ∅
+            ├── flags: attribute_write
             ├── receiver:
             │   @ CallNode (location: (7,0)-(7,3))
             │   ├── flags: variable_call

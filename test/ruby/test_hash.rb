@@ -1909,6 +1909,14 @@ class TestHashOnly < Test::Unit::TestCase
     end;
   end
 
+  def test_compare_by_id_memory_leak
+    assert_no_memory_leak([], "", <<~RUBY, rss: true)
+      1_000_000.times do
+        {a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8}.compare_by_identity
+      end
+    RUBY
+  end
+
   def test_try_convert
     assert_equal({1=>2}, Hash.try_convert({1=>2}))
     assert_equal(nil, Hash.try_convert("1=>2"))
@@ -2302,5 +2310,27 @@ class TestHashOnly < Test::Unit::TestCase
         h.compare_by_identity
       end
     end
+  end
+
+  def test_ar_hash_to_st_hash
+    assert_normal_exit("#{<<~"begin;"}\n#{<<~'end;'}", 'https://bugs.ruby-lang.org/issues/20050#note-5')
+    begin;
+      srand(0)
+      class Foo
+        def to_a
+          []
+        end
+
+        def hash
+          $h.delete($h.keys.sample) if rand < 0.1
+          to_a.hash
+        end
+      end
+
+      1000.times do
+        $h = {}
+        (0..10).each {|i| $h[Foo.new] ||= {} }
+      end
+    end;
   end
 end

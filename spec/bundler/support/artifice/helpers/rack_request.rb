@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "rack/test"
-require "net/http"
+require "bundler/vendored_net_http"
 
 module Artifice
   module Net
@@ -16,25 +16,25 @@ module Artifice
       end
     end
 
-    class HTTP < ::Net::HTTP
+    class HTTP < ::Gem::Net::HTTP
       class << self
         attr_accessor :endpoint
       end
 
-      # Net::HTTP uses a @newimpl instance variable to decide whether
+      # Gem::Net::HTTP uses a @newimpl instance variable to decide whether
       # to use a legacy implementation. Since we are subclassing
-      # Net::HTTP, we must set it
+      # Gem::Net::HTTP, we must set it
       @newimpl = true
 
       # We don't need to connect, so blank out this method
       def connect
       end
 
-      # Replace the Net::HTTP request method with a method
+      # Replace the Gem::Net::HTTP request method with a method
       # that converts the request into a Rack request and
       # dispatches it to the Rack endpoint.
       #
-      # @param [Net::HTTPRequest] req A Net::HTTPRequest
+      # @param [Net::HTTPRequest] req A Gem::Net::HTTPRequest
       #   object, or one if its subclasses
       # @param [optional, String, #read] body This should
       #   be sent as "rack.input". If it's a String, it will
@@ -42,7 +42,7 @@ module Artifice
       # @return [Net::HTTPResponse]
       #
       # @yield [Net::HTTPResponse] If a block is provided,
-      #   this method will yield the Net::HTTPResponse to
+      #   this method will yield the Gem::Net::HTTPResponse to
       #   it after the body is read.
       def request(req, body = nil, &block)
         rack_request = RackRequest.new(self.class.endpoint)
@@ -63,10 +63,10 @@ module Artifice
 
       private
 
-      # This method takes a Rack response and creates a Net::HTTPResponse
+      # This method takes a Rack response and creates a Gem::Net::HTTPResponse
       # Instead of trying to mock HTTPResponse directly, we just convert
       # the Rack response into a String that looks like a normal HTTP
-      # response and call Net::HTTPResponse.read_new
+      # response and call Gem::Net::HTTPResponse.read_new
       #
       # @param [Array(#to_i, Hash, #each)] response a Rack response
       # @return [Net::HTTPResponse]
@@ -86,8 +86,8 @@ module Artifice
 
         response_string << "" << body
 
-        response_io = ::Net::BufferedIO.new(StringIO.new(response_string.join("\n")))
-        res = ::Net::HTTPResponse.read_new(response_io)
+        response_io = ::Gem::Net::BufferedIO.new(StringIO.new(response_string.join("\n")))
+        res = ::Gem::Net::HTTPResponse.read_new(response_io)
 
         res.reading_body(response_io, true) do
           yield res if block_given?

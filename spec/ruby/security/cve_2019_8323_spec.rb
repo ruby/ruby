@@ -11,7 +11,12 @@ describe "CVE-2019-8323 is resisted by" do
       cutter = Class.new {
         include Gem::GemcutterUtilities
       }.new
-      response = Net::HTTPSuccess.new(nil, nil, nil)
+      klass = if defined?(Gem::Net::HTTPSuccess)
+                Gem::Net::HTTPSuccess
+              else
+                Net::HTTPSuccess
+              end
+      response = klass.new(nil, nil, nil)
       def response.body
         "\e]2;nyan\a"
       end
@@ -25,7 +30,12 @@ describe "CVE-2019-8323 is resisted by" do
       }.new
       def cutter.terminate_interaction(n)
       end
-      response = Net::HTTPNotFound.new(nil, nil, nil)
+      klass = if defined?(Gem::Net::HTTPNotFound)
+                Gem::Net::HTTPNotFound
+              else
+                Net::HTTPNotFound
+              end
+      response = klass.new(nil, nil, nil)
       def response.body
         "\e]2;nyan\a"
       end

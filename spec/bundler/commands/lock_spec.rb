@@ -19,7 +19,7 @@ RSpec.describe "bundle lock" do
       c.checksum repo, "activesupport", "2.3.2"
       c.checksum repo, "foo", "1.0"
       c.checksum repo, "rails", "2.3.2"
-      c.checksum repo, "rake", "13.0.1"
+      c.checksum repo, "rake", rake_version
       c.checksum repo, "weakling", "0.0.3"
     end
 
@@ -42,8 +42,8 @@ RSpec.describe "bundle lock" do
             actionpack (= 2.3.2)
             activerecord (= 2.3.2)
             activeresource (= 2.3.2)
-            rake (= 13.0.1)
-          rake (13.0.1)
+            rake (= #{rake_version})
+          rake (#{rake_version})
           weakling (0.0.3)
 
       PLATFORMS
@@ -201,7 +201,7 @@ RSpec.describe "bundle lock" do
       c.checksum repo, "activesupport", "2.3.2"
       c.checksum repo, "foo", "1.0"
       c.checksum repo, "rails", "2.3.2"
-      c.checksum repo, "rake", "13.0.1"
+      c.checksum repo, "rake", rake_version
       c.checksum repo, "weakling", "0.0.3"
     end
 
@@ -224,8 +224,8 @@ RSpec.describe "bundle lock" do
             actionpack (= 2.3.2)
             activerecord (= 2.3.2)
             activeresource (= 2.3.2)
-            rake (= 13.0.1)
-          rake (13.0.1)
+            rake (= #{rake_version})
+          rake (#{rake_version})
           weakling (0.0.3)
 
       PLATFORMS
@@ -245,11 +245,11 @@ RSpec.describe "bundle lock" do
   end
 
   it "update specific gems using --update" do
-    lockfile @lockfile.gsub("2.3.2", "2.3.1").gsub("13.0.1", "10.0.1")
+    lockfile @lockfile.gsub("2.3.2", "2.3.1").gsub(rake_version, "10.0.1")
 
     bundle "lock --update rails rake"
 
-    expect(read_lockfile).to eq(remove_checksums_from_lockfile(@lockfile, "(2.3.2)", "(13.0.1)"))
+    expect(read_lockfile).to eq(remove_checksums_from_lockfile(@lockfile, "(2.3.2)", "(#{rake_version})"))
   end
 
   it "preserves unknown checksum algorithms" do
@@ -315,7 +315,7 @@ RSpec.describe "bundle lock" do
 
     bundle "lock --update rake --verbose"
     expect(out).to match(/Writing lockfile to.+lock/)
-    expect(lockfile).to include("rake (13.0.1)")
+    expect(lockfile).to include("rake (#{rake_version})")
   end
 
   it "errors when updating a missing specific gems using --update" do
@@ -1005,7 +1005,7 @@ RSpec.describe "bundle lock" do
         c.checksum repo, "activesupport", "2.3.2"
         c.checksum repo, "foo", "1.0"
         c.checksum repo, "rails", "2.3.2"
-        c.checksum repo, "rake", "13.0.1"
+        c.checksum repo, "rake", rake_version
         c.checksum repo, "weakling", "0.0.3"
       end
 
@@ -1028,8 +1028,8 @@ RSpec.describe "bundle lock" do
               actionpack (= 2.3.2)
               activerecord (= 2.3.2)
               activeresource (= 2.3.2)
-              rake (= 13.0.1)
-            rake (13.0.1)
+              rake (= #{rake_version})
+            rake (#{rake_version})
             weakling (0.0.3)
 
         PLATFORMS
@@ -1059,7 +1059,7 @@ RSpec.describe "bundle lock" do
         c.checksum repo, "activesupport", "2.3.2"
         c.no_checksum "foo", "2.0"
         c.checksum repo, "rails", "2.3.2"
-        c.checksum repo, "rake", "13.0.1"
+        c.checksum repo, "rake", rake_version
         c.checksum repo, "weakling", "0.0.3"
       end
 
@@ -1082,8 +1082,8 @@ RSpec.describe "bundle lock" do
               actionpack (= 2.3.2)
               activerecord (= 2.3.2)
               activeresource (= 2.3.2)
-              rake (= 13.0.1)
-            rake (13.0.1)
+              rake (= #{rake_version})
+            rake (#{rake_version})
             weakling (0.0.3)
 
         PLATFORMS

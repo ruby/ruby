@@ -287,6 +287,19 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   end
 
+  def test_parser_flag
+    warning = /compiler based on the Prism parser is currently experimental/
+
+    assert_in_out_err(%w(--parser=prism -e) + ["puts :hi"], "", %w(hi), warning)
+
+    assert_in_out_err(%w(--parser=parse.y -e) + ["puts :hi"], "", %w(hi), [])
+    assert_norun_with_rflag('--parser=parse.y', '--version', "")
+
+    assert_in_out_err(%w(--parser=notreal -e) + ["puts :hi"], "", [], /unknown parser notreal/)
+
+    assert_in_out_err(%w(--parser=prism --version), "", /\+PRISM/, warning)
+  end
+
   def test_eval
     assert_in_out_err(%w(-e), "", [], /no code specified for -e \(RuntimeError\)/)
   end

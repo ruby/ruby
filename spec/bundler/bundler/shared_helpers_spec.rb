@@ -1,12 +1,8 @@
 # frozen_string_literal: true
 
 RSpec.describe Bundler::SharedHelpers do
-  let(:ext_lock_double) { double(:ext_lock) }
-
   before do
     pwd_stub
-    allow(Bundler.rubygems).to receive(:ext_lock).and_return(ext_lock_double)
-    allow(ext_lock_double).to receive(:synchronize) {|&block| block.call }
   end
 
   let(:pwd_stub) { allow(subject).to receive(:pwd).and_return(bundled_app) }

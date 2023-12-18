@@ -39,7 +39,7 @@ Gem::Specification.new do |s|
   # include the gemspec itself because warbler breaks w/o it
   s.files += %w[lib/bundler/bundler.gemspec]
 
-  s.bindir        = "libexec"
+  s.bindir        = "exe"
   s.executables   = %w[bundle bundler]
   s.require_paths = ["lib"]
 end

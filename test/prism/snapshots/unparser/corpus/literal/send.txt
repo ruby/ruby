@@ -1249,6 +1249,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (63,8)-(63,16))
+        │   │           ├── flags: static_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (63,8)-(63,16))
         │   │                   ├── key:
@@ -1304,6 +1305,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block: ∅
         │   │       └── @ KeywordHashNode (location: (64,13)-(64,25))
+        │   │           ├── flags: ∅
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (64,13)-(64,25))
         │   │                   ├── key:
@@ -1527,7 +1529,7 @@
         │   ├── closing_loc: (68,25)-(68,26) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (69,0)-(69,12))
-        │   ├── flags: ∅
+        │   ├── flags: attribute_write
         │   ├── receiver:
         │   │   @ CallNode (location: (69,0)-(69,3))
         │   │   ├── flags: variable_call
@@ -1567,6 +1569,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (70,4)-(70,8))
+        │   │           ├── flags: static_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (70,4)-(70,8))
         │   │                   ├── key:
@@ -1612,6 +1615,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (71,6)-(71,10))
+        │   │           ├── flags: static_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (71,6)-(71,10))
         │   │                   ├── key:
@@ -1657,6 +1661,7 @@
         │   │   ├── flags: contains_keyword_splat
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (72,6)-(72,9))
+        │   │           ├── flags: ∅
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocSplatNode (location: (72,6)-(72,9))
         │   │                   ├── value:
@@ -1768,7 +1773,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (77,0)-(77,13))
-        │   ├── flags: ∅
+        │   ├── flags: attribute_write
         │   ├── receiver:
         │   │   @ SelfNode (location: (77,0)-(77,4))
         │   ├── call_operator_loc: (77,4)-(77,5) = "."
@@ -2073,6 +2078,7 @@
         │   │   ├── flags: contains_keyword_splat
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (81,2)-(81,7))
+        │   │           ├── flags: ∅
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocSplatNode (location: (81,2)-(81,7))
         │   │                   ├── value:

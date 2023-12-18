@@ -17,6 +17,10 @@ module Spec
       Gem::Platform.new(platform)
     end
 
+    def rake_version
+      "13.1.0"
+    end
+
     def build_repo1
       rake_path = Dir["#{Path.base_system_gems}/**/rake*.gem"].first
 
@@ -49,7 +53,7 @@ module Spec
 
         build_gem "rails", "2.3.2" do |s|
           s.executables = "rails"
-          s.add_dependency "rake",           "13.0.1"
+          s.add_dependency "rake",           rake_version
           s.add_dependency "actionpack",     "2.3.2"
           s.add_dependency "activerecord",   "2.3.2"
           s.add_dependency "actionmailer",   "2.3.2"

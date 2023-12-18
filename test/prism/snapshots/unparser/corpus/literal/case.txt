@@ -404,7 +404,7 @@
             │       │       ├── operator_loc: (36,5)-(36,6) = "*"
             │       │       └── expression:
             │       │           @ CallNode (location: (36,6)-(36,15))
-            │       │           ├── flags: ∅
+            │       │           ├── flags: attribute_write
             │       │           ├── receiver:
             │       │           │   @ CallNode (location: (36,6)-(36,9))
             │       │           │   ├── flags: variable_call

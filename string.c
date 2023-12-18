@@ -3586,11 +3586,12 @@ rb_str_prepend_multi(int argc, VALUE *argv, VALUE str)
 st_index_t
 rb_str_hash(VALUE str)
 {
-    int e = ENCODING_GET(str);
-    if (e && is_ascii_string(str)) {
-        e = 0;
+    st_index_t h = rb_memhash((const void *)RSTRING_PTR(str), RSTRING_LEN(str));
+    int e = RSTRING_LEN(str) ? ENCODING_GET(str) : 0;
+    if (e && !is_ascii_string(str)) {
+        h = rb_hash_end(rb_hash_uint32(h, (uint32_t)e));
     }
-    return rb_memhash((const void *)RSTRING_PTR(str), RSTRING_LEN(str)) ^ e;
+    return h;
 }
 
 int
@@ -9689,7 +9690,7 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
 {
     VALUE rs;
     str_modifiable(str);
-    if (RSTRING_LEN(str) == 0) return Qnil;
+    if (RSTRING_LEN(str) == 0 && argc < 2) return Qnil;
     rs = chomp_rs(argc, argv);
     if (NIL_P(rs)) return Qnil;
     return rb_str_chomp_string(str, rs);

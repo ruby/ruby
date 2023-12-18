@@ -20,7 +20,7 @@ module Bundler
 
     GITHUB_PULL_REQUEST_URL = %r{\Ahttps://github\.com/([A-Za-z0-9_\-\.]+/[A-Za-z0-9_\-\.]+)/pull/(\d+)\z}
 
-    attr_reader :gemspecs
+    attr_reader :gemspecs, :gemfile
     attr_accessor :dependencies
 
     def initialize
@@ -404,13 +404,11 @@ module Bundler
     end
 
     def validate_keys(command, opts, valid_keys)
-      invalid_keys = opts.keys - valid_keys
-
-      git_source = opts.keys & @git_sources.keys.map(&:to_s)
-      if opts["branch"] && !(opts["git"] || opts["github"] || git_source.any?)
+      if opts["branch"] && !(opts["git"] || opts["github"] || (opts.keys & @git_sources.keys.map(&:to_s)).any?)
         raise GemfileError, %(The `branch` option for `#{command}` is not allowed. Only gems with a git source can specify a branch)
       end
 
+      invalid_keys = opts.keys - valid_keys
       return true unless invalid_keys.any?
 
       message = String.new

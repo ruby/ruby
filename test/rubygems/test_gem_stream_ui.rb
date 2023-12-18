@@ -2,7 +2,7 @@
 
 require_relative "helper"
 require "rubygems/user_interaction"
-require "timeout"
+require "rubygems/timeout/lib/timeout"
 
 class TestGemStreamUI < Gem::TestCase
   # increase timeout with RJIT for --jit-wait testing
@@ -40,7 +40,7 @@ class TestGemStreamUI < Gem::TestCase
   end
 
   def test_ask
-    Timeout.timeout(5) do
+    Gem::Timeout.timeout(5) do
       expected_answer = "Arthur, King of the Britons"
       @in.string = "#{expected_answer}\n"
       actual_answer = @sui.ask("What is your name?")
@@ -51,14 +51,14 @@ class TestGemStreamUI < Gem::TestCase
   def test_ask_no_tty
     @in.tty = false
 
-    Timeout.timeout(SHORT_TIMEOUT) do
+    Gem::Timeout.timeout(SHORT_TIMEOUT) do
       answer = @sui.ask("what is your favorite color?")
       assert_nil answer
     end
   end
 
   def test_ask_for_password
-    Timeout.timeout(5) do
+    Gem::Timeout.timeout(5) do
       expected_answer = "Arthur, King of the Britons"
       @in.string = "#{expected_answer}\n"
       actual_answer = @sui.ask_for_password("What is your name?")
@@ -69,7 +69,7 @@ class TestGemStreamUI < Gem::TestCase
   def test_ask_for_password_no_tty
     @in.tty = false
 
-    Timeout.timeout(SHORT_TIMEOUT) do
+    Gem::Timeout.timeout(SHORT_TIMEOUT) do
       answer = @sui.ask_for_password("what is the airspeed velocity of an unladen swallow?")
       assert_nil answer
     end
@@ -78,7 +78,7 @@ class TestGemStreamUI < Gem::TestCase
   def test_ask_yes_no_no_tty_with_default
     @in.tty = false
 
-    Timeout.timeout(SHORT_TIMEOUT) do
+    Gem::Timeout.timeout(SHORT_TIMEOUT) do
       answer = @sui.ask_yes_no("do coconuts migrate?", false)
       assert_equal false, answer
 
@@ -90,7 +90,7 @@ class TestGemStreamUI < Gem::TestCase
   def test_ask_yes_no_no_tty_without_default
     @in.tty = false
 
-    Timeout.timeout(SHORT_TIMEOUT) do
+    Gem::Timeout.timeout(SHORT_TIMEOUT) do
       assert_raise(Gem::OperationNotSupportedError) do
         @sui.ask_yes_no("do coconuts migrate?")
       end

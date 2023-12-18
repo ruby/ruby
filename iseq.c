@@ -43,7 +43,6 @@
 #include "builtin.h"
 #include "insns.inc"
 #include "insns_info.inc"
-#include "prism_compile.h"
 
 VALUE rb_cISeq;
 static VALUE iseqw_new(const rb_iseq_t *iseq);
@@ -1447,7 +1446,19 @@ iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
     pm_options_line_set(&options, start_line);
 
     pm_parser_t parser;
-    pm_parser_init(&parser, (const uint8_t *) RSTRING_PTR(src), RSTRING_LEN(src), &options);
+
+    if (RB_TYPE_P(src, T_FILE)) {
+        FilePathValue(src);
+        file = rb_fstring(src); /* rb_io_t->pathv gets frozen anyways */
+
+        pm_string_t input;
+        pm_string_mapped_init(&input, RSTRING_PTR(file));
+
+        pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), &options);
+    }
+    else {
+        pm_parser_init(&parser, (const uint8_t *) RSTRING_PTR(src), RSTRING_LEN(src), &options);
+    }
 
     rb_iseq_t *iseq = iseq_alloc();
     iseqw_s_compile_prism_compile(&parser, opt, iseq, file, path, start_line);
@@ -1487,6 +1498,23 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
     pm_options_free(&options);
 
     return iseqw_new(iseq);
+}
+
+rb_iseq_t *
+rb_iseq_new_main_prism(pm_string_t *input, pm_options_t *options, VALUE path)
+{
+    pm_parser_t parser;
+    pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
+
+    if (NIL_P(path)) path = rb_fstring_lit("<compiled>");
+    int start_line = 0;
+    pm_options_line_set(options, start_line);
+
+    rb_iseq_t *iseq = iseq_alloc();
+    iseqw_s_compile_prism_compile(&parser, Qnil, iseq, path, path, start_line);
+
+    pm_parser_free(&parser);
+    return iseq;
 }
 
 /*

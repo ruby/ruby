@@ -1197,6 +1197,10 @@ rb_tracepoint_enable(VALUE tpval)
         rb_raise(rb_eArgError, "can't nest-enable a targeting TracePoint");
     }
 
+    if (tp->tracing) {
+        return Qundef;
+    }
+
     if (tp->target_th) {
         rb_thread_add_event_hook2(tp->target_th->self, (rb_event_hook_func_t)tp_call_trace, tp->events, tpval,
                                   RUBY_EVENT_HOOK_FLAG_SAFE | RUBY_EVENT_HOOK_FLAG_RAW_ARG);
@@ -1678,16 +1682,16 @@ rb_workqueue_register(unsigned flags, rb_postponed_job_func_t func, void *data)
     return TRUE;
 }
 
-#define PJOB_PREREG_TABLE_SIZE              (sizeof(rb_atomic_t) * CHAR_BIT)
+#define PJOB_TABLE_SIZE              (sizeof(rb_atomic_t) * CHAR_BIT)
 /* pre-registered jobs table, for async-safe jobs */
 typedef struct rb_postponed_job_queue {
     struct {
         rb_postponed_job_func_t func;
         void *data;
-    } prereg_table[PJOB_PREREG_TABLE_SIZE];
+    } table[PJOB_TABLE_SIZE];
     /* Bits in this are set when the corresponding entry in prereg_table has non-zero
      * triggered_count; i.e. somebody called rb_postponed_job_trigger */
-    rb_atomic_t prereg_triggered_bitset;
+    rb_atomic_t triggered_bitset;
 } rb_postponed_job_queues_t;
 
 void
@@ -1696,8 +1700,8 @@ rb_vm_postponed_job_queue_init(rb_vm_t *vm)
     /* use mimmalloc; postponed job registration is a dependency of objspace, so this gets
      * called _VERY_ early inside Init_BareVM */
     rb_postponed_job_queues_t *pjq = ruby_mimmalloc(sizeof(rb_postponed_job_queues_t));
-    pjq->prereg_triggered_bitset = 0;
-    memset(pjq->prereg_table, 0, sizeof(pjq->prereg_table));
+    pjq->triggered_bitset = 0;
+    memset(pjq->table, 0, sizeof(pjq->table));
     vm->postponed_job_queue = pjq;
 }
 
@@ -1716,7 +1720,7 @@ rb_vm_postponed_job_atfork(void)
     rb_postponed_job_queues_t *pjq = vm->postponed_job_queue;
     /* make sure we set the interrupt flag on _this_ thread if we carried any pjobs over
      * from the other side of the fork */
-    if (pjq->prereg_triggered_bitset) {
+    if (pjq->triggered_bitset) {
         RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(get_valid_ec(vm));
     }
 
@@ -1753,15 +1757,15 @@ rb_postponed_job_preregister(unsigned int flags, rb_postponed_job_func_t func, v
      * func, however, the data may get mixed up between them. */
 
     rb_postponed_job_queues_t *pjq = GET_VM()->postponed_job_queue;
-    for (unsigned int i = 0; i < PJOB_PREREG_TABLE_SIZE; i++) {
+    for (unsigned int i = 0; i < PJOB_TABLE_SIZE; i++) {
         /* Try and set this slot to equal `func` */
-        rb_postponed_job_func_t existing_func = (rb_postponed_job_func_t)RUBY_ATOMIC_PTR_CAS(pjq->prereg_table[i], NULL, (void *)func);
+        rb_postponed_job_func_t existing_func = (rb_postponed_job_func_t)RUBY_ATOMIC_PTR_CAS(pjq->table[i], NULL, (void *)func);
         if (existing_func == NULL || existing_func == func) {
             /* Either this slot was NULL, and we set it to func, or, this slot was already equal to func.
              * In either case, clobber the data with our data. Note that concurrent calls to
              * rb_postponed_job_register with the same func & different data will result in either of the
              * datas being written */
-            RUBY_ATOMIC_PTR_EXCHANGE(pjq->prereg_table[i].data, data);
+            RUBY_ATOMIC_PTR_EXCHANGE(pjq->table[i].data, data);
             return (rb_postponed_job_handle_t)i;
         } else {
             /* Try the next slot if this one already has a func in it */
@@ -1779,7 +1783,7 @@ rb_postponed_job_trigger(rb_postponed_job_handle_t h)
     rb_vm_t *vm = GET_VM();
     rb_postponed_job_queues_t *pjq = vm->postponed_job_queue;
 
-    RUBY_ATOMIC_OR(pjq->prereg_triggered_bitset, (((rb_atomic_t)1UL) << h));
+    RUBY_ATOMIC_OR(pjq->triggered_bitset, (((rb_atomic_t)1UL) << h));
     RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(get_valid_ec(vm));
 }
 
@@ -1826,7 +1830,7 @@ rb_postponed_job_flush(rb_vm_t *vm)
     ccan_list_append_list(&tmp, &vm->workqueue);
     rb_nativethread_lock_unlock(&vm->workqueue_lock);
 
-    rb_atomic_t prereg_triggered_bits = RUBY_ATOMIC_EXCHANGE(pjq->prereg_triggered_bitset, 0);
+    rb_atomic_t triggered_bits = RUBY_ATOMIC_EXCHANGE(pjq->triggered_bitset, 0);
 
     ec->errinfo = Qnil;
     /* mask POSTPONED_JOB dispatch */
@@ -1835,11 +1839,11 @@ rb_postponed_job_flush(rb_vm_t *vm)
         EC_PUSH_TAG(ec);
         if (EC_EXEC_TAG() == TAG_NONE) {
             /* execute postponed jobs */
-            while (prereg_triggered_bits) {
-                unsigned int i = bit_length(prereg_triggered_bits) - 1;
-                prereg_triggered_bits ^= ((1UL) << i); /* toggle ith bit off */
-                rb_postponed_job_func_t func = pjq->prereg_table[i].func;
-                void *data = pjq->prereg_table[i].data;
+            while (triggered_bits) {
+                unsigned int i = bit_length(triggered_bits) - 1;
+                triggered_bits ^= ((1UL) << i); /* toggle ith bit off */
+                rb_postponed_job_func_t func = pjq->table[i].func;
+                void *data = pjq->table[i].data;
                 (func)(data);
             }
 
@@ -1870,8 +1874,8 @@ rb_postponed_job_flush(rb_vm_t *vm)
     }
     /* likewise with any remaining-to-be-executed bits of the preregistered postponed
      * job table */
-    if (prereg_triggered_bits) {
-        RUBY_ATOMIC_OR(pjq->prereg_triggered_bitset, prereg_triggered_bits);
+    if (triggered_bits) {
+        RUBY_ATOMIC_OR(pjq->triggered_bitset, triggered_bits);
         RUBY_VM_SET_POSTPONED_JOB_INTERRUPT(GET_EC());
     }
 }

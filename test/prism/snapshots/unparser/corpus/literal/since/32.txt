@@ -40,6 +40,7 @@
         │   │           │       │   ├── name: :argument
         │   │           │       │   └── depth: 0
         │   │           │       └── @ KeywordHashNode (location: (2,16)-(2,18))
+        │   │           │           ├── flags: ∅
         │   │           │           └── elements: (length: 1)
         │   │           │               └── @ AssocSplatNode (location: (2,16)-(2,18))
         │   │           │                   ├── value: ∅

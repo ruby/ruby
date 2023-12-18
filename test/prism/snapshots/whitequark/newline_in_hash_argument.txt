@@ -93,6 +93,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (10,8)-(11,1))
+        │   │           ├── flags: static_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (10,8)-(11,1))
         │   │                   ├── key:
@@ -130,6 +131,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ KeywordHashNode (location: (13,8)-(14,1))
+            │           ├── flags: static_keys
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (13,8)-(14,1))
             │                   ├── key:
