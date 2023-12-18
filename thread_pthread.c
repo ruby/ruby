@@ -1129,6 +1129,11 @@ void
 rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
 {
     rb_native_mutex_initialize(&sched->lock_);
+
+#if VM_CHECK_MODE
+    sched->lock_owner = NULL;
+#endif
+
     ccan_list_head_init(&sched->readyq);
     sched->readyq_cnt = 0;
 
