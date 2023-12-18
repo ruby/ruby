@@ -4684,6 +4684,7 @@ rb_hash_to_proc(VALUE hash)
     return rb_func_lambda_new(hash_proc_call, hash, 1, 1);
 }
 
+/* :nodoc: */
 static VALUE
 rb_hash_deconstruct_keys(VALUE hash, VALUE keys)
 {

@@ -1131,6 +1131,7 @@ rb_shape_shapes_available(VALUE self)
     return INT2NUM(MAX_SHAPE_ID - (GET_SHAPE_TREE()->next_shape_id - 1));
 }
 
+/* :nodoc: */
 static VALUE
 rb_shape_exhaust(int argc, VALUE *argv, VALUE self)
 {

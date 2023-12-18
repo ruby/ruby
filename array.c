@@ -8092,6 +8092,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
     return v;
 }
 
+/* :nodoc: */
 static VALUE
 rb_ary_deconstruct(VALUE ary)
 {

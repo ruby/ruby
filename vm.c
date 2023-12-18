@@ -3761,6 +3761,7 @@ f_sprintf(int c, const VALUE *v, VALUE _)
     return rb_f_sprintf(c, v);
 }
 
+/* :nodoc: */
 static VALUE
 vm_mtbl(VALUE self, VALUE obj, VALUE sym)
 {
@@ -3768,6 +3769,7 @@ vm_mtbl(VALUE self, VALUE obj, VALUE sym)
     return Qnil;
 }
 
+/* :nodoc: */
 static VALUE
 vm_mtbl2(VALUE self, VALUE obj, VALUE sym)
 {
