@@ -865,6 +865,7 @@ io_buffer_hexdump(VALUE string, size_t width, char *base, size_t size, int first
     return string;
 }
 
+/* Returns hexadecimal dump string */
 static VALUE
 rb_io_buffer_hexdump(VALUE self)
 {
