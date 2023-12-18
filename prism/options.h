@@ -35,7 +35,7 @@ typedef struct {
      * The line within the file that the parse starts on. This value is
      * 0-indexed.
      */
-    uint32_t line;
+    int32_t line;
 
     /**
      * The name of the encoding that the source file is in. Note that this must
@@ -80,7 +80,7 @@ PRISM_EXPORTED_FUNCTION void pm_options_filepath_set(pm_options_t *options, cons
  * @param options The options struct to set the line on.
  * @param line The line to set.
  */
-PRISM_EXPORTED_FUNCTION void pm_options_line_set(pm_options_t *options, uint32_t line);
+PRISM_EXPORTED_FUNCTION void pm_options_line_set(pm_options_t *options, int32_t line);
 
 /**
  * Set the encoding option on the given options struct.

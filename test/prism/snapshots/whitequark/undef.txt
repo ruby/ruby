@@ -6,11 +6,13 @@
         └── @ UndefNode (location: (1,0)-(1,27))
             ├── names: (length: 3)
             │   ├── @ SymbolNode (location: (1,6)-(1,9))
+            │   │   ├── flags: ∅
             │   │   ├── opening_loc: ∅
             │   │   ├── value_loc: (1,6)-(1,9) = "foo"
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "foo"
             │   ├── @ SymbolNode (location: (1,11)-(1,15))
+            │   │   ├── flags: ∅
             │   │   ├── opening_loc: (1,11)-(1,12) = ":"
             │   │   ├── value_loc: (1,12)-(1,15) = "bar"
             │   │   ├── closing_loc: ∅

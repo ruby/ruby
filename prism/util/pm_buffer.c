@@ -138,7 +138,7 @@ pm_buffer_append_byte(pm_buffer_t *buffer, uint8_t value) {
  * Append a 32-bit unsigned integer to the buffer as a variable-length integer.
  */
 void
-pm_buffer_append_varint(pm_buffer_t *buffer, uint32_t value) {
+pm_buffer_append_varuint(pm_buffer_t *buffer, uint32_t value) {
     if (value < 128) {
         pm_buffer_append_byte(buffer, (uint8_t) value);
     } else {
@@ -149,6 +149,15 @@ pm_buffer_append_varint(pm_buffer_t *buffer, uint32_t value) {
         }
         pm_buffer_append_byte(buffer, (uint8_t) n);
     }
+}
+
+/**
+ * Append a 32-bit signed integer to the buffer as a variable-length integer.
+ */
+void
+pm_buffer_append_varsint(pm_buffer_t *buffer, int32_t value) {
+    uint32_t unsigned_int = ((uint32_t)(value) << 1) ^ ((uint32_t)(value >> 31));
+    pm_buffer_append_varuint(buffer, unsigned_int);
 }
 
 /**

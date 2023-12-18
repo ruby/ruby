@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "github source", :realworld => true do
+RSpec.describe "github source", realworld: true do
   it "properly fetches PRs" do
     install_gemfile <<-G
       source "https://rubygems.org"

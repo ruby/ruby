@@ -59,6 +59,7 @@ module RubyVM::RJIT
     # @param iseq `RubyVM::RJIT::CPointer::Struct_rb_iseq_t`
     # @param cfp `RubyVM::RJIT::CPointer::Struct_rb_control_frame_t`
     def compile(iseq, cfp)
+      return unless supported_platform?
       pc = cfp.pc.to_i
       jit = JITState.new(iseq:, cfp:)
       asm = Assembler.new
@@ -503,6 +504,13 @@ module RubyVM::RJIT
     def assert(cond)
       unless cond
         raise "'#{cond.inspect}' was not true"
+      end
+    end
+
+    def supported_platform?
+      return @supported_platform if defined?(@supported_platform)
+      @supported_platform = RUBY_PLATFORM.match?(/x86_64/).tap do |supported|
+        warn "warning: RJIT does not support #{RUBY_PLATFORM} yet" unless supported
       end
     end
   end

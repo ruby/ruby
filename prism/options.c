@@ -20,7 +20,7 @@ pm_options_encoding_set(pm_options_t *options, const char *encoding) {
  * Set the line option on the given options struct.
  */
 PRISM_EXPORTED_FUNCTION void
-pm_options_line_set(pm_options_t *options, uint32_t line) {
+pm_options_line_set(pm_options_t *options, int32_t line) {
     options->line = line;
 }
 
@@ -115,6 +115,22 @@ pm_options_read_u32(const char *data) {
 }
 
 /**
+ * Read a 32-bit signed integer from a pointer. This function is used to read
+ * the options that are passed into the parser from the Ruby implementation. It
+ * handles aligned and unaligned reads.
+ */
+static int32_t
+pm_options_read_s32(const char *data) {
+    if (((uintptr_t) data) % sizeof(int32_t) == 0) {
+        return *((int32_t *) data);
+    } else {
+        int32_t value;
+        memcpy(&value, data, sizeof(int32_t));
+        return value;
+    }
+}
+
+/**
  * Deserialize an options struct from the given binary string. This is used to
  * pass options to the parser from an FFI call so that consumers of the library
  * from an FFI perspective don't have to worry about the structure of our
@@ -123,6 +139,9 @@ pm_options_read_u32(const char *data) {
  */
 void
 pm_options_read(pm_options_t *options, const char *data) {
+    options->line = 1; // default
+    if (data == NULL) return;
+
     uint32_t filepath_length = pm_options_read_u32(data);
     data += 4;
 
@@ -131,7 +150,7 @@ pm_options_read(pm_options_t *options, const char *data) {
         data += filepath_length;
     }
 
-    options->line = pm_options_read_u32(data);
+    options->line = pm_options_read_s32(data);
     data += 4;
 
     uint32_t encoding_length = pm_options_read_u32(data);

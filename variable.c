@@ -63,22 +63,6 @@ static void setup_const_entry(rb_const_entry_t *, VALUE, VALUE, rb_const_flag_t)
 static VALUE rb_const_search(VALUE klass, ID id, int exclude, int recurse, int visibility);
 static st_table *generic_iv_tbl_;
 
-static inline st_table *
-RCLASS_IV_HASH(VALUE obj)
-{
-    RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
-    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
-    return (st_table *)RCLASS_IVPTR(obj);
-}
-
-static inline void
-RCLASS_SET_IV_HASH(VALUE obj, const st_table *tbl)
-{
-    RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
-    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
-    RCLASS_IVPTR(obj) = (VALUE *)tbl;
-}
-
 void
 Init_var_tables(void)
 {
@@ -178,21 +162,21 @@ is_constant_path(VALUE name)
  *     mod.set_temporary_name(string) -> self
  *     mod.set_temporary_name(nil) -> self
  *
- *  Sets the temporary name of the module +mod+. This name is used as a prefix
- *  for the names of constants declared in +mod+. If the module is assigned a
- *  permanent name, the temporary name is discarded.
+ *  Sets the temporary name of the module. This name is reflected in
+ *  introspection of the module and the values that are related to it, such
+ *  as instances, constants, and methods.
  *
- *  After a permanent name is assigned, a temporary name can no longer be set,
- *  and this method raises a RuntimeError.
+ *  The name should be +nil+ or non-empty string that is not a valid constant
+ *  name (to avoid confusing between permanent and temporary names).
  *
- *  If the name given is not a string or is a zero length string, this method
- *  raises an ArgumentError.
+ *  The method can be useful to distinguish dynamically generated classes and
+ *  modules without assigning them to constants.
  *
- *  The temporary name must not be a valid constant name, to avoid confusion
- *  with actual constants. If you attempt to set a temporary name that is a
- *  a valid constant name, this method raises an ArgumentError.
+ *  If the module is given a permanent name by assigning it to a constant,
+ *  the temporary name is discarded. A temporary name can't be assigned to
+ *  modules that have a permanent name.
  *
- *  If the given name is +nil+, the module becomes anonymous.
+ *  If the given name is +nil+, the module becomes anonymous again.
  *
  *  Example:
  *
@@ -205,15 +189,20 @@ is_constant_path(VALUE name)
  *    m.set_temporary_name(nil) # => #<Module:0x0000000102c68f38>
  *    m.name #=> nil
  *
- *    n = Module.new
- *    n.set_temporary_name("fake_name")
+ *    c = Class.new
+ *    c.set_temporary_name("MyClass(with description)")
  *
- *    n::M = m
- *    n::M.name #=> "fake_name::M"
- *    N = n
+ *    c.new # => #<MyClass(with description):0x0....>
  *
- *    N.name #=> "nested_fake_name"
- *    N::M.name #=> "N::M"
+ *    c::M = m
+ *    c::M.name #=> "MyClass(with description)::M"
+ *
+ *    # Assigning to a constant replaces the name with a permanent one
+ *    C = c
+ *
+ *    C.name #=> "C"
+ *    C::M.name #=> "C::M"
+ *    c.new # => #<C:0x0....>
  */
 
 VALUE
@@ -453,6 +442,33 @@ struct rb_global_entry {
     ID id;
     bool ractor_local;
 };
+
+static enum rb_id_table_iterator_result
+free_global_entry_i(ID key, VALUE val, void *arg)
+{
+    struct rb_global_entry *entry = (struct rb_global_entry *)val;
+    if (entry->var->counter == 1) {
+        ruby_xfree(entry->var);
+    }
+    else {
+        entry->var->counter--;
+    }
+    ruby_xfree(entry);
+    return ID_TABLE_DELETE;
+}
+
+void
+rb_free_rb_global_tbl(void)
+{
+    rb_id_table_foreach(rb_global_tbl, free_global_entry_i, 0);
+    rb_id_table_free(rb_global_tbl);
+}
+
+void
+rb_free_generic_iv_tbl_(void)
+{
+    st_free_table(generic_iv_tbl_);
+}
 
 static struct rb_global_entry*
 rb_find_global_entry(ID id)
@@ -1082,17 +1098,34 @@ gen_ivtbl_resize(struct gen_ivtbl *old, uint32_t n)
 }
 
 void
-rb_mark_and_update_generic_ivar(VALUE obj)
+rb_mark_generic_ivar(VALUE obj)
 {
     struct gen_ivtbl *ivtbl;
 
     if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
         if (rb_shape_obj_too_complex(obj)) {
-            rb_mark_tbl(ivtbl->as.complex.table);
+            rb_mark_tbl_no_pin(ivtbl->as.complex.table);
         }
         else {
             for (uint32_t i = 0; i < ivtbl->as.shape.numiv; i++) {
-                rb_gc_mark_and_move(&ivtbl->as.shape.ivptr[i]);
+                rb_gc_mark_movable(ivtbl->as.shape.ivptr[i]);
+            }
+        }
+    }
+}
+
+void
+rb_ref_update_generic_ivar(VALUE obj)
+{
+    struct gen_ivtbl *ivtbl;
+
+    if (rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
+        if (rb_shape_obj_too_complex(obj)) {
+            rb_gc_ref_update_table_values_only(ivtbl->as.complex.table);
+        }
+        else {
+            for (uint32_t i = 0; i < ivtbl->as.shape.numiv; i++) {
+                ivtbl->as.shape.ivptr[i] = rb_gc_location(ivtbl->as.shape.ivptr[i]);
             }
         }
     }
@@ -1331,7 +1364,7 @@ rb_ivar_delete(VALUE obj, ID id, VALUE undef)
 
     if (!rb_shape_transition_shape_remove_ivar(obj, id, shape, &val)) {
         if (!rb_shape_obj_too_complex(obj)) {
-            rb_evict_ivars_to_hash(obj, shape);
+            rb_evict_ivars_to_hash(obj);
         }
 
         st_table *table = NULL;
@@ -1370,97 +1403,149 @@ rb_attr_delete(VALUE obj, ID id)
     return rb_ivar_delete(obj, id, Qnil);
 }
 
-static int
-rb_complex_ivar_set(VALUE obj, ID id, VALUE val)
-{
-    struct gen_ivtbl *ivtbl;
-    st_table *table;
-    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
-
-    switch (BUILTIN_TYPE(obj)) {
-      case T_OBJECT:
-        table = ROBJECT_IV_HASH(obj);
-        break;
-      case T_CLASS:
-      case T_MODULE:
-        table = RCLASS_IV_HASH(obj);
-        break;
-      default:
-        if (!rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
-            ivtbl = xmalloc(sizeof(struct gen_ivtbl));
-#if !SHAPE_IN_BASIC_FLAGS
-            ivtbl->shape_id = SHAPE_OBJ_TOO_COMPLEX;
-#endif
-            table = st_init_numtable_with_size(1);
-            ivtbl->as.complex.table = table;
-
-            st_insert(generic_ivtbl(obj, id, false), (st_data_t)obj, (st_data_t)ivtbl);
-        }
-        else {
-            table = ivtbl->as.complex.table;
-        }
-    }
-
-    int found = st_insert(table, (st_data_t)id, (st_data_t)val);
-    RB_OBJ_WRITTEN(obj, Qundef, val);
-    return found;
-}
-
 void
-rb_evict_ivars_to_hash(VALUE obj, rb_shape_t * shape)
+rb_obj_convert_to_too_complex(VALUE obj, st_table *table)
 {
     RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
 
-    st_table *table = st_init_numtable_with_size(shape->next_iv_index);
-
-    // Evacuate all previous values from shape into id_table
-    rb_ivar_foreach(obj, rb_obj_evacuate_ivs_to_hash_table, (st_data_t)table);
+    VALUE *old_ivptr = NULL;
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        rb_shape_set_too_complex(obj);
-
         if (!(RBASIC(obj)->flags & ROBJECT_EMBED)) {
-            xfree(ROBJECT(obj)->as.heap.ivptr);
+            old_ivptr = ROBJECT_IVPTR(obj);
         }
-
+        rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
         ROBJECT_SET_IV_HASH(obj, table);
         break;
       case T_CLASS:
       case T_MODULE:
-        rb_shape_set_too_complex(obj);
-
-        xfree(RCLASS_IVPTR(obj));
+        old_ivptr = RCLASS_IVPTR(obj);
+        rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
         RCLASS_SET_IV_HASH(obj, table);
         break;
       default:
         RB_VM_LOCK_ENTER();
         {
             struct st_table *gen_ivs = generic_ivtbl_no_ractor_check(obj);
-            st_data_t old_ivtbl;
-            struct gen_ivtbl *ivtbl = NULL;
 
-            if (st_delete(gen_ivs, &obj, &old_ivtbl)) {
-                ivtbl = (struct gen_ivtbl *)old_ivtbl;
+            struct gen_ivtbl *old_ivtbl = NULL;
+            st_lookup(gen_ivs, (st_data_t)obj, (st_data_t *)&old_ivtbl);
+
+            if (old_ivtbl) {
+                /* We need to modify old_ivtbl to have the too complex shape
+                 * and hold the table because the xmalloc could trigger a GC
+                 * compaction. We want the table to be updated rather than than
+                 * the original ivptr. */
+#if SHAPE_IN_BASIC_FLAGS
+                rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
+#else
+                old_ivtbl->shape_id = OBJ_TOO_COMPLEX_SHAPE_ID;
+#endif
+                old_ivtbl->as.complex.table = table;
+                old_ivptr = (VALUE *)old_ivtbl;
             }
 
-            ivtbl = xrealloc(ivtbl, sizeof(struct gen_ivtbl));
+            struct gen_ivtbl *ivtbl = xmalloc(sizeof(struct gen_ivtbl));
             ivtbl->as.complex.table = table;
+            st_insert(gen_ivs, (st_data_t)obj, (st_data_t)ivtbl);
 #if SHAPE_IN_BASIC_FLAGS
-            rb_shape_set_too_complex(obj);
+            rb_shape_set_shape_id(obj, OBJ_TOO_COMPLEX_SHAPE_ID);
 #else
             ivtbl->shape_id = OBJ_TOO_COMPLEX_SHAPE_ID;
 #endif
-
-            st_insert(gen_ivs, (st_data_t)obj, (st_data_t)ivtbl);
         }
         RB_VM_LOCK_LEAVE();
     }
 
+    if (old_ivptr) {
+        xfree(old_ivptr);
+    }
+}
+
+void
+rb_evict_ivars_to_hash(VALUE obj)
+{
+    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
+
+    st_table *table = st_init_numtable_with_size(rb_ivar_count(obj));
+
+    // Evacuate all previous values from shape into id_table
+    rb_obj_copy_ivs_to_hash_table(obj, table);
+    rb_obj_convert_to_too_complex(obj, table);
+
     RUBY_ASSERT(rb_shape_obj_too_complex(obj));
 }
 
+struct general_ivar_set_result {
+    attr_index_t index;
+    bool existing;
+};
+
+static struct general_ivar_set_result
+general_ivar_set(VALUE obj, ID id, VALUE val, void *data,
+                 VALUE *(*shape_ivptr_func)(VALUE, void *),
+                 void (*shape_resize_ivptr_func)(VALUE, attr_index_t, attr_index_t, void *),
+                 void (*set_shape_func)(VALUE, rb_shape_t *, void *),
+                 void (*transition_too_complex_func)(VALUE, void *),
+                 st_table *(*too_complex_table_func)(VALUE, void *))
+{
+    struct general_ivar_set_result result = {
+        .index = 0,
+        .existing = true
+    };
+
+    rb_shape_t *current_shape = rb_shape_get_shape(obj);
+
+    if (UNLIKELY(current_shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
+        goto too_complex;
+    }
+
+    attr_index_t index;
+    if (!rb_shape_get_iv_index(current_shape, id, &index)) {
+        result.existing = false;
+
+        index = current_shape->next_iv_index;
+        if (index >= MAX_IVARS) {
+            rb_raise(rb_eArgError, "too many instance variables");
+        }
+
+        rb_shape_t *next_shape = rb_shape_get_next(current_shape, obj, id);
+        if (UNLIKELY(next_shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
+            transition_too_complex_func(obj, data);
+            goto too_complex;
+        }
+        else if (UNLIKELY(next_shape->capacity != current_shape->capacity)) {
+            RUBY_ASSERT(next_shape->capacity > current_shape->capacity);
+            shape_resize_ivptr_func(obj, current_shape->capacity, next_shape->capacity, data);
+        }
+
+        RUBY_ASSERT(next_shape->type == SHAPE_IVAR);
+        RUBY_ASSERT(index == (next_shape->next_iv_index - 1));
+        set_shape_func(obj, next_shape, data);
+    }
+
+    VALUE *table = shape_ivptr_func(obj, data);
+    RB_OBJ_WRITE(obj, &table[index], val);
+
+    result.index = index;
+    return result;
+
+too_complex:
+    {
+        RUBY_ASSERT(rb_shape_obj_too_complex(obj));
+
+        st_table *table = too_complex_table_func(obj, data);
+        result.existing = st_insert(table, (st_data_t)id, (st_data_t)val);
+        result.index = 0;
+        RB_OBJ_WRITTEN(obj, Qundef, val);
+    }
+    return result;
+}
+
 struct gen_ivar_lookup_ensure_size {
+    VALUE obj;
+    ID id;
     struct gen_ivtbl *ivtbl;
     rb_shape_t *shape;
     bool resize;
@@ -1477,7 +1562,7 @@ generic_ivar_lookup_ensure_size(st_data_t *k, st_data_t *v, st_data_t u, int exi
     if (!existing || ivar_lookup->resize) {
         if (existing) {
             RUBY_ASSERT(ivar_lookup->shape->type == SHAPE_IVAR);
-            RUBY_ASSERT(rb_shape_get_shape_by_id(ivar_lookup->shape->parent_id)->type == SHAPE_CAPACITY_CHANGE);
+            RUBY_ASSERT(rb_shape_get_shape_by_id(ivar_lookup->shape->parent_id)->capacity < ivar_lookup->shape->capacity);
         }
         else {
             FL_SET_RAW((VALUE)*k, FL_EXIVAR);
@@ -1490,71 +1575,101 @@ generic_ivar_lookup_ensure_size(st_data_t *k, st_data_t *v, st_data_t u, int exi
     RUBY_ASSERT(FL_TEST((VALUE)*k, FL_EXIVAR));
 
     ivar_lookup->ivtbl = ivtbl;
+    if (ivar_lookup->shape) {
+#if SHAPE_IN_BASIC_FLAGS
+        rb_shape_set_shape(ivar_lookup->obj, ivar_lookup->shape);
+#else
+        ivtbl->shape_id = rb_shape_id(ivar_lookup->shape);
+#endif
+    }
 
     return ST_CONTINUE;
+}
+
+static VALUE *
+generic_ivar_set_shape_ivptr(VALUE obj, void *data)
+{
+    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
+
+    struct gen_ivar_lookup_ensure_size *ivar_lookup = data;
+
+    RB_VM_LOCK_ENTER();
+    {
+        st_update(generic_ivtbl(obj, ivar_lookup->id, false), (st_data_t)obj, generic_ivar_lookup_ensure_size, (st_data_t)ivar_lookup);
+    }
+    RB_VM_LOCK_LEAVE();
+
+    FL_SET_RAW(obj, FL_EXIVAR);
+
+    return ivar_lookup->ivtbl->as.shape.ivptr;
+}
+
+static void
+generic_ivar_set_shape_resize_ivptr(VALUE obj, attr_index_t _old_capa, attr_index_t new_capa, void *data)
+{
+    struct gen_ivar_lookup_ensure_size *ivar_lookup = data;
+
+    ivar_lookup->resize = true;
+}
+
+static void
+generic_ivar_set_set_shape(VALUE obj, rb_shape_t *shape, void *data)
+{
+    struct gen_ivar_lookup_ensure_size *ivar_lookup = data;
+
+    ivar_lookup->shape = shape;
+}
+
+static void
+generic_ivar_set_transition_too_complex(VALUE obj, void *_data)
+{
+    rb_evict_ivars_to_hash(obj);
+    FL_SET_RAW(obj, FL_EXIVAR);
+}
+
+static st_table *
+generic_ivar_set_too_complex_table(VALUE obj, void *data)
+{
+    struct gen_ivar_lookup_ensure_size *ivar_lookup = data;
+
+    struct gen_ivtbl *ivtbl;
+    if (!rb_gen_ivtbl_get(obj, 0, &ivtbl)) {
+        ivtbl = xmalloc(sizeof(struct gen_ivtbl));
+#if !SHAPE_IN_BASIC_FLAGS
+        ivtbl->shape_id = SHAPE_OBJ_TOO_COMPLEX;
+#endif
+        ivtbl->as.complex.table = st_init_numtable_with_size(1);
+
+        RB_VM_LOCK_ENTER();
+        {
+            st_insert(generic_ivtbl(obj, ivar_lookup->id, false), (st_data_t)obj, (st_data_t)ivtbl);
+        }
+        RB_VM_LOCK_LEAVE();
+
+        FL_SET_RAW(obj, FL_EXIVAR);
+    }
+
+    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
+
+    return ivtbl->as.complex.table;
 }
 
 static void
 generic_ivar_set(VALUE obj, ID id, VALUE val)
 {
-    rb_shape_t *shape = rb_shape_get_shape(obj);
-    if (UNLIKELY(shape->type == SHAPE_OBJ_TOO_COMPLEX)) {
-        rb_complex_ivar_set(obj, id, val);
-        return;
-    }
-
     struct gen_ivar_lookup_ensure_size ivar_lookup = {
-        .resize = false
+        .obj = obj,
+        .id = id,
+        .resize = false,
+        .shape = NULL,
     };
 
-    attr_index_t index;
-    bool found = rb_shape_get_iv_index(shape, id, &index);
-    if (!found) {
-        index = shape->next_iv_index;
-
-        if (UNLIKELY(index >= shape->capacity)) {
-            RUBY_ASSERT(index == shape->capacity);
-
-            rb_shape_t *next_shape = rb_shape_transition_shape_capa(shape);
-            if (shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-                rb_evict_ivars_to_hash(obj, shape);
-                rb_complex_ivar_set(obj, id, val);
-                FL_SET_RAW(obj, FL_EXIVAR);
-                return;
-            }
-
-            RUBY_ASSERT(index < next_shape->capacity);
-
-            ivar_lookup.resize = true;
-
-            shape = next_shape;
-        }
-
-        rb_shape_t *next_shape = rb_shape_get_next(shape, obj, id);
-        if (next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-            rb_evict_ivars_to_hash(obj, shape);
-            rb_complex_ivar_set(obj, id, val);
-            FL_SET_RAW(obj, FL_EXIVAR);
-            return;
-        }
-
-        shape = next_shape;
-        RUBY_ASSERT(index == (next_shape->next_iv_index - 1));
-    }
-
-    ivar_lookup.shape = shape;
-
-    RB_VM_LOCK_ENTER();
-    {
-        st_update(generic_ivtbl(obj, id, false), (st_data_t)obj, generic_ivar_lookup_ensure_size, (st_data_t)&ivar_lookup);
-    }
-    RB_VM_LOCK_LEAVE();
-
-    RB_OBJ_WRITE(obj, &ivar_lookup.ivtbl->as.shape.ivptr[index], val);
-
-    if (!found) {
-        rb_shape_set_shape(obj, shape);
-    }
+    general_ivar_set(obj, id, val, &ivar_lookup,
+                     generic_ivar_set_shape_ivptr,
+                     generic_ivar_set_shape_resize_ivptr,
+                     generic_ivar_set_set_shape,
+                     generic_ivar_set_transition_too_complex,
+                     generic_ivar_set_too_complex_table);
 }
 
 void
@@ -1574,84 +1689,64 @@ rb_ensure_iv_list_size(VALUE obj, uint32_t current_capacity, uint32_t new_capaci
     }
 }
 
-// @note May raise when there are too many instance variables.
-rb_shape_t *
-rb_grow_iv_list(VALUE obj)
+static int
+rb_obj_copy_ivs_to_hash_table_i(ID key, VALUE val, st_data_t arg)
 {
-    rb_shape_t * initial_shape = rb_shape_get_shape(obj);
-    RUBY_ASSERT(initial_shape->capacity > 0);
-    rb_shape_t * res = rb_shape_transition_shape_capa(initial_shape);
-    if (res->type == SHAPE_OBJ_TOO_COMPLEX) { // Out of shapes
-        rb_evict_ivars_to_hash(obj, initial_shape);
-    }
-    else {
-        rb_ensure_iv_list_size(obj, initial_shape->capacity, res->capacity);
-        rb_shape_set_shape(obj, res);
-    }
+    RUBY_ASSERT(!st_lookup((st_table *)arg, (st_data_t)key, NULL));
 
-    return res;
+    st_add_direct((st_table *)arg, (st_data_t)key, (st_data_t)val);
+    return ST_CONTINUE;
 }
 
-int
-rb_obj_evacuate_ivs_to_hash_table(ID key, VALUE val, st_data_t arg)
+void
+rb_obj_copy_ivs_to_hash_table(VALUE obj, st_table *table)
 {
-    st_insert((st_table *)arg, (st_data_t)key, (st_data_t)val);
-    return ST_CONTINUE;
+    rb_ivar_foreach(obj, rb_obj_copy_ivs_to_hash_table_i, (st_data_t)table);
+}
+
+static VALUE *
+obj_ivar_set_shape_ivptr(VALUE obj, void *_data)
+{
+    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
+
+    return ROBJECT_IVPTR(obj);
+}
+
+static void
+obj_ivar_set_shape_resize_ivptr(VALUE obj, attr_index_t old_capa, attr_index_t new_capa, void *_data)
+{
+    rb_ensure_iv_list_size(obj, old_capa, new_capa);
+}
+
+static void
+obj_ivar_set_set_shape(VALUE obj, rb_shape_t *shape, void *_data)
+{
+    rb_shape_set_shape(obj, shape);
+}
+
+static void
+obj_ivar_set_transition_too_complex(VALUE obj, void *_data)
+{
+    rb_evict_ivars_to_hash(obj);
+}
+
+static st_table *
+obj_ivar_set_too_complex_table(VALUE obj, void *_data)
+{
+    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
+
+    return ROBJECT_IV_HASH(obj);
 }
 
 attr_index_t
 rb_obj_ivar_set(VALUE obj, ID id, VALUE val)
 {
-    attr_index_t index;
-
-    rb_shape_t *shape = rb_shape_get_shape(obj);
-    uint32_t num_iv = shape->capacity;
-
-    if (rb_shape_obj_too_complex(obj)) {
-        rb_complex_ivar_set(obj, id, val);
-        return 0;
-    }
-
-    rb_shape_t *next_shape;
-
-    if (!rb_shape_get_iv_index(shape, id, &index)) {
-        index = shape->next_iv_index;
-        if (index >= MAX_IVARS) {
-            rb_raise(rb_eArgError, "too many instance variables");
-        }
-
-        RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
-
-        if (UNLIKELY(shape->next_iv_index >= num_iv)) {
-            RUBY_ASSERT(shape->next_iv_index == num_iv);
-
-            next_shape = rb_grow_iv_list(obj);
-            if (next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-                rb_complex_ivar_set(obj, id, val);
-                return 0;
-            }
-            shape = next_shape;
-            RUBY_ASSERT(shape->type == SHAPE_CAPACITY_CHANGE);
-        }
-
-        next_shape = rb_shape_get_next(shape, obj, id);
-
-        if (next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-            rb_evict_ivars_to_hash(obj, shape);
-            rb_complex_ivar_set(obj, id, val);
-            return 0;
-        }
-        else {
-            rb_shape_set_shape(obj, next_shape);
-            RUBY_ASSERT(next_shape->type == SHAPE_IVAR);
-            RUBY_ASSERT(index == (next_shape->next_iv_index - 1));
-        }
-    }
-
-    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
-    RB_OBJ_WRITE(obj, &ROBJECT_IVPTR(obj)[index], val);
-
-    return index;
+    return general_ivar_set(obj, id, val, NULL,
+                            obj_ivar_set_shape_ivptr,
+                            obj_ivar_set_shape_resize_ivptr,
+                            obj_ivar_set_set_shape,
+                            obj_ivar_set_transition_too_complex,
+                            obj_ivar_set_too_complex_table).index;
 }
 
 /* Set the instance variable +val+ on object +obj+ at ivar name +id+.
@@ -1722,7 +1817,7 @@ void rb_obj_freeze_inline(VALUE x)
         // If we're transitioning from "not complex" to "too complex"
         // then evict ivars.  This can happen if we run out of shapes
         if (!rb_shape_obj_too_complex(x) && next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-            rb_evict_ivars_to_hash(x, rb_shape_get_shape(x));
+            rb_evict_ivars_to_hash(x);
         }
         rb_shape_set_shape(x, next_shape);
 
@@ -1740,8 +1835,8 @@ ivar_set(VALUE obj, ID id, VALUE val)
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
       {
-          rb_obj_ivar_set(obj, id, val);
-          break;
+        rb_obj_ivar_set(obj, id, val);
+        break;
       }
       case T_CLASS:
       case T_MODULE:
@@ -1861,7 +1956,6 @@ iterate_over_shapes_with_callback(rb_shape_t *shape, rb_ivar_foreach_callback_fu
             }
         }
         return false;
-      case SHAPE_CAPACITY_CHANGE:
       case SHAPE_FROZEN:
       case SHAPE_T_OBJECT:
         return iterate_over_shapes_with_callback(rb_shape_get_parent(shape), callback, itr_data);
@@ -1908,7 +2002,7 @@ gen_ivar_each(VALUE obj, rb_ivar_foreach_callback_func *func, st_data_t arg)
     itr_data.arg = arg;
     itr_data.func = func;
     if (rb_shape_obj_too_complex(obj)) {
-        rb_st_foreach((st_table *)ivtbl, each_hash_iv, (st_data_t)&itr_data);
+        rb_st_foreach(ivtbl->as.complex.table, each_hash_iv, (st_data_t)&itr_data);
     }
     else {
         iterate_over_shapes_with_callback(shape, func, &itr_data);
@@ -2047,41 +2141,10 @@ rb_ivar_count(VALUE obj)
 
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
-        if (rb_shape_obj_too_complex(obj)) {
-            return ROBJECT_IV_COUNT(obj);
-        }
-
-        if (rb_shape_get_shape(obj)->next_iv_index > 0) {
-            st_index_t i, count, num = ROBJECT_IV_COUNT(obj);
-            const VALUE *const ivptr = ROBJECT_IVPTR(obj);
-            for (i = count = 0; i < num; ++i) {
-                if (!UNDEF_P(ivptr[i])) {
-                    count++;
-                }
-            }
-            return count;
-        }
-        break;
+        return ROBJECT_IV_COUNT(obj);
       case T_CLASS:
       case T_MODULE:
-        if (rb_shape_get_shape(obj)->next_iv_index > 0) {
-            st_index_t count = 0;
-
-            RB_VM_LOCK_ENTER();
-            {
-                st_index_t i, num = rb_shape_get_shape(obj)->next_iv_index;
-                const VALUE *const ivptr = RCLASS_IVPTR(obj);
-                for (i = count = 0; i < num; ++i) {
-                    if (!UNDEF_P(ivptr[i])) {
-                        count++;
-                    }
-                }
-            }
-            RB_VM_LOCK_LEAVE();
-
-            return count;
-        }
-        break;
+        return RCLASS_IV_COUNT(obj);
       default:
         if (FL_TEST(obj, FL_EXIVAR)) {
             struct gen_ivtbl *ivtbl;
@@ -2096,9 +2159,8 @@ rb_ivar_count(VALUE obj)
 }
 
 static int
-ivar_i(st_data_t k, st_data_t v, st_data_t a)
+ivar_i(ID key, VALUE v, st_data_t a)
 {
-    ID key = (ID)k;
     VALUE ary = (VALUE)a;
 
     if (rb_is_instance_id(key)) {
@@ -3968,9 +4030,8 @@ rb_define_class_variable(VALUE klass, const char *name, VALUE val)
 }
 
 static int
-cv_i(st_data_t k, st_data_t v, st_data_t a)
+cv_i(ID key, VALUE v, st_data_t a)
 {
-    ID key = (ID)k;
     st_table *tbl = (st_table *)a;
 
     if (rb_is_class_id(key)) {
@@ -4129,72 +4190,65 @@ rb_iv_set(VALUE obj, const char *name, VALUE val)
     return rb_ivar_set(obj, id, val);
 }
 
-/* tbl = xx(obj); tbl[key] = value; */
+static VALUE *
+class_ivar_set_shape_ivptr(VALUE obj, void *_data)
+{
+    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
+
+    return RCLASS_IVPTR(obj);
+}
+
+static void
+class_ivar_set_shape_resize_ivptr(VALUE obj, attr_index_t _old_capa, attr_index_t new_capa, void *_data)
+{
+    REALLOC_N(RCLASS_IVPTR(obj), VALUE, new_capa);
+}
+
+static void
+class_ivar_set_set_shape(VALUE obj, rb_shape_t *shape, void *_data)
+{
+    rb_shape_set_shape(obj, shape);
+}
+
+static void
+class_ivar_set_transition_too_complex(VALUE obj, void *_data)
+{
+    rb_evict_ivars_to_hash(obj);
+}
+
+static st_table *
+class_ivar_set_too_complex_table(VALUE obj, void *_data)
+{
+    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
+
+    return RCLASS_IV_HASH(obj);
+}
+
 int
-rb_class_ivar_set(VALUE obj, ID key, VALUE value)
+rb_class_ivar_set(VALUE obj, ID id, VALUE val)
 {
     RUBY_ASSERT(RB_TYPE_P(obj, T_CLASS) || RB_TYPE_P(obj, T_MODULE));
-    int found = 0;
+    bool existing = false;
     rb_check_frozen(obj);
 
     RB_VM_LOCK_ENTER();
     {
-        rb_shape_t * shape = rb_shape_get_shape(obj);
-        if (shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-            found = rb_complex_ivar_set(obj, key, value);
-            goto finish;
-        }
-
-        attr_index_t idx;
-        found = rb_shape_get_iv_index(shape, key, &idx);
-
-        if (!found) {
-            idx = shape->next_iv_index;
-
-            if (UNLIKELY(idx >= shape->capacity)) {
-                RUBY_ASSERT(shape->next_iv_index == shape->capacity);
-
-                rb_shape_t *next_shape = rb_shape_transition_shape_capa(shape);
-                if (next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-                    rb_evict_ivars_to_hash(obj, shape);
-                    rb_complex_ivar_set(obj, key, value);
-                    goto finish;
-                }
-
-                REALLOC_N(RCLASS_IVPTR(obj), VALUE, next_shape->capacity);
-
-                shape = next_shape;
-                RUBY_ASSERT(shape->type == SHAPE_CAPACITY_CHANGE);
-            }
-
-            rb_shape_t *next_shape = rb_shape_get_next(shape, obj, key);
-            if (next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-                rb_evict_ivars_to_hash(obj, shape);
-                rb_complex_ivar_set(obj, key, value);
-                goto finish;
-            }
-            else {
-                rb_shape_set_shape(obj, next_shape);
-
-                RUBY_ASSERT(next_shape->type == SHAPE_IVAR);
-                RUBY_ASSERT(idx == (next_shape->next_iv_index - 1));
-            }
-        }
-
-        RUBY_ASSERT(RCLASS_IVPTR(obj));
-
-        RB_OBJ_WRITE(obj, &RCLASS_IVPTR(obj)[idx], value);
+        existing = general_ivar_set(obj, id, val, NULL,
+                                    class_ivar_set_shape_ivptr,
+                                    class_ivar_set_shape_resize_ivptr,
+                                    class_ivar_set_set_shape,
+                                    class_ivar_set_transition_too_complex,
+                                    class_ivar_set_too_complex_table).existing;
     }
-finish:
     RB_VM_LOCK_LEAVE();
 
-    return found;
+    return existing;
 }
 
 static int
-tbl_copy_i(st_data_t key, st_data_t val, st_data_t dest)
+tbl_copy_i(ID key, VALUE val, st_data_t dest)
 {
-    rb_class_ivar_set(dest, key, val);
+    rb_class_ivar_set((VALUE)dest, key, val);
 
     return ST_CONTINUE;
 }

@@ -31,7 +31,7 @@ module IRB
           # 4. Exit the current Irb#run call via `throw :IRB_EXIT`.
           # 5. `Irb#debug_break` will be called and trigger the breakpoint, which will run the intended command.
           unless binding_irb?
-            puts "`debug` command is only available when IRB is started with binding.irb"
+            puts "Debugging commands are only available when IRB is started with binding.irb"
             return
           end
 

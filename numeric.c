@@ -1078,7 +1078,7 @@ flo_to_s(VALUE flt)
     s = sign ? rb_usascii_str_new_cstr("-") : rb_usascii_str_new(0, 0);
     if ((digs = (int)(e - p)) >= (int)sizeof(buf)) digs = (int)sizeof(buf) - 1;
     memcpy(buf, p, digs);
-    xfree(p);
+    free(p);
     if (decpt > 0) {
         if (decpt < digs) {
             memmove(buf + decpt + 1, buf + decpt, digs - decpt);
@@ -4096,7 +4096,13 @@ static double
 fix_fdiv_double(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
-        return double_div_double(FIX2LONG(x), FIX2LONG(y));
+        long iy = FIX2LONG(y);
+#if SIZEOF_LONG * CHAR_BIT > DBL_MANT_DIG
+        if ((iy < 0 ? -iy : iy) >= (1L << DBL_MANT_DIG)) {
+            return rb_big_fdiv_double(rb_int2big(FIX2LONG(x)), rb_int2big(iy));
+        }
+#endif
+        return double_div_double(FIX2LONG(x), iy);
     }
     else if (RB_BIGNUM_TYPE_P(y)) {
         return rb_big_fdiv_double(rb_int2big(FIX2LONG(x)), y);
@@ -4114,7 +4120,7 @@ rb_int_fdiv_double(VALUE x, VALUE y)
 {
     if (RB_INTEGER_TYPE_P(y) && !FIXNUM_ZERO_P(y)) {
         VALUE gcd = rb_gcd(x, y);
-        if (!FIXNUM_ZERO_P(gcd)) {
+        if (!FIXNUM_ZERO_P(gcd) && gcd != INT2FIX(1)) {
             x = rb_int_idiv(x, gcd);
             y = rb_int_idiv(y, gcd);
         }

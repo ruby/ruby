@@ -56,7 +56,7 @@ module Bundler
       if spec.source.instance_of?(Source::Path) && spec.source.path.absolute?
         full_path
       else
-        SharedHelpers.relative_path_to(full_path, :from => Bundler.root.join(bundler_path))
+        SharedHelpers.relative_path_to(full_path, from: Bundler.root.join(bundler_path))
       end
     rescue TypeError
       error_message = "#{spec.name} #{spec.version} has an invalid gemspec"

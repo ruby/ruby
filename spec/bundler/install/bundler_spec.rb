@@ -30,7 +30,7 @@ RSpec.describe "bundle install" do
     end
 
     it "causes a conflict if explicitly requesting a different version of bundler" do
-      install_gemfile <<-G, :raise_on_error => false
+      install_gemfile <<-G, raise_on_error: false
         source "#{file_uri_for(gem_repo2)}"
         gem "rails", "3.0"
         gem "bundler", "0.9.1"
@@ -50,7 +50,7 @@ RSpec.describe "bundle install" do
     end
 
     it "causes a conflict if explicitly requesting a non matching requirement on bundler" do
-      install_gemfile <<-G, :raise_on_error => false
+      install_gemfile <<-G, raise_on_error: false
         source "#{file_uri_for(gem_repo2)}"
         gem "rails", "3.0"
         gem "bundler", "~> 0.8"
@@ -73,7 +73,7 @@ RSpec.describe "bundle install" do
     end
 
     it "causes a conflict if explicitly requesting a version of bundler that doesn't exist" do
-      install_gemfile <<-G, :raise_on_error => false
+      install_gemfile <<-G, raise_on_error: false
         source "#{file_uri_for(gem_repo2)}"
         gem "rails", "3.0"
         gem "bundler", "0.9.2"
@@ -143,7 +143,7 @@ RSpec.describe "bundle install" do
         end
       end
 
-      install_gemfile <<-G, :raise_on_error => false
+      install_gemfile <<-G, raise_on_error: false
         source "#{file_uri_for(gem_repo2)}"
         gem "activemerchant"
         gem "rails_pinned_to_old_activesupport"
@@ -171,7 +171,7 @@ RSpec.describe "bundle install" do
         end
       end
 
-      install_gemfile <<-G, :raise_on_error => false
+      install_gemfile <<-G, raise_on_error: false
         source "#{file_uri_for(gem_repo2)}"
         gem "rails_pinned_to_old_activesupport"
         gem "activesupport", "2.3.5"

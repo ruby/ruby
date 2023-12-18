@@ -460,7 +460,7 @@ VALUE mFoo = rb_define_module_under(rb_mKernel, "Foo");
   end
 
   def test_do_constants
-    content = <<-EOF
+    content = <<-'EOF'
 #include <ruby.h>
 
 void Init_foo(){
@@ -474,6 +474,9 @@ void Init_foo(){
 
    /* TEST\:TEST: Checking to see if escaped colon works */
    rb_define_const(cFoo, "TEST", rb_str_new2("TEST:TEST"));
+
+   /* TEST: TEST:Checking to see if only word-ending colon works */
+   rb_define_const(cFoo, "TEST2", rb_str_new2("TEST:TEST"));
 
    /* \\: The file separator on MS Windows */
    rb_define_const(cFoo, "MSEPARATOR", rb_str_new2("\\"));
@@ -537,6 +540,9 @@ void Init_foo(){
                  constants.shift
     assert_equal ['TEST', 'TEST:TEST',
                   'Checking to see if escaped colon works   '],
+                 constants.shift
+    assert_equal ['TEST2', 'TEST',
+                  'TEST:Checking to see if only word-ending colon works   '],
                  constants.shift
     assert_equal ['MSEPARATOR', '\\',
                   'The file separator on MS Windows   '],
@@ -1371,6 +1377,36 @@ Init_Foo(void) {
     code = other_function.token_stream.first[:text]
 
     assert_equal "DLL_LOCAL VALUE\nother_function() {\n}", code
+  end
+
+  def test_find_body_static_inline
+    content = <<-EOF
+/*
+ * a comment for other_function
+ */
+static inline VALUE
+other_function() {
+}
+
+void
+Init_Foo(void) {
+    VALUE foo = rb_define_class("Foo", rb_cObject);
+
+    rb_define_method(foo, "my_method", other_function, 0);
+}
+    EOF
+
+    klass = util_get_class content, 'foo'
+    other_function = klass.method_list.first
+
+    assert_equal 'my_method', other_function.name
+    assert_equal "a comment for other_function",
+                 other_function.comment.text
+    assert_equal '()', other_function.params
+
+    code = other_function.token_stream.first[:text]
+
+    assert_equal "static inline VALUE\nother_function() {\n}", code
   end
 
   def test_find_modifiers_call_seq

@@ -9,6 +9,7 @@
             │   └── @ AssocNode (location: (1,2)-(1,4))
             │       ├── key:
             │       │   @ SymbolNode (location: (1,2)-(1,4))
+            │       │   ├── flags: ∅
             │       │   ├── opening_loc: ∅
             │       │   ├── value_loc: (1,2)-(1,3) = "y"
             │       │   ├── closing_loc: (1,3)-(1,4) = ":"
@@ -17,14 +18,14 @@
             │       │   @ ImplicitNode (location: (1,2)-(1,4))
             │       │   └── value:
             │       │       @ CallNode (location: (1,2)-(1,4))
+            │       │       ├── flags: ∅
             │       │       ├── receiver: ∅
             │       │       ├── call_operator_loc: ∅
+            │       │       ├── name: :y
             │       │       ├── message_loc: (1,2)-(1,3) = "y"
             │       │       ├── opening_loc: ∅
             │       │       ├── arguments: ∅
             │       │       ├── closing_loc: ∅
-            │       │       ├── block: ∅
-            │       │       ├── flags: ∅
-            │       │       └── name: :y
+            │       │       └── block: ∅
             │       └── operator_loc: ∅
             └── closing_loc: (1,5)-(1,6) = "}"

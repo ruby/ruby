@@ -4,7 +4,7 @@ module Lrama
     attr_accessor :skeleton, :header, :header_file,
                   :report_file, :outfile,
                   :error_recovery, :grammar_file,
-                  :report_file, :trace_opts, :report_opts, :y,
+                  :trace_opts, :report_opts, :y,
                   :debug
 
     def initialize
@@ -15,7 +15,6 @@ module Lrama
       @outfile = "y.tab.c"
       @error_recovery = false
       @grammar_file = nil
-      @report_file = nil
       @trace_opts = nil
       @report_opts = nil
       @y = STDIN

@@ -88,7 +88,7 @@ RSpec.describe Bundler::Env do
         allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
       end
 
-      let(:output) { described_class.report(:print_gemfile => true) }
+      let(:output) { described_class.report(print_gemfile: true) }
 
       it "prints the Gemfile" do
         expect(output).to include("Gemfile")
@@ -102,7 +102,7 @@ RSpec.describe Bundler::Env do
     end
 
     context "when there no Gemfile and print_gemfile is true" do
-      let(:output) { described_class.report(:print_gemfile => true) }
+      let(:output) { described_class.report(print_gemfile: true) }
 
       it "prints the environment" do
         expect(output).to start_with("## Environment")
@@ -114,7 +114,7 @@ RSpec.describe Bundler::Env do
         bundle "config set https://localgemserver.test/ user:pass"
       end
 
-      let(:output) { described_class.report(:print_gemfile => true) }
+      let(:output) { described_class.report(print_gemfile: true) }
 
       it "prints the config with redacted values" do
         expect(output).to include("https://localgemserver.test")
@@ -128,7 +128,7 @@ RSpec.describe Bundler::Env do
         bundle "config set https://localgemserver.test/ api_token:x-oauth-basic"
       end
 
-      let(:output) { described_class.report(:print_gemfile => true) }
+      let(:output) { described_class.report(print_gemfile: true) }
 
       it "prints the config with redacted values" do
         expect(output).to include("https://localgemserver.test")
@@ -158,7 +158,7 @@ RSpec.describe Bundler::Env do
       end
 
       it "prints the gemspec" do
-        output = described_class.report(:print_gemspecs => true)
+        output = described_class.report(print_gemspecs: true)
 
         expect(output).to include("foo.gemspec")
         expect(output).to include(gemspec)
@@ -177,7 +177,7 @@ RSpec.describe Bundler::Env do
         allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
         allow(Bundler::SharedHelpers).to receive(:pwd).and_return(bundled_app)
 
-        output = described_class.report(:print_gemspecs => true)
+        output = described_class.report(print_gemspecs: true)
         expect(output).to include(<<~ENV)
           ## Gemfile
 

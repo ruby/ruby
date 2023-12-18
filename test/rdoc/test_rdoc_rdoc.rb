@@ -165,12 +165,7 @@ class TestRDocRDoc < RDoc::TestCase
       b = Dir.glob(b).first
       c = Dir.glob(c).first
 
-      dot_doc = File.expand_path('.document')
-      FileUtils.touch dot_doc
-      open(dot_doc, 'w') do |f|
-        f.puts 'a.rb'
-        f.puts 'b.rb'
-      end
+      File.write('.document', "a.rb\n""b.rb\n")
       expected_files << a
       expected_files << b
 
@@ -196,12 +191,7 @@ class TestRDocRDoc < RDoc::TestCase
       b = Dir.glob(b).first
       c = Dir.glob(c).first
 
-      dot_doc = File.expand_path('.document')
-      FileUtils.touch dot_doc
-      open(dot_doc, 'w') do |f|
-        f.puts 'a.rb'
-        f.puts 'b.rb'
-      end
+      File.write('.document', "a.rb\n""b.rb\n")
       expected_files << a
 
       @rdoc.options.exclude = Regexp.new(['b.rb'].join('|'))

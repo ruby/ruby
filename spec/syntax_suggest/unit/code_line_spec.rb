@@ -5,7 +5,7 @@ require_relative "../spec_helper"
 module SyntaxSuggest
   RSpec.describe CodeLine do
     it "bug in keyword detection" do
-      lines = CodeLine.from_source(<<~'EOM')
+      lines = CodeLine.from_source(<<~EOM)
         def to_json(*opts)
           {
             type: :module,
@@ -19,7 +19,7 @@ module SyntaxSuggest
     it "supports endless method definitions" do
       skip("Unsupported ruby version") unless Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("3")
 
-      line = CodeLine.from_source(<<~'EOM').first
+      line = CodeLine.from_source(<<~EOM).first
         def square(x) = x * x
       EOM
 
@@ -28,7 +28,7 @@ module SyntaxSuggest
     end
 
     it "retains original line value, after being marked invisible" do
-      line = CodeLine.from_source(<<~'EOM').first
+      line = CodeLine.from_source(<<~EOM).first
         puts "lol"
       EOM
       expect(line.line).to match('puts "lol"')
@@ -38,7 +38,7 @@ module SyntaxSuggest
     end
 
     it "knows which lines can be joined" do
-      code_lines = CodeLine.from_source(<<~'EOM')
+      code_lines = CodeLine.from_source(<<~EOM)
         user = User.
           where(name: 'schneems').
           first
@@ -50,7 +50,7 @@ module SyntaxSuggest
     end
 
     it "trailing if" do
-      code_lines = CodeLine.from_source(<<~'EOM')
+      code_lines = CodeLine.from_source(<<~EOM)
         puts "lol" if foo
         if foo
         end
@@ -60,7 +60,7 @@ module SyntaxSuggest
     end
 
     it "trailing unless" do
-      code_lines = CodeLine.from_source(<<~'EOM')
+      code_lines = CodeLine.from_source(<<~EOM)
         puts "lol" unless foo
         unless foo
         end

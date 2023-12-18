@@ -59,21 +59,7 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u16, end_idx: u16) -> St
     let global_cb = crate::codegen::CodegenGlobals::get_inline_cb();
 
     // Sort the blocks by increasing start addresses
-    block_list.sort_by(|a, b| {
-        use std::cmp::Ordering;
-
-        // Get the start addresses for each block
-        let addr_a = a.get_start_addr().raw_ptr();
-        let addr_b = b.get_start_addr().raw_ptr();
-
-        if addr_a < addr_b {
-            Ordering::Less
-        } else if addr_a == addr_b {
-            Ordering::Equal
-        } else {
-            Ordering::Greater
-        }
-    });
+    block_list.sort_by_key(|block| block.get_start_addr().as_offset());
 
     // Compute total code size in bytes for all blocks in the function
     let mut total_code_size = 0;
@@ -116,7 +102,7 @@ pub fn disasm_iseq_insn_range(iseq: IseqPtr, start_idx: u16, end_idx: u16) -> St
                 // Compute the size of the gap between this block and the next
                 let next_block = block_list[block_idx + 1];
                 let next_start_addr = next_block.get_start_addr();
-                let gap_size = next_start_addr.into_usize() - end_addr.into_usize();
+                let gap_size = next_start_addr.as_offset() - end_addr.as_offset();
 
                 // Log the size of the gap between the blocks if nonzero
                 if gap_size > 0 {
@@ -212,8 +198,8 @@ macro_rules! assert_disasm {
         {
             let disasm = disasm_addr_range(
                 &$cb,
-                $cb.get_ptr(0).raw_ptr() as usize,
-                $cb.get_write_ptr().raw_ptr() as usize,
+                $cb.get_ptr(0).raw_addr(&$cb),
+                $cb.get_write_ptr().raw_addr(&$cb),
             );
             assert_eq!(unindent(&disasm, false), unindent(&$disasm, true));
         }

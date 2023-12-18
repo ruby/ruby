@@ -119,6 +119,8 @@ module Fiddle
           return SIZEOF_VOIDP
         when TYPE_CONST_STRING
           return SIZEOF_CONST_STRING
+        when TYPE_BOOL
+          return SIZEOF_BOOL
         else
           if defined?(TYPE_LONG_LONG) and
             ty == TYPE_LONG_LONG

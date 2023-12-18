@@ -97,13 +97,13 @@ class Gem::PackageTask < Rake::PackageTask
     gem_path = File.join package_dir, gem_file
     gem_dir  = File.join package_dir, gem_spec.full_name
 
-    task :package => [:gem]
+    task package: [:gem]
 
     directory package_dir
     directory gem_dir
 
     desc "Build the gem file #{gem_file}"
-    task :gem => [gem_path]
+    task gem: [gem_path]
 
     trace = Rake.application.options.trace
     Gem.configuration.verbose = trace

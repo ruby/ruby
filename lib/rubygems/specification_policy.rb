@@ -5,20 +5,21 @@ require_relative "user_interaction"
 class Gem::SpecificationPolicy
   include Gem::UserInteraction
 
-  VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/.freeze # :nodoc:
+  VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/ # :nodoc:
 
-  SPECIAL_CHARACTERS = /\A[#{Regexp.escape('.-_')}]+/.freeze # :nodoc:
+  SPECIAL_CHARACTERS = /\A[#{Regexp.escape('.-_')}]+/ # :nodoc:
 
-  VALID_URI_PATTERN = %r{\Ahttps?:\/\/([^\s:@]+:[^\s:@]*@)?[A-Za-z\d\-]+(\.[A-Za-z\d\-]+)+\.?(:\d{1,5})?([\/?]\S*)?\z}.freeze # :nodoc:
+  VALID_URI_PATTERN = %r{\Ahttps?:\/\/([^\s:@]+:[^\s:@]*@)?[A-Za-z\d\-]+(\.[A-Za-z\d\-]+)+\.?(:\d{1,5})?([\/?]\S*)?\z} # :nodoc:
 
   METADATA_LINK_KEYS = %w[
-    bug_tracker_uri
-    changelog_uri
-    documentation_uri
     homepage_uri
-    mailing_list_uri
+    changelog_uri
     source_code_uri
+    documentation_uri
     wiki_uri
+    mailing_list_uri
+    bug_tracker_uri
+    download_uri
     funding_uri
   ].freeze # :nodoc:
 
@@ -105,6 +106,8 @@ class Gem::SpecificationPolicy
     validate_extensions
 
     validate_removed_attributes
+
+    validate_unique_links
 
     if @warnings > 0
       if strict
@@ -400,8 +403,8 @@ or set it to nil if you don't want to specify a license.
   end
 
   LAZY = '"FIxxxXME" or "TOxxxDO"'.gsub(/xxx/, "")
-  LAZY_PATTERN = /\AFI XME|\ATO DO/x.freeze
-  HOMEPAGE_URI_PATTERN = /\A[a-z][a-z\d+.-]*:/i.freeze
+  LAZY_PATTERN = /\AFI XME|\ATO DO/x
+  HOMEPAGE_URI_PATTERN = /\A[a-z][a-z\d+.-]*:/i
 
   def validate_lazy_metadata
     unless @specification.authors.grep(LAZY_PATTERN).empty?
@@ -499,6 +502,22 @@ You have specified rust based extension, but Cargo.lock is not part of the gem f
     warning <<-WARNING if rake_extension && !rake_dependency
 You have specified rake based extension, but rake is not added as dependency. It is recommended to add rake as a dependency in gemspec since there's no guarantee rake will be already installed.
     WARNING
+  end
+
+  def validate_unique_links
+    links = @specification.metadata.slice(*METADATA_LINK_KEYS)
+    grouped = links.group_by {|_key, uri| uri }
+    grouped.each do |uri, copies|
+      next unless copies.length > 1
+      keys = copies.map(&:first).join("\n  ")
+      warning <<~WARNING
+        You have specified the uri:
+          #{uri}
+        for all of the following keys:
+          #{keys}
+        Only the first one will be shown on rubygems.org
+      WARNING
+    end
   end
 
   def warning(statement) # :nodoc:

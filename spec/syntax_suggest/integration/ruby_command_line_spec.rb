@@ -9,7 +9,7 @@ module SyntaxSuggest
       Dir.mktmpdir do |dir|
         tmpdir = Pathname(dir)
         script = tmpdir.join("script.rb")
-        script.write <<~'EOM'
+        script.write <<~EOM
           puts Kernel.private_methods
         EOM
 
@@ -159,7 +159,7 @@ module SyntaxSuggest
       Dir.mktmpdir do |dir|
         tmpdir = Pathname(dir)
         script = tmpdir.join("script.rb")
-        script.write <<~'EOM'
+        script.write <<~EOM
           $stderr = STDOUT
           eval("def lol")
         EOM
@@ -178,7 +178,7 @@ module SyntaxSuggest
       Dir.mktmpdir do |dir|
         tmpdir = Pathname(dir)
         script = tmpdir.join("script.rb")
-        script.write <<~'EOM'
+        script.write <<~EOM
           break
         EOM
 

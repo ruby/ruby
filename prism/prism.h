@@ -62,18 +62,6 @@ PRISM_EXPORTED_FUNCTION void pm_parser_init(pm_parser_t *parser, const uint8_t *
 PRISM_EXPORTED_FUNCTION void pm_parser_register_encoding_changed_callback(pm_parser_t *parser, pm_encoding_changed_callback_t callback);
 
 /**
- * Register a callback that will be called when prism encounters a magic comment
- * with an encoding referenced that it doesn't understand. The callback should
- * return NULL if it also doesn't understand the encoding or it should return a
- * pointer to a pm_encoding_t struct that contains the functions necessary to
- * parse identifiers.
- *
- * @param parser The parser to register the callback with.
- * @param callback The callback to register.
- */
-PRISM_EXPORTED_FUNCTION void pm_parser_register_encoding_decode_callback(pm_parser_t *parser, pm_encoding_decode_callback_t callback);
-
-/**
  * Free any memory associated with the given parser.
  *
  * @param parser The parser to free.
@@ -103,7 +91,7 @@ void pm_serialize_comment_list(pm_parser_t *parser, pm_list_t *list, pm_buffer_t
  * @param encoding The encoding to serialize.
  * @param buffer The buffer to serialize to.
  */
-void pm_serialize_encoding(pm_encoding_t *encoding, pm_buffer_t *buffer);
+void pm_serialize_encoding(const pm_encoding_t *encoding, pm_buffer_t *buffer);
 
 /**
  * Serialize the encoding, metadata, nodes, and constant pool.
@@ -165,6 +153,16 @@ PRISM_EXPORTED_FUNCTION void pm_serialize_lex(pm_buffer_t *buffer, const uint8_t
 PRISM_EXPORTED_FUNCTION void pm_serialize_parse_lex(pm_buffer_t *buffer, const uint8_t *source, size_t size, const char *data);
 
 /**
+ * Parse the source and return true if it parses without errors or warnings.
+ *
+ * @param source The source to parse.
+ * @param size The size of the source.
+ * @param data The optional data to pass to the parser.
+ * @return True if the source parses without errors or warnings.
+ */
+PRISM_EXPORTED_FUNCTION bool pm_parse_success_p(const uint8_t *source, size_t size, const char *data);
+
+/**
  * Returns a string representation of the given token type.
  *
  * @param token_type The token type to convert to a string.
@@ -213,7 +211,7 @@ PRISM_EXPORTED_FUNCTION const char * pm_token_type_to_str(pm_token_type_t token_
  *     pm_node_t *root = pm_parse(&parser);
  *     printf("PARSED!\n");
  *
- *     pm_node_destroy(root);
+ *     pm_node_destroy(&parser, root);
  *     pm_parser_free(&parser);
  * }
  * ```
@@ -265,7 +263,7 @@ PRISM_EXPORTED_FUNCTION const char * pm_token_type_to_str(pm_token_type_t token_
  *     printf("*.s%\n", (int) buffer.length, buffer.value);
  *
  *     pm_buffer_free(&buffer);
- *     pm_node_destroy(root);
+ *     pm_node_destroy(&parser, root);
  *     pm_parser_free(&parser);
  * }
  * ```

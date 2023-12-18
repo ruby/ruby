@@ -17,4 +17,7 @@
 extern VALUE rb_cEncodingConverter;
 size_t rb_econv_memsize(rb_econv_t *);
 
+/* vm.c */
+void rb_free_transcoder_table(void);
+
 #endif /* INTERNAL_TRANSCODE_H */

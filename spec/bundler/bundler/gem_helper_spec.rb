@@ -253,11 +253,11 @@ RSpec.describe Bundler::GemHelper do
       end
 
       before do
-        sys_exec("git init", :dir => app_path)
-        sys_exec("git config user.email \"you@example.com\"", :dir => app_path)
-        sys_exec("git config user.name \"name\"", :dir => app_path)
-        sys_exec("git config commit.gpgsign false", :dir => app_path)
-        sys_exec("git config push.default simple", :dir => app_path)
+        sys_exec("git init", dir: app_path)
+        sys_exec("git config user.email \"you@example.com\"", dir: app_path)
+        sys_exec("git config user.name \"name\"", dir: app_path)
+        sys_exec("git config commit.gpgsign false", dir: app_path)
+        sys_exec("git config push.default simple", dir: app_path)
 
         # silence messages
         allow(Bundler.ui).to receive(:confirm)
@@ -271,23 +271,23 @@ RSpec.describe Bundler::GemHelper do
         end
 
         it "when there are uncommitted files" do
-          sys_exec("git add .", :dir => app_path)
+          sys_exec("git add .", dir: app_path)
           expect { Rake.application["release"].invoke }.
             to raise_error("There are files that need to be committed first.")
         end
 
         it "when there is no git remote" do
-          sys_exec("git commit -a -m \"initial commit\"", :dir => app_path)
+          sys_exec("git commit -a -m \"initial commit\"", dir: app_path)
           expect { Rake.application["release"].invoke }.to raise_error(RuntimeError)
         end
       end
 
       context "succeeds" do
-        let(:repo) { build_git("foo", :bare => true) }
+        let(:repo) { build_git("foo", bare: true) }
 
         before do
-          sys_exec("git remote add origin #{file_uri_for(repo.path)}", :dir => app_path)
-          sys_exec('git commit -a -m "initial commit"', :dir => app_path)
+          sys_exec("git remote add origin #{file_uri_for(repo.path)}", dir: app_path)
+          sys_exec('git commit -a -m "initial commit"', dir: app_path)
         end
 
         context "on releasing" do
@@ -296,7 +296,7 @@ RSpec.describe Bundler::GemHelper do
             mock_confirm_message "Tagged v#{app_version}."
             mock_confirm_message "Pushed git commits and release tag."
 
-            sys_exec("git push -u origin main", :dir => app_path)
+            sys_exec("git push -u origin main", dir: app_path)
           end
 
           it "calls rubygem_push with proper arguments" do
@@ -314,8 +314,8 @@ RSpec.describe Bundler::GemHelper do
 
           it "also works when releasing from an ambiguous reference" do
             # Create a branch with the same name as the tag
-            sys_exec("git checkout -b v#{app_version}", :dir => app_path)
-            sys_exec("git push -u origin v#{app_version}", :dir => app_path)
+            sys_exec("git checkout -b v#{app_version}", dir: app_path)
+            sys_exec("git push -u origin v#{app_version}", dir: app_path)
 
             expect(subject).to receive(:rubygem_push).with(app_gem_path.to_s)
 
@@ -323,7 +323,7 @@ RSpec.describe Bundler::GemHelper do
           end
 
           it "also works with releasing from a branch not yet pushed" do
-            sys_exec("git checkout -b module_function", :dir => app_path)
+            sys_exec("git checkout -b module_function", dir: app_path)
 
             expect(subject).to receive(:rubygem_push).with(app_gem_path.to_s)
 
@@ -337,7 +337,7 @@ RSpec.describe Bundler::GemHelper do
             mock_build_message app_name, app_version
             mock_confirm_message "Pushed git commits and release tag."
 
-            sys_exec("git push -u origin main", :dir => app_path)
+            sys_exec("git push -u origin main", dir: app_path)
             expect(subject).to receive(:rubygem_push).with(app_gem_path.to_s)
           end
 
@@ -353,7 +353,7 @@ RSpec.describe Bundler::GemHelper do
           mock_confirm_message "Tag v#{app_version} has already been created."
           expect(subject).to receive(:rubygem_push).with(app_gem_path.to_s)
 
-          sys_exec("git tag -a -m \"Version #{app_version}\" v#{app_version}", :dir => app_path)
+          sys_exec("git tag -a -m \"Version #{app_version}\" v#{app_version}", dir: app_path)
 
           Rake.application["release"].invoke
         end
@@ -374,10 +374,10 @@ RSpec.describe Bundler::GemHelper do
       end
 
       before do
-        sys_exec("git init", :dir => app_path)
-        sys_exec("git config user.email \"you@example.com\"", :dir => app_path)
-        sys_exec("git config user.name \"name\"", :dir => app_path)
-        sys_exec("git config push.gpgsign simple", :dir => app_path)
+        sys_exec("git init", dir: app_path)
+        sys_exec("git config user.email \"you@example.com\"", dir: app_path)
+        sys_exec("git config user.name \"name\"", dir: app_path)
+        sys_exec("git config push.gpgsign simple", dir: app_path)
 
         # silence messages
         allow(Bundler.ui).to receive(:confirm)

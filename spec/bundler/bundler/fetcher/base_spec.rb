@@ -4,15 +4,16 @@ RSpec.describe Bundler::Fetcher::Base do
   let(:downloader)  { double(:downloader) }
   let(:remote)      { double(:remote) }
   let(:display_uri) { "http://sample_uri.com" }
+  let(:gem_remote_fetcher) { nil }
 
   class TestClass < described_class; end
 
-  subject { TestClass.new(downloader, remote, display_uri) }
+  subject { TestClass.new(downloader, remote, display_uri, gem_remote_fetcher) }
 
   describe "#initialize" do
     context "with the abstract Base class" do
       it "should raise an error" do
-        expect { described_class.new(downloader, remote, display_uri) }.to raise_error(RuntimeError, "Abstract class")
+        expect { described_class.new(downloader, remote, display_uri, gem_remote_fetcher) }.to raise_error(RuntimeError, "Abstract class")
       end
     end
 

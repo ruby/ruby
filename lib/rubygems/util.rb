@@ -60,7 +60,7 @@ module Gem::Util
   # Invokes system, but silences all output.
 
   def self.silent_system(*command)
-    opt = { :out => IO::NULL, :err => [:child, :out] }
+    opt = { out: IO::NULL, err: [:child, :out] }
     if Hash === command.last
       opt.update(command.last)
       cmds = command[0...-1]
@@ -109,7 +109,7 @@ module Gem::Util
   # comes with a leading slash.
 
   def self.correct_for_windows_path(path)
-    if path[0].chr == "/" && path[1].chr =~ /[a-z]/i && path[2].chr == ":"
+    if path[0].chr == "/" && path[1].chr.match?(/[a-z]/i) && path[2].chr == ":"
       path[1..-1]
     else
       path

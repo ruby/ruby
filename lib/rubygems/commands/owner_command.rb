@@ -39,7 +39,7 @@ permission to.
     add_proxy_option
     add_key_option
     add_otp_option
-    defaults.merge! :add => [], :remove => []
+    defaults.merge! add: [], remove: []
 
     add_option "-a", "--add NEW_OWNER", "Add an owner by user identifier" do |value, options|
       options[:add] << value

@@ -32,12 +32,12 @@
  * need to take a slower path and iterate one multi-byte character at a time.
  *
  * @param parser The parser.
- * @param source The source string.
+ * @param source The source to search.
  * @param charset The charset to search for.
- * @param length The maximum length to search.
+ * @param length The maximum number of bytes to search.
  * @return A pointer to the first character in the source string that is in the
  *     charset, or NULL if no such character exists.
  */
-const uint8_t * pm_strpbrk(pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, ptrdiff_t length);
+const uint8_t * pm_strpbrk(const pm_parser_t *parser, const uint8_t *source, const uint8_t *charset, ptrdiff_t length);
 
 #endif

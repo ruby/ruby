@@ -19,51 +19,5 @@ module Lrama
       end
       alias :inspect :to_s
     end
-
-    class StartPath < Path
-      def initialize(to_state_item)
-        super nil, to_state_item
-      end
-
-      def type
-        :start
-      end
-
-      def transition?
-        false
-      end
-
-      def production?
-        false
-      end
-    end
-
-    class TransitionPath < Path
-      def type
-        :transition
-      end
-
-      def transition?
-        true
-      end
-
-      def production?
-        false
-      end
-    end
-
-    class ProductionPath < Path
-      def type
-        :production
-      end
-
-      def transition?
-        false
-      end
-
-      def production?
-        true
-      end
-    end
   end
 end

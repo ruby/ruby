@@ -1,4 +1,4 @@
-class Bundler::Persistent::Net::HTTP::Persistent::TimedStackMulti < Bundler::ConnectionPool::TimedStack # :nodoc:
+class Gem::Net::HTTP::Persistent::TimedStackMulti < Bundler::ConnectionPool::TimedStack # :nodoc:
 
   ##
   # Returns a new hash that has arrays for keys

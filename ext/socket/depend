@@ -186,6 +186,7 @@ ancdata.o: $(hdrdir)/ruby/subst.h
 ancdata.o: $(hdrdir)/ruby/thread.h
 ancdata.o: $(hdrdir)/ruby/thread_native.h
 ancdata.o: $(hdrdir)/ruby/util.h
+ancdata.o: $(hdrdir)/ruby/version.h
 ancdata.o: $(top_srcdir)/ccan/check_type/check_type.h
 ancdata.o: $(top_srcdir)/ccan/container_of/container_of.h
 ancdata.o: $(top_srcdir)/ccan/list/list.h
@@ -394,6 +395,7 @@ basicsocket.o: $(hdrdir)/ruby/subst.h
 basicsocket.o: $(hdrdir)/ruby/thread.h
 basicsocket.o: $(hdrdir)/ruby/thread_native.h
 basicsocket.o: $(hdrdir)/ruby/util.h
+basicsocket.o: $(hdrdir)/ruby/version.h
 basicsocket.o: $(top_srcdir)/ccan/check_type/check_type.h
 basicsocket.o: $(top_srcdir)/ccan/container_of/container_of.h
 basicsocket.o: $(top_srcdir)/ccan/list/list.h
@@ -602,6 +604,7 @@ constants.o: $(hdrdir)/ruby/subst.h
 constants.o: $(hdrdir)/ruby/thread.h
 constants.o: $(hdrdir)/ruby/thread_native.h
 constants.o: $(hdrdir)/ruby/util.h
+constants.o: $(hdrdir)/ruby/version.h
 constants.o: $(top_srcdir)/ccan/check_type/check_type.h
 constants.o: $(top_srcdir)/ccan/container_of/container_of.h
 constants.o: $(top_srcdir)/ccan/list/list.h
@@ -811,6 +814,7 @@ ifaddr.o: $(hdrdir)/ruby/subst.h
 ifaddr.o: $(hdrdir)/ruby/thread.h
 ifaddr.o: $(hdrdir)/ruby/thread_native.h
 ifaddr.o: $(hdrdir)/ruby/util.h
+ifaddr.o: $(hdrdir)/ruby/version.h
 ifaddr.o: $(top_srcdir)/ccan/check_type/check_type.h
 ifaddr.o: $(top_srcdir)/ccan/container_of/container_of.h
 ifaddr.o: $(top_srcdir)/ccan/list/list.h
@@ -1019,6 +1023,7 @@ init.o: $(hdrdir)/ruby/subst.h
 init.o: $(hdrdir)/ruby/thread.h
 init.o: $(hdrdir)/ruby/thread_native.h
 init.o: $(hdrdir)/ruby/util.h
+init.o: $(hdrdir)/ruby/version.h
 init.o: $(top_srcdir)/ccan/check_type/check_type.h
 init.o: $(top_srcdir)/ccan/container_of/container_of.h
 init.o: $(top_srcdir)/ccan/list/list.h
@@ -1227,6 +1232,7 @@ ipsocket.o: $(hdrdir)/ruby/subst.h
 ipsocket.o: $(hdrdir)/ruby/thread.h
 ipsocket.o: $(hdrdir)/ruby/thread_native.h
 ipsocket.o: $(hdrdir)/ruby/util.h
+ipsocket.o: $(hdrdir)/ruby/version.h
 ipsocket.o: $(top_srcdir)/ccan/check_type/check_type.h
 ipsocket.o: $(top_srcdir)/ccan/container_of/container_of.h
 ipsocket.o: $(top_srcdir)/ccan/list/list.h
@@ -1435,6 +1441,7 @@ option.o: $(hdrdir)/ruby/subst.h
 option.o: $(hdrdir)/ruby/thread.h
 option.o: $(hdrdir)/ruby/thread_native.h
 option.o: $(hdrdir)/ruby/util.h
+option.o: $(hdrdir)/ruby/version.h
 option.o: $(top_srcdir)/ccan/check_type/check_type.h
 option.o: $(top_srcdir)/ccan/container_of/container_of.h
 option.o: $(top_srcdir)/ccan/list/list.h
@@ -1643,6 +1650,7 @@ raddrinfo.o: $(hdrdir)/ruby/subst.h
 raddrinfo.o: $(hdrdir)/ruby/thread.h
 raddrinfo.o: $(hdrdir)/ruby/thread_native.h
 raddrinfo.o: $(hdrdir)/ruby/util.h
+raddrinfo.o: $(hdrdir)/ruby/version.h
 raddrinfo.o: $(top_srcdir)/ccan/check_type/check_type.h
 raddrinfo.o: $(top_srcdir)/ccan/container_of/container_of.h
 raddrinfo.o: $(top_srcdir)/ccan/list/list.h
@@ -1851,6 +1859,7 @@ socket.o: $(hdrdir)/ruby/subst.h
 socket.o: $(hdrdir)/ruby/thread.h
 socket.o: $(hdrdir)/ruby/thread_native.h
 socket.o: $(hdrdir)/ruby/util.h
+socket.o: $(hdrdir)/ruby/version.h
 socket.o: $(top_srcdir)/ccan/check_type/check_type.h
 socket.o: $(top_srcdir)/ccan/container_of/container_of.h
 socket.o: $(top_srcdir)/ccan/list/list.h
@@ -2059,6 +2068,7 @@ sockssocket.o: $(hdrdir)/ruby/subst.h
 sockssocket.o: $(hdrdir)/ruby/thread.h
 sockssocket.o: $(hdrdir)/ruby/thread_native.h
 sockssocket.o: $(hdrdir)/ruby/util.h
+sockssocket.o: $(hdrdir)/ruby/version.h
 sockssocket.o: $(top_srcdir)/ccan/check_type/check_type.h
 sockssocket.o: $(top_srcdir)/ccan/container_of/container_of.h
 sockssocket.o: $(top_srcdir)/ccan/list/list.h
@@ -2267,6 +2277,7 @@ tcpserver.o: $(hdrdir)/ruby/subst.h
 tcpserver.o: $(hdrdir)/ruby/thread.h
 tcpserver.o: $(hdrdir)/ruby/thread_native.h
 tcpserver.o: $(hdrdir)/ruby/util.h
+tcpserver.o: $(hdrdir)/ruby/version.h
 tcpserver.o: $(top_srcdir)/ccan/check_type/check_type.h
 tcpserver.o: $(top_srcdir)/ccan/container_of/container_of.h
 tcpserver.o: $(top_srcdir)/ccan/list/list.h
@@ -2475,6 +2486,7 @@ tcpsocket.o: $(hdrdir)/ruby/subst.h
 tcpsocket.o: $(hdrdir)/ruby/thread.h
 tcpsocket.o: $(hdrdir)/ruby/thread_native.h
 tcpsocket.o: $(hdrdir)/ruby/util.h
+tcpsocket.o: $(hdrdir)/ruby/version.h
 tcpsocket.o: $(top_srcdir)/ccan/check_type/check_type.h
 tcpsocket.o: $(top_srcdir)/ccan/container_of/container_of.h
 tcpsocket.o: $(top_srcdir)/ccan/list/list.h
@@ -2683,6 +2695,7 @@ udpsocket.o: $(hdrdir)/ruby/subst.h
 udpsocket.o: $(hdrdir)/ruby/thread.h
 udpsocket.o: $(hdrdir)/ruby/thread_native.h
 udpsocket.o: $(hdrdir)/ruby/util.h
+udpsocket.o: $(hdrdir)/ruby/version.h
 udpsocket.o: $(top_srcdir)/ccan/check_type/check_type.h
 udpsocket.o: $(top_srcdir)/ccan/container_of/container_of.h
 udpsocket.o: $(top_srcdir)/ccan/list/list.h
@@ -2891,6 +2904,7 @@ unixserver.o: $(hdrdir)/ruby/subst.h
 unixserver.o: $(hdrdir)/ruby/thread.h
 unixserver.o: $(hdrdir)/ruby/thread_native.h
 unixserver.o: $(hdrdir)/ruby/util.h
+unixserver.o: $(hdrdir)/ruby/version.h
 unixserver.o: $(top_srcdir)/ccan/check_type/check_type.h
 unixserver.o: $(top_srcdir)/ccan/container_of/container_of.h
 unixserver.o: $(top_srcdir)/ccan/list/list.h
@@ -3099,6 +3113,7 @@ unixsocket.o: $(hdrdir)/ruby/subst.h
 unixsocket.o: $(hdrdir)/ruby/thread.h
 unixsocket.o: $(hdrdir)/ruby/thread_native.h
 unixsocket.o: $(hdrdir)/ruby/util.h
+unixsocket.o: $(hdrdir)/ruby/version.h
 unixsocket.o: $(top_srcdir)/ccan/check_type/check_type.h
 unixsocket.o: $(top_srcdir)/ccan/container_of/container_of.h
 unixsocket.o: $(top_srcdir)/ccan/list/list.h

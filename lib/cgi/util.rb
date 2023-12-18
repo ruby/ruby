@@ -46,6 +46,7 @@ module CGI::Util
     end
     buffer.force_encoding(encoding)
   end
+  alias escape_uri_component escapeURIComponent
 
   # URL-decode a string following RFC 3986 with encoding(optional).
   #   string = CGI.unescapeURIComponent("%27Stop%21%27+said%20Fred")
@@ -58,6 +59,8 @@ module CGI::Util
     str.force_encoding(encoding)
     str.valid_encoding? ? str : str.force_encoding(string.encoding)
   end
+
+  alias unescape_uri_component unescapeURIComponent
 
   # The set of special characters and their escaped values
   TABLE_FOR_ESCAPE_HTML__ = {

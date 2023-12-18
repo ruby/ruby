@@ -18,6 +18,7 @@
             │       │   └── closing_loc: (1,6)-(1,8) = "\":"
             │       ├── value:
             │       │   @ ArrayNode (location: (1,9)-(1,11))
+            │       │   ├── flags: ∅
             │       │   ├── elements: (length: 0)
             │       │   ├── opening_loc: (1,9)-(1,10) = "["
             │       │   └── closing_loc: (1,10)-(1,11) = "]"

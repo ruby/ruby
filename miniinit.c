@@ -49,3 +49,10 @@ Init_enc(void)
 }
 
 #include "mini_builtin.c"
+
+void
+rb_free_loaded_builtin_table(void)
+{
+    if (loaded_builtin_table)
+        st_free_table(loaded_builtin_table);
+}

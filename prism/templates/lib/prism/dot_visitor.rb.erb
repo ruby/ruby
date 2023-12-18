@@ -1,0 +1,186 @@
+require "cgi"
+
+module Prism
+  # This visitor provides the ability to call Node#to_dot, which converts a
+  # subtree into a graphviz dot graph.
+  class DotVisitor < Visitor
+    class Field # :nodoc:
+      attr_reader :name, :value, :port
+
+      def initialize(name, value, port)
+        @name = name
+        @value = value
+        @port = port
+      end
+
+      def to_dot
+        if port
+          "<tr><td align=\"left\" colspan=\"2\" port=\"#{name}\">#{name}</td></tr>"
+        else
+          "<tr><td align=\"left\">#{name}</td><td>#{CGI.escapeHTML(value)}</td></tr>"
+        end
+      end
+    end
+
+    class Table # :nodoc:
+      attr_reader :name, :fields
+
+      def initialize(name)
+        @name = name
+        @fields = []
+      end
+
+      def field(name, value = nil, port: false)
+        fields << Field.new(name, value, port)
+      end
+
+      def to_dot
+        dot = <<~DOT
+          <table border="0" cellborder="1" cellspacing="0" cellpadding="4">
+            <tr><td colspan="2"><b>#{name}</b></td></tr>
+        DOT
+
+        if fields.any?
+          "#{dot}  #{fields.map(&:to_dot).join("\n  ")}\n</table>"
+        else
+          "#{dot}</table>"
+        end
+      end
+    end
+
+    class Digraph # :nodoc:
+      attr_reader :nodes, :waypoints, :edges
+
+      def initialize
+        @nodes = []
+        @waypoints = []
+        @edges = []
+      end
+
+      def node(value)
+        nodes << value
+      end
+
+      def waypoint(value)
+        waypoints << value
+      end
+
+      def edge(value)
+        edges << value
+      end
+
+      def to_dot
+        <<~DOT
+          digraph "Prism" {
+            node [
+              fontname=\"Courier New\"
+              shape=plain
+              style=filled
+              fillcolor=gray95
+            ];
+
+            #{nodes.map { |node| node.gsub(/\n/, "\n  ") }.join("\n  ")}
+            node [shape=point];
+            #{waypoints.join("\n  ")}
+
+            #{edges.join("\n  ")}
+          }
+        DOT
+      end
+    end
+
+    private_constant :Field, :Table, :Digraph
+
+    # The digraph that is being built.
+    attr_reader :digraph
+
+    # Initialize a new dot visitor.
+    def initialize
+      @digraph = Digraph.new
+    end
+
+    # Convert this visitor into a graphviz dot graph string.
+    def to_dot
+      digraph.to_dot
+    end
+    <%- nodes.each do |node| -%>
+
+    # Visit a <%= node.name %> node.
+    def visit_<%= node.human %>(node)
+      table = Table.new("<%= node.name %>")
+      id = node_id(node)
+      <%- node.fields.each do |field| -%>
+
+      # <%= field.name %>
+      <%- case field -%>
+      <%- when Prism::NodeField -%>
+      table.field("<%= field.name %>", port: true)
+      digraph.edge("#{id}:<%= field.name %> -> #{node_id(node.<%= field.name %>)};")
+      <%- when Prism::OptionalNodeField -%>
+      unless (<%= field.name %> = node.<%= field.name %>).nil?
+        table.field("<%= field.name %>", port: true)
+        digraph.edge("#{id}:<%= field.name %> -> #{node_id(<%= field.name %>)};")
+      end
+      <%- when Prism::NodeListField -%>
+      if node.<%= field.name %>.any?
+        table.field("<%= field.name %>", port: true)
+
+        waypoint = "#{id}_<%= field.name %>"
+        digraph.waypoint("#{waypoint};")
+
+        digraph.edge("#{id}:<%= field.name %> -> #{waypoint};")
+        node.<%= field.name %>.each { |child| digraph.edge("#{waypoint} -> #{node_id(child)};") }
+      else
+        table.field("<%= field.name %>", "[]")
+      end
+      <%- when Prism::StringField, Prism::ConstantField, Prism::OptionalConstantField, Prism::UInt8Field, Prism::UInt32Field, Prism::ConstantListField -%>
+      table.field("<%= field.name %>", node.<%= field.name %>.inspect)
+      <%- when Prism::LocationField -%>
+      table.field("<%= field.name %>", location_inspect(node.<%= field.name %>))
+      <%- when Prism::OptionalLocationField -%>
+      unless (<%= field.name %> = node.<%= field.name %>).nil?
+        table.field("<%= field.name %>", location_inspect(<%= field.name %>))
+      end
+      <%- when Prism::FlagsField -%>
+      <%- flag = flags.find { |flag| flag.name == field.kind }.tap { |flag| raise "Expected to find #{field.kind}" unless flag } -%>
+      table.field("<%= field.name %>", <%= flag.human %>_inspect(node))
+      <%- else -%>
+      <%- raise -%>
+      <%- end -%>
+      <%- end -%>
+
+      digraph.nodes << <<~DOT
+        #{id} [
+          label=<#{table.to_dot.gsub(/\n/, "\n  ")}>
+        ];
+      DOT
+
+      super
+    end
+    <%- end -%>
+
+    private
+
+    # Generate a unique node ID for a node throughout the digraph.
+    def node_id(node)
+      "Node_#{node.object_id}"
+    end
+
+    # Inspect a location to display the start and end line and column numbers.
+    def location_inspect(location)
+      "(#{location.start_line},#{location.start_column})-(#{location.end_line},#{location.end_column})"
+    end
+    <%- flags.each do |flag| -%>
+
+    # Inspect a node that has <%= flag.human %> flags to display the flags as a
+    # comma-separated list.
+    def <%= flag.human %>_inspect(node)
+      flags = []
+      <%- flag.values.each do |value| -%>
+      flags << "<%= value.name.downcase %>" if node.<%= value.name.downcase %>?
+      <%- end -%>
+      flags.join(", ")
+    end
+    <%- end -%>
+  end
+end

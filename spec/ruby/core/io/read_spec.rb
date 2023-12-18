@@ -299,6 +299,32 @@ describe "IO#read" do
     @io.read(10, buf).should == nil
 
     buf.should == ''
+
+    buf = 'non-empty string'
+
+    @io.read(nil, buf).should == ""
+
+    buf.should == ''
+
+    buf = 'non-empty string'
+
+    @io.read(0, buf).should == ""
+
+    buf.should == ''
+  end
+
+  it "raise FrozenError if the output buffer is frozen" do
+    @io.read
+    -> { @io.read(0, 'frozen-string'.freeze) }.should raise_error(FrozenError)
+    -> { @io.read(1, 'frozen-string'.freeze) }.should raise_error(FrozenError)
+    -> { @io.read(nil, 'frozen-string'.freeze) }.should raise_error(FrozenError)
+  end
+
+  ruby_bug "", ""..."3.3" do
+    it "raise FrozenError if the output buffer is frozen (2)" do
+      @io.read
+      -> { @io.read(1, ''.freeze) }.should raise_error(FrozenError)
+    end
   end
 
   it "consumes zero bytes when reading zero bytes" do

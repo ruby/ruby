@@ -130,43 +130,8 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
   end
 
   def test_user_install_disabled_read_only
-    @spec = quick_gem "a" do |spec|
-      util_make_exec spec
-    end
-
-    util_build_gem @spec
-    @gem = @spec.cache_file
-
-    if Gem.win_platform?
-      pend("test_user_install_disabled_read_only test skipped on MS Windows")
-    elsif Process.uid.zero?
-      pend("test_user_install_disabled_read_only test skipped in root privilege")
-    else
-      @cmd.handle_options %w[--no-user-install]
-
-      refute @cmd.options[:user_install]
-
-      FileUtils.chmod 0o755, @userhome
-      FileUtils.chmod 0o000, @gemhome
-
-      Gem.use_paths @gemhome, @userhome
-
-      assert_raise(Gem::FilePermissionError) do
-        Gem::Installer.at(@gem, @cmd.options).install
-      end
-    end
-  ensure
-    FileUtils.chmod 0o755, @gemhome
-  end
-
-  def test_auto_install_dir_unless_gem_home_writable
-    if Process.uid.zero?
-      pend("test_auto_install_dir_unless_gem_home_writable test skipped in root privilege")
-      return
-    end
-
-    orig_gem_home = ENV["GEM_HOME"]
-    ENV.delete("GEM_HOME")
+    pend "skipped on MS Windows (chmod has no effect)" if Gem.win_platform?
+    pend "skipped in root privilege" if Process.uid.zero?
 
     @spec = quick_gem "a" do |spec|
       util_make_exec spec
@@ -175,19 +140,20 @@ class TestGemInstallUpdateOptions < Gem::InstallerTestCase
     util_build_gem @spec
     @gem = @spec.cache_file
 
-    @cmd.handle_options %w[]
+    @cmd.handle_options %w[--no-user-install]
 
-    assert_not_equal Gem.paths.home, Gem.user_dir
+    refute @cmd.options[:user_install]
 
     FileUtils.chmod 0o755, @userhome
     FileUtils.chmod 0o000, @gemhome
 
-    Gem.use_paths nil, @userhome
+    Gem.use_paths @gemhome, @userhome
 
-    assert_equal Gem.paths.home, Gem.user_dir
+    assert_raise(Gem::FilePermissionError) do
+      Gem::Installer.at(@gem, @cmd.options).install
+    end
   ensure
     FileUtils.chmod 0o755, @gemhome
-    ENV["GEM_HOME"] = orig_gem_home if orig_gem_home
   end
 
   def test_vendor

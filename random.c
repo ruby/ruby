@@ -157,6 +157,12 @@ rand_start(rb_random_mt_t *r)
 
 static rb_ractor_local_key_t default_rand_key;
 
+void
+rb_free_default_rand_key(void)
+{
+    xfree(default_rand_key);
+}
+
 static void
 default_rand_mark(void *ptr)
 {

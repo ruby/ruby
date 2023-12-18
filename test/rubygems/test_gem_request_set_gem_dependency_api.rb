@@ -90,7 +90,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_git
-    @gda.gem "a", :git => "git/a"
+    @gda.gem "a", git: "git/a"
 
     assert_equal [dep("a")], @set.dependencies
 
@@ -102,7 +102,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_bitbucket
-    @gda.gem "a", :bitbucket => "example/repository"
+    @gda.gem "a", bitbucket: "example/repository"
 
     assert_equal [dep("a")], @set.dependencies
 
@@ -115,7 +115,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_bitbucket_expand_path
-    @gda.gem "a", :bitbucket => "example"
+    @gda.gem "a", bitbucket: "example"
 
     assert_equal [dep("a")], @set.dependencies
 
@@ -129,7 +129,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
   def test_gem_git_branch
     _, err = capture_output do
-      @gda.gem "a", :git => "git/a", :branch => "other", :tag => "v1"
+      @gda.gem "a", git: "git/a", branch: "other", tag: "v1"
     end
     expected = "Gem dependencies file gem.deps.rb includes git reference for both ref/branch and tag but only ref/branch is used."
     assert_match expected, err
@@ -140,7 +140,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_git_gist
-    @gda.gem "a", :gist => "a"
+    @gda.gem "a", gist: "a"
 
     assert_equal [dep("a")], @set.dependencies
 
@@ -150,7 +150,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
   def test_gem_git_ref
     _, err = capture_output do
-      @gda.gem "a", :git => "git/a", :ref => "abcd123", :branch => "other"
+      @gda.gem "a", git: "git/a", ref: "abcd123", branch: "other"
     end
     expected = "Gem dependencies file gem.deps.rb includes git reference for both ref and branch but only ref is used."
     assert_match expected, err
@@ -161,7 +161,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_git_submodules
-    @gda.gem "a", :git => "git/a", :submodules => true
+    @gda.gem "a", git: "git/a", submodules: true
 
     assert_equal [dep("a")], @set.dependencies
 
@@ -170,7 +170,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_git_tag
-    @gda.gem "a", :git => "git/a", :tag => "v1"
+    @gda.gem "a", git: "git/a", tag: "v1"
 
     assert_equal [dep("a")], @set.dependencies
 
@@ -178,7 +178,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_github
-    @gda.gem "a", :github => "example/repository"
+    @gda.gem "a", github: "example/repository"
 
     assert_equal [dep("a")], @set.dependencies
 
@@ -191,7 +191,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_github_expand_path
-    @gda.gem "a", :github => "example"
+    @gda.gem "a", github: "example"
 
     assert_equal [dep("a")], @set.dependencies
 
@@ -204,7 +204,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_group
-    @gda.gem "a", :group => :test
+    @gda.gem "a", group: :test
 
     assert_equal [dep("a")], @set.dependencies
   end
@@ -212,7 +212,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   def test_gem_group_without
     @gda.without_groups << :test
 
-    @gda.gem "a", :group => :test
+    @gda.gem "a", group: :test
 
     assert_empty @set.dependencies
 
@@ -222,7 +222,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_groups
-    @gda.gem "a", :groups => [:test, :development]
+    @gda.gem "a", groups: [:test, :development]
 
     assert_equal [dep("a")], @set.dependencies
   end
@@ -230,7 +230,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   def test_gem_path
     name, version, directory = vendor_gem
 
-    @gda.gem name, :path => directory
+    @gda.gem name, path: directory
 
     assert_equal [dep(name)], @set.dependencies
 
@@ -248,7 +248,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     Gem.win_platform = false
 
     with_engine_version "ruby", "2.0.0" do
-      @gda.gem "a", :platforms => :ruby
+      @gda.gem "a", platforms: :ruby
 
       refute_empty @set.dependencies
     end
@@ -263,7 +263,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     with_engine_version "ruby", "2.0.0" do
       set = Gem::RequestSet.new
       gda = Gem::RequestSet::GemDependencyAPI.new set, "gem.deps.rb"
-      gda.gem "a", :platforms => :ruby
+      gda.gem "a", platforms: :ruby
 
       refute_empty set.dependencies
     end
@@ -271,7 +271,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     with_engine_version "rbx", "2.0.0" do
       set = Gem::RequestSet.new
       gda = Gem::RequestSet::GemDependencyAPI.new set, "gem.deps.rb"
-      gda.gem "a", :platforms => :ruby
+      gda.gem "a", platforms: :ruby
 
       refute_empty set.dependencies
     end
@@ -279,7 +279,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     with_engine_version "truffleruby", "2.0.0" do
       set = Gem::RequestSet.new
       gda = Gem::RequestSet::GemDependencyAPI.new set, "gem.deps.rb"
-      gda.gem "a", :platforms => :ruby
+      gda.gem "a", platforms: :ruby
 
       refute_empty set.dependencies
     end
@@ -287,7 +287,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     with_engine_version "jruby", "1.7.6" do
       set = Gem::RequestSet.new
       gda = Gem::RequestSet::GemDependencyAPI.new set, "gem.deps.rb"
-      gda.gem "a", :platforms => :ruby
+      gda.gem "a", platforms: :ruby
 
       assert_empty set.dependencies
     end
@@ -297,7 +297,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     with_engine_version "ruby", "2.0.0" do
       set = Gem::RequestSet.new
       gda = Gem::RequestSet::GemDependencyAPI.new set, "gem.deps.rb"
-      gda.gem "a", :platforms => :ruby
+      gda.gem "a", platforms: :ruby
 
       assert_empty set.dependencies
     end
@@ -307,13 +307,13 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
   def test_gem_platforms_engine
     with_engine_version "jruby", "1.7.6" do
-      @gda.gem "a", :platforms => :mri
+      @gda.gem "a", platforms: :mri
 
       assert_empty @set.dependencies
     end
 
     with_engine_version "truffleruby", "1.2.3" do
-      @gda.gem "a", :platforms => :mri
+      @gda.gem "a", platforms: :mri
 
       assert_empty @set.dependencies
     end
@@ -326,13 +326,13 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     with_engine_version "maglev", "1.0.0" do
       set = Gem::RequestSet.new
       gda = Gem::RequestSet::GemDependencyAPI.new set, "gem.deps.rb"
-      gda.gem "a", :platforms => :ruby
+      gda.gem "a", platforms: :ruby
 
       refute_empty set.dependencies
 
       set = Gem::RequestSet.new
       gda = Gem::RequestSet::GemDependencyAPI.new set, "gem.deps.rb"
-      gda.gem "a", :platforms => :maglev
+      gda.gem "a", platforms: :maglev
 
       refute_empty set.dependencies
     end
@@ -344,13 +344,13 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     with_engine_version "truffleruby", "1.0.0" do
       set = Gem::RequestSet.new
       gda = Gem::RequestSet::GemDependencyAPI.new set, "gem.deps.rb"
-      gda.gem "a", :platforms => :truffleruby
+      gda.gem "a", platforms: :truffleruby
 
       refute_empty set.dependencies
 
       set = Gem::RequestSet.new
       gda = Gem::RequestSet::GemDependencyAPI.new set, "gem.deps.rb"
-      gda.gem "a", :platforms => :maglev
+      gda.gem "a", platforms: :maglev
 
       assert_empty set.dependencies
     end
@@ -361,7 +361,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     Gem.win_platform = false
 
     with_engine_version "ruby", "2.0.0" do
-      @gda.gem "a", :platforms => [:mswin, :jruby]
+      @gda.gem "a", platforms: [:mswin, :jruby]
 
       assert_empty @set.dependencies
     end
@@ -374,7 +374,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     Gem.win_platform = false
 
     with_engine_version "ruby", "2.0.0" do
-      @gda.gem "a", :platforms => :jruby, :platform => :ruby
+      @gda.gem "a", platforms: :jruby, platform: :ruby
 
       refute_empty @set.dependencies
     end
@@ -384,7 +384,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
   def test_gem_platforms_version
     with_engine_version "ruby", "2.0.0" do
-      @gda.gem "a", :platforms => :ruby_18
+      @gda.gem "a", platforms: :ruby_18
 
       assert_empty @set.dependencies
     end
@@ -392,15 +392,15 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
   def test_gem_platforms_unknown
     e = assert_raise ArgumentError do
-      @gda.gem "a", :platforms => :unknown
+      @gda.gem "a", platforms: :unknown
     end
 
     assert_equal "unknown platform :unknown", e.message
   end
 
   def test_gem_requires
-    @gda.gem "a", :require => %w[b c]
-    @gda.gem "d", :require => "e"
+    @gda.gem "a", require: %w[b c]
+    @gda.gem "d", require: "e"
 
     assert_equal [dep("a"), dep("d")], @set.dependencies
 
@@ -409,7 +409,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_requires_false
-    @gda.gem "a", :require => false
+    @gda.gem "a", require: false
 
     assert_equal [dep("a")], @set.dependencies
 
@@ -419,7 +419,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   def test_gem_requires_without_group
     @gda.without_groups << :test
 
-    @gda.gem "a", :group => :test
+    @gda.gem "a", group: :test
 
     assert_empty @set.dependencies
 
@@ -447,7 +447,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
   end
 
   def test_gem_requirements_options
-    @gda.gem "c", :git => "https://example/c.git"
+    @gda.gem "c", git: "https://example/c.git"
 
     assert_equal [dep("c")], @set.dependencies
   end
@@ -459,7 +459,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     gda.gem name
 
     e = assert_raise ArgumentError do
-      gda.gem name, :path => directory
+      gda.gem name, path: directory
     end
 
     assert_equal "duplicate source path: #{directory} for gem #{name}",
@@ -467,7 +467,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     gda = Gem::RequestSet::GemDependencyAPI.new @set, nil
     gda.instance_variable_set :@vendor_set, @vendor_set
-    gda.gem name, :path => directory
+    gda.gem name, path: directory
 
     e = assert_raise ArgumentError do
       gda.gem name
@@ -489,7 +489,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
     groups = []
 
     @gda.group :a do
-      groups = @gda.send :gem_group, "a", :group => :b, :groups => [:c, :d]
+      groups = @gda.send :gem_group, "a", group: :b, groups: [:c, :d]
     end
 
     assert_equal [:a, :b, :c, :d], groups.sort_by(&:to_s)
@@ -537,7 +537,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
 
     @gda.without_groups << :other
 
-    @gda.gemspec :development_group => :other
+    @gda.gemspec development_group: :other
 
     assert_equal [dep("a", "= 1"), dep("b", "= 2")], @set.dependencies
 
@@ -569,7 +569,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
       s.add_dependency "c", 3
     end
 
-    @gda.gemspec :name => "b"
+    @gda.gemspec name: "b"
 
     assert_equal [dep("b", "= 2"), dep("c", "= 3")], @set.dependencies
   end
@@ -599,7 +599,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
       s.add_dependency "b", 2
     end
 
-    @gda.gemspec :path => "other"
+    @gda.gemspec path: "other"
 
     assert_equal [dep("a", "= 1"), dep("b", "= 2")], @set.dependencies
   end
@@ -621,7 +621,7 @@ class TestGemRequestSetGemDependencyAPI < Gem::TestCase
       "git://example/#{repo_name}.git"
     end
 
-    @gda.gem "a", :example => "repo"
+    @gda.gem "a", example: "repo"
 
     assert_equal ["git://example/repo.git", nil], @git_set.repositories["a"]
   end
@@ -762,19 +762,19 @@ end
   def test_ruby_engine
     with_engine_version "jruby", "1.7.6" do
       assert @gda.ruby RUBY_VERSION,
-               :engine => "jruby", :engine_version => "1.7.6"
+               engine: "jruby", engine_version: "1.7.6"
     end
 
     with_engine_version "truffleruby", "1.0.0-rc11" do
       assert @gda.ruby RUBY_VERSION,
-               :engine => "truffleruby", :engine_version => "1.0.0-rc11"
+               engine: "truffleruby", engine_version: "1.0.0-rc11"
     end
   end
 
   def test_ruby_engine_mismatch_engine
     with_engine_version "ruby", "2.0.0" do
       e = assert_raise Gem::RubyVersionMismatch do
-        @gda.ruby RUBY_VERSION, :engine => "jruby", :engine_version => "1.7.4"
+        @gda.ruby RUBY_VERSION, engine: "jruby", engine_version: "1.7.4"
       end
 
       assert_equal "Your Ruby engine is ruby, but your gem.deps.rb requires jruby",
@@ -785,7 +785,7 @@ end
   def test_ruby_engine_mismatch_version
     with_engine_version "jruby", "1.7.6" do
       e = assert_raise Gem::RubyVersionMismatch do
-        @gda.ruby RUBY_VERSION, :engine => "jruby", :engine_version => "1.7.4"
+        @gda.ruby RUBY_VERSION, engine: "jruby", engine_version: "1.7.4"
       end
 
       assert_equal "Your Ruby engine version is jruby 1.7.6, but your gem.deps.rb requires jruby 1.7.4",
@@ -795,7 +795,7 @@ end
 
   def test_ruby_engine_no_engine_version
     e = assert_raise ArgumentError do
-      @gda.ruby RUBY_VERSION, :engine => "jruby"
+      @gda.ruby RUBY_VERSION, engine: "jruby"
     end
 
     assert_equal "You must specify engine_version along with the Ruby engine",

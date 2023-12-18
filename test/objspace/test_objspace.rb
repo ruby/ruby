@@ -141,6 +141,7 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_reachable_objects_during_iteration
+    omit 'flaky on Visual Studio with: [BUG] Unnormalized Fixnum value' if /mswin/ =~ RUBY_PLATFORM
     opts = %w[--disable-gem --disable=frozen-string-literal -robjspace]
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
     begin;
@@ -563,7 +564,7 @@ class TestObjSpace < Test::Unit::TestCase
   end
 
   def test_dump_callinfo_includes_mid
-    assert_in_out_err(%w[-robjspace], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
+    assert_in_out_err(%w[-robjspace --disable-gems], "#{<<-"begin;"}\n#{<<-'end;'}") do |output, error|
       begin;
         class Foo
           def foo
@@ -579,13 +580,13 @@ class TestObjSpace < Test::Unit::TestCase
       end;
       assert_empty error
       assert(output.count > 1)
-      assert_equal 1, output.count { |l| l.include?('"mid":"baz"') }
+      assert_includes output.grep(/"imemo_type":"callinfo"/).join("\n"), '"mid":"baz"'
     end
   end
 
   def test_dump_string_coderange
     assert_includes ObjectSpace.dump("TEST STRING"), '"coderange":"7bit"'
-    unknown = "TEST STRING".dup.force_encoding(Encoding::BINARY)
+    unknown = "TEST STRING".dup.force_encoding(Encoding::UTF_16BE)
     2.times do # ensure that dumping the string doesn't mutate it
       assert_includes ObjectSpace.dump(unknown), '"coderange":"unknown"'
     end

@@ -28,7 +28,7 @@ RSpec.describe "bundle lock with git gems" do
       gem 'foo', :git => "#{lib_path("foo-1.0")}", :branch => "bad"
     G
 
-    bundle "lock --update foo", :env => { "LANG" => "en" }, :raise_on_error => false
+    bundle "lock --update foo", env: { "LANG" => "en" }, raise_on_error: false
 
     expect(err).to include("Revision bad does not exist in the repository")
   end
@@ -55,7 +55,7 @@ RSpec.describe "bundle lock with git gems" do
          #{Bundler::VERSION}
     L
 
-    bundle "install", :raise_on_error => false
+    bundle "install", raise_on_error: false
 
     expect(err).to include("Revision #{"a" * 40} does not exist in the repository")
   end
@@ -75,7 +75,7 @@ RSpec.describe "bundle lock with git gems" do
   it "properly clones a git source locked to an out of date ref" do
     update_git "foo"
 
-    bundle :install, :env => { "BUNDLE_PATH" => "foo" }
+    bundle :install, env: { "BUNDLE_PATH" => "foo" }
     expect(err).to be_empty
   end
 

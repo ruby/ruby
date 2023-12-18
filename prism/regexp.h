@@ -8,7 +8,7 @@
 
 #include "prism/defines.h"
 #include "prism/parser.h"
-#include "prism/enc/pm_encoding.h"
+#include "prism/encoding.h"
 #include "prism/util/pm_memchr.h"
 #include "prism/util/pm_string_list.h"
 #include "prism/util/pm_string.h"
@@ -28,6 +28,6 @@
  * @param encoding The encoding of the source code.
  * @return Whether or not the parsing was successful.
  */
-PRISM_EXPORTED_FUNCTION bool pm_regexp_named_capture_group_names(const uint8_t *source, size_t size, pm_string_list_t *named_captures, bool encoding_changed, pm_encoding_t *encoding);
+PRISM_EXPORTED_FUNCTION bool pm_regexp_named_capture_group_names(const uint8_t *source, size_t size, pm_string_list_t *named_captures, bool encoding_changed, const pm_encoding_t *encoding);
 
 #endif

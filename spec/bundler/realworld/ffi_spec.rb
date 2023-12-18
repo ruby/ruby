@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "loading dynamically linked library on a bundle exec context", :realworld => true do
+RSpec.describe "loading dynamically linked library on a bundle exec context", realworld: true do
   it "passes ENV right after argv in memory" do
     create_file "foo.rb", <<~RUBY
       require 'ffi'

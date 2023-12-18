@@ -18,6 +18,7 @@ module TestIRB
       IRB.init_config(nil)
       IRB.conf[:VERBOSE] = false
       IRB.conf[:PROMPT_MODE] = :SIMPLE
+      IRB.conf[:USE_PAGER] = false
       IRB.conf.merge!(conf)
       input = TestInputMethod.new(lines)
       irb = IRB::Irb.new(IRB::WorkSpace.new(main), input)

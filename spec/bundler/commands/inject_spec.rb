@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "bundle inject", :bundler => "< 3" do
+RSpec.describe "bundle inject", bundler: "< 3" do
   before :each do
     gemfile <<-G
       source "#{file_uri_for(gem_repo1)}"
@@ -36,14 +36,14 @@ RSpec.describe "bundle inject", :bundler => "< 3" do
 
   context "with injected gems already in the Gemfile" do
     it "doesn't add existing gems" do
-      bundle "inject 'rack' '> 0'", :raise_on_error => false
+      bundle "inject 'rack' '> 0'", raise_on_error: false
       expect(err).to match(/cannot specify the same gem twice/i)
     end
   end
 
   context "incorrect arguments" do
     it "fails when more than 2 arguments are passed" do
-      bundle "inject gem_name 1 v", :raise_on_error => false
+      bundle "inject gem_name 1 v", raise_on_error: false
       expect(err).to eq(<<-E.strip)
 ERROR: "bundle inject" was called with arguments ["gem_name", "1", "v"]
 Usage: "bundle inject GEM VERSION"
@@ -108,7 +108,7 @@ Usage: "bundle inject GEM VERSION"
         source "#{file_uri_for(gem_repo1)}"
         gem "rack-obama"
       G
-      bundle "inject 'rack' '> 0'", :raise_on_error => false
+      bundle "inject 'rack' '> 0'", raise_on_error: false
       expect(err).to match(/the lockfile can't be updated because frozen mode is set/)
 
       expect(bundled_app_lock.read).not_to match(/rack-obama/)

@@ -93,7 +93,7 @@ RSpec.describe "installing a gem with native extensions" do
   it "installs correctly from git when multiple gems with extensions share one repository" do
     build_repo2 do
       ["one", "two"].each do |n|
-        build_lib "c_extension_#{n}", "1.0", :path => lib_path("gems/c_extension_#{n}") do |s|
+        build_lib "c_extension_#{n}", "1.0", path: lib_path("gems/c_extension_#{n}") do |s|
           s.extensions = ["ext/extconf.rb"]
           s.write "ext/extconf.rb", <<-E
             require "mkmf"
@@ -122,7 +122,7 @@ RSpec.describe "installing a gem with native extensions" do
           C
         end
       end
-      build_git "gems", :path => lib_path("gems"), :gemspec => false
+      build_git "gems", path: lib_path("gems"), gemspec: false
     end
 
     bundle "config set build.c_extension_one --with-c_extension_one=one"

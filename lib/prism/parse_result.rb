@@ -25,40 +25,50 @@ module Prism
 
     # Perform a byteslice on the source code using the given byte offset and
     # byte length.
-    def slice(offset, length)
-      source.byteslice(offset, length)
+    def slice(byte_offset, length)
+      source.byteslice(byte_offset, length)
     end
 
     # Binary search through the offsets to find the line number for the given
     # byte offset.
-    def line(value)
-      start_line + find_line(value)
+    def line(byte_offset)
+      start_line + find_line(byte_offset)
     end
 
     # Return the byte offset of the start of the line corresponding to the given
     # byte offset.
-    def line_offset(value)
-      offsets[find_line(value)]
+    def line_start(byte_offset)
+      offsets[find_line(byte_offset)]
     end
 
     # Return the column number for the given byte offset.
-    def column(value)
-      value - offsets[find_line(value)]
+    def column(byte_offset)
+      byte_offset - line_start(byte_offset)
+    end
+
+    # Return the character offset for the given byte offset.
+    def character_offset(byte_offset)
+      source.byteslice(0, byte_offset).length
+    end
+
+    # Return the column number in characters for the given byte offset.
+    def character_column(byte_offset)
+      character_offset(byte_offset) - character_offset(line_start(byte_offset))
     end
 
     private
 
     # Binary search through the offsets to find the line number for the given
     # byte offset.
-    def find_line(value)
+    def find_line(byte_offset)
       left = 0
       right = offsets.length - 1
 
       while left <= right
         mid = left + (right - left) / 2
-        return mid if offsets[mid] == value
+        return mid if offsets[mid] == byte_offset
 
-        if offsets[mid] < value
+        if offsets[mid] < byte_offset
           left = mid + 1
         else
           right = mid - 1
@@ -121,9 +131,21 @@ module Prism
       source.slice(start_offset, length)
     end
 
+    # The character offset from the beginning of the source where this location
+    # starts.
+    def start_character_offset
+      source.character_offset(start_offset)
+    end
+
     # The byte offset from the beginning of the source where this location ends.
     def end_offset
       start_offset + length
+    end
+
+    # The character offset from the beginning of the source where this location
+    # ends.
+    def end_character_offset
+      source.character_offset(end_offset)
     end
 
     # The line number where this location starts.
@@ -133,7 +155,7 @@ module Prism
 
     # The content of the line where this location starts before this location.
     def start_line_slice
-      offset = source.line_offset(start_offset)
+      offset = source.line_start(start_offset)
       source.slice(offset, start_offset - offset)
     end
 
@@ -148,10 +170,22 @@ module Prism
       source.column(start_offset)
     end
 
+    # The column number in characters where this location ends from the start of
+    # the line.
+    def start_character_column
+      source.character_column(start_offset)
+    end
+
     # The column number in bytes where this location ends from the start of the
     # line.
     def end_column
       source.column(end_offset)
+    end
+
+    # The column number in characters where this location ends from the start of
+    # the line.
+    def end_character_column
+      source.character_column(end_offset)
     end
 
     # Implement the hash pattern matching interface for Location.
@@ -204,11 +238,6 @@ module Prism
     def deconstruct_keys(keys)
       { location: location }
     end
-
-    # This can only be true for inline comments.
-    def trailing?
-      false
-    end
   end
 
   # InlineComment objects are the most common. They correspond to comments in
@@ -229,18 +258,14 @@ module Prism
   # EmbDocComment objects correspond to comments that are surrounded by =begin
   # and =end.
   class EmbDocComment < Comment
+    # This can only be true for inline comments.
+    def trailing?
+      false
+    end
+
     # Returns a string representation of this comment.
     def inspect
       "#<Prism::EmbDocComment @location=#{location.inspect}>"
-    end
-  end
-
-  # DATAComment objects correspond to comments that are after the __END__
-  # keyword in a source file.
-  class DATAComment < Comment
-    # Returns a string representation of this comment.
-    def inspect
-      "#<Prism::DATAComment @location=#{location.inspect}>"
     end
   end
 
@@ -344,6 +369,11 @@ module Prism
     # The list of magic comments that were encountered during parsing.
     attr_reader :magic_comments
 
+    # An optional location that represents the location of the content after the
+    # __END__ marker. This content is loaded into the DATA constant when the
+    # file being parsed is the main file being executed.
+    attr_reader :data_loc
+
     # The list of errors that were generated during parsing.
     attr_reader :errors
 
@@ -354,10 +384,11 @@ module Prism
     attr_reader :source
 
     # Create a new parse result object with the given values.
-    def initialize(value, comments, magic_comments, errors, warnings, source)
+    def initialize(value, comments, magic_comments, data_loc, errors, warnings, source)
       @value = value
       @comments = comments
       @magic_comments = magic_comments
+      @data_loc = data_loc
       @errors = errors
       @warnings = warnings
       @source = source
@@ -365,7 +396,7 @@ module Prism
 
     # Implement the hash pattern matching interface for ParseResult.
     def deconstruct_keys(keys)
-      { value: value, comments: comments, magic_comments: magic_comments, errors: errors, warnings: warnings }
+      { value: value, comments: comments, magic_comments: magic_comments, data_loc: data_loc, errors: errors, warnings: warnings }
     end
 
     # Returns true if there were no errors during parsing and false if there

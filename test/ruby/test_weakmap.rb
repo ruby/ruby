@@ -237,6 +237,10 @@ class TestWeakMap < Test::Unit::TestCase
     end;
   end
 
+  def test_gc_compact_stress
+    EnvUtil.under_gc_compact_stress { ObjectSpace::WeakMap.new }
+  end
+
   def test_replaced_values_bug_19531
     a = "A".dup
     b = "B".dup

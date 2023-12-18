@@ -112,12 +112,46 @@ RSpec.describe "ruby requirement" do
   end
 
   it "fails gracefully with malformed requirements" do
-    install_gemfile <<-G, :raise_on_error => false
+    install_gemfile <<-G, raise_on_error: false
       source "#{file_uri_for(gem_repo1)}"
       ruby ">= 0", "-.\\0"
       gem "rack"
     G
 
     expect(err).to include("There was an error parsing") # i.e. DSL error, not error template
+  end
+
+  it "allows picking up ruby version from a file" do
+    create_file ".ruby-version", Gem.ruby_version.to_s
+
+    install_gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      ruby file: ".ruby-version"
+      gem "rack"
+    G
+
+    expect(lockfile).to include("RUBY VERSION")
+  end
+
+  it "reads the ruby version file from the right folder when nested Gemfiles are involved" do
+    create_file ".ruby-version", Gem.ruby_version.to_s
+
+    gemfile <<-G
+      source "#{file_uri_for(gem_repo1)}"
+      ruby file: ".ruby-version"
+      gem "rack"
+    G
+
+    nested_dir = bundled_app(".ruby-lsp")
+
+    FileUtils.mkdir nested_dir
+
+    create_file ".ruby-lsp/Gemfile", <<-G
+      eval_gemfile(File.expand_path("../Gemfile", __dir__))
+    G
+
+    bundle "install", dir: nested_dir
+
+    expect(bundled_app(".ruby-lsp/Gemfile.lock").read).to include("RUBY VERSION")
   end
 end

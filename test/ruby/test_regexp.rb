@@ -723,6 +723,12 @@ class TestRegexp < Test::Unit::TestCase
     assert_raise(RegexpError) { Regexp.new("((?<v>))\\g<0>") }
   end
 
+  def test_initialize_from_regex_memory_corruption
+    assert_ruby_status([], <<-'end;')
+      10_000.times { Regexp.new(Regexp.new("(?<name>)")) }
+    end;
+  end
+
   def test_initialize_bool_warning
     assert_warning(/expected true or false as ignorecase/) do
       Regexp.new("foo", :i)
@@ -1928,6 +1934,16 @@ class TestRegexp < Test::Unit::TestCase
   def test_bug_19476 # [Bug #19476]
     assert_equal("123456789".match(/(?:x?\dx?){2,10}/)[0], "123456789")
     assert_equal("123456789".match(/(?:x?\dx?){2,}/)[0], "123456789")
+  end
+
+  def test_encoding_flags_are_preserved_when_initialized_with_another_regexp
+    re = Regexp.new("\u2018hello\u2019".encode("UTF-8"))
+    str = "".encode("US-ASCII")
+
+    assert_nothing_raised do
+      str.match?(re)
+      str.match?(Regexp.new(re))
+    end
   end
 
   def test_bug_19537 # [Bug #19537]

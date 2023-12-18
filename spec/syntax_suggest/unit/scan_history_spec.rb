@@ -5,7 +5,7 @@ require_relative "../spec_helper"
 module SyntaxSuggest
   RSpec.describe ScanHistory do
     it "retains commits" do
-      source = <<~'EOM'
+      source = <<~EOM
         class OH         #  0
           def lol        #  1
             print 'lol   #  2
@@ -42,7 +42,7 @@ module SyntaxSuggest
     end
 
     it "is stashable" do
-      source = <<~'EOM'
+      source = <<~EOM
         class OH         #  0
           def lol        #  1
             print 'lol   #  2
@@ -79,7 +79,7 @@ module SyntaxSuggest
     end
 
     it "doesnt change if you dont't change it" do
-      source = <<~'EOM'
+      source = <<~EOM
         class OH         #  0
           def lol        #  1
             print 'lol   #  2

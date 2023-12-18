@@ -51,7 +51,10 @@ DATA.each_line {|s|
     next
   end
   h[name] = default_value
-  COMMENTS[name] = comment
+  if comment
+    # Stop unintentional references
+    COMMENTS[name] = comment.gsub(/\b(Data|Kernel|Process|Set|Socket|Time)\b/, '\\\\\\&')
+  end
 }
 DEFS = h.to_a
 
@@ -423,8 +426,8 @@ AF_ISDN	nil	Integrated Services Digital Network
 PF_ISDN	nil	Integrated Services Digital Network
 AF_NATM	nil	Native ATM access
 PF_NATM	nil	Native ATM access
-AF_SYSTEM
-PF_SYSTEM
+AF_SYSTEM	nil	Kernel event messages
+PF_SYSTEM	nil	Kernel event messages
 AF_NETBIOS	nil	NetBIOS
 PF_NETBIOS	nil	NetBIOS
 AF_PPP	nil	Point-to-Point Protocol
@@ -440,8 +443,8 @@ PF_PACKET	nil	Direct link-layer access
 
 AF_E164	nil	CCITT (ITU-T) E.164 recommendation
 PF_XTP	nil	eXpress Transfer Protocol
-PF_RTIP
-PF_PIP
+PF_RTIP	nil	Help Identify RTIP packets
+PF_PIP	nil	Help Identify PIP packets
 AF_KEY	nil	Key management protocol, originally developed for usage with IPsec
 PF_KEY	nil	Key management protocol, originally developed for usage with IPsec
 AF_NETLINK	nil	Kernel user interface device

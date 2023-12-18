@@ -11,7 +11,7 @@ class Gem::Commands::DependencyCommand < Gem::Command
   def initialize
     super "dependency",
           "Show the dependencies of an installed gem",
-          :version => Gem::Requirement.default, :domain => :local
+          version: Gem::Requirement.default, domain: :local
 
     add_version_option
     add_platform_option

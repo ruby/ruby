@@ -7,7 +7,7 @@ RSpec.describe "bundle remove" do
         source "#{file_uri_for(gem_repo1)}"
       G
 
-      bundle "remove", :raise_on_error => false
+      bundle "remove", raise_on_error: false
 
       expect(err).to include("Please specify gems to remove.")
     end
@@ -43,7 +43,7 @@ RSpec.describe "bundle remove" do
     end
   end
 
-  context "when --install flag is specified", :bundler => "< 3" do
+  context "when --install flag is specified", bundler: "< 3" do
     it "removes gems from .bundle" do
       gemfile <<-G
         source "#{file_uri_for(gem_repo1)}"
@@ -109,7 +109,7 @@ RSpec.describe "bundle remove" do
           source "#{file_uri_for(gem_repo1)}"
         G
 
-        bundle "remove rack", :raise_on_error => false
+        bundle "remove rack", raise_on_error: false
 
         expect(err).to include("`rack` is not specified in #{bundled_app_gemfile} so it could not be removed.")
       end
@@ -146,7 +146,7 @@ RSpec.describe "bundle remove" do
           gem "rspec"
         G
 
-        bundle "remove rails rack minitest", :raise_on_error => false
+        bundle "remove rails rack minitest", raise_on_error: false
 
         expect(err).to include("`rack` is not specified in #{bundled_app_gemfile} so it could not be removed.")
         expect(gemfile).to eq <<~G
@@ -373,7 +373,7 @@ RSpec.describe "bundle remove" do
           gem "rack"; gem "rails"
         G
 
-        bundle "remove rails", :raise_on_error => false
+        bundle "remove rails", raise_on_error: false
 
         expect(err).to include("Gems could not be removed. rack (>= 0) would also have been removed.")
         expect(gemfile).to eq <<~G
@@ -385,7 +385,7 @@ RSpec.describe "bundle remove" do
 
     context "when some gems could not be removed" do
       it "shows warning for gems not removed and success for those removed" do
-        install_gemfile <<-G, :raise_on_error => false
+        install_gemfile <<-G, raise_on_error: false
           source "#{file_uri_for(gem_repo1)}"
           gem"rack"
           gem"rspec"
@@ -491,7 +491,7 @@ RSpec.describe "bundle remove" do
           eval_gemfile "Gemfile-other"
         G
 
-        bundle "remove rack", :raise_on_error => false
+        bundle "remove rack", raise_on_error: false
 
         expect(err).to include("`rack` is not specified in #{bundled_app_gemfile} so it could not be removed.")
       end
@@ -510,7 +510,7 @@ RSpec.describe "bundle remove" do
           gem "rack"
         G
 
-        bundle "remove rack", :raise_on_error => false
+        bundle "remove rack", raise_on_error: false
 
         expect(out).to include("rack was removed.")
         expect(err).to include("`rack` is not specified in #{bundled_app("Gemfile-other")} so it could not be removed.")
@@ -535,7 +535,7 @@ RSpec.describe "bundle remove" do
           gem "rack"
         G
 
-        bundle "remove rack", :raise_on_error => false
+        bundle "remove rack", raise_on_error: false
 
         expect(out).to include("rack was removed.")
         expect(err).to include("Gems could not be removed. rails (>= 0) would also have been removed.")
@@ -560,7 +560,7 @@ RSpec.describe "bundle remove" do
           gem "rails"; gem "rack"
         G
 
-        bundle "remove rack", :raise_on_error => false
+        bundle "remove rack", raise_on_error: false
 
         expect(err).to include("Gems could not be removed. rails (>= 0) would also have been removed.")
         expect(bundled_app("Gemfile-other").read).to include("gem \"rack\"")
@@ -634,7 +634,7 @@ RSpec.describe "bundle remove" do
 
   context "with gemspec" do
     it "should not remove the gem" do
-      build_lib("foo", :path => tmp.join("foo")) do |s|
+      build_lib("foo", path: tmp.join("foo")) do |s|
         s.write("foo.gemspec", "")
         s.add_dependency "rack"
       end

@@ -30,7 +30,6 @@ require "fileutils"
 require "optparse"
 
 module FileUtils
-#  @fileutils_label = ""
   @fileutils_output = $stdout
 end
 
@@ -413,7 +412,7 @@ end
 
 module UN # :nodoc:
 
-  VERSION = "0.2.1"
+  VERSION = "0.3.0"
 
   module_function
   def help(argv, output: $stdout)

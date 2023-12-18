@@ -24,9 +24,9 @@ module Spec
       gem_load_activate_and_possibly_install(gem_name, bin_container)
     end
 
-    def gem_require(gem_name)
+    def gem_require(gem_name, entrypoint)
       gem_activate(gem_name)
-      require gem_name
+      require entrypoint
     end
 
     def test_setup

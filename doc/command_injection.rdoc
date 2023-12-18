@@ -1,4 +1,4 @@
-== Command Injection
+= Command Injection
 
 Some Ruby core methods accept string data
 that includes text to be executed as a system command.

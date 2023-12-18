@@ -1841,17 +1841,15 @@ time_mark(void *ptr)
     rb_gc_mark(tobj->vtm.zone);
 }
 
-static size_t
-time_memsize(const void *tobj)
-{
-    return sizeof(struct time_object);
-}
-
 static const rb_data_type_t time_data_type = {
     "time",
-    {time_mark, RUBY_TYPED_DEFAULT_FREE, time_memsize,},
+    {
+        time_mark,
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL, // No external memory to report,
+    },
     0, 0,
-    (RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_WB_PROTECTED),
+    (RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_FROZEN_SHAREABLE | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE),
 };
 
 static VALUE
@@ -2250,10 +2248,12 @@ extract_time(VALUE time)
     } while (0)
 
     if (rb_typeddata_is_kind_of(time, &time_data_type)) {
-        struct time_object *tobj = DATA_PTR(time);
+        struct time_object *tobj = RTYPEDDATA_GET_DATA(time);
 
         time_gmtime(time); /* ensure tm got */
         t = rb_time_unmagnify(tobj->timew);
+
+        RB_GC_GUARD(time);
     }
     else if (RB_TYPE_P(time, T_STRUCT)) {
 #define AREF(x) rb_struct_aref(time, ID2SYM(id_##x))
@@ -2291,13 +2291,15 @@ extract_vtm(VALUE time, VALUE orig_time, struct time_object *orig_tobj, VALUE su
     } while (0)
 
     if (rb_typeddata_is_kind_of(time, &time_data_type)) {
-        struct time_object *tobj = DATA_PTR(time);
+        struct time_object *tobj = RTYPEDDATA_GET_DATA(time);
 
         time_get_tm(time, tobj);
         time_set_vtm(orig_time, orig_tobj, tobj->vtm);
         t = rb_time_unmagnify(tobj->timew);
         if (TZMODE_FIXOFF_P(tobj) && vtm->utc_offset != INT2FIX(0))
             t = wadd(t, v2w(vtm->utc_offset));
+
+        RB_GC_GUARD(time);
     }
     else if (RB_TYPE_P(time, T_STRUCT)) {
 #define AREF(x) rb_struct_aref(time, ID2SYM(id_##x))
@@ -2337,7 +2339,7 @@ static int
 zone_timelocal(VALUE zone, VALUE time)
 {
     VALUE utc, tm;
-    struct time_object *tobj = DATA_PTR(time);
+    struct time_object *tobj = RTYPEDDATA_GET_DATA(time);
     wideval_t t, s;
 
     t = rb_time_unmagnify(tobj->timew);
@@ -2354,6 +2356,9 @@ zone_timelocal(VALUE zone, VALUE time)
     time_set_timew(time, tobj, s);
 
     zone_set_dst(zone, tobj, tm);
+
+    RB_GC_GUARD(time);
+
     return 1;
 }
 
@@ -2361,7 +2366,7 @@ static int
 zone_localtime(VALUE zone, VALUE time)
 {
     VALUE local, tm, subsecx;
-    struct time_object *tobj = DATA_PTR(time);
+    struct time_object *tobj = RTYPEDDATA_GET_DATA(time);
     wideval_t t, s;
 
     split_second(tobj->timew, &t, &subsecx);
@@ -2374,6 +2379,9 @@ zone_localtime(VALUE zone, VALUE time)
     tobj->vtm.tm_got = 1;
     zone_set_offset(zone, tobj, s, t);
     zone_set_dst(zone, tobj, tm);
+
+    RB_GC_GUARD(time);
+
     return 1;
 }
 
@@ -2702,7 +2710,7 @@ time_new_timew(VALUE klass, wideval_t timew)
     VALUE time = time_s_alloc(klass);
     struct time_object *tobj;
 
-    tobj = DATA_PTR(time);	/* skip type check */
+    tobj = RTYPEDDATA_GET_DATA(time);	/* skip type check */
     TZMODE_SET_LOCALTIME(tobj);
     time_set_timew(time, tobj, timew);
 
@@ -3576,7 +3584,7 @@ tmcmp(struct tm *a, struct tm *b)
  *   Time.utc(year, month = 1, mday = 1, hour = 0, min = 0, sec = 0, usec = 0) -> new_time
  *   Time.utc(sec, min, hour, mday, month, year, dummy, dummy, dummy, dummy) -> new_time
  *
- * Returns a new \Time object based the on given arguments,
+ * Returns a new +Time+ object based the on given arguments,
  * in the UTC timezone.
  *
  * With one to seven arguments given,
@@ -3654,7 +3662,7 @@ tmcmp(struct tm *a, struct tm *b)
  *   # => [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
  *   Time.utc(*a) # => 0005-04-03 02:01:00 UTC
  *
- * This form is useful for creating a \Time object from a 10-element
+ * This form is useful for creating a +Time+ object from a 10-element
  * array returned by Time.to_a:
  *
  *   t = Time.new(2000, 1, 2, 3, 4, 5, 6) # => 2000-01-02 03:04:05 +000006
@@ -3685,7 +3693,7 @@ time_s_mkutc(int argc, VALUE *argv, VALUE klass)
  *   Time.local(year, month = 1, mday = 1, hour = 0, min = 0, sec = 0, usec = 0) -> new_time
  *   Time.local(sec, min, hour, mday, month, year, dummy, dummy, dummy, dummy) -> new_time
  *
- * Like Time.utc, except that the returned \Time object
+ * Like Time.utc, except that the returned +Time+ object
  * has the local timezone, not the UTC timezone:
  *
  *   # With seven arguments.
@@ -3914,7 +3922,7 @@ time_cmp(VALUE time1, VALUE time2)
  *   eql?(other_time)
  *
  * Returns +true+ if +self+ and +other_time+ are
- * both \Time objects with the exact same time value.
+ * both +Time+ objects with the exact same time value.
  */
 
 static VALUE
@@ -4054,20 +4062,20 @@ time_zonelocal(VALUE time, VALUE off)
  *  With no argument given:
  *
  *  - Returns +self+ if +self+ is a local time.
- *  - Otherwise returns a new \Time in the user's local timezone:
+ *  - Otherwise returns a new +Time+ in the user's local timezone:
  *
  *      t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
  *      t.localtime                         # => 2000-01-01 14:15:01 -0600
  *
  *  With argument +zone+ given,
- *  returns the new \Time object created by converting
+ *  returns the new +Time+ object created by converting
  *  +self+ to the given time zone:
  *
  *    t = Time.utc(2000, 1, 1, 20, 15, 1) # => 2000-01-01 20:15:01 UTC
  *    t.localtime("-09:00")               # => 2000-01-01 11:15:01 -0900
  *
  *  For forms of argument +zone+, see
- *  {Timezone Specifiers}[rdoc-ref:timezones.rdoc].
+ *  {Timezone Specifiers}[rdoc-ref:Time@Timezone+Specifiers].
  *
  */
 
@@ -4094,7 +4102,7 @@ time_localtime_m(int argc, VALUE *argv, VALUE time)
  *    t.utc              # => 2000-01-01 06:00:00 UTC
  *    t.utc?             # => true
  *
- *  Related: Time#getutc (returns a new converted \Time object).
+ *  Related: Time#getutc (returns a new converted +Time+ object).
  */
 
 static VALUE
@@ -4159,7 +4167,7 @@ time_fixoff(VALUE time)
  *  call-seq:
  *    getlocal(zone = nil) -> new_time
  *
- *  Returns a new \Time object representing the value of +self+
+ *  Returns a new +Time+ object representing the value of +self+
  *  converted to a given timezone;
  *  if +zone+ is +nil+, the local timezone is used:
  *
@@ -4168,7 +4176,7 @@ time_fixoff(VALUE time)
  *    t.getlocal('+12:00')                  # => 2000-01-01 12:00:00 +1200
  *
  *  For forms of argument +zone+, see
- *  {Timezone Specifiers}[rdoc-ref:timezones.rdoc].
+ *  {Timezone Specifiers}[rdoc-ref:Time@Timezone+Specifiers].
  *
  */
 
@@ -4208,7 +4216,7 @@ time_getlocaltime(int argc, VALUE *argv, VALUE time)
  *  call-seq:
  *    getutc -> new_time
  *
- *  Returns a new \Time object representing the value of +self+
+ *  Returns a new +Time+ object representing the value of +self+
  *  converted to the UTC timezone:
  *
  *    local = Time.local(2000) # => 2000-01-01 00:00:00 -0600
@@ -4373,7 +4381,7 @@ time_add(const struct time_object *tobj, VALUE torig, VALUE offset, int sign)
  *  call-seq:
  *    self + numeric -> new_time
  *
- *  Returns a new \Time object whose value is the sum of the numeric value
+ *  Returns a new +Time+ object whose value is the sum of the numeric value
  *  of +self+ and the given +numeric+:
  *
  *    t = Time.new(2000) # => 2000-01-01 00:00:00 -0600
@@ -4401,7 +4409,7 @@ time_plus(VALUE time1, VALUE time2)
  *    self - other_time -> float
  *
  *  When +numeric+ is given,
- *  returns a new \Time object whose value is the difference
+ *  returns a new +Time+ object whose value is the difference
  *  of the numeric value of +self+ and +numeric+:
  *
  *    t = Time.new(2000) # => 2000-01-01 00:00:00 -0600
@@ -4451,7 +4459,7 @@ ndigits_denominator(VALUE ndigits)
  * call-seq:
  *   round(ndigits = 0) -> new_time
  *
- * Returns a new \Time object whose numeric value is that of +self+,
+ * Returns a new +Time+ object whose numeric value is that of +self+,
  * with its seconds value rounded to precision +ndigits+:
  *
  *   t = Time.utc(2010, 3, 30, 5, 43, 25.123456789r)
@@ -4500,7 +4508,7 @@ time_round(int argc, VALUE *argv, VALUE time)
  * call-seq:
  *   floor(ndigits = 0) -> new_time
  *
- * Returns a new \Time object whose numerical value
+ * Returns a new +Time+ object whose numerical value
  * is less than or equal to +self+ with its seconds
  * truncated to precision +ndigits+:
  *
@@ -4545,7 +4553,7 @@ time_floor(int argc, VALUE *argv, VALUE time)
  * call-seq:
  *   ceil(ndigits = 0)   -> new_time
  *
- * Returns a new \Time object whose numerical value
+ * Returns a new +Time+ object whose numerical value
  * is greater than or equal to +self+ with its seconds
  * truncated to precision +ndigits+:
  *
@@ -5007,7 +5015,7 @@ rb_time_utc_offset(VALUE time)
  *    #    [sec, min, hour, day, mon, year, wday, yday, dst?,   zone]
  *
  *  The returned array is suitable for use as an argument to Time.utc or Time.local
- *  to create a new \Time object.
+ *  to create a new +Time+ object.
  *
  */
 
@@ -5561,7 +5569,7 @@ tm_from_time(VALUE klass, VALUE time)
 
     GetTimeval(time, tobj);
     tm = time_s_alloc(klass);
-    ttm = DATA_PTR(tm);
+    ttm = RTYPEDDATA_GET_DATA(tm);
     v = &vtm;
     GMTIMEW(ttm->timew = tobj->timew, v);
     ttm->timew = wsub(ttm->timew, v->subsecx);
@@ -5591,7 +5599,7 @@ tm_initialize(int argc, VALUE *argv, VALUE time)
     if (rb_check_arity(argc, 1, 7) > 6) argc = 6;
     time_arg(argc, argv, &vtm);
     t = timegmw(&vtm);
-    struct time_object *tobj = DATA_PTR(time);
+    struct time_object *tobj = RTYPEDDATA_GET_DATA(time);
     TZMODE_SET_UTC(tobj);
     time_set_timew(time, tobj, t);
     time_set_vtm(time, tobj, vtm);
@@ -5611,7 +5619,7 @@ tm_to_time(VALUE tm)
 {
     struct time_object *torig = get_timeval(tm);
     VALUE dup = time_s_alloc(rb_cTime);
-    struct time_object *tobj = DATA_PTR(dup);
+    struct time_object *tobj = RTYPEDDATA_GET_DATA(dup);
     *tobj = *torig;
     return dup;
 }

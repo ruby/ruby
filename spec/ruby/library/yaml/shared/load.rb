@@ -1,14 +1,16 @@
-require_relative '../fixtures/common'
 require_relative '../fixtures/strings'
+
+require 'yaml'
 
 describe :yaml_load_safe, shared: true do
   it "returns a document from current io stream when io provided" do
-    File.open($test_file, 'w') do |io|
+    @test_file = tmp("yaml_test_file")
+    File.open(@test_file, 'w') do |io|
       YAML.dump( ['badger', 'elephant', 'tiger'], io )
     end
-    File.open($test_file) { |yf| YAML.send(@method,  yf ) }.should == ['badger', 'elephant', 'tiger']
+    File.open(@test_file) { |yf| YAML.send(@method,  yf ) }.should == ['badger', 'elephant', 'tiger']
   ensure
-    rm_r $test_file
+    rm_r @test_file
   end
 
   it "loads strings" do

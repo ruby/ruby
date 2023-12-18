@@ -74,6 +74,8 @@ thread_sched_wait_events(struct rb_thread_sched *sched, rb_thread_t *th, int fd,
         RB_VM_SAVE_MACHINE_CONTEXT(th);
         setup_ubf(th, ubf_event_waiting, (void *)th);
 
+        RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_SUSPENDED, th);
+
         thread_sched_lock(sched, th);
         {
             if (th->sched.waiting_reason.flags == thread_sched_waiting_none) {
@@ -418,6 +420,7 @@ co_start(struct coroutine_context *from, struct coroutine_context *self)
     thread_sched_add_running_thread(TH_SCHED(th), th);
     thread_sched_unlock(sched, th);
     {
+        RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_RESUMED, th);
         call_thread_start_func_2(th);
     }
     thread_sched_lock(sched, NULL);

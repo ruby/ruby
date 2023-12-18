@@ -32,7 +32,7 @@ module Bundler
         if Bundler.ui.debug?
           Bundler.ui.trace error
         else
-          Bundler.ui.error error.message, :wrap => true
+          Bundler.ui.error error.message, wrap: true
         end
       when Thor::Error
         Bundler.ui.error error.message
@@ -40,7 +40,7 @@ module Bundler
         Bundler.ui.error "\nQuitting..."
         Bundler.ui.trace error
       when Gem::InvalidSpecificationException
-        Bundler.ui.error error.message, :wrap => true
+        Bundler.ui.error error.message, wrap: true
       when SystemExit
       when *[defined?(Java::JavaLang::OutOfMemoryError) && Java::JavaLang::OutOfMemoryError].compact
         Bundler.ui.error "\nYour JVM has run out of memory, and Bundler cannot continue. " \

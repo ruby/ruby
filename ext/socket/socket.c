@@ -1313,7 +1313,7 @@ sock_s_getnameinfo(int argc, VALUE *argv, VALUE _)
     saved_errno = errno;
     if (res) rb_freeaddrinfo(res);
     errno = saved_errno;
-    rsock_raise_socket_error("getnameinfo", error);
+    rsock_raise_resolution_error("getnameinfo", error);
 
     UNREACHABLE_RETURN(Qnil);
 }

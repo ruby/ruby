@@ -2,7 +2,7 @@
 #
 # = drb/drb.rb
 #
-# Distributed Ruby: _dRuby_ version 2.0.4
+# Distributed Ruby: _dRuby_
 #
 # Copyright (c) 1999-2003 Masatoshi SEKI.  You can redistribute it and/or
 # modify it under the same terms as Ruby.
@@ -50,6 +50,7 @@ require 'socket'
 require 'io/wait'
 require 'monitor'
 require_relative 'eq'
+require_relative 'version'
 
 #
 # == Overview

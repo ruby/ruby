@@ -1,4 +1,4 @@
-== Keywords
+= Keywords
 
 The following keywords are used by Ruby.
 

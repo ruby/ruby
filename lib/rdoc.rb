@@ -120,6 +120,17 @@ module RDoc
     end
   end
 
+  ##
+  # Seaches and returns the directory for settings.
+  #
+  # 1. <tt>$HOME/.rdoc</tt> directory, if it exists.
+  # 2. The +rdoc+ directory under the path specified by the
+  #    +XDG_DATA_HOME+ environment variable, if it is set.
+  # 3. <tt>$HOME/.local/share/rdoc</tt> directory.
+  #
+  # Other than the home directory, the containing directory will be
+  # created automatically.
+
   def self.home
     rdoc_dir = begin
                 File.expand_path('~/.rdoc')
@@ -129,6 +140,7 @@ module RDoc
     if File.directory?(rdoc_dir)
       rdoc_dir
     else
+      require 'fileutils'
       begin
         # XDG
         xdg_data_home = ENV["XDG_DATA_HOME"] || File.join(File.expand_path("~"), '.local', 'share')

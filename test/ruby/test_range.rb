@@ -582,6 +582,14 @@ class TestRange < Test::Unit::TestCase
     assert_equal([fmin-2, fmin-3], a)
   end
 
+  def test_reverse_each_for_endless_range
+    assert_raise(TypeError) { (1..).reverse_each {} }
+
+    enum = nil
+    assert_nothing_raised { enum = (1..).reverse_each }
+    assert_raise(TypeError) { enum.each {} }
+  end
+
   def test_reverse_each_for_single_point_range
     fmin = RbConfig::LIMITS['FIXNUM_MIN']
     fmax = RbConfig::LIMITS['FIXNUM_MAX']

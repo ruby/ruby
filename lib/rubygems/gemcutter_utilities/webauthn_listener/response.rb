@@ -2,9 +2,9 @@
 
 ##
 # The WebauthnListener Response class is used by the WebauthnListener to create
-# responses to be sent to the Gem host. It creates a Net::HTTPResponse instance
+# responses to be sent to the Gem host. It creates a Gem::Net::HTTPResponse instance
 # when initialized and can be converted to the appropriate format to be sent by a socket using `to_s`.
-# Net::HTTPResponse instances cannot be directly sent over a socket.
+# Gem::Net::HTTPResponse instances cannot be directly sent over a socket.
 #
 # Types of response classes:
 #   - OkResponse
@@ -60,7 +60,7 @@ module Gem::GemcutterUtilities
       def body; end
 
       def build_http_response
-        response_class = Net::HTTPResponse::CODE_TO_OBJ[code.to_s]
+        response_class = Gem::Net::HTTPResponse::CODE_TO_OBJ[code.to_s]
         @http_response = response_class.new("1.1", code, reason_phrase)
         @http_response.instance_variable_set(:@read, true)
 
