@@ -150,7 +150,7 @@ module Prism
     # def compact_child_nodes: () -> Array[Node]
     def compact_child_nodes
       <%- if node.fields.any? { |field| field.is_a?(Prism::OptionalNodeField) } -%>
-      compact = []
+      compact = [] #: Array[Prism::node]
       <%- node.fields.each do |field| -%>
       <%- case field -%>
       <%- when Prism::NodeField -%>
@@ -179,7 +179,7 @@ module Prism
         when Prism::NodeField, Prism::LocationField then field.name
         when Prism::OptionalNodeField, Prism::NodeListField, Prism::OptionalLocationField then "*#{field.name}"
         end
-      }.compact.join(", ") %>]
+      }.compact.join(", ") %>] #: Array[Prism::node | Location]
     end
 
     # def copy: (**params) -> <%= node.name %>

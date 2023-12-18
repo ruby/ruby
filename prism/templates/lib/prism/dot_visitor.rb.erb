@@ -175,7 +175,7 @@ module Prism
     # Inspect a node that has <%= flag.human %> flags to display the flags as a
     # comma-separated list.
     def <%= flag.human %>_inspect(node)
-      flags = []
+      flags = [] #: Array[String]
       <%- flag.values.each do |value| -%>
       flags << "<%= value.name.downcase %>" if node.<%= value.name.downcase %>?
       <%- end -%>

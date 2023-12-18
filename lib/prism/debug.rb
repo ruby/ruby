@@ -55,7 +55,7 @@ module Prism
       verbose, $VERBOSE = $VERBOSE, nil
 
       begin
-        locals = []
+        locals = [] #: Array[Array[Symbol | Integer]]
         stack = [ISeq.new(RubyVM::InstructionSequence.compile(source).to_a)]
 
         while (iseq = stack.pop)
@@ -96,8 +96,8 @@ module Prism
     # For the given source, parses with prism and returns a list of all of the
     # sets of local variables that were encountered.
     def self.prism_locals(source)
-      locals = []
-      stack = [Prism.parse(source).value]
+      locals = [] #: Array[Array[Symbol | Integer]]
+      stack = [Prism.parse(source).value] #: Array[Prism::node]
 
       while (node = stack.pop)
         case node

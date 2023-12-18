@@ -148,6 +148,8 @@ module Prism
             end
           when LENGTH_MAX
             base + ", as many as possible"
+          else
+            raise
           end
         when UTF8
           "UTF-8 character"

@@ -169,7 +169,7 @@ module Prism
   class ParametersNode < Node
     # Mirrors the Method#parameters method.
     def signature
-      names = []
+      names = [] #: Array[[:req | :opt | :rest | :keyreq | :key | :keyrest | :block, Symbol] | [:rest | :keyrest | :nokey]]
 
       requireds.each do |param|
         names << (param.is_a?(MultiTargetNode) ? [:req] : [:req, param.name])
@@ -184,7 +184,7 @@ module Prism
 
       # Regardless of the order in which the keywords were defined, the required
       # keywords always come first followed by the optional keywords.
-      keyopt = []
+      keyopt = [] #: Array[OptionalKeywordParameterNode]
       keywords.each do |param|
         if param.is_a?(OptionalKeywordParameterNode)
           keyopt << param

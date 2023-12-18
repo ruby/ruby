@@ -103,7 +103,7 @@ module Prism
   # references and store them as references.
   class NodeField < NodeKindField
     def rbs_class
-      ruby_type
+      options[:kind] || "Prism::node"
     end
 
     def rbi_class
@@ -115,7 +115,7 @@ module Prism
   # optionally null. We pass them as references and store them as references.
   class OptionalNodeField < NodeKindField
     def rbs_class
-      "#{ruby_type}?"
+      "#{options[:kind] || "Prism::node"}?"
     end
 
     def rbi_class
@@ -127,7 +127,7 @@ module Prism
   # references and store them directly on the struct.
   class NodeListField < Field
     def rbs_class
-      "Array[Node]"
+      "Array[Prism::node]"
     end
 
     def rbi_class
@@ -549,6 +549,12 @@ module Prism
     "src/token_type.c",
     "rbi/prism.rbi",
     "sig/prism.rbs",
+    "sig/prism/dot_visitor.rbs",
+    "sig/prism/dsl.rbs",
+    "sig/prism/mutation_compiler.rbs",
+    "sig/prism/node.rbs",
+    "sig/prism/ripper_compat.rbs",
+    "sig/prism/visitor.rbs",
   ]
 end
 

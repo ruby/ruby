@@ -120,7 +120,7 @@ module Prism
         comment_start = comment.location.start_offset
         comment_end = comment.location.end_offset
 
-        targets = []
+        targets = [] #: Array[_Target]
         node.comment_targets.map do |value|
           case value
           when StatementsNode
@@ -133,8 +133,8 @@ module Prism
         end
 
         targets.sort_by!(&:start_offset)
-        preceding = nil
-        following = nil
+        preceding = nil #: _Target?
+        following = nil #: _Target?
 
         left = 0
         right = targets.length
