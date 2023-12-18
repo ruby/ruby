@@ -2428,6 +2428,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             }
 
             iseq = rb_iseq_new_main_prism(&input, &options, path);
+            ruby_opt_init(opt);
 
             pm_string_free(&input);
             pm_options_free(&options);
