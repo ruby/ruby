@@ -351,6 +351,29 @@ Executions:
 
 Omitting an optional argument does not raise an error.
 
+==== Argument Abbreviations
+
+Specify an argument list as an Array or a Hash.
+
+  :include: ruby/argument_abbreviation.rb
+
+When an argument is abbreviated, the expanded argument yielded.
+
+Executions:
+
+  $ ruby argument_abbreviation.rb --help
+  Usage: argument_abbreviation [options]
+  Usage: argument_abbreviation [options]
+      -x, --xxx=VALUE                  Argument abbreviations
+      -y, --yyy=VALUE                  Argument abbreviations
+  $ ruby argument_abbreviation.rb --xxx A
+  ["--xxx", "ABC"]
+  $ ruby argument_abbreviation.rb --xxx c
+  argument_abbreviation.rb:9:in `<main>': invalid argument: --xxx c (OptionParser::InvalidArgument)
+  $ ruby argument_abbreviation.rb --yyy a --yyy d
+  ["--yyy", "XYZ"]
+  ["--yyy", "FOO"]
+
 === Argument Values
 
 Permissible argument values may be restricted
