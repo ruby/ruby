@@ -15321,8 +15321,11 @@ Init_IO(void)
     /* Can be raised by IO operations when IO#timeout= is set. */
     rb_eIOTimeoutError = rb_define_class_under(rb_cIO, "TimeoutError", rb_eIOError);
 
+    /* Readable event mask for IO#wait. */
     rb_define_const(rb_cIO, "READABLE", INT2NUM(RUBY_IO_READABLE));
+    /* Writable event mask for IO#wait. */
     rb_define_const(rb_cIO, "WRITABLE", INT2NUM(RUBY_IO_WRITABLE));
+    /* Priority event mask for IO#wait. */
     rb_define_const(rb_cIO, "PRIORITY", INT2NUM(RUBY_IO_PRIORITY));
 
     /* exception to wait for reading. see IO.select. */
