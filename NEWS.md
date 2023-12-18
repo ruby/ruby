@@ -248,6 +248,20 @@ The following bundled gems are updated.
 See GitHub releases like [Logger](https://github.com/ruby/logger/releases) or
 changelog for details of the default gems or bundled gems.
 
+### Prism
+
+* Introduced [the Prism parser](https://github.com/ruby/prism) as a default gem
+    * Prism is a portable, error tolerant, and maintainable recursive descent parser for the Ruby language
+* Prism is production ready and actively maintained, you can use it in place of Ripper
+    * There is [extensive documentation](https://ruby.github.io/prism/) on how to use Prism
+    * Prism is both a C library that will be used internally by CRuby and a Ruby gem that can be used by any tooling which needs to parse Ruby code
+    * Notable methods in the Prism API are:
+        * `Prism.parse(source)` which returns the AST as part of a parse result object
+        * `Prism.parse_comments(source)` which returns the comments
+        * `Prism.parse_success?(source)` which returns true if there are no errors
+* You can make pull requests or issues directly on [the Prism repository](https://github.com/ruby/prism) if you are interested in contributing
+* You can now use `ruby --parser=prism` or `RUBYOPT="--parser=prism"` to experiment with the Prism compiler. Please note that this flag is for debugging only.
+
 ## Supported platforms
 
 ## Compatibility issues
