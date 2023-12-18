@@ -9,7 +9,8 @@ describe :yaml_each_document, shared: true do
   end
 
   it "works on files" do
-    File.open($test_parse_file, "r") do |file|
+    test_parse_file = fixture __FILE__, "test_yaml.yml"
+    File.open(test_parse_file, "r") do |file|
       YAML.send(@method, file) do |doc|
         doc.should == {"project"=>{"name"=>"RubySpec"}}
       end

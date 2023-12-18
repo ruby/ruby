@@ -347,8 +347,6 @@ module TestIRB
 
     def test_show_cmds_display_different_content_when_debugger_is_enabled
       write_ruby <<~'ruby'
-        # disable pager
-        STDIN.singleton_class.define_method(:tty?) { false }
         binding.irb
       ruby
 

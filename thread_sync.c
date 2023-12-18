@@ -1163,8 +1163,9 @@ NORETURN(static VALUE rb_queue_freeze(VALUE self));
  * call-seq:
  *   freeze
  *
- * Raises an exception:
- *   Queue.new.freeze # Raises TypeError (cannot freeze #<Thread::Queue:0x...>)
+ * The queue can't be frozen, so this method raises an exception:
+ *   Thread::Queue.new.freeze # Raises TypeError (cannot freeze #<Thread::Queue:0x...>)
+ *
  */
 static VALUE
 rb_queue_freeze(VALUE self)

@@ -5,14 +5,29 @@ end
 
 class Range
 
-  # Deserializes JSON string by constructing new Range object with arguments
-  # <tt>a</tt> serialized by <tt>to_json</tt>.
+  # See #as_json.
   def self.json_create(object)
     new(*object['a'])
   end
 
-  # Returns a hash, that will be turned into a JSON object and represent this
-  # object.
+  # Methods <tt>Range#as_json</tt> and +Range.json_create+ may be used
+  # to serialize and deserialize a \Range object;
+  # see Marshal[rdoc-ref:Marshal].
+  #
+  # \Method <tt>Range#as_json</tt> serializes +self+,
+  # returning a 2-element hash representing +self+:
+  #
+  #   require 'json/add/range'
+  #   x = (1..4).as_json     # => {"json_class"=>"Range", "a"=>[1, 4, false]}
+  #   y = (1...4).as_json    # => {"json_class"=>"Range", "a"=>[1, 4, true]}
+  #   z = ('a'..'d').as_json # => {"json_class"=>"Range", "a"=>["a", "d", false]}
+  #
+  # \Method +JSON.create+ deserializes such a hash, returning a \Range object:
+  #
+  #   Range.json_create(x) # => 1..4
+  #   Range.json_create(y) # => 1...4
+  #   Range.json_create(z) # => "a".."d"
+  #
   def as_json(*)
     {
       JSON.create_id  => self.class.name,
@@ -20,9 +35,19 @@ class Range
     }
   end
 
-  # Stores class name (Range) with JSON array of arguments <tt>a</tt> which
-  # include <tt>first</tt> (integer), <tt>last</tt> (integer), and
-  # <tt>exclude_end?</tt> (boolean) as JSON string.
+  # Returns a JSON string representing +self+:
+  #
+  #   require 'json/add/range'
+  #   puts (1..4).to_json
+  #   puts (1...4).to_json
+  #   puts ('a'..'d').to_json
+  #
+  # Output:
+  #
+  #   {"json_class":"Range","a":[1,4,false]}
+  #   {"json_class":"Range","a":[1,4,true]}
+  #   {"json_class":"Range","a":["a","d",false]}
+  #
   def to_json(*args)
     as_json.to_json(*args)
   end

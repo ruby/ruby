@@ -1,6 +1,6 @@
-== Encodings
+= Encodings
 
-=== The Basics
+== The Basics
 
 A {character encoding}[https://en.wikipedia.org/wiki/Character_encoding],
 often shortened to _encoding_, is a mapping between:
@@ -30,9 +30,9 @@ Other characters, such as the Euro symbol, are multi-byte:
   s = "\u20ac" # => "€"
   s.bytes      # => [226, 130, 172]
 
-=== The \Encoding \Class
+== The \Encoding \Class
 
-==== \Encoding Objects
+=== \Encoding Objects
 
 Ruby encodings are defined by constants in class \Encoding.
 There can be only one instance of \Encoding for each of these constants.
@@ -43,7 +43,7 @@ There can be only one instance of \Encoding for each of these constants.
   Encoding.list.take(3)
   # => [#<Encoding:ASCII-8BIT>, #<Encoding:UTF-8>, #<Encoding:US-ASCII>]
 
-==== Names and Aliases
+=== Names and Aliases
 
 \Method Encoding#name returns the name of an \Encoding:
 
@@ -78,7 +78,7 @@ because it includes both the names and their aliases.
   Encoding.find("US-ASCII")       # => #<Encoding:US-ASCII>
   Encoding.find("US-ASCII").class # => Encoding
 
-==== Default Encodings
+=== Default Encodings
 
 \Method Encoding.find, above, also returns a default \Encoding
 for each of these special names:
@@ -118,7 +118,7 @@ for each of these special names:
   Encoding.default_internal = 'US-ASCII' # => "US-ASCII"
   Encoding.default_internal              # => #<Encoding:US-ASCII>
 
-==== Compatible Encodings
+=== Compatible Encodings
 
 \Method Encoding.compatible? returns whether two given objects are encoding-compatible
 (that is, whether they can be concatenated);
@@ -132,7 +132,7 @@ returns the \Encoding of the concatenated string, or +nil+ if incompatible:
   s1 = "\xa1\xa1".force_encoding('euc-jp')     # => "\x{A1A1}"
   Encoding.compatible?(s0, s1)                 # => nil
 
-=== \String \Encoding
+== \String \Encoding
 
 A Ruby String object has an encoding that is an instance of class \Encoding.
 The encoding may be retrieved by method String#encoding.
@@ -183,7 +183,7 @@ Here are a couple of useful query methods:
   s = "\xc2".force_encoding("UTF-8")     # => "\xC2"
   s.valid_encoding?                      # => false
 
-=== \Symbol and \Regexp Encodings
+== \Symbol and \Regexp Encodings
 
 The string stored in a Symbol or Regexp object also has an encoding;
 the encoding may be retrieved by method Symbol#encoding or Regexp#encoding.
@@ -194,20 +194,20 @@ The default encoding for these, however, is:
 - The script encoding, otherwise;
   see (Script Encoding)[rdoc-ref:encodings.rdoc@Script+Encoding].
 
-=== Filesystem \Encoding
+== Filesystem \Encoding
 
 The filesystem encoding is the default \Encoding for a string from the filesystem:
 
     Encoding.find("filesystem") # => #<Encoding:UTF-8>
 
-=== Locale \Encoding
+== Locale \Encoding
 
 The locale encoding is the default encoding for a string from the environment,
 other than from the filesystem:
 
   Encoding.find('locale') # => #<Encoding:IBM437>
 
-=== Stream Encodings
+== Stream Encodings
 
 Certain stream objects can have two encodings; these objects include instances of:
 
@@ -222,7 +222,7 @@ The two encodings are:
 - An _internal_ _encoding_, which (if not +nil+) specifies the encoding
   to be used for the string constructed from the stream.
 
-==== External \Encoding
+=== External \Encoding
 
 The external encoding, which is an \Encoding object, specifies how bytes read
 from the stream are to be interpreted as characters.
@@ -250,7 +250,7 @@ For an \IO, \File, \ARGF, or \StringIO object, the external encoding may be set 
 
 - \Methods +set_encoding+ or (except for \ARGF) +set_encoding_by_bom+.
 
-==== Internal \Encoding
+=== Internal \Encoding
 
 The internal encoding, which is an \Encoding object or +nil+,
 specifies how characters read from the stream
@@ -276,7 +276,7 @@ For an \IO, \File, \ARGF, or \StringIO object, the internal encoding may be set 
 
 - \Method +set_encoding+.
 
-=== Script \Encoding
+== Script \Encoding
 
 A Ruby script has a script encoding, which may be retrieved by:
 
@@ -291,7 +291,7 @@ followed by a colon, space and the Encoding name or alias:
   # encoding: ISO-8859-1
   __ENCODING__ #=> #<Encoding:ISO-8859-1>
 
-=== Transcoding
+== Transcoding
 
 _Transcoding_ is the process of changing a sequence of characters
 from one encoding to another.
@@ -302,7 +302,7 @@ but the bytes that represent them may change.
 The handling for characters that cannot be represented in the destination encoding
 may be specified by @Encoding+Options.
 
-==== Transcoding a \String
+=== Transcoding a \String
 
 Each of these methods transcodes a string:
 
@@ -317,7 +317,7 @@ Each of these methods transcodes a string:
 - String#unicode_normalize!: Like String#unicode_normalize,
   but transcodes +self+ in place.
 
-=== Transcoding a Stream
+== Transcoding a Stream
 
 Each of these methods may transcode a stream;
 whether it does so depends on the external and internal encodings:
@@ -352,7 +352,7 @@ Output:
   "R\xE9sum\xE9"
   "Résumé"
 
-=== \Encoding Options
+== \Encoding Options
 
 A number of methods in the Ruby core accept keyword arguments as encoding options.
 

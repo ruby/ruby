@@ -1196,6 +1196,7 @@ fstring.o: $(hdrdir)/ruby/backward.h
 fstring.o: $(hdrdir)/ruby/backward/2/assume.h
 fstring.o: $(hdrdir)/ruby/backward/2/attributes.h
 fstring.o: $(hdrdir)/ruby/backward/2/bool.h
+fstring.o: $(hdrdir)/ruby/backward/2/gcc_version_since.h
 fstring.o: $(hdrdir)/ruby/backward/2/inttypes.h
 fstring.o: $(hdrdir)/ruby/backward/2/limits.h
 fstring.o: $(hdrdir)/ruby/backward/2/long_long.h
@@ -1358,6 +1359,8 @@ fstring.o: $(hdrdir)/ruby/oniguruma.h
 fstring.o: $(hdrdir)/ruby/ruby.h
 fstring.o: $(hdrdir)/ruby/st.h
 fstring.o: $(hdrdir)/ruby/subst.h
+fstring.o: $(top_srcdir)/internal/compilers.h
+fstring.o: $(top_srcdir)/internal/string.h
 fstring.o: fstring.c
 init.o: $(RUBY_EXTCONF_H)
 init.o: $(arch_hdrdir)/ruby/config.h

@@ -333,7 +333,7 @@ platform.
     @command_manager.command_names.each do |cmd_name|
       command = @command_manager[cmd_name]
 
-      next if command.deprecated?
+      next if command&.deprecated?
 
       summary =
         if command

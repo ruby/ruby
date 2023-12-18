@@ -2,7 +2,7 @@
 
 require "spec_helper"
 
-RSpec.describe "bundle install with complex dependencies", :realworld => true do
+RSpec.describe "bundle install with complex dependencies", realworld: true do
   it "resolves quickly" do
     gemfile <<-G
       source 'https://rubygems.org'

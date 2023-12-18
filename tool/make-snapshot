@@ -364,7 +364,7 @@ def package(vcs, rev, destdir, tmp = nil)
     end
   elsif prerelease
     versionhdr ||= IO.read("#{v}/version.h")
-    versionhdr.sub!(/^\#define\s+RUBY_PATCHLEVEL_STR\s+"\K.+?(?=")/, tag)
+    versionhdr.sub!(/^\#\s*define\s+RUBY_PATCHLEVEL_STR\s+"\K.+?(?=")/, tag) or raise "no match of RUBY_PATCHLEVEL_STR to replace"
     IO.write("#{v}/version.h", versionhdr)
   else
     tag ||= vcs.revision_name(revision)

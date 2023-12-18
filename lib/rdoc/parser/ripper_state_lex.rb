@@ -1,7 +1,12 @@
 # frozen_string_literal: true
 require 'ripper'
 
+##
+# Wrapper for Ripper lex states
+
 class RDoc::Parser::RipperStateLex
+  # :stopdoc:
+
   # TODO: Remove this constants after Ruby 2.4 EOL
   RIPPER_HAS_LEX_STATE = Ripper::Filter.method_defined?(:state)
 
@@ -565,6 +570,9 @@ class RDoc::Parser::RipperStateLex
     tk
   end
 
+  # :startdoc:
+
+  # New lexer for +code+.
   def initialize(code)
     @buf = []
     @heredoc_queue = []
@@ -572,6 +580,7 @@ class RDoc::Parser::RipperStateLex
     @tokens = @inner_lex.parse([])
   end
 
+  # Returns tokens parsed from +code+.
   def self.parse(code)
     lex = self.new(code)
     tokens = []
@@ -584,6 +593,7 @@ class RDoc::Parser::RipperStateLex
     tokens
   end
 
+  # Returns +true+ if lex state will be +END+ after +token+.
   def self.end?(token)
     (token[:state] & EXPR_END)
   end

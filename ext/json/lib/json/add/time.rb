@@ -5,7 +5,7 @@ end
 
 class Time
 
-  # Deserializes JSON string by converting time since epoch to Time
+  # See #as_json.
   def self.json_create(object)
     if usec = object.delete('u') # used to be tv_usec -> tv_nsec
       object['n'] = usec * 1000
@@ -17,8 +17,22 @@ class Time
     end
   end
 
-  # Returns a hash, that will be turned into a JSON object and represent this
-  # object.
+  # Methods <tt>Time#as_json</tt> and +Time.json_create+ may be used
+  # to serialize and deserialize a \Time object;
+  # see Marshal[rdoc-ref:Marshal].
+  #
+  # \Method <tt>Time#as_json</tt> serializes +self+,
+  # returning a 2-element hash representing +self+:
+  #
+  #   require 'json/add/time'
+  #   x = Time.now.as_json
+  #   # => {"json_class"=>"Time", "s"=>1700931656, "n"=>472846644}
+  #
+  # \Method +JSON.create+ deserializes such a hash, returning a \Time object:
+  #
+  #    Time.json_create(x)
+  #    # => 2023-11-25 11:00:56.472846644 -0600
+  #
   def as_json(*)
     nanoseconds = [ tv_usec * 1000 ]
     respond_to?(:tv_nsec) and nanoseconds << tv_nsec
@@ -30,8 +44,15 @@ class Time
     }
   end
 
-  # Stores class name (Time) with number of seconds since epoch and number of
-  # microseconds for Time as JSON string
+  # Returns a JSON string representing +self+:
+  #
+  #   require 'json/add/time'
+  #   puts Time.now.to_json
+  #
+  # Output:
+  #
+  #   {"json_class":"Time","s":1700931678,"n":980650786}
+  #
   def to_json(*args)
     as_json.to_json(*args)
   end

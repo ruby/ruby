@@ -9,7 +9,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
   let(:options) { { "ref" => ref, "branch" => branch, "tag" => tag }.compact }
   let(:revision) { nil }
   let(:git_source) { nil }
-  let(:clone_result) { double(Process::Status, :success? => true) }
+  let(:clone_result) { double(Process::Status, success?: true) }
   let(:base_clone_args) { ["clone", "--bare", "--no-hardlinks", "--quiet", "--no-tags", "--depth", "1", "--single-branch"] }
   subject(:git_proxy) { described_class.new(path, uri, options, revision, git_source) }
 
@@ -193,7 +193,7 @@ RSpec.describe Bundler::Source::Git::GitProxy do
 
     FileUtils.chmod("+x", file)
 
-    bundle :lock, :raise_on_error => false
+    bundle :lock, raise_on_error: false
 
     expect(Pathname.new(bundled_app("canary"))).not_to exist
   end

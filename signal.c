@@ -1488,6 +1488,9 @@ Init_signal(void)
     rb_alias(rb_eSignal, rb_intern_const("signm"), rb_intern_const("message"));
     rb_define_method(rb_eInterrupt, "initialize", interrupt_init, -1);
 
+    // It should be ready to call rb_signal_exec()
+    VM_ASSERT(GET_THREAD()->pending_interrupt_queue);
+
     /* At this time, there is no subthread. Then sigmask guarantee atomics. */
     rb_disable_interrupt();
 

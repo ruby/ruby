@@ -10,6 +10,7 @@
             ├── parameters: ∅
             ├── body: ∅
             ├── locals: []
+            ├── locals_body_index: 0
             ├── def_keyword_loc: (1,4)-(1,7) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: ∅

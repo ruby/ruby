@@ -6,9 +6,9 @@
         ├── @ IntegerNode (location: (1,0)-(1,1))
         │   └── flags: decimal
         └── @ RangeNode (location: (2,0)-(2,3))
+            ├── flags: ∅
             ├── left: ∅
             ├── right:
             │   @ IntegerNode (location: (2,2)-(2,3))
             │   └── flags: decimal
-            ├── operator_loc: (2,0)-(2,2) = ".."
-            └── flags: ∅
+            └── operator_loc: (2,0)-(2,2) = ".."

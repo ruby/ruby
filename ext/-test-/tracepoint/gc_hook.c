@@ -33,7 +33,9 @@ gc_start_end_i(VALUE tpval, void *data)
     }
 
     if (invoking == 0) {
-        rb_postponed_job_register(0, invoke_proc, data);
+        /* will overwrite the existing handle with new data on the second and subsequent call */
+        rb_postponed_job_handle_t h = rb_postponed_job_preregister(0, invoke_proc, data);
+        rb_postponed_job_trigger(h);
     }
 }
 

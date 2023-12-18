@@ -135,6 +135,7 @@ compat_init_setproctitle(int argc, char *argv[])
 }
 
 #ifndef HAVE_SETPROCTITLE
+
 void
 setproctitle(const char *fmt, ...)
 {

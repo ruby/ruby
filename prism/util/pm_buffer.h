@@ -118,7 +118,15 @@ void pm_buffer_append_byte(pm_buffer_t *buffer, uint8_t value);
  * @param buffer The buffer to append to.
  * @param value The integer to append.
  */
-void pm_buffer_append_varint(pm_buffer_t *buffer, uint32_t value);
+void pm_buffer_append_varuint(pm_buffer_t *buffer, uint32_t value);
+
+/**
+ * Append a 32-bit signed integer to the buffer as a variable-length integer.
+ *
+ * @param buffer The buffer to append to.
+ * @param value The integer to append.
+ */
+void pm_buffer_append_varsint(pm_buffer_t *buffer, int32_t value);
 
 /**
  * Concatenate one buffer onto another.

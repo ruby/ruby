@@ -100,7 +100,7 @@ describe "File.new" do
     File.should.exist?(@file)
   end
 
-  it "raises an Errorno::EEXIST if the file exists when create a new file with File::CREAT|File::EXCL" do
+  it "raises an Errno::EEXIST if the file exists when create a new file with File::CREAT|File::EXCL" do
     -> { @fh = File.new(@file, File::CREAT|File::EXCL) }.should raise_error(Errno::EEXIST)
   end
 

@@ -307,4 +307,11 @@ describe "Frozen properties" do
     o.freeze
     klass.frozen?.should == true
   end
+
+  it "will be unfrozen if the frozen object is cloned with freeze set to false" do
+    o = Object.new
+    o.freeze
+    o2 = o.clone(freeze: false)
+    o2.singleton_class.frozen?.should == false
+  end
 end

@@ -40,7 +40,7 @@ RSpec.describe "bundle update" do
         gem 'has_funding'
       G
 
-      bundle :update, :all => true
+      bundle :update, all: true
     end
 
     it "displays fund message" do

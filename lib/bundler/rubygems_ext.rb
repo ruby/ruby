@@ -2,6 +2,8 @@
 
 require "pathname"
 
+require "rubygems" unless defined?(Gem)
+
 require "rubygems/specification"
 
 # We can't let `Gem::Source` be autoloaded in the `Gem::Specification#source`
@@ -46,7 +48,7 @@ module Gem
 
     def full_gem_path
       if source.respond_to?(:root)
-        Pathname.new(loaded_from).dirname.expand_path(source.root).to_s.tap {|x| x.untaint if RUBY_VERSION < "2.7" }
+        Pathname.new(loaded_from).dirname.expand_path(source.root).to_s
       else
         rg_full_gem_path
       end
@@ -76,25 +78,7 @@ module Gem
       end
     end
 
-    alias_method :rg_missing_extensions?, :missing_extensions?
-    def missing_extensions?
-      # When we use this methods with local gemspec, we don't handle
-      # build status of extension correctly. So We need to find extension
-      # files in require_paths.
-      # TODO: Gem::Specification couldn't access extension name from extconf.rb
-      #       so we find them with heuristic way. We should improve it.
-      if source.respond_to?(:root)
-        return false if raw_require_paths.any? do |path|
-          ext_dir = File.join(full_gem_path, path)
-          File.exist?(File.join(ext_dir, "#{name}.#{RbConfig::CONFIG["DLEXT"]}")) ||
-          !Dir.glob(File.join(ext_dir, name, "*.#{RbConfig::CONFIG["DLEXT"]}")).empty?
-        end
-      end
-
-      rg_missing_extensions?
-    end
-
-    remove_method :gem_dir if instance_methods(false).include?(:gem_dir)
+    remove_method :gem_dir
     def gem_dir
       full_gem_path
     end
@@ -134,17 +118,6 @@ module Gem
       end
       gemfile
     end
-
-    # Backfill missing YAML require when not defined. Fixed since 3.1.0.pre1.
-    module YamlBackfiller
-      def to_yaml(opts = {})
-        Gem.load_yaml unless defined?(::YAML)
-
-        super(opts)
-      end
-    end
-
-    prepend YamlBackfiller
 
     def nondevelopment_dependencies
       dependencies - development_dependencies
@@ -206,37 +179,7 @@ module Gem
     end
   end
 
-  # comparison is done order independently since rubygems 3.2.0.rc.2
-  unless Gem::Requirement.new("> 1", "< 2") == Gem::Requirement.new("< 2", "> 1")
-    class Requirement
-      module OrderIndependentComparison
-        def ==(other)
-          return unless Gem::Requirement === other
-
-          if _requirements_sorted? && other._requirements_sorted?
-            super
-          else
-            _with_sorted_requirements == other._with_sorted_requirements
-          end
-        end
-
-        protected
-
-        def _requirements_sorted?
-          return @_requirements_sorted if defined?(@_requirements_sorted)
-          strings = as_list
-          @_requirements_sorted = strings == strings.sort
-        end
-
-        def _with_sorted_requirements
-          @_with_sorted_requirements ||= _requirements_sorted? ? self : self.class.new(as_list.sort)
-        end
-      end
-
-      prepend OrderIndependentComparison
-    end
-  end
-
+  # Requirements using lambda operator differentiate trailing zeros since rubygems 3.2.6
   if Gem::Requirement.new("~> 2.0").hash == Gem::Requirement.new("~> 2.0.0").hash
     class Requirement
       module CorrectHashForLambdaOperator
@@ -338,7 +281,7 @@ module Gem
   end
 
   # On universal Rubies, resolve the "universal" arch to the real CPU arch, without changing the extension directory.
-  class Specification
+  class BasicSpecification
     if /^universal\.(?<arch>.*?)-/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
       local_platform = Platform.local
       if local_platform.cpu == "universal"
@@ -351,9 +294,8 @@ module Gem
         end
 
         def extensions_dir
-          Gem.default_ext_dir_for(base_dir) ||
-            File.join(base_dir, "extensions", ORIGINAL_LOCAL_PLATFORM,
-                      Gem.extension_api_version)
+          @extensions_dir ||=
+            Gem.default_ext_dir_for(base_dir) || File.join(base_dir, "extensions", ORIGINAL_LOCAL_PLATFORM, Gem.extension_api_version)
         end
       end
     end
@@ -362,33 +304,25 @@ module Gem
   require "rubygems/name_tuple"
 
   class NameTuple
-    def self.new(name, version, platform="ruby")
-      if Gem::Platform === platform
-        super(name, version, platform.to_s)
-      else
-        super
+    # Versions of RubyGems before about 3.5.0 don't to_s the platform.
+    unless Gem::NameTuple.new("a", Gem::Version.new("1"), Gem::Platform.new("x86_64-linux")).platform.is_a?(String)
+      alias_method :initialize_with_platform, :initialize
+
+      def initialize(name, version, platform=Gem::Platform::RUBY)
+        if Gem::Platform === platform
+          initialize_with_platform(name, version, platform.to_s)
+        else
+          initialize_with_platform(name, version, platform)
+        end
       end
     end
 
     def lock_name
-      @lock_name ||=
-        if platform == Gem::Platform::RUBY
-          "#{name} (#{version})"
-        else
-          "#{name} (#{version}-#{platform})"
-        end
-    end
-  end
-
-  require "rubygems/util"
-
-  Util.singleton_class.module_eval do
-    if Util.singleton_methods.include?(:glob_files_in_dir) # since 3.0.0.beta.2
-      remove_method :glob_files_in_dir
-    end
-
-    def glob_files_in_dir(glob, base_path)
-      Dir.glob(glob, :base => base_path).map! {|f| File.expand_path(f, base_path) }
+      if platform == Gem::Platform::RUBY
+        "#{name} (#{version})"
+      else
+        "#{name} (#{version}-#{platform})"
+      end
     end
   end
 end

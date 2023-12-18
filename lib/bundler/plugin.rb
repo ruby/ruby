@@ -101,7 +101,7 @@ module Bundler
     # @param [Pathname] gemfile path
     # @param [Proc] block that can be evaluated for (inline) Gemfile
     def gemfile_install(gemfile = nil, &inline)
-      Bundler.settings.temporary(:frozen => false, :deployment => false) do
+      Bundler.settings.temporary(frozen: false, deployment: false) do
         builder = DSL.new
         if block_given?
           builder.instance_eval(&inline)
@@ -307,7 +307,7 @@ module Bundler
       @hooks_by_event = Hash.new {|h, k| h[k] = [] }
 
       load_paths = spec.load_paths
-      Bundler.rubygems.add_to_load_path(load_paths)
+      Gem.add_to_load_path(*load_paths)
       path = Pathname.new spec.full_gem_path
 
       begin
@@ -342,7 +342,7 @@ module Bundler
       # done to avoid conflicts
       path = index.plugin_path(name)
 
-      Bundler.rubygems.add_to_load_path(index.load_paths(name))
+      Gem.add_to_load_path(*index.load_paths(name))
 
       load path.join(PLUGIN_FILE_NAME)
 

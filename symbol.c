@@ -225,10 +225,10 @@ rb_sym_constant_char_p(const char *name, long nlen, rb_encoding *enc)
     if (!MBCLEN_CHARFOUND_P(c)) return FALSE;
     len = MBCLEN_CHARFOUND_LEN(c);
     c = rb_enc_mbc_to_codepoint(name, end, enc);
+    if (rb_enc_isupper(c, enc)) return TRUE;
+    if (rb_enc_islower(c, enc)) return FALSE;
     if (ONIGENC_IS_UNICODE(enc)) {
         static int ctype_titlecase = 0;
-        if (rb_enc_isupper(c, enc)) return TRUE;
-        if (rb_enc_islower(c, enc)) return FALSE;
         if (!ctype_titlecase) {
             static const UChar cname[] = "titlecaseletter";
             static const UChar *const end = cname + sizeof(cname) - 1;
@@ -529,6 +529,16 @@ register_sym(rb_symbols_t *symbols, VALUE str, VALUE sym)
     else {
         st_add_direct(symbols->str_sym, (st_data_t)str, (st_data_t)sym);
     }
+}
+
+void
+rb_free_static_symid_str(void)
+{
+    GLOBAL_SYMBOLS_ENTER(symbols)
+    {
+        st_free_table(symbols->str_sym);
+    }
+    GLOBAL_SYMBOLS_LEAVE();
 }
 
 static void

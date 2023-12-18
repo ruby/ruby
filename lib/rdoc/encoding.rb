@@ -86,17 +86,6 @@ module RDoc::Encoding
     nil
   end
 
-  def self.remove_frozen_string_literal string
-    string =~ /\A(?:#!.*\n)?(.*\n)/
-    first_line = $1
-
-    if first_line =~ /\A# +frozen[-_]string[-_]literal[=:].+$/i
-      string = string.sub first_line, ''
-    end
-
-    string
-  end
-
   ##
   # Detects the encoding of +string+ based on the magic comment
 

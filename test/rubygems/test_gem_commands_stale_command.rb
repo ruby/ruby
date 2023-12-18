@@ -25,11 +25,11 @@ class TestGemCommandsStaleCommand < Gem::TestCase
     files.each do |file|
       filename = File.join(bar_baz.full_gem_path, file)
       FileUtils.mkdir_p File.dirname filename
-      FileUtils.touch(filename, :mtime => Time.now)
+      FileUtils.touch(filename, mtime: Time.now)
 
       filename = File.join(foo_bar.full_gem_path, file)
       FileUtils.mkdir_p File.dirname filename
-      FileUtils.touch(filename, :mtime => Time.now - 86_400)
+      FileUtils.touch(filename, mtime: Time.now - 86_400)
     end
 
     use_ui @stub_ui do

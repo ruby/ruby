@@ -19,6 +19,7 @@
 #include "shape.h"
 #include "ruby_assert.h"
 #include "vm_core.h"
+#include "vm_sync.h"
 #include "method.h"             /* for rb_cref_t */
 
 #ifdef RCLASS_SUPER
@@ -110,6 +111,44 @@ struct RClass_and_rb_classext_t {
 #define RICLASS_IS_ORIGIN FL_USER0
 #define RCLASS_SUPERCLASSES_INCLUDE_SELF FL_USER2
 #define RICLASS_ORIGIN_SHARED_MTBL FL_USER3
+
+static inline st_table *
+RCLASS_IV_HASH(VALUE obj)
+{
+    RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
+    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
+    return (st_table *)RCLASS_IVPTR(obj);
+}
+
+static inline void
+RCLASS_SET_IV_HASH(VALUE obj, const st_table *tbl)
+{
+    RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
+    RUBY_ASSERT(rb_shape_obj_too_complex(obj));
+    RCLASS_IVPTR(obj) = (VALUE *)tbl;
+}
+
+static inline uint32_t
+RCLASS_IV_COUNT(VALUE obj)
+{
+    RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
+    if (rb_shape_obj_too_complex(obj)) {
+        uint32_t count;
+
+        // "Too complex" classes could have their IV hash mutated in
+        // parallel, so lets lock around getting the hash size.
+        RB_VM_LOCK_ENTER();
+        {
+            count = (uint32_t)rb_st_table_size(RCLASS_IV_HASH(obj));
+        }
+        RB_VM_LOCK_LEAVE();
+
+        return count;
+    }
+    else {
+        return rb_shape_get_shape_by_id(RCLASS_SHAPE_ID(obj))->next_iv_index;
+    }
+}
 
 /* class.c */
 void rb_class_subclass_add(VALUE super, VALUE klass);

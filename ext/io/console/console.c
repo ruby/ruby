@@ -1152,6 +1152,16 @@ console_scroll(VALUE io, int line)
 # define console_key_pressed_p rb_f_notimplement
 #endif
 
+/*
+ * call-seq:
+ *   io.cursor -> [row, column]
+ *
+ * Returns the current cursor position as a two-element array of integers (row, column)
+ *
+ *   io.cursor # => [3, 5]
+ *
+ * You must require 'io/console' to use this method.
+ */
 static VALUE
 console_cursor_pos(VALUE io)
 {
@@ -1672,6 +1682,7 @@ InitVM_console(void)
     {
 	/* :stopdoc: */
         cConmode = rb_define_class_under(rb_cIO, "ConsoleMode", rb_cObject);
+        rb_define_const(cConmode, "VERSION", rb_str_new_cstr(STRINGIZE(IO_CONSOLE_VERSION)));
         rb_define_alloc_func(cConmode, conmode_alloc);
         rb_undef_method(cConmode, "initialize");
         rb_define_method(cConmode, "initialize_copy", conmode_init_copy, 1);

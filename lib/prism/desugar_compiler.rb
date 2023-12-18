@@ -157,15 +157,15 @@ module Prism
         *arguments,
         node.name_loc,
         CallNode.new(
+          0,
           read_class.new(*arguments, node.name_loc),
           nil,
+          node.operator_loc.slice.chomp("="),
           node.operator_loc.copy(length: node.operator_loc.length - 1),
           nil,
-          ArgumentsNode.new([node.value], 0, node.value.location),
+          ArgumentsNode.new(0, [node.value], node.value.location),
           nil,
           nil,
-          0,
-          node.operator_loc.slice.chomp("="),
           node.location
         ),
         node.operator_loc.copy(start_offset: node.operator_loc.end_offset - 1, length: 1),
@@ -188,6 +188,7 @@ module Prism
       IfNode.new(
         node.operator_loc,
         DefinedNode.new(nil, read_class.new(*arguments, node.name_loc), nil, node.operator_loc, node.name_loc),
+        node.operator_loc,
         StatementsNode.new([read_class.new(*arguments, node.name_loc)], node.location),
         ElseNode.new(
           node.operator_loc,

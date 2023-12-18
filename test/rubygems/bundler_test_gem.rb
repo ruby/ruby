@@ -3,7 +3,7 @@
 require_relative "helper"
 
 class TestBundlerGem < Gem::TestCase
-  PROJECT_DIR = File.expand_path("../..", __dir__).tap(&Gem::UNTAINT)
+  PROJECT_DIR = File.expand_path("../..", __dir__)
 
   def test_self_use_gemdeps
     with_local_bundler_at(Gem.dir) do
@@ -131,9 +131,9 @@ class TestBundlerGem < Gem::TestCase
 
       install_specs a, b, c
 
-      install_gem a, :install_dir => path
-      install_gem b, :install_dir => path
-      install_gem c, :install_dir => path
+      install_gem a, install_dir: path
+      install_gem b, install_dir: path
+      install_gem c, install_dir: path
 
       ENV["GEM_PATH"] = path
 
@@ -183,9 +183,9 @@ class TestBundlerGem < Gem::TestCase
 
       install_specs a, b, c
 
-      install_gem a, :install_dir => path
-      install_gem b, :install_dir => path
-      install_gem c, :install_dir => path
+      install_gem a, install_dir: path
+      install_gem b, install_dir: path
+      install_gem c, install_dir: path
 
       ENV["GEM_PATH"] = path
 
@@ -201,7 +201,7 @@ class TestBundlerGem < Gem::TestCase
           f.puts "gem 'a'"
         end
         out0 = with_path_and_rubyopt(new_path, new_rubyopt) do
-          IO.popen("foo", :chdir => "sub1", &:read).split(/\n/)
+          IO.popen("foo", chdir: "sub1", &:read).split(/\n/)
         end
 
         File.open path, "a" do |f|
@@ -209,7 +209,7 @@ class TestBundlerGem < Gem::TestCase
           f.puts "gem 'c'"
         end
         out = with_path_and_rubyopt(new_path, new_rubyopt) do
-          IO.popen("foo", :chdir => "sub1", &:read).split(/\n/)
+          IO.popen("foo", chdir: "sub1", &:read).split(/\n/)
         end
 
         Dir.rmdir "sub1"
@@ -221,7 +221,7 @@ class TestBundlerGem < Gem::TestCase
 
   def test_use_gemdeps
     with_local_bundler_at(Gem.dir) do
-      gem_deps_file = "gem.deps.rb".tap(&Gem::UNTAINT)
+      gem_deps_file = "gem.deps.rb"
       spec = util_spec "a", 1
       install_specs spec
 

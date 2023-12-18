@@ -15,8 +15,8 @@ class Gem::Commands::UninstallCommand < Gem::Command
 
   def initialize
     super "uninstall", "Uninstall gems from the local repository",
-          :version => Gem::Requirement.default, :user_install => true,
-          :check_dev => false, :vendor => false
+          version: Gem::Requirement.default, user_install: true,
+          check_dev: false, vendor: false
 
     add_option("-a", "--[no-]all",
       "Uninstall all matching versions") do |value, options|

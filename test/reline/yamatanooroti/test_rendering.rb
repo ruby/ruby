@@ -4,6 +4,33 @@ begin
   require 'yamatanooroti'
 
   class Reline::RenderingTest < Yamatanooroti::TestCase
+
+    FACE_CONFIGS = { no_config: "", valid_config: <<~VALID_CONFIG, incomplete_config: <<~INCOMPLETE_CONFIG }
+      require "reline"
+      Reline::Face.config(:completion_dialog) do |face|
+        face.define :default, foreground: :white, background: :blue
+        face.define :enhanced, foreground: :white, background: :magenta
+        face.define :scrollbar, foreground: :white, background: :blue
+      end
+    VALID_CONFIG
+      require "reline"
+      Reline::Face.config(:completion_dialog) do |face|
+        face.define :default, foreground: :white, background: :black
+        face.define :scrollbar, foreground: :white, background: :cyan
+      end
+    INCOMPLETE_CONFIG
+
+    def iterate_over_face_configs(&block)
+      FACE_CONFIGS.each do |config_name, face_config|
+        config_file = Tempfile.create(%w{face_config- .rb})
+        config_file.write face_config
+        block.call(config_name, config_file)
+        config_file.close
+      ensure
+        File.delete(config_file)
+      end
+    end
+
     def setup
       @pwd = Dir.pwd
       suffix = '%010d' % Random.rand(0..65535)
@@ -954,75 +981,83 @@ begin
     end
 
     def test_simple_dialog
-      start_terminal(20, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple}, startup_message: 'Multiline REPL.')
-      write('a')
-      write('b')
-      write('c')
-      write("\C-h")
-      close
-      assert_screen(<<~'EOC')
-        Multiline REPL.
-        prompt> ab
-                  Ruby is...
-                  A dynamic, open source programming
-                  language with a focus on simplicity
-                  and productivity. It has an elegant
-                  syntax that is natural to read and
-                  easy to write.
-      EOC
+      iterate_over_face_configs do |config_name, config_file|
+        start_terminal(20, 50, %W{ruby -I#{@pwd}/lib -r#{config_file.path} #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple}, startup_message: 'Multiline REPL.')
+        write('a')
+        write('b')
+        write('c')
+        write("\C-h")
+        close
+        assert_screen(<<~'EOC', "Failed with `#{config_name}` in Face")
+          Multiline REPL.
+          prompt> ab
+                    Ruby is...
+                    A dynamic, open source programming
+                    language with a focus on simplicity
+                    and productivity. It has an elegant
+                    syntax that is natural to read and
+                    easy to write.
+        EOC
+      end
     end
 
     def test_simple_dialog_at_right_edge
-      start_terminal(20, 40, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple}, startup_message: 'Multiline REPL.')
-      write('a')
-      write('b')
-      write('c')
-      write("\C-h")
-      close
-      assert_screen(<<~'EOC')
-        Multiline REPL.
-        prompt> ab
-             Ruby is...
-             A dynamic, open source programming
-             language with a focus on simplicity
-             and productivity. It has an elegant
-             syntax that is natural to read and
-             easy to write.
-      EOC
+      iterate_over_face_configs do |config_name, config_file|
+        start_terminal(20, 40, %W{ruby -I#{@pwd}/lib -r#{config_file.path} #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple}, startup_message: 'Multiline REPL.')
+        write('a')
+        write('b')
+        write('c')
+        write("\C-h")
+        close
+        assert_screen(<<~'EOC')
+          Multiline REPL.
+          prompt> ab
+               Ruby is...
+               A dynamic, open source programming
+               language with a focus on simplicity
+               and productivity. It has an elegant
+               syntax that is natural to read and
+               easy to write.
+        EOC
+      end
     end
 
     def test_dialog_scroll_pushup_condition
-      start_terminal(10, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
-      write("\n" * 10)
-      write("if 1\n  sSt\nend")
-      write("\C-p\C-h\C-e")
-      close
-      assert_screen(<<~'EOC')
-        prompt>
-        prompt>
-        prompt>
-        prompt>
-        prompt>
-        prompt>
-        prompt> if 1
-        prompt>   St
-        prompt> enString
-                  Struct
-      EOC
+      iterate_over_face_configs do |config_name, config_file|
+        start_terminal(10, 50, %W{ruby -I#{@pwd}/lib -r#{config_file.path} #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+        write("\n" * 10)
+        write("if 1\n  sSt\nend")
+        write("\C-p\C-h\C-e")
+        close
+        assert_screen(<<~'EOC')
+          prompt>
+          prompt>
+          prompt>
+          prompt>
+          prompt>
+          prompt>
+          prompt> if 1
+          prompt>   St
+          prompt> enString
+                    Struct
+        EOC
+      end
     end
 
     def test_simple_dialog_with_scroll_screen
-      start_terminal(5, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple}, startup_message: 'Multiline REPL.')
-      write("if 1\n  2\n  3\n  4\n  5\n  6")
-      write("\C-p\C-n\C-p\C-p\C-p#")
-      close
-      assert_screen(<<~'EOC')
-        prompt>   2
-        prompt>   3#
-        prompt>   4
-        prompt>   5
-        prompt>   6 Ruby is...
-      EOC
+      iterate_over_face_configs do |config_name, config_file|
+        start_terminal(5, 50, %W{ruby -I#{@pwd}/lib -r#{config_file.path} #{@pwd}/test/reline/yamatanooroti/multiline_repl --dialog simple}, startup_message: 'Multiline REPL.')
+        write("if 1\n  2\n  3\n  4\n  5\n  6")
+        write("\C-p\C-n\C-p\C-p\C-p#")
+        close
+        assert_screen(<<~'EOC')
+          prompt>   2
+          prompt>   3#
+          prompt>   4
+          prompt>   5
+          prompt>   6 Ruby is...
+        EOC
+      end
     end
 
     def test_autocomplete_at_bottom

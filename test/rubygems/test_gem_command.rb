@@ -92,7 +92,7 @@ class TestGemCommand < Gem::TestCase
       options[:help] = value
     end
 
-    @cmd.defaults = { :help => true }
+    @cmd.defaults = { help: true }
 
     @cmd.when_invoked do |options|
       assert options[:help], "Help options should default true"

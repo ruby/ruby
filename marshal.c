@@ -228,19 +228,24 @@ static void
 free_dump_arg(void *ptr)
 {
     clear_dump_arg(ptr);
-    xfree(ptr);
 }
 
 static size_t
 memsize_dump_arg(const void *ptr)
 {
-    return sizeof(struct dump_arg);
+    const struct dump_arg *p = (struct dump_arg *)ptr;
+    size_t memsize = 0;
+    if (p->symbols) memsize += rb_st_memsize(p->symbols);
+    if (p->data) memsize += rb_st_memsize(p->data);
+    if (p->compat_tbl) memsize += rb_st_memsize(p->compat_tbl);
+    if (p->encodings) memsize += rb_st_memsize(p->encodings);
+    return memsize;
 }
 
 static const rb_data_type_t dump_arg_data = {
     "dump_arg",
     {mark_dump_arg, free_dump_arg, memsize_dump_arg,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
 static VALUE
@@ -461,7 +466,7 @@ w_float(double d, struct dump_arg *arg)
             memcpy(buf + len, p, digs);
             len += digs;
         }
-        xfree(p);
+        free(p);
         w_bytes(buf, len, arg);
     }
 }
@@ -605,10 +610,8 @@ struct w_ivar_arg {
 };
 
 static int
-w_obj_each(st_data_t key, st_data_t val, st_data_t a)
+w_obj_each(ID id, VALUE value, st_data_t a)
 {
-    ID id = (ID)key;
-    VALUE value = (VALUE)val;
     struct w_ivar_arg *ivarg = (struct w_ivar_arg *)a;
     struct dump_call_arg *arg = ivarg->dump;
 
@@ -630,9 +633,8 @@ w_obj_each(st_data_t key, st_data_t val, st_data_t a)
 }
 
 static int
-obj_count_ivars(st_data_t key, st_data_t val, st_data_t a)
+obj_count_ivars(ID id, VALUE val, st_data_t a)
 {
-    ID id = (ID)key;
     if (!to_be_skipped_id(id) && UNLIKELY(!++*(st_index_t *)a)) {
         rb_raise(rb_eRuntimeError, "too many instance variables");
     }
@@ -1272,19 +1274,24 @@ static void
 free_load_arg(void *ptr)
 {
     clear_load_arg(ptr);
-    xfree(ptr);
 }
 
 static size_t
 memsize_load_arg(const void *ptr)
 {
-    return sizeof(struct load_arg);
+    const struct load_arg *p = (struct load_arg *)ptr;
+    size_t memsize = 0;
+    if (p->symbols) memsize += rb_st_memsize(p->symbols);
+    if (p->data) memsize += rb_st_memsize(p->data);
+    if (p->partial_objects) memsize += rb_st_memsize(p->partial_objects);
+    if (p->compat_tbl) memsize += rb_st_memsize(p->compat_tbl);
+    return memsize;
 }
 
 static const rb_data_type_t load_arg_data = {
     "load_arg",
     {mark_load_arg, free_load_arg, memsize_load_arg,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
 #define r_entry(v, arg) r_entry0((v), (arg)->data->num_entries, (arg))
@@ -1673,10 +1680,9 @@ r_leave(VALUE v, struct load_arg *arg, bool partial)
 }
 
 static int
-copy_ivar_i(st_data_t key, st_data_t val, st_data_t arg)
+copy_ivar_i(ID vid, VALUE value, st_data_t arg)
 {
-    VALUE obj = (VALUE)arg, value = (VALUE)val;
-    ID vid = (ID)key;
+    VALUE obj = (VALUE)arg;
 
     if (!rb_ivar_defined(obj, vid))
         rb_ivar_set(obj, vid, value);
@@ -2511,6 +2517,20 @@ Init_marshal(void)
     rb_define_const(rb_mMarshal, "MINOR_VERSION", INT2FIX(MARSHAL_MINOR));
 }
 
+static int
+free_compat_i(st_data_t key, st_data_t value, st_data_t _)
+{
+    xfree((marshal_compat_t *)value);
+    return ST_CONTINUE;
+}
+
+static void
+free_compat_allocator_table(void *data)
+{
+    st_foreach(data, free_compat_i, 0);
+    st_free_table(data);
+}
+
 static st_table *
 compat_allocator_table(void)
 {
@@ -2519,7 +2539,7 @@ compat_allocator_table(void)
 #undef RUBY_UNTYPED_DATA_WARNING
 #define RUBY_UNTYPED_DATA_WARNING 0
     compat_allocator_tbl_wrapper =
-        Data_Wrap_Struct(0, mark_marshal_compat_t, 0, compat_allocator_tbl);
+        Data_Wrap_Struct(0, mark_marshal_compat_t, free_compat_allocator_table, compat_allocator_tbl);
     rb_gc_register_mark_object(compat_allocator_tbl_wrapper);
     return compat_allocator_tbl;
 }

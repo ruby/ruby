@@ -103,9 +103,14 @@ module Prism
         case node
         when BlockNode, DefNode, LambdaNode
           names = node.locals
-
-          params = node.parameters
-          params = params&.parameters unless node.is_a?(DefNode)
+          params =
+            if node.is_a?(DefNode)
+              node.parameters
+            elsif node.parameters.is_a?(NumberedParametersNode)
+              nil
+            else
+              node.parameters&.parameters
+            end
 
           # prism places parameters in the same order that they appear in the
           # source. CRuby places them in the order that they need to appear
@@ -121,7 +126,7 @@ module Prism
                 end
               end,
               *params.optionals.map(&:name),
-              *((params.rest.name || :*) if params.rest && params.rest.operator != ","),
+              *((params.rest.name || :*) if params.rest && !params.rest.is_a?(ImplicitRestNode)),
               *params.posts.map do |post|
                 if post.is_a?(RequiredParameterNode)
                   post.name
@@ -132,6 +137,10 @@ module Prism
               *params.keywords.grep(RequiredKeywordParameterNode).map(&:name),
               *params.keywords.grep(OptionalKeywordParameterNode).map(&:name),
             ]
+
+            if params.keyword_rest.is_a?(ForwardingParameterNode)
+              sorted.push(:*, :&, :"...")
+            end
 
             sorted << AnonymousLocal if params.keywords.any?
 

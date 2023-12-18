@@ -29,7 +29,7 @@ module Bundler
       end
 
       # temporarily unfreeze
-      Bundler.settings.temporary(:deployment => false, :frozen => false) do
+      Bundler.settings.temporary(deployment: false, frozen: false) do
         # evaluate the Gemfile we have now
         builder = Dsl.new
         builder.eval_gemfile(gemfile_path)

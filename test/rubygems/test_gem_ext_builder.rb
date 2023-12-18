@@ -106,38 +106,41 @@ install:
 
   def test_build_extensions
     pend "terminates on mswin" if vc_windows? && ruby_repo?
-    @spec.extensions << "ext/extconf.rb"
 
-    ext_dir = File.join @spec.gem_dir, "ext"
+    extension_in_lib do
+      @spec.extensions << "ext/extconf.rb"
 
-    FileUtils.mkdir_p ext_dir
+      ext_dir = File.join @spec.gem_dir, "ext"
 
-    extconf_rb = File.join ext_dir, "extconf.rb"
+      FileUtils.mkdir_p ext_dir
 
-    File.open extconf_rb, "w" do |f|
-      f.write <<-'RUBY'
-        require 'mkmf'
+      extconf_rb = File.join ext_dir, "extconf.rb"
 
-        create_makefile 'a'
-      RUBY
+      File.open extconf_rb, "w" do |f|
+        f.write <<-'RUBY'
+          require 'mkmf'
+
+          create_makefile 'a'
+        RUBY
+      end
+
+      ext_lib_dir = File.join ext_dir, "lib"
+      FileUtils.mkdir ext_lib_dir
+      FileUtils.touch File.join ext_lib_dir, "a.rb"
+      FileUtils.mkdir File.join ext_lib_dir, "a"
+      FileUtils.touch File.join ext_lib_dir, "a", "b.rb"
+
+      use_ui @ui do
+        @builder.build_extensions
+      end
+
+      assert_path_exist @spec.extension_dir
+      assert_path_exist @spec.gem_build_complete_path
+      assert_path_exist File.join @spec.extension_dir, "gem_make.out"
+      assert_path_exist File.join @spec.extension_dir, "a.rb"
+      assert_path_exist File.join @spec.gem_dir, "lib", "a.rb"
+      assert_path_exist File.join @spec.gem_dir, "lib", "a", "b.rb"
     end
-
-    ext_lib_dir = File.join ext_dir, "lib"
-    FileUtils.mkdir ext_lib_dir
-    FileUtils.touch File.join ext_lib_dir, "a.rb"
-    FileUtils.mkdir File.join ext_lib_dir, "a"
-    FileUtils.touch File.join ext_lib_dir, "a", "b.rb"
-
-    use_ui @ui do
-      @builder.build_extensions
-    end
-
-    assert_path_exist @spec.extension_dir
-    assert_path_exist @spec.gem_build_complete_path
-    assert_path_exist File.join @spec.extension_dir, "gem_make.out"
-    assert_path_exist File.join @spec.extension_dir, "a.rb"
-    assert_path_exist File.join @spec.gem_dir, "lib", "a.rb"
-    assert_path_exist File.join @spec.gem_dir, "lib", "a", "b.rb"
   end
 
   def test_build_extensions_with_gemhome_with_space
@@ -153,54 +156,41 @@ install:
   end
 
   def test_build_extensions_install_ext_only
-    class << Gem
-      alias_method :orig_install_extension_in_lib, :install_extension_in_lib
-
-      remove_method :install_extension_in_lib
-
-      def Gem.install_extension_in_lib
-        false
-      end
-    end
     pend "terminates on mswin" if vc_windows? && ruby_repo?
 
-    @spec.extensions << "ext/extconf.rb"
+    extension_in_lib(false) do
+      @spec.extensions << "ext/extconf.rb"
 
-    ext_dir = File.join @spec.gem_dir, "ext"
+      ext_dir = File.join @spec.gem_dir, "ext"
 
-    FileUtils.mkdir_p ext_dir
+      FileUtils.mkdir_p ext_dir
 
-    extconf_rb = File.join ext_dir, "extconf.rb"
+      extconf_rb = File.join ext_dir, "extconf.rb"
 
-    File.open extconf_rb, "w" do |f|
-      f.write <<-'RUBY'
-        require 'mkmf'
+      File.open extconf_rb, "w" do |f|
+        f.write <<-'RUBY'
+          require 'mkmf'
 
-        create_makefile 'a'
-      RUBY
-    end
+          create_makefile 'a'
+        RUBY
+      end
 
-    ext_lib_dir = File.join ext_dir, "lib"
-    FileUtils.mkdir ext_lib_dir
-    FileUtils.touch File.join ext_lib_dir, "a.rb"
-    FileUtils.mkdir File.join ext_lib_dir, "a"
-    FileUtils.touch File.join ext_lib_dir, "a", "b.rb"
+      ext_lib_dir = File.join ext_dir, "lib"
+      FileUtils.mkdir ext_lib_dir
+      FileUtils.touch File.join ext_lib_dir, "a.rb"
+      FileUtils.mkdir File.join ext_lib_dir, "a"
+      FileUtils.touch File.join ext_lib_dir, "a", "b.rb"
 
-    use_ui @ui do
-      @builder.build_extensions
-    end
+      use_ui @ui do
+        @builder.build_extensions
+      end
 
-    assert_path_exist @spec.extension_dir
-    assert_path_exist @spec.gem_build_complete_path
-    assert_path_exist File.join @spec.extension_dir, "gem_make.out"
-    assert_path_exist File.join @spec.extension_dir, "a.rb"
-    assert_path_not_exist File.join @spec.gem_dir, "lib", "a.rb"
-    assert_path_not_exist File.join @spec.gem_dir, "lib", "a", "b.rb"
-  ensure
-    class << Gem
-      remove_method :install_extension_in_lib
-
-      alias_method :install_extension_in_lib, :orig_install_extension_in_lib
+      assert_path_exist @spec.extension_dir
+      assert_path_exist @spec.gem_build_complete_path
+      assert_path_exist File.join @spec.extension_dir, "gem_make.out"
+      assert_path_exist File.join @spec.extension_dir, "a.rb"
+      assert_path_not_exist File.join @spec.gem_dir, "lib", "a.rb"
+      assert_path_not_exist File.join @spec.gem_dir, "lib", "a", "b.rb"
     end
   end
 

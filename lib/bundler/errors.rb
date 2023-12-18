@@ -53,8 +53,8 @@ module Bundler
   class MarshalError < StandardError; end
 
   class ChecksumMismatchError < SecurityError
-    def initialize(name_tuple, existing, checksum)
-      @name_tuple = name_tuple
+    def initialize(lock_name, existing, checksum)
+      @lock_name = lock_name
       @existing = existing
       @checksum = checksum
     end
@@ -62,9 +62,9 @@ module Bundler
     def message
       <<~MESSAGE
         Bundler found mismatched checksums. This is a potential security risk.
-          #{@name_tuple.lock_name} #{@existing.to_lock}
+          #{@lock_name} #{@existing.to_lock}
             from #{@existing.sources.join("\n    and ")}
-          #{@name_tuple.lock_name} #{@checksum.to_lock}
+          #{@lock_name} #{@checksum.to_lock}
             from #{@checksum.sources.join("\n    and ")}
 
         #{mismatch_resolution_instructions}
@@ -214,5 +214,20 @@ module Bundler
     end
 
     status_code(36)
+  end
+
+  class InsecureInstallPathError < BundlerError
+    def initialize(path)
+      @path = path
+    end
+
+    def message
+      "The installation path is insecure. Bundler cannot continue.\n" \
+      "#{@path} is world-writable (without sticky bit).\n" \
+      "Bundler cannot safely replace gems in world-writeable directories due to potential vulnerabilities.\n" \
+      "Please change the permissions of this directory or choose a different install path."
+    end
+
+    status_code(38)
   end
 end

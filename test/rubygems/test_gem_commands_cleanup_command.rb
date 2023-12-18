@@ -169,7 +169,7 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     FileUtils.chmod 0o555, @gemhome
 
     @a_1_1, = util_gem "a", "1.1"
-    @a_1_1 = install_gem @a_1_1, :user_install => true # pick up user install path
+    @a_1_1 = install_gem @a_1_1, user_install: true # pick up user install path
 
     Gem::Specification.dirs = [Gem.dir, Gem.user_dir]
 
@@ -243,11 +243,11 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     e_1, = util_gem "e", "1"
     e_2, = util_gem "e", "2"
 
-    c_1 = install_gem c_1, :user_install => true # pick up user install path
+    c_1 = install_gem c_1, user_install: true # pick up user install path
     c_2 = install_gem c_2
 
     d_1 = install_gem d_1
-    d_2 = install_gem d_2, :user_install => true # pick up user install path
+    d_2 = install_gem d_2, user_install: true # pick up user install path
 
     e_1 = install_gem e_1
     e_2 = install_gem e_2
@@ -270,8 +270,8 @@ class TestGemCommandsCleanupCommand < Gem::TestCase
     d_1, = util_gem "d", "1.0"
     d_2, = util_gem "d", "1.1"
 
-    c_1 = install_gem c_1, :user_install => true # pick up user install path
-    c_2 = install_gem c_2, :user_install => true # pick up user install path
+    c_1 = install_gem c_1, user_install: true # pick up user install path
+    c_2 = install_gem c_2, user_install: true # pick up user install path
 
     d_1 = install_gem d_1
     d_2 = install_gem d_2

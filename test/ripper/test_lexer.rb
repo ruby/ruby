@@ -273,4 +273,65 @@ world"
 
     assert_include(Ripper.tokenize(code).join(""), "+1")
   end
+
+  def test_nested_heredoc
+    code = <<~'HEREDOC'
+    <<~H1
+      1
+      #{<<~H2}
+        2
+      H2
+      3
+    H1
+    HEREDOC
+
+    expected = [
+      [[1, 0], :on_heredoc_beg, "<<~H1", state(:EXPR_BEG)],
+      [[1, 5], :on_nl, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_ignored_sp, "  ", state(:EXPR_BEG)],
+      [[2, 2], :on_tstring_content, "1\n", state(:EXPR_BEG)],
+      [[3, 0], :on_ignored_sp, "  ", state(:EXPR_BEG)],
+      [[3, 2], :on_embexpr_beg, "\#{", state(:EXPR_BEG)],
+      [[3, 4], :on_heredoc_beg, "<<~H2", state(:EXPR_BEG)],
+      [[3, 9], :on_embexpr_end, "}", state(:EXPR_END)],
+      [[3, 10], :on_tstring_content, "\n", state(:EXPR_BEG)],
+      [[4, 0], :on_ignored_sp, "    ", state(:EXPR_BEG)],
+      [[4, 4], :on_tstring_content, "2\n", state(:EXPR_BEG)],
+      [[5, 0], :on_heredoc_end, "  H2\n", state(:EXPR_BEG)],
+      [[6, 0], :on_ignored_sp, "  ", state(:EXPR_BEG)],
+      [[6, 2], :on_tstring_content, "3\n", state(:EXPR_BEG)],
+      [[7, 0], :on_heredoc_end, "H1\n", state(:EXPR_BEG)],
+    ]
+    assert_equal(code, Ripper.tokenize(code).join(""))
+    assert_equal(expected, result = Ripper.lex(code),
+                 proc {expected.zip(result) {|e, r| break diff(e, r) unless e == r}})
+
+    code = <<~'HEREDOC'
+    <<-H1
+      1
+      #{<<~H2}
+        2
+      H2
+      3
+    H1
+    HEREDOC
+
+    expected = [
+      [[1, 0], :on_heredoc_beg, "<<-H1", state(:EXPR_BEG)],
+      [[1, 5], :on_nl, "\n", state(:EXPR_BEG)],
+      [[2, 0], :on_tstring_content, "  1\n  ", state(:EXPR_BEG)],
+      [[3, 2], :on_embexpr_beg, "\#{", state(:EXPR_BEG)],
+      [[3, 4], :on_heredoc_beg, "<<~H2", state(:EXPR_BEG)],
+      [[3, 9], :on_embexpr_end, "}", state(:EXPR_END)],
+      [[3, 10], :on_tstring_content, "\n", state(:EXPR_BEG)],
+      [[4, 0], :on_ignored_sp, "    ", state(:EXPR_BEG)],
+      [[4, 4], :on_tstring_content, "2\n", state(:EXPR_BEG)],
+      [[5, 0], :on_heredoc_end, "  H2\n", state(:EXPR_BEG)],
+      [[6, 0], :on_tstring_content, "  3\n", state(:EXPR_BEG)],
+      [[7, 0], :on_heredoc_end, "H1\n", state(:EXPR_BEG)],
+    ]
+    assert_equal(code, Ripper.tokenize(code).join(""))
+    assert_equal(expected, result = Ripper.lex(code),
+                 proc {expected.zip(result) {|e, r| break diff(e, r) unless e == r}})
+  end
 end

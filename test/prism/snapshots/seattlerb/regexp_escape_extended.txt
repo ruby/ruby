@@ -4,8 +4,8 @@
     @ StatementsNode (location: (1,0)-(1,6))
     └── body: (length: 1)
         └── @ RegularExpressionNode (location: (1,0)-(1,6))
+            ├── flags: ∅
             ├── opening_loc: (1,0)-(1,1) = "/"
             ├── content_loc: (1,1)-(1,5) = "\\“"
             ├── closing_loc: (1,5)-(1,6) = "/"
-            ├── unescaped: "“"
-            └── flags: ∅
+            └── unescaped: "“"

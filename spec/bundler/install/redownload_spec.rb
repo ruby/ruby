@@ -57,7 +57,7 @@ RSpec.describe "bundle install" do
     end
   end
 
-  describe "with --force", :bundler => 2 do
+  describe "with --force", bundler: 2 do
     it_behaves_like "an option to force redownloading gems" do
       let(:flag) { "force" }
     end

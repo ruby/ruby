@@ -7,6 +7,7 @@ describe "Method#parameters" do
     def one_keyrest(**a); end
 
     def one_keyreq(a:); end
+    def one_nokey(**nil); end
 
     def one_splat_one_req(*a,b); end
     def one_splat_two_req(*a,b,c); end
@@ -15,6 +16,7 @@ describe "Method#parameters" do
     def one_opt_with_stabby(a=-> b { true }); end
 
     def one_unnamed_splat(*); end
+    def one_unnamed_keyrest(**); end
 
     def one_splat_one_block(*args, &block)
       local_is_not_parameter = {}
@@ -178,6 +180,11 @@ describe "Method#parameters" do
     m.parameters.should == [[:keyreq,:a]]
   end
 
+  it "returns [[:nokey]] for a method with a single **nil parameter" do
+    m = MethodSpecs::Methods.instance_method(:one_nokey)
+    m.parameters.should == [[:nokey]]
+  end
+
   it "works with ->(){} as the value of an optional argument" do
     m = MethodSpecs::Methods.instance_method(:one_opt_with_stabby)
     m.parameters.should == [[:opt,:a]]
@@ -225,9 +232,14 @@ describe "Method#parameters" do
   end
 
   ruby_version_is '3.2' do
-    it "adds * rest arg for \"star\" argument" do
+    it "adds rest arg with name * for \"star\" argument" do
       m = MethodSpecs::Methods.new
       m.method(:one_unnamed_splat).parameters.should == [[:rest, :*]]
+    end
+
+    it "adds keyrest arg with ** as a name for \"double star\" argument" do
+      m = MethodSpecs::Methods.new
+      m.method(:one_unnamed_keyrest).parameters.should == [[:keyrest, :**]]
     end
   end
 
@@ -235,6 +247,23 @@ describe "Method#parameters" do
     it "adds nameless rest arg for \"star\" argument" do
       m = MethodSpecs::Methods.new
       m.method(:one_unnamed_splat).parameters.should == [[:rest]]
+    end
+
+    it "adds nameless keyrest arg for \"double star\" argument" do
+      m = MethodSpecs::Methods.new
+      m.method(:one_unnamed_keyrest).parameters.should == [[:keyrest]]
+    end
+  end
+
+  ruby_version_is '3.1' do
+    it "adds block arg with name & for anonymous block argument" do
+      object = Object.new
+
+      eval(<<~RUBY).should == [[:block, :&]]
+        def object.foo(&)
+        end
+        object.method(:foo).parameters
+      RUBY
     end
   end
 

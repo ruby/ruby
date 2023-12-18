@@ -2,7 +2,7 @@
 
 require_relative "helper"
 require "rubygems/request"
-require "timeout"
+require "rubygems/timeout"
 
 class TestGemRequestConnectionPool < Gem::TestCase
   class FakeHttp
@@ -141,8 +141,8 @@ class TestGemRequestConnectionPool < Gem::TestCase
     pool.checkout
 
     Thread.new do
-      assert_raise(Timeout::Error) do
-        Timeout.timeout(1) do
+      assert_raise(Gem::Timeout::Error) do
+        Gem::Timeout.timeout(1) do
           pool.checkout
         end
       end

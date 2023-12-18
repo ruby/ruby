@@ -117,7 +117,7 @@ module SyntaxSuggest
 
       if ENV["SYNTAX_SUGGEST_DEBUG"]
         puts "```"
-        puts @queue.peek.to_s
+        puts @queue.peek
         puts "```"
         puts "  @frontier indent:  #{frontier_indent}"
         puts "  @unvisited indent: #{unvisited_indent}"

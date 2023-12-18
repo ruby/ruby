@@ -17,18 +17,18 @@ class Gem::DependencyInstaller
   extend Gem::Deprecate
 
   DEFAULT_OPTIONS = { # :nodoc:
-    :env_shebang => false,
-    :document => %w[ri],
-    :domain => :both, # HACK: dup
-    :force => false,
-    :format_executable => false, # HACK: dup
-    :ignore_dependencies => false,
-    :prerelease => false,
-    :security_policy => nil, # HACK: NoSecurity requires OpenSSL. AlmostNo? Low?
-    :wrappers => true,
-    :build_args => nil,
-    :build_docs_in_background => false,
-    :install_as_default => false,
+    env_shebang: false,
+    document: %w[ri],
+    domain: :both, # HACK: dup
+    force: false,
+    format_executable: false, # HACK: dup
+    ignore_dependencies: false,
+    prerelease: false,
+    security_policy: nil, # HACK: NoSecurity requires OpenSSL. AlmostNo? Low?
+    wrappers: true,
+    build_args: nil,
+    build_docs_in_background: false,
+    install_as_default: false,
   }.freeze
 
   ##
@@ -228,22 +228,22 @@ class Gem::DependencyInstaller
     @installed_gems = []
 
     options = {
-      :bin_dir => @bin_dir,
-      :build_args => @build_args,
-      :document => @document,
-      :env_shebang => @env_shebang,
-      :force => @force,
-      :format_executable => @format_executable,
-      :ignore_dependencies => @ignore_dependencies,
-      :prerelease => @prerelease,
-      :security_policy => @security_policy,
-      :user_install => @user_install,
-      :wrappers => @wrappers,
-      :build_root => @build_root,
-      :install_as_default => @install_as_default,
-      :dir_mode => @dir_mode,
-      :data_mode => @data_mode,
-      :prog_mode => @prog_mode,
+      bin_dir: @bin_dir,
+      build_args: @build_args,
+      document: @document,
+      env_shebang: @env_shebang,
+      force: @force,
+      format_executable: @format_executable,
+      ignore_dependencies: @ignore_dependencies,
+      prerelease: @prerelease,
+      security_policy: @security_policy,
+      user_install: @user_install,
+      wrappers: @wrappers,
+      build_root: @build_root,
+      install_as_default: @install_as_default,
+      dir_mode: @dir_mode,
+      data_mode: @data_mode,
+      prog_mode: @prog_mode,
     }
     options[:install_dir] = @install_dir if @only_install_dir
 

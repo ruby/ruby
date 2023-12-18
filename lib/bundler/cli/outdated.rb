@@ -41,12 +41,12 @@ module Bundler
         # We're doing a full update
         Bundler.definition(true)
       else
-        Bundler.definition(:gems => gems, :sources => sources)
+        Bundler.definition(gems: gems, sources: sources)
       end
 
       Bundler::CLI::Common.configure_gem_version_promoter(
         Bundler.definition,
-        options.merge(:strict => @strict)
+        options.merge(strict: @strict)
       )
 
       definition_resolution = proc do
@@ -90,10 +90,10 @@ module Bundler
         end
 
         outdated_gems << {
-          :active_spec => active_spec,
-          :current_spec => current_spec,
-          :dependency => dependency,
-          :groups => groups,
+          active_spec: active_spec,
+          current_spec: current_spec,
+          dependency: dependency,
+          groups: groups,
         }
       end
 

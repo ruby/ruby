@@ -52,7 +52,7 @@ RSpec.describe "bundle update" do
         gem 'thin'
       G
 
-      bundle :update, :all => true
+      bundle :update, all: true
     end
 
     it_behaves_like "a post-install message outputter"
@@ -67,7 +67,7 @@ RSpec.describe "bundle update" do
         gem 'thin'
       G
 
-      bundle :update, :all => true
+      bundle :update, all: true
     end
 
     it_behaves_like "a post-install message outputter"

@@ -10,7 +10,7 @@ RSpec.describe Bundler::Dsl do
     it "registers custom hosts" do
       subject.git_source(:example) {|repo_name| "git@git.example.com:#{repo_name}.git" }
       subject.git_source(:foobar) {|repo_name| "git@foobar.com:#{repo_name}.git" }
-      subject.gem("dobry-pies", :example => "strzalek/dobry-pies")
+      subject.gem("dobry-pies", example: "strzalek/dobry-pies")
       example_uri = "git@git.example.com:strzalek/dobry-pies.git"
       expect(subject.dependencies.first.source.uri).to eq(example_uri)
     end
@@ -26,7 +26,7 @@ RSpec.describe Bundler::Dsl do
     end
 
     it "converts :github PR to URI using https" do
-      subject.gem("sparks", :github => "https://github.com/indirect/sparks/pull/5")
+      subject.gem("sparks", github: "https://github.com/indirect/sparks/pull/5")
       github_uri = "https://github.com/indirect/sparks.git"
       expect(subject.dependencies.first.source.uri).to eq(github_uri)
       expect(subject.dependencies.first.source.ref).to eq("refs/pull/5/head")
@@ -34,21 +34,21 @@ RSpec.describe Bundler::Dsl do
 
     it "rejects :github PR URI with a branch, ref or tag" do
       expect do
-        subject.gem("sparks", :github => "https://github.com/indirect/sparks/pull/5", :branch => "foo")
+        subject.gem("sparks", github: "https://github.com/indirect/sparks/pull/5", branch: "foo")
       end.to raise_error(
         Bundler::GemfileError,
         %(The :branch option can't be used with `github: "https://github.com/indirect/sparks/pull/5"`),
       )
 
       expect do
-        subject.gem("sparks", :github => "https://github.com/indirect/sparks/pull/5", :ref => "foo")
+        subject.gem("sparks", github: "https://github.com/indirect/sparks/pull/5", ref: "foo")
       end.to raise_error(
         Bundler::GemfileError,
         %(The :ref option can't be used with `github: "https://github.com/indirect/sparks/pull/5"`),
       )
 
       expect do
-        subject.gem("sparks", :github => "https://github.com/indirect/sparks/pull/5", :tag => "foo")
+        subject.gem("sparks", github: "https://github.com/indirect/sparks/pull/5", tag: "foo")
       end.to raise_error(
         Bundler::GemfileError,
         %(The :tag option can't be used with `github: "https://github.com/indirect/sparks/pull/5"`),
@@ -57,46 +57,46 @@ RSpec.describe Bundler::Dsl do
 
     it "rejects :github with :git" do
       expect do
-        subject.gem("sparks", :github => "indirect/sparks", :git => "https://github.com/indirect/sparks.git")
+        subject.gem("sparks", github: "indirect/sparks", git: "https://github.com/indirect/sparks.git")
       end.to raise_error(
         Bundler::GemfileError,
         %(The :git option can't be used with `github: "indirect/sparks"`),
       )
     end
 
-    context "default hosts", :bundler => "< 3" do
+    context "default hosts", bundler: "< 3" do
       it "converts :github to URI using https" do
-        subject.gem("sparks", :github => "indirect/sparks")
+        subject.gem("sparks", github: "indirect/sparks")
         github_uri = "https://github.com/indirect/sparks.git"
         expect(subject.dependencies.first.source.uri).to eq(github_uri)
       end
 
       it "converts :github shortcut to URI using https" do
-        subject.gem("sparks", :github => "rails")
+        subject.gem("sparks", github: "rails")
         github_uri = "https://github.com/rails/rails.git"
         expect(subject.dependencies.first.source.uri).to eq(github_uri)
       end
 
       it "converts numeric :gist to :git" do
-        subject.gem("not-really-a-gem", :gist => 2_859_988)
+        subject.gem("not-really-a-gem", gist: 2_859_988)
         github_uri = "https://gist.github.com/2859988.git"
         expect(subject.dependencies.first.source.uri).to eq(github_uri)
       end
 
       it "converts :gist to :git" do
-        subject.gem("not-really-a-gem", :gist => "2859988")
+        subject.gem("not-really-a-gem", gist: "2859988")
         github_uri = "https://gist.github.com/2859988.git"
         expect(subject.dependencies.first.source.uri).to eq(github_uri)
       end
 
       it "converts :bitbucket to :git" do
-        subject.gem("not-really-a-gem", :bitbucket => "mcorp/flatlab-rails")
+        subject.gem("not-really-a-gem", bitbucket: "mcorp/flatlab-rails")
         bitbucket_uri = "https://mcorp@bitbucket.org/mcorp/flatlab-rails.git"
         expect(subject.dependencies.first.source.uri).to eq(bitbucket_uri)
       end
 
       it "converts 'mcorp' to 'mcorp/mcorp'" do
-        subject.gem("not-really-a-gem", :bitbucket => "mcorp")
+        subject.gem("not-really-a-gem", bitbucket: "mcorp")
         bitbucket_uri = "https://mcorp@bitbucket.org/mcorp/mcorp.git"
         expect(subject.dependencies.first.source.uri).to eq(bitbucket_uri)
       end
@@ -142,18 +142,18 @@ RSpec.describe Bundler::Dsl do
      :ruby_30, :ruby_31, :ruby_32, :ruby_33, :mri, :mri_18, :mri_19, :mri_20, :mri_21, :mri_22, :mri_23, :mri_24,
      :mri_25, :mri_26, :mri_27, :mri_30, :mri_31, :mri_32, :mri_33, :jruby, :rbx, :truffleruby].each do |platform|
       it "allows #{platform} as a valid platform" do
-        subject.gem("foo", :platform => platform)
+        subject.gem("foo", platform: platform)
       end
     end
     # rubocop:enable Naming/VariableNumber
 
     it "allows platforms matching the running Ruby version" do
       platform = "ruby_#{RbConfig::CONFIG["MAJOR"]}#{RbConfig::CONFIG["MINOR"]}"
-      subject.gem("foo", :platform => platform)
+      subject.gem("foo", platform: platform)
     end
 
     it "rejects invalid platforms" do
-      expect { subject.gem("foo", :platform => :bogus) }.
+      expect { subject.gem("foo", platform: :bogus) }.
         to raise_error(Bundler::GemfileError, /is not a valid platform/)
     end
 
@@ -203,19 +203,19 @@ RSpec.describe Bundler::Dsl do
     end
 
     it "rejects branch option on non-git gems" do
-      expect { subject.gem("foo", :branch => "test") }.
+      expect { subject.gem("foo", branch: "test") }.
         to raise_error(Bundler::GemfileError, /The `branch` option for `gem 'foo'` is not allowed. Only gems with a git source can specify a branch/)
     end
 
     it "allows specifying a branch on git gems" do
-      subject.gem("foo", :branch => "test", :git => "http://mytestrepo")
+      subject.gem("foo", branch: "test", git: "http://mytestrepo")
       dep = subject.dependencies.last
       expect(dep.name).to eq "foo"
     end
 
     it "allows specifying a branch on git gems with a git_source" do
       subject.git_source(:test_source) {|n| "https://github.com/#{n}" }
-      subject.gem("foo", :branch => "test", :test_source => "bundler/bundler")
+      subject.gem("foo", branch: "test", test_source: "bundler/bundler")
       dep = subject.dependencies.last
       expect(dep.name).to eq "foo"
     end
@@ -280,7 +280,7 @@ RSpec.describe Bundler::Dsl do
         allow(Bundler).to receive(:default_gemfile).and_return(Pathname.new("./Gemfile"))
 
         subject.source("https://other-source.org") do
-          subject.gem("dobry-pies", :path => "foo")
+          subject.gem("dobry-pies", path: "foo")
           subject.gem("foo")
         end
 
@@ -292,7 +292,7 @@ RSpec.describe Bundler::Dsl do
   describe "#check_primary_source_safety" do
     context "when a global source is not defined implicitly" do
       it "will raise a major deprecation warning" do
-        not_a_global_source = double("not-a-global-source", :no_remotes? => true)
+        not_a_global_source = double("not-a-global-source", no_remotes?: true)
         allow(Bundler::Source::Rubygems).to receive(:new).and_return(not_a_global_source)
 
         warning = "This Gemfile does not include an explicit global source. " \

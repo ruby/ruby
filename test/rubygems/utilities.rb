@@ -65,7 +65,7 @@ class Gem::FakeFetcher
   def create_response(uri)
     data = find_data(uri)
     response = data.respond_to?(:call) ? data.call : data
-    raise TypeError, "#{response.class} is not a type of Net::HTTPResponse" unless response.is_a?(Net::HTTPResponse)
+    raise TypeError, "#{response.class} is not a type of Gem::Net::HTTPResponse" unless response.is_a?(Gem::Net::HTTPResponse)
 
     response
   end
@@ -164,7 +164,7 @@ class Gem::FakeFetcher
 end
 
 ##
-# The HTTPResponseFactory allows easy creation of Net::HTTPResponse instances in RubyGems tests:
+# The HTTPResponseFactory allows easy creation of Gem::Net::HTTPResponse instances in RubyGems tests:
 #
 # Example:
 #
@@ -178,7 +178,7 @@ end
 
 class Gem::HTTPResponseFactory
   def self.create(body:, code:, msg:, headers: {})
-    response = Net::HTTPResponse.send(:response_class, code.to_s).new("1.0", code.to_s, msg)
+    response = Gem::Net::HTTPResponse.send(:response_class, code.to_s).new("1.0", code.to_s, msg)
     response.instance_variable_set(:@body, body)
     response.instance_variable_set(:@read, true)
     headers.each {|name, value| response[name] = value }
@@ -201,23 +201,23 @@ end
 
 class Gem::MockBrowser
   def self.options(uri)
-    options = Net::HTTP::Options.new(uri)
-    Net::HTTP.start(uri.hostname, uri.port) do |http|
+    options = Gem::Net::HTTP::Options.new(uri)
+    Gem::Net::HTTP.start(uri.hostname, uri.port) do |http|
       http.request(options)
     end
   end
 
   def self.get(uri)
-    get = Net::HTTP::Get.new(uri)
-    Net::HTTP.start(uri.hostname, uri.port) do |http|
+    get = Gem::Net::HTTP::Get.new(uri)
+    Gem::Net::HTTP.start(uri.hostname, uri.port) do |http|
       http.request(get)
     end
   end
 
   def self.post(uri, content_type: "application/x-www-form-urlencoded")
     headers = { "content-type" => content_type } if content_type
-    post = Net::HTTP::Post.new(uri, headers)
-    Net::HTTP.start(uri.hostname, uri.port) do |http|
+    post = Gem::Net::HTTP::Post.new(uri, headers)
+    Gem::Net::HTTP.start(uri.hostname, uri.port) do |http|
       http.request(post)
     end
   end

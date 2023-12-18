@@ -28,10 +28,14 @@ module IRB
           return
         end
 
-        source = SourceFinder.new(@irb_context).find_source(str)
+        str, esses = str.split(" -")
+        super_level = esses ? esses.count("s") : 0
+        source = SourceFinder.new(@irb_context).find_source(str, super_level)
 
         if source
           show_source(source)
+        elsif super_level > 0
+          puts "Error: Couldn't locate a super definition for #{str}"
         else
           puts "Error: Couldn't locate a definition for #{str}"
         end

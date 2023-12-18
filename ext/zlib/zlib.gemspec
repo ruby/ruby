@@ -27,5 +27,5 @@ Gem::Specification.new do |spec|
   spec.executables   = []
   spec.require_paths = ["lib"]
   spec.extensions    = "ext/zlib/extconf.rb"
-  spec.required_ruby_version = ">= 2.3.0"
+  spec.required_ruby_version = ">= 2.5.0"
 end

@@ -1,4 +1,4 @@
-use std::{ffi::{CStr, CString}, ptr::null};
+use std::{ffi::{CStr, CString}, ptr::null, fs::File};
 use crate::backend::current::TEMP_REGS;
 use std::os::raw::{c_char, c_int, c_uint};
 
@@ -11,13 +11,13 @@ pub static LARGE_CALL_THRESHOLD: u64 = 120;
 // Number of live ISEQs after which we consider an app to be large
 pub static LARGE_ISEQ_COUNT: u64 = 40_000;
 
-// This option is exposed to the C side a a global variable for performance, see vm.c
+// This option is exposed to the C side in a global variable for performance, see vm.c
 // Number of method calls after which to start generating code
 // Threshold==1 means compile on first execution
 #[no_mangle]
 pub static mut rb_yjit_call_threshold: u64 = SMALL_CALL_THRESHOLD;
 
-// This option is exposed to the C side a a global variable for performance, see vm.c
+// This option is exposed to the C side in a global variable for performance, see vm.c
 // Number of execution requests after which a method is no longer
 // considered hot. Raising this results in more generated code.
 #[no_mangle]
@@ -72,13 +72,16 @@ pub struct Options {
     /// Enable generating frame pointers (for x86. arm64 always does this)
     pub frame_pointer: bool,
 
+    /// Run code GC when exec_mem_size is reached.
+    pub code_gc: bool,
+
     /// Enable writing /tmp/perf-{pid}.map for Linux perf
     pub perf_map: bool,
 }
 
 // Initialize the options to default values
 pub static mut OPTIONS: Options = Options {
-    exec_mem_size: 128 * 1024 * 1024,
+    exec_mem_size: 64 * 1024 * 1024,
     no_type_prop: false,
     max_versions: 4,
     num_temp_regs: 5,
@@ -92,19 +95,21 @@ pub static mut OPTIONS: Options = Options {
     verify_ctx: false,
     dump_iseq_disasm: None,
     frame_pointer: false,
+    code_gc: false,
     perf_map: false,
 };
 
 /// YJIT option descriptions for `ruby --help`.
-static YJIT_OPTIONS: [(&str, &str); 8] = [
-    ("--yjit-stats",                    "Enable collecting YJIT statistics"),
-    ("--yjit-trace-exits",              "Record Ruby source location when exiting from generated code"),
-    ("--yjit-trace-exits-sample-rate",  "Trace exit locations only every Nth occurrence"),
-    ("--yjit-exec-mem-size=num",        "Size of executable memory block in MiB (default: 128)"),
-    ("--yjit-call-threshold=num",       "Number of calls to trigger JIT"),
-    ("--yjit-cold-threshold=num",       "Global call after which ISEQs not compiled (default: 200K)"),
-    ("--yjit-max-versions=num",         "Maximum number of versions per basic block (default: 4)"),
-    ("--yjit-perf",                     "Enable frame pointers and perf profiling"),
+static YJIT_OPTIONS: [(&str, &str); 9] = [
+    ("--yjit-exec-mem-size=num",           "Size of executable memory block in MiB (default: 64)"),
+    ("--yjit-call-threshold=num",          "Number of calls to trigger JIT"),
+    ("--yjit-cold-threshold=num",          "Global calls after which ISEQs not compiled (default: 200K)"),
+    ("--yjit-stats",                       "Enable collecting YJIT statistics"),
+    ("--yjit-disable",                     "Disable YJIT for lazily enabling it with RubyVM::YJIT.enable"),
+    ("--yjit-code-gc",                     "Run code GC when the code size reaches the limit"),
+    ("--yjit-perf",                        "Enable frame pointers and perf profiling"),
+    ("--yjit-trace-exits",                 "Record Ruby source location when exiting from generated code"),
+    ("--yjit-trace-exits-sample-rate=num", "Trace exit locations only every Nth occurrence"),
 ];
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -120,7 +125,12 @@ macro_rules! get_option {
     // Unsafe is ok here because options are initialized
     // once before any Ruby code executes
     ($option_name:ident) => {
-        unsafe { OPTIONS.$option_name }
+        {
+            // Make this a statement since attributes on expressions are experimental
+            #[allow(unused_unsafe)]
+            let ret = unsafe { OPTIONS.$option_name };
+            ret
+        }
     };
 }
 pub(crate) use get_option;
@@ -204,6 +214,10 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             }
         },
 
+        ("code-gc", _) => unsafe {
+            OPTIONS.code_gc = true;
+        },
+
         ("perf", _) => match opt_val {
             "" => unsafe {
                 OPTIONS.frame_pointer = true;
@@ -217,10 +231,14 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("dump-disasm", _) => match opt_val {
             "" => unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::Stdout) },
             directory => {
-                let pid = std::process::id();
-                let path = format!("{directory}/yjit_{pid}.log");
-                println!("YJIT disasm dump: {path}");
-                unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(path)) }
+                let path = format!("{directory}/yjit_{}.log", std::process::id());
+                match File::options().create(true).append(true).open(&path) {
+                    Ok(_) => {
+                        eprintln!("YJIT disasm dump: {path}");
+                        unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(path)) }
+                    }
+                    Err(err) => eprintln!("Failed to create {path}: {err}"),
+                }
             }
          },
 

@@ -461,6 +461,20 @@ cancel_getaddrinfo(void *ptr)
 }
 
 static int
+do_pthread_create(pthread_t *th, const pthread_attr_t *attr, void *(*start_routine) (void *), void *arg)
+{
+    int limit = 3, ret;
+    do {
+        // It is said that pthread_create may fail spuriously, so we follow the JDK and retry several times.
+        //
+        // https://bugs.openjdk.org/browse/JDK-8268605
+        // https://github.com/openjdk/jdk/commit/e35005d5ce383ddd108096a3079b17cb0bcf76f1
+        ret = pthread_create(th, attr, start_routine, arg);
+    } while (ret == EAGAIN && limit-- > 0);
+    return ret;
+}
+
+static int
 rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hints, struct addrinfo **ai)
 {
     int retry;
@@ -475,22 +489,27 @@ start:
         return EAI_MEMORY;
     }
 
-    pthread_t th;
-    if (pthread_create(&th, 0, do_getaddrinfo, arg) != 0) {
+    pthread_attr_t attr;
+    if (pthread_attr_init(&attr) != 0) {
         free_getaddrinfo_arg(arg);
         return EAI_AGAIN;
     }
-
-    pthread_detach(th);
-#if defined(__s390__) || defined(__s390x__) || defined(__zarch__) || defined(__SYSC_ZARCH__)
-# define S390X
-#endif
-#if defined(HAVE_PTHREAD_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU) && !defined(S390X)
+#if defined(HAVE_PTHREAD_ATTR_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU)
     cpu_set_t tmp_cpu_set;
     CPU_ZERO(&tmp_cpu_set);
-    CPU_SET(sched_getcpu(), &tmp_cpu_set);
-    pthread_setaffinity_np(th, sizeof(cpu_set_t), &tmp_cpu_set);
+    int cpu = sched_getcpu();
+    if (cpu < CPU_SETSIZE) {
+        CPU_SET(cpu, &tmp_cpu_set);
+        pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &tmp_cpu_set);
+    }
 #endif
+
+    pthread_t th;
+    if (do_pthread_create(&th, &attr, do_getaddrinfo, arg) != 0) {
+        free_getaddrinfo_arg(arg);
+        return EAI_AGAIN;
+    }
+    pthread_detach(th);
 
     rb_thread_call_without_gvl2(wait_getaddrinfo, arg, cancel_getaddrinfo, arg);
 
@@ -686,7 +705,7 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
                char *serv, size_t servlen, int flags)
 {
     int retry;
-    struct getnameinfo_arg *arg = allocate_getnameinfo_arg(sa, salen, hostlen, servlen, flags);
+    struct getnameinfo_arg *arg;
     int err;
 
 start:
@@ -697,19 +716,27 @@ start:
         return EAI_MEMORY;
     }
 
-    pthread_t th;
-    if (pthread_create(&th, 0, do_getnameinfo, arg) != 0) {
+    pthread_attr_t attr;
+    if (pthread_attr_init(&attr) != 0) {
         free_getnameinfo_arg(arg);
         return EAI_AGAIN;
     }
-
-    pthread_detach(th);
-#if defined(HAVE_PTHREAD_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU) && !defined(S390X)
+#if defined(HAVE_PTHREAD_ATTR_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU)
     cpu_set_t tmp_cpu_set;
     CPU_ZERO(&tmp_cpu_set);
-    CPU_SET(sched_getcpu(), &tmp_cpu_set);
-    pthread_setaffinity_np(th, sizeof(cpu_set_t), &tmp_cpu_set);
+    int cpu = sched_getcpu();
+    if (cpu < CPU_SETSIZE) {
+        CPU_SET(cpu, &tmp_cpu_set);
+        pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &tmp_cpu_set);
+    }
 #endif
+
+    pthread_t th;
+    if (do_pthread_create(&th, 0, do_getnameinfo, arg) != 0) {
+        free_getnameinfo_arg(arg);
+        return EAI_AGAIN;
+    }
+    pthread_detach(th);
 
     rb_thread_call_without_gvl2(wait_getnameinfo, arg, cancel_getnameinfo, arg);
 
@@ -753,7 +780,7 @@ make_ipaddr0(struct sockaddr *addr, socklen_t addrlen, char *buf, size_t buflen)
 
     error = rb_getnameinfo(addr, addrlen, buf, buflen, NULL, 0, NI_NUMERICHOST);
     if (error) {
-        rsock_raise_socket_error("getnameinfo", error);
+        rsock_raise_resolution_error("getnameinfo", error);
     }
 }
 
@@ -962,7 +989,7 @@ rsock_getaddrinfo(VALUE host, VALUE port, struct addrinfo *hints, int socktype_h
         if (hostp && hostp[strlen(hostp)-1] == '\n') {
             rb_raise(rb_eSocket, "newline at the end of hostname");
         }
-        rsock_raise_socket_error("getaddrinfo", error);
+        rsock_raise_resolution_error("getaddrinfo", error);
     }
 
     return res;
@@ -1021,7 +1048,7 @@ rsock_ipaddr(struct sockaddr *sockaddr, socklen_t sockaddrlen, int norevlookup)
     error = rb_getnameinfo(sockaddr, sockaddrlen, hbuf, sizeof(hbuf),
                            pbuf, sizeof(pbuf), NI_NUMERICHOST | NI_NUMERICSERV);
     if (error) {
-        rsock_raise_socket_error("getnameinfo", error);
+        rsock_raise_resolution_error("getnameinfo", error);
     }
     addr2 = rb_str_new2(hbuf);
     if (addr1 == Qnil) {
@@ -1659,7 +1686,7 @@ rsock_inspect_sockaddr(struct sockaddr *sockaddr_arg, socklen_t socklen, VALUE r
                                        hbuf, (socklen_t)sizeof(hbuf), NULL, 0,
                                        NI_NUMERICHOST|NI_NUMERICSERV);
                 if (error) {
-                    rsock_raise_socket_error("getnameinfo", error);
+                    rsock_raise_resolution_error("getnameinfo", error);
                 }
                 if (addr->sin6_port == 0) {
                     rb_str_cat2(ret, hbuf);
@@ -2027,7 +2054,7 @@ addrinfo_mdump(VALUE self)
                                hbuf, (socklen_t)sizeof(hbuf), pbuf, (socklen_t)sizeof(pbuf),
                                NI_NUMERICHOST|NI_NUMERICSERV);
         if (error) {
-            rsock_raise_socket_error("getnameinfo", error);
+            rsock_raise_resolution_error("getnameinfo", error);
         }
         sockaddr = rb_assoc_new(rb_str_new_cstr(hbuf), rb_str_new_cstr(pbuf));
         break;
@@ -2373,7 +2400,7 @@ addrinfo_getnameinfo(int argc, VALUE *argv, VALUE self)
                            hbuf, (socklen_t)sizeof(hbuf), pbuf, (socklen_t)sizeof(pbuf),
                            flags);
     if (error) {
-        rsock_raise_socket_error("getnameinfo", error);
+        rsock_raise_resolution_error("getnameinfo", error);
     }
 
     return rb_assoc_new(rb_str_new2(hbuf), rb_str_new2(pbuf));
@@ -3003,12 +3030,12 @@ rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len)
 void
 rsock_init_addrinfo(void)
 {
+    id_timeout = rb_intern("timeout");
+
     /*
      * The Addrinfo class maps <tt>struct addrinfo</tt> to ruby.  This
      * structure identifies an Internet host and a service.
      */
-    id_timeout = rb_intern("timeout");
-
     rb_cAddrinfo = rb_define_class("Addrinfo", rb_cObject);
     rb_define_alloc_func(rb_cAddrinfo, addrinfo_s_allocate);
     rb_define_method(rb_cAddrinfo, "initialize", addrinfo_initialize, -1);

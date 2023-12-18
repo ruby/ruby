@@ -84,7 +84,7 @@ module Bundler
       else
         raise ArgumentError, "2nd argument is invalid"
       end
-      label.nil? ? {} : { :label => label }
+      label.nil? ? {} : { label: label }
     end
 
     def spec_for_dependency(dependency)
@@ -103,7 +103,7 @@ module Bundler
       end
 
       def g
-        @g ||= ::GraphViz.digraph(@graph_name, :concentrate => true, :normalize => true, :nodesep => 0.55) do |g|
+        @g ||= ::GraphViz.digraph(@graph_name, concentrate: true, normalize: true, nodesep: 0.55) do |g|
           g.edge[:weight]   = 2
           g.edge[:fontname] = g.node[:fontname] = "Arial, Helvetica, SansSerif"
           g.edge[:fontsize] = 12
@@ -114,10 +114,10 @@ module Bundler
         @groups.each do |group|
           g.add_nodes(
             group, {
-              :style => "filled",
-              :fillcolor => "#B9B9D5",
-              :shape => "box3d",
-              :fontsize => 16,
+              style: "filled",
+              fillcolor: "#B9B9D5",
+              shape: "box3d",
+              fontsize: 16,
             }.merge(@node_options[group])
           )
         end
@@ -125,8 +125,8 @@ module Bundler
         @relations.each do |parent, children|
           children.each do |child|
             if @groups.include?(parent)
-              g.add_nodes(child, { :style => "filled", :fillcolor => "#B9B9D5" }.merge(@node_options[child]))
-              g.add_edges(parent, child, { :constraint => false }.merge(@edge_options["#{parent}_#{child}"]))
+              g.add_nodes(child, { style: "filled", fillcolor: "#B9B9D5" }.merge(@node_options[child]))
+              g.add_edges(parent, child, { constraint: false }.merge(@edge_options["#{parent}_#{child}"]))
             else
               g.add_nodes(child, @node_options[child])
               g.add_edges(parent, child, @edge_options["#{parent}_#{child}"])
@@ -135,7 +135,7 @@ module Bundler
         end
 
         if @output_format.to_s == "debug"
-          $stdout.puts g.output :none => String
+          $stdout.puts g.output none: String
           Bundler.ui.info "debugging bundle viz..."
         else
           begin

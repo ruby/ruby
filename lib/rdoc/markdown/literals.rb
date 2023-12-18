@@ -3,7 +3,6 @@
 # :markup: markdown
 
 ##
-#--
 # This set of literals is for Ruby 1.9 regular expressions and gives full
 # unicode support.
 #

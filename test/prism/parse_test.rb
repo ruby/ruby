@@ -46,6 +46,22 @@ module Prism
       assert_equal filepath, find_source_file_node(result.value).filepath
     end
 
+    def test_parse_takes_line
+      line = 4
+      result = Prism.parse("def foo\n __FILE__\nend", line: line)
+
+      assert_equal line, result.value.location.start_line
+      assert_equal line + 1, find_source_file_node(result.value).location.start_line
+    end
+
+    def test_parse_takes_negative_lines
+      line = -2
+      result = Prism.parse("def foo\n __FILE__\nend", line: line)
+
+      assert_equal line, result.value.location.start_line
+      assert_equal line + 1, find_source_file_node(result.value).location.start_line
+    end
+
     def test_parse_lex
       node, tokens = Prism.parse_lex("def foo; end").value
 
@@ -94,6 +110,11 @@ module Prism
       #
       # Additionally, Ripper cannot parse the %w[] fixture in this file, so set ripper_should_parse to false.
       ripper_should_parse = false if relative == "spanning_heredoc.txt"
+
+      # Ruby < 3.3.0 cannot parse heredocs where there are leading whitespace charactes in the heredoc start.
+      # Example: <<~'   EOF' or <<-'  EOF'
+      # https://bugs.ruby-lang.org/issues/19539
+      ripper_should_parse = false if relative == "heredocs_leading_whitespace.txt" && RUBY_VERSION < "3.3.0"
 
       define_method "test_filepath_#{relative}" do
         # First, read the source from the filepath. Use binmode to avoid converting CRLF on Windows,

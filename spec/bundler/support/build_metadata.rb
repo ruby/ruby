@@ -10,20 +10,20 @@ module Spec
 
     def write_build_metadata(dir: source_root)
       build_metadata = {
-        :git_commit_sha => git_commit_sha,
-        :built_at => loaded_gemspec.date.utc.strftime("%Y-%m-%d"),
-        :release => true,
+        git_commit_sha: git_commit_sha,
+        built_at: loaded_gemspec.date.utc.strftime("%Y-%m-%d"),
+        release: true,
       }
 
-      replace_build_metadata(build_metadata, dir: dir) # rubocop:disable Style/HashSyntax
+      replace_build_metadata(build_metadata, dir: dir)
     end
 
     def reset_build_metadata(dir: source_root)
       build_metadata = {
-        :release => false,
+        release: false,
       }
 
-      replace_build_metadata(build_metadata, dir: dir) # rubocop:disable Style/HashSyntax
+      replace_build_metadata(build_metadata, dir: dir)
     end
 
     private
@@ -41,7 +41,7 @@ module Spec
     end
 
     def git_commit_sha
-      ruby_core_tarball? ? "unknown" : sys_exec("git rev-parse --short HEAD", :dir => source_root).strip
+      ruby_core_tarball? ? "unknown" : sys_exec("git rev-parse --short HEAD", dir: source_root).strip
     end
 
     extend self

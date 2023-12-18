@@ -610,6 +610,7 @@ module Prism
       result = Prism.lex(source, **options)
       result_value = result.value
       previous_state = nil
+      last_heredoc_end = nil
 
       # In previous versions of Ruby, Ripper wouldn't flush the bom before the
       # first token, so we had to have a hack in place to account for that. This
@@ -664,6 +665,7 @@ module Prism
           when :on_heredoc_end
             # Heredoc end tokens can be emitted in an odd order, so we don't
             # want to bother comparing the state on them.
+            last_heredoc_end = token.location.end_offset
             IgnoreStateToken.new([[lineno, column], event, value, lex_state])
           when :on_ident
             if lex_state == Ripper::EXPR_END
@@ -729,16 +731,24 @@ module Prism
             # comment and there is still whitespace after the comment, then
             # Ripper will append a on_nl token (even though there isn't
             # necessarily a newline). We mirror that here.
-            start_offset = previous_token.location.end_offset
-            end_offset = token.location.start_offset
+            if previous_token.type == :COMMENT
+              # If the comment is at the start of a heredoc: <<HEREDOC # comment
+              # then the comment's end_offset is up near the heredoc_beg.
+              # This is not the correct offset to use for figuring out if
+              # there is trailing whitespace after the last token.
+              # Use the greater offset of the two to determine the start of
+              # the trailing whitespace.
+              start_offset = [previous_token.location.end_offset, last_heredoc_end].compact.max
+              end_offset = token.location.start_offset
 
-            if previous_token.type == :COMMENT && start_offset < end_offset
-              if bom
-                start_offset += 3
-                end_offset += 3
+              if start_offset < end_offset
+                if bom
+                  start_offset += 3
+                  end_offset += 3
+                end
+
+                tokens << Token.new([[lineno, 0], :on_nl, source.byteslice(start_offset...end_offset), lex_state])
               end
-
-              tokens << Token.new([[lineno, 0], :on_nl, source.byteslice(start_offset...end_offset), lex_state])
             end
 
             Token.new([[lineno, column], event, value, lex_state])
@@ -831,7 +841,7 @@ module Prism
       # We sort by location to compare against Ripper's output
       tokens.sort_by!(&:location)
 
-      ParseResult.new(tokens, result.comments, result.magic_comments, result.errors, result.warnings, [])
+      ParseResult.new(tokens, result.comments, result.magic_comments, result.data_loc, result.errors, result.warnings, [])
     end
   end
 

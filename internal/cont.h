@@ -22,6 +22,9 @@ void rb_jit_cont_init(void);
 void rb_jit_cont_each_iseq(rb_iseq_callback callback, void *data);
 void rb_jit_cont_finish(void);
 
+/* vm.c */
+void rb_free_shared_fiber_pool(void);
+
 // Copy locals from the current execution to the specified fiber.
 VALUE rb_fiber_inherit_storage(struct rb_execution_context_struct *ec, struct rb_fiber_struct *fiber);
 

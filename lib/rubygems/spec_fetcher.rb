@@ -69,9 +69,9 @@ class Gem::SpecFetcher
     @prerelease_specs = {}
 
     @caches = {
-      :latest => @latest_specs,
-      :prerelease => @prerelease_specs,
-      :released => @specs,
+      latest: @latest_specs,
+      prerelease: @prerelease_specs,
+      released: @specs,
     }
 
     @fetcher = Gem::RemoteFetcher.fetcher

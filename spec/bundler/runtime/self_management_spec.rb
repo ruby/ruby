@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "Self management", :rubygems => ">= 3.3.0.dev", :realworld => true do
+RSpec.describe "Self management", rubygems: ">= 3.3.0.dev", realworld: true do
   describe "auto switching" do
     let(:previous_minor) do
       "2.3.0"
@@ -24,19 +24,19 @@ RSpec.describe "Self management", :rubygems => ">= 3.3.0.dev", :realworld => tru
       lockfile_bundled_with(previous_minor)
 
       bundle "config set --local path.system true"
-      bundle "install", :artifice => "vcr"
+      bundle "install", artifice: "vcr"
       expect(out).to include("Bundler #{Bundler::VERSION} is running, but your lockfile was generated with #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
 
       # It uninstalls the older system bundler
-      bundle "clean --force"
+      bundle "clean --force", artifice: nil
       expect(out).to eq("Removing bundler (#{Bundler::VERSION})")
 
       # App now uses locked version
-      bundle "-v"
+      bundle "-v", artifice: nil
       expect(out).to end_with(previous_minor[0] == "2" ? "Bundler version #{previous_minor}" : previous_minor)
 
       # Subsequent installs use the locked version without reinstalling
-      bundle "install --verbose"
+      bundle "install --verbose", artifice: nil
       expect(out).to include("Using bundler #{previous_minor}")
       expect(out).not_to include("Bundler #{Bundler::VERSION} is running, but your lockfile was generated with #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
     end
@@ -45,7 +45,7 @@ RSpec.describe "Self management", :rubygems => ">= 3.3.0.dev", :realworld => tru
       lockfile_bundled_with(previous_minor)
 
       bundle "config set --local path vendor/bundle"
-      bundle "install", :artifice => "vcr"
+      bundle "install", artifice: "vcr"
       expect(out).to include("Bundler #{Bundler::VERSION} is running, but your lockfile was generated with #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
       expect(vendored_gems("gems/bundler-#{previous_minor}")).to exist
 
@@ -67,7 +67,7 @@ RSpec.describe "Self management", :rubygems => ">= 3.3.0.dev", :realworld => tru
       lockfile_bundled_with(previous_minor)
 
       bundle "config set --local deployment true"
-      bundle "install", :artifice => "vcr"
+      bundle "install", artifice: "vcr"
       expect(out).to include("Bundler #{Bundler::VERSION} is running, but your lockfile was generated with #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
       expect(vendored_gems("gems/bundler-#{previous_minor}")).to exist
 
@@ -100,7 +100,7 @@ RSpec.describe "Self management", :rubygems => ">= 3.3.0.dev", :realworld => tru
 
       lockfile_bundled_with(missing_minor)
 
-      bundle "install", :artifice => "vcr"
+      bundle "install", artifice: "vcr"
       expect(err).to eq("Your lockfile is locked to a version of bundler (#{missing_minor}) that doesn't exist at https://rubygems.org/. Going on using #{Bundler::VERSION}")
 
       bundle "-v"
@@ -111,7 +111,7 @@ RSpec.describe "Self management", :rubygems => ">= 3.3.0.dev", :realworld => tru
       lockfile_bundled_with(current_version)
 
       bundle "config set --local version #{previous_minor}"
-      bundle "install", :artifice => "vcr"
+      bundle "install", artifice: "vcr"
       expect(out).to include("Bundler #{Bundler::VERSION} is running, but your configuration was #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
 
       bundle "-v"
@@ -122,7 +122,7 @@ RSpec.describe "Self management", :rubygems => ">= 3.3.0.dev", :realworld => tru
       lockfile_bundled_with(previous_minor)
 
       bundle "config set version system"
-      bundle "install", :artifice => "vcr"
+      bundle "install", artifice: "vcr"
       expect(out).not_to match(/restarting using that version/)
 
       bundle "-v"

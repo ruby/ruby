@@ -32,6 +32,9 @@ jobs:
         test_task: ['check']
         configure: ['']
         os: ${{ fromJSON(format('["macos-11","macos-12"{0}]', (github.repository == 'ruby/ruby' && ',"macos-arm-oss"' || ''))) }}
+        include:
+          - test_task: test-all TESTS=--repeat-count=2
+            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-12' }}
       fail-fast: false
 
     env:

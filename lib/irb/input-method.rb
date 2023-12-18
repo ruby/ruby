@@ -193,6 +193,10 @@ module IRB
       }
     end
 
+    def completion_info
+      'RegexpCompletor'
+    end
+
     # Reads the next line from this input method.
     #
     # See IO#gets for more information.
@@ -230,13 +234,13 @@ module IRB
     HISTORY = Reline::HISTORY
     include HistorySavingAbility
     # Creates a new input method object using Reline
-    def initialize
+    def initialize(completor)
       IRB.__send__(:set_encoding, Reline.encoding_system_needs.name, override: false)
 
-      super
+      super()
 
       @eof = false
-      @completor = RegexpCompletor.new
+      @completor = completor
 
       Reline.basic_word_break_characters = BASIC_WORD_BREAK_CHARACTERS
       Reline.completion_append_character = nil
@@ -268,6 +272,11 @@ module IRB
         rescue LoadError
         end
       end
+    end
+
+    def completion_info
+      autocomplete_message = Reline.autocompletion ? 'Autocomplete' : 'Tab Complete'
+      "#{autocomplete_message}, #{@completor.inspect}"
     end
 
     def check_termination(&block)
@@ -303,6 +312,9 @@ module IRB
         return nil if result.nil? or pointer.nil? or pointer < 0
 
         name = doc_namespace.call(result[pointer])
+        # Use first one because document dialog does not support multiple namespaces.
+        name = name.first if name.is_a?(Array)
+
         show_easter_egg = name&.match?(/\ARubyVM/) && !ENV['RUBY_YES_I_AM_NOT_A_NORMAL_USER']
 
         options = {}

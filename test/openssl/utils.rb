@@ -151,7 +151,11 @@ class OpenSSL::TestCase < Test::Unit::TestCase
   def omit_on_fips
     return unless OpenSSL.fips_mode
 
-    omit 'An encryption used in the test is not FIPS-approved'
+    omit <<~MESSAGE
+      Only for OpenSSL non-FIPS with the following possible reasons:
+      * A testing logic is non-FIPS specific.
+      * An encryption used in the test is not FIPS-approved.
+    MESSAGE
   end
 
   def omit_on_non_fips

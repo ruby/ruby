@@ -199,6 +199,36 @@ will be autolinked:
 If not, or if you suppress autolinking, consider forcing
 [monofont](rdoc-ref:RDoc::MarkupReference@Monofont).
 
+### Explicit Links
+
+When writing an explicit link, follow these guidelines.
+
+#### +rdoc-ref+ Scheme
+
+Use the +rdoc-ref+ scheme for:
+
+- A link in core documentation to other core documentation.
+- A link in core documentation to documentation in a standard library package.
+- A link in a standard library package to other documentation in that same
+  standard library package.
+
+See section "+rdoc-ref+ Scheme" in {Links}[rdoc-ref:RDoc::MarkupReference@Links].
+
+#### URL-Based Link
+
+Use a full URL-based link for:
+
+- A link in standard library documentation to documentation in the core.
+- A link in standard library documentation to documentation in a different
+  standard library package.
+
+Doing so ensures that the link will valid even when the package documentation
+is built independently (separately from the core documentation).
+
+The link should lead to a target in https://docs.ruby-lang.org/en/master/.
+
+Also use a full URL-based link for a link to an off-site document.
+
 ### Variable Names
 
 The name of a variable (as specified in its call-seq) should be marked up as
@@ -264,7 +294,10 @@ Guidelines:
 - Consider listing the parent class and any included modules; consider
   [links](rdoc-ref:RDoc::MarkupReference@Links)
   to their "What's Here" sections if those exist.
-- List methods as a bullet list:
+- All methods mentioned in the left-pane table of contents
+  should be listed (including any methods extended from another class).
+- Attributes (which are not included in the TOC) may also be listed.
+- Display methods as items in one or more bullet lists:
 
     - Begin each item with the method name, followed by a colon
       and a short description.

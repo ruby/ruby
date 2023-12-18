@@ -24,7 +24,7 @@ RSpec.describe "bundle init" do
 
     it "honours the current process umask when generating from a template" do
       FileUtils.mkdir(target_dir)
-      bundle :init, :dir => target_dir
+      bundle :init, dir: target_dir
       generated_mode = File.stat(File.join(target_dir, "Gemfile")).mode & 0o111
       expect(generated_mode).to be_zero
     end
@@ -38,11 +38,11 @@ RSpec.describe "bundle init" do
     end
 
     it "does not change existing Gemfiles" do
-      expect { bundle :init, :raise_on_error => false }.not_to change { File.read(bundled_app_gemfile) }
+      expect { bundle :init, raise_on_error: false }.not_to change { File.read(bundled_app_gemfile) }
     end
 
     it "notifies the user that an existing Gemfile already exists" do
-      bundle :init, :raise_on_error => false
+      bundle :init, raise_on_error: false
       expect(err).to include("Gemfile already exists")
     end
   end
@@ -55,7 +55,7 @@ RSpec.describe "bundle init" do
 
       FileUtils.mkdir bundled_app(subdir)
 
-      bundle :init, :dir => bundled_app(subdir)
+      bundle :init, dir: bundled_app(subdir)
 
       expect(out).to include("Writing new Gemfile")
       expect(bundled_app("#{subdir}/Gemfile")).to be_file
@@ -71,7 +71,7 @@ RSpec.describe "bundle init" do
       mode = File.stat(bundled_app(subdir)).mode ^ 0o222
       FileUtils.chmod mode, bundled_app(subdir)
 
-      bundle :init, :dir => bundled_app(subdir), :raise_on_error => false
+      bundle :init, dir: bundled_app(subdir), raise_on_error: false
 
       expect(err).to include("directory is not writable")
       expect(Dir[bundled_app("#{subdir}/*")]).to be_empty
@@ -92,7 +92,7 @@ RSpec.describe "bundle init" do
         S
       end
 
-      bundle :init, :gemspec => spec_file
+      bundle :init, gemspec: spec_file
 
       gemfile = bundled_app_gemfile.read
       expect(gemfile).to match(%r{source 'https://rubygems.org'})
@@ -112,7 +112,7 @@ RSpec.describe "bundle init" do
           S
         end
 
-        bundle :init, :gemspec => spec_file, :raise_on_error => false
+        bundle :init, gemspec: spec_file, raise_on_error: false
         expect(err).to include("There was an error while loading `test.gemspec`")
       end
     end
@@ -135,11 +135,11 @@ RSpec.describe "bundle init" do
       end
 
       it "does not change existing Gemfiles" do
-        expect { bundle :init, :raise_on_error => false }.not_to change { File.read(bundled_app("gems.rb")) }
+        expect { bundle :init, raise_on_error: false }.not_to change { File.read(bundled_app("gems.rb")) }
       end
 
       it "notifies the user that an existing gems.rb already exists" do
-        bundle :init, :raise_on_error => false
+        bundle :init, raise_on_error: false
         expect(err).to include("gems.rb already exists")
       end
     end
@@ -152,7 +152,7 @@ RSpec.describe "bundle init" do
 
         FileUtils.mkdir bundled_app(subdir)
 
-        bundle :init, :dir => bundled_app(subdir)
+        bundle :init, dir: bundled_app(subdir)
 
         expect(out).to include("Writing new gems.rb")
         expect(bundled_app("#{subdir}/gems.rb")).to be_file
@@ -175,7 +175,7 @@ RSpec.describe "bundle init" do
       end
 
       it "should generate from an existing gemspec" do
-        bundle :init, :gemspec => spec_file
+        bundle :init, gemspec: spec_file
 
         gemfile = bundled_app("gems.rb").read
         expect(gemfile).to match(%r{source 'https://rubygems.org'})
@@ -185,7 +185,7 @@ RSpec.describe "bundle init" do
       end
 
       it "prints message to user" do
-        bundle :init, :gemspec => spec_file
+        bundle :init, gemspec: spec_file
 
         expect(out).to include("Writing new gems.rb")
       end
@@ -196,7 +196,7 @@ RSpec.describe "bundle init" do
     it "should use the --gemfile value to name the gemfile" do
       custom_gemfile_name = "NiceGemfileName"
 
-      bundle :init, :gemfile => custom_gemfile_name
+      bundle :init, gemfile: custom_gemfile_name
 
       expect(out).to include("Writing new #{custom_gemfile_name}")
       used_template = File.read("#{source_root}/lib/bundler/templates/Gemfile")

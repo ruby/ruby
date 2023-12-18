@@ -29,6 +29,7 @@
             │   └── @ AssocNode (location: (3,10)-(3,23))
             │       ├── key:
             │       │   @ SymbolNode (location: (3,10)-(3,14))
+            │       │   ├── flags: ∅
             │       │   ├── opening_loc: (3,10)-(3,11) = ":"
             │       │   ├── value_loc: (3,11)-(3,14) = "foo"
             │       │   ├── closing_loc: ∅

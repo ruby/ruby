@@ -111,7 +111,7 @@ class Gem::InstallerTestCase < Gem::TestCase
 
   def setup_base_installer(force = true)
     @gem = setup_base_gem
-    util_installer @spec, @gemhome, false, force
+    util_installer @spec, @gemhome, force
   end
 
   ##
@@ -163,7 +163,7 @@ class Gem::InstallerTestCase < Gem::TestCase
 
     @user_gem = @user_spec.cache_file
 
-    util_installer @user_spec, Gem.user_dir, :user
+    Gem::Installer.at @user_gem, user_install: true
   end
 
   ##
@@ -215,18 +215,16 @@ class Gem::InstallerTestCase < Gem::TestCase
       end
     end
 
-    Gem::Installer.at @gem, :force => force
+    Gem::Installer.at @gem, force: force
   end
 
   ##
-  # Creates an installer for +spec+ that will install into +gem_home+.  If
-  # +user+ is true a user-install will be performed.
+  # Creates an installer for +spec+ that will install into +gem_home+.
 
-  def util_installer(spec, gem_home, user=false, force=true)
+  def util_installer(spec, gem_home, force=true)
     Gem::Installer.at(spec.cache_file,
-                       :install_dir => gem_home,
-                       :user_install => user,
-                       :force => force)
+                       install_dir: gem_home,
+                       force: force)
   end
 
   @@symlink_supported = nil

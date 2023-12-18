@@ -20,7 +20,7 @@ module Bundler
       strict_rm_rf spec.extension_dir
 
       SharedHelpers.filesystem_access(gem_dir, :create) do
-        FileUtils.mkdir_p gem_dir, :mode => 0o755
+        FileUtils.mkdir_p gem_dir, mode: 0o755
       end
 
       extract_files
@@ -43,6 +43,14 @@ module Bundler
       run_post_install_hooks
 
       spec
+    end
+
+    def pre_install_checks
+      super
+    rescue Gem::FilePermissionError
+      # Ignore permission checks in RubyGems. Instead, go on, and try to write
+      # for real. We properly handle permission errors when they happen.
+      nil
     end
 
     def generate_plugins
@@ -95,15 +103,7 @@ module Bundler
     end
 
     def gem_checksum
-      return nil if Bundler.settings[:disable_checksum_validation]
-      return nil unless source = @package.instance_variable_get(:@gem)
-      return nil unless source.respond_to?(:with_read_io)
-
-      source.with_read_io do |io|
-        Checksum.from_gem(io, source.path)
-      ensure
-        io.rewind
-      end
+      Checksum.from_gem_package(@package)
     end
 
     private
@@ -116,11 +116,22 @@ module Bundler
     end
 
     def strict_rm_rf(dir)
-      Bundler.rm_rf dir
-    rescue StandardError => e
-      raise unless File.exist?(dir)
+      return unless File.exist?(dir)
 
-      raise DirectoryRemovalError.new(e, "Could not delete previous installation of `#{dir}`")
+      parent = File.dirname(dir)
+      parent_st = File.stat(parent)
+
+      if parent_st.world_writable? && !parent_st.sticky?
+        raise InsecureInstallPathError.new(parent)
+      end
+
+      begin
+        FileUtils.remove_entry_secure(dir)
+      rescue StandardError => e
+        raise unless File.exist?(dir)
+
+        raise DirectoryRemovalError.new(e, "Could not delete previous installation of `#{dir}`")
+      end
     end
   end
 end

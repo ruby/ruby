@@ -3,7 +3,7 @@
 └── statements:
     @ StatementsNode (location: (1,0)-(1,26))
     └── body: (length: 1)
-        └── @ CaseNode (location: (1,0)-(1,26))
+        └── @ CaseMatchNode (location: (1,0)-(1,26))
             ├── predicate:
             │   @ IntegerNode (location: (1,5)-(1,6))
             │   └── flags: decimal

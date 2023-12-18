@@ -8,8 +8,8 @@ class Gem::Commands::CleanupCommand < Gem::Command
   def initialize
     super "cleanup",
           "Clean up old versions of installed gems",
-          :force => false, :install_dir => Gem.dir,
-          :check_dev => true
+          force: false, install_dir: Gem.dir,
+          check_dev: true
 
     add_option("-n", "-d", "--dry-run",
                "Do not uninstall gems") do |_value, options|
@@ -166,8 +166,8 @@ If no gems are named all gems in GEM_HOME are cleaned.
     say "Attempting to uninstall #{spec.full_name}"
 
     uninstall_options = {
-      :executables => false,
-      :version => "= #{spec.version}",
+      executables: false,
+      version: "= #{spec.version}",
     }
 
     uninstall_options[:user_install] = Gem.user_dir == spec.base_dir

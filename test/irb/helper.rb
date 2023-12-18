@@ -93,6 +93,10 @@ module TestIRB
       if ruby_core?
         omit "This test works only under ruby/irb"
       end
+
+      write_rc <<~RUBY
+        IRB.conf[:USE_PAGER] = false
+      RUBY
     end
 
     def teardown
@@ -197,8 +201,14 @@ module TestIRB
     end
 
     def write_rc(content)
-      @irbrc = Tempfile.new('irbrc')
-      @tmpfiles << @irbrc
+      # Append irbrc content if a tempfile for it already exists
+      if @irbrc
+        @irbrc = File.open(@irbrc, "a")
+      else
+        @irbrc = Tempfile.new('irbrc')
+        @tmpfiles << @irbrc
+      end
+
       @irbrc.write(content)
       @irbrc.close
       @envs['IRBRC'] = @irbrc.path

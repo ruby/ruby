@@ -76,6 +76,7 @@
         │   ├── closing_loc: (23,5)-(23,6) = "?"
         │   └── unescaped: "abc"
         ├── @ ArrayNode (location: (25,0)-(25,8))
+        │   ├── flags: ∅
         │   ├── elements: (length: 0)
         │   ├── opening_loc: (25,0)-(25,3) = "%w{"
         │   └── closing_loc: (25,7)-(25,8) = "}"
@@ -121,15 +122,15 @@
         │   │   │   │   @ StatementsNode (location: (35,8)-(35,11))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (35,8)-(35,11))
+        │   │   │   │           ├── flags: variable_call
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── name: :bbb
         │   │   │   │           ├── message_loc: (35,8)-(35,11) = "bbb"
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           ├── block: ∅
-        │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: :bbb
+        │   │   │   │           └── block: ∅
         │   │   │   └── closing_loc: (35,11)-(35,12) = "}"
         │   │   └── @ StringNode (location: (35,12)-(35,16))
         │   │       ├── flags: ∅
@@ -145,6 +146,7 @@
         │   ├── closing_loc: (37,7)-(37,8) = "]"
         │   └── unescaped: "foo[]"
         ├── @ CallNode (location: (39,0)-(41,5))
+        │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ StringNode (location: (39,0)-(39,5))
         │   │   ├── flags: ∅
@@ -153,22 +155,21 @@
         │   │   ├── closing_loc: (39,4)-(39,5) = "\""
         │   │   └── unescaped: "foo"
         │   ├── call_operator_loc: ∅
+        │   ├── name: :+
         │   ├── message_loc: (39,6)-(39,7) = "+"
         │   ├── opening_loc: ∅
         │   ├── arguments:
         │   │   @ ArgumentsNode (location: (41,0)-(41,5))
-        │   │   ├── arguments: (length: 1)
-        │   │   │   └── @ StringNode (location: (41,0)-(41,5))
-        │   │   │       ├── flags: ∅
-        │   │   │       ├── opening_loc: (41,0)-(41,1) = "\""
-        │   │   │       ├── content_loc: (41,1)-(41,4) = "bar"
-        │   │   │       ├── closing_loc: (41,4)-(41,5) = "\""
-        │   │   │       └── unescaped: "bar"
-        │   │   └── flags: ∅
+        │   │   ├── flags: ∅
+        │   │   └── arguments: (length: 1)
+        │   │       └── @ StringNode (location: (41,0)-(41,5))
+        │   │           ├── flags: ∅
+        │   │           ├── opening_loc: (41,0)-(41,1) = "\""
+        │   │           ├── content_loc: (41,1)-(41,4) = "bar"
+        │   │           ├── closing_loc: (41,4)-(41,5) = "\""
+        │   │           └── unescaped: "bar"
         │   ├── closing_loc: ∅
-        │   ├── block: ∅
-        │   ├── flags: ∅
-        │   └── name: :+
+        │   └── block: ∅
         ├── @ StringNode (location: (43,0)-(43,7))
         │   ├── flags: ∅
         │   ├── opening_loc: (43,0)-(43,3) = "%q{"
@@ -176,6 +177,7 @@
         │   ├── closing_loc: (43,6)-(43,7) = "}"
         │   └── unescaped: "abc"
         ├── @ SymbolNode (location: (45,0)-(45,7))
+        │   ├── flags: ∅
         │   ├── opening_loc: (45,0)-(45,3) = "%s["
         │   ├── value_loc: (45,3)-(45,6) = "abc"
         │   ├── closing_loc: (45,6)-(45,7) = "]"
@@ -219,15 +221,15 @@
         │   │   │   │   @ StatementsNode (location: (55,7)-(55,10))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (55,7)-(55,10))
+        │   │   │   │           ├── flags: variable_call
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── name: :bbb
         │   │   │   │           ├── message_loc: (55,7)-(55,10) = "bbb"
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           ├── block: ∅
-        │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: :bbb
+        │   │   │   │           └── block: ∅
         │   │   │   └── closing_loc: (55,10)-(55,11) = "}"
         │   │   └── @ StringNode (location: (55,11)-(55,15))
         │   │       ├── flags: ∅
@@ -243,6 +245,7 @@
         │   ├── closing_loc: (57,4)-(57,5) = "'"
         │   └── unescaped: "abc"
         ├── @ ArrayNode (location: (59,0)-(59,9))
+        │   ├── flags: ∅
         │   ├── elements: (length: 3)
         │   │   ├── @ StringNode (location: (59,3)-(59,4))
         │   │   │   ├── flags: ∅
@@ -265,6 +268,7 @@
         │   ├── opening_loc: (59,0)-(59,3) = "%w["
         │   └── closing_loc: (59,8)-(59,9) = "]"
         ├── @ ArrayNode (location: (61,0)-(61,17))
+        │   ├── flags: ∅
         │   ├── elements: (length: 3)
         │   │   ├── @ StringNode (location: (61,3)-(61,6))
         │   │   │   ├── flags: ∅
@@ -287,6 +291,7 @@
         │   ├── opening_loc: (61,0)-(61,3) = "%w["
         │   └── closing_loc: (61,16)-(61,17) = "]"
         ├── @ ArrayNode (location: (63,0)-(63,18))
+        │   ├── flags: ∅
         │   ├── elements: (length: 2)
         │   │   ├── @ StringNode (location: (63,3)-(63,11))
         │   │   │   ├── flags: ∅
@@ -303,6 +308,7 @@
         │   ├── opening_loc: (63,0)-(63,3) = "%w["
         │   └── closing_loc: (63,17)-(63,18) = "]"
         ├── @ ArrayNode (location: (65,0)-(65,16))
+        │   ├── flags: ∅
         │   ├── elements: (length: 2)
         │   │   ├── @ StringNode (location: (65,3)-(65,11))
         │   │   │   ├── flags: ∅
@@ -319,6 +325,7 @@
         │   ├── opening_loc: (65,0)-(65,3) = "%w["
         │   └── closing_loc: (65,15)-(65,16) = "]"
         ├── @ ArrayNode (location: (67,0)-(67,14))
+        │   ├── flags: ∅
         │   ├── elements: (length: 3)
         │   │   ├── @ StringNode (location: (67,3)-(67,4))
         │   │   │   ├── flags: ∅
@@ -341,15 +348,15 @@
         │   │   │   │   │   │   @ StatementsNode (location: (67,8)-(67,9))
         │   │   │   │   │   │   └── body: (length: 1)
         │   │   │   │   │   │       └── @ CallNode (location: (67,8)-(67,9))
+        │   │   │   │   │   │           ├── flags: variable_call
         │   │   │   │   │   │           ├── receiver: ∅
         │   │   │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │   │   │           ├── name: :c
         │   │   │   │   │   │           ├── message_loc: (67,8)-(67,9) = "c"
         │   │   │   │   │   │           ├── opening_loc: ∅
         │   │   │   │   │   │           ├── arguments: ∅
         │   │   │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │   │   │           ├── block: ∅
-        │   │   │   │   │   │           ├── flags: variable_call
-        │   │   │   │   │   │           └── name: :c
+        │   │   │   │   │   │           └── block: ∅
         │   │   │   │   │   └── closing_loc: (67,9)-(67,10) = "}"
         │   │   │   │   └── @ StringNode (location: (67,10)-(67,11))
         │   │   │   │       ├── flags: ∅
@@ -367,6 +374,7 @@
         │   ├── opening_loc: (67,0)-(67,3) = "%W["
         │   └── closing_loc: (67,13)-(67,14) = "]"
         ├── @ ArrayNode (location: (69,0)-(69,9))
+        │   ├── flags: ∅
         │   ├── elements: (length: 3)
         │   │   ├── @ StringNode (location: (69,3)-(69,4))
         │   │   │   ├── flags: ∅
@@ -389,6 +397,7 @@
         │   ├── opening_loc: (69,0)-(69,3) = "%W["
         │   └── closing_loc: (69,8)-(69,9) = "]"
         ├── @ ArrayNode (location: (71,0)-(75,1))
+        │   ├── flags: ∅
         │   ├── elements: (length: 3)
         │   │   ├── @ StringNode (location: (72,2)-(72,3))
         │   │   │   ├── flags: ∅
@@ -482,21 +491,22 @@
         │   ├── content_loc: (97,1)-(97,2) = "a"
         │   ├── closing_loc: ∅
         │   └── unescaped: "a"
-        ├── @ StringConcatNode (location: (99,0)-(99,6))
-        │   ├── left:
-        │   │   @ StringNode (location: (99,0)-(99,2))
-        │   │   ├── flags: ∅
-        │   │   ├── opening_loc: (99,0)-(99,1) = "?"
-        │   │   ├── content_loc: (99,1)-(99,2) = "a"
-        │   │   ├── closing_loc: ∅
-        │   │   └── unescaped: "a"
-        │   └── right:
-        │       @ StringNode (location: (99,3)-(99,6))
-        │       ├── flags: ∅
-        │       ├── opening_loc: (99,3)-(99,4) = "\""
-        │       ├── content_loc: (99,4)-(99,5) = "a"
-        │       ├── closing_loc: (99,5)-(99,6) = "\""
-        │       └── unescaped: "a"
+        ├── @ InterpolatedStringNode (location: (99,0)-(99,6))
+        │   ├── opening_loc: ∅
+        │   ├── parts: (length: 2)
+        │   │   ├── @ StringNode (location: (99,0)-(99,2))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── opening_loc: (99,0)-(99,1) = "?"
+        │   │   │   ├── content_loc: (99,1)-(99,2) = "a"
+        │   │   │   ├── closing_loc: ∅
+        │   │   │   └── unescaped: "a"
+        │   │   └── @ StringNode (location: (99,3)-(99,6))
+        │   │       ├── flags: ∅
+        │   │       ├── opening_loc: (99,3)-(99,4) = "\""
+        │   │       ├── content_loc: (99,4)-(99,5) = "a"
+        │   │       ├── closing_loc: (99,5)-(99,6) = "\""
+        │   │       └── unescaped: "a"
+        │   └── closing_loc: ∅
         ├── @ StringNode (location: (101,0)-(101,7))
         │   ├── flags: ∅
         │   ├── opening_loc: (101,0)-(101,3) = "%Q{"

@@ -457,7 +457,7 @@ Security fixes
 Bug fixes
 ---------
 
-* Fixed OpenSSL::PKey::*.{new,generate} immediately aborting if the thread is
+* Fixed OpenSSL::PKey::\*.{new,generate} immediately aborting if the thread is
   interrupted.
   [[Bug #14882]](https://bugs.ruby-lang.org/issues/14882)
   [[GitHub #205]](https://github.com/ruby/openssl/pull/205)

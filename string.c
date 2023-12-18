@@ -280,26 +280,6 @@ rb_str_make_embedded(VALUE str)
 }
 
 void
-rb_str_update_shared_ary(VALUE str, VALUE old_root, VALUE new_root)
-{
-    // if the root location hasn't changed, we don't need to update
-    if (new_root == old_root) {
-        return;
-    }
-
-    // if the root string isn't embedded, we don't need to touch the pointer.
-    // it already points to the shame shared buffer
-    if (!STR_EMBED_P(new_root)) {
-        return;
-    }
-
-    size_t offset = (size_t)((uintptr_t)RSTRING(str)->as.heap.ptr - (uintptr_t)RSTRING(old_root)->as.embed.ary);
-
-    RUBY_ASSERT(RSTRING(str)->as.heap.ptr >= RSTRING(old_root)->as.embed.ary);
-    RSTRING(str)->as.heap.ptr = RSTRING(new_root)->as.embed.ary + offset;
-}
-
-void
 rb_debug_rstring_null_ptr(const char *func)
 {
     fprintf(stderr, "%s is returning NULL!! "
@@ -428,7 +408,7 @@ rb_fstring(VALUE str)
         }
     }
 
-    if (!OBJ_FROZEN(str))
+    if (!FL_TEST_RAW(str, FL_FREEZE | STR_NOFREE))
         rb_str_resize(str, RSTRING_LEN(str));
 
     fstr = register_fstring(str, FALSE);
@@ -1768,6 +1748,18 @@ VALUE
 rb_str_dup(VALUE str)
 {
     return str_duplicate(rb_obj_class(str), str);
+}
+
+/* :nodoc: */
+VALUE
+rb_str_dup_m(VALUE str)
+{
+    if (LIKELY(BARE_STRING_P(str))) {
+        return str_duplicate(rb_obj_class(str), str);
+    }
+    else {
+        return rb_obj_dup(str);
+    }
 }
 
 VALUE
@@ -3594,11 +3586,12 @@ rb_str_prepend_multi(int argc, VALUE *argv, VALUE str)
 st_index_t
 rb_str_hash(VALUE str)
 {
-    int e = ENCODING_GET(str);
-    if (e && is_ascii_string(str)) {
-        e = 0;
+    st_index_t h = rb_memhash((const void *)RSTRING_PTR(str), RSTRING_LEN(str));
+    int e = RSTRING_LEN(str) ? ENCODING_GET(str) : 0;
+    if (e && !is_ascii_string(str)) {
+        h = rb_hash_end(rb_hash_uint32(h, (uint32_t)e));
     }
-    return rb_memhash((const void *)RSTRING_PTR(str), RSTRING_LEN(str)) ^ e;
+    return h;
 }
 
 int
@@ -5854,8 +5847,7 @@ rb_str_sub(int argc, VALUE *argv, VALUE str)
 static VALUE
 str_gsub(int argc, VALUE *argv, VALUE str, int bang)
 {
-    VALUE pat, val = Qnil, repl, match, match0 = Qnil, dest, hash = Qnil;
-    struct re_registers *regs;
+    VALUE pat, val = Qnil, repl, match0 = Qnil, dest, hash = Qnil;
     long beg, beg0, end0;
     long offset, blen, slen, len, last;
     enum {STR, ITER, MAP} mode = STR;
@@ -5900,8 +5892,8 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
     ENC_CODERANGE_SET(dest, rb_enc_asciicompat(str_enc) ? ENC_CODERANGE_7BIT : ENC_CODERANGE_VALID);
 
     do {
-        match = rb_backref_get();
-        regs = RMATCH_REGS(match);
+        VALUE match = rb_backref_get();
+        struct re_registers *regs = RMATCH_REGS(match);
         if (RB_TYPE_P(pat, T_STRING)) {
             beg0 = beg;
             end0 = beg0 + RSTRING_LEN(pat);
@@ -5958,6 +5950,8 @@ str_gsub(int argc, VALUE *argv, VALUE str, int bang)
         cp = RSTRING_PTR(str) + offset;
         if (offset > RSTRING_LEN(str)) break;
         beg = rb_pat_search(pat, str, offset, need_backref);
+
+        RB_GC_GUARD(match);
     } while (beg >= 0);
     if (RSTRING_LEN(str) > offset) {
         rb_enc_str_buf_cat(dest, cp, RSTRING_LEN(str) - offset, str_enc);
@@ -7237,6 +7231,8 @@ str_undump(VALUE str)
             rb_str_cat(undumped, s++, 1);
         }
     }
+
+    RB_GC_GUARD(str);
 
     return undumped;
 invalid_format:
@@ -9694,7 +9690,7 @@ rb_str_chomp_bang(int argc, VALUE *argv, VALUE str)
 {
     VALUE rs;
     str_modifiable(str);
-    if (RSTRING_LEN(str) == 0) return Qnil;
+    if (RSTRING_LEN(str) == 0 && argc < 2) return Qnil;
     rs = chomp_rs(argc, argv);
     if (NIL_P(rs)) return Qnil;
     return rb_str_chomp_string(str, rs);
@@ -9961,11 +9957,11 @@ rb_str_strip(VALUE str)
 static VALUE
 scan_once(VALUE str, VALUE pat, long *start, int set_backref_str)
 {
-    VALUE result, match;
-    struct re_registers *regs;
-    int i;
+    VALUE result = Qnil;
     long end, pos = rb_pat_search(pat, str, *start, set_backref_str);
     if (pos >= 0) {
+        VALUE match;
+        struct re_registers *regs;
         if (BUILTIN_TYPE(pat) == T_STRING) {
             regs = NULL;
             end = pos + RSTRING_LEN(pat);
@@ -9976,6 +9972,7 @@ scan_once(VALUE str, VALUE pat, long *start, int set_backref_str)
             pos = BEG(0);
             end = END(0);
         }
+
         if (pos == end) {
             rb_encoding *enc = STR_ENC_GET(str);
             /*
@@ -9990,22 +9987,27 @@ scan_once(VALUE str, VALUE pat, long *start, int set_backref_str)
         else {
             *start = end;
         }
+
         if (!regs || regs->num_regs == 1) {
             result = rb_str_subseq(str, pos, end - pos);
             return result;
         }
-        result = rb_ary_new2(regs->num_regs);
-        for (i=1; i < regs->num_regs; i++) {
-            VALUE s = Qnil;
-            if (BEG(i) >= 0) {
-                s = rb_str_subseq(str, BEG(i), END(i)-BEG(i));
+        else {
+            result = rb_ary_new2(regs->num_regs);
+            for (int i = 1; i < regs->num_regs; i++) {
+                VALUE s = Qnil;
+                if (BEG(i) >= 0) {
+                    s = rb_str_subseq(str, BEG(i), END(i)-BEG(i));
+                }
+
+                rb_ary_push(result, s);
             }
-            rb_ary_push(result, s);
         }
 
-        return result;
+        RB_GC_GUARD(match);
     }
-    return Qnil;
+
+    return result;
 }
 
 
@@ -10843,7 +10845,23 @@ static VALUE
 rb_str_force_encoding(VALUE str, VALUE enc)
 {
     str_modifiable(str);
-    rb_enc_associate(str, rb_to_encoding(enc));
+
+    rb_encoding *encoding = rb_to_encoding(enc);
+    int idx = rb_enc_to_index(encoding);
+
+    // If the encoding is unchanged, we do nothing.
+    if (ENCODING_GET(str) == idx) {
+        return str;
+    }
+
+    rb_enc_associate_index(str, idx);
+
+    // If the coderange was 7bit and the new encoding is ASCII-compatible
+    // we can keep the coderange.
+    if (ENC_CODERANGE(str) == ENC_CODERANGE_7BIT && encoding && rb_enc_asciicompat(encoding)) {
+        return str;
+    }
+
     ENC_CODERANGE_CLEAR(str);
     return str;
 }
@@ -12068,6 +12086,7 @@ Init_String(void)
     rb_define_method(rb_cString, "freeze", rb_str_freeze, 0);
     rb_define_method(rb_cString, "+@", str_uplus, 0);
     rb_define_method(rb_cString, "-@", str_uminus, 0);
+    rb_define_method(rb_cString, "dup", rb_str_dup_m, 0);
     rb_define_alias(rb_cString, "dedup", "-@");
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, -1);

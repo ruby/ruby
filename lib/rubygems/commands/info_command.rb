@@ -8,8 +8,8 @@ class Gem::Commands::InfoCommand < Gem::Command
 
   def initialize
     super "info", "Show information for the given gem",
-         :name => //, :domain => :local, :details => false, :versions => true,
-         :installed => nil, :version => Gem::Requirement.default
+         name: //, domain: :local, details: false, versions: true,
+         installed: nil, version: Gem::Requirement.default
 
     add_query_options
 

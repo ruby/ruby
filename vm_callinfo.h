@@ -300,6 +300,7 @@ struct rb_callcache {
 #define VM_CALLCACHE_UNMARKABLE FL_FREEZE
 #define VM_CALLCACHE_ON_STACK   FL_EXIVAR
 
+/* VM_CALLCACHE_IVAR used for IVAR/ATTRSET/STRUCT_AREF/STRUCT_ASET methods */
 #define VM_CALLCACHE_IVAR       IMEMO_FL_USER0
 #define VM_CALLCACHE_BF         IMEMO_FL_USER1
 #define VM_CALLCACHE_SUPER      IMEMO_FL_USER2
@@ -488,6 +489,12 @@ vm_cc_call_set(const struct rb_callcache *cc, vm_call_handler call)
 }
 
 static inline void
+set_vm_cc_ivar(const struct rb_callcache *cc)
+{
+    *(VALUE *)&cc->flags |= VM_CALLCACHE_IVAR;
+}
+
+static inline void
 vm_cc_attr_index_set(const struct rb_callcache *cc, attr_index_t index, shape_id_t dest_shape_id)
 {
     uintptr_t *attr_value = (uintptr_t *)&cc->aux_.attr.value;
@@ -498,7 +505,7 @@ vm_cc_attr_index_set(const struct rb_callcache *cc, attr_index_t index, shape_id
     VM_ASSERT(IMEMO_TYPE_P(cc, imemo_callcache));
     VM_ASSERT(cc != vm_cc_empty());
     *attr_value = (attr_index_t)(index + 1) | ((uintptr_t)(dest_shape_id) << SHAPE_FLAG_SHIFT);
-    *(VALUE *)&cc->flags |= VM_CALLCACHE_IVAR;
+    set_vm_cc_ivar(cc);
 }
 
 static inline bool

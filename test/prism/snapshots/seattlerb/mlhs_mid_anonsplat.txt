@@ -33,12 +33,12 @@
             ├── operator_loc: (1,20)-(1,21) = "="
             └── value:
                 @ CallNode (location: (1,22)-(1,23))
+                ├── flags: variable_call
                 ├── receiver: ∅
                 ├── call_operator_loc: ∅
+                ├── name: :f
                 ├── message_loc: (1,22)-(1,23) = "f"
                 ├── opening_loc: ∅
                 ├── arguments: ∅
                 ├── closing_loc: ∅
-                ├── block: ∅
-                ├── flags: variable_call
-                └── name: :f
+                └── block: ∅

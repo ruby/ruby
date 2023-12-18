@@ -178,6 +178,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_stat_heap_all
+    omit "flaky with RJIT, which allocates objects itself" if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
     stat_heap_all = {}
     stat_heap = {}
 
@@ -577,6 +578,14 @@ class TestGc < Test::Unit::TestCase
       GC::Profiler.clear
       assert_equal(0, GC::Profiler.raw_data.size)
     RUBY
+  end
+
+  def test_profiler_raw_data
+    GC::Profiler.enable
+    GC.start
+    assert GC::Profiler.raw_data
+  ensure
+    GC::Profiler.disable
   end
 
   def test_profiler_total_time

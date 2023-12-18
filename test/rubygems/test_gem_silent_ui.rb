@@ -2,7 +2,6 @@
 
 require_relative "helper"
 require "rubygems/user_interaction"
-require "timeout"
 
 class TestGemSilentUI < Gem::TestCase
   def setup

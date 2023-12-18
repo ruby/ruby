@@ -17,9 +17,9 @@ module Bundler
       installer = Installer.new(Bundler.root, Bundler.definition)
 
       installer_opts = {
-        :force => options[:force],
-        :binstubs_cmd => true,
-        :all_platforms => options["all-platforms"],
+        force: options[:force],
+        binstubs_cmd: true,
+        all_platforms: options["all-platforms"],
       }
 
       if options[:all]
@@ -45,7 +45,7 @@ module Bundler
             next
           end
 
-          Bundler.settings.temporary(:path => (Bundler.settings[:path] || Bundler.root)) do
+          Bundler.settings.temporary(path: (Bundler.settings[:path] || Bundler.root)) do
             installer.generate_standalone_bundler_executable_stubs(spec, installer_opts)
           end
         else

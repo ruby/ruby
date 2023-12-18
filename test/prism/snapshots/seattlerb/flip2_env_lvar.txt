@@ -7,30 +7,31 @@
             ├── if_keyword_loc: (1,0)-(1,2) = "if"
             ├── predicate:
             │   @ FlipFlopNode (location: (1,3)-(1,7))
+            │   ├── flags: ∅
             │   ├── left:
             │   │   @ CallNode (location: (1,3)-(1,4))
+            │   │   ├── flags: variable_call
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
+            │   │   ├── name: :a
             │   │   ├── message_loc: (1,3)-(1,4) = "a"
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
-            │   │   ├── block: ∅
-            │   │   ├── flags: variable_call
-            │   │   └── name: :a
+            │   │   └── block: ∅
             │   ├── right:
             │   │   @ CallNode (location: (1,6)-(1,7))
+            │   │   ├── flags: variable_call
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
+            │   │   ├── name: :b
             │   │   ├── message_loc: (1,6)-(1,7) = "b"
             │   │   ├── opening_loc: ∅
             │   │   ├── arguments: ∅
             │   │   ├── closing_loc: ∅
-            │   │   ├── block: ∅
-            │   │   ├── flags: variable_call
-            │   │   └── name: :b
-            │   ├── operator_loc: (1,4)-(1,6) = ".."
-            │   └── flags: ∅
+            │   │   └── block: ∅
+            │   └── operator_loc: (1,4)-(1,6) = ".."
+            ├── then_keyword_loc: (1,8)-(1,12) = "then"
             ├── statements: ∅
             ├── consequent: ∅
             └── end_keyword_loc: (1,13)-(1,16) = "end"

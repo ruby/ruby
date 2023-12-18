@@ -212,7 +212,7 @@ class TestGemSafeMarshal < Gem::TestCase
     Time.at(secs, 1.00001, :nanosecond),
     Time.at(secs, 1.00001, :nanosecond),
   ].tap do |times|
-    unless RUBY_ENGINE == "truffleruby" && RUBY_ENGINE_VERSION < "23" || RUBY_VERSION < "2.7"
+    unless RUBY_ENGINE == "truffleruby" && RUBY_ENGINE_VERSION < "23"
       times.concat [
         Time.at(secs, in: "UTC"),
         Time.at(secs, in: "Z"),

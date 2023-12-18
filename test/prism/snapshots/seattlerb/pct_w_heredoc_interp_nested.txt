@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(4,11))
     └── body: (length: 1)
         └── @ ArrayNode (location: (1,0)-(4,11))
+            ├── flags: ∅
             ├── elements: (length: 5)
             │   ├── @ StringNode (location: (1,4)-(1,5))
             │   │   ├── flags: ∅

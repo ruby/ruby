@@ -136,9 +136,16 @@ RBIMPL_ATTR_ARTIFICIAL()
 static inline VALUE
 RARRAY_AREF(VALUE ary, long i)
 {
+    VALUE val;
     RBIMPL_ASSERT_TYPE(ary, RUBY_T_ARRAY);
 
-    return RARRAY_CONST_PTR(ary)[i];
+    RBIMPL_WARNING_PUSH();
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ == 13
+    RBIMPL_WARNING_IGNORED(-Warray-bounds);
+#endif
+    val = RARRAY_CONST_PTR(ary)[i];
+    RBIMPL_WARNING_POP();
+    return val;
 }
 
 #endif /* INTERNAL_ARRAY_H */

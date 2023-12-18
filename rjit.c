@@ -101,6 +101,9 @@ VALUE rb_rjit_raw_samples = 0;
 // Line numbers for --rjit-trace-exits
 VALUE rb_rjit_line_samples = 0;
 
+// Postponed job handle for triggering rjit_iseq_update_references
+static rb_postponed_job_handle_t rjit_iseq_update_references_pjob;
+
 // A default threshold used to add iseq to JIT.
 #define DEFAULT_CALL_THRESHOLD 10
 // Size of executable memory block in MiB.
@@ -301,7 +304,7 @@ rb_rjit_iseq_update_references(struct rb_iseq_constant_body *const body)
     // Asynchronously hook the Ruby code to avoid allocation during GC.compact.
     // Using _one because it's too slow to invalidate all for each ISEQ. Thus
     // not giving an ISEQ pointer.
-    rb_postponed_job_register_one(0, rjit_iseq_update_references, NULL);
+    rb_postponed_job_trigger(rjit_iseq_update_references_pjob);
 }
 
 void
@@ -428,6 +431,10 @@ rb_rjit_init(const struct rb_rjit_options *opts)
         rb_warn("Disabling RJIT because RubyVM::RJIT::Compiler is not defined");
         rb_rjit_enabled = false;
         return;
+    }
+    rjit_iseq_update_references_pjob = rb_postponed_job_preregister(0, rjit_iseq_update_references, NULL);
+    if (rjit_iseq_update_references_pjob == POSTPONED_JOB_HANDLE_INVALID) {
+        rb_bug("Could not preregister postponed job for RJIT");
     }
     rb_mRJITC = rb_const_get(rb_mRJIT, rb_intern("C"));
     VALUE rb_cRJITCompiler = rb_const_get(rb_mRJIT, rb_intern("Compiler"));

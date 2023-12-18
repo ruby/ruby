@@ -6,9 +6,22 @@
 
 module Lrama
   class Grammar
-    class Symbol < Struct.new(:id, :alias_name, :number, :tag, :term, :token_id, :nullable, :precedence, :printer, :error_token, keyword_init: true)
-      attr_accessor :first_set, :first_set_bitmap
+    class Symbol
+      attr_accessor :id, :alias_name, :tag, :number, :token_id, :nullable, :precedence, :printer, :error_token, :first_set, :first_set_bitmap
+      attr_reader :term
       attr_writer :eof_symbol, :error_symbol, :undef_symbol, :accept_symbol
+
+      def initialize(id:, alias_name: nil, number: nil, tag: nil, term:, token_id: nil, nullable: nil, precedence: nil, printer: nil)
+        @id = id
+        @alias_name = alias_name
+        @number = number
+        @tag = tag
+        @term = term
+        @token_id = token_id
+        @nullable = nullable
+        @precedence = precedence
+        @printer = printer
+      end
 
       def term?
         term
@@ -41,6 +54,7 @@ module Lrama
       # name for yysymbol_kind_t
       #
       # See: b4_symbol_kind_base
+      # @type var name: String
       def enum_name
         case
         when accept_symbol?

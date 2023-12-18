@@ -90,9 +90,7 @@ RSpec.describe "Bundler.with_env helpers" do
       RUBY
       setup_require = "-r#{lib_dir}/bundler/setup"
       ENV["BUNDLER_ORIG_RUBYOPT"] = "-W2 #{setup_require} #{ENV["RUBYOPT"]}"
-      simulate_bundler_version_when_missing_prerelease_default_gem_activation do
-        bundle_exec_ruby bundled_app("source.rb")
-      end
+      bundle_exec_ruby bundled_app("source.rb")
       expect(last_command.stdboth).not_to include(setup_require)
     end
 
@@ -101,9 +99,7 @@ RSpec.describe "Bundler.with_env helpers" do
         print #{modified_env}['RUBYOPT']
       RUBY
       ENV["BUNDLER_ORIG_RUBYOPT"] = "-W2 -rbundler/setup #{ENV["RUBYOPT"]}"
-      simulate_bundler_version_when_missing_prerelease_default_gem_activation do
-        bundle_exec_ruby bundled_app("source.rb")
-      end
+      bundle_exec_ruby bundled_app("source.rb")
       expect(last_command.stdboth).not_to include("-rbundler/setup")
     end
 
@@ -134,7 +130,7 @@ RSpec.describe "Bundler.with_env helpers" do
     it_behaves_like "an unbundling helper"
   end
 
-  describe "Bundler.clean_env", :bundler => 2 do
+  describe "Bundler.clean_env", bundler: 2 do
     let(:modified_env) { "Bundler.clean_env" }
 
     it_behaves_like "an unbundling helper"
@@ -156,7 +152,7 @@ RSpec.describe "Bundler.with_env helpers" do
     end
   end
 
-  describe "Bundler.with_clean_env", :bundler => 2 do
+  describe "Bundler.with_clean_env", bundler: 2 do
     it "should set ENV to unbundled_env in the block" do
       expected = Bundler.unbundled_env
 
@@ -207,7 +203,7 @@ RSpec.describe "Bundler.with_env helpers" do
     end
   end
 
-  describe "Bundler.clean_system", :bundler => 2 do
+  describe "Bundler.clean_system", bundler: 2 do
     before do
       create_file("source.rb", <<-'RUBY')
         Bundler.ui.silence { Bundler.clean_system("ruby", "-e", "exit(42) unless ENV['BUNDLE_FOO'] == 'bar'") }
@@ -258,7 +254,7 @@ RSpec.describe "Bundler.with_env helpers" do
     end
   end
 
-  describe "Bundler.clean_exec", :bundler => 2 do
+  describe "Bundler.clean_exec", bundler: 2 do
     before do
       create_file("source.rb", <<-'RUBY')
         Process.fork do
