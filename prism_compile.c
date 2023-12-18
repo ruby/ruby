@@ -5567,6 +5567,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         int table_size = (int) locals_size;
 
         if (PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_NODE)) {
+            body->param.lead_num = 1;
             table_size++;
         }
 
