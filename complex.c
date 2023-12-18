@@ -1498,28 +1498,23 @@ nucomp_denominator(VALUE self)
 
 /*
  * call-seq:
- *   numerator -> numeric
+ *   numerator -> new_complex
  *
- * Returns the numerator of +self+:
+ * Returns the \Complex object created from the numerators
+ * of the real and imaginary parts of +self+,
+ * after converting each part to the
+ * {lowest common denominator}[https://en.wikipedia.org/wiki/Lowest_common_denominator]
+ * of the two:
  *
  *   c = Complex(Rational(2, 3), Rational(3, 4)) # => ((2/3)+(3/4)*i)
  *   c.numerator                                 # => (8+9i)
  *
- * This result is computed thus:
+ * In this example, the lowest common denominator of the two parts is 12;
+ * the two converted parts may be thought of as \Complex(8, 12) and \Complex(9, 12),
+ * whose numerators, respectively, are 8 and 9;
+ * so the returned value of <tt>c.numerator</tt> is <tt>Complex(8, 9)</tt>.
  *
- *   # Numerators and denominators for c.real and c.imag.
- *   c.real.numerator   # => 2
- *   c.real.denominator # => 3
- *   c.imag.numerator   # => 3
- *   c.imag.denominator # => 4
- *   # Real and imaginary parts for new Complex c.numerator.
- *   result_real = c.real.numerator * c.imag.denominator # => 8
- *   result_imag = c.imag.numerator * c.real.denominator # => 9
- *   # New Complex c.numerator (Q.E.D.).
- *   result = Complex(result_real, result_imag) # => (8+9i)
- *   c.numerator                                # => (8+9i)
- *
- * Related: Complex.denominator.
+ * Related: Complex#denominator.
  */
 static VALUE
 nucomp_numerator(VALUE self)
