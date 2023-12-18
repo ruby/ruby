@@ -160,11 +160,12 @@ The following default gem is added.
 
 The following default gems are updated.
 
-* RubyGems 3.5.0.dev
+* RubyGems 3.5.1
+* abbrev 0.1.2
 * base64 0.2.0
 * benchmark 0.3.0
 * bigdecimal 3.1.5
-* bundler 2.5.0.dev
+* bundler 2.5.1
 * cgi 0.4.1
 * csv 3.2.8
 * date 3.3.4
@@ -179,9 +180,10 @@ The following default gems are updated.
 * fileutils 1.7.2
 * find 0.2.0
 * getoptlong 0.2.1
-* io-console 0.7.0
+* io-console 0.7.1
 * io-nonblock 0.3.0
 * io-wait 0.3.1
+* ipaddr 1.2.6
 * irb 1.10.1
 * json 2.7.1
 * logger 1.6.0
@@ -191,7 +193,7 @@ The following default gems are updated.
 * nkf 0.1.3
 * observer 0.1.2
 * open-uri 0.4.1
-* open3 0.2.0
+* open3 0.2.1
 * openssl 3.2.0
 * optparse 0.4.0
 * ostruct 0.6.0
@@ -200,17 +202,19 @@ The following default gems are updated.
 * prettyprint 0.2.0
 * pstore 0.1.3
 * psych 5.1.1.1
-* rdoc 6.6.1
-* reline 0.4.0
+* rdoc 6.6.2
+* readline 0.0.4
+* reline 0.4.1
 * resolv 0.3.0
 * rinda 0.2.0
-* securerandom 0.3.0
+* securerandom 0.3.1
 * set 1.0.4
 * shellwords 0.2.0
 * singleton 0.2.0
-* stringio 3.1.1
-* strscan 3.0.8
+* stringio 3.1.0
+* strscan 3.0.7
 * syntax_suggest 2.0.0
+* syslog 0.1.2
 * tempfile 0.2.1
 * time 0.3.0
 * timeout 0.4.1
@@ -300,7 +304,7 @@ changelog for details of the default gems or bundled gems.
     and callback functions (`rb_internal_thread_event_callback`) receive it.
     https://github.com/ruby/ruby/pull/8885
   * The following functions are introduced to manipulate Ruby thread local data
-    from internal thread event hook APIs (they are introduced since Ruby 3.2). 
+    from internal thread event hook APIs (they are introduced since Ruby 3.2).
     https://github.com/ruby/ruby/pull/8936
     * `rb_internal_thread_specific_key_create()`
     * `rb_internal_thread_specific_get()`
@@ -326,9 +330,7 @@ changelog for details of the default gems or bundled gems.
 
 ## Implementation improvements
 
-* `defined?(@ivar)` is optimized with Object Shapes.
-
-### GC
+### GC / Memory management
 
 * Major performance improvements over 3.2
     * Young objects referenced by old objects are no longer immediately
@@ -346,6 +348,7 @@ changelog for details of the default gems or bundled gems.
       `Thread::Backtrace`, `Thread::Backtrace::Location`, `File::Stat`, `Method`.
       This makes these classes faster to allocate and free, use less memory and reduce
       heap fragmentation.
+* `defined?(@ivar)` is optimized with Object Shapes.
 
 ### YJIT
 

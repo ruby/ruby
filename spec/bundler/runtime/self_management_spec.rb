@@ -28,7 +28,7 @@ RSpec.describe "Self management", rubygems: ">= 3.3.0.dev", realworld: true do
       expect(out).to include("Bundler #{Bundler::VERSION} is running, but your lockfile was generated with #{previous_minor}. Installing Bundler #{previous_minor} and restarting using that version.")
 
       # It uninstalls the older system bundler
-      bundle "clean --force"
+      bundle "clean --force", artifice: nil
       expect(out).to eq("Removing bundler (#{Bundler::VERSION})")
 
       # App now uses locked version

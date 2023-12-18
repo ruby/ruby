@@ -672,6 +672,12 @@ rdoc-coverage: PHONY main srcs-doc
 	@echo Generating RDoc coverage report
 	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) "$(srcdir)"
 
+undocumented: PHONY main srcs-doc
+	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) "$(srcdir)" | \
+	sed -n \
+	-e '/^ *# in file /{' -e 's///;N;s/\n/: /p' -e '}' \
+	-e 's/^ *\(.*[^ ]\) *# in file \(.*\)/\2: \1/p'
+
 RDOCBENCHOUT=/tmp/rdocbench
 
 GCBENCH_ITEM=null
@@ -1353,7 +1359,7 @@ $(srcdir)/ext/rbconfig/sizeof/limits.c: $(srcdir)/ext/rbconfig/sizeof/depend \
 	$(exec) $(MAKE) -f - $(mflags) \
 		Q=$(Q) ECHO=$(ECHO) top_srcdir=../../.. srcdir=. VPATH=../../.. RUBY="$(BASERUBY)" $(@F)
 
-$(srcdir)/ext/socket/constdefs.c: $(srcdir)/ext/socket/depend
+$(srcdir)/ext/socket/constdefs.c: $(srcdir)/ext/socket/depend $(srcdir)/ext/socket/mkconstants.rb
 	$(Q) $(CHDIR) $(@D) && \
 	$(CAT_DEPEND) depend | \
 	$(exec) $(MAKE) -f - $(mflags) \
