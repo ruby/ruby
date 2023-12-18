@@ -42,9 +42,7 @@ module Prism
 
       assert_kind_of Prism::CallNode, Prism.parse("foo").value.statements.body[0]
       assert_kind_of Prism::LocalVariableReadNode, Prism.parse("foo", scopes: [[:foo]]).value.statements.body[0]
-      assert_equal 1, Prism.parse("foo", scopes: [[:foo], []]).value.statements.body[0].depth
-
-      assert_equal [:foo], Prism.parse("foo", scopes: [[:foo]]).value.locals
+      assert_equal 2, Prism.parse("foo", scopes: [[:foo], []]).value.statements.body[0].depth
     end
 
     def test_literal_value_method

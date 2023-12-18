@@ -1,4 +1,4 @@
-name: Miscellaneous checks
+name: Misc
 on: [push, pull_request, merge_group]
 
 concurrency:
@@ -10,6 +10,8 @@ permissions:
 
 jobs:
   checks:
+    name: Miscellaneous checks
+
     permissions:
       contents: write # for Git to git push
 

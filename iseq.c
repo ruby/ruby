@@ -1501,7 +1501,8 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
 }
 
 rb_iseq_t *
-rb_iseq_new_main_prism(pm_string_t *input, pm_options_t *options, VALUE path) {
+rb_iseq_new_main_prism(pm_string_t *input, pm_options_t *options, VALUE path)
+{
     pm_parser_t parser;
     pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
 
