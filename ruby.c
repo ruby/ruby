@@ -2344,7 +2344,16 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         pm_string_t input;
         pm_options_t options = { 0 };
 
-        if (opt->e_script) {
+        if (strcmp(opt->script, "-") == 0) {
+            int xflag = opt->xflag;
+            VALUE rb_source = open_load_file(opt->script_name, &xflag);
+            opt->xflag = xflag != 0;
+
+            rb_warn("Prism support for streaming code from stdin is not currently supported");
+            pm_string_constant_init(&input, RSTRING_PTR(rb_source), RSTRING_LEN(rb_source));
+            pm_options_filepath_set(&options, RSTRING_PTR(opt->script_name));
+        }
+        else if (opt->e_script) {
             pm_string_constant_init(&input, RSTRING_PTR(opt->e_script), RSTRING_LEN(opt->e_script));
             pm_options_filepath_set(&options, "-e");
         }
@@ -2400,7 +2409,16 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             pm_string_t input;
             pm_options_t options = { 0 };
 
-            if (opt->e_script) {
+            if (strcmp(opt->script, "-") == 0) {
+                int xflag = opt->xflag;
+                VALUE rb_source = open_load_file(opt->script_name, &xflag);
+                opt->xflag = xflag != 0;
+
+                rb_warn("Prism support for streaming code from stdin is not currently supported");
+                pm_string_constant_init(&input, RSTRING_PTR(rb_source), RSTRING_LEN(rb_source));
+                pm_options_filepath_set(&options, RSTRING_PTR(opt->script_name));
+            }
+            else if (opt->e_script) {
                 pm_string_constant_init(&input, RSTRING_PTR(opt->e_script), RSTRING_LEN(opt->e_script));
                 pm_options_filepath_set(&options, "-e");
             }
