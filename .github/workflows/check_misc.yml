@@ -1,4 +1,4 @@
-name: Miscellaneous
+name: Misc
 on: [push, pull_request, merge_group]
 
 concurrency:
