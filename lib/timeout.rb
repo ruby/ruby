@@ -23,18 +23,19 @@
 # Copyright:: (C) 2000  Information-technology Promotion Agency, Japan
 
 module Timeout
+  # The version
   VERSION = "0.4.1"
 
   # Internal error raised to when a timeout is triggered.
   class ExitException < Exception
-    def exception(*)
+    def exception(*) # :nodoc:
       self
     end
   end
 
   # Raised by Timeout.timeout when the block times out.
   class Error < RuntimeError
-    def self.handle_timeout(message)
+    def self.handle_timeout(message) # :nodoc:
       exc = ExitException.new(message)
 
       begin
