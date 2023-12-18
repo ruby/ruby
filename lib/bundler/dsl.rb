@@ -20,7 +20,7 @@ module Bundler
 
     GITHUB_PULL_REQUEST_URL = %r{\Ahttps://github\.com/([A-Za-z0-9_\-\.]+/[A-Za-z0-9_\-\.]+)/pull/(\d+)\z}
 
-    attr_reader :gemspecs
+    attr_reader :gemspecs, :gemfile
     attr_accessor :dependencies
 
     def initialize

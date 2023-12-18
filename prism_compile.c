@@ -1210,13 +1210,32 @@ pm_compile_index_and_or_write_node(bool and_node, pm_node_t *receiver, pm_node_t
  * path).
  */
 static uint8_t
-pm_compile_multi_write_lhs(rb_iseq_t *iseq, NODE dummy_line_node, const pm_node_t *node, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, uint8_t pushed, bool nested)
+pm_compile_multi_write_lhs(rb_iseq_t *iseq, NODE dummy_line_node, const uint8_t *src, bool popped, const pm_node_t *node, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, uint8_t pushed, bool nested)
 {
     switch (PM_NODE_TYPE(node)) {
+      case PM_INDEX_TARGET_NODE: {
+        pm_index_target_node_t *cast = (pm_index_target_node_t *)node;
+        PM_COMPILE_NOT_POPPED((pm_node_t *)cast->receiver);
+        pushed++;
+
+        if (cast->arguments) {
+            for (size_t i = 0; i < cast->arguments->arguments.size; i++) {
+                PM_COMPILE_NOT_POPPED((pm_node_t *)cast->arguments->arguments.nodes[i]);
+            }
+            pushed += cast->arguments->arguments.size;
+        }
+        break;
+      }
+      case PM_CALL_TARGET_NODE: {
+        pm_call_target_node_t *cast = (pm_call_target_node_t *)node;
+        PM_COMPILE_NOT_POPPED((pm_node_t *)cast->receiver);
+        pushed++;
+        break;
+      }
       case PM_MULTI_TARGET_NODE: {
         pm_multi_target_node_t *cast = (pm_multi_target_node_t *) node;
         for (size_t index = 0; index < cast->lefts.size; index++) {
-            pushed = pm_compile_multi_write_lhs(iseq, dummy_line_node, cast->lefts.nodes[index], ret, scope_node, pushed, false);
+            pushed = pm_compile_multi_write_lhs(iseq, dummy_line_node, src, popped, cast->lefts.nodes[index], ret, scope_node, pushed, false);
         }
         break;
       }
@@ -1224,7 +1243,7 @@ pm_compile_multi_write_lhs(rb_iseq_t *iseq, NODE dummy_line_node, const pm_node_
         pm_constant_path_target_node_t *cast = (pm_constant_path_target_node_t *)node;
         if (cast->parent) {
             PM_PUTNIL;
-            pushed = pm_compile_multi_write_lhs(iseq, dummy_line_node, cast->parent, ret, scope_node, pushed, false);
+            pushed = pm_compile_multi_write_lhs(iseq, dummy_line_node, src, popped, cast->parent, ret, scope_node, pushed, false);
         } else {
             ADD_INSN1(ret, &dummy_line_node, putobject, rb_cObject);
         }
@@ -1233,12 +1252,12 @@ pm_compile_multi_write_lhs(rb_iseq_t *iseq, NODE dummy_line_node, const pm_node_
       case PM_CONSTANT_PATH_NODE: {
         pm_constant_path_node_t *cast = (pm_constant_path_node_t *) node;
         if (cast->parent) {
-            pushed = pm_compile_multi_write_lhs(iseq, dummy_line_node, cast->parent, ret, scope_node, pushed, false);
+            pushed = pm_compile_multi_write_lhs(iseq, dummy_line_node, src, popped, cast->parent, ret, scope_node, pushed, false);
         } else {
             PM_POP;
             ADD_INSN1(ret, &dummy_line_node, putobject, rb_cObject);
         }
-        pushed = pm_compile_multi_write_lhs(iseq, dummy_line_node, cast->child, ret, scope_node, pushed, cast->parent);
+        pushed = pm_compile_multi_write_lhs(iseq, dummy_line_node, src, popped, cast->child, ret, scope_node, pushed, cast->parent);
         break;
       }
       case PM_CONSTANT_READ_NODE: {
@@ -2622,9 +2641,11 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     }
 
     if (pm_node->flags & PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) {
-        ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(orig_argc + 1));
+        if (!popped) {
+            ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(orig_argc + 1));
+        }
         ADD_SEND_R(ret, &dummy_line_node, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
-        PM_POP;
+        PM_POP_UNLESS_POPPED;
     }
     else {
         ADD_SEND_R(ret, &dummy_line_node, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
@@ -3137,7 +3158,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         ID method_id = pm_constant_id_lookup(scope_node, call_node->name);
         if (node->flags & PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) {
-            PM_PUTNIL;
+            if (!popped) {
+                PM_PUTNIL;
+            }
         }
 
         if (call_node->receiver == NULL) {
@@ -4927,11 +4950,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_multi_write_node_t *multi_write_node = (pm_multi_write_node_t *)node;
         pm_node_list_t *lefts = &multi_write_node->lefts;
         pm_node_list_t *rights = &multi_write_node->rights;
+        size_t argc = 1;
 
         // pre-process the left hand side of multi-assignments.
         uint8_t pushed = 0;
         for (size_t index = 0; index < lefts->size; index++) {
-            pushed = pm_compile_multi_write_lhs(iseq, dummy_line_node, lefts->nodes[index], ret, scope_node, pushed, false);
+            pushed = pm_compile_multi_write_lhs(iseq, dummy_line_node, src, popped, lefts->nodes[index], ret, scope_node, pushed, false);
         }
 
         PM_COMPILE_NOT_POPPED(multi_write_node->value);
@@ -4942,6 +4966,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             pm_splat_node_t *rest_splat = ((pm_splat_node_t *)multi_write_node->rest);
             rest_expression = rest_splat->expression;
         }
+
+        size_t remainder = pushed;
+        if (popped) remainder--;
 
         if (lefts->size) {
             ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(lefts->size), INT2FIX((int) (bool) (rights->size || rest_expression)));
@@ -4956,15 +4983,53 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
                     ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(pushed));
                     ADD_INSN1(ret, &dummy_line_node, setconstant, ID2SYM(name));
+                } else if (PM_NODE_TYPE_P(considered_node, PM_INDEX_TARGET_NODE)) {
+                    pm_index_target_node_t *cast = (pm_index_target_node_t *)considered_node;
+
+                    if (cast->arguments) {
+                        pm_arguments_node_t *args = (pm_arguments_node_t *)cast->arguments;
+                        argc = args->arguments.size + 1;
+                    }
+
+                    if (argc == 1) {
+                        ADD_INSN(ret, &dummy_line_node, swap);
+                    }
+                    else {
+                        VALUE vals = INT2FIX(remainder + (lefts->size - index));
+                        ADD_INSN1(ret, &dummy_line_node, topn, vals);
+                        for (size_t i = 1; i < argc; i++) {
+                            ADD_INSN1(ret, &dummy_line_node, topn, vals);
+                        }
+                        ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(argc));
+                    }
+
+                    ADD_SEND(ret, &dummy_line_node, idASET, INT2FIX(argc));
+                    PM_POP;
+                    PM_POP;
+                    remainder -= argc;
+
+                } else if (PM_NODE_TYPE_P(considered_node, PM_CALL_TARGET_NODE)) {
+                    pm_call_target_node_t *cast = (pm_call_target_node_t *)considered_node;
+
+                    VALUE vals = INT2FIX(remainder + (lefts->size - index));
+                    ADD_INSN1(ret, &dummy_line_node, topn, vals);
+                    ADD_INSN(ret, &dummy_line_node, swap);
+
+                    ID method_id = pm_constant_id_lookup(scope_node, cast->name);
+                    ADD_SEND(ret, &dummy_line_node, method_id, INT2FIX(argc));
+                    PM_POP;
+                    remainder -= argc;
                 } else {
                     PM_COMPILE(lefts->nodes[index]);
                 }
             }
         }
 
-        if (pushed) {
-            ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(pushed));
-            for (uint8_t index = 0; index < pushed; index++) {
+        if ((pushed)) {
+            if (!popped) {
+                ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(pushed));
+            }
+            for (uint8_t index = 0; index < (pushed); index++) {
                 PM_POP;
             }
         }
@@ -6121,7 +6186,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ISEQ_COMPILE_DATA(iseq)->last_line = body->location.code_location.end_pos.lineno;
 
             /* wide range catch handler must put at last */
-            ISEQ_COMPILE_DATA(iseq)->catch_except_p = true;
             ADD_CATCH_ENTRY(CATCH_TYPE_REDO, start, end, NULL, start);
             ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, start, end, NULL, end);
             break;

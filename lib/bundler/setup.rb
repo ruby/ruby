@@ -12,7 +12,9 @@ if Bundler::SharedHelpers.in_bundle?
       Bundler.ui.error e.message
       Bundler.ui.warn e.backtrace.join("\n") if ENV["DEBUG"]
       if e.is_a?(Bundler::GemNotFound)
-        suggested_bundle = Gem.loaded_specs["bundler"] ? "bundle" : Bundler::SharedHelpers.bundle_bin_path
+        default_bundle = Gem.bin_path("bundler", "bundle")
+        current_bundle = Bundler::SharedHelpers.bundle_bin_path
+        suggested_bundle = default_bundle == current_bundle ? "bundle" : current_bundle
         suggested_cmd = "#{suggested_bundle} install"
         original_gemfile = Bundler.original_env["BUNDLE_GEMFILE"]
         suggested_cmd += " --gemfile #{original_gemfile}" if original_gemfile

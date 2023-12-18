@@ -664,6 +664,7 @@ class Gem::Installer
     @env_shebang         = options[:env_shebang]
     @force               = options[:force]
     @install_dir         = options[:install_dir]
+    @user_install        = options[:user_install]
     @ignore_dependencies = options[:ignore_dependencies]
     @format_executable   = options[:format_executable]
     @wrappers            = options[:wrappers]
@@ -675,22 +676,7 @@ class Gem::Installer
 
     @build_args = options[:build_args]
 
-    @gem_home = @install_dir
-
-    unless @gem_home
-      # `--build-root` overrides `--user-install` and auto-user-install
-      if @build_root.nil?
-        # Please note that `options[:user_install]` might have three states:
-        # * `true`: `--user-install`
-        # * `false`: `--no-user-install` and
-        # * `nil`: option was not specified
-        if options[:user_install] || (options[:user_install].nil? && Gem.default_user_install)
-          @gem_home = Gem.user_dir
-        end
-      end
-
-      @gem_home ||= Gem.dir
-    end
+    @gem_home = @install_dir || user_install_dir || Gem.dir
 
     # If the user has asked for the gem to be installed in a directory that is
     # the system gem directory, then use the system bin directory, else create
@@ -985,6 +971,19 @@ TEXT
   end
 
   private
+
+  def user_install_dir
+    # never install to user home in --build-root mode
+    return unless @build_root.nil?
+
+    # Please note that @user_install might have three states:
+    # * `true`: `--user-install`
+    # * `false`: `--no-user-install` and
+    # * `nil`: option was not specified
+    if @user_install || (@user_install.nil? && Gem.default_user_install)
+      Gem.user_dir
+    end
+  end
 
   def build_args
     @build_args ||= begin
