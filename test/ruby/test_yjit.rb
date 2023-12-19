@@ -67,6 +67,29 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_yjit_enable_stats
+    args = []
+    args << "--disable=yjit" if RubyVM::YJIT.enabled?
+    assert_separately(args, <<~RUBY, ignore_stderr: true)
+      assert_false RubyVM::YJIT.enabled?
+      assert_nil RubyVM::YJIT.runtime_stats
+
+      RubyVM::YJIT.enable(stats: true)
+
+      assert_true RubyVM::YJIT.enabled?
+      assert_true RubyVM::YJIT.runtime_stats[:all_stats]
+    RUBY
+  end
+
+  def test_yjit_enable_stats_quiet
+    assert_in_out_err(['--yjit-disable', '-e', 'RubyVM::YJIT.enable(stats: true)']) do |_stdout, stderr, _status|
+      assert_not_empty stderr
+    end
+    assert_in_out_err(['--yjit-disable', '-e', 'RubyVM::YJIT.enable(stats: :quiet)']) do |_stdout, stderr, _status|
+      assert_empty stderr
+    end
+  end
+
   def test_yjit_enable_with_call_threshold
     assert_separately(%w[--yjit-disable --yjit-call-threshold=1], <<~RUBY)
       def not_compiled = nil
