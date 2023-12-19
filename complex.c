@@ -1653,10 +1653,15 @@ nucomp_inspect(VALUE self)
 
 /*
  * call-seq:
- *    cmp.finite?  ->  true or false
+ *   finite? -> true or false
  *
- * Returns +true+ if +cmp+'s real and imaginary parts are both finite numbers,
- * otherwise returns +false+.
+ * Returns +true+ if both <tt>self.real.finite?</tt> and <tt>self.imag.finite?</tt>
+ * are true, +false+ otherwise:
+ *
+ *   Complex(1, 1).finite?               # => true
+ *   Complex(Float::INFINITY, 0).finite? # => false
+ *
+ * Related: Numeric#finite?, Float#finite?.
  */
 static VALUE
 rb_complex_finite_p(VALUE self)
@@ -1668,15 +1673,15 @@ rb_complex_finite_p(VALUE self)
 
 /*
  * call-seq:
- *    cmp.infinite?  ->  nil or 1
+ *   infinite? -> 1 or nil
  *
- * Returns +1+ if +cmp+'s real or imaginary part is an infinite number,
- * otherwise returns +nil+.
+ * Returns +1+ if either <tt>self.real.infinite?</tt> or <tt>self.imag.infinite?</tt>
+ * is true, +nil+ otherwise:
  *
- *  For example:
+ *   Complex(Float::INFINITY, 0).infinite? # => 1
+ *   Complex(1, 1).infinite?               # => nil
  *
- *     (1+1i).infinite?                   #=> nil
- *     (Float::INFINITY + 1i).infinite?   #=> 1
+ * Related: Numeric#infinite?, Float#infinite?.
  */
 static VALUE
 rb_complex_infinite_p(VALUE self)
