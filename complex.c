@@ -1477,11 +1477,17 @@ nucomp_real_p_m(VALUE self)
 
 /*
  * call-seq:
- *    cmp.denominator  ->  integer
+ *   denominator -> integer
  *
- * Returns the denominator (lcm of both denominator - real and imag).
+ * Returns the denominator of +self+, which is
+ * the {least common multiple}[https://en.wikipedia.org/wiki/Least_common_multiple]
+ * of <tt>self.real.denominator</tt> and <tt>self.imag.denominator</tt>:
  *
- * See numerator.
+ *   Complex.rect(Rational(1, 2), Rational(2, 3)).denominator # => 6
+ *
+ * Note that <tt>n.denominator</tt> of a non-rational numeric is +1+.
+ *
+ * Related: Complex#numerator.
  */
 static VALUE
 nucomp_denominator(VALUE self)
@@ -1492,21 +1498,23 @@ nucomp_denominator(VALUE self)
 
 /*
  * call-seq:
- *    cmp.numerator  ->  numeric
+ *   numerator -> new_complex
  *
- * Returns the numerator.
+ * Returns the \Complex object created from the numerators
+ * of the real and imaginary parts of +self+,
+ * after converting each part to the
+ * {lowest common denominator}[https://en.wikipedia.org/wiki/Lowest_common_denominator]
+ * of the two:
  *
- *        1   2       3+4i  <-  numerator
- *        - + -i  ->  ----
- *        2   3        6    <-  denominator
+ *   c = Complex(Rational(2, 3), Rational(3, 4)) # => ((2/3)+(3/4)*i)
+ *   c.numerator                                 # => (8+9i)
  *
- *    c = Complex('1/2+2/3i')  #=> ((1/2)+(2/3)*i)
- *    n = c.numerator          #=> (3+4i)
- *    d = c.denominator        #=> 6
- *    n / d                    #=> ((1/2)+(2/3)*i)
- *    Complex(Rational(n.real, d), Rational(n.imag, d))
- *                             #=> ((1/2)+(2/3)*i)
- * See denominator.
+ * In this example, the lowest common denominator of the two parts is 12;
+ * the two converted parts may be thought of as \Complex(8, 12) and \Complex(9, 12),
+ * whose numerators, respectively, are 8 and 9;
+ * so the returned value of <tt>c.numerator</tt> is <tt>Complex(8, 9)</tt>.
+ *
+ * Related: Complex#denominator.
  */
 static VALUE
 nucomp_numerator(VALUE self)
