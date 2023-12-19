@@ -26,8 +26,6 @@ module Psych
 
         def key? target
           @obj_to_node.key? target
-        rescue NoMethodError
-          false
         end
 
         def id_for target
