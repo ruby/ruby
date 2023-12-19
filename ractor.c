@@ -3491,6 +3491,8 @@ ractor_moved_bang(VALUE obj)
     rv->v3 = 0;
     rv->flags = rv->flags & ~fl_users;
 
+    if (BUILTIN_TYPE(obj) == T_OBJECT) ROBJECT_SET_SHAPE_ID(obj, ROOT_SHAPE_ID);
+
     // TODO: record moved location
 }
 
