@@ -249,9 +249,9 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("no-type-prop", "") => unsafe { OPTIONS.no_type_prop = true },
         ("stats", _) => match opt_val {
             "" => unsafe { OPTIONS.gen_stats = true },
-            "quiet" => {
-                unsafe { OPTIONS.gen_stats = true }
-                unsafe { OPTIONS.print_stats = false }
+            "quiet" => unsafe {
+                OPTIONS.gen_stats = true;
+                OPTIONS.print_stats = false;
             },
             _ => {
                 return None;
