@@ -1286,7 +1286,7 @@ rb_io_read_memory(rb_io_t *fptr, void *buf, size_t count)
         iis.timeout = &timeout_storage;
     }
 
-    return (ssize_t)rb_thread_io_blocking_region(internal_read_func, &iis, fptr->fd);
+    return (ssize_t)rb_thread_io_blocking_call(internal_read_func, &iis, fptr->fd, RB_WAITFD_IN);
 }
 
 static ssize_t
@@ -1319,7 +1319,7 @@ rb_io_write_memory(rb_io_t *fptr, const void *buf, size_t count)
         iis.timeout = &timeout_storage;
     }
 
-    return (ssize_t)rb_thread_io_blocking_region(internal_write_func, &iis, fptr->fd);
+    return (ssize_t)rb_thread_io_blocking_call(internal_write_func, &iis, fptr->fd, RB_WAITFD_OUT);
 }
 
 #ifdef HAVE_WRITEV
@@ -1356,7 +1356,7 @@ rb_writev_internal(rb_io_t *fptr, const struct iovec *iov, int iovcnt)
         iis.timeout = &timeout_storage;
     }
 
-    return (ssize_t)rb_thread_io_blocking_region(internal_writev_func, &iis, fptr->fd);
+    return (ssize_t)rb_thread_io_blocking_call(internal_writev_func, &iis, fptr->fd, RB_WAITFD_OUT);
 }
 #endif
 
@@ -1386,7 +1386,7 @@ static VALUE
 io_flush_buffer_async(VALUE arg)
 {
     rb_io_t *fptr = (rb_io_t *)arg;
-    return rb_thread_io_blocking_region(io_flush_buffer_sync, fptr, fptr->fd);
+    return rb_thread_io_blocking_call(io_flush_buffer_sync, fptr, fptr->fd, RB_WAITFD_OUT);
 }
 
 static inline int
@@ -3410,7 +3410,7 @@ io_read_memory_call(VALUE arg)
         }
     }
 
-    return rb_thread_io_blocking_region(internal_read_func, iis, iis->fptr->fd);
+    return rb_thread_io_blocking_call(internal_read_func, iis, iis->fptr->fd, RB_WAITFD_IN);
 }
 
 static long
@@ -6115,7 +6115,7 @@ pread_internal_call(VALUE _arg)
         }
     }
 
-    return rb_thread_io_blocking_region(internal_pread_func, arg, arg->fd);
+    return rb_thread_io_blocking_call(internal_pread_func, arg, arg->fd, RB_WAITFD_IN);
 }
 
 /*
@@ -6248,7 +6248,7 @@ rb_io_pwrite(VALUE io, VALUE str, VALUE offset)
     arg.buf = RSTRING_PTR(tmp);
     arg.count = (size_t)RSTRING_LEN(tmp);
 
-    n = (ssize_t)rb_thread_io_blocking_region(internal_pwrite_func, &arg, fptr->fd);
+    n = (ssize_t)rb_thread_io_blocking_call(internal_pwrite_func, &arg, fptr->fd, RB_WAITFD_OUT);
     if (n < 0) rb_sys_fail_path(fptr->pathv);
     rb_str_tmp_frozen_release(str, tmp);
 
