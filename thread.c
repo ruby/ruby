@@ -1647,6 +1647,20 @@ rb_thread_call_without_gvl(void *(*func)(void *data), void *data1,
 }
 
 static void
+rb_thread_io_setup_wfd(rb_thread_t *th, int fd, struct waiting_fd *wfd)
+{
+    wfd->fd = fd;
+    wfd->th = th;
+    wfd->busy = NULL;
+
+    RB_VM_LOCK_ENTER();
+    {
+        ccan_list_add(&th->vm->waiting_fds, &wfd->wfd_node);
+    }
+    RB_VM_LOCK_LEAVE();
+}
+
+static void
 rb_thread_io_wake_pending_closer(struct waiting_fd *wfd)
 {
     bool has_waiter = wfd->busy && RB_TEST(wfd->busy->wakeup_mutex);
@@ -1681,12 +1695,19 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
 
     RUBY_DEBUG_LOG("th:%u fd:%d ev:%d", rb_th_serial(th), fd, events);
 
+    struct waiting_fd waiting_fd;
+
 #ifdef RUBY_THREAD_PTHREAD_H
     if (events && !th_has_dedicated_nt(th)) {
         VM_ASSERT(events == RB_WAITFD_IN || events == RB_WAITFD_OUT);
 
-        // wait readable/writable
-        thread_sched_wait_events(TH_SCHED(th), th, fd, waitfd_to_waiting_flag(events), NULL);
+        rb_thread_io_setup_wfd(th, fd, &waiting_fd);
+        {
+            // wait readable/writable
+            thread_sched_wait_events(TH_SCHED(th), th, fd, waitfd_to_waiting_flag(events), NULL);
+        }
+        rb_thread_io_wake_pending_closer(&waiting_fd);
+
         RUBY_VM_CHECK_INTS_BLOCKING(ec);
     }
 #endif
@@ -1695,23 +1716,13 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
     volatile int saved_errno = 0;
     enum ruby_tag_type state;
 
-    struct waiting_fd waiting_fd = {
-        .fd = fd,
-        .th = rb_ec_thread_ptr(ec),
-        .busy = NULL,
-    };
-
     // `errno` is only valid when there is an actual error - but we can't
     // extract that from the return value of `func` alone, so we clear any
     // prior `errno` value here so that we can later check if it was set by
     // `func` or not (as opposed to some previously set value).
     errno = 0;
 
-    RB_VM_LOCK_ENTER();
-    {
-        ccan_list_add(&rb_ec_vm_ptr(ec)->waiting_fds, &waiting_fd.wfd_node);
-    }
-    RB_VM_LOCK_LEAVE();
+    rb_thread_io_setup_wfd(th, fd, &waiting_fd);
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
