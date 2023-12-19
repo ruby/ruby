@@ -10752,8 +10752,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         break;
 
       case T_ICLASS:
-        if (FL_TEST(obj, RICLASS_IS_ORIGIN) &&
-                !FL_TEST(obj, RICLASS_ORIGIN_SHARED_MTBL)) {
+        if (RICLASS_OWNS_M_TBL_P(obj)) {
             update_m_tbl(objspace, RCLASS_M_TBL(obj));
         }
         if (RCLASS_SUPER((VALUE)obj)) {
