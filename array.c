@@ -1231,12 +1231,13 @@ ary_make_partial_step(VALUE ary, VALUE klass, long offset, long len, long step)
     assert(offset+len <= RARRAY_LEN(ary));
     assert(step != 0);
 
-    const VALUE *values = RARRAY_CONST_PTR(ary);
     const long orig_len = len;
 
     if (step > 0 && step >= len) {
         VALUE result = ary_new(klass, 1);
         VALUE *ptr = (VALUE *)ARY_EMBED_PTR(result);
+        const VALUE *values = RARRAY_CONST_PTR(ary);
+
         RB_OBJ_WRITE(result, ptr, values[offset]);
         ARY_SET_EMBED_LEN(result, 1);
         return result;
@@ -1254,6 +1255,8 @@ ary_make_partial_step(VALUE ary, VALUE klass, long offset, long len, long step)
     VALUE result = ary_new(klass, len);
     if (ARY_EMBED_P(result)) {
         VALUE *ptr = (VALUE *)ARY_EMBED_PTR(result);
+        const VALUE *values = RARRAY_CONST_PTR(ary);
+
         for (i = 0; i < len; ++i) {
             RB_OBJ_WRITE(result, ptr+i, values[j]);
             j += step;
@@ -1261,6 +1264,8 @@ ary_make_partial_step(VALUE ary, VALUE klass, long offset, long len, long step)
         ARY_SET_EMBED_LEN(result, len);
     }
     else {
+        const VALUE *values = RARRAY_CONST_PTR(ary);
+
         RARRAY_PTR_USE(result, ptr, {
             for (i = 0; i < len; ++i) {
                 RB_OBJ_WRITE(result, ptr+i, values[j]);
