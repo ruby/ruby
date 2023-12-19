@@ -4,7 +4,7 @@ module RubyVM::RJIT
     # @param mem_size  [Integer] JIT buffer size
     # @param outliend  [TrueClass,FalseClass] true for outlined CodeBlock
     def initialize(mem_block:, mem_size:, outlined: false)
-      @comments  = Hash.new { |h, k| h[k] = [] }
+      @comments  = Hash.new { |h, k| h[k] = [] } if dump_disasm?
       @mem_block = mem_block
       @mem_size  = mem_size
       @write_pos = 0
@@ -26,7 +26,7 @@ module RubyVM::RJIT
 
       # Convert comment indexes to addresses
       asm.comments.each do |index, comments|
-        @comments[start_addr + index] += comments
+        @comments[start_addr + index] += comments if dump_disasm?
       end
       asm.comments.clear
 
@@ -39,7 +39,7 @@ module RubyVM::RJIT
 
     def set_write_addr(addr)
       @write_pos = addr - @mem_block
-      @comments.delete(addr) # TODO: clean up old comments for all the overwritten range?
+      @comments.delete(addr) if dump_disasm?
     end
 
     def with_write_addr(addr)
@@ -82,6 +82,10 @@ module RubyVM::RJIT
 
     def bold(text)
       "\e[1m#{text}\e[0m"
+    end
+
+    def dump_disasm?
+      C.rjit_opts.dump_disasm
     end
   end
 end
