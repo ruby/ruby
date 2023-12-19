@@ -1643,6 +1643,24 @@ assert_match /\Atest_ractor\.rb:1:\s+warning:\s+Ractor is experimental/, %q{
   eval("Ractor.new{}.take", nil, "test_ractor.rb", 1)
 }
 
+# check moved object
+assert_equal 'ok', %q{
+  r = Ractor.new do
+    Ractor.receive
+    GC.start
+    :ok
+  end
+
+  obj = begin
+  raise
+  rescue => e
+    e = Marshal.load(Marshal.dump(e))
+  end
+
+  r.send obj, move: true
+  r.take
+}
+
 ## Ractor::Selector
 
 # Selector#empty? returns true
