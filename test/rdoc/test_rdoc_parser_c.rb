@@ -583,8 +583,6 @@ void Init_curses(){
   mCurses = rb_define_module("Curses");
 
   /*
-   * Document-const: Curses::COLOR_BLACK
-   *
    * Value of the color black
    */
   rb_curses_define_const(COLOR_BLACK);
@@ -609,8 +607,7 @@ void Init_curses(){
   def test_do_constants_file
     content = <<-EOF
 void Init_File(void) {
-  /*  Document-const: LOCK_SH
-   *
+  /*
    *  Shared lock
    */
   rb_file_const("LOCK_SH", INT2FIX(LOCK_SH));

@@ -756,17 +756,27 @@ class RDoc::Parser::C < RDoc::Parser
   def gen_const_table file_content
     table = {}
     @content.scan(%r{
-      ((?>^\s*/\*.*?\*/\s+))
-        rb_define_(\w+)\((?:\s*(?:\w+),)?\s*
-                           "(\w+)"\s*,
+      (?<doc>(?>^\s*/\*.*?\*/\s+))
+        rb_define_(?<type>\w+)\(\s*(?:\w+),\s*
+                           "(?<name>\w+)"\s*,
                            .*?\)\s*;
+    |  (?<doc>(?>^\s*/\*.*?\*/\s+))
+        rb_file_(?<type>const)\(\s*
+                           "(?<name>\w+)"\s*,
+                           .*?\)\s*;
+    |  (?<doc>(?>^\s*/\*.*?\*/\s+))
+        rb_curses_define_(?<type>const)\(\s*
+                           (?<name>\w+)
+                           \s*\)\s*;
     | Document-(?:const|global|variable):\s
-        ((?:\w+::)*\w+)
-        \s*?\n((?>.*?\*/))
+        (?<name>(?:\w+::)*\w+)
+        \s*?\n(?<doc>(?>.*?\*/))
     }mxi) do
-      case
-      when $1 then table[[$2, $3]] = $1
-      when $4 then table[$4] = "/*\n" + $5
+      name, doc, type = $~.values_at(:name, :doc, :type)
+      if type
+        table[[type, name]] = doc
+      else
+        table[name] = "/*\n" + doc
       end
     end
     table
