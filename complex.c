@@ -1510,7 +1510,7 @@ nucomp_denominator(VALUE self)
  *   c.numerator                                 # => (8+9i)
  *
  * In this example, the lowest common denominator of the two parts is 12;
- * the two converted parts may be thought of as \Complex(8, 12) and \Complex(9, 12),
+ * the two converted parts may be thought of as \Rational(8, 12) and \Rational(9, 12),
  * whose numerators, respectively, are 8 and 9;
  * so the returned value of <tt>c.numerator</tt> is <tt>Complex(8, 9)</tt>.
  *
@@ -1607,15 +1607,16 @@ f_format(VALUE self, VALUE (*func)(VALUE))
 
 /*
  * call-seq:
- *    cmp.to_s  ->  string
+ *   to_s -> string
  *
- * Returns the value as a string.
+ * Returns a string representation of +self+:
  *
- *    Complex(2).to_s                       #=> "2+0i"
- *    Complex('-8/6').to_s                  #=> "-4/3+0i"
- *    Complex('1/2i').to_s                  #=> "0+1/2i"
- *    Complex(0, Float::INFINITY).to_s      #=> "0+Infinity*i"
- *    Complex(Float::NAN, Float::NAN).to_s  #=> "NaN+NaN*i"
+ *   Complex(2).to_s                      # => "2+0i"
+ *   Complex('-8/6').to_s                 # => "-4/3+0i"
+ *   Complex('1/2i').to_s                 # => "0+1/2i"
+ *   Complex(0, Float::INFINITY).to_s     # => "0+Infinity*i"
+ *   Complex(Float::NAN, Float::NAN).to_s # => "NaN+NaN*i"
+ *
  */
 static VALUE
 nucomp_to_s(VALUE self)
@@ -1625,15 +1626,16 @@ nucomp_to_s(VALUE self)
 
 /*
  * call-seq:
- *    cmp.inspect  ->  string
+ *   inspect -> string
  *
- * Returns the value as a string for inspection.
+ * Returns a string representation of +self+:
  *
- *    Complex(2).inspect                       #=> "(2+0i)"
- *    Complex('-8/6').inspect                  #=> "((-4/3)+0i)"
- *    Complex('1/2i').inspect                  #=> "(0+(1/2)*i)"
- *    Complex(0, Float::INFINITY).inspect      #=> "(0+Infinity*i)"
- *    Complex(Float::NAN, Float::NAN).inspect  #=> "(NaN+NaN*i)"
+ *   Complex(2).inspect                      # => "(2+0i)"
+ *   Complex('-8/6').inspect                 # => "((-4/3)+0i)"
+ *   Complex('1/2i').inspect                 # => "(0+(1/2)*i)"
+ *   Complex(0, Float::INFINITY).inspect     # => "(0+Infinity*i)"
+ *   Complex(Float::NAN, Float::NAN).inspect # => "(NaN+NaN*i)"
+ *
  */
 static VALUE
 nucomp_inspect(VALUE self)
