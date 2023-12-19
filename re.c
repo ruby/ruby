@@ -2151,6 +2151,17 @@ match_ary_aref(VALUE match, VALUE idx, VALUE result)
  *    m['foo'] # => "h"
  *    m[:bar]  # => "ge"
  *
+ *  If multiple captures have the same name, returns the last matched
+ *  substring.
+ *
+ *    m = /(?<foo>.)(?<foo>.+)/.match("hoge")
+ *    # => #<MatchData "hoge" foo:"h" foo:"oge">
+ *    m[:foo] #=> "oge"
+ *
+ *    m = /\W(?<foo>.+)|\w(?<foo>.+)|(?<foo>.+)/.match("hoge")
+ *    #<MatchData "hoge" foo:nil foo:"oge" foo:nil>
+ *    m[:foo] #=> "oge"
+ *
  */
 
 static VALUE
