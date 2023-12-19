@@ -201,7 +201,7 @@ The following default gems are updated.
 * pp 0.5.0
 * prettyprint 0.2.0
 * pstore 0.1.3
-* psych 5.1.1.1
+* psych 5.1.2
 * rdoc 6.6.2
 * readline 0.0.4
 * reline 0.4.1
