@@ -501,6 +501,7 @@ generator = BindingGenerator.new(
       rb_cTrueClass
       rb_rjit_global_events
       rb_mRubyVMFrozenCore
+      rb_vm_insns_count
       idRespond_to_missing
     ],
   },

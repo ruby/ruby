@@ -151,12 +151,10 @@ rb_rjit_setup_options(const char *s, struct rb_rjit_options *rjit_opt)
 
 #define M(shortopt, longopt, desc) RUBY_OPT_MESSAGE(shortopt, longopt, desc)
 const struct ruby_opt_message rb_rjit_option_messages[] = {
-    M("--rjit-stats",              "", "Enable collecting RJIT statistics"),
-#if RJIT_STATS
-    M("--rjit-trace-exits",        "", "Trace side exit locations"),
-#endif
     M("--rjit-exec-mem-size=num",  "", "Size of executable memory block in MiB (default: " STRINGIZE(DEFAULT_EXEC_MEM_SIZE) ")"),
     M("--rjit-call-threshold=num", "", "Number of calls to trigger JIT (default: " STRINGIZE(DEFAULT_CALL_THRESHOLD) ")"),
+    M("--rjit-stats",              "", "Enable collecting RJIT statistics"),
+    M("--rjit-trace-exits",        "", "Trace side exit locations"),
 #ifdef HAVE_LIBCAPSTONE
     M("--rjit-dump-disasm",        "", "Dump all JIT code"),
 #endif
@@ -165,15 +163,6 @@ const struct ruby_opt_message rb_rjit_option_messages[] = {
 #undef M
 
 struct rb_rjit_runtime_counters rb_rjit_counters = { 0 };
-
-#if RJIT_STATS
-void
-rb_rjit_collect_vm_usage_insn(int insn)
-{
-    if (!rjit_stats_p) return;
-    rb_rjit_counters.vm_insns_count++;
-}
-#endif // YJIT_STATS
 
 extern VALUE rb_gc_enable(void);
 extern VALUE rb_gc_disable(void);

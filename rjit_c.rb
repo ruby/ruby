@@ -512,6 +512,10 @@ module RubyVM::RJIT # :nodoc: all
     Primitive.cexpr! %q{ SIZET2NUM(rb_rjit_global_events) }
   end
 
+  def C.rb_vm_insns_count
+    Primitive.cexpr! %q{ SIZET2NUM(rb_vm_insns_count) }
+  end
+
   def C.rb_ary_clear
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ary_clear) }
   end
@@ -1335,7 +1339,6 @@ module RubyVM::RJIT # :nodoc: all
   def C.rb_rjit_runtime_counters
     @rb_rjit_runtime_counters ||= CType::Struct.new(
       "rb_rjit_runtime_counters", Primitive.cexpr!("SIZEOF(struct rb_rjit_runtime_counters)"),
-      vm_insns_count: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), vm_insns_count)")],
       rjit_insns_count: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), rjit_insns_count)")],
       send_args_splat_kw_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_args_splat_kw_splat)")],
       send_args_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_args_splat)")],
