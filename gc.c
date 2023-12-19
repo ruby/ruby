@@ -4426,16 +4426,20 @@ run_finalizer(rb_objspace_t *objspace, VALUE obj, VALUE table)
         VALUE objid;
         VALUE final;
         rb_control_frame_t *cfp;
+        VALUE *sp;
         long finished;
     } saved;
+
     rb_execution_context_t * volatile ec = GET_EC();
 #define RESTORE_FINALIZER() (\
         ec->cfp = saved.cfp, \
+        ec->cfp->sp = saved.sp, \
         ec->errinfo = saved.errinfo)
 
     saved.errinfo = ec->errinfo;
     saved.objid = rb_obj_id(obj);
     saved.cfp = ec->cfp;
+    saved.sp = ec->cfp->sp;
     saved.finished = 0;
     saved.final = Qundef;
 
