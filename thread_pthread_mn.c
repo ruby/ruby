@@ -185,7 +185,7 @@ static struct nt_stack_chunk_header *
 nt_alloc_thread_stack_chunk(void)
 {
     int mmap_flags = MAP_ANONYMOUS | MAP_PRIVATE;
-#ifdef MAP_STACK // not available on macOS
+#if defined(MAP_STACK) && !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__)
     mmap_flags |= MAP_STACK;
 #endif
 
