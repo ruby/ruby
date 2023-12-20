@@ -36,26 +36,27 @@ Note: We're only listing outstanding class updates.
 
 * Encoding
 
-    * Encoding#replicate has been removed, it was already deprecated.  [[Feature #18949]]
+    * `Encoding#replicate` has been removed, it was already deprecated.  [[Feature #18949]]
 
 * Fiber
 
     * Introduce Fiber#kill. [[Bug #595]]
-      ```ruby
-      fiber = Fiber.new do
-        while true
-          puts "Yielding..."
-          Fiber.yield
-        end
-      ensure
-        puts "Exiting..."
-      end
 
-      fiber.resume
-      # Yielding...
-      fiber.kill
-      # Exiting...
-      ```
+        ```ruby
+        fiber = Fiber.new do
+          while true
+            puts "Yielding..."
+            Fiber.yield
+          end
+        ensure
+          puts "Exiting..."
+        end
+
+        fiber.resume
+        # Yielding...
+        fiber.kill
+        # Exiting...
+    ```
 
 * MatchData
 
@@ -67,6 +68,16 @@ Note: We're only listing outstanding class updates.
     * Module#set_temporary_name added for setting a temporary name for a
       module. [[Feature #19521]]
 
+* NoMethodError
+
+    * Error message have changed to not use the target object's `#inspect`
+      for efficiency, and says "instance of ClassName" instead. [[Feature #18285]]
+
+        ```ruby
+        ([1] * 100).nonexisting
+        # undefined method `nonexisting' for an instance of Array (NoMethodError)
+        ```
+
 * ObjectSpace::WeakKeyMap
 
     * New core class to build collections with weak references.
@@ -75,7 +86,7 @@ Note: We're only listing outstanding class updates.
 
 * ObjectSpace::WeakMap
 
-    * `ObjectSpace::WeakMap#delete` was added to eagerly clear weak map
+    * ObjectSpace::WeakMap#delete was added to eagerly clear weak map
       entries. [[Feature #19561]]
 
 * Proc
@@ -84,7 +95,7 @@ Note: We're only listing outstanding class updates.
 
 * Process
 
-    * New `Process.warmup` method that notify the Ruby virtual machine that the boot sequence is finished,
+    * New Process.warmup method that notify the Ruby virtual machine that the boot sequence is finished,
       and that now is a good time to optimize the application. This is useful
       for long-running applications. The actual optimizations performed are entirely
       implementation-specific and may change in the future without notice. [[Feature #18885]]
@@ -92,10 +103,6 @@ Note: We're only listing outstanding class updates.
 * Process::Status
 
     * Process::Status#& and Process::Status#>> are deprecated. [[Bug #19868]]
-
-* Queue
-
-    * Queue#freeze now raises TypeError. [[Bug #17146]]
 
 * Range
 
@@ -109,15 +116,30 @@ Note: We're only listing outstanding class updates.
       Refinement#refined_class is deprecated and will be removed in Ruby
       3.4.  [[Feature #19714]]
 
-* SizedQueue
-
-    * SizedQueue#freeze now raises TypeError. [[Bug #17146]]
-
 * String
 
     * String#unpack now raises ArgumentError for unknown directives. [[Bug #19150]]
     * String#bytesplice now accepts new arguments index/length or range of the
       source string to be copied.  [[Feature #19314]]
+
+* Thread::Queue
+
+    * Thread::Queue#freeze now raises TypeError. [[Bug #17146]]
+
+* Thread::SizedQueue
+
+    * Thread::SizedQueue#freeze now raises TypeError. [[Bug #17146]]
+
+* Time
+
+    * Time.new with a string argument became stricter. [[Bug #19293]]
+
+        ```ruby
+        Time.new('2023-12-20')
+        #  no time information (ArgumentError)
+        Time.new('2023-12-20')
+        #  no time information (ArgumentError)
+        ```
 
 * TracePoint
 
@@ -150,7 +172,7 @@ Note: We're only listing outstanding class updates.
   connections. Socket#recvmsg and Socket#recvmsg_nonblock returns `nil` instead of an empty packet on closed
   connections. [[Bug #19012]]
 
-* Name resolution such as `Socket.getaddrinfo`, `Socket.getnameinfo`, `Addrinfo.getaddrinfo`, etc.
+* Name resolution such as Socket.getaddrinfo, Socket.getnameinfo, Addrinfo.getaddrinfo, etc.
   can now be interrupted. [[Feature #19965]]
 
 * Random::Formatter#alphanumeric is extended to accept optional `chars`
@@ -490,3 +512,5 @@ changelog for details of the default gems or bundled gems.
 [Feature #19965]: https://bugs.ruby-lang.org/issues/19965
 [Feature #20005]: https://bugs.ruby-lang.org/issues/20005
 [Feature #20057]: https://bugs.ruby-lang.org/issues/20057
+[Bug #19293]: https://bugs.ruby-lang.org/issues/19293
+[Feature #18285]: https://bugs.ruby-lang.org/issues/18285
