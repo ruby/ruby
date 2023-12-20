@@ -83,7 +83,7 @@ void rb_check_stack_overflow(void);
 extern uint64_t rb_vm_insns_count;
 #endif
 
-extern bool rb_free_on_exit;
+extern bool rb_free_at_exit;
 
 /* miniinit.c and builtin.c */
 void rb_free_loaded_builtin_table(void);

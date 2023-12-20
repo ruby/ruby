@@ -4699,7 +4699,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
               case T_NONE:
                 break;
               default:
-                if (rb_free_on_exit) {
+                if (rb_free_at_exit) {
                     obj_free(objspace, vp);
                 }
                 break;
