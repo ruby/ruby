@@ -305,7 +305,7 @@ changelog for details of the default gems or bundled gems.
     * added: `rb_postponed_job_preregister()`
     * added: `rb_postponed_job_trigger()`
     * deprecated: `rb_postponed_job_register()` (and semantic change. see below)
-    * deprecated: `rb_postponed_job_register_once()`
+    * deprecated: `rb_postponed_job_register_one()`
   * The postponed job APIs have been changed to address some rare crashes.
     To solve the issue, we introduced new two APIs and deprecated current APIs.
     The semantics of these functions have also changed slightly; `rb_postponed_job_register`
