@@ -1241,9 +1241,9 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err([IO::NULL], success: true)
   end
 
-  def test_free_on_exit_env_var
-    env = {"RUBY_FREE_ON_EXIT"=>"1"}
+  def test_free_at_exit_env_var
+    env = {"RUBY_FREE_AT_EXIT"=>"1"}
     assert_ruby_status([env, "-e;"])
-    assert_in_out_err([env, "-W"], "", [], /Free on exit is experimental and may be unstable/)
+    assert_in_out_err([env, "-W"], "", [], /Free at exit is experimental and may be unstable/)
   end
 end
