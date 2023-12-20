@@ -184,7 +184,7 @@ The following default gems are updated.
 * io-nonblock 0.3.0
 * io-wait 0.3.1
 * ipaddr 1.2.6
-* irb 1.10.1
+* irb 1.11.0
 * json 2.7.1
 * logger 1.6.0
 * mutex_m 0.2.0
