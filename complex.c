@@ -1779,14 +1779,15 @@ rb_dbl_complex_new(double real, double imag)
 
 /*
  * call-seq:
- *    cmp.to_i  ->  integer
+ *   to_i -> integer
  *
- * Returns the value as an integer if possible (the imaginary part
- * should be exactly zero).
+ * Returns the value of <tt>self.real</tt> as an Integer, if possible:
  *
- *    Complex(1, 0).to_i    #=> 1
- *    Complex(1, 0.0).to_i  # RangeError
- *    Complex(1, 2).to_i    # RangeError
+ *   Complex(1, 0).to_i              # => 1
+ *   Complex(1, Rational(0, 1)).to_i # => 1
+ *
+ * Raises RangeError if <tt>self.imag</tt> is not exactly zero
+ * (either <tt>Integer(0)</tt> or <tt>Rational(0, _n_)</tt>).
  */
 static VALUE
 nucomp_to_i(VALUE self)
@@ -1802,14 +1803,15 @@ nucomp_to_i(VALUE self)
 
 /*
  * call-seq:
- *    cmp.to_f  ->  float
+ *   to_f -> float
  *
- * Returns the value as a float if possible (the imaginary part should
- * be exactly zero).
+ * Returns the value of <tt>self.real</tt> as a Float, if possible:
  *
- *    Complex(1, 0).to_f    #=> 1.0
- *    Complex(1, 0.0).to_f  # RangeError
- *    Complex(1, 2).to_f    # RangeError
+ *   Complex(1, 0).to_f              # => 1.0
+ *   Complex(1, Rational(0, 1)).to_f # => 1.0
+ *
+ * Raises RangeError if <tt>self.imag</tt> is not exactly zero
+ * (either <tt>Integer(0)</tt> or <tt>Rational(0, _n_)</tt>).
  */
 static VALUE
 nucomp_to_f(VALUE self)
@@ -1825,16 +1827,17 @@ nucomp_to_f(VALUE self)
 
 /*
  * call-seq:
- *    cmp.to_r  ->  rational
+ *   cmp.to_r  ->  rational
  *
- * Returns the value as a rational if possible (the imaginary part
- * should be exactly zero).
+ * Returns the value of <tt>self.real</tt> as a Rational, if possible:
  *
- *    Complex(1, 0).to_r    #=> (1/1)
- *    Complex(1, 0.0).to_r  # RangeError
- *    Complex(1, 2).to_r    # RangeError
+ *   Complex(1, 0).to_r              # => (1/1)
+ *   Complex(1, Rational(0, 1)).to_r # => (1/1)
  *
- * See rationalize.
+ * Raises RangeError if <tt>self.imag</tt> is not exactly zero
+ * (either <tt>Integer(0)</tt> or <tt>Rational(0, _n_)</tt>).
+ *
+ * Related: Complex#rationalize.
  */
 static VALUE
 nucomp_to_r(VALUE self)
@@ -1850,16 +1853,11 @@ nucomp_to_r(VALUE self)
 
 /*
  * call-seq:
- *    cmp.rationalize([eps])  ->  rational
+ *   rationalize(epsilon = nil) -> rational
  *
- * Returns the value as a rational if possible (the imaginary part
- * should be exactly zero).
+ * Equivalent to Complex#to_r.
  *
- *    Complex(1.0/3, 0).rationalize  #=> (1/3)
- *    Complex(1, 0.0).rationalize    # RangeError
- *    Complex(1, 2).rationalize      # RangeError
- *
- * See to_r.
+ * (Argument +epsilon+ is ignored.)
  */
 static VALUE
 nucomp_rationalize(int argc, VALUE *argv, VALUE self)
@@ -1877,12 +1875,9 @@ nucomp_rationalize(int argc, VALUE *argv, VALUE self)
 
 /*
  * call-seq:
- *    complex.to_c  ->  self
+ *   to_c -> self
  *
- * Returns self.
- *
- *    Complex(2).to_c      #=> (2+0i)
- *    Complex(-8, 6).to_c  #=> (-8+6i)
+ * Returns +self+.
  */
 static VALUE
 nucomp_to_c(VALUE self)
