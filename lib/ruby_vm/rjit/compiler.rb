@@ -67,7 +67,8 @@ module RubyVM::RJIT
       compile_block(asm, jit:, pc:)
       iseq.body.jit_entry = @cb.write(asm)
     rescue Exception => e
-      $stderr.puts e.full_message
+      $stderr.puts "#{e.class}: #{e.message}"
+      $stderr.puts e.backtrace
       exit 1
     end
 
