@@ -643,11 +643,11 @@ VALUE rb_tracearg_object(rb_trace_arg_t *trace_arg);
  * racing with Ruby's internal use of them. These two functions are still present,
  * but are marked as deprecated and have slightly changed semantics:
  *
- * * rb_postponed_job_register now works like rb_postponed_job_register_once i.e.
+ * * rb_postponed_job_register now works like rb_postponed_job_register_one i.e.
  *   `func` will only be executed at most one time each time Ruby checks for
  *   interrupts, no matter how many times it is registered
  * * They are also called with the last `data` to be registered, not the first
- *   (which is how rb_postponed_job_register_once previously worked)
+ *   (which is how rb_postponed_job_register_one previously worked)
  */
 
 
