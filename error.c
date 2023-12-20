@@ -3061,7 +3061,7 @@ syserr_eqq(VALUE self, VALUE exc)
  *
  *  <em>raises the exception:</em>
  *
- *     NoMethodError: undefined method `to_ary' for "hello":String
+ *     NoMethodError: undefined method `to_ary' for an instance of String
  */
 
 /*
