@@ -1641,7 +1641,14 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
 int
 rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
 {
-    rb_execution_context_t *ec = GET_EC();
+    rb_execution_context_t *ec = rb_current_execution_context(false);
+
+    // If there is no EC, we may be attempting to profile a non-Ruby thread or a
+    // M:N shared native thread which has no active Ruby thread.
+    if (!ec) {
+        return 0;
+    }
+
     return thread_profile_frames(ec, start, limit, buff, lines);
 }
 
