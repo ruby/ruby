@@ -241,8 +241,8 @@ The following bundled gems are updated.
 * net-ftp 0.3.3
 * net-imap 0.4.8
 * net-smtp 0.4.0
-* rbs 3.3.2
-* typeprof 0.21.8
+* rbs 3.4.0
+* typeprof 0.21.9
 * debug 1.9.0
 
 See GitHub releases like [Logger](https://github.com/ruby/logger/releases) or
