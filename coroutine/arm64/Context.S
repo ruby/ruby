@@ -91,3 +91,37 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 #if defined(__linux__) && defined(__ELF__)
 .section .note.GNU-stack,"",%progbits
 #endif
+
+#if __ARM_FEATURE_BTI_DEFAULT != 0 || __ARM_FEATURE_PAC_DEFAULT != 0
+/*  See "ELF for the Arm 64-bit Architecture (AArch64)"
+    https://github.com/ARM-software/abi-aa/blob/2023Q3/aaelf64/aaelf64.rst#program-property */
+#  define GNU_PROPERTY_AARCH64_FEATURE_1_BTI (1<<0)
+#  define GNU_PROPERTY_AARCH64_FEATURE_1_PAC (1<<1)
+
+#  if __ARM_FEATURE_BTI_DEFAULT != 0
+#    define BTI_FLAG GNU_PROPERTY_AARCH64_FEATURE_1_BTI
+#  else
+#    define BTI_FLAG 0
+#  endif
+#  if __ARM_FEATURE_PAC_DEFAULT != 0
+#    define PAC_FLAG GNU_PROPERTY_AARCH64_FEATURE_1_PAC
+#  else
+#    define PAC_FLAG 0
+#  endif
+
+  # The note section format is described by Note Section in Chapter 5
+  # of "System V Application Binary Interface, Edition 4.1".
+  .pushsection .note.gnu.property, "a"
+  .p2align 3
+  .long 0x4        /* Name size ("GNU\0") */
+  .long 0x10       /* Descriptor size */
+  .long 0x5        /* Type: NT_GNU_PROPERTY_TYPE_0 */
+  .asciz "GNU"     /* Name */
+  # Begin descriptor
+  .long 0xc0000000 /* Property type: GNU_PROPERTY_AARCH64_FEATURE_1_AND */
+  .long 0x4        /* Property size */
+  .long (BTI_FLAG|PAC_FLAG)
+  .long 0x0        /* 8-byte alignment padding */
+  # End descriptor
+  .popsection
+#endif
