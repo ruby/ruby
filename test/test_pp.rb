@@ -28,6 +28,13 @@ class PPTest < Test::Unit::TestCase
     end
     assert_equal(%(""\n), PP.pp(o, "".dup))
   end
+
+  def test_range
+    assert_equal("0..1\n", PP.pp(0..1, "".dup))
+    assert_equal("0...1\n", PP.pp(0...1, "".dup))
+    assert_equal("0...\n", PP.pp(0..., "".dup))
+    assert_equal("...1\n", PP.pp(...1, "".dup))
+  end
 end
 
 class HasInspect

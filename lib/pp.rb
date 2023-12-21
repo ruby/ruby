@@ -444,7 +444,7 @@ end if defined?(Data.define)
 
 class Range # :nodoc:
   def pretty_print(q) # :nodoc:
-    q.pp self.begin
+    q.pp self.begin if self.begin
     q.breakable ''
     q.text(self.exclude_end? ? '...' : '..')
     q.breakable ''
