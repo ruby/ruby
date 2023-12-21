@@ -36,7 +36,7 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 	hint #34
 #endif
 	# Make space on the stack for caller registers
-	sub sp, sp, 0xb0
+	sub sp, sp, 0xa0
 
 	# Save caller registers
 	stp d8, d9, [sp, 0x00]
@@ -49,9 +49,6 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 	stp x25, x26, [sp, 0x70]
 	stp x27, x28, [sp, 0x80]
 	stp x29, x30, [sp, 0x90]
-
-	# Save return address
-	str x30, [sp, 0xa0]
 
 	# Save stack pointer to x0 (first argument)
 	mov x2, sp
@@ -73,20 +70,16 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 	ldp x27, x28, [sp, 0x80]
 	ldp x29, x30, [sp, 0x90]
 
-	# Load return address into x17
-	ldr x17, [sp, 0xa0]
-
 	# Pop stack frame
-	add sp, sp, 0xb0
+	add sp, sp, 0xa0
 
 #if defined(__ARM_FEATURE_PAC_DEFAULT) && (__ARM_FEATURE_PAC_DEFAULT != 0)
-	mov x16, sp
-	# autia1716
-	hint #12
+	# autiasp: Authenticate x30 (LR) with SP and key A
+	hint #29
 #endif
 
-	# Jump to return address (in x17)
-	ret x17
+	# Jump to return address (in x30)
+	ret
 
 #if defined(__linux__) && defined(__ELF__)
 .section .note.GNU-stack,"",%progbits

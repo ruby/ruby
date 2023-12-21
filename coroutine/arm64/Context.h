@@ -17,7 +17,7 @@
 
 #define COROUTINE __attribute__((noreturn)) void
 
-enum {COROUTINE_REGISTERS = 0xb0 / 8};
+enum {COROUTINE_REGISTERS = 0xa0 / 8};
 
 #if defined(__SANITIZE_ADDRESS__)
     #define COROUTINE_SANITIZE_ADDRESS
@@ -89,7 +89,7 @@ static inline void coroutine_initialize(
     context->stack_pointer -= COROUTINE_REGISTERS;
     memset(context->stack_pointer, 0, sizeof(void*) * COROUTINE_REGISTERS);
 
-    context->stack_pointer[0xa0 / 8] = ptrauth_sign_instruction_addr((void*)start, (void*)top);
+    context->stack_pointer[0x98 / 8] = ptrauth_sign_instruction_addr((void*)start, (void*)top);
 }
 
 struct coroutine_context * coroutine_transfer(struct coroutine_context * current, struct coroutine_context * target);
