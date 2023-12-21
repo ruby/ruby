@@ -264,9 +264,9 @@ module RubyVM::RJIT
           # noop
         in MapToSelf
           # noop
-        in MapToLocal[local_idx]
-          if stack_idx == local_idx
-            self.temp_types[stack_idx] = self.local_types[local_idx];
+        in MapToLocal[temp_local_idx]
+          if stack_idx == temp_local_idx
+            self.temp_types[stack_idx] = self.local_types[temp_local_idx]
             self.temp_mapping[stack_idx] = MapToStack
           else
             # noop
