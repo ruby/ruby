@@ -127,8 +127,6 @@ Note: We're only listing outstanding class updates.
         ```ruby
         Time.new('2023-12-20')
         #  no time information (ArgumentError)
-        Time.new('2023-12-20')
-        #  no time information (ArgumentError)
         ```
 
 * TracePoint
