@@ -139,9 +139,8 @@ rb_rjit_setup_options(const char *s, struct rb_rjit_options *rjit_opt)
     else if (opt_match_noarg(s, l, "verify-ctx")) {
         rjit_opt->verify_ctx = true;
     }
-    // --rjit=pause is an undocumented feature for experiments
-    else if (opt_match_noarg(s, l, "pause")) {
-        rjit_opt->pause = true;
+    else if (opt_match_noarg(s, l, "disable")) {
+        rjit_opt->disable = true;
     }
     else {
         rb_raise(rb_eRuntimeError,
@@ -437,7 +436,7 @@ rb_rjit_init(const struct rb_rjit_options *opts)
     }
 
     // Enable RJIT and stats from here
-    rb_rjit_call_p = !rb_rjit_opts.pause;
+    rb_rjit_call_p = !rb_rjit_opts.disable;
     rjit_stats_p = rb_rjit_opts.stats;
 }
 

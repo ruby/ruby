@@ -4,8 +4,8 @@ module RubyVM::RJIT
     Primitive.cexpr! 'RBOOL(rb_rjit_enabled)'
   end
 
-  # Start generating JITed code again after --rjit-pause.
-  def self.resume
+  # Start generating JITed code again after --rjit-disable.
+  def self.enable
     Primitive.cstmt! %{
       rb_rjit_call_p = true;
       return Qnil;
