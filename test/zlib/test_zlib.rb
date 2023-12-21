@@ -991,6 +991,25 @@ if defined? Zlib
           assert_raise(ArgumentError) { f.read(-1) }
           assert_equal(str, f.read)
         end
+
+        Zlib::GzipReader.open(t.path) do |f|
+          s = "".b
+
+          assert_raise(ArgumentError) { f.read(-1, s) }
+
+          assert_same s, f.read(1, s)
+          assert_equal "\xE3".b, s
+
+          assert_same s, f.read(2, s)
+          assert_equal "\x81\x82".b, s
+
+          assert_same s, f.read(6, s)
+          assert_equal "\u3044\u3046".b, s
+
+          assert_nil f.read(1, s)
+          assert_equal "".b, s
+          assert_predicate f, :eof?
+        end
       }
     end
 
@@ -1005,10 +1024,14 @@ if defined? Zlib
 
         Zlib::GzipReader.open(t.path) do |f|
           s = "".dup
-          f.readpartial(3, s)
+          assert_same s, f.readpartial(3, s)
           assert("foo".start_with?(s))
 
           assert_raise(ArgumentError) { f.readpartial(-1) }
+
+          assert_same s, f.readpartial(3, s)
+
+          assert_predicate f, :eof?
         end
       }
     end
