@@ -36,26 +36,27 @@ Note: We're only listing outstanding class updates.
 
 * Encoding
 
-    * Encoding#replicate has been removed, it was already deprecated.  [[Feature #18949]]
+    * `Encoding#replicate` has been removed, it was already deprecated.  [[Feature #18949]]
 
 * Fiber
 
     * Introduce Fiber#kill. [[Bug #595]]
-      ```ruby
-      fiber = Fiber.new do
-        while true
-          puts "Yielding..."
-          Fiber.yield
-        end
-      ensure
-        puts "Exiting..."
-      end
 
-      fiber.resume
-      # Yielding...
-      fiber.kill
-      # Exiting...
-      ```
+        ```ruby
+        fiber = Fiber.new do
+          while true
+            puts "Yielding..."
+            Fiber.yield
+          end
+        ensure
+          puts "Exiting..."
+        end
+
+        fiber.resume
+        # Yielding...
+        fiber.kill
+        # Exiting...
+    ```
 
 * MatchData
 
@@ -75,7 +76,7 @@ Note: We're only listing outstanding class updates.
 
 * ObjectSpace::WeakMap
 
-    * `ObjectSpace::WeakMap#delete` was added to eagerly clear weak map
+    * ObjectSpace::WeakMap#delete was added to eagerly clear weak map
       entries. [[Feature #19561]]
 
 * Proc
@@ -84,7 +85,7 @@ Note: We're only listing outstanding class updates.
 
 * Process
 
-    * New `Process.warmup` method that notify the Ruby virtual machine that the boot sequence is finished,
+    * New Process.warmup method that notify the Ruby virtual machine that the boot sequence is finished,
       and that now is a good time to optimize the application. This is useful
       for long-running applications. The actual optimizations performed are entirely
       implementation-specific and may change in the future without notice. [[Feature #18885]]
@@ -92,10 +93,6 @@ Note: We're only listing outstanding class updates.
 * Process::Status
 
     * Process::Status#& and Process::Status#>> are deprecated. [[Bug #19868]]
-
-* Queue
-
-    * Queue#freeze now raises TypeError. [[Bug #17146]]
 
 * Range
 
@@ -109,15 +106,28 @@ Note: We're only listing outstanding class updates.
       Refinement#refined_class is deprecated and will be removed in Ruby
       3.4.  [[Feature #19714]]
 
-* SizedQueue
-
-    * SizedQueue#freeze now raises TypeError. [[Bug #17146]]
-
 * String
 
     * String#unpack now raises ArgumentError for unknown directives. [[Bug #19150]]
     * String#bytesplice now accepts new arguments index/length or range of the
       source string to be copied.  [[Feature #19314]]
+
+* Thread::Queue
+
+    * Thread::Queue#freeze now raises TypeError. [[Bug #17146]]
+
+* Thread::SizedQueue
+
+    * Thread::SizedQueue#freeze now raises TypeError. [[Bug #17146]]
+
+* Time
+
+    * Time.new with a string argument became stricter. [[Bug #19293]]
+
+        ```ruby
+        Time.new('2023-12-20')
+        #  no time information (ArgumentError)
+        ```
 
 * TracePoint
 
@@ -150,7 +160,7 @@ Note: We're only listing outstanding class updates.
   connections. Socket#recvmsg and Socket#recvmsg_nonblock returns `nil` instead of an empty packet on closed
   connections. [[Bug #19012]]
 
-* Name resolution such as `Socket.getaddrinfo`, `Socket.getnameinfo`, `Addrinfo.getaddrinfo`, etc.
+* Name resolution such as Socket.getaddrinfo, Socket.getnameinfo, Addrinfo.getaddrinfo, etc.
   can now be interrupted. [[Feature #19965]]
 
 * Random::Formatter#alphanumeric is extended to accept optional `chars`
@@ -289,6 +299,14 @@ changelog for details of the default gems or bundled gems.
 * `it` calls without arguments in a block with no ordinary parameters are
   deprecated. `it` will be a reference to the first block parameter in Ruby 3.4.
   [[Feature #18980]]
+
+* Error message for NoMethodError have changed to not use the target object's `#inspect`
+  for efficiency, and says "instance of ClassName" instead. [[Feature #18285]]
+
+    ```ruby
+    ([1] * 100).nonexisting
+    # undefined method `nonexisting' for an instance of Array (NoMethodError)
+    ```
 
 ## Stdlib compatibility issues
 
@@ -456,6 +474,7 @@ changelog for details of the default gems or bundled gems.
 [Feature #10602]: https://bugs.ruby-lang.org/issues/10602
 [Bug #17146]:     https://bugs.ruby-lang.org/issues/17146
 [Feature #18183]: https://bugs.ruby-lang.org/issues/18183
+[Feature #18285]: https://bugs.ruby-lang.org/issues/18285
 [Feature #18498]: https://bugs.ruby-lang.org/issues/18498
 [Feature #18515]: https://bugs.ruby-lang.org/issues/18515
 [Feature #18551]: https://bugs.ruby-lang.org/issues/18551
@@ -465,6 +484,7 @@ changelog for details of the default gems or bundled gems.
 [Bug #19012]:     https://bugs.ruby-lang.org/issues/19012
 [Feature #19057]: https://bugs.ruby-lang.org/issues/19057
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
+[Bug #19293]:     https://bugs.ruby-lang.org/issues/19293
 [Feature #19314]: https://bugs.ruby-lang.org/issues/19314
 [Feature #19347]: https://bugs.ruby-lang.org/issues/19347
 [Feature #19351]: https://bugs.ruby-lang.org/issues/19351
