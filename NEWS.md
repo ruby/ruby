@@ -68,16 +68,6 @@ Note: We're only listing outstanding class updates.
     * Module#set_temporary_name added for setting a temporary name for a
       module. [[Feature #19521]]
 
-* NoMethodError
-
-    * Error message have changed to not use the target object's `#inspect`
-      for efficiency, and says "instance of ClassName" instead. [[Feature #18285]]
-
-        ```ruby
-        ([1] * 100).nonexisting
-        # undefined method `nonexisting' for an instance of Array (NoMethodError)
-        ```
-
 * ObjectSpace::WeakKeyMap
 
     * New core class to build collections with weak references.
@@ -312,6 +302,14 @@ changelog for details of the default gems or bundled gems.
   deprecated. `it` will be a reference to the first block parameter in Ruby 3.4.
   [[Feature #18980]]
 
+* Error message for NoMethodError have changed to not use the target object's `#inspect`
+  for efficiency, and says "instance of ClassName" instead. [[Feature #18285]]
+
+    ```ruby
+    ([1] * 100).nonexisting
+    # undefined method `nonexisting' for an instance of Array (NoMethodError)
+    ```
+
 ## Stdlib compatibility issues
 
 * `racc` is promoted to bundled gems.
@@ -478,6 +476,7 @@ changelog for details of the default gems or bundled gems.
 [Feature #10602]: https://bugs.ruby-lang.org/issues/10602
 [Bug #17146]:     https://bugs.ruby-lang.org/issues/17146
 [Feature #18183]: https://bugs.ruby-lang.org/issues/18183
+[Feature #18285]: https://bugs.ruby-lang.org/issues/18285
 [Feature #18498]: https://bugs.ruby-lang.org/issues/18498
 [Feature #18515]: https://bugs.ruby-lang.org/issues/18515
 [Feature #18551]: https://bugs.ruby-lang.org/issues/18551
@@ -487,6 +486,7 @@ changelog for details of the default gems or bundled gems.
 [Bug #19012]:     https://bugs.ruby-lang.org/issues/19012
 [Feature #19057]: https://bugs.ruby-lang.org/issues/19057
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
+[Bug #19293]:     https://bugs.ruby-lang.org/issues/19293
 [Feature #19314]: https://bugs.ruby-lang.org/issues/19314
 [Feature #19347]: https://bugs.ruby-lang.org/issues/19347
 [Feature #19351]: https://bugs.ruby-lang.org/issues/19351
@@ -512,5 +512,3 @@ changelog for details of the default gems or bundled gems.
 [Feature #19965]: https://bugs.ruby-lang.org/issues/19965
 [Feature #20005]: https://bugs.ruby-lang.org/issues/20005
 [Feature #20057]: https://bugs.ruby-lang.org/issues/20057
-[Bug #19293]: https://bugs.ruby-lang.org/issues/19293
-[Feature #18285]: https://bugs.ruby-lang.org/issues/18285
