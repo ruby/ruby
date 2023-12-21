@@ -18,9 +18,19 @@
 .align 2
 #endif
 
+## NOTE(PAC): Use we HINT mnemonics instead of PAC mnemonics to
+## keep compatibility with those assemblers that don't support PAC.
+##
+## See "Providing protection for complex software" for more details about PAC/BTI
+## https://developer.arm.com/architectures/learn-the-architecture/providing-protection-for-complex-software
+
 .global PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer)
 PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 
+#if defined(__ARM_FEATURE_PAC_DEFAULT) && (__ARM_FEATURE_PAC_DEFAULT != 0)
+	# paciasp
+	hint #25
+#endif
 	# Make space on the stack for caller registers
 	sub sp, sp, 0xb0
 
@@ -59,14 +69,20 @@ PREFIXED_SYMBOL(SYMBOL_PREFIX,coroutine_transfer):
 	ldp x27, x28, [sp, 0x80]
 	ldp x29, x30, [sp, 0x90]
 
-	# Load return address into x4
-	ldr x4, [sp, 0xa0]
+	# Load return address into x17
+	ldr x17, [sp, 0xa0]
 
 	# Pop stack frame
 	add sp, sp, 0xb0
 
-	# Jump to return address (in x4)
-	ret x4
+#if defined(__ARM_FEATURE_PAC_DEFAULT) && (__ARM_FEATURE_PAC_DEFAULT != 0)
+	mov x16, sp
+	# autia1716
+	hint #12
+#endif
+
+	# Jump to return address (in x17)
+	ret x17
 
 #if defined(__linux__) && defined(__ELF__)
 .section .note.GNU-stack,"",%progbits
