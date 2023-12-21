@@ -789,4 +789,9 @@ def check_coredump
   end
 end
 
+def rjit_enabled?
+  # Don't check `RubyVM::RJIT.enabled?`. On btest-bruby, target Ruby != runner Ruby.
+  ENV.fetch('RUN_OPTS', '').include?('rjit')
+end
+
 exit main

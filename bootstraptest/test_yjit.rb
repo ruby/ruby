@@ -22,7 +22,7 @@ assert_equal '[:ae, :ae]', %q{
   end
 
   [test(Array.new 5), test([])]
-} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT
+} unless rjit_enabled? # Not yet working on RJIT
 
 # regression test for arity check with splat and send
 assert_equal '[:ae, :ae]', %q{
@@ -81,7 +81,7 @@ assert_equal 'ok', %q{
     GC.compact
   end
   :ok
-} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT
+} unless rjit_enabled? # Not yet working on RJIT
 
 # regression test for overly generous guard elision
 assert_equal '[0, :sum, 0, :sum]', %q{
@@ -209,7 +209,7 @@ assert_equal '[:ok]', %q{
   # Used to crash due to GC run in rb_ensure_iv_list_size()
   # not marking the newly allocated [:ok].
   RegressionTest.new.extender.itself
-} unless RUBY_DESCRIPTION.include?('+RJIT') # Skip on RJIT since this uncovers a crash
+} unless rjit_enabled? # Skip on RJIT since this uncovers a crash
 
 assert_equal 'true', %q{
   # regression test for tracking type of locals for too long
@@ -1960,7 +1960,7 @@ assert_equal '[97, :nil, 97, :nil, :raised]', %q{
   getbyte("a", 0)
 
   [getbyte("a", 0), getbyte("a", 1), getbyte("a", -1), getbyte("a", -2), getbyte("a", "a")]
-} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT
+} unless rjit_enabled? # Not yet working on RJIT
 
 # Test << operator on string subclass
 assert_equal 'abab', %q{
@@ -2604,7 +2604,7 @@ assert_equal '[[:c_return, :String, :string_alias, "events_to_str"]]', %q{
   events.compiled(events)
 
   events
-} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # RJIT calls extra Ruby methods
+} unless rjit_enabled? # RJIT calls extra Ruby methods
 
 # test enabling a TracePoint that targets a particular line in a C method call
 assert_equal '[true]', %q{
@@ -2686,7 +2686,7 @@ assert_equal '[[:c_call, :itself]]', %q{
   tp.enable { shouldnt_compile }
 
   events
-} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # RJIT calls extra Ruby methods
+} unless rjit_enabled? # RJIT calls extra Ruby methods
 
 # test enabling c_return tracing before compiling
 assert_equal '[[:c_return, :itself, main]]', %q{
@@ -2701,7 +2701,7 @@ assert_equal '[[:c_return, :itself, main]]', %q{
   tp.enable { shouldnt_compile }
 
   events
-} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # RJIT calls extra Ruby methods
+} unless rjit_enabled? # RJIT calls extra Ruby methods
 
 # test c_call invalidation
 assert_equal '[[:c_call, :itself]]', %q{
@@ -4223,7 +4223,7 @@ assert_equal 'true', %q{
   rescue ArgumentError
     true
   end
-} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT
+} unless rjit_enabled? # Not yet working on RJIT
 
 # Regresssion test: register allocator on expandarray
 assert_equal '[]', %q{
