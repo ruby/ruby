@@ -1220,6 +1220,48 @@ RSpec.describe "bundle install with specific platforms" do
     end
   end
 
+  it "does not add ruby platform gem if it brings extra dependencies not resolved originally" do
+    build_repo4 do
+      build_gem "nokogiri", "1.15.5" do |s|
+        s.add_dependency "mini_portile2", "~> 2.8.2"
+      end
+
+      build_gem "nokogiri", "1.15.5" do |s|
+        s.platform = "x86_64-linux"
+      end
+    end
+
+    gemfile <<~G
+      source "#{file_uri_for(gem_repo4)}"
+
+      gem "nokogiri"
+    G
+
+    checksums = checksums_section_when_existing do |c|
+      c.checksum gem_repo4, "nokogiri", "1.15.5", "x86_64-linux"
+    end
+
+    simulate_platform "x86_64-linux" do
+      bundle "install --verbose", artifice: "compact_index", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
+
+      expect(lockfile).to eq(<<~L)
+        GEM
+          remote: #{file_uri_for(gem_repo4)}/
+          specs:
+            nokogiri (1.15.5-x86_64-linux)
+
+        PLATFORMS
+          x86_64-linux
+
+        DEPENDENCIES
+          nokogiri
+        #{checksums}
+        BUNDLED WITH
+           #{Bundler::VERSION}
+      L
+    end
+  end
+
   private
 
   def setup_multiplatform_gem

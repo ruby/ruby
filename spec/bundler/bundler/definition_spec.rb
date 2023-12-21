@@ -121,10 +121,7 @@ RSpec.describe Bundler::Definition do
         gem "foo", :path => "#{lib_path("foo")}"
       G
 
-      bundle :check, env: { "DEBUG" => "1" }
-
-      expect(out).to match(/using resolution from the lockfile/)
-      expect(lockfile).to eq <<~G
+      expected_lockfile = <<~G
         PATH
           remote: #{lib_path("foo")}
           specs:
@@ -145,6 +142,13 @@ RSpec.describe Bundler::Definition do
         BUNDLED WITH
            #{Bundler::VERSION}
       G
+
+      expect(lockfile).to eq(expected_lockfile)
+
+      bundle :check, env: { "DEBUG" => "1" }
+
+      expect(out).to match(/using resolution from the lockfile/)
+      expect(lockfile).to eq(expected_lockfile)
     end
 
     it "for a locked gem for another platform" do

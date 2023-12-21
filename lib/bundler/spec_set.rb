@@ -37,7 +37,7 @@ module Bundler
 
           specs_for_dep.first.dependencies.each do |d|
             next if d.type == :development
-            incomplete = true if d.name != "bundler" && lookup[d.name].empty?
+            incomplete = true if d.name != "bundler" && lookup[d.name].nil?
             deps << [d, dep[1]]
           end
         else
@@ -45,7 +45,7 @@ module Bundler
         end
 
         if incomplete && check
-          @incomplete_specs += lookup[name].any? ? lookup[name] : [LazySpecification.new(name, nil, nil)]
+          @incomplete_specs += lookup[name] || [LazySpecification.new(name, nil, nil)]
         end
       end
 
@@ -64,7 +64,9 @@ module Bundler
         valid_platform = lookup.all? do |_, specs|
           spec = specs.first
           matching_specs = spec.source.specs.search([spec.name, spec.version])
-          platform_spec = GemHelpers.select_best_platform_match(matching_specs, platform).find(&:matches_current_metadata?)
+          platform_spec = GemHelpers.select_best_platform_match(matching_specs, platform).find do |s|
+            s.matches_current_metadata? && valid_dependencies?(s)
+          end
 
           if platform_spec
             new_specs << LazySpecification.from_spec(platform_spec)
@@ -90,9 +92,20 @@ module Bundler
       platforms
     end
 
+    def validate_deps(s)
+      s.runtime_dependencies.each do |dep|
+        next if dep.name == "bundler"
+
+        return :missing unless names.include?(dep.name)
+        return :invalid if none? {|spec| dep.matches_spec?(spec) }
+      end
+
+      :valid
+    end
+
     def [](key)
       key = key.name if key.respond_to?(:name)
-      lookup[key].reverse
+      lookup[key]&.reverse || []
     end
 
     def []=(key, value)
@@ -167,7 +180,7 @@ module Bundler
     end
 
     def what_required(spec)
-      unless req = find {|s| s.dependencies.any? {|d| d.type == :runtime && d.name == spec.name } }
+      unless req = find {|s| s.runtime_dependencies.any? {|d| d.name == spec.name } }
         return [spec]
       end
       what_required(req) << spec
@@ -193,7 +206,15 @@ module Bundler
       sorted.each(&b)
     end
 
+    def names
+      lookup.keys
+    end
+
     private
+
+    def valid_dependencies?(s)
+      validate_deps(s) == :valid
+    end
 
     def sorted
       rake = @specs.find {|s| s.name == "rake" }
@@ -213,8 +234,9 @@ module Bundler
 
     def lookup
       @lookup ||= begin
-        lookup = Hash.new {|h, k| h[k] = [] }
+        lookup = {}
         @specs.each do |s|
+          lookup[s.name] ||= []
           lookup[s.name] << s
         end
         lookup
@@ -228,6 +250,8 @@ module Bundler
 
     def specs_for_dependency(dep, platform)
       specs_for_name = lookup[dep.name]
+      return [] unless specs_for_name
+
       matching_specs = if dep.force_ruby_platform
         GemHelpers.force_ruby_platform(specs_for_name)
       else
@@ -240,7 +264,11 @@ module Bundler
     def tsort_each_child(s)
       s.dependencies.sort_by(&:name).each do |d|
         next if d.type == :development
-        lookup[d.name].each {|s2| yield s2 }
+
+        specs_for_name = lookup[d.name]
+        next unless specs_for_name
+
+        specs_for_name.each {|s2| yield s2 }
       end
     end
   end

@@ -1561,6 +1561,17 @@ dependencies: []
     assert_empty err
   end
 
+  def test_contains_requirable_file_extension_soext
+    ext_spec
+    dlext = RbConfig::CONFIG["DLEXT"]
+    @ext.files += ["lib/ext.#{dlext}"]
+
+    FileUtils.mkdir_p @ext.extension_dir
+    FileUtils.touch File.join(@ext.extension_dir, "ext.#{dlext}")
+    FileUtils.touch File.join(@ext.extension_dir, "gem.build_complete")
+    assert @ext.contains_requirable_file? "ext.so"
+  end
+
   def test_date
     assert_date @a1.date
   end
