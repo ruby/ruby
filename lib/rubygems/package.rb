@@ -268,7 +268,7 @@ class Gem::Package
 
       tar.add_file_simple file, stat.mode, stat.size do |dst_io|
         File.open file, "rb" do |src_io|
-          dst_io.write src_io.read 16_384 until src_io.eof?
+          copy_stream(src_io, dst_io)
         end
       end
     end
@@ -453,7 +453,7 @@ EOM
         end
 
         if entry.file?
-          File.open(destination, "wb") {|out| out.write entry.read }
+          File.open(destination, "wb") {|out| copy_stream(entry, out) }
           FileUtils.chmod file_mode(entry.header.mode), destination
         end
 
@@ -713,6 +713,16 @@ EOM
     end
   rescue Zlib::GzipFile::Error => e
     raise Gem::Package::FormatError.new(e.message, entry.full_name)
+  end
+
+  if RUBY_ENGINE == "truffleruby"
+    def copy_stream(src, dst) # :nodoc:
+      dst.write src.read
+    end
+  else
+    def copy_stream(src, dst) # :nodoc:
+      IO.copy_stream(src, dst)
+    end
   end
 end
 

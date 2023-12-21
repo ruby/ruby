@@ -250,6 +250,13 @@ module Spec
       File.open(version_file, "w") {|f| f << contents }
     end
 
+    def replace_required_ruby_version(version, dir:)
+      gemspec_file = File.expand_path("bundler.gemspec", dir)
+      contents = File.read(gemspec_file)
+      contents.sub!(/(^\s+s\.required_ruby_version\s*=\s*)"[^"]+"/, %(\\1"#{version}"))
+      File.open(gemspec_file, "w") {|f| f << contents }
+    end
+
     def ruby_core?
       # avoid to warnings
       @ruby_core ||= nil

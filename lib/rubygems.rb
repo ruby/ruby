@@ -9,7 +9,7 @@
 require "rbconfig"
 
 module Gem
-  VERSION = "3.5.1"
+  VERSION = "3.5.2"
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -940,6 +940,13 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
                      next unless val && !val.empty?
                      ".#{val}"
                    end].compact.uniq
+  end
+
+  ##
+  # Suffixes for dynamic library require-able paths.
+
+  def self.dynamic_library_suffixes
+    @dynamic_library_suffixes ||= suffixes - [".rb"]
   end
 
   ##

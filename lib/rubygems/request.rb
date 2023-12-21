@@ -30,7 +30,7 @@ class Gem::Request
     @uri = uri
     @request_class = request_class
     @last_modified = last_modified
-    @requests = Hash.new 0
+    @requests = Hash.new(0).compare_by_identity
     @user_agent = user_agent
 
     @connection_pool = pool
@@ -196,7 +196,7 @@ class Gem::Request
     bad_response = false
 
     begin
-      @requests[connection.object_id] += 1
+      @requests[connection] += 1
 
       verbose "#{request.method} #{Gem::Uri.redact(@uri)}"
 
@@ -247,7 +247,7 @@ class Gem::Request
     rescue EOFError, Gem::Timeout::Error,
            Errno::ECONNABORTED, Errno::ECONNRESET, Errno::EPIPE
 
-      requests = @requests[connection.object_id]
+      requests = @requests[connection]
       verbose "connection reset after #{requests} requests, retrying"
 
       raise Gem::RemoteFetcher::FetchError.new("too many connection resets", @uri) if retried
@@ -267,7 +267,7 @@ class Gem::Request
   # Resets HTTP connection +connection+.
 
   def reset(connection)
-    @requests.delete connection.object_id
+    @requests.delete connection
 
     connection.finish
     connection.start

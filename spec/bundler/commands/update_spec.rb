@@ -1371,26 +1371,28 @@ RSpec.describe "bundle update --bundler" do
     expect(the_bundle).to include_gem "rack 1.0"
   end
 
-  it "updates the bundler version in the lockfile even if the latest version is not installed", :ruby_repo, :realworld do
+  it "updates the bundler version in the lockfile even if the latest version is not installed", :ruby_repo do
     pristine_system_gems "bundler-2.3.9"
 
     build_repo4 do
       build_gem "rack", "1.0"
+
+      build_bundler "999.0.0"
     end
 
-    install_gemfile <<-G, env: { "BUNDLER_IGNORE_DEFAULT_GEM" => "true" }
+    install_gemfile <<-G
       source "#{file_uri_for(gem_repo4)}"
       gem "rack"
     G
     lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, "2.3.9")
 
-    bundle :update, bundler: true, artifice: "vcr", verbose: true, env: { "BUNDLER_IGNORE_DEFAULT_GEM" => "true" }
+    bundle :update, bundler: true, artifice: "compact_index", verbose: true, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s }
 
     # Only updates properly on modern RubyGems.
 
     if Gem.rubygems_version >= Gem::Version.new("3.3.0.dev")
-      expect(out).to include("Updating bundler to 2.3.10")
-      expect(out).to include("Using bundler 2.3.10")
+      expect(out).to include("Updating bundler to 999.0.0")
+      expect(out).to include("Using bundler 999.0.0")
       expect(out).not_to include("Installing Bundler 2.3.9 and restarting using that version.")
 
       expect(lockfile).to eq <<~L
@@ -1406,16 +1408,63 @@ RSpec.describe "bundle update --bundler" do
           rack
 
         BUNDLED WITH
-           2.3.10
+           999.0.0
       L
 
-      expect(the_bundle).to include_gems "bundler 2.3.10"
+      expect(the_bundle).to include_gems "bundler 999.0.0"
+      expect(the_bundle).to include_gems "rack 1.0"
+    else
+      # Old RubyGems versions do not trampoline but they still change BUNDLED
+      # WITH to the latest bundler version. This means the below check fails
+      # because it tries to use bundler 999.0.0 which did not get installed.
+      # Workaround the bug by forcing the version we know is installed.
+      expect(the_bundle).to include_gems "rack 1.0", env: { "BUNDLER_VERSION" => "2.3.9" }
+    end
+  end
+
+  it "does not update the bundler version in the lockfile if the latest version is not compatible with current ruby", :ruby_repo do
+    pristine_system_gems "bundler-2.3.9"
+
+    build_repo4 do
+      build_gem "rack", "1.0"
+
+      build_bundler "2.3.9"
+      build_bundler "999.0.0" do |s|
+        s.required_ruby_version = "> #{Gem.ruby_version}"
+      end
     end
 
+    install_gemfile <<-G, env: { "BUNDLER_IGNORE_DEFAULT_GEM" => "true" }
+      source "#{file_uri_for(gem_repo4)}"
+      gem "rack"
+    G
+    lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, "2.3.9")
+
+    bundle :update, bundler: true, artifice: "compact_index", verbose: true, env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo4.to_s, "BUNDLER_IGNORE_DEFAULT_GEM" => "true" }
+
+    expect(out).to include("Using bundler 2.3.9")
+
+    expect(lockfile).to eq <<~L
+      GEM
+        remote: #{file_uri_for(gem_repo4)}/
+        specs:
+          rack (1.0)
+
+      PLATFORMS
+        #{lockfile_platforms}
+
+      DEPENDENCIES
+        rack
+
+      BUNDLED WITH
+         2.3.9
+    L
+
+    expect(the_bundle).to include_gems "bundler 2.3.9"
     expect(the_bundle).to include_gems "rack 1.0"
   end
 
-  it "errors if the explicit target version does not exist", :realworld do
+  it "errors if the explicit target version does not exist" do
     pristine_system_gems "bundler-2.3.9"
 
     build_repo4 do
@@ -1428,7 +1477,7 @@ RSpec.describe "bundle update --bundler" do
     G
     lockfile lockfile.sub(/(^\s*)#{Bundler::VERSION}($)/, "2.3.9")
 
-    bundle :update, bundler: "999.999.999", artifice: "vcr", raise_on_error: false
+    bundle :update, bundler: "999.999.999", artifice: "compact_index", raise_on_error: false
 
     # Only gives a meaningful error message on modern RubyGems.
 

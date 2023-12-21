@@ -77,7 +77,7 @@ class CompactIndexAPI < Endpoint
 
         specs.group_by(&:name).map do |name, versions|
           gem_versions = versions.map do |spec|
-            deps = spec.dependencies.select {|d| d.type == :runtime }.map do |d|
+            deps = spec.runtime_dependencies.map do |d|
               reqs = d.requirement.requirements.map {|r| r.join(" ") }.join(", ")
               CompactIndex::Dependency.new(d.name, reqs)
             end
