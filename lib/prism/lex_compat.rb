@@ -244,7 +244,7 @@ module Prism
         return false unless self[0...-1] == other[0...-1]
 
         if self[3] == Ripper::EXPR_ARG | Ripper::EXPR_LABELED
-          other[3] & Ripper::EXPR_ARG | Ripper::EXPR_LABELED > 0
+          other[3] & Ripper::EXPR_ARG | Ripper::EXPR_LABELED != 0
         else
           self[3] == other[3]
         end
