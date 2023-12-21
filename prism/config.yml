@@ -692,6 +692,7 @@ nodes:
         type: constant[]
       - name: parameters
         type: node?
+        kind: BlockParametersNode
       - name: body
         type: node?
       - name: opening_loc
@@ -727,6 +728,7 @@ nodes:
         kind: ParametersNode
       - name: locals
         type: node[]
+        kind: BlockLocalVariableNode
       - name: opening_loc
         type: location?
       - name: closing_loc
@@ -1134,6 +1136,9 @@ nodes:
         type: node?
       - name: child
         type: node
+        kind:
+          - ConstantReadNode
+          - MissingNode
       - name: delimiter_loc
         type: location
     comment: |
@@ -1177,6 +1182,9 @@ nodes:
         type: node?
       - name: child
         type: node
+        kind:
+          - ConstantReadNode
+          - MissingNode
       - name: delimiter_loc
         type: location
     comment: |
@@ -1617,6 +1625,10 @@ nodes:
     fields:
       - name: numeric
         type: node
+        kind:
+          - FloatNode
+          - IntegerNode
+          - RationalNode
     comment: |
       Represents an imaginary number literal.
 
@@ -2370,16 +2382,36 @@ nodes:
     fields:
       - name: requireds
         type: node[]
+        kind:
+          - RequiredParameterNode
+          - MultiTargetNode
       - name: optionals
         type: node[]
+        kind: OptionalParameterNode
       - name: rest
         type: node?
+        kind:
+          - RestParameterNode
+          - ImplicitRestNode # Only in block parameters
       - name: posts
         type: node[]
+        kind:
+          - RequiredParameterNode
+          - MultiTargetNode
+          # On parsing error of `f(**kwargs, ...)` or `f(**nil, ...)`, the keyword_rest value is moved here:
+          - KeywordRestParameterNode
+          - NoKeywordsParameterNode
       - name: keywords
         type: node[]
+        kind:
+          - RequiredKeywordParameterNode
+          - OptionalKeywordParameterNode
       - name: keyword_rest
         type: node?
+        kind:
+          - KeywordRestParameterNode
+          - ForwardingParameterNode
+          - NoKeywordsParameterNode
       - name: block
         type: node?
         kind: BlockParameterNode
