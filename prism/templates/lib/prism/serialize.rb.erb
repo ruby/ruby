@@ -4,7 +4,7 @@ require "stringio"
 if String.instance_method(:unpack1).parameters.none? { |_, name| name == :offset }
   String.prepend(
     Module.new {
-      def unpack1(format, offset: 0)
+      def unpack1(format, offset: 0) # :nodoc:
         offset == 0 ? super(format) : self[offset..].unpack1(format)
       end
     }
@@ -12,11 +12,21 @@ if String.instance_method(:unpack1).parameters.none? { |_, name| name == :offset
 end
 
 module Prism
+  # A module responsible for deserializing parse results.
   module Serialize
+    # The major version of prism that we are expecting to find in the serialized
+    # strings.
     MAJOR_VERSION = 0
-    MINOR_VERSION = 15
-    PATCH_VERSION = 1
 
+    # The minor version of prism that we are expecting to find in the serialized
+    # strings.
+    MINOR_VERSION = 19
+
+    # The patch version of prism that we are expecting to find in the serialized
+    # strings.
+    PATCH_VERSION = 0
+
+    # Deserialize the AST represented by the given string into a parse result.
     def self.load(input, serialized)
       input = input.dup
       source = Source.new(input)
@@ -27,13 +37,16 @@ module Prism
       result
     end
 
+    # Deserialize the tokens represented by the given string into a parse
+    # result.
     def self.load_tokens(source, serialized)
       Loader.new(source, serialized).load_tokens_result
     end
 
-    class Loader
+    class Loader # :nodoc:
       attr_reader :encoding, :input, :serialized, :io
       attr_reader :constant_pool_offset, :constant_pool, :source
+      attr_reader :start_line
 
       def initialize(source, serialized)
         @encoding = Encoding::UTF_8
@@ -47,7 +60,7 @@ module Prism
         @constant_pool = nil
 
         @source = source
-        define_load_node_lambdas unless RUBY_ENGINE == 'ruby'
+        define_load_node_lambdas unless RUBY_ENGINE == "ruby"
       end
 
       def load_header
@@ -60,32 +73,40 @@ module Prism
       end
 
       def load_encoding
-        Encoding.find(io.read(load_varint))
+        @encoding = Encoding.find(io.read(load_varuint))
+        @input = input.force_encoding(@encoding).freeze
+        @encoding
       end
 
-      def load_force_encoding
-        @encoding = load_encoding
-        @input = input.force_encoding(@encoding).freeze
+      def load_start_line
+        source.start_line = load_varsint
       end
 
       def load_comments
-        load_varint.times.map { Comment.new(Comment::TYPES.fetch(load_varint), load_location) }
+        load_varuint.times.map do
+          case load_varuint
+          when 0 then InlineComment.new(load_location)
+          when 1 then EmbDocComment.new(load_location)
+          when 2 then DATAComment.new(load_location)
+          end
+        end
       end
 
       def load_metadata
         comments = load_comments
-        magic_comments = load_varint.times.map { MagicComment.new(load_location, load_location) }
-        errors = load_varint.times.map { ParseError.new(load_embedded_string, load_location) }
-        warnings = load_varint.times.map { ParseWarning.new(load_embedded_string, load_location) }
-        [comments, magic_comments, errors, warnings]
+        magic_comments = load_varuint.times.map { MagicComment.new(load_location, load_location) }
+        data_loc = load_optional_location
+        errors = load_varuint.times.map { ParseError.new(load_embedded_string, load_location) }
+        warnings = load_varuint.times.map { ParseWarning.new(load_embedded_string, load_location) }
+        [comments, magic_comments, data_loc, errors, warnings]
       end
 
       def load_tokens
         tokens = []
-        while type = TOKEN_TYPES.fetch(load_varint)
-          start = load_varint
-          length = load_varint
-          lex_state = load_varint
+        while type = TOKEN_TYPES.fetch(load_varuint)
+          start = load_varuint
+          length = load_varuint
+          lex_state = load_varuint
           location = Location.new(@source, start, length)
           tokens << [Prism::Token.new(type, location.slice, location), lex_state]
         end
@@ -96,38 +117,37 @@ module Prism
       def load_tokens_result
         tokens = load_tokens
         encoding = load_encoding
-        comments, magic_comments, errors, warnings = load_metadata
-
-        if encoding != @encoding
-          tokens.each { |token,| token.value.force_encoding(encoding) }
-        end
+        load_start_line
+        comments, magic_comments, data_loc, errors, warnings = load_metadata
+        tokens.each { |token,| token.value.force_encoding(encoding) }
 
         raise "Expected to consume all bytes while deserializing" unless @io.eof?
-        Prism::ParseResult.new(tokens, comments, magic_comments, errors, warnings, @source)
+        Prism::ParseResult.new(tokens, comments, magic_comments, data_loc, errors, warnings, @source)
       end
 
       def load_nodes
         load_header
-        load_force_encoding
+        load_encoding
+        load_start_line
 
-        comments, magic_comments, errors, warnings = load_metadata
+        comments, magic_comments, data_loc, errors, warnings = load_metadata
 
         @constant_pool_offset = io.read(4).unpack1("L")
-        @constant_pool = Array.new(load_varint, nil)
+        @constant_pool = Array.new(load_varuint, nil)
 
-        [load_node, comments, magic_comments, errors, warnings]
+        [load_node, comments, magic_comments, data_loc, errors, warnings]
       end
 
       def load_result
-        node, comments, magic_comments, errors, warnings = load_nodes
-        Prism::ParseResult.new(node, comments, magic_comments, errors, warnings, @source)
+        node, comments, magic_comments, data_loc, errors, warnings = load_nodes
+        Prism::ParseResult.new(node, comments, magic_comments, data_loc, errors, warnings, @source)
       end
 
       private
 
       # variable-length integer using https://en.wikipedia.org/wiki/LEB128
       # This is also what protobuf uses: https://protobuf.dev/programming-guides/encoding/#varints
-      def load_varint
+      def load_varuint
         n = io.getbyte
         if n < 128
           n
@@ -139,6 +159,11 @@ module Prism
           end
           n + (b << (shift + 7))
         end
+      end
+
+      def load_varsint
+        n = load_varuint
+        (n >> 1) ^ (-(n & 1))
       end
 
       def load_serialized_length
@@ -153,14 +178,14 @@ module Prism
       end
 
       def load_embedded_string
-        io.read(load_varint).force_encoding(encoding)
+        io.read(load_varuint).force_encoding(encoding)
       end
 
       def load_string
         type = io.getbyte
         case type
         when 1
-          input.byteslice(load_varint, load_varint).force_encoding(encoding)
+          input.byteslice(load_varuint, load_varuint).force_encoding(encoding)
         when 2
           load_embedded_string
         else
@@ -169,7 +194,7 @@ module Prism
       end
 
       def load_location
-        Location.new(source, load_varint, load_varint)
+        Location.new(source, load_varuint, load_varuint)
       end
 
       def load_optional_location
@@ -198,11 +223,11 @@ module Prism
       end
 
       def load_required_constant
-        load_constant(load_varint - 1)
+        load_constant(load_varuint - 1)
       end
 
       def load_optional_constant
-        index = load_varint
+        index = load_varuint
         load_constant(index - 1) if index != 0
       end
 
@@ -222,13 +247,14 @@ module Prism
               when Prism::NodeField then "load_node"
               when Prism::OptionalNodeField then "load_optional_node"
               when Prism::StringField then "load_string"
-              when Prism::NodeListField then "Array.new(load_varint) { load_node }"
+              when Prism::NodeListField then "Array.new(load_varuint) { load_node }"
               when Prism::ConstantField then "load_required_constant"
               when Prism::OptionalConstantField then "load_optional_constant"
-              when Prism::ConstantListField then "Array.new(load_varint) { load_required_constant }"
+              when Prism::ConstantListField then "Array.new(load_varuint) { load_required_constant }"
               when Prism::LocationField then "load_location"
               when Prism::OptionalLocationField then "load_optional_location"
-              when Prism::UInt32Field, Prism::FlagsField then "load_varint"
+              when Prism::UInt8Field then "io.getbyte"
+              when Prism::UInt32Field, Prism::FlagsField then "load_varuint"
               else raise
               end
             } + ["location"]).join(", ") -%>)
@@ -255,13 +281,14 @@ module Prism
                 when Prism::NodeField then "load_node"
                 when Prism::OptionalNodeField then "load_optional_node"
                 when Prism::StringField then "load_string"
-                when Prism::NodeListField then "Array.new(load_varint) { load_node }"
+                when Prism::NodeListField then "Array.new(load_varuint) { load_node }"
                 when Prism::ConstantField then "load_required_constant"
                 when Prism::OptionalConstantField then "load_optional_constant"
-                when Prism::ConstantListField then "Array.new(load_varint) { load_required_constant }"
+                when Prism::ConstantListField then "Array.new(load_varuint) { load_required_constant }"
                 when Prism::LocationField then "load_location"
                 when Prism::OptionalLocationField then "load_optional_location"
-                when Prism::UInt32Field, Prism::FlagsField then "load_varint"
+                when Prism::UInt8Field then "io.getbyte"
+                when Prism::UInt32Field, Prism::FlagsField then "load_varuint"
                 else raise
                 end
               } + ["location"]).join(", ") -%>)
@@ -272,6 +299,7 @@ module Prism
       end
     end
 
+    # The token types that can be indexed by their enum values.
     TOKEN_TYPES = [
       nil,
       <%- tokens.each do |token| -%>

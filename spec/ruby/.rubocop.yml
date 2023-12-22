@@ -33,6 +33,10 @@ Lint/AssignmentInCondition:
 Lint/BooleanSymbol:
   Enabled: false
 
+Lint/DeprecatedOpenSSLConstant:
+  Exclude:
+    - library/openssl/digest/**/*.rb
+
 Lint/InterpolationCheck:
   Enabled: false
 

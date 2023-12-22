@@ -6,12 +6,14 @@ module Bundler
       attr_reader :downloader
       attr_reader :display_uri
       attr_reader :remote
+      attr_reader :gem_remote_fetcher
 
-      def initialize(downloader, remote, display_uri)
+      def initialize(downloader, remote, display_uri, gem_remote_fetcher)
         raise "Abstract class" if self.class == Base
         @downloader = downloader
         @remote = remote
         @display_uri = display_uri
+        @gem_remote_fetcher = gem_remote_fetcher
       end
 
       def remote_uri

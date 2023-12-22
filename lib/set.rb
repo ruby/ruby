@@ -3,7 +3,7 @@
 #
 # set.rb - defines the Set class
 #
-# Copyright (c) 2002-2020 Akinori MUSHA <knu@iDaemons.org>
+# Copyright (c) 2002-2023 Akinori MUSHA <knu@iDaemons.org>
 #
 # Documentation by Akinori MUSHA and Gavin Sinclair.
 #
@@ -216,7 +216,7 @@
 #   has been modified while an element in the set.
 #
 class Set
-  VERSION = "1.0.3"
+  VERSION = "1.0.4"
 
   include Enumerable
 

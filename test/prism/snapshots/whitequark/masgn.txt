@@ -18,6 +18,7 @@
         │   ├── operator_loc: (1,11)-(1,12) = "="
         │   └── value:
         │       @ ArrayNode (location: (1,13)-(1,17))
+        │       ├── flags: ∅
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (1,13)-(1,14))
         │       │   │   └── flags: decimal
@@ -40,6 +41,7 @@
         │   ├── operator_loc: (3,9)-(3,10) = "="
         │   └── value:
         │       @ ArrayNode (location: (3,11)-(3,15))
+        │       ├── flags: ∅
         │       ├── elements: (length: 2)
         │       │   ├── @ IntegerNode (location: (3,11)-(3,12))
         │       │   │   └── flags: decimal
@@ -65,6 +67,7 @@
             ├── operator_loc: (5,14)-(5,15) = "="
             └── value:
                 @ ArrayNode (location: (5,16)-(5,20))
+                ├── flags: ∅
                 ├── elements: (length: 2)
                 │   ├── @ IntegerNode (location: (5,16)-(5,17))
                 │   │   └── flags: decimal

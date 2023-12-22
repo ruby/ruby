@@ -60,7 +60,7 @@ module IRB
         end
 
         File.open(history_file, (append_history ? 'a' : 'w'), 0o600, encoding: IRB.conf[:LC_MESSAGES]&.encoding) do |f|
-          hist = history.map{ |l| l.split("\n").join("\\\n") }
+          hist = history.map{ |l| l.scrub.split("\n").join("\\\n") }
           unless append_history
             begin
               hist = hist.last(num) if hist.size > num and num > 0

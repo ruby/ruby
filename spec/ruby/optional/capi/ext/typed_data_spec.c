@@ -106,6 +106,12 @@ VALUE sws_typed_wrap_struct(VALUE self, VALUE val) {
   return TypedData_Wrap_Struct(rb_cObject, &sample_typed_wrapped_struct_data_type, bar);
 }
 
+VALUE sws_untyped_wrap_struct(VALUE self, VALUE val) {
+  int* data = (int*) malloc(sizeof(int));
+  *data = FIX2INT(val);
+  return Data_Wrap_Struct(rb_cObject, NULL, free, data);
+}
+
 VALUE sws_typed_get_struct(VALUE self, VALUE obj) {
   struct sample_typed_wrapped_struct* bar;
   TypedData_Get_Struct(obj, struct sample_typed_wrapped_struct, &sample_typed_wrapped_struct_data_type, bar);
@@ -165,12 +171,17 @@ VALUE sws_typed_rb_check_typeddata_different_type(VALUE self, VALUE obj) {
   return rb_check_typeddata(obj, &sample_typed_wrapped_struct_other_data_type) == DATA_PTR(obj) ? Qtrue : Qfalse;
 }
 
+VALUE sws_typed_RTYPEDDATA_P(VALUE self, VALUE obj) {
+  return RTYPEDDATA_P(obj) ? Qtrue : Qfalse;
+}
+
 void Init_typed_data_spec(void) {
   VALUE cls = rb_define_class("CApiAllocTypedSpecs", rb_cObject);
   rb_define_alloc_func(cls, sdaf_alloc_typed_func);
   rb_define_method(cls, "typed_wrapped_data", sdaf_typed_get_struct, 0);
   cls = rb_define_class("CApiWrappedTypedStructSpecs", rb_cObject);
   rb_define_method(cls, "typed_wrap_struct", sws_typed_wrap_struct, 1);
+  rb_define_method(cls, "untyped_wrap_struct", sws_untyped_wrap_struct, 1);
   rb_define_method(cls, "typed_get_struct", sws_typed_get_struct, 1);
   rb_define_method(cls, "typed_get_struct_other", sws_typed_get_struct_different_type, 1);
   rb_define_method(cls, "typed_get_struct_parent", sws_typed_get_struct_parent_type, 1);
@@ -181,6 +192,7 @@ void Init_typed_data_spec(void) {
   rb_define_method(cls, "rb_check_typeddata_same_type", sws_typed_rb_check_typeddata_same_type, 1);
   rb_define_method(cls, "rb_check_typeddata_same_type_parent", sws_typed_rb_check_typeddata_same_type_parent, 1);
   rb_define_method(cls, "rb_check_typeddata_different_type", sws_typed_rb_check_typeddata_different_type, 1);
+  rb_define_method(cls, "RTYPEDDATA_P", sws_typed_RTYPEDDATA_P, 1);
 }
 
 #ifdef __cplusplus

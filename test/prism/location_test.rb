@@ -188,6 +188,12 @@ module Prism
       assert_location(CallOrWriteNode, "foo.foo ||= bar")
     end
 
+    def test_CallTargetNode
+      assert_location(CallTargetNode, "foo.bar, = baz", 0...7) do |node|
+        node.lefts.first
+      end
+    end
+
     def test_CapturePatternNode
       assert_location(CapturePatternNode, "case foo; in bar => baz; end", 13...23) do |node|
         node.conditions.first.pattern
@@ -199,6 +205,13 @@ module Prism
       assert_location(CaseNode, "case foo; when bar; else; end")
       assert_location(CaseNode, "case foo; when bar; when baz; end")
       assert_location(CaseNode, "case foo; when bar; when baz; else; end")
+    end
+
+    def test_CaseMatchNode
+      assert_location(CaseMatchNode, "case foo; in bar; end")
+      assert_location(CaseMatchNode, "case foo; in bar; else; end")
+      assert_location(CaseMatchNode, "case foo; in bar; in baz; end")
+      assert_location(CaseMatchNode, "case foo; in bar; in baz; else; end")
     end
 
     def test_ClassNode
@@ -421,6 +434,22 @@ module Prism
       end
     end
 
+    def test_ImplicitRestNode
+      assert_location(ImplicitRestNode, "foo, = bar", 3..4, &:rest)
+
+      assert_location(ImplicitRestNode, "for foo, in bar do end", 7..8) do |node|
+        node.index.rest
+      end
+
+      assert_location(ImplicitRestNode, "foo { |bar,| }", 10..11) do |node|
+        node.block.parameters.parameters.rest
+      end
+
+      assert_location(ImplicitRestNode, "foo in [bar,]", 11..12) do |node|
+        node.pattern.rest
+      end
+    end
+
     def test_InNode
       assert_location(InNode, "case foo; in bar; end", 10...16) do |node|
         node.conditions.first
@@ -437,6 +466,12 @@ module Prism
 
     def test_IndexOrWriteNode
       assert_location(IndexOrWriteNode, "foo[foo] ||= bar")
+    end
+
+    def test_IndexTargetNode
+      assert_location(IndexTargetNode, "foo[bar, &baz], = qux", 0...14) do |node|
+        node.lefts.first
+      end
     end
 
     def test_InstanceVariableAndWriteNode
@@ -488,6 +523,7 @@ module Prism
     def test_InterpolatedStringNode
       assert_location(InterpolatedStringNode, "\"foo \#@bar baz\"")
       assert_location(InterpolatedStringNode, "<<~A\nhello \#{1} world\nA", 0...4)
+      assert_location(InterpolatedStringNode, '"foo" "bar"')
     end
 
     def test_InterpolatedSymbolNode
@@ -500,16 +536,6 @@ module Prism
 
     def test_KeywordHashNode
       assert_location(KeywordHashNode, "foo(a, b: 1)", 7...11) { |node| node.arguments.arguments[1] }
-    end
-
-    def test_KeywordParameterNode
-      assert_location(KeywordParameterNode, "def foo(bar:); end", 8...12) do |node|
-        node.parameters.keywords.first
-      end
-
-      assert_location(KeywordParameterNode, "def foo(bar: nil); end", 8...16) do |node|
-        node.parameters.keywords.first
-      end
     end
 
     def test_KeywordRestParameterNode
@@ -605,8 +631,19 @@ module Prism
       assert_location(NoKeywordsParameterNode, "def foo(**nil); end", 8...13) { |node| node.parameters.keyword_rest }
     end
 
+    def test_NumberedParametersNode
+      assert_location(NumberedParametersNode, "-> { _1 }", &:parameters)
+      assert_location(NumberedParametersNode, "foo { _1 }", 4...10) { |node| node.block.parameters }
+    end
+
     def test_NumberedReferenceReadNode
       assert_location(NumberedReferenceReadNode, "$1")
+    end
+
+    def test_OptionalKeywordParameterNode
+      assert_location(OptionalKeywordParameterNode, "def foo(bar: nil); end", 8...16) do |node|
+        node.parameters.keywords.first
+      end
     end
 
     def test_OptionalParameterNode
@@ -671,6 +708,12 @@ module Prism
 
     def test_RegularExpressionNode
       assert_location(RegularExpressionNode, "/foo/")
+    end
+
+    def test_RequiredKeywordParameterNode
+      assert_location(RequiredKeywordParameterNode, "def foo(bar:); end", 8...12) do |node|
+        node.parameters.keywords.first
+      end
     end
 
     def test_RequiredParameterNode
@@ -778,10 +821,6 @@ module Prism
       assert_location(StatementsNode, "END { foo }", 6...9, &:statements)
 
       assert_location(StatementsNode, "\"\#{foo}\"", 3...6) { |node| node.parts.first.statements }
-    end
-
-    def test_StringConcatNode
-      assert_location(StringConcatNode, '"foo" "bar"')
     end
 
     def test_StringNode

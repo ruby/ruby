@@ -831,27 +831,24 @@ class Reline::LineEditor
       dialog.column = 0
       dialog.width = @screen_size.last
     end
+    face = Reline::Face[dialog_render_info.face || :default]
+    scrollbar_sgr = face[:scrollbar]
+    default_sgr = face[:default]
+    enhanced_sgr = face[:enhanced]
     dialog.contents = contents.map.with_index do |item, i|
-      if i == pointer
-        fg_color = dialog_render_info.pointer_fg_color
-        bg_color = dialog_render_info.pointer_bg_color
-      else
-        fg_color = dialog_render_info.fg_color
-        bg_color = dialog_render_info.bg_color
-      end
+      line_sgr = i == pointer ? enhanced_sgr : default_sgr
       str_width = dialog.width - (scrollbar_pos.nil? ? 0 : @block_elem_width)
       str = padding_space_with_escape_sequences(Reline::Unicode.take_range(item, 0, str_width), str_width)
-      colored_content = "\e[#{bg_color}m\e[#{fg_color}m#{str}"
+      colored_content = "#{line_sgr}#{str}"
       if scrollbar_pos
-        color_seq = "\e[37m"
         if scrollbar_pos <= (i * 2) and (i * 2 + 1) < (scrollbar_pos + bar_height)
-          colored_content + color_seq + @full_block
+          colored_content + scrollbar_sgr + @full_block
         elsif scrollbar_pos <= (i * 2) and (i * 2) < (scrollbar_pos + bar_height)
-          colored_content + color_seq + @upper_half_block
+          colored_content + scrollbar_sgr + @upper_half_block
         elsif scrollbar_pos <= (i * 2 + 1) and (i * 2) < (scrollbar_pos + bar_height)
-          colored_content + color_seq + @lower_half_block
+          colored_content + scrollbar_sgr + @lower_half_block
         else
-          colored_content + color_seq + ' ' * @block_elem_width
+          colored_content + scrollbar_sgr + ' ' * @block_elem_width
         end
       else
         colored_content

@@ -322,18 +322,6 @@ Both are equivalent to:
 
   my_method(1, 2, 3)
 
-If the method accepts keyword arguments, the splat operator will convert a
-hash at the end of the array into keyword arguments:
-
-  def my_method(a, b, c: 3)
-  end
-
-  arguments = [1, 2, { c: 4 }]
-  my_method(*arguments)
-
-Note that this behavior is currently deprecated and will emit a warning.
-This behavior will be removed in Ruby 3.0.
-
 You may also use the <code>**</code> (described next) to convert a Hash into
 keyword arguments.
 

@@ -4,15 +4,6 @@
 # Mixin methods for Gem::Command to promote available RubyGems update
 
 module Gem::UpdateSuggestion
-  # list taken from https://github.com/watson/ci-info/blob/7a3c30d/index.js#L56-L66
-  CI_ENV_VARS = [
-    "CI", # Travis CI, CircleCI, Cirrus CI, Gitlab CI, Appveyor, CodeShip, dsari
-    "CONTINUOUS_INTEGRATION", # Travis CI, Cirrus CI
-    "BUILD_NUMBER", # Jenkins, TeamCity
-    "CI_APP_ID", "CI_BUILD_ID", "CI_BUILD_NUMBER", # Applfow
-    "RUN_ID" # TaskCluster, dsari
-  ].freeze
-
   ONE_WEEK = 7 * 24 * 60 * 60
 
   ##
@@ -39,7 +30,7 @@ Run `gem update --system #{Gem.latest_rubygems_version}` to update your installa
     return false unless Gem.ui.tty?
     return false if Gem.rubygems_version.prerelease?
     return false if Gem.disable_system_update_message
-    return false if ci?
+    return false if Gem::CIDetector.ci?
 
     # check makes sense only when we can store timestamp of last try
     # otherwise we will not be able to prevent "annoying" update message
@@ -61,9 +52,5 @@ Run `gem update --system #{Gem.latest_rubygems_version}` to update your installa
     end
   rescue StandardError # don't block install command on any problem
     false
-  end
-
-  def ci?
-    CI_ENV_VARS.any? {|var| ENV.include?(var) }
   end
 end

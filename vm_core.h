@@ -726,9 +726,8 @@ typedef struct rb_vm_struct {
     /* relation table of ensure - rollback for callcc */
     struct st_table *ensure_rollback_table;
 
-    /* postponed_job (async-signal-safe, NOT thread-safe) */
-    struct rb_postponed_job_struct *postponed_job_buffer;
-    rb_atomic_t postponed_job_index;
+    /* postponed_job (async-signal-safe, and thread-safe) */
+    struct rb_postponed_job_queue *postponed_job_queue;
 
     int src_encoding_index;
 
@@ -885,13 +884,68 @@ typedef void *rb_jmpbuf_t[5];
 #endif
 
 /*
+  `rb_vm_tag_jmpbuf_t` type represents a buffer used to
+  long jump to a C frame associated with `rb_vm_tag`.
+
+  Use-site of `rb_vm_tag_jmpbuf_t` is responsible for calling the
+  following functions:
+  - `rb_vm_tag_jmpbuf_init` once `rb_vm_tag_jmpbuf_t` is allocated.
+  - `rb_vm_tag_jmpbuf_deinit` once `rb_vm_tag_jmpbuf_t` is no longer necessary.
+
+  `RB_VM_TAG_JMPBUF_GET` transforms a `rb_vm_tag_jmpbuf_t` into a
+  `rb_jmpbuf_t` to be passed to `rb_setjmp/rb_longjmp`.
+*/
+#if defined(__wasm__) && !defined(__EMSCRIPTEN__)
+/*
+  WebAssembly target with Asyncify-based SJLJ needs
+  to capture the execution context by unwind/rewind-ing
+  call frames into a jump buffer. The buffer space tends
+  to be considerably large unlike other architectures'
+  register-based buffers.
+  Therefore, we allocates the buffer on the heap on such
+  environments.
+*/
+typedef rb_jmpbuf_t *rb_vm_tag_jmpbuf_t;
+
+#define RB_VM_TAG_JMPBUF_GET(buf) (*buf)
+
+static inline void
+rb_vm_tag_jmpbuf_init(rb_vm_tag_jmpbuf_t *jmpbuf)
+{
+    *jmpbuf = ruby_xmalloc(sizeof(rb_jmpbuf_t));
+}
+
+static inline void
+rb_vm_tag_jmpbuf_deinit(const rb_vm_tag_jmpbuf_t *jmpbuf)
+{
+    ruby_xfree(*jmpbuf);
+}
+#else
+typedef rb_jmpbuf_t rb_vm_tag_jmpbuf_t;
+
+#define RB_VM_TAG_JMPBUF_GET(buf) (buf)
+
+static inline void
+rb_vm_tag_jmpbuf_init(rb_vm_tag_jmpbuf_t *jmpbuf)
+{
+    // no-op
+}
+
+static inline void
+rb_vm_tag_jmpbuf_deinit(const rb_vm_tag_jmpbuf_t *jmpbuf)
+{
+    // no-op
+}
+#endif
+
+/*
   the members which are written in EC_PUSH_TAG() should be placed at
   the beginning and the end, so that entire region is accessible.
 */
 struct rb_vm_tag {
     VALUE tag;
     VALUE retval;
-    rb_jmpbuf_t buf;
+    rb_vm_tag_jmpbuf_t buf;
     struct rb_vm_tag *prev;
     enum ruby_tag_type state;
     unsigned int lock_rec;
@@ -899,7 +953,7 @@ struct rb_vm_tag {
 
 STATIC_ASSERT(rb_vm_tag_buf_offset, offsetof(struct rb_vm_tag, buf) > 0);
 STATIC_ASSERT(rb_vm_tag_buf_end,
-              offsetof(struct rb_vm_tag, buf) + sizeof(rb_jmpbuf_t) <
+              offsetof(struct rb_vm_tag, buf) + sizeof(rb_vm_tag_jmpbuf_t) <
               sizeof(struct rb_vm_tag));
 
 struct rb_unblock_callback {
@@ -1097,6 +1151,7 @@ typedef struct rb_thread_struct {
 
     /* misc */
     VALUE name;
+    void **specific_storage;
 
     struct rb_ext_config ext_config;
 } rb_thread_t;
@@ -2115,6 +2170,10 @@ rb_exec_event_hook_script_compiled(rb_execution_context_t *ec, const rb_iseq_t *
 }
 
 void rb_vm_trap_exit(rb_vm_t *vm);
+void rb_vm_postponed_job_atfork(void); /* vm_trace.c */
+void rb_vm_postponed_job_free(void); /* vm_trace.c */
+size_t rb_vm_memsize_postponed_job_queue(void); /* vm_trace.c */
+void rb_vm_postponed_job_queue_init(rb_vm_t *vm); /* vm_trace.c */
 
 RUBY_SYMBOL_EXPORT_BEGIN
 

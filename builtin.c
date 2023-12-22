@@ -3,14 +3,14 @@
 #include "iseq.h"
 #include "builtin.h"
 
-#ifdef CROSS_COMPILING
+#include "builtin_binary.inc"
+
+#ifndef BUILTIN_BINARY_SIZE
 
 #define INCLUDED_BY_BUILTIN_C 1
 #include "mini_builtin.c"
 
 #else
-
-#include "builtin_binary.inc"
 
 static const unsigned char *
 bin4feature(const struct builtin_binary *bb, const char *feature, size_t *psize)
@@ -56,6 +56,12 @@ rb_load_with_builtin_functions(const char *feature_name, const struct rb_builtin
 }
 
 #endif
+
+void
+rb_free_loaded_builtin_table(void)
+{
+    // do nothing
+}
 
 void
 Init_builtin(void)

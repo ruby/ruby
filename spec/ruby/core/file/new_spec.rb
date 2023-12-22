@@ -100,7 +100,7 @@ describe "File.new" do
     File.should.exist?(@file)
   end
 
-  it "raises an Errorno::EEXIST if the file exists when create a new file with File::CREAT|File::EXCL" do
+  it "raises an Errno::EEXIST if the file exists when create a new file with File::CREAT|File::EXCL" do
     -> { @fh = File.new(@file, File::CREAT|File::EXCL) }.should raise_error(Errno::EEXIST)
   end
 
@@ -186,6 +186,12 @@ describe "File.new" do
     -> {
       @fh = File.new(@file, mode: 'w', flags: File::EXCL)
     }.should raise_error(Errno::EEXIST, /File exists/)
+  end
+
+  it "does not use the given block and warns to use File::open" do
+    -> {
+      @fh = File.new(@file) { raise }
+    }.should complain(/warning: File::new\(\) does not take block; use File::open\(\) instead/)
   end
 
   it "raises a TypeError if the first parameter can't be coerced to a string" do

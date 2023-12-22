@@ -180,7 +180,7 @@ end
 # - {CVE-2004-0452}[https://cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2004-0452].
 #
 module Bundler::FileUtils
-  VERSION = "1.7.0"
+  VERSION = "1.7.2"
 
   def self.private_module_function(name)   #:nodoc:
     module_function name
@@ -191,8 +191,6 @@ module Bundler::FileUtils
   # Returns a string containing the path to the current directory:
   #
   #   Bundler::FileUtils.pwd # => "/rdoc/fileutils"
-  #
-  # Bundler::FileUtils.getwd is an alias for Bundler::FileUtils.pwd.
   #
   # Related: Bundler::FileUtils.cd.
   #
@@ -234,8 +232,6 @@ module Bundler::FileUtils
   #
   #     cd ..
   #     cd fileutils
-  #
-  # Bundler::FileUtils.chdir is an alias for Bundler::FileUtils.cd.
   #
   # Related: Bundler::FileUtils.pwd.
   #
@@ -515,8 +511,6 @@ module Bundler::FileUtils
   # Raises an exception if +dest+ is the path to an existing file
   # and keyword argument +force+ is not +true+.
   #
-  # Bundler::FileUtils#link is an alias for Bundler::FileUtils#ln.
-  #
   # Related: Bundler::FileUtils.link_entry (has different options).
   #
   def ln(src, dest, force: nil, noop: nil, verbose: nil)
@@ -707,8 +701,6 @@ module Bundler::FileUtils
   #     ln -sf src2.txt dest2.txt
   #     ln -s srcdir3/src0.txt srcdir3/src1.txt destdir3
   #
-  # Bundler::FileUtils.symlink is an alias for Bundler::FileUtils.ln_s.
-  #
   # Related: Bundler::FileUtils.ln_sf.
   #
   def ln_s(src, dest, force: nil, relative: false, target_directory: true, noop: nil, verbose: nil)
@@ -875,8 +867,6 @@ module Bundler::FileUtils
   #     cp src2.txt src2.dat dest2
   #
   # Raises an exception if +src+ is a directory.
-  #
-  # Bundler::FileUtils.copy is an alias for Bundler::FileUtils.cp.
   #
   # Related: {methods for copying}[rdoc-ref:FileUtils@Copying].
   #
@@ -1164,8 +1154,6 @@ module Bundler::FileUtils
   #     mv src0 dest0
   #     mv src1.txt src1 dest1
   #
-  # Bundler::FileUtils.move is an alias for Bundler::FileUtils.mv.
-  #
   def mv(src, dest, force: nil, noop: nil, verbose: nil, secure: nil)
     fu_output_message "mv#{force ? ' -f' : ''} #{[src,dest].flatten.join ' '}" if verbose
     return if noop
@@ -1223,8 +1211,6 @@ module Bundler::FileUtils
   #
   #     rm src0.dat src0.txt
   #
-  # Bundler::FileUtils.remove is an alias for Bundler::FileUtils.rm.
-  #
   # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
   #
   def rm(list, force: nil, noop: nil, verbose: nil)
@@ -1249,8 +1235,6 @@ module Bundler::FileUtils
   # should be {interpretable as paths}[rdoc-ref:FileUtils@Path+Arguments].
   #
   # See Bundler::FileUtils.rm for keyword arguments.
-  #
-  # Bundler::FileUtils.safe_unlink is an alias for Bundler::FileUtils.rm_f.
   #
   # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
   #
@@ -1338,8 +1322,6 @@ module Bundler::FileUtils
   # see {Avoiding the TOCTTOU Vulnerability}[rdoc-ref:FileUtils@Avoiding+the+TOCTTOU+Vulnerability].
   #
   # See Bundler::FileUtils.rm_r for keyword arguments.
-  #
-  # Bundler::FileUtils.rmtree is an alias for Bundler::FileUtils.rm_rf.
   #
   # Related: {methods for deleting}[rdoc-ref:FileUtils@Deleting].
   #
@@ -1642,7 +1624,13 @@ module Bundler::FileUtils
       st = File.stat(s)
       unless File.exist?(d) and compare_file(s, d)
         remove_file d, true
-        copy_file s, d
+        if d.end_with?('/')
+          mkdir_p d
+          copy_file s, d + File.basename(s)
+        else
+          mkdir_p File.expand_path('..', d)
+          copy_file s, d
+        end
         File.utime st.atime, st.mtime, d if preserve
         File.chmod fu_mode(mode, st), d if mode
         File.chown uid, gid, d if uid or gid

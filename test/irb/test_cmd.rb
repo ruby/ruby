@@ -23,9 +23,6 @@ module TestIRB
       save_encodings
       IRB.instance_variable_get(:@CONF).clear
       @is_win = (RbConfig::CONFIG['host_os'] =~ /mswin|msys|mingw|cygwin|bccwin|wince|emc/)
-      STDIN.singleton_class.define_method :tty? do
-        false
-      end
     end
 
     def teardown
@@ -34,13 +31,13 @@ module TestIRB
       Dir.chdir(@pwd)
       FileUtils.rm_rf(@tmpdir)
       restore_encodings
-      STDIN.singleton_class.remove_method :tty?
     end
 
     def execute_lines(*lines, conf: {}, main: self, irb_path: nil)
       IRB.init_config(nil)
       IRB.conf[:VERBOSE] = false
       IRB.conf[:PROMPT_MODE] = :SIMPLE
+      IRB.conf[:USE_PAGER] = false
       IRB.conf.merge!(conf)
       input = TestInputMethod.new(lines)
       irb = IRB::Irb.new(IRB::WorkSpace.new(main), input)
@@ -90,6 +87,7 @@ module TestIRB
         Ruby\sversion:\s.+\n
         IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
+        Completion: .+\n
         \.irbrc\spath:\s.+\n
         RUBY_PLATFORM:\s.+\n
         East\sAsian\sAmbiguous\sWidth:\s\d\n
@@ -113,6 +111,7 @@ module TestIRB
         Ruby\sversion:\s.+\n
         IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
+        Completion: .+\n
         \.irbrc\spath:\s.+\n
         RUBY_PLATFORM:\s.+\n
         East\sAsian\sAmbiguous\sWidth:\s\d\n
@@ -139,6 +138,7 @@ module TestIRB
         Ruby\sversion:\s.+\n
         IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
+        Completion: .+\n
         RUBY_PLATFORM:\s.+\n
         East\sAsian\sAmbiguous\sWidth:\s\d\n
         #{@is_win ? 'Code\spage:\s\d+\n' : ''}
@@ -168,6 +168,7 @@ module TestIRB
         Ruby\sversion:\s.+\n
         IRB\sversion:\sirb\s.+\n
         InputMethod:\sAbstract\sInputMethod\n
+        Completion: .+\n
         RUBY_PLATFORM:\s.+\n
         East\sAsian\sAmbiguous\sWidth:\s\d\n
         #{@is_win ? 'Code\spage:\s\d+\n' : ''}
@@ -196,6 +197,7 @@ module TestIRB
         Ruby\sversion: .+\n
         IRB\sversion:\sirb .+\n
         InputMethod:\sAbstract\sInputMethod\n
+        Completion: .+\n
         \.irbrc\spath: .+\n
         RUBY_PLATFORM: .+\n
         LANG\senv:\sja_JP\.UTF-8\n
@@ -224,8 +226,11 @@ module TestIRB
 
       c = Class.new(Object)
       out, err = execute_lines(
-        "3\n",
         "measure\n",
+        "3\n",
+        "measure :off\n",
+        "3\n",
+        "measure :on\n",
         "3\n",
         "measure :off\n",
         "3\n",
@@ -234,7 +239,7 @@ module TestIRB
       )
 
       assert_empty err
-      assert_match(/\A=> 3\nTIME is added\.\n=> nil\nprocessing time: .+\n=> 3\n=> nil\n=> 3\n/, out)
+      assert_match(/\A(TIME is added\.\n=> nil\nprocessing time: .+\n=> 3\n=> nil\n=> 3\n){2}/, out)
       assert_empty(c.class_variables)
     end
 
@@ -351,7 +356,37 @@ module TestIRB
       assert_match(/\A=> 3\nCUSTOM is added\.\n=> nil\ncustom processing time: .+\n=> 3\n=> nil\n=> 3\n/, out)
     end
 
-    def test_measure_with_proc
+    def test_measure_toggle
+      conf = {
+        PROMPT: {
+          DEFAULT: {
+            PROMPT_I: '> ',
+            PROMPT_S: '> ',
+            PROMPT_C: '> '
+          }
+        },
+        PROMPT_MODE: :DEFAULT,
+        MEASURE: false,
+        MEASURE_PROC: {
+          FOO: proc { |&block| puts 'foo'; block.call },
+          BAR: proc { |&block| puts 'bar'; block.call }
+        }
+      }
+      out, err = execute_lines(
+        "measure :foo",
+        "measure :on, :bar",
+        "3\n",
+        "measure :off, :foo\n",
+        "measure :off, :bar\n",
+        "3\n",
+        conf: conf
+      )
+
+      assert_empty err
+      assert_match(/\AFOO is added\.\n=> nil\nfoo\nBAR is added\.\n=> nil\nbar\nfoo\n=> 3\nbar\nfoo\n=> nil\nbar\n=> nil\n=> 3\n/, out)
+    end
+
+    def test_measure_with_proc_warning
       conf = {
         PROMPT: {
           DEFAULT: {
@@ -366,26 +401,15 @@ module TestIRB
       c = Class.new(Object)
       out, err = execute_lines(
         "3\n",
-        "measure { |context, code, line_no, &block|\n",
-        "  result = block.()\n",
-        "  puts 'aaa' if IRB.conf[:MEASURE]\n",
-        "  result\n",
-        "}\n",
-        "3\n",
-        "measure { |context, code, line_no, &block|\n",
-        "  result = block.()\n",
-        "  puts 'bbb' if IRB.conf[:MEASURE]\n",
-        "  result\n",
-        "}\n",
-        "3\n",
-        "measure :off\n",
+        "measure do\n",
+        "end\n",
         "3\n",
         conf: conf,
         main: c
       )
 
-      assert_empty err
-      assert_match(/\A=> 3\nBLOCK is added\.\n=> nil\naaa\n=> 3\nBLOCK is added.\naaa\n=> nil\nbbb\n=> 3\n=> nil\n=> 3\n/, out)
+      assert_match(/to add custom measure/, err)
+      assert_match(/\A=> 3\n=> nil\n=> 3\n/, out)
       assert_empty(c.class_variables)
     end
   end
@@ -444,96 +468,6 @@ module TestIRB
 
       assert_empty err
       assert_match(/Please specify the file name./, out)
-    end
-  end
-
-  class ShowSourceTest < CommandTestCase
-    def test_show_source
-      out, err = execute_lines(
-        "show_source IRB.conf\n",
-      )
-      assert_empty err
-      assert_match(%r[/irb\/init\.rb], out)
-    end
-
-    def test_show_source_method
-      out, err = execute_lines(
-        "p show_source('IRB.conf')\n",
-      )
-      assert_empty err
-      assert_match(%r[/irb\/init\.rb], out)
-    end
-
-    def test_show_source_string
-      out, err = execute_lines(
-        "show_source 'IRB.conf'\n",
-      )
-      assert_empty err
-      assert_match(%r[/irb\/init\.rb], out)
-    end
-
-    def test_show_source_alias
-      out, err = execute_lines(
-        "$ 'IRB.conf'\n",
-        conf: { COMMAND_ALIASES: { :'$' => :show_source } }
-      )
-      assert_empty err
-      assert_match(%r[/irb\/init\.rb], out)
-    end
-
-    def test_show_source_end_finder
-      eval(code = <<-EOS, binding, __FILE__, __LINE__ + 1)
-        def show_source_test_method
-          unless true
-          end
-        end unless defined?(show_source_test_method)
-      EOS
-
-      out, err = execute_lines(
-        "show_source '#{self.class.name}#show_source_test_method'\n",
-      )
-
-      assert_empty err
-      assert_include(out, code)
-    end
-
-    def test_show_source_private_instance
-      eval(code = <<-EOS, binding, __FILE__, __LINE__ + 1)
-        class PrivateInstanceTest
-          private def show_source_test_method
-            unless true
-            end
-          end unless private_method_defined?(:show_source_test_method)
-        end
-      EOS
-
-      out, err = execute_lines(
-        "show_source '#{self.class.name}::PrivateInstanceTest#show_source_test_method'\n",
-      )
-
-      assert_empty err
-      assert_include(out, code.lines[1..-2].join)
-    end
-
-
-    def test_show_source_private
-      eval(code = <<-EOS, binding, __FILE__, __LINE__ + 1)
-        class PrivateTest
-          private def show_source_test_method
-            unless true
-            end
-          end unless private_method_defined?(:show_source_test_method)
-        end
-
-        Instance = PrivateTest.new unless defined?(Instance)
-      EOS
-
-      out, err = execute_lines(
-        "show_source '#{self.class.name}::Instance.show_source_test_method'\n",
-      )
-
-      assert_empty err
-      assert_include(out, code.lines[1..-4].join)
     end
   end
 
@@ -677,6 +611,16 @@ module TestIRB
       assert_empty err
       assert_match(/List all available commands and their description/, out)
       assert_match(/Start the debugger of debug\.gem/, out)
+    end
+
+    def test_show_cmds_list_user_aliases
+      out, err = execute_lines(
+        "show_cmds\n"
+      )
+
+      assert_empty err
+      assert_match(/\$\s+Alias for `show_source`/, out)
+      assert_match(/@\s+Alias for `whereami`/, out)
     end
   end
 
@@ -966,4 +910,68 @@ module TestIRB
       assert_match("command: ': code2'", out)
     end
   end
+
+  class HistoryCmdTest < CommandTestCase
+    def teardown
+      TestInputMethod.send(:remove_const, "HISTORY") if defined?(TestInputMethod::HISTORY)
+      super
+    end
+
+    def test_history
+      TestInputMethod.const_set("HISTORY", %w[foo bar baz])
+
+      out, err = without_rdoc do
+        execute_lines("history")
+      end
+
+      assert_include(out, <<~EOF)
+        2: baz
+        1: bar
+        0: foo
+      EOF
+      assert_empty err
+    end
+
+    def test_multiline_history_with_truncation
+      TestInputMethod.const_set("HISTORY", ["foo", "bar", <<~INPUT])
+        [].each do |x|
+          puts x
+        end
+      INPUT
+
+      out, err = without_rdoc do
+        execute_lines("hist")
+      end
+
+      assert_include(out, <<~EOF)
+        2: [].each do |x|
+             puts x
+           ...
+        1: bar
+        0: foo
+      EOF
+      assert_empty err
+    end
+
+    def test_history_grep
+      TestInputMethod.const_set("HISTORY", ["foo", "bar", <<~INPUT])
+        [].each do |x|
+          puts x
+        end
+      INPUT
+
+      out, err = without_rdoc do
+        execute_lines("hist -g each\n")
+      end
+
+      assert_include(out, <<~EOF)
+        2: [].each do |x|
+             puts x
+           ...
+      EOF
+      assert_empty err
+    end
+
+  end
+
 end

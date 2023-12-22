@@ -6,11 +6,14 @@
 # conditions  mentioned in  the file  COPYING are  met.  Consult  the  file for
 # details.
 
-# Note we only manage non-amd64 free pipelines.
-# https://docs.travis-ci.com/user/billing-overview/
+# When you see Travis CI issues, or you are interested in understanding how to
+# manage, please check the link below.
+# https://github.com/ruby/ruby/wiki/CI-Servers#travis-ci
 
 # We enable Travis on the specific branches or forked repositories here.
-if: (repo = ruby/ruby AND (branch = master OR branch =~ /^ruby_\d_\d$/)) OR repo != ruby/ruby OR commit_message !~ /\[DOC\]/
+if: >-
+  (repo != ruby/ruby OR branch = master OR branch =~ /^ruby_\d_\d$/)
+  AND (commit_message !~ /\[DOC\]/)
 
 language: c
 
@@ -24,15 +27,13 @@ git:
 env:
   global:
     - NPROC="$(nproc)"
-    # JOBS and SETARCH are overridden when necessary; see below.
-    - JOBS=-j$((1+${NPROC}))
+    - JOBS="-j${NPROC}"
+    # SETARCH are overridden when necessary. See below.
     - SETARCH=
     # https://github.com/travis-ci/travis-build/blob/e411371dda21430a60f61b8f3f57943d2fe4d344/lib/travis/build/bash/travis_apt_get_options.bash#L7
     - travis_apt_get_options='--allow-downgrades --allow-remove-essential --allow-change-held-packages'
     - travis_apt_get_options="-yq --no-install-suggests --no-install-recommends $travis_apt_get_options"
-    # -O1 is faster than -O3 in our tests.
-    - optflags=-O1
-    # -g0 disables backtraces when SEGV.  Do not set that.
+    # -g0 disables backtraces when SEGV. Do not set that.
     - debugflags=-ggdb3
     - RUBY_TESTOPTS="$JOBS -q --tty=no"
 
@@ -54,28 +55,23 @@ env:
         openssl
         zlib1g-dev
       - gcc-11 --version
-
   - &arm64-linux
     name: arm64-linux
     arch: arm64
     <<: *gcc-11
-
   - &ppc64le-linux
     name: ppc64le-linux
     arch: ppc64le
-    dist: focal
-    compiler: gcc
-
+    <<: *gcc-11
   - &s390x-linux
     name: s390x-linux
     arch: s390x
-    compiler: gcc
+    <<: *gcc-11
     env:
       # Avoid possible test failures with the zlib applying the following patch
       # on s390x CPU architecture.
       # https://github.com/madler/zlib/pull/410
       - DFLTCC=0
-
   - &arm32-linux
     name: arm32-linux
     arch: arm64
@@ -83,6 +79,12 @@ env:
     compiler: arm-linux-gnueabihf-gcc
     env:
       - SETARCH='setarch linux32 --verbose --32bit'
+      # Still keep the -O1 for only arm32, while we want to test with the
+      # default optflags -O3.
+      # Because bootstraptest/test_ractor.rb fails with segfualt with the
+      # default -O3.
+      # https://bugs.ruby-lang.org/issues/19981
+      - optflags=-O1
     before_install:
       - sudo dpkg --add-architecture armhf
       - tool/travis_retry.sh sudo bash -c "rm -rf '${TRAVIS_ROOT}/var/lib/apt/lists/'* && exec apt-get update -yq"
@@ -102,18 +104,20 @@ env:
 
 matrix:
   include:
-    # Build every commit (Allowed Failures):
-    - <<: *arm32-linux
-    # Comment out as the 2nd arm64 pipeline is unstable.
-    # - <<: *arm64-linux
+    - <<: *arm64-linux
     - <<: *ppc64le-linux
     - <<: *s390x-linux
+    # FIXME: lib/rubygems/util.rb:104 glob_files_in_dir -
+    # <internal:dir>:411:in glob: File name too long - (Errno::ENAMETOOLONG)
+    # https://github.com/rubygems/rubygems/issues/7132
+    - <<: *arm32-linux
   allow_failures:
     # Allow failures for the unstable jobs.
-    # - name: arm32-linux
     # - name: arm64-linux
-    - name: ppc64le-linux
-    - name: s390x-linux
+    # - name: ppc64le-linux
+    # - name: s390x-linux
+    # The 2nd arm64 pipeline may be unstable.
+    # - name: arm32-linux
   fast_finish: true
 
 before_script:
@@ -123,6 +127,10 @@ before_script:
   - $SETARCH ../configure -C --disable-install-doc --prefix=$(pwd)/install
   - $SETARCH make -s $JOBS
   - make -s $JOBS install
+  # Useful info to report issues to the Ruby.
+  - $SETARCH $(pwd)/install/bin/ruby -v
+  # Useful info To report issues to the RubyGems.
+  - $SETARCH $(pwd)/install/bin/gem env
 
 script:
   - $SETARCH make -s test
@@ -133,9 +141,9 @@ script:
 notifications:
   webhooks:
     urls:
-      - secure: mRsoS/UbqDkKkW5p3AEqM27d4SZnV6Gsylo3bm8T/deltQzTsGzZwrm7OIBXZv0UFZdE68XmPlyHfZFLSP2V9QZ7apXMf9/vw0GtcSe1gchtnjpAPF6lYBn7nMCbVPPx9cS0dwL927fjdRM1vj7IKZ2bk4F0lAJ25R25S6teqdk= # ruby-lang slack: ruby/simpler-alerts-bot (travis)
+      # ruby-lang slack: ruby/simpler-alerts-bot (travis)
+      - secure: mRsoS/UbqDkKkW5p3AEqM27d4SZnV6Gsylo3bm8T/deltQzTsGzZwrm7OIBXZv0UFZdE68XmPlyHfZFLSP2V9QZ7apXMf9/vw0GtcSe1gchtnjpAPF6lYBn7nMCbVPPx9cS0dwL927fjdRM1vj7IKZ2bk4F0lAJ25R25S6teqdk=
     on_success: never
     on_failure: always
-
   email:
     - jaruga@ruby-lang.org

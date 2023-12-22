@@ -15,6 +15,7 @@
             │           ├── if_keyword_loc: (2,8)-(2,10) = "if"
             │           ├── predicate:
             │           │   @ TrueNode (location: (2,11)-(2,15))
+            │           ├── then_keyword_loc: (2,16)-(2,20) = "then"
             │           ├── statements:
             │           │   @ StatementsNode (location: (3,10)-(3,19))
             │           │   └── body: (length: 1)
@@ -22,13 +23,14 @@
             │           │           ├── keyword_loc: (3,10)-(3,16) = "return"
             │           │           └── arguments:
             │           │               @ ArgumentsNode (location: (3,17)-(3,19))
-            │           │               ├── arguments: (length: 1)
-            │           │               │   └── @ IntegerNode (location: (3,17)-(3,19))
-            │           │               │       └── flags: decimal
-            │           │               └── flags: ∅
+            │           │               ├── flags: ∅
+            │           │               └── arguments: (length: 1)
+            │           │                   └── @ IntegerNode (location: (3,17)-(3,19))
+            │           │                       └── flags: decimal
             │           ├── consequent: ∅
             │           └── end_keyword_loc: (4,8)-(4,11) = "end"
             ├── locals: []
+            ├── locals_body_index: 0
             ├── def_keyword_loc: (1,6)-(1,9) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: ∅

@@ -83,7 +83,7 @@ module Bundler
 
         Bundler.configure_gem_home_and_path(Plugin.root)
 
-        Bundler.settings.temporary(:deployment => false, :frozen => false) do
+        Bundler.settings.temporary(deployment: false, frozen: false) do
           definition = Definition.new(nil, deps, source_list, true)
 
           install_definition(definition)

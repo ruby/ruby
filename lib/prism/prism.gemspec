@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |spec|
   spec.name = "prism"
-  spec.version = "0.15.1"
+  spec.version = "0.19.0"
   spec.authors = ["Shopify"]
   spec.email = ["ruby@shopify.com"]
 
@@ -29,8 +29,9 @@ Gem::Specification.new do |spec|
     "docs/fuzzing.md",
     "docs/heredocs.md",
     "docs/javascript.md",
+    "docs/local_variable_depth.md",
     "docs/mapping.md",
-    "docs/prism.png",
+    "docs/releasing.md",
     "docs/ripper.md",
     "docs/ruby_api.md",
     "docs/serialization.md",
@@ -43,8 +44,9 @@ Gem::Specification.new do |spec|
     "include/prism/ast.h",
     "include/prism/defines.h",
     "include/prism/diagnostic.h",
-    "include/prism/enc/pm_encoding.h",
+    "include/prism/encoding.h",
     "include/prism/node.h",
+    "include/prism/options.h",
     "include/prism/pack.h",
     "include/prism/parser.h",
     "include/prism/prettyprint.h",
@@ -56,6 +58,7 @@ Gem::Specification.new do |spec|
     "include/prism/util/pm_memchr.h",
     "include/prism/util/pm_newline_list.h",
     "include/prism/util/pm_state_stack.h",
+    "include/prism/util/pm_strncasecmp.h",
     "include/prism/util/pm_string.h",
     "include/prism/util/pm_string_list.h",
     "include/prism/util/pm_strpbrk.h",
@@ -65,6 +68,7 @@ Gem::Specification.new do |spec|
     "lib/prism/debug.rb",
     "lib/prism/desugar_compiler.rb",
     "lib/prism/dispatcher.rb",
+    "lib/prism/dot_visitor.rb",
     "lib/prism/dsl.rb",
     "lib/prism/ffi.rb",
     "lib/prism/lex_compat.rb",
@@ -81,13 +85,7 @@ Gem::Specification.new do |spec|
     "lib/prism/parse_result/newlines.rb",
     "lib/prism/visitor.rb",
     "src/diagnostic.c",
-    "src/enc/pm_big5.c",
-    "src/enc/pm_euc_jp.c",
-    "src/enc/pm_gbk.c",
-    "src/enc/pm_shift_jis.c",
-    "src/enc/pm_tables.c",
-    "src/enc/pm_unicode.c",
-    "src/enc/pm_windows_31j.c",
+    "src/encoding.c",
     "src/node.c",
     "src/pack.c",
     "src/prettyprint.c",
@@ -105,6 +103,7 @@ Gem::Specification.new do |spec|
     "src/util/pm_string_list.c",
     "src/util/pm_strncasecmp.c",
     "src/util/pm_strpbrk.c",
+    "src/options.c",
     "src/prism.c",
     "prism.gemspec",
     "sig/prism.rbs",
@@ -115,4 +114,6 @@ Gem::Specification.new do |spec|
 
   spec.extensions = ["ext/prism/extconf.rb"]
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
+  spec.metadata["source_code_uri"] = "https://github.com/ruby/prism"
+  spec.metadata["changelog_uri"] = "https://github.com/ruby/prism/blob/main/CHANGELOG.md"
 end

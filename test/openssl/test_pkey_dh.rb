@@ -18,15 +18,26 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     assert_key(dh)
   end if ENV["OSSL_TEST_ALL"]
 
-  def test_new_break
+  def test_new_break_on_non_fips
+    omit_on_fips
+
     assert_nil(OpenSSL::PKey::DH.new(NEW_KEYLEN) { break })
     assert_raise(RuntimeError) do
       OpenSSL::PKey::DH.new(NEW_KEYLEN) { raise }
     end
   end
 
+  def test_new_break_on_fips
+    omit_on_non_fips
+
+    # The block argument is not executed in FIPS case.
+    # See https://github.com/ruby/openssl/issues/692 for details.
+    assert(OpenSSL::PKey::DH.new(NEW_KEYLEN) { break })
+    assert(OpenSSL::PKey::DH.new(NEW_KEYLEN) { raise })
+  end
+
   def test_derive_key
-    params = Fixtures.pkey("dh1024")
+    params = Fixtures.pkey("dh2048_ffdhe2048")
     dh1 = OpenSSL::PKey.generate_key(params)
     dh2 = OpenSSL::PKey.generate_key(params)
     dh1_pub = OpenSSL::PKey.read(dh1.public_to_der)
@@ -44,34 +55,38 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end
 
   def test_DHparams
-    dh1024 = Fixtures.pkey("dh1024")
-    dh1024params = dh1024.public_key
+    dh = Fixtures.pkey("dh2048_ffdhe2048")
+    dh_params = dh.public_key
 
     asn1 = OpenSSL::ASN1::Sequence([
-      OpenSSL::ASN1::Integer(dh1024.p),
-      OpenSSL::ASN1::Integer(dh1024.g)
+      OpenSSL::ASN1::Integer(dh.p),
+      OpenSSL::ASN1::Integer(dh.g)
     ])
     key = OpenSSL::PKey::DH.new(asn1.to_der)
-    assert_same_dh dh1024params, key
+    assert_same_dh dh_params, key
 
     pem = <<~EOF
     -----BEGIN DH PARAMETERS-----
-    MIGHAoGBAKnKQ8MNK6nYZzLrrcuTsLxuiJGXoOO5gT+tljOTbHBuiktdMTITzIY0
-    pFxIvjG05D7HoBZQfrR0c92NGWPkAiCkhQKB8JCbPVzwNLDy6DZ0pmofDKrEsYHG
-    AQjjxMXhwULlmuR/K+WwlaZPiLIBYalLAZQ7ZbOPeVkJ8ePao0eLAgEC
+    MIIBCAKCAQEA//////////+t+FRYortKmq/cViAnPTzx2LnFg84tNpWp4TZBFGQz
+    +8yTnc4kmz75fS/jY2MMddj2gbICrsRhetPfHtXV/WVhJDP1H18GbtCFY2VVPe0a
+    87VXE15/V8k1mE8McODmi3fipona8+/och3xWKE2rec1MKzKT0g6eXq8CrGCsyT7
+    YdEIqUuyyOP7uWrat2DX9GgdT0Kj3jlN9K5W7edjcrsZCwenyO4KbXCeAvzhzffi
+    7MA0BM0oNC9hkXL+nOmFg/+OTxIy7vKBg8P+OxtMb61zO7X8vC7CIAXFjvGDfRaD
+    ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
     -----END DH PARAMETERS-----
     EOF
-    key = OpenSSL::PKey::DH.new(pem)
-    assert_same_dh dh1024params, key
-    key = OpenSSL::PKey.read(pem)
-    assert_same_dh dh1024params, key
 
-    assert_equal asn1.to_der, dh1024.to_der
-    assert_equal pem, dh1024.export
+    key = OpenSSL::PKey::DH.new(pem)
+    assert_same_dh dh_params, key
+    key = OpenSSL::PKey.read(pem)
+    assert_same_dh dh_params, key
+
+    assert_equal asn1.to_der, dh.to_der
+    assert_equal pem, dh.export
   end
 
   def test_public_key
-    dh = Fixtures.pkey("dh1024")
+    dh = Fixtures.pkey("dh2048_ffdhe2048")
     public_key = dh.public_key
     assert_no_key(public_key) #implies public_key.public? is false!
     assert_equal(dh.to_der, public_key.to_der)
@@ -80,7 +95,8 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
 
   def test_generate_key
     # Deprecated in v3.0.0; incompatible with OpenSSL 3.0
-    dh = Fixtures.pkey("dh1024").public_key # creates a copy with params only
+    # Creates a copy with params only
+    dh = Fixtures.pkey("dh2048_ffdhe2048").public_key
     assert_no_key(dh)
     dh.generate_key!
     assert_key(dh)
@@ -91,7 +107,15 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end if !openssl?(3, 0, 0)
 
   def test_params_ok?
-    dh0 = Fixtures.pkey("dh1024")
+    # Skip the tests in old OpenSSL version 1.1.1c or early versions before
+    # applying the following commits in OpenSSL 1.1.1d to make `DH_check`
+    # function pass the RFC 7919 FFDHE group texts.
+    # https://github.com/openssl/openssl/pull/9435
+    unless openssl?(1, 1, 1, 4)
+      pend 'DH check for RFC 7919 FFDHE group texts is not implemented'
+    end
+
+    dh0 = Fixtures.pkey("dh2048_ffdhe2048")
 
     dh1 = OpenSSL::PKey::DH.new(OpenSSL::ASN1::Sequence([
       OpenSSL::ASN1::Integer(dh0.p),
@@ -108,7 +132,7 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
 
   def test_dup
     # Parameters only
-    dh1 = Fixtures.pkey("dh1024")
+    dh1 = Fixtures.pkey("dh2048_ffdhe2048")
     dh2 = dh1.dup
     assert_equal dh1.to_der, dh2.to_der
     assert_not_equal nil, dh1.p
@@ -125,7 +149,7 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
     end
 
     # With a key pair
-    dh3 = OpenSSL::PKey.generate_key(Fixtures.pkey("dh1024"))
+    dh3 = OpenSSL::PKey.generate_key(Fixtures.pkey("dh2048_ffdhe2048"))
     dh4 = dh3.dup
     assert_equal dh3.to_der, dh4.to_der
     assert_equal dh1.to_der, dh4.to_der # encodes parameters only
@@ -136,7 +160,7 @@ class OpenSSL::TestPKeyDH < OpenSSL::PKeyTestCase
   end
 
   def test_marshal
-    dh = Fixtures.pkey("dh1024")
+    dh = Fixtures.pkey("dh2048_ffdhe2048")
     deserialized = Marshal.load(Marshal.dump(dh))
 
     assert_equal dh.to_der, deserialized.to_der

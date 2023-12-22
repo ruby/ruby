@@ -11,7 +11,7 @@
  *
  * This  is a  set of  APIs  to roll  your  own subclass  of ::rb_cRandom.   An
  * illustrative    example     of    such     PRNG    can    be     found    at
- * `ext/-test-/ramdom/loop.c`.
+ * `ext/-test-/random/loop.c`.
  */
 
 #include "ruby/ruby.h"

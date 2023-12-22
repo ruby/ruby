@@ -1,9 +1,8 @@
 require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 
-describe "UNIXSocket#addr" do
-
-  platform_is_not :windows do
+with_feature :unix_socket do
+  describe "UNIXSocket#addr" do
     before :each do
       @path = SocketSpecs.socket_path
       @server = UNIXServer.open(@path)

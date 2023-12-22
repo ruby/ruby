@@ -33,10 +33,6 @@ describe :io_each, shared: true do
       $_.should == "test"
     end
 
-    it "returns self" do
-      @io.send(@method) { |l| l }.should equal(@io)
-    end
-
     it "raises an IOError when self is not readable" do
       -> { IOSpecs.closed_io.send(@method) {} }.should raise_error(IOError)
     end

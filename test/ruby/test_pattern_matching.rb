@@ -1161,7 +1161,7 @@ END
       end
     end
 
-    bug18890 = assert_warning(/(?:.*:[47]: warning: unused literal ignored\n){2}/) do
+    bug18890 = assert_warning(/(?:.*:[47]: warning: possibly useless use of a literal in void context\n){2}/) do
       eval("#{<<~';;;'}")
       proc do |i|
         case i

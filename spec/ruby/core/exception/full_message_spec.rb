@@ -46,6 +46,49 @@ describe "Exception#full_message" do
     full_message[0].should.end_with?("': Some runtime error (RuntimeError)\n")
   end
 
+  describe "includes details about whether an exception was handled" do
+    describe "RuntimeError" do
+      it "should report as unhandled if message is empty" do
+        err = RuntimeError.new("")
+
+        err.full_message.should =~ /unhandled exception/
+        err.full_message(highlight: true).should =~ /unhandled exception/
+        err.full_message(highlight: false).should =~ /unhandled exception/
+      end
+
+      it "should not report as unhandled if the message is not empty" do
+        err = RuntimeError.new("non-empty")
+
+        err.full_message.should !~ /unhandled exception/
+        err.full_message(highlight: true).should !~ /unhandled exception/
+        err.full_message(highlight: false).should !~ /unhandled exception/
+      end
+
+      it "should not report as unhandled if the message is nil" do
+        err = RuntimeError.new(nil)
+
+        err.full_message.should !~ /unhandled exception/
+        err.full_message(highlight: true).should !~ /unhandled exception/
+        err.full_message(highlight: false).should !~ /unhandled exception/
+      end
+
+      it "should not report as unhandled if the message is not specified" do
+        err = RuntimeError.new()
+
+        err.full_message.should !~ /unhandled exception/
+        err.full_message(highlight: true).should !~ /unhandled exception/
+        err.full_message(highlight: false).should !~ /unhandled exception/
+      end
+    end
+
+    describe "generic Error" do
+      it "should not report as unhandled in any event" do
+        StandardError.new("").full_message.should !~ /unhandled exception/
+        StandardError.new("non-empty").full_message.should !~ /unhandled exception/
+      end
+    end
+  end
+
   it "shows the exception class at the end of the first line of the message when the message contains multiple lines" do
     begin
       line = __LINE__; raise "first line\nsecond line"
@@ -107,21 +150,49 @@ describe "Exception#full_message" do
   ruby_version_is "3.2" do
     it "relies on #detailed_message" do
       e = RuntimeError.new("new error")
-      e.define_singleton_method(:detailed_message) { |**opt| "DETAILED MESSAGE" }
+      e.define_singleton_method(:detailed_message) { |**| "DETAILED MESSAGE" }
 
       e.full_message.lines.first.should =~ /DETAILED MESSAGE/
     end
 
-    it "passes all its own keyword arguments to #detailed_message" do
+    it "passes all its own keyword arguments (with :highlight default value and without :order default value) to #detailed_message" do
       e = RuntimeError.new("new error")
-      opt_ = nil
-      e.define_singleton_method(:detailed_message) do |**opt|
-        opt_ = opt
+      options_passed = nil
+      e.define_singleton_method(:detailed_message) do |**options|
+        options_passed = options
         "DETAILED MESSAGE"
       end
 
       e.full_message(foo: "bar")
-      opt_.should == { foo: "bar", highlight: Exception.to_tty? }
+      options_passed.should == { foo: "bar", highlight: Exception.to_tty? }
+    end
+
+    it "converts #detailed_message returned value to String if it isn't a String" do
+      message = Object.new
+      def message.to_str; "DETAILED MESSAGE"; end
+
+      e = RuntimeError.new("new error")
+      e.define_singleton_method(:detailed_message) { |**| message }
+
+      e.full_message.lines.first.should =~ /DETAILED MESSAGE/
+    end
+
+    it "uses class name if #detailed_message returns nil" do
+      e = RuntimeError.new("new error")
+      e.define_singleton_method(:detailed_message) { |**| nil }
+
+      e.full_message(highlight: false).lines.first.should =~ /RuntimeError/
+      e.full_message(highlight: true).lines.first.should =~ /#{Regexp.escape("\e[1;4mRuntimeError\e[m")}/
+    end
+
+    it "uses class name if exception object doesn't respond to #detailed_message" do
+      e = RuntimeError.new("new error")
+      class << e
+        undef :detailed_message
+      end
+
+      e.full_message(highlight: false).lines.first.should =~ /RuntimeError/
+      e.full_message(highlight: true).lines.first.should =~ /#{Regexp.escape("\e[1;4mRuntimeError\e[m")}/
     end
   end
 end

@@ -1273,6 +1273,10 @@ compile_length_enclose_node(EncloseNode* node, regex_t* reg)
     break;
 
   case ENCLOSE_STOP_BACKTRACK:
+    /* Disable POP_STOP_BT optimization for simple repeat under the match cache */
+    /* optimization because the match cache optimization pushes an extra item to */
+    /* the stack and it breaks the assumption for this optimization. */
+#ifndef USE_MATCH_CACHE
     if (IS_ENCLOSE_STOP_BT_SIMPLE_REPEAT(node)) {
       QtfrNode* qn = NQTFR(node->target);
       tlen = compile_length_tree(qn->target, reg);
@@ -1282,8 +1286,11 @@ compile_length_enclose_node(EncloseNode* node, regex_t* reg)
 	  + SIZE_OP_PUSH + tlen + SIZE_OP_POP + SIZE_OP_JUMP;
     }
     else {
+#endif
       len = SIZE_OP_PUSH_STOP_BT + tlen + SIZE_OP_POP_STOP_BT;
+#ifndef USE_MATCH_CACHE
     }
+#endif
     break;
 
   case ENCLOSE_CONDITION:
@@ -1395,6 +1402,10 @@ compile_enclose_node(EncloseNode* node, regex_t* reg)
     break;
 
   case ENCLOSE_STOP_BACKTRACK:
+    /* Disable POP_STOP_BT optimization for simple repeat under the match cache */
+    /* optimization because the match cache optimization pushes an extra item to */
+    /* the stack and it breaks the assumption for this optimization. */
+#ifndef USE_MATCH_CACHE
     if (IS_ENCLOSE_STOP_BT_SIMPLE_REPEAT(node)) {
       QtfrNode* qn = NQTFR(node->target);
       r = compile_tree_n_times(qn->target, qn->lower, reg);
@@ -1413,12 +1424,15 @@ compile_enclose_node(EncloseNode* node, regex_t* reg)
 	 -((int )SIZE_OP_PUSH + len + (int )SIZE_OP_POP + (int )SIZE_OP_JUMP));
     }
     else {
+#endif
       r = add_opcode(reg, OP_PUSH_STOP_BT);
       if (r) return r;
       r = compile_tree(node->target, reg);
       if (r) return r;
       r = add_opcode(reg, OP_POP_STOP_BT);
+#ifndef USE_MATCH_CACHE
     }
+#endif
     break;
 
   case ENCLOSE_CONDITION:
@@ -5715,7 +5729,7 @@ onig_reg_copy(regex_t** nreg, regex_t* oreg)
         goto err_repeat_range;
     }
     if (IS_NOT_NULL(reg->name_table)) {
-      if (IS_NULL(reg->name_table = st_copy(reg->name_table)))
+      if (onig_names_copy(reg, oreg))
         goto err_name_table;
     }
     if (IS_NOT_NULL(reg->chain)) {
@@ -5726,7 +5740,7 @@ onig_reg_copy(regex_t** nreg, regex_t* oreg)
 # undef COPY_FAILED
 
   err_chain:
-    onig_st_free_table(reg->name_table);
+    onig_names_free(reg);
   err_name_table:
     xfree(reg->repeat_range);
   err_repeat_range:

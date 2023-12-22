@@ -187,7 +187,7 @@ VALUE rb_ary_shared_with_p(VALUE lhs, VALUE rhs);
  *     : (int i)                 -> T?
  *     | (int beg, int len)      -> ::Array[T]?
  *     | (Range[int] r)          -> ::Array[T]?
- *     | (ArithmeticSequence as) -> ::Array[T]? # This also raises RagneError.
+ *     | (ArithmeticSequence as) -> ::Array[T]? # This also raises RangeError.
  * end
  * ```
  */

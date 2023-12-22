@@ -140,7 +140,7 @@ class Gem::S3URISigner
   end
 
   def ec2_metadata_credentials_json
-    require "net/http"
+    require_relative "net/http"
     require_relative "request"
     require_relative "request/connection_pools"
     require "json"
@@ -154,11 +154,11 @@ class Gem::S3URISigner
   def ec2_metadata_request(url)
     uri = URI(url)
     @request_pool ||= create_request_pool(uri)
-    request = Gem::Request.new(uri, Net::HTTP::Get, nil, @request_pool)
+    request = Gem::Request.new(uri, Gem::Net::HTTP::Get, nil, @request_pool)
     response = request.fetch
 
     case response
-    when Net::HTTPOK then
+    when Gem::Net::HTTPOK then
       JSON.parse(response.body)
     else
       raise InstanceProfileError.new("Unable to fetch AWS metadata from #{uri}: #{response.message} #{response.code}")

@@ -358,18 +358,18 @@ class TestSetTraceFunc < Test::Unit::TestCase
 
   def test_thread_trace
     events = {:set => [], :add => []}
+    name = "#{self.class}\##{__method__}"
     prc = Proc.new { |event, file, lineno, mid, binding, klass|
-      events[:set] << [event, lineno, mid, klass, :set]
+      events[:set] << [event, lineno, mid, klass, :set] if file == name
     }
     prc = prc # suppress warning
     prc2 = Proc.new { |event, file, lineno, mid, binding, klass|
-      events[:add] << [event, lineno, mid, klass, :add]
+      events[:add] << [event, lineno, mid, klass, :add] if file == name
     }
     prc2 = prc2 # suppress warning
 
     th = Thread.new do
       th = Thread.current
-      name = "#{self.class}\##{__method__}"
       eval <<-EOF.gsub(/^.*?: /, ""), nil, name
        1: th.set_trace_func(prc)
        2: th.add_trace_func(prc2)
@@ -908,6 +908,55 @@ CODE
   def test_tracepoint_attr
     c = Class.new do
       attr_accessor :x
+      alias y x
+      alias y= x=
+    end
+    obj = c.new
+
+    ar_meth = obj.method(:x)
+    aw_meth = obj.method(:x=)
+    aar_meth = obj.method(:y)
+    aaw_meth = obj.method(:y=)
+    events = []
+    trace = TracePoint.new(:c_call, :c_return){|tp|
+      next if !target_thread?
+      next if tp.path != __FILE__
+      next if tp.method_id == :call
+      case tp.event
+      when :c_call
+        assert_raise(RuntimeError) {tp.return_value}
+        events << [tp.event, tp.method_id, tp.callee_id]
+      when :c_return
+        events << [tp.event, tp.method_id, tp.callee_id, tp.return_value]
+      end
+    }
+    test_proc = proc do
+      obj.x = 1
+      obj.x
+      obj.y = 2
+      obj.y
+      aw_meth.call(1)
+      ar_meth.call
+      aaw_meth.call(2)
+      aar_meth.call
+    end
+    test_proc.call # populate call caches
+    trace.enable(&test_proc)
+    expected = [
+      [:c_call, :x=, :x=],
+      [:c_return, :x=, :x=, 1],
+      [:c_call, :x, :x],
+      [:c_return, :x, :x, 1],
+      [:c_call, :x=, :y=],
+      [:c_return, :x=, :y=, 2],
+      [:c_call, :x, :y],
+      [:c_return, :x, :y, 2],
+    ]
+    assert_equal(expected*2, events)
+  end
+
+  def test_tracepoint_struct
+    c = Struct.new(:x) do
       alias y x
       alias y= x=
     end
@@ -1923,7 +1972,11 @@ CODE
 
   def tp_return_value mid
     ary = []
-    TracePoint.new(:return, :b_return){|tp| next if !target_thread?; ary << [tp.event, tp.method_id, tp.return_value]}.enable{
+    TracePoint.new(:return, :b_return){|tp|
+      next if !target_thread?
+      next if tp.path != __FILE__
+      ary << [tp.event, tp.method_id, tp.return_value]
+    }.enable{
       send mid
     }
     ary.pop # last b_return event is not required.
@@ -2132,7 +2185,7 @@ CODE
     q = Thread::Queue.new
     t = Thread.new{
       Thread.current.add_trace_func proc{|ev, file, line, *args|
-        events << [ev, line]
+        events << [ev, line] if file == __FILE__
       } # do not stop trace. They will be stopped at Thread termination.
       q.push 1
       _x = 1
@@ -2404,6 +2457,18 @@ CODE
       end
     end
     assert_equal [:tp1, 1, 2, :tp2, 3], events
+  end
+
+  def test_multiple_enable
+    ary = []
+    trace = TracePoint.new(:call) do |tp|
+      ary << tp.method_id
+    end
+    trace.enable
+    trace.enable
+    foo
+    trace.disable
+    assert_equal(1, ary.count(:foo), '[Bug #19114]')
   end
 
   def test_multiple_tracepoints_same_bmethod

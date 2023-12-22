@@ -108,7 +108,7 @@ impl JITState {
         JITState {
             iseq: blockid.iseq,
             starting_insn_idx: blockid.idx,
-            starting_ctx: starting_ctx.clone(),
+            starting_ctx,
             output_ptr,
             insn_idx: 0,
             opcode: 0,
@@ -151,7 +151,7 @@ impl JITState {
     }
 
     pub fn get_starting_ctx(&self) -> Context {
-        self.starting_ctx.clone()
+        self.starting_ctx
     }
 
     pub fn get_arg(&self, arg_idx: isize) -> VALUE {
@@ -245,13 +245,13 @@ impl JITState {
     fn perf_symbol_range_start(&self, asm: &mut Assembler, symbol_name: &str) {
         let symbol_name = symbol_name.to_string();
         let syms = self.perf_map.clone();
-        asm.pos_marker(move |start| syms.borrow_mut().push((start, None, symbol_name.clone())));
+        asm.pos_marker(move |start, _| syms.borrow_mut().push((start, None, symbol_name.clone())));
     }
 
     /// Mark the end address of a symbol to be reported to perf
     fn perf_symbol_range_end(&self, asm: &mut Assembler) {
         let syms = self.perf_map.clone();
-        asm.pos_marker(move |end| {
+        asm.pos_marker(move |end, _| {
             if let Some((_, ref mut end_store, _)) = syms.borrow_mut().last_mut() {
                 assert_eq!(None, *end_store);
                 *end_store = Some(end);
@@ -362,9 +362,13 @@ fn jit_prepare_routine_call(
 /// Record the current codeblock write position for rewriting into a jump into
 /// the outlined block later. Used to implement global code invalidation.
 fn record_global_inval_patch(asm: &mut Assembler, outline_block_target_pos: CodePtr) {
+    // We add a padding before pos_marker so that the previous patch will not overlap this.
+    // jump_to_next_insn() puts a patch point at the end of the block in fallthrough cases.
+    // In the fallthrough case, the next block should start with the same Context, so the
+    // patch is fine, but it should not overlap another patch.
     asm.pad_inval_patch();
-    asm.pos_marker(move |code_ptr| {
-        CodegenGlobals::push_global_inval_patch(code_ptr, outline_block_target_pos);
+    asm.pos_marker(move |code_ptr, cb| {
+        CodegenGlobals::push_global_inval_patch(code_ptr, outline_block_target_pos, cb);
     });
 }
 
@@ -410,7 +414,7 @@ fn verify_ctx(jit: &JITState, ctx: &Context) {
                 }
             }
             TempMappingKind::MapToLocal => {
-                let local_idx: u8 = learned_mapping.get_local_idx().into();
+                let local_idx: u8 = learned_mapping.get_local_idx();
                 let local_val = jit.peek_at_local(local_idx.into());
                 if local_val != stack_val {
                     panic!(
@@ -550,7 +554,7 @@ fn gen_exit(exit_pc: *mut VALUE, asm: &mut Assembler) {
 pub fn gen_outlined_exit(exit_pc: *mut VALUE, ctx: &Context, ocb: &mut OutlinedCb) -> Option<CodePtr> {
     let mut cb = ocb.unwrap();
     let mut asm = Assembler::new();
-    asm.ctx = ctx.clone();
+    asm.ctx = *ctx;
     asm.set_reg_temps(ctx.get_reg_temps());
 
     gen_exit(exit_pc, &mut asm);
@@ -599,7 +603,7 @@ pub fn jit_ensure_block_entry_exit(jit: &mut JITState, asm: &mut Assembler, ocb:
     // If we're compiling the first instruction in the block.
     if jit.insn_idx == jit.starting_insn_idx {
         // Generate the exit with the cache in Assembler.
-        let side_exit_context = SideExitContext::new(jit.pc, block_starting_context.clone());
+        let side_exit_context = SideExitContext::new(jit.pc, *block_starting_context);
         let entry_exit = asm.get_side_exit(&side_exit_context, None, ocb);
         jit.block_entry_exit = Some(entry_exit?);
     } else {
@@ -770,8 +774,8 @@ pub fn gen_entry_prologue(
             rb_yjit_set_exception_return as *mut u8,
             vec![
                 CFP,
-                Opnd::const_ptr(CodegenGlobals::get_leave_exit_code().raw_ptr()),
-                Opnd::const_ptr(CodegenGlobals::get_leave_exception_code().raw_ptr()),
+                Opnd::const_ptr(CodegenGlobals::get_leave_exit_code().raw_ptr(cb)),
+                Opnd::const_ptr(CodegenGlobals::get_leave_exception_code().raw_ptr(cb)),
             ],
         );
     } else {
@@ -779,7 +783,7 @@ pub fn gen_entry_prologue(
         // on the entry frame. See [jit_compile] for details.
         asm.mov(
             Opnd::mem(64, CFP, RUBY_OFFSET_CFP_JIT_RETURN),
-            Opnd::const_ptr(CodegenGlobals::get_leave_exit_code().raw_ptr()),
+            Opnd::const_ptr(CodegenGlobals::get_leave_exit_code().raw_ptr(cb)),
         );
     }
 
@@ -843,7 +847,7 @@ fn jump_to_next_insn(
 ) -> Option<()> {
     // Reset the depth since in current usages we only ever jump to to
     // chain_depth > 0 from the same instruction.
-    let mut reset_depth = asm.ctx.clone();
+    let mut reset_depth = asm.ctx;
     reset_depth.reset_chain_depth();
 
     let jump_block = BlockId {
@@ -853,10 +857,10 @@ fn jump_to_next_insn(
 
     // We are at the end of the current instruction. Record the boundary.
     if jit.record_boundary_patch_point {
+        jit.record_boundary_patch_point = false;
         let exit_pc = unsafe { jit.pc.offset(insn_len(jit.opcode).try_into().unwrap()) };
         let exit_pos = gen_outlined_exit(exit_pc, &reset_depth, ocb);
         record_global_inval_patch(asm, exit_pos?);
-        jit.record_boundary_patch_point = false;
     }
 
     // Generate the jump instruction
@@ -897,7 +901,7 @@ pub fn gen_single_block(
     let mut insn_idx: IseqIdx = blockid.idx;
 
     // Initialize a JIT state object
-    let mut jit = JITState::new(blockid, ctx.clone(), cb.get_write_ptr(), ec);
+    let mut jit = JITState::new(blockid, ctx, cb.get_write_ptr(), ec);
     jit.iseq = blockid.iseq;
 
     // Create a backend assembler instance
@@ -2450,41 +2454,33 @@ fn gen_setinstancevariable(
         None
     };
 
-    // Get the next shape information if it needs transition
+    // The current shape doesn't contain this iv, we need to transition to another shape.
     let new_shape = if !shape_too_complex && receiver_t_object && ivar_index.is_none() {
-        let shape = comptime_receiver.shape_of();
+        let current_shape = comptime_receiver.shape_of();
+        let next_shape = unsafe { rb_shape_get_next(current_shape, comptime_receiver, ivar_name) };
+        let next_shape_id = unsafe { rb_shape_id(next_shape) };
 
-        let current_capacity = unsafe { (*shape).capacity };
-
-        // If the object doesn't have the capacity to store the IV,
-        // then we'll need to allocate it.
-        let needs_extension = unsafe { (*shape).next_iv_index >= current_capacity };
-
-        // We can write to the object, but we need to transition the shape
-        let ivar_index = unsafe { (*shape).next_iv_index } as usize;
-
-        let capa_shape = if needs_extension {
-            // We need to add an extended table to the object
-            // First, create an outgoing transition that increases the
-            // capacity
-            Some(unsafe { rb_shape_transition_shape_capa(shape) })
+        // If the VM ran out of shapes, or this class generated too many leaf,
+        // it may be de-optimized into OBJ_TOO_COMPLEX_SHAPE (hash-table).
+        if next_shape_id == OBJ_TOO_COMPLEX_SHAPE_ID {
+            Some((next_shape_id, None, 0_usize))
         } else {
-            None
-        };
+            let current_capacity = unsafe { (*current_shape).capacity };
 
-        let dest_shape = if let Some(capa_shape) = capa_shape {
-            unsafe { rb_shape_get_next(capa_shape, comptime_receiver, ivar_name) }
-        } else {
-            unsafe { rb_shape_get_next(shape, comptime_receiver, ivar_name) }
-        };
+            // If the new shape has a different capacity, or is TOO_COMPLEX, we'll have to
+            // reallocate it.
+            let needs_extension = unsafe { (*current_shape).capacity != (*next_shape).capacity };
 
-        let new_shape_id = unsafe { rb_shape_id(dest_shape) };
-        let needs_extension = if needs_extension {
-            Some((current_capacity, unsafe { (*dest_shape).capacity }))
-        } else {
-            None
-        };
-        Some((new_shape_id, needs_extension, ivar_index))
+            // We can write to the object, but we need to transition the shape
+            let ivar_index = unsafe { (*current_shape).next_iv_index } as usize;
+
+            let needs_extension = if needs_extension {
+                Some((current_capacity, unsafe { (*next_shape).capacity }))
+            } else {
+                None
+            };
+            Some((next_shape_id, needs_extension, ivar_index))
+        }
     } else {
         None
     };
@@ -2688,7 +2684,7 @@ fn gen_definedivar(
         jit_prepare_routine_call(jit, asm);
 
         // Call rb_ivar_defined(recv, ivar_name)
-        let def_result = asm.ccall(rb_ivar_defined as *const u8, vec![recv.into(), ivar_name.into()]);
+        let def_result = asm.ccall(rb_ivar_defined as *const u8, vec![recv, ivar_name.into()]);
 
         // if (rb_ivar_defined(recv, ivar_name)) {
         //  val = pushval;
@@ -2748,7 +2744,6 @@ fn gen_checktype(
     if let RUBY_T_STRING | RUBY_T_ARRAY | RUBY_T_HASH = type_val {
         let val_type = asm.ctx.get_opnd_type(StackOpnd(0));
         let val = asm.stack_pop(1);
-        let val = asm.load(val);
 
         // Check if we know from type information
         match val_type.known_value_type() {
@@ -2766,6 +2761,7 @@ fn gen_checktype(
 
         let ret = asm.new_label("ret");
 
+        let val = asm.load(val);
         if !val_type.is_heap() {
             // if (SPECIAL_CONST_P(val)) {
             // Return Qfalse via REG1 if not on heap
@@ -3928,7 +3924,7 @@ fn gen_branchif(
         asm.test(val_opnd, Opnd::Imm(!Qnil.as_i64()));
 
         // Generate the branch instructions
-        let ctx = asm.ctx.clone();
+        let ctx = asm.ctx;
         gen_branch(
             jit,
             asm,
@@ -3984,7 +3980,7 @@ fn gen_branchunless(
         asm.test(val_opnd, not_qnil.into());
 
         // Generate the branch instructions
-        let ctx = asm.ctx.clone();
+        let ctx = asm.ctx;
         gen_branch(
             jit,
             asm,
@@ -4037,7 +4033,7 @@ fn gen_branchnil(
         // Test if the value is Qnil
         asm.cmp(val_opnd, Opnd::UImm(Qnil.into()));
         // Generate the branch instructions
-        let ctx = asm.ctx.clone();
+        let ctx = asm.ctx;
         gen_branch(
             jit,
             asm,
@@ -4953,6 +4949,31 @@ fn jit_rb_ary_empty_p(
     return true;
 }
 
+// Codegen for rb_ary_length()
+fn jit_rb_ary_length(
+    _jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    let array_opnd = asm.stack_pop(1);
+    let array_reg = asm.load(array_opnd);
+    let len_opnd = get_array_len(asm, array_reg);
+
+    // Convert the length to a fixnum
+    let shifted_val = asm.lshift(len_opnd, Opnd::UImm(1));
+    let out_val = asm.or(shifted_val, Opnd::UImm(RUBY_FIXNUM_FLAG as u64));
+
+    let out_opnd = asm.stack_push(Type::Fixnum);
+    asm.store(out_opnd, out_val);
+
+    return true;
+}
+
 fn jit_rb_ary_push(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -5036,7 +5057,7 @@ fn jit_obj_respond_to(
         (METHOD_VISI_UNDEF, _) => {
             // No method, we can return false given respond_to_missing? hasn't been overridden.
             // In the future, we might want to jit the call to respond_to_missing?
-            if !assume_method_basic_definition(jit, asm, ocb, recv_class, ID!(respond_to_missing).into()) {
+            if !assume_method_basic_definition(jit, asm, ocb, recv_class, ID!(respond_to_missing)) {
                 return false;
             }
             Qfalse
@@ -5141,8 +5162,13 @@ fn jit_thread_s_current(
 // Check if we know how to codegen for a particular cfunc method
 fn lookup_cfunc_codegen(def: *const rb_method_definition_t) -> Option<MethodGenFn> {
     let method_serial = unsafe { get_def_method_serial(def) };
+    let table = unsafe { METHOD_CODEGEN_TABLE.as_ref().unwrap() };
 
-    CodegenGlobals::look_up_codegen_method(method_serial)
+    let option_ref = table.get(&method_serial);
+    match option_ref {
+        None => None,
+        Some(&mgf) => Some(mgf), // Deref
+    }
 }
 
 // Is anyone listening for :c_call and :c_return event currently?
@@ -5215,13 +5241,12 @@ struct ControlFrame {
 //   * Provided sp should point to the new frame's sp, immediately following locals and the environment
 //   * At entry, CFP points to the caller (not callee) frame
 //   * At exit, ec->cfp is updated to the pushed CFP
-//   * CFP and SP registers are updated only if set_sp_cfp is set
+//   * SP register is updated only if frame.iseq is set
 //   * Stack overflow is not checked (should be done by the caller)
 //   * Interrupts are not checked (should be done by the caller)
 fn gen_push_frame(
     jit: &mut JITState,
     asm: &mut Assembler,
-    set_sp_cfp: bool, // if true CFP and SP will be switched to the callee
     frame: ControlFrame,
 ) {
     let sp = frame.sp;
@@ -5313,7 +5338,7 @@ fn gen_push_frame(
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_SELF), frame.recv);
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_BLOCK_CODE), 0.into());
 
-    if set_sp_cfp {
+    if frame.iseq.is_some() {
         // Spill stack temps to let the callee use them (must be done before changing the SP register)
         asm.spill_temps();
 
@@ -5323,16 +5348,6 @@ fn gen_push_frame(
     }
     let ep = asm.sub(sp, SIZEOF_VALUE.into());
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_EP), ep);
-
-    let new_cfp = asm.lea(cfp_opnd(0));
-    if set_sp_cfp {
-        asm_comment!(asm, "switch to new CFP");
-        asm.mov(CFP, new_cfp);
-        asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
-    } else {
-        asm_comment!(asm, "set ec->cfp");
-        asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), new_cfp);
-    }
 }
 
 fn gen_send_cfunc(
@@ -5401,6 +5416,9 @@ fn gen_send_cfunc(
         return None;
     }
 
+    // Increment total cfunc send count
+    gen_counter_incr(asm, Counter::num_send_cfunc);
+
     // Delegate to codegen for C methods if we have it.
     if kw_arg.is_null() && flags & VM_CALL_OPT_SEND == 0 && flags & VM_CALL_ARGS_SPLAT == 0 && (cfunc_argc == -1 || argc == cfunc_argc) {
         let codegen_p = lookup_cfunc_codegen(unsafe { (*cme).def });
@@ -5408,12 +5426,39 @@ fn gen_send_cfunc(
         if let Some(known_cfunc_codegen) = codegen_p {
             if known_cfunc_codegen(jit, asm, ocb, ci, cme, block, argc, recv_known_klass) {
                 assert_eq!(expected_stack_after, asm.ctx.get_stack_size() as i32);
+                gen_counter_incr(asm, Counter::num_send_cfunc_inline);
                 // cfunc codegen generated code. Terminate the block so
                 // there isn't multiple calls in the same block.
                 jump_to_next_insn(jit, asm, ocb);
                 return Some(EndBlock);
             }
         }
+    }
+
+    // Log the name of the method we're calling to,
+    // note that we intentionally don't do this for inlined cfuncs
+    if get_option!(gen_stats) {
+        // TODO: extract code to get method name string into its own function
+
+        // Assemble the method name string
+        let mid = unsafe { vm_ci_mid(ci) };
+        let class_name = if recv_known_klass != ptr::null() {
+            unsafe { cstr_to_rust_string(rb_class2name(*recv_known_klass)) }.unwrap()
+        } else {
+            "Unknown".to_string()
+        };
+        let method_name = if mid != 0 {
+            unsafe { cstr_to_rust_string(rb_id2name(mid)) }.unwrap()
+        } else {
+            "Unknown".to_string()
+        };
+        let name_str = format!("{}#{}", class_name, method_name);
+
+        // Get an index for this cfunc name
+        let cfunc_idx = get_cfunc_idx(&name_str);
+
+        // Increment the counter for this cfunc
+        asm.ccall(incr_cfunc_counter as *const u8, vec![cfunc_idx.into()]);
     }
 
     // Check for interrupts
@@ -5434,7 +5479,6 @@ fn gen_send_cfunc(
     } else {
         argc - kw_arg_num + 1
     };
-
 
     // If the argument count doesn't match
     if cfunc_argc >= 0 && cfunc_argc != passed_argc && flags & VM_CALL_ARGS_SPLAT == 0 {
@@ -5531,7 +5575,7 @@ fn gen_send_cfunc(
         frame_type |= VM_FRAME_FLAG_CFRAME_KW
     }
 
-    gen_push_frame(jit, asm, false, ControlFrame {
+    gen_push_frame(jit, asm, ControlFrame {
         frame_type,
         specval,
         cme,
@@ -5544,6 +5588,10 @@ fn gen_send_cfunc(
         },
         iseq: None,
     });
+
+    asm_comment!(asm, "set ec->cfp");
+    let new_cfp = asm.lea(Opnd::mem(64, CFP, -(RUBY_SIZEOF_CONTROL_FRAME as i32)));
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), new_cfp);
 
     if !kw_arg.is_null() {
         // Build a hash from all kwargs passed
@@ -5672,15 +5720,15 @@ fn get_array_ptr(asm: &mut Assembler, array_reg: Opnd) -> Opnd {
 }
 
 /// Pushes arguments from an array to the stack. Differs from push splat because
-/// the array can have items left over.
-fn move_rest_args_to_stack(array: Opnd, num_args: u32, asm: &mut Assembler) {
-    asm_comment!(asm, "move_rest_args_to_stack");
+/// the array can have items left over. Array is assumed to be T_ARRAY without guards.
+fn copy_splat_args_for_rest_callee(array: Opnd, num_args: u32, asm: &mut Assembler) {
+    asm_comment!(asm, "copy_splat_args_for_rest_callee");
 
     let array_len_opnd = get_array_len(asm, array);
 
-    asm_comment!(asm, "Side exit if length is less than required");
+    asm_comment!(asm, "guard splat array large enough");
     asm.cmp(array_len_opnd, num_args.into());
-    asm.jl(Target::side_exit(Counter::guard_send_iseq_has_rest_and_splat_not_equal));
+    asm.jl(Target::side_exit(Counter::guard_send_iseq_has_rest_and_splat_too_few));
 
     // Unused operands cause the backend to panic
     if num_args == 0 {
@@ -5841,6 +5889,31 @@ fn gen_send_bmethod(
 
     let frame_type = VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_BMETHOD | VM_FRAME_FLAG_LAMBDA;
     gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, Some(capture.ep), cme, block, flags, argc, None)
+}
+
+/// Return the ISEQ's return value if it consists of only putnil/putobject and leave.
+fn iseq_get_return_value(iseq: IseqPtr) -> Option<VALUE> {
+    // Expect only two instructions and one possible operand
+    let iseq_size = unsafe { get_iseq_encoded_size(iseq) };
+    if !(2..=3).contains(&iseq_size) {
+        return None;
+    }
+
+    // Get the first two instructions
+    let first_insn = iseq_opcode_at_idx(iseq, 0);
+    let second_insn = iseq_opcode_at_idx(iseq, insn_len(first_insn as usize));
+
+    // Extract the return value if known
+    if second_insn != YARVINSN_leave {
+        return None;
+    }
+    match first_insn {
+        YARVINSN_putnil => Some(Qnil),
+        YARVINSN_putobject => unsafe { Some(*rb_iseq_pc_at_idx(iseq, 1)) },
+        YARVINSN_putobject_INT2FIX_0_ => Some(VALUE::fixnum_from_usize(0)),
+        YARVINSN_putobject_INT2FIX_1_ => Some(VALUE::fixnum_from_usize(1)),
+        _ => None,
+    }
 }
 
 fn gen_send_iseq(
@@ -6043,9 +6116,14 @@ fn gen_send_iseq(
             unsafe { rb_yjit_array_len(array) as u32}
         };
 
-        if opt_num == 0 && required_num != array_length as i32 + argc - 1 && !iseq_has_rest {
-            gen_counter_incr(asm, Counter::send_iseq_splat_arity_error);
-            return None;
+        // Arity check accounting for size of the splat. When callee has rest parameters, we insert
+        // runtime guards later in copy_splat_args_for_rest_callee()
+        if !iseq_has_rest {
+            let supplying = argc - 1 + array_length as i32;
+            if (required_num..=required_num + opt_num).contains(&supplying) == false {
+                gen_counter_incr(asm, Counter::send_iseq_splat_arity_error);
+                return None;
+            }
         }
 
         if iseq_has_rest && opt_num > 0 {
@@ -6103,8 +6181,6 @@ fn gen_send_iseq(
     if let (None, Some(builtin_info), true, false) = (block, builtin_func, builtin_attrs & BUILTIN_ATTR_LEAF != 0, opt_send_call) {
         let builtin_argc = unsafe { (*builtin_info).argc };
         if builtin_argc + 1 < (C_ARG_OPNDS.len() as i32) {
-            asm_comment!(asm, "inlined leaf builtin");
-
             // We pop the block arg without using it because:
             //  - the builtin is leaf, so it promises to not `yield`.
             //  - no leaf builtins have block param at the time of writing, and
@@ -6116,6 +6192,9 @@ fn gen_send_iseq(
                 }
                 asm.stack_pop(1);
             }
+
+            asm_comment!(asm, "inlined leaf builtin");
+            gen_counter_incr(asm, Counter::num_send_leaf_builtin);
 
             // Skip this if it doesn't trigger GC
             if builtin_attrs & BUILTIN_ATTR_NO_GC == 0 {
@@ -6143,8 +6222,27 @@ fn gen_send_iseq(
             // Note: assuming that the leaf builtin doesn't change local variables here.
             // Seems like a safe assumption.
 
-            return Some(KeepCompiling);
+            // Let guard chains share the same successor
+            jump_to_next_insn(jit, asm, ocb);
+            return Some(EndBlock);
         }
+    }
+
+    // Inline simple ISEQs whose return value is known at compile time
+    if let (Some(value), None, false) = (iseq_get_return_value(iseq), block_arg_type, opt_send_call) {
+        asm_comment!(asm, "inlined simple ISEQ");
+        gen_counter_incr(asm, Counter::num_send_inline);
+
+        // Pop receiver and arguments
+        asm.stack_pop(argc as usize + if captured_opnd.is_some() { 0 } else { 1 });
+
+        // Push the return value
+        let stack_ret = asm.stack_push(Type::from(value));
+        asm.mov(stack_ret, value.into());
+
+        // Let guard chains share the same successor
+        jump_to_next_insn(jit, asm, ocb);
+        return Some(EndBlock);
     }
 
     // Stack overflow check
@@ -6271,8 +6369,8 @@ fn gen_send_iseq(
                 let diff: u32 = (required_num - non_rest_arg_count + opts_filled)
                     .try_into().unwrap();
 
-                // This moves the arguments onto the stack. But it doesn't modify the array.
-                move_rest_args_to_stack(array, diff, asm);
+                // Copy required arguments to the stack without modifying the array
+                copy_splat_args_for_rest_callee(array, diff, asm);
 
                 // We will now slice the array to give us a new array of the correct size
                 let sliced = asm.ccall(rb_yjit_rb_ary_subseq_length as *const u8, vec![array, Opnd::UImm(diff as u64)]);
@@ -6584,7 +6682,7 @@ fn gen_send_iseq(
     };
 
     // Setup the new frame
-    gen_push_frame(jit, asm, true, ControlFrame {
+    gen_push_frame(jit, asm, ControlFrame {
         frame_type,
         specval,
         cme,
@@ -6628,7 +6726,7 @@ fn gen_send_iseq(
     // Pop arguments and receiver in return context and
     // mark it as a continuation of gen_leave()
     let mut return_asm = Assembler::new();
-    return_asm.ctx = asm.ctx.clone();
+    return_asm.ctx = asm.ctx;
     return_asm.stack_pop(sp_offset.try_into().unwrap());
     return_asm.ctx.set_sp_offset(0); // We set SP on the caller's frame above
     return_asm.ctx.reset_chain_depth();
@@ -6645,6 +6743,12 @@ fn gen_send_iseq(
         None,
         BranchGenFn::JITReturn,
     );
+
+    // ec->cfp is updated after cfp->jit_return for rb_profile_frames() safety
+    asm_comment!(asm, "switch to new CFP");
+    let new_cfp = asm.sub(CFP, RUBY_SIZEOF_CONTROL_FRAME.into());
+    asm.mov(CFP, new_cfp);
+    asm.store(Opnd::mem(64, EC, RUBY_OFFSET_EC_CFP), CFP);
 
     // Directly jump to the entry point of the callee
     gen_direct_jump(
@@ -6998,6 +7102,8 @@ fn gen_send_general(
     let recv_idx = argc + if flags & VM_CALL_ARGS_BLOCKARG != 0 { 1 } else { 0 };
     let comptime_recv = jit.peek_at_stack(&asm.ctx, recv_idx as isize);
     let comptime_recv_klass = comptime_recv.class_of();
+    assert_eq!(RUBY_T_CLASS, comptime_recv_klass.builtin_type(),
+        "objects visible to ruby code should have a T_CLASS in their klass field");
 
     // Points to the receiver operand on the stack
     let recv = asm.stack_opnd(recv_idx);
@@ -8676,6 +8782,85 @@ type MethodGenFn = fn(
     known_recv_class: *const VALUE,
 ) -> bool;
 
+/// Methods for generating code for hardcoded (usually C) methods
+static mut METHOD_CODEGEN_TABLE: Option<HashMap<usize, MethodGenFn>> = None;
+
+/// Register codegen functions for some Ruby core methods
+pub fn yjit_reg_method_codegen_fns() {
+    unsafe {
+        assert!(METHOD_CODEGEN_TABLE.is_none());
+        METHOD_CODEGEN_TABLE = Some(HashMap::default());
+
+        // Specialization for C methods. See yjit_reg_method() for details.
+        yjit_reg_method(rb_cBasicObject, "!", jit_rb_obj_not);
+
+        yjit_reg_method(rb_cNilClass, "nil?", jit_rb_true);
+        yjit_reg_method(rb_mKernel, "nil?", jit_rb_false);
+        yjit_reg_method(rb_mKernel, "is_a?", jit_rb_kernel_is_a);
+        yjit_reg_method(rb_mKernel, "kind_of?", jit_rb_kernel_is_a);
+        yjit_reg_method(rb_mKernel, "instance_of?", jit_rb_kernel_instance_of);
+
+        yjit_reg_method(rb_cBasicObject, "==", jit_rb_obj_equal);
+        yjit_reg_method(rb_cBasicObject, "equal?", jit_rb_obj_equal);
+        yjit_reg_method(rb_cBasicObject, "!=", jit_rb_obj_not_equal);
+        yjit_reg_method(rb_mKernel, "eql?", jit_rb_obj_equal);
+        yjit_reg_method(rb_cModule, "==", jit_rb_obj_equal);
+        yjit_reg_method(rb_cModule, "===", jit_rb_mod_eqq);
+        yjit_reg_method(rb_cSymbol, "==", jit_rb_obj_equal);
+        yjit_reg_method(rb_cSymbol, "===", jit_rb_obj_equal);
+        yjit_reg_method(rb_cInteger, "==", jit_rb_int_equal);
+        yjit_reg_method(rb_cInteger, "===", jit_rb_int_equal);
+
+        yjit_reg_method(rb_cInteger, "/", jit_rb_int_div);
+        yjit_reg_method(rb_cInteger, "<<", jit_rb_int_lshift);
+        yjit_reg_method(rb_cInteger, "[]", jit_rb_int_aref);
+
+        yjit_reg_method(rb_cString, "empty?", jit_rb_str_empty_p);
+        yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
+        yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
+        yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
+        yjit_reg_method(rb_cString, "getbyte", jit_rb_str_getbyte);
+        yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
+        yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
+
+        yjit_reg_method(rb_cArray, "empty?", jit_rb_ary_empty_p);
+        yjit_reg_method(rb_cArray, "length", jit_rb_ary_length);
+        yjit_reg_method(rb_cArray, "size", jit_rb_ary_length);
+        yjit_reg_method(rb_cArray, "<<", jit_rb_ary_push);
+
+        yjit_reg_method(rb_mKernel, "respond_to?", jit_obj_respond_to);
+        yjit_reg_method(rb_mKernel, "block_given?", jit_rb_f_block_given_p);
+
+        yjit_reg_method(rb_singleton_class(rb_cThread), "current", jit_thread_s_current);
+    }
+}
+
+// Register a specialized codegen function for a particular method. Note that
+// the if the function returns true, the code it generates runs without a
+// control frame and without interrupt checks. To avoid creating observable
+// behavior changes, the codegen function should only target simple code paths
+// that do not allocate and do not make method calls.
+fn yjit_reg_method(klass: VALUE, mid_str: &str, gen_fn: MethodGenFn) {
+    let id_string = std::ffi::CString::new(mid_str).expect("couldn't convert to CString!");
+    let mid = unsafe { rb_intern(id_string.as_ptr()) };
+    let me = unsafe { rb_method_entry_at(klass, mid) };
+
+    if me.is_null() {
+        panic!("undefined optimized method!: {mid_str}");
+    }
+
+    // For now, only cfuncs are supported
+    //RUBY_ASSERT(me && me->def);
+    //RUBY_ASSERT(me->def->type == VM_METHOD_TYPE_CFUNC);
+
+    let method_serial = unsafe {
+        let def = (*me).def;
+        get_def_method_serial(def)
+    };
+
+    unsafe { METHOD_CODEGEN_TABLE.as_mut().unwrap().insert(method_serial, gen_fn); }
+}
+
 /// Global state needed for code generation
 pub struct CodegenGlobals {
     /// Inline code block (fast path)
@@ -8706,9 +8891,6 @@ pub struct CodegenGlobals {
     /// For implementing global code invalidation
     global_inval_patches: Vec<CodepagePatch>,
 
-    // Methods for generating code for hardcoded (usually C) methods
-    method_codegen_table: HashMap<usize, MethodGenFn>,
-
     /// Page indexes for outlined code that are not associated to any ISEQ.
     ocb_pages: Vec<usize>,
 }
@@ -8729,7 +8911,6 @@ impl CodegenGlobals {
     pub fn init() {
         // Executable memory and code page size in bytes
         let mem_size = get_option!(exec_mem_size);
-
 
         #[cfg(not(test))]
         let (mut cb, mut ocb) = {
@@ -8792,7 +8973,7 @@ impl CodegenGlobals {
         cb.mark_all_executable();
         ocb.unwrap().mark_all_executable();
 
-        let mut codegen_globals = CodegenGlobals {
+        let codegen_globals = CodegenGlobals {
             inline_cb: cb,
             outlined_cb: ocb,
             leave_exit_code,
@@ -8802,94 +8983,12 @@ impl CodegenGlobals {
             branch_stub_hit_trampoline,
             entry_stub_hit_trampoline,
             global_inval_patches: Vec::new(),
-            method_codegen_table: HashMap::new(),
             ocb_pages,
         };
-
-        // Register the method codegen functions
-        codegen_globals.reg_method_codegen_fns();
 
         // Initialize the codegen globals instance
         unsafe {
             CODEGEN_GLOBALS = Some(codegen_globals);
-        }
-    }
-
-    // Register a specialized codegen function for a particular method. Note that
-    // the if the function returns true, the code it generates runs without a
-    // control frame and without interrupt checks. To avoid creating observable
-    // behavior changes, the codegen function should only target simple code paths
-    // that do not allocate and do not make method calls.
-    fn yjit_reg_method(&mut self, klass: VALUE, mid_str: &str, gen_fn: MethodGenFn) {
-        let id_string = std::ffi::CString::new(mid_str).expect("couldn't convert to CString!");
-        let mid = unsafe { rb_intern(id_string.as_ptr()) };
-        let me = unsafe { rb_method_entry_at(klass, mid) };
-
-        if me.is_null() {
-            panic!("undefined optimized method!");
-        }
-
-        // For now, only cfuncs are supported
-        //RUBY_ASSERT(me && me->def);
-        //RUBY_ASSERT(me->def->type == VM_METHOD_TYPE_CFUNC);
-
-        let method_serial = unsafe {
-            let def = (*me).def;
-            get_def_method_serial(def)
-        };
-
-        self.method_codegen_table.insert(method_serial, gen_fn);
-    }
-
-    /// Register codegen functions for some Ruby core methods
-    fn reg_method_codegen_fns(&mut self) {
-        unsafe {
-            // Specialization for C methods. See yjit_reg_method() for details.
-            self.yjit_reg_method(rb_cBasicObject, "!", jit_rb_obj_not);
-
-            self.yjit_reg_method(rb_cNilClass, "nil?", jit_rb_true);
-            self.yjit_reg_method(rb_mKernel, "nil?", jit_rb_false);
-            self.yjit_reg_method(rb_mKernel, "is_a?", jit_rb_kernel_is_a);
-            self.yjit_reg_method(rb_mKernel, "kind_of?", jit_rb_kernel_is_a);
-            self.yjit_reg_method(rb_mKernel, "instance_of?", jit_rb_kernel_instance_of);
-
-            self.yjit_reg_method(rb_cBasicObject, "==", jit_rb_obj_equal);
-            self.yjit_reg_method(rb_cBasicObject, "equal?", jit_rb_obj_equal);
-            self.yjit_reg_method(rb_cBasicObject, "!=", jit_rb_obj_not_equal);
-            self.yjit_reg_method(rb_mKernel, "eql?", jit_rb_obj_equal);
-            self.yjit_reg_method(rb_cModule, "==", jit_rb_obj_equal);
-            self.yjit_reg_method(rb_cModule, "===", jit_rb_mod_eqq);
-            self.yjit_reg_method(rb_cSymbol, "==", jit_rb_obj_equal);
-            self.yjit_reg_method(rb_cSymbol, "===", jit_rb_obj_equal);
-            self.yjit_reg_method(rb_cInteger, "==", jit_rb_int_equal);
-            self.yjit_reg_method(rb_cInteger, "===", jit_rb_int_equal);
-
-            self.yjit_reg_method(rb_cInteger, "/", jit_rb_int_div);
-            self.yjit_reg_method(rb_cInteger, "<<", jit_rb_int_lshift);
-            self.yjit_reg_method(rb_cInteger, "[]", jit_rb_int_aref);
-
-            // rb_str_to_s() methods in string.c
-            self.yjit_reg_method(rb_cString, "empty?", jit_rb_str_empty_p);
-            self.yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
-            self.yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
-            self.yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
-            self.yjit_reg_method(rb_cString, "getbyte", jit_rb_str_getbyte);
-            self.yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
-            self.yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
-
-            // rb_ary_empty_p() method in array.c
-            self.yjit_reg_method(rb_cArray, "empty?", jit_rb_ary_empty_p);
-            self.yjit_reg_method(rb_cArray, "<<", jit_rb_ary_push);
-
-            self.yjit_reg_method(rb_mKernel, "respond_to?", jit_obj_respond_to);
-            self.yjit_reg_method(rb_mKernel, "block_given?", jit_rb_f_block_given_p);
-
-            // Thread.current
-            self.yjit_reg_method(
-                rb_singleton_class(rb_cThread),
-                "current",
-                jit_thread_s_current,
-            );
         }
     }
 
@@ -8924,10 +9023,18 @@ impl CodegenGlobals {
         CodegenGlobals::get_instance().stub_exit_code
     }
 
-    pub fn push_global_inval_patch(i_pos: CodePtr, o_pos: CodePtr) {
+    pub fn push_global_inval_patch(inline_pos: CodePtr, outlined_pos: CodePtr, cb: &CodeBlock) {
+        if let Some(last_patch) = CodegenGlobals::get_instance().global_inval_patches.last() {
+            let patch_offset = inline_pos.as_offset() - last_patch.inline_patch_pos.as_offset();
+            assert!(
+                patch_offset < 0 || cb.jmp_ptr_bytes() as i64 <= patch_offset,
+                "patches should not overlap (patch_offset: {patch_offset})",
+            );
+        }
+
         let patch = CodepagePatch {
-            inline_patch_pos: i_pos,
-            outlined_target_pos: o_pos,
+            inline_patch_pos: inline_pos,
+            outlined_target_pos: outlined_pos,
         };
         CodegenGlobals::get_instance()
             .global_inval_patches
@@ -8950,16 +9057,6 @@ impl CodegenGlobals {
 
     pub fn get_entry_stub_hit_trampoline() -> CodePtr {
         CodegenGlobals::get_instance().entry_stub_hit_trampoline
-    }
-
-    pub fn look_up_codegen_method(method_serial: usize) -> Option<MethodGenFn> {
-        let table = &CodegenGlobals::get_instance().method_codegen_table;
-
-        let option_ref = table.get(&method_serial);
-        match option_ref {
-            None => None,
-            Some(&mgf) => Some(mgf), // Deref
-        }
     }
 
     pub fn get_ocb_pages() -> &'static Vec<usize> {

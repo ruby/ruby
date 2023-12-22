@@ -132,17 +132,12 @@ class TestShapes < Test::Unit::TestCase
     begin;
       class Hi; end
 
-      obj = Hi.new
-      i = 0
-      while RubyVM::Shape.shapes_available > 2
-        obj.instance_variable_set(:"@a#{i}", 1)
-        i += 1
-      end
+      RubyVM::Shape.exhaust_shapes(2)
 
       obj = Hi.new
-      obj.instance_variable_set(:"@b", 1)
-      obj.instance_variable_set(:"@c", 1)
-      obj.instance_variable_set(:"@d", 1)
+      obj.instance_variable_set(:@b, 1)
+      obj.instance_variable_set(:@c, 1)
+      obj.instance_variable_set(:@d, 1)
 
       assert_predicate RubyVM::Shape.of(obj), :too_complex?
     end;
@@ -184,17 +179,34 @@ class TestShapes < Test::Unit::TestCase
     assert_empty obj.instance_variables
   end
 
+  def test_too_complex_geniv
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class TooComplex < Hash
+        attr_reader :very_unique
+      end
+
+      RubyVM::Shape.exhaust_shapes
+
+      (RubyVM::Shape::SHAPE_MAX_VARIATIONS * 2).times do
+        TooComplex.new.instance_variable_set(:"@unique_#{_1}", 1)
+      end
+
+      tc = TooComplex.new
+      tc.instance_variable_set(:@very_unique, 3)
+      tc.instance_variable_set(:@very_unique2, 4)
+      assert_equal 3, tc.instance_variable_get(:@very_unique)
+      assert_equal 4, tc.instance_variable_get(:@very_unique2)
+
+      assert_equal [:@very_unique, :@very_unique2], tc.instance_variables
+    end;
+  end
+
   def test_use_all_shapes_then_freeze
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       class Hi; end
-
-      obj = Hi.new
-      i = 0
-      while RubyVM::Shape.shapes_available > 2
-        obj.instance_variable_set(:"@a#{i}", 1)
-        i += 1
-      end
+      RubyVM::Shape.exhaust_shapes(3)
 
       obj = Hi.new
       i = 0
@@ -203,11 +215,12 @@ class TestShapes < Test::Unit::TestCase
         i += 1
       end
       obj.freeze
-      obj.frozen?
+
+      assert obj.frozen?
     end;
   end
 
-  def test_run_out_of_shape
+  def test_run_out_of_shape_for_object
     assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       class A
@@ -215,14 +228,314 @@ class TestShapes < Test::Unit::TestCase
           @a = 1
         end
       end
-      # Try to run out of shapes
-      o = Object.new
-      i = 0
-      while RubyVM::Shape.shapes_available > 0
-        o.instance_variable_set(:"@i#{i}", 1)
-        i += 1
-        A.new
+      RubyVM::Shape.exhaust_shapes
+
+      A.new
+    end;
+  end
+
+  def test_run_out_of_shape_for_class_ivar
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      RubyVM::Shape.exhaust_shapes
+
+      c = Class.new
+      c.instance_variable_set(:@a, 1)
+      assert_equal(1, c.instance_variable_get(:@a))
+
+      c.remove_instance_variable(:@a)
+      assert_nil(c.instance_variable_get(:@a))
+
+      assert_raise(NameError) do
+        c.remove_instance_variable(:@a)
       end
+    end;
+  end
+
+  def test_evacuate_class_ivar_and_compaction
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      count = 20
+
+      c = Class.new
+      count.times do |ivar|
+        c.instance_variable_set("@i#{ivar}", "ivar-#{ivar}")
+      end
+
+      RubyVM::Shape.exhaust_shapes
+
+      GC.auto_compact = true
+      GC.stress = true
+      # Cause evacuation
+      c.instance_variable_set(:@a, o = Object.new)
+      assert_equal(o, c.instance_variable_get(:@a))
+      GC.stress = false
+
+      count.times do |ivar|
+        assert_equal "ivar-#{ivar}", c.instance_variable_get("@i#{ivar}")
+      end
+    end;
+  end
+
+  def test_evacuate_generic_ivar_and_compaction
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      count = 20
+
+      c = Hash.new
+      count.times do |ivar|
+        c.instance_variable_set("@i#{ivar}", "ivar-#{ivar}")
+      end
+
+      RubyVM::Shape.exhaust_shapes
+
+      GC.auto_compact = true
+      GC.stress = true
+
+      # Cause evacuation
+      c.instance_variable_set(:@a, o = Object.new)
+      assert_equal(o, c.instance_variable_get(:@a))
+
+      GC.stress = false
+
+      count.times do |ivar|
+        assert_equal "ivar-#{ivar}", c.instance_variable_get("@i#{ivar}")
+      end
+    end;
+  end
+
+  def test_evacuate_object_ivar_and_compaction
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      count = 20
+
+      c = Object.new
+      count.times do |ivar|
+        c.instance_variable_set("@i#{ivar}", "ivar-#{ivar}")
+      end
+
+      RubyVM::Shape.exhaust_shapes
+
+      GC.auto_compact = true
+      GC.stress = true
+
+      # Cause evacuation
+      c.instance_variable_set(:@a, o = Object.new)
+      assert_equal(o, c.instance_variable_get(:@a))
+
+      GC.stress = false
+
+      count.times do |ivar|
+        assert_equal "ivar-#{ivar}", c.instance_variable_get("@i#{ivar}")
+      end
+    end;
+  end
+
+  def test_gc_stress_during_evacuate_generic_ivar
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      [].instance_variable_set(:@a, 1)
+
+      RubyVM::Shape.exhaust_shapes
+
+      ary = 10.times.map { [] }
+
+      GC.stress = true
+      ary.each do |o|
+        o.instance_variable_set(:@a, 1)
+        o.instance_variable_set(:@b, 1)
+      end
+    end;
+  end
+
+  def test_run_out_of_shape_for_module_ivar
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      RubyVM::Shape.exhaust_shapes
+
+      module Foo
+        @a = 1
+        @b = 2
+        assert_equal 1, @a
+        assert_equal 2, @b
+      end
+    end;
+  end
+
+  def test_run_out_of_shape_for_class_cvar
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      RubyVM::Shape.exhaust_shapes
+
+      c = Class.new
+
+      c.class_variable_set(:@@a, 1)
+      assert_equal(1, c.class_variable_get(:@@a))
+
+      c.class_eval { remove_class_variable(:@@a) }
+      assert_false(c.class_variable_defined?(:@@a))
+
+      assert_raise(NameError) do
+        c.class_eval { remove_class_variable(:@@a) }
+      end
+    end;
+  end
+
+  def test_run_out_of_shape_generic_instance_variable_set
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class TooComplex < Hash
+      end
+
+      RubyVM::Shape.exhaust_shapes
+
+      tc = TooComplex.new
+      tc.instance_variable_set(:@a, 1)
+      tc.instance_variable_set(:@b, 2)
+
+      tc.remove_instance_variable(:@a)
+      assert_nil(tc.instance_variable_get(:@a))
+
+      assert_raise(NameError) do
+        tc.remove_instance_variable(:@a)
+      end
+    end;
+  end
+
+  def test_run_out_of_shape_generic_ivar_set
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class Hi < String
+        def initialize
+          8.times do |i|
+            instance_variable_set("@ivar_#{i}", i)
+          end
+        end
+
+        def transition
+          @hi_transition ||= 1
+        end
+      end
+
+      a = Hi.new
+
+      # Try to run out of shapes
+      RubyVM::Shape.exhaust_shapes
+
+      assert_equal 1, a.transition
+      assert_equal 1, a.transition
+    end;
+  end
+
+  def test_run_out_of_shape_instance_variable_defined
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class A
+        attr_reader :a, :b, :c, :d
+        def initialize
+          @a = @b = @c = @d = 1
+        end
+      end
+
+      RubyVM::Shape.exhaust_shapes
+
+      a = A.new
+      assert_equal true, a.instance_variable_defined?(:@a)
+    end;
+  end
+
+  def test_run_out_of_shape_instance_variable_defined_on_module
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      RubyVM::Shape.exhaust_shapes
+
+      module A
+        @a = @b = @c = @d = 1
+      end
+
+      assert_equal true, A.instance_variable_defined?(:@a)
+    end;
+  end
+
+  def test_run_out_of_shape_during_remove_instance_variable
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      o = Object.new
+      10.times { |i| o.instance_variable_set(:"@a#{i}", i) }
+
+      RubyVM::Shape.exhaust_shapes
+
+      o.remove_instance_variable(:@a0)
+      (1...10).each do |i|
+        assert_equal(i, o.instance_variable_get(:"@a#{i}"))
+      end
+    end;
+  end
+
+  def test_run_out_of_shape_remove_instance_variable
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class A
+        attr_reader :a, :b, :c, :d
+        def initialize
+          @a = @b = @c = @d = 1
+        end
+      end
+
+      a = A.new
+
+      RubyVM::Shape.exhaust_shapes
+
+      a.remove_instance_variable(:@b)
+      assert_nil a.b
+
+      a.remove_instance_variable(:@a)
+      assert_nil a.a
+
+      a.remove_instance_variable(:@c)
+      assert_nil a.c
+
+      assert_equal 1, a.d
+    end;
+  end
+
+  def test_run_out_of_shape_rb_obj_copy_ivar
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      class A
+        def initialize
+          init # Avoid right sizing
+        end
+
+        def init
+          @a = @b = @c = @d = @e = @f = 1
+        end
+      end
+
+      a = A.new
+
+      RubyVM::Shape.exhaust_shapes
+
+      a.dup
+    end;
+  end
+
+  def test_evacuate_generic_ivar_memory_leak
+    assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", rss: true)
+      o = []
+      o.instance_variable_set(:@a, 1)
+
+      RubyVM::Shape.exhaust_shapes
+
+      ary = 1_000_000.times.map { [] }
+    begin;
+      ary.each do |o|
+        o.instance_variable_set(:@a, 1)
+        o.instance_variable_set(:@b, 1)
+      end
+      ary.clear
+      ary = nil
+      GC.start
     end;
   end
 
@@ -231,12 +544,7 @@ class TestShapes < Test::Unit::TestCase
     begin;
       class Hi; end
 
-      obj = Hi.new
-      i = 0
-      while RubyVM::Shape.shapes_available > 2
-        obj.instance_variable_set(:"@a#{i}", 1)
-        i += 1
-      end
+      RubyVM::Shape.exhaust_shapes(2)
 
       obj = Module.new
       3.times do
@@ -256,12 +564,7 @@ class TestShapes < Test::Unit::TestCase
     begin;
       class Hi; end
 
-      obj = Hi.new
-      i = 0
-      while RubyVM::Shape.shapes_available > 2
-        obj.instance_variable_set(:"@a#{i}", 1)
-        i += 1
-      end
+      RubyVM::Shape.exhaust_shapes(2)
 
       obj = Object.new
       i = 0
@@ -316,6 +619,42 @@ class TestShapes < Test::Unit::TestCase
       assert_predicate RubyVM::Shape.of(tc), :too_complex?
       assert_equal 3, tc.very_unique
       assert_equal 3, Ractor.make_shareable(tc).very_unique
+    end;
+  end
+
+  def test_too_complex_obj_ivar_ractor_share
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = nil
+
+      RubyVM::Shape.exhaust_shapes
+
+      r = Ractor.new do
+        o = Object.new
+        o.instance_variable_set(:@a, "hello")
+        Ractor.yield(o)
+      end
+
+      o = r.take
+      assert_equal "hello", o.instance_variable_get(:@a)
+    end;
+  end
+
+  def test_too_complex_generic_ivar_ractor_share
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      $VERBOSE = nil
+
+      RubyVM::Shape.exhaust_shapes
+
+      r = Ractor.new do
+        o = []
+        o.instance_variable_set(:@a, "hello")
+        Ractor.yield(o)
+      end
+
+      o = r.take
+      assert_equal "hello", o.instance_variable_get(:@a)
     end;
   end
 
@@ -397,6 +736,84 @@ class TestShapes < Test::Unit::TestCase
       tc.remove_instance_variable(:@a3)
     end
     assert_nil tc.a3
+  end
+
+  def test_remove_instance_variable
+    ivars_count = 5
+    object = Object.new
+    ivars_count.times do |i|
+      object.instance_variable_set("@ivar_#{i}", i)
+    end
+
+    ivars = ivars_count.times.map do |i|
+      object.instance_variable_get("@ivar_#{i}")
+    end
+    assert_equal [0, 1, 2, 3, 4], ivars
+
+    object.remove_instance_variable(:@ivar_2)
+
+    ivars = ivars_count.times.map do |i|
+      object.instance_variable_get("@ivar_#{i}")
+    end
+    assert_equal [0, 1, nil, 3, 4], ivars
+  end
+
+  def test_remove_instance_variable_when_out_of_shapes
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      ivars_count = 5
+      object = Object.new
+      ivars_count.times do |i|
+        object.instance_variable_set("@ivar_#{i}", i)
+      end
+
+      ivars = ivars_count.times.map do |i|
+        object.instance_variable_get("@ivar_#{i}")
+      end
+      assert_equal [0, 1, 2, 3, 4], ivars
+
+      RubyVM::Shape.exhaust_shapes
+
+      object.remove_instance_variable(:@ivar_2)
+
+      ivars = ivars_count.times.map do |i|
+        object.instance_variable_get("@ivar_#{i}")
+      end
+      assert_equal [0, 1, nil, 3, 4], ivars
+    end;
+  end
+
+  def test_remove_instance_variable_capacity_transition
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      t_object_shape = RubyVM::Shape.find_by_id(GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT])
+      assert_equal(RubyVM::Shape::SHAPE_T_OBJECT, t_object_shape.type)
+
+      initial_capacity = t_object_shape.capacity
+
+      # a does not transition in capacity
+      a = Class.new.new
+      initial_capacity.times do |i|
+        a.instance_variable_set(:"@ivar#{i + 1}", i)
+      end
+
+      # b transitions in capacity
+      b = Class.new.new
+      (initial_capacity + 1).times do |i|
+        b.instance_variable_set(:"@ivar#{i}", i)
+      end
+
+      assert_operator(RubyVM::Shape.of(a).capacity, :<, RubyVM::Shape.of(b).capacity)
+
+      # b will now have the same tree as a
+      b.remove_instance_variable(:@ivar0)
+
+      a.instance_variable_set(:@foo, 1)
+      a.instance_variable_set(:@bar, 1)
+
+      # Check that there is no heap corruption
+      GC.verify_internal_consistency
+    end;
   end
 
   def test_freeze_after_complex
@@ -481,14 +898,6 @@ class TestShapes < Test::Unit::TestCase
 
   def test_array_has_root_shape
     assert_shape_equal(RubyVM::Shape.root_shape, RubyVM::Shape.of([]))
-  end
-
-  def test_hash_has_correct_pool_shape
-    omit "SHAPE_IN_BASIC_FLAGS == 0" unless RbConfig::SIZEOF["uint64_t"] <= RbConfig::SIZEOF["void*"]
-
-    # All hashes are now allocated their own ar_table, so start in a
-    # larger pool, and have already transitioned once.
-    assert_shape_equal(RubyVM::Shape.root_shape, RubyVM::Shape.of({}).parent)
   end
 
   def test_true_has_special_const_shape_id

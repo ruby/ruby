@@ -19,36 +19,15 @@ class Gem::PathSupport
   attr_reader :spec_cache_dir # :nodoc:
 
   ##
-  # Whether `Gem.paths.home` defaulted to a user install or not.
-  attr_reader :auto_user_install
-
-  ##
   #
   # Constructor. Takes a single argument which is to be treated like a
   # hashtable, or defaults to ENV, the system environment.
   #
   def initialize(env)
-    # Current implementation of @home, which is exposed as `Gem.paths.home`:
-    # 1. If `env["GEM_HOME"]` is defined in the environment: `env["GEM_HOME"]`.
-    # 2. If `Gem.default_dir` is writable: `Gem.default_dir`.
-    # 3. Otherwise: `Gem.user_dir`.
-
-    if env.key?("GEM_HOME")
-      @home = normalize_home_dir(env["GEM_HOME"])
-    elsif File.writable?(Gem.default_dir)
-      @home = normalize_home_dir(Gem.default_dir)
-    else
-      # If `GEM_HOME` is not set AND we can't use `Gem.default_dir`,
-      # default to a user installation and set `@auto_user_install`.
-      @auto_user_install = true
-      @home = normalize_home_dir(Gem.user_dir)
-    end
-
+    @home = normalize_home_dir(env["GEM_HOME"] || Gem.default_dir)
     @path = split_gem_path env["GEM_PATH"], @home
 
     @spec_cache_dir = env["GEM_SPEC_CACHE"] || Gem.default_spec_cache_dir
-
-    @spec_cache_dir = @spec_cache_dir.dup.tap(&Gem::UNTAINT)
   end
 
   private

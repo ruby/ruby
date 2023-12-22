@@ -45,8 +45,8 @@ class WebauthnPollerTest < Gem::TestCase
   end
 
   def test_poll_thread_timeout_error
-    raise_error = ->(*_args) { raise Timeout::Error, "execution expired" }
-    Timeout.stub(:timeout, raise_error) do
+    raise_error = ->(*_args) { raise Gem::Timeout::Error, "execution expired" }
+    Gem::Timeout.stub(:timeout, raise_error) do
       thread = Gem::GemcutterUtilities::WebauthnPoller.poll_thread({}, @host, @webauthn_url, @credentials)
       thread.join
       assert_equal thread[:error].message, "execution expired"
@@ -72,8 +72,8 @@ class WebauthnPollerTest < Gem::TestCase
       msg: "OK"
     )
 
-    assert_raise Timeout::Error do
-      Timeout.timeout(0.1) do
+    assert_raise Gem::Timeout::Error do
+      Gem::Timeout.timeout(0.1) do
         Gem::GemcutterUtilities::WebauthnPoller.new({}, @host).poll_for_otp(@webauthn_url, @credentials)
       end
     end

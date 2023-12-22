@@ -10,6 +10,8 @@ end
 
 class IRB::RenderingTest < Yamatanooroti::TestCase
   def setup
+    @original_term = ENV['TERM']
+    ENV['TERM'] = "xterm-256color"
     @pwd = Dir.pwd
     suffix = '%010d' % Random.rand(0..65535)
     @tmpdir = File.join(File.expand_path(Dir.tmpdir), "test_irb_#{$$}_#{suffix}")
@@ -27,6 +29,7 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
   def teardown
     FileUtils.rm_rf(@tmpdir)
     ENV['IRBRC'] = @irbrc_backup
+    ENV['TERM'] = @original_term
     ENV.delete('RELINE_TEST_PROMPT') if ENV['RELINE_TEST_PROMPT']
   end
 
@@ -203,9 +206,24 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     EOC
   end
 
-  def test_autocomplete_with_showdoc_in_gaps_on_narrow_screen_right
-    omit if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('3.1')
+  def test_autocomplete_with_multiple_doc_namespaces
     write_irbrc <<~'LINES'
+      puts 'start IRB'
+    LINES
+    start_terminal(3, 50, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+    write("{}.__id_")
+    write("\C-i")
+    close
+    screen = result.join("\n").sub(/\n*\z/, "\n")
+    # This assertion passes whether showdoc dialog completed or not.
+    assert_match(/start\ IRB\nirb\(main\):001> {}\.__id__\n                }\.__id__(?:Press )?/, screen)
+  end
+
+  def test_autocomplete_with_showdoc_in_gaps_on_narrow_screen_right
+    rdoc_dir = File.join(@tmpdir, 'rdoc')
+    system("bundle exec rdoc -r -o #{rdoc_dir}")
+    write_irbrc <<~LINES
+      IRB.conf[:EXTRA_DOC_DIRS] = ['#{rdoc_dir}']
       IRB.conf[:PROMPT][:MY_PROMPT] = {
         :PROMPT_I => "%03n> ",
         :PROMPT_S => "%03n> ",
@@ -214,8 +232,8 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
       IRB.conf[:PROMPT_MODE] = :MY_PROMPT
       puts 'start IRB'
     LINES
-    start_terminal(4, 19, %W{ruby -I/home/aycabta/ruby/reline/lib -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
-    write("Str\C-i")
+    start_terminal(4, 19, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+    write("IR\C-i")
     close
 
     # This is because on macOS we display different shortcut for displaying the full doc
@@ -223,23 +241,25 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     if RUBY_PLATFORM =~ /darwin/
       assert_screen(<<~EOC)
         start IRB
-        001> String
-             StringPress O
-             StructString
+        001> IRB
+             IRBPress Opti
+                IRB
       EOC
     else
       assert_screen(<<~EOC)
         start IRB
-        001> String
-             StringPress A
-             StructString
+        001> IRB
+             IRBPress Alt+
+                IRB
       EOC
     end
   end
 
   def test_autocomplete_with_showdoc_in_gaps_on_narrow_screen_left
-    omit if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('3.1')
-    write_irbrc <<~'LINES'
+    rdoc_dir = File.join(@tmpdir, 'rdoc')
+    system("bundle exec rdoc -r -o #{rdoc_dir}")
+    write_irbrc <<~LINES
+      IRB.conf[:EXTRA_DOC_DIRS] = ['#{rdoc_dir}']
       IRB.conf[:PROMPT][:MY_PROMPT] = {
         :PROMPT_I => "%03n> ",
         :PROMPT_S => "%03n> ",
@@ -249,13 +269,13 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
       puts 'start IRB'
     LINES
     start_terminal(4, 12, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
-    write("Str\C-i")
+    write("IR\C-i")
     close
     assert_screen(<<~EOC)
       start IRB
-      001> String
-      PressString
-      StrinStruct
+      001> IRB
+      PressIRB
+      IRB
     EOC
   end
 
@@ -358,6 +378,86 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     assert_match(/a{80}/, screen)
     # because pager is not invoked, foobar will be evaluated
     assert_match(/foobar/, screen)
+  end
+
+  def test_long_evaluation_output_is_paged
+    write_irbrc <<~'LINES'
+      puts 'start IRB'
+      require "irb/pager"
+    LINES
+    start_terminal(10, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+    write("'a' * 80 * 11\n")
+    write("'foo' + 'bar'\n") # eval something to make sure IRB resumes
+    close
+
+    screen = result.join("\n").sub(/\n*\z/, "\n")
+    assert_match(/(a{80}\n){8}/, screen)
+    # because pager is invoked, foobar will not be evaluated
+    assert_not_match(/foobar/, screen)
+  end
+
+  def test_long_evaluation_output_is_preserved_after_paging
+    write_irbrc <<~'LINES'
+      puts 'start IRB'
+      require "irb/pager"
+    LINES
+    start_terminal(10, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
+    write("'a' * 80 * 11\n")
+    write("q") # quit pager
+    write("'foo' + 'bar'\n") # eval something to make sure IRB resumes
+    close
+
+    screen = result.join("\n").sub(/\n*\z/, "\n")
+    # confirm pager has exited
+    assert_match(/foobar/, screen)
+    # confirm output is preserved
+    assert_match(/(a{80}\n){6}/, screen)
+  end
+
+  def test_debug_integration_hints_debugger_commands
+    write_irbrc <<~'LINES'
+      IRB.conf[:USE_COLORIZE] = false
+    LINES
+    script = Tempfile.create(["debug", ".rb"])
+    script.write <<~RUBY
+      puts 'start IRB'
+      binding.irb
+    RUBY
+    script.close
+    start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{script.to_path}}, startup_message: 'start IRB')
+    write("debug\n")
+    write("pp 1\n")
+    write("pp 1")
+    close
+
+    screen = result.join("\n").sub(/\n*\z/, "\n")
+    # submitted input shouldn't contain hint
+    assert_include(screen, "irb:rdbg(main):002> pp 1\n")
+    # unsubmitted input should contain hint
+    assert_include(screen, "irb:rdbg(main):003> pp 1 # debug command\n")
+  ensure
+    File.unlink(script) if script
+  end
+
+  def test_debug_integration_doesnt_hint_non_debugger_commands
+    write_irbrc <<~'LINES'
+      IRB.conf[:USE_COLORIZE] = false
+    LINES
+    script = Tempfile.create(["debug", ".rb"])
+    script.write <<~RUBY
+      puts 'start IRB'
+      binding.irb
+    RUBY
+    script.close
+    start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{script.to_path}}, startup_message: 'start IRB')
+    write("debug\n")
+    write("foo")
+    close
+
+    screen = result.join("\n").sub(/\n*\z/, "\n")
+    assert_include(screen, "irb:rdbg(main):002> foo\n")
+  ensure
+    File.unlink(script) if script
   end
 
   private

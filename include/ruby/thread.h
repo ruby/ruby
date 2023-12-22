@@ -205,7 +205,7 @@ void *rb_nogvl(void *(*func)(void *), void *data1,
 #define RUBY_INTERNAL_THREAD_EVENT_READY      1 << 1 /** acquiring GVL */
 
 /**
- * Triggered when a thread successfuly acquired the GVL.
+ * Triggered when a thread successfully acquired the GVL.
  *
  * @note       The callback will be called *with* the GVL held.
  */
@@ -227,7 +227,9 @@ void *rb_nogvl(void *(*func)(void *), void *data1,
 
 #define RUBY_INTERNAL_THREAD_EVENT_MASK       0xff /** All Thread events */
 
-typedef void rb_internal_thread_event_data_t; // for future extension.
+typedef struct rb_internal_thread_event_data {
+   VALUE thread;
+} rb_internal_thread_event_data_t;
 
 typedef void (*rb_internal_thread_event_callback)(rb_event_flag_t event,
               const rb_internal_thread_event_data_t *event_data,
@@ -241,9 +243,12 @@ typedef struct rb_internal_thread_event_hook rb_internal_thread_event_hook_t;
  * @param[in]  events  A set of events that `func` should run.
  * @param[in]  data    Passed as-is to `func`.
  * @return     An opaque pointer to the hook, to unregister it later.
- * @note       This functionality is a noop on Windows.
+ * @note       This functionality is a noop on Windows and WebAssembly.
  * @note       The callback will be called without the GVL held, except for the
  *             RESUMED event.
+ * @note       Callbacks are not guaranteed to be executed on the native threads
+ *             that corresponds to the Ruby thread. To identify which Ruby thread
+ *             the event refers to, you must use `event_data->thread`.
  * @warning    This function MUST not be called from a thread event callback.
  */
 rb_internal_thread_event_hook_t *rb_internal_thread_add_event_hook(
@@ -255,12 +260,52 @@ rb_internal_thread_event_hook_t *rb_internal_thread_add_event_hook(
  * Unregister the passed hook.
  *
  * @param[in]  hook.  The hook to unregister.
- * @return     Wether the hook was found and unregistered.
- * @note       This functionality is a noop on Windows.
+ * @return     Whether the hook was found and unregistered.
+ * @note       This functionality is a noop on Windows and WebAssembly.
  * @warning    This function MUST not be called from a thread event callback.
 */
 bool rb_internal_thread_remove_event_hook(
         rb_internal_thread_event_hook_t * hook);
+
+
+typedef int rb_internal_thread_specific_key_t;
+#define RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX 8
+/**
+ * Create a key to store thread specific data.
+ *
+ * These APIs are designed for tools using
+ * rb_internal_thread_event_hook APIs.
+ *
+ * Note that only `RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX` keys
+ * can be created. raises `ThreadError` if exceeded.
+ *
+ * Usage:
+ *   // at initialize time:
+ *   int tool_key; // gvar
+ *   Init_tool() {
+ *     tool_key = rb_internal_thread_specific_key_create();
+ *   }
+ *
+ *   // at any timing:
+ *   rb_internal_thread_specific_set(thread, tool_key, per_thread_data);
+ *   ...
+ *   per_thread_data = rb_internal_thread_specific_get(thread, tool_key);
+ */
+rb_internal_thread_specific_key_t rb_internal_thread_specific_key_create(void);
+
+/**
+ * Get thread and tool specific data.
+ *
+ * This function is async signal safe and thread safe.
+ */
+void *rb_internal_thread_specific_get(VALUE thread_val, rb_internal_thread_specific_key_t key);
+
+/**
+ * Set thread and tool specific data.
+ *
+ * This function is async signal safe and thread safe.
+ */
+void rb_internal_thread_specific_set(VALUE thread_val, rb_internal_thread_specific_key_t key, void *data);
 
 RBIMPL_SYMBOL_EXPORT_END()
 

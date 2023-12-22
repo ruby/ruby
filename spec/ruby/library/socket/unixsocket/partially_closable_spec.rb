@@ -2,9 +2,8 @@ require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 require_relative '../shared/partially_closable_sockets'
 
-platform_is_not :windows do
+with_feature :unix_socket do
   describe "UNIXSocket partial closability" do
-
     before :each do
       @path = SocketSpecs.socket_path
       @server = UNIXServer.open(@path)
@@ -20,6 +19,5 @@ platform_is_not :windows do
     end
 
     it_should_behave_like :partially_closable_sockets
-
   end
 end

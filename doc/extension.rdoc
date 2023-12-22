@@ -779,26 +779,26 @@ approach to marking and reference updating is provided, by declaring offset
 references to the VALUES in your struct.
 
 Doing this allows the Ruby GC to support marking these references and GC
-compaction without the need to define the `dmark` and `dcompact` callbacks.
+compaction without the need to define the +dmark+ and +dcompact+ callbacks.
 
 You must define a static list of VALUE pointers to the offsets within your
 struct where the references are located, and set the "data" member to point to
-this reference list. The reference list must end with `END_REFS`
+this reference list. The reference list must end with +RUBY_END_REFS+.
 
 Some Macros have been provided to make edge referencing easier:
 
-* <code>RUBY_TYPED_DECL_MARKING</code> =A flag that can be set on the `ruby_data_type_t` to indicate that references are being declared as edges.
+* <code>RUBY_TYPED_DECL_MARKING</code> =A flag that can be set on the +ruby_data_type_t+ to indicate that references are being declared as edges.
 
-* <code>RUBY_REFERENCES_START(ref_list_name)</code> - Define `ref_list_name` as a list of references
+* <code>RUBY_REFERENCES(ref_list_name)</code> - Define _ref_list_name_ as a list of references
 
-* <code>RUBY_REFERENCES_END</code> - Mark the end of the references list. This will take care of terminating the list correctly
+* <code>RUBY_REF_END</code> - The end mark of the references list.
 
-* <code>RUBY_REF_EDGE\(struct, member\)</code> - Declare `member` as a VALUE edge from `struct`. Use this after `RUBY_REFERENCES_START`
+* <code>RUBY_REF_EDGE(struct, member)</code> - Declare _member_ as a VALUE edge from _struct_. Use this after +RUBY_REFERENCES_START+
 
-* +REFS_LIST_PTR+ - Coerce the reference list into a format that can be
-  accepted by the existing `dmark` interface.
+* +RUBY_REFS_LIST_PTR+ - Coerce the reference list into a format that can be
+  accepted by the existing +dmark+ interface.
 
-The example below is from `Dir` (defined in `dir.c`)
+The example below is from Dir (defined in +dir.c+)
 
   // The struct being wrapped. Notice this contains 3 members of which the second
   // is a VALUE reference to another ruby object.
@@ -808,18 +808,19 @@ The example below is from `Dir` (defined in `dir.c`)
       rb_encoding *enc;
   }
 
-  // Define a reference list `dir_refs` containing a single entry to `path`, and
-  // terminating with RUBY_REF_END
-  RUBY_REFERENCES_START(dir_refs)
-      REF_EDGE(dir_data, path),
-  RUBY_REFERENCES_END
+  // Define a reference list `dir_refs` containing a single entry to `path`.
+  // Needs terminating with RUBY_REF_END
+  RUBY_REFERENCES(dir_refs) = {
+      RUBY_REF_EDGE(dir_data, path),
+      RUBY_REF_END
+  };
 
   // Override the "dmark" field with the defined reference list now that we
   // no longer need a marking callback and add RUBY_TYPED_DECL_MARKING to the
   // flags field
   static const rb_data_type_t dir_data_type = {
       "dir",
-      {REFS_LIST_PTR(dir_refs), dir_free, dir_memsize,},
+      {RUBY_REFS_LIST_PTR(dir_refs), dir_free, dir_memsize,},
       0, NULL, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_DECL_MARKING
   };
 

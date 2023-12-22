@@ -1,4 +1,4 @@
-== Format Specifications
+= Format Specifications
 
 Several Ruby core classes have instance method +printf+ or +sprintf+:
 
@@ -37,12 +37,12 @@ It consists of:
 Except for the leading percent character,
 the only required part is the type specifier, so we begin with that.
 
-=== Type Specifiers
+== Type Specifiers
 
 This section provides a brief explanation of each type specifier.
 The links lead to the details and examples.
 
-==== \Integer Type Specifiers
+=== \Integer Type Specifiers
 
 - +b+ or +B+: Format +argument+ as a binary integer.
   See {Specifiers b and B}[rdoc-ref:format_specifications.rdoc@Specifiers+b+and+B].
@@ -54,7 +54,7 @@ The links lead to the details and examples.
 - +x+ or +X+: Format +argument+ as a hexadecimal integer.
   See {Specifiers x and X}[rdoc-ref:format_specifications.rdoc@Specifiers+x+and+X].
 
-==== Floating-Point Type Specifiers
+=== Floating-Point Type Specifiers
 
 - +a+ or +A+: Format +argument+ as hexadecimal floating-point number.
   See {Specifiers a and A}[rdoc-ref:format_specifications.rdoc@Specifiers+a+and+A].
@@ -65,7 +65,7 @@ The links lead to the details and examples.
 - +g+ or +G+: Format +argument+ in a "general" format.
   See {Specifiers g and G}[rdoc-ref:format_specifications.rdoc@Specifiers+g+and+G].
 
-==== Other Type Specifiers
+=== Other Type Specifiers
 
 - +c+: Format +argument+ as a character.
   See {Specifier c}[rdoc-ref:format_specifications.rdoc@Specifier+c].
@@ -76,7 +76,7 @@ The links lead to the details and examples.
 - <tt>%</tt>: Format +argument+ (<tt>'%'</tt>) as a single percent character.
   See {Specifier %}[rdoc-ref:format_specifications.rdoc@Specifier+-25].
 
-=== Flags
+== Flags
 
 The effect of a flag may vary greatly among type specifiers.
 These remarks are general in nature.
@@ -85,7 +85,7 @@ See {type-specific details}[rdoc-ref:format_specifications.rdoc@Type+Specifier+D
 Multiple flags may be given with single type specifier;
 order does not matter.
 
-==== <tt>' '</tt> Flag
+=== <tt>' '</tt> Flag
 
 Insert a space before a non-negative number:
 
@@ -97,49 +97,49 @@ Insert a minus sign for negative value:
   sprintf('%d', -10)  # => "-10"
   sprintf('% d', -10) # => "-10"
 
-==== <tt>'#'</tt> Flag
+=== <tt>'#'</tt> Flag
 
 Use an alternate format; varies among types:
 
   sprintf('%x', 100)  # => "64"
   sprintf('%#x', 100) # => "0x64"
 
-==== <tt>'+'</tt> Flag
+=== <tt>'+'</tt> Flag
 
 Add a leading plus sign for a non-negative number:
 
   sprintf('%x', 100)  # => "64"
   sprintf('%+x', 100) # => "+64"
 
-==== <tt>'-'</tt> Flag
+=== <tt>'-'</tt> Flag
 
 Left justify the value in its field:
 
   sprintf('%6d', 100)  # => "   100"
   sprintf('%-6d', 100) # => "100   "
 
-==== <tt>'0'</tt> Flag
+=== <tt>'0'</tt> Flag
 
 Left-pad with zeros instead of spaces:
 
   sprintf('%6d', 100)  # => "   100"
   sprintf('%06d', 100) # => "000100"
 
-==== <tt>'*'</tt> Flag
+=== <tt>'*'</tt> Flag
 
 Use the next argument as the field width:
 
   sprintf('%d', 20, 14)  # => "20"
   sprintf('%*d', 20, 14) # => "                  14"
 
-==== <tt>'n$'</tt> Flag
+=== <tt>'n$'</tt> Flag
 
 Format the (1-based) <tt>n</tt>th argument into this field:
 
     sprintf("%s %s", 'world', 'hello')     # => "world hello"
     sprintf("%2$s %1$s", 'world', 'hello') # => "hello world"
 
-=== Width Specifier
+== Width Specifier
 
 In general, a width specifier determines the minimum width (in characters)
 of the formatted field:
@@ -152,7 +152,7 @@ of the formatted field:
   # Ignore if too small.
   sprintf('%1d', 100)   # => "100"
 
-=== Precision Specifier
+== Precision Specifier
 
 A precision specifier is a decimal point followed by zero or more
 decimal digits.
@@ -194,9 +194,9 @@ the number of characters to write:
   sprintf('%s', Time.now)    # => "2022-05-04 11:59:16 -0400"
   sprintf('%.10s', Time.now) # => "2022-05-04"
 
-=== Type Specifier Details and Examples
+== Type Specifier Details and Examples
 
-==== Specifiers +a+ and +A+
+=== Specifiers +a+ and +A+
 
 Format +argument+ as hexadecimal floating-point number:
 
@@ -209,7 +209,7 @@ Format +argument+ as hexadecimal floating-point number:
   sprintf('%A', 4096)      # => "0X1P+12"
   sprintf('%A', -4096)     # => "-0X1P+12"
 
-==== Specifiers +b+ and +B+
+=== Specifiers +b+ and +B+
 
 The two specifiers +b+ and +B+ behave identically
 except when flag <tt>'#'</tt>+ is used.
@@ -226,14 +226,14 @@ Format +argument+ as a binary integer:
   sprintf('%#b', 4)  # => "0b100"
   sprintf('%#B', 4)  # => "0B100"
 
-==== Specifier +c+
+=== Specifier +c+
 
 Format +argument+ as a single character:
 
   sprintf('%c', 'A') # => "A"
   sprintf('%c', 65)  # => "A"
 
-==== Specifier +d+
+=== Specifier +d+
 
 Format +argument+ as a decimal integer:
 
@@ -242,7 +242,7 @@ Format +argument+ as a decimal integer:
 
 Flag <tt>'#'</tt> does not apply.
 
-==== Specifiers +e+ and +E+
+=== Specifiers +e+ and +E+
 
 Format +argument+ in
 {scientific notation}[https://en.wikipedia.org/wiki/Scientific_notation]:
@@ -250,7 +250,7 @@ Format +argument+ in
   sprintf('%e', 3.14159)  # => "3.141590e+00"
   sprintf('%E', -3.14159) # => "-3.141590E+00"
 
-==== Specifier +f+
+=== Specifier +f+
 
 Format +argument+ as a floating-point number:
 
@@ -259,7 +259,7 @@ Format +argument+ as a floating-point number:
 
 Flag <tt>'#'</tt> does not apply.
 
-==== Specifiers +g+ and +G+
+=== Specifiers +g+ and +G+
 
 Format +argument+ using exponential form (+e+/+E+ specifier)
 if the exponent is less than -4 or greater than or equal to the precision.
@@ -281,7 +281,7 @@ Otherwise format +argument+ using floating-point form (+f+ specifier):
   sprintf('%#G', 100000000000)  # => "1.00000E+11"
   sprintf('%#G', 0.000000000001)  # => "1.00000E-12"
 
-==== Specifier +o+
+=== Specifier +o+
 
 Format +argument+ as an octal integer.
 If +argument+ is negative, it will be formatted as a two's complement
@@ -296,14 +296,14 @@ prefixed with +..7+:
   sprintf('%#o', 16)  # => "020"
   sprintf('%#o', -16) # => "..760"
 
-==== Specifier +p+
+=== Specifier +p+
 
 Format +argument+ as a string via <tt>argument.inspect</tt>:
 
   t = Time.now
   sprintf('%p', t)   # => "2022-05-01 13:42:07.1645683 -0500"
 
-==== Specifier +s+
+=== Specifier +s+
 
 Format +argument+ as a string via <tt>argument.to_s</tt>:
 
@@ -312,7 +312,7 @@ Format +argument+ as a string via <tt>argument.to_s</tt>:
 
 Flag <tt>'#'</tt> does not apply.
 
-==== Specifiers +x+ and +X+
+=== Specifiers +x+ and +X+
 
 Format +argument+ as a hexadecimal integer.
 If +argument+ is negative, it will be formatted as a two's complement
@@ -329,7 +329,7 @@ prefixed with +..f+:
   # Alternate format for negative value.
   sprintf('%#x', -100) # => "0x..f9c"
 
-==== Specifier <tt>%</tt>
+=== Specifier <tt>%</tt>
 
 Format +argument+ (<tt>'%'</tt>) as a single percent character:
 
@@ -337,7 +337,7 @@ Format +argument+ (<tt>'%'</tt>) as a single percent character:
 
 Flags do not apply.
 
-=== Reference by Name
+== Reference by Name
 
 For more complex formatting, Ruby supports a reference by name.
 %<name>s style uses format style, but %{name} style doesn't.

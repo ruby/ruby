@@ -5,6 +5,12 @@ require_relative 'shared/new'
 
 describe "IO.new" do
   it_behaves_like :io_new, :new
+
+  it "does not use the given block and warns to use IO::open" do
+    -> {
+      @io = IO.send(@method, @fd) { raise }
+    }.should complain(/warning: IO::new\(\) does not take block; use IO::open\(\) instead/)
+  end
 end
 
 describe "IO.new" do

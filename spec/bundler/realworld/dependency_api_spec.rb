@@ -2,7 +2,7 @@
 
 require_relative "../support/silent_logger"
 
-RSpec.describe "gemcutter's dependency API", :realworld => true do
+RSpec.describe "gemcutter's dependency API", realworld: true do
   context "when Gemcutter API takes too long to respond" do
     before do
       require_rack
@@ -13,12 +13,12 @@ RSpec.describe "gemcutter's dependency API", :realworld => true do
       require_relative "../support/artifice/endpoint_timeout"
 
       @t = Thread.new do
-        server = Rack::Server.start(:app => EndpointTimeout,
-                                    :Host => "0.0.0.0",
-                                    :Port => port,
-                                    :server => "webrick",
-                                    :AccessLog => [],
-                                    :Logger => Spec::SilentLogger.new)
+        server = Rack::Server.start(app: EndpointTimeout,
+                                    Host: "0.0.0.0",
+                                    Port: port,
+                                    server: "webrick",
+                                    AccessLog: [],
+                                    Logger: Spec::SilentLogger.new)
         server.start
       end
       @t.run
@@ -34,7 +34,7 @@ RSpec.describe "gemcutter's dependency API", :realworld => true do
     end
 
     it "times out and falls back on the modern index" do
-      install_gemfile <<-G, :artifice => nil
+      install_gemfile <<-G, artifice: nil
         source "#{@server_uri}"
         gem "rack"
       G

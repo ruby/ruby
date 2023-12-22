@@ -24,6 +24,12 @@ describe "IO#gets" do
     end
   end
 
+  it "sets $_ to nil after the last line has been read" do
+    while @io.gets
+    end
+    $_.should be_nil
+  end
+
   it "returns nil if called at the end of the stream" do
     IOSpecs.lines.length.times { @io.gets }
     @io.gets.should == nil

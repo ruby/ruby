@@ -6,7 +6,6 @@ RSpec.describe Bundler::Plugin::Installer do
   describe "cli install" do
     it "uses Gem.sources when non of the source is provided" do
       sources = double(:sources)
-      Bundler.settings # initialize it before we have to touch rubygems.ext_lock
       allow(Gem).to receive(:sources) { sources }
 
       allow(installer).to receive(:install_rubygems).
@@ -21,7 +20,7 @@ RSpec.describe Bundler::Plugin::Installer do
         allow(installer).to receive(:install_git).
           and_return("new-plugin" => spec)
 
-        expect(installer.install(["new-plugin"], :git => "https://some.ran/dom")).
+        expect(installer.install(["new-plugin"], git: "https://some.ran/dom")).
           to eq("new-plugin" => spec)
       end
 
@@ -29,7 +28,7 @@ RSpec.describe Bundler::Plugin::Installer do
         allow(installer).to receive(:install_local_git).
           and_return("new-plugin" => spec)
 
-        expect(installer.install(["new-plugin"], :local_git => "/phony/path/repo")).
+        expect(installer.install(["new-plugin"], local_git: "/phony/path/repo")).
           to eq("new-plugin" => spec)
       end
 
@@ -37,7 +36,7 @@ RSpec.describe Bundler::Plugin::Installer do
         allow(installer).to receive(:install_rubygems).
           and_return("new-plugin" => spec)
 
-        expect(installer.install(["new-plugin"], :source => "https://some.ran/dom")).
+        expect(installer.install(["new-plugin"], source: "https://some.ran/dom")).
           to eq("new-plugin" => spec)
       end
     end
@@ -52,13 +51,13 @@ RSpec.describe Bundler::Plugin::Installer do
 
       context "git plugins" do
         before do
-          build_git "ga-plugin", :path => lib_path("ga-plugin") do |s|
+          build_git "ga-plugin", path: lib_path("ga-plugin") do |s|
             s.write "plugins.rb"
           end
         end
 
         let(:result) do
-          installer.install(["ga-plugin"], :git => file_uri_for(lib_path("ga-plugin")))
+          installer.install(["ga-plugin"], git: file_uri_for(lib_path("ga-plugin")))
         end
 
         it "returns the installed spec after installing" do
@@ -75,13 +74,13 @@ RSpec.describe Bundler::Plugin::Installer do
 
       context "local git plugins" do
         before do
-          build_git "ga-plugin", :path => lib_path("ga-plugin") do |s|
+          build_git "ga-plugin", path: lib_path("ga-plugin") do |s|
             s.write "plugins.rb"
           end
         end
 
         let(:result) do
-          installer.install(["ga-plugin"], :local_git => lib_path("ga-plugin").to_s)
+          installer.install(["ga-plugin"], local_git: lib_path("ga-plugin").to_s)
         end
 
         it "returns the installed spec after installing" do
@@ -98,7 +97,7 @@ RSpec.describe Bundler::Plugin::Installer do
 
       context "rubygems plugins" do
         let(:result) do
-          installer.install(["re-plugin"], :source => file_uri_for(gem_repo2))
+          installer.install(["re-plugin"], source: file_uri_for(gem_repo2))
         end
 
         it "returns the installed spec after installing " do
@@ -113,7 +112,7 @@ RSpec.describe Bundler::Plugin::Installer do
 
       context "multiple plugins" do
         let(:result) do
-          installer.install(["re-plugin", "ma-plugin"], :source => file_uri_for(gem_repo2))
+          installer.install(["re-plugin", "ma-plugin"], source: file_uri_for(gem_repo2))
         end
 
         it "returns the installed spec after installing " do

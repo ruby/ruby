@@ -56,9 +56,15 @@ describe "Process::Constants" do
   end
 
   platform_is :netbsd, :freebsd do
-    it "Process::RLIMIT_SBSIZE" do
+    it "has the correct constant values on NetBSD and FreeBSD" do
       Process::RLIMIT_SBSIZE.should == 9 # FIXME: what's it equal?
       Process::RLIMIT_AS.should == 10
+    end
+  end
+
+  platform_is :freebsd do
+    it "has the correct constant values on FreeBSD" do
+      Process::RLIMIT_NPTS.should == 11
     end
   end
 

@@ -136,6 +136,14 @@ module Bundler
         @hooks[event] || []
       end
 
+      # This plugin is installed inside the .bundle/plugin directory,
+      # and thus is managed solely by Bundler
+      def installed_in_plugin_root?(name)
+        return false unless (path = installed?(name))
+
+        path.start_with?("#{Plugin.root}/")
+      end
+
       private
 
       # Reads the index file from the directory and initializes the instance

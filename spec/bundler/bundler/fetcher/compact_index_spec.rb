@@ -6,8 +6,9 @@ require "bundler/compact_index_client"
 RSpec.describe Bundler::Fetcher::CompactIndex do
   let(:downloader)  { double(:downloader) }
   let(:display_uri) { Bundler::URI("http://sampleuri.com") }
-  let(:remote)      { double(:remote, :cache_slug => "lsjdf", :uri => display_uri) }
-  let(:compact_index) { described_class.new(downloader, remote, display_uri) }
+  let(:remote)      { double(:remote, cache_slug: "lsjdf", uri: display_uri) }
+  let(:gem_remote_fetcher) { nil }
+  let(:compact_index) { described_class.new(downloader, remote, display_uri, gem_remote_fetcher) }
 
   before do
     allow(compact_index).to receive(:log_specs) {}
@@ -33,7 +34,7 @@ RSpec.describe Bundler::Fetcher::CompactIndex do
     describe "#available?" do
       before do
         allow(compact_index).to receive(:compact_index_client).
-          and_return(double(:compact_index_client, :update_and_parse_checksums! => true))
+          and_return(double(:compact_index_client, update_and_parse_checksums!: true))
       end
 
       it "returns true" do

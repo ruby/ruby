@@ -2,12 +2,12 @@ require_relative '../spec_helper'
 require_relative '../fixtures/classes'
 require_relative 'shared/new'
 
-describe "UNIXSocket.open" do
-  it_behaves_like :unixsocket_new, :open
-end
+with_feature :unix_socket do
+  describe "UNIXSocket.open" do
+    it_behaves_like :unixsocket_new, :open
+  end
 
-describe "UNIXSocket.open" do
-  platform_is_not :windows do
+  describe "UNIXSocket.open" do
     before :each do
       @path = SocketSpecs.socket_path
       @server = UNIXServer.open(@path)

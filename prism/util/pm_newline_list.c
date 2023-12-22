@@ -1,7 +1,9 @@
 #include "prism/util/pm_newline_list.h"
 
-// Initialize a new newline list with the given capacity. Returns true if the
-// allocation of the offsets succeeds, otherwise returns false.
+/**
+ * Initialize a new newline list with the given capacity. Returns true if the
+ * allocation of the offsets succeeds, otherwise returns false.
+ */
 bool
 pm_newline_list_init(pm_newline_list_t *list, const uint8_t *start, size_t capacity) {
     list->offsets = (size_t *) calloc(capacity, sizeof(size_t));
@@ -14,14 +16,13 @@ pm_newline_list_init(pm_newline_list_t *list, const uint8_t *start, size_t capac
     list->size = 1;
     list->capacity = capacity;
 
-    list->last_index = 0;
-    list->last_offset = 0;
-
     return true;
 }
 
-// Append a new offset to the newline list. Returns true if the reallocation of
-// the offsets succeeds (if one was necessary), otherwise returns false.
+/**
+ * Append a new offset to the newline list. Returns true if the reallocation of
+ * the offsets succeeds (if one was necessary), otherwise returns false.
+ */
 bool
 pm_newline_list_append(pm_newline_list_t *list, const uint8_t *cursor) {
     if (list->size == list->capacity) {
@@ -44,7 +45,10 @@ pm_newline_list_append(pm_newline_list_t *list, const uint8_t *cursor) {
     return true;
 }
 
-// Conditionally append a new offset to the newline list, if the value passed in is a newline.
+/**
+ * Conditionally append a new offset to the newline list, if the value passed in
+ * is a newline.
+ */
 bool
 pm_newline_list_check_append(pm_newline_list_t *list, const uint8_t *cursor) {
     if (*cursor != '\n') {
@@ -53,9 +57,11 @@ pm_newline_list_check_append(pm_newline_list_t *list, const uint8_t *cursor) {
     return pm_newline_list_append(list, cursor);
 }
 
-// Returns the line and column of the given offset. If the offset is not in the
-// list, the line and column of the closest offset less than the given offset
-// are returned.
+/**
+ * Returns the line and column of the given offset. If the offset is not in the
+ * list, the line and column of the closest offset less than the given offset
+ * are returned.
+ */
 pm_line_column_t
 pm_newline_list_line_column(const pm_newline_list_t *list, const uint8_t *cursor) {
     assert(cursor >= list->start);
@@ -81,7 +87,9 @@ pm_newline_list_line_column(const pm_newline_list_t *list, const uint8_t *cursor
     return ((pm_line_column_t) { left - 1, offset - list->offsets[left - 1] });
 }
 
-// Free the internal memory allocated for the newline list.
+/**
+ * Free the internal memory allocated for the newline list.
+ */
 void
 pm_newline_list_free(pm_newline_list_t *list) {
     free(list->offsets);

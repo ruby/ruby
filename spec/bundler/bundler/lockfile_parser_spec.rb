@@ -119,12 +119,13 @@ RSpec.describe Bundler::LockfileParser do
     let(:bundler_version) { Gem::Version.new("1.12.0.rc.2") }
     let(:ruby_version) { "ruby 2.1.3p242" }
     let(:lockfile_path) { Bundler.default_lockfile.relative_path_from(Dir.pwd) }
-    let(:rake_checksum) do
+    let(:rake_sha256_checksum) do
       Bundler::Checksum.from_lock(
         "sha256=814828c34f1315d7e7b7e8295184577cc4e969bad6156ac069d02d63f58d82e8",
         "#{lockfile_path}:20:17"
       )
     end
+    let(:rake_checksums) { [rake_sha256_checksum] }
 
     shared_examples_for "parsing" do
       it "parses correctly" do
@@ -135,9 +136,9 @@ RSpec.describe Bundler::LockfileParser do
         expect(subject.platforms).to eq platforms
         expect(subject.bundler_version).to eq bundler_version
         expect(subject.ruby_version).to eq ruby_version
-        checksum = subject.sources.last.checksum_store.fetch(specs.last)
-        expect(checksum).to be_match(rake_checksum)
-        expect(checksum.sources.first.to_s).to match(/the lockfile CHECKSUMS at #{Regexp.escape(lockfile_path.to_s)}:\d+:\d+/)
+        rake_spec = specs.last
+        checksums = subject.sources.last.checksum_store.to_lock(specs.last)
+        expect(checksums).to eq("#{rake_spec.name_tuple.lock_name} #{rake_checksums.map(&:to_lock).sort.join(",")}")
       end
     end
 
@@ -174,18 +175,20 @@ RSpec.describe Bundler::LockfileParser do
     end
 
     context "when the checksum is of an unknown algorithm" do
+      let(:rake_sha512_checksum) do
+        Bundler::Checksum.from_lock(
+          "sha512=pVDn9GLmcFkz8vj1ueiVxj5uGKkAyaqYjEX8zG6L5O4BeVg3wANaKbQdpj/B82Nd/MHVszy6polHcyotUdwilQ==",
+          "#{lockfile_path}:20:17"
+        )
+      end
       let(:lockfile_contents) do
         super().sub(
           "sha256=",
           "sha512=pVDn9GLmcFkz8vj1ueiVxj5uGKkAyaqYjEX8zG6L5O4BeVg3wANaKbQdpj/B82Nd/MHVszy6polHcyotUdwilQ==,sha256="
         )
       end
+      let(:rake_checksums) { [rake_sha256_checksum, rake_sha512_checksum] }
       include_examples "parsing"
-
-      it "preserves the checksum as is" do
-        checksum = subject.sources.last.checksum_store.fetch(specs.last, "sha512")
-        expect(checksum.algo).to eq("sha512")
-      end
     end
 
     context "when CHECKSUMS has duplicate checksums in the lockfile that don't match" do
@@ -198,7 +201,7 @@ RSpec.describe Bundler::LockfileParser do
             Bundler found mismatched checksums. This is a potential security risk.
               rake (10.3.2) #{bad_checksum}
                 from the lockfile CHECKSUMS at #{lockfile_path}:20:17
-              rake (10.3.2) #{rake_checksum.to_lock}
+              rake (10.3.2) #{rake_sha256_checksum.to_lock}
                 from the lockfile CHECKSUMS at #{lockfile_path}:21:17
 
             To resolve this issue you can either:

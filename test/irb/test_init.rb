@@ -120,6 +120,50 @@ module TestIRB
       IRB.conf[:USE_AUTOCOMPLETE] = orig_use_autocomplete_conf
     end
 
+    def test_completor_environment_variable
+      orig_use_autocomplete_env = ENV['IRB_COMPLETOR']
+      orig_use_autocomplete_conf = IRB.conf[:COMPLETOR]
+
+      ENV['IRB_COMPLETOR'] = nil
+      IRB.setup(__FILE__)
+      assert_equal(:regexp, IRB.conf[:COMPLETOR])
+
+      ENV['IRB_COMPLETOR'] = 'regexp'
+      IRB.setup(__FILE__)
+      assert_equal(:regexp, IRB.conf[:COMPLETOR])
+
+      ENV['IRB_COMPLETOR'] = 'type'
+      IRB.setup(__FILE__)
+      assert_equal(:type, IRB.conf[:COMPLETOR])
+
+      ENV['IRB_COMPLETOR'] = 'regexp'
+      IRB.setup(__FILE__, argv: ['--type-completor'])
+      assert_equal :type, IRB.conf[:COMPLETOR]
+
+      ENV['IRB_COMPLETOR'] = 'type'
+      IRB.setup(__FILE__, argv: ['--regexp-completor'])
+      assert_equal :regexp, IRB.conf[:COMPLETOR]
+    ensure
+      ENV['IRB_COMPLETOR'] = orig_use_autocomplete_env
+      IRB.conf[:COMPLETOR] = orig_use_autocomplete_conf
+    end
+
+    def test_completor_setup_with_argv
+      orig_completor_conf = IRB.conf[:COMPLETOR]
+
+      # Default is :regexp
+      IRB.setup(__FILE__, argv: [])
+      assert_equal :regexp, IRB.conf[:COMPLETOR]
+
+      IRB.setup(__FILE__, argv: ['--type-completor'])
+      assert_equal :type, IRB.conf[:COMPLETOR]
+
+      IRB.setup(__FILE__, argv: ['--regexp-completor'])
+      assert_equal :regexp, IRB.conf[:COMPLETOR]
+    ensure
+      IRB.conf[:COMPLETOR] = orig_completor_conf
+    end
+
     def test_noscript
       argv = %w[--noscript -- -f]
       IRB.setup(eval("__FILE__"), argv: argv)
@@ -172,6 +216,46 @@ module TestIRB
       yield
     ensure
       ARGV.replace(orig)
+    end
+  end
+
+  class InitIntegrationTest < IntegrationTestCase
+    def test_load_error_in_rc_file_is_warned
+      write_rc <<~'IRBRC'
+        require "file_that_does_not_exist"
+      IRBRC
+
+      write_ruby <<~'RUBY'
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "'foobar'"
+        type "exit"
+      end
+
+      # IRB session should still be started
+      assert_includes output, "foobar"
+      assert_includes output, 'cannot load such file -- file_that_does_not_exist (LoadError)'
+    end
+
+    def test_normal_errors_in_rc_file_is_warned
+      write_rc <<~'IRBRC'
+        raise "I'm an error"
+      IRBRC
+
+      write_ruby <<~'RUBY'
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "'foobar'"
+        type "exit"
+      end
+
+      # IRB session should still be started
+      assert_includes output, "foobar"
+      assert_includes output, 'I\'m an error (RuntimeError)'
     end
   end
 end

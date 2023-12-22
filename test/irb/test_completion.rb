@@ -37,11 +37,11 @@ module TestIRB
       def test_complete_hash_and_proc
         # hash
         assert_include(completion_candidates("{}.an", binding), "{}.any?")
-        assert_equal(["Proc.any?", "Hash.any?"], doc_namespace("{}.any?", binding))
+        assert_equal(["Hash.any?", "Proc.any?"], doc_namespace("{}.any?", binding))
 
         # proc
         assert_include(completion_candidates("{}.bin", binding), "{}.binding")
-        assert_equal(["Proc.binding", "Hash.binding"], doc_namespace("{}.binding", binding))
+        assert_equal(["Hash.binding", "Proc.binding"], doc_namespace("{}.binding", binding))
       end
 
       def test_complete_numeric

@@ -6,6 +6,7 @@
         ├── @ UndefNode (location: (1,0)-(1,7))
         │   ├── names: (length: 1)
         │   │   └── @ SymbolNode (location: (1,6)-(1,7))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (1,6)-(1,7) = "a"
         │   │       ├── closing_loc: ∅
@@ -14,11 +15,13 @@
         ├── @ UndefNode (location: (3,0)-(3,10))
         │   ├── names: (length: 2)
         │   │   ├── @ SymbolNode (location: (3,6)-(3,7))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: ∅
         │   │   │   ├── value_loc: (3,6)-(3,7) = "a"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a"
         │   │   └── @ SymbolNode (location: (3,9)-(3,10))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (3,9)-(3,10) = "b"
         │   │       ├── closing_loc: ∅
@@ -27,6 +30,7 @@
         ├── @ UndefNode (location: (5,0)-(5,8))
         │   ├── names: (length: 1)
         │   │   └── @ SymbolNode (location: (5,6)-(5,8))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (5,6)-(5,8) = "if"
         │   │       ├── closing_loc: ∅
@@ -35,6 +39,7 @@
         ├── @ UndefNode (location: (7,0)-(7,9))
         │   ├── names: (length: 1)
         │   │   └── @ SymbolNode (location: (7,6)-(7,9))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: ∅
         │   │       ├── value_loc: (7,6)-(7,9) = "<=>"
         │   │       ├── closing_loc: ∅
@@ -43,6 +48,7 @@
         ├── @ UndefNode (location: (9,0)-(9,8))
         │   ├── names: (length: 1)
         │   │   └── @ SymbolNode (location: (9,6)-(9,8))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: (9,6)-(9,7) = ":"
         │   │       ├── value_loc: (9,7)-(9,8) = "a"
         │   │       ├── closing_loc: ∅
@@ -51,16 +57,19 @@
         ├── @ UndefNode (location: (11,0)-(11,16))
         │   ├── names: (length: 3)
         │   │   ├── @ SymbolNode (location: (11,6)-(11,8))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (11,6)-(11,7) = ":"
         │   │   │   ├── value_loc: (11,7)-(11,8) = "a"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "a"
         │   │   ├── @ SymbolNode (location: (11,10)-(11,12))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── opening_loc: (11,10)-(11,11) = ":"
         │   │   │   ├── value_loc: (11,11)-(11,12) = "b"
         │   │   │   ├── closing_loc: ∅
         │   │   │   └── unescaped: "b"
         │   │   └── @ SymbolNode (location: (11,14)-(11,16))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: (11,14)-(11,15) = ":"
         │   │       ├── value_loc: (11,15)-(11,16) = "c"
         │   │       ├── closing_loc: ∅
@@ -69,6 +78,7 @@
         ├── @ UndefNode (location: (13,0)-(13,12))
         │   ├── names: (length: 1)
         │   │   └── @ SymbolNode (location: (13,6)-(13,12))
+        │   │       ├── flags: ∅
         │   │       ├── opening_loc: (13,6)-(13,8) = ":'"
         │   │       ├── value_loc: (13,8)-(13,11) = "abc"
         │   │       ├── closing_loc: (13,11)-(13,12) = "'"
@@ -98,6 +108,7 @@
         └── @ UndefNode (location: (17,0)-(17,14))
             ├── names: (length: 1)
             │   └── @ SymbolNode (location: (17,6)-(17,14))
+            │       ├── flags: ∅
             │       ├── opening_loc: ∅
             │       ├── value_loc: (17,6)-(17,14) = "Constant"
             │       ├── closing_loc: ∅

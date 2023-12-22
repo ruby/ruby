@@ -106,7 +106,7 @@ mod tests {
 
     #[test]
     fn test_failures() {
-        vec![5, 9, 10, 11, 13, 17, 18, 19].iter().for_each(|&imm| {
+        [5, 9, 10, 11, 13, 17, 18, 19].iter().for_each(|&imm| {
             assert!(BitmaskImmediate::try_from(imm).is_err());
         });
     }

@@ -30,3 +30,15 @@ case type;
    end
 
 case ;;;;;;;; when 1; end
+
+case 1 in 2
+when 3
+end
+
+case 1 in 2; when 3; end
+
+case 1 in 2
+in 3
+end
+
+case 1 in 2; in 3; end

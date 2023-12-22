@@ -212,6 +212,34 @@ end
 
 describe :kernel_require, shared: true do
   describe "(path resolution)" do
+    it "loads .rb file when passed absolute path without extension" do
+      path = File.expand_path "load_fixture", CODE_LOADING_DIR
+      @object.send(@method, path).should be_true
+      # This should _not_ be [:no_ext]
+      ScratchPad.recorded.should == [:loaded]
+    end
+
+    platform_is :linux, :darwin do
+      it "loads c-extension file when passed absolute path without extension when no .rb is present" do
+        # the error message is specific to what dlerror() returns
+        path = File.join CODE_LOADING_DIR, "a", "load_fixture"
+        -> { @object.send(@method, path) }.should raise_error(Exception, /file too short|not a mach-o file/)
+      end
+    end
+
+    platform_is :darwin do
+      it "loads .bundle file when passed absolute path with .so" do
+        # the error message is specific to what dlerror() returns
+        path = File.join CODE_LOADING_DIR, "a", "load_fixture.so"
+        -> { @object.send(@method, path) }.should raise_error(Exception, /load_fixture\.bundle.+(file too short|not a mach-o file)/)
+      end
+    end
+
+    it "does not try an extra .rb if the path already ends in .rb" do
+      path = File.join CODE_LOADING_DIR, "d", "load_fixture.rb"
+      -> { @object.send(@method, path) }.should raise_error(LoadError)
+    end
+
     # For reference see [ruby-core:24155] in which matz confirms this feature is
     # intentional for security reasons.
     it "does not load a bare filename unless the current working directory is in $LOAD_PATH" do

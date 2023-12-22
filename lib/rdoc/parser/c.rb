@@ -575,19 +575,18 @@ class RDoc::Parser::C < RDoc::Parser
     table = {}
     file_content.scan(%r{
       ((?>/\*.*?\*/\s*)?)
-      ((?:(?:\w+)\s+)?
-        (?:intern\s+)?VALUE\s+(\w+)
-        \s*(?:\([^)]*\))(?:[^\);]|$))
+      ((?:\w+\s+){0,2} VALUE\s+(\w+)
+        \s*(?:\([^\)]*\))(?:[^\);]|$))
     | ((?>/\*.*?\*/\s*))^\s*(\#\s*define\s+(\w+)\s+(\w+))
     | ^\s*\#\s*define\s+(\w+)\s+(\w+)
     }xm) do
       case
-      when $1
-        table[$3] = [:func_def, $1, $2, $~.offset(2)] if !table[$3] || table[$3][0] != :func_def
-      when $4
-        table[$6] = [:macro_def, $4, $5, $~.offset(5), $7] if !table[$6] || table[$6][0] == :macro_alias
-      when $8
-        table[$8] ||= [:macro_alias, $9]
+      when name = $3
+        table[name] = [:func_def, $1, $2, $~.offset(2)] if !(t = table[name]) || t[0] != :func_def
+      when name = $6
+        table[name] = [:macro_def, $4, $5, $~.offset(5), $7] if !(t = table[name]) || t[0] == :macro_alias
+      when name = $8
+        table[name] ||= [:macro_alias, $9]
       end
     end
     table
@@ -939,14 +938,13 @@ class RDoc::Parser::C < RDoc::Parser
     # "/* definition: comment */" form.  The literal ':' and '\' characters
     # can be escaped with a backslash.
     if type.downcase == 'const' then
-      no_match, new_definition, new_comment = comment.text.split(/(\A.*):/)
+      if /\A(.+?)?:(?!\S)/ =~ comment.text
+        new_definition, new_comment = $1, $'
 
-      if no_match and no_match.empty? then
-        if new_definition.empty? then # Default to literal C definition
+        if !new_definition # Default to literal C definition
           new_definition = definition
         else
-          new_definition = new_definition.gsub("\:", ":")
-          new_definition = new_definition.gsub("\\", '\\')
+          new_definition = new_definition.gsub(/\\([\\:])/, '\1')
         end
 
         new_definition.sub!(/\A(\s+)/, '')
@@ -1216,6 +1214,9 @@ class RDoc::Parser::C < RDoc::Parser
 
     @top_level
   end
+
+  ##
+  # Creates a RDoc::Comment instance.
 
   def new_comment text = nil, location = nil, language = nil
     RDoc::Comment.new(text, location, language).tap do |comment|

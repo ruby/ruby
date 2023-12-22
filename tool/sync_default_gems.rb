@@ -149,7 +149,7 @@ module SyncDefaultGems
       gemspec_content = File.readlines("#{upstream}/bundler/bundler.gemspec").map do |line|
         next if line =~ /LICENSE\.md/
 
-        line.gsub("bundler.gemspec", "lib/bundler/bundler.gemspec").gsub('"exe"', '"libexec"')
+        line.gsub("bundler.gemspec", "lib/bundler/bundler.gemspec")
       end.compact.join
       File.write("lib/bundler/bundler.gemspec", gemspec_content)
 
@@ -206,7 +206,6 @@ module SyncDefaultGems
       rm_rf("test/json/lib")
       cp_r("#{upstream}/lib", "ext/json")
       cp_r("#{upstream}/json.gemspec", "ext/json")
-      cp_r("#{upstream}/VERSION", "ext/json")
       rm_rf(%w[ext/json/lib/json/ext ext/json/lib/json/pure.rb ext/json/lib/json/pure])
       `git checkout ext/json/extconf.rb ext/json/parser/prereq.mk ext/json/generator/depend ext/json/parser/depend ext/json/depend`
     when "psych"
@@ -413,6 +412,8 @@ module SyncDefaultGems
       cp_r("#{upstream}/templates", "prism/")
       rm_rf("prism/templates/javascript")
       rm_rf("prism/templates/java")
+      rm_rf("prism/templates/rbi")
+      rm_rf("prism/templates/sig")
 
       rm("prism/extconf.rb")
     else
@@ -432,7 +433,7 @@ module SyncDefaultGems
       |ext/.*\.java
       |rakelib/.*
       |test/(?:lib|fixtures)/.*
-      |tool/.*
+      |tool/(?!bundler/).*
     )\z]mx
 
     # Gem-specific patterns
@@ -543,6 +544,8 @@ module SyncDefaultGems
         end
         if editor
           system([editor, conflict].join(' '))
+          conflict.delete_if {|f| !File.exist?(f)}
+          return true if conflict.empty?
           return system(*%w"git add --", *conflict)
         end
       end
@@ -552,6 +555,10 @@ module SyncDefaultGems
     return true
   end
 
+  def preexisting?(base, file)
+    system(*%w"git cat-file -e", "#{base}:#{file}", err: File::NULL)
+  end
+
   def filter_pickup_files(changed, ignore_file_pattern, base)
     toplevels = {}
     remove = []
@@ -559,14 +566,13 @@ module SyncDefaultGems
     changed = changed.reject do |f|
       case
       when toplevels.fetch(top = f[%r[\A[^/]+(?=/|\z)]m]) {
-             remove << top if toplevels[top] =
-                              !system(*%w"git cat-file -e", "#{base}:#{top}", err: File::NULL)
+             remove << top if toplevels[top] = !preexisting?(base, top)
            }
         # Remove any new top-level directories.
         true
       when ignore_file_pattern.match?(f)
         # Forcibly reset any changes matching ignore_file_pattern.
-        ignore << f
+        (preexisting?(base, f) ? ignore : remove) << f
       end
     end
     return changed, remove, ignore

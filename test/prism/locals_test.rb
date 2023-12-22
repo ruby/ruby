@@ -68,6 +68,13 @@ module Prism
     # HERE
     todos << "seattlerb/heredoc_nested.txt"
 
+    # Ruby < 3.3.0 fails to parse:
+    #
+    # <<-'  HERE'
+    #  foo
+    #   HERE
+    invalid << "heredocs_leading_whitespace.txt" if RUBY_VERSION < "3.3.0"
+
     base = File.join(__dir__, "fixtures")
     skips = invalid | todos
 

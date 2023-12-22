@@ -63,6 +63,22 @@ class TestTempfile < Test::Unit::TestCase
     assert_match(/\.txt$/, File.basename(t.path))
   end
 
+  def test_dup
+    t = tempfile
+    t2 = t.dup
+    t2.close
+    assert_equal true, t2.closed?
+    assert_equal false, t.closed?
+  end
+
+  def test_clone
+    t = tempfile
+    t2 = t.clone
+    t2.close
+    assert_equal true, t2.closed?
+    assert_equal false, t.closed?
+  end
+
   def test_unlink
     t = tempfile("foo")
     path = t.path
@@ -360,6 +376,14 @@ puts Tempfile.new('foo').path
       assert_file.exist?(path)
     }
     assert_file.not_exist?(path)
+  end
+
+  def test_open
+    Tempfile.open {|f|
+      file = f.open
+      assert_kind_of File, file
+      assert_equal f.to_i, file.to_i
+    }
   end
 
   def test_open_traversal_dir

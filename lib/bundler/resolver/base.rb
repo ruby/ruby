@@ -24,7 +24,7 @@ module Bundler
 
           name = dep.name
 
-          @packages[name] = Package.new(name, dep_platforms, **options.merge(:dependency => dep))
+          @packages[name] = Package.new(name, dep_platforms, **options.merge(dependency: dep))
 
           dep
         end.compact

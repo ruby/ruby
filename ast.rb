@@ -265,8 +265,8 @@ module RubyVM::AbstractSyntaxTree
       lines = script_lines
       if lines
         lines = lines[first_lineno - 1 .. last_lineno - 1]
-        lines[-1] = lines[-1][0...last_column]
-        lines[0] = lines[0][first_column..-1]
+        lines[-1] = lines[-1].byteslice(0...last_column)
+        lines[0] = lines[0].byteslice(first_column..-1)
         lines.join
       else
         nil

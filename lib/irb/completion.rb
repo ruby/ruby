@@ -9,6 +9,30 @@ require_relative 'ruby-lex'
 
 module IRB
   class BaseCompletor # :nodoc:
+
+    # Set of reserved words used by Ruby, you should not use these for
+    # constants or variables
+    ReservedWords = %w[
+      __ENCODING__ __LINE__ __FILE__
+      BEGIN END
+      alias and
+      begin break
+      case class
+      def defined? do
+      else elsif end ensure
+      false for
+      if in
+      module
+      next nil not
+      or
+      redo rescue retry return
+      self super
+      then true
+      undef unless until
+      when while
+      yield
+    ]
+
     def completion_candidates(preposing, target, postposing, bind:)
       raise NotImplementedError
     end
@@ -69,6 +93,27 @@ module IRB
     end
   end
 
+  class TypeCompletor < BaseCompletor # :nodoc:
+    def initialize(context)
+      @context = context
+    end
+
+    def inspect
+      ReplTypeCompletor.info
+    end
+
+    def completion_candidates(preposing, target, _postposing, bind:)
+      result = ReplTypeCompletor.analyze(preposing + target, binding: bind, filename: @context.irb_path)
+      return [] unless result
+      result.completion_candidates.map { target + _1 }
+    end
+
+    def doc_namespace(preposing, matched, _postposing, bind:)
+      result = ReplTypeCompletor.analyze(preposing + matched, binding: bind, filename: @context.irb_path)
+      result&.doc_namespace('')
+    end
+  end
+
   class RegexpCompletor < BaseCompletor # :nodoc:
     using Module.new {
       refine ::Binding do
@@ -94,28 +139,9 @@ module IRB
       end
     }
 
-    # Set of reserved words used by Ruby, you should not use these for
-    # constants or variables
-    ReservedWords = %w[
-      __ENCODING__ __LINE__ __FILE__
-      BEGIN END
-      alias and
-      begin break
-      case class
-      def defined? do
-      else elsif end ensure
-      false for
-      if in
-      module
-      next nil not
-      or
-      redo rescue retry return
-      self super
-      then true
-      undef unless until
-      when while
-      yield
-    ]
+    def inspect
+      'RegexpCompletor'
+    end
 
     def complete_require_path(target, preposing, postposing)
       if target =~ /\A(['"])([^'"]+)\Z/
@@ -205,16 +231,16 @@ module IRB
         end
 
       when /^([^\}]*\})\.([^.]*)$/
-        # Proc or Hash
+        # Hash or Proc
         receiver = $1
         message = $2
 
         if doc_namespace
-          ["Proc.#{message}", "Hash.#{message}"]
+          ["Hash.#{message}", "Proc.#{message}"]
         else
-          proc_candidates = Proc.instance_methods.collect{|m| m.to_s}
           hash_candidates = Hash.instance_methods.collect{|m| m.to_s}
-          select_message(receiver, message, proc_candidates | hash_candidates)
+          proc_candidates = Proc.instance_methods.collect{|m| m.to_s}
+          select_message(receiver, message, hash_candidates | proc_candidates)
         end
 
       when /^(:[^:.]+)$/

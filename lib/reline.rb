@@ -7,6 +7,7 @@ require 'reline/key_stroke'
 require 'reline/line_editor'
 require 'reline/history'
 require 'reline/terminfo'
+require 'reline/face'
 require 'rbconfig'
 
 module Reline
@@ -36,10 +37,8 @@ module Reline
   DialogRenderInfo = Struct.new(
     :pos,
     :contents,
-    :bg_color,
-    :pointer_bg_color,
-    :fg_color,
-    :pointer_fg_color,
+    :face,
+    :bg_color, # For the time being, this line should stay here for the compatibility with IRB.
     :width,
     :height,
     :scrollbar,
@@ -260,10 +259,7 @@ module Reline
         contents: result,
         scrollbar: true,
         height: [15, preferred_dialog_height].min,
-        bg_color: 46,
-        pointer_bg_color: 45,
-        fg_color: 37,
-        pointer_fg_color: 37
+        face: :completion_dialog
       )
     }
     Reline::DEFAULT_DIALOG_CONTEXT = Array.new
@@ -605,5 +601,7 @@ Reline::IOGate = if tty
 else
   io
 end
+
+Reline::Face.load_initial_configs
 
 Reline::HISTORY = Reline::History.new(Reline.core.config)

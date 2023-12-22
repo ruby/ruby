@@ -354,7 +354,7 @@ describe "File.open" do
     end
   end
 
-  it "raises an Errorno::EEXIST if the file exists when open with File::CREAT|File::EXCL" do
+  it "raises an Errno::EEXIST if the file exists when open with File::CREAT|File::EXCL" do
     -> {
       File.open(@file, File::CREAT|File::EXCL) do |f|
         f.puts("writing")
@@ -423,7 +423,7 @@ describe "File.open" do
       }.should raise_error(IOError)
     end
 
-    it "raises an Errorno::EEXIST if the file exists when open with File::RDONLY|File::TRUNC" do
+    it "raises an Errno::EEXIST if the file exists when open with File::RDONLY|File::TRUNC" do
       -> {
         File.open(@file, File::RDONLY|File::TRUNC) do |f|
           f.puts("writing").should == nil
@@ -441,7 +441,7 @@ describe "File.open" do
       }.should raise_error(Errno::EINVAL)
     end
 
-    it "raises an Errorno::EEXIST if the file exists when open with File::RDONLY|File::TRUNC" do
+    it "raises an Errno::EEXIST if the file exists when open with File::RDONLY|File::TRUNC" do
       -> {
         File.open(@file, File::RDONLY|File::TRUNC) do |f|
           f.puts("writing").should == nil

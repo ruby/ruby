@@ -57,14 +57,39 @@ pub trait Allocator {
     fn mark_unused(&mut self, ptr: *const u8, size: u32) -> bool;
 }
 
-/// Pointer into a [VirtualMemory].
-/// We may later change this to wrap an u32.
-/// Note: there is no NULL constant for CodePtr. You should use Option<CodePtr> instead.
+/// Pointer into a [VirtualMemory] represented as an offset from the base.
+/// Note: there is no NULL constant for [CodePtr]. You should use `Option<CodePtr>` instead.
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Debug)]
 #[repr(C, packed)]
-pub struct CodePtr(NonNull<u8>);
+pub struct CodePtr(u32);
 
 impl CodePtr {
+    /// Advance the CodePtr. Can return a dangling pointer.
+    pub fn add_bytes(self, bytes: usize) -> Self {
+        let CodePtr(raw) = self;
+        let bytes: u32 = bytes.try_into().unwrap();
+        CodePtr(raw + bytes)
+    }
+
+    /// Note that the raw pointer might be dangling if there hasn't
+    /// been any writes to it through the [VirtualMemory] yet.
+    pub fn raw_ptr(self, base: &impl CodePtrBase) -> *const u8 {
+        let CodePtr(offset) = self;
+        return base.base_ptr().as_ptr().wrapping_add(offset.as_usize())
+    }
+
+    /// Get the address of the code pointer.
+    pub fn raw_addr(self, base: &impl CodePtrBase) -> usize {
+        self.raw_ptr(base) as usize
+    }
+
+    /// Get the offset component for the code pointer. Useful finding the distance between two
+    /// code pointers that share the same [VirtualMem].
+    pub fn as_offset(self) -> i64 {
+        let CodePtr(offset) = self;
+        offset.into()
+    }
+
     pub fn as_side_exit(self) -> Target {
         Target::SideExitPtr(self)
     }
@@ -98,7 +123,7 @@ impl<A: Allocator> VirtualMemory<A> {
     /// Return the start of the region as a raw pointer. Note that it could be a dangling
     /// pointer so be careful dereferencing it.
     pub fn start_ptr(&self) -> CodePtr {
-        CodePtr(self.region_start)
+        CodePtr(0)
     }
 
     pub fn mapped_end_ptr(&self) -> CodePtr {
@@ -128,7 +153,7 @@ impl<A: Allocator> VirtualMemory<A> {
     /// Write a single byte. The first write to a page makes it readable.
     pub fn write_byte(&mut self, write_ptr: CodePtr, byte: u8) -> Result<(), WriteError> {
         let page_size = self.page_size_bytes;
-        let raw: *mut u8 = write_ptr.raw_ptr() as *mut u8;
+        let raw: *mut u8 = write_ptr.raw_ptr(self) as *mut u8;
         let page_addr = (raw as usize / page_size) * page_size;
 
         if self.current_write_page == Some(page_addr) {
@@ -209,57 +234,30 @@ impl<A: Allocator> VirtualMemory<A> {
 
     /// Free a range of bytes. start_ptr must be memory page-aligned.
     pub fn free_bytes(&mut self, start_ptr: CodePtr, size: u32) {
-        assert_eq!(start_ptr.into_usize() % self.page_size_bytes, 0);
+        assert_eq!(start_ptr.raw_ptr(self) as usize % self.page_size_bytes, 0);
 
         // Bounds check the request. We should only free memory we manage.
-        let mapped_region = self.start_ptr().raw_ptr()..self.mapped_end_ptr().raw_ptr();
-        let virtual_region = self.start_ptr().raw_ptr()..self.virtual_end_ptr().raw_ptr();
-        let last_byte_to_free = start_ptr.add_bytes(size.saturating_sub(1).as_usize()).raw_ptr();
-        assert!(mapped_region.contains(&start_ptr.raw_ptr()));
+        let mapped_region = self.start_ptr().raw_ptr(self)..self.mapped_end_ptr().raw_ptr(self);
+        let virtual_region = self.start_ptr().raw_ptr(self)..self.virtual_end_ptr().raw_ptr(self);
+        let last_byte_to_free = start_ptr.add_bytes(size.saturating_sub(1).as_usize()).raw_ptr(self);
+        assert!(mapped_region.contains(&start_ptr.raw_ptr(self)));
         // On platforms where code page size != memory page size (e.g. Linux), we often need
         // to free code pages that contain unmapped memory pages. When it happens on the last
         // code page, it's more appropriate to check the last byte against the virtual region.
         assert!(virtual_region.contains(&last_byte_to_free));
 
-        self.allocator.mark_unused(start_ptr.0.as_ptr(), size);
+        self.allocator.mark_unused(start_ptr.raw_ptr(self), size);
     }
 }
 
-impl CodePtr {
-    /// Note that the raw pointer might be dangling if there hasn't
-    /// been any writes to it through the [VirtualMemory] yet.
-    pub fn raw_ptr(self) -> *const u8 {
-        let CodePtr(ptr) = self;
-        return ptr.as_ptr();
-    }
-
-    /// Advance the CodePtr. Can return a dangling pointer.
-    pub fn add_bytes(self, bytes: usize) -> Self {
-        let CodePtr(raw) = self;
-        CodePtr(NonNull::new(raw.as_ptr().wrapping_add(bytes)).unwrap())
-    }
-
-    pub fn into_i64(self) -> i64 {
-        let CodePtr(ptr) = self;
-        ptr.as_ptr() as i64
-    }
-
-    #[cfg(target_arch = "aarch64")]
-    pub fn into_u64(self) -> u64 {
-        let CodePtr(ptr) = self;
-        ptr.as_ptr() as u64
-    }
-
-    pub fn into_usize(self) -> usize {
-        let CodePtr(ptr) = self;
-        ptr.as_ptr() as usize
-    }
+/// Something that could provide a base pointer to compute a raw pointer from a [CodePtr].
+pub trait CodePtrBase {
+    fn base_ptr(&self) -> NonNull<u8>;
 }
 
-impl From<*mut u8> for CodePtr {
-    fn from(value: *mut u8) -> Self {
-        assert!(value as usize != 0);
-        return CodePtr(NonNull::new(value).unwrap());
+impl<A: Allocator> CodePtrBase for VirtualMemory<A> {
+    fn base_ptr(&self) -> NonNull<u8> {
+        self.region_start
     }
 }
 
@@ -416,7 +414,7 @@ pub mod tests {
         let one_past_end = virt.start_ptr().add_bytes(virt.virtual_region_size());
         assert_eq!(Err(OutOfBounds), virt.write_byte(one_past_end, 0));
 
-        let end_of_addr_space = CodePtr(NonNull::new(usize::MAX as _).unwrap());
+        let end_of_addr_space = CodePtr(u32::MAX);
         assert_eq!(Err(OutOfBounds), virt.write_byte(end_of_addr_space, 0));
     }
 

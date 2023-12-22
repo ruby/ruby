@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name          = "tmpdir"
-  spec.version       = "0.1.3"
+  spec.version       = "0.2.0"
   spec.authors       = ["Yukihiro Matsumoto"]
   spec.email         = ["matz@ruby-lang.org"]
 

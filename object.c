@@ -92,6 +92,12 @@ static VALUE rb_cFalseClass_to_s;
 
 /*! \endcond */
 
+size_t
+rb_obj_embedded_size(uint32_t numiv)
+{
+    return offsetof(struct RObject, as.ary) + (sizeof(VALUE) * numiv);
+}
+
 VALUE
 rb_obj_hide(VALUE obj)
 {
@@ -293,12 +299,10 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
     rb_shape_t * src_shape = rb_shape_get_shape(obj);
 
     if (rb_shape_obj_too_complex(obj)) {
+        // obj is TOO_COMPLEX so we can copy its iv_hash
         st_table * table = rb_st_init_numtable_with_size(rb_st_table_size(ROBJECT_IV_HASH(obj)));
-
-        rb_ivar_foreach(obj, rb_obj_evacuate_ivs_to_hash_table, (st_data_t)table);
-        rb_shape_set_too_complex(dest);
-
-        ROBJECT(dest)->as.heap.ivptr = (VALUE *)table;
+        st_replace(table, ROBJECT_IV_HASH(obj));
+        rb_obj_convert_to_too_complex(dest, table);
 
         return;
     }
@@ -326,9 +330,16 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
         RUBY_ASSERT(initial_shape->type == SHAPE_T_OBJECT);
 
         shape_to_set_on_dest = rb_shape_rebuild_shape(initial_shape, src_shape);
+        if (UNLIKELY(rb_shape_id(shape_to_set_on_dest) == OBJ_TOO_COMPLEX_SHAPE_ID)) {
+            st_table * table = rb_st_init_numtable_with_size(src_num_ivs);
+            rb_obj_copy_ivs_to_hash_table(obj, table);
+            rb_obj_convert_to_too_complex(dest, table);
+
+            return;
+        }
     }
 
-    RUBY_ASSERT(src_num_ivs <= shape_to_set_on_dest->capacity);
+    RUBY_ASSERT(src_num_ivs <= shape_to_set_on_dest->capacity || rb_shape_id(shape_to_set_on_dest) == OBJ_TOO_COMPLEX_SHAPE_ID);
     if (initial_shape->capacity < shape_to_set_on_dest->capacity) {
         rb_ensure_iv_list_size(dest, initial_shape->capacity, shape_to_set_on_dest->capacity);
         dest_buf = ROBJECT_IVPTR(dest);
@@ -465,7 +476,7 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
         if (RB_OBJ_FROZEN(obj)) {
             rb_shape_t * next_shape = rb_shape_transition_shape_frozen(clone);
             if (!rb_shape_obj_too_complex(clone) && next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-                rb_evict_ivars_to_hash(clone, rb_shape_get_shape(clone));
+                rb_evict_ivars_to_hash(clone);
             }
             else {
                 rb_shape_set_shape(clone, next_shape);
@@ -489,7 +500,7 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
         // If we're out of shapes, but we want to freeze, then we need to
         // evacuate this clone to a hash
         if (!rb_shape_obj_too_complex(clone) && next_shape->type == SHAPE_OBJ_TOO_COMPLEX) {
-            rb_evict_ivars_to_hash(clone, rb_shape_get_shape(clone));
+            rb_evict_ivars_to_hash(clone);
         }
         else {
             rb_shape_set_shape(clone, next_shape);
@@ -697,10 +708,8 @@ rb_inspect(VALUE obj)
 }
 
 static int
-inspect_i(st_data_t k, st_data_t v, st_data_t a)
+inspect_i(ID id, VALUE value, st_data_t a)
 {
-    ID id = (ID)k;
-    VALUE value = (VALUE)v;
     VALUE str = (VALUE)a;
 
     /* need not to show internal data */

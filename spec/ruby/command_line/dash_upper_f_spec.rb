@@ -6,7 +6,7 @@ describe "the -F command line option" do
   end
 
   it "specifies the field separator pattern for -a" do
-    ruby_exe("puts $F[0]", options: "-naF:", escape: true,
+    ruby_exe("puts $F[0]", options: "-naF:",
                            args: " < #{@passwd}").should ==
       "nobody\nroot\ndaemon\n"
   end

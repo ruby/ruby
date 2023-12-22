@@ -106,11 +106,11 @@ describe "Dir.glob" do
   ruby_version_is '3.1' do
     it "recursively matches files and directories in nested dot subdirectory except . with 'nested/**/*' from the current directory and option File::FNM_DOTMATCH" do
       expected = %w[
-       nested/.
-       nested/.dotsubir
-       nested/.dotsubir/.dotfile
-       nested/.dotsubir/nondotfile
-     ]
+        nested/.
+        nested/.dotsubir
+        nested/.dotsubir/.dotfile
+        nested/.dotsubir/nondotfile
+      ]
 
       Dir.glob('nested/**/*', File::FNM_DOTMATCH).sort.should == expected.sort
     end

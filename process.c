@@ -576,7 +576,6 @@ proc_get_ppid(VALUE _)
  *    stat = $?       # => #<Process::Status: pid 1262862 exit 99>
  *    stat.class      # => Process::Status
  *    stat.to_i       # => 25344
- *    stat >> 8       # => 99
  *    stat.stopped?   # => false
  *    stat.exited?    # => true
  *    stat.exitstatus # => 99
@@ -594,17 +593,17 @@ struct rb_process_status {
 static const rb_data_type_t rb_process_status_type = {
     .wrap_struct_name = "Process::Status",
     .function = {
+        .dmark = NULL,
         .dfree = RUBY_DEFAULT_FREE,
+        .dsize = NULL,
     },
-    .data = NULL,
-    .flags = RUBY_TYPED_FREE_IMMEDIATELY,
+    .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
 static VALUE
 rb_process_status_allocate(VALUE klass)
 {
-    struct rb_process_status *data = NULL;
-
+    struct rb_process_status *data;
     return TypedData_Make_Struct(klass, struct rb_process_status, &rb_process_status_type, data);
 }
 
@@ -646,8 +645,7 @@ VALUE
 rb_process_status_new(rb_pid_t pid, int status, int error)
 {
     VALUE last_status = rb_process_status_allocate(rb_cProcessStatus);
-
-    struct rb_process_status *data = RTYPEDDATA_DATA(last_status);
+    struct rb_process_status *data = RTYPEDDATA_GET_DATA(last_status);
     data->pid = pid;
     data->status = status;
     data->error = error;
@@ -660,7 +658,8 @@ static VALUE
 process_status_dump(VALUE status)
 {
     VALUE dump = rb_class_new_instance(0, 0, rb_cObject);
-    struct rb_process_status *data = RTYPEDDATA_DATA(status);
+    struct rb_process_status *data;
+    TypedData_Get_Struct(status, struct rb_process_status, &rb_process_status_type, data);
     if (data->pid) {
         rb_ivar_set(dump, id_status, INT2NUM(data->status));
         rb_ivar_set(dump, id_pid, PIDT2NUM(data->pid));
@@ -698,16 +697,18 @@ rb_last_status_clear(void)
 }
 
 static rb_pid_t
-pst_pid(VALUE pst)
+pst_pid(VALUE status)
 {
-    struct rb_process_status *data = RTYPEDDATA_DATA(pst);
+    struct rb_process_status *data;
+    TypedData_Get_Struct(status, struct rb_process_status, &rb_process_status_type, data);
     return data->pid;
 }
 
 static int
-pst_status(VALUE pst)
+pst_status(VALUE status)
 {
-    struct rb_process_status *data = RTYPEDDATA_DATA(pst);
+    struct rb_process_status *data;
+    TypedData_Get_Struct(status, struct rb_process_status, &rb_process_status_type, data);
     return data->status;
 }
 
@@ -876,7 +877,9 @@ pst_equal(VALUE st1, VALUE st2)
  *  call-seq:
  *    stat & mask -> integer
  *
- *  This method is deprecated; use other attribute methods.
+ *  This method is deprecated as #to_i value is system-specific; use
+ *  predicate methods like #exited? or #stopped?, or getters like #exitstatus
+ *  or #stopsig.
  *
  *  Returns the logical AND of the value of #to_i with +mask+:
  *
@@ -928,7 +931,9 @@ pst_bitand(VALUE st1, VALUE st2)
  *  call-seq:
  *    stat >> places -> integer
  *
- *  This method is deprecated; use other predicate methods.
+ *  This method is deprecated as #to_i value is system-specific; use
+ *  predicate methods like #exited? or #stopped?, or getters like #exitstatus
+ *  or #stopsig.
  *
  *  Returns the value of #to_i, shifted +places+ to the right:
  *
@@ -1834,7 +1839,7 @@ memsize_exec_arg(const void *ptr)
 static const rb_data_type_t exec_arg_data_type = {
     "exec_arg",
     {mark_exec_arg, RUBY_TYPED_DEFAULT_FREE, memsize_exec_arg},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_EMBEDDABLE
 };
 
 #ifdef _WIN32
@@ -2778,6 +2783,7 @@ rb_execarg_setenv(VALUE execarg_obj, VALUE env)
     struct rb_execarg *eargp = rb_execarg_get(execarg_obj);
     env = !NIL_P(env) ? rb_check_exec_env(env, &eargp->path_env) : Qfalse;
     eargp->env_modification = env;
+    RB_GC_GUARD(execarg_obj);
 }
 
 static int
@@ -2975,6 +2981,7 @@ execarg_parent_end(VALUE execarg_obj)
     }
 
     errno = err;
+    RB_GC_GUARD(execarg_obj);
     return execarg_obj;
 }
 
@@ -3346,6 +3353,13 @@ run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, s
             if (extra_fd == -1) {
                 ERRMSG("dup");
                 goto fail;
+            }
+            // without this, kqueue timer_th.event_fd fails with a reserved FD did not have close-on-exec
+            //   in #assert_close_on_exec because the FD_CLOEXEC is not dup'd by default
+            if (fd_get_cloexec(pairs[i].oldfd, errmsg, errmsg_buflen)) {
+                if (fd_set_cloexec(extra_fd, errmsg, errmsg_buflen)) {
+                    goto fail;
+                }
             }
             rb_update_max_fd(extra_fd);
         }
@@ -4666,7 +4680,7 @@ do_spawn_process(VALUE arg)
 
     rb_execarg_parent_start1(argp->execarg);
 
-    return (VALUE)rb_spawn_process(DATA_PTR(argp->execarg),
+    return (VALUE)rb_spawn_process(rb_execarg_get(argp->execarg),
                                    argp->errmsg.ptr, argp->errmsg.buflen);
 }
 
@@ -8779,16 +8793,23 @@ proc_warmup(VALUE _)
  *
  * == \Process Creation
  *
- * Each of these methods creates a process:
+ * Each of the following methods executes a given command in a new process or subshell,
+ * or multiple commands in new processes and/or subshells.
+ * The choice of process or subshell depends on the form of the command;
+ * see {Argument command_line or exe_path}[rdoc-ref:Process@Argument+command_line+or+exe_path].
  *
- * - Process.exec: Replaces the current process by running a given external command.
- * - Process.spawn, Kernel#spawn: Executes the given command and returns its pid without waiting for completion.
- * - Kernel#system: Executes the given command in a subshell.
+ * - Process.spawn, Kernel#spawn: Executes the command;
+ *   returns the new pid without waiting for completion.
+ * - Process.exec: Replaces the current process by executing the command.
  *
- * Each of these methods accepts:
+ * In addition:
  *
- * - An optional hash of environment variable names and values.
- * - An optional hash of execution options.
+ * - \Method Kernel#system executes a given command-line (string) in a subshell;
+ *   returns +true+, +false+, or +nil+.
+ * - \Method Kernel#` executes a given command-line (string) in a subshell;
+ *   returns its $stdout string.
+ * - \Module Open3 supports creating child processes
+ *   with access to their $stdin, $stdout, and $stderr streams.
  *
  * === Execution Environment
  *
@@ -8801,7 +8822,6 @@ proc_warmup(VALUE _)
  *
  * Output:
  *
- *   nil
  *   "0"
  *
  * The effect is usually similar to that of calling ENV#update with argument +env+,
@@ -8812,6 +8832,53 @@ proc_warmup(VALUE _)
  * However, some modifications to the calling process may remain
  * if the new process fails.
  * For example, hard resource limits are not restored.
+ *
+ * === Argument +command_line+ or +exe_path+
+ *
+ * The required string argument is one of the following:
+ *
+ * - +command_line+ if it begins with a shell reserved word or special built-in,
+ *   or if it contains one or more meta characters.
+ * - +exe_path+ otherwise.
+ *
+ * <b>Argument +command_line+</b>
+ *
+ * \String argument +command_line+ is a command line to be passed to a shell;
+ * it must begin with a shell reserved word, begin with a special built-in,
+ * or contain meta characters:
+ *
+ *   system('if true; then echo "Foo"; fi')          # => true  # Shell reserved word.
+ *   system('echo')                                  # => true  # Built-in.
+ *   system('date > /tmp/date.tmp')                  # => true  # Contains meta character.
+ *   system('date > /nop/date.tmp')                  # => false
+ *   system('date > /nop/date.tmp', exception: true) # Raises RuntimeError.
+ *
+ * The command line may also contain arguments and options for the command:
+ *
+ *   system('echo "Foo"') # => true
+ *
+ * Output:
+ *
+ *   Foo
+ *
+ * See {Execution Shell}[rdoc-ref:Process@Execution+Shell] for details about the shell.
+ *
+ * <b>Argument +exe_path+</b>
+ *
+ * Argument +exe_path+ is one of the following:
+ *
+ * - The string path to an executable to be called.
+ * - A 2-element array containing the path to an executable to be called,
+ *   and the string to be used as the name of the executing process.
+ *
+ * Example:
+ *
+ *   system('/usr/bin/date') # => true # Path to date on Unix-style system.
+ *   system('foo')           # => nil  # Command failed.
+ *
+ * Output:
+ *
+ *   Mon Aug 28 11:43:10 AM CDT 2023
  *
  * === Execution Options
  *
@@ -8848,7 +8915,7 @@ proc_warmup(VALUE _)
  * The key for such an option may be an integer file descriptor (fd),
  * specifying a source,
  * or an array of fds, specifying multiple sources.
-
+ *
  * An integer source fd may be specified as:
  *
  * - _n_: Specifies file descriptor _n_.

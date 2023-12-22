@@ -101,6 +101,9 @@ VALUE rb_rjit_raw_samples = 0;
 // Line numbers for --rjit-trace-exits
 VALUE rb_rjit_line_samples = 0;
 
+// Postponed job handle for triggering rjit_iseq_update_references
+static rb_postponed_job_handle_t rjit_iseq_update_references_pjob;
+
 // A default threshold used to add iseq to JIT.
 #define DEFAULT_CALL_THRESHOLD 10
 // Size of executable memory block in MiB.
@@ -136,9 +139,8 @@ rb_rjit_setup_options(const char *s, struct rb_rjit_options *rjit_opt)
     else if (opt_match_noarg(s, l, "verify-ctx")) {
         rjit_opt->verify_ctx = true;
     }
-    // --rjit=pause is an undocumented feature for experiments
-    else if (opt_match_noarg(s, l, "pause")) {
-        rjit_opt->pause = true;
+    else if (opt_match_noarg(s, l, "disable")) {
+        rjit_opt->disable = true;
     }
     else {
         rb_raise(rb_eRuntimeError,
@@ -148,12 +150,10 @@ rb_rjit_setup_options(const char *s, struct rb_rjit_options *rjit_opt)
 
 #define M(shortopt, longopt, desc) RUBY_OPT_MESSAGE(shortopt, longopt, desc)
 const struct ruby_opt_message rb_rjit_option_messages[] = {
-    M("--rjit-stats",              "", "Enable collecting RJIT statistics"),
-#if RJIT_STATS
-    M("--rjit-trace-exits",        "", "Trace side exit locations"),
-#endif
     M("--rjit-exec-mem-size=num",  "", "Size of executable memory block in MiB (default: " STRINGIZE(DEFAULT_EXEC_MEM_SIZE) ")"),
     M("--rjit-call-threshold=num", "", "Number of calls to trigger JIT (default: " STRINGIZE(DEFAULT_CALL_THRESHOLD) ")"),
+    M("--rjit-stats",              "", "Enable collecting RJIT statistics"),
+    M("--rjit-trace-exits",        "", "Trace side exit locations"),
 #ifdef HAVE_LIBCAPSTONE
     M("--rjit-dump-disasm",        "", "Dump all JIT code"),
 #endif
@@ -163,18 +163,11 @@ const struct ruby_opt_message rb_rjit_option_messages[] = {
 
 struct rb_rjit_runtime_counters rb_rjit_counters = { 0 };
 
-#if RJIT_STATS
-void
-rb_rjit_collect_vm_usage_insn(int insn)
-{
-    if (!rjit_stats_p) return;
-    rb_rjit_counters.vm_insns_count++;
-}
-#endif // YJIT_STATS
-
 extern VALUE rb_gc_enable(void);
 extern VALUE rb_gc_disable(void);
+extern uint64_t rb_vm_insns_count;
 
+// Disable GC, TracePoint, and VM insns counter
 #define WITH_RJIT_ISOLATED(stmt) do { \
     VALUE was_disabled = rb_gc_disable(); \
     rb_hook_list_t *global_hooks = rb_ec_ractor_hooks(GET_EC()); \
@@ -183,7 +176,9 @@ extern VALUE rb_gc_disable(void);
     bool original_call_p = rb_rjit_call_p; \
     rjit_stats_p = false; \
     rb_rjit_call_p = false; \
+    uint64_t insns_count = rb_vm_insns_count; \
     stmt; \
+    rb_vm_insns_count = insns_count; \
     rb_rjit_call_p = (rjit_cancel_p ? false : original_call_p); \
     rjit_stats_p = rb_rjit_opts.stats; \
     global_hooks->events = rb_rjit_global_events; \
@@ -301,7 +296,7 @@ rb_rjit_iseq_update_references(struct rb_iseq_constant_body *const body)
     // Asynchronously hook the Ruby code to avoid allocation during GC.compact.
     // Using _one because it's too slow to invalidate all for each ISEQ. Thus
     // not giving an ISEQ pointer.
-    rb_postponed_job_register_one(0, rjit_iseq_update_references, NULL);
+    rb_postponed_job_trigger(rjit_iseq_update_references_pjob);
 }
 
 void
@@ -429,6 +424,10 @@ rb_rjit_init(const struct rb_rjit_options *opts)
         rb_rjit_enabled = false;
         return;
     }
+    rjit_iseq_update_references_pjob = rb_postponed_job_preregister(0, rjit_iseq_update_references, NULL);
+    if (rjit_iseq_update_references_pjob == POSTPONED_JOB_HANDLE_INVALID) {
+        rb_bug("Could not preregister postponed job for RJIT");
+    }
     rb_mRJITC = rb_const_get(rb_mRJIT, rb_intern("C"));
     VALUE rb_cRJITCompiler = rb_const_get(rb_mRJIT, rb_intern("Compiler"));
     rb_RJITCompiler = rb_funcall(rb_cRJITCompiler, rb_intern("new"), 0);
@@ -441,7 +440,7 @@ rb_rjit_init(const struct rb_rjit_options *opts)
     }
 
     // Enable RJIT and stats from here
-    rb_rjit_call_p = !rb_rjit_opts.pause;
+    rb_rjit_call_p = !rb_rjit_opts.disable;
     rjit_stats_p = rb_rjit_opts.stats;
 }
 

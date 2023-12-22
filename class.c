@@ -578,9 +578,12 @@ rb_mod_init_copy(VALUE clone, VALUE orig)
                 rb_bug("non iclass between module/class and origin");
             }
             clone_p = class_alloc(RBASIC(p)->flags, METACLASS_OF(p));
+            /* We should set the m_tbl right after allocation before anything
+             * that can trigger GC to avoid clone_p from becoming old and
+             * needing to fire write barriers. */
+            RCLASS_SET_M_TBL(clone_p, RCLASS_M_TBL(p));
             RCLASS_SET_SUPER(prev_clone_p, clone_p);
             prev_clone_p = clone_p;
-            RCLASS_M_TBL(clone_p) = RCLASS_M_TBL(p);
             RCLASS_CONST_TBL(clone_p) = RCLASS_CONST_TBL(p);
             RCLASS_SET_ALLOCATOR(clone_p, RCLASS_ALLOCATOR(p));
             if (RB_TYPE_P(clone, T_CLASS)) {
@@ -1134,7 +1137,7 @@ rb_include_class_new(VALUE module, VALUE super)
 {
     VALUE klass = class_alloc(T_ICLASS, rb_cClass);
 
-    RCLASS_M_TBL(klass) = RCLASS_M_TBL(module);
+    RCLASS_SET_M_TBL(klass, RCLASS_M_TBL(module));
 
     RCLASS_SET_ORIGIN(klass, klass);
     if (BUILTIN_TYPE(module) == T_ICLASS) {
@@ -1410,10 +1413,10 @@ ensure_origin(VALUE klass)
     VALUE origin = RCLASS_ORIGIN(klass);
     if (origin == klass) {
         origin = class_alloc(T_ICLASS, klass);
+        RCLASS_SET_M_TBL(origin, RCLASS_M_TBL(klass));
         RCLASS_SET_SUPER(origin, RCLASS_SUPER(klass));
         RCLASS_SET_SUPER(klass, origin);
         RCLASS_SET_ORIGIN(klass, origin);
-        RCLASS_M_TBL(origin) = RCLASS_M_TBL(klass);
         RCLASS_M_TBL_INIT(klass);
         rb_id_table_foreach(RCLASS_M_TBL(origin), cache_clear_refined_method, (void *)klass);
         rb_id_table_foreach(RCLASS_M_TBL(origin), move_refined_method, (void *)klass);

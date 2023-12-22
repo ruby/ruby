@@ -30,6 +30,31 @@ RSpec.describe "bundler plugin uninstall" do
     plugin_should_not_be_installed("foo")
   end
 
+  it "doesn't wipe out path plugins" do
+    build_lib "path_plugin" do |s|
+      s.write "plugins.rb"
+    end
+    path = lib_path("path_plugin-1.0")
+    expect(path).to be_a_directory
+
+    allow(Bundler::SharedHelpers).to receive(:find_gemfile).and_return(bundled_app_gemfile)
+
+    install_gemfile <<-G
+      source '#{file_uri_for(gem_repo2)}'
+      plugin 'path_plugin', :path => "#{path}"
+      gem 'rack', '1.0.0'
+    G
+
+    plugin_should_be_installed("path_plugin")
+    expect(Bundler::Plugin.index.plugin_path("path_plugin")).to eq path
+
+    bundle "plugin uninstall path_plugin"
+    expect(out).to include("Uninstalled plugin path_plugin")
+    plugin_should_not_be_installed("path_plugin")
+    # the actual gem still exists though
+    expect(path).to be_a_directory
+  end
+
   describe "with --all" do
     it "uninstalls all installed plugins" do
       bundle "plugin install foo kung-foo --source #{file_uri_for(gem_repo2)}"

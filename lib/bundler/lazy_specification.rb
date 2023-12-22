@@ -7,13 +7,25 @@ module Bundler
     include MatchPlatform
     include ForcePlatform
 
-    attr_reader :name, :version, :dependencies, :platform
-    attr_accessor :source, :remote, :force_ruby_platform
+    attr_reader :name, :version, :platform
+    attr_accessor :source, :remote, :force_ruby_platform, :dependencies, :required_ruby_version, :required_rubygems_version
+
+    alias_method :runtime_dependencies, :dependencies
+
+    def self.from_spec(s)
+      lazy_spec = new(s.name, s.version, s.platform, s.source)
+      lazy_spec.dependencies = s.dependencies
+      lazy_spec.required_ruby_version = s.required_ruby_version
+      lazy_spec.required_rubygems_version = s.required_rubygems_version
+      lazy_spec
+    end
 
     def initialize(name, version, platform, source = nil)
       @name          = name
       @version       = version
       @dependencies  = []
+      @required_ruby_version = Gem::Requirement.default
+      @required_rubygems_version = Gem::Requirement.default
       @platform      = platform || Gem::Platform::RUBY
       @source        = source
       @force_ruby_platform = default_force_ruby_platform
@@ -92,7 +104,7 @@ module Bundler
 
         installable_candidates = GemHelpers.select_best_platform_match(matching_specs, target_platform)
 
-        specification = __materialize__(installable_candidates, :fallback_to_non_installable => false)
+        specification = __materialize__(installable_candidates, fallback_to_non_installable: false)
         return specification unless specification.nil?
 
         if target_platform != platform
@@ -112,9 +124,7 @@ module Bundler
     # bad gem.
     def __materialize__(candidates, fallback_to_non_installable: Bundler.frozen_bundle?)
       search = candidates.reverse.find do |spec|
-        spec.is_a?(StubSpecification) ||
-          (spec.matches_current_ruby? &&
-            spec.matches_current_rubygems?)
+        spec.is_a?(StubSpecification) || spec.matches_current_metadata?
       end
       if search.nil? && fallback_to_non_installable
         search = candidates.last
@@ -131,6 +141,10 @@ module Bundler
     def git_version
       return unless source.is_a?(Bundler::Source::Git)
       " #{source.revision[0..6]}"
+    end
+
+    def force_ruby_platform!
+      @force_ruby_platform = true
     end
 
     private

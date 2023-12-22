@@ -18,7 +18,7 @@ class Integer < Numeric
   #
   #     42.to_d   # => 0.42e2
   #
-  # See also BigDecimal::new.
+  # See also Kernel.BigDecimal.
   #
   def to_d
     BigDecimal(self)
@@ -45,7 +45,7 @@ class Float < Numeric
   #     1.234.to_d       # => 0.1234e1
   #     1.234.to_d(2)    # => 0.12e1
   #
-  # See also BigDecimal::new.
+  # See also Kernel.BigDecimal.
   #
   def to_d(precision=0)
     BigDecimal(self, precision)
@@ -67,7 +67,7 @@ class String
   #     "123.45e1".to_d        # => 0.12345e4
   #     "45.67 degrees".to_d   # => 0.4567e2
   #
-  # See also BigDecimal::new.
+  # See also Kernel.BigDecimal.
   #
   def to_d
     BigDecimal.interpret_loosely(self)
@@ -127,7 +127,7 @@ class Rational < Numeric
   #
   #     Rational(22, 7).to_d(3)   # => 0.314e1
   #
-  # See also BigDecimal::new.
+  # See also Kernel.BigDecimal.
   #
   def to_d(precision)
     BigDecimal(self, precision)
@@ -152,7 +152,7 @@ class Complex < Numeric
   #     Complex(0.1234567, 0).to_d(4)   # => 0.1235e0
   #     Complex(Rational(22, 7), 0).to_d(3)   # => 0.314e1
   #
-  # See also BigDecimal::new.
+  # See also Kernel.BigDecimal.
   #
   def to_d(*args)
     BigDecimal(self) unless self.imag.zero? # to raise eerror

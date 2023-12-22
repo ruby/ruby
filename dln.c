@@ -272,13 +272,15 @@ rb_w32_check_imported(HMODULE ext, HMODULE mine)
 static bool
 dln_incompatible_func(void *handle, const char *funcname, void *const fp, const char **libname)
 {
-    Dl_info dli;
     void *ex = dlsym(handle, funcname);
     if (!ex) return false;
     if (ex == fp) return false;
+#  if defined(HAVE_DLADDR)
+    Dl_info dli;
     if (dladdr(ex, &dli)) {
         *libname = dli.dli_fname;
     }
+#  endif
     return true;
 }
 
@@ -419,33 +421,63 @@ dln_open(const char *file)
 static void *
 dln_sym(void *handle, const char *symbol)
 {
-    void *func;
-    const char *error;
-
 #if defined(_WIN32)
-    char message[1024];
-
-    func = GetProcAddress(handle, symbol);
-    if (func == NULL) {
-        error = dln_strerror();
-        goto failed;
-    }
-
+    return GetProcAddress(handle, symbol);
 #elif defined(USE_DLN_DLOPEN)
-    func = dlsym(handle, symbol);
+    return dlsym(handle, symbol);
+#endif
+}
+
+static void *
+dln_sym_func(void *handle, const char *symbol)
+{
+    void *func = dln_sym(handle, symbol);
+
     if (func == NULL) {
+        const char *error;
+#if defined(_WIN32)
+        char message[1024];
+        error = dln_strerror();
+#elif defined(USE_DLN_DLOPEN)
         const size_t errlen = strlen(error = dln_strerror()) + 1;
         error = memcpy(ALLOCA_N(char, errlen), error, errlen);
-        goto failed;
+#endif
+        dln_loaderror("%s - %s", error, symbol);
     }
-#endif
-
     return func;
-
-  failed:
-    dln_loaderror("%s - %s", error, symbol);
 }
+
+#define dln_sym_callable(rettype, argtype, handle, symbol) \
+    (*(rettype (*)argtype)dln_sym_func(handle, symbol))
 #endif
+
+void *
+dln_symbol(void *handle, const char *symbol)
+{
+#if defined(_WIN32) || defined(USE_DLN_DLOPEN)
+    if (EXTERNAL_PREFIX[0]) {
+        const size_t symlen = strlen(symbol);
+        char *const tmp = ALLOCA_N(char, symlen + sizeof(EXTERNAL_PREFIX));
+        if (!tmp) dln_memerror();
+        memcpy(tmp, EXTERNAL_PREFIX, sizeof(EXTERNAL_PREFIX) - 1);
+        memcpy(tmp + sizeof(EXTERNAL_PREFIX) - 1, symbol, symlen + 1);
+        symbol = tmp;
+    }
+    if (handle == NULL) {
+# if defined(USE_DLN_DLOPEN)
+        handle = dlopen(NULL, RTLD_LAZY | RTLD_GLOBAL);
+# elif defined(_WIN32)
+        handle = rb_libruby_handle();
+# else
+        return NULL;
+# endif
+    }
+    return dln_sym(handle, symbol);
+#else
+    return NULL;
+#endif
+}
+
 
 #if defined(RUBY_DLN_CHECK_ABI) && defined(USE_DLN_DLOPEN)
 static bool
@@ -463,8 +495,9 @@ dln_load(const char *file)
     void *handle = dln_open(file);
 
 #ifdef RUBY_DLN_CHECK_ABI
-    unsigned long long (*abi_version_fct)(void) = (unsigned long long(*)(void))dln_sym(handle, "ruby_abi_version");
-    unsigned long long binary_abi_version = (*abi_version_fct)();
+    typedef unsigned long long abi_version_number;
+    abi_version_number binary_abi_version =
+        dln_sym_callable(abi_version_number, (void), handle, EXTERNAL_PREFIX "ruby_abi_version")();
     if (binary_abi_version != ruby_abi_version() && abi_check_enabled_p()) {
         dln_loaderror("incompatible ABI version of binary - %s", file);
     }
@@ -472,10 +505,9 @@ dln_load(const char *file)
 
     char *init_fct_name;
     init_funcname(&init_fct_name, file);
-    void (*init_fct)(void) = (void(*)(void))dln_sym(handle, init_fct_name);
 
     /* Call the init code */
-    (*init_fct)();
+    dln_sym_callable(void, (void), handle, init_fct_name)();
 
     return handle;
 

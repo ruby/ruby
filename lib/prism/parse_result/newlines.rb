@@ -18,10 +18,12 @@ module Prism
     # MarkNewlinesVisitor, since that visitor is responsible for marking the
     # newlines for JRuby/TruffleRuby.
     class Newlines < Visitor
+      # Create a new Newlines visitor with the given newline offsets.
       def initialize(newline_marked)
         @newline_marked = newline_marked
       end
 
+      # Permit block/lambda nodes to mark newlines within themselves.
       def visit_block_node(node)
         old_newline_marked = @newline_marked
         @newline_marked = Array.new(old_newline_marked.size, false)
@@ -35,6 +37,7 @@ module Prism
 
       alias_method :visit_lambda_node, :visit_block_node
 
+      # Mark if/unless nodes as newlines.
       def visit_if_node(node)
         node.set_newline_flag(@newline_marked)
         super(node)
@@ -42,6 +45,7 @@ module Prism
 
       alias_method :visit_unless_node, :visit_if_node
 
+      # Permit statements lists to mark newlines within themselves.
       def visit_statements_node(node)
         node.body.each do |child|
           child.set_newline_flag(@newline_marked)

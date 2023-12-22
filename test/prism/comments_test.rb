@@ -10,7 +10,7 @@ module Prism
 
       assert_comment(
         source,
-        :inline,
+        InlineComment,
         start_offset: 0,
         end_offset: 9,
         start_line: 1,
@@ -29,7 +29,7 @@ module Prism
 
       assert_comment(
         source,
-        :inline,
+        InlineComment,
         start_offset: 10,
         end_offset: 21,
         start_line: 2,
@@ -39,37 +39,23 @@ module Prism
       )
     end
 
-    def test_comment___END__
-      source = <<~RUBY
+    def test___END__
+      result = Prism.parse(<<~RUBY)
         __END__
         comment
       RUBY
 
-      assert_comment(
-        source,
-        :__END__,
-        start_offset: 0,
-        end_offset: 16,
-        start_line: 1,
-        end_line: 3,
-        start_column: 0,
-        end_column: 0
-      )
+      data_loc = result.data_loc
+      assert_equal 0, data_loc.start_offset
+      assert_equal 16, data_loc.end_offset
     end
 
-    def test_comment___END__crlf
-      source = "__END__\r\ncomment\r\n"
+    def test___END__crlf
+      result = Prism.parse("__END__\r\ncomment\r\n")
 
-      assert_comment(
-        source,
-        :__END__,
-        start_offset: 0,
-        end_offset: 18,
-        start_line: 1,
-        end_line: 3,
-        start_column: 0,
-        end_column: 0
-      )
+      data_loc = result.data_loc
+      assert_equal 0, data_loc.start_offset
+      assert_equal 18, data_loc.end_offset
     end
 
     def test_comment_embedded_document
@@ -81,7 +67,7 @@ module Prism
 
       assert_comment(
         source,
-        :embdoc,
+        EmbDocComment,
         start_offset: 0,
         end_offset: 20,
         start_line: 1,
@@ -99,7 +85,7 @@ module Prism
 
       assert_comment(
         source,
-        :embdoc,
+        EmbDocComment,
         start_offset: 0,
         end_offset: 24,
         start_line: 1,
@@ -138,7 +124,7 @@ module Prism
     def assert_comment(source, type, start_offset:, end_offset:, start_line:, end_line:, start_column:, end_column:)
       result = Prism.parse(source)
       assert result.errors.empty?, result.errors.map(&:message).join("\n")
-      assert_equal type, result.comments.first.type
+      assert_kind_of type, result.comments.first
 
       location = result.comments.first.location
       assert_equal start_offset, location.start_offset, -> { "Expected start_offset to be #{start_offset}" }

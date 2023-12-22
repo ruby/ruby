@@ -8,7 +8,7 @@ module Lrama
       warning = Lrama::Warning.new
       text = options.y.read
       options.y.close if options.y != STDIN
-      grammar = Lrama::Parser.new(text, options.grammar_file).parse
+      grammar = Lrama::Parser.new(text, options.grammar_file, options.debug).parse
       states = Lrama::States.new(grammar, warning, trace_state: (options.trace_opts[:automaton] || options.trace_opts[:closure]))
       states.compute
       context = Lrama::Context.new(states)
@@ -18,6 +18,11 @@ module Lrama
         File.open(options.report_file, "w+") do |f|
           reporter.report(f, **options.report_opts)
         end
+      end
+
+      if options.trace_opts && options.trace_opts[:rules]
+        puts "Grammar rules:"
+        puts grammar.rules
       end
 
       File.open(options.outfile, "w+") do |f|

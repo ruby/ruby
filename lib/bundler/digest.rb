@@ -50,7 +50,7 @@ module Bundler
           words.map!.with_index {|word, index| SHA1_MASK & (word + mutated[index]) }
         end
 
-        words.pack("N*").unpack("H*").first
+        words.pack("N*").unpack1("H*")
       end
 
       private

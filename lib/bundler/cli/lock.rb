@@ -26,14 +26,14 @@ module Bundler
 
       if update.is_a?(Array) # unlocking specific gems
         Bundler::CLI::Common.ensure_all_gems_in_lockfile!(update)
-        update = { :gems => update, :conservative => conservative }
+        update = { gems: update, conservative: conservative }
       elsif update && conservative
-        update = { :conservative => conservative }
+        update = { conservative: conservative }
       elsif update && bundler
-        update = { :bundler => bundler }
+        update = { bundler: bundler }
       end
 
-      Bundler.settings.temporary(:frozen => false) do
+      Bundler.settings.temporary(frozen: false) do
         definition = Bundler.definition(update)
 
         Bundler::CLI::Common.configure_gem_version_promoter(definition, options) if options[:update]

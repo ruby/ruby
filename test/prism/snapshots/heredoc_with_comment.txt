@@ -1,0 +1,21 @@
+@ ProgramNode (location: (1,0)-(1,15))
+├── locals: []
+└── statements:
+    @ StatementsNode (location: (1,0)-(1,15))
+    └── body: (length: 1)
+        └── @ CallNode (location: (1,0)-(1,15))
+            ├── flags: ∅
+            ├── receiver:
+            │   @ StringNode (location: (1,0)-(1,9))
+            │   ├── flags: ∅
+            │   ├── opening_loc: (1,0)-(1,9) = "<<-TARGET"
+            │   ├── content_loc: (2,0)-(3,0) = "  content makes for an obvious error\r\n"
+            │   ├── closing_loc: (3,0)-(3,6) = "TARGET"
+            │   └── unescaped: "  content makes for an obvious error\r\n"
+            ├── call_operator_loc: (1,9)-(1,10) = "."
+            ├── name: :chomp
+            ├── message_loc: (1,10)-(1,15) = "chomp"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            └── block: ∅

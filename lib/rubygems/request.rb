@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require "net/http"
+require_relative "net/http"
 require_relative "user_interaction"
 
 class Gem::Request
@@ -30,7 +30,7 @@ class Gem::Request
     @uri = uri
     @request_class = request_class
     @last_modified = last_modified
-    @requests = Hash.new 0
+    @requests = Hash.new(0).compare_by_identity
     @user_agent = user_agent
 
     @connection_pool = pool
@@ -196,7 +196,7 @@ class Gem::Request
     bad_response = false
 
     begin
-      @requests[connection.object_id] += 1
+      @requests[connection] += 1
 
       verbose "#{request.method} #{Gem::Uri.redact(@uri)}"
 
@@ -205,7 +205,7 @@ class Gem::Request
       if request.response_body_permitted? && file_name =~ /\.gem$/
         reporter = ui.download_reporter
         response = connection.request(request) do |incomplete_response|
-          if Net::HTTPOK === incomplete_response
+          if Gem::Net::HTTPOK === incomplete_response
             reporter.fetch(file_name, incomplete_response.content_length)
             downloaded = 0
             data = String.new
@@ -228,7 +228,7 @@ class Gem::Request
       end
 
       verbose "#{response.code} #{response.message}"
-    rescue Net::HTTPBadResponse
+    rescue Gem::Net::HTTPBadResponse
       verbose "bad response"
 
       reset connection
@@ -237,17 +237,17 @@ class Gem::Request
 
       bad_response = true
       retry
-    rescue Net::HTTPFatalError
+    rescue Gem::Net::HTTPFatalError
       verbose "fatal error"
 
       raise Gem::RemoteFetcher::FetchError.new("fatal error", @uri)
-    # HACK: work around EOFError bug in Net::HTTP
+    # HACK: work around EOFError bug in Gem::Net::HTTP
     # NOTE Errno::ECONNABORTED raised a lot on Windows, and make impossible
     # to install gems.
-    rescue EOFError, Timeout::Error,
+    rescue EOFError, Gem::Timeout::Error,
            Errno::ECONNABORTED, Errno::ECONNRESET, Errno::EPIPE
 
-      requests = @requests[connection.object_id]
+      requests = @requests[connection]
       verbose "connection reset after #{requests} requests, retrying"
 
       raise Gem::RemoteFetcher::FetchError.new("too many connection resets", @uri) if retried
@@ -267,7 +267,7 @@ class Gem::Request
   # Resets HTTP connection +connection+.
 
   def reset(connection)
-    @requests.delete connection.object_id
+    @requests.delete connection
 
     connection.finish
     connection.start

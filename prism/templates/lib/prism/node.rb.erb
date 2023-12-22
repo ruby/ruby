@@ -2,13 +2,15 @@ module Prism
   # This represents a node in the tree. It is the parent class of all of the
   # various node types.
   class Node
+    # A Location instance that represents the location of this node in the
+    # source.
     attr_reader :location
 
-    def newline?
+    def newline? # :nodoc:
       @newline ? true : false
     end
 
-    def set_newline_flag(newline_marked)
+    def set_newline_flag(newline_marked) # :nodoc:
       line = location.start_line
       unless newline_marked[line]
         newline_marked[line] = true
@@ -29,10 +31,18 @@ module Prism
       end
       q.current_group.break
     end
+
+    # Convert this node into a graphviz dot graph string.
+    def to_dot
+      DotVisitor.new.tap { |visitor| accept(visitor) }.to_dot
+    end
   end
   <%- nodes.each do |node| -%>
 
-  <%= "#{node.comment.split("\n").map { |line| line.empty? ? "#" : "# #{line}" }.join("\n  ")}\n  " if node.comment %>class <%= node.name -%> < Node
+  <%- node.each_comment_line do |line| -%>
+  #<%= line %>
+  <%- end -%>
+  class <%= node.name -%> < Node
     <%- node.fields.each do |field| -%>
     # attr_reader <%= field.name %>: <%= field.rbs_class %>
     <%= "private " if field.is_a?(Prism::FlagsField) %>attr_reader :<%= field.name %>
@@ -52,15 +62,15 @@ module Prism
     end
     <%- if node.newline == false -%>
 
-    def set_newline_flag(newline_marked)
+    def set_newline_flag(newline_marked) # :nodoc:
       # Never mark <%= node.name %> with a newline flag, mark children instead
     end
     <%- elsif node.newline.is_a?(String) -%>
 
-    def set_newline_flag(newline_marked)
+    def set_newline_flag(newline_marked) # :nodoc:
       <%- field = node.fields.find { |f| f.name == node.newline } or raise node.newline -%>
       <%- case field -%>
-      <%- when Prism::NodeField, Prism::OptionalNodeField -%>
+      <%- when Prism::NodeField -%>
       <%= field.name %>.set_newline_flag(newline_marked)
       <%- when Prism::NodeListField -%>
       first = <%= field.name %>.first
@@ -160,6 +170,7 @@ module Prism
     <%- end -%>
     <%- end -%>
 
+    # def inspect(inspector: NodeInspector) -> String
     def inspect(inspector = NodeInspector.new)
       inspector << inspector.header(self)
       <%- node.fields.each_with_index do |field, index| -%>
@@ -179,7 +190,7 @@ module Prism
         inspector << "<%= pointer %><%= field.name %>:\n"
         inspector << <%= field.name %>.inspect(inspector.child_inspector("<%= preadd %>")).delete_prefix(inspector.prefix)
       end
-      <%- when Prism::ConstantField, Prism::StringField, Prism::UInt32Field -%>
+      <%- when Prism::ConstantField, Prism::StringField, Prism::UInt8Field, Prism::UInt32Field -%>
       inspector << "<%= pointer %><%= field.name %>: #{<%= field.name %>.inspect}\n"
       <%- when Prism::OptionalConstantField -%>
       if (<%= field.name %> = self.<%= field.name %>).nil?
@@ -231,6 +242,7 @@ module Prism
   <%- end -%>
   <%- flags.each_with_index do |flag, flag_index| -%>
 
+  # <%= flag.comment %>
   module <%= flag.name %>
     <%- flag.values.each_with_index do |value, index| -%>
     # <%= value.comment %>

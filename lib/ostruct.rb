@@ -107,7 +107,7 @@
 # For all these reasons, consider not using OpenStruct at all.
 #
 class OpenStruct
-  VERSION = "0.5.5"
+  VERSION = "0.6.0"
 
   HAS_PERFORMANCE_WARNINGS = begin
     Warning[:performance]

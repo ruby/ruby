@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative "helper"
-require "net/http"
+require "rubygems/net/http"
 require "rubygems/openssl"
 
 unless Gem::HAVE_OPENSSL
@@ -28,12 +28,12 @@ class TestGemBundledCA < Gem::TestCase
 
   def assert_https(host)
     assert true
-    http = Net::HTTP.new(host, 443)
+    http = Gem::Net::HTTP.new(host, 443)
     http.use_ssl = true
     http.verify_mode = OpenSSL::SSL::VERIFY_PEER
     http.cert_store = bundled_certificate_store
     http.get("/")
-  rescue Errno::ENOENT, Errno::ETIMEDOUT, SocketError
+  rescue Errno::ENOENT, Errno::ETIMEDOUT, SocketError, Net::OpenTimeout
     pend "#{host} seems offline, I can't tell whether ssl would work."
   rescue OpenSSL::SSL::SSLError => e
     # Only fail for certificate verification errors

@@ -28,11 +28,11 @@ module Bundler
         spec.load_paths.reject {|path| $LOAD_PATH.include?(path) }
       end.reverse.flatten
 
-      Bundler.rubygems.add_to_load_path(load_paths)
+      Gem.add_to_load_path(*load_paths)
 
       setup_manpath
 
-      lock(:preserve_unknown_sections => true)
+      lock(preserve_unknown_sections: true)
 
       self
     end

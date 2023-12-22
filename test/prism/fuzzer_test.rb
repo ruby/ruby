@@ -35,6 +35,7 @@ module Prism
     snippet "escaped unicode at end of file 7", '"\\u3'
     snippet "escaped unicode at end of file 8", '"\\u33'
     snippet "escaped unicode at end of file 9", '"\\u333'
+    snippet "float suffix at end of file", "1e"
 
     snippet "statements node with multiple heredocs", <<~EOF
       for <<A + <<B
@@ -57,5 +58,7 @@ module Prism
       a
       /{/, ''\\
     RUBY
+
+    snippet "parameter name that is zero length", "a { |b;"
   end
 end

@@ -140,7 +140,6 @@ extern "C" {
 // Renames
 pub use rb_insn_name as raw_insn_name;
 pub use rb_insn_len as raw_insn_len;
-pub use rb_yarv_class_of as CLASS_OF;
 pub use rb_get_ec_cfp as get_ec_cfp;
 pub use rb_get_cfp_iseq as get_cfp_iseq;
 pub use rb_get_cfp_pc as get_cfp_pc;
@@ -250,6 +249,12 @@ pub type IseqPtr = *const rb_iseq_t;
 pub fn iseq_pc_to_insn_idx(iseq: IseqPtr, pc: *mut VALUE) -> Option<u16> {
     let pc_zero = unsafe { rb_iseq_pc_at_idx(iseq, 0) };
     unsafe { pc.offset_from(pc_zero) }.try_into().ok()
+}
+
+/// Given an ISEQ pointer and an instruction index, return an opcode.
+pub fn iseq_opcode_at_idx(iseq: IseqPtr, insn_idx: u32) -> u32 {
+    let pc = unsafe { rb_iseq_pc_at_idx(iseq, insn_idx) };
+    unsafe { rb_iseq_opcode_at_pc(iseq, pc) as u32 }
 }
 
 /// Opaque execution-context type from vm_core.h
@@ -400,7 +405,13 @@ impl VALUE {
     }
 
     pub fn class_of(self) -> VALUE {
-        unsafe { CLASS_OF(self) }
+        if !self.special_const_p() {
+            let builtin_type = self.builtin_type();
+            assert_ne!(builtin_type, RUBY_T_NONE, "YJIT should only see live objects");
+            assert_ne!(builtin_type, RUBY_T_MOVED, "YJIT should only see live objects");
+        }
+
+        unsafe { rb_yarv_class_of(self) }
     }
 
     pub fn is_frozen(self) -> bool {

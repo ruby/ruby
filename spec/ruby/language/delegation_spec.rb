@@ -38,28 +38,26 @@ describe "delegation with def(...)" do
   end
 end
 
-ruby_version_is "2.7.3" do
-  describe "delegation with def(x, ...)" do
-    it "delegates rest and kwargs" do
-      a = Class.new(DelegationSpecs::Target)
-      a.class_eval(<<-RUBY)
-        def delegate(x, ...)
-          target(...)
-        end
-      RUBY
+describe "delegation with def(x, ...)" do
+  it "delegates rest and kwargs" do
+    a = Class.new(DelegationSpecs::Target)
+    a.class_eval(<<-RUBY)
+      def delegate(x, ...)
+        target(...)
+      end
+    RUBY
 
-      a.new.delegate(0, 1, b: 2).should == [[1], {b: 2}]
-    end
+    a.new.delegate(0, 1, b: 2).should == [[1], {b: 2}]
+  end
 
-    it "delegates block" do
-      a = Class.new(DelegationSpecs::Target)
-      a.class_eval(<<-RUBY)
-        def delegate_block(x, ...)
-          target_block(...)
-        end
-      RUBY
+  it "delegates block" do
+    a = Class.new(DelegationSpecs::Target)
+    a.class_eval(<<-RUBY)
+      def delegate_block(x, ...)
+        target_block(...)
+      end
+    RUBY
 
-      a.new.delegate_block(0, 1, b: 2) { |x| x }.should == [{b: 2}, [1]]
-    end
+    a.new.delegate_block(0, 1, b: 2) { |x| x }.should == [{b: 2}, [1]]
   end
 end

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "real world edgecases", :realworld => true do
+RSpec.describe "real world edgecases", realworld: true do
   def rubygems_version(name, requirement)
     ruby <<-RUBY
       require "#{spec_dir}/support/artifice/vcr"
@@ -193,13 +193,13 @@ RSpec.describe "real world edgecases", :realworld => true do
         rails (~> 4.2.7.1)
     L
 
-    bundle "lock --update paperclip", :env => { "BUNDLER_VERSION" => "1.99.0" }
+    bundle "lock --update paperclip", env: { "BUNDLER_VERSION" => "1.99.0" }
 
     expect(lockfile).to include(rubygems_version("paperclip", "~> 5.1.0"))
   end
 
-  it "outputs a helpful error message when gems have invalid gemspecs", :rubygems => "< 3.3.16" do
-    install_gemfile <<-G, :standalone => true, :raise_on_error => false, :env => { "BUNDLE_FORCE_RUBY_PLATFORM" => "1" }
+  it "outputs a helpful error message when gems have invalid gemspecs", rubygems: "< 3.3.16" do
+    install_gemfile <<-G, standalone: true, raise_on_error: false, env: { "BUNDLE_FORCE_RUBY_PLATFORM" => "1" }
       source 'https://rubygems.org'
       gem "resque-scheduler", "2.2.0"
       gem "redis-namespace", "1.6.0" # for a consistent resolution including ruby 2.3.0
@@ -209,148 +209,14 @@ RSpec.describe "real world edgecases", :realworld => true do
     expect(err).to include("resque-scheduler 2.2.0 has an invalid gemspec")
   end
 
-  it "outputs a helpful warning when gems have a gemspec with invalid `require_paths`", :rubygems => ">= 3.3.16" do
-    install_gemfile <<-G, :standalone => true, :env => { "BUNDLE_FORCE_RUBY_PLATFORM" => "1" }
+  it "outputs a helpful warning when gems have a gemspec with invalid `require_paths`", rubygems: ">= 3.3.16" do
+    install_gemfile <<-G, standalone: true, env: { "BUNDLE_FORCE_RUBY_PLATFORM" => "1" }
       source 'https://rubygems.org'
       gem "resque-scheduler", "2.2.0"
       gem "redis-namespace", "1.6.0" # for a consistent resolution including ruby 2.3.0
       gem "ruby2_keywords", "0.0.5"
     G
     expect(err).to include("resque-scheduler 2.2.0 includes a gemspec with `require_paths` set to an array of arrays. Newer versions of this gem might've already fixed this").once
-  end
-
-  it "doesn't hang on big gemfile" do
-    skip "Only for ruby 2.7" unless RUBY_VERSION.start_with?("2.7")
-
-    gemfile <<~G
-      # frozen_string_literal: true
-
-      source "https://rubygems.org"
-
-      ruby "~> 2.7.7"
-
-      gem "rails"
-      gem "pg", ">= 0.18", "< 2.0"
-      gem "goldiloader"
-      gem "awesome_nested_set"
-      gem "circuitbox"
-      gem "passenger"
-      gem "globalid"
-      gem "rack-cors"
-      gem "rails-pg-extras"
-      gem "linear_regression_trend"
-      gem "rack-protection"
-      gem "pundit"
-      gem "remote_ip_proxy_scrubber"
-      gem "bcrypt"
-      gem "searchkick"
-      gem "excon"
-      gem "faraday_middleware-aws-sigv4"
-      gem "typhoeus"
-      gem "sidekiq"
-      gem "sidekiq-undertaker"
-      gem "sidekiq-cron"
-      gem "storext"
-      gem "appsignal"
-      gem "fcm"
-      gem "business_time"
-      gem "tzinfo"
-      gem "holidays"
-      gem "bigdecimal"
-      gem "progress_bar"
-      gem "redis"
-      gem "hiredis"
-      gem "state_machines"
-      gem "state_machines-audit_trail"
-      gem "state_machines-activerecord"
-      gem "interactor"
-      gem "ar_transaction_changes"
-      gem "redis-rails"
-      gem "seed_migration"
-      gem "lograge"
-      gem "graphiql-rails", group: :development
-      gem "graphql"
-      gem "pusher"
-      gem "rbnacl"
-      gem "jwt"
-      gem "json-schema"
-      gem "discard"
-      gem "money"
-      gem "strip_attributes"
-      gem "validates_email_format_of"
-      gem "audited"
-      gem "concurrent-ruby"
-      gem "with_advisory_lock"
-
-      group :test do
-        gem "rspec-sidekiq"
-        gem "simplecov", require: false
-      end
-
-      group :development, :test do
-        gem "byebug", platform: :mri
-        gem "guard"
-        gem "guard-bundler"
-        gem "guard-rspec"
-        gem "rb-fsevent"
-        gem "rspec_junit_formatter"
-        gem "rspec-collection_matchers"
-        gem "rspec-rails"
-        gem "rspec-retry"
-        gem "state_machines-rspec"
-        gem "dotenv-rails"
-        gem "database_cleaner-active_record"
-        gem "database_cleaner-redis"
-        gem "timecop"
-      end
-
-      gem "factory_bot_rails"
-      gem "faker"
-
-      group :development do
-        gem "listen"
-        gem "sql_queries_count"
-        gem "rubocop"
-        gem "rubocop-performance"
-        gem "rubocop-rspec"
-        gem "rubocop-rails"
-        gem "brakeman"
-        gem "bundler-audit"
-        gem "solargraph"
-        gem "annotate"
-      end
-    G
-
-    if Bundler.feature_flag.bundler_3_mode?
-      # Conflicts on bundler version, so we count attempts differently
-      bundle :lock, :env => { "DEBUG_RESOLVER" => "1" }, :raise_on_error => false
-      expect(out.split("\n").grep(/backtracking to/).count).to eq(8)
-    else
-      bundle :lock, :env => { "DEBUG_RESOLVER" => "1" }
-      expect(out).to include("Solution found after 7 attempts")
-    end
-  end
-
-  it "doesn't hang on tricky gemfile" do
-    skip "Only for ruby 2.7" unless RUBY_VERSION.start_with?("2.7")
-
-    gemfile <<~G
-      source 'https://rubygems.org'
-
-      group :development do
-        gem "puppet-module-posix-default-r2.7", '~> 0.3'
-        gem "puppet-module-posix-dev-r2.7", '~> 0.3'
-        gem "beaker-rspec"
-        gem "beaker-puppet"
-        gem "beaker-docker"
-        gem "beaker-puppet_install_helper"
-        gem "beaker-module_install_helper"
-      end
-    G
-
-    bundle :lock, :env => { "DEBUG_RESOLVER" => "1" }
-
-    expect(out).to include("Solution found after 6 attempts")
   end
 
   it "doesn't hang on nix gemfile" do
@@ -510,7 +376,7 @@ RSpec.describe "real world edgecases", :realworld => true do
       gem "zookeeper"
     G
 
-    bundle :lock, :env => { "DEBUG_RESOLVER" => "1" }
+    bundle :lock, env: { "DEBUG_RESOLVER" => "1" }
 
     expect(out).to include("Solution found after 4 attempts")
   end

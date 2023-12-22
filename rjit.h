@@ -14,10 +14,6 @@
 
 # if USE_RJIT
 
-#ifndef RJIT_STATS
-# define RJIT_STATS RUBY_DEBUG
-#endif
-
 #include "ruby.h"
 #include "vm_core.h"
 
@@ -39,7 +35,7 @@ struct rb_rjit_options {
     // Verify context objects
     bool verify_ctx;
     // [experimental] Do not start RJIT until RJIT.resume is called.
-    bool pause;
+    bool disable;
 };
 
 RUBY_SYMBOL_EXPORT_BEGIN

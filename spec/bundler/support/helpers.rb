@@ -43,7 +43,7 @@ module Spec
       last_command.stderr
     end
 
-    MAJOR_DEPRECATION = /^\[DEPRECATED\]\s*/.freeze
+    MAJOR_DEPRECATION = /^\[DEPRECATED\]\s*/
 
     def err_without_deprecations
       err.gsub(/#{MAJOR_DEPRECATION}.+[\n]?/, "")
@@ -60,7 +60,7 @@ module Spec
     def run(cmd, *args)
       opts = args.last.is_a?(Hash) ? args.pop : {}
       groups = args.map(&:inspect).join(", ")
-      setup = "require '#{entrypoint}' ; Bundler.ui.silence { Bundler.setup(#{groups}) }"
+      setup = "require 'bundler' ; Bundler.ui.silence { Bundler.setup(#{groups}) }"
       ruby([setup, cmd].join(" ; "), opts)
     end
 
@@ -116,9 +116,9 @@ module Spec
         end
       end.join
 
-      ruby_cmd = build_ruby_cmd({ :load_path => load_path, :requires => requires })
+      ruby_cmd = build_ruby_cmd({ load_path: load_path, requires: requires, env: env })
       cmd = "#{ruby_cmd} #{bundle_bin} #{cmd}#{args}"
-      sys_exec(cmd, { :env => env, :dir => dir, :raise_on_error => raise_on_error }, &block)
+      sys_exec(cmd, { env: env, dir: dir, raise_on_error: raise_on_error }, &block)
     end
 
     def bundler(cmd, options = {})
@@ -147,7 +147,13 @@ module Spec
       lib_option = libs ? "-I#{libs.join(File::PATH_SEPARATOR)}" : []
 
       requires = options.delete(:requires) || []
-      requires << "#{Path.spec_dir}/support/hax.rb"
+
+      hax_path = "#{Path.spec_dir}/support/hax.rb"
+
+      # For specs that need to ignore the default Bundler gem, load hax before
+      # anything else since other stuff may actually load bundler and not skip
+      # the default version
+      options[:env]&.include?("BUNDLER_IGNORE_DEFAULT_GEM") ? requires.prepend(hax_path) : requires.append(hax_path)
       require_option = requires.map {|r| "-r#{r}" }
 
       [Gem.ruby, *lib_option, *require_option].compact.join(" ")
@@ -170,7 +176,7 @@ module Spec
     end
 
     def git(cmd, path, options = {})
-      sys_exec("git #{cmd}", options.merge(:dir => path))
+      sys_exec("git #{cmd}", options.merge(dir: path))
     end
 
     def sys_exec(cmd, options = {})
@@ -181,7 +187,7 @@ module Spec
 
       require "open3"
       require "shellwords"
-      Open3.popen3(env, *cmd.shellsplit, :chdir => dir) do |stdin, stdout, stderr, wait_thr|
+      Open3.popen3(env, *cmd.shellsplit, chdir: dir) do |stdin, stdout, stderr, wait_thr|
         yield stdin, stdout, wait_thr if block_given?
         stdin.close
 
@@ -293,59 +299,35 @@ module Spec
     def system_gems(*gems)
       gems = gems.flatten
       options = gems.last.is_a?(Hash) ? gems.pop : {}
-      path = options.fetch(:path, system_gem_path)
+      install_dir = options.fetch(:path, system_gem_path)
       default = options.fetch(:default, false)
-      with_gem_path_as(path) do
+      with_gem_path_as(install_dir) do
         gem_repo = options.fetch(:gem_repo, gem_repo1)
         gems.each do |g|
           gem_name = g.to_s
           if gem_name.start_with?("bundler")
             version = gem_name.match(/\Abundler-(?<version>.*)\z/)[:version] if gem_name != "bundler"
-            with_built_bundler(version) {|gem_path| install_gem(gem_path, default) }
+            with_built_bundler(version) {|gem_path| install_gem(gem_path, install_dir, default) }
           elsif %r{\A(?:[a-zA-Z]:)?/.*\.gem\z}.match?(gem_name)
-            install_gem(gem_name, default)
+            install_gem(gem_name, install_dir, default)
           else
-            install_gem("#{gem_repo}/gems/#{gem_name}.gem", default)
+            install_gem("#{gem_repo}/gems/#{gem_name}.gem", install_dir, default)
           end
         end
       end
     end
 
-    def install_gem(path, default = false)
+    def install_gem(path, install_dir, default = false)
       raise "OMG `#{path}` does not exist!" unless File.exist?(path)
 
-      args = "--no-document --ignore-dependencies --verbose --local"
-      args += " --default --install-dir #{system_gem_path}" if default
+      args = "--no-document --ignore-dependencies --verbose --local --install-dir #{install_dir}"
+      args += " --default" if default
 
       gem_command "install #{args} '#{path}'"
     end
 
-    def with_built_bundler(version = nil)
-      version ||= Bundler::VERSION
-      full_name = "bundler-#{version}"
-      build_path = tmp + full_name
-      bundler_path = build_path + "#{full_name}.gem"
-
-      Dir.mkdir build_path
-
-      begin
-        shipped_files.each do |shipped_file|
-          target_shipped_file = build_path + shipped_file
-          target_shipped_dir = File.dirname(target_shipped_file)
-          FileUtils.mkdir_p target_shipped_dir unless File.directory?(target_shipped_dir)
-          FileUtils.cp shipped_file, target_shipped_file, :preserve => true
-        end
-
-        replace_version_file(version, dir: build_path) # rubocop:disable Style/HashSyntax
-
-        Spec::BuildMetadata.write_build_metadata(dir: build_path) # rubocop:disable Style/HashSyntax
-
-        gem_command "build #{relative_gemspec}", :dir => build_path
-
-        yield(bundler_path)
-      ensure
-        build_path.rmtree
-      end
+    def with_built_bundler(version = nil, &block)
+      Builders::BundlerBuilder.new(self, "bundler", version)._build(&block)
     end
 
     def with_gem_path_as(path)
@@ -464,30 +446,10 @@ module Spec
       old = ENV["BUNDLER_SPEC_WINDOWS"]
       ENV["BUNDLER_SPEC_WINDOWS"] = "true"
       simulate_platform platform do
-        simulate_bundler_version_when_missing_prerelease_default_gem_activation do
-          yield
-        end
+        yield
       end
     ensure
       ENV["BUNDLER_SPEC_WINDOWS"] = old
-    end
-
-    def simulate_bundler_version_when_missing_prerelease_default_gem_activation
-      return yield unless rubygems_version_failing_to_activate_bundler_prereleases
-
-      old = ENV["BUNDLER_VERSION"]
-      ENV["BUNDLER_VERSION"] = Bundler::VERSION
-      yield
-    ensure
-      ENV["BUNDLER_VERSION"] = old
-    end
-
-    def env_for_missing_prerelease_default_gem_activation
-      if rubygems_version_failing_to_activate_bundler_prereleases
-        { "BUNDLER_VERSION" => Bundler::VERSION }
-      else
-        {}
-      end
     end
 
     def current_ruby_minor
@@ -508,14 +470,8 @@ module Spec
       Gem.ruby_version.segments[0..1]
     end
 
-    # versions not including
-    # https://github.com/rubygems/rubygems/commit/929e92d752baad3a08f3ac92eaec162cb96aedd1
-    def rubygems_version_failing_to_activate_bundler_prereleases
-      Gem.rubygems_version < Gem::Version.new("3.1.0.pre.1")
-    end
-
     def revision_for(path)
-      sys_exec("git rev-parse HEAD", :dir => path).strip
+      sys_exec("git rev-parse HEAD", dir: path).strip
     end
 
     def with_read_only(pattern)

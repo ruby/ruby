@@ -45,24 +45,6 @@ RSpec.describe Bundler::SpecSet do
     end
   end
 
-  describe "#merge" do
-    let(:other_specs) do
-      [
-        build_spec("f", "1.0"),
-        build_spec("g", "2.0"),
-      ].flatten
-    end
-
-    let(:other_spec_set) { described_class.new(other_specs) }
-
-    it "merges the items in each gemspec" do
-      new_spec_set = subject.merge(other_spec_set)
-      specs = new_spec_set.to_a.map(&:full_name)
-      expect(specs).to include("a-1.0")
-      expect(specs).to include("f-1.0")
-    end
-  end
-
   describe "#to_a" do
     it "returns the specs in order" do
       expect(subject.to_a.map(&:full_name)).to eq %w[

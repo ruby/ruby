@@ -2747,6 +2747,7 @@ EOS
     require 'objspace'
     begin;
       obj = "a" * 12
+      obj.force_encoding(Encoding::UTF_16LE)
       obj.force_encoding(Encoding::BINARY)
       assert_include(ObjectSpace.dump(obj), '"coderange":"unknown"')
       Process.warmup

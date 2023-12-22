@@ -76,11 +76,13 @@ module IRB # :nodoc:
     @CONF[:USE_SINGLELINE] = false unless defined?(ReadlineInputMethod)
     @CONF[:USE_COLORIZE] = (nc = ENV['NO_COLOR']).nil? || nc.empty?
     @CONF[:USE_AUTOCOMPLETE] = ENV.fetch("IRB_USE_AUTOCOMPLETE", "true") != "false"
+    @CONF[:COMPLETOR] = ENV.fetch("IRB_COMPLETOR", "regexp").to_sym
     @CONF[:INSPECT_MODE] = true
     @CONF[:USE_TRACER] = false
     @CONF[:USE_LOADER] = false
     @CONF[:IGNORE_SIGINT] = true
     @CONF[:IGNORE_EOF] = false
+    @CONF[:USE_PAGER] = true
     @CONF[:EXTRA_DOC_DIRS] = []
     @CONF[:ECHO] = nil
     @CONF[:ECHO_ON_ASSIGNMENT] = nil
@@ -187,10 +189,6 @@ module IRB # :nodoc:
       # Symbol aliases
       :'$' => :show_source,
       :'@' => :whereami,
-      # Keyword aliases
-      :break => :irb_break,
-      :catch => :irb_catch,
-      :next => :irb_next,
     }
   end
 
@@ -217,6 +215,7 @@ module IRB # :nodoc:
       added = [:TIME, IRB.conf[:MEASURE_PROC][:TIME], arg]
     end
     if added
+      IRB.conf[:MEASURE] = true
       found = IRB.conf[:MEASURE_CALLBACKS].find{ |m| m[0] == added[0] && m[2] == added[2] }
       if found
         # already added
@@ -237,6 +236,7 @@ module IRB # :nodoc:
       type_sym = type.upcase.to_sym
       IRB.conf[:MEASURE_CALLBACKS].reject!{ |t, | t == type_sym }
     end
+    IRB.conf[:MEASURE] = nil if IRB.conf[:MEASURE_CALLBACKS].empty?
   end
 
   def IRB.init_error
@@ -284,6 +284,8 @@ module IRB # :nodoc:
         end
       when "--noinspect"
         @CONF[:INSPECT_MODE] = false
+      when "--no-pager"
+        @CONF[:USE_PAGER] = false
       when "--singleline", "--readline", "--legacy"
         @CONF[:USE_SINGLELINE] = true
       when "--nosingleline", "--noreadline"
@@ -329,6 +331,10 @@ module IRB # :nodoc:
         @CONF[:USE_AUTOCOMPLETE] = true
       when "--noautocomplete"
         @CONF[:USE_AUTOCOMPLETE] = false
+      when "--regexp-completor"
+        @CONF[:COMPLETOR] = :regexp
+      when "--type-completor"
+        @CONF[:COMPLETOR] = :type
       when /^--prompt-mode(?:=(.+))?/, /^--prompt(?:=(.+))?/
         opt = $1 || argv.shift
         prompt_mode = opt.upcase.tr("-", "_").intern
@@ -383,18 +389,16 @@ module IRB # :nodoc:
     $LOAD_PATH.unshift(*load_path)
   end
 
-  # running config
+  # Run the config file
   def IRB.run_config
     if @CONF[:RC]
       begin
-        load rc_file
-      rescue LoadError, Errno::ENOENT
-      rescue # StandardError, ScriptError
-        print "load error: #{rc_file}\n"
-        print $!.class, ": ", $!, "\n"
-        for err in $@[0, $@.size - 2]
-          print "\t", err, "\n"
-        end
+        file = rc_file
+        # Because rc_file always returns `HOME/.irbrc` even if no rc file is present, we can't warn users about missing rc files.
+        # Otherwise, it'd be very noisy.
+        load file if File.exist?(file)
+      rescue StandardError, ScriptError => e
+        warn "Error loading RC file '#{file}':\n#{e.full_message(highlight: false)}"
       end
     end
   end
@@ -412,7 +416,7 @@ module IRB # :nodoc:
     end
     case rc_file = @CONF[:RC_NAME_GENERATOR].call(ext)
     when String
-      return rc_file
+      rc_file
     else
       fail IllegalRCNameGenerator
     end

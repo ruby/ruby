@@ -221,6 +221,25 @@ describe "Signal.trap" do
       Signal.trap(:HUP, @saved_trap).should equal(@proc)
     end
 
+    it "calls #to_str on an object to convert to a String" do
+      obj = mock("signal")
+      obj.should_receive(:to_str).exactly(2).times.and_return("HUP")
+      Signal.trap obj, @proc
+      Signal.trap(obj, @saved_trap).should equal(@proc)
+    end
+
+    it "accepts Integer values" do
+      hup = Signal.list["HUP"]
+      Signal.trap hup, @proc
+      Signal.trap(hup, @saved_trap).should equal(@proc)
+    end
+
+    it "does not call #to_int on an object to convert to an Integer" do
+      obj = mock("signal")
+      obj.should_not_receive(:to_int)
+      -> { Signal.trap obj, @proc }.should raise_error(ArgumentError, /bad signal type/)
+    end
+
     it "raises ArgumentError when passed unknown signal" do
       -> { Signal.trap(300) { } }.should raise_error(ArgumentError, "invalid signal number (300)")
       -> { Signal.trap("USR10") { } }.should raise_error(ArgumentError, "unsupported signal `SIGUSR10'")

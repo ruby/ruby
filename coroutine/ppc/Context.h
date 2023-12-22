@@ -13,7 +13,7 @@
 
 enum {
   COROUTINE_REGISTERS =
-  20  /* 19 general purpose registers (r13–r31) and 1 return address */
+  20  /* 19 general purpose registers (r13-r31) and 1 return address */
   + 4  /* space for fiber_entry() to store the link register */
 };
 

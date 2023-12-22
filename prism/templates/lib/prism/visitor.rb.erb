@@ -4,14 +4,18 @@ module Prism
   # implement each one that they need. For a default implementation that
   # continues walking the tree, see the Visitor class.
   class BasicVisitor
+    # Calls `accept` on the given node if it is not `nil`, which in turn should
+    # call back into this visitor by calling the appropriate `visit_*` method.
     def visit(node)
       node&.accept(self)
     end
 
+    # Visits each node in `nodes` by calling `accept` on each one.
     def visit_all(nodes)
       nodes.each { |node| node&.accept(self) }
     end
 
+    # Visits the child nodes of `node` by calling `accept` on each one.
     def visit_child_nodes(node)
       node.compact_child_nodes.each { |node| node.accept(self) }
     end

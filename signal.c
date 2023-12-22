@@ -403,6 +403,9 @@ interrupt_init(int argc, VALUE *argv, VALUE self)
 }
 
 void rb_malloc_info_show_results(void); /* gc.c */
+#if defined(USE_SIGALTSTACK) || defined(_WIN32)
+static void reset_sigmask(int sig);
+#endif
 
 void
 ruby_default_signal(int sig)
@@ -413,6 +416,9 @@ ruby_default_signal(int sig)
     rb_malloc_info_show_results();
 
     signal(sig, SIG_DFL);
+#if defined(USE_SIGALTSTACK) || defined(_WIN32)
+    reset_sigmask(sig);
+#endif
     raise(sig);
 }
 
@@ -1487,6 +1493,9 @@ Init_signal(void)
     rb_define_method(rb_eSignal, "signo", esignal_signo, 0);
     rb_alias(rb_eSignal, rb_intern_const("signm"), rb_intern_const("message"));
     rb_define_method(rb_eInterrupt, "initialize", interrupt_init, -1);
+
+    // It should be ready to call rb_signal_exec()
+    VM_ASSERT(GET_THREAD()->pending_interrupt_queue);
 
     /* At this time, there is no subthread. Then sigmask guarantee atomics. */
     rb_disable_interrupt();

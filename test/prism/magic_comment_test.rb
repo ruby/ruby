@@ -16,8 +16,8 @@ module Prism
       "# -*- CoDiNg: ascii -*-",
       "# -*- \s\t\v encoding \s\t\v : \s\t\v ascii \s\t\v -*-",
       "# -*- foo: bar; encoding: ascii -*-",
-      "# coding \t \r  \v   :     \t \v    \r   ascii-8bit\n",
-      "# vim: filetype=ruby, fileencoding=big5, tabsize=3, shiftwidth=3\n"
+      "# coding \t \r  \v   :     \t \v    \r   ascii-8bit",
+      "# vim: filetype=ruby, fileencoding=big5, tabsize=3, shiftwidth=3"
     ]
 
     examples.each do |example|

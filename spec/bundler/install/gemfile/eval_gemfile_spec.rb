@@ -2,7 +2,7 @@
 
 RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
   before do
-    build_lib("gunks", :path => bundled_app.join("gems/gunks")) do |s|
+    build_lib("gunks", path: bundled_app.join("gems/gunks")) do |s|
       s.name    = "gunks"
       s.version = "0.0.1"
     end
@@ -24,7 +24,7 @@ RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
       expect(out).to include("Resolving dependencies")
       expect(out).to include("Bundle complete")
 
-      expect(the_bundle).to include_gem "gunks 0.0.1", :source => "path@#{bundled_app("gems", "gunks")}"
+      expect(the_bundle).to include_gem "gunks 0.0.1", source: "path@#{bundled_app("gems", "gunks")}"
     end
   end
 
@@ -64,7 +64,7 @@ RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
 
   context "eval-ed Gemfile has relative-path gems" do
     before do
-      build_lib("a", :path => bundled_app("gems/a"))
+      build_lib("a", path: bundled_app("gems/a"))
       create_file bundled_app("nested/Gemfile-nested"), <<-G
         source "#{file_uri_for(gem_repo1)}"
         gem "a", :path => "../gems/a"
@@ -102,7 +102,7 @@ RSpec.describe "bundle install with gemfile that uses eval_gemfile" do
       expect(out).to include("Resolving dependencies")
       expect(out).to include("Bundle complete")
 
-      expect(the_bundle).to include_gem "gunks 0.0.1", :source => "path@#{bundled_app("gems", "gunks")}"
+      expect(the_bundle).to include_gem "gunks 0.0.1", source: "path@#{bundled_app("gems", "gunks")}"
     end
   end
 

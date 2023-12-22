@@ -433,8 +433,10 @@ THREAD_IMPL_SRC = thread_$(THREAD_MODEL).c
 
 !if "$(CROSS_COMPILING)" == "yes"
 PREP          = $(arch)-fake.rb
+BUILTIN_BINARY = no
 !else
 PREP          = miniruby$(EXEEXT)
+BUILTIN_BINARY = yes
 !endif
 
 !if !defined(EXTSTATIC)

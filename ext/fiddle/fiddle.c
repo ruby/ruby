@@ -363,7 +363,7 @@ Init_fiddle(void)
      *
      * C type - bool
      */
-    rb_define_const(mFiddleTypes, "BOOL" ,      rb_fiddle_type_bool());
+    rb_define_const(mFiddleTypes, "BOOL" , INT2NUM(TYPE_BOOL));
 
     /* Document-const: ALIGN_VOIDP
      *
@@ -468,6 +468,12 @@ Init_fiddle(void)
      * The alignment size of a uintptr_t
      */
     rb_define_const(mFiddle, "ALIGN_UINTPTR_T", INT2NUM(ALIGN_OF(uintptr_t)));
+
+    /* Document-const: ALIGN_BOOL
+     *
+     * The alignment size of a bool
+     */
+    rb_define_const(mFiddle, "ALIGN_BOOL", INT2NUM(ALIGN_OF(bool)));
 
     /* Document-const: WINDOWS
      *

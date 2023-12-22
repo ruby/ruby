@@ -1,4 +1,4 @@
-name: Miscellaneous checks
+name: Misc
 on: [push, pull_request, merge_group]
 
 concurrency:
@@ -10,6 +10,8 @@ permissions:
 
 jobs:
   checks:
+    name: Miscellaneous checks
+
     permissions:
       contents: write # for Git to git push
 
@@ -28,7 +30,7 @@ jobs:
 
       - name: Check if C-sources are US-ASCII
         run: |
-          grep -r -n $'[^\t -~]' -- *.[chy] include internal win32/*.[ch] && exit 1 || :
+          grep -r -n --include='*.[chyS]' --include='*.asm' $'[^\t-~]' -- . && exit 1 || :
 
       - name: Check for trailing spaces
         run: |

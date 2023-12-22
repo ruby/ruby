@@ -5,6 +5,7 @@
     └── body: (length: 1)
         └── @ LambdaNode (location: (1,0)-(1,11))
             ├── locals: [:k]
+            ├── locals_body_index: 1
             ├── operator_loc: (1,0)-(1,2) = "->"
             ├── opening_loc: (1,8)-(1,9) = "{"
             ├── closing_loc: (1,10)-(1,11) = "}"
@@ -17,10 +18,9 @@
             │   │   ├── rest: ∅
             │   │   ├── posts: (length: 0)
             │   │   ├── keywords: (length: 1)
-            │   │   │   └── @ KeywordParameterNode (location: (1,4)-(1,6))
+            │   │   │   └── @ RequiredKeywordParameterNode (location: (1,4)-(1,6))
             │   │   │       ├── name: :k
-            │   │   │       ├── name_loc: (1,4)-(1,6) = "k:"
-            │   │   │       └── value: ∅
+            │   │   │       └── name_loc: (1,4)-(1,6) = "k:"
             │   │   ├── keyword_rest: ∅
             │   │   └── block: ∅
             │   ├── locals: (length: 0)

@@ -1,5 +1,4 @@
 require_relative '../../spec_helper'
-require_relative 'fixtures/classes'
 
 describe "Kernel#sleep" do
   it "is a private method" do

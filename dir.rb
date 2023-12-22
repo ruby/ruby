@@ -320,7 +320,7 @@ class Dir
   #     Dir.glob('io.?') # => ["io.c"]
   #
   # - <tt>'[_set_]'</tt>: Matches any one character in the string _set_;
-  #   behaves like a {Regexp character class}[rdoc-ref:regexp.rdoc@Character+Classes],
+  #   behaves like a {Regexp character class}[rdoc-ref:Regexp@Character+Classes],
   #   including set negation (<tt>'[^a-z]'</tt>):
   #
   #     Dir.glob('*.[a-z][a-z]').take(3)
@@ -328,7 +328,7 @@ class Dir
   #
   # - <tt>'{_abc_,_xyz_}'</tt>:
   #   Matches either string _abc_ or string _xyz_;
-  #   behaves like {Regexp alternation}[rdoc-ref:regexp.rdoc@Alternation]:
+  #   behaves like {Regexp alternation}[rdoc-ref:Regexp@Alternation]:
   #
   #     Dir.glob('{LEGAL,BSDL}') # => ["LEGAL", "BSDL"]
   #

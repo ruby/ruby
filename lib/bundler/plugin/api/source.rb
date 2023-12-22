@@ -96,7 +96,7 @@ module Bundler
         #
         # Note: Do not override if you don't know what you are doing.
         def post_install(spec, disable_exts = false)
-          opts = { :env_shebang => false, :disable_extensions => disable_exts }
+          opts = { env_shebang: false, disable_extensions: disable_exts }
           installer = Bundler::Source::Path::Installer.new(spec, opts)
           installer.post_install
         end

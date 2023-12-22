@@ -83,7 +83,7 @@ optimized_unescape_html(VALUE str)
     unsigned long charlimit = (strcasecmp(rb_enc_name(enc), "UTF-8") == 0 ? UNICODE_MAX :
                                strcasecmp(rb_enc_name(enc), "ISO-8859-1") == 0 ? 256 :
                                128);
-    long i, len, beg = 0;
+    long i, j, len, beg = 0;
     size_t clen, plen;
     int overflow;
     const char *cstr;
@@ -100,6 +100,7 @@ optimized_unescape_html(VALUE str)
         plen = i - beg;
         if (++i >= len) break;
         c = (unsigned char)cstr[i];
+        j = i;
 #define MATCH(s) (len - i >= (int)rb_strlen_lit(s) && \
                   memcmp(&cstr[i], s, rb_strlen_lit(s)) == 0 && \
                   (i += rb_strlen_lit(s) - 1, 1))
@@ -112,28 +113,40 @@ optimized_unescape_html(VALUE str)
             else if (MATCH("mp;")) {
                 c = '&';
             }
-            else continue;
+            else {
+                i = j;
+                continue;
+            }
             break;
           case 'q':
             ++i;
             if (MATCH("uot;")) {
                 c = '"';
             }
-            else continue;
+            else {
+                i = j;
+                continue;
+            }
             break;
           case 'g':
             ++i;
             if (MATCH("t;")) {
                 c = '>';
             }
-            else continue;
+            else {
+                i = j;
+                continue;
+            }
             break;
           case 'l':
             ++i;
             if (MATCH("t;")) {
                 c = '<';
             }
-            else continue;
+            else {
+                i = j;
+                continue;
+            }
             break;
           case '#':
             if (len - ++i >= 2 && ISDIGIT(cstr[i])) {
@@ -142,9 +155,15 @@ optimized_unescape_html(VALUE str)
             else if ((cstr[i] == 'x' || cstr[i] == 'X') && len - ++i >= 2 && ISXDIGIT(cstr[i])) {
                 cc = ruby_scan_digits(&cstr[i], len-i, 16, &clen, &overflow);
             }
-            else continue;
+            else {
+                i = j;
+                continue;
+            }
             i += clen;
-            if (overflow || cc >= charlimit || cstr[i] != ';') continue;
+            if (overflow || cc >= charlimit || cstr[i] != ';') {
+                i = j;
+                continue;
+            }
             if (!dest) {
                 dest = rb_str_buf_new(len);
             }
@@ -458,7 +477,9 @@ InitVM_escape(void)
     rb_define_method(rb_mEscape, "escapeHTML", cgiesc_escape_html, 1);
     rb_define_method(rb_mEscape, "unescapeHTML", cgiesc_unescape_html, 1);
     rb_define_method(rb_mEscape, "escapeURIComponent", cgiesc_escape_uri_component, 1);
+    rb_define_alias(rb_mEscape, "escape_uri_component", "escapeURIComponent");
     rb_define_method(rb_mEscape, "unescapeURIComponent", cgiesc_unescape_uri_component, -1);
+    rb_define_alias(rb_mEscape, "unescape_uri_component", "unescapeURIComponent");
     rb_define_method(rb_mEscape, "escape", cgiesc_escape, 1);
     rb_define_method(rb_mEscape, "unescape", cgiesc_unescape, -1);
     rb_prepend_module(rb_mUtil, rb_mEscape);

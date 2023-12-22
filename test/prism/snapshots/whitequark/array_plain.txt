@@ -4,6 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,6))
     └── body: (length: 1)
         └── @ ArrayNode (location: (1,0)-(1,6))
+            ├── flags: ∅
             ├── elements: (length: 2)
             │   ├── @ IntegerNode (location: (1,1)-(1,2))
             │   │   └── flags: decimal

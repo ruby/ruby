@@ -39,6 +39,20 @@ class SampleClassForTestProfileFrames
   end
 end
 
+class SampleClassForTestProfileThreadFrames
+  def initialize(mutex)
+    @mutex = mutex
+  end
+
+  def foo(block)
+    bar(block)
+  end
+
+  def bar(block)
+    block.call
+  end
+end
+
 class TestProfileFrames < Test::Unit::TestCase
   def test_profile_frames
     obj, frames = Fiber.new{
@@ -138,6 +152,41 @@ class TestProfileFrames < Test::Unit::TestCase
       end
     }
   end
+
+  def test_profile_thread_frames
+    mutex = Mutex.new
+    th = Thread.new do
+      mutex.lock
+      Thread.stop
+      SampleClassForTestProfileThreadFrames.new(mutex).foo(lambda { mutex.unlock; loop { sleep(1) } } )
+    end
+
+    # ensure execution has reached SampleClassForTestProfileThreadFrames#bar before running profile_thread_frames
+    loop { break if th.status == "sleep"; sleep 0.1 }
+    th.run
+    mutex.lock # wait until SampleClassForTestProfileThreadFrames#bar has been called
+
+    frames = Bug::Debug.profile_thread_frames(th, 0, 10)
+
+    full_labels = [
+      "Kernel#sleep",
+      "TestProfileFrames#test_profile_thread_frames",
+      "Kernel#loop",
+      "TestProfileFrames#test_profile_thread_frames",
+      "SampleClassForTestProfileThreadFrames#bar",
+      "SampleClassForTestProfileThreadFrames#foo",
+      "TestProfileFrames#test_profile_thread_frames",
+    ]
+
+    frames.each.with_index do |frame, i|
+      assert_equal(full_labels[i], frame)
+    end
+
+  ensure
+    th.kill
+    th.join
+  end
+
 
   def test_matches_backtrace_locations_main_thread
     assert_equal(Thread.current, Thread.main)

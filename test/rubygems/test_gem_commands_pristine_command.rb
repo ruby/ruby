@@ -296,7 +296,7 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     build_args = %w[--with-awesome=true --sweet]
 
-    install_gem a, :build_args => build_args
+    install_gem a, build_args: build_args
 
     @cmd.options[:args] = %w[a]
 
@@ -391,6 +391,9 @@ class TestGemCommandsPristineCommand < Gem::TestCase
 
     b = util_spec "b"
     install_gem b
+
+    assert_path_exist File.join(gemhome2, "gems", "b-2")
+    assert_path_not_exist File.join(@gemhome, "gems", "b-2")
 
     @cmd.options[:args] = %w[a b]
 

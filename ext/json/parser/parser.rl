@@ -229,7 +229,7 @@ static char *JSON_parse_object(JSON_Parser *json, char *p, char *pe, VALUE *resu
         if (json->allow_nan) {
             *result = CInfinity;
         } else {
-            rb_enc_raise(EXC_ENCODING eParserError, "unexpected token at '%s'", p - 8);
+            rb_enc_raise(EXC_ENCODING eParserError, "unexpected token at '%s'", p - 7);
         }
     }
     action parse_string {
@@ -508,7 +508,7 @@ static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int
                 case 'u':
                     if (pe > stringEnd - 4) {
                       if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-                        free(bufferStart);
+                        ruby_xfree(bufferStart);
                       }
                       rb_enc_raise(
                         EXC_ENCODING eParserError,
@@ -521,7 +521,7 @@ static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int
                             pe++;
                             if (pe > stringEnd - 6) {
                               if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-                                free(bufferStart);
+                                ruby_xfree(bufferStart);
                               }
                               rb_enc_raise(
                                 EXC_ENCODING eParserError,
@@ -566,13 +566,13 @@ static VALUE json_string_unescape(char *string, char *stringEnd, int intern, int
         result = rb_utf8_str_new(bufferStart, (long)(buffer - bufferStart));
       }
       if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-        free(bufferStart);
+        ruby_xfree(bufferStart);
       }
 # else
       result = rb_utf8_str_new(bufferStart, (long)(buffer - bufferStart));
 
       if (bufferSize > MAX_STACK_BUFFER_SIZE) {
-        free(bufferStart);
+        ruby_xfree(bufferStart);
       }
 
       if (intern) {
@@ -797,7 +797,7 @@ static VALUE cParser_initialize(int argc, VALUE *argv, VALUE self)
         json->max_nesting = 100;
         json->allow_nan = 0;
         json->create_additions = 0;
-        json->create_id = rb_funcall(mJSON, i_create_id, 0);
+        json->create_id = Qnil;
         json->object_class = Qnil;
         json->array_class = Qnil;
         json->decimal_class = Qnil;

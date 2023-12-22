@@ -4,7 +4,7 @@ require_relative "helpers/endpoint"
 
 class EndpointMirrorSource < Endpoint
   get "/gems/:id" do
-    if request.env["HTTP_X_GEMFILE_SOURCE"] == "https://server.example.org/"
+    if request.env["HTTP_X_GEMFILE_SOURCE"] == "https://server.example.org/" && request.env["HTTP_USER_AGENT"].start_with?("bundler")
       File.binread("#{gem_repo1}/gems/#{params[:id]}")
     else
       halt 500

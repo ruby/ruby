@@ -746,6 +746,14 @@ dummy
     assert_equal("def test_keep_script_lines_for_of\n", node_method.source.lines.first)
   end
 
+  def test_source_with_multibyte_characters
+    ast = RubyVM::AbstractSyntaxTree.parse(%{a("\u00a7");b("\u00a9")}, keep_script_lines: true)
+    a_fcall, b_fcall = ast.children[2].children
+
+    assert_equal(%{a("\u00a7")}, a_fcall.source)
+    assert_equal(%{b("\u00a9")}, b_fcall.source)
+  end
+
   def test_keep_tokens_for_parse
     node = RubyVM::AbstractSyntaxTree.parse(<<~END, keep_tokens: true)
     1.times do

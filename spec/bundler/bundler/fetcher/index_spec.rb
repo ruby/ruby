@@ -8,8 +8,9 @@ RSpec.describe Bundler::Fetcher::Index do
   let(:display_uri) { "http://sample_uri.com" }
   let(:rubygems)    { double(:rubygems) }
   let(:gem_names)   { %w[foo bar] }
+  let(:gem_remote_fetcher) { nil }
 
-  subject { described_class.new(downloader, remote, display_uri) }
+  subject { described_class.new(downloader, remote, display_uri, gem_remote_fetcher) }
 
   before { allow(Bundler).to receive(:rubygems).and_return(rubygems) }
 
@@ -72,7 +73,7 @@ RSpec.describe Bundler::Fetcher::Index do
     context "any other message is returned" do
       let(:error_message) { "You get an error, you get an error!" }
 
-      before { allow(Bundler).to receive(:ui).and_return(double(:trace => nil)) }
+      before { allow(Bundler).to receive(:ui).and_return(double(trace: nil)) }
 
       it "should raise a Bundler::HTTPError" do
         expect { subject.specs(gem_names) }.to raise_error(Bundler::HTTPError, "Could not fetch specs from http://sample_uri.com due to underlying error <You get an error, you get an error! (http://sample_uri.com)>")

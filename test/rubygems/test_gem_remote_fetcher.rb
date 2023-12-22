@@ -554,7 +554,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     @fetcher = fetcher
 
     def fetcher.fetch_http(uri, mtime = nil, head = nil)
-      raise Timeout::Error, "timed out"
+      raise Gem::Timeout::Error, "timed out"
     end
 
     url = "http://example.com/uri"
@@ -563,7 +563,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       fetcher.fetch_path url
     end
 
-    assert_match(/Timeout::Error: timed out \(#{Regexp.escape url}\)\z/,
+    assert_match(/Gem::Timeout::Error: timed out \(#{Regexp.escape url}\)\z/,
                  e.message)
     assert_equal url, e.uri
   end
@@ -659,13 +659,13 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     def fetcher.request(uri, request_class, last_modified = nil)
       url = "http://gems.example.com/redirect"
       if defined? @requested
-        res = Net::HTTPOK.new nil, 200, nil
+        res = Gem::Net::HTTPOK.new nil, 200, nil
         def res.body
           "real_path"
         end
       else
         @requested = true
-        res = Net::HTTPMovedPermanently.new nil, 301, nil
+        res = Gem::Net::HTTPMovedPermanently.new nil, 301, nil
         res.add_field "Location", url
       end
       res
@@ -683,7 +683,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     def fetcher.request(uri, request_class, last_modified = nil)
       url = "http://gems.example.com/redirect"
-      res = Net::HTTPMovedPermanently.new nil, 301, nil
+      res = Gem::Net::HTTPMovedPermanently.new nil, 301, nil
       res.add_field "Location", url
       res
     end
@@ -701,7 +701,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     url = "http://gems.example.com/redirect"
 
     def fetcher.request(uri, request_class, last_modified = nil)
-      res = Net::HTTPMovedPermanently.new nil, 301, nil
+      res = Gem::Net::HTTPMovedPermanently.new nil, 301, nil
       res
     end
 
@@ -728,7 +728,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     def fetcher.request(uri, request_class, last_modified = nil)
       $fetched_uri = uri
-      res = Net::HTTPOK.new nil, 200, nil
+      res = Gem::Net::HTTPOK.new nil, 200, nil
       def res.body
         "success"
       end
@@ -757,7 +757,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_config_creds
     Gem.configuration[:s3_source] = {
-      "my-bucket" => { :id => "testuser", :secret => "testpass" },
+      "my-bucket" => { id: "testuser", secret: "testpass" },
     }
     url = "s3://my-bucket/gems/specs.4.8.gz"
     Time.stub :now, Time.at(1_561_353_581) do
@@ -769,7 +769,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_config_creds_with_region
     Gem.configuration[:s3_source] = {
-      "my-bucket" => { :id => "testuser", :secret => "testpass", :region => "us-west-2" },
+      "my-bucket" => { id: "testuser", secret: "testpass", region: "us-west-2" },
     }
     url = "s3://my-bucket/gems/specs.4.8.gz"
     Time.stub :now, Time.at(1_561_353_581) do
@@ -781,7 +781,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_config_creds_with_token
     Gem.configuration[:s3_source] = {
-      "my-bucket" => { :id => "testuser", :secret => "testpass", :security_token => "testtoken" },
+      "my-bucket" => { id: "testuser", secret: "testpass", security_token: "testtoken" },
     }
     url = "s3://my-bucket/gems/specs.4.8.gz"
     Time.stub :now, Time.at(1_561_353_581) do
@@ -796,7 +796,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     ENV["AWS_SECRET_ACCESS_KEY"] = "testpass"
     ENV["AWS_SESSION_TOKEN"] = nil
     Gem.configuration[:s3_source] = {
-      "my-bucket" => { :provider => "env" },
+      "my-bucket" => { provider: "env" },
     }
     url = "s3://my-bucket/gems/specs.4.8.gz"
     Time.stub :now, Time.at(1_561_353_581) do
@@ -812,7 +812,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     ENV["AWS_SECRET_ACCESS_KEY"] = "testpass"
     ENV["AWS_SESSION_TOKEN"] = nil
     Gem.configuration[:s3_source] = {
-      "my-bucket" => { :provider => "env", :region => "us-west-2" },
+      "my-bucket" => { provider: "env", region: "us-west-2" },
     }
     url = "s3://my-bucket/gems/specs.4.8.gz"
     Time.stub :now, Time.at(1_561_353_581) do
@@ -828,7 +828,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     ENV["AWS_SECRET_ACCESS_KEY"] = "testpass"
     ENV["AWS_SESSION_TOKEN"] = "testtoken"
     Gem.configuration[:s3_source] = {
-      "my-bucket" => { :provider => "env" },
+      "my-bucket" => { provider: "env" },
     }
     url = "s3://my-bucket/gems/specs.4.8.gz"
     Time.stub :now, Time.at(1_561_353_581) do
@@ -848,7 +848,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_instance_profile_creds
     Gem.configuration[:s3_source] = {
-      "my-bucket" => { :provider => "instance_profile" },
+      "my-bucket" => { provider: "instance_profile" },
     }
 
     url = "s3://my-bucket/gems/specs.4.8.gz"
@@ -862,7 +862,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_instance_profile_creds_with_region
     Gem.configuration[:s3_source] = {
-      "my-bucket" => { :provider => "instance_profile", :region => "us-west-2" },
+      "my-bucket" => { provider: "instance_profile", region: "us-west-2" },
     }
 
     url = "s3://my-bucket/gems/specs.4.8.gz"
@@ -876,7 +876,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_instance_profile_creds_with_token
     Gem.configuration[:s3_source] = {
-      "my-bucket" => { :provider => "instance_profile" },
+      "my-bucket" => { provider: "instance_profile" },
     }
 
     url = "s3://my-bucket/gems/specs.4.8.gz"
@@ -906,7 +906,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_s3_no_host
     Gem.configuration[:s3_source] = {
-      "my-bucket" => { :id => "testuser", :secret => "testpass" },
+      "my-bucket" => { id: "testuser", secret: "testpass" },
     }
 
     url = "s3://other-bucket/gems/specs.4.8.gz"
@@ -916,7 +916,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_fetch_s3_no_id
-    Gem.configuration[:s3_source] = { "my-bucket" => { :secret => "testpass" } }
+    Gem.configuration[:s3_source] = { "my-bucket" => { secret: "testpass" } }
 
     url = "s3://my-bucket/gems/specs.4.8.gz"
     refute_fetch_s3 url, "s3_source for my-bucket missing id or secret"
@@ -925,7 +925,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_fetch_s3_no_secret
-    Gem.configuration[:s3_source] = { "my-bucket" => { :id => "testuser" } }
+    Gem.configuration[:s3_source] = { "my-bucket" => { id: "testuser" } }
 
     url = "s3://my-bucket/gems/specs.4.8.gz"
     refute_fetch_s3 url, "s3_source for my-bucket missing id or secret"
@@ -958,8 +958,8 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     @fetcher = fetcher
 
     assert_throws :block_called do
-      fetcher.request URI("http://example"), Net::HTTP::Get do |req|
-        assert_kind_of Net::HTTPGenericRequest, req
+      fetcher.request URI("http://example"), Gem::Net::HTTP::Get do |req|
+        assert_kind_of Gem::Net::HTTPGenericRequest, req
         throw :block_called
       end
     end
@@ -984,7 +984,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_ssl_client_cert_auth_connection
     ssl_server = start_ssl_server(
-      { :SSLVerifyClient => OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT }
+      { SSLVerifyClient: OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT }
     )
 
     temp_ca_cert = File.join(__dir__, "ca_cert.pem")
@@ -1000,7 +1000,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_do_not_allow_invalid_client_cert_auth_connection
     ssl_server = start_ssl_server(
-      { :SSLVerifyClient => OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT }
+      { SSLVerifyClient: OpenSSL::SSL::VERIFY_PEER | OpenSSL::SSL::VERIFY_FAIL_IF_NO_PEER_CERT }
     )
 
     temp_ca_cert = File.join(__dir__, "ca_cert.pem")
@@ -1146,15 +1146,15 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
     null_logger = NilLog.new
     server = WEBrick::HTTPServer.new({
-      :Port => 0,
-      :Logger => null_logger,
-      :AccessLog => [],
-      :SSLEnable => true,
-      :SSLCACertificateFile => File.join(__dir__, "ca_cert.pem"),
-      :SSLCertificate => cert("ssl_cert.pem"),
-      :SSLPrivateKey => key("ssl_key.pem"),
-      :SSLVerifyClient => nil,
-      :SSLCertName => nil,
+      Port: 0,
+      Logger: null_logger,
+      AccessLog: [],
+      SSLEnable: true,
+      SSLCACertificateFile: File.join(__dir__, "ca_cert.pem"),
+      SSLCertificate: cert("ssl_cert.pem"),
+      SSLPrivateKey: key("ssl_key.pem"),
+      SSLVerifyClient: nil,
+      SSLCertName: nil,
     }.merge(config))
     server.mount_proc("/yaml") do |_req, res|
       res.body = "--- true\n"
@@ -1186,10 +1186,10 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def start_server(data)
     null_logger = NilLog.new
     s = WEBrick::HTTPServer.new(
-      :Port => 0,
-      :DocumentRoot => nil,
-      :Logger => null_logger,
-      :AccessLog => null_logger
+      Port: 0,
+      DocumentRoot: nil,
+      Logger: null_logger,
+      AccessLog: null_logger
     )
     s.mount_proc("/kill") {|_req, _res| s.shutdown }
     s.mount_proc("/yaml") do |req, res|

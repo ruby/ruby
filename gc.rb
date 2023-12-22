@@ -39,6 +39,7 @@ module GC
     Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
   end
 
+  # Alias of GC.start
   def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true
     Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
   end
@@ -322,6 +323,7 @@ module GC
 end
 
 module ObjectSpace
+  # Alias of GC.start
   def garbage_collect full_mark: true, immediate_mark: true, immediate_sweep: true
     Primitive.gc_start_internal full_mark, immediate_mark, immediate_sweep, false
   end

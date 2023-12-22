@@ -11,7 +11,7 @@ require "rbconfig"
 class TestGem < Gem::TestCase
   PLUGINS_LOADED = [] # rubocop:disable Style/MutableConstant
 
-  PROJECT_DIR = File.expand_path("../..", __dir__).tap(&Gem::UNTAINT)
+  PROJECT_DIR = File.expand_path("../..", __dir__)
 
   def setup
     super
@@ -96,7 +96,7 @@ class TestGem < Gem::TestCase
 
     gemhome2 = "#{@gemhome}2"
 
-    installed = Gem.install "a", "= 1", :install_dir => gemhome2
+    installed = Gem.install "a", "= 1", install_dir: gemhome2
 
     assert_equal %w[a-1], installed.map(&:full_name)
 
@@ -115,7 +115,7 @@ class TestGem < Gem::TestCase
       begin
         raise "Error"
       rescue StandardError
-        Gem.install "a", "= 1", :install_dir => gemhome2
+        Gem.install "a", "= 1", install_dir: gemhome2
       end
     assert_equal %w[a-1], installed.map(&:full_name)
   end
@@ -154,11 +154,11 @@ class TestGem < Gem::TestCase
   def assert_self_install_permissions(format_executable: false)
     mask = Gem.win_platform? ? 0o700 : 0o777
     options = {
-      :dir_mode => 0o500,
-      :prog_mode => Gem.win_platform? ? 0o410 : 0o510,
-      :data_mode => 0o640,
-      :wrappers => true,
-      :format_executable => format_executable,
+      dir_mode: 0o500,
+      prog_mode: Gem.win_platform? ? 0o410 : 0o510,
+      data_mode: 0o640,
+      wrappers: true,
+      format_executable: format_executable,
     }
     Dir.chdir @tempdir do
       Dir.mkdir "bin"
@@ -201,7 +201,7 @@ class TestGem < Gem::TestCase
     end
     assert_equal(expected, result)
   ensure
-    File.chmod(0o755, *Dir.glob(@gemhome + "/gems/**/").map {|path| path.tap(&Gem::UNTAINT) })
+    File.chmod(0o755, *Dir.glob(@gemhome + "/gems/**/"))
   end
 
   def test_require_missing
@@ -1552,9 +1552,9 @@ class TestGem < Gem::TestCase
     g = util_spec "g", "1", nil, "lib/g.rb"
     m = util_spec "m", "1", nil, "lib/m.rb"
 
-    install_gem g, :install_dir => Gem.dir
-    m0 = install_gem m, :install_dir => Gem.dir
-    m1 = install_gem m, :install_dir => Gem.user_dir
+    install_gem g, install_dir: Gem.dir
+    m0 = install_gem m, install_dir: Gem.dir
+    m1 = install_gem m, install_dir: Gem.user_dir
 
     assert_equal m0.gem_dir, File.join(Gem.dir, "gems", "m-1")
     assert_equal m1.gem_dir, File.join(Gem.user_dir, "gems", "m-1")
@@ -1608,9 +1608,9 @@ class TestGem < Gem::TestCase
     g = util_spec "g", "1", nil, "lib/g.rb"
     m = util_spec "m", "1", nil, "lib/m.rb"
 
-    install_gem g, :install_dir => Gem.dir
-    install_gem m, :install_dir => Gem.dir
-    install_gem m, :install_dir => Gem.user_dir
+    install_gem g, install_dir: Gem.dir
+    install_gem m, install_dir: Gem.dir
+    install_gem m, install_dir: Gem.user_dir
 
     Gem.use_paths Gem.dir, [Gem.dir, Gem.user_dir]
 

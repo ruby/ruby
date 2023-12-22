@@ -102,4 +102,5 @@ Filter options can be combined. `--filter-minor` and `--filter-patch` would show
 
     * Gem       Current  Latest  Requested  Groups
     * faker     1.6.5    1.6.6   ~> 1.4     development, test
+
 Combining all three `filter` options would be the same result as providing none of them.

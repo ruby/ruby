@@ -113,6 +113,15 @@ describe "IO.read" do
     IO.read(@fname, 1, 10).should == nil
   end
 
+  it "returns an empty string when reading zero bytes" do
+    IO.read(@fname, 0).should == ''
+  end
+
+  it "returns a String in BINARY when passed a size" do
+    IO.read(@fname, 1).encoding.should == Encoding::BINARY
+    IO.read(@fname, 0).encoding.should == Encoding::BINARY
+  end
+
   it "raises an Errno::ENOENT when the requested file does not exist" do
     rm_r @fname
     -> { IO.read @fname }.should raise_error(Errno::ENOENT)
@@ -274,6 +283,14 @@ describe "IO#read" do
     @io.read(4).should == '7890'
   end
 
+  it "treats first nil argument as no length limit" do
+    @io.read(nil).should == @contents
+  end
+
+  it "raises an ArgumentError when not passed a valid length" do
+    -> { @io.read(-1) }.should raise_error(ArgumentError)
+  end
+
   it "clears the output buffer if there is nothing to read" do
     @io.pos = 10
 
@@ -282,6 +299,32 @@ describe "IO#read" do
     @io.read(10, buf).should == nil
 
     buf.should == ''
+
+    buf = 'non-empty string'
+
+    @io.read(nil, buf).should == ""
+
+    buf.should == ''
+
+    buf = 'non-empty string'
+
+    @io.read(0, buf).should == ""
+
+    buf.should == ''
+  end
+
+  it "raise FrozenError if the output buffer is frozen" do
+    @io.read
+    -> { @io.read(0, 'frozen-string'.freeze) }.should raise_error(FrozenError)
+    -> { @io.read(1, 'frozen-string'.freeze) }.should raise_error(FrozenError)
+    -> { @io.read(nil, 'frozen-string'.freeze) }.should raise_error(FrozenError)
+  end
+
+  ruby_bug "", ""..."3.3" do
+    it "raise FrozenError if the output buffer is frozen (2)" do
+      @io.read
+      -> { @io.read(1, ''.freeze) }.should raise_error(FrozenError)
+    end
   end
 
   it "consumes zero bytes when reading zero bytes" do
@@ -565,6 +608,7 @@ describe :io_read_size_internal_encoding, shared: true do
 
   it "returns a String in BINARY when passed a size" do
     @io.read(4).encoding.should equal(Encoding::BINARY)
+    @io.read(0).encoding.should equal(Encoding::BINARY)
   end
 
   it "does not change the buffer's encoding when passed a limit" do

@@ -1133,6 +1133,11 @@ range_reverse_each(VALUE range)
     VALUE end = RANGE_END(range);
     int excl = EXCL(range);
 
+    if (NIL_P(end)) {
+        rb_raise(rb_eTypeError, "can't iterate from %s",
+                 rb_obj_classname(end));
+    }
+
     if (FIXNUM_P(beg) && FIXNUM_P(end)) {
         if (excl) {
             if (end == LONG2FIX(FIXNUM_MIN)) return range;
@@ -2335,18 +2340,17 @@ empty_region_p(VALUE beg, VALUE end, int excl)
  *    (1..2).overlap?(3..4)      # => false
  *    (1...3).overlap?(3..4)     # => false
  *
- *  This method assumes that there is no minimum value because
- *  Ruby lacks a standard method for determining minimum values.
- *  This assumption is invalid.
- *  For example, there is no value smaller than +-Float::INFINITY+,
- *  making +(...-Float::INFINITY)+ an empty set.
- *  Consequently, +(...-Float::INFINITY)+ has no elements in common with itself,
- *  yet +(...-Float::INFINITY).overlap?((...-Float::INFINITY))+ returns
- *  true due to this assumption.
- *  In general, if +r = (...minimum); r.overlap?(r)+ returns +true+,
- *  where +minimum+ is a value that no value is smaller than.
- *  Such values include +-Float::INFINITY+, +[]+, +""+, and
- *  classes without subclasses.
+ *  Note that the method wouldn't make any assumptions about the beginless
+ *  range being actually empty, even if its upper bound is the minimum
+ *  possible value of its type, so all this would return +true+:
+ *
+ *     (...-Float::INFINITY).overlap?(...-Float::INFINITY) # => true
+ *     (..."").overlap?(..."") # => true
+ *     (...[]).overlap?(...[]) # => true
+ *
+ *  Even if those ranges are effectively empty (no number can be smaller than
+ *  <tt>-Float::INFINITY</tt>), they are still considered overlapping
+ *  with themselves.
  *
  *  Related: Range#cover?.
  */
@@ -2558,6 +2562,7 @@ range_overlap(VALUE range, VALUE other)
  * - {Comparing}[rdoc-ref:Range@Methods+for+Comparing]
  * - {Iterating}[rdoc-ref:Range@Methods+for+Iterating]
  * - {Converting}[rdoc-ref:Range@Methods+for+Converting]
+ * - {Methods for Working with JSON}[rdoc-ref:Range@Methods+for+Working+with+JSON]
  *
  * === Methods for Creating a \Range
  *
@@ -2599,6 +2604,16 @@ range_overlap(VALUE range, VALUE other)
  * - #inspect: Returns a string representation of +self+ (uses #inspect).
  * - #to_a (aliased as #entries): Returns elements of +self+ in an array.
  * - #to_s: Returns a string representation of +self+ (uses #to_s).
+ *
+ * === Methods for Working with \JSON
+ *
+ * - ::json_create: Returns a new \Range object constructed from the given object.
+ * - #as_json: Returns a 2-element hash representing +self+.
+ * - #to_json: Returns a \JSON string representing +self+.
+ *
+ * To make these methods available:
+ *
+ *   require 'json/add/range'
  *
  */
 

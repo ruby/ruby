@@ -108,7 +108,7 @@ class Gem::Specification < Gem::BasicSpecification
   @load_cache = {} # :nodoc:
   @load_cache_mutex = Thread::Mutex.new
 
-  VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/.freeze # :nodoc:
+  VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/ # :nodoc:
 
   # :startdoc:
 
@@ -127,35 +127,35 @@ class Gem::Specification < Gem::BasicSpecification
   # Map of attribute names to default values.
 
   @@default_value = {
-    :authors => [],
-    :autorequire => nil,
-    :bindir => "bin",
-    :cert_chain => [],
-    :date => nil,
-    :dependencies => [],
-    :description => nil,
-    :email => nil,
-    :executables => [],
-    :extensions => [],
-    :extra_rdoc_files => [],
-    :files => [],
-    :homepage => nil,
-    :licenses => [],
-    :metadata => {},
-    :name => nil,
-    :platform => Gem::Platform::RUBY,
-    :post_install_message => nil,
-    :rdoc_options => [],
-    :require_paths => ["lib"],
-    :required_ruby_version => Gem::Requirement.default,
-    :required_rubygems_version => Gem::Requirement.default,
-    :requirements => [],
-    :rubygems_version => Gem::VERSION,
-    :signing_key => nil,
-    :specification_version => CURRENT_SPECIFICATION_VERSION,
-    :summary => nil,
-    :test_files => [],
-    :version => nil,
+    authors: [],
+    autorequire: nil,
+    bindir: "bin",
+    cert_chain: [],
+    date: nil,
+    dependencies: [],
+    description: nil,
+    email: nil,
+    executables: [],
+    extensions: [],
+    extra_rdoc_files: [],
+    files: [],
+    homepage: nil,
+    licenses: [],
+    metadata: {},
+    name: nil,
+    platform: Gem::Platform::RUBY,
+    post_install_message: nil,
+    rdoc_options: [],
+    require_paths: ["lib"],
+    required_ruby_version: Gem::Requirement.default,
+    required_rubygems_version: Gem::Requirement.default,
+    requirements: [],
+    rubygems_version: Gem::VERSION,
+    signing_key: nil,
+    specification_version: CURRENT_SPECIFICATION_VERSION,
+    summary: nil,
+    test_files: [],
+    version: nil,
   }.freeze
 
   # rubocop:disable Style/MutableConstant
@@ -531,13 +531,6 @@ class Gem::Specification < Gem::BasicSpecification
   attr_reader :required_rubygems_version
 
   ##
-  # The version of RubyGems used to create this gem.
-  #
-  # Do not set this, it is set automatically when the gem is packaged.
-
-  attr_accessor :rubygems_version
-
-  ##
   # The key used to sign this gem.  See Gem::Security for details.
 
   attr_accessor :signing_key
@@ -725,6 +718,21 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   ######################################################################
+  # :section: Read-only attributes
+
+  ##
+  # The version of RubyGems used to create this gem.
+
+  attr_accessor :rubygems_version
+
+  ##
+  # The path where this gem installs its extensions.
+
+  def extensions_dir
+    @extensions_dir ||= super
+  end
+
+  ######################################################################
   # :section: Specification internals
 
   ##
@@ -775,7 +783,7 @@ class Gem::Specification < Gem::BasicSpecification
   def self.each_gemspec(dirs) # :nodoc:
     dirs.each do |dir|
       Gem::Util.glob_files_in_dir("*.gemspec", dir).each do |path|
-        yield path.tap(&Gem::UNTAINT)
+        yield path
       end
     end
   end
@@ -961,7 +969,7 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self.dirs
     @@dirs ||= Gem.path.collect do |dir|
-      File.join dir.dup.tap(&Gem::UNTAINT), "specifications"
+      File.join dir, "specifications"
     end
   end
 
@@ -1154,12 +1162,9 @@ class Gem::Specification < Gem::BasicSpecification
     spec = @load_cache_mutex.synchronize { @load_cache[file] }
     return spec if spec
 
-    file = file.dup.tap(&Gem::UNTAINT)
     return unless File.file?(file)
 
     code = Gem.open_file(file, "r:UTF-8:-", &:read)
-
-    code.tap(&Gem::UNTAINT)
 
     begin
       spec = eval code, binding, file
@@ -1750,7 +1755,7 @@ class Gem::Specification < Gem::BasicSpecification
     /\A
      (\d{4})-(\d{2})-(\d{2})
      (\s+ \d{2}:\d{2}:\d{2}\.\d+ \s* (Z | [-+]\d\d:\d\d) )?
-     \Z/x.freeze
+     \Z/x
 
   ##
   # The date this gem was created
@@ -2669,19 +2674,12 @@ class Gem::Specification < Gem::BasicSpecification
   rubygems_deprecate :validate_permissions
 
   ##
-  # Set the version to +version+, potentially also setting
-  # required_rubygems_version if +version+ indicates it is a
-  # prerelease.
+  # Set the version to +version+.
 
   def version=(version)
     @version = Gem::Version.create(version)
     return if @version.nil?
 
-    # skip to set required_ruby_version when pre-released rubygems.
-    # It caused to raise CircularDependencyError
-    if @version.prerelease? && (@name.nil? || @name.strip != "rubygems")
-      self.required_rubygems_version = "> 1.3.1"
-    end
     invalidate_memoized_attributes
   end
 
@@ -2694,9 +2692,9 @@ class Gem::Specification < Gem::BasicSpecification
       case ivar
       when "date"
         # Force Date to go through the extra coerce logic in date=
-        self.date = val.tap(&Gem::UNTAINT)
+        self.date = val
       else
-        instance_variable_set "@#{ivar}", val.tap(&Gem::UNTAINT)
+        instance_variable_set "@#{ivar}", val
       end
     end
 

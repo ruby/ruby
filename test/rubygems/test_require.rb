@@ -471,11 +471,11 @@ class TestGemRequire < Gem::TestCase
     File.write(path, code)
 
     output = Gem::Util.popen({ "GEM_HOME" => @gemhome }, *ruby_with_rubygems_in_load_path, path).strip
-    assert $?.success?
     refute_empty output
     assert_equal "999.99.9", output.lines[0].chomp
     # Make sure only files from the newer json gem are loaded, and no files from the default json gem
     assert_equal ["#{@gemhome}/gems/json-999.99.9/lib/json.rb"], output.lines.grep(%r{/gems/json-}).map(&:chomp)
+    assert $?.success?
   end
 
   def test_default_gem_and_normal_gem

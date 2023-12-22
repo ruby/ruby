@@ -1,5 +1,6 @@
 main = self
 
+# The big difference is Kernel#load does not attempt to add an extension to the passed path, unlike Kernel#require
 describe :kernel_load, shared: true do
   before :each do
     CodeLoadingSpecs.spec_setup
@@ -10,22 +11,31 @@ describe :kernel_load, shared: true do
     CodeLoadingSpecs.spec_cleanup
   end
 
-  it "loads a non-extensioned file as a Ruby source file" do
-    path = File.expand_path "load_fixture", CODE_LOADING_DIR
-    @object.load(path).should be_true
-    ScratchPad.recorded.should == [:no_ext]
-  end
+  describe "(path resolution)" do
+    # This behavior is specific to Kernel#load, it differs for Kernel#require
+    it "loads a non-extensioned file as a Ruby source file" do
+      path = File.expand_path "load_fixture", CODE_LOADING_DIR
+      @object.load(path).should be_true
+      ScratchPad.recorded.should == [:no_ext]
+    end
 
-  it "loads a non .rb extensioned file as a Ruby source file" do
-    path = File.expand_path "load_fixture.ext", CODE_LOADING_DIR
-    @object.load(path).should be_true
-    ScratchPad.recorded.should == [:no_rb_ext]
-  end
+    it "loads a non .rb extensioned file as a Ruby source file" do
+      path = File.expand_path "load_fixture.ext", CODE_LOADING_DIR
+      @object.load(path).should be_true
+      ScratchPad.recorded.should == [:no_rb_ext]
+    end
 
-  it "loads from the current working directory" do
-    Dir.chdir CODE_LOADING_DIR do
-      @object.load("load_fixture.rb").should be_true
-      ScratchPad.recorded.should == [:loaded]
+    it "loads from the current working directory" do
+      Dir.chdir CODE_LOADING_DIR do
+        @object.load("load_fixture.rb").should be_true
+        ScratchPad.recorded.should == [:loaded]
+      end
+    end
+
+    # This behavior is specific to Kernel#load, it differs for Kernel#require
+    it "does not look for a c-extension file when passed a path without extension (when no .rb is present)" do
+      path = File.join CODE_LOADING_DIR, "a", "load_fixture"
+      -> { @object.send(@method, path) }.should raise_error(LoadError)
     end
   end
 

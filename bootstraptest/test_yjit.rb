@@ -1,3 +1,64 @@
+# regression test for send stack shifting
+assert_normal_exit %q{
+  def foo(a, b)
+    a.singleton_methods(b)
+  end
+
+  def call_foo
+    [1, 1, 1, 1, 1, 1, send(:foo, 1, 1)]
+  end
+
+  call_foo
+}
+
+# regression test for arity check with splat
+assert_equal '[:ae, :ae]', %q{
+  def req_one(a_, b_ = 1) = raise
+
+  def test(args)
+    req_one *args
+  rescue ArgumentError
+    :ae
+  end
+
+  [test(Array.new 5), test([])]
+} unless rjit_enabled? # Not yet working on RJIT
+
+# regression test for arity check with splat and send
+assert_equal '[:ae, :ae]', %q{
+  def two_reqs(a, b_, _ = 1) = a.gsub(a, a)
+
+  def test(name, args)
+    send(name, *args)
+  rescue ArgumentError
+    :ae
+  end
+
+  [test(:two_reqs, ["g", nil, nil, nil]), test(:two_reqs, ["g"])]
+}
+
+# regression test for GC marking stubs in invalidated code
+assert_normal_exit %q{
+  garbage = Array.new(10_000) { [] } # create garbage to cause iseq movement
+  eval(<<~RUBY)
+  def foo(n, garbage)
+    if n == 2
+      # 1.times.each to create a cfunc frame to preserve the JIT frame
+      # which will return to a stub housed in an invalidated block
+      return 1.times.each do
+        Object.define_method(:foo) {}
+        garbage.clear
+        GC.verify_compaction_references(toward: :empty, expand_heap: true)
+      end
+    end
+
+    foo(n + 1, garbage)
+  end
+  RUBY
+
+  foo(1, garbage)
+}
+
 # regression test for callee block handler overlapping with arguments
 assert_equal '3', %q{
   def foo(_req, *args) = args.last
@@ -20,7 +81,7 @@ assert_equal 'ok', %q{
     GC.compact
   end
   :ok
-} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT
+} unless rjit_enabled? # Not yet working on RJIT
 
 # regression test for overly generous guard elision
 assert_equal '[0, :sum, 0, :sum]', %q{
@@ -148,7 +209,7 @@ assert_equal '[:ok]', %q{
   # Used to crash due to GC run in rb_ensure_iv_list_size()
   # not marking the newly allocated [:ok].
   RegressionTest.new.extender.itself
-} unless RUBY_DESCRIPTION.include?('+RJIT') # Skip on RJIT since this uncovers a crash
+} unless rjit_enabled? # Skip on RJIT since this uncovers a crash
 
 assert_equal 'true', %q{
   # regression test for tracking type of locals for too long
@@ -276,6 +337,33 @@ assert_equal '["instance-variable", 5]', %q{
   end
 
   Foo.new.foo
+}
+
+# getinstancevariable with shape too complex
+assert_normal_exit %q{
+  class Foo
+    def initialize
+      @a = 1
+    end
+
+    def getter
+      @foobar
+    end
+  end
+
+  # Initialize ivars in changing order, making the Foo
+  # class have shape too complex
+  100.times do |x|
+    foo = Foo.new
+    foo.instance_variable_set(:"@a#{x}", 1)
+    foo.instance_variable_set(:"@foobar", 777)
+
+    # The getter method eventually sees shape too complex
+    r = foo.getter
+    if r != 777
+      raise "error"
+    end
+  end
 }
 
 assert_equal '0', %q{
@@ -1872,7 +1960,7 @@ assert_equal '[97, :nil, 97, :nil, :raised]', %q{
   getbyte("a", 0)
 
   [getbyte("a", 0), getbyte("a", 1), getbyte("a", -1), getbyte("a", -2), getbyte("a", "a")]
-} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT
+} unless rjit_enabled? # Not yet working on RJIT
 
 # Test << operator on string subclass
 assert_equal 'abab', %q{
@@ -2516,7 +2604,7 @@ assert_equal '[[:c_return, :String, :string_alias, "events_to_str"]]', %q{
   events.compiled(events)
 
   events
-} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # RJIT calls extra Ruby methods
+} unless rjit_enabled? # RJIT calls extra Ruby methods
 
 # test enabling a TracePoint that targets a particular line in a C method call
 assert_equal '[true]', %q{
@@ -2598,7 +2686,7 @@ assert_equal '[[:c_call, :itself]]', %q{
   tp.enable { shouldnt_compile }
 
   events
-} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # RJIT calls extra Ruby methods
+} unless rjit_enabled? # RJIT calls extra Ruby methods
 
 # test enabling c_return tracing before compiling
 assert_equal '[[:c_return, :itself, main]]', %q{
@@ -2613,7 +2701,7 @@ assert_equal '[[:c_return, :itself, main]]', %q{
   tp.enable { shouldnt_compile }
 
   events
-} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # RJIT calls extra Ruby methods
+} unless rjit_enabled? # RJIT calls extra Ruby methods
 
 # test c_call invalidation
 assert_equal '[[:c_call, :itself]]', %q{
@@ -4135,7 +4223,7 @@ assert_equal 'true', %q{
   rescue ArgumentError
     true
   end
-} unless defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled? # Not yet working on RJIT
+} unless rjit_enabled? # Not yet working on RJIT
 
 # Regresssion test: register allocator on expandarray
 assert_equal '[]', %q{
@@ -4196,3 +4284,49 @@ assert_equal '[6, -6, 9671406556917033397649408, -9671406556917033397649408, 212
 
 # Integer multiplication and overflow (minimized regression test from test-basic)
 assert_equal '8515157028618240000', %q{2128789257154560000 * 4}
+
+# Inlined method calls
+assert_equal 'nil', %q{
+  def putnil = nil
+  def entry = putnil
+  entry.inspect
+}
+assert_equal '1', %q{
+  def putobject_1 = 1
+  def entry = putobject_1
+  entry
+}
+assert_equal 'false', %q{
+  def putobject(_unused_arg1) = false
+  def entry = putobject(nil)
+  entry
+}
+assert_equal 'true', %q{
+  def entry = yield
+  entry { true }
+}
+
+assert_normal_exit %q{
+  ivars = 1024.times.map { |i| "@iv_#{i} = #{i}\n" }.join
+  Foo = Class.new
+  Foo.class_eval "def initialize() #{ivars} end"
+  Foo.new
+}
+
+assert_equal '0', %q{
+  def spill
+    1.to_i # not inlined
+  end
+
+  def inline(_stack1, _stack2, _stack3, _stack4, _stack5)
+    0 # inlined
+  end
+
+  def entry
+    # RegTemps is 00111110 prior to the #inline call.
+    # Its return value goes to stack_idx=0, which conflicts with stack_idx=5.
+    inline(spill, 2, 3, 4, 5)
+  end
+
+  entry
+}

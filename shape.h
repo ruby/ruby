@@ -9,7 +9,6 @@
 #define SHAPE_IN_BASIC_FLAGS 1
 typedef uint32_t attr_index_t;
 typedef uint32_t shape_id_t;
-typedef uint32_t redblack_id_t;
 # define SHAPE_ID_NUM_BITS 32
 
 #else
@@ -18,10 +17,11 @@ typedef uint32_t redblack_id_t;
 #define SHAPE_IN_BASIC_FLAGS 0
 typedef uint16_t attr_index_t;
 typedef uint16_t shape_id_t;
-typedef uint16_t redblack_id_t;
 # define SHAPE_ID_NUM_BITS 16
 
 #endif
+
+typedef uint32_t redblack_id_t;
 
 #define MAX_IVARS (attr_index_t)(-1)
 
@@ -64,8 +64,6 @@ enum shape_type {
     SHAPE_ROOT,
     SHAPE_IVAR,
     SHAPE_FROZEN,
-    SHAPE_CAPACITY_CHANGE,
-    SHAPE_INITIAL_CAPACITY,
     SHAPE_T_OBJECT,
     SHAPE_OBJ_TOO_COMPLEX,
 };
@@ -156,14 +154,14 @@ rb_shape_t* rb_shape_get_shape_by_id(shape_id_t shape_id);
 shape_id_t rb_shape_get_shape_id(VALUE obj);
 rb_shape_t * rb_shape_get_next_iv_shape(rb_shape_t * shape, ID id);
 bool rb_shape_get_iv_index(rb_shape_t * shape, ID id, attr_index_t * value);
+bool rb_shape_get_iv_index_with_hint(shape_id_t shape_id, ID id, attr_index_t * value, shape_id_t *shape_id_hint);
 bool rb_shape_obj_too_complex(VALUE obj);
 
 void rb_shape_set_shape(VALUE obj, rb_shape_t* shape);
 rb_shape_t* rb_shape_get_shape(VALUE obj);
 int rb_shape_frozen_shape_p(rb_shape_t* shape);
 rb_shape_t* rb_shape_transition_shape_frozen(VALUE obj);
-void rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE * removed);
-rb_shape_t * rb_shape_transition_shape_capa(rb_shape_t * shape);
+bool rb_shape_transition_shape_remove_ivar(VALUE obj, ID id, rb_shape_t *shape, VALUE * removed);
 rb_shape_t* rb_shape_get_next(rb_shape_t* shape, VALUE obj, ID id);
 
 rb_shape_t * rb_shape_rebuild_shape(rb_shape_t * initial_shape, rb_shape_t * dest_shape);
@@ -215,20 +213,11 @@ RBASIC_IV_COUNT(VALUE obj)
     return rb_shape_get_shape_by_id(rb_shape_get_shape_id(obj))->next_iv_index;
 }
 
-static inline uint32_t
-RCLASS_IV_COUNT(VALUE obj)
-{
-    RUBY_ASSERT(RB_TYPE_P(obj, RUBY_T_CLASS) || RB_TYPE_P(obj, RUBY_T_MODULE));
-    uint32_t ivc = rb_shape_get_shape_by_id(RCLASS_SHAPE_ID(obj))->next_iv_index;
-    return ivc;
-}
-
 rb_shape_t *rb_shape_traverse_from_new_root(rb_shape_t *initial_shape, rb_shape_t *orig_shape);
 
 bool rb_shape_set_shape_id(VALUE obj, shape_id_t shape_id);
 
 VALUE rb_obj_debug_shape(VALUE self, VALUE obj);
-void rb_shape_set_too_complex(VALUE obj);
 
 // For ext/objspace
 RUBY_SYMBOL_EXPORT_BEGIN

@@ -136,7 +136,7 @@ opt.on('--dialog VAL') { |v|
     if v.include?('alt-scrollbar')
       scrollbar = true
     end
-    Reline::DialogRenderInfo.new(pos: cursor_pos, contents: contents, height: height, scrollbar: scrollbar)
+    Reline::DialogRenderInfo.new(pos: cursor_pos, contents: contents, height: height, scrollbar: scrollbar, face: :completion_dialog)
   })
   if v.include?('alt-scrollbar')
     ENV['RELINE_ALT_SCROLLBAR'] = '1'

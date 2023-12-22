@@ -1,44 +1,45 @@
 # frozen_string_literal: true
+# :markup: markdown
 
-# This module allows for introspection of YJIT, CRuby's in-process
-# just-in-time compiler. This module exists only to help develop YJIT, as such,
-# everything in the module is highly implementation specific and comes with no
-# API stability guarantee whatsoever.
+# This module allows for introspection of \YJIT, CRuby's just-in-time compiler.
+# Everything in the module is highly implementation specific and the API might
+# be less stable compared to the standard library.
 #
-# This module may not exist if YJIT does not support the particular platform
-# for which CRuby is built. There is also no API stability guarantee as to in
-# what situations this module is defined.
+# This module may not exist if \YJIT does not support the particular platform
+# for which CRuby is built.
 module RubyVM::YJIT
-  # Check if YJIT is enabled
+  # Check if \YJIT is enabled.
   def self.enabled?
     Primitive.cexpr! 'RBOOL(rb_yjit_enabled_p)'
   end
 
-  # Check if --yjit-stats is used.
+  # Check if `--yjit-stats` is used.
   def self.stats_enabled?
     Primitive.rb_yjit_stats_enabled_p
   end
 
   # Check if rb_yjit_trace_exit_locations_enabled_p is enabled.
-  def self.trace_exit_locations_enabled?
+  def self.trace_exit_locations_enabled? # :nodoc:
     Primitive.rb_yjit_trace_exit_locations_enabled_p
   end
 
-  # Discard statistics collected for --yjit-stats.
+  # Discard statistics collected for `--yjit-stats`.
   def self.reset_stats!
     Primitive.rb_yjit_reset_stats_bang
   end
 
-  # Enable YJIT compilation.
-  def self.enable
-    Primitive.rb_yjit_enable
+  # Enable \YJIT compilation.
+  def self.enable(stats: false)
+    return false if enabled?
+    at_exit { print_and_dump_stats } if stats
+    Primitive.rb_yjit_enable(stats, stats != :quiet)
   end
 
   # If --yjit-trace-exits is enabled parse the hashes from
   # Primitive.rb_yjit_get_exit_locations into a format readable
   # by Stackprof. This will allow us to find the exact location of a
   # side exit in YJIT based on the instruction that is exiting.
-  def self.exit_locations
+  def self.exit_locations # :nodoc:
     return unless trace_exit_locations_enabled?
 
     results = Primitive.rb_yjit_get_exit_locations
@@ -130,13 +131,13 @@ module RubyVM::YJIT
   #
   # In a script call:
   #
-  #   at_exit do
-  #     RubyVM::YJIT.dump_exit_locations("my_file.dump")
-  #   end
+  #     at_exit do
+  #       RubyVM::YJIT.dump_exit_locations("my_file.dump")
+  #     end
   #
   # Then run the file with the following options:
   #
-  #   ruby --yjit --yjit-trace-exits test.rb
+  #     ruby --yjit --yjit-trace-exits test.rb
   #
   # Once the code is done running, use Stackprof to read the dump file.
   # See Stackprof documentation for options.
@@ -148,8 +149,8 @@ module RubyVM::YJIT
     File.binwrite(filename, Marshal.dump(RubyVM::YJIT.exit_locations))
   end
 
-  # Return a hash for statistics generated for the --yjit-stats command line option.
-  # Return nil when option is not passed or unavailable.
+  # Return a hash for statistics generated for the `--yjit-stats` command line option.
+  # Return `nil` when option is not passed or unavailable.
   def self.runtime_stats(context: false)
     stats = Primitive.rb_yjit_get_stats(context)
     return stats if stats.nil?
@@ -182,7 +183,7 @@ module RubyVM::YJIT
   end
 
   # Format and print out counters as a String. This returns a non-empty
-  # content only when --yjit-stats is enabled.
+  # content only when `--yjit-stats` is enabled.
   def self.stats_string
     # Lazily require StringIO to avoid breaking miniruby
     require 'stringio'
@@ -191,8 +192,8 @@ module RubyVM::YJIT
     strio.string
   end
 
-  # Produce disassembly for an iseq
-  def self.disasm(iseq)
+  # Produce disassembly for an iseq. This requires a `--enable-yjit=dev` build.
+  def self.disasm(iseq) # :nodoc:
     # If a method or proc is passed in, get its iseq
     iseq = RubyVM::InstructionSequence.of(iseq)
 
@@ -206,7 +207,7 @@ module RubyVM::YJIT
   end
 
   # Produce a list of instructions compiled by YJIT for an iseq
-  def self.insns_compiled(iseq)
+  def self.insns_compiled(iseq) # :nodoc:
     return nil unless self.enabled?
 
     # If a method or proc is passed in, get its iseq
@@ -214,7 +215,8 @@ module RubyVM::YJIT
     Primitive.rb_yjit_insns_compiled(iseq)
   end
 
-  # Free and recompile all existing JIT code
+  # Discard existing compiled code to reclaim memory
+  # and allow for recompilations in the future.
   def self.code_gc
     Primitive.rb_yjit_code_gc
   end
@@ -223,18 +225,21 @@ module RubyVM::YJIT
     Primitive.rb_yjit_simulate_oom_bang
   end
 
-  # Avoid calling a method here to not interfere with compilation tests
+  # Avoid calling a Ruby method here to not interfere with compilation tests
   if Primitive.rb_yjit_stats_enabled_p
-    at_exit do
+    at_exit { print_and_dump_stats }
+  end
+
+  class << self # :stopdoc:
+    private
+
+    # Print stats and dump exit locations
+    def print_and_dump_stats
       if Primitive.rb_yjit_print_stats_p
         _print_stats
       end
       _dump_locations
     end
-  end
-
-  class << self
-    private
 
     def _dump_locations # :nodoc:
       return unless trace_exit_locations_enabled?
@@ -302,6 +307,10 @@ module RubyVM::YJIT
       out.puts "num_send_polymorphic:  " + format_number_pct(13, stats[:num_send_polymorphic], stats[:num_send])
       out.puts "num_send_megamorphic:  " + format_number_pct(13, stats[:send_megamorphic], stats[:num_send])
       out.puts "num_send_dynamic:      " + format_number_pct(13, stats[:num_send_dynamic], stats[:num_send])
+      out.puts "num_send_inline:       " + format_number_pct(13, stats[:num_send_inline], stats[:num_send])
+      out.puts "num_send_leaf_builtin: " + format_number_pct(13, stats[:num_send_leaf_builtin], stats[:num_send])
+      out.puts "num_send_cfunc:        " + format_number_pct(13, stats[:num_send_cfunc], stats[:num_send])
+      out.puts "num_send_cfunc_inline: " + format_number_pct(13, stats[:num_send_cfunc_inline], stats[:num_send_cfunc])
       if stats[:num_send_x86_rel32] != 0 || stats[:num_send_x86_reg] != 0
         out.puts "num_send_x86_rel32:    " + format_number(13,  stats[:num_send_x86_rel32])
         out.puts "num_send_x86_reg:      " + format_number(13, stats[:num_send_x86_reg])
@@ -365,6 +374,37 @@ module RubyVM::YJIT
       out.puts "avg_len_in_yjit:       " + ("%13.1f" % stats[:avg_len_in_yjit])
 
       print_sorted_exit_counts(stats, out: out, prefix: "exit_")
+
+      print_sorted_cfunc_calls(stats, out:out)
+    end
+
+    def print_sorted_cfunc_calls(stats, out:, how_many: 20, left_pad: 4) # :nodoc:
+      calls = stats[:cfunc_calls]
+      if calls.empty?
+        return
+      end
+
+      # Total number of cfunc calls
+      num_send_cfunc = stats[:num_send_cfunc]
+
+      # Sort calls by decreasing frequency and keep the top N
+      pairs = calls.map { |k,v| [k, v] }
+      pairs.sort_by! {|pair| pair[1] }
+      pairs.reverse!
+      pairs = pairs[0...how_many]
+
+      top_n_total = pairs.sum { |name, count| count }
+      top_n_pct = 100.0 * top_n_total / num_send_cfunc
+      longest_name_len = pairs.max_by { |name, count| name.length }.first.length
+
+      out.puts "Top-#{pairs.size} most frequent C calls (#{"%.1f" % top_n_pct}% of C calls):"
+
+      pairs.each do |name, count|
+        padding = longest_name_len + left_pad
+        padded_name = "%#{padding}s" % name
+        padded_count = format_number_pct(10, count, num_send_cfunc)
+        out.puts("#{padded_name}: #{padded_count}")
+      end
     end
 
     def print_sorted_exit_counts(stats, out:, prefix:, how_many: 20, left_pad: 4) # :nodoc:
@@ -434,11 +474,10 @@ module RubyVM::YJIT
 
     # Format large numbers with comma separators for readability
     def format_number(pad, number)
-      integer, decimal = number.to_s.split(".")
-      d_groups = integer.chars.to_a.reverse.each_slice(3)
-      with_commas = d_groups.map(&:join).join(',').reverse
-      formatted = [with_commas, decimal].compact.join(".")
-      formatted.rjust(pad, ' ')
+      s = number.to_s
+      i = s.index('.') || s.size
+      s.insert(i -= 3, ',') while i > 3
+      s.rjust(pad, ' ')
     end
 
     # Format a number along with a percentage over a total value

@@ -19,7 +19,7 @@ describe "Socket::IPSocket#getaddress" do
   # traditionally invalidly named ones.
   it "raises an error on unknown hostnames" do
     -> {
-      IPSocket.getaddress("rubyspecdoesntexist.fallingsnow.net")
+      IPSocket.getaddress("rubyspecdoesntexist.ruby-lang.org")
     }.should raise_error(SocketError)
   end
 end

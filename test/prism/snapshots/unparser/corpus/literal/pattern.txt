@@ -3,18 +3,18 @@
 └── statements:
     @ StatementsNode (location: (1,0)-(41,8))
     └── body: (length: 4)
-        ├── @ CaseNode (location: (1,0)-(33,3))
+        ├── @ CaseMatchNode (location: (1,0)-(33,3))
         │   ├── predicate:
         │   │   @ CallNode (location: (1,5)-(1,8))
+        │   │   ├── flags: variable_call
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :foo
         │   │   ├── message_loc: (1,5)-(1,8) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
-        │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :foo
+        │   │   └── block: ∅
         │   ├── conditions: (length: 15)
         │   │   ├── @ InNode (location: (2,0)-(3,6))
         │   │   │   ├── pattern:
@@ -54,7 +54,8 @@
         │   │   │   │   │   │   └── flags: decimal
         │   │   │   │   │   └── @ IntegerNode (location: (4,7)-(4,8))
         │   │   │   │   │       └── flags: decimal
-        │   │   │   │   ├── rest: ∅
+        │   │   │   │   ├── rest:
+        │   │   │   │   │   @ ImplicitRestNode (location: (4,8)-(4,9))
         │   │   │   │   ├── posts: (length: 0)
         │   │   │   │   ├── opening_loc: (4,3)-(4,4) = "["
         │   │   │   │   └── closing_loc: (4,10)-(4,11) = "]"
@@ -62,15 +63,15 @@
         │   │   │   │   @ StatementsNode (location: (5,2)-(5,3))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (5,2)-(5,3))
+        │   │   │   │           ├── flags: variable_call
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
+        │   │   │   │           ├── name: :y
         │   │   │   │           ├── message_loc: (5,2)-(5,3) = "y"
         │   │   │   │           ├── opening_loc: ∅
         │   │   │   │           ├── arguments: ∅
         │   │   │   │           ├── closing_loc: ∅
-        │   │   │   │           ├── block: ∅
-        │   │   │   │           ├── flags: variable_call
-        │   │   │   │           └── name: :y
+        │   │   │   │           └── block: ∅
         │   │   │   ├── in_loc: (4,0)-(4,2) = "in"
         │   │   │   └── then_loc: (4,12)-(4,16) = "then"
         │   │   ├── @ InNode (location: (6,0)-(7,6))
@@ -83,6 +84,7 @@
         │   │   │   │   │   └── @ AssocNode (location: (6,5)-(6,7))
         │   │   │   │   │       ├── key:
         │   │   │   │   │       │   @ SymbolNode (location: (6,5)-(6,7))
+        │   │   │   │   │       │   ├── flags: ∅
         │   │   │   │   │       │   ├── opening_loc: ∅
         │   │   │   │   │       │   ├── value_loc: (6,5)-(6,6) = "x"
         │   │   │   │   │       │   ├── closing_loc: (6,6)-(6,7) = ":"
@@ -124,6 +126,7 @@
         │   │   │   │   ├── if_keyword_loc: (10,6)-(10,8) = "if"
         │   │   │   │   ├── predicate:
         │   │   │   │   │   @ TrueNode (location: (10,9)-(10,13))
+        │   │   │   │   ├── then_keyword_loc: ∅
         │   │   │   │   ├── statements:
         │   │   │   │   │   @ StatementsNode (location: (10,3)-(10,5))
         │   │   │   │   │   └── body: (length: 1)
@@ -173,6 +176,7 @@
         │   │   │   │   │   ├── @ AssocNode (location: (14,4)-(14,8))
         │   │   │   │   │   │   ├── key:
         │   │   │   │   │   │   │   @ SymbolNode (location: (14,4)-(14,6))
+        │   │   │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   │   │   ├── opening_loc: ∅
         │   │   │   │   │   │   │   ├── value_loc: (14,4)-(14,5) = "a"
         │   │   │   │   │   │   │   ├── closing_loc: (14,5)-(14,6) = ":"
@@ -184,6 +188,7 @@
         │   │   │   │   │   └── @ AssocNode (location: (14,10)-(14,15))
         │   │   │   │   │       ├── key:
         │   │   │   │   │       │   @ SymbolNode (location: (14,10)-(14,13))
+        │   │   │   │   │       │   ├── flags: ∅
         │   │   │   │   │       │   ├── opening_loc: ∅
         │   │   │   │   │       │   ├── value_loc: (14,10)-(14,12) = "aa"
         │   │   │   │   │       │   ├── closing_loc: (14,12)-(14,13) = ":"
@@ -240,6 +245,7 @@
         │   │   │   │   │   └── @ AssocNode (location: (20,4)-(20,10))
         │   │   │   │   │       ├── key:
         │   │   │   │   │       │   @ SymbolNode (location: (20,4)-(20,8))
+        │   │   │   │   │       │   ├── flags: ∅
         │   │   │   │   │       │   ├── opening_loc: (20,4)-(20,5) = "\""
         │   │   │   │   │       │   ├── value_loc: (20,5)-(20,6) = "a"
         │   │   │   │   │       │   ├── closing_loc: (20,6)-(20,8) = "\":"
@@ -331,18 +337,18 @@
         │   │   └── end_keyword_loc: (33,0)-(33,3) = "end"
         │   ├── case_keyword_loc: (1,0)-(1,4) = "case"
         │   └── end_keyword_loc: (33,0)-(33,3) = "end"
-        ├── @ CaseNode (location: (34,0)-(36,3))
+        ├── @ CaseMatchNode (location: (34,0)-(36,3))
         │   ├── predicate:
         │   │   @ CallNode (location: (34,5)-(34,8))
+        │   │   ├── flags: variable_call
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :foo
         │   │   ├── message_loc: (34,5)-(34,8) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
-        │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :foo
+        │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (35,0)-(35,17))
         │   │       ├── pattern:
@@ -373,18 +379,18 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (34,0)-(34,4) = "case"
         │   └── end_keyword_loc: (36,0)-(36,3) = "end"
-        ├── @ CaseNode (location: (37,0)-(40,3))
+        ├── @ CaseMatchNode (location: (37,0)-(40,3))
         │   ├── predicate:
         │   │   @ CallNode (location: (37,5)-(37,8))
+        │   │   ├── flags: variable_call
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
+        │   │   ├── name: :foo
         │   │   ├── message_loc: (37,5)-(37,8) = "foo"
         │   │   ├── opening_loc: ∅
         │   │   ├── arguments: ∅
         │   │   ├── closing_loc: ∅
-        │   │   ├── block: ∅
-        │   │   ├── flags: variable_call
-        │   │   └── name: :foo
+        │   │   └── block: ∅
         │   ├── conditions: (length: 1)
         │   │   └── @ InNode (location: (38,0)-(38,4))
         │   │       ├── pattern:

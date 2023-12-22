@@ -1,11 +1,9 @@
 require_relative '../../spec_helper'
 
 describe "Warning.[]" do
-  ruby_version_is '2.7.2' do
-    it "returns default values for categories :deprecated and :experimental" do
-      ruby_exe('p [Warning[:deprecated], Warning[:experimental]]').chomp.should == "[false, true]"
-      ruby_exe('p [Warning[:deprecated], Warning[:experimental]]', options: "-w").chomp.should == "[true, true]"
-    end
+  it "returns default values for categories :deprecated and :experimental" do
+    ruby_exe('p [Warning[:deprecated], Warning[:experimental]]').chomp.should == "[false, true]"
+    ruby_exe('p [Warning[:deprecated], Warning[:experimental]]', options: "-w").chomp.should == "[true, true]"
   end
 
   ruby_version_is '3.3' do

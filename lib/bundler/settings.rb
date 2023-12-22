@@ -46,6 +46,20 @@ module Bundler
       update_requires_all_flag
     ].freeze
 
+    REMEMBERED_KEYS = %w[
+      bin
+      cache_all
+      clean
+      deployment
+      frozen
+      no_prune
+      path
+      shebang
+      path.system
+      without
+      with
+    ].freeze
+
     NUMBER_KEYS = %w[
       jobs
       redirect
@@ -115,7 +129,7 @@ module Bundler
     end
 
     def set_command_option(key, value)
-      if Bundler.feature_flag.forget_cli_options?
+      if !is_remembered(key) || Bundler.feature_flag.forget_cli_options?
         temporary(key => value)
         value
       else
@@ -321,11 +335,11 @@ module Bundler
 
     def configs
       @configs ||= {
-        :temporary => @temporary,
-        :local => @local_config,
-        :env => @env_config,
-        :global => @global_config,
-        :default => DEFAULT_CONFIG,
+        temporary: @temporary,
+        local: @local_config,
+        env: @env_config,
+        global: @global_config,
+        default: DEFAULT_CONFIG,
       }
     end
 
@@ -372,6 +386,10 @@ module Bundler
 
     def is_array(key)
       ARRAY_KEYS.include?(self.class.key_to_s(key))
+    end
+
+    def is_remembered(key)
+      REMEMBERED_KEYS.include?(self.class.key_to_s(key))
     end
 
     def is_credential(key)
@@ -509,7 +527,7 @@ module Bundler
         (https?.*?) # URI
         (\.#{Regexp.union(PER_URI_OPTIONS)})? # optional suffix key
         \z
-      /ix.freeze
+      /ix
 
     def self.key_for(key)
       key = normalize_uri(key).to_s if key.is_a?(String) && key.start_with?("http", "mirror.http")

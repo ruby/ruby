@@ -14,6 +14,7 @@ module IRB
         str  = "Ruby version: #{RUBY_VERSION}\n"
         str += "IRB version: #{IRB.version}\n"
         str += "InputMethod: #{IRB.CurrentContext.io.inspect}\n"
+        str += "Completion: #{IRB.CurrentContext.io.respond_to?(:completion_info) ? IRB.CurrentContext.io.completion_info : 'off'}\n"
         str += ".irbrc path: #{IRB.rc_file}\n" if File.exist?(IRB.rc_file)
         str += "RUBY_PLATFORM: #{RUBY_PLATFORM}\n"
         str += "LANG env: #{ENV["LANG"]}\n" if ENV["LANG"] && !ENV["LANG"].empty?

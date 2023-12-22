@@ -88,6 +88,14 @@ class TestStringIO < Test::Unit::TestCase
     assert_string("", Encoding::UTF_8, StringIO.new("foo").gets(0))
   end
 
+  def test_gets_utf_16
+    stringio = StringIO.new("line1\nline2\nline3\n".encode("utf-16le"))
+    assert_equal("line1\n".encode("utf-16le"), stringio.gets)
+    assert_equal("line2\n".encode("utf-16le"), stringio.gets)
+    assert_equal("line3\n".encode("utf-16le"), stringio.gets)
+    assert_nil(stringio.gets)
+  end
+
   def test_gets_chomp
     assert_equal(nil, StringIO.new("").gets(chomp: true))
     assert_equal("", StringIO.new("\n").gets(chomp: true))

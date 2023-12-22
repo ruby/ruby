@@ -5,6 +5,7 @@
     └── body: (length: 1)
         └── @ LambdaNode (location: (1,0)-(1,23))
             ├── locals: [:b, :c, :d, :e, :f]
+            ├── locals_body_index: 5
             ├── operator_loc: (1,0)-(1,2) = "->"
             ├── opening_loc: (1,21)-(1,22) = "{"
             ├── closing_loc: (1,22)-(1,23) = "}"

@@ -6,11 +6,27 @@ require 'tmpdir'
 
 class TestRequire < Test::Unit::TestCase
   def test_load_error_path
-    filename = "should_not_exist"
-    error = assert_raise(LoadError) do
-      require filename
-    end
-    assert_equal filename, error.path
+    Tempfile.create(["should_not_exist", ".rb"]) {|t|
+      filename = t.path
+      t.close
+      File.unlink(filename)
+
+      error = assert_raise(LoadError) do
+        require filename
+      end
+      assert_equal filename, error.path
+
+      # with --disable=gems
+      assert_separately(["-", filename], "#{<<~"begin;"}\n#{<<~'end;'}")
+      begin;
+        filename = ARGV[0]
+        path = Struct.new(:to_path).new(filename)
+        error = assert_raise(LoadError) do
+          require path
+        end
+        assert_equal filename, error.path
+      end;
+    }
   end
 
   def test_require_invalid_shared_object
