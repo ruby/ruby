@@ -1380,7 +1380,7 @@ RSpec.describe "bundle update --bundler" do
       build_bundler "999.0.0"
     end
 
-    install_gemfile <<-G
+    install_gemfile <<-G, artifice: nil, env: { "BUNDLER_IGNORE_DEFAULT_GEM" => "true" }
       source "#{file_uri_for(gem_repo4)}"
       gem "rack"
     G
