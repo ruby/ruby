@@ -9,10 +9,14 @@ module RubyVM::RJIT
     :shape,      # @param [Symbol] Next0, Next1, or Default
     :target0,    # @param [RubyVM::RJIT::BranchTarget] First branch target
     :target1,    # @param [RubyVM::RJIT::BranchTarget,NilClass] Second branch target (optional)
-    :compile,    # @param [Proc] A callback to (re-)generate this branch stub
+    :compiler,   # @param [Symbol] The name of a callback to (re-)generate this branch stub
+    :payload,    # @param [Object,NilClass] One optional argument to the :compiler callback
     :start_addr, # @param [Integer] Stub source start address to be re-generated
     :end_addr,   # @param [Integer] Stub source end address to be re-generated
   )
+    def compile(asm)
+      InsnCompiler.public_send(compiler, asm, self, *payload)
+    end
   end
 
   class BranchTarget < Struct.new(

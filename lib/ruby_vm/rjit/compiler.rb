@@ -135,9 +135,9 @@ module RubyVM::RJIT
         # the old branch code with the new block code.
         @cb.set_write_addr(branch_stub.start_addr)
         branch_stub.shape = target0_p ? Next0 : Next1
-        Assembler.new.tap do |branch_asm|
-          branch_stub.compile.call(branch_asm)
-          @cb.write(branch_asm)
+        Assembler.new.tap do |asm|
+          branch_stub.compile(asm)
+          @cb.write(asm)
         end
       end
 
@@ -157,9 +157,9 @@ module RubyVM::RJIT
       # Re-generate the branch code for non-fallthrough cases
       unless fallthrough
         @cb.with_write_addr(branch_stub.start_addr) do
-          branch_asm = Assembler.new
-          branch_stub.compile.call(branch_asm)
-          @cb.write(branch_asm)
+          asm = Assembler.new
+          branch_stub.compile(asm)
+          @cb.write(asm)
         end
       end
 
@@ -221,9 +221,9 @@ module RubyVM::RJIT
           @ocb.write(ocb_asm)
         end
         @cb.with_write_addr(branch_stub.start_addr) do
-          branch_asm = Assembler.new
-          branch_stub.compile.call(branch_asm)
-          @cb.write(branch_asm)
+          asm = Assembler.new
+          branch_stub.compile(asm)
+          @cb.write(asm)
         end
       end
     end

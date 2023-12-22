@@ -1924,26 +1924,24 @@ module RubyVM::RJIT
         end
 
         # Jump to target0 on jnz
-        branch_stub.compile = compile_branchif(branch_stub)
-        branch_stub.compile.call(asm)
+        branch_stub.compiler = :compile_branchif
+        branch_stub.compile(asm)
       end
 
       EndBlock
     end
 
-    def compile_branchif(branch_stub) # Proc escapes arguments in memory
-      proc do |branch_asm|
-        branch_asm.comment("branchif #{branch_stub.shape}")
-        branch_asm.stub(branch_stub) do
-          case branch_stub.shape
-          in Default
-            branch_asm.jnz(branch_stub.target0.address)
-            branch_asm.jmp(branch_stub.target1.address)
-          in Next0
-            branch_asm.jz(branch_stub.target1.address)
-          in Next1
-            branch_asm.jnz(branch_stub.target0.address)
-          end
+    def self.compile_branchif(asm, branch_stub)
+      asm.comment("branchif #{branch_stub.shape}")
+      asm.stub(branch_stub) do
+        case branch_stub.shape
+        in Default
+          asm.jnz(branch_stub.target0.address)
+          asm.jmp(branch_stub.target1.address)
+        in Next0
+          asm.jz(branch_stub.target1.address)
+        in Next1
+          asm.jnz(branch_stub.target0.address)
         end
       end
     end
@@ -1989,26 +1987,24 @@ module RubyVM::RJIT
         end
 
         # Jump to target0 on jz
-        branch_stub.compile = compile_branchunless(branch_stub)
-        branch_stub.compile.call(asm)
+        branch_stub.compiler = :compile_branchunless
+        branch_stub.compile(asm)
       end
 
       EndBlock
     end
 
-    def compile_branchunless(branch_stub) # Proc escapes arguments in memory
-      proc do |branch_asm|
-        branch_asm.comment("branchunless #{branch_stub.shape}")
-        branch_asm.stub(branch_stub) do
-          case branch_stub.shape
-          in Default
-            branch_asm.jz(branch_stub.target0.address)
-            branch_asm.jmp(branch_stub.target1.address)
-          in Next0
-            branch_asm.jnz(branch_stub.target1.address)
-          in Next1
-            branch_asm.jz(branch_stub.target0.address)
-          end
+    def self.compile_branchunless(asm, branch_stub)
+      asm.comment("branchunless #{branch_stub.shape}")
+      asm.stub(branch_stub) do
+        case branch_stub.shape
+        in Default
+          asm.jz(branch_stub.target0.address)
+          asm.jmp(branch_stub.target1.address)
+        in Next0
+          asm.jnz(branch_stub.target1.address)
+        in Next1
+          asm.jz(branch_stub.target0.address)
         end
       end
     end
@@ -2053,26 +2049,24 @@ module RubyVM::RJIT
         end
 
         # Jump to target0 on je
-        branch_stub.compile = compile_branchnil(branch_stub)
-        branch_stub.compile.call(asm)
+        branch_stub.compiler = :compile_branchnil
+        branch_stub.compile(asm)
       end
 
       EndBlock
     end
 
-    def compile_branchnil(branch_stub) # Proc escapes arguments in memory
-      proc do |branch_asm|
-        branch_asm.comment("branchnil #{branch_stub.shape}")
-        branch_asm.stub(branch_stub) do
-          case branch_stub.shape
-          in Default
-            branch_asm.je(branch_stub.target0.address)
-            branch_asm.jmp(branch_stub.target1.address)
-          in Next0
-            branch_asm.jne(branch_stub.target1.address)
-          in Next1
-            branch_asm.je(branch_stub.target0.address)
-          end
+    def self.compile_branchnil(asm, branch_stub)
+      asm.comment("branchnil #{branch_stub.shape}")
+      asm.stub(branch_stub) do
+        case branch_stub.shape
+        in Default
+          asm.je(branch_stub.target0.address)
+          asm.jmp(branch_stub.target1.address)
+        in Next0
+          asm.jne(branch_stub.target1.address)
+        in Next1
+          asm.je(branch_stub.target0.address)
         end
       end
     end
@@ -3637,21 +3631,20 @@ module RubyVM::RJIT
           @exit_compiler.compile_branch_stub(deeper, ocb_asm, branch_stub, true)
           @ocb.write(ocb_asm)
         end
-        branch_stub.compile = compile_jit_chain_guard(branch_stub, opcode:)
-        branch_stub.compile.call(asm)
+        branch_stub.compiler = :compile_jit_chain_guard
+        branch_stub.payload = opcode
+        branch_stub.compile(asm)
       else
         asm.public_send(opcode, side_exit)
       end
     end
 
-    def compile_jit_chain_guard(branch_stub, opcode:) # Proc escapes arguments in memory
-      proc do |branch_asm|
-        # Not using `asm.comment` here since it's usually put before cmp/test before this.
-        branch_asm.stub(branch_stub) do
-          case branch_stub.shape
-          in Default
-            branch_asm.public_send(opcode, branch_stub.target0.address)
-          end
+    def self.compile_jit_chain_guard(asm, branch_stub, opcode)
+      # Not using `asm.comment` here since it's usually put before cmp/test before this.
+      asm.stub(branch_stub) do
+        case branch_stub.shape
+        in Default
+          asm.public_send(opcode, branch_stub.target0.address)
         end
       end
     end
@@ -5644,8 +5637,9 @@ module RubyVM::RJIT
           @exit_compiler.compile_branch_stub(return_ctx, ocb_asm, branch_stub, true)
           @ocb.write(ocb_asm)
         end
-        branch_stub.compile = compile_jit_return(branch_stub, cfp_offset:)
-        branch_stub.compile.call(asm)
+        branch_stub.compiler = :compile_jit_return
+        branch_stub.payload = cfp_offset
+        branch_stub.compile(asm)
       end
 
       asm.comment('switch to callee CFP')
@@ -5655,15 +5649,13 @@ module RubyVM::RJIT
       asm.mov([EC, C.rb_execution_context_t.offsetof(:cfp)], cfp_reg)
     end
 
-    def compile_jit_return(branch_stub, cfp_offset:) # Proc escapes arguments in memory
-      proc do |branch_asm|
-        branch_asm.comment('set jit_return to callee CFP')
-        branch_asm.stub(branch_stub) do
-          case branch_stub.shape
-          in Default
-            branch_asm.mov(:rax, branch_stub.target0.address)
-            branch_asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:jit_return)], :rax)
-          end
+    def self.compile_jit_return(asm, branch_stub, cfp_offset)
+      asm.comment('set jit_return to callee CFP')
+      asm.stub(branch_stub) do
+        case branch_stub.shape
+        in Default
+          asm.mov(:rax, branch_stub.target0.address)
+          asm.mov([CFP, cfp_offset + C.rb_control_frame_t.offsetof(:jit_return)], :rax)
         end
       end
     end
@@ -5888,20 +5880,19 @@ module RubyVM::RJIT
         @exit_compiler.compile_branch_stub(ctx, ocb_asm, branch_stub, true)
         @ocb.write(ocb_asm)
       end
-      branch_stub.compile = compile_jit_direct_jump(branch_stub, comment:)
-      branch_stub.compile.call(asm)
+      branch_stub.compiler = :compile_jit_direct_jump
+      branch_stub.payload = comment
+      branch_stub.compile(asm)
     end
 
-    def compile_jit_direct_jump(branch_stub, comment:) # Proc escapes arguments in memory
-      proc do |branch_asm|
-        branch_asm.comment(comment)
-        branch_asm.stub(branch_stub) do
-          case branch_stub.shape
-          in Default
-            branch_asm.jmp(branch_stub.target0.address)
-          in Next0
-            # Just write the block without a jump
-          end
+    def self.compile_jit_direct_jump(asm, branch_stub, comment)
+      asm.comment(comment)
+      asm.stub(branch_stub) do
+        case branch_stub.shape
+        in Default
+          asm.jmp(branch_stub.target0.address)
+        in Next0
+          # Just write the block without a jump
         end
       end
     end
