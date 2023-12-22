@@ -227,6 +227,16 @@ assert_equal %q{[10, main]}, %q{
   }, '[ruby-dev:31372]'
 end
 
+assert_normal_exit %{
+  $stderr = STDOUT
+  5000.times do
+    begin
+      eval "0 rescue break"
+    rescue SyntaxError
+    end
+  end
+}
+
 assert_normal_exit %q{
   $stderr = STDOUT
   class Foo
