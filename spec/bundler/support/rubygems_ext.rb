@@ -86,7 +86,7 @@ module Spec
         puts success_message
         puts
       else
-        system("git status --porcelain")
+        system("git diff")
 
         puts
         puts error_message
