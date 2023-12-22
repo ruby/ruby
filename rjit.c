@@ -121,14 +121,20 @@ rb_rjit_setup_options(const char *s, struct rb_rjit_options *rjit_opt)
     if (l == 0) {
         return;
     }
-    else if (opt_match_arg(s, l, "call-threshold")) {
-        rjit_opt->call_threshold = atoi(s + 1);
-    }
     else if (opt_match_arg(s, l, "exec-mem-size")) {
         rjit_opt->exec_mem_size = atoi(s + 1);
     }
+    else if (opt_match_arg(s, l, "call-threshold")) {
+        rjit_opt->call_threshold = atoi(s + 1);
+    }
     else if (opt_match_noarg(s, l, "stats")) {
         rjit_opt->stats = true;
+    }
+    else if (opt_match_noarg(s, l, "disable")) {
+        rjit_opt->disable = true;
+    }
+    else if (opt_match_noarg(s, l, "trace")) {
+        rjit_opt->trace_exits = true;
     }
     else if (opt_match_noarg(s, l, "trace-exits")) {
         rjit_opt->trace_exits = true;
@@ -138,9 +144,6 @@ rb_rjit_setup_options(const char *s, struct rb_rjit_options *rjit_opt)
     }
     else if (opt_match_noarg(s, l, "verify-ctx")) {
         rjit_opt->verify_ctx = true;
-    }
-    else if (opt_match_noarg(s, l, "disable")) {
-        rjit_opt->disable = true;
     }
     else {
         rb_raise(rb_eRuntimeError,
@@ -153,6 +156,8 @@ const struct ruby_opt_message rb_rjit_option_messages[] = {
     M("--rjit-exec-mem-size=num",  "", "Size of executable memory block in MiB (default: " STRINGIZE(DEFAULT_EXEC_MEM_SIZE) ")"),
     M("--rjit-call-threshold=num", "", "Number of calls to trigger JIT (default: " STRINGIZE(DEFAULT_CALL_THRESHOLD) ")"),
     M("--rjit-stats",              "", "Enable collecting RJIT statistics"),
+    M("--rjit-disable",            "", "Disable RJIT for lazily enabling it with RubyVM::RJIT.enable"),
+    M("--rjit-trace",              "", "Allow TracePoint during JIT compilation"),
     M("--rjit-trace-exits",        "", "Trace side exit locations"),
 #ifdef HAVE_LIBCAPSTONE
     M("--rjit-dump-disasm",        "", "Dump all JIT code"),
@@ -167,12 +172,12 @@ extern VALUE rb_gc_enable(void);
 extern VALUE rb_gc_disable(void);
 extern uint64_t rb_vm_insns_count;
 
-// Disable GC, TracePoint, and VM insns counter
+// Disable GC, TracePoint, JIT, and VM insns counter
 #define WITH_RJIT_ISOLATED(stmt) do { \
     VALUE was_disabled = rb_gc_disable(); \
     rb_hook_list_t *global_hooks = rb_ec_ractor_hooks(GET_EC()); \
     rb_rjit_global_events = global_hooks->events; \
-    global_hooks->events = 0; \
+    if (!rb_rjit_opts.trace) global_hooks->events = 0; \
     bool original_call_p = rb_rjit_call_p; \
     rjit_stats_p = false; \
     rb_rjit_call_p = false; \
@@ -181,7 +186,7 @@ extern uint64_t rb_vm_insns_count;
     rb_vm_insns_count = insns_count; \
     rb_rjit_call_p = (rjit_cancel_p ? false : original_call_p); \
     rjit_stats_p = rb_rjit_opts.stats; \
-    global_hooks->events = rb_rjit_global_events; \
+    if (!rb_rjit_opts.trace) global_hooks->events = rb_rjit_global_events; \
     if (!was_disabled) rb_gc_enable(); \
 } while (0);
 

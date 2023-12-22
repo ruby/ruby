@@ -389,7 +389,7 @@ usage(const char *name, int help, int highlight, int columns)
         M("yjit", "",           "in-process JIT compiler (default: disabled)"),
 #endif
 #if USE_RJIT
-        M("rjit", "",           "pure-Ruby JIT compiler (default: disabled)"),
+        M("rjit", "",           "pure-Ruby JIT compiler (experimental, default: disabled)"),
 #endif
     };
     static const struct ruby_opt_message warn_categories[] = {
