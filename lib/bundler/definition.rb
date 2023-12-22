@@ -312,10 +312,6 @@ module Bundler
       end
     end
 
-    def should_complete_platforms?
-      !lockfile_exists? && generic_local_platform_is_ruby? && !Bundler.settings[:force_ruby_platform]
-    end
-
     def spec_git_paths
       sources.git_sources.map {|s| File.realpath(s.path) if File.exist?(s.path) }.compact
     end
@@ -516,6 +512,10 @@ module Bundler
     end
 
     private
+
+    def should_complete_platforms?
+      !lockfile_exists? && generic_local_platform_is_ruby? && !Bundler.settings[:force_ruby_platform]
+    end
 
     def lockfile_exists?
       lockfile && File.exist?(lockfile)
