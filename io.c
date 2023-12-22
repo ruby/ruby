@@ -3410,7 +3410,12 @@ io_read_memory_call(VALUE arg)
         }
     }
 
-    return rb_thread_io_blocking_call(internal_read_func, iis, iis->fptr->fd, RB_WAITFD_IN);
+    if (iis->nonblock) {
+        return rb_thread_io_blocking_call(internal_read_func, iis, iis->fptr->fd, 0);
+    }
+    else {
+        return rb_thread_io_blocking_call(internal_read_func, iis, iis->fptr->fd, RB_WAITFD_IN);
+    }
 }
 
 static long
