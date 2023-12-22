@@ -1045,6 +1045,7 @@ $(PLATFORM_D):
 	$(Q) $(MAKEDIRS) $(PLATFORM_DIR) $(@D)
 	@$(NULLCMD) > $@
 
+exe/$(PROGRAM): $(TIMESTAMPDIR)/$(arch)/.time
 exe/$(PROGRAM): ruby-runner.c ruby-runner.h exe/.time $(PREP) {$(VPATH)}config.h
 	$(Q) $(CC) $(CFLAGS) $(INCFLAGS) $(CPPFLAGS) -DRUBY_INSTALL_NAME=$(@F) $(COUTFLAG)ruby-runner.$(OBJEXT) -c $(CSRCFLAG)$(srcdir)/ruby-runner.c
 	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(LDFLAGS) $(OUTFLAG)$@ ruby-runner.$(OBJEXT) $(LIBS)
@@ -1057,6 +1058,8 @@ exe/$(PROGRAM): ruby-runner.c ruby-runner.h exe/.time $(PREP) {$(VPATH)}config.h
 	    -e '  File.symlink(prog, dest)' \
 	    -e 'end' \
 	$(@F) $(@D) $(RUBY_INSTALL_NAME)$(EXEEXT)
+	$(Q) $(BOOTSTRAPRUBY) -r$(srcdir)/lib/fileutils \
+	    -e 'FileUtils::Verbose.ln_sr(*ARGV, force: true)' rbconfig.rb $(EXTOUT)/$(arch)
 
 exe/.time:
 	$(Q) $(MAKEDIRS) $(@D)
