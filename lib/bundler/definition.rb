@@ -602,6 +602,8 @@ module Bundler
       @resolved_bundler_version = result.find {|spec| spec.name == "bundler" }&.version
       @platforms = result.add_extra_platforms!(platforms) if should_add_extra_platforms?
 
+      result.complete_platforms!(platforms)
+
       SpecSet.new(result.for(dependencies, false, @platforms))
     end
 
