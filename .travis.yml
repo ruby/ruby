@@ -146,4 +146,7 @@ notifications:
     on_success: never
     on_failure: always
   email:
-    - jaruga@ruby-lang.org
+    recipients:
+      - jaruga@ruby-lang.org
+    on_success: never
+    on_failure: always
