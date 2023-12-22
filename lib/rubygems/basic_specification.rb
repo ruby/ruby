@@ -84,7 +84,13 @@ class Gem::BasicSpecification
       return false
     end
 
-    have_file? file, Gem.suffixes
+    is_soext = file.end_with?(".so", ".o")
+
+    if is_soext
+      have_file? file.delete_suffix(File.extname(file)), Gem.dynamic_library_suffixes
+    else
+      have_file? file, Gem.suffixes
+    end
   end
 
   def default_gem?
@@ -96,7 +102,7 @@ class Gem::BasicSpecification
   # Returns full path to the directory where gem's extensions are installed.
 
   def extension_dir
-    @extension_dir ||= File.expand_path(File.join(extensions_dir, full_name)).tap(&Gem::UNTAINT)
+    @extension_dir ||= File.expand_path(File.join(extensions_dir, full_name))
   end
 
   ##
@@ -110,9 +116,7 @@ class Gem::BasicSpecification
 
   def find_full_gem_path # :nodoc:
     # TODO: also, shouldn't it default to full_name if it hasn't been written?
-    path = File.expand_path File.join(gems_dir, full_name)
-    path.tap(&Gem::UNTAINT)
-    path
+    File.expand_path File.join(gems_dir, full_name)
   end
 
   private :find_full_gem_path
@@ -133,9 +137,9 @@ class Gem::BasicSpecification
 
   def full_name
     if platform == Gem::Platform::RUBY || platform.nil?
-      (+"#{name}-#{version}").tap(&Gem::UNTAINT)
+      "#{name}-#{version}"
     else
-      (+"#{name}-#{version}-#{platform}").tap(&Gem::UNTAINT)
+      "#{name}-#{version}-#{platform}"
     end
   end
 
@@ -147,7 +151,7 @@ class Gem::BasicSpecification
     @full_require_paths ||=
       begin
         full_paths = raw_require_paths.map do |path|
-          File.join full_gem_path, path.tap(&Gem::UNTAINT)
+          File.join full_gem_path, path
         end
 
         full_paths << extension_dir if have_extensions?
@@ -161,7 +165,7 @@ class Gem::BasicSpecification
 
   def datadir
     # TODO: drop the extra ", gem_name" which is uselessly redundant
-    File.expand_path(File.join(gems_dir, full_name, "data", name)).tap(&Gem::UNTAINT)
+    File.expand_path(File.join(gems_dir, full_name, "data", name))
   end
 
   ##
@@ -270,7 +274,7 @@ class Gem::BasicSpecification
   def matches_for_glob(glob) # TODO: rename?
     glob = File.join(lib_dirs_glob, glob)
 
-    Dir[glob].map {|f| f.tap(&Gem::UNTAINT) } # FIX our tests are broken, run w/ SAFE=1
+    Dir[glob]
   end
 
   ##
@@ -295,7 +299,7 @@ class Gem::BasicSpecification
       "lib" # default value for require_paths for bundler/inline
     end
 
-    "#{full_gem_path}/#{dirs}".dup.tap(&Gem::UNTAINT)
+    "#{full_gem_path}/#{dirs}"
   end
 
   ##
@@ -332,7 +336,7 @@ class Gem::BasicSpecification
 
   def have_file?(file, suffixes)
     return true if raw_require_paths.any? do |path|
-      base = File.join(gems_dir, full_name, path.tap(&Gem::UNTAINT), file).tap(&Gem::UNTAINT)
+      base = File.join(gems_dir, full_name, path, file)
       suffixes.any? {|suf| File.file? base + suf }
     end
 

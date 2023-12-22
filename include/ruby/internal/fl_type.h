@@ -457,7 +457,7 @@ RB_FL_ABLE(VALUE obj)
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 /**
- * This is an implenentation detail of  RB_FL_TEST().  3rd parties need not use
+ * This is an implementation detail of  RB_FL_TEST().  3rd parties need not use
  * this.  Just always use RB_FL_TEST().
  *
  * @param[in]  obj    Object in question.
@@ -505,7 +505,7 @@ RB_FL_TEST(VALUE obj, VALUE flags)
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 /**
- * This is an  implenentation detail of RB_FL_ANY().  3rd parties  need not use
+ * This is an  implementation detail of RB_FL_ANY().  3rd parties  need not use
  * this.  Just always use RB_FL_ANY().
  *
  * @param[in]  obj    Object in question.
@@ -539,7 +539,7 @@ RB_FL_ANY(VALUE obj, VALUE flags)
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 /**
- * This is an  implenentation detail of RB_FL_ALL().  3rd parties  need not use
+ * This is an  implementation detail of RB_FL_ALL().  3rd parties  need not use
  * this.  Just always use RB_FL_ALL().
  *
  * @param[in]  obj    Object in question.
@@ -575,7 +575,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 /**
  * @private
  *
- * This is an  implenentation detail of RB_FL_SET().  3rd parties  need not use
+ * This is an  implementation detail of RB_FL_SET().  3rd parties  need not use
  * this.  Just always use RB_FL_SET().
  *
  * @param[out]  obj    Object in question.
@@ -595,7 +595,7 @@ rbimpl_fl_set_raw_raw(struct RBasic *obj, VALUE flags)
 
 RBIMPL_ATTR_ARTIFICIAL()
 /**
- * This is an  implenentation detail of RB_FL_SET().  3rd parties  need not use
+ * This is an  implementation detail of RB_FL_SET().  3rd parties  need not use
  * this.  Just always use RB_FL_SET().
  *
  * @param[out]  obj    Object in question.
@@ -635,7 +635,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 /**
  * @private
  *
- * This is an implenentation detail of RB_FL_UNSET().  3rd parties need not use
+ * This is an implementation detail of RB_FL_UNSET().  3rd parties need not use
  * this.  Just always use RB_FL_UNSET().
  *
  * @param[out]  obj    Object in question.
@@ -655,7 +655,7 @@ rbimpl_fl_unset_raw_raw(struct RBasic *obj, VALUE flags)
 
 RBIMPL_ATTR_ARTIFICIAL()
 /**
- * This is an implenentation detail of RB_FL_UNSET().  3rd parties need not use
+ * This is an implementation detail of RB_FL_UNSET().  3rd parties need not use
  * this.  Just always use RB_FL_UNSET().
  *
  * @param[out]  obj    Object in question.
@@ -690,7 +690,7 @@ RBIMPL_ATTR_ARTIFICIAL()
 /**
  * @private
  *
- * This is an  implenentation detail of RB_FL_REVERSE().  3rd  parties need not
+ * This is an  implementation detail of RB_FL_REVERSE().  3rd  parties need not
  * use this.  Just always use RB_FL_REVERSE().
  *
  * @param[out]  obj    Object in question.
@@ -710,7 +710,7 @@ rbimpl_fl_reverse_raw_raw(struct RBasic *obj, VALUE flags)
 
 RBIMPL_ATTR_ARTIFICIAL()
 /**
- * This is an  implenentation detail of RB_FL_REVERSE().  3rd  parties need not
+ * This is an  implementation detail of RB_FL_REVERSE().  3rd  parties need not
  * use this.  Just always use RB_FL_REVERSE().
  *
  * @param[out]  obj    Object in question.
@@ -866,7 +866,7 @@ RB_OBJ_INFECT(VALUE dst, VALUE src)
 RBIMPL_ATTR_PURE_UNLESS_DEBUG()
 RBIMPL_ATTR_ARTIFICIAL()
 /**
- * This is an  implenentation detail of RB_OBJ_FROZEN().  3rd  parties need not
+ * This is an  implementation detail of RB_OBJ_FROZEN().  3rd  parties need not
  * use this.  Just always use RB_OBJ_FROZEN().
  *
  * @param[in]  obj             Object in question.
@@ -907,7 +907,7 @@ RB_OBJ_FROZEN(VALUE obj)
 
 RBIMPL_ATTR_ARTIFICIAL()
 /**
- * This is an  implenentation detail of RB_OBJ_FREEZE().  3rd  parties need not
+ * This is an  implementation detail of RB_OBJ_FREEZE().  3rd  parties need not
  * use this.  Just always use RB_OBJ_FREEZE().
  *
  * @param[out]  obj  Object in question.

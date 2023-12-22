@@ -87,13 +87,16 @@ describe "Keyword arguments" do
   end
 
   context "**" do
-    it "does not copy a non-empty Hash for a method taking (*args)" do
-      def m(*args)
-        args[0]
-      end
+    ruby_version_is "3.3" do
+      it "copies a non-empty Hash for a method taking (*args)" do
+        def m(*args)
+          args[0]
+        end
 
-      h = {a: 1}
-      m(**h).should.equal?(h)
+        h = {a: 1}
+        m(**h).should_not.equal?(h)
+        h.should == {a: 1}
+      end
     end
 
     it "copies the given Hash for a method taking (**kwargs)" do

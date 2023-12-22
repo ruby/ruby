@@ -15,30 +15,29 @@ module Psych
     class YAMLTree < Psych::Visitors::Visitor
       class Registrar # :nodoc:
         def initialize
-          @obj_to_id   = {}
-          @obj_to_node = {}
+          @obj_to_id   = {}.compare_by_identity
+          @obj_to_node = {}.compare_by_identity
           @targets     = []
           @counter     = 0
         end
 
         def register target, node
-          return unless target.respond_to? :object_id
           @targets << target
-          @obj_to_node[target.object_id] = node
+          @obj_to_node[target] = node
         end
 
         def key? target
-          @obj_to_node.key? target.object_id
+          @obj_to_node.key? target
         rescue NoMethodError
           false
         end
 
         def id_for target
-          @obj_to_id[target.object_id] ||= (@counter += 1)
+          @obj_to_id[target] ||= (@counter += 1)
         end
 
         def node_for target
-          @obj_to_node[target.object_id]
+          @obj_to_node[target]
         end
       end
 

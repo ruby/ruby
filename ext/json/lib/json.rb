@@ -285,6 +285,15 @@ require 'json/common'
 #   # Raises JSON::NestingError (nesting of 2 is too deep):
 #   JSON.generate(obj, max_nesting: 2)
 #
+# ====== Escaping Options
+#
+# Options +script_safe+ (boolean) specifies wether <tt>'\u2028'</tt>, <tt>'\u2029'</tt>
+# and <tt>'/'</tt> should be escaped as to make the JSON object safe to interpolate in script
+# tags.
+#
+# Options +ascii_only+ (boolean) specifies wether all characters outside the ASCII range
+# should be escaped.
+#
 # ====== Output Options
 #
 # The default formatting options generate the most compact

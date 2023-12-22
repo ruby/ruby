@@ -558,6 +558,25 @@ class TestOpenURI < Test::Unit::TestCase
     }
   end
 
+  def test_max_redirects_success
+    with_http {|srv, dr, url|
+      srv.mount_proc("/r1/") {|req, res| res.status = 301; res["location"] = "#{url}/r2"; res.body = "r1" }
+      srv.mount_proc("/r2/") {|req, res| res.status = 301; res["location"] = "#{url}/r3"; res.body = "r2" }
+      srv.mount_proc("/r3/") {|req, res| res.body = "r3" }
+      URI.open("#{url}/r1/", max_redirects: 2) { |f| assert_equal("r3", f.read) }
+    }
+  end
+
+  def test_max_redirects_too_many
+    with_http {|srv, dr, url|
+      srv.mount_proc("/r1/") {|req, res| res.status = 301; res["location"] = "#{url}/r2"; res.body = "r1" }
+      srv.mount_proc("/r2/") {|req, res| res.status = 301; res["location"] = "#{url}/r3"; res.body = "r2" }
+      srv.mount_proc("/r3/") {|req, res| res.body = "r3" }
+      exc = assert_raise(OpenURI::TooManyRedirects) { URI.open("#{url}/r1/", max_redirects: 1) {} }
+      assert_equal("Too many redirects", exc.message)
+    }
+  end
+
   def test_userinfo
     assert_raise(ArgumentError) { URI.open("http://user:pass@127.0.0.1/") {} }
   end

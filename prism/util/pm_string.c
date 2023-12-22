@@ -1,16 +1,17 @@
 #include "prism/util/pm_string.h"
 
-// The following headers are necessary to read files using demand paging.
-#ifdef _WIN32
-#include <windows.h>
-#else
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#endif
+/**
+ * Returns the size of the pm_string_t struct. This is necessary to allocate the
+ * correct amount of memory in the FFI backend.
+ */
+PRISM_EXPORTED_FUNCTION size_t
+pm_string_sizeof(void) {
+    return sizeof(pm_string_t);
+}
 
-// Initialize a shared string that is based on initial input.
+/**
+ * Initialize a shared string that is based on initial input.
+ */
 void
 pm_string_shared_init(pm_string_t *string, const uint8_t *start, const uint8_t *end) {
     assert(start <= end);
@@ -22,7 +23,9 @@ pm_string_shared_init(pm_string_t *string, const uint8_t *start, const uint8_t *
     };
 }
 
-// Initialize an owned string that is responsible for freeing allocated memory.
+/**
+ * Initialize an owned string that is responsible for freeing allocated memory.
+ */
 void
 pm_string_owned_init(pm_string_t *string, uint8_t *source, size_t length) {
     *string = (pm_string_t) {
@@ -32,7 +35,9 @@ pm_string_owned_init(pm_string_t *string, uint8_t *source, size_t length) {
     };
 }
 
-// Initialize a constant string that doesn't own its memory source.
+/**
+ * Initialize a constant string that doesn't own its memory source.
+ */
 void
 pm_string_constant_init(pm_string_t *string, const char *source, size_t length) {
     *string = (pm_string_t) {
@@ -42,69 +47,17 @@ pm_string_constant_init(pm_string_t *string, const char *source, size_t length) 
     };
 }
 
-static void
-pm_string_mapped_init_internal(pm_string_t *string, uint8_t *source, size_t length) {
-    *string = (pm_string_t) {
-        .type = PM_STRING_MAPPED,
-        .source = source,
-        .length = length
-    };
-}
-
-// Returns the memory size associated with the string.
-size_t
-pm_string_memsize(const pm_string_t *string) {
-    size_t size = sizeof(pm_string_t);
-    if (string->type == PM_STRING_OWNED) {
-        size += string->length;
-    }
-    return size;
-}
-
-// Ensure the string is owned. If it is not, then reinitialize it as owned and
-// copy over the previous source.
-void
-pm_string_ensure_owned(pm_string_t *string) {
-    if (string->type == PM_STRING_OWNED) return;
-
-    size_t length = pm_string_length(string);
-    const uint8_t *source = pm_string_source(string);
-
-    uint8_t *memory = malloc(length);
-    if (!memory) return;
-
-    pm_string_owned_init(string, memory, length);
-    memcpy((void *) string->source, source, length);
-}
-
-// Returns the length associated with the string.
-PRISM_EXPORTED_FUNCTION size_t
-pm_string_length(const pm_string_t *string) {
-    return string->length;
-}
-
-// Returns the start pointer associated with the string.
-PRISM_EXPORTED_FUNCTION const uint8_t *
-pm_string_source(const pm_string_t *string) {
-    return string->source;
-}
-
-// Free the associated memory of the given string.
-PRISM_EXPORTED_FUNCTION void
-pm_string_free(pm_string_t *string) {
-    void *memory = (void *) string->source;
-
-    if (string->type == PM_STRING_OWNED) {
-        free(memory);
-    } else if (string->type == PM_STRING_MAPPED && string->length) {
-#if defined(_WIN32)
-        UnmapViewOfFile(memory);
-#else
-        munmap(memory, string->length);
-#endif
-    }
-}
-
+/**
+ * Read the file indicated by the filepath parameter into source and load its
+ * contents and size into the given `pm_string_t`. The given `pm_string_t`
+ * should be freed using `pm_string_free` when it is no longer used.
+ *
+ * We want to use demand paging as much as possible in order to avoid having to
+ * read the entire file into memory (which could be detrimental to performance
+ * for large files). This means that if we're on windows we'll use
+ * `MapViewOfFile`, on POSIX systems that have access to `mmap` we'll use
+ * `mmap`, and on other POSIX systems we'll use `read`.
+ */
 bool
 pm_string_mapped_init(pm_string_t *string, const char *filepath) {
 #ifdef _WIN32
@@ -128,8 +81,8 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
     // the source to a constant empty string and return.
     if (file_size == 0) {
         CloseHandle(file);
-        uint8_t empty[] = "";
-        pm_string_mapped_init_internal(string, empty, 0);
+        const uint8_t source[] = "";
+        *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
         return true;
     }
 
@@ -151,7 +104,7 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
         return false;
     }
 
-    pm_string_mapped_init_internal(string, source, (size_t) file_size);
+    *string = (pm_string_t) { .type = PM_STRING_MAPPED, .source = source, .length = (size_t) file_size };
     return true;
 #else
     // Open the file for reading
@@ -175,8 +128,8 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
 
     if (size == 0) {
         close(fd);
-        uint8_t empty[] = "";
-        pm_string_mapped_init_internal(string, empty, 0);
+        const uint8_t source[] = "";
+        *string = (pm_string_t) { .type = PM_STRING_CONSTANT, .source = source, .length = 0 };
         return true;
     }
 
@@ -187,14 +140,71 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
     }
 
     close(fd);
-    pm_string_mapped_init_internal(string, source, size);
+    *string = (pm_string_t) { .type = PM_STRING_MAPPED, .source = source, .length = size };
     return true;
 #endif
 }
 
-// Returns the size of the pm_string_t struct. This is necessary to allocate the
-// correct amount of memory in the FFI backend.
+/**
+ * Returns the memory size associated with the string.
+ */
+size_t
+pm_string_memsize(const pm_string_t *string) {
+    size_t size = sizeof(pm_string_t);
+    if (string->type == PM_STRING_OWNED) {
+        size += string->length;
+    }
+    return size;
+}
+
+/**
+ * Ensure the string is owned. If it is not, then reinitialize it as owned and
+ * copy over the previous source.
+ */
+void
+pm_string_ensure_owned(pm_string_t *string) {
+    if (string->type == PM_STRING_OWNED) return;
+
+    size_t length = pm_string_length(string);
+    const uint8_t *source = pm_string_source(string);
+
+    uint8_t *memory = malloc(length);
+    if (!memory) return;
+
+    pm_string_owned_init(string, memory, length);
+    memcpy((void *) string->source, source, length);
+}
+
+/**
+ * Returns the length associated with the string.
+ */
 PRISM_EXPORTED_FUNCTION size_t
-pm_string_sizeof(void) {
-    return sizeof(pm_string_t);
+pm_string_length(const pm_string_t *string) {
+    return string->length;
+}
+
+/**
+ * Returns the start pointer associated with the string.
+ */
+PRISM_EXPORTED_FUNCTION const uint8_t *
+pm_string_source(const pm_string_t *string) {
+    return string->source;
+}
+
+/**
+ * Free the associated memory of the given string.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_string_free(pm_string_t *string) {
+    void *memory = (void *) string->source;
+
+    if (string->type == PM_STRING_OWNED) {
+        free(memory);
+    } else if (string->type == PM_STRING_MAPPED && string->length) {
+#if defined(_WIN32)
+        UnmapViewOfFile(memory);
+#else
+        munmap(memory, string->length);
+#endif
+    }
 }

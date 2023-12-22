@@ -24,7 +24,7 @@ module TestIRB
     def test_initialization
       Reline.completion_proc = nil
       Reline.dig_perfect_match_proc = nil
-      IRB::RelineInputMethod.new
+      IRB::RelineInputMethod.new(IRB::RegexpCompletor.new)
 
       assert_nil Reline.completion_append_character
       assert_equal '', Reline.completer_quote_characters
@@ -40,7 +40,7 @@ module TestIRB
 
       IRB.conf[:USE_AUTOCOMPLETE] = false
 
-      IRB::RelineInputMethod.new
+      IRB::RelineInputMethod.new(IRB::RegexpCompletor.new)
 
       refute Reline.autocompletion
       assert_equal empty_proc, Reline.dialog_proc(:show_doc).dialog_proc
@@ -55,7 +55,7 @@ module TestIRB
 
       IRB.conf[:USE_AUTOCOMPLETE] = true
 
-      IRB::RelineInputMethod.new
+      IRB::RelineInputMethod.new(IRB::RegexpCompletor.new)
 
       assert Reline.autocompletion
       assert_not_equal empty_proc, Reline.dialog_proc(:show_doc).dialog_proc
@@ -71,7 +71,7 @@ module TestIRB
       IRB.conf[:USE_AUTOCOMPLETE] = true
 
       without_rdoc do
-        IRB::RelineInputMethod.new
+        IRB::RelineInputMethod.new(IRB::RegexpCompletor.new)
       end
 
       assert Reline.autocompletion
@@ -89,7 +89,7 @@ module TestIRB
     end
 
     def display_document(target, bind)
-      input_method = IRB::RelineInputMethod.new
+      input_method = IRB::RelineInputMethod.new(IRB::RegexpCompletor.new)
       input_method.instance_variable_set(:@completion_params, [target, '', '', bind])
       input_method.display_document(target, driver: @driver)
     end

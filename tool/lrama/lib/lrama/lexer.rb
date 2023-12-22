@@ -1,12 +1,14 @@
 require "strscan"
+require "lrama/lexer/location"
 require "lrama/lexer/token"
 
 module Lrama
   class Lexer
+    attr_reader :head_line, :head_column
     attr_accessor :status
     attr_accessor :end_symbol
 
-    SYMBOLS = %w(%{ %} %% { } \[ \] : \| ;)
+    SYMBOLS = ['%{', '%}', '%%', '{', '}', '\[', '\]', '\(', '\)', '\,', ':', '\|', ';']
     PERCENT_TOKENS = %w(
       %union
       %token
@@ -24,12 +26,14 @@ module Lrama
       %precedence
       %prec
       %error-token
+      %empty
+      %code
     )
 
     def initialize(text)
       @scanner = StringScanner.new(text)
-      @head = @scanner.pos
-      @line = 1
+      @head_column = @head = @scanner.pos
+      @head_line = @line = 1
       @status = :initial
       @end_symbol = nil
     end
@@ -51,6 +55,13 @@ module Lrama
       @scanner.pos - @head
     end
 
+    def location
+      Location.new(
+        first_line: @head_line, first_column: @head_column,
+        last_line: @line, last_column: column
+      )
+    end
+
     def lex_token
       while !@scanner.eos? do
         case
@@ -60,11 +71,8 @@ module Lrama
           # noop
         when @scanner.scan(/\/\*/)
           lex_comment
-        when @scanner.scan(/\/\//)
-          @scanner.scan_until(/\n/)
-          newline
-        when @scanner.scan(/%empty/)
-          # noop
+        when @scanner.scan(/\/\/.*(?<newline>\n)?/)
+          newline if @scanner[:newline]
         else
           break
         end
@@ -80,18 +88,20 @@ module Lrama
         return [@scanner.matched, @scanner.matched]
       when @scanner.scan(/#{PERCENT_TOKENS.join('|')}/)
         return [@scanner.matched, @scanner.matched]
+      when @scanner.scan(/[\?\+\*]/)
+        return [@scanner.matched, @scanner.matched]
       when @scanner.scan(/<\w+>/)
-        return [:TAG, build_token(type: Token::Tag, s_value: @scanner.matched)]
+        return [:TAG, Lrama::Lexer::Token::Tag.new(s_value: @scanner.matched, location: location)]
       when @scanner.scan(/'.'/)
-        return [:CHARACTER, build_token(type: Token::Char, s_value: @scanner.matched)]
+        return [:CHARACTER, Lrama::Lexer::Token::Char.new(s_value: @scanner.matched, location: location)]
       when @scanner.scan(/'\\\\'|'\\b'|'\\t'|'\\f'|'\\r'|'\\n'|'\\v'|'\\13'/)
-        return [:CHARACTER, build_token(type: Token::Char, s_value: @scanner.matched)]
-      when @scanner.scan(/"/)
-        return [:STRING, %Q("#{@scanner.scan_until(/"/)})]
+        return [:CHARACTER, Lrama::Lexer::Token::Char.new(s_value: @scanner.matched, location: location)]
+      when @scanner.scan(/".*?"/)
+        return [:STRING, %Q(#{@scanner.matched})]
       when @scanner.scan(/\d+/)
         return [:INTEGER, Integer(@scanner.matched)]
       when @scanner.scan(/([a-zA-Z_.][-a-zA-Z0-9_.]*)/)
-        token = build_token(type: Token::Ident, s_value: @scanner.matched)
+        token = Lrama::Lexer::Token::Ident.new(s_value: @scanner.matched, location: location)
         type =
           if @scanner.check(/\s*(\[\s*[a-zA-Z_.][-a-zA-Z0-9_.]*\s*\])?\s*:/)
             :IDENT_COLON
@@ -100,7 +110,7 @@ module Lrama
           end
         return [type, token]
       else
-        raise
+        raise ParseError, "Unexpected token: #{@scanner.peek(10).chomp}."
       end
     end
 
@@ -115,28 +125,30 @@ module Lrama
         when @scanner.scan(/}/)
           if nested == 0 && @end_symbol == '}'
             @scanner.unscan
-            return [:C_DECLARATION, build_token(type: Token::User_code, s_value: code, references: [])]
+            return [:C_DECLARATION, Lrama::Lexer::Token::UserCode.new(s_value: code, location: location)]
           else
             code += @scanner.matched
             nested -= 1
           end
         when @scanner.check(/#{@end_symbol}/)
-          return [:C_DECLARATION, build_token(type: Token::User_code, s_value: code, references: [])]
+          return [:C_DECLARATION, Lrama::Lexer::Token::UserCode.new(s_value: code, location: location)]
         when @scanner.scan(/\n/)
           code += @scanner.matched
           newline
-        when @scanner.scan(/"/)
-          matched = @scanner.scan_until(/"/)
-          code += %Q("#{matched})
-          @line += matched.count("\n")
-        when @scanner.scan(/'/)
-          matched = @scanner.scan_until(/'/)
-          code += %Q('#{matched})
+        when @scanner.scan(/".*?"/)
+          code += %Q(#{@scanner.matched})
+          @line += @scanner.matched.count("\n")
+        when @scanner.scan(/'.*?'/)
+          code += %Q(#{@scanner.matched})
         else
-          code += @scanner.getch
+          if @scanner.scan(/[^\"'\{\}\n#{@end_symbol}]+/)
+            code += @scanner.matched
+          else
+            code += @scanner.getch
+          end
         end
       end
-      raise
+      raise ParseError, "Unexpected code: #{code}."
     end
 
     private
@@ -145,25 +157,13 @@ module Lrama
       while !@scanner.eos? do
         case
         when @scanner.scan(/\n/)
-          @line += 1
-          @head = @scanner.pos + 1
+          newline
         when @scanner.scan(/\*\//)
           return
         else
           @scanner.getch
         end
       end
-    end
-
-    def build_token(type:, s_value:, **options)
-      token = Token.new(type: type, s_value: s_value)
-      token.line = @head_line
-      token.column = @head_column
-      options.each do |attr, value|
-        token.public_send("#{attr}=", value)
-      end
-
-      token
     end
 
     def newline

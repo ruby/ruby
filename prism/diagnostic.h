@@ -1,6 +1,12 @@
+/**
+ * @file diagnostic.h
+ *
+ * A list of diagnostics generated during parsing.
+ */
 #ifndef PRISM_DIAGNOSTIC_H
 #define PRISM_DIAGNOSTIC_H
 
+#include "prism/ast.h"
 #include "prism/defines.h"
 #include "prism/util/pm_list.h"
 
@@ -8,24 +14,45 @@
 #include <stdlib.h>
 #include <assert.h>
 
-// This struct represents a diagnostic found during parsing.
+/**
+ * This struct represents a diagnostic generated during parsing.
+ *
+ * @extends pm_list_node_t
+ */
 typedef struct {
+    /** The embedded base node. */
     pm_list_node_t node;
-    const uint8_t *start;
-    const uint8_t *end;
+
+    /** The location of the diagnostic in the source. */
+    pm_location_t location;
+
+    /** The message associated with the diagnostic. */
     const char *message;
+
+    /**
+     * Whether or not the memory related to the message of this diagnostic is
+     * owned by this diagnostic. If it is, it needs to be freed when the
+     * diagnostic is freed.
+     */
+    bool owned;
 } pm_diagnostic_t;
 
+/**
+ * The diagnostic IDs of all of the diagnostics, used to communicate the types
+ * of errors between the parser and the user.
+ */
 typedef enum {
     PM_ERR_ALIAS_ARGUMENT,
     PM_ERR_AMPAMPEQ_MULTI_ASSIGN,
     PM_ERR_ARGUMENT_AFTER_BLOCK,
+    PM_ERR_ARGUMENT_AFTER_FORWARDING_ELLIPSES,
     PM_ERR_ARGUMENT_BARE_HASH,
     PM_ERR_ARGUMENT_BLOCK_MULTI,
     PM_ERR_ARGUMENT_FORMAL_CLASS,
     PM_ERR_ARGUMENT_FORMAL_CONSTANT,
     PM_ERR_ARGUMENT_FORMAL_GLOBAL,
     PM_ERR_ARGUMENT_FORMAL_IVAR,
+    PM_ERR_ARGUMENT_FORWARDING_UNBOUND,
     PM_ERR_ARGUMENT_NO_FORWARDING_AMP,
     PM_ERR_ARGUMENT_NO_FORWARDING_ELLIPSES,
     PM_ERR_ARGUMENT_NO_FORWARDING_STAR,
@@ -51,6 +78,7 @@ typedef enum {
     PM_ERR_CANNOT_PARSE_STRING_PART,
     PM_ERR_CASE_EXPRESSION_AFTER_CASE,
     PM_ERR_CASE_EXPRESSION_AFTER_WHEN,
+    PM_ERR_CASE_MATCH_MISSING_PREDICATE,
     PM_ERR_CASE_MISSING_CONDITIONS,
     PM_ERR_CASE_TERM,
     PM_ERR_CLASS_IN_METHOD,
@@ -149,6 +177,7 @@ typedef enum {
     PM_ERR_LIST_W_UPPER_ELEMENT,
     PM_ERR_LIST_W_UPPER_TERM,
     PM_ERR_MALLOC_FAILED,
+    PM_ERR_MIXED_ENCODING,
     PM_ERR_MODULE_IN_METHOD,
     PM_ERR_MODULE_NAME,
     PM_ERR_MODULE_TERM,
@@ -162,6 +191,7 @@ typedef enum {
     PM_ERR_OPERATOR_WRITE_BLOCK,
     PM_ERR_PARAMETER_ASSOC_SPLAT_MULTI,
     PM_ERR_PARAMETER_BLOCK_MULTI,
+    PM_ERR_PARAMETER_CIRCULAR,
     PM_ERR_PARAMETER_METHOD_NAME,
     PM_ERR_PARAMETER_NAME_REPEAT,
     PM_ERR_PARAMETER_NO_DEFAULT,
@@ -181,6 +211,7 @@ typedef enum {
     PM_ERR_PATTERN_EXPRESSION_AFTER_PIN,
     PM_ERR_PATTERN_EXPRESSION_AFTER_PIPE,
     PM_ERR_PATTERN_EXPRESSION_AFTER_RANGE,
+    PM_ERR_PATTERN_EXPRESSION_AFTER_REST,
     PM_ERR_PATTERN_HASH_KEY,
     PM_ERR_PATTERN_HASH_KEY_LABEL,
     PM_ERR_PATTERN_IDENT_AFTER_HROCKET,
@@ -196,6 +227,10 @@ typedef enum {
     PM_ERR_RESCUE_TERM,
     PM_ERR_RESCUE_VARIABLE,
     PM_ERR_RETURN_INVALID,
+    PM_ERR_STATEMENT_ALIAS,
+    PM_ERR_STATEMENT_POSTEXE_END,
+    PM_ERR_STATEMENT_PREEXE_BEGIN,
+    PM_ERR_STATEMENT_UNDEF,
     PM_ERR_STRING_CONCATENATION,
     PM_ERR_STRING_INTERPOLATED_TERM,
     PM_ERR_STRING_LITERAL_TERM,
@@ -211,7 +246,9 @@ typedef enum {
     PM_ERR_UNARY_RECEIVER_TILDE,
     PM_ERR_UNDEF_ARGUMENT,
     PM_ERR_UNTIL_TERM,
+    PM_ERR_VOID_EXPRESSION,
     PM_ERR_WHILE_TERM,
+    PM_ERR_WRITE_TARGET_IN_METHOD,
     PM_ERR_WRITE_TARGET_READONLY,
     PM_ERR_WRITE_TARGET_UNEXPECTED,
     PM_ERR_XSTRING_TERM,
@@ -219,14 +256,42 @@ typedef enum {
     PM_WARN_AMBIGUOUS_FIRST_ARGUMENT_PLUS,
     PM_WARN_AMBIGUOUS_PREFIX_STAR,
     PM_WARN_AMBIGUOUS_SLASH,
+    PM_WARN_END_IN_METHOD,
+
     /* This must be the last member. */
     PM_DIAGNOSTIC_ID_LEN,
 } pm_diagnostic_id_t;
 
-// Append a diagnostic to the given list of diagnostics.
+/**
+ * Append a diagnostic to the given list of diagnostics that is using shared
+ * memory for its message.
+ *
+ * @param list The list to append to.
+ * @param start The start of the diagnostic.
+ * @param end The end of the diagnostic.
+ * @param diag_id The diagnostic ID.
+ * @return Whether the diagnostic was successfully appended.
+ */
 bool pm_diagnostic_list_append(pm_list_t *list, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id);
 
-// Deallocate the internal state of the given diagnostic list.
+/**
+ * Append a diagnostic to the given list of diagnostics that is using a format
+ * string for its message.
+ *
+ * @param list The list to append to.
+ * @param start The start of the diagnostic.
+ * @param end The end of the diagnostic.
+ * @param diag_id The diagnostic ID.
+ * @param ... The arguments to the format string for the message.
+ * @return Whether the diagnostic was successfully appended.
+ */
+bool pm_diagnostic_list_append_format(pm_list_t *list, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id, ...);
+
+/**
+ * Deallocate the internal state of the given diagnostic list.
+ *
+ * @param list The list to deallocate.
+ */
 void pm_diagnostic_list_free(pm_list_t *list);
 
 #endif

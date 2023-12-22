@@ -9,7 +9,7 @@
 require "rbconfig"
 
 module Gem
-  VERSION = "3.5.0.dev"
+  VERSION = "3.5.2"
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -114,11 +114,6 @@ require_relative "rubygems/errors"
 
 module Gem
   RUBYGEMS_DIR = __dir__
-
-  # Taint support is deprecated in Ruby 2.7.
-  # This allows switching ".untaint" to ".tap(&Gem::UNTAINT)",
-  # to avoid deprecation warnings in Ruby 2.7.
-  UNTAINT = RUBY_VERSION < "2.7" ? :untaint.to_sym : proc {}
 
   ##
   # An Array of Regexps that match windows Ruby platforms.
@@ -496,7 +491,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
     glob_with_suffixes = "#{glob}#{Gem.suffix_pattern}"
     $LOAD_PATH.map do |load_path|
       Gem::Util.glob_files_in_dir(glob_with_suffixes, load_path)
-    end.flatten.select {|file| File.file? file.tap(&Gem::UNTAINT) }
+    end.flatten.select {|file| File.file? file }
   end
 
   ##
@@ -948,6 +943,13 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   end
 
   ##
+  # Suffixes for dynamic library require-able paths.
+
+  def self.dynamic_library_suffixes
+    @dynamic_library_suffixes ||= suffixes - [".rb"]
+  end
+
+  ##
   # Prints the amount of time the supplied block takes to run using the debug
   # UI output.
 
@@ -1083,8 +1085,6 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
         break
       end
     end
-
-    path.tap(&Gem::UNTAINT)
 
     unless File.file? path
       return unless raise_exception
@@ -1294,9 +1294,10 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
   ##
   # Location of Marshal quick gemspecs on remote repositories
 
-  MARSHAL_SPEC_DIR = "quick/Marshal.#{Gem.marshal_version}/"
+  MARSHAL_SPEC_DIR = "quick/Marshal.#{Gem.marshal_version}/".freeze
 
   autoload :ConfigFile,         File.expand_path("rubygems/config_file", __dir__)
+  autoload :CIDetector,         File.expand_path("rubygems/ci_detector", __dir__)
   autoload :Dependency,         File.expand_path("rubygems/dependency", __dir__)
   autoload :DependencyList,     File.expand_path("rubygems/dependency_list", __dir__)
   autoload :Installer,          File.expand_path("rubygems/installer", __dir__)
@@ -1343,6 +1344,17 @@ begin
 rescue LoadError
 end
 
+# TruffleRuby >= 24 defines REUSE_AS_BINARY_ON_TRUFFLERUBY in defaults/truffleruby.
+# However, TruffleRuby < 24 defines REUSE_AS_BINARY_ON_TRUFFLERUBY directly in its copy
+# of lib/rubygems/platform.rb, so it is not defined if RubyGems is updated (gem update --system).
+# Instead, we define it here in that case, similar to bundler/lib/bundler/rubygems_ext.rb.
+# We must define it here and not in platform.rb because platform.rb is loaded before defaults/truffleruby.
+class Gem::Platform
+  if RUBY_ENGINE == "truffleruby" && !defined?(REUSE_AS_BINARY_ON_TRUFFLERUBY)
+    REUSE_AS_BINARY_ON_TRUFFLERUBY = %w[libv8 libv8-node sorbet-static].freeze
+  end
+end
+
 ##
 # Loads the default specs.
 Gem::Specification.load_defaults
@@ -1352,7 +1364,7 @@ require_relative "rubygems/core_ext/kernel_gem"
 path = File.join(__dir__, "rubygems/core_ext/kernel_require.rb")
 # When https://bugs.ruby-lang.org/issues/17259 is available, there is no need to override Kernel#warn
 if RUBY_ENGINE == "truffleruby" ||
-   (RUBY_ENGINE == "ruby" && RUBY_VERSION >= "3.0")
+   RUBY_ENGINE == "ruby"
   file = "<internal:#{path}>"
 else
   require_relative "rubygems/core_ext/kernel_warn"

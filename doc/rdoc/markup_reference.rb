@@ -467,7 +467,31 @@ require 'rdoc'
 #
 #   - Appended to a line of code
 #     that defines a class, module, method, alias, constant, or attribute.
+#
 #   - Specifies that the defined object should not be documented.
+#
+#   - For method definitions in C code, it must be placed before the
+#     implementation:
+#
+#         /* :nodoc: */
+#         static VALUE
+#         some_method(VALUE self)
+#         {
+#             return self;
+#         }
+#
+#     Note that this directive has <em>no effect at all</em> at method
+#     definition places.  E.g.,
+#
+#         /* :nodoc: */
+#         rb_define_method(cMyClass, "do_something", something_func, 0);
+#
+#     The above comment is just a comment and has nothing to do with \RDoc.
+#     Therefore, +do_something+ method will be reported as "undocumented"
+#     unless that method or function is documented elsewhere.
+#
+#   - For constant definitions in C code, this directive <em>can not work</em>
+#     because there is no "implementation" place for constants.
 #
 # - <tt># :nodoc: all</tt>:
 #
@@ -502,8 +526,8 @@ require 'rdoc'
 #   #++
 #   # Documented.
 #
-# For C code, any of directives <tt>:startdoc:</tt>, <tt>:enddoc:</tt>,
-# and <tt>:nodoc:</tt> may appear in a stand-alone comment:
+# For C code, any of directives <tt>:startdoc:</tt>, <tt>:stopdoc:</tt>,
+# and <tt>:enddoc:</tt> may appear in a stand-alone comment:
 #
 #   /* :startdoc: */
 #   /* :stopdoc: */
@@ -1192,13 +1216,26 @@ require 'rdoc'
 #
 class RDoc::MarkupReference
 
+  # exmaple class
   class DummyClass; end
+
+  # exmaple module
   module DummyModule; end
+
+  # exmaple singleton method
   def self.dummy_singleton_method(foo, bar); end
+
+  # example instance method
   def dummy_instance_method(foo, bar); end;
+
   alias dummy_instance_alias dummy_instance_method
+
+  # exmaple attribute
   attr_accessor :dummy_attribute
+
   alias dummy_attribute_alias dummy_attribute
+
+  # exmaple constant
   DUMMY_CONSTANT = ''
 
   # :call-seq:

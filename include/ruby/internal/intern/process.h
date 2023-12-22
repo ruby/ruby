@@ -256,7 +256,7 @@ rb_pid_t rb_spawn_err(int argc, const VALUE *argv, char *errbuf, size_t buflen);
  *
  * @internal
  *
- * This function  might or might  not exist depending on  `./confiugre` result.
+ * This function  might or might  not exist depending on  `./configure` result.
  * It must be a portability hell.  Better not use.
  */
 VALUE rb_proc_times(VALUE _);

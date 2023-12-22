@@ -14,7 +14,7 @@
             │   ├── rest: ∅
             │   ├── posts: (length: 0)
             │   ├── keywords: (length: 1)
-            │   │   └── @ KeywordParameterNode (location: (1,6)-(1,12))
+            │   │   └── @ OptionalKeywordParameterNode (location: (1,6)-(1,12))
             │   │       ├── name: :foo
             │   │       ├── name_loc: (1,6)-(1,10) = "foo:"
             │   │       └── value:
@@ -24,6 +24,7 @@
             │   └── block: ∅
             ├── body: ∅
             ├── locals: [:foo]
+            ├── locals_body_index: 1
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,5)-(1,6) = "("

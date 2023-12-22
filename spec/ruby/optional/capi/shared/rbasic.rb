@@ -1,5 +1,4 @@
 describe :rbasic, shared: true do
-
   before :all do
     specs = CApiRBasicSpecs.new
     @taint = ruby_version_is(''...'3.1') ? specs.taint_flag : 0

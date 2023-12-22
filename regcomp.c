@@ -5729,7 +5729,7 @@ onig_reg_copy(regex_t** nreg, regex_t* oreg)
         goto err_repeat_range;
     }
     if (IS_NOT_NULL(reg->name_table)) {
-      if (IS_NULL(reg->name_table = st_copy(reg->name_table)))
+      if (onig_names_copy(reg, oreg))
         goto err_name_table;
     }
     if (IS_NOT_NULL(reg->chain)) {
@@ -5740,7 +5740,7 @@ onig_reg_copy(regex_t** nreg, regex_t* oreg)
 # undef COPY_FAILED
 
   err_chain:
-    onig_st_free_table(reg->name_table);
+    onig_names_free(reg);
   err_name_table:
     xfree(reg->repeat_range);
   err_repeat_range:

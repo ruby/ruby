@@ -203,6 +203,15 @@ RSpec.describe "bundle install across platforms" do
       gem "pry"
     G
 
+    checksums = checksums_section_when_existing do |c|
+      c.checksum gem_repo4, "coderay", "1.1.2"
+      c.checksum gem_repo4, "empyrean", "0.1.0"
+      c.checksum gem_repo4, "ffi", "1.9.23", "java"
+      c.checksum gem_repo4, "method_source", "0.9.0"
+      c.checksum gem_repo4, "pry", "0.11.3", "java"
+      c.checksum gem_repo4, "spoon", "0.0.6"
+    end
+
     expect(lockfile).to eq <<~L
       GEM
         remote: #{file_uri_for(gem_repo4)}/
@@ -224,15 +233,7 @@ RSpec.describe "bundle install across platforms" do
       DEPENDENCIES
         empyrean (= 0.1.0)
         pry
-
-      CHECKSUMS
-        #{checksum_for_repo_gem gem_repo4, "coderay", "1.1.2"}
-        #{checksum_for_repo_gem gem_repo4, "empyrean", "0.1.0"}
-        #{checksum_for_repo_gem gem_repo4, "ffi", "1.9.23", "java"}
-        #{checksum_for_repo_gem gem_repo4, "method_source", "0.9.0"}
-        #{checksum_for_repo_gem gem_repo4, "pry", "0.11.3", "java"}
-        #{checksum_for_repo_gem gem_repo4, "spoon", "0.0.6"}
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     L
@@ -264,16 +265,7 @@ RSpec.describe "bundle install across platforms" do
       DEPENDENCIES
         empyrean (= 0.1.0)
         pry
-
-      CHECKSUMS
-        #{checksum_for_repo_gem gem_repo4, "coderay", "1.1.2"}
-        #{checksum_for_repo_gem gem_repo4, "empyrean", "0.1.0"}
-        #{checksum_for_repo_gem gem_repo4, "ffi", "1.9.23", "java"}
-        #{checksum_for_repo_gem gem_repo4, "method_source", "0.9.0"}
-        pry (0.11.3)
-        #{checksum_for_repo_gem gem_repo4, "pry", "0.11.3", "java"}
-        #{checksum_for_repo_gem gem_repo4, "spoon", "0.0.6"}
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     L
@@ -306,38 +298,30 @@ RSpec.describe "bundle install across platforms" do
       DEPENDENCIES
         empyrean (= 0.1.0)
         pry
-
-      CHECKSUMS
-        #{checksum_for_repo_gem gem_repo4, "coderay", "1.1.2"}
-        #{checksum_for_repo_gem gem_repo4, "empyrean", "0.1.0"}
-        #{checksum_for_repo_gem gem_repo4, "ffi", "1.9.23", "java"}
-        #{checksum_for_repo_gem gem_repo4, "method_source", "0.9.0"}
-        #{checksum_for_repo_gem gem_repo4, "pry", "0.11.3", "java"}
-        #{checksum_for_repo_gem gem_repo4, "spoon", "0.0.6"}
-
+      #{checksums}
       BUNDLED WITH
          1.16.1
     L
 
     aggregate_failures do
       lockfile bad_lockfile
-      bundle :install, :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+      bundle :install, env: { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(lockfile).to eq good_lockfile
 
       lockfile bad_lockfile
-      bundle :update, :all => true, :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+      bundle :update, all: true, env: { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(lockfile).to eq good_lockfile
 
       lockfile bad_lockfile
-      bundle "update ffi", :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+      bundle "update ffi", env: { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(lockfile).to eq good_lockfile
 
       lockfile bad_lockfile
-      bundle "update empyrean", :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+      bundle "update empyrean", env: { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(lockfile).to eq good_lockfile
 
       lockfile bad_lockfile
-      bundle :lock, :env => { "BUNDLER_VERSION" => Bundler::VERSION }
+      bundle :lock, env: { "BUNDLER_VERSION" => Bundler::VERSION }
       expect(lockfile).to eq good_lockfile
     end
   end
@@ -388,6 +372,11 @@ RSpec.describe "bundle install across platforms" do
   end
 
   it "keeps existing platforms when installing with force_ruby_platform" do
+    checksums = checksums_section do |c|
+      c.no_checksum "platform_specific", "1.0"
+      c.no_checksum "platform_specific", "1.0", "java"
+    end
+
     lockfile <<-G
       GEM
         remote: #{file_uri_for(gem_repo1)}/
@@ -399,6 +388,7 @@ RSpec.describe "bundle install across platforms" do
 
       DEPENDENCIES
         platform_specific
+      #{checksums}
     G
 
     bundle "config set --local force_ruby_platform true"
@@ -407,6 +397,8 @@ RSpec.describe "bundle install across platforms" do
       source "#{file_uri_for(gem_repo1)}"
       gem "platform_specific"
     G
+
+    checksums.checksum gem_repo1, "platform_specific", "1.0"
 
     expect(the_bundle).to include_gem "platform_specific 1.0 RUBY"
 
@@ -423,11 +415,7 @@ RSpec.describe "bundle install across platforms" do
 
       DEPENDENCIES
         platform_specific
-
-      CHECKSUMS
-        #{checksum_for_repo_gem(gem_repo1, "platform_specific", "1.0")}
-        #{gem_no_checksum "platform_specific", "1.0", "java"}
-
+      #{checksums}
       BUNDLED WITH
          #{Bundler::VERSION}
     G
@@ -596,9 +584,7 @@ RSpec.describe "bundle install with platform conditionals" do
 
       DEPENDENCIES
         rack
-
-      CHECKSUMS
-
+      #{checksums_section_when_existing}
       BUNDLED WITH
          #{Bundler::VERSION}
     L
@@ -643,7 +629,7 @@ RSpec.describe "when a gem has no architecture" do
       gem "rcov"
     G
 
-    bundle :install, :artifice => "windows", :env => { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
+    bundle :install, artifice: "windows", env: { "BUNDLER_SPEC_GEM_REPO" => gem_repo2.to_s }
     expect(the_bundle).to include_gems "rcov 1.0.0"
   end
 end

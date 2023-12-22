@@ -1,15 +1,22 @@
 # frozen_string_literal: true
 
+# The Prism Ruby parser.
+#
+# "Parsing Ruby is suddenly manageable!"
+#   - You, hopefully
+#
 module Prism
   # There are many files in prism that are templated to handle every node type,
   # which means the files can end up being quite large. We autoload them to make
   # our require speed faster since consuming libraries are unlikely to use all
   # of these features.
+
   autoload :BasicVisitor, "prism/visitor"
   autoload :Compiler, "prism/compiler"
   autoload :Debug, "prism/debug"
   autoload :DesugarCompiler, "prism/desugar_compiler"
   autoload :Dispatcher, "prism/dispatcher"
+  autoload :DotVisitor, "prism/dot_visitor"
   autoload :DSL, "prism/dsl"
   autoload :LexCompat, "prism/lex_compat"
   autoload :LexRipper, "prism/lex_compat"
@@ -23,17 +30,26 @@ module Prism
 
   # Some of these constants are not meant to be exposed, so marking them as
   # private here.
+
   private_constant :Debug
   private_constant :LexCompat
   private_constant :LexRipper
 
-  # Returns an array of tokens that closely resembles that of the Ripper lexer.
-  # The only difference is that since we don't keep track of lexer state in the
-  # same way, it's going to always return the NONE state.
-  def self.lex_compat(source, filepath = "")
-    LexCompat.new(source, filepath).result
+  # :call-seq:
+  #   Prism::lex_compat(source, **options) -> ParseResult
+  #
+  # Returns a parse result whose value is an array of tokens that closely
+  # resembles the return value of Ripper::lex. The main difference is that the
+  # `:on_sp` token is not emitted.
+  #
+  # For supported options, see Prism::parse.
+  def self.lex_compat(source, **options)
+    LexCompat.new(source, **options).result
   end
 
+  # :call-seq:
+  #   Prism::lex_ripper(source) -> Array
+  #
   # This lexes with the Ripper lex. It drops any space events but otherwise
   # returns the same tokens. Raises SyntaxError if the syntax in source is
   # invalid.
@@ -41,9 +57,28 @@ module Prism
     LexRipper.new(source).result
   end
 
+  # :call-seq:
+  #   Prism::load(source, serialized) -> ParseResult
+  #
   # Load the serialized AST using the source as a reference into a tree.
   def self.load(source, serialized)
     Serialize.load(source, serialized)
+  end
+
+  # :call-seq:
+  #   Prism::parse_failure?(source, **options) -> bool
+  #
+  # Returns true if the source parses with errors.
+  def self.parse_failure?(source, **options)
+    !parse_success?(source, **options)
+  end
+
+  # :call-seq:
+  #   Prism::parse_file_failure?(filepath, **options) -> bool
+  #
+  # Returns true if the file at filepath parses with errors.
+  def self.parse_file_failure?(filepath, **options)
+    !parse_file_success?(filepath, **options)
   end
 end
 

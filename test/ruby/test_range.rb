@@ -582,6 +582,14 @@ class TestRange < Test::Unit::TestCase
     assert_equal([fmin-2, fmin-3], a)
   end
 
+  def test_reverse_each_for_endless_range
+    assert_raise(TypeError) { (1..).reverse_each {} }
+
+    enum = nil
+    assert_nothing_raised { enum = (1..).reverse_each }
+    assert_raise(TypeError) { enum.each {} }
+  end
+
   def test_reverse_each_for_single_point_range
     fmin = RbConfig::LIMITS['FIXNUM_MIN']
     fmax = RbConfig::LIMITS['FIXNUM_MAX']
@@ -718,6 +726,8 @@ class TestRange < Test::Unit::TestCase
     assert_not_operator(5..nil, :===, 0)
     assert_operator(nil..10, :===, 0)
     assert_operator(nil..nil, :===, 0)
+    assert_operator(nil..nil, :===, Object.new)
+    assert_not_operator(0..10, :===, 0..10)
   end
 
   def test_eqq_string
@@ -725,7 +735,7 @@ class TestRange < Test::Unit::TestCase
     assert_not_operator('A'..'Z', :===, 'ana')
     assert_operator('A'.., :===, 'ANA')
     assert_operator(..'Z', :===, 'ANA')
-    assert_raise(TypeError) {(nil..nil) === 'ANA'}
+    assert_operator(nil..nil, :===, 'ANA')
   end
 
   def test_eqq_time

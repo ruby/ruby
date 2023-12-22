@@ -49,6 +49,10 @@ class Test_String_Fstring < Test::Unit::TestCase
     assert_raise(TypeError) {fstr.singleton_class}
   end
 
+  def test_fake_str
+    assert_equal([*"a".."z"].join(""), Bug::String.fstring_fake_str)
+  end
+
   class S < String
   end
 

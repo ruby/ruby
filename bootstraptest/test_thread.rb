@@ -293,7 +293,6 @@ assert_normal_exit %q{
   exec "/"
 }
 
-rjit_enabled = RUBY_DESCRIPTION.include?('+RJIT')
 assert_normal_exit %q{
   (0..10).map {
     Thread.new {
@@ -304,7 +303,7 @@ assert_normal_exit %q{
   }.each {|t|
     t.join
   }
-} unless rjit_enabled # flaky
+} unless rjit_enabled? # flaky
 
 assert_equal 'ok', %q{
   def m
@@ -498,7 +497,7 @@ assert_equal 'foo', %q{
   [th1, th2].each {|t| t.join }
   GC.start
   f.call.source
-} unless rjit_enabled # flaky
+} unless rjit_enabled? # flaky
 assert_normal_exit %q{
   class C
     def inspect

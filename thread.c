@@ -149,6 +149,7 @@ NORETURN(static void async_bug_fd(const char *mesg, int errno_arg, int fd));
 static int consume_communication_pipe(int fd);
 
 static volatile int system_working = 1;
+static rb_internal_thread_specific_key_t specific_key_count;
 
 struct waiting_fd {
     struct ccan_list_node wfd_node; /* <=> vm.waiting_fds */
@@ -778,12 +779,16 @@ struct thread_create_params {
     VALUE (*fn)(void *);
 };
 
+static void thread_specific_storage_alloc(rb_thread_t *th);
+
 static VALUE
 thread_create_core(VALUE thval, struct thread_create_params *params)
 {
     rb_execution_context_t *ec = GET_EC();
     rb_thread_t *th = rb_thread_ptr(thval), *current_th = rb_ec_thread_ptr(ec);
     int err;
+
+    thread_specific_storage_alloc(th);
 
     if (OBJ_FROZEN(current_th->thgroup)) {
         rb_raise(rb_eThreadError,
@@ -1642,6 +1647,20 @@ rb_thread_call_without_gvl(void *(*func)(void *data), void *data1,
 }
 
 static void
+rb_thread_io_setup_wfd(rb_thread_t *th, int fd, struct waiting_fd *wfd)
+{
+    wfd->fd = fd;
+    wfd->th = th;
+    wfd->busy = NULL;
+
+    RB_VM_LOCK_ENTER();
+    {
+        ccan_list_add(&th->vm->waiting_fds, &wfd->wfd_node);
+    }
+    RB_VM_LOCK_LEAVE();
+}
+
+static void
 rb_thread_io_wake_pending_closer(struct waiting_fd *wfd)
 {
     bool has_waiter = wfd->busy && RB_TEST(wfd->busy->wakeup_mutex);
@@ -1676,12 +1695,19 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
 
     RUBY_DEBUG_LOG("th:%u fd:%d ev:%d", rb_th_serial(th), fd, events);
 
+    struct waiting_fd waiting_fd;
+
 #ifdef RUBY_THREAD_PTHREAD_H
     if (events && !th_has_dedicated_nt(th)) {
         VM_ASSERT(events == RB_WAITFD_IN || events == RB_WAITFD_OUT);
 
-        // wait readable/writable
-        thread_sched_wait_events(TH_SCHED(th), th, fd, waitfd_to_waiting_flag(events), NULL);
+        rb_thread_io_setup_wfd(th, fd, &waiting_fd);
+        {
+            // wait readable/writable
+            thread_sched_wait_events(TH_SCHED(th), th, fd, waitfd_to_waiting_flag(events), NULL);
+        }
+        rb_thread_io_wake_pending_closer(&waiting_fd);
+
         RUBY_VM_CHECK_INTS_BLOCKING(ec);
     }
 #endif
@@ -1690,23 +1716,13 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
     volatile int saved_errno = 0;
     enum ruby_tag_type state;
 
-    struct waiting_fd waiting_fd = {
-        .fd = fd,
-        .th = rb_ec_thread_ptr(ec),
-        .busy = NULL,
-    };
-
     // `errno` is only valid when there is an actual error - but we can't
     // extract that from the return value of `func` alone, so we clear any
     // prior `errno` value here so that we can later check if it was set by
     // `func` or not (as opposed to some previously set value).
     errno = 0;
 
-    RB_VM_LOCK_ENTER();
-    {
-        ccan_list_add(&rb_ec_vm_ptr(ec)->waiting_fds, &waiting_fd.wfd_node);
-    }
-    RB_VM_LOCK_LEAVE();
+    rb_thread_io_setup_wfd(th, fd, &waiting_fd);
 
     EC_PUSH_TAG(ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
@@ -4249,6 +4265,27 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
     return (int)rb_ensure(do_select, (VALUE)&set, select_set_free, (VALUE)&set);
 }
 
+static bool
+thread_sched_wait_events_timeval(rb_thread_t *th, int fd, int events, struct timeval *timeout)
+{
+#ifdef RUBY_THREAD_PTHREAD_H
+    if (!th->nt->dedicated) {
+        rb_hrtime_t rel, *prel;
+
+        if (timeout) {
+            rel = rb_timeval2hrtime(timeout);
+            prel = &rel;
+        }
+        else {
+            prel = NULL;
+        }
+
+        return thread_sched_wait_events(TH_SCHED(th), th, fd, waitfd_to_waiting_flag(events), prel);
+    }
+#endif // RUBY_THREAD_PTHREAD_H
+    return 0;
+}
+
 #ifdef USE_POLL
 
 /* The same with linux kernel. TODO: make platform independent definition. */
@@ -4277,23 +4314,9 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     wfd.fd = fd;
     wfd.busy = NULL;
 
-#ifdef RUBY_THREAD_PTHREAD_H
-    if (!th->nt->dedicated) {
-        rb_hrtime_t rel, *prel;
-
-        if (timeout) {
-            rel = rb_timeval2hrtime(timeout);
-            prel = &rel;
-        }
-        else {
-            prel = NULL;
-        }
-
-        if (thread_sched_wait_events(TH_SCHED(th), th, fd, waitfd_to_waiting_flag(events), prel)) {
-            return 0; // timeout
-        }
+    if (thread_sched_wait_events_timeval(th, fd, events, timeout)) {
+        return 0; // timeout
     }
-#endif
 
     RB_VM_LOCK_ENTER();
     {
@@ -4428,6 +4451,11 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     struct select_args args;
     int r;
     VALUE ptr = (VALUE)&args;
+    rb_thread_t *th = GET_THREAD();
+
+    if (thread_sched_wait_events_timeval(th, fd, events, timeout)) {
+        return 0; // timeout
+    }
 
     args.as.fd = fd;
     args.read = (events & RB_WAITFD_IN) ? init_set_fd(fd, &rfds) : NULL;
@@ -4435,7 +4463,7 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     args.except = (events & RB_WAITFD_PRI) ? init_set_fd(fd, &efds) : NULL;
     args.tv = timeout;
     args.wfd.fd = fd;
-    args.wfd.th = GET_THREAD();
+    args.wfd.th = th;
     args.wfd.busy = NULL;
 
     RB_VM_LOCK_ENTER();
@@ -4621,6 +4649,7 @@ rb_thread_atfork_internal(rb_thread_t *th, void (*atfork)(rb_thread_t *, const r
     rb_vm_living_threads_init(vm);
 
     rb_ractor_atfork(vm, th);
+    rb_vm_postponed_job_atfork();
 
     /* may be held by RJIT threads in parent */
     rb_native_mutex_initialize(&vm->workqueue_lock);
@@ -4693,16 +4722,14 @@ struct thgroup {
     int enclosed;
 };
 
-static size_t
-thgroup_memsize(const void *ptr)
-{
-    return sizeof(struct thgroup);
-}
-
 static const rb_data_type_t thgroup_data_type = {
     "thgroup",
-    {0, RUBY_TYPED_DEFAULT_FREE, thgroup_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY
+    {
+        0,
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL, // No external memory to report
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
 };
 
 /*
@@ -5408,10 +5435,6 @@ Init_Thread(void)
             // it assumes blocked by thread_sched_to_waiting().
             // thread_sched_to_running(sched, th);
 
-#ifdef RB_INTERNAL_THREAD_HOOK
-            RB_INTERNAL_THREAD_HOOK(RUBY_INTERNAL_THREAD_EVENT_RESUMED);
-#endif
-
             th->pending_interrupt_queue = rb_ary_hidden_new(0);
             th->pending_interrupt_queue_checked = 0;
             th->pending_interrupt_mask_stack = rb_ary_hidden_new(0);
@@ -5788,4 +5811,67 @@ rb_uninterruptible(VALUE (*b_proc)(VALUE), VALUE data)
 
     RUBY_VM_CHECK_INTS(cur_th->ec);
     return ret;
+}
+
+static void
+thread_specific_storage_alloc(rb_thread_t *th)
+{
+    VM_ASSERT(th->specific_storage == NULL);
+
+    if (UNLIKELY(specific_key_count > 0)) {
+        th->specific_storage = ZALLOC_N(void *, RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX);
+    }
+}
+
+rb_internal_thread_specific_key_t
+rb_internal_thread_specific_key_create(void)
+{
+    rb_vm_t *vm = GET_VM();
+
+    if (specific_key_count == 0 && vm->ractor.cnt > 1) {
+        rb_raise(rb_eThreadError, "The first rb_internal_thread_specific_key_create() is called with multiple ractors");
+    }
+    else if (specific_key_count > RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX) {
+        rb_raise(rb_eThreadError, "rb_internal_thread_specific_key_create() is called more than %d times", RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX);
+    }
+    else {
+        rb_internal_thread_specific_key_t key = specific_key_count++;
+
+        if (key == 0) {
+            // allocate
+            rb_ractor_t *cr = GET_RACTOR();
+            rb_thread_t *th;
+
+            ccan_list_for_each(&cr->threads.set, th, lt_node) {
+                thread_specific_storage_alloc(th);
+            }
+        }
+        return key;
+    }
+}
+
+// async and native thread safe.
+void *
+rb_internal_thread_specific_get(VALUE thread_val, rb_internal_thread_specific_key_t key)
+{
+    rb_thread_t *th = DATA_PTR(thread_val);
+
+    VM_ASSERT(rb_thread_ptr(thread_val) == th);
+    VM_ASSERT(key < RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX);
+    VM_ASSERT(th->specific_storage);
+
+    return th->specific_storage[key];
+}
+
+// async and native thread safe.
+void
+rb_internal_thread_specific_set(VALUE thread_val, rb_internal_thread_specific_key_t key, void *data)
+{
+    rb_thread_t *th = DATA_PTR(thread_val);
+
+    VM_ASSERT(rb_thread_ptr(thread_val) == th);
+    VM_ASSERT(key < RB_INTERNAL_THREAD_SPECIFIC_KEY_MAX);
+    VM_ASSERT(th->specific_storage);
+
+    th->specific_storage[key] = data;
 }

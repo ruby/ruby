@@ -58,6 +58,7 @@ module Lrama
         o.separator 'Tuning the Parser:'
         o.on('-S', '--skeleton=FILE', 'specify the skeleton to use') {|v| @options.skeleton = v }
         o.on('-t', 'reserved, do nothing') { }
+        o.on('--debug', 'display debugging outputs of internal parser') {|v| @options.debug = true }
         o.separator ''
         o.separator 'Output:'
         o.on('-H', '--header=[FILE]', 'also produce a header file named FILE') {|v| @options.header = true; @options.header_file = v }
@@ -108,7 +109,7 @@ module Lrama
     def validate_trace(trace)
       list = %w[
         none locations scan parse automaton bitsets
-        closure grammar resource sets muscles tools
+        closure grammar rules resource sets muscles tools
         m4-early m4 skeleton time ielr cex all
       ]
       h = {}

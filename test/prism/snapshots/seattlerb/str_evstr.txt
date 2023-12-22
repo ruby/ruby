@@ -18,14 +18,14 @@
             │       │   @ StatementsNode (location: (1,5)-(1,6))
             │       │   └── body: (length: 1)
             │       │       └── @ CallNode (location: (1,5)-(1,6))
+            │       │           ├── flags: variable_call
             │       │           ├── receiver: ∅
             │       │           ├── call_operator_loc: ∅
+            │       │           ├── name: :b
             │       │           ├── message_loc: (1,5)-(1,6) = "b"
             │       │           ├── opening_loc: ∅
             │       │           ├── arguments: ∅
             │       │           ├── closing_loc: ∅
-            │       │           ├── block: ∅
-            │       │           ├── flags: variable_call
-            │       │           └── name: :b
+            │       │           └── block: ∅
             │       └── closing_loc: (1,6)-(1,7) = "}"
             └── closing_loc: (1,7)-(1,8) = "\""

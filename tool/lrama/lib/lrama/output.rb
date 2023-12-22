@@ -186,9 +186,9 @@ module Lrama
       str = ""
 
       @context.states.rules.each do |rule|
-        next unless rule.code
+        next unless rule.token_code
 
-        code = rule.code
+        code = rule.token_code
         spaces = " " * (code.column - 1)
 
         str << <<-STR
@@ -347,6 +347,15 @@ module Lrama
       else
         ""
       end
+    end
+
+    # b4_percent_code_get
+    def percent_code(name)
+      @grammar.percent_codes.select do |percent_code|
+        percent_code.id.s_value == name
+      end.map do |percent_code|
+        percent_code.code.s_value
+      end.join
     end
 
     private

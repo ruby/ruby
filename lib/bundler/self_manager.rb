@@ -121,7 +121,7 @@ module Bundler
         source = Bundler::Source::Rubygems.new("remotes" => "https://rubygems.org")
         source.remote!
         source.add_dependency_names("bundler")
-        source.specs
+        source.specs.select(&:matches_current_metadata?)
       end
     end
 

@@ -8,8 +8,8 @@ class Gem::Commands::ContentsCommand < Gem::Command
 
   def initialize
     super "contents", "Display the contents of the installed gems",
-          :specdirs => [], :lib_only => false, :prefix => true,
-          :show_install_dir => false
+          specdirs: [], lib_only: false, prefix: true,
+          show_install_dir: false
 
     add_version_option
 

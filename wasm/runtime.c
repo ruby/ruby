@@ -19,6 +19,13 @@ int rb_wasm_rt_start(int (main)(int argc, char **argv), int argc, char **argv) {
       result = main(argc, argv);
     }
 
+    extern void *rb_asyncify_unwind_buf;
+    // Exit Asyncify loop if there is no unwound buffer, which
+    // means that main function has returned normally.
+    if (rb_asyncify_unwind_buf == NULL) {
+      break;
+    }
+
     // NOTE: it's important to call 'asyncify_stop_unwind' here instead in rb_wasm_handle_jmp_unwind
     // because unless that, Asyncify inserts another unwind check here and it unwinds to the root frame.
     asyncify_stop_unwind();

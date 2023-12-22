@@ -78,6 +78,7 @@ each_builtin_i(st_data_t key, st_data_t val, st_data_t dmy)
     return ST_CONTINUE;
 }
 
+/* :nodoc: */
 static VALUE
 each_builtin(VALUE self)
 {

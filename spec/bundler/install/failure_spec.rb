@@ -14,7 +14,7 @@ RSpec.describe "bundle install" do
         end
       end
 
-      install_gemfile <<-G, :raise_on_error => false
+      install_gemfile <<-G, raise_on_error: false
         source "#{file_uri_for(gem_repo2)}"
         gem "rails"
       G
@@ -39,7 +39,7 @@ In Gemfile:
       end
 
       it "removes the downloaded .gem" do
-        install_gemfile <<-G, :raise_on_error => false
+        install_gemfile <<-G, raise_on_error: false
           source "#{file_uri_for(gem_repo4)}"
           gem "a"
         G

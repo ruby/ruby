@@ -19,7 +19,7 @@ module Prism
     class Comments
       # A target for attaching comments that is based on a specific node's
       # location.
-      class NodeTarget
+      class NodeTarget # :nodoc:
         attr_reader :node
 
         def initialize(node)
@@ -46,7 +46,7 @@ module Prism
 
       # A target for attaching comments that is based on a location field on a
       # node. For example, the `end` token of a ClassNode.
-      class LocationTarget
+      class LocationTarget # :nodoc:
         attr_reader :location
 
         def initialize(location)
@@ -70,12 +70,17 @@ module Prism
         end
       end
 
+      # The parse result that we are attaching comments to.
       attr_reader :parse_result
 
+      # Create a new Comments object that will attach comments to the given
+      # parse result.
       def initialize(parse_result)
         @parse_result = parse_result
       end
 
+      # Attach the comments to their respective locations in the tree by
+      # mutating the parse result.
       def attach!
         parse_result.comments.each do |comment|
           preceding, enclosing, following = nearest_targets(parse_result.value, comment)

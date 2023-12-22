@@ -118,7 +118,7 @@ module SyntaxSuggest
     # Returns an array of all the CodeLines that exist after
     # the currently scanned block
     private def after_lines
-      @code_lines[@after_index.next..-1] || []
+      @code_lines[@after_index.next..] || []
     end
 
     private def current

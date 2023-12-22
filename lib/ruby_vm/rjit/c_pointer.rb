@@ -338,7 +338,7 @@ module RubyVM::RJIT
 
     # Give a name to a dynamic CPointer class to see it on inspect
     def self.with_class_name(prefix, name, cache: false, &block)
-      return block.call if name.empty?
+      return block.call if !name.nil? && name.empty?
 
       # Use a cached result only if cache: true
       class_name = "#{prefix}_#{name}"

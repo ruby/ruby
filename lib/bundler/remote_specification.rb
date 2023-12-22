@@ -88,6 +88,10 @@ module Bundler
       end
     end
 
+    def runtime_dependencies
+      dependencies.select(&:runtime?)
+    end
+
     def git_version
       return unless loaded_from && source.is_a?(Bundler::Source::Git)
       " #{source.revision[0..6]}"

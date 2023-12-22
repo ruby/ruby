@@ -509,7 +509,7 @@ rjit_for_each_iseq(rb_execution_context_t *ec, VALUE self, VALUE block)
     return Qnil;
 }
 
-// bindgen funcs
+// bindgen references
 extern ID rb_get_symbol_id(VALUE name);
 extern VALUE rb_fix_aref(VALUE fix, VALUE idx);
 extern VALUE rb_str_getbyte(VALUE str, VALUE index);
@@ -535,6 +535,7 @@ extern VALUE rb_vm_set_ivar_id(VALUE obj, ID id, VALUE val);
 extern VALUE rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary);
 extern void* rb_rjit_entry_stub_hit(VALUE branch_stub);
 extern void* rb_rjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int target0_p);
+extern uint64_t rb_vm_insns_count;
 
 #include "rjit_c.rbinc"
 

@@ -3,7 +3,7 @@
 require_relative "helpers/compact_index"
 
 class CompactIndexHostRedirect < CompactIndexAPI
-  get "/fetch/actual/gem/:id", :host_name => "localgemserver.test" do
+  get "/fetch/actual/gem/:id", host_name: "localgemserver.test" do
     redirect "http://bundler.localgemserver.test#{request.path_info}"
   end
 

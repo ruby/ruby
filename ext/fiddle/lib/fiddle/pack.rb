@@ -15,6 +15,7 @@ module Fiddle
       TYPE_USHORT => ALIGN_SHORT,
       TYPE_UINT   => ALIGN_INT,
       TYPE_ULONG  => ALIGN_LONG,
+      TYPE_BOOL   => ALIGN_BOOL,
     }
 
     PACK_MAP = {
@@ -30,6 +31,16 @@ module Fiddle
       TYPE_UINT   => "I!",
       TYPE_ULONG  => "L!",
     }
+    case SIZEOF_BOOL
+    when SIZEOF_CHAR
+      PACK_MAP[TYPE_BOOL] = PACK_MAP[TYPE_UCHAR]
+    when SIZEOF_SHORT
+      PACK_MAP[TYPE_BOOL] = PACK_MAP[TYPE_USHORT]
+    when SIZEOF_INT
+      PACK_MAP[TYPE_BOOL] = PACK_MAP[TYPE_UINT]
+    when SIZEOF_LONG
+      PACK_MAP[TYPE_BOOL] = PACK_MAP[TYPE_ULONG]
+    end
 
     SIZE_MAP = {
       TYPE_VOIDP => SIZEOF_VOIDP,
@@ -43,6 +54,7 @@ module Fiddle
       TYPE_USHORT => SIZEOF_SHORT,
       TYPE_UINT   => SIZEOF_INT,
       TYPE_ULONG  => SIZEOF_LONG,
+      TYPE_BOOL   => SIZEOF_BOOL,
     }
     if defined?(TYPE_LONG_LONG)
       ALIGN_MAP[TYPE_LONG_LONG] = ALIGN_MAP[TYPE_ULONG_LONG] = ALIGN_LONG_LONG

@@ -44,7 +44,7 @@ EOF
       @cmd.show_owners("freewill")
     end
 
-    assert_equal Net::HTTP::Get, @stub_fetcher.last_request.class
+    assert_equal Gem::Net::HTTP::Get, @stub_fetcher.last_request.class
     assert_equal Gem.configuration.rubygems_api_key, @stub_fetcher.last_request["Authorization"]
 
     assert_match(/Owners for gem: freewill/, @stub_ui.output)
@@ -165,7 +165,7 @@ EOF
       @cmd.add_owners("freewill", ["user-new1@example.com"])
     end
 
-    assert_equal Net::HTTP::Post, @stub_fetcher.last_request.class
+    assert_equal Gem::Net::HTTP::Post, @stub_fetcher.last_request.class
     assert_equal Gem.configuration.rubygems_api_key, @stub_fetcher.last_request["Authorization"]
     assert_equal "email=user-new1%40example.com", @stub_fetcher.last_request.body
 
@@ -244,7 +244,7 @@ EOF
       @cmd.remove_owners("freewill", ["user-remove1@example.com"])
     end
 
-    assert_equal Net::HTTP::Delete, @stub_fetcher.last_request.class
+    assert_equal Gem::Net::HTTP::Delete, @stub_fetcher.last_request.class
     assert_equal Gem.configuration.rubygems_api_key, @stub_fetcher.last_request["Authorization"]
     assert_equal "email=user-remove1%40example.com", @stub_fetcher.last_request.body
 

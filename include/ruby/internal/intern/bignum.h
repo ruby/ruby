@@ -51,7 +51,7 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 VALUE rb_big_new(size_t len, int sign);
 
 /**
- * Queries if  the passed bignum  instance is a  "bigzro".  What is  a bigzero?
+ * Queries if  the passed bignum  instance is a  "bigzero".  What is a bigzero?
  * Well, bignums  are for very big  integers, but can also  represent tiny ones
  * like -1,  0, 1.   Bigzero are  instances of bignums  whose values  are zero.
  * Knowing if a bignum is bigzero can  be handy on occasions, like for instance

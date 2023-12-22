@@ -362,11 +362,6 @@ pub fn const_ptr_opnd(ptr: *const u8) -> X86Opnd
     uimm_opnd(ptr as u64)
 }
 
-pub fn code_ptr_opnd(code_ptr: CodePtr) -> X86Opnd
-{
-    uimm_opnd(code_ptr.raw_ptr() as u64)
-}
-
 /// Write the REX byte
 fn write_rex(cb: &mut CodeBlock, w_flag: bool, reg_no: u8, idx_reg_no: u8, rm_reg_no: u8) {
     // 0 1 0 0 w r x b
@@ -696,7 +691,7 @@ pub fn call_ptr(cb: &mut CodeBlock, scratch_opnd: X86Opnd, dst_ptr: *const u8) {
         let end_ptr = cb.get_ptr(cb.write_pos + 5);
 
         // Compute the jump offset
-        let rel64: i64 = dst_ptr as i64 - end_ptr.into_i64();
+        let rel64: i64 = dst_ptr as i64 - end_ptr.raw_ptr(cb) as i64;
 
         // If the offset fits in 32-bit
         if rel64 >= i32::MIN.into() && rel64 <= i32::MAX.into() {
@@ -897,7 +892,7 @@ fn write_jcc_ptr(cb: &mut CodeBlock, op0: u8, op1: u8, dst_ptr: CodePtr) {
     let end_ptr = cb.get_ptr(cb.write_pos + 4);
 
     // Compute the jump offset
-    let rel64 = dst_ptr.into_i64() - end_ptr.into_i64();
+    let rel64 = dst_ptr.as_offset() - end_ptr.as_offset();
 
     if rel64 >= i32::MIN.into() && rel64 <= i32::MAX.into() {
         // Write the relative 32-bit jump offset

@@ -71,6 +71,24 @@ static struct enc_table {
     st_table *names;
 } global_enc_table;
 
+static int
+enc_names_free_i(st_data_t name, st_data_t idx, st_data_t args)
+{
+    ruby_xfree((void *)name);
+    return ST_DELETE;
+}
+
+void
+rb_free_global_enc_table(void)
+{
+    for (size_t i = 0; i < ENCODING_LIST_CAPA; i++) {
+        xfree((void *)global_enc_table.list[i].enc);
+    }
+
+    st_foreach(global_enc_table.names, enc_names_free_i, (st_data_t)0);
+    st_free_table(global_enc_table.names);
+}
+
 static rb_encoding *global_enc_ascii,
                    *global_enc_utf_8,
                    *global_enc_us_ascii;

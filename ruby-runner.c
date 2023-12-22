@@ -7,6 +7,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#ifdef _WIN32
+# error This feature is unnecessary on Windows in favor of SxS.
+#endif
+
 #include "ruby-runner.h"
 
 static void

@@ -164,6 +164,12 @@ pack_encoding_to_ruby(pm_pack_encoding encoding) {
     return rb_enc_from_encoding(rb_enc_from_index(index));
 }
 
+/**
+ * call-seq:
+ *   Pack::parse(version, variant, source) -> Format
+ *
+ * Parse the given source and return a format object.
+ */
 static VALUE
 pack_parse(VALUE self, VALUE version_symbol, VALUE variant_symbol, VALUE format_string) {
     if (version_symbol != v3_2_0_symbol) {
@@ -223,15 +229,17 @@ pack_parse(VALUE self, VALUE version_symbol, VALUE variant_symbol, VALUE format_
             break;
         }
 
-        VALUE directive_args[9] = { version_symbol,
-                                    variant_symbol,
-                                    rb_usascii_str_new(directive_start, directive_end - directive_start),
-                                    pack_type_to_symbol(type),
-                                    pack_signed_to_symbol(signed_type),
-                                    pack_endian_to_symbol(endian),
-                                    pack_size_to_symbol(size),
-                                    pack_length_type_to_symbol(length_type),
-                                    UINT64T2NUM(length) };
+        VALUE directive_args[9] = {
+            version_symbol,
+            variant_symbol,
+            rb_usascii_str_new(directive_start, directive_end - directive_start),
+            pack_type_to_symbol(type),
+            pack_signed_to_symbol(signed_type),
+            pack_endian_to_symbol(endian),
+            pack_size_to_symbol(size),
+            pack_length_type_to_symbol(length_type),
+            UINT64T2NUM(length)
+        };
 
         rb_ary_push(directives_array, rb_class_new_instance(9, directive_args, rb_cPrismPackDirective));
     }
@@ -242,6 +250,9 @@ pack_parse(VALUE self, VALUE version_symbol, VALUE variant_symbol, VALUE format_
     return rb_class_new_instance(2, format_args, rb_cPrismPackFormat);
 }
 
+/**
+ * The function that gets called when Ruby initializes the prism extension.
+ */
 void
 Init_prism_pack(void) {
     rb_cPrism = rb_define_module("Prism");

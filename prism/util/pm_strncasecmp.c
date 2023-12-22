@@ -1,7 +1,14 @@
-#include <ctype.h>
-#include <stddef.h>
-#include <stdint.h>
+#include "prism/util/pm_strncasecmp.h"
 
+/**
+ * Compare two strings, ignoring case, up to the given length. Returns 0 if the
+ * strings are equal, a negative number if string1 is less than string2, or a
+ * positive number if string1 is greater than string2.
+ *
+ * Note that this is effectively our own implementation of strncasecmp, but it's
+ * not available on all of the platforms we want to support so we're rolling it
+ * here.
+ */
 int
 pm_strncasecmp(const uint8_t *string1, const uint8_t *string2, size_t length) {
     size_t offset = 0;

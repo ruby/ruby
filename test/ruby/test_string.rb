@@ -587,6 +587,8 @@ CODE
     assert_equal("foo", s.chomp!("\n"))
     s = "foo\r"
     assert_equal("foo", s.chomp!("\n"))
+
+    assert_raise(ArgumentError) {String.new.chomp!("", "")}
   ensure
     $/ = save
     $VERBOSE = verbose
@@ -894,6 +896,17 @@ CODE
     assert_raise_with_message(RuntimeError, /invalid/) {
       S('"\\u{007F}".xxxxxx').undump
     }
+  end
+
+  def test_undump_gc_compact_stress
+    a = S("Test") << 1 << 2 << 3 << 9 << 13 << 10
+    EnvUtil.under_gc_compact_stress do
+      assert_equal(a, S('"Test\\x01\\x02\\x03\\t\\r\\n"').undump)
+    end
+
+    EnvUtil.under_gc_compact_stress do
+      assert_equal(S("\u{ABCDE 10ABCD}"), S('"\\u{ABCDE 10ABCD}"').undump)
+    end
   end
 
   def test_dup
@@ -1249,6 +1262,10 @@ CODE
     assert_raise(ArgumentError) { S("foo").gsub }
   end
 
+  def test_gsub_gc_compact_stress
+    EnvUtil.under_gc_compact_stress { assert_equal(S("h<e>ll<o>"), S("hello").gsub(/([aeiou])/, S('<\1>'))) }
+  end
+
   def test_gsub_encoding
     a = S("hello world")
     a.force_encoding Encoding::UTF_8
@@ -1292,6 +1309,14 @@ CODE
     assert_nil(a.sub!(S('X'), S('Y')))
   end
 
+  def test_gsub_bang_gc_compact_stress
+    EnvUtil.under_gc_compact_stress do
+      a = S("hello")
+      a.gsub!(/([aeiou])/, S('<\1>'))
+      assert_equal(S("h<e>ll<o>"), a)
+    end
+  end
+
   def test_sub_hash
     assert_equal('azc', S('abc').sub(/b/, "b" => "z"))
     assert_equal('ac', S('abc').sub(/b/, {}))
@@ -1319,6 +1344,9 @@ CODE
     assert_not_equal(S("a").hash, S("a\0").hash, bug4104)
     bug9172 = '[ruby-core:58658] [Bug #9172]'
     assert_not_equal(S("sub-setter").hash, S("discover").hash, bug9172)
+    assert_equal(S("").hash, S("".encode(Encoding::UTF_32BE)).hash)
+    h1, h2 = ["\x80", "\x81"].map {|c| c.b.hash ^ c.hash}
+    assert_not_equal(h1, h2)
   end
 
   def test_hex
@@ -1620,6 +1648,10 @@ CODE
     assert_nil($~)
 
     assert_equal(%w[1 2 3], S("a1 a2 a3").scan(/a\K./))
+  end
+
+  def test_scan_gc_compact_stress
+    EnvUtil.under_gc_compact_stress { assert_equal([["1a"], ["2b"], ["3c"]], S("1a2b3c").scan(/(\d.)/)) }
   end
 
   def test_scan_segv

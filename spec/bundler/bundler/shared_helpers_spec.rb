@@ -1,12 +1,8 @@
 # frozen_string_literal: true
 
 RSpec.describe Bundler::SharedHelpers do
-  let(:ext_lock_double) { double(:ext_lock) }
-
   before do
     pwd_stub
-    allow(Bundler.rubygems).to receive(:ext_lock).and_return(ext_lock_double)
-    allow(ext_lock_double).to receive(:synchronize) {|&block| block.call }
   end
 
   let(:pwd_stub) { allow(subject).to receive(:pwd).and_return(bundled_app) }
@@ -248,8 +244,6 @@ RSpec.describe Bundler::SharedHelpers do
 
     shared_examples_for "ENV['BUNDLER_SETUP'] gets set correctly" do
       it "ensures bundler/setup is set in ENV['BUNDLER_SETUP']" do
-        skip "Does not play well with DidYouMean being a bundled gem instead of a default gem in Ruby 2.6" if RUBY_VERSION < "2.7"
-
         subject.set_bundle_environment
         expect(ENV["BUNDLER_SETUP"]).to eq("#{source_lib_dir}/bundler/setup")
       end
@@ -522,6 +516,36 @@ RSpec.describe Bundler::SharedHelpers do
           Bundler::GenericSystemCallError, /error accessing.+underlying.+Shields down/m
         )
       end
+    end
+  end
+
+  describe "#major_deprecation" do
+    before { allow(Bundler).to receive(:bundler_major_version).and_return(37) }
+    before { allow(Bundler.ui).to receive(:warn) }
+
+    it "prints and raises nothing below the deprecated major version" do
+      subject.major_deprecation(38, "Message")
+      subject.major_deprecation(39, "Message", removed_message: "Removal", print_caller_location: true)
+      expect(Bundler.ui).not_to have_received(:warn)
+    end
+
+    it "prints but does not raise _at_ the deprecated major version" do
+      subject.major_deprecation(37, "Message")
+      subject.major_deprecation(37, "Message", removed_message: "Removal")
+      expect(Bundler.ui).to have_received(:warn).with("[DEPRECATED] Message").twice
+
+      subject.major_deprecation(37, "Message", print_caller_location: true)
+      expect(Bundler.ui).to have_received(:warn).
+        with(a_string_matching(/^\[DEPRECATED\] Message \(called at .*:\d+\)$/))
+    end
+
+    it "raises the appropriate errors when _past_ the deprecated major version" do
+      expect { subject.major_deprecation(36, "Message") }.
+        to raise_error(Bundler::DeprecatedError, "[REMOVED] Message")
+      expect { subject.major_deprecation(36, "Message", removed_message: "Removal") }.
+        to raise_error(Bundler::DeprecatedError, "[REMOVED] Removal")
+      expect { subject.major_deprecation(35, "Message", removed_message: "Removal", print_caller_location: true) }.
+        to raise_error(Bundler::DeprecatedError, /^\[REMOVED\] Removal \(called at .*:\d+\)$/)
     end
   end
 end

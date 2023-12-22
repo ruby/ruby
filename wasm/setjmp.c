@@ -101,7 +101,6 @@ _rb_wasm_setjmp_internal(rb_wasm_jmp_buf *env)
         asyncify_stop_rewind();
         RB_WASM_DEBUG_LOG("  JMP_BUF_STATE_RETURNING");
         env->state = JMP_BUF_STATE_CAPTURED;
-        free(env->longjmp_buf_ptr);
         _rb_wasm_active_jmpbuf = NULL;
         return env->payload;
     }
@@ -119,7 +118,10 @@ _rb_wasm_longjmp(rb_wasm_jmp_buf* env, int value)
     assert(value != 0);
     env->state = JMP_BUF_STATE_RETURNING;
     env->payload = value;
-    env->longjmp_buf_ptr = malloc(sizeof(struct __rb_wasm_asyncify_jmp_buf));
+    // Asyncify buffer built during unwinding for longjmp will not
+    // be used to rewind, so re-use static-variable.
+    static struct __rb_wasm_asyncify_jmp_buf tmp_longjmp_buf;
+    env->longjmp_buf_ptr = &tmp_longjmp_buf;
     _rb_wasm_active_jmpbuf = env;
     async_buf_init(env->longjmp_buf_ptr);
     asyncify_start_unwind(env->longjmp_buf_ptr);

@@ -47,12 +47,14 @@ VALUE rb_mod_set_temporary_name(VALUE, VALUE);
 
 struct gen_ivtbl;
 int rb_gen_ivtbl_get(VALUE obj, ID id, struct gen_ivtbl **ivtbl);
-int rb_obj_evacuate_ivs_to_hash_table(ID key, VALUE val, st_data_t arg);
-void rb_evict_ivars_to_hash(VALUE obj, rb_shape_t * shape);
+void rb_obj_copy_ivs_to_hash_table(VALUE obj, st_table *table);
+void rb_obj_convert_to_too_complex(VALUE obj, st_table *table);
+void rb_evict_ivars_to_hash(VALUE obj);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 /* variable.c (export) */
-void rb_mark_and_update_generic_ivar(VALUE);
+void rb_mark_generic_ivar(VALUE obj);
+void rb_ref_update_generic_ivar(VALUE);
 void rb_mv_generic_ivar(VALUE src, VALUE dst);
 VALUE rb_const_missing(VALUE klass, VALUE name);
 int rb_class_ivar_set(VALUE klass, ID vid, VALUE value);
@@ -64,9 +66,7 @@ VALUE rb_gvar_get(ID);
 VALUE rb_gvar_set(ID, VALUE);
 VALUE rb_gvar_defined(ID);
 void rb_const_warn_if_deprecated(const rb_const_entry_t *, VALUE, ID);
-rb_shape_t * rb_grow_iv_list(VALUE obj);
 void rb_ensure_iv_list_size(VALUE obj, uint32_t len, uint32_t newsize);
-struct gen_ivtbl *rb_ensure_generic_iv_list_size(VALUE obj, rb_shape_t *shape, uint32_t newsize);
 attr_index_t rb_obj_ivar_set(VALUE obj, ID id, VALUE val);
 
 #endif /* INTERNAL_VARIABLE_H */

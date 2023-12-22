@@ -104,6 +104,12 @@ class TestRDocMarkupFormatter < RDoc::TestCase
     formatted = document.accept @to
 
     assert_equal '<{foo}[rdoc-label:bar]>.', formatted
+
+    document = doc(para('<tt>{abc}</tt>: {foo}[rdoc-label:bar].'))
+
+    formatted = document.accept @to
+
+    assert_equal '<code>{abc}</code>: <{foo}[rdoc-label:bar]>.', formatted
   end
 
   def test_parse_url

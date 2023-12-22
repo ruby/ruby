@@ -8,6 +8,12 @@ end
 
 module SyntaxSuggest
   RSpec.describe "Top level SyntaxSuggest api" do
+    it "doesn't load prism if env var is set" do
+      skip("SYNTAX_SUGGEST_DISABLE_PRISM not set") unless ENV["SYNTAX_SUGGEST_DISABLE_PRISM"]
+
+      expect(SyntaxSuggest.use_prism_parser?).to be_falsey
+    end
+
     it "has a `handle_error` interface" do
       fake_error = Object.new
       def fake_error.message

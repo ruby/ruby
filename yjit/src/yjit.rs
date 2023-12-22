@@ -29,9 +29,12 @@ pub fn yjit_enabled_p() -> bool {
 
 /// This function is called from C code
 #[no_mangle]
-pub extern "C" fn rb_yjit_init() {
+pub extern "C" fn rb_yjit_init(yjit_enabled: bool) {
+    // Register the method codegen functions. This must be done at boot.
+    yjit_reg_method_codegen_fns();
+
     // If --yjit-disable, yjit_init() will not be called until RubyVM::YJIT.enable.
-    if !get_option!(disable) {
+    if yjit_enabled && !get_option!(disable) {
         yjit_init();
     }
 }
@@ -131,10 +134,18 @@ pub extern "C" fn rb_yjit_iseq_gen_entry_point(iseq: IseqPtr, ec: EcPtr, jit_exc
         return std::ptr::null();
     }
 
+    // If a custom call threshold was not specified on the command-line and
+    // this is a large application (has very many ISEQs), switch to
+    // using the call threshold for large applications after this entry point
+    use crate::stats::rb_yjit_live_iseq_count;
+    if unsafe { rb_yjit_call_threshold } == SMALL_CALL_THRESHOLD && unsafe { rb_yjit_live_iseq_count } > LARGE_ISEQ_COUNT {
+        unsafe { rb_yjit_call_threshold = LARGE_CALL_THRESHOLD; };
+    }
+
     let maybe_code_ptr = with_compile_time(|| { gen_entry_point(iseq, ec, jit_exception) });
 
     match maybe_code_ptr {
-        Some(ptr) => ptr.raw_ptr(),
+        Some(ptr) => ptr,
         None => std::ptr::null(),
     }
 }
@@ -157,13 +168,13 @@ pub extern "C" fn rb_yjit_code_gc(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
 
 /// Enable YJIT compilation, returning true if YJIT was previously disabled
 #[no_mangle]
-pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
+pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE, print_stats: VALUE) -> VALUE {
     with_vm_lock(src_loc!(), || {
-        if yjit_enabled_p() {
-            return Qfalse;
+        // Initialize and enable YJIT
+        unsafe {
+            OPTIONS.gen_stats = gen_stats.test();
+            OPTIONS.print_stats = print_stats.test();
         }
-
-        // Initialize and enable YJIT if currently disabled
         yjit_init();
 
         // Add "+YJIT" to RUBY_DESCRIPTION

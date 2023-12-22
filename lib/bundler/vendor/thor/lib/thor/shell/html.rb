@@ -1,5 +1,4 @@
 require_relative "basic"
-require_relative "lcs_diff"
 
 class Bundler::Thor
   module Shell
@@ -7,8 +6,6 @@ class Bundler::Thor
     # Bundler::Thor::Shell::Basic to see all available methods.
     #
     class HTML < Basic
-      include LCSDiff
-
       # The start of an HTML bold sequence.
       BOLD       = "font-weight: bold"
 

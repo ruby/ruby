@@ -483,28 +483,29 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
     return LONG2FIX(argc);
 }
 
-static size_t
-stat_memsize(const void *p)
-{
-    return sizeof(struct stat);
-}
-
 static const rb_data_type_t stat_data_type = {
     "stat",
-    {NULL, RUBY_TYPED_DEFAULT_FREE, stat_memsize,},
-    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED
+    {
+        NULL,
+        RUBY_TYPED_DEFAULT_FREE,
+        NULL, // No external memory to report
+    },
+    0, 0, RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE
+};
+
+struct rb_stat {
+    struct stat stat;
+    bool initialized;
 };
 
 static VALUE
 stat_new_0(VALUE klass, const struct stat *st)
 {
-    struct stat *nst = 0;
-    VALUE obj = TypedData_Wrap_Struct(klass, &stat_data_type, 0);
-
+    struct rb_stat *rb_st;
+    VALUE obj = TypedData_Make_Struct(klass, struct rb_stat, &stat_data_type, rb_st);
     if (st) {
-        nst = ALLOC(struct stat);
-        *nst = *st;
-        RTYPEDDATA_DATA(obj) = nst;
+        rb_st->stat = *st;
+        rb_st->initialized = true;
     }
     return obj;
 }
@@ -518,10 +519,10 @@ rb_stat_new(const struct stat *st)
 static struct stat*
 get_stat(VALUE self)
 {
-    struct stat* st;
-    TypedData_Get_Struct(self, struct stat, &stat_data_type, st);
-    if (!st) rb_raise(rb_eTypeError, "uninitialized File::Stat");
-    return st;
+    struct rb_stat* rb_st;
+    TypedData_Get_Struct(self, struct rb_stat, &stat_data_type, rb_st);
+    if (!rb_st->initialized) rb_raise(rb_eTypeError, "uninitialized File::Stat");
+    return &rb_st->stat;
 }
 
 static struct timespec stat_mtimespec(const struct stat *st);
@@ -1092,9 +1093,9 @@ rb_stat_inspect(VALUE self)
 #endif
     };
 
-    struct stat* st;
-    TypedData_Get_Struct(self, struct stat, &stat_data_type, st);
-    if (!st) {
+    struct rb_stat* rb_st;
+    TypedData_Get_Struct(self, struct rb_stat, &stat_data_type, rb_st);
+    if (!rb_st->initialized) {
         return rb_sprintf("#<%s: uninitialized>", rb_obj_classname(self));
     }
 
@@ -1593,8 +1594,6 @@ rb_access(VALUE fname, int mode)
  */
 
 /*
- * Document-method: directory?
- *
  * call-seq:
  *   File.directory?(path) -> true or false
  *
@@ -2454,6 +2453,7 @@ rb_file_ctime(VALUE obj)
     return stat_ctime(&st);
 }
 
+#if defined(HAVE_STAT_BIRTHTIME)
 /*
  *  call-seq:
  *     File.birthtime(file_name)  -> time
@@ -2468,7 +2468,6 @@ rb_file_ctime(VALUE obj)
  *
  */
 
-#if defined(HAVE_STAT_BIRTHTIME)
 RUBY_FUNC_EXPORTED VALUE
 rb_file_s_birthtime(VALUE klass, VALUE fname)
 {
@@ -2514,16 +2513,6 @@ rb_file_birthtime(VALUE obj)
 # define rb_file_birthtime rb_f_notimplement
 #endif
 
-/*
- *  call-seq:
- *     file.size    -> integer
- *
- *  Returns the size of <i>file</i> in bytes.
- *
- *     File.new("testfile").size   #=> 66
- *
- */
-
 rb_off_t
 rb_file_size(VALUE file)
 {
@@ -2546,6 +2535,16 @@ rb_file_size(VALUE file)
         return NUM2OFFT(rb_funcall(file, idSize, 0));
     }
 }
+
+/*
+ *  call-seq:
+ *     file.size    -> integer
+ *
+ *  Returns the size of <i>file</i> in bytes.
+ *
+ *     File.new("testfile").size   #=> 66
+ *
+ */
 
 static VALUE
 file_size(VALUE self)
@@ -5559,7 +5558,7 @@ rb_stat_s_alloc(VALUE klass)
 static VALUE
 rb_stat_init(VALUE obj, VALUE fname)
 {
-    struct stat st, *nst;
+    struct stat st;
 
     FilePathValue(fname);
     fname = rb_str_encode_ospath(fname);
@@ -5567,13 +5566,11 @@ rb_stat_init(VALUE obj, VALUE fname)
         rb_sys_fail_path(fname);
     }
 
-    if (DATA_PTR(obj)) {
-        xfree(DATA_PTR(obj));
-        DATA_PTR(obj) = NULL;
-    }
-    nst = ALLOC(struct stat);
-    *nst = st;
-    DATA_PTR(obj) = nst;
+    struct rb_stat *rb_st;
+    TypedData_Get_Struct(obj, struct rb_stat, &stat_data_type, rb_st);
+
+    rb_st->stat = st;
+    rb_st->initialized = true;
 
     return Qnil;
 }
@@ -5582,19 +5579,15 @@ rb_stat_init(VALUE obj, VALUE fname)
 static VALUE
 rb_stat_init_copy(VALUE copy, VALUE orig)
 {
-    struct stat *nst;
-
     if (!OBJ_INIT_COPY(copy, orig)) return copy;
-    if (DATA_PTR(copy)) {
-        xfree(DATA_PTR(copy));
-        DATA_PTR(copy) = 0;
-    }
-    if (DATA_PTR(orig)) {
-        nst = ALLOC(struct stat);
-        *nst = *(struct stat*)DATA_PTR(orig);
-        DATA_PTR(copy) = nst;
-    }
 
+    struct rb_stat *orig_rb_st;
+    TypedData_Get_Struct(orig, struct rb_stat, &stat_data_type, orig_rb_st);
+
+    struct rb_stat *copy_rb_st;
+    TypedData_Get_Struct(copy, struct rb_stat, &stat_data_type, copy_rb_st);
+
+    *copy_rb_st = *orig_rb_st;
     return copy;
 }
 
@@ -7747,57 +7740,80 @@ Init_File(void)
      */
     rb_mFConst = rb_define_module_under(rb_cFile, "Constants");
     rb_include_module(rb_cIO, rb_mFConst);
+    /* {File::RDONLY}[rdoc-ref:File::Constants@File-3A-3ARDONLY] */
     rb_define_const(rb_mFConst, "RDONLY", INT2FIX(O_RDONLY));
+    /* {File::WRONLY}[rdoc-ref:File::Constants@File-3A-3AWRONLY] */
     rb_define_const(rb_mFConst, "WRONLY", INT2FIX(O_WRONLY));
+    /* {File::RDWR}[rdoc-ref:File::Constants@File-3A-3ARDWR] */
     rb_define_const(rb_mFConst, "RDWR", INT2FIX(O_RDWR));
+    /* {File::APPEND}[rdoc-ref:File::Constants@File-3A-3AAPPEND] */
     rb_define_const(rb_mFConst, "APPEND", INT2FIX(O_APPEND));
+    /* {File::CREAT}[rdoc-ref:File::Constants@File-3A-3ACREAT] */
     rb_define_const(rb_mFConst, "CREAT", INT2FIX(O_CREAT));
+    /* {File::EXCL}[rdoc-ref:File::Constants@File-3A-3AEXCL] */
     rb_define_const(rb_mFConst, "EXCL", INT2FIX(O_EXCL));
 #if defined(O_NDELAY) || defined(O_NONBLOCK)
 # ifndef O_NONBLOCK
 #   define O_NONBLOCK O_NDELAY
 # endif
+    /* {File::NONBLOCK}[rdoc-ref:File::Constants@File-3A-3ANONBLOCK] */
     rb_define_const(rb_mFConst, "NONBLOCK", INT2FIX(O_NONBLOCK));
 #endif
+    /* {File::TRUNC}[rdoc-ref:File::Constants@File-3A-3ATRUNC] */
     rb_define_const(rb_mFConst, "TRUNC", INT2FIX(O_TRUNC));
 #ifdef O_NOCTTY
+    /* {File::NOCTTY}[rdoc-ref:File::Constants@File-3A-3ANOCTTY] */
     rb_define_const(rb_mFConst, "NOCTTY", INT2FIX(O_NOCTTY));
 #endif
 #ifndef O_BINARY
 # define  O_BINARY 0
 #endif
+    /* {File::BINARY}[rdoc-ref:File::Constants@File-3A-3ABINARY] */
     rb_define_const(rb_mFConst, "BINARY", INT2FIX(O_BINARY));
 #ifndef O_SHARE_DELETE
 # define O_SHARE_DELETE 0
 #endif
+    /* {File::SHARE_DELETE}[rdoc-ref:File::Constants@File-3A-3ASHARE_DELETE+-28Windows+Only-29] */
     rb_define_const(rb_mFConst, "SHARE_DELETE", INT2FIX(O_SHARE_DELETE));
 #ifdef O_SYNC
+    /* {File::SYNC}[rdoc-ref:File::Constants@File-3A-3ASYNC-2C+File-3A-3ARSYNC-2C+and+File-3A-3ADSYNC] */
     rb_define_const(rb_mFConst, "SYNC", INT2FIX(O_SYNC));
 #endif
 #ifdef O_DSYNC
+    /* {File::DSYNC}[rdoc-ref:File::Constants@File-3A-3ASYNC-2C+File-3A-3ARSYNC-2C+and+File-3A-3ADSYNC] */
     rb_define_const(rb_mFConst, "DSYNC", INT2FIX(O_DSYNC));
 #endif
 #ifdef O_RSYNC
+    /* {File::RSYNC}[rdoc-ref:File::Constants@File-3A-3ASYNC-2C+File-3A-3ARSYNC-2C+and+File-3A-3ADSYNC] */
     rb_define_const(rb_mFConst, "RSYNC", INT2FIX(O_RSYNC));
 #endif
 #ifdef O_NOFOLLOW
+    /* {File::NOFOLLOW}[rdoc-ref:File::Constants@File-3A-3ANOFOLLOW] */
     rb_define_const(rb_mFConst, "NOFOLLOW", INT2FIX(O_NOFOLLOW)); /* FreeBSD, Linux */
 #endif
 #ifdef O_NOATIME
+    /* {File::NOATIME}[rdoc-ref:File::Constants@File-3A-3ANOATIME] */
     rb_define_const(rb_mFConst, "NOATIME", INT2FIX(O_NOATIME)); /* Linux */
 #endif
 #ifdef O_DIRECT
+    /* {File::DIRECT}[rdoc-ref:File::Constants@File-3A-3ADIRECT] */
     rb_define_const(rb_mFConst, "DIRECT", INT2FIX(O_DIRECT));
 #endif
 #ifdef O_TMPFILE
+    /* {File::TMPFILE}[rdoc-ref:File::Constants@File-3A-3ATMPFILE] */
     rb_define_const(rb_mFConst, "TMPFILE", INT2FIX(O_TMPFILE));
 #endif
 
+    /* {File::LOCK_SH}[rdoc-ref:File::Constants@File-3A-3ALOCK_SH] */
     rb_define_const(rb_mFConst, "LOCK_SH", INT2FIX(LOCK_SH));
+    /* {File::LOCK_EX}[rdoc-ref:File::Constants@File-3A-3ALOCK_EX] */
     rb_define_const(rb_mFConst, "LOCK_EX", INT2FIX(LOCK_EX));
+    /* {File::LOCK_UN}[rdoc-ref:File::Constants@File-3A-3ALOCK_UN] */
     rb_define_const(rb_mFConst, "LOCK_UN", INT2FIX(LOCK_UN));
+    /* {File::LOCK_NB}[rdoc-ref:File::Constants@File-3A-3ALOCK_NB] */
     rb_define_const(rb_mFConst, "LOCK_NB", INT2FIX(LOCK_NB));
 
+    /* {File::NULL}[rdoc-ref:File::Constants@File-3A-3ANULL] */
     rb_define_const(rb_mFConst, "NULL", rb_fstring_cstr(ruby_null_device));
 
     rb_define_global_function("test", rb_f_test, -1);

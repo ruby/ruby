@@ -4,12 +4,10 @@ require_relative "test_helper"
 
 module Prism
   class RipperCompatTest < TestCase
-    def test_1_plus_2
+    def test_binary
       assert_equivalent("1 + 2")
-    end
-
-    def test_2_minus_3
-      assert_equivalent("2 - 3")
+      assert_equivalent("3 - 4 * 5")
+      assert_equivalent("6 / 7; 8 % 9")
     end
 
     private

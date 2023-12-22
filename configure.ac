@@ -89,7 +89,7 @@ AS_IF([test "$HAVE_BASERUBY" != no -a "`RUBYOPT=- $BASERUBY --disable=gems -e 'p
 ])
 AS_IF([test "$HAVE_BASERUBY" = no], [
     AS_IF([test "$cross_compiling" = yes], [AC_MSG_ERROR([executable host ruby is required for cross-compiling])])
-    BASERUBY="echo executable host ruby is required.  use --with-baseruby option.; false"
+    BASERUBY=$srcdir/tool/missing-baseruby.bat
 ])
 AC_SUBST(BASERUBY)
 AC_SUBST(HAVE_BASERUBY)
@@ -421,13 +421,16 @@ AC_SUBST(COUTFLAG)
 AC_SUBST(CSRCFLAG)
 
 AS_CASE(["$build_os"],
-  [darwin1*.*], [
+  [darwin*], [
+    # gcc 13 warns duplicate -l options, which are added by the
+    # default spec.
     # Xcode linker warns for deprecated architecture and wrongly
     # installed TBD files.
-    CC_WRAPPER=""
+    CC_WRAPPER="" CC_NO_WRAPPER="$CC"
     echo 'int main(void) {return 0;}' > conftest.c
     AS_IF([$CC -framework Foundation -o conftest conftest.c 2>&1 |
-	   grep '^ld: warning: text-based stub file' >/dev/null], [
+	   grep -e '^ld: warning: ignoring duplicate libraries:' \
+	        -e '^ld: warning: text-based stub file' >/dev/null], [
 	CC_WRAPPER=`cd -P "${tooldir}" && pwd`/darwin-cc
 	CC="$CC_WRAPPER $CC"
     ])
@@ -458,7 +461,7 @@ AC_SUBST(CC_VERSION_MESSAGE, $cc_version_message)
 : ${DLDFLAGS="$LDFLAGS"}
 
 RUBY_UNIVERSAL_ARCH
-AS_IF([test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "$cross_compiling" = no -a "${universal_binary:-no}" = no], [
+AS_IF([test "$target_cpu" != "$host_cpu" -a "$GCC" = yes -a "${universal_binary:-no}" = no], [
     RUBY_DEFAULT_ARCH("$target_cpu")
 ])
 host_os=$target_os
@@ -503,12 +506,9 @@ AS_CASE(["$target_os"],
     ])
     rb_cv_binary_elf=no
     : ${enable_shared=yes}
-],
-[darwin*], [
-    : ${enable_shared=yes}
-],
+    AS_IF([$WINDRES --version | grep LLVM > /dev/null], [USE_LLVM_WINDRES=yes], [USE_LLVM_WINDRES=no])
+    ],
 [hiuxmpp*], [AC_DEFINE(__HIUX_MPP__)])    # by TOYODA Eizi <toyoda@npd.kishou.go.jp>
-
 
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
@@ -1091,12 +1091,18 @@ main()
 		])
 		POSTLINK=""
 		AC_CHECK_PROGS(codesign, codesign)
-		AC_CHECK_PROGS(dsymutil, dsymutil)
+		dsymutils=
+		AS_CASE("$CC_NO_WRAPPER", [gcc*-1[[3-9]]], [
+		    dsymutils=${CC_NO_WRAPPER@%:@gcc}
+		    dsymutils=dsymutil${dsymutils%-1*}
+		    dsymutils="$dsymutils-19 $dsymutils-18 $dsymutils-17"
+		])
+		AC_CHECK_PROGS(dsymutil, $dsymutils dsymutil)
 		AS_IF([test -n "$codesign"], [
 		    POSTLINK="{ test -z '\$(RUBY_CODESIGN)' || $codesign -s '\$(RUBY_CODESIGN)' -f \$@; }${POSTLINK:+; $POSTLINK}"
 		])
 		AS_IF([test -n "$dsymutil"], [
-		    POSTLINK="$dsymutil \$@${POSTLINK:+; $POSTLINK}"
+		    POSTLINK="$dsymutil \$@ 2>/dev/null${POSTLINK:+; $POSTLINK}"
 		])
 		AS_IF([test -n "${POSTLINK}"], [
 		    LINK_SO="$LINK_SO
@@ -1346,6 +1352,7 @@ AC_CHECK_HEADERS(time.h)
 AC_CHECK_HEADERS(ucontext.h)
 AC_CHECK_HEADERS(utime.h)
 AC_CHECK_HEADERS(sys/epoll.h)
+AC_CHECK_HEADERS(sys/event.h)
 
 AS_CASE("$target_cpu", [x64|x86_64|i[3-6]86*], [
   AC_CHECK_HEADERS(x86intrin.h)
@@ -1480,6 +1487,25 @@ RUBY_CHECK_SIZEOF(float)
 RUBY_CHECK_SIZEOF(double)
 RUBY_CHECK_SIZEOF(time_t, [long "long long"], [], [@%:@include <time.h>])
 RUBY_CHECK_SIZEOF(clock_t, [], [], [@%:@include <time.h>])
+AC_SUBST(X_BUILTIN_BINARY, yes)
+AS_IF([test "$cross_compiling" = yes],
+[dnl miniruby cannot run if cross compiling
+    X_BUILTIN_BINARY=no
+],
+[
+    AS_CASE([ac_cv_sizeof_voidp],
+    [[1-9]*], [dnl fixed value
+    ],
+    [
+        AC_CACHE_CHECK([word size], [rb_cv_word_size],
+            [for w in 4 8; do
+                AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[@%:@if SIZEOF_VOIDP != ${w}
+                @%:@error SIZEOF_VOIDP
+                @%:@endif]])], [rb_cv_word_size=${w}; break])
+            done])
+        AS_IF([test -z $rb_cv_word_size], [X_BUILTIN_BINARY=no])
+    ])
+])
 
 AC_CACHE_CHECK(packed struct attribute, rb_cv_packed_struct,
     [rb_cv_packed_struct=no
@@ -2638,6 +2664,9 @@ AS_CASE([$coroutine_type], [yes|''], [
         ],
         [*86-mingw*], [
             coroutine_type=win32
+        ],
+        [aarch64-mingw*], [
+            coroutine_type=arm64
         ],
         [arm*-linux*], [
             coroutine_type=arm32
@@ -3888,47 +3917,40 @@ AC_SUBST(CARGO_BUILD_ARGS)dnl for selecting Rust build profiles
 AC_SUBST(YJIT_LIBS)dnl for optionally building the Rust parts of YJIT
 AC_SUBST(YJIT_OBJ)dnl for optionally building the C parts of YJIT
 
-dnl Currently, RJIT only supports Unix x86_64 platforms.
+dnl RJIT supports only x86_64 platforms, but allows arm64/aarch64 for custom JITs.
 RJIT_TARGET_OK=no
 AS_IF([test "$cross_compiling" = no],
     AS_CASE(["$target_cpu-$target_os"],
         [*android*], [
             RJIT_TARGET_OK=no
         ],
-        [x86_64-darwin*], [
+        [arm64-darwin*|aarch64-darwin*|x86_64-darwin*], [
             RJIT_TARGET_OK=yes
         ],
-        [x86_64-*linux*], [
+        [arm64-*linux*|aarch64-*linux*|x86_64-*linux*], [
             RJIT_TARGET_OK=yes
         ],
-        [x86_64-*bsd*], [
+        [arm64-*bsd*|aarch64-*bsd*|x86_64-*bsd*], [
             RJIT_TARGET_OK=yes
         ]
     )
 )
 
-dnl Build RJIT on Unix x86_64 platforms or if --enable-rjit is specified.
+dnl Build RJIT on supported platforms or if --enable-rjit is specified.
 AC_ARG_ENABLE(rjit,
     AS_HELP_STRING([--enable-rjit],
     [enable pure-Ruby JIT compiler. enabled by default on Unix x86_64 platforms]),
     [RJIT_SUPPORT=$enableval],
-    [AS_CASE(["$YJIT_TARGET_OK"],
+    [AS_CASE(["$RJIT_TARGET_OK"],
         [yes], [RJIT_SUPPORT=yes],
         [RJIT_SUPPORT=no]
     )]
 )
 
 AS_CASE(["$RJIT_SUPPORT"],
-[yes|dev|disasm], [
+[yes|dev], [
     AS_CASE(["$RJIT_SUPPORT"],
     [dev], [
-        # Link libcapstone for --rjit-dump-disasm
-        AC_CHECK_LIB([capstone], [cs_disasm])
-
-        # Enable extra stats (vm_insns_count, ratio_in_rjit)
-        AC_DEFINE(RJIT_STATS, 1)
-    ],
-    [disasm], [
         # Link libcapstone for --rjit-dump-disasm
         AC_CHECK_LIB([capstone], [cs_disasm])
     ])
@@ -4214,6 +4236,7 @@ AC_SUBST(MINIOBJS)
 AC_SUBST(THREAD_MODEL)
 AC_SUBST(COROUTINE_TYPE, ${coroutine_type})
 AC_SUBST(PLATFORM_DIR)
+AC_SUBST(USE_LLVM_WINDRES)
 
 firstmf=`echo $FIRSTMAKEFILE | sed 's/:.*//'`
 firsttmpl=`echo $FIRSTMAKEFILE | sed 's/.*://'`
@@ -4473,7 +4496,7 @@ guard=INCLUDE_RUBY_CONFIG_H
 {
   echo "#ifndef $guard"
   echo "#define $guard 1"
-  grep -v "^#define PACKAGE_" confdefs.h
+  sed "/^@%:@define PACKAGE_/d;s/  *$//" confdefs.h
   echo "#endif /* $guard */"
 } | tr -d '\015' |
 (

@@ -333,9 +333,10 @@ class BasicSocket < IO
   # _flags_ is zero or more of the +MSG_+ options.
   # The result, _mesg_, is the data received.
   #
-  # When recvfrom(2) returns 0, Socket#recv_nonblock returns
-  # an empty string as data.
-  # The meaning depends on the socket: EOF on TCP, empty packet on UDP, etc.
+  # When recvfrom(2) returns 0, Socket#recv_nonblock returns nil.
+  # In most cases it means the connection was closed, but for UDP connections
+  # it may mean an empty packet was received, as the underlying API makes
+  # it impossible to distinguish these two cases.
   #
   # === Parameters
   # * +maxlen+ - the number of bytes to receive from the socket
@@ -480,9 +481,10 @@ class Socket < BasicSocket
   # The second element, _sender_addrinfo_, contains protocol-specific address
   # information of the sender.
   #
-  # When recvfrom(2) returns 0, Socket#recvfrom_nonblock returns
-  # an empty string as data.
-  # The meaning depends on the socket: EOF on TCP, empty packet on UDP, etc.
+  # When recvfrom(2) returns 0, Socket#recv_nonblock returns nil.
+  # In most cases it means the connection was closed, but for UDP connections
+  # it may mean an empty packet was received, as the underlying API makes
+  # it impossible to distinguish these two cases.
   #
   # === Parameters
   # * +maxlen+ - the maximum number of bytes to receive from the socket
@@ -1229,9 +1231,10 @@ class UDPSocket < IPSocket
   # The first element of the results, _mesg_, is the data received.
   # The second element, _sender_inet_addr_, is an array to represent the sender address.
   #
-  # When recvfrom(2) returns 0,
-  # Socket#recvfrom_nonblock returns an empty string as data.
-  # It means an empty packet.
+  # When recvfrom(2) returns 0, Socket#recv_nonblock returns nil.
+  # In most cases it means the connection was closed, but it may also mean
+  # an empty packet was received, as the underlying API makes
+  # it impossible to distinguish these two cases.
   #
   # === Parameters
   # * +maxlen+ - the number of bytes to receive from the socket

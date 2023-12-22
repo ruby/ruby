@@ -41,9 +41,25 @@ module Prism
 
     def test_parse_takes_file_path
       filepath = "filepath.rb"
-      result = Prism.parse("def foo; __FILE__; end", filepath)
+      result = Prism.parse("def foo; __FILE__; end", filepath: filepath)
 
       assert_equal filepath, find_source_file_node(result.value).filepath
+    end
+
+    def test_parse_takes_line
+      line = 4
+      result = Prism.parse("def foo\n __FILE__\nend", line: line)
+
+      assert_equal line, result.value.location.start_line
+      assert_equal line + 1, find_source_file_node(result.value).location.start_line
+    end
+
+    def test_parse_takes_negative_lines
+      line = -2
+      result = Prism.parse("def foo\n __FILE__\nend", line: line)
+
+      assert_equal line, result.value.location.start_line
+      assert_equal line + 1, find_source_file_node(result.value).location.start_line
     end
 
     def test_parse_lex
@@ -95,6 +111,11 @@ module Prism
       # Additionally, Ripper cannot parse the %w[] fixture in this file, so set ripper_should_parse to false.
       ripper_should_parse = false if relative == "spanning_heredoc.txt"
 
+      # Ruby < 3.3.0 cannot parse heredocs where there are leading whitespace charactes in the heredoc start.
+      # Example: <<~'   EOF' or <<-'  EOF'
+      # https://bugs.ruby-lang.org/issues/19539
+      ripper_should_parse = false if relative == "heredocs_leading_whitespace.txt" && RUBY_VERSION < "3.3.0"
+
       define_method "test_filepath_#{relative}" do
         # First, read the source from the filepath. Use binmode to avoid converting CRLF on Windows,
         # and explicitly set the external encoding to UTF-8 to override the binmode default.
@@ -122,7 +143,7 @@ module Prism
         end
 
         # Next, assert that there were no errors during parsing.
-        result = Prism.parse(source, relative)
+        result = Prism.parse(source, filepath: relative)
         assert_empty result.errors
 
         # Next, pretty print the source.
@@ -149,7 +170,7 @@ module Prism
 
         # Next, assert that the value can be serialized and deserialized without
         # changing the shape of the tree.
-        assert_equal_nodes(result.value, Prism.load(source, Prism.dump(source, relative)).value)
+        assert_equal_nodes(result.value, Prism.load(source, Prism.dump(source, filepath: relative)).value)
 
         # Next, check that the location ranges of each node in the tree are a
         # superset of their respective child nodes.
@@ -203,10 +224,10 @@ module Prism
 
         file_contents.split(/(?<=\S)\n\n(?=\S)/).each do |snippet|
           snippet = snippet.rstrip
-          result = Prism.parse(snippet, relative)
+          result = Prism.parse(snippet, filepath: relative)
           assert_empty result.errors
 
-          assert_equal_nodes(result.value, Prism.load(snippet, Prism.dump(snippet, relative)).value)
+          assert_equal_nodes(result.value, Prism.load(snippet, Prism.dump(snippet, filepath: relative)).value)
         end
       end
     end

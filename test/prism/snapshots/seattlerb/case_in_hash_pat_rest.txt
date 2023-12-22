@@ -3,9 +3,10 @@
 └── statements:
     @ StatementsNode (location: (1,0)-(3,3))
     └── body: (length: 1)
-        └── @ CaseNode (location: (1,0)-(3,3))
+        └── @ CaseMatchNode (location: (1,0)-(3,3))
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
+            │   ├── flags: ∅
             │   ├── opening_loc: (1,5)-(1,6) = ":"
             │   ├── value_loc: (1,6)-(1,7) = "a"
             │   ├── closing_loc: ∅
@@ -15,32 +16,34 @@
             │       ├── pattern:
             │       │   @ HashPatternNode (location: (2,3)-(2,15))
             │       │   ├── constant: ∅
-            │       │   ├── elements: (length: 2)
-            │       │   │   ├── @ AssocNode (location: (2,3)-(2,7))
-            │       │   │   │   ├── key:
-            │       │   │   │   │   @ SymbolNode (location: (2,3)-(2,5))
-            │       │   │   │   │   ├── opening_loc: ∅
-            │       │   │   │   │   ├── value_loc: (2,3)-(2,4) = "b"
-            │       │   │   │   │   ├── closing_loc: (2,4)-(2,5) = ":"
-            │       │   │   │   │   └── unescaped: "b"
-            │       │   │   │   ├── value:
-            │       │   │   │   │   @ LocalVariableTargetNode (location: (2,6)-(2,7))
-            │       │   │   │   │   ├── name: :c
-            │       │   │   │   │   └── depth: 0
-            │       │   │   │   └── operator_loc: ∅
-            │       │   │   └── @ AssocSplatNode (location: (2,9)-(2,15))
+            │       │   ├── elements: (length: 1)
+            │       │   │   └── @ AssocNode (location: (2,3)-(2,7))
+            │       │   │       ├── key:
+            │       │   │       │   @ SymbolNode (location: (2,3)-(2,5))
+            │       │   │       │   ├── flags: ∅
+            │       │   │       │   ├── opening_loc: ∅
+            │       │   │       │   ├── value_loc: (2,3)-(2,4) = "b"
+            │       │   │       │   ├── closing_loc: (2,4)-(2,5) = ":"
+            │       │   │       │   └── unescaped: "b"
             │       │   │       ├── value:
-            │       │   │       │   @ LocalVariableTargetNode (location: (2,11)-(2,15))
-            │       │   │       │   ├── name: :rest
+            │       │   │       │   @ LocalVariableTargetNode (location: (2,6)-(2,7))
+            │       │   │       │   ├── name: :c
             │       │   │       │   └── depth: 0
-            │       │   │       └── operator_loc: (2,9)-(2,11) = "**"
-            │       │   ├── rest: ∅
+            │       │   │       └── operator_loc: ∅
+            │       │   ├── rest:
+            │       │   │   @ AssocSplatNode (location: (2,9)-(2,15))
+            │       │   │   ├── value:
+            │       │   │   │   @ LocalVariableTargetNode (location: (2,11)-(2,15))
+            │       │   │   │   ├── name: :rest
+            │       │   │   │   └── depth: 0
+            │       │   │   └── operator_loc: (2,9)-(2,11) = "**"
             │       │   ├── opening_loc: ∅
             │       │   └── closing_loc: ∅
             │       ├── statements:
             │       │   @ StatementsNode (location: (2,21)-(2,23))
             │       │   └── body: (length: 1)
             │       │       └── @ SymbolNode (location: (2,21)-(2,23))
+            │       │           ├── flags: ∅
             │       │           ├── opening_loc: (2,21)-(2,22) = ":"
             │       │           ├── value_loc: (2,22)-(2,23) = "d"
             │       │           ├── closing_loc: ∅

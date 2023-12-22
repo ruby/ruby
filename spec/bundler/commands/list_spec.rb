@@ -3,7 +3,7 @@
 RSpec.describe "bundle list" do
   context "with name-only and paths option" do
     it "raises an error" do
-      bundle "list --name-only --paths", :raise_on_error => false
+      bundle "list --name-only --paths", raise_on_error: false
 
       expect(err).to eq "The `--name-only` and `--paths` options cannot be used together"
     end
@@ -11,7 +11,7 @@ RSpec.describe "bundle list" do
 
   context "with without-group and only-group option" do
     it "raises an error" do
-      bundle "list --without-group dev --only-group test", :raise_on_error => false
+      bundle "list --without-group dev --only-group test", raise_on_error: false
 
       expect(err).to eq "The `--only-group` and `--without-group` options cannot be used together"
     end
@@ -40,7 +40,7 @@ RSpec.describe "bundle list" do
 
     context "when group is not found" do
       it "raises an error" do
-        bundle "list --without-group random", :raise_on_error => false
+        bundle "list --without-group random", raise_on_error: false
 
         expect(err).to eq "`random` group could not be found."
       end
@@ -79,7 +79,7 @@ RSpec.describe "bundle list" do
 
     context "when group is not found" do
       it "raises an error" do
-        bundle "list --only-group random", :raise_on_error => false
+        bundle "list --only-group random", raise_on_error: false
 
         expect(err).to eq "`random` group could not be found."
       end
@@ -124,9 +124,9 @@ RSpec.describe "bundle list" do
         build_gem "bar"
       end
 
-      build_git "git_test", "1.0.0", :path => lib_path("git_test")
+      build_git "git_test", "1.0.0", path: lib_path("git_test")
 
-      build_lib("gemspec_test", :path => tmp.join("gemspec_test")) do |s|
+      build_lib("gemspec_test", path: tmp.join("gemspec_test")) do |s|
         s.add_dependency "bar", "=1.0.0"
       end
 

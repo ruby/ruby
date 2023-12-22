@@ -3,9 +3,14 @@ gnumake = yes
 include Makefile
 
 DLLWRAP = @DLLWRAP@ --target=$(target_os) --driver-name="$(CC)"
-windres-cpp := $(CPP) -xc
-windres-cpp := --preprocessor=$(firstword $(windres-cpp)) \
-	$(addprefix --preprocessor-arg=,$(wordlist 2,$(words $(windres-cpp)),$(windres-cpp)))
+ifeq (@USE_LLVM_WINDRES@,yes) # USE_LLVM_WINDRES
+	# llvm-windres fails when preprocessor options are added
+	windres-cpp :=
+else
+	windres-cpp := $(CPP) -xc
+	windres-cpp := --preprocessor=$(firstword $(windres-cpp)) \
+		$(addprefix --preprocessor-arg=,$(wordlist 2,$(words $(windres-cpp)),$(windres-cpp)))
+endif
 WINDRES = @WINDRES@ $(windres-cpp) -DRC_INVOKED
 STRIP = @STRIP@
 

@@ -8,12 +8,12 @@
         │   └── filepath: "unparser/corpus/literal/pragma.txt"
         ├── @ SourceLineNode (location: (3,0)-(3,8))
         └── @ CallNode (location: (4,0)-(4,7))
+            ├── flags: variable_call
             ├── receiver: ∅
             ├── call_operator_loc: ∅
+            ├── name: :__dir__
             ├── message_loc: (4,0)-(4,7) = "__dir__"
             ├── opening_loc: ∅
             ├── arguments: ∅
             ├── closing_loc: ∅
-            ├── block: ∅
-            ├── flags: variable_call
-            └── name: :__dir__
+            └── block: ∅

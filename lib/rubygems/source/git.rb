@@ -227,7 +227,7 @@ class Gem::Source::Git < Gem::Source
     require_relative "../openssl"
 
     normalized =
-      if @repository =~ %r{^\w+://(\w+@)?}
+      if @repository.match?(%r{^\w+://(\w+@)?})
         uri = URI(@repository).normalize.to_s.sub %r{/$},""
         uri.sub(/\A(\w+)/) { $1.downcase }
       else

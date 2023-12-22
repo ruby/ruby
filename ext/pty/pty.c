@@ -745,8 +745,13 @@ void
 Init_pty(void)
 {
     cPTY = rb_define_module("PTY");
-    /* :nodoc: */
-    rb_define_module_function(cPTY,"getpty",pty_getpty,-1);
+#if 1
+    rb_define_module_function(cPTY,"get""pty",pty_getpty,-1);
+#else  /* for RDoc */
+    /* show getpty as an alias of spawn */
+    VALUE sPTY = rb_singleton_class(cPTY);
+    rb_define_alias(sPTY, "getpty", "spawn");
+#endif
     rb_define_module_function(cPTY,"spawn",pty_getpty,-1);
     rb_define_singleton_method(cPTY,"check",pty_check,-1);
     rb_define_singleton_method(cPTY,"open",pty_open,0);

@@ -17,7 +17,6 @@ extern uint8_t *rb_rjit_mem_block;
 
 #define RJIT_RUNTIME_COUNTERS(...) struct rb_rjit_runtime_counters { size_t __VA_ARGS__; };
 RJIT_RUNTIME_COUNTERS(
-    vm_insns_count,
     rjit_insns_count,
 
     send_args_splat_kw_splat,

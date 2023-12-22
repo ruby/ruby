@@ -1,4 +1,4 @@
-== Packed \Data
+= Packed \Data
 
 Certain Ruby core methods deal with packing and unpacking data:
 
@@ -64,7 +64,7 @@ If elements don't fit the provided directive, only least significant bits are en
 
     [257].pack("C").unpack("C") # => [1]
 
-=== Packing \Method
+== Packing \Method
 
 \Method Array#pack accepts optional keyword argument
 +buffer+ that specifies the target string (instead of a new string):
@@ -76,7 +76,7 @@ The method can accept a block:
   # Packed string is passed to the block.
   [65, 66].pack('C*') {|s| p s }    # => "AB"
 
-=== Unpacking Methods
+== Unpacking Methods
 
 Methods String#unpack and String#unpack1 each accept
 an optional keyword argument +offset+ that specifies an offset
@@ -95,12 +95,12 @@ Both methods can accept a block:
   # The single unpacked object is passed to the block.
   'AB'.unpack1('C*') {|ele| p ele } # => 65
 
-=== \Integer Directives
+== \Integer Directives
 
 Each integer directive specifies the packing or unpacking
 for one element in the input or output array.
 
-==== 8-Bit \Integer Directives
+=== 8-Bit \Integer Directives
 
 - <tt>'c'</tt> - 8-bit signed integer
   (like C <tt>signed char</tt>):
@@ -116,7 +116,7 @@ for one element in the input or output array.
     s = [0, 1, -1].pack('C*') # => "\x00\x01\xFF"
     s.unpack('C*')            # => [0, 1, 255]
 
-==== 16-Bit \Integer Directives
+=== 16-Bit \Integer Directives
 
 - <tt>'s'</tt> - 16-bit signed integer, native-endian
   (like C <tt>int16_t</tt>):
@@ -146,7 +146,7 @@ for one element in the input or output array.
     s.unpack('v*')
     # => [0, 1, 65535, 32767, 32768, 65535]
 
-==== 32-Bit \Integer Directives
+=== 32-Bit \Integer Directives
 
 - <tt>'l'</tt> - 32-bit signed integer, native-endian
   (like C <tt>int32_t</tt>):
@@ -178,7 +178,7 @@ for one element in the input or output array.
     s.unpack('v*')
     # => [0, 0, 1, 0, 65535, 65535]
 
-==== 64-Bit \Integer Directives
+=== 64-Bit \Integer Directives
 
 - <tt>'q'</tt> - 64-bit signed integer, native-endian
   (like C <tt>int64_t</tt>):
@@ -196,7 +196,7 @@ for one element in the input or output array.
     s.unpack('Q*')
     # => [578437695752307201, 17940646550795321087]
 
-==== Platform-Dependent \Integer Directives
+=== Platform-Dependent \Integer Directives
 
 - <tt>'i'</tt> - Platform-dependent width signed integer,
   native-endian (like C <tt>int</tt>):
@@ -230,7 +230,7 @@ for one element in the input or output array.
     s.unpack('J*')
     # => [67305985, 4244504319]
 
-==== Other \Integer Directives
+=== Other \Integer Directives
 
 - <tt>'U'</tt> - UTF-8 character:
 
@@ -247,7 +247,7 @@ for one element in the input or output array.
     s.unpack('w*')
     # => [1073741823]
 
-==== Modifiers for \Integer Directives
+=== Modifiers for \Integer Directives
 
 For the following directives, <tt>'!'</tt> or <tt>'_'</tt> modifiers may be
 suffixed as underlying platform’s native size.
@@ -265,12 +265,12 @@ The endian modifiers also may be suffixed in the directives above:
 - <tt>'>'</tt> - Big-endian.
 - <tt>'<'</tt> - Little-endian.
 
-=== \Float Directives
+== \Float Directives
 
 Each float directive specifies the packing or unpacking
 for one element in the input or output array.
 
-==== Single-Precision \Float Directives
+=== Single-Precision \Float Directives
 
 - <tt>'F'</tt> or <tt>'f'</tt> - Native format:
 
@@ -287,7 +287,7 @@ for one element in the input or output array.
     s = [3.0].pack('g') # => "@@\x00\x00"
     s.unpack('g')       # => [3.0]
 
-==== Double-Precision \Float Directives
+=== Double-Precision \Float Directives
 
 - <tt>'D'</tt> or <tt>'d'</tt> - Native format:
 
@@ -314,12 +314,12 @@ A float directive may be infinity or not-a-number:
   [nan].pack('f')                # => "\x00\x00\xC0\x7F"
   "\x00\x00\xC0\x7F".unpack('f') # => [NaN]
 
-=== \String Directives
+== \String Directives
 
 Each string directive specifies the packing or unpacking
 for one byte in the input or output string.
 
-==== Binary \String Directives
+=== Binary \String Directives
 
 - <tt>'A'</tt> - Arbitrary binary string (space padded; count is width);
   +nil+ is treated as the empty string:
@@ -377,7 +377,7 @@ for one byte in the input or output string.
     "foo".unpack('Z*')      # => ["foo"]
     "foo\0bar".unpack('Z*') # => ["foo"] # Does not read past "\0".
 
-==== Bit \String Directives
+=== Bit \String Directives
 
 - <tt>'B'</tt> - Bit string (high byte first):
 
@@ -421,7 +421,7 @@ for one byte in the input or output string.
     "\x01".unpack("b2") # => ["10"]
     "\x01".unpack("b3") # => ["100"]
 
-==== Hex \String Directives
+=== Hex \String Directives
 
 - <tt>'H'</tt> - Hex string (high nibble first):
 
@@ -467,7 +467,7 @@ for one byte in the input or output string.
     "\x01\xfe".unpack('h4') # => ["10ef"]
     "\x01\xfe".unpack('h5') # => ["10ef"]
 
-==== Pointer \String Directives
+=== Pointer \String Directives
 
 - <tt>'P'</tt> - Pointer to a structure (fixed-length string):
 
@@ -485,7 +485,7 @@ for one byte in the input or output string.
     ("\0" * 8).unpack("p") # => [nil]
     [nil].pack("p")        # => "\x00\x00\x00\x00\x00\x00\x00\x00"
 
-==== Other \String Directives
+=== Other \String Directives
 
 - <tt>'M'</tt> - Quoted printable, MIME encoding;
   text mode, but input must use LF and output LF;
@@ -559,7 +559,7 @@ for one byte in the input or output string.
     [0x40000000].pack("U") # => "\xFD\x80\x80\x80\x80\x80"
     [0x7fffffff].pack("U") # => "\xFD\xBF\xBF\xBF\xBF\xBF"
 
-=== Offset Directives
+== Offset Directives
 
 - <tt>'@'</tt> - Begin packing at the given byte offset;
   for packing, null fill if necessary:
@@ -577,7 +577,7 @@ for one byte in the input or output string.
     [0, 1, 2].pack("CCX2C")   # => "\x02"
     "\x00\x02".unpack("CCXC") # => [0, 2, 2]
 
-=== Null Byte Direcive
+== Null Byte Direcive
 
 - <tt>'x'</tt> - Null byte:
 

@@ -182,7 +182,9 @@ class TestProfileFrames < Test::Unit::TestCase
       assert_equal(full_labels[i], frame)
     end
 
+  ensure
     th.kill
+    th.join
   end
 
 

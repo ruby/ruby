@@ -10,11 +10,11 @@
             │       ├── keyword_loc: (1,6)-(1,10) = "when"
             │       ├── conditions: (length: 1)
             │       │   └── @ RegularExpressionNode (location: (1,11)-(1,23))
+            │       │       ├── flags: ∅
             │       │       ├── opening_loc: (1,11)-(1,14) = "%r%"
             │       │       ├── content_loc: (1,14)-(1,22) = "blahblah"
             │       │       ├── closing_loc: (1,22)-(1,23) = "%"
-            │       │       ├── unescaped: "blahblah"
-            │       │       └── flags: ∅
+            │       │       └── unescaped: "blahblah"
             │       └── statements: ∅
             ├── consequent: ∅
             ├── case_keyword_loc: (1,0)-(1,4) = "case"

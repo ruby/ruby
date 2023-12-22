@@ -63,11 +63,14 @@ int rb_notify_fd_close(int fd, struct rb_io_close_wait_list *busy);
 void rb_notify_fd_close_wait(struct rb_io_close_wait_list *busy);
 
 RUBY_SYMBOL_EXPORT_BEGIN
+
 /* Temporary.  This API will be removed (renamed). */
 VALUE rb_thread_io_blocking_region(rb_blocking_function_t *func, void *data1, int fd);
+VALUE rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, int events);
 
 /* thread.c (export) */
 int ruby_thread_has_gvl_p(void); /* for ext/fiddle/closure.c */
+
 RUBY_SYMBOL_EXPORT_END
 
 int rb_threadptr_execute_interrupts(struct rb_thread_struct *th, int blocking_timing);

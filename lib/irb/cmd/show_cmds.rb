@@ -16,6 +16,12 @@ module IRB
         commands_info = IRB::ExtendCommandBundle.all_commands_info
         commands_grouped_by_categories = commands_info.group_by { |cmd| cmd[:category] }
 
+        user_aliases = irb_context.instance_variable_get(:@user_aliases)
+
+        commands_grouped_by_categories["Aliases"] = user_aliases.map do |alias_name, target|
+          { display_name: alias_name, description: "Alias for `#{target}`" }
+        end
+
         if irb_context.with_debugger
           # Remove the original "Debugging" category
           commands_grouped_by_categories.delete("Debugging")

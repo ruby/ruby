@@ -134,5 +134,10 @@ module Test_Symbol
         Bug::Symbol.find(cx)
       }
     end
+
+    def test_const_name_type
+      sym = "\xb5".force_encoding(Encoding::Windows_1253)
+      assert_not_operator Bug::Symbol, :const?, sym, sym.encode(Encoding::UTF_8)
+    end
   end
 end

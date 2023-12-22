@@ -11,10 +11,10 @@ class Gem::Commands::PristineCommand < Gem::Command
   def initialize
     super "pristine",
           "Restores installed gems to pristine condition from files located in the gem cache",
-          :version => Gem::Requirement.default,
-          :extensions => true,
-          :extensions_set => false,
-          :all => false
+          version: Gem::Requirement.default,
+          extensions: true,
+          extensions_set: false,
+          all: false
 
     add_option("--all",
                "Restore all installed gems to pristine",
@@ -179,12 +179,12 @@ extensions will be restored.
       install_dir = options[:install_dir] if options[:install_dir]
 
       installer_options = {
-        :wrappers => true,
-        :force => true,
-        :install_dir => install_dir || spec.base_dir,
-        :env_shebang => env_shebang,
-        :build_args => spec.build_args,
-        :bin_dir => bin_dir,
+        wrappers: true,
+        force: true,
+        install_dir: install_dir || spec.base_dir,
+        env_shebang: env_shebang,
+        build_args: spec.build_args,
+        bin_dir: bin_dir,
       }
 
       if options[:only_executables]

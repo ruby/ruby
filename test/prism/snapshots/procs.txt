@@ -5,6 +5,7 @@
     └── body: (length: 10)
         ├── @ LambdaNode (location: (1,0)-(1,21))
         │   ├── locals: [:a, :b, :c, :d]
+        │   ├── locals_body_index: 4
         │   ├── operator_loc: (1,0)-(1,2) = "->"
         │   ├── opening_loc: (1,16)-(1,17) = "{"
         │   ├── closing_loc: (1,20)-(1,21) = "}"
@@ -38,6 +39,7 @@
         │               └── depth: 0
         ├── @ LambdaNode (location: (3,0)-(5,3))
         │   ├── locals: []
+        │   ├── locals_body_index: 0
         │   ├── operator_loc: (3,0)-(3,2) = "->"
         │   ├── opening_loc: (3,3)-(3,5) = "do"
         │   ├── closing_loc: (5,0)-(5,3) = "end"
@@ -56,6 +58,7 @@
         │       └── end_keyword_loc: (5,0)-(5,3) = "end"
         ├── @ LambdaNode (location: (7,0)-(11,3))
         │   ├── locals: []
+        │   ├── locals_body_index: 0
         │   ├── operator_loc: (7,0)-(7,2) = "->"
         │   ├── opening_loc: (7,3)-(7,5) = "do"
         │   ├── closing_loc: (11,0)-(11,3) = "end"
@@ -85,6 +88,7 @@
         │       └── end_keyword_loc: (11,0)-(11,3) = "end"
         ├── @ LambdaNode (location: (13,0)-(13,10))
         │   ├── locals: []
+        │   ├── locals_body_index: 0
         │   ├── operator_loc: (13,0)-(13,2) = "->"
         │   ├── opening_loc: (13,3)-(13,4) = "{"
         │   ├── closing_loc: (13,9)-(13,10) = "}"
@@ -93,17 +97,18 @@
         │       @ StatementsNode (location: (13,5)-(13,8))
         │       └── body: (length: 1)
         │           └── @ CallNode (location: (13,5)-(13,8))
+        │               ├── flags: variable_call
         │               ├── receiver: ∅
         │               ├── call_operator_loc: ∅
+        │               ├── name: :foo
         │               ├── message_loc: (13,5)-(13,8) = "foo"
         │               ├── opening_loc: ∅
         │               ├── arguments: ∅
         │               ├── closing_loc: ∅
-        │               ├── block: ∅
-        │               ├── flags: variable_call
-        │               └── name: :foo
+        │               └── block: ∅
         ├── @ LambdaNode (location: (15,0)-(15,15))
         │   ├── locals: []
+        │   ├── locals_body_index: 0
         │   ├── operator_loc: (15,0)-(15,2) = "->"
         │   ├── opening_loc: (15,3)-(15,5) = "do"
         │   ├── closing_loc: (15,12)-(15,15) = "end"
@@ -112,17 +117,18 @@
         │       @ StatementsNode (location: (15,7)-(15,10))
         │       └── body: (length: 1)
         │           └── @ CallNode (location: (15,7)-(15,10))
+        │               ├── flags: variable_call
         │               ├── receiver: ∅
         │               ├── call_operator_loc: ∅
+        │               ├── name: :foo
         │               ├── message_loc: (15,7)-(15,10) = "foo"
         │               ├── opening_loc: ∅
         │               ├── arguments: ∅
         │               ├── closing_loc: ∅
-        │               ├── block: ∅
-        │               ├── flags: variable_call
-        │               └── name: :foo
+        │               └── block: ∅
         ├── @ LambdaNode (location: (17,0)-(17,29))
         │   ├── locals: [:a, :b, :c, :d, :e]
+        │   ├── locals_body_index: 5
         │   ├── operator_loc: (17,0)-(17,2) = "->"
         │   ├── opening_loc: (17,24)-(17,25) = "{"
         │   ├── closing_loc: (17,28)-(17,29) = "}"
@@ -144,14 +150,12 @@
         │   │   │   ├── rest: ∅
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 2)
-        │   │   │   │   ├── @ KeywordParameterNode (location: (17,13)-(17,15))
+        │   │   │   │   ├── @ RequiredKeywordParameterNode (location: (17,13)-(17,15))
         │   │   │   │   │   ├── name: :c
-        │   │   │   │   │   ├── name_loc: (17,13)-(17,15) = "c:"
-        │   │   │   │   │   └── value: ∅
-        │   │   │   │   └── @ KeywordParameterNode (location: (17,17)-(17,19))
+        │   │   │   │   │   └── name_loc: (17,13)-(17,15) = "c:"
+        │   │   │   │   └── @ RequiredKeywordParameterNode (location: (17,17)-(17,19))
         │   │   │   │       ├── name: :d
-        │   │   │   │       ├── name_loc: (17,17)-(17,19) = "d:"
-        │   │   │   │       └── value: ∅
+        │   │   │   │       └── name_loc: (17,17)-(17,19) = "d:"
         │   │   │   ├── keyword_rest: ∅
         │   │   │   └── block:
         │   │   │       @ BlockParameterNode (location: (17,21)-(17,23))
@@ -169,6 +173,7 @@
         │               └── depth: 0
         ├── @ LambdaNode (location: (19,0)-(19,40))
         │   ├── locals: [:a, :b, :c, :d, :e, :f, :g]
+        │   ├── locals_body_index: 7
         │   ├── operator_loc: (19,0)-(19,2) = "->"
         │   ├── opening_loc: (19,35)-(19,36) = "{"
         │   ├── closing_loc: (19,39)-(19,40) = "}"
@@ -194,14 +199,12 @@
         │   │   │   │   └── operator_loc: (19,14)-(19,15) = "*"
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 2)
-        │   │   │   │   ├── @ KeywordParameterNode (location: (19,18)-(19,20))
+        │   │   │   │   ├── @ RequiredKeywordParameterNode (location: (19,18)-(19,20))
         │   │   │   │   │   ├── name: :d
-        │   │   │   │   │   ├── name_loc: (19,18)-(19,20) = "d:"
-        │   │   │   │   │   └── value: ∅
-        │   │   │   │   └── @ KeywordParameterNode (location: (19,22)-(19,24))
+        │   │   │   │   │   └── name_loc: (19,18)-(19,20) = "d:"
+        │   │   │   │   └── @ RequiredKeywordParameterNode (location: (19,22)-(19,24))
         │   │   │   │       ├── name: :e
-        │   │   │   │       ├── name_loc: (19,22)-(19,24) = "e:"
-        │   │   │   │       └── value: ∅
+        │   │   │   │       └── name_loc: (19,22)-(19,24) = "e:"
         │   │   │   ├── keyword_rest:
         │   │   │   │   @ KeywordRestParameterNode (location: (19,26)-(19,29))
         │   │   │   │   ├── name: :f
@@ -223,6 +226,7 @@
         │               └── depth: 0
         ├── @ LambdaNode (location: (21,0)-(23,3))
         │   ├── locals: [:a, :b, :c, :d, :e, :f, :g]
+        │   ├── locals_body_index: 7
         │   ├── operator_loc: (21,0)-(21,2) = "->"
         │   ├── opening_loc: (21,35)-(21,37) = "do"
         │   ├── closing_loc: (23,0)-(23,3) = "end"
@@ -248,14 +252,12 @@
         │   │   │   │   └── operator_loc: (21,14)-(21,15) = "*"
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 2)
-        │   │   │   │   ├── @ KeywordParameterNode (location: (21,18)-(21,20))
+        │   │   │   │   ├── @ RequiredKeywordParameterNode (location: (21,18)-(21,20))
         │   │   │   │   │   ├── name: :d
-        │   │   │   │   │   ├── name_loc: (21,18)-(21,20) = "d:"
-        │   │   │   │   │   └── value: ∅
-        │   │   │   │   └── @ KeywordParameterNode (location: (21,22)-(21,24))
+        │   │   │   │   │   └── name_loc: (21,18)-(21,20) = "d:"
+        │   │   │   │   └── @ RequiredKeywordParameterNode (location: (21,22)-(21,24))
         │   │   │   │       ├── name: :e
-        │   │   │   │       ├── name_loc: (21,22)-(21,24) = "e:"
-        │   │   │   │       └── value: ∅
+        │   │   │   │       └── name_loc: (21,22)-(21,24) = "e:"
         │   │   │   ├── keyword_rest:
         │   │   │   │   @ KeywordRestParameterNode (location: (21,26)-(21,29))
         │   │   │   │   ├── name: :f
@@ -277,6 +279,7 @@
         │               └── depth: 0
         ├── @ LambdaNode (location: (25,0)-(25,25))
         │   ├── locals: [:a]
+        │   ├── locals_body_index: 1
         │   ├── operator_loc: (25,0)-(25,2) = "->"
         │   ├── opening_loc: (25,7)-(25,8) = "{"
         │   ├── closing_loc: (25,24)-(25,25) = "}"
@@ -301,6 +304,7 @@
         │       └── body: (length: 1)
         │           └── @ LambdaNode (location: (25,9)-(25,23))
         │               ├── locals: [:b]
+        │               ├── locals_body_index: 1
         │               ├── operator_loc: (25,9)-(25,11) = "->"
         │               ├── opening_loc: (25,14)-(25,15) = "{"
         │               ├── closing_loc: (25,22)-(25,23) = "}"
@@ -324,26 +328,27 @@
         │                   @ StatementsNode (location: (25,16)-(25,21))
         │                   └── body: (length: 1)
         │                       └── @ CallNode (location: (25,16)-(25,21))
+        │                           ├── flags: ∅
         │                           ├── receiver:
         │                           │   @ LocalVariableReadNode (location: (25,16)-(25,17))
         │                           │   ├── name: :a
         │                           │   └── depth: 1
         │                           ├── call_operator_loc: ∅
+        │                           ├── name: :*
         │                           ├── message_loc: (25,18)-(25,19) = "*"
         │                           ├── opening_loc: ∅
         │                           ├── arguments:
         │                           │   @ ArgumentsNode (location: (25,20)-(25,21))
-        │                           │   ├── arguments: (length: 1)
-        │                           │   │   └── @ LocalVariableReadNode (location: (25,20)-(25,21))
-        │                           │   │       ├── name: :b
-        │                           │   │       └── depth: 0
-        │                           │   └── flags: ∅
+        │                           │   ├── flags: ∅
+        │                           │   └── arguments: (length: 1)
+        │                           │       └── @ LocalVariableReadNode (location: (25,20)-(25,21))
+        │                           │           ├── name: :b
+        │                           │           └── depth: 0
         │                           ├── closing_loc: ∅
-        │                           ├── block: ∅
-        │                           ├── flags: ∅
-        │                           └── name: :*
+        │                           └── block: ∅
         └── @ LambdaNode (location: (27,0)-(27,19))
             ├── locals: [:a, :b, :c]
+            ├── locals_body_index: 3
             ├── operator_loc: (27,0)-(27,2) = "->"
             ├── opening_loc: (27,16)-(27,17) = "{"
             ├── closing_loc: (27,18)-(27,19) = "}"

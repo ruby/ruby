@@ -94,7 +94,7 @@ module Gem
   # The home directory for the user.
 
   def self.user_home
-    @user_home ||= find_home.tap(&Gem::UNTAINT)
+    @user_home ||= find_home
   end
 
   ##
@@ -131,14 +131,14 @@ module Gem
   # The path to standard location of the user's .gemrc file.
 
   def self.config_file
-    @config_file ||= find_config_file.tap(&Gem::UNTAINT)
+    @config_file ||= find_config_file
   end
 
   ##
   # The path to standard location of the user's state file.
 
   def self.state_file
-    @state_file ||= File.join(Gem.state_home, "gem", "last_update_check").tap(&Gem::UNTAINT)
+    @state_file ||= File.join(Gem.state_home, "gem", "last_update_check")
   end
 
   ##
@@ -233,6 +233,18 @@ module Gem
     end
 
     default_cert_path
+  end
+
+  ##
+  # Enables automatic installation into user directory
+
+  def self.default_user_install # :nodoc:
+    if !ENV.key?("GEM_HOME") && (File.exist?(Gem.dir) && !File.writable?(Gem.dir))
+      Gem.ui.say "Defaulting to user installation because default installation directory (#{Gem.dir}) is not writable."
+      return true
+    end
+
+    false
   end
 
   ##

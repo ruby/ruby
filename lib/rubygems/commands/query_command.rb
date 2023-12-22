@@ -20,8 +20,8 @@ class Gem::Commands::QueryCommand < Gem::Command
 
   def initialize(name = "query", summary = "Query gem information in local or remote repositories")
     super name, summary,
-         :domain => :local, :details => false, :versions => true,
-         :installed => nil, :version => Gem::Requirement.default
+         domain: :local, details: false, versions: true,
+         installed: nil, version: Gem::Requirement.default
 
     add_option("-n", "--name-matches REGEXP",
                "Name of gem(s) to query on matches the",

@@ -313,18 +313,20 @@ class TestGCCompact < Test::Unit::TestCase
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
-      ARY_COUNT = 500
+      ARY_COUNT = 50000
 
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      arys = ARY_COUNT.times.map do
-        ary = "abbbbbbbbbb".chars
-        ary.uniq!
-      end
+      Fiber.new {
+        $arys = ARY_COUNT.times.map do
+          ary = "abbbbbbbbbb".chars
+          ary.uniq!
+        end
+      }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
-      assert_operator(stats.dig(:moved_down, :T_ARRAY) || 0, :>=, ARY_COUNT)
-      refute_empty(arys.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
+      assert_operator(stats.dig(:moved_down, :T_ARRAY) || 0, :>=, ARY_COUNT - 10)
+      refute_empty($arys.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
@@ -333,26 +335,27 @@ class TestGCCompact < Test::Unit::TestCase
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
-      ARY_COUNT = 500
+      ARY_COUNT = 50000
 
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      ary = "hello".chars
-      arys = ARY_COUNT.times.map do
-        x = []
-        ary.each { |e| x << e }
-        x
-      end
+      Fiber.new {
+        ary = "hello".chars
+        $arys = ARY_COUNT.times.map do
+          x = []
+          ary.each { |e| x << e }
+          x
+        end
+      }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
-      assert_operator(stats.dig(:moved_up, :T_ARRAY) || 0, :>=, ARY_COUNT)
-      refute_empty(arys.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
+      assert_operator(stats.dig(:moved_up, :T_ARRAY) || 0, :>=, ARY_COUNT - 10)
+      refute_empty($arys.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
   def test_moving_objects_between_size_pools
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
-    omit "Flaky on Solaris" if /solaris/i =~ RUBY_PLATFORM
 
     assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
     begin;
@@ -364,57 +367,63 @@ class TestGCCompact < Test::Unit::TestCase
         end
       end
 
-      OBJ_COUNT = 500
+      OBJ_COUNT = 50000
 
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      ary = OBJ_COUNT.times.map { Foo.new }
-      ary.each(&:add_ivars)
+      Fiber.new {
+        $ary = OBJ_COUNT.times.map { Foo.new }
+        $ary.each(&:add_ivars)
 
-      GC.start
-      Foo.new.add_ivars
+        GC.start
+        Foo.new.add_ivars
+      }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      assert_operator(stats.dig(:moved_up, :T_OBJECT) || 0, :>=, OBJ_COUNT)
-      refute_empty(ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
+      assert_operator(stats.dig(:moved_up, :T_OBJECT) || 0, :>=, OBJ_COUNT - 10)
+      refute_empty($ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
   def test_moving_strings_up_size_pools
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
-    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30, signal: :SEGV)
     begin;
-      STR_COUNT = 500
+      STR_COUNT = 50000
 
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      str = "a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]
-      ary = STR_COUNT.times.map { "" << str }
+      Fiber.new {
+        str = "a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] * 4
+        $ary = STR_COUNT.times.map { "" << str }
+      }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      assert_operator(stats[:moved_up][:T_STRING], :>=, STR_COUNT)
-      refute_empty(ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
+      assert_operator(stats[:moved_up][:T_STRING], :>=, STR_COUNT - 10)
+      refute_empty($ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
   def test_moving_strings_down_size_pools
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
 
-    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30, signal: :SEGV)
     begin;
-      STR_COUNT = 500
+      STR_COUNT = 50000
 
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      ary = STR_COUNT.times.map { ("a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE]).squeeze! }
+      Fiber.new {
+        $ary = STR_COUNT.times.map { ("a" * GC::INTERNAL_CONSTANTS[:BASE_SLOT_SIZE] * 4).squeeze! }
+      }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      assert_operator(stats[:moved_down][:T_STRING], :>=, STR_COUNT)
-      refute_empty(ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
+      assert_operator(stats[:moved_down][:T_STRING], :>=, STR_COUNT - 10)
+      refute_empty($ary.keep_if { |o| ObjectSpace.dump(o).include?('"embedded":true') })
     end;
   end
 
@@ -422,24 +431,22 @@ class TestGCCompact < Test::Unit::TestCase
     omit if GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT] == 1
     # AR and ST hashes are in the same size pool on 32 bit
     omit unless RbConfig::SIZEOF["uint64_t"] <= RbConfig::SIZEOF["void*"]
-    # This test fails on Solaris SPARC with the following error and I can't figure out why:
-    #   TestGCCompact#test_moving_hashes_down_size_pools
-    #   Expected 499 to be >= 500.
-    omit if /sparc-solaris/ =~ RUBY_PLATFORM
 
-    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 10, signal: :SEGV)
+    assert_separately(%w[-robjspace], "#{<<~"begin;"}\n#{<<~"end;"}", timeout: 30, signal: :SEGV)
     begin;
-      HASH_COUNT = 500
+      HASH_COUNT = 50000
 
       GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      base_hash = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8 }
-      ary = HASH_COUNT.times.map { base_hash.dup }
-      ary.each { |h| h[:i] = 9 }
+      Fiber.new {
+        base_hash = { a: 1, b: 2, c: 3, d: 4, e: 5, f: 6, g: 7, h: 8 }
+        $ary = HASH_COUNT.times.map { base_hash.dup }
+        $ary.each_with_index { |h, i| h[:i] = 9 }
+      }.resume
 
       stats = GC.verify_compaction_references(expand_heap: true, toward: :empty)
 
-      assert_operator(stats[:moved_down][:T_HASH], :>=, 500)
+      assert_operator(stats[:moved_down][:T_HASH], :>=, HASH_COUNT - 10)
     end;
   end
 

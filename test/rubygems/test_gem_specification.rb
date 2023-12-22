@@ -797,28 +797,6 @@ dependencies: []
     assert_equal File.join(@tempdir, "a-2.gemspec"), spec.loaded_from
   end
 
-  if RUBY_ENGINE == "ruby" && RUBY_VERSION < "2.7"
-    def test_self_load_tainted
-      full_path = @a2.spec_file
-      write_file full_path do |io|
-        io.write @a2.to_ruby_for_cache
-      end
-
-      full_path.taint
-      loader = Thread.new do
-        $SAFE = 1
-        Gem::Specification.load full_path
-      end
-      spec = loader.value
-
-      @a2.files.clear
-
-      assert_equal @a2, spec
-    ensure
-      $SAFE = 0
-    end
-  end
-
   def test_self_load_escape_curly
     @a2.name = 'a};raise "improper escaping";%q{'
 
@@ -1583,6 +1561,17 @@ dependencies: []
     assert_empty err
   end
 
+  def test_contains_requirable_file_extension_soext
+    ext_spec
+    dlext = RbConfig::CONFIG["DLEXT"]
+    @ext.files += ["lib/ext.#{dlext}"]
+
+    FileUtils.mkdir_p @ext.extension_dir
+    FileUtils.touch File.join(@ext.extension_dir, "ext.#{dlext}")
+    FileUtils.touch File.join(@ext.extension_dir, "gem.build_complete")
+    assert @ext.contains_requirable_file? "ext.so"
+  end
+
   def test_date
     assert_date @a1.date
   end
@@ -2025,12 +2014,6 @@ dependencies: []
 
     @a1.platform = "powerpc-darwin"
     assert_equal Gem::Platform.new("ppc-darwin"), @a1.platform
-  end
-
-  def test_prerelease_spec_adds_required_rubygems_version
-    @prerelease = util_spec("tardis", "2.2.0.a")
-    refute @prerelease.required_rubygems_version.satisfied_by?(Gem::Version.new("1.3.1"))
-    assert @prerelease.required_rubygems_version.satisfied_by?(Gem::Version.new("1.4.0"))
   end
 
   def test_require_paths
@@ -3669,6 +3652,38 @@ Did you mean 'Ruby'?
       end
 
       assert_equal "metadata['homepage_uri'] has invalid link: \"http:/example.com\"", e.message
+    end
+  end
+
+  def test_metadata_link_validation_warns_for_duplicates
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @m2 = quick_gem "m", "2" do |s|
+        s.files = %w[lib/code.rb]
+        s.licenses = "BSD-2-Clause"
+        s.metadata = {
+          "source_code_uri" => "http://example.com",
+          "homepage_uri" => "http://example.com",
+          "changelog_uri" => "http://example.com/changelog",
+        }
+      end
+
+      use_ui @ui do
+        @m2.validate
+      end
+
+      expected = <<~EXPECTED
+        #{w}:  You have specified the uri:
+          http://example.com
+        for all of the following keys:
+          homepage_uri
+          source_code_uri
+        Only the first one will be shown on rubygems.org
+        #{w}:  See https://guides.rubygems.org/specification-reference/ for help
+      EXPECTED
+
+      assert_equal expected, @ui.error, "warning"
     end
   end
 

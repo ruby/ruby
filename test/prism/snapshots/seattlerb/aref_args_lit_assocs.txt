@@ -4,10 +4,12 @@
     @ StatementsNode (location: (1,0)-(1,11))
     └── body: (length: 1)
         └── @ ArrayNode (location: (1,0)-(1,11))
+            ├── flags: ∅
             ├── elements: (length: 2)
             │   ├── @ IntegerNode (location: (1,1)-(1,2))
             │   │   └── flags: decimal
             │   └── @ KeywordHashNode (location: (1,4)-(1,10))
+            │       ├── flags: ∅
             │       └── elements: (length: 1)
             │           └── @ AssocNode (location: (1,4)-(1,10))
             │               ├── key:

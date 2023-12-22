@@ -114,7 +114,7 @@ RSpec.describe "post bundle message" do
       end
 
       it "should report a helpful error message" do
-        install_gemfile <<-G, :raise_on_error => false
+        install_gemfile <<-G, raise_on_error: false
           source "#{file_uri_for(gem_repo1)}"
           gem "rack"
           gem "not-a-gem", :group => :development
@@ -131,7 +131,7 @@ Could not find gem 'not-a-gem' in rubygems repository #{file_uri_for(gem_repo1)}
         G
         bundle :cache
         expect(bundled_app("vendor/cache/rack-1.0.0.gem")).to exist
-        install_gemfile <<-G, :raise_on_error => false
+        install_gemfile <<-G, raise_on_error: false
           source "#{file_uri_for(gem_repo1)}"
           gem "rack"
           gem "not-a-gem", :group => :development
@@ -142,7 +142,7 @@ Could not find gem 'not-a-gem' in rubygems repository #{file_uri_for(gem_repo1)}
     end
   end
 
-  describe "for second bundle install run", :bundler => "< 3" do
+  describe "for second bundle install run", bundler: "< 3" do
     it "without any options" do
       2.times { bundle :install }
       expect(out).to include(bundle_show_message)
@@ -179,25 +179,25 @@ Could not find gem 'not-a-gem' in rubygems repository #{file_uri_for(gem_repo1)}
 
   describe "for bundle update" do
     it "shows proper messages according to the configured groups" do
-      bundle :update, :all => true
+      bundle :update, all: true
       expect(out).not_to include("Gems in the groups")
       expect(out).to include(bundle_updated_message)
 
       bundle "config set --local without emo"
       bundle :install
-      bundle :update, :all => true
+      bundle :update, all: true
       expect(out).to include("Gems in the group 'emo' were not updated")
       expect(out).to include(bundle_updated_message)
 
       bundle "config set --local without emo test"
       bundle :install
-      bundle :update, :all => true
+      bundle :update, all: true
       expect(out).to include("Gems in the groups 'emo' and 'test' were not updated")
       expect(out).to include(bundle_updated_message)
 
       bundle "config set --local without emo obama test"
       bundle :install
-      bundle :update, :all => true
+      bundle :update, all: true
       expect(out).to include("Gems in the groups 'emo', 'obama' and 'test' were not updated")
       expect(out).to include(bundle_updated_message)
     end

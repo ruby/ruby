@@ -205,7 +205,7 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
 
     gemhome2 = "#{@gemhome}2"
 
-    Gem::Installer.at(rubygems_update_package, :install_dir => gemhome2).install
+    Gem::Installer.at(rubygems_update_package, install_dir: gemhome2).install
 
     Gem.use_paths @gemhome, [gemhome2, @gemhome]
 
@@ -670,10 +670,10 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     @cmd.handle_options %w[--system]
 
     expected = {
-      :args => [],
-      :document => %w[ri],
-      :force => false,
-      :system => true,
+      args: [],
+      document: %w[ri],
+      force: false,
+      system: true,
     }
 
     assert_equal expected, @cmd.options
@@ -689,10 +689,10 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     @cmd.handle_options %w[--system 1.3.7]
 
     expected = {
-      :args => [],
-      :document => %w[ri],
-      :force => false,
-      :system => "1.3.7",
+      args: [],
+      document: %w[ri],
+      force: false,
+      system: "1.3.7",
     }
 
     assert_equal expected, @cmd.options

@@ -39,6 +39,7 @@
             │   │           ├── operator_loc: (3,17)-(3,18) = "="
             │   │           └── value:
             │   │               @ ArrayNode (location: (3,19)-(3,25))
+            │   │               ├── flags: ∅
             │   │               ├── elements: (length: 2)
             │   │               │   ├── @ IntegerNode (location: (3,20)-(3,21))
             │   │               │   │   └── flags: decimal

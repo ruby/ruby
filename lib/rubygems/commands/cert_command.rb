@@ -6,7 +6,7 @@ require_relative "../security"
 class Gem::Commands::CertCommand < Gem::Command
   def initialize
     super "cert", "Manage RubyGems certificates and signing settings",
-          :add => [], :remove => [], :list => [], :build => [], :sign => []
+          add: [], remove: [], list: [], build: [], sign: []
 
     add_option("-a", "--add CERT",
                "Add a trusted certificate.") do |cert_file, options|

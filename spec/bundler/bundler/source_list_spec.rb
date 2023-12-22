@@ -85,7 +85,7 @@ RSpec.describe Bundler::SourceList do
         end
 
         it "ignores git protocols on request" do
-          Bundler.settings.temporary(:"git.allow_insecure" => true)
+          Bundler.settings.temporary("git.allow_insecure": true)
           expect(Bundler.ui).to_not receive(:warn).with(msg)
           source_list.add_git_source("uri" => "git://existing-git.org/path.git")
         end

@@ -168,10 +168,8 @@ dump_append_c(struct dump_config *dc, unsigned char c)
 }
 
 static void
-dump_append_ref(struct dump_config *dc, VALUE ref)
+dump_append_ptr(struct dump_config *dc, VALUE ref)
 {
-    RUBY_ASSERT(ref > 0);
-
     char buffer[roomof(sizeof(VALUE) * CHAR_BIT, 4) + rb_strlen_lit("\"0x\"")];
     char *buffer_start, *buffer_end;
 
@@ -186,6 +184,14 @@ dump_append_ref(struct dump_config *dc, VALUE ref)
     *--buffer_start = '"';
     buffer_append(dc, buffer_start, buffer_end - buffer_start);
 }
+
+static void
+dump_append_ref(struct dump_config *dc, VALUE ref)
+{
+    RUBY_ASSERT(ref > 0);
+    dump_append_ptr(dc, ref);
+}
+
 
 static void
 dump_append_string_value(struct dump_config *dc, VALUE obj)
@@ -360,8 +366,9 @@ dump_append_string_content(struct dump_config *dc, VALUE obj)
 static inline void
 dump_append_id(struct dump_config *dc, ID id)
 {
-    if (is_instance_id(id)) {
-        dump_append_string_value(dc, rb_sym2str(ID2SYM(id)));
+    VALUE str = rb_sym2str(ID2SYM(id));
+    if (RTEST(str)) {
+        dump_append_string_value(dc, str);
     }
     else {
         dump_append(dc, "\"ID_INTERNAL(");
@@ -437,7 +444,21 @@ dump_object(VALUE obj, struct dump_config *dc)
             mid = vm_ci_mid((const struct rb_callinfo *)obj);
             if (mid != 0) {
                 dump_append(dc, ", \"mid\":");
-                dump_append_string_value(dc, rb_id2str(mid));
+                dump_append_id(dc, mid);
+            }
+            break;
+
+          case imemo_callcache:
+            mid = vm_cc_cme((const struct rb_callcache *)obj)->called_id;
+            if (mid != 0) {
+                dump_append(dc, ", \"called_id\":");
+                dump_append_id(dc, mid);
+
+                VALUE klass = ((const struct rb_callcache *)obj)->klass;
+                if (klass != 0) {
+                    dump_append(dc, ", \"receiver_class\":");
+                    dump_append_ref(dc, klass);
+                }
             }
             break;
 
@@ -770,16 +791,6 @@ shape_i(rb_shape_t *shape, void *data)
         break;
       case SHAPE_FROZEN:
         dump_append(dc, "\"FROZEN\"");
-        break;
-      case SHAPE_CAPACITY_CHANGE:
-        dump_append(dc, "\"CAPACITY_CHANGE\"");
-        dump_append(dc, ", \"capacity\":");
-        dump_append_sizet(dc, shape->capacity);
-        break;
-      case SHAPE_INITIAL_CAPACITY:
-        dump_append(dc, "\"INITIAL_CAPACITY\"");
-        dump_append(dc, ", \"capacity\":");
-        dump_append_sizet(dc, shape->capacity);
         break;
       case SHAPE_T_OBJECT:
         dump_append(dc, "\"T_OBJECT\"");

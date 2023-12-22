@@ -121,7 +121,7 @@
 
 module Benchmark
 
-  VERSION = "0.2.1"
+  VERSION = "0.3.0"
 
   BENCHMARK_VERSION = "2002-04-25" # :nodoc:
 

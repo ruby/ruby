@@ -34,23 +34,24 @@ module Prism
     # attr_reader listeners: Hash[Symbol, Array[Listener]]
     attr_reader :listeners
 
+    # Initialize a new dispatcher.
     def initialize
       @listeners = {}
     end
 
-    # Register a listener for one or more events
+    # Register a listener for one or more events.
     #
     # def register: (Listener, *Symbol) -> void
     def register(listener, *events)
       events.each { |event| (listeners[event] ||= []) << listener }
     end
 
-    # Walks `root` dispatching events to all registered listeners
+    # Walks `root` dispatching events to all registered listeners.
     #
     # def dispatch: (Node) -> void
     alias dispatch visit
 
-    # Dispatches a single event for `node` to all registered listeners
+    # Dispatches a single event for `node` to all registered listeners.
     #
     # def dispatch_once: (Node) -> void
     def dispatch_once(node)
@@ -67,7 +68,7 @@ module Prism
     end
     <%- end -%>
 
-    class DispatchOnce < Visitor
+    class DispatchOnce < Visitor # :nodoc:
       attr_reader :listeners
 
       def initialize(listeners)

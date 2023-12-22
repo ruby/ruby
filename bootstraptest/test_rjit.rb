@@ -42,3 +42,17 @@ assert_equal '1', %q{
 
   entry
 }
+
+# Updating local type in Context
+assert_normal_exit %q{
+  def foo(flag, object)
+    klass = if flag
+      object
+    end
+    klass ||= object
+    return klass.new
+  end
+
+  foo(false, Object)
+  foo(true, Object)
+}

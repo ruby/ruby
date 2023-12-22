@@ -62,7 +62,7 @@
 #include "ruby/backward/2/assume.h"
 #include "ruby/defines.h"
 
-/** @cond INTENAL_MACRO  */
+/** @cond INTERNAL_MACRO  */
 
 /* Make alloca work the best possible way.  */
 #if defined(alloca)
