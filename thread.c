@@ -1691,7 +1691,10 @@ static int
 thread_io_wait_events(rb_thread_t *th, rb_execution_context_t *ec, int fd, int events, struct timeval *timeout, struct waiting_fd *wfd)
 {
 #if defined(USE_MN_THREADS) && USE_MN_THREADS
-    if (!th_has_dedicated_nt(th) && (events || timeout)) {
+    if (!th_has_dedicated_nt(th) &&
+        (events || timeout) &&
+        th->blocking // no fiber scheduler
+        ) {
         int r;
         rb_hrtime_t rel, *prel;
 
