@@ -1827,7 +1827,7 @@ nucomp_to_f(VALUE self)
 
 /*
  * call-seq:
- *   cmp.to_r  ->  rational
+ *   to_r -> rational
  *
  * Returns the value of <tt>self.real</tt> as a Rational, if possible:
  *
@@ -1855,9 +1855,32 @@ nucomp_to_r(VALUE self)
  * call-seq:
  *   rationalize(epsilon = nil) -> rational
  *
- * Equivalent to Complex#to_r.
+ * Returns a Rational object whose value is exactly or approximately
+ * equivalent to that of <tt>self.real</tt>.
  *
- * (Argument +epsilon+ is ignored.)
+ * With no argument +epsilon+ given, equivalent to Complex#to_r:
+ *
+ *   Complex(1, 0).rationalize              # => (1/1)
+ *   Complex(1, Rational(0, 1)).rationalize # => (1/1)
+ *   Complex(3.14159, 0).rationalize       # => (314159/100000)
+ *
+ * With argument +epsilon+ given, returns a \Rational object
+ * whose value is exactly or approximately equal to that of <tt>self.real</tt>
+ * to the given precision:
+ *
+ *   Complex(3.14159, 0).rationalize(0.1)          # => (16/5)
+ *   Complex(3.14159, 0).rationalize(0.01)         # => (22/7)
+ *   Complex(3.14159, 0).rationalize(0.001)        # => (201/64)
+ *   Complex(3.14159, 0).rationalize(0.0001)       # => (333/106)
+ *   Complex(3.14159, 0).rationalize(0.00001)      # => (355/113)
+ *   Complex(3.14159, 0).rationalize(0.000001)     # => (7433/2366)
+ *   Complex(3.14159, 0).rationalize(0.0000001)    # => (9208/2931)
+ *   Complex(3.14159, 0).rationalize(0.00000001)   # => (47460/15107)
+ *   Complex(3.14159, 0).rationalize(0.000000001)  # => (76149/24239)
+ *   Complex(3.14159, 0).rationalize(0.0000000001) # => (314159/100000)
+ *   Complex(3.14159, 0).rationalize(0.0)          # => (3537115888337719/1125899906842624)
+ *
+ * Related: Complex#to_r.
  */
 static VALUE
 nucomp_rationalize(int argc, VALUE *argv, VALUE self)
