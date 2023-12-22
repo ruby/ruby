@@ -513,7 +513,7 @@ module Bundler
 
     private
 
-    def should_complete_platforms?
+    def should_add_extra_platforms?
       !lockfile_exists? && generic_local_platform_is_ruby? && !Bundler.settings[:force_ruby_platform]
     end
 
@@ -600,7 +600,7 @@ module Bundler
       result = SpecSet.new(resolver.start)
 
       @resolved_bundler_version = result.find {|spec| spec.name == "bundler" }&.version
-      @platforms = result.complete_platforms!(platforms) if should_complete_platforms?
+      @platforms = result.add_extra_platforms!(platforms) if should_add_extra_platforms?
 
       SpecSet.new(result.for(dependencies, false, @platforms))
     end
