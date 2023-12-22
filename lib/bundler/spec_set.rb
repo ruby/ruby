@@ -52,7 +52,7 @@ module Bundler
       specs.uniq
     end
 
-    def complete_platforms!(platforms)
+    def add_extra_platforms!(platforms)
       return platforms.concat([Gem::Platform::RUBY]).uniq if @specs.empty?
 
       new_platforms = @specs.flat_map {|spec| spec.source.specs.search([spec.name, spec.version]).map(&:platform) }.uniq.select do |platform|
