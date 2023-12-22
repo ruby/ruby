@@ -165,7 +165,9 @@ struct rb_rjit_runtime_counters rb_rjit_counters = { 0 };
 
 extern VALUE rb_gc_enable(void);
 extern VALUE rb_gc_disable(void);
+extern uint64_t rb_vm_insns_count;
 
+// Disable GC, TracePoint, and VM insns counter
 #define WITH_RJIT_ISOLATED(stmt) do { \
     VALUE was_disabled = rb_gc_disable(); \
     rb_hook_list_t *global_hooks = rb_ec_ractor_hooks(GET_EC()); \
@@ -174,7 +176,9 @@ extern VALUE rb_gc_disable(void);
     bool original_call_p = rb_rjit_call_p; \
     rjit_stats_p = false; \
     rb_rjit_call_p = false; \
+    uint64_t insns_count = rb_vm_insns_count; \
     stmt; \
+    rb_vm_insns_count = insns_count; \
     rb_rjit_call_p = (rjit_cancel_p ? false : original_call_p); \
     rjit_stats_p = rb_rjit_opts.stats; \
     global_hooks->events = rb_rjit_global_events; \
