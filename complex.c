@@ -1862,7 +1862,7 @@ nucomp_to_r(VALUE self)
  *
  *   Complex(1, 0).rationalize              # => (1/1)
  *   Complex(1, Rational(0, 1)).rationalize # => (1/1)
- *   Complex(3.14159, 0).rationalize       # => (314159/100000)
+ *   Complex(3.14159, 0).rationalize        # => (314159/100000)
  *
  * With argument +epsilon+ given, returns a \Rational object
  * whose value is exactly or approximately equal to that of <tt>self.real</tt>
