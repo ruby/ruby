@@ -2099,7 +2099,7 @@ module RubyVM::RJIT
         end
 
         # Check if the key is the same value
-        asm.cmp(key_opnd, comptime_key)
+        asm.cmp(key_opnd, to_value(comptime_key))
         side_exit = side_exit(jit, starting_context)
         jit_chain_guard(:jne, jit, starting_context, asm, side_exit)
 
