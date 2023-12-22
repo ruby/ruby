@@ -1,10 +1,10 @@
 module RubyVM::RJIT
-  # Return true if RJIT is enabled.
+  # Return true if \RJIT is enabled.
   def self.enabled?
     Primitive.cexpr! 'RBOOL(rb_rjit_enabled)'
   end
 
-  # Start generating JITed code again after --rjit-disable.
+  # Start JIT compilation after \--rjit-disable.
   def self.enable
     Primitive.cstmt! %{
       rb_rjit_call_p = true;

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 module RubyVM::RJIT
+  # Return a Hash for \RJIT statistics. \--rjit-stats makes more information available.
   def self.runtime_stats
     stats = {}
 
@@ -30,6 +31,7 @@ module RubyVM::RJIT
     stats
   end
 
+  # :nodoc: all
   class << self
     private
 
