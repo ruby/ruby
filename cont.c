@@ -2587,12 +2587,12 @@ rb_threadptr_root_fiber_release(rb_thread_t *th)
         /* ignore. A root fiber object will free th->ec */
     }
     else {
-        rb_execution_context_t *ec = GET_EC();
+        rb_execution_context_t *ec = rb_current_execution_context(false);
 
         VM_ASSERT(th->ec->fiber_ptr->cont.type == FIBER_CONTEXT);
         VM_ASSERT(th->ec->fiber_ptr->cont.self == 0);
 
-        if (th->ec == ec) {
+        if (ec && th->ec == ec) {
             rb_ractor_set_current_ec(th->ractor, NULL);
         }
         fiber_free(th->ec->fiber_ptr);
