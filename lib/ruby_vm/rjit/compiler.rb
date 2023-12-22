@@ -142,11 +142,12 @@ module RubyVM::RJIT
       end
 
       # Reuse or generate a block
+      c_target = C.rb_rjit_branch_target.new(target0_p ? branch_stub.c_target0 : branch_stub.c_target1)
       if block
-        target.address = block.start_addr
+        c_target.address = block.start_addr
       else
         jit = JITState.new(iseq: branch_stub.iseq, cfp:)
-        target.address = Assembler.new.then do |asm|
+        c_target.address = Assembler.new.then do |asm|
           compile_block(asm, jit:, pc: target.pc, ctx: target.ctx.dup)
           @cb.write(asm)
         end
@@ -163,7 +164,7 @@ module RubyVM::RJIT
         end
       end
 
-      return target.address
+      return c_target.address
     rescue Exception => e
       STDERR.puts e.full_message
       exit 1
@@ -204,20 +205,22 @@ module RubyVM::RJIT
 
       # Re-stub incoming branches
       block.incoming.each do |branch_stub|
-        target = [branch_stub.target0, branch_stub.target1].compact.find do |target|
-          target.pc == block.pc && target.ctx == block.ctx
+        c_target = [branch_stub.c_target0, branch_stub.c_target1].compact.map do |c_target_addr|
+          C.rb_rjit_branch_target.new(c_target_addr)
+        end.find do |c_target|
+          c_target.pc == block.pc && Context.load(c_target.ctx.to_i) == block.ctx
         end
-        next if target.nil?
+        next if c_target.nil?
         # TODO: Could target.address be a stub address? Is invalidation not needed in that case?
 
         # If the target being re-generated is currently a fallthrough block,
         # the fallthrough code must be rewritten with a jump to the stub.
-        if target.address == branch_stub.end_addr
+        if c_target.address == branch_stub.end_addr
           branch_stub.shape = Default
         end
 
-        target.address = Assembler.new.then do |ocb_asm|
-          @exit_compiler.compile_branch_stub(block.ctx, ocb_asm, branch_stub, target == branch_stub.target0)
+        c_target.address = Assembler.new.then do |ocb_asm|
+          @exit_compiler.compile_branch_stub(block.ctx, ocb_asm, branch_stub, c_target.to_i == branch_stub.c_target0)
           @ocb.write(ocb_asm)
         end
         @cb.with_write_addr(branch_stub.start_addr) do

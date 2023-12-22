@@ -655,6 +655,7 @@ generator = BindingGenerator.new(
     rb_rjit_type
     rb_rjit_temp_mapping
     rb_rjit_context
+    rb_rjit_branch_target
   ],
   # #ifdef-dependent immediate types, which need Primitive.cexpr! for type detection
   dynamic_types: %w[

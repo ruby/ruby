@@ -52,8 +52,7 @@ module RubyVM::RJIT
     end
 
     # Allocate `rb_rjit_context`, serialize self into it, and return the address of it.
-    def save
-      c_ctx = C.rb_rjit_context.new
+    def save(c_ctx = C.rb_rjit_context.new)
       c_ctx.stack_size = self.stack_size
       c_ctx.sp_offset = self.sp_offset
       c_ctx.chain_depth = self.chain_depth
@@ -86,7 +85,7 @@ module RubyVM::RJIT
       MAX_TEMP_TYPES.times do |i|
         ctx.temp_mapping[i] = C_TEMP.fetch(c_ctx.temp_mapping[i])
       end
-      ctx
+      ctx.freeze
     end
 
     # Create a new Context instance with a given stack_size and sp_offset adjusted

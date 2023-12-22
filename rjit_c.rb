@@ -1347,6 +1347,15 @@ module RubyVM::RJIT # :nodoc: all
     )
   end
 
+  def C.rb_rjit_branch_target
+    @rb_rjit_branch_target ||= CType::Struct.new(
+      "rb_rjit_branch_target", Primitive.cexpr!("SIZEOF(struct rb_rjit_branch_target)"),
+      pc: [CType::Immediate.parse("uint64_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_branch_target *)NULL)), pc)")],
+      ctx: [self.rb_rjit_context, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_branch_target *)NULL)), ctx)")],
+      address: [CType::Immediate.parse("uint64_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_branch_target *)NULL)), address)")],
+    )
+  end
+
   def C.rb_rjit_context
     @rb_rjit_context ||= CType::Struct.new(
       "rb_rjit_context", Primitive.cexpr!("SIZEOF(struct rb_rjit_context)"),

@@ -7,8 +7,8 @@ module RubyVM::RJIT
   class BranchStub < Struct.new(
     :iseq,       # @param [RubyVM::RJIT::CPointer::Struct_rb_iseq_struct] Branch target ISEQ
     :shape,      # @param [Symbol] Next0, Next1, or Default
-    :target0,    # @param [RubyVM::RJIT::BranchTarget] First branch target
-    :target1,    # @param [RubyVM::RJIT::BranchTarget,NilClass] Second branch target (optional)
+    :c_target0,  # @param [Integer] First branch target
+    :c_target1,  # @param [Integer,NilClass] Second branch target (optional)
     :compiler,   # @param [Symbol] The name of a callback to (re-)generate this branch stub
     :payload,    # @param [Object,NilClass] One optional argument to the :compiler callback
     :start_addr, # @param [Integer] Stub source start address to be re-generated
@@ -17,19 +17,44 @@ module RubyVM::RJIT
     def compile(asm)
       InsnCompiler.public_send(compiler, asm, self, *payload)
     end
+
+    def target0
+      BranchTarget.load(c_target0)
+    end
+
+    def target0=(target)
+      self.c_target0 = target.save
+    end
+
+    def target1
+      BranchTarget.load(c_target1)
+    end
+
+    def target1=(target)
+      self.c_target1 = target.save
+    end
   end
 
   class BranchTarget < Struct.new(
     :pc,      # @param [Integer]
-    :c_ctx,   # @param [Integer]
+    :ctx,     # @param [Context]
     :address, # @param [Integer]
   )
-    def initialize(pc:, ctx:, address: nil)
-      super(pc:, c_ctx: ctx.save, address: address)
+    def save
+      c_target = C.rb_rjit_branch_target.new
+      c_target.pc = pc
+      ctx.save(c_target.ctx)
+      c_target.address = address
+      c_target.to_i
     end
 
-    def ctx
-      Context.load(c_ctx)
+    def self.load(c_target_addr)
+      c_target = C.rb_rjit_branch_target.new(c_target_addr)
+      target = BranchTarget.new
+      target.pc = c_target.pc
+      target.ctx = Context.load(c_target.ctx.to_i)
+      target.address = c_target.address
+      target.freeze
     end
   end
 end

@@ -1908,20 +1908,15 @@ module RubyVM::RJIT
         asm.test(val_opnd, ~Qnil)
 
         # Set stubs
-        branch_stub = BranchStub.new(
-          iseq: jit.iseq,
-          shape: Default,
-          target0: BranchTarget.new(ctx:, pc: jump_pc), # branch target
-          target1: BranchTarget.new(ctx:, pc: next_pc), # fallthrough
-        )
-        branch_stub.target0.address = Assembler.new.then do |ocb_asm|
+        branch_stub = BranchStub.new(iseq: jit.iseq, shape: Default)
+        branch_stub.target0 = BranchTarget.new(ctx:, pc: jump_pc, address: Assembler.new.then { |ocb_asm| # branch target
           @exit_compiler.compile_branch_stub(ctx, ocb_asm, branch_stub, true)
           @ocb.write(ocb_asm)
-        end
-        branch_stub.target1.address = Assembler.new.then do |ocb_asm|
+        })
+        branch_stub.target1 = BranchTarget.new(ctx:, pc: next_pc, address: Assembler.new.then { |ocb_asm| # fallthrough
           @exit_compiler.compile_branch_stub(ctx, ocb_asm, branch_stub, false)
           @ocb.write(ocb_asm)
-        end
+        })
 
         # Jump to target0 on jnz
         branch_stub.compiler = :compile_branchif
@@ -1971,20 +1966,15 @@ module RubyVM::RJIT
         asm.test(val_opnd, ~Qnil)
 
         # Set stubs
-        branch_stub = BranchStub.new(
-          iseq: jit.iseq,
-          shape: Default,
-          target0: BranchTarget.new(ctx:, pc: jump_pc), # branch target
-          target1: BranchTarget.new(ctx:, pc: next_pc), # fallthrough
-        )
-        branch_stub.target0.address = Assembler.new.then do |ocb_asm|
+        branch_stub = BranchStub.new(iseq: jit.iseq, shape: Default)
+        branch_stub.target0 = BranchTarget.new(ctx:, pc: jump_pc, address: Assembler.new.then { |ocb_asm| # branch target
           @exit_compiler.compile_branch_stub(ctx, ocb_asm, branch_stub, true)
           @ocb.write(ocb_asm)
-        end
-        branch_stub.target1.address = Assembler.new.then do |ocb_asm|
+        })
+        branch_stub.target1 = BranchTarget.new(ctx:, pc: next_pc, address: Assembler.new.then { |ocb_asm| # fallthrough
           @exit_compiler.compile_branch_stub(ctx, ocb_asm, branch_stub, false)
           @ocb.write(ocb_asm)
-        end
+        })
 
         # Jump to target0 on jz
         branch_stub.compiler = :compile_branchunless
@@ -2033,20 +2023,15 @@ module RubyVM::RJIT
         asm.cmp(val_opnd, Qnil)
 
         # Set stubs
-        branch_stub = BranchStub.new(
-          iseq: jit.iseq,
-          shape: Default,
-          target0: BranchTarget.new(ctx:, pc: jump_pc), # branch target
-          target1: BranchTarget.new(ctx:, pc: next_pc), # fallthrough
-        )
-        branch_stub.target0.address = Assembler.new.then do |ocb_asm|
+        branch_stub = BranchStub.new(iseq: jit.iseq, shape: Default)
+        branch_stub.target0 = BranchTarget.new(ctx:, pc: jump_pc, address: Assembler.new.then { |ocb_asm| # branch target
           @exit_compiler.compile_branch_stub(ctx, ocb_asm, branch_stub, true)
           @ocb.write(ocb_asm)
-        end
-        branch_stub.target1.address = Assembler.new.then do |ocb_asm|
+        })
+        branch_stub.target1 = BranchTarget.new(ctx:, pc: next_pc, address: Assembler.new.then { |ocb_asm| # fallthrough
           @exit_compiler.compile_branch_stub(ctx, ocb_asm, branch_stub, false)
           @ocb.write(ocb_asm)
-        end
+        })
 
         # Jump to target0 on je
         branch_stub.compiler = :compile_branchnil
@@ -3622,15 +3607,11 @@ module RubyVM::RJIT
         deeper = ctx.dup
         deeper.chain_depth += 1
 
-        branch_stub = BranchStub.new(
-          iseq: jit.iseq,
-          shape: Default,
-          target0: BranchTarget.new(ctx: deeper, pc: jit.pc),
-        )
-        branch_stub.target0.address = Assembler.new.then do |ocb_asm|
+        branch_stub = BranchStub.new(iseq: jit.iseq, shape: Default)
+        branch_stub.target0 = BranchTarget.new(ctx: deeper, pc: jit.pc, address: Assembler.new.then { |ocb_asm|
           @exit_compiler.compile_branch_stub(deeper, ocb_asm, branch_stub, true)
           @ocb.write(ocb_asm)
-        end
+        })
         branch_stub.compiler = :compile_jit_chain_guard
         branch_stub.payload = opcode
         branch_stub.compile(asm)
@@ -5628,15 +5609,12 @@ module RubyVM::RJIT
         return_ctx.stack_push(Type::Unknown) # push callee's return value
         return_ctx.sp_offset = 1 # SP is in the position after popping a receiver and arguments
         return_ctx.chain_depth = 0
-        branch_stub = BranchStub.new(
-          iseq: jit.iseq,
-          shape: Default,
-          target0: BranchTarget.new(ctx: return_ctx, pc: jit.pc + jit.insn.len * C.VALUE.size),
-        )
-        branch_stub.target0.address = Assembler.new.then do |ocb_asm|
+        return_pc = jit.pc + jit.insn.len * C.VALUE.size
+        branch_stub = BranchStub.new(iseq: jit.iseq, shape: Default)
+        branch_stub.target0 = BranchTarget.new(ctx: return_ctx, pc: return_pc, address: Assembler.new.then { |ocb_asm|
           @exit_compiler.compile_branch_stub(return_ctx, ocb_asm, branch_stub, true)
           @ocb.write(ocb_asm)
-        end
+        })
         branch_stub.compiler = :compile_jit_return
         branch_stub.payload = cfp_offset
         branch_stub.compile(asm)
@@ -5871,15 +5849,11 @@ module RubyVM::RJIT
     end
 
     def jit_direct_jump(iseq, pc, ctx, asm, comment: 'jit_direct_jump')
-      branch_stub = BranchStub.new(
-        iseq:,
-        shape: Default,
-        target0: BranchTarget.new(ctx:, pc:),
-      )
-      branch_stub.target0.address = Assembler.new.then do |ocb_asm|
+      branch_stub = BranchStub.new(iseq:, shape: Default)
+      branch_stub.target0 = BranchTarget.new(ctx:, pc:, address: Assembler.new.then { |ocb_asm|
         @exit_compiler.compile_branch_stub(ctx, ocb_asm, branch_stub, true)
         @ocb.write(ocb_asm)
-      end
+      })
       branch_stub.compiler = :compile_jit_direct_jump
       branch_stub.payload = comment
       branch_stub.compile(asm)
