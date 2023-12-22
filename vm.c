@@ -3056,7 +3056,8 @@ ruby_vm_destruct(rb_vm_t *vm)
                 rb_objspace_free_objects(objspace);
                 rb_free_generic_iv_tbl_();
                 rb_free_default_rand_key();
-                if (th) {
+                if (th && vm->fork_gen == 0) {
+                    /* If we have forked, main_thread may not be the initial thread */
                     xfree(stack);
                     ruby_mimfree(th);
                 }
