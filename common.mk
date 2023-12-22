@@ -935,10 +935,12 @@ test: test-short
 test-precheck: encs exts PHONY $(DOT_WAIT)
 yes-test-all-precheck: programs $(DOT_WAIT) test-precheck
 
+PRECHECK_TEST_ALL = yes-test-all-precheck
+
 # $ make test-all TESTOPTS="--help" displays more detail
 # for example, make test-all TESTOPTS="-j2 -v -n test-name -- test-file-name"
 test-all: $(TEST_RUNNABLE)-test-all
-yes-test-all: yes-test-all-precheck
+yes-test-all: $(PRECHECK_TEST_ALL)
 	$(ACTIONS_GROUP)
 	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(TESTS)
 	$(ACTIONS_ENDGROUP)
