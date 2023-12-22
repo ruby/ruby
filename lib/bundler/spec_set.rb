@@ -68,8 +68,6 @@ module Bundler
       less_specific_platform = new_platforms.find {|platform| platform != Gem::Platform::RUBY && platform === Bundler.local_platform }
       platforms.delete(Bundler.local_platform) if less_specific_platform
 
-      reset!
-
       platforms
     end
 
@@ -209,14 +207,18 @@ module Bundler
         end
 
         if platform_spec
-          new_specs << LazySpecification.from_spec(platform_spec)
+          new_specs << LazySpecification.from_spec(platform_spec) unless specs.include?(platform_spec)
           true
         else
           false
         end
       end
 
-      @specs.concat(new_specs.uniq) if valid_platform
+      if valid_platform && new_specs.any?
+        @specs.concat(new_specs)
+
+        reset!
+      end
 
       valid_platform
     end
