@@ -2872,7 +2872,7 @@ timer_thread_set_timeout(rb_vm_t *vm)
                 RUBY_DEBUG_LOG("th:%u now:%lu rel:%lu", rb_th_serial(th), (unsigned long)now, (unsigned long)hrrel);
 
                 // TODO: overflow?
-                timeout = (int)(hrrel / RB_HRTIME_PER_MSEC); // ms
+                timeout = (int)((hrrel + RB_HRTIME_PER_MSEC - 1) / RB_HRTIME_PER_MSEC); // ms
             }
         }
         rb_native_mutex_unlock(&timer_th.waiting_lock);
