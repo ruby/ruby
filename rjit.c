@@ -134,7 +134,7 @@ rb_rjit_setup_options(const char *s, struct rb_rjit_options *rjit_opt)
         rjit_opt->disable = true;
     }
     else if (opt_match_noarg(s, l, "trace")) {
-        rjit_opt->trace_exits = true;
+        rjit_opt->trace = true;
     }
     else if (opt_match_noarg(s, l, "trace-exits")) {
         rjit_opt->trace_exits = true;
@@ -172,23 +172,39 @@ extern VALUE rb_gc_enable(void);
 extern VALUE rb_gc_disable(void);
 extern uint64_t rb_vm_insns_count;
 
-// Disable GC, TracePoint, JIT, and VM insns counter
-#define WITH_RJIT_ISOLATED(stmt) do { \
+// Disable GC, TracePoint, JIT, and stats
+#define WITH_RJIT_ISOLATED_USING_PC(using_pc, stmt) do { \
     VALUE was_disabled = rb_gc_disable(); \
+    \
     rb_hook_list_t *global_hooks = rb_ec_ractor_hooks(GET_EC()); \
     rb_rjit_global_events = global_hooks->events; \
-    if (!rb_rjit_opts.trace) global_hooks->events = 0; \
+    \
+    const VALUE *pc = NULL; \
+    if (rb_rjit_opts.trace) { \
+        pc = GET_EC()->cfp->pc; \
+        if (!using_pc) GET_EC()->cfp->pc = 0; /* avoid crashing on calc_lineno */ \
+    } \
+    else global_hooks->events = 0; \
+    \
     bool original_call_p = rb_rjit_call_p; \
-    rjit_stats_p = false; \
     rb_rjit_call_p = false; \
+    \
+    rjit_stats_p = false; \
     uint64_t insns_count = rb_vm_insns_count; \
+    \
     stmt; \
+    \
     rb_vm_insns_count = insns_count; \
-    rb_rjit_call_p = (rjit_cancel_p ? false : original_call_p); \
     rjit_stats_p = rb_rjit_opts.stats; \
-    if (!rb_rjit_opts.trace) global_hooks->events = rb_rjit_global_events; \
+    \
+    rb_rjit_call_p = (rjit_cancel_p ? false : original_call_p); \
+    \
+    if (rb_rjit_opts.trace) GET_EC()->cfp->pc = pc; \
+    else global_hooks->events = rb_rjit_global_events; \
+    \
     if (!was_disabled) rb_gc_enable(); \
 } while (0);
+#define WITH_RJIT_ISOLATED(stmt) WITH_RJIT_ISOLATED_USING_PC(false, stmt)
 
 void
 rb_rjit_cancel_all(const char *reason)
@@ -354,7 +370,7 @@ rb_rjit_compile(const rb_iseq_t *iseq)
     RB_VM_LOCK_ENTER();
     rb_vm_barrier();
 
-    WITH_RJIT_ISOLATED({
+    WITH_RJIT_ISOLATED_USING_PC(true, {
         VALUE iseq_ptr = rb_funcall(rb_cRJITIseqPtr, rb_intern("new"), 1, SIZET2NUM((size_t)iseq));
         VALUE cfp_ptr = rb_funcall(rb_cRJITCfpPtr, rb_intern("new"), 1, SIZET2NUM((size_t)GET_EC()->cfp));
         rb_funcall(rb_RJITCompiler, rb_intern("compile"), 2, iseq_ptr, cfp_ptr);
@@ -373,7 +389,7 @@ rb_rjit_entry_stub_hit(VALUE branch_stub)
 
     rb_control_frame_t *cfp = GET_EC()->cfp;
 
-    WITH_RJIT_ISOLATED({
+    WITH_RJIT_ISOLATED_USING_PC(true, {
         VALUE cfp_ptr = rb_funcall(rb_cRJITCfpPtr, rb_intern("new"), 1, SIZET2NUM((size_t)cfp));
         result = rb_funcall(rb_RJITCompiler, rb_intern("entry_stub_hit"), 2, branch_stub, cfp_ptr);
     });
