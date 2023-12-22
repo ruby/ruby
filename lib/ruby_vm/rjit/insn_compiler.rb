@@ -1,3 +1,4 @@
+# frozen_string_literal: true
 module RubyVM::RJIT
   class InsnCompiler
     # struct rb_calling_info. Storing flags instead of ci.
