@@ -56,7 +56,7 @@ Note: We're only listing outstanding class updates.
         # Yielding...
         fiber.kill
         # Exiting...
-    ```
+        ```
 
 * MatchData
 
