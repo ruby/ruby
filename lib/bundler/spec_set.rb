@@ -71,6 +71,12 @@ module Bundler
       platforms
     end
 
+    def complete_platforms!(platforms)
+      platforms.each do |platform|
+        complete_platform(platform)
+      end
+    end
+
     def validate_deps(s)
       s.runtime_dependencies.each do |dep|
         next if dep.name == "bundler"
