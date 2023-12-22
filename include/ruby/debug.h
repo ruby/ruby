@@ -718,8 +718,8 @@ void rb_postponed_job_trigger(rb_postponed_job_handle_t h);
 
 /**
  * Schedules the given `func` to be called with `data` when Ruby next checks for
- * interupts. If this function is called multiple times in between Ruby checking
- * for interrupts, then `func` will be called only once with the `data` vlaue from
+ * interrupts. If this function is called multiple times in between Ruby checking
+ * for interrupts, then `func` will be called only once with the `data` value from
  * the first call to this function.
  *
  * Like `rb_postponed_job_trigger`, the context in which the job is called
@@ -731,7 +731,7 @@ void rb_postponed_job_trigger(rb_postponed_job_handle_t h);
  *   rb_postponed_job_trigger(rb_postponed_job_preregister(func, data));
  * ```
  *
- * @note    Prevoius versions of Ruby promised that the (`func`, `data`) pairs would
+ * @note    Previous versions of Ruby promised that the (`func`, `data`) pairs would
  *          be executed as many times as they were registered with this function; in
  *          reality this was always subject to race conditions and this function no
  *          longer provides this guarantee. Instead, multiple calls to this function
