@@ -106,6 +106,12 @@ Note: We're only listing outstanding class updates.
       Refinement#refined_class is deprecated and will be removed in Ruby
       3.4.  [[Feature #19714]]
 
+* Regexp
+
+    * The cache-based optimization now supports lookarounds and atomic groupings. That is, match
+      for Regexp containing these extensions can now also be performed in linear time to the length
+      of the input string. However, these cannot contain captures and cannot be nested. [[Feature #19725]]
+
 * String
 
     * String#unpack now raises ArgumentError for unknown directives. [[Bug #19150]]
@@ -508,6 +514,7 @@ changelog for details of the default gems or bundled gems.
 [Feature #19637]: https://bugs.ruby-lang.org/issues/19637
 [Feature #19678]: https://bugs.ruby-lang.org/issues/19678
 [Feature #19714]: https://bugs.ruby-lang.org/issues/19714
+[Feature #19725]: https://bugs.ruby-lang.org/issues/19725
 [Feature #19757]: https://bugs.ruby-lang.org/issues/19757
 [Feature #19776]: https://bugs.ruby-lang.org/issues/19776
 [Feature #19777]: https://bugs.ruby-lang.org/issues/19777
