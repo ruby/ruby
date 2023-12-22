@@ -161,4 +161,45 @@ RJIT_RUNTIME_COUNTERS(
 #undef RJIT_RUNTIME_COUNTERS
 extern struct rb_rjit_runtime_counters rb_rjit_counters;
 
+enum rb_rjit_type {
+    Type_Unknown,
+    Type_UnknownImm,
+    Type_UnknownHeap,
+    Type_Nil,
+    Type_True,
+    Type_False,
+    Type_Fixnum,
+    Type_Flonum,
+    Type_Hash,
+    Type_ImmSymbol,
+    Type_HeapSymbol,
+    Type_TString,
+    Type_CString,
+    Type_TArray,
+    Type_BlockParamProxy,
+};
+
+enum rb_rjit_temp_mapping {
+    Temp_MapToStack,
+    Temp_MapToSelf,
+    Temp_MapToLocal0,
+    Temp_MapToLocal1,
+    Temp_MapToLocal2,
+    Temp_MapToLocal3,
+    Temp_MapToLocal4,
+    Temp_MapToLocal5,
+    Temp_MapToLocal6,
+    Temp_MapToLocal7,
+};
+
+struct rb_rjit_context {
+    uint32_t stack_size;
+    int32_t sp_offset;
+    uint8_t chain_depth;
+    enum rb_rjit_type local_types[8];
+    enum rb_rjit_type temp_types[8];
+    enum rb_rjit_type self_type;
+    enum rb_rjit_temp_mapping temp_mapping[8];
+};
+
 #endif /* RJIT_C_H */

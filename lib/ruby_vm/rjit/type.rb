@@ -196,23 +196,24 @@ module RubyVM::RJIT
   end
 
   # List of types
-  Type::Unknown     = Type[:Unknown]
-  Type::UnknownImm  = Type[:UnknownImm]
-  Type::UnknownHeap = Type[:UnknownHeap]
-  Type::Nil         = Type[:Nil]
-  Type::True        = Type[:True]
-  Type::False       = Type[:False]
-  Type::Fixnum      = Type[:Fixnum]
-  Type::Flonum      = Type[:Flonum]
-  Type::Hash        = Type[:Hash]
-  Type::ImmSymbol   = Type[:ImmSymbol]
-  Type::HeapSymbol  = Type[:HeapSymbol]
-
-  Type::TString = Type[:TString] # An object with the T_STRING flag set, possibly an rb_cString
-  Type::CString = Type[:CString] # An un-subclassed string of type rb_cString (can have instance vars in some cases)
-  Type::TArray  = Type[:TArray]  # An object with the T_ARRAY flag set, possibly an rb_cArray
-
+  Type::Unknown         = Type[:Unknown]
+  Type::UnknownImm      = Type[:UnknownImm]
+  Type::UnknownHeap     = Type[:UnknownHeap]
+  Type::Nil             = Type[:Nil]
+  Type::True            = Type[:True]
+  Type::False           = Type[:False]
+  Type::Fixnum          = Type[:Fixnum]
+  Type::Flonum          = Type[:Flonum]
+  Type::Hash            = Type[:Hash]
+  Type::ImmSymbol       = Type[:ImmSymbol]
+  Type::HeapSymbol      = Type[:HeapSymbol]
+  Type::TString         = Type[:TString] # An object with the T_STRING flag set, possibly an rb_cString
+  Type::CString         = Type[:CString] # An un-subclassed string of type rb_cString (can have instance vars in some cases)
+  Type::TArray          = Type[:TArray]  # An object with the T_ARRAY flag set, possibly an rb_cArray
   Type::BlockParamProxy = Type[:BlockParamProxy] # A special sentinel value indicating the block parameter should be read from
+
+  TYPE_C = Type.constants.map { |const| [Type.const_get(const), C.const_get("Type_#{const}")] }.to_h
+  C_TYPE = TYPE_C.map { |type, c| [c, type] }.to_h
 
   module TypeDiff
     Compatible = Data.define(:diversion) # The smaller, the more compatible.

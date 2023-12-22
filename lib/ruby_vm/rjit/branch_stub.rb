@@ -17,8 +17,15 @@ module RubyVM::RJIT
 
   class BranchTarget < Struct.new(
     :pc,
-    :ctx,
+    :c_ctx,
     :address,
   )
+    def initialize(pc:, ctx:, address: nil)
+      super(pc:, c_ctx: ctx.save, address: address)
+    end
+
+    def ctx
+      Context.load(c_ctx)
+    end
   end
 end

@@ -68,7 +68,7 @@ module RubyVM::RJIT
           define_singleton_method(:members) { members.keys }
 
           define_method(:initialize) do |addr = nil|
-            if addr.nil? # TODO: get rid of this feature later
+            if addr.nil?
               addr = Fiddle.malloc(size)
             end
             super(addr, size, members)

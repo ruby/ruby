@@ -14,6 +14,15 @@ module RubyVM::RJIT
   MapToSelf  = :MapToSelf  # Temp maps to the self operand
   MapToLocal = Data.define(:local_index) # Temp maps to a local variable with index
 
+  TEMP_C = {
+    MapToStack => C::Temp_MapToStack,
+    MapToSelf  => C::Temp_MapToSelf,
+  }
+  MAX_TEMP_TYPES.times do |i|
+    TEMP_C[MapToLocal[i]] = C.const_get("Temp_MapToLocal#{i}")
+  end
+  C_TEMP = TEMP_C.map { |temp, c| [c, temp] }.to_h
+
   class Context < Struct.new(
     :stack_size,   # @param [Integer] The number of values on the stack
     :sp_offset,    # @param [Integer] JIT sp offset relative to the interpreter's sp
@@ -39,6 +48,44 @@ module RubyVM::RJIT
       ctx.local_types = ctx.local_types.dup
       ctx.temp_types = ctx.temp_types.dup
       ctx.temp_mapping = ctx.temp_mapping.dup
+      ctx
+    end
+
+    # Allocate `rb_rjit_context`, serialize self into it, and return the address of it.
+    def save
+      c_ctx = C.rb_rjit_context.new
+      c_ctx.stack_size = self.stack_size
+      c_ctx.sp_offset = self.sp_offset
+      c_ctx.chain_depth = self.chain_depth
+      MAX_LOCAL_TYPES.times do |i|
+        c_ctx.local_types[i] = TYPE_C.fetch(self.local_types[i])
+      end
+      MAX_TEMP_TYPES.times do |i|
+        c_ctx.temp_types[i] = TYPE_C.fetch(self.temp_types[i])
+      end
+      c_ctx.self_type = TYPE_C.fetch(self.self_type)
+      MAX_TEMP_TYPES.times do |i|
+        c_ctx.temp_mapping[i] = TEMP_C.fetch(self.temp_mapping[i])
+      end
+      c_ctx.to_i
+    end
+
+    def self.load(c_ctx_addr)
+      c_ctx = C.rb_rjit_context.new(c_ctx_addr)
+      ctx = Context.new
+      ctx.stack_size = c_ctx.stack_size
+      ctx.sp_offset = c_ctx.sp_offset
+      ctx.chain_depth = c_ctx.chain_depth
+      MAX_LOCAL_TYPES.times do |i|
+        ctx.local_types[i] = C_TYPE.fetch(c_ctx.local_types[i])
+      end
+      MAX_TEMP_TYPES.times do |i|
+        ctx.temp_types[i] = C_TYPE.fetch(c_ctx.temp_types[i])
+      end
+      ctx.self_type = C_TYPE.fetch(c_ctx.self_type)
+      MAX_TEMP_TYPES.times do |i|
+        ctx.temp_mapping[i] = C_TEMP.fetch(c_ctx.temp_mapping[i])
+      end
       ctx
     end
 

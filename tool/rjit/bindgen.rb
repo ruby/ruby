@@ -483,6 +483,31 @@ generator = BindingGenerator.new(
       RUBY_ENCODING_MASK
       RUBY_FL_FREEZE
       RHASH_PASS_AS_KEYWORDS
+      Type_Unknown
+      Type_UnknownImm
+      Type_UnknownHeap
+      Type_Nil
+      Type_True
+      Type_False
+      Type_Fixnum
+      Type_Flonum
+      Type_Hash
+      Type_ImmSymbol
+      Type_HeapSymbol
+      Type_TString
+      Type_CString
+      Type_TArray
+      Type_BlockParamProxy
+      Temp_MapToStack
+      Temp_MapToSelf
+      Temp_MapToLocal0
+      Temp_MapToLocal1
+      Temp_MapToLocal2
+      Temp_MapToLocal3
+      Temp_MapToLocal4
+      Temp_MapToLocal5
+      Temp_MapToLocal6
+      Temp_MapToLocal7
     ],
   },
   values: {
@@ -627,6 +652,9 @@ generator = BindingGenerator.new(
     rb_iseq_param_keyword
     rb_rjit_options
     rb_callinfo_kwarg
+    rb_rjit_type
+    rb_rjit_temp_mapping
+    rb_rjit_context
   ],
   # #ifdef-dependent immediate types, which need Primitive.cexpr! for type detection
   dynamic_types: %w[

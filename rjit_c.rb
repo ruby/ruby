@@ -414,6 +414,31 @@ module RubyVM::RJIT # :nodoc: all
   C::SHAPE_ROOT = Primitive.cexpr! %q{ SIZET2NUM(SHAPE_ROOT) }
   C::STRING_REDEFINED_OP_FLAG = Primitive.cexpr! %q{ SIZET2NUM(STRING_REDEFINED_OP_FLAG) }
   C::T_OBJECT = Primitive.cexpr! %q{ SIZET2NUM(T_OBJECT) }
+  C::Temp_MapToLocal0 = Primitive.cexpr! %q{ SIZET2NUM(Temp_MapToLocal0) }
+  C::Temp_MapToLocal1 = Primitive.cexpr! %q{ SIZET2NUM(Temp_MapToLocal1) }
+  C::Temp_MapToLocal2 = Primitive.cexpr! %q{ SIZET2NUM(Temp_MapToLocal2) }
+  C::Temp_MapToLocal3 = Primitive.cexpr! %q{ SIZET2NUM(Temp_MapToLocal3) }
+  C::Temp_MapToLocal4 = Primitive.cexpr! %q{ SIZET2NUM(Temp_MapToLocal4) }
+  C::Temp_MapToLocal5 = Primitive.cexpr! %q{ SIZET2NUM(Temp_MapToLocal5) }
+  C::Temp_MapToLocal6 = Primitive.cexpr! %q{ SIZET2NUM(Temp_MapToLocal6) }
+  C::Temp_MapToLocal7 = Primitive.cexpr! %q{ SIZET2NUM(Temp_MapToLocal7) }
+  C::Temp_MapToSelf = Primitive.cexpr! %q{ SIZET2NUM(Temp_MapToSelf) }
+  C::Temp_MapToStack = Primitive.cexpr! %q{ SIZET2NUM(Temp_MapToStack) }
+  C::Type_BlockParamProxy = Primitive.cexpr! %q{ SIZET2NUM(Type_BlockParamProxy) }
+  C::Type_CString = Primitive.cexpr! %q{ SIZET2NUM(Type_CString) }
+  C::Type_False = Primitive.cexpr! %q{ SIZET2NUM(Type_False) }
+  C::Type_Fixnum = Primitive.cexpr! %q{ SIZET2NUM(Type_Fixnum) }
+  C::Type_Flonum = Primitive.cexpr! %q{ SIZET2NUM(Type_Flonum) }
+  C::Type_Hash = Primitive.cexpr! %q{ SIZET2NUM(Type_Hash) }
+  C::Type_HeapSymbol = Primitive.cexpr! %q{ SIZET2NUM(Type_HeapSymbol) }
+  C::Type_ImmSymbol = Primitive.cexpr! %q{ SIZET2NUM(Type_ImmSymbol) }
+  C::Type_Nil = Primitive.cexpr! %q{ SIZET2NUM(Type_Nil) }
+  C::Type_TArray = Primitive.cexpr! %q{ SIZET2NUM(Type_TArray) }
+  C::Type_TString = Primitive.cexpr! %q{ SIZET2NUM(Type_TString) }
+  C::Type_True = Primitive.cexpr! %q{ SIZET2NUM(Type_True) }
+  C::Type_Unknown = Primitive.cexpr! %q{ SIZET2NUM(Type_Unknown) }
+  C::Type_UnknownHeap = Primitive.cexpr! %q{ SIZET2NUM(Type_UnknownHeap) }
+  C::Type_UnknownImm = Primitive.cexpr! %q{ SIZET2NUM(Type_UnknownImm) }
   C::VM_BLOCK_HANDLER_NONE = Primitive.cexpr! %q{ SIZET2NUM(VM_BLOCK_HANDLER_NONE) }
   C::VM_CALL_ARGS_BLOCKARG = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_ARGS_BLOCKARG) }
   C::VM_CALL_ARGS_SPLAT = Primitive.cexpr! %q{ SIZET2NUM(VM_CALL_ARGS_SPLAT) }
@@ -1322,6 +1347,19 @@ module RubyVM::RJIT # :nodoc: all
     )
   end
 
+  def C.rb_rjit_context
+    @rb_rjit_context ||= CType::Struct.new(
+      "rb_rjit_context", Primitive.cexpr!("SIZEOF(struct rb_rjit_context)"),
+      stack_size: [CType::Immediate.parse("uint32_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_context *)NULL)), stack_size)")],
+      sp_offset: [CType::Immediate.parse("int32_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_context *)NULL)), sp_offset)")],
+      chain_depth: [CType::Immediate.parse("uint8_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_context *)NULL)), chain_depth)")],
+      local_types: [CType::Array.new { self.rb_rjit_type }, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_context *)NULL)), local_types)")],
+      temp_types: [CType::Array.new { self.rb_rjit_type }, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_context *)NULL)), temp_types)")],
+      self_type: [self.rb_rjit_type, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_context *)NULL)), self_type)")],
+      temp_mapping: [CType::Array.new { self.rb_rjit_temp_mapping }, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_context *)NULL)), temp_mapping)")],
+    )
+  end
+
   def C.rb_rjit_options
     @rb_rjit_options ||= CType::Struct.new(
       "rb_rjit_options", Primitive.cexpr!("SIZEOF(struct rb_rjit_options)"),
@@ -1463,6 +1501,14 @@ module RubyVM::RJIT # :nodoc: all
       getblockpp_not_iseq_block: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), getblockpp_not_iseq_block)")],
       compiled_block_count: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), compiled_block_count)")],
     )
+  end
+
+  def C.rb_rjit_temp_mapping
+    @rb_rjit_temp_mapping ||= CType::Immediate.parse("int")
+  end
+
+  def C.rb_rjit_type
+    @rb_rjit_type ||= CType::Immediate.parse("int")
   end
 
   def C.rb_serial_t
