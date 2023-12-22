@@ -16,9 +16,9 @@ module RubyVM::RJIT
   end
 
   class BranchTarget < Struct.new(
-    :pc,
-    :c_ctx,
-    :address,
+    :pc,      # @param [Integer]
+    :c_ctx,   # @param [Integer]
+    :address, # @param [Integer]
   )
     def initialize(pc:, ctx:, address: nil)
       super(pc:, c_ctx: ctx.save, address: address)
