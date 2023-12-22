@@ -86,8 +86,7 @@ module Bundler
       less_specific_platform = new_platforms.find {|platform| platform != Gem::Platform::RUBY && platform === Bundler.local_platform }
       platforms.delete(Bundler.local_platform) if less_specific_platform
 
-      @sorted = nil
-      @lookup = nil
+      reset!
 
       platforms
     end
@@ -110,14 +109,14 @@ module Bundler
 
     def []=(key, value)
       @specs << value
-      @lookup = nil
-      @sorted = nil
+
+      reset!
     end
 
     def delete(specs)
       specs.each {|spec| @specs.delete(spec) }
-      @lookup = nil
-      @sorted = nil
+
+      reset!
     end
 
     def sort!
@@ -175,8 +174,8 @@ module Bundler
 
     def delete_by_name(name)
       @specs.reject! {|spec| spec.name == name }
-      @lookup = nil
-      @sorted = nil
+
+      reset!
     end
 
     def what_required(spec)
@@ -211,6 +210,11 @@ module Bundler
     end
 
     private
+
+    def reset!
+      @sorted = nil
+      @lookup = nil
+    end
 
     def valid_dependencies?(s)
       validate_deps(s) == :valid
