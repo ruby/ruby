@@ -820,7 +820,7 @@ module RubyVM::RJIT # :nodoc: all
           ), Primitive.cexpr!("OFFSETOF(((struct RArray *)NULL)->as.heap, aux)")],
           ptr: [CType::Pointer.new { self.VALUE }, Primitive.cexpr!("OFFSETOF(((struct RArray *)NULL)->as.heap, ptr)")],
         ),
-        ary: CType::Pointer.new { self.VALUE },
+        ary: CType::Array.new { self.VALUE },
       ), Primitive.cexpr!("OFFSETOF((*((struct RArray *)NULL)), as)")],
     )
   end
@@ -848,7 +848,7 @@ module RubyVM::RJIT # :nodoc: all
           ivptr: [CType::Pointer.new { self.VALUE }, Primitive.cexpr!("OFFSETOF(((struct RObject *)NULL)->as.heap, ivptr)")],
           iv_index_tbl: [CType::Pointer.new { self.rb_id_table }, Primitive.cexpr!("OFFSETOF(((struct RObject *)NULL)->as.heap, iv_index_tbl)")],
         ),
-        ary: CType::Pointer.new { self.VALUE },
+        ary: CType::Array.new { self.VALUE },
       ), Primitive.cexpr!("OFFSETOF((*((struct RObject *)NULL)), as)")],
     )
   end
@@ -871,7 +871,7 @@ module RubyVM::RJIT # :nodoc: all
         ),
         embed: CType::Struct.new(
           "", Primitive.cexpr!("SIZEOF(((struct RString *)NULL)->as.embed)"),
-          ary: [CType::Pointer.new { CType::Immediate.parse("char") }, Primitive.cexpr!("OFFSETOF(((struct RString *)NULL)->as.embed, ary)")],
+          ary: [CType::Array.new { CType::Immediate.parse("char") }, Primitive.cexpr!("OFFSETOF(((struct RString *)NULL)->as.embed, ary)")],
         ),
       ), Primitive.cexpr!("OFFSETOF((*((struct RString *)NULL)), as)")],
     )
@@ -888,7 +888,7 @@ module RubyVM::RJIT # :nodoc: all
           len: [CType::Immediate.parse("long"), Primitive.cexpr!("OFFSETOF(((struct RStruct *)NULL)->as.heap, len)")],
           ptr: [CType::Pointer.new { self.VALUE }, Primitive.cexpr!("OFFSETOF(((struct RStruct *)NULL)->as.heap, ptr)")],
         ),
-        ary: CType::Pointer.new { self.VALUE },
+        ary: CType::Array.new { self.VALUE },
       ), Primitive.cexpr!("OFFSETOF((*((struct RStruct *)NULL)), as)")],
     )
   end

@@ -296,7 +296,7 @@ class BindingGenerator
   # @param type [String]
   def generate_type(type)
     if type.match?(/\[\d+\]\z/)
-      return "CType::Pointer.new { #{generate_type(type.sub!(/\[\d+\]\z/, ''))} }"
+      return "CType::Array.new { #{generate_type(type.sub!(/\[\d+\]\z/, ''))} }"
     end
     type = type.delete_suffix('const')
     if type.end_with?('*')
