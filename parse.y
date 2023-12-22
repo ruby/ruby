@@ -2059,7 +2059,7 @@ get_nd_args(struct parser_params *p, NODE *node)
 %type <node> expr_value expr_value_do arg_value primary_value rel_expr
 %type <node_fcall> fcall
 %type <node> if_tail opt_else case_body case_args cases opt_rescue exc_list exc_var opt_ensure
-%type <node> args call_args opt_call_args
+%type <node> args arg_splat call_args opt_call_args
 %type <node> paren_args opt_paren_args
 %type <node_args> args_tail opt_args_tail block_args_tail opt_block_args_tail
 %type <node> command_args aref_args
@@ -3784,23 +3784,12 @@ args		: arg_value
                     /*% %*/
                     /*% ripper: args_add!(args_new!, $1) %*/
                     }
-                | tSTAR arg_value
+                | arg_splat
                     {
                     /*%%%*/
-                        $$ = NEW_SPLAT($2, &@$);
+                        $$ = NEW_SPLAT($arg_splat, &@$);
                     /*% %*/
-                    /*% ripper: args_add_star!(args_new!, $2) %*/
-                    }
-                | tSTAR
-                    {
-                        if (!local_id(p, idFWD_REST) ||
-                            local_id(p, idFWD_ALL)) {
-                            compile_error(p, "no anonymous rest parameter");
-                        }
-                    /*%%%*/
-                        $$ = NEW_SPLAT(NEW_LVAR(idFWD_REST, &@1), &@$);
-                    /*% %*/
-                    /*% ripper: args_add_star!(args_new!, Qnil) %*/
+                    /*% ripper: args_add_star!(args_new!, $arg_splat) %*/
                     }
                 | args ',' arg_value
                     {
@@ -3809,23 +3798,30 @@ args		: arg_value
                     /*% %*/
                     /*% ripper: args_add!($1, $3) %*/
                     }
-                | args ',' tSTAR arg_value
+                | args ',' arg_splat
                     {
                     /*%%%*/
-                        $$ = rest_arg_append(p, $1, $4, &@$);
+                        $$ = rest_arg_append(p, $args, $arg_splat, &@$);
                     /*% %*/
-                    /*% ripper: args_add_star!($1, $4) %*/
+                    /*% ripper: args_add_star!($args, $arg_splat) %*/
                     }
-                | args ',' tSTAR
+                ;
+
+/* value */
+arg_splat	: tSTAR arg_value
+                    {
+                        $$ = $2;
+                    }
+                | tSTAR /* none */
                     {
                         if (!local_id(p, idFWD_REST) ||
                             local_id(p, idFWD_ALL)) {
                             compile_error(p, "no anonymous rest parameter");
                         }
                     /*%%%*/
-                        $$ = rest_arg_append(p, $1, NEW_LVAR(idFWD_REST, &@3), &@$);
+                        $$ = NEW_LVAR(idFWD_REST, &@1);
                     /*% %*/
-                    /*% ripper: args_add_star!($1, Qnil) %*/
+                    /*% ripper: Qnil %*/
                     }
                 ;
 
