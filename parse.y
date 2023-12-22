@@ -1378,6 +1378,7 @@ static NODE *new_args_forward_call(struct parser_params*, NODE*, const YYLTYPE*,
 #endif
 static int check_forwarding_args(struct parser_params*);
 static void add_forwarding_args(struct parser_params *p);
+static void forwarding_arg_check(struct parser_params *p, ID arg, ID all, const char *var);
 
 static const struct vtable *dyna_push(struct parser_params *);
 static void dyna_pop(struct parser_params*, const struct vtable *);
@@ -3756,9 +3757,7 @@ block_arg	: tAMPER arg_value
                     }
                 | tAMPER
                     {
-                        if (!local_id(p, idFWD_BLOCK)) {
-                            compile_error(p, "no anonymous block parameter");
-                        }
+                        forwarding_arg_check(p, idFWD_BLOCK, 0, "block");
                     /*%%%*/
                         $$ = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, &@1), &@$);
                     /*% %*/
@@ -3814,10 +3813,7 @@ arg_splat	: tSTAR arg_value
                     }
                 | tSTAR /* none */
                     {
-                        if (!local_id(p, idFWD_REST) ||
-                            local_id(p, idFWD_ALL)) {
-                            compile_error(p, "no anonymous rest parameter");
-                        }
+                        forwarding_arg_check(p, idFWD_REST, idFWD_ALL, "rest");
                     /*%%%*/
                         $$ = NEW_LVAR(idFWD_REST, &@1);
                     /*% %*/
@@ -6689,10 +6685,7 @@ assoc		: arg_value tASSOC arg_value
                     }
                 | tDSTAR
                     {
-                        if (!local_id(p, idFWD_KWREST) ||
-                            local_id(p, idFWD_ALL)) {
-                            compile_error(p, "no anonymous keyword rest parameter");
-                        }
+                        forwarding_arg_check(p, idFWD_KWREST, idFWD_ALL, "keyword rest");
                     /*%%%*/
                         $$ = list_append(p, NEW_LIST(0, &@$),
                                          NEW_LVAR(idFWD_KWREST, &@$));
@@ -15011,6 +15004,34 @@ add_forwarding_args(struct parser_params *p)
 #endif
     arg_var(p, idFWD_BLOCK);
     arg_var(p, idFWD_ALL);
+}
+
+static void
+forwarding_arg_check(struct parser_params *p, ID arg, ID all, const char *var)
+{
+    struct vtable *vars, *args;
+
+    vars = p->lvtbl->vars;
+    args = p->lvtbl->args;
+
+    while (vars && !DVARS_TERMINAL_P(vars->prev)) {
+        vars = vars->prev;
+        args = args->prev;
+    }
+
+    bool found = false;
+    if (vars && vars->prev == DVARS_INHERIT) {
+        found = (rb_local_defined(arg, p->parent_iseq) &&
+                 !(all && rb_local_defined(all, p->parent_iseq)));
+    }
+    else {
+        found = (vtable_included(args, arg) &&
+                 !(all && vtable_included(args, all)));
+    }
+
+    if (!found) {
+        compile_error(p, "no anonymous %s parameter", var);
+    }
 }
 
 #ifndef RIPPER
