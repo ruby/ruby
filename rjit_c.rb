@@ -1326,13 +1326,14 @@ module RubyVM::RJIT # :nodoc: all
     @rb_rjit_options ||= CType::Struct.new(
       "rb_rjit_options", Primitive.cexpr!("SIZEOF(struct rb_rjit_options)"),
       on: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), on)")],
-      call_threshold: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), call_threshold)")],
       exec_mem_size: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), exec_mem_size)")],
+      call_threshold: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), call_threshold)")],
       stats: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), stats)")],
+      disable: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), disable)")],
+      trace: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), trace)")],
       trace_exits: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), trace_exits)")],
       dump_disasm: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), dump_disasm)")],
       verify_ctx: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), verify_ctx)")],
-      disable: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), disable)")],
     )
   end
 
