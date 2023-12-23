@@ -17,6 +17,7 @@
 #include "internal/numeric.h"
 #include "internal/string.h"
 #include "internal/thread.h"
+#include <stddef.h>
 
 VALUE rb_cIOBuffer;
 VALUE rb_eIOBufferLockedError;
@@ -33,6 +34,13 @@ size_t RUBY_IO_BUFFER_DEFAULT_SIZE;
 #include <unistd.h>
 #include <sys/mman.h>
 #endif
+
+enum {
+    RB_IO_BUFFER_HEXDUMP_DEFAULT_WIDTH = 16,
+
+    RB_IO_BUFFER_INSPECT_HEXDUMP_MAXIMUM_SIZE = 256,
+    RB_IO_BUFFER_INSPECT_HEXDUMP_WIDTH = 16,
+};
 
 struct rb_io_buffer {
     void *base;
@@ -323,6 +331,22 @@ io_buffer_extract_size(VALUE argument)
     return NUM2SIZET(argument);
 }
 
+static inline size_t
+io_buffer_extract_width(VALUE argument, size_t minimum)
+{
+    if (rb_int_negative_p(argument)) {
+        rb_raise(rb_eArgError, "Width can't be negative!");
+    }
+
+    size_t width = NUM2SIZET(argument);
+
+    if (width < minimum) {
+        rb_raise(rb_eArgError, "Width must be at least %zu!", minimum);
+    }
+
+    return width;
+}
+
 // Compute the default length for a buffer, given an offset into that buffer.
 // The default length is the size of the buffer minus the offset. The offset
 // must be less than the size of the buffer otherwise the length will be
@@ -349,7 +373,7 @@ io_buffer_extract_length_offset(VALUE self, int argc, VALUE argv[], size_t *leng
     struct rb_io_buffer *buffer = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
 
-    if (argc >= 2) {
+    if (argc >= 2 && !NIL_P(argv[1])) {
         *offset = io_buffer_extract_offset(argv[1]);
     }
     else {
@@ -375,14 +399,14 @@ io_buffer_extract_offset_length(VALUE self, int argc, VALUE argv[], size_t *offs
     struct rb_io_buffer *buffer = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
 
-    if (argc >= 1) {
+    if (argc >= 1 && !NIL_P(argv[0])) {
         *offset = io_buffer_extract_offset(argv[0]);
     }
     else {
         *offset = 0;
     }
 
-    if (argc >= 2) {
+    if (argc >= 2 && !NIL_P(argv[1])) {
         *length = io_buffer_extract_length(argv[1]);
     }
     else {
@@ -766,6 +790,84 @@ io_buffer_validate(struct rb_io_buffer *buffer)
     }
 }
 
+int
+rb_io_buffer_get_bytes(VALUE self, void **base, size_t *size)
+{
+    struct rb_io_buffer *buffer = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+
+    if (io_buffer_validate(buffer)) {
+        if (buffer->base) {
+            *base = buffer->base;
+            *size = buffer->size;
+
+            return buffer->flags;
+        }
+    }
+
+    *base = NULL;
+    *size = 0;
+
+    return 0;
+}
+
+// Internal function for accessing bytes for writing, wil
+static inline void
+io_buffer_get_bytes_for_writing(struct rb_io_buffer *buffer, void **base, size_t *size)
+{
+    if (buffer->flags & RB_IO_BUFFER_READONLY) {
+        rb_raise(rb_eIOBufferAccessError, "Buffer is not writable!");
+    }
+
+    if (!io_buffer_validate(buffer)) {
+        rb_raise(rb_eIOBufferInvalidatedError, "Buffer is invalid!");
+    }
+
+    if (buffer->base) {
+        *base = buffer->base;
+        *size = buffer->size;
+
+        return;
+    }
+
+    rb_raise(rb_eIOBufferAllocationError, "The buffer is not allocated!");
+}
+
+void
+rb_io_buffer_get_bytes_for_writing(VALUE self, void **base, size_t *size)
+{
+    struct rb_io_buffer *buffer = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+
+    io_buffer_get_bytes_for_writing(buffer, base, size);
+}
+
+static void
+io_buffer_get_bytes_for_reading(struct rb_io_buffer *buffer, const void **base, size_t *size)
+{
+    if (!io_buffer_validate(buffer)) {
+        rb_raise(rb_eIOBufferInvalidatedError, "Buffer has been invalidated!");
+    }
+
+    if (buffer->base) {
+        *base = buffer->base;
+        *size = buffer->size;
+
+        return;
+    }
+
+    rb_raise(rb_eIOBufferAllocationError, "The buffer is not allocated!");
+}
+
+void
+rb_io_buffer_get_bytes_for_reading(VALUE self, const void **base, size_t *size)
+{
+    struct rb_io_buffer *buffer = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+
+    io_buffer_get_bytes_for_reading(buffer, base, size);
+}
+
 /*
  *  call-seq: to_s -> string
  *
@@ -825,24 +927,46 @@ rb_io_buffer_to_s(VALUE self)
     return rb_str_cat2(result, ">");
 }
 
+// Compute the output size of a hexdump of the given width (bytes per line), total size, and whether it is the first line in the output.
+// This is used to preallocate the output string.
+inline static size_t
+io_buffer_hexdump_output_size(size_t width, size_t size, int first)
+{
+    // For each byte, 2 hex digits and a space is emitted, along with a preview of that byte:
+    size_t total = size * 4;
+
+    // For each line:
+    // 1 byte    10 bytes  1 byte  (above)   1 byte
+    // (newline) (address) (space) (hexdump) (space) (preview)
+    total += (size / width) * (1 + 10 + 1 + 1);
+
+    // If the hexdump is the first line, one less newline will be emitted:
+    if (size && first) total -= 1;
+
+    return total;
+}
+
+// Append a hexdump of the given width (bytes per line), base address, size, and whether it is the first line in the output.
+// If the hexdump is not the first line, it will prepend a newline if there is any output at all.
+// If formatting here is adjusted, please update io_buffer_hexdump_output_size accordingly.
 static VALUE
-io_buffer_hexdump(VALUE string, size_t width, char *base, size_t size, int first)
+io_buffer_hexdump(VALUE string, size_t width, char *base, size_t length, size_t offset, int first)
 {
     char *text = alloca(width+1);
     text[width] = '\0';
 
-    for (size_t offset = 0; offset < size; offset += width) {
+    for (; offset < length; offset += width) {
         memset(text, '\0', width);
         if (first) {
-            rb_str_catf(string, "0x%08" PRIxSIZE " ", offset);
+            rb_str_catf(string, "0x%08zx ", offset);
             first = 0;
         }
         else {
-            rb_str_catf(string, "\n0x%08" PRIxSIZE " ", offset);
+            rb_str_catf(string, "\n0x%08zx ", offset);
         }
 
         for (size_t i = 0; i < width; i += 1) {
-            if (offset+i < size) {
+            if (offset+i < length) {
                 unsigned char value = ((unsigned char*)base)[offset+i];
 
                 if (value < 127 && isprint(value)) {
@@ -865,24 +989,20 @@ io_buffer_hexdump(VALUE string, size_t width, char *base, size_t size, int first
     return string;
 }
 
-/* Returns hexadecimal dump string */
-static VALUE
-rb_io_buffer_hexdump(VALUE self)
-{
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
-
-    VALUE result = Qnil;
-
-    if (io_buffer_validate(buffer) && buffer->base) {
-        result = rb_str_buf_new(buffer->size*3 + (buffer->size/16)*12 + 1);
-
-        io_buffer_hexdump(result, 16, buffer->base, buffer->size, 1);
-    }
-
-    return result;
-}
-
+/*
+ *  call-seq: inspect -> string
+ *
+ *  Inspect the buffer and report useful information about it's internal state.
+ *  Only a limited portion of the buffer will be displayed in a hexdump style
+ *  format.
+ *
+ *  Example:
+ *
+ *    buffer = IO::Buffer.for("Hello World")
+ *    puts buffer.inspect
+ *    # #<IO::Buffer 0x000000010198ccd8+11 EXTERNAL READONLY SLICE>
+ *    # 0x00000000  48 65 6c 6c 6f 20 57 6f 72 6c 64                Hello World
+ */
 VALUE
 rb_io_buffer_inspect(VALUE self)
 {
@@ -892,9 +1012,19 @@ rb_io_buffer_inspect(VALUE self)
     VALUE result = rb_io_buffer_to_s(self);
 
     if (io_buffer_validate(buffer)) {
-        // Limit the maximum size generated by inspect.
-        if (buffer->size <= 256) {
-            io_buffer_hexdump(result, 16, buffer->base, buffer->size, 0);
+        // Limit the maximum size generated by inspect:
+        size_t size = buffer->size;
+        int clamped = 0;
+
+        if (size > RB_IO_BUFFER_INSPECT_HEXDUMP_MAXIMUM_SIZE) {
+            size = RB_IO_BUFFER_INSPECT_HEXDUMP_MAXIMUM_SIZE;
+            clamped = 1;
+        }
+
+        io_buffer_hexdump(result, RB_IO_BUFFER_INSPECT_HEXDUMP_WIDTH, buffer->base, size, 0, 0);
+
+        if (clamped) {
+            rb_str_catf(result, "\n(and %zu more bytes not printed)", buffer->size - size);
         }
     }
 
@@ -1266,6 +1396,36 @@ io_buffer_validate_range(struct rb_io_buffer *buffer, size_t offset, size_t leng
     }
 }
 
+/*
+ * Returns hexadecimal dump string
+ */
+static VALUE
+rb_io_buffer_hexdump(int argc, VALUE *argv, VALUE self)
+{
+    rb_check_arity(argc, 0, 3);
+
+    size_t offset, length;
+    struct rb_io_buffer *buffer = io_buffer_extract_offset_length(self, argc, argv, &offset, &length);
+
+    size_t width = RB_IO_BUFFER_HEXDUMP_DEFAULT_WIDTH;
+    if (argc >= 3) {
+        width = io_buffer_extract_width(argv[2], 1);
+    }
+
+    // This may raise an exception if the offset/length is invalid:
+    io_buffer_validate_range(buffer, offset, length);
+
+    VALUE result = Qnil;
+
+    if (io_buffer_validate(buffer) && buffer->base) {
+        result = rb_str_buf_new(io_buffer_hexdump_output_size(width, length, 1));
+
+        io_buffer_hexdump(result, width, buffer->base, offset+length, offset, 1);
+    }
+
+    return result;
+}
+
 static VALUE
 rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_t length)
 {
@@ -1354,83 +1514,6 @@ io_buffer_slice(int argc, VALUE *argv, VALUE self)
     struct rb_io_buffer *buffer = io_buffer_extract_offset_length(self, argc, argv, &offset, &length);
 
     return rb_io_buffer_slice(buffer, self, offset, length);
-}
-
-int
-rb_io_buffer_get_bytes(VALUE self, void **base, size_t *size)
-{
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
-
-    if (io_buffer_validate(buffer)) {
-        if (buffer->base) {
-            *base = buffer->base;
-            *size = buffer->size;
-
-            return buffer->flags;
-        }
-    }
-
-    *base = NULL;
-    *size = 0;
-
-    return 0;
-}
-
-static inline void
-io_buffer_get_bytes_for_writing(struct rb_io_buffer *buffer, void **base, size_t *size)
-{
-    if (buffer->flags & RB_IO_BUFFER_READONLY) {
-        rb_raise(rb_eIOBufferAccessError, "Buffer is not writable!");
-    }
-
-    if (!io_buffer_validate(buffer)) {
-        rb_raise(rb_eIOBufferInvalidatedError, "Buffer is invalid!");
-    }
-
-    if (buffer->base) {
-        *base = buffer->base;
-        *size = buffer->size;
-
-        return;
-    }
-
-    rb_raise(rb_eIOBufferAllocationError, "The buffer is not allocated!");
-}
-
-void
-rb_io_buffer_get_bytes_for_writing(VALUE self, void **base, size_t *size)
-{
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
-
-    io_buffer_get_bytes_for_writing(buffer, base, size);
-}
-
-static void
-io_buffer_get_bytes_for_reading(struct rb_io_buffer *buffer, const void **base, size_t *size)
-{
-    if (!io_buffer_validate(buffer)) {
-        rb_raise(rb_eIOBufferInvalidatedError, "Buffer has been invalidated!");
-    }
-
-    if (buffer->base) {
-        *base = buffer->base;
-        *size = buffer->size;
-
-        return;
-    }
-
-    rb_raise(rb_eIOBufferAllocationError, "The buffer is not allocated!");
-}
-
-void
-rb_io_buffer_get_bytes_for_reading(VALUE self, const void **base, size_t *size)
-{
-    struct rb_io_buffer *buffer = NULL;
-    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
-
-    io_buffer_get_bytes_for_reading(buffer, base, size);
 }
 
 /*
@@ -2368,8 +2451,8 @@ io_buffer_get_string(int argc, VALUE *argv, VALUE self)
 /*
  *  call-seq: set_string(string, [offset, [length, [source_offset]]]) -> size
  *
- *  Efficiently copy buffer from a source String into the buffer,
- *  at +offset+ using +memcpy+.
+ *  Efficiently copy from a source String into the buffer, at +offset+ using
+ *  +memcpy+.
  *
  *    buf = IO::Buffer.new(8)
  *    # =>
@@ -3490,7 +3573,7 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "initialize", rb_io_buffer_initialize, -1);
     rb_define_method(rb_cIOBuffer, "initialize_copy", rb_io_buffer_initialize_copy, 1);
     rb_define_method(rb_cIOBuffer, "inspect", rb_io_buffer_inspect, 0);
-    rb_define_method(rb_cIOBuffer, "hexdump", rb_io_buffer_hexdump, 0);
+    rb_define_method(rb_cIOBuffer, "hexdump", rb_io_buffer_hexdump, -1);
     rb_define_method(rb_cIOBuffer, "to_s", rb_io_buffer_to_s, 0);
     rb_define_method(rb_cIOBuffer, "size", rb_io_buffer_size, 0);
     rb_define_method(rb_cIOBuffer, "valid?", rb_io_buffer_valid_p, 0);
