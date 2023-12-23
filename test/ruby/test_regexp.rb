@@ -72,6 +72,18 @@ class TestRegexp < Test::Unit::TestCase
     end
   end
 
+  def test_to_s_under_gc_compact_stress
+    EnvUtil.under_gc_compact_stress do
+      str = "abcd\u3042"
+      [:UTF_16BE, :UTF_16LE, :UTF_32BE, :UTF_32LE].each do |es|
+        enc = Encoding.const_get(es)
+        rs = Regexp.new(str.encode(enc)).to_s
+        assert_equal("(?-mix:abcd\u3042)".encode(enc), rs)
+        assert_equal(enc, rs.encoding)
+      end
+    end
+  end
+
   def test_to_s_extended_subexp
     re = /#\g#{"\n"}/x
     re = /#{re}/

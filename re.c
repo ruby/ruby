@@ -565,8 +565,6 @@ rb_reg_str_with_term(VALUE re, int term)
 {
     int options, opt;
     const int embeddable = ONIG_OPTION_MULTILINE|ONIG_OPTION_IGNORECASE|ONIG_OPTION_EXTEND;
-    long len;
-    const UChar* ptr;
     VALUE str = rb_str_buf_new2("(?");
     char optbuf[OPTBUF_SIZE + 1]; /* for '-' */
     rb_encoding *enc = rb_enc_get(re);
@@ -575,8 +573,9 @@ rb_reg_str_with_term(VALUE re, int term)
 
     rb_enc_copy(str, re);
     options = RREGEXP_PTR(re)->options;
-    ptr = (UChar*)RREGEXP_SRC_PTR(re);
-    len = RREGEXP_SRC_LEN(re);
+    VALUE src_str = RREGEXP_SRC(re);
+    const UChar *ptr = (UChar *)RSTRING_PTR(src_str);
+    long len = RSTRING_LEN(src_str);
   again:
     if (len >= 4 && ptr[0] == '(' && ptr[1] == '?') {
         int err = 1;
@@ -665,6 +664,8 @@ rb_reg_str_with_term(VALUE re, int term)
         rb_str_buf_cat(str, paren, n);
     }
     rb_enc_copy(str, re);
+
+    RB_GC_GUARD(src_str);
 
     return str;
 }
