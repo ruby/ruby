@@ -697,6 +697,8 @@ io_flags_for_size(size_t size)
 VALUE
 rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
 {
+    io_buffer_experimental();
+
     rb_check_arity(argc, 0, 2);
 
     struct rb_io_buffer *buffer = NULL;
