@@ -5816,6 +5816,8 @@ rb_str_sub_bang(int argc, VALUE *argv, VALUE str)
         TERM_FILL(&RSTRING_PTR(str)[len], TERM_LEN(str));
         ENC_CODERANGE_SET(str, cr);
 
+        RB_GC_GUARD(match);
+
         return str;
     }
     return Qnil;
