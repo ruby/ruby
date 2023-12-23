@@ -5237,37 +5237,37 @@ rb_thread_flock(void *data)
  *  <br>
  *
  *  <table>
- *  <tr>
- *  <th colspan="3">Locking Constants</th>
- *  </tr>
- *  <tr>
- *  <th>Constant</th>
- *  <th>Lock</th>
- *  <th>Effect</th>
- *  </tr>
- *  <tr>
- *  <td><tt>File::LOCK_EX</tt></td>
- *  <td>Exclusive</td>
- *  <td>Only one process may hold an exclusive lock for <tt>self</tt> at a time.</td>
- *  </tr>
- *  <tr>
- *  <td><tt>File::LOCK_NB</tt></td>
- *  <td>Non-blocking</td>
- *  <td>
- *  No blocking; may be combined with other `File::LOCK_SH` or `File::LOCK_EX`
- *  using the bitwise OR operator <tt>|</tt>.
- *  </td>
- *  </tr>
- *  <tr>
- *  <td><tt>File::LOCK_SH</tt></td>
- *  <td>Shared</td>
- *  <td>Multiple processes may each hold a shared lock for <tt>self</tt> at the same time.</td>
- *  </tr>
- *  <tr>
- *  <td><tt>File::LOCK_UN</tt></td>
- *  <td>None</td>
- *  <td>No locking.</td>
- *  </tr>
+ *    <tr>
+ *      <th colspan="3">Locking Constants</th>
+ *    </tr>
+ *    <tr>
+ *      <th>Constant</th>
+ *      <th>Lock</th>
+ *      <th>Effect</th>
+ *    </tr>
+ *    <tr>
+ *    <td><tt>File::LOCK_EX</tt></td>
+ *    <td>Exclusive</td>
+ *      <td>Only one process may hold an exclusive lock for <tt>self</tt> at a time.</td>
+ *    </tr>
+ *    <tr>
+ *      <td><tt>File::LOCK_NB</tt></td>
+ *      <td>Non-blocking</td>
+ *      <td>
+ *        No blocking; may be combined with other `File::LOCK_SH` or `File::LOCK_EX`
+ *        using the bitwise OR operator <tt>|</tt>.
+ *      </td>
+ *    </tr>
+ *    <tr>
+ *      <td><tt>File::LOCK_SH</tt></td>
+ *      <td>Shared</td>
+ *      <td>Multiple processes may each hold a shared lock for <tt>self</tt> at the same time.</td>
+ *    </tr>
+ *    <tr>
+ *      <td><tt>File::LOCK_UN</tt></td>
+ *      <td>None</td>
+ *      <td>No locking.</td>
+ *    </tr>
  *  </table>
  *
  *  <br>
