@@ -57,7 +57,10 @@ enum rb_io_buffer_flags {
     RB_IO_BUFFER_PRIVATE = 64,
 
     // The buffer is read-only and cannot be modified.
-    RB_IO_BUFFER_READONLY = 128
+    RB_IO_BUFFER_READONLY = 128,
+
+    // The biggest possible value.
+    RB_IO_BUFFER_FLAGS_MAXIMUM = RB_IO_BUFFER_READONLY
 };
 
 // Represents the endian of the data types.

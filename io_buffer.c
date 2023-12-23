@@ -294,7 +294,23 @@ static const rb_data_type_t rb_io_buffer_type = {
     .flags = RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_EMBEDDABLE,
 };
 
-// Extract an offset argument, which must be a positive integer.
+static inline enum rb_io_buffer_flags
+io_buffer_extract_flags(VALUE argument)
+{
+    if (rb_int_negative_p(argument)) {
+        rb_raise(rb_eArgError, "Flags can't be negative!");
+    }
+
+    enum rb_io_buffer_flags flags = RB_NUM2UINT(argument);
+
+    if (flags > RB_IO_BUFFER_FLAGS_MAXIMUM) {
+        rb_raise(rb_eArgError, "Invalid flags!");
+    }
+
+    return flags;
+}
+
+// Extract an offset argument, which must be a non-negative integer.
 static inline size_t
 io_buffer_extract_offset(VALUE argument)
 {
@@ -305,7 +321,7 @@ io_buffer_extract_offset(VALUE argument)
     return NUM2SIZET(argument);
 }
 
-// Extract a length argument, which must be a positive integer.
+// Extract a length argument, which must be a non-negative integer.
 // Length is generally considered a mutable property of an object and
 // semantically should be considered a subset of "size" as a concept.
 static inline size_t
@@ -318,7 +334,7 @@ io_buffer_extract_length(VALUE argument)
     return NUM2SIZET(argument);
 }
 
-// Extract a size argument, which must be a positive integer.
+// Extract a size argument, which must be a non-negative integer.
 // Size is generally considered an immutable property of an object.
 static inline size_t
 io_buffer_extract_size(VALUE argument)
@@ -330,6 +346,8 @@ io_buffer_extract_size(VALUE argument)
     return NUM2SIZET(argument);
 }
 
+// Extract a width argument, which must be a non-negative integer, and must be
+// at least the given minimum.
 static inline size_t
 io_buffer_extract_width(VALUE argument, size_t minimum)
 {
@@ -390,8 +408,14 @@ io_buffer_extract_length_offset(VALUE self, int argc, VALUE argv[], size_t *leng
 }
 
 // Extract the optional offset and length arguments, returning the buffer.
-// Similar to `io_buffer_extract_length_offset` but with the order of
-// arguments reversed.
+// Similar to `io_buffer_extract_length_offset` but with the order of arguments
+// reversed.
+//
+// After much consideration, I decided to accept both forms.
+// The `(offset, length)` order is more natural when referring about data,
+// while the `(length, offset)` order is more natural when referring to
+// read/write operations. In many cases, with the latter form, `offset`
+// is usually not supplied.
 static inline struct rb_io_buffer *
 io_buffer_extract_offset_length(VALUE self, int argc, VALUE argv[], size_t *offset, size_t *length)
 {
@@ -484,11 +508,11 @@ io_buffer_for_yield_instance_ensure(VALUE _arguments)
  *    IO::Buffer.for(string) -> readonly io_buffer
  *    IO::Buffer.for(string) {|io_buffer| ... read/write io_buffer ...}
  *
- *  Creates a IO::Buffer from the given string's memory. Without a block a
- *  frozen internal copy of the string is created efficiently and used as the
- *  buffer source. When a block is provided, the buffer is associated directly
- *  with the string's internal buffer and updating the buffer will update the
- *  string.
+ *  Creates a zero-copy IO::Buffer from the given string's memory. Without a
+ *  block a frozen internal copy of the string is created efficiently and used
+ *  as the buffer source. When a block is provided, the buffer is associated
+ *  directly with the string's internal buffer and updating the buffer will
+ *  update the string.
  *
  *  Until #free is invoked on the buffer, either explicitly or via the garbage
  *  collector, the source string will be locked and cannot be modified.
@@ -543,9 +567,9 @@ rb_io_buffer_type_for(VALUE klass, VALUE string)
  * call-seq:
  *   IO::Buffer.string(length) {|io_buffer| ... read/write io_buffer ...} -> string
  *
- * Creates a new string of the given length and yields a IO::Buffer instance
- * to the block which uses the string as a source. The block is expected to
- * write to the buffer and the string will be returned.
+ * Creates a new string of the given length and yields a zero-copy IO::Buffer
+ * instance to the block which uses the string as a source. The block is
+ * expected to write to the buffer and the string will be returned.
  *
  *    IO::Buffer.string(4) do |buffer|
  *      buffer.set_string("Ruby")
@@ -674,7 +698,7 @@ io_buffer_map(int argc, VALUE *argv, VALUE klass)
 
     enum rb_io_buffer_flags flags = 0;
     if (argc >= 4) {
-        flags = RB_NUM2UINT(argv[3]);
+        flags = io_buffer_extract_flags(argv[3]);
     }
 
     return rb_io_buffer_map(io, size, offset, flags);
@@ -737,7 +761,7 @@ rb_io_buffer_initialize(int argc, VALUE *argv, VALUE self)
 
     enum rb_io_buffer_flags flags = 0;
     if (argc >= 2) {
-        flags = RB_NUM2UINT(argv[1]);
+        flags = io_buffer_extract_flags(argv[1]);
     }
     else {
         flags |= io_flags_for_size(size);
@@ -3473,7 +3497,7 @@ io_buffer_not_inplace(VALUE self)
  *  C mechanisms like `memcpy`.
  *
  *  The class is meant to be an utility for implementing more high-level mechanisms
- *  like Fiber::SchedulerInterface#io_read and Fiber::SchedulerInterface#io_write.
+ *  like Fiber::Scheduler#io_read and Fiber::Scheduler#io_write.
  *
  *  <b>Examples of usage:</b>
  *
