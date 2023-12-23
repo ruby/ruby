@@ -3482,8 +3482,8 @@ io_buffer_not_inplace(VALUE self)
 /*
  *  Document-class: IO::Buffer
  *
- *  IO::Buffer is a low-level efficient buffer for input/output. There are three
- *  ways of using buffer:
+ *  IO::Buffer is a efficient zero-copy buffer for input/output. There are
+ *  three main ways of using buffer:
  *
  *  * Create an empty buffer with ::new, fill it with buffer using #copy or
  *    #set_value, #set_string, get buffer with #get_string;
@@ -3586,8 +3586,10 @@ Init_IO_Buffer(void)
 
     RUBY_IO_BUFFER_DEFAULT_SIZE = io_buffer_default_size(RUBY_IO_BUFFER_PAGE_SIZE);
 
-    // Efficient sizing of mapped buffers:
+    /* The operating system page size. Used for efficient page-aligned memory allocations. */
     rb_define_const(rb_cIOBuffer, "PAGE_SIZE", SIZET2NUM(RUBY_IO_BUFFER_PAGE_SIZE));
+
+    /* The default buffer size, typically a (small) multiple of the PAGE_SIZE. */
     rb_define_const(rb_cIOBuffer, "DEFAULT_SIZE", SIZET2NUM(RUBY_IO_BUFFER_DEFAULT_SIZE));
 
     rb_define_singleton_method(rb_cIOBuffer, "map", io_buffer_map, -1);
@@ -3601,22 +3603,39 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "size", rb_io_buffer_size, 0);
     rb_define_method(rb_cIOBuffer, "valid?", rb_io_buffer_valid_p, 0);
 
-    // Ownership:
     rb_define_method(rb_cIOBuffer, "transfer", rb_io_buffer_transfer, 0);
 
-    // Flags:
+    /* Indicates that the memory in the buffer is owned by someone else. */
     rb_define_const(rb_cIOBuffer, "EXTERNAL", RB_INT2NUM(RB_IO_BUFFER_EXTERNAL));
+
+    /* Indicates that the memory in the buffer is owned by the buffer. */
     rb_define_const(rb_cIOBuffer, "INTERNAL", RB_INT2NUM(RB_IO_BUFFER_INTERNAL));
+
+    /* Indicates that the memory in the buffer is mapped by the operating system */
     rb_define_const(rb_cIOBuffer, "MAPPED", RB_INT2NUM(RB_IO_BUFFER_MAPPED));
+
+    /* Indicates that the memory in the buffer is also mapped such that it can be shared with other processes. */
     rb_define_const(rb_cIOBuffer, "SHARED", RB_INT2NUM(RB_IO_BUFFER_SHARED));
+
+    /* Indicates that the memory in the buffer is locked and cannot be resized or freed. */
     rb_define_const(rb_cIOBuffer, "LOCKED", RB_INT2NUM(RB_IO_BUFFER_LOCKED));
+
+    /* Indicates that the memory in the buffer is mapped privately and changes won't be replicated to the underlying file. */
     rb_define_const(rb_cIOBuffer, "PRIVATE", RB_INT2NUM(RB_IO_BUFFER_PRIVATE));
+
+    /* Indicates that the memory in the buffer is read only, and attempts to modify it will fail. */
     rb_define_const(rb_cIOBuffer, "READONLY", RB_INT2NUM(RB_IO_BUFFER_READONLY));
 
-    // Endian:
+    /* Refers to little endian byte order, where the least significant byte is stored first. */
     rb_define_const(rb_cIOBuffer, "LITTLE_ENDIAN", RB_INT2NUM(RB_IO_BUFFER_LITTLE_ENDIAN));
+
+    /* Refers to big endian byte order, where the most significant byte is stored first. */
     rb_define_const(rb_cIOBuffer, "BIG_ENDIAN", RB_INT2NUM(RB_IO_BUFFER_BIG_ENDIAN));
+
+    /* Refers to the byte order of the host machine. */
     rb_define_const(rb_cIOBuffer, "HOST_ENDIAN", RB_INT2NUM(RB_IO_BUFFER_HOST_ENDIAN));
+
+    /* Refers to network byte order, which is the same as big endian. */
     rb_define_const(rb_cIOBuffer, "NETWORK_ENDIAN", RB_INT2NUM(RB_IO_BUFFER_NETWORK_ENDIAN));
 
     rb_define_method(rb_cIOBuffer, "null?", rb_io_buffer_null_p, 0);
