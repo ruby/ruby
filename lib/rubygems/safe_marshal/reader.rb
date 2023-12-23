@@ -299,7 +299,9 @@ module Gem
       end
 
       def read_user_class
-        raise NotImplementedError, "Reading Marshal objects of type user_class is not implemented"
+        name = read_element
+        wrapped_object = read_element
+        Elements::UserClass.new(name, wrapped_object)
       end
     end
   end

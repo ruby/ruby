@@ -247,9 +247,41 @@ class TestGemSafeMarshal < Gem::TestCase
   end
 
   def test_hash_with_compare_by_identity
-    pend "`read_user_class` not yet implemented"
+    with_const(Gem::SafeMarshal, :PERMITTED_CLASSES, %w[Hash]) do
+      assert_safe_load_as Hash.new.compare_by_identity.tap {|h|
+                            h[+"a"] = 1
+                            h[+"a"] = 2 }, additional_methods: [:compare_by_identity?], equality: false
+      assert_safe_load_as Hash.new.compare_by_identity, additional_methods: [:compare_by_identity?]
+      assert_safe_load_as Hash.new(0).compare_by_identity.tap {|h|
+                            h[+"a"] = 1
+                            h[+"a"] = 2 }, additional_methods: [:compare_by_identity?, :default], equality: false
+    end
+  end
 
-    assert_safe_load_as Hash.new.compare_by_identity
+  class StringSubclass < ::String
+  end
+
+  def test_string_subclass
+    with_const(Gem::SafeMarshal, :PERMITTED_CLASSES, [StringSubclass.name]) do
+      with_const(Gem::SafeMarshal, :PERMITTED_IVARS, { StringSubclass.name => %w[E] }) do
+        e = assert_raise(Gem::SafeMarshal::Visitors::ToRuby::UnsupportedError) do
+          Gem::SafeMarshal.safe_load Marshal.dump StringSubclass.new("abc")
+        end
+        assert_equal "Unsupported user class #{StringSubclass.name} in marshal stream @ root.object", e.message
+      end
+    end
+  end
+
+  class ArraySubclass < ::Array
+  end
+
+  def test_array_subclass
+    with_const(Gem::SafeMarshal, :PERMITTED_CLASSES, [ArraySubclass.name]) do
+      e = assert_raise(Gem::SafeMarshal::Visitors::ToRuby::UnsupportedError) do
+        Gem::SafeMarshal.safe_load(Marshal.dump(ArraySubclass.new << "abc"))
+      end
+      assert_equal "Unsupported user class #{ArraySubclass.name} in marshal stream @ root", e.message
+    end
   end
 
   def test_frozen_object
