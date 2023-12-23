@@ -249,7 +249,6 @@ ary_verify_(VALUE ary, const char *file, int line)
         assert(RARRAY_LEN(ary) <= ary_embed_capa(ary));
     }
     else {
-#if 1
         const VALUE *ptr = RARRAY_CONST_PTR(ary);
         long i, len = RARRAY_LEN(ary);
         volatile VALUE v;
@@ -258,7 +257,6 @@ ary_verify_(VALUE ary, const char *file, int line)
             v = ptr[i]; /* access check */
         }
         v = v;
-#endif
     }
 
     return ary;
