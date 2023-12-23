@@ -2481,7 +2481,7 @@ rb_ractor_terminate_all(void)
 rb_execution_context_t *
 rb_vm_main_ractor_ec(rb_vm_t *vm)
 {
-    return vm->ractor.main_ractor->threads.running_ec;
+    return vm->ractor.main_thread->ec;
 }
 
 static VALUE

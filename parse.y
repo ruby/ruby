@@ -1378,6 +1378,7 @@ static NODE *new_args_forward_call(struct parser_params*, NODE*, const YYLTYPE*,
 #endif
 static int check_forwarding_args(struct parser_params*);
 static void add_forwarding_args(struct parser_params *p);
+static void forwarding_arg_check(struct parser_params *p, ID arg, ID all, const char *var);
 
 static const struct vtable *dyna_push(struct parser_params *);
 static void dyna_pop(struct parser_params*, const struct vtable *);
@@ -2059,7 +2060,7 @@ get_nd_args(struct parser_params *p, NODE *node)
 %type <node> expr_value expr_value_do arg_value primary_value rel_expr
 %type <node_fcall> fcall
 %type <node> if_tail opt_else case_body case_args cases opt_rescue exc_list exc_var opt_ensure
-%type <node> args call_args opt_call_args
+%type <node> args arg_splat call_args opt_call_args
 %type <node> paren_args opt_paren_args
 %type <node_args> args_tail opt_args_tail block_args_tail opt_block_args_tail
 %type <node> command_args aref_args
@@ -3756,9 +3757,7 @@ block_arg	: tAMPER arg_value
                     }
                 | tAMPER
                     {
-                        if (!local_id(p, idFWD_BLOCK)) {
-                            compile_error(p, "no anonymous block parameter");
-                        }
+                        forwarding_arg_check(p, idFWD_BLOCK, 0, "block");
                     /*%%%*/
                         $$ = NEW_BLOCK_PASS(NEW_LVAR(idFWD_BLOCK, &@1), &@$);
                     /*% %*/
@@ -3784,23 +3783,12 @@ args		: arg_value
                     /*% %*/
                     /*% ripper: args_add!(args_new!, $1) %*/
                     }
-                | tSTAR arg_value
+                | arg_splat
                     {
                     /*%%%*/
-                        $$ = NEW_SPLAT($2, &@$);
+                        $$ = NEW_SPLAT($arg_splat, &@$);
                     /*% %*/
-                    /*% ripper: args_add_star!(args_new!, $2) %*/
-                    }
-                | tSTAR
-                    {
-                        if (!local_id(p, idFWD_REST) ||
-                            local_id(p, idFWD_ALL)) {
-                            compile_error(p, "no anonymous rest parameter");
-                        }
-                    /*%%%*/
-                        $$ = NEW_SPLAT(NEW_LVAR(idFWD_REST, &@1), &@$);
-                    /*% %*/
-                    /*% ripper: args_add_star!(args_new!, Qnil) %*/
+                    /*% ripper: args_add_star!(args_new!, $arg_splat) %*/
                     }
                 | args ',' arg_value
                     {
@@ -3809,23 +3797,27 @@ args		: arg_value
                     /*% %*/
                     /*% ripper: args_add!($1, $3) %*/
                     }
-                | args ',' tSTAR arg_value
+                | args ',' arg_splat
                     {
                     /*%%%*/
-                        $$ = rest_arg_append(p, $1, $4, &@$);
+                        $$ = rest_arg_append(p, $args, $arg_splat, &@$);
                     /*% %*/
-                    /*% ripper: args_add_star!($1, $4) %*/
+                    /*% ripper: args_add_star!($args, $arg_splat) %*/
                     }
-                | args ',' tSTAR
+                ;
+
+/* value */
+arg_splat	: tSTAR arg_value
                     {
-                        if (!local_id(p, idFWD_REST) ||
-                            local_id(p, idFWD_ALL)) {
-                            compile_error(p, "no anonymous rest parameter");
-                        }
+                        $$ = $2;
+                    }
+                | tSTAR /* none */
+                    {
+                        forwarding_arg_check(p, idFWD_REST, idFWD_ALL, "rest");
                     /*%%%*/
-                        $$ = rest_arg_append(p, $1, NEW_LVAR(idFWD_REST, &@3), &@$);
+                        $$ = NEW_LVAR(idFWD_REST, &@1);
                     /*% %*/
-                    /*% ripper: args_add_star!($1, Qnil) %*/
+                    /*% ripper: Qnil %*/
                     }
                 ;
 
@@ -6693,10 +6685,7 @@ assoc		: arg_value tASSOC arg_value
                     }
                 | tDSTAR
                     {
-                        if (!local_id(p, idFWD_KWREST) ||
-                            local_id(p, idFWD_ALL)) {
-                            compile_error(p, "no anonymous keyword rest parameter");
-                        }
+                        forwarding_arg_check(p, idFWD_KWREST, idFWD_ALL, "keyword rest");
                     /*%%%*/
                         $$ = list_append(p, NEW_LIST(0, &@$),
                                          NEW_LVAR(idFWD_KWREST, &@$));
@@ -15015,6 +15004,34 @@ add_forwarding_args(struct parser_params *p)
 #endif
     arg_var(p, idFWD_BLOCK);
     arg_var(p, idFWD_ALL);
+}
+
+static void
+forwarding_arg_check(struct parser_params *p, ID arg, ID all, const char *var)
+{
+    struct vtable *vars, *args;
+
+    vars = p->lvtbl->vars;
+    args = p->lvtbl->args;
+
+    while (vars && !DVARS_TERMINAL_P(vars->prev)) {
+        vars = vars->prev;
+        args = args->prev;
+    }
+
+    bool found = false;
+    if (vars && vars->prev == DVARS_INHERIT) {
+        found = (rb_local_defined(arg, p->parent_iseq) &&
+                 !(all && rb_local_defined(all, p->parent_iseq)));
+    }
+    else {
+        found = (vtable_included(args, arg) &&
+                 !(all && vtable_included(args, all)));
+    }
+
+    if (!found) {
+        compile_error(p, "no anonymous %s parameter", var);
+    }
 }
 
 #ifndef RIPPER

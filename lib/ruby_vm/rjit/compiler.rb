@@ -67,7 +67,8 @@ module RubyVM::RJIT
       compile_block(asm, jit:, pc:)
       iseq.body.jit_entry = @cb.write(asm)
     rescue Exception => e
-      $stderr.puts e.full_message
+      STDERR.puts "#{e.class}: #{e.message}"
+      STDERR.puts e.backtrace
       exit 1
     end
 
@@ -109,7 +110,7 @@ module RubyVM::RJIT
 
       return block.start_addr
     rescue Exception => e
-      $stderr.puts e.full_message
+      STDERR.puts e.full_message
       exit 1
     end
 
@@ -164,7 +165,7 @@ module RubyVM::RJIT
 
       return target.address
     rescue Exception => e
-      $stderr.puts e.full_message
+      STDERR.puts e.full_message
       exit 1
     end
 

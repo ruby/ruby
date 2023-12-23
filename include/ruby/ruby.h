@@ -283,7 +283,7 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
  * Soooo this `#define  errno` below seems like a noob  mistake at first sight.
  * If you look at its actual  implementation, the functions are just adding one
  * level of indirection.  It doesn't make any sense sorry?  But yes!  @ko1 told
- * @shyouhei that this is invevitable.
+ * @shyouhei that this is inevitable.
  *
  * The  ultimate  reason is  because  Ruby  now  has N:M  threads  implemented.
  * Threads of that sort  change their context in user land.   A function can be
@@ -300,7 +300,7 @@ int ruby_vsnprintf(char *str, size_t n, char const *fmt, va_list ap);
  * ```
  *
  * This function (if  ran under our Ractor) could change  its running thread at
- * the `close` function.  But the  two `errno` invokations are different!  Look
+ * the `close` function.  But the  two `errno` invocations are different!  Look
  * how the source code above is compiled by clang 17 with `-O3` flag @ Linux:
  *
  * ```

@@ -100,7 +100,7 @@ require_relative "irb/pager"
 # which is also displayed if you use command-line option <tt>--help</tt>.
 #
 # If you are interested in a specific option, consult the
-# {index}[rdoc-ref:doc/irb/indexes.rdoc@Index+of+Command-Line+Options].
+# {index}[rdoc-ref:doc/irb/indexes.md@Index+of+Command-Line+Options].
 #
 # ==== Command-Line Arguments
 #
@@ -172,7 +172,7 @@ require_relative "irb/pager"
 # Details of the entries' meanings are described in the relevant subsections below.
 #
 # If you are interested in a specific entry, consult the
-# {index}[rdoc-ref:doc/irb/indexes.rdoc@Index+of+IRB.conf+Entries].
+# {index}[rdoc-ref:doc/irb/indexes.md@Index+of+IRB.conf+Entries].
 #
 # === Notes on Initialization Precedence
 #

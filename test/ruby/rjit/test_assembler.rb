@@ -122,6 +122,7 @@ module RubyVM::RJIT
       asm.cmp(BytePtr[:rax, 8], 8)      # CMP r/m8, imm8 (Mod 01: [reg]+disp8)
       asm.cmp(DwordPtr[:rax, 8], 0x100) # CMP r/m32, imm32 (Mod 01: [reg]+disp8)
       asm.cmp([:rax, 8], 8)             # CMP r/m64, imm8 (Mod 01: [reg]+disp8)
+      asm.cmp([:rbx, 8], 0x100)         # CMP r/m64, imm32 (Mod 01: [reg]+disp8)
       asm.cmp([:rax, 0x100], 8)         # CMP r/m64, imm8 (Mod 10: [reg]+disp32)
       asm.cmp(:rax, 8)                  # CMP r/m64, imm8 (Mod 11: reg)
       asm.cmp(:rax, 0x100)              # CMP r/m64, imm32 (Mod 11: reg)
@@ -132,12 +133,13 @@ module RubyVM::RJIT
         0x0: cmp byte ptr [rax + 8], 8
         0x4: cmp dword ptr [rax + 8], 0x100
         0xb: cmp qword ptr [rax + 8], 8
-        0x10: cmp qword ptr [rax + 0x100], 8
-        0x18: cmp rax, 8
-        0x1c: cmp rax, 0x100
-        0x23: cmp qword ptr [rax + 8], rbx
-        0x27: cmp qword ptr [rax - 0x100], rbx
-        0x2e: cmp rax, rbx
+        0x10: cmp qword ptr [rbx + 8], 0x100
+        0x18: cmp qword ptr [rax + 0x100], 8
+        0x20: cmp rax, 8
+        0x24: cmp rax, 0x100
+        0x2b: cmp qword ptr [rax + 8], rbx
+        0x2f: cmp qword ptr [rax - 0x100], rbx
+        0x36: cmp rax, rbx
       EOS
     end
 

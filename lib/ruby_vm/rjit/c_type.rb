@@ -62,6 +62,14 @@ module RubyVM::RJIT
       end
     end
 
+    class Array
+      def self.new(&block)
+        CPointer.with_class_name('Array', block.object_id.to_s) do
+          CPointer::Array.define(block)
+        end
+      end
+    end
+
     class Pointer
       # This takes a block to avoid "stack level too deep" on a cyclic reference
       # @param block [Proc]

@@ -68,6 +68,10 @@ module Bundler
       @should_include && current_env? && current_platform?
     end
 
+    def gemspec_dev_dep?
+      type == :development
+    end
+
     def current_env?
       return true unless @env
       if @env.is_a?(Hash)

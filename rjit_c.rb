@@ -820,7 +820,7 @@ module RubyVM::RJIT # :nodoc: all
           ), Primitive.cexpr!("OFFSETOF(((struct RArray *)NULL)->as.heap, aux)")],
           ptr: [CType::Pointer.new { self.VALUE }, Primitive.cexpr!("OFFSETOF(((struct RArray *)NULL)->as.heap, ptr)")],
         ),
-        ary: CType::Pointer.new { self.VALUE },
+        ary: CType::Array.new { self.VALUE },
       ), Primitive.cexpr!("OFFSETOF((*((struct RArray *)NULL)), as)")],
     )
   end
@@ -848,7 +848,7 @@ module RubyVM::RJIT # :nodoc: all
           ivptr: [CType::Pointer.new { self.VALUE }, Primitive.cexpr!("OFFSETOF(((struct RObject *)NULL)->as.heap, ivptr)")],
           iv_index_tbl: [CType::Pointer.new { self.rb_id_table }, Primitive.cexpr!("OFFSETOF(((struct RObject *)NULL)->as.heap, iv_index_tbl)")],
         ),
-        ary: CType::Pointer.new { self.VALUE },
+        ary: CType::Array.new { self.VALUE },
       ), Primitive.cexpr!("OFFSETOF((*((struct RObject *)NULL)), as)")],
     )
   end
@@ -871,7 +871,7 @@ module RubyVM::RJIT # :nodoc: all
         ),
         embed: CType::Struct.new(
           "", Primitive.cexpr!("SIZEOF(((struct RString *)NULL)->as.embed)"),
-          ary: [CType::Pointer.new { CType::Immediate.parse("char") }, Primitive.cexpr!("OFFSETOF(((struct RString *)NULL)->as.embed, ary)")],
+          ary: [CType::Array.new { CType::Immediate.parse("char") }, Primitive.cexpr!("OFFSETOF(((struct RString *)NULL)->as.embed, ary)")],
         ),
       ), Primitive.cexpr!("OFFSETOF((*((struct RString *)NULL)), as)")],
     )
@@ -888,7 +888,7 @@ module RubyVM::RJIT # :nodoc: all
           len: [CType::Immediate.parse("long"), Primitive.cexpr!("OFFSETOF(((struct RStruct *)NULL)->as.heap, len)")],
           ptr: [CType::Pointer.new { self.VALUE }, Primitive.cexpr!("OFFSETOF(((struct RStruct *)NULL)->as.heap, ptr)")],
         ),
-        ary: CType::Pointer.new { self.VALUE },
+        ary: CType::Array.new { self.VALUE },
       ), Primitive.cexpr!("OFFSETOF((*((struct RStruct *)NULL)), as)")],
     )
   end
@@ -1326,13 +1326,14 @@ module RubyVM::RJIT # :nodoc: all
     @rb_rjit_options ||= CType::Struct.new(
       "rb_rjit_options", Primitive.cexpr!("SIZEOF(struct rb_rjit_options)"),
       on: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), on)")],
-      call_threshold: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), call_threshold)")],
       exec_mem_size: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), exec_mem_size)")],
+      call_threshold: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), call_threshold)")],
       stats: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), stats)")],
+      disable: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), disable)")],
+      trace: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), trace)")],
       trace_exits: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), trace_exits)")],
       dump_disasm: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), dump_disasm)")],
       verify_ctx: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), verify_ctx)")],
-      pause: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_options *)NULL)), pause)")],
     )
   end
 

@@ -216,7 +216,7 @@
 #   has been modified while an element in the set.
 #
 class Set
-  VERSION = "1.0.4"
+  VERSION = "1.1.0"
 
   include Enumerable
 
@@ -286,18 +286,10 @@ class Set
     @hash = orig.instance_variable_get(:@hash).dup
   end
 
-  if Kernel.instance_method(:initialize_clone).arity != 1
-    # Clone internal hash.
-    def initialize_clone(orig, **options)
-      super
-      @hash = orig.instance_variable_get(:@hash).clone(**options)
-    end
-  else
-    # Clone internal hash.
-    def initialize_clone(orig)
-      super
-      @hash = orig.instance_variable_get(:@hash).clone
-    end
+  # Clone internal hash.
+  def initialize_clone(orig, **options)
+    super
+    @hash = orig.instance_variable_get(:@hash).clone(**options)
   end
 
   def freeze    # :nodoc:
@@ -389,7 +381,7 @@ class Set
   # Equivalent to Set#flatten, but replaces the receiver with the
   # result in place.  Returns nil if no modifications were made.
   def flatten!
-    replace(flatten()) if any? { |e| e.is_a?(Set) }
+    replace(flatten()) if any?(Set)
   end
 
   # Returns true if the set contains the given object.
@@ -409,7 +401,7 @@ class Set
     when set.instance_of?(self.class) && @hash.respond_to?(:>=)
       @hash >= set.instance_variable_get(:@hash)
     when set.is_a?(Set)
-      size >= set.size && set.all? { |o| include?(o) }
+      size >= set.size && set.all?(self)
     else
       raise ArgumentError, "value must be a set"
     end
@@ -422,7 +414,7 @@ class Set
     when set.instance_of?(self.class) && @hash.respond_to?(:>)
       @hash > set.instance_variable_get(:@hash)
     when set.is_a?(Set)
-      size > set.size && set.all? { |o| include?(o) }
+      size > set.size && set.all?(self)
     else
       raise ArgumentError, "value must be a set"
     end
@@ -435,7 +427,7 @@ class Set
     when set.instance_of?(self.class) && @hash.respond_to?(:<=)
       @hash <= set.instance_variable_get(:@hash)
     when set.is_a?(Set)
-      size <= set.size && all? { |o| set.include?(o) }
+      size <= set.size && all?(set)
     else
       raise ArgumentError, "value must be a set"
     end
@@ -448,7 +440,7 @@ class Set
     when set.instance_of?(self.class) && @hash.respond_to?(:<)
       @hash < set.instance_variable_get(:@hash)
     when set.is_a?(Set)
-      size < set.size && all? { |o| set.include?(o) }
+      size < set.size && all?(set)
     else
       raise ArgumentError, "value must be a set"
     end
@@ -479,12 +471,12 @@ class Set
     case set
     when Set
       if size < set.size
-        any? { |o| set.include?(o) }
+        any?(set)
       else
-        set.any? { |o| include?(o) }
+        set.any?(self)
       end
     when Enumerable
-      set.any? { |o| include?(o) }
+      set.any?(self)
     else
       raise ArgumentError, "value must be enumerable"
     end

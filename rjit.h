@@ -22,20 +22,22 @@ struct rb_rjit_options {
     // Converted from "rjit" feature flag to tell the enablement
     // information to ruby_show_version().
     bool on;
-    // Number of calls to trigger JIT compilation.
-    unsigned int call_threshold;
     // Size of executable memory block in MiB
     unsigned int exec_mem_size;
+    // Number of calls to trigger JIT compilation
+    unsigned int call_threshold;
     // Collect RJIT statistics
     bool stats;
+    // Do not start RJIT until RJIT.enable is called
+    bool disable;
+    // Allow TracePoint during JIT compilation
+    bool trace;
     // Trace side exit locations
     bool trace_exits;
     // Enable disasm of all JIT code
     bool dump_disasm;
     // Verify context objects
     bool verify_ctx;
-    // [experimental] Do not start RJIT until RJIT.resume is called.
-    bool pause;
 };
 
 RUBY_SYMBOL_EXPORT_BEGIN

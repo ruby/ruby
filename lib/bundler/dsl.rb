@@ -103,16 +103,21 @@ module Bundler
       # if there's already a dependency with this name we try to prefer one
       if current = @dependencies.find {|d| d.name == dep.name }
         # Always prefer the dependency from the Gemfile
-        deleted_dep = @dependencies.delete(current) if current.type == :development
+        @dependencies.delete(current) if current.gemspec_dev_dep?
 
         if current.requirement != dep.requirement
           current_requirement_open = current.requirements_list.include?(">= 0")
 
-          if current.type == :development
-            unless current_requirement_open || dep.type == :development
-              Bundler.ui.warn "A gemspec development dependency (#{dep.name}, #{current.requirement}) is being overridden by a Gemfile dependency (#{dep.name}, #{dep.requirement}).\n" \
-                              "This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement\n" \
+          gemspec_dep = [dep, current].find(&:gemspec_dev_dep?)
+          if gemspec_dep
+            gemfile_dep = [dep, current].find(&:runtime?)
+
+            unless current_requirement_open
+              Bundler.ui.warn "A gemspec development dependency (#{gemspec_dep.name}, #{gemspec_dep.requirement}) is being overridden by a Gemfile dependency (#{gemfile_dep.name}, #{gemfile_dep.requirement}).\n" \
+                              "This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement\n"
             end
+
+            return if dep.gemspec_dev_dep?
           else
             update_prompt = ""
 
@@ -130,8 +135,8 @@ module Bundler
                            "You specified: #{current.name} (#{current.requirement}) and #{dep.name} (#{dep.requirement})" \
                            "#{update_prompt}"
           end
-        elsif current.type == :development || dep.type == :development
-          return if deleted_dep.nil?
+        elsif current.gemspec_dev_dep? || dep.gemspec_dev_dep?
+          return if dep.gemspec_dev_dep?
         elsif current.source != dep.source
           raise GemfileError, "You cannot specify the same gem twice coming from different sources.\n" \
                           "You specified that #{dep.name} (#{dep.requirement}) should come from " \

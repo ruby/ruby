@@ -1,5 +1,4 @@
 require_relative "basic"
-require_relative "lcs_diff"
 
 class Bundler::Thor
   module Shell
@@ -7,8 +6,6 @@ class Bundler::Thor
     # Bundler::Thor::Shell::Basic to see all available methods.
     #
     class Color < Basic
-      include LCSDiff
-
       # Embed in a String to clear all previous ANSI sequences.
       CLEAR      = "\e[0m"
       # The start of an ANSI bold sequence.

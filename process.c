@@ -3354,6 +3354,13 @@ run_exec_dup2(VALUE ary, VALUE tmpbuf, struct rb_execarg *sargp, char *errmsg, s
                 ERRMSG("dup");
                 goto fail;
             }
+            // without this, kqueue timer_th.event_fd fails with a reserved FD did not have close-on-exec
+            //   in #assert_close_on_exec because the FD_CLOEXEC is not dup'd by default
+            if (fd_get_cloexec(pairs[i].oldfd, errmsg, errmsg_buflen)) {
+                if (fd_set_cloexec(extra_fd, errmsg, errmsg_buflen)) {
+                    goto fail;
+                }
+            }
             rb_update_max_fd(extra_fd);
         }
         else {

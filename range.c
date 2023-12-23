@@ -1844,7 +1844,6 @@ range_inspect(VALUE range)
 }
 
 static VALUE range_include_internal(VALUE range, VALUE val);
-static VALUE range_string_cover_internal(VALUE range, VALUE val);
 VALUE rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive);
 
 /*
@@ -1889,8 +1888,6 @@ VALUE rb_str_include_range_p(VALUE beg, VALUE end, VALUE val, VALUE exclusive);
 static VALUE
 range_eqq(VALUE range, VALUE val)
 {
-    VALUE ret = range_string_cover_internal(range, val);
-    if (!UNDEF_P(ret)) return ret;
     return r_cover_p(range, RANGE_BEG(range), RANGE_END(range), val);
 }
 
@@ -1940,12 +1937,6 @@ range_integer_edge_p(VALUE beg, VALUE end)
 }
 
 static inline bool
-range_string_edge_p(VALUE beg, VALUE end)
-{
-    return RB_TYPE_P(beg, T_STRING) || RB_TYPE_P(end, T_STRING);
-}
-
-static inline bool
 range_string_range_p(VALUE beg, VALUE end)
 {
     return RB_TYPE_P(beg, T_STRING) && RB_TYPE_P(end, T_STRING);
@@ -1963,48 +1954,6 @@ range_include_fallback(VALUE beg, VALUE end, VALUE val)
     }
 
     return Qundef;
-}
-
-static VALUE
-range_string_cover_internal(VALUE range, VALUE val)
-{
-    VALUE beg = RANGE_BEG(range);
-    VALUE end = RANGE_END(range);
-    int nv = FIXNUM_P(beg) || FIXNUM_P(end) ||
-             linear_object_p(beg) || linear_object_p(end);
-
-    if (nv || range_integer_edge_p(beg, end)) {
-        return r_cover_p(range, beg, end, val);
-    }
-    else if (range_string_edge_p(beg, end)) {
-        if (range_string_range_p(beg, end)) {
-            return r_cover_p(range, beg, end, val);
-        }
-        if (NIL_P(beg)) {
-unbounded_begin:;
-            VALUE r = rb_funcall(val, id_cmp, 1, end);
-            if (NIL_P(r)) return Qfalse;
-            if (RANGE_EXCL(range)) {
-                return RBOOL(rb_cmpint(r, val, end) < 0);
-            }
-            return RBOOL(rb_cmpint(r, val, end) <= 0);
-        }
-        else if (NIL_P(end)) {
-unbounded_end:;
-            VALUE r = rb_funcall(beg, id_cmp, 1, val);
-            if (NIL_P(r)) return Qfalse;
-            return RBOOL(rb_cmpint(r, beg, val) <= 0);
-        }
-    }
-
-    if (!NIL_P(beg) && NIL_P(end)) {
-        goto unbounded_end;
-    }
-    if (NIL_P(beg) && !NIL_P(end)) {
-        goto unbounded_begin;
-    }
-
-    return range_include_fallback(beg, end, val);
 }
 
 static VALUE

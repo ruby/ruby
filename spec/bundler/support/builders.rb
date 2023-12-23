@@ -297,6 +297,10 @@ module Spec
       build_with(LibBuilder, name, args, &blk)
     end
 
+    def build_bundler(*args, &blk)
+      build_with(BundlerBuilder, "bundler", args, &blk)
+    end
+
     def build_gem(name, *args, &blk)
       build_with(GemBuilder, name, args, &blk)
     end
@@ -400,6 +404,49 @@ module Spec
       end
 
       alias_method :dep, :runtime
+    end
+
+    class BundlerBuilder
+      attr_writer :required_ruby_version
+
+      def initialize(context, name, version)
+        raise "can only build bundler" unless name == "bundler"
+
+        @context = context
+        @version = version || Bundler::VERSION
+      end
+
+      def _build(options = {})
+        full_name = "bundler-#{@version}"
+        build_path = @context.tmp + full_name
+        bundler_path = build_path + "#{full_name}.gem"
+
+        Dir.mkdir build_path
+
+        @context.shipped_files.each do |shipped_file|
+          target_shipped_file = shipped_file
+          target_shipped_file = shipped_file.sub(/\Alibexec/, "exe") if @context.ruby_core?
+          target_shipped_file = build_path + target_shipped_file
+          target_shipped_dir = File.dirname(target_shipped_file)
+          FileUtils.mkdir_p target_shipped_dir unless File.directory?(target_shipped_dir)
+          FileUtils.cp shipped_file, target_shipped_file, preserve: true
+        end
+
+        @context.replace_version_file(@version, dir: build_path)
+        @context.replace_required_ruby_version(@required_ruby_version, dir: build_path) if @required_ruby_version
+
+        Spec::BuildMetadata.write_build_metadata(dir: build_path)
+
+        @context.gem_command "build #{@context.relative_gemspec}", dir: build_path
+
+        if block_given?
+          yield(bundler_path)
+        else
+          FileUtils.mv bundler_path, options[:path]
+        end
+      ensure
+        build_path.rmtree
+      end
     end
 
     class LibBuilder

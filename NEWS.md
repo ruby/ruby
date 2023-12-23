@@ -36,26 +36,27 @@ Note: We're only listing outstanding class updates.
 
 * Encoding
 
-    * Encoding#replicate has been removed, it was already deprecated.  [[Feature #18949]]
+    * `Encoding#replicate` has been removed, it was already deprecated.  [[Feature #18949]]
 
 * Fiber
 
     * Introduce Fiber#kill. [[Bug #595]]
-      ```ruby
-      fiber = Fiber.new do
-        while true
-          puts "Yielding..."
-          Fiber.yield
-        end
-      ensure
-        puts "Exiting..."
-      end
 
-      fiber.resume
-      # Yielding...
-      fiber.kill
-      # Exiting...
-      ```
+        ```ruby
+        fiber = Fiber.new do
+          while true
+            puts "Yielding..."
+            Fiber.yield
+          end
+        ensure
+          puts "Exiting..."
+        end
+
+        fiber.resume
+        # Yielding...
+        fiber.kill
+        # Exiting...
+        ```
 
 * MatchData
 
@@ -75,7 +76,7 @@ Note: We're only listing outstanding class updates.
 
 * ObjectSpace::WeakMap
 
-    * `ObjectSpace::WeakMap#delete` was added to eagerly clear weak map
+    * ObjectSpace::WeakMap#delete was added to eagerly clear weak map
       entries. [[Feature #19561]]
 
 * Proc
@@ -84,7 +85,7 @@ Note: We're only listing outstanding class updates.
 
 * Process
 
-    * New `Process.warmup` method that notify the Ruby virtual machine that the boot sequence is finished,
+    * New Process.warmup method that notify the Ruby virtual machine that the boot sequence is finished,
       and that now is a good time to optimize the application. This is useful
       for long-running applications. The actual optimizations performed are entirely
       implementation-specific and may change in the future without notice. [[Feature #18885]]
@@ -92,10 +93,6 @@ Note: We're only listing outstanding class updates.
 * Process::Status
 
     * Process::Status#& and Process::Status#>> are deprecated. [[Bug #19868]]
-
-* Queue
-
-    * Queue#freeze now raises TypeError. [[Bug #17146]]
 
 * Range
 
@@ -109,15 +106,34 @@ Note: We're only listing outstanding class updates.
       Refinement#refined_class is deprecated and will be removed in Ruby
       3.4.  [[Feature #19714]]
 
-* SizedQueue
+* Regexp
 
-    * SizedQueue#freeze now raises TypeError. [[Bug #17146]]
+    * The cache-based optimization now supports lookarounds and atomic groupings. That is, match
+      for Regexp containing these extensions can now also be performed in linear time to the length
+      of the input string. However, these cannot contain captures and cannot be nested. [[Feature #19725]]
 
 * String
 
     * String#unpack now raises ArgumentError for unknown directives. [[Bug #19150]]
     * String#bytesplice now accepts new arguments index/length or range of the
       source string to be copied.  [[Feature #19314]]
+
+* Thread::Queue
+
+    * Thread::Queue#freeze now raises TypeError. [[Bug #17146]]
+
+* Thread::SizedQueue
+
+    * Thread::SizedQueue#freeze now raises TypeError. [[Bug #17146]]
+
+* Time
+
+    * Time.new with a string argument became stricter. [[Bug #19293]]
+
+        ```ruby
+        Time.new('2023-12-20')
+        #  no time information (ArgumentError)
+        ```
 
 * TracePoint
 
@@ -128,7 +144,9 @@ Note: We're only listing outstanding class updates.
 ## Stdlib updates
 
 * RubyGems and Bundler warn if users do `require` the following gems without adding them to Gemfile or gemspec.
-  This is because they will become the bundled gems in the future version of Ruby.
+  This is because they will become the bundled gems in the future version of Ruby. This warning is suppressed
+  if you use bootsnap gem. We recommend to run your application with `DISABLE_BOOTSNAP=1` environmental variable
+  at least once. This is limitation of this version.
   [[Feature #19351]] [[Feature #19776]] [[Feature #19843]]
     * abbrev
     * base64
@@ -148,7 +166,7 @@ Note: We're only listing outstanding class updates.
   connections. Socket#recvmsg and Socket#recvmsg_nonblock returns `nil` instead of an empty packet on closed
   connections. [[Bug #19012]]
 
-* Name resolution such as `Socket.getaddrinfo`, `Socket.getnameinfo`, `Addrinfo.getaddrinfo`, etc.
+* Name resolution such as Socket.getaddrinfo, Socket.getnameinfo, Addrinfo.getaddrinfo, etc.
   can now be interrupted. [[Feature #19965]]
 
 * Random::Formatter#alphanumeric is extended to accept optional `chars`
@@ -160,12 +178,12 @@ The following default gem is added.
 
 The following default gems are updated.
 
-* RubyGems 3.5.1
+* RubyGems 3.5.3
 * abbrev 0.1.2
 * base64 0.2.0
 * benchmark 0.3.0
 * bigdecimal 3.1.5
-* bundler 2.5.1
+* bundler 2.5.3
 * cgi 0.4.1
 * csv 3.2.8
 * date 3.3.4
@@ -184,7 +202,7 @@ The following default gems are updated.
 * io-nonblock 0.3.0
 * io-wait 0.3.1
 * ipaddr 1.2.6
-* irb 1.10.1
+* irb 1.11.0
 * json 2.7.1
 * logger 1.6.0
 * mutex_m 0.2.0
@@ -208,7 +226,7 @@ The following default gems are updated.
 * resolv 0.3.0
 * rinda 0.2.0
 * securerandom 0.3.1
-* set 1.0.4
+* set 1.1.0
 * shellwords 0.2.0
 * singleton 0.2.0
 * stringio 3.1.0
@@ -241,9 +259,9 @@ The following bundled gems are updated.
 * net-ftp 0.3.3
 * net-imap 0.4.8
 * net-smtp 0.4.0
-* rbs 3.3.2
-* typeprof 0.21.8
-* debug 1.9.0
+* rbs 3.4.0
+* typeprof 0.21.9
+* debug 1.9.1
 
 See GitHub releases like [Logger](https://github.com/ruby/logger/releases) or
 changelog for details of the default gems or bundled gems.
@@ -288,6 +306,14 @@ changelog for details of the default gems or bundled gems.
   deprecated. `it` will be a reference to the first block parameter in Ruby 3.4.
   [[Feature #18980]]
 
+* Error message for NoMethodError have changed to not use the target object's `#inspect`
+  for efficiency, and says "instance of ClassName" instead. [[Feature #18285]]
+
+    ```ruby
+    ([1] * 100).nonexisting
+    # undefined method `nonexisting' for an instance of Array (NoMethodError)
+    ```
+
 ## Stdlib compatibility issues
 
 * `racc` is promoted to bundled gems.
@@ -305,7 +331,7 @@ changelog for details of the default gems or bundled gems.
     * added: `rb_postponed_job_preregister()`
     * added: `rb_postponed_job_trigger()`
     * deprecated: `rb_postponed_job_register()` (and semantic change. see below)
-    * deprecated: `rb_postponed_job_register_once()`
+    * deprecated: `rb_postponed_job_register_one()`
   * The postponed job APIs have been changed to address some rare crashes.
     To solve the issue, we introduced new two APIs and deprecated current APIs.
     The semantics of these functions have also changed slightly; `rb_postponed_job_register`
@@ -343,6 +369,15 @@ changelog for details of the default gems or bundled gems.
     descriptor.
 
 ## Implementation improvements
+
+### Parser
+
+* Replace Bison with [Lrama LALR parser generator](https://github.com/ruby/lrama).
+  No need to install Bison to build Ruby from source code anymore.
+  We will no longer suffer bison compatibility issues and we can use new features by just implementing it to Lrama. [[Feature #19637]]
+  * See [The future vision of Ruby Parser](https://rubykaigi.org/2023/presentations/spikeolaf.html) for detail.
+  * Lrama internal parser is a LR parser generated by Racc for maintainability.
+  * Parameterizing Rules `(?, *, +)` are supported, it will be used in Ruby parse.y.
 
 ### GC / Memory management
 
@@ -454,6 +489,7 @@ changelog for details of the default gems or bundled gems.
 [Feature #10602]: https://bugs.ruby-lang.org/issues/10602
 [Bug #17146]:     https://bugs.ruby-lang.org/issues/17146
 [Feature #18183]: https://bugs.ruby-lang.org/issues/18183
+[Feature #18285]: https://bugs.ruby-lang.org/issues/18285
 [Feature #18498]: https://bugs.ruby-lang.org/issues/18498
 [Feature #18515]: https://bugs.ruby-lang.org/issues/18515
 [Feature #18551]: https://bugs.ruby-lang.org/issues/18551
@@ -463,6 +499,7 @@ changelog for details of the default gems or bundled gems.
 [Bug #19012]:     https://bugs.ruby-lang.org/issues/19012
 [Feature #19057]: https://bugs.ruby-lang.org/issues/19057
 [Bug #19150]:     https://bugs.ruby-lang.org/issues/19150
+[Bug #19293]:     https://bugs.ruby-lang.org/issues/19293
 [Feature #19314]: https://bugs.ruby-lang.org/issues/19314
 [Feature #19347]: https://bugs.ruby-lang.org/issues/19347
 [Feature #19351]: https://bugs.ruby-lang.org/issues/19351
@@ -474,8 +511,10 @@ changelog for details of the default gems or bundled gems.
 [Feature #19572]: https://bugs.ruby-lang.org/issues/19572
 [Feature #19591]: https://bugs.ruby-lang.org/issues/19591
 [Feature #19630]: https://bugs.ruby-lang.org/issues/19630
+[Feature #19637]: https://bugs.ruby-lang.org/issues/19637
 [Feature #19678]: https://bugs.ruby-lang.org/issues/19678
 [Feature #19714]: https://bugs.ruby-lang.org/issues/19714
+[Feature #19725]: https://bugs.ruby-lang.org/issues/19725
 [Feature #19757]: https://bugs.ruby-lang.org/issues/19757
 [Feature #19776]: https://bugs.ruby-lang.org/issues/19776
 [Feature #19777]: https://bugs.ruby-lang.org/issues/19777

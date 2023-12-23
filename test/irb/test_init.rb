@@ -218,4 +218,44 @@ module TestIRB
       ARGV.replace(orig)
     end
   end
+
+  class InitIntegrationTest < IntegrationTestCase
+    def test_load_error_in_rc_file_is_warned
+      write_rc <<~'IRBRC'
+        require "file_that_does_not_exist"
+      IRBRC
+
+      write_ruby <<~'RUBY'
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "'foobar'"
+        type "exit"
+      end
+
+      # IRB session should still be started
+      assert_includes output, "foobar"
+      assert_includes output, 'cannot load such file -- file_that_does_not_exist (LoadError)'
+    end
+
+    def test_normal_errors_in_rc_file_is_warned
+      write_rc <<~'IRBRC'
+        raise "I'm an error"
+      IRBRC
+
+      write_ruby <<~'RUBY'
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "'foobar'"
+        type "exit"
+      end
+
+      # IRB session should still be started
+      assert_includes output, "foobar"
+      assert_includes output, 'I\'m an error (RuntimeError)'
+    end
+  end
 end

@@ -133,6 +133,14 @@ module Gem
         end
         attr_reader :sign, :data
       end
+
+      class UserClass < Element
+        def initialize(name, wrapped_object)
+          @name = name
+          @wrapped_object = wrapped_object
+        end
+        attr_reader :name, :wrapped_object
+      end
     end
   end
 end

@@ -326,34 +326,8 @@ module Spec
       gem_command "install #{args} '#{path}'"
     end
 
-    def with_built_bundler(version = nil)
-      version ||= Bundler::VERSION
-      full_name = "bundler-#{version}"
-      build_path = tmp + full_name
-      bundler_path = build_path + "#{full_name}.gem"
-
-      Dir.mkdir build_path
-
-      begin
-        shipped_files.each do |shipped_file|
-          target_shipped_file = shipped_file
-          target_shipped_file = shipped_file.sub(/\Alibexec/, "exe") if ruby_core?
-          target_shipped_file = build_path + target_shipped_file
-          target_shipped_dir = File.dirname(target_shipped_file)
-          FileUtils.mkdir_p target_shipped_dir unless File.directory?(target_shipped_dir)
-          FileUtils.cp shipped_file, target_shipped_file, preserve: true
-        end
-
-        replace_version_file(version, dir: build_path)
-
-        Spec::BuildMetadata.write_build_metadata(dir: build_path)
-
-        gem_command "build #{relative_gemspec}", dir: build_path
-
-        yield(bundler_path)
-      ensure
-        build_path.rmtree
-      end
+    def with_built_bundler(version = nil, &block)
+      Builders::BundlerBuilder.new(self, "bundler", version)._build(&block)
     end
 
     def with_gem_path_as(path)

@@ -643,11 +643,11 @@ VALUE rb_tracearg_object(rb_trace_arg_t *trace_arg);
  * racing with Ruby's internal use of them. These two functions are still present,
  * but are marked as deprecated and have slightly changed semantics:
  *
- * * rb_postponed_job_register now works like rb_postponed_job_register_once i.e.
+ * * rb_postponed_job_register now works like rb_postponed_job_register_one i.e.
  *   `func` will only be executed at most one time each time Ruby checks for
  *   interrupts, no matter how many times it is registered
  * * They are also called with the last `data` to be registered, not the first
- *   (which is how rb_postponed_job_register_once previously worked)
+ *   (which is how rb_postponed_job_register_one previously worked)
  */
 
 
@@ -718,8 +718,8 @@ void rb_postponed_job_trigger(rb_postponed_job_handle_t h);
 
 /**
  * Schedules the given `func` to be called with `data` when Ruby next checks for
- * interupts. If this function is called multiple times in between Ruby checking
- * for interrupts, then `func` will be called only once with the `data` vlaue from
+ * interrupts. If this function is called multiple times in between Ruby checking
+ * for interrupts, then `func` will be called only once with the `data` value from
  * the first call to this function.
  *
  * Like `rb_postponed_job_trigger`, the context in which the job is called
@@ -731,7 +731,7 @@ void rb_postponed_job_trigger(rb_postponed_job_handle_t h);
  *   rb_postponed_job_trigger(rb_postponed_job_preregister(func, data));
  * ```
  *
- * @note    Prevoius versions of Ruby promised that the (`func`, `data`) pairs would
+ * @note    Previous versions of Ruby promised that the (`func`, `data`) pairs would
  *          be executed as many times as they were registered with this function; in
  *          reality this was always subject to race conditions and this function no
  *          longer provides this guarantee. Instead, multiple calls to this function
