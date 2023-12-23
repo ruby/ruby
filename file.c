@@ -5265,8 +5265,8 @@ rb_thread_flock(void *data)
  *    </tr>
  *    <tr>
  *      <td><tt>File::LOCK_UN</tt></td>
- *      <td>None</td>
- *      <td>No locking.</td>
+ *      <td>Unlock</td>
+ *      <td>Remove an existing lock held by this process.</td>
  *    </tr>
  *  </table>
  *
