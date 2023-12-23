@@ -340,7 +340,7 @@ io_buffer_extract_width(VALUE argument, size_t minimum)
     size_t width = NUM2SIZET(argument);
 
     if (width < minimum) {
-        rb_raise(rb_eArgError, "Width must be at least %zu!", minimum);
+        rb_raise(rb_eArgError, "Width must be at least %" PRIuSIZE "!", minimum);
     }
 
     return width;
@@ -957,11 +957,11 @@ io_buffer_hexdump(VALUE string, size_t width, const char *base, size_t length, s
     for (; offset < length; offset += width) {
         memset(text, '\0', width);
         if (first) {
-            rb_str_catf(string, "0x%08zx ", offset);
+            rb_str_catf(string, "0x%08" PRIxSIZE " ", offset);
             first = 0;
         }
         else {
-            rb_str_catf(string, "\n0x%08zx ", offset);
+            rb_str_catf(string, "\n0x%08" PRIxSIZE " ", offset);
         }
 
         for (size_t i = 0; i < width; i += 1) {
@@ -1023,7 +1023,7 @@ rb_io_buffer_inspect(VALUE self)
         io_buffer_hexdump(result, RB_IO_BUFFER_INSPECT_HEXDUMP_WIDTH, buffer->base, size, 0, 0);
 
         if (clamped) {
-            rb_str_catf(result, "\n(and %zu more bytes not printed)", buffer->size - size);
+            rb_str_catf(result, "\n(and %" PRIuSIZE " more bytes not printed)", buffer->size - size);
         }
     }
 
