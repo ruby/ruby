@@ -45,9 +45,11 @@ describe "Set#flatten!" do
     -> { set.flatten! }.should raise_error(ArgumentError)
   end
 
-  context "when Set contains a Set-like object" do
-    it "flattens self, including Set-like objects" do
-      Set[SetSpecs::SetLike.new([1])].flatten!.should == Set[1]
+  version_is(Set::VERSION, ""..."1.1.0") do
+    context "when Set contains a Set-like object" do
+      it "flattens self, including Set-like objects" do
+        Set[SetSpecs::SetLike.new([1])].flatten!.should == Set[1]
+      end
     end
   end
 end

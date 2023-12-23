@@ -33,9 +33,11 @@ describe "Set#subset?" do
     -> { Set[].subset?(Object.new) }.should raise_error(ArgumentError)
   end
 
-  context "when comparing to a Set-like object" do
-    it "returns true if passed a Set-like object that self is a subset of" do
-      Set[1, 2, 3].subset?(SetSpecs::SetLike.new([1, 2, 3, 4])).should be_true
+  version_is(Set::VERSION, ""..."1.1.0") do
+    context "when comparing to a Set-like object" do
+      it "returns true if passed a Set-like object that self is a subset of" do
+        Set[1, 2, 3].subset?(SetSpecs::SetLike.new([1, 2, 3, 4])).should be_true
+      end
     end
   end
 end
