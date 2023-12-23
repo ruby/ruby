@@ -17,7 +17,6 @@
 #include "internal/numeric.h"
 #include "internal/string.h"
 #include "internal/thread.h"
-#include <stddef.h>
 
 VALUE rb_cIOBuffer;
 VALUE rb_eIOBufferLockedError;
@@ -790,7 +789,7 @@ io_buffer_validate(struct rb_io_buffer *buffer)
     }
 }
 
-int
+enum rb_io_buffer_flags
 rb_io_buffer_get_bytes(VALUE self, void **base, size_t *size)
 {
     struct rb_io_buffer *buffer = NULL;
@@ -950,7 +949,7 @@ io_buffer_hexdump_output_size(size_t width, size_t size, int first)
 // If the hexdump is not the first line, it will prepend a newline if there is any output at all.
 // If formatting here is adjusted, please update io_buffer_hexdump_output_size accordingly.
 static VALUE
-io_buffer_hexdump(VALUE string, size_t width, char *base, size_t length, size_t offset, int first)
+io_buffer_hexdump(VALUE string, size_t width, const char *base, size_t length, size_t offset, int first)
 {
     char *text = alloca(width+1);
     text[width] = '\0';
