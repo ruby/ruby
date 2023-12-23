@@ -172,7 +172,7 @@ extern VALUE rb_gc_enable(void);
 extern VALUE rb_gc_disable(void);
 extern uint64_t rb_vm_insns_count;
 
-// Disable GC, TracePoint, JIT, and stats
+// Disable GC, TracePoint, JIT, stats, and $!
 #define WITH_RJIT_ISOLATED_USING_PC(using_pc, stmt) do { \
     VALUE was_disabled = rb_gc_disable(); \
     \
@@ -192,7 +192,11 @@ extern uint64_t rb_vm_insns_count;
     rjit_stats_p = false; \
     uint64_t insns_count = rb_vm_insns_count; \
     \
+    VALUE err = rb_errinfo(); \
+    \
     stmt; \
+    \
+    rb_set_errinfo(err); \
     \
     rb_vm_insns_count = insns_count; \
     rjit_stats_p = rb_rjit_opts.stats; \
