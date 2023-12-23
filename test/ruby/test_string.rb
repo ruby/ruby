@@ -2081,6 +2081,15 @@ CODE
     }
   end
 
+  def test_sub_gc_compact_stress
+    EnvUtil.under_gc_compact_stress do
+      m = /&(?<foo>.*?);/.match(S("aaa &amp; yyy"))
+      assert_equal("amp", m["foo"])
+
+      assert_equal("aaa [amp] yyy", S("aaa &amp; yyy").sub(/&(?<foo>.*?);/, S('[\k<foo>]')))
+    end
+  end
+
   def test_sub!
     a = S("hello")
     b = a.dup
