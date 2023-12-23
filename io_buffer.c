@@ -131,6 +131,7 @@ io_buffer_map_file(struct rb_io_buffer *buffer, int descriptor, size_t size, rb_
 
     if (flags & RB_IO_BUFFER_PRIVATE) {
         buffer->flags |= RB_IO_BUFFER_PRIVATE;
+        access |= MAP_PRIVATE;
     }
     else {
         // This buffer refers to external buffer.
@@ -152,6 +153,7 @@ io_buffer_map_file(struct rb_io_buffer *buffer, int descriptor, size_t size, rb_
     buffer->flags |= RB_IO_BUFFER_MAPPED;
 }
 
+// Release the memory associated with a mapped buffer.
 static inline void
 io_buffer_unmap(void* base, size_t size)
 {
@@ -935,6 +937,10 @@ rb_io_buffer_to_s(VALUE self)
         rb_str_cat2(result, " LOCKED");
     }
 
+    if (buffer->flags & RB_IO_BUFFER_PRIVATE) {
+        rb_str_cat2(result, " PRIVATE");
+    }
+
     if (buffer->flags & RB_IO_BUFFER_READONLY) {
         rb_str_cat2(result, " READONLY");
     }
@@ -1074,8 +1080,8 @@ rb_io_buffer_size(VALUE self)
  *
  *  Returns whether the buffer buffer is accessible.
  *
- *  A buffer becomes invalid if it is a slice of another buffer which has been
- *  freed.
+ *  A buffer becomes invalid if it is a slice of another buffer (or string)
+ *  which has been freed or re-allocated at a different address.
  */
 static VALUE
 rb_io_buffer_valid_p(VALUE self)
@@ -1190,6 +1196,23 @@ rb_io_buffer_mapped_p(VALUE self)
  *  If the buffer is _shared_, meaning it references memory that can be shared
  *  with other processes (and thus might change without being modified
  *  locally).
+ *
+ *  Example:
+ *    # Create a test file:
+ *    File.write('test.txt', 'test')
+ *
+ *    # Create a shared mapping from the given file, the file must be opened in
+ *    # read-write mode unless we also specify IO::Buffer::READONLY:
+ *    buffer = IO::Buffer.map(File.open('test.txt', 'r+'), nil, 0)
+ *    # => #<IO::Buffer 0x00007f1bffd5e000+4 EXTERNAL MAPPED SHARED>
+ *
+ *    # Write to the buffer, which will modify the mapped file:
+ *    buffer.set_string('b', 0)
+ *    # => 1
+ *
+ *    # The file itself is modified:
+ *    File.read('test.txt')
+ *    # => "best"
  */
 static VALUE
 rb_io_buffer_shared_p(VALUE self)
@@ -1223,6 +1246,39 @@ rb_io_buffer_locked_p(VALUE self)
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
 
     return RBOOL(buffer->flags & RB_IO_BUFFER_LOCKED);
+}
+
+/*  call-seq: private? -> true or false
+ *
+ *  If the buffer is _private_, meaning modifications to the buffer will not
+ *  be replicated to the underlying file mapping.
+ *
+ *  Example:
+ *
+ *    # Create a test file:
+ *    File.write('test.txt', 'test')
+ *
+ *    # Create a private mapping from the given file. Note that the file here
+ *    # is opened in read-only mode, but it doesn't matter due to the private
+ *    # mapping:
+ *    buffer = IO::Buffer.map(File.open('test.txt'), nil, 0, IO::Buffer::PRIVATE)
+ *    # => #<IO::Buffer 0x00007fce63f11000+4 MAPPED PRIVATE>
+ *
+ *    # Write to the buffer (invoking CoW of the underlying file buffer):
+ *    buffer.set_string('b', 0)
+ *    # => 1
+ *
+ *    # The file itself is not modified:
+ *    File.read('test.txt')
+ *    # => "test"
+ */
+int
+rb_io_buffer_private_p(VALUE self)
+{
+    struct rb_io_buffer *buffer = NULL;
+    TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
+
+    return buffer->flags & RB_IO_BUFFER_PRIVATE;
 }
 
 int
@@ -3483,21 +3539,25 @@ io_buffer_not_inplace(VALUE self)
  *  Document-class: IO::Buffer
  *
  *  IO::Buffer is a efficient zero-copy buffer for input/output. There are
- *  three main ways of using buffer:
+ *  typical use cases:
  *
  *  * Create an empty buffer with ::new, fill it with buffer using #copy or
- *    #set_value, #set_string, get buffer with #get_string;
+ *    #set_value, #set_string, get buffer with #get_string or write it directly
+ *    to some file with #write.
  *  * Create a buffer mapped to some string with ::for, then it could be used
  *    both for reading with #get_string or #get_value, and writing (writing will
- *    change the source string, too);
+ *    change the source string, too).
  *  * Create a buffer mapped to some file with ::map, then it could be used for
  *    reading and writing the underlying file.
+ *  * Create a string of a fixed size with ::string, then #read into it, or
+ *    modify it using #set_value.
  *
  *  Interaction with string and file memory is performed by efficient low-level
  *  C mechanisms like `memcpy`.
  *
  *  The class is meant to be an utility for implementing more high-level mechanisms
- *  like Fiber::Scheduler#io_read and Fiber::Scheduler#io_write.
+ *  like Fiber::Scheduler#io_read and Fiber::Scheduler#io_write and parsing binary
+ *  protocols.
  *
  *  <b>Examples of usage:</b>
  *
@@ -3560,16 +3620,28 @@ io_buffer_not_inplace(VALUE self)
  *    File.read('test.txt')
  *    # => "t--- buffer"
  *
- *  <b>The class is experimental and the interface is subject to change.</b>
+ *  <b>The class is experimental and the interface is subject to change, this
+ *  is especially true of file mappings which may be removed entirely in
+ *  the future.</b>
  */
 void
 Init_IO_Buffer(void)
 {
     rb_cIOBuffer = rb_define_class_under(rb_cIO, "Buffer", rb_cObject);
+
+    /* Raised when an operation would resize or re-allocate a locked buffer. */
     rb_eIOBufferLockedError = rb_define_class_under(rb_cIOBuffer, "LockedError", rb_eRuntimeError);
+
+    /* Raised when the buffer cannot be allocated for some reason, or you try to use a buffer that's not allocated. */
     rb_eIOBufferAllocationError = rb_define_class_under(rb_cIOBuffer, "AllocationError", rb_eRuntimeError);
+
+    /* Raised when you try to write to a read-only buffer, or resize an external buffer. */
     rb_eIOBufferAccessError = rb_define_class_under(rb_cIOBuffer, "AccessError", rb_eRuntimeError);
+
+    /* Raised if you try to access a buffer slice which no longer references a valid memory range of the underlying source. */
     rb_eIOBufferInvalidatedError = rb_define_class_under(rb_cIOBuffer, "InvalidatedError", rb_eRuntimeError);
+
+    /* Raised if the mask given to a binary operation is invalid, e.g. zero length or overlaps the target buffer. */
     rb_eIOBufferMaskError = rb_define_class_under(rb_cIOBuffer, "MaskError", rb_eArgError);
 
     rb_define_alloc_func(rb_cIOBuffer, rb_io_buffer_type_allocate);
@@ -3605,37 +3677,37 @@ Init_IO_Buffer(void)
 
     rb_define_method(rb_cIOBuffer, "transfer", rb_io_buffer_transfer, 0);
 
-    /* Indicates that the memory in the buffer is owned by someone else. */
+    /* Indicates that the memory in the buffer is owned by someone else. See #external? for more details. */
     rb_define_const(rb_cIOBuffer, "EXTERNAL", RB_INT2NUM(RB_IO_BUFFER_EXTERNAL));
 
-    /* Indicates that the memory in the buffer is owned by the buffer. */
+    /* Indicates that the memory in the buffer is owned by the buffer. See #internal? for more details. */
     rb_define_const(rb_cIOBuffer, "INTERNAL", RB_INT2NUM(RB_IO_BUFFER_INTERNAL));
 
-    /* Indicates that the memory in the buffer is mapped by the operating system */
+    /* Indicates that the memory in the buffer is mapped by the operating system. See #mapped? for more details. */
     rb_define_const(rb_cIOBuffer, "MAPPED", RB_INT2NUM(RB_IO_BUFFER_MAPPED));
 
-    /* Indicates that the memory in the buffer is also mapped such that it can be shared with other processes. */
+    /* Indicates that the memory in the buffer is also mapped such that it can be shared with other processes. See #shared? for more details. */
     rb_define_const(rb_cIOBuffer, "SHARED", RB_INT2NUM(RB_IO_BUFFER_SHARED));
 
-    /* Indicates that the memory in the buffer is locked and cannot be resized or freed. */
+    /* Indicates that the memory in the buffer is locked and cannot be resized or freed. See #locked? and #locked for more details. */
     rb_define_const(rb_cIOBuffer, "LOCKED", RB_INT2NUM(RB_IO_BUFFER_LOCKED));
 
-    /* Indicates that the memory in the buffer is mapped privately and changes won't be replicated to the underlying file. */
+    /* Indicates that the memory in the buffer is mapped privately and changes won't be replicated to the underlying file. See #private? for more details. */
     rb_define_const(rb_cIOBuffer, "PRIVATE", RB_INT2NUM(RB_IO_BUFFER_PRIVATE));
 
-    /* Indicates that the memory in the buffer is read only, and attempts to modify it will fail. */
+    /* Indicates that the memory in the buffer is read only, and attempts to modify it will fail. See #readonly? for more details.*/
     rb_define_const(rb_cIOBuffer, "READONLY", RB_INT2NUM(RB_IO_BUFFER_READONLY));
 
-    /* Refers to little endian byte order, where the least significant byte is stored first. */
+    /* Refers to little endian byte order, where the least significant byte is stored first. See #get_value for more details. */
     rb_define_const(rb_cIOBuffer, "LITTLE_ENDIAN", RB_INT2NUM(RB_IO_BUFFER_LITTLE_ENDIAN));
 
-    /* Refers to big endian byte order, where the most significant byte is stored first. */
+    /* Refers to big endian byte order, where the most significant byte is stored first. See #get_value for more details. */
     rb_define_const(rb_cIOBuffer, "BIG_ENDIAN", RB_INT2NUM(RB_IO_BUFFER_BIG_ENDIAN));
 
-    /* Refers to the byte order of the host machine. */
+    /* Refers to the byte order of the host machine. See #get_value for more details. */
     rb_define_const(rb_cIOBuffer, "HOST_ENDIAN", RB_INT2NUM(RB_IO_BUFFER_HOST_ENDIAN));
 
-    /* Refers to network byte order, which is the same as big endian. */
+    /* Refers to network byte order, which is the same as big endian. See #get_value for more details. */
     rb_define_const(rb_cIOBuffer, "NETWORK_ENDIAN", RB_INT2NUM(RB_IO_BUFFER_NETWORK_ENDIAN));
 
     rb_define_method(rb_cIOBuffer, "null?", rb_io_buffer_null_p, 0);
