@@ -76,6 +76,7 @@ class TestSyntax < Test::Unit::TestCase
 
   def test_anonymous_block_forwarding
     assert_syntax_error("def b; c(&); end", /no anonymous block parameter/)
+    assert_syntax_error("def b(&) ->(&) {c(&)} end", /anonymous block parameter is also used/)
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
     begin;
       def b(&); c(&) end
@@ -143,6 +144,9 @@ class TestSyntax < Test::Unit::TestCase
   def test_anonymous_rest_forwarding
     assert_syntax_error("def b; c(*); end", /no anonymous rest parameter/)
     assert_syntax_error("def b; c(1, *); end", /no anonymous rest parameter/)
+    assert_syntax_error("def b(*) ->(*) {c(*)} end", /anonymous rest parameter is also used/)
+    assert_syntax_error("def b(a, *) ->(*) {c(1, *)} end", /anonymous rest parameter is also used/)
+    assert_syntax_error("def b(*) ->(a, *) {c(*)} end", /anonymous rest parameter is also used/)
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
     begin;
       def b(*); c(*) end
@@ -156,6 +160,9 @@ class TestSyntax < Test::Unit::TestCase
   def test_anonymous_keyword_rest_forwarding
     assert_syntax_error("def b; c(**); end", /no anonymous keyword rest parameter/)
     assert_syntax_error("def b; c(k: 1, **); end", /no anonymous keyword rest parameter/)
+    assert_syntax_error("def b(**) ->(**) {c(**)} end", /anonymous keyword rest parameter is also used/)
+    assert_syntax_error("def b(k:, **) ->(**) {c(k: 1, **)} end", /anonymous keyword rest parameter is also used/)
+    assert_syntax_error("def b(**) ->(k:, **) {c(**)} end", /anonymous keyword rest parameter is also used/)
     assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
     begin;
       def b(**); c(**) end

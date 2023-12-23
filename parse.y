@@ -15009,6 +15009,8 @@ add_forwarding_args(struct parser_params *p)
 static void
 forwarding_arg_check(struct parser_params *p, ID arg, ID all, const char *var)
 {
+    bool conflict = false;
+
     struct vtable *vars, *args;
 
     vars = p->lvtbl->vars;
@@ -15017,6 +15019,7 @@ forwarding_arg_check(struct parser_params *p, ID arg, ID all, const char *var)
     while (vars && !DVARS_TERMINAL_P(vars->prev)) {
         vars = vars->prev;
         args = args->prev;
+        conflict |= (vtable_included(args, arg) && !(all && vtable_included(args, all)));
     }
 
     bool found = false;
@@ -15031,6 +15034,9 @@ forwarding_arg_check(struct parser_params *p, ID arg, ID all, const char *var)
 
     if (!found) {
         compile_error(p, "no anonymous %s parameter", var);
+    }
+    else if (conflict) {
+        compile_error(p, "anonymous %s parameter is also used within block", var);
     }
 }
 
