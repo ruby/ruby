@@ -616,6 +616,21 @@ kqueue_unregister_waiting(int fd, enum thread_sched_waiting_flag flags)
     }
 }
 
+static bool
+kqueue_already_registered(int fd)
+{
+    rb_thread_t *wth, *found_wth = NULL;
+    ccan_list_for_each(&timer_th.waiting, wth, sched.waiting_reason.node) {
+        // Similar to EEXIST in epoll_ctl, but more strict because it checks fd rather than flags
+        //   for simplicity
+        if (wth->sched.waiting_reason.flags && wth->sched.waiting_reason.data.fd == fd) {
+            found_wth = wth;
+            break;
+        }
+    }
+    return found_wth != NULL;
+}
+
 #endif // HAVE_SYS_EVENT_H
 
 // return false if the fd is not waitable or not need to wait.
@@ -645,6 +660,10 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
 #if HAVE_SYS_EVENT_H
     struct kevent ke[2];
     int num_events = 0;
+
+    if (kqueue_already_registered(fd)) {
+        return false;
+    }
 #else
     uint32_t epoll_events = 0;
 #endif
