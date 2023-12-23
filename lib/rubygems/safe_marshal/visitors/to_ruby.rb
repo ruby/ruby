@@ -247,6 +247,30 @@ module Gem::SafeMarshal
         end
       end
 
+      def visit_Gem_SafeMarshal_Elements_UserClass(r)
+        if resolve_class(r.name) == ::Hash && r.wrapped_object.is_a?(Elements::Hash)
+
+          hash = register_object({}.compare_by_identity)
+
+          o = r.wrapped_object
+          o.pairs.each_with_index do |(k, v), i|
+            push_stack i
+            k = visit(k)
+            push_stack k
+            hash[k] = visit(v)
+          end
+
+          if o.is_a?(Elements::HashWithDefaultValue)
+            push_stack :default
+            hash.default = visit(o.default)
+          end
+
+          hash
+        else
+          raise UnsupportedError.new("Unsupported user class #{resolve_class(r.name)} in marshal stream", stack: formatted_stack)
+        end
+      end
+
       def resolve_class(n)
         @class_cache[n] ||= begin
           to_s = resolve_symbol_name(n)
@@ -372,6 +396,12 @@ module Gem::SafeMarshal
           @name = name
           @stack = stack
           super "Attempting to load unpermitted class #{name.inspect} @ #{stack.join "."}"
+        end
+      end
+
+      class UnsupportedError < Error
+        def initialize(message, stack:)
+          super "#{message} @ #{stack.join "."}"
         end
       end
 

@@ -460,6 +460,35 @@ RSpec.describe "bundle install with gem sources" do
       expect(the_bundle).to include_gems("rubocop 1.37.1")
     end
 
+    it "warns when a Gemfile dependency is overriding a gemspec development dependency, with different requirements" do
+      build_lib "my-gem", path: bundled_app do |s|
+        s.add_development_dependency "rails", ">= 5"
+      end
+
+      build_repo4 do
+        build_gem "rails", "7.0.8"
+      end
+
+      gemfile <<~G
+        source "#{file_uri_for(gem_repo4)}"
+
+        gem "rails", "~> 7.0.8"
+
+        gemspec
+      G
+
+      bundle :install
+
+      expect(err).to include("A gemspec development dependency (rails, >= 5) is being overridden by a Gemfile dependency (rails, ~> 7.0.8).")
+      expect(err).to include("This behaviour may change in the future. Please remove either of them, or make sure they both have the same requirement")
+
+      # This is not the best behavior I believe, it would be better if both
+      # requirements are considered if they are compatible, and a version
+      # satisfying both is chosen. But not sure about changing it right now, so
+      # I went with a warning for the time being.
+      expect(the_bundle).to include_gems("rails 7.0.8")
+    end
+
     it "does not warn if a gem is added once in Gemfile and also inside a gemspec as a development dependency, with same requirements, and different sources" do
       build_lib "my-gem", path: bundled_app do |s|
         s.add_development_dependency "activesupport"
