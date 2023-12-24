@@ -519,7 +519,7 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   def test_private
-    Tempfile.create do |io|
+    Tempfile.create("buffer.txt") do |io|
       io.write("Hello World")
 
       buffer = IO::Buffer.map(io, nil, 0, IO::Buffer::PRIVATE)
@@ -532,7 +532,8 @@ class TestIOBuffer < Test::Unit::TestCase
       io.seek(0)
       assert_equal "Hello World", io.read
     ensure
-      buffer.free
+      buffer&.free
+      io&.close
     end
   end
 end
