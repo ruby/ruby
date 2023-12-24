@@ -7444,7 +7444,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
                 if (RTYPEDDATA_P(obj) && gc_declarative_marking_p(any->as.typeddata.type)) {
                     size_t *offset_list = (size_t *)RANY(obj)->as.typeddata.type->function.dmark;
 
-                    for (size_t offset = *offset_list; *offset_list != RUBY_REF_END; offset = *offset_list++) {
+                    for (size_t offset = *offset_list; offset != RUBY_REF_END; offset = *offset_list++) {
                         rb_gc_mark_movable(*(VALUE *)((char *)ptr + offset));
                     }
                 }
@@ -10814,7 +10814,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
                 if (RTYPEDDATA_P(obj) && gc_declarative_marking_p(any->as.typeddata.type)) {
                     size_t *offset_list = (size_t *)RANY(obj)->as.typeddata.type->function.dmark;
 
-                    for (size_t offset = *offset_list; *offset_list != RUBY_REF_END; offset = *offset_list++) {
+                    for (size_t offset = *offset_list; offset != RUBY_REF_END; offset = *offset_list++) {
                         VALUE *ref = (VALUE *)((char *)ptr + offset);
                         if (SPECIAL_CONST_P(*ref)) continue;
                         *ref = rb_gc_location(*ref);
