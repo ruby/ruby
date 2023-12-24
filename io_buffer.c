@@ -305,6 +305,7 @@ io_buffer_extract_flags(VALUE argument)
 
     enum rb_io_buffer_flags flags = RB_NUM2UINT(argument);
 
+    // We deliberately ignore unknown flags. Any future flags which are exposed this way should be safe to ignore.
     return flags & RB_IO_BUFFER_FLAGS_MASK;
 }
 
