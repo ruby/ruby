@@ -961,13 +961,16 @@ rb_io_buffer_to_s(VALUE self)
 inline static size_t
 io_buffer_hexdump_output_size(size_t width, size_t size, int first)
 {
-    // For each byte, 2 hex digits and a space is emitted, along with a preview of that byte:
-    size_t total = size * 4;
+    // The preview on the right hand side is 1:1:
+    size_t total = size;
+
+    size_t whole_lines = (size / width);
+    size_t partial_line = (size % width) ? 1 : 0;
 
     // For each line:
-    // 1 byte    10 bytes  1 byte  (above)   1 byte
-    // (newline) (address) (space) (hexdump) (space) (preview)
-    total += (size / width) * (1 + 10 + 1 + 1);
+    // 1 byte    10 bytes  1 byte  width*3 bytes   1 byte  size bytes
+    // (newline) (address) (space) (hexdump      ) (space) (preview)
+    total += (whole_lines + partial_line) * (1 + 10 + width*3 + 1 + 1);
 
     // If the hexdump is the first line, one less newline will be emitted:
     if (size && first) total -= 1;
@@ -1476,7 +1479,22 @@ io_buffer_validate_range(struct rb_io_buffer *buffer, size_t offset, size_t leng
 }
 
 /*
- * Returns hexadecimal dump string
+ *  call-seq: hexdump([offset, [length, [width]]]) -> string
+ *
+ *  Returns a human-readable string representation of the buffer. The exact
+ *  format is subject to change.
+ *
+ *  Example:
+ *
+ *    buffer = IO::Buffer.for("Hello World")
+ *    puts buffer.hexdump
+ *    # 0x00000000  48 65 6c 6c 6f 20 57 6f 72 6c 64                Hello World
+ *
+ *  As buffers are usually fairly big, you may want to limit the output by
+ *  specifying the offset and length:
+ *
+ *    puts buffer.hexdump(6, 5)
+ *    # 0x00000006  57 6f 72 6c 64                                  World
  */
 static VALUE
 rb_io_buffer_hexdump(int argc, VALUE *argv, VALUE self)
