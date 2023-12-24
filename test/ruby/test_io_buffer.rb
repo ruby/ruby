@@ -519,8 +519,6 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   def test_private
-    omit if RUBY_PLATFORM =~ /mswin|mingw/
-
     Tempfile.create("buffer.txt") do |io|
       io.write("Hello World")
 

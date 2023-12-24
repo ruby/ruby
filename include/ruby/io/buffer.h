@@ -58,6 +58,9 @@ enum rb_io_buffer_flags {
 
     // The buffer is read-only and cannot be modified.
     RB_IO_BUFFER_READONLY = 128,
+
+    // The buffer is backed by a file.
+    RB_IO_BUFFER_FILE = 256,
 };
 
 // Represents the endian of the data types.
