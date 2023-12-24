@@ -116,7 +116,6 @@ io_buffer_map_file(struct rb_io_buffer *buffer, int descriptor, size_t size, rb_
     if (!mapping) rb_sys_fail("io_buffer_map_descriptor:CreateFileMapping");
 
     void *base = MapViewOfFile(mapping, access, (DWORD)(offset >> 32), (DWORD)(offset & 0xFFFFFFFF), size);
-    fprintf(stderr, "io_buffer_map_file:MapViewOfFile buffer->base=%p\n", base);
 
     if (!base) {
         CloseHandle(mapping);
@@ -227,16 +226,10 @@ io_buffer_free(struct rb_io_buffer *buffer)
         if (buffer->flags & RB_IO_BUFFER_MAPPED) {
 #ifdef _WIN32
             if (buffer->flags & RB_IO_BUFFER_FILE) {
-                fprintf(stderr, "io_buffer_free:UnmapViewOfFile buffer->base=%p\n", buffer->base);
-
-                if (!UnmapViewOfFile(buffer->base)) {
-                    fprintf(stderr, "io_buffer_free:UnmapViewOfFile: %lu\n", GetLastError());
-                }
+                UnmapViewOfFile(buffer->base);
             }
             else {
-                if (!VirtualFree(buffer->base, 0, MEM_RELEASE)) {
-                    fprintf(stderr, "io_buffer_free:VirtualFree: %lu\n", GetLastError());
-                }
+                VirtualFree(buffer->base, 0, MEM_RELEASE);
             }
 #else
             munmap(buffer->base, buffer->size);
@@ -260,10 +253,7 @@ io_buffer_free(struct rb_io_buffer *buffer)
 
 #if defined(_WIN32)
     if (buffer->mapping) {
-        if (!CloseHandle(buffer->mapping)) {
-            fprintf(stderr, "io_buffer_free:CloseHandle: %lu\n", GetLastError());
-        }
-
+        CloseHandle(buffer->mapping);
         buffer->mapping = NULL;
     }
 #endif
