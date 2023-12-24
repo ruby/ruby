@@ -5254,7 +5254,7 @@ rb_thread_flock(void *data)
  *      <td><tt>File::LOCK_NB</tt></td>
  *      <td>Non-blocking</td>
  *      <td>
- *        No blocking; may be combined with other `File::LOCK_SH` or `File::LOCK_EX`
+ *        No blocking; may be combined with other <tt>File::LOCK_SH</tt> or <tt>File::LOCK_EX</tt>
  *        using the bitwise OR operator <tt>|</tt>.
  *      </td>
  *    </tr>
