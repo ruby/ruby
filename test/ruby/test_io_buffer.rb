@@ -531,6 +531,8 @@ class TestIOBuffer < Test::Unit::TestCase
       # It was not changed because the mapping was private:
       io.seek(0)
       assert_equal "Hello World", io.read
+    ensure
+      buffer.free
     end
   end
 end
