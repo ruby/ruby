@@ -305,11 +305,7 @@ io_buffer_extract_flags(VALUE argument)
 
     enum rb_io_buffer_flags flags = RB_NUM2UINT(argument);
 
-    if (flags > RB_IO_BUFFER_FLAGS_MAXIMUM) {
-        rb_raise(rb_eArgError, "Invalid flags!");
-    }
-
-    return flags;
+    return flags & RB_IO_BUFFER_FLAGS_MASK;
 }
 
 // Extract an offset argument, which must be a non-negative integer.

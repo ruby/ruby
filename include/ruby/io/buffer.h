@@ -60,7 +60,7 @@ enum rb_io_buffer_flags {
     RB_IO_BUFFER_READONLY = 128,
 
     // The biggest possible value.
-    RB_IO_BUFFER_FLAGS_MAXIMUM = RB_IO_BUFFER_READONLY
+    RB_IO_BUFFER_FLAGS_MASK = RB_IO_BUFFER_EXTERNAL | RB_IO_BUFFER_INTERNAL | RB_IO_BUFFER_MAPPED | RB_IO_BUFFER_SHARED | RB_IO_BUFFER_LOCKED | RB_IO_BUFFER_PRIVATE | RB_IO_BUFFER_READONLY,
 };
 
 // Represents the endian of the data types.
