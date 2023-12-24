@@ -23,69 +23,96 @@ module RubyVM::RJIT
   end
   C_TEMP = TEMP_C.map { |temp, c| [c, temp] }.to_h
 
-  class Context < Struct.new(
-    :stack_size,   # @param [Integer] The number of values on the stack
-    :sp_offset,    # @param [Integer] JIT sp offset relative to the interpreter's sp
-    :chain_depth,  # @param [Integer] jit_chain_guard depth
-    :local_types,  # @param [Array<RubyVM::RJIT::Type>] Local variable types we keep track of
-    :temp_types,   # @param [Array<RubyVM::RJIT::Type>] Temporary variable types we keep track of
-    :self_type,    # @param [RubyVM::RJIT::Type] Type we track for self
-    :temp_mapping, # @param [Array<Symbol>] Mapping of temp stack entries to types we track
-  )
-    def initialize(
-      stack_size:   0,
-      sp_offset:    0,
-      chain_depth:  0,
-      local_types:  [Type::Unknown] * MAX_LOCAL_TYPES,
-      temp_types:   [Type::Unknown] * MAX_TEMP_TYPES,
-      self_type:    Type::Unknown,
-      temp_mapping: [MapToStack] * MAX_TEMP_TYPES
-    ) = super
+  class LocalTypes
+    def initialize(ctx); @ctx = ctx; end
+    def [](index) = (index < MAX_LOCAL_TYPES ? C_TYPE.fetch(@ctx.local_types[index]) : nil)
+    def []=(index, type); @ctx.local_types[index] = TYPE_C.fetch(type); end
+  end
 
-    # Deep dup by default for safety
+  class TempTypes
+    def initialize(ctx); @ctx = ctx; end
+    def [](index) = (index < MAX_TEMP_TYPES ? C_TYPE.fetch(@ctx.temp_types[index]) : nil)
+    def []=(index, type); @ctx.temp_types[index] = TYPE_C.fetch(type); end
+  end
+
+  class TempMapping
+    def initialize(ctx); @ctx = ctx; end
+    def [](index) = (index < MAX_TEMP_TYPES ? C_TEMP.fetch(@ctx.temp_mapping[index]) : nil)
+    def []=(index, temp); @ctx.temp_mapping[index] = TEMP_C.fetch(temp); end
+  end
+
+  # @param stack_size [Integer] The number of values on the stack
+  # @param sp_offset [Integer] JIT sp offset relative to the interpreter's sp
+  # @param chain_depth [Integer] jit_chain_guard depth
+  # @param local_types [Array<RubyVM::RJIT::Type>] Local variable types we keep track of
+  # @param temp_types [Array<RubyVM::RJIT::Type>] Temporary variable types we keep track of
+  # @param self_type [RubyVM::RJIT::Type] Type we track for self
+  # @param temp_mapping [Array<Symbol>] Mapping of temp stack entries to types we track
+  class Context
+    def initialize(addr = nil)
+      @ctx = C.rb_rjit_context.new(addr)
+      if addr.nil?
+        self.stack_size = 0
+        self.sp_offset = 0
+        self.chain_depth = 0
+        MAX_LOCAL_TYPES.times { |i| self.local_types[i] = Type::Unknown }
+        MAX_TEMP_TYPES.times { |i| self.temp_types[i] = Type::Unknown }
+        self.self_type = Type::Unknown
+        MAX_TEMP_TYPES.times { |i| self.temp_mapping[i] = MapToStack }
+      end
+    end
+
+    # Attribute readers and writers
+    def stack_size = @ctx.stack_size
+    def stack_size=(size); @ctx.stack_size = size; end
+    def sp_offset = @ctx.sp_offset
+    def sp_offset=(offset); @ctx.sp_offset = offset; end
+    def chain_depth = @ctx.chain_depth
+    def chain_depth=(depth); @ctx.chain_depth = depth; end
+    def local_types; @local_types ||= LocalTypes.new(@ctx); end
+    def temp_types; @temp_types ||= TempTypes.new(@ctx); end
+    def self_type = C_TYPE.fetch(@ctx.self_type)
+    def self_type=(type); @ctx.self_type = TYPE_C.fetch(type); end
+    def temp_mapping; @temp_mapping ||= TempMapping.new(@ctx); end
+
     def dup
-      ctx = super
-      ctx.local_types = ctx.local_types.dup
-      ctx.temp_types = ctx.temp_types.dup
-      ctx.temp_mapping = ctx.temp_mapping.dup
+      ctx = Context.new
+      ctx.stack_size = self.stack_size
+      ctx.sp_offset = self.sp_offset
+      ctx.chain_depth = self.chain_depth
+      MAX_LOCAL_TYPES.times { |i| ctx.local_types[i] = self.local_types[i] }
+      MAX_TEMP_TYPES.times { |i| ctx.temp_types[i] = self.temp_types[i] }
+      ctx.self_type = self.self_type
+      MAX_TEMP_TYPES.times { |i| ctx.temp_mapping[i] = self.temp_mapping[i] }
       ctx
     end
 
-    # Allocate `rb_rjit_context`, serialize self into it, and return the address of it.
-    def save(c_ctx = C.rb_rjit_context.new)
-      c_ctx.stack_size = self.stack_size
-      c_ctx.sp_offset = self.sp_offset
-      c_ctx.chain_depth = self.chain_depth
-      MAX_LOCAL_TYPES.times do |i|
-        c_ctx.local_types[i] = TYPE_C.fetch(self.local_types[i])
-      end
-      MAX_TEMP_TYPES.times do |i|
-        c_ctx.temp_types[i] = TYPE_C.fetch(self.temp_types[i])
-      end
-      c_ctx.self_type = TYPE_C.fetch(self.self_type)
-      MAX_TEMP_TYPES.times do |i|
-        c_ctx.temp_mapping[i] = TEMP_C.fetch(self.temp_mapping[i])
-      end
-      c_ctx.to_i
+    def ==(other)
+      self.to_a == other.to_a
     end
 
-    def self.load(c_ctx_addr)
-      c_ctx = C.rb_rjit_context.new(c_ctx_addr)
-      ctx = Context.new
-      ctx.stack_size = c_ctx.stack_size
-      ctx.sp_offset = c_ctx.sp_offset
-      ctx.chain_depth = c_ctx.chain_depth
-      MAX_LOCAL_TYPES.times do |i|
-        ctx.local_types[i] = C_TYPE.fetch(c_ctx.local_types[i])
-      end
-      MAX_TEMP_TYPES.times do |i|
-        ctx.temp_types[i] = C_TYPE.fetch(c_ctx.temp_types[i])
-      end
-      ctx.self_type = C_TYPE.fetch(c_ctx.self_type)
-      MAX_TEMP_TYPES.times do |i|
-        ctx.temp_mapping[i] = C_TEMP.fetch(c_ctx.temp_mapping[i])
-      end
-      ctx.freeze
+    def hash
+      to_a.hash
+    end
+
+    def to_a
+      [
+        self.stack_size,
+        self.sp_offset,
+        self.chain_depth,
+        *MAX_LOCAL_TYPES.times.map { |i| self.local_types[i] },
+        *MAX_TEMP_TYPES.times.map { |i| self.temp_types[i] },
+        self.self_type,
+        *MAX_TEMP_TYPES.times.map { |i| self.temp_mapping[i] },
+      ]
+    end
+
+    def to_c
+      @ctx
+    end
+
+    def to_i # TODO: remove later?
+      @ctx.to_i
     end
 
     # Create a new Context instance with a given stack_size and sp_offset adjusted
@@ -341,7 +368,7 @@ module RubyVM::RJIT
       end
 
       # Clear the local types
-      self.local_types = [Type::Unknown] * MAX_LOCAL_TYPES
+      MAX_LOCAL_TYPES.times { |i| self.local_types[i] = Type::Unknown }
     end
 
     # Compute a difference score for two context objects
@@ -378,7 +405,7 @@ module RubyVM::RJIT
       end
 
       # For each local type we track
-      src.local_types.size.times do |i|
+      MAX_LOCAL_TYPES.times do |i|
         t_src = src.local_types[i]
         t_dst = dst.local_types[i]
         diff += case t_src.diff(t_dst)

@@ -208,7 +208,7 @@ module RubyVM::RJIT
         c_target = [branch_stub.c_target0, branch_stub.c_target1].compact.map do |c_target_addr|
           C.rb_rjit_branch_target.new(c_target_addr)
         end.find do |c_target|
-          c_target.pc == block.pc && Context.load(c_target.ctx.to_i) == block.ctx
+          c_target.pc == block.pc && Context.new(c_target.ctx.to_i) == block.ctx
         end
         next if c_target.nil?
         # TODO: Could target.address be a stub address? Is invalidation not needed in that case?

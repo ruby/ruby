@@ -58,7 +58,7 @@ struct rb_rjit_context {
 
 struct rb_rjit_branch_target {
     uint64_t pc;
-    struct rb_rjit_context ctx;
+    struct rb_rjit_context *ctx;
     uint64_t address;
 };
 

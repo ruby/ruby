@@ -43,7 +43,7 @@ module RubyVM::RJIT
     def save
       c_target = C.rb_rjit_branch_target.new
       c_target.pc = pc
-      ctx.save(c_target.ctx)
+      c_target.ctx = ctx.to_c
       c_target.address = address
       c_target.to_i
     end
@@ -52,7 +52,7 @@ module RubyVM::RJIT
       c_target = C.rb_rjit_branch_target.new(c_target_addr)
       target = BranchTarget.new
       target.pc = c_target.pc
-      target.ctx = Context.load(c_target.ctx.to_i)
+      target.ctx = Context.new(c_target.ctx.to_i)
       target.address = c_target.address
       target.freeze
     end

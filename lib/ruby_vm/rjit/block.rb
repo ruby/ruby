@@ -9,11 +9,11 @@ module RubyVM::RJIT
     :invalidated, # @param [TrueClass,FalseClass] true if already invalidated
   )
     def initialize(ctx:, incoming: [], invalidated: false, **kwargs)
-      super(c_ctx: ctx.save, incoming:, invalidated:, **kwargs)
+      super(c_ctx: ctx.to_i, incoming:, invalidated:, **kwargs)
     end
 
     def ctx
-      Context.load(c_ctx)
+      Context.new(c_ctx)
     end
   end
 end
