@@ -872,6 +872,13 @@ class TestRegexp < Test::Unit::TestCase
     $_ = nil; assert_nil(~/./)
   end
 
+  def test_match_under_gc_compact_stress
+    EnvUtil.under_gc_compact_stress do
+      m = /(?<foo>.)(?<n>[^aeiou])?(?<bar>.+)/.match("hoge\u3042")
+      assert_equal("h", m.match(:foo))
+    end
+  end
+
   def test_match_p
     /backref/ =~ 'backref'
     # must match here, but not in a separate method, e.g., assert_send,

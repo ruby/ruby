@@ -1581,7 +1581,6 @@ rb_reg_prepare_re(VALUE re, VALUE str)
 {
     int r;
     OnigErrorInfo einfo;
-    const char *pattern;
     VALUE unescaped;
     rb_encoding *fixed_enc = 0;
     rb_encoding *enc = rb_reg_prepare_enc(re, str, 1);
@@ -1590,11 +1589,13 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     if (reg->enc == enc) return reg;
 
     rb_reg_check(re);
-    pattern = RREGEXP_SRC_PTR(re);
+
+    VALUE src_str = RREGEXP_SRC(re);
+    const char *pattern = RSTRING_PTR(src_str);
 
     onig_errmsg_buffer err = "";
     unescaped = rb_reg_preprocess(
-        pattern, pattern + RREGEXP_SRC_LEN(re), enc,
+        pattern, pattern + RSTRING_LEN(src_str), enc,
         &fixed_enc, err, 0);
 
     if (NIL_P(unescaped)) {
@@ -1639,6 +1640,7 @@ rb_reg_prepare_re(VALUE re, VALUE str)
     reg->timelimit = timelimit;
 
     RB_GC_GUARD(unescaped);
+    RB_GC_GUARD(src_str);
     return reg;
 }
 
