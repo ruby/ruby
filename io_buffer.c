@@ -3641,12 +3641,13 @@ Init_IO_Buffer(void)
     /* The operating system page size. Used for efficient page-aligned memory allocations. */
     rb_define_const(rb_cIOBuffer, "PAGE_SIZE", SIZET2NUM(RUBY_IO_BUFFER_PAGE_SIZE));
 
-    /* The default buffer size, typically a (small) multiple of the PAGE_SIZE. */
+    /* The default buffer size, typically a (small) multiple of the PAGE_SIZE.
+       Can be explicitly specified by setting the RUBY_IO_BUFFER_DEFAULT_SIZE
+       environment variable. */
     rb_define_const(rb_cIOBuffer, "DEFAULT_SIZE", SIZET2NUM(RUBY_IO_BUFFER_DEFAULT_SIZE));
 
     rb_define_singleton_method(rb_cIOBuffer, "map", io_buffer_map, -1);
 
-    // General use:
     rb_define_method(rb_cIOBuffer, "initialize", rb_io_buffer_initialize, -1);
     rb_define_method(rb_cIOBuffer, "initialize_copy", rb_io_buffer_initialize_copy, 1);
     rb_define_method(rb_cIOBuffer, "inspect", rb_io_buffer_inspect, 0);
