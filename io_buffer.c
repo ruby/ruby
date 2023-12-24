@@ -1268,13 +1268,13 @@ rb_io_buffer_locked_p(VALUE self)
  *    File.read('test.txt')
  *    # => "test"
  */
-int
+static VALUE
 rb_io_buffer_private_p(VALUE self)
 {
     struct rb_io_buffer *buffer = NULL;
     TypedData_Get_Struct(self, struct rb_io_buffer, &rb_io_buffer_type, buffer);
 
-    return buffer->flags & RB_IO_BUFFER_PRIVATE;
+    return RBOOL(buffer->flags & RB_IO_BUFFER_PRIVATE);
 }
 
 int
@@ -3698,6 +3698,7 @@ Init_IO_Buffer(void)
     rb_define_method(rb_cIOBuffer, "mapped?", rb_io_buffer_mapped_p, 0);
     rb_define_method(rb_cIOBuffer, "shared?", rb_io_buffer_shared_p, 0);
     rb_define_method(rb_cIOBuffer, "locked?", rb_io_buffer_locked_p, 0);
+    rb_define_method(rb_cIOBuffer, "private?", rb_io_buffer_private_p, 0);
     rb_define_method(rb_cIOBuffer, "readonly?", io_buffer_readonly_p, 0);
 
     // Locking to prevent changes while using pointer:
