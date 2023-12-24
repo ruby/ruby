@@ -789,8 +789,6 @@ rb_complex_real(VALUE self)
  *
  *   Complex.polar(1, Math::PI/4).imag # => 0.7071067811865476 # Square root of 2.
  *
- * \Complex#imaginary is an alias for \Complex#imag.
- *
  */
 VALUE
 rb_complex_imag(VALUE self)
@@ -1001,7 +999,6 @@ f_divide(VALUE self, VALUE other,
  *   Complex(9, 8)  / 4              # => ((9/4)+(2/1)*i)
  *   Complex(20, 9) / 9.8            # => (2.0408163265306123+0.9183673469387754i)
  *
- * Complex#quo is an alias for Complex#/.
  */
 VALUE
 rb_complex_div(VALUE self, VALUE other)
@@ -1327,7 +1324,6 @@ nucomp_coerce(VALUE self, VALUE other)
  *
  *   Complex.rectangular(1, 1).abs # => 1.4142135623730951 # The square root of 2.
  *
- * Complex#magnitude is an alias for Complex#abs.
  */
 VALUE
 rb_complex_abs(VALUE self)
@@ -1388,7 +1384,6 @@ nucomp_abs2(VALUE self)
  *
  *   Complex.polar(1, 1.0/3).arg # => 0.33333333333333326
  *
- * Complex#angle and Complex#phase are aliases for Complex#arg.
  */
 VALUE
 rb_complex_arg(VALUE self)
@@ -1454,7 +1449,6 @@ nucomp_polar(VALUE self)
  *
  *   Complex.rect(1, 2).conj # => (1-2i)
  *
- * Complex#conjugate is an alias for Complex#conj.
  */
 VALUE
 rb_complex_conjugate(VALUE self)
@@ -1547,6 +1541,18 @@ rb_complex_hash(VALUE self)
     return v;
 }
 
+/*
+ * :call-seq:
+ *   hash -> integer
+ *
+ * Returns the integer hash value for +self+.
+ *
+ * Two \Complex objects created from the same values will have the same hash value
+ * (and will compare using #eql?):
+ *
+ *   Complex(1, 2).hash == Complex(1, 2).hash # => true
+ *
+ */
 static VALUE
 nucomp_hash(VALUE self)
 {
