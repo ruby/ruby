@@ -519,8 +519,18 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   def test_private
-    buffer = IO::Buffer.map(File.open(__FILE__, "r+"), nil, 0, IO::Buffer::PRIVATE)
-    assert buffer.private?
-    refute buffer.readonly?
+    Tempfile.create do |io|
+      io.write("Hello World")
+
+      buffer = IO::Buffer.map(io, nil, 0, IO::Buffer::PRIVATE)
+      assert buffer.private?
+      refute buffer.readonly?
+
+      buffer.set_string("J")
+
+      # It was not changed because the mapping was private:
+      io.seek(0)
+      assert_equal "Hello World", io.read
+    end
   end
 end
