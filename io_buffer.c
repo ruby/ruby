@@ -632,8 +632,6 @@ rb_io_buffer_map(VALUE io, size_t size, rb_off_t offset, enum rb_io_buffer_flags
  *  mapping, you need to open a file in read-write mode, and explicitly pass
  *  +flags+ argument without IO::Buffer::IMMUTABLE.
  *
- *  Example:
- *
  *    File.write('test.txt', 'test')
  *
  *    buffer = IO::Buffer.map(File.open('test.txt'), nil, 0, IO::Buffer::READONLY)
@@ -723,8 +721,6 @@ io_flags_for_size(size_t size)
  *  virtual memory mechanism (anonymous +mmap+ on Unix, +VirtualAlloc+
  *  on Windows). The behavior can be forced by passing IO::Buffer::MAPPED
  *  as a second parameter.
- *
- *  Examples
  *
  *    buffer = IO::Buffer.new(4)
  *    # =>
@@ -1024,8 +1020,6 @@ io_buffer_hexdump(VALUE string, size_t width, const char *base, size_t length, s
  *  Only a limited portion of the buffer will be displayed in a hexdump style
  *  format.
  *
- *  Example:
- *
  *    buffer = IO::Buffer.for("Hello World")
  *    puts buffer.inspect
  *    # #<IO::Buffer 0x000000010198ccd8+11 EXTERNAL READONLY SLICE>
@@ -1094,8 +1088,16 @@ rb_io_buffer_valid_p(VALUE self)
 /*
  *  call-seq: null? -> true or false
  *
- *  If the buffer was freed with #free or was never allocated in the first
- *  place.
+ *  If the buffer was freed with #free, transferred with #transfer, or was
+ *  never allocated in the first place.
+ *
+ *    buffer = IO::Buffer.new(0)
+ *    buffer.null? #=> true
+ *
+ *    buffer = IO::Buffer.new(4)
+ *    buffer.null? #=> false
+ *    buffer.free
+ *    buffer.null? #=> true
  */
 static VALUE
 rb_io_buffer_null_p(VALUE self)
@@ -1196,7 +1198,6 @@ rb_io_buffer_mapped_p(VALUE self)
  *  with other processes (and thus might change without being modified
  *  locally).
  *
- *  Example:
  *    # Create a test file:
  *    File.write('test.txt', 'test')
  *
@@ -1232,8 +1233,6 @@ rb_io_buffer_shared_p(VALUE self)
  *  Locking is not thread safe, but is a semantic used to ensure buffers don't
  *  move while being used by a system call.
  *
- *  Example:
- *
  *    buffer.locked do
  *      buffer.write(io) # theoretical system call interface
  *    end
@@ -1251,8 +1250,6 @@ rb_io_buffer_locked_p(VALUE self)
  *
  *  If the buffer is _private_, meaning modifications to the buffer will not
  *  be replicated to the underlying file mapping.
- *
- *  Example:
  *
  *    # Create a test file:
  *    File.write('test.txt', 'test')
@@ -1373,8 +1370,6 @@ rb_io_buffer_try_unlock(VALUE self)
  *  non-blocking system calls. You can only share a buffer between threads with
  *  appropriate synchronisation techniques.
  *
- *  Example:
- *
  *    buffer = IO::Buffer.new(4)
  *    buffer.locked? #=> false
  *
@@ -1421,8 +1416,6 @@ rb_io_buffer_locked(VALUE self)
  *  After the buffer is freed, no further operations can't be performed on it.
  *
  *  You can resize a freed buffer to re-allocate it.
- *
- *  Example:
  *
  *    buffer = IO::Buffer.for('test')
  *    buffer.free
@@ -1479,8 +1472,6 @@ io_buffer_validate_range(struct rb_io_buffer *buffer, size_t offset, size_t leng
  *
  *  Returns a human-readable string representation of the buffer. The exact
  *  format is subject to change.
- *
- *  Example:
  *
  *    buffer = IO::Buffer.for("Hello World")
  *    puts buffer.hexdump
@@ -1561,8 +1552,6 @@ rb_io_buffer_slice(struct rb_io_buffer *buffer, VALUE self, size_t offset, size_
  *  Raises RuntimeError if the <tt>offset+length</tt> is out of the current
  *  buffer's bounds.
  *
- *  Example:
- *
  *    string = 'test'
  *    buffer = IO::Buffer.for(string)
  *
@@ -1614,8 +1603,6 @@ io_buffer_slice(int argc, VALUE *argv, VALUE self)
  *
  *  Transfers ownership of the underlying memory to a new buffer, causing the
  *  current buffer to become uninitialized.
- *
- *  Example:
  *
  *    buffer = IO::Buffer.new('test')
  *    other = buffer.transfer
@@ -1927,8 +1914,6 @@ io_buffer_buffer_type_size(ID buffer_type)
  *
  *  Returns the size of the given buffer type(s) in bytes.
  *
- *  Example:
- *
  *    IO::Buffer.size_of(:u32) # => 4
  *    IO::Buffer.size_of([:u32, :u32]) # => 8
  */
@@ -2007,8 +1992,6 @@ rb_io_buffer_get_value(const void* base, size_t size, ID buffer_type, size_t *of
  *  in the buffer. For example, a +:u32+ buffer type is a 32-bit unsigned
  *  integer in little-endian format.
  *
- *  Example:
- *
  *    string = [1.5].pack('f')
  *    # => "\x00\x00\xC0?"
  *    IO::Buffer.for(string).get_value(:f32, 0)
@@ -2031,8 +2014,6 @@ io_buffer_get_value(VALUE self, VALUE type, VALUE _offset)
  *
  *  Similar to #get_value, except that it can handle multiple buffer types and
  *  returns an array of values.
- *
- *  Example:
  *
  *    string = [1.5, 2.5].pack('ff')
  *    IO::Buffer.for(string).get_values([:f32, :f32], 0)
@@ -2106,8 +2087,6 @@ io_buffer_extract_offset_count(ID buffer_type, size_t size, int argc, VALUE *arg
  *
  *  If +count+ is given, only +count+ values will be yielded.
  *
- *  Example:
- *
  *    IO::Buffer.for("Hello World").each(:U8, 2, 2) do |offset, value|
  *      puts "#{offset}: #{value}"
  *    end
@@ -2151,8 +2130,6 @@ io_buffer_each(int argc, VALUE *argv, VALUE self)
  *
  *  If +count+ is given, only +count+ values will be returned.
  *
- *  Example:
- *
  *    IO::Buffer.for("Hello World").values(:U8, 2, 2)
  *    # => [108, 108]
  */
@@ -2193,8 +2170,6 @@ io_buffer_values(int argc, VALUE *argv, VALUE self)
  *  Iterates over the buffer, yielding each byte starting from +offset+.
  *
  *  If +count+ is given, only +count+ bytes will be yielded.
- *
- *  Example:
  *
  *    IO::Buffer.for("Hello World").each_byte(2, 2) do |offset, byte|
  *      puts "#{offset}: #{byte}"
@@ -2304,8 +2279,6 @@ io_buffer_set_value(VALUE self, VALUE type, VALUE _offset, VALUE value)
  *  Write +values+ of +buffer_types+ at +offset+ to the buffer. +buffer_types+
  *  should be an array of symbols as described in #get_value. +values+ should
  *  be an array of values to write.
- *
- *  Example:
  *
  *    buffer = IO::Buffer.new(8)
  *    buffer.set_values([:U8, :U16], 0, [1, 2])
@@ -2806,8 +2779,6 @@ rb_io_buffer_read(VALUE self, VALUE io, size_t length, size_t offset)
  *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
  *  buffer.
  *
- *  Example:
- *
  *    IO::Buffer.for('test') do |buffer|
  *      p buffer
  *      # =>
@@ -2927,8 +2898,6 @@ rb_io_buffer_pread(VALUE self, VALUE io, rb_off_t from, size_t length, size_t of
  *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
  *  buffer.
  *
- *  Example:
- *
  *    IO::Buffer.for('test') do |buffer|
  *      p buffer
  *      # =>
@@ -3046,8 +3015,6 @@ rb_io_buffer_write(VALUE self, VALUE io, size_t length, size_t offset)
  *
  *  If +offset+ is not given, it defaults to zero, i.e. the beginning of the
  *  buffer.
- *
- *  Example:
  *
  *    out = File.open('output.txt', 'wb')
  *    IO::Buffer.for('1234567').write(out, 3)
@@ -3170,8 +3137,6 @@ rb_io_buffer_pwrite(VALUE self, VALUE io, rb_off_t from, size_t length, size_t o
  *
  *  If the +from+ position is beyond the end of the file, the gap will be
  *  filled with null (0 value) bytes.
- *
- *  Example:
  *
  *    out = File.open('output.txt', File::RDWR) # open for read/write, no truncation
  *    IO::Buffer.for('1234567').pwrite(out, 2, 3, 1)
@@ -3574,7 +3539,7 @@ io_buffer_not_inplace(VALUE self)
  *  like Fiber::Scheduler#io_read and Fiber::Scheduler#io_write and parsing binary
  *  protocols.
  *
- *  <b>Examples of usage:</b>
+ *  == Examples of Usage
  *
  *  Empty buffer:
  *
