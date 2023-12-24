@@ -257,7 +257,7 @@ The following bundled gems are updated.
 * rexml 3.2.6
 * rss 0.3.0
 * net-ftp 0.3.3
-* net-imap 0.4.8
+* net-imap 0.4.9
 * net-smtp 0.4.0
 * rbs 3.4.0
 * typeprof 0.21.9
