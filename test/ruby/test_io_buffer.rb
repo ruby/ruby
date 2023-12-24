@@ -517,4 +517,10 @@ class TestIOBuffer < Test::Unit::TestCase
   rescue NotImplementedError
     omit "Fork/shared memory is not supported."
   end
+
+  def test_private
+    buffer = IO::Buffer.map(File.open(__FILE__), nil, 0, IO::Buffer::PRIVATE)
+    assert buffer.private?
+    refute buffer.readonly?
+  end
 end
