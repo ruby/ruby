@@ -1286,7 +1286,7 @@ rb_io_read_memory(rb_io_t *fptr, void *buf, size_t count)
         iis.timeout = &timeout_storage;
     }
 
-    return (ssize_t)rb_thread_io_blocking_call(internal_read_func, &iis, fptr->fd, RB_WAITFD_IN);
+    return (ssize_t)rb_thread_io_blocking_call(internal_read_func, &iis, fptr->fd, RB_WAITFD_IN | RB_WAITFD_OUT);
 }
 
 static ssize_t
