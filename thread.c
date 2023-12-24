@@ -1706,7 +1706,7 @@ thread_io_wait_events(rb_thread_t *th, rb_execution_context_t *ec, int fd, int e
             prel = NULL;
         }
 
-        VM_ASSERT(prel || events == RB_WAITFD_IN || events == RB_WAITFD_OUT);
+        VM_ASSERT(prel || (events & (RB_WAITFD_IN | RB_WAITFD_OUT)));
 
         thread_io_setup_wfd(th, fd, wfd);
         {
