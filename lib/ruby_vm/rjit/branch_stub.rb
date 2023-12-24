@@ -19,42 +19,60 @@ module RubyVM::RJIT
     end
 
     def target0
-      BranchTarget.load(c_target0)
+      BranchTarget.new(c_target0)
     end
 
     def target0=(target)
-      self.c_target0 = target.save
+      self.c_target0 = target.to_i
     end
 
     def target1
-      BranchTarget.load(c_target1)
+      BranchTarget.new(c_target1)
     end
 
     def target1=(target)
-      self.c_target1 = target.save
+      self.c_target1 = target.to_i
     end
   end
 
-  class BranchTarget < Struct.new(
-    :pc,      # @param [Integer]
-    :ctx,     # @param [Context]
-    :address, # @param [Integer]
-  )
-    def save
-      c_target = C.rb_rjit_branch_target.new
-      c_target.pc = pc
-      c_target.ctx = ctx.to_c
-      c_target.address = address
-      c_target.to_i
+  # @param pc [Integer]
+  # @param ctx [Context]
+  # @param address [Integer]
+  class BranchTarget
+    def initialize(addr = nil, pc: nil, ctx: nil, address: nil)
+      @branch_target = C.rb_rjit_branch_target.new(addr)
+      if addr.nil?
+        self.pc = pc
+        @branch_target.ctx = ctx.to_c
+        self.address = address
+      end
     end
 
-    def self.load(c_target_addr)
-      c_target = C.rb_rjit_branch_target.new(c_target_addr)
-      target = BranchTarget.new
-      target.pc = c_target.pc
-      target.ctx = Context.new(c_target.ctx.to_i)
-      target.address = c_target.address
-      target.freeze
+    # Attribute readers and writers
+    def pc = @branch_target.pc
+    def pc=(pc); @branch_target.pc = pc; end
+    def ctx = Context.new(@branch_target.ctx.to_i)
+    def address = @branch_target.address
+    def address=(address); @branch_target.address = address; end
+
+    def ==(other)
+      self.to_a == other.to_a
+    end
+
+    def hash
+      to_a.hash
+    end
+
+    def to_a
+      [
+        self.pc,
+        self.ctx,
+        self.address,
+      ]
+    end
+
+    def to_i # TODO: remove later?
+      @branch_target.to_i
     end
   end
 end
