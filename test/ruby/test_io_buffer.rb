@@ -517,4 +517,25 @@ class TestIOBuffer < Test::Unit::TestCase
   rescue NotImplementedError
     omit "Fork/shared memory is not supported."
   end
+
+  def test_private
+    omit if RUBY_PLATFORM =~ /mswin|mingw/
+
+    Tempfile.create("buffer.txt") do |io|
+      io.write("Hello World")
+
+      buffer = IO::Buffer.map(io, nil, 0, IO::Buffer::PRIVATE)
+      assert buffer.private?
+      refute buffer.readonly?
+
+      buffer.set_string("J")
+
+      # It was not changed because the mapping was private:
+      io.seek(0)
+      assert_equal "Hello World", io.read
+    ensure
+      buffer&.free
+      io&.close
+    end
+  end
 end
