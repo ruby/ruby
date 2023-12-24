@@ -1598,7 +1598,8 @@ io_buffer_slice(int argc, VALUE *argv, VALUE self)
 /*
  *  call-seq: transfer -> new_io_buffer
  *
- *  Transfers ownership to a new buffer, deallocating the current one.
+ *  Transfers ownership of the underlying memory to a new buffer, causing the
+ *  current buffer to become uninitialized.
  *
  *  Example:
  *
