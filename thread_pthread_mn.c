@@ -660,10 +660,6 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
 #if HAVE_SYS_EVENT_H
     struct kevent ke[2];
     int num_events = 0;
-
-    if (kqueue_already_registered(fd)) {
-        return false;
-    }
 #else
     uint32_t epoll_events = 0;
 #endif
@@ -708,6 +704,11 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
     {
 #if HAVE_SYS_EVENT_H
         if (num_events > 0) {
+            if (kqueue_already_registered(fd)) {
+                rb_native_mutex_unlock(&timer_th.waiting_lock);
+                return false;
+            }
+
             if (kevent(timer_th.event_fd, ke, num_events, NULL, 0, NULL) == -1) {
                 RUBY_DEBUG_LOG("failed (%d)", errno);
 
