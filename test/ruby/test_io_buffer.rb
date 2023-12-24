@@ -519,7 +519,7 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   def test_private
-    buffer = IO::Buffer.map(File.open(__FILE__), nil, 0, IO::Buffer::PRIVATE)
+    buffer = IO::Buffer.map(File.open(__FILE__, "r+"), nil, 0, IO::Buffer::PRIVATE)
     assert buffer.private?
     refute buffer.readonly?
   end
