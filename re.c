@@ -450,7 +450,7 @@ rb_reg_expr_str(VALUE str, const char *s, long len,
 }
 
 static VALUE
-rb_reg_desc(const char *s, long len, VALUE re)
+rb_reg_desc(VALUE re)
 {
     rb_encoding *enc = rb_enc_get(re);
     VALUE str = rb_str_buf_new2("/");
@@ -463,7 +463,11 @@ rb_reg_desc(const char *s, long len, VALUE re)
     else {
         rb_enc_associate(str, rb_usascii_encoding());
     }
-    rb_reg_expr_str(str, s, len, enc, resenc, '/');
+
+    VALUE src_str = RREGEXP_SRC(re);
+    rb_reg_expr_str(str, RSTRING_PTR(src_str), RSTRING_LEN(src_str), enc, resenc, '/');
+    RB_GC_GUARD(src_str);
+
     rb_str_buf_cat2(str, "/");
     if (re) {
         char opts[OPTBUF_SIZE];
@@ -522,7 +526,7 @@ rb_reg_inspect(VALUE re)
     if (!RREGEXP_PTR(re) || !RREGEXP_SRC(re) || !RREGEXP_SRC_PTR(re)) {
         return rb_any_to_s(re);
     }
-    return rb_reg_desc(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re), re);
+    return rb_reg_desc(re);
 }
 
 static VALUE rb_reg_str_with_term(VALUE re, int term);
@@ -670,12 +674,12 @@ rb_reg_str_with_term(VALUE re, int term)
     return str;
 }
 
-NORETURN(static void rb_reg_raise(const char *s, long len, const char *err, VALUE re));
+NORETURN(static void rb_reg_raise(const char *err, VALUE re));
 
 static void
-rb_reg_raise(const char *s, long len, const char *err, VALUE re)
+rb_reg_raise(const char *err, VALUE re)
 {
-    VALUE desc = rb_reg_desc(s, len, re);
+    VALUE desc = rb_reg_desc(re);
 
     rb_raise(rb_eRegexpError, "%s: %"PRIsVALUE, err, desc);
 }
@@ -1634,7 +1638,7 @@ rb_reg_prepare_re(VALUE re, VALUE str)
 
     if (r) {
         onig_error_code_to_str((UChar*)err, r, &einfo);
-        rb_reg_raise(pattern, RREGEXP_SRC_LEN(re), err, re);
+        rb_reg_raise(err, re);
     }
 
     reg->timelimit = timelimit;
@@ -1667,7 +1671,7 @@ rb_reg_onig_match(VALUE re, VALUE str,
         if (result != ONIG_MISMATCH) {
             onig_errmsg_buffer err = "";
             onig_error_code_to_str((UChar*)err, (int)result);
-            rb_reg_raise(RREGEXP_SRC_PTR(re), RREGEXP_SRC_LEN(re), err, re);
+            rb_reg_raise(err, re);
         }
     }
 

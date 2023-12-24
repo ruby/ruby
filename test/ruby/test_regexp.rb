@@ -469,6 +469,12 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('/\/\xF1\xF2\xF3/i', /\/#{s}/i.inspect)
   end
 
+  def test_inspect_under_gc_compact_stress
+    EnvUtil.under_gc_compact_stress do
+      assert_equal('/(?-mix:\\/)|/', Regexp.union(/\//, "").inspect)
+    end
+  end
+
   def test_char_to_option
     assert_equal("BAR", "FOOBARBAZ"[/b../i])
     assert_equal("bar", "foobarbaz"[/  b  .  .  /x])
