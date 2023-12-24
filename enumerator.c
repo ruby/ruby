@@ -559,11 +559,17 @@ enumerator_block_call(VALUE obj, rb_block_call_func *func, VALUE arg)
     const struct enumerator *e = enumerator_ptr(obj);
     ID meth = e->meth;
 
-    if (e->args) {
-        argc = RARRAY_LENINT(e->args);
-        argv = RARRAY_CONST_PTR(e->args);
+    VALUE args = e->args;
+    if (args) {
+        argc = RARRAY_LENINT(args);
+        argv = RARRAY_CONST_PTR(args);
     }
-    return rb_block_call_kw(e->obj, meth, argc, argv, func, arg, e->kw_splat);
+
+    VALUE ret = rb_block_call_kw(e->obj, meth, argc, argv, func, arg, e->kw_splat);
+
+    RB_GC_GUARD(args);
+
+    return ret;
 }
 
 /*
