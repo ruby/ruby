@@ -101,11 +101,9 @@ io_buffer_map_file(struct rb_io_buffer *buffer, int descriptor, size_t size, rb_
         access = FILE_MAP_WRITE;
     }
 
-    HANDLE mapping = CreateFileMapping(file, NULL, protect, 0, 0, NULL);
-    if (!mapping) rb_sys_fail("io_buffer_map_descriptor:CreateFileMapping");
-
     if (flags & RB_IO_BUFFER_PRIVATE) {
-        access |= FILE_MAP_COPY;
+        protect = PAGE_WRITECOPY;
+        access = FILE_MAP_COPY;
         buffer->flags |= RB_IO_BUFFER_PRIVATE;
     }
     else {
@@ -113,6 +111,9 @@ io_buffer_map_file(struct rb_io_buffer *buffer, int descriptor, size_t size, rb_
         buffer->flags |= RB_IO_BUFFER_EXTERNAL;
         buffer->flags |= RB_IO_BUFFER_SHARED;
     }
+
+    HANDLE mapping = CreateFileMapping(file, NULL, protect, 0, 0, NULL);
+    if (!mapping) rb_sys_fail("io_buffer_map_descriptor:CreateFileMapping");
 
     void *base = MapViewOfFile(mapping, access, (DWORD)(offset >> 32), (DWORD)(offset & 0xFFFFFFFF), size);
 
