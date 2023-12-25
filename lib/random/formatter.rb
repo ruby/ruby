@@ -201,7 +201,7 @@ module Random::Formatter
   #
   # The result contains 74 random bits (9.25 random bytes).
   #
-  # Note that this method cannot be made reproducable because its output
+  # Note that this method cannot be made reproducible because its output
   # includes not only random bits but also timestamp.
   #
   # See draft-ietf-uuidrev-rfc4122bis[https://datatracker.ietf.org/doc/draft-ietf-uuidrev-rfc4122bis/]
