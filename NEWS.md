@@ -5,8 +5,6 @@ since the **3.2.0** release, except for bug fixes.
 
 Note that each entry is kept to a minimum, see links for details.
 
-## Language changes
-
 ## Command line options
 
 * A new `performance` warning category was introduced.
@@ -279,8 +277,6 @@ changelog for details of the default gems or bundled gems.
         * `Prism.parse_success?(source)` which returns true if there are no errors
 * You can make pull requests or issues directly on [the Prism repository](https://github.com/ruby/prism) if you are interested in contributing
 * You can now use `ruby --parser=prism` or `RUBYOPT="--parser=prism"` to experiment with the Prism compiler. Please note that this flag is for debugging only.
-
-## Supported platforms
 
 ## Compatibility issues
 
