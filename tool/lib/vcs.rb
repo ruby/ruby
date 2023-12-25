@@ -693,6 +693,9 @@ class VCS
         cmd_pipe(env, cmd, chdir: @srcdir) do |r|
           while s = r.gets("\ncommit ")
             h, s = s.split(/^$/, 2)
+
+            next if /^Author: *dependabot\[bot\]/ =~ h
+
             h.gsub!(/^(?:(?:Author|Commit)(?:Date)?|Date): /, '  \&')
             if s.sub!(/\nNotes \(log-fix\):\n((?: +.*\n)+)/, '')
               fix = $1
