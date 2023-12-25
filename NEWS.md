@@ -7,6 +7,8 @@ Note that each entry is kept to a minimum, see links for details.
 
 ## Language changes
 
+* `it` is added to reference a block parameter. [[Feature #18980]]
+
 ## Core classes updates
 
 Note: We're only listing outstanding class updates.
@@ -30,3 +32,5 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 ## Implementation improvements
 
 ## JIT
+
+[Feature #18980]: https://bugs.ruby-lang.org/issues/18980
