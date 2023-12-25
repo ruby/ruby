@@ -259,7 +259,7 @@ assert_normal_exit %q{
 }
 
 assert_normal_exit %q{
-  # Test to ensure send on overriden c functions
+  # Test to ensure send on overridden c functions
   # doesn't corrupt the stack
   class Bar
     def bar(x)
@@ -4195,7 +4195,7 @@ assert_equal '[true, true, true, true, true]', %q{
   calling_my_func
 }
 
-# Regresssion test: rest and optional and splat
+# Regression test: rest and optional and splat
 assert_equal 'true', %q{
   def my_func(base=nil, *args)
     [base, args]
@@ -4225,7 +4225,7 @@ assert_equal 'true', %q{
   end
 } unless rjit_enabled? # Not yet working on RJIT
 
-# Regresssion test: register allocator on expandarray
+# Regression test: register allocator on expandarray
 assert_equal '[]', %q{
   func = proc { [] }
   proc do
