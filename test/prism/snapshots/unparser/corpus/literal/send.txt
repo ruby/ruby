@@ -1249,7 +1249,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (63,8)-(63,16))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (63,8)-(63,16))
         │   │                   ├── key:
@@ -1310,7 +1310,7 @@
         │   │               └── @ AssocNode (location: (64,13)-(64,25))
         │   │                   ├── key:
         │   │                   │   @ StringNode (location: (64,13)-(64,18))
-        │   │                   │   ├── flags: ∅
+        │   │                   │   ├── flags: frozen
         │   │                   │   ├── opening_loc: (64,13)-(64,14) = "\""
         │   │                   │   ├── content_loc: (64,14)-(64,17) = "baz"
         │   │                   │   ├── closing_loc: (64,17)-(64,18) = "\""
@@ -1569,7 +1569,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (70,4)-(70,8))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (70,4)-(70,8))
         │   │                   ├── key:
@@ -1615,7 +1615,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (71,6)-(71,10))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (71,6)-(71,10))
         │   │                   ├── key:

@@ -31,7 +31,7 @@
             │       │               ├── closing_loc: ∅
             │       │               └── unescaped: "hello"
             │       └── @ KeywordHashNode (location: (1,17)-(1,21))
-            │           ├── flags: static_keys
+            │           ├── flags: symbol_keys
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (1,17)-(1,21))
             │                   ├── key:

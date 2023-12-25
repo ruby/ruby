@@ -17,12 +17,6 @@
 
 #include <stdbool.h>
 
-// TODO: remove this by renaming the original flag
-/**
- * Temporary alias for the PM_NODE_FLAG_STATIC_KEYS flag.
- */
-#define PM_KEYWORD_HASH_NODE_FLAGS_SYMBOL_KEYS PM_KEYWORD_HASH_NODE_FLAGS_STATIC_KEYS
-
 /**
  * This enum provides various bits that represent different kinds of states that
  * the lexer can track. This is used to determine which kind of token to return

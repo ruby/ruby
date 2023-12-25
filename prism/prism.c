@@ -1340,6 +1340,11 @@ pm_assoc_node_create(pm_parser_t *parser, pm_node_t *key, const pm_token_t *oper
         flags = key->flags & value->flags & PM_NODE_FLAG_STATIC_LITERAL;
     }
 
+    // Hash string keys should be frozen
+    if (PM_NODE_TYPE_P(key, PM_STRING_NODE)) {
+        key->flags |= PM_STRING_FLAGS_FROZEN;
+    }
+
     *node = (pm_assoc_node_t) {
         {
             .type = PM_ASSOC_NODE,
@@ -11338,6 +11343,9 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
                     }
 
                     parsed_bare_hash = true;
+                } else if (accept1(parser, PM_TOKEN_KEYWORD_IN)) {
+                    // TODO: Could we solve this with binding powers instead?
+                    pm_parser_err_current(parser, PM_ERR_ARGUMENT_IN);
                 }
 
                 parse_arguments_append(parser, arguments, argument);
@@ -13349,8 +13357,15 @@ parse_pattern_primitive(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
             // expression to determine if it's a variable or an expression.
             switch (parser->current.type) {
                 case PM_TOKEN_IDENTIFIER: {
+                    int depth = pm_parser_local_depth(parser, &parser->current);
+
+                    if (depth == -1) {
+                        depth = 0;
+                        PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_NO_LOCAL_VARIABLE, (int) (parser->current.end - parser->current.start), parser->current.start);
+                    }
+
+                    pm_node_t *variable = (pm_node_t *) pm_local_variable_read_node_create(parser, &parser->current, (uint32_t) depth);
                     parser_lex(parser);
-                    pm_node_t *variable = (pm_node_t *) pm_local_variable_read_node_create(parser, &parser->previous, 0);
 
                     return (pm_node_t *) pm_pinned_variable_node_create(parser, &operator, variable);
                 }
@@ -17175,9 +17190,14 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
 
 static pm_node_t *
 parse_program(pm_parser_t *parser) {
-    pm_parser_scope_push(parser, !parser->current_scope);
-    parser_lex(parser);
+    // If the current scope is NULL, then we want to push a new top level scope.
+    // The current scope could exist in the event that we are parsing an eval
+    // and the user has passed into scopes that already exist.
+    if (parser->current_scope == NULL) {
+        pm_parser_scope_push(parser, true);
+    }
 
+    parser_lex(parser);
     pm_statements_node_t *statements = parse_statements(parser, PM_CONTEXT_MAIN);
     if (!statements) {
         statements = pm_statements_node_create(parser);

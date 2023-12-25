@@ -53,7 +53,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ KeywordHashNode (location: (2,2)-(2,6))
-            │           ├── flags: static_keys
+            │           ├── flags: symbol_keys
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (2,2)-(2,6))
             │                   ├── key:

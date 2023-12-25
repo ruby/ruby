@@ -51,7 +51,7 @@ foo => __LINE__ .. __LINE__
 foo => __ENCODING__ .. __ENCODING__
 foo => -> { bar } .. -> { bar }
 
-foo => ^bar
+bar = 1; foo => ^bar
 foo => ^@bar
 foo => ^@@bar
 foo => ^$bar

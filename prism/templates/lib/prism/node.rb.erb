@@ -44,11 +44,11 @@ module Prism
   <%- end -%>
   class <%= node.name -%> < Node
     <%- node.fields.each do |field| -%>
-    # attr_reader <%= field.name %>: <%= field.rbs_class %>
+    # <%= "private " if field.is_a?(Prism::FlagsField) %>attr_reader <%= field.name %>: <%= field.rbs_class %>
     <%= "private " if field.is_a?(Prism::FlagsField) %>attr_reader :<%= field.name %>
 
     <%- end -%>
-    # def initialize: (<%= (node.fields.map { |field| "#{field.name}: #{field.rbs_class}" } + ["location: Location"]).join(", ") %>) -> void
+    # def initialize: (<%= (node.fields.map { |field| "#{field.rbs_class} #{field.name}" } + ["Location location"]).join(", ") %>) -> void
     def initialize(<%= (node.fields.map(&:name) + ["location"]).join(", ") %>)
       <%- node.fields.each do |field| -%>
       @<%= field.name %> = <%= field.name %>
@@ -56,7 +56,7 @@ module Prism
       @location = location
     end
 
-    # def accept: (visitor: Visitor) -> void
+    # def accept: (Visitor visitor) -> void
     def accept(visitor)
       visitor.visit_<%= node.human %>(self)
     end
@@ -137,7 +137,7 @@ module Prism
     # def deconstruct: () -> Array[nil | Node]
     alias deconstruct child_nodes
 
-    # def deconstruct_keys: (keys: Array[Symbol]) -> Hash[Symbol, nil | Node | Array[Node] | String | Token | Array[Token] | Location]
+    # def deconstruct_keys: (Array[Symbol] keys) -> { <%= (node.fields.map { |field| "#{field.name}: #{field.rbs_class}" } + ["location: Location"]).join(", ") %> }
     def deconstruct_keys(keys)
       { <%= (node.fields.map { |field| "#{field.name}: #{field.name}" } + ["location: location"]).join(", ") %> }
     end
@@ -170,7 +170,7 @@ module Prism
     <%- end -%>
     <%- end -%>
 
-    # def inspect(inspector: NodeInspector) -> String
+    # def inspect(NodeInspector inspector) -> String
     def inspect(inspector = NodeInspector.new)
       inspector << inspector.header(self)
       <%- node.fields.each_with_index do |field, index| -%>
