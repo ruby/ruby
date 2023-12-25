@@ -6,11 +6,11 @@ on:
       - 'spec/**'
       - '!spec/*.md'
   pull_request:
-    paths-ignore:
+    paths:
       - 'spec/**'
       - '!spec/*.md'
   merge_group:
-    paths-ignore:
+    paths:
       - 'spec/**'
       - '!spec/*.md'
 
