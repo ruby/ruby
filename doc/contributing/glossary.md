@@ -10,7 +10,7 @@ Just a list of acronyms I've run across in the Ruby source code and their meanin
 | `cd` | Call Data. A data structure that points at the `ci` and the `cc`.  `iseq` objects points at the `cd`, and access call information and call caches via this structure |
 | `cfp`| Control Frame Pointer. Represents a Ruby stack frame.  Calling a method pushes a new frame (cfp), returning pops a frame. Points at  the `pc`, `sp`, `ep`, and the corresponding `iseq`|
 | `ci` | Call Information.  Refers to an `rb_callinfo` struct. Contains call information about the call site, including number of parameters to be passed, whether it they are keyword arguments or not, etc. Used in conjunction with the `cc` and `cd`. |
-| `cref` | Class reference. A structure pointing to the class reference where `klass_or_self`, visibility scope, and refinements are stored. It also stores a pointer to the next class in the hierachy referenced by `rb_cref_struct * next`. The Class reference is lexically scoped. |
+| `cref` | Class reference. A structure pointing to the class reference where `klass_or_self`, visibility scope, and refinements are stored. It also stores a pointer to the next class in the hierarchy referenced by `rb_cref_struct * next`. The Class reference is lexically scoped. |
 | CRuby | Implementation of Ruby written in C |
 | `cvar` | Class Variable. Refers to a Ruby class variable like `@@foo` |
 | `dvar` | Dynamic Variable. Used by the parser to refer to local variables that are defined outside of the current lexical scope. For example `def foo; bar = 1; -> { p bar }; end` the "bar" inside the block is a `dvar` |

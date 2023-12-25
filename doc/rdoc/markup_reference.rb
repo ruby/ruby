@@ -1216,13 +1216,13 @@ require 'rdoc'
 #
 class RDoc::MarkupReference
 
-  # exmaple class
+  # example class
   class DummyClass; end
 
-  # exmaple module
+  # example module
   module DummyModule; end
 
-  # exmaple singleton method
+  # example singleton method
   def self.dummy_singleton_method(foo, bar); end
 
   # example instance method
@@ -1230,12 +1230,12 @@ class RDoc::MarkupReference
 
   alias dummy_instance_alias dummy_instance_method
 
-  # exmaple attribute
+  # example attribute
   attr_accessor :dummy_attribute
 
   alias dummy_attribute_alias dummy_attribute
 
-  # exmaple constant
+  # example constant
   DUMMY_CONSTANT = ''
 
   # :call-seq:

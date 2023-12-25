@@ -307,7 +307,7 @@ The standard error stream (the default value for <tt>$stderr</tt>):
 
   STDERR # => #<IO:<STDERR>>
 
-== Enviroment
+== Environment
 
 === ENV
 
