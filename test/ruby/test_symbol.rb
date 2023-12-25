@@ -118,6 +118,12 @@ class TestSymbol < Test::Unit::TestCase
     end
   end
 
+  def test_inspect_under_gc_compact_stress
+    EnvUtil.under_gc_compact_stress do
+      assert_inspect_evaled(':testing')
+    end
+  end
+
   def test_name
     assert_equal("foo", :foo.name)
     assert_same(:foo.name, :foo.name)
