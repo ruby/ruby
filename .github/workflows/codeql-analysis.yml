@@ -9,6 +9,7 @@ on:
       - '**.md'
       - '**.rdoc'
       - '**/.document'
+      - '.*.yml'
   pull_request:
     paths-ignore:
       - 'doc/**'
@@ -16,6 +17,7 @@ on:
       - '**.md'
       - '**.rdoc'
       - '**/.document'
+      - '.*.yml'
   schedule:
     - cron: '0 12 * * *'
   workflow_dispatch:

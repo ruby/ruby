@@ -7,6 +7,8 @@ on:
       - '**.md'
       - '**.rdoc'
       - '**/.document'
+      - '.*.yml'
+      - '.*.yml'
   pull_request:
     paths-ignore:
       - 'doc/**'
@@ -14,6 +16,8 @@ on:
       - '**.md'
       - '**.rdoc'
       - '**/.document'
+      - '.*.yml'
+      - '.*.yml'
   merge_group:
     paths-ignore:
       - 'doc/**'
@@ -21,6 +25,8 @@ on:
       - '**.md'
       - '**.rdoc'
       - '**/.document'
+      - '.*.yml'
+      - '.*.yml'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
