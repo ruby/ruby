@@ -310,6 +310,9 @@ changelog for details of the default gems or bundled gems.
     # undefined method `nonexisting' for an instance of Array (NoMethodError)
     ```
 
+* Now anonymous parameters forwarding is disallowed inside a block
+  that uses anonymous parameters.  [[Feature #19370]]
+
 ## Stdlib compatibility issues
 
 * `racc` is promoted to bundled gems.
@@ -500,6 +503,7 @@ changelog for details of the default gems or bundled gems.
 [Feature #19347]: https://bugs.ruby-lang.org/issues/19347
 [Feature #19351]: https://bugs.ruby-lang.org/issues/19351
 [Feature #19362]: https://bugs.ruby-lang.org/issues/19362
+[Feature #19370]: https://bugs.ruby-lang.org/issues/19370
 [Feature #19521]: https://bugs.ruby-lang.org/issues/19521
 [Feature #19538]: https://bugs.ruby-lang.org/issues/19538
 [Feature #19561]: https://bugs.ruby-lang.org/issues/19561
