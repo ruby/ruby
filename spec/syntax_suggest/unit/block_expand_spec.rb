@@ -146,7 +146,7 @@ module SyntaxSuggest
       EOM
     end
 
-    it "expand until next boundry (indentation)" do
+    it "expand until next boundary (indentation)" do
       source_string = <<~EOM
         describe "what" do
           Foo.call
@@ -188,7 +188,7 @@ module SyntaxSuggest
       EOM
     end
 
-    it "expand until next boundry (empty lines)" do
+    it "expand until next boundary (empty lines)" do
       source_string = <<~EOM
         describe "what" do
         end
