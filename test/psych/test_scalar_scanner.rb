@@ -150,7 +150,7 @@ module Psych
     end
 
     def test_scan_strict_int_commas_and_underscores
-      # this test is to ensure adherance to YML spec using the 'strict_integer' option
+      # this test is to ensure adherence to YML spec using the 'strict_integer' option
       scanner = Psych::ScalarScanner.new ClassLoader.new, strict_integer: true
       assert_equal 123_456_789, scanner.tokenize('123_456_789')
       assert_equal '123,456,789', scanner.tokenize('123,456,789')
