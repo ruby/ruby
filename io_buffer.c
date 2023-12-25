@@ -155,17 +155,7 @@ io_buffer_map_file(struct rb_io_buffer *buffer, int descriptor, size_t size, rb_
     buffer->size = size;
 
     buffer->flags |= RB_IO_BUFFER_MAPPED;
-}
-
-// Release the memory associated with a mapped buffer.
-static inline void
-io_buffer_unmap(void* base, size_t size)
-{
-#ifdef _WIN32
-    VirtualFree(base, 0, MEM_RELEASE);
-#else
-    munmap(base, size);
-#endif
+    buffer->flags |= RB_IO_BUFFER_FILE;
 }
 
 static void
@@ -234,7 +224,16 @@ io_buffer_free(struct rb_io_buffer *buffer)
         }
 
         if (buffer->flags & RB_IO_BUFFER_MAPPED) {
-            io_buffer_unmap(buffer->base, buffer->size);
+#ifdef _WIN32
+            if (buffer->flags & RB_IO_BUFFER_FILE) {
+                UnmapViewOfFile(buffer->base);
+            }
+            else {
+                VirtualFree(buffer->base, 0, MEM_RELEASE);
+            }
+#else
+            munmap(buffer->base, buffer->size);
+#endif
         }
 
         // Previously we had this, but we found out due to the way GC works, we
@@ -245,18 +244,19 @@ io_buffer_free(struct rb_io_buffer *buffer)
 
         buffer->base = NULL;
 
-#if defined(_WIN32)
-        if (buffer->mapping) {
-            CloseHandle(buffer->mapping);
-            buffer->mapping = NULL;
-        }
-#endif
         buffer->size = 0;
         buffer->flags = 0;
         buffer->source = Qnil;
 
         return 1;
     }
+
+#if defined(_WIN32)
+    if (buffer->mapping) {
+        CloseHandle(buffer->mapping);
+        buffer->mapping = NULL;
+    }
+#endif
 
     return 0;
 }
@@ -924,6 +924,10 @@ rb_io_buffer_to_s(VALUE self)
 
     if (buffer->flags & RB_IO_BUFFER_MAPPED) {
         rb_str_cat2(result, " MAPPED");
+    }
+
+    if (buffer->flags & RB_IO_BUFFER_FILE) {
+        rb_str_cat2(result, " FILE");
     }
 
     if (buffer->flags & RB_IO_BUFFER_SHARED) {

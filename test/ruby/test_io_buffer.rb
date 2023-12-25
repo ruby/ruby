@@ -519,23 +519,22 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   def test_private
-    omit if RUBY_PLATFORM =~ /mswin|mingw/
+    tmpdir = Dir.tmpdir
+    buffer_path = File.join(tmpdir, "buffer.txt")
+    File.write(buffer_path, "Hello World")
 
-    Tempfile.create("buffer.txt") do |io|
-      io.write("Hello World")
-
-      buffer = IO::Buffer.map(io, nil, 0, IO::Buffer::PRIVATE)
+    File.open(buffer_path) do |file|
+      buffer = IO::Buffer.map(file, nil, 0, IO::Buffer::PRIVATE)
       assert buffer.private?
       refute buffer.readonly?
 
       buffer.set_string("J")
 
       # It was not changed because the mapping was private:
-      io.seek(0)
-      assert_equal "Hello World", io.read
+      file.seek(0)
+      assert_equal "Hello World", file.read
     ensure
       buffer&.free
-      io&.close
     end
   end
 end
