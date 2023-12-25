@@ -5227,50 +5227,25 @@ rb_thread_flock(void *data)
  *  call-seq:
  *    flock(locking_constant) -> 0 or false
  *
- *  Locks or unlocks a file according to the given `locking_constant`,
+ *  Locks or unlocks file +self+ according to the given `locking_constant`,
  *  a bitwise OR of the values in the table below.
  *
  *  Not available on all platforms.
  *
  *  Returns `false` if `File::LOCK_NB` is specified and the operation would have blocked;
  *  otherwise returns `0`.
- *  <br>
- *
- *  <table>
- *    <tr>
- *      <th colspan="3">Locking Constants</th>
- *    </tr>
- *    <tr>
- *      <th>Constant</th>
- *      <th>Lock</th>
- *      <th>Effect</th>
- *    </tr>
- *    <tr>
- *    <td><tt>File::LOCK_EX</tt></td>
- *    <td>Exclusive</td>
- *      <td>Only one process may hold an exclusive lock for <tt>self</tt> at a time.</td>
- *    </tr>
- *    <tr>
- *      <td><tt>File::LOCK_NB</tt></td>
- *      <td>Non-blocking</td>
- *      <td>
- *        No blocking; may be combined with other <tt>File::LOCK_SH</tt> or <tt>File::LOCK_EX</tt>
- *        using the bitwise OR operator <tt>|</tt>.
- *      </td>
- *    </tr>
- *    <tr>
- *      <td><tt>File::LOCK_SH</tt></td>
- *      <td>Shared</td>
- *      <td>Multiple processes may each hold a shared lock for <tt>self</tt> at the same time.</td>
- *    </tr>
- *    <tr>
- *      <td><tt>File::LOCK_UN</tt></td>
- *      <td>Unlock</td>
- *      <td>Remove an existing lock held by this process.</td>
- *    </tr>
- *  </table>
  *
  *  <br>
+ *
+ *  | Constant        | Lock         | Effect
+ *  |-----------------|--------------|-------------------------------------------------------------------
+ *  | +File::LOCK_EX+ | Exclusive    | Only one process may hold an exclusive lock for +self+ at a time.
+ *  | +File::LOCK_NB+ | Non-blocking | No blocking; may be combined with +File::LOCK_SH+ or +File::LOCK_EX+ using the bitwise OR operator <tt>\|</tt>.
+ *  | +File::LOCK_SH+ | Shared       | Multiple processes may each hold a shared lock for +self+ at the same time.
+ *  | +File::LOCK_UN+ | Unlock       | Remove an existing lock held by this process.
+ *
+ *  <br>
+ *
  *  Example:
  *
  *  ```ruby
