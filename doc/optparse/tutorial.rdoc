@@ -570,7 +570,7 @@ Execution:
                                        Aenean massa. Cum sociis natoque penatibus
       -y, --yyy YYY                    Lorem ipsum dolor sit amet, consectetuer.
       -z, --zzz [ZZZ]                  Et magnis dis parturient montes, nascetur
-                                       ridiculous mus. Donec quam felis, ultricies
+                                       ridiculus mus. Donec quam felis, ultricies
                                        nec, pellentesque eu, pretium quis, sem.
 
 The program name is included in the default banner:
@@ -609,7 +609,7 @@ Execution:
                          Aenean massa. Cum sociis natoque penatibus
     -y, --yyy YYY        Lorem ipsum dolor sit amet, consectetuer.
     -z, --zzz [ZZZ]      Et magnis dis parturient montes, nascetur
-                         ridiculous mus. Donec quam felis, ultricies
+                         ridiculus mus. Donec quam felis, ultricies
                          nec, pellentesque eu, pretium quis, sem.
 
 === Top List and Base List
