@@ -15,7 +15,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (1,4)-(1,13))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (1,4)-(1,13))
         │   │                   ├── key:
@@ -43,7 +43,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (3,4)-(3,13))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (3,4)-(3,13))
         │   │                   ├── key:
@@ -95,7 +95,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block: ∅
         │   │       └── @ KeywordHashNode (location: (5,14)-(5,21))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (5,14)-(5,21))
         │   │                   ├── key:
@@ -124,7 +124,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (7,5)-(7,14))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (7,5)-(7,14))
         │   │                   ├── key:
@@ -148,7 +148,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (9,6)-(9,16))
-        │   │           ├── flags: static_keys
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (9,6)-(9,16))
         │   │                   ├── key:
@@ -172,7 +172,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ KeywordHashNode (location: (11,6)-(11,16))
-            │           ├── flags: static_keys
+            │           ├── flags: symbol_keys
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (11,6)-(11,16))
             │                   ├── key:

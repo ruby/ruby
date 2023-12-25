@@ -673,7 +673,7 @@ module Prism
     end
 
     def test_PinnedVariableNode
-      assert_location(PinnedVariableNode, "foo in ^bar", 7...11, &:pattern)
+      assert_location(PinnedVariableNode, "bar = 1; foo in ^bar", 16...20, &:pattern)
     end
 
     def test_PostExecutionNode

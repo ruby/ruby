@@ -368,8 +368,8 @@ flags:
     comment: Flags for integer nodes that correspond to the base of the integer.
   - name: KeywordHashNodeFlags
     values:
-      - name: STATIC_KEYS
-        comment: "a keyword hash which only has `AssocNode` elements all with static literal keys, which means the elements can be treated as keyword arguments"
+      - name: SYMBOL_KEYS
+        comment: "a keyword hash which only has `AssocNode` elements all with symbol keys, which means the elements can be treated as keyword arguments"
     comment: Flags for keyword hash nodes.
   - name: LoopFlags
     values:
