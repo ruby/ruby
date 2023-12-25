@@ -11,6 +11,29 @@
 # include <version.h>
 #endif
 
+/* copied from ext/-test-/cxxanyargs/cxxanyargs.cpp */
+#if 0 /* Ignore deprecation warnings */
+
+#elif defined(_MSC_VER)
+#pragma warning(disable : 4996)
+
+#elif defined(__INTEL_COMPILER)
+#pragma warning(disable : 1786)
+
+#elif defined(__clang__)
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
+#elif defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
+#elif defined(__SUNPRO_CC)
+#pragma error_messages (off,symdeprecated)
+
+#else
+// :FIXME: improve here for your compiler.
+
+#endif
+
 #ifndef RUBY_VERSION_MAJOR
 #define RUBY_VERSION_MAJOR RUBY_API_VERSION_MAJOR
 #define RUBY_VERSION_MINOR RUBY_API_VERSION_MINOR

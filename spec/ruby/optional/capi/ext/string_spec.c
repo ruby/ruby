@@ -255,10 +255,6 @@ VALUE string_spec_rb_str_new5(VALUE self, VALUE str, VALUE ptr, VALUE len) {
 }
 
 #ifndef RUBY_VERSION_IS_3_2
-// Suppress deprecations warnings for rb_tainted_str_new(), we want to test it while it exists
-RBIMPL_WARNING_PUSH()
-RBIMPL_WARNING_IGNORED(-Wdeprecated-declarations)
-
 VALUE string_spec_rb_tainted_str_new(VALUE self, VALUE str, VALUE len) {
   return rb_tainted_str_new(RSTRING_PTR(str), FIX2INT(len));
 }
@@ -266,8 +262,6 @@ VALUE string_spec_rb_tainted_str_new(VALUE self, VALUE str, VALUE len) {
 VALUE string_spec_rb_tainted_str_new2(VALUE self, VALUE str) {
   return rb_tainted_str_new2(RSTRING_PTR(str));
 }
-
-RBIMPL_WARNING_POP()
 #endif
 
 VALUE string_spec_rb_str_plus(VALUE self, VALUE str1, VALUE str2) {

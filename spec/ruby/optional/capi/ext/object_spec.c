@@ -155,13 +155,9 @@ static VALUE object_specs_rb_obj_method(VALUE self, VALUE obj, VALUE method) {
 }
 
 #ifndef RUBY_VERSION_IS_3_2
-// Suppress deprecations warnings for rb_obj_taint(), we want to test it while it exists
-RBIMPL_WARNING_PUSH()
-RBIMPL_WARNING_IGNORED(-Wdeprecated-declarations)
 static VALUE object_spec_rb_obj_taint(VALUE self, VALUE obj) {
   return rb_obj_taint(obj);
 }
-RBIMPL_WARNING_POP()
 #endif
 
 static VALUE so_require(VALUE self) {
