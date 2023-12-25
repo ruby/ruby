@@ -2,7 +2,7 @@ module Lrama
   class Grammar
     class Code
       class RuleAction < Code
-        def initialize(type: nil, token_code: nil, rule: nil)
+        def initialize(type:, token_code:, rule:)
           super(type: type, token_code: token_code)
           @rule = rule
         end
