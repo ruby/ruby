@@ -19,6 +19,8 @@ skip_commits:
     - '**/.document'
     - '**/*.[1-8]'
     - '**/*.ronn'
+    - '.github/'
+    - '.travis.yml'
 environment:
   ruby_version: "25-%Platform%"
   matrix:
