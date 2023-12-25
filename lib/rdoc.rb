@@ -121,7 +121,7 @@ module RDoc
   end
 
   ##
-  # Seaches and returns the directory for settings.
+  # Searches and returns the directory for settings.
   #
   # 1. <tt>$HOME/.rdoc</tt> directory, if it exists.
   # 2. The +rdoc+ directory under the path specified by the
