@@ -67,7 +67,7 @@
  * Minor  version.   As of  writing  this  version changes  annually.   Greater
  * version doesn't mean "better"; they just mean years passed.
  */
-#define RUBY_API_VERSION_MINOR 3
+#define RUBY_API_VERSION_MINOR 4
 
 /**
  * Teeny version.  This digit  is kind of reserved these days.   Kept 0 for the
