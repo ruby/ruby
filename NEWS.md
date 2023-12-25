@@ -15,7 +15,8 @@ Note: We're only listing outstanding class updates.
 
 ## Stdlib updates
 
-*   The following default gems are updated.
+The following default gems are updated.
+
 
 *   The following bundled gems are updated.
 
