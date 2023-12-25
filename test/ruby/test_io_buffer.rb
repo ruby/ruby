@@ -519,22 +519,26 @@ class TestIOBuffer < Test::Unit::TestCase
   end
 
   def test_private
-    tmpdir = Dir.tmpdir
-    buffer_path = File.join(tmpdir, "buffer.txt")
-    File.write(buffer_path, "Hello World")
+    Tempfile.create(%w"buffer .txt") do |file|
+      file.write("Hello World")
+      file.close
+      assert_separately(["-W0", "-", file.path], "#{<<-"begin;"}\n#{<<-'end;'}")
+      begin;
+        file = File.open(ARGV[0], "r+")
+        buffer = IO::Buffer.map(file, nil, 0, IO::Buffer::PRIVATE)
+        begin
+          assert buffer.private?
+          refute buffer.readonly?
 
-    File.open(buffer_path) do |file|
-      buffer = IO::Buffer.map(file, nil, 0, IO::Buffer::PRIVATE)
-      assert buffer.private?
-      refute buffer.readonly?
+          buffer.set_string("J")
 
-      buffer.set_string("J")
-
-      # It was not changed because the mapping was private:
-      file.seek(0)
-      assert_equal "Hello World", file.read
-    ensure
-      buffer&.free
+          # It was not changed because the mapping was private:
+          file.seek(0)
+          assert_equal "Hello World", file.read
+        ensure
+          buffer&.free
+        end
+      end;
     end
   end
 end
