@@ -757,8 +757,8 @@ nucomp_s_polar(int argc, VALUE *argv, VALUE klass)
  *
  * Returns the real value for +self+:
  *
- *   Complex(7).real      #=> 7
- *   Complex(9, -4).real  #=> 9
+ *   Complex.rect(7).real     # => 7
+ *   Complex.rect(9, -4).real # => 9
  *
  * If +self+ was created with
  * {polar coordinates}[rdoc-ref:Complex@Polar+Coordinates], the returned value
@@ -780,8 +780,8 @@ rb_complex_real(VALUE self)
  *
  * Returns the imaginary value for +self+:
  *
- *    Complex(7).imaginary      #=> 0
- *    Complex(9, -4).imaginary  #=> -4
+ *   Complex.rect(7).imag     # => 0
+ *   Complex.rect(9, -4).imag # => -4
  *
  * If +self+ was created with
  * {polar coordinates}[rdoc-ref:Complex@Polar+Coordinates], the returned value
@@ -803,8 +803,8 @@ rb_complex_imag(VALUE self)
  *
  * Returns the negation of +self+, which is the negation of each of its parts:
  *
- *   -Complex(1, 2)   # => (-1-2i)
- *   -Complex(-1, -2) # => (1+2i)
+ *   -Complex.rect(1, 2)   # => (-1-2i)
+ *   -Complex.rect(-1, -2) # => (1+2i)
  *
  */
 VALUE
@@ -1113,8 +1113,8 @@ complex_pow_for_special_angle(VALUE self, VALUE other)
  *
  * Returns +self+ raised to power +numeric+:
  *
- *   Complex('i') ** 2             # => (-1+0i)
- *   Complex(-8) ** Rational(1, 3) # => (1.0000000000000002+1.7320508075688772i)
+ *   Complex.rect(0, 1) ** 2            # => (-1+0i)
+ *   Complex.rect(-8) ** Rational(1, 3) # => (1.0000000000000002+1.7320508075688772i)
  *
  */
 VALUE
@@ -1617,11 +1617,11 @@ f_format(VALUE self, VALUE (*func)(VALUE))
  *
  * Returns a string representation of +self+:
  *
- *   Complex(2).to_s                      # => "2+0i"
- *   Complex('-8/6').to_s                 # => "-4/3+0i"
- *   Complex('1/2i').to_s                 # => "0+1/2i"
- *   Complex(0, Float::INFINITY).to_s     # => "0+Infinity*i"
- *   Complex(Float::NAN, Float::NAN).to_s # => "NaN+NaN*i"
+ *   Complex.rect(2).to_s                      # => "2+0i"
+ *   Complex.rect(-8, 6).to_s                  # => "-8+6i"
+ *   Complex.rect(0, Rational(1, 2)).to_s      # => "0+1/2i"
+ *   Complex.rect(0, Float::INFINITY).to_s     # => "0+Infinity*i"
+ *   Complex.rect(Float::NAN, Float::NAN).to_s # => "NaN+NaN*i"
  *
  */
 static VALUE
@@ -1636,11 +1636,11 @@ nucomp_to_s(VALUE self)
  *
  * Returns a string representation of +self+:
  *
- *   Complex(2).inspect                      # => "(2+0i)"
- *   Complex('-8/6').inspect                 # => "((-4/3)+0i)"
- *   Complex('1/2i').inspect                 # => "(0+(1/2)*i)"
- *   Complex(0, Float::INFINITY).inspect     # => "(0+Infinity*i)"
- *   Complex(Float::NAN, Float::NAN).inspect # => "(NaN+NaN*i)"
+ *   Complex.rect(2).inspect                      # => "(2+0i)"
+ *   Complex.rect(-8, 6).inspect                  # => "(-8+6i)"
+ *   Complex.rect(0, Rational(1, 2)).inspect      # => "(0+(1/2)*i)"
+ *   Complex.rect(0, Float::INFINITY).inspect     # => "(0+Infinity*i)"
+ *   Complex.rect(Float::NAN, Float::NAN).inspect # => "(NaN+NaN*i)"
  *
  */
 static VALUE
