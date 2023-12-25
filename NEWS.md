@@ -17,6 +17,13 @@ Note: We're only listing outstanding class updates.
 
 The following default gems are updated.
 
+* RubyGems 3.6.0.dev
+* bundler 2.6.0.dev
+* csv 3.2.9
+* fiddle 1.1.3
+* io-console 0.7.2.dev.1
+* stringio 3.1.1
+* strscan 3.0.8
 
 The following bundled gems are updated.
 
