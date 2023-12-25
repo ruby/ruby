@@ -1,6 +1,6 @@
 require 'lrama/lexer/token/char'
 require 'lrama/lexer/token/ident'
-require 'lrama/lexer/token/parameterizing'
+require 'lrama/lexer/token/instantiate_rule'
 require 'lrama/lexer/token/tag'
 require 'lrama/lexer/token/user_code'
 

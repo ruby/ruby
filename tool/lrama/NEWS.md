@@ -1,5 +1,25 @@
 # NEWS for Lrama
 
+## Lrama 0.6.0 (2023-12-25)
+
+### User defined parameterizing rules
+
+Allow to define parameterizing rule by `%rule` directive.
+
+```
+%rule pair(X, Y): X Y { $$ = $1 + $2; }
+                ;
+
+%%
+
+program: stmt
+       ;
+
+stmt: pair(ODD, EVEN) <num>
+    | pair(EVEN, ODD) <num>
+    ;
+```
+
 ## Lrama 0.5.11 (2023-12-02)
 
 ### Type specification of parameterizing rules
