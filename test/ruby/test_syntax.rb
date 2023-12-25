@@ -1810,7 +1810,9 @@ eom
     assert_valid_syntax('-> {-> {it}; _2}')
     assert_equal([1, nil], eval('proc {that=it; it=nil; [that, it]}.call(1)'))
     assert_equal(1, eval('proc {it = 1}.call'))
-    assert_equal(2, eval('a=Object.new; def a.foo; it = 2; end; a.foo'))
+    assert_warning(/1: warning: assigned but unused variable - it/) {
+      assert_equal(2, eval('a=Object.new; def a.foo; it = 2; end; a.foo'))
+    }
     assert_equal(3, eval('proc {|it| it}.call(3)'))
     assert_equal(4, eval('a=Object.new; def a.foo(it); it; end; a.foo(4)'))
     assert_equal(5, eval('a=Object.new; def a.it; 5; end; a.it'))
