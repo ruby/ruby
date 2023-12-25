@@ -48,7 +48,7 @@ File.foreach("#{gem_dir}/bundled_gems") do |line|
 
   when "debug"
     # Since debug gem requires debug.so in child processes without
-    # acitvating the gem, we preset necessary paths in RUBYLIB
+    # activating the gem, we preset necessary paths in RUBYLIB
     # environment variable.
     load_path = true
 

@@ -262,8 +262,8 @@ module Prism
     end
 
     def test_ConstantWriteNode
-      # We don't call assert_prism_eval directly in this case becuase we
-      # don't want to assign the constant mutliple times if we run
+      # We don't call assert_prism_eval directly in this case because we
+      # don't want to assign the constant multiple times if we run
       # with `--repeat-count`
       # Instead, we eval manually here, and remove the constant to
       constant_name = "YCT"
@@ -447,8 +447,8 @@ module Prism
     end
 
     def test_ConstantTargetNode
-      # We don't call assert_prism_eval directly in this case becuase we
-      # don't want to assign the constant mutliple times if we run
+      # We don't call assert_prism_eval directly in this case because we
+      # don't want to assign the constant multiple times if we run
       # with `--repeat-count`
       # Instead, we eval manually here, and remove the constant to
       constant_names = ["YCT", "YCT2"]
@@ -1379,7 +1379,7 @@ module Prism
     end
 
     ############################################################################
-    #  Calls / arugments                                                       #
+    #  Calls / arguments                                                       #
     ############################################################################
 
     def test_ArgumentsNode

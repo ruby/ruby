@@ -2728,7 +2728,7 @@ module RubyVM::RJIT
       sample_rhs = jit.peek_at_stack(0)
       sample_lhs = jit.peek_at_stack(1)
 
-      # We are not allowing module here because the module hierachy can change at runtime.
+      # We are not allowing module here because the module hierarchy can change at runtime.
       if C.RB_TYPE_P(sample_rhs, C::RUBY_T_CLASS)
         return false
       end
