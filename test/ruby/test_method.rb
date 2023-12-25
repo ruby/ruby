@@ -450,6 +450,17 @@ class TestMethod < Test::Unit::TestCase
     assert_equal(:bar, m.clone.bar)
   end
 
+  def test_clone_under_gc_compact_stress
+    EnvUtil.under_gc_compact_stress do
+      o = Object.new
+      def o.foo; :foo; end
+      m = o.method(:foo)
+      def m.bar; :bar; end
+      assert_equal(:foo, m.clone.call)
+      assert_equal(:bar, m.clone.bar)
+    end
+  end
+
   def test_inspect
     o = Object.new
     def o.foo; end; line_no = __LINE__
