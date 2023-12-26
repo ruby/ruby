@@ -214,6 +214,10 @@ io_buffer_initialize(VALUE self, struct rb_io_buffer *buffer, void *base, size_t
     buffer->size = size;
     buffer->flags = flags;
     RB_OBJ_WRITE(self, &buffer->source, source);
+
+#if defined(_WIN32)
+    buffer->mapping = NULL;
+#endif
 }
 
 static void
