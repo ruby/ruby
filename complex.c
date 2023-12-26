@@ -2521,64 +2521,64 @@ float_arg(VALUE self)
  *
  * - Creating \Complex objects:
  *
- *   - ::polar
- *   - ::rect (and its alias ::rectangular)
+ *   - ::polar: Returns a new \Complex object based on given polar coordinates.
+ *   - ::rect (and its alias ::rectangular):
+ *     Returns a new \Complex object based on given rectangular coordinates.
  *
  * - Querying:
  *
- *   - #abs
- *   - #angle
- *   - #arg
- *   - #denominator
- *   - #finite?
- *   - #hash
- *   - #imag
- *   - #imaginary
- *   - #infinite?
- *   - #magnitude
- *   - #numerator
- *   - #phase
- *   - #polar
- *   - #inspect
- *   - #real
- *   - #real?
- *   - #rect
- *   - #rectangular
+ *   - #abs (and its alias #magnitude): Returns the absolute value for +self+.
+ *   - #arg (and its aliases #angle and #phase):
+ *     Returns the argument (angle) for +self+ in radians.
+ *   - #denominator: Returns the denominator of +self+.
+ *   - #finite?: Returns whether both +self.real+ and +self.image+ are finite.
+ *   - #hash: Returns the integer hash value for +self+.
+ *   - #imag (and its alias #imaginary): Returns the imaginary value for +self+.
+ *   - #infinite?: Returns whether +self.real+ or +self.image+ is infinite.
+ *   - #numerator: Returns the numerator of +self+.
+ *   - #polar: Returns the array <tt>[self.abs, self.arg]</tt>.
+ *   - #inspect: Returns a string representation of +self+.
+ *   - #real: Returns the real value for +self+.
+ *   - #real?: Returns +false+; for compatibility with Numeric#real?.
+ *   - #rect (and its alias #rectangular):
+ *     Returns the array <tt>[self.real, self.imag]</tt>.
  *
  * - Comparing:
  *
- *   - {#<=>}[Complex.html#method-i-3C-3D-3E]
- *   - {#==}[Complex.html#method-i-3D-3D]
+ *   - {#<=>}[Complex.html#method-i-3C-3D-3E]:
+ *     Returns whether +self+ is less than, equal to, or greater than the given argument.
+ *   - {#==}[Complex.html#method-i-3D-3D]:
+ *     Returns whether +self+ is equal to the given argument.
  *
  * - Converting:
  *
- *   - #rationalize
- *   - #to_c
- *   - #to_d
- *   - #to_f
- *   - #to_i
- *   - #to_r
- *   - #to_s
+ *   - #rationalize: Returns a Rational object whose value is exactly
+ *     or approximately equivalent to that of <tt>self.real</tt>.
+ *   - #to_c: Returns +self+.
+ *   - #to_d: Returns the value as a BigDecimal object.
+ *   - #to_f: Returns the value of <tt>self.real</tt> as a Float, if possible.
+ *   - #to_i: Returns the value of <tt>self.real</tt> as an Integer, if possible:
+ *   - #to_r: Returns the value of <tt>self.real</tt> as a Rational, if possible.
+ *   - #to_s: Returns a string representation of +self+.
  *
  * - Performing complex arithmetic:
  *
- *   - #-
- *   - #*
- *   - #**
- *   - #+
- *   - #-
- *   - #-@
- *   - #/
- *   - #abs2
- *   - #conj
- *   - #conjugate
- *   - #fdiv
+ *   - #*: Returns the product of +self+ and the given numeric.
+ *   - #**: Returns +self+ raised to power of the given numeric.
+ *   - #+: Returns the sum of +self+ and the given numeric.
+ *   - #-: Returns the difference of +self+ and the given numeric.
+ *   - #-@: Returns the negation of +self+.
+ *   - #/: Returns the quotient of +self+ and the given numeric.
+ *   - #abs2: Returns square of the absolute value (magnitude) for +self+.
+ *   - #conj (and its alias #conjugate): Returns the conjugate of +self+.
+ *   - #fdiv: Returns <tt>Complex.rect(self.real/numeric, self.imag/numeric)</tt>.
  *
  * - Working with JSON:
  *
- *   - ::json_create
- *   - #as_json
- *   - #to_json
+ *   - ::json_create: Returns a new \Complex object,
+ *     deserialized from the given serialized hash.
+ *   - #as_json: Returns a serialized hash constructed from +self+.
+ *   - #to_json: Returns a JSON string representing +self+.
  *
  */
 void
