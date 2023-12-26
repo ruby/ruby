@@ -175,13 +175,13 @@ module Test_SyncDefaultGems
       result = nil
       out = capture_process_output_to([STDOUT, STDERR]) do
         Dir.chdir("src") do
-          if editor
-            editor, ENV["GIT_EDITOR"] = ENV["GIT_EDITOR"], editor
-            edit = true
-          end
+          orig_editor = ENV["GIT_EDITOR"]
+          ENV["GIT_EDITOR"] = editor || 'false'
+          edit = true if editor
+
           result = SyncDefaultGems.sync_default_gems_with_commits(@target, commits, edit: edit)
         ensure
-          ENV["GIT_EDITOR"] = editor if edit
+          ENV["GIT_EDITOR"] = orig_editor
         end
       end
       assert_equal(success, result, out)
