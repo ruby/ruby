@@ -977,7 +977,7 @@ static inline void *
 pm_alloc_node(PRISM_ATTRIBUTE_UNUSED pm_parser_t *parser, size_t size) {
     void *memory = calloc(1, size);
     if (memory == NULL) {
-        fprintf(stderr, "Failed to allocate "PRIuSIZE" bytes\n", size);
+        fprintf(stderr, "Failed to allocate %zu bytes\n", size);
         abort();
     }
     return memory;
