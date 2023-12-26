@@ -81,4 +81,24 @@ module TestWEBrick
   def start_httpproxy(config={}, log_tester=DefaultLogTester, &block)
     start_server(WEBrick::HTTPProxyServer, config, log_tester, &block)
   end
+
+  def start_cgi_server(config={}, log_tester=TestWEBrick::DefaultLogTester, &block)
+    config = {
+      :CGIInterpreter => TestWEBrick::RubyBin,
+      :DocumentRoot => File.dirname(__FILE__),
+      :DirectoryIndex => ["webrick.cgi"],
+      :RequestCallback => Proc.new{|req, res|
+        def req.meta_vars
+          meta = super
+          meta["RUBYLIB"] = $:.join(File::PATH_SEPARATOR)
+          meta[RbConfig::CONFIG['LIBPATHENV']] = ENV[RbConfig::CONFIG['LIBPATHENV']] if RbConfig::CONFIG['LIBPATHENV']
+          return meta
+        end
+      },
+    }.merge(config)
+    if RUBY_PLATFORM =~ /mswin|mingw|cygwin|bccwin32/
+      config[:CGIPathEnv] = ENV['PATH'] # runtime dll may not be in system dir.
+    end
+    start_server(WEBrick::HTTPServer, config, log_tester, &block)
+  end
 end

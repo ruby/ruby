@@ -247,22 +247,16 @@ class WEBrick::TestFileHandler < Test::Unit::TestCase
 
   def test_short_filename
     return if File.executable?(__FILE__) # skip on strange file system
-    return if /mswin/ =~ RUBY_PLATFORM && ENV.key?('GITHUB_ACTIONS') # not working from the beginning
 
-    config = {
-      :CGIInterpreter => TestWEBrick::RubyBin,
-      :DocumentRoot => File.dirname(__FILE__),
-      :CGIPathEnv => ENV['PATH'],
-    }
     log_tester = lambda {|log, access_log|
       log = log.reject {|s| /ERROR `.*\' not found\./ =~ s }
       log = log.reject {|s| /WARN  the request refers nondisclosure name/ =~ s }
       assert_equal([], log)
     }
-    TestWEBrick.start_httpserver(config, log_tester) do |server, addr, port, log|
+    TestWEBrick.start_cgi_server({}, log_tester) do |server, addr, port, log|
       http = Net::HTTP.new(addr, port)
       if windows?
-        root = config[:DocumentRoot].tr("/", "\\")
+        root = File.dirname(__FILE__).tr("/", "\\")
         fname = IO.popen(%W[dir /x #{root}\\webrick_long_filename.cgi], encoding: "binary", &:read)
         fname.sub!(/\A.*$^$.*$^$/m, '')
         if fname
