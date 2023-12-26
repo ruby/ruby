@@ -215,7 +215,7 @@ io_buffer_initialize(VALUE self, struct rb_io_buffer *buffer, void *base, size_t
     RB_OBJ_WRITE(self, &buffer->source, source);
 }
 
-static int
+static void
 io_buffer_free(struct rb_io_buffer *buffer)
 {
     if (buffer->base) {
@@ -247,8 +247,6 @@ io_buffer_free(struct rb_io_buffer *buffer)
         buffer->size = 0;
         buffer->flags = 0;
         buffer->source = Qnil;
-
-        return 1;
     }
 
 #if defined(_WIN32)
@@ -257,8 +255,6 @@ io_buffer_free(struct rb_io_buffer *buffer)
         buffer->mapping = NULL;
     }
 #endif
-
-    return 0;
 }
 
 void
