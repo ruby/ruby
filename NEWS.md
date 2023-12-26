@@ -27,6 +27,11 @@ The following default gems are updated.
 
 The following bundled gems are updated.
 
+* net-imap 0.4.9
+* rbs 3.4.1
+* typeprof 0.21.9
+* debug 1.9.1
+
 See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/logger/releases) or changelog for details of the default gems or bundled gems.
 
 ## Supported platforms
