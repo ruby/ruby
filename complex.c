@@ -2506,6 +2506,80 @@ float_arg(VALUE self)
  * - Separately, with methods Complex#real and Complex#imag.
  * - Together, with method Complex#rect.
  *
+ * == What's Here
+ *
+ * First, what's elsewhere:
+ *
+ * - \Class \Complex inherits (directly or indirectly)
+ *   from classes {Numeric}[rdoc-ref:Numeric@What-27s+Here]
+ *   and {Object}[rdoc-ref:Object@What-27s+Here].
+ * - Includes (directly or indirectly)
+ *   modules {Comparable}[rdoc-ref:Comparable@What-27s+Here]
+ *   and {Kernel}[rdoc-ref:Kernel@What-27s+Here].
+ *
+ * Here, class \Complex has methods for:
+ *
+ * - Creating \Complex objects:
+ *
+ *   - ::polar
+ *   - ::rect (and its alias ::rectangular)
+ *
+ * - Querying:
+ *
+ *   - #abs
+ *   - #angle
+ *   - #arg
+ *   - #denominator
+ *   - #finite?
+ *   - #hash
+ *   - #imag
+ *   - #imaginary
+ *   - #infinite?
+ *   - #magnitude
+ *   - #numerator
+ *   - #phase
+ *   - #polar
+ *   - #inspect
+ *   - #real
+ *   - #real?
+ *   - #rect
+ *   - #rectangular
+ *
+ * - Comparing:
+ *
+ *   - {#<=>}[Complex.html#method-i-3C-3D-3E]
+ *   - {#==}[Complex.html#method-i-3D-3D]
+ *
+ * - Converting:
+ *
+ *   - #rationalize
+ *   - #to_c
+ *   - #to_d
+ *   - #to_f
+ *   - #to_i
+ *   - #to_r
+ *   - #to_s
+ *
+ * - Performing complex arithmetic:
+ *
+ *   - #-
+ *   - #*
+ *   - #**
+ *   - #+
+ *   - #-
+ *   - #-@
+ *   - #/
+ *   - #abs2
+ *   - #conj
+ *   - #conjugate
+ *   - #fdiv
+ *
+ * - Working with JSON:
+ *
+ *   - ::json_create
+ *   - #as_json
+ *   - #to_json
+ *
  */
 void
 Init_Complex(void)
