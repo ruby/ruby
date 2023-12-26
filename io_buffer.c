@@ -113,6 +113,7 @@ io_buffer_map_file(struct rb_io_buffer *buffer, int descriptor, size_t size, rb_
     }
 
     HANDLE mapping = CreateFileMapping(file, NULL, protect, 0, 0, NULL);
+    fprintf(stderr, "io_buffer_map_file:CreateFileMapping -> %p\n", mapping);
     if (!mapping) rb_sys_fail("io_buffer_map_descriptor:CreateFileMapping");
 
     void *base = MapViewOfFile(mapping, access, (DWORD)(offset >> 32), (DWORD)(offset & 0xFFFFFFFF), size);
@@ -251,7 +252,10 @@ io_buffer_free(struct rb_io_buffer *buffer)
 
 #if defined(_WIN32)
     if (buffer->mapping) {
-        CloseHandle(buffer->mapping);
+        fprintf(stderr, "io_buffer_free:CloseHandle -> %p\n", buffer->mapping);
+        if (!CloseHandle(buffer->mapping)) {
+            fprintf(stderr, "io_buffer_free:GetLastError -> %d\n", GetLastError());
+        }
         buffer->mapping = NULL;
     }
 #endif
