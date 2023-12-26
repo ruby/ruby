@@ -132,6 +132,34 @@ class TestGemCommandsUpdateCommand < Gem::TestCase
     assert_empty err
   end
 
+  def test_execute_system_when_latest_does_not_support_your_ruby_but_previous_one_does
+    spec_fetcher do |fetcher|
+      fetcher.download "rubygems-update", 9 do |s|
+        s.files = %w[setup.rb]
+        s.required_ruby_version = "> 9"
+      end
+
+      fetcher.download "rubygems-update", 8 do |s|
+        s.files = %w[setup.rb]
+      end
+    end
+
+    @cmd.options[:args]          = []
+    @cmd.options[:system]        = true
+
+    use_ui @ui do
+      @cmd.execute
+    end
+
+    err = @ui.error.split "\n"
+    assert_empty err
+
+    out = @ui.output.split "\n"
+    assert_equal "Installing RubyGems 8", out.shift
+    assert_equal "RubyGems system software updated", out.shift
+    assert_empty out
+  end
+
   def test_execute_system_multiple
     spec_fetcher do |fetcher|
       fetcher.download "rubygems-update", 8 do |s|
