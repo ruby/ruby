@@ -244,7 +244,7 @@ command to remove old versions.
 
     @installer = Gem::DependencyInstaller.new update_options
 
-    say "Updating #{name}" unless options[:system] && options[:silent]
+    say "Updating #{name}" unless options[:system]
     begin
       @installer.install name, Gem::Requirement.new(version)
     rescue Gem::InstallError, Gem::DependencyError => e
