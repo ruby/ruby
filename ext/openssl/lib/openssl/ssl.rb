@@ -252,6 +252,14 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
         to_io.peeraddr
       end
 
+      def local_address
+        to_io.local_address
+      end
+
+      def remote_address
+        to_io.remote_address
+      end
+
       def setsockopt(level, optname, optval)
         to_io.setsockopt(level, optname, optval)
       end
@@ -270,6 +278,26 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
 
       def do_not_reverse_lookup=(flag)
         to_io.do_not_reverse_lookup = flag
+      end
+
+      def close_on_exec=(value)
+        to_io.close_on_exec = value
+      end
+
+      def close_on_exec?
+        to_io.close_on_exec?
+      end
+
+      def wait(*args)
+        to_io.wait(*args)
+      end
+
+      def wait_readable(*args)
+        to_io.wait_readable(*args)
+      end
+
+      def wait_writable(*args)
+        to_io.wait_writable(*args)
       end
     end
 
