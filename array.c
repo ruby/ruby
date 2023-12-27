@@ -5143,10 +5143,10 @@ recursive_eql(VALUE ary1, VALUE ary2, int recur)
 
 /*
  *  call-seq:
- *    array.eql? other_array -> true or false
+ *    array.eql?(other_array) -> true or false
  *
  *  Returns +true+ if +self+ and +other_array+ are the same size,
- *  and if, for each index +i+ in +self+, <tt>self[i].eql? other_array[i]</tt>:
+ *  and if, for each index +i+ in +self+, <tt>self[i].eql?(other_array[i])</tt>:
  *
  *    a0 = [:foo, 'bar', 2]
  *    a1 = [:foo, 'bar', 2]
