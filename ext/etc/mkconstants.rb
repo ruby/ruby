@@ -35,6 +35,12 @@ opt.def_option('-H FILE', 'specify output header file') {|filename|
 
 opt.parse!
 
+CONST_PREFIXES = {
+  'SC' => 'for Etc.sysconf; See <tt>man sysconf</tt>',
+  'CS' => 'for Etc.confstr; See <tt>man constr</tt>',
+  'PC' => 'for IO#pathconf; See <tt>man fpathconf</tt>',
+}
+
 h = {}
 COMMENTS = {}
 
@@ -49,6 +55,13 @@ DATA.each_line {|s|
     next
   end
   h[name] = default_value
+  if additional = CONST_PREFIXES[name[/\A_([A-Z]+)_/, 1]]
+    if comment&.match(/\w\z/)
+      comment << " " << additional
+    else
+      (comment ||= String.new) << " " << additional.sub(/\A\w/) {$&.upcase}
+    end
+  end
   COMMENTS[name] = comment if comment
 }
 DEFS = h.to_a
@@ -123,6 +136,9 @@ result = erb_new.call(<<'EOS', nil, '%').result(binding)
 static void
 init_constants(VALUE mod)
 {
+#if 0
+    mod = rb_define_module("Etc");
+#endif
 <%= gen_const_defs %>
 }
 EOS
