@@ -830,7 +830,10 @@ AS_IF([test "$GCC" = yes], [
 	AS_FOR(option, opt, [-mbranch-protection=pac-ret -msign-return-address=all], [
             RUBY_TRY_CFLAGS(option, [branch_protection=yes], [branch_protection=no])
             AS_IF([test "x$branch_protection" = xyes], [
+                # C compiler and assembler must be consistent for -mbranch-protection
+                # since they both check `__ARM_FEATURE_PAC_DEFAULT` definition.
                 RUBY_APPEND_OPTION(XCFLAGS, option)
+                RUBY_APPEND_OPTION(ASFLAGS, option)
                 break
             ])
         ])
