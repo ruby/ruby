@@ -542,7 +542,7 @@ init_cache_opcodes(const regex_t* reg, OnigCacheOpcode* cache_opcodes, long* num
     cache_opcodes->num_cache_points_at_outer_repeat = num_cache_points_at_repeat;\
     cache_opcodes->num_cache_points_in_outer_repeat = 0;\
     cache_opcodes->lookaround_nesting = lookaround_nesting;\
-    cache_point += lookaround_nesting > 0 ? 2 : 1;\
+    cache_point += lookaround_nesting != 0 ? 2 : 1;\
     cache_opcodes++;\
   } while (0)
 
