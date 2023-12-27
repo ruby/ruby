@@ -147,6 +147,7 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_ary_join          p->config->ary_join
 #define rb_ary_reverse       p->config->ary_reverse
 #define rb_ary_clear         p->config->ary_clear
+#define rb_ary_modify        p->config->ary_modify
 #undef RARRAY_LEN
 #define RARRAY_LEN           p->config->array_len
 #define RARRAY_AREF          p->config->array_aref

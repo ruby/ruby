@@ -566,6 +566,7 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->ary_join          = rb_ary_join;
     config->ary_reverse       = rb_ary_reverse;
     config->ary_clear         = rb_ary_clear;
+    config->ary_modify        = rb_ary_modify;
     config->array_len         = rb_array_len;
     config->array_aref        = RARRAY_AREF;
 
