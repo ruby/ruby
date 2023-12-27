@@ -3795,7 +3795,6 @@ rb_hash_equal(VALUE hash1, VALUE hash2)
  *
  *  Otherwise, returns +false+.
  *
- *  Equal:
  *    h1 = {foo: 0, bar: 1, baz: 2}
  *    h2 = {foo: 0, bar: 1, baz: 2}
  *    h1.eql? h2 # => true
