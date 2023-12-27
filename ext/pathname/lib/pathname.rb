@@ -580,14 +580,13 @@ class Pathname    # * Find *
 end
 
 
-autoload(:FileUtils, 'fileutils')
-
 class Pathname    # * FileUtils *
   # Creates a full path, including any intermediate directories that don't yet
   # exist.
   #
   # See FileUtils.mkpath and FileUtils.mkdir_p
   def mkpath(mode: nil)
+    require 'fileutils'
     FileUtils.mkpath(@path, mode: mode)
     nil
   end
