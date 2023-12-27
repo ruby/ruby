@@ -642,20 +642,16 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
     JSON_Generator_State *state = arg->state;
     VALUE Vstate = arg->Vstate;
 
-    char *object_nl = state->object_nl;
-    long object_nl_len = state->object_nl_len;
-    char *indent = state->indent;
-    long indent_len = state->indent_len;
     long depth = state->depth;
     int j;
 
     if (arg->iter > 0) fbuffer_append_char(buffer, ',');
-    if (object_nl) {
-        fbuffer_append(buffer, object_nl, object_nl_len);
+    if (RB_UNLIKELY(state->object_nl)) {
+        fbuffer_append(buffer, state->object_nl, state->object_nl_len);
     }
-    if (indent) {
+    if (RB_UNLIKELY(state->indent)) {
         for (j = 0; j < depth; j++) {
-            fbuffer_append(buffer, indent, indent_len);
+            fbuffer_append(buffer, state->indent, state->indent_len);
         }
     }
 
@@ -684,10 +680,6 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
 
 static void generate_json_object(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
-    char *object_nl = state->object_nl;
-    long object_nl_len = state->object_nl_len;
-    char *indent = state->indent;
-    long indent_len = state->indent_len;
     long max_nesting = state->max_nesting;
     long depth = ++state->depth;
     int j;
@@ -705,11 +697,11 @@ static void generate_json_object(FBuffer *buffer, VALUE Vstate, JSON_Generator_S
     rb_hash_foreach(obj, json_object_i, (VALUE)&arg);
 
     depth = --state->depth;
-    if (object_nl) {
-        fbuffer_append(buffer, object_nl, object_nl_len);
-        if (indent) {
+    if (RB_UNLIKELY(state->object_nl)) {
+        fbuffer_append(buffer, state->object_nl, state->object_nl_len);
+        if (RB_UNLIKELY(state->indent)) {
             for (j = 0; j < depth; j++) {
-                fbuffer_append(buffer, indent, indent_len);
+                fbuffer_append(buffer, state->indent, state->indent_len);
             }
         }
     }
@@ -718,10 +710,6 @@ static void generate_json_object(FBuffer *buffer, VALUE Vstate, JSON_Generator_S
 
 static void generate_json_array(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
-    char *array_nl = state->array_nl;
-    long array_nl_len = state->array_nl_len;
-    char *indent = state->indent;
-    long indent_len = state->indent_len;
     long max_nesting = state->max_nesting;
     long depth = ++state->depth;
     int i, j;
@@ -729,25 +717,25 @@ static void generate_json_array(FBuffer *buffer, VALUE Vstate, JSON_Generator_St
         rb_raise(eNestingError, "nesting of %ld is too deep", --state->depth);
     }
     fbuffer_append_char(buffer, '[');
-    if (array_nl) fbuffer_append(buffer, array_nl, array_nl_len);
+    if (RB_UNLIKELY(state->array_nl)) fbuffer_append(buffer, state->array_nl, state->array_nl_len);
     for(i = 0; i < RARRAY_LEN(obj); i++) {
         if (i > 0) {
             fbuffer_append_char(buffer, ',');
             if (RB_UNLIKELY(state->array_nl)) fbuffer_append(buffer, state->array_nl, state->array_nl_len);
         }
-        if (indent) {
+        if (RB_UNLIKELY(state->indent)) {
             for (j = 0; j < depth; j++) {
-                fbuffer_append(buffer, indent, indent_len);
+                fbuffer_append(buffer, state->indent, state->indent_len);
             }
         }
         generate_json(buffer, Vstate, state, RARRAY_AREF(obj, i));
     }
     state->depth = --depth;
-    if (array_nl) {
-        fbuffer_append(buffer, array_nl, array_nl_len);
-        if (indent) {
+    if (RB_UNLIKELY(state->array_nl)) {
+        fbuffer_append(buffer, state->array_nl, state->array_nl_len);
+        if (RB_UNLIKELY(state->indent)) {
             for (j = 0; j < depth; j++) {
-                fbuffer_append(buffer, indent, indent_len);
+                fbuffer_append(buffer, state->indent, state->indent_len);
             }
         }
     }
