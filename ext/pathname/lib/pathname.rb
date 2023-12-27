@@ -572,7 +572,7 @@ class Pathname    # * Find *
     return to_enum(__method__, ignore_error: ignore_error) unless block_given?
     require 'find'
     if @path == '.'
-      Find.find(@path, ignore_error: ignore_error) {|f| yield self.class.new(f.sub(%r{\A\./}, '')) }
+      Find.find(@path, ignore_error: ignore_error) {|f| yield self.class.new(f.delete_prefix('./')) }
     else
       Find.find(@path, ignore_error: ignore_error) {|f| yield self.class.new(f) }
     end
