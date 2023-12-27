@@ -489,7 +489,9 @@ module SyncDefaultGems
   def commits_in_ranges(gem, repo, default_branch, ranges)
     # If -a is given, discover all commits since the last picked commit
     if ranges == true
-      pattern = "https://github\.com/#{Regexp.quote(repo)}/commit/([0-9a-f]+)$"
+      # \r? needed in the regex in case the commit has windows-style line endings (because e.g. we're running
+      # tests on Windows)
+      pattern = "https://github\.com/#{Regexp.quote(repo)}/commit/([0-9a-f]+)\r?$"
       log = IO.popen(%W"git log -E --grep=#{pattern} -n1 --format=%B", &:read)
       ranges = ["#{log[%r[#{pattern}\n\s*(?i:co-authored-by:.*)*\s*\Z], 1]}..#{gem}/#{default_branch}"]
     end
