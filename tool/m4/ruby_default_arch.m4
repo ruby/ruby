@@ -10,10 +10,12 @@ AS_CASE([$1:"$host_cpu"],
     [[i[3-6]86]:x86_64], [ARCH_FLAG=-m32],
     [ppc64:ppc*],        [ARCH_FLAG=-m64],
     [ppc*:ppc64],        [ARCH_FLAG=-m32],
-    AS_CASE([$build_os],
-        [darwin*], [ARCH_FLAG="-arch "$1],
-        [ARCH_FLAG=-march=$1]
-    )
+    [
+    ARCH_FLAG=
+    for flag in "-arch "$1 -march=$1; do
+        _RUBY_TRY_CFLAGS([$]flag, [ARCH_FLAG="[$]flag"])
+        test x"$ARCH_FLAG" = x || break
+    done]
 )
-AC_MSG_RESULT([$ARCH_FLAG])
+AC_MSG_RESULT([${ARCH_FLAG:-'(none)'}])
 ])dnl
