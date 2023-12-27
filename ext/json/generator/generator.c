@@ -1,6 +1,10 @@
 #include "../fbuffer/fbuffer.h"
 #include "generator.h"
 
+#ifndef RB_UNLIKELY
+#define RB_UNLIKELY(cond) (cond)
+#endif
+
 static VALUE mJSON, mExt, mGenerator, cState, mGeneratorMethods, mObject,
              mHash, mArray,
 #ifdef RUBY_INTEGER_UNIFICATION
@@ -678,7 +682,7 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
             break;
     }
 
-    generate_json(buffer, Vstate, state, key_to_s);
+    generate_json_string(buffer, Vstate, state, key_to_s);
     fbuffer_append(buffer, delim2, delim2_len);
     generate_json(buffer, Vstate, state, val);
 
