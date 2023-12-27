@@ -2391,7 +2391,7 @@ stmt		: keyword_alias fitem {SET_LEX_STATE(EXPR_FNAME|EXPR_FITEM);} fitem
                         static const char mesg[] = "can't make alias for the number variables";
                     /*%%%*/
                         yyerror1(&@3, mesg);
-                        $$ = NEW_BEGIN(0, &@$);
+                        $$ = NEW_ERROR(&@$);
                     /*% %*/
                     /*% ripper[error]: alias_error!(ERR_MESG(), $3) %*/
                     }
@@ -2597,7 +2597,7 @@ command_asgn	: lhs '=' lex_ctxt command_rhs
                     {
                     /*%%%*/
                         rb_backref_error(p, $1);
-                        $$ = NEW_BEGIN(0, &@$);
+                        $$ = NEW_ERROR(&@$);
                     /*% %*/
                     /*% ripper[error]: backref_error(p, RNODE($1), assign!(var_field(p, $1), $4)) %*/
                     }
@@ -3076,7 +3076,7 @@ mlhs_node	: user_variable
                     {
                     /*%%%*/
                         rb_backref_error(p, $1);
-                        $$ = NEW_BEGIN(0, &@$);
+                        $$ = NEW_ERROR(&@$);
                     /*% %*/
                     /*% ripper[error]: backref_error(p, RNODE($1), var_field(p, $1)) %*/
                     }
@@ -3142,7 +3142,7 @@ lhs		: user_variable
                     {
                     /*%%%*/
                         rb_backref_error(p, $1);
-                        $$ = NEW_BEGIN(0, &@$);
+                        $$ = NEW_ERROR(&@$);
                     /*% %*/
                     /*% ripper[error]: backref_error(p, RNODE($1), var_field(p, $1)) %*/
                     }
@@ -3328,7 +3328,7 @@ arg		: lhs '=' lex_ctxt arg_rhs
                     {
                     /*%%%*/
                         rb_backref_error(p, $1);
-                        $$ = NEW_BEGIN(0, &@$);
+                        $$ = NEW_ERROR(&@$);
                     /*% %*/
                     /*% ripper[error]: backref_error(p, RNODE($1), opassign!(var_field(p, $1), $2, $4)) %*/
                     }
@@ -5521,7 +5521,7 @@ p_primitive	: literal
                 | keyword_variable
                     {
                     /*%%%*/
-                        if (!($$ = gettable(p, $1, &@$))) $$ = NEW_BEGIN(0, &@$);
+                        if (!($$ = gettable(p, $1, &@$))) $$ = NEW_ERROR(&@$);
                     /*% %*/
                     /*% ripper: var_ref!($1) %*/
                     }
@@ -5552,7 +5552,7 @@ p_var_ref	: '^' tIDENTIFIER
                 | '^' nonlocal_var
                     {
                     /*%%%*/
-                        if (!($$ = gettable(p, $2, &@$))) $$ = NEW_BEGIN(0, &@$);
+                        if (!($$ = gettable(p, $2, &@$))) $$ = NEW_ERROR(&@$);
                     /*% %*/
                     /*% ripper: var_ref!($2) %*/
                     }
@@ -5981,7 +5981,7 @@ string_dend	: tSTRING_DEND
 string_dvar	: nonlocal_var
                     {
                     /*%%%*/
-                        if (!($$ = gettable(p, $1, &@$))) $$ = NEW_BEGIN(0, &@$);
+                        if (!($$ = gettable(p, $1, &@$))) $$ = NEW_ERROR(&@$);
                     /*% %*/
                     /*% ripper: var_ref!($1) %*/
                     }
@@ -6055,7 +6055,7 @@ keyword_variable: keyword_nil {$$ = KWD2EID(nil, $1);}
 var_ref		: user_variable
                     {
                     /*%%%*/
-                        if (!($$ = gettable(p, $1, &@$))) $$ = NEW_BEGIN(0, &@$);
+                        if (!($$ = gettable(p, $1, &@$))) $$ = NEW_ERROR(&@$);
                     /*%
                         if (id_is_var(p, get_id($1))) {
                             $$ = dispatch1(var_ref, $1);
@@ -6068,7 +6068,7 @@ var_ref		: user_variable
                 | keyword_variable
                     {
                     /*%%%*/
-                        if (!($$ = gettable(p, $1, &@$))) $$ = NEW_BEGIN(0, &@$);
+                        if (!($$ = gettable(p, $1, &@$))) $$ = NEW_ERROR(&@$);
                     /*% %*/
                     /*% ripper: var_ref!($1) %*/
                     }
@@ -6669,7 +6669,7 @@ assoc		: arg_value tASSOC arg_value
                     {
                     /*%%%*/
                         NODE *val = gettable(p, $1, &@$);
-                        if (!val) val = NEW_BEGIN(0, &@$);
+                        if (!val) val = NEW_ERROR(&@$);
                         $$ = list_append(p, NEW_LIST(NEW_LIT(ID2SYM($1), &@1), &@$), val);
                     /*% %*/
                     /*% ripper: assoc_new!($1, Qnil) %*/
@@ -13335,7 +13335,7 @@ assignable(struct parser_params *p, ID id, NODE *val, const YYLTYPE *loc)
       case NODE_CVASGN: return NEW_CVASGN(id, val, loc);
     }
     if (err) yyerror1(loc, err);
-    return NEW_BEGIN(0, loc);
+    return NEW_ERROR(loc);
 }
 #else
 static VALUE
@@ -14763,7 +14763,7 @@ new_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct lex_c
         }
     }
     else {
-        asgn = NEW_BEGIN(0, loc);
+        asgn = NEW_ERROR(loc);
     }
     return asgn;
 }
@@ -14801,7 +14801,7 @@ new_const_op_assign(struct parser_params *p, NODE *lhs, ID op, NODE *rhs, struct
         asgn = NEW_OP_CDECL(lhs, op, rhs, loc);
     }
     else {
-        asgn = NEW_BEGIN(0, loc);
+        asgn = NEW_ERROR(loc);
     }
     fixpos(asgn, lhs);
     return asgn;
@@ -15380,7 +15380,7 @@ rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, lo
     }
     node = node_assign(p, assignable(p, var, 0, loc), NEW_LIT(ID2SYM(var), loc), NO_LEX_CTXT, loc);
     succ = *succ_block;
-    if (!succ) succ = NEW_BEGIN(0, loc);
+    if (!succ) succ = NEW_ERROR(loc);
     succ = block_append(p, succ, node);
     *succ_block = succ;
     return ST_CONTINUE;
