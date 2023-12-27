@@ -55,14 +55,15 @@ typedef struct FBufferStruct {
 
 static FBuffer *fbuffer_alloc(unsigned long initial_length);
 static void fbuffer_free(FBuffer *fb);
+#ifndef JSON_GENERATOR
 static void fbuffer_clear(FBuffer *fb);
+#endif
 static void fbuffer_append(FBuffer *fb, const char *newstr, unsigned long len);
 #ifdef JSON_GENERATOR
 static void fbuffer_append_long(FBuffer *fb, long number);
 #endif
 static void fbuffer_append_char(FBuffer *fb, char newchr);
 #ifdef JSON_GENERATOR
-static FBuffer *fbuffer_dup(FBuffer *fb);
 static VALUE fbuffer_to_s(FBuffer *fb);
 #endif
 
@@ -86,10 +87,12 @@ static void fbuffer_free(FBuffer *fb)
     ruby_xfree(fb);
 }
 
+#ifndef JSON_GENERATOR
 static void fbuffer_clear(FBuffer *fb)
 {
     fb->len = 0;
 }
+#endif
 
 static inline void fbuffer_inc_capa(FBuffer *fb, unsigned long requested)
 {
@@ -166,16 +169,6 @@ static void fbuffer_append_long(FBuffer *fb, long number)
     char buf[20];
     unsigned long len = fltoa(number, buf);
     fbuffer_append(fb, buf, len);
-}
-
-static FBuffer *fbuffer_dup(FBuffer *fb)
-{
-    unsigned long len = fb->len;
-    FBuffer *result;
-
-    result = fbuffer_alloc(len);
-    fbuffer_append(result, FBUFFER_PAIR(fb));
-    return result;
 }
 
 static VALUE fbuffer_to_s(FBuffer *fb)
