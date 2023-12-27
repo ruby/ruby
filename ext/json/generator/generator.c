@@ -827,35 +827,56 @@ static void generate_json_float(FBuffer *buffer, VALUE Vstate, JSON_Generator_St
 static void generate_json(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     VALUE tmp;
-    VALUE klass = CLASS_OF(obj);
-    if (klass == rb_cHash) {
-        generate_json_object(buffer, Vstate, state, obj);
-    } else if (klass == rb_cArray) {
-        generate_json_array(buffer, Vstate, state, obj);
-    } else if (klass == rb_cString) {
-        generate_json_string(buffer, Vstate, state, obj);
-    } else if (obj == Qnil) {
+    if (obj == Qnil) {
         generate_json_null(buffer, Vstate, state, obj);
     } else if (obj == Qfalse) {
         generate_json_false(buffer, Vstate, state, obj);
     } else if (obj == Qtrue) {
         generate_json_true(buffer, Vstate, state, obj);
-    } else if (FIXNUM_P(obj)) {
-        generate_json_fixnum(buffer, Vstate, state, obj);
-    } else if (RB_TYPE_P(obj, T_BIGNUM)) {
-        generate_json_bignum(buffer, Vstate, state, obj);
-    } else if (klass == rb_cFloat) {
-        generate_json_float(buffer, Vstate, state, obj);
-    } else if (state->strict) {
-        rb_raise(eGeneratorError, "%"PRIsVALUE" not allowed in JSON", RB_OBJ_STRING(CLASS_OF(obj)));
-    } else if (rb_respond_to(obj, i_to_json)) {
-        tmp = rb_funcall(obj, i_to_json, 1, Vstate);
-        Check_Type(tmp, T_STRING);
-        fbuffer_append_str(buffer, tmp);
+    } else if (RB_SPECIAL_CONST_P(obj)) {
+        if (RB_FIXNUM_P(obj)) {
+            generate_json_fixnum(buffer, Vstate, state, obj);
+        } else if (RB_FLONUM_P(obj)) {
+            generate_json_float(buffer, Vstate, state, obj);
+        } else {
+            goto general;
+        }
     } else {
-        tmp = rb_funcall(obj, i_to_s, 0);
-        Check_Type(tmp, T_STRING);
-        generate_json_string(buffer, Vstate, state, tmp);
+        VALUE klass = RBASIC_CLASS(obj);
+        switch (RB_BUILTIN_TYPE(obj)) {
+            case T_BIGNUM:
+                generate_json_bignum(buffer, Vstate, state, obj);
+                break;
+            case T_HASH:
+                if (klass != rb_cHash) goto general;
+                generate_json_object(buffer, Vstate, state, obj);
+                break;
+            case T_ARRAY:
+                if (klass != rb_cArray) goto general;
+                generate_json_array(buffer, Vstate, state, obj);
+                break;
+            case T_STRING:
+                if (klass != rb_cString) goto general;
+                generate_json_string(buffer, Vstate, state, obj);
+                break;
+            case T_FLOAT:
+                if (klass != rb_cFloat) goto general;
+                generate_json_float(buffer, Vstate, state, obj);
+                break;
+            default:
+            general:
+                if (state->strict) {
+                    rb_raise(eGeneratorError, "%"PRIsVALUE" not allowed in JSON", RB_OBJ_STRING(CLASS_OF(obj)));
+                } else if (rb_respond_to(obj, i_to_json)) {
+                    tmp = rb_funcall(obj, i_to_json, 1, Vstate);
+                    Check_Type(tmp, T_STRING);
+                    fbuffer_append_str(buffer, tmp);
+                } else {
+                    tmp = rb_funcall(obj, i_to_s, 0);
+                    Check_Type(tmp, T_STRING);
+                    generate_json_string(buffer, Vstate, state, tmp);
+                }
+        }
     }
 }
 
