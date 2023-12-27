@@ -813,6 +813,9 @@ typedef struct {
 
     /** The optional block attached to the call. */
     pm_node_t *block;
+
+    /** The flag indicating whether this arguments list has forwarding argument. */
+    bool has_forwarding;
 } pm_arguments_t;
 
 /**
@@ -11306,6 +11309,7 @@ parse_arguments(pm_parser_t *parser, pm_arguments_t *arguments, bool accepts_for
 
                         argument = (pm_node_t *) pm_forwarding_arguments_node_create(parser, &parser->previous);
                         parse_arguments_append(parser, arguments, argument);
+                        arguments->has_forwarding = true;
                         parsed_forwarding_arguments = true;
                         break;
                     }
@@ -12170,14 +12174,20 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
         }
 
         if (block != NULL) {
-            if (arguments->block == NULL) {
+            if (arguments->block == NULL && !arguments->has_forwarding) {
                 arguments->block = (pm_node_t *) block;
             } else {
-                pm_parser_err_node(parser, (pm_node_t *) block, PM_ERR_ARGUMENT_BLOCK_MULTI);
-                if (arguments->arguments == NULL) {
-                    arguments->arguments = pm_arguments_node_create(parser);
+                if (arguments->has_forwarding) {
+                    pm_parser_err_node(parser, (pm_node_t *) block, PM_ERR_ARGUMENT_BLOCK_FORWARDING);
+                } else {
+                    pm_parser_err_node(parser, (pm_node_t *) block, PM_ERR_ARGUMENT_BLOCK_MULTI);
                 }
-                pm_arguments_node_arguments_append(arguments->arguments, arguments->block);
+                if (arguments->block != NULL) {
+                    if (arguments->arguments == NULL) {
+                        arguments->arguments = pm_arguments_node_create(parser);
+                    }
+                    pm_arguments_node_arguments_append(arguments->arguments, arguments->block);
+                }
                 arguments->block = (pm_node_t *) block;
             }
         }

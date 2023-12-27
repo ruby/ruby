@@ -2046,6 +2046,20 @@ module Prism
       ]
     end
 
+    def test_block_arg_and_block
+      source = 'foo(&1) { }'
+      assert_errors expression(source), source, [
+        ['multiple block arguments; only one block is allowed', 8..11]
+      ], compare_ripper: false # Ripper does not check 'both block arg and actual block given'.
+    end
+
+    def test_forwarding_arg_and_block
+      source = 'def foo(...) = foo(...) { }'
+      assert_errors expression(source), source, [
+        ['both a block argument and a forwarding argument; only one block is allowed', 24..27]
+      ], compare_ripper: false # Ripper does not check 'both block arg and actual block given'.
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")

@@ -56,6 +56,7 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_ARGUMENT_AFTER_BLOCK]               = "unexpected argument after a block argument",
     [PM_ERR_ARGUMENT_AFTER_FORWARDING_ELLIPSES] = "unexpected argument after `...`",
     [PM_ERR_ARGUMENT_BARE_HASH]                 = "unexpected bare hash argument",
+    [PM_ERR_ARGUMENT_BLOCK_FORWARDING]          = "both a block argument and a forwarding argument; only one block is allowed",
     [PM_ERR_ARGUMENT_BLOCK_MULTI]               = "multiple block arguments; only one block is allowed",
     [PM_ERR_ARGUMENT_FORMAL_CLASS]              = "invalid formal argument; formal argument cannot be a class variable",
     [PM_ERR_ARGUMENT_FORMAL_CONSTANT]           = "invalid formal argument; formal argument cannot be a constant",
