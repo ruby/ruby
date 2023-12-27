@@ -3791,7 +3791,7 @@ rb_hash_equal(VALUE hash1, VALUE hash2)
  *  Returns +true+ if all of the following are true:
  *  * +object+ is a \Hash object.
  *  * +hash+ and +object+ have the same keys (regardless of order).
- *  * For each key +key+, <tt>h[key] eql? object[key]</tt>.
+ *  * For each key +key+, <tt>h[key].eql?(object[key])</tt>.
  *
  *  Otherwise, returns +false+.
  *
