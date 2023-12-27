@@ -2513,9 +2513,7 @@ float_arg(VALUE self)
  * - \Class \Complex inherits (directly or indirectly)
  *   from classes {Numeric}[rdoc-ref:Numeric@What-27s+Here]
  *   and {Object}[rdoc-ref:Object@What-27s+Here].
- * - Includes (directly or indirectly)
- *   modules {Comparable}[rdoc-ref:Comparable@What-27s+Here]
- *   and {Kernel}[rdoc-ref:Kernel@What-27s+Here].
+ * - Includes (indirectly) module {Comparable}[rdoc-ref:Comparable@What-27s+Here].
  *
  * Here, class \Complex has methods for:
  *
