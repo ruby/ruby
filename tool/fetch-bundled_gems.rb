@@ -15,7 +15,7 @@ next if n =~ /^#/
 
 if File.directory?(n)
   puts "updating #{n} ..."
-  system("git", "fetch", chdir: n) or abort
+  system("git", "fetch", "--all", chdir: n) or abort
 else
   puts "retrieving #{n} ..."
   system(*%W"git clone #{u} #{n}") or abort
