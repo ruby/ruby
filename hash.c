@@ -3786,7 +3786,7 @@ rb_hash_equal(VALUE hash1, VALUE hash2)
 
 /*
  *  call-seq:
- *    hash.eql? object -> true or false
+ *    hash.eql?(object) -> true or false
  *
  *  Returns +true+ if all of the following are true:
  *  * +object+ is a \Hash object.
