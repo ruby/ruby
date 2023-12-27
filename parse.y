@@ -11252,7 +11252,7 @@ rb_node_block_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc)
 {
     rb_node_block_t *n = NODE_NEWNODE(NODE_BLOCK, rb_node_block_t, loc);
     n->nd_head = nd_head;
-    n->nd_end = 0;
+    n->nd_end = (NODE *)n;
     n->nd_next = 0;
 
     return n;
@@ -12343,7 +12343,6 @@ block_append(struct parser_params *p, NODE *head, NODE *tail)
     switch (nd_type(h)) {
       default:
         h = end = NEW_BLOCK(head, &head->nd_loc);
-        RNODE_BLOCK(end)->nd_end = end;
         head = end;
         break;
       case NODE_BLOCK:
@@ -12369,7 +12368,6 @@ block_append(struct parser_params *p, NODE *head, NODE *tail)
 
     if (!nd_type_p(tail, NODE_BLOCK)) {
         tail = NEW_BLOCK(tail, &tail->nd_loc);
-        RNODE_BLOCK(tail)->nd_end = tail;
     }
     RNODE_BLOCK(end)->nd_next = tail;
     RNODE_BLOCK(h)->nd_end = RNODE_BLOCK(tail)->nd_end;
