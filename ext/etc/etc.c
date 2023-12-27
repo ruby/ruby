@@ -203,7 +203,7 @@ setup_passwd(struct passwd *pwd)
 #endif
 
 /* call-seq:
- *	getpwuid(uid)	->  Passwd
+ *	getpwuid(uid)	->  Etc::Passwd
  *
  * Returns the <tt>/etc/passwd</tt> information for the user with the given
  * integer +uid+.
@@ -215,7 +215,7 @@ setup_passwd(struct passwd *pwd)
  *
  * See the unix manpage for <code>getpwuid(3)</code> for more detail.
  *
- * === Example:
+ * *Example:*
  *
  *	Etc.getpwuid(0)
  *	#=> #<struct Etc::Passwd name="root", passwd="x", uid=0, gid=0, gecos="root",dir="/root", shell="/bin/bash">
@@ -243,7 +243,7 @@ etc_getpwuid(int argc, VALUE *argv, VALUE obj)
 }
 
 /* call-seq:
- *	getpwnam(name)	->  Passwd
+ *	getpwnam(name)	->  Etc::Passwd
  *
  * Returns the <tt>/etc/passwd</tt> information for the user with specified
  * login +name+.
@@ -252,7 +252,7 @@ etc_getpwuid(int argc, VALUE *argv, VALUE obj)
  *
  * See the unix manpage for <code>getpwnam(3)</code> for more detail.
  *
- * === Example:
+ * *Example:*
  *
  *	Etc.getpwnam('root')
  *	#=> #<struct Etc::Passwd name="root", passwd="x", uid=0, gid=0, gecos="root",dir="/root", shell="/bin/bash">
@@ -307,8 +307,8 @@ each_passwd(void)
 #endif
 
 /* call-seq:
- *	Etc.passwd { |struct| block }	->  Passwd
- *	Etc.passwd			->  Passwd
+ *	passwd { |struct| block }
+ *	passwd				->  Etc::Passwd
  *
  * Provides a convenient Ruby iterator which executes a block for each entry
  * in the <tt>/etc/passwd</tt> file.
@@ -317,7 +317,7 @@ each_passwd(void)
  *
  * See ::getpwent above for details.
  *
- * Example:
+ * *Example:*
  *
  *     require 'etc'
  *
@@ -343,7 +343,7 @@ etc_passwd(VALUE obj)
 }
 
 /* call-seq:
- *	Etc::Passwd.each { |struct| block }	->  Passwd
+ *	Etc::Passwd.each { |struct| block }	->  Etc::Passwd
  *	Etc::Passwd.each			->  Enumerator
  *
  * Iterates for each entry in the <tt>/etc/passwd</tt> file if a block is
@@ -355,7 +355,7 @@ etc_passwd(VALUE obj)
  *
  * See Etc.getpwent above for details.
  *
- * Example:
+ * *Example:*
  *
  *     require 'etc'
  *
@@ -377,7 +377,10 @@ etc_each_passwd(VALUE obj)
     return obj;
 }
 
-/* Resets the process of reading the <tt>/etc/passwd</tt> file, so that the
+/* call-seq:
+ *	setpwent
+ *
+ * Resets the process of reading the <tt>/etc/passwd</tt> file, so that the
  * next call to ::getpwent will return the first entry again.
  */
 static VALUE
@@ -389,7 +392,10 @@ etc_setpwent(VALUE obj)
     return Qnil;
 }
 
-/* Ends the process of scanning through the <tt>/etc/passwd</tt> file begun
+/* call-seq:
+ *	endpwent
+ *
+ * Ends the process of scanning through the <tt>/etc/passwd</tt> file begun
  * with ::getpwent, and closes the file.
  */
 static VALUE
@@ -401,7 +407,10 @@ etc_endpwent(VALUE obj)
     return Qnil;
 }
 
-/* Returns an entry from the <tt>/etc/passwd</tt> file.
+/* call-seq:
+ *	getpwent	->  Etc::Passwd
+ *
+ * Returns an entry from the <tt>/etc/passwd</tt> file.
  *
  * The first time it is called it opens the file and returns the first entry;
  * each successive call returns the next entry, or +nil+ if the end of the file
@@ -449,7 +458,7 @@ setup_group(struct group *grp)
 #endif
 
 /* call-seq:
- *	getgrgid(group_id)  ->	Group
+ *	getgrgid(group_id)  ->	Etc::Group
  *
  * Returns information about the group with specified integer +group_id+,
  * as found in <tt>/etc/group</tt>.
@@ -458,7 +467,7 @@ setup_group(struct group *grp)
  *
  * See the unix manpage for <code>getgrgid(3)</code> for more detail.
  *
- * === Example:
+ * *Example:*
  *
  *	Etc.getgrgid(100)
  *	#=> #<struct Etc::Group name="users", passwd="x", gid=100, mem=["meta", "root"]>
@@ -487,7 +496,7 @@ etc_getgrgid(int argc, VALUE *argv, VALUE obj)
 }
 
 /* call-seq:
- *	getgrnam(name)	->  Group
+ *	getgrnam(name)	->  Etc::Group
  *
  * Returns information about the group with specified +name+, as found in
  * <tt>/etc/group</tt>.
@@ -496,7 +505,7 @@ etc_getgrgid(int argc, VALUE *argv, VALUE obj)
  *
  * See the unix manpage for <code>getgrnam(3)</code> for more detail.
  *
- * === Example:
+ * *Example:*
  *
  *	Etc.getgrnam('users')
  *	#=> #<struct Etc::Group name="users", passwd="x", gid=100, mem=["meta", "root"]>
@@ -529,7 +538,6 @@ group_ensure(VALUE _)
     return Qnil;
 }
 
-
 static VALUE
 group_iterate(VALUE _)
 {
@@ -552,14 +560,18 @@ each_group(void)
 }
 #endif
 
-/* Provides a convenient Ruby iterator which executes a block for each entry
+/* call-seq:
+ *	group { |struct| block }
+ *	group				->  Etc::Group
+ *
+ * Provides a convenient Ruby iterator which executes a block for each entry
  * in the <tt>/etc/group</tt> file.
  *
  * The code block is passed an Group struct.
  *
  * See ::getgrent above for details.
  *
- * Example:
+ * *Example:*
  *
  *     require 'etc'
  *
@@ -586,7 +598,7 @@ etc_group(VALUE obj)
 
 #ifdef HAVE_GETGRENT
 /* call-seq:
- *	Etc::Group.each { |group| block }   ->	obj
+ *	Etc::Group.each { |group| block }   ->	Etc::Group
  *	Etc::Group.each			    ->	Enumerator
  *
  * Iterates for each entry in the <tt>/etc/group</tt> file if a block is
@@ -596,7 +608,7 @@ etc_group(VALUE obj)
  *
  * The code block is passed a Group struct.
  *
- * Example:
+ * *Example:*
  *
  *     require 'etc'
  *
@@ -617,7 +629,10 @@ etc_each_group(VALUE obj)
 }
 #endif
 
-/* Resets the process of reading the <tt>/etc/group</tt> file, so that the
+/* call-seq:
+ *	setgrent
+ *
+ * Resets the process of reading the <tt>/etc/group</tt> file, so that the
  * next call to ::getgrent will return the first entry again.
  */
 static VALUE
@@ -629,7 +644,10 @@ etc_setgrent(VALUE obj)
     return Qnil;
 }
 
-/* Ends the process of scanning through the <tt>/etc/group</tt> file begun
+/* call-seq:
+ *	endgrent
+ *
+ * Ends the process of scanning through the <tt>/etc/group</tt> file begun
  * by ::getgrent, and closes the file.
  */
 static VALUE
@@ -641,7 +659,10 @@ etc_endgrent(VALUE obj)
     return Qnil;
 }
 
-/* Returns an entry from the <tt>/etc/group</tt> file.
+/* call-seq:
+ *	getgrent	->  Etc::Group
+ *
+ * Returns an entry from the <tt>/etc/group</tt> file.
  *
  * The first time it is called it opens the file and returns the first entry;
  * each successive call returns the next entry, or +nil+ if the end of the file
@@ -672,7 +693,9 @@ UINT rb_w32_system_tmpdir(WCHAR *path, UINT len);
 VALUE rb_w32_conv_from_wchar(const WCHAR *wstr, rb_encoding *enc);
 #endif
 
-/*
+/* call-seq:
+ *	sysconfdir	->  String
+ *
  * Returns system configuration directory.
  *
  * This is typically <code>"/etc"</code>, but is modified by the prefix used
@@ -692,7 +715,9 @@ etc_sysconfdir(VALUE obj)
 #endif
 }
 
-/*
+/* call-seq:
+ *	systmpdir	->  String
+ *
  * Returns system temporary directory; typically "/tmp".
  */
 static VALUE
@@ -736,13 +761,15 @@ etc_systmpdir(VALUE _)
 }
 
 #ifdef HAVE_UNAME
-/*
+/* call-seq:
+ *	uname	-> hash
+ *
  * Returns the system information obtained by uname system call.
  *
  * The return value is a hash which has 5 keys at least:
  *   :sysname, :nodename, :release, :version, :machine
  *
- * Example:
+ * *Example:*
  *
  *   require 'etc'
  *   require 'pp'
@@ -852,7 +879,9 @@ etc_uname(VALUE obj)
 #endif
 
 #ifdef HAVE_SYSCONF
-/*
+/* call-seq:
+ *	sysconf(name)	->  Integer
+ *
  * Returns system configuration variable using sysconf().
  *
  * _name_ should be a constant under <code>Etc</code> which begins with <code>SC_</code>.
@@ -886,7 +915,9 @@ etc_sysconf(VALUE obj, VALUE arg)
 #endif
 
 #ifdef HAVE_CONFSTR
-/*
+/* call-seq:
+ *	confstr(name)	->  String
+ *
  * Returns system configuration variable using confstr().
  *
  * _name_ should be a constant under <code>Etc</code> which begins with <code>CS_</code>.
@@ -933,7 +964,9 @@ etc_confstr(VALUE obj, VALUE arg)
 #endif
 
 #ifdef HAVE_FPATHCONF
-/*
+/* call-seq:
+ *	pathconf(name)	->  Integer
+ *
  * Returns pathname configuration variable using fpathconf().
  *
  * _name_ should be a constant under <code>Etc</code> which begins with <code>PC_</code>.
@@ -1025,7 +1058,9 @@ etc_nprocessors_affin(void)
 }
 #endif
 
-/*
+/* call-seq:
+ *	nprocessors	->  Integer
+ *
  * Returns the number of online processors.
  *
  * The result is intended as the number of processes to
@@ -1035,7 +1070,7 @@ etc_nprocessors_affin(void)
  * - sched_getaffinity(): Linux
  * - sysconf(_SC_NPROCESSORS_ONLN): GNU/Linux, NetBSD, FreeBSD, OpenBSD, DragonFly BSD, OpenIndiana, Mac OS X, AIX
  *
- * Example:
+ * *Example:*
  *
  *   require 'etc'
  *   p Etc.nprocessors #=> 4
@@ -1044,7 +1079,7 @@ etc_nprocessors_affin(void)
  * process is bound to specific cpus. This is intended for getting better
  * parallel processing.
  *
- * Example: (Linux)
+ * *Example:* (Linux)
  *
  *   linux$ taskset 0x3 ./ruby -retc -e "p Etc.nprocessors"  #=> 2
  *
@@ -1094,7 +1129,7 @@ etc_nprocessors(VALUE obj)
  * The Etc module provides a more reliable way to access information about
  * the logged in user than environment variables such as +$USER+.
  *
- * == Example:
+ * *Example:*
  *
  *     require 'etc'
  *
