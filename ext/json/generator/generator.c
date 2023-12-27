@@ -743,7 +743,7 @@ static void generate_json_array(FBuffer *buffer, VALUE Vstate, JSON_Generator_St
                 fbuffer_append(buffer, indent, indent_len);
             }
         }
-        generate_json(buffer, Vstate, state, rb_ary_entry(obj, i));
+        generate_json(buffer, Vstate, state, RARRAY_AREF(obj, i));
     }
     state->depth = --depth;
     if (array_nl) {
