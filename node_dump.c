@@ -914,6 +914,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("self");
         ANN("format: self");
         ANN("example: self");
+        F_CUSTOM1(nd_state, "nd_state") {
+            A_INT((int)RNODE_SELF(node)->nd_state);
+        }
         return;
 
       case NODE_NIL:
