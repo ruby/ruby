@@ -1167,6 +1167,7 @@ typedef struct rb_parser_config_struct {
     VALUE (*ary_join)(VALUE ary, VALUE sep);
     VALUE (*ary_reverse)(VALUE ary);
     VALUE (*ary_clear)(VALUE ary);
+    void (*ary_modify)(VALUE ary);
     long (*array_len)(VALUE a);
     VALUE (*array_aref)(VALUE, long);
 
