@@ -1925,7 +1925,8 @@ get_nd_args(struct parser_params *p, NODE *node)
     }
 #else
 #endif
-} <node> <node_fcall> <node_args> <node_args_aux> <node_opt_arg> <node_kw_arg> <node_block_pass>
+} <node> <node_fcall> <node_args> <node_args_aux> <node_opt_arg>
+  <node_kw_arg> <node_block_pass> <node_masgn> <node_def_temp> <node_exits>
 %printer {
 #ifndef RIPPER
     rb_parser_printf(p, "%"PRIsVALUE, rb_id2str($$));
