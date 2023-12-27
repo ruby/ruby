@@ -2555,7 +2555,7 @@ float_arg(VALUE self)
  *   - #to_c: Returns +self+.
  *   - #to_d: Returns the value as a BigDecimal object.
  *   - #to_f: Returns the value of <tt>self.real</tt> as a Float, if possible.
- *   - #to_i: Returns the value of <tt>self.real</tt> as an Integer, if possible:
+ *   - #to_i: Returns the value of <tt>self.real</tt> as an Integer, if possible.
  *   - #to_r: Returns the value of <tt>self.real</tt> as a Rational, if possible.
  *   - #to_s: Returns a string representation of +self+.
  *
