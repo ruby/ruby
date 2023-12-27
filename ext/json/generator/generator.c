@@ -742,17 +742,19 @@ static void generate_json_array(FBuffer *buffer, VALUE Vstate, JSON_Generator_St
     fbuffer_append_char(buffer, ']');
 }
 
-static int enc_utf8_compatible_p(rb_encoding *enc)
+static int usascii_encindex, utf8_encindex;
+
+static int enc_utf8_compatible_p(int enc_idx)
 {
-    if (enc == rb_usascii_encoding()) return 1;
-    if (enc == rb_utf8_encoding()) return 1;
+    if (enc_idx == usascii_encindex) return 1;
+    if (enc_idx == utf8_encindex) return 1;
     return 0;
 }
 
 static void generate_json_string(FBuffer *buffer, VALUE Vstate, JSON_Generator_State *state, VALUE obj)
 {
     fbuffer_append_char(buffer, '"');
-    if (!enc_utf8_compatible_p(rb_enc_get(obj))) {
+    if (!enc_utf8_compatible_p(RB_ENCODING_GET(obj))) {
         obj = rb_str_export_to_enc(obj, rb_utf8_encoding());
     }
     convert_UTF8_to_JSON(buffer, obj, state->ascii_only, state->script_safe);
@@ -1479,4 +1481,7 @@ void Init_generator(void)
     i_match = rb_intern("match");
     i_keys = rb_intern("keys");
     i_dup = rb_intern("dup");
+
+    usascii_encindex = rb_usascii_encindex();
+    utf8_encindex = rb_utf8_encindex();
 }
