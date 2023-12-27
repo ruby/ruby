@@ -2545,10 +2545,8 @@ float_arg(VALUE self)
  *
  * - Comparing:
  *
- *   - {#<=>}[Complex.html#method-i-3C-3D-3E]:
- *     Returns whether +self+ is less than, equal to, or greater than the given argument.
- *   - {#==}[Complex.html#method-i-3D-3D]:
- *     Returns whether +self+ is equal to the given argument.
+ *   - #<=>: Returns whether +self+ is less than, equal to, or greater than the given argument.
+ *   - #==: Returns whether +self+ is equal to the given argument.
  *
  * - Converting:
  *
