@@ -1,4 +1,15 @@
 /* This is a wrapper for parse.y */
+
+#include "internal/ruby_parser.h"
+
+#include "rubyparser.h"
+
+VALUE
+rb_node_line_lineno_val(const NODE *node)
+{
+    return INT2FIX(node->nd_loc.beg_pos.lineno);
+}
+
 #ifdef UNIVERSAL_PARSER
 
 #include "internal.h"
@@ -14,7 +25,6 @@
 #include "internal/parse.h"
 #include "internal/rational.h"
 #include "internal/re.h"
-#include "internal/ruby_parser.h"
 #include "internal/string.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
@@ -909,11 +919,4 @@ rb_parser_set_yydebug(VALUE vparser, VALUE flag)
     rb_ruby_parser_set_yydebug(parser->parser_params, RTEST(flag));
     return flag;
 }
-
-#else
-
-/* For "ISO C requires a translation unit to contain at least one declaration" */
-void
-rb_parser_dummy(void)
-{}
 #endif

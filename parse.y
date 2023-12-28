@@ -953,6 +953,7 @@ static rb_node_lambda_t *rb_node_lambda_new(struct parser_params *p, rb_node_arg
 static rb_node_aryptn_t *rb_node_aryptn_new(struct parser_params *p, NODE *pre_args, NODE *rest_arg, NODE *post_args, const YYLTYPE *loc);
 static rb_node_hshptn_t *rb_node_hshptn_new(struct parser_params *p, NODE *nd_pconst, NODE *nd_pkwargs, NODE *nd_pkwrestarg, const YYLTYPE *loc);
 static rb_node_fndptn_t *rb_node_fndptn_new(struct parser_params *p, NODE *pre_rest_arg, NODE *args, NODE *post_rest_arg, const YYLTYPE *loc);
+static rb_node_line_t *rb_node_line_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE *loc);
 
 #define NEW_SCOPE(a,b,loc) (NODE *)rb_node_scope_new(p,a,b,loc)
@@ -1054,6 +1055,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_ARYPTN(pre,r,post,loc) (NODE *)rb_node_aryptn_new(p,pre,r,post,loc)
 #define NEW_HSHPTN(c,kw,kwrest,loc) (NODE *)rb_node_hshptn_new(p,c,kw,kwrest,loc)
 #define NEW_FNDPTN(pre,a,post,loc) (NODE *)rb_node_fndptn_new(p,pre,a,post,loc)
+#define NEW_LINE(loc) (NODE *)rb_node_line_new(p,loc)
 #define NEW_ERROR(loc) (NODE *)rb_node_error_new(p,loc)
 
 #endif
@@ -6596,6 +6598,7 @@ singleton	: var_ref
                           case NODE_DXSTR:
                           case NODE_DREGX:
                           case NODE_LIT:
+                          case NODE_LINE:
                           case NODE_DSYM:
                           case NODE_LIST:
                           case NODE_ZLIST:
@@ -12175,6 +12178,14 @@ rb_node_fndptn_new(struct parser_params *p, NODE *pre_rest_arg, NODE *args, NODE
     return n;
 }
 
+static rb_node_line_t *
+rb_node_line_new(struct parser_params *p, const YYLTYPE *loc)
+{
+    rb_node_line_t *n = NODE_NEWNODE(NODE_LINE, rb_node_line_t, loc);
+
+    return n;
+}
+
 static rb_node_cdecl_t *
 rb_node_cdecl_new(struct parser_params *p, ID nd_vid, NODE *nd_value, NODE *nd_else, const YYLTYPE *loc)
 {
@@ -12782,7 +12793,7 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
         }
         return node;
       case keyword__LINE__:
-        return NEW_LIT(INT2FIX(loc->beg_pos.lineno), loc);
+        return NEW_LINE(loc);
       case keyword__ENCODING__:
         node = NEW_LIT(rb_enc_from_encoding(p->enc), loc);
         RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(node)->nd_lit);
@@ -13637,6 +13648,8 @@ shareable_literal_value(struct parser_params *p, NODE *node)
         return Qfalse;
       case NODE_NIL:
         return Qnil;
+      case NODE_LINE:
+        return rb_node_line_lineno_val(node);
       case NODE_LIT:
         return RNODE_LIT(node)->nd_lit;
       default:
@@ -13663,6 +13676,7 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
       case NODE_FALSE:
       case NODE_NIL:
       case NODE_LIT:
+      case NODE_LINE:
         return value;
 
       case NODE_DSTR:
@@ -13970,6 +13984,7 @@ void_expr(struct parser_params *p, NODE *node)
         useless = "a constant";
         break;
       case NODE_LIT:
+      case NODE_LINE:
       case NODE_STR:
       case NODE_DSTR:
       case NODE_DREGX:
@@ -14107,6 +14122,7 @@ is_static_content(NODE *node)
             if (!is_static_content(RNODE_LIST(node)->nd_head)) return 0;
         } while ((node = RNODE_LIST(node)->nd_next) != 0);
       case NODE_LIT:
+      case NODE_LINE:
       case NODE_STR:
       case NODE_NIL:
       case NODE_TRUE:
