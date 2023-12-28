@@ -1352,6 +1352,7 @@ typedef struct rb_parser_config_struct {
     void (*bug)(const char *fmt, ...);
     void (*fatal)(const char *fmt, ...);
     VALUE (*verbose)(void);
+    int *(*errno_ptr)(void);
 
     /* VM */
     VALUE (*make_backtrace)(void);
