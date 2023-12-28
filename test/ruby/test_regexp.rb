@@ -1987,6 +1987,11 @@ class TestRegexp < Test::Unit::TestCase
     end
   end
 
+  def test_bug_20095 # [Bug 20095]
+    re = /(?=.*(?=.*).*)x(?=foo)/
+    assert !'xxx'.match?(re)
+  end
+
   def test_linear_time_p
     assert_send [Regexp, :linear_time?, /a/]
     assert_send [Regexp, :linear_time?, 'a']

@@ -552,9 +552,14 @@ init_cache_opcodes(const regex_t* reg, OnigCacheOpcode* cache_opcodes, long* num
     OnigCacheOpcode* cache_opcodes_in_lookaround = cache_opcodes - 1;\
     while (\
       cache_opcodes_in_lookaround >= cache_opcodes_begin &&\
-      cache_opcodes_in_lookaround->lookaround_nesting == lookaround_nesting\
+      (\
+        (\
+          cache_opcodes_in_lookaround->lookaround_nesting == lookaround_nesting &&\
+          cache_opcodes_in_lookaround->match_addr == NULL\
+        ) || cache_opcodes_in_lookaround->lookaround_nesting > lookaround_nesting\
+      )\
     ) {\
-      cache_opcodes_in_lookaround->match_addr = match_addr;\
+      if (cache_opcodes_in_lookaround->match_addr == NULL) cache_opcodes_in_lookaround->match_addr = match_addr;\
       cache_opcodes_in_lookaround--;\
     }\
     lookaround_nesting--;\
