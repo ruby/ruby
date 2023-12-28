@@ -11,6 +11,12 @@ inputs:
     description: >-
       Architecture.  Because we run this on a GitHub-hosted runner
       acceptable value for this input is very limited.
+  docker_platform:
+    required: false
+    default: ''
+    description: >-
+      Docker platform.  This is used to run QEMU on a GitHub-hosted
+      runner.
 
 outputs:
   arch:
@@ -24,7 +30,29 @@ runs:
   using: composite
 
   steps:
+    - name: set SETARCH for QEMU
+      if: ${{ inputs.docker_platform != '' }}
+      shell: bash
+      run: |
+        CONTAINER_NAME="ruby-ci-ubuntu-$GITHUB_RUN_ID"
+        docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+        docker run -dit -v "$PWD:$PWD" -w "$PWD" \
+          --name "$CONTAINER_NAME" \
+          --platform=${{ inputs.docker_platform }} \
+          ubuntu:20.04
+
+        SETARCH="${{ github.workspace }}/setarch"
+        echo '#!/bin/sh'                                    >> $SETARCH
+        echo "exec docker exec \\"                          >> $SETARCH
+        echo "  --env DEBIAN_FRONTEND=\$DEBIAN_FRONTEND \\" >> $SETARCH
+        echo "  --env GNUMAKEFLAGS=\$GNUMAKEFLAGS \\"       >> $SETARCH
+        echo "  --workdir \$PWD $CONTAINER_NAME \$@"        >> $SETARCH
+        chmod +x $SETARCH
+
+        echo "SETARCH=${SETARCH}" >> "$GITHUB_ENV"
+
     - name: set SETARCH
+      if: ${{ inputs.docker_platform == '' }}
       shell: bash
       run: echo "SETARCH=${setarch}" >> "$GITHUB_ENV"
       env:
@@ -39,15 +67,18 @@ runs:
 
     - name: apt-get
       shell: bash
+      # Run `apt-get` on the guest machine if we use QEMU. Otherwise install
+      # the target arch packages on the host machine.
       env:
-        arch: ${{ inputs.arch && format(':{0}', steps.uname.outputs.dpkg) || '' }}
+        arch: ${{ (inputs.arch && inputs.docker_platform == '') && format(':{0}', steps.uname.outputs.dpkg) || '' }}
+        shell: ${{ inputs.docker_platform != '' && env.SETARCH || 'sudo' }}
       run: |
         set -x
         ${arch:+sudo dpkg --add-architecture ${arch#:}}
-        sudo apt-get update -qq || :
-        sudo apt-get install --no-install-recommends -qq -y -o=Dpkg::Use-Pty=0 \
+        ${shell} apt-get update -qq || :
+        ${shell} apt-get install --no-install-recommends -qq -y -o=Dpkg::Use-Pty=0 \
         ${arch:+cross}build-essential${arch/:/-} \
         libssl-dev${arch} libyaml-dev${arch} libreadline6-dev${arch} \
         zlib1g-dev${arch} libncurses5-dev${arch} libffi-dev${arch} \
         autoconf ruby
-        sudo apt-get install -qq -y pkg-config${arch} || :
+        ${shell} apt-get install -qq -y pkg-config${arch} || :
