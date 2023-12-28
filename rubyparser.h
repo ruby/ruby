@@ -130,6 +130,7 @@ enum node_type {
     NODE_HSHPTN,
     NODE_FNDPTN,
     NODE_ERROR,
+    NODE_LINE,
     NODE_RIPPER,
     NODE_RIPPER_VALUES,
     NODE_LAST
@@ -931,6 +932,10 @@ typedef struct RNode_FNDPTN {
     NODE *post_rest_arg;
 } rb_node_fndptn_t;
 
+typedef struct RNode_LINE {
+    NODE node;
+} rb_node_line_t;
+
 typedef struct RNode_ERROR {
     NODE node;
 } rb_node_error_t;
@@ -1040,6 +1045,7 @@ typedef struct RNode_ERROR {
 #define RNODE_ARYPTN(node) ((struct RNode_ARYPTN *)(node))
 #define RNODE_HSHPTN(node) ((struct RNode_HSHPTN *)(node))
 #define RNODE_FNDPTN(node) ((struct RNode_FNDPTN *)(node))
+#define RNODE_LINE(node) ((struct RNode_LINE *)(node))
 
 #ifdef RIPPER
 typedef struct RNode_RIPPER {

@@ -1098,6 +1098,13 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
             F_NODE(nd_pkwrestarg, RNODE_HSHPTN, "keyword rest argument");
         }
         return;
+
+      case NODE_LINE:
+        ANN("line");
+        ANN("format: [lineno]");
+        ANN("example: __LINE__");
+        return;
+
       case NODE_ERROR:
         ANN("Broken input recovered by Error Tolerant mode");
         return;

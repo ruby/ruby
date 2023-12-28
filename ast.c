@@ -692,6 +692,8 @@ node_children(rb_ast_t *ast, const NODE *node)
                                         NEW_CHILD(ast, RNODE_HSHPTN(node)->nd_pkwargs),
                                         kwrest);
         }
+      case NODE_LINE:
+        return rb_ary_new_from_args(1, rb_node_line_lineno_val(node));
       case NODE_ERROR:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_ARGS_AUX:

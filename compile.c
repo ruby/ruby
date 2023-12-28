@@ -30,6 +30,7 @@
 #include "internal/object.h"
 #include "internal/rational.h"
 #include "internal/re.h"
+#include "internal/ruby_parser.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
 #include "internal/variable.h"
@@ -1928,6 +1929,9 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
             switch (nd_type(val_node)) {
               case NODE_LIT:
                 dv = RNODE_LIT(val_node)->nd_lit;
+                break;
+              case NODE_LINE:
+                dv = rb_node_line_lineno_val(val_node);;
                 break;
               case NODE_NIL:
                 dv = Qnil;
@@ -4488,6 +4492,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
         }
         goto again;
       case NODE_LIT:		/* NODE_LIT is always true */
+      case NODE_LINE:
       case NODE_TRUE:
       case NODE_STR:
       case NODE_ZLIST:
@@ -4647,6 +4652,7 @@ static_literal_node_p(const NODE *node, const rb_iseq_t *iseq)
 {
     switch (nd_type(node)) {
       case NODE_LIT:
+      case NODE_LINE:
       case NODE_NIL:
       case NODE_TRUE:
       case NODE_FALSE:
@@ -4668,6 +4674,8 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
         return Qtrue;
       case NODE_FALSE:
         return Qfalse;
+      case NODE_LINE:
+        return rb_node_line_lineno_val(node);
       case NODE_STR:
         if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
             VALUE lit;
@@ -5055,6 +5063,8 @@ rb_node_case_when_optimizable_literal(const NODE *const node)
         return Qtrue;
       case NODE_FALSE:
         return Qfalse;
+      case NODE_LINE:
+        return rb_node_line_lineno_val(node);
       case NODE_STR:
         return rb_fstring(RNODE_STR(node)->nd_lit);
     }
@@ -5681,6 +5691,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         /* fall through */
       case NODE_STR:
       case NODE_LIT:
+      case NODE_LINE:
       case NODE_ZLIST:
       case NODE_AND:
       case NODE_OR:
@@ -6255,10 +6266,27 @@ optimizable_range_item_p(const NODE *n)
     switch (nd_type(n)) {
       case NODE_LIT:
         return RB_INTEGER_TYPE_P(RNODE_LIT(n)->nd_lit);
+      case NODE_LINE:
+        return TRUE;
       case NODE_NIL:
         return TRUE;
       default:
         return FALSE;
+    }
+}
+
+static VALUE
+optimized_range_item(const NODE *n)
+{
+    switch (nd_type(n)) {
+      case NODE_LIT:
+        return RNODE_LIT(n)->nd_lit;
+      case NODE_LINE:
+        return rb_node_line_lineno_val(n);
+      case NODE_NIL:
+        return Qnil;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(n)));
     }
 }
 
@@ -7076,6 +7104,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         break;
       }
       case NODE_LIT:
+      case NODE_LINE:
       case NODE_STR:
       case NODE_XSTR:
       case NODE_DSTR:
@@ -9571,8 +9600,8 @@ compile_dots(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, in
 
     if (optimizable_range_item_p(b) && optimizable_range_item_p(e)) {
         if (!popped) {
-            VALUE bv = nd_type_p(b, NODE_LIT) ? RNODE_LIT(b)->nd_lit : Qnil;
-            VALUE ev = nd_type_p(e, NODE_LIT) ? RNODE_LIT(e)->nd_lit : Qnil;
+            VALUE bv = optimized_range_item(b);
+            VALUE ev = optimized_range_item(e);
             VALUE val = rb_range_new(bv, ev, excl);
             ADD_INSN1(ret, node, putobject, val);
             RB_OBJ_WRITTEN(iseq, Qundef, val);
@@ -9629,6 +9658,7 @@ compile_kw_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
         return COMPILE_NG;
     }
     else if (nd_type_p(default_value, NODE_LIT) ||
+             nd_type_p(default_value, NODE_LINE) ||
              nd_type_p(default_value, NODE_NIL) ||
              nd_type_p(default_value, NODE_TRUE) ||
              nd_type_p(default_value, NODE_FALSE)) {
@@ -10095,6 +10125,12 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         if (!popped) {
             ADD_INSN1(ret, node, putobject, RNODE_LIT(node)->nd_lit);
             RB_OBJ_WRITTEN(iseq, Qundef, RNODE_LIT(node)->nd_lit);
+        }
+        break;
+      }
+      case NODE_LINE:{
+        if (!popped) {
+            ADD_INSN1(ret, node, putobject, rb_node_line_lineno_val(node));
         }
         break;
       }

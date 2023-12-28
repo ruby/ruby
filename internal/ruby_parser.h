@@ -66,4 +66,6 @@ enum lex_state_e {
     EXPR_END_ANY  =  (EXPR_END | EXPR_ENDARG | EXPR_ENDFN),
     EXPR_NONE = 0
 };
+
+VALUE rb_node_line_lineno_val(const NODE *);
 #endif /* INTERNAL_RUBY_PARSE_H */
