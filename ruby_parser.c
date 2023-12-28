@@ -450,6 +450,12 @@ ruby_verbose2(void)
     return ruby_verbose;
 }
 
+static int *
+rb_errno_ptr2(void)
+{
+    return rb_errno_ptr();
+}
+
 static int
 type_p(VALUE obj, int t)
 {
@@ -724,6 +730,7 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->bug             = rb_bug;
     config->fatal           = rb_fatal;
     config->verbose         = ruby_verbose2;
+    config->errno_ptr       = rb_errno_ptr2;
 
     config->make_backtrace = rb_make_backtrace;
 

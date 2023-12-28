@@ -331,6 +331,8 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_fatal           p->config->fatal
 #undef ruby_verbose
 #define ruby_verbose       p->config->verbose()
+#undef errno
+#define errno              (*p->config->errno_ptr())
 
 #define rb_make_backtrace p->config->make_backtrace
 
