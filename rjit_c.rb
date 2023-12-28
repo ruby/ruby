@@ -1497,6 +1497,7 @@ module RubyVM::RJIT # :nodoc: all
       nt: [CType::Pointer.new { self.rb_native_thread }, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), nt)")],
       ec: [CType::Pointer.new { self.rb_execution_context_t }, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), ec)")],
       sched: [self.rb_thread_sched_item, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), sched)")],
+      mn_schedulable: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), mn_schedulable)")],
       serial: [self.rb_atomic_t, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), serial)")],
       last_status: [self.VALUE, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), last_status)")],
       calling: [CType::Pointer.new { self.rb_calling_info }, Primitive.cexpr!("OFFSETOF((*((struct rb_thread_struct *)NULL)), calling)")],

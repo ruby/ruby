@@ -1146,6 +1146,11 @@ static int nogvl_wait_for(VALUE th, rb_io_t *fptr, short events, struct timeval 
 static inline int
 io_internal_wait(VALUE thread, rb_io_t *fptr, int error, int events, struct timeval *timeout)
 {
+    if (!timeout && rb_thread_mn_schedulable(thread)) {
+        RUBY_ASSERT(errno == EWOULDBLOCK || errno == EAGAIN);
+        return -1;
+    }
+
     int ready = nogvl_wait_for(thread, fptr, events, timeout);
 
     if (ready > 0) {

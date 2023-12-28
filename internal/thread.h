@@ -74,5 +74,6 @@ int ruby_thread_has_gvl_p(void); /* for ext/fiddle/closure.c */
 RUBY_SYMBOL_EXPORT_END
 
 int rb_threadptr_execute_interrupts(struct rb_thread_struct *th, int blocking_timing);
+bool rb_thread_mn_schedulable(VALUE thread);
 
 #endif /* INTERNAL_THREAD_H */
