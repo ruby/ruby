@@ -7166,8 +7166,6 @@ rb_file_open_internal(VALUE io, VALUE filename, const char *modestr)
     if (p) {
         parse_mode_enc(p+1, rb_usascii_encoding(),
                        &convconfig.enc, &convconfig.enc2, &fmode);
-        convconfig.ecflags = 0;
-        convconfig.ecopts = Qnil;
     }
     else {
         rb_encoding *e;
@@ -7175,9 +7173,18 @@ rb_file_open_internal(VALUE io, VALUE filename, const char *modestr)
 
         e = (fmode & FMODE_BINMODE) ? rb_ascii8bit_encoding() : NULL;
         rb_io_ext_int_to_encs(e, NULL, &convconfig.enc, &convconfig.enc2, fmode);
-        convconfig.ecflags = 0;
-        convconfig.ecopts = Qnil;
     }
+
+    convconfig.ecflags = (fmode & FMODE_READABLE) ?
+        MODE_BTMODE(ECONV_DEFAULT_NEWLINE_DECORATOR,
+            0, ECONV_UNIVERSAL_NEWLINE_DECORATOR) : 0;
+#ifdef TEXTMODE_NEWLINE_DECORATOR_ON_WRITE
+    convconfig.ecflags |= (fmode & FMODE_WRITABLE) ?
+        MODE_BTMODE(TEXTMODE_NEWLINE_DECORATOR_ON_WRITE,
+            0, TEXTMODE_NEWLINE_DECORATOR_ON_WRITE) : 0;
+#endif
+    SET_UNIVERSAL_NEWLINE_DECORATOR_IF_ENC2(convconfig.enc2, convconfig.ecflags);
+    convconfig.ecopts = Qnil;
 
     return rb_file_open_generic(io, filename,
             rb_io_fmode_oflags(fmode),
@@ -9241,11 +9248,27 @@ static VALUE
 prep_io(int fd, int fmode, VALUE klass, const char *path)
 {
     VALUE path_value = Qnil;
+    rb_encoding *e;
+    struct rb_io_encoding convconfig;
+
     if (path) {
         path_value = rb_obj_freeze(rb_str_new_cstr(path));
     }
 
-    VALUE self = rb_io_open_descriptor(klass, fd, fmode, path_value, Qnil, NULL);
+    e = (fmode & FMODE_BINMODE) ? rb_ascii8bit_encoding() : NULL;
+    rb_io_ext_int_to_encs(e, NULL, &convconfig.enc, &convconfig.enc2, fmode);
+    convconfig.ecflags = (fmode & FMODE_READABLE) ?
+        MODE_BTMODE(ECONV_DEFAULT_NEWLINE_DECORATOR,
+            0, ECONV_UNIVERSAL_NEWLINE_DECORATOR) : 0;
+#ifdef TEXTMODE_NEWLINE_DECORATOR_ON_WRITE
+    convconfig.ecflags |= (fmode & FMODE_WRITABLE) ?
+        MODE_BTMODE(TEXTMODE_NEWLINE_DECORATOR_ON_WRITE,
+            0, TEXTMODE_NEWLINE_DECORATOR_ON_WRITE) : 0;
+#endif
+    SET_UNIVERSAL_NEWLINE_DECORATOR_IF_ENC2(convconfig.enc2, convconfig.ecflags);
+    convconfig.ecopts = Qnil;
+
+    VALUE self = rb_io_open_descriptor(klass, fd, fmode, path_value, Qnil, &convconfig);
     rb_io_t*io = RFILE(self)->fptr;
 
     if (!io_check_tty(io)) {
