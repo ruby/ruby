@@ -554,8 +554,8 @@ init_cache_opcodes(const regex_t* reg, OnigCacheOpcode* cache_opcodes, long* num
       cache_opcodes_in_lookaround >= cache_opcodes_begin &&\
       (\
         (\
-          cache_opcodes_in_lookaround->lookaround_nesting == lookaround_nesting &&\
-          cache_opcodes_in_lookaround->match_addr == NULL\
+	  cache_opcodes_in_lookaround->lookaround_nesting == lookaround_nesting &&\
+	  cache_opcodes_in_lookaround->match_addr == NULL\
         ) || cache_opcodes_in_lookaround->lookaround_nesting > lookaround_nesting\
       )\
     ) {\
