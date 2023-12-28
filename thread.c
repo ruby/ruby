@@ -1687,15 +1687,22 @@ thread_io_wake_pending_closer(struct waiting_fd *wfd)
     }
 }
 
-static int
-thread_io_wait_events(rb_thread_t *th, rb_execution_context_t *ec, int fd, int events, struct timeval *timeout, struct waiting_fd *wfd)
+static bool
+thread_io_mn_schedulable(rb_thread_t *th, int events, const struct timeval *timeout)
 {
 #if defined(USE_MN_THREADS) && USE_MN_THREADS
-    if (!th_has_dedicated_nt(th) &&
-        (events || timeout) &&
-        th->blocking // no fiber scheduler
-        ) {
-        int r;
+    return !th_has_dedicated_nt(th) && (events || timeout) && th->blocking;
+#else
+    return false;
+#endif
+}
+
+// true if need retry
+static bool
+thread_io_wait_events(rb_thread_t *th, int fd, int events, const struct timeval *timeout)
+{
+#if defined(USE_MN_THREADS) && USE_MN_THREADS
+    if (thread_io_mn_schedulable(th, events, timeout)) {
         rb_hrtime_t rel, *prel;
 
         if (timeout) {
@@ -1708,20 +1715,40 @@ thread_io_wait_events(rb_thread_t *th, rb_execution_context_t *ec, int fd, int e
 
         VM_ASSERT(prel || (events & (RB_WAITFD_IN | RB_WAITFD_OUT)));
 
-        thread_io_setup_wfd(th, fd, wfd);
-        {
-            // wait readable/writable
-            r = thread_sched_wait_events(TH_SCHED(th), th, fd, waitfd_to_waiting_flag(events), prel);
+        if (thread_sched_wait_events(TH_SCHED(th), th, fd, waitfd_to_waiting_flag(events), prel)) {
+            // timeout
+            return false;
         }
-        thread_io_wake_pending_closer(wfd);
-
-        RUBY_VM_CHECK_INTS_BLOCKING(ec);
-
-        return r;
+        else {
+            return true;
+        }
     }
 #endif // defined(USE_MN_THREADS) && USE_MN_THREADS
+    return false;
+}
 
-    return 0;
+// assume read/write
+static bool
+blocking_call_retryable_p(int r, int eno)
+{
+    if (r != -1) return false;
+
+    switch (eno) {
+      case EAGAIN:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+      case EWOULDBLOCK:
+#endif
+        return true;
+      default:
+        return false;
+    }
+}
+
+bool
+rb_thread_mn_schedulable(VALUE thval)
+{
+    rb_thread_t *th = rb_thread_ptr(thval);
+    return th->mn_schedulable;
 }
 
 VALUE
@@ -1733,12 +1760,11 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
     RUBY_DEBUG_LOG("th:%u fd:%d ev:%d", rb_th_serial(th), fd, events);
 
     struct waiting_fd waiting_fd;
-
-    thread_io_wait_events(th, ec, fd, events, NULL, &waiting_fd);
-
     volatile VALUE val = Qundef; /* shouldn't be used */
     volatile int saved_errno = 0;
     enum ruby_tag_type state;
+    bool prev_mn_schedulable = th->mn_schedulable;
+    th->mn_schedulable = thread_io_mn_schedulable(th, events, NULL);
 
     // `errno` is only valid when there is an actual error - but we can't
     // extract that from the return value of `func` alone, so we clear any
@@ -1747,16 +1773,26 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
     errno = 0;
 
     thread_io_setup_wfd(th, fd, &waiting_fd);
+    {
+        EC_PUSH_TAG(ec);
+        if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+          retry:
+            BLOCKING_REGION(waiting_fd.th, {
+                val = func(data1);
+                saved_errno = errno;
+            }, ubf_select, waiting_fd.th, FALSE);
 
-    EC_PUSH_TAG(ec);
-    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        BLOCKING_REGION(waiting_fd.th, {
-            val = func(data1);
-            saved_errno = errno;
-        }, ubf_select, waiting_fd.th, FALSE);
+            if (events &&
+                blocking_call_retryable_p((int)val, saved_errno) &&
+                thread_io_wait_events(th, fd, events, NULL)) {
+                RUBY_VM_CHECK_INTS_BLOCKING(ec);
+                goto retry;
+            }
+        }
+        EC_POP_TAG();
+
+        th->mn_schedulable = prev_mn_schedulable;
     }
-    EC_POP_TAG();
-
     /*
      * must be deleted before jump
      * this will delete either from waiting_fds or on-stack struct rb_io_close_wait_list
@@ -4316,20 +4352,20 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     rb_execution_context_t *ec = GET_EC();
     rb_thread_t *th = rb_ec_thread_ptr(ec);
 
-    if (thread_io_wait_events(th, ec, fd, events, timeout, &wfd)) {
-        return 0; // timeout
-    }
-
     thread_io_setup_wfd(th, fd, &wfd);
 
     EC_PUSH_TAG(wfd.th->ec);
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
         rb_hrtime_t *to, rel, end = 0;
+        struct timeval tv;
+
         RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
+
         timeout_prepare(&to, &rel, &end, timeout);
         fds[0].fd = fd;
         fds[0].events = (short)events;
         fds[0].revents = 0;
+
         do {
             nfds = 1;
 
@@ -4344,7 +4380,9 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
             }, ubf_select, wfd.th, TRUE);
 
             RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
-        } while (wait_retryable(&result, lerrno, to, end));
+        } while (wait_retryable(&result, lerrno, to, end) &&
+                 thread_io_wait_events(th, fd, events, rb_hrtime2timeval(&tv, to)) &&
+                 wait_retryable(&result, lerrno, to, end));
     }
     EC_POP_TAG();
 
@@ -4452,24 +4490,12 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     rb_execution_context_t *ec = GET_EC();
     rb_thread_t *th = rb_ec_thread_ptr(ec);
 
-    if (thread_io_wait_events(th, ec, fd, events, timeout, &args.wfd)) {
-        return 0; // timeout
-    }
-
     args.as.fd = fd;
     args.read = (events & RB_WAITFD_IN) ? init_set_fd(fd, &rfds) : NULL;
     args.write = (events & RB_WAITFD_OUT) ? init_set_fd(fd, &wfds) : NULL;
     args.except = (events & RB_WAITFD_PRI) ? init_set_fd(fd, &efds) : NULL;
     args.tv = timeout;
-    args.wfd.fd = fd;
-    args.wfd.th = th;
-    args.wfd.busy = NULL;
-
-    RB_VM_LOCK_ENTER();
-    {
-        ccan_list_add(&args.wfd.th->vm->waiting_fds, &args.wfd.wfd_node);
-    }
-    RB_VM_LOCK_LEAVE();
+    thread_io_setup_wfd(th, fd, &args.wfd);
 
     r = (int)rb_ensure(select_single, ptr, select_single_cleanup, ptr);
     if (r == -1)
