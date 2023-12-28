@@ -2999,9 +2999,12 @@ rb_fiber_alive_p(VALUE fiber_value)
 }
 
 /*
- *  call-seq: fiber.resumed? -> true or false
+ *  call-seq: fiber.resuming? -> true or false
  *
- *  Whether the fiber is currently resumed.
+ *  Whether the fiber is currently resuming another.
+ *
+ *  If true, Fiber#raise and Fiber#kill will raise a FiberError as the only
+ *  valid way to go back to the fiber is via Fiber.yield.
  */
 VALUE
 rb_fiber_resuming_p(VALUE fiber_value)
