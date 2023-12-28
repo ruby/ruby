@@ -4679,8 +4679,10 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
         else {
             return rb_fstring(RNODE_STR(node)->nd_lit);
         }
-      default:
+      case NODE_LIT:
         return RNODE_LIT(node)->nd_lit;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
     }
 }
 
