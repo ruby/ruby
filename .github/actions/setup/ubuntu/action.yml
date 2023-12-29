@@ -34,7 +34,7 @@ runs:
       if: ${{ inputs.use_docker == 'true' && runner.os == 'macOS' }}
       shell: bash
       run: |
-        brew install docker
+        brew install docker colima
         colima start
 
     - name: set SETARCH (docker)

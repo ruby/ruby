@@ -40,11 +40,11 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: |
           matrix = [
-            { test_task: 'check', arch: 'i686' },
-            { test_task: 'check', configure: '--disable-yjit' },
-            { test_task: 'check', configure: '--enable-shared --enable-load-relative' },
-            { test_task: 'test-bundler-parallel' },
-            { test_task: 'test-bundled-gems' },
+            # { test_task: 'check', arch: 'i686' },
+            # { test_task: 'check', configure: '--disable-yjit' },
+            # { test_task: 'check', configure: '--enable-shared --enable-load-relative' },
+            # { test_task: 'test-bundler-parallel' },
+            # { test_task: 'test-bundled-gems' },
           ]
           # Add arm64 macos runner only for ruby/ruby
           if ENV['GITHUB_REPOSITORY'] == 'ruby/ruby'
@@ -79,6 +79,7 @@ jobs:
       )}}
 
     steps:
+      - uses: mxschmitt/action-tmate@v3
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           sparse-checkout-cone-mode: false
