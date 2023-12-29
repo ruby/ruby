@@ -10495,6 +10495,7 @@ node_dump.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/gc.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/hash.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+node_dump.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/serial.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/variable.h

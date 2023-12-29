@@ -68,4 +68,5 @@ enum lex_state_e {
 };
 
 VALUE rb_node_line_lineno_val(const NODE *);
+VALUE rb_node_file_path_val(const NODE *);
 #endif /* INTERNAL_RUBY_PARSE_H */

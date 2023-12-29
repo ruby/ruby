@@ -11,6 +11,7 @@
 
 #include "internal.h"
 #include "internal/hash.h"
+#include "internal/ruby_parser.h"
 #include "internal/variable.h"
 #include "ruby/ruby.h"
 #include "vm_core.h"
@@ -64,6 +65,7 @@
 #define F_INT(name, type, ann)	    SIMPLE_FIELD1(#name, ann) A_INT(type(node)->name)
 #define F_LONG(name, type, ann)	    SIMPLE_FIELD1(#name, ann) A_LONG(type(node)->name)
 #define F_LIT(name, type, ann)	    SIMPLE_FIELD1(#name, ann) A_LIT(type(node)->name)
+#define F_VALUE(name, val, ann)     SIMPLE_FIELD1(#name, ann) A_LIT(val)
 #define F_MSG(name, ann, desc)	    SIMPLE_FIELD1(#name, ann) A(desc)
 
 #define F_NODE(name, type, ann) \
@@ -1103,6 +1105,13 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("line");
         ANN("format: [lineno]");
         ANN("example: __LINE__");
+        return;
+
+      case NODE_FILE:
+        ANN("line");
+        ANN("format: [path]");
+        ANN("example: __FILE__");
+        F_VALUE(path, rb_node_file_path_val(node), "path");
         return;
 
       case NODE_ERROR:
