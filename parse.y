@@ -76,48 +76,6 @@
 #include "symbol.h"
 
 #ifndef RIPPER
-static void
-bignum_negate(VALUE b)
-{
-    BIGNUM_NEGATE(b);
-}
-
-static void
-rational_set_num(VALUE r, VALUE n)
-{
-    RATIONAL_SET_NUM(r, n);
-}
-
-static VALUE
-rational_get_num(VALUE obj)
-{
-    return RRATIONAL(obj)->num;
-}
-
-static void
-rcomplex_set_real(VALUE cmp, VALUE r)
-{
-    RCOMPLEX_SET_REAL(cmp, r);
-}
-
-static VALUE
-rcomplex_get_real(VALUE obj)
-{
-    return RCOMPLEX(obj)->real;
-}
-
-static void
-rcomplex_set_imag(VALUE cmp, VALUE i)
-{
-    RCOMPLEX_SET_IMAG(cmp, i);
-}
-
-static VALUE
-rcomplex_get_imag(VALUE obj)
-{
-    return RCOMPLEX(obj)->imag;
-}
-
 static bool
 hash_literal_key_p(VALUE k)
 {
@@ -1228,7 +1186,9 @@ static NODE *new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw
 static rb_node_kw_arg_t *new_kw_arg(struct parser_params *p, NODE *k, const YYLTYPE *loc);
 static rb_node_args_t *args_with_numbered(struct parser_params*,rb_node_args_t*,int,ID);
 
+#ifndef UNIVERSAL_PARSER
 static VALUE negate_lit(struct parser_params*, VALUE);
+#endif
 static NODE *ret_args(struct parser_params*,NODE*);
 static NODE *arg_blk_pass(NODE*,rb_node_block_pass_t*);
 static NODE *new_yield(struct parser_params*,NODE*,const YYLTYPE*);
@@ -14357,6 +14317,7 @@ new_yield(struct parser_params *p, NODE *node, const YYLTYPE *loc)
     return NEW_YIELD(node, loc);
 }
 
+#ifndef UNIVERSAL_PARSER
 static VALUE
 negate_lit(struct parser_params *p, VALUE lit)
 {
@@ -14373,15 +14334,15 @@ negate_lit(struct parser_params *p, VALUE lit)
     }
     switch (BUILTIN_TYPE(lit)) {
       case T_BIGNUM:
-        bignum_negate(lit);
+        BIGNUM_NEGATE(lit);
         lit = rb_big_norm(lit);
         break;
       case T_RATIONAL:
-        rational_set_num(lit, negate_lit(p, rational_get_num(lit)));
+        RATIONAL_SET_NUM(lit, negate_lit(p, RRATIONAL(lit)->num));
         break;
       case T_COMPLEX:
-        rcomplex_set_real(lit, negate_lit(p, rcomplex_get_real(lit)));
-        rcomplex_set_imag(lit, negate_lit(p, rcomplex_get_imag(lit)));
+        RCOMPLEX_SET_REAL(lit, negate_lit(p, RCOMPLEX(lit)->real));
+        RCOMPLEX_SET_IMAG(lit, negate_lit(p, RCOMPLEX(lit)->imag));
         break;
       case T_FLOAT:
         lit = DBL2NUM(-RFLOAT_VALUE(lit));
@@ -14394,6 +14355,7 @@ negate_lit(struct parser_params *p, VALUE lit)
     }
     return lit;
 }
+#endif
 
 static NODE *
 arg_blk_pass(NODE *node1, rb_node_block_pass_t *node2)
