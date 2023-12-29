@@ -4,12 +4,6 @@
 
 #include "rubyparser.h"
 
-VALUE
-rb_node_line_lineno_val(const NODE *node)
-{
-    return INT2FIX(node->nd_loc.beg_pos.lineno);
-}
-
 #ifdef UNIVERSAL_PARSER
 
 #include "internal.h"
@@ -920,3 +914,16 @@ rb_parser_set_yydebug(VALUE vparser, VALUE flag)
     return flag;
 }
 #endif
+
+VALUE
+rb_node_line_lineno_val(const NODE *node)
+{
+    return INT2FIX(node->nd_loc.beg_pos.lineno);
+}
+
+VALUE
+rb_node_file_path_val(const NODE *node)
+{
+    rb_parser_string_t *str = RNODE_FILE(node)->path;
+    return rb_enc_str_new(str->ptr, str->len, str->enc);
+}

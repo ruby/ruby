@@ -1210,6 +1210,9 @@ eom
     assert_warn(/string literal in condition/) do
       eval('1 if ""')
     end
+    assert_warning(/string literal in condition/) do
+      eval('1 if __FILE__')
+    end
     assert_warn(/regex literal in condition/) do
       eval('1 if //')
     end

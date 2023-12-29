@@ -819,7 +819,6 @@ get_nd_vid(const NODE *node)
     }
 }
 
-
 static NODE *
 get_nd_value(const NODE *node)
 {
@@ -828,6 +827,19 @@ get_nd_value(const NODE *node)
         return RNODE_LASGN(node)->nd_value;
       case NODE_DASGN:
         return RNODE_DASGN(node)->nd_value;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+    }
+}
+
+static VALUE
+get_string_value(const NODE *node)
+{
+    switch (nd_type(node)) {
+      case NODE_STR:
+        return RNODE_STR(node)->nd_lit;
+      case NODE_FILE:
+        return rb_node_file_path_val(node);
       default:
         rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
     }
@@ -4282,7 +4294,7 @@ all_string_result_p(const NODE *node)
 {
     if (!node) return FALSE;
     switch (nd_type(node)) {
-      case NODE_STR: case NODE_DSTR:
+      case NODE_STR: case NODE_DSTR: case NODE_FILE:
         return TRUE;
       case NODE_IF: case NODE_UNLESS:
         if (!RNODE_IF(node)->nd_body || !RNODE_IF(node)->nd_else) return FALSE;
@@ -4493,6 +4505,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
         goto again;
       case NODE_LIT:		/* NODE_LIT is always true */
       case NODE_LINE:
+      case NODE_FILE:
       case NODE_TRUE:
       case NODE_STR:
       case NODE_ZLIST:
@@ -4658,6 +4671,7 @@ static_literal_node_p(const NODE *node, const rb_iseq_t *iseq)
       case NODE_FALSE:
         return TRUE;
       case NODE_STR:
+      case NODE_FILE:
         return ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal;
       default:
         return FALSE;
@@ -4676,16 +4690,17 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
         return Qfalse;
       case NODE_LINE:
         return rb_node_line_lineno_val(node);
+      case NODE_FILE:
       case NODE_STR:
         if (ISEQ_COMPILE_DATA(iseq)->option->debug_frozen_string_literal || RTEST(ruby_debug)) {
             VALUE lit;
             VALUE debug_info = rb_ary_new_from_args(2, rb_iseq_path(iseq), INT2FIX((int)nd_line(node)));
-            lit = rb_str_dup(RNODE_STR(node)->nd_lit);
+            lit = rb_str_dup(get_string_value(node));
             rb_ivar_set(lit, id_debug_created_info, rb_obj_freeze(debug_info));
             return rb_str_freeze(lit);
         }
         else {
-            return rb_fstring(RNODE_STR(node)->nd_lit);
+            return rb_fstring(get_string_value(node));
         }
       case NODE_LIT:
         return RNODE_LIT(node)->nd_lit;
@@ -5067,6 +5082,8 @@ rb_node_case_when_optimizable_literal(const NODE *const node)
         return rb_node_line_lineno_val(node);
       case NODE_STR:
         return rb_fstring(RNODE_STR(node)->nd_lit);
+      case NODE_FILE:
+        return rb_fstring(rb_node_file_path_val(node));
     }
     return Qundef;
 }
@@ -5086,9 +5103,9 @@ when_vals(rb_iseq_t *iseq, LINK_ANCHOR *const cond_seq, const NODE *vals,
             rb_hash_aset(literals, lit, (VALUE)(l1) | 1);
         }
 
-        if (nd_type_p(val, NODE_STR)) {
-            debugp_param("nd_lit", RNODE_STR(val)->nd_lit);
-            lit = rb_fstring(RNODE_STR(val)->nd_lit);
+        if (nd_type_p(val, NODE_STR) || nd_type_p(val, NODE_FILE)) {
+            debugp_param("nd_lit", get_string_value(val));
+            lit = rb_fstring(get_string_value(val));
             ADD_INSN1(cond_seq, val, putobject, lit);
             RB_OBJ_WRITTEN(iseq, Qundef, lit);
         }
@@ -5692,6 +5709,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
       case NODE_STR:
       case NODE_LIT:
       case NODE_LINE:
+      case NODE_FILE:
       case NODE_ZLIST:
       case NODE_AND:
       case NODE_OR:
@@ -7105,6 +7123,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
       }
       case NODE_LIT:
       case NODE_LINE:
+      case NODE_FILE:
       case NODE_STR:
       case NODE_XSTR:
       case NODE_DSTR:
@@ -8321,12 +8340,13 @@ compile_call_precheck_freeze(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
     /* optimization shortcut
      *   "literal".freeze -> opt_str_freeze("literal")
      */
-    if (get_nd_recv(node) && nd_type_p(get_nd_recv(node), NODE_STR) &&
+    if (get_nd_recv(node) &&
+        (nd_type_p(get_nd_recv(node), NODE_STR) || nd_type_p(get_nd_recv(node), NODE_FILE)) &&
         (get_node_call_nd_mid(node) == idFreeze || get_node_call_nd_mid(node) == idUMinus) &&
         get_nd_args(node) == NULL &&
         ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
         ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-        VALUE str = rb_fstring(RNODE_STR(get_nd_recv(node))->nd_lit);
+        VALUE str = rb_fstring(get_string_value(get_nd_recv(node)));
         if (get_node_call_nd_mid(node) == idUMinus) {
             ADD_INSN2(ret, line_node, opt_str_uminus, str,
                       new_callinfo(iseq, idUMinus, 0, 0, NULL, FALSE));
@@ -8346,11 +8366,11 @@ compile_call_precheck_freeze(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE
      */
     if (get_node_call_nd_mid(node) == idAREF && !private_recv_p(node) && get_nd_args(node) &&
         nd_type_p(get_nd_args(node), NODE_LIST) && RNODE_LIST(get_nd_args(node))->as.nd_alen == 1 &&
-        nd_type_p(RNODE_LIST(get_nd_args(node))->nd_head, NODE_STR) &&
+        (nd_type_p(RNODE_LIST(get_nd_args(node))->nd_head, NODE_STR) || nd_type_p(RNODE_LIST(get_nd_args(node))->nd_head, NODE_FILE)) &&
         ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
         !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
         ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-        VALUE str = rb_fstring(RNODE_STR(RNODE_LIST(get_nd_args(node))->nd_head)->nd_lit);
+        VALUE str = rb_fstring(get_string_value(RNODE_LIST(get_nd_args(node))->nd_head));
         CHECK(COMPILE(ret, "recv", get_nd_recv(node)));
         ADD_INSN2(ret, line_node, opt_aref_with, str,
                   new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE));
@@ -9697,12 +9717,12 @@ compile_attrasgn(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
      */
     if (mid == idASET && !private_recv_p(node) && RNODE_ATTRASGN(node)->nd_args &&
         nd_type_p(RNODE_ATTRASGN(node)->nd_args, NODE_LIST) && RNODE_LIST(RNODE_ATTRASGN(node)->nd_args)->as.nd_alen == 2 &&
-        nd_type_p(RNODE_LIST(RNODE_ATTRASGN(node)->nd_args)->nd_head, NODE_STR) &&
+        (nd_type_p(RNODE_LIST(RNODE_ATTRASGN(node)->nd_args)->nd_head, NODE_STR) || nd_type_p(RNODE_LIST(RNODE_ATTRASGN(node)->nd_args)->nd_head, NODE_FILE)) &&
         ISEQ_COMPILE_DATA(iseq)->current_block == NULL &&
         !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
         ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction)
     {
-        VALUE str = rb_fstring(RNODE_STR(RNODE_LIST(RNODE_ATTRASGN(node)->nd_args)->nd_head)->nd_lit);
+        VALUE str = rb_fstring(get_string_value(RNODE_LIST(RNODE_ATTRASGN(node)->nd_args)->nd_head));
         CHECK(COMPILE(ret, "recv", RNODE_ATTRASGN(node)->nd_recv));
         CHECK(COMPILE(ret, "value", RNODE_LIST(RNODE_LIST(RNODE_ATTRASGN(node)->nd_args)->nd_next)->nd_head));
         if (!popped) {
@@ -10134,10 +10154,11 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         break;
       }
+      case NODE_FILE:
       case NODE_STR:{
-        debugp_param("nd_lit", RNODE_STR(node)->nd_lit);
+        debugp_param("nd_lit", get_string_value(node));
         if (!popped) {
-            VALUE lit = RNODE_STR(node)->nd_lit;
+            VALUE lit = get_string_value(node);
             if (!ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal) {
                 lit = rb_fstring(lit);
                 ADD_INSN1(ret, node, putstring, lit);
