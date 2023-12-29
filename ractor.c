@@ -3504,7 +3504,9 @@ move_enter(VALUE obj, struct obj_traverse_replace_data *data)
         return traverse_skip;
     }
     else {
-        data->replacement = rb_obj_alloc(RBASIC_CLASS(obj));
+        VALUE moved = rb_obj_alloc(RBASIC_CLASS(obj));
+        rb_shape_set_shape(moved, rb_shape_get_shape(obj));
+        data->replacement = moved;
         return traverse_cont;
     }
 }

@@ -1087,6 +1087,27 @@ assert_equal '333', %q{
   a + b + c + d + e + f
 }
 
+# moved objects have their shape properly set to original object's shape
+assert_equal '1234', %q{
+class Obj
+  attr_accessor :a, :b, :c, :d
+  def initialize
+    @a = 1
+    @b = 2
+    @c = 3
+  end
+end
+r = Ractor.new do
+  obj = receive
+  obj.d = 4
+  [obj.a, obj.b, obj.c, obj.d]
+end
+obj = Obj.new
+r.send(obj, move: true)
+values = r.take
+values.join
+}
+
 # cvar in shareable-objects are not allowed to access from non-main Ractor
 assert_equal 'can not access class variables from non-main Ractors', %q{
   class C
