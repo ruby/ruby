@@ -2584,6 +2584,8 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #define MATCH_CACHE_DEBUG_HIT ((void) 0)
 #endif
 
+#define MATCH_CACHE_HIT ((void) 0)
+
 #  define CHECK_MATCH_CACHE do {\
   if (msa->match_cache_status == MATCH_CACHE_STATUS_ENABLED) {\
     const OnigCacheOpcode *cache_opcode;\
@@ -2594,8 +2596,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       uint8_t match_cache_point_mask = 1 << (match_cache_point & 7);\
       MATCH_CACHE_DEBUG;\
       if (msa->match_cache_buf[match_cache_point_index] & match_cache_point_mask) {\
-	MATCH_CACHE_DEBUG_HIT;\
-	if (*pbegin == OP_REPEAT_INC) stkp->u.repeat.count--;\
+	MATCH_CACHE_DEBUG_HIT; MATCH_CACHE_HIT;\
 	if (cache_opcode->lookaround_nesting == 0) goto fail;\
 	else if (cache_opcode->lookaround_nesting < 0) {\
 	  if (check_extended_match_cache_point(msa->match_cache_buf, match_cache_point_index, match_cache_point_mask)) {\
@@ -3868,9 +3869,15 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	/* end of repeat. Nothing to do. */
       }
       else if (stkp->u.repeat.count >= reg->repeat_range[mem].lower) {
+#ifdef USE_MATCH_CACHE
 	if (*pbegin == OP_REPEAT_INC) {
+#undef MATCH_CACHE_HIT
+#define MATCH_CACHE_HIT stkp->u.repeat.count--;
 	  CHECK_MATCH_CACHE;
+#undef MATCH_CACHE_HIT
+#define MATCH_CACHE_HIT ((void) 0)
 	}
+#endif
 	STACK_PUSH_ALT(p, s, sprev, pkeep);
 	p = STACK_AT(si)->u.repeat.pcode; /* Don't use stkp after PUSH. */
       }
