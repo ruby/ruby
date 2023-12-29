@@ -11,8 +11,6 @@ on:
   pull_request:
     # Do not use paths-ignore for required status checks
     # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
-  workflow_dispatch:
-
   merge_group:
     paths-ignore:
       - 'doc/**'
@@ -48,14 +46,11 @@ jobs:
             { test_task: 'test-bundler-parallel' },
             { test_task: 'test-bundled-gems' },
           ]
-          require 'json'
-          event = JSON.parse(File.read(ENV['GITHUB_EVENT_PATH']))
-
-          # Run slow jobs only for master branch and manual trigger
-          if (ENV['GITHUB_EVENT_NAME'] == 'push' && ENV['GITHUB_REF'] == 'refs/heads/master') ||
-             (ENV['GITHUB_EVENT_NAME'] == 'workflow_dispatch')
-            matrix << { test_task: 'test', arch: 'arm64', docker_platform: 'linux/arm64/v8' }
+          # Add arm64 macos runner only for ruby/ruby
+          if ENV['GITHUB_REPOSITORY'] == 'ruby/ruby'
+            matrix << { test_task: 'test', arch: 'arm64', runner: 'macos-arm-oss', use_docker: 'true' }
           end
+          require 'json'
           File.write(ENV['GITHUB_OUTPUT'], "matrix-include=#{JSON.dump(matrix)}")
 
   make:
@@ -64,7 +59,6 @@ jobs:
       matrix:
         test_task: [check]
         arch: ['']
-        docker_platform: ['']
         configure: ['cppflags=-DVM_CHECK_MODE']
         # specifying other jobs with `include` to avoid redundant tests
         include: ${{ fromJson(needs.build-matrix.outputs.matrix-include) }}
@@ -74,7 +68,7 @@ jobs:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
       RUBY_DEBUG: ci
 
-    runs-on: ubuntu-20.04
+    runs-on: ${{ matrix.runner || 'ubuntu-20.04' }}
 
     if: >-
       ${{!(false
@@ -93,7 +87,7 @@ jobs:
       - uses: ./.github/actions/setup/ubuntu
         with:
           arch: ${{ matrix.arch }}
-          docker_platform: ${{ matrix.docker_platform }}
+          use_docker: ${{ matrix.use_docker }}
 
       - uses: ./.github/actions/setup/directories
         with:

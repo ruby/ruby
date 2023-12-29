@@ -11,9 +11,9 @@ inputs:
     description: >-
       Architecture.  Because we run this on a GitHub-hosted runner
       acceptable value for this input is very limited.
-  docker_platform:
+  use_docker:
     required: false
-    default: ''
+    default: 'false'
     description: >-
       Docker platform.  This is used to run QEMU on a GitHub-hosted
       runner.
@@ -30,15 +30,20 @@ runs:
   using: composite
 
   steps:
-    - name: set SETARCH for QEMU
-      if: ${{ inputs.docker_platform != '' }}
+    - name: install Docker
+      if: ${{ inputs.use_docker == 'true' && runner.os == 'macOS' }}
+      shell: bash
+      run: |
+        brew install docker
+        colima start
+
+    - name: set SETARCH (docker)
+      if: ${{ inputs.use_docker == 'true' }}
       shell: bash
       run: |
         CONTAINER_NAME="ruby-ci-ubuntu-$GITHUB_RUN_ID"
-        docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
         docker run -dit -v "$PWD:$PWD" -w "$PWD" \
           --name "$CONTAINER_NAME" \
-          --platform=${{ inputs.docker_platform }} \
           ubuntu:20.04
 
         SETARCH="${{ github.workspace }}/setarch"
@@ -52,7 +57,7 @@ runs:
         echo "SETARCH=${SETARCH}" >> "$GITHUB_ENV"
 
     - name: set SETARCH
-      if: ${{ inputs.docker_platform == '' }}
+      if: ${{ inputs.use_docker != 'true' }}
       shell: bash
       run: echo "SETARCH=${setarch}" >> "$GITHUB_ENV"
       env:
@@ -67,11 +72,11 @@ runs:
 
     - name: apt-get
       shell: bash
-      # Run `apt-get` on the guest machine if we use QEMU. Otherwise install
-      # the target arch packages on the host machine.
+      # Run `apt-get` on the guest machine if we use a guest machine. Otherwise
+      # install the target arch packages on the host machine.
       env:
-        arch: ${{ (inputs.arch && inputs.docker_platform == '') && format(':{0}', steps.uname.outputs.dpkg) || '' }}
-        shell: ${{ inputs.docker_platform != '' && env.SETARCH || 'sudo' }}
+        arch: ${{ (inputs.arch && inputs.use_docker != 'true') && format(':{0}', steps.uname.outputs.dpkg) || '' }}
+        shell: ${{ inputs.use_docker == 'true' && env.SETARCH || 'sudo' }}
       run: |
         set -x
         ${arch:+sudo dpkg --add-architecture ${arch#:}}
