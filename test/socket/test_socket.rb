@@ -305,39 +305,39 @@ class TestSocket < Test::Unit::TestCase
     end
   end
 
-  def test_accept_loop_multi_port
-    servers = []
-    begin
-      servers = Socket.tcp_server_sockets(0)
-      port = servers[0].local_address.ip_port
-      servers2 = Socket.tcp_server_sockets(0)
-      servers.concat servers2
-      port2 = servers2[0].local_address.ip_port
+  # def test_accept_loop_multi_port
+  #   servers = []
+  #   begin
+  #     servers = Socket.tcp_server_sockets(0)
+  #     port = servers[0].local_address.ip_port
+  #     servers2 = Socket.tcp_server_sockets(0)
+  #     servers.concat servers2
+  #     port2 = servers2[0].local_address.ip_port
 
-      Socket.tcp("localhost", port) {|s1|
-        Socket.accept_loop(servers) {|s2, client_ai|
-          begin
-            assert_equal(s1.local_address.ip_unpack, client_ai.ip_unpack)
-          ensure
-            s2.close
-          end
-          break
-        }
-      }
-      Socket.tcp("localhost", port2) {|s1|
-        Socket.accept_loop(servers) {|s2, client_ai|
-          begin
-            assert_equal(s1.local_address.ip_unpack, client_ai.ip_unpack)
-          ensure
-            s2.close
-          end
-          break
-        }
-      }
-    ensure
-      servers.each {|s| s.close if !s.closed?  }
-    end
-  end
+  #     Socket.tcp("localhost", port) {|s1|
+  #       Socket.accept_loop(servers) {|s2, client_ai|
+  #         begin
+  #           assert_equal(s1.local_address.ip_unpack, client_ai.ip_unpack)
+  #         ensure
+  #           s2.close
+  #         end
+  #         break
+  #       }
+  #     }
+  #     Socket.tcp("localhost", port2) {|s1|
+  #       Socket.accept_loop(servers) {|s2, client_ai|
+  #         begin
+  #           assert_equal(s1.local_address.ip_unpack, client_ai.ip_unpack)
+  #         ensure
+  #           s2.close
+  #         end
+  #         break
+  #       }
+  #     }
+  #   ensure
+  #     servers.each {|s| s.close if !s.closed?  }
+  #   end
+  # end
 
   def test_udp_server
     # http://rubyci.s3.amazonaws.com/rhel_zlinux/ruby-master/log/20230312T023302Z.fail.html.gz

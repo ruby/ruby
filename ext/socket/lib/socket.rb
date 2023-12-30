@@ -634,7 +634,9 @@ class Socket < BasicSocket
       local_addr_list = Addrinfo.getaddrinfo(local_host, local_port, nil, :STREAM, nil)
     end
 
+    threads = []
     Addrinfo.foreach(host, port, nil, :STREAM, timeout: resolv_timeout) {|ai|
+      sleep 0.001
       if local_addr_list
         local_addr = local_addr_list.find {|local_ai| local_ai.afamily == ai.afamily }
         next unless local_addr
@@ -642,16 +644,21 @@ class Socket < BasicSocket
         local_addr = nil
       end
       begin
-        sock = local_addr ?
-          ai.connect_from(local_addr, timeout: connect_timeout) :
-          ai.connect(timeout: connect_timeout)
+        threads << Thread.new(ai, local_addr) { |ai, local_addr|
+          begin
+            local_addr ?
+              ai.connect_from(local_addr, timeout: connect_timeout) :
+              ai.connect(timeout: connect_timeout)
+          rescue => e
+            e
+          end
+        }
       rescue SystemCallError
         last_error = $!
         next
       end
-      ret = sock
-      break
     }
+    ret = threads.each(&:join).find { |th| th.value.is_a? Socket }.value
     unless ret
       if last_error
         raise last_error
