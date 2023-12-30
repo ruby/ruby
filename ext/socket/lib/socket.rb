@@ -703,7 +703,12 @@ class Socket < BasicSocket
           family_name, res = hostname_resolution_queue.get
 
           if res.is_a? Exception
-            last_error = res unless (res.is_a?(Socket::ResolutionError)) && (res.error_code == Socket::EAI_ADDRFAMILY)
+            unless (Socket.const_defined?(:EAI_ADDRFAMILY)) &&
+                (res.is_a?(Socket::ResolutionError)) &&
+                (res.error_code == Socket::EAI_ADDRFAMILY)
+              last_error = res
+            end
+
             if hostname_resolution_retry_count.zero?
               state = :failure
               break
