@@ -778,4 +778,31 @@ class TestSocket < Test::Unit::TestCase
     end
   end
 
+  def test_tcp_socket_v6_hostname_resolved_earlier_and_v6_server_is_not_listening
+    opts = %w[-rsocket -W1]
+    assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
+
+    begin;
+      ipv4_address = "127.0.0.1"
+      ipv4_server = Socket.new(Socket::AF_INET, :STREAM)
+      ipv4_server.bind(Socket.pack_sockaddr_in(0, ipv4_address))
+      port = ipv4_server.connect_address.ip_port
+
+      Addrinfo.define_singleton_method(:foreach) do |*args, &block|
+        [Addrinfo.tcp("::1", port), Addrinfo.tcp("127.0.0.1", port)].each do |ai|
+          block.call(ai)
+        end
+      end
+
+      ipv4_server_thread = Thread.new { ipv4_server.listen(1); ipv4_server.accept }
+      socket = Socket.tcp("localhost", port)
+      assert_equal(ipv4_address, socket.remote_address.ip_address)
+
+      accepted, _ = ipv4_server_thread.value
+      accepted.close
+      ipv4_server.close
+      socket.close if socket && !socket.closed?
+    end;
+  end
+
 end if defined?(Socket)
