@@ -1774,9 +1774,9 @@ check_sizeof(type, header) ::
   `SIZEOF_{TYPE}` を定義し，そのサイズを返す．定義されていな
   いときはnilを返す．
 
-append_cppflags(array-of-flags[, opt])
-append_cflags(array-of-flags[, opt])
-append_ldflags(array-of-flags[, opt])
+append_cppflags(array-of-flags[, opt]) ::
+append_cflags(array-of-flags[, opt]) ::
+append_ldflags(array-of-flags[, opt]) ::
 
   各flagが使用可能であれば，それぞれ$CPPFLAGS, $CFLAGS,
   $LDFLAGSに追加する．コンパイラのフラグには移植性がないので，
