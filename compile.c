@@ -1942,6 +1942,9 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
               case NODE_LIT:
                 dv = RNODE_LIT(val_node)->nd_lit;
                 break;
+              case NODE_SYM:
+                dv = rb_node_sym_string_val(val_node);
+                break;
               case NODE_LINE:
                 dv = rb_node_line_lineno_val(val_node);;
               case NODE_INTEGER:
@@ -4516,6 +4519,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
         }
         goto again;
       case NODE_LIT:		/* NODE_LIT is always true */
+      case NODE_SYM:
       case NODE_LINE:
       case NODE_FILE:
       case NODE_INTEGER:    /* NODE_INTEGER is always true */
@@ -4590,14 +4594,27 @@ keyword_node_p(const NODE *const node)
 }
 
 static VALUE
-node_hash_unique_key_index(rb_node_hash_t *node_hash, int *count_ptr)
+get_symbol_value(rb_iseq_t *iseq, const NODE *node)
+{
+    switch (nd_type(node)) {
+      case NODE_LIT:
+        return RNODE_LIT(node)->nd_lit;
+      case NODE_SYM:
+        return rb_node_sym_string_val(node);
+      default:
+        UNKNOWN_NODE("get_symbol_value", node, Qnil);
+    }
+}
+
+static VALUE
+node_hash_unique_key_index(rb_iseq_t *iseq, rb_node_hash_t *node_hash, int *count_ptr)
 {
     NODE *node = node_hash->nd_head;
     VALUE hash = rb_hash_new();
     VALUE ary = rb_ary_new();
 
     for (int i = 0; node != NULL; i++, node = RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next) {
-        VALUE key = RNODE_LIT(RNODE_LIST(node)->nd_head)->nd_lit;
+        VALUE key = get_symbol_value(iseq, RNODE_LIST(node)->nd_head);
         VALUE idx = rb_hash_aref(hash, key);
         if (!NIL_P(idx)) {
             rb_ary_store(ary, FIX2INT(idx), Qfalse);
@@ -4633,6 +4650,9 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
             if (key_node && nd_type_p(key_node, NODE_LIT) && SYMBOL_P(RNODE_LIT(key_node)->nd_lit)) {
                 /* can be keywords */
             }
+            else if (key_node && nd_type_p(key_node, NODE_SYM)) {
+                /* can be keywords */
+            }
             else {
                 if (flag) {
                     *flag |= VM_CALL_KW_SPLAT;
@@ -4654,7 +4674,7 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         node = RNODE_HASH(root_node)->nd_head;
         {
             int len = 0;
-            VALUE key_index = node_hash_unique_key_index(RNODE_HASH(root_node), &len);
+            VALUE key_index = node_hash_unique_key_index(iseq, RNODE_HASH(root_node), &len);
             struct rb_callinfo_kwarg *kw_arg =
                 rb_xmalloc_mul_add(len, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
             VALUE *keywords = kw_arg->keywords;
@@ -4670,7 +4690,7 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
                 const NODE *val_node = RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_head;
                 int popped = TRUE;
                 if (rb_ary_entry(key_index, i)) {
-                    keywords[j] = RNODE_LIT(key_node)->nd_lit;
+                    keywords[j] = get_symbol_value(iseq, key_node);
                     j++;
                     popped = FALSE;
                 }
@@ -4710,6 +4730,7 @@ static_literal_node_p(const NODE *node, const rb_iseq_t *iseq, bool hash_key)
 {
     switch (nd_type(node)) {
       case NODE_LIT:
+      case NODE_SYM:
       case NODE_LINE:
       case NODE_INTEGER:
       case NODE_FLOAT:
@@ -4745,6 +4766,8 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
         return Qtrue;
       case NODE_FALSE:
         return Qfalse;
+      case NODE_SYM:
+        return rb_node_sym_string_val(node);
       case NODE_LINE:
         return rb_node_line_lineno_val(node);
       case NODE_FILE:
@@ -5141,6 +5164,8 @@ rb_node_case_when_optimizable_literal(const NODE *const node)
         return Qtrue;
       case NODE_FALSE:
         return Qfalse;
+      case NODE_SYM:
+        return rb_node_sym_string_val(node);
       case NODE_LINE:
         return rb_node_line_lineno_val(node);
       case NODE_STR:
@@ -5771,6 +5796,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         /* fall through */
       case NODE_STR:
       case NODE_LIT:
+      case NODE_SYM:
       case NODE_LINE:
       case NODE_FILE:
       case NODE_INTEGER:
@@ -7073,7 +7099,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
             const NODE *kw_args = RNODE_HASH(RNODE_HSHPTN(node)->nd_pkwargs)->nd_head;
             keys = rb_ary_new_capa(kw_args ? RNODE_LIST(kw_args)->as.nd_alen/2 : 0);
             while (kw_args) {
-                rb_ary_push(keys, RNODE_LIT(RNODE_LIST(kw_args)->nd_head)->nd_lit);
+                rb_ary_push(keys, get_symbol_value(iseq, RNODE_LIST(kw_args)->nd_head));
                 kw_args = RNODE_LIST(RNODE_LIST(kw_args)->nd_next)->nd_next;
             }
         }
@@ -7117,12 +7143,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
                 for (i = 0; i < keys_num; i++) {
                     NODE *key_node = RNODE_LIST(args)->nd_head;
                     NODE *value_node = RNODE_LIST(RNODE_LIST(args)->nd_next)->nd_head;
-                    VALUE key;
-
-                    if (!nd_type_p(key_node, NODE_LIT)) {
-                        UNKNOWN_NODE("NODE_IN", key_node, COMPILE_NG);
-                    }
-                    key = RNODE_LIT(key_node)->nd_lit;
+                    VALUE key = get_symbol_value(iseq, key_node);
 
                     ADD_INSN(ret, line_node, dup);
                     ADD_INSN1(ret, line_node, putobject, key);
@@ -7199,6 +7220,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
         break;
       }
       case NODE_LIT:
+      case NODE_SYM:
       case NODE_LINE:
       case NODE_INTEGER:
       case NODE_FLOAT:
@@ -8594,9 +8616,17 @@ compile_builtin_attr(rb_iseq_t *iseq, const NODE *node)
 
         node = RNODE_LIST(node)->nd_head;
         if (!node) goto no_arg;
-        if (!nd_type_p(node, NODE_LIT)) goto bad_arg;
+        switch (nd_type(node)) {
+          case NODE_SYM:
+            symbol = rb_node_sym_string_val(node);
+            break;
+          case NODE_LIT:
+            symbol = RNODE_LIT(node)->nd_lit;
+            break;
+          default:
+            goto bad_arg;
+        }
 
-        symbol = RNODE_LIT(node)->nd_lit;
         if (!SYMBOL_P(symbol)) goto non_symbol_arg;
 
         string = rb_sym_to_s(symbol);
@@ -8628,13 +8658,23 @@ compile_builtin_attr(rb_iseq_t *iseq, const NODE *node)
 static int
 compile_builtin_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, const NODE *line_node, int popped)
 {
+    VALUE name;
+
     if (!node) goto no_arg;
     if (!nd_type_p(node, NODE_LIST)) goto bad_arg;
     if (RNODE_LIST(node)->nd_next) goto too_many_arg;
     node = RNODE_LIST(node)->nd_head;
     if (!node) goto no_arg;
-    if (!nd_type_p(node, NODE_LIT)) goto bad_arg;
-    VALUE name = RNODE_LIT(node)->nd_lit;
+    switch (nd_type(node)) {
+      case NODE_SYM:
+        name = rb_node_sym_string_val(node);
+        break;
+      case NODE_LIT:
+        name = RNODE_LIT(node)->nd_lit;
+        break;
+      default:
+        goto bad_arg;
+    }
     if (!SYMBOL_P(name)) goto non_symbol_arg;
     if (!popped) {
         compile_lvar(iseq, ret, line_node, SYM2ID(name));
@@ -9759,6 +9799,7 @@ compile_kw_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
         return COMPILE_NG;
     }
     else if (nd_type_p(default_value, NODE_LIT) ||
+             nd_type_p(default_value, NODE_SYM) ||
              nd_type_p(default_value, NODE_LINE) ||
              nd_type_p(default_value, NODE_INTEGER) ||
              nd_type_p(default_value, NODE_FLOAT) ||
@@ -10230,6 +10271,12 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         if (!popped) {
             ADD_INSN1(ret, node, putobject, RNODE_LIT(node)->nd_lit);
             RB_OBJ_WRITTEN(iseq, Qundef, RNODE_LIT(node)->nd_lit);
+        }
+        break;
+      }
+      case NODE_SYM:{
+        if (!popped) {
+            ADD_INSN1(ret, node, putobject, rb_node_sym_string_val(node));
         }
         break;
       }

@@ -150,6 +150,7 @@ enum node_type {
     NODE_ERRINFO,
     NODE_DEFINED,
     NODE_POSTEXE,
+    NODE_SYM,
     NODE_DSYM,
     NODE_ATTRASGN,
     NODE_LAMBDA,
@@ -940,6 +941,12 @@ typedef struct RNode_POSTEXE {
     struct RNode *nd_body;
 } rb_node_postexe_t;
 
+typedef struct RNode_SYM {
+    NODE node;
+
+    struct rb_parser_string *string;
+} rb_node_sym_t;
+
 typedef struct RNode_DSYM {
     NODE node;
 
@@ -1105,6 +1112,7 @@ typedef struct RNode_ERROR {
 #define RNODE_ERRINFO(node) ((struct RNode_ERRINFO *)(node))
 #define RNODE_DEFINED(node) ((struct RNode_DEFINED *)(node))
 #define RNODE_POSTEXE(node) ((struct RNode_POSTEXE *)(node))
+#define RNODE_SYM(node) ((struct RNode_SYM *)(node))
 #define RNODE_DSYM(node) ((struct RNode_DSYM *)(node))
 #define RNODE_ATTRASGN(node) ((struct RNode_ATTRASGN *)(node))
 #define RNODE_LAMBDA(node) ((struct RNode_LAMBDA *)(node))
