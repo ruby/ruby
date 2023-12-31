@@ -1685,8 +1685,11 @@ ruby_mn_threads_params(void)
     const int default_max_cpu = 8; // TODO: CPU num?
     int max_cpu = default_max_cpu;
 
-    if (USE_MN_THREADS && max_cpu_cstr && (max_cpu = atoi(max_cpu_cstr)) > 0) {
-        max_cpu = default_max_cpu;
+    if (USE_MN_THREADS && max_cpu_cstr)  {
+        int given_max_cpu = atoi(max_cpu_cstr);
+        if (given_max_cpu > 0) {
+            max_cpu = given_max_cpu;
+        }
     }
 
     vm->ractor.sched.max_cpu = max_cpu;
