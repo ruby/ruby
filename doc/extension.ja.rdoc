@@ -1731,7 +1731,7 @@ have_func(func, header) ::
   ックする．funcが標準ではリンクされないライブラリ内のもので
   ある時には先にhave_libraryでそのライブラリをチェックしてお
   く事．チェックに成功すると，プリプロセッサマクロ
-  `HAVE_{FUNC}` を定義し，trueを返す．
+  <tt>HAVE_{FUNC}</tt> を定義し，trueを返す．
 
 have_var(var, header) ::
 
@@ -1739,39 +1739,39 @@ have_var(var, header) ::
   クする．varが標準ではリンクされないライブラリ内のものであ
   る時には先にhave_libraryでそのライブラリをチェックしておく
   事．チェックに成功すると，プリプロセッサマクロ
-  `HAVE_{VAR}` を定義し，trueを返す．
+  <tt>HAVE_{VAR}</tt> を定義し，trueを返す．
 
 have_header(header) ::
 
   ヘッダファイルの存在をチェックする．チェックに成功すると，
-  プリプロセッサマクロ `HAVE_{HEADER_H}` を定義し，trueを返す．
+  プリプロセッサマクロ <tt>HAVE_{HEADER_H}</tt> を定義し，trueを返す．
   (スラッシュやドットはアンダースコアに置換される)
 
 find_header(header, path...) ::
 
   ヘッダファイルheaderの存在を -Ipath を追加しながらチェック
   する．チェックに成功すると，プリプロセッサマクロ
-  `HAVE_{HEADER_H}` を定義し，trueを返す．
+  <tt>HAVE_{HEADER_H}</tt> を定義し，trueを返す．
   (スラッシュやドットはアンダースコアに置換される)
 
 have_struct_member(type, member[, header[, opt]]) ::
 
   ヘッダファイルheaderをインクルードして型typeが定義され，
   なおかつメンバmemberが存在するかをチェックする．チェックに
-  成功すると，プリプロセッサマクロ `HAVE_{TYPE}_{MEMBER}` を
+  成功すると，プリプロセッサマクロ <tt>HAVE_{TYPE}_{MEMBER}</tt> を
   定義し，trueを返す．
 
 have_type(type, header, opt) ::
 
   ヘッダファイルheaderをインクルードして型typeが存在するかを
   チェックする．チェックに成功すると，プリプロセッサマクロ
-  `HAVE_TYPE_{TYPE}` を定義し，trueを返す．
+  <tt>HAVE_TYPE_{TYPE}</tt> を定義し，trueを返す．
 
 check_sizeof(type, header) ::
 
   ヘッダファイルheaderをインクルードして型typeのchar単位サイ
   ズを調べる．チェックに成功すると，プリプロセッサマクロ
-  `SIZEOF_{TYPE}` を定義し，そのサイズを返す．定義されていな
+  <tt>SIZEOF_{TYPE}</tt> を定義し，そのサイズを返す．定義されていな
   いときはnilを返す．
 
 append_cppflags(array-of-flags[, opt]) ::
