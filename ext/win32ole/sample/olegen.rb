@@ -70,8 +70,8 @@ class WIN32COMGen
     end
     if ts.empty?
       ts = 'VT_VARIANT'
-    elsif ts[-1] == ?|
-	ts += 'VT_VARIANT'
+    elsif ts.end_with?(?|)
+      ts += 'VT_VARIANT'
     end
     ts
   end
