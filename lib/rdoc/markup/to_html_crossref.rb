@@ -63,8 +63,8 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
 
     name = name[1..-1] unless @show_hash if name[0, 1] == '#'
 
-    if !(name.end_with?('+@', '-@')) and name =~ /(.*[^#:])@/
-      text ||= "#{CGI.unescape $'} at <code>#{$1}</code>"
+    if !(name.end_with?('+@', '-@')) and name =~ /(.*[^#:])?@/
+      text ||= [CGI.unescape($'), (" at <code>#{$1}</code>" if $~.begin(1))].join("")
       code = false
     else
       text ||= name
@@ -139,35 +139,34 @@ class RDoc::Markup::ToHtmlCrossref < RDoc::Markup::ToHtml
   # Creates an HTML link to +name+ with the given +text+.
 
   def link name, text, code = true
-    if !(name.end_with?('+@', '-@')) and name =~ /(.*[^#:])@/
+    if !(name.end_with?('+@', '-@')) and name =~ /(.*[^#:])?@/
       name = $1
       label = $'
     end
 
-    ref = @cross_reference.resolve name, text
+    ref = @cross_reference.resolve name, text if name
 
     case ref
     when String then
       ref
     else
-      path = ref.as_href @from_path
+      path = ref ? ref.as_href(@from_path) : +""
 
       if code and RDoc::CodeObject === ref and !(RDoc::TopLevel === ref)
         text = "<code>#{CGI.escapeHTML text}</code>"
       end
 
-      if path =~ /#/ then
-        path << "-label-#{label}"
-      elsif ref.sections and
-            ref.sections.any? { |section| label == section.title } then
-        path << "##{label}"
-      else
-        if ref.respond_to?(:aref)
+      if label
+        if path =~ /#/
+          path << "-label-#{label}"
+        elsif ref&.sections&.any? { |section| label == section.title }
+          path << "##{label}"
+        elsif ref.respond_to?(:aref)
           path << "##{ref.aref}-label-#{label}"
         else
           path << "#label-#{label}"
         end
-      end if label
+      end
 
       "<a href=\"#{path}\">#{text}</a>"
     end
