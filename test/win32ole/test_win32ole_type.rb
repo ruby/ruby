@@ -178,7 +178,7 @@ if defined?(WIN32OLE_TYPE)
     end
 
     def test_inspect
-      assert_equal("#<WIN32OLE_TYPE:Shell>", @ole_type.inspect)
+      assert_equal("#<WIN32OLE::Type:Shell>", @ole_type.inspect)
     end
 
     # WIN32OLE_TYPE.typelibs will be obsoleted.

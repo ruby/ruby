@@ -362,7 +362,7 @@ folevariable_inspect(VALUE self)
     VALUE v = rb_inspect(folevariable_value(self));
     VALUE n = folevariable_name(self);
     VALUE detail = rb_sprintf("%"PRIsVALUE"=%"PRIsVALUE, n, v);
-    return make_inspect("WIN32OLE_VARIABLE", detail);
+    return make_inspect("WIN32OLE::Variable", detail);
 }
 
 VALUE cWIN32OLE_VARIABLE;

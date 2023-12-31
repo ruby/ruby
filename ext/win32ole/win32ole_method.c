@@ -277,7 +277,7 @@ folemethod_initialize(VALUE self, VALUE oletype, VALUE method)
         }
     }
     else {
-        rb_raise(rb_eTypeError, "1st argument should be WIN32OLE_TYPE object");
+        rb_raise(rb_eTypeError, "1st argument should be WIN32OLE::Type object");
     }
     return obj;
 }
@@ -920,7 +920,7 @@ folemethod_params(VALUE self)
 static VALUE
 folemethod_inspect(VALUE self)
 {
-    return default_inspect(self, "WIN32OLE_METHOD");
+    return default_inspect(self, "WIN32OLE::Method");
 }
 
 VALUE cWIN32OLE_METHOD;

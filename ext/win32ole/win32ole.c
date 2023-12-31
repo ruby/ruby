@@ -2215,7 +2215,7 @@ fole_s_show_help(int argc, VALUE *argv, VALUE self)
         helpfile = target;
     }
     if (!RB_TYPE_P(helpfile, T_STRING)) {
-        rb_raise(rb_eTypeError, "1st parameter must be (String|WIN32OLE_TYPE|WIN32OLE_METHOD)");
+        rb_raise(rb_eTypeError, "1st parameter must be (String|WIN32OLE::Type|WIN32OLE::Method)");
     }
     hwnd = ole_show_help(helpfile, helpcontext);
     if(hwnd == 0) {
@@ -3529,7 +3529,7 @@ fole_type(VALUE self)
     type = ole_type_from_itypeinfo(pTypeInfo);
     OLE_RELEASE(pTypeInfo);
     if (type == Qnil) {
-        rb_raise(rb_eRuntimeError, "failed to create WIN32OLE_TYPE obj from ITypeInfo");
+        rb_raise(rb_eRuntimeError, "failed to create WIN32OLE::Type obj from ITypeInfo");
     }
     return type;
 }

@@ -814,12 +814,12 @@ foletypelib_ole_types(VALUE self)
  *  Returns the type library name with class name.
  *
  *     tlib = WIN32OLE::TypeLib.new('Microsoft Excel 9.0 Object Library')
- *     tlib.inspect # => "<#WIN32OLE_TYPELIB:Microsoft Excel 9.0 Object Library>"
+ *     tlib.inspect # => "<#WIN32OLE::TypeLib:Microsoft Excel 9.0 Object Library>"
  */
 static VALUE
 foletypelib_inspect(VALUE self)
 {
-    return default_inspect(self, "WIN32OLE_TYPELIB");
+    return default_inspect(self, "WIN32OLE::TypeLib");
 }
 
 VALUE cWIN32OLE_TYPELIB;

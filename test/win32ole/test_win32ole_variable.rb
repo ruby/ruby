@@ -58,8 +58,8 @@ if defined?(WIN32OLE_VARIABLE)
     end
 
     def test_inspect
-      assert_equal("#<WIN32OLE_VARIABLE:ssfDESKTOP=0>",  @var1.inspect)
-      assert_equal("#<WIN32OLE_VARIABLE:UILevel=nil>", @var2.inspect)
+      assert_equal("#<WIN32OLE::Variable:ssfDESKTOP=0>",  @var1.inspect)
+      assert_equal("#<WIN32OLE::Variable:UILevel=nil>", @var2.inspect)
     end
 
   end

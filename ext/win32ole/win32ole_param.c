@@ -139,7 +139,7 @@ oleparam_ole_param(VALUE self, VALUE olemethod, int n)
  *
  *    tobj = WIN32OLE::Type.new('Microsoft Scripting Runtime', 'IFileSystem')
  *    method = WIN32OLE::Method.new(tobj, 'CreateTextFile')
- *    param = WIN32OLE::Param.new(method, 2) # => #<WIN32OLE_PARAM:Overwrite=true>
+ *    param = WIN32OLE::Param.new(method, 2) # => #<WIN32OLE::Param:Overwrite=true>
  *
  */
 static VALUE
@@ -147,7 +147,7 @@ foleparam_initialize(VALUE self, VALUE olemethod, VALUE n)
 {
     int idx;
     if (!rb_obj_is_kind_of(olemethod, cWIN32OLE_METHOD)) {
-        rb_raise(rb_eTypeError, "1st parameter must be WIN32OLE_METHOD object");
+        rb_raise(rb_eTypeError, "1st parameter must be WIN32OLE::Method object");
     }
     idx = RB_FIX2INT(n);
     return oleparam_ole_param(self, olemethod, idx);
@@ -416,7 +416,7 @@ foleparam_inspect(VALUE self)
         rb_str_cat2(detail, "=");
         rb_str_concat(detail, rb_inspect(defval));
     }
-    return make_inspect("WIN32OLE_PARAM", detail);
+    return make_inspect("WIN32OLE::Param", detail);
 }
 
 void

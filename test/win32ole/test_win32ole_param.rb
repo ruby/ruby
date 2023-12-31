@@ -43,7 +43,7 @@ if defined?(WIN32OLE_PARAM)
       assert_equal("OverWriteFiles", param.name)
       assert_equal(WIN32OLE_PARAM, param.class)
       assert_equal(true, param.default)
-      assert_equal("#<WIN32OLE_PARAM:OverWriteFiles=true>", param.inspect)
+      assert_equal("#<WIN32OLE::Param:OverWriteFiles=true>", param.inspect)
     end
 
     def test_name
@@ -91,8 +91,8 @@ if defined?(WIN32OLE_PARAM)
     end
 
     def test_inspect
-      assert_equal("#<WIN32OLE_PARAM:Source>", @param_source.inspect)
-      assert_equal("#<WIN32OLE_PARAM:OverWriteFiles=true>", @param_overwritefiles.inspect)
+      assert_equal("#<WIN32OLE::Param:Source>", @param_source.inspect)
+      assert_equal("#<WIN32OLE::Param:OverWriteFiles=true>", @param_overwritefiles.inspect)
     end
   end
 end

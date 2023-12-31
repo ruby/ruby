@@ -145,7 +145,7 @@ foletype_s_typelibs(VALUE self)
             "WIN32OLE::Type.typelibs",
             "WIN32OLE::TypeLib.typelibs.collect{t|t.name}");
     */
-    return rb_eval_string("WIN32OLE_TYPELIB.typelibs.collect{|t|t.name}");
+    return rb_eval_string("WIN32OLE::TypeLib.typelibs.collect{|t|t.name}");
 }
 
 /*
@@ -829,7 +829,7 @@ foletype_impl_ole_types(VALUE self)
  *  object and having IMPLTYPEFLAG_FSOURCE.
  *     tobj = WIN32OLE::Type.new('Microsoft Internet Controls', "InternetExplorer")
  *     p tobj.source_ole_types
- *     # => [#<WIN32OLE_TYPE:DWebBrowserEvents2>, #<WIN32OLE_TYPE:DWebBrowserEvents>]
+ *     # => [#<WIN32OLE::Type:DWebBrowserEvents2>, #<WIN32OLE::Type:DWebBrowserEvents>]
  */
 static VALUE
 foletype_source_ole_types(VALUE self)
@@ -845,7 +845,7 @@ foletype_source_ole_types(VALUE self)
  *  Returns the array of WIN32OLE::Type object which is implemented by the WIN32OLE::Type
  *  object and having IMPLTYPEFLAG_FSOURCE and IMPLTYPEFLAG_FDEFAULT.
  *     tobj = WIN32OLE::Type.new('Microsoft Internet Controls', "InternetExplorer")
- *     p tobj.default_event_sources  # => [#<WIN32OLE_TYPE:DWebBrowserEvents2>]
+ *     p tobj.default_event_sources  # => [#<WIN32OLE::Type:DWebBrowserEvents2>]
  */
 static VALUE
 foletype_default_event_sources(VALUE self)
@@ -862,7 +862,7 @@ foletype_default_event_sources(VALUE self)
  *  object and having IMPLTYPEFLAG_FDEFAULT.
  *     tobj = WIN32OLE::Type.new('Microsoft Internet Controls', "InternetExplorer")
  *     p tobj.default_ole_types
- *     # => [#<WIN32OLE_TYPE:IWebBrowser2>, #<WIN32OLE_TYPE:DWebBrowserEvents2>]
+ *     # => [#<WIN32OLE::Type:IWebBrowser2>, #<WIN32OLE::Type:DWebBrowserEvents2>]
  */
 static VALUE
 foletype_default_ole_types(VALUE self)
@@ -878,12 +878,12 @@ foletype_default_ole_types(VALUE self)
  *  Returns the type name with class name.
  *
  *     ie = WIN32OLE.new('InternetExplorer.Application')
- *     ie.ole_type.inspect => #<WIN32OLE_TYPE:IWebBrowser2>
+ *     ie.ole_type.inspect => #<WIN32OLE::Type:IWebBrowser2>
  */
 static VALUE
 foletype_inspect(VALUE self)
 {
-    return default_inspect(self, "WIN32OLE_TYPE");
+    return default_inspect(self, "WIN32OLE::Type");
 }
 
 VALUE cWIN32OLE_TYPE;

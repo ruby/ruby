@@ -357,7 +357,7 @@ check_type_val2variant(VALUE val)
         case T_NIL:
             break;
         default:
-            rb_raise(rb_eTypeError, "can not convert WIN32OLE_VARIANT from type %s",
+            rb_raise(rb_eTypeError, "can not convert WIN32OLE::Variant from type %s",
                      rb_obj_classname(val));
         }
     }
@@ -422,7 +422,7 @@ folevariant_initialize(VALUE self, VALUE args)
         vvt = rb_ary_entry(args, 1);
         vt = RB_NUM2INT(vvt);
         if ((vt & VT_TYPEMASK) == VT_RECORD) {
-            rb_raise(rb_eArgError, "not supported VT_RECORD WIN32OLE_VARIANT object");
+            rb_raise(rb_eArgError, "not supported VT_RECORD WIN32OLE::Variant object");
         }
         ole_val2olevariantdata(val, vt, pvar);
     }

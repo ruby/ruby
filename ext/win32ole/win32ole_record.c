@@ -303,7 +303,7 @@ folerecord_initialize(VALUE self, VALUE typename, VALUE oleobj) {
             hr = E_FAIL;
         }
     } else {
-        rb_raise(rb_eArgError, "2nd argument should be WIN32OLE object or WIN32OLE_TYPELIB object");
+        rb_raise(rb_eArgError, "2nd argument should be WIN32OLE object or WIN32OLE::TypeLib object");
     }
 
     if (FAILED(hr)) {
@@ -584,7 +584,7 @@ folerecord_inspect(VALUE self)
         tname = rb_inspect(tname);
     }
     field = rb_inspect(folerecord_to_h(self));
-    return rb_sprintf("#<WIN32OLE_RECORD(%"PRIsVALUE") %"PRIsVALUE">",
+    return rb_sprintf("#<WIN32OLE::Record(%"PRIsVALUE") %"PRIsVALUE">",
                       tname,
                       field);
 }

@@ -110,7 +110,7 @@ if defined?(WIN32OLE_TYPELIB)
 
     def test_inspect
       tlib = WIN32OLE_TYPELIB.new("Microsoft Shell Controls And Automation")
-      assert_equal("#<WIN32OLE_TYPELIB:Microsoft Shell Controls And Automation>", tlib.inspect)
+      assert_equal("#<WIN32OLE::TypeLib:Microsoft Shell Controls And Automation>", tlib.inspect)
     end
 
   end
