@@ -85,7 +85,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
       headers: { "location" => redirected_uri }
     )
     Gem::RemoteFetcher.fetcher = fetcher
-    ui = Gem::MockGemUi.new("you@example.com\nsecret\n\n\n\n\n\n\n\n\n")
+    ui = Gem::MockGemUi.new("you@example.com\nsecret\n\n\n")
 
     assert_raise Gem::MockGemUi::TermError do
       use_ui ui do
@@ -106,51 +106,98 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     assert_equal api_key, credentials[:rubygems_api_key]
   end
 
-  def test_execute_with_key_name_and_scope
+  def test_execute_with_key_name_default_scope
     email     = "you@example.com"
     password  = "secret"
     api_key   = "1234abcd"
     fetcher   = Gem::RemoteFetcher.fetcher
 
-    key_name_ui = Gem::MockGemUi.new "#{email}\n#{password}\ntest-key\n\ny\n\n\n\n\n\n"
+    key_name_ui = Gem::MockGemUi.new "#{email}\n#{password}\ntest-key\n\n"
     util_capture(key_name_ui, nil, api_key, fetcher) { @cmd.execute }
 
     user = ENV["USER"] || ENV["USERNAME"]
 
     assert_match "API Key name [#{Socket.gethostname}-#{user}", key_name_ui.output
+    assert_match "The default access scope is:", key_name_ui.output
+    assert_match "index_rubygems: y", key_name_ui.output
+    assert_match "Do you want to customise scopes? [yN]", key_name_ui.output
+    assert_equal "name=test-key&index_rubygems=true", fetcher.last_request.body
+
+    credentials = load_yaml_file Gem.configuration.credentials_path
+    assert_equal api_key, credentials[:rubygems_api_key]
+  end
+
+  def test_execute_with_key_name_and_custom_scope
+    email     = "you@example.com"
+    password  = "secret"
+    api_key   = "1234abcd"
+    fetcher   = Gem::RemoteFetcher.fetcher
+
+    key_name_ui = Gem::MockGemUi.new "#{email}\n#{password}\ntest-key\ny\n\n\ny\n\n\n\n\n\n\n"
+    util_capture(key_name_ui, nil, api_key, fetcher) { @cmd.execute }
+
+    user = ENV["USER"] || ENV["USERNAME"]
+
+    assert_match "API Key name [#{Socket.gethostname}-#{user}", key_name_ui.output
+    assert_match "The default access scope is:", key_name_ui.output
+    assert_match "Do you want to customise scopes? [yN]", key_name_ui.output
+    assert_match "show_dashboard (exclusive scope, answering yes will not prompt for other scopes) [yN]", key_name_ui.output
     assert_match "index_rubygems [yN]", key_name_ui.output
     assert_match "push_rubygem [yN]", key_name_ui.output
     assert_match "yank_rubygem [yN]", key_name_ui.output
     assert_match "add_owner [yN]", key_name_ui.output
     assert_match "remove_owner [yN]", key_name_ui.output
     assert_match "access_webhooks [yN]", key_name_ui.output
-    assert_match "show_dashboard [yN]", key_name_ui.output
     assert_equal "name=test-key&push_rubygem=true", fetcher.last_request.body
 
     credentials = load_yaml_file Gem.configuration.credentials_path
     assert_equal api_key, credentials[:rubygems_api_key]
   end
 
-  def test_execute_with_key_name_scope_and_mfa_level_of_ui_only
+  def test_execute_with_key_name_and_exclusive_scope
+    email     = "you@example.com"
+    password  = "secret"
+    api_key   = "1234abcd"
+    fetcher   = Gem::RemoteFetcher.fetcher
+
+    key_name_ui = Gem::MockGemUi.new "#{email}\n#{password}\ntest-key\ny\ny\n"
+    util_capture(key_name_ui, nil, api_key, fetcher) { @cmd.execute }
+
+    user = ENV["USER"] || ENV["USERNAME"]
+
+    assert_match "API Key name [#{Socket.gethostname}-#{user}", key_name_ui.output
+    assert_match "The default access scope is:", key_name_ui.output
+    assert_match "index_rubygems: y", key_name_ui.output
+    assert_match "Do you want to customise scopes? [yN]", key_name_ui.output
+    assert_match "show_dashboard (exclusive scope, answering yes will not prompt for other scopes) [yN]", key_name_ui.output
+    assert_equal "name=test-key&show_dashboard=true", fetcher.last_request.body
+
+    credentials = load_yaml_file Gem.configuration.credentials_path
+    assert_equal api_key, credentials[:rubygems_api_key]
+  end
+
+  def test_execute_with_key_name_custom_scope_and_mfa_level_of_ui_only
     email     = "you@example.com"
     password  = "secret"
     api_key   = "1234abcd"
     fetcher   = Gem::RemoteFetcher.fetcher
     mfa_level = "ui_only"
 
-    key_name_ui = Gem::MockGemUi.new "#{email}\n#{password}\ntest-key\n\ny\n\n\n\n\n\ny"
+    key_name_ui = Gem::MockGemUi.new "#{email}\n#{password}\ntest-key\ny\n\n\ny\n\n\n\n\n\n\ny"
     util_capture(key_name_ui, nil, api_key, fetcher, mfa_level) { @cmd.execute }
 
     user = ENV["USER"] || ENV["USERNAME"]
 
     assert_match "API Key name [#{Socket.gethostname}-#{user}", key_name_ui.output
+    assert_match "The default access scope is:", key_name_ui.output
+    assert_match "Do you want to customise scopes? [yN]", key_name_ui.output
+    assert_match "show_dashboard (exclusive scope, answering yes will not prompt for other scopes) [yN]", key_name_ui.output
     assert_match "index_rubygems [yN]", key_name_ui.output
     assert_match "push_rubygem [yN]", key_name_ui.output
     assert_match "yank_rubygem [yN]", key_name_ui.output
     assert_match "add_owner [yN]", key_name_ui.output
     assert_match "remove_owner [yN]", key_name_ui.output
     assert_match "access_webhooks [yN]", key_name_ui.output
-    assert_match "show_dashboard [yN]", key_name_ui.output
     assert_match "Would you like to enable MFA for this key? (strongly recommended) [yn]", key_name_ui.output
     assert_equal "name=test-key&push_rubygem=true&mfa=true", fetcher.last_request.body
 
@@ -158,26 +205,28 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     assert_equal api_key, credentials[:rubygems_api_key]
   end
 
-  def test_execute_with_key_name_scope_and_mfa_level_of_gem_signin
+  def test_execute_with_key_name_custom_scope_and_mfa_level_of_gem_signin
     email     = "you@example.com"
     password  = "secret"
     api_key   = "1234abcd"
     fetcher   = Gem::RemoteFetcher.fetcher
     mfa_level = "ui_and_gem_signin"
 
-    key_name_ui = Gem::MockGemUi.new "#{email}\n#{password}\ntest-key\n\ny\n\n\n\n\n\ny"
+    key_name_ui = Gem::MockGemUi.new "#{email}\n#{password}\ntest-key\ny\n\n\ny\n\n\n\n\n\n\ny"
     util_capture(key_name_ui, nil, api_key, fetcher, mfa_level) { @cmd.execute }
 
     user = ENV["USER"] || ENV["USERNAME"]
 
     assert_match "API Key name [#{Socket.gethostname}-#{user}", key_name_ui.output
+    assert_match "The default access scope is:", key_name_ui.output
+    assert_match "Do you want to customise scopes? [yN]", key_name_ui.output
+    assert_match "show_dashboard (exclusive scope, answering yes will not prompt for other scopes) [yN]", key_name_ui.output
     assert_match "index_rubygems [yN]", key_name_ui.output
     assert_match "push_rubygem [yN]", key_name_ui.output
     assert_match "yank_rubygem [yN]", key_name_ui.output
     assert_match "add_owner [yN]", key_name_ui.output
     assert_match "remove_owner [yN]", key_name_ui.output
     assert_match "access_webhooks [yN]", key_name_ui.output
-    assert_match "show_dashboard [yN]", key_name_ui.output
     assert_match "Would you like to enable MFA for this key? (strongly recommended) [yn]", key_name_ui.output
     assert_equal "name=test-key&push_rubygem=true&mfa=true", fetcher.last_request.body
 
@@ -207,7 +256,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     api_key   = "1234abcd"
     fetcher   = Gem::RemoteFetcher.fetcher
 
-    key_name_ui = Gem::MockGemUi.new "#{email}\n#{password}\ntest-key\n\ny\n\n\n\n\n\ny"
+    key_name_ui = Gem::MockGemUi.new "#{email}\n#{password}\ntest-key\ny\n\n\ny\n\n\n\n\n\n\ny"
 
     # Set the expected response for the Web-API supplied
     ENV["RUBYGEMS_HOST"]       = host
@@ -221,13 +270,13 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     user = ENV["USER"] || ENV["USERNAME"]
 
     assert_match "API Key name [#{Socket.gethostname}-#{user}", key_name_ui.output
+    assert_match "show_dashboard (exclusive scope, answering yes will not prompt for other scopes) [yN]", key_name_ui.output
     assert_match "index_rubygems [yN]", key_name_ui.output
     assert_match "push_rubygem [yN]", key_name_ui.output
     assert_match "yank_rubygem [yN]", key_name_ui.output
     assert_match "add_owner [yN]", key_name_ui.output
     assert_match "remove_owner [yN]", key_name_ui.output
     assert_match "access_webhooks [yN]", key_name_ui.output
-    assert_match "show_dashboard [yN]", key_name_ui.output
     assert_equal "name=test-key&push_rubygem=true", fetcher.last_request.body
   end
 
@@ -248,7 +297,7 @@ class TestGemCommandsSigninCommand < Gem::TestCase
     fetcher.data[profile]      = profile_response
     Gem::RemoteFetcher.fetcher = fetcher
 
-    sign_in_ui = ui_stub || Gem::MockGemUi.new("#{email}\n#{password}\n\n\n\n\n\n\n\n\n")
+    sign_in_ui = ui_stub || Gem::MockGemUi.new("#{email}\n#{password}\n\n\n")
 
     use_ui sign_in_ui do
       yield

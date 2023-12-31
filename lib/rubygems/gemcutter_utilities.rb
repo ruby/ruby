@@ -10,7 +10,8 @@ require_relative "gemcutter_utilities/webauthn_poller"
 
 module Gem::GemcutterUtilities
   ERROR_CODE = 1
-  API_SCOPES = [:index_rubygems, :push_rubygem, :yank_rubygem, :add_owner, :remove_owner, :access_webhooks, :show_dashboard].freeze
+  API_SCOPES = [:index_rubygems, :push_rubygem, :yank_rubygem, :add_owner, :remove_owner, :access_webhooks].freeze
+  EXCLUSIVELY_API_SCOPES = [:show_dashboard].freeze
 
   include Gem::Text
 
@@ -309,15 +310,31 @@ module Gem::GemcutterUtilities
   end
 
   def get_scope_params(scope)
-    scope_params = {}
+    scope_params = { index_rubygems: true }
 
     if scope
       scope_params = { scope => true }
     else
-      say "Please select scopes you want to enable for the API key (y/n)"
-      API_SCOPES.each do |s|
-        selected = ask_yes_no(s.to_s, false)
-        scope_params[s] = true if selected
+      say "The default access scope is:"
+      scope_params.each do |k, _v|
+        say "  #{k}: y"
+      end
+      say "\n"
+      customise = ask_yes_no("Do you want to customise scopes?", false)
+      if customise
+        EXCLUSIVELY_API_SCOPES.each do |excl_scope|
+          selected = ask_yes_no("#{excl_scope} (exclusive scope, answering yes will not prompt for other scopes)", false)
+          next unless selected
+
+          return { excl_scope => true }
+        end
+
+        scope_params = {}
+
+        API_SCOPES.each do |s|
+          selected = ask_yes_no(s.to_s, false)
+          scope_params[s] = true if selected
+        end
       end
       say "\n"
     end
