@@ -581,6 +581,8 @@ node_children(rb_ast_t *ast, const NODE *node)
             }
             return rb_ary_new_from_args(3, RNODE_DSTR(node)->nd_lit, head, next);
         }
+      case NODE_SYM:
+        return rb_ary_new_from_args(1, rb_node_sym_string_val(node));
       case NODE_EVSTR:
         return rb_ary_new_from_node_args(ast, 1, RNODE_EVSTR(node)->nd_body);
       case NODE_ARGSCAT:

@@ -1013,7 +1013,7 @@ dummy
                 const: nil
                 kw:
                   (HASH@2:4-2:13
-                     (LIST@2:4-2:13 (LIT@2:4-2:6 :a) (CONST@2:7-2:13 :String) nil))
+                     (LIST@2:4-2:13 (SYM@2:4-2:6 :a) (CONST@2:7-2:13 :String) nil))
                 kwrest: nil) (BEGIN@2:14-2:14 nil) nil)))
     EXP
   end

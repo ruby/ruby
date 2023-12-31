@@ -965,6 +965,13 @@ rb_parser_set_yydebug(VALUE vparser, VALUE flag)
 #endif
 
 VALUE
+rb_node_sym_string_val(const NODE *node)
+{
+    rb_parser_string_t *str = RNODE_SYM(node)->string;
+    return ID2SYM(rb_intern3(str->ptr, str->len, str->enc));
+}
+
+VALUE
 rb_node_line_lineno_val(const NODE *node)
 {
     return INT2FIX(node->nd_loc.beg_pos.lineno);

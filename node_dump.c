@@ -784,6 +784,13 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_NODE(nd_next->nd_next, RNODE_DSTR, "tailing strings");
         return;
 
+      case NODE_SYM:
+        ANN("symbol literal");
+        ANN("format: [string]");
+        ANN("example: :foo");
+        F_VALUE(string, rb_node_sym_string_val(node), "string");
+        return;
+
       case NODE_EVSTR:
         ANN("interpolation expression");
         ANN("format: \"..#{ [nd_body] }..\"");

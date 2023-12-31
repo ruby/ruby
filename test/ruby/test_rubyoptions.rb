@@ -568,12 +568,14 @@ class TestRubyOptions < Test::Unit::TestCase
       t.puts "if a = {}; end"
       t.puts "if a = {1=>2}; end"
       t.puts "if a = {3=>a}; end"
+      t.puts "if a = :sym; end"
       t.flush
       err = ["#{t.path}:1:#{warning}",
              "#{t.path}:2:#{warning}",
              "#{t.path}:3:#{warning}",
              "#{t.path}:5:#{warning}",
              "#{t.path}:6:#{warning}",
+             "#{t.path}:8:#{warning}",
             ]
       feature4299 = '[ruby-dev:43083]'
       assert_in_out_err(["-w", t.path], "", [], err, feature4299)
