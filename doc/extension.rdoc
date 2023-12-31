@@ -747,13 +747,14 @@ RUBY_TYPED_WB_PROTECTED ::
   barriers in all implementations of methods of that object as
   appropriate. Otherwise Ruby might crash while running.
 
-  More about write barriers can be found in "Generational GC" in
-  Appendix D.
+  More about write barriers can be found in {Generational
+  GC}[rdoc-ref:@Appendix+D.+Generational+GC].
 
 RUBY_TYPED_FROZEN_SHAREABLE ::
 
-  This flag indicates that the object is shareable object
-  if the object is frozen. See Appendix F more details.
+  This flag indicates that the object is shareable object if the object
+  is frozen. See {Ractor support}[rdoc-ref:@Appendix+F.+Ractor+support]
+  more details.
 
   If this flag is not set, the object can not become a shareable
   object by Ractor.make_shareable() method.
