@@ -2022,7 +2022,7 @@ f_global_variables(VALUE _)
  *  +Proc+ object) or block is executed whenever the variable
  *  is assigned. The block or +Proc+ object receives the
  *  variable's new value as a parameter. Also see
- *  Kernel::untrace_var.
+ *  #untrace_var.
  *
  *     trace_var :$_, proc {|v| puts "$_ is now '#{v}'" }
  *     $_ = "hello"
