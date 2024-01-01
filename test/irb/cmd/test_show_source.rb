@@ -272,5 +272,33 @@ module TestIRB
 
       assert_match(%r[#{@ruby_file.to_path}:2\s+def foo\r\n  end], out)
     end
+
+    def test_show_source_with_double_colons
+      write_ruby <<~RUBY
+        class Foo
+        end
+
+        class Foo
+          class Bar
+          end
+        end
+
+        binding.irb
+      RUBY
+
+      out = run_ruby_file do
+        type "show_source ::Foo"
+        type "exit"
+      end
+
+      assert_match(%r[#{@ruby_file.to_path}:1\s+class Foo\r\nend], out)
+
+      out = run_ruby_file do
+        type "show_source ::Foo::Bar"
+        type "exit"
+      end
+
+      assert_match(%r[#{@ruby_file.to_path}:5\s+class Bar\r\n  end], out)
+    end
   end
 end

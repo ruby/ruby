@@ -19,7 +19,7 @@ module IRB
     def find_source(signature, super_level = 0)
       context_binding = @irb_context.workspace.binding
       case signature
-      when /\A[A-Z]\w*(::[A-Z]\w*)*\z/ # Const::Name
+      when /\A(::)?[A-Z]\w*(::[A-Z]\w*)*\z/ # Const::Name
         eval(signature, context_binding) # trigger autoload
         base = context_binding.receiver.yield_self { |r| r.is_a?(Module) ? r : Object }
         file, line = base.const_source_location(signature)
