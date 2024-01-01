@@ -291,11 +291,13 @@ module IRB
       @auto_indent_proc = block
     end
 
+    def retrieve_doc_namespace(matched)
+      preposing, _target, postposing, bind = @completion_params
+      @completor.doc_namespace(preposing, matched, postposing, bind: bind)
+    end
+
     def show_doc_dialog_proc
-      doc_namespace = ->(matched) {
-        preposing, _target, postposing, bind = @completion_params
-        @completor.doc_namespace(preposing, matched, postposing, bind: bind)
-      }
+      input_method = self # self is changed in the lambda below.
       ->() {
         dialog.trap_key = nil
         alt_d = [
@@ -311,7 +313,7 @@ module IRB
         cursor_pos_to_render, result, pointer, autocomplete_dialog = context.pop(4)
         return nil if result.nil? or pointer.nil? or pointer < 0
 
-        name = doc_namespace.call(result[pointer])
+        name = input_method.retrieve_doc_namespace(result[pointer])
         # Use first one because document dialog does not support multiple namespaces.
         name = name.first if name.is_a?(Array)
 
@@ -419,8 +421,7 @@ module IRB
         return
       end
 
-      _target, preposing, postposing, bind = @completion_params
-      namespace = @completor.doc_namespace(preposing, matched, postposing, bind: bind)
+      namespace = retrieve_doc_namespace(matched)
       return unless namespace
 
       driver ||= RDoc::RI::Driver.new

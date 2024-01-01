@@ -90,7 +90,7 @@ module TestIRB
 
     def display_document(target, bind)
       input_method = IRB::RelineInputMethod.new(IRB::RegexpCompletor.new)
-      input_method.instance_variable_set(:@completion_params, [target, '', '', bind])
+      input_method.instance_variable_set(:@completion_params, ['', target, '', bind])
       input_method.display_document(target, driver: @driver)
     end
 
