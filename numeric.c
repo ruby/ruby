@@ -4249,7 +4249,7 @@ fix_idiv(VALUE x, VALUE y)
  *    4.div(3.0)      # => 1
  *    4.div(Rational(3, 1))      # => 1
  *
- *  Raises an exception if +numeric+ does not have method +div+.
+ * Raises an exception if +numeric+ does not have method +div+.
  *
  */
 
