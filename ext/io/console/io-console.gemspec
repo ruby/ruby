@@ -1,5 +1,13 @@
 # -*- ruby -*-
-_VERSION = "0.7.2.dev.1"
+_VERSION = ["", "ext/io/console/"].find do |dir|
+  begin
+    break File.open(File.join(__dir__, "#{dir}console.c")) {|f|
+      f.gets("\nIO_CONSOLE_VERSION ")
+      f.gets[/"(.+)"/, 1]
+    }
+  rescue Errno::ENOENT
+  end
+end
 
 Gem::Specification.new do |s|
   s.name = "io-console"

@@ -2,6 +2,10 @@
 /*
  * console IO module
  */
+
+static const char *const
+IO_CONSOLE_VERSION = "0.7.2.dev.1";
+
 #include "ruby.h"
 #include "ruby/io.h"
 #include "ruby/thread.h"
