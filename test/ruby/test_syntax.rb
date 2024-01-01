@@ -1216,6 +1216,9 @@ eom
     assert_warning(/literal in condition/) do
       eval('1 if 1')
     end
+    assert_warning(/literal in condition/) do
+      eval('1 if __LINE__')
+    end
     assert_warning(/symbol literal in condition/) do
       eval('1 if :foo')
     end
