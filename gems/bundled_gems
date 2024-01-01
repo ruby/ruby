@@ -11,10 +11,10 @@ rake            13.1.0  https://github.com/ruby/rake
 test-unit       3.6.1   https://github.com/test-unit/test-unit
 rexml           3.2.6   https://github.com/ruby/rexml
 rss             0.3.0   https://github.com/ruby/rss
-net-ftp         0.3.3   https://github.com/ruby/net-ftp
-net-imap        0.4.9   https://github.com/ruby/net-imap
+net-ftp         0.3.3   https://github.com/ruby/net-ftp 953c52c7de997828dae8a257568f45a467d3ecf5
+net-imap        0.4.9   https://github.com/ruby/net-imap efbd204d3048132da43f999fb870351905ff49e2
 net-pop         0.1.2   https://github.com/ruby/net-pop
-net-smtp        0.4.0   https://github.com/ruby/net-smtp
+net-smtp        0.4.0   https://github.com/ruby/net-smtp 2b251244b7678c5e84e620584c26242f36c1e91a
 matrix          0.4.2   https://github.com/ruby/matrix
 prime           0.1.2   https://github.com/ruby/prime
 rbs             3.4.1   https://github.com/ruby/rbs
