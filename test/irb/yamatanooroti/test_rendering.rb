@@ -30,7 +30,6 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
     FileUtils.rm_rf(@tmpdir)
     ENV['IRBRC'] = @irbrc_backup
     ENV['TERM'] = @original_term
-    ENV.delete('RELINE_TEST_PROMPT') if ENV['RELINE_TEST_PROMPT']
   end
 
   def test_launch
