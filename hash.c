@@ -2282,7 +2282,7 @@ rb_hash_default_proc(VALUE hash)
  *  call-seq:
  *    hash.default_proc = proc -> proc
  *
- *  Sets the default proc for +self+ to +proc+:
+ *  Sets the default proc for +self+ to +proc+
  *  (see {Default Values}[rdoc-ref:Hash@Default+Values]):
  *    h = {}
  *    h.default_proc # => nil
