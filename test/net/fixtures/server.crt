@@ -1,13 +1,13 @@
 Certificate:
     Data:
-        Version: 3 (0x2)
-        Serial Number: 2 (0x2)
-    Signature Algorithm: sha256WithRSAEncryption
-        Issuer: C=JP, ST=Shimane, L=Matz-e city, O=Ruby Core Team, CN=Ruby Test CA/emailAddress=security@ruby-lang.org
+        Version: 1 (0x0)
+        Serial Number: 0 (0x0)
+        Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C = JP, ST = Shimane, L = Matz-e city, O = Ruby Core Team, CN = Ruby Test CA, emailAddress = security@ruby-lang.org
         Validity
-            Not Before: Jan  2 03:27:13 2019 GMT
-            Not After : Jan  1 03:27:13 2024 GMT
-        Subject: C=JP, ST=Shimane, O=Ruby Core Team, OU=Ruby Test, CN=localhost
+            Not Before: Jan  1 11:02:41 2024 GMT
+            Not After : Dec 30 11:02:41 2028 GMT
+        Subject: C = JP, ST = Shimane, O = Ruby Core Team, OU = Ruby Test, CN = localhost
         Subject Public Key Info:
             Public Key Algorithm: rsaEncryption
                 Public-Key: (2048 bit)
@@ -31,52 +31,41 @@ Certificate:
                     74:8c:61:16:20:3d:d0:1c:4e:8f:6e:fd:fe:64:10:
                     4f:41
                 Exponent: 65537 (0x10001)
-        X509v3 extensions:
-            X509v3 Basic Constraints: 
-                CA:FALSE
-            Netscape Comment: 
-                OpenSSL Generated Certificate
-            X509v3 Subject Key Identifier: 
-                ED:28:C2:7E:AB:4B:C8:E8:FE:55:6D:66:95:31:1C:2D:60:F9:02:36
-            X509v3 Authority Key Identifier: 
-                keyid:F6:D1:22:29:D5:3D:23:D7:5E:AD:0C:9C:E6:75:8F:9D:CD:F8:9D:53
-
     Signature Algorithm: sha256WithRSAEncryption
-         1d:b8:c5:8b:72:41:20:65:ad:27:6f:15:63:06:26:12:8d:9c:
-         ad:ca:f4:db:97:b4:90:cb:ff:35:94:bb:2a:a7:a1:ab:1e:35:
-         2d:a5:3f:c9:24:b0:1a:58:89:75:3e:81:0a:2c:4f:98:f9:51:
-         fb:c0:a3:09:d0:0a:9b:e7:a2:b7:c3:60:40:c8:f4:6d:b2:6a:
-         56:12:17:4c:00:24:31:df:9c:60:ae:b1:68:54:a9:e6:b5:4a:
-         04:e6:92:05:86:d9:5a:dc:96:30:a5:58:de:14:99:0f:e5:15:
-         89:3e:9b:eb:80:e3:bd:83:c3:ea:33:35:4b:3e:2f:d3:0d:64:
-         93:67:7f:8d:f5:3f:0c:27:bc:37:5a:cc:d6:47:16:af:5a:62:
-         d2:da:51:f8:74:06:6b:24:ad:28:68:08:98:37:7d:ed:0e:ab:
-         1e:82:61:05:d0:ba:75:a0:ab:21:b0:9a:fd:2b:54:86:1d:0d:
-         1f:c2:d4:77:1f:72:26:5e:ad:8a:9f:09:36:6d:44:be:74:c2:
-         5a:3e:ff:5c:9d:75:d6:38:7b:c5:39:f9:44:6e:a1:d1:8e:ff:
-         63:db:c4:bb:c6:91:92:ca:5c:60:9b:1d:eb:0a:de:08:ee:bf:
-         da:76:03:65:62:29:8b:f8:7f:c7:86:73:1e:f6:1f:2d:89:69:
-         fd:be:bd:6e
+    Signature Value:
+        36:63:a3:6f:e6:4d:ff:a9:43:81:8d:9d:84:42:83:57:c9:e0:
+        c6:0a:41:f5:ea:95:de:fa:65:77:e9:c6:33:b9:bb:65:f8:75:
+        cc:23:fb:78:96:20:c6:72:ec:69:5f:5c:a5:b6:78:f6:6a:0e:
+        84:7c:8b:d4:78:a4:29:f3:fa:ce:b8:d4:17:92:ca:cb:17:b5:
+        52:6d:bc:db:f3:f1:60:dd:dd:23:c5:f2:a3:8d:db:18:27:9a:
+        a4:5c:1f:1e:2c:62:6d:78:6a:a2:54:a6:8d:02:97:15:00:87:
+        af:fb:c8:f1:8f:24:c2:2b:19:33:0b:c9:3c:5e:7d:6e:4f:aa:
+        c1:d8:29:88:e2:43:33:0f:51:cd:12:1c:cd:95:47:6e:a9:ab:
+        10:aa:d8:34:04:3f:ee:be:ab:54:f9:e5:e5:09:f9:10:b8:3b:
+        ab:22:77:74:8e:95:ec:98:1b:1d:28:30:f7:51:62:a0:98:6e:
+        8e:80:09:9c:34:e9:48:4b:33:db:66:98:e5:67:13:b9:9d:42:
+        c3:45:a9:8b:ba:12:5a:1a:14:d3:21:dc:b7:c6:2b:11:7a:3e:
+        90:1f:42:3e:aa:68:55:a3:dd:07:12:89:9a:a0:2a:9d:9e:51:
+        7d:4c:98:71:b5:bf:c2:fb:80:c3:18:02:ea:a3:0b:8d:6a:bb:
+        c7:67:a3:f7
 -----BEGIN CERTIFICATE-----
-MIID4zCCAsugAwIBAgIBAjANBgkqhkiG9w0BAQsFADCBjDELMAkGA1UEBhMCSlAx
-EDAOBgNVBAgMB1NoaW1hbmUxFDASBgNVBAcMC01hdHotZSBjaXR5MRcwFQYDVQQK
-DA5SdWJ5IENvcmUgVGVhbTEVMBMGA1UEAwwMUnVieSBUZXN0IENBMSUwIwYJKoZI
-hvcNAQkBFhZzZWN1cml0eUBydWJ5LWxhbmcub3JnMB4XDTE5MDEwMjAzMjcxM1oX
-DTI0MDEwMTAzMjcxM1owYDELMAkGA1UEBhMCSlAxEDAOBgNVBAgMB1NoaW1hbmUx
-FzAVBgNVBAoMDlJ1YnkgQ29yZSBUZWFtMRIwEAYDVQQLDAlSdWJ5IFRlc3QxEjAQ
-BgNVBAMMCWxvY2FsaG9zdDCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
-AOjanAEuKxDsSc1eBxMHnHCexnS8E8Lhb8aC/eNI4CylaMeeQt5gVGXmahRXejDQ
-zLW22cPS38kll1Rnz/a+XsuL7gPF4eL55/fRDEfwuNozWq1Bree1onu3vzDaYPjj
-VKK8Ov0bdNncdELpKb7frLRP6zL0BvHhjEuoi/sp57G/HQHucw/5QNzVFXnZxnPQ
-wN3L5NoZR4DGFARy/Zp8jxGCdkkEeczyXDEilRM+XUCmTeCjAiZ9Uju77WWhD+1r
-sDzU3mEVXtPdaAmfSlelwqlthpLF9KTUtxM7UmMkBeLM44o81DU0KxC7WHLn4Y0d
-dIxhFiA90BxOj279/mQQT0ECAwEAAaN7MHkwCQYDVR0TBAIwADAsBglghkgBhvhC
-AQ0EHxYdT3BlblNTTCBHZW5lcmF0ZWQgQ2VydGlmaWNhdGUwHQYDVR0OBBYEFO0o
-wn6rS8jo/lVtZpUxHC1g+QI2MB8GA1UdIwQYMBaAFPbRIinVPSPXXq0MnOZ1j53N
-+J1TMA0GCSqGSIb3DQEBCwUAA4IBAQAduMWLckEgZa0nbxVjBiYSjZytyvTbl7SQ
-y/81lLsqp6GrHjUtpT/JJLAaWIl1PoEKLE+Y+VH7wKMJ0Aqb56K3w2BAyPRtsmpW
-EhdMACQx35xgrrFoVKnmtUoE5pIFhtla3JYwpVjeFJkP5RWJPpvrgOO9g8PqMzVL
-Pi/TDWSTZ3+N9T8MJ7w3WszWRxavWmLS2lH4dAZrJK0oaAiYN33tDqsegmEF0Lp1
-oKshsJr9K1SGHQ0fwtR3H3ImXq2Knwk2bUS+dMJaPv9cnXXWOHvFOflEbqHRjv9j
-28S7xpGSylxgmx3rCt4I7r/adgNlYimL+H/HhnMe9h8tiWn9vr1u
+MIIDYTCCAkkCAQAwDQYJKoZIhvcNAQELBQAwgYwxCzAJBgNVBAYTAkpQMRAwDgYD
+VQQIDAdTaGltYW5lMRQwEgYDVQQHDAtNYXR6LWUgY2l0eTEXMBUGA1UECgwOUnVi
+eSBDb3JlIFRlYW0xFTATBgNVBAMMDFJ1YnkgVGVzdCBDQTElMCMGCSqGSIb3DQEJ
+ARYWc2VjdXJpdHlAcnVieS1sYW5nLm9yZzAeFw0yNDAxMDExMTAyNDFaFw0yODEy
+MzAxMTAyNDFaMGAxCzAJBgNVBAYTAkpQMRAwDgYDVQQIDAdTaGltYW5lMRcwFQYD
+VQQKDA5SdWJ5IENvcmUgVGVhbTESMBAGA1UECwwJUnVieSBUZXN0MRIwEAYDVQQD
+DAlsb2NhbGhvc3QwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDo2pwB
+LisQ7EnNXgcTB5xwnsZ0vBPC4W/Ggv3jSOAspWjHnkLeYFRl5moUV3ow0My1ttnD
+0t/JJZdUZ8/2vl7Li+4DxeHi+ef30QxH8LjaM1qtQa3ntaJ7t78w2mD441SivDr9
+G3TZ3HRC6Sm+36y0T+sy9Abx4YxLqIv7Keexvx0B7nMP+UDc1RV52cZz0MDdy+Ta
+GUeAxhQEcv2afI8RgnZJBHnM8lwxIpUTPl1Apk3gowImfVI7u+1loQ/ta7A81N5h
+FV7T3WgJn0pXpcKpbYaSxfSk1LcTO1JjJAXizOOKPNQ1NCsQu1hy5+GNHXSMYRYg
+PdAcTo9u/f5kEE9BAgMBAAEwDQYJKoZIhvcNAQELBQADggEBADZjo2/mTf+pQ4GN
+nYRCg1fJ4MYKQfXqld76ZXfpxjO5u2X4dcwj+3iWIMZy7GlfXKW2ePZqDoR8i9R4
+pCnz+s641BeSyssXtVJtvNvz8WDd3SPF8qON2xgnmqRcHx4sYm14aqJUpo0ClxUA
+h6/7yPGPJMIrGTMLyTxefW5PqsHYKYjiQzMPUc0SHM2VR26pqxCq2DQEP+6+q1T5
+5eUJ+RC4O6sid3SOleyYGx0oMPdRYqCYbo6ACZw06UhLM9tmmOVnE7mdQsNFqYu6
+EloaFNMh3LfGKxF6PpAfQj6qaFWj3QcSiZqgKp2eUX1MmHG1v8L7gMMYAuqjC41q
+u8dno/c=
 -----END CERTIFICATE-----
