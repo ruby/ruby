@@ -14260,6 +14260,12 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
         else {
             SWITCH_BY_COND_TYPE(type, warning, "");
         }
+        break;
+
+      case NODE_LINE:
+        SWITCH_BY_COND_TYPE(type, warning, "");
+        break;
+
       default:
         break;
     }
