@@ -1863,7 +1863,7 @@ Ruby 3.0 から、Ruby プログラムを並列に実行するための仕組み
 Ractor をサポートするための詳細は、extension.rdoc の「Appendix F. Ractor
 support」を参照してください。
 
-
-:enddoc: Local variables:
-:enddoc: fill-column: 60
-:enddoc: end:
+:stopdoc: Local variables:
+:stopdoc: fill-column: 60
+:stopdoc: end:
+:startdoc:

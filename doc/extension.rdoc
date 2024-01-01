@@ -2274,6 +2274,7 @@ There are possibly other points or requirements which must be considered in the
 making of a Ractor-safe extension.  This document will be extended as they are
 discovered.
 
-:enddoc: Local variables:
-:enddoc: fill-column: 70
-:enddoc: end:
+:stopdoc: Local variables:
+:stopdoc: fill-column: 70
+:stopdoc: end:
+:startdoc:
