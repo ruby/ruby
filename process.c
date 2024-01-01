@@ -1479,7 +1479,7 @@ proc_m_wait(int c, VALUE *v, VALUE _)
  *    Process.wait2(pid)
  *    # => [309581, #<Process::Status: pid 309581 exit 13>]
  *
- *  Process.waitpid2 is an alias for Process.waitpid.
+ *  Process.waitpid2 is an alias for Process.wait2.
  */
 
 static VALUE
