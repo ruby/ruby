@@ -98,7 +98,7 @@ parse_integer(const pm_integer_node_t *node)
         base = 16;
         break;
       default:
-        rb_bug("Unexpected integer base");
+        rb_bug("Unreachable");
     }
 
     return rb_int_parse_cstr(start, length, &end, NULL, base, RB_INT_PARSE_DEFAULT);
@@ -173,7 +173,7 @@ parse_imaginary(pm_imaginary_node_t *node)
         break;
       }
       default:
-        rb_bug("Unexpected numeric type on imaginary number");
+        rb_bug("Unexpected numeric type on imaginary number %s\n", pm_node_type_to_str(PM_NODE_TYPE(node->numeric)));
     }
 
     return rb_complex_raw(INT2FIX(0), imaginary_part);
@@ -382,8 +382,9 @@ pm_static_literal_value(const pm_node_t *node, pm_scope_node_t *scope_node, pm_p
         return pm_new_regex(cast, parser);
       }
       case PM_SOURCE_ENCODING_NODE: {
-        rb_encoding *encoding = rb_find_encoding(rb_str_new_cstr(scope_node->parser->encoding->name));
-        if (!encoding) rb_bug("Encoding not found!");
+        const char *name = scope_node->parser->encoding->name;
+        rb_encoding *encoding = rb_find_encoding(rb_str_new_cstr(name));
+        if (!encoding) rb_bug("Encoding not found %s!", name);
         return rb_enc_from_encoding(encoding);
       }
       case PM_SOURCE_FILE_NODE: {
@@ -404,7 +405,7 @@ pm_static_literal_value(const pm_node_t *node, pm_scope_node_t *scope_node, pm_p
       case PM_TRUE_NODE:
         return Qtrue;
       default:
-        rb_raise(rb_eArgError, "Don't have a literal value for this type");
+        rb_bug("Don't have a literal value for node type %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
         return Qfalse;
     }
 }
@@ -764,7 +765,7 @@ pm_lookup_local_index_any_scope(rb_iseq_t *iseq, pm_scope_node_t *scope_node, pm
     if (!scope_node) {
         // We have recursed up all scope nodes
         // and have not found the local yet
-        rb_bug("This local does not exist");
+        rb_bug("Local with constant_id %u does not exist", (unsigned int)constant_id);
     }
 
     st_data_t local_index;
@@ -783,7 +784,7 @@ pm_lookup_local_index(rb_iseq_t *iseq, pm_scope_node_t *scope_node, pm_constant_
     st_data_t local_index;
 
     if (!st_lookup(scope_node->index_lookup_table, constant_id, &local_index)) {
-        rb_bug("This local does not exist");
+        rb_bug("Local with constant_id %u does not exist", (unsigned int)constant_id);
     }
 
     return scope_node->local_table_for_iseq_size - (int)local_index;
@@ -810,7 +811,7 @@ static ID
 pm_constant_id_lookup(pm_scope_node_t *scope_node, pm_constant_id_t constant_id)
 {
     if (constant_id < 1 || constant_id > scope_node->parser->constant_pool.size) {
-        rb_bug("[PRISM] constant_id out of range: %u", (unsigned int)constant_id);
+        rb_bug("constant_id out of range: %u", (unsigned int)constant_id);
     }
     return scope_node->constants[constant_id - 1];
 }
@@ -1041,7 +1042,7 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                                 break;
                             }
                             default: {
-                                rb_bug("Unknown type");
+                                rb_bug("Unknown type in keyword argument %s\n", pm_node_type_to_str(PM_NODE_TYPE(cur_node)));
                             }
                           }
                       }
@@ -2726,7 +2727,7 @@ pm_compile_multi_assign_params(pm_multi_target_node_t *multi, st_table *index_lo
               break;
           }
           default: {
-              rb_bug("Parameter within a MultiTargetNode isn't allowed");
+              rb_bug("Parameter of type %s within a MultiTargetNode isn't allowed", pm_node_type_to_str(PM_NODE_TYPE(multi_node)));
           }
         }
     }
@@ -2755,7 +2756,7 @@ pm_compile_multi_assign_params(pm_multi_target_node_t *multi, st_table *index_lo
               break;
           }
           default: {
-              rb_bug("Parameter within a MultiTargetNode isn't allowed");
+              rb_bug("Parameter of type %s within a MultiTargetNode isn't allowed", pm_node_type_to_str(PM_NODE_TYPE(multi_node)));
           }
         }
     }
@@ -3982,7 +3983,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_FORWARDING_ARGUMENTS_NODE: {
-        rb_bug("Should never hit the forwarding arguments case directly\n");
+        rb_bug("Cannot compile a ForwardingArgumentsNode directly\n");
         return;
       }
       case PM_FORWARDING_SUPER_NODE: {
@@ -5114,7 +5115,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     break;
                 }
                 else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_EVAL) {
-                    rb_raise(rb_eArgError, "Can't escape from eval with next");
+                    rb_raise(rb_eSyntaxError, "Can't escape from eval with next");
                     return;
                 }
 
@@ -5179,7 +5180,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_PARAMETERS_NODE: {
-        rb_bug("Should not ever enter a parameters node directly");
+        rb_bug("Cannot compile a ParametersNode directly\n");
 
         return;
       }
@@ -5243,7 +5244,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_PROGRAM_NODE: {
-        rb_bug("Should not ever enter a program node directly");
+        rb_bug("Cannot compile a ProgramNode directly\n");
 
         return;
       }
@@ -5684,7 +5685,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                       break;
                   }
                   default: {
-                      rb_bug("Unsupported node %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
+                      rb_bug("Unsupported node in requireds in parameters %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
                   }
                 }
             }
@@ -5761,7 +5762,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                       break;
                   }
                   default: {
-                      rb_bug("Unsupported node %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
+                      rb_bug("Unsupported node in posts in parameters %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
                   }
                 }
             }
@@ -5814,7 +5815,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     break;
                   }
                   default: {
-                    rb_bug("Unexpected keyword parameter node type");
+                    rb_bug("Unexpected keyword parameter node type %s", pm_node_type_to_str(PM_NODE_TYPE(keyword_parameter_node)));
                   }
                 }
 
@@ -5903,7 +5904,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                       break;
                   }
                   default: {
-                      rb_raise(rb_eArgError, "node type %s not expected as keyword_rest", pm_node_type_to_str(PM_NODE_TYPE(parameters_node->keyword_rest)));
+                      rb_bug("node type %s not expected as keyword_rest", pm_node_type_to_str(PM_NODE_TYPE(parameters_node->keyword_rest)));
                   }
                 }
             }
@@ -6064,7 +6065,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     break;
                   }
                   default: {
-                    rb_bug("Unexpected keyword parameter node type");
+                    rb_bug("Unexpected keyword parameter node type %s", pm_node_type_to_str(PM_NODE_TYPE(keyword_parameter_node)));
                   }
                 }
             }
@@ -6372,7 +6373,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 break;
               }
               default: {
-                rb_bug("This node type should never occur on a SuperNode's block");
+                rb_bug("Unexpected node type on a SuperNode's block: %s", pm_node_type_to_str(PM_NODE_TYPE(super_node->block)));
               }
             }
         }
@@ -6443,7 +6444,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_WHEN_NODE: {
-        rb_bug("Should not ever enter a when node directly");
+        rb_bug("Cannot compile a WhenNode directly\n");
         return;
       }
       case PM_WHILE_NODE: {
