@@ -12178,7 +12178,9 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
                 arguments->block = (pm_node_t *) block;
             } else {
                 if (arguments->has_forwarding) {
-                    pm_parser_err_node(parser, (pm_node_t *) block, PM_ERR_ARGUMENT_BLOCK_FORWARDING);
+                    if (parser->version != PM_OPTIONS_VERSION_CRUBY_3_3_0) {
+                        pm_parser_err_node(parser, (pm_node_t *) block, PM_ERR_ARGUMENT_BLOCK_FORWARDING);
+                    }
                 } else {
                     pm_parser_err_node(parser, (pm_node_t *) block, PM_ERR_ARGUMENT_BLOCK_MULTI);
                 }
