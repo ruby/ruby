@@ -663,6 +663,7 @@ class Socket < BasicSocket
     state = :start
     connected_socket = nil
     last_error = nil
+    is_windows_environment ||= (RUBY_PLATFORM =~ /mswin|mingw|cygwin/)
 
     if local_host && local_port
       local_addrinfos = Addrinfo.getaddrinfo(local_host, local_port, nil, :STREAM, nil)
@@ -814,7 +815,16 @@ class Socket < BasicSocket
 
         if connectable_sockets&.any?
           while (connectable_socket = connectable_sockets.pop)
-            if (sockopt = connectable_socket.getsockopt(Socket::SOL_SOCKET, Socket::SO_ERROR)).int.zero?
+            is_connected =
+              if is_windows_environment
+                sockopt = connectable_socket.getsockopt(Socket::SOL_SOCKET, Socket::SO_CONNECT_TIME)
+                sockopt.unpack('i').first >= 0
+              else
+                sockopt = connectable_socket.getsockopt(Socket::SOL_SOCKET, Socket::SO_ERROR)
+                sockopt.int.zero?
+              end
+
+            if is_connected
               connected_socket = connectable_socket
               connecting_sockets.delete connectable_socket
               connectable_sockets.each do |other_connectable_socket|
