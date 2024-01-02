@@ -12242,6 +12242,7 @@ prism/pack.$(OBJEXT): $(top_srcdir)/prism/pack.h
 prism/pack.$(OBJEXT): {$(VPATH)}config.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/options.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/parser.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
@@ -12282,6 +12283,7 @@ prism/prism.$(OBJEXT): {$(VPATH)}prism/ast.h
 prism/prism.$(OBJEXT): {$(VPATH)}prism/version.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+prism/regexp.$(OBJEXT): $(top_srcdir)/prism/options.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/parser.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/regexp.c
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/regexp.h
@@ -12378,6 +12380,7 @@ prism/util/pm_strncasecmp.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.c
 prism/util/pm_strncasecmp.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/options.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/parser.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
