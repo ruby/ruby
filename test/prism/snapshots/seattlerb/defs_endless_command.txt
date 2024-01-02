@@ -8,7 +8,7 @@
             ├── name_loc: (1,6)-(1,17) = "some_method"
             ├── receiver:
             │   @ CallNode (location: (1,4)-(1,5))
-            │   ├── flags: variable_call
+            │   ├── flags: variable_call, ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :x
@@ -22,7 +22,7 @@
             │   @ StatementsNode (location: (1,20)-(1,35))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,20)-(1,35))
-            │           ├── flags: ∅
+            │           ├── flags: ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :other_method

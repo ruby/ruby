@@ -360,7 +360,7 @@ module Prism
 
     def test_double_splat_followed_by_splat_argument
       expected = CallNode(
-        0,
+        CallNodeFlags::IGNORE_VISIBILITY,
         nil,
         nil,
         :a,
@@ -381,7 +381,7 @@ module Prism
 
     def test_arguments_after_block
       expected = CallNode(
-        0,
+        CallNodeFlags::IGNORE_VISIBILITY,
         nil,
         nil,
         :a,
@@ -407,7 +407,7 @@ module Prism
 
     def test_splat_argument_after_keyword_argument
       expected = CallNode(
-        0,
+        CallNodeFlags::IGNORE_VISIBILITY,
         nil,
         nil,
         :a,
@@ -462,7 +462,7 @@ module Prism
         nil,
         StatementsNode(
           [CallNode(
-            0,
+            CallNodeFlags::IGNORE_VISIBILITY,
             nil,
             nil,
             :bar,
@@ -1070,7 +1070,7 @@ module Prism
 
     def test_do_not_allow_forward_arguments_in_blocks
       expected = CallNode(
-        0,
+        CallNodeFlags::IGNORE_VISIBILITY,
         nil,
         nil,
         :a,

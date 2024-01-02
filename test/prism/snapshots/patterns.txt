@@ -6,7 +6,7 @@
         ├── @ MatchRequiredNode (location: (1,0)-(1,10))
         │   ├── value:
         │   │   @ CallNode (location: (1,0)-(1,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -23,7 +23,7 @@
         ├── @ MatchRequiredNode (location: (2,0)-(2,8))
         │   ├── value:
         │   │   @ CallNode (location: (2,0)-(2,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -39,7 +39,7 @@
         ├── @ MatchRequiredNode (location: (3,0)-(3,10))
         │   ├── value:
         │   │   @ CallNode (location: (3,0)-(3,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -54,7 +54,7 @@
         ├── @ MatchRequiredNode (location: (4,0)-(4,9))
         │   ├── value:
         │   │   @ CallNode (location: (4,0)-(4,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -72,7 +72,7 @@
         ├── @ MatchRequiredNode (location: (5,0)-(5,9))
         │   ├── value:
         │   │   @ CallNode (location: (5,0)-(5,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -90,7 +90,7 @@
         ├── @ MatchRequiredNode (location: (6,0)-(6,11))
         │   ├── value:
         │   │   @ CallNode (location: (6,0)-(6,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -110,7 +110,7 @@
         ├── @ MatchRequiredNode (location: (7,0)-(7,14))
         │   ├── value:
         │   │   @ CallNode (location: (7,0)-(7,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -130,7 +130,7 @@
         ├── @ MatchRequiredNode (location: (8,0)-(8,13))
         │   ├── value:
         │   │   @ CallNode (location: (8,0)-(8,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -150,7 +150,7 @@
         ├── @ MatchRequiredNode (location: (9,0)-(9,12))
         │   ├── value:
         │   │   @ CallNode (location: (9,0)-(9,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -170,7 +170,7 @@
         ├── @ MatchRequiredNode (location: (10,0)-(10,12))
         │   ├── value:
         │   │   @ CallNode (location: (10,0)-(10,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -190,7 +190,7 @@
         ├── @ MatchRequiredNode (location: (11,0)-(11,14))
         │   ├── value:
         │   │   @ CallNode (location: (11,0)-(11,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -210,7 +210,7 @@
         ├── @ MatchRequiredNode (location: (12,0)-(12,14))
         │   ├── value:
         │   │   @ CallNode (location: (12,0)-(12,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -235,7 +235,7 @@
         ├── @ MatchRequiredNode (location: (13,0)-(13,14))
         │   ├── value:
         │   │   @ CallNode (location: (13,0)-(13,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -260,7 +260,7 @@
         ├── @ MatchRequiredNode (location: (14,0)-(14,14))
         │   ├── value:
         │   │   @ CallNode (location: (14,0)-(14,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -285,7 +285,7 @@
         ├── @ MatchRequiredNode (location: (15,0)-(15,14))
         │   ├── value:
         │   │   @ CallNode (location: (15,0)-(15,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -310,7 +310,7 @@
         ├── @ MatchRequiredNode (location: (16,0)-(16,14))
         │   ├── value:
         │   │   @ CallNode (location: (16,0)-(16,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -330,7 +330,7 @@
         ├── @ MatchRequiredNode (location: (17,0)-(17,14))
         │   ├── value:
         │   │   @ CallNode (location: (17,0)-(17,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -350,7 +350,7 @@
         ├── @ MatchRequiredNode (location: (18,0)-(18,12))
         │   ├── value:
         │   │   @ CallNode (location: (18,0)-(18,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -370,7 +370,7 @@
         ├── @ MatchRequiredNode (location: (19,0)-(19,10))
         │   ├── value:
         │   │   @ CallNode (location: (19,0)-(19,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -385,7 +385,7 @@
         ├── @ MatchRequiredNode (location: (20,0)-(20,11))
         │   ├── value:
         │   │   @ CallNode (location: (20,0)-(20,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -400,7 +400,7 @@
         ├── @ MatchRequiredNode (location: (21,0)-(21,11))
         │   ├── value:
         │   │   @ CallNode (location: (21,0)-(21,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -415,7 +415,7 @@
         ├── @ MatchRequiredNode (location: (22,0)-(22,12))
         │   ├── value:
         │   │   @ CallNode (location: (22,0)-(22,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -430,7 +430,7 @@
         ├── @ MatchRequiredNode (location: (23,0)-(23,15))
         │   ├── value:
         │   │   @ CallNode (location: (23,0)-(23,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -446,7 +446,7 @@
         ├── @ MatchRequiredNode (location: (24,0)-(24,15))
         │   ├── value:
         │   │   @ CallNode (location: (24,0)-(24,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -461,7 +461,7 @@
         ├── @ MatchRequiredNode (location: (25,0)-(25,19))
         │   ├── value:
         │   │   @ CallNode (location: (25,0)-(25,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -476,7 +476,7 @@
         ├── @ MatchRequiredNode (location: (26,0)-(26,17))
         │   ├── value:
         │   │   @ CallNode (location: (26,0)-(26,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -503,7 +503,7 @@
         ├── @ MatchRequiredNode (location: (28,0)-(28,13))
         │   ├── value:
         │   │   @ CallNode (location: (28,0)-(28,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -526,7 +526,7 @@
         ├── @ MatchRequiredNode (location: (29,0)-(29,17))
         │   ├── value:
         │   │   @ CallNode (location: (29,0)-(29,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -547,7 +547,7 @@
         ├── @ MatchRequiredNode (location: (30,0)-(30,15))
         │   ├── value:
         │   │   @ CallNode (location: (30,0)-(30,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -574,7 +574,7 @@
         ├── @ MatchRequiredNode (location: (31,0)-(31,15))
         │   ├── value:
         │   │   @ CallNode (location: (31,0)-(31,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -601,7 +601,7 @@
         ├── @ MatchRequiredNode (location: (32,0)-(32,19))
         │   ├── value:
         │   │   @ CallNode (location: (32,0)-(32,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -632,7 +632,7 @@
         ├── @ MatchRequiredNode (location: (33,0)-(33,25))
         │   ├── value:
         │   │   @ CallNode (location: (33,0)-(33,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -663,7 +663,7 @@
         ├── @ MatchRequiredNode (location: (34,0)-(34,23))
         │   ├── value:
         │   │   @ CallNode (location: (34,0)-(34,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -694,7 +694,7 @@
         ├── @ MatchRequiredNode (location: (35,0)-(35,21))
         │   ├── value:
         │   │   @ CallNode (location: (35,0)-(35,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -725,7 +725,7 @@
         ├── @ MatchRequiredNode (location: (36,0)-(36,21))
         │   ├── value:
         │   │   @ CallNode (location: (36,0)-(36,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -756,7 +756,7 @@
         ├── @ MatchRequiredNode (location: (37,0)-(37,25))
         │   ├── value:
         │   │   @ CallNode (location: (37,0)-(37,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -787,7 +787,7 @@
         ├── @ MatchRequiredNode (location: (38,0)-(38,25))
         │   ├── value:
         │   │   @ CallNode (location: (38,0)-(38,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -828,7 +828,7 @@
         ├── @ MatchRequiredNode (location: (39,0)-(39,25))
         │   ├── value:
         │   │   @ CallNode (location: (39,0)-(39,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -869,7 +869,7 @@
         ├── @ MatchRequiredNode (location: (40,0)-(40,25))
         │   ├── value:
         │   │   @ CallNode (location: (40,0)-(40,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -910,7 +910,7 @@
         ├── @ MatchRequiredNode (location: (41,0)-(41,25))
         │   ├── value:
         │   │   @ CallNode (location: (41,0)-(41,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -951,7 +951,7 @@
         ├── @ MatchRequiredNode (location: (42,0)-(42,25))
         │   ├── value:
         │   │   @ CallNode (location: (42,0)-(42,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -982,7 +982,7 @@
         ├── @ MatchRequiredNode (location: (43,0)-(43,25))
         │   ├── value:
         │   │   @ CallNode (location: (43,0)-(43,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1013,7 +1013,7 @@
         ├── @ MatchRequiredNode (location: (44,0)-(44,21))
         │   ├── value:
         │   │   @ CallNode (location: (44,0)-(44,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1044,7 +1044,7 @@
         ├── @ MatchRequiredNode (location: (45,0)-(45,17))
         │   ├── value:
         │   │   @ CallNode (location: (45,0)-(45,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1065,7 +1065,7 @@
         ├── @ MatchRequiredNode (location: (46,0)-(46,19))
         │   ├── value:
         │   │   @ CallNode (location: (46,0)-(46,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1086,7 +1086,7 @@
         ├── @ MatchRequiredNode (location: (47,0)-(47,19))
         │   ├── value:
         │   │   @ CallNode (location: (47,0)-(47,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1107,7 +1107,7 @@
         ├── @ MatchRequiredNode (location: (48,0)-(48,21))
         │   ├── value:
         │   │   @ CallNode (location: (48,0)-(48,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1128,7 +1128,7 @@
         ├── @ MatchRequiredNode (location: (49,0)-(49,27))
         │   ├── value:
         │   │   @ CallNode (location: (49,0)-(49,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1151,7 +1151,7 @@
         ├── @ MatchRequiredNode (location: (50,0)-(50,27))
         │   ├── value:
         │   │   @ CallNode (location: (50,0)-(50,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1172,7 +1172,7 @@
         ├── @ MatchRequiredNode (location: (51,0)-(51,35))
         │   ├── value:
         │   │   @ CallNode (location: (51,0)-(51,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1193,7 +1193,7 @@
         ├── @ MatchRequiredNode (location: (52,0)-(52,31))
         │   ├── value:
         │   │   @ CallNode (location: (52,0)-(52,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1246,7 +1246,7 @@
         ├── @ MatchRequiredNode (location: (54,9)-(54,20))
         │   ├── value:
         │   │   @ CallNode (location: (54,9)-(54,12))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1266,7 +1266,7 @@
         ├── @ MatchRequiredNode (location: (55,0)-(55,12))
         │   ├── value:
         │   │   @ CallNode (location: (55,0)-(55,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1285,7 +1285,7 @@
         ├── @ MatchRequiredNode (location: (56,0)-(56,13))
         │   ├── value:
         │   │   @ CallNode (location: (56,0)-(56,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1304,7 +1304,7 @@
         ├── @ MatchRequiredNode (location: (57,0)-(57,12))
         │   ├── value:
         │   │   @ CallNode (location: (57,0)-(57,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1323,7 +1323,7 @@
         ├── @ MatchRequiredNode (location: (59,0)-(59,11))
         │   ├── value:
         │   │   @ CallNode (location: (59,0)-(59,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1344,7 +1344,7 @@
         ├── @ MatchRequiredNode (location: (60,0)-(60,13))
         │   ├── value:
         │   │   @ CallNode (location: (60,0)-(60,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1364,7 +1364,7 @@
         ├── @ MatchRequiredNode (location: (61,0)-(61,23))
         │   ├── value:
         │   │   @ CallNode (location: (61,0)-(61,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1408,7 +1408,7 @@
         ├── @ MatchRequiredNode (location: (63,0)-(63,10))
         │   ├── value:
         │   │   @ CallNode (location: (63,0)-(63,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1424,7 +1424,7 @@
         ├── @ MatchRequiredNode (location: (64,0)-(64,20))
         │   ├── value:
         │   │   @ CallNode (location: (64,0)-(64,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1452,7 +1452,7 @@
         ├── @ MatchRequiredNode (location: (65,0)-(65,12))
         │   ├── value:
         │   │   @ CallNode (location: (65,0)-(65,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1472,7 +1472,7 @@
         ├── @ MatchRequiredNode (location: (66,0)-(66,22))
         │   ├── value:
         │   │   @ CallNode (location: (66,0)-(66,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1504,7 +1504,7 @@
         ├── @ MatchRequiredNode (location: (68,0)-(68,12))
         │   ├── value:
         │   │   @ CallNode (location: (68,0)-(68,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1527,7 +1527,7 @@
         ├── @ MatchRequiredNode (location: (69,0)-(69,13))
         │   ├── value:
         │   │   @ CallNode (location: (69,0)-(69,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1552,7 +1552,7 @@
         ├── @ MatchRequiredNode (location: (70,0)-(70,19))
         │   ├── value:
         │   │   @ CallNode (location: (70,0)-(70,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1581,7 +1581,7 @@
         ├── @ MatchRequiredNode (location: (71,0)-(71,15))
         │   ├── value:
         │   │   @ CallNode (location: (71,0)-(71,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1607,7 +1607,7 @@
         ├── @ MatchRequiredNode (location: (72,0)-(72,21))
         │   ├── value:
         │   │   @ CallNode (location: (72,0)-(72,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1639,7 +1639,7 @@
         ├── @ MatchRequiredNode (location: (73,0)-(73,21))
         │   ├── value:
         │   │   @ CallNode (location: (73,0)-(73,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1671,7 +1671,7 @@
         ├── @ MatchRequiredNode (location: (74,0)-(74,27))
         │   ├── value:
         │   │   @ CallNode (location: (74,0)-(74,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1709,7 +1709,7 @@
         ├── @ MatchRequiredNode (location: (76,0)-(76,12))
         │   ├── value:
         │   │   @ CallNode (location: (76,0)-(76,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1732,7 +1732,7 @@
         ├── @ MatchRequiredNode (location: (77,0)-(77,13))
         │   ├── value:
         │   │   @ CallNode (location: (77,0)-(77,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1757,7 +1757,7 @@
         ├── @ MatchRequiredNode (location: (78,0)-(78,19))
         │   ├── value:
         │   │   @ CallNode (location: (78,0)-(78,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1786,7 +1786,7 @@
         ├── @ MatchRequiredNode (location: (79,0)-(79,17))
         │   ├── value:
         │   │   @ CallNode (location: (79,0)-(79,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1818,7 +1818,7 @@
         ├── @ MatchRequiredNode (location: (80,0)-(80,15))
         │   ├── value:
         │   │   @ CallNode (location: (80,0)-(80,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1844,7 +1844,7 @@
         ├── @ MatchRequiredNode (location: (81,0)-(81,21))
         │   ├── value:
         │   │   @ CallNode (location: (81,0)-(81,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1876,7 +1876,7 @@
         ├── @ MatchRequiredNode (location: (82,0)-(82,21))
         │   ├── value:
         │   │   @ CallNode (location: (82,0)-(82,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1908,7 +1908,7 @@
         ├── @ MatchRequiredNode (location: (83,0)-(83,27))
         │   ├── value:
         │   │   @ CallNode (location: (83,0)-(83,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1946,7 +1946,7 @@
         ├── @ MatchRequiredNode (location: (85,0)-(85,11))
         │   ├── value:
         │   │   @ CallNode (location: (85,0)-(85,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -1973,7 +1973,7 @@
         ├── @ MatchRequiredNode (location: (86,0)-(86,21))
         │   ├── value:
         │   │   @ CallNode (location: (86,0)-(86,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2006,7 +2006,7 @@
         ├── @ MatchRequiredNode (location: (87,0)-(87,21))
         │   ├── value:
         │   │   @ CallNode (location: (87,0)-(87,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2039,7 +2039,7 @@
         ├── @ MatchRequiredNode (location: (88,0)-(88,21))
         │   ├── value:
         │   │   @ CallNode (location: (88,0)-(88,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2072,7 +2072,7 @@
         ├── @ MatchRequiredNode (location: (89,0)-(89,22))
         │   ├── value:
         │   │   @ CallNode (location: (89,0)-(89,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2108,7 +2108,7 @@
         ├── @ MatchRequiredNode (location: (91,0)-(91,9))
         │   ├── value:
         │   │   @ CallNode (location: (91,0)-(91,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2129,7 +2129,7 @@
         ├── @ MatchRequiredNode (location: (92,0)-(92,17))
         │   ├── value:
         │   │   @ CallNode (location: (92,0)-(92,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2178,7 +2178,7 @@
         ├── @ MatchRequiredNode (location: (94,0)-(94,13))
         │   ├── value:
         │   │   @ CallNode (location: (94,0)-(94,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2205,7 +2205,7 @@
         ├── @ MatchRequiredNode (location: (95,0)-(95,23))
         │   ├── value:
         │   │   @ CallNode (location: (95,0)-(95,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2238,7 +2238,7 @@
         ├── @ MatchRequiredNode (location: (96,0)-(96,23))
         │   ├── value:
         │   │   @ CallNode (location: (96,0)-(96,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2271,7 +2271,7 @@
         ├── @ MatchRequiredNode (location: (97,0)-(97,23))
         │   ├── value:
         │   │   @ CallNode (location: (97,0)-(97,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2304,7 +2304,7 @@
         ├── @ MatchRequiredNode (location: (98,0)-(98,24))
         │   ├── value:
         │   │   @ CallNode (location: (98,0)-(98,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2340,7 +2340,7 @@
         ├── @ MatchPredicateNode (location: (100,0)-(100,10))
         │   ├── value:
         │   │   @ CallNode (location: (100,0)-(100,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2357,7 +2357,7 @@
         ├── @ MatchPredicateNode (location: (101,0)-(101,8))
         │   ├── value:
         │   │   @ CallNode (location: (101,0)-(101,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2373,7 +2373,7 @@
         ├── @ MatchPredicateNode (location: (102,0)-(102,10))
         │   ├── value:
         │   │   @ CallNode (location: (102,0)-(102,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2388,7 +2388,7 @@
         ├── @ MatchPredicateNode (location: (103,0)-(103,9))
         │   ├── value:
         │   │   @ CallNode (location: (103,0)-(103,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2406,7 +2406,7 @@
         ├── @ MatchPredicateNode (location: (104,0)-(104,9))
         │   ├── value:
         │   │   @ CallNode (location: (104,0)-(104,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2424,7 +2424,7 @@
         ├── @ MatchPredicateNode (location: (105,0)-(105,11))
         │   ├── value:
         │   │   @ CallNode (location: (105,0)-(105,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2444,7 +2444,7 @@
         ├── @ MatchPredicateNode (location: (106,0)-(106,14))
         │   ├── value:
         │   │   @ CallNode (location: (106,0)-(106,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2464,7 +2464,7 @@
         ├── @ MatchPredicateNode (location: (107,0)-(107,13))
         │   ├── value:
         │   │   @ CallNode (location: (107,0)-(107,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2484,7 +2484,7 @@
         ├── @ MatchPredicateNode (location: (108,0)-(108,12))
         │   ├── value:
         │   │   @ CallNode (location: (108,0)-(108,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2504,7 +2504,7 @@
         ├── @ MatchPredicateNode (location: (109,0)-(109,12))
         │   ├── value:
         │   │   @ CallNode (location: (109,0)-(109,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2524,7 +2524,7 @@
         ├── @ MatchPredicateNode (location: (110,0)-(110,14))
         │   ├── value:
         │   │   @ CallNode (location: (110,0)-(110,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2544,7 +2544,7 @@
         ├── @ MatchPredicateNode (location: (111,0)-(111,14))
         │   ├── value:
         │   │   @ CallNode (location: (111,0)-(111,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2569,7 +2569,7 @@
         ├── @ MatchPredicateNode (location: (112,0)-(112,14))
         │   ├── value:
         │   │   @ CallNode (location: (112,0)-(112,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2594,7 +2594,7 @@
         ├── @ MatchPredicateNode (location: (113,0)-(113,14))
         │   ├── value:
         │   │   @ CallNode (location: (113,0)-(113,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2619,7 +2619,7 @@
         ├── @ MatchPredicateNode (location: (114,0)-(114,14))
         │   ├── value:
         │   │   @ CallNode (location: (114,0)-(114,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2644,7 +2644,7 @@
         ├── @ MatchPredicateNode (location: (115,0)-(115,14))
         │   ├── value:
         │   │   @ CallNode (location: (115,0)-(115,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2664,7 +2664,7 @@
         ├── @ MatchPredicateNode (location: (116,0)-(116,14))
         │   ├── value:
         │   │   @ CallNode (location: (116,0)-(116,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2684,7 +2684,7 @@
         ├── @ MatchPredicateNode (location: (117,0)-(117,12))
         │   ├── value:
         │   │   @ CallNode (location: (117,0)-(117,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2704,7 +2704,7 @@
         ├── @ MatchPredicateNode (location: (118,0)-(118,10))
         │   ├── value:
         │   │   @ CallNode (location: (118,0)-(118,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2719,7 +2719,7 @@
         ├── @ MatchPredicateNode (location: (119,0)-(119,11))
         │   ├── value:
         │   │   @ CallNode (location: (119,0)-(119,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2734,7 +2734,7 @@
         ├── @ MatchPredicateNode (location: (120,0)-(120,11))
         │   ├── value:
         │   │   @ CallNode (location: (120,0)-(120,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2749,7 +2749,7 @@
         ├── @ MatchPredicateNode (location: (121,0)-(121,12))
         │   ├── value:
         │   │   @ CallNode (location: (121,0)-(121,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2764,7 +2764,7 @@
         ├── @ MatchPredicateNode (location: (122,0)-(122,15))
         │   ├── value:
         │   │   @ CallNode (location: (122,0)-(122,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2780,7 +2780,7 @@
         ├── @ MatchPredicateNode (location: (123,0)-(123,15))
         │   ├── value:
         │   │   @ CallNode (location: (123,0)-(123,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2795,7 +2795,7 @@
         ├── @ MatchPredicateNode (location: (124,0)-(124,19))
         │   ├── value:
         │   │   @ CallNode (location: (124,0)-(124,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2810,7 +2810,7 @@
         ├── @ MatchPredicateNode (location: (125,0)-(125,17))
         │   ├── value:
         │   │   @ CallNode (location: (125,0)-(125,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2837,7 +2837,7 @@
         ├── @ CaseMatchNode (location: (127,0)-(127,25))
         │   ├── predicate:
         │   │   @ CallNode (location: (127,5)-(127,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2861,7 +2861,7 @@
         ├── @ CaseMatchNode (location: (128,0)-(128,23))
         │   ├── predicate:
         │   │   @ CallNode (location: (128,5)-(128,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2884,7 +2884,7 @@
         ├── @ CaseMatchNode (location: (129,0)-(129,25))
         │   ├── predicate:
         │   │   @ CallNode (location: (129,5)-(129,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2906,7 +2906,7 @@
         ├── @ CaseMatchNode (location: (130,0)-(130,24))
         │   ├── predicate:
         │   │   @ CallNode (location: (130,5)-(130,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2931,7 +2931,7 @@
         ├── @ CaseMatchNode (location: (131,0)-(131,24))
         │   ├── predicate:
         │   │   @ CallNode (location: (131,5)-(131,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2956,7 +2956,7 @@
         ├── @ CaseMatchNode (location: (132,0)-(132,26))
         │   ├── predicate:
         │   │   @ CallNode (location: (132,5)-(132,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -2983,7 +2983,7 @@
         ├── @ CaseMatchNode (location: (133,0)-(133,29))
         │   ├── predicate:
         │   │   @ CallNode (location: (133,5)-(133,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3010,7 +3010,7 @@
         ├── @ CaseMatchNode (location: (134,0)-(134,28))
         │   ├── predicate:
         │   │   @ CallNode (location: (134,5)-(134,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3037,7 +3037,7 @@
         ├── @ CaseMatchNode (location: (135,0)-(135,27))
         │   ├── predicate:
         │   │   @ CallNode (location: (135,5)-(135,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3064,7 +3064,7 @@
         ├── @ CaseMatchNode (location: (136,0)-(136,27))
         │   ├── predicate:
         │   │   @ CallNode (location: (136,5)-(136,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3091,7 +3091,7 @@
         ├── @ CaseMatchNode (location: (137,0)-(137,29))
         │   ├── predicate:
         │   │   @ CallNode (location: (137,5)-(137,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3118,7 +3118,7 @@
         ├── @ CaseMatchNode (location: (138,0)-(138,29))
         │   ├── predicate:
         │   │   @ CallNode (location: (138,5)-(138,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3150,7 +3150,7 @@
         ├── @ CaseMatchNode (location: (139,0)-(139,29))
         │   ├── predicate:
         │   │   @ CallNode (location: (139,5)-(139,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3182,7 +3182,7 @@
         ├── @ CaseMatchNode (location: (140,0)-(140,29))
         │   ├── predicate:
         │   │   @ CallNode (location: (140,5)-(140,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3214,7 +3214,7 @@
         ├── @ CaseMatchNode (location: (141,0)-(141,29))
         │   ├── predicate:
         │   │   @ CallNode (location: (141,5)-(141,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3246,7 +3246,7 @@
         ├── @ CaseMatchNode (location: (142,0)-(142,29))
         │   ├── predicate:
         │   │   @ CallNode (location: (142,5)-(142,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3273,7 +3273,7 @@
         ├── @ CaseMatchNode (location: (143,0)-(143,29))
         │   ├── predicate:
         │   │   @ CallNode (location: (143,5)-(143,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3300,7 +3300,7 @@
         ├── @ CaseMatchNode (location: (144,0)-(144,27))
         │   ├── predicate:
         │   │   @ CallNode (location: (144,5)-(144,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3327,7 +3327,7 @@
         ├── @ CaseMatchNode (location: (145,0)-(145,25))
         │   ├── predicate:
         │   │   @ CallNode (location: (145,5)-(145,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3349,7 +3349,7 @@
         ├── @ CaseMatchNode (location: (146,0)-(146,26))
         │   ├── predicate:
         │   │   @ CallNode (location: (146,5)-(146,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3371,7 +3371,7 @@
         ├── @ CaseMatchNode (location: (147,0)-(147,26))
         │   ├── predicate:
         │   │   @ CallNode (location: (147,5)-(147,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3393,7 +3393,7 @@
         ├── @ CaseMatchNode (location: (148,0)-(148,27))
         │   ├── predicate:
         │   │   @ CallNode (location: (148,5)-(148,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3415,7 +3415,7 @@
         ├── @ CaseMatchNode (location: (149,0)-(149,30))
         │   ├── predicate:
         │   │   @ CallNode (location: (149,5)-(149,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3438,7 +3438,7 @@
         ├── @ CaseMatchNode (location: (150,0)-(150,30))
         │   ├── predicate:
         │   │   @ CallNode (location: (150,5)-(150,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3460,7 +3460,7 @@
         ├── @ CaseMatchNode (location: (151,0)-(151,34))
         │   ├── predicate:
         │   │   @ CallNode (location: (151,5)-(151,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3482,7 +3482,7 @@
         ├── @ CaseMatchNode (location: (152,0)-(152,32))
         │   ├── predicate:
         │   │   @ CallNode (location: (152,5)-(152,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3516,7 +3516,7 @@
         ├── @ CaseMatchNode (location: (154,0)-(154,32))
         │   ├── predicate:
         │   │   @ CallNode (location: (154,5)-(154,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3552,7 +3552,7 @@
         ├── @ CaseMatchNode (location: (155,0)-(155,30))
         │   ├── predicate:
         │   │   @ CallNode (location: (155,5)-(155,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3587,7 +3587,7 @@
         ├── @ CaseMatchNode (location: (156,0)-(156,32))
         │   ├── predicate:
         │   │   @ CallNode (location: (156,5)-(156,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3621,7 +3621,7 @@
         ├── @ CaseMatchNode (location: (157,0)-(157,31))
         │   ├── predicate:
         │   │   @ CallNode (location: (157,5)-(157,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3658,7 +3658,7 @@
         ├── @ CaseMatchNode (location: (158,0)-(158,31))
         │   ├── predicate:
         │   │   @ CallNode (location: (158,5)-(158,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3695,7 +3695,7 @@
         ├── @ CaseMatchNode (location: (159,0)-(159,33))
         │   ├── predicate:
         │   │   @ CallNode (location: (159,5)-(159,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3734,7 +3734,7 @@
         ├── @ CaseMatchNode (location: (160,0)-(160,36))
         │   ├── predicate:
         │   │   @ CallNode (location: (160,5)-(160,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3773,7 +3773,7 @@
         ├── @ CaseMatchNode (location: (161,0)-(161,35))
         │   ├── predicate:
         │   │   @ CallNode (location: (161,5)-(161,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3812,7 +3812,7 @@
         ├── @ CaseMatchNode (location: (162,0)-(162,34))
         │   ├── predicate:
         │   │   @ CallNode (location: (162,5)-(162,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3851,7 +3851,7 @@
         ├── @ CaseMatchNode (location: (163,0)-(163,34))
         │   ├── predicate:
         │   │   @ CallNode (location: (163,5)-(163,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3890,7 +3890,7 @@
         ├── @ CaseMatchNode (location: (164,0)-(164,36))
         │   ├── predicate:
         │   │   @ CallNode (location: (164,5)-(164,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3929,7 +3929,7 @@
         ├── @ CaseMatchNode (location: (165,0)-(165,36))
         │   ├── predicate:
         │   │   @ CallNode (location: (165,5)-(165,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -3973,7 +3973,7 @@
         ├── @ CaseMatchNode (location: (166,0)-(166,36))
         │   ├── predicate:
         │   │   @ CallNode (location: (166,5)-(166,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -4017,7 +4017,7 @@
         ├── @ CaseMatchNode (location: (167,0)-(167,36))
         │   ├── predicate:
         │   │   @ CallNode (location: (167,5)-(167,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -4061,7 +4061,7 @@
         ├── @ CaseMatchNode (location: (168,0)-(168,36))
         │   ├── predicate:
         │   │   @ CallNode (location: (168,5)-(168,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -4105,7 +4105,7 @@
         ├── @ CaseMatchNode (location: (169,0)-(169,36))
         │   ├── predicate:
         │   │   @ CallNode (location: (169,5)-(169,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -4144,7 +4144,7 @@
         ├── @ CaseMatchNode (location: (170,0)-(170,36))
         │   ├── predicate:
         │   │   @ CallNode (location: (170,5)-(170,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -4183,7 +4183,7 @@
         ├── @ CaseMatchNode (location: (171,0)-(171,34))
         │   ├── predicate:
         │   │   @ CallNode (location: (171,5)-(171,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -4222,7 +4222,7 @@
         ├── @ CaseMatchNode (location: (172,0)-(172,32))
         │   ├── predicate:
         │   │   @ CallNode (location: (172,5)-(172,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -4256,7 +4256,7 @@
         ├── @ CaseMatchNode (location: (173,0)-(173,33))
         │   ├── predicate:
         │   │   @ CallNode (location: (173,5)-(173,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -4290,7 +4290,7 @@
         ├── @ CaseMatchNode (location: (174,0)-(174,33))
         │   ├── predicate:
         │   │   @ CallNode (location: (174,5)-(174,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -4324,7 +4324,7 @@
         ├── @ CaseMatchNode (location: (175,0)-(175,34))
         │   ├── predicate:
         │   │   @ CallNode (location: (175,5)-(175,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -4358,7 +4358,7 @@
         ├── @ CaseMatchNode (location: (176,0)-(176,37))
         │   ├── predicate:
         │   │   @ CallNode (location: (176,5)-(176,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -4393,7 +4393,7 @@
         ├── @ CaseMatchNode (location: (177,0)-(177,37))
         │   ├── predicate:
         │   │   @ CallNode (location: (177,5)-(177,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -4427,7 +4427,7 @@
         ├── @ CaseMatchNode (location: (178,0)-(178,41))
         │   ├── predicate:
         │   │   @ CallNode (location: (178,5)-(178,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -4461,7 +4461,7 @@
         ├── @ CaseMatchNode (location: (179,0)-(179,39))
         │   ├── predicate:
         │   │   @ CallNode (location: (179,5)-(179,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -4510,7 +4510,7 @@
         │   │   @ MatchPredicateNode (location: (181,3)-(181,10))
         │   │   ├── value:
         │   │   │   @ CallNode (location: (181,3)-(181,4))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :a
@@ -4535,7 +4535,7 @@
         ├── @ MatchRequiredNode (location: (184,0)-(186,1))
         │   ├── value:
         │   │   @ CallNode (location: (184,0)-(184,1))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :a
@@ -4559,7 +4559,7 @@
         ├── @ MatchPredicateNode (location: (188,0)-(192,1))
         │   ├── value:
         │   │   @ CallNode (location: (188,0)-(188,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -4612,7 +4612,7 @@
         ├── @ MatchPredicateNode (location: (194,0)-(194,17))
         │   ├── value:
         │   │   @ CallNode (location: (194,0)-(194,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -4636,7 +4636,7 @@
         ├── @ MatchRequiredNode (location: (195,0)-(195,17))
         │   ├── value:
         │   │   @ CallNode (location: (195,0)-(195,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -4684,7 +4684,7 @@
         │       ├── opening_loc: ∅
         │       └── closing_loc: ∅
         ├── @ CallNode (location: (198,0)-(200,3))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo

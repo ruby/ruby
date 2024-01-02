@@ -7,7 +7,7 @@
             ├── flags: ∅
             ├── receiver:
             │   @ CallNode (location: (1,0)-(5,3))
-            │   ├── flags: ∅
+            │   ├── flags: ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :proc

@@ -17,7 +17,7 @@
         │   │   @ StatementsNode (location: (2,2)-(2,5))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (2,2)-(2,5))
-        │   │           ├── flags: variable_call
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -91,7 +91,7 @@
         │   ├── if_keyword_loc: (18,0)-(18,2) = "if"
         │   ├── predicate:
         │   │   @ CallNode (location: (18,3)-(18,6))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -129,7 +129,7 @@
         │   │           │           ├── name_loc: (22,2)-(22,5) = "foo"
         │   │           │           ├── value:
         │   │           │           │   @ CallNode (location: (22,8)-(22,11))
-        │   │           │           │   ├── flags: variable_call
+        │   │           │           │   ├── flags: variable_call, ignore_visibility
         │   │           │           │   ├── receiver: ∅
         │   │           │           │   ├── call_operator_loc: ∅
         │   │           │           │   ├── name: :bar
@@ -168,7 +168,7 @@
         │   │           │           ├── name_loc: (26,2)-(26,5) = "foo"
         │   │           │           ├── value:
         │   │           │           │   @ CallNode (location: (26,8)-(26,11))
-        │   │           │           │   ├── flags: variable_call
+        │   │           │           │   ├── flags: variable_call, ignore_visibility
         │   │           │           │   ├── receiver: ∅
         │   │           │           │   ├── call_operator_loc: ∅
         │   │           │           │   ├── name: :bar
@@ -186,7 +186,7 @@
         │   ├── keyword_loc: (28,0)-(28,6) = "unless"
         │   ├── predicate:
         │   │   @ CallNode (location: (28,7)-(28,10))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -205,7 +205,7 @@
         │   │           ├── name_loc: (29,2)-(29,5) = "foo"
         │   │           ├── value:
         │   │           │   @ CallNode (location: (29,8)-(29,11))
-        │   │           │   ├── flags: variable_call
+        │   │           │   ├── flags: variable_call, ignore_visibility
         │   │           │   ├── receiver: ∅
         │   │           │   ├── call_operator_loc: ∅
         │   │           │   ├── name: :bar
@@ -221,7 +221,7 @@
             ├── if_keyword_loc: (31,0)-(31,2) = "if"
             ├── predicate:
             │   @ CallNode (location: (31,3)-(33,1))
-            │   ├── flags: ∅
+            │   ├── flags: ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :foo

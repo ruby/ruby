@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(9,17))
     └── body: (length: 5)
         ├── @ CallNode (location: (1,0)-(1,2))
-        │   ├── flags: variable_call
+        │   ├── flags: variable_call, ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :_1
@@ -19,7 +19,7 @@
         │   ├── operator_loc: (3,6)-(3,8) = "<<"
         │   ├── expression:
         │   │   @ CallNode (location: (3,9)-(3,12))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -32,7 +32,7 @@
         │   │   @ StatementsNode (location: (3,14)-(3,16))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (3,14)-(3,16))
-        │   │           ├── flags: variable_call
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :_1
@@ -54,7 +54,7 @@
         │   │   @ StatementsNode (location: (5,9)-(5,11))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (5,9)-(5,11))
-        │   │           ├── flags: variable_call
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :_1
@@ -75,7 +75,7 @@
         │   │   @ StatementsNode (location: (7,12)-(7,14))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (7,12)-(7,14))
-        │   │           ├── flags: variable_call
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :_1
@@ -102,7 +102,7 @@
             │   @ StatementsNode (location: (9,10)-(9,12))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (9,10)-(9,12))
-            │           ├── flags: variable_call
+            │           ├── flags: variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :_1

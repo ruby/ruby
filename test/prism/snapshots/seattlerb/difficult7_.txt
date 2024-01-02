@@ -16,7 +16,7 @@
             │   │   │   └── unescaped: "a"
             │   │   ├── value:
             │   │   │   @ CallNode (location: (2,11)-(2,33))
-            │   │   │   ├── flags: ∅
+            │   │   │   ├── flags: ignore_visibility
             │   │   │   ├── receiver: ∅
             │   │   │   ├── call_operator_loc: ∅
             │   │   │   ├── name: :lambda
@@ -36,7 +36,7 @@
             │   │   │       │           ├── if_keyword_loc: ∅
             │   │   │       │           ├── predicate:
             │   │   │       │           │   @ CallNode (location: (2,20)-(2,21))
-            │   │   │       │           │   ├── flags: variable_call
+            │   │   │       │           │   ├── flags: variable_call, ignore_visibility
             │   │   │       │           │   ├── receiver: ∅
             │   │   │       │           │   ├── call_operator_loc: ∅
             │   │   │       │           │   ├── name: :b
@@ -50,7 +50,7 @@
             │   │   │       │           │   @ StatementsNode (location: (2,24)-(2,27))
             │   │   │       │           │   └── body: (length: 1)
             │   │   │       │           │       └── @ CallNode (location: (2,24)-(2,27))
-            │   │   │       │           │           ├── flags: ∅
+            │   │   │       │           │           ├── flags: ignore_visibility
             │   │   │       │           │           ├── receiver: ∅
             │   │   │       │           │           ├── call_operator_loc: ∅
             │   │   │       │           │           ├── name: :c
@@ -66,7 +66,7 @@
             │   │   │       │           │   │   @ StatementsNode (location: (2,30)-(2,31))
             │   │   │       │           │   │   └── body: (length: 1)
             │   │   │       │           │   │       └── @ CallNode (location: (2,30)-(2,31))
-            │   │   │       │           │   │           ├── flags: variable_call
+            │   │   │       │           │   │           ├── flags: variable_call, ignore_visibility
             │   │   │       │           │   │           ├── receiver: ∅
             │   │   │       │           │   │           ├── call_operator_loc: ∅
             │   │   │       │           │   │           ├── name: :d

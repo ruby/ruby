@@ -11,7 +11,7 @@
             │   @ RescueModifierNode (location: (1,4)-(1,16))
             │   ├── expression:
             │   │   @ CallNode (location: (1,4)-(1,7))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: ignore_visibility
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
             │   │   ├── name: :b

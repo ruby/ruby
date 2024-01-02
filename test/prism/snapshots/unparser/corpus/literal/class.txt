@@ -20,7 +20,7 @@
         │   ├── operator_loc: (4,6)-(4,8) = "<<"
         │   ├── expression:
         │   │   @ CallNode (location: (4,9)-(4,10))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :a
@@ -37,7 +37,7 @@
         │   ├── operator_loc: (7,6)-(7,8) = "<<"
         │   ├── expression:
         │   │   @ CallNode (location: (7,9)-(7,10))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :a
@@ -50,7 +50,7 @@
         │   │   @ StatementsNode (location: (8,2)-(8,3))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (8,2)-(8,3))
-        │   │           ├── flags: variable_call
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :b
@@ -169,7 +169,7 @@
         │   │   @ StatementsNode (location: (27,2)-(31,5))
         │   │   └── body: (length: 2)
         │   │       ├── @ CallNode (location: (27,2)-(27,16))
-        │   │       │   ├── flags: ∅
+        │   │       │   ├── flags: ignore_visibility
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
         │   │       │   ├── name: :include

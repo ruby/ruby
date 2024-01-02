@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(12,3))
     └── body: (length: 4)
         ├── @ CallNode (location: (1,0)-(3,4))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :bar
@@ -21,7 +21,7 @@
         │   │           │   └── depth: 0
         │   │           ├── collection:
         │   │           │   @ CallNode (location: (1,13)-(1,16))
-        │   │           │   ├── flags: variable_call
+        │   │           │   ├── flags: variable_call, ignore_visibility
         │   │           │   ├── receiver: ∅
         │   │           │   ├── call_operator_loc: ∅
         │   │           │   ├── name: :bar
@@ -34,7 +34,7 @@
         │   │           │   @ StatementsNode (location: (2,2)-(2,5))
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ CallNode (location: (2,2)-(2,5))
-        │   │           │           ├── flags: variable_call
+        │   │           │           ├── flags: variable_call, ignore_visibility
         │   │           │           ├── receiver: ∅
         │   │           │           ├── call_operator_loc: ∅
         │   │           │           ├── name: :baz
@@ -56,7 +56,7 @@
         │   │   └── depth: 0
         │   ├── collection:
         │   │   @ CallNode (location: (4,9)-(4,12))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :bar
@@ -69,7 +69,7 @@
         │   │   @ StatementsNode (location: (5,2)-(5,5))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (5,2)-(5,5))
-        │   │           ├── flags: variable_call
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :baz
@@ -101,7 +101,7 @@
         │   │   └── rparen_loc: (7,10)-(7,11) = ")"
         │   ├── collection:
         │   │   @ CallNode (location: (7,15)-(7,18))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :bar
@@ -114,7 +114,7 @@
         │   │   @ StatementsNode (location: (8,2)-(8,5))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (8,2)-(8,5))
-        │   │           ├── flags: variable_call
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :baz
@@ -143,7 +143,7 @@
             │   └── rparen_loc: (10,9)-(10,10) = ")"
             ├── collection:
             │   @ CallNode (location: (10,14)-(10,17))
-            │   ├── flags: variable_call
+            │   ├── flags: variable_call, ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :bar
@@ -156,7 +156,7 @@
             │   @ StatementsNode (location: (11,2)-(11,5))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (11,2)-(11,5))
-            │           ├── flags: variable_call
+            │           ├── flags: variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :baz

@@ -7,7 +7,7 @@
             ├── flags: ∅
             ├── receiver:
             │   @ CallNode (location: (1,2)-(1,5))
-            │   ├── flags: ∅
+            │   ├── flags: ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :a
@@ -18,7 +18,7 @@
             │   │   ├── flags: ∅
             │   │   └── arguments: (length: 1)
             │   │       └── @ CallNode (location: (1,4)-(1,5))
-            │   │           ├── flags: variable_call
+            │   │           ├── flags: variable_call, ignore_visibility
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :b

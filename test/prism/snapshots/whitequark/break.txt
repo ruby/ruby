@@ -12,7 +12,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ CallNode (location: (3,6)-(3,9))
-        │   │           ├── flags: variable_call
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :foo
@@ -42,7 +42,7 @@
             │           │   @ StatementsNode (location: (7,6)-(7,9))
             │           │   └── body: (length: 1)
             │           │       └── @ CallNode (location: (7,6)-(7,9))
-            │           │           ├── flags: variable_call
+            │           │           ├── flags: variable_call, ignore_visibility
             │           │           ├── receiver: ∅
             │           │           ├── call_operator_loc: ∅
             │           │           ├── name: :foo

@@ -7,7 +7,7 @@
         │   ├── flags: attribute_write
         │   ├── receiver:
         │   │   @ CallNode (location: (1,0)-(1,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -32,7 +32,7 @@
         │   ├── flags: attribute_write
         │   ├── receiver:
         │   │   @ CallNode (location: (3,0)-(3,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -58,7 +58,7 @@
         │   │   @ ConstantPathNode (location: (5,0)-(5,6))
         │   │   ├── parent:
         │   │   │   @ CallNode (location: (5,0)-(5,3))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :foo
@@ -79,7 +79,7 @@
             ├── flags: attribute_write
             ├── receiver:
             │   @ CallNode (location: (7,0)-(7,3))
-            │   ├── flags: variable_call
+            │   ├── flags: variable_call, ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :foo

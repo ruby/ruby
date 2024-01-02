@@ -9,7 +9,7 @@
             │   @ StatementsNode (location: (1,7)-(1,11))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,7)-(1,11))
-            │           ├── flags: variable_call
+            │           ├── flags: variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :meth
@@ -23,7 +23,7 @@
             │   ├── keyword_loc: (1,13)-(1,19) = "rescue"
             │   ├── exceptions: (length: 1)
             │   │   └── @ CallNode (location: (1,20)-(1,23))
-            │   │       ├── flags: variable_call
+            │   │       ├── flags: variable_call, ignore_visibility
             │   │       ├── receiver: ∅
             │   │       ├── call_operator_loc: ∅
             │   │       ├── name: :foo
@@ -41,7 +41,7 @@
             │   │   @ StatementsNode (location: (1,31)-(1,34))
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (1,31)-(1,34))
-            │   │           ├── flags: variable_call
+            │   │           ├── flags: variable_call, ignore_visibility
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :bar

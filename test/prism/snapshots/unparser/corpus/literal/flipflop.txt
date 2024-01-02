@@ -21,7 +21,7 @@
         │   │   │           │   │           ├── flags: ∅
         │   │   │           │   │           ├── receiver:
         │   │   │           │   │           │   @ CallNode (location: (1,5)-(1,6))
-        │   │   │           │   │           │   ├── flags: variable_call
+        │   │   │           │   │           │   ├── flags: variable_call, ignore_visibility
         │   │   │           │   │           │   ├── receiver: ∅
         │   │   │           │   │           │   ├── call_operator_loc: ∅
         │   │   │           │   │           │   ├── name: :i
@@ -53,7 +53,7 @@
         │   │   │           │   │           ├── flags: ∅
         │   │   │           │   │           ├── receiver:
         │   │   │           │   │           │   @ CallNode (location: (1,15)-(1,16))
-        │   │   │           │   │           │   ├── flags: variable_call
+        │   │   │           │   │           │   ├── flags: variable_call, ignore_visibility
         │   │   │           │   │           │   ├── receiver: ∅
         │   │   │           │   │           │   ├── call_operator_loc: ∅
         │   │   │           │   │           │   ├── name: :i
@@ -84,7 +84,7 @@
         │   │   @ StatementsNode (location: (2,2)-(2,5))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (2,2)-(2,5))
-        │   │           ├── flags: variable_call
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :foo
@@ -113,7 +113,7 @@
             │   │           │   │           ├── flags: ∅
             │   │           │   │           ├── receiver:
             │   │           │   │           │   @ CallNode (location: (4,5)-(4,6))
-            │   │           │   │           │   ├── flags: variable_call
+            │   │           │   │           │   ├── flags: variable_call, ignore_visibility
             │   │           │   │           │   ├── receiver: ∅
             │   │           │   │           │   ├── call_operator_loc: ∅
             │   │           │   │           │   ├── name: :i
@@ -145,7 +145,7 @@
             │   │           │   │           ├── flags: ∅
             │   │           │   │           ├── receiver:
             │   │           │   │           │   @ CallNode (location: (4,16)-(4,17))
-            │   │           │   │           │   ├── flags: variable_call
+            │   │           │   │           │   ├── flags: variable_call, ignore_visibility
             │   │           │   │           │   ├── receiver: ∅
             │   │           │   │           │   ├── call_operator_loc: ∅
             │   │           │   │           │   ├── name: :i
@@ -176,7 +176,7 @@
             │   @ StatementsNode (location: (5,2)-(5,5))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (5,2)-(5,5))
-            │           ├── flags: variable_call
+            │           ├── flags: variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :foo

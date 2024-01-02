@@ -7,7 +7,7 @@
             ├── flags: safe_navigation
             ├── receiver:
             │   @ CallNode (location: (1,0)-(1,1))
-            │   ├── flags: variable_call
+            │   ├── flags: variable_call, ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :a
@@ -24,7 +24,7 @@
             ├── operator_loc: (1,5)-(1,7) = "+="
             └── value:
                 @ CallNode (location: (1,8)-(1,11))
-                ├── flags: ∅
+                ├── flags: ignore_visibility
                 ├── receiver: ∅
                 ├── call_operator_loc: ∅
                 ├── name: :x

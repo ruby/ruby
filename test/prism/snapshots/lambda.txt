@@ -60,7 +60,7 @@
         │   │   │   │           │       │   @ StatementsNode (location: (5,10)-(5,11))
         │   │   │   │           │       │   └── body: (length: 1)
         │   │   │   │           │       │       └── @ CallNode (location: (5,10)-(5,11))
-        │   │   │   │           │       │           ├── flags: variable_call
+        │   │   │   │           │       │           ├── flags: variable_call, ignore_visibility
         │   │   │   │           │       │           ├── receiver: ∅
         │   │   │   │           │       │           ├── call_operator_loc: ∅
         │   │   │   │           │       │           ├── name: :a
@@ -100,7 +100,7 @@
         │   │   │   │           ├── flags: ∅
         │   │   │   │           ├── receiver:
         │   │   │   │           │   @ CallNode (location: (7,6)-(7,7))
-        │   │   │   │           │   ├── flags: variable_call
+        │   │   │   │           │   ├── flags: variable_call, ignore_visibility
         │   │   │   │           │   ├── receiver: ∅
         │   │   │   │           │   ├── call_operator_loc: ∅
         │   │   │   │           │   ├── name: :b
@@ -145,7 +145,7 @@
         │   │   │   │       ├── operator_loc: (9,7)-(9,8) = "="
         │   │   │   │       └── value:
         │   │   │   │           @ CallNode (location: (9,9)-(9,12))
-        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           ├── flags: variable_call, ignore_visibility
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :bar
@@ -183,7 +183,7 @@
             │   │   │       ├── name_loc: (11,3)-(11,7) = "foo:"
             │   │   │       └── value:
             │   │   │           @ CallNode (location: (11,8)-(11,11))
-            │   │   │           ├── flags: variable_call
+            │   │   │           ├── flags: variable_call, ignore_visibility
             │   │   │           ├── receiver: ∅
             │   │   │           ├── call_operator_loc: ∅
             │   │   │           ├── name: :bar

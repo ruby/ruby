@@ -116,7 +116,7 @@
         │   │   @ ParenthesesNode (location: (10,4)-(10,7))
         │   │   ├── body:
         │   │   │   @ CallNode (location: (10,5)-(10,6))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :b
@@ -144,7 +144,7 @@
         │   │   @ ParenthesesNode (location: (13,4)-(13,7))
         │   │   ├── body:
         │   │   │   @ CallNode (location: (13,5)-(13,6))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :a
@@ -224,7 +224,7 @@
         │   ├── name_loc: (25,6)-(25,7) = "b"
         │   ├── receiver:
         │   │   @ CallNode (location: (25,4)-(25,5))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :a
@@ -939,7 +939,7 @@
         │   │   @ StatementsNode (location: (110,10)-(110,14))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (110,10)-(110,14))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :b
@@ -980,7 +980,7 @@
         │   │   @ StatementsNode (location: (112,12)-(112,18))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (112,12)-(112,18))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :b
@@ -1019,7 +1019,7 @@
         │   │   @ StatementsNode (location: (114,12)-(114,24))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (114,12)-(114,24))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :b
@@ -1056,7 +1056,7 @@
         │   │   │   ├── name_loc: (116,5)-(116,6) = "c"
         │   │   │   ├── value:
         │   │   │   │   @ CallNode (location: (116,9)-(116,10))
-        │   │   │   │   ├── flags: variable_call
+        │   │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   │   ├── receiver: ∅
         │   │   │   │   ├── call_operator_loc: ∅
         │   │   │   │   ├── name: :b
@@ -1158,7 +1158,7 @@
         │   │   │   ├── name_loc: (128,5)-(128,6) = "a"
         │   │   │   ├── value:
         │   │   │   │   @ CallNode (location: (128,9)-(128,10))
-        │   │   │   │   ├── flags: variable_call
+        │   │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   │   ├── receiver: ∅
         │   │   │   │   ├── call_operator_loc: ∅
         │   │   │   │   ├── name: :b
@@ -1250,7 +1250,7 @@
         │   │           │       │   @ StatementsNode (location: (136,18)-(136,24))
         │   │           │       │   └── body: (length: 1)
         │   │           │       │       └── @ CallNode (location: (136,18)-(136,24))
-        │   │           │       │           ├── flags: ∅
+        │   │           │       │           ├── flags: ignore_visibility
         │   │           │       │           ├── receiver: ∅
         │   │           │       │           ├── call_operator_loc: ∅
         │   │           │       │           ├── name: :b
@@ -1302,7 +1302,7 @@
         │   │           │               ├── @ AssocSplatNode (location: (139,11)-(139,16))
         │   │           │               │   ├── value:
         │   │           │               │   │   @ CallNode (location: (139,13)-(139,16))
-        │   │           │               │   │   ├── flags: variable_call
+        │   │           │               │   │   ├── flags: variable_call, ignore_visibility
         │   │           │               │   │   ├── receiver: ∅
         │   │           │               │   │   ├── call_operator_loc: ∅
         │   │           │               │   │   ├── name: :bar
@@ -1315,7 +1315,7 @@
         │   │           │               ├── @ AssocSplatNode (location: (139,18)-(139,23))
         │   │           │               │   ├── value:
         │   │           │               │   │   @ CallNode (location: (139,20)-(139,23))
-        │   │           │               │   │   ├── flags: variable_call
+        │   │           │               │   │   ├── flags: variable_call, ignore_visibility
         │   │           │               │   │   ├── receiver: ∅
         │   │           │               │   │   ├── call_operator_loc: ∅
         │   │           │               │   │   ├── name: :baz
@@ -1328,7 +1328,7 @@
         │   │           │               └── @ AssocSplatNode (location: (139,25)-(139,30))
         │   │           │                   ├── value:
         │   │           │                   │   @ CallNode (location: (139,27)-(139,30))
-        │   │           │                   │   ├── flags: variable_call
+        │   │           │                   │   ├── flags: variable_call, ignore_visibility
         │   │           │                   │   ├── receiver: ∅
         │   │           │                   │   ├── call_operator_loc: ∅
         │   │           │                   │   ├── name: :qux
@@ -1611,7 +1611,7 @@
         │   │           ├── flags: ∅
         │   │           ├── receiver:
         │   │           │   @ CallNode (location: (161,2)-(161,6))
-        │   │           │   ├── flags: variable_call
+        │   │           │   ├── flags: variable_call, ignore_visibility
         │   │           │   ├── receiver: ∅
         │   │           │   ├── call_operator_loc: ∅
         │   │           │   ├── name: :item
@@ -1629,7 +1629,7 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ CallNode (location: (161,10)-(161,14))
-        │   │           │           ├── flags: ∅
+        │   │           │           ├── flags: ignore_visibility
         │   │           │           ├── receiver: ∅
         │   │           │           ├── call_operator_loc: ∅
         │   │           │           ├── name: :a
@@ -1765,7 +1765,7 @@
         │   │   │           ├── flags: ∅
         │   │   │           ├── receiver:
         │   │   │           │   @ CallNode (location: (172,9)-(172,10))
-        │   │   │           │   ├── flags: variable_call
+        │   │   │           │   ├── flags: variable_call, ignore_visibility
         │   │   │           │   ├── receiver: ∅
         │   │   │           │   ├── call_operator_loc: ∅
         │   │   │           │   ├── name: :a
@@ -1811,7 +1811,7 @@
         │   │   │           ├── flags: ∅
         │   │   │           ├── receiver:
         │   │   │           │   @ CallNode (location: (174,9)-(174,10))
-        │   │   │           │   ├── flags: variable_call
+        │   │   │           │   ├── flags: variable_call, ignore_visibility
         │   │   │           │   ├── receiver: ∅
         │   │   │           │   ├── call_operator_loc: ∅
         │   │   │           │   ├── name: :a
@@ -1857,7 +1857,7 @@
         │   │   │           ├── flags: ∅
         │   │   │           ├── receiver:
         │   │   │           │   @ CallNode (location: (176,9)-(176,10))
-        │   │   │           │   ├── flags: variable_call
+        │   │   │           │   ├── flags: variable_call, ignore_visibility
         │   │   │           │   ├── receiver: ∅
         │   │   │           │   ├── call_operator_loc: ∅
         │   │   │           │   ├── name: :a
@@ -1934,7 +1934,7 @@
         │   │   @ StatementsNode (location: (181,2)-(181,7))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (181,2)-(181,7))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar

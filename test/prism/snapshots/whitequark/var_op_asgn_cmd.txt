@@ -8,7 +8,7 @@
             ├── operator_loc: (1,4)-(1,6) = "+="
             ├── value:
             │   @ CallNode (location: (1,7)-(1,12))
-            │   ├── flags: ∅
+            │   ├── flags: ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :m

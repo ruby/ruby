@@ -10,7 +10,7 @@
             │   @ RescueModifierNode (location: (1,7)-(1,22))
             │   ├── expression:
             │   │   @ CallNode (location: (1,7)-(1,11))
-            │   │   ├── flags: variable_call
+            │   │   ├── flags: variable_call, ignore_visibility
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
             │   │   ├── name: :meth
@@ -22,7 +22,7 @@
             │   ├── keyword_loc: (1,12)-(1,18) = "rescue"
             │   └── rescue_expression:
             │       @ CallNode (location: (1,19)-(1,22))
-            │       ├── flags: variable_call
+            │       ├── flags: variable_call, ignore_visibility
             │       ├── receiver: ∅
             │       ├── call_operator_loc: ∅
             │       ├── name: :bar

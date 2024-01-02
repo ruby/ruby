@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(3,24))
     └── body: (length: 2)
         ├── @ CallNode (location: (1,0)-(1,19))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :fun
@@ -15,7 +15,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 2)
         │   │       ├── @ CallNode (location: (1,4)-(1,7))
-        │   │       │   ├── flags: variable_call
+        │   │       │   ├── flags: variable_call, ignore_visibility
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
         │   │       │   ├── name: :foo
@@ -42,7 +42,7 @@
         │   ├── closing_loc: (1,18)-(1,19) = ")"
         │   └── block: ∅
         └── @ CallNode (location: (3,0)-(3,24))
-            ├── flags: ∅
+            ├── flags: ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :fun
@@ -53,7 +53,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 2)
             │       ├── @ CallNode (location: (3,4)-(3,7))
-            │       │   ├── flags: variable_call
+            │       │   ├── flags: variable_call, ignore_visibility
             │       │   ├── receiver: ∅
             │       │   ├── call_operator_loc: ∅
             │       │   ├── name: :foo
@@ -82,7 +82,7 @@
                 @ BlockArgumentNode (location: (3,20)-(3,24))
                 ├── expression:
                 │   @ CallNode (location: (3,21)-(3,24))
-                │   ├── flags: variable_call
+                │   ├── flags: variable_call, ignore_visibility
                 │   ├── receiver: ∅
                 │   ├── call_operator_loc: ∅
                 │   ├── name: :baz

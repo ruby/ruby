@@ -12,7 +12,7 @@
             │   ├── flags: contains_splat
             │   ├── elements: (length: 3)
             │   │   ├── @ CallNode (location: (1,4)-(1,5))
-            │   │   │   ├── flags: variable_call
+            │   │   │   ├── flags: variable_call, ignore_visibility
             │   │   │   ├── receiver: ∅
             │   │   │   ├── call_operator_loc: ∅
             │   │   │   ├── name: :b
@@ -25,7 +25,7 @@
             │   │   │   ├── operator_loc: (1,7)-(1,8) = "*"
             │   │   │   └── expression:
             │   │   │       @ CallNode (location: (1,8)-(1,9))
-            │   │   │       ├── flags: variable_call
+            │   │   │       ├── flags: variable_call, ignore_visibility
             │   │   │       ├── receiver: ∅
             │   │   │       ├── call_operator_loc: ∅
             │   │   │       ├── name: :c
@@ -35,7 +35,7 @@
             │   │   │       ├── closing_loc: ∅
             │   │   │       └── block: ∅
             │   │   └── @ CallNode (location: (1,11)-(1,12))
-            │   │       ├── flags: variable_call
+            │   │       ├── flags: variable_call, ignore_visibility
             │   │       ├── receiver: ∅
             │   │       ├── call_operator_loc: ∅
             │   │       ├── name: :d

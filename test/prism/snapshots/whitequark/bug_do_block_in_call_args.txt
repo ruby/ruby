@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,33))
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,33))
-            ├── flags: ∅
+            ├── flags: ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :bar
@@ -23,7 +23,7 @@
             │           │   @ StatementsNode (location: (1,13)-(1,29))
             │           │   └── body: (length: 1)
             │           │       └── @ CallNode (location: (1,13)-(1,29))
-            │           │           ├── flags: ∅
+            │           │           ├── flags: ignore_visibility
             │           │           ├── receiver:
             │           │           │   @ SelfNode (location: (1,13)-(1,17))
             │           │           ├── call_operator_loc: (1,17)-(1,18) = "."

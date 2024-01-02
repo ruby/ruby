@@ -12,7 +12,7 @@
         │   │   @ StatementsNode (location: (2,2)-(5,6))
         │   │   └── body: (length: 4)
         │   │       ├── @ CallNode (location: (2,2)-(2,8))
-        │   │       │   ├── flags: ∅
+        │   │       │   ├── flags: ignore_visibility
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
         │   │       │   ├── name: :p
@@ -39,7 +39,7 @@
         │   │       │   │   └── flags: decimal
         │   │       │   └── operator_loc: (3,4)-(3,5) = "="
         │   │       ├── @ CallNode (location: (4,2)-(4,5))
-        │   │       │   ├── flags: ∅
+        │   │       │   ├── flags: ignore_visibility
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
         │   │       │   ├── name: :p
@@ -65,7 +65,7 @@
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (6,0)-(6,3) = "end"
         └── @ CallNode (location: (7,0)-(7,1))
-            ├── flags: variable_call
+            ├── flags: variable_call, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :a

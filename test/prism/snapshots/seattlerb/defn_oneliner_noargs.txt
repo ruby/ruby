@@ -12,7 +12,7 @@
             │   @ StatementsNode (location: (1,11)-(1,17))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,11)-(1,17))
-            │           ├── flags: variable_call
+            │           ├── flags: variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :system

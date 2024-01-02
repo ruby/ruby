@@ -122,7 +122,7 @@
         │   │   │   │   @ StatementsNode (location: (35,8)-(35,11))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (35,8)-(35,11))
-        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           ├── flags: variable_call, ignore_visibility
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :bbb
@@ -221,7 +221,7 @@
         │   │   │   │   @ StatementsNode (location: (55,7)-(55,10))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (55,7)-(55,10))
-        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           ├── flags: variable_call, ignore_visibility
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :bbb
@@ -348,7 +348,7 @@
         │   │   │   │   │   │   @ StatementsNode (location: (67,8)-(67,9))
         │   │   │   │   │   │   └── body: (length: 1)
         │   │   │   │   │   │       └── @ CallNode (location: (67,8)-(67,9))
-        │   │   │   │   │   │           ├── flags: variable_call
+        │   │   │   │   │   │           ├── flags: variable_call, ignore_visibility
         │   │   │   │   │   │           ├── receiver: ∅
         │   │   │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │   │   │           ├── name: :c

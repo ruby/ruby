@@ -58,7 +58,7 @@
             │   @ StatementsNode (location: (11,2)-(15,5))
             │   └── body: (length: 2)
             │       ├── @ CallNode (location: (11,2)-(11,16))
-            │       │   ├── flags: ∅
+            │       │   ├── flags: ignore_visibility
             │       │   ├── receiver: ∅
             │       │   ├── call_operator_loc: ∅
             │       │   ├── name: :include

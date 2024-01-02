@@ -6,7 +6,7 @@
         └── @ CaseNode (location: (1,0)-(1,25))
             ├── predicate:
             │   @ CallNode (location: (1,5)-(1,6))
-            │   ├── flags: variable_call
+            │   ├── flags: variable_call, ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :a
@@ -23,7 +23,7 @@
             │       │       ├── operator_loc: (1,13)-(1,14) = "*"
             │       │       └── expression:
             │       │           @ CallNode (location: (1,14)-(1,15))
-            │       │           ├── flags: variable_call
+            │       │           ├── flags: variable_call, ignore_visibility
             │       │           ├── receiver: ∅
             │       │           ├── call_operator_loc: ∅
             │       │           ├── name: :b

@@ -347,6 +347,8 @@ flags:
         comment: "a call that could have been a local variable"
       - name: ATTRIBUTE_WRITE
         comment: "a call that is an attribute write, so the value being written should be returned"
+      - name: IGNORE_VISIBILITY
+        comment: "a call that ignores method visibility"
     comment: Flags for call nodes.
   - name: EncodingFlags
     values:

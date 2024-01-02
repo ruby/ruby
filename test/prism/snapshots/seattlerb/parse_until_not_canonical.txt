@@ -15,7 +15,7 @@
             │   │   ├── flags: ∅
             │   │   ├── receiver:
             │   │   │   @ CallNode (location: (1,10)-(1,13))
-            │   │   │   ├── flags: variable_call
+            │   │   │   ├── flags: variable_call, ignore_visibility
             │   │   │   ├── receiver: ∅
             │   │   │   ├── call_operator_loc: ∅
             │   │   │   ├── name: :var

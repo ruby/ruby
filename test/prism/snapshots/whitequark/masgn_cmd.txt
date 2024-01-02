@@ -18,7 +18,7 @@
             ├── operator_loc: (1,9)-(1,10) = "="
             └── value:
                 @ CallNode (location: (1,11)-(1,16))
-                ├── flags: ∅
+                ├── flags: ignore_visibility
                 ├── receiver: ∅
                 ├── call_operator_loc: ∅
                 ├── name: :m

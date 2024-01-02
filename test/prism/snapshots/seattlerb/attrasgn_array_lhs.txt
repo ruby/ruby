@@ -31,7 +31,7 @@
             │       │   ├── flags: ∅
             │       │   ├── left:
             │       │   │   @ CallNode (location: (1,13)-(1,17))
-            │       │   │   ├── flags: variable_call
+            │       │   │   ├── flags: variable_call, ignore_visibility
             │       │   │   ├── receiver: ∅
             │       │   │   ├── call_operator_loc: ∅
             │       │   │   ├── name: :from
@@ -42,7 +42,7 @@
             │       │   │   └── block: ∅
             │       │   ├── right:
             │       │   │   @ CallNode (location: (1,21)-(1,23))
-            │       │   │   ├── flags: variable_call
+            │       │   │   ├── flags: variable_call, ignore_visibility
             │       │   │   ├── receiver: ∅
             │       │   │   ├── call_operator_loc: ∅
             │       │   │   ├── name: :to

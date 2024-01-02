@@ -14,7 +14,7 @@
         │   │   │           ├── flags: ∅
         │   │   │           ├── left:
         │   │   │           │   @ CallNode (location: (1,2)-(1,5))
-        │   │   │           │   ├── flags: variable_call
+        │   │   │           │   ├── flags: variable_call, ignore_visibility
         │   │   │           │   ├── receiver: ∅
         │   │   │           │   ├── call_operator_loc: ∅
         │   │   │           │   ├── name: :foo
@@ -25,7 +25,7 @@
         │   │   │           │   └── block: ∅
         │   │   │           ├── right:
         │   │   │           │   @ CallNode (location: (1,7)-(1,10))
-        │   │   │           │   ├── flags: variable_call
+        │   │   │           │   ├── flags: variable_call, ignore_visibility
         │   │   │           │   ├── receiver: ∅
         │   │   │           │   ├── call_operator_loc: ∅
         │   │   │           │   ├── name: :bar
@@ -51,7 +51,7 @@
             │   ├── flags: ∅
             │   ├── left:
             │   │   @ CallNode (location: (3,3)-(3,6))
-            │   │   ├── flags: variable_call
+            │   │   ├── flags: variable_call, ignore_visibility
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
             │   │   ├── name: :foo
@@ -62,7 +62,7 @@
             │   │   └── block: ∅
             │   ├── right:
             │   │   @ CallNode (location: (3,8)-(3,11))
-            │   │   ├── flags: variable_call
+            │   │   ├── flags: variable_call, ignore_visibility
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
             │   │   ├── name: :bar

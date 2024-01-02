@@ -9,7 +9,7 @@
             │   @ StatementsNode (location: (1,7)-(1,11))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,7)-(1,11))
-            │           ├── flags: variable_call
+            │           ├── flags: variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :meth
@@ -28,7 +28,7 @@
             │   │   @ StatementsNode (location: (1,21)-(1,24))
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (1,21)-(1,24))
-            │   │           ├── flags: variable_call
+            │   │           ├── flags: variable_call, ignore_visibility
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :baz
@@ -45,7 +45,7 @@
             │   │   @ StatementsNode (location: (1,31)-(1,34))
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (1,31)-(1,34))
-            │   │           ├── flags: variable_call
+            │   │           ├── flags: variable_call, ignore_visibility
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :foo
@@ -62,7 +62,7 @@
             │   │   @ StatementsNode (location: (1,44)-(1,47))
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (1,44)-(1,47))
-            │   │           ├── flags: variable_call
+            │   │           ├── flags: variable_call, ignore_visibility
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :bar

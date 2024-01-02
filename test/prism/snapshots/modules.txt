@@ -37,7 +37,7 @@
         │   │   │   │   @ StatementsNode (location: (3,9)-(3,12))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (3,9)-(3,12))
-        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           ├── flags: variable_call, ignore_visibility
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :bbb
@@ -61,7 +61,7 @@
         │   │   @ ConstantPathNode (location: (5,7)-(5,11))
         │   │   ├── parent:
         │   │   │   @ CallNode (location: (5,7)-(5,8))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :m

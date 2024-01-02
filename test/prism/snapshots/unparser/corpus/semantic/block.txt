@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(26,3))
     └── body: (length: 6)
         ├── @ CallNode (location: (1,0)-(2,3))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -21,7 +21,7 @@
         │       ├── opening_loc: (1,4)-(1,6) = "do"
         │       └── closing_loc: (2,0)-(2,3) = "end"
         ├── @ CallNode (location: (4,0)-(6,3))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -52,7 +52,7 @@
         │       ├── opening_loc: (4,4)-(4,6) = "do"
         │       └── closing_loc: (6,0)-(6,3) = "end"
         ├── @ CallNode (location: (8,0)-(11,3))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -78,7 +78,7 @@
         │       ├── opening_loc: (8,4)-(8,6) = "do"
         │       └── closing_loc: (11,0)-(11,3) = "end"
         ├── @ CallNode (location: (13,0)-(14,3))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -110,7 +110,7 @@
         │       ├── opening_loc: (13,4)-(13,6) = "do"
         │       └── closing_loc: (14,0)-(14,3) = "end"
         ├── @ CallNode (location: (16,0)-(20,3))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -156,7 +156,7 @@
         │       ├── opening_loc: (16,12)-(16,14) = "do"
         │       └── closing_loc: (20,0)-(20,3) = "end"
         └── @ CallNode (location: (22,0)-(26,3))
-            ├── flags: ∅
+            ├── flags: ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :foo
@@ -182,7 +182,7 @@
                 │   @ StatementsNode (location: (25,2)-(25,3))
                 │   └── body: (length: 1)
                 │       └── @ CallNode (location: (25,2)-(25,3))
-                │           ├── flags: variable_call
+                │           ├── flags: variable_call, ignore_visibility
                 │           ├── receiver: ∅
                 │           ├── call_operator_loc: ∅
                 │           ├── name: :a

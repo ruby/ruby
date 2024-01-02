@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(6,5))
     └── body: (length: 2)
         ├── @ CallNode (location: (1,0)-(4,8))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :puts
@@ -26,7 +26,7 @@
             ├── flags: ∅
             ├── receiver:
             │   @ CallNode (location: (6,0)-(6,1))
-            │   ├── flags: variable_call
+            │   ├── flags: variable_call, ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :a
@@ -44,7 +44,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ CallNode (location: (6,4)-(6,5))
-            │           ├── flags: variable_call
+            │           ├── flags: variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :b

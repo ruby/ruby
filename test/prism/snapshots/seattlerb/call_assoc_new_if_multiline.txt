@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(5,4))
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(5,4))
-            ├── flags: ∅
+            ├── flags: ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :a

@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(5,26))
     └── body: (length: 3)
         ├── @ CallNode (location: (1,0)-(1,15))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :assert
@@ -31,7 +31,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (3,0)-(3,11))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :assert
@@ -42,7 +42,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ CallNode (location: (3,7)-(3,11))
-        │   │           ├── flags: variable_call
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :dogs
@@ -54,7 +54,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         └── @ CallNode (location: (5,0)-(5,26))
-            ├── flags: ∅
+            ├── flags: ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :f
@@ -87,7 +87,7 @@
             │                   │       @ StatementsNode (location: (5,11)-(5,22))
             │                   │       └── body: (length: 1)
             │                   │           └── @ CallNode (location: (5,11)-(5,22))
-            │                   │               ├── flags: ∅
+            │                   │               ├── flags: ignore_visibility
             │                   │               ├── receiver: ∅
             │                   │               ├── call_operator_loc: ∅
             │                   │               ├── name: :meth

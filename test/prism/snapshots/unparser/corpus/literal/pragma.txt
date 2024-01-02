@@ -8,7 +8,7 @@
         │   └── filepath: "unparser/corpus/literal/pragma.txt"
         ├── @ SourceLineNode (location: (3,0)-(3,8))
         └── @ CallNode (location: (4,0)-(4,7))
-            ├── flags: variable_call
+            ├── flags: variable_call, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :__dir__

@@ -68,7 +68,7 @@
         │       ├── flags: ∅
         │       └── arguments: (length: 1)
         │           └── @ CallNode (location: (5,7)-(5,14))
-        │               ├── flags: ∅
+        │               ├── flags: ignore_visibility
         │               ├── receiver: ∅
         │               ├── call_operator_loc: ∅
         │               ├── name: :y
@@ -102,7 +102,7 @@
         │       ├── flags: ∅
         │       └── arguments: (length: 1)
         │           └── @ CallNode (location: (7,7)-(7,12))
-        │               ├── flags: ∅
+        │               ├── flags: ignore_visibility
         │               ├── receiver: ∅
         │               ├── call_operator_loc: ∅
         │               ├── name: :y
@@ -136,7 +136,7 @@
         │       ├── flags: ∅
         │       └── arguments: (length: 1)
         │           └── @ CallNode (location: (9,7)-(9,13))
-        │               ├── flags: ∅
+        │               ├── flags: ignore_visibility
         │               ├── receiver: ∅
         │               ├── call_operator_loc: ∅
         │               ├── name: :y
@@ -170,7 +170,7 @@
                 ├── flags: ∅
                 └── arguments: (length: 1)
                     └── @ CallNode (location: (11,7)-(11,14))
-                        ├── flags: ∅
+                        ├── flags: ignore_visibility
                         ├── receiver: ∅
                         ├── call_operator_loc: ∅
                         ├── name: :y
@@ -186,7 +186,7 @@
                         │               └── @ AssocNode (location: (11,9)-(11,13))
                         │                   ├── key:
                         │                   │   @ CallNode (location: (11,9)-(11,10))
-                        │                   │   ├── flags: variable_call
+                        │                   │   ├── flags: variable_call, ignore_visibility
                         │                   │   ├── receiver: ∅
                         │                   │   ├── call_operator_loc: ∅
                         │                   │   ├── name: :z

@@ -19,7 +19,7 @@
             │   └── rparen_loc: ∅
             ├── collection:
             │   @ CallNode (location: (1,12)-(1,15))
-            │   ├── flags: variable_call
+            │   ├── flags: variable_call, ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :foo
@@ -32,7 +32,7 @@
             │   @ StatementsNode (location: (1,17)-(1,23))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,17)-(1,23))
-            │           ├── flags: ∅
+            │           ├── flags: ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :p

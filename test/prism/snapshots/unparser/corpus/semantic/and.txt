@@ -9,7 +9,7 @@
         │   │   ├── flags: exclude_end
         │   │   ├── left:
         │   │   │   @ CallNode (location: (1,0)-(1,1))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :a
@@ -20,7 +20,7 @@
         │   │   │   └── block: ∅
         │   │   ├── right:
         │   │   │   @ CallNode (location: (1,4)-(1,5))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :b
@@ -35,7 +35,7 @@
         │   │   ├── flags: exclude_end
         │   │   ├── left:
         │   │   │   @ CallNode (location: (1,9)-(1,10))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :c
@@ -46,7 +46,7 @@
         │   │   │   └── block: ∅
         │   │   ├── right:
         │   │   │   @ CallNode (location: (1,13)-(1,14))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :d
@@ -63,7 +63,7 @@
         │   │   ├── flags: exclude_end
         │   │   ├── left:
         │   │   │   @ CallNode (location: (2,0)-(2,1))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :a
@@ -74,7 +74,7 @@
         │   │   │   └── block: ∅
         │   │   ├── right:
         │   │   │   @ CallNode (location: (2,4)-(2,5))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :b
@@ -89,7 +89,7 @@
         │   │   ├── flags: exclude_end
         │   │   ├── left:
         │   │   │   @ CallNode (location: (2,10)-(2,11))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :c
@@ -100,7 +100,7 @@
         │   │   │   └── block: ∅
         │   │   ├── right:
         │   │   │   @ CallNode (location: (2,14)-(2,15))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :d
@@ -120,7 +120,7 @@
         │   │   │   ├── flags: exclude_end
         │   │   │   ├── left:
         │   │   │   │   @ CallNode (location: (4,3)-(4,4))
-        │   │   │   │   ├── flags: variable_call
+        │   │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   │   ├── receiver: ∅
         │   │   │   │   ├── call_operator_loc: ∅
         │   │   │   │   ├── name: :a
@@ -131,7 +131,7 @@
         │   │   │   │   └── block: ∅
         │   │   │   ├── right:
         │   │   │   │   @ CallNode (location: (4,7)-(4,8))
-        │   │   │   │   ├── flags: variable_call
+        │   │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   │   ├── receiver: ∅
         │   │   │   │   ├── call_operator_loc: ∅
         │   │   │   │   ├── name: :b
@@ -146,7 +146,7 @@
         │   │   │   ├── flags: exclude_end
         │   │   │   ├── left:
         │   │   │   │   @ CallNode (location: (4,12)-(4,13))
-        │   │   │   │   ├── flags: variable_call
+        │   │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   │   ├── receiver: ∅
         │   │   │   │   ├── call_operator_loc: ∅
         │   │   │   │   ├── name: :c
@@ -157,7 +157,7 @@
         │   │   │   │   └── block: ∅
         │   │   │   ├── right:
         │   │   │   │   @ CallNode (location: (4,16)-(4,17))
-        │   │   │   │   ├── flags: variable_call
+        │   │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   │   ├── receiver: ∅
         │   │   │   │   ├── call_operator_loc: ∅
         │   │   │   │   ├── name: :d
@@ -181,7 +181,7 @@
             │   │   ├── flags: exclude_end
             │   │   ├── left:
             │   │   │   @ CallNode (location: (7,3)-(7,4))
-            │   │   │   ├── flags: variable_call
+            │   │   │   ├── flags: variable_call, ignore_visibility
             │   │   │   ├── receiver: ∅
             │   │   │   ├── call_operator_loc: ∅
             │   │   │   ├── name: :a
@@ -192,7 +192,7 @@
             │   │   │   └── block: ∅
             │   │   ├── right:
             │   │   │   @ CallNode (location: (7,7)-(7,8))
-            │   │   │   ├── flags: variable_call
+            │   │   │   ├── flags: variable_call, ignore_visibility
             │   │   │   ├── receiver: ∅
             │   │   │   ├── call_operator_loc: ∅
             │   │   │   ├── name: :b
@@ -207,7 +207,7 @@
             │   │   ├── flags: exclude_end
             │   │   ├── left:
             │   │   │   @ CallNode (location: (7,13)-(7,14))
-            │   │   │   ├── flags: variable_call
+            │   │   │   ├── flags: variable_call, ignore_visibility
             │   │   │   ├── receiver: ∅
             │   │   │   ├── call_operator_loc: ∅
             │   │   │   ├── name: :c
@@ -218,7 +218,7 @@
             │   │   │   └── block: ∅
             │   │   ├── right:
             │   │   │   @ CallNode (location: (7,17)-(7,18))
-            │   │   │   ├── flags: variable_call
+            │   │   │   ├── flags: variable_call, ignore_visibility
             │   │   │   ├── receiver: ∅
             │   │   │   ├── call_operator_loc: ∅
             │   │   │   ├── name: :d

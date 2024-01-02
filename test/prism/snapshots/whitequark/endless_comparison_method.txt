@@ -22,7 +22,7 @@
         │   │   @ StatementsNode (location: (1,16)-(1,28))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (1,16)-(1,28))
-        │   │           ├── flags: variable_call
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :do_something
@@ -58,7 +58,7 @@
         │   │   @ StatementsNode (location: (3,16)-(3,28))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (3,16)-(3,28))
-        │   │           ├── flags: variable_call
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :do_something
@@ -94,7 +94,7 @@
         │   │   @ StatementsNode (location: (5,16)-(5,28))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (5,16)-(5,28))
-        │   │           ├── flags: variable_call
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :do_something
@@ -130,7 +130,7 @@
         │   │   @ StatementsNode (location: (7,16)-(7,28))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (7,16)-(7,28))
-        │   │           ├── flags: variable_call
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :do_something
@@ -166,7 +166,7 @@
         │   │   @ StatementsNode (location: (9,17)-(9,29))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (9,17)-(9,29))
-        │   │           ├── flags: variable_call
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :do_something
@@ -202,7 +202,7 @@
             │   @ StatementsNode (location: (11,16)-(11,28))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (11,16)-(11,28))
-            │           ├── flags: variable_call
+            │           ├── flags: variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :do_something

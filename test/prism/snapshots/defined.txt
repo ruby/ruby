@@ -41,7 +41,7 @@
         │   │   @ AndNode (location: (5,9)-(5,20))
         │   │   ├── left:
         │   │   │   @ CallNode (location: (5,9)-(5,12))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :foo
@@ -52,7 +52,7 @@
         │   │   │   └── block: ∅
         │   │   ├── right:
         │   │   │   @ CallNode (location: (5,17)-(5,20))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :bar

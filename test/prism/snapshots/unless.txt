@@ -90,7 +90,7 @@
             ├── keyword_loc: (14,11)-(14,17) = "unless"
             ├── predicate:
             │   @ CallNode (location: (14,18)-(14,22))
-            │   ├── flags: ∅
+            │   ├── flags: ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :bar?
@@ -104,7 +104,7 @@
             │   @ StatementsNode (location: (14,0)-(14,10))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (14,0)-(14,10))
-            │           ├── flags: ∅
+            │           ├── flags: ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :foo

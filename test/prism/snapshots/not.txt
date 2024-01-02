@@ -9,7 +9,7 @@
         │   │   ├── flags: ∅
         │   │   ├── receiver:
         │   │   │   @ CallNode (location: (1,4)-(1,7))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :foo
@@ -30,7 +30,7 @@
         │   │   ├── flags: ∅
         │   │   ├── receiver:
         │   │   │   @ CallNode (location: (1,16)-(1,19))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :bar
@@ -53,7 +53,7 @@
         │   │   @ AndNode (location: (3,4)-(3,15))
         │   │   ├── left:
         │   │   │   @ CallNode (location: (3,4)-(3,7))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :foo
@@ -64,7 +64,7 @@
         │   │   │   └── block: ∅
         │   │   ├── right:
         │   │   │   @ CallNode (location: (3,12)-(3,15))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :bar
@@ -85,7 +85,7 @@
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ CallNode (location: (5,4)-(5,7))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -107,7 +107,7 @@
         │   │   ├── flags: ∅
         │   │   ├── receiver:
         │   │   │   @ CallNode (location: (7,4)-(7,7))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :foo
@@ -128,7 +128,7 @@
         │   │   ├── flags: ∅
         │   │   ├── receiver:
         │   │   │   @ CallNode (location: (8,2)-(8,5))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :bar
@@ -151,7 +151,7 @@
         │   │   ├── flags: ∅
         │   │   ├── receiver:
         │   │   │   @ CallNode (location: (11,4)-(11,7))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :foo
@@ -172,7 +172,7 @@
         │   │   ├── flags: ∅
         │   │   ├── receiver:
         │   │   │   @ CallNode (location: (13,2)-(13,5))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :bar
@@ -195,7 +195,7 @@
         │   │   ├── flags: ∅
         │   │   ├── receiver:
         │   │   │   @ CallNode (location: (16,4)-(16,7))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :foo
@@ -216,7 +216,7 @@
         │   │   ├── flags: ∅
         │   │   ├── receiver:
         │   │   │   @ CallNode (location: (20,2)-(20,5))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :bar
@@ -237,7 +237,7 @@
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ CallNode (location: (22,4)-(22,7))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -257,7 +257,7 @@
         │   ├── flags: ∅
         │   ├── receiver:
         │   │   @ CallNode (location: (30,0)-(30,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -280,7 +280,7 @@
         │   │   ├── flags: ∅
         │   │   ├── left:
         │   │   │   @ CallNode (location: (35,4)-(35,7))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :foo
@@ -291,7 +291,7 @@
         │   │   │   └── block: ∅
         │   │   ├── right:
         │   │   │   @ CallNode (location: (35,11)-(35,14))
-        │   │   │   ├── flags: variable_call
+        │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :bar
@@ -319,7 +319,7 @@
             │   │           ├── flags: ∅
             │   │           ├── left:
             │   │           │   @ CallNode (location: (37,5)-(37,8))
-            │   │           │   ├── flags: variable_call
+            │   │           │   ├── flags: variable_call, ignore_visibility
             │   │           │   ├── receiver: ∅
             │   │           │   ├── call_operator_loc: ∅
             │   │           │   ├── name: :foo
@@ -330,7 +330,7 @@
             │   │           │   └── block: ∅
             │   │           ├── right:
             │   │           │   @ CallNode (location: (37,12)-(37,15))
-            │   │           │   ├── flags: variable_call
+            │   │           │   ├── flags: variable_call, ignore_visibility
             │   │           │   ├── receiver: ∅
             │   │           │   ├── call_operator_loc: ∅
             │   │           │   ├── name: :bar

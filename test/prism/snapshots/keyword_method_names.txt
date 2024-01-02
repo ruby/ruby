@@ -33,7 +33,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (5,0)-(5,3) = "end"
         ├── @ CallNode (location: (7,0)-(10,3))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :private
@@ -52,7 +52,7 @@
         │   │           │   @ StatementsNode (location: (8,2)-(9,5))
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ CallNode (location: (8,2)-(9,5))
-        │   │           │           ├── flags: ∅
+        │   │           │           ├── flags: ignore_visibility
         │   │           │           ├── receiver: ∅
         │   │           │           ├── call_operator_loc: ∅
         │   │           │           ├── name: :bar

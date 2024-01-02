@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(17,20))
     └── body: (length: 5)
         ├── @ CallNode (location: (1,0)-(2,12))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :puts
@@ -67,7 +67,7 @@
             ├── name_loc: (17,0)-(17,1) = "a"
             ├── value:
             │   @ CallNode (location: (17,4)-(17,20))
-            │   ├── flags: ∅
+            │   ├── flags: ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :foo

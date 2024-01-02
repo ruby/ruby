@@ -9,7 +9,7 @@
         │   ├── closing_loc: (1,18)-(1,21) = "end"
         │   ├── predicate:
         │   │   @ CallNode (location: (1,6)-(1,9))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -22,7 +22,7 @@
         │       @ StatementsNode (location: (1,13)-(1,17))
         │       └── body: (length: 1)
         │           └── @ CallNode (location: (1,13)-(1,17))
-        │               ├── flags: variable_call
+        │               ├── flags: variable_call, ignore_visibility
         │               ├── receiver: ∅
         │               ├── call_operator_loc: ∅
         │               ├── name: :meth
@@ -37,7 +37,7 @@
             ├── closing_loc: (3,16)-(3,19) = "end"
             ├── predicate:
             │   @ CallNode (location: (3,6)-(3,9))
-            │   ├── flags: variable_call
+            │   ├── flags: variable_call, ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :foo
@@ -50,7 +50,7 @@
                 @ StatementsNode (location: (3,11)-(3,15))
                 └── body: (length: 1)
                     └── @ CallNode (location: (3,11)-(3,15))
-                        ├── flags: variable_call
+                        ├── flags: variable_call, ignore_visibility
                         ├── receiver: ∅
                         ├── call_operator_loc: ∅
                         ├── name: :meth
