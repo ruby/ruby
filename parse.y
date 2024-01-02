@@ -123,9 +123,171 @@ hash_literal_key_p(VALUE k)
 {
     switch (OBJ_BUILTIN_TYPE(k)) {
       case T_NODE:
-        return false;
+        switch (nd_type(RNODE(k))) {
+          case NODE_INTEGER:
+          case NODE_FLOAT:
+          case NODE_RATIONAL:
+          case NODE_IMAGINARY:
+          case NODE_LINE:
+          case NODE_FILE:
+            return true;
+          default:
+            return false;
+        }
       default:
         return true;
+    }
+}
+
+static int rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2);
+
+static int
+node_numeric_str_cmp(char *str1, char *str2)
+{
+    size_t len1 = strlen(str1);
+    size_t len2 = strlen(str2);
+
+    return (len1 != len2 ||
+            memcmp(str1, str2, len1) != 0);
+}
+
+static int
+node_integer_cmp(rb_node_integer_t *n1, rb_node_integer_t *n2)
+{
+    return (n1->minus != n2->minus ||
+            n1->base != n2->base ||
+            node_numeric_str_cmp(n1->val, n2->val));
+}
+
+static int
+node_float_cmp(rb_node_float_t *n1, rb_node_float_t *n2)
+{
+    return (n1->minus != n2->minus ||
+            node_numeric_str_cmp(n1->val, n2->val));
+}
+
+static int
+node_rational_cmp(rb_node_rational_t *n1, rb_node_rational_t *n2)
+{
+    return (n1->minus != n2->minus ||
+            n1->base != n2->base ||
+            n1->seen_point != n2->seen_point ||
+            node_numeric_str_cmp(n1->val, n2->val));
+}
+
+static int
+node_imaginary_cmp(rb_node_imaginary_t *n1, rb_node_imaginary_t *n2)
+{
+    return (n1->minus != n2->minus ||
+            n1->base != n2->base ||
+            n1->seen_point != n2->seen_point ||
+            n1->type != n2->type ||
+            node_numeric_str_cmp(n1->val, n2->val));
+}
+
+static int
+node_integer_line_cmp(rb_node_integer_t *i, rb_node_line_t *line)
+{
+    VALUE num = rb_node_integer_literal_val(i);
+
+    return !(FIXNUM_P(num) && RNODE(line)->nd_loc.beg_pos.lineno == FIX2INT(num));
+}
+
+static int
+node_cdhash_cmp(VALUE val, VALUE lit)
+{
+    if (val == lit) {
+        return 0;
+    }
+
+    /* Special case for __FILE__ and String */
+    if (OBJ_BUILTIN_TYPE(val) == T_NODE && nd_type(RNODE(val)) == NODE_FILE && RB_TYPE_P(lit, T_STRING)) {
+        return rb_str_hash_cmp(rb_node_file_path_val(RNODE(val)), lit);
+    }
+    if (OBJ_BUILTIN_TYPE(lit) == T_NODE && nd_type(RNODE(lit)) == NODE_FILE && RB_TYPE_P(val, T_STRING)) {
+        return rb_str_hash_cmp(rb_node_file_path_val(RNODE(lit)), val);
+    }
+
+    if ((OBJ_BUILTIN_TYPE(val) == T_NODE) && (OBJ_BUILTIN_TYPE(lit) == T_NODE)) {
+        NODE *node_val = RNODE(val);
+        NODE *node_lit = RNODE(lit);
+        enum node_type type_val = nd_type(node_val);
+        enum node_type type_lit = nd_type(node_lit);
+
+        /* Special case for Integer and __LINE__ */
+        if (type_val == NODE_INTEGER && type_lit == NODE_LINE) {
+            return node_integer_line_cmp(RNODE_INTEGER(node_val), RNODE_LINE(node_lit));
+        }
+        if (type_lit == NODE_INTEGER && type_val == NODE_LINE) {
+            return node_integer_line_cmp(RNODE_INTEGER(node_lit), RNODE_LINE(node_val));
+        }
+
+        if (type_val != type_lit) {
+            return -1;
+        }
+        else if (type_lit == NODE_INTEGER) {
+            return node_integer_cmp(RNODE_INTEGER(node_val), RNODE_INTEGER(node_lit));
+        }
+        else if (type_lit == NODE_FLOAT) {
+            return node_float_cmp(RNODE_FLOAT(node_val), RNODE_FLOAT(node_lit));
+        }
+        else if (type_lit == NODE_RATIONAL) {
+            return node_rational_cmp(RNODE_RATIONAL(node_val), RNODE_RATIONAL(node_lit));
+        }
+        else if (type_lit == NODE_IMAGINARY) {
+            return node_imaginary_cmp(RNODE_IMAGINARY(node_val), RNODE_IMAGINARY(node_lit));
+        }
+        else if (type_lit == NODE_LINE) {
+            return node_val->nd_loc.beg_pos.lineno != node_lit->nd_loc.beg_pos.lineno;
+        }
+        else if (type_lit == NODE_FILE) {
+            return rb_parser_string_hash_cmp(RNODE_FILE(node_val)->path, RNODE_FILE(node_lit)->path);
+        }
+        else {
+            rb_bug("unexpected node: %s, %s", ruby_node_name(type_val), ruby_node_name(type_lit));
+        }
+    }
+    else if ((OBJ_BUILTIN_TYPE(val) == T_NODE) || (OBJ_BUILTIN_TYPE(lit) == T_NODE)) {
+        return -1;
+    }
+    else {
+        return rb_iseq_cdhash_cmp(val, lit);
+    }
+}
+
+static st_index_t
+node_cdhash_hash(VALUE a)
+{
+    switch (OBJ_BUILTIN_TYPE(a)) {
+      case T_NODE:{
+        VALUE val;
+        NODE *node = RNODE(a);
+        enum node_type type = nd_type(node);
+        switch (type) {
+          case NODE_INTEGER:
+            val = rb_node_integer_literal_val(RNODE_INTEGER(node));
+            return (FIXNUM_P(val) ? val : FIX2LONG(rb_big_hash(val)));
+          case NODE_FLOAT:
+            val = rb_node_float_literal_val(RNODE_FLOAT(node));
+            return rb_dbl_long_hash(RFLOAT_VALUE(val));
+          case NODE_RATIONAL:
+            val = rb_node_rational_literal_val(RNODE_RATIONAL(node));
+            return rb_rational_hash(val);
+          case NODE_IMAGINARY:
+            val = rb_node_imaginary_literal_val(RNODE_IMAGINARY(node));
+            return rb_complex_hash(val);
+          case NODE_LINE:
+            /* Same with NODE_INTEGER FIXNUM case */
+            return INT2FIX(node->nd_loc.beg_pos.lineno);
+          case NODE_FILE:
+            /* Same with String in rb_iseq_cdhash_hash */
+            return rb_str_hash(rb_node_file_path_val(node));
+          default:
+            rb_bug("unexpected node: %s", ruby_node_name(type));
+        }
+      }
+      default:
+        return rb_iseq_cdhash_hash(a);
     }
 }
 
@@ -134,14 +296,14 @@ literal_cmp(VALUE val, VALUE lit)
 {
     if (val == lit) return 0;
     if (!hash_literal_key_p(val) || !hash_literal_key_p(lit)) return -1;
-    return rb_iseq_cdhash_cmp(val, lit);
+    return node_cdhash_cmp(val, lit);
 }
 
 static st_index_t
 literal_hash(VALUE a)
 {
     if (!hash_literal_key_p(a)) return (st_index_t)a;
-    return rb_iseq_cdhash_hash(a);
+    return node_cdhash_hash(a);
 }
 
 static VALUE
@@ -1963,6 +2125,28 @@ rb_parser_string_pointer(rb_parser_string_t *str)
 {
     return str->ptr;
 }
+
+#ifndef UNIVERSAL_PARSER
+# define PARSER_STRING_GETMEM(str, ptrvar, lenvar, encvar) \
+    ((ptrvar) = str->ptr,                            \
+     (lenvar) = str->len,                            \
+     (encvar) = str->enc)
+
+static int
+rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2)
+{
+    long len1, len2;
+    const char *ptr1, *ptr2;
+    rb_encoding *enc1, *enc2;
+
+    PARSER_STRING_GETMEM(str1, ptr1, len1, enc1);
+    PARSER_STRING_GETMEM(str2, ptr2, len2, enc2);
+
+    return (len1 != len2 ||
+            enc1 != enc2 ||
+            memcmp(ptr1, ptr2, len1) != 0);
+}
+#endif
 
 static rb_parser_string_t *
 rb_str_to_parser_encoding_string(rb_parser_t *p, VALUE str)
@@ -14782,6 +14966,66 @@ append_literal_keys(st_data_t k, st_data_t v, st_data_t h)
     return ST_CONTINUE;
 }
 
+static int
+nd_type_st_key_enable_p(NODE *node)
+{
+    switch (nd_type(node)) {
+      case NODE_LIT:
+      case NODE_INTEGER:
+      case NODE_FLOAT:
+      case NODE_RATIONAL:
+      case NODE_IMAGINARY:
+      case NODE_LINE:
+      case NODE_FILE:
+        return true;
+      default:
+        return false;
+    }
+}
+
+static VALUE
+nd_st_key(struct parser_params *p, NODE *node)
+{
+    switch (nd_type(node)) {
+      case NODE_LIT:
+        return RNODE_LIT(node)->nd_lit;
+      case NODE_INTEGER:
+      case NODE_FLOAT:
+      case NODE_RATIONAL:
+      case NODE_IMAGINARY:
+      case NODE_LINE:
+      case NODE_FILE:
+        return (VALUE)node;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+        UNREACHABLE_RETURN(0);
+    }
+}
+
+static VALUE
+nd_st_key_val(struct parser_params *p, NODE *node)
+{
+    switch (nd_type(node)) {
+      case NODE_LIT:
+        return RNODE_LIT(node)->nd_lit;
+      case NODE_INTEGER:
+        return rb_node_integer_literal_val(RNODE_INTEGER(node));
+      case NODE_FLOAT:
+        return rb_node_float_literal_val(RNODE_FLOAT(node));
+      case NODE_RATIONAL:
+        return rb_node_rational_literal_val(RNODE_RATIONAL(node));
+      case NODE_IMAGINARY:
+        return rb_node_imaginary_literal_val(RNODE_IMAGINARY(node));
+      case NODE_LINE:
+        return rb_node_line_lineno_val(node);
+      case NODE_FILE:
+        return rb_node_file_path_val(node);
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+        UNREACHABLE_RETURN(0);
+    }
+}
+
 static NODE *
 remove_duplicate_keys(struct parser_params *p, NODE *hash)
 {
@@ -14804,64 +15048,12 @@ remove_duplicate_keys(struct parser_params *p, NODE *hash)
         if (!head) {
             key = (st_data_t)value;
         }
-        else if (nd_type_p(head, NODE_LIT) &&
-                 st_delete(literal_keys, (key = (st_data_t)RNODE_LIT(head)->nd_lit, &key), &data)) {
+        else if (nd_type_st_key_enable_p(head) &&
+                 st_delete(literal_keys, (key = (st_data_t)nd_st_key(p, head), &key), &data)) {
             NODE *dup_value = (RNODE_LIST((NODE *)data))->nd_next;
             rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
                             "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
-                            RNODE_LIT(head)->nd_lit, nd_line(head));
-            if (dup_value == last_expr) {
-                RNODE_LIST(value)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(value)->nd_head);
-            }
-            else {
-                RNODE_LIST(last_expr)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(last_expr)->nd_head);
-            }
-        }
-        else if (nd_type_p(head, NODE_INTEGER) &&
-                 st_delete(literal_keys, (key = (st_data_t)rb_node_integer_literal_val(RNODE_INTEGER(head)), &key), &data)) {
-            NODE *dup_value = (RNODE_LIST((NODE *)data))->nd_next;
-            rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
-                            "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
-                            rb_node_integer_literal_val(RNODE_INTEGER(head)), nd_line(head));
-            if (dup_value == last_expr) {
-                RNODE_LIST(value)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(value)->nd_head);
-            }
-            else {
-                RNODE_LIST(last_expr)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(last_expr)->nd_head);
-            }
-        }
-        else if (nd_type_p(head, NODE_FLOAT) &&
-                 st_delete(literal_keys, (key = (st_data_t)rb_node_float_literal_val(RNODE_FLOAT(head)), &key), &data)) {
-            NODE *dup_value = (RNODE_LIST((NODE *)data))->nd_next;
-            rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
-                            "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
-                            rb_node_float_literal_val(RNODE_FLOAT(head)), nd_line(head));
-            if (dup_value == last_expr) {
-                RNODE_LIST(value)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(value)->nd_head);
-            }
-            else {
-                RNODE_LIST(last_expr)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(last_expr)->nd_head);
-            }
-        }
-        else if (nd_type_p(head, NODE_RATIONAL) &&
-                 st_delete(literal_keys, (key = (st_data_t)rb_node_rational_literal_val(RNODE_RATIONAL(head)), &key), &data)) {
-            NODE *dup_value = (RNODE_LIST((NODE *)data))->nd_next;
-            rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
-                            "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
-                            rb_node_rational_literal_val(RNODE_RATIONAL(head)), nd_line(head));
-            if (dup_value == last_expr) {
-                RNODE_LIST(value)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(value)->nd_head);
-            }
-            else {
-                RNODE_LIST(last_expr)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(last_expr)->nd_head);
-            }
-        }
-        else if (nd_type_p(head, NODE_IMAGINARY) &&
-                 st_delete(literal_keys, (key = (st_data_t)rb_node_imaginary_literal_val(RNODE_IMAGINARY(head)), &key), &data)) {
-            NODE *dup_value = (RNODE_LIST((NODE *)data))->nd_next;
-            rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
-                            "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
-                            rb_node_imaginary_literal_val(RNODE_IMAGINARY(head)), nd_line(head));
+                            nd_st_key_val(p, head), nd_line(head));
             if (dup_value == last_expr) {
                 RNODE_LIST(value)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(value)->nd_head);
             }
@@ -14870,7 +15062,7 @@ remove_duplicate_keys(struct parser_params *p, NODE *hash)
             }
         }
         st_insert(literal_keys, (st_data_t)key, (st_data_t)hash);
-        last_expr = !head || (nd_type_p(head, NODE_LIT) || nd_type_p(head, NODE_INTEGER) || nd_type_p(head, NODE_FLOAT) || nd_type_p(head, NODE_RATIONAL) || nd_type_p(head, NODE_IMAGINARY)) ? value : head;
+        last_expr = !head || nd_type_st_key_enable_p(head) ? value : head;
         hash = next;
     }
     st_foreach(literal_keys, append_literal_keys, (st_data_t)&result);
