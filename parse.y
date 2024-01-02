@@ -14952,21 +14952,6 @@ dsym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 }
 
 static int
-append_literal_keys(st_data_t k, st_data_t v, st_data_t h)
-{
-    NODE *node = (NODE *)v;
-    NODE **result = (NODE **)h;
-    RNODE_LIST(node)->as.nd_alen = 2;
-    RNODE_LIST(RNODE_LIST(node)->nd_next)->as.nd_end = RNODE_LIST(node)->nd_next;
-    RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next = 0;
-    if (*result)
-        list_concat(*result, node);
-    else
-        *result = node;
-    return ST_CONTINUE;
-}
-
-static int
 nd_type_st_key_enable_p(NODE *node)
 {
     switch (nd_type(node)) {
@@ -15026,8 +15011,8 @@ nd_st_key_val(struct parser_params *p, NODE *node)
     }
 }
 
-static NODE *
-remove_duplicate_keys(struct parser_params *p, NODE *hash)
+static void
+warn_duplicate_keys(struct parser_params *p, NODE *hash)
 {
     struct st_hash_type literal_type = {
         literal_cmp,
@@ -15035,50 +15020,31 @@ remove_duplicate_keys(struct parser_params *p, NODE *hash)
     };
 
     st_table *literal_keys = st_init_table_with_size(&literal_type, RNODE_LIST(hash)->as.nd_alen / 2);
-    NODE *result = 0;
-    NODE *last_expr = 0;
-    rb_code_location_t loc = hash->nd_loc;
     while (hash && RNODE_LIST(hash)->nd_next) {
         NODE *head = RNODE_LIST(hash)->nd_head;
         NODE *value = RNODE_LIST(hash)->nd_next;
         NODE *next = RNODE_LIST(value)->nd_next;
         st_data_t key = (st_data_t)head;
         st_data_t data;
-        RNODE_LIST(value)->nd_next = 0;
         if (!head) {
             key = (st_data_t)value;
         }
         else if (nd_type_st_key_enable_p(head) &&
                  st_delete(literal_keys, (key = (st_data_t)nd_st_key(p, head), &key), &data)) {
-            NODE *dup_value = (RNODE_LIST((NODE *)data))->nd_next;
             rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
                             "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
                             nd_st_key_val(p, head), nd_line(head));
-            if (dup_value == last_expr) {
-                RNODE_LIST(value)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(value)->nd_head);
-            }
-            else {
-                RNODE_LIST(last_expr)->nd_head = block_append(p, RNODE_LIST(dup_value)->nd_head, RNODE_LIST(last_expr)->nd_head);
-            }
         }
         st_insert(literal_keys, (st_data_t)key, (st_data_t)hash);
-        last_expr = !head || nd_type_st_key_enable_p(head) ? value : head;
         hash = next;
     }
-    st_foreach(literal_keys, append_literal_keys, (st_data_t)&result);
     st_free_table(literal_keys);
-    if (hash) {
-        if (!result) result = hash;
-        else list_concat(result, hash);
-    }
-    result->nd_loc = loc;
-    return result;
 }
 
 static NODE *
 new_hash(struct parser_params *p, NODE *hash, const YYLTYPE *loc)
 {
-    if (hash) hash = remove_duplicate_keys(p, hash);
+    if (hash) warn_duplicate_keys(p, hash);
     return NEW_HASH(hash, loc);
 }
 #endif
