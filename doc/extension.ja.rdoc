@@ -1850,8 +1850,9 @@ RGenGCは，過去の拡張ライブラリに（ほぼ）互換性を保つよ�
 スするようなコードは書かないようにして下さい．代わりに，rb_ary_aref(),
 rb_ary_store() などの，適切な API 関数を利用するようにして下さい．
 
-そのほか，対応についての詳細は extension.rdoc の「Appendix D. Generational
-GC」を参照して下さい．
+そのほか，対応についての詳細は {Appendix D. Generational
+GC}[rdoc-ref:extension.rdoc@Appendix+D.+Generational+GC]を参
+照して下さい．
 
 == Appendix E. Ractor サポート
 
@@ -1860,8 +1861,9 @@ Ruby 3.0 から、Ruby プログラムを並列に実行するための仕組み
 なります。サポートしていないライブラリは、メイン Ractor 以外で実行すると
 エラーになります（Ractor::UnsafeError）。
 
-Ractor をサポートするための詳細は、extension.rdoc の「Appendix F. Ractor
-support」を参照してください。
+Ractor をサポートするための詳細は、{Appendix F. Ractor
+support}[rdoc-ref:extension.rdoc@Appendix+F.+Ractor+support]
+を参照してください。
 
 :stopdoc: Local variables:
 :stopdoc: fill-column: 60
