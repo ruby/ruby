@@ -12135,7 +12135,11 @@ static void
 reachable_objects_from_callback(VALUE obj)
 {
     rb_ractor_t *cr = GET_RACTOR();
-    cr->mfd->mark_func(obj, cr->mfd->data);
+    struct gc_mark_func_data_struct *cur_mfd = cr->mfd;
+    cur_mfd->mark_func(obj, cr->mfd->data);
+    /* mark_func might give up the GVL, in which time some other thread might set
+       mfd. In that case, set it back to the right value for this thread. */
+    cr->mfd = cur_mfd;
 }
 
 void
@@ -12187,19 +12191,23 @@ objspace_reachable_objects_from_root(rb_objspace_t *objspace, void (func)(const 
 {
     if (during_gc) rb_bug("objspace_reachable_objects_from_root() is not supported while during_gc == true");
 
-    rb_ractor_t *cr = GET_RACTOR();
-    struct root_objects_data data = {
-        .func = func,
-        .data = passing_data,
-    };
-    struct gc_mark_func_data_struct mfd = {
-        .mark_func = root_objects_from,
-        .data = &data,
-    }, *prev_mfd = cr->mfd;
+    RB_VM_LOCK_ENTER();
+    {
+        rb_ractor_t *cr = GET_RACTOR();
+        struct root_objects_data data = {
+            .func = func,
+            .data = passing_data,
+        };
+        struct gc_mark_func_data_struct mfd = {
+            .mark_func = root_objects_from,
+            .data = &data,
+        }, *prev_mfd = cr->mfd;
 
-    cr->mfd = &mfd;
-    gc_mark_roots(objspace, &data.category);
-    cr->mfd = prev_mfd;
+        cr->mfd = &mfd;
+        gc_mark_roots(objspace, &data.category);
+        cr->mfd = prev_mfd;
+    }
+    RB_VM_LOCK_LEAVE();
 }
 
 /*
