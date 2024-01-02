@@ -8658,7 +8658,7 @@ parser_lex(pm_parser_t *parser) {
                                         // this is not a valid heredoc declaration. In this case we
                                         // will add an error, but we will still return a heredoc
                                         // start.
-                                        pm_parser_err_current(parser, PM_ERR_EMBDOC_TERM);
+                                        pm_parser_err_current(parser, PM_ERR_HEREDOC_TERM);
                                         body_start = parser->end;
                                     } else {
                                         // Otherwise, we want to indicate that the body of the
@@ -9911,15 +9911,22 @@ parser_lex(pm_parser_t *parser) {
                 parser->next_start = NULL;
             }
 
-            // We'll check if we're at the end of the file. If we are, then we need to
-            // return the EOF token.
+            // Now let's grab the information about the identifier off of the
+            // current lex mode.
+            pm_lex_mode_t *lex_mode = parser->lex_modes.current;
+
+            // We'll check if we're at the end of the file. If we are, then we
+            // will add an error (because we weren't able to find the
+            // terminator) but still continue parsing so that content after the
+            // declaration of the heredoc can be parsed.
             if (parser->current.end >= parser->end) {
-                LEX(PM_TOKEN_EOF);
+                pm_parser_err_current(parser, PM_ERR_HEREDOC_TERM);
+                parser->next_start = lex_mode->as.heredoc.next_start;
+                parser->heredoc_end = parser->current.end;
+                lex_state_set(parser, PM_LEX_STATE_END);
+                LEX(PM_TOKEN_HEREDOC_END);
             }
 
-            // Now let's grab the information about the identifier off of the current
-            // lex mode.
-            pm_lex_mode_t *lex_mode = parser->lex_modes.current;
             const uint8_t *ident_start = lex_mode->as.heredoc.ident_start;
             size_t ident_length = lex_mode->as.heredoc.ident_length;
 

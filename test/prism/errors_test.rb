@@ -1248,6 +1248,15 @@ module Prism
       assert_errors expected, "def foo(a = 1,b,*c);end", [["unexpected parameter `*`", 16..17]]
     end
 
+    def test_content_after_unterminated_heredoc
+      receiver = StringNode(0, Location(), Location(), Location(), "")
+      expected = CallNode(0, receiver, Location(), :foo, Location(), nil, nil, nil, nil)
+
+      assert_errors expected, "<<~FOO.foo\n", [
+        ["could not find a terminator for the heredoc", 11..11]
+      ]
+    end
+
     def test_invalid_message_name
       result = Prism.parse("+.@foo,+=foo")
       assert_equal :"", result.value.statements.body.first.write_name
