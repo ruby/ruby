@@ -165,7 +165,9 @@ typedef struct pm_<%= node.human %> {
     pm_node_t base;
 <%- node.fields.grep_v(Prism::FlagsField).each do |field| -%>
 
-    /** <%= node.name %>#<%= field.name %> */
+    /**
+     * <%= node.name %>#<%= field.name %><%= "\n     *\n     * " + field.comment.split("\n").join("\n     * ") if field.comment %>
+     */
     <%= case field
     when Prism::NodeField, Prism::OptionalNodeField then "struct #{field.c_type} *#{field.name}"
     when Prism::NodeListField then "struct pm_node_list #{field.name}"

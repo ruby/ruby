@@ -714,6 +714,19 @@ nodes:
         kind: CallNodeFlags
       - name: receiver
         type: node?
+        comment: |
+          The object that the method is being called on. This can be either
+          `nil` or a node representing any kind of expression that returns a
+          non-void value.
+
+              foo.bar
+              ^^^
+
+              +foo
+               ^^^
+
+              foo + bar
+              ^^^
       - name: call_operator_loc
         type: location?
       - name: name
