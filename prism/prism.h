@@ -260,7 +260,7 @@ PRISM_EXPORTED_FUNCTION const char * pm_token_type_to_str(pm_token_type_t token_
  *     pm_buffer_t buffer = { 0 };
  *
  *     pm_prettyprint(&buffer, &parser, root);
- *     printf("*.s%\n", (int) buffer.length, buffer.value);
+ *     printf("%*.s\n", (int) buffer.length, buffer.value);
  *
  *     pm_buffer_free(&buffer);
  *     pm_node_destroy(&parser, root);
