@@ -646,6 +646,10 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
  *       has been set. This should be a boolean or nil.
  * * `verbose` - the current level of verbosity. This controls whether or not
  *       the parser emits warnings. This should be a boolean or nil.
+ * * `version` - the version of prism that should be used to parse Ruby code. By
+ *       default prism assumes you want to parse with the latest vesion of
+ *       prism (which you can trigger with `nil` or `"latest"`). If you want to
+ *       parse exactly as CRuby 3.3.0 would, then you can pass `"3.3.0"`.
  * * `scopes` - the locals that are in scope surrounding the code that is being
  *       parsed. This should be an array of arrays of symbols or nil.
  */
