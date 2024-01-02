@@ -7,72 +7,61 @@ require 'rdoc'
 # attributes, and constants -- are solely for illustrating \RDoc markup,
 # and have no other legitimate use.
 #
-# = \RDoc Markup Reference
-#
-# Notes:
+# == About the Examples
 #
 # - Examples in this reference are Ruby code and comments;
 #   certain differences from other sources
 #   (such as C code and comments) are noted.
+# - Almost all examples on this page are all RDoc-like;
+#   that is, they have no explicit comment markers like Ruby <tt>#</tt>
+#   or C <tt>/* ... */</tt>.
 # - An example that shows rendered HTML output
 #   displays that output in a blockquote:
 #
-#   Rendered HTML:
 #   >>>
 #     Some stuff
 #
-# \RDoc-generated documentation is derived from and controlled by:
+# == \RDoc Sources
 #
-# - Single-line or multi-line comments that precede certain definitions;
-#   see {Markup in Comments}[rdoc-ref:RDoc::MarkupReference@Markup+in+Comments].
-# - \RDoc directives in trailing comments (on the same line as code);
-#   see <tt>:nodoc:</tt>, <tt>:doc:</tt>, and <tt>:notnew:</tt>.
-# - \RDoc directives in single-line comments;
-#   see other {Directives}[rdoc-ref:RDoc::MarkupReference@Directives].
-# - The Ruby code itself (but not from C code);
-#   see {Documentation Derived from Ruby Code}[rdoc-ref:RDoc::MarkupReference@Documentation+Derived+from+Ruby+Code].
+# The sources of \RDoc documentation vary according to the type of file:
 #
-# == Markup in Comments
+# - <tt>.rb</tt> (Ruby code file):
 #
-# The treatment of markup in comments varies according to the type of file:
+#   - Markup may be found in Ruby comments:
+#     A comment that immediately precedes the definition
+#     of a Ruby class, module, method, alias, constant, or attribute
+#     becomes the documentation for that defined object.
+#   - An \RDoc directive may be found in:
 #
-# - <tt>.rb</tt> (Ruby code file): markup is parsed from Ruby comments.
+#     - A trailing comment (on the same line as code);
+#       see <tt>:nodoc:</tt>, <tt>:doc:</tt>, and <tt>:notnew:</tt>.
+#     - A single-line comment;
+#       see other {Directives}[rdoc-ref:RDoc::MarkupReference@Directives].
+#
+#   - Documentation may be derived from the Ruby code itself;
+#     see {Documentation Derived from Ruby Code}[rdoc-ref:RDoc::MarkupReference@Documentation+Derived+from+Ruby+Code].
+#
 # - <tt>.c</tt> (C code file): markup is parsed from C comments.
-# - <tt>.rdoc</tt> (RDoc text file): markup is parsed from the entire file.
+#   A comment that immediately precedes
+#   a function that implements a Ruby method,
+#   or otherwise immediately precedes the definition of a Ruby object,
+#   becomes the documentation for that object.
+# - <tt>.rdoc</tt> (\RDoc markup text file) or <tt>.md</tt> (\RDoc markdown text file):
+#   markup is parsed from the entire file.
+#   The text is not associated with any code object,
+#   but may (depending on how the documentation is built)
+#   become a separate page.
 #
-# The comment associated with
-# a Ruby class, module, method, alias, constant, or attribute
-# becomes the documentation for that defined object:
+# An <i>RDoc document</i>:
 #
-# - In a Ruby file, that comment immediately precedes
-#   the definition of the object.
-# - In a C file, that comment immediately precedes
-#   the function that implements a method,
-#   or otherwise immediately precedes the definition of the object.
-#
-# In either a Ruby or a C file,
-# \RDoc ignores comments that do not precede object definitions.
-#
-# In an \RDoc file, the text is not associated with any code object,
-# but may (depending on how the documentation is built),
-# become a separate page.
-#
-# Almost all examples on this page are all RDoc-like;
-# that is, they have no comment markers like Ruby <tt>#</tt>
-# or C <tt>/* ... */</tt>.
-#
-# === Margins
-#
-# In a multi-line comment,
-# \RDoc looks for the comment's natural left margin,
-# which becomes the <em>base margin</em> for the comment
-# and is the initial <em>current margin</em> for the comment.
-#
-# The current margin can change, and does so, for example in a list.
+# - A (possibly multi-line) comment in a Ruby or C file
+#   that generates \RDoc documentation (as above).
+# - The entire markup (<tt>.rdoc</tt>) file or markdown (<tt>.md</tt>) file
+#   (which is usually multi-line).
 #
 # === Blocks
 #
-# It's convenient to think of \RDoc markup input as a sequence of _blocks_
+# It's convenient to think of an \RDoc document as a sequence of _blocks_
 # of various types (details at the links):
 #
 # - {Paragraph}[rdoc-ref:RDoc::MarkupReference@Paragraphs]:
@@ -88,7 +77,7 @@ require 'rdoc'
 # - {List}[rdoc-ref:RDoc::MarkupReference@Lists]: items for
 #   a bullet list, numbered list, lettered list, or labeled list.
 # - {Heading}[rdoc-ref:RDoc::MarkupReference@Headings]:
-#   a section heading.
+#   a heading.
 # - {Horizontal rule}[rdoc-ref:RDoc::MarkupReference@Horizontal+Rules]:
 #   a line across the rendered page.
 # - {Directive}[rdoc-ref:RDoc::MarkupReference@Directives]:
@@ -103,6 +92,10 @@ require 'rdoc'
 # - Any block may appear independently
 #   (that is, not nested in another block);
 #   some blocks may be nested, as detailed below.
+# - In a multi-line block,
+#   \RDoc looks for the block's natural left margin,
+#   which becomes the <em>base margin</em> for the block
+#   and is the initial <em>current margin</em> for the block.
 #
 # ==== Paragraphs
 #
