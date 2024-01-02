@@ -430,7 +430,7 @@
         ├── @ MultiWriteNode (location: (41,0)-(41,21))
         │   ├── lefts: (length: 2)
         │   │   ├── @ IndexTargetNode (location: (41,0)-(41,6))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: attribute_write
         │   │   │   ├── receiver:
         │   │   │   │   @ CallNode (location: (41,0)-(41,3))
         │   │   │   │   ├── flags: variable_call
@@ -452,7 +452,7 @@
         │   │   │   ├── closing_loc: (41,5)-(41,6) = "]"
         │   │   │   └── block: ∅
         │   │   └── @ IndexTargetNode (location: (41,8)-(41,14))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: attribute_write
         │   │       ├── receiver:
         │   │       │   @ CallNode (location: (41,8)-(41,11))
         │   │       │   ├── flags: variable_call
@@ -2166,7 +2166,7 @@
         │   │   │   ├── operator_loc: (140,17)-(140,19) = "=>"
         │   │   │   ├── reference:
         │   │   │   │   @ IndexTargetNode (location: (140,20)-(140,24))
-        │   │   │   │   ├── flags: ∅
+        │   │   │   │   ├── flags: attribute_write
         │   │   │   │   ├── receiver:
         │   │   │   │   │   @ CallNode (location: (140,20)-(140,21))
         │   │   │   │   │   ├── flags: variable_call
@@ -2229,7 +2229,7 @@
             │   │   ├── operator_loc: (142,17)-(142,19) = "=>"
             │   │   ├── reference:
             │   │   │   @ IndexTargetNode (location: (142,20)-(142,27))
-            │   │   │   ├── flags: ∅
+            │   │   │   ├── flags: attribute_write
             │   │   │   ├── receiver:
             │   │   │   │   @ CallNode (location: (142,20)-(142,21))
             │   │   │   │   ├── flags: variable_call

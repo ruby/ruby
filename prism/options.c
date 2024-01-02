@@ -41,6 +41,33 @@ pm_options_suppress_warnings_set(pm_options_t *options, bool suppress_warnings) 
 }
 
 /**
+ * Set the version option on the given options struct by parsing the given
+ * string. If the string contains an invalid option, this returns false.
+ * Otherwise, it returns true.
+ */
+PRISM_EXPORTED_FUNCTION bool
+pm_options_version_set(pm_options_t *options, const char *version, size_t length) {
+    if (version == NULL && length == 0) {
+        options->version = PM_OPTIONS_VERSION_LATEST;
+        return true;
+    }
+
+    if (length == 5) {
+        if (strncmp(version, "3.3.0", 5) == 0) {
+            options->version = PM_OPTIONS_VERSION_CRUBY_3_3_0;
+            return true;
+        }
+
+        if (strncmp(version, "latest", 6) == 0) {
+            options->version = PM_OPTIONS_VERSION_LATEST;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/**
  * Allocate and zero out the scopes array on the given options struct.
  */
 PRISM_EXPORTED_FUNCTION void
@@ -163,6 +190,7 @@ pm_options_read(pm_options_t *options, const char *data) {
 
     options->frozen_string_literal = *data++;
     options->suppress_warnings = *data++;
+    options->version = (pm_options_version_t) *data++;
 
     uint32_t scopes_count = pm_options_read_u32(data);
     data += 4;

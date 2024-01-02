@@ -2172,11 +2172,16 @@ pm_call_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
 static pm_index_target_node_t *
 pm_index_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
     pm_index_target_node_t *node = PM_ALLOC_NODE(parser, pm_index_target_node_t);
+    pm_node_flags_t flags = target->base.flags;
+
+    if (parser->version != PM_OPTIONS_VERSION_CRUBY_3_3_0) {
+        flags |= PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE;
+    }
 
     *node = (pm_index_target_node_t) {
         {
             .type = PM_INDEX_TARGET_NODE,
-            .flags = target->base.flags,
+            .flags = flags,
             .location = target->base.location
         },
         .receiver = target->receiver,
@@ -17319,6 +17324,9 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         if (options->suppress_warnings) {
             parser->suppress_warnings = true;
         }
+
+        // version option
+        parser->version = options->version;
 
         // scopes option
         for (size_t scope_index = 0; scope_index < options->scopes_count; scope_index++) {

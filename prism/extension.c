@@ -22,6 +22,7 @@ ID rb_option_id_encoding;
 ID rb_option_id_line;
 ID rb_option_id_frozen_string_literal;
 ID rb_option_id_verbose;
+ID rb_option_id_version;
 ID rb_option_id_scopes;
 
 /******************************************************************************/
@@ -131,6 +132,14 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
         if (!NIL_P(value)) pm_options_frozen_string_literal_set(options, value == Qtrue);
     } else if (key_id == rb_option_id_verbose) {
         pm_options_suppress_warnings_set(options, value != Qtrue);
+    } else if (key_id == rb_option_id_version) {
+        if (!NIL_P(value)) {
+            const char *version = check_string(value);
+
+            if (!pm_options_version_set(options, version, RSTRING_LEN(value))) {
+                rb_raise(rb_eArgError, "invalid version: %"PRIsVALUE, value);
+            }
+        }
     } else if (key_id == rb_option_id_scopes) {
         if (!NIL_P(value)) build_options_scopes(options, value);
     } else {
@@ -1013,6 +1022,7 @@ Init_prism(void) {
     rb_option_id_line = rb_intern_const("line");
     rb_option_id_frozen_string_literal = rb_intern_const("frozen_string_literal");
     rb_option_id_verbose = rb_intern_const("verbose");
+    rb_option_id_version = rb_intern_const("version");
     rb_option_id_scopes = rb_intern_const("scopes");
 
     /**

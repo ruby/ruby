@@ -319,7 +319,7 @@
         ├── @ MultiWriteNode (location: (15,0)-(15,24))
         │   ├── lefts: (length: 2)
         │   │   ├── @ IndexTargetNode (location: (15,1)-(15,8))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: attribute_write
         │   │   │   ├── receiver:
         │   │   │   │   @ LocalVariableReadNode (location: (15,1)-(15,2))
         │   │   │   │   ├── name: :a
@@ -338,7 +338,7 @@
         │   │   │   ├── closing_loc: (15,7)-(15,8) = "]"
         │   │   │   └── block: ∅
         │   │   └── @ IndexTargetNode (location: (15,10)-(15,14))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: attribute_write
         │   │       ├── receiver:
         │   │       │   @ LocalVariableReadNode (location: (15,10)-(15,11))
         │   │       │   ├── name: :a
@@ -370,7 +370,7 @@
         ├── @ MultiWriteNode (location: (16,0)-(16,21))
         │   ├── lefts: (length: 2)
         │   │   ├── @ IndexTargetNode (location: (16,1)-(16,5))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: attribute_write
         │   │   │   ├── receiver:
         │   │   │   │   @ LocalVariableReadNode (location: (16,1)-(16,2))
         │   │   │   │   ├── name: :a
@@ -385,7 +385,7 @@
         │   │   │   ├── closing_loc: (16,4)-(16,5) = "]"
         │   │   │   └── block: ∅
         │   │   └── @ IndexTargetNode (location: (16,7)-(16,11))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: attribute_write
         │   │       ├── receiver:
         │   │       │   @ LocalVariableReadNode (location: (16,7)-(16,8))
         │   │       │   ├── name: :a
