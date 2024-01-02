@@ -4588,6 +4588,28 @@ keyword_node_p(const NODE *const node)
     return nd_type_p(node, NODE_HASH) && (RNODE_HASH(node)->nd_brace & HASH_BRACE) != HASH_BRACE;
 }
 
+static VALUE
+node_hash_unique_key_index(rb_node_hash_t *node_hash, int *count_ptr)
+{
+    NODE *node = node_hash->nd_head;
+    VALUE hash = rb_hash_new();
+    VALUE ary = rb_ary_new();
+
+    for (int i = 0; node != NULL; i++, node = RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next) {
+        VALUE key = RNODE_LIT(RNODE_LIST(node)->nd_head)->nd_lit;
+        VALUE idx = rb_hash_aref(hash, key);
+        if (!NIL_P(idx)) {
+            rb_ary_store(ary, FIX2INT(idx), Qfalse);
+            (*count_ptr)--;
+        }
+        rb_hash_aset(hash, key, INT2FIX(i));
+        rb_ary_store(ary, i, Qtrue);
+        (*count_ptr)++;
+    }
+
+    return ary;
+}
+
 static int
 compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
                     const NODE *const root_node,
@@ -4630,11 +4652,13 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         /* may be keywords */
         node = RNODE_HASH(root_node)->nd_head;
         {
-            int len = (int)RNODE_LIST(node)->as.nd_alen / 2;
+            int len = 0;
+            VALUE key_index = node_hash_unique_key_index(RNODE_HASH(root_node), &len);
             struct rb_callinfo_kwarg *kw_arg =
                 rb_xmalloc_mul_add(len, sizeof(VALUE), sizeof(struct rb_callinfo_kwarg));
             VALUE *keywords = kw_arg->keywords;
             int i = 0;
+            int j = 0;
             kw_arg->references = 0;
             kw_arg->keyword_len = len;
 
@@ -4643,10 +4667,15 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
             for (i=0; node != NULL; i++, node = RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_next) {
                 const NODE *key_node = RNODE_LIST(node)->nd_head;
                 const NODE *val_node = RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_head;
-                keywords[i] = RNODE_LIT(key_node)->nd_lit;
-                NO_CHECK(COMPILE(ret, "keyword values", val_node));
+                int popped = TRUE;
+                if (rb_ary_entry(key_index, i)) {
+                    keywords[j] = RNODE_LIT(key_node)->nd_lit;
+                    j++;
+                    popped = FALSE;
+                }
+                NO_CHECK(COMPILE_(ret, "keyword values", val_node, popped));
             }
-            assert(i == len);
+            assert(j == len);
             return TRUE;
         }
     }
