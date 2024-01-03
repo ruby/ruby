@@ -6501,7 +6501,7 @@ rb_str_reverse_bang(VALUE str)
 
 /*
  *  call-seq:
- *    include? other_string -> true or false
+ *    include?(other_string) -> true or false
  *
  *  Returns +true+ if +self+ contains +other_string+, +false+ otherwise:
  *
