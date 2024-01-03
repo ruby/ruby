@@ -21,6 +21,10 @@ module Prism
       @options = options
     end
 
+    def each_comment_line
+      comment.each_line { |line| yield line.prepend(" ").rstrip } if comment
+    end
+
     def semantic_field?
       true
     end

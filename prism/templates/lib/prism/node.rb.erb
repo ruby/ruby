@@ -47,7 +47,9 @@ module Prism
     <%- if field.comment.nil? -%>
     # <%= "private " if field.is_a?(Prism::FlagsField) %>attr_reader <%= field.name %>: <%= field.rbs_class %>
     <%- else -%>
-    # <%= field.comment.split("\n").join("\n    # ") %>
+    <%- field.each_comment_line do |line| -%>
+    #<%= line %>
+    <%- end -%>
     <%- end -%>
     <%= "private " if field.is_a?(Prism::FlagsField) %>attr_reader :<%= field.name %>
 
