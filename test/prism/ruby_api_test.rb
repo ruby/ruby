@@ -57,6 +57,8 @@ module Prism
       assert_equal 0.5r, parse_expression("0.5r").value
       assert_equal 42ri, parse_expression("42ri").value
       assert_equal 0.5ri, parse_expression("0.5ri").value
+      assert_equal 0xFFr, parse_expression("0xFFr").value
+      assert_equal 0xFFri, parse_expression("0xFFri").value
     end
 
     def test_location_join
