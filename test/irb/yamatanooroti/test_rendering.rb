@@ -232,7 +232,8 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
       puts 'start IRB'
     LINES
     start_terminal(4, 19, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
-    write("IR\C-i")
+    write("IR")
+    write("\C-i")
     close
 
     # This is because on macOS we display different shortcut for displaying the full doc
@@ -268,7 +269,8 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
       puts 'start IRB'
     LINES
     start_terminal(4, 12, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
-    write("IR\C-i")
+    write("IR")
+    write("\C-i")
     close
     assert_screen(<<~EOC)
       start IRB
