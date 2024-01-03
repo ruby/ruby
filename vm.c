@@ -3029,6 +3029,11 @@ ruby_vm_destruct(rb_vm_t *vm)
             st_free_table(vm->defined_module_hash);
 
             rb_id_table_free(vm->constant_cache);
+
+            if (th) {
+                xfree(th->nt);
+                th->nt = NULL;
+            }
         }
         else {
             if (th) {
