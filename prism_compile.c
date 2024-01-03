@@ -966,6 +966,9 @@ static int
 pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinfo_kwarg **kw_arg, rb_iseq_t *iseq, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, pm_scope_node_t *scope_node, NODE dummy_line_node, pm_parser_t *parser)
 {
     int orig_argc = 0;
+    bool has_splat = false;
+    bool has_keyword_splat = false;
+
     if (arguments_node == NULL) {
         if (*flags & VM_CALL_FCALL) {
             *flags |= VM_CALL_VCALL;
@@ -974,8 +977,7 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
     else {
         pm_node_list_t arguments_node_list = arguments_node->arguments;
 
-        bool has_keyword_splat = (arguments_node->base.flags & PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT);
-        bool has_splat = false;
+        has_keyword_splat = (arguments_node->base.flags & PM_ARGUMENTS_NODE_FLAGS_CONTAINS_KEYWORD_SPLAT);
 
         // We count the number of elements post the splat node that are not keyword elements to
         // eventually pass as an argument to newarray
@@ -990,7 +992,11 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                   pm_keyword_hash_node_t *keyword_arg = (pm_keyword_hash_node_t *)argument;
                   size_t len = keyword_arg->elements.size;
 
-                  if (has_keyword_splat) {
+                  if (has_keyword_splat || has_splat) {
+                      *flags |= VM_CALL_KW_SPLAT;
+                      *flags |= VM_CALL_KW_SPLAT_MUT;
+
+                      has_keyword_splat = true;
                       int cur_hash_size = 0;
 
                       bool new_hash_emitted = false;
@@ -1001,7 +1007,6 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
 
                           switch (PM_NODE_TYPE(cur_node)) {
                             case PM_ASSOC_NODE: {
-                                orig_argc++;
                                 pm_assoc_node_t *assoc = (pm_assoc_node_t *)cur_node;
 
                                 PM_COMPILE_NOT_POPPED(assoc->key);
@@ -1104,11 +1109,39 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                   *flags |= VM_CALL_ARGS_SPLAT;
                   pm_splat_node_t *splat_node = (pm_splat_node_t *)argument;
                   if (splat_node->expression) {
-                      orig_argc++;
                       PM_COMPILE_NOT_POPPED(splat_node->expression);
                   }
 
-                  ADD_INSN1(ret, &dummy_line_node, splatarray, Qfalse);
+                  bool first_splat = !has_splat;
+
+                  if (first_splat) {
+                      // If this is the first splat array seen and it's not the
+                      // last parameter, we want splatarray to dup it.
+                      //
+                      // foo(a, *b, c)
+                      //        ^^
+                      if (index + 1 < arguments_node_list.size) {
+                          ADD_INSN1(ret, &dummy_line_node, splatarray, Qtrue);
+                      }
+                      // If this is the first spalt array seen and it's the last
+                      // parameter, we don't want splatarray to dup it.
+                      //
+                      // foo(a, *b)
+                      //        ^^
+                      else {
+                          ADD_INSN1(ret, &dummy_line_node, splatarray, Qfalse);
+                      }
+                  }
+                  else {
+                      // If this is not the first splat array seen and it is also
+                      // the last parameter, we don't want splayarray to dup it
+                      // and we need to concat the array.
+                      //
+                      // foo(a, *b, *c)
+                      //            ^^
+                      ADD_INSN1(ret, &dummy_line_node, splatarray, Qfalse);
+                      ADD_INSN(ret, &dummy_line_node, concatarray);
+                  }
 
                   has_splat = true;
                   post_splat_counter = 0;
@@ -1124,36 +1157,68 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                   break;
               }
               default: {
-                  orig_argc++;
                   post_splat_counter++;
                   PM_COMPILE_NOT_POPPED(argument);
 
+                  // If we have a splat and we've seen a splat, we need to process
+                  // everything after the splat.
                   if (has_splat) {
-                      // If the next node starts the keyword section of parameters
-                      if ((index < arguments_node_list.size - 1) && PM_NODE_TYPE_P(arguments_node_list.nodes[index + 1], PM_KEYWORD_HASH_NODE)) {
-
+                      // Stack items are turned into an array and concatenated in
+                      // the following cases:
+                      //
+                      // If the next node is a splat:
+                      //
+                      //   foo(*a, b, *c)
+                      //
+                      // If the next node is a kwarg or kwarg splat:
+                      //
+                      //   foo(*a, b, c: :d)
+                      //   foo(*a, b, **c)
+                      //
+                      // If the next node is NULL (we have hit the end):
+                      //
+                      //   foo(*a, b)
+                      if (index == arguments_node_list.size - 1) {
+                          RUBY_ASSERT(post_splat_counter > 0);
                           ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
-                          ADD_INSN1(ret, &dummy_line_node, splatarray, Qfalse);
                           ADD_INSN(ret, &dummy_line_node, concatarray);
                       }
-                      // If it's the final node
-                      else if (index == arguments_node_list.size - 1) {
-                          if (post_splat_counter > 1) {
-                              ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
-                              ADD_INSN1(ret, &dummy_line_node, splatarray, Qfalse);
-                              ADD_INSN(ret, &dummy_line_node, concatarray);
+                      else {
+                          pm_node_t *next_arg = arguments_node_list.nodes[index + 1];
+
+                          switch (PM_NODE_TYPE(next_arg)) {
+                              // A keyword hash node contains all keyword arguments as AssocNodes and AssocSplatNodes
+                            case PM_KEYWORD_HASH_NODE: {
+                                ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
+                                ADD_INSN(ret, &dummy_line_node, concatarray);
+                                break;
+                            }
+                            case PM_SPLAT_NODE: {
+                                ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
+                                ADD_INSN(ret, &dummy_line_node, concatarray);
+                                break;
+                            }
+                            default:
+                              break;
                           }
-                          else {
-                              ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
-                              ADD_INSN(ret, &dummy_line_node, concatarray);
-                          }
-                          orig_argc = 1;
                       }
+                  }
+                  else {
+                      orig_argc++;
                   }
               }
             }
         }
     }
+
+    if (has_splat) {
+        orig_argc++;
+    }
+
+    if (has_keyword_splat) {
+        orig_argc++;
+    }
+
     return orig_argc;
 }
 
