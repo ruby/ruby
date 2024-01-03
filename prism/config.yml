@@ -1758,6 +1758,17 @@ nodes:
       - name: flags
         type: flags
         kind: IntegerBaseFlags
+        comment: |
+          Represents flag indicating the base of the integer
+              10    base decimal, value 10
+              0d10  base decimal, value 10
+              0b10  base binary, value 2
+              0o10  base octal, value 8
+              010   base octal, value 8
+              0x10  base hexidecimal, value 16
+          A 0 prefix indicates the number has a different base.
+          The d, b, o, and x prefixes indicate the base. If one of those
+          four letters is omitted, the base is assumed to be octal.
     comment: |
       Represents an integer number literal.
 
