@@ -1388,6 +1388,46 @@ module Prism
       CODE
     end
 
+    def test_trailing_keyword_method_params
+      # foo(1, b: 2, c: 3) # argc -> 3
+      assert_prism_eval("def self.foo(a, b:, c:); [a, b, c]; end; foo(1, b: 2, c: 3)")
+    end
+
+    def test_keyword_method_params_only
+      # foo(a: 1, b: 2) # argc -> 2
+      assert_prism_eval("def self.foo(a:, b:); [a, b]; end; foo(a: 1, b: 2)")
+    end
+
+    def test_keyword_method_params_with_splat
+      # foo(a: 1, **b) # argc -> 1
+      assert_prism_eval("def self.foo(a:, b:); [a, b]; end; b = { b: 2 }; foo(a: 1, **b)")
+    end
+
+    def test_positional_and_splat_keyword_method_params
+      # foo(a, **b) # argc -> 2
+      assert_prism_eval("def self.foo(a, b); [a, b]; end; b = { b: 2 }; foo(1, **b)")
+    end
+
+    def test_positional_and_splat_method_params
+      # foo(a, *b, c, *d, e) # argc -> 2
+      assert_prism_eval("def self.foo(a, b, c, d, e); [a, b, c, d, e]; end; b = [2]; d = [4]; foo(1, *b, 3, *d, 5)")
+    end
+
+    def test_positional_with_splat_and_splat_keyword_method_params
+      # foo(a, *b, c, *d, **e) # argc -> 3
+      assert_prism_eval("def self.foo(a, b, c, d, e); [a, b, c, d, e]; end; b = [2]; d = [4]; e = { e: 5 }; foo(1, *b, 3, *d, **e)")
+    end
+
+    def test_positional_with_splat_and_keyword_method_params
+      # foo(a, *b, c, *d, e:) # argc -> 3
+      assert_prism_eval("def self.foo(a, b, c, d, e:); [a, b, c, d, e]; end; b = [2]; d = [4]; foo(1, *b, 3, *d, e: 5)")
+    end
+
+    def test_leading_splat_and_keyword_method_params
+      # foo(*a, b:) # argc -> 2
+      assert_prism_eval("def self.foo(a, b:); [a, b]; end; a = [1]; foo(*a, b: 2)")
+    end
+
     def test_repeated_method_params
       assert_prism_eval("def self.foo(_a, _a); _a; end; foo(1, 2)")
     end
