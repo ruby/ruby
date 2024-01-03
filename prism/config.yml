@@ -1767,6 +1767,7 @@ nodes:
               0o10  base octal, value 8
               010   base octal, value 8
               0x10  base hexidecimal, value 16
+
           A 0 prefix indicates the number has a different base.
           The d, b, o, and x prefixes indicate the base. If one of those
           four letters is omitted, the base is assumed to be octal.
