@@ -1458,6 +1458,16 @@ class TestHash < Test::Unit::TestCase
     assert_predicate(h.dup, :compare_by_identity?, bug8703)
   end
 
+  def test_compare_by_identy_memory_leak
+    assert_no_memory_leak([], "", "#{<<~"begin;"}\n#{<<~'end;'}", "[Bug #20145]", rss: true)
+    begin;
+      h = { 1 => 2 }.compare_by_identity
+      1_000_000.times do
+        h.select { false }
+      end
+    end;
+  end
+
   def test_same_key
     bug9646 = '[ruby-dev:48047] [Bug #9646] Infinite loop at Hash#each'
     h = @cls[a=[], 1]
