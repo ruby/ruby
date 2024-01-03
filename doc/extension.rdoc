@@ -2210,69 +2210,69 @@ Ractor safety around C extensions has the following properties:
 
 To make a "Ractor-safe" C extension, we need to check the following points:
 
-(1) Do not share unshareable objects between ractors
+1. Do not share unshareable objects between ractors
 
-For example, C's global variable can lead sharing an unshareable objects
-between ractors.
+   For example, C's global variable can lead sharing an unshareable objects
+   between ractors.
 
-  VALUE g_var;
-  VALUE set(VALUE self, VALUE v){ return g_var = v; }
-  VALUE get(VALUE self){ return g_var; }
+     VALUE g_var;
+     VALUE set(VALUE self, VALUE v){ return g_var = v; }
+     VALUE get(VALUE self){ return g_var; }
 
-set() and get() pair can share an unshareable objects using g_var, and
-it is Ractor-unsafe.
+   set() and get() pair can share an unshareable objects using g_var, and
+   it is Ractor-unsafe.
 
-Not only using global variables directly, some indirect data structure
-such as global st_table can share the objects, so please take care.
+   Not only using global variables directly, some indirect data structure
+   such as global st_table can share the objects, so please take care.
 
-Note that class and module objects are shareable objects, so you can
-keep the code "cFoo = rb_define_class(...)" with C's global variables.
+   Note that class and module objects are shareable objects, so you can
+   keep the code "cFoo = rb_define_class(...)" with C's global variables.
 
-(2) Check the thread-safety of the extension
+2. Check the thread-safety of the extension
 
-An extension should be thread-safe. For example, the following code is
-not thread-safe:
+   An extension should be thread-safe. For example, the following code is
+   not thread-safe:
 
-  bool g_called = false;
-  VALUE call(VALUE self) {
-    if (g_called) rb_raise("recursive call is not allowed.");
-    g_called = true;
-    VALUE ret = do_something();
-    g_called = false;
-    return ret;
-  }
+     bool g_called = false;
+     VALUE call(VALUE self) {
+       if (g_called) rb_raise("recursive call is not allowed.");
+       g_called = true;
+       VALUE ret = do_something();
+       g_called = false;
+       return ret;
+     }
 
-because g_called global variable should be synchronized by other
-ractor's threads. To avoid such data-race, some synchronization should
-be used. Check include/ruby/thread_native.h and include/ruby/atomic.h.
+   because g_called global variable should be synchronized by other
+   ractor's threads. To avoid such data-race, some synchronization should
+   be used. Check include/ruby/thread_native.h and include/ruby/atomic.h.
 
-With Ractors, all objects given as method parameters and the receiver (self)
-are guaranteed to be from the current Ractor or to be shareable. As a
-consequence, it is easier to make code ractor-safe than to make code generally
-thread-safe. For example, we don't need to lock an array object to access the
-element of it.
+   With Ractors, all objects given as method parameters and the receiver (self)
+   are guaranteed to be from the current Ractor or to be shareable. As a
+   consequence, it is easier to make code ractor-safe than to make code generally
+   thread-safe. For example, we don't need to lock an array object to access the
+   element of it.
 
-(3) Check the thread-safety of any used library
+3. Check the thread-safety of any used library
 
-If the extension relies on an external library, such as a function foo() from
-a library libfoo, the function libfoo foo() should be thread safe.
+   If the extension relies on an external library, such as a function foo() from
+   a library libfoo, the function libfoo foo() should be thread safe.
 
-(4) Make an object shareable
+4. Make an object shareable
 
-This is not required to make an extension Ractor-safe.
+   This is not required to make an extension Ractor-safe.
 
-If an extension provides special objects defined by rb_data_type_t,
-consider these objects can become shareable or not.
+   If an extension provides special objects defined by rb_data_type_t,
+   consider these objects can become shareable or not.
 
-RUBY_TYPED_FROZEN_SHAREABLE flag indicates that these objects can be
-shareable objects if the object is frozen. This means that if the object
-is frozen, the mutation of wrapped data is not allowed.
+   RUBY_TYPED_FROZEN_SHAREABLE flag indicates that these objects can be
+   shareable objects if the object is frozen. This means that if the object
+   is frozen, the mutation of wrapped data is not allowed.
 
-(5) Others
+5. Others
 
-There are possibly other points or requirements which must be considered in the
-making of a Ractor-safe extension.  This document will be extended as they are
-discovered.
+   There are possibly other points or requirements which must be considered in the
+   making of a Ractor-safe extension.  This document will be extended as they are
+   discovered.
 
 :stopdoc: Local variables:
 :stopdoc: fill-column: 70
