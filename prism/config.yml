@@ -1760,6 +1760,7 @@ nodes:
         kind: IntegerBaseFlags
         comment: |
           Represents flag indicating the base of the integer
+
               10    base decimal, value 10
               0d10  base decimal, value 10
               0b10  base binary, value 2
