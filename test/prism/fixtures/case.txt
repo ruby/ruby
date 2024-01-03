@@ -42,3 +42,9 @@ in 3
 end
 
 case 1 in 2; in 3; end
+
+1.then do
+  case 1
+  in ^_1
+  end
+end

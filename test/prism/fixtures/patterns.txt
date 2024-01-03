@@ -200,3 +200,5 @@ foo do
 end
 
 foo => Object[{x:}]
+
+1.then { 1 in ^_1 }
