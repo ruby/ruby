@@ -740,10 +740,25 @@ nodes:
     fields:
       - name: new_name
         type: node
+        comment: |
+          Represents the new name of the global variable that can be used after aliasing. This can be either a global variable, a back reference, or a numbered reference.
+
+              alias $foo $bar
+                    ^^^^
       - name: old_name
         type: node
+        comment: |
+          Represents the old name of the global variable that could be used before aliasing. This can be either a global variable, a back reference, or a numbered reference.
+
+              alias $foo $bar
+                         ^^^^
       - name: keyword_loc
         type: location
+        comment: |
+          The location of the `alias` keyword.
+
+              alias $foo $bar
+              ^^^^^
     comment: |
       Represents the use of the `alias` keyword to alias a global variable.
 
