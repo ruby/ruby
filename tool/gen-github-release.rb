@@ -29,8 +29,8 @@ note =  "## What's Changed\n\n"
 
 diff = client.compare("ruby/ruby", ARGV[0], ARGV[1])
 diff[:commits].each do |c|
-  if c[:commit][:message] =~ /\[Backport #(\d*)\]/
-    url = "https://bugs.ruby-lang.org/issues/#{$1}"
+  if c[:commit][:message] =~ /\[(Backport|Feature|Bug) #(\d*)\]/
+    url = "https://bugs.ruby-lang.org/issues/#{$2}"
     title = Nokogiri::HTML(URI.open(url)).title
     title.gsub!(/ - Ruby master - Ruby Issue Tracking System/, "")
   elsif c[:commit][:message] =~ /\(#(\d*)\)/
