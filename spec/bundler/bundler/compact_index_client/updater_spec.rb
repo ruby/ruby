@@ -21,7 +21,7 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
     before do
       allow(response).to receive(:[]).with("Repr-Digest") { nil }
       allow(response).to receive(:[]).with("Digest") { nil }
-      allow(response).to receive(:[]).with("ETag") { "thisisanetag" }
+      allow(response).to receive(:[]).with("ETag") { '"thisisanetag"' }
     end
 
     it "downloads the file without attempting append" do
@@ -57,7 +57,7 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
 
       let(:headers) do
         {
-          "If-None-Match" => "LocalEtag",
+          "If-None-Match" => '"LocalEtag"',
           "Range" => "bytes=2-",
         }
       end
@@ -76,7 +76,7 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
       it "appends the file if etags do not match" do
         expect(fetcher).to receive(:call).once.with(remote_path, headers).and_return(response)
         allow(response).to receive(:[]).with("Repr-Digest") { "sha-256=:#{digest}:" }
-        allow(response).to receive(:[]).with("ETag") { "NewEtag" }
+        allow(response).to receive(:[]).with("ETag") { '"NewEtag"' }
         allow(response).to receive(:is_a?).with(Gem::Net::HTTPPartialContent) { true }
         allow(response).to receive(:is_a?).with(Gem::Net::HTTPNotModified) { false }
         allow(response).to receive(:body) { "c123" }
@@ -90,7 +90,7 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
       it "replaces the file if response ignores range" do
         expect(fetcher).to receive(:call).once.with(remote_path, headers).and_return(response)
         allow(response).to receive(:[]).with("Repr-Digest") { "sha-256=:#{digest}:" }
-        allow(response).to receive(:[]).with("ETag") { "NewEtag" }
+        allow(response).to receive(:[]).with("ETag") { '"NewEtag"' }
         allow(response).to receive(:body) { full_body }
 
         updater.update(remote_path, local_path, etag_path)
@@ -107,8 +107,8 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
 
         full_response = double(:full_response, body: full_body, is_a?: false)
         allow(full_response).to receive(:[]).with("Repr-Digest") { "sha-256=:#{digest}:" }
-        allow(full_response).to receive(:[]).with("ETag") { "NewEtag" }
-        expect(fetcher).to receive(:call).once.with(remote_path, { "If-None-Match" => "LocalEtag" }).and_return(full_response)
+        allow(full_response).to receive(:[]).with("ETag") { '"NewEtag"' }
+        expect(fetcher).to receive(:call).once.with(remote_path, { "If-None-Match" => '"LocalEtag"' }).and_return(full_response)
 
         updater.update(remote_path, local_path, etag_path)
 
@@ -123,7 +123,7 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
           "Range" => "bytes=2-",
           # This MD5 feature should be deleted after sufficient time has passed since release.
           # From then on, requests that still don't have a saved etag will be made without this header.
-          "If-None-Match" => Digest::MD5.hexdigest(local_body),
+          "If-None-Match" => %("#{Digest::MD5.hexdigest(local_body)}"),
         }
       end
 
@@ -135,13 +135,13 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
         updater.update(remote_path, local_path, etag_path)
 
         expect(local_path.read).to eq("abc")
-        expect(etag_path.read).to eq(headers["If-None-Match"])
+        expect(%("#{etag_path.read}")).to eq(headers["If-None-Match"])
       end
 
       it "appends the file" do
         expect(fetcher).to receive(:call).once.with(remote_path, headers).and_return(response)
         allow(response).to receive(:[]).with("Repr-Digest") { "sha-256=:#{digest}:" }
-        allow(response).to receive(:[]).with("ETag") { "OpaqueEtag" }
+        allow(response).to receive(:[]).with("ETag") { '"OpaqueEtag"' }
         allow(response).to receive(:is_a?).with(Gem::Net::HTTPPartialContent) { true }
         allow(response).to receive(:is_a?).with(Gem::Net::HTTPNotModified) { false }
         allow(response).to receive(:body) { "c123" }
@@ -156,7 +156,7 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
         expect(fetcher).to receive(:call).once.with(remote_path, headers).and_return(response)
         allow(response).to receive(:[]).with("Repr-Digest") { nil }
         allow(response).to receive(:[]).with("Digest") { nil }
-        allow(response).to receive(:[]).with("ETag") { "OpaqueEtag" }
+        allow(response).to receive(:[]).with("ETag") { '"OpaqueEtag"' }
         allow(response).to receive(:is_a?).with(Gem::Net::HTTPPartialContent) { false }
         allow(response).to receive(:is_a?).with(Gem::Net::HTTPNotModified) { false }
         allow(response).to receive(:body) { full_body }
@@ -180,8 +180,8 @@ RSpec.describe Bundler::CompactIndexClient::Updater do
 
         full_response = double(:full_response, body: full_body, is_a?: false)
         allow(full_response).to receive(:[]).with("Repr-Digest") { "sha-256=:#{digest}:" }
-        allow(full_response).to receive(:[]).with("ETag") { "NewEtag" }
-        expect(fetcher).to receive(:call).once.with(remote_path, { "If-None-Match" => "LocalEtag" }).and_return(full_response)
+        allow(full_response).to receive(:[]).with("ETag") { '"NewEtag"' }
+        expect(fetcher).to receive(:call).once.with(remote_path, { "If-None-Match" => '"LocalEtag"' }).and_return(full_response)
 
         updater.update(remote_path, local_path, etag_path)
 
