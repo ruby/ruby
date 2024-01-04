@@ -511,6 +511,11 @@ start:
     }
     pthread_detach(th);
 
+    int r;
+    if ((r = pthread_attr_destroy(&attr)) != 0) {
+        rb_bug_errno("pthread_attr_destroy", r);
+    }
+
     rb_thread_call_without_gvl2(wait_getaddrinfo, arg, cancel_getaddrinfo, arg);
 
     int need_free = 0;
@@ -732,11 +737,16 @@ start:
 #endif
 
     pthread_t th;
-    if (do_pthread_create(&th, 0, do_getnameinfo, arg) != 0) {
+    if (do_pthread_create(&th, &attr, do_getnameinfo, arg) != 0) {
         free_getnameinfo_arg(arg);
         return EAI_AGAIN;
     }
     pthread_detach(th);
+
+    int r;
+    if ((r = pthread_attr_destroy(&attr)) != 0) {
+        rb_bug_errno("pthread_attr_destroy", r);
+    }
 
     rb_thread_call_without_gvl2(wait_getnameinfo, arg, cancel_getnameinfo, arg);
 
