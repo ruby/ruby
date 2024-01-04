@@ -171,9 +171,11 @@ pub extern "C" fn rb_yjit_code_gc(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
 pub extern "C" fn rb_yjit_enable(_ec: EcPtr, _ruby_self: VALUE, gen_stats: VALUE, print_stats: VALUE) -> VALUE {
     with_vm_lock(src_loc!(), || {
         // Initialize and enable YJIT
-        unsafe {
-            OPTIONS.gen_stats = gen_stats.test();
-            OPTIONS.print_stats = print_stats.test();
+        if gen_stats.test() {
+            unsafe {
+                OPTIONS.gen_stats = gen_stats.test();
+                OPTIONS.print_stats = print_stats.test();
+            }
         }
         yjit_init();
 
