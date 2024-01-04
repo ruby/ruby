@@ -828,10 +828,25 @@ nodes:
         kind: ArrayNodeFlags
       - name: elements
         type: node[]
+        comment: Represent the list of zero or more [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression) within the array.
       - name: opening_loc
         type: location?
+        comment: |
+          Represents the optional source location for the opening token.
+
+              [1,2,3]                 # "["
+              %w[foo bar baz]         # "%w["
+              %I(apple orange banana) # "%I("
+              foo = 1, 2, 3           # nil
       - name: closing_loc
         type: location?
+        comment: |
+          Represents the optional source location for the closing token.
+
+              [1,2,3]                 # "]"
+              %w[foo bar baz]         # "]"
+              %I(apple orange banana) # ")"
+              foo = 1, 2, 3           # nil
     comment: |
       Represents an array literal. This can be a regular array using brackets or a special array using % like %w or %i.
 
@@ -3169,6 +3184,7 @@ nodes:
         kind: StringFlags
       - name: filepath
         type: string
+        comment: Represents the file path being parsed. This corresponds directly to the `filepath` option given to the various `Prism::parse*` APIs.
     comment: |
       Represents the use of the `__FILE__` keyword.
 
