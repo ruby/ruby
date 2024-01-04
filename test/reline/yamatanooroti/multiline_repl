@@ -153,6 +153,10 @@ opt.on('--autocomplete') {
     %w{String Struct Symbol ScriptError SyntaxError Signal}.select{ |c| c.start_with?(target) }
   }
 }
+opt.on('--autocomplete-empty') {
+  Reline.autocompletion = true
+  Reline.completion_proc = lambda { |target, preposing = nil, postposing = nil| [] }
+}
 opt.on('--autocomplete-long') {
   Reline.autocompletion = true
   Reline.completion_proc = lambda { |target, preposing = nil, postposing = nil|

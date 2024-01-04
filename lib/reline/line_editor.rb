@@ -1313,7 +1313,7 @@ class Reline::LineEditor
       end
       if not just_show_list and target < completed
         @line = (preposing + completed + completion_append_character.to_s + postposing).split("\n")[@line_index] || String.new(encoding: @encoding)
-        line_to_pointer = (preposing + completed + completion_append_character.to_s).split("\n").last || String.new(encoding: @encoding)
+        line_to_pointer = (preposing + completed + completion_append_character.to_s).split("\n")[@line_index] || String.new(encoding: @encoding)
         @cursor_max = calculate_width(@line)
         @cursor = calculate_width(line_to_pointer)
         @byte_pointer = line_to_pointer.bytesize
@@ -1360,7 +1360,7 @@ class Reline::LineEditor
     completed = @completion_journey_data.list[@completion_journey_data.pointer]
     new_line = (@completion_journey_data.preposing + completed + @completion_journey_data.postposing).split("\n")[@line_index]
     @line = new_line.nil? ? String.new(encoding: @encoding) : new_line
-    line_to_pointer = (@completion_journey_data.preposing + completed).split("\n").last
+    line_to_pointer = (@completion_journey_data.preposing + completed).split("\n")[@line_index]
     line_to_pointer = String.new(encoding: @encoding) if line_to_pointer.nil?
     @cursor_max = calculate_width(@line)
     @cursor = calculate_width(line_to_pointer)

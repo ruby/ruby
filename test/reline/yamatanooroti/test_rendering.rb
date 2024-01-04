@@ -1213,6 +1213,32 @@ begin
       EOC
     end
 
+    def test_autocomplete_empty_string
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
+      write("\C-i")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> String
+                String     █
+                Struct     ▀
+                Symbol
+      EOC
+    end
+
+    def test_paste_code_with_tab_indent_does_not_fail
+      start_terminal(5, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete-empty}, startup_message: 'Multiline REPL.')
+      write("2.times do\n\tputs\n\tputs\nend")
+      close
+      assert_screen(<<~'EOC')
+        Multiline REPL.
+        prompt> 2.times do
+        prompt> puts
+        prompt> puts
+        prompt> end
+      EOC
+    end
+
     def test_autocomplete_after_2nd_line
       start_terminal(20, 30, %W{ruby -I#{@pwd}/lib #{@pwd}/test/reline/yamatanooroti/multiline_repl --autocomplete}, startup_message: 'Multiline REPL.')
       write("def hoge\n  Str")
