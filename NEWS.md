@@ -28,6 +28,7 @@ The following default gems are updated.
 
 The following bundled gems are updated.
 
+* net-ftp 0.3.4
 * net-imap 0.4.9
 * rbs 3.4.1
 * typeprof 0.21.9
