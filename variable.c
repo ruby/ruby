@@ -2459,10 +2459,12 @@ autoload_data_free(void *ptr)
 {
     struct autoload_data *p = ptr;
 
-    // We may leak some memory at VM shutdown time, no big deal...?
-    if (ccan_list_empty(&p->constants)) {
-        ruby_xfree(p);
+    struct autoload_const *autoload_const, *next;
+    ccan_list_for_each_safe(&p->constants, autoload_const, next, cnode) {
+        ccan_list_del_init(&autoload_const->cnode);
     }
+
+    ruby_xfree(p);
 }
 
 static size_t
