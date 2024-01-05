@@ -1234,6 +1234,16 @@ class TestNetHTTPKeepAlive < Test::Unit::TestCase
     }
   end
 
+  def test_http_retry_failed_with_block
+    start {|http|
+      http.max_retries = 10
+      called = 0
+      assert_raise(Errno::ECONNRESET){ http.get('/'){called += 1; raise Errno::ECONNRESET} }
+      assert_equal 1, called
+    }
+    @log_tester = nil
+  end
+
   def test_keep_alive_server_close
     def @server.run(sock)
       sock.close
