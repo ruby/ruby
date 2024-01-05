@@ -717,6 +717,24 @@ WARN
         end
       }
     }
+    assert_warning(/3: #{w}.+4: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m) {
+      eval %q{
+        case 1
+        when __LINE__, __LINE__
+        when 3, 3
+        when 3, 3
+        end
+      }
+    }
+    assert_warning(/3: #{w}.+4: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m) {
+      eval %q{
+        case 1
+        when __FILE__, __FILE__
+        when "filename", "filename"
+        when "filename", "filename"
+        end
+      }, binding, "filename"
+    }
   end
 
   def test_duplicated_when_check_option
