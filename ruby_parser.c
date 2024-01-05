@@ -1060,6 +1060,7 @@ rb_node_const_decl_val(const NODE *node)
         }
         else if (n && nd_type_p(n, NODE_COLON3)) {
             // ::Const::Name
+            rb_ary_push(path, rb_id2str(RNODE_COLON3(n)->nd_mid));
             rb_ary_push(path, rb_str_new(0, 0));
         }
         else {
