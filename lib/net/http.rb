@@ -397,7 +397,7 @@ module Net   #:nodoc:
   class HTTP < Protocol
 
     # :stopdoc:
-    VERSION = "0.3.0"
+    VERSION = "0.3.0.1"
     Revision = %q$Revision$.split[1]
     HTTPVersion = '1.1'
     begin
