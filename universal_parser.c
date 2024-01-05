@@ -226,6 +226,7 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_big_norm   p->config->big_norm
 #define rb_cstr_to_inum p->config->cstr_to_inum
 
+#undef rb_float_new
 #define rb_float_new   p->config->float_new
 #undef RFLOAT_VALUE
 #define RFLOAT_VALUE   p->config->float_value

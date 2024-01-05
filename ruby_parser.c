@@ -4,6 +4,135 @@
 
 #include "rubyparser.h"
 
+static VALUE
+compile_negative_numeric(VALUE val)
+{
+    if (FIXNUM_P(val)) {
+        return LONG2FIX(-FIX2LONG(val));
+    }
+    if (SPECIAL_CONST_P(val)) {
+#if USE_FLONUM
+        if (FLONUM_P(val)) {
+            return DBL2NUM(-RFLOAT_VALUE(val));
+        }
+#endif
+    }
+    switch (OBJ_BUILTIN_TYPE(val))
+    {
+    case T_BIGNUM:
+        BIGNUM_NEGATE(val);
+        val = rb_big_norm(val);
+        break;
+    case T_RATIONAL:
+        RATIONAL_SET_NUM(val, compile_negative_numeric(RRATIONAL(val)->num));
+        break;
+    case T_COMPLEX:
+        RCOMPLEX_SET_REAL(val, compile_negative_numeric(RCOMPLEX(val)->real));
+        RCOMPLEX_SET_IMAG(val, compile_negative_numeric(RCOMPLEX(val)->imag));
+        break;
+    case T_FLOAT:
+        val = DBL2NUM(-RFLOAT_VALUE(val));
+        break;
+    default:
+        val = LONG2FIX(-FIX2LONG(val));
+        break;
+    }
+    return val;
+}
+
+static VALUE
+compile_numeric_literal(char* val, int base)
+{
+    return rb_cstr_to_inum(val, base, FALSE);
+}
+
+VALUE
+rb_node_integer_literal_val(rb_node_integer_t* node)
+{
+    VALUE val = compile_numeric_literal(node->val, node->base);
+    if (node->minus) {
+        val = compile_negative_numeric(val);
+    }
+    return val;
+}
+
+VALUE
+rb_node_float_literal_val(rb_node_float_t* node)
+{
+    double d = strtod(node->val, 0);
+    if (node->minus) {
+        d = -d;
+    }
+    VALUE val = DBL2NUM(d);
+    return val;
+}
+
+static VALUE
+compile_rational_literal(char* node_val, int base, int seen_point)
+{
+    VALUE lit;
+    char* val = strdup(node_val);
+    if (seen_point > 0) {
+        int len = (int)(strlen(val));
+        char *point = &val[seen_point];
+        size_t fraclen = len-seen_point-1;
+        memmove(point, point+1, fraclen+1);
+
+        lit = rb_rational_new(compile_numeric_literal(val, base), rb_int_positive_pow(10, fraclen));
+    } else {
+        lit = rb_rational_raw1(compile_numeric_literal(val, base));
+    }
+
+    free(val);
+
+    return lit;
+}
+
+VALUE
+rb_node_rational_literal_val(rb_node_rational_t* node)
+{
+    VALUE lit;
+
+    lit = compile_rational_literal(node->val, node->base, node->seen_point);
+
+    if (node->minus) {
+        lit = compile_negative_numeric(lit);
+    }
+
+    return lit;
+}
+
+VALUE
+rb_node_imaginary_literal_val(rb_node_imaginary_t* node)
+{
+    VALUE lit;
+
+    enum rb_numeric_type type = node->type;
+
+    switch (type) {
+      case integer_literal:
+        lit = compile_numeric_literal(node->val, node->base);
+        break;
+      case float_literal:{
+        double d = strtod(node->val, 0);
+        lit = DBL2NUM(d);
+        break;
+      }
+      case rational_literal:
+        lit = compile_rational_literal(node->val, node->base, node->seen_point);
+        break;
+      default:
+        rb_bug("unreachable");
+    }
+
+    lit = rb_complex_raw(INT2FIX(0), lit);
+
+    if (node->minus) {
+        lit = compile_negative_numeric(lit);
+    }
+    return lit;
+}
+
 #ifdef UNIVERSAL_PARSER
 
 #include "internal.h"
