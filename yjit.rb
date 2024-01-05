@@ -28,7 +28,11 @@ module RubyVM::YJIT
     Primitive.rb_yjit_reset_stats_bang
   end
 
-  # Enable \YJIT compilation.
+  # Enable \YJIT compilation. `stats` option decides whether to enable \YJIT stats or not.
+  #
+  # * `false`: Disable stats.
+  # * `true`: Enable stats. Print stats at exit.
+  # * `:quiet`: Enable stats. Do not print stats at exit.
   def self.enable(stats: false)
     return false if enabled?
     at_exit { print_and_dump_stats } if stats
