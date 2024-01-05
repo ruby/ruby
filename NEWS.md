@@ -23,6 +23,7 @@ The following default gems are updated.
 * erb 4.0.4
 * fiddle 1.1.3
 * io-console 0.7.2.dev.1
+* net-http 0.4.1
 * stringio 3.1.1
 * strscan 3.0.8
 
