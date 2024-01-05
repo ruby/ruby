@@ -24,6 +24,7 @@ The following default gems are updated.
 * fiddle 1.1.3
 * io-console 0.7.2.dev.1
 * net-http 0.4.1
+* reline 0.4.2
 * stringio 3.1.1
 * strscan 3.0.8
 
