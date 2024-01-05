@@ -706,7 +706,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
       case NODE_LIT:
         ANN("literal");
         ANN("format: [nd_lit]");
-        ANN("example: 1, /foo/");
+        ANN("example: :sym, /foo/");
         goto lit;
       case NODE_STR:
         ANN("string literal");
@@ -719,6 +719,34 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: `foo`");
       lit:
         F_LIT(nd_lit, RNODE_LIT, "literal");
+        return;
+
+      case NODE_INTEGER:
+        ANN("integer literal");
+        ANN("format: [val]");
+        ANN("example: 1");
+        F_VALUE(val, rb_node_integer_literal_val(RNODE_INTEGER(node)), "val");
+        return;
+
+      case NODE_FLOAT:
+        ANN("float literal");
+        ANN("format: [val]");
+        ANN("example: 1.2");
+        F_VALUE(val, rb_node_float_literal_val(RNODE_FLOAT(node)), "val");
+        return;
+
+      case NODE_RATIONAL:
+        ANN("rational number literal");
+        ANN("format: [val]");
+        ANN("example: 1r");
+        F_VALUE(val, rb_node_rational_literal_val(RNODE_RATIONAL(node)), "val");
+        return;
+
+      case NODE_IMAGINARY:
+        ANN("complex number literal");
+        ANN("format: [val]");
+        ANN("example: 1i");
+        F_VALUE(val, rb_node_imaginary_literal_val(RNODE_IMAGINARY(node)), "val");
         return;
 
       case NODE_ONCE:

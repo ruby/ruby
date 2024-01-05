@@ -109,6 +109,10 @@ enum node_type {
     NODE_MATCH2,
     NODE_MATCH3,
     NODE_LIT,
+    NODE_INTEGER,
+    NODE_FLOAT,
+    NODE_RATIONAL,
+    NODE_IMAGINARY,
     NODE_STR,
     NODE_DSTR,
     NODE_XSTR,
@@ -628,6 +632,46 @@ typedef struct RNode_LIT {
     VALUE nd_lit;
 } rb_node_lit_t;
 
+typedef struct RNode_INTEGER {
+    NODE node;
+
+    char* val;
+    int minus;
+    int base;
+} rb_node_integer_t;
+
+typedef struct RNode_FLOAT {
+    NODE node;
+
+    char* val;
+    int minus;
+} rb_node_float_t;
+
+typedef struct RNode_RATIONAL {
+    NODE node;
+
+    char* val;
+    int minus;
+    int base;
+    int seen_point;
+} rb_node_rational_t;
+
+enum rb_numeric_type {
+    integer_literal,
+    float_literal,
+    rational_literal
+};
+
+typedef struct RNode_IMAGINARY {
+    NODE node;
+
+    char* val;
+    int minus;
+    int base;
+    int seen_point;
+    enum rb_numeric_type type;
+} rb_node_imaginary_t;
+
 typedef struct RNode_STR {
     NODE node;
 
@@ -1020,6 +1064,10 @@ typedef struct RNode_ERROR {
 #define RNODE_MATCH2(node) ((struct RNode_MATCH2 *)(node))
 #define RNODE_MATCH3(node) ((struct RNode_MATCH3 *)(node))
 #define RNODE_LIT(node) ((struct RNode_LIT *)(node))
+#define RNODE_INTEGER(node) ((struct RNode_INTEGER *)(node))
+#define RNODE_FLOAT(node) ((struct RNode_FLOAT *)(node))
+#define RNODE_RATIONAL(node) ((struct RNode_RATIONAL *)(node))
+#define RNODE_IMAGINARY(node) ((struct RNode_IMAGINARY *)(node))
 #define RNODE_STR(node) ((struct RNode_STR *)(node))
 #define RNODE_DSTR(node) ((struct RNode_DSTR *)(node))
 #define RNODE_XSTR(node) ((struct RNode_XSTR *)(node))
