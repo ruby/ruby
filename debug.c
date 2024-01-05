@@ -156,6 +156,12 @@ ruby_debug_print_node(int level, int debug_level, const char *header, const NODE
 }
 
 void
+ruby_debug_print_n(const NODE *node)
+{
+    ruby_debug_print_node(0, 1, "", node);
+}
+
+void
 ruby_debug_breakpoint(void)
 {
     /* */
