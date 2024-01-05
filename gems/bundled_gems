@@ -12,9 +12,9 @@ test-unit       3.6.1   https://github.com/test-unit/test-unit
 rexml           3.2.6   https://github.com/ruby/rexml
 rss             0.3.0   https://github.com/ruby/rss
 net-ftp         0.3.4   https://github.com/ruby/net-ftp
-net-imap        0.4.9   https://github.com/ruby/net-imap efbd204d3048132da43f999fb870351905ff49e2
+net-imap        0.4.9.1 https://github.com/ruby/net-imap
 net-pop         0.1.2   https://github.com/ruby/net-pop
-net-smtp        0.4.0   https://github.com/ruby/net-smtp 5eb6ec2c321364d4d23a7c21c6e4502aa4b0dff8
+net-smtp        0.4.0.1 https://github.com/ruby/net-smtp
 matrix          0.4.2   https://github.com/ruby/matrix
 prime           0.1.2   https://github.com/ruby/prime
 rbs             3.4.1   https://github.com/ruby/rbs
