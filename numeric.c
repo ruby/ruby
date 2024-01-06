@@ -2966,8 +2966,8 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
  *   greater than or equal to +to+ if +by+ is negative.
  *   If +to+ is +nil+, the sequence is of infinite length.
  *
- *  If a block is given, calls the block with each number in the sequence;
- *  returns +self+.  If no block is given, returns an Enumerator::ArithmeticSequence.
+ * If a block is given, calls the block with each number in the sequence;
+ * returns +self+. If no block is given, returns an Enumerator::ArithmeticSequence.
  *
  * <b>Keyword Arguments</b>
  *
