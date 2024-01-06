@@ -1,0 +1,20 @@
+#!ruby
+
+require 'rdoc/rdoc'
+
+# Make only the output directory relative to the invoked directory.
+invoked = Dir.pwd
+
+# Load options and parse files from srcdir.
+Dir.chdir(File.dirname(__dir__))
+
+options = RDoc::Options.load_options
+options.parse ARGV
+
+options.singleton_class.define_method(:finish) do
+  super()
+  @op_dir = File.expand_path(@op_dir, invoked)
+end
+
+# Do not hide errors when generating documents of Ruby itself.
+RDoc::RDoc.new.document options
