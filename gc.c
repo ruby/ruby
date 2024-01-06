@@ -9749,10 +9749,6 @@ gc_enter_count(enum gc_enter_event event)
     }
 }
 
-#ifndef MEASURE_GC
-#define MEASURE_GC (objspace->flags.measure_gc)
-#endif
-
 static bool current_process_time(struct timespec *ts);
 
 static void
@@ -9822,12 +9818,18 @@ gc_exit(rb_objspace_t *objspace, enum gc_enter_event event, unsigned int *lock_l
     RB_VM_LOCK_LEAVE_LEV(lock_lev);
 }
 
+#ifndef MEASURE_GC
+#define MEASURE_GC (objspace->flags.measure_gc)
+#endif
+
 static void
 gc_marking_enter(rb_objspace_t *objspace)
 {
     GC_ASSERT(during_gc != 0);
 
-    gc_clock_start(&objspace->profile.marking_start_time);
+    if (MEASURE_GC) {
+        gc_clock_start(&objspace->profile.marking_start_time);
+    }
 }
 
 static void
@@ -9835,7 +9837,9 @@ gc_marking_exit(rb_objspace_t *objspace)
 {
     GC_ASSERT(during_gc != 0);
 
-    objspace->profile.marking_time_ns += gc_clock_end(&objspace->profile.marking_start_time);
+    if (MEASURE_GC) {
+        objspace->profile.marking_time_ns += gc_clock_end(&objspace->profile.marking_start_time);
+    }
 }
 
 static void
@@ -9843,7 +9847,9 @@ gc_sweeping_enter(rb_objspace_t *objspace)
 {
     GC_ASSERT(during_gc != 0);
 
-    gc_clock_start(&objspace->profile.sweeping_start_time);
+    if (MEASURE_GC) {
+        gc_clock_start(&objspace->profile.sweeping_start_time);
+    }
 }
 
 static void
@@ -9851,7 +9857,9 @@ gc_sweeping_exit(rb_objspace_t *objspace)
 {
     GC_ASSERT(during_gc != 0);
 
-    objspace->profile.sweeping_time_ns += gc_clock_end(&objspace->profile.sweeping_start_time);
+    if (MEASURE_GC) {
+        objspace->profile.sweeping_time_ns += gc_clock_end(&objspace->profile.sweeping_start_time);
+    }
 }
 
 static void *
