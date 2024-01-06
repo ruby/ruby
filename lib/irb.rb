@@ -886,8 +886,8 @@ module IRB
   end
 
   # Quits irb
-  def IRB.irb_exit(irb, ret)
-    throw :IRB_EXIT, ret
+  def IRB.irb_exit(*)
+    throw :IRB_EXIT
   end
 
   # Aborts then interrupts irb.

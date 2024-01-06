@@ -573,14 +573,6 @@ module IRB
       @inspect_method.inspect_value(@last_value)
     end
 
-    alias __exit__ exit
-    # Exits the current session, see IRB.irb_exit
-    def exit(ret = 0)
-      IRB.irb_exit(@irb, ret)
-    rescue UncaughtThrowError
-      super
-    end
-
     NOPRINTING_IVARS = ["@last_value"] # :nodoc:
     NO_INSPECTING_IVARS = ["@irb", "@io"] # :nodoc:
     IDNAME_IVARS = ["@prompt_mode"] # :nodoc:
