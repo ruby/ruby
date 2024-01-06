@@ -66,52 +66,10 @@ static const rb_data_type_t ruby_parser_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-static void
-bignum_negate(VALUE b)
-{
-    BIGNUM_NEGATE(b);
-}
-
 static int
 is_ascii_string2(VALUE str)
 {
     return is_ascii_string(str);
-}
-
-static void
-rational_set_num(VALUE r, VALUE n)
-{
-    RATIONAL_SET_NUM(r, n);
-}
-
-static VALUE
-rational_get_num(VALUE obj)
-{
-    return RRATIONAL(obj)->num;
-}
-
-static void
-rcomplex_set_real(VALUE cmp, VALUE r)
-{
-    RCOMPLEX_SET_REAL(cmp, r);
-}
-
-static void
-rcomplex_set_imag(VALUE cmp, VALUE i)
-{
-    RCOMPLEX_SET_IMAG(cmp, i);
-}
-
-static VALUE
-rcomplex_get_real(VALUE obj)
-{
-    return RCOMPLEX(obj)->real;
-}
-
-static VALUE
-rcomplex_get_imag(VALUE obj)
-{
-    return RCOMPLEX(obj)->imag;
 }
 
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 6, 0)
@@ -502,12 +460,6 @@ special_const_p(VALUE obj)
     return (int)RB_SPECIAL_CONST_P(obj);
 }
 
-static int
-builtin_type(VALUE obj)
-{
-    return (int)RB_BUILTIN_TYPE(obj);
-}
-
 static rb_ast_t *
 ast_new(VALUE nb)
 {
@@ -530,6 +482,12 @@ str_coderange_scan_restartable(const char *s, const char *e, void *enc, int *cr)
 VALUE rb_io_gets_internal(VALUE io);
 extern VALUE rb_mRubyVMFrozenCore;
 VALUE rb_node_case_when_optimizable_literal(const NODE *const node);
+
+static VALUE
+negate_value(rb_parser_t *p, VALUE val)
+{
+    return rb_funcall(val, idUMinus, 0, 0);
+}
 
 void
 rb_parser_config_initialize(rb_parser_config_t *config)
@@ -635,8 +593,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
 
     config->int2fix = int2fix;
 
-    config->bignum_negate = bignum_negate;
-    config->big_norm      = rb_big_norm;
     config->cstr_to_inum  = rb_cstr_to_inum;
 
     config->float_new   = rb_float_new;
@@ -645,18 +601,11 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->num2int          = rb_num2int_inline;
     config->int_positive_pow = rb_int_positive_pow;
     config->int2num          = rb_int2num_inline;
-    config->fix2long         = rb_fix2long;
 
     config->rational_new     = rb_rational_new;
     config->rational_raw1    = rational_raw1;
-    config->rational_set_num = rational_set_num;
-    config->rational_get_num = rational_get_num;
 
     config->complex_raw       = rb_complex_raw;
-    config->rcomplex_set_real = rcomplex_set_real;
-    config->rcomplex_set_imag = rcomplex_set_imag;
-    config->rcomplex_get_real = rcomplex_get_real;
-    config->rcomplex_get_imag = rcomplex_get_imag;
 
     config->stderr_tty_p    = rb_stderr_tty_p;
     config->write_error_str = rb_write_error_str;
@@ -704,8 +653,8 @@ rb_parser_config_initialize(rb_parser_config_t *config)
 
     config->literal_cmp  = literal_cmp;
     config->literal_hash = literal_hash;
+    config->negate_value = negate_value;
 
-    config->builtin_class_name = rb_builtin_class_name;
     config->syntax_error_append = syntax_error_append;
     config->raise = rb_raise;
     config->syntax_error_new = syntax_error_new;
@@ -756,7 +705,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->mRubyVMFrozenCore = rb_mRubyVMFrozenCore;
     config->long2int = rb_long2int;
     config->special_const_p = special_const_p;
-    config->builtin_type = builtin_type;
 
     config->node_case_when_optimizable_literal = rb_node_case_when_optimizable_literal;
 

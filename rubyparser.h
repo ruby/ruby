@@ -1259,8 +1259,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*int2fix)(long i);
 
     /* Bignum */
-    void (*bignum_negate)(VALUE b);
-    VALUE (*big_norm)(VALUE x);
     VALUE (*cstr_to_inum)(const char *str, int base, int badcheck);
 
     /* Float */
@@ -1271,7 +1269,6 @@ typedef struct rb_parser_config_struct {
     int (*num2int)(VALUE val);
     VALUE (*int_positive_pow)(long x, unsigned long y);
     VALUE (*int2num)(int v);
-    long (*fix2long)(VALUE val);
 
     /* Rational */
     VALUE (*rational_new)(VALUE x, VALUE y);
@@ -1281,10 +1278,6 @@ typedef struct rb_parser_config_struct {
 
     /* Complex */
     VALUE (*complex_raw)(VALUE x, VALUE y);
-    void (*rcomplex_set_real)(VALUE cmp, VALUE r);
-    void (*rcomplex_set_imag)(VALUE cmp, VALUE i);
-    VALUE (*rcomplex_get_real)(VALUE obj);
-    VALUE (*rcomplex_get_imag)(VALUE obj);
 
     /* IO */
     int (*stderr_tty_p)(void);
@@ -1342,7 +1335,6 @@ typedef struct rb_parser_config_struct {
     parser_st_index_t (*literal_hash)(VALUE a);
 
     /* Error (Exception) */
-    const char *(*builtin_class_name)(VALUE x);
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 6, 0)
     VALUE (*syntax_error_append)(VALUE, VALUE, int, int, rb_encoding*, const char*, va_list);
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 3)
@@ -1402,7 +1394,7 @@ typedef struct rb_parser_config_struct {
     VALUE mRubyVMFrozenCore;
     int (*long2int)(long);
     int (*special_const_p)(VALUE);
-    int (*builtin_type)(VALUE);
+    VALUE (*negate_value)(rb_parser_t *, VALUE);
 
     VALUE (*node_case_when_optimizable_literal)(const NODE *const node);
 

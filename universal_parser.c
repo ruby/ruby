@@ -222,7 +222,6 @@ struct rb_imemo_tmpbuf_struct {
 #undef LONG2FIX
 #define LONG2FIX p->config->int2fix
 
-#define bignum_negate p->config->bignum_negate
 #define rb_big_norm   p->config->big_norm
 #define rb_cstr_to_inum p->config->cstr_to_inum
 
@@ -243,14 +242,8 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_rational_new  p->config->rational_new
 #undef rb_rational_raw1
 #define rb_rational_raw1 p->config->rational_raw1
-#define rational_set_num p->config->rational_set_num
-#define rational_get_num p->config->rational_get_num
 
 #define rb_complex_raw    p->config->complex_raw
-#define rcomplex_set_real p->config->rcomplex_set_real
-#define rcomplex_set_imag p->config->rcomplex_set_imag
-#define rcomplex_get_real p->config->rcomplex_get_real
-#define rcomplex_get_imag p->config->rcomplex_get_imag
 
 #define rb_stderr_tty_p    p->config->stderr_tty_p
 #define rb_write_error_str p->config->write_error_str
@@ -300,7 +293,7 @@ struct rb_imemo_tmpbuf_struct {
 #define literal_cmp  p->config->literal_cmp
 #define literal_hash p->config->literal_hash
 
-#define rb_builtin_class_name p->config->builtin_class_name
+#define negate_lit p->config->negate_value
 #define rb_syntax_error_append p->config->syntax_error_append
 #define rb_raise p->config->raise
 #define syntax_error_new p->config->syntax_error_new
@@ -365,8 +358,6 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_long2int p->config->long2int
 #undef SPECIAL_CONST_P
 #define SPECIAL_CONST_P p->config->special_const_p
-#undef BUILTIN_TYPE
-#define BUILTIN_TYPE p->config->builtin_type
 #define ruby_snprintf p->config->snprintf
 
 #define rb_node_case_when_optimizable_literal p->config->node_case_when_optimizable_literal
