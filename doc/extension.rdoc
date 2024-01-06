@@ -2274,7 +2274,8 @@ To make a "Ractor-safe" C extension, we need to check the following points:
    making of a Ractor-safe extension.  This document will be extended as they are
    discovered.
 
-:stopdoc: Local variables:
-:stopdoc: fill-column: 70
-:stopdoc: end:
-:startdoc:
+--
+Local variables:
+fill-column: 70
+end:
+++

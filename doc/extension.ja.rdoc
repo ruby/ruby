@@ -1865,7 +1865,8 @@ Ractor をサポートするための詳細は、{Appendix F. Ractor
 support}[rdoc-ref:extension.rdoc@Appendix+F.+Ractor+support]
 を参照してください。
 
-:stopdoc: Local variables:
-:stopdoc: fill-column: 60
-:stopdoc: end:
-:startdoc:
+--
+Local variables:
+fill-column: 60
+end:
+++
