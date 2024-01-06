@@ -966,7 +966,7 @@ num_negative_p(VALUE num)
  *  - Inherits from
  *    {class Numeric}[rdoc-ref:Numeric@What-27s+Here]
  *    and {class Object}[rdoc-ref:Object@What-27s+Here].
- *  - Includes {module Enumerable}[rdoc-ref:Enumerable@What-27s+Here].
+ *  - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
  *
  *  Here, class \Float provides methods for:
  *
