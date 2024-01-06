@@ -456,6 +456,10 @@ module Net   #:nodoc:
   #
   # == What's Here
   #
+  # First, what's elsewhere. Class Net::HTTP:
+  #
+  # - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
+  #
   # This is a categorized summary of methods and attributes.
   #
   # === \Net::HTTP Objects
