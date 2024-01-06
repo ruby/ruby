@@ -719,6 +719,28 @@ rdoc_include:
     assert_empty err
   end
 
+  def test_parse_locale_name_default
+    temp_dir do
+      @options.parse %w[]
+      assert_equal 'locale', @options.instance_variable_get(:@locale_dir)
+      assert_nil @options.instance_variable_get(:@locale_name)
+      assert_nil @options.locale
+      @options.finish
+      assert_nil @options.locale
+    end
+  end
+
+  def test_parse_locale_name
+    temp_dir do
+      @options.parse %w[--locale fr]
+      assert_equal 'locale', @options.instance_variable_get(:@locale_dir)
+      assert_equal 'fr', @options.instance_variable_get(:@locale_name)
+      assert_nil @options.locale
+      @options.finish
+      assert_equal 'fr', @options.locale.name
+    end
+  end
+
   def test_setup_generator
     test_generator = Class.new do
       def self.setup_options op
@@ -899,28 +921,6 @@ rdoc_include:
   def test_no_skip_test_value
     @options.parse %w[--no-skipping-tests]
     assert_equal false, @options.skip_tests
-  end
-
-  def test_locale_name_default
-    temp_dir do
-      @options.parse %w[]
-      assert_equal 'locale', @options.instance_variable_get(:@locale_dir)
-      assert_nil @options.instance_variable_get(:@locale_name)
-      assert_nil @options.locale
-      @options.finish
-      assert_nil @options.locale
-    end
-  end
-
-  def test_locale_name
-    temp_dir do
-      @options.parse %w[--locale fr]
-      assert_equal 'locale', @options.instance_variable_get(:@locale_dir)
-      assert_equal 'fr', @options.instance_variable_get(:@locale_name)
-      assert_nil @options.locale
-      @options.finish
-      assert_equal 'fr', @options.locale.name
-    end
   end
 
   class DummyCoder < Hash
