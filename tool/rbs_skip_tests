@@ -22,6 +22,14 @@ test_collection_install_frozen(RBS::CliTest) running tests without Bundler
 test_collection_install_gemspec(RBS::CliTest) running tests without Bundler
 test_collection_update(RBS::CliTest) running tests without Bundler
 
+test_defs(RBS::RbPrototypeTest)
+test_defs_return_type(RBS::RbPrototypeTest)
+test_defs_return_type_with_block(RBS::RbPrototypeTest)
+test_defs_return_type_with_if(RBS::RbPrototypeTest)
+test_endless_method_definition(RBS::RbPrototypeTest)
+test_literal_to_type(RBS::RbPrototypeTest)
+test_literal_types(RBS::RbPrototypeTest)
+
 test_TOPDIR(RbConfigSingletonTest) `TOPDIR` is `nil` during CI while RBS type is declared as `String`
 
 test_aref(FiberSingletonTest) the method should not accept String keys
