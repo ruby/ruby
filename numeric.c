@@ -2449,7 +2449,7 @@ rb_int_truncate(VALUE num, int ndigits)
 
 /*
  *  call-seq:
- *    round(ndigits = 0, half: :up]) -> integer or float
+ *    round(ndigits = 0, half: :up) -> integer or float
  *
  *  Returns +self+ rounded to the nearest value with
  *  a precision of +ndigits+ decimal digits.
