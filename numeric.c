@@ -3488,7 +3488,10 @@ rb_num2ull(VALUE val)
  *
  * First, what's elsewhere. \Class \Integer:
  *
- * - Inherits from {class Numeric}[rdoc-ref:Numeric@What-27s+Here].
+ * - Inherits from
+ *   {class Numeric}[rdoc-ref:Numeric@What-27s+Here]
+ *   and {class Object}[rdoc-ref:Object@What-27s+Here].
+ * - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
  *
  * Here, class \Integer provides methods for:
  *
