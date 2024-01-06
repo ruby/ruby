@@ -1490,7 +1490,7 @@ SRC
   # Used internally by the what_type? method to determine if +type+ is a scalar
   # pointer.
   def scalar_ptr_type?(type, member = nil, headers = nil, &b)
-    try_compile(<<"SRC", &b)   # pointer
+    try_compile(<<"SRC", &b)
 #{cpp_include(headers)}
 /*top*/
 volatile #{type} conftestval;
@@ -1503,7 +1503,7 @@ SRC
   # Used internally by the what_type? method to determine if +type+ is a scalar
   # pointer.
   def scalar_type?(type, member = nil, headers = nil, &b)
-    try_compile(<<"SRC", &b)   # pointer
+    try_compile(<<"SRC", &b)
 #{cpp_include(headers)}
 /*top*/
 volatile #{type} conftestval;
@@ -2377,7 +2377,7 @@ TARGET_ENTRY = #{EXPORT_PREFIX || ''}Init_$(TARGET_NAME)
 DLLIB = #{dllib}
 EXTSTATIC = #{$static || ""}
 STATIC_LIB = #{staticlib unless $static.nil?}
-#{!$extout && defined?($installed_list) ? "INSTALLED_LIST = #{$installed_list}\n" : ""}
+#{!$extout && defined?($installed_list) ? %[INSTALLED_LIST = #{$installed_list}\n] : ""}
 TIMESTAMP_DIR = #{$extout && $extmk ? '$(extout)/.timestamp' : '.'}
 " #"
     # TODO: fixme
@@ -2404,7 +2404,7 @@ TARGET_SO_DIR_TIMESTAMP = #{timestamp_file(sodir, target_prefix)}
     mfile.puts(conf)
     mfile.print "
 all:    #{$extout ? "install" : target ? "$(DLLIB)" : "Makefile"}
-static: #{$extmk && !$static ? "all" : "$(STATIC_LIB)#{$extout ? " install-rb" : ""}"}
+static: #{$extmk && !$static ? "all" : %[$(STATIC_LIB)#{$extout ? " install-rb" : ""}]}
 .PHONY: all install static install-so install-rb
 .PHONY: clean clean-so clean-static clean-rb
 " #"
