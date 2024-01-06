@@ -231,6 +231,23 @@ class TestGc < Test::Unit::TestCase
     assert_equal stat[:total_freed_objects], stat_heap_sum[:total_freed_objects]
   end
 
+  def test_measure_total_time
+    assert_separately([], __FILE__, __LINE__, <<~RUBY)
+      GC.measure_total_time = false
+
+      time_before = GC.stat(:time)
+
+      # Generate some garbage
+      Random.new.bytes(100 * 1024 * 1024)
+      GC.start
+
+      time_after = GC.stat(:time)
+
+      # If time measurement is disabled, the time stat should not change
+      assert_equal time_before, time_after
+    RUBY
+  end
+
   def test_latest_gc_info
     omit 'stress' if GC.stress
 
