@@ -1455,10 +1455,28 @@ nodes:
     fields:
       - name: opening_loc
         type: location
+        comment: |
+          The location of the opening brace.
+
+              { a => b }
+              ^
       - name: elements
         type: node[]
+        comment: |
+          The elements of the hash. These can be either `AssocNode`s or `AssocSplatNode`s.
+
+              { a: b }
+                ^^^^
+
+              { **foo }
+                ^^^^^
       - name: closing_loc
         type: location
+        comment: |
+          The location of the closing brace.
+
+              { a => b }
+                       ^
     comment: |
       Represents a hash literal.
 
