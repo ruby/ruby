@@ -15876,6 +15876,7 @@ ruby_parser.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/bits.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/complex.h
+ruby_parser.$(OBJEXT): $(top_srcdir)/internal/error.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/numeric.h
@@ -15883,6 +15884,7 @@ ruby_parser.$(OBJEXT): $(top_srcdir)/internal/rational.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/serial.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+ruby_parser.$(OBJEXT): $(top_srcdir)/internal/string.h
 ruby_parser.$(OBJEXT): $(top_srcdir)/internal/vm.h
 ruby_parser.$(OBJEXT): {$(VPATH)}assert.h
 ruby_parser.$(OBJEXT): {$(VPATH)}backward/2/assume.h
