@@ -2944,7 +2944,13 @@ realclean: distclean
     @lang[name] = mod
   end
 
-  self["C++"] = Module.new do
+  ##
+  # The language that this module is for
+  LANGUAGE = -"C"
+
+  self[self::LANGUAGE] = self
+
+  cxx = Module.new do
     # Module for C++
 
     include MakeMakefile
@@ -2984,6 +2990,9 @@ realclean: distclean
 
     # :startdoc:
   end
+
+  cxx::LANGUAGE = -"C++"
+  self[cxx::LANGUAGE] = cxx
 end
 
 # MakeMakefile::Global = #
