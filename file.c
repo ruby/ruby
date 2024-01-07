@@ -6608,7 +6608,7 @@ const char ruby_null_device[] =
  *
  *  - <tt>'r'</tt>:
  *
- *    - File is not initially truncated:
+ *    - \File is not initially truncated:
  *
  *        f = File.new('t.txt') # => #<File:t.txt>
  *        f.size == 0           # => false
@@ -6617,7 +6617,7 @@ const char ruby_null_device[] =
  *
  *        f.pos # => 0
  *
- *    - File may be read anywhere; see IO#rewind, IO#pos=, IO#seek:
+ *    - \File may be read anywhere; see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.readline # => "First line\n"
  *        f.readline # => "Second line\n"
@@ -6637,7 +6637,7 @@ const char ruby_null_device[] =
  *
  *  - <tt>'w'</tt>:
  *
- *    - File is initially truncated:
+ *    - \File is initially truncated:
  *
  *        path = 't.tmp'
  *        File.write(path, text)
@@ -6648,7 +6648,7 @@ const char ruby_null_device[] =
  *
  *        f.pos # => 0
  *
- *    - File may be written anywhere (even past end-of-file);
+ *    - \File may be written anywhere (even past end-of-file);
  *      see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.write('foo')
@@ -6691,7 +6691,7 @@ const char ruby_null_device[] =
  *
  *  - <tt>'a'</tt>:
  *
- *    - File is not initially truncated:
+ *    - \File is not initially truncated:
  *
  *        path = 't.tmp'
  *        File.write(path, 'foo')
@@ -6702,7 +6702,7 @@ const char ruby_null_device[] =
  *
  *        f.pos # => 0
  *
- *    - File may be written only at end-of-file;
+ *    - \File may be written only at end-of-file;
  *      IO#rewind, IO#pos=, IO#seek do not affect writing:
  *
  *        f.write('bar')
@@ -6723,7 +6723,7 @@ const char ruby_null_device[] =
  *
  *  - <tt>'r+'</tt>:
  *
- *    - File is not initially truncated:
+ *    - \File is not initially truncated:
  *
  *        path = 't.tmp'
  *        File.write(path, text)
@@ -6734,7 +6734,7 @@ const char ruby_null_device[] =
  *
  *        f.pos # => 0
  *
- *    - File may be read or written anywhere (even past end-of-file);
+ *    - \File may be read or written anywhere (even past end-of-file);
  *      see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.readline # => "First line\n"
@@ -6779,7 +6779,7 @@ const char ruby_null_device[] =
  *
  *  - <tt>'a+'</tt>:
  *
- *    - File is not initially truncated:
+ *    - \File is not initially truncated:
  *
  *        path = 't.tmp'
  *        File.write(path, 'foo')
@@ -6790,7 +6790,7 @@ const char ruby_null_device[] =
  *
  *        f.pos # => 0
  *
- *    - File may be written only at end-of-file;
+ *    - \File may be written only at end-of-file;
  *      IO#rewind, IO#pos=, IO#seek do not affect writing:
  *
  *        f.write('bar')
@@ -6805,7 +6805,7 @@ const char ruby_null_device[] =
  *        f.flush
  *        File.read(path) # => "foobarbazbat"
  *
- *    - File may be read anywhere; see IO#rewind, IO#pos=, IO#seek:
+ *    - \File may be read anywhere; see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.rewind
  *        f.read # => "foobarbazbat"
@@ -6830,7 +6830,7 @@ const char ruby_null_device[] =
  *        f = File.new(path, 'w')
  *        f.pos # => 0
  *
- *    - File may be written anywhere (even past end-of-file);
+ *    - \File may be written anywhere (even past end-of-file);
  *      see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.write('foo')
@@ -6907,7 +6907,7 @@ const char ruby_null_device[] =
  *        f = File.new(path, 'w+')
  *        f.pos # => 0
  *
- *    - File may be written anywhere (even past end-of-file);
+ *    - \File may be written anywhere (even past end-of-file);
  *      see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.write('foo')
@@ -6944,7 +6944,7 @@ const char ruby_null_device[] =
  *        File.read(path) # => "bazbam\u0000\u0000bah"
  *        f.pos # => 11
  *
- *    - File may be read anywhere (even past end-of-file);
+ *    - \File may be read anywhere (even past end-of-file);
  *      see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.rewind
@@ -6985,7 +6985,7 @@ const char ruby_null_device[] =
  *        f.flush
  *        File.read(path) # => "foobarbaz"
  *
- *    - File may be read anywhere (even past end-of-file);
+ *    - \File may be read anywhere (even past end-of-file);
  *      see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.rewind
