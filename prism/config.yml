@@ -2372,12 +2372,40 @@ nodes:
       - name: flags
         type: flags
         kind: RangeFlags
+        comment: |
+          A flag indicating whether the range excludes the end value.
+
+              1..3  # includes 3
+
+              1...3 # excludes 3
       - name: left
         type: node?
+        comment: |
+          The left-hand side of the range, if present. Can be either `nil` or
+          a node representing any kind of expression that returns a non-void
+          value.
+              1...
+              ^
+
+              hello...goodbye
+              ^^^^^
       - name: right
         type: node?
+          The right-hand side of the range, if present. Can be either `nil` or
+          a node representing any kind of expression that returns a non-void
+          value.
+
+              ..5
+                ^
+
+              1...foo
+                  ^^^
+          If neither right-hand or left-hand side was included, this will be a
+          MissingNode.
       - name: operator_loc
         type: location
+        comment: |
+          The location of the `..` or `...` operator.
     comment: |
       Represents the use of the `..` or `...` operators.
 
