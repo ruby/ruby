@@ -17,7 +17,7 @@ compile_negative_numeric(VALUE val)
         }
 #endif
     }
-    switch (OBJ_BUILTIN_TYPE(val)) {
+    switch (BUILTIN_TYPE(val)) {
       case T_BIGNUM:
         BIGNUM_NEGATE(val);
         val = rb_big_norm(val);
