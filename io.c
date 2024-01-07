@@ -14677,47 +14677,122 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
 /*
  * Document-class:  ARGF
  *
- * ARGF is a stream designed for use in scripts that process files given as
- * command-line arguments or passed in via STDIN.
+ * An \ARGF object is a stream-like object that processes an input stream.
  *
- * The arguments passed to your script are stored in the +ARGV+ Array, one
- * argument per element. ARGF assumes that any arguments that aren't
- * filenames have been removed from +ARGV+. For example:
+ * == Input Stream
  *
- *     $ ruby argf.rb --verbose file1 file2
+ * - If command-line arguments and/or options are given,
+ *   the input stream is read from files.
+ * - Otherwise, the stream is taken from $stdin.
  *
- *     ARGV  #=> ["--verbose", "file1", "file2"]
- *     option = ARGV.shift #=> "--verbose"
- *     ARGV  #=> ["file1", "file2"]
+ * === \File Input
  *
- * You can now use ARGF to work with a concatenation of each of these named
- * files. For instance, ARGF.read will return the contents of _file1_
- * followed by the contents of _file2_.
+ * When command-line arguments and/or options are given,
+ * the input stream is to be read from files;
+ * those files are specified by filepaths given on the command line.
  *
- * After a file in +ARGV+ has been read ARGF removes it from the Array.
- * Thus, after all files have been read +ARGV+ will be empty.
+ * Global variable +ARGV+ holds an array that initially
+ * contains the string arguments and options given on the command line,
+ * one per array element:
  *
- * You can manipulate +ARGV+ yourself to control what ARGF operates on. If
- * you remove a file from +ARGV+, it is ignored by ARGF; if you add files to
- * +ARGV+, they are treated as if they were named on the command line. For
- * example:
+ * - \File +t.rb+:
  *
- *     ARGV.replace ["file1"]
- *     ARGF.readlines # Returns the contents of file1 as an Array
- *     ARGV           #=> []
- *     ARGV.replace ["file2", "file3"]
- *     ARGF.read      # Returns the contents of file2 and file3
+ *     p ARGV
  *
- * If +ARGV+ is empty, ARGF acts as if it contained <tt>"-"</tt> that
- * makes ARGF read from STDIN, i.e. the data piped or typed to your
- * script. For example:
+ * - Command and output:
  *
- *     $ echo "glark" | ruby -e 'p ARGF.read'
- *     "glark\n"
+ *     $ ruby t.rb --foo bar.txt --baz bat.txt
+ *     ["--foo", "bar.txt", "--baz", "bat.txt"]
  *
- *     $ echo Glark > file1
- *     $ echo "glark" | ruby -e 'p ARGF.read' -- - file1
- *     "glark\nGlark\n"
+ * Any of those array elements that are not filepaths should be removed
+ * before accessing the input stream:
+ *
+ * - \File +t.rb+:
+ *
+ *     p ARGV
+ *     option_regexp = /^-/
+ *     options = ARGV.select {|ele| ele.match(option_regexp) }
+ *     ARGV.delete_if {|ele| ele.match(option_regexp) }
+ *     p options
+ *     p ARGV
+ *
+ * - Command and output:
+ *
+ *     $ ruby t.rb --foo bar.txt --baz bat.txt
+ *     ["--foo", "bar.txt", "--baz", "bat.txt"]
+ *     ["--foo", "--baz"]
+ *     ["bar.txt", "bat.txt"]
+ *
+ * \Method ARGF#read reads the content of oll the specified files into a single string:
+ *
+ * - \File +t.rb+:
+ *
+ *     option_regexp = /^-/
+ *     ARGV.delete_if {|ele| ele.match(option_regexp) }
+ *     p ARGV
+ *     p ARGF.read
+ *
+ * - \\File +bar.txt+:
+ *
+ *     bar 0
+ *     bar 1
+ *
+ * - \File +bat.txt+:
+ *
+ *     bat 0
+ *     bat 1
+ *
+ * - Command and output:
+ *
+ *     $ ruby t.rb --foo bar.txt --baz bat.txt
+ *     ["bar.txt", "bat.txt"]
+ *     "bar 0\nbar 1\nbat 0\nbat 1\n"
+ *
+ * === $stdin Input
+ *
+ * When +ARGV+ is initially empty,
+ * the \ARGF stream is $stdin:
+ *
+ * - \File +t.rb+:
+ *
+ *     p ARGV
+ *     p ARGF.read
+ *
+ * - Command and output:
+ *
+ *     $ echo "Open the pod bay doors, Hal." | ruby t.rb
+ *     []
+ *     "Open the pod bay doors, Hal.\n"
+ *
+ * Each filepath is removed from the array when the corresponding file is accessed;
+ * when all files have been accessed, the array is empty:
+ *
+ * - \File +t.rb+:
+ *
+ *     until ARGV.empty? && ARGF.eof?
+ *       p ARGV
+ *       p ARGF.readline
+ *     end
+ *
+ * - Command and output:
+ *
+ *     $ ruby t.rb bar.txt bat.txt
+ *     ["bar.txt", "bat.txt"]
+ *     "bar 0\n"
+ *     ["bat.txt"]
+ *     "bar 1\n"
+ *     ["bat.txt"]
+ *     "bat 0\n"
+ *     []
+ *     "bat 1\n"
+ *
+ * Because the value at +ARGV+ is an ordinary array,
+ * you can manipulate it to control what \ARGF operates on:
+ *
+ * - If you remove filepaths from +ARGV+, \ARGF ignores the corresponding files.
+ * - If you add filepaths to +ARGV+, they are treated just as if they were given
+ *   on the command line.
+ *
  */
 
 /*
