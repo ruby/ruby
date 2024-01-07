@@ -543,10 +543,35 @@ nodes:
     fields:
       - name: key
         type: node
+        comment: |
+          The key of the association. This can be any node.
+
+              { a: b }
+                ^
+
+              { foo => bar }
+                ^^^
+
+              { def a; end => 1 }
+                ^^^^^^^^^^
       - name: value
         type: node?
+        comment: |
+          The value of the association, if present. This can be any node. Will
+          not be present if, e.g., this node is an element of a `HashPatternNode`.
+
+              { foo => bar }
+                       ^^^
+
+              { x: 1 }
+                   ^
       - name: operator_loc
         type: location?
+        comment: |
+          The location of the `=>` operator, if present.
+
+              { foo => bar }
+                    ^^
     comment: |
       Represents a hash key/value pair.
 
