@@ -9172,6 +9172,7 @@ set_number_literal(struct parser_params *p, enum yytokentype type, int suffix, i
         break;
       case tIMAGINARY:
         set_yylval_node(NEW_IMAGINARY(strdup(tok(p)), base, seen_point, numeric_type, &_cur_loc));
+        (void)numeric_type;     /* for ripper */
         break;
       default:
         rb_bug("unexpected token: %d", type);
