@@ -216,7 +216,8 @@ rb_mod_set_temporary_name(VALUE mod, VALUE name)
     if (NIL_P(name)) {
         // Set the temporary classpath to NULL (anonymous):
         RCLASS_SET_CLASSPATH(mod, 0, FALSE);
-    } else {
+    }
+    else {
         // Ensure the name is a string:
         StringValue(name);
 

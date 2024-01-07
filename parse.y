@@ -9161,20 +9161,20 @@ set_number_literal(struct parser_params *p, enum yytokentype type, int suffix, i
     }
 
     switch (type) {
-        case tINTEGER:
-            set_yylval_node(NEW_INTEGER(strdup(tok(p)), base, &_cur_loc));
-            break;
-        case tFLOAT:
-            set_yylval_node(NEW_FLOAT(strdup(tok(p)), &_cur_loc));
-            break;
-        case tRATIONAL:
-            set_yylval_node(NEW_RATIONAL(strdup(tok(p)), base, seen_point, &_cur_loc));
-            break;
-        case tIMAGINARY:
-            set_yylval_node(NEW_IMAGINARY(strdup(tok(p)), base, seen_point, numeric_type, &_cur_loc));
-            break;
-        default:
-            rb_bug("unexpected token: %d", type);
+      case tINTEGER:
+        set_yylval_node(NEW_INTEGER(strdup(tok(p)), base, &_cur_loc));
+        break;
+      case tFLOAT:
+        set_yylval_node(NEW_FLOAT(strdup(tok(p)), &_cur_loc));
+        break;
+      case tRATIONAL:
+        set_yylval_node(NEW_RATIONAL(strdup(tok(p)), base, seen_point, &_cur_loc));
+        break;
+      case tIMAGINARY:
+        set_yylval_node(NEW_IMAGINARY(strdup(tok(p)), base, seen_point, numeric_type, &_cur_loc));
+        break;
+      default:
+        rb_bug("unexpected token: %d", type);
     }
     SET_LEX_STATE(EXPR_END);
     return type;
@@ -12068,7 +12068,8 @@ rb_node_lit_new(struct parser_params *p, VALUE nd_lit, const YYLTYPE *loc)
 }
 
 static rb_node_integer_t *
-rb_node_integer_new(struct parser_params *p, char* val, int base, const YYLTYPE *loc) {
+rb_node_integer_new(struct parser_params *p, char* val, int base, const YYLTYPE *loc)
+{
     rb_node_integer_t *n = NODE_NEWNODE(NODE_INTEGER, rb_node_integer_t, loc);
     n->val = val;
     n->minus = FALSE;
@@ -12078,7 +12079,8 @@ rb_node_integer_new(struct parser_params *p, char* val, int base, const YYLTYPE 
 }
 
 static rb_node_float_t *
-rb_node_float_new(struct parser_params *p, char* val, const YYLTYPE *loc) {
+rb_node_float_new(struct parser_params *p, char* val, const YYLTYPE *loc)
+{
     rb_node_float_t *n = NODE_NEWNODE(NODE_FLOAT, rb_node_float_t, loc);
     n->val = val;
     n->minus = FALSE;
@@ -12087,7 +12089,8 @@ rb_node_float_new(struct parser_params *p, char* val, const YYLTYPE *loc) {
 }
 
 static rb_node_rational_t *
-rb_node_rational_new(struct parser_params *p, char* val, int base, int seen_point, const YYLTYPE *loc) {
+rb_node_rational_new(struct parser_params *p, char* val, int base, int seen_point, const YYLTYPE *loc)
+{
     rb_node_rational_t *n = NODE_NEWNODE(NODE_RATIONAL, rb_node_rational_t, loc);
     n->val = val;
     n->minus = FALSE;
@@ -12098,7 +12101,8 @@ rb_node_rational_new(struct parser_params *p, char* val, int base, int seen_poin
 }
 
 static rb_node_imaginary_t *
-rb_node_imaginary_new(struct parser_params *p, char* val, int base, int seen_point, enum rb_numeric_type numeric_type, const YYLTYPE *loc) {
+rb_node_imaginary_new(struct parser_params *p, char* val, int base, int seen_point, enum rb_numeric_type numeric_type, const YYLTYPE *loc)
+{
     rb_node_imaginary_t *n = NODE_NEWNODE(NODE_IMAGINARY, rb_node_imaginary_t, loc);
     n->val = val;
     n->minus = FALSE;

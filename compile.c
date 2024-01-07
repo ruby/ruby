@@ -2680,7 +2680,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
 
                             break;
                         }
-                        case TS_CALLDATA:
+                      case TS_CALLDATA:
                         {
                             const struct rb_callinfo *source_ci = (const struct rb_callinfo *)operands[j];
                             assert(ISEQ_COMPILE_DATA(iseq)->ci_index <= body->ci_size);
@@ -3880,7 +3880,8 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
             if ((flag & VM_CALL_ARGS_SPLAT) && !(flag & (VM_CALL_KW_SPLAT|VM_CALL_ARGS_BLOCKARG))) {
                 OPERAND_AT(iobj, 0) = Qfalse;
             }
-        } else if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable)) {
+        }
+        else if (IS_NEXT_INSN_ID(niobj, getlocal) || IS_NEXT_INSN_ID(niobj, getinstancevariable)) {
             niobj = niobj->next;
 
             if (IS_NEXT_INSN_ID(niobj, send)) {

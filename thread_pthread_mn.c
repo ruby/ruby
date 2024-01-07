@@ -552,14 +552,14 @@ static enum thread_sched_waiting_flag
 kqueue_translate_filter_to_flags(int16_t filter)
 {
     switch (filter) {
-        case EVFILT_READ:
-            return thread_sched_waiting_io_read;
-        case EVFILT_WRITE:
-            return thread_sched_waiting_io_write;
-        case EVFILT_TIMER:
-            return thread_sched_waiting_timeout;
-        default:
-            rb_bug("kevent filter:%d not supported", filter);
+      case EVFILT_READ:
+        return thread_sched_waiting_io_read;
+      case EVFILT_WRITE:
+        return thread_sched_waiting_io_write;
+      case EVFILT_TIMER:
+        return thread_sched_waiting_timeout;
+      default:
+        rb_bug("kevent filter:%d not supported", filter);
     }
 }
 
@@ -713,13 +713,13 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
                 RUBY_DEBUG_LOG("failed (%d)", errno);
 
                 switch (errno) {
-                    case EBADF:
-                        // the fd is closed?
-                    case EINTR:
-                        // signal received? is there a sensible way to handle this?
-                    default:
-                        perror("kevent");
-                        rb_bug("register/kevent failed(fd:%d, errno:%d)", fd, errno);
+                  case EBADF:
+                    // the fd is closed?
+                  case EINTR:
+                    // signal received? is there a sensible way to handle this?
+                  default:
+                    perror("kevent");
+                    rb_bug("register/kevent failed(fd:%d, errno:%d)", fd, errno);
                 }
             }
             RUBY_DEBUG_LOG("kevent(add, fd:%d) success", fd);
@@ -921,7 +921,8 @@ timer_thread_polling(rb_vm_t *vm)
                 // wakeup timerthread
                 RUBY_DEBUG_LOG("comm from fd:%d", timer_th.comm_fds[1]);
                 consume_communication_pipe(timer_th.comm_fds[0]);
-            } else {
+            }
+            else {
                 // wakeup specific thread by IO
                 RUBY_DEBUG_LOG("io event. wakeup_th:%u event:%s%s",
                                 rb_th_serial(th),
@@ -940,7 +941,8 @@ timer_thread_polling(rb_vm_t *vm)
                         th->sched.waiting_reason.data.result = filter;
 
                         timer_thread_wakeup_thread(th);
-                    } else {
+                    }
+                    else {
                         // already released
                     }
                 }

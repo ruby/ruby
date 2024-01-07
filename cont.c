@@ -3299,7 +3299,8 @@ rb_fiber_m_kill(VALUE self)
     else if (fiber->status != FIBER_TERMINATED) {
         if (fiber_current() == fiber) {
             fiber_check_killed(fiber);
-        } else {
+        }
+        else {
             fiber_raise(fiber_ptr(self), Qnil);
         }
     }

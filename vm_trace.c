@@ -1767,7 +1767,8 @@ rb_postponed_job_preregister(unsigned int flags, rb_postponed_job_func_t func, v
              * datas being written */
             RUBY_ATOMIC_PTR_EXCHANGE(pjq->table[i].data, data);
             return (rb_postponed_job_handle_t)i;
-        } else {
+        }
+        else {
             /* Try the next slot if this one already has a func in it */
             continue;
         }

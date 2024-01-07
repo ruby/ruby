@@ -17,23 +17,22 @@ compile_negative_numeric(VALUE val)
         }
 #endif
     }
-    switch (OBJ_BUILTIN_TYPE(val))
-    {
-    case T_BIGNUM:
+    switch (OBJ_BUILTIN_TYPE(val)) {
+      case T_BIGNUM:
         BIGNUM_NEGATE(val);
         val = rb_big_norm(val);
         break;
-    case T_RATIONAL:
+      case T_RATIONAL:
         RATIONAL_SET_NUM(val, compile_negative_numeric(RRATIONAL(val)->num));
         break;
-    case T_COMPLEX:
+      case T_COMPLEX:
         RCOMPLEX_SET_REAL(val, compile_negative_numeric(RCOMPLEX(val)->real));
         RCOMPLEX_SET_IMAG(val, compile_negative_numeric(RCOMPLEX(val)->imag));
         break;
-    case T_FLOAT:
+      case T_FLOAT:
         val = DBL2NUM(-RFLOAT_VALUE(val));
         break;
-    default:
+      default:
         val = LONG2FIX(-FIX2LONG(val));
         break;
     }
@@ -79,7 +78,8 @@ compile_rational_literal(char* node_val, int base, int seen_point)
         memmove(point, point+1, fraclen+1);
 
         lit = rb_rational_new(compile_numeric_literal(val, base), rb_int_positive_pow(10, fraclen));
-    } else {
+    }
+    else {
         lit = rb_rational_raw1(compile_numeric_literal(val, base));
     }
 

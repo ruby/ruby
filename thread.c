@@ -410,12 +410,12 @@ rb_threadptr_join_list_wakeup(rb_thread_t *thread)
             rb_threadptr_interrupt(target_thread);
 
             switch (target_thread->status) {
-                case THREAD_STOPPED:
-                case THREAD_STOPPED_FOREVER:
-                    target_thread->status = THREAD_RUNNABLE;
-                    break;
-                default:
-                    break;
+              case THREAD_STOPPED:
+              case THREAD_STOPPED_FOREVER:
+                target_thread->status = THREAD_RUNNABLE;
+                break;
+              default:
+                break;
             }
         }
     }
