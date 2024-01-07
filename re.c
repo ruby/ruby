@@ -3042,53 +3042,53 @@ escape_asis:
 
                     for (s = p+1; s < end; s++) {
                         switch(*s) {
-			  case 'x':
-			    local_extend = invert ? -1 : 1;
-			    break;
-			  case '-':
-			    invert = 1;
-			    break;
-			  case ':':
-			  case ')':
-			    if (local_extend == 0 ||
-				(local_extend == -1 && !extended_mode) ||
-				(local_extend == 1 && extended_mode)) {
-				/* no changes to extended flag */
-				goto fallthrough;
-			    }
+                          case 'x':
+                            local_extend = invert ? -1 : 1;
+                            break;
+                          case '-':
+                            invert = 1;
+                            break;
+                          case ':':
+                          case ')':
+                            if (local_extend == 0 ||
+                                (local_extend == -1 && !extended_mode) ||
+                                (local_extend == 1 && extended_mode)) {
+                                /* no changes to extended flag */
+                                goto fallthrough;
+                            }
 
-			    if (*s == ':') {
-				/* change extended flag until ')' */
-				int local_options = options;
-				if (local_extend == 1) {
-				    local_options |= ONIG_OPTION_EXTEND;
-				}
-				else {
-				    local_options &= ~ONIG_OPTION_EXTEND;
-				}
+                            if (*s == ':') {
+                                /* change extended flag until ')' */
+                                int local_options = options;
+                                if (local_extend == 1) {
+                                    local_options |= ONIG_OPTION_EXTEND;
+                                }
+                                else {
+                                    local_options &= ~ONIG_OPTION_EXTEND;
+                                }
 
-				rb_str_buf_cat(buf, (char *)&c, 1);
-				int ret = unescape_nonascii0(&p, end, enc, buf, encp,
-							     has_property, err,
-							     local_options, 1);
-				if (ret < 0) return ret;
-				goto begin_scan;
-			    }
-			    else {
-				/* change extended flag for rest of expression */
-				extended_mode = local_extend == 1;
-				goto fallthrough;
-			    }
-			  case 'i':
-			  case 'm':
-			  case 'a':
-			  case 'd':
-			  case 'u':
-			    /* other option flags, ignored during scanning */
-			    break;
-			  default:
-			    /* other character, no extended flag change*/
-			    goto fallthrough;
+                                rb_str_buf_cat(buf, (char *)&c, 1);
+                                int ret = unescape_nonascii0(&p, end, enc, buf, encp,
+                                                             has_property, err,
+                                                             local_options, 1);
+                                if (ret < 0) return ret;
+                                goto begin_scan;
+                            }
+                            else {
+                                /* change extended flag for rest of expression */
+                                extended_mode = local_extend == 1;
+                                goto fallthrough;
+                            }
+                          case 'i':
+                          case 'm':
+                          case 'a':
+                          case 'd':
+                          case 'u':
+                            /* other option flags, ignored during scanning */
+                            break;
+                          default:
+                            /* other character, no extended flag change*/
+                            goto fallthrough;
                         }
                     }
                 }
