@@ -217,41 +217,10 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_hash_lookup    p->config->hash_lookup
 #define rb_ident_hash_new p->config->ident_hash_new
 
-#undef INT2FIX
-#define INT2FIX  p->config->int2fix
-#undef LONG2FIX
-#define LONG2FIX p->config->int2fix
-
-#define bignum_negate p->config->bignum_negate
-#define rb_big_norm   p->config->big_norm
-#define rb_cstr_to_inum p->config->cstr_to_inum
-
-#undef rb_float_new
-#define rb_float_new   p->config->float_new
-#undef RFLOAT_VALUE
-#define RFLOAT_VALUE   p->config->float_value
-#undef DBL2NUM
-#define DBL2NUM p->config->float_new
-
 #undef NUM2INT
 #define NUM2INT             p->config->num2int
-#define rb_int_positive_pow p->config->int_positive_pow
 #undef INT2NUM
 #define INT2NUM             p->config->int2num
-#undef FIX2LONG
-#define FIX2LONG            p->config->fix2long
-
-#define rb_rational_new  p->config->rational_new
-#undef rb_rational_raw1
-#define rb_rational_raw1 p->config->rational_raw1
-#define rational_set_num p->config->rational_set_num
-#define rational_get_num p->config->rational_get_num
-
-#define rb_complex_raw    p->config->complex_raw
-#define rcomplex_set_real p->config->rcomplex_set_real
-#define rcomplex_set_imag p->config->rcomplex_set_imag
-#define rcomplex_get_real p->config->rcomplex_get_real
-#define rcomplex_get_imag p->config->rcomplex_get_imag
 
 #define rb_stderr_tty_p    p->config->stderr_tty_p
 #define rb_write_error_str p->config->write_error_str
@@ -301,7 +270,6 @@ struct rb_imemo_tmpbuf_struct {
 #define literal_cmp  p->config->literal_cmp
 #define literal_hash p->config->literal_hash
 
-#define rb_builtin_class_name p->config->builtin_class_name
 #define rb_syntax_error_append p->config->syntax_error_append
 #define rb_raise p->config->raise
 #define syntax_error_new p->config->syntax_error_new
@@ -350,8 +318,6 @@ struct rb_imemo_tmpbuf_struct {
 #define RTEST p->config->rtest
 #undef NIL_P
 #define NIL_P p->config->nil_p
-#undef FLONUM_P
-#define FLONUM_P p->config->flonum_p
 #undef Qnil
 #define Qnil  p->config->qnil
 #undef Qtrue
