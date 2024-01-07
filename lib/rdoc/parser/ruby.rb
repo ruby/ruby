@@ -1453,6 +1453,12 @@ class RDoc::Parser::Ruby < RDoc::Parser
     meth = RDoc::AnyMethod.new get_tkread, name
     look_for_directives_in meth, comment
     meth.singleton = single == SINGLE ? true : singleton
+    if singleton
+      # `current_line_visibility' is useless because it works against
+      # the normal method named as same as the singleton method, after
+      # the latter was defined.  Of course these are different things.
+      container.current_line_visibility = :public
+    end
 
     record_location meth
     meth.line   = line_no
