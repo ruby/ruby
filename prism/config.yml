@@ -581,8 +581,19 @@ nodes:
     fields:
       - name: value
         type: node?
+        comment: |
+          The value to be splatted, if present. Will be missing when keyword
+          rest argument forwarding is used.
+
+              { **foo }
+                  ^^^
       - name: operator_loc
         type: location
+        comment: |
+          The location of the `**` operator.
+
+              { **x }
+                ^^
     comment: |
       Represents a splat in a hash literal.
 
