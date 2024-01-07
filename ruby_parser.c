@@ -3,6 +3,7 @@
 #include "internal/ruby_parser.h"
 
 #include "rubyparser.h"
+#include "internal/error.h"
 
 static VALUE
 compile_negative_numeric(VALUE val)
@@ -16,6 +17,7 @@ compile_negative_numeric(VALUE val)
             return DBL2NUM(-RFLOAT_VALUE(val));
         }
 #endif
+        goto unknown;
     }
     switch (BUILTIN_TYPE(val)) {
       case T_BIGNUM:
@@ -32,8 +34,10 @@ compile_negative_numeric(VALUE val)
       case T_FLOAT:
         val = DBL2NUM(-RFLOAT_VALUE(val));
         break;
+      unknown:
       default:
-        val = LONG2FIX(-FIX2LONG(val));
+        rb_bug("unknown literal type (%s) passed to compile_negative_numeric",
+               rb_builtin_class_name(val));
         break;
     }
     return val;
@@ -145,7 +149,6 @@ rb_node_imaginary_literal_val(const NODE *n)
 #include "internal/compile.h"
 #include "internal/complex.h"
 #include "internal/encoding.h"
-#include "internal/error.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
 #include "internal/io.h"
