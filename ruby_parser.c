@@ -195,52 +195,10 @@ static const rb_data_type_t ruby_parser_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-static void
-bignum_negate(VALUE b)
-{
-    BIGNUM_NEGATE(b);
-}
-
 static int
 is_ascii_string2(VALUE str)
 {
     return is_ascii_string(str);
-}
-
-static void
-rational_set_num(VALUE r, VALUE n)
-{
-    RATIONAL_SET_NUM(r, n);
-}
-
-static VALUE
-rational_get_num(VALUE obj)
-{
-    return RRATIONAL(obj)->num;
-}
-
-static void
-rcomplex_set_real(VALUE cmp, VALUE r)
-{
-    RCOMPLEX_SET_REAL(cmp, r);
-}
-
-static void
-rcomplex_set_imag(VALUE cmp, VALUE i)
-{
-    RCOMPLEX_SET_IMAG(cmp, i);
-}
-
-static VALUE
-rcomplex_get_real(VALUE obj)
-{
-    return RCOMPLEX(obj)->real;
-}
-
-static VALUE
-rcomplex_get_imag(VALUE obj)
-{
-    return RCOMPLEX(obj)->imag;
 }
 
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 6, 0)
@@ -517,18 +475,6 @@ nil_p(VALUE obj)
     return (int)NIL_P(obj);
 }
 
-static int
-flonum_p(VALUE obj)
-{
-    return (int)RB_FLONUM_P(obj);
-}
-
-static VALUE
-int2fix(long i)
-{
-    return INT2FIX(i);
-}
-
 static VALUE
 syntax_error_new(void)
 {
@@ -557,12 +503,6 @@ static VALUE
 default_rs(void)
 {
     return rb_default_rs;
-}
-
-static VALUE
-rational_raw1(VALUE x)
-{
-    return rb_rational_raw1(x);
 }
 
 static void *
@@ -762,30 +702,8 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->hash_delete    = rb_hash_delete;
     config->ident_hash_new = rb_ident_hash_new;
 
-    config->int2fix = int2fix;
-
-    config->bignum_negate = bignum_negate;
-    config->big_norm      = rb_big_norm;
-    config->cstr_to_inum  = rb_cstr_to_inum;
-
-    config->float_new   = rb_float_new;
-    config->float_value = rb_float_value;
-
     config->num2int          = rb_num2int_inline;
-    config->int_positive_pow = rb_int_positive_pow;
     config->int2num          = rb_int2num_inline;
-    config->fix2long         = rb_fix2long;
-
-    config->rational_new     = rb_rational_new;
-    config->rational_raw1    = rational_raw1;
-    config->rational_set_num = rational_set_num;
-    config->rational_get_num = rational_get_num;
-
-    config->complex_raw       = rb_complex_raw;
-    config->rcomplex_set_real = rcomplex_set_real;
-    config->rcomplex_set_imag = rcomplex_set_imag;
-    config->rcomplex_get_real = rcomplex_get_real;
-    config->rcomplex_get_imag = rcomplex_get_imag;
 
     config->stderr_tty_p    = rb_stderr_tty_p;
     config->write_error_str = rb_write_error_str;
@@ -834,7 +752,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->literal_cmp  = literal_cmp;
     config->literal_hash = literal_hash;
 
-    config->builtin_class_name = rb_builtin_class_name;
     config->syntax_error_append = syntax_error_append;
     config->raise = rb_raise;
     config->syntax_error_new = syntax_error_new;
@@ -876,7 +793,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->undef_p = undef_p;
     config->rtest = rtest;
     config->nil_p = nil_p;
-    config->flonum_p = flonum_p;
     config->qnil  = Qnil;
     config->qtrue = Qtrue;
     config->qfalse = Qfalse;
