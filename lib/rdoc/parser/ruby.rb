@@ -1782,6 +1782,7 @@ class RDoc::Parser::Ruby < RDoc::Parser
 
     nest = 1
     save_visibility = container.visibility
+    container.visibility = :public unless current_method
 
     non_comment_seen = true
 

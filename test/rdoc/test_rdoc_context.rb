@@ -928,7 +928,11 @@ class TestRDocContext < XrefTestCase
     assert_equal :protected, @c6.find_method_named('prot6').visibility
     assert_equal :public, @c6.find_method_named('pub6').visibility
     assert_equal :public, @c6.find_method_named('s_pub1').visibility
+    assert_equal :public, @c6.find_method_named('s_pub2').visibility
     assert_equal :public, @c6.find_method_named('s_pub3').visibility
+    assert_equal :public, @c6.find_method_named('s_pub4').visibility
+    assert_equal :private, @c6.find_method_named('s_priv1').visibility
+    assert_equal :protected, @c6.find_method_named('s_prot1').visibility
   end
 
   def util_visibilities
