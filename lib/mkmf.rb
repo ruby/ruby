@@ -59,6 +59,9 @@ module MakeMakefile
   # The makefile configuration using the defaults from when Ruby was built.
 
   CONFIG = RbConfig::MAKEFILE_CONFIG
+
+  ##
+  # The saved original value of +LIB+ environment variable
   ORIG_LIBPATH = ENV['LIB']
 
   ##
@@ -245,12 +248,16 @@ MESSAGE
   CSRCFLAG = CONFIG['CSRCFLAG']
   CPPOUTFILE = config_string('CPPOUTFILE') {|str| str.sub(/\bconftest\b/, CONFTEST)}
 
+  # :startdoc:
+
+  # Removes _files_.
   def rm_f(*files)
     opt = (Hash === files.last ? [files.pop] : [])
     FileUtils.rm_f(Dir[*files.flatten], *opt)
   end
   module_function :rm_f
 
+  # Removes _files_ recursively.
   def rm_rf(*files)
     opt = (Hash === files.last ? [files.pop] : [])
     FileUtils.rm_rf(Dir[*files.flatten], *opt)
@@ -264,6 +271,8 @@ MESSAGE
     Array === times or times = [times]
     t if times.all? {|n| n <= t}
   end
+
+  # :stopdoc:
 
   def split_libs(*strs)
     sep = $mswin ? /\s+/ : /\s+(?=-|\z)/
@@ -397,6 +406,14 @@ MESSAGE
     envs.map {|e, v| "#{e}=#{v.quote}"}
   end
 
+  # :startdoc:
+
+  # call-seq:
+  #   xsystem(command, werror: false, **opts)   -> true or false
+  #
+  # Executes _command_ with expanding variables, and returns the exit
+  # status like as Kernel#system.  If _werror_ is true and the error
+  # output is not empty, returns +false+.  The output will logged.
   def xsystem command, opts = nil
     env, command = expand_command(command)
     Logging::open do
@@ -415,6 +432,7 @@ MESSAGE
     end
   end
 
+  # Executes _command_ similarly to xsystem, but yields opened pipe.
   def xpopen command, *mode, &block
     env, commands = expand_command(command)
     command = [env_quote(env), command].join(' ')
@@ -429,6 +447,7 @@ MESSAGE
     end
   end
 
+  # Logs _src_
   def log_src(src, heading="checked program was")
     src = src.split(/^/)
     fmt = "%#{src.size.to_s.size}d: %s"
@@ -443,10 +462,15 @@ EOM
 EOM
   end
 
+  # Returns the language-dependent source file name for configuration
+  # checks.
   def conftest_source
     CONFTEST_C
   end
 
+  # Creats temporary source file from +COMMON_HEADERS+ and _src_.
+  # Yields the created source string and uses the returned string as
+  # the source code, if the block is given.
   def create_tmpsrc(src)
     src = "#{COMMON_HEADERS}\n#{src}"
     src = yield(src) if block_given?
@@ -466,6 +490,8 @@ EOM
     end
     src
   end
+
+  # :stopdoc:
 
   def have_devel?
     unless defined? $have_devel
@@ -579,8 +605,8 @@ MSG
 
   # Returns whether or not the +src+ can be compiled as a C source and linked
   # with its depending libraries successfully.  +opt+ is passed to the linker
-  # as options. Note that +$CFLAGS+ and +$LDFLAGS+ are also passed to the
-  # linker.
+  # as options. Note that <tt>$CFLAGS</tt> and <tt>$LDFLAGS</tt> are also
+  # passed to the linker.
   #
   # If a block given, it is called with the source before compilation. You can
   # modify the source in the block.
@@ -594,8 +620,8 @@ MSG
   end
 
   # Returns whether or not the +src+ can be compiled as a C source.  +opt+ is
-  # passed to the C compiler as options. Note that +$CFLAGS+ is also passed to
-  # the compiler.
+  # passed to the C compiler as options. Note that <tt>$CFLAGS</tt> is also
+  # passed to the compiler.
   #
   # If a block given, it is called with the source before compilation. You can
   # modify the source in the block.
@@ -611,7 +637,7 @@ MSG
 
   # Returns whether or not the +src+ can be preprocessed with the C
   # preprocessor.  +opt+ is passed to the preprocessor as options. Note that
-  # +$CFLAGS+ is also passed to the preprocessor.
+  # <tt>$CFLAGS</tt> is also passed to the preprocessor.
   #
   # If a block given, it is called with the source before preprocessing. You
   # can modify the source in the block.
@@ -636,6 +662,14 @@ MSG
     end
   end
 
+  # :startdoc:
+
+  # Sets <tt>$CPPFLAGS</tt> to _flags_ and yields.  If the block returns a
+  # falsy value, <tt>$CPPFLAGS</tt> is reset to its previous value, remains
+  # set to _flags_ otherwise.
+  #
+  # [+flags+] a C preprocessor flag as a +String+
+  #
   def with_cppflags(flags)
     cppflags = $CPPFLAGS
     $CPPFLAGS = flags.dup
@@ -644,10 +678,16 @@ MSG
     $CPPFLAGS = cppflags unless ret
   end
 
+  # :nodoc:
   def try_cppflags(flags, opts = {})
     try_header(MAIN_DOES_NOTHING, flags, {:werror => true}.update(opts))
   end
 
+  # Check whether each given C preprocessor flag is acceptable and append it
+  # to <tt>$CPPFLAGS</tt> if so.
+  #
+  # [+flags+] a C preprocessor flag as a +String+ or an +Array+ of them
+  #
   def append_cppflags(flags, *opts)
     Array(flags).each do |flag|
       if checking_for("whether #{flag} is accepted as CPPFLAGS") {
@@ -658,6 +698,9 @@ MSG
     end
   end
 
+  # Sets <tt>$CFLAGS</tt> to _flags_ and yields.  If the block returns a falsy
+  # value, <tt>$CFLAGS</tt> is reset to its previous value, remains set to
+  # _flags_ otherwise.
   def with_cflags(flags)
     cflags = $CFLAGS
     $CFLAGS = flags.dup
@@ -666,10 +709,14 @@ MSG
     $CFLAGS = cflags unless ret
   end
 
+  # :nodoc:
   def try_cflags(flags, opts = {})
     try_compile(MAIN_DOES_NOTHING, flags, {:werror => true}.update(opts))
   end
 
+  # Sets <tt>$LDFLAGS</tt> to _flags_ and yields.  If the block returns a
+  # falsy value, <tt>$LDFLAGS</tt> is reset to its previous value, remains set
+  # to _flags_ otherwise.
   def with_ldflags(flags)
     ldflags = $LDFLAGS
     $LDFLAGS = flags.dup
@@ -678,11 +725,19 @@ MSG
     $LDFLAGS = ldflags unless ret
   end
 
+  # :nodoc:
   def try_ldflags(flags, opts = {})
     opts = {:werror => true}.update(opts) if $mswin
     try_link(MAIN_DOES_NOTHING, flags, opts)
   end
 
+  # :startdoc:
+
+  # Check whether each given linker flag is acceptable and append it to
+  # <tt>$LDFLAGS</tt> if so.
+  #
+  # [+flags+] a linker flag as a +String+ or an +Array+ of them
+  #
   def append_ldflags(flags, *opts)
     Array(flags).each do |flag|
       if checking_for("whether #{flag} is accepted as LDFLAGS") {
@@ -692,6 +747,8 @@ MSG
       end
     end
   end
+
+  # :stopdoc:
 
   def try_static_assert(expr, headers = nil, opt = "", &b)
     headers = cpp_include(headers)
@@ -828,6 +885,8 @@ int t(void) { const volatile void *volatile p; p = &(&#{var})[0]; return !p; }
 SRC
   end
 
+  # :startdoc:
+
   # Returns whether or not the +src+ can be preprocessed with the C
   # preprocessor and matches with +pat+.
   #
@@ -866,6 +925,8 @@ SRC
     log_src(src)
   end
 
+  # :stopdoc:
+
   # This is used internally by the have_macro? method.
   def macro_defined?(macro, src, opt = "", &b)
     src = src.sub(/[^\n]\z/, "\\&\n")
@@ -885,8 +946,8 @@ SRC
   # * the linked file can be invoked as an executable
   # * and the executable exits successfully
   #
-  # +opt+ is passed to the linker as options. Note that +$CFLAGS+ and
-  # +$LDFLAGS+ are also passed to the linker.
+  # +opt+ is passed to the linker as options. Note that <tt>$CFLAGS</tt> and
+  # <tt>$LDFLAGS</tt> are also passed to the linker.
   #
   # If a block given, it is called with the source before compilation. You can
   # modify the source in the block.
@@ -958,6 +1019,10 @@ SRC
     format(LIBARG, lib) + " " + libs
   end
 
+  # Prints messages to $stdout, if verbose mode.
+  #
+  # Internal use only.
+  #
   def message(*s)
     unless Logging.quiet and not $VERBOSE
       printf(*s)
@@ -989,6 +1054,10 @@ SRC
     r
   end
 
+  # Build a message for checking.
+  #
+  # Internal use only.
+  #
   def checking_message(target, place = nil, opt = nil)
     [["in", place], ["with", opt]].inject("#{target}") do |msg, (pre, noun)|
       if noun
@@ -1250,6 +1319,7 @@ SRC
     end
   end
 
+  # :nodoc:
   # Returns whether or not the static type +type+ is defined.
   #
   # See also +have_type+
@@ -1307,6 +1377,7 @@ SRC
     end
   end
 
+  # :nodoc:
   # Returns whether or not the constant +const+ is defined.
   #
   # See also +have_const+
@@ -1525,6 +1596,10 @@ SRC
     end
   end
 
+  # :startdoc:
+
+  # Returns a string represents the type of _type_, or _member_ of
+  # _type_ if _member_ is not +nil+.
   def what_type?(type, member = nil, headers = nil, &b)
     m = "#{type}"
     var = val = "*rbcv_var_"
@@ -1584,6 +1659,8 @@ SRC
     end
   end
 
+  # :nodoc:
+  #
   # This method is used internally by the find_executable method.
   #
   # Internal use only.
@@ -1621,8 +1698,6 @@ SRC
     end
     nil
   end
-
-  # :startdoc:
 
   # Searches for the executable +bin+ on +path+.  The default path is your
   # +PATH+ environment variable. If that isn't defined, it will resort to
@@ -2727,6 +2802,9 @@ MESSAGE
 
   split = Shellwords.method(:shellwords).to_proc
 
+  ##
+  # The prefix added to exported symbols automatically
+
   EXPORT_PREFIX = config_string('EXPORT_PREFIX') {|s| s.strip}
 
   hdr = ['#include "ruby.h"' "\n"]
@@ -2756,6 +2834,10 @@ MESSAGE
   # make compile rules
 
   COMPILE_RULES = config_string('COMPILE_RULES', &split) || %w[.%s.%s:]
+
+  ##
+  # Substitution in rules for NMake
+
   RULE_SUBST = config_string('RULE_SUBST')
 
   ##
@@ -2801,6 +2883,10 @@ MESSAGE
   # Argument which will add a library path to the linker
 
   LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L%s'
+
+  ##
+  # Argument which will add a runtime library path to the linker
+
   RPATHFLAG = config_string('RPATHFLAG') || ''
 
   ##
@@ -2812,6 +2898,10 @@ MESSAGE
   # A C main function which does no work
 
   MAIN_DOES_NOTHING = config_string('MAIN_DOES_NOTHING') || "int main(int argc, char **argv)\n{\n  return !!argv[argc];\n}"
+
+  ##
+  # The type names for convertible_int
+
   UNIVERSAL_INTS = config_string('UNIVERSAL_INTS') {|s| Shellwords.shellwords(s)} ||
     %w[int short long long\ long]
 
@@ -2842,17 +2932,25 @@ realclean: distclean
 
   @lang = Hash.new(self)
 
+  ##
+  # Retrieves the module for _name_ language.
   def self.[](name)
     @lang.fetch(name)
   end
 
+  ##
+  # Defines the module for _name_ language.
   def self.[]=(name, mod)
     @lang[name] = mod
   end
 
   self["C++"] = Module.new do
+    # Module for C++
+
     include MakeMakefile
     extend self
+
+    # :stopdoc:
 
     CONFTEST_CXX = "#{CONFTEST}.#{config_string('CXX_EXT') || CXX_EXT[0]}"
 
@@ -2883,6 +2981,8 @@ realclean: distclean
       conf = link_config(ldflags, *opts)
       RbConfig::expand(TRY_LINK_CXX.dup, conf)
     end
+
+    # :startdoc:
   end
 end
 
