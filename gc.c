@@ -11002,11 +11002,19 @@ gc_update_references(rb_objspace_t *objspace)
  *
  * Returns information about object moved in the most recent \GC compaction.
  *
- * The returned hash has two keys :considered and :moved.  The hash for
- * :considered lists the number of objects that were considered for movement
- * by the compactor, and the :moved hash lists the number of objects that
- * were actually moved.  Some objects can't be moved (maybe they were pinned)
- * so these numbers can be used to calculate compaction efficiency.
+ * The returned +hash+ has the following keys:
+ *
+ * - +:considered+: a hash containing the type of the object as the key and
+ *   the number of objects of that type that were considered for movement.
+ * - +:moved+: a hash containing the type of the object as the key and the
+ *   number of objects of that type that were actually moved.
+ * - +:moved_up+: a hash containing the type of the object as the key and the
+ *   number of objects of that type that were increased in size.
+ * - +:moved_down+: a hash containing the type of the object as the key and
+ *   the number of objects of that type that were decreased in size.
+ *
+ * Some objects can't be moved (due to pinning) so these numbers can be used to
+ * calculate compaction efficiency.
  */
 static VALUE
 gc_compact_stats(VALUE self)
