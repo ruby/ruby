@@ -100,28 +100,18 @@ hash_literal_key_p(VALUE k)
 static int rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2);
 
 static int
-node_numeric_str_cmp(char *str1, char *str2)
-{
-    size_t len1 = strlen(str1);
-    size_t len2 = strlen(str2);
-
-    return (len1 != len2 ||
-            memcmp(str1, str2, len1) != 0);
-}
-
-static int
 node_integer_cmp(rb_node_integer_t *n1, rb_node_integer_t *n2)
 {
     return (n1->minus != n2->minus ||
             n1->base != n2->base ||
-            node_numeric_str_cmp(n1->val, n2->val));
+            strcmp(n1->val, n2->val));
 }
 
 static int
 node_float_cmp(rb_node_float_t *n1, rb_node_float_t *n2)
 {
     return (n1->minus != n2->minus ||
-            node_numeric_str_cmp(n1->val, n2->val));
+            strcmp(n1->val, n2->val));
 }
 
 static int
@@ -130,7 +120,7 @@ node_rational_cmp(rb_node_rational_t *n1, rb_node_rational_t *n2)
     return (n1->minus != n2->minus ||
             n1->base != n2->base ||
             n1->seen_point != n2->seen_point ||
-            node_numeric_str_cmp(n1->val, n2->val));
+            strcmp(n1->val, n2->val));
 }
 
 static int
@@ -140,7 +130,7 @@ node_imaginary_cmp(rb_node_imaginary_t *n1, rb_node_imaginary_t *n2)
             n1->base != n2->base ||
             n1->seen_point != n2->seen_point ||
             n1->type != n2->type ||
-            node_numeric_str_cmp(n1->val, n2->val));
+            strcmp(n1->val, n2->val));
 }
 
 static int
