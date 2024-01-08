@@ -14966,13 +14966,19 @@ nd_st_key(struct parser_params *p, NODE *node)
       case NODE_STR:
         return RNODE_STR(node)->nd_lit;
       case NODE_INTEGER:
+        return rb_node_integer_literal_val(node);
       case NODE_FLOAT:
+        return rb_node_float_literal_val(node);
       case NODE_RATIONAL:
+        return rb_node_rational_literal_val(node);
       case NODE_IMAGINARY:
+        return rb_node_imaginary_literal_val(node);
       case NODE_SYM:
+        return rb_node_sym_string_val(node);
       case NODE_LINE:
+        return rb_node_line_lineno_val(node);
       case NODE_FILE:
-        return (VALUE)node;
+        return rb_node_file_path_val(node);
       default:
         rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
         UNREACHABLE_RETURN(0);
