@@ -4642,7 +4642,7 @@ fn jit_rb_int_lshift(
     }
 
     // Fallback to a C call if the shift amount varies
-    if asm.ctx.get_chain_depth() > 0 {
+    if asm.ctx.get_chain_depth() > 1 {
         return false;
     }
 
@@ -4656,7 +4656,7 @@ fn jit_rb_int_lshift(
         jit,
         asm,
         ocb,
-        1,
+        2, // defer_compilation increments chain_depth
         Counter::lshift_amount_changed,
     );
 
