@@ -4342,7 +4342,11 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
 int
 rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 {
-    struct pollfd fds[1];
+    struct pollfd fds[1] = {{
+        .fd = fd,
+        .events = (short)events,
+        .revents = 0,
+    }};
     int result = 0;
     nfds_t nfds;
     struct waiting_fd wfd;
@@ -4354,37 +4358,36 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 
     thread_io_setup_wfd(th, fd, &wfd);
 
-    EC_PUSH_TAG(wfd.th->ec);
-    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        rb_hrtime_t *to, rel, end = 0;
-        struct timeval tv;
-
-        RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
-
-        timeout_prepare(&to, &rel, &end, timeout);
-        fds[0].fd = fd;
-        fds[0].events = (short)events;
-        fds[0].revents = 0;
-
-        do {
-            nfds = 1;
-
-            lerrno = 0;
-            BLOCKING_REGION(wfd.th, {
-                struct timespec ts;
-
-                if (!RUBY_VM_INTERRUPTED(wfd.th->ec)) {
-                    result = ppoll(fds, nfds, rb_hrtime2timespec(&ts, to), 0);
-                    if (result < 0) lerrno = errno;
-                }
-            }, ubf_select, wfd.th, TRUE);
-
-            RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
-        } while (wait_retryable(&result, lerrno, to, end) &&
-                 thread_io_wait_events(th, fd, events, rb_hrtime2timeval(&tv, to)) &&
-                 wait_retryable(&result, lerrno, to, end));
+    if (timeout == NULL && thread_io_wait_events(th, fd, events, NULL)) {
+        // fd is readable
+        state = 0;
+        fds[0].revents = events;
+        errno = 0;
     }
-    EC_POP_TAG();
+    else {
+        EC_PUSH_TAG(wfd.th->ec);
+        if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+            rb_hrtime_t *to, rel, end = 0;
+            RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
+            timeout_prepare(&to, &rel, &end, timeout);
+            do {
+                nfds = 1;
+
+                lerrno = 0;
+                BLOCKING_REGION(wfd.th, {
+                    struct timespec ts;
+
+                    if (!RUBY_VM_INTERRUPTED(wfd.th->ec)) {
+                        result = ppoll(fds, nfds, rb_hrtime2timespec(&ts, to), 0);
+                        if (result < 0) lerrno = errno;
+                    }
+                }, ubf_select, wfd.th, TRUE);
+
+                RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
+            } while (wait_retryable(&result, lerrno, to, end));
+        }
+        EC_POP_TAG();
+    }
 
     thread_io_wake_pending_closer(&wfd);
 
