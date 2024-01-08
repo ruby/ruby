@@ -46,8 +46,9 @@ compile_numeric_literal(char* val, int base)
 }
 
 VALUE
-rb_node_integer_literal_val(rb_node_integer_t* node)
+rb_node_integer_literal_val(const NODE *n)
 {
+    rb_node_integer_t *node = RNODE_INTEGER(n);
     VALUE val = compile_numeric_literal(node->val, node->base);
     if (node->minus) {
         val = compile_negative_numeric(val);
@@ -56,8 +57,9 @@ rb_node_integer_literal_val(rb_node_integer_t* node)
 }
 
 VALUE
-rb_node_float_literal_val(rb_node_float_t* node)
+rb_node_float_literal_val(const NODE *n)
 {
+    rb_node_float_t *node = RNODE_FLOAT(n);
     double d = strtod(node->val, 0);
     if (node->minus) {
         d = -d;
@@ -89,9 +91,10 @@ compile_rational_literal(char* node_val, int base, int seen_point)
 }
 
 VALUE
-rb_node_rational_literal_val(rb_node_rational_t* node)
+rb_node_rational_literal_val(const NODE *n)
 {
     VALUE lit;
+    rb_node_rational_t *node = RNODE_RATIONAL(n);
 
     lit = compile_rational_literal(node->val, node->base, node->seen_point);
 
@@ -103,9 +106,10 @@ rb_node_rational_literal_val(rb_node_rational_t* node)
 }
 
 VALUE
-rb_node_imaginary_literal_val(rb_node_imaginary_t* node)
+rb_node_imaginary_literal_val(const NODE *n)
 {
     VALUE lit;
+    rb_node_imaginary_t *node = RNODE_IMAGINARY(n);
 
     enum rb_numeric_type type = node->type;
 

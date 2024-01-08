@@ -559,13 +559,13 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_XSTR:
         return rb_ary_new_from_args(1, RNODE_LIT(node)->nd_lit);
       case NODE_INTEGER:
-        return rb_ary_new_from_args(1, rb_node_integer_literal_val(RNODE_INTEGER(node)));
+        return rb_ary_new_from_args(1, rb_node_integer_literal_val(node));
       case NODE_FLOAT:
-        return rb_ary_new_from_args(1, rb_node_float_literal_val(RNODE_FLOAT(node)));
+        return rb_ary_new_from_args(1, rb_node_float_literal_val(node));
       case NODE_RATIONAL:
-        return rb_ary_new_from_args(1, rb_node_rational_literal_val(RNODE_RATIONAL(node)));
+        return rb_ary_new_from_args(1, rb_node_rational_literal_val(node));
       case NODE_IMAGINARY:
-        return rb_ary_new_from_args(1, rb_node_imaginary_literal_val(RNODE_IMAGINARY(node)));
+        return rb_ary_new_from_args(1, rb_node_imaginary_literal_val(node));
       case NODE_ONCE:
         return rb_ary_new_from_node_args(ast, 1, RNODE_ONCE(node)->nd_body);
       case NODE_DSTR:
