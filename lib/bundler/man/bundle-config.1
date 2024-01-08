@@ -302,9 +302,9 @@ Note that any configured credentials will be redacted by informative commands su
 .P
 Also note that to guarantee a sane mapping between valid environment variable names and valid host names, bundler makes the following transformations:
 .IP "\(bu" 4
-Any \fB\-\fR characters in a host name are mapped to a triple dash (\fB___\fR) in the corresponding environment variable\.
+Any \fB\-\fR characters in a host name are mapped to a triple underscore (\fB___\fR) in the corresponding environment variable\.
 .IP "\(bu" 4
-Any \fB\.\fR characters in a host name are mapped to a double dash (\fB__\fR) in the corresponding environment variable\.
+Any \fB\.\fR characters in a host name are mapped to a double underscore (\fB__\fR) in the corresponding environment variable\.
 .IP "" 0
 .P
 This means that if you have a gem server named \fBmy\.gem\-host\.com\fR, you'll need to use the \fBBUNDLE_MY__GEM___HOST__COM\fR variable to configure credentials for it through ENV\.
