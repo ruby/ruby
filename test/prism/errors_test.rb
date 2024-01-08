@@ -335,10 +335,10 @@ module Prism
 
     def test_def_with_multiple_statements_receiver
       assert_errors expression("def (\na\nb\n).c; end"), "def (\na\nb\n).c; end", [
-        ["expected a matching `)`", 7..7],
-        ["expected a `.` or `::` after the receiver in a method definition", 7..7],
-        ["expected a method name", 7..7],
-        ["cannot parse the expression", 10..10],
+        ["expected a matching `)`", 8..8],
+        ["expected a `.` or `::` after the receiver in a method definition", 8..8],
+        ["expected a delimiter to close the parameters", 9..9],
+        ["cannot parse the expression", 9..9],
         ["cannot parse the expression", 11..11]
       ]
     end
