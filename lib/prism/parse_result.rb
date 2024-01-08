@@ -281,7 +281,8 @@ module Prism
     # the beginning of the file. Useful for when you want a location object but
     # do not care where it points.
     def self.null
-      new(nil, 0, 0)
+      source = nil #: Source
+      new(source, 0, 0)
     end
   end
 

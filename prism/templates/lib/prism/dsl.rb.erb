@@ -36,6 +36,7 @@ module Prism
 
     # Create a new Location object
     def Location(source = nil, start_offset = 0, length = 0)
+      # @type var source: Source
       Location.new(source, start_offset, length)
     end
     <%- nodes.each do |node| -%>

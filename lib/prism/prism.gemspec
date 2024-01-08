@@ -122,7 +122,6 @@ Gem::Specification.new do |spec|
     "src/options.c",
     "src/prism.c",
     "prism.gemspec",
-    "sig/manifest.yaml",
     "sig/prism.rbs",
     "sig/prism/compiler.rbs",
     "sig/prism/dispatcher.rbs",

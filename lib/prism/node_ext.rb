@@ -106,14 +106,23 @@ module Prism
     # local variable
     class DynamicPartsInConstantPathError < StandardError; end
 
+    # An error class raised when missing nodes are found while computing a
+    # constant path's full name. For example:
+    # Foo:: -> raises because the constant path is missing the last part
+    class MissingNodesInConstantPathError < StandardError; end
+
     # Returns the list of parts for the full name of this constant path.
     # For example: [:Foo, :Bar]
     def full_name_parts
-      parts = [child.name]
-      current = parent
+      parts = [] #: Array[Symbol]
+      current = self #: node?
 
       while current.is_a?(ConstantPathNode)
-        parts.unshift(current.child.name)
+        child = current.child
+        if child.is_a?(MissingNode)
+          raise MissingNodesInConstantPathError, "Constant path contains missing nodes. Cannot compute full name"
+        end
+        parts.unshift(child.name)
         current = current.parent
       end
 
@@ -134,14 +143,19 @@ module Prism
     # Returns the list of parts for the full name of this constant path.
     # For example: [:Foo, :Bar]
     def full_name_parts
-      parts = case parent
-      when ConstantPathNode, ConstantReadNode
-        parent.full_name_parts
-      when nil
-        [:""]
-      else
-        raise ConstantPathNode::DynamicPartsInConstantPathError,
-          "Constant path target contains dynamic parts. Cannot compute full name"
+      parts =
+        case parent
+        when ConstantPathNode, ConstantReadNode
+          parent.full_name_parts
+        when nil
+          [:""]
+        else
+          # e.g. self::Foo, (var)::Bar = baz
+          raise ConstantPathNode::DynamicPartsInConstantPathError, "Constant target path contains dynamic parts. Cannot compute full name"
+        end
+
+      if child.is_a?(MissingNode)
+        raise ConstantPathNode::MissingNodesInConstantPathError, "Constant target path contains missing nodes. Cannot compute full name"
       end
 
       parts.push(child.name)
@@ -169,7 +183,7 @@ module Prism
   class ParametersNode < Node
     # Mirrors the Method#parameters method.
     def signature
-      names = [] #: Array[[:req | :opt | :rest | :keyreq | :key | :keyrest | :block, Symbol] | [:req | :rest | :keyrest | :nokey]]
+      names = [] #: Array[[Symbol, Symbol] | [Symbol]]
 
       requireds.each do |param|
         names << (param.is_a?(MultiTargetNode) ? [:req] : [:req, param.name])
@@ -182,7 +196,14 @@ module Prism
       end
 
       posts.each do |param|
-        names << (param.is_a?(MultiTargetNode) ? [:req] : [:req, param.name])
+        if param.is_a?(MultiTargetNode)
+          names << [:req]
+        elsif param.is_a?(NoKeywordsParameterNode)
+          # Invalid syntax, e.g. "def f(**nil, ...)" moves the NoKeywordsParameterNode to posts
+          raise "Invalid syntax"
+        else
+          names << [:req, param.name]
+        end
       end
 
       # Regardless of the order in which the keywords were defined, the required

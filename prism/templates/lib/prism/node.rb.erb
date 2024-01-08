@@ -56,6 +56,7 @@ module Prism
 
     # Convert this node into a graphviz dot graph string.
     def to_dot
+      # @type self: node
       DotVisitor.new.tap { |visitor| accept(visitor) }.to_dot
     end
 
