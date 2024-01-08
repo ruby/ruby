@@ -213,7 +213,8 @@ node_cdhash_hash(VALUE a)
         switch (type) {
           case NODE_INTEGER:
             val = rb_node_integer_literal_val(node);
-            return (FIXNUM_P(val) ? val : FIX2LONG(rb_big_hash(val)));
+            if (!FIXNUM_P(val)) val = rb_big_hash(val);
+            return FIX2LONG(val);
           case NODE_FLOAT:
             val = rb_node_float_literal_val(node);
             return rb_dbl_long_hash(RFLOAT_VALUE(val));
@@ -227,7 +228,7 @@ node_cdhash_hash(VALUE a)
             return rb_node_sym_string_val(node);
           case NODE_LINE:
             /* Same with NODE_INTEGER FIXNUM case */
-            return INT2FIX(node->nd_loc.beg_pos.lineno);
+            return (st_index_t)node->nd_loc.beg_pos.lineno;
           case NODE_FILE:
             /* Same with String in rb_iseq_cdhash_hash */
             return rb_str_hash(rb_node_file_path_val(node));
