@@ -1053,8 +1053,6 @@ nodes:
               @@abc   # name `:@@abc`
 
               @@_test # name `:@@_test`
-
-              @@🍔    # name `:@@🍔`
     comment: |
       Represents referencing a class variable.
 
@@ -1234,8 +1232,6 @@ nodes:
               X              # name `:X`
 
               SOME_CONSTANT  # name `:SOME_CONSTANT`
-
-              F🥨            # name `:F🥨`
     comment: |
       Represents referencing a constant.
 
@@ -1534,8 +1530,6 @@ nodes:
               $foo   # name `:$foo`
 
               $_Test # name `:$_Test`
-
-              $🍟    # name `:$🍟`
 
           In addition to the above, global variable names may be one of: `$~`,
           `$*`, `$$`, `$?`, `$!`, `$@`, `$/`, `$\`, `$;`, `$,`, `$.`, `$=`,
@@ -1870,8 +1864,6 @@ nodes:
               @x     # name `:@x`
 
               @_test # name `:@_test`
-
-              @🌯    # name `:@🌯`
     comment: |
       Represents referencing an instance variable.
 
@@ -2106,8 +2098,6 @@ nodes:
               x      # name `:x`
 
               _Test  # name `:_Test`
-
-              🌯     # name `:🌯`
       - name: depth
         type: uint32
         comment: |
