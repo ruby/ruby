@@ -34,7 +34,8 @@ module IRB
         return unless receiver.respond_to?(method, true)
         file, line = method_target(receiver, super_level, method, "receiver")
       end
-      if file && line && File.exist?(file)
+      # If the line is zero, it means that the target's source is probably in a binary file, which we should ignore.
+      if file && line && !line.zero? && File.exist?(file)
         Source.new(file: file, first_line: line, last_line: find_end(file, line))
       end
     end

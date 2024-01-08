@@ -300,5 +300,24 @@ module TestIRB
 
       assert_match(%r[#{@ruby_file.to_path}:5\s+class Bar\r\n  end], out)
     end
+
+    def test_show_source_ignores_binary_source_file
+      write_ruby <<~RUBY
+        # io-console is an indirect dependency of irb
+        require "io/console"
+
+        binding.irb
+      RUBY
+
+      out = run_ruby_file do
+        # IO::ConsoleMode is defined in io-console gem's C extension
+        type "show_source IO::ConsoleMode"
+        type "exit"
+      end
+
+      # A safeguard to make sure the test subject is actually defined
+      refute_match(/NameError/, out)
+      assert_match(%r[Error: Couldn't locate a definition for IO::ConsoleMode], out)
+    end
   end
 end
