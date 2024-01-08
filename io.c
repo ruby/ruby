@@ -14704,35 +14704,18 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     $ ruby t.rb --foo bar.txt --baz bat.txt
  *     ["--foo", "bar.txt", "--baz", "bat.txt"]
  *
- * Any of those array elements that are not filepaths should be removed
- * before accessing the input stream:
+ * Methods in \ARGF assume that each element in +ARGV+ is a filepath;
+ * elements (such as options) that are not filepaths should be removed
+ * before any access to the input stream.
+ *
+ * \Method ARGF#read reads the content of all the specified files into a single string:
  *
  * - \File +t.rb+:
  *
- *     p ARGV
- *     option_regexp = /^-/
- *     options = ARGV.select {|ele| ele.match(option_regexp) }
- *     ARGV.delete_if {|ele| ele.match(option_regexp) }
- *     p options
- *     p ARGV
- *
- * - Command and output:
- *
- *     $ ruby t.rb --foo bar.txt --baz bat.txt
- *     ["--foo", "bar.txt", "--baz", "bat.txt"]
- *     ["--foo", "--baz"]
- *     ["bar.txt", "bat.txt"]
- *
- * \Method ARGF#read reads the content of oll the specified files into a single string:
- *
- * - \File +t.rb+:
- *
- *     option_regexp = /^-/
- *     ARGV.delete_if {|ele| ele.match(option_regexp) }
  *     p ARGV
  *     p ARGF.read
  *
- * - \\File +bar.txt+:
+ * - \File +bar.txt+:
  *
  *     bar 0
  *     bar 1
@@ -14744,27 +14727,11 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  * - Command and output:
  *
- *     $ ruby t.rb --foo bar.txt --baz bat.txt
+ *     $ ruby t.rb bar.txt bat.txt
  *     ["bar.txt", "bat.txt"]
  *     "bar 0\nbar 1\nbat 0\nbat 1\n"
  *
- * === $stdin Input
- *
- * When +ARGV+ is initially empty,
- * the \ARGF stream is $stdin:
- *
- * - \File +t.rb+:
- *
- *     p ARGV
- *     p ARGF.read
- *
- * - Command and output:
- *
- *     $ echo "Open the pod bay doors, Hal." | ruby t.rb
- *     []
- *     "Open the pod bay doors, Hal.\n"
- *
- * Each filepath is removed from the array when the corresponding file is accessed;
+ * Each filepath in +ARGV+ is removed when the corresponding file is accessed;
  * when all files have been accessed, the array is empty:
  *
  * - \File +t.rb+:
@@ -14792,6 +14759,22 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * - If you remove filepaths from +ARGV+, \ARGF ignores the corresponding files.
  * - If you add filepaths to +ARGV+, they are treated just as if they were given
  *   on the command line.
+ *
+ * === $stdin Input
+ *
+ * When +ARGV+ is initially empty,
+ * the \ARGF stream is $stdin:
+ *
+ * - \File +t.rb+:
+ *
+ *     p ARGV
+ *     p ARGF.read
+ *
+ * - Command and output:
+ *
+ *     $ echo "Open the pod bay doors, Hal." | ruby t.rb
+ *     []
+ *     "Open the pod bay doors, Hal.\n"
  *
  */
 
