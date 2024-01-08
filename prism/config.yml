@@ -2287,6 +2287,16 @@ nodes:
     fields:
       - name: number
         type: uint32
+        comment: |
+          The (1-indexed, from the left) number of the capture group. Numbered
+          references that would overflow a `uint32`  result in a `number` of
+          exactly `2**32 - 1`.
+
+              $1          # number `1`
+
+              $5432       # number `5432`
+
+              $4294967296 # number `4294967295`
     comment: |
       Represents reading a numbered reference to a capture in the previous match.
 
