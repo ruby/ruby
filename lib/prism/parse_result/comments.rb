@@ -150,6 +150,7 @@ module Prism
           target_end = target.end_offset
 
           if target.encloses?(comment)
+            # @type var target: NodeTarget
             # The comment is completely contained by this target. Abandon the
             # binary search at this level.
             return nearest_targets(target.node, comment)

@@ -58,7 +58,11 @@ module Prism
 
     # Walk the tree and mark nodes that are on a new line.
     def mark_newlines!
-      value.accept(Newlines.new(Array.new(1 + source.offsets.size, false)))
+      if ProgramNode === value
+        value.accept(Newlines.new(Array.new(1 + source.offsets.size, false)))
+      else
+        raise "ParseResult does not contain ProgramNode value"
+      end
     end
   end
 end

@@ -169,14 +169,17 @@ module Prism
   class ParametersNode < Node
     # Mirrors the Method#parameters method.
     def signature
-      names = [] #: Array[[:req | :opt | :rest | :keyreq | :key | :keyrest | :block, Symbol] | [:rest | :keyrest | :nokey]]
+      names = [] #: Array[[:req | :opt | :rest | :keyreq | :key | :keyrest | :block, Symbol] | [:req | :rest | :keyrest | :nokey]]
 
       requireds.each do |param|
         names << (param.is_a?(MultiTargetNode) ? [:req] : [:req, param.name])
       end
 
       optionals.each { |param| names << [:opt, param.name] }
-      names << [:rest, rest.name || :*] if rest
+
+      if rest && rest.is_a?(RestParameterNode)
+        names << [:rest, rest.name || :*]
+      end
 
       posts.each do |param|
         names << (param.is_a?(MultiTargetNode) ? [:req] : [:req, param.name])

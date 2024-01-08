@@ -99,11 +99,11 @@ module Prism
     end
 
     def specific_kind
-      @options[:kind] unless @options[:kind].is_a?(Array)
+      options[:kind] unless options[:kind].is_a?(Array)
     end
 
     def union_kind
-      options[:kind] if @options[:kind].is_a?(Array)
+      options[:kind] if options[:kind].is_a?(Array)
     end
   end
 
@@ -132,7 +132,7 @@ module Prism
       if specific_kind
         "#{specific_kind}?"
       elsif union_kind
-        [union_kind, "nil"].join(" | ")
+        [*union_kind, "nil"].join(" | ")
       else
         "Prism::node?"
       end
@@ -147,7 +147,13 @@ module Prism
   # references and store them directly on the struct.
   class NodeListField < Field
     def rbs_class
-      "Array[Prism::node]"
+      if specific_kind
+        "Array[#{specific_kind}]"
+      elsif union_kind
+        "Array[#{union_kind.join(" | ")}]"
+      else
+        "Array[Prism::node]"
+      end
     end
 
     def rbi_class
@@ -156,6 +162,15 @@ module Prism
 
     def java_type
       "Node[]"
+    end
+
+    # TODO: unduplicate with NodeKindField
+    def specific_kind
+      options[:kind] unless options[:kind].is_a?(Array)
+    end
+
+    def union_kind
+      options[:kind] if options[:kind].is_a?(Array)
     end
   end
 
@@ -569,12 +584,12 @@ module Prism
     "src/token_type.c",
     "rbi/prism.rbi",
     "sig/prism.rbs",
-    "sig/prism/dot_visitor.rbs",
     "sig/prism/dsl.rbs",
     "sig/prism/mutation_compiler.rbs",
     "sig/prism/node.rbs",
-    "sig/prism/ripper_compat.rbs",
     "sig/prism/visitor.rbs",
+    "sig/prism/_private/dot_visitor.rbs",
+    "sig/prism/_private/ripper_compat.rbs",
   ]
 end
 

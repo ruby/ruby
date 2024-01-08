@@ -182,14 +182,9 @@ module Prism
       }.compact.join(", ") %>] #: Array[Prism::node | Location]
     end
 
-    # def copy: (**params) -> <%= node.name %>
-    def copy(**params)
-      <%= node.name %>.new(
-        source,
-        <%- (node.fields.map(&:name) + ["location"]).map do |name| -%>
-        params.fetch(:<%= name %>) { <%= name %> },
-        <%- end -%>
-      )
+    # def copy: (<%= (node.fields.map { |field| "?#{field.name}: #{field.rbs_class}" } + ["?location: Location"]).join(", ") %>) -> <%= node.name %>
+    def copy(<%= (node.fields.map(&:name) + ["location"]).map { |field| "#{field}: self.#{field}" }.join(", ") %>)
+      <%= node.name %>.new(<%= ["source", *node.fields.map(&:name), "location"].join(", ") %>)
     end
 
     # def deconstruct: () -> Array[nil | Node]

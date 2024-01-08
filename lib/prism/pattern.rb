@@ -69,7 +69,14 @@ module Prism
     # nodes.
     def compile
       result = Prism.parse("case nil\nin #{query}\nend")
-      compile_node(result.value.statements.body.last.conditions.last.pattern)
+
+      case_match_node = result.value.statements.body.last
+      raise CompilationError, case_match_node.inspect unless case_match_node.is_a?(CaseMatchNode)
+
+      in_node = case_match_node.conditions.last
+      raise CompilationError, in_node.inspect unless in_node.is_a?(InNode)
+
+      compile_node(in_node.pattern)
     end
 
     # Scan the given node and all of its children for nodes that match the
@@ -77,13 +84,14 @@ module Prism
     # matches the pattern. If no block is given, an enumerator will be returned
     # that will yield each node that matches the pattern.
     def scan(root)
-      return to_enum(__method__, root) unless block_given?
+      return to_enum(__method__ || raise, root) unless block_given?
 
       @compiled ||= compile
+      compiled = @compiled #: Proc
       queue = [root]
 
       while (node = queue.shift)
-        yield node if @compiled.call(node)
+        yield node if compiled.call(node)
         queue.concat(node.compact_child_nodes)
       end
     end
@@ -174,7 +182,13 @@ module Prism
 
       preprocessed =
         node.elements.to_h do |element|
-          [element.key.unescaped.to_sym, compile_node(element.value)]
+          key = element.key
+          if key.respond_to?(:unescaped)
+            # @type var key: SymbolNode
+            [key.unescaped.to_sym, compile_node(element.value)]
+          else
+            raise CompilationError, element.inspect
+          end
         end
 
       compiled_keywords = ->(other) do

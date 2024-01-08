@@ -17,7 +17,7 @@ module Prism
         if port
           "<tr><td align=\"left\" colspan=\"2\" port=\"#{name}\">#{name}</td></tr>"
         else
-          "<tr><td align=\"left\">#{name}</td><td>#{CGI.escapeHTML(value)}</td></tr>"
+          "<tr><td align=\"left\">#{name}</td><td>#{CGI.escapeHTML(value || raise)}</td></tr>"
         end
       end
     end

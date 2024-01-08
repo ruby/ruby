@@ -216,6 +216,7 @@ module Prism
           else
             source = directive.source
           end
+          # @type var source_width: Integer
           "  #{source.ljust(source_width)}  #{directive.describe}"
         end
 

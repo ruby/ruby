@@ -692,7 +692,6 @@ nodes:
         type: constant[]
       - name: parameters
         type: node?
-        kind: BlockParametersNode
       - name: body
         type: node?
       - name: opening_loc
@@ -1583,8 +1582,12 @@ nodes:
         type: node?
       - name: elements
         type: node[]
+        kind: AssocNode
       - name: rest
         type: node?
+        kind:
+          - AssocSplatNode
+          - NoKeywordsParameterNode
       - name: opening_loc
         type: location?
       - name: closing_loc
