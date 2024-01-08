@@ -4637,17 +4637,28 @@ fn jit_rb_int_lshift(
 
     // Untag the fixnum shift amount
     let shift_amt = comptime_shift.as_isize() >> 1;
-
     if shift_amt > 63 || shift_amt < 0 {
+        return false;
+    }
+
+    // Fallback to a C call if the shift amount varies
+    if asm.ctx.get_chain_depth() > 1 {
         return false;
     }
 
     let rhs = asm.stack_pop(1);
     let lhs = asm.stack_pop(1);
 
-    // Guard on the shift value we speculated on
+    // Guard on the shift amount we speculated on
     asm.cmp(rhs, comptime_shift.into());
-    asm.jne(Target::side_exit(Counter::lshift_amt_changed));
+    jit_chain_guard(
+        JCC_JNE,
+        jit,
+        asm,
+        ocb,
+        2, // defer_compilation increments chain_depth
+        Counter::lshift_amount_changed,
+    );
 
     let in_val = asm.sub(lhs, 1.into());
     let shift_opnd = Opnd::UImm(shift_amt as u64);
