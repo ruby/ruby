@@ -756,7 +756,7 @@ pm_interpolated_node_compile(pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_
                         ADD_INSN1(ret, &dummy_line_node, putobject, rb_str_freeze(current_string));
                     }
                     else {
-                        ADD_INSN1(ret, &dummy_line_node, putstring, current_string);
+                        ADD_INSN1(ret, &dummy_line_node, putstring, rb_str_freeze(current_string));
                     }
                     current_string = Qnil;
                     number_of_items_pushed++;
@@ -775,7 +775,7 @@ pm_interpolated_node_compile(pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_
                 ADD_INSN1(ret, &dummy_line_node, putobject, rb_str_freeze(current_string));
             }
             else {
-                ADD_INSN1(ret, &dummy_line_node, putstring, current_string);
+                ADD_INSN1(ret, &dummy_line_node, putstring, rb_str_freeze(current_string));
             }
             current_string = Qnil;
             number_of_items_pushed++;
