@@ -600,6 +600,11 @@ module Prism
 
         ("a""b""#{1}").frozen?
       CODE
+      assert_prism_eval(<<-CODE)
+        # frozen_string_literal: true
+
+        ("a""#{1}""b").frozen?
+      CODE
     end
 
     def test_InterpolatedSymbolNode
