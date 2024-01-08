@@ -224,7 +224,7 @@ node_cdhash_hash(VALUE a)
         switch (type) {
           case NODE_INTEGER:
             val = rb_node_integer_literal_val(node);
-            return (FIXNUM_P(val) ? val : FIX2LONG(rb_big_hash(val)));
+            return (FIXNUM_P(val) ? val : (VALUE)FIX2LONG(rb_big_hash(val)));
           case NODE_FLOAT:
             val = rb_node_float_literal_val(node);
             return rb_dbl_long_hash(RFLOAT_VALUE(val));
