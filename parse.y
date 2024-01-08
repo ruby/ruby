@@ -2139,7 +2139,25 @@ rb_str_to_parser_encoding_string(rb_parser_t *p, VALUE str)
 } tIDENTIFIER tFID tGVAR tIVAR tCONSTANT tCVAR tLABEL tOP_ASGN
 %printer {
 #ifndef RIPPER
-    rb_parser_printf(p, "%+"PRIsVALUE, RNODE_LIT($$)->nd_lit);
+    switch (nd_type(RNODE($$))) {
+      case NODE_INTEGER:
+        rb_parser_printf(p, "%+"PRIsVALUE, rb_node_integer_literal_val(RNODE_INTEGER($$)));
+        break;
+      case NODE_FLOAT:
+        rb_parser_printf(p, "%+"PRIsVALUE, rb_node_float_literal_val(RNODE_FLOAT($$)));
+        break;
+      case NODE_RATIONAL:
+        rb_parser_printf(p, "%+"PRIsVALUE, rb_node_rational_literal_val(RNODE_RATIONAL($$)));
+        break;
+      case NODE_IMAGINARY:
+        rb_parser_printf(p, "%+"PRIsVALUE, rb_node_imaginary_literal_val(RNODE_IMAGINARY($$)));
+        break;
+      case NODE_LIT:
+        rb_parser_printf(p, "%+"PRIsVALUE, RNODE_LIT($$)->nd_lit);
+        break;
+      default:
+        break;
+    }
 #else
     rb_parser_printf(p, "%+"PRIsVALUE, get_value($$));
 #endif
