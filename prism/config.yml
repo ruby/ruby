@@ -544,7 +544,7 @@ nodes:
       - name: key
         type: node
         comment: |
-          The key of the association. This can be any node.
+          The key of the association. This can be any node that represents a non-void expression.
 
               { a: b }
                 ^
@@ -557,8 +557,9 @@ nodes:
       - name: value
         type: node?
         comment: |
-          The value of the association, if present. This can be any node. Will
-          not be present if, e.g., this node is an element of a `HashPatternNode`.
+          The value of the association, if present. This can be any node that
+          represents a non-void expression. It can be optionally omitted if this
+          node is an element in a `HashPatternNode`.
 
               { foo => bar }
                        ^^^
