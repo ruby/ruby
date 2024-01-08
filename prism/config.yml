@@ -633,6 +633,12 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the back-reference variable, including the leading `$`.
+
+              $& # name `:$&`
+
+              $+ # name `:$+`
     comment: |
       Represents reading a reference to a field in the previous match.
 
