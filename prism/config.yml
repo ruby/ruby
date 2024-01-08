@@ -1507,6 +1507,22 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the global variable, including the leading `$`. Generally,
+          global variable names begin with an underscore, hyphen, alphabetical
+          or non-ASCII character, followed by arbitrarily many underscores,
+          alphanumeric or non-ASCII characters. The exact definitions of
+          "alphabetical" and "alphanumeric" are encoding-dependent.
+
+              $foo   # name `:$foo`
+
+              $_Test # name `:$_Test`
+
+              $🍟    # name `:$🍟`
+
+          In addition to the above, global variable names may be one of: `$~`,
+          `$*`, `$$`, `$?`, `$!`, `$@`, `$/`, `$\`, `$;`, `$,`, `$.`, `$=`,
+          `$:`, `$<`, `$>`, `$"`, or `$0`.
     comment: |
       Represents referencing a global variable.
 
