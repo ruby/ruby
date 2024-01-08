@@ -2085,8 +2085,33 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the local variable. Local variable names begin with an
+          underscore or a lower-case letter, followed by arbitrarily many
+          underscores, alphanumeric or non-ASCII characters. The exact
+          definitions of "lower-case", "alphabetical" and "alphanumeric" are
+          encoding-dependent.
+
+              x      # name `:x`
+
+              _Test  # name `:_Test`
+
+              🌯     # name `:🌯`
       - name: depth
         type: uint32
+        comment: |
+          The number of visible scopes searched up to find the declaration of
+          this local variable.
+
+              foo = 1; foo # depth 0
+
+              bar = 2; tap { bar } # depth 1
+
+          The specific rules for calculating the depth may differ from
+          individual Ruby implementations, as they are not specified by the
+          language.
+
+          For more information, see [the Prism documentation](https://github.com/ruby/prism/blob/main/docs/local_variable_depth.md).
     comment: |
       Represents reading a local variable. Note that this requires that a local
       variable of the same name has already been written to in the same scope,
