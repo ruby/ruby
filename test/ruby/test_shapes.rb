@@ -942,6 +942,19 @@ class TestShapes < Test::Unit::TestCase
     assert_shape_equal(RubyVM::Shape.of(obj), RubyVM::Shape.of(obj2))
   end
 
+  def test_duplicating_too_complex_objects_memory_leak
+    assert_no_memory_leak([], "#{<<~'begin;'}", "#{<<~'end;'}", "[Bug #20162]", rss: true)
+      RubyVM::Shape.exhaust_shapes
+
+      o = Object.new
+      o.instance_variable_set(:@a, 0)
+    begin;
+      1_000_000.times do
+        o.dup
+      end
+    end;
+  end
+
   def test_freezing_and_duplicating_object
     obj = Object.new.freeze
     obj2 = obj.dup
