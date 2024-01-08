@@ -7622,6 +7622,7 @@ yycompile0(VALUE arg)
     RUBY_DTRACE_PARSE_HOOK(END);
     p->debug_lines = 0;
 
+    xfree(p->lex.strterm);
     p->lex.strterm = 0;
     p->lex.pcur = p->lex.pbeg = p->lex.pend = 0;
     if (n || p->error_p) {
