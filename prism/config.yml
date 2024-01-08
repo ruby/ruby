@@ -1225,6 +1225,17 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the constant. Constant names begin with an upper-case
+          letter, followed by arbitrarily many underscores, alphanumeric or
+          non-ASCII characters. The exact definitions of "upper-case",
+          and "alphanumeric" are encoding-dependent.
+
+              X              # name `:X`
+
+              SOME_CONSTANT  # name `:SOME_CONSTANT`
+
+              F🥨            # name `:F🥨`
     comment: |
       Represents referencing a constant.
 
