@@ -6877,10 +6877,6 @@ assocs		: assoc
 assoc		: arg_value tASSOC arg_value
                     {
                     /*%%%*/
-                        if (nd_type_p($1, NODE_STR)) {
-                            nd_set_type($1, NODE_LIT);
-                            RB_OBJ_WRITE(p->ast, &RNODE_LIT($1)->nd_lit, rb_fstring(RNODE_LIT($1)->nd_lit));
-                        }
                         $$ = list_append(p, NEW_LIST($1, &@$), $3);
                     /*% %*/
                     /*% ripper: assoc_new!($1, $3) %*/
@@ -14941,6 +14937,7 @@ nd_type_st_key_enable_p(NODE *node)
       case NODE_FLOAT:
       case NODE_RATIONAL:
       case NODE_IMAGINARY:
+      case NODE_STR:
       case NODE_LINE:
       case NODE_FILE:
         return true;
@@ -14955,6 +14952,8 @@ nd_st_key(struct parser_params *p, NODE *node)
     switch (nd_type(node)) {
       case NODE_LIT:
         return RNODE_LIT(node)->nd_lit;
+      case NODE_STR:
+        return RNODE_STR(node)->nd_lit;
       case NODE_INTEGER:
       case NODE_FLOAT:
       case NODE_RATIONAL:
@@ -14974,6 +14973,8 @@ nd_st_key_val(struct parser_params *p, NODE *node)
     switch (nd_type(node)) {
       case NODE_LIT:
         return RNODE_LIT(node)->nd_lit;
+      case NODE_STR:
+        return RNODE_STR(node)->nd_lit;
       case NODE_INTEGER:
         return rb_node_integer_literal_val(node);
       case NODE_FLOAT:
