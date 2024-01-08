@@ -1037,6 +1037,18 @@ nodes:
     fields:
       - name: name
         type: constant
+        comment: |
+          The name of the class variable, including the leading `@@`. Variable
+          names begin with an underscore, alphabetical, or non-ASCII character,
+          followed by arbitrarily many underscores, alphanumeric or non-ASCII
+          characters. The exact definitions of "alphabetical" and "alphanumeric"
+          are encoding-dependent.
+
+              @@abc   # name `:@@abc`
+
+              @@_test # name `:@@_test`
+
+              @@🍔    # name `:@@🍔`
     comment: |
       Represents referencing a class variable.
 
