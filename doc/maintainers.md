@@ -181,11 +181,6 @@ have commit right, others don't.
 * https://github.com/ruby/logger
 * https://rubygems.org/gems/logger
 
-#### lib/mutex_m.rb
-* Keiju ISHITSUKA (keiju)
-* https://github.com/ruby/mutex_m
-* https://rubygems.org/gems/mutex_m
-
 #### lib/net/http.rb, lib/net/https.rb
 * NARUSE, Yui (naruse)
 * https://github.com/ruby/net-http
@@ -486,6 +481,9 @@ have commit right, others don't.
 
 ### racc
 * https://github.com/ruby/racc
+
+#### mutex_m
+* https://github.com/ruby/mutex_m
 
 
 ## Platform Maintainers
