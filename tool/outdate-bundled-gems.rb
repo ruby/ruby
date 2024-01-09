@@ -22,6 +22,8 @@ until ARGV.empty?
     gem_platform = nil
   when /\A--ruby[-_]version=(.*)/im
     ruby_version = $1
+  when /\A--only=(?:(curdir|srcdir)|all)\z/im
+    only = $1&.downcase
   when /\A-/
     raise "#{$0}: unknown option: #{ARGV.first}"
   else
@@ -140,9 +142,11 @@ curdir.glob(".bundle/.timestamp/#{gem_platform}/#{ruby_version}/.*.time") do |st
   end
 end
 
-srcdir.each_file {|f| fu.rm_f(f)}
-srcdir.each_directory {|d| fu.rm_rf(d)}
-unless curdir.equal?(srcdir)
+unless only == "curdir"
+  srcdir.each_file {|f| fu.rm_f(f)}
+  srcdir.each_directory {|d| fu.rm_rf(d)}
+end
+unless only == "srcdir" or curdir.equal?(srcdir)
   curdir.each_file {|f| fu.rm_f(f)}
   curdir.each_directory {|d| fu.rm_rf(d)}
 end
