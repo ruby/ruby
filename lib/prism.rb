@@ -44,7 +44,7 @@ module Prism
   #
   # For supported options, see Prism::parse.
   def self.lex_compat(source, **options)
-    LexCompat.new(source, **options).result
+    LexCompat.new(source, **options).result #: ParseResult[Array[[[Integer, Integer], Symbol, String, untyped]]]
   end
 
   # :call-seq:
