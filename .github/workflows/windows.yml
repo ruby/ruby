@@ -37,6 +37,9 @@ jobs:
     strategy:
       matrix:
         include:
+          - vc: 2015
+            vs: 2019
+            vcvars: '10.0.14393.0 -vcvars_ver=14.0' # The oldest Windows 10 SDK w/ VC++ 2015 toolset (v140)
           - vs: 2019
           - vs: 2022
       fail-fast: false
@@ -51,7 +54,7 @@ jobs:
       || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
       )}}
 
-    name: VisualStudio ${{ matrix.vs }}
+    name: VisualStudio ${{ matrix.vc || matrix.vs }}
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
@@ -134,13 +137,10 @@ jobs:
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
         run: |
           set VS=${{ matrix.vs }}
-          set VCVARS=${{ matrix.vcvars || '' }}
-          if not "%VCVARS%" == "" goto :vcset
-            set VCVARS="C:\Program Files (x86)\Microsoft Visual Studio\%VS%\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-            if not exist %VCVARS% set VCVARS="C:\Program Files\Microsoft Visual Studio\%VS%\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-          :vcset
+          set VCVARS="C:\Program Files (x86)\Microsoft Visual Studio\%VS%\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          if not exist %VCVARS% set VCVARS="C:\Program Files\Microsoft Visual Studio\%VS%\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           set | C:\msys64\usr\bin\sort > old.env
-          call %VCVARS%
+          call %VCVARS% ${{ matrix.vcvars || '' }}
           nmake -f nul
           set TMP=%USERPROFILE%\AppData\Local\Temp
           set TEMP=%USERPROFILE%\AppData\Local\Temp
@@ -191,7 +191,7 @@ jobs:
 
       - uses: ./.github/actions/slack
         with:
-          label: VS${{ matrix.vs }} / ${{ matrix.test_task || 'check' }}
+          label: VS${{ matrix.vc || matrix.vs }} / ${{ matrix.test_task || 'check' }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
 
