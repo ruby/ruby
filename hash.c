@@ -4898,7 +4898,7 @@ static inline const char *
 env_name(volatile VALUE *s)
 {
     const char *name;
-    SafeStringValue(*s);
+    StringValue(*s);
     get_env_ptr(name, *s);
     return name;
 }
@@ -5375,8 +5375,8 @@ env_aset(VALUE nm, VALUE val)
         env_delete(nm);
         return Qnil;
     }
-    SafeStringValue(nm);
-    SafeStringValue(val);
+    StringValue(nm);
+    StringValue(val);
     /* nm can be modified in `val.to_str`, don't get `name` before
      * check for `val` */
     get_env_ptr(name, nm);
@@ -6239,7 +6239,7 @@ env_rassoc(VALUE dmy, VALUE obj)
 static VALUE
 env_key(VALUE dmy, VALUE value)
 {
-    SafeStringValue(value);
+    StringValue(value);
     VALUE str = Qnil;
 
     ENV_LOCK();

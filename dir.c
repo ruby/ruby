@@ -3509,7 +3509,7 @@ dir_s_home(int argc, VALUE *argv, VALUE obj)
     rb_check_arity(argc, 0, 1);
     user = (argc > 0) ? argv[0] : Qnil;
     if (!NIL_P(user)) {
-        SafeStringValue(user);
+        StringValue(user);
         rb_must_asciicompat(user);
         u = StringValueCStr(user);
         if (*u) {
