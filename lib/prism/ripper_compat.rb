@@ -109,7 +109,7 @@ module Prism
     # Visit a CallNode node.
     def visit_call_node(node)
       message = node.message
-      if message && message.match?(/^[[:alpha:]_]/) && node.opening_loc.nil? && node.arguments && node.arguments.arguments && node.arguments.arguments.length == 1
+      if message && !message.match?(/^[[:alpha:]_]/) && node.opening_loc.nil? && node.arguments && node.arguments.arguments && node.arguments.arguments.length == 1
         left = visit(node.receiver)
         right = visit(node.arguments.arguments.first)
 
