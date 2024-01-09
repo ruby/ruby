@@ -97,15 +97,20 @@ end
 srcdir = Removal.new(ARGV.shift)
 curdir = !srcdir.base || File.identical?(srcdir.base, ".") ? srcdir : Removal.new
 
-unless all
-  bundled = File.read("#{srcdir.base}gems/bundled_gems").scan(/^(\w\S+)\s+(\S+)/).to_h rescue nil
-end
+bundled = File.readlines("#{srcdir.base}gems/bundled_gems").
+            grep(/^(\w\S+)\s+\S+(?:\s+\S+\s+(\S+))?/) {$~.captures}.to_h rescue nil
 
 srcdir.glob(".bundle/gems/*/") do |dir|
   base = File.basename(dir)
-  next if bundled && !bundled.key?(base[/\A.+(?=-)/])
+  next if !all && bundled && !bundled.key?(base[/\A.+(?=-)/])
   unless srcdir.exist?("gems/#{base}.gem")
     srcdir.rmdir(dir)
+  end
+end
+
+srcdir.glob(".bundle/.timestamp/*.revision") do |file|
+  unless bundled&.fetch(File.basename(file, ".revision"), nil)
+    srcdir.unlink(file)
   end
 end
 
