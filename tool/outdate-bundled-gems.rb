@@ -24,6 +24,8 @@ until ARGV.empty?
     ruby_version = $1
   when /\A--only=(?:(curdir|srcdir)|all)\z/im
     only = $1&.downcase
+  when /\A--all\z/im
+    all = true
   when /\A-/
     raise "#{$0}: unknown option: #{ARGV.first}"
   else
@@ -91,8 +93,14 @@ end
 srcdir = Removal.new(ARGV.shift)
 curdir = !srcdir.base || File.identical?(srcdir.base, ".") ? srcdir : Removal.new
 
+unless all
+  bundled = File.read("#{srcdir.base}gems/bundled_gems").scan(/^(\w\S+)\s+(\S+)/).to_h rescue nil
+end
+
 srcdir.glob(".bundle/gems/*/") do |dir|
-  unless srcdir.exist?("gems/#{File.basename(dir)}.gem")
+  base = File.basename(dir)
+  next if bundled && !bundled.key?(base[/\A.+(?=-)/])
+  unless srcdir.exist?("gems/#{base}.gem")
     srcdir.rmdir(dir)
   end
 end
