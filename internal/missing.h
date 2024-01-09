@@ -13,6 +13,7 @@
 /* missing/setproctitle.c */
 #ifndef HAVE_SETPROCTITLE
 extern void ruby_init_setproctitle(int argc, char *argv[]);
+extern void ruby_free_proctitle(void);
 #endif
 
 #endif /* INTERNAL_MISSING_H */
