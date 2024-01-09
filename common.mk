@@ -19320,6 +19320,7 @@ vm.$(OBJEXT): $(top_srcdir)/internal/gc.h
 vm.$(OBJEXT): $(top_srcdir)/internal/hash.h
 vm.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 vm.$(OBJEXT): $(top_srcdir)/internal/inits.h
+vm.$(OBJEXT): $(top_srcdir)/internal/missing.h
 vm.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 vm.$(OBJEXT): $(top_srcdir)/internal/object.h
 vm.$(OBJEXT): $(top_srcdir)/internal/parse.h

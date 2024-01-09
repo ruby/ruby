@@ -20,6 +20,7 @@
 #include "internal/eval.h"
 #include "internal/gc.h"
 #include "internal/inits.h"
+#include "internal/missing.h"
 #include "internal/object.h"
 #include "internal/proc.h"
 #include "internal/re.h"
@@ -3034,6 +3035,10 @@ ruby_vm_destruct(rb_vm_t *vm)
                 xfree(th->nt);
                 th->nt = NULL;
             }
+
+#ifndef HAVE_SETPROCTITLE
+            ruby_free_proctitle();
+#endif
         }
         else {
             if (th) {
