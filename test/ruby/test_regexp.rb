@@ -1945,6 +1945,15 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_match_cache_with_peek_optimization
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
+    begin;
+      Regexp.timeout = timeout
+      assert_nil(/a*z/ =~ "a" * 1000000 + "x")
+    end;
+  end
+
   def test_cache_opcodes_initialize
     str = 'test1-test2-test3-test4-test_5'
     re = '^([0-9a-zA-Z\-/]*){1,256}$'
