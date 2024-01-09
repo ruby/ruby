@@ -892,21 +892,16 @@ pm_node_flag_unset(pm_node_t *node, pm_node_flags_t flag) {
  */
 static inline void
 pm_node_flag_set_repeated_parameter(pm_node_t *node) {
-    switch (PM_NODE_TYPE(node)) {
-        case PM_BLOCK_LOCAL_VARIABLE_NODE:
-        case PM_BLOCK_PARAMETER_NODE:
-        case PM_KEYWORD_REST_PARAMETER_NODE:
-        case PM_OPTIONAL_KEYWORD_PARAMETER_NODE:
-        case PM_OPTIONAL_PARAMETER_NODE:
-        case PM_REQUIRED_KEYWORD_PARAMETER_NODE:
-        case PM_REQUIRED_PARAMETER_NODE:
-        case PM_REST_PARAMETER_NODE:
-            pm_node_flag_set(node, PM_PARAMETER_FLAGS_REPEATED_PARAMETER);
-            break;
-        default:
-            fprintf(stderr, "unhandled type %d\n", PM_NODE_TYPE(node));
-            abort();
-    };
+    assert(PM_NODE_TYPE(node) == PM_BLOCK_LOCAL_VARIABLE_NODE ||
+            PM_NODE_TYPE(node) == PM_BLOCK_PARAMETER_NODE ||
+            PM_NODE_TYPE(node) == PM_KEYWORD_REST_PARAMETER_NODE ||
+            PM_NODE_TYPE(node) == PM_OPTIONAL_KEYWORD_PARAMETER_NODE ||
+            PM_NODE_TYPE(node) == PM_OPTIONAL_PARAMETER_NODE ||
+            PM_NODE_TYPE(node) == PM_REQUIRED_KEYWORD_PARAMETER_NODE ||
+            PM_NODE_TYPE(node) == PM_REQUIRED_PARAMETER_NODE ||
+            PM_NODE_TYPE(node) == PM_REST_PARAMETER_NODE);
+
+    pm_node_flag_set(node, PM_PARAMETER_FLAGS_REPEATED_PARAMETER);
 }
 
 /******************************************************************************/
@@ -6016,6 +6011,9 @@ pm_parser_local_add_owned(pm_parser_t *parser, const uint8_t *start, size_t leng
 /**
  * Add a parameter name to the current scope and check whether the name of the
  * parameter is unique or not.
+ *
+ * Returns `true` if this is a duplicate parameter name, otherwise returns
+ * false.
  */
 static bool
 pm_parser_parameter_name_check(pm_parser_t *parser, const pm_token_t *name) {
