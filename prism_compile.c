@@ -6338,7 +6338,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             pm_string_node_t *cast = (pm_string_node_t *) node;
             VALUE value = parse_string_encoded(node, &cast->unescaped, parser);
             if (node->flags & PM_STRING_FLAGS_FROZEN) {
-                ADD_INSN1(ret, &dummy_line_node, putobject, rb_str_freeze(value));
+                ADD_INSN1(ret, &dummy_line_node, putobject, rb_fstring(value));
             }
             else {
                 ADD_INSN1(ret, &dummy_line_node, putstring, value);

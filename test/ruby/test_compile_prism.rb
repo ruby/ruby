@@ -638,14 +638,23 @@ module Prism
       assert_prism_eval('"pit"')
       assert_prism_eval('"a".frozen?')
 
-      frozen_source = <<-CODE
-      # frozen_string_literal: true
-      "a".frozen?
-      CODE
-      ruby_eval = RubyVM::InstructionSequence.compile(frozen_source).eval
-      prism_eval = RubyVM::InstructionSequence.compile_prism(frozen_source).eval
+      [
+        # Test that string literal is frozen
+        <<~RUBY,
+          # frozen_string_literal: true
+          "a".frozen?
+        RUBY
+        # Test that two string literals with the same contents are the same string
+        <<~RUBY,
+          # frozen_string_literal: true
+          "hello".equal?("hello")
+        RUBY
+      ].each do |src|
+        ruby_eval = RubyVM::InstructionSequence.compile(src).eval
+        prism_eval = RubyVM::InstructionSequence.compile_prism(src).eval
 
-      assert_equal ruby_eval, prism_eval
+        assert_equal ruby_eval, prism_eval, src
+      end
     end
 
     def test_SymbolNode
