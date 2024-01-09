@@ -8094,6 +8094,34 @@ pm_heredoc_strspn_inline_whitespace(pm_parser_t *parser, const uint8_t **cursor,
 }
 
 /**
+ * Lex past the delimiter of a percent literal. Handle newlines and heredocs
+ * appropriately.
+ */
+static uint8_t
+pm_lex_percent_delimiter(pm_parser_t *parser) {
+    size_t eol_length = match_eol(parser);
+
+    if (eol_length) {
+        if (parser->heredoc_end) {
+            // If we have already lexed a heredoc, then the newline has already
+            // been added to the list. In this case we want to just flush the
+            // heredoc end.
+            parser_flush_heredoc_end(parser);
+        } else {
+            // Otherwise, we'll add the newline to the list of newlines.
+            pm_newline_list_append(&parser->newline_list, parser->current.end + eol_length - 1);
+        }
+
+        const uint8_t delimiter = *parser->current.end;
+        parser->current.end += eol_length;
+
+        return delimiter;
+    }
+
+    return *parser->current.end++;
+}
+
+/**
  * This is a convenience macro that will set the current token type, call the
  * lex callback, and then return from the parser_lex function.
  */
@@ -9049,15 +9077,8 @@ parser_lex(pm_parser_t *parser) {
                                 pm_parser_err_current(parser, PM_ERR_INVALID_PERCENT);
                             }
 
-                            lex_mode_push_string(parser, true, false, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
-
-                            size_t eol_length = match_eol(parser);
-                            if (eol_length) {
-                                parser->current.end += eol_length;
-                                pm_newline_list_append(&parser->newline_list, parser->current.end - 1);
-                            } else {
-                                parser->current.end++;
-                            }
+                            const uint8_t delimiter = pm_lex_percent_delimiter(parser);
+                            lex_mode_push_string(parser, true, false, lex_mode_incrementor(delimiter), lex_mode_terminator(delimiter));
 
                             if (parser->current.end < parser->end) {
                                 LEX(PM_TOKEN_STRING_BEGIN);
@@ -9077,7 +9098,7 @@ parser_lex(pm_parser_t *parser) {
                                 parser->current.end++;
 
                                 if (parser->current.end < parser->end) {
-                                    lex_mode_push_list(parser, false, *parser->current.end++);
+                                    lex_mode_push_list(parser, false, pm_lex_percent_delimiter(parser));
                                 } else {
                                     lex_mode_push_list_eof(parser);
                                 }
@@ -9088,7 +9109,7 @@ parser_lex(pm_parser_t *parser) {
                                 parser->current.end++;
 
                                 if (parser->current.end < parser->end) {
-                                    lex_mode_push_list(parser, true, *parser->current.end++);
+                                    lex_mode_push_list(parser, true, pm_lex_percent_delimiter(parser));
                                 } else {
                                     lex_mode_push_list_eof(parser);
                                 }
@@ -9099,9 +9120,8 @@ parser_lex(pm_parser_t *parser) {
                                 parser->current.end++;
 
                                 if (parser->current.end < parser->end) {
-                                    lex_mode_push_regexp(parser, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
-                                    pm_newline_list_check_append(&parser->newline_list, parser->current.end);
-                                    parser->current.end++;
+                                    const uint8_t delimiter = pm_lex_percent_delimiter(parser);
+                                    lex_mode_push_regexp(parser, lex_mode_incrementor(delimiter), lex_mode_terminator(delimiter));
                                 } else {
                                     lex_mode_push_regexp(parser, '\0', '\0');
                                 }
@@ -9112,9 +9132,8 @@ parser_lex(pm_parser_t *parser) {
                                 parser->current.end++;
 
                                 if (parser->current.end < parser->end) {
-                                    lex_mode_push_string(parser, false, false, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
-                                    pm_newline_list_check_append(&parser->newline_list, parser->current.end);
-                                    parser->current.end++;
+                                    const uint8_t delimiter = pm_lex_percent_delimiter(parser);
+                                    lex_mode_push_string(parser, false, false, lex_mode_incrementor(delimiter), lex_mode_terminator(delimiter));
                                 } else {
                                     lex_mode_push_string_eof(parser);
                                 }
@@ -9125,9 +9144,8 @@ parser_lex(pm_parser_t *parser) {
                                 parser->current.end++;
 
                                 if (parser->current.end < parser->end) {
-                                    lex_mode_push_string(parser, true, false, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
-                                    pm_newline_list_check_append(&parser->newline_list, parser->current.end);
-                                    parser->current.end++;
+                                    const uint8_t delimiter = pm_lex_percent_delimiter(parser);
+                                    lex_mode_push_string(parser, true, false, lex_mode_incrementor(delimiter), lex_mode_terminator(delimiter));
                                 } else {
                                     lex_mode_push_string_eof(parser);
                                 }
@@ -9138,9 +9156,9 @@ parser_lex(pm_parser_t *parser) {
                                 parser->current.end++;
 
                                 if (parser->current.end < parser->end) {
-                                    lex_mode_push_string(parser, false, false, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
+                                    const uint8_t delimiter = pm_lex_percent_delimiter(parser);
+                                    lex_mode_push_string(parser, false, false, lex_mode_incrementor(delimiter), lex_mode_terminator(delimiter));
                                     lex_state_set(parser, PM_LEX_STATE_FNAME | PM_LEX_STATE_FITEM);
-                                    parser->current.end++;
                                 } else {
                                     lex_mode_push_string_eof(parser);
                                 }
@@ -9151,7 +9169,7 @@ parser_lex(pm_parser_t *parser) {
                                 parser->current.end++;
 
                                 if (parser->current.end < parser->end) {
-                                    lex_mode_push_list(parser, false, *parser->current.end++);
+                                    lex_mode_push_list(parser, false, pm_lex_percent_delimiter(parser));
                                 } else {
                                     lex_mode_push_list_eof(parser);
                                 }
@@ -9162,7 +9180,7 @@ parser_lex(pm_parser_t *parser) {
                                 parser->current.end++;
 
                                 if (parser->current.end < parser->end) {
-                                    lex_mode_push_list(parser, true, *parser->current.end++);
+                                    lex_mode_push_list(parser, true, pm_lex_percent_delimiter(parser));
                                 } else {
                                     lex_mode_push_list_eof(parser);
                                 }
@@ -9173,8 +9191,8 @@ parser_lex(pm_parser_t *parser) {
                                 parser->current.end++;
 
                                 if (parser->current.end < parser->end) {
-                                    lex_mode_push_string(parser, true, false, lex_mode_incrementor(*parser->current.end), lex_mode_terminator(*parser->current.end));
-                                    parser->current.end++;
+                                    const uint8_t delimiter = pm_lex_percent_delimiter(parser);
+                                    lex_mode_push_string(parser, true, false, lex_mode_incrementor(delimiter), lex_mode_terminator(delimiter));
                                 } else {
                                     lex_mode_push_string_eof(parser);
                                 }
