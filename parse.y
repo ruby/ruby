@@ -174,28 +174,23 @@ node_cdhash_cmp(VALUE val, VALUE lit)
         if (type_val != type_lit) {
             return -1;
         }
-        else if (type_lit == NODE_INTEGER) {
+
+        switch (type_lit) {
+          case NODE_INTEGER:
             return node_integer_cmp(RNODE_INTEGER(node_val), RNODE_INTEGER(node_lit));
-        }
-        else if (type_lit == NODE_FLOAT) {
+          case NODE_FLOAT:
             return node_float_cmp(RNODE_FLOAT(node_val), RNODE_FLOAT(node_lit));
-        }
-        else if (type_lit == NODE_RATIONAL) {
+          case NODE_RATIONAL:
             return node_rational_cmp(RNODE_RATIONAL(node_val), RNODE_RATIONAL(node_lit));
-        }
-        else if (type_lit == NODE_IMAGINARY) {
+          case NODE_IMAGINARY:
             return node_imaginary_cmp(RNODE_IMAGINARY(node_val), RNODE_IMAGINARY(node_lit));
-        }
-        else if (type_lit == NODE_SYM) {
+          case NODE_SYM:
             return rb_parser_string_hash_cmp(RNODE_SYM(node_val)->string, RNODE_SYM(node_lit)->string);
-        }
-        else if (type_lit == NODE_LINE) {
+          case NODE_LINE:
             return node_val->nd_loc.beg_pos.lineno != node_lit->nd_loc.beg_pos.lineno;
-        }
-        else if (type_lit == NODE_FILE) {
+          case NODE_FILE:
             return rb_parser_string_hash_cmp(RNODE_FILE(node_val)->path, RNODE_FILE(node_lit)->path);
-        }
-        else {
+          default:
             rb_bug("unexpected node: %s, %s", ruby_node_name(type_val), ruby_node_name(type_lit));
         }
     }
