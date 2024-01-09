@@ -6850,11 +6850,13 @@ assocs		: assoc
                             assocs = tail;
                         }
                         else if (tail) {
-                            if (RNODE_LIST(assocs)->nd_head &&
-                                !RNODE_LIST(tail)->nd_head && nd_type_p(RNODE_LIST(tail)->nd_next, NODE_LIST) &&
-                                nd_type_p(RNODE_LIST(RNODE_LIST(tail)->nd_next)->nd_head, NODE_HASH)) {
-                                /* DSTAR */
-                                tail = RNODE_HASH(RNODE_LIST(RNODE_LIST(tail)->nd_next)->nd_head)->nd_head;
+                            if (RNODE_LIST(assocs)->nd_head) {
+                                NODE *n = RNODE_LIST(tail)->nd_next;
+                                if (!RNODE_LIST(tail)->nd_head && nd_type_p(n, NODE_LIST) &&
+                                    nd_type_p((n = RNODE_LIST(n)->nd_head), NODE_HASH)) {
+                                    /* DSTAR */
+                                    tail = RNODE_HASH(n)->nd_head;
+                                }
                             }
                             assocs = list_concat(assocs, tail);
                         }
