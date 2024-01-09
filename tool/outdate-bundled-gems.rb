@@ -34,8 +34,7 @@ until ARGV.empty?
   ARGV.shift
 end
 
-gem_platform ||= (ruby_platform ? Gem::Platform.new(ruby_platform) : Gem::Platform.local).to_s
-ruby_version ||= RbConfig::CONFIG['ruby_version'] # This may not have "-static"
+gem_platform ||= Gem::Platform.new(ruby_platform).to_s if ruby_platform
 
 class Removal
   attr_reader :base
@@ -135,27 +134,31 @@ curdir.glob(".bundle/gems/*/") do |dir|
 end
 
 curdir.glob(".bundle/{extensions,.timestamp}/*/") do |dir|
-  unless File.fnmatch?(gem_platform, File.basename(dir))
+  unless gem_platform and File.fnmatch?(gem_platform, File.basename(dir))
     curdir.rmdir(dir)
   end
 end
 
-curdir.glob(".bundle/{extensions,.timestamp}/#{gem_platform}/*/") do |dir|
-  unless File.fnmatch?(ruby_version, File.basename(dir, '-static'))
-    curdir.rmdir(dir)
+if gem_platform
+  curdir.glob(".bundle/{extensions,.timestamp}/#{gem_platform}/*/") do |dir|
+    unless ruby_version and File.fnmatch?(ruby_version, File.basename(dir, '-static'))
+      curdir.rmdir(dir)
+    end
   end
 end
 
-curdir.glob(".bundle/extensions/#{gem_platform}/#{ruby_version}/*/") do |dir|
-  unless curdir.exist?(".bundle/specifications/#{File.basename(dir)}.gemspec")
-    curdir.rmdir(dir)
+if ruby_version
+  curdir.glob(".bundle/extensions/#{gem_platform || '*'}/#{ruby_version}/*/") do |dir|
+    unless curdir.exist?(".bundle/specifications/#{File.basename(dir)}.gemspec")
+      curdir.rmdir(dir)
+    end
   end
-end
 
-curdir.glob(".bundle/.timestamp/#{gem_platform}/#{ruby_version}/.*.time") do |stamp|
-  dir = stamp[%r[/\.([^/]+)\.time\z], 1].gsub('.-.', '/')[%r[\A[^/]+/[^/]+]]
-  unless curdir.directory?(File.join(".bundle", dir))
-    curdir.unlink(stamp)
+  curdir.glob(".bundle/.timestamp/#{gem_platform || '*'}/#{ruby_version}/.*.time") do |stamp|
+    dir = stamp[%r[/\.([^/]+)\.time\z], 1].gsub('.-.', '/')[%r[\A[^/]+/[^/]+]]
+    unless curdir.directory?(File.join(".bundle", dir))
+      curdir.unlink(stamp)
+    end
   end
 end
 
