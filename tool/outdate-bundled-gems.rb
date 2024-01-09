@@ -81,12 +81,16 @@ class Removal
     }
   end
 
+  def sorted
+    @remove.sort_by {|k, | [-k.count("/"), k]}
+  end
+
   def each_file
-    @remove.each {|k, v| yield prefixed(k) if v == :rm_f}
+    sorted.each {|k, v| yield prefixed(k) if v == :rm_f}
   end
 
   def each_directory
-    @remove.each {|k, v| yield prefixed(k) if v == :rm_rf}
+    sorted.each {|k, v| yield prefixed(k) if v == :rm_rf}
   end
 end
 
