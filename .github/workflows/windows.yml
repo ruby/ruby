@@ -39,7 +39,7 @@ jobs:
         include:
           - vc: 2015
             vs: 2019
-            vcvars: '10.0.14393.0 -vcvars_ver=14.0' # The oldest Windows 10 SDK w/ VC++ 2015 toolset (v140)
+            vcvars: '10.0.19041.0 -vcvars_ver=14.0' # The oldest Windows 10 SDK w/ VC++ 2015 toolset (v140)
           - vs: 2019
           - vs: 2022
       fail-fast: false
