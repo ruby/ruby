@@ -2482,12 +2482,12 @@ rb_check_argv(int argc, VALUE *argv)
         }
         prog = RARRAY_AREF(tmp, 0);
         argv[0] = RARRAY_AREF(tmp, 1);
-        SafeStringValue(prog);
+        StringValue(prog);
         StringValueCStr(prog);
         prog = rb_str_new_frozen(prog);
     }
     for (i = 0; i < argc; i++) {
-        SafeStringValue(argv[i]);
+        StringValue(argv[i]);
         argv[i] = rb_str_new_frozen(argv[i]);
         StringValueCStr(argv[i]);
     }

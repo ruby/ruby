@@ -5121,7 +5121,7 @@ rb_io_ungetbyte(VALUE io, VALUE b)
         b = rb_str_new((const char *)&c, 1);
         break;
       default:
-        SafeStringValue(b);
+        StringValue(b);
     }
     io_ungetbyte(b, fptr);
     return Qnil;
@@ -5183,7 +5183,7 @@ rb_io_ungetc(VALUE io, VALUE c)
         c = rb_enc_uint_chr(NUM2UINT(c), io_read_encoding(fptr));
     }
     else {
-        SafeStringValue(c);
+        StringValue(c);
     }
     if (NEED_READCONV(fptr)) {
         SET_BINARY_MODE(fptr);
@@ -6834,7 +6834,7 @@ rb_io_extract_modeenc(VALUE *vmode_p, VALUE *vperm_p, VALUE opthash,
     else {
         const char *p;
 
-        SafeStringValue(vmode);
+        StringValue(vmode);
         p = StringValueCStr(vmode);
         fmode = rb_io_modestr_fmode(p);
         oflags = rb_io_fmode_oflags(fmode);
@@ -7950,7 +7950,7 @@ rb_io_popen(VALUE pname, VALUE pmode, VALUE env, VALUE opt)
         RB_GC_GUARD(tmp);
     }
     else {
-        SafeStringValue(pname);
+        StringValue(pname);
         execarg_obj = Qnil;
         if (!is_popen_fork(pname))
             execarg_obj = rb_execarg_new(1, &pname, TRUE, FALSE);
@@ -8155,7 +8155,7 @@ rb_io_s_sysopen(int argc, VALUE *argv, VALUE _)
     else if (!NIL_P(intmode = rb_check_to_integer(vmode, "to_int")))
         oflags = NUM2INT(intmode);
     else {
-        SafeStringValue(vmode);
+        StringValue(vmode);
         oflags = rb_io_modestr_oflags(StringValueCStr(vmode));
     }
     if (NIL_P(vperm)) perm = 0666;
@@ -10569,7 +10569,7 @@ rb_f_backquote(VALUE obj, VALUE str)
     VALUE result;
     rb_io_t *fptr;
 
-    SafeStringValue(str);
+    StringValue(str);
     rb_last_status_clear();
     port = pipe_open_s(str, "r", FMODE_READABLE|DEFAULT_TEXTMODE, NULL);
     if (NIL_P(port)) return rb_str_new(0,0);
@@ -11575,7 +11575,7 @@ rb_f_syscall(int argc, VALUE *argv, VALUE _)
         VALUE v = rb_check_string_type(argv[i]);
 
         if (!NIL_P(v)) {
-            SafeStringValue(v);
+            StringValue(v);
             rb_str_modify(v);
             arg[i] = (VALUE)StringValueCStr(v);
         }

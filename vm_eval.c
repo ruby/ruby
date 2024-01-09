@@ -1787,7 +1787,7 @@ rb_f_eval(int argc, const VALUE *argv, VALUE self)
     int line = 1;
 
     rb_scan_args(argc, argv, "13", &src, &scope, &vfile, &vline);
-    SafeStringValue(src);
+    StringValue(src);
     if (argc >= 3) {
         StringValue(vfile);
     }
@@ -1981,7 +1981,7 @@ static VALUE
 eval_under(VALUE self, int singleton, VALUE src, VALUE file, int line)
 {
     rb_cref_t *cref = vm_cref_push(GET_EC(), self, NULL, FALSE, singleton);
-    SafeStringValue(src);
+    StringValue(src);
 
     return eval_string_with_cref(self, src, cref, file, line);
 }
@@ -2000,7 +2000,7 @@ specific_eval(int argc, const VALUE *argv, VALUE self, int singleton, int kw_spl
 
         rb_check_arity(argc, 1, 3);
         code = argv[0];
-        SafeStringValue(code);
+        StringValue(code);
         if (argc > 2)
             line = NUM2INT(argv[2]);
         if (argc > 1) {

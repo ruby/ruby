@@ -213,7 +213,7 @@ rb_imemo_tmpbuf_auto_free_pointer_new_from_an_RString(VALUE str)
     void *dst;
     size_t len;
 
-    SafeStringValue(str);
+    StringValue(str);
     /* create tmpbuf to keep the pointer before xmalloc */
     imemo = rb_imemo_tmpbuf_auto_free_pointer();
     tmpbuf = (rb_imemo_tmpbuf_t *)imemo;
