@@ -47,6 +47,7 @@
                 │   │   @ ParametersNode (location: (2,8)-(2,9))
                 │   │   ├── requireds: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (2,8)-(2,9))
+                │   │   │       ├── flags: ∅
                 │   │   │       └── name: :c
                 │   │   ├── optionals: (length: 0)
                 │   │   ├── rest: ∅

@@ -11,10 +11,13 @@
             │   @ ParametersNode (location: (1,6)-(1,18))
             │   ├── requireds: (length: 3)
             │   │   ├── @ RequiredParameterNode (location: (1,6)-(1,7))
+            │   │   │   ├── flags: ∅
             │   │   │   └── name: :x
             │   │   ├── @ RequiredParameterNode (location: (1,9)-(1,10))
+            │   │   │   ├── flags: ∅
             │   │   │   └── name: :y
             │   │   └── @ RequiredParameterNode (location: (1,12)-(1,13))
+            │   │       ├── flags: ∅
             │   │       └── name: :z
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅

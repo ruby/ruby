@@ -31,6 +31,7 @@
         │   │               │   │   @ ParametersNode (location: (2,9)-(2,12))
         │   │               │   │   ├── requireds: (length: 1)
         │   │               │   │   │   └── @ RequiredParameterNode (location: (2,9)-(2,12))
+        │   │               │   │   │       ├── flags: ∅
         │   │               │   │   │       └── name: :bar
         │   │               │   │   ├── optionals: (length: 0)
         │   │               │   │   ├── rest: ∅
@@ -290,6 +291,7 @@
         │   │               │   │   @ ParametersNode (location: (28,10)-(28,13))
         │   │               │   │   ├── requireds: (length: 1)
         │   │               │   │   │   └── @ RequiredParameterNode (location: (28,10)-(28,13))
+        │   │               │   │   │       ├── flags: ∅
         │   │               │   │   │       └── name: :baz
         │   │               │   │   ├── optionals: (length: 0)
         │   │               │   │   ├── rest: ∅
@@ -369,6 +371,7 @@
         │   │               │   │   @ ParametersNode (location: (36,10)-(36,13))
         │   │               │   │   ├── requireds: (length: 1)
         │   │               │   │   │   └── @ RequiredParameterNode (location: (36,10)-(36,13))
+        │   │               │   │   │       ├── flags: ∅
         │   │               │   │   │       └── name: :foo
         │   │               │   │   ├── optionals: (length: 0)
         │   │               │   │   ├── rest: ∅

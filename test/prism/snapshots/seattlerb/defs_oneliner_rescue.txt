@@ -12,6 +12,7 @@
         │   │   @ ParametersNode (location: (1,14)-(1,17))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (1,14)-(1,17))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :cmd
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -72,6 +73,7 @@
         │   │   @ ParametersNode (location: (8,14)-(8,17))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (8,14)-(8,17))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :cmd
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -120,6 +122,7 @@
             │   @ ParametersNode (location: (13,14)-(13,17))
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (13,14)-(13,17))
+            │   │       ├── flags: ∅
             │   │       └── name: :cmd
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅

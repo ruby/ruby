@@ -378,6 +378,11 @@ flags:
       - name: BEGIN_MODIFIER
         comment: "a loop after a begin statement, so the body is executed first before the condition"
     comment: Flags for while and until loop nodes.
+  - name: ParameterFlags
+    values:
+      - name: REPEATED_PARAMETER
+        comment: "a parameter name that has been repeated in the method signature"
+    comment: Flags for parameter nodes.
   - name: RangeFlags
     values:
       - name: EXCLUDE_END
@@ -648,6 +653,9 @@ nodes:
           ^^^^^^^^^^
   - name: BlockLocalVariableNode
     fields:
+      - name: flags
+        type: flags
+        kind: ParameterFlags
       - name: name
         type: constant
     comment: |
@@ -676,6 +684,9 @@ nodes:
                      ^^^^^^^^^^^^^^
   - name: BlockParameterNode
     fields:
+      - name: flags
+        type: flags
+        kind: ParameterFlags
       - name: name
         type: constant?
       - name: name_loc
@@ -1923,6 +1934,9 @@ nodes:
               ^^^^
   - name: KeywordRestParameterNode
     fields:
+      - name: flags
+        type: flags
+        kind: ParameterFlags
       - name: name
         type: constant?
       - name: name_loc
@@ -2221,6 +2235,9 @@ nodes:
           ^^
   - name: OptionalKeywordParameterNode
     fields:
+      - name: flags
+        type: flags
+        kind: ParameterFlags
       - name: name
         type: constant
       - name: name_loc
@@ -2235,6 +2252,9 @@ nodes:
           end
   - name: OptionalParameterNode
     fields:
+      - name: flags
+        type: flags
+        kind: ParameterFlags
       - name: name
         type: constant
       - name: name_loc
@@ -2451,6 +2471,9 @@ nodes:
           ^^^^^^
   - name: RequiredKeywordParameterNode
     fields:
+      - name: flags
+        type: flags
+        kind: ParameterFlags
       - name: name
         type: constant
       - name: name_loc
@@ -2463,6 +2486,9 @@ nodes:
           end
   - name: RequiredParameterNode
     fields:
+      - name: flags
+        type: flags
+        kind: ParameterFlags
       - name: name
         type: constant
     comment: |
@@ -2514,6 +2540,9 @@ nodes:
       `ex` is in the `exception` field.
   - name: RestParameterNode
     fields:
+      - name: flags
+        type: flags
+        kind: ParameterFlags
       - name: name
         type: constant?
       - name: name_loc

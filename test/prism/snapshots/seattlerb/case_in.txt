@@ -557,6 +557,7 @@
         │   │       │   │   │   │   │   @ ParametersNode (location: (70,7)-(70,8))
         │   │       │   │   │   │   │   ├── requireds: (length: 1)
         │   │       │   │   │   │   │   │   └── @ RequiredParameterNode (location: (70,7)-(70,8))
+        │   │       │   │   │   │   │   │       ├── flags: ∅
         │   │       │   │   │   │   │   │       └── name: :b
         │   │       │   │   │   │   │   ├── optionals: (length: 0)
         │   │       │   │   │   │   │   ├── rest: ∅

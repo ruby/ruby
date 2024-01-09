@@ -96,6 +96,7 @@
         │       │   │   @ ParametersNode (location: (13,8)-(13,9))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (13,8)-(13,9))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :a
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -137,6 +138,7 @@
         │       │   │   @ ParametersNode (location: (16,16)-(16,17))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (16,16)-(16,17))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :a
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅

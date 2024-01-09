@@ -22,9 +22,11 @@
                 │   │   @ ParametersNode (location: (1,5)-(1,15))
                 │   │   ├── requireds: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (1,5)-(1,6))
+                │   │   │       ├── flags: ∅
                 │   │   │       └── name: :a
                 │   │   ├── optionals: (length: 1)
                 │   │   │   └── @ OptionalParameterNode (location: (1,8)-(1,12))
+                │   │   │       ├── flags: ∅
                 │   │   │       ├── name: :b
                 │   │   │       ├── name_loc: (1,8)-(1,9) = "b"
                 │   │   │       ├── operator_loc: (1,9)-(1,10) = "="
@@ -34,6 +36,7 @@
                 │   │   ├── rest: ∅
                 │   │   ├── posts: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (1,14)-(1,15))
+                │   │   │       ├── flags: ∅
                 │   │   │       └── name: :c
                 │   │   ├── keywords: (length: 0)
                 │   │   ├── keyword_rest: ∅

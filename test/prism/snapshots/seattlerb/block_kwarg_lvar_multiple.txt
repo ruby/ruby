@@ -26,6 +26,7 @@
                 │   │   ├── posts: (length: 0)
                 │   │   ├── keywords: (length: 2)
                 │   │   │   ├── @ OptionalKeywordParameterNode (location: (1,6)-(1,14))
+                │   │   │   │   ├── flags: ∅
                 │   │   │   │   ├── name: :kw
                 │   │   │   │   ├── name_loc: (1,6)-(1,9) = "kw:"
                 │   │   │   │   └── value:
@@ -36,6 +37,7 @@
                 │   │   │   │       ├── closing_loc: ∅
                 │   │   │   │       └── unescaped: "val"
                 │   │   │   └── @ OptionalKeywordParameterNode (location: (1,16)-(1,26))
+                │   │   │       ├── flags: ∅
                 │   │   │       ├── name: :kw2
                 │   │   │       ├── name_loc: (1,16)-(1,20) = "kw2:"
                 │   │   │       └── value:

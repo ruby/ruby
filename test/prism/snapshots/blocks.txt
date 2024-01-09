@@ -141,8 +141,10 @@
         │       │   │   @ ParametersNode (location: (7,15)-(7,22))
         │       │   │   ├── requireds: (length: 2)
         │       │   │   │   ├── @ RequiredParameterNode (location: (7,15)-(7,16))
+        │       │   │   │   │   ├── flags: ∅
         │       │   │   │   │   └── name: :x
         │       │   │   │   └── @ RequiredParameterNode (location: (7,18)-(7,22))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :memo
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -324,6 +326,7 @@
         │       │   │   ├── requireds: (length: 0)
         │       │   │   ├── optionals: (length: 1)
         │       │   │   │   └── @ OptionalParameterNode (location: (17,8)-(17,16))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       ├── name: :a
         │       │   │   │       ├── name_loc: (17,8)-(17,9) = "a"
         │       │   │   │       ├── operator_loc: (17,10)-(17,11) = "="
@@ -521,9 +524,11 @@
         │       │   │   @ ParametersNode (location: (33,7)-(33,19))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (33,7)-(33,8))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :x
         │       │   │   ├── optionals: (length: 1)
         │       │   │   │   └── @ OptionalParameterNode (location: (33,10)-(33,15))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       ├── name: :y
         │       │   │   │       ├── name_loc: (33,10)-(33,11) = "y"
         │       │   │   │       ├── operator_loc: (33,12)-(33,13) = "="
@@ -534,6 +539,7 @@
         │       │   │   ├── posts: (length: 0)
         │       │   │   ├── keywords: (length: 1)
         │       │   │   │   └── @ RequiredKeywordParameterNode (location: (33,17)-(33,19))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       ├── name: :z
         │       │   │   │       └── name_loc: (33,17)-(33,19) = "z:"
         │       │   │   ├── keyword_rest: ∅
@@ -568,6 +574,7 @@
         │       │   │   @ ParametersNode (location: (35,7)-(35,8))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (35,7)-(35,8))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :x
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -608,6 +615,7 @@
         │       │   │   @ ParametersNode (location: (38,9)-(38,10))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (38,9)-(38,10))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :a
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -640,6 +648,7 @@
         │       │   │   @ ParametersNode (location: (41,8)-(41,9))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (41,8)-(41,9))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :a
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -721,12 +730,14 @@
         │   │               │   │   ├── posts: (length: 0)
         │   │               │   │   ├── keywords: (length: 2)
         │   │               │   │   │   ├── @ OptionalKeywordParameterNode (location: (49,2)-(49,6))
+        │   │               │   │   │   │   ├── flags: ∅
         │   │               │   │   │   │   ├── name: :a
         │   │               │   │   │   │   ├── name_loc: (49,2)-(49,4) = "a:"
         │   │               │   │   │   │   └── value:
         │   │               │   │   │   │       @ IntegerNode (location: (49,5)-(49,6))
         │   │               │   │   │   │       └── flags: decimal
         │   │               │   │   │   └── @ OptionalKeywordParameterNode (location: (50,2)-(50,6))
+        │   │               │   │   │       ├── flags: ∅
         │   │               │   │   │       ├── name: :b
         │   │               │   │   │       ├── name_loc: (50,2)-(50,4) = "b:"
         │   │               │   │   │       └── value:
@@ -761,6 +772,7 @@
                 │   │   @ ParametersNode (location: (54,8)-(54,12))
                 │   │   ├── requireds: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (54,8)-(54,11))
+                │   │   │       ├── flags: ∅
                 │   │   │       └── name: :bar
                 │   │   ├── optionals: (length: 0)
                 │   │   ├── rest:

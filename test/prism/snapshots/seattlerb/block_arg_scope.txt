@@ -22,6 +22,7 @@
                 │   │   @ ParametersNode (location: (1,5)-(1,6))
                 │   │   ├── requireds: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (1,5)-(1,6))
+                │   │   │       ├── flags: ∅
                 │   │   │       └── name: :b
                 │   │   ├── optionals: (length: 0)
                 │   │   ├── rest: ∅
@@ -31,6 +32,7 @@
                 │   │   └── block: ∅
                 │   ├── locals: (length: 1)
                 │   │   └── @ BlockLocalVariableNode (location: (1,8)-(1,9))
+                │   │       ├── flags: ∅
                 │   │       └── name: :c
                 │   ├── opening_loc: (1,4)-(1,5) = "|"
                 │   └── closing_loc: (1,9)-(1,10) = "|"

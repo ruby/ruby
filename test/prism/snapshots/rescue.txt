@@ -170,6 +170,7 @@
         │       │   │   @ ParametersNode (location: (18,8)-(18,9))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (18,8)-(18,9))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :x
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅

@@ -887,6 +887,27 @@ pm_node_flag_unset(pm_node_t *node, pm_node_flags_t flag) {
     node->flags &= (pm_node_flags_t) ~flag;
 }
 
+/**
+ * Set the repeated parameter flag on the given node.
+ */
+static inline void
+pm_node_flag_set_repeated_parameter(pm_node_t *node) {
+    switch (PM_NODE_TYPE(node)) {
+        case PM_BLOCK_LOCAL_VARIABLE_NODE:
+        case PM_BLOCK_PARAMETER_NODE:
+        case PM_KEYWORD_REST_PARAMETER_NODE:
+        case PM_OPTIONAL_KEYWORD_PARAMETER_NODE:
+        case PM_OPTIONAL_PARAMETER_NODE:
+        case PM_REQUIRED_KEYWORD_PARAMETER_NODE:
+        case PM_REQUIRED_PARAMETER_NODE:
+        case PM_REST_PARAMETER_NODE:
+            pm_node_flag_set(node, PM_PARAMETER_FLAGS_REPEATED_PARAMETER);
+            break;
+        default:
+            fprintf(stderr, "unhandled type %d\n", PM_NODE_TYPE(node));
+            abort();
+    };
+}
 
 /******************************************************************************/
 /* Node creation functions                                                    */
@@ -5996,22 +6017,24 @@ pm_parser_local_add_owned(pm_parser_t *parser, const uint8_t *start, size_t leng
  * Add a parameter name to the current scope and check whether the name of the
  * parameter is unique or not.
  */
-static void
+static bool
 pm_parser_parameter_name_check(pm_parser_t *parser, const pm_token_t *name) {
     // We want to check whether the parameter name is a numbered parameter or
     // not.
     pm_refute_numbered_parameter(parser, name->start, name->end);
-
-    // We want to ignore any parameter name that starts with an underscore.
-    if ((name->start < name->end) && (*name->start == '_')) return;
 
     // Otherwise we'll fetch the constant id for the parameter name and check
     // whether it's already in the current scope.
     pm_constant_id_t constant_id = pm_parser_constant_id_token(parser, name);
 
     if (pm_constant_id_list_includes(&parser->current_scope->locals, constant_id)) {
-        pm_parser_err_token(parser, name, PM_ERR_PARAMETER_NAME_REPEAT);
+        // Add an error if the parameter doesn't start with _ and has been seen before
+        if ((name->start < name->end) && (*name->start != '_')) {
+            pm_parser_err_token(parser, name, PM_ERR_PARAMETER_NAME_REPEAT);
+        }
+        return true;
     }
+    return false;
 }
 
 /**
@@ -11466,7 +11489,9 @@ parse_required_destructured_parameter(pm_parser_t *parser) {
             if (accept1(parser, PM_TOKEN_IDENTIFIER)) {
                 pm_token_t name = parser->previous;
                 value = (pm_node_t *) pm_required_parameter_node_create(parser, &name);
-                pm_parser_parameter_name_check(parser, &name);
+                if (pm_parser_parameter_name_check(parser, &name)) {
+                    pm_node_flag_set_repeated_parameter(value);
+                }
                 pm_parser_local_add_token(parser, &name);
             }
 
@@ -11476,7 +11501,9 @@ parse_required_destructured_parameter(pm_parser_t *parser) {
             pm_token_t name = parser->previous;
 
             param = (pm_node_t *) pm_required_parameter_node_create(parser, &name);
-            pm_parser_parameter_name_check(parser, &name);
+            if (pm_parser_parameter_name_check(parser, &name)) {
+                pm_node_flag_set_repeated_parameter(param);
+            }
             pm_parser_local_add_token(parser, &name);
         }
 
@@ -11593,9 +11620,10 @@ parse_parameters(
                 pm_token_t operator = parser->previous;
                 pm_token_t name;
 
+                bool repeated = false;
                 if (accept1(parser, PM_TOKEN_IDENTIFIER)) {
                     name = parser->previous;
-                    pm_parser_parameter_name_check(parser, &name);
+                    repeated = pm_parser_parameter_name_check(parser, &name);
                     pm_parser_local_add_token(parser, &name);
                 } else {
                     name = not_provided(parser);
@@ -11606,6 +11634,9 @@ parse_parameters(
                 }
 
                 pm_block_parameter_node_t *param = pm_block_parameter_node_create(parser, &name, &operator);
+                if (repeated) {
+                    pm_node_flag_set_repeated_parameter((pm_node_t *)param);
+                }
                 if (params->block == NULL) {
                     pm_parameters_node_block_set(params, param);
                 } else {
@@ -11678,7 +11709,7 @@ parse_parameters(
                 }
 
                 pm_token_t name = parser->previous;
-                pm_parser_parameter_name_check(parser, &name);
+                bool repeated = pm_parser_parameter_name_check(parser, &name);
                 pm_parser_local_add_token(parser, &name);
 
                 if (accept1(parser, PM_TOKEN_EQUAL)) {
@@ -11689,6 +11720,9 @@ parse_parameters(
                     pm_node_t *value = parse_value_expression(parser, binding_power, false, PM_ERR_PARAMETER_NO_DEFAULT);
 
                     pm_optional_parameter_node_t *param = pm_optional_parameter_node_create(parser, &name, &operator, value);
+                    if (repeated) {
+                        pm_node_flag_set_repeated_parameter((pm_node_t *)param);
+                    }
                     pm_parameters_node_optionals_append(params, param);
 
                     parser->current_param_name = old_param_name;
@@ -11703,9 +11737,15 @@ parse_parameters(
                     }
                 } else if (order > PM_PARAMETERS_ORDER_AFTER_OPTIONAL) {
                     pm_required_parameter_node_t *param = pm_required_parameter_node_create(parser, &name);
+                    if (repeated) {
+                        pm_node_flag_set_repeated_parameter((pm_node_t *)param);
+                    }
                     pm_parameters_node_requireds_append(params, (pm_node_t *) param);
                 } else {
                     pm_required_parameter_node_t *param = pm_required_parameter_node_create(parser, &name);
+                    if (repeated) {
+                        pm_node_flag_set_repeated_parameter((pm_node_t *)param);
+                    }
                     pm_parameters_node_posts_append(params, (pm_node_t *) param);
                 }
 
@@ -11720,7 +11760,7 @@ parse_parameters(
                 pm_token_t local = name;
                 local.end -= 1;
 
-                pm_parser_parameter_name_check(parser, &local);
+                bool repeated = pm_parser_parameter_name_check(parser, &local);
                 pm_parser_local_add_token(parser, &local);
 
                 switch (parser->current.type) {
@@ -11728,6 +11768,9 @@ parse_parameters(
                     case PM_TOKEN_PARENTHESIS_RIGHT:
                     case PM_TOKEN_PIPE: {
                         pm_node_t *param = (pm_node_t *) pm_required_keyword_parameter_node_create(parser, &name);
+                        if (repeated) {
+                            pm_node_flag_set_repeated_parameter(param);
+                        }
                         pm_parameters_node_keywords_append(params, param);
                         break;
                     }
@@ -11739,6 +11782,9 @@ parse_parameters(
                         }
 
                         pm_node_t *param = (pm_node_t *) pm_required_keyword_parameter_node_create(parser, &name);
+                        if (repeated) {
+                            pm_node_flag_set_repeated_parameter(param);
+                        }
                         pm_parameters_node_keywords_append(params, param);
                         break;
                     }
@@ -11758,6 +11804,9 @@ parse_parameters(
                             param = (pm_node_t *) pm_required_keyword_parameter_node_create(parser, &name);
                         }
 
+                        if (repeated) {
+                            pm_node_flag_set_repeated_parameter(param);
+                        }
                         pm_parameters_node_keywords_append(params, param);
 
                         // If parsing the value of the parameter resulted in error recovery,
@@ -11780,10 +11829,10 @@ parse_parameters(
 
                 pm_token_t operator = parser->previous;
                 pm_token_t name;
-
+                bool repeated = false;
                 if (accept1(parser, PM_TOKEN_IDENTIFIER)) {
                     name = parser->previous;
-                    pm_parser_parameter_name_check(parser, &name);
+                    repeated = pm_parser_parameter_name_check(parser, &name);
                     pm_parser_local_add_token(parser, &name);
                 } else {
                     name = not_provided(parser);
@@ -11794,6 +11843,9 @@ parse_parameters(
                 }
 
                 pm_node_t *param = (pm_node_t *) pm_rest_parameter_node_create(parser, &operator, &name);
+                if (repeated) {
+                    pm_node_flag_set_repeated_parameter(param);
+                }
                 if (params->rest == NULL) {
                     pm_parameters_node_rest_set(params, param);
                 } else {
@@ -11816,9 +11868,10 @@ parse_parameters(
                 } else {
                     pm_token_t name;
 
+                    bool repeated = false;
                     if (accept1(parser, PM_TOKEN_IDENTIFIER)) {
                         name = parser->previous;
-                        pm_parser_parameter_name_check(parser, &name);
+                        repeated = pm_parser_parameter_name_check(parser, &name);
                         pm_parser_local_add_token(parser, &name);
                     } else {
                         name = not_provided(parser);
@@ -11829,6 +11882,9 @@ parse_parameters(
                     }
 
                     param = (pm_node_t *) pm_keyword_rest_parameter_node_create(parser, &operator, &name);
+                    if (repeated) {
+                        pm_node_flag_set_repeated_parameter(param);
+                    }
                 }
 
                 if (params->keyword_rest == NULL) {
@@ -12064,10 +12120,13 @@ parse_block_parameters(
     if ((opening->type != PM_TOKEN_NOT_PROVIDED) && accept1(parser, PM_TOKEN_SEMICOLON)) {
         do {
             expect1(parser, PM_TOKEN_IDENTIFIER, PM_ERR_BLOCK_PARAM_LOCAL_VARIABLE);
-            pm_parser_parameter_name_check(parser, &parser->previous);
+            bool repeated = pm_parser_parameter_name_check(parser, &parser->previous);
             pm_parser_local_add_token(parser, &parser->previous);
 
             pm_block_local_variable_node_t *local = pm_block_local_variable_node_create(parser, &parser->previous);
+            if (repeated) {
+                pm_node_flag_set_repeated_parameter((pm_node_t *)local);
+            }
             pm_block_parameters_node_append_local(block_parameters, local);
         } while (accept1(parser, PM_TOKEN_COMMA));
     }

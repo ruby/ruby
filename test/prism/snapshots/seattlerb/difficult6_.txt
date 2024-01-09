@@ -15,9 +15,11 @@
             │   │   @ ParametersNode (location: (1,3)-(1,11))
             │   │   ├── requireds: (length: 1)
             │   │   │   └── @ RequiredParameterNode (location: (1,3)-(1,4))
+            │   │   │       ├── flags: ∅
             │   │   │       └── name: :a
             │   │   ├── optionals: (length: 1)
             │   │   │   └── @ OptionalParameterNode (location: (1,6)-(1,11))
+            │   │   │       ├── flags: ∅
             │   │   │       ├── name: :b
             │   │   │       ├── name_loc: (1,6)-(1,7) = "b"
             │   │   │       ├── operator_loc: (1,7)-(1,8) = "="

@@ -138,11 +138,13 @@ module Prism
               *params.keywords.grep(OptionalKeywordParameterNode).map(&:name),
             ]
 
+            sorted << AnonymousLocal if params.keywords.any?
+
             if params.keyword_rest.is_a?(ForwardingParameterNode)
               sorted.push(:*, :&, :"...")
+            elsif params.keyword_rest.is_a?(KeywordRestParameterNode)
+              sorted << params.keyword_rest.name if params.keyword_rest.name
             end
-
-            sorted << AnonymousLocal if params.keywords.any?
 
             # Recurse down the parameter tree to find any destructured
             # parameters and add them after the other parameters.
@@ -151,14 +153,16 @@ module Prism
               case param
               when MultiTargetNode
                 param_stack.concat(param.rights.reverse)
-                param_stack << param.rest
+                param_stack << param.rest if param.rest&.expression && !sorted.include?(param.rest.expression.name)
                 param_stack.concat(param.lefts.reverse)
               when RequiredParameterNode
                 sorted << param.name
               when SplatNode
-                sorted << param.expression.name if param.expression
+                sorted << param.expression.name
               end
             end
+
+            sorted << params.block.name if params.block&.name
 
             names = sorted.concat(names - sorted)
           end

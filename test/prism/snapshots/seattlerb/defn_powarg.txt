@@ -16,6 +16,7 @@
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest:
             │   │   @ KeywordRestParameterNode (location: (1,6)-(1,12))
+            │   │   ├── flags: ∅
             │   │   ├── name: :opts
             │   │   ├── name_loc: (1,8)-(1,12) = "opts"
             │   │   └── operator_loc: (1,6)-(1,8) = "**"

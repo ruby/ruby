@@ -26,6 +26,7 @@
                 │   │   ├── posts: (length: 0)
                 │   │   ├── keywords: (length: 1)
                 │   │   │   └── @ OptionalKeywordParameterNode (location: (1,6)-(1,14))
+                │   │   │       ├── flags: ∅
                 │   │   │       ├── name: :kw
                 │   │   │       ├── name_loc: (1,6)-(1,9) = "kw:"
                 │   │   │       └── value:

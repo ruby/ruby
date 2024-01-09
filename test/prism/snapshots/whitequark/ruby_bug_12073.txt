@@ -47,6 +47,7 @@
             │   @ ParametersNode (location: (3,8)-(3,13))
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (3,8)-(3,13))
+            │   │       ├── flags: ∅
             │   │       └── name: :raise
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅

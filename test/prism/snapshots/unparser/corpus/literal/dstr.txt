@@ -325,6 +325,7 @@
                 │   │   @ ParametersNode (location: (34,19)-(34,20))
                 │   │   ├── requireds: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (34,19)-(34,20))
+                │   │   │       ├── flags: ∅
                 │   │   │       └── name: :x
                 │   │   ├── optionals: (length: 0)
                 │   │   ├── rest: ∅

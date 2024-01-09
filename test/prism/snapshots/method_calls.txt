@@ -938,8 +938,10 @@
         │       │   │   @ ParametersNode (location: (64,20)-(64,24))
         │       │   │   ├── requireds: (length: 2)
         │       │   │   │   ├── @ RequiredParameterNode (location: (64,20)-(64,21))
+        │       │   │   │   │   ├── flags: ∅
         │       │   │   │   │   └── name: :a
         │       │   │   │   └── @ RequiredParameterNode (location: (64,23)-(64,24))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :b
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -1932,6 +1934,7 @@
         │   │           │               │   │   @ ParametersNode (location: (121,12)-(121,13))
         │   │           │               │   │   ├── requireds: (length: 1)
         │   │           │               │   │   │   └── @ RequiredParameterNode (location: (121,12)-(121,13))
+        │   │           │               │   │   │       ├── flags: ∅
         │   │           │               │   │   │       └── name: :a
         │   │           │               │   │   ├── optionals: (length: 0)
         │   │           │               │   │   ├── rest: ∅
@@ -2008,6 +2011,7 @@
         │   │       │                   │   │   @ ParametersNode (location: (128,12)-(128,13))
         │   │       │                   │   │   ├── requireds: (length: 1)
         │   │       │                   │   │   │   └── @ RequiredParameterNode (location: (128,12)-(128,13))
+        │   │       │                   │   │   │       ├── flags: ∅
         │   │       │                   │   │   │       └── name: :a
         │   │       │                   │   │   ├── optionals: (length: 0)
         │   │       │                   │   │   ├── rest: ∅
@@ -2131,6 +2135,7 @@
         │   │               │   │   @ ParametersNode (location: (139,10)-(139,11))
         │   │               │   │   ├── requireds: (length: 1)
         │   │               │   │   │   └── @ RequiredParameterNode (location: (139,10)-(139,11))
+        │   │               │   │   │       ├── flags: ∅
         │   │               │   │   │       └── name: :a
         │   │               │   │   ├── optionals: (length: 0)
         │   │               │   │   ├── rest: ∅
@@ -2309,6 +2314,7 @@
             │   ├── optionals: (length: 0)
             │   ├── rest:
             │   │   @ RestParameterNode (location: (149,6)-(149,7))
+            │   │   ├── flags: ∅
             │   │   ├── name: ∅
             │   │   ├── name_loc: ∅
             │   │   └── operator_loc: (149,6)-(149,7) = "*"

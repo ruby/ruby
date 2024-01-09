@@ -197,9 +197,11 @@
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 2)
         │   │   │   ├── @ RequiredKeywordParameterNode (location: (21,8)-(21,12))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── name: :bar
         │   │   │   │   └── name_loc: (21,8)-(21,12) = "bar:"
         │   │   │   └── @ RequiredKeywordParameterNode (location: (21,14)-(21,18))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       └── name_loc: (21,14)-(21,18) = "baz:"
         │   │   ├── keyword_rest: ∅
@@ -430,6 +432,7 @@
         │   │   @ ParametersNode (location: (51,8)-(51,11))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (51,8)-(51,11))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :bar
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -459,8 +462,10 @@
         │   │   @ ParametersNode (location: (55,8)-(55,16))
         │   │   ├── requireds: (length: 2)
         │   │   │   ├── @ RequiredParameterNode (location: (55,8)-(55,11))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── name: :bar
         │   │   │   └── @ RequiredParameterNode (location: (55,13)-(55,16))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :baz
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -491,6 +496,7 @@
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (59,8)-(59,16))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       ├── name_loc: (59,8)-(59,11) = "bar"
         │   │   │       ├── operator_loc: (59,12)-(59,13) = "="
@@ -527,6 +533,7 @@
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (63,8)-(63,24))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       ├── name_loc: (63,8)-(63,11) = "bar"
         │   │   │       ├── operator_loc: (63,12)-(63,13) = "="
@@ -571,6 +578,7 @@
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (66,8)-(66,18))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       ├── name_loc: (66,8)-(66,11) = "bar"
         │   │   │       ├── operator_loc: (66,12)-(66,13) = "="
@@ -603,9 +611,11 @@
         │   │   @ ParametersNode (location: (70,8)-(70,23))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (70,8)-(70,11))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :bar
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (70,13)-(70,23))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       ├── name_loc: (70,13)-(70,16) = "baz"
         │   │   │       ├── operator_loc: (70,17)-(70,18) = "="
@@ -642,6 +652,7 @@
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 1)
         │   │   │   └── @ OptionalKeywordParameterNode (location: (74,8)-(74,14))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       ├── name_loc: (74,8)-(74,12) = "bar:"
         │   │   │       └── value:
@@ -670,6 +681,7 @@
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 1)
         │   │   │   └── @ OptionalKeywordParameterNode (location: (77,8)-(77,16))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       ├── name_loc: (77,8)-(77,12) = "bar:"
         │   │   │       └── value:
@@ -706,6 +718,7 @@
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 1)
         │   │   │   └── @ OptionalKeywordParameterNode (location: (80,8)-(80,18))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :bar
         │   │   │       ├── name_loc: (80,8)-(80,12) = "bar:"
         │   │   │       └── value:
@@ -740,6 +753,7 @@
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest:
         │   │   │   @ RestParameterNode (location: (83,8)-(83,9))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: ∅
         │   │   │   ├── name_loc: ∅
         │   │   │   └── operator_loc: (83,8)-(83,9) = "*"
@@ -778,6 +792,7 @@
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest:
         │   │   │   @ RestParameterNode (location: (87,8)-(87,12))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :bar
         │   │   │   ├── name_loc: (87,9)-(87,12) = "bar"
         │   │   │   └── operator_loc: (87,8)-(87,9) = "*"
@@ -807,10 +822,12 @@
         │   │   @ ParametersNode (location: (91,8)-(91,17))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (91,8)-(91,11))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :bar
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest:
         │   │   │   @ RestParameterNode (location: (91,13)-(91,17))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :baz
         │   │   │   ├── name_loc: (91,14)-(91,17) = "baz"
         │   │   │   └── operator_loc: (91,13)-(91,14) = "*"
@@ -841,6 +858,7 @@
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (95,8)-(95,18))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       ├── name_loc: (95,8)-(95,11) = "baz"
         │   │   │       ├── operator_loc: (95,12)-(95,13) = "="
@@ -848,6 +866,7 @@
         │   │   │           @ TrueNode (location: (95,14)-(95,18))
         │   │   ├── rest:
         │   │   │   @ RestParameterNode (location: (95,20)-(95,24))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :bor
         │   │   │   ├── name_loc: (95,21)-(95,24) = "bor"
         │   │   │   └── operator_loc: (95,20)-(95,21) = "*"
@@ -885,6 +904,7 @@
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (99,8)-(99,18))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       ├── name_loc: (99,8)-(99,11) = "baz"
         │   │   │       ├── operator_loc: (99,12)-(99,13) = "="
@@ -892,6 +912,7 @@
         │   │   │           @ TrueNode (location: (99,14)-(99,18))
         │   │   ├── rest:
         │   │   │   @ RestParameterNode (location: (99,20)-(99,24))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :bor
         │   │   │   ├── name_loc: (99,21)-(99,24) = "bor"
         │   │   │   └── operator_loc: (99,20)-(99,21) = "*"
@@ -900,6 +921,7 @@
         │   │   ├── keyword_rest: ∅
         │   │   └── block:
         │   │       @ BlockParameterNode (location: (99,26)-(99,32))
+        │   │       ├── flags: ∅
         │   │       ├── name: :block
         │   │       ├── name_loc: (99,27)-(99,32) = "block"
         │   │       └── operator_loc: (99,26)-(99,27) = "&"
@@ -932,9 +954,11 @@
         │   │   @ ParametersNode (location: (103,8)-(103,29))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (103,8)-(103,11))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :bar
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (103,13)-(103,23))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       ├── name_loc: (103,13)-(103,16) = "baz"
         │   │   │       ├── operator_loc: (103,17)-(103,18) = "="
@@ -942,6 +966,7 @@
         │   │   │           @ TrueNode (location: (103,19)-(103,23))
         │   │   ├── rest:
         │   │   │   @ RestParameterNode (location: (103,25)-(103,29))
+        │   │   │   ├── flags: ∅
         │   │   │   ├── name: :bor
         │   │   │   ├── name_loc: (103,26)-(103,29) = "bor"
         │   │   │   └── operator_loc: (103,25)-(103,26) = "*"
@@ -977,6 +1002,7 @@
         │   │   ├── keyword_rest: ∅
         │   │   └── block:
         │   │       @ BlockParameterNode (location: (107,8)-(107,14))
+        │   │       ├── flags: ∅
         │   │       ├── name: :block
         │   │       ├── name_loc: (107,9)-(107,14) = "block"
         │   │       └── operator_loc: (107,8)-(107,9) = "&"
@@ -1009,6 +1035,7 @@
         │   │   @ ParametersNode (location: (111,8)-(111,19))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (111,8)-(111,11))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :bar
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -1017,6 +1044,7 @@
         │   │   ├── keyword_rest: ∅
         │   │   └── block:
         │   │       @ BlockParameterNode (location: (111,13)-(111,19))
+        │   │       ├── flags: ∅
         │   │       ├── name: :block
         │   │       ├── name_loc: (111,14)-(111,19) = "block"
         │   │       └── operator_loc: (111,13)-(111,14) = "&"
@@ -1082,6 +1110,7 @@
         │   │   │       │   └── @ MultiTargetNode (location: (120,7)-(120,10))
         │   │   │       │       ├── lefts: (length: 1)
         │   │   │       │       │   └── @ RequiredParameterNode (location: (120,8)-(120,9))
+        │   │   │       │       │       ├── flags: ∅
         │   │   │       │       │       └── name: :a
         │   │   │       │       ├── rest: ∅
         │   │   │       │       ├── rights: (length: 0)
@@ -1118,9 +1147,11 @@
         │   │   ├── posts: (length: 0)
         │   │   ├── keywords: (length: 2)
         │   │   │   ├── @ RequiredKeywordParameterNode (location: (123,8)-(123,12))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── name: :bar
         │   │   │   │   └── name_loc: (123,8)-(123,12) = "bar:"
         │   │   │   └── @ OptionalKeywordParameterNode (location: (123,14)-(123,26))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :baz
         │   │   │       ├── name_loc: (123,14)-(123,18) = "baz:"
         │   │   │       └── value:

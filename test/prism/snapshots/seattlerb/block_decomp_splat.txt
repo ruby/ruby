@@ -28,6 +28,7 @@
                 │   │   │       │   ├── operator_loc: (1,6)-(1,7) = "*"
                 │   │   │       │   └── expression:
                 │   │   │       │       @ RequiredParameterNode (location: (1,7)-(1,8))
+                │   │   │       │       ├── flags: ∅
                 │   │   │       │       └── name: :a
                 │   │   │       ├── rights: (length: 0)
                 │   │   │       ├── lparen_loc: (1,5)-(1,6) = "("

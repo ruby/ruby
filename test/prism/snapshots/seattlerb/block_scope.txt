@@ -21,6 +21,7 @@
                 │   ├── parameters: ∅
                 │   ├── locals: (length: 1)
                 │   │   └── @ BlockLocalVariableNode (location: (1,6)-(1,7))
+                │   │       ├── flags: ∅
                 │   │       └── name: :b
                 │   ├── opening_loc: (1,4)-(1,5) = "|"
                 │   └── closing_loc: (1,7)-(1,8) = "|"

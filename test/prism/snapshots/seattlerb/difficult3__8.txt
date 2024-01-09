@@ -22,10 +22,12 @@
                 │   │   @ ParametersNode (location: (1,5)-(1,17))
                 │   │   ├── requireds: (length: 2)
                 │   │   │   ├── @ RequiredParameterNode (location: (1,5)-(1,6))
+                │   │   │   │   ├── flags: ∅
                 │   │   │   │   └── name: :a
                 │   │   │   └── @ MultiTargetNode (location: (1,8)-(1,17))
                 │   │   │       ├── lefts: (length: 1)
                 │   │   │       │   └── @ RequiredParameterNode (location: (1,9)-(1,10))
+                │   │   │       │       ├── flags: ∅
                 │   │   │       │       └── name: :b
                 │   │   │       ├── rest:
                 │   │   │       │   @ SplatNode (location: (1,12)-(1,13))
@@ -33,6 +35,7 @@
                 │   │   │       │   └── expression: ∅
                 │   │   │       ├── rights: (length: 1)
                 │   │   │       │   └── @ RequiredParameterNode (location: (1,15)-(1,16))
+                │   │   │       │       ├── flags: ∅
                 │   │   │       │       └── name: :c
                 │   │   │       ├── lparen_loc: (1,8)-(1,9) = "("
                 │   │   │       └── rparen_loc: (1,16)-(1,17) = ")"

@@ -356,6 +356,7 @@
             │               │   │   @ ParametersNode (location: (34,13)-(34,14))
             │               │   │   ├── requireds: (length: 1)
             │               │   │   │   └── @ RequiredParameterNode (location: (34,13)-(34,14))
+            │               │   │   │       ├── flags: ∅
             │               │   │   │       └── name: :_
             │               │   │   ├── optionals: (length: 0)
             │               │   │   ├── rest: ∅
@@ -398,6 +399,7 @@
             │   │               │   │   @ ParametersNode (location: (37,13)-(37,14))
             │   │               │   │   ├── requireds: (length: 1)
             │   │               │   │   │   └── @ RequiredParameterNode (location: (37,13)-(37,14))
+            │   │               │   │   │       ├── flags: ∅
             │   │               │   │   │       └── name: :_
             │   │               │   │   ├── optionals: (length: 0)
             │   │               │   │   ├── rest: ∅
@@ -436,6 +438,7 @@
             │   │   │               │   │   @ ParametersNode (location: (40,13)-(40,14))
             │   │   │               │   │   ├── requireds: (length: 1)
             │   │   │               │   │   │   └── @ RequiredParameterNode (location: (40,13)-(40,14))
+            │   │   │               │   │   │       ├── flags: ∅
             │   │   │               │   │   │       └── name: :_
             │   │   │               │   │   ├── optionals: (length: 0)
             │   │   │               │   │   ├── rest: ∅

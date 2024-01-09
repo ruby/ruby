@@ -22,9 +22,11 @@
                 │   │   @ ParametersNode (location: (1,5)-(1,22))
                 │   │   ├── requireds: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (1,5)-(1,6))
+                │   │   │       ├── flags: ∅
                 │   │   │       └── name: :b
                 │   │   ├── optionals: (length: 1)
                 │   │   │   └── @ OptionalParameterNode (location: (1,8)-(1,11))
+                │   │   │       ├── flags: ∅
                 │   │   │       ├── name: :c
                 │   │   │       ├── name_loc: (1,8)-(1,9) = "c"
                 │   │   │       ├── operator_loc: (1,9)-(1,10) = "="
@@ -33,16 +35,19 @@
                 │   │   │           └── flags: decimal
                 │   │   ├── rest:
                 │   │   │   @ RestParameterNode (location: (1,13)-(1,15))
+                │   │   │   ├── flags: ∅
                 │   │   │   ├── name: :d
                 │   │   │   ├── name_loc: (1,14)-(1,15) = "d"
                 │   │   │   └── operator_loc: (1,13)-(1,14) = "*"
                 │   │   ├── posts: (length: 1)
                 │   │   │   └── @ RequiredParameterNode (location: (1,17)-(1,18))
+                │   │   │       ├── flags: ∅
                 │   │   │       └── name: :e
                 │   │   ├── keywords: (length: 0)
                 │   │   ├── keyword_rest: ∅
                 │   │   └── block:
                 │   │       @ BlockParameterNode (location: (1,20)-(1,22))
+                │   │       ├── flags: ∅
                 │   │       ├── name: :f
                 │   │       ├── name_loc: (1,21)-(1,22) = "f"
                 │   │       └── operator_loc: (1,20)-(1,21) = "&"
