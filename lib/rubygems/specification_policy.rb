@@ -7,7 +7,7 @@ class Gem::SpecificationPolicy
 
   VALID_NAME_PATTERN = /\A[a-zA-Z0-9\.\-\_]+\z/ # :nodoc:
 
-  SPECIAL_CHARACTERS = /\A[#{Regexp.escape('.-_')}]+/ # :nodoc:
+  SPECIAL_CHARACTERS = /\A[#{Regexp.escape(".-_")}]+/ # :nodoc:
 
   VALID_URI_PATTERN = %r{\Ahttps?:\/\/([^\s:@]+:[^\s:@]*@)?[A-Za-z\d\-]+(\.[A-Za-z\d\-]+)+\.?(:\d{1,5})?([\/?]\S*)?\z} # :nodoc:
 
