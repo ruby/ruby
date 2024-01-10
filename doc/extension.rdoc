@@ -2121,9 +2121,9 @@ of objects are generated and \(c) container-type objects that have
 references to other objects. If your extension provides such a type of
 +T_DATA+ objects, consider inserting write barriers.
 
-(a): short-lived objects don't become old generation objects.
-(b): only a few oldgen objects don't have performance impact.
-\(c): only a few references don't have performance impact.
+a. short-lived objects don't become old generation objects.
+b. only a few oldgen objects don't have performance impact.
+c. only a few references don't have performance impact.
 
 Inserting write barriers is a very difficult hack, it is easy to
 introduce critical bugs. And inserting write barriers has several areas
