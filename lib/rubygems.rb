@@ -1218,7 +1218,7 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     def find_unresolved_default_spec(path)
       default_spec = @path_to_default_spec_map[path]
-      return default_spec if default_spec && loaded_specs[default_spec.name] != default_spec
+      default_spec if default_spec && loaded_specs[default_spec.name] != default_spec
     end
 
     ##
