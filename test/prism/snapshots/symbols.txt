@@ -135,7 +135,7 @@
         │   ├── opening_loc: (27,0)-(27,1) = ":"
         │   ├── value_loc: (27,1)-(27,3) = "~@"
         │   ├── closing_loc: ∅
-        │   └── unescaped: "~@"
+        │   └── unescaped: "~"
         ├── @ ArrayNode (location: (29,0)-(29,16))
         │   ├── flags: ∅
         │   ├── elements: (length: 4)
@@ -345,7 +345,7 @@
         │   ├── opening_loc: (57,0)-(57,1) = ":"
         │   ├── value_loc: (57,1)-(57,3) = "!@"
         │   ├── closing_loc: ∅
-        │   └── unescaped: "!@"
+        │   └── unescaped: "!"
         ├── @ SymbolNode (location: (59,0)-(59,3))
         │   ├── flags: ∅
         │   ├── opening_loc: (59,0)-(59,1) = ":"

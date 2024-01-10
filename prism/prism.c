@@ -12626,14 +12626,48 @@ parse_string_part(pm_parser_t *parser) {
     }
 }
 
+/**
+ * When creating a symbol, unary operators that cannot be binary operators
+ * automatically drop trailing `@` characters. This happens at the parser level,
+ * such that `~@` is parsed as `~` and `!@` is parsed as `!`. We do that here.
+ */
+static pm_node_t *
+parse_operator_symbol(pm_parser_t *parser, const pm_token_t *opening, pm_lex_state_t next_state) {
+    pm_token_t closing = not_provided(parser);
+    pm_symbol_node_t *symbol = pm_symbol_node_create(parser, opening, &parser->current, &closing);
+
+    const uint8_t *end = parser->current.end;
+    switch (parser->current.type) {
+        case PM_TOKEN_TILDE:
+        case PM_TOKEN_BANG:
+            if (parser->current.end[-1] == '@') end--;
+            break;
+        default:
+            break;
+    }
+
+    if (next_state != PM_LEX_STATE_NONE) lex_state_set(parser, next_state);
+    parser_lex(parser);
+
+    pm_string_shared_init(&symbol->unescaped, parser->previous.start, end);
+    return (pm_node_t *) symbol;
+}
+
+/**
+ * Parse a symbol node. This function will get called immediately after finding
+ * a symbol opening token. This handles parsing bare symbols and interpolated
+ * symbols.
+ */
 static pm_node_t *
 parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_state) {
-    pm_token_t opening = parser->previous;
+    const pm_token_t opening = parser->previous;
 
     if (lex_mode->mode != PM_LEX_STRING) {
         if (next_state != PM_LEX_STATE_NONE) lex_state_set(parser, next_state);
 
         switch (parser->current.type) {
+            case PM_CASE_OPERATOR:
+                return parse_operator_symbol(parser, &opening, next_state == PM_LEX_STATE_NONE ? PM_LEX_STATE_ENDFN : next_state);
             case PM_TOKEN_IDENTIFIER:
             case PM_TOKEN_CONSTANT:
             case PM_TOKEN_INSTANCE_VARIABLE:
@@ -12643,10 +12677,6 @@ parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_s
             case PM_TOKEN_NUMBERED_REFERENCE:
             case PM_TOKEN_BACK_REFERENCE:
             case PM_CASE_KEYWORD:
-                parser_lex(parser);
-                break;
-            case PM_CASE_OPERATOR:
-                lex_state_set(parser, next_state == PM_LEX_STATE_NONE ? PM_LEX_STATE_ENDFN : next_state);
                 parser_lex(parser);
                 break;
             default:
@@ -12764,8 +12794,11 @@ parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_s
 static inline pm_node_t *
 parse_undef_argument(pm_parser_t *parser) {
     switch (parser->current.type) {
+        case PM_CASE_OPERATOR: {
+            const pm_token_t opening = not_provided(parser);
+            return parse_operator_symbol(parser, &opening, PM_LEX_STATE_NONE);
+        }
         case PM_CASE_KEYWORD:
-        case PM_CASE_OPERATOR:
         case PM_TOKEN_CONSTANT:
         case PM_TOKEN_IDENTIFIER:
         case PM_TOKEN_METHOD_NAME: {
@@ -12799,16 +12832,17 @@ parse_undef_argument(pm_parser_t *parser) {
 static inline pm_node_t *
 parse_alias_argument(pm_parser_t *parser, bool first) {
     switch (parser->current.type) {
-        case PM_CASE_OPERATOR:
+        case PM_CASE_OPERATOR: {
+            const pm_token_t opening = not_provided(parser);
+            return parse_operator_symbol(parser, &opening, first ? PM_LEX_STATE_FNAME | PM_LEX_STATE_FITEM : PM_LEX_STATE_NONE);
+        }
         case PM_CASE_KEYWORD:
         case PM_TOKEN_CONSTANT:
         case PM_TOKEN_IDENTIFIER:
         case PM_TOKEN_METHOD_NAME: {
-            if (first) {
-                lex_state_set(parser, PM_LEX_STATE_FNAME | PM_LEX_STATE_FITEM);
-            }
-
+            if (first) lex_state_set(parser, PM_LEX_STATE_FNAME | PM_LEX_STATE_FITEM);
             parser_lex(parser);
+
             pm_token_t opening = not_provided(parser);
             pm_token_t closing = not_provided(parser);
             pm_symbol_node_t *symbol = pm_symbol_node_create(parser, &opening, &parser->previous, &closing);
