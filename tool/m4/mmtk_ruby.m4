@@ -49,11 +49,11 @@ AS_IF([test -n "$with_mmtk_ruby"], [
         AS_IF([test "x$with_mmtk_ruby_debug" != xno], [
             AC_MSG_RESULT([debug])
             mmtk_ruby_so_path=$mmtk_ruby_repo_path/mmtk/target/debug/$MMTK_RUBY_SO_NAME
-            mmtk_ruby_build_command="cargo +nightly build"
+            mmtk_ruby_build_command="cargo build"
         ], [
             AC_MSG_RESULT([release])
             mmtk_ruby_so_path=$mmtk_ruby_repo_path/mmtk/target/release/$MMTK_RUBY_SO_NAME
-            mmtk_ruby_build_command="cargo +nightly build --release"
+            mmtk_ruby_build_command="cargo build --release"
         ])
         mmtk_ruby_build_suggestion="Please build it with \`$mmtk_ruby_build_command\` in $mmtk_ruby_repo_path/mmtk"
     ])
