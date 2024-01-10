@@ -168,13 +168,13 @@ module Prism
 
     # The source code that this location represents.
     def slice
-      source.slice(start_offset, length)
+      source!.slice(start_offset, length)
     end
 
     # The character offset from the beginning of the source where this location
     # starts.
     def start_character_offset
-      source.character_offset(start_offset)
+      source!.character_offset(start_offset)
     end
 
     # The offset from the start of the file in code units of the given encoding.
@@ -190,7 +190,7 @@ module Prism
     # The character offset from the beginning of the source where this location
     # ends.
     def end_character_offset
-      source.character_offset(end_offset)
+      source!.character_offset(end_offset)
     end
 
     # The offset from the start of the file in code units of the given encoding.
@@ -200,30 +200,30 @@ module Prism
 
     # The line number where this location starts.
     def start_line
-      source.line(start_offset)
+      source!.line(start_offset)
     end
 
     # The content of the line where this location starts before this location.
     def start_line_slice
-      offset = source.line_start(start_offset)
-      source.slice(offset, start_offset - offset)
+      offset = source!.line_start(start_offset)
+      source!.slice(offset, start_offset - offset)
     end
 
     # The line number where this location ends.
     def end_line
-      source.line(end_offset)
+      source!.line(end_offset)
     end
 
     # The column number in bytes where this location starts from the start of
     # the line.
     def start_column
-      source.column(start_offset)
+      source!.column(start_offset)
     end
 
     # The column number in characters where this location ends from the start of
     # the line.
     def start_character_column
-      source.character_column(start_offset)
+      source!.character_column(start_offset)
     end
 
     # The column number in code units of the given encoding where this location
@@ -235,13 +235,13 @@ module Prism
     # The column number in bytes where this location ends from the start of the
     # line.
     def end_column
-      source.column(end_offset)
+      source!.column(end_offset)
     end
 
     # The column number in characters where this location ends from the start of
     # the line.
     def end_character_column
-      source.character_column(end_offset)
+      source!.character_column(end_offset)
     end
 
     # The column number in code units of the given encoding where this location
@@ -281,8 +281,13 @@ module Prism
     # the beginning of the file. Useful for when you want a location object but
     # do not care where it points.
     def self.null
-      source = nil #: Source
-      new(source, 0, 0)
+      new(nil, 0, 0)
+    end
+
+    private
+
+    def source!
+      source or raise "Missing source"
     end
   end
 
