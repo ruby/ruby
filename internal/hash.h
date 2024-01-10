@@ -100,6 +100,8 @@ static inline st_table *RHASH_ST_TABLE(VALUE h);
 static inline size_t RHASH_ST_SIZE(VALUE h);
 static inline void RHASH_ST_CLEAR(VALUE h);
 
+int rb_hash_update_i(VALUE key, VALUE value, VALUE hash);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 /* hash.c (export) */
 VALUE rb_hash_delete_entry(VALUE hash, VALUE key);

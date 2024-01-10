@@ -3895,7 +3895,7 @@ rb_hash_update_callback(st_data_t *key, st_data_t *value, struct update_arg *arg
 
 NOINSERT_UPDATE_CALLBACK(rb_hash_update_callback)
 
-static int
+int
 rb_hash_update_i(VALUE key, VALUE value, VALUE hash)
 {
     RHASH_UPDATE(hash, key, rb_hash_update_callback, value);

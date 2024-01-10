@@ -1108,6 +1108,83 @@ values = r.take
 values.join
 }
 
+# send array with move: true
+assert_equal 'true,true,true,true', %q{
+r = Ractor.new do
+  obj = receive
+  values = {id: obj.object_id}
+  values[:equal] = (obj == [1,2,3,"hi"])
+  values[:string_frozen] = obj[3].frozen?
+  values
+end
+obj = [1,2,3,"hi".freeze]
+obj_id = obj.object_id
+r.send(obj, move: true)
+r_values = r.take
+[
+  r_values[:equal],
+  r_values[:string_frozen],
+  obj_id == r_values[:id],
+  Ractor::MovedObject === obj,
+].join(',')
+}
+
+# send hash with move: true
+assert_equal 'true,false,true,true,true,true,false,true,true', %q{
+r = Ractor.new do
+  obj = receive
+  values = {id: obj.object_id}
+  values[:equal] = (obj == {1=>2,3=>4,5=>["unfrozen", "frozen"]}) # true
+  values[:unfrozen_frozen] = obj[5][0].frozen? # false
+  values[:frozen_frozen] = obj[5][1].frozen? # true
+  values[:default_equal] = (obj[:no_key] == "woops")
+  values[:default_id] = obj[:no_key].object_id
+  values
+end
+obj0 = "unfrozen"
+obj1 = "frozen".freeze
+default = "woops"
+obj = {1=>2,3=>4,5=>[obj0, obj1]}
+obj.default = default
+default_id = default.object_id
+obj_id = obj.object_id
+r.send(obj, move: true)
+r_values = r.take
+[
+  r_values[:equal], # true
+  r_values[:unfrozen_frozen], # false
+  r_values[:frozen_frozen], # true
+  obj_id == r_values[:id], # true
+  Ractor::MovedObject === obj, # true
+  Ractor::MovedObject === obj0, # true
+  Ractor::MovedObject === obj1, # false, it's shareable so isn't truly moved
+  Ractor::MovedObject === default, # true
+  r_values[:default_equal] && default_id == r_values[:default_id], # true
+].join(',')
+}
+
+# send struct with move: true
+assert_equal 'true,false,true,true', %q{
+Foo = Struct.new(:a,:b,:c,:d,:e,:f)
+r = Ractor.new {
+  foo = receive
+  values = {id: foo.object_id}
+  values[:equal] = (foo == Foo.new(1,2,3,4,5,6))
+  values[:frozen] = foo.frozen? # false
+  values
+}
+obj = Foo.new(1,2,3,4,5,6)
+obj_id = obj.object_id
+r.send(obj, move: true)
+r_values = r.take
+[
+  r_values[:equal],
+  r_values[:frozen],
+  obj_id == r_values[:id],
+  Ractor::MovedObject === obj,
+].join(',')
+}
+
 # cvar in shareable-objects are not allowed to access from non-main Ractor
 assert_equal 'can not access class variables from non-main Ractors', %q{
   class C

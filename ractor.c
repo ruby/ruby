@@ -2795,7 +2795,7 @@ static struct st_table *
 obj_traverse_rec(struct obj_traverse_data *data)
 {
     if (UNLIKELY(!data->rec)) {
-        data->rec_hash = rb_ident_hash_new();
+        data->rec_hash = rb_obj_hide(rb_ident_hash_new());
         data->rec = RHASH_ST_TABLE(data->rec_hash);
     }
     return data->rec;
@@ -3217,7 +3217,7 @@ static struct st_table *
 obj_traverse_replace_rec(struct obj_traverse_replace_data *data)
 {
     if (UNLIKELY(!data->rec)) {
-        data->rec_hash = rb_ident_hash_new();
+        data->rec_hash = rb_obj_hide(rb_ident_hash_new());
         data->rec = RHASH_ST_TABLE(data->rec_hash);
     }
     return data->rec;
@@ -3261,14 +3261,16 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
       case traverse_stop: return 1; // stop search
     }
 
-    replacement = (st_data_t)data->replacement;
+    replacement = (st_data_t)data->replacement; // got from enter_func
+    VM_ASSERT(replacement != Qundef);
 
-    if (UNLIKELY(st_lookup(obj_traverse_replace_rec(data), (st_data_t)obj, &replacement))) {
+    struct st_table *rec = obj_traverse_replace_rec(data);
+    if (UNLIKELY(st_lookup(rec, (st_data_t)obj, &replacement))) {
         data->replacement = (VALUE)replacement;
         return 0;
     }
     else {
-        st_insert(obj_traverse_replace_rec(data), (st_data_t)obj, replacement);
+        st_insert(rec, (st_data_t)obj, replacement);
     }
 
     if (!data->move) {
@@ -3278,7 +3280,10 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
 #define CHECK_AND_REPLACE(v) do { \
     VALUE _val = (v); \
     if (obj_traverse_replace_i(_val, data)) { return 1; } \
-    else if (data->replacement != _val)     { RB_OBJ_WRITE(obj, &v, data->replacement); } \
+    else if (data->replacement != _val)     { \
+        VM_ASSERT(data->replacement != Qundef); \
+        RB_OBJ_WRITE(obj, &v, data->replacement); \
+    } \
 } while (0)
 
     if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
@@ -3351,15 +3356,22 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
       case T_ARRAY:
         {
             rb_ary_cancel_sharing(obj);
+            if (data->move) rb_ary_unembed(obj);
 
             for (int i = 0; i < RARRAY_LENINT(obj); i++) {
                 VALUE e = rb_ary_entry(obj, i);
+                VALUE entry = e;
 
                 if (obj_traverse_replace_i(e, data)) {
                     return 1;
                 }
                 else if (e != data->replacement) {
-                    RARRAY_ASET(obj, i, data->replacement);
+                    entry = data->replacement;
+                    // use this instead of rb_ary_store because `obj` might be frozen
+                    RARRAY_ASET(obj, i, entry);
+                }
+                if (data->move) {
+                    RB_OBJ_WRITTEN(replacement, Qundef, entry);
                 }
             }
             RB_GC_GUARD(obj);
@@ -3367,17 +3379,19 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
         break;
       case T_HASH:
         {
+             if (data->move) {
+                 rb_hash_foreach(obj, rb_hash_update_i, replacement);
+             }
             struct obj_traverse_replace_callback_data d = {
                 .stop = false,
                 .data = data,
-                .src = obj,
+                .src = data->move ? replacement : obj,
             };
-            rb_hash_stlike_foreach_with_replace(obj,
+            rb_hash_stlike_foreach_with_replace(data->move ? replacement : obj,
                                                 obj_hash_traverse_replace_foreach_i,
                                                 obj_hash_traverse_replace_i,
                                                 (VALUE)&d);
             if (d.stop) return 1;
-            // TODO: rehash here?
 
             VALUE ifnone = RHASH_IFNONE(obj);
             if (obj_traverse_replace_i(ifnone, data)) {
@@ -3392,10 +3406,16 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
       case T_STRUCT:
         {
             long len = RSTRUCT_LEN(obj);
-            const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
 
             for (long i=0; i<len; i++) {
-                CHECK_AND_REPLACE(ptr[i]);
+                VALUE val = RSTRUCT_GET(obj, i);
+                if (obj_traverse_replace_i(val, data)) {
+                    return 1;
+                }
+                if (val != data->replacement || data->move) {
+                    // use this instead of rb_struct_aset because struct might be frozen
+                    RSTRUCT_SET(data->move ? replacement : obj, i, data->replacement);
+                }
             }
         }
         break;
@@ -3526,11 +3546,11 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
     dst->v2 = src->v2;
     dst->v3 = src->v3;
 
+    rb_obj_switch_obj_id((VALUE)src, (VALUE)dst);
+
     if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
         rb_replace_generic_ivar(v, obj);
     }
-
-    // TODO: generic_ivar
 
     ractor_moved_bang(obj);
     return traverse_cont;

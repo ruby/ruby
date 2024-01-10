@@ -392,6 +392,21 @@ rb_ary_make_embedded(VALUE ary)
     }
 }
 
+void rb_ary_unembed(VALUE ary)
+{
+    if (ARY_EMBED_P(ary)) {
+        long len = ARY_EMBED_LEN(ary);
+        long capacity = ARY_CAPA(ary);
+        VALUE *ptr = ary_heap_alloc(capacity);
+
+        MEMCPY(ptr, ARY_EMBED_PTR(ary), VALUE, len);
+        FL_UNSET_EMBED(ary);
+        ARY_SET_PTR(ary, ptr);
+        ARY_SET_HEAP_LEN(ary, len);
+        ARY_SET_CAPA(ary, capacity);
+    }
+}
+
 static void
 ary_resize_capa(VALUE ary, long capacity)
 {

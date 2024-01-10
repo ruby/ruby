@@ -278,6 +278,7 @@ void rb_objspace_each_objects_without_setup(
 size_t rb_gc_obj_slot_size(VALUE obj);
 
 VALUE rb_gc_disable_no_rest(void);
+void rb_obj_switch_obj_id(VALUE src, VALUE dst);
 
 
 /* gc.c (export) */
