@@ -39,7 +39,7 @@ class TestGemSource < Gem::TestCase
     uri = URI.parse("file:///C:/WINDOWS/Temp/gem_repo")
     root = Gem.spec_cache_dir
     cache_dir = @source.cache_dir(uri).gsub(root, "")
-    assert !cache_dir.include?(':'), "#{cache_dir} should not contain a :"
+    assert !cache_dir.include?(":"), "#{cache_dir} should not contain a :"
   end
 
   def test_dependency_resolver_set_bundler_api
