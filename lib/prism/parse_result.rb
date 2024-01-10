@@ -286,6 +286,7 @@ module Prism
 
     private
 
+    # Access the associated source, raising if not present.
     def source!
       source or raise "Missing source"
     end
