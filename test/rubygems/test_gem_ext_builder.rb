@@ -52,7 +52,7 @@ install:
     assert_match(/DESTDIR\\=#{ENV['DESTDIR']}$/,         results)
     assert_match(/DESTDIR\\=#{ENV['DESTDIR']} install$/, results)
 
-    unless /nmake/.match?(results)
+    unless results.include?('nmake')
       assert_match(/^clean: destination$/,   results)
       assert_match(/^all: destination$/,     results)
       assert_match(/^install: destination$/, results)
