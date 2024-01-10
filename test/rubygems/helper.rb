@@ -122,7 +122,7 @@ class Gem::TestCase < Test::Unit::TestCase
     $stdout.rewind
     $stderr.rewind
 
-    return captured_stdout.read, captured_stderr.read
+    [captured_stdout.read, captured_stderr.read]
   ensure
     $stdout.reopen orig_stdout
     $stderr.reopen orig_stderr
