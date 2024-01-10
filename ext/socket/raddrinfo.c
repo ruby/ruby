@@ -461,7 +461,7 @@ cancel_getaddrinfo(void *ptr)
 }
 
 static int
-do_pthread_create(pthread_t *th, const pthread_attr_t *attr, void *(*start_routine) (void *), void *arg)
+do_pthread_create(pthread_t *th, void *(*start_routine) (void *), void *arg)
 {
     int limit = 3, ret;
     do {
@@ -469,7 +469,7 @@ do_pthread_create(pthread_t *th, const pthread_attr_t *attr, void *(*start_routi
         //
         // https://bugs.openjdk.org/browse/JDK-8268605
         // https://github.com/openjdk/jdk/commit/e35005d5ce383ddd108096a3079b17cb0bcf76f1
-        ret = pthread_create(th, attr, start_routine, arg);
+        ret = pthread_create(th, 0, start_routine, arg);
     } while (ret == EAGAIN && limit-- > 0);
     return ret;
 }
@@ -489,32 +489,12 @@ start:
         return EAI_MEMORY;
     }
 
-    pthread_attr_t attr;
-    if (pthread_attr_init(&attr) != 0) {
-        free_getaddrinfo_arg(arg);
-        return EAI_AGAIN;
-    }
-#if defined(HAVE_PTHREAD_ATTR_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU)
-    cpu_set_t tmp_cpu_set;
-    CPU_ZERO(&tmp_cpu_set);
-    int cpu = sched_getcpu();
-    if (cpu < CPU_SETSIZE) {
-        CPU_SET(cpu, &tmp_cpu_set);
-        pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &tmp_cpu_set);
-    }
-#endif
-
     pthread_t th;
-    if (do_pthread_create(&th, &attr, do_getaddrinfo, arg) != 0) {
+    if (do_pthread_create(&th, do_getaddrinfo, arg) != 0) {
         free_getaddrinfo_arg(arg);
         return EAI_AGAIN;
     }
     pthread_detach(th);
-
-    int r;
-    if ((r = pthread_attr_destroy(&attr)) != 0) {
-        rb_bug_errno("pthread_attr_destroy", r);
-    }
 
     rb_thread_call_without_gvl2(wait_getaddrinfo, arg, cancel_getaddrinfo, arg);
 
@@ -721,32 +701,12 @@ start:
         return EAI_MEMORY;
     }
 
-    pthread_attr_t attr;
-    if (pthread_attr_init(&attr) != 0) {
-        free_getnameinfo_arg(arg);
-        return EAI_AGAIN;
-    }
-#if defined(HAVE_PTHREAD_ATTR_SETAFFINITY_NP) && defined(HAVE_SCHED_GETCPU)
-    cpu_set_t tmp_cpu_set;
-    CPU_ZERO(&tmp_cpu_set);
-    int cpu = sched_getcpu();
-    if (cpu < CPU_SETSIZE) {
-        CPU_SET(cpu, &tmp_cpu_set);
-        pthread_attr_setaffinity_np(&attr, sizeof(cpu_set_t), &tmp_cpu_set);
-    }
-#endif
-
     pthread_t th;
-    if (do_pthread_create(&th, &attr, do_getnameinfo, arg) != 0) {
+    if (do_pthread_create(&th, do_getnameinfo, arg) != 0) {
         free_getnameinfo_arg(arg);
         return EAI_AGAIN;
     }
     pthread_detach(th);
-
-    int r;
-    if ((r = pthread_attr_destroy(&attr)) != 0) {
-        rb_bug_errno("pthread_attr_destroy", r);
-    }
 
     rb_thread_call_without_gvl2(wait_getnameinfo, arg, cancel_getnameinfo, arg);
 
