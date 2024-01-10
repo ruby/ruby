@@ -24,6 +24,7 @@ Gem::Specification.new do |spec|
     "docs/build_system.md",
     "docs/building.md",
     "docs/configuration.md",
+    "docs/cruby_compilation.md",
     "docs/design.md",
     "docs/encoding.md",
     "docs/fuzzing.md",
