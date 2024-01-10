@@ -12,30 +12,8 @@ class TestWEBrickCGI < Test::Unit::TestCase
     super
   end
 
-  def start_cgi_server(log_tester=TestWEBrick::DefaultLogTester, &block)
-    config = {
-      :CGIInterpreter => TestWEBrick::RubyBin,
-      :DocumentRoot => File.dirname(__FILE__),
-      :DirectoryIndex => ["webrick.cgi"],
-      :RequestCallback => Proc.new{|req, res|
-        def req.meta_vars
-          meta = super
-          meta["RUBYLIB"] = $:.join(File::PATH_SEPARATOR)
-          meta[RbConfig::CONFIG['LIBPATHENV']] = ENV[RbConfig::CONFIG['LIBPATHENV']] if RbConfig::CONFIG['LIBPATHENV']
-          return meta
-        end
-      },
-    }
-    if RUBY_PLATFORM =~ /mswin|mingw|cygwin|bccwin32/
-      config[:CGIPathEnv] = ENV['PATH'] # runtime dll may not be in system dir.
-    end
-    TestWEBrick.start_httpserver(config, log_tester){|server, addr, port, log|
-      block.call(server, addr, port, log)
-    }
-  end
-
   def test_cgi
-    start_cgi_server{|server, addr, port, log|
+    TestWEBrick.start_cgi_server{|server, addr, port, log|
       http = Net::HTTP.new(addr, port)
       req = Net::HTTP::Get.new("/webrick.cgi")
       http.request(req){|res| assert_equal("/webrick.cgi", res.body, log.call)}
@@ -98,7 +76,7 @@ class TestWEBrickCGI < Test::Unit::TestCase
     log_tester = lambda {|log, access_log|
       assert_match(/BadRequest/, log.join)
     }
-    start_cgi_server(log_tester) {|server, addr, port, log|
+    TestWEBrick.start_cgi_server({}, log_tester) {|server, addr, port, log|
       sock = TCPSocket.new(addr, port)
       begin
         sock << "POST /webrick.cgi HTTP/1.0" << CRLF
@@ -115,7 +93,7 @@ class TestWEBrickCGI < Test::Unit::TestCase
   end
 
   def test_cgi_env
-    start_cgi_server do |server, addr, port, log|
+    TestWEBrick.start_cgi_server do |server, addr, port, log|
       http = Net::HTTP.new(addr, port)
       req = Net::HTTP::Get.new("/webrick.cgi/dumpenv")
       req['proxy'] = 'http://example.com/'
@@ -137,7 +115,7 @@ class TestWEBrickCGI < Test::Unit::TestCase
       assert_equal(1, log.length)
       assert_match(/ERROR bad URI/, log[0])
     }
-    start_cgi_server(log_tester) {|server, addr, port, log|
+    TestWEBrick.start_cgi_server({}, log_tester) {|server, addr, port, log|
       res = TCPSocket.open(addr, port) {|sock|
         sock << "GET /#{CtrlSeq}#{CRLF}#{CRLF}"
         sock.close_write
@@ -155,7 +133,7 @@ class TestWEBrickCGI < Test::Unit::TestCase
       assert_equal(1, log.length)
       assert_match(/ERROR bad header/, log[0])
     }
-    start_cgi_server(log_tester) {|server, addr, port, log|
+    TestWEBrick.start_cgi_server({}, log_tester) {|server, addr, port, log|
       res = TCPSocket.open(addr, port) {|sock|
         sock << "GET / HTTP/1.0#{CRLF}#{CtrlSeq}#{CRLF}#{CRLF}"
         sock.close_write

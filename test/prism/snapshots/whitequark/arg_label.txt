@@ -12,7 +12,7 @@
         │   │   @ StatementsNode (location: (2,1)-(2,4))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (2,1)-(2,4))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :a
@@ -47,7 +47,7 @@
         │   │   @ StatementsNode (location: (4,10)-(4,13))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (4,10)-(4,13))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :a
@@ -74,7 +74,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (4,14)-(4,17) = "end"
         └── @ CallNode (location: (6,0)-(6,12))
-            ├── flags: ∅
+            ├── flags: ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :f
@@ -96,7 +96,7 @@
                 │   @ StatementsNode (location: (6,7)-(6,10))
                 │   └── body: (length: 1)
                 │       └── @ CallNode (location: (6,7)-(6,10))
-                │           ├── flags: ∅
+                │           ├── flags: ignore_visibility
                 │           ├── receiver: ∅
                 │           ├── call_operator_loc: ∅
                 │           ├── name: :a

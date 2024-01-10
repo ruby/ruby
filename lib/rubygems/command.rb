@@ -190,7 +190,7 @@ class Gem::Command
             "Please specify at least one gem name (e.g. gem build GEMNAME)"
     end
 
-    args.select {|arg| arg !~ /^-/ }
+    args.reject {|arg| arg.start_with?("-") }
   end
 
   ##

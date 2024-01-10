@@ -53,17 +53,7 @@ module Test
         end
       end
 
-      module RJITFirst
-        def group(list)
-          # RJIT first
-          rjit, others = list.partition {|e| /test_rjit/ =~ e}
-          rjit + others
-        end
-      end
-
       class Alpha < NoSort
-        include RJITFirst
-
         def sort_by_name(list)
           list.sort_by(&:name)
         end
@@ -76,8 +66,6 @@ module Test
 
       # shuffle test suites based on CRC32 of their names
       Shuffle = Struct.new(:seed, :salt) do
-        include RJITFirst
-
         def initialize(seed)
           self.class::CRC_TBL ||= (0..255).map {|i|
             (0..7).inject(i) {|c,| (c & 1 == 1) ? (0xEDB88320 ^ (c >> 1)) : (c >> 1) }
@@ -93,6 +81,10 @@ module Test
 
         def sort_by_string(list)
           list.sort_by {|e| randomize_key(e)}
+        end
+
+        def group(list)
+          list
         end
 
         private

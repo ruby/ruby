@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require "net/http"
+require "bundler/vendored_net_http"
 
-class Fail < Net::HTTP
-  # Net::HTTP uses a @newimpl instance variable to decide whether
+class Fail < Gem::Net::HTTP
+  # Gem::Net::HTTP uses a @newimpl instance variable to decide whether
   # to use a legacy implementation. Since we are subclassing
-  # Net::HTTP, we must set it
+  # Gem::Net::HTTP, we must set it
   @newimpl = true
 
   def request(req, body = nil, &block)
@@ -23,5 +23,5 @@ end
 
 require_relative "helpers/artifice"
 
-# Replace Net::HTTP with our failing subclass
+# Replace Gem::Net::HTTP with our failing subclass
 Artifice.replace_net_http(::Fail)

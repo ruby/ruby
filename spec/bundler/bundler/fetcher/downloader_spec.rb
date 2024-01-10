@@ -27,7 +27,7 @@ RSpec.describe Bundler::Fetcher::Downloader do
     end
 
     context "logging" do
-      let(:http_response) { Net::HTTPSuccess.new("1.1", 200, "Success") }
+      let(:http_response) { Gem::Net::HTTPSuccess.new("1.1", 200, "Success") }
 
       it "should log the HTTP response code and message to debug" do
         expect(Bundler).to receive_message_chain(:ui, :debug).with("HTTP 200 Success #{uri}")
@@ -35,8 +35,8 @@ RSpec.describe Bundler::Fetcher::Downloader do
       end
     end
 
-    context "when the request response is a Net::HTTPRedirection" do
-      let(:http_response) { Net::HTTPRedirection.new(httpv, 308, "Moved") }
+    context "when the request response is a Gem::Net::HTTPRedirection" do
+      let(:http_response) { Gem::Net::HTTPRedirection.new(httpv, 308, "Moved") }
 
       before { http_response["location"] = "http://www.redirect-uri.com/api/v2/endpoint" }
 
@@ -59,24 +59,24 @@ RSpec.describe Bundler::Fetcher::Downloader do
       end
     end
 
-    context "when the request response is a Net::HTTPSuccess" do
-      let(:http_response) { Net::HTTPSuccess.new("1.1", 200, "Success") }
+    context "when the request response is a Gem::Net::HTTPSuccess" do
+      let(:http_response) { Gem::Net::HTTPSuccess.new("1.1", 200, "Success") }
 
       it "should return the response body" do
         expect(subject.fetch(uri, options, counter)).to eq(http_response)
       end
     end
 
-    context "when the request response is a Net::HTTPRequestEntityTooLarge" do
-      let(:http_response) { Net::HTTPRequestEntityTooLarge.new("1.1", 413, "Too Big") }
+    context "when the request response is a Gem::Net::HTTPRequestEntityTooLarge" do
+      let(:http_response) { Gem::Net::HTTPRequestEntityTooLarge.new("1.1", 413, "Too Big") }
 
       it "should raise a Bundler::Fetcher::FallbackError with the response body" do
         expect { subject.fetch(uri, options, counter) }.to raise_error(Bundler::Fetcher::FallbackError, "Body with info")
       end
     end
 
-    context "when the request response is a Net::HTTPUnauthorized" do
-      let(:http_response) { Net::HTTPUnauthorized.new("1.1", 401, "Unauthorized") }
+    context "when the request response is a Gem::Net::HTTPUnauthorized" do
+      let(:http_response) { Gem::Net::HTTPUnauthorized.new("1.1", 401, "Unauthorized") }
 
       it "should raise a Bundler::Fetcher::AuthenticationRequiredError with the uri host" do
         expect { subject.fetch(uri, options, counter) }.to raise_error(Bundler::Fetcher::AuthenticationRequiredError,
@@ -98,8 +98,8 @@ RSpec.describe Bundler::Fetcher::Downloader do
       end
     end
 
-    context "when the request response is a Net::HTTPForbidden" do
-      let(:http_response) { Net::HTTPForbidden.new("1.1", 403, "Forbidden") }
+    context "when the request response is a Gem::Net::HTTPForbidden" do
+      let(:http_response) { Gem::Net::HTTPForbidden.new("1.1", 403, "Forbidden") }
       let(:uri) { Bundler::URI("http://user:password@www.uri-to-fetch.com") }
 
       it "should raise a Bundler::Fetcher::AuthenticationForbiddenError with the uri host" do
@@ -108,12 +108,12 @@ RSpec.describe Bundler::Fetcher::Downloader do
       end
     end
 
-    context "when the request response is a Net::HTTPNotFound" do
-      let(:http_response) { Net::HTTPNotFound.new("1.1", 404, "Not Found") }
+    context "when the request response is a Gem::Net::HTTPNotFound" do
+      let(:http_response) { Gem::Net::HTTPNotFound.new("1.1", 404, "Not Found") }
 
-      it "should raise a Bundler::Fetcher::FallbackError with Net::HTTPNotFound" do
+      it "should raise a Bundler::Fetcher::FallbackError with Gem::Net::HTTPNotFound" do
         expect { subject.fetch(uri, options, counter) }.
-          to raise_error(Bundler::Fetcher::FallbackError, "Net::HTTPNotFound: http://www.uri-to-fetch.com/api/v2/endpoint")
+          to raise_error(Bundler::Fetcher::FallbackError, "Gem::Net::HTTPNotFound: http://www.uri-to-fetch.com/api/v2/endpoint")
       end
 
       context "when the there are credentials provided in the request" do
@@ -121,16 +121,16 @@ RSpec.describe Bundler::Fetcher::Downloader do
 
         it "should raise a Bundler::Fetcher::FallbackError that doesn't contain the password" do
           expect { subject.fetch(uri, options, counter) }.
-            to raise_error(Bundler::Fetcher::FallbackError, "Net::HTTPNotFound: http://username@www.uri-to-fetch.com/api/v2/endpoint")
+            to raise_error(Bundler::Fetcher::FallbackError, "Gem::Net::HTTPNotFound: http://username@www.uri-to-fetch.com/api/v2/endpoint")
         end
       end
     end
 
     context "when the request response is some other type" do
-      let(:http_response) { Net::HTTPBadGateway.new("1.1", 500, "Fatal Error") }
+      let(:http_response) { Gem::Net::HTTPBadGateway.new("1.1", 500, "Fatal Error") }
 
       it "should raise a Bundler::HTTPError with the response class and body" do
-        expect { subject.fetch(uri, options, counter) }.to raise_error(Bundler::HTTPError, "Net::HTTPBadGateway: Body with info")
+        expect { subject.fetch(uri, options, counter) }.to raise_error(Bundler::HTTPError, "Gem::Net::HTTPBadGateway: Body with info")
       end
     end
   end
@@ -140,7 +140,7 @@ RSpec.describe Bundler::Fetcher::Downloader do
     let(:response)     { double(:response) }
 
     before do
-      allow(Net::HTTP::Get).to receive(:new).with("/api/v2/endpoint", options).and_return(net_http_get)
+      allow(Gem::Net::HTTP::Get).to receive(:new).with("/api/v2/endpoint", options).and_return(net_http_get)
       allow(connection).to receive(:request).with(uri, net_http_get).and_return(response)
     end
 

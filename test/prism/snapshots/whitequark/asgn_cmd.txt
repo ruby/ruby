@@ -14,7 +14,7 @@
         │   │   ├── name_loc: (1,6)-(1,9) = "bar"
         │   │   ├── value:
         │   │   │   @ CallNode (location: (1,12)-(1,17))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :m
@@ -37,7 +37,7 @@
             ├── name_loc: (3,0)-(3,3) = "foo"
             ├── value:
             │   @ CallNode (location: (3,6)-(3,11))
-            │   ├── flags: ∅
+            │   ├── flags: ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :m

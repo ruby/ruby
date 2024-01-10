@@ -42,7 +42,9 @@ module Prism
 
       assert_kind_of Prism::CallNode, Prism.parse("foo").value.statements.body[0]
       assert_kind_of Prism::LocalVariableReadNode, Prism.parse("foo", scopes: [[:foo]]).value.statements.body[0]
-      assert_equal 2, Prism.parse("foo", scopes: [[:foo], []]).value.statements.body[0].depth
+      assert_equal 1, Prism.parse("foo", scopes: [[:foo], []]).value.statements.body[0].depth
+
+      assert_equal [:foo], Prism.parse("foo", scopes: [[:foo]]).value.locals
     end
 
     def test_literal_value_method
@@ -55,6 +57,8 @@ module Prism
       assert_equal 0.5r, parse_expression("0.5r").value
       assert_equal 42ri, parse_expression("42ri").value
       assert_equal 0.5ri, parse_expression("0.5ri").value
+      assert_equal 0xFFr, parse_expression("0xFFr").value
+      assert_equal 0xFFri, parse_expression("0xFFri").value
     end
 
     def test_location_join

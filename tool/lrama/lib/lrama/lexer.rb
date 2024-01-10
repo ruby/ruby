@@ -1,4 +1,5 @@
 require "strscan"
+require "lrama/lexer/grammar_file"
 require "lrama/lexer/location"
 require "lrama/lexer/token"
 
@@ -28,10 +29,12 @@ module Lrama
       %error-token
       %empty
       %code
+      %rule
     )
 
-    def initialize(text)
-      @scanner = StringScanner.new(text)
+    def initialize(grammar_file)
+      @grammar_file = grammar_file
+      @scanner = StringScanner.new(grammar_file.text)
       @head_column = @head = @scanner.pos
       @head_line = @line = 1
       @status = :initial
@@ -57,8 +60,9 @@ module Lrama
 
     def location
       Location.new(
+        grammar_file: @grammar_file,
         first_line: @head_line, first_column: @head_column,
-        last_line: @line, last_column: column
+        last_line: line, last_column: column
       )
     end
 
@@ -78,8 +82,7 @@ module Lrama
         end
       end
 
-      @head_line = line
-      @head_column = column
+      reset_first_position
 
       case
       when @scanner.eos?
@@ -117,6 +120,8 @@ module Lrama
     def lex_c_code
       nested = 0
       code = ''
+      reset_first_position
+
       while !@scanner.eos? do
         case
         when @scanner.scan(/{/)
@@ -140,12 +145,12 @@ module Lrama
           @line += @scanner.matched.count("\n")
         when @scanner.scan(/'.*?'/)
           code += %Q(#{@scanner.matched})
+        when @scanner.scan(/[^\"'\{\}\n]+/)
+          code += @scanner.matched
+        when @scanner.scan(/#{Regexp.escape(@end_symbol)}/)
+          code += @scanner.matched
         else
-          if @scanner.scan(/[^\"'\{\}\n#{@end_symbol}]+/)
-            code += @scanner.matched
-          else
-            code += @scanner.getch
-          end
+          code += @scanner.getch
         end
       end
       raise ParseError, "Unexpected code: #{code}."
@@ -166,9 +171,14 @@ module Lrama
       end
     end
 
+    def reset_first_position
+      @head_line = line
+      @head_column = column
+    end
+
     def newline
       @line += 1
-      @head = @scanner.pos + 1
+      @head = @scanner.pos
     end
   end
 end

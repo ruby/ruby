@@ -25,6 +25,19 @@ typedef struct pm_options_scope {
 } pm_options_scope_t;
 
 /**
+ * The version of prism that we should be parsing with. This is used to allow
+ * consumers to specify which behavior they want in case they need to parse
+ * exactly as a specific version of CRuby.
+ */
+typedef enum {
+    /** The current version of prism. */
+    PM_OPTIONS_VERSION_LATEST = 0,
+
+    /** The vendored version of prism in CRuby 3.3.0. */
+    PM_OPTIONS_VERSION_CRUBY_3_3_0 = 1
+} pm_options_version_t;
+
+/**
  * The options that can be passed to the parser.
  */
 typedef struct {
@@ -54,6 +67,13 @@ typedef struct {
      * surrounding the eval.
      */
     pm_options_scope_t *scopes;
+
+    /**
+     * The version of prism that we should be parsing with. This is used to
+     * allow consumers to specify which behavior they want in case they need to
+     * parse exactly as a specific version of CRuby.
+     */
+    pm_options_version_t version;
 
     /** Whether or not the frozen string literal option has been set. */
     bool frozen_string_literal;
@@ -105,6 +125,18 @@ PRISM_EXPORTED_FUNCTION void pm_options_frozen_string_literal_set(pm_options_t *
  * @param suppress_warnings The suppress warnings value to set.
  */
 PRISM_EXPORTED_FUNCTION void pm_options_suppress_warnings_set(pm_options_t *options, bool suppress_warnings);
+
+/**
+ * Set the version option on the given options struct by parsing the given
+ * string. If the string contains an invalid option, this returns false.
+ * Otherwise, it returns true.
+ *
+ * @param options The options struct to set the version on.
+ * @param version The version to set.
+ * @param length The length of the version string.
+ * @return Whether or not the version was parsed successfully.
+ */
+PRISM_EXPORTED_FUNCTION bool pm_options_version_set(pm_options_t *options, const char *version, size_t length);
 
 /**
  * Allocate and zero out the scopes array on the given options struct.
@@ -167,8 +199,16 @@ PRISM_EXPORTED_FUNCTION void pm_options_free(pm_options_t *options);
  * | ...     | the encoding bytes         |
  * | `1`     | frozen string literal      |
  * | `1`     | suppress warnings          |
+ * | `1`     | the version                |
  * | `4`     | the number of scopes       |
  * | ...     | the scopes                 |
+ *
+ * The version field is an enum, so it should be one of the following values:
+ *
+ * | value | version                   |
+ * | ----- | ------------------------- |
+ * | `0`   | use the latest version of prism |
+ * | `1`   | use the version of prism that is vendored in CRuby 3.3.0 |
  *
  * Each scope is layed out as follows:
  *

@@ -6,7 +6,7 @@
         ├── @ MultiWriteNode (location: (1,0)-(1,17))
         │   ├── lefts: (length: 2)
         │   │   ├── @ CallTargetNode (location: (1,0)-(1,6))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: ignore_visibility
         │   │   │   ├── receiver:
         │   │   │   │   @ SelfNode (location: (1,0)-(1,4))
         │   │   │   ├── call_operator_loc: (1,4)-(1,5) = "."
@@ -27,14 +27,14 @@
         ├── @ MultiWriteNode (location: (3,0)-(3,24))
         │   ├── lefts: (length: 2)
         │   │   ├── @ CallTargetNode (location: (3,0)-(3,6))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: ignore_visibility
         │   │   │   ├── receiver:
         │   │   │   │   @ SelfNode (location: (3,0)-(3,4))
         │   │   │   ├── call_operator_loc: (3,4)-(3,5) = "."
         │   │   │   ├── name: :a=
         │   │   │   └── message_loc: (3,5)-(3,6) = "a"
         │   │   └── @ IndexTargetNode (location: (3,8)-(3,18))
-        │   │       ├── flags: ∅
+        │   │       ├── flags: attribute_write, ignore_visibility
         │   │       ├── receiver:
         │   │       │   @ SelfNode (location: (3,8)-(3,12))
         │   │       ├── opening_loc: (3,12)-(3,13) = "["
@@ -60,7 +60,7 @@
         └── @ MultiWriteNode (location: (5,0)-(5,18))
             ├── lefts: (length: 2)
             │   ├── @ CallTargetNode (location: (5,0)-(5,7))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: ignore_visibility
             │   │   ├── receiver:
             │   │   │   @ SelfNode (location: (5,0)-(5,4))
             │   │   ├── call_operator_loc: (5,4)-(5,6) = "::"

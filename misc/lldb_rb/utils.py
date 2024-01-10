@@ -455,6 +455,10 @@ class RbInspector(LLDBInterface):
                     self._append_expression("*(struct RNode_FNDPTN *) %0#x" % val.GetValueAsUnsigned())
                 elif nd_type == self.ruby_globals["NODE_ERROR"]:
                     self._append_expression("*(struct RNode_ERROR *) %0#x" % val.GetValueAsUnsigned())
+                elif nd_type == self.ruby_globals["NODE_LINE"]:
+                    self._append_expression("*(struct RNode_LINE *) %0#x" % val.GetValueAsUnsigned())
+                elif nd_type == self.ruby_globals["NODE_FILE"]:
+                    self._append_expression("*(struct RNode_FILE *) %0#x" % val.GetValueAsUnsigned())
                 elif nd_type == self.ruby_globals["NODE_RIPPER"]:
                     self._append_expression("*(struct RNode_RIPPER *) %0#x" % val.GetValueAsUnsigned())
                 elif nd_type == self.ruby_globals["NODE_RIPPER_VALUES"]:

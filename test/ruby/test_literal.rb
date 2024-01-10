@@ -496,11 +496,14 @@ class TestRubyLiteral < Test::Unit::TestCase
       '1.0i',
       '1.72723e-77',
       '//',
+      '__LINE__',
+      '__FILE__',
     ) do |key|
-      assert_warning(/key #{Regexp.quote(eval(key).inspect)} is duplicated/) do
-        eval("{#{key} => :bar, #{key} => :foo}")
-      end
+      assert_warning(/key #{Regexp.quote(eval(key).inspect)} is duplicated/) { eval("{#{key} => :bar, #{key} => :foo}") }
     end
+
+    assert_warning(/key 1 is duplicated/) { eval("{__LINE__ => :bar, 1 => :foo}") }
+    assert_warning(/key \"FILENAME\" is duplicated/) { eval("{__FILE__ => :bar, 'FILENAME' => :foo}", binding, "FILENAME") }
   end
 
   def test_hash_frozen_key_id

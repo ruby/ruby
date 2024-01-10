@@ -551,7 +551,8 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
             arg_rest_dup(args);
             rb_ary_push(args->rest, converted_keyword_hash);
             keyword_hash = Qnil;
-        } else {
+        }
+        else {
             keyword_hash = converted_keyword_hash;
         }
 

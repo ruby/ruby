@@ -204,6 +204,13 @@ module TestIRB
       end
     end
 
+    def test_not_completing_empty_string
+      assert_equal([], completion_candidates("", binding))
+      assert_equal([], completion_candidates(" ", binding))
+      assert_equal([], completion_candidates("\t", binding))
+      assert_equal(nil, doc_namespace("", binding))
+    end
+
     def test_complete_symbol
       symbols = %w"UTF-16LE UTF-7".map do |enc|
         "K".force_encoding(enc).to_sym

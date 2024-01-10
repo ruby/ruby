@@ -215,6 +215,7 @@ module IRB # :nodoc:
       added = [:TIME, IRB.conf[:MEASURE_PROC][:TIME], arg]
     end
     if added
+      IRB.conf[:MEASURE] = true
       found = IRB.conf[:MEASURE_CALLBACKS].find{ |m| m[0] == added[0] && m[2] == added[2] }
       if found
         # already added
@@ -235,6 +236,7 @@ module IRB # :nodoc:
       type_sym = type.upcase.to_sym
       IRB.conf[:MEASURE_CALLBACKS].reject!{ |t, | t == type_sym }
     end
+    IRB.conf[:MEASURE] = nil if IRB.conf[:MEASURE_CALLBACKS].empty?
   end
 
   def IRB.init_error
@@ -387,18 +389,16 @@ module IRB # :nodoc:
     $LOAD_PATH.unshift(*load_path)
   end
 
-  # running config
+  # Run the config file
   def IRB.run_config
     if @CONF[:RC]
       begin
-        load rc_file
-      rescue LoadError, Errno::ENOENT
-      rescue # StandardError, ScriptError
-        print "load error: #{rc_file}\n"
-        print $!.class, ": ", $!, "\n"
-        for err in $@[0, $@.size - 2]
-          print "\t", err, "\n"
-        end
+        file = rc_file
+        # Because rc_file always returns `HOME/.irbrc` even if no rc file is present, we can't warn users about missing rc files.
+        # Otherwise, it'd be very noisy.
+        load file if File.exist?(file)
+      rescue StandardError, ScriptError => e
+        warn "Error loading RC file '#{file}':\n#{e.full_message(highlight: false)}"
       end
     end
   end
@@ -416,7 +416,7 @@ module IRB # :nodoc:
     end
     case rc_file = @CONF[:RC_NAME_GENERATOR].call(ext)
     when String
-      return rc_file
+      rc_file
     else
       fail IllegalRCNameGenerator
     end

@@ -547,7 +547,7 @@ init_cache_opcodes(const regex_t* reg, OnigCacheOpcode* cache_opcodes, long* num
     cache_opcodes->num_cache_points_at_outer_repeat = num_cache_points_at_repeat;\
     cache_opcodes->num_cache_points_in_outer_repeat = 0;\
     cache_opcodes->lookaround_nesting = lookaround_nesting;\
-    cache_point += lookaround_nesting > 0 ? 2 : 1;\
+    cache_point += lookaround_nesting != 0 ? 2 : 1;\
     cache_opcodes++;\
   } while (0)
 
@@ -709,11 +709,11 @@ init_cache_opcodes(const regex_t* reg, OnigCacheOpcode* cache_opcodes, long* num
 	  OnigRepeatRange *repeat_range = &reg->repeat_range[repeat_mem];
 	  if (repeat_range->lower < repeat_range->upper) {
 	    INC_CACHE_OPCODES;
-	    cache_point--;
+	    cache_point -= lookaround_nesting != 0 ? 2 : 1;
 	  }
 	  cache_point -= num_cache_points_in_repeat;
 	  int repeat_bounds = repeat_range->upper == 0x7fffffff ? 1 : repeat_range->upper - repeat_range->lower;
-	  cache_point += num_cache_points_in_repeat * repeat_range->lower + (num_cache_points_in_repeat + 1) * repeat_bounds;
+	  cache_point += num_cache_points_in_repeat * repeat_range->lower + (num_cache_points_in_repeat + (lookaround_nesting != 0 ? 2 : 1)) * repeat_bounds;
 	  OnigCacheOpcode* cache_opcodes_in_repeat = cache_opcodes - 1;
 	  while (cache_opcodes_at_repeat <= cache_opcodes_in_repeat) {
 	    cache_opcodes_in_repeat->num_cache_points_in_outer_repeat = num_cache_points_in_repeat;
@@ -2600,6 +2600,8 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 #define MATCH_CACHE_DEBUG_HIT ((void) 0)
 #endif
 
+#define MATCH_CACHE_HIT ((void) 0)
+
 #  define CHECK_MATCH_CACHE do {\
   if (msa->match_cache_status == MATCH_CACHE_STATUS_ENABLED) {\
     const OnigCacheOpcode *cache_opcode;\
@@ -2610,7 +2612,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
       uint8_t match_cache_point_mask = 1 << (match_cache_point & 7);\
       MATCH_CACHE_DEBUG;\
       if (msa->match_cache_buf[match_cache_point_index] & match_cache_point_mask) {\
-	MATCH_CACHE_DEBUG_HIT;\
+	MATCH_CACHE_DEBUG_HIT; MATCH_CACHE_HIT;\
 	if (cache_opcode->lookaround_nesting == 0) goto fail;\
 	else if (cache_opcode->lookaround_nesting < 0) {\
 	  if (check_extended_match_cache_point(msa->match_cache_buf, match_cache_point_index, match_cache_point_mask)) {\
@@ -3825,14 +3827,15 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
     CASE(OP_PUSH_IF_PEEK_NEXT)  MOP_IN(OP_PUSH_IF_PEEK_NEXT);
       GET_RELADDR_INC(addr, p);
+      CHECK_MATCH_CACHE;
       if (*p == *s) {
 	p++;
-	CHECK_MATCH_CACHE;
 	STACK_PUSH_ALT(p + addr, s, sprev, pkeep);
 	MOP_OUT;
 	JUMP;
       }
       p++;
+      INC_NUM_FAILS;
       MOP_OUT;
       JUMP;
 
@@ -3882,9 +3885,15 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	/* end of repeat. Nothing to do. */
       }
       else if (stkp->u.repeat.count >= reg->repeat_range[mem].lower) {
+#ifdef USE_MATCH_CACHE
 	if (*pbegin == OP_REPEAT_INC) {
+#undef MATCH_CACHE_HIT
+#define MATCH_CACHE_HIT stkp->u.repeat.count--;
 	  CHECK_MATCH_CACHE;
+#undef MATCH_CACHE_HIT
+#define MATCH_CACHE_HIT ((void) 0)
 	}
+#endif
 	STACK_PUSH_ALT(p, s, sprev, pkeep);
 	p = STACK_AT(si)->u.repeat.pcode; /* Don't use stkp after PUSH. */
       }

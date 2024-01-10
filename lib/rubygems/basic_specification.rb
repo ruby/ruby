@@ -84,7 +84,13 @@ class Gem::BasicSpecification
       return false
     end
 
-    have_file? file, Gem.suffixes
+    is_soext = file.end_with?(".so", ".o")
+
+    if is_soext
+      have_file? file.delete_suffix(File.extname(file)), Gem.dynamic_library_suffixes
+    else
+      have_file? file, Gem.suffixes
+    end
   end
 
   def default_gem?

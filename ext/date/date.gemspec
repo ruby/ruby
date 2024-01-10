@@ -31,4 +31,6 @@ Gem::Specification.new do |s|
   s.email = [nil]
   s.homepage = "https://github.com/ruby/date"
   s.licenses = ["Ruby", "BSD-2-Clause"]
+
+  s.metadata["changelog_uri"] = s.homepage + "/releases"
 end

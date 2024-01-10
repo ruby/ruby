@@ -19,7 +19,7 @@ module IRB
     def find_source(signature, super_level = 0)
       context_binding = @irb_context.workspace.binding
       case signature
-      when /\A[A-Z]\w*(::[A-Z]\w*)*\z/ # Const::Name
+      when /\A(::)?[A-Z]\w*(::[A-Z]\w*)*\z/ # Const::Name
         eval(signature, context_binding) # trigger autoload
         base = context_binding.receiver.yield_self { |r| r.is_a?(Module) ? r : Object }
         file, line = base.const_source_location(signature)
@@ -34,7 +34,8 @@ module IRB
         return unless receiver.respond_to?(method, true)
         file, line = method_target(receiver, super_level, method, "receiver")
       end
-      if file && line && File.exist?(file)
+      # If the line is zero, it means that the target's source is probably in a binary file, which we should ignore.
+      if file && line && !line.zero? && File.exist?(file)
         Source.new(file: file, first_line: line, last_line: find_end(file, line))
       end
     end

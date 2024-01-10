@@ -117,6 +117,11 @@ static const pm_node_flags_t PM_NODE_FLAG_COMMON_MASK = (1 << (PM_NODE_FLAG_BITS
 #define PM_NODE_TYPE_P(node, type) (PM_NODE_TYPE(node) == (type))
 
 /**
+ * Return true if the given flag is set on the given node.
+ */
+#define PM_NODE_FLAG_P(node, flag) ((((pm_node_t *)(node))->flags & (flag)) != 0)
+
+/**
  * This is the base structure that represents a node in the syntax tree. It is
  * embedded into every node type.
  */
@@ -160,7 +165,15 @@ typedef struct pm_<%= node.human %> {
     pm_node_t base;
 <%- node.fields.grep_v(Prism::FlagsField).each do |field| -%>
 
-    /** <%= node.name %>#<%= field.name %> */
+    /**
+     * <%= node.name %>#<%= field.name %>
+    <%- if field.comment -%>
+     *
+    <%- field.each_comment_line do |line| -%>
+     *<%= line %>
+    <%- end -%>
+    <%- end -%>
+     */
     <%= case field
     when Prism::NodeField, Prism::OptionalNodeField then "struct #{field.c_type} *#{field.name}"
     when Prism::NodeListField then "struct pm_node_list #{field.name}"

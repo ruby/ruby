@@ -23,10 +23,18 @@ RBIMPL_SYMBOL_EXPORT_BEGIN()
 
 #define RUBY_IO_BUFFER_VERSION 2
 
+// The `IO::Buffer` class.
 RUBY_EXTERN VALUE rb_cIOBuffer;
+
+// The operating system page size.
 RUBY_EXTERN size_t RUBY_IO_BUFFER_PAGE_SIZE;
+
+// The default buffer size, usually a (small) multiple of the page size.
+// Can be overridden by the RUBY_IO_BUFFER_DEFAULT_SIZE environment variable.
 RUBY_EXTERN size_t RUBY_IO_BUFFER_DEFAULT_SIZE;
 
+// Represents the internal state of the buffer.
+// More than one flag can be set at a time.
 enum rb_io_buffer_flags {
     // The memory in the buffer is owned by someone else.
     // More specifically, it means that someone else owns the buffer and we shouldn't try to resize it.
@@ -49,10 +57,15 @@ enum rb_io_buffer_flags {
     RB_IO_BUFFER_PRIVATE = 64,
 
     // The buffer is read-only and cannot be modified.
-    RB_IO_BUFFER_READONLY = 128
+    RB_IO_BUFFER_READONLY = 128,
+
+    // The buffer is backed by a file.
+    RB_IO_BUFFER_FILE = 256,
 };
 
+// Represents the endian of the data types.
 enum rb_io_buffer_endian {
+    // The least significant units are put first.
     RB_IO_BUFFER_LITTLE_ENDIAN = 4,
     RB_IO_BUFFER_BIG_ENDIAN = 8,
 
@@ -79,7 +92,10 @@ int rb_io_buffer_try_unlock(VALUE self);
 VALUE rb_io_buffer_free(VALUE self);
 VALUE rb_io_buffer_free_locked(VALUE self);
 
-int rb_io_buffer_get_bytes(VALUE self, void **base, size_t *size);
+// Access the internal buffer and flags. Validates the pointers.
+// The points may not remain valid if the source buffer is manipulated.
+// Consider using rb_io_buffer_lock if needed.
+enum rb_io_buffer_flags rb_io_buffer_get_bytes(VALUE self, void **base, size_t *size);
 void rb_io_buffer_get_bytes_for_reading(VALUE self, const void **base, size_t *size);
 void rb_io_buffer_get_bytes_for_writing(VALUE self, void **base, size_t *size);
 

@@ -10,7 +10,7 @@
         │   │   @ RescueModifierNode (location: (1,7)-(1,27))
         │   │   ├── expression:
         │   │   │   @ CallNode (location: (1,7)-(1,16))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :raise
@@ -21,7 +21,7 @@
         │   │   │   │   ├── flags: ∅
         │   │   │   │   └── arguments: (length: 1)
         │   │   │   │       └── @ CallNode (location: (1,13)-(1,16))
-        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           ├── flags: variable_call, ignore_visibility
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :bar
@@ -45,7 +45,7 @@
         │   │   @ RescueModifierNode (location: (3,7)-(3,28))
         │   │   ├── expression:
         │   │   │   @ CallNode (location: (3,7)-(3,17))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :raise
@@ -56,7 +56,7 @@
         │   │   │   │   ├── flags: ∅
         │   │   │   │   └── arguments: (length: 1)
         │   │   │   │       └── @ CallNode (location: (3,13)-(3,16))
-        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           ├── flags: variable_call, ignore_visibility
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :bar
@@ -81,7 +81,7 @@
         │   │   @ RescueModifierNode (location: (5,6)-(5,26))
         │   │   ├── expression:
         │   │   │   @ CallNode (location: (5,6)-(5,15))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :raise
@@ -92,7 +92,7 @@
         │   │   │   │   ├── flags: ∅
         │   │   │   │   └── arguments: (length: 1)
         │   │   │   │       └── @ CallNode (location: (5,12)-(5,15))
-        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           ├── flags: variable_call, ignore_visibility
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :bar
@@ -115,7 +115,7 @@
         │   │   @ RescueModifierNode (location: (7,6)-(7,27))
         │   │   ├── expression:
         │   │   │   @ CallNode (location: (7,6)-(7,16))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :raise
@@ -126,7 +126,7 @@
         │   │   │   │   ├── flags: ∅
         │   │   │   │   └── arguments: (length: 1)
         │   │   │   │       └── @ CallNode (location: (7,12)-(7,15))
-        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           ├── flags: variable_call, ignore_visibility
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :bar
@@ -157,7 +157,7 @@
         │       @ RescueModifierNode (location: (9,9)-(9,29))
         │       ├── expression:
         │       │   @ CallNode (location: (9,9)-(9,18))
-        │       │   ├── flags: ∅
+        │       │   ├── flags: ignore_visibility
         │       │   ├── receiver: ∅
         │       │   ├── call_operator_loc: ∅
         │       │   ├── name: :raise
@@ -168,7 +168,7 @@
         │       │   │   ├── flags: ∅
         │       │   │   └── arguments: (length: 1)
         │       │   │       └── @ CallNode (location: (9,15)-(9,18))
-        │       │   │           ├── flags: variable_call
+        │       │   │           ├── flags: variable_call, ignore_visibility
         │       │   │           ├── receiver: ∅
         │       │   │           ├── call_operator_loc: ∅
         │       │   │           ├── name: :bar
@@ -198,7 +198,7 @@
         │       @ RescueModifierNode (location: (11,9)-(11,30))
         │       ├── expression:
         │       │   @ CallNode (location: (11,9)-(11,19))
-        │       │   ├── flags: ∅
+        │       │   ├── flags: ignore_visibility
         │       │   ├── receiver: ∅
         │       │   ├── call_operator_loc: ∅
         │       │   ├── name: :raise
@@ -209,7 +209,7 @@
         │       │   │   ├── flags: ∅
         │       │   │   └── arguments: (length: 1)
         │       │   │       └── @ CallNode (location: (11,15)-(11,18))
-        │       │   │           ├── flags: variable_call
+        │       │   │           ├── flags: variable_call, ignore_visibility
         │       │   │           ├── receiver: ∅
         │       │   │           ├── call_operator_loc: ∅
         │       │   │           ├── name: :bar
@@ -239,7 +239,7 @@
         │       @ RescueModifierNode (location: (13,9)-(13,29))
         │       ├── expression:
         │       │   @ CallNode (location: (13,9)-(13,18))
-        │       │   ├── flags: ∅
+        │       │   ├── flags: ignore_visibility
         │       │   ├── receiver: ∅
         │       │   ├── call_operator_loc: ∅
         │       │   ├── name: :raise
@@ -250,7 +250,7 @@
         │       │   │   ├── flags: ∅
         │       │   │   └── arguments: (length: 1)
         │       │   │       └── @ CallNode (location: (13,15)-(13,18))
-        │       │   │           ├── flags: variable_call
+        │       │   │           ├── flags: variable_call, ignore_visibility
         │       │   │           ├── receiver: ∅
         │       │   │           ├── call_operator_loc: ∅
         │       │   │           ├── name: :bar
@@ -280,7 +280,7 @@
         │       @ RescueModifierNode (location: (15,9)-(15,30))
         │       ├── expression:
         │       │   @ CallNode (location: (15,9)-(15,19))
-        │       │   ├── flags: ∅
+        │       │   ├── flags: ignore_visibility
         │       │   ├── receiver: ∅
         │       │   ├── call_operator_loc: ∅
         │       │   ├── name: :raise
@@ -291,7 +291,7 @@
         │       │   │   ├── flags: ∅
         │       │   │   └── arguments: (length: 1)
         │       │   │       └── @ CallNode (location: (15,15)-(15,18))
-        │       │   │           ├── flags: variable_call
+        │       │   │           ├── flags: variable_call, ignore_visibility
         │       │   │           ├── receiver: ∅
         │       │   │           ├── call_operator_loc: ∅
         │       │   │           ├── name: :bar
@@ -321,7 +321,7 @@
         │       @ RescueModifierNode (location: (17,11)-(17,31))
         │       ├── expression:
         │       │   @ CallNode (location: (17,11)-(17,20))
-        │       │   ├── flags: ∅
+        │       │   ├── flags: ignore_visibility
         │       │   ├── receiver: ∅
         │       │   ├── call_operator_loc: ∅
         │       │   ├── name: :raise
@@ -332,7 +332,7 @@
         │       │   │   ├── flags: ∅
         │       │   │   └── arguments: (length: 1)
         │       │   │       └── @ CallNode (location: (17,17)-(17,20))
-        │       │   │           ├── flags: variable_call
+        │       │   │           ├── flags: variable_call, ignore_visibility
         │       │   │           ├── receiver: ∅
         │       │   │           ├── call_operator_loc: ∅
         │       │   │           ├── name: :bar
@@ -362,7 +362,7 @@
         │       @ RescueModifierNode (location: (19,11)-(19,32))
         │       ├── expression:
         │       │   @ CallNode (location: (19,11)-(19,21))
-        │       │   ├── flags: ∅
+        │       │   ├── flags: ignore_visibility
         │       │   ├── receiver: ∅
         │       │   ├── call_operator_loc: ∅
         │       │   ├── name: :raise
@@ -373,7 +373,7 @@
         │       │   │   ├── flags: ∅
         │       │   │   └── arguments: (length: 1)
         │       │   │       └── @ CallNode (location: (19,17)-(19,20))
-        │       │   │           ├── flags: variable_call
+        │       │   │           ├── flags: variable_call, ignore_visibility
         │       │   │           ├── receiver: ∅
         │       │   │           ├── call_operator_loc: ∅
         │       │   │           ├── name: :bar
@@ -403,7 +403,7 @@
         │       @ RescueModifierNode (location: (21,10)-(21,30))
         │       ├── expression:
         │       │   @ CallNode (location: (21,10)-(21,19))
-        │       │   ├── flags: ∅
+        │       │   ├── flags: ignore_visibility
         │       │   ├── receiver: ∅
         │       │   ├── call_operator_loc: ∅
         │       │   ├── name: :raise
@@ -414,7 +414,7 @@
         │       │   │   ├── flags: ∅
         │       │   │   └── arguments: (length: 1)
         │       │   │       └── @ CallNode (location: (21,16)-(21,19))
-        │       │   │           ├── flags: variable_call
+        │       │   │           ├── flags: variable_call, ignore_visibility
         │       │   │           ├── receiver: ∅
         │       │   │           ├── call_operator_loc: ∅
         │       │   │           ├── name: :bar
@@ -444,7 +444,7 @@
         │       @ RescueModifierNode (location: (23,10)-(23,31))
         │       ├── expression:
         │       │   @ CallNode (location: (23,10)-(23,20))
-        │       │   ├── flags: ∅
+        │       │   ├── flags: ignore_visibility
         │       │   ├── receiver: ∅
         │       │   ├── call_operator_loc: ∅
         │       │   ├── name: :raise
@@ -455,7 +455,7 @@
         │       │   │   ├── flags: ∅
         │       │   │   └── arguments: (length: 1)
         │       │   │       └── @ CallNode (location: (23,16)-(23,19))
-        │       │   │           ├── flags: variable_call
+        │       │   │           ├── flags: variable_call, ignore_visibility
         │       │   │           ├── receiver: ∅
         │       │   │           ├── call_operator_loc: ∅
         │       │   │           ├── name: :bar
@@ -491,7 +491,7 @@
         │       @ RescueModifierNode (location: (25,10)-(25,30))
         │       ├── expression:
         │       │   @ CallNode (location: (25,10)-(25,19))
-        │       │   ├── flags: ∅
+        │       │   ├── flags: ignore_visibility
         │       │   ├── receiver: ∅
         │       │   ├── call_operator_loc: ∅
         │       │   ├── name: :raise
@@ -502,7 +502,7 @@
         │       │   │   ├── flags: ∅
         │       │   │   └── arguments: (length: 1)
         │       │   │       └── @ CallNode (location: (25,16)-(25,19))
-        │       │   │           ├── flags: variable_call
+        │       │   │           ├── flags: variable_call, ignore_visibility
         │       │   │           ├── receiver: ∅
         │       │   │           ├── call_operator_loc: ∅
         │       │   │           ├── name: :bar
@@ -538,7 +538,7 @@
                 @ RescueModifierNode (location: (27,10)-(27,31))
                 ├── expression:
                 │   @ CallNode (location: (27,10)-(27,20))
-                │   ├── flags: ∅
+                │   ├── flags: ignore_visibility
                 │   ├── receiver: ∅
                 │   ├── call_operator_loc: ∅
                 │   ├── name: :raise
@@ -549,7 +549,7 @@
                 │   │   ├── flags: ∅
                 │   │   └── arguments: (length: 1)
                 │   │       └── @ CallNode (location: (27,16)-(27,19))
-                │   │           ├── flags: variable_call
+                │   │           ├── flags: variable_call, ignore_visibility
                 │   │           ├── receiver: ∅
                 │   │           ├── call_operator_loc: ∅
                 │   │           ├── name: :bar

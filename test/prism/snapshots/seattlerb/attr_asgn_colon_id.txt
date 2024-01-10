@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,8))
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,8))
-            ├── flags: ∅
+            ├── flags: attribute_write
             ├── receiver:
             │   @ ConstantReadNode (location: (1,0)-(1,1))
             │   └── name: :A

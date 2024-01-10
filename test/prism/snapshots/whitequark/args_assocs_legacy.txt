@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(11,17))
     └── body: (length: 6)
         ├── @ CallNode (location: (1,0)-(1,14))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :fun
@@ -15,6 +15,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (1,4)-(1,13))
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (1,4)-(1,13))
         │   │                   ├── key:
@@ -31,7 +32,7 @@
         │   ├── closing_loc: (1,13)-(1,14) = ")"
         │   └── block: ∅
         ├── @ CallNode (location: (3,0)-(3,19))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :fun
@@ -42,6 +43,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (3,4)-(3,13))
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (3,4)-(3,13))
         │   │                   ├── key:
@@ -60,7 +62,7 @@
         │       @ BlockArgumentNode (location: (3,15)-(3,19))
         │       ├── expression:
         │       │   @ CallNode (location: (3,16)-(3,19))
-        │       │   ├── flags: variable_call
+        │       │   ├── flags: variable_call, ignore_visibility
         │       │   ├── receiver: ∅
         │       │   ├── call_operator_loc: ∅
         │       │   ├── name: :baz
@@ -71,7 +73,7 @@
         │       │   └── block: ∅
         │       └── operator_loc: (3,15)-(3,16) = "&"
         ├── @ CallNode (location: (5,0)-(5,21))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver:
         │   │   @ SelfNode (location: (5,0)-(5,4))
         │   ├── call_operator_loc: (5,4)-(5,5) = "."
@@ -83,7 +85,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 2)
         │   │       ├── @ CallNode (location: (5,9)-(5,12))
-        │   │       │   ├── flags: variable_call
+        │   │       │   ├── flags: variable_call, ignore_visibility
         │   │       │   ├── receiver: ∅
         │   │       │   ├── call_operator_loc: ∅
         │   │       │   ├── name: :foo
@@ -93,6 +95,7 @@
         │   │       │   ├── closing_loc: ∅
         │   │       │   └── block: ∅
         │   │       └── @ KeywordHashNode (location: (5,14)-(5,21))
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (5,14)-(5,21))
         │   │                   ├── key:
@@ -109,7 +112,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (7,0)-(7,15))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver:
         │   │   @ SelfNode (location: (7,0)-(7,4))
         │   ├── call_operator_loc: ∅
@@ -121,6 +124,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (7,5)-(7,14))
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (7,5)-(7,14))
         │   │                   ├── key:
@@ -144,6 +148,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ KeywordHashNode (location: (9,6)-(9,16))
+        │   │           ├── flags: symbol_keys
         │   │           └── elements: (length: 1)
         │   │               └── @ AssocNode (location: (9,6)-(9,16))
         │   │                   ├── key:
@@ -167,6 +172,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ KeywordHashNode (location: (11,6)-(11,16))
+            │           ├── flags: symbol_keys
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (11,6)-(11,16))
             │                   ├── key:

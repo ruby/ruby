@@ -1254,10 +1254,8 @@ fchdir_restore(VALUE v)
  *   Dir.pwd # => "/var/spool/mail"
  *   dir  = Dir.new('/usr')
  *   fd = dir.fileno
- *   Dir.fchdir(fd) do
- *     Dir.pwd # => "/usr"
- *   end
- *   Dir.pwd # => "/var/spool/mail"
+ *   Dir.fchdir(fd)
+ *   Dir.pwd # => "/usr"
  *
  * With a block, temporarily changes the working directory:
  *
@@ -1271,7 +1269,9 @@ fchdir_restore(VALUE v)
  *
  *   Dir.chdir('/var/spool/mail')
  *   Dir.pwd # => "/var/spool/mail"
- *   Dir.chdir('/tmp') do
+ *   dir  = Dir.new('/tmp')
+ *   fd = dir.fileno
+ *   Dir.fchdir(fd) do
  *     Dir.pwd # => "/tmp"
  *   end
  *   Dir.pwd # => "/var/spool/mail"
@@ -3672,12 +3672,27 @@ Init_Dir(void)
 
     rb_define_singleton_method(rb_cFile,"fnmatch", file_s_fnmatch, -1);
     rb_define_singleton_method(rb_cFile,"fnmatch?", file_s_fnmatch, -1);
+
+    /* Document-const: FNM_NOESCAPE
+     * {File::FNM_NOESCAPE}[rdoc-ref:File::Constants@File-3A-3AFNM_NOESCAPE] */
     rb_file_const("FNM_NOESCAPE", INT2FIX(FNM_NOESCAPE));
+    /* Document-const: FNM_PATHNAME
+     * {File::FNM_PATHNAME}[rdoc-ref:File::Constants@File-3A-3AFNM_PATHNAME] */
     rb_file_const("FNM_PATHNAME", INT2FIX(FNM_PATHNAME));
+    /* Document-const: FNM_DOTMATCH
+     * {File::FNM_DOTMATCH}[rdoc-ref:File::Constants@File-3A-3AFNM_DOTMATCH] */
     rb_file_const("FNM_DOTMATCH", INT2FIX(FNM_DOTMATCH));
+    /* Document-const: FNM_CASEFOLD
+     * {File::FNM_CASEFOLD}[rdoc-ref:File::Constants@File-3A-3AFNM_CASEFOLD] */
     rb_file_const("FNM_CASEFOLD", INT2FIX(FNM_CASEFOLD));
+    /* Document-const: FNM_EXTGLOB
+     * {File::FNM_EXTGLOB}[rdoc-ref:File::Constants@File-3A-3AFNM_EXTGLOB] */
     rb_file_const("FNM_EXTGLOB", INT2FIX(FNM_EXTGLOB));
+    /* Document-const: FNM_SYSCASE
+     * {File::FNM_SYSCASE}[rdoc-ref:File::Constants@File-3A-3AFNM_SYSCASE] */
     rb_file_const("FNM_SYSCASE", INT2FIX(FNM_SYSCASE));
+    /* Document-const: FNM_SHORTNAME
+     * {File::FNM_SHORTNAME}[rdoc-ref:File::Constants@File-3A-3AFNM_SHORTNAME] */
     rb_file_const("FNM_SHORTNAME", INT2FIX(FNM_SHORTNAME));
 }
 

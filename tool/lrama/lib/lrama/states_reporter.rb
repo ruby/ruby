@@ -156,7 +156,7 @@ module Lrama
           nl = true
         end
 
-        if r = state.default_reduction_rule
+        if (r = state.default_reduction_rule)
           nl = true
           s = "$default".ljust(max_len)
 

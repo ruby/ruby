@@ -6,7 +6,7 @@
         ├── @ CaseMatchNode (location: (1,0)-(33,3))
         │   ├── predicate:
         │   │   @ CallNode (location: (1,5)-(1,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -63,7 +63,7 @@
         │   │   │   │   @ StatementsNode (location: (5,2)-(5,3))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (5,2)-(5,3))
-        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           ├── flags: variable_call, ignore_visibility
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :y
@@ -340,7 +340,7 @@
         ├── @ CaseMatchNode (location: (34,0)-(36,3))
         │   ├── predicate:
         │   │   @ CallNode (location: (34,5)-(34,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -382,7 +382,7 @@
         ├── @ CaseMatchNode (location: (37,0)-(40,3))
         │   ├── predicate:
         │   │   @ CallNode (location: (37,5)-(37,8))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo

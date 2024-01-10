@@ -271,15 +271,12 @@ static VALUE encoding_spec_rb_enc_str_asciionly_p(VALUE self, VALUE str) {
   }
 }
 
-RBIMPL_WARNING_PUSH()
-RBIMPL_WARNING_IGNORED(-Wformat-security)
 static VALUE encoding_spec_rb_enc_raise(VALUE self, VALUE encoding, VALUE exception_class, VALUE format) {
   rb_encoding *e = rb_to_encoding(encoding);
   const char *f = RSTRING_PTR(format);
 
   rb_enc_raise(e, exception_class, "%s", f);
 }
-RBIMPL_WARNING_POP()
 
 static VALUE encoding_spec_rb_uv_to_utf8(VALUE self, VALUE buf, VALUE num) {
   int len = rb_uv_to_utf8(RSTRING_PTR(buf), NUM2INT(num));

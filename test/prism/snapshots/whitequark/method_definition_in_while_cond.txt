@@ -22,7 +22,7 @@
         │   │   │   │       ├── operator_loc: (1,16)-(1,17) = "="
         │   │   │   │       └── value:
         │   │   │   │           @ CallNode (location: (1,18)-(1,28))
-        │   │   │   │           ├── flags: ∅
+        │   │   │   │           ├── flags: ignore_visibility
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :tap
@@ -72,7 +72,7 @@
         │   │   │   @ StatementsNode (location: (3,15)-(3,25))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (3,15)-(3,25))
-        │   │   │           ├── flags: ∅
+        │   │   │           ├── flags: ignore_visibility
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :tap
@@ -122,7 +122,7 @@
         │   │   │   │       ├── operator_loc: (5,21)-(5,22) = "="
         │   │   │   │       └── value:
         │   │   │   │           @ CallNode (location: (5,23)-(5,33))
-        │   │   │   │           ├── flags: ∅
+        │   │   │   │           ├── flags: ignore_visibility
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :tap
@@ -173,7 +173,7 @@
             │   │   @ StatementsNode (location: (7,20)-(7,30))
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (7,20)-(7,30))
-            │   │           ├── flags: ∅
+            │   │           ├── flags: ignore_visibility
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :tap

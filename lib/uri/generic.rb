@@ -1364,6 +1364,9 @@ module URI
           str << ':'
           str << @port.to_s
         end
+        if (@host || @port) && !@path.empty? && !@path.start_with?('/')
+          str << '/'
+        end
         str << @path
         if @query
           str << '?'

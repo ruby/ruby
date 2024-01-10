@@ -589,7 +589,7 @@ class TestAst < Test::Unit::TestCase
     assert_equal("foo", head)
     assert_equal(:EVSTR, body.type)
     body, = body.children
-    assert_equal(:LIT, body.type)
+    assert_equal(:INTEGER, body.type)
     assert_equal([1], body.children)
   end
 
@@ -885,7 +885,7 @@ dummy
       begin
         a = 1
     STR
-      (SCOPE@1:0-2:7 tbl: [:a] args: nil body: (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1)))
+      (SCOPE@1:0-2:7 tbl: [:a] args: nil body: (LASGN@2:2-2:7 :a (INTEGER@2:6-2:7 1)))
     EXP
   end
 
@@ -898,7 +898,8 @@ dummy
        tbl: [:a]
        args: nil
        body:
-         (IF@1:0-2:7 (VCALL@1:3-1:7 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1)) nil))
+         (IF@1:0-2:7 (VCALL@1:3-1:7 :cond) (LASGN@2:2-2:7 :a (INTEGER@2:6-2:7 1))
+            nil))
     EXP
 
     assert_error_tolerant(<<~STR, <<~EXP)
@@ -910,7 +911,7 @@ dummy
        tbl: [:a]
        args: nil
        body:
-         (IF@1:0-3:4 (VCALL@1:3-1:7 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1))
+         (IF@1:0-3:4 (VCALL@1:3-1:7 :cond) (LASGN@2:2-2:7 :a (INTEGER@2:6-2:7 1))
             (BEGIN@3:4-3:4 nil)))
     EXP
   end
@@ -924,7 +925,7 @@ dummy
        tbl: [:a]
        args: nil
        body:
-         (UNLESS@1:0-2:7 (VCALL@1:7-1:11 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1))
+         (UNLESS@1:0-2:7 (VCALL@1:7-1:11 :cond) (LASGN@2:2-2:7 :a (INTEGER@2:6-2:7 1))
             nil))
     EXP
 
@@ -937,7 +938,7 @@ dummy
        tbl: [:a]
        args: nil
        body:
-         (UNLESS@1:0-3:4 (VCALL@1:7-1:11 :cond) (LASGN@2:2-2:7 :a (LIT@2:6-2:7 1))
+         (UNLESS@1:0-3:4 (VCALL@1:7-1:11 :cond) (LASGN@2:2-2:7 :a (INTEGER@2:6-2:7 1))
             (BEGIN@3:4-3:4 nil)))
     EXP
   end
@@ -976,7 +977,7 @@ dummy
        args: nil
        body:
          (CASE@1:0-2:6 (VCALL@1:5-1:6 :a)
-            (WHEN@2:0-2:6 (LIST@2:5-2:6 (LIT@2:5-2:6 1) nil) (BEGIN@2:6-2:6 nil)
+            (WHEN@2:0-2:6 (LIST@2:5-2:6 (INTEGER@2:5-2:6 1) nil) (BEGIN@2:6-2:6 nil)
                nil)))
     EXP
 
@@ -993,7 +994,7 @@ dummy
             (WHEN@2:0-2:11
                (LIST@2:5-2:11
                   (OPCALL@2:5-2:11 (VCALL@2:5-2:6 :a) :==
-                     (LIST@2:10-2:11 (LIT@2:10-2:11 1) nil)) nil)
+                     (LIST@2:10-2:11 (INTEGER@2:10-2:11 1) nil)) nil)
                (BEGIN@2:11-2:11 nil) nil)))
     EXP
 
@@ -1012,7 +1013,7 @@ dummy
                 const: nil
                 kw:
                   (HASH@2:4-2:13
-                     (LIST@2:4-2:13 (LIT@2:4-2:6 :a) (CONST@2:7-2:13 :String) nil))
+                     (LIST@2:4-2:13 (SYM@2:4-2:6 :a) (CONST@2:7-2:13 :String) nil))
                 kwrest: nil) (BEGIN@2:14-2:14 nil) nil)))
     EXP
   end
@@ -1094,7 +1095,7 @@ dummy
        tbl: []
        args: nil
        body:
-         (ITER@1:0-2:3 (FCALL@1:0-1:3 :m (LIST@1:2-1:3 (LIT@1:2-1:3 1) nil))
+         (ITER@1:0-2:3 (FCALL@1:0-1:3 :m (LIST@1:2-1:3 (INTEGER@1:2-1:3 1) nil))
             (SCOPE@1:4-2:3 tbl: [] args: nil body: (VCALL@2:2-2:3 :a))))
     EXP
   end

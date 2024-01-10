@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(9,52))
     └── body: (length: 5)
         ├── @ CallNode (location: (1,0)-(1,42))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :p
@@ -33,7 +33,7 @@
         │   │           │   │   │   └── unescaped: "a"
         │   │           │   │   ├── value:
         │   │           │   │   │   @ CallNode (location: (1,14)-(1,25))
-        │   │           │   │   │   ├── flags: ∅
+        │   │           │   │   │   ├── flags: ignore_visibility
         │   │           │   │   │   ├── receiver: ∅
         │   │           │   │   │   ├── call_operator_loc: ∅
         │   │           │   │   │   ├── name: :proc
@@ -60,7 +60,7 @@
         │   │           │       │   └── unescaped: "b"
         │   │           │       ├── value:
         │   │           │       │   @ CallNode (location: (1,30)-(1,41))
-        │   │           │       │   ├── flags: ∅
+        │   │           │       │   ├── flags: ignore_visibility
         │   │           │       │   ├── receiver: ∅
         │   │           │       │   ├── call_operator_loc: ∅
         │   │           │       │   ├── name: :proc
@@ -81,7 +81,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (3,0)-(3,40))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :p
@@ -103,7 +103,7 @@
         │   │           │   ├── @ AssocSplatNode (location: (3,9)-(3,23))
         │   │           │   │   ├── value:
         │   │           │   │   │   @ CallNode (location: (3,12)-(3,23))
-        │   │           │   │   │   ├── flags: ∅
+        │   │           │   │   │   ├── flags: ignore_visibility
         │   │           │   │   │   ├── receiver: ∅
         │   │           │   │   │   ├── call_operator_loc: ∅
         │   │           │   │   │   ├── name: :proc
@@ -130,7 +130,7 @@
         │   │           │       │   └── unescaped: "b"
         │   │           │       ├── value:
         │   │           │       │   @ CallNode (location: (3,28)-(3,39))
-        │   │           │       │   ├── flags: ∅
+        │   │           │       │   ├── flags: ignore_visibility
         │   │           │       │   ├── receiver: ∅
         │   │           │       │   ├── call_operator_loc: ∅
         │   │           │       │   ├── name: :proc
@@ -151,7 +151,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (5,0)-(5,43))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :p
@@ -180,7 +180,7 @@
         │   │           │   │   │   └── unescaped: "a"
         │   │           │   │   ├── value:
         │   │           │   │   │   @ CallNode (location: (5,15)-(5,26))
-        │   │           │   │   │   ├── flags: ∅
+        │   │           │   │   │   ├── flags: ignore_visibility
         │   │           │   │   │   ├── receiver: ∅
         │   │           │   │   │   ├── call_operator_loc: ∅
         │   │           │   │   │   ├── name: :proc
@@ -207,7 +207,7 @@
         │   │           │       │   └── unescaped: "b"
         │   │           │       ├── value:
         │   │           │       │   @ CallNode (location: (5,31)-(5,42))
-        │   │           │       │   ├── flags: ∅
+        │   │           │       │   ├── flags: ignore_visibility
         │   │           │       │   ├── receiver: ∅
         │   │           │       │   ├── call_operator_loc: ∅
         │   │           │       │   ├── name: :proc
@@ -228,7 +228,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         ├── @ CallNode (location: (7,0)-(7,40))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :p
@@ -257,7 +257,7 @@
         │   │           │   │   │   └── unescaped: "a"
         │   │           │   │   ├── value:
         │   │           │   │   │   @ CallNode (location: (7,12)-(7,23))
-        │   │           │   │   │   ├── flags: ∅
+        │   │           │   │   │   ├── flags: ignore_visibility
         │   │           │   │   │   ├── receiver: ∅
         │   │           │   │   │   ├── call_operator_loc: ∅
         │   │           │   │   │   ├── name: :proc
@@ -284,7 +284,7 @@
         │   │           │       │   └── unescaped: "b"
         │   │           │       ├── value:
         │   │           │       │   @ CallNode (location: (7,28)-(7,39))
-        │   │           │       │   ├── flags: ∅
+        │   │           │       │   ├── flags: ignore_visibility
         │   │           │       │   ├── receiver: ∅
         │   │           │       │   ├── call_operator_loc: ∅
         │   │           │       │   ├── name: :proc
@@ -305,7 +305,7 @@
         │   ├── closing_loc: ∅
         │   └── block: ∅
         └── @ CallNode (location: (9,0)-(9,52))
-            ├── flags: ∅
+            ├── flags: ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :p
@@ -327,7 +327,7 @@
             │           │   ├── @ AssocNode (location: (9,9)-(9,35))
             │           │   │   ├── key:
             │           │   │   │   @ CallNode (location: (9,9)-(9,20))
-            │           │   │   │   ├── flags: ∅
+            │           │   │   │   ├── flags: ignore_visibility
             │           │   │   │   ├── receiver: ∅
             │           │   │   │   ├── call_operator_loc: ∅
             │           │   │   │   ├── name: :proc
@@ -345,7 +345,7 @@
             │           │   │   │       └── closing_loc: (9,17)-(9,20) = "end"
             │           │   │   ├── value:
             │           │   │   │   @ CallNode (location: (9,24)-(9,35))
-            │           │   │   │   ├── flags: ∅
+            │           │   │   │   ├── flags: ignore_visibility
             │           │   │   │   ├── receiver: ∅
             │           │   │   │   ├── call_operator_loc: ∅
             │           │   │   │   ├── name: :proc
@@ -372,7 +372,7 @@
             │           │       │   └── unescaped: "b"
             │           │       ├── value:
             │           │       │   @ CallNode (location: (9,40)-(9,51))
-            │           │       │   ├── flags: ∅
+            │           │       │   ├── flags: ignore_visibility
             │           │       │   ├── receiver: ∅
             │           │       │   ├── call_operator_loc: ∅
             │           │       │   ├── name: :proc

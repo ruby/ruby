@@ -6,11 +6,11 @@ on:
       - 'spec/**'
       - '!spec/*.md'
   pull_request:
-    paths-ignore:
+    paths:
       - 'spec/**'
       - '!spec/*.md'
   merge_group:
-    paths-ignore:
+    paths:
       - 'spec/**'
       - '!spec/*.md'
 
@@ -43,6 +43,7 @@ jobs:
           - ruby-3.0
           - ruby-3.1
           - ruby-3.2
+          - ruby-3.3
 
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1

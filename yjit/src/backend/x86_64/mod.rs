@@ -135,7 +135,7 @@ impl Assembler
             // Opnd::Value operands into registers here because:
             //
             //   - Most instructions can't be encoded with 64-bit immediates.
-            //   - We look for Op::Load specifically when emiting to keep GC'ed
+            //   - We look for Op::Load specifically when emitting to keep GC'ed
             //     VALUEs alive. This is a sort of canonicalization.
             let mut unmapped_opnds: Vec<Opnd> = vec![];
 

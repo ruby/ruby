@@ -8,7 +8,7 @@
         │   ├── operator_loc: (1,2)-(1,5) = "&&="
         │   ├── value:
         │   │   @ CallNode (location: (1,6)-(1,7))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :b
@@ -24,7 +24,7 @@
         │   ├── operator_loc: (3,2)-(3,4) = "+="
         │   ├── value:
         │   │   @ CallNode (location: (3,5)-(3,6))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :b
@@ -41,7 +41,7 @@
             ├── operator_loc: (5,2)-(5,5) = "||="
             ├── value:
             │   @ CallNode (location: (5,6)-(5,7))
-            │   ├── flags: variable_call
+            │   ├── flags: variable_call, ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :b

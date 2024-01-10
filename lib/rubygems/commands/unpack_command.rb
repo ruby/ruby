@@ -143,12 +143,6 @@ command help for an example.
   #   get_path 'rake', '< 0.1' # nil
   #   get_path 'rak'           # nil (exact name required)
   #--
-  # TODO: This should be refactored so that it's a general service. I don't
-  # think any of our existing classes are the right place though.  Just maybe
-  # 'Cache'?
-  #
-  # TODO: It just uses Gem.dir for now.  What's an easy way to get the list of
-  # source directories?
 
   def get_path(dependency)
     return dependency.name if /\.gem$/i.match?(dependency.name)

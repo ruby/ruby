@@ -53,7 +53,7 @@
         │   ├── equal_loc: ∅
         │   └── end_keyword_loc: (3,14)-(3,17) = "end"
         └── @ CallNode (location: (5,0)-(5,13))
-            ├── flags: ∅
+            ├── flags: ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :m

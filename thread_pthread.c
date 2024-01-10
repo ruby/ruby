@@ -62,6 +62,10 @@ static const void *const condattr_monotonic = NULL;
 
 #include COROUTINE_H
 
+#ifndef HAVE_SYS_EVENT_H
+#define HAVE_SYS_EVENT_H 0
+#endif
+
 #ifndef HAVE_SYS_EPOLL_H
 #define HAVE_SYS_EPOLL_H 0
 #else
@@ -77,6 +81,9 @@ static const void *const condattr_monotonic = NULL;
     #define USE_MN_THREADS 0
   #elif HAVE_SYS_EPOLL_H
     #include <sys/epoll.h>
+    #define USE_MN_THREADS 1
+  #elif HAVE_SYS_EVENT_H
+    #include <sys/event.h>
     #define USE_MN_THREADS 1
   #else
     #define USE_MN_THREADS 0
@@ -1129,6 +1136,11 @@ void
 rb_thread_sched_init(struct rb_thread_sched *sched, bool atfork)
 {
     rb_native_mutex_initialize(&sched->lock_);
+
+#if VM_CHECK_MODE
+    sched->lock_owner = NULL;
+#endif
+
     ccan_list_head_init(&sched->readyq);
     sched->readyq_cnt = 0;
 
@@ -1673,8 +1685,11 @@ ruby_mn_threads_params(void)
     const int default_max_cpu = 8; // TODO: CPU num?
     int max_cpu = default_max_cpu;
 
-    if (USE_MN_THREADS && max_cpu_cstr && (max_cpu = atoi(max_cpu_cstr)) > 0) {
-        max_cpu = default_max_cpu;
+    if (USE_MN_THREADS && max_cpu_cstr)  {
+        int given_max_cpu = atoi(max_cpu_cstr);
+        if (given_max_cpu > 0) {
+            max_cpu = given_max_cpu;
+        }
     }
 
     vm->ractor.sched.max_cpu = max_cpu;
@@ -2062,10 +2077,6 @@ native_thread_init_stack(rb_thread_t *th)
     return 0;
 }
 
-#ifndef __CYGWIN__
-#define USE_NATIVE_THREAD_INIT 1
-#endif
-
 struct nt_param {
     rb_vm_t *vm;
     struct rb_native_thread *nt;
@@ -2174,13 +2185,8 @@ native_thread_create_dedicated(rb_thread_t *th)
 static void
 call_thread_start_func_2(rb_thread_t *th)
 {
-#if defined USE_NATIVE_THREAD_INIT
     native_thread_init_stack(th);
     thread_start_func_2(th, th->ec->machine.stack_start);
-#else
-    VALUE stack_start;
-    thread_start_func_2(th, &stack_start);
-#endif
 }
 
 static void *
@@ -2794,10 +2800,15 @@ static struct {
 
     int comm_fds[2]; // r, w
 
+#if (HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H) && USE_MN_THREADS
+    int event_fd; // kernel event queue fd (epoll/kqueue)
+#endif
 #if HAVE_SYS_EPOLL_H && USE_MN_THREADS
 #define EPOLL_EVENTS_MAX 0x10
-    int epoll_fd;
     struct epoll_event finished_events[EPOLL_EVENTS_MAX];
+#elif HAVE_SYS_EVENT_H && USE_MN_THREADS
+#define KQUEUE_EVENTS_MAX 0x10
+    struct kevent finished_events[KQUEUE_EVENTS_MAX];
 #endif
 
     // waiting threads list
@@ -2855,7 +2866,7 @@ timer_thread_set_timeout(rb_vm_t *vm)
                 RUBY_DEBUG_LOG("th:%u now:%lu rel:%lu", rb_th_serial(th), (unsigned long)now, (unsigned long)hrrel);
 
                 // TODO: overflow?
-                timeout = (int)(hrrel / RB_HRTIME_PER_MSEC); // ms
+                timeout = (int)((hrrel + RB_HRTIME_PER_MSEC - 1) / RB_HRTIME_PER_MSEC); // ms
             }
         }
         rb_native_mutex_unlock(&timer_th.waiting_lock);
@@ -3083,7 +3094,7 @@ rb_thread_create_timer_thread(void)
 
             CLOSE_INVALIDATE_PAIR(timer_th.comm_fds);
 #if HAVE_SYS_EPOLL_H && USE_MN_THREADS
-            close_invalidate(&timer_th.epoll_fd, "close epoll_fd");
+            close_invalidate(&timer_th.event_fd, "close event_fd");
 #endif
             rb_native_mutex_destroy(&timer_th.waiting_lock);
         }
@@ -3094,8 +3105,8 @@ rb_thread_create_timer_thread(void)
         // open communication channel
         setup_communication_pipe_internal(timer_th.comm_fds);
 
-        // open epoll fd
-        timer_thread_setup_nm();
+        // open event fd
+        timer_thread_setup_mn();
     }
 
     pthread_create(&timer_th.pthread_id, NULL, timer_thread_func, GET_VM());
@@ -3176,8 +3187,8 @@ rb_reserved_fd_p(int fd)
 
     if (fd == timer_th.comm_fds[0] ||
         fd == timer_th.comm_fds[1]
-#if HAVE_SYS_EPOLL_H && USE_MN_THREADS
-        || fd == timer_th.epoll_fd
+#if (HAVE_SYS_EPOLL_H || HAVE_SYS_EVENT_H) && USE_MN_THREADS
+        || fd == timer_th.event_fd
 #endif
         ) {
         goto check_fork_gen;

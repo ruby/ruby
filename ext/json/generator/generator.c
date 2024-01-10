@@ -867,7 +867,7 @@ json_object_i(VALUE key, VALUE val, VALUE _arg)
     if (klass == rb_cString) {
         key_to_s = key;
     } else if (klass == rb_cSymbol) {
-        key_to_s = rb_id2str(SYM2ID(key));
+        key_to_s = rb_sym2str(key);
     } else {
         key_to_s = rb_funcall(key, i_to_s, 0);
     }

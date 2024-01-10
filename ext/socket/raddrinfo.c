@@ -511,6 +511,11 @@ start:
     }
     pthread_detach(th);
 
+    int r;
+    if ((r = pthread_attr_destroy(&attr)) != 0) {
+        rb_bug_errno("pthread_attr_destroy", r);
+    }
+
     rb_thread_call_without_gvl2(wait_getaddrinfo, arg, cancel_getaddrinfo, arg);
 
     int need_free = 0;
@@ -732,11 +737,16 @@ start:
 #endif
 
     pthread_t th;
-    if (do_pthread_create(&th, 0, do_getnameinfo, arg) != 0) {
+    if (do_pthread_create(&th, &attr, do_getnameinfo, arg) != 0) {
         free_getnameinfo_arg(arg);
         return EAI_AGAIN;
     }
     pthread_detach(th);
+
+    int r;
+    if ((r = pthread_attr_destroy(&attr)) != 0) {
+        rb_bug_errno("pthread_attr_destroy", r);
+    }
 
     rb_thread_call_without_gvl2(wait_getnameinfo, arg, cancel_getnameinfo, arg);
 
@@ -3030,12 +3040,12 @@ rsock_io_socket_addrinfo(VALUE io, struct sockaddr *addr, socklen_t len)
 void
 rsock_init_addrinfo(void)
 {
+    id_timeout = rb_intern("timeout");
+
     /*
      * The Addrinfo class maps <tt>struct addrinfo</tt> to ruby.  This
      * structure identifies an Internet host and a service.
      */
-    id_timeout = rb_intern("timeout");
-
     rb_cAddrinfo = rb_define_class("Addrinfo", rb_cObject);
     rb_define_alloc_func(rb_cAddrinfo, addrinfo_s_allocate);
     rb_define_method(rb_cAddrinfo, "initialize", addrinfo_initialize, -1);

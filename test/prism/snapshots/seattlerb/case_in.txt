@@ -771,7 +771,7 @@
         │   │       │   │   └── @ PinnedExpressionNode (location: (90,4)-(90,8))
         │   │       │   │       ├── expression:
         │   │       │   │       │   @ CallNode (location: (90,6)-(90,7))
-        │   │       │   │       │   ├── flags: variable_call
+        │   │       │   │       │   ├── flags: variable_call, ignore_visibility
         │   │       │   │       │   ├── receiver: ∅
         │   │       │   │       │   ├── call_operator_loc: ∅
         │   │       │   │       │   ├── name: :a

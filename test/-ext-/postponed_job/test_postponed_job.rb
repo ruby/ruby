@@ -25,6 +25,14 @@ class TestPostponed_job < Test::Unit::TestCase
     RUBY
   end
 
+  def test_multiple_preregistration_with_new_data
+    assert_separately([], __FILE__, __LINE__, <<-'RUBY')
+      require '-test-/postponed_job'
+      values = Bug.postponed_job_preregister_calls_with_last_argument
+      # i.e. the callback is called with the last argument it was preregistered with
+      assert_equal [3, 4], values
+    RUBY
+  end
 
   def test_legacy_register
     assert_separately([], __FILE__, __LINE__, <<-'RUBY')

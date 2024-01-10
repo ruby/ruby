@@ -12,7 +12,7 @@
         │   │   @ StatementsNode (location: (1,8)-(1,20))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (1,8)-(1,20))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :raise
@@ -35,7 +35,7 @@
         │   │   │   @ StatementsNode (location: (1,23)-(1,33))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (1,23)-(1,33))
-        │   │   │           ├── flags: ∅
+        │   │   │           ├── flags: ignore_visibility
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :tap
@@ -62,7 +62,7 @@
         │   │   @ StatementsNode (location: (3,8)-(3,16))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (3,8)-(3,16))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :raise
@@ -85,7 +85,7 @@
         │   │   │   @ StatementsNode (location: (3,19)-(3,25))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (3,19)-(3,25))
-        │   │   │           ├── flags: ∅
+        │   │   │           ├── flags: ignore_visibility
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :tap
@@ -146,7 +146,7 @@
             │               │   @ StatementsNode (location: (5,20)-(5,23))
             │               │   └── body: (length: 1)
             │               │       └── @ CallNode (location: (5,20)-(5,23))
-            │               │           ├── flags: ∅
+            │               │           ├── flags: ignore_visibility
             │               │           ├── receiver: ∅
             │               │           ├── call_operator_loc: ∅
             │               │           ├── name: :p

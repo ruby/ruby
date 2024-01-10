@@ -407,7 +407,7 @@ pub extern "C" fn rb_yjit_constant_ic_update(iseq: *const rb_iseq_t, ic: IC, ins
     let insn_idx: IseqIdx = if let Ok(idx) = insn_idx.try_into() {
         idx
     } else {
-        // The index is too large, YJIT can't possibily have code for it,
+        // The index is too large, YJIT can't possibly have code for it,
         // so there is nothing to invalidate.
         return;
     };

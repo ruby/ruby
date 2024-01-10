@@ -25,7 +25,7 @@
             │   │           ├── operator_loc: (1,7)-(1,8) = "="
             │   │           └── value:
             │   │               @ CallNode (location: (1,9)-(1,12))
-            │   │               ├── flags: variable_call
+            │   │               ├── flags: variable_call, ignore_visibility
             │   │               ├── receiver: ∅
             │   │               ├── call_operator_loc: ∅
             │   │               ├── name: :foo

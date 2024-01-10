@@ -100,15 +100,16 @@ pub static mut OPTIONS: Options = Options {
 };
 
 /// YJIT option descriptions for `ruby --help`.
-static YJIT_OPTIONS: [(&str, &str); 8] = [
-    ("--yjit-stats",                    "Enable collecting YJIT statistics"),
-    ("--yjit-trace-exits",              "Record Ruby source location when exiting from generated code"),
-    ("--yjit-trace-exits-sample-rate",  "Trace exit locations only every Nth occurrence"),
-    ("--yjit-exec-mem-size=num",        "Size of executable memory block in MiB (default: 64)"),
-    ("--yjit-code-gc",                  "Run code GC when the code size reaches the limit"),
-    ("--yjit-call-threshold=num",       "Number of calls to trigger JIT"),
-    ("--yjit-cold-threshold=num",       "Global call after which ISEQs not compiled (default: 200K)"),
-    ("--yjit-perf",                     "Enable frame pointers and perf profiling"),
+static YJIT_OPTIONS: [(&str, &str); 9] = [
+    ("--yjit-exec-mem-size=num",           "Size of executable memory block in MiB (default: 64)"),
+    ("--yjit-call-threshold=num",          "Number of calls to trigger JIT"),
+    ("--yjit-cold-threshold=num",          "Global calls after which ISEQs not compiled (default: 200K)"),
+    ("--yjit-stats",                       "Enable collecting YJIT statistics"),
+    ("--yjit-disable",                     "Disable YJIT for lazily enabling it with RubyVM::YJIT.enable"),
+    ("--yjit-code-gc",                     "Run code GC when the code size reaches the limit"),
+    ("--yjit-perf",                        "Enable frame pointers and perf profiling"),
+    ("--yjit-trace-exits",                 "Record Ruby source location when exiting from generated code"),
+    ("--yjit-trace-exits-sample-rate=num", "Trace exit locations only every Nth occurrence"),
 ];
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -248,9 +249,9 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
         ("no-type-prop", "") => unsafe { OPTIONS.no_type_prop = true },
         ("stats", _) => match opt_val {
             "" => unsafe { OPTIONS.gen_stats = true },
-            "quiet" => {
-                unsafe { OPTIONS.gen_stats = true }
-                unsafe { OPTIONS.print_stats = false }
+            "quiet" => unsafe {
+                OPTIONS.gen_stats = true;
+                OPTIONS.print_stats = false;
             },
             _ => {
                 return None;

@@ -2593,12 +2593,12 @@ rb_threadptr_root_fiber_release(rb_thread_t *th)
         // So when using MMTk, only execute this part when called by a mutator.
         if (!rb_mmtk_enabled_p()) {
 #endif
-        rb_execution_context_t *ec = GET_EC();
+        rb_execution_context_t *ec = rb_current_execution_context(false);
 
         VM_ASSERT(th->ec->fiber_ptr->cont.type == FIBER_CONTEXT);
         VM_ASSERT(th->ec->fiber_ptr->cont.self == 0);
 
-        if (th->ec == ec) {
+        if (ec && th->ec == ec) {
             rb_ractor_set_current_ec(th->ractor, NULL);
         }
 #if USE_MMTK
@@ -3308,7 +3308,8 @@ rb_fiber_m_kill(VALUE self)
     else if (fiber->status != FIBER_TERMINATED) {
         if (fiber_current() == fiber) {
             fiber_check_killed(fiber);
-        } else {
+        }
+        else {
             fiber_raise(fiber_ptr(self), Qnil);
         }
     }

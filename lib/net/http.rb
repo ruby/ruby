@@ -456,6 +456,10 @@ module Net   #:nodoc:
   #
   # == What's Here
   #
+  # First, what's elsewhere. Class Net::HTTP:
+  #
+  # - Inherits from {class Object}[rdoc-ref:Object@What-27s+Here].
+  #
   # This is a categorized summary of methods and attributes.
   #
   # === \Net::HTTP Objects
@@ -722,7 +726,7 @@ module Net   #:nodoc:
   class HTTP < Protocol
 
     # :stopdoc:
-    VERSION = "0.4.0"
+    VERSION = "0.4.1"
     HTTPVersion = '1.1'
     begin
       require 'zlib'
@@ -2350,7 +2354,10 @@ module Net   #:nodoc:
           res
         }
         res.reading_body(@socket, req.response_body_permitted?) {
-          yield res if block_given?
+          if block_given?
+            count = max_retries # Don't restart in the middle of a download
+            yield res
+          end
         }
       rescue Net::OpenTimeout
         raise

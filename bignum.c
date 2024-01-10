@@ -5501,10 +5501,10 @@ big_op(VALUE x, VALUE y, enum big_op_t op)
     n = FIX2INT(rel);
 
     switch (op) {
-        case big_op_gt: return RBOOL(n >  0);
-        case big_op_ge: return RBOOL(n >= 0);
-        case big_op_lt: return RBOOL(n <  0);
-        case big_op_le: return RBOOL(n <= 0);
+      case big_op_gt: return RBOOL(n >  0);
+      case big_op_ge: return RBOOL(n >= 0);
+      case big_op_lt: return RBOOL(n <  0);
+      case big_op_le: return RBOOL(n <= 0);
     }
     return Qundef;
 }

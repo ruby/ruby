@@ -13,10 +13,16 @@ module Prism
   # This represents a field on a node. It contains all of the necessary
   # information to template out the code for that field.
   class Field
-    attr_reader :name, :options
+    attr_reader :name, :comment, :options
 
-    def initialize(name:, type:, **options)
-      @name, @type, @options = name, type, options
+    def initialize(name:, comment: nil, **options)
+      @name = name
+      @comment = comment
+      @options = options
+    end
+
+    def each_comment_line
+      comment.each_line { |line| yield line.prepend(" ").rstrip } if comment
     end
 
     def semantic_field?
@@ -248,8 +254,8 @@ module Prism
     end
   end
 
-  # This class represents a node in the tree, configured by the config.yml file in
-  # YAML format. It contains information about the name of the node and the
+  # This class represents a node in the tree, configured by the config.yml file
+  # in YAML format. It contains information about the name of the node and the
   # various child nodes it contains.
   class NodeType
     attr_reader :name, :type, :human, :fields, :newline, :comment
@@ -263,7 +269,16 @@ module Prism
 
       @fields =
         config.fetch("fields", []).map do |field|
-          field_type_for(field.fetch("type")).new(**field.transform_keys(&:to_sym))
+          type = field_type_for(field.fetch("type"))
+
+          options = field.transform_keys(&:to_sym)
+          options.delete(:type)
+
+          # If/when we have documentation on every field, this should be changed
+          # to use fetch instead of delete.
+          comment = options.delete(:comment)
+
+          type.new(comment: comment, **options)
         end
 
       @newline = config.fetch("newline", true)

@@ -1,11 +1,6 @@
 # frozen_string_literal: false
 require 'mkmf'
 
-version = ["../../..", "."].find do |dir|
-  break File.read(File.join(__dir__, dir, "io-console.gemspec"))[/^_VERSION\s*=\s*"(.*?)"/, 1]
-rescue
-end
-
 have_func("rb_io_path")
 have_func("rb_io_descriptor")
 have_func("rb_io_get_write_io")
@@ -40,7 +35,6 @@ when true
   elsif have_func("rb_scheduler_timeout") # 3.0
     have_func("rb_io_wait")
   end
-  $defs << "-D""IO_CONSOLE_VERSION=#{version}"
   create_makefile("io/console") {|conf|
     conf << "\n""VK_HEADER = #{vk_header}\n"
   }

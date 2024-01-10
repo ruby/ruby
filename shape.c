@@ -733,9 +733,10 @@ rb_shape_get_next(rb_shape_t *shape, VALUE obj, ID id)
                 if (RCLASS_EXT(klass)->variation_count >= SHAPE_MAX_VARIATIONS) {
                     rb_category_warn(
                         RB_WARN_CATEGORY_PERFORMANCE,
-                        "Maximum shapes variations (%d) reached by %"PRIsVALUE", instance variables accesses will be slower.",
-                        SHAPE_MAX_VARIATIONS,
-                        rb_class_path(klass)
+                        "The class %"PRIsVALUE" reached %d shape variations, instance variables accesses will be slower and memory usage increased.\n"
+                        "It is recommended to define instance variables in a consistent order, for instance by eagerly defining them all in the #initialize method.",
+                        rb_class_path(klass),
+                        SHAPE_MAX_VARIATIONS
                     );
                 }
             }
@@ -1130,6 +1131,7 @@ rb_shape_shapes_available(VALUE self)
     return INT2NUM(MAX_SHAPE_ID - (GET_SHAPE_TREE()->next_shape_id - 1));
 }
 
+/* :nodoc: */
 static VALUE
 rb_shape_exhaust(int argc, VALUE *argv, VALUE self)
 {

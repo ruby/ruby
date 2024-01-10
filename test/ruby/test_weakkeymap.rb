@@ -87,7 +87,7 @@ class TestWeakKeyMap < Test::Unit::TestCase
     assert_nothing_raised(FrozenError) {@wm['foo'] = o}
   end
 
-  def test_inconsistent_hash_key
+  def test_inconsistent_hash_key_memory_leak
     assert_no_memory_leak [], '', <<~RUBY
       class BadHash
         def initialize
@@ -121,6 +121,10 @@ class TestWeakKeyMap < Test::Unit::TestCase
 
       assert_equal(val, wm[key])
     end;
+  end
+
+  def test_gc_compact_stress
+    EnvUtil.under_gc_compact_stress { ObjectSpace::WeakKeyMap.new }
   end
 
   private

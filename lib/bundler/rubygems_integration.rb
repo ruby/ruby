@@ -4,17 +4,12 @@ require "rubygems" unless defined?(Gem)
 
 module Bundler
   class RubygemsIntegration
-    if defined?(Gem::Ext::Builder::CHDIR_MONITOR)
-      EXT_LOCK = Gem::Ext::Builder::CHDIR_MONITOR
-    else
-      require "monitor"
+    require "monitor"
 
-      EXT_LOCK = Monitor.new
-    end
+    EXT_LOCK = Monitor.new
 
     def initialize
       @replaced_methods = {}
-      backport_ext_builder_monitor
     end
 
     def version
@@ -41,18 +36,6 @@ module Bundler
 
     def loaded_specs(name)
       Gem.loaded_specs[name]
-    end
-
-    def add_to_load_path(paths)
-      return Gem.add_to_load_path(*paths) if Gem.respond_to?(:add_to_load_path)
-
-      if insert_index = Gem.load_path_insert_index
-        # Gem directories must come after -I and ENV['RUBYLIB']
-        $LOAD_PATH.insert(insert_index, *paths)
-      else
-        # We are probably testing in core, -I and RUBYLIB don't apply
-        $LOAD_PATH.unshift(*paths)
-      end
     end
 
     def mark_loaded(spec)
@@ -116,16 +99,6 @@ module Bundler
       Gem::Util.inflate(obj)
     end
 
-    def correct_for_windows_path(path)
-      if Gem::Util.respond_to?(:correct_for_windows_path)
-        Gem::Util.correct_for_windows_path(path)
-      elsif path[0].chr == "/" && path[1].chr =~ /[a-z]/i && path[2].chr == ":"
-        path[1..-1]
-      else
-        path
-      end
-    end
-
     def gem_dir
       Gem.dir
     end
@@ -161,7 +134,7 @@ module Bundler
     def spec_cache_dirs
       @spec_cache_dirs ||= begin
         dirs = gem_path.map {|dir| File.join(dir, "specifications") }
-        dirs << Gem.spec_cache_dir if Gem.respond_to?(:spec_cache_dir) # Not in RubyGems 2.0.3 or earlier
+        dirs << Gem.spec_cache_dir
         dirs.uniq.select {|dir| File.directory? dir }
       end
     end
@@ -181,18 +154,6 @@ module Bundler
     def loaded_gem_paths
       loaded_gem_paths = Gem.loaded_specs.map {|_, s| s.full_require_paths }
       loaded_gem_paths.flatten
-    end
-
-    def load_plugins
-      Gem.load_plugins if Gem.respond_to?(:load_plugins)
-    end
-
-    def load_plugin_files(files)
-      Gem.load_plugin_files(files) if Gem.respond_to?(:load_plugin_files)
-    end
-
-    def load_env_plugins
-      Gem.load_env_plugins if Gem.respond_to?(:load_env_plugins)
     end
 
     def ui=(obj)
@@ -480,7 +441,6 @@ module Bundler
 
         begin
           remote_gem_path = uri + "gems/#{gem_file_name}"
-          remote_gem_path = remote_gem_path.to_s if provides?("< 3.2.0.rc.1")
 
           SharedHelpers.filesystem_access(local_gem_path) do
             fetcher.cache_update_path remote_gem_path, local_gem_path
@@ -514,25 +474,6 @@ module Bundler
       end
     end
 
-    def backport_ext_builder_monitor
-      # So we can avoid requiring "rubygems/ext" in its entirety
-      Gem.module_eval <<-RUBY, __FILE__, __LINE__ + 1
-        module Ext
-        end
-      RUBY
-
-      require "rubygems/ext/builder"
-
-      Gem::Ext::Builder.class_eval do
-        unless const_defined?(:CHDIR_MONITOR)
-          const_set(:CHDIR_MONITOR, EXT_LOCK)
-        end
-
-        remove_const(:CHDIR_MUTEX) if const_defined?(:CHDIR_MUTEX)
-        const_set(:CHDIR_MUTEX, const_get(:CHDIR_MONITOR))
-      end
-    end
-
     def find_bundler(version)
       find_name("bundler").find {|s| s.version.to_s == version }
     end
@@ -541,14 +482,8 @@ module Bundler
       Gem::Specification.stubs_for(name).map(&:to_spec)
     end
 
-    if Gem::Specification.respond_to?(:default_stubs)
-      def default_stubs
-        Gem::Specification.default_stubs("*.gemspec")
-      end
-    else
-      def default_stubs
-        Gem::Specification.send(:default_stubs, "*.gemspec")
-      end
+    def default_stubs
+      Gem::Specification.default_stubs("*.gemspec")
     end
   end
 

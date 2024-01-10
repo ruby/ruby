@@ -23,7 +23,7 @@
         │   │   │           ├── name_loc: (1,21)-(1,22) = "a"
         │   │   │           ├── value:
         │   │   │           │   @ CallNode (location: (1,25)-(1,35))
-        │   │   │           │   ├── flags: ∅
+        │   │   │           │   ├── flags: ignore_visibility
         │   │   │           │   ├── receiver: ∅
         │   │   │           │   ├── call_operator_loc: ∅
         │   │   │           │   ├── name: :tap
@@ -62,7 +62,7 @@
         │   │   │   @ StatementsNode (location: (3,21)-(3,31))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (3,21)-(3,31))
-        │   │   │           ├── flags: ∅
+        │   │   │           ├── flags: ignore_visibility
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :tap
@@ -107,7 +107,7 @@
         │   │   │           ├── name_loc: (5,16)-(5,17) = "a"
         │   │   │           ├── value:
         │   │   │           │   @ CallNode (location: (5,20)-(5,30))
-        │   │   │           │   ├── flags: ∅
+        │   │   │           │   ├── flags: ignore_visibility
         │   │   │           │   ├── receiver: ∅
         │   │   │           │   ├── call_operator_loc: ∅
         │   │   │           │   ├── name: :tap
@@ -149,7 +149,7 @@
             │   │   @ StatementsNode (location: (7,17)-(7,27))
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (7,17)-(7,27))
-            │   │           ├── flags: ∅
+            │   │           ├── flags: ignore_visibility
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :tap

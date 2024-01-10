@@ -377,18 +377,18 @@ ole_param_default(ITypeInfo *pTypeInfo, UINT method_index, UINT index)
  *       end
  *     end
  *
- *     The above script result is following:
- *         Filename
- *         FileFormat
- *         Password
- *         WriteResPassword
- *         ReadOnlyRecommended
- *         CreateBackup
- *         AccessMode (= 1)
- *         ConflictResolution
- *         AddToMru
- *         TextCodepage
- *         TextVisualLayout
+ *  The above script result is following:
+ *      Filename
+ *      FileFormat
+ *      Password
+ *      WriteResPassword
+ *      ReadOnlyRecommended
+ *      CreateBackup
+ *      AccessMode (= 1)
+ *      ConflictResolution
+ *      AddToMru
+ *      TextCodepage
+ *      TextVisualLayout
  */
 static VALUE
 foleparam_default(VALUE self)

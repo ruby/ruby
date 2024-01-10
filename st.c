@@ -108,6 +108,7 @@
 #include "internal/bits.h"
 #include "internal/hash.h"
 #include "internal/sanitizers.h"
+#include "internal/st.h"
 #endif
 
 #if USE_MMTK
@@ -1175,6 +1176,13 @@ st_add_direct_with_hash(st_table *tab,
         bin_ind = find_table_bin_ind_direct(tab, hash, key);
         set_bin(tab->bins, get_size_ind(tab), bin_ind, ind + ENTRY_BASE);
     }
+}
+
+void
+rb_st_add_direct_with_hash(st_table *tab,
+                           st_data_t key, st_data_t value, st_hash_t hash)
+{
+    st_add_direct_with_hash(tab, key, value, hash);
 }
 
 /* Insert (KEY, VALUE) into table TAB.  The table should not have

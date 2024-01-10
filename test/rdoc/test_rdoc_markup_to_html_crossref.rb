@@ -133,6 +133,18 @@ class TestRDocMarkupToHtmlCrossref < XrefTestCase
                  'rdoc-ref:C1@foo'
   end
 
+  def test_convert_RDOCLINK_rdoc_ref_label_in_current_file
+    result = @to.convert 'rdoc-ref:@foo'
+
+    assert_equal para("<a href=\"#label-foo\">foo</a>"), result,
+                 'rdoc-ref:@foo'
+
+    result = @to.convert '{Foo}[rdoc-ref:@foo]'
+
+    assert_equal para("<a href=\"#label-foo\">Foo</a>"), result,
+                 '{Foo}[rdoc-ref:@foo]'
+  end
+
   def test_gen_url
     assert_equal '<a href="C1.html">Some class</a>',
                  @to.gen_url('rdoc-ref:C1', 'Some class')

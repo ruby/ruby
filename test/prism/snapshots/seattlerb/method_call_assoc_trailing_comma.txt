@@ -7,7 +7,7 @@
             ├── flags: ∅
             ├── receiver:
             │   @ CallNode (location: (1,0)-(1,1))
-            │   ├── flags: variable_call
+            │   ├── flags: variable_call, ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :a
@@ -25,6 +25,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ KeywordHashNode (location: (1,4)-(1,8))
+            │           ├── flags: ∅
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (1,4)-(1,8))
             │                   ├── key:

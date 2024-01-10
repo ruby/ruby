@@ -9,7 +9,7 @@
             ├── name_loc: (1,0)-(1,1) = "a"
             ├── value:
             │   @ CallNode (location: (1,4)-(1,20))
-            │   ├── flags: ∅
+            │   ├── flags: ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :foo
@@ -37,7 +37,7 @@
             │   │           │   │   │   │   @ StatementsNode (location: (3,6)-(3,9))
             │   │           │   │   │   │   └── body: (length: 1)
             │   │           │   │   │   │       └── @ CallNode (location: (3,6)-(3,9))
-            │   │           │   │   │   │           ├── flags: variable_call
+            │   │           │   │   │   │           ├── flags: variable_call, ignore_visibility
             │   │           │   │   │   │           ├── receiver: ∅
             │   │           │   │   │   │           ├── call_operator_loc: ∅
             │   │           │   │   │   │           ├── name: :bar

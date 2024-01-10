@@ -20,7 +20,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 2)
             │       ├── @ CallNode (location: (3,6)-(3,9))
-            │       │   ├── flags: variable_call
+            │       │   ├── flags: variable_call, ignore_visibility
             │       │   ├── receiver: ∅
             │       │   ├── call_operator_loc: ∅
             │       │   ├── name: :foo
@@ -30,7 +30,7 @@
             │       │   ├── closing_loc: ∅
             │       │   └── block: ∅
             │       └── @ CallNode (location: (3,11)-(3,14))
-            │           ├── flags: variable_call
+            │           ├── flags: variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :bar

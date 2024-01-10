@@ -7,6 +7,7 @@ on:
       - '**.md'
       - '**.rdoc'
       - '**/.document'
+      - '.*.yml'
   pull_request:
     paths-ignore:
       - 'doc/**'
@@ -14,6 +15,7 @@ on:
       - '**.md'
       - '**.rdoc'
       - '**/.document'
+      - '.*.yml'
   merge_group:
     paths-ignore:
       - 'doc/**'
@@ -21,6 +23,7 @@ on:
       - '**.md'
       - '**.rdoc'
       - '**/.document'
+      - '.*.yml'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -137,6 +140,9 @@ jobs:
         with:
           name: ruby-wasm-install
           path: ${{ github.workspace }}/install.tar.gz
+      - name: Show Playground URL to try the build
+        run: |
+          echo "Try on Playground: https://ruby.github.io/play-ruby?run=$GITHUB_RUN_ID" >> $GITHUB_STEP_SUMMARY
 
       - name: Run basictest
         run: wasmtime run ./../build/miniruby --mapdir /::./ -- basictest/test.rb
@@ -153,6 +159,16 @@ jobs:
           label: ${{ matrix.entry.name }}
           SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
         if: ${{ failure() }}
+
+      # Workaround for https://github.com/orgs/community/discussions/25220
+      - name: Save Pull Request number
+        if: ${{ github.event_name == 'pull_request' }}
+        run: echo "${{ github.event.pull_request.number }}" >> ${{ github.workspace }}/github-pr-info.txt
+      - uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+        if: ${{ github.event_name == 'pull_request' }}
+        with:
+          name: github-pr-info
+          path: ${{ github.workspace }}/github-pr-info.txt
 
 defaults:
   run:

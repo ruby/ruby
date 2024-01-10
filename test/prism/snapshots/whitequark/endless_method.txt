@@ -70,7 +70,7 @@
         │   ├── name_loc: (5,8)-(5,11) = "foo"
         │   ├── receiver:
         │   │   @ CallNode (location: (5,4)-(5,7))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :obj
@@ -98,7 +98,7 @@
             ├── name_loc: (7,8)-(7,11) = "inc"
             ├── receiver:
             │   @ CallNode (location: (7,4)-(7,7))
-            │   ├── flags: variable_call
+            │   ├── flags: variable_call, ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :obj

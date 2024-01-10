@@ -64,14 +64,14 @@ LIBRUBY_EXTS  = ./.libruby-with-ext.time
 REVISION_H    = ./.revision.time
 PLATFORM_D    = $(TIMESTAMPDIR)/.$(PLATFORM_DIR).time
 ENC_TRANS_D   = $(TIMESTAMPDIR)/.enc-trans.time
-RDOC          = $(XRUBY) "$(srcdir)/libexec/rdoc" --root "$(srcdir)" --encoding=UTF-8 --all
+RDOC          = $(XRUBY) "$(tooldir)/rdoc-srcdir"
 RDOCOUT       = $(EXTOUT)/rdoc
 HTMLOUT       = $(EXTOUT)/html
 CAPIOUT       = doc/capi
 INSTALL_DOC_OPTS = --rdoc-output="$(RDOCOUT)" --html-output="$(HTMLOUT)"
-RDOC_GEN_OPTS = --page-dir "$(srcdir)/doc" --no-force-update \
+RDOC_GEN_OPTS = --no-force-update \
 	--title "Documentation for Ruby $(RUBY_API_VERSION)" \
-	--main README.md
+	$(empty)
 
 INITOBJS      = dmyext.$(OBJEXT) dmyenc.$(OBJEXT)
 NORMALMAINOBJ = main.$(OBJEXT)
@@ -664,15 +664,21 @@ post-install-dbg::
 
 rdoc: PHONY main srcs-doc
 	@echo Generating RDoc documentation
-	$(Q) $(RDOC) --ri --op "$(RDOCOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) "$(srcdir)"
+	$(Q) $(RDOC) --ri --op "$(RDOCOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
 
 html: PHONY main srcs-doc
 	@echo Generating RDoc HTML files
-	$(Q) $(RDOC) --op "$(HTMLOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) "$(srcdir)"
+	$(Q) $(RDOC) --op "$(HTMLOUT)" $(RDOC_GEN_OPTS) $(RDOCFLAGS) .
 
 rdoc-coverage: PHONY main srcs-doc
 	@echo Generating RDoc coverage report
 	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) "$(srcdir)"
+
+undocumented: PHONY main srcs-doc
+	$(Q) $(RDOC) --quiet -C $(RDOCFLAGS) "$(srcdir)" | \
+	sed -n \
+	-e '/^ *# in file /{' -e 's///;N;s/\n/: /p' -e '}' \
+	-e 's/^ *\(.*[^ ]\) *# in file \(.*\)/\2: \1/p'
 
 RDOCBENCHOUT=/tmp/rdocbench
 
@@ -931,12 +937,15 @@ test: test-short
 test-precheck: encs exts PHONY $(DOT_WAIT)
 yes-test-all-precheck: programs $(DOT_WAIT) test-precheck
 
+PRECHECK_TEST_ALL = yes-test-all-precheck
+
 # $ make test-all TESTOPTS="--help" displays more detail
 # for example, make test-all TESTOPTS="-j2 -v -n test-name -- test-file-name"
 test-all: $(TEST_RUNNABLE)-test-all
-yes-test-all: yes-test-all-precheck
+yes-test-all: $(PRECHECK_TEST_ALL)
 	$(ACTIONS_GROUP)
-	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" $(TEST_EXCLUDES) $(TESTOPTS) $(TESTS)
+	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" \
+	$(TEST_EXCLUDES) $(TESTOPTS) $(TESTS) --exclude='rubygems/test_gem_package_task\.rb'
 	$(ACTIONS_ENDGROUP)
 TESTS_BUILD = mkmf
 no-test-all: PHONY
@@ -1039,6 +1048,7 @@ $(PLATFORM_D):
 	$(Q) $(MAKEDIRS) $(PLATFORM_DIR) $(@D)
 	@$(NULLCMD) > $@
 
+exe/$(PROGRAM): $(TIMESTAMPDIR)/$(arch)/.time
 exe/$(PROGRAM): ruby-runner.c ruby-runner.h exe/.time $(PREP) {$(VPATH)}config.h
 	$(Q) $(CC) $(CFLAGS) $(INCFLAGS) $(CPPFLAGS) -DRUBY_INSTALL_NAME=$(@F) $(COUTFLAG)ruby-runner.$(OBJEXT) -c $(CSRCFLAG)$(srcdir)/ruby-runner.c
 	$(Q) $(PURIFY) $(CC) $(CFLAGS) $(LDFLAGS) $(OUTFLAG)$@ ruby-runner.$(OBJEXT) $(LIBS)
@@ -1051,6 +1061,8 @@ exe/$(PROGRAM): ruby-runner.c ruby-runner.h exe/.time $(PREP) {$(VPATH)}config.h
 	    -e '  File.symlink(prog, dest)' \
 	    -e 'end' \
 	$(@F) $(@D) $(RUBY_INSTALL_NAME)$(EXEEXT)
+	$(Q) $(BOOTSTRAPRUBY) -r$(srcdir)/lib/fileutils \
+	    -e 'FileUtils::Verbose.ln_sr(*ARGV, force: true)' rbconfig.rb $(EXTOUT)/$(arch)
 
 exe/.time:
 	$(Q) $(MAKEDIRS) $(@D)
@@ -1355,7 +1367,7 @@ $(srcdir)/ext/rbconfig/sizeof/limits.c: $(srcdir)/ext/rbconfig/sizeof/depend \
 	$(exec) $(MAKE) -f - $(mflags) \
 		Q=$(Q) ECHO=$(ECHO) top_srcdir=../../.. srcdir=. VPATH=../../.. RUBY="$(BASERUBY)" $(@F)
 
-$(srcdir)/ext/socket/constdefs.c: $(srcdir)/ext/socket/depend
+$(srcdir)/ext/socket/constdefs.c: $(srcdir)/ext/socket/depend $(srcdir)/ext/socket/mkconstants.rb
 	$(Q) $(CHDIR) $(@D) && \
 	$(CAT_DEPEND) depend | \
 	$(exec) $(MAKE) -f - $(mflags) \
@@ -1523,7 +1535,9 @@ clone-bundled-gems-src: PHONY
 	    gems/bundled_gems
 
 outdate-bundled-gems: PHONY
-	$(Q) $(BASERUBY) $(tooldir)/$@.rb --make="$(MAKE)" --mflags="$(MFLAGS)" "$(srcdir)"
+	$(Q) $(BASERUBY) $(tooldir)/$@.rb --make="$(MAKE)" --mflags="$(MFLAGS)" \
+	--ruby-platform=$(arch) --ruby-version=$(ruby_version) \
+	"$(srcdir)"
 
 update-bundled_gems: PHONY
 	$(Q) $(RUNRUBY) -rrubygems \
@@ -2190,10 +2204,16 @@ ast.$(OBJEXT): $(hdrdir)/ruby.h
 ast.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 ast.$(OBJEXT): $(top_srcdir)/internal/array.h
 ast.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+ast.$(OBJEXT): $(top_srcdir)/internal/bignum.h
+ast.$(OBJEXT): $(top_srcdir)/internal/bits.h
 ast.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+ast.$(OBJEXT): $(top_srcdir)/internal/complex.h
+ast.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 ast.$(OBJEXT): $(top_srcdir)/internal/gc.h
 ast.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+ast.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 ast.$(OBJEXT): $(top_srcdir)/internal/parse.h
+ast.$(OBJEXT): $(top_srcdir)/internal/rational.h
 ast.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 ast.$(OBJEXT): $(top_srcdir)/internal/serial.h
 ast.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
@@ -2201,6 +2221,27 @@ ast.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 ast.$(OBJEXT): $(top_srcdir)/internal/variable.h
 ast.$(OBJEXT): $(top_srcdir)/internal/vm.h
 ast.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+ast.$(OBJEXT): $(top_srcdir)/prism/defines.h
+ast.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
+ast.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+ast.$(OBJEXT): $(top_srcdir)/prism/node.h
+ast.$(OBJEXT): $(top_srcdir)/prism/options.h
+ast.$(OBJEXT): $(top_srcdir)/prism/pack.h
+ast.$(OBJEXT): $(top_srcdir)/prism/parser.h
+ast.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+ast.$(OBJEXT): $(top_srcdir)/prism/prism.h
+ast.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
+ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
+ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+ast.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 ast.$(OBJEXT): {$(VPATH)}assert.h
 ast.$(OBJEXT): {$(VPATH)}ast.c
 ast.$(OBJEXT): {$(VPATH)}ast.rbinc
@@ -2377,6 +2418,9 @@ ast.$(OBJEXT): {$(VPATH)}missing.h
 ast.$(OBJEXT): {$(VPATH)}node.h
 ast.$(OBJEXT): {$(VPATH)}onigmo.h
 ast.$(OBJEXT): {$(VPATH)}oniguruma.h
+ast.$(OBJEXT): {$(VPATH)}prism/ast.h
+ast.$(OBJEXT): {$(VPATH)}prism/version.h
+ast.$(OBJEXT): {$(VPATH)}prism_compile.h
 ast.$(OBJEXT): {$(VPATH)}ruby_assert.h
 ast.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 ast.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -2611,6 +2655,27 @@ builtin.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/variable.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/vm.h
 builtin.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/defines.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/node.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/options.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/pack.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/parser.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/prism.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+builtin.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 builtin.$(OBJEXT): {$(VPATH)}assert.h
 builtin.$(OBJEXT): {$(VPATH)}atomic.h
 builtin.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -2787,6 +2852,9 @@ builtin.$(OBJEXT): {$(VPATH)}missing.h
 builtin.$(OBJEXT): {$(VPATH)}node.h
 builtin.$(OBJEXT): {$(VPATH)}onigmo.h
 builtin.$(OBJEXT): {$(VPATH)}oniguruma.h
+builtin.$(OBJEXT): {$(VPATH)}prism/ast.h
+builtin.$(OBJEXT): {$(VPATH)}prism/version.h
+builtin.$(OBJEXT): {$(VPATH)}prism_compile.h
 builtin.$(OBJEXT): {$(VPATH)}ruby_assert.h
 builtin.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 builtin.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -3207,6 +3275,7 @@ compile.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 compile.$(OBJEXT): $(top_srcdir)/internal/object.h
 compile.$(OBJEXT): $(top_srcdir)/internal/rational.h
 compile.$(OBJEXT): $(top_srcdir)/internal/re.h
+compile.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 compile.$(OBJEXT): $(top_srcdir)/internal/serial.h
 compile.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 compile.$(OBJEXT): $(top_srcdir)/internal/string.h
@@ -3675,6 +3744,27 @@ cont.$(OBJEXT): $(top_srcdir)/internal/thread.h
 cont.$(OBJEXT): $(top_srcdir)/internal/variable.h
 cont.$(OBJEXT): $(top_srcdir)/internal/vm.h
 cont.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+cont.$(OBJEXT): $(top_srcdir)/prism/defines.h
+cont.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
+cont.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+cont.$(OBJEXT): $(top_srcdir)/prism/node.h
+cont.$(OBJEXT): $(top_srcdir)/prism/options.h
+cont.$(OBJEXT): $(top_srcdir)/prism/pack.h
+cont.$(OBJEXT): $(top_srcdir)/prism/parser.h
+cont.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+cont.$(OBJEXT): $(top_srcdir)/prism/prism.h
+cont.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
+cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
+cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+cont.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 cont.$(OBJEXT): {$(VPATH)}$(COROUTINE_H)
 cont.$(OBJEXT): {$(VPATH)}assert.h
 cont.$(OBJEXT): {$(VPATH)}atomic.h
@@ -3853,6 +3943,9 @@ cont.$(OBJEXT): {$(VPATH)}missing.h
 cont.$(OBJEXT): {$(VPATH)}node.h
 cont.$(OBJEXT): {$(VPATH)}onigmo.h
 cont.$(OBJEXT): {$(VPATH)}oniguruma.h
+cont.$(OBJEXT): {$(VPATH)}prism/ast.h
+cont.$(OBJEXT): {$(VPATH)}prism/version.h
+cont.$(OBJEXT): {$(VPATH)}prism_compile.h
 cont.$(OBJEXT): {$(VPATH)}ractor.h
 cont.$(OBJEXT): {$(VPATH)}ractor_core.h
 cont.$(OBJEXT): {$(VPATH)}rjit.h
@@ -6615,6 +6708,27 @@ eval.$(OBJEXT): $(top_srcdir)/internal/thread.h
 eval.$(OBJEXT): $(top_srcdir)/internal/variable.h
 eval.$(OBJEXT): $(top_srcdir)/internal/vm.h
 eval.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+eval.$(OBJEXT): $(top_srcdir)/prism/defines.h
+eval.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
+eval.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+eval.$(OBJEXT): $(top_srcdir)/prism/node.h
+eval.$(OBJEXT): $(top_srcdir)/prism/options.h
+eval.$(OBJEXT): $(top_srcdir)/prism/pack.h
+eval.$(OBJEXT): $(top_srcdir)/prism/parser.h
+eval.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+eval.$(OBJEXT): $(top_srcdir)/prism/prism.h
+eval.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
+eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
+eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+eval.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 eval.$(OBJEXT): {$(VPATH)}assert.h
 eval.$(OBJEXT): {$(VPATH)}atomic.h
 eval.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -6795,6 +6909,9 @@ eval.$(OBJEXT): {$(VPATH)}missing.h
 eval.$(OBJEXT): {$(VPATH)}node.h
 eval.$(OBJEXT): {$(VPATH)}onigmo.h
 eval.$(OBJEXT): {$(VPATH)}oniguruma.h
+eval.$(OBJEXT): {$(VPATH)}prism/ast.h
+eval.$(OBJEXT): {$(VPATH)}prism/version.h
+eval.$(OBJEXT): {$(VPATH)}prism_compile.h
 eval.$(OBJEXT): {$(VPATH)}probes.dmyh
 eval.$(OBJEXT): {$(VPATH)}probes.h
 eval.$(OBJEXT): {$(VPATH)}probes_helper.h
@@ -7070,6 +7187,27 @@ gc.$(OBJEXT): $(top_srcdir)/internal/thread.h
 gc.$(OBJEXT): $(top_srcdir)/internal/variable.h
 gc.$(OBJEXT): $(top_srcdir)/internal/vm.h
 gc.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+gc.$(OBJEXT): $(top_srcdir)/prism/defines.h
+gc.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
+gc.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+gc.$(OBJEXT): $(top_srcdir)/prism/node.h
+gc.$(OBJEXT): $(top_srcdir)/prism/options.h
+gc.$(OBJEXT): $(top_srcdir)/prism/pack.h
+gc.$(OBJEXT): $(top_srcdir)/prism/parser.h
+gc.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+gc.$(OBJEXT): $(top_srcdir)/prism/prism.h
+gc.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
+gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
+gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+gc.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 gc.$(OBJEXT): {$(VPATH)}assert.h
 gc.$(OBJEXT): {$(VPATH)}atomic.h
 gc.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -7252,6 +7390,9 @@ gc.$(OBJEXT): {$(VPATH)}missing.h
 gc.$(OBJEXT): {$(VPATH)}node.h
 gc.$(OBJEXT): {$(VPATH)}onigmo.h
 gc.$(OBJEXT): {$(VPATH)}oniguruma.h
+gc.$(OBJEXT): {$(VPATH)}prism/ast.h
+gc.$(OBJEXT): {$(VPATH)}prism/version.h
+gc.$(OBJEXT): {$(VPATH)}prism_compile.h
 gc.$(OBJEXT): {$(VPATH)}probes.dmyh
 gc.$(OBJEXT): {$(VPATH)}probes.h
 gc.$(OBJEXT): {$(VPATH)}ractor.h
@@ -7285,15 +7426,42 @@ goruby.$(OBJEXT): $(hdrdir)/ruby.h
 goruby.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/array.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+goruby.$(OBJEXT): $(top_srcdir)/internal/bignum.h
+goruby.$(OBJEXT): $(top_srcdir)/internal/bits.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+goruby.$(OBJEXT): $(top_srcdir)/internal/complex.h
+goruby.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/gc.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+goruby.$(OBJEXT): $(top_srcdir)/internal/numeric.h
+goruby.$(OBJEXT): $(top_srcdir)/internal/rational.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/serial.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/variable.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/vm.h
 goruby.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/defines.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/node.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/options.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/pack.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/parser.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/prism.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+goruby.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 goruby.$(OBJEXT): {$(VPATH)}assert.h
 goruby.$(OBJEXT): {$(VPATH)}atomic.h
 goruby.$(OBJEXT): {$(VPATH)}backward.h
@@ -7471,6 +7639,9 @@ goruby.$(OBJEXT): {$(VPATH)}missing.h
 goruby.$(OBJEXT): {$(VPATH)}node.h
 goruby.$(OBJEXT): {$(VPATH)}onigmo.h
 goruby.$(OBJEXT): {$(VPATH)}oniguruma.h
+goruby.$(OBJEXT): {$(VPATH)}prism/ast.h
+goruby.$(OBJEXT): {$(VPATH)}prism/version.h
+goruby.$(OBJEXT): {$(VPATH)}prism_compile.h
 goruby.$(OBJEXT): {$(VPATH)}ruby_assert.h
 goruby.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 goruby.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -7502,6 +7673,7 @@ hash.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 hash.$(OBJEXT): $(top_srcdir)/internal/object.h
 hash.$(OBJEXT): $(top_srcdir)/internal/proc.h
 hash.$(OBJEXT): $(top_srcdir)/internal/serial.h
+hash.$(OBJEXT): $(top_srcdir)/internal/st.h
 hash.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 hash.$(OBJEXT): $(top_srcdir)/internal/string.h
 hash.$(OBJEXT): $(top_srcdir)/internal/symbol.h
@@ -7510,6 +7682,27 @@ hash.$(OBJEXT): $(top_srcdir)/internal/time.h
 hash.$(OBJEXT): $(top_srcdir)/internal/variable.h
 hash.$(OBJEXT): $(top_srcdir)/internal/vm.h
 hash.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+hash.$(OBJEXT): $(top_srcdir)/prism/defines.h
+hash.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
+hash.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+hash.$(OBJEXT): $(top_srcdir)/prism/node.h
+hash.$(OBJEXT): $(top_srcdir)/prism/options.h
+hash.$(OBJEXT): $(top_srcdir)/prism/pack.h
+hash.$(OBJEXT): $(top_srcdir)/prism/parser.h
+hash.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+hash.$(OBJEXT): $(top_srcdir)/prism/prism.h
+hash.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
+hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
+hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+hash.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 hash.$(OBJEXT): {$(VPATH)}assert.h
 hash.$(OBJEXT): {$(VPATH)}atomic.h
 hash.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -7670,6 +7863,7 @@ hash.$(OBJEXT): {$(VPATH)}internal/module.h
 hash.$(OBJEXT): {$(VPATH)}internal/newobj.h
 hash.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 hash.$(OBJEXT): {$(VPATH)}internal/special_consts.h
+hash.$(OBJEXT): {$(VPATH)}internal/st.h
 hash.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 hash.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 hash.$(OBJEXT): {$(VPATH)}internal/stdbool.h
@@ -7685,6 +7879,9 @@ hash.$(OBJEXT): {$(VPATH)}missing.h
 hash.$(OBJEXT): {$(VPATH)}node.h
 hash.$(OBJEXT): {$(VPATH)}onigmo.h
 hash.$(OBJEXT): {$(VPATH)}oniguruma.h
+hash.$(OBJEXT): {$(VPATH)}prism/ast.h
+hash.$(OBJEXT): {$(VPATH)}prism/version.h
+hash.$(OBJEXT): {$(VPATH)}prism_compile.h
 hash.$(OBJEXT): {$(VPATH)}probes.dmyh
 hash.$(OBJEXT): {$(VPATH)}probes.h
 hash.$(OBJEXT): {$(VPATH)}ractor.h
@@ -8288,16 +8485,21 @@ iseq.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 iseq.$(OBJEXT): $(hdrdir)/ruby/version.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/array.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+iseq.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/bits.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/class.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/compile.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+iseq.$(OBJEXT): $(top_srcdir)/internal/complex.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/error.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/file.h
+iseq.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/gc.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/hash.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+iseq.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/parse.h
+iseq.$(OBJEXT): $(top_srcdir)/internal/rational.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
 iseq.$(OBJEXT): $(top_srcdir)/internal/serial.h
@@ -8538,15 +8740,21 @@ load.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 load.$(OBJEXT): $(hdrdir)/ruby/version.h
 load.$(OBJEXT): $(top_srcdir)/internal/array.h
 load.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+load.$(OBJEXT): $(top_srcdir)/internal/bignum.h
 load.$(OBJEXT): $(top_srcdir)/internal/bits.h
 load.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+load.$(OBJEXT): $(top_srcdir)/internal/complex.h
 load.$(OBJEXT): $(top_srcdir)/internal/dir.h
 load.$(OBJEXT): $(top_srcdir)/internal/error.h
 load.$(OBJEXT): $(top_srcdir)/internal/file.h
+load.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 load.$(OBJEXT): $(top_srcdir)/internal/gc.h
+load.$(OBJEXT): $(top_srcdir)/internal/hash.h
 load.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 load.$(OBJEXT): $(top_srcdir)/internal/load.h
+load.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 load.$(OBJEXT): $(top_srcdir)/internal/parse.h
+load.$(OBJEXT): $(top_srcdir)/internal/rational.h
 load.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 load.$(OBJEXT): $(top_srcdir)/internal/serial.h
 load.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
@@ -8555,6 +8763,27 @@ load.$(OBJEXT): $(top_srcdir)/internal/thread.h
 load.$(OBJEXT): $(top_srcdir)/internal/variable.h
 load.$(OBJEXT): $(top_srcdir)/internal/vm.h
 load.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+load.$(OBJEXT): $(top_srcdir)/prism/defines.h
+load.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
+load.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+load.$(OBJEXT): $(top_srcdir)/prism/node.h
+load.$(OBJEXT): $(top_srcdir)/prism/options.h
+load.$(OBJEXT): $(top_srcdir)/prism/pack.h
+load.$(OBJEXT): $(top_srcdir)/prism/parser.h
+load.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+load.$(OBJEXT): $(top_srcdir)/prism/prism.h
+load.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+load.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+load.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+load.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+load.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+load.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
+load.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+load.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
+load.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+load.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+load.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+load.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 load.$(OBJEXT): {$(VPATH)}assert.h
 load.$(OBJEXT): {$(VPATH)}atomic.h
 load.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -8732,6 +8961,9 @@ load.$(OBJEXT): {$(VPATH)}missing.h
 load.$(OBJEXT): {$(VPATH)}node.h
 load.$(OBJEXT): {$(VPATH)}onigmo.h
 load.$(OBJEXT): {$(VPATH)}oniguruma.h
+load.$(OBJEXT): {$(VPATH)}prism/ast.h
+load.$(OBJEXT): {$(VPATH)}prism/version.h
+load.$(OBJEXT): {$(VPATH)}prism_compile.h
 load.$(OBJEXT): {$(VPATH)}probes.dmyh
 load.$(OBJEXT): {$(VPATH)}probes.h
 load.$(OBJEXT): {$(VPATH)}ruby_assert.h
@@ -9838,15 +10070,42 @@ miniinit.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 miniinit.$(OBJEXT): $(srcdir)/rjit_c.rb
 miniinit.$(OBJEXT): $(top_srcdir)/internal/array.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+miniinit.$(OBJEXT): $(top_srcdir)/internal/bignum.h
+miniinit.$(OBJEXT): $(top_srcdir)/internal/bits.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+miniinit.$(OBJEXT): $(top_srcdir)/internal/complex.h
+miniinit.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/gc.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+miniinit.$(OBJEXT): $(top_srcdir)/internal/numeric.h
+miniinit.$(OBJEXT): $(top_srcdir)/internal/rational.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/serial.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/variable.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/vm.h
 miniinit.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/defines.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/node.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/options.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/pack.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/parser.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/prism.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+miniinit.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 miniinit.$(OBJEXT): {$(VPATH)}array.rb
 miniinit.$(OBJEXT): {$(VPATH)}assert.h
 miniinit.$(OBJEXT): {$(VPATH)}ast.rb
@@ -10036,6 +10295,9 @@ miniinit.$(OBJEXT): {$(VPATH)}onigmo.h
 miniinit.$(OBJEXT): {$(VPATH)}oniguruma.h
 miniinit.$(OBJEXT): {$(VPATH)}pack.rb
 miniinit.$(OBJEXT): {$(VPATH)}prelude.rb
+miniinit.$(OBJEXT): {$(VPATH)}prism/ast.h
+miniinit.$(OBJEXT): {$(VPATH)}prism/version.h
+miniinit.$(OBJEXT): {$(VPATH)}prism_compile.h
 miniinit.$(OBJEXT): {$(VPATH)}ractor.rb
 miniinit.$(OBJEXT): {$(VPATH)}rjit.rb
 miniinit.$(OBJEXT): {$(VPATH)}rjit_c.rb
@@ -10262,10 +10524,17 @@ node_dump.$(OBJEXT): $(CCAN_DIR)/str/str.h
 node_dump.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/array.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+node_dump.$(OBJEXT): $(top_srcdir)/internal/bignum.h
+node_dump.$(OBJEXT): $(top_srcdir)/internal/bits.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+node_dump.$(OBJEXT): $(top_srcdir)/internal/complex.h
+node_dump.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/gc.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/hash.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+node_dump.$(OBJEXT): $(top_srcdir)/internal/numeric.h
+node_dump.$(OBJEXT): $(top_srcdir)/internal/rational.h
+node_dump.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/serial.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 node_dump.$(OBJEXT): $(top_srcdir)/internal/variable.h
@@ -10688,6 +10957,7 @@ object.$(OBJEXT): $(top_srcdir)/internal/inits.h
 object.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 object.$(OBJEXT): $(top_srcdir)/internal/object.h
 object.$(OBJEXT): $(top_srcdir)/internal/serial.h
+object.$(OBJEXT): $(top_srcdir)/internal/st.h
 object.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 object.$(OBJEXT): $(top_srcdir)/internal/string.h
 object.$(OBJEXT): $(top_srcdir)/internal/struct.h
@@ -10855,6 +11125,7 @@ object.$(OBJEXT): {$(VPATH)}internal/module.h
 object.$(OBJEXT): {$(VPATH)}internal/newobj.h
 object.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 object.$(OBJEXT): {$(VPATH)}internal/special_consts.h
+object.$(OBJEXT): {$(VPATH)}internal/st.h
 object.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 object.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 object.$(OBJEXT): {$(VPATH)}internal/stdbool.h
@@ -12010,6 +12281,7 @@ prism/pack.$(OBJEXT): $(top_srcdir)/prism/pack.h
 prism/pack.$(OBJEXT): {$(VPATH)}config.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/options.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/parser.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
@@ -12050,6 +12322,7 @@ prism/prism.$(OBJEXT): {$(VPATH)}prism/ast.h
 prism/prism.$(OBJEXT): {$(VPATH)}prism/version.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+prism/regexp.$(OBJEXT): $(top_srcdir)/prism/options.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/parser.h
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/regexp.c
 prism/regexp.$(OBJEXT): $(top_srcdir)/prism/regexp.h
@@ -12146,6 +12419,7 @@ prism/util/pm_strncasecmp.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.c
 prism/util/pm_strncasecmp.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/options.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/parser.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
@@ -12374,6 +12648,27 @@ proc.$(OBJEXT): $(top_srcdir)/internal/symbol.h
 proc.$(OBJEXT): $(top_srcdir)/internal/variable.h
 proc.$(OBJEXT): $(top_srcdir)/internal/vm.h
 proc.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+proc.$(OBJEXT): $(top_srcdir)/prism/defines.h
+proc.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
+proc.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+proc.$(OBJEXT): $(top_srcdir)/prism/node.h
+proc.$(OBJEXT): $(top_srcdir)/prism/options.h
+proc.$(OBJEXT): $(top_srcdir)/prism/pack.h
+proc.$(OBJEXT): $(top_srcdir)/prism/parser.h
+proc.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+proc.$(OBJEXT): $(top_srcdir)/prism/prism.h
+proc.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
+proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
+proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+proc.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 proc.$(OBJEXT): {$(VPATH)}assert.h
 proc.$(OBJEXT): {$(VPATH)}atomic.h
 proc.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -12549,6 +12844,9 @@ proc.$(OBJEXT): {$(VPATH)}missing.h
 proc.$(OBJEXT): {$(VPATH)}node.h
 proc.$(OBJEXT): {$(VPATH)}onigmo.h
 proc.$(OBJEXT): {$(VPATH)}oniguruma.h
+proc.$(OBJEXT): {$(VPATH)}prism/ast.h
+proc.$(OBJEXT): {$(VPATH)}prism/version.h
+proc.$(OBJEXT): {$(VPATH)}prism_compile.h
 proc.$(OBJEXT): {$(VPATH)}proc.c
 proc.$(OBJEXT): {$(VPATH)}ruby_assert.h
 proc.$(OBJEXT): {$(VPATH)}ruby_atomic.h
@@ -14827,6 +15125,27 @@ rjit.$(OBJEXT): $(top_srcdir)/internal/struct.h
 rjit.$(OBJEXT): $(top_srcdir)/internal/variable.h
 rjit.$(OBJEXT): $(top_srcdir)/internal/vm.h
 rjit.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/defines.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/node.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/options.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/pack.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/parser.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/prism.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+rjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 rjit.$(OBJEXT): {$(VPATH)}assert.h
 rjit.$(OBJEXT): {$(VPATH)}atomic.h
 rjit.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -15007,6 +15326,9 @@ rjit.$(OBJEXT): {$(VPATH)}missing.h
 rjit.$(OBJEXT): {$(VPATH)}node.h
 rjit.$(OBJEXT): {$(VPATH)}onigmo.h
 rjit.$(OBJEXT): {$(VPATH)}oniguruma.h
+rjit.$(OBJEXT): {$(VPATH)}prism/ast.h
+rjit.$(OBJEXT): {$(VPATH)}prism/version.h
+rjit.$(OBJEXT): {$(VPATH)}prism_compile.h
 rjit.$(OBJEXT): {$(VPATH)}ractor.h
 rjit.$(OBJEXT): {$(VPATH)}ractor_core.h
 rjit.$(OBJEXT): {$(VPATH)}rjit.c
@@ -15055,6 +15377,27 @@ rjit_c.$(OBJEXT): $(top_srcdir)/internal/struct.h
 rjit_c.$(OBJEXT): $(top_srcdir)/internal/variable.h
 rjit_c.$(OBJEXT): $(top_srcdir)/internal/vm.h
 rjit_c.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/defines.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/node.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/options.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/pack.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/parser.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/prism.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+rjit_c.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 rjit_c.$(OBJEXT): {$(VPATH)}assert.h
 rjit_c.$(OBJEXT): {$(VPATH)}atomic.h
 rjit_c.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -15234,6 +15577,9 @@ rjit_c.$(OBJEXT): {$(VPATH)}missing.h
 rjit_c.$(OBJEXT): {$(VPATH)}node.h
 rjit_c.$(OBJEXT): {$(VPATH)}onigmo.h
 rjit_c.$(OBJEXT): {$(VPATH)}oniguruma.h
+rjit_c.$(OBJEXT): {$(VPATH)}prism/ast.h
+rjit_c.$(OBJEXT): {$(VPATH)}prism/version.h
+rjit_c.$(OBJEXT): {$(VPATH)}prism_compile.h
 rjit_c.$(OBJEXT): {$(VPATH)}probes.dmyh
 rjit_c.$(OBJEXT): {$(VPATH)}probes.h
 rjit_c.$(OBJEXT): {$(VPATH)}probes_helper.h
@@ -15279,12 +15625,16 @@ ruby.$(OBJEXT): $(hdrdir)/ruby/ruby.h
 ruby.$(OBJEXT): $(hdrdir)/ruby/version.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/array.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/basic_operators.h
+ruby.$(OBJEXT): $(top_srcdir)/internal/bignum.h
+ruby.$(OBJEXT): $(top_srcdir)/internal/bits.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/class.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/cmdlineopt.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+ruby.$(OBJEXT): $(top_srcdir)/internal/complex.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/cont.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/error.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/file.h
+ruby.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/gc.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/imemo.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/inits.h
@@ -15292,8 +15642,10 @@ ruby.$(OBJEXT): $(top_srcdir)/internal/io.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/load.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/loadpath.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/missing.h
+ruby.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/object.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/parse.h
+ruby.$(OBJEXT): $(top_srcdir)/internal/rational.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/serial.h
 ruby.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
@@ -15518,7 +15870,191 @@ ruby.$(OBJEXT): {$(VPATH)}util.h
 ruby.$(OBJEXT): {$(VPATH)}vm_core.h
 ruby.$(OBJEXT): {$(VPATH)}vm_opts.h
 ruby.$(OBJEXT): {$(VPATH)}yjit.h
+ruby_parser.$(OBJEXT): $(hdrdir)/ruby/ruby.h
+ruby_parser.$(OBJEXT): $(top_srcdir)/internal/array.h
+ruby_parser.$(OBJEXT): $(top_srcdir)/internal/bignum.h
+ruby_parser.$(OBJEXT): $(top_srcdir)/internal/bits.h
+ruby_parser.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+ruby_parser.$(OBJEXT): $(top_srcdir)/internal/complex.h
+ruby_parser.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
+ruby_parser.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+ruby_parser.$(OBJEXT): $(top_srcdir)/internal/numeric.h
+ruby_parser.$(OBJEXT): $(top_srcdir)/internal/rational.h
+ruby_parser.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
+ruby_parser.$(OBJEXT): $(top_srcdir)/internal/serial.h
+ruby_parser.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
+ruby_parser.$(OBJEXT): $(top_srcdir)/internal/vm.h
+ruby_parser.$(OBJEXT): {$(VPATH)}assert.h
+ruby_parser.$(OBJEXT): {$(VPATH)}backward/2/assume.h
+ruby_parser.$(OBJEXT): {$(VPATH)}backward/2/attributes.h
+ruby_parser.$(OBJEXT): {$(VPATH)}backward/2/bool.h
+ruby_parser.$(OBJEXT): {$(VPATH)}backward/2/gcc_version_since.h
+ruby_parser.$(OBJEXT): {$(VPATH)}backward/2/inttypes.h
+ruby_parser.$(OBJEXT): {$(VPATH)}backward/2/limits.h
+ruby_parser.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
+ruby_parser.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
+ruby_parser.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
+ruby_parser.$(OBJEXT): {$(VPATH)}config.h
+ruby_parser.$(OBJEXT): {$(VPATH)}defines.h
+ruby_parser.$(OBJEXT): {$(VPATH)}encoding.h
+ruby_parser.$(OBJEXT): {$(VPATH)}intern.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/abi.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/anyargs.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/arithmetic.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/arithmetic/char.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/arithmetic/double.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/arithmetic/fixnum.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/arithmetic/gid_t.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/arithmetic/int.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/arithmetic/intptr_t.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/arithmetic/long.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/arithmetic/long_long.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/arithmetic/mode_t.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/arithmetic/off_t.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/arithmetic/pid_t.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/arithmetic/short.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/arithmetic/size_t.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/arithmetic/st_data_t.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/arithmetic/uid_t.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/assume.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/alloc_size.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/artificial.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/cold.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/const.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/constexpr.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/deprecated.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/diagnose_if.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/enum_extensibility.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/error.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/flag_enum.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/forceinline.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/format.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/maybe_unused.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/noalias.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/nodiscard.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/noexcept.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/noinline.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/nonnull.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/noreturn.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/packed_struct.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/pure.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/restrict.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/returns_nonnull.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/warning.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/attr/weakref.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/cast.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/compiler_is.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/compiler_is/apple.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/compiler_is/clang.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/compiler_is/gcc.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/compiler_is/intel.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/compiler_is/msvc.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/compiler_is/sunpro.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/compiler_since.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/config.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/constant_p.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/core.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rarray.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rbasic.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rbignum.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rclass.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rdata.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rfile.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rhash.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/robject.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rregexp.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rstring.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rstruct.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/core/rtypeddata.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/ctype.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/dllexport.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/dosish.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/encoding/coderange.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/encoding/ctype.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/encoding/encoding.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/encoding/pathname.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/encoding/re.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/encoding/sprintf.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/encoding/string.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/encoding/symbol.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/encoding/transcode.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/error.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/eval.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/event.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/fl_type.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/gc.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/glob.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/globals.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/has/attribute.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/has/builtin.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/has/c_attribute.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/has/cpp_attribute.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/has/declspec_attribute.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/has/extension.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/has/feature.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/has/warning.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/array.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/bignum.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/class.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/compar.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/complex.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/cont.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/dir.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/enum.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/enumerator.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/error.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/eval.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/file.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/hash.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/io.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/load.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/marshal.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/numeric.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/object.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/parse.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/proc.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/process.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/random.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/range.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/rational.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/re.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/ruby.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/select.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/select/largesize.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/signal.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/sprintf.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/string.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/struct.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/thread.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/time.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/variable.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/intern/vm.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/interpreter.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/iterator.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/memory.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/method.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/module.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/newobj.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/scan_args.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/special_consts.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/static_assert.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/stdalign.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/stdbool.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/symbol.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/value.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/value_type.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/variable.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/warning_push.h
+ruby_parser.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
+ruby_parser.$(OBJEXT): {$(VPATH)}missing.h
+ruby_parser.$(OBJEXT): {$(VPATH)}onigmo.h
+ruby_parser.$(OBJEXT): {$(VPATH)}oniguruma.h
+ruby_parser.$(OBJEXT): {$(VPATH)}ruby_assert.h
 ruby_parser.$(OBJEXT): {$(VPATH)}ruby_parser.c
+ruby_parser.$(OBJEXT): {$(VPATH)}rubyparser.h
+ruby_parser.$(OBJEXT): {$(VPATH)}st.h
+ruby_parser.$(OBJEXT): {$(VPATH)}subst.h
 scheduler.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 scheduler.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 scheduler.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -16501,6 +17037,7 @@ st.$(OBJEXT): $(top_srcdir)/internal/bits.h
 st.$(OBJEXT): $(top_srcdir)/internal/compilers.h
 st.$(OBJEXT): $(top_srcdir)/internal/hash.h
 st.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
+st.$(OBJEXT): $(top_srcdir)/internal/st.h
 st.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 st.$(OBJEXT): $(top_srcdir)/internal/warnings.h
 st.$(OBJEXT): {$(VPATH)}assert.h
@@ -16647,6 +17184,7 @@ st.$(OBJEXT): {$(VPATH)}internal/module.h
 st.$(OBJEXT): {$(VPATH)}internal/newobj.h
 st.$(OBJEXT): {$(VPATH)}internal/scan_args.h
 st.$(OBJEXT): {$(VPATH)}internal/special_consts.h
+st.$(OBJEXT): {$(VPATH)}internal/st.h
 st.$(OBJEXT): {$(VPATH)}internal/static_assert.h
 st.$(OBJEXT): {$(VPATH)}internal/stdalign.h
 st.$(OBJEXT): {$(VPATH)}internal/stdbool.h
@@ -17547,6 +18085,27 @@ thread.$(OBJEXT): $(top_srcdir)/internal/time.h
 thread.$(OBJEXT): $(top_srcdir)/internal/variable.h
 thread.$(OBJEXT): $(top_srcdir)/internal/vm.h
 thread.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+thread.$(OBJEXT): $(top_srcdir)/prism/defines.h
+thread.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
+thread.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+thread.$(OBJEXT): $(top_srcdir)/prism/node.h
+thread.$(OBJEXT): $(top_srcdir)/prism/options.h
+thread.$(OBJEXT): $(top_srcdir)/prism/pack.h
+thread.$(OBJEXT): $(top_srcdir)/prism/parser.h
+thread.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+thread.$(OBJEXT): $(top_srcdir)/prism/prism.h
+thread.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
+thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
+thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+thread.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 thread.$(OBJEXT): {$(VPATH)}$(COROUTINE_H)
 thread.$(OBJEXT): {$(VPATH)}assert.h
 thread.$(OBJEXT): {$(VPATH)}atomic.h
@@ -17728,6 +18287,9 @@ thread.$(OBJEXT): {$(VPATH)}missing.h
 thread.$(OBJEXT): {$(VPATH)}node.h
 thread.$(OBJEXT): {$(VPATH)}onigmo.h
 thread.$(OBJEXT): {$(VPATH)}oniguruma.h
+thread.$(OBJEXT): {$(VPATH)}prism/ast.h
+thread.$(OBJEXT): {$(VPATH)}prism/version.h
+thread.$(OBJEXT): {$(VPATH)}prism_compile.h
 thread.$(OBJEXT): {$(VPATH)}ractor.h
 thread.$(OBJEXT): {$(VPATH)}ractor_core.h
 thread.$(OBJEXT): {$(VPATH)}rjit.h
@@ -18750,6 +19312,7 @@ vm.$(OBJEXT): $(top_srcdir)/internal/class.h
 vm.$(OBJEXT): $(top_srcdir)/internal/compar.h
 vm.$(OBJEXT): $(top_srcdir)/internal/compile.h
 vm.$(OBJEXT): $(top_srcdir)/internal/compilers.h
+vm.$(OBJEXT): $(top_srcdir)/internal/complex.h
 vm.$(OBJEXT): $(top_srcdir)/internal/cont.h
 vm.$(OBJEXT): $(top_srcdir)/internal/encoding.h
 vm.$(OBJEXT): $(top_srcdir)/internal/error.h
@@ -18764,6 +19327,7 @@ vm.$(OBJEXT): $(top_srcdir)/internal/object.h
 vm.$(OBJEXT): $(top_srcdir)/internal/parse.h
 vm.$(OBJEXT): $(top_srcdir)/internal/proc.h
 vm.$(OBJEXT): $(top_srcdir)/internal/random.h
+vm.$(OBJEXT): $(top_srcdir)/internal/rational.h
 vm.$(OBJEXT): $(top_srcdir)/internal/re.h
 vm.$(OBJEXT): $(top_srcdir)/internal/ruby_parser.h
 vm.$(OBJEXT): $(top_srcdir)/internal/sanitizers.h
@@ -18777,6 +19341,27 @@ vm.$(OBJEXT): $(top_srcdir)/internal/transcode.h
 vm.$(OBJEXT): $(top_srcdir)/internal/variable.h
 vm.$(OBJEXT): $(top_srcdir)/internal/vm.h
 vm.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+vm.$(OBJEXT): $(top_srcdir)/prism/defines.h
+vm.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
+vm.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+vm.$(OBJEXT): $(top_srcdir)/prism/node.h
+vm.$(OBJEXT): $(top_srcdir)/prism/options.h
+vm.$(OBJEXT): $(top_srcdir)/prism/pack.h
+vm.$(OBJEXT): $(top_srcdir)/prism/parser.h
+vm.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+vm.$(OBJEXT): $(top_srcdir)/prism/prism.h
+vm.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
+vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
+vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+vm.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 vm.$(OBJEXT): {$(VPATH)}assert.h
 vm.$(OBJEXT): {$(VPATH)}atomic.h
 vm.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -18957,6 +19542,9 @@ vm.$(OBJEXT): {$(VPATH)}missing.h
 vm.$(OBJEXT): {$(VPATH)}node.h
 vm.$(OBJEXT): {$(VPATH)}onigmo.h
 vm.$(OBJEXT): {$(VPATH)}oniguruma.h
+vm.$(OBJEXT): {$(VPATH)}prism/ast.h
+vm.$(OBJEXT): {$(VPATH)}prism/version.h
+vm.$(OBJEXT): {$(VPATH)}prism_compile.h
 vm.$(OBJEXT): {$(VPATH)}probes.dmyh
 vm.$(OBJEXT): {$(VPATH)}probes.h
 vm.$(OBJEXT): {$(VPATH)}probes_helper.h
@@ -19009,6 +19597,27 @@ vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/string.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/variable.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/vm.h
 vm_backtrace.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/defines.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/node.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/options.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/pack.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/parser.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/prism.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+vm_backtrace.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}assert.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}atomic.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -19185,6 +19794,9 @@ vm_backtrace.$(OBJEXT): {$(VPATH)}missing.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}node.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}onigmo.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}oniguruma.h
+vm_backtrace.$(OBJEXT): {$(VPATH)}prism/ast.h
+vm_backtrace.$(OBJEXT): {$(VPATH)}prism/version.h
+vm_backtrace.$(OBJEXT): {$(VPATH)}prism_compile.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}ruby_assert.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}ruby_atomic.h
 vm_backtrace.$(OBJEXT): {$(VPATH)}rubyparser.h
@@ -19213,6 +19825,27 @@ vm_dump.$(OBJEXT): $(top_srcdir)/internal/static_assert.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/variable.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/vm.h
 vm_dump.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/defines.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/node.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/options.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/pack.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/parser.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/prism.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+vm_dump.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 vm_dump.$(OBJEXT): {$(VPATH)}addr2line.h
 vm_dump.$(OBJEXT): {$(VPATH)}assert.h
 vm_dump.$(OBJEXT): {$(VPATH)}atomic.h
@@ -19387,6 +20020,9 @@ vm_dump.$(OBJEXT): {$(VPATH)}missing.h
 vm_dump.$(OBJEXT): {$(VPATH)}node.h
 vm_dump.$(OBJEXT): {$(VPATH)}onigmo.h
 vm_dump.$(OBJEXT): {$(VPATH)}oniguruma.h
+vm_dump.$(OBJEXT): {$(VPATH)}prism/ast.h
+vm_dump.$(OBJEXT): {$(VPATH)}prism/version.h
+vm_dump.$(OBJEXT): {$(VPATH)}prism_compile.h
 vm_dump.$(OBJEXT): {$(VPATH)}procstat_vm.c
 vm_dump.$(OBJEXT): {$(VPATH)}ractor.h
 vm_dump.$(OBJEXT): {$(VPATH)}ractor_core.h
@@ -19627,6 +20263,27 @@ vm_trace.$(OBJEXT): $(top_srcdir)/internal/thread.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/variable.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/vm.h
 vm_trace.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/defines.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/node.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/options.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/pack.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/parser.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/prism.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+vm_trace.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 vm_trace.$(OBJEXT): {$(VPATH)}assert.h
 vm_trace.$(OBJEXT): {$(VPATH)}atomic.h
 vm_trace.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -19804,6 +20461,9 @@ vm_trace.$(OBJEXT): {$(VPATH)}missing.h
 vm_trace.$(OBJEXT): {$(VPATH)}node.h
 vm_trace.$(OBJEXT): {$(VPATH)}onigmo.h
 vm_trace.$(OBJEXT): {$(VPATH)}oniguruma.h
+vm_trace.$(OBJEXT): {$(VPATH)}prism/ast.h
+vm_trace.$(OBJEXT): {$(VPATH)}prism/version.h
+vm_trace.$(OBJEXT): {$(VPATH)}prism_compile.h
 vm_trace.$(OBJEXT): {$(VPATH)}ractor.h
 vm_trace.$(OBJEXT): {$(VPATH)}rjit.h
 vm_trace.$(OBJEXT): {$(VPATH)}ruby_assert.h
@@ -20043,6 +20703,27 @@ yjit.$(OBJEXT): $(top_srcdir)/internal/string.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/variable.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/vm.h
 yjit.$(OBJEXT): $(top_srcdir)/internal/warnings.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/defines.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/encoding.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/node.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/options.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/pack.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/parser.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/prism.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/regexp.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_memchr.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_state_stack.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_string.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_string_list.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
+yjit.$(OBJEXT): $(top_srcdir)/prism/util/pm_strpbrk.h
 yjit.$(OBJEXT): {$(VPATH)}assert.h
 yjit.$(OBJEXT): {$(VPATH)}atomic.h
 yjit.$(OBJEXT): {$(VPATH)}backward/2/assume.h
@@ -20223,6 +20904,9 @@ yjit.$(OBJEXT): {$(VPATH)}missing.h
 yjit.$(OBJEXT): {$(VPATH)}node.h
 yjit.$(OBJEXT): {$(VPATH)}onigmo.h
 yjit.$(OBJEXT): {$(VPATH)}oniguruma.h
+yjit.$(OBJEXT): {$(VPATH)}prism/ast.h
+yjit.$(OBJEXT): {$(VPATH)}prism/version.h
+yjit.$(OBJEXT): {$(VPATH)}prism_compile.h
 yjit.$(OBJEXT): {$(VPATH)}probes.dmyh
 yjit.$(OBJEXT): {$(VPATH)}probes.h
 yjit.$(OBJEXT): {$(VPATH)}probes_helper.h

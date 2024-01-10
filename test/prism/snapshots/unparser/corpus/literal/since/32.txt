@@ -26,7 +26,7 @@
         │   │   @ StatementsNode (location: (2,2)-(2,19))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (2,2)-(2,19))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -40,6 +40,7 @@
         │   │           │       │   ├── name: :argument
         │   │           │       │   └── depth: 0
         │   │           │       └── @ KeywordHashNode (location: (2,16)-(2,18))
+        │   │           │           ├── flags: ∅
         │   │           │           └── elements: (length: 1)
         │   │           │               └── @ AssocSplatNode (location: (2,16)-(2,18))
         │   │           │                   ├── value: ∅
@@ -77,7 +78,7 @@
             │   @ StatementsNode (location: (6,2)-(6,18))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (6,2)-(6,18))
-            │           ├── flags: ∅
+            │           ├── flags: ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :bar

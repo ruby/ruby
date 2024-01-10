@@ -36,6 +36,7 @@ class TestIOWait < Test::Unit::TestCase
   end
 
   def test_ready?
+    omit 'unstable on MinGW' if /mingw/ =~ RUBY_PLATFORM
     assert_not_predicate @r, :ready?, "shouldn't ready, but ready"
     @w.syswrite "."
     sleep 0.1

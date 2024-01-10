@@ -4395,7 +4395,7 @@ fn jit_rb_kernel_is_a(
     let sample_rhs = jit.peek_at_stack(&asm.ctx, 0);
     let sample_lhs = jit.peek_at_stack(&asm.ctx, 1);
 
-    // We are not allowing module here because the module hierachy can change at runtime.
+    // We are not allowing module here because the module hierarchy can change at runtime.
     if !unsafe { RB_TYPE_P(sample_rhs, RUBY_T_CLASS) } {
         return false;
     }
@@ -4637,17 +4637,28 @@ fn jit_rb_int_lshift(
 
     // Untag the fixnum shift amount
     let shift_amt = comptime_shift.as_isize() >> 1;
-
     if shift_amt > 63 || shift_amt < 0 {
+        return false;
+    }
+
+    // Fallback to a C call if the shift amount varies
+    if asm.ctx.get_chain_depth() > 1 {
         return false;
     }
 
     let rhs = asm.stack_pop(1);
     let lhs = asm.stack_pop(1);
 
-    // Guard on the shift value we speculated on
+    // Guard on the shift amount we speculated on
     asm.cmp(rhs, comptime_shift.into());
-    asm.jne(Target::side_exit(Counter::lshift_amt_changed));
+    jit_chain_guard(
+        JCC_JNE,
+        jit,
+        asm,
+        ocb,
+        2, // defer_compilation increments chain_depth
+        Counter::lshift_amount_changed,
+    );
 
     let in_val = asm.sub(lhs, 1.into());
     let shift_opnd = Opnd::UImm(shift_amt as u64);
@@ -6127,7 +6138,7 @@ fn gen_send_iseq(
         }
 
         if iseq_has_rest && opt_num > 0 {
-            // If we have a rest and option arugments
+            // If we have a rest and option arguments
             // we are going to set the pc_offset for where
             // to jump in the called method.
             // If the number of args change, that would need to
@@ -6163,7 +6174,7 @@ fn gen_send_iseq(
     assert_eq!(opts_missing + opts_filled, opt_num);
     assert!(opts_filled >= 0);
 
-    // ISeq with optional paramters start at different
+    // ISeq with optional parameters start at different
     // locations depending on the number of optionals given.
     if opt_num > 0 {
         assert!(opts_filled >= 0);

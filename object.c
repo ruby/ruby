@@ -31,6 +31,7 @@
 #include "internal/object.h"
 #include "internal/struct.h"
 #include "internal/string.h"
+#include "internal/st.h"
 #include "internal/symbol.h"
 #include "internal/variable.h"
 #include "variable.h"
@@ -123,7 +124,8 @@ rb_obj_reveal(VALUE obj, VALUE klass)
 VALUE
 rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
 {
-    RBASIC(obj)->flags = type;
+    VALUE ignored_flags = RUBY_FL_PROMOTED;
+    RBASIC(obj)->flags = (type & ~ignored_flags) | (RBASIC(obj)->flags & ignored_flags);
     RBASIC_SET_CLASS(obj, klass);
     return obj;
 }

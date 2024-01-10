@@ -46,18 +46,6 @@ pm_newline_list_append(pm_newline_list_t *list, const uint8_t *cursor) {
 }
 
 /**
- * Conditionally append a new offset to the newline list, if the value passed in
- * is a newline.
- */
-bool
-pm_newline_list_check_append(pm_newline_list_t *list, const uint8_t *cursor) {
-    if (*cursor != '\n') {
-        return true;
-    }
-    return pm_newline_list_append(list, cursor);
-}
-
-/**
  * Returns the line and column of the given offset. If the offset is not in the
  * list, the line and column of the closest offset less than the given offset
  * are returned.

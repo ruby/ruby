@@ -10,7 +10,7 @@
             │   ├── flags: ∅
             │   ├── receiver:
             │   │   @ CallNode (location: (1,0)-(1,1))
-            │   │   ├── flags: variable_call
+            │   │   ├── flags: variable_call, ignore_visibility
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
             │   │   ├── name: :a
@@ -28,7 +28,7 @@
             │   │   ├── flags: ∅
             │   │   └── arguments: (length: 1)
             │   │       └── @ CallNode (location: (1,4)-(1,7))
-            │   │           ├── flags: ∅
+            │   │           ├── flags: ignore_visibility
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :c
@@ -47,7 +47,7 @@
             │       │   @ StatementsNode (location: (1,11)-(1,12))
             │       │   └── body: (length: 1)
             │       │       └── @ CallNode (location: (1,11)-(1,12))
-            │       │           ├── flags: variable_call
+            │       │           ├── flags: variable_call, ignore_visibility
             │       │           ├── receiver: ∅
             │       │           ├── call_operator_loc: ∅
             │       │           ├── name: :d
@@ -88,7 +88,7 @@
                 │   @ StatementsNode (location: (1,26)-(1,27))
                 │   └── body: (length: 1)
                 │       └── @ CallNode (location: (1,26)-(1,27))
-                │           ├── flags: variable_call
+                │           ├── flags: variable_call, ignore_visibility
                 │           ├── receiver: ∅
                 │           ├── call_operator_loc: ∅
                 │           ├── name: :g

@@ -196,10 +196,6 @@ static VALUE copy_ary(RB_BLOCK_CALL_FUNC_ARGLIST(el, new_ary)) {
   return rb_ary_push(new_ary, el);
 }
 
-// Suppress deprecations warnings for rb_iterate(), we want to test it while it exists
-RBIMPL_WARNING_PUSH()
-RBIMPL_WARNING_IGNORED(-Wdeprecated-declarations)
-
 static VALUE array_spec_rb_iterate(VALUE self, VALUE ary) {
   VALUE new_ary = rb_ary_new();
 
@@ -254,8 +250,6 @@ static VALUE array_spec_rb_block_call_then_yield(VALUE self, VALUE obj) {
   rb_block_call(obj, rb_intern("each"), 0, 0, iter_yield, obj);
   return Qnil;
 }
-
-RBIMPL_WARNING_POP()
 
 static VALUE array_spec_rb_mem_clear(VALUE self, VALUE obj) {
   VALUE ary[1];

@@ -14,7 +14,7 @@ class Reline::KillRing
     end
 
     def ==(other)
-      object_id == other.object_id
+      equal?(other)
     end
   end
 

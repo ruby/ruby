@@ -138,6 +138,7 @@ class RDoc::Markup::AttributeManager
     res
   end
 
+  # :nodoc:
   def exclusive?(attr)
     (attr & @exclusive_bitmap) != 0
   end
@@ -155,6 +156,7 @@ class RDoc::Markup::AttributeManager
     convert_attrs_word_pair_map(str, attrs, exclusive)
   end
 
+  # :nodoc:
   def convert_attrs_matching_word_pairs(str, attrs, exclusive)
     # first do matching ones
     tags = @matching_word_pairs.select { |start, bitmap|
@@ -179,6 +181,7 @@ class RDoc::Markup::AttributeManager
     str.delete!(NON_PRINTING_START + NON_PRINTING_END)
   end
 
+  # :nodoc:
   def convert_attrs_word_pair_map(str, attrs, exclusive)
     # then non-matching
     unless @word_pair_map.empty? then

@@ -7,6 +7,7 @@ on:
       - '**.md'
       - '**.rdoc'
       - '**/.document'
+      - '.*.yml'
   pull_request:
     # Do not use paths-ignore for required status checks
     # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
@@ -17,6 +18,7 @@ on:
       - '**.md'
       - '**.rdoc'
       - '**/.document'
+      - '.*.yml'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -32,6 +34,9 @@ jobs:
         test_task: ['check']
         configure: ['']
         os: ${{ fromJSON(format('["macos-11","macos-12"{0}]', (github.repository == 'ruby/ruby' && ',"macos-arm-oss"' || ''))) }}
+        include:
+          - test_task: test-all TESTS=--repeat-count=2
+            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-12' }}
       fail-fast: false
 
     env:

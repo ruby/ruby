@@ -331,7 +331,7 @@
         │   ├── end_keyword_loc: (86,0)-(86,3) = "end"
         │   └── name: :X
         └── @ CallNode (location: (89,0)-(92,1))
-            ├── flags: ∅
+            ├── flags: ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :x

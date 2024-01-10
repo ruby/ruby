@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 class Gem::Request::ConnectionPools # :nodoc:
-  @client = Net::HTTP
+  @client = Gem::Net::HTTP
 
   class << self
     attr_accessor :client

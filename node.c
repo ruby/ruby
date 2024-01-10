@@ -170,9 +170,33 @@ struct rb_ast_local_table_link {
 };
 
 static void
+parser_string_free(rb_ast_t *ast, rb_parser_string_t *str)
+{
+    xfree(str);
+}
+
+static void
 free_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
 {
     switch (nd_type(node)) {
+      case NODE_SYM:
+        parser_string_free(ast, RNODE_SYM(node)->string);
+        break;
+      case NODE_FILE:
+        parser_string_free(ast, RNODE_FILE(node)->path);
+        break;
+      case NODE_INTEGER:
+        xfree(RNODE_INTEGER(node)->val);
+        break;
+      case NODE_FLOAT:
+        xfree(RNODE_FLOAT(node)->val);
+        break;
+      case NODE_RATIONAL:
+        xfree(RNODE_RATIONAL(node)->val);
+        break;
+      case NODE_IMAGINARY:
+        xfree(RNODE_IMAGINARY(node)->val);
+        break;
       default:
         break;
     }

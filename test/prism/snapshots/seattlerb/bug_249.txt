@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(4,28))
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(4,28))
-            ├── flags: ∅
+            ├── flags: ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :mount
@@ -66,6 +66,7 @@
             │       │   ├── closing_loc: ∅
             │       │   └── block: ∅
             │       └── @ KeywordHashNode (location: (4,11)-(4,28))
+            │           ├── flags: symbol_keys
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (4,11)-(4,28))
             │                   ├── key:

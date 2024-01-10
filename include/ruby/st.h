@@ -104,8 +104,6 @@ st_table *rb_st_init_table(const struct st_hash_type *);
 #define st_init_table rb_st_init_table
 st_table *rb_st_init_table_with_size(const struct st_hash_type *, st_index_t);
 #define st_init_table_with_size rb_st_init_table_with_size
-st_table *rb_st_init_existing_table_with_size(st_table *tab, const struct st_hash_type *type, st_index_t size);
-#define st_init_existing_table_with_size rb_st_init_existing_table_with_size
 st_table *rb_st_init_numtable(void);
 #define st_init_numtable rb_st_init_numtable
 st_table *rb_st_init_numtable_with_size(st_index_t);
@@ -162,8 +160,6 @@ void rb_st_cleanup_safe(st_table *, st_data_t);
 #define st_cleanup_safe rb_st_cleanup_safe
 void rb_st_clear(st_table *);
 #define st_clear rb_st_clear
-st_table *rb_st_replace(st_table *new_tab, st_table *old_tab);
-#define st_replace rb_st_replace
 st_table *rb_st_copy(st_table *);
 #define st_copy rb_st_copy
 CONSTFUNC(int rb_st_numcmp(st_data_t, st_data_t));

@@ -8,6 +8,7 @@ on:
       - '**.md'
       - '**.rdoc'
       - '**/.document'
+      - '.*.yml'
   pull_request:
     paths-ignore:
       - 'doc/**'
@@ -15,6 +16,7 @@ on:
       - '**.md'
       - '**.rdoc'
       - '**/.document'
+      - '.*.yml'
   merge_group:
     paths-ignore:
       - 'doc/**'
@@ -22,6 +24,7 @@ on:
       - '**.md'
       - '**.rdoc'
       - '**/.document'
+      - '.*.yml'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -53,6 +56,7 @@ jobs:
           - ruby-3.0
           - ruby-3.1
           - ruby-3.2
+          - ruby-3.3
 
     steps:
       - uses: ruby/setup-ruby@036ef458ddccddb148a2b9fb67e95a22fdbf728b # v1.160.0

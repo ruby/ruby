@@ -125,7 +125,7 @@ print_errinfo(const VALUE eclass, const VALUE errat, const VALUE emesg, const VA
 }
 
 VALUE
-rb_decorate_message(const VALUE eclass, const VALUE emesg, int highlight)
+rb_decorate_message(const VALUE eclass, VALUE emesg, int highlight)
 {
     const char *einfo = "";
     long elen = 0;
@@ -209,6 +209,8 @@ rb_decorate_message(const VALUE eclass, const VALUE emesg, int highlight)
             }
         }
     }
+
+    RB_GC_GUARD(emesg);
 
     return str;
 }

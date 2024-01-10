@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(40,24))
     └── body: (length: 21)
         ├── @ CallNode (location: (1,0)-(1,9))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -66,7 +66,7 @@
         │   │   │   │   @ StatementsNode (location: (9,7)-(9,10))
         │   │   │   │   └── body: (length: 1)
         │   │   │   │       └── @ CallNode (location: (9,7)-(9,10))
-        │   │   │   │           ├── flags: variable_call
+        │   │   │   │           ├── flags: variable_call, ignore_visibility
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :bbb
@@ -106,7 +106,7 @@
         │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   └── arguments: (length: 1)
         │   │   │   │   │       └── @ CallNode (location: (11,18)-(11,21))
-        │   │   │   │   │           ├── flags: variable_call
+        │   │   │   │   │           ├── flags: variable_call, ignore_visibility
         │   │   │   │   │           ├── receiver: ∅
         │   │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │   │           ├── name: :baz
@@ -203,7 +203,7 @@
         │   │       │   @ StatementsNode (location: (30,7)-(30,10))
         │   │       │   └── body: (length: 1)
         │   │       │       └── @ CallNode (location: (30,7)-(30,10))
-        │   │       │           ├── flags: variable_call
+        │   │       │           ├── flags: variable_call, ignore_visibility
         │   │       │           ├── receiver: ∅
         │   │       │           ├── call_operator_loc: ∅
         │   │       │           ├── name: :bbb
@@ -316,7 +316,7 @@
         │   │   └── flags: decimal
         │   └── operator_loc: (39,2)-(39,3) = "="
         └── @ CallNode (location: (40,0)-(40,24))
-            ├── flags: ∅
+            ├── flags: ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :tap
@@ -352,7 +352,7 @@
                 │           │   │   ├── flags: ∅
                 │           │   │   └── arguments: (length: 1)
                 │           │   │       └── @ CallNode (location: (40,18)-(40,22))
-                │           │   │           ├── flags: variable_call
+                │           │   │           ├── flags: variable_call, ignore_visibility
                 │           │   │           ├── receiver: ∅
                 │           │   │           ├── call_operator_loc: ∅
                 │           │   │           ├── name: :to_s

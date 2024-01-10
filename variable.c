@@ -166,21 +166,21 @@ is_constant_path(VALUE name)
  *     mod.set_temporary_name(string) -> self
  *     mod.set_temporary_name(nil) -> self
  *
- *  Sets the temporary name of the module +mod+. This name is used as a prefix
- *  for the names of constants declared in +mod+. If the module is assigned a
- *  permanent name, the temporary name is discarded.
+ *  Sets the temporary name of the module. This name is reflected in
+ *  introspection of the module and the values that are related to it, such
+ *  as instances, constants, and methods.
  *
- *  After a permanent name is assigned, a temporary name can no longer be set,
- *  and this method raises a RuntimeError.
+ *  The name should be +nil+ or non-empty string that is not a valid constant
+ *  name (to avoid confusing between permanent and temporary names).
  *
- *  If the name given is not a string or is a zero length string, this method
- *  raises an ArgumentError.
+ *  The method can be useful to distinguish dynamically generated classes and
+ *  modules without assigning them to constants.
  *
- *  The temporary name must not be a valid constant name, to avoid confusion
- *  with actual constants. If you attempt to set a temporary name that is a
- *  a valid constant name, this method raises an ArgumentError.
+ *  If the module is given a permanent name by assigning it to a constant,
+ *  the temporary name is discarded. A temporary name can't be assigned to
+ *  modules that have a permanent name.
  *
- *  If the given name is +nil+, the module becomes anonymous.
+ *  If the given name is +nil+, the module becomes anonymous again.
  *
  *  Example:
  *
@@ -193,15 +193,20 @@ is_constant_path(VALUE name)
  *    m.set_temporary_name(nil) # => #<Module:0x0000000102c68f38>
  *    m.name #=> nil
  *
- *    n = Module.new
- *    n.set_temporary_name("fake_name")
+ *    c = Class.new
+ *    c.set_temporary_name("MyClass(with description)")
  *
- *    n::M = m
- *    n::M.name #=> "fake_name::M"
- *    N = n
+ *    c.new # => #<MyClass(with description):0x0....>
  *
- *    N.name #=> "N"
- *    N::M.name #=> "N::M"
+ *    c::M = m
+ *    c::M.name #=> "MyClass(with description)::M"
+ *
+ *    # Assigning to a constant replaces the name with a permanent one
+ *    C = c
+ *
+ *    C.name #=> "C"
+ *    C::M.name #=> "C::M"
+ *    c.new # => #<C:0x0....>
  */
 
 VALUE
@@ -215,7 +220,8 @@ rb_mod_set_temporary_name(VALUE mod, VALUE name)
     if (NIL_P(name)) {
         // Set the temporary classpath to NULL (anonymous):
         RCLASS_SET_CLASSPATH(mod, 0, FALSE);
-    } else {
+    }
+    else {
         // Ensure the name is a string:
         StringValue(name);
 
@@ -2519,10 +2525,12 @@ autoload_data_free(void *ptr)
 {
     struct autoload_data *p = ptr;
 
-    // We may leak some memory at VM shutdown time, no big deal...?
-    if (ccan_list_empty(&p->constants)) {
-        ruby_xfree(p);
+    struct autoload_const *autoload_const, *next;
+    ccan_list_for_each_safe(&p->constants, autoload_const, next, cnode) {
+        ccan_list_del_init(&autoload_const->cnode);
     }
+
+    ruby_xfree(p);
 }
 
 static size_t

@@ -211,7 +211,7 @@ module Prism
     end
 
     Dir["*.txt", base: base].each do |relative|
-      next if relative == "newline_terminated.txt"
+      next if relative == "newline_terminated.txt" || relative == "spanning_heredoc_newlines.txt"
 
       # We test every snippet (separated by \n\n) in isolation
       # to ensure the parser does not try to read bytes further than the end of each snippet

@@ -33,16 +33,16 @@ module Bundler
           # Subtract a byte to ensure the range won't be empty.
           # Avoids 416 (Range Not Satisfiable) responses.
           response = @fetcher.call(remote_path, request_headers(etag, file.size - 1))
-          break true if response.is_a?(Net::HTTPNotModified)
+          break true if response.is_a?(Gem::Net::HTTPNotModified)
 
           file.digests = parse_digests(response)
           # server may ignore Range and return the full response
-          if response.is_a?(Net::HTTPPartialContent)
+          if response.is_a?(Gem::Net::HTTPPartialContent)
             break false unless file.append(response.body.byteslice(1..-1))
           else
             file.write(response.body)
           end
-          CacheFile.write(etag_path, etag(response))
+          CacheFile.write(etag_path, etag_from_response(response))
           true
         end
       end
@@ -51,15 +51,15 @@ module Bundler
       def replace(remote_path, local_path, etag_path)
         etag = etag_path.read.tap(&:chomp!) if etag_path.file?
         response = @fetcher.call(remote_path, request_headers(etag))
-        return true if response.is_a?(Net::HTTPNotModified)
+        return true if response.is_a?(Gem::Net::HTTPNotModified)
         CacheFile.write(local_path, response.body, parse_digests(response))
-        CacheFile.write(etag_path, etag(response))
+        CacheFile.write(etag_path, etag_from_response(response))
       end
 
       def request_headers(etag, range_start = nil)
         headers = {}
         headers["Range"] = "bytes=#{range_start}-" if range_start
-        headers["If-None-Match"] = etag if etag
+        headers["If-None-Match"] = %("#{etag}") if etag
         headers
       end
 
@@ -77,7 +77,7 @@ module Bundler
         etag
       end
 
-      def etag(response)
+      def etag_from_response(response)
         return unless response["ETag"]
         etag = response["ETag"].delete_prefix("W/")
         return if etag.delete_prefix!('"') && !etag.delete_suffix!('"')

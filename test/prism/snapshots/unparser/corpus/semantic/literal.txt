@@ -57,7 +57,7 @@
         ├── @ FloatNode (location: (12,0)-(12,16))
         ├── @ FloatNode (location: (13,0)-(13,17))
         └── @ CallNode (location: (14,0)-(14,10))
-            ├── flags: ∅
+            ├── flags: ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :w
@@ -68,7 +68,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ CallNode (location: (14,2)-(14,9))
-            │           ├── flags: ∅
+            │           ├── flags: ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :foo
@@ -79,7 +79,7 @@
             │           │   ├── flags: ∅
             │           │   └── arguments: (length: 1)
             │           │       └── @ CallNode (location: (14,6)-(14,9))
-            │           │           ├── flags: variable_call
+            │           │           ├── flags: variable_call, ignore_visibility
             │           │           ├── receiver: ∅
             │           │           ├── call_operator_loc: ∅
             │           │           ├── name: :bar

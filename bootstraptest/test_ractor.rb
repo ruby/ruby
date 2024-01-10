@@ -1089,6 +1089,27 @@ assert_equal '333', %q{
   a + b + c + d + e + f
 }
 
+# moved objects have their shape properly set to original object's shape
+assert_equal '1234', %q{
+class Obj
+  attr_accessor :a, :b, :c, :d
+  def initialize
+    @a = 1
+    @b = 2
+    @c = 3
+  end
+end
+r = Ractor.new do
+  obj = receive
+  obj.d = 4
+  [obj.a, obj.b, obj.c, obj.d]
+end
+obj = Obj.new
+r.send(obj, move: true)
+values = r.take
+values.join
+}
+
 # cvar in shareable-objects are not allowed to access from non-main Ractor
 assert_equal 'can not access class variables from non-main Ractors', %q{
   class C
@@ -1403,7 +1424,7 @@ assert_equal '[false, false, true, true]', %q{
 }
 
 # TracePoint with normal Proc should be Ractor local
-assert_equal '[4, 8]', %q{
+assert_equal '[6, 10]', %q{
   rs = []
   TracePoint.new(:line){|tp| rs << tp.lineno if tp.path == __FILE__}.enable do
     Ractor.new{ # line 4
@@ -1645,16 +1666,38 @@ assert_match /\Atest_ractor\.rb:1:\s+warning:\s+Ractor is experimental/, %q{
   eval("Ractor.new{}.take", nil, "test_ractor.rb", 1)
 }
 
+# check moved object
+assert_equal 'ok', %q{
+  r = Ractor.new do
+    Ractor.receive
+    GC.start
+    :ok
+  end
+
+  obj = begin
+  raise
+  rescue => e
+    e = Marshal.load(Marshal.dump(e))
+  end
+
+  r.send obj, move: true
+  r.take
+}
+
 ## Ractor::Selector
 
 # Selector#empty? returns true
 assert_equal 'true', %q{
+  skip true unless defined? Ractor::Selector
+
   s = Ractor::Selector.new
   s.empty?
 }
 
 # Selector#empty? returns false if there is target ractors
 assert_equal 'false', %q{
+  skip false unless defined? Ractor::Selector
+
   s = Ractor::Selector.new
   s.add Ractor.new{}
   s.empty?
@@ -1662,6 +1705,8 @@ assert_equal 'false', %q{
 
 # Selector#clear removes all ractors from the waiting list
 assert_equal 'true', %q{
+  skip true unless defined? Ractor::Selector
+
   s = Ractor::Selector.new
   s.add Ractor.new{10}
   s.add Ractor.new{20}
@@ -1671,6 +1716,8 @@ assert_equal 'true', %q{
 
 # Selector#wait can wait multiple ractors
 assert_equal '[10, 20, true]', %q{
+  skip [10, 20, true] unless defined? Ractor::Selector
+
   s = Ractor::Selector.new
   s.add Ractor.new{10}
   s.add Ractor.new{20}
@@ -1680,10 +1727,12 @@ assert_equal '[10, 20, true]', %q{
   r, v = s.wait
   vs << v
   [*vs.sort, s.empty?]
-}
+} if defined? Ractor::Selector
 
 # Selector#wait can wait multiple ractors with receiving.
 assert_equal '30', %q{
+  skip 30 unless defined? Ractor::Selector
+
   RN = 30
   rs = RN.times.map{
     Ractor.new{ :v }
@@ -1700,11 +1749,13 @@ assert_equal '30', %q{
   end
 
   results.size
-}
+} if defined? Ractor::Selector
 
 # Selector#wait can support dynamic addition
 yjit_enabled = ENV.key?('RUBY_YJIT_ENABLE') || ENV.fetch('RUN_OPTS', '').include?('yjit') || BT.ruby.include?('yjit')
 assert_equal '600', %q{
+  skip 600 unless defined? Ractor::Selector
+
   RN = 100
   s = Ractor::Selector.new
   rs = RN.times.map{
@@ -1734,6 +1785,8 @@ assert_equal '600', %q{
 
 # Selector should be GCed (free'ed) without trouble
 assert_equal 'ok', %q{
+  skip :ok unless defined? Ractor::Selector
+
   RN = 30
   rs = RN.times.map{
     Ractor.new{ :v }

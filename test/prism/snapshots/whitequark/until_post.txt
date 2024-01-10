@@ -9,7 +9,7 @@
             ├── closing_loc: ∅
             ├── predicate:
             │   @ CallNode (location: (1,21)-(1,24))
-            │   ├── flags: variable_call
+            │   ├── flags: variable_call, ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :foo
@@ -27,7 +27,7 @@
                         │   @ StatementsNode (location: (1,6)-(1,10))
                         │   └── body: (length: 1)
                         │       └── @ CallNode (location: (1,6)-(1,10))
-                        │           ├── flags: variable_call
+                        │           ├── flags: variable_call, ignore_visibility
                         │           ├── receiver: ∅
                         │           ├── call_operator_loc: ∅
                         │           ├── name: :meth

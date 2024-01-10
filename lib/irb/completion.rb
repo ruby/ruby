@@ -406,7 +406,13 @@ module IRB
         else
           select_message(receiver, message, candidates.sort)
         end
-
+      when /^\s*$/
+        # empty input
+        if doc_namespace
+          nil
+        else
+          []
+        end
       else
         if doc_namespace
           vars = (bind.local_variables | bind.eval_instance_variables).collect{|m| m.to_s}

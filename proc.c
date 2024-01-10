@@ -23,15 +23,6 @@
 #include "vm_core.h"
 #include "yjit.h"
 
-#if !defined(__GNUC__) || __GNUC__ < 5 || defined(__MINGW32__)
-# define NO_CLOBBERED(v) (*(volatile VALUE *)&(v))
-#else
-# define NO_CLOBBERED(v) (v)
-#endif
-
-#define UPDATE_TYPED_REFERENCE(_type, _ref) *(_type*)&_ref = (_type)rb_gc_location((VALUE)_ref)
-#define UPDATE_REFERENCE(_ref) UPDATE_TYPED_REFERENCE(VALUE, _ref)
-
 const rb_cref_t *rb_vm_cref_in_context(VALUE self, VALUE cbase);
 
 struct METHOD {

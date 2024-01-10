@@ -151,8 +151,13 @@ class TestGc < Test::Unit::TestCase
     GC.stat(stat)
 
     GC::INTERNAL_CONSTANTS[:SIZE_POOL_COUNT].times do |i|
-      GC.stat_heap(i, stat_heap)
-      GC.stat(stat)
+      begin
+        reenable_gc = !GC.disable
+        GC.stat_heap(i, stat_heap)
+        GC.stat(stat)
+      ensure
+        GC.enable if reenable_gc
+      end
 
       assert_equal GC::INTERNAL_CONSTANTS[:RVALUE_SIZE] * (2**i), stat_heap[:slot_size]
       assert_operator stat_heap[:heap_allocatable_pages], :<=, stat[:heap_allocatable_pages]
@@ -178,6 +183,7 @@ class TestGc < Test::Unit::TestCase
   end
 
   def test_stat_heap_all
+    omit "flaky with RJIT, which allocates objects itself" if defined?(RubyVM::RJIT) && RubyVM::RJIT.enabled?
     stat_heap_all = {}
     stat_heap = {}
 
@@ -223,6 +229,23 @@ class TestGc < Test::Unit::TestCase
     assert_equal stat[:total_freed_pages], stat_heap_sum[:total_freed_pages]
     assert_equal stat[:total_allocated_objects], stat_heap_sum[:total_allocated_objects]
     assert_equal stat[:total_freed_objects], stat_heap_sum[:total_freed_objects]
+  end
+
+  def test_measure_total_time
+    assert_separately([], __FILE__, __LINE__, <<~RUBY)
+      GC.measure_total_time = false
+
+      time_before = GC.stat(:time)
+
+      # Generate some garbage
+      Random.new.bytes(100 * 1024 * 1024)
+      GC.start
+
+      time_after = GC.stat(:time)
+
+      # If time measurement is disabled, the time stat should not change
+      assert_equal time_before, time_after
+    RUBY
   end
 
   def test_latest_gc_info
@@ -803,6 +826,15 @@ class TestGc < Test::Unit::TestCase
         ObjectSpace.define_finalizer(obj, method(:c2))
         obj = nil
       end
+    end;
+
+    assert_normal_exit "#{<<~"begin;"}\n#{<<~'end;'}", '[Bug #20042]'
+    begin;
+      def (f = Object.new).call = nil # missing ID
+      o = Object.new
+      ObjectSpace.define_finalizer(o, f)
+      o = nil
+      GC.start
     end;
   end
 

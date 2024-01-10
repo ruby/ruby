@@ -28,9 +28,15 @@ module RubyVM::YJIT
     Primitive.rb_yjit_reset_stats_bang
   end
 
-  # Enable \YJIT compilation.
-  def self.enable
-    Primitive.rb_yjit_enable
+  # Enable \YJIT compilation. `stats` option decides whether to enable \YJIT stats or not.
+  #
+  # * `false`: Disable stats.
+  # * `true`: Enable stats. Print stats at exit.
+  # * `:quiet`: Enable stats. Do not print stats at exit.
+  def self.enable(stats: false)
+    return false if enabled?
+    at_exit { print_and_dump_stats } if stats
+    Primitive.rb_yjit_enable(stats, stats != :quiet)
   end
 
   # If --yjit-trace-exits is enabled parse the hashes from
@@ -223,18 +229,21 @@ module RubyVM::YJIT
     Primitive.rb_yjit_simulate_oom_bang
   end
 
-  # Avoid calling a method here to not interfere with compilation tests
+  # Avoid calling a Ruby method here to not interfere with compilation tests
   if Primitive.rb_yjit_stats_enabled_p
-    at_exit do
+    at_exit { print_and_dump_stats }
+  end
+
+  class << self # :stopdoc:
+    private
+
+    # Print stats and dump exit locations
+    def print_and_dump_stats
       if Primitive.rb_yjit_print_stats_p
         _print_stats
       end
       _dump_locations
     end
-  end
-
-  class << self # :stopdoc:
-    private
 
     def _dump_locations # :nodoc:
       return unless trace_exit_locations_enabled?
@@ -279,7 +288,7 @@ module RubyVM::YJIT
       ].each do |insn|
         print_counters(stats, out: out, prefix: "#{insn}_", prompt: "#{insn} exit reasons:", optional: true)
       end
-      print_counters(stats, out: out, prefix: 'lshift_', prompt: 'left shift (ltlt) exit reasons: ')
+      print_counters(stats, out: out, prefix: 'lshift_', prompt: 'left shift (opt_ltlt) exit reasons: ')
       print_counters(stats, out: out, prefix: 'invalidate_', prompt: 'invalidation reasons: ')
     end
 

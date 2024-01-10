@@ -37,7 +37,7 @@ end
 
 class Resolv
 
-  VERSION = "0.2.2"
+  VERSION = "0.3.0"
 
   ##
   # Looks up the first IP address for +name+.
@@ -2771,7 +2771,7 @@ class Resolv
           attr_reader :target
 
           ##
-          # The service paramters for the target host.
+          # The service parameters for the target host.
 
           attr_reader :params
 

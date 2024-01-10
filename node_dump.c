@@ -11,6 +11,7 @@
 
 #include "internal.h"
 #include "internal/hash.h"
+#include "internal/ruby_parser.h"
 #include "internal/variable.h"
 #include "ruby/ruby.h"
 #include "vm_core.h"
@@ -64,6 +65,7 @@
 #define F_INT(name, type, ann)	    SIMPLE_FIELD1(#name, ann) A_INT(type(node)->name)
 #define F_LONG(name, type, ann)	    SIMPLE_FIELD1(#name, ann) A_LONG(type(node)->name)
 #define F_LIT(name, type, ann)	    SIMPLE_FIELD1(#name, ann) A_LIT(type(node)->name)
+#define F_VALUE(name, val, ann)     SIMPLE_FIELD1(#name, ann) A_LIT(val)
 #define F_MSG(name, ann, desc)	    SIMPLE_FIELD1(#name, ann) A(desc)
 
 #define F_NODE(name, type, ann) \
@@ -704,7 +706,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
       case NODE_LIT:
         ANN("literal");
         ANN("format: [nd_lit]");
-        ANN("example: 1, /foo/");
+        ANN("example: :sym, /foo/");
         goto lit;
       case NODE_STR:
         ANN("string literal");
@@ -717,6 +719,34 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: `foo`");
       lit:
         F_LIT(nd_lit, RNODE_LIT, "literal");
+        return;
+
+      case NODE_INTEGER:
+        ANN("integer literal");
+        ANN("format: [val]");
+        ANN("example: 1");
+        F_VALUE(val, rb_node_integer_literal_val(node), "val");
+        return;
+
+      case NODE_FLOAT:
+        ANN("float literal");
+        ANN("format: [val]");
+        ANN("example: 1.2");
+        F_VALUE(val, rb_node_float_literal_val(node), "val");
+        return;
+
+      case NODE_RATIONAL:
+        ANN("rational number literal");
+        ANN("format: [val]");
+        ANN("example: 1r");
+        F_VALUE(val, rb_node_rational_literal_val(node), "val");
+        return;
+
+      case NODE_IMAGINARY:
+        ANN("complex number literal");
+        ANN("format: [val]");
+        ANN("example: 1i");
+        F_VALUE(val, rb_node_imaginary_literal_val(node), "val");
         return;
 
       case NODE_ONCE:
@@ -752,6 +782,13 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_NODE(nd_next->nd_head, RNODE_DSTR, "interpolation");
         LAST_NODE;
         F_NODE(nd_next->nd_next, RNODE_DSTR, "tailing strings");
+        return;
+
+      case NODE_SYM:
+        ANN("symbol literal");
+        ANN("format: [string]");
+        ANN("example: :foo");
+        F_VALUE(string, rb_node_sym_string_val(node), "string");
         return;
 
       case NODE_EVSTR:
@@ -914,6 +951,9 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("self");
         ANN("format: self");
         ANN("example: self");
+        F_CUSTOM1(nd_state, "nd_state") {
+            A_INT((int)RNODE_SELF(node)->nd_state);
+        }
         return;
 
       case NODE_NIL:
@@ -1095,6 +1135,20 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
             F_NODE(nd_pkwrestarg, RNODE_HSHPTN, "keyword rest argument");
         }
         return;
+
+      case NODE_LINE:
+        ANN("line");
+        ANN("format: [lineno]");
+        ANN("example: __LINE__");
+        return;
+
+      case NODE_FILE:
+        ANN("line");
+        ANN("format: [path]");
+        ANN("example: __FILE__");
+        F_VALUE(path, rb_node_file_path_val(node), "path");
+        return;
+
       case NODE_ERROR:
         ANN("Broken input recovered by Error Tolerant mode");
         return;

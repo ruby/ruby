@@ -369,9 +369,9 @@ module Prism
     # The list of magic comments that were encountered during parsing.
     attr_reader :magic_comments
 
-    # An optional location that represents the location of the content after the
-    # __END__ marker. This content is loaded into the DATA constant when the
-    # file being parsed is the main file being executed.
+    # An optional location that represents the location of the __END__ marker
+    # and the rest of the content of the file. This content is loaded into the
+    # DATA constant when the file being parsed is the main file being executed.
     attr_reader :data_loc
 
     # The list of errors that were generated during parsing.

@@ -3,7 +3,7 @@
 source "https://rubygems.org"
 
 gem "test-unit", "~> 3.0"
-gem "rake", "~> 13.0"
+gem "rake", "~> 13.1"
 gem "rb_sys"
 
 gem "webrick", "~> 1.6"

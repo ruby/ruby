@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(3,6))
     └── body: (length: 2)
         ├── @ CallNode (location: (1,0)-(1,7))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :x
@@ -37,7 +37,7 @@
         │       ├── opening_loc: (1,1)-(1,2) = "{"
         │       └── closing_loc: (1,6)-(1,7) = "}"
         └── @ CallNode (location: (3,0)-(3,6))
-            ├── flags: ∅
+            ├── flags: ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :x

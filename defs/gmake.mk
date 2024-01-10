@@ -519,14 +519,29 @@ spec/%/ spec/%_spec.rb: programs exts PHONY
 ruby.pc: $(filter-out ruby.pc,$(ruby_pc))
 
 matz: up
+	$(eval OLD := $(MAJOR).$(MINOR).0)
 	$(eval MINOR := $(shell expr $(MINOR) + 1))
-	$(eval message := Development of $(MAJOR).$(MINOR).0 started.)
+	$(eval NEW := $(MAJOR).$(MINOR).0)
+	$(eval message := Development of $(NEW) started.)
 	$(eval files := include/ruby/version.h include/ruby/internal/abi.h)
+	$(GIT) -C $(srcdir) mv -f NEWS.md doc/NEWS/NEWS-$(OLD).md
+	$(GIT) -C $(srcdir) commit -m "[DOC] Flush NEWS.md"
 	sed -i~ \
 	-e "s/^\(#define RUBY_API_VERSION_MINOR\) .*/\1 $(MINOR)/" \
 	-e "s/^\(#define RUBY_ABI_VERSION\) .*/\1 0/" \
 	 $(files:%=$(srcdir)/%)
-	$(GIT) -C $(srcdir) commit -m "$(message)" $(files)
+	$(GIT) -C $(srcdir) add $(files)
+	$(BASERUBY) -C $(srcdir) -p -00 \
+	-e 'BEGIN {old, new = ARGV.shift(2); STDOUT.reopen("NEWS.md")}' \
+	-e 'case $$.' \
+	-e 'when 1; $$_.sub!(/Ruby \K[0-9.]+/, new)' \
+	-e 'when 2; $$_.sub!(/\*\*\K[0-9.]+(?=\*\*)/, old)' \
+	-e 'end' \
+	-e 'next if /^[\[ *]/ =~ $$_' \
+	-e '$$_.sub!(/\n{2,}\z/, "\n\n")' \
+	$(OLD) $(NEW) doc/NEWS/NEWS-$(OLD).md
+	$(GIT) -C $(srcdir) add NEWS.md
+	$(GIT) -C $(srcdir) commit -m "$(message)"
 
 tags:
 	$(MAKE) GIT="$(GIT)" -C "$(srcdir)" -f defs/tags.mk

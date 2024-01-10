@@ -335,10 +335,10 @@ module Prism
 
     def test_def_with_multiple_statements_receiver
       assert_errors expression("def (\na\nb\n).c; end"), "def (\na\nb\n).c; end", [
-        ["expected a matching `)`", 7..7],
-        ["expected a `.` or `::` after the receiver in a method definition", 7..7],
-        ["expected a method name", 7..7],
-        ["cannot parse the expression", 10..10],
+        ["expected a matching `)`", 8..8],
+        ["expected a `.` or `::` after the receiver in a method definition", 8..8],
+        ["expected a delimiter to close the parameters", 9..9],
+        ["cannot parse the expression", 9..9],
         ["cannot parse the expression", 11..11]
       ]
     end
@@ -360,14 +360,14 @@ module Prism
 
     def test_double_splat_followed_by_splat_argument
       expected = CallNode(
-        0,
+        CallNodeFlags::IGNORE_VISIBILITY,
         nil,
         nil,
         :a,
         Location(),
         Location(),
         ArgumentsNode(1, [
-          KeywordHashNode([AssocSplatNode(expression("kwargs"), Location())]),
+          KeywordHashNode(0, [AssocSplatNode(expression("kwargs"), Location())]),
           SplatNode(Location(), expression("args"))
         ]),
         Location(),
@@ -381,7 +381,7 @@ module Prism
 
     def test_arguments_after_block
       expected = CallNode(
-        0,
+        CallNodeFlags::IGNORE_VISIBILITY,
         nil,
         nil,
         :a,
@@ -407,20 +407,20 @@ module Prism
 
     def test_splat_argument_after_keyword_argument
       expected = CallNode(
-        0,
+        CallNodeFlags::IGNORE_VISIBILITY,
         nil,
         nil,
         :a,
         Location(),
         Location(),
         ArgumentsNode(0, [
-          KeywordHashNode(
-            [AssocNode(
+          KeywordHashNode(1, [
+            AssocNode(
               SymbolNode(0, nil, Location(), Location(), "foo"),
               expression("bar"),
               nil
-            )]
-          ),
+            )
+          ]),
           SplatNode(Location(), expression("args"))
         ]),
         Location(),
@@ -462,7 +462,7 @@ module Prism
         nil,
         StatementsNode(
           [CallNode(
-            0,
+            CallNodeFlags::IGNORE_VISIBILITY,
             nil,
             nil,
             :bar,
@@ -1070,7 +1070,7 @@ module Prism
 
     def test_do_not_allow_forward_arguments_in_blocks
       expected = CallNode(
-        0,
+        CallNodeFlags::IGNORE_VISIBILITY,
         nil,
         nil,
         :a,
@@ -1246,6 +1246,15 @@ module Prism
       )
 
       assert_errors expected, "def foo(a = 1,b,*c);end", [["unexpected parameter `*`", 16..17]]
+    end
+
+    def test_content_after_unterminated_heredoc
+      receiver = StringNode(0, Location(), Location(), Location(), "")
+      expected = CallNode(0, receiver, Location(), :foo, Location(), nil, nil, nil, nil)
+
+      assert_errors expected, "<<~FOO.foo\n", [
+        ["could not find a terminator for the heredoc", 11..11]
+      ]
     end
 
     def test_invalid_message_name
@@ -1997,11 +2006,67 @@ module Prism
       end
     end
 
+    def test_command_call_in
+      source = <<~RUBY
+        foo 1 in a
+        a = foo 2 in b
+      RUBY
+      message1 = 'unexpected `in` keyword in arguments'
+      message2 = 'expected a newline or semicolon after the statement'
+      assert_errors expression(source), source, [
+        [message1, 9..10],
+        [message2, 8..8],
+        [message1, 24..25],
+        [message2, 23..23],
+      ]
+    end
+
     def test_constant_assignment_in_method
       source = 'def foo();A=1;end'
       assert_errors expression(source), source, [
         ['dynamic constant assignment', 10..13]
       ]
+    end
+
+    def test_non_assoc_equality
+      source = <<~RUBY
+        1 == 2 == 3
+        1 != 2 != 3
+        1 === 2 === 3
+        1 =~ 2 =~ 3
+        1 !~ 2 !~ 3
+        1 <=> 2 <=> 3
+      RUBY
+      message1 = 'expected a newline or semicolon after the statement'
+      message2 = 'cannot parse the expression'
+      assert_errors expression(source), source, [
+        [message1, 6..6],
+        [message2, 6..6],
+        [message1, 18..18],
+        [message2, 18..18],
+        [message1, 31..31],
+        [message2, 31..31],
+        [message1, 44..44],
+        [message2, 44..44],
+        [message1, 56..56],
+        [message2, 56..56],
+        [message1, 69..69],
+        [message2, 69..69],
+      ]
+    end
+
+    def test_block_arg_and_block
+      source = 'foo(&1) { }'
+      assert_errors expression(source), source, [
+        ['multiple block arguments; only one block is allowed', 8..11]
+      ], compare_ripper: false # Ripper does not check 'both block arg and actual block given'.
+    end
+
+    def test_forwarding_arg_and_block
+      source = 'def foo(...) = foo(...) { }'
+      assert_errors expression(source), source, [
+        ['both a block argument and a forwarding argument; only one block is allowed', 24..27]
+      ], compare_ripper: false # Ripper does not check 'both block arg and actual block given'.
     end
 
     private

@@ -84,7 +84,7 @@ module Gem::GemcutterUtilities
   # If +allowed_push_host+ metadata is present, then it will only allow that host.
 
   def rubygems_api_request(method, path, host = nil, allowed_push_host = nil, scope: nil, credentials: {}, &block)
-    require "net/http"
+    require_relative "net/http"
 
     self.host = host if host
     unless self.host
@@ -119,7 +119,7 @@ module Gem::GemcutterUtilities
   end
 
   def mfa_unauthorized?(response)
-    response.is_a?(Net::HTTPUnauthorized) && response.body.start_with?("You have enabled multifactor authentication")
+    response.is_a?(Gem::Net::HTTPUnauthorized) && response.body.start_with?("You have enabled multifactor authentication")
   end
 
   def update_scope(scope)
@@ -208,13 +208,13 @@ module Gem::GemcutterUtilities
 
   def with_response(response, error_prefix = nil)
     case response
-    when Net::HTTPSuccess then
+    when Gem::Net::HTTPSuccess then
       if block_given?
         yield response
       else
         say clean_text(response.body)
       end
-    when Net::HTTPPermanentRedirect, Net::HTTPRedirection then
+    when Gem::Net::HTTPPermanentRedirect, Gem::Net::HTTPRedirection then
       message = "The request has redirected permanently to #{response["location"]}. Please check your defined push host URL."
       message = "#{error_prefix}: #{message}" if error_prefix
 
@@ -244,7 +244,7 @@ module Gem::GemcutterUtilities
   private
 
   def request_with_otp(method, uri, &block)
-    request_method = Net::HTTP.const_get method.to_s.capitalize
+    request_method = Gem::Net::HTTP.const_get method.to_s.capitalize
 
     Gem::RemoteFetcher.fetcher.request(uri, request_method) do |req|
       req["OTP"] = otp if otp
@@ -297,7 +297,7 @@ module Gem::GemcutterUtilities
         request.basic_auth credentials[:email], credentials[:password]
       end
     end
-    response.is_a?(Net::HTTPSuccess) ? response.body : nil
+    response.is_a?(Gem::Net::HTTPSuccess) ? response.body : nil
   end
 
   def pretty_host(host)
@@ -366,6 +366,6 @@ module Gem::GemcutterUtilities
   end
 
   def api_key_forbidden?(response)
-    response.is_a?(Net::HTTPForbidden) && response.body.start_with?("The API key doesn't have access")
+    response.is_a?(Gem::Net::HTTPForbidden) && response.body.start_with?("The API key doesn't have access")
   end
 end

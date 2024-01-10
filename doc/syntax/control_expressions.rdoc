@@ -189,7 +189,7 @@ The same is true for +unless+.
 The +case+ expression can be used in two ways.
 
 The most common way is to compare an object against multiple patterns.  The
-patterns are matched using the +===+ method which is aliased to +==+ on
+patterns are matched using the <tt>===</tt> method which is aliased to <tt>==</tt> on
 Object.  Other classes must override it to give meaningful behavior.  See
 Module#=== and Regexp#=== for examples.
 

@@ -9,6 +9,7 @@
 #include "prism/ast.h"
 #include "prism/defines.h"
 #include "prism/encoding.h"
+#include "prism/options.h"
 #include "prism/util/pm_constant_pool.h"
 #include "prism/util/pm_list.h"
 #include "prism/util/pm_newline_list.h"
@@ -556,7 +557,11 @@ struct pm_parser {
     /** The list of magic comments that have been found while parsing. */
     pm_list_t magic_comment_list;
 
-    /** The optional location of the __END__ keyword and its contents. */
+    /**
+     * An optional location that represents the location of the __END__ marker
+     * and the rest of the content of the file. This content is loaded into the
+     * DATA constant when the file being parsed is the main file being executed.
+     */
     pm_location_t data_loc;
 
     /** The list of warnings that have been found while parsing. */
@@ -662,6 +667,12 @@ struct pm_parser {
      */
     const pm_encoding_t *explicit_encoding;
 
+    /** The current parameter name id on parsing its default value. */
+    pm_constant_id_t current_param_name;
+
+    /** The version of prism that we should use to parse. */
+    pm_options_version_t version;
+
     /** Whether or not we're at the beginning of a command. */
     bool command_start;
 
@@ -683,9 +694,6 @@ struct pm_parser {
 
     /** This flag indicates that we are currently parsing a keyword argument. */
     bool in_keyword_arg;
-
-    /** The current parameter name id on parsing its default value. */
-    pm_constant_id_t current_param_name;
 
     /**
      * Whether or not the parser has seen a token that has semantic meaning

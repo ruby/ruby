@@ -11,7 +11,7 @@
             │   │   @ StatementsNode (location: (1,4)-(1,7))
             │   │   └── body: (length: 1)
             │   │       └── @ CallNode (location: (1,4)-(1,7))
-            │   │           ├── flags: variable_call
+            │   │           ├── flags: variable_call, ignore_visibility
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :bar
@@ -27,7 +27,7 @@
             │   @ StatementsNode (location: (1,10)-(1,13))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,10)-(1,13))
-            │           ├── flags: variable_call
+            │           ├── flags: variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :foo

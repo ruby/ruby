@@ -35,6 +35,7 @@
 #include "internal/hash.h"
 #include "internal/object.h"
 #include "internal/proc.h"
+#include "internal/st.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
 #include "internal/time.h"
@@ -698,61 +699,75 @@ hash_ar_free_and_clear_table(VALUE hash)
     HASH_ASSERT(RHASH_AR_TABLE_BOUND(hash) == 0);
 }
 
-static void
-ar_try_convert_table(VALUE hash)
+void rb_st_add_direct_with_hash(st_table *tab, st_data_t key, st_data_t value, st_hash_t hash); // st.c
+
+enum ar_each_key_type {
+    ar_each_key_copy,
+    ar_each_key_cmp,
+    ar_each_key_insert,
+};
+
+static inline int
+ar_each_key(ar_table *ar, int max, enum ar_each_key_type type, st_data_t *dst_keys, st_table *new_tab, st_hash_t *hashes)
 {
-    if (!RHASH_AR_TABLE_P(hash)) return;
+    for (int i = 0; i < max; i++) {
+        ar_table_pair *pair = &ar->pairs[i];
 
-    const unsigned size = RHASH_AR_TABLE_SIZE(hash);
-
-    if (size < RHASH_AR_TABLE_MAX_SIZE) {
-        return;
+        switch (type) {
+          case ar_each_key_copy:
+            dst_keys[i] = pair->key;
+            break;
+          case ar_each_key_cmp:
+            if (dst_keys[i] != pair->key) return 1;
+            break;
+          case ar_each_key_insert:
+            if (UNDEF_P(pair->key)) continue; // deleted entry
+            rb_st_add_direct_with_hash(new_tab, pair->key, pair->val, hashes[i]);
+            break;
+        }
     }
 
-    st_table tab;
-    st_table *new_tab = &tab;
-    rb_st_init_existing_table_with_size(new_tab, &objhash, size * 2);
-
-    for (st_index_t i = 0; i < RHASH_AR_TABLE_MAX_BOUND; i++) {
-        ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, i);
-        st_add_direct(new_tab, pair->key, pair->val);
-    }
-
-    hash_ar_free_and_clear_table(hash);
-    RHASH_ST_TABLE_SET(hash, new_tab);
+    return 0;
 }
 
 static st_table *
 ar_force_convert_table(VALUE hash, const char *file, int line)
 {
-    st_table *new_tab;
-    st_table tab;
-    new_tab = &tab;
-
     if (RHASH_ST_TABLE_P(hash)) {
         return RHASH_ST_TABLE(hash);
     }
+    else {
+        ar_table *ar = RHASH_AR_TABLE(hash);
+        st_hash_t hashes[RHASH_AR_TABLE_MAX_SIZE];
+        unsigned int bound, size;
 
-    RUBY_ASSERT(RHASH_AR_TABLE(hash));
-    {
-        unsigned i, bound = RHASH_AR_TABLE_BOUND(hash);
+        // prepare hash values
+        do {
+            st_data_t keys[RHASH_AR_TABLE_MAX_SIZE];
+            bound = RHASH_AR_TABLE_BOUND(hash);
+            size = RHASH_AR_TABLE_SIZE(hash);
+            ar_each_key(ar, bound, ar_each_key_copy, keys, NULL, NULL);
 
-        rb_st_init_existing_table_with_size(new_tab, &objhash, RHASH_AR_TABLE_SIZE(hash));
+            for (unsigned int i = 0; i < bound; i++) {
+                // do_hash calls #hash method and it can modify hash object
+                hashes[i] = UNDEF_P(keys[i]) ? 0 : ar_do_hash(keys[i]);
+            }
 
-        for (i = 0; i < bound; i++) {
-            if (ar_cleared_entry(hash, i)) continue;
+            // check if modified
+            if (UNLIKELY(!RHASH_AR_TABLE_P(hash))) return RHASH_ST_TABLE(hash);
+            if (UNLIKELY(RHASH_AR_TABLE_BOUND(hash) != bound)) continue;
+            if (UNLIKELY(ar_each_key(ar, bound, ar_each_key_cmp, keys, NULL, NULL))) continue;
+        } while (0);
 
-            ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, i);
-            st_add_direct(new_tab, pair->key, pair->val);
-        }
+        // make st
+        st_table tab;
+        st_table *new_tab = &tab;
+        st_init_existing_table_with_size(new_tab, &objhash, size);
+        ar_each_key(ar, bound, ar_each_key_insert, NULL, new_tab, hashes);
         hash_ar_free_and_clear_table(hash);
+        RHASH_ST_TABLE_SET(hash, new_tab);
+        return RHASH_ST_TABLE(hash);
     }
-
-    RHASH_ST_TABLE_SET(hash, new_tab);
-
-    new_tab = RHASH_ST_TABLE(hash);
-
-    return new_tab;
 }
 
 static int
@@ -1520,7 +1535,7 @@ hash_copy(VALUE ret, VALUE hash)
         }
         else {
             st_table *tab = RHASH_ST_TABLE(ret);
-            rb_st_init_existing_table_with_size(tab, &objhash, RHASH_AR_TABLE_SIZE(hash));
+            st_init_existing_table_with_size(tab, &objhash, RHASH_AR_TABLE_SIZE(hash));
 
             int bound = RHASH_AR_TABLE_BOUND(hash);
             for (int i = 0; i < bound; i++) {
@@ -1547,7 +1562,15 @@ hash_copy(VALUE ret, VALUE hash)
 static VALUE
 hash_dup_with_compare_by_id(VALUE hash)
 {
-    return hash_copy(copy_compare_by_id(rb_hash_new(), hash), hash);
+    VALUE dup = hash_alloc_flags(rb_cHash, 0, Qnil, RHASH_ST_TABLE_P(hash));
+    if (RHASH_ST_TABLE_P(hash)) {
+        RHASH_SET_ST_FLAG(dup);
+    }
+    else {
+        RHASH_UNSET_ST_FLAG(dup);
+    }
+
+    return hash_copy(dup, hash);
 }
 
 static VALUE
@@ -1642,7 +1665,7 @@ rb_hash_stlike_update(VALUE hash, st_data_t key, st_update_callback_func *func, 
     if (RHASH_AR_TABLE_P(hash)) {
         int result = ar_update(hash, key, func, arg);
         if (result == -1) {
-            ar_try_convert_table(hash);
+            ar_force_convert_table(hash, __FILE__, __LINE__);
         }
         else {
             return result;
@@ -2271,7 +2294,7 @@ rb_hash_default_proc(VALUE hash)
  *  call-seq:
  *    hash.default_proc = proc -> proc
  *
- *  Sets the default proc for +self+ to +proc+:
+ *  Sets the default proc for +self+ to +proc+
  *  (see {Default Values}[rdoc-ref:Hash@Default+Values]):
  *    h = {}
  *    h.default_proc # => nil
@@ -3775,16 +3798,15 @@ rb_hash_equal(VALUE hash1, VALUE hash2)
 
 /*
  *  call-seq:
- *    hash.eql? object -> true or false
+ *    hash.eql?(object) -> true or false
  *
  *  Returns +true+ if all of the following are true:
  *  * +object+ is a \Hash object.
  *  * +hash+ and +object+ have the same keys (regardless of order).
- *  * For each key +key+, <tt>h[key] eql? object[key]</tt>.
+ *  * For each key +key+, <tt>h[key].eql?(object[key])</tt>.
  *
  *  Otherwise, returns +false+.
  *
- *  Equal:
  *    h1 = {foo: 0, bar: 1, baz: 2}
  *    h2 = {foo: 0, bar: 1, baz: 2}
  *    h1.eql? h2 # => true
@@ -4367,17 +4389,30 @@ rb_hash_compare_by_id(VALUE hash)
     if (hash_iterating_p(hash)) {
         rb_raise(rb_eRuntimeError, "compare_by_identity during iteration");
     }
-    ar_force_convert_table(hash, __FILE__, __LINE__);
-    HASH_ASSERT(RHASH_ST_TABLE_P(hash));
 
-    tmp = hash_alloc(0);
-    hash_st_table_init(tmp, &identhash, RHASH_SIZE(hash));
-    identtable = RHASH_ST_TABLE(tmp);
+    if (RHASH_TABLE_EMPTY_P(hash)) {
+        // Fast path: There's nothing to rehash, so we don't need a `tmp` table.
+        // We're most likely an AR table, so this will need an allocation.
+        ar_force_convert_table(hash, __FILE__, __LINE__);
+        HASH_ASSERT(RHASH_ST_TABLE_P(hash));
 
-    rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
+        RHASH_ST_TABLE(hash)->type = &identhash;
+    }
+    else {
+        // Slow path: Need to rehash the members of `self` into a new
+        // `tmp` table using the new `identhash` compare/hash functions.
+        tmp = hash_alloc(0);
+        hash_st_table_init(tmp, &identhash, RHASH_SIZE(hash));
+        identtable = RHASH_ST_TABLE(tmp);
 
-    RHASH_ST_TABLE_SET(hash, identtable);
-    RHASH_ST_CLEAR(tmp);
+        rb_hash_foreach(hash, rb_hash_rehash_i, (VALUE)tmp);
+        rb_hash_free(hash);
+
+        // We know for sure `identtable` is an st table,
+        // so we can skip `ar_force_convert_table` here.
+        RHASH_ST_TABLE_SET(hash, identtable);
+        RHASH_ST_CLEAR(tmp);
+    }
 
 #if USE_MMTK
     if (rb_mmtk_enabled_p()) {
@@ -4693,6 +4728,7 @@ rb_hash_to_proc(VALUE hash)
     return rb_func_lambda_new(hash_proc_call, hash, 1, 1);
 }
 
+/* :nodoc: */
 static VALUE
 rb_hash_deconstruct_keys(VALUE hash, VALUE keys)
 {
@@ -4727,8 +4763,9 @@ rb_hash_add_new_element(VALUE hash, VALUE key, VALUE val)
         if (ret != -1) {
             return ret;
         }
-        ar_try_convert_table(hash);
+        ar_force_convert_table(hash, __FILE__, __LINE__);
     }
+
     tbl = RHASH_TBL_RAW(hash);
     return st_update(tbl, (st_data_t)key, add_new_i, (st_data_t)args);
 
@@ -7292,7 +7329,7 @@ Init_Hash(void)
      * - ENV.replace replaces \ENV with a new collection of entries.
      * - ENV.clear empties \ENV.
      *
-     * == What's Here
+     * === What's Here
      *
      * First, what's elsewhere. \Class \ENV:
      *
@@ -7308,7 +7345,7 @@ Init_Hash(void)
      * - {Converting}[rdoc-ref:ENV@Methods+for+Converting]
      * - {And more ....}[rdoc-ref:ENV@More+Methods]
      *
-     * === Methods for Querying
+     * ==== Methods for Querying
      *
      * - ::[]: Returns the value for the given environment variable name if it exists:
      * - ::empty?: Returns whether \ENV is empty.
@@ -7319,7 +7356,7 @@ Init_Hash(void)
      * - ::size, ::length: Returns the number of entries.
      * - ::value?: Returns whether any entry has the given value.
      *
-     * === Methods for Assigning
+     * ==== Methods for Assigning
      *
      * - ::[]=, ::store: Creates, updates, or deletes the named environment variable.
      * - ::clear: Removes every environment variable; returns \ENV:
@@ -7327,7 +7364,7 @@ Init_Hash(void)
      * - ::replace: Replaces the entire content of the \ENV
      *   with the name/value pairs in the given hash.
      *
-     * === Methods for Deleting
+     * ==== Methods for Deleting
      *
      * - ::delete: Deletes the named environment variable name if it exists.
      * - ::delete_if: Deletes entries selected by the block.
@@ -7336,13 +7373,13 @@ Init_Hash(void)
      * - ::select!, ::filter!: Deletes entries selected by the block.
      * - ::shift: Removes and returns the first entry.
      *
-     * === Methods for Iterating
+     * ==== Methods for Iterating
      *
      * - ::each, ::each_pair: Calls the block with each name/value pair.
      * - ::each_key: Calls the block with each name.
      * - ::each_value: Calls the block with each value.
      *
-     * === Methods for Converting
+     * ==== Methods for Converting
      *
      * - ::assoc: Returns a 2-element array containing the name and value
      *   of the named environment variable if it exists:
@@ -7365,7 +7402,7 @@ Init_Hash(void)
      * - ::values: Returns all values as an array.
      * - ::values_at: Returns an array of the values for the given name.
      *
-     * === More Methods
+     * ==== More Methods
      *
      * - ::dup: Raises an exception.
      * - ::freeze: Raises an exception.

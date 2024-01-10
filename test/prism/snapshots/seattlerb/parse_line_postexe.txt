@@ -8,7 +8,7 @@
             │   @ StatementsNode (location: (2,0)-(2,3))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (2,0)-(2,3))
-            │           ├── flags: variable_call
+            │           ├── flags: variable_call, ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :foo

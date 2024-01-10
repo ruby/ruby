@@ -177,6 +177,43 @@ VALUE rb_f_require(VALUE self, VALUE feature);
 VALUE rb_require_string(VALUE feature);
 
 /**
+ * Resolves  and  returns  a symbol  of  a  function  in  the  native extension
+ * specified by the feature and symbol names. Extensions will use this function
+ * to access the symbols provided by other native extensions.
+ *
+ * @param[in]  feature           Name of a feature, e.g. `"json"`.
+ * @param[in]  symbol            Name of a symbol defined by the feature.
+ * @return     The resolved symbol of  a function, defined and externed  by the
+ *             specified feature.  It may be NULL if the feature is not loaded,
+ *             the feature is not extension, or the symbol is not found.
+ */
+void *rb_ext_resolve_symbol(const char *feature, const char *symbol);
+
+/**
+ * This macro  is  to provide  backwards compatibility.  It provides  a  way to
+ * define function prototypes and resolving function symbols in a safe way.
+ *
+ * ```CXX
+ * // prototypes
+ * #ifdef HAVE_RB_EXT_RESOLVE_SYMBOL
+ * VALUE *(*other_extension_func)(VALUE,VALUE);
+ * #else
+ * VALUE other_extension_func(VALUE);
+ * #endif
+ *
+ * // in Init_xxx()
+ * #ifdef HAVE_RB_EXT_RESOLVE_SYMBOL
+ * other_extension_func = \
+ *     (VALUE(*)(VALUE,VALUE))rb_ext_resolve_symbol(fname, sym_name);
+ * if (other_extension_func == NULL) {
+ *   // raise your own error
+ * }
+ * #endif
+ * ```
+ */
+#define HAVE_RB_EXT_RESOLVE_SYMBOL 1
+
+/**
  * @name extension configuration
  * @{
  */

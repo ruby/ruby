@@ -81,7 +81,7 @@ module Prism
   class RationalNode < Node
     # Returns the value of the node as a Ruby Rational.
     def value
-      Rational(slice.chomp("r"))
+      Rational(numeric.is_a?(IntegerNode) && !numeric.decimal? ? numeric.value : slice.chomp("r"))
     end
   end
 

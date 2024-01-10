@@ -1593,7 +1593,7 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
     // Skip dummy frame; see `rb_ec_partial_backtrace_object` for details
     end_cfp = RUBY_VM_NEXT_CONTROL_FRAME(end_cfp);
 
-    for (i=0; i<limit && cfp != end_cfp;) {
+    for (i=0; i<limit && cfp != end_cfp; cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp)) {
         if (VM_FRAME_RUBYFRAME_P(cfp) && cfp->pc != 0) {
             if (start > 0) {
                 start--;
@@ -1627,12 +1627,15 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
         else {
             cme = rb_vm_frame_method_entry(cfp);
             if (cme && cme->def->type == VM_METHOD_TYPE_CFUNC) {
+                if (start > 0) {
+                    start--;
+                    continue;
+                }
                 buff[i] = (VALUE)cme;
                 if (lines) lines[i] = 0;
                 i++;
             }
         }
-        cfp = RUBY_VM_PREVIOUS_CONTROL_FRAME(cfp);
     }
 
     return i;
@@ -1641,7 +1644,14 @@ thread_profile_frames(rb_execution_context_t *ec, int start, int limit, VALUE *b
 int
 rb_profile_frames(int start, int limit, VALUE *buff, int *lines)
 {
-    rb_execution_context_t *ec = GET_EC();
+    rb_execution_context_t *ec = rb_current_execution_context(false);
+
+    // If there is no EC, we may be attempting to profile a non-Ruby thread or a
+    // M:N shared native thread which has no active Ruby thread.
+    if (!ec) {
+        return 0;
+    }
+
     return thread_profile_frames(ec, start, limit, buff, lines);
 }
 

@@ -26,8 +26,6 @@ static VALUE thread_spec_rb_thread_alone(VALUE self) {
   return rb_thread_alone() ? Qtrue : Qfalse;
 }
 
-RBIMPL_WARNING_IGNORED(-Wdeprecated-declarations)
-
 /* This is unblocked by unblock_func(). */
 static void* blocking_gvl_func(void* data) {
   int rfd = *(int *)data;

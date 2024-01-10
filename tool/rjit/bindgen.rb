@@ -296,7 +296,7 @@ class BindingGenerator
   # @param type [String]
   def generate_type(type)
     if type.match?(/\[\d+\]\z/)
-      return "CType::Pointer.new { #{generate_type(type.sub!(/\[\d+\]\z/, ''))} }"
+      return "CType::Array.new { #{generate_type(type.sub!(/\[\d+\]\z/, ''))} }"
     end
     type = type.delete_suffix('const')
     if type.end_with?('*')
@@ -501,6 +501,7 @@ generator = BindingGenerator.new(
       rb_cTrueClass
       rb_rjit_global_events
       rb_mRubyVMFrozenCore
+      rb_vm_insns_count
       idRespond_to_missing
     ],
   },

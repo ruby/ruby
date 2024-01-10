@@ -488,7 +488,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     @fetcher.data["http://gems.example.com/gems/a-1.gem"] = a1_data
 
     # compact index is available
-    compact_index_response = Net::HTTPResponse.new "1.1", 200, "OK"
+    compact_index_response = Gem::Net::HTTPResponse.new "1.1", 200, "OK"
     compact_index_response.uri = URI("http://gems.example.com")
     @fetcher.data["http://gems.example.com/"] = compact_index_response
 

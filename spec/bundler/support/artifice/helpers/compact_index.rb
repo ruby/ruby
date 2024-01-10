@@ -19,8 +19,8 @@ class CompactIndexAPI < Endpoint
     def etag_response
       response_body = yield
       etag = Digest::MD5.hexdigest(response_body)
-      return if not_modified?(etag)
       headers "ETag" => quote(etag)
+      return if not_modified?(etag)
       headers "Repr-Digest" => "sha-256=:#{Digest::SHA256.base64digest(response_body)}:"
       headers "Surrogate-Control" => "max-age=2592000, stale-while-revalidate=60"
       content_type "text/plain"
@@ -35,7 +35,6 @@ class CompactIndexAPI < Endpoint
       etags = parse_etags(request.env["HTTP_IF_NONE_MATCH"])
 
       return unless etags.include?(etag)
-      headers "ETag" => quote(etag)
       status 304
       body ""
     end
@@ -77,7 +76,7 @@ class CompactIndexAPI < Endpoint
 
         specs.group_by(&:name).map do |name, versions|
           gem_versions = versions.map do |spec|
-            deps = spec.dependencies.select {|d| d.type == :runtime }.map do |d|
+            deps = spec.runtime_dependencies.map do |d|
               reqs = d.requirement.requirements.map {|r| r.join(" ") }.join(", ")
               CompactIndex::Dependency.new(d.name, reqs)
             end

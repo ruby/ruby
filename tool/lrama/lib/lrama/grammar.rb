@@ -8,6 +8,10 @@ require "lrama/grammar/printer"
 require "lrama/grammar/reference"
 require "lrama/grammar/rule"
 require "lrama/grammar/rule_builder"
+require "lrama/grammar/parameterizing_rule_builder"
+require "lrama/grammar/parameterizing_rule_resolver"
+require "lrama/grammar/parameterizing_rule_rhs_builder"
+require "lrama/grammar/parameterizing_rule"
 require "lrama/grammar/symbol"
 require "lrama/grammar/type"
 require "lrama/grammar/union"
@@ -36,6 +40,7 @@ module Lrama
       @rule_builders = []
       @rules = []
       @sym_to_rules = {}
+      @parameterizing_resolver = ParameterizingRuleResolver.new
       @empty_symbol = nil
       @eof_symbol = nil
       @error_symbol = nil
@@ -69,7 +74,7 @@ module Lrama
         return sym
       end
 
-      if sym = @symbols.find {|s| s.id == id }
+      if (sym = @symbols.find {|s| s.id == id })
         return sym
       end
 
@@ -127,6 +132,10 @@ module Lrama
 
     def add_rule_builder(builder)
       @rule_builders << builder
+    end
+
+    def add_parameterizing_rule_builder(builder)
+      @parameterizing_resolver.add_parameterizing_rule_builder(builder)
     end
 
     def prologue_first_lineno=(prologue_first_lineno)
@@ -310,7 +319,7 @@ module Lrama
 
     def setup_rules
       @rule_builders.each do |builder|
-        builder.setup_rules
+        builder.setup_rules(@parameterizing_resolver)
       end
     end
 
@@ -350,56 +359,21 @@ module Lrama
       @accept_symbol = term
     end
 
-    # 1. Add $accept rule to the top of rules
-    # 2. Extract action in the middle of RHS into new Empty rule
-    # 3. Append id and extract action then create Rule
-    #
-    # Bison 3.8.2 uses different orders for symbol number and rule number
-    # when a rule has actions in the middle of a rule.
-    #
-    # For example,
-    #
-    # `program: $@1 top_compstmt`
-    #
-    # Rules are ordered like below,
-    #
-    # 1 $@1: ε
-    # 2 program: $@1 top_compstmt
-    #
-    # Symbols are ordered like below,
-    #
-    # 164 program
-    # 165 $@1
-    #
     def normalize_rules
-      # 1. Add $accept rule to the top of rules
-      accept = @accept_symbol
-      eof = @eof_symbol
+      # Add $accept rule to the top of rules
       lineno = @rule_builders.first ? @rule_builders.first.line : 0
-      @rules << Rule.new(id: @rule_counter.increment, _lhs: accept.id, _rhs: [@rule_builders.first.lhs, eof.id], token_code: nil, lineno: lineno)
+      @rules << Rule.new(id: @rule_counter.increment, _lhs: @accept_symbol.id, _rhs: [@rule_builders.first.lhs, @eof_symbol.id], token_code: nil, lineno: lineno)
 
       setup_rules
 
       @rule_builders.each do |builder|
-        # Extract actions in the middle of RHS into new rules.
-        builder.midrule_action_rules.each do |rule|
-          @rules << rule
-        end
-
         builder.rules.each do |rule|
-          add_nterm(id: rule._lhs)
-          @rules << rule
-        end
-
-        builder.parameterizing_rules.each do |rule|
           add_nterm(id: rule._lhs, tag: rule.lhs_tag)
           @rules << rule
         end
-
-        builder.midrule_action_rules.each do |rule|
-          add_nterm(id: rule._lhs)
-        end
       end
+
+      @rules.sort_by!(&:id)
     end
 
     # Collect symbols from rules

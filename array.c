@@ -314,7 +314,6 @@ ary_verify_(VALUE ary, const char *file, int line)
         assert(RARRAY_LEN(ary) <= ary_embed_capa(ary));
     }
     else {
-#if 1
         const VALUE *ptr = RARRAY_CONST_PTR(ary);
         long i, len = RARRAY_LEN(ary);
         volatile VALUE v;
@@ -323,7 +322,6 @@ ary_verify_(VALUE ary, const char *file, int line)
             v = ptr[i]; /* access check */
         }
         v = v;
-#endif
     }
 
     return ary;
@@ -1456,12 +1454,13 @@ ary_make_partial_step(VALUE ary, VALUE klass, long offset, long len, long step)
     assert(offset+len <= RARRAY_LEN(ary));
     assert(step != 0);
 
-    const VALUE *values = RARRAY_CONST_PTR(ary);
     const long orig_len = len;
 
     if (step > 0 && step >= len) {
         VALUE result = ary_new(klass, 1);
         VALUE *ptr = (VALUE *)ARY_EMBED_PTR(result);
+        const VALUE *values = RARRAY_CONST_PTR(ary);
+
         RB_OBJ_WRITE(result, ptr, values[offset]);
         ARY_SET_EMBED_LEN(result, 1);
         return result;
@@ -1479,6 +1478,8 @@ ary_make_partial_step(VALUE ary, VALUE klass, long offset, long len, long step)
     VALUE result = ary_new(klass, len);
     if (ARY_EMBED_P(result)) {
         VALUE *ptr = (VALUE *)ARY_EMBED_PTR(result);
+        const VALUE *values = RARRAY_CONST_PTR(ary);
+
         for (i = 0; i < len; ++i) {
             RB_OBJ_WRITE(result, ptr+i, values[j]);
             j += step;
@@ -1486,6 +1487,8 @@ ary_make_partial_step(VALUE ary, VALUE klass, long offset, long len, long step)
         ARY_SET_EMBED_LEN(result, len);
     }
     else {
+        const VALUE *values = RARRAY_CONST_PTR(ary);
+
         RARRAY_PTR_USE(result, ptr, {
             for (i = 0; i < len; ++i) {
                 RB_OBJ_WRITE(result, ptr+i, values[j]);
@@ -4656,6 +4659,13 @@ take_items(VALUE obj, long n)
  *    d = a.zip(b, c)
  *    d # => [[:a0, :b0, :c0], [:a1, :b1, :c1], [:a2, :b2, :c2], [:a3, :b3, :c3]]
  *
+ *  If an argument is not an array, it extracts the values by calling #each:
+ *
+ *  a = [:a0, :a1, :a2, :a2]
+ *  b = 1..4
+ *  c = a.zip(b)
+ *  c # => [[:a0, 1], [:a1, 2], [:a2, 3], [:a2, 4]]
+ *
  *  When a block is given, calls the block with each of the sub-arrays (formed as above); returns +nil+:
  *
  *    a = [:a0, :a1, :a2, :a3]
@@ -5416,10 +5426,10 @@ recursive_eql(VALUE ary1, VALUE ary2, int recur)
 
 /*
  *  call-seq:
- *    array.eql? other_array -> true or false
+ *    array.eql?(other_array) -> true or false
  *
  *  Returns +true+ if +self+ and +other_array+ are the same size,
- *  and if, for each index +i+ in +self+, <tt>self[i].eql? other_array[i]</tt>:
+ *  and if, for each index +i+ in +self+, <tt>self[i].eql?(other_array[i])</tt>:
  *
  *    a0 = [:foo, 'bar', 2]
  *    a1 = [:foo, 'bar', 2]
@@ -5464,7 +5474,7 @@ rb_ary_hash_values(long len, const VALUE *elements)
  *
  *  Returns the integer hash value for +self+.
  *
- *  Two arrays with the same content will have the same hash code (and will compare using eql?):
+ *  Two arrays with the same content will have the same hash code (and will compare using #eql?):
  *
  *    [0, 1, 2].hash == [0, 1, 2].hash # => true
  *    [0, 1, 2].hash == [0, 1, 3].hash # => false
@@ -8368,6 +8378,7 @@ rb_ary_sum(int argc, VALUE *argv, VALUE ary)
     return v;
 }
 
+/* :nodoc: */
 static VALUE
 rb_ary_deconstruct(VALUE ary)
 {

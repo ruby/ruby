@@ -22,6 +22,29 @@
 
 #endif
 
+#ifndef FLEX_ARY_LEN
+/* From internal/compilers.h */
+/* A macro for defining a flexible array, like: VALUE ary[FLEX_ARY_LEN]; */
+#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
+# define FLEX_ARY_LEN   /* VALUE ary[]; */
+#elif defined(__GNUC__) && !defined(__STRICT_ANSI__)
+# define FLEX_ARY_LEN 0 /* VALUE ary[0]; */
+#else
+# define FLEX_ARY_LEN 1 /* VALUE ary[1]; */
+#endif
+#endif
+
+/*
+ * Parser String
+ */
+typedef struct rb_parser_string {
+    rb_encoding *enc;
+    /* Length of the string, not including terminating NUL character. */
+    long len;
+    /* Pointer to the contents of the string. */
+    char ptr[FLEX_ARY_LEN];
+} rb_parser_string_t;
+
 /*
  * AST Node
  */
@@ -86,6 +109,10 @@ enum node_type {
     NODE_MATCH2,
     NODE_MATCH3,
     NODE_LIT,
+    NODE_INTEGER,
+    NODE_FLOAT,
+    NODE_RATIONAL,
+    NODE_IMAGINARY,
     NODE_STR,
     NODE_DSTR,
     NODE_XSTR,
@@ -123,6 +150,7 @@ enum node_type {
     NODE_ERRINFO,
     NODE_DEFINED,
     NODE_POSTEXE,
+    NODE_SYM,
     NODE_DSYM,
     NODE_ATTRASGN,
     NODE_LAMBDA,
@@ -130,22 +158,12 @@ enum node_type {
     NODE_HSHPTN,
     NODE_FNDPTN,
     NODE_ERROR,
+    NODE_LINE,
+    NODE_FILE,
     NODE_RIPPER,
     NODE_RIPPER_VALUES,
     NODE_LAST
 };
-
-#ifndef FLEX_ARY_LEN
-/* From internal/compilers.h */
-/* A macro for defining a flexible array, like: VALUE ary[FLEX_ARY_LEN]; */
-#if defined(__STDC_VERSION__) && (__STDC_VERSION__ >= 199901L)
-# define FLEX_ARY_LEN   /* VALUE ary[]; */
-#elif defined(__GNUC__) && !defined(__STRICT_ANSI__)
-# define FLEX_ARY_LEN 0 /* VALUE ary[0]; */
-#else
-# define FLEX_ARY_LEN 1 /* VALUE ary[1]; */
-#endif
-#endif
 
 typedef struct rb_ast_id_table {
     int size;
@@ -615,6 +633,46 @@ typedef struct RNode_LIT {
     VALUE nd_lit;
 } rb_node_lit_t;
 
+typedef struct RNode_INTEGER {
+    NODE node;
+
+    char* val;
+    int minus;
+    int base;
+} rb_node_integer_t;
+
+typedef struct RNode_FLOAT {
+    NODE node;
+
+    char* val;
+    int minus;
+} rb_node_float_t;
+
+typedef struct RNode_RATIONAL {
+    NODE node;
+
+    char* val;
+    int minus;
+    int base;
+    int seen_point;
+} rb_node_rational_t;
+
+enum rb_numeric_type {
+    integer_literal,
+    float_literal,
+    rational_literal
+};
+
+typedef struct RNode_IMAGINARY {
+    NODE node;
+
+    char* val;
+    int minus;
+    int base;
+    int seen_point;
+    enum rb_numeric_type type;
+} rb_node_imaginary_t;
+
 typedef struct RNode_STR {
     NODE node;
 
@@ -883,6 +941,12 @@ typedef struct RNode_POSTEXE {
     struct RNode *nd_body;
 } rb_node_postexe_t;
 
+typedef struct RNode_SYM {
+    NODE node;
+
+    struct rb_parser_string *string;
+} rb_node_sym_t;
+
 typedef struct RNode_DSYM {
     NODE node;
 
@@ -930,6 +994,16 @@ typedef struct RNode_FNDPTN {
     NODE *args;
     NODE *post_rest_arg;
 } rb_node_fndptn_t;
+
+typedef struct RNode_LINE {
+    NODE node;
+} rb_node_line_t;
+
+typedef struct RNode_FILE {
+    NODE node;
+
+    struct rb_parser_string *path;
+} rb_node_file_t;
 
 typedef struct RNode_ERROR {
     NODE node;
@@ -997,6 +1071,10 @@ typedef struct RNode_ERROR {
 #define RNODE_MATCH2(node) ((struct RNode_MATCH2 *)(node))
 #define RNODE_MATCH3(node) ((struct RNode_MATCH3 *)(node))
 #define RNODE_LIT(node) ((struct RNode_LIT *)(node))
+#define RNODE_INTEGER(node) ((struct RNode_INTEGER *)(node))
+#define RNODE_FLOAT(node) ((struct RNode_FLOAT *)(node))
+#define RNODE_RATIONAL(node) ((struct RNode_RATIONAL *)(node))
+#define RNODE_IMAGINARY(node) ((struct RNode_IMAGINARY *)(node))
 #define RNODE_STR(node) ((struct RNode_STR *)(node))
 #define RNODE_DSTR(node) ((struct RNode_DSTR *)(node))
 #define RNODE_XSTR(node) ((struct RNode_XSTR *)(node))
@@ -1034,12 +1112,15 @@ typedef struct RNode_ERROR {
 #define RNODE_ERRINFO(node) ((struct RNode_ERRINFO *)(node))
 #define RNODE_DEFINED(node) ((struct RNode_DEFINED *)(node))
 #define RNODE_POSTEXE(node) ((struct RNode_POSTEXE *)(node))
+#define RNODE_SYM(node) ((struct RNode_SYM *)(node))
 #define RNODE_DSYM(node) ((struct RNode_DSYM *)(node))
 #define RNODE_ATTRASGN(node) ((struct RNode_ATTRASGN *)(node))
 #define RNODE_LAMBDA(node) ((struct RNode_LAMBDA *)(node))
 #define RNODE_ARYPTN(node) ((struct RNode_ARYPTN *)(node))
 #define RNODE_HSHPTN(node) ((struct RNode_HSHPTN *)(node))
 #define RNODE_FNDPTN(node) ((struct RNode_FNDPTN *)(node))
+#define RNODE_LINE(node) ((struct RNode_LINE *)(node))
+#define RNODE_FILE(node) ((struct RNode_FILE *)(node))
 
 #ifdef RIPPER
 typedef struct RNode_RIPPER {
@@ -1167,6 +1248,7 @@ typedef struct rb_parser_config_struct {
     VALUE (*ary_join)(VALUE ary, VALUE sep);
     VALUE (*ary_reverse)(VALUE ary);
     VALUE (*ary_clear)(VALUE ary);
+    void (*ary_modify)(VALUE ary);
     long (*array_len)(VALUE a);
     VALUE (*array_aref)(VALUE, long);
 
@@ -1229,36 +1311,9 @@ typedef struct rb_parser_config_struct {
     VALUE (*hash_lookup)(VALUE hash, VALUE key);
     VALUE (*ident_hash_new)(void);
 
-    /* Fixnum */
-    VALUE (*int2fix)(long i);
-
-    /* Bignum */
-    void (*bignum_negate)(VALUE b);
-    VALUE (*big_norm)(VALUE x);
-    VALUE (*cstr_to_inum)(const char *str, int base, int badcheck);
-
-    /* Float */
-    VALUE (*float_new)(double d);
-    double (*float_value)(VALUE v);
-
     /* Numeric */
     int (*num2int)(VALUE val);
-    VALUE (*int_positive_pow)(long x, unsigned long y);
     VALUE (*int2num)(int v);
-    long (*fix2long)(VALUE val);
-
-    /* Rational */
-    VALUE (*rational_new)(VALUE x, VALUE y);
-    VALUE (*rational_raw1)(VALUE x);
-    void (*rational_set_num)(VALUE r, VALUE n);
-    VALUE (*rational_get_num)(VALUE obj);
-
-    /* Complex */
-    VALUE (*complex_raw)(VALUE x, VALUE y);
-    void (*rcomplex_set_real)(VALUE cmp, VALUE r);
-    void (*rcomplex_set_imag)(VALUE cmp, VALUE i);
-    VALUE (*rcomplex_get_real)(VALUE obj);
-    VALUE (*rcomplex_get_imag)(VALUE obj);
 
     /* IO */
     int (*stderr_tty_p)(void);
@@ -1316,7 +1371,6 @@ typedef struct rb_parser_config_struct {
     parser_st_index_t (*literal_hash)(VALUE a);
 
     /* Error (Exception) */
-    const char *(*builtin_class_name)(VALUE x);
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 6, 0)
     VALUE (*syntax_error_append)(VALUE, VALUE, int, int, rb_encoding*, const char*, va_list);
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 3)
@@ -1351,6 +1405,7 @@ typedef struct rb_parser_config_struct {
     void (*bug)(const char *fmt, ...);
     void (*fatal)(const char *fmt, ...);
     VALUE (*verbose)(void);
+    int *(*errno_ptr)(void);
 
     /* VM */
     VALUE (*make_backtrace)(void);
@@ -1366,7 +1421,6 @@ typedef struct rb_parser_config_struct {
     int (*undef_p)(VALUE);
     int (*rtest)(VALUE obj);
     int (*nil_p)(VALUE obj);
-    int (*flonum_p)(VALUE obj);
     VALUE qnil;
     VALUE qtrue;
     VALUE qfalse;
@@ -1398,6 +1452,10 @@ void rb_ruby_parser_config_free(rb_parser_config_t *config);
 rb_parser_t *rb_ruby_parser_allocate(rb_parser_config_t *config);
 rb_parser_t *rb_ruby_parser_new(rb_parser_config_t *config);
 #endif
+
+long rb_parser_string_length(rb_parser_string_t *str);
+char *rb_parser_string_pointer(rb_parser_string_t *str);
+
 RUBY_SYMBOL_EXPORT_END
 
 #endif /* RUBY_RUBYPARSER_H */

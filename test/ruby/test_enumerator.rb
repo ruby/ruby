@@ -127,6 +127,16 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal([[1,5],[2,6],[3,7]], @obj.to_enum(:foo, 1, 2, 3).with_index(5).to_a)
   end
 
+  def test_with_index_under_gc_compact_stress
+    EnvUtil.under_gc_compact_stress do
+      assert_equal([[1, 0], [2, 1], [3, 2]], @obj.to_enum(:foo, 1, 2, 3).with_index.to_a)
+      assert_equal([[1, 5], [2, 6], [3, 7]], @obj.to_enum(:foo, 1, 2, 3).with_index(5).to_a)
+
+      s = 1 << (8 * 1.size - 2)
+      assert_equal([[1, s], [2, s + 1], [3, s + 2]], @obj.to_enum(:foo, 1, 2, 3).with_index(s).to_a)
+    end
+  end
+
   def test_with_index_large_offset
     bug8010 = '[ruby-dev:47131] [Bug #8010]'
     s = 1 << (8*1.size-2)
@@ -850,6 +860,20 @@ class TestEnumerator < Test::Unit::TestCase
     assert_equal(21, chain.next)
     assert_equal(27, chain.next)
     assert_equal(33, chain.next)
+  end
+
+  def test_lazy_chain_under_gc_compact_stress
+    EnvUtil.under_gc_compact_stress do
+      ea = (10..).lazy.select(&:even?).take(10)
+      ed = (20..).lazy.select(&:odd?)
+      chain = (ea + ed).select{|x| x % 3 == 0}
+      assert_equal(12, chain.next)
+      assert_equal(18, chain.next)
+      assert_equal(24, chain.next)
+      assert_equal(21, chain.next)
+      assert_equal(27, chain.next)
+      assert_equal(33, chain.next)
+    end
   end
 
   def test_chain_undef_methods

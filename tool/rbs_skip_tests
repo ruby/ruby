@@ -22,6 +22,31 @@ test_collection_install_frozen(RBS::CliTest) running tests without Bundler
 test_collection_install_gemspec(RBS::CliTest) running tests without Bundler
 test_collection_update(RBS::CliTest) running tests without Bundler
 
+test_defs(RBS::RbPrototypeTest) Numeric Nodes are added
+test_defs_return_type(RBS::RbPrototypeTest) Numeric Nodes are added
+test_defs_return_type_with_block(RBS::RbPrototypeTest) Numeric Nodes are added
+test_defs_return_type_with_if(RBS::RbPrototypeTest) Numeric Nodes are added
+test_endless_method_definition(RBS::RbPrototypeTest) Numeric Nodes are added
+test_literal_to_type(RBS::RbPrototypeTest) Numeric Nodes are added
+test_literal_types(RBS::RbPrototypeTest) Numeric Nodes are added
+test_accessibility(RBS::RbPrototypeTest) Symbol Node is added
+test_aliases(RBS::RbPrototypeTest) Symbol Node is added
+test_comments(RBS::RbPrototypeTest) Symbol Node is added
+test_const(RBS::RbPrototypeTest) Symbol Node is added
+test_meta_programming(RBS::RbPrototypeTest) Symbol Node is added
+test_module_function(RBS::RbPrototypeTest) Symbol Node is added
+test_all(RBS::RbiPrototypeTest) Symbol Node is added
+test_block_args(RBS::RbiPrototypeTest) Symbol Node is added
+test_implicit_block(RBS::RbiPrototypeTest) Symbol Node is added
+test_non_parameter_type_member(RBS::RbiPrototypeTest) Symbol Node is added
+test_noreturn(RBS::RbiPrototypeTest) Symbol Node is added
+test_optional_block(RBS::RbiPrototypeTest) Symbol Node is added
+test_overloading(RBS::RbiPrototypeTest) Symbol Node is added
+test_parameter(RBS::RbiPrototypeTest) Symbol Node is added
+test_parameter_type_member_variance(RBS::RbiPrototypeTest) Symbol Node is added
+test_tuple(RBS::RbiPrototypeTest) Symbol Node is added
+test_untyped_block(RBS::RbiPrototypeTest) Symbol Node is added
+
 test_TOPDIR(RbConfigSingletonTest) `TOPDIR` is `nil` during CI while RBS type is declared as `String`
 
 test_aref(FiberSingletonTest) the method should not accept String keys

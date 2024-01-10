@@ -2,6 +2,10 @@
 /*
  * console IO module
  */
+
+static const char *const
+IO_CONSOLE_VERSION = "0.7.2.dev.1";
+
 #include "ruby.h"
 #include "ruby/io.h"
 #include "ruby/thread.h"
@@ -74,6 +78,8 @@ getattr(int fd, conmode *t)
 #ifndef SET_LAST_ERROR
 #define SET_LAST_ERROR (0)
 #endif
+
+#define CSI "\x1b\x5b"
 
 static ID id_getc, id_console, id_close;
 static ID id_gets, id_flush, id_chomp_bang;
@@ -896,6 +902,16 @@ console_set_winsize(VALUE io, VALUE size)
 #endif
 
 #ifdef _WIN32
+/*
+ * call-seq:
+ *   io.check_winsize_changed { ... }   -> io
+ *
+ * Yields while console input events are queued.
+ *
+ * This method is Windows only.
+ *
+ * You must require 'io/console' to use this method.
+ */
 static VALUE
 console_check_winsize_changed(VALUE io)
 {
@@ -982,6 +998,14 @@ console_ioflush(VALUE io)
     return io;
 }
 
+/*
+ * call-seq:
+ *   io.beep
+ *
+ * Beeps on the output console.
+ *
+ * You must require 'io/console' to use this method.
+ */
 static VALUE
 console_beep(VALUE io)
 {
@@ -1049,6 +1073,17 @@ console_scroll(VALUE io, int line)
 
 #include "win32_vk.inc"
 
+/*
+ * call-seq:
+ *   io.pressed?(key)   -> bool
+ *
+ * Returns +true+ if +key+ is pressed.  +key+ may be a virtual key
+ * code or its name (String or Symbol) with out "VK_" prefix.
+ *
+ * This method is Windows only.
+ *
+ * You must require 'io/console' to use this method.
+ */
 static VALUE
 console_key_pressed_p(VALUE io, VALUE k)
 {
@@ -1142,7 +1177,7 @@ static VALUE
 console_scroll(VALUE io, int line)
 {
     if (line) {
-	VALUE s = rb_sprintf("\x1b[%d%c", line < 0 ? -line : line,
+	VALUE s = rb_sprintf(CSI "%d%c", line < 0 ? -line : line,
 			     line < 0 ? 'T' : 'S');
 	rb_io_write(io, s);
     }
@@ -1192,6 +1227,14 @@ console_cursor_pos(VALUE io)
 #endif
 }
 
+/*
+ * call-seq:
+ *   io.goto(line, column)      -> io
+ *
+ * Set the cursor position at +line+ and +column+.
+ *
+ * You must require 'io/console' to use this method.
+ */
 static VALUE
 console_goto(VALUE io, VALUE y, VALUE x)
 {
@@ -1204,7 +1247,7 @@ console_goto(VALUE io, VALUE y, VALUE x)
 	rb_syserr_fail(LAST_ERROR, 0);
     }
 #else
-    rb_io_write(io, rb_sprintf("\x1b[%d;%dH", NUM2UINT(y)+1, NUM2UINT(x)+1));
+    rb_io_write(io, rb_sprintf(CSI "%d;%dH", NUM2UINT(y)+1, NUM2UINT(x)+1));
 #endif
     return io;
 }
@@ -1229,8 +1272,8 @@ console_move(VALUE io, int y, int x)
 #else
     if (x || y) {
 	VALUE s = rb_str_new_cstr("");
-	if (y) rb_str_catf(s, "\x1b[%d%c", y < 0 ? -y : y, y < 0 ? 'A' : 'B');
-	if (x) rb_str_catf(s, "\x1b[%d%c", x < 0 ? -x : x, x < 0 ? 'D' : 'C');
+	if (y) rb_str_catf(s, CSI "%d%c", y < 0 ? -y : y, y < 0 ? 'A' : 'B');
+	if (x) rb_str_catf(s, CSI "%d%c", x < 0 ? -x : x, x < 0 ? 'D' : 'C');
 	rb_io_write(io, s);
 	rb_io_flush(io);
     }
@@ -1238,6 +1281,15 @@ console_move(VALUE io, int y, int x)
     return io;
 }
 
+/*
+ * call-seq:
+ *   io.goto_column(column)     -> io
+ *
+ * Set the cursor position at +column+ in the same line of the current
+ * position.
+ *
+ * You must require 'io/console' to use this method.
+ */
 static VALUE
 console_goto_column(VALUE io, VALUE val)
 {
@@ -1255,11 +1307,23 @@ console_goto_column(VALUE io, VALUE val)
 	rb_syserr_fail(LAST_ERROR, 0);
     }
 #else
-    rb_io_write(io, rb_sprintf("\x1b[%dG", NUM2UINT(val)+1));
+    rb_io_write(io, rb_sprintf(CSI "%dG", NUM2UINT(val)+1));
 #endif
     return io;
 }
 
+/*
+ * call-seq:
+ *   io.erase_line(mode)        -> io
+ *
+ * Erases the line at the cursor corresponding to +mode+.
+ * +mode+ may be either:
+ * 0: after cursor
+ * 1: before and cursor
+ * 2: entire line
+ *
+ * You must require 'io/console' to use this method.
+ */
 static VALUE
 console_erase_line(VALUE io, VALUE val)
 {
@@ -1290,11 +1354,23 @@ console_erase_line(VALUE io, VALUE val)
     constat_clear(h, ws.wAttributes, w, *pos);
     return io;
 #else
-    rb_io_write(io, rb_sprintf("\x1b[%dK", mode));
+    rb_io_write(io, rb_sprintf(CSI "%dK", mode));
 #endif
     return io;
 }
 
+/*
+ * call-seq:
+ *   io.erase_screen(mode)      -> io
+ *
+ * Erases the screen at the cursor corresponding to +mode+.
+ * +mode+ may be either:
+ * 0: after cursor
+ * 1: before and cursor
+ * 2: entire screen
+ *
+ * You must require 'io/console' to use this method.
+ */
 static VALUE
 console_erase_screen(VALUE io, VALUE val)
 {
@@ -1332,11 +1408,21 @@ console_erase_screen(VALUE io, VALUE val)
     }
     constat_clear(h, ws.wAttributes, w, *pos);
 #else
-    rb_io_write(io, rb_sprintf("\x1b[%dJ", mode));
+    rb_io_write(io, rb_sprintf(CSI "%dJ", mode));
 #endif
     return io;
 }
 
+/*
+ * call-seq:
+ *   io.cursor = [line, column]         -> io
+ *
+ * Same as <tt>io.goto(line, column)</tt>
+ *
+ * See IO#goto.
+ *
+ * You must require 'io/console' to use this method.
+ */
 static VALUE
 console_cursor_set(VALUE io, VALUE cpos)
 {
@@ -1345,42 +1431,98 @@ console_cursor_set(VALUE io, VALUE cpos)
     return console_goto(io, RARRAY_AREF(cpos, 0), RARRAY_AREF(cpos, 1));
 }
 
+/*
+ * call-seq:
+ *   io.cursor_up(n)            -> io
+ *
+ * Moves the cursor up +n+ lines.
+ *
+ * You must require 'io/console' to use this method.
+ */
 static VALUE
 console_cursor_up(VALUE io, VALUE val)
 {
     return console_move(io, -NUM2INT(val), 0);
 }
 
+/*
+ * call-seq:
+ *   io.cursor_down(n)          -> io
+ *
+ * Moves the cursor down +n+ lines.
+ *
+ * You must require 'io/console' to use this method.
+ */
 static VALUE
 console_cursor_down(VALUE io, VALUE val)
 {
     return console_move(io, +NUM2INT(val), 0);
 }
 
+/*
+ * call-seq:
+ *   io.cursor_left(n)          -> io
+ *
+ * Moves the cursor left +n+ columns.
+ *
+ * You must require 'io/console' to use this method.
+ */
 static VALUE
 console_cursor_left(VALUE io, VALUE val)
 {
     return console_move(io, 0, -NUM2INT(val));
 }
 
+/*
+ * call-seq:
+ *   io.cursor_right(n)         -> io
+ *
+ * Moves the cursor right +n+ columns.
+ *
+ * You must require 'io/console' to use this method.
+ */
 static VALUE
 console_cursor_right(VALUE io, VALUE val)
 {
     return console_move(io, 0, +NUM2INT(val));
 }
 
+/*
+ * call-seq:
+ *   io.scroll_forward(n)       -> io
+ *
+ * Scrolls the entire scrolls forward +n+ lines.
+ *
+ * You must require 'io/console' to use this method.
+ */
 static VALUE
 console_scroll_forward(VALUE io, VALUE val)
 {
     return console_scroll(io, +NUM2INT(val));
 }
 
+/*
+ * call-seq:
+ *   io.scroll_backward(n)      -> io
+ *
+ * Scrolls the entire scrolls backward +n+ lines.
+ *
+ * You must require 'io/console' to use this method.
+ */
 static VALUE
 console_scroll_backward(VALUE io, VALUE val)
 {
     return console_scroll(io, -NUM2INT(val));
 }
 
+/*
+ * call-seq:
+ *   io.clear_screen            -> io
+ *
+ * Clears the entire screen and moves the cursor top-left corner.
+ *
+ * You must require 'io/console' to use this method.
+ */
 static VALUE
 console_clear_screen(VALUE io)
 {
@@ -1675,14 +1817,16 @@ InitVM_console(void)
     rb_define_method(rb_cIO, "getpass", console_getpass, -1);
     rb_define_singleton_method(rb_cIO, "console", console_dev, -1);
     {
+	/* :stopdoc: */
 	VALUE mReadable = rb_define_module_under(rb_cIO, "generic_readable");
+	/* :startdoc: */
 	rb_define_method(mReadable, "getch", io_getch, -1);
 	rb_define_method(mReadable, "getpass", io_getpass, -1);
     }
     {
 	/* :stopdoc: */
         cConmode = rb_define_class_under(rb_cIO, "ConsoleMode", rb_cObject);
-        rb_define_const(cConmode, "VERSION", rb_str_new_cstr(STRINGIZE(IO_CONSOLE_VERSION)));
+        rb_define_const(cConmode, "VERSION", rb_str_new_cstr(IO_CONSOLE_VERSION));
         rb_define_alloc_func(cConmode, conmode_alloc);
         rb_undef_method(cConmode, "initialize");
         rb_define_method(cConmode, "initialize_copy", conmode_init_copy, 1);

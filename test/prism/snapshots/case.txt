@@ -1,8 +1,8 @@
-@ ProgramNode (location: (1,0)-(44,22))
+@ ProgramNode (location: (1,0)-(50,3))
 ├── locals: []
 └── statements:
-    @ StatementsNode (location: (1,0)-(44,22))
-    └── body: (length: 13)
+    @ StatementsNode (location: (1,0)-(50,3))
+    └── body: (length: 14)
         ├── @ CaseNode (location: (1,0)-(3,3))
         │   ├── predicate:
         │   │   @ SymbolNode (location: (1,5)-(1,8))
@@ -37,7 +37,7 @@
         │   │   │       @ StatementsNode (location: (5,22)-(5,30))
         │   │   │       └── body: (length: 1)
         │   │   │           └── @ CallNode (location: (5,22)-(5,30))
-        │   │   │               ├── flags: ∅
+        │   │   │               ├── flags: ignore_visibility
         │   │   │               ├── receiver: ∅
         │   │   │               ├── call_operator_loc: ∅
         │   │   │               ├── name: :puts
@@ -63,7 +63,7 @@
         │   │           @ StatementsNode (location: (5,44)-(5,53))
         │   │           └── body: (length: 1)
         │   │               └── @ CallNode (location: (5,44)-(5,53))
-        │   │                   ├── flags: ∅
+        │   │                   ├── flags: ignore_visibility
         │   │                   ├── receiver: ∅
         │   │                   ├── call_operator_loc: ∅
         │   │                   ├── name: :puts
@@ -94,7 +94,7 @@
         │   │       │       ├── operator_loc: (7,11)-(7,12) = "*"
         │   │       │       └── expression:
         │   │       │           @ CallNode (location: (7,12)-(7,15))
-        │   │       │           ├── flags: variable_call
+        │   │       │           ├── flags: variable_call, ignore_visibility
         │   │       │           ├── receiver: ∅
         │   │       │           ├── call_operator_loc: ∅
         │   │       │           ├── name: :foo
@@ -144,7 +144,7 @@
         ├── @ CaseNode (location: (15,0)-(15,36))
         │   ├── predicate:
         │   │   @ CallNode (location: (15,5)-(15,9))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :this
@@ -175,7 +175,7 @@
         │   │       │       ├── flags: ∅
         │   │       │       ├── receiver:
         │   │       │       │   @ CallNode (location: (18,5)-(18,8))
-        │   │       │       │   ├── flags: variable_call
+        │   │       │       │   ├── flags: variable_call, ignore_visibility
         │   │       │       │   ├── receiver: ∅
         │   │       │       │   ├── call_operator_loc: ∅
         │   │       │       │   ├── name: :foo
@@ -193,7 +193,7 @@
         │   │       │       │   ├── flags: ∅
         │   │       │       │   └── arguments: (length: 1)
         │   │       │       │       └── @ CallNode (location: (18,12)-(18,15))
-        │   │       │       │           ├── flags: variable_call
+        │   │       │       │           ├── flags: variable_call, ignore_visibility
         │   │       │       │           ├── receiver: ∅
         │   │       │       │           ├── call_operator_loc: ∅
         │   │       │       │           ├── name: :bar
@@ -215,7 +215,7 @@
         │   │       ├── keyword_loc: (22,0)-(22,4) = "when"
         │   │       ├── conditions: (length: 1)
         │   │       │   └── @ CallNode (location: (22,5)-(22,6))
-        │   │       │       ├── flags: variable_call
+        │   │       │       ├── flags: variable_call, ignore_visibility
         │   │       │       ├── receiver: ∅
         │   │       │       ├── call_operator_loc: ∅
         │   │       │       ├── name: :a
@@ -235,7 +235,7 @@
         ├── @ CaseNode (location: (27,0)-(30,6))
         │   ├── predicate:
         │   │   @ CallNode (location: (27,5)-(27,9))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :type
@@ -335,24 +335,66 @@
         │   ├── consequent: ∅
         │   ├── case_keyword_loc: (40,0)-(40,4) = "case"
         │   └── end_keyword_loc: (42,0)-(42,3) = "end"
-        └── @ CaseMatchNode (location: (44,0)-(44,22))
-            ├── predicate:
-            │   @ MatchPredicateNode (location: (44,5)-(44,11))
-            │   ├── value:
-            │   │   @ IntegerNode (location: (44,5)-(44,6))
-            │   │   └── flags: decimal
-            │   ├── pattern:
-            │   │   @ IntegerNode (location: (44,10)-(44,11))
-            │   │   └── flags: decimal
-            │   └── operator_loc: (44,7)-(44,9) = "in"
-            ├── conditions: (length: 1)
-            │   └── @ InNode (location: (44,13)-(44,17))
-            │       ├── pattern:
-            │       │   @ IntegerNode (location: (44,16)-(44,17))
-            │       │   └── flags: decimal
-            │       ├── statements: ∅
-            │       ├── in_loc: (44,13)-(44,15) = "in"
-            │       └── then_loc: ∅
-            ├── consequent: ∅
-            ├── case_keyword_loc: (44,0)-(44,4) = "case"
-            └── end_keyword_loc: (44,19)-(44,22) = "end"
+        ├── @ CaseMatchNode (location: (44,0)-(44,22))
+        │   ├── predicate:
+        │   │   @ MatchPredicateNode (location: (44,5)-(44,11))
+        │   │   ├── value:
+        │   │   │   @ IntegerNode (location: (44,5)-(44,6))
+        │   │   │   └── flags: decimal
+        │   │   ├── pattern:
+        │   │   │   @ IntegerNode (location: (44,10)-(44,11))
+        │   │   │   └── flags: decimal
+        │   │   └── operator_loc: (44,7)-(44,9) = "in"
+        │   ├── conditions: (length: 1)
+        │   │   └── @ InNode (location: (44,13)-(44,17))
+        │   │       ├── pattern:
+        │   │       │   @ IntegerNode (location: (44,16)-(44,17))
+        │   │       │   └── flags: decimal
+        │   │       ├── statements: ∅
+        │   │       ├── in_loc: (44,13)-(44,15) = "in"
+        │   │       └── then_loc: ∅
+        │   ├── consequent: ∅
+        │   ├── case_keyword_loc: (44,0)-(44,4) = "case"
+        │   └── end_keyword_loc: (44,19)-(44,22) = "end"
+        └── @ CallNode (location: (46,0)-(50,3))
+            ├── flags: ∅
+            ├── receiver:
+            │   @ IntegerNode (location: (46,0)-(46,1))
+            │   └── flags: decimal
+            ├── call_operator_loc: (46,1)-(46,2) = "."
+            ├── name: :then
+            ├── message_loc: (46,2)-(46,6) = "then"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            └── block:
+                @ BlockNode (location: (46,7)-(50,3))
+                ├── locals: [:_1]
+                ├── locals_body_index: 1
+                ├── parameters:
+                │   @ NumberedParametersNode (location: (46,7)-(50,3))
+                │   └── maximum: 1
+                ├── body:
+                │   @ StatementsNode (location: (47,2)-(49,5))
+                │   └── body: (length: 1)
+                │       └── @ CaseMatchNode (location: (47,2)-(49,5))
+                │           ├── predicate:
+                │           │   @ IntegerNode (location: (47,7)-(47,8))
+                │           │   └── flags: decimal
+                │           ├── conditions: (length: 1)
+                │           │   └── @ InNode (location: (48,2)-(48,8))
+                │           │       ├── pattern:
+                │           │       │   @ PinnedVariableNode (location: (48,5)-(48,8))
+                │           │       │   ├── variable:
+                │           │       │   │   @ LocalVariableReadNode (location: (48,6)-(48,8))
+                │           │       │   │   ├── name: :_1
+                │           │       │   │   └── depth: 0
+                │           │       │   └── operator_loc: (48,5)-(48,6) = "^"
+                │           │       ├── statements: ∅
+                │           │       ├── in_loc: (48,2)-(48,4) = "in"
+                │           │       └── then_loc: ∅
+                │           ├── consequent: ∅
+                │           ├── case_keyword_loc: (47,2)-(47,6) = "case"
+                │           └── end_keyword_loc: (49,2)-(49,5) = "end"
+                ├── opening_loc: (46,7)-(46,9) = "do"
+                └── closing_loc: (50,0)-(50,3) = "end"

@@ -97,7 +97,7 @@ VALUE rb_fiber_scheduler_get(void);
  * current  thread  will  call  scheduler's  `#close`  method  on  finalisation
  * (allowing  the  scheduler  to  properly  manage  all  non-finished  fibers).
  * `scheduler`   can   be   an   object   of   any   class   corresponding   to
- * `Fiber::SchedulerInterface`. Its implementation is up to the user.
+ * `Fiber::Scheduler` interface. Its implementation is up to the user.
  *
  * @param[in]  scheduler     The scheduler to set.
  * @exception  rb_eArgError  `scheduler` does not conform the interface.

@@ -205,7 +205,7 @@ void *rb_nogvl(void *(*func)(void *), void *data1,
 #define RUBY_INTERNAL_THREAD_EVENT_READY      1 << 1 /** acquiring GVL */
 
 /**
- * Triggered when a thread successfuly acquired the GVL.
+ * Triggered when a thread successfully acquired the GVL.
  *
  * @note       The callback will be called *with* the GVL held.
  */
@@ -260,7 +260,7 @@ rb_internal_thread_event_hook_t *rb_internal_thread_add_event_hook(
  * Unregister the passed hook.
  *
  * @param[in]  hook.  The hook to unregister.
- * @return     Wether the hook was found and unregistered.
+ * @return     Whether the hook was found and unregistered.
  * @note       This functionality is a noop on Windows and WebAssembly.
  * @warning    This function MUST not be called from a thread event callback.
 */
@@ -287,7 +287,7 @@ typedef int rb_internal_thread_specific_key_t;
  *   }
  *
  *   // at any timing:
- *   rb_internal_thread_pecific_set(thread, tool_key, per_thread_data);
+ *   rb_internal_thread_specific_set(thread, tool_key, per_thread_data);
  *   ...
  *   per_thread_data = rb_internal_thread_specific_get(thread, tool_key);
  */

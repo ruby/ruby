@@ -59,9 +59,9 @@ make
 
 ### Requirement
 
-1.  Windows 7 or later.
+1.  Windows 10/Windows Server 2016 or later.
 
-2.  Visual C++ 12.0 (2013) or later.
+2.  Visual C++ 14.0 (2015) or later.
 
     **Note** if you want to build x64 version, use native compiler for
     x64.
@@ -80,7 +80,7 @@ make
 4.  If you want to build from GIT source, following commands are required.
     * patch
     * sed
-    * ruby 2.0 or later
+    * ruby 3.0 or later
 
     You can use [scoop](https://scoop.sh/) to install them like:
 

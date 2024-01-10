@@ -5,7 +5,7 @@
 #
 
 module IRB
-  # Outputs the irb help message, see IRB@Command+line+options.
+  # Outputs the irb help message, see IRB@Command-Line+Options.
   def IRB.print_usage
     lc = IRB.conf[:LC_MESSAGES]
     path = lc.find("irb/help-message")

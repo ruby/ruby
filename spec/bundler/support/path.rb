@@ -80,7 +80,13 @@ module Spec
     end
 
     def shipped_files
-      @shipped_files ||= loaded_gemspec.files
+      @shipped_files ||= if ruby_core_tarball?
+        loaded_gemspec.files.map {|f| f.gsub(%r{^exe/}, "libexec/") }
+      elsif ruby_core?
+        tracked_files
+      else
+        loaded_gemspec.files
+      end
     end
 
     def lib_tracked_files
@@ -244,6 +250,13 @@ module Spec
       File.open(version_file, "w") {|f| f << contents }
     end
 
+    def replace_required_ruby_version(version, dir:)
+      gemspec_file = File.expand_path("bundler.gemspec", dir)
+      contents = File.read(gemspec_file)
+      contents.sub!(/(^\s+s\.required_ruby_version\s*=\s*)"[^"]+"/, %(\\1"#{version}"))
+      File.open(gemspec_file, "w") {|f| f << contents }
+    end
+
     def ruby_core?
       # avoid to warnings
       @ruby_core ||= nil
@@ -268,7 +281,7 @@ module Spec
     end
 
     def tracked_files_glob
-      ruby_core? ? "lib/bundler lib/bundler.rb spec/bundler man/bundle*" : ""
+      ruby_core? ? "libexec/bundle* lib/bundler lib/bundler.rb spec/bundler man/bundle*" : "lib exe spec CHANGELOG.md LICENSE.md README.md bundler.gemspec"
     end
 
     def lib_tracked_files_glob

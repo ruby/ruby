@@ -12,7 +12,7 @@
         │   │   ├── operator_loc: (1,7)-(1,9) = "+="
         │   │   ├── value:
         │   │   │   @ CallNode (location: (1,10)-(1,18))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :raise
@@ -46,7 +46,7 @@
         │   │   ├── name_loc: (3,5)-(3,6) = "b"
         │   │   ├── value:
         │   │   │   @ CallNode (location: (3,9)-(3,17))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :raise
@@ -78,7 +78,7 @@
         │   │   ├── operator_loc: (5,6)-(5,8) = "+="
         │   │   ├── value:
         │   │   │   @ CallNode (location: (5,9)-(5,17))
-        │   │   │   ├── flags: ∅
+        │   │   │   ├── flags: ignore_visibility
         │   │   │   ├── receiver: ∅
         │   │   │   ├── call_operator_loc: ∅
         │   │   │   ├── name: :raise
@@ -111,7 +111,7 @@
             │   ├── name_loc: (7,4)-(7,5) = "b"
             │   ├── value:
             │   │   @ CallNode (location: (7,8)-(7,16))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: ignore_visibility
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
             │   │   ├── name: :raise

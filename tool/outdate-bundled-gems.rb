@@ -14,6 +14,18 @@ until ARGV.empty?
     # just to run when `make -n`
   when /\A--mflags=(.*)/
     fu = FileUtils::DryRun if /\A-\S*n/ =~ $1
+  when /\A--gem[-_]platform=(.*)/im
+    gem_platform = $1
+    ruby_platform = nil
+  when /\A--ruby[-_]platform=(.*)/im
+    ruby_platform = $1
+    gem_platform = nil
+  when /\A--ruby[-_]version=(.*)/im
+    ruby_version = $1
+  when /\A--only=(?:(curdir|srcdir)|all)\z/im
+    only = $1&.downcase
+  when /\A--all\z/im
+    all = true
   when /\A-/
     raise "#{$0}: unknown option: #{ARGV.first}"
   else
@@ -22,7 +34,11 @@ until ARGV.empty?
   ARGV.shift
 end
 
+gem_platform ||= Gem::Platform.new(ruby_platform).to_s if ruby_platform
+
 class Removal
+  attr_reader :base
+
   def initialize(base = nil)
     @base = (File.join(base, "/") if base)
     @remove = {}
@@ -64,21 +80,36 @@ class Removal
     }
   end
 
+  def sorted
+    @remove.sort_by {|k, | [-k.count("/"), k]}
+  end
+
   def each_file
-    @remove.each {|k, v| yield prefixed(k) if v == :rm_f}
+    sorted.each {|k, v| yield prefixed(k) if v == :rm_f}
   end
 
   def each_directory
-    @remove.each {|k, v| yield prefixed(k) if v == :rm_rf}
+    sorted.each {|k, v| yield prefixed(k) if v == :rm_rf}
   end
 end
 
 srcdir = Removal.new(ARGV.shift)
-curdir = Removal.new
+curdir = !srcdir.base || File.identical?(srcdir.base, ".") ? srcdir : Removal.new
+
+bundled = File.readlines("#{srcdir.base}gems/bundled_gems").
+            grep(/^(\w\S+)\s+\S+(?:\s+\S+\s+(\S+))?/) {$~.captures}.to_h rescue nil
 
 srcdir.glob(".bundle/gems/*/") do |dir|
-  unless srcdir.exist?("gems/#{File.basename(dir)}.gem")
+  base = File.basename(dir)
+  next if !all && bundled && !bundled.key?(base[/\A.+(?=-)/])
+  unless srcdir.exist?("gems/#{base}.gem")
     srcdir.rmdir(dir)
+  end
+end
+
+srcdir.glob(".bundle/.timestamp/*.revision") do |file|
+  unless bundled&.fetch(File.basename(file, ".revision"), nil)
+    srcdir.unlink(file)
   end
 end
 
@@ -102,34 +133,40 @@ curdir.glob(".bundle/gems/*/") do |dir|
   end
 end
 
-platform = Gem::Platform.local.to_s
 curdir.glob(".bundle/{extensions,.timestamp}/*/") do |dir|
-  unless File.basename(dir) == platform
+  unless gem_platform and File.fnmatch?(gem_platform, File.basename(dir))
     curdir.rmdir(dir)
   end
 end
 
-baseruby_version = RbConfig::CONFIG['ruby_version'] # This may not have "-static"
-curdir.glob(".bundle/{extensions,.timestamp}/#{platform}/*/") do |dir|
-  version = File.basename(dir).split('-', 2).first # Remove "-static" if exists
-  unless version == baseruby_version
-    curdir.rmdir(dir)
+if gem_platform
+  curdir.glob(".bundle/{extensions,.timestamp}/#{gem_platform}/*/") do |dir|
+    unless ruby_version and File.fnmatch?(ruby_version, File.basename(dir, '-static'))
+      curdir.rmdir(dir)
+    end
   end
 end
 
-curdir.glob(".bundle/extensions/#{platform}/#{baseruby_version}/*/") do |dir|
-  unless curdir.exist?(".bundle/specifications/#{File.basename(dir)}.gemspec")
-    curdir.rmdir(dir)
+if ruby_version
+  curdir.glob(".bundle/extensions/#{gem_platform || '*'}/#{ruby_version}/*/") do |dir|
+    unless curdir.exist?(".bundle/specifications/#{File.basename(dir)}.gemspec")
+      curdir.rmdir(dir)
+    end
+  end
+
+  curdir.glob(".bundle/.timestamp/#{gem_platform || '*'}/#{ruby_version}/.*.time") do |stamp|
+    dir = stamp[%r[/\.([^/]+)\.time\z], 1].gsub('.-.', '/')[%r[\A[^/]+/[^/]+]]
+    unless curdir.directory?(File.join(".bundle", dir))
+      curdir.unlink(stamp)
+    end
   end
 end
 
-curdir.glob(".bundle/.timestamp/#{platform}/#{baseruby_version}/.*.time") do |stamp|
-  unless curdir.directory?(File.join(".bundle", stamp[%r[/\.([^/]+)\.time\z], 1].gsub('.-.', '/')))
-    curdir.unlink(stamp)
-  end
+unless only == "curdir"
+  srcdir.each_file {|f| fu.rm_f(f)}
+  srcdir.each_directory {|d| fu.rm_rf(d)}
 end
-
-srcdir.each_file {|f| fu.rm_f(f)}
-srcdir.each_directory {|d| fu.rm_rf(d)}
-curdir.each_file {|f| fu.rm_f(f)}
-curdir.each_directory {|d| fu.rm_rf(d)}
+unless only == "srcdir" or curdir.equal?(srcdir)
+  curdir.each_file {|f| fu.rm_f(f)}
+  curdir.each_directory {|d| fu.rm_rf(d)}
+end

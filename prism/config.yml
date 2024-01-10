@@ -345,6 +345,10 @@ flags:
         comment: "&. operator"
       - name: VARIABLE_CALL
         comment: "a call that could have been a local variable"
+      - name: ATTRIBUTE_WRITE
+        comment: "a call that is an attribute write, so the value being written should be returned"
+      - name: IGNORE_VISIBILITY
+        comment: "a call that ignores method visibility"
     comment: Flags for call nodes.
   - name: EncodingFlags
     values:
@@ -364,6 +368,11 @@ flags:
       - name: HEXADECIMAL
         comment: "0x prefix"
     comment: Flags for integer nodes that correspond to the base of the integer.
+  - name: KeywordHashNodeFlags
+    values:
+      - name: SYMBOL_KEYS
+        comment: "a keyword hash which only has `AssocNode` elements all with symbol keys, which means the elements can be treated as keyword arguments"
+    comment: Flags for keyword hash nodes.
   - name: LoopFlags
     values:
       - name: BEGIN_MODIFIER
@@ -534,10 +543,36 @@ nodes:
     fields:
       - name: key
         type: node
+        comment: |
+          The key of the association. This can be any node that represents a non-void expression.
+
+              { a: b }
+                ^
+
+              { foo => bar }
+                ^^^
+
+              { def a; end => 1 }
+                ^^^^^^^^^^
       - name: value
         type: node?
+        comment: |
+          The value of the association, if present. This can be any node that
+          represents a non-void expression. It can be optionally omitted if this
+          node is an element in a `HashPatternNode`.
+
+              { foo => bar }
+                       ^^^
+
+              { x: 1 }
+                   ^
       - name: operator_loc
         type: location?
+        comment: |
+          The location of the `=>` operator, if present.
+
+              { foo => bar }
+                    ^^
     comment: |
       Represents a hash key/value pair.
 
@@ -547,8 +582,19 @@ nodes:
     fields:
       - name: value
         type: node?
+        comment: |
+          The value to be splatted, if present. Will be missing when keyword
+          rest argument forwarding is used.
+
+              { **foo }
+                  ^^^
       - name: operator_loc
         type: location
+        comment: |
+          The location of the `**` operator.
+
+              { **x }
+                ^^
     comment: |
       Represents a splat in a hash literal.
 
@@ -705,6 +751,19 @@ nodes:
         kind: CallNodeFlags
       - name: receiver
         type: node?
+        comment: |
+          The object that the method is being called on. This can be either
+          `nil` or a node representing any kind of expression that returns a
+          non-void value.
+
+              foo.bar
+              ^^^
+
+              +foo
+               ^^^
+
+              foo + bar
+              ^^^
       - name: call_operator_loc
         type: location?
       - name: name
@@ -1433,10 +1492,28 @@ nodes:
     fields:
       - name: opening_loc
         type: location
+        comment: |
+          The location of the opening brace.
+
+              { a => b }
+              ^
       - name: elements
         type: node[]
+        comment: |
+          The elements of the hash. These can be either `AssocNode`s or `AssocSplatNode`s.
+
+              { a: b }
+                ^^^^
+
+              { **foo }
+                ^^^^^
       - name: closing_loc
         type: location
+        comment: |
+          The location of the closing brace.
+
+              { a => b }
+                       ^
     comment: |
       Represents a hash literal.
 
@@ -1736,6 +1813,19 @@ nodes:
       - name: flags
         type: flags
         kind: IntegerBaseFlags
+        comment: |
+          Represents flag indicating the base of the integer
+
+              10    base decimal, value 10
+              0d10  base decimal, value 10
+              0b10  base binary, value 2
+              0o10  base octal, value 8
+              010   base octal, value 8
+              0x10  base hexidecimal, value 16
+
+          A 0 prefix indicates the number has a different base.
+          The d, b, o, and x prefixes indicate the base. If one of those
+          four letters is omitted, the base is assumed to be octal.
     comment: |
       Represents an integer number literal.
 
@@ -1821,6 +1911,9 @@ nodes:
           ^^^^^^^^^^^^^^^^
   - name: KeywordHashNode
     fields:
+      - name: flags
+        type: flags
+        kind: KeywordHashNodeFlags
       - name: elements
         type: node[]
     comment: |
@@ -2279,12 +2372,42 @@ nodes:
       - name: flags
         type: flags
         kind: RangeFlags
+        comment: |
+          A flag indicating whether the range excludes the end value.
+
+              1..3  # includes 3
+
+              1...3 # excludes 3
       - name: left
         type: node?
+        comment: |
+          The left-hand side of the range, if present. Can be either `nil` or
+          a node representing any kind of expression that returns a non-void
+          value.
+
+              1...
+              ^
+
+              hello...goodbye
+              ^^^^^
       - name: right
         type: node?
+        comment: |
+          The right-hand side of the range, if present. Can be either `nil` or
+          a node representing any kind of expression that returns a non-void
+          value.
+
+              ..5
+                ^
+
+              1...foo
+                  ^^^
+          If neither right-hand or left-hand side was included, this will be a
+          MissingNode.
       - name: operator_loc
         type: location
+        comment: |
+          The location of the `..` or `...` operator.
     comment: |
       Represents the use of the `..` or `...` operators.
 

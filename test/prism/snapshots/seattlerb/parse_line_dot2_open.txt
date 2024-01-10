@@ -14,7 +14,7 @@
         │   ├── flags: ∅
         │   ├── left:
         │   │   @ CallNode (location: (2,2)-(2,3))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :a
@@ -26,7 +26,7 @@
         │   ├── right: ∅
         │   └── operator_loc: (2,3)-(2,5) = ".."
         └── @ CallNode (location: (3,2)-(3,3))
-            ├── flags: variable_call
+            ├── flags: variable_call, ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :c

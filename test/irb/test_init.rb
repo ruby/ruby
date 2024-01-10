@@ -66,10 +66,18 @@ module TestIRB
       end
     end
 
-    def test_recovery_sigint
+    def test_sigint_restore_default
       pend "This test gets stuck on Solaris for unknown reason; contribution is welcome" if RUBY_PLATFORM =~ /solaris/
       bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []
-      status = assert_in_out_err(bundle_exec + %w[-W0 -rirb -e binding.irb;loop{Process.kill("SIGINT",$$)} -- -f --], "exit\n", //, //)
+      # IRB should restore SIGINT handler
+      status = assert_in_out_err(bundle_exec + %w[-W0 -rirb -e Signal.trap("SIGINT","DEFAULT");binding.irb;loop{Process.kill("SIGINT",$$)} -- -f --], "exit\n", //, //)
+      Process.kill("SIGKILL", status.pid) if !status.exited? && !status.stopped? && !status.signaled?
+    end
+
+    def test_sigint_restore_block
+      bundle_exec = ENV.key?('BUNDLE_GEMFILE') ? ['-rbundler/setup'] : []
+      # IRB should restore SIGINT handler
+      status = assert_in_out_err(bundle_exec + %w[-W0 -rirb -e x=false;Signal.trap("SIGINT"){x=true};binding.irb;loop{Process.kill("SIGINT",$$);if(x);break;end} -- -f --], "exit\n", //, //)
       Process.kill("SIGKILL", status.pid) if !status.exited? && !status.stopped? && !status.signaled?
     end
 
@@ -216,6 +224,46 @@ module TestIRB
       yield
     ensure
       ARGV.replace(orig)
+    end
+  end
+
+  class InitIntegrationTest < IntegrationTestCase
+    def test_load_error_in_rc_file_is_warned
+      write_rc <<~'IRBRC'
+        require "file_that_does_not_exist"
+      IRBRC
+
+      write_ruby <<~'RUBY'
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "'foobar'"
+        type "exit"
+      end
+
+      # IRB session should still be started
+      assert_includes output, "foobar"
+      assert_includes output, 'cannot load such file -- file_that_does_not_exist (LoadError)'
+    end
+
+    def test_normal_errors_in_rc_file_is_warned
+      write_rc <<~'IRBRC'
+        raise "I'm an error"
+      IRBRC
+
+      write_ruby <<~'RUBY'
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type "'foobar'"
+        type "exit"
+      end
+
+      # IRB session should still be started
+      assert_includes output, "foobar"
+      assert_includes output, 'I\'m an error (RuntimeError)'
     end
   end
 end

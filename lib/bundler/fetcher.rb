@@ -1,10 +1,10 @@
 # frozen_string_literal: true
 
 require_relative "vendored_persistent"
+require_relative "vendored_timeout"
 require "cgi"
 require "securerandom"
 require "zlib"
-require "rubygems/request"
 
 module Bundler
   # Handles all the fetching with the rubygems server
@@ -83,7 +83,7 @@ module Bundler
     FAIL_ERRORS = begin
       fail_errors = [AuthenticationRequiredError, BadAuthenticationError, AuthenticationForbiddenError, FallbackError, SecurityError]
       fail_errors << Gem::Requirement::BadRequirementError
-      fail_errors.concat(NET_ERRORS.map {|e| Net.const_get(e) })
+      fail_errors.concat(NET_ERRORS.map {|e| Gem::Net.const_get(e) })
     end.freeze
 
     class << self
@@ -113,7 +113,7 @@ module Bundler
 
       uri = Bundler::URI.parse("#{remote_uri}#{Gem::MARSHAL_SPEC_DIR}#{spec_file_name}.rz")
       spec = if uri.scheme == "file"
-        path = Bundler.rubygems.correct_for_windows_path(uri.path)
+        path = Gem::Util.correct_for_windows_path(uri.path)
         Bundler.safe_load_marshal Bundler.rubygems.inflate(Gem.read_binary(path))
       elsif cached_spec_path = gemspec_cached_path(spec_file_name)
         Bundler.load_gemspec(cached_spec_path)
@@ -253,7 +253,7 @@ module Bundler
                     Bundler.settings[:ssl_client_cert]
         raise SSLError if needs_ssl && !defined?(OpenSSL::SSL)
 
-        con = PersistentHTTP.new name: "bundler", proxy: :ENV
+        con = Gem::Net::HTTP::Persistent.new name: "bundler", proxy: :ENV
         if gem_proxy = Gem.configuration[:http_proxy]
           con.proxy = Bundler::URI.parse(gem_proxy) if gem_proxy != :no_proxy
         end
@@ -288,10 +288,10 @@ module Bundler
     end
 
     HTTP_ERRORS = [
-      Timeout::Error, EOFError, SocketError, Errno::ENETDOWN, Errno::ENETUNREACH,
+      Gem::Timeout::Error, EOFError, SocketError, Errno::ENETDOWN, Errno::ENETUNREACH,
       Errno::EINVAL, Errno::ECONNRESET, Errno::ETIMEDOUT, Errno::EAGAIN,
-      Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::ProtocolError,
-      PersistentHTTP::Error, Zlib::BufError, Errno::EHOSTUNREACH
+      Gem::Net::HTTPBadResponse, Gem::Net::HTTPHeaderSyntaxError, Gem::Net::ProtocolError,
+      Gem::Net::HTTP::Persistent::Error, Zlib::BufError, Errno::EHOSTUNREACH
     ].freeze
 
     def bundler_cert_store
@@ -307,6 +307,7 @@ module Bundler
         end
       else
         store.set_default_paths
+        require "rubygems/request"
         Gem::Request.get_cert_files.each {|c| store.add_file c }
       end
       store

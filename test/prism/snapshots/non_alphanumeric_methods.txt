@@ -248,7 +248,7 @@
         │   ├── name_loc: (48,6)-(48,7) = "-"
         │   ├── receiver:
         │   │   @ CallNode (location: (48,4)-(48,5))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :a

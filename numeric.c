@@ -963,7 +963,10 @@ num_negative_p(VALUE num)
  *
  *  First, what's elsewhere. \Class \Float:
  *
- *  - Inherits from {class Numeric}[rdoc-ref:Numeric@What-27s+Here].
+ *  - Inherits from
+ *    {class Numeric}[rdoc-ref:Numeric@What-27s+Here]
+ *    and {class Object}[rdoc-ref:Object@What-27s+Here].
+ *  - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
  *
  *  Here, class \Float provides methods for:
  *
@@ -1550,8 +1553,8 @@ rb_float_pow(VALUE x, VALUE y)
  *    1.eql?(Rational(1, 1)) # => false
  *    1.eql?(Complex(1, 0))  # => false
  *
- *  \Method +eql?+ is different from +==+ in that +eql?+ requires matching types,
- *  while +==+ does not.
+ *  \Method +eql?+ is different from <tt>==</tt> in that +eql?+ requires matching types,
+ *  while <tt>==</tt> does not.
  *
  */
 
@@ -2449,7 +2452,7 @@ rb_int_truncate(VALUE num, int ndigits)
 
 /*
  *  call-seq:
- *    round(ndigits = 0, half: :up]) -> integer or float
+ *    round(ndigits = 0, half: :up) -> integer or float
  *
  *  Returns +self+ rounded to the nearest value with
  *  a precision of +ndigits+ decimal digits.
@@ -2946,88 +2949,88 @@ num_step_size(VALUE from, VALUE args, VALUE eobj)
  *    step(by: , to: nil) {|n| ... }    ->  self
  *    step(by: , to: nil)               ->  enumerator
  *
- *  Generates a sequence of numbers; with a block given, traverses the sequence.
+ * Generates a sequence of numbers; with a block given, traverses the sequence.
  *
- *  Of the Core and Standard Library classes,
- *  Integer, Float, and Rational use this implementation.
+ * Of the Core and Standard Library classes,
+ * Integer, Float, and Rational use this implementation.
  *
- *  A quick example:
+ * A quick example:
  *
- *    squares = []
- *    1.step(by: 2, to: 10) {|i| squares.push(i*i) }
- *    squares # => [1, 9, 25, 49, 81]
+ *   squares = []
+ *   1.step(by: 2, to: 10) {|i| squares.push(i*i) }
+ *   squares # => [1, 9, 25, 49, 81]
  *
- *  The generated sequence:
+ * The generated sequence:
  *
- *  - Begins with +self+.
- *  - Continues at intervals of +by+ (which may not be zero).
- *  - Ends with the last number that is within or equal to +to+;
- *    that is, less than or equal to +to+ if +by+ is positive,
- *    greater than or equal to +to+ if +by+ is negative.
- *    If +to+ is +nil+, the sequence is of infinite length.
+ * - Begins with +self+.
+ * - Continues at intervals of +by+ (which may not be zero).
+ * - Ends with the last number that is within or equal to +to+;
+ *   that is, less than or equal to +to+ if +by+ is positive,
+ *   greater than or equal to +to+ if +by+ is negative.
+ *   If +to+ is +nil+, the sequence is of infinite length.
  *
- *  If a block is given, calls the block with each number in the sequence;
- *  returns +self+.  If no block is given, returns an Enumerator::ArithmeticSequence.
+ * If a block is given, calls the block with each number in the sequence;
+ * returns +self+. If no block is given, returns an Enumerator::ArithmeticSequence.
  *
- *  <b>Keyword Arguments</b>
+ * <b>Keyword Arguments</b>
  *
- *  With keyword arguments +by+ and +to+,
- *  their values (or defaults) determine the step and limit:
+ * With keyword arguments +by+ and +to+,
+ * their values (or defaults) determine the step and limit:
  *
- *    # Both keywords given.
- *    squares = []
- *    4.step(by: 2, to: 10) {|i| squares.push(i*i) }    # => 4
- *    squares # => [16, 36, 64, 100]
- *    cubes = []
- *    3.step(by: -1.5, to: -3) {|i| cubes.push(i*i*i) } # => 3
- *    cubes   # => [27.0, 3.375, 0.0, -3.375, -27.0]
- *    squares = []
- *    1.2.step(by: 0.2, to: 2.0) {|f| squares.push(f*f) }
- *    squares # => [1.44, 1.9599999999999997, 2.5600000000000005, 3.24, 4.0]
+ *   # Both keywords given.
+ *   squares = []
+ *   4.step(by: 2, to: 10) {|i| squares.push(i*i) }    # => 4
+ *   squares # => [16, 36, 64, 100]
+ *   cubes = []
+ *   3.step(by: -1.5, to: -3) {|i| cubes.push(i*i*i) } # => 3
+ *   cubes   # => [27.0, 3.375, 0.0, -3.375, -27.0]
+ *   squares = []
+ *   1.2.step(by: 0.2, to: 2.0) {|f| squares.push(f*f) }
+ *   squares # => [1.44, 1.9599999999999997, 2.5600000000000005, 3.24, 4.0]
  *
- *    squares = []
- *    Rational(6/5).step(by: 0.2, to: 2.0) {|r| squares.push(r*r) }
- *    squares # => [1.0, 1.44, 1.9599999999999997, 2.5600000000000005, 3.24, 4.0]
+ *   squares = []
+ *   Rational(6/5).step(by: 0.2, to: 2.0) {|r| squares.push(r*r) }
+ *   squares # => [1.0, 1.44, 1.9599999999999997, 2.5600000000000005, 3.24, 4.0]
  *
- *    # Only keyword to given.
- *    squares = []
- *    4.step(to: 10) {|i| squares.push(i*i) }           # => 4
- *    squares # => [16, 25, 36, 49, 64, 81, 100]
- *    # Only by given.
+ *   # Only keyword to given.
+ *   squares = []
+ *   4.step(to: 10) {|i| squares.push(i*i) }           # => 4
+ *   squares # => [16, 25, 36, 49, 64, 81, 100]
+ *   # Only by given.
  *
- *    # Only keyword by given
- *    squares = []
- *    4.step(by:2) {|i| squares.push(i*i); break if i > 10 }
- *    squares # => [16, 36, 64, 100, 144]
+ *   # Only keyword by given
+ *   squares = []
+ *   4.step(by:2) {|i| squares.push(i*i); break if i > 10 }
+ *   squares # => [16, 36, 64, 100, 144]
  *
- *    # No block given.
- *    e = 3.step(by: -1.5, to: -3) # => (3.step(by: -1.5, to: -3))
- *    e.class                      # => Enumerator::ArithmeticSequence
+ *   # No block given.
+ *   e = 3.step(by: -1.5, to: -3) # => (3.step(by: -1.5, to: -3))
+ *   e.class                      # => Enumerator::ArithmeticSequence
  *
- *  <b>Positional Arguments</b>
+ * <b>Positional Arguments</b>
  *
- *  With optional positional arguments +to+ and +by+,
- *  their values (or defaults) determine the step and limit:
+ * With optional positional arguments +to+ and +by+,
+ * their values (or defaults) determine the step and limit:
  *
- *    squares = []
- *    4.step(10, 2) {|i| squares.push(i*i) }    # => 4
- *    squares # => [16, 36, 64, 100]
- *    squares = []
- *    4.step(10) {|i| squares.push(i*i) }
- *    squares # => [16, 25, 36, 49, 64, 81, 100]
- *    squares = []
- *    4.step {|i| squares.push(i*i); break if i > 10 }  # => nil
- *    squares # => [16, 25, 36, 49, 64, 81, 100, 121]
+ *   squares = []
+ *   4.step(10, 2) {|i| squares.push(i*i) }    # => 4
+ *   squares # => [16, 36, 64, 100]
+ *   squares = []
+ *   4.step(10) {|i| squares.push(i*i) }
+ *   squares # => [16, 25, 36, 49, 64, 81, 100]
+ *   squares = []
+ *   4.step {|i| squares.push(i*i); break if i > 10 }  # => nil
+ *   squares # => [16, 25, 36, 49, 64, 81, 100, 121]
  *
  * <b>Implementation Notes</b>
  *
- *  If all the arguments are integers, the loop operates using an integer
- *  counter.
+ * If all the arguments are integers, the loop operates using an integer
+ * counter.
  *
- *  If any of the arguments are floating point numbers, all are converted
- *  to floats, and the loop is executed
- *  <i>floor(n + n*Float::EPSILON) + 1</i> times,
- *  where <i>n = (limit - self)/step</i>.
+ * If any of the arguments are floating point numbers, all are converted
+ * to floats, and the loop is executed
+ * <i>floor(n + n*Float::EPSILON) + 1</i> times,
+ * where <i>n = (limit - self)/step</i>.
  *
  */
 
@@ -3488,7 +3491,10 @@ rb_num2ull(VALUE val)
  *
  * First, what's elsewhere. \Class \Integer:
  *
- * - Inherits from {class Numeric}[rdoc-ref:Numeric@What-27s+Here].
+ * - Inherits from
+ *   {class Numeric}[rdoc-ref:Numeric@What-27s+Here]
+ *   and {class Object}[rdoc-ref:Object@What-27s+Here].
+ * - Includes {module Comparable}[rdoc-ref:Comparable@What-27s+Here].
  *
  * Here, class \Integer provides methods for:
  *
@@ -4242,14 +4248,14 @@ fix_idiv(VALUE x, VALUE y)
  * Performs integer division; returns the integer result of dividing +self+
  * by +numeric+:
  *
- *    4.div(3)      # => 1
- *    4.div(-3)      # => -2
- *    -4.div(3)      # => -2
- *    -4.div(-3)      # => 1
- *    4.div(3.0)      # => 1
- *    4.div(Rational(3, 1))      # => 1
+ *    4.div(3)              # => 1
+ *    4.div(-3)             # => -2
+ *    -4.div(3)             # => -2
+ *    -4.div(-3)            # => 1
+ *    4.div(3.0)            # => 1
+ *    4.div(Rational(3, 1)) # => 1
  *
- *  Raises an exception if +numeric+ does not have method +div+.
+ * Raises an exception if +numeric+ does not have method +div+.
  *
  */
 

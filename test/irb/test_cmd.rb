@@ -226,8 +226,11 @@ module TestIRB
 
       c = Class.new(Object)
       out, err = execute_lines(
-        "3\n",
         "measure\n",
+        "3\n",
+        "measure :off\n",
+        "3\n",
+        "measure :on\n",
         "3\n",
         "measure :off\n",
         "3\n",
@@ -236,7 +239,7 @@ module TestIRB
       )
 
       assert_empty err
-      assert_match(/\A=> 3\nTIME is added\.\n=> nil\nprocessing time: .+\n=> 3\n=> nil\n=> 3\n/, out)
+      assert_match(/\A(TIME is added\.\n=> nil\nprocessing time: .+\n=> 3\n=> nil\n=> 3\n){2}/, out)
       assert_empty(c.class_variables)
     end
 
@@ -353,7 +356,37 @@ module TestIRB
       assert_match(/\A=> 3\nCUSTOM is added\.\n=> nil\ncustom processing time: .+\n=> 3\n=> nil\n=> 3\n/, out)
     end
 
-    def test_measure_with_proc
+    def test_measure_toggle
+      conf = {
+        PROMPT: {
+          DEFAULT: {
+            PROMPT_I: '> ',
+            PROMPT_S: '> ',
+            PROMPT_C: '> '
+          }
+        },
+        PROMPT_MODE: :DEFAULT,
+        MEASURE: false,
+        MEASURE_PROC: {
+          FOO: proc { |&block| puts 'foo'; block.call },
+          BAR: proc { |&block| puts 'bar'; block.call }
+        }
+      }
+      out, err = execute_lines(
+        "measure :foo",
+        "measure :on, :bar",
+        "3\n",
+        "measure :off, :foo\n",
+        "measure :off, :bar\n",
+        "3\n",
+        conf: conf
+      )
+
+      assert_empty err
+      assert_match(/\AFOO is added\.\n=> nil\nfoo\nBAR is added\.\n=> nil\nbar\nfoo\n=> 3\nbar\nfoo\n=> nil\nbar\n=> nil\n=> 3\n/, out)
+    end
+
+    def test_measure_with_proc_warning
       conf = {
         PROMPT: {
           DEFAULT: {
@@ -368,26 +401,15 @@ module TestIRB
       c = Class.new(Object)
       out, err = execute_lines(
         "3\n",
-        "measure { |context, code, line_no, &block|\n",
-        "  result = block.()\n",
-        "  puts 'aaa' if IRB.conf[:MEASURE]\n",
-        "  result\n",
-        "}\n",
-        "3\n",
-        "measure { |context, code, line_no, &block|\n",
-        "  result = block.()\n",
-        "  puts 'bbb' if IRB.conf[:MEASURE]\n",
-        "  result\n",
-        "}\n",
-        "3\n",
-        "measure :off\n",
+        "measure do\n",
+        "end\n",
         "3\n",
         conf: conf,
         main: c
       )
 
-      assert_empty err
-      assert_match(/\A=> 3\nBLOCK is added\.\n=> nil\naaa\n=> 3\nBLOCK is added.\naaa\n=> nil\nbbb\n=> 3\n=> nil\n=> 3\n/, out)
+      assert_match(/to add custom measure/, err)
+      assert_match(/\A=> 3\n=> nil\n=> 3\n/, out)
       assert_empty(c.class_variables)
     end
   end

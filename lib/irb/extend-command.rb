@@ -16,15 +16,6 @@ module IRB # :nodoc:
     # See #install_alias_method.
     OVERRIDE_ALL = 0x02
 
-    # Quits the current irb context
-    #
-    # +ret+ is the optional signal or message to send to Context#exit
-    #
-    # Same as <code>IRB.CurrentContext.exit</code>.
-    def irb_exit(ret = 0)
-      irb_context.exit(ret)
-    end
-
     # Displays current configuration.
     #
     # Modifying the configuration is achieved by sending a message to IRB.conf.
@@ -35,13 +26,16 @@ module IRB # :nodoc:
     @ALIASES = [
       [:context, :irb_context, NO_OVERRIDE],
       [:conf, :irb_context, NO_OVERRIDE],
-      [:irb_quit, :irb_exit, OVERRIDE_PRIVATE_ONLY],
-      [:exit, :irb_exit, OVERRIDE_PRIVATE_ONLY],
-      [:quit, :irb_exit, OVERRIDE_PRIVATE_ONLY],
     ]
 
 
     @EXTEND_COMMANDS = [
+      [
+        :irb_exit, :Exit, "cmd/exit",
+        [:exit, OVERRIDE_PRIVATE_ONLY],
+        [:quit, OVERRIDE_PRIVATE_ONLY],
+        [:irb_quit, OVERRIDE_PRIVATE_ONLY],
+      ],
       [
         :irb_current_working_workspace, :CurrentWorkingWorkspace, "cmd/chws",
         [:cwws, NO_OVERRIDE],

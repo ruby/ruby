@@ -8,6 +8,7 @@
 #include "internal/dir.h"
 #include "internal/error.h"
 #include "internal/file.h"
+#include "internal/hash.h"
 #include "internal/load.h"
 #include "internal/ruby_parser.h"
 #include "internal/thread.h"
@@ -18,11 +19,21 @@
 #include "ruby/encoding.h"
 #include "ruby/util.h"
 
-static VALUE ruby_dln_librefs;
+static VALUE ruby_dln_libmap;
 
 #define IS_RBEXT(e) (strcmp((e), ".rb") == 0)
 #define IS_SOEXT(e) (strcmp((e), ".so") == 0 || strcmp((e), ".o") == 0)
 #define IS_DLEXT(e) (strcmp((e), DLEXT) == 0)
+
+#if SIZEOF_VALUE <= SIZEOF_LONG
+# define SVALUE2NUM(x) LONG2NUM((long)(x))
+# define NUM2SVALUE(x) (SIGNED_VALUE)NUM2LONG(x)
+#elif SIZEOF_VALUE <= SIZEOF_LONG_LONG
+# define SVALUE2NUM(x) LL2NUM((LONG_LONG)(x))
+# define NUM2SVALUE(x) (SIGNED_VALUE)NUM2LL(x)
+#else
+# error Need integer for VALUE
+#endif
 
 enum {
     loadable_ext_rb = (0+ /* .rb extension is the first in both tables */
@@ -726,21 +737,38 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
     const rb_iseq_t *iseq = rb_iseq_load_iseq(fname);
 
     if (!iseq) {
-        rb_execution_context_t *ec = GET_EC();
-        VALUE v = rb_vm_push_frame_fname(ec, fname);
-        rb_ast_t *ast;
-        VALUE parser = rb_parser_new();
-        rb_parser_set_context(parser, NULL, FALSE);
-        ast = (rb_ast_t *)rb_parser_load_file(parser, fname);
+        if (*rb_ruby_prism_ptr()) {
+            pm_string_t input;
+            pm_options_t options = { 0 };
 
-        rb_thread_t *th = rb_ec_thread_ptr(ec);
-        VALUE realpath_map = get_loaded_features_realpath_map(th->vm);
+            pm_string_mapped_init(&input, RSTRING_PTR(fname));
+            pm_options_filepath_set(&options, RSTRING_PTR(fname));
 
-        iseq = rb_iseq_new_top(&ast->body, rb_fstring_lit("<top (required)>"),
-                               fname, realpath_internal_cached(realpath_map, fname), NULL);
-        rb_ast_dispose(ast);
-        rb_vm_pop_frame(ec);
-        RB_GC_GUARD(v);
+            pm_parser_t parser;
+            pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), &options);
+
+            iseq = rb_iseq_new_main_prism(&input, &options, fname);
+
+            pm_string_free(&input);
+            pm_options_free(&options);
+        }
+        else {
+            rb_execution_context_t *ec = GET_EC();
+            VALUE v = rb_vm_push_frame_fname(ec, fname);
+            rb_ast_t *ast;
+            VALUE parser = rb_parser_new();
+            rb_parser_set_context(parser, NULL, FALSE);
+            ast = (rb_ast_t *)rb_parser_load_file(parser, fname);
+
+            rb_thread_t *th = rb_ec_thread_ptr(ec);
+            VALUE realpath_map = get_loaded_features_realpath_map(th->vm);
+
+            iseq = rb_iseq_new_top(&ast->body, rb_fstring_lit("<top (required)>"),
+                                   fname, realpath_internal_cached(realpath_map, fname), NULL);
+            rb_ast_dispose(ast);
+            rb_vm_pop_frame(ec);
+            RB_GC_GUARD(v);
+        }
     }
     rb_exec_event_hook_script_compiled(ec, iseq, Qnil);
     rb_iseq_eval(iseq);
@@ -1225,7 +1253,7 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
     ec->errinfo = Qnil; /* ensure */
     th->top_wrapper = 0;
     if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        long handle;
+        VALUE handle;
         int found;
 
         RUBY_DTRACE_HOOK(FIND_REQUIRE_ENTRY, RSTRING_PTR(fname));
@@ -1256,9 +1284,9 @@ require_internal(rb_execution_context_t *ec, VALUE fname, int exception, bool wa
                   case 's':
                     reset_ext_config = true;
                     ext_config_push(th, &prev_ext_config);
-                    handle = (long)rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
-                                                    path, VM_BLOCK_HANDLER_NONE, path);
-                    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
+                    handle = rb_vm_call_cfunc(rb_vm_top_self(), load_ext,
+                                              path, VM_BLOCK_HANDLER_NONE, path);
+                    rb_hash_aset(ruby_dln_libmap, path, SVALUE2NUM((SIGNED_VALUE)handle));
                     break;
                 }
                 result = TAG_RETURN;
@@ -1518,6 +1546,37 @@ rb_f_autoload_p(int argc, VALUE *argv, VALUE obj)
     return rb_mod_autoload_p(argc, argv, klass);
 }
 
+void *
+rb_ext_resolve_symbol(const char* fname, const char* symbol)
+{
+    VALUE handle;
+    VALUE resolved;
+    VALUE path;
+    char *ext;
+    VALUE fname_str = rb_str_new_cstr(fname);
+
+    resolved = rb_resolve_feature_path((VALUE)NULL, fname_str);
+    if (NIL_P(resolved)) {
+        ext = strrchr(fname, '.');
+        if (!ext || !IS_SOEXT(ext)) {
+            rb_str_cat_cstr(fname_str, ".so");
+        }
+        if (rb_feature_p(GET_VM(), fname, 0, FALSE, FALSE, 0)) {
+            return dln_symbol(NULL, symbol);
+        }
+        return NULL;
+    }
+    if (RARRAY_LEN(resolved) != 2 || rb_ary_entry(resolved, 0) != ID2SYM(rb_intern("so"))) {
+        return NULL;
+    }
+    path = rb_ary_entry(resolved, 1);
+    handle = rb_hash_lookup(ruby_dln_libmap, path);
+    if (NIL_P(handle)) {
+        return NULL;
+    }
+    return dln_symbol((void *)NUM2SVALUE(handle), symbol);
+}
+
 void
 Init_load(void)
 {
@@ -1552,6 +1611,6 @@ Init_load(void)
     rb_define_global_function("autoload", rb_f_autoload, 2);
     rb_define_global_function("autoload?", rb_f_autoload_p, -1);
 
-    ruby_dln_librefs = rb_ary_hidden_new(0);
-    rb_gc_register_mark_object(ruby_dln_librefs);
+    ruby_dln_libmap = rb_hash_new_with_size(0);
+    rb_gc_register_mark_object(ruby_dln_libmap);
 }

@@ -149,7 +149,7 @@ module SyncDefaultGems
       gemspec_content = File.readlines("#{upstream}/bundler/bundler.gemspec").map do |line|
         next if line =~ /LICENSE\.md/
 
-        line.gsub("bundler.gemspec", "lib/bundler/bundler.gemspec").gsub('"exe"', '"libexec"')
+        line.gsub("bundler.gemspec", "lib/bundler/bundler.gemspec")
       end.compact.join
       File.write("lib/bundler/bundler.gemspec", gemspec_content)
 
@@ -433,7 +433,7 @@ module SyncDefaultGems
       |ext/.*\.java
       |rakelib/.*
       |test/(?:lib|fixtures)/.*
-      |tool/.*
+      |tool/(?!bundler/).*
     )\z]mx
 
     # Gem-specific patterns
@@ -489,7 +489,9 @@ module SyncDefaultGems
   def commits_in_ranges(gem, repo, default_branch, ranges)
     # If -a is given, discover all commits since the last picked commit
     if ranges == true
-      pattern = "https://github\.com/#{Regexp.quote(repo)}/commit/([0-9a-f]+)$"
+      # \r? needed in the regex in case the commit has windows-style line endings (because e.g. we're running
+      # tests on Windows)
+      pattern = "https://github\.com/#{Regexp.quote(repo)}/commit/([0-9a-f]+)\r?$"
       log = IO.popen(%W"git log -E --grep=#{pattern} -n1 --format=%B", &:read)
       ranges = ["#{log[%r[#{pattern}\n\s*(?i:co-authored-by:.*)*\s*\Z], 1]}..#{gem}/#{default_branch}"]
     end
@@ -544,6 +546,8 @@ module SyncDefaultGems
         end
         if editor
           system([editor, conflict].join(' '))
+          conflict.delete_if {|f| !File.exist?(f)}
+          return true if conflict.empty?
           return system(*%w"git add --", *conflict)
         end
       end

@@ -25,7 +25,7 @@
         │   │           │   @ StatementsNode (location: (2,2)-(2,10))
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ CallNode (location: (2,2)-(2,10))
-        │   │           │           ├── flags: ∅
+        │   │           │           ├── flags: ignore_visibility
         │   │           │           ├── receiver: ∅
         │   │           │           ├── call_operator_loc: ∅
         │   │           │           ├── name: :bar
@@ -70,7 +70,7 @@
         │   │           │   @ StatementsNode (location: (5,14)-(5,22))
         │   │           │   └── body: (length: 1)
         │   │           │       └── @ CallNode (location: (5,14)-(5,22))
-        │   │           │           ├── flags: ∅
+        │   │           │           ├── flags: ignore_visibility
         │   │           │           ├── receiver: ∅
         │   │           │           ├── call_operator_loc: ∅
         │   │           │           ├── name: :bar
@@ -134,7 +134,7 @@
         │   │   @ StatementsNode (location: (10,13)-(10,21))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (10,13)-(10,21))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -175,7 +175,7 @@
         │   │   @ StatementsNode (location: (13,2)-(13,10))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (13,2)-(13,10))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -216,7 +216,7 @@
         │   │   @ StatementsNode (location: (16,16)-(16,24))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (16,16)-(16,24))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -294,7 +294,7 @@
         │   │   @ StatementsNode (location: (22,2)-(22,10))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (22,2)-(22,10))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -340,7 +340,7 @@
         │   │   @ StatementsNode (location: (25,20)-(25,28))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (25,20)-(25,28))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :bar
@@ -381,7 +381,7 @@
             │   @ StatementsNode (location: (27,16)-(27,24))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (27,16)-(27,24))
-            │           ├── flags: ∅
+            │           ├── flags: ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :bar

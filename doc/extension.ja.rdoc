@@ -780,9 +780,9 @@ RUBY_TYPED_WB_PROTECTED ::
   メソッドの実装に適切にライトバリアを挿入する責任があります．
   さもなくばRubyは実行時にクラッシュする可能性があります．
 
-  ライトバリアについてはdoc/extension.ja.rdocのAppendix D
-  "世代別GC"も参照してください．
-
+  ライトバリアについては{世代別
+  GC}[rdoc-ref:@Appendix+D.+-E4-B8-96-E4-BB-A3-E5-88-A5GC]
+  も参照してください．
 
 Cの構造体の割当と対応するオブジェクトの生成を同時に行うマク
 ロとして以下のものが提供されています．
@@ -1731,7 +1731,7 @@ have_func(func, header) ::
   ックする．funcが標準ではリンクされないライブラリ内のもので
   ある時には先にhave_libraryでそのライブラリをチェックしてお
   く事．チェックに成功すると，プリプロセッサマクロ
-  `HAVE_{FUNC}` を定義し，trueを返す．
+  <tt>HAVE_{FUNC}</tt> を定義し，trueを返す．
 
 have_var(var, header) ::
 
@@ -1739,44 +1739,44 @@ have_var(var, header) ::
   クする．varが標準ではリンクされないライブラリ内のものであ
   る時には先にhave_libraryでそのライブラリをチェックしておく
   事．チェックに成功すると，プリプロセッサマクロ
-  `HAVE_{VAR}` を定義し，trueを返す．
+  <tt>HAVE_{VAR}</tt> を定義し，trueを返す．
 
 have_header(header) ::
 
   ヘッダファイルの存在をチェックする．チェックに成功すると，
-  プリプロセッサマクロ `HAVE_{HEADER_H}` を定義し，trueを返す．
+  プリプロセッサマクロ <tt>HAVE_{HEADER_H}</tt> を定義し，trueを返す．
   (スラッシュやドットはアンダースコアに置換される)
 
 find_header(header, path...) ::
 
   ヘッダファイルheaderの存在を -Ipath を追加しながらチェック
   する．チェックに成功すると，プリプロセッサマクロ
-  `HAVE_{HEADER_H}` を定義し，trueを返す．
+  <tt>HAVE_{HEADER_H}</tt> を定義し，trueを返す．
   (スラッシュやドットはアンダースコアに置換される)
 
 have_struct_member(type, member[, header[, opt]]) ::
 
   ヘッダファイルheaderをインクルードして型typeが定義され，
   なおかつメンバmemberが存在するかをチェックする．チェックに
-  成功すると，プリプロセッサマクロ `HAVE_{TYPE}_{MEMBER}` を
+  成功すると，プリプロセッサマクロ <tt>HAVE_{TYPE}_{MEMBER}</tt> を
   定義し，trueを返す．
 
 have_type(type, header, opt) ::
 
   ヘッダファイルheaderをインクルードして型typeが存在するかを
   チェックする．チェックに成功すると，プリプロセッサマクロ
-  `HAVE_TYPE_{TYPE}` を定義し，trueを返す．
+  <tt>HAVE_TYPE_{TYPE}</tt> を定義し，trueを返す．
 
 check_sizeof(type, header) ::
 
   ヘッダファイルheaderをインクルードして型typeのchar単位サイ
   ズを調べる．チェックに成功すると，プリプロセッサマクロ
-  `SIZEOF_{TYPE}` を定義し，そのサイズを返す．定義されていな
+  <tt>SIZEOF_{TYPE}</tt> を定義し，そのサイズを返す．定義されていな
   いときはnilを返す．
 
-append_cppflags(array-of-flags[, opt])
-append_cflags(array-of-flags[, opt])
-append_ldflags(array-of-flags[, opt])
+append_cppflags(array-of-flags[, opt]) ::
+append_cflags(array-of-flags[, opt]) ::
+append_ldflags(array-of-flags[, opt]) ::
 
   各flagが使用可能であれば，それぞれ$CPPFLAGS, $CFLAGS,
   $LDFLAGSに追加する．コンパイラのフラグには移植性がないので，
@@ -1850,8 +1850,9 @@ RGenGCは，過去の拡張ライブラリに（ほぼ）互換性を保つよ�
 スするようなコードは書かないようにして下さい．代わりに，rb_ary_aref(),
 rb_ary_store() などの，適切な API 関数を利用するようにして下さい．
 
-そのほか，対応についての詳細は extension.rdoc の「Appendix D. Generational
-GC」を参照して下さい．
+そのほか，対応についての詳細は {Appendix D. Generational
+GC}[rdoc-ref:extension.rdoc@Appendix+D.+Generational+GC]を参
+照して下さい．
 
 == Appendix E. Ractor サポート
 
@@ -1860,10 +1861,12 @@ Ruby 3.0 から、Ruby プログラムを並列に実行するための仕組み
 なります。サポートしていないライブラリは、メイン Ractor 以外で実行すると
 エラーになります（Ractor::UnsafeError）。
 
-Ractor をサポートするための詳細は、extension.rdoc の「Appendix F. Ractor
-support」を参照してください。
+Ractor をサポートするための詳細は、{Appendix F. Ractor
+support}[rdoc-ref:extension.rdoc@Appendix+F.+Ractor+support]
+を参照してください。
 
-
-:enddoc: Local variables:
-:enddoc: fill-column: 60
-:enddoc: end:
+--
+Local variables:
+fill-column: 60
+end:
+++

@@ -456,7 +456,7 @@ RSpec.describe "bundle gem" do
 
     prepare_gemspec(bundled_app("newgem", "newgem.gemspec"))
 
-    gems = ["rake-13.0.1"]
+    gems = ["rake-#{rake_version}"]
     path = Bundler.feature_flag.default_install_uses_path? ? local_gem_path(base: bundled_app("newgem")) : system_gem_path
     system_gems gems, path: path
     bundle "exec rake build", dir: bundled_app("newgem")
@@ -649,7 +649,7 @@ RSpec.describe "bundle gem" do
     it "runs rake without problems" do
       bundle "gem #{gem_name}"
 
-      system_gems ["rake-13.0.1"]
+      system_gems ["rake-#{rake_version}"]
 
       rakefile = <<~RAKEFILE
         task :default do

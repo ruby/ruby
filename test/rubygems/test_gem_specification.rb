@@ -1561,6 +1561,17 @@ dependencies: []
     assert_empty err
   end
 
+  def test_contains_requirable_file_extension_soext
+    ext_spec
+    dlext = RbConfig::CONFIG["DLEXT"]
+    @ext.files += ["lib/ext.#{dlext}"]
+
+    FileUtils.mkdir_p @ext.extension_dir
+    FileUtils.touch File.join(@ext.extension_dir, "ext.#{dlext}")
+    FileUtils.touch File.join(@ext.extension_dir, "gem.build_complete")
+    assert @ext.contains_requirable_file? "ext.so"
+  end
+
   def test_date
     assert_date @a1.date
   end
@@ -3641,6 +3652,38 @@ Did you mean 'Ruby'?
       end
 
       assert_equal "metadata['homepage_uri'] has invalid link: \"http:/example.com\"", e.message
+    end
+  end
+
+  def test_metadata_link_validation_warns_for_duplicates
+    util_setup_validate
+
+    Dir.chdir @tempdir do
+      @m2 = quick_gem "m", "2" do |s|
+        s.files = %w[lib/code.rb]
+        s.licenses = "BSD-2-Clause"
+        s.metadata = {
+          "source_code_uri" => "http://example.com",
+          "homepage_uri" => "http://example.com",
+          "changelog_uri" => "http://example.com/changelog",
+        }
+      end
+
+      use_ui @ui do
+        @m2.validate
+      end
+
+      expected = <<~EXPECTED
+        #{w}:  You have specified the uri:
+          http://example.com
+        for all of the following keys:
+          homepage_uri
+          source_code_uri
+        Only the first one will be shown on rubygems.org
+        #{w}:  See https://guides.rubygems.org/specification-reference/ for help
+      EXPECTED
+
+      assert_equal expected, @ui.error, "warning"
     end
   end
 

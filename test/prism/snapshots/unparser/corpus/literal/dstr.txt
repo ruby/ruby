@@ -56,7 +56,7 @@
         │   │       │   │       └── unescaped: "a\nb\n"
         │   │       │   └── closing_loc: (9,0)-(10,0) = "  HEREDOC\n"
         │   │       └── @ CallNode (location: (10,2)-(10,3))
-        │   │           ├── flags: variable_call
+        │   │           ├── flags: variable_call, ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :x
@@ -227,7 +227,7 @@
         │   ├── consequent: ∅
         │   └── end_keyword_loc: (30,0)-(30,3) = "end"
         ├── @ CallNode (location: (31,0)-(31,15))
-        │   ├── flags: ∅
+        │   ├── flags: ignore_visibility
         │   ├── receiver: ∅
         │   ├── call_operator_loc: ∅
         │   ├── name: :foo
@@ -252,7 +252,7 @@
         │   │           │   │   │   @ StatementsNode (location: (32,4)-(32,7))
         │   │           │   │   │   └── body: (length: 1)
         │   │           │   │   │       └── @ CallNode (location: (32,4)-(32,7))
-        │   │           │   │   │           ├── flags: variable_call
+        │   │           │   │   │           ├── flags: variable_call, ignore_visibility
         │   │           │   │   │           ├── receiver: ∅
         │   │           │   │   │           ├── call_operator_loc: ∅
         │   │           │   │   │           ├── name: :bar
@@ -272,7 +272,7 @@
         │   ├── closing_loc: (31,14)-(31,15) = ")"
         │   └── block: ∅
         └── @ CallNode (location: (34,0)-(37,1))
-            ├── flags: ∅
+            ├── flags: ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :foo
@@ -297,7 +297,7 @@
             │           │   │   │   @ StatementsNode (location: (35,4)-(35,7))
             │           │   │   │   └── body: (length: 1)
             │           │   │   │       └── @ CallNode (location: (35,4)-(35,7))
-            │           │   │   │           ├── flags: variable_call
+            │           │   │   │           ├── flags: variable_call, ignore_visibility
             │           │   │   │           ├── receiver: ∅
             │           │   │   │           ├── call_operator_loc: ∅
             │           │   │   │           ├── name: :bar

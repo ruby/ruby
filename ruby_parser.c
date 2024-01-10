@@ -1,4 +1,142 @@
 /* This is a wrapper for parse.y */
+
+#include "internal/ruby_parser.h"
+
+#include "rubyparser.h"
+
+static VALUE
+compile_negative_numeric(VALUE val)
+{
+    if (FIXNUM_P(val)) {
+        return LONG2FIX(-FIX2LONG(val));
+    }
+    if (SPECIAL_CONST_P(val)) {
+#if USE_FLONUM
+        if (FLONUM_P(val)) {
+            return DBL2NUM(-RFLOAT_VALUE(val));
+        }
+#endif
+    }
+    switch (OBJ_BUILTIN_TYPE(val)) {
+      case T_BIGNUM:
+        BIGNUM_NEGATE(val);
+        val = rb_big_norm(val);
+        break;
+      case T_RATIONAL:
+        RATIONAL_SET_NUM(val, compile_negative_numeric(RRATIONAL(val)->num));
+        break;
+      case T_COMPLEX:
+        RCOMPLEX_SET_REAL(val, compile_negative_numeric(RCOMPLEX(val)->real));
+        RCOMPLEX_SET_IMAG(val, compile_negative_numeric(RCOMPLEX(val)->imag));
+        break;
+      case T_FLOAT:
+        val = DBL2NUM(-RFLOAT_VALUE(val));
+        break;
+      default:
+        val = LONG2FIX(-FIX2LONG(val));
+        break;
+    }
+    return val;
+}
+
+static VALUE
+compile_numeric_literal(char* val, int base)
+{
+    return rb_cstr_to_inum(val, base, FALSE);
+}
+
+VALUE
+rb_node_integer_literal_val(const NODE *n)
+{
+    rb_node_integer_t *node = RNODE_INTEGER(n);
+    VALUE val = compile_numeric_literal(node->val, node->base);
+    if (node->minus) {
+        val = compile_negative_numeric(val);
+    }
+    return val;
+}
+
+VALUE
+rb_node_float_literal_val(const NODE *n)
+{
+    rb_node_float_t *node = RNODE_FLOAT(n);
+    double d = strtod(node->val, 0);
+    if (node->minus) {
+        d = -d;
+    }
+    VALUE val = DBL2NUM(d);
+    return val;
+}
+
+static VALUE
+compile_rational_literal(char* node_val, int base, int seen_point)
+{
+    VALUE lit;
+    char* val = strdup(node_val);
+    if (seen_point > 0) {
+        int len = (int)(strlen(val));
+        char *point = &val[seen_point];
+        size_t fraclen = len-seen_point-1;
+        memmove(point, point+1, fraclen+1);
+
+        lit = rb_rational_new(compile_numeric_literal(val, base), rb_int_positive_pow(10, fraclen));
+    }
+    else {
+        lit = rb_rational_raw1(compile_numeric_literal(val, base));
+    }
+
+    free(val);
+
+    return lit;
+}
+
+VALUE
+rb_node_rational_literal_val(const NODE *n)
+{
+    VALUE lit;
+    rb_node_rational_t *node = RNODE_RATIONAL(n);
+
+    lit = compile_rational_literal(node->val, node->base, node->seen_point);
+
+    if (node->minus) {
+        lit = compile_negative_numeric(lit);
+    }
+
+    return lit;
+}
+
+VALUE
+rb_node_imaginary_literal_val(const NODE *n)
+{
+    VALUE lit;
+    rb_node_imaginary_t *node = RNODE_IMAGINARY(n);
+
+    enum rb_numeric_type type = node->type;
+
+    switch (type) {
+      case integer_literal:
+        lit = compile_numeric_literal(node->val, node->base);
+        break;
+      case float_literal:{
+        double d = strtod(node->val, 0);
+        lit = DBL2NUM(d);
+        break;
+      }
+      case rational_literal:
+        lit = compile_rational_literal(node->val, node->base, node->seen_point);
+        break;
+      default:
+        rb_bug("unreachable");
+    }
+
+    lit = rb_complex_raw(INT2FIX(0), lit);
+
+    if (node->minus) {
+        lit = compile_negative_numeric(lit);
+    }
+    return lit;
+}
+
 #ifdef UNIVERSAL_PARSER
 
 #include "internal.h"
@@ -14,7 +152,6 @@
 #include "internal/parse.h"
 #include "internal/rational.h"
 #include "internal/re.h"
-#include "internal/ruby_parser.h"
 #include "internal/string.h"
 #include "internal/symbol.h"
 #include "internal/thread.h"
@@ -62,52 +199,10 @@ static const rb_data_type_t ruby_parser_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-static void
-bignum_negate(VALUE b)
-{
-    BIGNUM_NEGATE(b);
-}
-
 static int
 is_ascii_string2(VALUE str)
 {
     return is_ascii_string(str);
-}
-
-static void
-rational_set_num(VALUE r, VALUE n)
-{
-    RATIONAL_SET_NUM(r, n);
-}
-
-static VALUE
-rational_get_num(VALUE obj)
-{
-    return RRATIONAL(obj)->num;
-}
-
-static void
-rcomplex_set_real(VALUE cmp, VALUE r)
-{
-    RCOMPLEX_SET_REAL(cmp, r);
-}
-
-static void
-rcomplex_set_imag(VALUE cmp, VALUE i)
-{
-    RCOMPLEX_SET_IMAG(cmp, i);
-}
-
-static VALUE
-rcomplex_get_real(VALUE obj)
-{
-    return RCOMPLEX(obj)->real;
-}
-
-static VALUE
-rcomplex_get_imag(VALUE obj)
-{
-    return RCOMPLEX(obj)->imag;
 }
 
 RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 6, 0)
@@ -384,18 +479,6 @@ nil_p(VALUE obj)
     return (int)NIL_P(obj);
 }
 
-static int
-flonum_p(VALUE obj)
-{
-    return (int)RB_FLONUM_P(obj);
-}
-
-static VALUE
-int2fix(long i)
-{
-    return INT2FIX(i);
-}
-
 static VALUE
 syntax_error_new(void)
 {
@@ -426,12 +509,6 @@ default_rs(void)
     return rb_default_rs;
 }
 
-static VALUE
-rational_raw1(VALUE x)
-{
-    return rb_rational_raw1(x);
-}
-
 static void *
 memmove2(void *dest, const void *src, size_t t, size_t n)
 {
@@ -448,6 +525,12 @@ static VALUE
 ruby_verbose2(void)
 {
     return ruby_verbose;
+}
+
+static int *
+rb_errno_ptr2(void)
+{
+    return rb_errno_ptr();
 }
 
 static int
@@ -566,6 +649,7 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->ary_join          = rb_ary_join;
     config->ary_reverse       = rb_ary_reverse;
     config->ary_clear         = rb_ary_clear;
+    config->ary_modify        = rb_ary_modify;
     config->array_len         = rb_array_len;
     config->array_aref        = RARRAY_AREF;
 
@@ -622,30 +706,8 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->hash_delete    = rb_hash_delete;
     config->ident_hash_new = rb_ident_hash_new;
 
-    config->int2fix = int2fix;
-
-    config->bignum_negate = bignum_negate;
-    config->big_norm      = rb_big_norm;
-    config->cstr_to_inum  = rb_cstr_to_inum;
-
-    config->float_new   = rb_float_new;
-    config->float_value = rb_float_value;
-
     config->num2int          = rb_num2int_inline;
-    config->int_positive_pow = rb_int_positive_pow;
     config->int2num          = rb_int2num_inline;
-    config->fix2long         = rb_fix2long;
-
-    config->rational_new     = rb_rational_new;
-    config->rational_raw1    = rational_raw1;
-    config->rational_set_num = rational_set_num;
-    config->rational_get_num = rational_get_num;
-
-    config->complex_raw       = rb_complex_raw;
-    config->rcomplex_set_real = rcomplex_set_real;
-    config->rcomplex_set_imag = rcomplex_set_imag;
-    config->rcomplex_get_real = rcomplex_get_real;
-    config->rcomplex_get_imag = rcomplex_get_imag;
 
     config->stderr_tty_p    = rb_stderr_tty_p;
     config->write_error_str = rb_write_error_str;
@@ -694,7 +756,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->literal_cmp  = literal_cmp;
     config->literal_hash = literal_hash;
 
-    config->builtin_class_name = rb_builtin_class_name;
     config->syntax_error_append = syntax_error_append;
     config->raise = rb_raise;
     config->syntax_error_new = syntax_error_new;
@@ -723,6 +784,7 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->bug             = rb_bug;
     config->fatal           = rb_fatal;
     config->verbose         = ruby_verbose2;
+    config->errno_ptr       = rb_errno_ptr2;
 
     config->make_backtrace = rb_make_backtrace;
 
@@ -735,7 +797,6 @@ rb_parser_config_initialize(rb_parser_config_t *config)
     config->undef_p = undef_p;
     config->rtest = rtest;
     config->nil_p = nil_p;
-    config->flonum_p = flonum_p;
     config->qnil  = Qnil;
     config->qtrue = Qtrue;
     config->qfalse = Qfalse;
@@ -901,11 +962,24 @@ rb_parser_set_yydebug(VALUE vparser, VALUE flag)
     rb_ruby_parser_set_yydebug(parser->parser_params, RTEST(flag));
     return flag;
 }
-
-#else
-
-/* For "ISO C requires a translation unit to contain at least one declaration" */
-void
-rb_parser_dummy(void)
-{}
 #endif
+
+VALUE
+rb_node_sym_string_val(const NODE *node)
+{
+    rb_parser_string_t *str = RNODE_SYM(node)->string;
+    return ID2SYM(rb_intern3(str->ptr, str->len, str->enc));
+}
+
+VALUE
+rb_node_line_lineno_val(const NODE *node)
+{
+    return INT2FIX(node->nd_loc.beg_pos.lineno);
+}
+
+VALUE
+rb_node_file_path_val(const NODE *node)
+{
+    rb_parser_string_t *str = RNODE_FILE(node)->path;
+    return rb_enc_str_new(str->ptr, str->len, str->enc);
+}

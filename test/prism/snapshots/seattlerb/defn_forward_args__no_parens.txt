@@ -21,7 +21,7 @@
             │   @ StatementsNode (location: (2,2)-(2,8))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (2,2)-(2,8))
-            │           ├── flags: ∅
+            │           ├── flags: ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :m

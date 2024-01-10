@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,28))
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,28))
-            ├── flags: ∅
+            ├── flags: ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :p
@@ -31,6 +31,7 @@
             │       │               ├── closing_loc: ∅
             │       │               └── unescaped: "hello"
             │       └── @ KeywordHashNode (location: (1,17)-(1,21))
+            │           ├── flags: symbol_keys
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (1,17)-(1,21))
             │                   ├── key:

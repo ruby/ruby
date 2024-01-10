@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(5,3))
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(5,3))
-            ├── flags: ∅
+            ├── flags: ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :tap
@@ -24,7 +24,7 @@
                 │   │   @ StatementsNode (location: (2,2)-(2,7))
                 │   │   └── body: (length: 1)
                 │   │       └── @ CallNode (location: (2,2)-(2,7))
-                │   │           ├── flags: variable_call
+                │   │           ├── flags: variable_call, ignore_visibility
                 │   │           ├── receiver: ∅
                 │   │           ├── call_operator_loc: ∅
                 │   │           ├── name: :raise

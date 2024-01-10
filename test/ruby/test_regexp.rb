@@ -72,6 +72,18 @@ class TestRegexp < Test::Unit::TestCase
     end
   end
 
+  def test_to_s_under_gc_compact_stress
+    EnvUtil.under_gc_compact_stress do
+      str = "abcd\u3042"
+      [:UTF_16BE, :UTF_16LE, :UTF_32BE, :UTF_32LE].each do |es|
+        enc = Encoding.const_get(es)
+        rs = Regexp.new(str.encode(enc)).to_s
+        assert_equal("(?-mix:abcd\u3042)".encode(enc), rs)
+        assert_equal(enc, rs.encoding)
+      end
+    end
+  end
+
   def test_to_s_extended_subexp
     re = /#\g#{"\n"}/x
     re = /#{re}/
@@ -457,6 +469,12 @@ class TestRegexp < Test::Unit::TestCase
     assert_equal('/\/\xF1\xF2\xF3/i', /\/#{s}/i.inspect)
   end
 
+  def test_inspect_under_gc_compact_stress
+    EnvUtil.under_gc_compact_stress do
+      assert_equal('/(?-mix:\\/)|/', Regexp.union(/\//, "").inspect)
+    end
+  end
+
   def test_char_to_option
     assert_equal("BAR", "FOOBARBAZ"[/b../i])
     assert_equal("bar", "foobarbaz"[/  b  .  .  /x])
@@ -693,6 +711,18 @@ class TestRegexp < Test::Unit::TestCase
     }
   end
 
+  def test_match_no_match_no_matchdata
+    EnvUtil.without_gc do
+      h = {}
+      ObjectSpace.count_objects(h)
+      prev_matches = h[:T_MATCH] || 0
+      md = /[A-Z]/.match('1') # no match
+      ObjectSpace.count_objects(h)
+      new_matches = h[:T_MATCH] || 0
+      assert_equal prev_matches, new_matches, "Bug [#20104]"
+    end
+  end
+
   def test_initialize
     assert_raise(ArgumentError) { Regexp.new }
     assert_equal(/foo/, assert_warning(/ignored/) {Regexp.new(/foo/, Regexp::IGNORECASE)})
@@ -858,6 +888,13 @@ class TestRegexp < Test::Unit::TestCase
     $_ = "abc"; assert_equal(1, ~/bc/)
     $_ = "abc"; assert_nil(~/d/)
     $_ = nil; assert_nil(~/./)
+  end
+
+  def test_match_under_gc_compact_stress
+    EnvUtil.under_gc_compact_stress do
+      m = /(?<foo>.)(?<n>[^aeiou])?(?<bar>.+)/.match("hoge\u3042")
+      assert_equal("h", m.match(:foo))
+    end
   end
 
   def test_match_p
@@ -1908,6 +1945,15 @@ class TestRegexp < Test::Unit::TestCase
     end;
   end
 
+  def test_match_cache_with_peek_optimization
+    assert_separately([], "#{<<-"begin;"}\n#{<<-'end;'}")
+    timeout = #{ EnvUtil.apply_timeout_scale(10).inspect }
+    begin;
+      Regexp.timeout = timeout
+      assert_nil(/a*z/ =~ "a" * 1000000 + "x")
+    end;
+  end
+
   def test_cache_opcodes_initialize
     str = 'test1-test2-test3-test4-test_5'
     re = '^([0-9a-zA-Z\-/]*){1,256}$'
@@ -1952,6 +1998,22 @@ class TestRegexp < Test::Unit::TestCase
     100.times do
       assert !Regexp.new(re).match?(str)
     end
+  end
+
+  def test_bug_20083 # [Bug #20083]
+    re = /([\s]*ABC)$/i
+    (1..100).each do |n|
+      text = "#{"0" * n}ABC"
+      assert text.match?(re)
+    end
+  end
+
+  def test_bug_20098 # [Bug #20098]
+    assert /a((.|.)|bc){,4}z/.match? 'abcbcbcbcz'
+    assert /a(b+?c*){4,5}z/.match? 'abbbccbbbccbcbcz'
+    assert /a(b+?(.|.)){2,3}z/.match? 'abbbcbbbcbbbcz'
+    assert /a(b*?(.|.)[bc]){2,5}z/.match? 'abcbbbcbcccbcz'
+    assert /^(?:.+){2,4}?b|b/.match? "aaaabaa"
   end
 
   def test_linear_time_p

@@ -51,22 +51,14 @@ module Lrama
         freeze_rhs
       end
 
-      def setup_rules
+      def setup_rules(parameterizing_resolver)
         preprocess_references unless @skip_preprocess_references
-        process_rhs
+        process_rhs(parameterizing_resolver)
         build_rules
       end
 
-      def parameterizing_rules
-        @parameterizing_rules
-      end
-
-      def midrule_action_rules
-        @midrule_action_rules
-      end
-
       def rules
-        @rules
+        @parameterizing_rules + @midrule_action_rules + @rules
       end
 
       private
@@ -95,9 +87,9 @@ module Lrama
         end
       end
 
-      # rhs is a mixture of variety type of tokens like `Ident`, `Parameterizing`, `UserCode` and so on.
+      # rhs is a mixture of variety type of tokens like `Ident`, `InstantiateRule`, `UserCode` and so on.
       # `#process_rhs` replaces some kind of tokens to `Ident` so that all `@replaced_rhs` are `Ident` or `Char`.
-      def process_rhs
+      def process_rhs(parameterizing_resolver)
         return if @replaced_rhs
 
         @replaced_rhs = []
@@ -109,12 +101,17 @@ module Lrama
             @replaced_rhs << token
           when Lrama::Lexer::Token::Ident
             @replaced_rhs << token
-          when Lrama::Lexer::Token::Parameterizing
-            parameterizing = ParameterizingRules::Builder.new(token, @rule_counter, @lhs_tag, user_code, precedence_sym, line)
-            parameterizing.build.each do |r|
-              @parameterizing_rules << r
+          when Lrama::Lexer::Token::InstantiateRule
+            if parameterizing_resolver.defined?(token.rule_name)
+              parameterizing = parameterizing_resolver.build_rules(token, @rule_counter, @lhs_tag, line)
+              @parameterizing_rules = @parameterizing_rules + parameterizing.map(&:rules).flatten
+              @replaced_rhs = @replaced_rhs + parameterizing.map(&:token).flatten.uniq
+            else
+              # TODO: Delete when the standard library will defined as a grammar file.
+              parameterizing = ParameterizingRules::Builder.new(token, @rule_counter, @lhs_tag, user_code, precedence_sym, line)
+              @parameterizing_rules = @parameterizing_rules + parameterizing.build
+              @replaced_rhs << parameterizing.build_token
             end
-            @replaced_rhs << parameterizing.build_token
           when Lrama::Lexer::Token::UserCode
             prefix = token.referred ? "@" : "$@"
             new_token = Lrama::Lexer::Token::Ident.new(s_value: prefix + @midrule_action_counter.increment.to_s)
@@ -124,7 +121,7 @@ module Lrama
             rule_builder.lhs = new_token
             rule_builder.user_code = token
             rule_builder.complete_input
-            rule_builder.setup_rules
+            rule_builder.setup_rules(parameterizing_resolver)
 
             @rule_builders_for_derived_rules << rule_builder
           else
@@ -146,8 +143,15 @@ module Lrama
               else
                 candidates = rhs.each_with_index.select {|token, i| token.referred_by?(ref_name) }
 
-                raise "Referring symbol `#{ref_name}` is duplicated. #{token}" if candidates.size >= 2
-                raise "Referring symbol `#{ref_name}` is not found. #{token}" unless referring_symbol = candidates.first
+                if candidates.size >= 2
+                  location = token.location.partial_location(ref.first_column, ref.last_column)
+                  raise location.generate_error_message("Referring symbol `#{ref_name}` is duplicated.")
+                end
+
+                unless (referring_symbol = candidates.first)
+                  location = token.location.partial_location(ref.first_column, ref.last_column)
+                  raise location.generate_error_message("Referring symbol `#{ref_name}` is not found.")
+                end
 
                 ref.index = referring_symbol[1] + 1
               end
@@ -167,7 +171,7 @@ module Lrama
       end
 
       def flush_user_code
-        if c = @user_code
+        if (c = @user_code)
           @rhs << c
           @user_code = nil
         end

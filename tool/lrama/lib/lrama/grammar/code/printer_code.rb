@@ -2,7 +2,7 @@ module Lrama
   class Grammar
     class Code
       class PrinterCode < Code
-        def initialize(type: nil, token_code: nil, tag: nil)
+        def initialize(type:, token_code:, tag:)
           super(type: type, token_code: token_code)
           @tag = tag
         end

@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 module RubyVM::RJIT
+  # Return a Hash for \RJIT statistics. \--rjit-stats makes more information available.
   def self.runtime_stats
     stats = {}
 
@@ -15,6 +16,7 @@ module RubyVM::RJIT
     C.rb_rjit_runtime_counters.members.each do |member|
       stats[member] = C.rb_rjit_counters.public_send(member)
     end
+    stats[:vm_insns_count] = C.rb_vm_insns_count
 
     # Other stats are calculated here
     stats[:side_exit_count] = stats.select { |name, _count| name.start_with?('exit_') }.sum(&:last)
@@ -29,6 +31,7 @@ module RubyVM::RJIT
     stats
   end
 
+  # :nodoc: all
   class << self
     private
 

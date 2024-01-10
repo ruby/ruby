@@ -15,7 +15,7 @@
         │   │   │       ├── operator_loc: (1,6)-(1,7) = "*"
         │   │   │       └── expression:
         │   │   │           @ CallNode (location: (1,7)-(1,10))
-        │   │   │           ├── flags: variable_call
+        │   │   │           ├── flags: variable_call, ignore_visibility
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :bar
@@ -36,7 +36,7 @@
         │   │   ├── flags: ∅
         │   │   ├── elements: (length: 2)
         │   │   │   ├── @ CallNode (location: (3,6)-(3,9))
-        │   │   │   │   ├── flags: variable_call
+        │   │   │   │   ├── flags: variable_call, ignore_visibility
         │   │   │   │   ├── receiver: ∅
         │   │   │   │   ├── call_operator_loc: ∅
         │   │   │   │   ├── name: :bar
@@ -59,7 +59,7 @@
             │   ├── flags: contains_splat
             │   ├── elements: (length: 2)
             │   │   ├── @ CallNode (location: (5,6)-(5,9))
-            │   │   │   ├── flags: variable_call
+            │   │   │   ├── flags: variable_call, ignore_visibility
             │   │   │   ├── receiver: ∅
             │   │   │   ├── call_operator_loc: ∅
             │   │   │   ├── name: :baz
@@ -72,7 +72,7 @@
             │   │       ├── operator_loc: (5,11)-(5,12) = "*"
             │   │       └── expression:
             │   │           @ CallNode (location: (5,12)-(5,15))
-            │   │           ├── flags: variable_call
+            │   │           ├── flags: variable_call, ignore_visibility
             │   │           ├── receiver: ∅
             │   │           ├── call_operator_loc: ∅
             │   │           ├── name: :bar

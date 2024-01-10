@@ -67,7 +67,7 @@
         │   ├── closing_loc: ∅
         │   ├── predicate:
         │   │   @ CallNode (location: (11,17)-(11,21))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :bar?
@@ -80,7 +80,7 @@
         │       @ StatementsNode (location: (11,0)-(11,10))
         │       └── body: (length: 1)
         │           └── @ CallNode (location: (11,0)-(11,10))
-        │               ├── flags: ∅
+        │               ├── flags: ignore_visibility
         │               ├── receiver: ∅
         │               ├── call_operator_loc: ∅
         │               ├── name: :foo
@@ -112,7 +112,7 @@
             │   @ MatchPredicateNode (location: (13,10)-(13,20))
             │   ├── value:
             │   │   @ CallNode (location: (13,10)-(13,13))
-            │   │   ├── flags: variable_call
+            │   │   ├── flags: variable_call, ignore_visibility
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
             │   │   ├── name: :bar
@@ -130,7 +130,7 @@
                 @ StatementsNode (location: (13,0)-(13,3))
                 └── body: (length: 1)
                     └── @ CallNode (location: (13,0)-(13,3))
-                        ├── flags: variable_call
+                        ├── flags: variable_call, ignore_visibility
                         ├── receiver: ∅
                         ├── call_operator_loc: ∅
                         ├── name: :foo

@@ -1987,9 +1987,31 @@ end
 
     FileUtils.chmod 0o000, @gemhome
 
-    use_ui(@ui) { Gem::Installer.at @gem }
+    installer = use_ui(@ui) { Gem::Installer.at @gem }
 
+    assert_equal Gem.user_dir, installer.gem_home
     assert_equal "Defaulting to user installation because default installation directory (#{@gemhome}) is not writable.", @ui.output.strip
+  ensure
+    FileUtils.chmod 0o755, @gemhome
+    ENV["GEM_HOME"] = orig_gem_home
+  end
+
+  def test_process_options_does_not_fallback_to_user_install_when_gem_home_not_writable_and_no_user_install
+    if Process.uid.zero?
+      pend("skipped in root privilege")
+      return
+    end
+
+    orig_gem_home = ENV.delete("GEM_HOME")
+
+    @gem = setup_base_gem
+
+    FileUtils.chmod 0o000, @gemhome
+
+    installer = use_ui(@ui) { Gem::Installer.at @gem, user_install: false }
+
+    assert_equal @gemhome, installer.gem_home
+    assert_empty @ui.output.strip
   ensure
     FileUtils.chmod 0o755, @gemhome
     ENV["GEM_HOME"] = orig_gem_home

@@ -437,19 +437,19 @@ class TestGemRequirement < Gem::TestCase
   end
 
   def test_marshal_load_attack
-    wa = Net::WriteAdapter.allocate
+    wa = Gem::Net::WriteAdapter.allocate
     wa.instance_variable_set(:@socket, self.class)
     wa.instance_variable_set(:@method_id, :exploit)
     request_set = Gem::RequestSet.allocate
     request_set.instance_variable_set(:@git_set, "id")
     request_set.instance_variable_set(:@sets, wa)
-    wa = Net::WriteAdapter.allocate
+    wa = Gem::Net::WriteAdapter.allocate
     wa.instance_variable_set(:@socket, request_set)
     wa.instance_variable_set(:@method_id, :resolve)
     ent = Gem::Package::TarReader::Entry.allocate
     ent.instance_variable_set(:@read, 0)
     ent.instance_variable_set(:@header, "aaa")
-    io = Net::BufferedIO.allocate
+    io = Gem::Net::BufferedIO.allocate
     io.instance_variable_set(:@io, ent)
     io.instance_variable_set(:@debug_output, wa)
     reader = Gem::Package::TarReader.allocate

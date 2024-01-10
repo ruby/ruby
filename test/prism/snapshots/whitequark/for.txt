@@ -10,7 +10,7 @@
         │   │   └── depth: 0
         │   ├── collection:
         │   │   @ CallNode (location: (1,9)-(1,12))
-        │   │   ├── flags: variable_call
+        │   │   ├── flags: variable_call, ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :foo
@@ -23,7 +23,7 @@
         │   │   @ StatementsNode (location: (1,16)-(1,19))
         │   │   └── body: (length: 1)
         │   │       └── @ CallNode (location: (1,16)-(1,19))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: ignore_visibility
         │   │           ├── receiver: ∅
         │   │           ├── call_operator_loc: ∅
         │   │           ├── name: :p
@@ -49,7 +49,7 @@
             │   └── depth: 0
             ├── collection:
             │   @ CallNode (location: (3,9)-(3,12))
-            │   ├── flags: variable_call
+            │   ├── flags: variable_call, ignore_visibility
             │   ├── receiver: ∅
             │   ├── call_operator_loc: ∅
             │   ├── name: :foo
@@ -62,7 +62,7 @@
             │   @ StatementsNode (location: (3,14)-(3,17))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (3,14)-(3,17))
-            │           ├── flags: ∅
+            │           ├── flags: ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :p

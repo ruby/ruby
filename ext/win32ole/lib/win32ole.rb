@@ -5,7 +5,6 @@ rescue LoadError
 end
 
 if defined?(WIN32OLE)
-  # WIN32OLE
   class WIN32OLE
 
     #

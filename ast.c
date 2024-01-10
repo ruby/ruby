@@ -558,6 +558,14 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_STR:
       case NODE_XSTR:
         return rb_ary_new_from_args(1, RNODE_LIT(node)->nd_lit);
+      case NODE_INTEGER:
+        return rb_ary_new_from_args(1, rb_node_integer_literal_val(node));
+      case NODE_FLOAT:
+        return rb_ary_new_from_args(1, rb_node_float_literal_val(node));
+      case NODE_RATIONAL:
+        return rb_ary_new_from_args(1, rb_node_rational_literal_val(node));
+      case NODE_IMAGINARY:
+        return rb_ary_new_from_args(1, rb_node_imaginary_literal_val(node));
       case NODE_ONCE:
         return rb_ary_new_from_node_args(ast, 1, RNODE_ONCE(node)->nd_body);
       case NODE_DSTR:
@@ -573,6 +581,8 @@ node_children(rb_ast_t *ast, const NODE *node)
             }
             return rb_ary_new_from_args(3, RNODE_DSTR(node)->nd_lit, head, next);
         }
+      case NODE_SYM:
+        return rb_ary_new_from_args(1, rb_node_sym_string_val(node));
       case NODE_EVSTR:
         return rb_ary_new_from_node_args(ast, 1, RNODE_EVSTR(node)->nd_body);
       case NODE_ARGSCAT:
@@ -692,6 +702,10 @@ node_children(rb_ast_t *ast, const NODE *node)
                                         NEW_CHILD(ast, RNODE_HSHPTN(node)->nd_pkwargs),
                                         kwrest);
         }
+      case NODE_LINE:
+        return rb_ary_new_from_args(1, rb_node_line_lineno_val(node));
+      case NODE_FILE:
+        return rb_ary_new_from_args(1, rb_node_file_path_val(node));
       case NODE_ERROR:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_ARGS_AUX:

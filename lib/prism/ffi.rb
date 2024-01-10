@@ -314,6 +314,9 @@ module Prism
       template << "C"
       values << (options.fetch(:verbose, true) ? 0 : 1)
 
+      template << "C"
+      values << { nil => 0, "3.3.0" => 1, "latest" => 0 }.fetch(options[:version])
+
       template << "L"
       if (scopes = options[:scopes])
         values << scopes.length

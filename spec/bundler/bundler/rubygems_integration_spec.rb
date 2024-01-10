@@ -1,10 +1,6 @@
 # frozen_string_literal: true
 
 RSpec.describe Bundler::RubygemsIntegration do
-  it "uses the same chdir lock as rubygems" do
-    expect(Bundler.rubygems.ext_lock).to eq(Gem::Ext::Builder::CHDIR_MONITOR)
-  end
-
   context "#validate" do
     let(:spec) do
       Gem::Specification.new do |s|

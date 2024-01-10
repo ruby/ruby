@@ -287,6 +287,19 @@ class TestRubyOptions < Test::Unit::TestCase
     end
   end
 
+  def test_parser_flag
+    warning = /compiler based on the Prism parser is currently experimental/
+
+    assert_in_out_err(%w(--parser=prism -e) + ["puts :hi"], "", %w(hi), warning)
+
+    assert_in_out_err(%w(--parser=parse.y -e) + ["puts :hi"], "", %w(hi), [])
+    assert_norun_with_rflag('--parser=parse.y', '--version', "")
+
+    assert_in_out_err(%w(--parser=notreal -e) + ["puts :hi"], "", [], /unknown parser notreal/)
+
+    assert_in_out_err(%w(--parser=prism --version), "", /\+PRISM/, warning)
+  end
+
   def test_eval
     assert_in_out_err(%w(-e), "", [], /no code specified for -e \(RuntimeError\)/)
   end
@@ -555,16 +568,29 @@ class TestRubyOptions < Test::Unit::TestCase
       t.puts "if a = {}; end"
       t.puts "if a = {1=>2}; end"
       t.puts "if a = {3=>a}; end"
+      t.puts "if a = :sym; end"
       t.flush
       err = ["#{t.path}:1:#{warning}",
              "#{t.path}:2:#{warning}",
              "#{t.path}:3:#{warning}",
              "#{t.path}:5:#{warning}",
              "#{t.path}:6:#{warning}",
+             "#{t.path}:8:#{warning}",
             ]
       feature4299 = '[ruby-dev:43083]'
       assert_in_out_err(["-w", t.path], "", [], err, feature4299)
       assert_in_out_err(["-wr", t.path, "-e", ""], "", [], err, feature4299)
+
+      t.rewind
+      t.truncate(0)
+      t.puts "if a = __LINE__; end"
+      t.puts "if a = __FILE__; end"
+      t.flush
+      err = ["#{t.path}:1:#{warning}",
+             "#{t.path}:2:#{warning}",
+            ]
+      assert_in_out_err(["-w", t.path], "", [], err)
+      assert_in_out_err(["-wr", t.path, "-e", ""], "", [], err)
     }
   end
 
@@ -1228,9 +1254,9 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err([IO::NULL], success: true)
   end
 
-  def test_free_on_exit_env_var
-    env = {"RUBY_FREE_ON_EXIT"=>"1"}
+  def test_free_at_exit_env_var
+    env = {"RUBY_FREE_AT_EXIT"=>"1"}
     assert_ruby_status([env, "-e;"])
-    assert_in_out_err([env, "-W"], "", [], /Free on exit is experimental and may be unstable/)
+    assert_in_out_err([env, "-W"], "", [], /Free at exit is experimental and may be unstable/)
   end
 end

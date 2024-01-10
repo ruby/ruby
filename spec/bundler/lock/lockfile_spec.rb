@@ -873,7 +873,7 @@ RSpec.describe "the lockfile format" do
       c.checksum gem_repo2, "activeresource", "2.3.2"
       c.checksum gem_repo2, "activesupport", "2.3.2"
       c.checksum gem_repo2, "rails", "2.3.2"
-      c.checksum gem_repo2, "rake", "13.0.1"
+      c.checksum gem_repo2, "rake", rake_version
     end
 
     expect(lockfile).to eq <<~G
@@ -894,8 +894,8 @@ RSpec.describe "the lockfile format" do
             actionpack (= 2.3.2)
             activerecord (= 2.3.2)
             activeresource (= 2.3.2)
-            rake (= 13.0.1)
-          rake (13.0.1)
+            rake (= #{rake_version})
+          rake (#{rake_version})
 
       PLATFORMS
         #{lockfile_platforms}
@@ -1603,7 +1603,7 @@ RSpec.describe "the lockfile format" do
     L
 
     bundle "install --verbose"
-    expect(out).to include("re-resolving dependencies because your lock file is missing \"minitest-bisect\"")
+    expect(out).to include("re-resolving dependencies because your lock file includes \"minitest-bisect\" but not some of its dependencies")
 
     expect(lockfile).to eq <<~L
       GEM

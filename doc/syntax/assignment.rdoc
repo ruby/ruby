@@ -162,9 +162,7 @@ Here is an example of instance variable usage:
   p object1.value # prints "some value"
   p object2.value # prints "other value"
 
-An uninitialized instance variable has a value of +nil+.  If you run Ruby with
-warnings enabled, you will get a warning when accessing an uninitialized
-instance variable.
+An uninitialized instance variable has a value of +nil+.
 
 The +value+ method has access to the value set by the +initialize+ method, but
 only for the same object.

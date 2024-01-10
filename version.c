@@ -146,6 +146,8 @@ Init_version(void)
 
 int ruby_mn_threads_enabled;
 
+bool * rb_ruby_prism_ptr(void);
+
 static void
 define_ruby_description(const char *const jit_opt)
 {
@@ -160,6 +162,7 @@ define_ruby_description(const char *const jit_opt)
         ];
 
     const char *const threads_opt = ruby_mn_threads_enabled ? " +MN" : "";
+    const char *const parser_opt = (*rb_ruby_prism_ptr()) ? " +PRISM" : "";
 
 #if USE_MMTK
     const char *const mmtk_opt1 = rb_mmtk_enabled_p() ? " +MMTk(" : "";
@@ -171,6 +174,7 @@ define_ruby_description(const char *const jit_opt)
                      "%.*s"
                      "%s" // jit_opt
                      "%s" // threads_opts
+                     "%s" // parser_opt
 #if USE_MMTK
                      "%s%s%s" // mmtk_opt1, mmtk_opt2, mmtk_opt3
 #endif
@@ -178,6 +182,7 @@ define_ruby_description(const char *const jit_opt)
                      ruby_description_opt_point, ruby_description,
                      jit_opt,
                      threads_opt,
+                     parser_opt,
 #if USE_MMTK
                      mmtk_opt1, mmtk_opt2, mmtk_opt3,
 #endif

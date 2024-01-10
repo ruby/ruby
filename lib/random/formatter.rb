@@ -168,10 +168,10 @@ module Random::Formatter
   # See RFC4122[https://datatracker.ietf.org/doc/html/rfc4122] for details of UUID.
   #
   def uuid
-    ary = random_bytes(16).unpack("NnnnnN")
-    ary[2] = (ary[2] & 0x0fff) | 0x4000
-    ary[3] = (ary[3] & 0x3fff) | 0x8000
-    "%08x-%04x-%04x-%04x-%04x%08x" % ary
+    ary = random_bytes(16)
+    ary.setbyte(6, (ary.getbyte(6) & 0x0f) | 0x40)
+    ary.setbyte(8, (ary.getbyte(8) & 0x3f) | 0x80)
+    ary.unpack("H8H4H4H4H12").join(?-)
   end
 
   alias uuid_v4 uuid
@@ -201,7 +201,7 @@ module Random::Formatter
   #
   # The result contains 74 random bits (9.25 random bytes).
   #
-  # Note that this method cannot be made reproducable because its output
+  # Note that this method cannot be made reproducible because its output
   # includes not only random bits but also timestamp.
   #
   # See draft-ietf-uuidrev-rfc4122bis[https://datatracker.ietf.org/doc/draft-ietf-uuidrev-rfc4122bis/]

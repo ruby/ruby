@@ -136,6 +136,8 @@ def generate_eventids2_table(ids)
     buf << %Q[    rb_hash_aset(h, intern_sym("#{id}"), INT2FIX(1));\n]
   end
   buf << %Q[}\n]
+  buf << %Q[\n]
+  buf << %Q[#define RIPPER_EVENTIDS2_TABLE_SIZE #{ids.size}\n]
   buf
 end
 

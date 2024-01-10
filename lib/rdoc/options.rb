@@ -105,6 +105,7 @@ class RDoc::Options
     generator_name
     generator_options
     generators
+    locale
     op_dir
     page_dir
     option_parser

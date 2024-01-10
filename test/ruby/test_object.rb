@@ -458,7 +458,7 @@ class TestObject < Test::Unit::TestCase
   end
 
   def test_max_shape_variation_with_performance_warnings
-    assert_in_out_err([], <<-INPUT, %w(), /Maximum shapes variations \(8\) reached by Foo, instance variables accesses will be slower\.$/)
+    assert_in_out_err([], <<-INPUT, %w(), /The class Foo reached 8 shape variations, instance variables accesses will be slower and memory usage increased/)
       $VERBOSE = false
       Warning[:performance] = true
 

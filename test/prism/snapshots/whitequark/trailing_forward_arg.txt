@@ -25,7 +25,7 @@
             │   @ StatementsNode (location: (1,20)-(1,35))
             │   └── body: (length: 1)
             │       └── @ CallNode (location: (1,20)-(1,35))
-            │           ├── flags: ∅
+            │           ├── flags: ignore_visibility
             │           ├── receiver: ∅
             │           ├── call_operator_loc: ∅
             │           ├── name: :bar

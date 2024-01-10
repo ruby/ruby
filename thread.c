@@ -414,12 +414,12 @@ rb_threadptr_join_list_wakeup(rb_thread_t *thread)
             rb_threadptr_interrupt(target_thread);
 
             switch (target_thread->status) {
-                case THREAD_STOPPED:
-                case THREAD_STOPPED_FOREVER:
-                    target_thread->status = THREAD_RUNNABLE;
-                    break;
-                default:
-                    break;
+              case THREAD_STOPPED:
+              case THREAD_STOPPED_FOREVER:
+                target_thread->status = THREAD_RUNNABLE;
+                break;
+              default:
+                break;
             }
         }
     }
@@ -1669,8 +1669,28 @@ rb_thread_call_without_gvl(void *(*func)(void *data), void *data1,
     return rb_nogvl(func, data1, ubf, data2, 0);
 }
 
+static int
+waitfd_to_waiting_flag(int wfd_event)
+{
+    return wfd_event << 1;
+}
+
 static void
-rb_thread_io_wake_pending_closer(struct waiting_fd *wfd)
+thread_io_setup_wfd(rb_thread_t *th, int fd, struct waiting_fd *wfd)
+{
+    wfd->fd = fd;
+    wfd->th = th;
+    wfd->busy = NULL;
+
+    RB_VM_LOCK_ENTER();
+    {
+        ccan_list_add(&th->vm->waiting_fds, &wfd->wfd_node);
+    }
+    RB_VM_LOCK_LEAVE();
+}
+
+static void
+thread_io_wake_pending_closer(struct waiting_fd *wfd)
 {
     bool has_waiter = wfd->busy && RB_TEST(wfd->busy->wakeup_mutex);
     if (has_waiter) {
@@ -1690,10 +1710,68 @@ rb_thread_io_wake_pending_closer(struct waiting_fd *wfd)
     }
 }
 
-static int
-waitfd_to_waiting_flag(int wfd_event)
+static bool
+thread_io_mn_schedulable(rb_thread_t *th, int events, const struct timeval *timeout)
 {
-    return wfd_event << 1;
+#if defined(USE_MN_THREADS) && USE_MN_THREADS
+    return !th_has_dedicated_nt(th) && (events || timeout) && th->blocking;
+#else
+    return false;
+#endif
+}
+
+// true if need retry
+static bool
+thread_io_wait_events(rb_thread_t *th, int fd, int events, const struct timeval *timeout)
+{
+#if defined(USE_MN_THREADS) && USE_MN_THREADS
+    if (thread_io_mn_schedulable(th, events, timeout)) {
+        rb_hrtime_t rel, *prel;
+
+        if (timeout) {
+            rel = rb_timeval2hrtime(timeout);
+            prel = &rel;
+        }
+        else {
+            prel = NULL;
+        }
+
+        VM_ASSERT(prel || (events & (RB_WAITFD_IN | RB_WAITFD_OUT)));
+
+        if (thread_sched_wait_events(TH_SCHED(th), th, fd, waitfd_to_waiting_flag(events), prel)) {
+            // timeout
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+#endif // defined(USE_MN_THREADS) && USE_MN_THREADS
+    return false;
+}
+
+// assume read/write
+static bool
+blocking_call_retryable_p(int r, int eno)
+{
+    if (r != -1) return false;
+
+    switch (eno) {
+      case EAGAIN:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+      case EWOULDBLOCK:
+#endif
+        return true;
+      default:
+        return false;
+    }
+}
+
+bool
+rb_thread_mn_schedulable(VALUE thval)
+{
+    rb_thread_t *th = rb_thread_ptr(thval);
+    return th->mn_schedulable;
 }
 
 VALUE
@@ -1704,25 +1782,12 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
 
     RUBY_DEBUG_LOG("th:%u fd:%d ev:%d", rb_th_serial(th), fd, events);
 
-#ifdef RUBY_THREAD_PTHREAD_H
-    if (events && !th_has_dedicated_nt(th)) {
-        VM_ASSERT(events == RB_WAITFD_IN || events == RB_WAITFD_OUT);
-
-        // wait readable/writable
-        thread_sched_wait_events(TH_SCHED(th), th, fd, waitfd_to_waiting_flag(events), NULL);
-        RUBY_VM_CHECK_INTS_BLOCKING(ec);
-    }
-#endif
-
+    struct waiting_fd waiting_fd;
     volatile VALUE val = Qundef; /* shouldn't be used */
     volatile int saved_errno = 0;
     enum ruby_tag_type state;
-
-    struct waiting_fd waiting_fd = {
-        .fd = fd,
-        .th = rb_ec_thread_ptr(ec),
-        .busy = NULL,
-    };
+    bool prev_mn_schedulable = th->mn_schedulable;
+    th->mn_schedulable = thread_io_mn_schedulable(th, events, NULL);
 
     // `errno` is only valid when there is an actual error - but we can't
     // extract that from the return value of `func` alone, so we clear any
@@ -1730,26 +1795,32 @@ rb_thread_io_blocking_call(rb_blocking_function_t *func, void *data1, int fd, in
     // `func` or not (as opposed to some previously set value).
     errno = 0;
 
-    RB_VM_LOCK_ENTER();
+    thread_io_setup_wfd(th, fd, &waiting_fd);
     {
-        ccan_list_add(&rb_ec_vm_ptr(ec)->waiting_fds, &waiting_fd.wfd_node);
-    }
-    RB_VM_LOCK_LEAVE();
+        EC_PUSH_TAG(ec);
+        if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+          retry:
+            BLOCKING_REGION(waiting_fd.th, {
+                val = func(data1);
+                saved_errno = errno;
+            }, ubf_select, waiting_fd.th, FALSE);
 
-    EC_PUSH_TAG(ec);
-    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        BLOCKING_REGION(waiting_fd.th, {
-            val = func(data1);
-            saved_errno = errno;
-        }, ubf_select, waiting_fd.th, FALSE);
-    }
-    EC_POP_TAG();
+            if (events &&
+                blocking_call_retryable_p((int)val, saved_errno) &&
+                thread_io_wait_events(th, fd, events, NULL)) {
+                RUBY_VM_CHECK_INTS_BLOCKING(ec);
+                goto retry;
+            }
+        }
+        EC_POP_TAG();
 
+        th->mn_schedulable = prev_mn_schedulable;
+    }
     /*
      * must be deleted before jump
      * this will delete either from waiting_fds or on-stack struct rb_io_close_wait_list
      */
-    rb_thread_io_wake_pending_closer(&waiting_fd);
+    thread_io_wake_pending_closer(&waiting_fd);
 
     if (state) {
         EC_JUMP_TAG(ec, state);
@@ -4294,68 +4365,54 @@ rb_thread_fd_select(int max, rb_fdset_t * read, rb_fdset_t * write, rb_fdset_t *
 int
 rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 {
-    struct pollfd fds[1];
+    struct pollfd fds[1] = {{
+        .fd = fd,
+        .events = (short)events,
+        .revents = 0,
+    }};
     int result = 0;
     nfds_t nfds;
     struct waiting_fd wfd;
     int state;
     volatile int lerrno;
 
-    rb_thread_t *th = wfd.th = GET_THREAD();
-    wfd.fd = fd;
-    wfd.busy = NULL;
+    rb_execution_context_t *ec = GET_EC();
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
 
-#ifdef RUBY_THREAD_PTHREAD_H
-    if (!th->nt->dedicated) {
-        rb_hrtime_t rel, *prel;
+    thread_io_setup_wfd(th, fd, &wfd);
 
-        if (timeout) {
-            rel = rb_timeval2hrtime(timeout);
-            prel = &rel;
-        }
-        else {
-            prel = NULL;
-        }
-
-        if (thread_sched_wait_events(TH_SCHED(th), th, fd, waitfd_to_waiting_flag(events), prel)) {
-            return 0; // timeout
-        }
+    if (timeout == NULL && thread_io_wait_events(th, fd, events, NULL)) {
+        // fd is readable
+        state = 0;
+        fds[0].revents = events;
+        errno = 0;
     }
-#endif
-
-    RB_VM_LOCK_ENTER();
-    {
-        ccan_list_add(&wfd.th->vm->waiting_fds, &wfd.wfd_node);
-    }
-    RB_VM_LOCK_LEAVE();
-
-    EC_PUSH_TAG(wfd.th->ec);
-    if ((state = EC_EXEC_TAG()) == TAG_NONE) {
-        rb_hrtime_t *to, rel, end = 0;
-        RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
-        timeout_prepare(&to, &rel, &end, timeout);
-        fds[0].fd = fd;
-        fds[0].events = (short)events;
-        fds[0].revents = 0;
-        do {
-            nfds = 1;
-
-            lerrno = 0;
-            BLOCKING_REGION(wfd.th, {
-                struct timespec ts;
-
-                if (!RUBY_VM_INTERRUPTED(wfd.th->ec)) {
-                    result = ppoll(fds, nfds, rb_hrtime2timespec(&ts, to), 0);
-                    if (result < 0) lerrno = errno;
-                }
-            }, ubf_select, wfd.th, TRUE);
-
+    else {
+        EC_PUSH_TAG(wfd.th->ec);
+        if ((state = EC_EXEC_TAG()) == TAG_NONE) {
+            rb_hrtime_t *to, rel, end = 0;
             RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
-        } while (wait_retryable(&result, lerrno, to, end));
-    }
-    EC_POP_TAG();
+            timeout_prepare(&to, &rel, &end, timeout);
+            do {
+                nfds = 1;
 
-    rb_thread_io_wake_pending_closer(&wfd);
+                lerrno = 0;
+                BLOCKING_REGION(wfd.th, {
+                    struct timespec ts;
+
+                    if (!RUBY_VM_INTERRUPTED(wfd.th->ec)) {
+                        result = ppoll(fds, nfds, rb_hrtime2timespec(&ts, to), 0);
+                        if (result < 0) lerrno = errno;
+                    }
+                }, ubf_select, wfd.th, TRUE);
+
+                RUBY_VM_CHECK_INTS_BLOCKING(wfd.th->ec);
+            } while (wait_retryable(&result, lerrno, to, end));
+        }
+        EC_POP_TAG();
+    }
+
+    thread_io_wake_pending_closer(&wfd);
 
     if (state) {
         EC_JUMP_TAG(wfd.th->ec, state);
@@ -4429,7 +4486,7 @@ select_single_cleanup(VALUE ptr)
 {
     struct select_args *args = (struct select_args *)ptr;
 
-    rb_thread_io_wake_pending_closer(&args->wfd);
+    thread_io_wake_pending_closer(&args->wfd);
     if (args->read) rb_fd_term(args->read);
     if (args->write) rb_fd_term(args->write);
     if (args->except) rb_fd_term(args->except);
@@ -4456,21 +4513,15 @@ rb_thread_wait_for_single_fd(int fd, int events, struct timeval *timeout)
     struct select_args args;
     int r;
     VALUE ptr = (VALUE)&args;
+    rb_execution_context_t *ec = GET_EC();
+    rb_thread_t *th = rb_ec_thread_ptr(ec);
 
     args.as.fd = fd;
     args.read = (events & RB_WAITFD_IN) ? init_set_fd(fd, &rfds) : NULL;
     args.write = (events & RB_WAITFD_OUT) ? init_set_fd(fd, &wfds) : NULL;
     args.except = (events & RB_WAITFD_PRI) ? init_set_fd(fd, &efds) : NULL;
     args.tv = timeout;
-    args.wfd.fd = fd;
-    args.wfd.th = GET_THREAD();
-    args.wfd.busy = NULL;
-
-    RB_VM_LOCK_ENTER();
-    {
-        ccan_list_add(&args.wfd.th->vm->waiting_fds, &args.wfd.wfd_node);
-    }
-    RB_VM_LOCK_LEAVE();
+    thread_io_setup_wfd(th, fd, &args.wfd);
 
     r = (int)rb_ensure(select_single, ptr, select_single_cleanup, ptr);
     if (r == -1)

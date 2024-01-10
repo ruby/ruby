@@ -61,6 +61,7 @@ class RDoc::Markup::ToHtml < RDoc::Markup::Formatter
   #
   # These methods are used by regexp handling markup added by RDoc::Markup#add_regexp_handling.
 
+  # :nodoc:
   URL_CHARACTERS_REGEXP_STR = /[A-Za-z0-9\-._~:\/\?#\[\]@!$&'\(\)*+,;%=]/.source
 
   ##

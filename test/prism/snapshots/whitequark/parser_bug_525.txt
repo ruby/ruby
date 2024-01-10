@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,32))
     └── body: (length: 1)
         └── @ CallNode (location: (1,0)-(1,32))
-            ├── flags: ∅
+            ├── flags: ignore_visibility
             ├── receiver: ∅
             ├── call_operator_loc: ∅
             ├── name: :m1
@@ -15,6 +15,7 @@
             │   ├── flags: ∅
             │   └── arguments: (length: 1)
             │       └── @ KeywordHashNode (location: (1,3)-(1,11))
+            │           ├── flags: symbol_keys
             │           └── elements: (length: 1)
             │               └── @ AssocNode (location: (1,3)-(1,11))
             │                   ├── key:
@@ -26,7 +27,7 @@
             │                   │   └── unescaped: "k"
             │                   ├── value:
             │                   │   @ CallNode (location: (1,9)-(1,11))
-            │                   │   ├── flags: variable_call
+            │                   │   ├── flags: variable_call, ignore_visibility
             │                   │   ├── receiver: ∅
             │                   │   ├── call_operator_loc: ∅
             │                   │   ├── name: :m2
@@ -46,7 +47,7 @@
                 │   @ StatementsNode (location: (1,16)-(1,27))
                 │   └── body: (length: 1)
                 │       └── @ CallNode (location: (1,16)-(1,27))
-                │           ├── flags: ∅
+                │           ├── flags: ignore_visibility
                 │           ├── receiver: ∅
                 │           ├── call_operator_loc: ∅
                 │           ├── name: :m3

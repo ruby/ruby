@@ -67,7 +67,7 @@
         │   ├── closing_loc: ∅
         │   ├── predicate:
         │   │   @ CallNode (location: (11,17)-(11,21))
-        │   │   ├── flags: ∅
+        │   │   ├── flags: ignore_visibility
         │   │   ├── receiver: ∅
         │   │   ├── call_operator_loc: ∅
         │   │   ├── name: :bar?
@@ -80,7 +80,7 @@
         │       @ StatementsNode (location: (11,0)-(11,10))
         │       └── body: (length: 1)
         │           └── @ CallNode (location: (11,0)-(11,10))
-        │               ├── flags: ∅
+        │               ├── flags: ignore_visibility
         │               ├── receiver: ∅
         │               ├── call_operator_loc: ∅
         │               ├── name: :foo
@@ -124,7 +124,7 @@
         │   │   │   │       ├── operator_loc: (13,21)-(13,22) = "="
         │   │   │   │       └── value:
         │   │   │   │           @ CallNode (location: (13,23)-(13,33))
-        │   │   │   │           ├── flags: ∅
+        │   │   │   │           ├── flags: ignore_visibility
         │   │   │   │           ├── receiver: ∅
         │   │   │   │           ├── call_operator_loc: ∅
         │   │   │   │           ├── name: :tap
@@ -182,7 +182,7 @@
         │   │   │           ├── name_loc: (15,16)-(15,17) = "a"
         │   │   │           ├── value:
         │   │   │           │   @ CallNode (location: (15,20)-(15,30))
-        │   │   │           │   ├── flags: ∅
+        │   │   │           │   ├── flags: ignore_visibility
         │   │   │           │   ├── receiver: ∅
         │   │   │           │   ├── call_operator_loc: ∅
         │   │   │           │   ├── name: :tap
@@ -222,7 +222,7 @@
         │   │   │   @ StatementsNode (location: (17,21)-(17,31))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (17,21)-(17,31))
-        │   │   │           ├── flags: ∅
+        │   │   │           ├── flags: ignore_visibility
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :tap
@@ -265,7 +265,7 @@
         │   │   │           ├── name_loc: (19,21)-(19,22) = "a"
         │   │   │           ├── value:
         │   │   │           │   @ CallNode (location: (19,25)-(19,35))
-        │   │   │           │   ├── flags: ∅
+        │   │   │           │   ├── flags: ignore_visibility
         │   │   │           │   ├── receiver: ∅
         │   │   │           │   ├── call_operator_loc: ∅
         │   │   │           │   ├── name: :tap
@@ -303,7 +303,7 @@
         │   │   │   @ StatementsNode (location: (21,16)-(21,26))
         │   │   │   └── body: (length: 1)
         │   │   │       └── @ CallNode (location: (21,16)-(21,26))
-        │   │   │           ├── flags: ∅
+        │   │   │           ├── flags: ignore_visibility
         │   │   │           ├── receiver: ∅
         │   │   │           ├── call_operator_loc: ∅
         │   │   │           ├── name: :bar
@@ -336,7 +336,7 @@
             │   @ MatchPredicateNode (location: (23,10)-(23,20))
             │   ├── value:
             │   │   @ CallNode (location: (23,10)-(23,13))
-            │   │   ├── flags: variable_call
+            │   │   ├── flags: variable_call, ignore_visibility
             │   │   ├── receiver: ∅
             │   │   ├── call_operator_loc: ∅
             │   │   ├── name: :bar
@@ -354,7 +354,7 @@
                 @ StatementsNode (location: (23,0)-(23,3))
                 └── body: (length: 1)
                     └── @ CallNode (location: (23,0)-(23,3))
-                        ├── flags: variable_call
+                        ├── flags: variable_call, ignore_visibility
                         ├── receiver: ∅
                         ├── call_operator_loc: ∅
                         ├── name: :foo

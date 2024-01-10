@@ -5222,47 +5222,50 @@ rb_thread_flock(void *data)
     return (VALUE)ret;
 }
 
-/*
+/*  :markup: markdown
+ *
  *  call-seq:
- *     file.flock(locking_constant) -> 0 or false
+ *    flock(locking_constant) -> 0 or false
  *
- *  Locks or unlocks a file according to <i>locking_constant</i> (a
- *  logical <em>or</em> of the values in the table below).
- *  Returns <code>false</code> if File::LOCK_NB is specified and the
- *  operation would otherwise have blocked. Not available on all
- *  platforms.
+ *  Locks or unlocks file +self+ according to the given `locking_constant`,
+ *  a bitwise OR of the values in the table below.
  *
- *  Locking constants (in class File):
+ *  Not available on all platforms.
  *
- *     LOCK_EX   | Exclusive lock. Only one process may hold an
- *               | exclusive lock for a given file at a time.
- *     ----------+------------------------------------------------
- *     LOCK_NB   | Don't block when locking. May be combined
- *               | with other lock options using logical or.
- *     ----------+------------------------------------------------
- *     LOCK_SH   | Shared lock. Multiple processes may each hold a
- *               | shared lock for a given file at the same time.
- *     ----------+------------------------------------------------
- *     LOCK_UN   | Unlock.
+ *  Returns `false` if `File::LOCK_NB` is specified and the operation would have blocked;
+ *  otherwise returns `0`.
+ *
+ *  <br>
+ *
+ *  | Constant        | Lock         | Effect
+ *  |-----------------|--------------|-------------------------------------------------------------------
+ *  | +File::LOCK_EX+ | Exclusive    | Only one process may hold an exclusive lock for +self+ at a time.
+ *  | +File::LOCK_NB+ | Non-blocking | No blocking; may be combined with +File::LOCK_SH+ or +File::LOCK_EX+ using the bitwise OR operator <tt>\|</tt>.
+ *  | +File::LOCK_SH+ | Shared       | Multiple processes may each hold a shared lock for +self+ at the same time.
+ *  | +File::LOCK_UN+ | Unlock       | Remove an existing lock held by this process.
+ *
+ *  <br>
  *
  *  Example:
  *
- *     # update a counter using write lock
- *     # don't use "w" because it truncates the file before lock.
- *     File.open("counter", File::RDWR|File::CREAT, 0644) {|f|
- *       f.flock(File::LOCK_EX)
- *       value = f.read.to_i + 1
- *       f.rewind
- *       f.write("#{value}\n")
- *       f.flush
- *       f.truncate(f.pos)
- *     }
+ *  ```ruby
+ *  # Update a counter using an exclusive lock.
+ *  # Don't use File::WRONLY because it truncates the file.
+ *  File.open('counter', File::RDWR | File::CREAT, 0644) do |f|
+ *    f.flock(File::LOCK_EX)
+ *    value = f.read.to_i + 1
+ *    f.rewind
+ *    f.write("#{value}\n")
+ *    f.flush
+ *    f.truncate(f.pos)
+ *  end
  *
- *     # read the counter using read lock
- *     File.open("counter", "r") {|f|
- *       f.flock(File::LOCK_SH)
- *       p f.read
- *     }
+ *  # Read the counter using a shared lock.
+ *  File.open('counter', 'r') do |f|
+ *    f.flock(File::LOCK_SH)
+ *    f.read
+ *  end
+ *  ```
  *
  */
 
@@ -6605,7 +6608,7 @@ const char ruby_null_device[] =
  *
  *  - <tt>'r'</tt>:
  *
- *    - File is not initially truncated:
+ *    - \File is not initially truncated:
  *
  *        f = File.new('t.txt') # => #<File:t.txt>
  *        f.size == 0           # => false
@@ -6614,7 +6617,7 @@ const char ruby_null_device[] =
  *
  *        f.pos # => 0
  *
- *    - File may be read anywhere; see IO#rewind, IO#pos=, IO#seek:
+ *    - \File may be read anywhere; see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.readline # => "First line\n"
  *        f.readline # => "Second line\n"
@@ -6634,7 +6637,7 @@ const char ruby_null_device[] =
  *
  *  - <tt>'w'</tt>:
  *
- *    - File is initially truncated:
+ *    - \File is initially truncated:
  *
  *        path = 't.tmp'
  *        File.write(path, text)
@@ -6645,7 +6648,7 @@ const char ruby_null_device[] =
  *
  *        f.pos # => 0
  *
- *    - File may be written anywhere (even past end-of-file);
+ *    - \File may be written anywhere (even past end-of-file);
  *      see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.write('foo')
@@ -6688,7 +6691,7 @@ const char ruby_null_device[] =
  *
  *  - <tt>'a'</tt>:
  *
- *    - File is not initially truncated:
+ *    - \File is not initially truncated:
  *
  *        path = 't.tmp'
  *        File.write(path, 'foo')
@@ -6699,7 +6702,7 @@ const char ruby_null_device[] =
  *
  *        f.pos # => 0
  *
- *    - File may be written only at end-of-file;
+ *    - \File may be written only at end-of-file;
  *      IO#rewind, IO#pos=, IO#seek do not affect writing:
  *
  *        f.write('bar')
@@ -6720,7 +6723,7 @@ const char ruby_null_device[] =
  *
  *  - <tt>'r+'</tt>:
  *
- *    - File is not initially truncated:
+ *    - \File is not initially truncated:
  *
  *        path = 't.tmp'
  *        File.write(path, text)
@@ -6731,7 +6734,7 @@ const char ruby_null_device[] =
  *
  *        f.pos # => 0
  *
- *    - File may be read or written anywhere (even past end-of-file);
+ *    - \File may be read or written anywhere (even past end-of-file);
  *      see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.readline # => "First line\n"
@@ -6776,7 +6779,7 @@ const char ruby_null_device[] =
  *
  *  - <tt>'a+'</tt>:
  *
- *    - File is not initially truncated:
+ *    - \File is not initially truncated:
  *
  *        path = 't.tmp'
  *        File.write(path, 'foo')
@@ -6787,7 +6790,7 @@ const char ruby_null_device[] =
  *
  *        f.pos # => 0
  *
- *    - File may be written only at end-of-file;
+ *    - \File may be written only at end-of-file;
  *      IO#rewind, IO#pos=, IO#seek do not affect writing:
  *
  *        f.write('bar')
@@ -6802,7 +6805,7 @@ const char ruby_null_device[] =
  *        f.flush
  *        File.read(path) # => "foobarbazbat"
  *
- *    - File may be read anywhere; see IO#rewind, IO#pos=, IO#seek:
+ *    - \File may be read anywhere; see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.rewind
  *        f.read # => "foobarbazbat"
@@ -6827,7 +6830,7 @@ const char ruby_null_device[] =
  *        f = File.new(path, 'w')
  *        f.pos # => 0
  *
- *    - File may be written anywhere (even past end-of-file);
+ *    - \File may be written anywhere (even past end-of-file);
  *      see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.write('foo')
@@ -6904,7 +6907,7 @@ const char ruby_null_device[] =
  *        f = File.new(path, 'w+')
  *        f.pos # => 0
  *
- *    - File may be written anywhere (even past end-of-file);
+ *    - \File may be written anywhere (even past end-of-file);
  *      see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.write('foo')
@@ -6941,7 +6944,7 @@ const char ruby_null_device[] =
  *        File.read(path) # => "bazbam\u0000\u0000bah"
  *        f.pos # => 11
  *
- *    - File may be read anywhere (even past end-of-file);
+ *    - \File may be read anywhere (even past end-of-file);
  *      see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.rewind
@@ -6982,7 +6985,7 @@ const char ruby_null_device[] =
  *        f.flush
  *        File.read(path) # => "foobarbaz"
  *
- *    - File may be read anywhere (even past end-of-file);
+ *    - \File may be read anywhere (even past end-of-file);
  *      see IO#rewind, IO#pos=, IO#seek:
  *
  *        f.rewind
@@ -7740,57 +7743,80 @@ Init_File(void)
      */
     rb_mFConst = rb_define_module_under(rb_cFile, "Constants");
     rb_include_module(rb_cIO, rb_mFConst);
+    /* {File::RDONLY}[rdoc-ref:File::Constants@File-3A-3ARDONLY] */
     rb_define_const(rb_mFConst, "RDONLY", INT2FIX(O_RDONLY));
+    /* {File::WRONLY}[rdoc-ref:File::Constants@File-3A-3AWRONLY] */
     rb_define_const(rb_mFConst, "WRONLY", INT2FIX(O_WRONLY));
+    /* {File::RDWR}[rdoc-ref:File::Constants@File-3A-3ARDWR] */
     rb_define_const(rb_mFConst, "RDWR", INT2FIX(O_RDWR));
+    /* {File::APPEND}[rdoc-ref:File::Constants@File-3A-3AAPPEND] */
     rb_define_const(rb_mFConst, "APPEND", INT2FIX(O_APPEND));
+    /* {File::CREAT}[rdoc-ref:File::Constants@File-3A-3ACREAT] */
     rb_define_const(rb_mFConst, "CREAT", INT2FIX(O_CREAT));
+    /* {File::EXCL}[rdoc-ref:File::Constants@File-3A-3AEXCL] */
     rb_define_const(rb_mFConst, "EXCL", INT2FIX(O_EXCL));
 #if defined(O_NDELAY) || defined(O_NONBLOCK)
 # ifndef O_NONBLOCK
 #   define O_NONBLOCK O_NDELAY
 # endif
+    /* {File::NONBLOCK}[rdoc-ref:File::Constants@File-3A-3ANONBLOCK] */
     rb_define_const(rb_mFConst, "NONBLOCK", INT2FIX(O_NONBLOCK));
 #endif
+    /* {File::TRUNC}[rdoc-ref:File::Constants@File-3A-3ATRUNC] */
     rb_define_const(rb_mFConst, "TRUNC", INT2FIX(O_TRUNC));
 #ifdef O_NOCTTY
+    /* {File::NOCTTY}[rdoc-ref:File::Constants@File-3A-3ANOCTTY] */
     rb_define_const(rb_mFConst, "NOCTTY", INT2FIX(O_NOCTTY));
 #endif
 #ifndef O_BINARY
 # define  O_BINARY 0
 #endif
+    /* {File::BINARY}[rdoc-ref:File::Constants@File-3A-3ABINARY] */
     rb_define_const(rb_mFConst, "BINARY", INT2FIX(O_BINARY));
 #ifndef O_SHARE_DELETE
 # define O_SHARE_DELETE 0
 #endif
+    /* {File::SHARE_DELETE}[rdoc-ref:File::Constants@File-3A-3ASHARE_DELETE+-28Windows+Only-29] */
     rb_define_const(rb_mFConst, "SHARE_DELETE", INT2FIX(O_SHARE_DELETE));
 #ifdef O_SYNC
+    /* {File::SYNC}[rdoc-ref:File::Constants@File-3A-3ASYNC-2C+File-3A-3ARSYNC-2C+and+File-3A-3ADSYNC] */
     rb_define_const(rb_mFConst, "SYNC", INT2FIX(O_SYNC));
 #endif
 #ifdef O_DSYNC
+    /* {File::DSYNC}[rdoc-ref:File::Constants@File-3A-3ASYNC-2C+File-3A-3ARSYNC-2C+and+File-3A-3ADSYNC] */
     rb_define_const(rb_mFConst, "DSYNC", INT2FIX(O_DSYNC));
 #endif
 #ifdef O_RSYNC
+    /* {File::RSYNC}[rdoc-ref:File::Constants@File-3A-3ASYNC-2C+File-3A-3ARSYNC-2C+and+File-3A-3ADSYNC] */
     rb_define_const(rb_mFConst, "RSYNC", INT2FIX(O_RSYNC));
 #endif
 #ifdef O_NOFOLLOW
+    /* {File::NOFOLLOW}[rdoc-ref:File::Constants@File-3A-3ANOFOLLOW] */
     rb_define_const(rb_mFConst, "NOFOLLOW", INT2FIX(O_NOFOLLOW)); /* FreeBSD, Linux */
 #endif
 #ifdef O_NOATIME
+    /* {File::NOATIME}[rdoc-ref:File::Constants@File-3A-3ANOATIME] */
     rb_define_const(rb_mFConst, "NOATIME", INT2FIX(O_NOATIME)); /* Linux */
 #endif
 #ifdef O_DIRECT
+    /* {File::DIRECT}[rdoc-ref:File::Constants@File-3A-3ADIRECT] */
     rb_define_const(rb_mFConst, "DIRECT", INT2FIX(O_DIRECT));
 #endif
 #ifdef O_TMPFILE
+    /* {File::TMPFILE}[rdoc-ref:File::Constants@File-3A-3ATMPFILE] */
     rb_define_const(rb_mFConst, "TMPFILE", INT2FIX(O_TMPFILE));
 #endif
 
+    /* {File::LOCK_SH}[rdoc-ref:File::Constants@File-3A-3ALOCK_SH] */
     rb_define_const(rb_mFConst, "LOCK_SH", INT2FIX(LOCK_SH));
+    /* {File::LOCK_EX}[rdoc-ref:File::Constants@File-3A-3ALOCK_EX] */
     rb_define_const(rb_mFConst, "LOCK_EX", INT2FIX(LOCK_EX));
+    /* {File::LOCK_UN}[rdoc-ref:File::Constants@File-3A-3ALOCK_UN] */
     rb_define_const(rb_mFConst, "LOCK_UN", INT2FIX(LOCK_UN));
+    /* {File::LOCK_NB}[rdoc-ref:File::Constants@File-3A-3ALOCK_NB] */
     rb_define_const(rb_mFConst, "LOCK_NB", INT2FIX(LOCK_NB));
 
+    /* {File::NULL}[rdoc-ref:File::Constants@File-3A-3ANULL] */
     rb_define_const(rb_mFConst, "NULL", rb_fstring_cstr(ruby_null_device));
 
     rb_define_global_function("test", rb_f_test, -1);
