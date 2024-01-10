@@ -2678,7 +2678,7 @@ rb_io_eof(VALUE io)
     READ_CHECK(fptr);
 #if RUBY_CRLF_ENVIRONMENT
     if (!NEED_READCONV(fptr) && NEED_NEWLINE_DECORATOR_ON_READ(fptr)) {
-        return RBOOL(eof(fptr->fd));;
+        return RBOOL(eof(fptr->fd));
     }
 #endif
     return RBOOL(io_fillbuf(fptr) < 0);

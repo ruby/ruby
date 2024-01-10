@@ -1829,7 +1829,7 @@ top_include(int argc, VALUE *argv, VALUE self)
 static VALUE
 top_using(VALUE self, VALUE module)
 {
-    const rb_cref_t *cref = CREF_NEXT(rb_vm_cref());;
+    const rb_cref_t *cref = CREF_NEXT(rb_vm_cref());
     rb_control_frame_t *prev_cfp = previous_frame(GET_EC());
     rb_thread_t *th = GET_THREAD();
 
