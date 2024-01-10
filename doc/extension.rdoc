@@ -1143,41 +1143,48 @@ parse.y       :: grammar definition
 parse.c       :: automatically generated from parse.y
 defs/keywords :: reserved keywords
 lex.c         :: automatically generated from keywords
+id.c          :: pre-defined IDs
 
 === Ruby evaluator (a.k.a. YARV)
 
-  compile.c
-  eval.c
-  eval_error.c
-  eval_jump.c
-  eval_safe.c
-  insns.def           : definition of VM instructions
-  iseq.c              : implementation of VM::ISeq
-  thread.c            : thread management and context switching
-  thread_win32.c      : thread implementation
-  thread_pthread.c    : ditto
-  vm.c
-  vm_dump.c
-  vm_eval.c
-  vm_exec.c
-  vm_insnhelper.c
-  vm_method.c
+eval.c              ::
+eval_error.c        ::
+eval_jump.c         ::
+  Evaluator
 
-  defs/opt_insns_unif.def  : instruction unification
-  defs/opt_operand.def     : definitions for optimization
+compile.c           :: AST to VM instruction compiler
+iseq.c              :: implementation of VM::ISeq
 
-    -> insn*.inc           : automatically generated
-    -> opt*.inc            : automatically generated
-    -> vm.inc              : automatically generated
+thread.c            ::
+thread_win32.c      ::
+thread_pthread.c    ::
+  thread management and context switching
+
+vm.c                ::
+vm_dump.c           ::
+vm_eval.c           ::
+vm_exec.c           ::
+vm_insnhelper.c     ::
+vm_method.c         ::
+  VM implementation
+
+insns.def               :: definition of VM instructions
+defs/opt_insns_unif.def :: instruction unification
+defs/opt_operand.def    :: definitions for optimization
+
+-> insn*.inc    ::
+-> opt*.inc     ::
+-> vm.inc       ::
+  automatically generated
 
 === Regular expression engine (Onigumo)
 
-  regcomp.c
-  regenc.c
-  regerror.c
-  regexec.c
-  regparse.c
-  regsyntax.c
+regcomp.c               :: compiler
+regenc.c                :: encodings
+regerror.c              :: error handling
+regexec.c               :: executer
+regparse.c              :: parser
+regsyntax.c             :: pre-defined syntax options
 
 === Utility functions
 
@@ -1189,22 +1196,27 @@ util.c     :: misc utilities
 
 === Ruby interpreter implementation
 
-  dmyext.c
-  dmydln.c
-  dmyencoding.c
-  id.c
-  inits.c
-  main.c
-  ruby.c
-  version.c
+dmyext.c        ::
+dmydln.c        ::
+dmyencoding.c   ::
+  for miniruby
 
-  gem_prelude.rb
-  prelude.rb
+id.c            ::
+inits.c         ::
+main.c          ::
+ruby.c          ::
+version.c       ::
+  Ruby command
+
+builtijns.c     ::
+gem_prelude.rb  ::
+prelude.rb      ::
+  for Ruby code loaded at start up
 
 === Class library
 
 array.c      :: Array
-bignum.c     :: Bignum
+bignum.c     :: Integer (Bignum)
 compar.c     :: Comparable
 complex.c    :: Complex
 cont.c       :: Fiber, Continuation
@@ -1216,11 +1228,11 @@ hash.c       :: Hash
 io.c         :: IO
 marshal.c    :: Marshal
 math.c       :: Math
-numeric.c    :: Numeric, Integer, Fixnum, Float
+numeric.c    :: Numeric, Integer (Fixnum), Float
 pack.c       :: Array#pack, String#unpack
 proc.c       :: Binding, Proc
 process.c    :: Process
-random.c     :: random number
+random.c     :: Random number generator
 range.c      :: Range
 rational.c   :: Rational
 re.c         :: Regexp, MatchData
@@ -1228,9 +1240,10 @@ signal.c     :: Signal
 sprintf.c    :: String#sprintf
 string.c     :: String
 struct.c     :: Struct
+symbol.c     :: Symbol
 time.c       :: Time
 
-defs/known_errors.def :: Errno::* exception classes
+defs/known_errors.def :: exception classes under Errno
 -> known_errors.inc   :: automatically generated
 
 === Multilingualization
@@ -1242,9 +1255,9 @@ enc/trans/* :: codepoint mapping tables
 
 === goruby interpreter implementation
 
-  goruby.c
-  golf_prelude.rb     : goruby specific libraries.
-    -> golf_prelude.c : automatically generated
+goruby.c                ::
+golf_prelude.rb         :: goruby specific libraries.
+-> golf_prelude.c       :: automatically generated
 
 == Appendix B. Ruby extension API reference
 

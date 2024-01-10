@@ -1091,41 +1091,47 @@ parse.y       :: 字句解析器と構文定義
 parse.c       :: 自動生成
 defs/keywords :: 予約語
 lex.c         :: 自動生成
+id.c          :: 定義済みID
 
 === Rubyの評価器 (通称YARV)
 
-  compile.c
-  eval.c
-  eval_error.c
-  eval_jump.c
-  eval_safe.c
-  insns.def           : 仮想機械語の定義
-  iseq.c              : VM::ISeqの実装
-  thread.c            : スレッド管理とコンテキスト切り替え
-  thread_win32.c      : スレッド実装
-  thread_pthread.c    : 同上
-  vm.c
-  vm_dump.c
-  vm_eval.c
-  vm_exec.c
-  vm_insnhelper.c
-  vm_method.c
+eval.c              ::
+eval_error.c        ::
+eval_jump.c         ::
+  評価機
 
-  defs/opt_insns_unif.def  : 命令融合
-  defs/opt_operand.def     : 最適化のための定義
+compile.c           :: ASTからVM命令へのコンパイラ
+iseq.c              :: VM::ISeqの実装
 
-    -> insn*.inc           : 自動生成
-    -> opt*.inc            : 自動生成
-    -> vm.inc              : 自動生成
+thread.c            ::
+thread_win32.c      ::
+thread_pthread.c    ::
+  スレッド管理とコンテキスト切り替え
+
+vm.c                ::
+vm_dump.c           ::
+vm_eval.c           ::
+vm_exec.c           ::
+vm_insnhelper.c     ::
+vm_method.c         ::
+  VM実装
+
+insns.def               ::
+  仮想機械語の定義
+  defs/opt_insns_unif.def ::
+    命令融合
+  defs/opt_operand.def    ::
+    最適化のための定義
+  -> insn*.inc opt*.inc vm.inc :: 自動生成
 
 === 正規表現エンジン (鬼雲)
 
-  regcomp.c
-  regenc.c
-  regerror.c
-  regexec.c
-  regparse.c
-  regsyntax.c
+regcomp.c               :: コンパイラ
+regenc.c                :: エンコーディング
+regerror.c              :: エラー
+regexec.c               :: 実行器
+regparse.c              :: パーサ
+regsyntax.c             :: 定義済みシンタックスオプション
 
 === ユーティリティ関数
 
@@ -1137,22 +1143,26 @@ util.c     :: その他のユーティリティ
 
 === Rubyコマンドの実装
 
-  dmyext.c
-  dmydln.c
-  dmyencoding.c
-  id.c
-  inits.c
-  main.c
-  ruby.c
-  version.c
+dmyext.c        ::
+dmydln.c        ::
+dmyencoding.c   ::
+  miniruby用
 
-  gem_prelude.rb
-  prelude.rb
+inits.c         ::
+main.c          ::
+ruby.c          ::
+version.c       ::
+  Rubyコマンド
+
+builtin.c       ::
+gem_prelude.rb  ::
+prelude.rb      ::
+  起動時に実行されるRubyコード用
 
 === クラスライブラリ
 
 array.c      :: Array
-bignum.c     :: Bignum
+bignum.c     :: Integer (Bignum)
 compar.c     :: Comparable
 complex.c    :: Complex
 cont.c       :: Fiber, Continuation
@@ -1164,11 +1174,11 @@ hash.c       :: Hash
 io.c         :: IO
 marshal.c    :: Marshal
 math.c       :: Math
-numeric.c    :: Numeric, Integer, Fixnum, Float
+numeric.c    :: Numeric, Integer (Fixnum), Float
 pack.c       :: Array#pack, String#unpack
 proc.c       :: Binding, Proc
 process.c    :: Process
-random.c     :: 乱数
+random.c     :: 乱数 (Random)
 range.c      :: Range
 rational.c   :: Rational
 re.c         :: Regexp, MatchData
@@ -1176,10 +1186,12 @@ signal.c     :: Signal
 sprintf.c    :: String#sprintf
 string.c     :: String
 struct.c     :: Struct
+symbol.c     :: Symbol
 time.c       :: Time
 
-defs/known_errors.def :: 例外クラス Errno::*
--> known_errors.inc   :: 自動生成
+defs/known_errors.def ::
+  Errno の下の例外クラス
+  -> known_errors.inc   :: 自動生成
 
 === 多言語化
 
@@ -1190,9 +1202,10 @@ enc/trans/* :: コードポイント対応表
 
 === gorubyコマンドの実装
 
-  goruby.c
-  golf_prelude.rb      : goruby固有のライブラリ
-    -> golf_prelude.c  : 自動生成
+goruby.c                :: gorubyコマンド
+golf_prelude.rb         ::
+  goruby固有のライブラリ
+  -> golf_prelude.c     :: 自動生成
 
 == Appendix B. 拡張用関数リファレンス
 
