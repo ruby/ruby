@@ -982,7 +982,6 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
 
                   if (has_keyword_splat) {
                       int cur_hash_size = 0;
-                      orig_argc++;
 
                       bool new_hash_emitted = false;
                       for (size_t i = 0; i < len; i++) {
@@ -992,6 +991,7 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
 
                           switch (PM_NODE_TYPE(cur_node)) {
                             case PM_ASSOC_NODE: {
+                                orig_argc++;
                                 pm_assoc_node_t *assoc = (pm_assoc_node_t *)cur_node;
 
                                 PM_COMPILE_NOT_POPPED(assoc->key);
