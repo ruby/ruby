@@ -434,6 +434,10 @@ fill_keys_values(st_data_t key, st_data_t val, st_data_t ptr)
 static inline int
 ignore_keyword_hash_p(VALUE keyword_hash, const rb_iseq_t * const iseq, unsigned int * kw_flag, VALUE * converted_keyword_hash)
 {
+    if (keyword_hash == Qnil) {
+        return 1;
+    }
+
     if (!RB_TYPE_P(keyword_hash, T_HASH)) {
         keyword_hash = rb_to_hash_type(keyword_hash);
     }
