@@ -427,7 +427,6 @@ fn main() {
         .allowlist_function("rb_yarv_ary_entry_internal")
         .allowlist_function("rb_yjit_fix_div_fix")
         .allowlist_function("rb_yjit_fix_mod_fix")
-        .allowlist_function("rb_yjit_fix_mul_fix")
         .allowlist_function("rb_FL_TEST")
         .allowlist_function("rb_FL_TEST_RAW")
         .allowlist_function("rb_RB_TYPE_P")

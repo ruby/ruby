@@ -871,12 +871,6 @@ rb_yjit_fix_mod_fix(VALUE recv, VALUE obj)
     return rb_fix_mod_fix(recv, obj);
 }
 
-VALUE
-rb_yjit_fix_mul_fix(VALUE recv, VALUE obj)
-{
-    return rb_fix_mul_fix(recv, obj);
-}
-
 // Print the Ruby source location of some ISEQ for debugging purposes
 void
 rb_yjit_dump_iseq_loc(const rb_iseq_t *iseq, uint32_t insn_idx)
