@@ -1441,6 +1441,11 @@ module Prism
 
       assert_prism_eval("prism_test_call_node_splat(*[], 1, 2)")
 
+      assert_prism_eval(<<~RUBY)
+        def self.prism_test_call_node_splat_and_double_splat(a, b, **opts); end
+        prism_test_call_node_splat_and_double_splat(*[1], 2, **{})
+      RUBY
+
       assert_prism_eval(<<-CODE)
         class Foo
           def []=(a, b)
