@@ -198,7 +198,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     Gem::Specification.reset
 
     FileUtils.mv @a1_gem, @tempdir
-    FileUtils.mv  a2_gem, @tempdir # not in index
+    FileUtils.mv a2_gem, @tempdir # not in index
     FileUtils.mv @b1_gem, @tempdir
     inst = nil
 
@@ -237,7 +237,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     Gem::Specification.reset
 
     FileUtils.mv @a1_gem, @tempdir
-    FileUtils.mv  a2_gem, @tempdir # not in index
+    FileUtils.mv a2_gem, @tempdir # not in index
     FileUtils.mv @b1_gem, @tempdir
     FileUtils.mv a3_gem, @tempdir
 
