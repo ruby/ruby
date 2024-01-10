@@ -5951,6 +5951,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
       case NODE_IASGN:
       case NODE_CDECL:
       case NODE_CVASGN:
+      case NODE_OP_CDECL:
         expr_type = DEFINED_ASGN;
         break;
     }

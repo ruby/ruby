@@ -127,6 +127,18 @@ class TestDefined < Test::Unit::TestCase
     assert_equal nil, defined?($2)
   end
 
+  def test_defined_assignment
+    assert_equal("assignment", defined?(a = 1))
+    assert_equal("assignment", defined?(a += 1))
+    assert_equal("assignment", defined?(a &&= 1))
+    assert_equal("assignment", eval('defined?(A = 1)'))
+    assert_equal("assignment", eval('defined?(A += 1)'))
+    assert_equal("assignment", eval('defined?(A &&= 1)'))
+    assert_equal("assignment", eval('defined?(A::B = 1)'))
+    assert_equal("assignment", eval('defined?(A::B += 1)'))
+    assert_equal("assignment", eval('defined?(A::B &&= 1)'))
+  end
+
   def test_defined_literal
     assert_equal("nil", defined?(nil))
     assert_equal("true", defined?(true))
