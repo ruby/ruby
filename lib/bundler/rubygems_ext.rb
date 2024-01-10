@@ -282,7 +282,7 @@ module Gem
 
   # On universal Rubies, resolve the "universal" arch to the real CPU arch, without changing the extension directory.
   class BasicSpecification
-    if /^universal\.(?<arch>.*?)-/ =~ (CROSS_COMPILING || RUBY_PLATFORM)
+    if /^universal\.(?<arch>.*?)-/ =~ CROSS_COMPILING || RUBY_PLATFORM
       local_platform = Platform.local
       if local_platform.cpu == "universal"
         ORIGINAL_LOCAL_PLATFORM = local_platform.to_s.freeze
