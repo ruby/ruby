@@ -1946,7 +1946,8 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
                 dv = rb_node_sym_string_val(val_node);
                 break;
               case NODE_LINE:
-                dv = rb_node_line_lineno_val(val_node);;
+                dv = rb_node_line_lineno_val(val_node);
+                break;
               case NODE_INTEGER:
                 dv = rb_node_integer_literal_val(val_node);
                 break;
