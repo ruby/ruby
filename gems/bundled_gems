@@ -21,3 +21,4 @@ rbs             3.4.1   https://github.com/ruby/rbs
 typeprof        0.21.9  https://github.com/ruby/typeprof
 debug           1.9.1   https://github.com/ruby/debug
 racc            1.7.3   https://github.com/ruby/racc
+mutex_m         0.2.0   https://github.com/ruby/mutex_m
