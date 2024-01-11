@@ -326,8 +326,8 @@ struct rb_imemo_tmpbuf_struct {
 #define Qfalse p->config->qfalse
 #undef Qundef
 #define Qundef p->config->qundef
-#define rb_eArgError p->config->eArgError
-#define rb_mRubyVMFrozenCore p->config->mRubyVMFrozenCore
+#define rb_eArgError p->config->eArgError()
+#define rb_mRubyVMFrozenCore p->config->mRubyVMFrozenCore()
 #undef rb_long2int
 #define rb_long2int p->config->long2int
 #undef SPECIAL_CONST_P

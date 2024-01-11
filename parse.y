@@ -15911,9 +15911,6 @@ rb_ruby_parser_free(void *ptr)
 {
     struct parser_params *p = (struct parser_params*)ptr;
     struct local_vars *local, *prev;
-#ifdef UNIVERSAL_PARSER
-    rb_parser_config_t *config = p->config;
-#endif
 
     if (p->tokenbuf) {
         ruby_sized_xfree(p->tokenbuf, p->toksiz);
@@ -15932,13 +15929,6 @@ rb_ruby_parser_free(void *ptr)
         }
     }
     xfree(ptr);
-
-#ifdef UNIVERSAL_PARSER
-    config->counter--;
-    if (config->counter <= 0) {
-        rb_ruby_parser_config_free(config);
-    }
-#endif
 }
 
 size_t
@@ -15955,20 +15945,6 @@ rb_ruby_parser_memsize(const void *ptr)
     }
     return size;
 }
-
-#ifdef UNIVERSAL_PARSER
-rb_parser_config_t *
-rb_ruby_parser_config_new(void *(*malloc)(size_t size))
-{
-    return (rb_parser_config_t *)malloc(sizeof(rb_parser_config_t));
-}
-
-void
-rb_ruby_parser_config_free(rb_parser_config_t *config)
-{
-    config->free(config);
-}
-#endif
 
 #ifndef UNIVERSAL_PARSER
 #ifndef RIPPER
