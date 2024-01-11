@@ -2816,7 +2816,7 @@ EOS
       t1.join
 
       t2 = Thread.new do
-        Process.waitpid -1
+        Process.waitpid(-1)
       rescue Errno::ECHILD
         nil
       end
