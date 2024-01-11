@@ -9473,6 +9473,7 @@ parser_set_encode(struct parser_params *p, const char *name)
 {
     rb_encoding *enc;
     VALUE excargs[3];
+    int idx = 0;
 
     const char *wrong = 0;
     switch (*name) {
@@ -9482,7 +9483,7 @@ parser_set_encode(struct parser_params *p, const char *name)
       case 'l': case 'L': wrong = "locale"; break;
     }
     if (wrong && STRCASECMP(name, wrong) == 0) goto unknown;
-    int idx = rb_enc_find_index(name);
+    idx = rb_enc_find_index(name);
     if (idx < 0) {
       unknown:
         excargs[1] = rb_sprintf("unknown encoding name: %s", name);
