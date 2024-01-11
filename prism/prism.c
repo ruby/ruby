@@ -6361,8 +6361,10 @@ parser_lex_magic_comment_encoding(pm_parser_t *parser) {
  */
 static void
 parser_lex_magic_comment_frozen_string_literal_value(pm_parser_t *parser, const uint8_t *start, const uint8_t *end) {
-    if (start + 4 <= end && pm_strncasecmp(start, (const uint8_t *) "true", 4) == 0) {
+    if ((start + 4 <= end) && pm_strncasecmp(start, (const uint8_t *) "true", 4) == 0) {
         parser->frozen_string_literal = true;
+    } else if ((start + 5 <= end) && pm_strncasecmp(start, (const uint8_t *) "false", 5) == 0) {
+        parser->frozen_string_literal = false;
     }
 }
 
