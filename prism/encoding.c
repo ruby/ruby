@@ -5022,10 +5022,6 @@ pm_encoding_find(const uint8_t *start, const uint8_t *end) {
                 ENCODING2("EUC-CN", "eucCN", PM_ENCODING_GB2312);
                 ENCODING2("EUC-TW", "eucTW", PM_ENCODING_EUC_TW);
                 ENCODING1("Emacs-Mule", PM_ENCODING_EMACS_MULE);
-                ENCODING1("external", PM_ENCODING_UTF_8);
-                break;
-            case 'F': case 'f':
-                ENCODING1("filesystem", PM_ENCODING_UTF_8);
                 break;
             case 'G': case 'g':
                 ENCODING1("GBK", PM_ENCODING_GBK);
@@ -5070,9 +5066,6 @@ pm_encoding_find(const uint8_t *start, const uint8_t *end) {
             case 'K': case 'k':
                 ENCODING1("KOI8-R", PM_ENCODING_KOI8_R);
                 ENCODING1("KOI8-U", PM_ENCODING_KOI8_U);
-                break;
-            case 'L': case 'l':
-                ENCODING1("locale", PM_ENCODING_UTF_8);
                 break;
             case 'M': case 'm':
                 ENCODING1("macCentEuro", PM_ENCODING_MAC_CENT_EURO);

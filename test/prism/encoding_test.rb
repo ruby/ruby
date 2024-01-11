@@ -137,9 +137,7 @@ module Prism
     # These test that we're correctly parsing codepoints for each alias of each
     # encoding that prism supports.
     encodings.each do |encoding, range|
-      encoding.names.each do |name|
-        next if name == "locale"
-
+      (encoding.names - %w[external internal filesystem locale]).each do |name|
         define_method(:"test_encoding_#{name}") do
           assert_encoding(encoding, name, range)
         end
