@@ -9477,11 +9477,20 @@ parser_encode_length(struct parser_params *p, const char *name, long len)
 static void
 parser_set_encode(struct parser_params *p, const char *name)
 {
-    int idx = rb_enc_find_index(name);
     rb_encoding *enc;
     VALUE excargs[3];
 
+    const char *wrong = 0;
+    switch (*name) {
+      case 'e': case 'E': wrong = "external"; break;
+      case 'i': case 'I': wrong = "internal"; break;
+      case 'f': case 'F': wrong = "filesystem"; break;
+      case 'l': case 'L': wrong = "locale"; break;
+    }
+    if (wrong && STRCASECMP(name, wrong) == 0) goto unknown;
+    int idx = rb_enc_find_index(name);
     if (idx < 0) {
+      unknown:
         excargs[1] = rb_sprintf("unknown encoding name: %s", name);
       error:
         excargs[0] = rb_eArgError;

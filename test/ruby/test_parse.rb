@@ -767,6 +767,34 @@ x = __ENCODING__
       END
     end
     assert_equal(__ENCODING__, x)
+
+    assert_raise(ArgumentError) do
+      EnvUtil.with_default_external(Encoding::US_ASCII) {eval <<-END, nil, __FILE__, __LINE__+1}
+# coding = external
+x = __ENCODING__
+      END
+    end
+
+    assert_raise(ArgumentError) do
+      EnvUtil.with_default_internal(Encoding::US_ASCII) {eval <<-END, nil, __FILE__, __LINE__+1}
+# coding = internal
+x = __ENCODING__
+      END
+    end
+
+    assert_raise(ArgumentError) do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# coding = filesystem
+x = __ENCODING__
+      END
+    end
+
+    assert_raise(ArgumentError) do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# coding = locale
+x = __ENCODING__
+      END
+    end
   end
 
   def test_utf8_bom
