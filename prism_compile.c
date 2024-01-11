@@ -5606,6 +5606,18 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
         }
 
+        // If we have an anonymous "rest" node, we'll need to increase the local
+        // table size to take it in to account.
+        // def m(foo, *, bar)
+        //            ^
+        if (parameters_node && parameters_node->rest) {
+            if (!(PM_NODE_TYPE_P(parameters_node->rest, PM_IMPLICIT_REST_NODE))) {
+                if (!((pm_rest_parameter_node_t *)parameters_node->rest)->name) {
+                    table_size++;
+                }
+            }
+        }
+
         if (posts_list) {
             for (size_t i = 0; i < posts_list->size; i++) {
                 // For each MultiTargetNode, we're going to have one
