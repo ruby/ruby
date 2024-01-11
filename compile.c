@@ -5859,17 +5859,20 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         expr_type = DEFINED_FALSE;
         break;
 
+      case NODE_HASH:
       case NODE_LIST:{
-        const NODE *vals = node;
+        const NODE *vals = (nd_type(node) == NODE_HASH) ? RNODE_HASH(node)->nd_head : node;
 
-        do {
-            defined_expr0(iseq, ret, RNODE_LIST(vals)->nd_head, lfinish, Qfalse, false);
+        if (vals && RNODE_LIST(vals)->nd_head) {
+            do {
+                defined_expr0(iseq, ret, RNODE_LIST(vals)->nd_head, lfinish, Qfalse, false);
 
-            if (!lfinish[1]) {
-                lfinish[1] = NEW_LABEL(line);
-            }
-            ADD_INSNL(ret, line_node, branchunless, lfinish[1]);
-        } while ((vals = RNODE_LIST(vals)->nd_next) != NULL);
+                if (!lfinish[1]) {
+                    lfinish[1] = NEW_LABEL(line);
+                }
+                ADD_INSNL(ret, line_node, branchunless, lfinish[1]);
+            } while ((vals = RNODE_LIST(vals)->nd_next) != NULL);
+        }
       }
         /* fall through */
       case NODE_STR:
@@ -5886,6 +5889,15 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
       case NODE_AND:
       case NODE_OR:
       default:
+        expr_type = DEFINED_EXPR;
+        break;
+
+      case NODE_SPLAT:
+        defined_expr0(iseq, ret, RNODE_LIST(node)->nd_head, lfinish, Qfalse, false);
+        if (!lfinish[1]) {
+            lfinish[1] = NEW_LABEL(line);
+        }
+        ADD_INSNL(ret, line_node, branchunless, lfinish[1]);
         expr_type = DEFINED_EXPR;
         break;
 
