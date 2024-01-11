@@ -34,7 +34,6 @@ Socket:: Access underlying OS socket implementations
 == Libraries
 
 Abbrev:: Calculates a set of unique abbreviations for a given set of strings
-Base64:: Support for encoding and decoding binary data using a Base64 representation
 Benchmark:: Provides methods to measure and report the time used to execute code
 Bundler:: Manage your Ruby application's gem dependencies
 CGI:: Support for the Common Gateway Interface protocol
@@ -130,3 +129,4 @@ DEBUGGER__:: Debugging functionality for Ruby
 Racc:: A LALR(1) parser generator written in Ruby.
 Mutex_m:: Mixin to extend objects to be handled like a Mutex
 GetoptLong:: Parse command line options similar to the GNU C getopt_long()
+Base64:: Support for encoding and decoding binary data using a Base64 representation
