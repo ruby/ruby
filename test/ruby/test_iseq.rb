@@ -801,12 +801,15 @@ class TestISeq < Test::Unit::TestCase
 
   def test_compile_prism_with_file
     Tempfile.create(%w"test_iseq .rb") do |f|
-      f.puts "name = 'Prism'; puts 'hello"
+      f.puts "name = 'Prism'; puts 'hello'"
       f.close
 
-      assert_nothing_raised(SyntaxError) {
-        RubyVM::InstructionSequence.compile_prism(f.path)
-      }
+      assert_nothing_raised(TypeError) do
+        begin
+          RubyVM::InstructionSequence.compile_prism(f.path)
+        rescue SyntaxError
+        end
+      end
     end
   end
 end

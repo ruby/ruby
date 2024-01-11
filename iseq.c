@@ -28,6 +28,7 @@
 #include "internal/file.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
+#include "internal/io.h"
 #include "internal/ruby_parser.h"
 #include "internal/sanitizers.h"
 #include "internal/symbol.h"
@@ -1404,19 +1405,36 @@ static void
 iseqw_s_compile_prism_compile(pm_parser_t *parser, VALUE opt, rb_iseq_t *iseq, VALUE file, VALUE path, int first_lineno)
 {
     pm_node_t *node = pm_parse(parser);
-    rb_code_location_t code_location;
-    pm_code_location(&code_location, &parser->newline_list, &node->location);
 
-    rb_compile_option_t option;
-    make_compile_option(&option, opt);
-    prepare_iseq_build(iseq, rb_fstring_lit("<compiled>"), file, path, first_lineno, &code_location, -1, NULL, 0, ISEQ_TYPE_TOP, Qnil, &option);
+    if (parser->error_list.size > 0) {
+        pm_buffer_t buffer = { 0 };
+        pm_parser_errors_format(parser, &buffer, rb_stderr_tty_p());
 
-    pm_scope_node_t scope_node;
-    pm_scope_node_init(node, &scope_node, NULL, parser);
-    rb_iseq_compile_prism_node(iseq, &scope_node, parser);
+        pm_buffer_prepend_string(&buffer, "syntax errors found\n", 20);
+        VALUE error = rb_exc_new(rb_eSyntaxError, pm_buffer_value(&buffer), pm_buffer_length(&buffer));
 
-    finish_iseq_build(iseq);
-    pm_node_destroy(parser, node);
+        pm_buffer_free(&buffer);
+        pm_node_destroy(parser, node);
+
+        // TODO: We need to set the backtrace based on the ISEQ.
+        // VALUE path = pathobj_path(ISEQ_BODY(iseq)->location.pathobj);
+        // rb_funcallv(error, rb_intern("set_backtrace"), 1, &path);
+        rb_exc_raise(error);
+    } else {
+        rb_code_location_t code_location;
+        pm_code_location(&code_location, &parser->newline_list, &node->location);
+
+        rb_compile_option_t option;
+        make_compile_option(&option, opt);
+        prepare_iseq_build(iseq, rb_fstring_lit("<compiled>"), file, path, first_lineno, &code_location, -1, NULL, 0, ISEQ_TYPE_TOP, Qnil, &option);
+
+        pm_scope_node_t scope_node;
+        pm_scope_node_init(node, &scope_node, NULL, parser);
+        rb_iseq_compile_prism_node(iseq, &scope_node, parser);
+
+        finish_iseq_build(iseq);
+        pm_node_destroy(parser, node);
+    }
 }
 
 static VALUE
