@@ -3666,7 +3666,9 @@ kwmerge_i(VALUE key, VALUE value, VALUE hash)
 static VALUE
 m_core_hash_merge_kwd(VALUE recv, VALUE hash, VALUE kw)
 {
-    REWIND_CFP(hash = core_hash_merge_kwd(hash, kw));
+    if (kw != Qnil) {
+        REWIND_CFP(hash = core_hash_merge_kwd(hash, kw));
+    }
     return hash;
 }
 

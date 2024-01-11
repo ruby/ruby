@@ -194,6 +194,9 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal(1, o(**nil))
     assert_equal(2, o(2, **nil))
     assert_equal(1, o(*nil, **nil))
+    assert_equal(1, o(**nil, **nil))
+    assert_equal({a: 1}, o(a: 1, **nil))
+    assert_equal({a: 1}, o(**nil, a: 1))
 
     # symproc call
     assert_equal(1, :o.to_proc.call(self, **nil))
@@ -211,6 +214,10 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_equal([[], {}], skws(**nil))
     assert_equal([[1], {}], skws(1, **nil))
     assert_equal([[], {}], skws(*nil, **nil))
+
+    assert_equal({}, {**nil})
+    assert_equal({a: 1}, {a: 1, **nil})
+    assert_equal({a: 1}, {**nil, a: 1})
   end
 
   def test_lambda
