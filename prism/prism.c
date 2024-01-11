@@ -5933,6 +5933,33 @@ pm_parser_scope_push(pm_parser_t *parser, bool closed) {
 }
 
 /**
+ * Save the current param name as the return value and set it to the given
+ * constant id.
+ */
+static inline pm_constant_id_t
+pm_parser_current_param_name_set(pm_parser_t *parser, pm_constant_id_t current_param_name) {
+    pm_constant_id_t saved_param_name = parser->current_param_name;
+    parser->current_param_name = current_param_name;
+    return saved_param_name;
+}
+
+/**
+ * Save the current param name as the return value and clear it.
+ */
+static inline pm_constant_id_t
+pm_parser_current_param_name_unset(pm_parser_t *parser) {
+    return pm_parser_current_param_name_set(parser, PM_CONSTANT_ID_UNSET);
+}
+
+/**
+ * Restore the current param name from the given value.
+ */
+static inline void
+pm_parser_current_param_name_restore(pm_parser_t *parser, pm_constant_id_t saved_param_name) {
+    parser->current_param_name = saved_param_name;
+}
+
+/**
  * Check if any of the currently visible scopes contain a local variable
  * described by the given constant id.
  */
@@ -11715,8 +11742,8 @@ parse_parameters(
                 if (accept1(parser, PM_TOKEN_EQUAL)) {
                     pm_token_t operator = parser->previous;
                     context_push(parser, PM_CONTEXT_DEFAULT_PARAMS);
-                    pm_constant_id_t old_param_name = parser->current_param_name;
-                    parser->current_param_name = pm_parser_constant_id_token(parser, &name);
+
+                    pm_constant_id_t saved_param_name = pm_parser_current_param_name_set(parser, pm_parser_constant_id_token(parser, &name));
                     pm_node_t *value = parse_value_expression(parser, binding_power, false, PM_ERR_PARAMETER_NO_DEFAULT);
 
                     pm_optional_parameter_node_t *param = pm_optional_parameter_node_create(parser, &name, &operator, value);
@@ -11725,7 +11752,7 @@ parse_parameters(
                     }
                     pm_parameters_node_optionals_append(params, param);
 
-                    parser->current_param_name = old_param_name;
+                    pm_parser_current_param_name_restore(parser, saved_param_name);
                     context_pop(parser);
 
                     // If parsing the value of the parameter resulted in error recovery,
@@ -11793,11 +11820,13 @@ parse_parameters(
 
                         if (token_begins_expression_p(parser->current.type)) {
                             context_push(parser, PM_CONTEXT_DEFAULT_PARAMS);
-                            pm_constant_id_t old_param_name = parser->current_param_name;
-                            parser->current_param_name = pm_parser_constant_id_token(parser, &local);
+
+                            pm_constant_id_t saved_param_name = pm_parser_current_param_name_set(parser, pm_parser_constant_id_token(parser, &local));
                             pm_node_t *value = parse_value_expression(parser, binding_power, false, PM_ERR_PARAMETER_NO_DEFAULT_KW);
-                            parser->current_param_name = old_param_name;
+
+                            pm_parser_current_param_name_restore(parser, saved_param_name);
                             context_pop(parser);
+
                             param = (pm_node_t *) pm_optional_keyword_parameter_node_create(parser, &name, value);
                         }
                         else {
@@ -12142,8 +12171,10 @@ parse_block(pm_parser_t *parser) {
     pm_token_t opening = parser->previous;
     accept1(parser, PM_TOKEN_NEWLINE);
 
+    pm_constant_id_t saved_param_name = pm_parser_current_param_name_unset(parser);
     pm_accepts_block_stack_push(parser, true);
     pm_parser_scope_push(parser, false);
+
     pm_block_parameters_node_t *block_parameters = NULL;
 
     if (accept1(parser, PM_TOKEN_PIPE)) {
@@ -12207,6 +12238,8 @@ parse_block(pm_parser_t *parser) {
     pm_constant_id_list_t locals = parser->current_scope->locals;
     pm_parser_scope_pop(parser);
     pm_accepts_block_stack_pop(parser);
+    pm_parser_current_param_name_restore(parser, saved_param_name);
+
     return pm_block_node_create(parser, &locals, locals_body_index, &opening, parameters, statements, &parser->previous);
 }
 
@@ -14910,8 +14943,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 pm_token_t operator = parser->previous;
                 pm_node_t *expression = parse_value_expression(parser, PM_BINDING_POWER_NOT, true, PM_ERR_EXPECT_EXPRESSION_AFTER_LESS_LESS);
 
-                pm_constant_id_t old_param_name = parser->current_param_name;
-                parser->current_param_name = 0;
+                pm_constant_id_t saved_param_name = pm_parser_current_param_name_unset(parser);
                 pm_parser_scope_push(parser, true);
                 accept2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON);
 
@@ -14928,11 +14960,12 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 }
 
                 expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_CLASS_TERM);
-
                 pm_constant_id_list_t locals = parser->current_scope->locals;
+
                 pm_parser_scope_pop(parser);
-                parser->current_param_name = old_param_name;
                 pm_do_loop_stack_pop(parser);
+                pm_parser_current_param_name_restore(parser, saved_param_name);
+
                 return (pm_node_t *) pm_singleton_class_node_create(parser, &locals, &class_keyword, &operator, expression, statements, &parser->previous);
             }
 
@@ -14958,9 +14991,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 superclass = NULL;
             }
 
-            pm_constant_id_t old_param_name = parser->current_param_name;
-            parser->current_param_name = 0;
+            pm_constant_id_t saved_param_name = pm_parser_current_param_name_unset(parser);
             pm_parser_scope_push(parser, true);
+
             if (inheritance_operator.type != PM_TOKEN_NOT_PROVIDED) {
                 expect2(parser, PM_TOKEN_NEWLINE, PM_TOKEN_SEMICOLON, PM_ERR_CLASS_UNEXPECTED_END);
             } else {
@@ -14986,9 +15019,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             pm_constant_id_list_t locals = parser->current_scope->locals;
+
             pm_parser_scope_pop(parser);
-            parser->current_param_name = old_param_name;
             pm_do_loop_stack_pop(parser);
+            pm_parser_current_param_name_restore(parser, saved_param_name);
 
             if (!PM_NODE_TYPE_P(constant_path, PM_CONSTANT_PATH_NODE) && !(PM_NODE_TYPE_P(constant_path, PM_CONSTANT_READ_NODE))) {
                 pm_parser_err_node(parser, constant_path, PM_ERR_CLASS_NAME);
@@ -15003,18 +15037,21 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_token_t operator = not_provided(parser);
             pm_token_t name = (pm_token_t) { .type = PM_TOKEN_MISSING, .start = def_keyword.end, .end = def_keyword.end };
 
-            // This context is necessary for lexing `...` in a bare params correctly.
-            // It must be pushed before lexing the first param, so it is here.
+            // This context is necessary for lexing `...` in a bare params
+            // correctly. It must be pushed before lexing the first param, so it
+            // is here.
             context_push(parser, PM_CONTEXT_DEF_PARAMS);
+            pm_constant_id_t saved_param_name;
+
             parser_lex(parser);
-            pm_constant_id_t old_param_name = parser->current_param_name;
 
             switch (parser->current.type) {
                 case PM_CASE_OPERATOR:
+                    saved_param_name = pm_parser_current_param_name_unset(parser);
                     pm_parser_scope_push(parser, true);
-                    parser->current_param_name = 0;
                     lex_state_set(parser, PM_LEX_STATE_ENDFN);
                     parser_lex(parser);
+
                     name = parser->previous;
                     break;
                 case PM_TOKEN_IDENTIFIER: {
@@ -15023,17 +15060,18 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     if (match2(parser, PM_TOKEN_DOT, PM_TOKEN_COLON_COLON)) {
                         receiver = parse_variable_call(parser);
 
+                        saved_param_name = pm_parser_current_param_name_unset(parser);
                         pm_parser_scope_push(parser, true);
-                        parser->current_param_name = 0;
                         lex_state_set(parser, PM_LEX_STATE_FNAME);
                         parser_lex(parser);
 
                         operator = parser->previous;
                         name = parse_method_definition_name(parser);
                     } else {
+                        saved_param_name = pm_parser_current_param_name_unset(parser);
                         pm_refute_numbered_parameter(parser, parser->previous.start, parser->previous.end);
                         pm_parser_scope_push(parser, true);
-                        parser->current_param_name = 0;
+
                         name = parser->previous;
                     }
 
@@ -15050,9 +15088,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 case PM_TOKEN_KEYWORD___FILE__:
                 case PM_TOKEN_KEYWORD___LINE__:
                 case PM_TOKEN_KEYWORD___ENCODING__: {
+                    saved_param_name = pm_parser_current_param_name_unset(parser);
                     pm_parser_scope_push(parser, true);
-                    parser->current_param_name = 0;
                     parser_lex(parser);
+
                     pm_token_t identifier = parser->previous;
 
                     if (match2(parser, PM_TOKEN_DOT, PM_TOKEN_COLON_COLON)) {
@@ -15124,8 +15163,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     operator = parser->previous;
                     receiver = (pm_node_t *) pm_parentheses_node_create(parser, &lparen, expression, &rparen);
 
+                    saved_param_name = pm_parser_current_param_name_unset(parser);
                     pm_parser_scope_push(parser, true);
-                    parser->current_param_name = 0;
 
                     // To push `PM_CONTEXT_DEF_PARAMS` again is for the same reason as described the above.
                     context_push(parser, PM_CONTEXT_DEF_PARAMS);
@@ -15133,8 +15172,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                     break;
                 }
                 default:
+                    saved_param_name = pm_parser_current_param_name_unset(parser);
                     pm_parser_scope_push(parser, true);
-                    parser->current_param_name = 0;
+
                     name = parse_method_definition_name(parser);
                     break;
             }
@@ -15249,8 +15289,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             pm_constant_id_list_t locals = parser->current_scope->locals;
-            parser->current_param_name = old_param_name;
+
             pm_parser_scope_pop(parser);
+            pm_parser_current_param_name_restore(parser, saved_param_name);
 
             return (pm_node_t *) pm_def_node_create(
                 parser,
@@ -15478,9 +15519,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 pm_parser_err_token(parser, &name, PM_ERR_MODULE_NAME);
             }
 
-            pm_constant_id_t old_param_name = parser->current_param_name;
-            parser->current_param_name = 0;
+            pm_constant_id_t saved_param_name = pm_parser_current_param_name_unset(parser);
             pm_parser_scope_push(parser, true);
+
             accept2(parser, PM_TOKEN_SEMICOLON, PM_TOKEN_NEWLINE);
             pm_node_t *statements = NULL;
 
@@ -15497,7 +15538,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
             pm_constant_id_list_t locals = parser->current_scope->locals;
             pm_parser_scope_pop(parser);
-            parser->current_param_name = old_param_name;
+            pm_parser_current_param_name_restore(parser, saved_param_name);
 
             expect1(parser, PM_TOKEN_KEYWORD_END, PM_ERR_MODULE_TERM);
 
@@ -16164,7 +16205,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             parser_lex(parser);
 
             pm_token_t operator = parser->previous;
+            pm_constant_id_t saved_param_name = pm_parser_current_param_name_unset(parser);
             pm_parser_scope_push(parser, false);
+
             pm_block_parameters_node_t *block_parameters;
 
             switch (parser->current.type) {
@@ -16243,8 +16286,11 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             pm_constant_id_list_t locals = parser->current_scope->locals;
+
             pm_parser_scope_pop(parser);
             pm_accepts_block_stack_pop(parser);
+            pm_parser_current_param_name_restore(parser, saved_param_name);
+
             return (pm_node_t *) pm_lambda_node_create(parser, &locals, locals_body_index, &operator, &opening, &parser->previous, parameters, body);
         }
         case PM_TOKEN_UPLUS: {

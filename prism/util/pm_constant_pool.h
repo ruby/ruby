@@ -19,6 +19,13 @@
 #include <string.h>
 
 /**
+ * When we allocate constants into the pool, we reserve 0 to mean that the slot
+ * is not yet filled. This constant is reused in other places to indicate the
+ * lack of a constant id.
+ */
+#define PM_CONSTANT_ID_UNSET 0
+
+/**
  * A constant id is a unique identifier for a constant in the constant pool.
  */
 typedef uint32_t pm_constant_id_t;
