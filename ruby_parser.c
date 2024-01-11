@@ -6,7 +6,7 @@
 #include "internal/error.h"
 
 static VALUE
-compile_negative_numeric(VALUE val)
+negative_numeric(VALUE val)
 {
     if (FIXNUM_P(val)) {
         return LONG2FIX(-FIX2LONG(val));
@@ -25,18 +25,18 @@ compile_negative_numeric(VALUE val)
         val = rb_big_norm(val);
         break;
       case T_RATIONAL:
-        RATIONAL_SET_NUM(val, compile_negative_numeric(RRATIONAL(val)->num));
+        RATIONAL_SET_NUM(val, negative_numeric(RRATIONAL(val)->num));
         break;
       case T_COMPLEX:
-        RCOMPLEX_SET_REAL(val, compile_negative_numeric(RCOMPLEX(val)->real));
-        RCOMPLEX_SET_IMAG(val, compile_negative_numeric(RCOMPLEX(val)->imag));
+        RCOMPLEX_SET_REAL(val, negative_numeric(RCOMPLEX(val)->real));
+        RCOMPLEX_SET_IMAG(val, negative_numeric(RCOMPLEX(val)->imag));
         break;
       case T_FLOAT:
         val = DBL2NUM(-RFLOAT_VALUE(val));
         break;
       unknown:
       default:
-        rb_bug("unknown literal type (%s) passed to compile_negative_numeric",
+        rb_bug("unknown literal type (%s) passed to negative_numeric",
                rb_builtin_class_name(val));
         break;
     }
@@ -44,7 +44,7 @@ compile_negative_numeric(VALUE val)
 }
 
 static VALUE
-compile_numeric_literal(const char *val, int base)
+integer_value(const char *val, int base)
 {
     return rb_cstr_to_inum(val, base, FALSE);
 }
@@ -53,9 +53,9 @@ VALUE
 rb_node_integer_literal_val(const NODE *n)
 {
     const rb_node_integer_t *node = RNODE_INTEGER(n);
-    VALUE val = compile_numeric_literal(node->val, node->base);
+    VALUE val = integer_value(node->val, node->base);
     if (node->minus) {
-        val = compile_negative_numeric(val);
+        val = negative_numeric(val);
     }
     return val;
 }
@@ -73,7 +73,7 @@ rb_node_float_literal_val(const NODE *n)
 }
 
 static VALUE
-compile_rational_literal(const char *node_val, int base, int seen_point)
+rational_value(const char *node_val, int base, int seen_point)
 {
     VALUE lit;
     char* val = strdup(node_val);
@@ -83,10 +83,10 @@ compile_rational_literal(const char *node_val, int base, int seen_point)
         size_t fraclen = len-seen_point-1;
         memmove(point, point+1, fraclen+1);
 
-        lit = rb_rational_new(compile_numeric_literal(val, base), rb_int_positive_pow(10, fraclen));
+        lit = rb_rational_new(integer_value(val, base), rb_int_positive_pow(10, fraclen));
     }
     else {
-        lit = rb_rational_raw1(compile_numeric_literal(val, base));
+        lit = rb_rational_raw1(integer_value(val, base));
     }
 
     free(val);
@@ -100,10 +100,10 @@ rb_node_rational_literal_val(const NODE *n)
     VALUE lit;
     const rb_node_rational_t *node = RNODE_RATIONAL(n);
 
-    lit = compile_rational_literal(node->val, node->base, node->seen_point);
+    lit = rational_value(node->val, node->base, node->seen_point);
 
     if (node->minus) {
-        lit = compile_negative_numeric(lit);
+        lit = negative_numeric(lit);
     }
 
     return lit;
@@ -119,7 +119,7 @@ rb_node_imaginary_literal_val(const NODE *n)
 
     switch (type) {
       case integer_literal:
-        lit = compile_numeric_literal(node->val, node->base);
+        lit = integer_value(node->val, node->base);
         break;
       case float_literal:{
         double d = strtod(node->val, 0);
@@ -127,7 +127,7 @@ rb_node_imaginary_literal_val(const NODE *n)
         break;
       }
       case rational_literal:
-        lit = compile_rational_literal(node->val, node->base, node->seen_point);
+        lit = rational_value(node->val, node->base, node->seen_point);
         break;
       default:
         rb_bug("unreachable");
@@ -136,7 +136,7 @@ rb_node_imaginary_literal_val(const NODE *n)
     lit = rb_complex_raw(INT2FIX(0), lit);
 
     if (node->minus) {
-        lit = compile_negative_numeric(lit);
+        lit = negative_numeric(lit);
     }
     return lit;
 }
