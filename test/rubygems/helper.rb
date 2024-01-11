@@ -105,7 +105,7 @@ class Gem::TestCase < Test::Unit::TestCase
     refute File.directory?(path), msg
   end
 
-  # https://github.com/seattlerb/minitest/blob/21d9e804b63c619f602f3f4ece6c71b48974707a/lib/minitest/assertions.rb#L546
+  # Originally copied from minitest/assertions.rb
   def capture_subprocess_io
     require "tempfile"
 
