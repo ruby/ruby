@@ -321,7 +321,6 @@ rb_ast_t *
 rb_ast_new(rb_parser_config_t *config)
 {
     node_buffer_t *nb = rb_node_buffer_new(config);
-    config->counter++;
     return config->ast_new((VALUE)nb);
 }
 #else

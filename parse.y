@@ -15970,7 +15970,6 @@ rb_ruby_parser_allocate(rb_parser_config_t *config)
     /* parser_initialize expects fields to be set to 0 */
     rb_parser_t *p = (rb_parser_t *)config->calloc(1, sizeof(rb_parser_t));
     p->config = config;
-    p->config->counter++;
     return p;
 }
 

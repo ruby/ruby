@@ -1194,14 +1194,6 @@ typedef struct rb_imemo_tmpbuf_struct rb_imemo_tmpbuf_t;
 
 #ifdef UNIVERSAL_PARSER
 typedef struct rb_parser_config_struct {
-    /*
-     * Reference counter.
-     *   This is needed because both parser and ast refer
-     *   same config pointer.
-     *   We can remove this, once decuple parser and ast from Ruby GC.
-     */
-    int counter;
-
     /* Memory */
     void *(*malloc)(size_t size);
     void *(*calloc)(size_t number, size_t size);
