@@ -39,6 +39,9 @@ module Kernel
     RUBYGEMS_ACTIVATION_MONITOR.synchronize do
       path = File.path(path)
 
+      # If +path+ belongs to a default gem, we activate it and then go straight
+      # to normal require
+
       if spec = Gem.find_unresolved_default_spec(path)
         # Ensure -I beats a default gem
         resolved_path = begin
