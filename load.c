@@ -883,9 +883,8 @@ rb_load_protect(VALUE fname, int wrap, int *pstate)
  *  LoadError will be raised.
  *
  *  If the optional _wrap_ parameter is +true+, the loaded script will
- *  be executed under an anonymous module, protecting the calling
- *  program's global namespace.  If the optional _wrap_ parameter is a
- *  module, the loaded script will be executed under the given module.
+ *  be executed under an anonymous module. If the optional _wrap_ parameter
+ *  is a module, the loaded script will be executed under the given module.
  *  In no circumstance will any local variables in the loaded file be
  *  propagated to the loading environment.
  */
