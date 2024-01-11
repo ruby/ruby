@@ -2703,37 +2703,45 @@ rb_free_warning(void)
 }
 
 static VALUE
+setup_syserr(int n, const char *name)
+{
+    VALUE error = rb_define_class_under(rb_mErrno, name, rb_eSystemCallError);
+
+    /* capture nonblock errnos for WaitReadable/WaitWritable subclasses */
+    switch (n) {
+      case EAGAIN:
+        rb_eEAGAIN = error;
+
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+        break;
+      case EWOULDBLOCK:
+#endif
+
+        rb_eEWOULDBLOCK = error;
+        break;
+      case EINPROGRESS:
+        rb_eEINPROGRESS = error;
+        break;
+    }
+
+    rb_define_const(error, "Errno", INT2NUM(n));
+    st_add_direct(syserr_tbl, n, (st_data_t)error);
+    return error;
+}
+
+static VALUE
 set_syserr(int n, const char *name)
 {
     st_data_t error;
 
     if (!st_lookup(syserr_tbl, n, &error)) {
-        error = rb_define_class_under(rb_mErrno, name, rb_eSystemCallError);
-
-        /* capture nonblock errnos for WaitReadable/WaitWritable subclasses */
-        switch (n) {
-          case EAGAIN:
-            rb_eEAGAIN = error;
-
-#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
-            break;
-          case EWOULDBLOCK:
-#endif
-
-            rb_eEWOULDBLOCK = error;
-            break;
-          case EINPROGRESS:
-            rb_eEINPROGRESS = error;
-            break;
-        }
-
-        rb_define_const(error, "Errno", INT2NUM(n));
-        st_add_direct(syserr_tbl, n, error);
+        return setup_syserr(n, name);
     }
     else {
-        rb_define_const(rb_mErrno, name, error);
+        VALUE errclass = (VALUE)error;
+        rb_define_const(rb_mErrno, name, errclass);
+        return errclass;
     }
-    return error;
 }
 
 static VALUE
@@ -2742,12 +2750,12 @@ get_syserr(int n)
     st_data_t error;
 
     if (!st_lookup(syserr_tbl, n, &error)) {
-        char name[8];	/* some Windows' errno have 5 digits. */
+        char name[DECIMAL_SIZE_OF(n) + sizeof("E-")];
 
         snprintf(name, sizeof(name), "E%03d", n);
-        error = set_syserr(n, name);
+        return setup_syserr(n, name);
     }
-    return error;
+    return (VALUE)error;
 }
 
 /*
@@ -3840,9 +3848,13 @@ rb_check_copyable(VALUE obj, VALUE orig)
 void
 Init_syserr(void)
 {
-    rb_eNOERROR = set_syserr(0, "NOERROR");
+    rb_eNOERROR = setup_syserr(0, "NOERROR");
+#if 0
+    /* No error */
+    rb_define_const(rb_mErrno, "NOERROR", rb_eNOERROR);
+#endif
 #define defined_error(name, num) set_syserr((num), (name));
-#define undefined_error(name) set_syserr(0, (name));
+#define undefined_error(name) rb_define_const(rb_mErrno, (name), rb_eNameError);
 #include "known_errors.inc"
 #undef defined_error
 #undef undefined_error

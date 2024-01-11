@@ -31,6 +31,9 @@ trace_point.rb
 warning.rb
 yjit.rb
 
+# Errno::*
+known_errors.inc
+
 # the lib/ directory (which has its own .document file)
 lib
 
