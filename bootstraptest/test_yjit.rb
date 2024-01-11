@@ -2509,7 +2509,7 @@ assert_equal '[1, 2]', %q{
 
   expandarray_redefined_nilclass
   expandarray_redefined_nilclass
-}
+} unless rjit_enabled?
 
 assert_equal '[1, 2, nil]', %q{
   def expandarray_rhs_too_small
