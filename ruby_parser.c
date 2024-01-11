@@ -569,6 +569,18 @@ tmpbuf_parser_heap(void *buf, rb_imemo_tmpbuf_t *old_heap, size_t cnt)
     return rb_imemo_tmpbuf_parser_heap(buf, old_heap, cnt);
 }
 
+static VALUE
+arg_error(void)
+{
+    return rb_eArgError;
+}
+
+static VALUE
+ruby_vm_frozen_core(void)
+{
+    return rb_mRubyVMFrozenCore;
+}
+
 static int
 special_const_p(VALUE obj)
 {
@@ -601,235 +613,242 @@ str_coderange_scan_restartable(const char *s, const char *e, void *enc, int *cr)
 }
 
 VALUE rb_io_gets_internal(VALUE io);
+extern VALUE rb_eArgError;
 extern VALUE rb_mRubyVMFrozenCore;
 VALUE rb_node_case_when_optimizable_literal(const NODE *const node);
 
-void
-rb_parser_config_initialize(rb_parser_config_t *config)
-{
-    config->counter = 0;
+rb_parser_config_t rb_global_parser_config = (rb_parser_config_t) {
+    .counter = 0,
 
-    config->malloc   = ruby_xmalloc;
-    config->calloc   = ruby_xcalloc;
-    config->realloc  = ruby_xrealloc;
-    config->free     = ruby_xfree;
-    config->alloc_n  = ruby_xmalloc2;
-    config->alloc    = ruby_xmalloc;
-    config->realloc_n = ruby_xrealloc2;
-    config->zalloc = zalloc;
-    config->rb_memmove = memmove2;
-    config->nonempty_memcpy = nonempty_memcpy;
-    config->xmalloc_mul_add = rb_xmalloc_mul_add;
+    .malloc = ruby_xmalloc,
+    .calloc = ruby_xcalloc,
+    .realloc = ruby_xrealloc,
+    .free = ruby_xfree,
+    .alloc_n = ruby_xmalloc2,
+    .alloc = ruby_xmalloc,
+    .realloc_n = ruby_xrealloc2,
+    .zalloc = zalloc,
+    .rb_memmove = memmove2,
+    .nonempty_memcpy = nonempty_memcpy,
+    .xmalloc_mul_add = rb_xmalloc_mul_add,
 
-    config->tmpbuf_parser_heap = tmpbuf_parser_heap;
-    config->ast_new = ast_new;
+    .tmpbuf_parser_heap = tmpbuf_parser_heap,
+    .ast_new = ast_new,
 
-    config->compile_callback         = rb_suppress_tracing;
-    config->reg_named_capture_assign = reg_named_capture_assign;
+    .compile_callback = rb_suppress_tracing,
+    .reg_named_capture_assign = reg_named_capture_assign,
 
-    config->obj_freeze = rb_obj_freeze;
-    config->obj_hide = rb_obj_hide;
-    config->obj_frozen = obj_frozen;
-    config->type_p = type_p;
-    config->obj_freeze_raw = OBJ_FREEZE_RAW;
+    .obj_freeze = rb_obj_freeze,
+    .obj_hide = rb_obj_hide,
+    .obj_frozen = obj_frozen,
+    .type_p = type_p,
+    .obj_freeze_raw = OBJ_FREEZE_RAW,
 
-    config->fixnum_p = fixnum_p;
-    config->symbol_p = symbol_p;
+    .fixnum_p = fixnum_p,
+    .symbol_p = symbol_p,
 
-    config->attr_get = rb_attr_get;
+    .attr_get = rb_attr_get,
 
-    config->ary_new           = rb_ary_new;
-    config->ary_push          = rb_ary_push;
-    config->ary_new_from_args = rb_ary_new_from_args;
-    config->ary_pop           = rb_ary_pop;
-    config->ary_last          = rb_ary_last;
-    config->ary_unshift       = rb_ary_unshift;
-    config->ary_new2          = rb_ary_new2;
-    config->ary_entry         = rb_ary_entry;
-    config->ary_join          = rb_ary_join;
-    config->ary_reverse       = rb_ary_reverse;
-    config->ary_clear         = rb_ary_clear;
-    config->ary_modify        = rb_ary_modify;
-    config->array_len         = rb_array_len;
-    config->array_aref        = RARRAY_AREF;
+    .ary_new = rb_ary_new,
+    .ary_push = rb_ary_push,
+    .ary_new_from_args = rb_ary_new_from_args,
+    .ary_pop = rb_ary_pop,
+    .ary_last = rb_ary_last,
+    .ary_unshift = rb_ary_unshift,
+    .ary_new2 = rb_ary_new2,
+    .ary_entry = rb_ary_entry,
+    .ary_join = rb_ary_join,
+    .ary_reverse = rb_ary_reverse,
+    .ary_clear = rb_ary_clear,
+    .ary_modify = rb_ary_modify,
+    .array_len = rb_array_len,
+    .array_aref = RARRAY_AREF,
 
-    config->sym_intern_ascii_cstr = rb_sym_intern_ascii_cstr;
-    config->make_temporary_id     = rb_make_temporary_id;
-    config->is_local_id           = is_local_id2;
-    config->is_attrset_id         = is_attrset_id2;
-    config->is_global_name_punct  = is_global_name_punct;
-    config->id_type               = id_type;
-    config->id_attrset            = rb_id_attrset;
-    config->intern                = rb_intern;
-    config->intern2               = rb_intern2;
-    config->intern3               = intern3;
-    config->intern_str            = rb_intern_str;
-    config->is_notop_id           = is_notop_id2;
-    config->enc_symname_type      = enc_symname_type;
-    config->str_intern            = rb_str_intern;
-    config->id2name               = rb_id2name;
-    config->id2str                = rb_id2str;
-    config->id2sym                = rb_id2sym;
-    config->sym2id                = rb_sym2id;
+    .sym_intern_ascii_cstr = rb_sym_intern_ascii_cstr,
+    .make_temporary_id = rb_make_temporary_id,
+    .is_local_id = is_local_id2,
+    .is_attrset_id = is_attrset_id2,
+    .is_global_name_punct = is_global_name_punct,
+    .id_type = id_type,
+    .id_attrset = rb_id_attrset,
+    .intern = rb_intern,
+    .intern2 = rb_intern2,
+    .intern3 = intern3,
+    .intern_str = rb_intern_str,
+    .is_notop_id = is_notop_id2,
+    .enc_symname_type = enc_symname_type,
+    .str_intern = rb_str_intern,
+    .id2name = rb_id2name,
+    .id2str = rb_id2str,
+    .id2sym = rb_id2sym,
+    .sym2id = rb_sym2id,
 
-    config->str_catf        = rb_str_catf;
-    config->str_cat_cstr    = rb_str_cat_cstr;
-    config->str_subseq      = rb_str_subseq;
-    config->str_dup         = rb_str_dup;
-    config->str_new_frozen  = rb_str_new_frozen;
-    config->str_buf_new     = rb_str_buf_new;
-    config->str_buf_cat     = rb_str_buf_cat;
-    config->str_modify      = rb_str_modify;
-    config->str_set_len     = rb_str_set_len;
-    config->str_cat         = rb_str_cat;
-    config->str_resize      = rb_str_resize;
-    config->str_new         = rb_str_new;
-    config->str_new_cstr    = rb_str_new_cstr;
-    config->fstring         = rb_fstring;
-    config->is_ascii_string = is_ascii_string2;
-    config->enc_str_new     = enc_str_new;
-    config->enc_str_buf_cat = enc_str_buf_cat;
-    config->str_buf_append  = rb_str_buf_append;
-    config->str_vcatf       = rb_str_vcatf;
-    config->string_value_cstr = rb_string_value_cstr;
-    config->rb_sprintf      = rb_sprintf;
-    config->rstring_ptr     = RSTRING_PTR;
-    config->rstring_end     = RSTRING_END;
-    config->rstring_len     = RSTRING_LEN;
-    config->filesystem_str_new_cstr = rb_filesystem_str_new_cstr;
-    config->obj_as_string = rb_obj_as_string;
+    .str_catf = rb_str_catf,
+    .str_cat_cstr = rb_str_cat_cstr,
+    .str_subseq = rb_str_subseq,
+    .str_dup = rb_str_dup,
+    .str_new_frozen = rb_str_new_frozen,
+    .str_buf_new = rb_str_buf_new,
+    .str_buf_cat = rb_str_buf_cat,
+    .str_modify = rb_str_modify,
+    .str_set_len = rb_str_set_len,
+    .str_cat = rb_str_cat,
+    .str_resize = rb_str_resize,
+    .str_new = rb_str_new,
+    .str_new_cstr = rb_str_new_cstr,
+    .fstring = rb_fstring,
+    .is_ascii_string = is_ascii_string2,
+    .enc_str_new = enc_str_new,
+    .enc_str_buf_cat = enc_str_buf_cat,
+    .str_buf_append = rb_str_buf_append,
+    .str_vcatf = rb_str_vcatf,
+    .string_value_cstr = rb_string_value_cstr,
+    .rb_sprintf = rb_sprintf,
+    .rstring_ptr = RSTRING_PTR,
+    .rstring_end = RSTRING_END,
+    .rstring_len = RSTRING_LEN,
+    .filesystem_str_new_cstr = rb_filesystem_str_new_cstr,
+    .obj_as_string = rb_obj_as_string,
 
-    config->hash_clear     = rb_hash_clear;
-    config->hash_new       = rb_hash_new;
-    config->hash_aset      = rb_hash_aset;
-    config->hash_lookup    = rb_hash_lookup;
-    config->hash_delete    = rb_hash_delete;
-    config->ident_hash_new = rb_ident_hash_new;
+    .hash_clear = rb_hash_clear,
+    .hash_new = rb_hash_new,
+    .hash_aset = rb_hash_aset,
+    .hash_delete = rb_hash_delete,
+    .hash_lookup = rb_hash_lookup,
+    .ident_hash_new = rb_ident_hash_new,
 
-    config->num2int          = rb_num2int_inline;
-    config->int2num          = rb_int2num_inline;
+    .num2int = rb_num2int_inline,
+    .int2num = rb_int2num_inline,
 
-    config->stderr_tty_p    = rb_stderr_tty_p;
-    config->write_error_str = rb_write_error_str;
-    config->default_rs = default_rs;
-    config->io_write = rb_io_write;
-    config->io_flush = rb_io_flush;
-    config->io_puts = rb_io_puts;
-    config->io_gets_internal= rb_io_gets_internal;
+    .stderr_tty_p = rb_stderr_tty_p,
+    .write_error_str = rb_write_error_str,
+    .default_rs = default_rs,
+    .io_write = rb_io_write,
+    .io_flush = rb_io_flush,
+    .io_puts = rb_io_puts,
+    .io_gets_internal = rb_io_gets_internal,
 
-    config->debug_output_stdout = rb_ractor_stdout;
-    config->debug_output_stderr = rb_ractor_stderr;
+    .debug_output_stdout = rb_ractor_stdout,
+    .debug_output_stderr = rb_ractor_stderr,
 
-    config->is_usascii_enc        = is_usascii_enc;
-    config->enc_isalnum           = enc_isalnum;
-    config->enc_precise_mbclen    = enc_precise_mbclen;
-    config->mbclen_charfound_p    = mbclen_charfound_p;
-    config->enc_name              = enc_name;
-    config->enc_prev_char         = enc_prev_char;
-    config->enc_get               = enc_get;
-    config->enc_asciicompat       = enc_asciicompat;
-    config->utf8_encoding         = utf8_encoding;
-    config->enc_associate         = enc_associate;
-    config->ascii8bit_encoding    = ascii8bit_encoding;
-    config->enc_codelen           = enc_codelen;
-    config->enc_mbcput            = enc_mbcput;
-    config->char_to_option_kcode  = rb_char_to_option_kcode;
-    config->ascii8bit_encindex    = rb_ascii8bit_encindex;
-    config->enc_find_index        = rb_enc_find_index;
-    config->enc_from_index        = enc_from_index;
-    config->enc_associate_index   = rb_enc_associate_index;
-    config->enc_isspace           = enc_isspace;
-    config->enc_coderange_7bit    = ENC_CODERANGE_7BIT;
-    config->enc_coderange_unknown = ENC_CODERANGE_UNKNOWN;
-    config->enc_compatible        = enc_compatible;
-    config->enc_from_encoding     = enc_from_encoding;
-    config->encoding_get          = encoding_get;
-    config->encoding_set          = encoding_set;
-    config->encoding_is_ascii8bit = encoding_is_ascii8bit;
-    config->usascii_encoding      = usascii_encoding;
+    .is_usascii_enc = is_usascii_enc,
+    .enc_isalnum = enc_isalnum,
+    .enc_precise_mbclen = enc_precise_mbclen,
+    .mbclen_charfound_p = mbclen_charfound_p,
+    .enc_name = enc_name,
+    .enc_prev_char = enc_prev_char,
+    .enc_get = enc_get,
+    .enc_asciicompat = enc_asciicompat,
+    .utf8_encoding = utf8_encoding,
+    .enc_associate = enc_associate,
+    .ascii8bit_encoding = ascii8bit_encoding,
+    .enc_codelen = enc_codelen,
+    .enc_mbcput = enc_mbcput,
+    .char_to_option_kcode = rb_char_to_option_kcode,
+    .ascii8bit_encindex = rb_ascii8bit_encindex,
+    .enc_find_index = rb_enc_find_index,
+    .enc_from_index = enc_from_index,
+    .enc_associate_index = rb_enc_associate_index,
+    .enc_isspace = enc_isspace,
+    .enc_coderange_7bit = ENC_CODERANGE_7BIT,
+    .enc_coderange_unknown = ENC_CODERANGE_UNKNOWN,
+    .enc_compatible = enc_compatible,
+    .enc_from_encoding = enc_from_encoding,
+    .encoding_get = encoding_get,
+    .encoding_set = encoding_set,
+    .encoding_is_ascii8bit = encoding_is_ascii8bit,
+    .usascii_encoding = usascii_encoding,
 
-    config->ractor_make_shareable = rb_ractor_make_shareable;
+    .ractor_make_shareable = rb_ractor_make_shareable,
 
-    config->local_defined        = local_defined;
-    config->dvar_defined         = dvar_defined;
+    .local_defined = local_defined,
+    .dvar_defined = dvar_defined,
 
-    config->literal_cmp  = literal_cmp;
-    config->literal_hash = literal_hash;
+    .literal_cmp = literal_cmp,
+    .literal_hash = literal_hash,
 
-    config->syntax_error_append = syntax_error_append;
-    config->raise = rb_raise;
-    config->syntax_error_new = syntax_error_new;
+    .syntax_error_append = syntax_error_append,
+    .raise = rb_raise,
+    .syntax_error_new = syntax_error_new,
 
-    config->errinfo = rb_errinfo;
-    config->set_errinfo = rb_set_errinfo;
-    config->exc_raise = rb_exc_raise;
-    config->make_exception = rb_make_exception;
+    .errinfo = rb_errinfo,
+    .set_errinfo = rb_set_errinfo,
+    .exc_raise = rb_exc_raise,
+    .make_exception = rb_make_exception,
 
-    config->sized_xfree = ruby_sized_xfree;
-    config->sized_realloc_n = ruby_sized_realloc_n;
-    config->obj_write = obj_write;
-    config->obj_written = obj_written;
-    config->gc_register_mark_object = rb_gc_register_mark_object;
-    config->gc_guard = gc_guard;
-    config->gc_mark = rb_gc_mark;
-    config->gc_mark_movable = rb_gc_mark_movable;
-    config->gc_location = rb_gc_location;
+    .sized_xfree = ruby_sized_xfree,
+    .sized_realloc_n = ruby_sized_realloc_n,
+    .obj_write = obj_write,
+    .obj_written = obj_written,
+    .gc_register_mark_object = rb_gc_register_mark_object,
+    .gc_guard = gc_guard,
+    .gc_mark = rb_gc_mark,
+    .gc_mark_movable = rb_gc_mark_movable,
+    .gc_location = rb_gc_location,
 
-    config->reg_compile = rb_reg_compile;
-    config->reg_check_preprocess = rb_reg_check_preprocess;
-    config->memcicmp = rb_memcicmp;
+    .reg_compile = rb_reg_compile,
+    .reg_check_preprocess = rb_reg_check_preprocess,
+    .memcicmp = rb_memcicmp,
 
-    config->compile_warn    = rb_compile_warn;
-    config->compile_warning = rb_compile_warning;
-    config->bug             = rb_bug;
-    config->fatal           = rb_fatal;
-    config->verbose         = ruby_verbose2;
-    config->errno_ptr       = rb_errno_ptr2;
+    .compile_warn = rb_compile_warn,
+    .compile_warning = rb_compile_warning,
+    .bug = rb_bug,
+    .fatal = rb_fatal,
+    .verbose = ruby_verbose2,
+    .errno_ptr = rb_errno_ptr2,
 
-    config->make_backtrace = rb_make_backtrace;
+    .make_backtrace = rb_make_backtrace,
 
-    config->scan_hex    = ruby_scan_hex;
-    config->scan_oct    = ruby_scan_oct;
-    config->scan_digits = ruby_scan_digits;
-    config->strtod      = ruby_strtod;
+    .scan_hex = ruby_scan_hex,
+    .scan_oct = ruby_scan_oct,
+    .scan_digits = ruby_scan_digits,
+    .strtod = ruby_strtod,
 
-    config->rbool = rbool;
-    config->undef_p = undef_p;
-    config->rtest = rtest;
-    config->nil_p = nil_p;
-    config->qnil  = Qnil;
-    config->qtrue = Qtrue;
-    config->qfalse = Qfalse;
-    config->qundef = Qundef;
-    config->eArgError = rb_eArgError;
-    config->mRubyVMFrozenCore = rb_mRubyVMFrozenCore;
-    config->long2int = rb_long2int;
-    config->special_const_p = special_const_p;
-    config->builtin_type = builtin_type;
+    .rbool = rbool,
+    .undef_p = undef_p,
+    .rtest = rtest,
+    .nil_p = nil_p,
+    .qnil = Qnil,
+    .qtrue = Qtrue,
+    .qfalse = Qfalse,
+    .qundef = Qundef,
+    .eArgError = arg_error,
+    .mRubyVMFrozenCore = ruby_vm_frozen_core,
+    .long2int = rb_long2int,
+    .special_const_p = special_const_p,
+    .builtin_type = builtin_type,
 
-    config->node_case_when_optimizable_literal = rb_node_case_when_optimizable_literal;
+    .node_case_when_optimizable_literal = rb_node_case_when_optimizable_literal,
 
     /* For Ripper */
-    config->static_id2sym = static_id2sym;
-    config->str_coderange_scan_restartable = str_coderange_scan_restartable;
+    .static_id2sym = static_id2sym,
+    .str_coderange_scan_restartable = str_coderange_scan_restartable,
+};
+
+rb_parser_t *
+rb_parser_params_allocate(void)
+{
+    return rb_ruby_parser_allocate(&rb_global_parser_config);
+}
+
+rb_parser_t *
+rb_parser_params_new(void)
+{
+    return rb_ruby_parser_new(&rb_global_parser_config);
 }
 
 VALUE
 rb_parser_new(void)
 {
     struct ruby_parser *parser;
-    rb_parser_config_t *config;
     rb_parser_t *parser_params;
-
-    config = rb_ruby_parser_config_new(ruby_xmalloc);
-    rb_parser_config_initialize(config);
 
     /*
      * Create parser_params ahead of vparser because
      * rb_ruby_parser_new can run GC so if create vparser
      * first, parser_mark tries to mark not initialized parser_params.
      */
-    parser_params = rb_ruby_parser_new(config);
+    parser_params = rb_parser_params_new();
     VALUE vparser = TypedData_Make_Struct(0, struct ruby_parser,
                                          &ruby_parser_data_type, parser);
     parser->parser_params = parser_params;

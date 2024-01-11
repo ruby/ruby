@@ -115,10 +115,7 @@ ripper_s_allocate(VALUE klass)
                                        &parser_data_type, r);
 
 #ifdef UNIVERSAL_PARSER
-    rb_parser_config_t *config;
-    config = rb_ruby_parser_config_new(ruby_xmalloc);
-    rb_parser_config_initialize(config);
-    r->p = rb_ruby_parser_allocate(config);
+    r->p = rb_parser_params_allocate();
 #else
     r->p = rb_ruby_ripper_parser_allocate();
 #endif
@@ -260,11 +257,11 @@ parser_dedent_string0(VALUE a)
 }
 
 static VALUE
-parser_config_free(VALUE a)
+parser_free(VALUE a)
 {
-    rb_parser_config_t *config = (void *)a;
+    struct parser_params *p = (void *)a;
 
-    rb_ruby_parser_config_free(config);
+    rb_ruby_parser_free(p);
     return Qnil;
 }
 #endif
@@ -283,17 +280,14 @@ static VALUE
 parser_dedent_string(VALUE self, VALUE input, VALUE width)
 {
     struct parser_params *p;
-    rb_parser_config_t *config;
     struct dedent_string_arg args;
 
-    config = rb_ruby_parser_config_new(ruby_xmalloc);
-    rb_parser_config_initialize(config);
-    p = rb_ruby_parser_new(config);
+    p = rb_parser_params_new();
 
     args.p = p;
     args.input = input;
     args.width = width;
-    return rb_ensure(parser_dedent_string0, (VALUE)&args, parser_config_free, (VALUE)config);
+    return rb_ensure(parser_dedent_string0, (VALUE)&args, parser_free, (VALUE)p);
 }
 #else
 static VALUE
@@ -530,17 +524,14 @@ static VALUE
 ripper_lex_state_name(VALUE self, VALUE state)
 {
     struct parser_params *p;
-    rb_parser_config_t *config;
     struct lex_state_name_arg args;
 
-    config = rb_ruby_parser_config_new(ruby_xmalloc);
-    rb_parser_config_initialize(config);
-    p = rb_ruby_parser_new(config);
+    p = rb_parser_params_new();
 
     args.p = p;
     args.state = state;
 
-    return rb_ensure(lex_state_name0, (VALUE)&args, parser_config_free, (VALUE)config);
+    return rb_ensure(lex_state_name0, (VALUE)&args, parser_free, (VALUE)p);
 }
 #else
 static VALUE
