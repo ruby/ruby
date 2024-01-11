@@ -1,30 +1,33 @@
 require_relative '../../spec_helper'
-require 'getoptlong'
 
-describe "GetoptLong#terminate" do
-  before :each do
-    @opts = GetoptLong.new(
-      [ '--size', '-s',             GetoptLong::REQUIRED_ARGUMENT ],
-      [ '--verbose', '-v',          GetoptLong::NO_ARGUMENT ],
-      [ '--query', '-q',            GetoptLong::NO_ARGUMENT ],
-      [ '--check', '--valid', '-c', GetoptLong::NO_ARGUMENT ]
-    )
-  end
+ruby_version_is ""..."3.4" do
+  require 'getoptlong'
 
-  it "terminates option processing" do
-    argv [ "--size", "10k", "-v", "-q", "a.txt", "b.txt" ] do
-      @opts.get.should == [ "--size", "10k" ]
-      @opts.terminate
-      @opts.get.should == nil
+  describe "GetoptLong#terminate" do
+    before :each do
+      @opts = GetoptLong.new(
+        [ '--size', '-s',             GetoptLong::REQUIRED_ARGUMENT ],
+        [ '--verbose', '-v',          GetoptLong::NO_ARGUMENT ],
+        [ '--query', '-q',            GetoptLong::NO_ARGUMENT ],
+        [ '--check', '--valid', '-c', GetoptLong::NO_ARGUMENT ]
+      )
     end
-  end
 
-  it "returns self when option processing is terminated" do
-    @opts.terminate.should == @opts
-  end
+    it "terminates option processing" do
+      argv [ "--size", "10k", "-v", "-q", "a.txt", "b.txt" ] do
+        @opts.get.should == [ "--size", "10k" ]
+        @opts.terminate
+        @opts.get.should == nil
+      end
+    end
 
-  it "returns nil when option processing was already terminated" do
-    @opts.terminate
-    @opts.terminate.should == nil
+    it "returns self when option processing is terminated" do
+      @opts.terminate.should == @opts
+    end
+
+    it "returns nil when option processing was already terminated" do
+      @opts.terminate
+      @opts.terminate.should == nil
+    end
   end
 end
