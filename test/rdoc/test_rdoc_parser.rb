@@ -147,6 +147,8 @@ class TestRDocParser < RDoc::TestCase
     end
 
     assert_equal RDoc::Parser::Simple, @RP.can_parse(readme_ext)
+  ensure
+    File.unlink readme_ext
   end
 
   def test_can_parse_modeline_c
@@ -162,7 +164,6 @@ class TestRDocParser < RDoc::TestCase
   ensure
     File.unlink readme_inc
   end
-
 
   ##
   # Selenium hides a .jar file using a .txt extension.
