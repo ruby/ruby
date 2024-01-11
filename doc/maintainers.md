@@ -77,11 +77,6 @@ have commit right, others don't.
 * https://github.com/ruby/abbrev
 * https://rubygems.org/gems/abbrev
 
-#### lib/base64.rb
-* Yusuke Endoh (mame)
-* https://github.com/ruby/base64
-* https://rubygems.org/gems/base64
-
 #### lib/benchmark.rb
 * *unmaintained*
 * https://github.com/ruby/benchmark
@@ -482,6 +477,9 @@ have commit right, others don't.
 
 #### lib/getoptlong.rb
 * https://github.com/ruby/getoptlong
+
+#### lib/base64.rb
+* https://github.com/ruby/base64
 
 ## Platform Maintainers
 ### mswin64 (Microsoft Windows)
