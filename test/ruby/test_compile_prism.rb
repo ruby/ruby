@@ -1484,6 +1484,13 @@ module Prism
         foo.[]=(1,2)
       CODE
 
+      # With splat inside of []=
+      assert_prism_eval(<<~RUBY)
+        obj = Object.new
+        def obj.[]=(a, b); 10; end
+        obj[*[1]] = 3
+      RUBY
+
       assert_prism_eval(<<-CODE)
         def self.prism_opt_var_trail_hash(a = nil, *b, c, **d); end
         prism_opt_var_trail_hash("a")
