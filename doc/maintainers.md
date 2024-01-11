@@ -154,11 +154,6 @@ have commit right, others don't.
 * https://github.com/ruby/forwardable
 * https://rubygems.org/gems/forwardable
 
-#### lib/getoptlong.rb
-* *unmaintained*
-* https://github.com/ruby/getoptlong
-* https://rubygems.org/gems/getoptlong
-
 #### lib/ipaddr.rb
 * Akinori MUSHA (knu)
 * https://github.com/ruby/ipaddr
@@ -485,6 +480,8 @@ have commit right, others don't.
 #### mutex_m
 * https://github.com/ruby/mutex_m
 
+#### lib/getoptlong.rb
+* https://github.com/ruby/getoptlong
 
 ## Platform Maintainers
 ### mswin64 (Microsoft Windows)
