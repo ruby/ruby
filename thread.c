@@ -522,9 +522,9 @@ static VALUE rb_threadptr_raise(rb_thread_t *, int, VALUE *);
 static VALUE rb_thread_to_s(VALUE thread);
 
 void
-ruby_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
+ruby_thread_init_stack(rb_thread_t *th)
 {
-    native_thread_init_stack(th, local_in_parent_frame);
+    native_thread_init_stack(th);
 }
 
 const VALUE *

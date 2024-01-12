@@ -4174,7 +4174,7 @@ rb_vm_set_progname(VALUE filename)
 extern const struct st_hash_type rb_fstring_hash_type;
 
 void
-Init_BareVM(void *local_in_parent_frame)
+Init_BareVM(void)
 {
     /* VM bootstrap: phase 1 */
     rb_vm_t * vm = ruby_mimmalloc(sizeof(*vm));
@@ -4204,7 +4204,7 @@ Init_BareVM(void *local_in_parent_frame)
     th_init(th, 0, vm);
 
     rb_ractor_set_current_ec(th->ractor, th->ec);
-    ruby_thread_init_stack(th, local_in_parent_frame);
+    ruby_thread_init_stack(th);
 
     // setup ractor system
     rb_native_mutex_initialize(&vm->ractor.sync.lock);
