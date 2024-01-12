@@ -14315,7 +14315,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             if (
                 match1(parser, PM_TOKEN_PARENTHESIS_LEFT) ||
                 (accepts_command_call && (token_begins_expression_p(parser->current.type) || match3(parser, PM_TOKEN_UAMPERSAND, PM_TOKEN_USTAR, PM_TOKEN_USTAR_STAR))) ||
-                (pm_accepts_block_stack_p(parser) && match2(parser, PM_TOKEN_KEYWORD_DO, PM_TOKEN_BRACE_LEFT))
+                (pm_accepts_block_stack_p(parser) && match1(parser, PM_TOKEN_KEYWORD_DO)) ||
+		match1(parser, PM_TOKEN_BRACE_LEFT)
             ) {
                 pm_arguments_t arguments = { 0 };
                 parse_arguments_list(parser, &arguments, true, accepts_command_call);
@@ -14439,7 +14440,8 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 // a block, so we need to check for that here.
                 if (
                     (accepts_command_call && (token_begins_expression_p(parser->current.type) || match3(parser, PM_TOKEN_UAMPERSAND, PM_TOKEN_USTAR, PM_TOKEN_USTAR_STAR))) ||
-                    (pm_accepts_block_stack_p(parser) && match2(parser, PM_TOKEN_KEYWORD_DO, PM_TOKEN_BRACE_LEFT))
+                    (pm_accepts_block_stack_p(parser) && match1(parser, PM_TOKEN_KEYWORD_DO)) ||
+		    match1(parser, PM_TOKEN_BRACE_LEFT)
                 ) {
                     pm_arguments_t arguments = { 0 };
                     parse_arguments_list(parser, &arguments, true, accepts_command_call);

@@ -1,8 +1,8 @@
-@ ProgramNode (location: (1,0)-(149,18))
-├── locals: []
+@ ProgramNode (location: (1,0)-(154,6))
+├── locals: [:foo]
 └── statements:
-    @ StatementsNode (location: (1,0)-(149,18))
-    └── body: (length: 63)
+    @ StatementsNode (location: (1,0)-(154,6))
+    └── body: (length: 66)
         ├── @ CallNode (location: (1,0)-(1,14))
         │   ├── flags: ∅
         │   ├── receiver:
@@ -2304,48 +2304,109 @@
         │   │       │           └── closing_loc: (147,5)-(147,6) = ")"
         │   │       └── closing_loc: (147,6)-(147,7) = "}"
         │   └── closing_loc: (147,7)-(147,8) = "\""
-        └── @ DefNode (location: (149,0)-(149,18))
-            ├── name: :f
-            ├── name_loc: (149,4)-(149,5) = "f"
+        ├── @ DefNode (location: (149,0)-(149,18))
+        │   ├── name: :f
+        │   ├── name_loc: (149,4)-(149,5) = "f"
+        │   ├── receiver: ∅
+        │   ├── parameters:
+        │   │   @ ParametersNode (location: (149,6)-(149,7))
+        │   │   ├── requireds: (length: 0)
+        │   │   ├── optionals: (length: 0)
+        │   │   ├── rest:
+        │   │   │   @ RestParameterNode (location: (149,6)-(149,7))
+        │   │   │   ├── flags: ∅
+        │   │   │   ├── name: ∅
+        │   │   │   ├── name_loc: ∅
+        │   │   │   └── operator_loc: (149,6)-(149,7) = "*"
+        │   │   ├── posts: (length: 0)
+        │   │   ├── keywords: (length: 0)
+        │   │   ├── keyword_rest: ∅
+        │   │   └── block: ∅
+        │   ├── body:
+        │   │   @ StatementsNode (location: (149,10)-(149,13))
+        │   │   └── body: (length: 1)
+        │   │       └── @ CallNode (location: (149,10)-(149,13))
+        │   │           ├── flags: ignore_visibility
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :p
+        │   │           ├── message_loc: (149,10)-(149,11) = "p"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments:
+        │   │           │   @ ArgumentsNode (location: (149,12)-(149,13))
+        │   │           │   ├── flags: ∅
+        │   │           │   └── arguments: (length: 1)
+        │   │           │       └── @ SplatNode (location: (149,12)-(149,13))
+        │   │           │           ├── operator_loc: (149,12)-(149,13) = "*"
+        │   │           │           └── expression: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           └── block: ∅
+        │   ├── locals: [:*]
+        │   ├── locals_body_index: 1
+        │   ├── def_keyword_loc: (149,0)-(149,3) = "def"
+        │   ├── operator_loc: ∅
+        │   ├── lparen_loc: (149,5)-(149,6) = "("
+        │   ├── rparen_loc: (149,7)-(149,8) = ")"
+        │   ├── equal_loc: ∅
+        │   └── end_keyword_loc: (149,15)-(149,18) = "end"
+        ├── @ CallNode (location: (151,0)-(151,16))
+        │   ├── flags: ignore_visibility
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :foo
+        │   ├── message_loc: (151,0)-(151,3) = "foo"
+        │   ├── opening_loc: ∅
+        │   ├── arguments:
+        │   │   @ ArgumentsNode (location: (151,4)-(151,16))
+        │   │   ├── flags: ∅
+        │   │   └── arguments: (length: 2)
+        │   │       ├── @ IntegerNode (location: (151,4)-(151,5))
+        │   │       │   └── flags: decimal
+        │   │       └── @ CallNode (location: (151,7)-(151,16))
+        │   │           ├── flags: ignore_visibility
+        │   │           ├── receiver: ∅
+        │   │           ├── call_operator_loc: ∅
+        │   │           ├── name: :Bar
+        │   │           ├── message_loc: (151,7)-(151,10) = "Bar"
+        │   │           ├── opening_loc: ∅
+        │   │           ├── arguments: ∅
+        │   │           ├── closing_loc: ∅
+        │   │           └── block:
+        │   │               @ BlockNode (location: (151,11)-(151,16))
+        │   │               ├── locals: []
+        │   │               ├── locals_body_index: 0
+        │   │               ├── parameters: ∅
+        │   │               ├── body:
+        │   │               │   @ StatementsNode (location: (151,13)-(151,14))
+        │   │               │   └── body: (length: 1)
+        │   │               │       └── @ IntegerNode (location: (151,13)-(151,14))
+        │   │               │           └── flags: decimal
+        │   │               ├── opening_loc: (151,11)-(151,12) = "{"
+        │   │               └── closing_loc: (151,15)-(151,16) = "}"
+        │   ├── closing_loc: ∅
+        │   └── block: ∅
+        ├── @ LocalVariableWriteNode (location: (153,0)-(153,7))
+        │   ├── name: :foo
+        │   ├── depth: 0
+        │   ├── name_loc: (153,0)-(153,3) = "foo"
+        │   ├── value:
+        │   │   @ IntegerNode (location: (153,6)-(153,7))
+        │   │   └── flags: decimal
+        │   └── operator_loc: (153,4)-(153,5) = "="
+        └── @ CallNode (location: (154,0)-(154,6))
+            ├── flags: ignore_visibility
             ├── receiver: ∅
-            ├── parameters:
-            │   @ ParametersNode (location: (149,6)-(149,7))
-            │   ├── requireds: (length: 0)
-            │   ├── optionals: (length: 0)
-            │   ├── rest:
-            │   │   @ RestParameterNode (location: (149,6)-(149,7))
-            │   │   ├── flags: ∅
-            │   │   ├── name: ∅
-            │   │   ├── name_loc: ∅
-            │   │   └── operator_loc: (149,6)-(149,7) = "*"
-            │   ├── posts: (length: 0)
-            │   ├── keywords: (length: 0)
-            │   ├── keyword_rest: ∅
-            │   └── block: ∅
-            ├── body:
-            │   @ StatementsNode (location: (149,10)-(149,13))
-            │   └── body: (length: 1)
-            │       └── @ CallNode (location: (149,10)-(149,13))
-            │           ├── flags: ignore_visibility
-            │           ├── receiver: ∅
-            │           ├── call_operator_loc: ∅
-            │           ├── name: :p
-            │           ├── message_loc: (149,10)-(149,11) = "p"
-            │           ├── opening_loc: ∅
-            │           ├── arguments:
-            │           │   @ ArgumentsNode (location: (149,12)-(149,13))
-            │           │   ├── flags: ∅
-            │           │   └── arguments: (length: 1)
-            │           │       └── @ SplatNode (location: (149,12)-(149,13))
-            │           │           ├── operator_loc: (149,12)-(149,13) = "*"
-            │           │           └── expression: ∅
-            │           ├── closing_loc: ∅
-            │           └── block: ∅
-            ├── locals: [:*]
-            ├── locals_body_index: 1
-            ├── def_keyword_loc: (149,0)-(149,3) = "def"
-            ├── operator_loc: ∅
-            ├── lparen_loc: (149,5)-(149,6) = "("
-            ├── rparen_loc: (149,7)-(149,8) = ")"
-            ├── equal_loc: ∅
-            └── end_keyword_loc: (149,15)-(149,18) = "end"
+            ├── call_operator_loc: ∅
+            ├── name: :foo
+            ├── message_loc: (154,0)-(154,3) = "foo"
+            ├── opening_loc: ∅
+            ├── arguments: ∅
+            ├── closing_loc: ∅
+            └── block:
+                @ BlockNode (location: (154,4)-(154,6))
+                ├── locals: []
+                ├── locals_body_index: 0
+                ├── parameters: ∅
+                ├── body: ∅
+                ├── opening_loc: (154,4)-(154,5) = "{"
+                └── closing_loc: (154,5)-(154,6) = "}"
