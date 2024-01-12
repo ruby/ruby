@@ -29,7 +29,7 @@ typedef struct rb_strterm_literal_struct {
 } rb_strterm_literal_t;
 
 typedef struct rb_strterm_heredoc_struct {
-    VALUE lastline;	/* the string of line that contains `<<"END"` */
+    rb_parser_string_t *lastline;	/* the string of line that contains `<<"END"` */
     long offset;	/* the column of END in `<<"END"` */
     int sourceline;	/* lineno of the line that contains `<<"END"` */
     unsigned length;	/* the length of END in `<<"END"` */
@@ -65,6 +65,7 @@ RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_ruby_parser_encoding(rb_parser_t *p);
 int rb_ruby_parser_end_seen_p(rb_parser_t *p);
 int rb_ruby_parser_set_yydebug(rb_parser_t *p, int flag);
+rb_parser_string_t *rb_str_to_parser_string(rb_parser_t *p, VALUE str);
 
 RUBY_SYMBOL_EXPORT_END
 
@@ -96,7 +97,7 @@ int rb_ruby_ripper_initialized_p(rb_parser_t *p);
 void rb_ruby_ripper_parser_initialize(rb_parser_t *p);
 long rb_ruby_ripper_column(rb_parser_t *p);
 long rb_ruby_ripper_token_len(rb_parser_t *p);
-VALUE rb_ruby_ripper_lex_lastline(rb_parser_t *p);
+rb_parser_string_t *rb_ruby_ripper_lex_lastline(rb_parser_t *p);
 VALUE rb_ruby_ripper_lex_state_name(struct parser_params *p, int state);
 struct parser_params *rb_ruby_ripper_parser_allocate(void);
 #endif
