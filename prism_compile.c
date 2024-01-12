@@ -3408,42 +3408,38 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         for (size_t i = 0; i < conditions.size; i++) {
             label = NEW_LABEL(lineno);
             conditions_labels[i] = label;
-            if (has_predicate) {
-                pm_when_node_t *when_node = (pm_when_node_t *)conditions.nodes[i];
+            pm_when_node_t *when_node = (pm_when_node_t *)conditions.nodes[i];
 
-                for (size_t i = 0; i < when_node->conditions.size; i++) {
-                    pm_node_t *condition_node = when_node->conditions.nodes[i];
+            for (size_t i = 0; i < when_node->conditions.size; i++) {
+                pm_node_t *condition_node = when_node->conditions.nodes[i];
 
-                    if (PM_NODE_TYPE_P(condition_node, PM_SPLAT_NODE)) {
-                        ADD_INSN (ret, &dummy_line_node, dup);
-                        PM_COMPILE_NOT_POPPED(condition_node);
-                        ADD_INSN1(ret, &dummy_line_node, splatarray, Qfalse);
-                        ADD_INSN1(ret, &dummy_line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE | VM_CHECKMATCH_ARRAY));
-                    }
-                    else {
-                        PM_COMPILE_NOT_POPPED(condition_node);
+                if (PM_NODE_TYPE_P(condition_node, PM_SPLAT_NODE)) {
+                    ADD_INSN (ret, &dummy_line_node, dup);
+                    PM_COMPILE_NOT_POPPED(condition_node);
+                    ADD_INSN1(ret, &dummy_line_node, splatarray, Qfalse);
+                    ADD_INSN1(ret, &dummy_line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE | VM_CHECKMATCH_ARRAY));
+                }
+                else {
+                    PM_COMPILE_NOT_POPPED(condition_node);
+                    if (has_predicate) {
                         ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
                         ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idEqq, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
                     }
-
-                    ADD_INSNL(ret, &dummy_line_node, branchif, label);
                 }
-            }
-            else {
-                ADD_INSNL(ret, &dummy_line_node, jump, label);
-                PM_PUTNIL;
+
+                ADD_INSNL(ret, &dummy_line_node, branchif, label);
             }
         }
 
         if (has_predicate) {
             PM_POP;
+        }
 
-            if (case_node->consequent) {
-                 PM_COMPILE((pm_node_t *)case_node->consequent);
-            }
-            else {
-                PM_PUTNIL_UNLESS_POPPED;
-            }
+        if (case_node->consequent) {
+             PM_COMPILE((pm_node_t *)case_node->consequent);
+        }
+        else {
+            PM_PUTNIL_UNLESS_POPPED;
         }
 
         ADD_INSNL(ret, &dummy_line_node, jump, end_label);
