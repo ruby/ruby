@@ -751,6 +751,10 @@ Rubyの識別子として有効である必要はありません．
 
 +reserved+ は0で埋めなければなりません．
 
++parent+ はこの構造体が継承する別の構造体に対応する +rb_data_type_t+ を
+指定します．その場合<tt>TypedData_Get_Struct()</tt>が派生オブジェクトも
+受け付けるようになります．
+
 +data+ にはユーザー定義の任意の値を指定できます．Rubyはこの値に
 は関知しないので，好きに使ってください．
 
@@ -782,6 +786,16 @@ Rubyの識別子として有効である必要はありません．
   GC}[rdoc-ref:@Appendix+D.+-E4-B8-96-E4-BB-A3-E5-88-A5GC]
   も参照してください．
 
++RUBY_TYPED_FROZEN_SHAREABLE+ ::
+
+  オブジェクトがfreezeされていればRactor間で共有できることを示します．
+  {Appendix F. Ractor
+  support}[rdoc-ref:extension.rdoc@Appendix+F.+Ractor+support]を参照し
+  てください．
+
+  このフラグがセットされていなければ，<tt>Ractor.make_shareable()</tt>
+  で共有可能にはできません．
+
 Cの構造体の割当と対応するオブジェクトの生成を同時に行うマク
 ロとして以下のものが提供されています．
 
@@ -807,6 +821,59 @@ Cの構造体へのポインタは変数 _sval_ に代入されます．
 
 これらのマクロの使い方はちょっと分かりにくいので，後で説明す
 る例題を参照してください．
+
+==== 宣言的マーク/コンパクト構造体参照
+
+構造体の参照しているRubyオブジェクトが，条件付きロジックや複雑なデータ
+構造でラップされていない，単純な参照だけの場合は，VALUEへの参照のオフセッ
+ト(edge)によってマーク付けと参照更新を宣言することもできます．
+
+これにより，+dmark+ や +dcompact+ コールバック関数を定義せずに済みます．
+
+参照が配置されている構造体内のオフセットへのVALUEポインタの静的リストを
+定義し，この参照リストを指すように +data+ メンバーを設定します． 参照リ
+ストは +RUBY_END_REFS+ で終わる必要があります．
+
+以下のマクロが使用できます:
+
+<tt>RUBY_TYPED_DECL_MARKING</tt>  ::
+  +ruby_data_type_t+ がedgeを使用していることを示すフラグ
+
+<tt>RUBY_REFERENCES(ref_list_name)</tt> ::
+  _ref_list_name_ を参照リストとして定義する
+<tt>RUBY_REF_END</tt> :: 参照リストの終端
+<tt>RUBY_REF_EDGE(struct, member)</tt> ::
+  _struct_ から _member_ をedgeとして宣言する． +RUBY_REFERENCES_START+
+  の後で使用する．
++RUBY_REFS_LIST_PTR+ ::
+  参照リストを +dmark+ として使用できるように変換する
+
+以下は +dir.c+ で定義されている Dir の例です．
+
+  // ラップされる構造体．3つのメンバの内，2番目が他のrubyオブジェクトへの参照
+  struct dir_data {
+      DIR *dir;
+      const VALUE path;
+      rb_encoding *enc;
+  }
+
+  // `path` エントリを持つ参照リスト `dir_refs` を定義
+  // RUBY_REF_ENDで終了していなければならない
+  RUBY_REFERENCES(dir_refs) = {
+      RUBY_REF_EDGE(dir_data, path),
+      RUBY_REF_END
+  };
+
+  // RUBY_TYPED_DECL_MARKINGをセットして定義された参照リストを"dmark"に使用しているので，
+  // マーク用コールバック関数は不要
+  static const rb_data_type_t dir_data_type = {
+      "dir",
+      {RUBY_REFS_LIST_PTR(dir_refs), dir_free, dir_memsize,},
+      0, NULL, RUBY_TYPED_WB_PROTECTED | RUBY_TYPED_FREE_IMMEDIATELY | RUBY_TYPED_DECL_MARKING
+  };
+
+このように，単純な参照を宣言的に宣言することで，GCがマークや移動，コン
+パクション中の参照の自動更新などをできるようになります．
 
 == 例: dbmの拡張ライブラリの作成
 
