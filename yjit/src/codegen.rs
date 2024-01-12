@@ -1637,18 +1637,6 @@ fn gen_expandarray(
 
     let array_opnd = asm.stack_opnd(0);
 
-    // If the array operand is nil, just push on nils
-    if asm.ctx.get_opnd_type(array_opnd.into()) == Type::Nil {
-        asm.stack_pop(1); // pop after using the type info
-        // special case for a, b = nil pattern
-        // push N nils onto the stack
-        for _ in 0..num {
-            let push_opnd = asm.stack_push(Type::Nil);
-            asm.mov(push_opnd, Qnil.into());
-        }
-        return Some(KeepCompiling);
-    }
-
     // Defer compilation so we can specialize on a runtime `self`
     if !jit.at_current_insn() {
         defer_compilation(jit, asm, ocb);
@@ -1657,10 +1645,52 @@ fn gen_expandarray(
 
     let comptime_recv = jit.peek_at_stack(&asm.ctx, 0);
 
-    // If the comptime receiver is not an array, bail
-    if comptime_recv.class_of() != unsafe { rb_cArray } {
-        gen_counter_incr(asm, Counter::expandarray_comptime_not_array);
-        return None;
+    // If the comptime receiver is not an array
+    if !unsafe { RB_TYPE_P(comptime_recv, RUBY_T_ARRAY) } {
+        // at compile time, ensure to_ary is not defined
+        let target_cme = unsafe { rb_callable_method_entry_or_negative(comptime_recv.class_of(), ID!(to_ary)) };
+        let cme_def_type = unsafe { get_cme_def_type(target_cme) };
+
+        // if to_ary is defined, return can't compile so to_ary can be called
+        if cme_def_type != VM_METHOD_TYPE_UNDEF {
+            gen_counter_incr(asm, Counter::expandarray_to_ary);
+            return None;
+        }
+
+        // invalidate compile block if to_ary is later defined
+        jit.assume_method_lookup_stable(asm, ocb, target_cme);
+
+        jit_guard_known_klass(
+            jit,
+            asm,
+            ocb,
+            comptime_recv.class_of(),
+            array_opnd,
+            array_opnd.into(),
+            comptime_recv,
+            SEND_MAX_DEPTH,
+            Counter::expandarray_not_array,
+        );
+
+        let opnd = asm.stack_pop(1); // pop after using the type info
+
+        // If we don't actually want any values, then just keep going
+        if num == 0 {
+            return Some(KeepCompiling);
+        }
+
+        // load opnd to avoid a race because we are also pushing onto the stack
+        let opnd = asm.load(opnd);
+
+        for _ in 1..num {
+            let push_opnd = asm.stack_push(Type::Nil);
+            asm.mov(push_opnd, Qnil.into());
+        }
+
+        let push_opnd = asm.stack_push(Type::Unknown);
+        asm.mov(push_opnd, opnd);
+
+        return Some(KeepCompiling);
     }
 
     // Get the compile-time array length

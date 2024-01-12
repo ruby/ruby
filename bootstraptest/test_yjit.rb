@@ -2494,6 +2494,23 @@ assert_equal '[:not_array, nil, nil]', %q{
   expandarray_not_array(obj)
 }
 
+assert_equal '[1, 2]', %q{
+  class NilClass
+    private
+    def to_ary
+      [1, 2]
+    end
+  end
+
+  def expandarray_redefined_nilclass
+    a, b = nil
+    [a, b]
+  end
+
+  expandarray_redefined_nilclass
+  expandarray_redefined_nilclass
+} unless rjit_enabled?
+
 assert_equal '[1, 2, nil]', %q{
   def expandarray_rhs_too_small
     a, b, c = [1, 2]

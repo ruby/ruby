@@ -781,6 +781,7 @@ pub(crate) mod ids {
         name: max                content: b"max"
         name: hash               content: b"hash"
         name: respond_to_missing content: b"respond_to_missing?"
+        name: to_ary             content: b"to_ary"
     }
 }
 
