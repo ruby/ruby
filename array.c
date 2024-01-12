@@ -8643,7 +8643,6 @@ Init_Array(void)
     rb_define_method(rb_cArray, "unshift", rb_ary_unshift_m, -1);
     rb_define_alias(rb_cArray,  "prepend", "unshift");
     rb_define_method(rb_cArray, "insert", rb_ary_insert, -1);
-    rb_define_method(rb_cArray, "each", rb_ary_each, 0);
     rb_define_method(rb_cArray, "each_index", rb_ary_each_index, 0);
     rb_define_method(rb_cArray, "reverse_each", rb_ary_reverse_each, 0);
     rb_define_method(rb_cArray, "length", rb_ary_length, 0);

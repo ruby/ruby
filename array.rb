@@ -1,5 +1,59 @@
 class Array
   # call-seq:
+  #   array.each {|element| ... } -> self
+  #   array.each -> Enumerator
+  #
+  # Iterates over array elements.
+  #
+  # When a block given, passes each successive array element to the block;
+  # returns +self+:
+  #
+  #   a = [:foo, 'bar', 2]
+  #   a.each {|element|  puts "#{element.class} #{element}" }
+  #
+  # Output:
+  #
+  #   Symbol foo
+  #   String bar
+  #   Integer 2
+  #
+  # Allows the array to be modified during iteration:
+  #
+  #   a = [:foo, 'bar', 2]
+  #   a.each {|element| puts element; a.clear if element.to_s.start_with?('b') }
+  #
+  # Output:
+  #
+  #   foo
+  #   bar
+  #
+  # When no block given, returns a new Enumerator:
+  #   a = [:foo, 'bar', 2]
+  #
+  #   e = a.each
+  #   e # => #<Enumerator: [:foo, "bar", 2]:each>
+  #   a1 = e.each {|element|  puts "#{element.class} #{element}" }
+  #
+  # Output:
+  #
+  #   Symbol foo
+  #   String bar
+  #   Integer 2
+  #
+  # Related: #each_index, #reverse_each.
+  def each
+    unless block_given?
+      return to_enum(:each) { self.length }
+    end
+    i = 0
+    while i < self.length
+      yield self[i]
+      i = i.succ
+    end
+    self
+  end
+
+  # call-seq:
   #    array.shuffle!(random: Random) -> array
   #
   # Shuffles the elements of +self+ in place.

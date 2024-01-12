@@ -373,7 +373,7 @@ class TestGCCompact < Test::Unit::TestCase
 
       Fiber.new {
         $ary = OBJ_COUNT.times.map { Foo.new }
-        $ary.each(&:add_ivars)
+        $ary.reverse_each(&:add_ivars)
 
         GC.start
         Foo.new.add_ivars
