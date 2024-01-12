@@ -1651,8 +1651,9 @@ fn gen_expandarray(
         let target_cme = unsafe { rb_callable_method_entry_or_negative(comptime_recv.class_of(), ID!(to_ary)) };
         let cme_def_type = unsafe { get_cme_def_type(target_cme) };
 
+        // if to_ary is defined, return can't compile so to_ary can be called
         if cme_def_type != VM_METHOD_TYPE_UNDEF {
-            // if to_ary is defined, return can't compile so to_ary can be called
+            gen_counter_incr(asm, Counter::expandarray_to_ary);
             return None;
         }
 

@@ -469,7 +469,7 @@ make_counters! {
     expandarray_splat,
     expandarray_postarg,
     expandarray_not_array,
-    expandarray_comptime_not_array,
+    expandarray_to_ary,
     expandarray_chain_max_depth,
 
     // getblockparam
