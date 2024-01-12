@@ -153,18 +153,16 @@ ruby_free_proctitle(void)
 
 	if (!orig_environ) return; /* environ is allocated by OS */
 
-	for (int i = 0; environ[i] != NULL; i++) {
-		xfree(environ[i]);
-	}
-
-	/* ruby_setenv could allocate a new environ, so we need to free both environ
-	 * orig_environ in that case. */
+	/* ruby_setenv could allocate a new environ, so we need to free orig_environ
+	 * in that case. */
 	if (environ != orig_environ) {
+		for (int i = 0; orig_environ[i] != NULL; i++) {
+			xfree(orig_environ[i]);
+		}
+
 		xfree(orig_environ);
 		orig_environ = NULL;
 	}
-
-	xfree(environ);
 #endif
 }
 
