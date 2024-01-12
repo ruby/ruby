@@ -2700,9 +2700,16 @@ load_file_internal(VALUE argp_v)
                 }
 
               start_read:
-                str += len - 1;
-                if (*str == '\n') *str-- = '\0';
-                if (*str == '\r') *str-- = '\0';
+                if (str[len-1] == '\n') {
+                    str[len-1] = '\0';
+                }
+                if (str[len-1] == '\r') {
+                    str[len-1] = '\0';
+                }
+                if (str[len-1] != '\0') {
+                    str += len - 1;
+                    str[len-1] = '\0';
+                }
                 /* ruby_engine should not contain a space */
                 if ((p = strstr(p, " -")) != 0) {
                     opt->warning = 0;
