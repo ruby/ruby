@@ -570,6 +570,12 @@ module Prism
 
     def test_LocalVariableReadNode
       assert_location(LocalVariableReadNode, "foo = 1; foo", 9...12)
+      assert_location(LocalVariableReadNode, "-> { it }", 5...7) do |node|
+        node.body.body.first
+      end
+      assert_location(LocalVariableReadNode, "foo { it }", 6...8) do |node|
+        node.block.body.body.first
+      end
     end
 
     def test_LocalVariableTargetNode

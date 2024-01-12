@@ -4196,12 +4196,10 @@ pm_local_variable_or_write_node_create(pm_parser_t *parser, pm_node_t *target, c
 }
 
 /**
- * Allocate a new LocalVariableReadNode node.
+ * Allocate a new LocalVariableReadNode node with constant_id.
  */
 static pm_local_variable_read_node_t *
-pm_local_variable_read_node_create(pm_parser_t *parser, const pm_token_t *name, uint32_t depth) {
-    pm_constant_id_t name_id = pm_parser_constant_id_token(parser, name);
-
+pm_local_variable_read_node_create_constant_id(pm_parser_t *parser, const pm_token_t *name, pm_constant_id_t name_id, uint32_t depth) {
     if (parser->current_param_name == name_id) {
         pm_parser_err_token(parser, name, PM_ERR_PARAMETER_CIRCULAR);
     }
@@ -4218,6 +4216,15 @@ pm_local_variable_read_node_create(pm_parser_t *parser, const pm_token_t *name, 
     };
 
     return node;
+}
+
+/**
+ * Allocate a new LocalVariableReadNode node.
+ */
+static pm_local_variable_read_node_t *
+pm_local_variable_read_node_create(pm_parser_t *parser, const pm_token_t *name, uint32_t depth) {
+    pm_constant_id_t name_id = pm_parser_constant_id_token(parser, name);
+    return pm_local_variable_read_node_create_constant_id(parser, name, name_id, depth);
 }
 
 /**
@@ -4242,6 +4249,57 @@ pm_local_variable_write_node_create(pm_parser_t *parser, pm_constant_id_t name, 
         .operator_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(operator)
     };
 
+    return node;
+}
+
+/**
+ * Returns true if the given bounds comprise `it`.
+ */
+static inline bool
+pm_token_is_it(const uint8_t *start, const uint8_t *end) {
+    return (end - start == 2) && (start[0] == 'i') && (start[1] == 't');
+}
+
+/**
+ * Returns true if the given node is `it` default parameter.
+ */
+static inline bool
+pm_node_is_it(pm_parser_t *parser, pm_node_t *node) {
+    // Check if it's a local variable reference
+    if (node->type != PM_CALL_NODE) {
+        return false;
+    }
+
+    // Check if it's a variable call
+    pm_call_node_t *call_node = (pm_call_node_t *) node;
+    if (!pm_call_node_variable_call_p(call_node)) {
+        return false;
+    }
+
+    // Check if it's called `it`
+    pm_constant_id_t id = ((pm_call_node_t *)node)->name;
+    pm_constant_t *constant = pm_constant_pool_id_to_constant(&parser->constant_pool, id);
+    return pm_token_is_it(constant->start, constant->start + constant->length);
+}
+
+/**
+ * Convert a `it` variable call node to a node for `it` default parameter.
+ */
+static pm_node_t *
+pm_node_check_it(pm_parser_t *parser, pm_node_t *node) {
+    if (
+        (parser->version != PM_OPTIONS_VERSION_CRUBY_3_3_0) &&
+        !parser->current_scope->closed &&
+        pm_node_is_it(parser, node)
+    ) {
+        if (parser->current_scope->explicit_params) {
+            pm_parser_err_previous(parser, PM_ERR_IT_NOT_ALLOWED);
+        } else {
+            pm_node_destroy(parser, node);
+            pm_constant_id_t name_id = pm_parser_constant_id_constant(parser, "0it", 3);
+            node = (pm_node_t *) pm_local_variable_read_node_create_constant_id(parser, &parser->previous, name_id, 0);
+        }
+    }
     return node;
 }
 
@@ -14449,6 +14507,31 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             if ((binding_power == PM_BINDING_POWER_STATEMENT) && match1(parser, PM_TOKEN_COMMA)) {
                 node = parse_targets_validate(parser, node, PM_BINDING_POWER_INDEX);
             }
+            else {
+                // Check if `it` is not going to be assigned.
+                switch (parser->current.type) {
+                  case PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL:
+                  case PM_TOKEN_AMPERSAND_EQUAL:
+                  case PM_TOKEN_CARET_EQUAL:
+                  case PM_TOKEN_EQUAL:
+                  case PM_TOKEN_GREATER_GREATER_EQUAL:
+                  case PM_TOKEN_LESS_LESS_EQUAL:
+                  case PM_TOKEN_MINUS_EQUAL:
+                  case PM_TOKEN_PARENTHESIS_RIGHT:
+                  case PM_TOKEN_PERCENT_EQUAL:
+                  case PM_TOKEN_PIPE_EQUAL:
+                  case PM_TOKEN_PIPE_PIPE_EQUAL:
+                  case PM_TOKEN_PLUS_EQUAL:
+                  case PM_TOKEN_SLASH_EQUAL:
+                  case PM_TOKEN_STAR_EQUAL:
+                  case PM_TOKEN_STAR_STAR_EQUAL:
+                    break;
+                  default:
+                    // Once we know it's neither a method call nor an assignment,
+                    // we can finally create `it` default parameter.
+                    node = pm_node_check_it(parser, node);
+                }
+            }
 
             return node;
         }
@@ -15056,6 +15139,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
                     if (match2(parser, PM_TOKEN_DOT, PM_TOKEN_COLON_COLON)) {
                         receiver = parse_variable_call(parser);
+                        receiver = pm_node_check_it(parser, receiver);
 
                         saved_param_name = pm_parser_current_param_name_unset(parser);
                         pm_parser_scope_push(parser, true);

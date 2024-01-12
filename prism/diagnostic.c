@@ -175,6 +175,7 @@ static const char* const diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_INVALID_PERCENT]                    = "invalid `%` token", // TODO WHAT?
     [PM_ERR_INVALID_TOKEN]                      = "invalid token", // TODO WHAT?
     [PM_ERR_INVALID_VARIABLE_GLOBAL]            = "invalid global variable",
+    [PM_ERR_IT_NOT_ALLOWED]                     = "`it` is not allowed when an ordinary parameter is defined",
     [PM_ERR_LAMBDA_OPEN]                        = "expected a `do` keyword or a `{` to open the lambda block",
     [PM_ERR_LAMBDA_TERM_BRACE]                  = "expected a lambda block beginning with `{` to end with `}`",
     [PM_ERR_LAMBDA_TERM_END]                    = "expected a lambda block beginning with `do` to end with `end`",

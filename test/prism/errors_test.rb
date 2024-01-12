@@ -2069,6 +2069,13 @@ module Prism
       ], compare_ripper: false # Ripper does not check 'both block arg and actual block given'.
     end
 
+    def test_it_with_ordinary_parameter
+      source = "proc { || it }"
+      errors = [["`it` is not allowed when an ordinary parameter is defined", 10..12]]
+
+      assert_errors expression(source), source, errors, compare_ripper: false
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")
