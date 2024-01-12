@@ -2887,6 +2887,294 @@ pm_compile_multi_assign_params(pm_multi_target_node_t *multi, st_table *index_lo
     return local_index;
 }
 
+/**
+ * A target node represents an indirect write to a variable or method call. In
+ * order to compile it, the parent expression needs to be compiled first. For
+ * simple writes this is nothing, but for more complex ones this could be the
+ * expression owning the constant, the receiver of a method, etc.
+ */
+static inline void
+pm_compile_target_node_parent(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, const uint8_t *src, pm_scope_node_t *scope_node) {
+    int lineno = (int) pm_newline_list_line_column(&scope_node->parser->newline_list, node->location.start).line;
+    NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
+
+    switch (PM_NODE_TYPE(node)) {
+      case PM_LOCAL_VARIABLE_TARGET_NODE:
+      case PM_CLASS_VARIABLE_TARGET_NODE:
+      case PM_CONSTANT_TARGET_NODE:
+      case PM_GLOBAL_VARIABLE_TARGET_NODE:
+      case PM_INSTANCE_VARIABLE_TARGET_NODE:
+        // These nodes don't have a parent, they are represented by a single
+        // write instruction once the values are being allocated. In this
+        // case we don't need to compile anything.
+        break;
+      case PM_CONSTANT_PATH_TARGET_NODE: {
+        // For a constant path node, we need to compile the object that is
+        // going to hold the constant that is being written. It's going to
+        // be either the parent expression (if there is one) or Object (if
+        // :: was used as a prefix).
+        const pm_constant_path_target_node_t *target = (const pm_constant_path_target_node_t *) node;
+
+        if (target->parent != NULL) {
+            PM_COMPILE_NOT_POPPED(target->parent);
+        } else {
+            ADD_INSN1(ret, &dummy_line_node, putobject, rb_cObject);
+        }
+
+        break;
+      }
+      case PM_CALL_TARGET_NODE: {
+        // For a call target node, we need to compile the receiver of the
+        // call. This is always going to be present (as otherwise it would
+        // be a local variable write).
+        const pm_call_target_node_t *target = (const pm_call_target_node_t *) node;
+        PM_COMPILE_NOT_POPPED(target->receiver);
+        break;
+      }
+      case PM_INDEX_TARGET_NODE:
+      case PM_MULTI_TARGET_NODE:
+        rb_bug("Unimplemented node type: %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
+        break;
+      default:
+        rb_bug("Unexpected node type: %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
+        break;
+    }
+}
+
+/**
+ * A target node represents an indirect write to a variable or a method call.
+ * Compiling one of these nodes assumes that any values that it needs to
+ * reference are already on the stack.
+ */
+static void
+pm_compile_target_node_write(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, const uint8_t *src, pm_scope_node_t *scope_node) {
+    int lineno = (int) pm_newline_list_line_column(&scope_node->parser->newline_list, node->location.start).line;
+    NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
+
+    switch (PM_NODE_TYPE(node)) {
+      case PM_LOCAL_VARIABLE_TARGET_NODE:
+      case PM_CLASS_VARIABLE_TARGET_NODE:
+      case PM_CONSTANT_TARGET_NODE:
+      case PM_GLOBAL_VARIABLE_TARGET_NODE:
+      case PM_INSTANCE_VARIABLE_TARGET_NODE:
+        // These nodes all are represented by a single write instruction.
+        PM_COMPILE_NOT_POPPED(node);
+        break;
+      case PM_CONSTANT_PATH_TARGET_NODE: {
+        // For a constant path node, the owner of the constant is already on the
+        // stack. We just need to grab it and then write the constant.
+        const pm_constant_path_target_node_t *target = (const pm_constant_path_target_node_t *) node;
+        ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
+
+        pm_constant_id_t name = ((const pm_constant_read_node_t *) target->child)->name;
+        ADD_INSN1(ret, &dummy_line_node, setconstant, ID2SYM(pm_constant_id_lookup(scope_node, name)));
+        ADD_INSN(ret, &dummy_line_node, pop);
+        break;
+      }
+      case PM_CALL_TARGET_NODE: {
+        // For a call target node, the receiver of the method is already on the
+        // stack. We just need to grab it and then call the method.
+        const pm_call_target_node_t *target = (const pm_call_target_node_t *) node;
+        ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
+        ADD_INSN(ret, &dummy_line_node, swap);
+        ADD_SEND(ret, &dummy_line_node, pm_constant_id_lookup(scope_node, target->name), INT2NUM(1));
+        ADD_INSN(ret, &dummy_line_node, pop);
+        ADD_INSN(ret, &dummy_line_node, pop);
+        break;
+      }
+      case PM_INDEX_TARGET_NODE:
+      case PM_MULTI_TARGET_NODE:
+        rb_bug("Unimplemented node type: %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
+        break;
+      default:
+        rb_bug("Unexpected node type: %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
+        break;
+    }
+}
+
+/**
+ * When we're compiling a multi target node, we need to first walk over it and
+ * compile all of the receivers/targets/arguments. These have to be evaluated
+ * first before anything else is. Then whatever node is used this can be
+ * evaluated. Finally, this node will need to be revisited to compile the writes
+ * that it represents.
+ */
+static void
+pm_compile_multi_target_node_parents(rb_iseq_t *iseq, const pm_multi_target_node_t *node, LINK_ANCHOR *const ret, const uint8_t *src, pm_scope_node_t *scope_node) {
+    for (size_t index = 0; index < node->lefts.size; index++) {
+        pm_compile_target_node_parent(iseq, node->lefts.nodes[index], ret, src, scope_node);
+    }
+
+    if ((node->rest != NULL) && PM_NODE_TYPE_P(node->rest, PM_SPLAT_NODE)) {
+        pm_splat_node_t *rest = (pm_splat_node_t *) node->rest;
+
+        if (rest->expression != NULL) {
+            pm_compile_target_node_parent(iseq, rest->expression, ret, src, scope_node);
+        }
+    }
+
+    for (size_t index = 0; index < node->rights.size; index++) {
+        pm_compile_target_node_parent(iseq, node->rights.nodes[index], ret, src, scope_node);
+    }
+}
+
+/**
+ * When we're compiling a multi target node, we need to revisit it after all of
+ * the values that are going to be written are on the stack. At this point we
+ * need to compile all of the writes that are going to happen.
+ */
+static void
+pm_compile_multi_target_node_writes(rb_iseq_t *iseq, const pm_multi_target_node_t *node, LINK_ANCHOR *const ret, const uint8_t *src, pm_scope_node_t *scope_node) {
+    int lineno = (int) pm_newline_list_line_column(&scope_node->parser->newline_list, node->base.location.start).line;
+    NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
+
+    // The first thing we're going to compile is an instruction to spread the
+    // top value of the stack out into the number of values that we're going to
+    // write.
+    ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(node->lefts.size), INT2FIX(node->rest ? 1 : 0));
+
+    // Next, we'll go through all of the leading targets.
+    for (size_t index = 0; index < node->lefts.size; index++) {
+        pm_compile_target_node_write(iseq, node->lefts.nodes[index], ret, src, scope_node);
+    }
+
+    // Next, we'll compile the rest target if there is one.
+    if ((node->rest != NULL) && PM_NODE_TYPE_P(node->rest, PM_SPLAT_NODE)) {
+        pm_splat_node_t *rest = (pm_splat_node_t *) node->rest;
+
+        if (rest->expression != NULL) {
+            pm_compile_target_node_write(iseq, rest->expression, ret, src, scope_node);
+        }
+    }
+
+    // Finally, we'll compile the trailing targets.
+    if (node->rights.size > 0) {
+        ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(node->rights.size), INT2FIX(2));
+
+        for (size_t index = 0; index < node->rights.size; index++) {
+            pm_compile_target_node_write(iseq, node->rights.nodes[index], ret, src, scope_node);
+        }
+    }
+}
+
+/**
+ * When compiling a for loop, we need to write the iteration variable to
+ * whatever expression exists in the index slot. This function performs that
+ * compilation.
+ */
+static void
+pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, const uint8_t *src, pm_scope_node_t *scope_node) {
+    int lineno = (int) pm_newline_list_line_column(&scope_node->parser->newline_list, node->location.start).line;
+    NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
+
+    switch (PM_NODE_TYPE(node)) {
+      case PM_LOCAL_VARIABLE_TARGET_NODE: {
+        // For local variables, all we have to do is retrieve the value and then
+        // compile the index node.
+        ADD_GETLOCAL(ret, &dummy_line_node, 1, 0);
+        PM_COMPILE_NOT_POPPED(node);
+        break;
+      }
+      case PM_CLASS_VARIABLE_TARGET_NODE:
+      case PM_CONSTANT_TARGET_NODE:
+      case PM_GLOBAL_VARIABLE_TARGET_NODE:
+      case PM_INSTANCE_VARIABLE_TARGET_NODE:
+      case PM_CONSTANT_PATH_TARGET_NODE:
+      case PM_CALL_TARGET_NODE: {
+        // For other targets, we need to potentially compile the parent or
+        // owning expression of this target, then retrieve the value, expand it,
+        // and then compile the necessary writes.
+        pm_compile_target_node_parent(iseq, node, ret, src, scope_node);
+        ADD_GETLOCAL(ret, &dummy_line_node, 1, 0);
+        ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(1), INT2FIX(0));
+        pm_compile_target_node_write(iseq, node, ret, src, scope_node);
+        break;
+      }
+      case PM_INDEX_TARGET_NODE: {
+        // For index targets, we need to compile the receiver, arguments,
+        // retrieve the value and expand the array, then potentially compile the
+        // block, and finally compile the method call. Finally, we need to pop
+        // the receiver and the value off the stack.
+        const pm_index_target_node_t *target = (const pm_index_target_node_t*) node;
+        PM_COMPILE_NOT_POPPED(target->receiver);
+
+        int orig_argc = 0;
+        int flags = 0;
+        struct rb_callinfo_kwarg *keywords = NULL;
+
+        if (target->arguments != NULL) {
+            orig_argc = pm_setup_args(target->arguments, &flags, &keywords, iseq, ret, src, false, scope_node, dummy_line_node, scope_node->parser);
+        }
+
+        ADD_GETLOCAL(ret, &dummy_line_node, 1, 0);
+        ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(1), INT2FIX(0));
+
+        if (orig_argc == 0) {
+            ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
+            ADD_INSN(ret, &dummy_line_node, swap);
+            ADD_SEND_R(ret, &dummy_line_node, idASET, INT2NUM(orig_argc + 1), NULL, INT2FIX(flags), keywords);
+            ADD_INSN(ret, &dummy_line_node, pop);
+            ADD_INSN(ret, &dummy_line_node, pop);
+        } else {
+            ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(orig_argc + 1));
+            for (int index = 0; index < orig_argc + 1; index++) {
+                ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(orig_argc + 1));
+            }
+            ADD_SEND_R(ret, &dummy_line_node, idASET, INT2NUM(orig_argc + 1), NULL, INT2FIX(flags), keywords);
+            for (int index = 0; index < orig_argc + 3; index++) {
+                ADD_INSN(ret, &dummy_line_node, pop);
+            }
+        }
+
+        break;
+      }
+      case PM_MULTI_TARGET_NODE: {
+        // If we have a multi target node, then we're going to do a bunch of
+        // work to convert the value into an array before we expand it.
+        // Effectively we're trying to accomplish:
+        //
+        //     (args.length == 1 && Array.try_convert(args[0])) || args
+        //
+        // First, we'll compile the left-hand side of any of the target in the
+        // multi target node. This ensures the receivers/parents/arguments are
+        // all on the stack. Then we'll do the conversion mentioned above.
+        // Finally, we'll iterate through the targets again and write all of the
+        // values.
+        const pm_multi_target_node_t *target = (const pm_multi_target_node_t *) node;
+        pm_compile_multi_target_node_parents(iseq, target, ret, src, scope_node);
+
+        LABEL *not_single = NEW_LABEL(lineno);
+        LABEL *not_ary = NEW_LABEL(lineno);
+
+        ADD_GETLOCAL(ret, &dummy_line_node, 1, 0);
+        ADD_INSN(ret, &dummy_line_node, dup);
+        ADD_CALL(ret, &dummy_line_node, idLength, INT2FIX(0));
+        ADD_INSN1(ret, &dummy_line_node, putobject, INT2FIX(1));
+        ADD_CALL(ret, &dummy_line_node, idEq, INT2FIX(1));
+        ADD_INSNL(ret, &dummy_line_node, branchunless, not_single);
+        ADD_INSN(ret, &dummy_line_node, dup);
+        ADD_INSN1(ret, &dummy_line_node, putobject, INT2FIX(0));
+        ADD_CALL(ret, &dummy_line_node, idAREF, INT2FIX(1));
+        ADD_INSN1(ret, &dummy_line_node, putobject, rb_cArray);
+        ADD_INSN(ret, &dummy_line_node, swap);
+        ADD_CALL(ret, &dummy_line_node, rb_intern("try_convert"), INT2FIX(1));
+        ADD_INSN(ret, &dummy_line_node, dup);
+        ADD_INSNL(ret, &dummy_line_node, branchunless, not_ary);
+        ADD_INSN(ret, &dummy_line_node, swap);
+
+        ADD_LABEL(ret, not_ary);
+        ADD_INSN(ret, &dummy_line_node, pop);
+
+        ADD_LABEL(ret, not_single);
+        pm_compile_multi_target_node_writes(iseq, target, ret, src, scope_node);
+        break;
+      }
+      default:
+        rb_bug("Unexpected node type for index in for node: %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
+        break;
+    }
+}
+
 /*
  * Compiles a prism node into instruction sequences
  *
@@ -4098,35 +4386,58 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_FOR_NODE: {
-        pm_for_node_t *for_node = (pm_for_node_t *)node;
-
-        ISEQ_COMPILE_DATA(iseq)->catch_except_p = true;
-
-        const rb_iseq_t *child_iseq;
-        const rb_iseq_t *prevblock = ISEQ_COMPILE_DATA(iseq)->current_block;
+        pm_for_node_t *cast = (pm_for_node_t *) node;
 
         LABEL *retry_label = NEW_LABEL(lineno);
         LABEL *retry_end_l = NEW_LABEL(lineno);
 
-        pm_scope_node_t next_scope_node;
-        pm_scope_node_init((pm_node_t *)for_node, &next_scope_node, scope_node, parser);
-
-        pm_constant_id_list_t locals;
-        pm_constant_id_list_init(&locals);
-
+        // First, compile the collection that we're going to be iterating over.
         ADD_LABEL(ret, retry_label);
+        PM_COMPILE_NOT_POPPED(cast->collection);
 
-        PM_COMPILE_NOT_POPPED(for_node->collection);
+        // Next, create the new scope that is going to contain the block that
+        // will be passed to the each method.
+        pm_scope_node_t next_scope_node;
+        pm_scope_node_init((pm_node_t *) cast, &next_scope_node, scope_node, parser);
 
-        child_iseq = NEW_CHILD_ISEQ(next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
-        ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq;
-        ADD_SEND_WITH_BLOCK(ret, &dummy_line_node, idEach, INT2FIX(0), child_iseq);
+        const rb_iseq_t *child_block = NEW_CHILD_ISEQ(next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+        const rb_iseq_t *prev_block = ISEQ_COMPILE_DATA(iseq)->current_block;
+        ISEQ_COMPILE_DATA(iseq)->current_block = child_block;
 
-        ADD_LABEL(ret, retry_end_l);
+        // Now, create the method call to each that will be used to iterate over
+        // the collection, and pass the newly created iseq as the block.
+        ADD_SEND_WITH_BLOCK(ret, &dummy_line_node, idEach, INT2FIX(0), child_block);
+
+        // We need to put the label "retry_end_l" immediately after the last
+        // "send" instruction. This because vm_throw checks if the break cont is
+        // equal to the index of next insn of the "send". (Otherwise, it is
+        // considered "break from proc-closure". See "TAG_BREAK" handling in
+        // "vm_throw_start".)
+        //
+        // Normally, "send" instruction is at the last. However, qcall under
+        // branch coverage measurement adds some instructions after the "send".
+        //
+        // Note that "invokesuper" appears instead of "send".
+        {
+            INSN *iobj;
+            LINK_ELEMENT *last_elem = LAST_ELEMENT(ret);
+            iobj = IS_INSN(last_elem) ? (INSN*) last_elem : (INSN*) get_prev_insn((INSN*) last_elem);
+            while (INSN_OF(iobj) != BIN(send) && INSN_OF(iobj) != BIN(invokesuper)) {
+                iobj = (INSN*) get_prev_insn(iobj);
+            }
+            ELEM_INSERT_NEXT(&iobj->link, (LINK_ELEMENT*) retry_end_l);
+
+            // LINK_ANCHOR has a pointer to the last element, but
+            // ELEM_INSERT_NEXT does not update it even if we add an insn to the
+            // last of LINK_ANCHOR. So this updates it manually.
+            if (&iobj->link == LAST_ELEMENT(ret)) {
+                ret->last = (LINK_ELEMENT*) retry_end_l;
+            }
+        }
+
         PM_POP_IF_POPPED;
-
-        ISEQ_COMPILE_DATA(iseq)->current_block = prevblock;
-        ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, child_iseq, retry_end_l);
+        ISEQ_COMPILE_DATA(iseq)->current_block = prev_block;
+        ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, retry_label, retry_end_l, child_block, retry_end_l);
         return;
       }
       case PM_FORWARDING_ARGUMENTS_NODE: {
@@ -5814,10 +6125,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         int table_size = (int) locals_size;
 
-        if (PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_NODE)) {
-            body->param.lead_num = 1;
-            table_size++;
-        }
+        // For nodes have a hidden iteration variable. We add that to the local
+        // table size here.
+        if (PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_NODE)) table_size++;
 
         if (keywords_list && keywords_list->size) {
             table_size++;
@@ -6212,6 +6522,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         // Set any anonymous locals for the for node
         if (PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_NODE)) {
+            if (PM_NODE_TYPE_P(((const pm_for_node_t *) scope_node->ast_node)->index, PM_LOCAL_VARIABLE_TARGET_NODE)) {
+                body->param.lead_num++;
+            } else {
+                body->param.rest_start = local_index;
+                body->param.flags.has_rest = true;
+            }
+
             ID local = rb_make_temporary_id(local_index);
             local_table_for_iseq->ids[local_index] = local;
             local_index++;
@@ -6377,18 +6694,24 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
           case ISEQ_TYPE_BLOCK: {
             LABEL *start = ISEQ_COMPILE_DATA(iseq)->start_label = NEW_LABEL(0);
             LABEL *end = ISEQ_COMPILE_DATA(iseq)->end_label = NEW_LABEL(0);
+            NODE dummy_line_node = generate_dummy_line_node(body->location.first_lineno, -1);
 
             start->rescued = LABEL_RESCUE_BEG;
             end->rescued = LABEL_RESCUE_END;
 
-            ADD_TRACE(ret, RUBY_EVENT_B_CALL);
-            NODE dummy_line_node = generate_dummy_line_node(body->location.first_lineno, -1);
-            if (ISEQ_COMPILE_DATA(iseq)->redo_label != 0) {
-                PM_NOP;
+            // For nodes automatically assign the iteration variable to whatever
+            // index variable. We need to handle that write here because it has
+            // to happen in the context of the block. Note that this happens
+            // before the B_CALL tracepoint event.
+            if (PM_NODE_TYPE_P(scope_node->ast_node, PM_FOR_NODE)) {
+                pm_compile_for_node_index(iseq, ((const pm_for_node_t *) scope_node->ast_node)->index, ret, src, scope_node);
             }
+
+            ADD_TRACE(ret, RUBY_EVENT_B_CALL);
+            PM_NOP;
             ADD_LABEL(ret, start);
 
-            if (scope_node->body) {
+            if (scope_node->body != NULL) {
                 switch (PM_NODE_TYPE(scope_node->ast_node)) {
                   case PM_POST_EXECUTION_NODE: {
                     pm_post_execution_node_t *post_execution_node = (pm_post_execution_node_t *)scope_node->ast_node;
@@ -6404,20 +6727,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     ADD_CALL_WITH_BLOCK(ret, &dummy_line_node, id_core_set_postexe, INT2FIX(0), block);
                     break;
                   }
-                  case PM_FOR_NODE: {
-                    pm_for_node_t *for_node = (pm_for_node_t *)scope_node->ast_node;
-                    LABEL *target = NEW_LABEL(lineno);
-                    LABEL *old_start = ISEQ_COMPILE_DATA(iseq)->start_label;
-
-                    ADD_GETLOCAL(ret, &dummy_line_node, 1, 0);
-                    PM_COMPILE(for_node->index);
-                    PM_NOP;
-                    ADD_LABEL(ret, target);
-                    ISEQ_COMPILE_DATA(iseq)->start_label = target;
-                    pm_compile_node(iseq, (pm_node_t *)(scope_node->body), ret, src, popped, scope_node);
-                    ISEQ_COMPILE_DATA(iseq)->start_label = old_start;
-                    break;
-                  }
                   case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
                     pm_interpolated_regular_expression_node_t *cast = (pm_interpolated_regular_expression_node_t *) scope_node->ast_node;
 
@@ -6431,12 +6740,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     ADD_INSN2(ret, &dummy_line_node, toregexp, INT2FIX(pm_reg_flags((pm_node_t *)cast)), INT2FIX(parts_size));
                     break;
                   }
-                  default: {
-                    pm_compile_node(iseq, (pm_node_t *)(scope_node->body), ret, src, popped, scope_node);
-                  }
+                  default:
+                    pm_compile_node(iseq, scope_node->body, ret, src, popped, scope_node);
+                    break;
                 }
-            }
-            else {
+            } else {
                 PM_PUTNIL;
             }
 
@@ -6448,8 +6756,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_CATCH_ENTRY(CATCH_TYPE_REDO, start, end, NULL, start);
             ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, start, end, NULL, end);
             break;
-        }
-        case ISEQ_TYPE_ENSURE: {
+          }
+          case ISEQ_TYPE_ENSURE: {
             iseq_set_exception_local_table(iseq);
 
             if (scope_node->body) {
@@ -6459,8 +6767,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_GETLOCAL(ret, &dummy_line_node, 1, 0);
             ADD_INSN1(ret, &dummy_line_node, throw, INT2FIX(0));
             return;
-        }
-        case ISEQ_TYPE_RESCUE: {
+          }
+          case ISEQ_TYPE_RESCUE: {
             iseq_set_exception_local_table(iseq);
             if (PM_NODE_TYPE_P(scope_node->ast_node, PM_RESCUE_MODIFIER_NODE)) {
                 LABEL *lab = NEW_LABEL(lineno);
@@ -6482,14 +6790,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_INSN1(ret, &dummy_line_node, throw, INT2FIX(0));
 
             return;
-        }
-        default:
+          }
+          default:
             if (scope_node->body) {
                 PM_COMPILE((pm_node_t *)scope_node->body);
-            }
-            else {
+            } else {
                 PM_PUTNIL;
             }
+            break;
         }
 
         st_free_table(index_lookup_table);
