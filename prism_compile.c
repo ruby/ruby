@@ -5108,12 +5108,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PM_NODE_TYPE_P(cast->rest, PM_SPLAT_NODE) &&
                 (((pm_splat_node_t *)cast->rest)->expression));
 
-        if (cast->lefts.size) {
-            int flag = (int) (bool) cast->rights.size || has_rest_expression;
-            ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(cast->lefts.size), INT2FIX(flag));
-            for (size_t index = 0; index < cast->lefts.size; index++) {
-                PM_COMPILE_NOT_POPPED(cast->lefts.nodes[index]);
-            }
+        int flag = (int) (bool) cast->rights.size || has_rest_expression;
+        ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(cast->lefts.size), INT2FIX(flag));
+        for (size_t index = 0; index < cast->lefts.size; index++) {
+            PM_COMPILE_NOT_POPPED(cast->lefts.nodes[index]);
         }
 
         if (has_rest_expression) {
