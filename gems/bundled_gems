@@ -19,7 +19,7 @@ matrix          0.4.2   https://github.com/ruby/matrix
 prime           0.1.2   https://github.com/ruby/prime
 rbs             3.4.2   https://github.com/ruby/rbs
 typeprof        0.21.9  https://github.com/ruby/typeprof
-debug           1.9.1   https://github.com/ruby/debug
+debug           1.9.1   https://github.com/ruby/debug 19b91b14ce814a0eb615abb8d2bef0594c61c5c8
 racc            1.7.3   https://github.com/ruby/racc
 mutex_m         0.2.0   https://github.com/ruby/mutex_m
 getoptlong      0.2.1   https://github.com/ruby/getoptlong

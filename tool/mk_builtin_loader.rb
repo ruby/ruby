@@ -274,7 +274,8 @@ def generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_nam
   locals&.reverse_each&.with_index{|param, i|
     next unless Symbol === param
     next unless local_candidates.include?(param.to_s)
-    f.puts "MAYBE_UNUSED(const VALUE) #{param} = rb_vm_lvar(ec, #{-3 - i});"
+    f.puts "VALUE *const #{param}__ptr = (VALUE *)&ec->cfp->ep[#{-3 - i}];"
+    f.puts "MAYBE_UNUSED(const VALUE) #{param} = *#{param}__ptr;"
     lineno += 1
   }
   f.puts "#line #{body_lineno} \"#{line_file}\""
