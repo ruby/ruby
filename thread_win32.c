@@ -582,7 +582,7 @@ rb_native_cond_destroy(rb_nativethread_cond_t *cond)
 }
 
 void
-ruby_init_stack(volatile void *addr)
+ruby_init_stack(volatile VALUE *addr)
 {
 }
 
@@ -594,20 +594,20 @@ COMPILER_WARNING_PUSH
 COMPILER_WARNING_IGNORED(-Wmaybe-uninitialized)
 #endif
 static inline SIZE_T
-query_memory_basic_info(PMEMORY_BASIC_INFORMATION mi, void *local_in_parent_frame)
+query_memory_basic_info(PMEMORY_BASIC_INFORMATION mi)
 {
-    return VirtualQuery(local_in_parent_frame, mi, sizeof(*mi));
+    return VirtualQuery(mi, mi, sizeof(*mi));
 }
 COMPILER_WARNING_POP
 
 static void
-native_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
+native_thread_init_stack(rb_thread_t *th)
 {
     MEMORY_BASIC_INFORMATION mi;
     char *base, *end;
     DWORD size, space;
 
-    CHECK_ERR(query_memory_basic_info(&mi, local_in_parent_frame));
+    CHECK_ERR(query_memory_basic_info(&mi));
     base = mi.AllocationBase;
     end = mi.BaseAddress;
     end += mi.RegionSize;
@@ -638,7 +638,7 @@ thread_start_func_1(void *th_ptr)
     rb_thread_t *th = th_ptr;
     volatile HANDLE thread_id = th->nt->thread_id;
 
-    native_thread_init_stack(th, &th);
+    native_thread_init_stack(th);
     th->nt->interrupt_event = CreateEvent(0, TRUE, FALSE, 0);
 
     /* run */
