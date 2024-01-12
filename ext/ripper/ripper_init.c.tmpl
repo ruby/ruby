@@ -471,11 +471,13 @@ ripper_token(VALUE self)
 {
     struct parser_params *p = ripper_parser_params(self, true);
     long pos, len;
+    VALUE str;
 
     if (NIL_P(rb_ruby_parser_parsing_thread(p))) return Qnil;
     pos = rb_ruby_ripper_column(p);
     len = rb_ruby_ripper_token_len(p);
-    return rb_str_subseq(rb_ruby_ripper_lex_lastline(p), pos, len);
+    str = rb_str_new_parser_string(rb_ruby_ripper_lex_lastline(p));
+    return rb_str_subseq(str, pos, len);
 }
 
 #ifdef RIPPER_DEBUG
