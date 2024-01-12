@@ -1430,10 +1430,20 @@ iseqw_s_compile_prism_compile(pm_parser_t *parser, VALUE opt, rb_iseq_t *iseq, V
 
         pm_scope_node_t scope_node;
         pm_scope_node_init(node, &scope_node, NULL, parser);
+
+        ID *constants = calloc(parser->constant_pool.size, sizeof(ID));
+        rb_encoding *encoding = rb_enc_find(parser->encoding->name);
+        for (uint32_t index = 0; index < parser->constant_pool.size; index++) {
+            pm_constant_t *constant = &parser->constant_pool.constants[index];
+            constants[index] = rb_intern3((const char *) constant->start, constant->length, encoding);
+        }
+        scope_node.constants = constants;
+
         rb_iseq_compile_prism_node(iseq, &scope_node, parser);
 
         finish_iseq_build(iseq);
         pm_node_destroy(parser, node);
+        free(constants);
     }
 }
 
