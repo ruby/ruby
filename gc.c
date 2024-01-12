@@ -6828,25 +6828,6 @@ static void each_stack_location(rb_objspace_t *objspace, const rb_execution_cont
                                  const VALUE *stack_start, const VALUE *stack_end, void *ctx,
                                  void (*cb)(rb_objspace_t *, void *, VALUE));
 
-static void
-gc_mark_machine_stack_location_maybe(rb_objspace_t *objspace, void *ctx, VALUE obj)
-{
-    gc_mark_maybe(objspace, obj);
-#ifdef RUBY_ASAN_ENABLED
-    rb_execution_context_t *ec = ctx;
-    void *fake_frame_start;
-    void *fake_frame_end;
-    bool is_fake_frame = asan_get_fake_stack_extents(
-        ec->thread_ptr->asan_fake_stack_handle, obj,
-        ec->machine.stack_start, ec->machine.stack_end,
-        &fake_frame_start, &fake_frame_end
-    );
-    if (is_fake_frame) {
-        each_stack_location(objspace, ec, fake_frame_start, fake_frame_end, NULL, gc_mark_maybe_cb);
-    }
-#endif
-}
-
 #if defined(__wasm__)
 
 
@@ -6865,10 +6846,10 @@ static void
 mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec)
 {
     emscripten_scan_stack(rb_mark_locations);
-    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], NULL, gc_mark_maybe_cb);
+    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe_cb);
 
     emscripten_scan_registers(rb_mark_locations);
-    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], NULL, gc_mark_maybe_cb);
+    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe_cb);
 }
 # else // use Asyncify version
 
@@ -6878,10 +6859,10 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec
     VALUE *stack_start, *stack_end;
     SET_STACK_END;
     GET_STACK_BOUNDS(stack_start, stack_end, 1);
-    each_stack_location(objspace, ec, stack_start, stack_end, NULL, gc_mark_maybe_cb);
+    each_stack_location(objspace, ec, stack_start, stack_end, gc_mark_maybe_cb);
 
     rb_wasm_scan_locals(rb_mark_locations);
-    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], NULL, gc_mark_maybe_cb);
+    each_stack_location(objspace, ec, rb_stack_range_tmp[0], rb_stack_range_tmp[1], gc_mark_maybe_cb);
 }
 
 # endif
@@ -6908,9 +6889,9 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec
     SET_STACK_END;
     GET_STACK_BOUNDS(stack_start, stack_end, 1);
 
-    each_location(objspace, save_regs_gc_mark.v, numberof(save_regs_gc_mark.v), (void *)ec, gc_mark_machine_stack_location_maybe);
+    each_location(objspace, save_regs_gc_mark.v, numberof(save_regs_gc_mark.v), NULL, gc_mark_maybe_cb);
 
-    each_stack_location(objspace, ec, stack_start, stack_end, (void *)ec, gc_mark_machine_stack_location_maybe);
+    each_stack_location(objspace, ec, stack_start, stack_end, NULL, gc_mark_maybe_cb);
 }
 #endif
 
@@ -6928,7 +6909,7 @@ each_machine_stack_value(const rb_execution_context_t *ec, void *ctx, void (*cb)
 void
 rb_gc_mark_machine_stack(const rb_execution_context_t *ec)
 {
-    each_machine_stack_value(ec, (void *)ec, gc_mark_machine_stack_location_maybe);
+    each_machine_stack_value(ec, NULL, gc_mark_maybe_cb);
 }
 
 static void
