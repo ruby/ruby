@@ -170,8 +170,6 @@ enum node_type {
     NODE_LINE,
     NODE_FILE,
     NODE_ENCODING,
-    NODE_RIPPER,
-    NODE_RIPPER_VALUES,
     NODE_LAST
 };
 
@@ -1137,27 +1135,6 @@ typedef struct RNode_ERROR {
 #define RNODE_LINE(node) ((struct RNode_LINE *)(node))
 #define RNODE_FILE(node) ((struct RNode_FILE *)(node))
 #define RNODE_ENCODING(node) ((struct RNode_ENCODING *)(node))
-
-#ifdef RIPPER
-typedef struct RNode_RIPPER {
-    NODE node;
-
-    ID nd_vid;
-    VALUE nd_rval;
-    VALUE nd_cval;
-} rb_node_ripper_t;
-
-typedef struct RNode_RIPPER_VALUES {
-    NODE node;
-
-    VALUE nd_val1;
-    VALUE nd_val2;
-    VALUE nd_val3;
-} rb_node_ripper_values_t;
-
-#define RNODE_RIPPER(node) ((struct RNode_RIPPER *)(node))
-#define RNODE_RIPPER_VALUES(node) ((struct RNode_RIPPER_VALUES *)(node))
-#endif
 
 /* FL     : 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: FINALIZE, 8: UNUSED, 9: UNUSED, 10: EXIVAR, 11: FREEZE */
 /* NODE_FL: 0..4: T_TYPES, 5: KEEP_WB, 6: PROMOTED, 7: NODE_FL_NEWLINE,

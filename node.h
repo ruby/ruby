@@ -35,7 +35,6 @@ struct node_buffer_struct {
     node_buffer_list_t unmarkable;
     node_buffer_list_t markable;
     struct rb_ast_local_table_link *local_tables;
-    VALUE mark_hash;
     // - id (sequence number)
     // - token_type
     // - text of token
@@ -66,8 +65,6 @@ void rb_node_init(NODE *n, enum node_type type);
 void rb_ast_mark(rb_ast_t*);
 void rb_ast_update_references(rb_ast_t*);
 void rb_ast_free(rb_ast_t*);
-void rb_ast_add_mark_object(rb_ast_t*, VALUE);
-void rb_ast_delete_mark_object(rb_ast_t*, VALUE);
 void rb_ast_set_tokens(rb_ast_t*, VALUE);
 NODE *rb_ast_newnode(rb_ast_t*, enum node_type type, size_t size, size_t alignment);
 void rb_ast_delete_node(rb_ast_t*, NODE *n);
