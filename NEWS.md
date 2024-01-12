@@ -30,6 +30,7 @@ The following default gems are updated.
 
 The following bundled gems are updated.
 
+* minitest 5.21.1
 * net-ftp 0.3.4
 * net-imap 0.4.9.1
 * net-smtp 0.4.0.1
