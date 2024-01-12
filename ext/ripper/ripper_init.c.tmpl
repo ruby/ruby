@@ -54,27 +54,6 @@ static const rb_data_type_t parser_data_type = {
     0, 0, RUBY_TYPED_FREE_IMMEDIATELY
 };
 
-ID
-ripper_get_id(VALUE v)
-{
-    NODE *nd;
-    if (!RB_TYPE_P(v, T_NODE)) return 0;
-    nd = (NODE *)v;
-    if (!nd_type_p(nd, NODE_RIPPER)) return 0;
-    return RNODE_RIPPER(nd)->nd_vid;
-}
-
-VALUE
-ripper_get_value(VALUE v)
-{
-    NODE *nd;
-    if (UNDEF_P(v)) return Qnil;
-    if (!RB_TYPE_P(v, T_NODE)) return v;
-    nd = (NODE *)v;
-    if (!nd_type_p(nd, NODE_RIPPER)) return Qnil;
-    return RNODE_RIPPER(nd)->nd_rval;
-}
-
 static VALUE
 ripper_lex_get_generic(struct parser_params *p, VALUE src)
 {
@@ -607,5 +586,8 @@ InitVM_ripper(void)
      */
     rb_define_global_const("SCRIPT_LINES__", Qnil);
 #endif
+    rb_ripper_none = rb_obj_alloc(rb_cObject);
+    rb_obj_freeze(rb_ripper_none);
+    rb_gc_register_mark_object(rb_ripper_none);
 
 }
