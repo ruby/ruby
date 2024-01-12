@@ -3134,7 +3134,7 @@ syserr_eqq(VALUE self, VALUE exc)
 /*
  * Document-class: fatal
  *
- * fatal is an Exception that is raised when Ruby has encountered a fatal
+ * +fatal+ is an Exception that is raised when Ruby has encountered a fatal
  * error and must exit.
  */
 
