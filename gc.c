@@ -4684,7 +4684,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
             void *poisoned = asan_unpoison_object_temporary(vp);
             switch (BUILTIN_TYPE(vp)) {
               case T_DATA:
-                if (!DATA_PTR(p) || !RANY(p)->as.data.dfree) break;
+                if (!rb_free_at_exit && (!DATA_PTR(p) || !RANY(p)->as.data.dfree)) break;
                 if (rb_obj_is_thread(vp)) break;
                 if (rb_obj_is_mutex(vp)) break;
                 if (rb_obj_is_fiber(vp)) break;
