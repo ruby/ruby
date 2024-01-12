@@ -767,6 +767,17 @@ module Prism
         end
         prism_test_case_node
       CODE
+
+      # Test splat in when
+      assert_prism_eval(<<~RUBY)
+        ary = [1, 2]
+        case 1
+        when *ary
+          :ok
+        else
+          :ng
+        end
+      RUBY
     end
 
     def test_ElseNode
