@@ -778,6 +778,16 @@ module Prism
           :ng
         end
       RUBY
+
+      # Test case without predicate
+      assert_prism_eval(<<~RUBY)
+        case
+        when 1 == 2
+          :ng
+        else
+          :ok
+        end
+      RUBY
     end
 
     def test_ElseNode
