@@ -566,6 +566,23 @@ class TestISeq < Test::Unit::TestCase
     iseq2
   end
 
+  def test_to_binary_with_hidden_local_variables
+    assert_iseq_to_binary("for foo in bar; end")
+
+    bin = RubyVM::InstructionSequence.compile(<<-RUBY).to_binary
+      Object.new.instance_eval do
+        a = []
+        def self.bar; [1] end
+        for foo in bar
+          a << (foo * 2)
+        end
+        a
+      end
+    RUBY
+    v = RubyVM::InstructionSequence.load_from_binary(bin).eval
+    assert_equal([2], v)
+  end
+
   def test_to_binary_with_objects
     assert_iseq_to_binary("[]"+100.times.map{|i|"<</#{i}/"}.join)
     assert_iseq_to_binary("@x ||= (1..2)")
