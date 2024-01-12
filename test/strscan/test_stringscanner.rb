@@ -737,8 +737,8 @@ module StringScannerTests
   def test_captures
     s = create_string_scanner("Timestamp: Fri Dec 12 1975 14:39")
     s.scan("Timestamp: ")
-    s.scan(/(\w+) (\w+) (\d+) /)
-    assert_equal(["Fri", "Dec", "12"], s.captures)
+    s.scan(/(\w+) (\w+) (\d+) (1980)?/)
+    assert_equal(["Fri", "Dec", "12", nil], s.captures)
     s.scan(/(\w+) (\w+) (\d+) /)
     assert_nil(s.captures)
   end
