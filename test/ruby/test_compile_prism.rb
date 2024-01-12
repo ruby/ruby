@@ -1330,6 +1330,10 @@ module Prism
       assert_prism_eval("def self.foo(_a, _a); _a; end; foo(1, 2)")
     end
 
+    def test_splat_params_with_no_lefties
+      assert_prism_eval("def self.foo(v, (*)); v; end; foo(1, [2, 3, 4])")
+    end
+
     def test_method_parameters
       assert_prism_eval(<<-CODE)
         def self.prism_test_method_parameters(a, b=1, *c, d:, e: 2, **f, &g)

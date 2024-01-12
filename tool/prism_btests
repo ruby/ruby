@@ -20,7 +20,7 @@
 ../src/bootstraptest/test_string.rb
 ../src/bootstraptest/test_struct.rb
 ../src/bootstraptest/test_thread.rb
-# ../src/bootstraptest/test_block.rb
+../src/bootstraptest/test_block.rb
 # ../src/bootstraptest/test_exception.rb
 # ../src/bootstraptest/test_flow.rb
 # ../src/bootstraptest/test_insns.rb
