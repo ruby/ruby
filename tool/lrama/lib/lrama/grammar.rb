@@ -1,4 +1,5 @@
 require "lrama/grammar/auxiliary"
+require "lrama/grammar/binding"
 require "lrama/grammar/code"
 require "lrama/grammar/counter"
 require "lrama/grammar/error_token"
@@ -8,9 +9,6 @@ require "lrama/grammar/printer"
 require "lrama/grammar/reference"
 require "lrama/grammar/rule"
 require "lrama/grammar/rule_builder"
-require "lrama/grammar/parameterizing_rule_builder"
-require "lrama/grammar/parameterizing_rule_resolver"
-require "lrama/grammar/parameterizing_rule_rhs_builder"
 require "lrama/grammar/parameterizing_rule"
 require "lrama/grammar/symbol"
 require "lrama/grammar/type"
@@ -40,7 +38,7 @@ module Lrama
       @rule_builders = []
       @rules = []
       @sym_to_rules = {}
-      @parameterizing_resolver = ParameterizingRuleResolver.new
+      @parameterizing_rule_resolver = ParameterizingRule::Resolver.new
       @empty_symbol = nil
       @eof_symbol = nil
       @error_symbol = nil
@@ -52,7 +50,7 @@ module Lrama
     end
 
     def add_percent_code(id:, code:)
-      @percent_codes << PercentCode.new(id, code)
+      @percent_codes << PercentCode.new(id.s_value, code.s_value)
     end
 
     def add_printer(ident_or_tags:, token_code:, lineno:)
@@ -134,8 +132,8 @@ module Lrama
       @rule_builders << builder
     end
 
-    def add_parameterizing_rule_builder(builder)
-      @parameterizing_resolver.add_parameterizing_rule_builder(builder)
+    def add_parameterizing_rule(rule)
+      @parameterizing_rule_resolver.add_parameterizing_rule(rule)
     end
 
     def prologue_first_lineno=(prologue_first_lineno)
@@ -171,7 +169,7 @@ module Lrama
 
     # TODO: More validation methods
     #
-    # * Validaiton for no_declared_type_reference
+    # * Validation for no_declared_type_reference
     def validate!
       validate_symbol_number_uniqueness!
       validate_symbol_alias_name_uniqueness!
@@ -319,7 +317,7 @@ module Lrama
 
     def setup_rules
       @rule_builders.each do |builder|
-        builder.setup_rules(@parameterizing_resolver)
+        builder.setup_rules(@parameterizing_rule_resolver)
       end
     end
 

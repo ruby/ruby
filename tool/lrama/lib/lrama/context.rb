@@ -9,7 +9,7 @@ module Lrama
     BaseMin = -Float::INFINITY
 
     # TODO: It might be better to pass `states` to Output directly?
-    attr_reader :states
+    attr_reader :states, :yylast, :yypact_ninf, :yytable_ninf, :yydefact, :yydefgoto
 
     def initialize(states)
       @states = states
@@ -41,13 +41,9 @@ module Lrama
     def yyfinal
       @states.states.find do |state|
         state.items.find do |item|
-          item.rule.lhs.id.s_value == "$accept" && item.end_of_rule?
+          item.rule.lhs.accept_symbol? && item.end_of_rule?
         end
       end.id
-    end
-
-    def yylast
-      @yylast
     end
 
     # Number of terms
@@ -119,28 +115,12 @@ module Lrama
       end
     end
 
-    def yypact_ninf
-      @yypact_ninf
-    end
-
-    def yytable_ninf
-      @yytable_ninf
-    end
-
     def yypact
       @base[0...yynstates]
     end
 
-    def yydefact
-      @yydefact
-    end
-
     def yypgoto
       @base[yynstates..-1]
-    end
-
-    def yydefgoto
-      @yydefgoto
     end
 
     def yytable

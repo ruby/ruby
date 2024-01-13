@@ -5,9 +5,8 @@ require "lrama/lexer/token"
 
 module Lrama
   class Lexer
-    attr_reader :head_line, :head_column
-    attr_accessor :status
-    attr_accessor :end_symbol
+    attr_reader :head_line, :head_column, :line
+    attr_accessor :status, :end_symbol
 
     SYMBOLS = ['%{', '%}', '%%', '{', '}', '\[', '\]', '\(', '\)', '\,', ':', '\|', ';']
     PERCENT_TOKENS = %w(
@@ -48,10 +47,6 @@ module Lrama
       when :c_declaration
         lex_c_code
       end
-    end
-
-    def line
-      @line
     end
 
     def column
