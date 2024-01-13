@@ -1232,6 +1232,11 @@ Init_default_shapes(void)
 #ifdef HAVE_MMAP
     rb_shape_tree_ptr->shape_cache = (redblack_node_t *)mmap(NULL, rb_size_mul_or_raise(REDBLACK_CACHE_SIZE, sizeof(redblack_node_t), rb_eRuntimeError),
                          PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
+    if (rb_shape_tree_ptr->shape_cache == MAP_FAILED) {
+        rb_shape_tree_ptr->shape_cache = NULL;
+    }
+
     rb_shape_tree_ptr->cache_size = 0;
 
     // If mmap fails, then give up on the redblack tree cache.
