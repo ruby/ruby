@@ -498,7 +498,7 @@ dln_load(const char *file)
     typedef unsigned long long abi_version_number;
     abi_version_number binary_abi_version =
         dln_sym_callable(abi_version_number, (void), handle, EXTERNAL_PREFIX "ruby_abi_version")();
-    if (binary_abi_version != ruby_abi_version() && abi_check_enabled_p()) {
+    if (binary_abi_version != RUBY_ABI_VERSION && abi_check_enabled_p()) {
         dln_loaderror("incompatible ABI version of binary - %s", file);
     }
 #endif
