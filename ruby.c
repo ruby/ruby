@@ -2487,7 +2487,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 static void
 warn_cr_in_shebang(const char *str, long len)
 {
-    if (str[len-1] == '\n' && str[len-2] == '\r') {
+    if (len > 1 && str[len-1] == '\n' && str[len-2] == '\r') {
         rb_warn("shebang line ending with \\r may cause problems");
     }
 }
