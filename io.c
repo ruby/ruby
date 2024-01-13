@@ -1577,13 +1577,13 @@ rb_wait_for_single_fd(int fd, int events, struct timeval *timeout)
 int
 rb_thread_wait_fd(int fd)
 {
-    return rb_wait_for_single_fd(fd, RUBY_IO_READABLE, NULL);
+    return io_wait_for_single_fd(fd, RUBY_IO_READABLE, NULL);
 }
 
 int
 rb_thread_fd_writable(int fd)
 {
-    return rb_wait_for_single_fd(fd, RUBY_IO_WRITABLE, NULL);
+    return io_wait_for_single_fd(fd, RUBY_IO_WRITABLE, NULL);
 }
 
 VALUE
