@@ -3854,7 +3854,7 @@ Init_syserr(void)
     rb_define_const(rb_mErrno, "NOERROR", rb_eNOERROR);
 #endif
 #define defined_error(name, num) set_syserr((num), (name));
-#define undefined_error(name) rb_define_const(rb_mErrno, (name), rb_eNameError);
+#define undefined_error(name) rb_define_const(rb_mErrno, (name), rb_eNOERROR);
 #include "known_errors.inc"
 #undef defined_error
 #undef undefined_error
