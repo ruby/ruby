@@ -540,6 +540,14 @@ end.join
     assert_equal(Encoding.find("locale"), Errno::EINVAL.new.message.encoding)
   end
 
+  def test_errno_constants
+    assert_equal [:NOERROR], Errno.constants.grep_v(/\AE/)
+    all_assertions_foreach("should be a subclass of SystemCallError", *Errno.constants) do |c|
+      e = Errno.const_get(c)
+      assert_operator e, :<, SystemCallError, proc {e.ancestors.inspect}
+    end
+  end
+
   def test_too_many_args_in_eval
     bug5720 = '[ruby-core:41520]'
     arg_string = (0...140000).to_a.join(", ")
