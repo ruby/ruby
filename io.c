@@ -14679,33 +14679,42 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  * :markup: markdown
  *
- * The +ARGF+ object gives access to one or more input streams,
- * which may include the contents of specified files, and of <tt>$stdin</tt>.
+ * The \ARGF object can process I/O streams specified
+ * in the array at global variable `ARGV`.
  *
- * Which streams are available depends on the array held by global variable +ARGV+.
- * Initially, that array contains the string arguments and options given on the command line,
- * one per array element:
+ * ## Simple Use
  *
- * - \File +t.rb+:
+ * Initially the `ARGV` array contains the arguments and options
+ * that it gets from the command line.
+ * So in a simple use, the \ARGF object provides a convenient
+ * way for the command line
+ * to specify paths to files that a Ruby program may access.
+ *
+ * This program prints its `ARGV` array, then prints what it reads
+ * from files at the paths specified in that array
+ * (see below for the content of files `foo.txt` and `bar.txt`):
+ *
+ * - \File `t.rb`:
  *
  *     ```
- *     p ARGV
+ *     # Print arguments (and options, if any) found on command line.
+ *     p ['ARGV', ARGV]
+ *     # Read and print everything from all specified streams.
+ *     p ['ARGF.read', ARGF.read]
  *     ```
  *
- * - Commands and output:
+ * - Command and output:
  *
  *     ```sh
- *     ruby t.rb --xyzzy --mojo foo.txt bar.txt
- *     ["--xyzzy", "--mojo", "foo.txt", "bar.txt"]
- *
- *     ruby t.rb
- *     []
+ *     ruby t.rb foo.txt bar.txt
+ *     ["ARGV", ["foo.txt", "bar.txt"]]
+ *     ["ARGF.read", "Foo 0\nFoo 1\nBar 0\nBar 1\nBar 2\nBar 3\n"]
  *     ```
  *
  * ## About the Examples
  *
  * Many examples here assume the existence of, and read the contents of,
- * files +foo.txt+ and +bar.txt+:
+ * files `foo.txt` and `bar.txt`:
  *
  * ```sh
  * cat foo.txt
@@ -14718,33 +14727,41 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * Bar 3
  * ```
  *
- * ## +ARGV+ and \ARGF
+ * ## `ARGV` and \ARGF
  *
- * \ARGF has one special case:
+ * \ARGF assumes that each element in array `ARGV` is one of:
  *
- * - If the _first_ access to an \ARGF stream occurs when the value of +ARGV+
- *   is the empty array <tt>[]</tt>,
- *   the access is to stream <tt>$stdin</tt>,
- *   just as if the value of +ARGV+ were array <tt>['-']</tt>;
- *   see {Special Case}[rdoc-ref:ARGF@Special+Case].
- * - In all other cases, both initially an later on,
- *   \ARGF considers the current content of +ARGV+.
- *
- * \ARGF assumes that each element in +ARGV+ is one of:
- *
- * - The path to a file to be read as input.
- * - Character <tt>'-'</tt>, which specifies that <tt>$stdin</tt> is to be read as input.
+ * - The path to a file that may be opened as a stream.
+ * - The character `'-'`, meaning stream`$stdin`.
  *
  * Each element that is not one of these
- * should be removed from +ARGV+ before any access to the input streams.
- * In the example above:
+ * should be removed from `ARGV` before \ARGF accesses I/O streams.
  *
- * - Filepaths <tt>foo.txt</tt> and <tt>bar.txt</tt> may be retained.
- * - Options <tt>--xyzzy</tt> and <tt>--mojo</tt> should be removed.
+ * In the following example:
  *
- * \ARGF considers the elements of +ARGV+, left to right:
+ * - Filepaths `foo.txt` and `bar.txt` may be retained.
+ * - Options `--xyzzy` and `--mojo` should be removed.
  *
- * - \File +t.rb+:
+ *
+ * Example:
+ *
+ * - \File `t.rb`:
+ *
+ *     ```
+ *     # Print arguments (and options, if any) found on command line.
+ *     p ['ARGV', ARGV]
+ *     ```
+ *
+ * - Command and output:
+ *
+ *     ```sh
+ *     ruby t.rb --xyzzy --mojo foo.txt bar.txt
+ *     ["ARGV", ["--xyzzy", "--mojo", "foo.txt", "bar.txt"]]
+ *     ```
+ *
+ * \ARGF's stream access considers the elements of `ARGV`, left to right:
+ *
+ * - \File `t.rb`:
  *
  *     ```
  *     p "ARGV: #{ARGV}"
@@ -14759,8 +14776,53 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     "Read: Foo 0\nFoo 1\nBar 0\nBar 1\nBar 2\nBar 3\n"
  *     ```
  *
- * When an element in +ARGV+ is the character <tt>'-'</tt>,
- * the stream accessed is <tt>$stdin</tt>:
+ * In general, \ARGF considers each string in `ARGV` to be a filepath,
+ * but there are two exceptional cases:
+ *
+ * (but see the {Special Case}[rdoc-ref:ARGF@Special+Case]).
+ * Therefore
+ *
+ * \ARGF has one special case:
+ *
+ * - If the _first_ access to an \ARGF stream occurs when the value of `ARGV`
+ *   is the empty array `[]`,
+ *   the access is to stream `$stdin`,
+ *   just as if the value of `ARGV` were array `['-']`;
+ *   see {Special Case}[rdoc-ref:ARGF@Special+Case].
+ * - In all other cases, both initially an later on,
+ *   \ARGF considers the current content of `ARGV`.
+ *
+ * \ARGF assumes that each element in `ARGV` is one of:
+ *
+ * - The path to a file to be read as input.
+ * - Character `'-'`, which specifies that `$stdin` is to be read as input.
+ *
+ * Each element that is not one of these
+ * should be removed from `ARGV` before any access to the input streams.
+ * In the example above:
+ *
+ * - Filepaths `foo.txt` and `bar.txt` may be retained.
+ * - Options `--xyzzy` and `--mojo` should be removed.
+ *
+ * \ARGF considers the elements of `ARGV`, left to right:
+ *
+ * - \File `t.rb`:
+ *
+ *     ```
+ *     p "ARGV: #{ARGV}"
+ *     p "Line: #{ARGF.read}" # Read everything from all specified streams.
+ *     ```
+ *
+ * - Command and output:
+ *
+ *     ```sh
+ *      ruby t.rb foo.txt bar.txt
+ *     "ARGV: [\"foo.txt\", \"bar.txt\"]"
+ *     "Read: Foo 0\nFoo 1\nBar 0\nBar 1\nBar 2\nBar 3\n"
+ *     ```
+ *
+ * When an element in `ARGV` is the character `'-'`,
+ * the stream accessed is `$stdin`:
  *
  * - Command and output:
  *
@@ -14770,7 +14832,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     "Read: Foo 0\nFoo 1\nOpen the pod bay doors, Hal.\nBar 0\nBar 1\nBar 2\nBar 3\n"
  *     ```
  *
- * When no character <tt>'-'</tt> is given, stream <tt>$stdin</tt> is ignored
+ * When no character `'-'` is given, stream `$stdin` is ignored
  * (exception: see {Special Case}[rdoc-ref:ARGF@Special+Case]):
  *
  * - Command and output:
@@ -14781,16 +14843,16 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     "Read: Foo 0\nFoo 1\nBar 0\nBar 1\nBar 2\nBar 3\n"
  *     ```
  *
- * Because the value at +ARGV+ is an ordinary array,
+ * Because the value at `ARGV` is an ordinary array,
  * you can manipulate it to control which sources \ARGF considers:
  *
- * - If you remove an element from +ARGV+, \ARGF will not consider the corresponding source.
- * - If you add an element to +ARGV+, \ARGF will consider the corresponding source.
+ * - If you remove an element from `ARGV`, \ARGF will not consider the corresponding source.
+ * - If you add an element to `ARGV`, \ARGF will consider the corresponding source.
  *
- * Each element in +ARGV+ is removed when its corresponding source is accessed;
+ * Each element in `ARGV` is removed when its corresponding source is accessed;
  * when all sources have been accessed, the array is empty:
  *
- * - \File +t.rb+:
+ * - \File `t.rb`:
  *
  *     ```
  *     until ARGV.empty? && ARGF.eof?
@@ -14802,7 +14864,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * - Command and output:
  *
  *     ```sh
- *     $ ruby t.rb foo.txt bar.txt
+ *     ruby t.rb foo.txt bar.txt
  *     "ARGV: [\"foo.txt\", \"bar.txt\"]"
  *     "Line: Foo 0\n"
  *     "ARGV: [\"bar.txt\"]"
@@ -14820,12 +14882,12 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * ## Special Case
  *
  * \ARGF has one special case:
- * If the _first_ access to an \ARGF stream occurs when the value of +ARGV+
- * is the empty array <tt>[]</tt>,
- * the access is to stream <tt>$stdin</tt>,
- * just as if the value of +ARGV+ were array <tt>['-']</tt>:
+ * If the _first_ access to an \ARGF stream occurs when the value of `ARGV`
+ * is the empty array `[]`,
+ * the access is to stream `$stdin`,
+ * just as if the value of `ARGV` were array `['-']`:
  *
- * - \File +t.rb+:
+ * - \File `t.rb`:
  *
  *     ```
  *     p ARGV
