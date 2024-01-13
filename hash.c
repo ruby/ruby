@@ -856,14 +856,7 @@ ar_general_foreach(VALUE hash, st_foreach_check_callback_func *func, st_update_c
                 return 0;
               case ST_REPLACE:
                 if (replace) {
-                    VALUE key = pair->key;
-                    VALUE val = pair->val;
-                    retval = (*replace)(&key, &val, arg, TRUE);
-
-                    // TODO: pair should be same as pair before.
-                    ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, i);
-                    pair->key = key;
-                    pair->val = val;
+                    retval = (*replace)(&pair->key, &pair->val, arg, TRUE);
                 }
                 break;
               case ST_DELETE:
