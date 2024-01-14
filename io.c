@@ -14690,26 +14690,30 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * way for the command line
  * to specify paths to files that a Ruby program may access.
  *
- * This program prints its `ARGV` array, then prints what it reads
- * from files at the paths specified in that array
+ * This program prints what it reads from files at the paths specified
+ * on the command line
  * (see below for the content of files `foo.txt` and `bar.txt`):
  *
  * - \File `t.rb`:
  *
  *     ```
- *     # Print arguments (and options, if any) found on command line.
- *     p ['ARGV', ARGV]
- *     # Read and print everything from all specified streams.
- *     p ['ARGF.read', ARGF.read]
+ *     # Read and print all lines from all specified streams.
+ *     p ['ARGF.readlines', ARGF.readlines]
  *     ```
  *
  * - Command and output:
  *
  *     ```sh
  *     ruby t.rb foo.txt bar.txt
- *     ["ARGV", ["foo.txt", "bar.txt"]]
- *     ["ARGF.read", "Foo 0\nFoo 1\nBar 0\nBar 1\nBar 2\nBar 3\n"]
+ *     ["ARGF.readlines", ["Foo 0\n", "Foo 1\n", "Bar 0\n", "Bar 1\n", "Bar 2\n", "Bar 3\n"]]
  *     ```
+ *
+ * For the program above, the command is equivalent to this one:
+ *
+ * ```sh
+ * cat foo.txt bar.txt | ruby t.rb
+ * ["ARGF.readlines", ["Foo 0\n", "Foo 1\n", "Bar 0\n", "Bar 1\n", "Bar 2\n", "Bar 3\n"]]
+ * ```
  *
  * ## About the Examples
  *
