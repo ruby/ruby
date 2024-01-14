@@ -9,6 +9,11 @@ Note that each entry is kept to a minimum, see links for details.
 
 * `it` is added to reference a block parameter. [[Feature #18980]]
 
+* Keyword splatting `nil` when calling methods is now supported.
+  `**nil` is treated similar to `**{}`, passing no keywords,
+  and not calling any conversion methods.
+  [[Bug #20064]]
+
 ## Core classes updates
 
 Note: We're only listing outstanding class updates.
@@ -57,3 +62,4 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 ## JIT
 
 [Feature #18980]: https://bugs.ruby-lang.org/issues/18980
+[Bug #20064]: https://bugs.ruby-lang.org/issues/20064

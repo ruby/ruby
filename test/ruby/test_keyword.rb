@@ -182,6 +182,44 @@ class TestKeywordArguments < Test::Unit::TestCase
                   [:keyrest, :kw], [:block, :b]], method(:f9).parameters)
   end
 
+  def test_keyword_splat_nil
+    # cfunc call
+    assert_equal(nil, p(**nil))
+
+    def self.a0; end
+    assert_equal(nil, a0(**nil))
+    assert_equal(nil, :a0.to_proc.call(self, **nil))
+
+    def self.o(x=1); x end
+    assert_equal(1, o(**nil))
+    assert_equal(2, o(2, **nil))
+    assert_equal(1, o(*nil, **nil))
+    assert_equal(1, o(**nil, **nil))
+    assert_equal({a: 1}, o(a: 1, **nil))
+    assert_equal({a: 1}, o(**nil, a: 1))
+
+    # symproc call
+    assert_equal(1, :o.to_proc.call(self, **nil))
+
+    def self.s(*a); a end
+    assert_equal([], s(**nil))
+    assert_equal([1], s(1, **nil))
+    assert_equal([], s(*nil, **nil))
+
+    def self.kws(**a); a end
+    assert_equal({}, kws(**nil))
+    assert_equal({}, kws(*nil, **nil))
+
+    def self.skws(*a, **kw); [a, kw] end
+    assert_equal([[], {}], skws(**nil))
+    assert_equal([[1], {}], skws(1, **nil))
+    assert_equal([[], {}], skws(*nil, **nil))
+
+    assert_equal({}, {**nil})
+    assert_equal({a: 1}, {a: 1, **nil})
+    assert_equal({a: 1}, {**nil, a: 1})
+  end
+
   def test_lambda
     f = ->(str: "foo", num: 424242) { [str, num] }
     assert_equal(["foo", 424242], f[])
