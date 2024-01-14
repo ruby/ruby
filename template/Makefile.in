@@ -643,7 +643,7 @@ un-runnable:
 	$(ECHO) cannot make runnable, configure with --enable-load-relative.
 	$(Q) exit 1
 
-LIBRUBY_FOR_LEAKED_GLOBALS = $(enable_shared:no=)
+LIBRUBY_FOR_LEAKED_GLOBALS = $(enable_shared:no=$(EXTSTATIC:static=))
 yes-test-basic: $(DOT_WAIT) test-leaked-globals
 leaked-globals: test-leaked-globals
 yes-test-leaked-globals-precheck: $(COMMONOBJS) prog $(tooldir)/leaked-globals
