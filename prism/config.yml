@@ -1976,26 +1976,87 @@ nodes:
     fields:
       - name: if_keyword_loc
         type: location?
+        comment: |
+          The location of the `if` keyword if present.
+
+              bar if foo
+                  ^^
+
+          The `if_keyword_loc` field will be `nil` when the `IfNode` represents a ternary expression.
       - name: predicate
         type: node
+        comment: |
+          The node for the condition the `IfNode` is testing.
+
+              if foo
+                 ^^^
+                bar
+              end
+
+              bar if foo
+                     ^^^
+
+              foo ? bar : baz
+              ^^^
       - name: then_keyword_loc
         type: location?
+        comment: |
+          The location of the `then` keyword (if present) or the `?` in a ternary expression, `nil` otherwise.
+
+              if foo then bar end
+                     ^^^^
+
+              a ? b : c
+                ^
       - name: statements
         type: node?
         kind: StatementsNode
+        comment: |
+          Represents the body of statements that will be executed when the predicate is evaluated as truthy. Will be `nil` when no body is provided.
+
+              if foo
+                bar
+                ^^^
+                baz
+                ^^^
+              end
       - name: consequent
         type: node?
+        comment: |
+          Represents an `ElseNode` or an `IfNode` when there is an `else` or an `elsif` in the `if` statement.
+
+              if foo
+                bar
+              elsif baz
+              ^^^^^^^^^
+                qux
+                ^^^
+              end
+              ^^^
+
+              if foo then bar else baz end
+                              ^^^^^^^^^^^^
       - name: end_keyword_loc
         type: location?
+        comment: |
+          The location of the `end` keyword if present, `nil` otherwise.
+
+              if foo
+                bar
+              end
+              ^^^
     newline: predicate
     comment: |
-      Represents the use of the `if` keyword, either in the block form or the modifier form.
+      Represents the use of the `if` keyword, either in the block form or the modifier form, or a ternary expression.
 
           bar if foo
           ^^^^^^^^^^
 
           if foo then bar end
           ^^^^^^^^^^^^^^^^^^^
+
+          foo ? bar : baz
+          ^^^^^^^^^^^^^^^
   - name: ImaginaryNode
     fields:
       - name: numeric
