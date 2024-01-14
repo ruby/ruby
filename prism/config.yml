@@ -475,10 +475,25 @@ nodes:
     fields:
       - name: left
         type: node
+        comment: |
+          Represents left side of expression.
+
+          left and right
+          ^^^^
       - name: right
         type: node
+        comment: |
+          Represents right side of expression.
+
+          left && right
+                  ^^^^^
       - name: operator_loc
         type: location
+        comment: |
+          The Location of `and` keyword or `&&` operator.
+
+          left and right
+               ^^^
     comment: |
       Represents the use of the `&&` operator or the `and` keyword.
 
@@ -2273,10 +2288,25 @@ nodes:
     fields:
       - name: left
         type: node
+        comment: |
+          Represents left side of expression.
+
+          left or right
+          ^^^^
       - name: right
         type: node
+        comment: |
+          Represents right side of expression.
+
+          left || right
+                  ^^^^^
       - name: operator_loc
         type: location
+        comment: |
+          The Location of `or` keyword or `||` operator.
+
+          left or right
+               ^^
     comment: |
       Represents the use of the `||` operator or the `or` keyword.
 
