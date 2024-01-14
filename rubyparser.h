@@ -1439,8 +1439,8 @@ void rb_ruby_parser_free(void *ptr);
 rb_ast_t* rb_ruby_parser_compile_string(rb_parser_t *p, const char *f, VALUE s, int line);
 
 #ifdef UNIVERSAL_PARSER
-rb_parser_t *rb_ruby_parser_allocate(rb_parser_config_t *config);
-rb_parser_t *rb_ruby_parser_new(rb_parser_config_t *config);
+rb_parser_t *rb_ruby_parser_allocate(const rb_parser_config_t *config);
+rb_parser_t *rb_ruby_parser_new(const rb_parser_config_t *config);
 #endif
 
 long rb_parser_string_length(rb_parser_string_t *str);

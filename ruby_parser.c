@@ -484,7 +484,7 @@ extern VALUE rb_eArgError;
 extern VALUE rb_mRubyVMFrozenCore;
 VALUE rb_node_case_when_optimizable_literal(const NODE *const node);
 
-rb_parser_config_t rb_global_parser_config = (rb_parser_config_t) {
+static const rb_parser_config_t rb_global_parser_config = {
     .malloc = ruby_xmalloc,
     .calloc = ruby_xcalloc,
     .realloc = ruby_xrealloc,

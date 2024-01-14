@@ -53,7 +53,7 @@ init_node_buffer_list(node_buffer_list_t * nb, node_buffer_elem_t *head, void *x
 
 #ifdef UNIVERSAL_PARSER
 static node_buffer_t *
-rb_node_buffer_new(rb_parser_config_t *config)
+rb_node_buffer_new(const rb_parser_config_t *config)
 #else
 static node_buffer_t *
 rb_node_buffer_new(void)
@@ -318,7 +318,7 @@ rb_ast_delete_node(rb_ast_t *ast, NODE *n)
 
 #ifdef UNIVERSAL_PARSER
 rb_ast_t *
-rb_ast_new(rb_parser_config_t *config)
+rb_ast_new(const rb_parser_config_t *config)
 {
     node_buffer_t *nb = rb_node_buffer_new(config);
     return config->ast_new((VALUE)nb);

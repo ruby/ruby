@@ -43,14 +43,14 @@ struct node_buffer_struct {
     // Array, whose entry is array
     VALUE tokens;
 #ifdef UNIVERSAL_PARSER
-    rb_parser_config_t *config;
+    const rb_parser_config_t *config;
 #endif
 };
 
 RUBY_SYMBOL_EXPORT_BEGIN
 
 #ifdef UNIVERSAL_PARSER
-rb_ast_t *rb_ast_new(rb_parser_config_t *config);
+rb_ast_t *rb_ast_new(const rb_parser_config_t *config);
 #else
 rb_ast_t *rb_ast_new(void);
 #endif

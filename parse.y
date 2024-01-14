@@ -611,7 +611,7 @@ struct parser_params {
     struct lex_context ctxt;
 
 #ifdef UNIVERSAL_PARSER
-    rb_parser_config_t *config;
+    const rb_parser_config_t *config;
 #endif
     /* compile_option */
     signed int frozen_string_literal:2; /* -1: not specified, 0: false, 1: true */
@@ -15989,7 +15989,7 @@ rb_reserved_word(const char *str, unsigned int len)
 
 #ifdef UNIVERSAL_PARSER
 rb_parser_t *
-rb_ruby_parser_allocate(rb_parser_config_t *config)
+rb_ruby_parser_allocate(const rb_parser_config_t *config)
 {
     /* parser_initialize expects fields to be set to 0 */
     rb_parser_t *p = (rb_parser_t *)config->calloc(1, sizeof(rb_parser_t));
@@ -15998,7 +15998,7 @@ rb_ruby_parser_allocate(rb_parser_config_t *config)
 }
 
 rb_parser_t *
-rb_ruby_parser_new(rb_parser_config_t *config)
+rb_ruby_parser_new(const rb_parser_config_t *config)
 {
     /* parser_initialize expects fields to be set to 0 */
     rb_parser_t *p = rb_ruby_parser_allocate(config);
