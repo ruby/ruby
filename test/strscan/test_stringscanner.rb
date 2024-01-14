@@ -558,6 +558,16 @@ module StringScannerTests
     assert_nil s.matched_size
   end
 
+  def test_empty_encoding_utf8
+    ss = create_string_scanner('')
+    assert_equal(Encoding::UTF_8, ss.rest.encoding)
+  end
+
+  def test_empty_encoding_ascii_8bit
+    ss = create_string_scanner(''.dup.force_encoding("ASCII-8BIT"))
+    assert_equal(Encoding::ASCII_8BIT, ss.rest.encoding)
+  end
+
   def test_encoding
     ss = create_string_scanner("\xA1\xA2".dup.force_encoding("euc-jp"))
     assert_equal(Encoding::EUC_JP, ss.scan(/./e).encoding)
