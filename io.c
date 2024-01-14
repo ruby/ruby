@@ -1636,7 +1636,7 @@ rb_io_maybe_wait_readable(int error, VALUE io, VALUE timeout)
         return RB_NUM2INT(result);
     }
     else {
-        return 0;
+        rb_raise(rb_eIOTimeoutError, "Timed out waiting for IO to become readable!");
     }
 }
 
@@ -1649,7 +1649,7 @@ rb_io_maybe_wait_writable(int error, VALUE io, VALUE timeout)
         return RB_NUM2INT(result);
     }
     else {
-        return 0;
+        rb_raise(rb_eIOTimeoutError, "Timed out waiting for IO to become writable!");
     }
 }
 

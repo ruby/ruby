@@ -985,13 +985,16 @@ VALUE rb_io_maybe_wait(int error, VALUE io, VALUE events, VALUE timeout);
  * passed  errno.  This  is  a  special case  of  rb_io_maybe_wait() that  only
  * concerns for reading.
  *
+ * If you do not want the default timeout handling, consider using
+ * ::rb_io_maybe_wait directly.
+ *
  * @param[in]  error                System errno.
  * @param[in]  io                   An IO object to wait.
  * @param[in]  timeout              Time, or numeric seconds since UNIX epoch.
  * @exception  rb_eIOError          `io` is not open.
  * @exception  rb_eRangeError       `timeout` is out of range.
  * @exception  rb_eSystemCallError  `select(2)` failed for some reason.
- * @retval     0                    Operation timed out.
+ * @exception  rb_eIOTimeoutError   The wait operation timed out.
  * @retval     Otherwise            Always returns ::RUBY_IO_READABLE.
  */
 int rb_io_maybe_wait_readable(int error, VALUE io, VALUE timeout);
@@ -1001,13 +1004,16 @@ int rb_io_maybe_wait_readable(int error, VALUE io, VALUE timeout);
  * passed  errno.  This  is  a  special case  of  rb_io_maybe_wait() that  only
  * concernsfor writing.
  *
+ * If you do not want the default timeout handling, consider using
+ * ::rb_io_maybe_wait directly.
+ *
  * @param[in]  error                System errno.
  * @param[in]  io                   An IO object to wait.
  * @param[in]  timeout              Time, or numeric seconds since UNIX epoch.
  * @exception  rb_eIOError          `io` is not open.
  * @exception  rb_eRangeError       `timeout` is out of range.
  * @exception  rb_eSystemCallError  `select(2)` failed for some reason.
- * @retval     0                    Operation timed out.
+ * @exception  rb_eIOTimeoutError   The wait operation timed out.
  * @retval     Otherwise            Always returns ::RUBY_IO_WRITABLE.
  */
 int rb_io_maybe_wait_writable(int error, VALUE io, VALUE timeout);
