@@ -296,7 +296,7 @@ module Prism
         values << 0
       end
 
-      template << "L"
+      template << "l"
       values << options.fetch(:line, 1)
 
       template << "L"
