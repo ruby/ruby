@@ -189,7 +189,7 @@ module Bundler
     def mirror_for(uri)
       if uri.is_a?(String)
         require_relative "vendored_uri"
-        uri = Bundler::URI(uri)
+        uri = Gem::URI(uri)
       end
 
       gem_mirrors.for(uri.to_s).uri
@@ -549,7 +549,7 @@ module Bundler
       end
       uri = URINormalizer.normalize_suffix(uri)
       require_relative "vendored_uri"
-      uri = Bundler::URI(uri)
+      uri = Gem::URI(uri)
       unless uri.absolute?
         raise ArgumentError, format("Gem sources must be absolute. You provided '%s'.", uri)
       end
@@ -564,7 +564,7 @@ module Bundler
           key
         when Symbol
           key.name
-        when Bundler::URI::HTTP
+        when Gem::URI::HTTP
           key.to_s
         else
           raise ArgumentError, "Invalid key: #{key.inspect}"
@@ -577,7 +577,7 @@ module Bundler
           key
         when Symbol
           key.to_s
-        when Bundler::URI::HTTP
+        when Gem::URI::HTTP
           key.to_s
         else
           raise ArgumentError, "Invalid key: #{key.inspect}"
