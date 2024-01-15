@@ -5259,6 +5259,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
         }
         else if (rest_expression) {
+            ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(0), INT2FIX(1));
             PM_COMPILE(rest_expression);
         }
 
