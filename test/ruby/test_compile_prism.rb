@@ -538,6 +538,7 @@ module Prism
       assert_prism_eval("(a, b, c), *, (d, e) = [1, 3], 4, 5, [6, 7]; b")
       assert_prism_eval("(a, b, c), *, (d, e) = [1, 3], 4, 5, [6, 7]; d")
       assert_prism_eval("((a, *, b), *, (c, *, (d, *, e, f, g))), *, ((h, i, *, j), *, (k, l, m, *, n, o, p), q, r) = 1; a")
+      assert_prism_eval("*a = 1; a")
       assert_prism_eval("_, {}[:foo] = 1")
       assert_prism_eval("_, {}[:foo], _ = 1")
       assert_prism_eval("_, {}[:foo], _ = 1")
