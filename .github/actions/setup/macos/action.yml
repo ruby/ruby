@@ -11,14 +11,20 @@ runs:
 
   steps:
     - name: brew
+      id: brew
       shell: bash
       run: |
-        brew install --quiet gmp libffi openssl@1.1 zlib autoconf automake libtool readline
+        formulae=(gmp libffi openssl@1.1 zlib autoconf automake libtool readline)
+        brew install --quiet "${formulae[@]}"
+        echo keg_only=$(brew info --json "${formulae[@]}" |
+          sed -n '/^ *"name": "\(.*\)",.*/{s//\1/;h;};/^ *"keg_only": true/{g;p;}'
+        ) > $GITHUB_OUTPUT
 
     - name: Set ENV
       shell: bash
       run: |
-        for lib in openssl@1.1 readline; do
-          CONFIGURE_ARGS="${CONFIGURE_ARGS:+$CONFIGURE_ARGS }--with-${lib%@*}-dir=$(brew --prefix $lib)"
+        CONFIGURE_ARGS="${CONFIGURE_ARGS:+$CONFIGURE_ARGS }--with-opt-dir=$(brew --prefix)"
+        for lib in ${{ steps.brew.outputs.keg_only }}; do
+          CONFIGURE_ARGS="${CONFIGURE_ARGS} --with-${lib%@*}-dir=$(brew --prefix $lib)"
         done
         echo CONFIGURE_ARGS="${CONFIGURE_ARGS}" >> $GITHUB_ENV
