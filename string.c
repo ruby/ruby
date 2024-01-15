@@ -3522,8 +3522,12 @@ rb_str_concat(VALUE str1, VALUE str2)
         }
         rb_str_resize(str1, pos+len);
         memcpy(RSTRING_PTR(str1) + pos, buf, len);
-        if (cr == ENC_CODERANGE_7BIT && code > 127)
+        if (cr == ENC_CODERANGE_7BIT && code > 127) {
             cr = ENC_CODERANGE_VALID;
+        }
+        else if (cr == ENC_CODERANGE_BROKEN) {
+            cr = ENC_CODERANGE_UNKNOWN;
+        }
         ENC_CODERANGE_SET(str1, cr);
     }
     return str1;

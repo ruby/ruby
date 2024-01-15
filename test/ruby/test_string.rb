@@ -301,6 +301,9 @@ CODE
     assert_raise(RangeError, bug) {S("a".force_encoding(Encoding::UTF_8)) << -1}
     assert_raise(RangeError, bug) {S("a".force_encoding(Encoding::UTF_8)) << 0x81308130}
     assert_nothing_raised {S("a".force_encoding(Encoding::GB18030)) << 0x81308130}
+
+    s = "\x95".force_encoding(Encoding::SJIS).tap(&:valid_encoding?)
+    assert_predicate(s << 0x5c, :valid_encoding?)
   end
 
   def test_MATCH # '=~'
