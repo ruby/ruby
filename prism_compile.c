@@ -3097,12 +3097,102 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PM_POP_IF_POPPED;
             }
             else {
+                bool has_kw_splat = false;
+
                 for (size_t index = 0; index < elements->size; index++) {
-                    PM_COMPILE(elements->nodes[index]);
+                    pm_node_t *element_node = elements->nodes[index];
+
+                    switch (PM_NODE_TYPE(element_node)) {
+                      case PM_KEYWORD_HASH_NODE: {
+                        has_kw_splat = true;
+                        pm_keyword_hash_node_t *keyword_arg = (pm_keyword_hash_node_t *)element_node;
+                        size_t len = keyword_arg->elements.size;
+
+                        int cur_hash_size = 0;
+
+                        bool new_hash_emitted = false;
+                        for (size_t i = 0; i < len; i++) {
+                            pm_node_t *cur_node = keyword_arg->elements.nodes[i];
+
+                            pm_node_type_t cur_type = PM_NODE_TYPE(cur_node);
+
+                            switch (PM_NODE_TYPE(cur_node)) {
+                              case PM_ASSOC_NODE: {
+                                pm_assoc_node_t *assoc = (pm_assoc_node_t *)cur_node;
+
+                                PM_COMPILE(assoc->key);
+                                PM_COMPILE(assoc->value);
+                                cur_hash_size++;
+
+                                // If we're at the last keyword arg, or the last assoc node of this "set",
+                                // then we want to either construct a newhash or merge onto previous hashes
+                                if (i == (len - 1) || !PM_NODE_TYPE_P(keyword_arg->elements.nodes[i + 1], cur_type)) {
+                                    if (new_hash_emitted) {
+                                        ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(cur_hash_size * 2 + 1));
+                                    }
+                                    else {
+                                        if (!popped) {
+                                            ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(cur_hash_size * 2));
+                                            cur_hash_size = 0;
+                                            new_hash_emitted = true;
+                                        }
+                                    }
+                                }
+
+                                break;
+                              }
+                              case PM_ASSOC_SPLAT_NODE: {
+                                if (len > 1) {
+                                    ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                                    if (i == 0) {
+                                        if (!popped) {
+                                            ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(0));
+                                            new_hash_emitted = true;
+                                        }
+                                    }
+                                    else {
+                                        PM_SWAP;
+                                    }
+                                }
+
+                                pm_assoc_splat_node_t *assoc_splat = (pm_assoc_splat_node_t *)cur_node;
+                                PM_COMPILE(assoc_splat->value);
+
+                                if (len > 1) {
+                                    ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_kwd, INT2FIX(2));
+                                }
+
+                                if ((i < len - 1) && !PM_NODE_TYPE_P(keyword_arg->elements.nodes[i + 1], cur_type)) {
+                                    ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                                    PM_SWAP;
+                                }
+
+                                cur_hash_size = 0;
+                                break;
+                              }
+                              default: {
+                                rb_bug("Unknown type in keyword argument %s\n", pm_node_type_to_str(PM_NODE_TYPE(cur_node)));
+                              }
+                            }
+                        }
+
+                        break;
+                      }
+                      default: {
+                        PM_COMPILE(element_node);
+
+                        break;
+                      }
+                    }
                 }
 
                 if (!popped) {
-                    ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(elements->size));
+                    if (has_kw_splat) {
+                        ADD_INSN1(ret, &dummy_line_node, newarraykwsplat, INT2FIX(elements->size));
+                    }
+                    else {
+                        ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(elements->size));
+                    }
                 }
             }
         }
