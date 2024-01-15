@@ -792,13 +792,14 @@ pm_interpolated_node_compile(pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_
 // It also takes a pointer to depth, and increments depth appropriately
 // according to the depth of the local
 static pm_local_index_t
-pm_lookup_local_index_any_scope(rb_iseq_t *iseq, pm_scope_node_t *scope_node, pm_constant_id_t constant_id, int *found_depth)
+pm_lookup_local_index_any_scope(rb_iseq_t *iseq, pm_scope_node_t *scope_node, pm_constant_id_t constant_id, int start_depth)
 {
-    int level = 0;
     pm_local_index_t lindex = {0};
-    if (found_depth) {
-        level = *found_depth;
+    int level = 0;
+    if (start_depth) {
+        level = start_depth;
     }
+
     if (!scope_node) {
         // We have recursed up all scope nodes
         // and have not found the local yet
@@ -809,12 +810,8 @@ pm_lookup_local_index_any_scope(rb_iseq_t *iseq, pm_scope_node_t *scope_node, pm
 
     if (!st_lookup(scope_node->index_lookup_table, constant_id, &local_index)) {
         // Local does not exist at this level, continue recursing up
-        if (found_depth) {
-            level++;
-            (*found_depth)++;
-            RUBY_ASSERT(level == *found_depth);
-        }
-        return pm_lookup_local_index_any_scope(iseq, scope_node->previous, constant_id, found_depth);
+        level++;
+        return pm_lookup_local_index_any_scope(iseq, scope_node->previous, constant_id, level);
     }
 
     lindex.level = level;
@@ -830,7 +827,7 @@ pm_lookup_local_index_with_depth(rb_iseq_t *iseq, pm_scope_node_t *scope_node, p
         iseq = (rb_iseq_t *)ISEQ_BODY(iseq)->parent_iseq;
     }
 
-    return pm_lookup_local_index_any_scope(iseq, scope_node, constant_id, (int *)&depth);
+    return pm_lookup_local_index_any_scope(iseq, scope_node, constant_id, depth);
 }
 
 // This returns the CRuby ID which maps to the pm_constant_id_t
@@ -4976,10 +4973,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_local_variable_target_node_t *local_write_node = (pm_local_variable_target_node_t *) node;
 
         pm_constant_id_t constant_id = local_write_node->name;
-        int found_depth = 0;
-        pm_local_index_t index = pm_lookup_local_index_any_scope(iseq, scope_node, constant_id, &found_depth);
+        pm_local_index_t index = pm_lookup_local_index_any_scope(iseq, scope_node, constant_id, NULL);
 
-        ADD_SETLOCAL(ret, &dummy_line_node, index.index, found_depth);
+        ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
         return;
       }
       case PM_LOCAL_VARIABLE_WRITE_NODE: {
@@ -4990,10 +4986,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         pm_constant_id_t constant_id = local_write_node->name;
 
-        int found_depth = 0;
-        pm_local_index_t index = pm_lookup_local_index_any_scope(iseq, scope_node, constant_id, &found_depth);
+        pm_local_index_t index = pm_lookup_local_index_any_scope(iseq, scope_node, constant_id, NULL);
 
-        ADD_SETLOCAL(ret, &dummy_line_node, index.index, found_depth);
+        ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
         return;
       }
       case PM_MATCH_LAST_LINE_NODE: {
