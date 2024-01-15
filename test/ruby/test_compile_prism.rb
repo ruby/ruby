@@ -209,6 +209,15 @@ module Prism
 
       assert_prism_eval("defined?(a(itself))")
       assert_prism_eval("defined?(itself(itself))")
+
+      # Method chain on a constant
+      assert_prism_eval(<<~RUBY)
+        class PrismDefinedNode
+          def m1; end
+        end
+
+        defined?(PrismDefinedNode.new.m1)
+      RUBY
     end
 
     def test_GlobalVariableReadNode
