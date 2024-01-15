@@ -2314,12 +2314,10 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
     scope->parameters = NULL;
     scope->body = NULL;
     scope->constants = NULL;
-    scope->local_depth_offset = 0;
     scope->local_table_for_iseq_size = 0;
 
     if (previous) {
         scope->constants = previous->constants;
-        scope->local_depth_offset = previous->local_depth_offset;
     }
     scope->index_lookup_table = NULL;
 
@@ -2330,7 +2328,6 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
             pm_block_node_t *cast = (pm_block_node_t *) node;
             scope->body = cast->body;
             scope->locals = cast->locals;
-            scope->local_depth_offset = 0;
             scope->parameters = cast->parameters;
             break;
         }
@@ -2349,19 +2346,16 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
         }
         case PM_ENSURE_NODE: {
             scope->body = (pm_node_t *)node;
-            scope->local_depth_offset += 1;
             break;
         }
         case PM_FOR_NODE: {
             pm_for_node_t *cast = (pm_for_node_t *)node;
             scope->body = (pm_node_t *)cast->statements;
-            scope->local_depth_offset += 1;
             break;
         }
         case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
             RUBY_ASSERT(node->flags & PM_REGULAR_EXPRESSION_FLAGS_ONCE);
             scope->body = (pm_node_t *)node;
-            scope->local_depth_offset += 1;
             break;
         }
         case PM_LAMBDA_NODE: {
@@ -2380,7 +2374,6 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
         case PM_POST_EXECUTION_NODE: {
             pm_post_execution_node_t *cast = (pm_post_execution_node_t *) node;
             scope->body = (pm_node_t *) cast->statements;
-            scope->local_depth_offset += 2;
             break;
         }
         case PM_PROGRAM_NODE: {
@@ -2392,13 +2385,11 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
         case PM_RESCUE_NODE: {
             pm_rescue_node_t *cast = (pm_rescue_node_t *)node;
             scope->body = (pm_node_t *)cast->statements;
-            scope->local_depth_offset += 1;
             break;
         }
         case PM_RESCUE_MODIFIER_NODE: {
             pm_rescue_modifier_node_t *cast = (pm_rescue_modifier_node_t *)node;
             scope->body = (pm_node_t *)cast->rescue_expression;
-            scope->local_depth_offset += 1;
             break;
         }
         case PM_SINGLETON_CLASS_NODE: {
