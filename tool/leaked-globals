@@ -13,12 +13,15 @@ until ARGV.empty?
     soext = $1
   when /\A SYMBOLS_IN_EMPTYLIB=(.*)/x
     SYMBOLS_IN_EMPTYLIB = $1.split(" ")
+  when /\A EXTSTATIC=(.+)?/x
+    EXTSTATIC = true
   else
     break
   end
   ARGV.shift
 end
 SYMBOLS_IN_EMPTYLIB ||= nil
+EXTSTATIC ||= false
 
 config = ARGV.shift
 count = 0
@@ -56,8 +59,14 @@ REPLACE.push("rust_eh_personality") if RUBY_PLATFORM.include?("darwin")
 
 print "Checking leaked global symbols..."
 STDOUT.flush
-soext = /\.#{soext}(?:$|\.)/ if soext
-so = soext =~ ARGV.first if ARGV.size == 1
+if soext
+  soext = /\.#{soext}(?:$|\.)/
+  if EXTSTATIC
+    ARGV.delete_if {|n| soext =~ n}
+  elsif ARGV.size == 1
+    so = soext =~ ARGV.first
+  end
+end
 IO.foreach("|#{NM} #{ARGV.join(' ')}") do |line|
   line.chomp!
   next so = nil if line.empty?

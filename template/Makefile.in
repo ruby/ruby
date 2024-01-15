@@ -643,7 +643,7 @@ un-runnable:
 	$(ECHO) cannot make runnable, configure with --enable-load-relative.
 	$(Q) exit 1
 
-LIBRUBY_FOR_LEAKED_GLOBALS = $(enable_shared:no=$(EXTSTATIC:static=))
+LIBRUBY_FOR_LEAKED_GLOBALS = $(enable_shared:no=)
 yes-test-basic: $(DOT_WAIT) test-leaked-globals
 leaked-globals: test-leaked-globals
 yes-test-leaked-globals-precheck: $(COMMONOBJS) prog $(tooldir)/leaked-globals
@@ -653,6 +653,7 @@ yes-test-leaked-globals: yes-test-leaked-globals-precheck
 	$(Q) $(XRUBY) $(tooldir)/leaked-globals \
 	  SOEXT=$(SOEXT) NM="$(NM) -Pgp" SYMBOL_PREFIX=$(SYMBOL_PREFIX) \
 	  SYMBOLS_IN_EMPTYLIB="@XSYMBOLS_IN_EMPTYLIB@" \
+	  EXTSTATIC="$(EXTSTATIC)" \
 	  PLATFORM=$(hdrdir)/ruby/$(PLATFORM_DIR).h $(srcdir)/configure.ac \
 	  $(COMMONOBJS) $(LIBRUBY_FOR_LEAKED_GLOBALS:yes=$(LIBRUBY_SO))
 	$(ACTIONS_ENDGROUP)
