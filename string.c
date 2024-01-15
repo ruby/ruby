@@ -3237,14 +3237,15 @@ rb_str_resize(VALUE str, long len)
 
     int independent = str_independent(str);
     long slen = RSTRING_LEN(str);
+    const int termlen = TERM_LEN(str);
 
-    if (slen > len && ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) {
+    if ((slen > len && ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) ||
+        (termlen > 1 && (slen % termlen == 0) != (len % termlen == 0))) {
         ENC_CODERANGE_CLEAR(str);
     }
 
     {
         long capa;
-        const int termlen = TERM_LEN(str);
         if (STR_EMBED_P(str)) {
             if (len == slen) return str;
             if (str_embed_capa(str) >= len + termlen) {
