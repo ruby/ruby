@@ -59,6 +59,7 @@ jobs:
           sparse-checkout: /.github
 
       - name: Install libraries
+        id: libraries
         uses: ./.github/actions/setup/macos
 
       - uses: ./.github/actions/setup/directories
@@ -69,7 +70,7 @@ jobs:
           dummy-files: ${{ matrix.test_task == 'check' }}
 
       - name: Run configure
-        run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
+        run: ../src/configure -C --disable-install-doc ${{ matrix.configure }} ${{ steps.libraries.outputs.opt_dir }}
 
       - run: make prepare-gems
         if: ${{ matrix.test_task == 'test-bundled-gems' }}
