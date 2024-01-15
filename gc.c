@@ -11108,16 +11108,16 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
 
 /*
  *  call-seq:
- *     GC.compact
+ *     GC.compact -> hash
  *
- * This function compacts objects together in Ruby's heap.  It eliminates
+ * This function compacts objects together in Ruby's heap. It eliminates
  * unused space (or fragmentation) in the heap by moving objects in to that
- * unused space.  This function returns a hash which contains statistics about
- * which objects were moved. See <tt>GC.latest_compact_info</tt> for details
- * about compaction statistics.
+ * unused space.
  *
- * This method is implementation specific and not expected to be implemented
- * in any implementation besides MRI.
+ * The returned +hash+ contains statistics about the objects that were moved;
+ * see GC.latest_compact_info.
+ *
+ * This method is only expected to work on CRuby.
  *
  * To test whether \GC compaction is supported, use the idiom:
  *
