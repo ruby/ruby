@@ -284,6 +284,7 @@ module RubyVM::YJIT
         opt_mod
         opt_mult
         opt_plus
+        opt_succ
         setlocal
       ].each do |insn|
         print_counters(stats, out: out, prefix: "#{insn}_", prompt: "#{insn} exit reasons:", optional: true)

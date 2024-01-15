@@ -444,6 +444,9 @@ make_counters! {
     opt_minus_overflow,
     opt_mult_overflow,
 
+    opt_succ_not_fixnum,
+    opt_succ_overflow,
+
     opt_mod_zero,
     opt_div_zero,
 

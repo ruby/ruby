@@ -4610,6 +4610,36 @@ fn jit_rb_int_equal(
     true
 }
 
+fn jit_rb_int_succ(
+    _jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    // Guard the receiver is fixnum
+    let recv_type = asm.ctx.get_opnd_type(StackOpnd(0));
+    let recv = asm.stack_pop(1);
+    if recv_type != Type::Fixnum {
+        asm_comment!(asm, "guard object is fixnum");
+        asm.test(recv, Opnd::Imm(RUBY_FIXNUM_FLAG as i64));
+        asm.jz(Target::side_exit(Counter::opt_succ_not_fixnum));
+    }
+
+    asm_comment!(asm, "Integer#succ");
+    let out_val = asm.add(recv, Opnd::Imm(2)); // 2 is untagged Fixnum 1
+    asm.jo(Target::side_exit(Counter::opt_succ_overflow));
+
+    // Push the output onto the stack
+    let dst = asm.stack_push(Type::Fixnum);
+    asm.mov(dst, out_val);
+
+    true
+}
+
 fn jit_rb_int_div(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -8852,6 +8882,7 @@ pub fn yjit_reg_method_codegen_fns() {
         yjit_reg_method(rb_cInteger, "==", jit_rb_int_equal);
         yjit_reg_method(rb_cInteger, "===", jit_rb_int_equal);
 
+        yjit_reg_method(rb_cInteger, "succ", jit_rb_int_succ);
         yjit_reg_method(rb_cInteger, "/", jit_rb_int_div);
         yjit_reg_method(rb_cInteger, "<<", jit_rb_int_lshift);
         yjit_reg_method(rb_cInteger, "[]", jit_rb_int_aref);
