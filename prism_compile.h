@@ -1,5 +1,17 @@
 #include "prism/prism.h"
 
+/**
+ * the getlocal and setlocal instructions require two parameters. level is how
+ * many hops up the iseq stack one needs to go before finding the correct local
+ * table. The index is the index in that table where our variable is.
+ *
+ * Because these are always calculated and used together, we'll bind them
+ * together as a tuple.
+ */
+typedef struct pm_local_index_struct {
+    int index, level;
+} pm_local_index_t;
+
 // ScopeNodes are helper nodes, and will never be part of the AST. We manually
 // declare them here to avoid generating them.
 typedef struct pm_scope_node {
