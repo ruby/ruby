@@ -792,7 +792,7 @@ pm_interpolated_node_compile(pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_
 // It also takes a pointer to depth, and increments depth appropriately
 // according to the depth of the local
 static pm_local_index_t
-pm_lookup_local_index_any_scope(rb_iseq_t *iseq, pm_scope_node_t *scope_node, pm_constant_id_t constant_id, int start_depth)
+pm_lookup_local_index(rb_iseq_t *iseq, pm_scope_node_t *scope_node, pm_constant_id_t constant_id, int start_depth)
 {
     pm_local_index_t lindex = {0};
     int level = 0;
@@ -811,7 +811,7 @@ pm_lookup_local_index_any_scope(rb_iseq_t *iseq, pm_scope_node_t *scope_node, pm
     if (!st_lookup(scope_node->index_lookup_table, constant_id, &local_index)) {
         // Local does not exist at this level, continue recursing up
         level++;
-        return pm_lookup_local_index_any_scope((rb_iseq_t *)ISEQ_BODY(iseq)->parent_iseq, scope_node->previous, constant_id, level);
+        return pm_lookup_local_index((rb_iseq_t *)ISEQ_BODY(iseq)->parent_iseq, scope_node->previous, constant_id, level);
     }
 
     lindex.level = level;
@@ -2112,7 +2112,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
         // of a pattern. For example, foo in bar. This results in the value
         // being matched being written to that local variable.
         pm_local_variable_target_node_t *cast = (pm_local_variable_target_node_t *) node;
-        pm_local_index_t index = pm_lookup_local_index_any_scope(iseq, scope_node, cast->name, 0);
+        pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, cast->name, 0);
 
         // If this local variable is being written from within an alternation
         // pattern, then it cannot actually be added to the local table since
@@ -4872,7 +4872,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         LABEL *end_label = NEW_LABEL(lineno);
 
         pm_constant_id_t constant_id = local_variable_and_write_node->name;
-        pm_local_index_t local_index = pm_lookup_local_index_any_scope(iseq, scope_node, constant_id, local_variable_and_write_node->depth);
+        pm_local_index_t local_index = pm_lookup_local_index(iseq, scope_node, constant_id, local_variable_and_write_node->depth);
         ADD_GETLOCAL(ret, &dummy_line_node, local_index.index, local_index.level);
 
         PM_DUP_UNLESS_POPPED;
@@ -4894,7 +4894,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_local_variable_operator_write_node_t *local_variable_operator_write_node = (pm_local_variable_operator_write_node_t*) node;
 
         pm_constant_id_t constant_id = local_variable_operator_write_node->name;
-        pm_local_index_t local_index = pm_lookup_local_index_any_scope(iseq, scope_node, constant_id, 0);
+        pm_local_index_t local_index = pm_lookup_local_index(iseq, scope_node, constant_id, 0);
 
         ADD_GETLOCAL(ret, &dummy_line_node, local_index.index, local_index.level);
 
@@ -4920,7 +4920,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         ADD_INSNL(ret, &dummy_line_node, branchunless, set_label);
 
         pm_constant_id_t constant_id = local_variable_or_write_node->name;
-        pm_local_index_t local_index = pm_lookup_local_index_any_scope(iseq, scope_node, constant_id, 0);
+        pm_local_index_t local_index = pm_lookup_local_index(iseq, scope_node, constant_id, 0);
         ADD_GETLOCAL(ret, &dummy_line_node, local_index.index, local_index.level);
 
         PM_DUP_UNLESS_POPPED;
@@ -4943,7 +4943,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_local_variable_read_node_t *local_read_node = (pm_local_variable_read_node_t *) node;
 
         if (!popped) {
-            pm_local_index_t index = pm_lookup_local_index_any_scope(iseq, scope_node, local_read_node->name, 0);
+            pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, local_read_node->name, 0);
             ADD_GETLOCAL(ret, &dummy_line_node, index.index, index.level);
         }
         return;
@@ -4952,7 +4952,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_local_variable_target_node_t *local_write_node = (pm_local_variable_target_node_t *) node;
 
         pm_constant_id_t constant_id = local_write_node->name;
-        pm_local_index_t index = pm_lookup_local_index_any_scope(iseq, scope_node, constant_id, 0);
+        pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, constant_id, 0);
 
         ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
         return;
@@ -4965,7 +4965,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         pm_constant_id_t constant_id = local_write_node->name;
 
-        pm_local_index_t index = pm_lookup_local_index_any_scope(iseq, scope_node, constant_id, 0);
+        pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, constant_id, 0);
 
         ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
         return;
@@ -5106,7 +5106,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             assert(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_TARGET_NODE));
 
             pm_local_variable_target_node_t *local_target = (pm_local_variable_target_node_t *) target;
-            pm_local_index_t index = pm_lookup_local_index_any_scope(iseq, scope_node, local_target->name, 0);
+            pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, local_target->name, 0);
 
             ADD_INSN1(ret, &dummy_line_node, putobject, rb_id2sym(pm_constant_id_lookup(scope_node, local_target->name)));
             ADD_SEND(ret, &dummy_line_node, idAREF, INT2FIX(1));
@@ -5123,7 +5123,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             assert(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_TARGET_NODE));
 
             pm_local_variable_target_node_t *local_target = (pm_local_variable_target_node_t *) target;
-            pm_local_index_t index = pm_lookup_local_index_any_scope(iseq, scope_node, local_target->name, 0);
+            pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, local_target->name, 0);
 
             if (((size_t) targets_index) < (targets_count - 1)) {
                 PM_DUP;
@@ -5146,7 +5146,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             assert(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_TARGET_NODE));
 
             pm_local_variable_target_node_t *local_target = (pm_local_variable_target_node_t *) target;
-            pm_local_index_t index = pm_lookup_local_index_any_scope(iseq, scope_node, local_target->name, 0);
+            pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, local_target->name, 0);
 
             PM_PUTNIL;
             ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
@@ -5183,7 +5183,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_REQUIRED_PARAMETER_NODE: {
         pm_required_parameter_node_t *required_parameter_node = (pm_required_parameter_node_t *)node;
-        pm_local_index_t index = pm_lookup_local_index_any_scope(iseq, scope_node, required_parameter_node->name, 0);
+        pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, required_parameter_node->name, 0);
 
         ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
         return;
@@ -5444,7 +5444,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_optional_parameter_node_t *optional_parameter_node = (pm_optional_parameter_node_t *)node;
         PM_COMPILE_NOT_POPPED(optional_parameter_node->value);
 
-        pm_local_index_t index = pm_lookup_local_index_any_scope(iseq, scope_node, optional_parameter_node->name, 0);
+        pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, optional_parameter_node->name, 0);
 
         ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
 
@@ -6395,7 +6395,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                             PM_NODE_TYPE_P(value, PM_RANGE_NODE)) {
                         LABEL *end_label = NEW_LABEL(nd_line(&dummy_line_node));
 
-                        pm_local_index_t index = pm_lookup_local_index_any_scope(iseq, scope_node, name, 0);
+                        pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, name, 0);
                         int kw_bits_idx = table_size - body->param.keyword->bits_start;
                         ADD_INSN2(ret, &dummy_line_node, checkkeyword, INT2FIX(kw_bits_idx + VM_ENV_DATA_SIZE - 1), INT2FIX(i));
                         ADD_INSNL(ret, &dummy_line_node, branchif, end_label);
