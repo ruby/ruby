@@ -2838,4 +2838,11 @@ EOS
     [t1, t2, t3].each { _1&.join rescue nil }
     [long_rpipe, long_wpipe, short_rpipe, short_wpipe].each { _1&.close rescue nil }
   end if defined?(fork)
+
+  def test_low_memory_startup
+    omit "JIT enabled" if %w[YJIT RJIT].any? {|n| RubyVM.const_defined?(n) and RubyVM.const_get(n).enabled?}
+    (25..27).each {|i| as = 1<<i; assert_normal_exit("", "AS: %x" % as, rlimit_as: as)}
+  rescue ArgumentError, Errno::EINVAL => e
+    omit e.message
+  end
 end
