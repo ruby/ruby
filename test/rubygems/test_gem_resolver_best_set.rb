@@ -34,7 +34,7 @@ class TestGemResolverBestSet < Gem::TestCase
 
     set = Gem::Resolver::BestSet.new
 
-    api_uri = URI(@gem_repo)
+    api_uri = Gem::URI(@gem_repo)
 
     set.sets << Gem::Resolver::APISet.new(api_uri)
 
@@ -94,7 +94,7 @@ class TestGemResolverBestSet < Gem::TestCase
   def test_replace_failed_api_set
     set = Gem::Resolver::BestSet.new
 
-    api_uri = URI(@gem_repo) + "./info/"
+    api_uri = Gem::URI(@gem_repo) + "./info/"
     api_set = Gem::Resolver::APISet.new api_uri
 
     set.sets << api_set
@@ -131,7 +131,7 @@ class TestGemResolverBestSet < Gem::TestCase
   def test_replace_failed_api_set_uri_with_credentials
     set = Gem::Resolver::BestSet.new
 
-    api_uri = URI(@gem_repo) + "./info/"
+    api_uri = Gem::URI(@gem_repo) + "./info/"
     api_uri.user = "user"
     api_uri.password = "pass"
     api_set = Gem::Resolver::APISet.new api_uri

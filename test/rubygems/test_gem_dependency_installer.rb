@@ -489,7 +489,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     # compact index is available
     compact_index_response = Gem::Net::HTTPResponse.new "1.1", 200, "OK"
-    compact_index_response.uri = URI("http://gems.example.com")
+    compact_index_response.uri = Gem::URI("http://gems.example.com")
     @fetcher.data["http://gems.example.com/"] = compact_index_response
 
     # but private local gem not present there

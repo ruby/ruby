@@ -2,6 +2,6 @@
 # -*- ruby -*-
 
 require_relative '../optparse'
-require 'uri'
+require_relative '../../../vendor/uri/lib/uri'
 
-Gem::OptionParser.accept(URI) {|s,| URI.parse(s) if s}
+Gem::OptionParser.accept(Gem::URI) {|s,| Gem::URI.parse(s) if s}

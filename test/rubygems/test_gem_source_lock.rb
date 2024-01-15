@@ -110,6 +110,6 @@ class TestGemSourceLock < Gem::TestCase
     remote = Gem::Source.new @gem_repo
     lock   = Gem::Source::Lock.new remote
 
-    assert_equal URI(@gem_repo), lock.uri
+    assert_equal Gem::URI(@gem_repo), lock.uri
   end
 end

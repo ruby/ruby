@@ -22,7 +22,7 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_initialize_invalid_uri
-    assert_raise URI::InvalidURIError do
+    assert_raise Gem::URI::InvalidURIError do
       Gem::Source.new "git@example:a.git"
     end
   end
@@ -36,7 +36,7 @@ class TestGemSource < Gem::TestCase
   end
 
   def test_cache_dir_escapes_windows_paths
-    uri = URI.parse("file:///C:/WINDOWS/Temp/gem_repo")
+    uri = Gem::URI.parse("file:///C:/WINDOWS/Temp/gem_repo")
     root = Gem.spec_cache_dir
     cache_dir = @source.cache_dir(uri).gsub(root, "")
     assert !cache_dir.include?(":"), "#{cache_dir} should not contain a :"
@@ -44,7 +44,7 @@ class TestGemSource < Gem::TestCase
 
   def test_dependency_resolver_set_bundler_api
     response = Gem::Net::HTTPResponse.new "1.1", 200, "OK"
-    response.uri = URI("http://example")
+    response.uri = Gem::URI("http://example")
 
     @fetcher.data[@gem_repo] = response
 
@@ -78,7 +78,7 @@ class TestGemSource < Gem::TestCase
     spec = @source.fetch_spec tuple("a", Gem::Version.new(1), "ruby")
     assert_equal a1.full_name, spec.full_name
 
-    cache_dir = @source.cache_dir URI.parse(spec_uri)
+    cache_dir = @source.cache_dir Gem::URI.parse(spec_uri)
 
     cache_file = File.join cache_dir, a1.spec_name
 
@@ -91,7 +91,7 @@ class TestGemSource < Gem::TestCase
     spec_uri = "#{@gem_repo}/#{Gem::MARSHAL_SPEC_DIR}#{a1.spec_name}"
     @fetcher.data["#{spec_uri}.rz"] = nil
 
-    cache_dir = @source.cache_dir URI.parse(spec_uri)
+    cache_dir = @source.cache_dir Gem::URI.parse(spec_uri)
     FileUtils.mkdir_p cache_dir
 
     cache_file = File.join cache_dir, a1.spec_name

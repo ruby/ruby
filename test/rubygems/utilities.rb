@@ -40,16 +40,16 @@ class Gem::FakeFetcher
   end
 
   def find_data(path)
-    return Gem.read_binary path.path if URI === path && path.scheme == "file"
+    return Gem.read_binary path.path if Gem::URI === path && path.scheme == "file"
 
-    if URI === path && "URI::#{path.scheme.upcase}" != path.class.name
+    if Gem::URI === path && "Gem::URI::#{path.scheme.upcase}" != path.class.name
       raise ArgumentError,
         "mismatch for scheme #{path.scheme} and class #{path.class}"
     end
 
     path = path.to_s
     @paths << path
-    raise ArgumentError, "need full URI" unless path.start_with?("https://", "http://")
+    raise ArgumentError, "need full Gem::URI" unless path.start_with?("https://", "http://")
 
     unless @data.key? path
       raise Gem::RemoteFetcher::FetchError.new("no data for #{path}", path)
@@ -194,7 +194,7 @@ end
 # Example:
 #
 #   # Sends a get request to http://localhost:5678
-#   Gem::MockBrowser.get URI("http://localhost:5678")
+#   Gem::MockBrowser.get Gem::URI("http://localhost:5678")
 #
 # See RubyGems' tests for more examples of MockBrowser.
 #
@@ -368,12 +368,12 @@ class Gem::TestCase::SpecFetcherSetup
     begin
       gem_repo = @test.gem_repo
       @test.gem_repo = @repository
-      @test.uri = URI @repository
+      @test.uri = Gem::URI @repository
 
       @test.util_setup_spec_fetcher(*@downloaded)
     ensure
       @test.gem_repo = gem_repo
-      @test.uri = URI gem_repo
+      @test.uri = Gem::URI gem_repo
     end
 
     @gems.each do |spec, gem|

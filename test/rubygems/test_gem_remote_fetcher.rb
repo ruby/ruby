@@ -162,7 +162,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_cache_update_path
-    uri = URI "http://example/file"
+    uri = Gem::URI "http://example/file"
     path = File.join @tempdir, "file"
 
     fetcher = util_fuck_with_fetcher "hello"
@@ -176,7 +176,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_cache_update_path_with_utf8_internal_encoding
     with_internal_encoding("UTF-8") do
-      uri = URI "http://example/file"
+      uri = Gem::URI "http://example/file"
       path = File.join @tempdir, "file"
       data = String.new("\xC8").force_encoding(Encoding::BINARY)
 
@@ -190,7 +190,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   end
 
   def test_cache_update_path_no_update
-    uri = URI "http://example/file"
+    uri = Gem::URI "http://example/file"
     path = File.join @tempdir, "file"
 
     fetcher = util_fuck_with_fetcher "hello"
@@ -613,7 +613,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       nil
     end
 
-    assert_nil fetcher.fetch_path(URI.parse(@gem_repo), Time.at(0))
+    assert_nil fetcher.fetch_path(Gem::URI.parse(@gem_repo), Time.at(0))
   end
 
   def test_implicit_no_proxy
@@ -671,7 +671,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       res
     end
 
-    data = fetcher.fetch_http URI.parse(url)
+    data = fetcher.fetch_http Gem::URI.parse(url)
 
     assert_equal "real_path", data
   end
@@ -689,7 +689,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     end
 
     e = assert_raise Gem::RemoteFetcher::FetchError do
-      fetcher.fetch_http URI.parse(url)
+      fetcher.fetch_http Gem::URI.parse(url)
     end
 
     assert_equal "too many redirects (#{url})", e.message
@@ -706,7 +706,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     end
 
     e = assert_raise Gem::RemoteFetcher::FetchError do
-      fetcher.fetch_http URI.parse(url)
+      fetcher.fetch_http Gem::URI.parse(url)
     end
 
     assert_equal "redirecting but no redirect location was given (#{url})", e.message
@@ -714,7 +714,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
 
   def test_fetch_http_with_additional_headers
     ENV["http_proxy"] = @proxy_uri
-    ENV["no_proxy"] = URI.parse(@server_uri).host
+    ENV["no_proxy"] = Gem::URI.parse(@server_uri).host
     fetcher = Gem::RemoteFetcher.new nil, nil, { "X-Captain" => "murphy" }
     @fetcher = fetcher
     assert_equal "murphy", fetcher.fetch_path(@server_uri)
@@ -747,7 +747,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
       s3_uri_signer
     end
 
-    data = fetcher.fetch_s3 URI.parse(url)
+    data = fetcher.fetch_s3 Gem::URI.parse(url)
 
     assert_equal "https://my-bucket.s3.#{region}.amazonaws.com/gems/specs.4.8.gz?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=testuser%2F20190624%2F#{region}%2Fs3%2Faws4_request&X-Amz-Date=20190624T050641Z&X-Amz-Expires=86400#{token ? "&X-Amz-Security-Token=" + token : ""}&X-Amz-SignedHeaders=host&X-Amz-Signature=#{signature}", $fetched_uri.to_s
     assert_equal "success", data
@@ -893,7 +893,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     @fetcher = fetcher
 
     e = assert_raise Gem::RemoteFetcher::FetchError do
-      fetcher.fetch_s3 URI.parse(url)
+      fetcher.fetch_s3 Gem::URI.parse(url)
     end
 
     assert_match expected_message, e.message
@@ -936,7 +936,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def test_observe_no_proxy_env_single_host
     use_ui @stub_ui do
       ENV["http_proxy"] = @proxy_uri
-      ENV["no_proxy"] = URI.parse(@server_uri).host
+      ENV["no_proxy"] = Gem::URI.parse(@server_uri).host
       fetcher = Gem::RemoteFetcher.new nil
       @fetcher = fetcher
       assert_data_from_server fetcher.fetch_path(@server_uri)
@@ -946,7 +946,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
   def test_observe_no_proxy_env_list
     use_ui @stub_ui do
       ENV["http_proxy"] = @proxy_uri
-      ENV["no_proxy"] = "fakeurl.com, #{URI.parse(@server_uri).host}"
+      ENV["no_proxy"] = "fakeurl.com, #{Gem::URI.parse(@server_uri).host}"
       fetcher = Gem::RemoteFetcher.new nil
       @fetcher = fetcher
       assert_data_from_server fetcher.fetch_path(@server_uri)
@@ -958,7 +958,7 @@ PeIQQkFng2VVot/WAQbv3ePqWq07g1BBcwIBAg==
     @fetcher = fetcher
 
     assert_throws :block_called do
-      fetcher.request URI("http://example"), Gem::Net::HTTP::Get do |req|
+      fetcher.request Gem::URI("http://example"), Gem::Net::HTTP::Get do |req|
         assert_kind_of Gem::Net::HTTPGenericRequest, req
         throw :block_called
       end

@@ -11,7 +11,7 @@ if $0 == __FILE__
   puts
   puts "Gem::Net::HTTP::STATUS_CODES = {"
   url = "https://www.iana.org/assignments/http-status-codes/http-status-codes-1.csv"
-  URI(url).read.each_line do |line|
+  Gem::URI(url).read.each_line do |line|
     code, mes, = line.split(',')
     next if ['(Unused)', 'Unassigned', 'Description'].include?(mes)
     puts "  #{code} => '#{mes}',"
