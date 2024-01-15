@@ -4811,6 +4811,33 @@ fn jit_rb_str_uplus(
     true
 }
 
+fn jit_rb_str_length(
+    _jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    asm_comment!(asm, "String#length");
+    extern "C" {
+        fn rb_str_length(str: VALUE) -> VALUE;
+    }
+
+    // This function cannot allocate or raise an exceptions
+    let recv = asm.stack_opnd(0);
+    let ret_opnd = asm.ccall(rb_str_length as *const u8, vec![recv]);
+    asm.stack_pop(1); // Keep recv on stack during ccall for GC
+
+    // Should be guaranteed to be a fixnum on 64-bit systems
+    let out_opnd = asm.stack_push(Type::Fixnum);
+    asm.mov(out_opnd, ret_opnd);
+
+    true
+}
+
 fn jit_rb_str_bytesize(
     _jit: &mut JITState,
     asm: &mut Assembler,
@@ -8890,6 +8917,8 @@ pub fn yjit_reg_method_codegen_fns() {
         yjit_reg_method(rb_cString, "empty?", jit_rb_str_empty_p);
         yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
         yjit_reg_method(rb_cString, "to_str", jit_rb_str_to_s);
+        yjit_reg_method(rb_cString, "length", jit_rb_str_length);
+        yjit_reg_method(rb_cString, "size", jit_rb_str_length);
         yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
         yjit_reg_method(rb_cString, "getbyte", jit_rb_str_getbyte);
         yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
