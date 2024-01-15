@@ -1,5 +1,5 @@
 require_relative '../../../../../vendored_net_http'
-require_relative '../../../../uri/lib/uri'
+require_relative '../../../../../vendored_uri'
 require 'cgi' # for escaping
 require_relative '../../../../connection_pool/lib/connection_pool'
 
