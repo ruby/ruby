@@ -1375,7 +1375,7 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
 # define is_option_with_arg(name, allow_hyphen, allow_envopt)           \
     is_option_with_optarg(name, allow_hyphen, allow_envopt, Qtrue, Qtrue)
 # define is_option_with_optarg(name, allow_hyphen, allow_envopt, needs_arg, next_arg) \
-    (strncmp((name), s, n = sizeof(name) - 1) == 0 && is_option_end(s[n], (allow_hyphen)) && \
+    (strncmp((name), s, n = sizeof(name) - 1) == 0 && (s[n]) && is_option_end(s[n], (allow_hyphen)) && \
      (s[n] != '-' || s[n+1]) ?                                          \
      (check_envopt(name, (allow_envopt)), s += n,                       \
       need_argument(name, s, needs_arg, next_arg), 1) : 0)
