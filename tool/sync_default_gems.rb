@@ -38,7 +38,6 @@ module SyncDefaultGems
     fileutils: 'ruby/fileutils',
     find: "ruby/find",
     forwardable: "ruby/forwardable",
-    getoptlong: "ruby/getoptlong",
     ipaddr: 'ruby/ipaddr',
     irb: 'ruby/irb',
     json: 'flori/json',
