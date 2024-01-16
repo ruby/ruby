@@ -795,23 +795,18 @@ static pm_local_index_t
 pm_lookup_local_index(rb_iseq_t *iseq, pm_scope_node_t *scope_node, pm_constant_id_t constant_id, int start_depth)
 {
     pm_local_index_t lindex = {0};
-    int level = 0;
-    if (start_depth) {
-        level = start_depth;
-    }
-
-    if (!scope_node) {
-        // We have recursed up all scope nodes
-        // and have not found the local yet
-        rb_bug("Local with constant_id %u does not exist", (unsigned int)constant_id);
-    }
-
+    int level = (start_depth) ? start_depth : 0;
     st_data_t local_index;
 
-    if (!st_lookup(scope_node->index_lookup_table, constant_id, &local_index)) {
-        // Local does not exist at this level, continue recursing up
+    while(!st_lookup(scope_node->index_lookup_table, constant_id, &local_index)) {
         level++;
-        return pm_lookup_local_index((rb_iseq_t *)ISEQ_BODY(iseq)->parent_iseq, scope_node->previous, constant_id, level);
+        if (scope_node->previous) {
+            scope_node = scope_node->previous;
+        } else {
+            // We have recursed up all scope nodes
+            // and have not found the local yet
+            rb_bug("Local with constant_id %u does not exist", (unsigned int)constant_id);
+        }
     }
 
     lindex.level = level;
