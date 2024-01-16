@@ -22,7 +22,6 @@ Gem::Specification.new do |spec|
     "README.md",
     "config.yml",
     "docs/build_system.md",
-    "docs/building.md",
     "docs/configuration.md",
     "docs/cruby_compilation.md",
     "docs/design.md",
