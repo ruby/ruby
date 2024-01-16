@@ -3189,6 +3189,19 @@ rb_const_location_from(VALUE klass, ID id, int exclude, int recurse, int visibil
             if (exclude && klass == rb_cObject) {
                 goto not_found;
             }
+
+            if (UNDEF_P(ce->value)) { // autoload
+                VALUE autoload_const_value = autoload_data(klass, id);
+                if (RTEST(autoload_const_value)) {
+                    struct autoload_const *autoload_const;
+                    struct autoload_data *autoload_data = get_autoload_data(autoload_const_value, &autoload_const);
+
+                    if (!UNDEF_P(autoload_const->value) && RTEST(rb_mutex_owned_p(autoload_data->mutex))) {
+                        return rb_assoc_new(autoload_const->file, INT2NUM(autoload_const->line));
+                    }
+                }
+            }
+
             if (NIL_P(ce->file)) return rb_ary_new();
             return rb_assoc_new(ce->file, INT2NUM(ce->line));
         }
