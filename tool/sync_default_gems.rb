@@ -43,7 +43,6 @@ module SyncDefaultGems
     irb: 'ruby/irb',
     json: 'flori/json',
     logger: 'ruby/logger',
-    mutex_m: "ruby/mutex_m",
     nkf: "ruby/nkf",
     observer: "ruby/observer",
     open3: "ruby/open3",
