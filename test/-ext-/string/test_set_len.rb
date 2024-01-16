@@ -63,4 +63,22 @@ class Test_StrSetLen < Test::Unit::TestCase
     assert_not_predicate str, :ascii_only?
     assert_equal u, str
   end
+
+  def test_valid_encoding_after_resized
+    s = "\0\0".force_encoding(Encoding::UTF_16BE)
+    str = Bug::String.new(s)
+    assert_predicate str, :valid_encoding?
+    str.resize(1)
+    assert_not_predicate str, :valid_encoding?
+    str.resize(2)
+    assert_predicate str, :valid_encoding?
+    str.resize(3)
+    assert_not_predicate str, :valid_encoding?
+
+    s = "\xDB\x00\xDC\x00".force_encoding(Encoding::UTF_16BE)
+    str = Bug::String.new(s)
+    assert_predicate str, :valid_encoding?
+    str.resize(2)
+    assert_not_predicate str, :valid_encoding?
+  end
 end
