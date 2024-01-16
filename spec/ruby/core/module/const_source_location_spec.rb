@@ -233,5 +233,17 @@ describe "Module#const_source_location" do
       line = ConstantSpecs::CONST_LOCATION
       ConstantSpecs.const_source_location('CONST_LOCATION').should == [file, line]
     end
+
+    ruby_bug("#20188", ""..."3.4") do
+      it 'returns the real constant location as soon as it is defined' do
+        file = fixture(__FILE__, 'autoload_const_source_location.rb')
+        ConstantSpecs.autoload :ConstSource, file
+        autoload_location = [__FILE__, __LINE__ - 1]
+
+        ConstantSpecs.const_source_location(:ConstSource).should == autoload_location
+        ConstantSpecs::ConstSource::LOCATION.should == ConstantSpecs.const_source_location(:ConstSource)
+        ConstantSpecs::BEFORE_DEFINE_LOCATION.should == autoload_location
+      end
+    end
   end
 end
