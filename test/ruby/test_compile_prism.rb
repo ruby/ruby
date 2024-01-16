@@ -221,6 +221,7 @@ module Prism
 
       assert_prism_eval("defined?(next)")
       assert_prism_eval("defined?(break)")
+      assert_prism_eval("defined?(defined?(a))")
     end
 
     def test_GlobalVariableReadNode
