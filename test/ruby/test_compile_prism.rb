@@ -962,6 +962,22 @@ module Prism
         end
         prism_test_ensure_node
       CODE
+
+      # Test empty ensure block
+      assert_prism_eval(<<~RUBY)
+        res = []
+
+        begin
+          begin
+            raise
+          ensure
+          end
+        rescue
+          res << "rescue"
+        end
+
+        res
+      RUBY
     end
 
     def test_NextNode
