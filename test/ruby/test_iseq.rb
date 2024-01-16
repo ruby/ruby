@@ -805,10 +805,7 @@ class TestISeq < Test::Unit::TestCase
       f.close
 
       assert_nothing_raised(TypeError) do
-        begin
-          RubyVM::InstructionSequence.compile_prism(f.path)
-        rescue SyntaxError
-        end
+        RubyVM::InstructionSequence.compile_prism(f)
       end
     end
   end
