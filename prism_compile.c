@@ -2478,6 +2478,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
       case PM_NEXT_NODE:
       case PM_OR_NODE:
       case PM_RANGE_NODE:
+      case PM_REDO_NODE:
       case PM_REGULAR_EXPRESSION_NODE:
       case PM_SOURCE_ENCODING_NODE:
       case PM_SOURCE_FILE_NODE:
