@@ -3279,14 +3279,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     PM_PUTNIL_UNLESS_POPPED;
                 }
             }
+
             ADD_LABEL(ret, eend);
+            ADD_LABEL(ret, econt);
+
             if (!popped) {
                 PM_NOP;
             }
             pm_statements_node_t *statements = begin_node->ensure_clause->statements;
             if (statements) {
                 PM_COMPILE((pm_node_t *)statements);
-                ADD_LABEL(ret, econt);
                 PM_POP_UNLESS_POPPED;
             }
 
