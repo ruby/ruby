@@ -2686,6 +2686,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
         ADD_INSN3(ret, &dummy_line_node, defined, INT2FIX(DEFINED_ZSUPER), 0,
                   PUSH_VAL(DEFINED_ZSUPER));
         return;
+      case PM_CALL_AND_WRITE_NODE:
       case PM_CONSTANT_WRITE_NODE:
       case PM_CONSTANT_OPERATOR_WRITE_NODE:
       case PM_CONSTANT_AND_WRITE_NODE:
