@@ -20,7 +20,6 @@ module SyncDefaultGems
     "resolv-replace": "ruby/resolv-replace",
     English: "ruby/English",
     abbrev: "ruby/abbrev",
-    base64: "ruby/base64",
     benchmark: "ruby/benchmark",
     bigdecimal: "ruby/bigdecimal",
     cgi: "ruby/cgi",
