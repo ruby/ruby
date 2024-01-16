@@ -59,7 +59,7 @@ jobs:
         include:
           # To mitigate flakiness of MinGW CI, we test only one runtime that newer MSYS2 uses.
           - msystem: 'UCRT64'
-            base_ruby: head
+            baseruby: '2.7'
             test_task: 'check'
             test-all-opts: '--name=!/TestObjSpace#test_reachable_objects_during_iteration/'
       fail-fast: false
@@ -76,7 +76,7 @@ jobs:
       - name: Set up Ruby & MSYS2
         uses: ruby/setup-ruby@360dc864d5da99d54fcb8e9148c14a84b90d3e88 # v1.165.1
         with:
-          ruby-version: ${{ matrix.base_ruby }}
+          ruby-version: ${{ matrix.baseruby }}
 
       - name: where check
         run: |
