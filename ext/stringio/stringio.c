@@ -1464,8 +1464,14 @@ strio_write(VALUE self, VALUE str)
 	}
     }
     else {
+	int cr0 = ENC_CODERANGE(ptr->string);
+	int cr = ENC_CODERANGE_UNKNOWN;
+	if (rb_enc_asciicompat(enc) && rb_enc_asciicompat(enc2)) {
+	    cr = ENC_CODERANGE_AND(cr0, ENC_CODERANGE(str));
+	}
 	strio_extend(ptr, ptr->pos, len);
 	memmove(RSTRING_PTR(ptr->string)+ptr->pos, RSTRING_PTR(str), len);
+	if (cr != cr0) ENC_CODERANGE_SET(ptr->string, cr);
     }
     RB_GC_GUARD(str);
     ptr->pos += len;
