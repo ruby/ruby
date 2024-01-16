@@ -96,10 +96,6 @@ jobs:
             ${{ steps.find-tools.outputs.needs }}
         if: ${{ steps.find-tools.outputs.needs != '' }}
 
-      - uses: ruby/setup-ruby@360dc864d5da99d54fcb8e9148c14a84b90d3e88 # v1.165.1
-        with:
-          ruby-version: '2.7'
-
       - uses: actions/cache@e12d46a63a90f2fae62d114769bbf2a179198b5c # v3.3.3
         with:
           path: C:\vcpkg\downloads
@@ -137,6 +133,7 @@ jobs:
           builddir: build
 
       - name: setup env
+        # Available Ruby versions: https://github.com/actions/runner-images/blob/main/images/windows/Windows2019-Readme.md#ruby
         # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
         run: |
@@ -150,9 +147,13 @@ jobs:
           set TEMP=%USERPROFILE%\AppData\Local\Temp
           set MAKEFLAGS=l
           set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
+          set PATH=C:\hostedtoolcache\windows\Ruby\2.7.8\x64\bin;%PATH%
           set | C:\msys64\usr\bin\sort > new.env
           C:\msys64\usr\bin\comm -13 old.env new.env >> %GITHUB_ENV%
           del *.env
+
+      - name: baseruby version
+        run: ruby -v
 
       - name: compiler version
         run: cl
