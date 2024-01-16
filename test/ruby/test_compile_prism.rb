@@ -218,6 +218,8 @@ module Prism
 
         defined?(PrismDefinedNode.new.m1)
       RUBY
+
+      assert_prism_eval("defined?(next)")
     end
 
     def test_GlobalVariableReadNode
