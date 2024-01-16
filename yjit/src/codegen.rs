@@ -5605,7 +5605,7 @@ fn gen_send_cfunc(
             // Nothing to do
         }
         _ => {
-            gen_counter_incr(asm, Counter::send_block_arg);
+            gen_counter_incr(asm, Counter::send_cfunc_block_arg);
             return None;
         }
     }
@@ -7009,7 +7009,7 @@ fn exit_if_unsupported_block_arg_type(
             Some(Some(Type::TProc))
         }
         _ => {
-            gen_counter_incr(asm, Counter::send_block_arg);
+            gen_counter_incr(asm, Counter::send_iseq_block_arg_type);
             None
         }
     }
@@ -7341,7 +7341,7 @@ fn gen_send_general(
                 let ivar_name = unsafe { get_cme_def_body_attr_id(cme) };
 
                 if flags & VM_CALL_ARGS_BLOCKARG != 0 {
-                    gen_counter_incr(asm, Counter::send_block_arg);
+                    gen_counter_incr(asm, Counter::send_getter_block_arg);
                     return None;
                 }
 
@@ -7373,7 +7373,7 @@ fn gen_send_general(
                     gen_counter_incr(asm, Counter::send_cfunc_tracing);
                     return None;
                 } else if flags & VM_CALL_ARGS_BLOCKARG != 0 {
-                    gen_counter_incr(asm, Counter::send_block_arg);
+                    gen_counter_incr(asm, Counter::send_attrset_block_arg);
                     return None;
                 } else {
                     let ivar_name = unsafe { get_cme_def_body_attr_id(cme) };
@@ -7396,7 +7396,7 @@ fn gen_send_general(
             // Send family of methods, e.g. call/apply
             VM_METHOD_TYPE_OPTIMIZED => {
                 if flags & VM_CALL_ARGS_BLOCKARG != 0 {
-                    gen_counter_incr(asm, Counter::send_block_arg);
+                    gen_counter_incr(asm, Counter::send_optimized_block_arg);
                     return None;
                 }
 
