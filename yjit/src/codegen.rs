@@ -7307,21 +7307,43 @@ fn gen_send_general(
                 );
             }
             VM_METHOD_TYPE_IVAR => {
-                if flags & VM_CALL_ARGS_SPLAT != 0 {
-                    gen_counter_incr(asm, Counter::send_args_splat_ivar);
-                    return None;
-                }
-
-                if argc != 0 {
-                    // Argument count mismatch. Getters take no arguments.
-                    gen_counter_incr(asm, Counter::send_getter_arity);
-                    return None;
-                }
-
                 // This is a .send call not supported right now for getters
                 if flags & VM_CALL_OPT_SEND != 0 {
                     gen_counter_incr(asm, Counter::send_send_getter);
                     return None;
+                }
+
+                if flags & VM_CALL_ARGS_BLOCKARG != 0 {
+                    match asm.ctx.get_opnd_type(StackOpnd(0)) {
+                        Type::Nil | Type::BlockParamProxy => {
+                            // Getters ignore the block arg, and these types of block args can be
+                            // passed without side-effect (never any `to_proc` call).
+                            asm.stack_pop(1);
+                        }
+                        _ => {
+                            gen_counter_incr(asm, Counter::send_getter_block_arg);
+                            return None;
+                        }
+                    }
+                }
+
+                if argc != 0 {
+                    // Guard for simple splat of empty array
+                    if VM_CALL_ARGS_SPLAT == flags & (VM_CALL_ARGS_SPLAT | VM_CALL_KWARG | VM_CALL_KW_SPLAT)
+                        && argc == 1 {
+                        // Not using chain guards since on failure these likely end up just raising
+                        // ArgumentError
+                        let splat = asm.stack_opnd(0);
+                        guard_object_is_array(asm, splat, splat.into(), Counter::guard_send_getter_splat_non_empty);
+                        let splat_len = get_array_len(asm, splat);
+                        asm.cmp(splat_len, 0.into());
+                        asm.jne(Target::side_exit(Counter::guard_send_getter_splat_non_empty));
+                        asm.stack_pop(1);
+                    } else {
+                        // Argument count mismatch. Getters take no arguments.
+                        gen_counter_incr(asm, Counter::send_getter_arity);
+                        return None;
+                    }
                 }
 
                 if c_method_tracing_currently_enabled(jit) {
@@ -7338,12 +7360,8 @@ fn gen_send_general(
                     return None;
                 }
 
+                let recv = asm.stack_opnd(0); // the receiver should now be the stack top
                 let ivar_name = unsafe { get_cme_def_body_attr_id(cme) };
-
-                if flags & VM_CALL_ARGS_BLOCKARG != 0 {
-                    gen_counter_incr(asm, Counter::send_getter_block_arg);
-                    return None;
-                }
 
                 return gen_get_ivar(
                     jit,
@@ -7353,7 +7371,7 @@ fn gen_send_general(
                     comptime_recv,
                     ivar_name,
                     recv,
-                    recv_opnd,
+                    recv.into(),
                 );
             }
             VM_METHOD_TYPE_ATTRSET => {
