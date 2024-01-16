@@ -51,7 +51,8 @@ class ConstantsLeakCheckerAction
 
     if @check && !constants.empty?
       MSpec.protect 'Constants leak check' do
-        raise ConstantLeakError, "Top level constants leaked: #{constants.join(', ')}"
+        message = constants.map{|c| "#{c.const_source_location}: #{c}" }.join(', ')
+        raise ConstantLeakError, "Top level constants leaked: #{message}"
       end
     end
   end
@@ -65,7 +66,8 @@ class ConstantsLeakCheckerAction
 
     if @check && !constants.empty?
       MSpec.protect 'Global constants leak check' do
-        raise ConstantLeakError, "Top level constants leaked in the whole test suite: #{constants.join(', ')}"
+      message = constants.map{|c| "#{c.const_source_location}: #{c}" }.join(', ')
+        raise ConstantLeakError, "Top level constants leaked in the whole test suite: #{message}"
       end
     end
   end
