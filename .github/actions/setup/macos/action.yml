@@ -4,21 +4,26 @@ description: >-
 
 inputs: {} # nothing?
 
-outputs: {} # nothing?
+outputs:
+  opt_dir:
+    value: ${{ steps.brew.outputs.opt_dir }}
 
 runs:
   using: composite
 
   steps:
     - name: brew
+      id: brew
       shell: bash
       run: |
-        brew install --quiet gmp libffi openssl@1.1 zlib autoconf automake libtool readline
-
-    - name: Set ENV
-      shell: bash
-      run: |
-        for lib in openssl@1.1 readline; do
-          CONFIGURE_ARGS="${CONFIGURE_ARGS:+$CONFIGURE_ARGS }--with-${lib%@*}-dir=$(brew --prefix $lib)"
+        formulae=(gmp libffi openssl@1.1 zlib autoconf automake libtool readline)
+        brew install --quiet "${formulae[@]}"
+        keg_only=($(brew info --json "${formulae[@]}" |
+          sed -n '/^ *"name": "\(.*\)",.*/{s//\1/;h;};/^ *"keg_only": true/{g;p;}'
+        ))
+        echo opt_dir="--with-opt-dir=$(brew --prefix)" >> $GITHUB_OUTPUT
+        conf=
+        for lib in ${{ steps.brew.outputs.keg_only }}; do
+          conf="${conf:+$conf } --with-${lib%@*}-dir=$(brew --prefix $lib)"
         done
-        echo CONFIGURE_ARGS="${CONFIGURE_ARGS}" >> $GITHUB_ENV
+        echo CONFIGURE_ARGS="${conf}" >> $GITHUB_ENV
