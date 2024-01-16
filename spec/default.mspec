@@ -3,6 +3,10 @@ $VERBOSE = false
 if (opt = ENV["RUBYOPT"]) and (opt = opt.dup).sub!(/(?:\A|\s)-w(?=\z|\s)/, '')
   ENV["RUBYOPT"] = opt
 end
+
+# Enabld leakcheckers by ruby/mspec
+ENV["CHECK_LEAKS"] ||= "true"
+
 require "./rbconfig" unless defined?(RbConfig)
 require_relative "../tool/test-coverage" if ENV.key?("COVERAGE")
 load File.dirname(__FILE__) + '/ruby/default.mspec'

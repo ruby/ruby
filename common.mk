@@ -43,9 +43,6 @@ RUBYLIB       = $(PATH_SEPARATOR)
 RUBYOPT       = -
 RUN_OPTS      = --disable-gems
 
-# Enabld leakcheckers by ruby/mspec
-CHECK_LEAKS = true
-
 # GITPULLOPTIONS = --no-tags
 
 PRISM_SRCDIR = $(srcdir)/prism
