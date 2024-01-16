@@ -1,8 +1,8 @@
-@ ProgramNode (location: (1,0)-(26,3))
+@ ProgramNode (location: (1,0)-(28,9))
 ├── locals: [:a]
 └── statements:
-    @ StatementsNode (location: (1,0)-(26,3))
-    └── body: (length: 9)
+    @ StatementsNode (location: (1,0)-(28,9))
+    └── body: (length: 10)
         ├── @ HashNode (location: (1,0)-(1,2))
         │   ├── opening_loc: (1,0)-(1,1) = "{"
         │   ├── elements: (length: 0)
@@ -267,100 +267,116 @@
         │   │   @ IntegerNode (location: (22,4)-(22,5))
         │   │   └── flags: decimal
         │   └── operator_loc: (22,2)-(22,3) = "="
-        └── @ CallNode (location: (23,0)-(26,3))
-            ├── flags: ignore_visibility
-            ├── receiver: ∅
-            ├── call_operator_loc: ∅
-            ├── name: :tap
-            ├── message_loc: (23,0)-(23,3) = "tap"
-            ├── opening_loc: ∅
-            ├── arguments: ∅
-            ├── closing_loc: ∅
-            └── block:
-                @ BlockNode (location: (23,4)-(26,3))
-                ├── locals: [:b]
-                ├── locals_body_index: 0
-                ├── parameters: ∅
-                ├── body:
-                │   @ StatementsNode (location: (24,2)-(25,20))
-                │   └── body: (length: 2)
-                │       ├── @ LocalVariableWriteNode (location: (24,2)-(24,7))
-                │       │   ├── name: :b
-                │       │   ├── depth: 0
-                │       │   ├── name_loc: (24,2)-(24,3) = "b"
-                │       │   ├── value:
-                │       │   │   @ IntegerNode (location: (24,6)-(24,7))
-                │       │   │   └── flags: decimal
-                │       │   └── operator_loc: (24,4)-(24,5) = "="
-                │       └── @ HashNode (location: (25,2)-(25,20))
-                │           ├── opening_loc: (25,2)-(25,3) = "{"
-                │           ├── elements: (length: 4)
-                │           │   ├── @ AssocNode (location: (25,4)-(25,6))
-                │           │   │   ├── key:
-                │           │   │   │   @ SymbolNode (location: (25,4)-(25,6))
-                │           │   │   │   ├── flags: ∅
-                │           │   │   │   ├── opening_loc: ∅
-                │           │   │   │   ├── value_loc: (25,4)-(25,5) = "a"
-                │           │   │   │   ├── closing_loc: (25,5)-(25,6) = ":"
-                │           │   │   │   └── unescaped: "a"
-                │           │   │   ├── value:
-                │           │   │   │   @ ImplicitNode (location: (25,4)-(25,6))
-                │           │   │   │   └── value:
-                │           │   │   │       @ LocalVariableReadNode (location: (25,4)-(25,6))
-                │           │   │   │       ├── name: :a
-                │           │   │   │       └── depth: 1
-                │           │   │   └── operator_loc: ∅
-                │           │   ├── @ AssocNode (location: (25,8)-(25,10))
-                │           │   │   ├── key:
-                │           │   │   │   @ SymbolNode (location: (25,8)-(25,10))
-                │           │   │   │   ├── flags: ∅
-                │           │   │   │   ├── opening_loc: ∅
-                │           │   │   │   ├── value_loc: (25,8)-(25,9) = "b"
-                │           │   │   │   ├── closing_loc: (25,9)-(25,10) = ":"
-                │           │   │   │   └── unescaped: "b"
-                │           │   │   ├── value:
-                │           │   │   │   @ ImplicitNode (location: (25,8)-(25,10))
-                │           │   │   │   └── value:
-                │           │   │   │       @ LocalVariableReadNode (location: (25,8)-(25,10))
-                │           │   │   │       ├── name: :b
-                │           │   │   │       └── depth: 0
-                │           │   │   └── operator_loc: ∅
-                │           │   ├── @ AssocNode (location: (25,12)-(25,14))
-                │           │   │   ├── key:
-                │           │   │   │   @ SymbolNode (location: (25,12)-(25,14))
-                │           │   │   │   ├── flags: ∅
-                │           │   │   │   ├── opening_loc: ∅
-                │           │   │   │   ├── value_loc: (25,12)-(25,13) = "c"
-                │           │   │   │   ├── closing_loc: (25,13)-(25,14) = ":"
-                │           │   │   │   └── unescaped: "c"
-                │           │   │   ├── value:
-                │           │   │   │   @ ImplicitNode (location: (25,12)-(25,14))
-                │           │   │   │   └── value:
-                │           │   │   │       @ CallNode (location: (25,12)-(25,14))
-                │           │   │   │       ├── flags: ignore_visibility
-                │           │   │   │       ├── receiver: ∅
-                │           │   │   │       ├── call_operator_loc: ∅
-                │           │   │   │       ├── name: :c
-                │           │   │   │       ├── message_loc: (25,12)-(25,13) = "c"
-                │           │   │   │       ├── opening_loc: ∅
-                │           │   │   │       ├── arguments: ∅
-                │           │   │   │       ├── closing_loc: ∅
-                │           │   │   │       └── block: ∅
-                │           │   │   └── operator_loc: ∅
-                │           │   └── @ AssocNode (location: (25,16)-(25,18))
-                │           │       ├── key:
-                │           │       │   @ SymbolNode (location: (25,16)-(25,18))
-                │           │       │   ├── flags: ∅
-                │           │       │   ├── opening_loc: ∅
-                │           │       │   ├── value_loc: (25,16)-(25,17) = "D"
-                │           │       │   ├── closing_loc: (25,17)-(25,18) = ":"
-                │           │       │   └── unescaped: "D"
-                │           │       ├── value:
-                │           │       │   @ ImplicitNode (location: (25,16)-(25,18))
-                │           │       │   └── value:
-                │           │       │       @ ConstantReadNode (location: (25,16)-(25,18))
-                │           │       │       └── name: :D
-                │           │       └── operator_loc: ∅
-                │           └── closing_loc: (25,19)-(25,20) = "}"
-                ├── opening_loc: (23,4)-(23,6) = "do"
-                └── closing_loc: (26,0)-(26,3) = "end"
+        ├── @ CallNode (location: (23,0)-(26,3))
+        │   ├── flags: ignore_visibility
+        │   ├── receiver: ∅
+        │   ├── call_operator_loc: ∅
+        │   ├── name: :tap
+        │   ├── message_loc: (23,0)-(23,3) = "tap"
+        │   ├── opening_loc: ∅
+        │   ├── arguments: ∅
+        │   ├── closing_loc: ∅
+        │   └── block:
+        │       @ BlockNode (location: (23,4)-(26,3))
+        │       ├── locals: [:b]
+        │       ├── locals_body_index: 0
+        │       ├── parameters: ∅
+        │       ├── body:
+        │       │   @ StatementsNode (location: (24,2)-(25,20))
+        │       │   └── body: (length: 2)
+        │       │       ├── @ LocalVariableWriteNode (location: (24,2)-(24,7))
+        │       │       │   ├── name: :b
+        │       │       │   ├── depth: 0
+        │       │       │   ├── name_loc: (24,2)-(24,3) = "b"
+        │       │       │   ├── value:
+        │       │       │   │   @ IntegerNode (location: (24,6)-(24,7))
+        │       │       │   │   └── flags: decimal
+        │       │       │   └── operator_loc: (24,4)-(24,5) = "="
+        │       │       └── @ HashNode (location: (25,2)-(25,20))
+        │       │           ├── opening_loc: (25,2)-(25,3) = "{"
+        │       │           ├── elements: (length: 4)
+        │       │           │   ├── @ AssocNode (location: (25,4)-(25,6))
+        │       │           │   │   ├── key:
+        │       │           │   │   │   @ SymbolNode (location: (25,4)-(25,6))
+        │       │           │   │   │   ├── flags: ∅
+        │       │           │   │   │   ├── opening_loc: ∅
+        │       │           │   │   │   ├── value_loc: (25,4)-(25,5) = "a"
+        │       │           │   │   │   ├── closing_loc: (25,5)-(25,6) = ":"
+        │       │           │   │   │   └── unescaped: "a"
+        │       │           │   │   ├── value:
+        │       │           │   │   │   @ ImplicitNode (location: (25,4)-(25,6))
+        │       │           │   │   │   └── value:
+        │       │           │   │   │       @ LocalVariableReadNode (location: (25,4)-(25,6))
+        │       │           │   │   │       ├── name: :a
+        │       │           │   │   │       └── depth: 1
+        │       │           │   │   └── operator_loc: ∅
+        │       │           │   ├── @ AssocNode (location: (25,8)-(25,10))
+        │       │           │   │   ├── key:
+        │       │           │   │   │   @ SymbolNode (location: (25,8)-(25,10))
+        │       │           │   │   │   ├── flags: ∅
+        │       │           │   │   │   ├── opening_loc: ∅
+        │       │           │   │   │   ├── value_loc: (25,8)-(25,9) = "b"
+        │       │           │   │   │   ├── closing_loc: (25,9)-(25,10) = ":"
+        │       │           │   │   │   └── unescaped: "b"
+        │       │           │   │   ├── value:
+        │       │           │   │   │   @ ImplicitNode (location: (25,8)-(25,10))
+        │       │           │   │   │   └── value:
+        │       │           │   │   │       @ LocalVariableReadNode (location: (25,8)-(25,10))
+        │       │           │   │   │       ├── name: :b
+        │       │           │   │   │       └── depth: 0
+        │       │           │   │   └── operator_loc: ∅
+        │       │           │   ├── @ AssocNode (location: (25,12)-(25,14))
+        │       │           │   │   ├── key:
+        │       │           │   │   │   @ SymbolNode (location: (25,12)-(25,14))
+        │       │           │   │   │   ├── flags: ∅
+        │       │           │   │   │   ├── opening_loc: ∅
+        │       │           │   │   │   ├── value_loc: (25,12)-(25,13) = "c"
+        │       │           │   │   │   ├── closing_loc: (25,13)-(25,14) = ":"
+        │       │           │   │   │   └── unescaped: "c"
+        │       │           │   │   ├── value:
+        │       │           │   │   │   @ ImplicitNode (location: (25,12)-(25,14))
+        │       │           │   │   │   └── value:
+        │       │           │   │   │       @ CallNode (location: (25,12)-(25,14))
+        │       │           │   │   │       ├── flags: ignore_visibility
+        │       │           │   │   │       ├── receiver: ∅
+        │       │           │   │   │       ├── call_operator_loc: ∅
+        │       │           │   │   │       ├── name: :c
+        │       │           │   │   │       ├── message_loc: (25,12)-(25,13) = "c"
+        │       │           │   │   │       ├── opening_loc: ∅
+        │       │           │   │   │       ├── arguments: ∅
+        │       │           │   │   │       ├── closing_loc: ∅
+        │       │           │   │   │       └── block: ∅
+        │       │           │   │   └── operator_loc: ∅
+        │       │           │   └── @ AssocNode (location: (25,16)-(25,18))
+        │       │           │       ├── key:
+        │       │           │       │   @ SymbolNode (location: (25,16)-(25,18))
+        │       │           │       │   ├── flags: ∅
+        │       │           │       │   ├── opening_loc: ∅
+        │       │           │       │   ├── value_loc: (25,16)-(25,17) = "D"
+        │       │           │       │   ├── closing_loc: (25,17)-(25,18) = ":"
+        │       │           │       │   └── unescaped: "D"
+        │       │           │       ├── value:
+        │       │           │       │   @ ImplicitNode (location: (25,16)-(25,18))
+        │       │           │       │   └── value:
+        │       │           │       │       @ ConstantReadNode (location: (25,16)-(25,18))
+        │       │           │       │       └── name: :D
+        │       │           │       └── operator_loc: ∅
+        │       │           └── closing_loc: (25,19)-(25,20) = "}"
+        │       ├── opening_loc: (23,4)-(23,6) = "do"
+        │       └── closing_loc: (26,0)-(26,3) = "end"
+        └── @ HashNode (location: (28,0)-(28,9))
+            ├── opening_loc: (28,0)-(28,1) = "{"
+            ├── elements: (length: 1)
+            │   └── @ AssocNode (location: (28,2)-(28,7))
+            │       ├── key:
+            │       │   @ SymbolNode (location: (28,2)-(28,4))
+            │       │   ├── flags: ∅
+            │       │   ├── opening_loc: ∅
+            │       │   ├── value_loc: (28,2)-(28,3) = "a"
+            │       │   ├── closing_loc: (28,3)-(28,4) = ":"
+            │       │   └── unescaped: "a"
+            │       ├── value:
+            │       │   @ IntegerNode (location: (28,5)-(28,7))
+            │       │   └── flags: decimal
+            │       └── operator_loc: ∅
+            └── closing_loc: (28,8)-(28,9) = "}"

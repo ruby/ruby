@@ -8972,11 +8972,12 @@ parser_lex(pm_parser_t *parser) {
                     }
 
                     bool spcarg = lex_state_spcarg_p(parser, space_seen);
-                    if (spcarg) {
+                    bool is_beg = lex_state_beg_p(parser);
+                    if (!is_beg && spcarg) {
                         pm_parser_warn_token(parser, &parser->current, PM_WARN_AMBIGUOUS_FIRST_ARGUMENT_MINUS);
                     }
 
-                    if (lex_state_beg_p(parser) || spcarg) {
+                    if (is_beg || spcarg) {
                         lex_state_set(parser, PM_LEX_STATE_BEG);
                         LEX(pm_char_is_decimal_digit(peek(parser)) ? PM_TOKEN_UMINUS_NUM : PM_TOKEN_UMINUS);
                     }
