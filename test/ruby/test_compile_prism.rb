@@ -220,6 +220,7 @@ module Prism
       RUBY
 
       assert_prism_eval("defined?(next)")
+      assert_prism_eval("defined?(break)")
     end
 
     def test_GlobalVariableReadNode

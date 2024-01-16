@@ -2462,6 +2462,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
           }
       }
       case PM_AND_NODE:
+      case PM_BREAK_NODE:
       case PM_FLOAT_NODE:
       case PM_HASH_NODE:
       case PM_IMAGINARY_NODE:
