@@ -1810,7 +1810,7 @@ fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
 
 // Gets the EP of the ISeq of the containing method, or "local level".
 // Equivalent of GET_LEP() macro.
-fn gen_get_lep(jit: &mut JITState, asm: &mut Assembler) -> Opnd {
+fn gen_get_lep(jit: &JITState, asm: &mut Assembler) -> Opnd {
     // Equivalent of get_lvar_level() in compile.c
     fn get_lvar_level(iseq: IseqPtr) -> u32 {
         if iseq == unsafe { rb_get_iseq_body_local_iseq(iseq) } {
@@ -6876,6 +6876,12 @@ fn gen_send_iseq(
     // Create a context for the callee
     let mut callee_ctx = Context::default();
 
+    // If the callee has :inline_block annotation and the callsite has a block ISEQ,
+    // duplicate a callee block for each block ISEQ to make its `yield` monomorphic.
+    if let (Some(BlockHandler::BlockISeq(iseq)), true) = (block, builtin_attrs & BUILTIN_ATTR_INLINE_BLOCK != 0) {
+        callee_ctx.set_inline_block(iseq);
+    }
+
     // Set the argument types in the callee's context
     for arg_idx in 0..argc {
         let stack_offs: u8 = (argc - arg_idx - 1).try_into().unwrap();
@@ -7862,6 +7868,13 @@ fn gen_invokeblock_specialized(
             SEND_MAX_DEPTH,
             Counter::guard_invokeblock_tag_changed,
         );
+
+        // If the current ISEQ is annotated to be inlined but it's not being inlined here,
+        // generate a dynamic dispatch to avoid making this yield megamorphic.
+        if unsafe { rb_yjit_iseq_builtin_attrs(jit.iseq) } & BUILTIN_ATTR_INLINE_BLOCK != 0 && !asm.ctx.inline() {
+            gen_counter_incr(asm, Counter::invokeblock_iseq_not_inlined);
+            return None;
+        }
 
         let comptime_captured = unsafe { ((comptime_handler.0 & !0x3) as *const rb_captured_block).as_ref().unwrap() };
         let comptime_iseq = unsafe { *comptime_captured.code.iseq.as_ref() };

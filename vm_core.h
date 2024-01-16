@@ -368,6 +368,8 @@ enum rb_builtin_attr {
     BUILTIN_ATTR_LEAF = 0x01,
     // This iseq only contains single `opt_invokebuiltin_delegate_leave` instruction with 0 arguments.
     BUILTIN_ATTR_SINGLE_NOARG_LEAF = 0x02,
+    // This attribute signals JIT to duplicate the iseq for each block iseq so that its `yield` will be monomorphic.
+    BUILTIN_ATTR_INLINE_BLOCK = 0x04,
 };
 
 typedef VALUE (*rb_jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);

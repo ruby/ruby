@@ -245,7 +245,7 @@ macro_rules! make_counters {
 
 /// The list of counters that are available without --yjit-stats.
 /// They are incremented only by `incr_counter!` and don't use `gen_counter_incr`.
-pub const DEFAULT_COUNTERS: [Counter; 8] = [
+pub const DEFAULT_COUNTERS: [Counter; 9] = [
     Counter::code_gc_count,
     Counter::compiled_iseq_entry,
     Counter::cold_iseq_entry,
@@ -254,6 +254,7 @@ pub const DEFAULT_COUNTERS: [Counter; 8] = [
     Counter::compiled_block_count,
     Counter::compiled_branch_count,
     Counter::compile_time_ns,
+    Counter::max_inline_versions,
 ];
 
 /// Macro to increase a counter by name and count
@@ -268,6 +269,24 @@ macro_rules! incr_counter_by {
     };
 }
 pub(crate) use incr_counter_by;
+
+/// Macro to increase a counter if the given value is larger
+macro_rules! incr_counter_to {
+    // Unsafe is ok here because options are initialized
+    // once before any Ruby code executes
+    ($counter_name:ident, $count:expr) => {
+        #[allow(unused_unsafe)]
+        {
+            unsafe {
+                $crate::stats::COUNTERS.$counter_name = u64::max(
+                    $crate::stats::COUNTERS.$counter_name,
+                    $count as u64,
+                )
+            }
+        }
+    };
+}
+pub(crate) use incr_counter_to;
 
 /// Macro to increment a counter by name
 macro_rules! incr_counter {
@@ -395,6 +414,7 @@ make_counters! {
     invokeblock_iseq_arg0_args_splat,
     invokeblock_iseq_arg0_not_array,
     invokeblock_iseq_arg0_wrong_len,
+    invokeblock_iseq_not_inlined,
     invokeblock_ifunc_args_splat,
     invokeblock_ifunc_kw_splat,
     invokeblock_proc,
@@ -518,6 +538,7 @@ make_counters! {
     defer_empty_count,
     branch_insn_count,
     branch_known_count,
+    max_inline_versions,
 
     freed_iseq_count,
 
