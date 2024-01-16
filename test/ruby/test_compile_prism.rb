@@ -223,6 +223,8 @@ module Prism
       assert_prism_eval("defined?(break)")
       assert_prism_eval("defined?(redo)")
       assert_prism_eval("defined?(return)")
+      assert_prism_eval("defined?(retry)")
+
       assert_prism_eval("defined?(defined?(a))")
       assert_prism_eval('defined?(:"#{1}")')
       assert_prism_eval("defined?(`echo #{1}`)")
