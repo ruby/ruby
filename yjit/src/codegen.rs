@@ -4754,10 +4754,6 @@ fn jit_rb_int_rshift(
 
     let comptime_shift = jit.peek_at_stack(&asm.ctx, 0);
 
-    if !comptime_shift.fixnum_p() {
-        return false;
-    }
-
     // Untag the fixnum shift amount
     let shift_amt = comptime_shift.as_isize() >> 1;
     if shift_amt > 63 || shift_amt < 0 {
