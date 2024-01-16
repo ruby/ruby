@@ -47,6 +47,7 @@ The following bundled gems are promoted from default gems.
 
 * mutex_m 0.2.0
 * getoptlong 0.2.1
+* base64 0.2.0
 
 See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/logger/releases) or changelog for details of the default gems or bundled gems.
 
