@@ -3201,12 +3201,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_BEGIN_NODE: {
         pm_begin_node_t *begin_node = (pm_begin_node_t *) node;
         rb_iseq_t *child_iseq;
-        LABEL *lstart = NEW_LABEL(lineno);
-        LABEL *lend = NEW_LABEL(lineno);
-        LABEL *lcont = NEW_LABEL(lineno);
-
 
         if (begin_node->rescue_clause) {
+            LABEL *lstart = NEW_LABEL(lineno);
+            LABEL *lend = NEW_LABEL(lineno);
+            LABEL *lcont = NEW_LABEL(lineno);
             pm_scope_node_t rescue_scope_node;
             pm_scope_node_init((pm_node_t *)begin_node->rescue_clause, &rescue_scope_node, scope_node, parser);
 
@@ -3292,14 +3291,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
 
         if (!begin_node->rescue_clause && !begin_node->ensure_clause) {
-            ADD_LABEL(ret, lstart);
             if (begin_node->statements) {
                 PM_COMPILE((pm_node_t *)begin_node->statements);
             }
             else {
                 PM_PUTNIL_UNLESS_POPPED;
             }
-            ADD_LABEL(ret, lend);
         }
         return;
       }
