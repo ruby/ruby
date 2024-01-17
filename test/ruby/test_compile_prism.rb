@@ -1197,7 +1197,7 @@ module Prism
       CODE
     end
 
-    def test_RescueModiferNode
+    def test_RescueModifierNode
       assert_prism_eval("1.nil? rescue false")
       assert_prism_eval("1.nil? rescue 1")
       assert_prism_eval("raise 'bang' rescue nil")
