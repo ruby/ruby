@@ -14908,7 +14908,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * === About \Enumerable
  *
  * \ARGF includes module Enumerable.
- * Virtually all methods in \Enumerable call method `#each` in the including class.
+ * Virtually all methods in \Enumerable call method <tt>#each</tt> in the including class.
  *
  * <b>Note well</b>: In \ARGF, method #each returns data from the _sources_,
  * _not_ from +ARGV+;
@@ -14917,18 +14917,14 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  * - \File +t.rb+:
  *
- *     ```
  *     p ['ARGV', ARGV]
  *     p ['ARGF.entries', ARGF.entries]
- *     ```
  *
  * - Command and output:
  *
- *     ```sh
- *     ruby t.rb foo.txt bar.txt
+ *     $ ruby t.rb foo.txt bar.txt
  *     ["ARGV", ["foo.txt", "bar.txt"]]
  *     ["ARGF.entries", ["Foo 0\n", "Foo 1\n", "Bar 0\n", "Bar 1\n", "Bar 2\n", "Bar 3\n"]]
- *     ```
  *
  * == Writing
  *
