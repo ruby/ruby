@@ -13602,7 +13602,7 @@ parse_pattern_primitive(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
                     parser_lex(parser);
                     pm_node_t *variable = (pm_node_t *) parse_variable(parser);
                     if (variable == NULL) {
-                        if (pm_token_is_it(parser->previous.start, parser->previous.end)) {
+                        if (parser->version != PM_OPTIONS_VERSION_CRUBY_3_3_0 && pm_token_is_it(parser->previous.start, parser->previous.end)) {
                             pm_constant_id_t name_id = pm_parser_constant_id_constant(parser, "0it", 3);
                             variable = (pm_node_t *) pm_local_variable_read_node_create_constant_id(parser, &parser->previous, name_id, 0);
                         } else {
