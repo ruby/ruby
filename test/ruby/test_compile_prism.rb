@@ -258,6 +258,7 @@ module Prism
       assert_prism_eval("defined?(/(?<foo>bar)/ =~ 'barbar')")
       assert_prism_eval("defined?(1 => 1)")
       assert_prism_eval("defined?(module M; end)")
+      assert_prism_eval("defined?(1.2r)")
     end
 
     def test_GlobalVariableReadNode
