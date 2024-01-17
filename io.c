@@ -14700,10 +14700,10 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
 /*
  * Document-class:  ARGF
  *
- * == \ARGF and `ARGV`
+ * == \ARGF and +ARGV+
  *
- * The \ARGF object works with the array at global variable `ARGV`
- * to make `$stdin` and file streams available in the Ruby program:
+ * The \ARGF object works with the array at global variable +ARGV+
+ * to make <tt>$stdin</tt> and file streams available in the Ruby program:
  *
  * - **ARGV** may be thought of as the <b>argument vector</b> array.
  *
@@ -14713,20 +14713,20 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  * - **ARGF** may be thought of as the <b>argument files</b> object.
  *
- *     It can access file streams and/or the `$stdin` stream,
- *     based on what it finds in `ARGV`.
+ *     It can access file streams and/or the <tt>$stdin</tt> stream,
+ *     based on what it finds in +ARGV+.
  *     This provides a convenient way for the command line
  *     to specify streams for a Ruby program to read.
  *
  * == Reading
  *
  * \ARGF may read from _source_ streams,
- * which at any particular time are determined by the content of `ARGV`.
+ * which at any particular time are determined by the content of +ARGV+.
  *
  * === Simplest Case
  *
- * When the <i>very first</i> \ARGF read occurs with an empty `ARGV` (`[]`),
- * the source is `$stdin`:
+ * When the <i>very first</i> \ARGF read occurs with an empty +ARGV+ (`[]`),
+ * the source is <tt>$stdin</tt>:
  *
  * - \File `t.rb`:
  *
@@ -14765,20 +14765,20 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * Bar 3
  * ```
  *
- * === Sources in `ARGV`
+ * === Sources in +ARGV+
  *
  * For any \ARGF read _except_ the {simplest case}[rdoc-ref:ARGF@Simplest+Case]
- * (that is, _except_ for the <i>very first</i> \ARGF read with an empty `ARGV`),
- * the sources are found in `ARGV`.
+ * (that is, _except_ for the <i>very first</i> \ARGF read with an empty +ARGV+),
+ * the sources are found in +ARGV+.
  *
- * \ARGF assumes that each element in array `ARGV` is a potential source,
+ * \ARGF assumes that each element in array +ARGV+ is a potential source,
  * and is one of:
  *
  * - The string path to a file that may be opened as a stream.
- * - The character `'-'`, meaning stream`$stdin`.
+ * - The character `'-'`, meaning stream <tt>$stdin</tt>.
  *
  * Each element that is _not_ one of these
- * should be removed from `ARGV` before \ARGF accesses that source.
+ * should be removed from +ARGV+ before \ARGF accesses that source.
  *
  * In the following example:
  *
@@ -14801,7 +14801,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     ["ARGV", ["--xyzzy", "--mojo", "foo.txt", "bar.txt"]]
  *     ```
  *
- * \ARGF's stream access considers the elements of `ARGV`, left to right:
+ * \ARGF's stream access considers the elements of +ARGV+, left to right:
  *
  * - \File `t.rb`:
  *
@@ -14818,13 +14818,13 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     "Read: Foo 0\nFoo 1\nBar 0\nBar 1\nBar 2\nBar 3\n"
  *     ```
  *
- * Because the value at `ARGV` is an ordinary array,
+ * Because the value at +ARGV+ is an ordinary array,
  * you can manipulate it to control which sources \ARGF considers:
  *
- * - If you remove an element from `ARGV`, \ARGF will not consider the corresponding source.
- * - If you add an element to `ARGV`, \ARGF will consider the corresponding source.
+ * - If you remove an element from +ARGV+, \ARGF will not consider the corresponding source.
+ * - If you add an element to +ARGV+, \ARGF will consider the corresponding source.
  *
- * Each element in `ARGV` is removed when its corresponding source is accessed;
+ * Each element in +ARGV+ is removed when its corresponding source is accessed;
  * when all sources have been accessed, the array is empty:
  *
  * - \File `t.rb`:
@@ -14853,9 +14853,9 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     "ARGV: []"
  *     "Line: Bar 3\n"
  *     ```
- * ==== Filepaths in `ARGV`
+ * ==== Filepaths in +ARGV+
  *
- * The `ARGV` array may contain filepaths the specify sources for \ARGF reading.
+ * The +ARGV+ array may contain filepaths the specify sources for \ARGF reading.
  *
  * This program prints what it reads from files at the paths specified
  * on the command line:
@@ -14876,9 +14876,9 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     ["ARGF.read", "Foo 0\nFoo 1\nBar 0\nBar 1\nBar 2\nBar 3\n"]
  *     ```
  *
- * ==== Specifying `$stdin` in `ARGV`
+ * ==== Specifying <tt>$stdin</tt> in +ARGV+
  *
- * To specify stream `$stdin` in `ARGV`, us the character `'-'`:
+ * To specify stream <tt>$stdin</tt> in +ARGV+, us the character `'-'`:
  *
  * - \File `t.rb`:
  *
@@ -14895,7 +14895,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     ["ARGF.read", "Open the pod bay doors, Hal.\n"]
  *     ```
  *
- * When no character `'-'` is given, stream `$stdin` is ignored
+ * When no character `'-'` is given, stream <tt>$stdin</tt> is ignored
  * (exception: see {Special Case}[rdoc-ref:ARGF@Special+Case]):
  *
  * - Command and output:
@@ -14906,19 +14906,19 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     "Read: Foo 0\nFoo 1\nBar 0\nBar 1\nBar 2\nBar 3\n"
  *     ```
  *
- * ==== Mixtures and Repetitions in `ARGV`
+ * ==== Mixtures and Repetitions in +ARGV+
  *
- * For an \ARGF reader, `ARGV` may contain any mixture of filepaths
+ * For an \ARGF reader, +ARGV+ may contain any mixture of filepaths
  * and character `'-'`, including repetitions.
  *
- * ==== Modifications to `ARGV`
+ * ==== Modifications to +ARGV+
  *
- * The running Ruby program may make any modifications to the `ARGV` array;
- * the current value of `ARGV` affects \ARGF reading.
+ * The running Ruby program may make any modifications to the +ARGV+ array;
+ * the current value of +ARGV+ affects \ARGF reading.
  *
- * ==== Empty `ARGV`
+ * ==== Empty +ARGV+
  *
- * For an empty `ARGV`, an \ARGF read method either returns +nil+
+ * For an empty +ARGV+, an \ARGF read method either returns +nil+
  * or raises an exception, depending on the specific method.
  *
  * === More Read Methods
@@ -14940,9 +14940,9 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * Virtually all methods in \Enumerable call method `#each` in the including class.
  *
  * <b>Note well</b>: In \ARGF, method #each returns data from the _sources_,
- * _not_ from `ARGV`;
+ * _not_ from +ARGV+;
  * therefore, for example, `ARGF#entries` returns an array of lines from the sources,
- * not an array of the strings from `ARGV`:
+ * not an array of the strings from +ARGV+:
  *
  * - \File `t.rb`:
  *
