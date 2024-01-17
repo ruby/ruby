@@ -1369,14 +1369,14 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
     (((allow_envopt) || !envopt) ? (void)0 :                            \
      rb_raise(rb_eRuntimeError, "invalid switch in RUBYOPT: --" name))
 # define need_argument(name, s, needs_arg, next_arg)                    \
-    ((*(s) ? !*++(s) : (next_arg) && (!argc || !((s) = argv[1]) || (--argc, ++argv, 0))) && (needs_arg) ? \
+    ((*(s) ? !*++(s) : (next_arg) && (argc <= 1 || !((s) = argv[1]) || (--argc, ++argv, 0))) && (needs_arg) ? \
      rb_raise(rb_eRuntimeError, "missing argument for --" name)         \
      : (void)0)
 # define is_option_with_arg(name, allow_hyphen, allow_envopt)           \
     is_option_with_optarg(name, allow_hyphen, allow_envopt, Qtrue, Qtrue)
 # define is_option_with_optarg(name, allow_hyphen, allow_envopt, needs_arg, next_arg) \
     (strncmp((name), s, n = sizeof(name) - 1) == 0 && is_option_end(s[n], (allow_hyphen)) && \
-     (s[n] != '-' || s[n+1]) ?                                          \
+     (s[n] != '-' || (s[n] && s[n+1])) ?                                \
      (check_envopt(name, (allow_envopt)), s += n,                       \
       need_argument(name, s, needs_arg, next_arg), 1) : 0)
 

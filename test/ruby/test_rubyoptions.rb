@@ -541,6 +541,16 @@ class TestRubyOptions < Test::Unit::TestCase
                       /invalid name for global variable - -# \(NameError\)/)
   end
 
+  def test_option_missing_argument
+    assert_in_out_err(%w(-0 --enable), "", [], /missing argument for --enable/)
+    assert_in_out_err(%w(-0 --disable), "", [], /missing argument for --disable/)
+    assert_in_out_err(%w(-0 --dump), "", [], /missing argument for --dump/)
+    assert_in_out_err(%w(-0 --encoding), "", [], /missing argument for --encoding/)
+    assert_in_out_err(%w(-0 --external-encoding), "", [], /missing argument for --external-encoding/)
+    assert_in_out_err(%w(-0 --internal-encoding), "", [], /missing argument for --internal-encoding/)
+    assert_in_out_err(%w(-0 --backtrace-limit), "", [], /missing argument for --backtrace-limit/)
+  end
+
   def test_assignment_in_conditional
     Tempfile.create(["test_ruby_test_rubyoption", ".rb"]) {|t|
       t.puts "if a = 1"
