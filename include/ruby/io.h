@@ -975,6 +975,7 @@ VALUE rb_io_wait(VALUE io, VALUE events, VALUE timeout);
  * @exception  rb_eRangeError       `timeout` is out of range.
  * @exception  rb_eSystemCallError  `select(2)` failed for some reason.
  * @retval     RUBY_Qfalse          Operation timed out.
+ * @retval     RUBY_Qnil            Operation failed for some other reason (errno).
  * @retval     Otherwise            Actual events reached.
  *
  */
