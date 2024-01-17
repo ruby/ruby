@@ -2338,7 +2338,7 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
  *    a[1, 5] = 'foo' # => "foo"
  *    a # => [:foo, "foo"]
  *
- *  When Range argument +range+ is given and +object+ is an \Array,
+ *  When Range argument +range+ is given and +object+ is not an \Array,
  *  removes <tt>length - 1</tt> elements beginning at offset +start+,
  *  and assigns +object+ at offset +start+:
  *
@@ -2353,7 +2353,8 @@ ary_aset_by_rb_ary_splice(VALUE ary, long beg, long len, VALUE val)
  *    a # => [:foo, "foo"]
  *
  *  If the array length is less than <tt>range.begin</tt>,
- *  assigns +object+ at offset <tt>range.begin</tt>, and ignores +length+:
+ *  extends the array with +nil+, assigns +object+ at offset <tt>range.begin</tt>,
+ *  and ignores +length+:
  *
  *    a = [:foo, 'bar', 2]
  *    a[6..50] = 'foo' # => "foo"
