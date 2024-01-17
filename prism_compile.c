@@ -1038,14 +1038,10 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                                 else {
                                     PM_SWAP;
                                 }
-
-                                *flags |= VM_CALL_KW_SPLAT_MUT;
                             }
 
                             pm_assoc_splat_node_t *assoc_splat = (pm_assoc_splat_node_t *)cur_node;
                             PM_COMPILE_NOT_POPPED(assoc_splat->value);
-
-                            *flags |= VM_CALL_KW_SPLAT;
 
                             if (len > 1) {
                                 ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_kwd, INT2FIX(2));
