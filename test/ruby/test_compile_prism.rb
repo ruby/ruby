@@ -250,6 +250,7 @@ module Prism
       assert_prism_eval("defined?([0][0] ||= 1)")
 
       assert_prism_eval("defined?(case :a; when :a; 1; else; 2; end)")
+      assert_prism_eval("defined?(case [1, 2, 3]; in [1, 2, 3]; 4; end)")
     end
 
     def test_GlobalVariableReadNode
