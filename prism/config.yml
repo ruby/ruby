@@ -2044,7 +2044,8 @@ nodes:
     comment: |
       Represents reading a local variable. Note that this requires that a local
       variable of the same name has already been written to in the same scope,
-      otherwise it is parsed as a method call.
+      otherwise it is parsed as a method call. Note that `it` default parameter
+      has `0it` as the name of this node.
 
           foo
           ^^^
