@@ -41,7 +41,6 @@ class TestExtLibs < Test::Unit::TestCase
   end
   @excluded = excluded
 
-  check_existence "bigdecimal"
   check_existence "continuation"
   check_existence "coverage"
   check_existence "date"
