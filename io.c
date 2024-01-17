@@ -14934,17 +14934,17 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  * Methods about inplace mode:
  *
- * - \#inplace_mode
- * - \#inplace_mode=
- * - \#to_write_io
+ * - #inplace_mode
+ * - #inplace_mode=
+ * - #to_write_io
  *
  * Methods for writing:
  *
- * - \#print
- * - \#printf
- * - \#putc
- * - \#puts
- * - \#write
+ * - #print
+ * - #printf
+ * - #putc
+ * - #puts
+ * - #write
  *
  */
 
