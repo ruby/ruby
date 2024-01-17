@@ -5216,6 +5216,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_multi_write_node_t *multi_write_node = (pm_multi_write_node_t *)node;
         pm_node_list_t *lefts = &multi_write_node->lefts;
         pm_node_list_t *rights = &multi_write_node->rights;
+        bool has_rest_expression = (multi_write_node->rest &&
+                                    PM_NODE_TYPE_P(multi_write_node->rest, PM_SPLAT_NODE));
         size_t argc = 1;
 
         // pre-process the left hand side of multi-assignments.
@@ -5313,9 +5315,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PM_COMPILE(rights->nodes[index]);
             }
         }
-        else if (rest_expression) {
-            ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(0), INT2FIX(1));
-            PM_COMPILE(rest_expression);
+        else if (has_rest_expression) {
+            if (rest_expression) {
+                ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(0), INT2FIX(1));
+                PM_COMPILE(rest_expression);
+            } else if (!lefts->size && !PM_NODE_TYPE_P(multi_write_node->value, PM_SPLAT_NODE)){
+                ADD_INSN2(ret, &dummy_line_node, expandarray, INT2FIX(0), INT2FIX(0));
+            }
         }
 
         return;

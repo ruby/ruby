@@ -543,6 +543,10 @@ module Prism
       assert_prism_eval("_, {}[:foo], _ = 1")
       assert_prism_eval("_, {}[:foo], _ = 1")
       assert_prism_eval("_,{}[:foo], _, {}[:bar] = 1")
+      assert_prism_eval("* = :foo")
+      assert_prism_eval("* = *[]")
+      assert_prism_eval("a, * = :foo")
+
 
       assert_prism_eval(<<~CODE)
         class Foo
