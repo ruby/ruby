@@ -489,6 +489,17 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w[default-3.0], loaded_spec_names
   end
 
+  def test_normal_gem_does_not_shadow_default_gem
+    default_gem_spec = new_default_spec("foo", "2.0", nil, "foo.rb")
+    install_default_gems(default_gem_spec)
+
+    normal_gem_spec = util_spec("fake-foo", "3.0", nil, "lib/foo.rb")
+    install_specs(normal_gem_spec)
+
+    assert_require "foo"
+    assert_equal %w[foo-2.0], loaded_spec_names
+  end
+
   def test_normal_gems_with_overridden_load_error_message
     normal_gem_spec = util_spec("normal", "3.0", nil, "lib/normal/gem.rb")
 
