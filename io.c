@@ -14813,17 +14813,14 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  * - \File +t.rb+:
  *
- *     ```
  *     until ARGV.empty? && ARGF.eof?
  *       p "ARGV: #{ARGV}"
  *       p "Line: #{ARGF.readline}" # Read each line from each specified stream.
  *     end
- *     ```
  *
  * - Command and output:
  *
- *     ```sh
- *     ruby t.rb foo.txt bar.txt
+ *     $ ruby t.rb foo.txt bar.txt
  *     "ARGV: [\"foo.txt\", \"bar.txt\"]"
  *     "Line: Foo 0\n"
  *     "ARGV: [\"bar.txt\"]"
@@ -14836,7 +14833,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     "Line: Bar 2\n"
  *     "ARGV: []"
  *     "Line: Bar 3\n"
- *     ```
+ *
  * ==== Filepaths in +ARGV+
  *
  * The +ARGV+ array may contain filepaths the specify sources for \ARGF reading.
