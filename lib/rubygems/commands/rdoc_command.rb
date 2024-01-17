@@ -84,14 +84,7 @@ Use --overwrite to force rebuilding of documentation.
         FileUtils.rm_rf File.join(spec.doc_dir, "rdoc")
       end
 
-      begin
-        doc.generate
-      rescue Errno::ENOENT => e
-        match = e.message.include?(" - ")
-        alert_error "Unable to document #{spec.full_name}, " \
-                    " #{match.post_match} is missing, skipping"
-        terminate_interaction 1 if specs.length == 1
-      end
+      doc.generate
     end
   end
 end
