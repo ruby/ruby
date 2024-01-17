@@ -2546,6 +2546,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
       case PM_KEYWORD_HASH_NODE:
       case PM_LAMBDA_NODE:
       case PM_MATCH_PREDICATE_NODE:
+      case PM_MATCH_WRITE_NODE:
       case PM_NEXT_NODE:
       case PM_OR_NODE:
       case PM_RANGE_NODE:
