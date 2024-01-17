@@ -14859,18 +14859,14 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  * - \File +t.rb+:
  *
- *     ```
  *     p ['ARGV', ARGV]
  *     p ['ARGF.read', ARGF.read]
- *     ```
  *
  * - Command and output:
  *
- *     ```sh
- *     echo "Open the pod bay doors, Hal." | ruby t.rb -
+ *     $ echo "Open the pod bay doors, Hal." | ruby t.rb -
  *     ["ARGV", ["-"]]
  *     ["ARGF.read", "Open the pod bay doors, Hal.\n"]
- *     ```
  *
  * When no character <tt>'-'</tt> is given, stream <tt>$stdin</tt> is ignored
  * (exception: see {Special Case}[rdoc-ref:ARGF@Special+Case]):
