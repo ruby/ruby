@@ -252,6 +252,7 @@ module Prism
       assert_prism_eval("defined?(case :a; when :a; 1; else; 2; end)")
       assert_prism_eval("defined?(case [1, 2, 3]; in [1, 2, 3]; 4; end)")
       assert_prism_eval("defined?(class PrismClassA; end)")
+      assert_prism_eval("defined?(def prism_test_def_node; end)")
     end
 
     def test_GlobalVariableReadNode
