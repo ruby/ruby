@@ -17,7 +17,7 @@
     * autoconf - 2.67 or later
     * gperf - 3.1 or later
         * Usually unneeded; only if you edit some source files using gperf
-    * ruby - 2.5 or later
+    * ruby - 2.7 or later
         * We can upgrade this version to system ruby version of the latest Ubuntu LTS.
 
 2. Install optional, recommended dependencies:
