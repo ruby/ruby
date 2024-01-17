@@ -8787,7 +8787,6 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
             }
             else if (strcmp("cinit!", builtin_func) == 0) {
                 // ignore
-                GET_VM()->builtin_inline_index++;
                 return COMPILE_OK;
             }
             else if (strcmp("attr!", builtin_func) == 0) {
@@ -8815,10 +8814,7 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
                 return COMPILE_NG;
             }
 
-            if (GET_VM()->builtin_inline_index == INT_MAX) {
-                rb_bug("builtin inline function index overflow:%s", builtin_func);
-            }
-            int inline_index = GET_VM()->builtin_inline_index++;
+            int inline_index = nd_line(node);
             snprintf(inline_func, sizeof(inline_func), BUILTIN_INLINE_PREFIX "%d", inline_index);
             builtin_func = inline_func;
             args_node = NULL;

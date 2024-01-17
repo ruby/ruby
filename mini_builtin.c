@@ -27,7 +27,6 @@ builtin_iseq_load(const char *feature_name, const struct rb_builtin_function *ta
                  feature_name);
     }
     vm->builtin_function_table = table;
-    vm->builtin_inline_index = 0;
     static const rb_compile_option_t optimization = {
         TRUE, /* unsigned int inline_const_cache; */
         TRUE, /* unsigned int peephole_optimization; */
