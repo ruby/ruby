@@ -1485,6 +1485,7 @@ iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
         pm_string_mapped_init(&input, RSTRING_PTR(file));
     }
     else {
+        Check_Type(src, T_STRING);
         input.source = (const uint8_t *)RSTRING_PTR(src);
         input.length = RSTRING_LEN(src);
         input.type = PM_STRING_SHARED;
