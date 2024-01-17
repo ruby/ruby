@@ -2536,6 +2536,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
       case PM_FLOAT_NODE:
       case PM_FOR_NODE:
       case PM_HASH_NODE:
+      case PM_IF_NODE:
       case PM_IMAGINARY_NODE:
       case PM_INTEGER_NODE:
       case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE:
