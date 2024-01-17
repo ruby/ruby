@@ -1652,7 +1652,6 @@ Init_thread_sync(void)
     rb_define_method(rb_cSizedQueue, "clear", rb_szqueue_clear, 0);
     rb_define_method(rb_cSizedQueue, "length", rb_szqueue_length, 0);
     rb_define_method(rb_cSizedQueue, "num_waiting", rb_szqueue_num_waiting, 0);
-    rb_define_method(rb_cSizedQueue, "freeze", rb_queue_freeze, 0);
     rb_define_alias(rb_cSizedQueue, "size", "length");
 
     /* CVar */
