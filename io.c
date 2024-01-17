@@ -14781,34 +14781,26 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  * - \File +t.rb+:
  *
- *     ```
  *     # Print arguments (and options, if any) found on command line.
  *     p ['ARGV', ARGV]
- *     ```
  *
  * - Command and output:
  *
- *     ```sh
- *     ruby t.rb --xyzzy --mojo foo.txt bar.txt
+ *     $ ruby t.rb --xyzzy --mojo foo.txt bar.txt
  *     ["ARGV", ["--xyzzy", "--mojo", "foo.txt", "bar.txt"]]
- *     ```
  *
  * \ARGF's stream access considers the elements of +ARGV+, left to right:
  *
  * - \File +t.rb+:
  *
- *     ```
  *     p "ARGV: #{ARGV}"
  *     p "Line: #{ARGF.read}" # Read everything from all specified streams.
- *     ```
  *
  * - Command and output:
  *
- *     ```sh
- *     ruby t.rb foo.txt bar.txt
+ *     $ ruby t.rb foo.txt bar.txt
  *     "ARGV: [\"foo.txt\", \"bar.txt\"]"
  *     "Read: Foo 0\nFoo 1\nBar 0\nBar 1\nBar 2\nBar 3\n"
- *     ```
  *
  * Because the value at +ARGV+ is an ordinary array,
  * you can manipulate it to control which sources \ARGF considers:
