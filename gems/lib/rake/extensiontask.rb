@@ -1,3 +1,5 @@
+require "rake/tasklib" unless defined?(Rake::TaskLib)
+
 module Rake
   class ExtensionTask < TaskLib
     def initialize(...)
