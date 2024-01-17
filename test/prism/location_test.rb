@@ -680,6 +680,9 @@ module Prism
 
     def test_PinnedVariableNode
       assert_location(PinnedVariableNode, "bar = 1; foo in ^bar", 16...20, &:pattern)
+      assert_location(PinnedVariableNode, "proc { 1 in ^it }.call(1)", 12...15) do |node|
+        node.receiver.block.body.body.first.pattern
+      end
     end
 
     def test_PostExecutionNode

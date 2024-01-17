@@ -13602,8 +13602,13 @@ parse_pattern_primitive(pm_parser_t *parser, pm_diagnostic_id_t diag_id) {
                     parser_lex(parser);
                     pm_node_t *variable = (pm_node_t *) parse_variable(parser);
                     if (variable == NULL) {
-                        PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->previous, PM_ERR_NO_LOCAL_VARIABLE, (int) (parser->previous.end - parser->previous.start), parser->previous.start);
-                        variable = (pm_node_t *) pm_local_variable_read_node_create(parser, &parser->previous, 0);
+                        if (pm_token_is_it(parser->previous.start, parser->previous.end)) {
+                            pm_constant_id_t name_id = pm_parser_constant_id_constant(parser, "0it", 3);
+                            variable = (pm_node_t *) pm_local_variable_read_node_create_constant_id(parser, &parser->previous, name_id, 0);
+                        } else {
+                            PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->previous, PM_ERR_NO_LOCAL_VARIABLE, (int) (parser->previous.end - parser->previous.start), parser->previous.start);
+                            variable = (pm_node_t *) pm_local_variable_read_node_create(parser, &parser->previous, 0);
+                        }
                     }
 
                     return (pm_node_t *) pm_pinned_variable_node_create(parser, &operator, variable);
