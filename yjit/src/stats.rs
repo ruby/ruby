@@ -458,6 +458,8 @@ make_counters! {
     lshift_amount_changed,
     lshift_overflow,
 
+    rshift_amount_changed,
+
     opt_aref_argc_not_one,
     opt_aref_arg_not_fixnum,
     opt_aref_not_array,

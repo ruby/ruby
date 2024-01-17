@@ -4737,6 +4737,57 @@ fn jit_rb_int_lshift(
     true
 }
 
+fn jit_rb_int_rshift(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    if asm.ctx.two_fixnums_on_stack(jit) != Some(true) {
+        return false;
+    }
+    guard_two_fixnums(jit, asm, ocb);
+
+    let comptime_shift = jit.peek_at_stack(&asm.ctx, 0);
+
+    // Untag the fixnum shift amount
+    let shift_amt = comptime_shift.as_isize() >> 1;
+    if shift_amt > 63 || shift_amt < 0 {
+        return false;
+    }
+
+    // Fallback to a C call if the shift amount varies
+    if asm.ctx.get_chain_depth() > 2 {
+        return false;
+    }
+
+    let rhs = asm.stack_pop(1);
+    let lhs = asm.stack_pop(1);
+
+    // Guard on the shift amount we speculated on
+    asm.cmp(rhs, comptime_shift.into());
+    jit_chain_guard(
+        JCC_JNE,
+        jit,
+        asm,
+        ocb,
+        2, // defer_compilation increments chain_depth
+        Counter::rshift_amount_changed,
+    );
+
+    let shift_opnd = Opnd::UImm(shift_amt as u64);
+    let out_val = asm.rshift(lhs, shift_opnd);
+    let out_val = asm.or(out_val, 1.into());
+
+    let ret_opnd = asm.stack_push(Type::Fixnum);
+    asm.mov(ret_opnd, out_val);
+    true
+}
+
 fn jit_rb_int_aref(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -8909,6 +8960,7 @@ pub fn yjit_reg_method_codegen_fns() {
         yjit_reg_method(rb_cInteger, "succ", jit_rb_int_succ);
         yjit_reg_method(rb_cInteger, "/", jit_rb_int_div);
         yjit_reg_method(rb_cInteger, "<<", jit_rb_int_lshift);
+        yjit_reg_method(rb_cInteger, ">>", jit_rb_int_rshift);
         yjit_reg_method(rb_cInteger, "[]", jit_rb_int_aref);
 
         yjit_reg_method(rb_cString, "empty?", jit_rb_str_empty_p);

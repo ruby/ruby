@@ -290,6 +290,7 @@ module RubyVM::YJIT
         print_counters(stats, out: out, prefix: "#{insn}_", prompt: "#{insn} exit reasons:", optional: true)
       end
       print_counters(stats, out: out, prefix: 'lshift_', prompt: 'left shift (opt_ltlt) exit reasons: ')
+      print_counters(stats, out: out, prefix: 'rshift_', prompt: 'right shift (>>) exit reasons: ')
       print_counters(stats, out: out, prefix: 'invalidate_', prompt: 'invalidation reasons: ')
     end
 
