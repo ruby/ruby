@@ -931,6 +931,21 @@ module Prism
         end
         a
       CODE
+
+      # Test that ensure block only evaluated once
+      assert_prism_eval(<<~RUBY)
+        res = []
+        begin
+          begin
+            raise
+          ensure
+            res << $!.to_s
+          end
+        rescue
+          res
+        end
+      RUBY
+
       assert_prism_eval(<<-CODE)
         a = 1
         begin
