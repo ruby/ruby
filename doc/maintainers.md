@@ -327,9 +327,6 @@ have commit right, others don't.
 * https://rubygems.org/gems/weakref
 
 ### Extensions
-#### ext/bigdecimal
-* Kenta Murata (mrkn) https://github.com/ruby/bigdecimal
-* https://rubygems.org/gems/bigdecimal
 
 #### ext/cgi
 * Nobuyoshi Nakada (nobu)
@@ -480,6 +477,9 @@ have commit right, others don't.
 
 #### lib/base64.rb
 * https://github.com/ruby/base64
+
+#### ext/bigdecimal
+* https://rubygems.org/gems/bigdecimal
 
 ## Platform Maintainers
 ### mswin64 (Microsoft Windows)

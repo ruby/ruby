@@ -82,7 +82,6 @@ WeakRef:: Allows a referenced object to be garbage-collected
 
 == Extensions
 
-BigDecimal:: Provides arbitrary-precision floating point decimal arithmetic
 Date:: A subclass of Object includes Comparable module for handling dates
 DateTime:: Subclass of Date to handling dates, hours, minutes, seconds, offsets
 Digest:: Provides a framework for message digest libraries
@@ -130,3 +129,4 @@ Racc:: A LALR(1) parser generator written in Ruby.
 Mutex_m:: Mixin to extend objects to be handled like a Mutex
 GetoptLong:: Parse command line options similar to the GNU C getopt_long()
 Base64:: Support for encoding and decoding binary data using a Base64 representation
+BigDecimal:: Provides arbitrary-precision floating point decimal arithmetic
