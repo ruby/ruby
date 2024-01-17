@@ -174,6 +174,10 @@ module Prism
 
       assert_location(CallNode, "foo bar baz")
       assert_location(CallNode, "foo bar('baz')")
+
+      assert_location(CallNode, "-> { it }", 5...7, version: "3.3.0") do |node|
+        node.body.body.first
+      end
     end
 
     def test_CallAndWriteNode
@@ -900,8 +904,8 @@ module Prism
 
     private
 
-    def assert_location(kind, source, expected = 0...source.length)
-      result = Prism.parse(source)
+    def assert_location(kind, source, expected = 0...source.length, **options)
+      result = Prism.parse(source, **options)
       assert_equal [], result.comments
       assert_equal [], result.errors
 
