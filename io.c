@@ -14843,19 +14843,15 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  * - \File +t.rb+:
  *
- *     ```
  *     p ['ARGV', ARGV]
  *     # Read and print all content from the specified sources.
  *     p ['ARGF.read', ARGF.read]
- *     ```
  *
  * - Command and output:
  *
- *     ```sh
- *     ruby t.rb foo.txt bar.txt
+ *     $ ruby t.rb foo.txt bar.txt
  *     ["ARGV", [foo.txt, bar.txt]
  *     ["ARGF.read", "Foo 0\nFoo 1\nBar 0\nBar 1\nBar 2\nBar 3\n"]
- *     ```
  *
  * ==== Specifying <tt>$stdin</tt> in +ARGV+
  *
