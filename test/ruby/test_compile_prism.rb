@@ -260,6 +260,7 @@ module Prism
       assert_prism_eval("defined?(module M; end)")
       assert_prism_eval("defined?(1.2r)")
       assert_prism_eval("defined?(class << self; end)")
+      assert_prism_eval("defined?(while a != 1; end)")
     end
 
     def test_GlobalVariableReadNode
