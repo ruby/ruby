@@ -14707,16 +14707,16 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  * - **ARGV** may be thought of as the <b>argument vector</b> array.
  *
- *     Initially, it contains the command-line arguments and options
- *     that are passed to the Ruby program;
- *     the program can modify that array as it likes.
+ *   Initially, it contains the command-line arguments and options
+ *   that are passed to the Ruby program;
+ *   the program can modify that array as it likes.
  *
  * - **ARGF** may be thought of as the <b>argument files</b> object.
  *
- *     It can access file streams and/or the <tt>$stdin</tt> stream,
- *     based on what it finds in +ARGV+.
- *     This provides a convenient way for the command line
- *     to specify streams for a Ruby program to read.
+ *   It can access file streams and/or the <tt>$stdin</tt> stream,
+ *   based on what it finds in +ARGV+.
+ *   This provides a convenient way for the command line
+ *   to specify streams for a Ruby program to read.
  *
  * == Reading
  *
@@ -14730,41 +14730,32 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  * - \File +t.rb+:
  *
- *     ```
-
  *     p ['ARGV', ARGV]
  *     p ['ARGF.read', ARGF.read]
- *     ```
  *
  * - Commands and outputs
  *   (see below for the content of files +foo.txt+ and +bar.txt+):
  *
- *     ```sh
- *     echo "Open the pod bay doors, Hal." | ruby t.rb
+ *     $ echo "Open the pod bay doors, Hal." | ruby t.rb
  *     ["ARGV", []]
  *     ["ARGF.read", "Open the pod bay doors, Hal.\n"]
- *     ```
  *
- *     ```sh
- *     cat foo.txt bar.txt | ruby t.rb
+ *     $ cat foo.txt bar.txt | ruby t.rb
  *     ["ARGV", []]
  *     ["ARGF.read", "Foo 0\nFoo 1\nBar 0\nBar 1\nBar 2\nBar 3\n"]
- *     ```
  *
  * === About the Examples
  *
  * Many examples here assume the existence of files +foo.txt+ and +bar.txt+:
  *
- * ```sh
- * cat foo.txt
- * Foo 0
- * Foo 1
- * cat bar.txt
- * Bar 0
- * Bar 1
- * Bar 2
- * Bar 3
- * ```
+ *   $ cat foo.txt
+ *   Foo 0
+ *   Foo 1
+ *   $ cat bar.txt
+ *   Bar 0
+ *   Bar 1
+ *   Bar 2
+ *   Bar 3
  *
  * === Sources in +ARGV+
  *
