@@ -987,86 +987,85 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
             pm_node_t *argument = arguments_node_list.nodes[index];
 
             switch (PM_NODE_TYPE(argument)) {
-                // A keyword hash node contains all keyword arguments as AssocNodes and AssocSplatNodes
+              // A keyword hash node contains all keyword arguments as AssocNodes and AssocSplatNodes
               case PM_KEYWORD_HASH_NODE: {
-                  pm_keyword_hash_node_t *keyword_arg = (pm_keyword_hash_node_t *)argument;
-                  size_t len = keyword_arg->elements.size;
+                pm_keyword_hash_node_t *keyword_arg = (pm_keyword_hash_node_t *)argument;
+                size_t len = keyword_arg->elements.size;
 
-                  if (has_keyword_splat || has_splat) {
-                      *flags |= VM_CALL_KW_SPLAT;
-                      *flags |= VM_CALL_KW_SPLAT_MUT;
+                if (has_keyword_splat || has_splat) {
+                    *flags |= VM_CALL_KW_SPLAT;
+                    *flags |= VM_CALL_KW_SPLAT_MUT;
 
-                      has_keyword_splat = true;
-                      int cur_hash_size = 0;
+                    has_keyword_splat = true;
+                    int cur_hash_size = 0;
 
-                      bool new_hash_emitted = false;
-                      for (size_t i = 0; i < len; i++) {
-                          pm_node_t *cur_node = keyword_arg->elements.nodes[i];
+                    bool new_hash_emitted = false;
+                    for (size_t i = 0; i < len; i++) {
+                        pm_node_t *cur_node = keyword_arg->elements.nodes[i];
 
-                          pm_node_type_t cur_type = PM_NODE_TYPE(cur_node);
+                        pm_node_type_t cur_type = PM_NODE_TYPE(cur_node);
 
-                          switch (PM_NODE_TYPE(cur_node)) {
-                            case PM_ASSOC_NODE: {
-                                pm_assoc_node_t *assoc = (pm_assoc_node_t *)cur_node;
+                        switch (PM_NODE_TYPE(cur_node)) {
+                          case PM_ASSOC_NODE: {
+                            pm_assoc_node_t *assoc = (pm_assoc_node_t *)cur_node;
 
-                                PM_COMPILE_NOT_POPPED(assoc->key);
-                                PM_COMPILE_NOT_POPPED(assoc->value);
-                                cur_hash_size++;
+                            PM_COMPILE_NOT_POPPED(assoc->key);
+                            PM_COMPILE_NOT_POPPED(assoc->value);
+                            cur_hash_size++;
 
-                                // If we're at the last keyword arg, or the last assoc node of this "set",
-                                // then we want to either construct a newhash or merge onto previous hashes
-                                if (i == (len - 1) || !PM_NODE_TYPE_P(keyword_arg->elements.nodes[i + 1], cur_type)) {
-                                    if (new_hash_emitted) {
-                                        ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(cur_hash_size * 2 + 1));
-                                    }
-                                    else {
-                                        ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(cur_hash_size * 2));
-                                        cur_hash_size = 0;
-                                        new_hash_emitted = true;
-                                    }
+                            // If we're at the last keyword arg, or the last assoc node of this "set",
+                            // then we want to either construct a newhash or merge onto previous hashes
+                            if (i == (len - 1) || !PM_NODE_TYPE_P(keyword_arg->elements.nodes[i + 1], cur_type)) {
+                                if (new_hash_emitted) {
+                                    ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(cur_hash_size * 2 + 1));
                                 }
-
-                                break;
+                                else {
+                                    ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(cur_hash_size * 2));
+                                    cur_hash_size = 0;
+                                    new_hash_emitted = true;
+                                }
                             }
-                            case PM_ASSOC_SPLAT_NODE: {
-                                if (len > 1) {
-                                    ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                                    if (i == 0) {
-                                        ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(0));
-                                        new_hash_emitted = true;
-                                    }
-                                    else {
-                                        PM_SWAP;
-                                    }
 
-                                    *flags |= VM_CALL_KW_SPLAT_MUT;
+                            break;
+                          }
+                          case PM_ASSOC_SPLAT_NODE: {
+                            if (len > 1) {
+                                ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                                if (i == 0) {
+                                    ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(0));
+                                    new_hash_emitted = true;
                                 }
-
-                                pm_assoc_splat_node_t *assoc_splat = (pm_assoc_splat_node_t *)cur_node;
-                                PM_COMPILE_NOT_POPPED(assoc_splat->value);
-
-                                *flags |= VM_CALL_KW_SPLAT;
-
-                                if (len > 1) {
-                                    ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_kwd, INT2FIX(2));
-                                }
-
-                                if ((i < len - 1) && !PM_NODE_TYPE_P(keyword_arg->elements.nodes[i + 1], cur_type)) {
-                                    ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                                else {
                                     PM_SWAP;
                                 }
 
-                                cur_hash_size = 0;
-                                break;
+                                *flags |= VM_CALL_KW_SPLAT_MUT;
                             }
-                            default: {
-                                rb_bug("Unknown type in keyword argument %s\n", pm_node_type_to_str(PM_NODE_TYPE(cur_node)));
+
+                            pm_assoc_splat_node_t *assoc_splat = (pm_assoc_splat_node_t *)cur_node;
+                            PM_COMPILE_NOT_POPPED(assoc_splat->value);
+
+                            *flags |= VM_CALL_KW_SPLAT;
+
+                            if (len > 1) {
+                                ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_kwd, INT2FIX(2));
                             }
+
+                            if ((i < len - 1) && !PM_NODE_TYPE_P(keyword_arg->elements.nodes[i + 1], cur_type)) {
+                                ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                                PM_SWAP;
+                            }
+
+                            cur_hash_size = 0;
+                            break;
                           }
-                      }
-                      break;
-                  }
-                  else {
+                          default: {
+                            rb_bug("Unknown type in keyword argument %s\n", pm_node_type_to_str(PM_NODE_TYPE(cur_node)));
+                          }
+                        }
+                    }
+                }
+                else {
                     // We need to first figure out if all elements of the KeywordHashNode are AssocNodes
                     // with symbol keys.
                     if (PM_NODE_FLAG_P(keyword_arg, PM_KEYWORD_HASH_NODE_FLAGS_SYMBOL_KEYS)) {
@@ -1102,110 +1101,110 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
 
                         ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(len * 2));
                     }
-                  }
-                  break;
+                }
+                break;
               }
               case PM_SPLAT_NODE: {
-                  *flags |= VM_CALL_ARGS_SPLAT;
-                  pm_splat_node_t *splat_node = (pm_splat_node_t *)argument;
-                  if (splat_node->expression) {
-                      PM_COMPILE_NOT_POPPED(splat_node->expression);
-                  }
+                *flags |= VM_CALL_ARGS_SPLAT;
+                pm_splat_node_t *splat_node = (pm_splat_node_t *)argument;
+                if (splat_node->expression) {
+                    PM_COMPILE_NOT_POPPED(splat_node->expression);
+                }
 
-                  bool first_splat = !has_splat;
+                bool first_splat = !has_splat;
 
-                  if (first_splat) {
-                      // If this is the first splat array seen and it's not the
-                      // last parameter, we want splatarray to dup it.
-                      //
-                      // foo(a, *b, c)
-                      //        ^^
-                      if (index + 1 < arguments_node_list.size) {
-                          ADD_INSN1(ret, &dummy_line_node, splatarray, Qtrue);
-                      }
-                      // If this is the first spalt array seen and it's the last
-                      // parameter, we don't want splatarray to dup it.
-                      //
-                      // foo(a, *b)
-                      //        ^^
-                      else {
-                          ADD_INSN1(ret, &dummy_line_node, splatarray, Qfalse);
-                      }
-                  }
-                  else {
-                      // If this is not the first splat array seen and it is also
-                      // the last parameter, we don't want splayarray to dup it
-                      // and we need to concat the array.
-                      //
-                      // foo(a, *b, *c)
-                      //            ^^
-                      ADD_INSN1(ret, &dummy_line_node, splatarray, Qfalse);
-                      ADD_INSN(ret, &dummy_line_node, concatarray);
-                  }
+                if (first_splat) {
+                    // If this is the first splat array seen and it's not the
+                    // last parameter, we want splatarray to dup it.
+                    //
+                    // foo(a, *b, c)
+                    //        ^^
+                    if (index + 1 < arguments_node_list.size) {
+                        ADD_INSN1(ret, &dummy_line_node, splatarray, Qtrue);
+                    }
+                    // If this is the first spalt array seen and it's the last
+                    // parameter, we don't want splatarray to dup it.
+                    //
+                    // foo(a, *b)
+                    //        ^^
+                    else {
+                        ADD_INSN1(ret, &dummy_line_node, splatarray, Qfalse);
+                    }
+                }
+                else {
+                    // If this is not the first splat array seen and it is also
+                    // the last parameter, we don't want splayarray to dup it
+                    // and we need to concat the array.
+                    //
+                    // foo(a, *b, *c)
+                    //            ^^
+                    ADD_INSN1(ret, &dummy_line_node, splatarray, Qfalse);
+                    ADD_INSN(ret, &dummy_line_node, concatarray);
+                }
 
-                  has_splat = true;
-                  post_splat_counter = 0;
+                has_splat = true;
+                post_splat_counter = 0;
 
-                  break;
+                break;
               }
               case PM_FORWARDING_ARGUMENTS_NODE: {
-                  orig_argc++;
-                  *flags |= VM_CALL_ARGS_BLOCKARG | VM_CALL_ARGS_SPLAT;
-                  ADD_GETLOCAL(ret, &dummy_line_node, 3, 0);
-                  ADD_INSN1(ret, &dummy_line_node, splatarray, RBOOL(arguments_node_list.size > 1));
-                  ADD_INSN2(ret, &dummy_line_node, getblockparamproxy, INT2FIX(4), INT2FIX(0));
-                  break;
+                orig_argc++;
+                *flags |= VM_CALL_ARGS_BLOCKARG | VM_CALL_ARGS_SPLAT;
+                ADD_GETLOCAL(ret, &dummy_line_node, 3, 0);
+                ADD_INSN1(ret, &dummy_line_node, splatarray, RBOOL(arguments_node_list.size > 1));
+                ADD_INSN2(ret, &dummy_line_node, getblockparamproxy, INT2FIX(4), INT2FIX(0));
+                break;
               }
               default: {
-                  post_splat_counter++;
-                  PM_COMPILE_NOT_POPPED(argument);
+                post_splat_counter++;
+                PM_COMPILE_NOT_POPPED(argument);
 
-                  // If we have a splat and we've seen a splat, we need to process
-                  // everything after the splat.
-                  if (has_splat) {
-                      // Stack items are turned into an array and concatenated in
-                      // the following cases:
-                      //
-                      // If the next node is a splat:
-                      //
-                      //   foo(*a, b, *c)
-                      //
-                      // If the next node is a kwarg or kwarg splat:
-                      //
-                      //   foo(*a, b, c: :d)
-                      //   foo(*a, b, **c)
-                      //
-                      // If the next node is NULL (we have hit the end):
-                      //
-                      //   foo(*a, b)
-                      if (index == arguments_node_list.size - 1) {
-                          RUBY_ASSERT(post_splat_counter > 0);
-                          ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
-                          ADD_INSN(ret, &dummy_line_node, concatarray);
-                      }
-                      else {
-                          pm_node_t *next_arg = arguments_node_list.nodes[index + 1];
+                // If we have a splat and we've seen a splat, we need to process
+                // everything after the splat.
+                if (has_splat) {
+                    // Stack items are turned into an array and concatenated in
+                    // the following cases:
+                    //
+                    // If the next node is a splat:
+                    //
+                    //   foo(*a, b, *c)
+                    //
+                    // If the next node is a kwarg or kwarg splat:
+                    //
+                    //   foo(*a, b, c: :d)
+                    //   foo(*a, b, **c)
+                    //
+                    // If the next node is NULL (we have hit the end):
+                    //
+                    //   foo(*a, b)
+                    if (index == arguments_node_list.size - 1) {
+                        RUBY_ASSERT(post_splat_counter > 0);
+                        ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
+                        ADD_INSN(ret, &dummy_line_node, concatarray);
+                    }
+                    else {
+                        pm_node_t *next_arg = arguments_node_list.nodes[index + 1];
 
-                          switch (PM_NODE_TYPE(next_arg)) {
-                              // A keyword hash node contains all keyword arguments as AssocNodes and AssocSplatNodes
-                            case PM_KEYWORD_HASH_NODE: {
-                                ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
-                                ADD_INSN(ret, &dummy_line_node, concatarray);
-                                break;
-                            }
-                            case PM_SPLAT_NODE: {
-                                ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
-                                ADD_INSN(ret, &dummy_line_node, concatarray);
-                                break;
-                            }
-                            default:
-                              break;
+                        switch (PM_NODE_TYPE(next_arg)) {
+                          // A keyword hash node contains all keyword arguments as AssocNodes and AssocSplatNodes
+                          case PM_KEYWORD_HASH_NODE: {
+                            ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
+                            ADD_INSN(ret, &dummy_line_node, concatarray);
+                            break;
                           }
-                      }
-                  }
-                  else {
-                      orig_argc++;
-                  }
+                          case PM_SPLAT_NODE: {
+                            ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
+                            ADD_INSN(ret, &dummy_line_node, concatarray);
+                            break;
+                          }
+                          default:
+                            break;
+                        }
+                    }
+                }
+                else {
+                    orig_argc++;
+                }
               }
             }
         }
