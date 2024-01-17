@@ -1054,6 +1054,29 @@ class Complex_Test < Test::Unit::TestCase
     assert_raise(RangeError){Rational(Complex(3,2))}
   end
 
+  def test_to_r_with_float
+    assert_equal(Rational(3), Complex(3, 0.0).to_r)
+    assert_raise(RangeError){Complex(3, 1.0).to_r}
+  end
+
+  def test_to_r_with_numeric_obj
+    c = Class.new(Numeric)
+
+    num = 0
+    c.define_method(:to_s) { num.to_s }
+    c.define_method(:==) { num == it }
+    c.define_method(:<)  { num <  it }
+
+    o = c.new
+    assert_equal(Rational(3), Complex(3, o).to_r)
+
+    num = 1
+    assert_raise(RangeError){Complex(3, o).to_r}
+
+    c.define_method(:to_r) { 0r }
+    assert_equal(Rational(3), Complex(3, o).to_r)
+  end
+
   def test_to_c
     c = nil.to_c
     assert_equal([0,0], [c.real, c.imag])
