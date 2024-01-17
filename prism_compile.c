@@ -2710,6 +2710,8 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
       case PM_CLASS_VARIABLE_AND_WRITE_NODE:
       case PM_CLASS_VARIABLE_OR_WRITE_NODE:
 
+      case PM_INDEX_AND_WRITE_NODE:
+
       case PM_INSTANCE_VARIABLE_WRITE_NODE:
       case PM_INSTANCE_VARIABLE_OPERATOR_WRITE_NODE:
       case PM_INSTANCE_VARIABLE_AND_WRITE_NODE:
