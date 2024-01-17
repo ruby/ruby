@@ -651,7 +651,8 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
  *       prism (which you can trigger with `nil` or `"latest"`). If you want to
  *       parse exactly as CRuby 3.3.0 would, then you can pass `"3.3.0"`.
  * * `scopes` - the locals that are in scope surrounding the code that is being
- *       parsed. This should be an array of arrays of symbols or nil.
+ *       parsed. This should be an array of arrays of symbols or nil. Scopes are
+ *       ordered from the outermost scope to the innermost one.
  */
 static VALUE
 parse(int argc, VALUE *argv, VALUE self) {

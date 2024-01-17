@@ -64,7 +64,8 @@ typedef struct {
     /**
      * The scopes surrounding the code that is being parsed. For most parses
      * this will be NULL, but for evals it will be the locals that are in scope
-     * surrounding the eval.
+     * surrounding the eval. Scopes are ordered from the outermost scope to the
+     * innermost one.
      */
     pm_options_scope_t *scopes;
 
