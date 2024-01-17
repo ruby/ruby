@@ -2203,14 +2203,10 @@ pm_index_target_node_create(pm_parser_t *parser, pm_call_node_t *target) {
     pm_index_target_node_t *node = PM_ALLOC_NODE(parser, pm_index_target_node_t);
     pm_node_flags_t flags = target->base.flags;
 
-    if (parser->version != PM_OPTIONS_VERSION_CRUBY_3_3_0) {
-        flags |= PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE;
-    }
-
     *node = (pm_index_target_node_t) {
         {
             .type = PM_INDEX_TARGET_NODE,
-            .flags = flags,
+            .flags = flags | PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE,
             .location = target->base.location
         },
         .receiver = target->receiver,
@@ -12306,9 +12302,7 @@ parse_arguments_list(pm_parser_t *parser, pm_arguments_t *arguments, bool accept
                 arguments->block = (pm_node_t *) block;
             } else {
                 if (arguments->has_forwarding) {
-                    if (parser->version != PM_OPTIONS_VERSION_CRUBY_3_3_0) {
-                        pm_parser_err_node(parser, (pm_node_t *) block, PM_ERR_ARGUMENT_BLOCK_FORWARDING);
-                    }
+                    pm_parser_err_node(parser, (pm_node_t *) block, PM_ERR_ARGUMENT_BLOCK_FORWARDING);
                 } else {
                     pm_parser_err_node(parser, (pm_node_t *) block, PM_ERR_ARGUMENT_BLOCK_MULTI);
                 }
