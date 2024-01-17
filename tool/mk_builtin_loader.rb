@@ -166,7 +166,7 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
           when 'cstmt'
             text = inline_text argc, args.first
 
-            func_name = "_bi#{inlines.size}"
+            func_name = "_bi#{lineno}"
             cfunc_name = make_cfunc_name(inlines, name, lineno)
             inlines[cfunc_name] = [lineno, text, locals, func_name]
             argc -= 1
@@ -174,7 +174,7 @@ def collect_builtin base, tree, name, bs, inlines, locals = nil
             text = inline_text argc, args.first
             code = "return #{text};"
 
-            func_name = "_bi#{inlines.size}"
+            func_name = "_bi#{lineno}"
             cfunc_name = make_cfunc_name(inlines, name, lineno)
 
             locals = [] if $1 == 'cconst'

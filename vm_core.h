@@ -747,7 +747,6 @@ typedef struct rb_vm_struct {
     st_table *frozen_strings;
 
     const struct rb_builtin_function *builtin_function_table;
-    int builtin_inline_index;
 
     struct rb_id_table *negative_cme_table;
     st_table *overloaded_cme_table; // cme -> overloaded_cme
