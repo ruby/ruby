@@ -222,8 +222,15 @@ module Prism
       assert_prism_eval("defined?(next)")
       assert_prism_eval("defined?(break)")
       assert_prism_eval("defined?(redo)")
-      assert_prism_eval("defined?(return)")
       assert_prism_eval("defined?(retry)")
+
+      assert_prism_eval(<<~RUBY)
+        class PrismDefinedReturnNode
+          def self.m1; defined?(return) end
+        end
+
+        PrismDefinedReturnNode.m1
+      RUBY
 
       assert_prism_eval("defined?(begin; 1; end)")
 
