@@ -857,6 +857,17 @@ module Prism
         end
       RUBY
 
+      # Test splat in when
+      assert_prism_eval(<<~RUBY)
+        ary = [1, 2]
+        case 1
+        when :foo, *ary
+          :ok
+        else
+          :ng
+        end
+      RUBY
+
       # Test case without predicate
       assert_prism_eval(<<~RUBY)
         case
@@ -864,6 +875,16 @@ module Prism
           :ng
         else
           :ok
+        end
+      RUBY
+
+      # test splat with no predicate
+      assert_prism_eval(<<~RUBY)
+        case
+        when *[true]
+          :ok
+        else
+          :ng
         end
       RUBY
     end
