@@ -497,10 +497,10 @@ You have specified rust based extension, but Cargo.lock is not part of the gem f
 
   def validate_rake_extensions(builder) # :nodoc:
     rake_extension = @specification.extensions.any? {|s| builder.builder_for(s) == Gem::Ext::RakeBuilder }
-    rake_dependency = @specification.dependencies.any? {|d| d.name == "rake" }
+    rake_dependency = @specification.dependencies.any? {|d| d.name == "rake" && d.type == :runtime }
 
     warning <<-WARNING if rake_extension && !rake_dependency
-You have specified rake based extension, but rake is not added as dependency. It is recommended to add rake as a dependency in gemspec since there's no guarantee rake will be already installed.
+You have specified rake based extension, but rake is not added as runtime dependency. It is recommended to add rake as a runtime dependency in gemspec since there's no guarantee rake will be already installed.
     WARNING
   end
 
