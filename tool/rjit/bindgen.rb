@@ -183,7 +183,8 @@ class BindingGenerator
         raise "Non-immediate type is given to dynamic_types: #{type}"
       end
       println "  def C.#{type}"
-      println "    @#{type} ||= CType::Immediate.find(Primitive.cexpr!(\"SIZEOF(#{type})\"), Primitive.cexpr!(\"SIGNED_TYPE_P(#{type})\"))"
+      println "    @#{type} ||= CType::Immediate.find(Primitive.cexpr!(\"SIZEOF(#{type})\"),"
+      println "      Primitive.cexpr!(\"SIGNED_TYPE_P(#{type})\"))"
       println "  end"
       println
     end

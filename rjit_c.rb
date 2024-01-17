@@ -1541,11 +1541,13 @@ module RubyVM::RJIT # :nodoc: all
   end
 
   def C.VALUE
-    @VALUE ||= CType::Immediate.find(Primitive.cexpr!("SIZEOF(VALUE)"), Primitive.cexpr!("SIGNED_TYPE_P(VALUE)"))
+    @VALUE ||= CType::Immediate.find(Primitive.cexpr!("SIZEOF(VALUE)"),
+      Primitive.cexpr!("SIGNED_TYPE_P(VALUE)"))
   end
 
   def C.shape_id_t
-    @shape_id_t ||= CType::Immediate.find(Primitive.cexpr!("SIZEOF(shape_id_t)"), Primitive.cexpr!("SIGNED_TYPE_P(shape_id_t)"))
+    @shape_id_t ||= CType::Immediate.find(Primitive.cexpr!("SIZEOF(shape_id_t)"),
+      Primitive.cexpr!("SIGNED_TYPE_P(shape_id_t)"))
   end
 
   def C.rb_id_table
