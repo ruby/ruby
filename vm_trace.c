@@ -1273,7 +1273,7 @@ rb_tracepoint_enable_for_target(VALUE tpval, VALUE target, VALUE target_line)
     rb_hash_aset(tp->local_target_set, (VALUE)iseq, Qtrue);
 
     if ((tp->events & (RUBY_EVENT_CALL | RUBY_EVENT_RETURN)) &&
-        iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_INLINE) {
+        iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) {
         rb_clear_bf_ccs();
     }
 

@@ -448,7 +448,7 @@ pub struct iseq_inline_cvar_cache_entry {
     pub entry: *mut rb_cvar_class_tbl_entry,
 }
 pub const BUILTIN_ATTR_LEAF: rb_builtin_attr = 1;
-pub const BUILTIN_ATTR_SINGLE_NOARG_INLINE: rb_builtin_attr = 2;
+pub const BUILTIN_ATTR_SINGLE_NOARG_LEAF: rb_builtin_attr = 2;
 pub type rb_builtin_attr = u32;
 #[repr(C)]
 #[derive(Debug, Copy, Clone)]

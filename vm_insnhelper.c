@@ -2925,7 +2925,7 @@ vm_call_iseq_setup_kwparm_nokwarg(rb_execution_context_t *ec, rb_control_frame_t
 static VALUE builtin_invoker0(rb_execution_context_t *ec, VALUE self, const VALUE *argv, rb_insn_func_t funcptr);
 
 static VALUE
-vm_call_single_noarg_inline_builtin(rb_execution_context_t *ec, rb_control_frame_t *cfp,
+vm_call_single_noarg_leaf_builtin(rb_execution_context_t *ec, rb_control_frame_t *cfp,
                                     struct rb_calling_info *calling)
 {
     const struct rb_builtin_function *bf = calling->cc->aux_.bf;
@@ -2955,11 +2955,11 @@ vm_callee_setup_arg(rb_execution_context_t *ec, struct rb_calling_info *calling,
             VM_ASSERT(cc == calling->cc);
 
             if (cacheable_ci && vm_call_iseq_optimizable_p(ci, cc)) {
-                if ((iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_INLINE) &&
+                if ((iseq->body->builtin_attrs & BUILTIN_ATTR_SINGLE_NOARG_LEAF) &&
                     !(ruby_vm_event_flags & (RUBY_EVENT_C_CALL | RUBY_EVENT_C_RETURN))) {
                     VM_ASSERT(iseq->body->builtin_attrs & BUILTIN_ATTR_LEAF);
                     vm_cc_bf_set(cc, (void *)iseq->body->iseq_encoded[1]);
-                    CC_SET_FASTPATH(cc, vm_call_single_noarg_inline_builtin, true);
+                    CC_SET_FASTPATH(cc, vm_call_single_noarg_leaf_builtin, true);
                 }
                 else {
                     CC_SET_FASTPATH(cc, vm_call_iseq_setup_func(ci, param_size, local_size), true);
