@@ -60,7 +60,7 @@ module Bundler
         value = env[key]
         if !value.nil?
           env[@prefix + key] ||= value
-        elsif value.nil?
+        else
           env[@prefix + key] ||= INTENTIONALLY_NIL
         end
       end
