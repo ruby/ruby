@@ -1514,6 +1514,24 @@ class TestYJIT < Test::Unit::TestCase
     assert_in_out_err(%w[--yjit-stats --yjit-disable])
   end
 
+  def test_odd_calls_to_attr_reader
+    # Use of delegate from ActiveSupport use these kind of calls to getter methods.
+    assert_compiles(<<~RUBY, result: [1, 1, 1], no_send_fallbacks: true)
+      class One
+        attr_reader :one
+        def initialize
+          @one = 1
+        end
+      end
+
+      def calls(obj, empty, &)
+        [obj.one(*empty), obj.one(&), obj.one(*empty, &)]
+      end
+
+      calls(One.new, [])
+    RUBY
+  end
+
   private
 
   def code_gc_helpers
@@ -1537,7 +1555,17 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   ANY = Object.new
-  def assert_compiles(test_script, insns: [], call_threshold: 1, stdout: nil, exits: {}, result: ANY, frozen_string_literal: nil, mem_size: nil, code_gc: false)
+  def assert_compiles(
+    test_script, insns: [],
+    call_threshold: 1,
+    stdout: nil,
+    exits: {},
+    result: ANY,
+    frozen_string_literal: nil,
+    mem_size: nil,
+    code_gc: false,
+    no_send_fallbacks: false
+  )
     reset_stats = <<~RUBY
       RubyVM::YJIT.runtime_stats
       RubyVM::YJIT.reset_stats!
@@ -1608,6 +1636,10 @@ class TestYJIT < Test::Unit::TestCase
           #{stats_reasons}
         EOM
       end
+    end
+
+    if no_send_fallbacks
+      assert_equal(0, runtime_stats[:num_send_dynamic], "Expected no use of fallback implementation")
     end
 
     # Only available when --enable-yjit=dev
