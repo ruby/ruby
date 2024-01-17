@@ -244,6 +244,7 @@ module Prism
       assert_prism_eval("defined?(Prism::CPAWN &&= 1)")
       assert_prism_eval("defined?(Prism::CPOWN += 1)")
       assert_prism_eval("defined?(Prism::CPOrWN ||= 1)")
+      assert_prism_eval("defined?(Prism::CPWN = 1)")
     end
 
     def test_GlobalVariableReadNode
