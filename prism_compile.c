@@ -3514,10 +3514,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 pm_node_t *condition_node = when_node->conditions.nodes[i];
 
                 if (PM_NODE_TYPE_P(condition_node, PM_SPLAT_NODE)) {
+                    int checkmatch_type = has_predicate ? VM_CHECKMATCH_TYPE_CASE : VM_CHECKMATCH_TYPE_WHEN;
                     ADD_INSN (ret, &dummy_line_node, dup);
                     PM_COMPILE_NOT_POPPED(condition_node);
-                    ADD_INSN1(ret, &dummy_line_node, splatarray, Qfalse);
-                    ADD_INSN1(ret, &dummy_line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_CASE | VM_CHECKMATCH_ARRAY));
+                    ADD_INSN1(ret, &dummy_line_node, checkmatch,
+                              INT2FIX(checkmatch_type | VM_CHECKMATCH_ARRAY));
                 }
                 else {
                     PM_COMPILE_NOT_POPPED(condition_node);
