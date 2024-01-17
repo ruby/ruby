@@ -4236,6 +4236,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PM_COMPILE((pm_node_t *)ensure_node->statements);
         }
         ADD_LABEL(ret, end);
+        return;
       }
       case PM_ELSE_NODE: {
           pm_else_node_t *cast = (pm_else_node_t *)node;
