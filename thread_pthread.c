@@ -2327,10 +2327,8 @@ rb_threadptr_sched_free(rb_thread_t *th)
         // TODO: how to free nt and nt->altstack?
     }
 
-    if (th->sched.context) {
-        ruby_xfree(th->sched.context);
-        VM_ASSERT((th->sched.context = NULL) == NULL);
-    }
+    ruby_xfree(th->sched.context);
+    VM_ASSERT((th->sched.context = NULL) == NULL);
 #else
     ruby_xfree(th->sched.context_stack);
     native_thread_destroy(th->nt);

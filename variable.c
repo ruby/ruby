@@ -1459,9 +1459,7 @@ rb_obj_convert_to_too_complex(VALUE obj, st_table *table)
         RB_VM_LOCK_LEAVE();
     }
 
-    if (old_ivptr) {
-        xfree(old_ivptr);
-    }
+    xfree(old_ivptr);
 }
 
 void

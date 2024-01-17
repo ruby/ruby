@@ -3584,7 +3584,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         if (rb_shape_obj_too_complex(obj)) {
             st_free_table((st_table *)RCLASS_IVPTR(obj));
         }
-        else if (RCLASS_IVPTR(obj)) {
+        else {
             xfree(RCLASS_IVPTR(obj));
         }
 
@@ -3679,8 +3679,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             }
 #endif
             onig_region_free(&rm->regs, 0);
-            if (rm->char_offset)
-                xfree(rm->char_offset);
+            xfree(rm->char_offset);
 
             RB_DEBUG_COUNTER_INC(obj_match_ptr);
         }

@@ -182,10 +182,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
         if (LIKELY(body->local_table != rb_iseq_shared_exc_local_tbl))
             ruby_xfree((void *)body->local_table);
         ruby_xfree((void *)body->is_entries);
-
-        if (body->call_data) {
-            ruby_xfree(body->call_data);
-        }
+        ruby_xfree(body->call_data);
         ruby_xfree((void *)body->catch_table);
         ruby_xfree((void *)body->param.opt_table);
         if (ISEQ_MBITS_BUFLEN(body->iseq_size) > 1 && body->mark_bits.list) {
