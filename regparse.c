@@ -763,10 +763,9 @@ names_clear(regex_t* reg)
 	e->back_refs = (int* )NULL;
       }
     }
-    if (IS_NOT_NULL(t->e)) {
-      xfree(t->e);
-      t->e = NULL;
-    }
+
+    xfree(t->e);
+    t->e = NULL;
     t->num = 0;
   }
   return 0;

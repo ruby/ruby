@@ -5496,10 +5496,8 @@ clear_optimize_info(regex_t* reg)
   reg->sub_anchor    = 0;
   reg->exact_end     = (UChar* )NULL;
   reg->threshold_len = 0;
-  if (IS_NOT_NULL(reg->exact)) {
-    xfree(reg->exact);
-    reg->exact = (UChar* )NULL;
-  }
+  xfree(reg->exact);
+  reg->exact = (UChar* )NULL;
 }
 
 #ifdef ONIG_DEBUG
