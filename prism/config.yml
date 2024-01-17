@@ -1044,11 +1044,10 @@ nodes:
       - name: name
         type: constant
         comment: |
-          The name of the class variable, including the leading `@@`. Variable
-          names begin with an underscore, alphabetical, or non-ASCII character,
-          followed by arbitrarily many underscores, alphanumeric or non-ASCII
-          characters. The exact definitions of "alphabetical" and "alphanumeric"
-          are encoding-dependent.
+          The name of the class variable, including the leading `@@`.
+
+          For more information on permitted class variable names, see
+          [the Prism documentation](https://github.com/ruby/prism/blob/main/docs/lexing.md).
 
               @@abc   # name `:@@abc`
 
@@ -1224,10 +1223,10 @@ nodes:
       - name: name
         type: constant
         comment: |
-          The name of the constant. Constant names begin with an upper-case
-          letter, followed by arbitrarily many underscores, alphanumeric or
-          non-ASCII characters. The exact definitions of "upper-case",
-          and "alphanumeric" are encoding-dependent.
+          The name of the constant.
+
+          For more information on permitted constant names, see
+          [the Prism documentation](https://github.com/ruby/prism/blob/main/docs/lexing.md).
 
               X              # name `:X`
 
@@ -1521,19 +1520,14 @@ nodes:
       - name: name
         type: constant
         comment: |
-          The name of the global variable, including the leading `$`. Generally,
-          global variable names begin with an underscore, hyphen, alphabetical
-          or non-ASCII character, followed by arbitrarily many underscores,
-          alphanumeric or non-ASCII characters. The exact definitions of
-          "alphabetical" and "alphanumeric" are encoding-dependent.
+          The name of the global variable, including the leading `$`.
+
+          For more information on permitted global variable names, see
+          [the Prism documentation](https://github.com/ruby/prism/blob/main/docs/lexing.md).
 
               $foo   # name `:$foo`
 
               $_Test # name `:$_Test`
-
-          In addition to the above, global variable names may be one of: `$~`,
-          `$*`, `$$`, `$?`, `$!`, `$@`, `$/`, `$\`, `$;`, `$,`, `$.`, `$=`,
-          `$:`, `$<`, `$>`, `$"`, or `$0`.
     comment: |
       Represents referencing a global variable.
 
@@ -1855,11 +1849,10 @@ nodes:
       - name: name
         type: constant
         comment: |
-          The name of the instance variable, including the leading `@`. Variable
-          names begin with an underscore, alphabetical, or non-ASCII character,
-          followed by arbitrarily many underscores, alphanumeric or non-ASCII
-          characters. The exact definitions of "alphabetical" and "alphanumeric"
-          are encoding-dependent.
+          The name of the instance variable, including the leading `@`.
+
+          For more information on permitted instance variable names, see
+          [the Prism documentation](https://github.com/ruby/prism/blob/main/docs/lexing.md).
 
               @x     # name `:@x`
 
@@ -2089,11 +2082,10 @@ nodes:
       - name: name
         type: constant
         comment: |
-          The name of the local variable. Local variable names begin with an
-          underscore or a lower-case letter, followed by arbitrarily many
-          underscores, alphanumeric or non-ASCII characters. The exact
-          definitions of "lower-case", "alphabetical" and "alphanumeric" are
-          encoding-dependent.
+          The name of the local variable.
+
+          For more information on permitted local variable names, see
+          [the Prism documentation](https://github.com/ruby/prism/blob/main/docs/lexing.md).
 
               x      # name `:x`
 
