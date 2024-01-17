@@ -365,10 +365,8 @@ enum rb_iseq_type {
 enum rb_builtin_attr {
     // The iseq does not call methods.
     BUILTIN_ATTR_LEAF = 0x01,
-    // The iseq does not allocate objects.
-    BUILTIN_ATTR_NO_GC = 0x02,
     // This iseq only contains single `opt_invokebuiltin_delegate_leave` instruction with 0 arguments.
-    BUILTIN_ATTR_SINGLE_NOARG_INLINE = 0x04,
+    BUILTIN_ATTR_SINGLE_NOARG_INLINE = 0x02,
 };
 
 typedef VALUE (*rb_jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);

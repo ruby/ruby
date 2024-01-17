@@ -6,7 +6,7 @@ require_relative 'ruby_vm/helpers/c_escape'
 
 SUBLIBS = {}
 REQUIRED = {}
-BUILTIN_ATTRS = %w[leaf no_gc]
+BUILTIN_ATTRS = %w[leaf]
 
 def string_literal(lit, str = [])
   while lit

@@ -4924,13 +4924,10 @@ module RubyVM::RJIT
 
       asm.comment('inlined leaf builtin')
 
-      # Skip this if it doesn't trigger GC
-      if iseq.body.builtin_attrs & C::BUILTIN_ATTR_NO_GC == 0
-        # The callee may allocate, e.g. Integer#abs on a Bignum.
-        # Save SP for GC, save PC for allocation tracing, and prepare
-        # for global invalidation after GC's VM lock contention.
-        jit_prepare_routine_call(jit, ctx, asm)
-      end
+      # The callee may allocate, e.g. Integer#abs on a Bignum.
+      # Save SP for GC, save PC for allocation tracing, and prepare
+      # for global invalidation after GC's VM lock contention.
+      jit_prepare_routine_call(jit, ctx, asm)
 
       # Call the builtin func (ec, recv, arg1, arg2, ...)
       asm.mov(C_ARGS[0], EC)

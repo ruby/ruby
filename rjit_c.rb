@@ -364,7 +364,6 @@ module RubyVM::RJIT # :nodoc: all
   C::BOP_OR = Primitive.cexpr! %q{ SIZET2NUM(BOP_OR) }
   C::BOP_PLUS = Primitive.cexpr! %q{ SIZET2NUM(BOP_PLUS) }
   C::BUILTIN_ATTR_LEAF = Primitive.cexpr! %q{ SIZET2NUM(BUILTIN_ATTR_LEAF) }
-  C::BUILTIN_ATTR_NO_GC = Primitive.cexpr! %q{ SIZET2NUM(BUILTIN_ATTR_NO_GC) }
   C::HASH_REDEFINED_OP_FLAG = Primitive.cexpr! %q{ SIZET2NUM(HASH_REDEFINED_OP_FLAG) }
   C::INTEGER_REDEFINED_OP_FLAG = Primitive.cexpr! %q{ SIZET2NUM(INTEGER_REDEFINED_OP_FLAG) }
   C::INVALID_SHAPE_ID = Primitive.cexpr! %q{ SIZET2NUM(INVALID_SHAPE_ID) }

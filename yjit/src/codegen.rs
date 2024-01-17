@@ -6294,13 +6294,10 @@ fn gen_send_iseq(
             asm_comment!(asm, "inlined leaf builtin");
             gen_counter_incr(asm, Counter::num_send_leaf_builtin);
 
-            // Skip this if it doesn't trigger GC
-            if builtin_attrs & BUILTIN_ATTR_NO_GC == 0 {
-                // The callee may allocate, e.g. Integer#abs on a Bignum.
-                // Save SP for GC, save PC for allocation tracing, and prepare
-                // for global invalidation after GC's VM lock contention.
-                jit_prepare_routine_call(jit, asm);
-            }
+            // The callee may allocate, e.g. Integer#abs on a Bignum.
+            // Save SP for GC, save PC for allocation tracing, and prepare
+            // for global invalidation after GC's VM lock contention.
+            jit_prepare_routine_call(jit, asm);
 
             // Call the builtin func (ec, recv, arg1, arg2, ...)
             let mut args = vec![EC];
