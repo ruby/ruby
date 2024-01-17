@@ -6862,6 +6862,8 @@ rb_translate_prism(pm_parser_t *parser, rb_iseq_t *iseq, pm_scope_node_t *scope_
     pm_compile_node(iseq, (pm_node_t *)scope_node, ret, scope_node->base.location.start, false, (pm_scope_node_t *)scope_node);
     iseq_set_sequence(iseq, ret);
 
+    st_free_table(index_lookup_table);
+
     return Qnil;
 }
 
