@@ -14725,10 +14725,10 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  * === Simplest Case
  *
- * When the <i>very first</i> \ARGF read occurs with an empty +ARGV+ (`[]`),
+ * When the <i>very first</i> \ARGF read occurs with an empty +ARGV+ (<tt>[]</tt>),
  * the source is <tt>$stdin</tt>:
  *
- * - \File `t.rb`:
+ * - \File +t.rb+:
  *
  *     ```
  *     p ['ARGV', ARGV]
@@ -14736,7 +14736,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     ```
  *
  * - Commands and outputs
- *   (see below for the content of files `foo.txt` and `bar.txt`):
+ *   (see below for the content of files +foo.txt+ and +bar.txt+):
  *
  *     ```sh
  *     echo "Open the pod bay doors, Hal." | ruby t.rb
@@ -14752,7 +14752,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  * === About the Examples
  *
- * Many examples here assume the existence of files `foo.txt` and `bar.txt`:
+ * Many examples here assume the existence of files +foo.txt+ and +bar.txt+:
  *
  * ```sh
  * cat foo.txt
@@ -14782,12 +14782,12 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  * In the following example:
  *
- * - Filepaths `foo.txt` and `bar.txt` may be retained as potential sources.
+ * - Filepaths +foo.txt+ and +bar.txt+ may be retained as potential sources.
  * - Options `--xyzzy` and `--mojo` should be removed.
  *
  * Example:
  *
- * - \File `t.rb`:
+ * - \File +t.rb+:
  *
  *     ```
  *     # Print arguments (and options, if any) found on command line.
@@ -14803,7 +14803,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  * \ARGF's stream access considers the elements of +ARGV+, left to right:
  *
- * - \File `t.rb`:
+ * - \File +t.rb+:
  *
  *     ```
  *     p "ARGV: #{ARGV}"
@@ -14827,7 +14827,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * Each element in +ARGV+ is removed when its corresponding source is accessed;
  * when all sources have been accessed, the array is empty:
  *
- * - \File `t.rb`:
+ * - \File +t.rb+:
  *
  *     ```
  *     until ARGV.empty? && ARGF.eof?
@@ -14860,7 +14860,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * This program prints what it reads from files at the paths specified
  * on the command line:
  *
- * - \File `t.rb`:
+ * - \File +t.rb+:
  *
  *     ```
  *     p ['ARGV', ARGV]
@@ -14880,7 +14880,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  * To specify stream <tt>$stdin</tt> in +ARGV+, us the character `'-'`:
  *
- * - \File `t.rb`:
+ * - \File +t.rb+:
  *
  *     ```
  *     p ['ARGV', ARGV]
@@ -14944,7 +14944,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * therefore, for example, `ARGF#entries` returns an array of lines from the sources,
  * not an array of the strings from +ARGV+:
  *
- * - \File `t.rb`:
+ * - \File +t.rb+:
  *
  *     ```
  *     p ['ARGV', ARGV]
