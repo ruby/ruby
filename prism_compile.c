@@ -962,6 +962,78 @@ pm_compile_index_write_nodes_add_send(bool popped, LINK_ANCHOR *const ret, rb_is
     return;
 }
 
+static void
+pm_arg_compile_keyword_hash_node(pm_keyword_hash_node_t *node, rb_iseq_t *iseq, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, pm_scope_node_t *scope_node, NODE dummy_line_node)
+{
+    size_t len = node->elements.size;
+    int cur_hash_size = 0;
+
+    bool new_hash_emitted = false;
+    for (size_t i = 0; i < len; i++) {
+        pm_node_t *cur_node = node->elements.nodes[i];
+        pm_node_type_t cur_type = PM_NODE_TYPE(cur_node);
+
+        switch (cur_type) {
+          case PM_ASSOC_NODE: {
+            pm_assoc_node_t *assoc = (pm_assoc_node_t *)cur_node;
+
+            PM_COMPILE(assoc->key);
+            PM_COMPILE(assoc->value);
+            cur_hash_size++;
+
+            // If we're at the last keyword arg, or the last assoc node of this "set",
+            // then we want to either construct a newhash or merge onto previous hashes
+            if (i == (len - 1) || !PM_NODE_TYPE_P(node->elements.nodes[i + 1], cur_type)) {
+                if (new_hash_emitted) {
+                    ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(cur_hash_size * 2 + 1));
+                }
+                else {
+                    if (!popped) {
+                        ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(cur_hash_size * 2));
+                        cur_hash_size = 0;
+                        new_hash_emitted = true;
+                    }
+                }
+            }
+
+            break;
+          }
+          case PM_ASSOC_SPLAT_NODE: {
+            if (len > 1) {
+                ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                if (i == 0) {
+                    if (!popped) {
+                        ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(0));
+                        new_hash_emitted = true;
+                    }
+                }
+                else {
+                    PM_SWAP;
+                }
+            }
+
+            pm_assoc_splat_node_t *assoc_splat = (pm_assoc_splat_node_t *)cur_node;
+            PM_COMPILE(assoc_splat->value);
+
+            if (len > 1) {
+                ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_kwd, INT2FIX(2));
+            }
+
+            if ((i < len - 1) && !PM_NODE_TYPE_P(node->elements.nodes[i + 1], cur_type)) {
+                ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                PM_SWAP;
+            }
+
+            cur_hash_size = 0;
+            break;
+          }
+          default: {
+            rb_bug("Unknown type in keyword argument %s\n", pm_node_type_to_str(PM_NODE_TYPE(cur_node)));
+          }
+        }
+    }
+}
+
 static int
 pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinfo_kwarg **kw_arg, rb_iseq_t *iseq, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, pm_scope_node_t *scope_node, NODE dummy_line_node, pm_parser_t *parser)
 {
@@ -990,78 +1062,18 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
               // A keyword hash node contains all keyword arguments as AssocNodes and AssocSplatNodes
               case PM_KEYWORD_HASH_NODE: {
                 pm_keyword_hash_node_t *keyword_arg = (pm_keyword_hash_node_t *)argument;
-                size_t len = keyword_arg->elements.size;
 
                 if (has_keyword_splat || has_splat) {
                     *flags |= VM_CALL_KW_SPLAT;
                     *flags |= VM_CALL_KW_SPLAT_MUT;
 
                     has_keyword_splat = true;
-                    int cur_hash_size = 0;
 
-                    bool new_hash_emitted = false;
-                    for (size_t i = 0; i < len; i++) {
-                        pm_node_t *cur_node = keyword_arg->elements.nodes[i];
-
-                        pm_node_type_t cur_type = PM_NODE_TYPE(cur_node);
-
-                        switch (PM_NODE_TYPE(cur_node)) {
-                          case PM_ASSOC_NODE: {
-                            pm_assoc_node_t *assoc = (pm_assoc_node_t *)cur_node;
-
-                            PM_COMPILE_NOT_POPPED(assoc->key);
-                            PM_COMPILE_NOT_POPPED(assoc->value);
-                            cur_hash_size++;
-
-                            // If we're at the last keyword arg, or the last assoc node of this "set",
-                            // then we want to either construct a newhash or merge onto previous hashes
-                            if (i == (len - 1) || !PM_NODE_TYPE_P(keyword_arg->elements.nodes[i + 1], cur_type)) {
-                                if (new_hash_emitted) {
-                                    ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(cur_hash_size * 2 + 1));
-                                }
-                                else {
-                                    ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(cur_hash_size * 2));
-                                    cur_hash_size = 0;
-                                    new_hash_emitted = true;
-                                }
-                            }
-
-                            break;
-                          }
-                          case PM_ASSOC_SPLAT_NODE: {
-                            if (len > 1) {
-                                ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                                if (i == 0) {
-                                    ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(0));
-                                    new_hash_emitted = true;
-                                }
-                                else {
-                                    PM_SWAP;
-                                }
-                            }
-
-                            pm_assoc_splat_node_t *assoc_splat = (pm_assoc_splat_node_t *)cur_node;
-                            PM_COMPILE_NOT_POPPED(assoc_splat->value);
-
-                            if (len > 1) {
-                                ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_kwd, INT2FIX(2));
-                            }
-
-                            if ((i < len - 1) && !PM_NODE_TYPE_P(keyword_arg->elements.nodes[i + 1], cur_type)) {
-                                ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                                PM_SWAP;
-                            }
-
-                            cur_hash_size = 0;
-                            break;
-                          }
-                          default: {
-                            rb_bug("Unknown type in keyword argument %s\n", pm_node_type_to_str(PM_NODE_TYPE(cur_node)));
-                          }
-                        }
-                    }
+                    pm_arg_compile_keyword_hash_node(keyword_arg, iseq, ret, src, false, scope_node, dummy_line_node);
                 }
                 else {
+                    size_t len = keyword_arg->elements.size;
+
                     // We need to first figure out if all elements of the KeywordHashNode are AssocNodes
                     // with symbol keys.
                     if (PM_NODE_FLAG_P(keyword_arg, PM_KEYWORD_HASH_NODE_FLAGS_SYMBOL_KEYS)) {
@@ -3145,76 +3157,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     switch (PM_NODE_TYPE(element_node)) {
                       case PM_KEYWORD_HASH_NODE: {
                         has_kw_splat = true;
-                        pm_keyword_hash_node_t *keyword_arg = (pm_keyword_hash_node_t *)element_node;
-                        size_t len = keyword_arg->elements.size;
 
-                        int cur_hash_size = 0;
-
-                        bool new_hash_emitted = false;
-                        for (size_t i = 0; i < len; i++) {
-                            pm_node_t *cur_node = keyword_arg->elements.nodes[i];
-
-                            pm_node_type_t cur_type = PM_NODE_TYPE(cur_node);
-
-                            switch (PM_NODE_TYPE(cur_node)) {
-                              case PM_ASSOC_NODE: {
-                                pm_assoc_node_t *assoc = (pm_assoc_node_t *)cur_node;
-
-                                PM_COMPILE(assoc->key);
-                                PM_COMPILE(assoc->value);
-                                cur_hash_size++;
-
-                                // If we're at the last keyword arg, or the last assoc node of this "set",
-                                // then we want to either construct a newhash or merge onto previous hashes
-                                if (i == (len - 1) || !PM_NODE_TYPE_P(keyword_arg->elements.nodes[i + 1], cur_type)) {
-                                    if (new_hash_emitted) {
-                                        ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(cur_hash_size * 2 + 1));
-                                    }
-                                    else {
-                                        if (!popped) {
-                                            ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(cur_hash_size * 2));
-                                            cur_hash_size = 0;
-                                            new_hash_emitted = true;
-                                        }
-                                    }
-                                }
-
-                                break;
-                              }
-                              case PM_ASSOC_SPLAT_NODE: {
-                                if (len > 1) {
-                                    ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                                    if (i == 0) {
-                                        if (!popped) {
-                                            ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(0));
-                                            new_hash_emitted = true;
-                                        }
-                                    }
-                                    else {
-                                        PM_SWAP;
-                                    }
-                                }
-
-                                pm_assoc_splat_node_t *assoc_splat = (pm_assoc_splat_node_t *)cur_node;
-                                PM_COMPILE(assoc_splat->value);
-
-                                if (len > 1) {
-                                    ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_kwd, INT2FIX(2));
-                                }
-
-                                if ((i < len - 1) && !PM_NODE_TYPE_P(keyword_arg->elements.nodes[i + 1], cur_type)) {
-                                    ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                                    PM_SWAP;
-                                }
-
-                                cur_hash_size = 0;
-                                break;
-                              }
-                              default: {
-                                rb_bug("Unknown type in keyword argument %s\n", pm_node_type_to_str(PM_NODE_TYPE(cur_node)));
-                              }
-                            }
-                        }
+                        pm_arg_compile_keyword_hash_node((pm_keyword_hash_node_t *)element_node, iseq, ret, src, popped, scope_node, dummy_line_node);
 
                         break;
                       }
