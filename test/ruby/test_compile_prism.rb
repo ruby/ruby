@@ -239,6 +239,7 @@ module Prism
       assert_prism_eval("defined?(`echo #{1}`)")
 
       assert_prism_eval("defined?(PrismTestSubclass.test_call_and_write_node &&= 1)")
+      assert_prism_eval("defined?(PrismTestSubclass.test_call_operator_write_node += 1)")
     end
 
     def test_GlobalVariableReadNode
