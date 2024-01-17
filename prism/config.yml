@@ -476,21 +476,27 @@ nodes:
       - name: left
         type: node
         comment: |
-          Represents left side of expression.
+          Represents left side of expression. It includes any kind of node that returns a non-void value.
 
           left and right
           ^^^^
+          1 && 2
+          ^
       - name: right
         type: node
         comment: |
-          Represents right side of expression.
+          Represents right side of expression. It includes any kind of node that returns non-void value.
+          If nothing is given, it will be replaced by MissingNode.
 
           left && right
                   ^^^^^
+          1 and 2
+                ^
       - name: operator_loc
         type: location
         comment: |
           The Location of `and` keyword or `&&` operator.
+          The only difference between the two is that `&&` has higher precedence than `and`.
 
           left and right
                ^^^
@@ -2289,21 +2295,27 @@ nodes:
       - name: left
         type: node
         comment: |
-          Represents left side of expression.
+          Represents left side of expression. It includes any kind of node that returns a non-void value.
 
           left or right
           ^^^^
+          1 || 2
+          ^
       - name: right
         type: node
         comment: |
-          Represents right side of expression.
+          Represents right side of expression. It includes any kind of node that returns a non-void value.
+          If nothing is given, it will be replaced by MissingNode.
 
           left || right
                   ^^^^^
+          1 or 2
+               ^
       - name: operator_loc
         type: location
         comment: |
           The Location of `or` keyword or `||` operator.
+          The only difference between the two is that `||` has higher precedence than `or`.
 
           left or right
                ^^
