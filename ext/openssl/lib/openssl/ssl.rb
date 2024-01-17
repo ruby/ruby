@@ -299,6 +299,16 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
       def wait_writable(*args)
         to_io.wait_writable(*args)
       end
+
+      if IO.method_defined?(:timeout)
+        def timeout
+          to_io.timeout
+        end
+
+        def timeout=(value)
+          to_io.timeout=(value)
+        end
+      end
     end
 
     def verify_certificate_identity(cert, hostname)

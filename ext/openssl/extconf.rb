@@ -49,6 +49,7 @@ $defs.push("-D""OPENSSL_SUPPRESS_DEPRECATED")
 
 have_func("rb_io_descriptor")
 have_func("rb_io_maybe_wait(0, Qnil, Qnil, Qnil)", "ruby/io.h") # Ruby 3.1
+have_func("rb_io_timeout", "ruby/io.h")
 
 Logging::message "=== Checking for system dependent stuff... ===\n"
 have_library("nsl", "t_open")
