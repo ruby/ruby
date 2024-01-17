@@ -14731,6 +14731,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * - \File +t.rb+:
  *
  *     ```
+
  *     p ['ARGV', ARGV]
  *     p ['ARGF.read', ARGF.read]
  *     ```
@@ -14775,7 +14776,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * and is one of:
  *
  * - The string path to a file that may be opened as a stream.
- * - The character `'-'`, meaning stream <tt>$stdin</tt>.
+ * - The character <tt>'-'</tt>, meaning stream <tt>$stdin</tt>.
  *
  * Each element that is _not_ one of these
  * should be removed from +ARGV+ before \ARGF accesses that source.
@@ -14783,7 +14784,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * In the following example:
  *
  * - Filepaths +foo.txt+ and +bar.txt+ may be retained as potential sources.
- * - Options `--xyzzy` and `--mojo` should be removed.
+ * - Options <tt>--xyzzy</tt> and <tt>--mojo</tt> should be removed.
  *
  * Example:
  *
@@ -14878,7 +14879,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  * ==== Specifying <tt>$stdin</tt> in +ARGV+
  *
- * To specify stream <tt>$stdin</tt> in +ARGV+, us the character `'-'`:
+ * To specify stream <tt>$stdin</tt> in +ARGV+, us the character <tt>'-'</tt>:
  *
  * - \File +t.rb+:
  *
@@ -14895,7 +14896,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     ["ARGF.read", "Open the pod bay doors, Hal.\n"]
  *     ```
  *
- * When no character `'-'` is given, stream <tt>$stdin</tt> is ignored
+ * When no character <tt>'-'</tt> is given, stream <tt>$stdin</tt> is ignored
  * (exception: see {Special Case}[rdoc-ref:ARGF@Special+Case]):
  *
  * - Command and output:
@@ -14909,7 +14910,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * ==== Mixtures and Repetitions in +ARGV+
  *
  * For an \ARGF reader, +ARGV+ may contain any mixture of filepaths
- * and character `'-'`, including repetitions.
+ * and character <tt>'-'</tt>, including repetitions.
  *
  * ==== Modifications to +ARGV+
  *
@@ -14941,7 +14942,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  * <b>Note well</b>: In \ARGF, method #each returns data from the _sources_,
  * _not_ from +ARGV+;
- * therefore, for example, `ARGF#entries` returns an array of lines from the sources,
+ * therefore, for example, <tt>ARGF#entries</tt> returns an array of lines from the sources,
  * not an array of the strings from +ARGV+:
  *
  * - \File +t.rb+:
