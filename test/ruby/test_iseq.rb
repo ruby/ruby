@@ -809,4 +809,10 @@ class TestISeq < Test::Unit::TestCase
       end
     end
   end
+
+  def test_compile_prism_with_invalid_object_type
+    assert_raise(TypeError) do
+      RubyVM::InstructionSequence.compile_prism(Object.new)
+    end
+  end
 end
