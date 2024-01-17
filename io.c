@@ -14700,17 +14700,16 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
 /*
  * Document-class:  ARGF
  *
- * :markup: markdown
+ * == \ARGF and `ARGV`
  *
- * ## \ARGF and `ARGV`
- *
- * The \ARGF object works with the array at global variable `ARGV`:
+ * The \ARGF object works with the array at global variable `ARGV`
+ * to make `$stdin` and file streams available in the Ruby program:
  *
  * - **ARGV** may be thought of as the <b>argument vector</b> array.
  *
- *     Initially, it contains the arguments and options
- *     that are passed to it from the command line;
- *     the running Ruby program can modify that array as it likes.
+ *     Initially, it contains the command-line arguments and options
+ *     that are passed to the Ruby program;
+ *     the program can modify that array as it likes.
  *
  * - **ARGF** may be thought of as the <b>argument files</b> object.
  *
@@ -14719,12 +14718,12 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     This provides a convenient way for the command line
  *     to specify streams for a Ruby program to read.
  *
- * ## Reading
+ * == Reading
  *
  * \ARGF may read from _source_ streams,
  * which at any particular time are determined by the content of `ARGV`.
  *
- * ### Simplest Case
+ * === Simplest Case
  *
  * When the <i>very first</i> \ARGF read occurs with an empty `ARGV` (`[]`),
  * the source is `$stdin`:
@@ -14751,7 +14750,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     ["ARGF.read", "Foo 0\nFoo 1\nBar 0\nBar 1\nBar 2\nBar 3\n"]
  *     ```
  *
- * ### About the Examples
+ * === About the Examples
  *
  * Many examples here assume the existence of files `foo.txt` and `bar.txt`:
  *
@@ -14766,7 +14765,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * Bar 3
  * ```
  *
- * ### Sources in `ARGV`
+ * === Sources in `ARGV`
  *
  * For any \ARGF read _except_ the {simplest case}[rdoc-ref:ARGF@Simplest+Case]
  * (that is, _except_ for the <i>very first</i> \ARGF read with an empty `ARGV`),
@@ -14814,7 +14813,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * - Command and output:
  *
  *     ```sh
- *      ruby t.rb foo.txt bar.txt
+ *     ruby t.rb foo.txt bar.txt
  *     "ARGV: [\"foo.txt\", \"bar.txt\"]"
  *     "Read: Foo 0\nFoo 1\nBar 0\nBar 1\nBar 2\nBar 3\n"
  *     ```
@@ -14854,7 +14853,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     "ARGV: []"
  *     "Line: Bar 3\n"
  *     ```
- * #### Filepaths in `ARGV`
+ * ==== Filepaths in `ARGV`
  *
  * The `ARGV` array may contain filepaths the specify sources for \ARGF reading.
  *
@@ -14877,7 +14876,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     ["ARGF.read", "Foo 0\nFoo 1\nBar 0\nBar 1\nBar 2\nBar 3\n"]
  *     ```
  *
- * #### Specifying `$stdin` in `ARGV`
+ * ==== Specifying `$stdin` in `ARGV`
  *
  * To specify stream `$stdin` in `ARGV`, us the character `'-'`:
  *
@@ -14907,22 +14906,22 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     "Read: Foo 0\nFoo 1\nBar 0\nBar 1\nBar 2\nBar 3\n"
  *     ```
  *
- * #### Mixtures and Repetitions in `ARGV`
+ * ==== Mixtures and Repetitions in `ARGV`
  *
  * For an \ARGF reader, `ARGV` may contain any mixture of filepaths
  * and character `'-'`, including repetitions.
  *
- * #### Modifications to `ARGV`
+ * ==== Modifications to `ARGV`
  *
  * The running Ruby program may make any modifications to the `ARGV` array;
  * the current value of `ARGV` affects \ARGF reading.
  *
- * #### Empty `ARGV`
+ * ==== Empty `ARGV`
  *
  * For an empty `ARGV`, an \ARGF read method either returns +nil+
  * or raises an exception, depending on the specific method.
  *
- * ### More Read Methods
+ * === More Read Methods
  *
  * As seen above, method ARGF#read reads the content of all sources
  * into a single string.
@@ -14935,7 +14934,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  * - Line access: #each_line, #gets, #readline, #readlines.
  * - Source access: #read, #read_nonblock, #readpartial.
  *
- * ### About \Enumerable
+ * === About \Enumerable
  *
  * \ARGF includes module Enumerable.
  * Virtually all methods in \Enumerable call method `#each` in the including class.
@@ -14960,7 +14959,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *     ["ARGF.entries", ["Foo 0\n", "Foo 1\n", "Bar 0\n", "Bar 1\n", "Bar 2\n", "Bar 3\n"]]
  *     ```
  *
- * ## Writing
+ * == Writing
  *
  * If <i>inplace mode</i> is in effect,
  * \ARGF may write to target streams,
