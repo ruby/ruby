@@ -14873,11 +14873,9 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  * - Command and output:
  *
- *     ```sh
- *      echo "Open the pod bay doors, Hal." | ruby t.rb foo.txt bar.txt
+ *     $ echo "Open the pod bay doors, Hal." | ruby t.rb foo.txt bar.txt
  *     "ARGV: [\"foo.txt\", \"bar.txt\"]"
  *     "Read: Foo 0\nFoo 1\nBar 0\nBar 1\nBar 2\nBar 3\n"
- *     ```
  *
  * ==== Mixtures and Repetitions in +ARGV+
  *
