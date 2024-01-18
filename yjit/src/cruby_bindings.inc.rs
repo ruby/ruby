@@ -874,6 +874,25 @@ pub type ruby_vminsn_type = u32;
 pub type rb_iseq_callback = ::std::option::Option<
     unsafe extern "C" fn(arg1: *const rb_iseq_t, arg2: *mut ::std::os::raw::c_void),
 >;
+pub const DEFINED_NOT_DEFINED: defined_type = 0;
+pub const DEFINED_NIL: defined_type = 1;
+pub const DEFINED_IVAR: defined_type = 2;
+pub const DEFINED_LVAR: defined_type = 3;
+pub const DEFINED_GVAR: defined_type = 4;
+pub const DEFINED_CVAR: defined_type = 5;
+pub const DEFINED_CONST: defined_type = 6;
+pub const DEFINED_METHOD: defined_type = 7;
+pub const DEFINED_YIELD: defined_type = 8;
+pub const DEFINED_ZSUPER: defined_type = 9;
+pub const DEFINED_SELF: defined_type = 10;
+pub const DEFINED_TRUE: defined_type = 11;
+pub const DEFINED_FALSE: defined_type = 12;
+pub const DEFINED_ASGN: defined_type = 13;
+pub const DEFINED_EXPR: defined_type = 14;
+pub const DEFINED_REF: defined_type = 15;
+pub const DEFINED_FUNC: defined_type = 16;
+pub const DEFINED_CONST_FROM: defined_type = 17;
+pub type defined_type = u32;
 pub const ROBJECT_OFFSET_AS_HEAP_IVPTR: robject_offsets = 16;
 pub const ROBJECT_OFFSET_AS_HEAP_IV_INDEX_TBL: robject_offsets = 24;
 pub const ROBJECT_OFFSET_AS_ARY: robject_offsets = 16;

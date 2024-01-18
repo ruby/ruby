@@ -348,6 +348,7 @@ fn main() {
         .allowlist_function("rb_iseqw_to_iseq")
         .allowlist_function("rb_iseq_label")
         .allowlist_function("rb_iseq_line_no")
+        .allowlist_type("defined_type")
 
         // From builtin.h
         .allowlist_type("rb_builtin_function.*")
