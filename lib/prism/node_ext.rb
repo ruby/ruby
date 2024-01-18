@@ -118,7 +118,7 @@ module Prism
         current = current.parent
       end
 
-      unless current.is_a?(ConstantReadNode)
+      unless current.is_a?(ConstantReadNode) || current == nil
         raise DynamicPartsInConstantPathError, "Constant path contains dynamic parts. Cannot compute full name"
       end
 
