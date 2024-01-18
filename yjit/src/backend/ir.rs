@@ -946,6 +946,7 @@ pub struct SideExitContext {
     pub sp_offset: i8,
     pub reg_temps: RegTemps,
     pub is_return_landing: bool,
+    pub is_deferred: bool,
 }
 
 impl SideExitContext {
@@ -957,6 +958,7 @@ impl SideExitContext {
             sp_offset: ctx.get_sp_offset(),
             reg_temps: ctx.get_reg_temps(),
             is_return_landing: ctx.is_return_landing(),
+            is_deferred: ctx.is_deferred(),
         };
         if cfg!(debug_assertions) {
             // Assert that we're not losing any mandatory metadata
@@ -973,6 +975,9 @@ impl SideExitContext {
         ctx.set_reg_temps(self.reg_temps);
         if self.is_return_landing {
             ctx.set_as_return_landing();
+        }
+        if self.is_deferred {
+            ctx.mark_as_deferred();
         }
         ctx
     }

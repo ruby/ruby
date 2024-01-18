@@ -439,6 +439,11 @@ impl RegTemps {
     }
 }
 
+/// Bits for chain_depth_return_landing_defer
+const RETURN_LANDING_BIT: u8 = 0b10000000;
+const DEFER_BIT: u8          = 0b01000000;
+const CHAIN_DEPTH_MASK: u8   = 0b00111111; // 63
+
 /// Code generation context
 /// Contains information we can use to specialize/optimize code
 /// There are a lot of context objects so we try to keep the size small.
@@ -456,10 +461,10 @@ pub struct Context {
     reg_temps: RegTemps,
 
     /// Fields packed into u8
-    /// - Lower 7 bits: Depth of this block in the sidechain (eg: inline-cache chain)
-    /// - Top bit: Whether this code is the target of a JIT-to-JIT Ruby return
-    ///   ([Self::is_return_landing])
-    chain_depth_return_landing: u8,
+    /// - 1st bit from the left: Whether this code is the target of a JIT-to-JIT Ruby return ([Self::is_return_landing])
+    /// - 2nd bit from the left: Whether the compilation of this code has been deferred ([Self::is_deferred])
+    /// - Last 6 bits (max: 63): Depth of this block in the sidechain (eg: inline-cache chain)
+    chain_depth_and_flags: u8,
 
     // Type we track for self
     self_type: Type,
@@ -1674,6 +1679,9 @@ impl Context {
         if self.is_return_landing() {
             generic_ctx.set_as_return_landing();
         }
+        if self.is_deferred() {
+            generic_ctx.mark_as_deferred();
+        }
         generic_ctx
     }
 
@@ -1704,30 +1712,39 @@ impl Context {
     }
 
     pub fn get_chain_depth(&self) -> u8 {
-        self.chain_depth_return_landing & 0x7f
+        self.chain_depth_and_flags & CHAIN_DEPTH_MASK
     }
 
-    pub fn reset_chain_depth(&mut self) {
-        self.chain_depth_return_landing &= 0x80;
+    pub fn reset_chain_depth_and_defer(&mut self) {
+        self.chain_depth_and_flags &= !CHAIN_DEPTH_MASK;
+        self.chain_depth_and_flags &= !DEFER_BIT;
     }
 
     pub fn increment_chain_depth(&mut self) {
-        if self.get_chain_depth() == 0x7f {
+        if self.get_chain_depth() == CHAIN_DEPTH_MASK {
             panic!("max block version chain depth reached!");
         }
-        self.chain_depth_return_landing += 1;
+        self.chain_depth_and_flags += 1;
     }
 
     pub fn set_as_return_landing(&mut self) {
-        self.chain_depth_return_landing |= 0x80;
+        self.chain_depth_and_flags |= RETURN_LANDING_BIT;
     }
 
     pub fn clear_return_landing(&mut self) {
-        self.chain_depth_return_landing &= 0x7f;
+        self.chain_depth_and_flags &= !RETURN_LANDING_BIT;
     }
 
     pub fn is_return_landing(&self) -> bool {
-        self.chain_depth_return_landing & 0x80 > 0
+        self.chain_depth_and_flags & RETURN_LANDING_BIT != 0
+    }
+
+    pub fn mark_as_deferred(&mut self) {
+        self.chain_depth_and_flags |= DEFER_BIT;
+    }
+
+    pub fn is_deferred(&self) -> bool {
+        self.chain_depth_and_flags & DEFER_BIT != 0
     }
 
     /// Get an operand for the adjusted stack pointer address
@@ -2020,6 +2037,10 @@ impl Context {
         }
 
         if src.is_return_landing() != dst.is_return_landing() {
+            return TypeDiff::Incompatible;
+        }
+
+        if src.is_deferred() != dst.is_deferred() {
             return TypeDiff::Incompatible;
         }
 
@@ -3021,13 +3042,13 @@ pub fn defer_compilation(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) {
-    if asm.ctx.get_chain_depth() != 0 {
+    if asm.ctx.is_deferred() {
         panic!("Double defer!");
     }
 
     let mut next_ctx = asm.ctx;
 
-    next_ctx.increment_chain_depth();
+    next_ctx.mark_as_deferred();
 
     let branch = new_pending_branch(jit, BranchGenFn::JumpToTarget0(Cell::new(BranchShape::Default)));
 
@@ -3503,6 +3524,32 @@ mod tests {
         assert!(top_type == Type::Fixnum);
 
         // TODO: write more tests for Context type diff
+    }
+
+    #[test]
+    fn context_chain_depth() {
+        let mut ctx = Context::default();
+        assert_eq!(ctx.get_chain_depth(), 0);
+        assert_eq!(ctx.is_return_landing(), false);
+        assert_eq!(ctx.is_deferred(), false);
+
+        for _ in 0..5 {
+            ctx.increment_chain_depth();
+        }
+        assert_eq!(ctx.get_chain_depth(), 5);
+
+        ctx.set_as_return_landing();
+        assert_eq!(ctx.is_return_landing(), true);
+
+        ctx.clear_return_landing();
+        assert_eq!(ctx.is_return_landing(), false);
+
+        ctx.mark_as_deferred();
+        assert_eq!(ctx.is_deferred(), true);
+
+        ctx.reset_chain_depth_and_defer();
+        assert_eq!(ctx.get_chain_depth(), 0);
+        assert_eq!(ctx.is_deferred(), false);
     }
 
     #[test]

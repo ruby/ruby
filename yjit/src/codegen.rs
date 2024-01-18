@@ -848,7 +848,7 @@ fn jump_to_next_insn(
     // Reset the depth since in current usages we only ever jump to to
     // chain_depth > 0 from the same instruction.
     let mut reset_depth = asm.ctx;
-    reset_depth.reset_chain_depth();
+    reset_depth.reset_chain_depth_and_defer();
 
     let jump_block = BlockId {
         iseq: jit.iseq,
@@ -1029,7 +1029,7 @@ pub fn gen_single_block(
 
         // For now, reset the chain depth after each instruction as only the
         // first instruction in the block can concern itself with the depth.
-        asm.ctx.reset_chain_depth();
+        asm.ctx.reset_chain_depth_and_defer();
 
         // Move to the next instruction to compile
         insn_idx += insn_len(opcode) as u16;
@@ -4702,7 +4702,7 @@ fn jit_rb_int_lshift(
     }
 
     // Fallback to a C call if the shift amount varies
-    if asm.ctx.get_chain_depth() > 1 {
+    if asm.ctx.get_chain_depth() > 0 {
         return false;
     }
 
@@ -4716,7 +4716,7 @@ fn jit_rb_int_lshift(
         jit,
         asm,
         ocb,
-        2, // defer_compilation increments chain_depth
+        1,
         Counter::lshift_amount_changed,
     );
 
@@ -4761,7 +4761,7 @@ fn jit_rb_int_rshift(
     }
 
     // Fallback to a C call if the shift amount varies
-    if asm.ctx.get_chain_depth() > 2 {
+    if asm.ctx.get_chain_depth() > 1 {
         return false;
     }
 
@@ -4775,7 +4775,7 @@ fn jit_rb_int_rshift(
         jit,
         asm,
         ocb,
-        2, // defer_compilation increments chain_depth
+        1,
         Counter::rshift_amount_changed,
     );
 
@@ -6875,7 +6875,7 @@ fn gen_send_iseq(
     return_asm.ctx = asm.ctx;
     return_asm.stack_pop(sp_offset.try_into().unwrap());
     return_asm.ctx.set_sp_offset(0); // We set SP on the caller's frame above
-    return_asm.ctx.reset_chain_depth();
+    return_asm.ctx.reset_chain_depth_and_defer();
     return_asm.ctx.set_as_return_landing();
 
     // Write the JIT return address on the callee frame
