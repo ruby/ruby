@@ -609,6 +609,15 @@ class TestGc < Test::Unit::TestCase
         obj = nil
       end
     end;
+
+    assert_normal_exit "#{<<~"begin;"}\n#{<<~'end;'}", '[Bug #20042]'
+    begin;
+      def (f = Object.new).call = nil # missing ID
+      o = Object.new
+      ObjectSpace.define_finalizer(o, f)
+      o = nil
+      GC.start
+    end;
   end
 
   def test_object_ids_never_repeat
