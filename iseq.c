@@ -1442,6 +1442,7 @@ iseqw_s_compile_prism_compile(pm_parser_t *parser, VALUE opt, rb_iseq_t *iseq, V
         rb_iseq_compile_prism_node(iseq, &scope_node, parser);
 
         finish_iseq_build(iseq);
+        pm_scope_node_destroy(&scope_node);
         pm_node_destroy(parser, node);
         free(constants);
     }

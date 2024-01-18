@@ -33,4 +33,5 @@ typedef struct pm_scope_node {
 } pm_scope_node_t;
 
 void pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous, pm_parser_t *parser);
+void pm_scope_node_destroy(pm_scope_node_t *scope_node);
 bool *rb_ruby_prism_ptr(void);
