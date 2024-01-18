@@ -3239,8 +3239,7 @@ rb_str_resize(VALUE str, long len)
     long slen = RSTRING_LEN(str);
     const int termlen = TERM_LEN(str);
 
-    if ((slen > len && ENC_CODERANGE(str) != ENC_CODERANGE_7BIT) ||
-        (termlen > 1 && (slen % termlen == 0) != (len % termlen == 0))) {
+    if (slen > len || (termlen != 1 && slen < len)) {
         ENC_CODERANGE_CLEAR(str);
     }
 
