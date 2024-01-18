@@ -26,8 +26,6 @@ typedef uint32_t MMTk_AllocationSemantics;
 
 #define MMTK_MIN_OBJ_ALIGN 8
 
-#define MMTK_GC_THREAD_KIND_CONTROLLER 0
-
 #define MMTK_GC_THREAD_KIND_WORKER 1
 
 typedef struct RubyBindingOptions {
