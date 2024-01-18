@@ -6058,23 +6058,23 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                   // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
                   //            ^^^^^^^^^^
                   case PM_MULTI_TARGET_NODE: {
-                      required_multis_hidden_index = local_index;
-                      local = rb_make_temporary_id(local_index);
-                      local_table_for_iseq->ids[local_index] = local;
-                      break;
+                    required_multis_hidden_index = local_index;
+                    local = rb_make_temporary_id(local_index);
+                    local_table_for_iseq->ids[local_index] = local;
+                    break;
                   }
                   // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
                   //         ^
                   case PM_REQUIRED_PARAMETER_NODE: {
-                      pm_required_parameter_node_t * param = (pm_required_parameter_node_t *)required;
+                    pm_required_parameter_node_t * param = (pm_required_parameter_node_t *)required;
 
-                      if (!PM_NODE_FLAG_P(required, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
-                          pm_insert_local_index(param->name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
-                      }
-                      break;
+                    if (!PM_NODE_FLAG_P(required, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
+                        pm_insert_local_index(param->name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                    }
+                    break;
                   }
                   default: {
-                      rb_bug("Unsupported node in requireds in parameters %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
+                    rb_bug("Unsupported node in requireds in parameters %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
                   }
                 }
             }
