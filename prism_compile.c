@@ -5693,7 +5693,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             for (size_t index = 0; index < exceptions->size; index++) {
                 ADD_GETLOCAL(ret, &dummy_line_node, LVAR_ERRINFO, 0);
                 PM_COMPILE(exceptions->nodes[index]);
-                ADD_INSN1(ret, &dummy_line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
+                int checkmatch_flags = VM_CHECKMATCH_TYPE_RESCUE;
+                if (PM_NODE_TYPE_P(exceptions->nodes[index], PM_SPLAT_NODE)) {
+                    checkmatch_flags |= VM_CHECKMATCH_ARRAY;
+                }
+                ADD_INSN1(ret, &dummy_line_node, checkmatch, INT2FIX(checkmatch_flags));
                 ADD_INSN1(ret, &dummy_line_node, branchif, exception_match_label);
             }
         } else {
