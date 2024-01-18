@@ -12719,20 +12719,24 @@ parse_string_part(pm_parser_t *parser) {
  * automatically drop trailing `@` characters. This happens at the parser level,
  * such that `~@` is parsed as `~` and `!@` is parsed as `!`. We do that here.
  */
+static const uint8_t *
+parse_operator_symbol_name(const pm_token_t *name) {
+    switch (name->type) {
+        case PM_TOKEN_TILDE:
+        case PM_TOKEN_BANG:
+            if (name->end[-1] == '@') return name->end - 1;
+        /* fallthrough */
+        default:
+            return name->end;
+    }
+}
+
 static pm_node_t *
 parse_operator_symbol(pm_parser_t *parser, const pm_token_t *opening, pm_lex_state_t next_state) {
     pm_token_t closing = not_provided(parser);
     pm_symbol_node_t *symbol = pm_symbol_node_create(parser, opening, &parser->current, &closing);
 
-    const uint8_t *end = parser->current.end;
-    switch (parser->current.type) {
-        case PM_TOKEN_TILDE:
-        case PM_TOKEN_BANG:
-            if (parser->current.end[-1] == '@') end--;
-            break;
-        default:
-            break;
-    }
+    const uint8_t *end = parse_operator_symbol_name(&parser->current);
 
     if (next_state != PM_LEX_STATE_NONE) lex_state_set(parser, next_state);
     parser_lex(parser);
@@ -15378,6 +15382,13 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
             pm_parser_scope_pop(parser);
             pm_parser_current_param_name_restore(parser, saved_param_name);
+
+            /**
+             * If the final character is @. As is the case when defining
+             * methods to override the unary operators, we should ignore
+             * the @ in the same way we do for symbols.
+             */
+            name.end = parse_operator_symbol_name(&name);
 
             return (pm_node_t *) pm_def_node_create(
                 parser,
