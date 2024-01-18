@@ -1,3 +1,8 @@
+# regression test for autosplat into optional parameter
+assert_equal "[0, 1]", %q{
+  [0].yield_self { |a, opt = 1| [a, 1] }
+}
+
 # regression test for send stack shifting
 assert_normal_exit %q{
   def foo(a, b)

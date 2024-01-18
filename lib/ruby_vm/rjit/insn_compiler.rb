@@ -4576,7 +4576,7 @@ module RubyVM::RJIT
         # The block_arg0_splat implementation cannot deal with optional parameters.
         # This is a setup_parameters_complex() situation and interacts with the
         # starting position of the callee.
-        if opt_num > 1
+        if opt_num > 0
           asm.incr_counter(:invokeblock_iseq_arg0_optional)
           return CantCompile
         end
