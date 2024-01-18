@@ -5977,7 +5977,8 @@ node_extended_grapheme_cluster(Node** np, ScanEnv* env)
           R_ERR(add_code_range(&(cc->mbuf), env, 0x000A, 0x000A)); /* CR */
           R_ERR(add_code_range(&(cc->mbuf), env, 0x000D, 0x000D)); /* LF */
           R_ERR(not_code_range_buf(env->enc, cc->mbuf, &inverted_buf, env));
-          cc->mbuf = inverted_buf; /* TODO: check what to do with buffer before inversion */
+          bbuf_free(cc->mbuf);
+          cc->mbuf = inverted_buf;
 
           env->warnings_flag &= dup_not_warned; /* TODO: fix false warning */
         }
