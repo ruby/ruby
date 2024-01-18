@@ -3502,7 +3502,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         pm_node_list_t conditions = case_node->conditions;
 
-        LABEL **conditions_labels = (LABEL **)ALLOC_N(VALUE, conditions.size + 1);
+        LABEL **conditions_labels = (LABEL **)ALLOCA_N(VALUE, conditions.size + 1);
         LABEL *label;
 
         for (size_t i = 0; i < conditions.size; i++) {
