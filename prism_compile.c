@@ -3289,6 +3289,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             LABEL *estart = NEW_LABEL(lineno);
             LABEL *eend = NEW_LABEL(lineno);
             LABEL *econt = NEW_LABEL(lineno);
+
+            struct ensure_range er;
+            struct iseq_compile_data_ensure_node_stack enl;
+            struct ensure_range *erange;
+
+            er.begin = estart;
+            er.end = eend;
+            er.next = 0;
+            push_ensure_entry(iseq, &enl, &er, (void *)begin_node->ensure_clause);
+
             ADD_LABEL(ret, estart);
             if (!begin_node->rescue_clause) {
                 if (begin_node->statements) {
@@ -3311,15 +3321,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 PM_POP_UNLESS_POPPED;
             }
 
-            struct ensure_range er;
-            struct iseq_compile_data_ensure_node_stack enl;
-            struct ensure_range *erange;
-
-            er.begin = estart;
-            er.end = eend;
-            er.next = 0;
-            push_ensure_entry(iseq, &enl, &er, (void *)begin_node->ensure_clause);
-
             pm_scope_node_t next_scope_node;
             pm_scope_node_init((pm_node_t *)begin_node->ensure_clause, &next_scope_node, scope_node, parser);
             child_iseq = NEW_CHILD_ISEQ(&next_scope_node,
@@ -3336,6 +3337,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     erange = erange->next;
                 }
             }
+            ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = enl.prev;
         }
 
         if (!begin_node->rescue_clause && !begin_node->ensure_clause) {
@@ -3369,6 +3371,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             else {
                 PM_PUTNIL;
             }
+
+            pm_add_ensure_iseq(ret, iseq, 0, src, scope_node);
             ADD_INSNL(ret, &dummy_line_node, jump, ISEQ_COMPILE_DATA(iseq)->end_label);
             ADD_ADJUST_RESTORE(ret, splabel);
 
@@ -4213,8 +4217,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         LABEL *end = NEW_LABEL(lineno);
         ADD_LABEL(ret, start);
         if (ensure_node->statements) {
+            LABEL *prev_end_label = ISEQ_COMPILE_DATA(iseq)->end_label;
             ISEQ_COMPILE_DATA(iseq)->end_label = end;
             PM_COMPILE((pm_node_t *)ensure_node->statements);
+            ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
         }
         ADD_LABEL(ret, end);
         return;

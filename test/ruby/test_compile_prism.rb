@@ -961,6 +961,20 @@ module Prism
       assert_prism_eval("[true].map { break }")
     end
 
+    def test_break_runs_ensure
+      assert_prism_eval(<<-CODE)
+a = []
+while true
+  begin
+    break
+  ensure
+    a << 1
+  end
+end
+a
+      CODE
+    end
+
     def test_EnsureNode
       assert_prism_eval("begin; 1; ensure; 2; end")
       assert_prism_eval("begin; 1; begin; 3; ensure; 4; end; ensure; 2; end")
