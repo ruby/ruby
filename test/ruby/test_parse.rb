@@ -916,20 +916,6 @@ x = __ENCODING__
     assert_syntax_error("$& = 1", /Can't set variable/)
   end
 
-  def test_arg_concat
-    o = Object.new
-    class << o; self; end.instance_eval do
-      define_method(:[]=) {|*r, &b| b.call(r) }
-    end
-    r = nil
-    assert_nothing_raised do
-      eval <<-END, nil, __FILE__, __LINE__+1
-        o[&proc{|x| r = x }] = 1
-      END
-    end
-    assert_equal([1], r)
-  end
-
   def test_void_expr_stmts_value
     x = 1
     useless_use = /useless use/

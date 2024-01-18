@@ -13875,6 +13875,9 @@ new_bv(struct parser_params *p, ID name)
 static NODE *
 aryset(struct parser_params *p, NODE *recv, NODE *idx, const YYLTYPE *loc)
 {
+    if (idx && nd_type_p(idx, NODE_BLOCK_PASS)) {
+        compile_error(p, "block arg given in index");
+    }
     return NEW_ATTRASGN(recv, tASET, idx, loc);
 }
 
