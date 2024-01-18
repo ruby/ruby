@@ -120,14 +120,9 @@ rb_vm_get_sourceline(const rb_control_frame_t *cfp)
 }
 
 typedef struct rb_backtrace_location_struct {
-    enum LOCATION_TYPE {
-        LOCATION_TYPE_ISEQ = 1,
-        LOCATION_TYPE_CFUNC,
-    } type;
-
+    const rb_callable_method_entry_t *cme;
     const rb_iseq_t *iseq;
     const VALUE *pc;
-    ID mid;
 } rb_backtrace_location_t;
 
 struct valued_frame_info {
@@ -145,18 +140,8 @@ location_mark(void *ptr)
 static void
 location_mark_entry(rb_backtrace_location_t *fi)
 {
-    switch (fi->type) {
-      case LOCATION_TYPE_ISEQ:
-        rb_gc_mark_movable((VALUE)fi->iseq);
-        break;
-      case LOCATION_TYPE_CFUNC:
-        if (fi->iseq) {
-            rb_gc_mark_movable((VALUE)fi->iseq);
-        }
-        break;
-      default:
-        break;
-    }
+    rb_gc_mark((VALUE)fi->cme);
+    if (fi->iseq) rb_gc_mark_movable((VALUE)fi->iseq);
 }
 
 static const rb_data_type_t location_data_type = {
@@ -186,18 +171,10 @@ location_ptr(VALUE locobj)
 static int
 location_lineno(rb_backtrace_location_t *loc)
 {
-    switch (loc->type) {
-      case LOCATION_TYPE_ISEQ:
+    if (loc->iseq) {
         return calc_lineno(loc->iseq, loc->pc);
-      case LOCATION_TYPE_CFUNC:
-        if (loc->iseq && loc->pc) {
-            return calc_lineno(loc->iseq, loc->pc);
-        }
-        return 0;
-      default:
-        rb_bug("location_lineno: unreachable");
-        UNREACHABLE;
     }
+    return 0;
 }
 
 /*
@@ -217,15 +194,11 @@ location_lineno_m(VALUE self)
 static VALUE
 location_label(rb_backtrace_location_t *loc)
 {
-    switch (loc->type) {
-      case LOCATION_TYPE_ISEQ:
-        return ISEQ_BODY(loc->iseq)->location.label;
-      case LOCATION_TYPE_CFUNC:
-        return rb_id2str(loc->mid);
-      default:
-        rb_bug("location_label: unreachable");
-        UNREACHABLE;
+    if (loc->cme && loc->cme->def->type == VM_METHOD_TYPE_CFUNC) {
+        return rb_id2str(loc->cme->def->original_id);
     }
+
+    return ISEQ_BODY(loc->iseq)->location.label;
 }
 
 /*
@@ -264,15 +237,11 @@ location_label_m(VALUE self)
 static VALUE
 location_base_label(rb_backtrace_location_t *loc)
 {
-    switch (loc->type) {
-      case LOCATION_TYPE_ISEQ:
-        return ISEQ_BODY(loc->iseq)->location.base_label;
-      case LOCATION_TYPE_CFUNC:
-        return rb_id2str(loc->mid);
-      default:
-        rb_bug("location_base_label: unreachable");
-        UNREACHABLE;
+    if (loc->cme && loc->cme->def->type == VM_METHOD_TYPE_CFUNC) {
+        return rb_id2str(loc->cme->def->original_id);
     }
+
+    return ISEQ_BODY(loc->iseq)->location.base_label;
 }
 
 /*
@@ -289,15 +258,7 @@ location_base_label_m(VALUE self)
 static const rb_iseq_t *
 location_iseq(rb_backtrace_location_t *loc)
 {
-    switch (loc->type) {
-      case LOCATION_TYPE_ISEQ:
-        return loc->iseq;
-      case LOCATION_TYPE_CFUNC:
-        return loc->iseq;
-      default:
-        rb_bug("location_iseq: unreachable");
-        UNREACHABLE;
-    }
+    return loc->iseq;
 }
 
 /*
@@ -321,18 +282,10 @@ location_path_m(VALUE self)
 static int
 location_node_id(rb_backtrace_location_t *loc)
 {
-    switch (loc->type) {
-      case LOCATION_TYPE_ISEQ:
+    if (loc->iseq && loc->pc) {
         return calc_node_id(loc->iseq, loc->pc);
-      case LOCATION_TYPE_CFUNC:
-        if (loc->iseq && loc->pc) {
-            return calc_node_id(loc->iseq, loc->pc);
-        }
-        return -1;
-      default:
-        rb_bug("location_node_id: unreachable");
-        UNREACHABLE;
     }
+    return -1;
 }
 #endif
 
@@ -358,18 +311,10 @@ rb_get_iseq_from_frame_info(VALUE obj)
 static VALUE
 location_realpath(rb_backtrace_location_t *loc)
 {
-    switch (loc->type) {
-      case LOCATION_TYPE_ISEQ:
+    if (loc->iseq) {
         return rb_iseq_realpath(loc->iseq);
-      case LOCATION_TYPE_CFUNC:
-        if (loc->iseq) {
-            return rb_iseq_realpath(loc->iseq);
-        }
-        return Qnil;
-      default:
-        rb_bug("location_realpath: unreachable");
-        UNREACHABLE;
     }
+    return Qnil;
 }
 
 /*
@@ -407,14 +352,7 @@ location_to_str(rb_backtrace_location_t *loc)
     VALUE file, name;
     int lineno;
 
-    switch (loc->type) {
-      case LOCATION_TYPE_ISEQ:
-        file = rb_iseq_path(loc->iseq);
-        name = ISEQ_BODY(loc->iseq)->location.label;
-
-        lineno = calc_lineno(loc->iseq, loc->pc);
-        break;
-      case LOCATION_TYPE_CFUNC:
+    if (loc->cme && loc->cme->def->type == VM_METHOD_TYPE_CFUNC) {
         if (loc->iseq && loc->pc) {
             file = rb_iseq_path(loc->iseq);
             lineno = calc_lineno(loc->iseq, loc->pc);
@@ -423,10 +361,12 @@ location_to_str(rb_backtrace_location_t *loc)
             file = GET_VM()->progname;
             lineno = 0;
         }
-        name = rb_id2str(loc->mid);
-        break;
-      default:
-        rb_bug("location_to_str: unreachable");
+        name = rb_id2str(loc->cme->def->original_id);
+    }
+    else {
+        file = rb_iseq_path(loc->iseq);
+        lineno = calc_lineno(loc->iseq, loc->pc);
+        name = ISEQ_BODY(loc->iseq)->location.label;
     }
 
     return location_format(file, lineno, name);
@@ -474,17 +414,9 @@ backtrace_mark(void *ptr)
 static void
 location_update_entry(rb_backtrace_location_t *fi)
 {
-    switch (fi->type) {
-      case LOCATION_TYPE_ISEQ:
-        fi->iseq = (rb_iseq_t*)rb_gc_location((VALUE)fi->iseq);
-        break;
-      case LOCATION_TYPE_CFUNC:
-        if (fi->iseq) {
-            fi->iseq = (rb_iseq_t*)rb_gc_location((VALUE)fi->iseq);
-        }
-        break;
-      default:
-        break;
+    fi->cme = (rb_callable_method_entry_t *)rb_gc_location((VALUE)fi->cme);
+    if (fi->iseq) {
+        fi->iseq = (rb_iseq_t *)rb_gc_location((VALUE)fi->iseq);
     }
 }
 
@@ -632,7 +564,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
                     const rb_iseq_t *iseq = cfp->iseq;
                     const VALUE *pc = cfp->pc;
                     loc = &bt->backtrace[bt->backtrace_size++];
-                    loc->type = LOCATION_TYPE_ISEQ;
+                    RB_OBJ_WRITE(btobj, &loc->cme, rb_vm_frame_method_entry(cfp));
                     RB_OBJ_WRITE(btobj, &loc->iseq, iseq);
                     loc->pc = pc;
                     bt_update_cfunc_loc(cfunc_counter, loc-1, iseq, pc);
@@ -650,10 +582,9 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
             }
             else {
                 loc = &bt->backtrace[bt->backtrace_size++];
-                loc->type = LOCATION_TYPE_CFUNC;
+                RB_OBJ_WRITE(btobj, &loc->cme, rb_vm_frame_method_entry(cfp));
                 loc->iseq = NULL;
                 loc->pc = NULL;
-                loc->mid = rb_vm_frame_method_entry(cfp)->def->original_id;
                 cfunc_counter++;
             }
         }
