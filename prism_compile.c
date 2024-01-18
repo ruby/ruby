@@ -2476,6 +2476,14 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
     }
 }
 
+void
+pm_scope_node_destroy(pm_scope_node_t *scope_node)
+{
+    if (scope_node->index_lookup_table) {
+        st_free_table(scope_node->index_lookup_table);
+    }
+}
+
 static void pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, pm_scope_node_t *scope_node, ID method_id, LABEL *start);
 
 void
@@ -2842,6 +2850,8 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         pm_scope_node_t next_scope_node;
         pm_scope_node_init(call_node->block, &next_scope_node, scope_node, parser);
         block_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+        pm_scope_node_destroy(&next_scope_node);
+
         if (ISEQ_BODY(block_iseq)->catch_table) {
             ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, start, end_label, block_iseq, end_label);
         }
@@ -3240,13 +3250,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             LABEL *lstart = NEW_LABEL(lineno);
             LABEL *lend = NEW_LABEL(lineno);
             LABEL *lcont = NEW_LABEL(lineno);
+
             pm_scope_node_t rescue_scope_node;
             pm_scope_node_init((pm_node_t *)begin_node->rescue_clause, &rescue_scope_node, scope_node, parser);
-
             rb_iseq_t *rescue_iseq = NEW_CHILD_ISEQ(&rescue_scope_node,
                                                     rb_str_concat(rb_str_new2("rescue in"),
                                                                   ISEQ_BODY(iseq)->location.label),
                                                     ISEQ_TYPE_RESCUE, 1);
+            pm_scope_node_destroy(&rescue_scope_node);
+
             lstart->rescued = LABEL_RESCUE_BEG;
             lend->rescued = LABEL_RESCUE_END;
             ADD_LABEL(ret, lstart);
@@ -3310,12 +3322,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             pm_scope_node_t next_scope_node;
             pm_scope_node_init((pm_node_t *)begin_node->ensure_clause, &next_scope_node, scope_node, parser);
-
             child_iseq = NEW_CHILD_ISEQ(&next_scope_node,
                     rb_str_new2("ensure in"),
                     ISEQ_TYPE_ENSURE, lineno);
-            ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq;
+            pm_scope_node_destroy(&next_scope_node);
 
+            ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq;
 
             erange = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->erange;
             if (estart->link.next != &eend->link) {
@@ -3721,14 +3733,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_CLASS_NODE: {
         pm_class_node_t *class_node = (pm_class_node_t *)node;
-        pm_scope_node_t next_scope_node;
-        pm_scope_node_init((pm_node_t *)class_node, &next_scope_node, scope_node, parser);
 
         ID class_id = pm_constant_id_lookup(scope_node, class_node->name);
 
         VALUE class_name = rb_str_freeze(rb_sprintf("<class:%"PRIsVALUE">", rb_id2str(class_id)));
 
+        pm_scope_node_t next_scope_node;
+        pm_scope_node_init((pm_node_t *)class_node, &next_scope_node, scope_node, parser);
         const rb_iseq_t *class_iseq = NEW_CHILD_ISEQ(&next_scope_node, class_name, ISEQ_TYPE_CLASS, lineno);
+        pm_scope_node_destroy(&next_scope_node);
 
         // TODO: Once we merge constant path nodes correctly, fix this flag
         const int flags = VM_DEFINECLASS_TYPE_CLASS |
@@ -4144,9 +4157,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_DEF_NODE: {
         pm_def_node_t *def_node = (pm_def_node_t *) node;
         ID method_name = pm_constant_id_lookup(scope_node, def_node->name);
+
         pm_scope_node_t next_scope_node;
         pm_scope_node_init((pm_node_t *)def_node, &next_scope_node, scope_node, parser);
         rb_iseq_t *method_iseq = NEW_ISEQ(&next_scope_node, rb_id2str(method_name), ISEQ_TYPE_METHOD, lineno);
+        pm_scope_node_destroy(&next_scope_node);
 
         if (def_node->receiver) {
             PM_COMPILE_NOT_POPPED(def_node->receiver);
@@ -4248,9 +4263,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         LABEL *retry_label = NEW_LABEL(lineno);
         LABEL *retry_end_l = NEW_LABEL(lineno);
 
-        pm_scope_node_t next_scope_node;
-        pm_scope_node_init((pm_node_t *)for_node, &next_scope_node, scope_node, parser);
-
         pm_constant_id_list_t locals;
         pm_constant_id_list_init(&locals);
 
@@ -4258,7 +4270,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         PM_COMPILE_NOT_POPPED(for_node->collection);
 
+        pm_scope_node_t next_scope_node;
+        pm_scope_node_init((pm_node_t *)for_node, &next_scope_node, scope_node, parser);
         child_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+        pm_scope_node_destroy(&next_scope_node);
 
         ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq;
         ADD_SEND_WITH_BLOCK(ret, &dummy_line_node, idEach, INT2FIX(0), child_iseq);
@@ -4284,6 +4299,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             pm_scope_node_t next_scope_node;
             pm_scope_node_init((pm_node_t *)forwarding_super_node->block, &next_scope_node, scope_node, parser);
             block = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+            pm_scope_node_destroy(&next_scope_node);
 
             RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)block);
         }
@@ -4811,8 +4827,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             pm_scope_node_t next_scope_node;
             pm_scope_node_init((pm_node_t*)node, &next_scope_node, scope_node, parser);
-
             block_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+            pm_scope_node_destroy(&next_scope_node);
+
             ISEQ_COMPILE_DATA(iseq)->current_block = block_iseq;
 
             ADD_INSN2(ret, &dummy_line_node, once, block_iseq, INT2FIX(ic_index));
@@ -4892,8 +4909,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_LAMBDA_NODE: {
         pm_scope_node_t next_scope_node;
         pm_scope_node_init(node, &next_scope_node, scope_node, parser);
-
         const rb_iseq_t *block = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+        pm_scope_node_destroy(&next_scope_node);
+
         VALUE argc = INT2FIX(0);
 
         ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
@@ -5200,13 +5218,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_MODULE_NODE: {
         pm_module_node_t *module_node = (pm_module_node_t *)node;
-        pm_scope_node_t next_scope_node;
-        pm_scope_node_init((pm_node_t *)module_node, &next_scope_node, scope_node, parser);
 
         ID module_id = pm_constant_id_lookup(scope_node, module_node->name);
         VALUE module_name = rb_str_freeze(rb_sprintf("<module:%"PRIsVALUE">", rb_id2str(module_id)));
 
+        pm_scope_node_t next_scope_node;
+        pm_scope_node_init((pm_node_t *)module_node, &next_scope_node, scope_node, parser);
         const rb_iseq_t *module_iseq = NEW_CHILD_ISEQ(&next_scope_node, module_name, ISEQ_TYPE_CLASS, lineno);
+        pm_scope_node_destroy(&next_scope_node);
 
         const int flags = VM_DEFINECLASS_TYPE_MODULE |
             pm_compile_class_path(ret, iseq, module_node->constant_path, &dummy_line_node, src, false, scope_node);
@@ -5543,8 +5562,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         pm_scope_node_t next_scope_node;
         pm_scope_node_init(node, &next_scope_node, scope_node, parser);
-
         child_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+        pm_scope_node_destroy(&next_scope_node);
+
         ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq;
 
         int is_index = ISEQ_BODY(iseq)->ise_size++;
@@ -5798,13 +5818,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_RESCUE_MODIFIER_NODE: {
-        pm_scope_node_t rescue_scope_node;
         pm_rescue_modifier_node_t *rescue_node = (pm_rescue_modifier_node_t *)node;
+
+        pm_scope_node_t rescue_scope_node;
         pm_scope_node_init((pm_node_t *)rescue_node, &rescue_scope_node, scope_node, parser);
         rb_iseq_t *rescue_iseq = NEW_CHILD_ISEQ(&rescue_scope_node,
                                                 rb_str_concat(rb_str_new2("rescue in"),
                                                               ISEQ_BODY(iseq)->location.label),
                                                 ISEQ_TYPE_RESCUE, 1);
+        pm_scope_node_destroy(&rescue_scope_node);
 
         LABEL *lstart = NEW_LABEL(lineno);
         LABEL *lend = NEW_LABEL(lineno);
@@ -6415,6 +6437,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         // We set the index_lookup_table on the scope node so we can
         // refer to the parameters correctly
+        if (scope_node->index_lookup_table) {
+            st_free_table(scope_node->index_lookup_table);
+        }
         scope_node->index_lookup_table = index_lookup_table;
         iseq_calc_param_size(iseq);
         iseq_set_local_table(iseq, local_table_for_iseq);
@@ -6540,6 +6565,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     // We create another ScopeNode from the statements within the PostExecutionNode
                     pm_scope_node_t next_scope_node;
                     pm_scope_node_init((pm_node_t *)post_execution_node->statements, &next_scope_node, scope_node, parser);
+                    pm_scope_node_destroy(&next_scope_node);
 
                     const rb_iseq_t *block = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(body->parent_iseq), ISEQ_TYPE_BLOCK, lineno);
 
@@ -6634,8 +6660,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
         }
 
-        st_free_table(index_lookup_table);
-
         if (!PM_NODE_TYPE_P(scope_node->ast_node, PM_ENSURE_NODE)) {
             ADD_INSN(ret, &dummy_line_node, leave);
         }
@@ -6648,9 +6672,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       case PM_SINGLETON_CLASS_NODE: {
         pm_singleton_class_node_t *singleton_class_node = (pm_singleton_class_node_t *)node;
+
         pm_scope_node_t next_scope_node;
         pm_scope_node_init((pm_node_t *)singleton_class_node, &next_scope_node, scope_node, parser);
         const rb_iseq_t *singleton_class = NEW_ISEQ(&next_scope_node, rb_fstring_lit("singleton class"), ISEQ_TYPE_CLASS, lineno);
+        pm_scope_node_destroy(&next_scope_node);
 
         PM_COMPILE_NOT_POPPED(singleton_class_node->expression);
         PM_PUTNIL;
@@ -6763,6 +6789,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 pm_scope_node_t next_scope_node;
                 pm_scope_node_init(super_node->block, &next_scope_node, scope_node, parser);
                 parent_block = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+                pm_scope_node_destroy(&next_scope_node);
                 break;
               }
               default: {
@@ -6902,11 +6929,13 @@ rb_translate_prism(pm_parser_t *parser, rb_iseq_t *iseq, pm_scope_node_t *scope_
     for (size_t i = 0; i < locals->size; i++) {
         st_insert(index_lookup_table, locals->ids[i], i);
     }
+
+    if (scope_node->index_lookup_table) {
+        st_free_table(scope_node->index_lookup_table);
+    }
     scope_node->index_lookup_table = index_lookup_table;
 
     pm_compile_node(iseq, (pm_node_t *)scope_node, ret, scope_node->base.location.start, false, (pm_scope_node_t *)scope_node);
-
-    st_free_table(index_lookup_table);
 
     return Qnil;
 }
