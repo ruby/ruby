@@ -977,7 +977,7 @@ impl SideExitContext {
             ctx.set_as_return_landing();
         }
         if self.is_deferred {
-            ctx.set_as_deferred();
+            ctx.mark_as_deferred();
         }
         ctx
     }

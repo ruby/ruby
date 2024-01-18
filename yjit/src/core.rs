@@ -1680,7 +1680,7 @@ impl Context {
             generic_ctx.set_as_return_landing();
         }
         if self.is_deferred() {
-            generic_ctx.set_as_deferred();
+            generic_ctx.mark_as_deferred();
         }
         generic_ctx
     }
@@ -1739,7 +1739,7 @@ impl Context {
         self.chain_depth_return_landing_defer & RETURN_LANDING_BIT != 0
     }
 
-    pub fn set_as_deferred(&mut self) {
+    pub fn mark_as_deferred(&mut self) {
         self.chain_depth_return_landing_defer |= DEFER_BIT;
     }
 
@@ -3048,7 +3048,7 @@ pub fn defer_compilation(
 
     let mut next_ctx = asm.ctx;
 
-    next_ctx.set_as_deferred();
+    next_ctx.mark_as_deferred();
 
     let branch = new_pending_branch(jit, BranchGenFn::JumpToTarget0(Cell::new(BranchShape::Default)));
 
@@ -3544,7 +3544,7 @@ mod tests {
         ctx.clear_return_landing();
         assert_eq!(ctx.is_return_landing(), false);
 
-        ctx.set_as_deferred();
+        ctx.mark_as_deferred();
         assert_eq!(ctx.is_deferred(), true);
 
         ctx.reset_chain_depth_and_defer();
