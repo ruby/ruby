@@ -2855,6 +2855,7 @@ iseq_set_exception_table(rb_iseq_t *iseq)
                 if (entry->type == CATCH_TYPE_RESCUE ||
                     entry->type == CATCH_TYPE_BREAK ||
                     entry->type == CATCH_TYPE_NEXT) {
+                    RUBY_ASSERT(entry->sp > 0);
                     entry->sp--;
                 }
             }
