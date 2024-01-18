@@ -7,9 +7,10 @@
     exit /b 1
 )
 : "
-: ; call:warn() { echo "$1" >&2; }
-: ; call:abort () { exit 1; }
+: ; call() { local call=${1#:}; shift; $call "$@"; }
+: ; warn() { echo "$1" >&2; }
+: ; abort () { exit 1; }
 
-call:warn "executable host ruby is required.  use --with-baseruby option."
-call:warn "Note that BASERUBY must be Ruby 2.7.0 or later."
-call:abort
+call :warn "executable host ruby is required.  use --with-baseruby option."
+call :warn "Note that BASERUBY must be Ruby 2.7.0 or later."
+call :abort
