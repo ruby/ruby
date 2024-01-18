@@ -13,6 +13,7 @@
 
 **********************************************************************/
 
+#include "gc.h"
 #include "internal.h"
 #include "ruby/debug.h"
 #include "objspace.h"
@@ -121,6 +122,10 @@ freeobj_i(VALUE tpval, void *data)
     st_data_t v;
     struct allocation_info *info;
 
+    /* Modifying the st table can cause allocations, which can trigger GC.
+     * Since freeobj_i is called during GC, it must not trigger another GC. */
+    VALUE gc_disabled = rb_gc_disable_no_rest();
+
     if (arg->keep_remains) {
         if (st_lookup(arg->object_table, obj, &v)) {
             info = (struct allocation_info *)v;
@@ -135,6 +140,8 @@ freeobj_i(VALUE tpval, void *data)
             ruby_xfree(info);
         }
     }
+
+    if (gc_disabled == Qfalse) rb_gc_enable();
 }
 
 static int

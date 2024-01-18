@@ -158,6 +158,7 @@ object_tracing.o: $(hdrdir)/ruby/missing.h
 object_tracing.o: $(hdrdir)/ruby/ruby.h
 object_tracing.o: $(hdrdir)/ruby/st.h
 object_tracing.o: $(hdrdir)/ruby/subst.h
+object_tracing.o: $(top_srcdir)/gc.h
 object_tracing.o: $(top_srcdir)/internal.h
 object_tracing.o: object_tracing.c
 object_tracing.o: objspace.h
