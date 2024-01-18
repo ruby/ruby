@@ -830,12 +830,12 @@ pm_constant_id_lookup(pm_scope_node_t *scope_node, pm_constant_id_t constant_id)
 }
 
 static rb_iseq_t *
-pm_new_child_iseq(rb_iseq_t *iseq, pm_scope_node_t node, pm_parser_t *parser,
+pm_new_child_iseq(rb_iseq_t *iseq, pm_scope_node_t *node, pm_parser_t *parser,
                VALUE name, const rb_iseq_t *parent, enum rb_iseq_type type, int line_no)
 {
     debugs("[new_child_iseq]> ---------------------------------------\n");
     int isolated_depth = ISEQ_COMPILE_DATA(iseq)->isolated_depth;
-    rb_iseq_t * ret_iseq = pm_iseq_new_with_opt(&node, parser, name,
+    rb_iseq_t *ret_iseq = pm_iseq_new_with_opt(node, parser, name,
             rb_iseq_path(iseq), rb_iseq_realpath(iseq),
             line_no, parent,
             isolated_depth ? isolated_depth + 1 : 0,
@@ -2841,8 +2841,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         // Scope associated with the block
         pm_scope_node_t next_scope_node;
         pm_scope_node_init(call_node->block, &next_scope_node, scope_node, parser);
-
-        block_iseq = NEW_CHILD_ISEQ(next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+        block_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
         if (ISEQ_BODY(block_iseq)->catch_table) {
             ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, start, end_label, block_iseq, end_label);
         }
@@ -3244,7 +3243,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             pm_scope_node_t rescue_scope_node;
             pm_scope_node_init((pm_node_t *)begin_node->rescue_clause, &rescue_scope_node, scope_node, parser);
 
-            rb_iseq_t *rescue_iseq = NEW_CHILD_ISEQ(rescue_scope_node,
+            rb_iseq_t *rescue_iseq = NEW_CHILD_ISEQ(&rescue_scope_node,
                                                     rb_str_concat(rb_str_new2("rescue in"),
                                                                   ISEQ_BODY(iseq)->location.label),
                                                     ISEQ_TYPE_RESCUE, 1);
@@ -3312,7 +3311,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             pm_scope_node_t next_scope_node;
             pm_scope_node_init((pm_node_t *)begin_node->ensure_clause, &next_scope_node, scope_node, parser);
 
-            child_iseq = NEW_CHILD_ISEQ(next_scope_node,
+            child_iseq = NEW_CHILD_ISEQ(&next_scope_node,
                     rb_str_new2("ensure in"),
                     ISEQ_TYPE_ENSURE, lineno);
             ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq;
@@ -3729,7 +3728,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         VALUE class_name = rb_str_freeze(rb_sprintf("<class:%"PRIsVALUE">", rb_id2str(class_id)));
 
-        const rb_iseq_t *class_iseq = NEW_CHILD_ISEQ(next_scope_node, class_name, ISEQ_TYPE_CLASS, lineno);
+        const rb_iseq_t *class_iseq = NEW_CHILD_ISEQ(&next_scope_node, class_name, ISEQ_TYPE_CLASS, lineno);
 
         // TODO: Once we merge constant path nodes correctly, fix this flag
         const int flags = VM_DEFINECLASS_TYPE_CLASS |
@@ -4147,7 +4146,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         ID method_name = pm_constant_id_lookup(scope_node, def_node->name);
         pm_scope_node_t next_scope_node;
         pm_scope_node_init((pm_node_t *)def_node, &next_scope_node, scope_node, parser);
-        rb_iseq_t *method_iseq = NEW_ISEQ(next_scope_node, rb_id2str(method_name), ISEQ_TYPE_METHOD, lineno);
+        rb_iseq_t *method_iseq = NEW_ISEQ(&next_scope_node, rb_id2str(method_name), ISEQ_TYPE_METHOD, lineno);
 
         if (def_node->receiver) {
             PM_COMPILE_NOT_POPPED(def_node->receiver);
@@ -4259,7 +4258,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         PM_COMPILE_NOT_POPPED(for_node->collection);
 
-        child_iseq = NEW_CHILD_ISEQ(next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+        child_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+
         ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq;
         ADD_SEND_WITH_BLOCK(ret, &dummy_line_node, idEach, INT2FIX(0), child_iseq);
 
@@ -4283,7 +4283,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         if (forwarding_super_node->block) {
             pm_scope_node_t next_scope_node;
             pm_scope_node_init((pm_node_t *)forwarding_super_node->block, &next_scope_node, scope_node, parser);
-            block = NEW_CHILD_ISEQ(next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+            block = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+
             RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)block);
         }
 
@@ -4811,7 +4812,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             pm_scope_node_t next_scope_node;
             pm_scope_node_init((pm_node_t*)node, &next_scope_node, scope_node, parser);
 
-            block_iseq = NEW_CHILD_ISEQ(next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+            block_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
             ISEQ_COMPILE_DATA(iseq)->current_block = block_iseq;
 
             ADD_INSN2(ret, &dummy_line_node, once, block_iseq, INT2FIX(ic_index));
@@ -4892,7 +4893,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_scope_node_t next_scope_node;
         pm_scope_node_init(node, &next_scope_node, scope_node, parser);
 
-        const rb_iseq_t *block = NEW_CHILD_ISEQ(next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+        const rb_iseq_t *block = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
         VALUE argc = INT2FIX(0);
 
         ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
@@ -5205,7 +5206,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         ID module_id = pm_constant_id_lookup(scope_node, module_node->name);
         VALUE module_name = rb_str_freeze(rb_sprintf("<module:%"PRIsVALUE">", rb_id2str(module_id)));
 
-        const rb_iseq_t *module_iseq = NEW_CHILD_ISEQ(next_scope_node, module_name, ISEQ_TYPE_CLASS, lineno);
+        const rb_iseq_t *module_iseq = NEW_CHILD_ISEQ(&next_scope_node, module_name, ISEQ_TYPE_CLASS, lineno);
 
         const int flags = VM_DEFINECLASS_TYPE_MODULE |
             pm_compile_class_path(ret, iseq, module_node->constant_path, &dummy_line_node, src, false, scope_node);
@@ -5543,7 +5544,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_scope_node_t next_scope_node;
         pm_scope_node_init(node, &next_scope_node, scope_node, parser);
 
-        child_iseq = NEW_CHILD_ISEQ(next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+        child_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
         ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq;
 
         int is_index = ISEQ_BODY(iseq)->ise_size++;
@@ -5800,8 +5801,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_scope_node_t rescue_scope_node;
         pm_rescue_modifier_node_t *rescue_node = (pm_rescue_modifier_node_t *)node;
         pm_scope_node_init((pm_node_t *)rescue_node, &rescue_scope_node, scope_node, parser);
-
-        rb_iseq_t *rescue_iseq = NEW_CHILD_ISEQ(rescue_scope_node,
+        rb_iseq_t *rescue_iseq = NEW_CHILD_ISEQ(&rescue_scope_node,
                                                 rb_str_concat(rb_str_new2("rescue in"),
                                                               ISEQ_BODY(iseq)->location.label),
                                                 ISEQ_TYPE_RESCUE, 1);
@@ -6541,7 +6541,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     pm_scope_node_t next_scope_node;
                     pm_scope_node_init((pm_node_t *)post_execution_node->statements, &next_scope_node, scope_node, parser);
 
-                    const rb_iseq_t *block = NEW_CHILD_ISEQ(next_scope_node, make_name_for_block(body->parent_iseq), ISEQ_TYPE_BLOCK, lineno);
+                    const rb_iseq_t *block = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(body->parent_iseq), ISEQ_TYPE_BLOCK, lineno);
 
                     ADD_CALL_WITH_BLOCK(ret, &dummy_line_node, id_core_set_postexe, INT2FIX(0), block);
                     break;
@@ -6650,8 +6650,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_singleton_class_node_t *singleton_class_node = (pm_singleton_class_node_t *)node;
         pm_scope_node_t next_scope_node;
         pm_scope_node_init((pm_node_t *)singleton_class_node, &next_scope_node, scope_node, parser);
-
-        const rb_iseq_t *singleton_class = NEW_ISEQ(next_scope_node, rb_fstring_lit("singleton class"), ISEQ_TYPE_CLASS, lineno);
+        const rb_iseq_t *singleton_class = NEW_ISEQ(&next_scope_node, rb_fstring_lit("singleton class"), ISEQ_TYPE_CLASS, lineno);
 
         PM_COMPILE_NOT_POPPED(singleton_class_node->expression);
         PM_PUTNIL;
@@ -6763,7 +6762,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
               case PM_BLOCK_NODE: {
                 pm_scope_node_t next_scope_node;
                 pm_scope_node_init(super_node->block, &next_scope_node, scope_node, parser);
-                parent_block = NEW_CHILD_ISEQ(next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+                parent_block = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
                 break;
               }
               default: {
