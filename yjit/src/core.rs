@@ -464,7 +464,7 @@ pub struct Context {
     /// - 1st bit from the left: Whether this code is the target of a JIT-to-JIT Ruby return ([Self::is_return_landing])
     /// - 2nd bit from the left: Whether the compilation of this code has been deferred ([Self::is_deferred])
     /// - Last 6 bits (max: 63): Depth of this block in the sidechain (eg: inline-cache chain)
-    chain_depth_return_landing_defer: u8,
+    chain_depth_and_flags: u8,
 
     // Type we track for self
     self_type: Type,
@@ -1712,39 +1712,39 @@ impl Context {
     }
 
     pub fn get_chain_depth(&self) -> u8 {
-        self.chain_depth_return_landing_defer & CHAIN_DEPTH_MASK
+        self.chain_depth_and_flags & CHAIN_DEPTH_MASK
     }
 
     pub fn reset_chain_depth_and_defer(&mut self) {
-        self.chain_depth_return_landing_defer &= !CHAIN_DEPTH_MASK;
-        self.chain_depth_return_landing_defer &= !DEFER_BIT;
+        self.chain_depth_and_flags &= !CHAIN_DEPTH_MASK;
+        self.chain_depth_and_flags &= !DEFER_BIT;
     }
 
     pub fn increment_chain_depth(&mut self) {
         if self.get_chain_depth() == CHAIN_DEPTH_MASK {
             panic!("max block version chain depth reached!");
         }
-        self.chain_depth_return_landing_defer += 1;
+        self.chain_depth_and_flags += 1;
     }
 
     pub fn set_as_return_landing(&mut self) {
-        self.chain_depth_return_landing_defer |= RETURN_LANDING_BIT;
+        self.chain_depth_and_flags |= RETURN_LANDING_BIT;
     }
 
     pub fn clear_return_landing(&mut self) {
-        self.chain_depth_return_landing_defer &= !RETURN_LANDING_BIT;
+        self.chain_depth_and_flags &= !RETURN_LANDING_BIT;
     }
 
     pub fn is_return_landing(&self) -> bool {
-        self.chain_depth_return_landing_defer & RETURN_LANDING_BIT != 0
+        self.chain_depth_and_flags & RETURN_LANDING_BIT != 0
     }
 
     pub fn mark_as_deferred(&mut self) {
-        self.chain_depth_return_landing_defer |= DEFER_BIT;
+        self.chain_depth_and_flags |= DEFER_BIT;
     }
 
     pub fn is_deferred(&self) -> bool {
-        self.chain_depth_return_landing_defer & DEFER_BIT != 0
+        self.chain_depth_and_flags & DEFER_BIT != 0
     }
 
     /// Get an operand for the adjusted stack pointer address
