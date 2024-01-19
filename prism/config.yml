@@ -3392,18 +3392,56 @@ nodes:
     fields:
       - name: keyword_loc
         type: location
+        comment: |
+          The location of the `unless` keyword.
+
+              unless cond then bar end
+              ^^^^^^
+
+              bar unless cond
+                  ^^^^^^
       - name: predicate
         type: node
+        comment: |
+          The condition to be evaluated for the unless expression. Can be any
+          kind of node that represents a non-void expression.
+
+              unless cond then bar end
+                     ^^^^
+
+              bar unless cond
+                         ^^^^
       - name: then_keyword_loc
         type: location?
+        comment:
+          The location of the `then` keyword, if present.
+
+              unless cond then bar end
+                          ^^^^
       - name: statements
         type: node?
         kind: StatementsNode
+        comment: |
+          The body of statements that will executed if the unless condition is
+          falsey. Will be `nil` if no body is provided.
+
+              unless cond then bar end
+                               ^^^
       - name: consequent
         type: node?
         kind: ElseNode
+        comment: |
+          The else clause of the unless expression, if present.
+
+              unless cond then bar else baz end
+                                   ^^^^^^^^
       - name: end_keyword_loc
         type: location?
+        comment: |
+          The location of the `end` keyword, if present.
+
+              unless cond then bar end
+                                   ^^^
     newline: predicate
     comment: |
       Represents the use of the `unless` keyword, either in the block form or the modifier form.
