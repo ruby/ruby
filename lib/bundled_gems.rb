@@ -106,7 +106,7 @@ module Gem::BUNDLED_GEMS
       return if specs.include?(gem)
       caller = caller_locations(3, 3).find {|c| c&.absolute_path}
       return if find_gem(caller&.absolute_path)
-    elsif SINCE[name]
+    elsif SINCE[name] && !path
       gem = true
     else
       return
