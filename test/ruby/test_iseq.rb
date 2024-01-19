@@ -157,12 +157,12 @@ class TestISeq < Test::Unit::TestCase
     y = nil.instance_eval do
       eval("proc {#{name} = []; proc {|x| #{name}}}").call
     end
-    assert_raise_with_message(Ractor::IsolationError, /`#{name}'/) do
+    assert_raise_with_message(Ractor::IsolationError, /'#{name}'/) do
       Ractor.make_shareable(y)
     end
     obj = Object.new
     def obj.foo(*) nil.instance_eval{ ->{super} } end
-    assert_raise_with_message(Ractor::IsolationError, /refer unshareable object \[\] from variable `\*'/) do
+    assert_raise_with_message(Ractor::IsolationError, /refer unshareable object \[\] from variable '\*'/) do
       Ractor.make_shareable(obj.foo)
     end
   end
@@ -367,7 +367,7 @@ class TestISeq < Test::Unit::TestCase
       f.puts "end"
       f.close
       path = f.path
-      assert_in_out_err(%W[- #{path}], "#{<<-"begin;"}\n#{<<-"end;"}", /unexpected `end'/, [], success: true)
+      assert_in_out_err(%W[- #{path}], "#{<<-"begin;"}\n#{<<-"end;"}", /unexpected 'end'/, [], success: true)
       begin;
         path = ARGV[0]
         begin

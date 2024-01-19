@@ -2034,7 +2034,7 @@ clear_block_exit(struct parser_params *p, bool error)
 
 #define WARN_EOL(tok) \
     (looking_at_eol_p(p) ? \
-     (void)rb_warning0("`" tok "' at the end of line without an expression") : \
+     (void)rb_warning0("'" tok "' at the end of line without an expression") : \
      (void)0)
 static int looking_at_eol_p(struct parser_params *p);
 
@@ -2707,55 +2707,55 @@ rb_str_to_parser_string(rb_parser_t *p, VALUE str)
 }
 
 %token <id>
-        keyword_class        "`class'"
-        keyword_module       "`module'"
-        keyword_def          "`def'"
-        keyword_undef        "`undef'"
-        keyword_begin        "`begin'"
-        keyword_rescue       "`rescue'"
-        keyword_ensure       "`ensure'"
-        keyword_end          "`end'"
-        keyword_if           "`if'"
-        keyword_unless       "`unless'"
-        keyword_then         "`then'"
-        keyword_elsif        "`elsif'"
-        keyword_else         "`else'"
-        keyword_case         "`case'"
-        keyword_when         "`when'"
-        keyword_while        "`while'"
-        keyword_until        "`until'"
-        keyword_for          "`for'"
-        keyword_break        "`break'"
-        keyword_next         "`next'"
-        keyword_redo         "`redo'"
-        keyword_retry        "`retry'"
-        keyword_in           "`in'"
-        keyword_do           "`do'"
-        keyword_do_cond      "`do' for condition"
-        keyword_do_block     "`do' for block"
-        keyword_do_LAMBDA    "`do' for lambda"
-        keyword_return       "`return'"
-        keyword_yield        "`yield'"
-        keyword_super        "`super'"
-        keyword_self         "`self'"
-        keyword_nil          "`nil'"
-        keyword_true         "`true'"
-        keyword_false        "`false'"
-        keyword_and          "`and'"
-        keyword_or           "`or'"
-        keyword_not          "`not'"
-        modifier_if          "`if' modifier"
-        modifier_unless      "`unless' modifier"
-        modifier_while       "`while' modifier"
-        modifier_until       "`until' modifier"
-        modifier_rescue      "`rescue' modifier"
-        keyword_alias        "`alias'"
-        keyword_defined      "`defined?'"
-        keyword_BEGIN        "`BEGIN'"
-        keyword_END          "`END'"
-        keyword__LINE__      "`__LINE__'"
-        keyword__FILE__      "`__FILE__'"
-        keyword__ENCODING__  "`__ENCODING__'"
+        keyword_class        "'class'"
+        keyword_module       "'module'"
+        keyword_def          "'def'"
+        keyword_undef        "'undef'"
+        keyword_begin        "'begin'"
+        keyword_rescue       "'rescue'"
+        keyword_ensure       "'ensure'"
+        keyword_end          "'end'"
+        keyword_if           "'if'"
+        keyword_unless       "'unless'"
+        keyword_then         "'then'"
+        keyword_elsif        "'elsif'"
+        keyword_else         "'else'"
+        keyword_case         "'case'"
+        keyword_when         "'when'"
+        keyword_while        "'while'"
+        keyword_until        "'until'"
+        keyword_for          "'for'"
+        keyword_break        "'break'"
+        keyword_next         "'next'"
+        keyword_redo         "'redo'"
+        keyword_retry        "'retry'"
+        keyword_in           "'in'"
+        keyword_do           "'do'"
+        keyword_do_cond      "'do' for condition"
+        keyword_do_block     "'do' for block"
+        keyword_do_LAMBDA    "'do' for lambda"
+        keyword_return       "'return'"
+        keyword_yield        "'yield'"
+        keyword_super        "'super'"
+        keyword_self         "'self'"
+        keyword_nil          "'nil'"
+        keyword_true         "'true'"
+        keyword_false        "'false'"
+        keyword_and          "'and'"
+        keyword_or           "'or'"
+        keyword_not          "'not'"
+        modifier_if          "'if' modifier"
+        modifier_unless      "'unless' modifier"
+        modifier_while       "'while' modifier"
+        modifier_until       "'until' modifier"
+        modifier_rescue      "'rescue' modifier"
+        keyword_alias        "'alias'"
+        keyword_defined      "'defined?'"
+        keyword_BEGIN        "'BEGIN'"
+        keyword_END          "'END'"
+        keyword__LINE__      "'__LINE__'"
+        keyword__FILE__      "'__FILE__'"
+        keyword__ENCODING__  "'__ENCODING__'"
 
 %token <id>   tIDENTIFIER    "local variable or method"
 %token <id>   tFID           "method"
@@ -9915,10 +9915,10 @@ arg_ambiguous(struct parser_params *p, char c)
 {
 #ifndef RIPPER
     if (c == '/') {
-        rb_warning1("ambiguity between regexp and two divisions: wrap regexp in parentheses or add a space after `%c' operator", WARN_I(c));
+        rb_warning1("ambiguity between regexp and two divisions: wrap regexp in parentheses or add a space after '%c' operator", WARN_I(c));
     }
     else {
-        rb_warning1("ambiguous first argument; put parentheses or a space even after `%c' operator", WARN_I(c));
+        rb_warning1("ambiguous first argument; put parentheses or a space even after '%c' operator", WARN_I(c));
     }
 #else
     dispatch1(arg_ambiguous, rb_usascii_str_new(&c, 1));
@@ -10094,7 +10094,7 @@ parser_set_frozen_string_literal(struct parser_params *p, const char *name, cons
     int b;
 
     if (p->token_seen) {
-        rb_warning1("`%s' is ignored after any tokens", WARN_S(name));
+        rb_warning1("'%s' is ignored after any tokens", WARN_S(name));
         return;
     }
 
@@ -10110,7 +10110,7 @@ parser_set_shareable_constant_value(struct parser_params *p, const char *name, c
     for (const char *s = p->lex.pbeg, *e = p->lex.pcur; s < e; ++s) {
         if (*s == ' ' || *s == '\t') continue;
         if (*s == '#') break;
-        rb_warning1("`%s' is ignored unless in comment-only line", WARN_S(name));
+        rb_warning1("'%s' is ignored unless in comment-only line", WARN_S(name));
         return;
     }
 
@@ -10388,7 +10388,7 @@ parser_prepare(struct parser_params *p)
 
 #ifndef RIPPER
 #define ambiguous_operator(tok, op, syn) ( \
-    rb_warning0("`"op"' after local variable or literal is interpreted as binary operator"), \
+    rb_warning0("'"op"' after local variable or literal is interpreted as binary operator"), \
     rb_warning0("even though it seems like "syn""))
 #else
 #define ambiguous_operator(tok, op, syn) \
@@ -10619,7 +10619,7 @@ parse_numeric(struct parser_params *p, int c)
       trailing_uc:
         literal_flush(p, p->lex.pcur - 1);
         YYLTYPE loc = RUBY_INIT_YYLLOC();
-        compile_error(p, "trailing `%c' in number", nondigit);
+        compile_error(p, "trailing '%c' in number", nondigit);
         parser_show_error_line(p, &loc);
     }
     tokfix(p);
@@ -10685,8 +10685,8 @@ parse_qmark(struct parser_params *p, int space_seen)
                 if (n < 0) return -1;
                 ptr += n;
             } while (!lex_eol_ptr_p(p, ptr) && is_identchar(p, ptr, p->lex.pend, p->enc));
-            rb_warn2("`?' just followed by `%.*s' is interpreted as" \
-                     " a conditional operator, put a space after `?'",
+            rb_warn2("'?' just followed by '%.*s' is interpreted as" \
+                     " a conditional operator, put a space after '?'",
                      WARN_I((int)(ptr - start)), WARN_S_L(start, (ptr - start)));
         }
         goto ternary;
@@ -10849,7 +10849,7 @@ parse_numvar(struct parser_params *p)
 
     if (overflow || n > nth_ref_max) {
         /* compile_error()? */
-        rb_warn1("`%s' is too big for a number variable, always nil", WARN_S(tok(p)));
+        rb_warn1("'%s' is too big for a number variable, always nil", WARN_S(tok(p)));
         return 0;		/* $0 is $PROGRAM_NAME, not NTH_REF */
     }
     else {
@@ -10945,11 +10945,11 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
         if (!parser_is_identchar(p)) {
             YYLTYPE loc = RUBY_INIT_YYLLOC();
             if (c == -1 || ISSPACE(c)) {
-                compile_error(p, "`$' without identifiers is not allowed as a global variable name");
+                compile_error(p, "'$' without identifiers is not allowed as a global variable name");
             }
             else {
                 pushback(p, c);
-                compile_error(p, "`$%c' is not allowed as a global variable name", c);
+                compile_error(p, "'$%c' is not allowed as a global variable name", c);
             }
             parser_show_error_line(p, &loc);
             set_yylval_noname();
@@ -10966,7 +10966,7 @@ parse_gvar(struct parser_params *p, const enum lex_state_e last_state)
         tokenize_ident(p);
     }
     else {
-        compile_error(p, "`%.*s' is not allowed as a global variable name", toklen(p), tok(p));
+        compile_error(p, "'%.*s' is not allowed as a global variable name", toklen(p), tok(p));
         set_yylval_noname();
     }
     return tGVAR;
@@ -11017,10 +11017,10 @@ parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
         pushback(p, c);
         RUBY_SET_YYLLOC(loc);
         if (result == tIVAR) {
-            compile_error(p, "`@' without identifiers is not allowed as an instance variable name");
+            compile_error(p, "'@' without identifiers is not allowed as an instance variable name");
         }
         else {
-            compile_error(p, "`@@' without identifiers is not allowed as a class variable name");
+            compile_error(p, "'@@' without identifiers is not allowed as a class variable name");
         }
         parser_show_error_line(p, &loc);
         set_yylval_noname();
@@ -11031,10 +11031,10 @@ parse_atmark(struct parser_params *p, const enum lex_state_e last_state)
         pushback(p, c);
         RUBY_SET_YYLLOC(loc);
         if (result == tIVAR) {
-            compile_error(p, "`@%c' is not allowed as an instance variable name", c);
+            compile_error(p, "'@%c' is not allowed as an instance variable name", c);
         }
         else {
-            compile_error(p, "`@@%c' is not allowed as a class variable name", c);
+            compile_error(p, "'@@%c' is not allowed as a class variable name", c);
         }
         parser_show_error_line(p, &loc);
         set_yylval_noname();
@@ -11333,7 +11333,7 @@ parser_yylex(struct parser_params *p)
             }
             pushback(p, c);
             if (IS_SPCARG(c)) {
-                rb_warning0("`**' interpreted as argument prefix");
+                rb_warning0("'**' interpreted as argument prefix");
                 c = tDSTAR;
             }
             else if (IS_BEG()) {
@@ -11351,7 +11351,7 @@ parser_yylex(struct parser_params *p)
             }
             pushback(p, c);
             if (IS_SPCARG(c)) {
-                rb_warning0("`*' interpreted as argument prefix");
+                rb_warning0("'*' interpreted as argument prefix");
                 c = tSTAR;
             }
             else if (IS_BEG()) {
@@ -11541,7 +11541,7 @@ parser_yylex(struct parser_params *p)
                 (c = peekc_n(p, 1)) == -1 ||
                 !(c == '\'' || c == '"' ||
                   is_identchar(p, (p->lex.pcur+1), p->lex.pend, p->enc))) {
-                rb_warning0("`&' interpreted as argument prefix");
+                rb_warning0("'&' interpreted as argument prefix");
             }
             c = tAMPER;
         }
@@ -11892,7 +11892,7 @@ parser_yylex(struct parser_params *p)
 
       default:
         if (!parser_is_identchar(p)) {
-            compile_error(p, "Invalid char `\\x%02X' in expression", c);
+            compile_error(p, "Invalid char '\\x%02X' in expression", c);
             token_flush(p);
             goto retry;
         }
@@ -13584,7 +13584,7 @@ it_used_p(struct parser_params *p)
 {
     NODE *it = p->lvtbl->it;
     if (it) {
-        compile_error(p, "`it` is already used in\n"
+        compile_error(p, "'it' is already used in\n"
                       "%s:%d: current block here",
                       p->ruby_sourcefile, nd_line(it));
         parser_show_error_line(p, &it->nd_loc);
@@ -13854,7 +13854,7 @@ check_literal_when(struct parser_params *p, NODE *arg, const YYLTYPE *loc)
     else {
         VALUE line = rb_hash_lookup(p->case_labels, lit);
         if (!NIL_P(line)) {
-            rb_warning1("duplicated `when' clause with line %d is ignored",
+            rb_warning1("duplicated 'when' clause with line %d is ignored",
                         WARN_IVAL(line));
             return;
         }
@@ -15013,7 +15013,7 @@ assign_in_cond(struct parser_params *p, NODE *node)
     if (!get_nd_value(p, node)) return 1;
     if (is_static_content(get_nd_value(p, node))) {
         /* reports always */
-        parser_warn(p, get_nd_value(p, node), "found `= literal' in conditional, should be ==");
+        parser_warn(p, get_nd_value(p, node), "found '= literal' in conditional, should be ==");
     }
     return 1;
 }
@@ -17060,31 +17060,30 @@ rb_yytnamerr(struct parser_params *p, char *yyres, const char *yystr)
 
         while (*++yyp) {
             switch (*yyp) {
-              case '`':
+              case '\'':
                 if (!bquote) {
-                    bquote = count_char(yyp+1, '`') + 1;
+                    bquote = count_char(yyp+1, '\'') + 1;
                     if (yyres) memcpy(&yyres[yyn], yyp, bquote);
                     yyn += bquote;
                     yyp += bquote - 1;
                     break;
                 }
-                goto default_char;
-
-              case '\'':
-                if (bquote && count_char(yyp+1, '\'') + 1 == bquote) {
-                    if (yyres) memcpy(yyres + yyn, yyp, bquote);
-                    yyn += bquote;
-                    yyp += bquote - 1;
-                    bquote = 0;
-                    break;
+                else {
+                    if (bquote && count_char(yyp+1, '\'') + 1 == bquote) {
+                        if (yyres) memcpy(yyres + yyn, yyp, bquote);
+                        yyn += bquote;
+                        yyp += bquote - 1;
+                        bquote = 0;
+                        break;
+                    }
+                    if (yyp[1] && yyp[1] != '\'' && yyp[2] == '\'') {
+                        if (yyres) memcpy(yyres + yyn, yyp, 3);
+                        yyn += 3;
+                        yyp += 2;
+                        break;
+                    }
+                    goto do_not_strip_quotes;
                 }
-                if (yyp[1] && yyp[1] != '\'' && yyp[2] == '\'') {
-                    if (yyres) memcpy(yyres + yyn, yyp, 3);
-                    yyn += 3;
-                    yyp += 2;
-                    break;
-                }
-                goto do_not_strip_quotes;
 
               case ',':
                 goto do_not_strip_quotes;
@@ -17093,7 +17092,6 @@ rb_yytnamerr(struct parser_params *p, char *yyres, const char *yystr)
                 if (*++yyp != '\\')
                     goto do_not_strip_quotes;
                 /* Fall through.  */
-              default_char:
               default:
                 if (yyres)
                     yyres[yyn] = *yyp;

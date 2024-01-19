@@ -457,13 +457,13 @@ check_local_id(VALUE bindval, volatile VALUE *pname)
 
     if (lid) {
         if (!rb_is_local_id(lid)) {
-            rb_name_err_raise("wrong local variable name `%1$s' for %2$s",
+            rb_name_err_raise("wrong local variable name '%1$s' for %2$s",
                               bindval, ID2SYM(lid));
         }
     }
     else {
         if (!rb_is_local_name(name)) {
-            rb_name_err_raise("wrong local variable name `%1$s' for %2$s",
+            rb_name_err_raise("wrong local variable name '%1$s' for %2$s",
                               bindval, name);
         }
         return 0;
@@ -536,7 +536,7 @@ bind_local_variable_get(VALUE bindval, VALUE sym)
 
     sym = ID2SYM(lid);
   undefined:
-    rb_name_err_raise("local variable `%1$s' is not defined for %2$s",
+    rb_name_err_raise("local variable '%1$s' is not defined for %2$s",
                       bindval, sym);
     UNREACHABLE_RETURN(Qundef);
 }
@@ -1936,7 +1936,7 @@ method_owner(VALUE obj)
 void
 rb_method_name_error(VALUE klass, VALUE str)
 {
-#define MSG(s) rb_fstring_lit("undefined method `%1$s' for"s" `%2$s'")
+#define MSG(s) rb_fstring_lit("undefined method '%1$s' for"s" '%2$s'")
     VALUE c = klass;
     VALUE s = Qundef;
 
@@ -2091,7 +2091,7 @@ rb_obj_singleton_method(VALUE obj, VALUE vid)
     }
 
   /* undef: */
-    rb_name_err_raise("undefined singleton method `%1$s' for `%2$s'",
+    rb_name_err_raise("undefined singleton method '%1$s' for '%2$s'",
                       obj, vid);
     UNREACHABLE_RETURN(Qundef);
 }

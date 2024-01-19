@@ -800,29 +800,29 @@ uncallable_object(VALUE recv, ID mid)
 
     if (SPECIAL_CONST_P(recv)) {
         rb_raise(rb_eNotImpError,
-                 "method `%"PRIsVALUE"' called on unexpected immediate object (%p)",
+                 "method '%"PRIsVALUE"' called on unexpected immediate object (%p)",
                  mname, (void *)recv);
     }
     else if ((flags = RBASIC(recv)->flags) == 0) {
         rb_raise(rb_eNotImpError,
-                 "method `%"PRIsVALUE"' called on terminated object (%p)",
+                 "method '%"PRIsVALUE"' called on terminated object (%p)",
                  mname, (void *)recv);
     }
     else if (!(typestr = rb_type_str(type = BUILTIN_TYPE(recv)))) {
         rb_raise(rb_eNotImpError,
-                 "method `%"PRIsVALUE"' called on broken T_?""?""?(0x%02x) object"
+                 "method '%"PRIsVALUE"' called on broken T_?""?""?(0x%02x) object"
                  " (%p flags=0x%"PRIxVALUE")",
                  mname, type, (void *)recv, flags);
     }
     else if (T_OBJECT <= type && type < T_NIL) {
         rb_raise(rb_eNotImpError,
-                 "method `%"PRIsVALUE"' called on hidden %s object"
+                 "method '%"PRIsVALUE"' called on hidden %s object"
                  " (%p flags=0x%"PRIxVALUE")",
                  mname, typestr, (void *)recv, flags);
     }
     else {
         rb_raise(rb_eNotImpError,
-                 "method `%"PRIsVALUE"' called on unexpected %s object"
+                 "method '%"PRIsVALUE"' called on unexpected %s object"
                  " (%p flags=0x%"PRIxVALUE")",
                  mname, typestr, (void *)recv, flags);
     }
@@ -956,7 +956,7 @@ rb_make_no_method_exception(VALUE exc, VALUE format, VALUE obj,
     VALUE name = argv[0];
 
     if (!format) {
-        format = rb_fstring_lit("undefined method `%1$s' for %3$s%4$s");
+        format = rb_fstring_lit("undefined method '%1$s' for %3$s%4$s");
     }
     if (exc == rb_eNoMethodError) {
         VALUE args = rb_ary_new4(argc - 1, argv + 1);
@@ -986,17 +986,17 @@ raise_method_missing(rb_execution_context_t *ec, int argc, const VALUE *argv, VA
     stack_check(ec);
 
     if (last_call_status & MISSING_PRIVATE) {
-        format = rb_fstring_lit("private method `%1$s' called for %3$s%4$s");
+        format = rb_fstring_lit("private method '%1$s' called for %3$s%4$s");
     }
     else if (last_call_status & MISSING_PROTECTED) {
-        format = rb_fstring_lit("protected method `%1$s' called for %3$s%4$s");
+        format = rb_fstring_lit("protected method '%1$s' called for %3$s%4$s");
     }
     else if (last_call_status & MISSING_VCALL) {
-        format = rb_fstring_lit("undefined local variable or method `%1$s' for %3$s%4$s");
+        format = rb_fstring_lit("undefined local variable or method '%1$s' for %3$s%4$s");
         exc = rb_eNameError;
     }
     else if (last_call_status & MISSING_SUPER) {
-        format = rb_fstring_lit("super: no superclass method `%1$s' for %3$s%4$s");
+        format = rb_fstring_lit("super: no superclass method '%1$s' for %3$s%4$s");
     }
 
     {

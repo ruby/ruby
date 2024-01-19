@@ -47,7 +47,7 @@ error_pos_str(void)
             return rb_sprintf("%"PRIsVALUE": ", sourcefile);
         }
         else if ((caller_name = rb_frame_callee()) != 0) {
-            return rb_sprintf("%"PRIsVALUE":%d:in `%"PRIsVALUE"': ",
+            return rb_sprintf("%"PRIsVALUE":%d:in '%"PRIsVALUE"': ",
                               sourcefile, sourceline,
                               rb_id2str(caller_name));
         }
@@ -392,7 +392,7 @@ rb_ec_error_print(rb_execution_context_t *volatile ec, volatile VALUE errinfo)
     rb_ec_error_print_detailed(ec, errinfo, Qnil, Qundef);
 }
 
-#define undef_mesg_for(v, k) rb_fstring_lit("undefined"v" method `%1$s' for "k" `%2$s'")
+#define undef_mesg_for(v, k) rb_fstring_lit("undefined"v" method '%1$s' for "k" '%2$s'")
 #define undef_mesg(v) ( \
         is_mod ? \
         undef_mesg_for(v, "module") : \
@@ -420,7 +420,7 @@ rb_print_undef_str(VALUE klass, VALUE name)
     rb_name_err_raise_str(undef_mesg(""), klass, name);
 }
 
-#define inaccessible_mesg_for(v, k) rb_fstring_lit("method `%1$s' for "k" `%2$s' is "v)
+#define inaccessible_mesg_for(v, k) rb_fstring_lit("method '%1$s' for "k" '%2$s' is "v)
 #define inaccessible_mesg(v) ( \
         is_mod ? \
         inaccessible_mesg_for(v, "module") : \

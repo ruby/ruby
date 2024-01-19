@@ -849,7 +849,7 @@ class OptionParser
     def accept(t, pat = /.*/m, &block)
       if pat
         pat.respond_to?(:match) or
-          raise TypeError, "has no `match'", ParseError.filter_backtrace(caller(2))
+          raise TypeError, "has no 'match'", ParseError.filter_backtrace(caller(2))
       else
         pat = t if t.respond_to?(:match)
       end

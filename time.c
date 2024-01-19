@@ -650,13 +650,13 @@ wv2timet(wideval_t w)
         wideint_t wi = FIXWV2WINT(w);
         if (TIMET_MIN == 0) {
             if (wi < 0)
-                rb_raise(rb_eRangeError, "negative value to convert into `time_t'");
+                rb_raise(rb_eRangeError, "negative value to convert into 'time_t'");
             if (TIMET_MAX < (uwideint_t)wi)
-                rb_raise(rb_eRangeError, "too big to convert into `time_t'");
+                rb_raise(rb_eRangeError, "too big to convert into 'time_t'");
         }
         else {
             if (wi < TIMET_MIN || TIMET_MAX < wi)
-                rb_raise(rb_eRangeError, "too big to convert into `time_t'");
+                rb_raise(rb_eRangeError, "too big to convert into 'time_t'");
         }
         return (time_t)wi;
     }
@@ -2520,7 +2520,7 @@ two_digits(const char *ptr, const char *end, const char **endp, const char *name
         ((len > 2) && ISDIGIT(ptr[2]))) {
         VALUE mesg = rb_sprintf("two digits %s is expected", name);
         if (ptr[-1] == '-' || ptr[-1] == ':') {
-            rb_str_catf(mesg, " after `%c'", ptr[-1]);
+            rb_str_catf(mesg, " after '%c'", ptr[-1]);
         }
         rb_str_catf(mesg, ": %.*s", ((len > 10) ? 10 : (int)(end - ptr)) + 1, ptr - 1);
         rb_exc_raise(rb_exc_new_str(rb_eArgError, mesg));

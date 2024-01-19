@@ -592,15 +592,15 @@ setup_exception(rb_execution_context_t *ec, int tag, volatile VALUE mesg, VALUE 
             e = rb_obj_as_string(mesg);
             ec->errinfo = mesg;
             if (file && line) {
-                e = rb_sprintf("Exception `%"PRIsVALUE"' at %s:%d - %"PRIsVALUE"\n",
+                e = rb_sprintf("Exception '%"PRIsVALUE"' at %s:%d - %"PRIsVALUE"\n",
                                rb_obj_class(mesg), file, line, e);
             }
             else if (file) {
-                e = rb_sprintf("Exception `%"PRIsVALUE"' at %s - %"PRIsVALUE"\n",
+                e = rb_sprintf("Exception '%"PRIsVALUE"' at %s - %"PRIsVALUE"\n",
                                rb_obj_class(mesg), file, e);
             }
             else {
-                e = rb_sprintf("Exception `%"PRIsVALUE"' - %"PRIsVALUE"\n",
+                e = rb_sprintf("Exception '%"PRIsVALUE"' - %"PRIsVALUE"\n",
                                rb_obj_class(mesg), e);
             }
             warn_print_str(e);

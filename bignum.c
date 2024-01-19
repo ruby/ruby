@@ -4975,7 +4975,7 @@ big2str_generic(VALUE x, int base)
         invalid_radix(base);
 
     if (xn >= LONG_MAX/BITSPERDIG) {
-        rb_raise(rb_eRangeError, "bignum too big to convert into `string'");
+        rb_raise(rb_eRangeError, "bignum too big to convert into 'string'");
     }
 
     power_level = 0;
@@ -5100,7 +5100,7 @@ rb_big2str1(VALUE x, int base)
         invalid_radix(base);
 
     if (xn >= LONG_MAX/BITSPERDIG) {
-        rb_raise(rb_eRangeError, "bignum too big to convert into `string'");
+        rb_raise(rb_eRangeError, "bignum too big to convert into 'string'");
     }
 
     if (POW2_P(base)) {
@@ -5136,7 +5136,7 @@ big2ulong(VALUE x, const char *type)
     if (len == 0)
         return 0;
     if (BIGSIZE(x) > sizeof(long)) {
-        rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
+        rb_raise(rb_eRangeError, "bignum too big to convert into '%s'", type);
     }
     ds = BDIGITS(x);
 #if SIZEOF_LONG <= SIZEOF_BDIGIT
@@ -5179,7 +5179,7 @@ rb_big2long(VALUE x)
         if (num <= 1+(unsigned long)(-(LONG_MIN+1)))
             return -(long)(num-1)-1;
     }
-    rb_raise(rb_eRangeError, "bignum too big to convert into `long'");
+    rb_raise(rb_eRangeError, "bignum too big to convert into 'long'");
 }
 
 #if HAVE_LONG_LONG
@@ -5197,7 +5197,7 @@ big2ull(VALUE x, const char *type)
     if (len == 0)
         return 0;
     if (BIGSIZE(x) > SIZEOF_LONG_LONG)
-        rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
+        rb_raise(rb_eRangeError, "bignum too big to convert into '%s'", type);
 #if SIZEOF_LONG_LONG <= SIZEOF_BDIGIT
     num = (unsigned LONG_LONG)ds[0];
 #else
@@ -5238,7 +5238,7 @@ rb_big2ll(VALUE x)
         if (num <= 1+(unsigned LONG_LONG)(-(LLONG_MIN+1)))
             return -(LONG_LONG)(num-1)-1;
     }
-    rb_raise(rb_eRangeError, "bignum too big to convert into `long long'");
+    rb_raise(rb_eRangeError, "bignum too big to convert into 'long long'");
 }
 
 #endif  /* HAVE_LONG_LONG */

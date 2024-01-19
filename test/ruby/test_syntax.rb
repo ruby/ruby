@@ -491,7 +491,7 @@ class TestSyntax < Test::Unit::TestCase
 
   def test_warn_balanced
     warning = <<WARN
-test:1: warning: `%s' after local variable or literal is interpreted as binary operator
+test:1: warning: '%s' after local variable or literal is interpreted as binary operator
 test:1: warning: even though it seems like %s
 WARN
     [
@@ -699,7 +699,7 @@ WARN
   end
 
   def test_duplicated_when
-    w = 'warning: duplicated `when\' clause with line 3 is ignored'
+    w = 'warning: duplicated \'when\' clause with line 3 is ignored'
     assert_warning(/3: #{w}.+4: #{w}.+4: #{w}.+5: #{w}.+5: #{w}/m) {
       eval %q{
         case 1
@@ -740,7 +740,7 @@ WARN
   end
 
   def test_duplicated_when_check_option
-    w = /duplicated `when\' clause with line 3 is ignored/
+    w = /duplicated \'when\' clause with line 3 is ignored/
     assert_in_out_err(%[-wc], "#{<<~"begin;"}\n#{<<~'end;'}", ["Syntax OK"], w)
     begin;
       case 1
@@ -1315,7 +1315,7 @@ eom
   end
 
   def test_parenthesised_statement_argument
-    assert_syntax_error("foo(bar rescue nil)", /unexpected `rescue' modifier/)
+    assert_syntax_error("foo(bar rescue nil)", /unexpected 'rescue' modifier/)
     assert_valid_syntax("foo (bar rescue nil)")
   end
 
@@ -1803,7 +1803,7 @@ eom
     assert_syntax_error('def x(_4) end', /_4 is reserved for numbered parameter/)
     assert_syntax_error('def _5; end', /_5 is reserved for numbered parameter/)
     assert_syntax_error('def self._6; end', /_6 is reserved for numbered parameter/)
-    assert_raise_with_message(NameError, /undefined local variable or method `_1'/) {
+    assert_raise_with_message(NameError, /undefined local variable or method '_1'/) {
       eval('_1')
     }
     ['class C', 'class << C', 'module M', 'def m', 'def o.m'].each do |c|
@@ -1826,12 +1826,12 @@ eom
 
   def test_it
     assert_valid_syntax('proc {it}')
-    assert_syntax_error('[1,2].then {it+_2}', /`it` is already used/)
+    assert_syntax_error('[1,2].then {it+_2}', /'it' is already used/)
     assert_syntax_error('[1,2].then {_2+it}', /numbered parameter is already used/)
     assert_equal([1, 2], eval('[1,2].then {it}'))
-    assert_syntax_error('[1,2].then {"#{it}#{_2}"}', /`it` is already used/)
+    assert_syntax_error('[1,2].then {"#{it}#{_2}"}', /'it' is already used/)
     assert_syntax_error('[1,2].then {"#{_2}#{it}"}', /numbered parameter is already used/)
-    assert_syntax_error('->{it+_2}.call(1,2)', /`it` is already used/)
+    assert_syntax_error('->{it+_2}.call(1,2)', /'it' is already used/)
     assert_syntax_error('->{_2+it}.call(1,2)', /numbered parameter is already used/)
     assert_equal(4, eval('->(a=->{it}){a}.call.call(4)'))
     assert_equal(5, eval('-> a: ->{it} {a}.call.call(5)'))
@@ -1857,7 +1857,7 @@ eom
     assert_equal(4, eval('a=Object.new; def a.foo(it); it; end; a.foo(4)'))
     assert_equal(5, eval('a=Object.new; def a.it; 5; end; a.it'))
     assert_equal(6, eval('a=Class.new; a.class_eval{ def it; 6; end }; a.new.it'))
-    assert_raise_with_message(NameError, /undefined local variable or method `it'/) do
+    assert_raise_with_message(NameError, /undefined local variable or method 'it'/) do
       eval('it')
     end
     ['class C', 'class << C', 'module M', 'def m', 'def o.m'].each do |c|
