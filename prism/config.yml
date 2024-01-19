@@ -476,8 +476,7 @@ nodes:
       - name: left
         type: node
         comment: |
-          Represents the left side of the expression. It can be any kind of node
-          that represents a non-void expression.
+          Represents the left side of the expression. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               left and right
               ^^^^
@@ -487,8 +486,7 @@ nodes:
       - name: right
         type: node
         comment: |
-          Represents the right side of the expression. It can be any kind of
-          node that represents a non-void expression.
+          Represents the right side of the expression. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               left && right
                       ^^^^^
@@ -531,8 +529,7 @@ nodes:
       - name: closing_loc
         type: location?
     comment: |
-      Represents an array literal. This can be a regular array using brackets or
-      a special array using % like %w or %i.
+      Represents an array literal. This can be a regular array using brackets or a special array using % like %w or %i.
 
           [1, 2, 3]
           ^^^^^^^^^
@@ -572,8 +569,7 @@ nodes:
       - name: key
         type: node
         comment: |
-          The key of the association. This can be any node that represents a
-          non-void expression.
+          The key of the association. This can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               { a: b }
                 ^
@@ -586,9 +582,7 @@ nodes:
       - name: value
         type: node?
         comment: |
-          The value of the association, if present. This can be any node that
-          represents a non-void expression. It can be optionally omitted if this
-          node is an element in a `HashPatternNode`.
+          The value of the association, if present. This can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression). It can be optionally omitted if this node is an element in a `HashPatternNode`.
 
               { foo => bar }
                        ^^^
@@ -612,8 +606,7 @@ nodes:
       - name: value
         type: node?
         comment: |
-          The value to be splatted, if present. Will be missing when keyword
-          rest argument forwarding is used.
+          The value to be splatted, if present. Will be missing when keyword rest argument forwarding is used.
 
               { **foo }
                   ^^^
@@ -793,9 +786,7 @@ nodes:
       - name: receiver
         type: node?
         comment: |
-          The object that the method is being called on. This can be either
-          `nil` or a node representing any kind of expression that returns a
-          non-void value.
+          The object that the method is being called on. This can be either `nil` or any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               foo.bar
               ^^^
@@ -1044,8 +1035,7 @@ nodes:
       - name: name
         type: constant
         comment: |
-          The name of the class variable, which is a `@@` followed by an
-          [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifiers).
+          The name of the class variable, which is a `@@` followed by an [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifiers).
 
               @@abc   # name `:@@abc`
 
@@ -1236,8 +1226,7 @@ nodes:
       - name: name
         type: constant
     comment: |
-      Represents writing to a constant in a context that doesn't have an
-      explicit value.
+      Represents writing to a constant in a context that doesn't have an explicit value.
 
           Foo, Bar = baz
           ^^^  ^^^
@@ -1515,10 +1504,7 @@ nodes:
       - name: name
         type: constant
         comment: |
-          The name of the global variable, which is a `$` followed by an
-          [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifier).
-          Alternatively, it can be one of the special global variables designated
-          by a symbol.
+          The name of the global variable, which is a `$` followed by an [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifier). Alternatively, it can be one of the special global variables designated by a symbol.
 
               $foo   # name `:$foo`
 
@@ -1641,8 +1627,7 @@ nodes:
       - name: value
         type: node
     comment: |
-      Represents a node that is implicitly being added to the tree but doesn't
-      correspond directly to a node in the source.
+      Represents a node that is implicitly being added to the tree but doesn't correspond directly to a node in the source.
 
           { foo: }
             ^^^^
@@ -1844,8 +1829,7 @@ nodes:
       - name: name
         type: constant
         comment: |
-          The name of the instance variable, which is a `@` followed by an
-          [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifiers).
+          The name of the instance variable, which is a `@` followed by an [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifiers).
 
               @x     # name `:@x`
 
@@ -1902,9 +1886,7 @@ nodes:
         type: location
     newline: parts
     comment: |
-      Represents a regular expression literal that contains interpolation that
-      is being used in the predicate of a conditional to implicitly match
-      against the last line read by an IO object.
+      Represents a regular expression literal that contains interpolation that is being used in the predicate of a conditional to implicitly match against the last line read by an IO object.
 
           if /foo #{bar} baz/ then end
              ^^^^^^^^^^^^^^^^
@@ -2075,41 +2057,32 @@ nodes:
       - name: name
         type: constant
         comment: |
-          The name of the local variable, which is an
-          [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifiers).
+          The name of the local variable, which is an [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifiers).
 
               x      # name `:x`
 
               _Test  # name `:_Test`
 
-          Note that this can also be an underscore followed by a number for the
-          default block parameters.
+          Note that this can also be an underscore followed by a number for the default block parameters.
 
               _1     # name `:_1`
 
-          Finally, for the default `it` block parameter, the name is `0it`. This
-          is to distinguish it from an `it` local variable that is explicitly
-          declared.
+          Finally, for the default `it` block parameter, the name is `0it`. This is to distinguish it from an `it` local variable that is explicitly declared.
 
               it     # name `:0it`
 
       - name: depth
         type: uint32
         comment: |
-          The number of visible scopes that should be searched to find the
-          origin of this local variable.
+          The number of visible scopes that should be searched to find the origin of this local variable.
 
               foo = 1; foo # depth 0
 
               bar = 2; tap { bar } # depth 1
 
-          The specific rules for calculating the depth may differ from
-          individual Ruby implementations, as they are not specified by the
-          language. For more information, see [the Prism documentation](https://github.com/ruby/prism/blob/main/docs/local_variable_depth.md).
+          The specific rules for calculating the depth may differ from individual Ruby implementations, as they are not specified by the language. For more information, see [the Prism documentation](https://github.com/ruby/prism/blob/main/docs/local_variable_depth.md).
     comment: |
-      Represents reading a local variable. Note that this requires that a local
-      variable of the same name has already been written to in the same scope,
-      otherwise it is parsed as a method call.
+      Represents reading a local variable. Note that this requires that a local variable of the same name has already been written to in the same scope, otherwise it is parsed as a method call.
 
           foo
           ^^^
@@ -2155,9 +2128,7 @@ nodes:
       - name: unescaped
         type: string
     comment: |
-      Represents a regular expression literal used in the predicate of a
-      conditional to implicitly match against the last line read by an IO
-      object.
+      Represents a regular expression literal used in the predicate of a conditional to implicitly match against the last line read by an IO object.
 
           if /foo/i then end
              ^^^^^^
@@ -2195,15 +2166,13 @@ nodes:
       - name: targets
         type: node[]
     comment: |
-      Represents writing local variables using a regular expression match with
-      named capture groups.
+      Represents writing local variables using a regular expression match with named capture groups.
 
           /(?<foo>bar)/ =~ baz
           ^^^^^^^^^^^^^^^^^^^^
   - name: MissingNode
     comment: |
-      Represents a node that is missing from the source and results in a syntax
-      error.
+      Represents a node that is missing from the source and results in a syntax error.
   - name: ModuleNode
     fields:
       - name: locals
@@ -2296,8 +2265,7 @@ nodes:
       - name: maximum
         type: uint8
     comment: |
-      Represents an implicit set of parameters through the use of numbered
-      parameters within a block or lambda.
+      Represents an implicit set of parameters through the use of numbered parameters within a block or lambda.
 
           -> { _1 + _2 }
           ^^^^^^^^^^^^^^
@@ -2306,9 +2274,7 @@ nodes:
       - name: number
         type: uint32
         comment: |
-          The (1-indexed, from the left) number of the capture group. Numbered
-          references that would overflow a `uint32`  result in a `number` of
-          exactly `2**32 - 1`.
+          The (1-indexed, from the left) number of the capture group. Numbered references that would overflow a `uint32`  result in a `number` of exactly `2**32 - 1`.
 
               $1          # number `1`
 
@@ -2361,8 +2327,7 @@ nodes:
       - name: left
         type: node
         comment: |
-          Represents the left side of the expression. It can be any kind of node
-          that represents a non-void expression.
+          Represents the left side of the expression. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               left or right
               ^^^^
@@ -2372,8 +2337,7 @@ nodes:
       - name: right
         type: node
         comment: |
-          Represents the right side of the expression. It can be any kind of
-          node that represents a non-void expression.
+          Represents the right side of the expression. It can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               left || right
                       ^^^^^
@@ -2440,8 +2404,7 @@ nodes:
       - name: rparen_loc
         type: location
     comment: |
-      Represents the use of the `^` operator for pinning an expression in a
-      pattern matching expression.
+      Represents the use of the `^` operator for pinning an expression in a pattern matching expression.
 
           foo in ^(bar)
                  ^^^^^^
@@ -2452,8 +2415,7 @@ nodes:
       - name: operator_loc
         type: location
     comment: |
-      Represents the use of the `^` operator for pinning a variable in a pattern
-      matching expression.
+      Represents the use of the `^` operator for pinning a variable in a pattern matching expression.
 
           foo in ^bar
                  ^^^^
@@ -2505,9 +2467,7 @@ nodes:
       - name: left
         type: node?
         comment: |
-          The left-hand side of the range, if present. Can be either `nil` or
-          a node representing any kind of expression that returns a non-void
-          value.
+          The left-hand side of the range, if present. It can be either `nil` or any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               1...
               ^
@@ -2517,17 +2477,14 @@ nodes:
       - name: right
         type: node?
         comment: |
-          The right-hand side of the range, if present. Can be either `nil` or
-          a node representing any kind of expression that returns a non-void
-          value.
+          The right-hand side of the range, if present. It can be either `nil` or any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               ..5
                 ^
 
               1...foo
                   ^^^
-          If neither right-hand or left-hand side was included, this will be a
-          MissingNode.
+          If neither right-hand or left-hand side was included, this will be a MissingNode.
       - name: operator_loc
         type: location
         comment: |
@@ -2640,8 +2597,7 @@ nodes:
           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
           end
 
-      `Foo, *splat, Bar` are in the `exceptions` field.
-      `ex` is in the `exception` field.
+      `Foo, *splat, Bar` are in the `exceptions` field. `ex` is in the `exception` field.
   - name: RestParameterNode
     fields:
       - name: flags
@@ -2757,8 +2713,7 @@ nodes:
       - name: unescaped
         type: string
     comment: |
-      Represents a string literal, a string contained within a `%w` list, or
-      plain string content within an interpolated string.
+      Represents a string literal, a string contained within a `%w` list, or plain string content within an interpolated string.
 
           "foo"
           ^^^^^
