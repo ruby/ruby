@@ -1080,8 +1080,18 @@ nodes:
       - name: arguments
         type: node?
         kind: ArgumentsNode
+        comment: |
+          The arguments to the break statement, if present. These can be any [non-void expressions](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
+
+              break foo
+                    ^^^
       - name: keyword_loc
         type: location
+        comment: |
+          The location of the `break` keyword.
+
+              break foo
+              ^^^^^
     comment: |
       Represents the use of the `break` keyword.
 
