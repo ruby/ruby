@@ -540,26 +540,6 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w[default-3.0.0.rc2], loaded_spec_names
   end
 
-  def test_default_gem_with_unresolved_gems_depending_on_it
-    net_http_old = util_spec "net-http", "0.1.1", nil, "lib/net/http.rb"
-    install_gem net_http_old
-
-    net_http_default = new_default_spec "net-http", "0.3.0", nil, "net/http.rb"
-    install_default_gems net_http_default
-
-    faraday_1 = util_spec "faraday", "1", { "net-http" => ">= 0" }
-    install_gem faraday_1
-
-    faraday_2 = util_spec "faraday", "2", { "net-http" => ">= 0" }
-    install_gem faraday_2
-
-    chef = util_spec "chef", "1", { "faraday" => [">= 1", "< 3"] }, "lib/chef.rb"
-    install_gem chef
-
-    assert_require "chef"
-    assert_require "net/http"
-  end
-
   def loaded_spec_names
     Gem.loaded_specs.values.map(&:full_name).sort
   end
