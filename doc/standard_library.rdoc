@@ -52,7 +52,6 @@ IRB:: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
 OptionParser:: Ruby-oriented class for command-line option analysis
 Logger:: Provides a simple logging utility for outputting messages
 Net::HTTP:: HTTP client api for Ruby
-Observable:: Provides a mechanism for publish/subscribe pattern in Ruby
 Open3:: Provides access to stdin, stdout and stderr when running other programs
 OpenStruct:: Class to build custom data structures, similar to a Hash
 OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
@@ -130,3 +129,4 @@ Mutex_m:: Mixin to extend objects to be handled like a Mutex
 GetoptLong:: Parse command line options similar to the GNU C getopt_long()
 Base64:: Support for encoding and decoding binary data using a Base64 representation
 BigDecimal:: Provides arbitrary-precision floating point decimal arithmetic
+Observable:: Provides a mechanism for publish/subscribe pattern in Ruby
