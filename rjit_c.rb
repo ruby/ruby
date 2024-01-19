@@ -1388,6 +1388,7 @@ module RubyVM::RJIT # :nodoc: all
       send_iseq_has_rest: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_has_rest)")],
       send_iseq_block_arg0_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_block_arg0_splat)")],
       send_iseq_kw_call: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_kw_call)")],
+      send_iseq_kw_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_kw_splat)")],
       send_iseq_splat: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_splat)")],
       send_iseq_has_rest_and_optional: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_has_rest_and_optional)")],
       send_iseq_arity_error: [CType::Immediate.parse("size_t"), Primitive.cexpr!("OFFSETOF((*((struct rb_rjit_runtime_counters *)NULL)), send_iseq_arity_error)")],

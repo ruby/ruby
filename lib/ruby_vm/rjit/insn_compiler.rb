@@ -4452,6 +4452,11 @@ module RubyVM::RJIT
         return CantCompile
       end
 
+      if flags & C::VM_CALL_KW_SPLAT != 0
+        asm.incr_counter(:send_iseq_kw_splat)
+        return CantCompile
+      end
+
       if iseq_has_rest && opt_num != 0
         asm.incr_counter(:send_iseq_has_rest_and_optional)
         return CantCompile
