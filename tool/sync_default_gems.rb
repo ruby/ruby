@@ -53,7 +53,6 @@ module SyncDefaultGems
     readline: "ruby/readline",
     reline: 'ruby/reline',
     resolv: "ruby/resolv",
-    rinda: "ruby/rinda",
     rubygems: 'rubygems/rubygems',
     securerandom: "ruby/securerandom",
     set: "ruby/set",
