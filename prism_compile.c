@@ -6565,9 +6565,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     // We create another ScopeNode from the statements within the PostExecutionNode
                     pm_scope_node_t next_scope_node;
                     pm_scope_node_init((pm_node_t *)post_execution_node->statements, &next_scope_node, scope_node, parser);
-                    pm_scope_node_destroy(&next_scope_node);
-
                     const rb_iseq_t *block = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(body->parent_iseq), ISEQ_TYPE_BLOCK, lineno);
+                    pm_scope_node_destroy(&next_scope_node);
 
                     ADD_CALL_WITH_BLOCK(ret, &dummy_line_node, id_core_set_postexe, INT2FIX(0), block);
                     break;
