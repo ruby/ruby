@@ -2075,7 +2075,7 @@ nodes:
       - name: name
         type: constant
         comment: |
-          The name of the local variable, which is an 
+          The name of the local variable, which is an
           [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifiers).
 
               x      # name `:x`
@@ -2084,7 +2084,7 @@ nodes:
 
           Note that this can also be an underscore followed by a number for the
           default block parameters.
-            
+
               _1     # name `:_1`
 
           Finally, for the default `it` block parameter, the name is `0it`. This
