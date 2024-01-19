@@ -2660,7 +2660,7 @@ fn gen_defined(
             asm.stack_pop(1); // v operand is not used
             let out_opnd = asm.stack_push(Type::Unknown); // nil or "yield"
 
-            get_block_given(jit, asm, out_opnd, pushval.into(), Qnil.into());
+            gen_block_given(jit, asm, out_opnd, pushval.into(), Qnil.into());
         }
         _ => {
             // Save the PC and SP because the callee may allocate
@@ -5278,12 +5278,12 @@ fn jit_rb_f_block_given_p(
     asm.stack_pop(1);
     let out_opnd = asm.stack_push(Type::UnknownImm);
 
-    get_block_given(jit, asm, out_opnd, Qtrue.into(), Qfalse.into());
+    gen_block_given(jit, asm, out_opnd, Qtrue.into(), Qfalse.into());
 
     true
 }
 
-fn get_block_given(
+fn gen_block_given(
     jit: &mut JITState,
     asm: &mut Assembler,
     out_opnd: Opnd,
