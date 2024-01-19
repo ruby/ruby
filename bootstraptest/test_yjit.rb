@@ -4364,3 +4364,8 @@ assert_equal '[2, 4611686018427387904]', %q{
 assert_equal '[0, 1, -4]', %q{
   [0 >> 1, 2 >> 1, -7 >> 1]
 }
+
+assert_equal '[nil, "yield"]', %q{
+  def defined_yield = defined?(yield)
+  [defined_yield, defined_yield {}]
+}

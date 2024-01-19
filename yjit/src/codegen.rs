@@ -2655,31 +2655,41 @@ fn gen_defined(
     let obj = jit.get_arg(1);
     let pushval = jit.get_arg(2);
 
-    // Save the PC and SP because the callee may allocate
-    // Note that this modifies REG_SP, which is why we do it first
-    jit_prepare_routine_call(jit, asm);
+    match op_type as u32 {
+        DEFINED_YIELD => {
+            asm.stack_pop(1); // v operand is not used
+            let out_opnd = asm.stack_push(Type::Unknown); // nil or "yield"
 
-    // Get the operands from the stack
-    let v_opnd = asm.stack_opnd(0);
+            gen_block_given(jit, asm, out_opnd, pushval.into(), Qnil.into());
+        }
+        _ => {
+            // Save the PC and SP because the callee may allocate
+            // Note that this modifies REG_SP, which is why we do it first
+            jit_prepare_routine_call(jit, asm);
 
-    // Call vm_defined(ec, reg_cfp, op_type, obj, v)
-    let def_result = asm.ccall(rb_vm_defined as *const u8, vec![EC, CFP, op_type.into(), obj.into(), v_opnd]);
-    asm.stack_pop(1); // Keep it on stack during ccall for GC
+            // Get the operands from the stack
+            let v_opnd = asm.stack_opnd(0);
 
-    // if (vm_defined(ec, GET_CFP(), op_type, obj, v)) {
-    //  val = pushval;
-    // }
-    asm.test(def_result, Opnd::UImm(255));
-    let out_value = asm.csel_nz(pushval.into(), Qnil.into());
+            // Call vm_defined(ec, reg_cfp, op_type, obj, v)
+            let def_result = asm.ccall(rb_vm_defined as *const u8, vec![EC, CFP, op_type.into(), obj.into(), v_opnd]);
+            asm.stack_pop(1); // Keep it on stack during ccall for GC
 
-    // Push the return value onto the stack
-    let out_type = if pushval.special_const_p() {
-        Type::UnknownImm
-    } else {
-        Type::Unknown
-    };
-    let stack_ret = asm.stack_push(out_type);
-    asm.mov(stack_ret, out_value);
+            // if (vm_defined(ec, GET_CFP(), op_type, obj, v)) {
+            //  val = pushval;
+            // }
+            asm.test(def_result, Opnd::UImm(255));
+            let out_value = asm.csel_nz(pushval.into(), Qnil.into());
+
+            // Push the return value onto the stack
+            let out_type = if pushval.special_const_p() {
+                Type::UnknownImm
+            } else {
+                Type::Unknown
+            };
+            let stack_ret = asm.stack_push(out_type);
+            asm.mov(stack_ret, out_value);
+        }
+    }
 
     Some(KeepCompiling)
 }
@@ -5265,6 +5275,21 @@ fn jit_rb_f_block_given_p(
     _argc: i32,
     _known_recv_class: *const VALUE,
 ) -> bool {
+    asm.stack_pop(1);
+    let out_opnd = asm.stack_push(Type::UnknownImm);
+
+    gen_block_given(jit, asm, out_opnd, Qtrue.into(), Qfalse.into());
+
+    true
+}
+
+fn gen_block_given(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    out_opnd: Opnd,
+    true_opnd: Opnd,
+    false_opnd: Opnd,
+) {
     asm_comment!(asm, "block_given?");
 
     // Same as rb_vm_frame_block_handler
@@ -5273,15 +5298,10 @@ fn jit_rb_f_block_given_p(
         Opnd::mem(64, ep_opnd, SIZEOF_VALUE_I32 * VM_ENV_DATA_INDEX_SPECVAL)
     );
 
-    asm.stack_pop(1);
-    let out_opnd = asm.stack_push(Type::UnknownImm);
-
     // Return `block_handler != VM_BLOCK_HANDLER_NONE`
     asm.cmp(block_handler, VM_BLOCK_HANDLER_NONE.into());
-    let block_given = asm.csel_ne(Qtrue.into(), Qfalse.into());
+    let block_given = asm.csel_ne(true_opnd, false_opnd);
     asm.mov(out_opnd, block_given);
-
-    true
 }
 
 fn jit_thread_s_current(
