@@ -41,7 +41,6 @@ module SyncDefaultGems
     json: 'flori/json',
     logger: 'ruby/logger',
     nkf: "ruby/nkf",
-    observer: "ruby/observer",
     open3: "ruby/open3",
     openssl: "ruby/openssl",
     optparse: "ruby/optparse",
