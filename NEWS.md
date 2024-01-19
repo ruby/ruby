@@ -51,6 +51,7 @@ The following bundled gems are promoted from default gems.
 * base64 0.2.0
 * bigdecimal 3.1.6
 * observer 0.1.2
+* abbrev 0.1.2
 
 See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/logger/releases) or changelog for details of the default gems or bundled gems.
 
