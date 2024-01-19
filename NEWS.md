@@ -36,7 +36,7 @@ The following default gems are updated.
 
 The following bundled gems are updated.
 
-* minitest 5.21.1
+* minitest 5.21.2
 * net-ftp 0.3.4
 * net-imap 0.4.9.1
 * net-smtp 0.4.0.1
@@ -50,6 +50,7 @@ The following bundled gems are promoted from default gems.
 * getoptlong 0.2.1
 * base64 0.2.0
 * bigdecimal 3.1.6
+* observer 0.1.2
 
 See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/logger/releases) or changelog for details of the default gems or bundled gems.
 
