@@ -17,7 +17,6 @@ module SyncDefaultGems
     "net-http": "ruby/net-http",
     "net-protocol": "ruby/net-protocol",
     "open-uri": "ruby/open-uri",
-    "resolv-replace": "ruby/resolv-replace",
     English: "ruby/English",
     benchmark: "ruby/benchmark",
     cgi: "ruby/cgi",
