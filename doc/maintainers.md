@@ -472,13 +472,13 @@ have commit right, others don't.
 #### mutex_m
 * https://github.com/ruby/mutex_m
 
-#### lib/getoptlong.rb
+#### getoptlong
 * https://github.com/ruby/getoptlong
 
-#### lib/base64.rb
+#### base64
 * https://github.com/ruby/base64
 
-#### ext/bigdecimal
+#### bigdecimal
 * https://github.com/ruby/bigdecimal
 
 ## Platform Maintainers
