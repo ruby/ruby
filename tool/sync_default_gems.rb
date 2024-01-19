@@ -19,7 +19,6 @@ module SyncDefaultGems
     "open-uri": "ruby/open-uri",
     "resolv-replace": "ruby/resolv-replace",
     English: "ruby/English",
-    abbrev: "ruby/abbrev",
     benchmark: "ruby/benchmark",
     cgi: "ruby/cgi",
     csv: 'ruby/csv',
