@@ -6072,7 +6072,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         // We will assign these values now, if applicable, and use them for
         // the ISEQs on these multis
-        int required_multis_hidden_index = 0;
+        int required_multis_hidden_index = local_index;
         int post_multis_hidden_index = 0;
 
         // Here we figure out local table indices and insert them in to the
@@ -6091,7 +6091,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                   // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
                   //            ^^^^^^^^^^
                   case PM_MULTI_TARGET_NODE: {
-                    required_multis_hidden_index = local_index;
                     local = rb_make_temporary_id(local_index);
                     local_table_for_iseq->ids[local_index] = local;
                     break;
@@ -6527,7 +6526,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 // We want to account for this in our table size
                 pm_node_t *required = requireds_list->nodes[i];
                 if (PM_NODE_TYPE_P(required, PM_MULTI_TARGET_NODE)) {
-                    ADD_GETLOCAL(ret, &dummy_line_node, table_size - required_multis_hidden_index, 0);
+                    ADD_GETLOCAL(ret, &dummy_line_node, table_size - required_multis_hidden_index - (int)i, 0);
                     PM_COMPILE(required);
                 }
             }
