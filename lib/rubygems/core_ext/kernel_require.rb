@@ -62,6 +62,8 @@ module Kernel
 
         Kernel.send(:gem, spec.name, Gem::Requirement.default_prerelease) unless
           resolved_path
+
+        next
       end
 
       # If there are no unresolved deps, then we can use just try
