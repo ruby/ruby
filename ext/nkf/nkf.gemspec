@@ -11,8 +11,8 @@ end
 Gem::Specification.new do |spec|
   spec.name          = "nkf"
   spec.version       = source_version
-  spec.authors       = ["NARUSE Yui"]
-  spec.email         = ["naruse@airemix.jp"]
+  spec.authors       = ["NARUSE Yui", "Charles Oliver Nutter"]
+  spec.email         = ["naruse@airemix.jp", "headius@headius.com"]
 
   spec.summary       = %q{Ruby extension for Network Kanji Filter}
   spec.description   = %q{Ruby extension for Network Kanji Filter}
@@ -28,8 +28,16 @@ Gem::Specification.new do |spec|
   spec.files         = Dir.chdir(File.expand_path('..', __FILE__)) do
     `git ls-files -z`.split("\x0").reject { |f| f.match(%r{^(test|spec|features)/}) }
   end
+
+  if Gem::Platform === spec.platform and spec.platform =~ 'java' or RUBY_ENGINE == 'jruby'
+    spec.platform = 'java'
+
+    spec.files += Dir["lib/nkf.jar"]
+  else
+    spec.extensions    = ["ext/nkf/extconf.rb"]
+  end
+
   spec.bindir        = "exe"
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ["lib"]
-  spec.extensions    = ["ext/nkf/extconf.rb"]
 end
