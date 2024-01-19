@@ -42,7 +42,11 @@ module Kernel
       # If +path+ belongs to a default gem, we activate it and then go straight
       # to normal require
 
-      if spec = Gem.find_unresolved_default_spec(path)
+      if spec = Gem.find_default_spec(path)
+        name = spec.name
+
+        next if Gem.loaded_specs[name]
+
         # Ensure -I beats a default gem
         resolved_path = begin
           rp = nil
@@ -60,7 +64,7 @@ module Kernel
           rp
         end
 
-        Kernel.send(:gem, spec.name, Gem::Requirement.default_prerelease) unless
+        Kernel.send(:gem, name, Gem::Requirement.default_prerelease) unless
           resolved_path
 
         next
