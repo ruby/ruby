@@ -222,11 +222,6 @@ have commit right, others don't.
 * https://github.com/ruby/resolv
 * https://rubygems.org/gems/resolv
 
-#### lib/resolv-replace.rb
-* Tanaka Akira (akr)
-* https://github.com/ruby/resolv-replace
-* https://rubygems.org/gems/resolv-replace
-
 #### lib/rdoc.rb, lib/rdoc/*
 * Eric Hodel (drbrain)
 * Hiroshi SHIBATA (hsbt)
@@ -478,6 +473,8 @@ have commit right, others don't.
 #### abbrev
 * https://github.com/ruby/abbrev
 
+#### lib/resolv-replace.rb
+* https://github.com/ruby/resolv-replace
 
 ## Platform Maintainers
 ### mswin64 (Microsoft Windows)
