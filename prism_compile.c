@@ -6203,14 +6203,31 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             ID *ids = xcalloc(keywords_list->size, sizeof(ID));
 
-            for (size_t i = 0; i < keywords_list->size; i++, local_index++) {
+            size_t kw_index = 0;
+
+            for (size_t i = 0; i < keywords_list->size; i++) {
                 pm_node_t *keyword_parameter_node = keywords_list->nodes[i];
                 pm_constant_id_t name;
 
-                switch (PM_NODE_TYPE(keyword_parameter_node)) {
-                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
-                  //                                                       ^^^^
-                  case PM_OPTIONAL_KEYWORD_PARAMETER_NODE: {
+                // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+                //                                                   ^^
+                if (PM_NODE_TYPE_P(keyword_parameter_node, PM_REQUIRED_KEYWORD_PARAMETER_NODE)) {
+                    name = ((pm_required_keyword_parameter_node_t *)keyword_parameter_node)->name;
+                    keyword->required_num++;
+                    ID local = pm_constant_id_lookup(scope_node, name);
+                    pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                    local_index++;
+                    ids[kw_index++] = local;
+                }
+            }
+
+            for (size_t i = 0; i < keywords_list->size; i++) {
+                pm_node_t *keyword_parameter_node = keywords_list->nodes[i];
+                pm_constant_id_t name;
+
+                // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+                //                                                       ^^^^
+                if (PM_NODE_TYPE_P(keyword_parameter_node, PM_OPTIONAL_KEYWORD_PARAMETER_NODE)) {
                     pm_optional_keyword_parameter_node_t *cast = ((pm_optional_keyword_parameter_node_t *)keyword_parameter_node);
 
                     pm_node_t *value = cast->value;
@@ -6227,23 +6244,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                         rb_ary_push(default_values, complex_mark);
                     }
 
-                    break;
-                  }
-                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
-                  //                                                   ^^
-                  case PM_REQUIRED_KEYWORD_PARAMETER_NODE: {
-                    name = ((pm_required_keyword_parameter_node_t *)keyword_parameter_node)->name;
-                    keyword->required_num++;
-                    break;
-                  }
-                  default: {
-                    rb_bug("Unexpected keyword parameter node type %s", pm_node_type_to_str(PM_NODE_TYPE(keyword_parameter_node)));
-                  }
+                    ID local = pm_constant_id_lookup(scope_node, name);
+                    pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                    ids[kw_index++] = local;
+                    local_index++;
                 }
 
-                ID local = pm_constant_id_lookup(scope_node, name);
-                pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
-                ids[i] = local;
             }
 
             keyword->bits_start = local_index;

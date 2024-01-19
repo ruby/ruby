@@ -1464,6 +1464,10 @@ a
       CODE
     end
 
+    def test_required_kwarg_ordering
+      assert_prism_eval("def self.foo(a: 1, b:); [a, b]; end; foo(b: 2)")
+    end
+
     def test_trailing_keyword_method_params
       # foo(1, b: 2, c: 3) # argc -> 3
       assert_prism_eval("def self.foo(a, b:, c:); [a, b, c]; end; foo(1, b: 2, c: 3)")
