@@ -4358,7 +4358,6 @@ assert_equal '[0, 1, -4]', %q{
   [0 >> 1, 2 >> 1, -7 >> 1]
 }
 
-# Integer right shift
 assert_equal '[nil, "yield"]', %q{
   def defined_yield = defined?(yield)
   [defined_yield, defined_yield {}]
