@@ -72,10 +72,6 @@ have commit right, others don't.
 
 ## Default gems Maintainers
 ### Libraries
-#### lib/abbrev.rb
-* Akinori MUSHA (knu)
-* https://github.com/ruby/abbrev
-* https://rubygems.org/gems/abbrev
 
 #### lib/benchmark.rb
 * *unmaintained*
@@ -478,6 +474,10 @@ have commit right, others don't.
 
 #### observer
 * https://github.com/ruby/observer
+
+#### abbrev
+* https://github.com/ruby/abbrev
+
 
 ## Platform Maintainers
 ### mswin64 (Microsoft Windows)
