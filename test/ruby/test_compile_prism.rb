@@ -1354,6 +1354,9 @@ a
       assert_prism_eval("[[]].map { |a,b=1| a }")
       assert_prism_eval("[{}].map { |a,| }")
       assert_prism_eval("[{}].map { |a| a }")
+
+      # Test blocks with MultiTargetNode
+      assert_prism_eval("[[1, 2]].each.map { |(a), (b)| [a, b] }")
     end
 
     def test_ClassNode
