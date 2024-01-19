@@ -961,6 +961,18 @@ module Prism
       assert_prism_eval("[true].map { break }")
     end
 
+    def test_ensure_in_methods
+      assert_prism_eval(<<-CODE)
+def self.m
+  a = []
+ensure
+  a << 5
+  return a
+end
+m
+      CODE
+    end
+
     def test_break_runs_ensure
       assert_prism_eval(<<-CODE)
 a = []

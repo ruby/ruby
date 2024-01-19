@@ -3315,11 +3315,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             if (!popped) {
                 PM_NOP;
             }
-            pm_statements_node_t *statements = begin_node->ensure_clause->statements;
-            if (statements) {
-                PM_COMPILE((pm_node_t *)statements);
-                PM_POP_UNLESS_POPPED;
-            }
 
             pm_scope_node_t next_scope_node;
             pm_scope_node_init((pm_node_t *)begin_node->ensure_clause, &next_scope_node, scope_node, parser);
@@ -3338,6 +3333,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 }
             }
             ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = enl.prev;
+
+            // Compile the ensure entry
+            pm_statements_node_t *statements = begin_node->ensure_clause->statements;
+            if (statements) {
+                PM_COMPILE((pm_node_t *)statements);
+                PM_POP_UNLESS_POPPED;
+            }
         }
 
         if (!begin_node->rescue_clause && !begin_node->ensure_clause) {
