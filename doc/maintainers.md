@@ -422,7 +422,7 @@ have commit right, others don't.
 
 ## Bundled gems upstream repositories
 ### minitest
-* https://github.com/seattlerb/minitest
+* https://github.com/minitest/minitest
 
 ### power_assert
 * https://github.com/ruby/power_assert
@@ -479,7 +479,7 @@ have commit right, others don't.
 * https://github.com/ruby/base64
 
 #### ext/bigdecimal
-* https://rubygems.org/gems/bigdecimal
+* https://github.com/ruby/bigdecimal
 
 ## Platform Maintainers
 ### mswin64 (Microsoft Windows)
