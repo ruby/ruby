@@ -1044,10 +1044,8 @@ nodes:
       - name: name
         type: constant
         comment: |
-          The name of the class variable, including the leading `@@`.
-
-          For more information on permitted class variable names, see
-          [the Prism documentation](https://github.com/ruby/prism/blob/main/docs/lexing.md).
+          The name of the class variable, which is a `@@` followed by an
+          [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifiers).
 
               @@abc   # name `:@@abc`
 
@@ -1223,10 +1221,7 @@ nodes:
       - name: name
         type: constant
         comment: |
-          The name of the constant.
-
-          For more information on permitted constant names, see
-          [the Prism documentation](https://github.com/ruby/prism/blob/main/docs/lexing.md).
+          The name of the [constant](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#constants).
 
               X              # name `:X`
 
@@ -1520,10 +1515,10 @@ nodes:
       - name: name
         type: constant
         comment: |
-          The name of the global variable, including the leading `$`.
-
-          For more information on permitted global variable names, see
-          [the Prism documentation](https://github.com/ruby/prism/blob/main/docs/lexing.md).
+          The name of the global variable, which is a `$` followed by an
+          [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifier).
+          Alternatively, it can be one of the special global variables designated
+          by a symbol.
 
               $foo   # name `:$foo`
 
@@ -1849,10 +1844,8 @@ nodes:
       - name: name
         type: constant
         comment: |
-          The name of the instance variable, including the leading `@`.
-
-          For more information on permitted instance variable names, see
-          [the Prism documentation](https://github.com/ruby/prism/blob/main/docs/lexing.md).
+          The name of the instance variable, which is a `@` followed by an
+          [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifiers).
 
               @x     # name `:@x`
 
@@ -2082,19 +2075,29 @@ nodes:
       - name: name
         type: constant
         comment: |
-          The name of the local variable.
-
-          For more information on permitted local variable names, see
-          [the Prism documentation](https://github.com/ruby/prism/blob/main/docs/lexing.md).
+          The name of the local variable, which is an 
+          [identifier](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#identifiers).
 
               x      # name `:x`
 
               _Test  # name `:_Test`
+
+          Note that this can also be an underscore followed by a number for the
+          default block parameters.
+            
+              _1     # name `:_1`
+
+          Finally, for the default `it` block parameter, the name is `0it`. This
+          is to distinguish it from an `it` local variable that is explicitly
+          declared.
+
+              it     # name `:0it`
+
       - name: depth
         type: uint32
         comment: |
-          The number of visible scopes searched up to find the declaration of
-          this local variable.
+          The number of visible scopes that should be searched to find the
+          origin of this local variable.
 
               foo = 1; foo # depth 0
 
@@ -2102,14 +2105,11 @@ nodes:
 
           The specific rules for calculating the depth may differ from
           individual Ruby implementations, as they are not specified by the
-          language.
-
-          For more information, see [the Prism documentation](https://github.com/ruby/prism/blob/main/docs/local_variable_depth.md).
+          language. For more information, see [the Prism documentation](https://github.com/ruby/prism/blob/main/docs/local_variable_depth.md).
     comment: |
       Represents reading a local variable. Note that this requires that a local
       variable of the same name has already been written to in the same scope,
-      otherwise it is parsed as a method call. Note that `it` default parameter
-      has `0it` as the name of this node.
+      otherwise it is parsed as a method call.
 
           foo
           ^^^
