@@ -31,7 +31,7 @@ Gem::Specification.new do |spec|
 
   if Gem::Platform === spec.platform and spec.platform =~ 'java' or RUBY_ENGINE == 'jruby'
     spec.platform = 'java'
-
+    spec.licenses      += ["EPL-2.0", "LGPL-2.1"]
     spec.files += Dir["lib/nkf.jar"]
   else
     spec.extensions    = ["ext/nkf/extconf.rb"]
