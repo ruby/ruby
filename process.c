@@ -1677,13 +1677,21 @@ static void
 before_fork_ruby(void)
 {
     before_exec();
-    rb_mmtk_shutdown_gc_threads();
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_mmtk_shutdown_gc_threads();
+    }
+#endif
 }
 
 static void
 after_fork_ruby(rb_pid_t pid)
 {
-    rb_mmtk_respawn_gc_threads();
+#if USE_MMTK
+    if (rb_mmtk_enabled_p()) {
+        rb_mmtk_respawn_gc_threads();
+    }
+#endif
     rb_threadptr_pending_interrupt_clear(GET_THREAD());
     if (pid == 0) {
         // child
