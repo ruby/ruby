@@ -625,6 +625,19 @@ PREP
 CODE
   end
 
+  def test_tracepoint_bmethod_memory_leak
+    assert_no_memory_leak([], '', "#{<<~"begin;"}\n#{<<~'end;'}", "[Bug #20194]", rss: true)
+      obj = Object.new
+      obj.define_singleton_method(:foo) {}
+      bmethod = obj.method(:foo)
+      tp = TracePoint.new(:return) {}
+    begin;
+      1_000_000.times do
+        tp.enable(target: bmethod) {}
+      end
+    end;
+  end
+
   def trace_by_set_trace_func
     events = []
     trace = nil
