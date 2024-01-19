@@ -40,7 +40,7 @@ The following bundled gems are updated.
 * net-ftp 0.3.4
 * net-imap 0.4.9.1
 * net-smtp 0.4.0.1
-* rbs 3.4.1
+* rbs 3.4.2
 * typeprof 0.21.9
 * debug 1.9.1
 
@@ -52,6 +52,7 @@ The following bundled gems are promoted from default gems.
 * bigdecimal 3.1.6
 * observer 0.1.2
 * abbrev 0.1.2
+* resolv-replace 0.1.1
 
 See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/logger/releases) or changelog for details of the default gems or bundled gems.
 
