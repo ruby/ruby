@@ -3556,6 +3556,15 @@ class TestArray < Test::Unit::TestCase
     assert_equal(10000, eval(lit).size)
   end
 
+  def test_array_safely_modified_by_sort_block
+    var_0 = (1..70).to_a
+    var_0.sort! do |var_0_block_129, var_1_block_129|
+      var_0.pop
+      var_1_block_129 <=> var_0_block_129
+    end.shift(3)
+    assert_equal((1..67).to_a.reverse, var_0)
+  end
+
   private
   def need_continuation
     unless respond_to?(:callcc, true)
