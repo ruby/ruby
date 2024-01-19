@@ -6164,21 +6164,21 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                   // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
                   //                                      ^^^^^^^^^^
                   case PM_MULTI_TARGET_NODE: {
-                      post_multis_hidden_index = local_index;
-                      local = rb_make_temporary_id(local_index);
-                      local_table_for_iseq->ids[local_index] = local;
-                      break;
+                    post_multis_hidden_index = local_index;
+                    local = rb_make_temporary_id(local_index);
+                    local_table_for_iseq->ids[local_index] = local;
+                    break;
                   }
                   // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
                   //                                   ^
                   case PM_REQUIRED_PARAMETER_NODE: {
-                      pm_required_parameter_node_t * param = (pm_required_parameter_node_t *)post_node;
+                    pm_required_parameter_node_t * param = (pm_required_parameter_node_t *)post_node;
 
-                      pm_insert_local_index(param->name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
-                      break;
+                    pm_insert_local_index(param->name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                    break;
                   }
                   default: {
-                      rb_bug("Unsupported node in posts in parameters %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
+                    rb_bug("Unsupported node in posts in parameters %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
                   }
                 }
             }
@@ -6275,52 +6275,52 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                   //                                                             ^^^^^
                   case PM_NO_KEYWORDS_PARAMETER_NODE: {
 
-                      body->param.flags.accepts_no_kwarg = true;
-                      break;
+                    body->param.flags.accepts_no_kwarg = true;
+                    break;
                   }
                   // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
                   //                                                             ^^^
                   case PM_KEYWORD_REST_PARAMETER_NODE: {
-                        pm_keyword_rest_parameter_node_t *kw_rest_node = (pm_keyword_rest_parameter_node_t *)parameters_node->keyword_rest;
-                        if (!body->param.flags.has_kw) {
-                            body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
-                        }
+                    pm_keyword_rest_parameter_node_t *kw_rest_node = (pm_keyword_rest_parameter_node_t *)parameters_node->keyword_rest;
+                    if (!body->param.flags.has_kw) {
+                        body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
+                    }
 
-                        keyword->rest_start = local_index;
-                        body->param.flags.has_kwrest = true;
+                    keyword->rest_start = local_index;
+                    body->param.flags.has_kwrest = true;
 
-                        pm_constant_id_t constant_id = kw_rest_node->name;
-                        if (constant_id) {
-                            pm_insert_local_index(constant_id, local_index, index_lookup_table, local_table_for_iseq, scope_node);
-                        }
-                        else {
-                            local_table_for_iseq->ids[local_index] = idPow;
-                        }
-                        local_index++;
-                        break;
+                    pm_constant_id_t constant_id = kw_rest_node->name;
+                    if (constant_id) {
+                        pm_insert_local_index(constant_id, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                    }
+                    else {
+                        local_table_for_iseq->ids[local_index] = idPow;
+                    }
+                    local_index++;
+                    break;
                   }
                   // def foo(...)
                   //         ^^^
                   case PM_FORWARDING_PARAMETER_NODE: {
-                      body->param.rest_start = local_index;
-                      body->param.flags.has_rest = true;
-                      ID local = idMULT;
-                      local_table_for_iseq->ids[local_index] = local;
-                      local_index++;
+                    body->param.rest_start = local_index;
+                    body->param.flags.has_rest = true;
+                    ID local = idMULT;
+                    local_table_for_iseq->ids[local_index] = local;
+                    local_index++;
 
-                      body->param.block_start = local_index;
-                      body->param.flags.has_block = true;
-                      local = idAnd;
-                      local_table_for_iseq->ids[local_index] = local;
-                      local_index++;
+                    body->param.block_start = local_index;
+                    body->param.flags.has_block = true;
+                    local = idAnd;
+                    local_table_for_iseq->ids[local_index] = local;
+                    local_index++;
 
-                      local = idDot3;
-                      local_table_for_iseq->ids[local_index] = local;
-                      local_index++;
-                      break;
+                    local = idDot3;
+                    local_table_for_iseq->ids[local_index] = local;
+                    local_index++;
+                    break;
                   }
                   default: {
-                      rb_bug("node type %s not expected as keyword_rest", pm_node_type_to_str(PM_NODE_TYPE(parameters_node->keyword_rest)));
+                    rb_bug("node type %s not expected as keyword_rest", pm_node_type_to_str(PM_NODE_TYPE(parameters_node->keyword_rest)));
                   }
                 }
             }
@@ -6398,16 +6398,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         switch (PM_NODE_TYPE(scope_node->ast_node)) {
           case PM_BLOCK_NODE: {
-              locals_body_index = ((pm_block_node_t *)scope_node->ast_node)->locals_body_index;
-              break;
+            locals_body_index = ((pm_block_node_t *)scope_node->ast_node)->locals_body_index;
+            break;
           }
           case PM_DEF_NODE: {
-              locals_body_index = ((pm_def_node_t *)scope_node->ast_node)->locals_body_index;
-              break;
+            locals_body_index = ((pm_def_node_t *)scope_node->ast_node)->locals_body_index;
+            break;
           }
           case PM_LAMBDA_NODE: {
-              locals_body_index = ((pm_lambda_node_t *)scope_node->ast_node)->locals_body_index;
-              break;
+            locals_body_index = ((pm_lambda_node_t *)scope_node->ast_node)->locals_body_index;
+            break;
           }
           default: {
           }
