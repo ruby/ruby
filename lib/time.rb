@@ -455,7 +455,7 @@ class Time
     #
     def strptime(date, format, now=self.now)
       d = Date._strptime(date, format)
-      raise ArgumentError, "invalid date or strptime format - `#{date}' `#{format}'" unless d
+      raise ArgumentError, "invalid date or strptime format - '#{date}' '#{format}'" unless d
       if seconds = d[:seconds]
         if sec_fraction = d[:sec_fraction]
           usec = sec_fraction * 1000000

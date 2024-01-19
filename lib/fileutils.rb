@@ -1651,7 +1651,7 @@ module FileUtils
       when "a"
         mask | 07777
       else
-        raise ArgumentError, "invalid `who' symbol in file mode: #{chr}"
+        raise ArgumentError, "invalid 'who' symbol in file mode: #{chr}"
       end
     end
   end
@@ -1705,7 +1705,7 @@ module FileUtils
             copy_mask = user_mask(chr)
             (current_mode & copy_mask) / (copy_mask & 0111) * (user_mask & 0111)
           else
-            raise ArgumentError, "invalid `perm' symbol in file mode: #{chr}"
+            raise ArgumentError, "invalid 'perm' symbol in file mode: #{chr}"
           end
         end
 

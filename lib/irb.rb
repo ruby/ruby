@@ -1235,7 +1235,7 @@ module IRB
         lines.map{ |l| l + "\n" }.join
       }
       # The "<top (required)>" in "(irb)" may be the top level of IRB so imitate the main object.
-      message = message.gsub(/\(irb\):(?<num>\d+):in `<(?<frame>top \(required\))>'/) { "(irb):#{$~[:num]}:in `<main>'" }
+      message = message.gsub(/\(irb\):(?<num>\d+):in (?<open_quote>[`'])<(?<frame>top \(required\))>'/) { "(irb):#{$~[:num]}:in #{$~[:open_quote]}<main>'" }
       puts message
       puts 'Maybe IRB bug!' if irb_bug
     rescue Exception => handler_exc

@@ -2247,10 +2247,10 @@ rb_class_get_superclass(VALUE klass)
     return RCLASS(klass)->super;
 }
 
-static const char bad_instance_name[] = "`%1$s' is not allowed as an instance variable name";
-static const char bad_class_name[] = "`%1$s' is not allowed as a class variable name";
+static const char bad_instance_name[] = "'%1$s' is not allowed as an instance variable name";
+static const char bad_class_name[] = "'%1$s' is not allowed as a class variable name";
 static const char bad_const_name[] = "wrong constant name %1$s";
-static const char bad_attr_name[] = "invalid attribute name `%1$s'";
+static const char bad_attr_name[] = "invalid attribute name '%1$s'";
 #define wrong_constant_name bad_const_name
 
 /*! \private */

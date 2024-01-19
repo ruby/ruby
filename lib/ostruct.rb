@@ -376,7 +376,7 @@ class OpenStruct
     end
     @table.delete(sym) do
       return yield if block
-      raise! NameError.new("no field `#{sym}' in #{self}", sym)
+      raise! NameError.new("no field '#{sym}' in #{self}", sym)
     end
   end
 

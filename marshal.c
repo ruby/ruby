@@ -617,11 +617,11 @@ w_obj_each(ID id, VALUE value, st_data_t a)
 
     if (to_be_skipped_id(id)) {
         if (id == s_encoding_short) {
-            rb_warn("instance variable `"name_s_encoding_short"' on class %"PRIsVALUE" is not dumped",
+            rb_warn("instance variable '"name_s_encoding_short"' on class %"PRIsVALUE" is not dumped",
                     CLASS_OF(arg->obj));
         }
         if (id == s_ruby2_keywords_flag) {
-            rb_warn("instance variable `"name_s_ruby2_keywords_flag"' on class %"PRIsVALUE" is not dumped",
+            rb_warn("instance variable '"name_s_ruby2_keywords_flag"' on class %"PRIsVALUE" is not dumped",
                     CLASS_OF(arg->obj));
         }
         return ST_CONTINUE;
@@ -1796,7 +1796,7 @@ append_extmod(VALUE obj, VALUE extmod)
 #define prohibit_ivar(type, str) do { \
         if (!ivp || !*ivp) break; \
         rb_raise(rb_eTypeError, \
-                 "can't override instance variable of "type" `%"PRIsVALUE"'", \
+                 "can't override instance variable of "type" '%"PRIsVALUE"'", \
                  (str)); \
     } while (0)
 
@@ -2133,7 +2133,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
             st_data_t d;
 
             if (!rb_obj_respond_to(klass, s_load, TRUE)) {
-                rb_raise(rb_eTypeError, "class %"PRIsVALUE" needs to have method `_load'",
+                rb_raise(rb_eTypeError, "class %"PRIsVALUE" needs to have method '_load'",
                          name);
             }
             data = r_string(arg);
@@ -2169,7 +2169,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
                 append_extmod(v, extmod);
             }
             if (!rb_obj_respond_to(v, s_mload, TRUE)) {
-                rb_raise(rb_eTypeError, "instance of %"PRIsVALUE" needs to have method `marshal_load'",
+                rb_raise(rb_eTypeError, "instance of %"PRIsVALUE" needs to have method 'marshal_load'",
                          name);
             }
             v = r_entry(v, arg);
@@ -2215,7 +2215,7 @@ r_object_for(struct load_arg *arg, bool partial, int *ivp, VALUE extmod, int typ
             v = r_entry(v, arg);
             if (!rb_obj_respond_to(v, s_load_data, TRUE)) {
                 rb_raise(rb_eTypeError,
-                         "class %"PRIsVALUE" needs to have instance method `_load_data'",
+                         "class %"PRIsVALUE" needs to have instance method '_load_data'",
                          name);
             }
             r = r_object0(arg, partial, 0, extmod);

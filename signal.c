@@ -274,7 +274,7 @@ signm2signo(VALUE *sig_ptr, int negative, int exit, int *prefix_ptr)
         vsig = rb_str_subseq(vsig, prefix, len);
         prefix = signame_prefix_len;
     }
-    rb_raise(rb_eArgError, "unsupported signal `%.*s%"PRIsVALUE"'",
+    rb_raise(rb_eArgError, "unsupported signal '%.*s%"PRIsVALUE"'",
              prefix, signame_prefix, vsig);
     UNREACHABLE_RETURN(0);
 }

@@ -3213,7 +3213,7 @@ rb_num2ulong(VALUE val)
 void
 rb_out_of_int(SIGNED_VALUE num)
 {
-    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to `int'",
+    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to 'int'",
              num, num < 0 ? "small" : "big");
 }
 
@@ -3232,12 +3232,12 @@ check_uint(unsigned long num, int sign)
     if (sign) {
         /* minus */
         if (num < (unsigned long)INT_MIN)
-            rb_raise(rb_eRangeError, "integer %ld too small to convert to `unsigned int'", (long)num);
+            rb_raise(rb_eRangeError, "integer %ld too small to convert to 'unsigned int'", (long)num);
     }
     else {
         /* plus */
         if (UINT_MAX < num)
-            rb_raise(rb_eRangeError, "integer %lu too big to convert to `unsigned int'", num);
+            rb_raise(rb_eRangeError, "integer %lu too big to convert to 'unsigned int'", num);
     }
 }
 
@@ -3312,7 +3312,7 @@ NORETURN(static void rb_out_of_short(SIGNED_VALUE num));
 static void
 rb_out_of_short(SIGNED_VALUE num)
 {
-    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to `short'",
+    rb_raise(rb_eRangeError, "integer %"PRIdVALUE " too %s to convert to 'short'",
              num, num < 0 ? "small" : "big");
 }
 
@@ -3330,12 +3330,12 @@ check_ushort(unsigned long num, int sign)
     if (sign) {
         /* minus */
         if (num < (unsigned long)SHRT_MIN)
-            rb_raise(rb_eRangeError, "integer %ld too small to convert to `unsigned short'", (long)num);
+            rb_raise(rb_eRangeError, "integer %ld too small to convert to 'unsigned short'", (long)num);
     }
     else {
         /* plus */
         if (USHRT_MAX < num)
-            rb_raise(rb_eRangeError, "integer %lu too big to convert to `unsigned short'", num);
+            rb_raise(rb_eRangeError, "integer %lu too big to convert to 'unsigned short'", num);
     }
 }
 
@@ -4709,7 +4709,7 @@ rb_int_cmp(VALUE x, VALUE y)
         return rb_big_cmp(x, y);
     }
     else {
-        rb_raise(rb_eNotImpError, "need to define `<=>' in %s", rb_obj_classname(x));
+        rb_raise(rb_eNotImpError, "need to define '<=>' in %s", rb_obj_classname(x));
     }
 }
 

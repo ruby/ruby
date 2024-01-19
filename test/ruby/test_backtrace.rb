@@ -216,7 +216,7 @@ class TestBacktrace < Test::Unit::TestCase
     end
     @line = __LINE__ + 1
     [1].map.map { [1].map.map { foo } }
-    assert_equal("[\"#{__FILE__}:#{@line}:in `map'\"]", @res)
+    assert_equal("[\"#{__FILE__}:#{@line}:in 'map'\"]", @res)
   end
 
   def test_caller_location_path_cfunc_iseq_no_pc
@@ -384,11 +384,11 @@ class TestBacktrace < Test::Unit::TestCase
   end
 
   def test_notty_backtrace
-    err = ["-:1:in `<main>': unhandled exception"]
+    err = ["-:1:in '<main>': unhandled exception"]
     assert_in_out_err([], "raise", [], err)
 
-    err = ["-:2:in `foo': foo! (RuntimeError)",
-           "\tfrom -:4:in `<main>'"]
+    err = ["-:2:in 'foo': foo! (RuntimeError)",
+           "\tfrom -:4:in '<main>'"]
     assert_in_out_err([], <<-"end;", [], err)
     def foo
       raise "foo!"
@@ -396,12 +396,12 @@ class TestBacktrace < Test::Unit::TestCase
     foo
     end;
 
-    err = ["-:7:in `rescue in bar': bar! (RuntimeError)",
-           "\tfrom -:4:in `bar'",
-           "\tfrom -:9:in `<main>'",
-           "-:2:in `foo': foo! (RuntimeError)",
-           "\tfrom -:5:in `bar'",
-           "\tfrom -:9:in `<main>'"]
+    err = ["-:7:in 'rescue in bar': bar! (RuntimeError)",
+           "\tfrom -:4:in 'bar'",
+           "\tfrom -:9:in '<main>'",
+           "-:2:in 'foo': foo! (RuntimeError)",
+           "\tfrom -:5:in 'bar'",
+           "\tfrom -:9:in '<main>'"]
     assert_in_out_err([], <<-"end;", [], err)
     def foo
       raise "foo!"
@@ -416,7 +416,7 @@ class TestBacktrace < Test::Unit::TestCase
   end
 
   def test_caller_to_enum
-    err = ["-:3:in `foo': unhandled exception", "\tfrom -:in `each'"]
+    err = ["-:3:in 'foo': unhandled exception", "\tfrom -:in 'each'"]
     assert_in_out_err([], <<-"end;", [], err, "[ruby-core:91911]")
       def foo
         return to_enum(__method__) unless block_given?

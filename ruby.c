@@ -1029,7 +1029,7 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
 #if AMBIGUOUS_FEATURE_NAMES
     if (matched == 1) goto found;
     if (matched > 1) {
-        VALUE mesg = rb_sprintf("ambiguous feature: `%.*s' (", len, str);
+        VALUE mesg = rb_sprintf("ambiguous feature: '%.*s' (", len, str);
 #define ADD_FEATURE_NAME(bit) \
         if (FEATURE_BIT(bit) & set) { \
             rb_str_cat_cstr(mesg, #bit); \
@@ -1043,7 +1043,7 @@ feature_option(const char *str, int len, void *arg, const unsigned int enable)
 #else
     (void)set;
 #endif
-    rb_warn("unknown argument for --%s: `%.*s'",
+    rb_warn("unknown argument for --%s: '%.*s'",
             enable ? "enable" : "disable", len, str);
     rb_warn("features are [%.*s].", (int)strlen(list), list);
     return;
@@ -1082,7 +1082,7 @@ debug_option(const char *str, int len, void *arg)
 #ifdef RUBY_DEVEL
     if (ruby_patchlevel < 0 && ruby_env_debug_option(str, len, 0)) return;
 #endif
-    rb_warn("unknown argument for --debug: `%.*s'", len, str);
+    rb_warn("unknown argument for --debug: '%.*s'", len, str);
     rb_warn("debug features are [%.*s].", (int)strlen(list), list);
 }
 
@@ -1105,14 +1105,14 @@ dump_additional_option(const char *str, int len, unsigned int bits, const char *
         w = memtermspn(str, additional_opt_sep, len);
 #define SET_ADDITIONAL(bit) if (NAME_MATCH_P(#bit, str, w)) { \
             if (bits & DUMP_BIT(bit)) \
-                rb_warn("duplicate option to dump %s: `%.*s'", name, w, str); \
+                rb_warn("duplicate option to dump %s: '%.*s'", name, w, str); \
             bits |= DUMP_BIT(bit); \
             continue; \
         }
         if (dump_error_tolerant_bits & bits) {
             SET_ADDITIONAL(error_tolerant);
         }
-        rb_warn("don't know how to dump %s with `%.*s'", name, w, str);
+        rb_warn("don't know how to dump %s with '%.*s'", name, w, str);
     }
     return bits;
 }
@@ -1130,7 +1130,7 @@ dump_option(const char *str, int len, void *arg)
         return; \
     }
     EACH_DUMPS(SET_WHEN_DUMP, ;);
-    rb_warn("don't know how to dump `%.*s',", len, str);
+    rb_warn("don't know how to dump '%.*s',", len, str);
     rb_warn("but only [%.*s].", (int)strlen(list), list);
 }
 
@@ -1176,7 +1176,7 @@ setup_yjit_options(const char *s)
 
     rb_raise(
         rb_eRuntimeError,
-        "invalid YJIT option `%s' (--help will show valid yjit options)",
+        "invalid YJIT option '%s' (--help will show valid yjit options)",
         s
     );
 }
@@ -1214,7 +1214,7 @@ proc_W_option(ruby_cmdline_options_t *opt, const char *s, int *warning)
             bits = 1U << RB_WARN_CATEGORY_PERFORMANCE;
         }
         else {
-            rb_warn("unknown warning category: `%s'", s);
+            rb_warn("unknown warning category: '%s'", s);
         }
         if (bits) FEATURE_SET_TO(opt->warn, bits, enable ? bits : 0);
         return 0;

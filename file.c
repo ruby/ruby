@@ -3666,7 +3666,7 @@ rb_default_home_dir(VALUE result)
          * lookup by getuid() has a chance of succeeding.
          */
         if (NIL_P(login_name)) {
-            rb_raise(rb_eArgError, "couldn't find login name -- expanding `~'");
+            rb_raise(rb_eArgError, "couldn't find login name -- expanding '~'");
         }
 # endif /* !defined(HAVE_GETPWUID_R) && !defined(HAVE_GETPWUID) */
 
@@ -3674,7 +3674,7 @@ rb_default_home_dir(VALUE result)
         if (NIL_P(pw_dir)) {
             pw_dir = rb_getpwdiruid();
             if (NIL_P(pw_dir)) {
-                rb_raise(rb_eArgError, "couldn't find home for uid `%ld'", (long)getuid());
+                rb_raise(rb_eArgError, "couldn't find home for uid '%ld'", (long)getuid());
             }
         }
 
@@ -3685,7 +3685,7 @@ rb_default_home_dir(VALUE result)
     }
 #endif /* defined HAVE_PWD_H */
     if (!dir) {
-        rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `~'");
+        rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding '~'");
     }
     return copy_home_path(result, dir);
 }

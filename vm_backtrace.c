@@ -396,7 +396,7 @@ location_format(VALUE file, int lineno, VALUE name)
         rb_str_cat_cstr(s, "unknown method");
     }
     else {
-        rb_str_catf(s, "`%s'", RSTRING_PTR(name));
+        rb_str_catf(s, "'%s'", RSTRING_PTR(name));
     }
     return s;
 }
@@ -973,7 +973,7 @@ oldbt_print(void *data, VALUE file, int lineno, VALUE name)
                 RSTRING_PTR(file), lineno);
     }
     else {
-        fprintf(fp, "\tfrom %s:%d:in `%s'\n",
+        fprintf(fp, "\tfrom %s:%d:in '%s'\n",
                 RSTRING_PTR(file), lineno, RSTRING_PTR(name));
     }
 }
@@ -1012,7 +1012,7 @@ oldbt_bugreport(void *arg, VALUE file, int line, VALUE method)
         fprintf(fp, "%s:%d:in unknown method\n", filename, line);
     }
     else {
-        fprintf(fp, "%s:%d:in `%s'\n", filename, line, RSTRING_PTR(method));
+        fprintf(fp, "%s:%d:in '%s'\n", filename, line, RSTRING_PTR(method));
     }
 }
 
@@ -1053,7 +1053,7 @@ oldbt_print_to(void *data, VALUE file, int lineno, VALUE name)
         rb_str_cat2(str, "unknown method\n");
     }
     else {
-        rb_str_catf(str, " `%"PRIsVALUE"'\n", name);
+        rb_str_catf(str, " '%"PRIsVALUE"'\n", name);
     }
     (*arg->iter)(arg->output, str);
 }
