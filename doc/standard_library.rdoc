@@ -61,7 +61,6 @@ PStore:: Implements a file based persistence mechanism based on a Hash
 Readline:: Wrapper for Readline extencion and Reline
 Reline:: GNU Readline and Editline by pure Ruby implementation.
 Resolv::  Thread-aware DNS resolver library in Ruby
-resolv-replace.rb:: Replace Socket DNS with Resolv
 RDoc:: Produces HTML and command-line documentation for Ruby
 Rinda:: The Linda distributed computing paradigm in Ruby
 SecureRandom:: Interface for secure random number generator
@@ -130,3 +129,4 @@ Base64:: Support for encoding and decoding binary data using a Base64 representa
 BigDecimal:: Provides arbitrary-precision floating point decimal arithmetic
 Observable:: Provides a mechanism for publish/subscribe pattern in Ruby
 Abbrev:: Calculates a set of unique abbreviations for a given set of strings
+resolv-replace.rb:: Replace Socket DNS with Resolv
