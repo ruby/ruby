@@ -8560,7 +8560,7 @@ rb_io_printf(int argc, const VALUE *argv, VALUE out)
 VALUE
 argf_printf(int argc, const VALUE *argv, VALUE out)
 {
-  rb_io_printf(argc, argv, out)
+  return rb_io_printf(argc, argv, out)
 }
 
 /*
@@ -8713,7 +8713,7 @@ rb_io_print(int argc, const VALUE *argv, VALUE out)
 VALUE
 argf_print(int argc, const VALUE *argv, VALUE out)
 {
-  rb_io_print(argc, argv, out)
+  return rb_io_print(argc, argv, out)
 }
 
 /*
@@ -8811,7 +8811,7 @@ rb_io_putc(VALUE io, VALUE ch)
 static VALUE
 argf_putc(VALUE io, VALUE ch)
 {
-  rb_io_putc(io, ch)
+  return rb_io_putc(io, ch)
 }
 
 #define forward(obj, id, argc, argv) \
@@ -8969,7 +8969,7 @@ rb_io_puts(int argc, const VALUE *argv, VALUE out)
 VALUE
 argf_puts(int argc, const VALUE *argv, VALUE out)
 {
-  rb_io_puts(argc, argv, out)
+  return rb_io_puts(argc, argv, out)
 }
 
 /*
