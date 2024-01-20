@@ -8710,7 +8710,7 @@ rb_io_print(int argc, const VALUE *argv, VALUE out)
     return Qnil;
 }
 
-VALUE
+static VALUE
 argf_print(int argc, const VALUE *argv, VALUE out)
 {
   return rb_io_print(argc, argv, out);
@@ -8966,7 +8966,7 @@ rb_io_puts(int argc, const VALUE *argv, VALUE out)
     return Qnil;
 }
 
-VALUE
+static VALUE
 argf_puts(int argc, const VALUE *argv, VALUE out)
 {
   return rb_io_puts(argc, argv, out);
