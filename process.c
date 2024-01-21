@@ -4972,24 +4972,16 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *
  *  Argument +exe_path+ is one of the following:
  *
- *  - The string path to an executable to be called:
+ *  - The string path to an executable to be called.
+ *  - A 2-element array containing the path to an executable to be called,
+ *    and the string to be used as the name of the executing process.
  *
  *      spawn('/usr/bin/date') # Path to date on Unix-style system.
  *      Process.wait
  *
  *    Output:
  *
- *      Thu Aug 31 10:06:48 AM CDT 2023
- *
- *  - A 2-element array containing the path to an executable
- *    and the string to be used as the name of the executing process:
- *
- *      pid = spawn(['sleep', 'Hello!'], '1') # 2-element array.
- *      p `ps -p #{pid} -o command=`
- *
- *    Output:
- *
- *      "Hello! 1\n"
+ *      Mon Aug 28 11:43:10 AM CDT 2023
  *
  *  Ruby invokes the executable directly.
  *  This form does not use the shell;
@@ -8877,18 +8869,28 @@ proc_warmup(VALUE _)
  *
  * Argument +exe_path+ is one of the following:
  *
- * - The string path to an executable to be called.
- * - A 2-element array containing the path to an executable to be called,
- *   and the string to be used as the name of the executing process.
+ * - The string path to an executable to be called:
  *
- * Example:
+ *   Example:
  *
- *   system('/usr/bin/date') # => true # Path to date on Unix-style system.
- *   system('foo')           # => nil  # Command failed.
+ *     system('/usr/bin/date') # => true # Path to date on Unix-style system.
+ *     system('foo')           # => nil  # Command execlution failed.
  *
- * Output:
+ *   Output:
  *
- *   Mon Aug 28 11:43:10 AM CDT 2023
+ *     Thu Aug 31 10:06:48 AM CDT 2023
+ *
+ * - A 2-element array containing the path to an executable
+ *   and the string to be used as the name of the executing process:
+ *
+ *   Example:
+ *
+ *     pid = spawn(['sleep', 'Hello!'], '1') # 2-element array.
+ *     p `ps -p #{pid} -o command=`
+ *
+ *   Output:
+ *
+ *     "Hello! 1\n"
  *
  * === Execution Options
  *
