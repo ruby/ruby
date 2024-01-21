@@ -8876,6 +8876,11 @@ proc_warmup(VALUE _)
  *
  *     Thu Aug 31 10:06:48 AM CDT 2023
  *
+ *   A path or command name containing spaces without arguments cannot
+ *   be distinguished from +command_line+ above, so you must quote or
+ *   escape the entire command name using a shell in platform
+ *   dependent manner, or use the array form below.
+ *
  * - A 2-element array containing the path to an executable
  *   and the string to be used as the name of the executing process:
  *
@@ -8921,6 +8926,15 @@ proc_warmup(VALUE _)
  * display the contents of the <tt>%Path%</tt> environment variable on
  * Windows, but <code>Process.spawn 'echo', '$PATH'</code> prints the
  * literal <tt>$PATH</tt>.
+ *
+ * If you want to invoke a path containing spaces with no arguments
+ * without shell, you will need to use a 2-element array +exe_path+.
+ *
+ * Example:
+ *
+ *   path = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+ *   spawn(path) # Raises Errno::ENOENT; No such file or directory - /Applications/Google
+ *   spawn([path] * 2)
  *
  * === Execution Options
  *
