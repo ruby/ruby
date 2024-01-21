@@ -3114,7 +3114,9 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *
  *    Sat Aug 26 09:38:00 AM CDT 2023
  *
- *  Ruby invokes the executable directly, with no shell and no shell expansion:
+ *  Ruby invokes the executable directly.
+ *  This form does not use the shell;
+ *  see {Arguments args}[rdoc-ref:Process@Arguments+args] for caveats.
  *
  *    exec('doesnt_exist') # Raises Errno::ENOENT
  *
@@ -4820,7 +4822,9 @@ rb_spawn(int argc, const VALUE *argv)
  *    system('foo')           # => nil
  *    $?                      # => #<Process::Status: pid 645608 exit 127>
  *
- *  Ruby invokes the executable directly, with no shell and no shell expansion:
+ *  Ruby invokes the executable directly.
+ *  This form does not use the shell;
+ *  see {Arguments args}[rdoc-ref:Process@Arguments+args] for caveats.
  *
  *    system('doesnt_exist') # => nil
  *
@@ -4985,7 +4989,7 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *
  *  Ruby invokes the executable directly.
  *  This form does not use the shell;
- *  see below for caveats.
+ *  see {Arguments args}[rdoc-ref:Process@Arguments+args] for caveats.
  *
  *  If one or more +args+ is given, each is an argument or option
  *  to be passed to the executable:
@@ -4999,14 +5003,6 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *
  *    C*
  *    hello world
- *
- *  The 'cmdname, arg1, ...' form does not use the shell. However,
- *  on different OSes, different things are provided as built-in
- *  commands. An example of this is 'echo', which is a built-in
- *  on Windows, but is a normal program on Linux and Mac OS X.
- *  This means that `Process.spawn 'echo', '%Path%'` will display
- *  the contents of the `%Path%` environment variable on Windows,
- *  but `Process.spawn 'echo', '$PATH'` prints the literal '$PATH'.
  *
  *  Raises an exception if the new process could not execute.
  */
@@ -8843,7 +8839,7 @@ proc_warmup(VALUE _)
  *   or if it contains one or more meta characters.
  * - +exe_path+ otherwise.
  *
- * <b>Argument +command_line+</b>
+ * ==== Argument +command_line+
  *
  * \String argument +command_line+ is a command line to be passed to a shell;
  * it must begin with a shell reserved word, begin with a special built-in,
@@ -8865,7 +8861,7 @@ proc_warmup(VALUE _)
  *
  * See {Execution Shell}[rdoc-ref:Process@Execution+Shell] for details about the shell.
  *
- * <b>Argument +exe_path+</b>
+ * ==== Argument +exe_path+
  *
  * Argument +exe_path+ is one of the following:
  *
@@ -8891,6 +8887,40 @@ proc_warmup(VALUE _)
  *   Output:
  *
  *     "Hello! 1\n"
+ *
+ * === Arguments +args+
+ *
+ * If +command_line+ does not contain shell meta characters except for
+ * spaces and tabs, or +exe_path+ is given, Ruby invokes the
+ * executable directly.  This form does not use the shell:
+ *
+ *   spawn("doesnt_exist")       # Raises Errno::ENOENT
+ *   spawn("doesnt_exist", "\n") # Raises Errno::ENOENT
+ *
+ *   spawn("doesnt_exist\n")     # => false
+ *   # sh: 1: doesnot_exist: not found
+ *
+ * The error message is from a shell and would vary depending on your
+ * system.
+ *
+ * If one or more +args+ is given after +exe_path+, each is an
+ * argument or option to be passed to the executable:
+ *
+ * Example:
+ *
+ *   system('echo', '<', 'C*', '|', '$SHELL', '>')   # => true
+ *
+ * Output:
+ *
+ *   < C* | $SHELL >
+ *
+ * However, on different OSes, different things are provided as
+ * built-in commands.  An example of this is +'echo'+, which is a
+ * built-in on Windows, but is a normal program on Linux and Mac OS X.
+ * This means that <code>Process.spawn 'echo', '%Path%'</code> will
+ * display the contents of the <tt>%Path%</tt> environment variable on
+ * Windows, but <code>Process.spawn 'echo', '$PATH'</code> prints the
+ * literal <tt>$PATH</tt>.
  *
  * === Execution Options
  *
