@@ -3083,7 +3083,7 @@ NORETURN(static VALUE f_exec(int c, const VALUE *a, VALUE _));
  *  or contain meta characters:
  *
  *    exec('if true; then echo "Foo"; fi') # Shell reserved word.
- *    exec('echo')                         # Built-in.
+ *    exec('exit')                         # Built-in.
  *    exec('date > date.tmp')              # Contains meta character.
  *
  *  The command line may also contain arguments and options for the command:
@@ -4772,14 +4772,14 @@ rb_spawn(int argc, const VALUE *argv)
  *  or contain meta characters:
  *
  *    system('if true; then echo "Foo"; fi')          # => true  # Shell reserved word.
- *    system('echo')                                  # => true  # Built-in.
+ *    system('exit')                                  # => true  # Built-in.
  *    system('date > /tmp/date.tmp')                  # => true  # Contains meta character.
  *    system('date > /nop/date.tmp')                  # => false
  *    system('date > /nop/date.tmp', exception: true) # Raises RuntimeError.
  *
  *  Assigns the command's error status to <tt>$?</tt>:
  *
- *    system('echo')                             # => true  # Built-in.
+ *    system('exit')                             # => true  # Built-in.
  *    $?                                         # => #<Process::Status: pid 640610 exit 0>
  *    system('date > /nop/date.tmp')             # => false
  *    $?                                         # => #<Process::Status: pid 640742 exit 2>
@@ -4948,7 +4948,7 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *
  *    spawn('if true; then echo "Foo"; fi') # => 798847 # Shell reserved word.
  *    Process.wait                          # => 798847
- *    spawn('echo')                         # => 798848 # Built-in.
+ *    spawn('exit')                         # => 798848 # Built-in.
  *    Process.wait                          # => 798848
  *    spawn('date > /tmp/date.tmp')         # => 798879 # Contains meta character.
  *    Process.wait                          # => 798849
@@ -8848,7 +8848,7 @@ proc_warmup(VALUE _)
  * or contain meta characters:
  *
  *   system('if true; then echo "Foo"; fi')          # => true  # Shell reserved word.
- *   system('echo')                                  # => true  # Built-in.
+ *   system('exit')                                  # => true  # Built-in.
  *   system('date > /tmp/date.tmp')                  # => true  # Contains meta character.
  *   system('date > /nop/date.tmp')                  # => false
  *   system('date > /nop/date.tmp', exception: true) # Raises RuntimeError.
