@@ -1076,6 +1076,7 @@ static rb_node_undef_t *rb_node_undef_new(struct parser_params *p, NODE *nd_unde
 static rb_node_class_t *rb_node_class_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, NODE *nd_super, const YYLTYPE *loc);
 static rb_node_module_t *rb_node_module_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_sclass_t *rb_node_sclass_new(struct parser_params *p, NODE *nd_recv, NODE *nd_body, const YYLTYPE *loc);
+static rb_node_reopen_t *rb_node_reopen_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_colon2_t *rb_node_colon2_new(struct parser_params *p, NODE *nd_head, ID nd_mid, const YYLTYPE *loc);
 static rb_node_colon3_t *rb_node_colon3_new(struct parser_params *p, ID nd_mid, const YYLTYPE *loc);
 static rb_node_dot2_t *rb_node_dot2_new(struct parser_params *p, NODE *nd_beg, NODE *nd_end, const YYLTYPE *loc);
@@ -1184,6 +1185,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_CLASS(n,b,s,loc) (NODE *)rb_node_class_new(p,n,b,s,loc)
 #define NEW_MODULE(n,b,loc) (NODE *)rb_node_module_new(p,n,b,loc)
 #define NEW_SCLASS(r,b,loc) (NODE *)rb_node_sclass_new(p,r,b,loc)
+#define NEW_REOPEN(r,b,loc) (NODE *)rb_node_reopen_new(p,r,b,loc)
 #define NEW_COLON2(c,i,loc) (NODE *)rb_node_colon2_new(p,c,i,loc)
 #define NEW_COLON3(i,loc) (NODE *)rb_node_colon3_new(p,i,loc)
 #define NEW_DOT2(b,e,loc) (NODE *)rb_node_dot2_new(p,b,e,loc)
@@ -2225,6 +2227,7 @@ rb_str_to_parser_encoding_string(rb_parser_t *p, VALUE str)
 %token <id>
         keyword_class        "`class'"
         keyword_module       "`module'"
+        keyword_reopen       "`reopen'"
         keyword_def          "`def'"
         keyword_undef        "`undef'"
         keyword_begin        "`begin'"
@@ -2336,7 +2339,7 @@ rb_str_to_parser_encoding_string(rb_parser_t *p, VALUE str)
 %type <id>   f_kwrest f_label f_arg_asgn call_op call_op2 reswords relop dot_or_colon
 %type <id>   p_kwrest p_kwnorest p_any_kwrest p_kw_label
 %type <id>   f_no_kwarg f_any_kwrest args_forward excessed_comma nonlocal_var def_name
-%type <ctxt> lex_ctxt begin_defined k_class k_module k_END k_rescue k_ensure after_rescue
+%type <ctxt> lex_ctxt begin_defined k_class k_module k_reopen k_END k_rescue k_ensure after_rescue
 %type <ctxt> p_in_kwarg
 %type <tbl>  p_lparen p_lbracket p_pktbl p_pvtbl
 /* ripper */ %type <num>  max_numparam
@@ -3499,6 +3502,7 @@ reswords	: keyword__LINE__ | keyword__FILE__ | keyword__ENCODING__
                 | keyword_end | keyword_ensure | keyword_false
                 | keyword_for | keyword_in | keyword_module | keyword_next
                 | keyword_nil | keyword_not | keyword_or | keyword_redo
+                | keyword_reopen
                 | keyword_rescue | keyword_retry | keyword_return | keyword_self
                 | keyword_super | keyword_then | keyword_true | keyword_undef
                 | keyword_when | keyword_yield | keyword_if | keyword_unless
@@ -4412,6 +4416,24 @@ primary		: literal
                         p->ctxt.in_class = $k_module.in_class;
                         p->ctxt.shareable_constant_value = $k_module.shareable_constant_value;
                     }
+                | k_reopen cpath
+                    {
+                        begin_definition("reopen", &@k_reopen, &@cpath);
+                    }
+                  bodystmt
+                  k_end
+                    {
+                    /*%%%*/
+                        $$ = NEW_REOPEN($cpath, $bodystmt, &@$);
+                        nd_set_line(RNODE_REOPEN($$)->nd_body, @k_end.end_pos.lineno);
+                        set_line_body($bodystmt, @cpath.end_pos.lineno);
+                        nd_set_line($$, @cpath.end_pos.lineno);
+                    /*% %*/
+                    /*% ripper: reopen!($cpath, $bodystmt) %*/
+                        local_pop(p);
+                        p->ctxt.in_class = $k_reopen.in_class;
+                        p->ctxt.shareable_constant_value = $k_reopen.shareable_constant_value;
+                    }
                 | defn_head[head]
                   f_arglist[args]
                     {
@@ -4580,6 +4602,17 @@ k_class		: keyword_class
 k_module	: keyword_module
                     {
                         token_info_push(p, "module", &@$);
+                        $$ = p->ctxt;
+                        p->ctxt.in_rescue = before_rescue;
+                    /*%%%*/
+                        push_end_expect_token_locations(p, &@1.beg_pos);
+                    /*% %*/
+                    }
+                ;
+
+k_reopen        : keyword_reopen
+                    {
+                        token_info_push(p, "reopen", &@$);
                         $$ = p->ctxt;
                         p->ctxt.in_rescue = before_rescue;
                     /*%%%*/
@@ -11667,6 +11700,18 @@ rb_node_module_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, const
     /* Keep the order of node creation */
     NODE *scope = NEW_SCOPE(0, nd_body, loc);
     rb_node_module_t *n = NODE_NEWNODE(NODE_MODULE, rb_node_module_t, loc);
+    n->nd_cpath = nd_cpath;
+    n->nd_body = scope;
+
+    return n;
+}
+
+static rb_node_reopen_t *
+rb_node_reopen_new(struct parser_params *p, NODE *nd_cpath, NODE *nd_body, const YYLTYPE *loc)
+{
+    /* Keep the order of node creation */
+    NODE *scope = NEW_SCOPE(0, nd_body, loc);
+    rb_node_reopen_t *n = NODE_NEWNODE(NODE_REOPEN, rb_node_reopen_t, loc);
     n->nd_cpath = nd_cpath;
     n->nd_body = scope;
 

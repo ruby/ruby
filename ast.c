@@ -609,6 +609,8 @@ node_children(rb_ast_t *ast, const NODE *node)
         return rb_ary_new_from_node_args(ast, 2, RNODE_MODULE(node)->nd_cpath, RNODE_MODULE(node)->nd_body);
       case NODE_SCLASS:
         return rb_ary_new_from_node_args(ast, 2, RNODE_SCLASS(node)->nd_recv, RNODE_SCLASS(node)->nd_body);
+      case NODE_REOPEN:
+        return rb_ary_new_from_node_args(ast, 2, RNODE_REOPEN(node)->nd_cpath, RNODE_REOPEN(node)->nd_body);
       case NODE_COLON2:
         return rb_ary_new_from_args(2, NEW_CHILD(ast, RNODE_COLON2(node)->nd_head), ID2SYM(RNODE_COLON2(node)->nd_mid));
       case NODE_COLON3:

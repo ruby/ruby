@@ -10554,6 +10554,22 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         break;
       }
+      case NODE_REOPEN:{
+        const rb_iseq_t *target_iseq = NEW_CHILD_ISEQ(RNODE_REOPEN(node)->nd_body,
+                                                      rb_str_freeze(rb_sprintf("<reopen:%"PRIsVALUE">", rb_id2str(get_node_colon_nd_mid(RNODE_REOPEN(node)->nd_cpath)))),
+                                                      ISEQ_TYPE_CLASS, line);
+        const int flags = VM_DEFINECLASS_TYPE_REOPEN |
+            compile_cpath(ret, iseq, RNODE_REOPEN(node)->nd_cpath);
+
+        ADD_INSN (ret, node, putnil); /* dummy */
+        ADD_INSN3(ret, node, defineclass, ID2SYM(get_node_colon_nd_mid(RNODE_REOPEN(node)->nd_cpath)), target_iseq, INT2FIX(flags));
+        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)target_iseq);
+
+        if (popped) {
+            ADD_INSN(ret, node, pop);
+        }
+        break;
+      }
       case NODE_COLON2:
         CHECK(compile_colon2(iseq, ret, node, popped));
         break;

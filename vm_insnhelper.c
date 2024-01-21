@@ -5450,6 +5450,30 @@ vm_define_module(ID id, rb_num_t flags, VALUE cbase)
 }
 
 static VALUE
+vm_reopen_class_or_module(ID id, rb_num_t flags, VALUE cbase)
+{
+    VALUE target;
+
+    vm_check_if_namespace(cbase);
+    if ((target = vm_const_get_under(id, flags, cbase)) != 0) {
+        /*
+         *`reopen` must have no superclass, so `flags` signs there are no superclass.
+         * `vm_check_if_class` should ignore the superclass value (Qnil).
+         */
+        if (vm_check_if_module(id, target) || vm_check_if_class(id, flags, Qnil, target))
+            return target;
+        rb_raise(rb_eArgError,
+                 "%"PRIsVALUE" is not a class or module",
+                 target);
+    }
+    else {
+        rb_raise(rb_eArgError,
+                 "%"PRIsVALUE" is not defined yet",
+                 target);
+    }
+}
+
+static VALUE
 vm_find_or_create_class_by_id(ID id,
                               rb_num_t flags,
                               VALUE cbase,
@@ -5469,6 +5493,10 @@ vm_find_or_create_class_by_id(ID id,
       case VM_DEFINECLASS_TYPE_MODULE:
         /* classdef returns class scope value */
         return vm_define_module(id, flags, cbase);
+
+      case VM_DEFINECLASS_TYPE_REOPEN:
+        /* classdef returns class scope value */
+        return vm_reopen_class_or_module(id, flags, cbase);
 
       default:
         rb_bug("unknown defineclass type: %d", (int)type);

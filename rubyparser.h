@@ -137,6 +137,7 @@ enum node_type {
     NODE_CLASS,
     NODE_MODULE,
     NODE_SCLASS,
+    NODE_REOPEN,
     NODE_COLON2,
     NODE_COLON3,
     NODE_DOT2,
@@ -865,6 +866,13 @@ typedef struct RNode_SCLASS {
     struct RNode *nd_body;
 } rb_node_sclass_t;
 
+typedef struct RNode_REOPEN {
+    NODE node;
+
+    struct RNode *nd_cpath;
+    struct RNode *nd_body;
+} rb_node_reopen_t;
+
 typedef struct RNode_COLON2 {
     NODE node;
 
@@ -1099,6 +1107,7 @@ typedef struct RNode_ERROR {
 #define RNODE_CLASS(node) ((struct RNode_CLASS *)(node))
 #define RNODE_MODULE(node) ((struct RNode_MODULE *)(node))
 #define RNODE_SCLASS(node) ((struct RNode_SCLASS *)(node))
+#define RNODE_REOPEN(node) ((struct RNode_REOPEN *)(node))
 #define RNODE_COLON2(node) ((struct RNode_COLON2 *)(node))
 #define RNODE_COLON3(node) ((struct RNode_COLON3 *)(node))
 #define RNODE_DOT2(node) ((struct RNode_DOT2 *)(node))

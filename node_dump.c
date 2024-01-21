@@ -906,6 +906,15 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_NODE(nd_body, RNODE_SCLASS, "singleton class definition");
         return;
 
+      case NODE_REOPEN:
+        ANN("class/module reopening");
+        ANN("format: reopen [nd_cpath]; [nd_body]; end");
+        ANN("example: reopen M; ..; end");
+        F_NODE(nd_cpath, RNODE_REOPEN, "class/module path");
+        LAST_NODE;
+        F_NODE(nd_body, RNODE_REOPEN, "class/module definition");
+        return;
+
       case NODE_COLON2:
         ANN("scoped constant reference");
         ANN("format: [nd_head]::[nd_mid]");
