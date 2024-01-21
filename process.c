@@ -9025,21 +9025,31 @@ proc_warmup(VALUE _)
  * === Execution Shell
  *
  * On a Unix-like system, the shell invoked is <tt>/bin/sh</tt>;
- * otherwise the shell invoked is determined by environment variable
- * <tt>ENV['RUBYSHELL']</tt>, if defined, or <tt>ENV['COMSPEC']</tt> otherwise.
- *
- * Except for the +COMSPEC+ case,
  * the entire string +command_line+ is passed as an argument
  * to {shell option -c}[https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/sh.html].
  *
  * The shell performs normal shell expansion on the command line:
  *
- *   spawn('echo C*') # => 799139
- *   Process.wait     # => 799139
+ * Example:
+ *
+ *   system('echo $SHELL: C*') # => true
  *
  * Output:
  *
- *   CONTRIBUTING.md COPYING COPYING.ja
+ *   /bin/bash: CONTRIBUTING.md COPYING COPYING.ja
+ *
+ * On Windows, the shell invoked is determined by environment variable
+ * +RUBYSHELL+, if defined, or +COMSPEC+ otherwise.  The standard
+ * shell +cmd.exe+ performs environment variable expansion but does
+ * not have globbing functionality:
+ *
+ * Example:
+ *
+ *   system("echo %COMSPEC%: C*")' # => true
+ *
+ * Output:
+ *
+ *   C:\WINDOWS\system32\cmd.exe: C*
  *
  * == What's Here
  *
