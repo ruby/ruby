@@ -1515,6 +1515,11 @@ a
       CODE
     end
 
+    def test_complex_default_params
+      assert_prism_eval("def self.foo(a:, b: '2'.to_i); [a, b]; end; foo(a: 1)")
+      assert_prism_eval("def self.foo(a:, b: 2, c: '3'.to_i); [a, b, c]; end; foo(a: 1)")
+    end
+
     def test_rescue_with_ensure
       assert_prism_eval(<<-CODE)
 begin
