@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-return if Prism::BACKEND == :FFI
-
 require_relative "test_helper"
+
+return if Prism::BACKEND == :FFI
 
 module Prism
   class FormatErrorsTest < TestCase
