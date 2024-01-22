@@ -616,6 +616,30 @@ class Socket < BasicSocket
 
   HOSTNAME_RESOLUTION_QUEUE_UPDATED = 0
   private_constant :HOSTNAME_RESOLUTION_QUEUE_UPDATED
+
+  @tcp_fast_fallback = true
+
+  class << self
+    attr_accessor :tcp_fast_fallback
+
+    def initialize_socket
+      @local_ip_address_list = Socket.ip_address_list
+      @has_public_ipv4_addr = false
+      @has_public_ipv6_addr = false
+      @local_ip_address_list.each do |ai|
+        if ai.ipv6?
+          next if @has_public_ipv6_addr
+          @has_public_ipv6_addr = true unless (ai.ipv6_loopback? || ai.ipv6_multicast? || ai.ipv6_linklocal?)
+        else
+          next if @has_public_ipv4_addr
+          @has_public_ipv4_addr = true unless (ai.ipv4_loopback? || ai.ipv4_multicast? || ai.ip_address.start_with?("169.254"))
+        end
+      end
+    end
+  end
+
+  self.initialize_socket
+
   # :call-seq:
   #   Socket.tcp(host, port, local_host=nil, local_port=nil, [opts]) {|socket| ... }
   #   Socket.tcp(host, port, local_host=nil, local_port=nil, [opts])
@@ -641,8 +665,11 @@ class Socket < BasicSocket
   #     sock.close_write
   #     puts sock.read
   #   }
-  #
-  def self.tcp(host, port, local_host = nil, local_port = nil, connect_timeout: nil, resolv_timeout: nil) # :yield: socket
+  def self.tcp(host, port, local_host = nil, local_port = nil, connect_timeout: nil, resolv_timeout: nil, fast_fallback: tcp_fast_fallback, &block) # :yield: socket
+    unless fast_fallback
+      return tcp_without_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:, &block)
+    end
+
     # Happy Eyeballs' states
     # - :start
     # - :v6c
@@ -654,10 +681,14 @@ class Socket < BasicSocket
     # - :failure
     # - :timeout
 
+    specified_family_name = nil
     hostname_resolution_threads = []
+    hostname_resolution_queue = nil
+    hostname_resolution_waiting = nil
     wait_for_hostname_resolution_patiently = false
     selectable_addrinfos = SelectableAddrinfos.new
     connecting_sockets = ConnectingSockets.new
+    local_addrinfos = []
     connection_attempt_delay_expires_at = nil
     connection_attempt_started_at = nil
     state = :start
@@ -665,19 +696,35 @@ class Socket < BasicSocket
     last_error = nil
     is_windows_environment ||= (RUBY_PLATFORM =~ /mswin|mingw|cygwin/)
 
-    if local_host && local_port
-      local_addrinfos = Addrinfo.getaddrinfo(local_host, local_port, nil, :STREAM, nil)
-      resolving_family_names = local_addrinfos.map { |lai| ADDRESS_FAMILIES.key(lai.afamily) }
-    else
-      local_addrinfos = []
-      resolving_family_names = ADDRESS_FAMILIES.keys
-    end
-
-    hostname_resolution_queue = HostnameResolutionQueue.new(resolving_family_names.size)
-
     ret = loop do
       case state
       when :start
+        specified_family_name, next_state =
+          (host && specified_family_name_and_next_state(host)) ||
+          ((host == "localhost" || host.nil?) &&
+           @local_ip_address_list.none?(&:ipv6_loopback?) ? [:ipv4, :v4c] : nil ) ||
+          ((host != "localhost" && !host.nil?) &&
+           (if @has_public_ipv4_addr && @has_public_ipv6_addr then nil
+            elsif @has_public_ipv4_addr then [:ipv4, :v4c]
+            elsif @has_public_ipv6_addr then [:ipv6, :v6c]
+            end))
+
+        if local_host && local_port
+          specified_family_name, next_state = specified_family_name_and_next_state(local_host) unless specified_family_name
+          local_addrinfos = Addrinfo.getaddrinfo(local_host, local_port, ADDRESS_FAMILIES[specified_family_name], :STREAM, timeout: resolv_timeout)
+        end
+
+        if specified_family_name
+          addrinfos = Addrinfo.getaddrinfo(host, port, ADDRESS_FAMILIES[specified_family_name], :STREAM, timeout: resolv_timeout)
+          selectable_addrinfos.add(specified_family_name, addrinfos)
+          hostname_resolution_queue = NoHostnameResolutionQueue.new
+          state = next_state
+          next
+        end
+
+        resolving_family_names = ADDRESS_FAMILIES.keys
+        hostname_resolution_queue = HostnameResolutionQueue.new(resolving_family_names.size)
+        hostname_resolution_waiting = hostname_resolution_queue.waiting_pipe
         hostname_resolution_started_at = current_clocktime
         hostname_resolution_args = [host, port, hostname_resolution_queue]
 
@@ -694,7 +741,7 @@ class Socket < BasicSocket
 
         while hostname_resolution_retry_count >= 0
           remaining = resolv_timeout ? second_to_timeout(hostname_resolution_started_at + resolv_timeout) : nil
-          hostname_resolved, _, = IO.select([hostname_resolution_queue.rpipe], nil, nil, remaining)
+          hostname_resolved, _, = IO.select(hostname_resolution_waiting, nil, nil, remaining)
 
           unless hostname_resolved
             state = :timeout
@@ -718,7 +765,7 @@ class Socket < BasicSocket
           else
             state = case family_name
                     when :ipv6 then :v6c
-                    when :ipv4 then hostname_resolution_queue.rpipe.closed? ? :v4c : :v4w
+                    when :ipv4 then hostname_resolution_queue.closed? ? :v4c : :v4w
                     end
             selectable_addrinfos.add(family_name, res)
             last_error = nil
@@ -728,7 +775,7 @@ class Socket < BasicSocket
 
         next
       when :v4w
-        ipv6_resolved, _, = IO.select([hostname_resolution_queue.rpipe], nil, nil, RESOLUTION_DELAY)
+        ipv6_resolved, _, = IO.select(hostname_resolution_waiting, nil, nil, RESOLUTION_DELAY)
 
         if ipv6_resolved
           family_name, res = hostname_resolution_queue.get
@@ -742,14 +789,13 @@ class Socket < BasicSocket
       when :v4c, :v6c, :v46c
         connection_attempt_started_at = current_clocktime unless connection_attempt_started_at
         addrinfo = selectable_addrinfos.get
-        socket = Socket.new(addrinfo.pfamily, addrinfo.socktype, addrinfo.protocol)
 
         if local_addrinfos.any?
           local_addrinfo = local_addrinfos.find { |lai| lai.afamily == addrinfo.afamily }
 
           if local_addrinfo.nil?
             if selectable_addrinfos.empty? && connecting_sockets.empty? && hostname_resolution_queue.empty?
-              if !hostname_resolution_queue.rpipe.closed? && !wait_for_hostname_resolution_patiently
+              if !hostname_resolution_queue.closed? && !wait_for_hostname_resolution_patiently
                 wait_for_hostname_resolution_patiently = true
                 connection_attempt_delay_expires_at = current_clocktime + PATIENTLY_RESOLUTION_DELAY
                 state = :v46w
@@ -766,16 +812,28 @@ class Socket < BasicSocket
             end
             next
           end
-
-          socket.bind(local_addrinfo)
         end
 
         connection_attempt_delay_expires_at = current_clocktime + CONNECTION_ATTEMPT_DELAY
 
         begin
-          case socket.connect_nonblock(addrinfo, exception: false)
+          result = if specified_family_name && selectable_addrinfos.empty? &&
+                       connecting_sockets.empty? && hostname_resolution_queue.empty?
+                     local_addrinfo ?
+                       addrinfo.connect_from(local_addrinfo, timeout: connect_timeout) :
+                       addrinfo.connect(timeout: connect_timeout)
+                   else
+                     socket = Socket.new(addrinfo.pfamily, addrinfo.socktype, addrinfo.protocol)
+                     socket.bind(local_addrinfo) if local_addrinfo
+                     socket.connect_nonblock(addrinfo, exception: false)
+                   end
+
+          case result
           when 0
             connected_socket = socket
+            state = :success
+          when Socket
+            connected_socket = result
             state = :success
           when :wait_writable
             connecting_sockets.add(socket, addrinfo)
@@ -783,10 +841,10 @@ class Socket < BasicSocket
           end
         rescue SystemCallError => e
           last_error = e
-          socket.close unless socket.closed?
+          socket.close if socket && !socket.closed?
 
           if selectable_addrinfos.empty? && connecting_sockets.empty? && hostname_resolution_queue.empty?
-            if !hostname_resolution_queue.rpipe.closed? && !wait_for_hostname_resolution_patiently
+            if !hostname_resolution_queue.closed? && !wait_for_hostname_resolution_patiently
               wait_for_hostname_resolution_patiently = true
               connection_attempt_delay_expires_at = current_clocktime + PATIENTLY_RESOLUTION_DELAY
               state = :v46w
@@ -810,8 +868,8 @@ class Socket < BasicSocket
         end
 
         remaining = second_to_timeout(connection_attempt_delay_expires_at)
-        rpipe = hostname_resolution_queue.rpipe.closed? ? nil : [hostname_resolution_queue.rpipe]
-        hostname_resolved, connectable_sockets, = IO.select(rpipe, connecting_sockets.all, nil, remaining)
+        hostname_resolution_waiting = hostname_resolution_waiting && hostname_resolution_queue.closed? ? nil : hostname_resolution_waiting
+        hostname_resolved, connectable_sockets, = IO.select(hostname_resolution_waiting, connecting_sockets.all, nil, remaining)
 
         if connectable_sockets&.any?
           while (connectable_socket = connectable_sockets.pop)
@@ -841,7 +899,7 @@ class Socket < BasicSocket
               next if connectable_sockets.any?
 
               if selectable_addrinfos.empty? && connecting_sockets.empty? && hostname_resolution_queue.empty?
-                if !hostname_resolution_queue.rpipe.closed? && !wait_for_hostname_resolution_patiently
+                if !hostname_resolution_queue.closed? && !wait_for_hostname_resolution_patiently
                   wait_for_hostname_resolution_patiently = true
                   connection_attempt_delay_expires_at = current_clocktime + PATIENTLY_RESOLUTION_DELAY
                 else
@@ -890,16 +948,25 @@ class Socket < BasicSocket
       ret
     end
   ensure
-    hostname_resolution_threads.each do |thread|
-      thread&.exit
-    end
+    if fast_fallback
+      hostname_resolution_threads.each do |thread|
+        thread&.exit
+      end
 
-    hostname_resolution_queue.close_all
+      hostname_resolution_queue&.close_all
 
-    connecting_sockets.each do |connecting_socket|
-      connecting_socket.close unless connecting_socket.closed?
+      connecting_sockets.each do |connecting_socket|
+        connecting_socket.close unless connecting_socket.closed?
+      end
     end
   end
+
+  def self.specified_family_name_and_next_state(hostname)
+    if    hostname.match?(/:/)                             then [:ipv6, :v6c]
+    elsif hostname.match?(/^([0-9]{1,3}\.){3}[0-9]{1,3}$/) then [:ipv4, :v4c]
+    end
+  end
+  private_class_method :specified_family_name_and_next_state
 
   def self.hostname_resolution(family, host, port, hostname_resolution_queue)
     begin
@@ -940,6 +1007,10 @@ class Socket < BasicSocket
     def get
       return nil if empty?
 
+      if @addrinfo_dict.size == 1
+        @addrinfo_dict.each { |_, addrinfos| return addrinfos.shift }
+      end
+
       precedences = case @last_family
                     when :ipv4, nil then PRIORITY_ON_V6
                     when :ipv6      then PRIORITY_ON_V4
@@ -964,15 +1035,48 @@ class Socket < BasicSocket
   end
   private_constant :SelectableAddrinfos
 
-  class HostnameResolutionQueue
-    attr_reader :rpipe
+  class NoHostnameResolutionQueue
+    def waiting_pipe
+      nil
+    end
 
+    def add_resolved(_, _)
+      raise StandardError, "This #{self.class} cannot respond to:"
+    end
+
+    def add_error(_, _)
+      raise StandardError, "This #{self.class} cannot respond to:"
+    end
+
+    def get
+      nil
+    end
+
+    def empty?
+      true
+    end
+
+    def closed?
+      true
+    end
+
+    def close_all
+      # Do nothing
+    end
+  end
+  private_constant :NoHostnameResolutionQueue
+
+  class HostnameResolutionQueue
     def initialize(size)
       @size = size
       @taken_count = 0
       @rpipe, @wpipe = IO.pipe
       @queue = Queue.new
       @mutex = Mutex.new
+    end
+
+    def waiting_pipe
+      [@rpipe]
     end
 
     def add_resolved(family, resolved_addrinfos)
@@ -1006,6 +1110,10 @@ class Socket < BasicSocket
 
     def empty?
       @queue.empty?
+    end
+
+    def closed?
+      @rpipe.closed?
     end
 
     def close_all
@@ -1044,6 +1152,52 @@ class Socket < BasicSocket
     end
   end
   private_constant :ConnectingSockets
+
+  def self.tcp_without_fast_fallback(host, port, local_host, local_port, connect_timeout:, resolv_timeout:, &block)
+    last_error = nil
+    ret = nil
+
+    local_addr_list = nil
+    if local_host != nil || local_port != nil
+      local_addr_list = Addrinfo.getaddrinfo(local_host, local_port, nil, :STREAM, nil)
+    end
+
+    Addrinfo.foreach(host, port, nil, :STREAM, timeout: resolv_timeout) {|ai|
+      if local_addr_list
+        local_addr = local_addr_list.find {|local_ai| local_ai.afamily == ai.afamily }
+        next unless local_addr
+      else
+        local_addr = nil
+      end
+      begin
+        sock = local_addr ?
+          ai.connect_from(local_addr, timeout: connect_timeout) :
+          ai.connect(timeout: connect_timeout)
+      rescue SystemCallError
+        last_error = $!
+        next
+      end
+      ret = sock
+      break
+    }
+    unless ret
+      if last_error
+        raise last_error
+      else
+        raise SocketError, "no appropriate local address"
+      end
+    end
+    if block_given?
+      begin
+        yield ret
+      ensure
+        ret.close
+      end
+    else
+      ret
+    end
+  end
+  private_class_method :tcp_without_fast_fallback
 
   # :stopdoc:
   def self.ip_sockets_port0(ai_list, reuseaddr)
