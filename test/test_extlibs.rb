@@ -34,7 +34,7 @@ class TestExtLibs < Test::Unit::TestCase
   end.flatten.compact
   excluded << '+' if excluded.empty?
   if windows?
-    excluded.map! {|i| i == '+' ? ['pty', 'syslog'] : i}
+    excluded.map! {|i| i == '+' ? ['pty'] : i}
     excluded.flatten!
   else
     excluded.map! {|i| i == '+' ? '*win32*' : i}
@@ -68,7 +68,6 @@ class TestExtLibs < Test::Unit::TestCase
   check_existence "socket"
   check_existence "stringio"
   check_existence "strscan"
-  check_existence "syslog"
   check_existence "thread"
   check_existence "win32ole"
   check_existence "zlib", "this may be false positive, but should assert because rubygems requires this"
