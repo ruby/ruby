@@ -96,6 +96,12 @@ jobs:
             ${{ steps.find-tools.outputs.needs }}
         if: ${{ steps.find-tools.outputs.needs != '' }}
 
+      - uses: ruby/setup-ruby@5daca165445f0ae10478593083f72ca2625e241d # v1.169.0
+        with:
+          ruby-version: '2.7'
+          bundler: none
+          windows-toolchain: none
+
       - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
         with:
           path: C:\vcpkg\downloads
@@ -147,7 +153,6 @@ jobs:
           set TEMP=%USERPROFILE%\AppData\Local\Temp
           set MAKEFLAGS=l
           set /a TEST_JOBS=(15 * %NUMBER_OF_PROCESSORS% / 10) > nul
-          set PATH=C:\hostedtoolcache\windows\Ruby\2.7.8\x64\bin;%PATH%
           set | C:\msys64\usr\bin\sort > new.env
           C:\msys64\usr\bin\comm -13 old.env new.env >> %GITHUB_ENV%
           del *.env
