@@ -960,7 +960,7 @@ pm_compile_index_write_nodes_add_send(bool popped, LINK_ANCHOR *const ret, rb_is
             PM_POP;
         }
 
-        ADD_INSN(ret, &dummy_line_node, swap);
+        PM_SWAP;
         ADD_SEND_R(ret, &dummy_line_node, idASET, FIXNUM_INC(argc, 1), NULL, INT2FIX(flag), keywords);
     }
     else if (keywords && keywords->keyword_len) {
@@ -3342,11 +3342,11 @@ pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *c
         ADD_INSN1(ret, &dummy_line_node, putobject, INT2FIX(0));
         ADD_CALL(ret, &dummy_line_node, idAREF, INT2FIX(1));
         ADD_INSN1(ret, &dummy_line_node, putobject, rb_cArray);
-        ADD_INSN(ret, &dummy_line_node, swap);
+        PM_SWAP;
         ADD_CALL(ret, &dummy_line_node, rb_intern("try_convert"), INT2FIX(1));
         ADD_INSN(ret, &dummy_line_node, dup);
         ADD_INSNL(ret, &dummy_line_node, branchunless, not_ary);
-        ADD_INSN(ret, &dummy_line_node, swap);
+        PM_SWAP;
 
         ADD_LABEL(ret, not_ary);
         PM_POP;
