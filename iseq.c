@@ -1475,12 +1475,12 @@ iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
 
     pm_parser_t parser;
 
+    VALUE file_path = Qnil;
     pm_string_t input;
     if (RB_TYPE_P(src, T_FILE)) {
-        FilePathValue(src);
-        file = rb_fstring(src); /* rb_io_t->pathv gets frozen anyways */
+        file_path = rb_io_path(src); /* rb_io_t->pathv gets frozen anyways */
 
-        pm_string_mapped_init(&input, RSTRING_PTR(file));
+        pm_string_mapped_init(&input, RSTRING_PTR(file_path));
     }
     else {
         Check_Type(src, T_STRING);
@@ -1493,6 +1493,7 @@ iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
 
     rb_iseq_t *iseq = iseq_alloc();
     iseqw_s_compile_prism_compile(&parser, opt, iseq, file, path, start_line);
+    RB_GC_GUARD(file_path);
     pm_parser_free(&parser);
     pm_options_free(&options);
     pm_string_free(&input);
