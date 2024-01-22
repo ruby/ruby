@@ -36,7 +36,6 @@ Socket:: Access underlying OS socket implementations
 Benchmark:: Provides methods to measure and report the time used to execute code
 Bundler:: Manage your Ruby application's gem dependencies
 CGI:: Support for the Common Gateway Interface protocol
-CSV:: Provides an interface to read and write CSV files and data
 Delegator:: Provides three abilities to delegate method calls to an object
 DidYouMean:: "Did you mean?" experience in Ruby
 English:: Provides references to special global variables with less cryptic names
@@ -130,3 +129,4 @@ Rinda:: The Linda distributed computing paradigm in Ruby
 DRb:: Distributed object system for Ruby
 NKF:: Ruby extension for Network Kanji Filter
 Syslog:: Ruby interface for the POSIX system logging facility
+CSV:: Provides an interface to read and write CSV files and data

@@ -88,12 +88,6 @@ have commit right, others don't.
 * https://github.com/ruby/cgi
 * https://rubygems.org/gems/cgi
 
-#### lib/csv.rb
-* Kenta Murata (mrkn)
-* Kouhei Sutou (kou)
-* https://github.com/ruby/csv
-* https://rubygems.org/gems/csv
-
 #### lib/English.rb
 * *unmaintained*
 * https://github.com/ruby/English
@@ -467,6 +461,9 @@ have commit right, others don't.
 
 #### syslog
 * https://github.com/ruby/syslog
+
+#### csv
+* https://github.com/ruby/csv
 
 ## Platform Maintainers
 ### mswin64 (Microsoft Windows)
