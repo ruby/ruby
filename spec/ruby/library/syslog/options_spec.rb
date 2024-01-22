@@ -1,47 +1,50 @@
 require_relative '../../spec_helper'
 
-platform_is_not :windows do
-  require 'syslog'
+ruby_version_is ""..."3.4" do
 
-  describe "Syslog.options" do
-    platform_is_not :windows do
+  platform_is_not :windows do
+    require 'syslog'
 
-      before :each do
-        Syslog.opened?.should be_false
-      end
+    describe "Syslog.options" do
+      platform_is_not :windows do
 
-      after :each do
-        Syslog.opened?.should be_false
-      end
+        before :each do
+          Syslog.opened?.should be_false
+        end
 
-      it "returns the logging options" do
-        Syslog.open("rubyspec", Syslog::LOG_PID)
-        Syslog.options.should == Syslog::LOG_PID
-        Syslog.close
-      end
+        after :each do
+          Syslog.opened?.should be_false
+        end
 
-      it "returns nil when the log is closed" do
-        Syslog.opened?.should be_false
-        Syslog.options.should == nil
-      end
+        it "returns the logging options" do
+          Syslog.open("rubyspec", Syslog::LOG_PID)
+          Syslog.options.should == Syslog::LOG_PID
+          Syslog.close
+        end
 
-      it "defaults to LOG_PID | LOG_CONS" do
-        Syslog.open
-        Syslog.options.should == Syslog::LOG_PID | Syslog::LOG_CONS
-        Syslog.close
-      end
+        it "returns nil when the log is closed" do
+          Syslog.opened?.should be_false
+          Syslog.options.should == nil
+        end
 
-      it "resets after each open call" do
-        Syslog.open
-        Syslog.options.should == Syslog::LOG_PID | Syslog::LOG_CONS
+        it "defaults to LOG_PID | LOG_CONS" do
+          Syslog.open
+          Syslog.options.should == Syslog::LOG_PID | Syslog::LOG_CONS
+          Syslog.close
+        end
 
-        Syslog.open!("rubyspec", Syslog::LOG_PID)
-        Syslog.options.should == Syslog::LOG_PID
-        Syslog.close
+        it "resets after each open call" do
+          Syslog.open
+          Syslog.options.should == Syslog::LOG_PID | Syslog::LOG_CONS
 
-        Syslog.open
-        Syslog.options.should == Syslog::LOG_PID | Syslog::LOG_CONS
-        Syslog.close
+          Syslog.open!("rubyspec", Syslog::LOG_PID)
+          Syslog.options.should == Syslog::LOG_PID
+          Syslog.close
+
+          Syslog.open
+          Syslog.options.should == Syslog::LOG_PID | Syslog::LOG_CONS
+          Syslog.close
+        end
       end
     end
   end
