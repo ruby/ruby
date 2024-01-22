@@ -1533,7 +1533,7 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
 }
 
 rb_iseq_t *
-rb_iseq_new_main_prism(pm_string_t *input, pm_options_t *options, VALUE path, VALUE optimize)
+rb_iseq_new_main_prism(pm_string_t *input, pm_options_t *options, VALUE script_name, VALUE path, VALUE optimize)
 {
     pm_parser_t parser;
     pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
@@ -1543,7 +1543,7 @@ rb_iseq_new_main_prism(pm_string_t *input, pm_options_t *options, VALUE path, VA
     pm_options_line_set(options, start_line);
 
     rb_iseq_t *iseq = iseq_alloc();
-    iseqw_s_compile_prism_compile(&parser, optimize, iseq, path, path, start_line);
+    iseqw_s_compile_prism_compile(&parser, optimize, iseq, script_name, path, start_line);
 
     pm_parser_free(&parser);
     return iseq;
