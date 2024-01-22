@@ -350,11 +350,6 @@ have commit right, others don't.
 * https://github.com/flori/json
 * https://rubygems.org/gems/json
 
-#### ext/nkf
-* NARUSE, Yui (naruse)
-* https://github.com/ruby/nkf
-* https://rubygems.org/gems/nkf
-
 #### ext/openssl
 * Kazuki Yamaguchi (rhe)
 * https://github.com/ruby/openssl
@@ -471,6 +466,9 @@ have commit right, others don't.
 
 #### drb
 * https://github.com/ruby/drb
+
+#### nkf
+* https://github.com/ruby/nkf
 
 ## Platform Maintainers
 ### mswin64 (Microsoft Windows)
