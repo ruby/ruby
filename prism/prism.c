@@ -1352,16 +1352,18 @@ pm_assoc_node_create(pm_parser_t *parser, pm_node_t *key, const pm_token_t *oper
         end = key->location.end;
     }
 
+    // Hash string keys will be frozen, so we can mark them as frozen here so
+    // that the compiler picks them up and also when we check for static literal
+    // on the keys it gets factored in.
+    if (PM_NODE_TYPE_P(key, PM_STRING_NODE)) {
+        key->flags |= PM_STRING_FLAGS_FROZEN | PM_NODE_FLAG_STATIC_LITERAL;
+    }
+
     // If the key and value of this assoc node are both static literals, then
     // we can mark this node as a static literal.
     pm_node_flags_t flags = 0;
     if (value && !PM_NODE_TYPE_P(value, PM_ARRAY_NODE) && !PM_NODE_TYPE_P(value, PM_HASH_NODE) && !PM_NODE_TYPE_P(value, PM_RANGE_NODE)) {
         flags = key->flags & value->flags & PM_NODE_FLAG_STATIC_LITERAL;
-    }
-
-    // Hash string keys should be frozen
-    if (PM_NODE_TYPE_P(key, PM_STRING_NODE)) {
-        key->flags |= PM_STRING_FLAGS_FROZEN;
     }
 
     *node = (pm_assoc_node_t) {
