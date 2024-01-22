@@ -385,6 +385,15 @@ module Prism
         hash["key", &(Proc.new { _1.upcase })] &&= "value"
         hash
       CODE
+
+      # Test with keyword arguments
+      assert_prism_eval(<<~RUBY)
+        h = Object.new
+        def h.[](**b) = 0
+        def h.[]=(*a, **b); end
+
+        h[foo: 1] &&= 2
+      RUBY
     end
 
     def test_IndexOrWriteNode
