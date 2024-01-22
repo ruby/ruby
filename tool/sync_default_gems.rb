@@ -25,7 +25,6 @@ module SyncDefaultGems
     delegate: "ruby/delegate",
     did_you_mean: "ruby/did_you_mean",
     digest: "ruby/digest",
-    drb: "ruby/drb",
     erb: "ruby/erb",
     error_highlight: "ruby/error_highlight",
     etc: 'ruby/etc',
