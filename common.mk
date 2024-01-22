@@ -1563,7 +1563,7 @@ no-test-bundled-gems-prepare: no-test-bundled-gems-precheck
 yes-test-bundled-gems-prepare: yes-test-bundled-gems-precheck
 	$(ACTIONS_GROUP)
 	$(XRUBY) -C "$(srcdir)" bin/gem install --no-document \
-		--install-dir .bundle --conservative "hoe" "json-schema" "test-unit-rr" "drb" "ipaddr" "forwardable" "ruby2_keywords"
+		--install-dir .bundle --conservative "hoe" "json-schema" "test-unit-rr" "ipaddr" "forwardable" "ruby2_keywords"
 	$(ACTIONS_ENDGROUP)
 
 PREPARE_BUNDLED_GEMS = test-bundled-gems-prepare
