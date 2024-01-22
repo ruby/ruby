@@ -25,37 +25,37 @@
     pm_compile_node(iseq, (node), ret, src, false, scope_node)
 
 #define PM_POP \
-    ADD_INSN(ret, &dummy_line_node, pop);
+    ADD_INSN(ret, &dummy_line_node, pop)
 
 #define PM_POP_IF_POPPED \
-    if (popped) PM_POP;
+    if (popped) PM_POP
 
 #define PM_POP_UNLESS_POPPED \
-    if (!popped) PM_POP;
+    if (!popped) PM_POP
 
 #define PM_DUP \
-    ADD_INSN(ret, &dummy_line_node, dup);
+    ADD_INSN(ret, &dummy_line_node, dup)
 
 #define PM_DUP_UNLESS_POPPED \
-    if (!popped) PM_DUP;
+    if (!popped) PM_DUP
 
 #define PM_PUTSELF \
-    ADD_INSN(ret, &dummy_line_node, putself);
+    ADD_INSN(ret, &dummy_line_node, putself)
 
 #define PM_PUTNIL \
-    ADD_INSN(ret, &dummy_line_node, putnil);
+    ADD_INSN(ret, &dummy_line_node, putnil)
 
 #define PM_PUTNIL_UNLESS_POPPED \
-    if (!popped) PM_PUTNIL;
+    if (!popped) PM_PUTNIL
 
 #define PM_SWAP \
-    ADD_INSN(ret, &dummy_line_node, swap);
+    ADD_INSN(ret, &dummy_line_node, swap)
 
 #define PM_SWAP_UNLESS_POPPED \
-    if (!popped) PM_SWAP;
+    if (!popped) PM_SWAP
 
 #define PM_NOP \
-    ADD_INSN(ret, &dummy_line_node, nop);
+    ADD_INSN(ret, &dummy_line_node, nop)
 
 /**
  * We're using the top most bit of a pm_constant_id_t as a tag to represent an
@@ -5797,7 +5797,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_NIL_NODE:
-        PM_PUTNIL_UNLESS_POPPED
+        PM_PUTNIL_UNLESS_POPPED;
         return;
       case PM_NO_KEYWORDS_PARAMETER_NODE: {
         ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg = TRUE;
