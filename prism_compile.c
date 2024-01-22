@@ -6867,6 +6867,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_INSN1(ret, &dummy_line_node, throw, INT2FIX(0));
             return;
           }
+          case ISEQ_TYPE_METHOD: {
+            ADD_TRACE(ret, RUBY_EVENT_CALL);
+            if (scope_node->body) {
+                PM_COMPILE((pm_node_t *)scope_node->body);
+            } else {
+                PM_PUTNIL;
+            }
+            ADD_TRACE(ret, RUBY_EVENT_RETURN);
+
+            break;
+          }
           case ISEQ_TYPE_RESCUE: {
             iseq_set_exception_local_table(iseq);
             if (PM_NODE_TYPE_P(scope_node->ast_node, PM_RESCUE_MODIFIER_NODE)) {
