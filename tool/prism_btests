@@ -31,5 +31,5 @@
 ../src/bootstraptest/test_exception.rb
 ../src/bootstraptest/test_insns.rb
 ../src/bootstraptest/test_ractor.rb
-# ../src/bootstraptest/test_method.rb
+../src/bootstraptest/test_method.rb
 # ../src/bootstraptest/test_yjit.rb
