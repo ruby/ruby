@@ -29,7 +29,7 @@
 ../src/bootstraptest/test_yjit_30k_methods.rb
 ../src/bootstraptest/test_yjit_rust_port.rb
 ../src/bootstraptest/test_exception.rb
-# ../src/bootstraptest/test_insns.rb
+../src/bootstraptest/test_insns.rb
+../src/bootstraptest/test_ractor.rb
 # ../src/bootstraptest/test_method.rb
-# ../src/bootstraptest/test_ractor.rb
 # ../src/bootstraptest/test_yjit.rb
