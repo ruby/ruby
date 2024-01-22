@@ -2713,6 +2713,10 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     if (pm_node->flags & PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) {
         if (flags & VM_CALL_ARGS_BLOCKARG) {
             ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
+            if (flags & VM_CALL_ARGS_SPLAT) {
+                ADD_INSN1(ret, &dummy_line_node, putobject, INT2FIX(-1));
+                ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idAREF, INT2FIX(1), INT2FIX(0));
+            }
             ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(orig_argc + 3));
             PM_POP;
         }
