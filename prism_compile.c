@@ -952,6 +952,17 @@ pm_compile_index_write_nodes_add_send(bool popped, LINK_ANCHOR *const ret, rb_is
         }
         ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idASET, argc, INT2FIX(flag));
     }
+    else if (flag & VM_CALL_KW_SPLAT) {
+        if (block_offset > 0) {
+            ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(2));
+            PM_SWAP;
+            ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(3));
+            PM_POP;
+        }
+
+        ADD_INSN(ret, &dummy_line_node, swap);
+        ADD_SEND_R(ret, &dummy_line_node, idASET, FIXNUM_INC(argc, 1), NULL, INT2FIX(flag), keywords);
+    }
     else if (keywords && keywords->keyword_len) {
         ADD_INSN1(ret, &dummy_line_node, opt_reverse, INT2FIX(keywords->keyword_len + block_offset + 1));
         ADD_INSN1(ret, &dummy_line_node, opt_reverse, INT2FIX(keywords->keyword_len + block_offset + 0));
