@@ -20,7 +20,6 @@ module SyncDefaultGems
     English: "ruby/English",
     benchmark: "ruby/benchmark",
     cgi: "ruby/cgi",
-    csv: 'ruby/csv',
     date: 'ruby/date',
     delegate: "ruby/delegate",
     did_you_mean: "ruby/did_you_mean",
