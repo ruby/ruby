@@ -17873,7 +17873,7 @@ pm_parser_errors_format_sort(const pm_list_t *error_list, const pm_newline_list_
         if (start.line == end.line) {
             column_end = (uint32_t) end.column;
         } else {
-            column_end = (uint32_t) (newline_list->offsets[start.line + 1] - newline_list->offsets[start.line] - 1);
+            column_end = (uint32_t) (newline_list->offsets[start.line] - newline_list->offsets[start.line - 1] - 1);
         }
 
         // Ensure we have at least one column of error.
@@ -17892,16 +17892,16 @@ pm_parser_errors_format_sort(const pm_list_t *error_list, const pm_newline_list_
 
 static inline void
 pm_parser_errors_format_line(const pm_parser_t *parser, const pm_newline_list_t *newline_list, const char *number_prefix, size_t line, pm_buffer_t *buffer) {
-    const uint8_t *start = &parser->start[newline_list->offsets[line]];
+    const uint8_t *start = &parser->start[newline_list->offsets[line - 1]];
     const uint8_t *end;
 
-    if (line + 1 >= newline_list->size) {
+    if (line >= newline_list->size) {
         end = parser->end;
     } else {
-        end = &parser->start[newline_list->offsets[line + 1]];
+        end = &parser->start[newline_list->offsets[line]];
     }
 
-    pm_buffer_append_format(buffer, number_prefix, (uint32_t) (line + 1));
+    pm_buffer_append_format(buffer, number_prefix, (uint32_t) line);
     pm_buffer_append_string(buffer, (const char *) start, (size_t) (end - start));
 
     if (end == parser->end && end[-1] != '\n') {
@@ -17926,7 +17926,7 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
     // blank lines based on the maximum number of digits in the line numbers
     // that are going to be displayed.
     pm_error_format_t error_format;
-    size_t max_line_number = errors[error_list->size - 1].line + 1;
+    size_t max_line_number = errors[error_list->size - 1].line;
 
     if (max_line_number < 10) {
         if (colorize) {
@@ -18008,7 +18008,7 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
     // the source before the error to give some context. We'll be careful not to
     // display the same line twice in case the errors are close enough in the
     // source.
-    uint32_t last_line = (uint32_t) -1;
+    uint32_t last_line = 0;
     const pm_encoding_t *encoding = parser->encoding;
 
     for (size_t index = 0; index < error_list->size; index++) {
@@ -18054,7 +18054,7 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
         pm_buffer_append_string(buffer, error_format.blank_prefix, error_format.blank_prefix_length);
 
         size_t column = 0;
-        const uint8_t *start = &parser->start[newline_list->offsets[error->line]];
+        const uint8_t *start = &parser->start[newline_list->offsets[error->line - 1]];
 
         while (column < error->column_end) {
             if (column < error->column_start) {
@@ -18078,7 +18078,7 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
         // Here we determine how many lines of padding to display after the
         // error, depending on where the next error is in source.
         last_line = error->line;
-        size_t next_line = (index == error_list->size - 1) ? newline_list->size - 1 : errors[index + 1].line;
+        size_t next_line = (index == error_list->size - 1) ? newline_list->size : errors[index + 1].line;
 
         if (next_line - last_line > 1) {
             pm_buffer_append_string(buffer, "  ", 2);
