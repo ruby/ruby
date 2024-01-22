@@ -1746,6 +1746,15 @@ a
         obj[*[1]] = 3
       RUBY
 
+      # Test passing block inside of []=
+      assert_prism_eval(<<~RUBY)
+        obj = Object.new
+        def obj.[]=(a); end
+
+        p = proc {}
+        obj[&p] = 4
+      RUBY
+
       assert_prism_eval(<<-CODE)
         def self.prism_opt_var_trail_hash(a = nil, *b, c, **d); end
         prism_opt_var_trail_hash("a")
