@@ -1142,7 +1142,7 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                 }
                 else {
                     // If this is not the first splat array seen and it is also
-                    // the last parameter, we don't want splayarray to dup it
+                    // the last parameter, we don't want splatarray to dup it
                     // and we need to concat the array.
                     //
                     // foo(a, *b, *c)
@@ -3104,7 +3104,7 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
 
         if (cast->block != NULL) {
             flags |= VM_CALL_ARGS_BLOCKARG;
-            if (cast->block != NULL) pm_compile_node(iseq, cast->block, writes, src, false, scope_node);
+            if (cast->block != NULL) pm_compile_node(iseq, cast->block, parents, src, false, scope_node);
         }
 
         if (state != NULL) {
@@ -3121,7 +3121,18 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
             }
         }
 
-        ADD_SEND_R(writes, &dummy_line_node, idASET, INT2NUM(argc + 1), NULL, INT2FIX(flags), kwargs);
+        // The argc that we're going to pass to the send instruction is the
+        // number of arguments + 1 for the value being written. If there's a
+        // splat, then we need to insert newarray and concatarray instructions
+        // after the arguments have been written.
+        int ci_argc = argc + 1;
+        if (flags & VM_CALL_ARGS_SPLAT) {
+            ci_argc--;
+            ADD_INSN1(writes, &dummy_line_node, newarray, INT2FIX(1));
+            ADD_INSN(writes, &dummy_line_node, concatarray);
+        }
+
+        ADD_SEND_R(writes, &dummy_line_node, idASET, INT2NUM(ci_argc), NULL, INT2FIX(flags), kwargs);
         ADD_INSN(writes, &dummy_line_node, pop);
 
         if (state != NULL) {
