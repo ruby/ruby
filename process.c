@@ -8919,13 +8919,8 @@ proc_warmup(VALUE _)
  *
  *   < C* | $SHELL >
  *
- * However, on different OSes, different things are provided as
- * built-in commands.  An example of this is +'echo'+, which is a
- * built-in on Windows, but is a normal program on Linux and Mac OS X.
- * This means that <code>Process.spawn 'echo', '%Path%'</code> will
- * display the contents of the <tt>%Path%</tt> environment variable on
- * Windows, but <code>Process.spawn 'echo', '$PATH'</code> prints the
- * literal <tt>$PATH</tt>.
+ * However, there are exceptions on Windows.  See {Execution Shell on
+ * Windows}[rdoc-ref:Process@Execution+Shell+on+Windows].
  *
  * If you want to invoke a path containing spaces with no arguments
  * without shell, you will need to use a 2-element array +exe_path+.
@@ -9082,10 +9077,27 @@ proc_warmup(VALUE _)
  *
  *   /bin/bash: CONTRIBUTING.md COPYING COPYING.ja
  *
+ * === Execution Shell on Windows
+ *
  * On Windows, the shell invoked is determined by environment variable
- * +RUBYSHELL+, if defined, or +COMSPEC+ otherwise.  The standard
- * shell +cmd.exe+ performs environment variable expansion but does
- * not have globbing functionality:
+ * +RUBYSHELL+, if defined, or +COMSPEC+ otherwise; the entire string
+ * +command_line+ is passed as an argument to <tt>-c</tt> option for
+ * +RUBYSHELL+, as well as <tt>/bin/sh</tt>, and {/c
+ * option}[https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/cmd]
+ * for +COMSPEC+.  The shell is invoked automatically in the following
+ * cases:
+ *
+ * - The command is a built-in of +cmd.exe+, such as +echo+.
+ * - The executable file is a batch file; its name ends with +.bat+ or
+ *   +.cmd+.
+ *
+ * Note that the command will still be invoked as +command_line+ form
+ * even when called in +exe_path+ form, because +cmd.exe+ does not
+ * accept a script name like <tt>/bin/sh</tt> does but only works with
+ * <tt>/c</tt> option.
+ *
+ * The standard shell +cmd.exe+ performs environment variable
+ * expansion but does not have globbing functionality:
  *
  * Example:
  *
