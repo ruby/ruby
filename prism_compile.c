@@ -1298,9 +1298,9 @@ pm_compile_index_and_or_write_node(bool and_node, pm_node_t *receiver, pm_node_t
     ADD_INSNL(ret, &dummy_line_node, jump, lfin);
     ADD_LABEL(ret, label);
     if (!popped) {
-        ADD_INSN1(ret, &dummy_line_node, setn, FIXNUM_INC(argc, 2 + block_offset));
+        ADD_INSN1(ret, &dummy_line_node, setn, FIXNUM_INC(argc, 2 + block_offset + (keywords ? keywords->keyword_len : 0)));
     }
-    ADD_INSN1(ret, &dummy_line_node, adjuststack, FIXNUM_INC(argc, 2 + block_offset));
+    ADD_INSN1(ret, &dummy_line_node, adjuststack, FIXNUM_INC(argc, 2 + block_offset + (keywords ? keywords->keyword_len : 0)));
     ADD_LABEL(ret, lfin);
 
     return;

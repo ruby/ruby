@@ -425,6 +425,15 @@ module Prism
         hash
       CODE
 
+      # Test with keyword arguments
+      assert_prism_eval(<<~RUBY)
+        h = Object.new
+        def h.[](**b) = 0
+        def h.[]=(*a, **b); end
+
+        h[foo: 1] ||= 2
+      RUBY
+
       # Test with keyword splat
       assert_prism_eval(<<~RUBY)
         h = Object.new
