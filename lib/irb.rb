@@ -365,7 +365,7 @@ require_relative "irb/pager"
 # You can change the initial behavior and suppress all echoing by:
 #
 # - Adding to the configuration file: <tt>IRB.conf[:ECHO] = false</tt>.
-#   (The default value for this entry is +niL+, which means the same as +true+.)
+#   (The default value for this entry is +nil+, which means the same as +true+.)
 # - Giving command-line option <tt>--noecho</tt>.
 #   (The default is <tt>--echo</tt>.)
 #
