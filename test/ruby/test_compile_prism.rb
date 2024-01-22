@@ -1755,6 +1755,15 @@ a
         obj[&p] = 4
       RUBY
 
+      # Test splat and block inside of []=
+      assert_prism_eval(<<~RUBY)
+        obj = Object.new
+        def obj.[]=(a, b); end
+
+        p = proc {}
+        obj[*[1], &p] = 4
+      RUBY
+
       assert_prism_eval(<<-CODE)
         def self.prism_opt_var_trail_hash(a = nil, *b, c, **d); end
         prism_opt_var_trail_hash("a")
