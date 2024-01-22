@@ -1506,6 +1506,22 @@ a
       CODE
     end
 
+    def test_rescue_with_ensure
+      assert_prism_eval(<<-CODE)
+begin
+  begin
+    raise "a"
+  rescue
+    raise "b"
+  ensure
+    raise "c"
+  end
+rescue => e
+  e.message
+end
+      CODE
+    end
+
     def test_required_kwarg_ordering
       assert_prism_eval("def self.foo(a: 1, b:); [a, b]; end; foo(b: 2)")
     end
