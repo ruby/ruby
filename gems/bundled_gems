@@ -29,3 +29,4 @@ observer        0.1.2   https://github.com/ruby/observer
 abbrev          0.1.2   https://github.com/ruby/abbrev
 resolv-replace  0.1.1   https://github.com/ruby/resolv-replace
 rinda           0.2.0   https://github.com/ruby/rinda
+drb             2.2.0   https://github.com/ruby/drb
