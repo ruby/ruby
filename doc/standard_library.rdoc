@@ -90,7 +90,6 @@ Pathname:: Representation of the name of a file or directory on the filesystem
 Psych:: A YAML parser and emitter for Ruby
 StringIO:: Pseudo I/O on String objects
 StringScanner:: Provides lexical scanning operations on a String
-Syslog:: Ruby interface for the POSIX system logging facility
 WIN32OLE:: Provides an interface for OLE Automation in Ruby
 Zlib:: Ruby interface for the zlib compression/decompression library
 
@@ -130,3 +129,4 @@ resolv-replace.rb:: Replace Socket DNS with Resolv
 Rinda:: The Linda distributed computing paradigm in Ruby
 DRb:: Distributed object system for Ruby
 NKF:: Ruby extension for Network Kanji Filter
+Syslog:: Ruby interface for the POSIX system logging facility
