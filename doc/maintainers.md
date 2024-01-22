@@ -463,7 +463,7 @@ have commit right, others don't.
 #### abbrev
 * https://github.com/ruby/abbrev
 
-#### lib/resolv-replace.rb
+#### resolv-replace
 * https://github.com/ruby/resolv-replace
 
 #### rinda
