@@ -394,6 +394,15 @@ module Prism
 
         h[foo: 1] &&= 2
       RUBY
+
+      # Test with keyword splat
+      assert_prism_eval(<<~RUBY)
+        h = Object.new
+        def h.[](**b) = 1
+        def h.[]=(*a, **b); end
+
+        h[**{}] &&= 2
+      RUBY
     end
 
     def test_IndexOrWriteNode
@@ -415,6 +424,15 @@ module Prism
         hash["key", &(Proc.new { _1.upcase })] ||= "value"
         hash
       CODE
+
+      # Test with keyword splat
+      assert_prism_eval(<<~RUBY)
+        h = Object.new
+        def h.[](**b) = nil
+        def h.[]=(*a, **b); end
+
+        h[**{}] ||= 2
+      RUBY
     end
 
     def test_IndexOperatorWriteNode
