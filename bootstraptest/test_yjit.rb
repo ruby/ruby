@@ -1,3 +1,38 @@
+# regression test for popping before side exit
+assert_equal "ok", %q{
+  def foo(a, *) = a
+
+  def call(args, &)
+    foo(1) # spill at where the block arg will be
+    foo(*args, &)
+  end
+
+  call([1, 2])
+
+  begin
+    call([])
+  rescue ArgumentError
+    :ok
+  end
+}
+
+# regression test for send processing before side exit
+assert_equal "ok", %q{
+  def foo(a, *) = :foo
+
+  def call(args)
+    send(:foo, *args)
+  end
+
+  call([1, 2])
+
+  begin
+    call([])
+  rescue ArgumentError
+    :ok
+  end
+}
+
 # test discarding extra yield arguments
 assert_equal "2210150001501015", %q{
   def splat_kw(ary) = yield *ary, a: 1
