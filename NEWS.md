@@ -24,7 +24,6 @@ The following default gems are updated.
 
 * RubyGems 3.6.0.dev
 * bundler 2.6.0.dev
-* csv 3.2.9
 * erb 4.0.4
 * fiddle 1.1.3
 * io-console 0.7.2
