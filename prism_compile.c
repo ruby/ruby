@@ -2716,7 +2716,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
             ADD_INSN1(ret, &dummy_line_node, putobject, INT2FIX(-1));
             ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idAREF, INT2FIX(1), INT2FIX(0));
             ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(orig_argc + 2));
-            ADD_INSN (ret, &dummy_line_node, pop);
+            PM_POP;
         }
         else if (!popped) {
             ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(orig_argc + 1));
@@ -3349,7 +3349,7 @@ pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *c
         ADD_INSN(ret, &dummy_line_node, swap);
 
         ADD_LABEL(ret, not_ary);
-        ADD_INSN(ret, &dummy_line_node, pop);
+        PM_POP;
 
         ADD_LABEL(ret, not_single);
         ADD_SEQ(ret, writes);
