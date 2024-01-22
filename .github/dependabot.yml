@@ -12,3 +12,7 @@ updates:
     directory: '/.github/actions/setup/directories'
     schedule:
       interval: 'daily'
+  - package-ecosystem: 'cargo'
+    directory: '/yjit'
+    schedule:
+      interval: 'daily'
