@@ -54,6 +54,7 @@ The following bundled gems are promoted from default gems.
 * abbrev 0.1.2
 * resolv-replace 0.1.1
 * rinda 0.2.0
+* drb 2.2.0
 
 See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/logger/releases) or changelog for details of the default gems or bundled gems.
 
