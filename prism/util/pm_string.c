@@ -102,7 +102,7 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
 
     *string = (pm_string_t) { .type = PM_STRING_MAPPED, .source = source, .length = (size_t) file_size };
     return true;
-#else
+#elif defined(_POSIX_MAPPED_FILES)
     // Open the file for reading
     int fd = open(filepath, O_RDONLY);
     if (fd == -1) {
@@ -135,6 +135,11 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
     close(fd);
     *string = (pm_string_t) { .type = PM_STRING_MAPPED, .source = source, .length = size };
     return true;
+#else
+    (void) string;
+    (void) filepath;
+    perror("pm_string_mapped_init is not implemented for this platform");
+    return false;
 #endif
 }
 
@@ -213,11 +218,13 @@ pm_string_free(pm_string_t *string) {
 
     if (string->type == PM_STRING_OWNED) {
         free(memory);
+#ifdef PRISM_HAS_MMAP
     } else if (string->type == PM_STRING_MAPPED && string->length) {
 #if defined(_WIN32)
         UnmapViewOfFile(memory);
-#else
+#elif defined(_POSIX_MAPPED_FILES)
         munmap(memory, string->length);
 #endif
+#endif /* PRISM_HAS_MMAP */
     }
 }

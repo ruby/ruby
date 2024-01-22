@@ -17,7 +17,7 @@
 // The following headers are necessary to read files using demand paging.
 #ifdef _WIN32
 #include <windows.h>
-#else
+#elif defined(_POSIX_MAPPED_FILES)
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -45,8 +45,10 @@ typedef struct {
         /** This string owns its memory, and should be freed using `pm_string_free`. */
         PM_STRING_OWNED,
 
+#ifdef PRISM_HAS_MMAP
         /** This string is a memory-mapped file, and should be freed using `pm_string_free`. */
         PM_STRING_MAPPED
+#endif
     } type;
 } pm_string_t;
 
