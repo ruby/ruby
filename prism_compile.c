@@ -317,7 +317,10 @@ pm_new_regex(pm_regular_expression_node_t * cast, const pm_parser_t * parser) {
     VALUE regex_str = parse_string(&cast->unescaped, parser);
     rb_encoding * enc = pm_reg_enc(cast, parser);
 
-    return rb_enc_reg_new(RSTRING_PTR(regex_str), RSTRING_LEN(regex_str), enc, pm_reg_flags((const pm_node_t *)cast));
+    VALUE regex = rb_enc_reg_new(RSTRING_PTR(regex_str), RSTRING_LEN(regex_str), enc, pm_reg_flags((const pm_node_t *)cast));
+    rb_obj_freeze(regex);
+
+    return regex;
 }
 
 /**
