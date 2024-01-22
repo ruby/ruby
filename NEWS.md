@@ -57,6 +57,7 @@ The following bundled gems are promoted from default gems.
 * rinda 0.2.0
 * drb 2.2.0
 * nkf 0.2.0
+* syslog 0.1.2
 
 See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/logger/releases) or changelog for details of the default gems or bundled gems.
 
