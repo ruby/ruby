@@ -23,6 +23,7 @@
 ../src/bootstraptest/test_rjit.rb
 ../src/bootstraptest/test_string.rb
 ../src/bootstraptest/test_struct.rb
+../src/bootstraptest/test_syntax.rb
 ../src/bootstraptest/test_thread.rb
 ../src/bootstraptest/test_yjit_30k_ifelse.rb
 ../src/bootstraptest/test_yjit_30k_methods.rb
@@ -31,5 +32,4 @@
 # ../src/bootstraptest/test_insns.rb
 # ../src/bootstraptest/test_method.rb
 # ../src/bootstraptest/test_ractor.rb
-# ../src/bootstraptest/test_syntax.rb
 # ../src/bootstraptest/test_yjit.rb
