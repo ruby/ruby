@@ -396,9 +396,7 @@ pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node
       }
       case PM_SOURCE_LINE_NODE: {
         int source_line = (int) pm_newline_list_line_column(&scope_node->parser->newline_list, node->location.start).line;
-        // Ruby treats file lines as 1-indexed
         // TODO: Incorporate options which allow for passing a line number
-        source_line += 1;
         return INT2FIX(source_line);
       }
       case PM_STRING_NODE:
