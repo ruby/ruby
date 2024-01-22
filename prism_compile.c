@@ -3362,6 +3362,111 @@ pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *c
     }
 }
 
+static void
+pm_compile_rescue(rb_iseq_t *iseq, pm_begin_node_t *begin_node, LINK_ANCHOR *const ret, const uint8_t *src, int lineno, bool popped, pm_scope_node_t *scope_node)
+{
+    NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
+    pm_parser_t *parser = scope_node->parser;
+    LABEL *lstart = NEW_LABEL(lineno);
+    LABEL *lend = NEW_LABEL(lineno);
+    LABEL *lcont = NEW_LABEL(lineno);
+
+    pm_scope_node_t rescue_scope_node;
+    pm_scope_node_init((pm_node_t *)begin_node->rescue_clause, &rescue_scope_node, scope_node, parser);
+    rb_iseq_t *rescue_iseq = NEW_CHILD_ISEQ(&rescue_scope_node,
+            rb_str_concat(rb_str_new2("rescue in"),
+                ISEQ_BODY(iseq)->location.label),
+            ISEQ_TYPE_RESCUE, 1);
+    pm_scope_node_destroy(&rescue_scope_node);
+
+    lstart->rescued = LABEL_RESCUE_BEG;
+    lend->rescued = LABEL_RESCUE_END;
+    ADD_LABEL(ret, lstart);
+    bool prev_in_rescue = ISEQ_COMPILE_DATA(iseq)->in_rescue;
+    ISEQ_COMPILE_DATA(iseq)->in_rescue = true;
+    if (begin_node->statements) {
+        PM_COMPILE_NOT_POPPED((pm_node_t *)begin_node->statements);
+    }
+    else {
+        PM_PUTNIL;
+    }
+    ISEQ_COMPILE_DATA(iseq)->in_rescue = prev_in_rescue;
+
+    if (begin_node->else_clause) {
+        PM_POP_UNLESS_POPPED;
+        PM_COMPILE((pm_node_t *)begin_node->else_clause);
+    }
+
+    ADD_LABEL(ret, lend);
+    PM_NOP;
+    ADD_LABEL(ret, lcont);
+
+    PM_POP_IF_POPPED;
+    ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, rescue_iseq, lcont);
+    ADD_CATCH_ENTRY(CATCH_TYPE_RETRY, lend, lcont, NULL, lstart);
+}
+
+static void
+pm_compile_ensure(rb_iseq_t *iseq, pm_begin_node_t *begin_node, LINK_ANCHOR *const ret, const uint8_t *src, int lineno, bool popped, pm_scope_node_t *scope_node)
+{
+    NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
+    pm_parser_t *parser = scope_node->parser;
+
+    LABEL *estart = NEW_LABEL(lineno);
+    LABEL *eend = NEW_LABEL(lineno);
+    LABEL *econt = NEW_LABEL(lineno);
+
+    struct ensure_range er;
+    struct iseq_compile_data_ensure_node_stack enl;
+    struct ensure_range *erange;
+
+    er.begin = estart;
+    er.end = eend;
+    er.next = 0;
+    push_ensure_entry(iseq, &enl, &er, (void *)begin_node->ensure_clause);
+
+    ADD_LABEL(ret, estart);
+    if (begin_node->rescue_clause) {
+        pm_compile_rescue(iseq, begin_node, ret, src, lineno, popped, scope_node);
+    }
+    else {
+        if (begin_node->statements) {
+            PM_COMPILE((pm_node_t *)begin_node->statements);
+        }
+        else {
+            PM_PUTNIL_UNLESS_POPPED;
+        }
+    }
+
+    ADD_LABEL(ret, eend);
+    ADD_LABEL(ret, econt);
+
+    pm_scope_node_t next_scope_node;
+    pm_scope_node_init((pm_node_t *)begin_node->ensure_clause, &next_scope_node, scope_node, parser);
+    rb_iseq_t * child_iseq = NEW_CHILD_ISEQ(&next_scope_node,
+            rb_str_new2("ensure in"),
+            ISEQ_TYPE_ENSURE, lineno);
+    pm_scope_node_destroy(&next_scope_node);
+
+    ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq;
+
+    erange = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->erange;
+    if (estart->link.next != &eend->link) {
+        while (erange) {
+            ADD_CATCH_ENTRY(CATCH_TYPE_ENSURE, erange->begin, erange->end, child_iseq, econt);
+            erange = erange->next;
+        }
+    }
+    ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = enl.prev;
+
+    // Compile the ensure entry
+    pm_statements_node_t *statements = begin_node->ensure_clause->statements;
+    if (statements) {
+        PM_COMPILE((pm_node_t *)statements);
+        PM_POP_UNLESS_POPPED;
+    }
+}
+
 /*
  * Compiles a prism node into instruction sequences
  *
@@ -3598,105 +3703,18 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_BEGIN_NODE: {
         pm_begin_node_t *begin_node = (pm_begin_node_t *) node;
-        rb_iseq_t *child_iseq;
 
-        if (begin_node->rescue_clause) {
-            LABEL *lstart = NEW_LABEL(lineno);
-            LABEL *lend = NEW_LABEL(lineno);
-            LABEL *lcont = NEW_LABEL(lineno);
-
-            pm_scope_node_t rescue_scope_node;
-            pm_scope_node_init((pm_node_t *)begin_node->rescue_clause, &rescue_scope_node, scope_node, parser);
-            rb_iseq_t *rescue_iseq = NEW_CHILD_ISEQ(&rescue_scope_node,
-                                                    rb_str_concat(rb_str_new2("rescue in"),
-                                                                  ISEQ_BODY(iseq)->location.label),
-                                                    ISEQ_TYPE_RESCUE, 1);
-            pm_scope_node_destroy(&rescue_scope_node);
-
-            lstart->rescued = LABEL_RESCUE_BEG;
-            lend->rescued = LABEL_RESCUE_END;
-            ADD_LABEL(ret, lstart);
-            bool prev_in_rescue = ISEQ_COMPILE_DATA(iseq)->in_rescue;
-            ISEQ_COMPILE_DATA(iseq)->in_rescue = true;
-            if (begin_node->statements) {
-                PM_COMPILE_NOT_POPPED((pm_node_t *)begin_node->statements);
-            }
-            else {
-                PM_PUTNIL;
-            }
-            ISEQ_COMPILE_DATA(iseq)->in_rescue = prev_in_rescue;
-
-            if (begin_node->else_clause) {
-                PM_POP_UNLESS_POPPED;
-                PM_COMPILE((pm_node_t *)begin_node->else_clause);
-            }
-
-            ADD_LABEL(ret, lend);
-            PM_NOP;
-            ADD_LABEL(ret, lcont);
-
-            PM_POP_IF_POPPED;
-            ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, rescue_iseq, lcont);
-            ADD_CATCH_ENTRY(CATCH_TYPE_RETRY, lend, lcont, NULL, lstart);
-        }
         if (begin_node->ensure_clause) {
-            LABEL *estart = NEW_LABEL(lineno);
-            LABEL *eend = NEW_LABEL(lineno);
-            LABEL *econt = NEW_LABEL(lineno);
-
-            struct ensure_range er;
-            struct iseq_compile_data_ensure_node_stack enl;
-            struct ensure_range *erange;
-
-            er.begin = estart;
-            er.end = eend;
-            er.next = 0;
-            push_ensure_entry(iseq, &enl, &er, (void *)begin_node->ensure_clause);
-
-            ADD_LABEL(ret, estart);
-            if (!begin_node->rescue_clause) {
-                if (begin_node->statements) {
-                    PM_COMPILE((pm_node_t *)begin_node->statements);
-                }
-                else {
-                    PM_PUTNIL_UNLESS_POPPED;
-                }
-            }
-
-            ADD_LABEL(ret, eend);
-            ADD_LABEL(ret, econt);
-
-            if (!popped) {
-                PM_NOP;
-            }
-
-            pm_scope_node_t next_scope_node;
-            pm_scope_node_init((pm_node_t *)begin_node->ensure_clause, &next_scope_node, scope_node, parser);
-            child_iseq = NEW_CHILD_ISEQ(&next_scope_node,
-                    rb_str_new2("ensure in"),
-                    ISEQ_TYPE_ENSURE, lineno);
-            pm_scope_node_destroy(&next_scope_node);
-
-            ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq;
-
-            erange = ISEQ_COMPILE_DATA(iseq)->ensure_node_stack->erange;
-            if (estart->link.next != &eend->link) {
-                while (erange) {
-                    ADD_CATCH_ENTRY(CATCH_TYPE_ENSURE, erange->begin, erange->end, child_iseq, econt);
-                    erange = erange->next;
-                }
-            }
-            ISEQ_COMPILE_DATA(iseq)->ensure_node_stack = enl.prev;
-
-            // Compile the ensure entry
-            pm_statements_node_t *statements = begin_node->ensure_clause->statements;
-            if (statements) {
-                PM_COMPILE((pm_node_t *)statements);
-                PM_POP_UNLESS_POPPED;
-            }
+            // Compiling the ensure clause will compile the rescue clause (if
+            // there is one), which will compile the begin statements
+            pm_compile_ensure(iseq, begin_node, ret, src, lineno, popped, scope_node);
         }
-
-        if (!begin_node->rescue_clause && !begin_node->ensure_clause) {
+        else if (begin_node->rescue_clause) {
+            // Compiling rescue will compile begin statements (if applicable)
+            pm_compile_rescue(iseq, begin_node, ret, src, lineno, popped, scope_node);
+        }
+        else {
+            // If there is neither ensure or rescue, the just compile statements
             if (begin_node->statements) {
                 PM_COMPILE((pm_node_t *)begin_node->statements);
             }
