@@ -37,6 +37,8 @@ jobs:
         include:
           - test_task: test-all TESTS=--repeat-count=2
             os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-13' }}
+          - test_task: test-bundled-gems
+            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-13' }}
       fail-fast: false
 
     env:
