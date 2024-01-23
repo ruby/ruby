@@ -1545,6 +1545,10 @@ a
       CODE
     end
 
+    def test_repeated_optional_underscore
+      assert_prism_eval("def self.m(a, _, _, _ = 1, _ = 2, b); end; method(:m).parameters")
+    end
+
     def test_repeated_required_underscore
       assert_prism_eval("def self.m(a, _, _, b); end; method(:m).parameters")
     end

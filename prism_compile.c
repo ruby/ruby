@@ -6328,6 +6328,19 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
         }
 
+        // Ensure there is enough room in the local table for any
+        // parameters that have been repeated
+        // ex: def underscore_parameters(_, _ = 1, _ = 2); _; end
+        //                                  ^^^^^^^^^^^^
+        if (optionals_list && optionals_list->size) {
+            for (size_t i = 0; i < optionals_list->size; i++) {
+                pm_node_t * node = optionals_list->nodes[i];
+                if (PM_NODE_FLAG_P(node, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
+                    table_size++;
+                }
+            }
+        }
+
         // If we have an anonymous "rest" node, we'll need to increase the local
         // table size to take it in to account.
         // def m(foo, *, bar)
@@ -6444,8 +6457,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             body->param.flags.has_opt = true;
 
             for (size_t i = 0; i < optionals_list->size; i++, local_index++) {
-                pm_constant_id_t name = ((pm_optional_parameter_node_t *)optionals_list->nodes[i])->name;
-                pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                pm_node_t * node = optionals_list->nodes[i];
+                pm_constant_id_t name = ((pm_optional_parameter_node_t *)node)->name;
+
+                if (PM_NODE_FLAG_P(node, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
+                    ID local = pm_constant_id_lookup(scope_node, name);
+                    local_table_for_iseq->ids[local_index] = local;
+                }
+                else {
+                    pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                }
             }
         }
 
