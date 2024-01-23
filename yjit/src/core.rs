@@ -483,6 +483,9 @@ pub struct Context {
 
     /// A pointer to a block ISEQ supplied by the caller. 0 if not inlined.
     /// Not using IseqPtr to satisfy Default trait, and not using Option for #[repr(packed)]
+    /// TODO: This could be u16 if we have a global or per-ISEQ HashMap to convert IseqPtr
+    /// to serial indexes. We're thinking of overhauling Context structure in Ruby 3.4 which
+    /// could allow this to consume no bytes, so we're leaving this as is.
     inline_block: u64,
 }
 
