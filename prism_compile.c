@@ -6378,6 +6378,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
         }
 
+        if (keywords_list && keywords_list->size) {
+            for (size_t i = 0; i < keywords_list->size; i++) {
+                pm_node_t *keyword_parameter_node = keywords_list->nodes[i];
+                if (PM_NODE_FLAG_P(keyword_parameter_node, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
+                    table_size++;
+                }
+            }
+        }
+
         if (block_param_keyword_rest) {
             table_size++;
         }
@@ -6583,7 +6592,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     name = ((pm_required_keyword_parameter_node_t *)keyword_parameter_node)->name;
                     keyword->required_num++;
                     ID local = pm_constant_id_lookup(scope_node, name);
-                    pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+
+                    if (PM_NODE_FLAG_P(keyword_parameter_node, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
+                        local_table_for_iseq->ids[local_index] = local;
+                    }
+                    else {
+                        pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                    }
                     local_index++;
                     ids[kw_index++] = local;
                 }
@@ -6613,7 +6628,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     }
 
                     ID local = pm_constant_id_lookup(scope_node, name);
-                    pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                    if (PM_NODE_FLAG_P(keyword_parameter_node, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
+                        local_table_for_iseq->ids[local_index] = local;
+                    }
+                    else {
+                        pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                    }
                     ids[kw_index++] = local;
                     local_index++;
                 }
