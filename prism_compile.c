@@ -6386,6 +6386,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             table_size++;
         }
 
+        if (parameters_node && parameters_node->block) {
+            if (PM_NODE_FLAG_P(parameters_node->block, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
+                table_size++;
+            }
+        }
+
         // When we have a `...` as the keyword_rest, it's a forwarding_parameter_node and
         // we need to leave space for 2 more locals on the locals table (`*` and `&`)
         if (parameters_node && parameters_node->keyword_rest &&
@@ -6734,14 +6740,20 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 body->param.flags.has_block = true;
 
                 pm_constant_id_t name = ((pm_block_parameter_node_t *)parameters_node->block)->name;
+
                 if (name == 0) {
                     local_table_for_iseq->ids[local_index] = PM_CONSTANT_AND;
                     st_insert(index_lookup_table, PM_CONSTANT_AND, local_index);
                 }
                 else {
-                    pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                    if (PM_NODE_FLAG_P(parameters_node->block, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
+                        ID local = pm_constant_id_lookup(scope_node, name);
+                        local_table_for_iseq->ids[local_index] = local;
+                    }
+                    else {
+                        pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                    }
                 }
-
                 local_index++;
             }
         }
