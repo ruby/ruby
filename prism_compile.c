@@ -6218,6 +6218,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_node_list_t *requireds_list = NULL;
         pm_node_list_t *block_locals = NULL;
         pm_node_t *block_param_keyword_rest = NULL;
+        bool trailing_comma = false;
 
         struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
 
@@ -6229,6 +6230,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 block_locals = &block_parameters_node->locals;
                 if (parameters_node) {
                     block_param_keyword_rest = parameters_node->keyword_rest;
+                    if (parameters_node->rest && PM_NODE_TYPE_P(parameters_node->rest, PM_IMPLICIT_REST_NODE)) {
+                        trailing_comma = true;
+                    }
                 }
                 break;
               }
@@ -6558,7 +6562,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             local_index++;
         }
 
-        if (body->type == ISEQ_TYPE_BLOCK && local_index == 1 && requireds_list && requireds_list->size == 1) {
+        if (body->type == ISEQ_TYPE_BLOCK && local_index == 1 && requireds_list && requireds_list->size == 1 && !trailing_comma) {
             body->param.flags.ambiguous_param0 = true;
         }
 
