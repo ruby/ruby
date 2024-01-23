@@ -2793,6 +2793,34 @@ pm_add_ensure_iseq(LINK_ANCHOR *const ret, rb_iseq_t *iseq, int is_return, const
     ADD_SEQ(ret, ensure);
 }
 
+struct pm_local_table_insert_ctx {
+    pm_scope_node_t *scope_node;
+    rb_ast_id_table_t *local_table_for_iseq;
+    int local_index;
+};
+
+static int
+pm_local_table_insert_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
+{
+    if (!existing) {
+        pm_constant_id_t constant_id = *(pm_constant_id_t *)key;
+        struct pm_local_table_insert_ctx * ctx = (struct pm_local_table_insert_ctx *)arg;
+
+        pm_scope_node_t *scope_node = ctx->scope_node;
+        rb_ast_id_table_t *local_table_for_iseq = ctx->local_table_for_iseq;
+        int local_index = ctx->local_index;
+
+        ID local = pm_constant_id_lookup(scope_node, constant_id);
+        local_table_for_iseq->ids[local_index] = local;
+
+        *value = local_index;
+
+        ctx->local_index++;
+    }
+
+    return ST_CONTINUE;
+}
+
 static void
 pm_insert_local_index(pm_constant_id_t constant_id, int local_index, st_table *index_lookup_table, rb_ast_id_table_t *local_table_for_iseq, pm_scope_node_t *scope_node)
 {
@@ -6711,31 +6739,18 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         //********STEP 4**********
         // Goal: fill in the method body locals
         // To be explicit, these are the non-parameter locals
-        uint32_t locals_body_index = 0;
-
-        switch (PM_NODE_TYPE(scope_node->ast_node)) {
-          case PM_BLOCK_NODE: {
-            locals_body_index = ((pm_block_node_t *)scope_node->ast_node)->locals_body_index;
-            break;
-          }
-          case PM_DEF_NODE: {
-            locals_body_index = ((pm_def_node_t *)scope_node->ast_node)->locals_body_index;
-            break;
-          }
-          case PM_LAMBDA_NODE: {
-            locals_body_index = ((pm_lambda_node_t *)scope_node->ast_node)->locals_body_index;
-            break;
-          }
-          default: {
-          }
-        }
-
         if (scope_node->locals.size) {
-            for (size_t i = locals_body_index; i < scope_node->locals.size; i++) {
+            for (size_t i = 0; i < scope_node->locals.size; i++) {
                 pm_constant_id_t constant_id = locals->ids[i];
                 if (constant_id) {
-                    pm_insert_local_index(constant_id, local_index, index_lookup_table, local_table_for_iseq, scope_node);
-                    local_index++;
+                    struct pm_local_table_insert_ctx ctx;
+                    ctx.scope_node = scope_node;
+                    ctx.local_table_for_iseq = local_table_for_iseq;
+                    ctx.local_index = local_index;
+
+                    st_update(index_lookup_table, constant_id, pm_local_table_insert_func, (st_data_t)&ctx);
+
+                    local_index = ctx.local_index;
                 }
             }
         }
