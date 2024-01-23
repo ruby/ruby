@@ -3177,7 +3177,9 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
         //
         //     for i, j in []; end
         //
+        if (state != NULL) state->position--;
         pm_compile_multi_target_node(iseq, node, parents, writes, cleanup, src, scope_node, state);
+        if (state != NULL) state->position++;
         break;
       }
       default:
@@ -3270,6 +3272,9 @@ pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR
     // Now, we need to go back and modify the topn instructions in order to
     // ensure they can correctly retrieve the parent expressions.
     pm_multi_target_state_update(&target_state);
+
+    if (state != NULL) state->stack_size += target_state.stack_size;
+
     return target_state.stack_size;
 }
 

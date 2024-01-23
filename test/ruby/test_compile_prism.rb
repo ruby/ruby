@@ -653,6 +653,21 @@ module Prism
         foo = Foo.new
         _, foo.bar, _, foo.baz = 1
       CODE
+
+      # Test nested writes with method calls
+      assert_prism_eval(<<~RUBY)
+        class Foo
+          attr_accessor :bar
+        end
+
+        a = Foo.new
+
+        (a.bar, a.bar), b = [1], 2
+      RUBY
+      assert_prism_eval(<<~RUBY)
+        h = {}
+        (h[:foo], h[:bar]), a = [1], 2
+      RUBY
     end
 
     ############################################################################
