@@ -1545,6 +1545,10 @@ a
       CODE
     end
 
+    def test_repeated_block_underscore
+      assert_prism_eval("def self.m(_, **_, &_); _; end; method(:m).parameters")
+    end
+
     def test_repeated_kw_rest_underscore
       assert_prism_eval("def self.m(_, **_); _; end; method(:m).parameters")
     end
