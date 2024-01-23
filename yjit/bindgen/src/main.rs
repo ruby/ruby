@@ -426,6 +426,7 @@ fn main() {
         .allowlist_function("rb_yarv_str_eql_internal")
         .allowlist_function("rb_str_neq_internal")
         .allowlist_function("rb_yarv_ary_entry_internal")
+        .allowlist_function("rb_yjit_ruby2_keywords_splat_p")
         .allowlist_function("rb_yjit_fix_div_fix")
         .allowlist_function("rb_yjit_fix_mod_fix")
         .allowlist_function("rb_FL_TEST")
