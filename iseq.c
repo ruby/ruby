@@ -2526,6 +2526,15 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
         rb_str_modify_expand(str, header_minlen - l);
         memset(RSTRING_END(str), '=', header_minlen - l);
     }
+    if (iseq->body->builtin_attrs) {
+#define disasm_builtin_attr(str, iseq, attr) \
+        if (iseq->body->builtin_attrs & BUILTIN_ATTR_ ## attr) { \
+            rb_str_cat2(str, " " #attr); \
+        }
+        disasm_builtin_attr(str, iseq, LEAF);
+        disasm_builtin_attr(str, iseq, SINGLE_NOARG_LEAF);
+        disasm_builtin_attr(str, iseq, INLINE_BLOCK);
+    }
     rb_str_cat2(str, "\n");
 
     /* show catch table information */
