@@ -178,8 +178,8 @@ RSpec.describe Bundler::YAMLSerializer do
     it "skip commented out words" do
       yaml = <<~YAML
         ---
-        foo: "bar"
-        buzz: "foo" # "bar"
+        foo: bar
+        buzz: foo # bar
       YAML
 
       hash = {
