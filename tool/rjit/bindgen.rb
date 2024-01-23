@@ -182,9 +182,12 @@ class BindingGenerator
       unless generate_node(nodes_index[type])&.start_with?('CType::Immediate')
         raise "Non-immediate type is given to dynamic_types: #{type}"
       end
+      # Only one Primitive.cexpr! is allowed for each line: https://github.com/ruby/ruby/pull/9612
       println "  def C.#{type}"
-      println "    @#{type} ||= CType::Immediate.find(Primitive.cexpr!(\"SIZEOF(#{type})\"),"
-      println "      Primitive.cexpr!(\"SIGNED_TYPE_P(#{type})\"))"
+      println "    @#{type} ||= CType::Immediate.find("
+      println "      Primitive.cexpr!(\"SIZEOF(#{type})\"),"
+      println "      Primitive.cexpr!(\"SIGNED_TYPE_P(#{type})\"),"
+      println "    )"
       println "  end"
       println
     end
