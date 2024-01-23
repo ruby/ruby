@@ -6632,8 +6632,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 body->param.flags.has_block = true;
 
                 pm_constant_id_t name = ((pm_block_parameter_node_t *)parameters_node->block)->name;
-                pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
-                local_index++;
+                if (name != 0) {
+                    pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                    local_index++;
+                }
             }
         }
 
