@@ -2055,6 +2055,10 @@ end
     def test_BlockParameterNode
       assert_prism_eval("def prism_test_block_parameter_node(&bar) end")
       assert_prism_eval("->(b, c=1, *d, e, &f){}")
+
+      # Test BlockParameterNode with no name
+      assert_prism_eval("->(&){}")
+      assert_prism_eval("def prism_test_block_parameter_node(&); end")
     end
 
     def test_BlockParametersNode
