@@ -6418,7 +6418,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                   case PM_REQUIRED_PARAMETER_NODE: {
                     pm_required_parameter_node_t * param = (pm_required_parameter_node_t *)required;
 
-                    if (!PM_NODE_FLAG_P(required, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
+                    if (PM_NODE_FLAG_P(required, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
+                        ID local = pm_constant_id_lookup(scope_node, param->name);
+                        local_table_for_iseq->ids[local_index] = local;
+                    }
+                    else {
                         pm_insert_local_index(param->name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
                     }
                     break;
