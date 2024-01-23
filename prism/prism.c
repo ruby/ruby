@@ -424,6 +424,11 @@ lex_state_beg_p(pm_parser_t *parser) {
 }
 
 static inline bool
+lex_state_arg_labeled_p(pm_parser_t *parser) {
+    return (parser->lex_state & (PM_LEX_STATE_ARG | PM_LEX_STATE_LABELED)) == (PM_LEX_STATE_ARG | PM_LEX_STATE_LABELED);
+}
+
+static inline bool
 lex_state_arg_p(pm_parser_t *parser) {
     return lex_state_p(parser, PM_LEX_STATE_ARG_ANY);
 }
@@ -13924,7 +13929,7 @@ parse_strings(pm_parser_t *parser, pm_node_t *current) {
     assert(parser->current.type == PM_TOKEN_STRING_BEGIN);
 
     bool concating = false;
-    bool state_is_arg_labeled = lex_state_p(parser, PM_LEX_STATE_ARG | PM_LEX_STATE_LABELED);
+    bool state_is_arg_labeled = lex_state_arg_labeled_p(parser);
 
     while (match1(parser, PM_TOKEN_STRING_BEGIN)) {
         pm_node_t *node = NULL;
