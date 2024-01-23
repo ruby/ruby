@@ -56,9 +56,10 @@ module Bundler
       last_hash = nil
       last_empty_key = nil
       str.split(/\r?\n/) do |line|
-        line = line.split("#", 2).first.strip if line.include?("#")
         if match = HASH_REGEX.match(line)
           indent, key, quote, val = match.captures
+          val = strip_comment(val)
+
           convert_to_backward_compatible_key!(key)
           depth = indent.size / 2
           if quote.empty? && val.empty?
@@ -73,12 +74,22 @@ module Bundler
           end
         elsif match = ARRAY_REGEX.match(line)
           _, val = match.captures
+          val = strip_comment(val)
+
           last_hash[last_empty_key] = [] unless last_hash[last_empty_key].is_a?(Array)
 
           last_hash[last_empty_key].push(val)
         end
       end
       res
+    end
+
+    def strip_comment(val)
+      if val.include?("#") && !val.start_with?("#")
+        val.split("#", 2).first.strip
+      else
+        val
+      end
     end
 
     # for settings' keys

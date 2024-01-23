@@ -179,12 +179,12 @@ RSpec.describe Bundler::YAMLSerializer do
       yaml = <<~YAML
         ---
         foo: "bar"
-        buzz: # "foo"
+        buzz: "foo" # "bar"
       YAML
 
       hash = {
         "foo" => "bar",
-        "buzz" => {},
+        "buzz" => "foo",
       }
 
       expect(serializer.load(yaml)).to eq(hash)
