@@ -6358,11 +6358,19 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // table size to take it in to account.
         // def m(foo, *, bar)
         //            ^
-        if (parameters_node && parameters_node->rest) {
-            if (!(PM_NODE_TYPE_P(parameters_node->rest, PM_IMPLICIT_REST_NODE))) {
-                if (!((pm_rest_parameter_node_t *)parameters_node->rest)->name || PM_NODE_FLAG_P(parameters_node->rest, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
-                    table_size++;
+        if (parameters_node) {
+            if (parameters_node->rest) {
+                if (!(PM_NODE_TYPE_P(parameters_node->rest, PM_IMPLICIT_REST_NODE))) {
+                    if (!((pm_rest_parameter_node_t *)parameters_node->rest)->name || PM_NODE_FLAG_P(parameters_node->rest, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
+                        table_size++;
+                    }
                 }
+            }
+
+            // def underscore_parameters(_, **_); _; end
+            //                              ^^^
+            if (parameters_node->keyword_rest && PM_NODE_FLAG_P(parameters_node->keyword_rest, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
+                table_size++;
             }
         }
 
@@ -6691,7 +6699,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
                     pm_constant_id_t constant_id = kw_rest_node->name;
                     if (constant_id) {
-                        pm_insert_local_index(constant_id, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                        if (PM_NODE_FLAG_P(kw_rest_node, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
+                            ID local = pm_constant_id_lookup(scope_node, constant_id);
+                            local_table_for_iseq->ids[local_index] = local;
+                        }
+                        else {
+                            pm_insert_local_index(constant_id, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                        }
                     }
                     else {
                         local_table_for_iseq->ids[local_index] = PM_CONSTANT_POW;
