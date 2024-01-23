@@ -2079,6 +2079,7 @@ end
 
     def test_OptionalParameterNode
       assert_prism_eval("def prism_test_optional_param_node(bar = nil); end")
+      assert_prism_eval("def prism_test_optional_param_node2(bar = baz = qux = nil); end")
     end
 
     def test_OptionalKeywordParameterNode

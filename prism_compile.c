@@ -6411,8 +6411,21 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             body->param.flags.has_opt = true;
 
             for (size_t i = 0; i < optionals_list->size; i++, local_index++) {
-                pm_constant_id_t name = ((pm_optional_parameter_node_t *)optionals_list->nodes[i])->name;
-                pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                pm_optional_parameter_node_t *optional = (pm_optional_parameter_node_t *)optionals_list->nodes[i];
+                pm_insert_local_index((pm_constant_id_t)optional->name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+
+                // def foo (a = b = 2)
+                //              ^^^^^
+                pm_node_t *value = optional->value;
+                while (value && PM_NODE_TYPE_P(value, PM_LOCAL_VARIABLE_WRITE_NODE)) {
+                    pm_local_variable_write_node_t *lvwrite = (pm_local_variable_write_node_t *)value;
+                    pm_insert_local_index((pm_constant_id_t)lvwrite->name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                    if (PM_NODE_TYPE_P(lvwrite->value, PM_LOCAL_VARIABLE_WRITE_NODE)) {
+                        value = lvwrite->value;
+                    } else {
+                        value = NULL;
+                    }
+                }
             }
         }
 
