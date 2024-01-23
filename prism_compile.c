@@ -57,18 +57,8 @@
 #define PM_NOP \
     ADD_INSN(ret, &dummy_line_node, nop)
 
-/**
- * We're using the top most bit of a pm_constant_id_t as a tag to represent an
- * anonymous local. When a child iseq is created and needs access to a value
- * that has yet to be defined, or is defined by the parent node's iseq. This can
- * be added to it's local table and then handled accordingly when compiling the
- * scope node associated with the child iseq.
- *
- * See the compilation process for PM_FOR_NODE: as an example, where the
- * variable referenced inside the StatementsNode is defined as part of the top
- * level ForLoop node.
-*/
-#define TEMP_CONSTANT_IDENTIFIER ((pm_constant_id_t)(1 << 31))
+#define PM_SPECIAL_CONSTANT_FLAG ((pm_constant_id_t)(1 << 31))
+#define PM_CONSTANT_AND ((pm_constant_id_t)(idAnd | PM_SPECIAL_CONSTANT_FLAG))
 
 rb_iseq_t *
 pm_iseq_new_with_opt(pm_scope_node_t *scope_node, pm_parser_t *parser, VALUE name, VALUE path, VALUE realpath,
@@ -2790,6 +2780,8 @@ pm_add_ensure_iseq(LINK_ANCHOR *const ret, rb_iseq_t *iseq, int is_return, const
 static void
 pm_insert_local_index(pm_constant_id_t constant_id, int local_index, st_table *index_lookup_table, rb_ast_id_table_t *local_table_for_iseq, pm_scope_node_t *scope_node)
 {
+    RUBY_ASSERT((constant_id & PM_SPECIAL_CONSTANT_FLAG) == 0);
+
     ID local = pm_constant_id_lookup(scope_node, constant_id);
     local_table_for_iseq->ids[local_index] = local;
     st_insert(index_lookup_table, constant_id, local_index);
@@ -3737,6 +3729,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_block_argument_node_t *block_argument_node = (pm_block_argument_node_t *) node;
         if (block_argument_node->expression) {
             PM_COMPILE(block_argument_node->expression);
+        }
+        else {
+            pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_AND, 0);
+            ADD_GETLOCAL(ret, &dummy_line_node, index.index, index.level);
         }
         return;
       }
@@ -6632,10 +6628,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 body->param.flags.has_block = true;
 
                 pm_constant_id_t name = ((pm_block_parameter_node_t *)parameters_node->block)->name;
-                if (name != 0) {
-                    pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
-                    local_index++;
+                if (name == 0) {
+                    local_table_for_iseq->ids[local_index] = PM_CONSTANT_AND;
+                    st_insert(index_lookup_table, PM_CONSTANT_AND, local_index);
                 }
+                else {
+                    pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                }
+
+                local_index++;
             }
         }
 

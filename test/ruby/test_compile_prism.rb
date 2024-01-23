@@ -1690,6 +1690,15 @@ end
 
     def test_BlockArgumentNode
       assert_prism_eval("1.then(&:to_s)")
+
+      # Test forwarding with no name
+      assert_prism_eval(<<~RUBY)
+        o = Object.new
+        def o.foo(&) = yield
+        def o.bar(&) = foo(&)
+
+        o.bar { :ok }
+      RUBY
     end
 
     def test_BlockLocalVariableNode
