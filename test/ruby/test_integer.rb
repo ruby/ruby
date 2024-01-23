@@ -319,24 +319,24 @@ class TestInteger < Test::Unit::TestCase
   def test_times_bignum_redefine_plus_lt
     assert_separately([], "#{<<-"begin;"}\n#{<<~"end;"}")
     begin;
-      called = false
+      called = {}
       Integer.class_eval do
         alias old_succ succ
         undef succ
-        define_method(:succ){|x| called = true; x+1}
+        define_method(:succ){|x| called[:succ] = true; x+1}
         alias old_lt <
         undef <
-        define_method(:<){|x| called = true}
+        define_method(:<){|x| called[:<] = true}
       end
 
       fix = 1
-      fix.times{break 0}
+      fix.times{|i| break 0 if i == 1}
       fix_called = called
 
-      called = false
+      called = {}
 
       big = 2**65
-      big.times{break 0}
+      big.times{|i| break 0 if i == 1}
       big_called = called
 
       Integer.class_eval do
