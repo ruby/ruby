@@ -85,7 +85,7 @@ jobs:
 
       - name: make btest
         run: |
-          make -s btest RUN_OPTS="$RUN_OPTS" BTESTS="$(cat ../src/tool/prism_btests | grep -v '^#' | tr '\n' ' ')"
+          make -s btest RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 30
         env:
           GNUMAKEFLAGS: ''
