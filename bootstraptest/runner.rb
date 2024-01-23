@@ -798,4 +798,8 @@ def rjit_enabled?
   ENV.fetch('RUN_OPTS', '').include?('rjit')
 end
 
+def prism_enabled?
+  ENV.fetch('RUN_OPTS', '').include?('--parser=prism')
+end
+
 exit main

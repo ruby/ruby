@@ -14,7 +14,7 @@ assert_equal "ok", %q{
   rescue ArgumentError
     :ok
   end
-}
+} unless prism_enabled? # https://github.com/ruby/prism/issues/2249
 
 # regression test for send processing before side exit
 assert_equal "ok", %q{
