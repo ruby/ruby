@@ -4443,3 +4443,19 @@ assert_equal '[nil, "yield"]', %q{
   def defined_yield = defined?(yield)
   [defined_yield, defined_yield {}]
 }
+
+# splat with ruby2_keywords into rest parameter
+assert_equal '[[{:a=>1}], {}]', %q{
+  ruby2_keywords def foo(*args) = args
+
+  def bar(*args, **kw) = [args, kw]
+
+  def pass_bar(*args) = bar(*args)
+
+  def body
+    args = foo(a: 1)
+    pass_bar(*args)
+  end
+
+  body
+}

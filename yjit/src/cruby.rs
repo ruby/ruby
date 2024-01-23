@@ -165,7 +165,6 @@ pub use rb_get_iseq_flags_has_lead as get_iseq_flags_has_lead;
 pub use rb_get_iseq_flags_has_opt as get_iseq_flags_has_opt;
 pub use rb_get_iseq_flags_has_kw as get_iseq_flags_has_kw;
 pub use rb_get_iseq_flags_has_rest as get_iseq_flags_has_rest;
-pub use rb_get_iseq_flags_ruby2_keywords as get_iseq_flags_ruby2_keywords;
 pub use rb_get_iseq_flags_has_post as get_iseq_flags_has_post;
 pub use rb_get_iseq_flags_has_kwrest as get_iseq_flags_has_kwrest;
 pub use rb_get_iseq_flags_has_block as get_iseq_flags_has_block;
