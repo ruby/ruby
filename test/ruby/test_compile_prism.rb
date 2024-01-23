@@ -1515,6 +1515,10 @@ a
       CODE
     end
 
+    def test_locals_in_parameters
+      assert_prism_eval("def self.m(a = b = c = 1); [a, b, c]; end; self.m")
+    end
+
     def test_trailing_comma_on_block
       assert_prism_eval("def self.m; yield [:ok]; end; m {|v0,| v0 }")
     end
