@@ -849,6 +849,13 @@ module Prism
       assert_prism_eval("*b, c = [1, 2, 3]; c")
       assert_prism_eval("a, *, c = [1, 2, 3]; a")
       assert_prism_eval("a, *, c = [1, 2, 3]; c")
+
+      # Test anonymous splat node
+      assert_prism_eval(<<~RUBY)
+        def self.bar(*) = Array(*)
+
+        bar([1, 2, 3])
+      RUBY
     end
 
     ############################################################################

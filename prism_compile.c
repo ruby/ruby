@@ -59,6 +59,7 @@
 
 #define PM_SPECIAL_CONSTANT_FLAG ((pm_constant_id_t)(1 << 31))
 #define PM_CONSTANT_AND ((pm_constant_id_t)(idAnd | PM_SPECIAL_CONSTANT_FLAG))
+#define PM_CONSTANT_MULT ((pm_constant_id_t)(idMULT | PM_SPECIAL_CONSTANT_FLAG))
 
 rb_iseq_t *
 pm_iseq_new_with_opt(pm_scope_node_t *scope_node, pm_parser_t *parser, VALUE name, VALUE path, VALUE realpath,
@@ -1124,6 +1125,10 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                 pm_splat_node_t *splat_node = (pm_splat_node_t *)argument;
                 if (splat_node->expression) {
                     PM_COMPILE_NOT_POPPED(splat_node->expression);
+                }
+                else {
+                    pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_MULT, 0);
+                    ADD_GETLOCAL(ret, &dummy_line_node, index.index, index.level);
                 }
 
                 bool first_splat = !has_splat;
@@ -6431,7 +6436,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 else {
                     // def foo(a, (b, *c, d), e = 1, *, g, (h, *i, j),  k:, l: 1, **m, &n)
                     //                               ^
-                    local_table_for_iseq->ids[local_index] = idMULT;
+                    local_table_for_iseq->ids[local_index] = PM_CONSTANT_MULT;
+                    st_insert(index_lookup_table, PM_CONSTANT_MULT, local_index);
                 }
                 local_index++;
             }
