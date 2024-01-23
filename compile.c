@@ -8637,6 +8637,9 @@ compile_builtin_attr(rb_iseq_t *iseq, const NODE *node)
         if (strcmp(RSTRING_PTR(string), "leaf") == 0) {
             ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_LEAF;
         }
+        else if (strcmp(RSTRING_PTR(string), "inline_block") == 0) {
+            ISEQ_BODY(iseq)->builtin_attrs |= BUILTIN_ATTR_INLINE_BLOCK;
+        }
         else {
             goto unknown_arg;
         }
@@ -8787,7 +8790,6 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
             }
             else if (strcmp("cinit!", builtin_func) == 0) {
                 // ignore
-                GET_VM()->builtin_inline_index++;
                 return COMPILE_OK;
             }
             else if (strcmp("attr!", builtin_func) == 0) {
@@ -8815,10 +8817,7 @@ compile_builtin_function_call(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NOD
                 return COMPILE_NG;
             }
 
-            if (GET_VM()->builtin_inline_index == INT_MAX) {
-                rb_bug("builtin inline function index overflow:%s", builtin_func);
-            }
-            int inline_index = GET_VM()->builtin_inline_index++;
+            int inline_index = nd_line(node);
             snprintf(inline_func, sizeof(inline_func), BUILTIN_INLINE_PREFIX "%d", inline_index);
             builtin_func = inline_func;
             args_node = NULL;

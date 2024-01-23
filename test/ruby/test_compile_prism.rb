@@ -385,6 +385,24 @@ module Prism
         hash["key", &(Proc.new { _1.upcase })] &&= "value"
         hash
       CODE
+
+      # Test with keyword arguments
+      assert_prism_eval(<<~RUBY)
+        h = Object.new
+        def h.[](**b) = 0
+        def h.[]=(*a, **b); end
+
+        h[foo: 1] &&= 2
+      RUBY
+
+      # Test with keyword splat
+      assert_prism_eval(<<~RUBY)
+        h = Object.new
+        def h.[](**b) = 1
+        def h.[]=(*a, **b); end
+
+        h[**{}] &&= 2
+      RUBY
     end
 
     def test_IndexOrWriteNode
@@ -406,6 +424,24 @@ module Prism
         hash["key", &(Proc.new { _1.upcase })] ||= "value"
         hash
       CODE
+
+      # Test with keyword arguments
+      assert_prism_eval(<<~RUBY)
+        h = Object.new
+        def h.[](**b) = 0
+        def h.[]=(*a, **b); end
+
+        h[foo: 1] ||= 2
+      RUBY
+
+      # Test with keyword splat
+      assert_prism_eval(<<~RUBY)
+        h = Object.new
+        def h.[](**b) = nil
+        def h.[]=(*a, **b); end
+
+        h[**{}] ||= 2
+      RUBY
     end
 
     def test_IndexOperatorWriteNode
@@ -1354,6 +1390,9 @@ a
       assert_prism_eval("[[]].map { |a,b=1| a }")
       assert_prism_eval("[{}].map { |a,| }")
       assert_prism_eval("[{}].map { |a| a }")
+
+      # Test blocks with MultiTargetNode
+      assert_prism_eval("[[1, 2]].each.map { |(a), (b)| [a, b] }")
     end
 
     def test_ClassNode
@@ -1473,6 +1512,31 @@ a
           m1: "m1",
           m2: "m2"
         )
+      CODE
+    end
+
+    def test_trailing_comma_on_block
+      assert_prism_eval("def self.m; yield [:ok]; end; m {|v0,| v0 }")
+    end
+
+    def test_complex_default_params
+      assert_prism_eval("def self.foo(a:, b: '2'.to_i); [a, b]; end; foo(a: 1)")
+      assert_prism_eval("def self.foo(a:, b: 2, c: '3'.to_i); [a, b, c]; end; foo(a: 1)")
+    end
+
+    def test_rescue_with_ensure
+      assert_prism_eval(<<-CODE)
+begin
+  begin
+    raise "a"
+  rescue
+    raise "b"
+  ensure
+    raise "c"
+  end
+rescue => e
+  e.message
+end
       CODE
     end
 
@@ -1714,6 +1778,24 @@ a
         obj = Object.new
         def obj.[]=(a, b); 10; end
         obj[*[1]] = 3
+      RUBY
+
+      # Test passing block inside of []=
+      assert_prism_eval(<<~RUBY)
+        obj = Object.new
+        def obj.[]=(a); end
+
+        p = proc {}
+        obj[&p] = 4
+      RUBY
+
+      # Test splat and block inside of []=
+      assert_prism_eval(<<~RUBY)
+        obj = Object.new
+        def obj.[]=(a, b); end
+
+        p = proc {}
+        obj[*[1], &p] = 4
       RUBY
 
       assert_prism_eval(<<-CODE)

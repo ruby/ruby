@@ -747,7 +747,7 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
             pm_parser_t parser;
             pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), &options);
 
-            iseq = rb_iseq_new_main_prism(&input, &options, fname);
+            iseq = rb_iseq_new_main_prism(&input, &options, fname, fname, Qnil);
 
             pm_string_free(&input);
             pm_options_free(&options);

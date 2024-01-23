@@ -848,6 +848,12 @@ rb_parser_set_yydebug(VALUE vparser, VALUE flag)
 }
 #endif
 
+VALUE
+rb_str_new_parser_string(rb_parser_string_t *str)
+{
+    return rb_enc_str_new(str->ptr, str->len, str->enc);
+}
+
 static VALUE
 negative_numeric(VALUE val)
 {
@@ -1000,6 +1006,5 @@ rb_node_line_lineno_val(const NODE *node)
 VALUE
 rb_node_file_path_val(const NODE *node)
 {
-    rb_parser_string_t *str = RNODE_FILE(node)->path;
-    return rb_enc_str_new(str->ptr, str->len, str->enc);
+    return rb_str_new_parser_string(RNODE_FILE(node)->path);
 }

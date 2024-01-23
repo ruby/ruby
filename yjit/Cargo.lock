@@ -4,9 +4,9 @@ version = 3
 
 [[package]]
 name = "capstone"
-version = "0.10.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "66b5d1f14c3539b6ff22fcb602fea5f1c4416148c8b7965a2e74860aa169b7b5"
+checksum = "1097e608594dad3bad608295567f757742b883606fe150faf7a9740b849730d8"
 dependencies = [
  "capstone-sys",
  "libc",
@@ -14,9 +14,9 @@ dependencies = [
 
 [[package]]
 name = "capstone-sys"
-version = "0.14.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df653a22d0ad34b0d91cc92a6289d96e44aac1c9a96250a094c9aeec4a91084f"
+checksum = "2e7f651d5ec4c2a2e6c508f2c8032655003cd728ec85663e9796616990e25b5a"
 dependencies = [
  "cc",
  "libc",

@@ -1,38 +1,41 @@
 require_relative '../../spec_helper'
 
-platform_is_not :windows do
-  require 'syslog'
+ruby_version_is ""..."3.4" do
 
-  describe "Syslog.inspect" do
-    platform_is_not :windows do
+  platform_is_not :windows do
+    require 'syslog'
 
-      before :each do
-        Syslog.opened?.should be_false
-      end
+    describe "Syslog.inspect" do
+      platform_is_not :windows do
 
-      after :each do
-        Syslog.opened?.should be_false
-      end
+        before :each do
+          Syslog.opened?.should be_false
+        end
 
-      it "returns a string a closed log" do
-        Syslog.inspect.should =~ /opened=false/
-      end
+        after :each do
+          Syslog.opened?.should be_false
+        end
 
-      it "returns a string for an opened log" do
-        Syslog.open
-        Syslog.inspect.should =~ /opened=true.*/
-        Syslog.close
-      end
+        it "returns a string a closed log" do
+          Syslog.inspect.should =~ /opened=false/
+        end
 
-      it "includes the ident, options, facility and mask" do
-        Syslog.open("rubyspec", Syslog::LOG_PID, Syslog::LOG_USER)
-        inspect_str = Syslog.inspect.split ", "
-        inspect_str[0].should =~ /opened=true/
-        inspect_str[1].should == "ident=\"rubyspec\""
-        inspect_str[2].should == "options=#{Syslog::LOG_PID}"
-        inspect_str[3].should == "facility=#{Syslog::LOG_USER}"
-        inspect_str[4].should == "mask=255>"
-        Syslog.close
+        it "returns a string for an opened log" do
+          Syslog.open
+          Syslog.inspect.should =~ /opened=true.*/
+          Syslog.close
+        end
+
+        it "includes the ident, options, facility and mask" do
+          Syslog.open("rubyspec", Syslog::LOG_PID, Syslog::LOG_USER)
+          inspect_str = Syslog.inspect.split ", "
+          inspect_str[0].should =~ /opened=true/
+          inspect_str[1].should == "ident=\"rubyspec\""
+          inspect_str[2].should == "options=#{Syslog::LOG_PID}"
+          inspect_str[3].should == "facility=#{Syslog::LOG_USER}"
+          inspect_str[4].should == "mask=255>"
+          Syslog.close
+        end
       end
     end
   end

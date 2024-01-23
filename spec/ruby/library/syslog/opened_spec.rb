@@ -1,38 +1,41 @@
 require_relative '../../spec_helper'
 
-platform_is_not :windows do
-  require 'syslog'
+ruby_version_is ""..."3.4" do
 
-  describe "Syslog.opened?" do
-    platform_is_not :windows do
+  platform_is_not :windows do
+    require 'syslog'
 
-      before :each do
-        Syslog.opened?.should be_false
-      end
+    describe "Syslog.opened?" do
+      platform_is_not :windows do
 
-      after :each do
-        Syslog.opened?.should be_false
-      end
-
-      it "returns true if the log is opened" do
-        Syslog.open
-        Syslog.opened?.should be_true
-        Syslog.close
-      end
-
-      it "returns false otherwise" do
-        Syslog.opened?.should be_false
-        Syslog.open
-        Syslog.close
-        Syslog.opened?.should be_false
-      end
-
-      it "works inside a block" do
-        Syslog.open do |s|
-          s.opened?.should be_true
-          Syslog.opened?.should be_true
+        before :each do
+          Syslog.opened?.should be_false
         end
-        Syslog.opened?.should be_false
+
+        after :each do
+          Syslog.opened?.should be_false
+        end
+
+        it "returns true if the log is opened" do
+          Syslog.open
+          Syslog.opened?.should be_true
+          Syslog.close
+        end
+
+        it "returns false otherwise" do
+          Syslog.opened?.should be_false
+          Syslog.open
+          Syslog.close
+          Syslog.opened?.should be_false
+        end
+
+        it "works inside a block" do
+          Syslog.open do |s|
+            s.opened?.should be_true
+            Syslog.opened?.should be_true
+          end
+          Syslog.opened?.should be_false
+        end
       end
     end
   end

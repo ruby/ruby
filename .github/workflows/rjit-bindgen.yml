@@ -52,7 +52,7 @@ jobs:
 
     steps:
       - name: Set up Ruby
-        uses: ruby/setup-ruby@b203567269b5bbc256dbc1c84f7495913f977353 # v1.167.0
+        uses: ruby/setup-ruby@5daca165445f0ae10478593083f72ca2625e241d # v1.169.0
         with:
           ruby-version: '3.1'
 

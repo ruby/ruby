@@ -345,7 +345,7 @@ struct getaddrinfo_arg
     char *node, *service;
     struct addrinfo hints;
     struct addrinfo *ai;
-    int err, refcount, done, cancelled;
+    int err, gai_errno, refcount, done, cancelled;
     rb_nativethread_lock_t lock;
     rb_nativethread_cond_t cond;
 };
@@ -406,8 +406,9 @@ do_getaddrinfo(void *ptr)
 {
     struct getaddrinfo_arg *arg = (struct getaddrinfo_arg *)ptr;
 
-    int err;
+    int err, gai_errno;
     err = getaddrinfo(arg->node, arg->service, &arg->hints, &arg->ai);
+    gai_errno = errno;
 #ifdef __linux__
     /* On Linux (mainly Ubuntu 13.04) /etc/nsswitch.conf has mdns4 and
      * it cause getaddrinfo to return EAI_SYSTEM/ENOENT. [ruby-list:49420]
@@ -420,6 +421,7 @@ do_getaddrinfo(void *ptr)
     rb_nativethread_lock_lock(&arg->lock);
     {
         arg->err = err;
+        arg->gai_errno = gai_errno;
         if (arg->cancelled) {
             freeaddrinfo(arg->ai);
         }
@@ -479,7 +481,7 @@ rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hint
 {
     int retry;
     struct getaddrinfo_arg *arg;
-    int err;
+    int err, gai_errno;
 
 start:
     retry = 0;
@@ -503,6 +505,7 @@ start:
     {
         if (arg->done) {
             err = arg->err;
+            gai_errno = arg->gai_errno;
             if (err == 0) *ai = arg->ai;
         }
         else if (arg->cancelled) {
@@ -525,6 +528,10 @@ start:
     rb_thread_check_ints();
     if (retry) goto start;
 
+    /* Because errno is threadlocal, the errno value we got from the call to getaddrinfo() in the thread
+     * (in case of EAI_SYSTEM return value) is not propagated to the caller of _this_ function. Set errno
+     * explicitly, as round-tripped through struct getaddrinfo_arg, to deal with that */
+    errno = gai_errno;
     return err;
 }
 
@@ -591,7 +598,7 @@ struct getnameinfo_arg
     size_t hostlen;
     char *serv;
     size_t servlen;
-    int err, refcount, done, cancelled;
+    int err, gni_errno, refcount, done, cancelled;
     rb_nativethread_lock_t lock;
     rb_nativethread_cond_t cond;
 };
@@ -644,12 +651,14 @@ do_getnameinfo(void *ptr)
 {
     struct getnameinfo_arg *arg = (struct getnameinfo_arg *)ptr;
 
-    int err;
+    int err, gni_errno;
     err = getnameinfo(arg->sa, arg->salen, arg->host, (socklen_t)arg->hostlen, arg->serv, (socklen_t)arg->servlen, arg->flags);
+    gni_errno = errno;
 
     int need_free = 0;
     rb_nativethread_lock_lock(&arg->lock);
     arg->err = err;
+    arg->gni_errno = gni_errno;
     if (!arg->cancelled) {
         arg->done = 1;
         rb_native_cond_signal(&arg->cond);
@@ -691,7 +700,7 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
 {
     int retry;
     struct getnameinfo_arg *arg;
-    int err;
+    int err, gni_errno;
 
 start:
     retry = 0;
@@ -714,6 +723,7 @@ start:
     rb_nativethread_lock_lock(&arg->lock);
     if (arg->done) {
         err = arg->err;
+        gni_errno = arg->gni_errno;
         if (err == 0) {
             if (host) memcpy(host, arg->host, hostlen);
             if (serv) memcpy(serv, arg->serv, servlen);
@@ -738,6 +748,9 @@ start:
     rb_thread_check_ints();
     if (retry) goto start;
 
+    /* Make sure we copy the thread-local errno value from the getnameinfo thread back to this thread, so
+     * calling code sees the correct errno */
+    errno = gni_errno;
     return err;
 }
 

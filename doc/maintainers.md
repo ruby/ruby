@@ -1,5 +1,12 @@
 # Maintainers
-This page describes the current module, library, and extension maintainers of Ruby.
+This page describes the current branch, module, library, and extension maintainers of Ruby.
+
+## Branch Maintainers
+
+A branch maintainer is responsible for backporting commits into stable branches
+and publishing Ruby patch releases.
+
+[The list of current branch maintainers is available in the wiki](https://github.com/ruby/ruby/wiki/Release-Engineering).
 
 ## Module Maintainers
 A module maintainer is responsible for a certain part of Ruby.
@@ -88,12 +95,6 @@ have commit right, others don't.
 * https://github.com/ruby/cgi
 * https://rubygems.org/gems/cgi
 
-#### lib/csv.rb
-* Kenta Murata (mrkn)
-* Kouhei Sutou (kou)
-* https://github.com/ruby/csv
-* https://rubygems.org/gems/csv
-
 #### lib/English.rb
 * *unmaintained*
 * https://github.com/ruby/English
@@ -113,11 +114,6 @@ have commit right, others don't.
 * Akinori MUSHA (knu)
 * https://github.com/ruby/digest
 * https://rubygems.org/gems/digest
-
-#### lib/drb.rb, lib/drb/*
-* Masatoshi SEKI (seki)
-* https://github.com/ruby/drb
-* https://rubygems.org/gems/drb
 
 #### lib/erb.rb
 * Masatoshi SEKI (seki)
@@ -355,11 +351,6 @@ have commit right, others don't.
 * https://github.com/flori/json
 * https://rubygems.org/gems/json
 
-#### ext/nkf
-* NARUSE, Yui (naruse)
-* https://github.com/ruby/nkf
-* https://rubygems.org/gems/nkf
-
 #### ext/openssl
 * Kazuki Yamaguchi (rhe)
 * https://github.com/ruby/openssl
@@ -385,11 +376,6 @@ have commit right, others don't.
 * Kouhei Sutou (kou)
 * https://github.com/ruby/strscan
 * https://rubygems.org/gems/strscan
-
-#### ext/syslog
-* Akinori MUSHA (knu)
-* https://github.com/ruby/syslog
-* https://rubygems.org/gems/syslog
 
 #### ext/win32ole
 * Masaki Suketa (suke)
@@ -468,11 +454,23 @@ have commit right, others don't.
 #### abbrev
 * https://github.com/ruby/abbrev
 
-#### lib/resolv-replace.rb
+#### resolv-replace
 * https://github.com/ruby/resolv-replace
 
 #### rinda
 * https://github.com/ruby/rinda
+
+#### drb
+* https://github.com/ruby/drb
+
+#### nkf
+* https://github.com/ruby/nkf
+
+#### syslog
+* https://github.com/ruby/syslog
+
+#### csv
+* https://github.com/ruby/csv
 
 ## Platform Maintainers
 ### mswin64 (Microsoft Windows)

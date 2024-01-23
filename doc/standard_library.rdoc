@@ -36,10 +36,8 @@ Socket:: Access underlying OS socket implementations
 Benchmark:: Provides methods to measure and report the time used to execute code
 Bundler:: Manage your Ruby application's gem dependencies
 CGI:: Support for the Common Gateway Interface protocol
-CSV:: Provides an interface to read and write CSV files and data
 Delegator:: Provides three abilities to delegate method calls to an object
 DidYouMean:: "Did you mean?" experience in Ruby
-DRb:: Distributed object system for Ruby
 English:: Provides references to special global variables with less cryptic names
 ERB:: An easy to use but powerful templating system for Ruby
 ErrorHighlight:: Highlight error location in your code
@@ -86,13 +84,11 @@ Fcntl:: Loads constants defined in the OS fcntl.h C header file
 Fiddle:: A libffi wrapper for Ruby
 IO:: Extensions for Ruby IO class, including #wait, #nonblock and ::console
 JSON:: Implements Javascript Object Notation for Ruby
-NKF:: Ruby extension for Network Kanji Filter
 OpenSSL:: Provides SSL, TLS and general purpose cryptography for Ruby
 Pathname:: Representation of the name of a file or directory on the filesystem
 Psych:: A YAML parser and emitter for Ruby
 StringIO:: Pseudo I/O on String objects
 StringScanner:: Provides lexical scanning operations on a String
-Syslog:: Ruby interface for the POSIX system logging facility
 WIN32OLE:: Provides an interface for OLE Automation in Ruby
 Zlib:: Ruby interface for the zlib compression/decompression library
 
@@ -130,3 +126,7 @@ Observable:: Provides a mechanism for publish/subscribe pattern in Ruby
 Abbrev:: Calculates a set of unique abbreviations for a given set of strings
 resolv-replace.rb:: Replace Socket DNS with Resolv
 Rinda:: The Linda distributed computing paradigm in Ruby
+DRb:: Distributed object system for Ruby
+NKF:: Ruby extension for Network Kanji Filter
+Syslog:: Ruby interface for the POSIX system logging facility
+CSV:: Provides an interface to read and write CSV files and data

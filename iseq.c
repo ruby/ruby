@@ -1399,7 +1399,7 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
 }
 
 static void
-iseqw_s_compile_prism_compile(pm_parser_t *parser, VALUE opt, rb_iseq_t *iseq, VALUE file, VALUE path, int first_lineno)
+iseqw_s_compile_prism_compile(pm_parser_t *parser, VALUE optimize, rb_iseq_t *iseq, VALUE file, VALUE path, int first_lineno)
 {
     pm_node_t *node = pm_parse(parser);
 
@@ -1422,7 +1422,7 @@ iseqw_s_compile_prism_compile(pm_parser_t *parser, VALUE opt, rb_iseq_t *iseq, V
         pm_code_location(&code_location, &parser->newline_list, &node->location);
 
         rb_compile_option_t option;
-        make_compile_option(&option, opt);
+        make_compile_option(&option, optimize);
         prepare_iseq_build(iseq, rb_fstring_lit("<compiled>"), file, path, first_lineno, &code_location, -1, NULL, 0, ISEQ_TYPE_TOP, Qnil, &option);
 
         pm_scope_node_t scope_node;
@@ -1475,12 +1475,12 @@ iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
 
     pm_parser_t parser;
 
+    VALUE file_path = Qnil;
     pm_string_t input;
     if (RB_TYPE_P(src, T_FILE)) {
-        FilePathValue(src);
-        file = rb_fstring(src); /* rb_io_t->pathv gets frozen anyways */
+        file_path = rb_io_path(src); /* rb_io_t->pathv gets frozen anyways */
 
-        pm_string_mapped_init(&input, RSTRING_PTR(file));
+        pm_string_mapped_init(&input, RSTRING_PTR(file_path));
     }
     else {
         Check_Type(src, T_STRING);
@@ -1493,6 +1493,7 @@ iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
 
     rb_iseq_t *iseq = iseq_alloc();
     iseqw_s_compile_prism_compile(&parser, opt, iseq, file, path, start_line);
+    RB_GC_GUARD(file_path);
     pm_parser_free(&parser);
     pm_options_free(&options);
     pm_string_free(&input);
@@ -1533,7 +1534,7 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
 }
 
 rb_iseq_t *
-rb_iseq_new_main_prism(pm_string_t *input, pm_options_t *options, VALUE path)
+rb_iseq_new_main_prism(pm_string_t *input, pm_options_t *options, VALUE script_name, VALUE path, VALUE optimize)
 {
     pm_parser_t parser;
     pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
@@ -1543,7 +1544,7 @@ rb_iseq_new_main_prism(pm_string_t *input, pm_options_t *options, VALUE path)
     pm_options_line_set(options, start_line);
 
     rb_iseq_t *iseq = iseq_alloc();
-    iseqw_s_compile_prism_compile(&parser, Qnil, iseq, path, path, start_line);
+    iseqw_s_compile_prism_compile(&parser, optimize, iseq, script_name, path, start_line);
 
     pm_parser_free(&parser);
     return iseq;

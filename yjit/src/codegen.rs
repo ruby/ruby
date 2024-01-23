@@ -1810,7 +1810,7 @@ fn gen_get_ep(asm: &mut Assembler, level: u32) -> Opnd {
 
 // Gets the EP of the ISeq of the containing method, or "local level".
 // Equivalent of GET_LEP() macro.
-fn gen_get_lep(jit: &mut JITState, asm: &mut Assembler) -> Opnd {
+fn gen_get_lep(jit: &JITState, asm: &mut Assembler) -> Opnd {
     // Equivalent of get_lvar_level() in compile.c
     fn get_lvar_level(iseq: IseqPtr) -> u32 {
         if iseq == unsafe { rb_get_iseq_body_local_iseq(iseq) } {
@@ -5893,12 +5893,6 @@ fn get_array_ptr(asm: &mut Assembler, array_reg: Opnd) -> Opnd {
 fn copy_splat_args_for_rest_callee(array: Opnd, num_args: u32, asm: &mut Assembler) {
     asm_comment!(asm, "copy_splat_args_for_rest_callee");
 
-    let array_len_opnd = get_array_len(asm, array);
-
-    asm_comment!(asm, "guard splat array large enough");
-    asm.cmp(array_len_opnd, num_args.into());
-    asm.jl(Target::side_exit(Counter::guard_send_iseq_has_rest_and_splat_too_few));
-
     // Unused operands cause the backend to panic
     if num_args == 0 {
         return;
@@ -6117,6 +6111,7 @@ fn gen_send_iseq(
     let supplying_kws = unsafe { vm_ci_flag(ci) & VM_CALL_KWARG } != 0;
     let iseq_has_rest = unsafe { get_iseq_flags_has_rest(iseq) };
     let iseq_has_block_param = unsafe { get_iseq_flags_has_block(iseq) };
+    let arg_setup_block = captured_opnd.is_some(); // arg_setup_type: arg_setup_block (invokeblock)
 
     // For computing offsets to callee locals
     let num_params = unsafe { get_iseq_body_param_size(iseq) };
@@ -6137,10 +6132,10 @@ fn gen_send_iseq(
     // Arity handling and optional parameter setup
     let mut opts_filled = argc - required_num - kw_arg_num;
     let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
-    // We have a rest parameter so there could be more args
-    // than are required + optional. Those will go in rest.
+    // With a rest parameter or a yield to a block,
+    // callers can pass more than required + optional.
     // So we cap ops_filled at opt_num.
-    if iseq_has_rest {
+    if iseq_has_rest || arg_setup_block {
         opts_filled = min(opts_filled, opt_num);
     }
     let mut opts_missing: i32 = opt_num - opts_filled;
@@ -6159,10 +6154,16 @@ fn gen_send_iseq(
     exit_if_supplying_kws_and_accept_no_kwargs(asm, supplying_kws, iseq)?;
     exit_if_splat_and_zsuper(asm, flags)?;
     exit_if_doing_kw_and_splat(asm, doing_kw_call, flags)?;
-    exit_if_wrong_number_arguments(asm, opts_filled, flags, opt_num, iseq_has_rest)?;
+    exit_if_wrong_number_arguments(asm, arg_setup_block, opts_filled, flags, opt_num, iseq_has_rest)?;
     exit_if_doing_kw_and_opts_missing(asm, doing_kw_call, opts_missing)?;
     exit_if_has_rest_and_optional_and_block(asm, iseq_has_rest, opt_num, iseq, block_arg)?;
     let block_arg_type = exit_if_unsupported_block_arg_type(jit, asm, block_arg)?;
+
+    // Bail if we can't drop extra arguments for a yield by just popping them
+    if supplying_kws && arg_setup_block && argc > (kw_arg_num + required_num + opt_num) {
+        gen_counter_incr(asm, Counter::send_iseq_complex_discard_extras);
+        return None;
+    }
 
     // Block parameter handling. This mirrors setup_parameters_complex().
     if iseq_has_block_param {
@@ -6249,35 +6250,6 @@ fn gen_send_iseq(
         }
     }
 
-    // Check if we need the arg0 splat handling of vm_callee_setup_block_arg()
-    // Also known as "autosplat" inside setup_parameters_complex()
-    let arg_setup_block = captured_opnd.is_some(); // arg_setup_type: arg_setup_block (invokeblock)
-    let block_arg0_splat = arg_setup_block && argc == 1 && unsafe {
-         (get_iseq_flags_has_lead(iseq) || opt_num > 1)
-             && !get_iseq_flags_ambiguous_param0(iseq)
-    };
-    if block_arg0_splat {
-        // If block_arg0_splat, we still need side exits after splat, but
-        // doing push_splat_args here disallows it. So bail out.
-        if flags & VM_CALL_ARGS_SPLAT != 0 && !iseq_has_rest {
-            gen_counter_incr(asm, Counter::invokeblock_iseq_arg0_args_splat);
-            return None;
-        }
-        // The block_arg0_splat implementation is for the rb_simple_iseq_p case,
-        // but doing_kw_call means it's not a simple ISEQ.
-        if doing_kw_call {
-            gen_counter_incr(asm, Counter::invokeblock_iseq_arg0_has_kw);
-            return None;
-        }
-        // The block_arg0_splat implementation cannot deal with optional parameters.
-        // This is a setup_parameters_complex() situation and interacts with the
-        // starting position of the callee.
-        if opt_num > 1 {
-            gen_counter_incr(asm, Counter::invokeblock_iseq_arg0_optional);
-            return None;
-        }
-    }
-
     let splat_array_length = if flags & VM_CALL_ARGS_SPLAT != 0 {
         let array = jit.peek_at_stack(&asm.ctx, if block_arg { 1 } else { 0 }) ;
         let array_length = if array == Qnil {
@@ -6317,6 +6289,33 @@ fn gen_send_iseq(
     } else {
         None
     };
+
+    // Check if we need the arg0 splat handling of vm_callee_setup_block_arg()
+    // Also known as "autosplat" inside setup_parameters_complex().
+    // Autosplat checks argc == 1 after splat and kwsplat processing, so make
+    // sure to amend this if we start support kw_splat.
+    let block_arg0_splat = arg_setup_block
+        && (argc == 1 || (argc == 2 && splat_array_length == Some(0)))
+        && !supplying_kws && !doing_kw_call
+        && unsafe {
+            (get_iseq_flags_has_lead(iseq) || opt_num > 1)
+                && !get_iseq_flags_ambiguous_param0(iseq)
+        };
+    if block_arg0_splat {
+        // If block_arg0_splat, we still need side exits after splat, but
+        // the splat modifies the stack which breaks side exits. So bail out.
+        if flags & VM_CALL_ARGS_SPLAT != 0 {
+            gen_counter_incr(asm, Counter::invokeblock_iseq_arg0_args_splat);
+            return None;
+        }
+        // The block_arg0_splat implementation cannot deal with optional parameters.
+        // This is a setup_parameters_complex() situation and interacts with the
+        // starting position of the callee.
+        if opt_num > 1 {
+            gen_counter_incr(asm, Counter::invokeblock_iseq_arg0_optional);
+            return None;
+        }
+    }
 
     // Adjust `opts_filled` and `opts_missing` taking
     // into account the size of the splat expansion.
@@ -6425,6 +6424,28 @@ fn gen_send_iseq(
     let stack_limit = asm.lea(asm.ctx.sp_opnd(locals_offs as isize));
     asm.cmp(CFP, stack_limit);
     asm.jbe(Target::side_exit(Counter::guard_send_se_cf_overflow));
+
+    if iseq_has_rest && flags & VM_CALL_ARGS_SPLAT != 0 {
+        // Insert length guard for a call to copy_splat_args_for_rest_callee()
+        // that will come later. We will have made changes to
+        // the stack by spilling or handling __send__ shifting
+        // by the time we get to that code, so we need the
+        // guard here where we can still side exit.
+        let non_rest_arg_count = argc - 1;
+        if non_rest_arg_count < required_num + opt_num {
+            let take_count: u32 = (required_num - non_rest_arg_count + opts_filled)
+                .try_into().unwrap();
+
+            if take_count > 0 {
+                asm_comment!(asm, "guard splat_array_length >= {take_count}");
+
+                let splat_array = asm.stack_opnd(i32::from(block_arg) + kw_arg_num);
+                let array_len_opnd = get_array_len(asm, splat_array);
+                asm.cmp(array_len_opnd, take_count.into());
+                asm.jl(Target::side_exit(Counter::guard_send_iseq_has_rest_and_splat_too_few));
+            }
+        }
+    }
 
     match block_arg_type {
         Some(Type::Nil) => {
@@ -6536,14 +6557,14 @@ fn gen_send_iseq(
                 // from the array and move them to the stack.
                 asm_comment!(asm, "take items from splat array");
 
-                let diff: u32 = (required_num - non_rest_arg_count + opts_filled)
+                let take_count: u32 = (required_num - non_rest_arg_count + opts_filled)
                     .try_into().unwrap();
 
                 // Copy required arguments to the stack without modifying the array
-                copy_splat_args_for_rest_callee(array, diff, asm);
+                copy_splat_args_for_rest_callee(array, take_count, asm);
 
                 // We will now slice the array to give us a new array of the correct size
-                let sliced = asm.ccall(rb_yjit_rb_ary_subseq_length as *const u8, vec![array, Opnd::UImm(diff as u64)]);
+                let sliced = asm.ccall(rb_yjit_rb_ary_subseq_length as *const u8, vec![array, Opnd::UImm(take_count.into())]);
 
                 sliced
             } else {
@@ -6603,6 +6624,19 @@ fn gen_send_iseq(
         // we won't be reading it for the remainder of the block.
         asm.ctx.dealloc_temp_reg(rest_param.stack_idx());
         asm.store(rest_param, rest_param_array);
+    }
+
+    // Pop surplus positional arguments when yielding
+    if arg_setup_block {
+        let extras = argc - required_num - opt_num;
+        if extras > 0 {
+            // Checked earlier. If there are keyword args, then
+            // the positional arguments are not at the stack top.
+            assert_eq!(0, kw_arg_num);
+
+            asm.stack_pop(extras as usize);
+            argc = required_num + opt_num;
+        }
     }
 
     if doing_kw_call {
@@ -6876,6 +6910,12 @@ fn gen_send_iseq(
     // Create a context for the callee
     let mut callee_ctx = Context::default();
 
+    // If the callee has :inline_block annotation and the callsite has a block ISEQ,
+    // duplicate a callee block for each block ISEQ to make its `yield` monomorphic.
+    if let (Some(BlockHandler::BlockISeq(iseq)), true) = (block, builtin_attrs & BUILTIN_ATTR_INLINE_BLOCK != 0) {
+        callee_ctx.set_inline_block(iseq);
+    }
+
     // Set the argument types in the callee's context
     for arg_idx in 0..argc {
         let stack_offs: u8 = (argc - arg_idx - 1).try_into().unwrap();
@@ -7034,11 +7074,18 @@ fn exit_if_doing_kw_and_splat(asm: &mut Assembler, doing_kw_call: bool, flags: u
 }
 
 #[must_use]
-fn exit_if_wrong_number_arguments(asm: &mut Assembler, opts_filled: i32, flags: u32, opt_num: i32, iseq_has_rest: bool) -> Option<()> {
+fn exit_if_wrong_number_arguments(
+    asm: &mut Assembler,
+    args_setup_block: bool,
+    opts_filled: i32,
+    flags: u32,
+    opt_num: i32,
+    iseq_has_rest: bool,
+) -> Option<()> {
     // Too few arguments and no splat to make up for it
     let too_few = opts_filled < 0 && flags & VM_CALL_ARGS_SPLAT == 0;
-    // Too many arguments and no place to put them (i.e. rest arg)
-    let too_many = opts_filled > opt_num && !iseq_has_rest;
+    // Too many arguments and no sink that take them
+    let too_many = opts_filled > opt_num && !(iseq_has_rest || args_setup_block);
 
     exit_if(asm, too_few || too_many, Counter::send_iseq_arity_error)
 }
@@ -7862,6 +7909,13 @@ fn gen_invokeblock_specialized(
             SEND_MAX_DEPTH,
             Counter::guard_invokeblock_tag_changed,
         );
+
+        // If the current ISEQ is annotated to be inlined but it's not being inlined here,
+        // generate a dynamic dispatch to avoid making this yield megamorphic.
+        if unsafe { rb_yjit_iseq_builtin_attrs(jit.iseq) } & BUILTIN_ATTR_INLINE_BLOCK != 0 && !asm.ctx.inline() {
+            gen_counter_incr(asm, Counter::invokeblock_iseq_not_inlined);
+            return None;
+        }
 
         let comptime_captured = unsafe { ((comptime_handler.0 & !0x3) as *const rb_captured_block).as_ref().unwrap() };
         let comptime_iseq = unsafe { *comptime_captured.code.iseq.as_ref() };

@@ -20,12 +20,10 @@ module SyncDefaultGems
     English: "ruby/English",
     benchmark: "ruby/benchmark",
     cgi: "ruby/cgi",
-    csv: 'ruby/csv',
     date: 'ruby/date',
     delegate: "ruby/delegate",
     did_you_mean: "ruby/did_you_mean",
     digest: "ruby/digest",
-    drb: "ruby/drb",
     erb: "ruby/erb",
     error_highlight: "ruby/error_highlight",
     etc: 'ruby/etc',
@@ -38,7 +36,6 @@ module SyncDefaultGems
     irb: 'ruby/irb',
     json: 'flori/json',
     logger: 'ruby/logger',
-    nkf: "ruby/nkf",
     open3: "ruby/open3",
     openssl: "ruby/openssl",
     optparse: "ruby/optparse",
@@ -319,13 +316,6 @@ module SyncDefaultGems
       cp_r("#{upstream}/test/erb", "test")
       cp_r("#{upstream}/erb.gemspec", "lib")
       cp_r("#{upstream}/libexec/erb", "libexec")
-    when "nkf"
-      rm_rf(%w[ext/nkf test/nkf])
-      cp_r("#{upstream}/ext/nkf", "ext")
-      cp_r("#{upstream}/lib", "ext/nkf")
-      cp_r("#{upstream}/test/nkf", "test")
-      cp_r("#{upstream}/nkf.gemspec", "ext/nkf")
-      `git checkout ext/nkf/depend`
     when "syslog"
       rm_rf(%w[ext/syslog test/syslog test/test_syslog.rb])
       cp_r("#{upstream}/ext/syslog", "ext")

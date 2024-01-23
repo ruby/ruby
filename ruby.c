@@ -2427,7 +2427,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
                 pm_options_filepath_set(&options, RSTRING_PTR(opt->script_name));
             }
 
-            iseq = rb_iseq_new_main_prism(&input, &options, path);
+            VALUE optimize = dump & DUMP_BIT(insns_without_opt) ? Qfalse : Qnil;
+            iseq = rb_iseq_new_main_prism(&input, &options, opt->script_name, path, optimize);
             ruby_opt_init(opt);
 
             pm_string_free(&input);

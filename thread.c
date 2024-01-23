@@ -639,8 +639,6 @@ void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
 static int
 thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 {
-    STACK_GROW_DIR_DETECTION;
-
     RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
     VM_ASSERT(th != th->vm->ractor.main_thread);
 

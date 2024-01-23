@@ -1989,7 +1989,7 @@ native_thread_init_main_thread_stack(void *addr)
 #else
     if (!native_main_thread.stack_start ||
         STACK_UPPER((VALUE *)(void *)&addr,
-                    native_main_thread.stack_start > addr,
+                    native_main_thread.stack_start > (VALUE *)addr,
                     native_main_thread.stack_start < (VALUE *)addr)) {
         native_main_thread.stack_start = (VALUE *)addr;
     }

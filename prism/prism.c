@@ -1352,16 +1352,18 @@ pm_assoc_node_create(pm_parser_t *parser, pm_node_t *key, const pm_token_t *oper
         end = key->location.end;
     }
 
+    // Hash string keys will be frozen, so we can mark them as frozen here so
+    // that the compiler picks them up and also when we check for static literal
+    // on the keys it gets factored in.
+    if (PM_NODE_TYPE_P(key, PM_STRING_NODE)) {
+        key->flags |= PM_STRING_FLAGS_FROZEN | PM_NODE_FLAG_STATIC_LITERAL;
+    }
+
     // If the key and value of this assoc node are both static literals, then
     // we can mark this node as a static literal.
     pm_node_flags_t flags = 0;
     if (value && !PM_NODE_TYPE_P(value, PM_ARRAY_NODE) && !PM_NODE_TYPE_P(value, PM_HASH_NODE) && !PM_NODE_TYPE_P(value, PM_RANGE_NODE)) {
         flags = key->flags & value->flags & PM_NODE_FLAG_STATIC_LITERAL;
-    }
-
-    // Hash string keys should be frozen
-    if (PM_NODE_TYPE_P(key, PM_STRING_NODE)) {
-        key->flags |= PM_STRING_FLAGS_FROZEN;
     }
 
     *node = (pm_assoc_node_t) {
@@ -12719,20 +12721,24 @@ parse_string_part(pm_parser_t *parser) {
  * automatically drop trailing `@` characters. This happens at the parser level,
  * such that `~@` is parsed as `~` and `!@` is parsed as `!`. We do that here.
  */
+static const uint8_t *
+parse_operator_symbol_name(const pm_token_t *name) {
+    switch (name->type) {
+        case PM_TOKEN_TILDE:
+        case PM_TOKEN_BANG:
+            if (name->end[-1] == '@') return name->end - 1;
+        /* fallthrough */
+        default:
+            return name->end;
+    }
+}
+
 static pm_node_t *
 parse_operator_symbol(pm_parser_t *parser, const pm_token_t *opening, pm_lex_state_t next_state) {
     pm_token_t closing = not_provided(parser);
     pm_symbol_node_t *symbol = pm_symbol_node_create(parser, opening, &parser->current, &closing);
 
-    const uint8_t *end = parser->current.end;
-    switch (parser->current.type) {
-        case PM_TOKEN_TILDE:
-        case PM_TOKEN_BANG:
-            if (parser->current.end[-1] == '@') end--;
-            break;
-        default:
-            break;
-    }
+    const uint8_t *end = parse_operator_symbol_name(&parser->current);
 
     if (next_state != PM_LEX_STATE_NONE) lex_state_set(parser, next_state);
     parser_lex(parser);
@@ -15379,6 +15385,13 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_parser_scope_pop(parser);
             pm_parser_current_param_name_restore(parser, saved_param_name);
 
+            /**
+             * If the final character is @. As is the case when defining
+             * methods to override the unary operators, we should ignore
+             * the @ in the same way we do for symbols.
+             */
+            name.end = parse_operator_symbol_name(&name);
+
             return (pm_node_t *) pm_def_node_create(
                 parser,
                 &name,
@@ -17862,7 +17875,7 @@ pm_parser_errors_format_sort(const pm_list_t *error_list, const pm_newline_list_
         if (start.line == end.line) {
             column_end = (uint32_t) end.column;
         } else {
-            column_end = (uint32_t) (newline_list->offsets[start.line + 1] - newline_list->offsets[start.line] - 1);
+            column_end = (uint32_t) (newline_list->offsets[start.line] - newline_list->offsets[start.line - 1] - 1);
         }
 
         // Ensure we have at least one column of error.
@@ -17881,16 +17894,16 @@ pm_parser_errors_format_sort(const pm_list_t *error_list, const pm_newline_list_
 
 static inline void
 pm_parser_errors_format_line(const pm_parser_t *parser, const pm_newline_list_t *newline_list, const char *number_prefix, size_t line, pm_buffer_t *buffer) {
-    const uint8_t *start = &parser->start[newline_list->offsets[line]];
+    const uint8_t *start = &parser->start[newline_list->offsets[line - 1]];
     const uint8_t *end;
 
-    if (line + 1 >= newline_list->size) {
+    if (line >= newline_list->size) {
         end = parser->end;
     } else {
-        end = &parser->start[newline_list->offsets[line + 1]];
+        end = &parser->start[newline_list->offsets[line]];
     }
 
-    pm_buffer_append_format(buffer, number_prefix, (uint32_t) (line + 1));
+    pm_buffer_append_format(buffer, number_prefix, (uint32_t) line);
     pm_buffer_append_string(buffer, (const char *) start, (size_t) (end - start));
 
     if (end == parser->end && end[-1] != '\n') {
@@ -17915,7 +17928,7 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
     // blank lines based on the maximum number of digits in the line numbers
     // that are going to be displayed.
     pm_error_format_t error_format;
-    size_t max_line_number = errors[error_list->size - 1].line + 1;
+    size_t max_line_number = errors[error_list->size - 1].line;
 
     if (max_line_number < 10) {
         if (colorize) {
@@ -17997,7 +18010,7 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
     // the source before the error to give some context. We'll be careful not to
     // display the same line twice in case the errors are close enough in the
     // source.
-    uint32_t last_line = (uint32_t) -1;
+    uint32_t last_line = 0;
     const pm_encoding_t *encoding = parser->encoding;
 
     for (size_t index = 0; index < error_list->size; index++) {
@@ -18043,7 +18056,7 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
         pm_buffer_append_string(buffer, error_format.blank_prefix, error_format.blank_prefix_length);
 
         size_t column = 0;
-        const uint8_t *start = &parser->start[newline_list->offsets[error->line]];
+        const uint8_t *start = &parser->start[newline_list->offsets[error->line - 1]];
 
         while (column < error->column_end) {
             if (column < error->column_start) {
@@ -18067,7 +18080,7 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
         // Here we determine how many lines of padding to display after the
         // error, depending on where the next error is in source.
         last_line = error->line;
-        size_t next_line = (index == error_list->size - 1) ? newline_list->size - 1 : errors[index + 1].line;
+        size_t next_line = (index == error_list->size - 1) ? newline_list->size : errors[index + 1].line;
 
         if (next_line - last_line > 1) {
             pm_buffer_append_string(buffer, "  ", 2);
