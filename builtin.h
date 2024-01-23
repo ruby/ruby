@@ -106,6 +106,8 @@ rb_vm_lvar(rb_execution_context_t *ec, int index)
 #endif
 }
 
+#define LOCAL_PTR(local) local ## __ptr
+
 // dump/load
 
 struct builtin_binary {

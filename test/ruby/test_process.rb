@@ -2841,6 +2841,7 @@ EOS
 
   def test_low_memory_startup
     omit "JIT enabled" if %w[YJIT RJIT].any? {|n| RubyVM.const_defined?(n) and RubyVM.const_get(n).enabled?}
+    omit "flaky on Travis arm32" if /armv8l-linux-eabihf/ =~ RUBY_PLATFORM
     as = 1<<25
     _, _, status = EnvUtil.invoke_ruby(%W'-W0', "", true, :merge_to_stdout, rlimit_as: as)
     omit sprintf("Crashed with AS: %#x: %s", as, status) if status.signaled?

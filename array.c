@@ -28,6 +28,7 @@
 #include "ruby/encoding.h"
 #include "ruby/st.h"
 #include "ruby/util.h"
+#include "vm_core.h"
 #include "builtin.h"
 
 #if !ARRAY_DEBUG
@@ -2484,50 +2485,19 @@ ary_enum_length(VALUE ary, VALUE args, VALUE eobj)
     return rb_ary_length(ary);
 }
 
-/*
- *  call-seq:
- *    array.each {|element| ... } -> self
- *    array.each -> Enumerator
- *
- *  Iterates over array elements.
- *
- *  When a block given, passes each successive array element to the block;
- *  returns +self+:
- *
- *    a = [:foo, 'bar', 2]
- *    a.each {|element|  puts "#{element.class} #{element}" }
- *
- *  Output:
- *
- *    Symbol foo
- *    String bar
- *    Integer 2
- *
- *  Allows the array to be modified during iteration:
- *
- *    a = [:foo, 'bar', 2]
- *    a.each {|element| puts element; a.clear if element.to_s.start_with?('b') }
- *
- *  Output:
- *
- *    foo
- *    bar
- *
- *  When no block given, returns a new Enumerator:
- *    a = [:foo, 'bar', 2]
- *
- *    e = a.each
- *    e # => #<Enumerator: [:foo, "bar", 2]:each>
- *    a1 = e.each {|element|  puts "#{element.class} #{element}" }
- *
- *  Output:
- *
- *    Symbol foo
- *    String bar
- *    Integer 2
- *
- *  Related: #each_index, #reverse_each.
- */
+// Primitive to avoid a race condition in Array#each.
+// Return `true` and write `value` and `index` if the element exists.
+static VALUE
+ary_fetch_next(VALUE self, VALUE *index, VALUE *value)
+{
+    long i = NUM2LONG(*index);
+    if (i >= RARRAY_LEN(self)) {
+        return Qfalse;
+    }
+    *value = RARRAY_AREF(self, i);
+    *index = LONG2NUM(i + 1);
+    return Qtrue;
+}
 
 VALUE
 rb_ary_each(VALUE ary)
@@ -8644,7 +8614,6 @@ Init_Array(void)
     rb_define_method(rb_cArray, "unshift", rb_ary_unshift_m, -1);
     rb_define_alias(rb_cArray,  "prepend", "unshift");
     rb_define_method(rb_cArray, "insert", rb_ary_insert, -1);
-    rb_define_method(rb_cArray, "each", rb_ary_each, 0);
     rb_define_method(rb_cArray, "each_index", rb_ary_each_index, 0);
     rb_define_method(rb_cArray, "reverse_each", rb_ary_reverse_each, 0);
     rb_define_method(rb_cArray, "length", rb_ary_length, 0);
