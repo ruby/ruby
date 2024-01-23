@@ -202,3 +202,8 @@ end
 foo => Object[{x:}]
 
 1.then { 1 in ^_1 }
+
+(
+  a,
+  b
+) = c
