@@ -513,7 +513,6 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_extract_file_permissions
     pend "chmod not supported" if Gem.win_platform?
-    pend "Travis CI enable writable permission to group" if ENV['TRAVIS']
 
     gem_with_long_permissions = File.expand_path("packages/Bluebie-legs-0.6.2.gem", __dir__)
 
@@ -529,7 +528,6 @@ class TestGemPackage < Gem::Package::TarTestCase
 
   def test_extract_file_umask_global_permissions
     pend "chmod not supported" if Gem.win_platform?
-    pend "Travis CI enable writable permission to group" if ENV['TRAVIS']
 
     package = Gem::Package.new @gem
 
