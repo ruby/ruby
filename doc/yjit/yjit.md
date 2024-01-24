@@ -243,8 +243,8 @@ which often consumes more memory than JIT code. Generally, YJIT adds memory over
 3-4x of `--yjit-exec-mem-size` in production as of Ruby 3.3. You should multiply that by the number
 of worker processes to estimate the worst case memory overhead.
 
-We use `--yjit-exec-mem-size=64` for Shopify's Rails monolith, which is Ruby 3.3's default,
-but smaller values like 32 MiB or 48 MiB might make sense for your application.
+`--yjit-exec-mem-size=48` is the default since Ruby 3.3.1,
+but smaller values like 32 MiB might make sense for your application.
 While doing so, you may want to monitor `RubyVM::YJIT.runtime_stats[:ratio_in_yjit]` as explained above.
 
 ### Enabling YJIT lazily
