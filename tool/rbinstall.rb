@@ -549,24 +549,24 @@ module RbInstall
       end
 
       def collect
-        libraries.sort
+        requirable_features.sort
       end
 
       class Ext < self
-        def libraries
+        def requirable_features
           # install ext only when it's configured
           return [] unless File.exist?(makefile_path)
 
-          ruby_libraries + ext_libraries
+          ruby_features + ext_features
         end
 
         private
 
-        def ruby_libraries
+        def ruby_features
           Dir.glob("**/*.rb", base: "#{makefile_dir}/lib")
         end
 
-        def ext_libraries
+        def ext_features
           makefile = File.read(makefile_path)
 
           name = makefile[/^TARGET[ \t]*=[ \t]*((?:.*\\\n)*.*)/, 1]
@@ -586,24 +586,24 @@ module RbInstall
       end
 
       class Lib < self
-        def libraries
+        def requirable_features
           gemname = File.basename(gemspec, ".gemspec")
           base = relative_base || gemname
           # for lib/net/net-smtp.gemspec
           if m = /.*(?=-(.*)\z)/.match(gemname)
             base = File.join(base, *m.to_a.select {|n| !base.include?(n)})
           end
-          files = Dir.glob("lib/#{base}{.rb,/**/*.rb}", base: srcdir)
+          files = Dir.glob("#{base}{.rb,/**/*.rb}", base: "#{srcdir}/lib")
           if !relative_base and files.empty? # no files at the toplevel
             # pseudo gem like ruby2_keywords
-            files << "lib/#{gemname}.rb"
+            files << "#{gemname}.rb"
           end
 
           case gemname
           when "net-http"
-            files << "lib/net/https.rb"
+            files << "net/https.rb"
           when "optparse"
-            files << "lib/optionparser.rb"
+            files << "optionparser.rb"
           end
 
           files
