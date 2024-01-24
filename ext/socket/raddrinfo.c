@@ -481,7 +481,7 @@ rb_getaddrinfo(const char *hostp, const char *portp, const struct addrinfo *hint
 {
     int retry;
     struct getaddrinfo_arg *arg;
-    int err, gai_errno;
+    int err, gai_errno = 0;
 
 start:
     retry = 0;
@@ -531,7 +531,7 @@ start:
     /* Because errno is threadlocal, the errno value we got from the call to getaddrinfo() in the thread
      * (in case of EAI_SYSTEM return value) is not propagated to the caller of _this_ function. Set errno
      * explicitly, as round-tripped through struct getaddrinfo_arg, to deal with that */
-    errno = gai_errno;
+    if (gai_errno) errno = gai_errno;
     return err;
 }
 
@@ -700,7 +700,7 @@ rb_getnameinfo(const struct sockaddr *sa, socklen_t salen,
 {
     int retry;
     struct getnameinfo_arg *arg;
-    int err, gni_errno;
+    int err, gni_errno = 0;
 
 start:
     retry = 0;
@@ -750,7 +750,7 @@ start:
 
     /* Make sure we copy the thread-local errno value from the getnameinfo thread back to this thread, so
      * calling code sees the correct errno */
-    errno = gni_errno;
+    if (gni_errno) errno = gni_errno;
     return err;
 }
 
