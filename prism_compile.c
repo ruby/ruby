@@ -59,6 +59,7 @@
 
 #define PM_SPECIAL_CONSTANT_FLAG ((pm_constant_id_t)(1 << 31))
 #define PM_CONSTANT_AND ((pm_constant_id_t)(idAnd | PM_SPECIAL_CONSTANT_FLAG))
+#define PM_CONSTANT_DOT3 ((pm_constant_id_t)(idDot3 | PM_SPECIAL_CONSTANT_FLAG))
 #define PM_CONSTANT_MULT ((pm_constant_id_t)(idMULT | PM_SPECIAL_CONSTANT_FLAG))
 #define PM_CONSTANT_POW ((pm_constant_id_t)(idPow | PM_SPECIAL_CONSTANT_FLAG))
 
@@ -1181,9 +1182,15 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
               case PM_FORWARDING_ARGUMENTS_NODE: {
                 orig_argc++;
                 *flags |= VM_CALL_ARGS_BLOCKARG | VM_CALL_ARGS_SPLAT;
-                ADD_GETLOCAL(ret, &dummy_line_node, 3, 0);
+
+                pm_local_index_t mult_index = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_MULT, 0);
+                ADD_GETLOCAL(ret, &dummy_line_node, mult_index.index, mult_index.level);
+
                 ADD_INSN1(ret, &dummy_line_node, splatarray, RBOOL(arguments_node_list.size > 1));
-                ADD_INSN2(ret, &dummy_line_node, getblockparamproxy, INT2FIX(4), INT2FIX(0));
+
+                pm_local_index_t dot3_index = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_DOT3, 0);
+                ADD_INSN2(ret, &dummy_line_node, getblockparamproxy, INT2FIX(dot3_index.index), INT2FIX(dot3_index.level));
+
                 break;
               }
               default: {
@@ -6635,8 +6642,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                   case PM_FORWARDING_PARAMETER_NODE: {
                     body->param.rest_start = local_index;
                     body->param.flags.has_rest = true;
-                    ID local = idMULT;
-                    local_table_for_iseq->ids[local_index] = local;
+                    local_table_for_iseq->ids[local_index] = PM_CONSTANT_MULT;
+                    st_insert(index_lookup_table, PM_CONSTANT_MULT, local_index);
                     local_index++;
 
                     body->param.block_start = local_index;
@@ -6645,8 +6652,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     st_insert(index_lookup_table, PM_CONSTANT_AND, local_index);
                     local_index++;
 
-                    local = idDot3;
-                    local_table_for_iseq->ids[local_index] = local;
+                    local_table_for_iseq->ids[local_index] = PM_CONSTANT_DOT3;
+                    st_insert(index_lookup_table, PM_CONSTANT_DOT3, local_index);
                     local_index++;
                     break;
                   }
