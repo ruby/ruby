@@ -2078,6 +2078,13 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
         CHECK(pm_compile_pattern(iseq, scope_node, cast->right, ret, src, matched_label, unmatched_label, in_single_pattern, true, true, base_index));
         break;
       }
+      case PM_PINNED_EXPRESSION_NODE:
+        // Pinned expressions are a way to match against the value of an
+        // expression that should be evaluated at runtime. This looks like:
+        // foo in ^(bar). To compile these, we compile the expression as if it
+        // were a literal value by falling through to the literal case.
+        node = ((pm_pinned_expression_node_t *) node)->expression;
+        /* fallthrough */
       case PM_ARRAY_NODE:
       case PM_CLASS_VARIABLE_READ_NODE:
       case PM_CONSTANT_PATH_NODE:
@@ -2095,6 +2102,9 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
       case PM_LAMBDA_NODE:
       case PM_LOCAL_VARIABLE_READ_NODE:
       case PM_NIL_NODE:
+      case PM_SOURCE_ENCODING_NODE:
+      case PM_SOURCE_FILE_NODE:
+      case PM_SOURCE_LINE_NODE:
       case PM_RANGE_NODE:
       case PM_RATIONAL_NODE:
       case PM_REGULAR_EXPRESSION_NODE:
@@ -2128,15 +2138,6 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
         // that they hold.
         pm_pinned_variable_node_t *cast = (pm_pinned_variable_node_t *) node;
         CHECK(pm_compile_pattern(iseq, scope_node, cast->variable, ret, src, matched_label, unmatched_label, in_single_pattern, in_alternation_pattern, true, base_index));
-        break;
-      }
-      case PM_PINNED_EXPRESSION_NODE: {
-        // Pinned expressions are a way to match against the value of an
-        // expression that should be evaluated at runtime. This looks like:
-        // foo in ^(bar). To compile these, we compile the expression that they
-        // hold.
-        pm_pinned_expression_node_t *cast = (pm_pinned_expression_node_t *) node;
-        CHECK(pm_compile_pattern(iseq, scope_node, cast->expression, ret, src, matched_label, unmatched_label, in_single_pattern, in_alternation_pattern, true, base_index));
         break;
       }
       case PM_IF_NODE:
