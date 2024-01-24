@@ -6617,8 +6617,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
                     body->param.block_start = local_index;
                     body->param.flags.has_block = true;
-                    local = idAnd;
-                    local_table_for_iseq->ids[local_index] = local;
+                    local_table_for_iseq->ids[local_index] = PM_CONSTANT_AND;
+                    st_insert(index_lookup_table, PM_CONSTANT_AND, local_index);
                     local_index++;
 
                     local = idDot3;

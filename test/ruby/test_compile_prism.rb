@@ -1713,11 +1713,20 @@ end
     def test_BlockArgumentNode
       assert_prism_eval("1.then(&:to_s)")
 
-      # Test forwarding with no name
+      # Test anonymous block forwarding
       assert_prism_eval(<<~RUBY)
         o = Object.new
         def o.foo(&) = yield
         def o.bar(&) = foo(&)
+
+        o.bar { :ok }
+      RUBY
+
+      # Test anonymous block forwarding from argument forwarding
+      assert_prism_eval(<<~RUBY)
+        o = Object.new
+        def o.foo = yield
+        def o.bar(...) = foo(&)
 
         o.bar { :ok }
       RUBY
