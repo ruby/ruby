@@ -81,7 +81,7 @@ pub struct Options {
 
 // Initialize the options to default values
 pub static mut OPTIONS: Options = Options {
-    exec_mem_size: 64 * 1024 * 1024,
+    exec_mem_size: 48 * 1024 * 1024,
     no_type_prop: false,
     max_versions: 4,
     num_temp_regs: 5,
@@ -101,7 +101,7 @@ pub static mut OPTIONS: Options = Options {
 
 /// YJIT option descriptions for `ruby --help`.
 static YJIT_OPTIONS: [(&str, &str); 9] = [
-    ("--yjit-exec-mem-size=num",           "Size of executable memory block in MiB (default: 64)"),
+    ("--yjit-exec-mem-size=num",           "Size of executable memory block in MiB (default: 48)"),
     ("--yjit-call-threshold=num",          "Number of calls to trigger JIT"),
     ("--yjit-cold-threshold=num",          "Global calls after which ISEQs not compiled (default: 200K)"),
     ("--yjit-stats",                       "Enable collecting YJIT statistics"),
