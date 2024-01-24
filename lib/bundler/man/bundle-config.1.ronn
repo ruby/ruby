@@ -388,10 +388,10 @@ copy-pasting bundler output.
 Also note that to guarantee a sane mapping between valid environment variable
 names and valid host names, bundler makes the following transformations:
 
-* Any `-` characters in a host name are mapped to a triple dash (`___`) in the
+* Any `-` characters in a host name are mapped to a triple underscore (`___`) in the
   corresponding environment variable.
 
-* Any `.` characters in a host name are mapped to a double dash (`__`) in the
+* Any `.` characters in a host name are mapped to a double underscore (`__`) in the
   corresponding environment variable.
 
 This means that if you have a gem server named `my.gem-host.com`, you'll need to

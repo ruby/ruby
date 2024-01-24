@@ -301,7 +301,7 @@ class Gem::Specification < Gem::BasicSpecification
   #
   # Usage:
   #
-  #   spec.description = <<-EOF
+  #   spec.description = <<~EOF
   #     Rake is a Make-like program implemented in Ruby. Tasks and
   #     dependencies are specified in standard Ruby syntax.
   #   EOF

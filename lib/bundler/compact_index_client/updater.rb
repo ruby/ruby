@@ -42,7 +42,7 @@ module Bundler
           else
             file.write(response.body)
           end
-          CacheFile.write(etag_path, etag(response))
+          CacheFile.write(etag_path, etag_from_response(response))
           true
         end
       end
@@ -53,13 +53,13 @@ module Bundler
         response = @fetcher.call(remote_path, request_headers(etag))
         return true if response.is_a?(Gem::Net::HTTPNotModified)
         CacheFile.write(local_path, response.body, parse_digests(response))
-        CacheFile.write(etag_path, etag(response))
+        CacheFile.write(etag_path, etag_from_response(response))
       end
 
       def request_headers(etag, range_start = nil)
         headers = {}
         headers["Range"] = "bytes=#{range_start}-" if range_start
-        headers["If-None-Match"] = etag if etag
+        headers["If-None-Match"] = %("#{etag}") if etag
         headers
       end
 
@@ -77,7 +77,7 @@ module Bundler
         etag
       end
 
-      def etag(response)
+      def etag_from_response(response)
         return unless response["ETag"]
         etag = response["ETag"].delete_prefix("W/")
         return if etag.delete_prefix!('"') && !etag.delete_suffix!('"')

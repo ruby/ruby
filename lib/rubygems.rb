@@ -9,7 +9,7 @@
 require "rbconfig"
 
 module Gem
-  VERSION = "3.5.4"
+  VERSION = "3.5.5"
 end
 
 # Must be first since it unloads the prelude from 1.9.2
@@ -1215,6 +1215,13 @@ An Array (#{env.inspect}) was passed in from #{caller[3]}
 
     ##
     # Find a Gem::Specification of default gem from +path+
+
+    def find_default_spec(path)
+      @path_to_default_spec_map[path]
+    end
+
+    ##
+    # Find an unresolved Gem::Specification of default gem from +path+
 
     def find_unresolved_default_spec(path)
       default_spec = @path_to_default_spec_map[path]
