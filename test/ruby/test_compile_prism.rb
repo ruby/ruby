@@ -825,6 +825,14 @@ module Prism
       assert_prism_eval("foo = { a: 1 }; { **foo }")
       assert_prism_eval("foo = { a: 1 }; bar = foo; { **foo, b: 2, **bar, c: 3 }")
       assert_prism_eval("foo = { a: 1 }; { b: 2, **foo, c: 3}")
+
+      # Test anonymous AssocSplatNode
+      assert_prism_eval(<<~RUBY)
+        o = Object.new
+        def o.bar(**) = Hash(**)
+
+        o.bar(hello: "world")
+      RUBY
     end
 
     def test_HashNode

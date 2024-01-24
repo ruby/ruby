@@ -60,6 +60,7 @@
 #define PM_SPECIAL_CONSTANT_FLAG ((pm_constant_id_t)(1 << 31))
 #define PM_CONSTANT_AND ((pm_constant_id_t)(idAnd | PM_SPECIAL_CONSTANT_FLAG))
 #define PM_CONSTANT_MULT ((pm_constant_id_t)(idMULT | PM_SPECIAL_CONSTANT_FLAG))
+#define PM_CONSTANT_POW ((pm_constant_id_t)(idPow | PM_SPECIAL_CONSTANT_FLAG))
 
 rb_iseq_t *
 pm_iseq_new_with_opt(pm_scope_node_t *scope_node, pm_parser_t *parser, VALUE name, VALUE path, VALUE realpath,
@@ -1021,7 +1022,13 @@ pm_arg_compile_keyword_hash_node(pm_keyword_hash_node_t *node, rb_iseq_t *iseq, 
             }
 
             pm_assoc_splat_node_t *assoc_splat = (pm_assoc_splat_node_t *)cur_node;
-            PM_COMPILE(assoc_splat->value);
+            if (assoc_splat->value != NULL) {
+                PM_COMPILE(assoc_splat->value);
+            }
+            else {
+                pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_POW, 0);
+                ADD_GETLOCAL(ret, &dummy_line_node, index.index, index.level);
+            }
 
             if (len > 1) {
                 ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_kwd, INT2FIX(2));
@@ -6601,7 +6608,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                         pm_insert_local_index(constant_id, local_index, index_lookup_table, local_table_for_iseq, scope_node);
                     }
                     else {
-                        local_table_for_iseq->ids[local_index] = idPow;
+                        local_table_for_iseq->ids[local_index] = PM_CONSTANT_POW;
+                        st_insert(index_lookup_table, PM_CONSTANT_POW, local_index);
                     }
                     local_index++;
                     break;
