@@ -6780,6 +6780,30 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         //********STEP 5************
         // Goal: compile anything that needed to be compiled
+        if (optionals_list && optionals_list->size) {
+            LABEL **opt_table = (LABEL **)ALLOC_N(VALUE, optionals_list->size + 1);
+            LABEL *label;
+
+            // TODO: Should we make an api for NEW_LABEL where you can pass
+            // a pointer to the label it should fill out?  We already
+            // have a list of labels allocated above so it seems wasteful
+            // to do the copies.
+            for (size_t i = 0; i < optionals_list->size; i++) {
+                label = NEW_LABEL(lineno);
+                opt_table[i] = label;
+                ADD_LABEL(ret, label);
+                pm_node_t *optional_node = optionals_list->nodes[i];
+                PM_COMPILE_NOT_POPPED(optional_node);
+            }
+
+            // Set the last label
+            label = NEW_LABEL(lineno);
+            opt_table[optionals_list->size] = label;
+            ADD_LABEL(ret, label);
+
+            body->param.opt_table = (const VALUE *)opt_table;
+        }
+
         if (keywords_list && keywords_list->size) {
             size_t optional_index = 0;
             for (size_t i = 0; i < keywords_list->size; i++) {
@@ -6823,30 +6847,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                   }
                 }
             }
-        }
-
-        if (optionals_list && optionals_list->size) {
-            LABEL **opt_table = (LABEL **)ALLOC_N(VALUE, optionals_list->size + 1);
-            LABEL *label;
-
-            // TODO: Should we make an api for NEW_LABEL where you can pass
-            // a pointer to the label it should fill out?  We already
-            // have a list of labels allocated above so it seems wasteful
-            // to do the copies.
-            for (size_t i = 0; i < optionals_list->size; i++) {
-                label = NEW_LABEL(lineno);
-                opt_table[i] = label;
-                ADD_LABEL(ret, label);
-                pm_node_t *optional_node = optionals_list->nodes[i];
-                PM_COMPILE_NOT_POPPED(optional_node);
-            }
-
-            // Set the last label
-            label = NEW_LABEL(lineno);
-            opt_table[optionals_list->size] = label;
-            ADD_LABEL(ret, label);
-
-            body->param.opt_table = (const VALUE *)opt_table;
         }
 
         if (requireds_list && requireds_list->size) {
