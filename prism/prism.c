@@ -11021,7 +11021,7 @@ parse_write(pm_parser_t *parser, pm_node_t *target, pm_token_t *operator, pm_nod
                     return target;
                 }
 
-                if (*call->message_loc.start == '_' || parser->encoding->alnum_char(call->message_loc.start, call->message_loc.end - call->message_loc.start)) {
+                if (char_is_identifier_start(parser, call->message_loc.start)) {
                     // When we get here, we have a method call, because it was
                     // previously marked as a method call but now we have an =. This
                     // looks like:
