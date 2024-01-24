@@ -67,6 +67,9 @@ pm_iseq_new_with_opt(pm_scope_node_t *scope_node, pm_parser_t *parser, VALUE nam
                      int first_lineno, const rb_iseq_t *parent, int isolated_depth,
                      enum rb_iseq_type type, const rb_compile_option_t *option);
 
+/**
+ * Parse the span associated with the given integer node into a Ruby VALUE.
+ */
 static VALUE
 parse_integer(const pm_integer_node_t *node)
 {
@@ -96,11 +99,14 @@ parse_integer(const pm_integer_node_t *node)
     return rb_int_parse_cstr(start, length, &end, NULL, base, RB_INT_PARSE_DEFAULT);
 }
 
+/**
+ * Parse the span associated with the given float node into a Ruby VALUE.
+ */
 static VALUE
-parse_float(const pm_node_t *node)
+parse_float(const pm_float_node_t *node)
 {
-    const uint8_t *start = node->location.start;
-    const uint8_t *end = node->location.end;
+    const uint8_t *start = node->base.location.start;
+    const uint8_t *end = node->base.location.end;
     size_t length = end - start;
 
     char *buffer = malloc(length + 1);
@@ -113,15 +119,18 @@ parse_float(const pm_node_t *node)
     return number;
 }
 
+/**
+ * Parse the span associated with the given rational node into a Ruby VALUE.
+ */
 static VALUE
-parse_rational(const pm_node_t *node)
+parse_rational(const pm_rational_node_t *node)
 {
-    const uint8_t *start = node->location.start;
-    const uint8_t *end = node->location.end - 1;
+    const uint8_t *start = node->base.location.start;
+    const uint8_t *end = node->base.location.end - 1;
     size_t length = end - start;
 
     VALUE res;
-    if (PM_NODE_TYPE_P(((pm_rational_node_t *)node)->numeric, PM_FLOAT_NODE)) {
+    if (PM_NODE_TYPE_P(node->numeric, PM_FLOAT_NODE)) {
         char *buffer = malloc(length + 1);
         memcpy(buffer, start, length);
 
@@ -139,7 +148,7 @@ parse_rational(const pm_node_t *node)
         free(buffer);
     }
     else {
-        RUBY_ASSERT(PM_NODE_TYPE_P(((pm_rational_node_t *)node)->numeric, PM_INTEGER_NODE));
+        RUBY_ASSERT(PM_NODE_TYPE_P(node->numeric, PM_INTEGER_NODE));
         VALUE number = rb_int_parse_cstr((const char *)start, length, NULL, NULL, -10, RB_INT_PARSE_DEFAULT);
         res = rb_rational_raw(number, INT2FIX(1));
     }
@@ -147,28 +156,29 @@ parse_rational(const pm_node_t *node)
     return res;
 }
 
+/**
+ * Parse the span associated with the given imaginary node into a Ruby VALUE.
+ */
 static VALUE
-parse_imaginary(pm_imaginary_node_t *node)
+parse_imaginary(const pm_imaginary_node_t *node)
 {
-    VALUE imaginary_part;
+    VALUE imaginary;
+
     switch (PM_NODE_TYPE(node->numeric)) {
-      case PM_FLOAT_NODE: {
-        imaginary_part = parse_float(node->numeric);
+      case PM_FLOAT_NODE:
+        imaginary = parse_float((const pm_float_node_t *) node->numeric);
         break;
-      }
-      case PM_INTEGER_NODE: {
-        imaginary_part = parse_integer((pm_integer_node_t *) node->numeric);
+      case PM_INTEGER_NODE:
+        imaginary = parse_integer((const pm_integer_node_t *) node->numeric);
         break;
-      }
-      case PM_RATIONAL_NODE: {
-        imaginary_part = parse_rational(node->numeric);
+      case PM_RATIONAL_NODE:
+        imaginary = parse_rational((const pm_rational_node_t *) node->numeric);
         break;
-      }
       default:
         rb_bug("Unexpected numeric type on imaginary number %s\n", pm_node_type_to_str(PM_NODE_TYPE(node->numeric)));
     }
 
-    return rb_complex_raw(INT2FIX(0), imaginary_part);
+    return rb_complex_raw(INT2FIX(0), imaginary);
 }
 
 static inline VALUE
@@ -184,7 +194,8 @@ parse_string(pm_string_t *string, const pm_parser_t *parser)
  * creating those strings based on the flags set on the owning node.
  */
 static inline VALUE
-parse_string_encoded(const pm_node_t *node, const pm_string_t *string, const pm_parser_t *parser) {
+parse_string_encoded(const pm_node_t *node, const pm_string_t *string, const pm_parser_t *parser)
+{
     rb_encoding *encoding;
 
     if (node->flags & PM_ENCODING_FLAGS_FORCED_BINARY_ENCODING) {
@@ -231,7 +242,8 @@ pm_optimizable_range_item_p(pm_node_t *node)
  * that are expected by the CRuby VM.
  */
 static int
-pm_reg_flags(const pm_node_t *node) {
+pm_reg_flags(const pm_node_t *node)
+{
     int flags = 0;
     int dummy = 0;
 
@@ -273,7 +285,8 @@ pm_reg_flags(const pm_node_t *node) {
 }
 
 static rb_encoding *
-pm_reg_enc(const pm_regular_expression_node_t *node, const pm_parser_t *parser) {
+pm_reg_enc(const pm_regular_expression_node_t *node, const pm_parser_t *parser)
+{
     if (node->base.flags & PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT) {
         return rb_ascii8bit_encoding();
     }
@@ -305,7 +318,8 @@ pm_static_literal_p(const pm_node_t *node)
 }
 
 static VALUE
-pm_new_regex(pm_regular_expression_node_t * cast, const pm_parser_t * parser) {
+pm_new_regex(pm_regular_expression_node_t * cast, const pm_parser_t * parser)
+{
     VALUE regex_str = parse_string(&cast->unescaped, parser);
     rb_encoding * enc = pm_reg_enc(cast, parser);
 
@@ -321,7 +335,7 @@ pm_new_regex(pm_regular_expression_node_t * cast, const pm_parser_t * parser) {
  * literal values can be compiled into a literal array.
  */
 static inline VALUE
-pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node, const pm_parser_t *parser)
+pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node)
 {
     // Every node that comes into this function should already be marked as
     // static literal. If it's not, then we have a bug somewhere.
@@ -334,7 +348,7 @@ pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node
 
         VALUE value = rb_ary_hidden_new(elements->size);
         for (size_t index = 0; index < elements->size; index++) {
-            rb_ary_push(value, pm_static_literal_value(elements->nodes[index], scope_node, parser));
+            rb_ary_push(value, pm_static_literal_value(elements->nodes[index], scope_node));
         }
 
         OBJ_FREEZE(value);
@@ -343,7 +357,7 @@ pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node
       case PM_FALSE_NODE:
         return Qfalse;
       case PM_FLOAT_NODE:
-        return parse_float(node);
+        return parse_float((const pm_float_node_t *) node);
       case PM_HASH_NODE: {
         pm_hash_node_t *cast = (pm_hash_node_t *) node;
         pm_node_list_t *elements = &cast->elements;
@@ -352,7 +366,7 @@ pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node
         for (size_t index = 0; index < elements->size; index++) {
             assert(PM_NODE_TYPE_P(elements->nodes[index], PM_ASSOC_NODE));
             pm_assoc_node_t *cast = (pm_assoc_node_t *) elements->nodes[index];
-            VALUE pair[2] = { pm_static_literal_value(cast->key, scope_node, parser), pm_static_literal_value(cast->value, scope_node, parser) };
+            VALUE pair[2] = { pm_static_literal_value(cast->key, scope_node), pm_static_literal_value(cast->value, scope_node) };
             rb_ary_cat(array, pair, 2);
         }
 
@@ -364,17 +378,17 @@ pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node
         return value;
       }
       case PM_IMAGINARY_NODE:
-        return parse_imaginary((pm_imaginary_node_t *) node);
+        return parse_imaginary((const pm_imaginary_node_t *) node);
       case PM_INTEGER_NODE:
-        return parse_integer((pm_integer_node_t *) node);
+        return parse_integer((const pm_integer_node_t *) node);
       case PM_NIL_NODE:
         return Qnil;
       case PM_RATIONAL_NODE:
-        return parse_rational(node);
+        return parse_rational((const pm_rational_node_t *) node);
       case PM_REGULAR_EXPRESSION_NODE: {
         pm_regular_expression_node_t *cast = (pm_regular_expression_node_t *) node;
 
-        return pm_new_regex(cast, parser);
+        return pm_new_regex(cast, scope_node->parser);
       }
       case PM_SOURCE_ENCODING_NODE: {
         const char *name = scope_node->parser->encoding->name;
@@ -383,8 +397,8 @@ pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node
         return rb_enc_from_encoding(encoding);
       }
       case PM_SOURCE_FILE_NODE: {
-        pm_source_file_node_t *cast = (pm_source_file_node_t *)node;
-        return cast->filepath.length ? parse_string(&cast->filepath, parser) : rb_fstring_lit("<compiled>");
+        pm_source_file_node_t *cast = (pm_source_file_node_t *) node;
+        return pm_string_length(&cast->filepath) > 0 ? parse_string(&cast->filepath, scope_node->parser) : rb_fstring_lit("<compiled>");
       }
       case PM_SOURCE_LINE_NODE: {
         int source_line = (int) pm_newline_list_line_column(&scope_node->parser->newline_list, node->location.start).line;
@@ -392,9 +406,9 @@ pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node
         return INT2FIX(source_line);
       }
       case PM_STRING_NODE:
-        return parse_string(&((pm_string_node_t *) node)->unescaped, parser);
+        return parse_string(&((pm_string_node_t *) node)->unescaped, scope_node->parser);
       case PM_SYMBOL_NODE:
-        return ID2SYM(parse_string_symbol(&((pm_symbol_node_t *) node)->unescaped, parser));
+        return ID2SYM(parse_string_symbol(&((pm_symbol_node_t *) node)->unescaped, scope_node->parser));
       case PM_TRUE_NODE:
         return Qtrue;
       default:
@@ -572,7 +586,6 @@ again:
       case PM_FLIP_FLOP_NODE:
         pm_compile_flip_flop((pm_flip_flop_node_t *)cond, else_label, then_label, iseq, lineno, ret, src, popped, scope_node);
         return;
-        // TODO: Several more nodes in this case statement
       case PM_DEFINED_NODE: {
         pm_defined_node_t *defined_node = (pm_defined_node_t *)cond;
         pm_compile_defined_expr(iseq, defined_node->value, ret, src, popped, scope_node, dummy_line_node, lineno, true);
@@ -1106,7 +1119,7 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                         for (size_t i = 0; i < len; i++) {
                             pm_assoc_node_t *assoc = (pm_assoc_node_t *)keyword_arg->elements.nodes[i];
                             pm_node_t *key = assoc->key;
-                            keywords[i] = pm_static_literal_value(key, scope_node, parser);
+                            keywords[i] = pm_static_literal_value(key, scope_node);
                             PM_COMPILE_NOT_POPPED(assoc->value);
                         }
                     } else {
@@ -3000,7 +3013,8 @@ typedef struct {
  * Push a new state node onto the multi target state.
  */
 static void
-pm_multi_target_state_push(pm_multi_target_state_t *state, INSN *topn, size_t stack_size) {
+pm_multi_target_state_push(pm_multi_target_state_t *state, INSN *topn, size_t stack_size)
+{
     pm_multi_target_state_node_t *node = ALLOC(pm_multi_target_state_node_t);
     node->topn = topn;
     node->stack_index = state->stack_size + 1;
@@ -3025,7 +3039,8 @@ pm_multi_target_state_push(pm_multi_target_state_t *state, INSN *topn, size_t st
  * correctly retrieve their parent expressions.
  */
 static void
-pm_multi_target_state_update(pm_multi_target_state_t *state) {
+pm_multi_target_state_update(pm_multi_target_state_t *state)
+{
     // If nothing was ever pushed onto the stack, then we don't need to do any
     // kind of updates.
     if (state->stack_size == 0) return;
@@ -3094,7 +3109,8 @@ pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR
  * the containing node.
  */
 static void
-pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const parents, LINK_ANCHOR *const writes, LINK_ANCHOR *const cleanup, const uint8_t *src, pm_scope_node_t *scope_node, pm_multi_target_state_t *state) {
+pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const parents, LINK_ANCHOR *const writes, LINK_ANCHOR *const cleanup, const uint8_t *src, pm_scope_node_t *scope_node, pm_multi_target_state_t *state)
+{
     int lineno = (int) pm_newline_list_line_column(&scope_node->parser->newline_list, node->location.start).line;
     NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
 
@@ -3309,7 +3325,8 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
  * targets.
  */
 static size_t
-pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const parents, LINK_ANCHOR *const writes, LINK_ANCHOR *const cleanup, const uint8_t *src, pm_scope_node_t *scope_node, pm_multi_target_state_t *state) {
+pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const parents, LINK_ANCHOR *const writes, LINK_ANCHOR *const cleanup, const uint8_t *src, pm_scope_node_t *scope_node, pm_multi_target_state_t *state)
+{
     int lineno = (int) pm_newline_list_line_column(&scope_node->parser->newline_list, node->location.start).line;
     NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
 
@@ -3399,7 +3416,8 @@ pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR
  * compilation.
  */
 static void
-pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, const uint8_t *src, pm_scope_node_t *scope_node) {
+pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, const uint8_t *src, pm_scope_node_t *scope_node)
+{
     int lineno = (int) pm_newline_list_line_column(&scope_node->parser->newline_list, node->location.start).line;
     NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
 
@@ -3687,7 +3705,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             if (!popped) {
                 pm_array_node_t *cast = (pm_array_node_t *) node;
                 if (cast->elements.size) {
-                    VALUE value = pm_static_literal_value(node, scope_node, parser);
+                    VALUE value = pm_static_literal_value(node, scope_node);
                     ADD_INSN1(ret, &dummy_line_node, duparray, value);
                     RB_OBJ_WRITTEN(iseq, Qundef, value);
                 }
@@ -4746,7 +4764,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_FLOAT_NODE: {
         if (!popped) {
-            ADD_INSN1(ret, &dummy_line_node, putobject, parse_float(node));
+            ADD_INSN1(ret, &dummy_line_node, putobject, parse_float((const pm_float_node_t *) node));
         }
         return;
       }
@@ -5024,7 +5042,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // is popped, then we know we don't need to do anything since it's
             // statically known.
             if (!popped) {
-                VALUE value = pm_static_literal_value(node, scope_node, parser);
+                VALUE value = pm_static_literal_value(node, scope_node);
                 ADD_INSN1(ret, &dummy_line_node, duphash, value);
                 RB_OBJ_WRITTEN(iseq, Qundef, value);
             }
@@ -5981,7 +5999,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_RATIONAL_NODE: {
         if (!popped) {
-            ADD_INSN1(ret, &dummy_line_node, putobject, parse_rational(node));
+            ADD_INSN1(ret, &dummy_line_node, putobject, parse_rational((const pm_rational_node_t *) node));
         }
         return;
       }
@@ -6556,7 +6574,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                                 PM_NODE_TYPE_P(value, PM_HASH_NODE) ||
                                 PM_NODE_TYPE_P(value, PM_RANGE_NODE))) {
 
-                       rb_ary_push(default_values, pm_static_literal_value(value, scope_node, parser));
+                       rb_ary_push(default_values, pm_static_literal_value(value, scope_node));
                     }
                     else {
                         rb_ary_push(default_values, complex_mark);
@@ -7035,7 +7053,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // reference the encoding object corresponding to the encoding of the
         // source file, and can be changed by a magic encoding comment.
         if (!popped) {
-            VALUE value = pm_static_literal_value(node, scope_node, parser);
+            VALUE value = pm_static_literal_value(node, scope_node);
             ADD_INSN1(ret, &dummy_line_node, putobject, value);
             RB_OBJ_WRITTEN(iseq, Qundef, value);
         }
@@ -7045,7 +7063,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // Source file nodes are generated by the __FILE__ syntax. They
         // reference the file name of the source file.
         if (!popped) {
-            VALUE value = pm_static_literal_value(node, scope_node, parser);
+            VALUE value = pm_static_literal_value(node, scope_node);
             ADD_INSN1(ret, &dummy_line_node, putstring, value);
             RB_OBJ_WRITTEN(iseq, Qundef, value);
         }
@@ -7055,7 +7073,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // Source line nodes are generated by the __LINE__ syntax. They
         // reference the line number where they occur in the source file.
         if (!popped) {
-            VALUE value = pm_static_literal_value(node, scope_node, parser);
+            VALUE value = pm_static_literal_value(node, scope_node);
             ADD_INSN1(ret, &dummy_line_node, putobject, value);
             RB_OBJ_WRITTEN(iseq, Qundef, value);
         }
@@ -7149,7 +7167,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // Symbols nodes are symbol literals with no interpolation. They are
         // always marked as static literals.
         if (!popped) {
-            VALUE value = pm_static_literal_value(node, scope_node, parser);
+            VALUE value = pm_static_literal_value(node, scope_node);
             ADD_INSN1(ret, &dummy_line_node, putobject, value);
             RB_OBJ_WRITTEN(iseq, Qundef, value);
         }
