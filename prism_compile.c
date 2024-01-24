@@ -1937,7 +1937,12 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
                 ADD_INSN1(match_values, &line.node, putobject, symbol);
                 ADD_SEND(match_values, &line.node, has_rest ? rb_intern("delete") : idAREF, INT2FIX(1));
 
-                CHECK(pm_compile_pattern_match(iseq, scope_node, assoc->value, match_values, src, match_failed_label, in_single_pattern, in_alternation_pattern, false, base_index + 1));
+                const pm_node_t *value = assoc->value;
+                if (PM_NODE_TYPE_P(value, PM_IMPLICIT_NODE)) {
+                    value = ((const pm_implicit_node_t *) value)->value;
+                }
+
+                CHECK(pm_compile_pattern_match(iseq, scope_node, value, match_values, src, match_failed_label, in_single_pattern, in_alternation_pattern, false, base_index + 1));
             }
 
             ADD_SEQ(ret, match_values);
