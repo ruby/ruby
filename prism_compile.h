@@ -17,10 +17,10 @@ typedef struct pm_local_index_struct {
 typedef struct pm_scope_node {
     pm_node_t base;
     struct pm_scope_node *previous;
-    pm_node_t *ast_node;
-    pm_node_t *parameters;
-    pm_node_t *body;
-    pm_constant_id_list_t locals;
+    const pm_node_t *ast_node;
+    const pm_node_t *parameters;
+    const pm_node_t *body;
+    const pm_constant_id_list_t *locals;
     pm_parser_t *parser;
 
     // The size of the local table
