@@ -4991,7 +4991,9 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *
  *      "Hello! 1\n"
  *
- *  Ruby invokes the executable directly, with no shell and no shell expansion.
+ *  Ruby invokes the executable directly.
+ *  This form does not use the shell;
+ *  see below for caveats.
  *
  *  If one or more +args+ is given, each is an argument or option
  *  to be passed to the executable:
@@ -5005,6 +5007,14 @@ rb_f_system(int argc, VALUE *argv, VALUE _)
  *
  *    C*
  *    hello world
+ *
+ *  The 'cmdname, arg1, ...' form does not use the shell. However,
+ *  on different OSes, different things are provided as built-in
+ *  commands. An example of this is 'echo', which is a built-in
+ *  on Windows, but is a normal program on Linux and Mac OS X.
+ *  This means that `Process.spawn 'echo', '%Path%'` will display
+ *  the contents of the `%Path%` environment variable on Windows,
+ *  but `Process.spawn 'echo', '$PATH'` prints the literal '$PATH'.
  *
  *  Raises an exception if the new process could not execute.
  */
