@@ -211,9 +211,9 @@ module Prism
 
           constant =
             if start.nobits?(1 << 31)
-              input.byteslice(start, length).to_sym
+              input.byteslice(start, length).force_encoding(@encoding).to_sym
             else
-              serialized.byteslice(start & ((1 << 31) - 1), length).to_sym
+              serialized.byteslice(start & ((1 << 31) - 1), length).force_encoding(@encoding).to_sym
             end
 
           constant_pool[index] = constant
