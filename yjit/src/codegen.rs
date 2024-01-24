@@ -4712,6 +4712,8 @@ fn jit_rb_int_lshift(
     }
 
     // Fallback to a C call if the shift amount varies
+    // This check is needed because the chain guard will side-exit
+    // if its max depth is reached
     if asm.ctx.get_chain_depth() > 0 {
         return false;
     }
@@ -4771,7 +4773,9 @@ fn jit_rb_int_rshift(
     }
 
     // Fallback to a C call if the shift amount varies
-    if asm.ctx.get_chain_depth() > 1 {
+    // This check is needed because the chain guard will side-exit
+    // if its max depth is reached
+    if asm.ctx.get_chain_depth() > 0 {
         return false;
     }
 
