@@ -842,7 +842,7 @@
         │   │       │   │               ├── flags: ∅
         │   │       │   │               └── arguments: (length: 1)
         │   │       │   │                   └── @ SymbolNode (location: (99,7)-(99,10))
-        │   │       │   │                       ├── flags: ∅
+        │   │       │   │                       ├── flags: forced_us_ascii_encoding
         │   │       │   │                       ├── opening_loc: (99,7)-(99,8) = ":"
         │   │       │   │                       ├── value_loc: (99,8)-(99,10) = "hi"
         │   │       │   │                       ├── closing_loc: ∅
@@ -850,7 +850,7 @@
         │   │       │   ├── consequent: ∅
         │   │       │   └── end_keyword_loc: ∅
         │   │       └── @ SymbolNode (location: (100,0)-(100,4))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: forced_us_ascii_encoding
         │   │           ├── opening_loc: (100,0)-(100,1) = ":"
         │   │           ├── value_loc: (100,1)-(100,4) = "bye"
         │   │           ├── closing_loc: ∅

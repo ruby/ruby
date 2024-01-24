@@ -479,7 +479,7 @@
             │           │   @ UndefNode (location: (79,2)-(79,12))
             │           │   ├── names: (length: 1)
             │           │   │   └── @ SymbolNode (location: (79,8)-(79,12))
-            │           │   │       ├── flags: ∅
+            │           │   │       ├── flags: forced_us_ascii_encoding
             │           │   │       ├── opening_loc: (79,8)-(79,9) = ":"
             │           │   │       ├── value_loc: (79,9)-(79,12) = "bar"
             │           │   │       ├── closing_loc: ∅

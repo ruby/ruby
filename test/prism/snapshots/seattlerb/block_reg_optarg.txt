@@ -32,7 +32,7 @@
                 │   │   │       ├── operator_loc: (1,10)-(1,11) = "="
                 │   │   │       └── value:
                 │   │   │           @ SymbolNode (location: (1,12)-(1,14))
-                │   │   │           ├── flags: ∅
+                │   │   │           ├── flags: forced_us_ascii_encoding
                 │   │   │           ├── opening_loc: (1,12)-(1,13) = ":"
                 │   │   │           ├── value_loc: (1,13)-(1,14) = "d"
                 │   │   │           ├── closing_loc: ∅

@@ -20,7 +20,7 @@
             │   │       ├── name_loc: (1,8)-(1,11) = "kw:"
             │   │       └── value:
             │   │           @ SymbolNode (location: (1,12)-(1,16))
-            │   │           ├── flags: ∅
+            │   │           ├── flags: forced_us_ascii_encoding
             │   │           ├── opening_loc: (1,12)-(1,13) = ":"
             │   │           ├── value_loc: (1,13)-(1,16) = "val"
             │   │           ├── closing_loc: ∅

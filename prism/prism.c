@@ -5472,6 +5472,53 @@ pm_super_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_argument
 }
 
 /**
+ * Read through the contents of a string and check if it consists solely of US ASCII code points.
+ */
+static bool
+ascii_only_p( const pm_string_t *contents) {
+    const size_t length = contents->length;
+
+    for (size_t i = 0; i < length; i++) {
+        if (contents->source[i] & 0x80) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Ruby "downgrades" the encoding of Symbols to US-ASCII if the associated encoding is ASCII-compatible and
+ * the Symbol consists only of US-ASCII code points. Otherwise, the encoding may be explicitly set with an
+ * escape sequence.
+ */
+static inline pm_node_flags_t
+parse_symbol_encoding(const pm_parser_t *parser, const pm_string_t *contents) {
+    // Don't set any flags on the Symbol if it hasn't been populated yet.
+    if (contents->source == NULL) {
+        return 0;
+    }
+
+    // Ruby stipulates that all source files must use an ASCII-compatible encoding. Thus, all symbols appearing in
+    // source are eligible for "downgrading" to US-ASCII.
+    if (ascii_only_p(contents)) {
+        return PM_SYMBOL_FLAGS_FORCED_US_ASCII_ENCODING;
+    } else {
+        // A Symbol may optionally have its encoding explicitly set.
+        //
+        // NB: an explicitly set encoding is ignored by Ruby if the Symbol consists of only US ASCII code points.
+        if (parser->explicit_encoding != NULL) {
+            if (parser->explicit_encoding == PM_ENCODING_UTF_8_ENTRY) {
+                return PM_SYMBOL_FLAGS_FORCED_UTF8_ENCODING;
+            } else if (parser->encoding == PM_ENCODING_US_ASCII_ENTRY) {
+                return PM_SYMBOL_FLAGS_FORCED_BINARY_ENCODING;
+            }
+        }
+    }
+    return 0;
+}
+
+/**
  * Allocate and initialize a new SymbolNode node with the given unescaped
  * string.
  */
@@ -5493,6 +5540,8 @@ pm_symbol_node_create_unescaped(pm_parser_t *parser, const pm_token_t *opening, 
         .closing_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(closing),
         .unescaped = *unescaped
     };
+
+    pm_node_flag_set((pm_node_t *)node, parse_symbol_encoding(parser, unescaped));
 
     return node;
 }
@@ -5532,6 +5581,7 @@ pm_symbol_node_label_create(pm_parser_t *parser, const pm_token_t *token) {
 
             assert((label.end - label.start) >= 0);
             pm_string_shared_init(&node->unescaped, label.start, label.end);
+            pm_node_flag_set((pm_node_t *)node, parse_symbol_encoding(parser, &node->unescaped));
             break;
         }
         case PM_TOKEN_MISSING: {
@@ -5593,6 +5643,8 @@ pm_string_node_to_symbol_node(pm_parser_t *parser, pm_string_node_t *node, const
         .closing_loc = PM_OPTIONAL_LOCATION_TOKEN_VALUE(closing),
         .unescaped = node->unescaped
     };
+
+    pm_node_flag_set((pm_node_t *)new_node, parse_symbol_encoding(parser, &node->unescaped));
 
     // We are explicitly _not_ using pm_node_destroy here because we don't want
     // to trash the unescaped string. We could instead copy the string if we
@@ -8115,7 +8167,6 @@ pm_token_buffer_push(pm_token_buffer_t *token_buffer, uint8_t byte) {
 /**
  * When we're about to return from lexing the current token and we know for sure
  * that we have found an escape sequence, this function is called to copy the
- *
  * contents of the token buffer into the current string on the parser so that it
  * can be attached to the correct node.
  */
@@ -8130,7 +8181,6 @@ pm_token_buffer_copy(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
  * string. If we haven't pushed anything into the buffer, this means that we
  * never found an escape sequence, so we can directly reference the bounds of
  * the current string. Either way, at the return of this function it is expected
- *
  * that parser->current_string is established in such a way that it can be
  * attached to a node.
  */
@@ -8148,7 +8198,6 @@ pm_token_buffer_flush(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
  * When we've found an escape sequence, we need to copy everything up to this
  * point into the buffer because we're about to provide a string that has
  * different content than a direct slice of the source.
- *
  *
  * It is expected that the parser's current token end will be pointing at one
  * byte past the backslash that starts the escape sequence.
@@ -12595,8 +12644,11 @@ PM_STATIC_ASSERT(__LINE__, ((int) PM_STRING_FLAGS_FORCED_UTF8_ENCODING) == ((int
 static inline pm_node_flags_t
 parse_unescaped_encoding(const pm_parser_t *parser) {
     if (parser->explicit_encoding != NULL) {
+        // If the there's an explicit encoding and it's using a UTF-8 escape sequence, then mark the string as UTF-8.
         if (parser->explicit_encoding == PM_ENCODING_UTF_8_ENTRY) {
             return PM_STRING_FLAGS_FORCED_UTF8_ENCODING;
+        // If there's a non-UTF-8 escape sequence being used, then the string uses the source encoding, unless the source
+        // is marked as US-ASCII. In that case the string is forced as ASCII-8BIT in order to keep the string valid.
         } else if (parser->encoding == PM_ENCODING_US_ASCII_ENTRY) {
             return PM_STRING_FLAGS_FORCED_BINARY_ENCODING;
         }
@@ -12749,6 +12801,7 @@ parse_operator_symbol(pm_parser_t *parser, const pm_token_t *opening, pm_lex_sta
     parser_lex(parser);
 
     pm_string_shared_init(&symbol->unescaped, parser->previous.start, end);
+    pm_node_flag_set((pm_node_t *)symbol, parse_symbol_encoding(parser, &symbol->unescaped));
     return (pm_node_t *) symbol;
 }
 
@@ -12787,6 +12840,8 @@ parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_s
         pm_symbol_node_t *symbol = pm_symbol_node_create(parser, &opening, &parser->previous, &closing);
 
         pm_string_shared_init(&symbol->unescaped, parser->previous.start, parser->previous.end);
+        pm_node_flag_set((pm_node_t *)symbol, parse_symbol_encoding(parser, &symbol->unescaped));
+
         return (pm_node_t *) symbol;
     }
 
@@ -12872,6 +12927,7 @@ parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_s
     } else {
         content = (pm_token_t) { .type = PM_TOKEN_STRING_CONTENT, .start = parser->previous.end, .end = parser->previous.end };
         pm_string_shared_init(&unescaped, content.start, content.end);
+
     }
 
     if (next_state != PM_LEX_STATE_NONE) {
@@ -12883,7 +12939,11 @@ parse_symbol(pm_parser_t *parser, pm_lex_mode_t *lex_mode, pm_lex_state_t next_s
     } else {
         expect1(parser, PM_TOKEN_STRING_END, PM_ERR_SYMBOL_TERM_DYNAMIC);
     }
-    return (pm_node_t *) pm_symbol_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
+
+    pm_symbol_node_t *symbol_node = pm_symbol_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
+    pm_node_flag_set((pm_node_t *)symbol_node, parse_symbol_encoding(parser, &symbol_node->unescaped));
+
+    return (pm_node_t *) symbol_node;
 }
 
 /**
@@ -12947,6 +13007,7 @@ parse_alias_argument(pm_parser_t *parser, bool first) {
             pm_symbol_node_t *symbol = pm_symbol_node_create(parser, &opening, &parser->previous, &closing);
 
             pm_string_shared_init(&symbol->unescaped, parser->previous.start, parser->previous.end);
+            pm_node_flag_set((pm_node_t *)symbol, parse_symbol_encoding(parser, &symbol->unescaped));
             return (pm_node_t *) symbol;
         }
         case PM_TOKEN_SYMBOL_BEGIN: {

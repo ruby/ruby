@@ -23,7 +23,7 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ SymbolNode (location: (2,2)-(2,4))
-        │   │           │           ├── flags: ∅
+        │   │           │           ├── flags: forced_us_ascii_encoding
         │   │           │           ├── opening_loc: (2,2)-(2,3) = ":"
         │   │           │           ├── value_loc: (2,3)-(2,4) = "b"
         │   │           │           ├── closing_loc: ∅
@@ -58,7 +58,7 @@
         │   │           │   ├── flags: ∅
         │   │           │   └── arguments: (length: 1)
         │   │           │       └── @ SymbolNode (location: (4,11)-(4,13))
-        │   │           │           ├── flags: ∅
+        │   │           │           ├── flags: forced_us_ascii_encoding
         │   │           │           ├── opening_loc: (4,11)-(4,12) = ":"
         │   │           │           ├── value_loc: (4,12)-(4,13) = "b"
         │   │           │           ├── closing_loc: ∅
@@ -107,7 +107,7 @@
                 │           │   ├── flags: ∅
                 │           │   └── arguments: (length: 1)
                 │           │       └── @ SymbolNode (location: (6,8)-(6,10))
-                │           │           ├── flags: ∅
+                │           │           ├── flags: forced_us_ascii_encoding
                 │           │           ├── opening_loc: (6,8)-(6,9) = ":"
                 │           │           ├── value_loc: (6,9)-(6,10) = "b"
                 │           │           ├── closing_loc: ∅

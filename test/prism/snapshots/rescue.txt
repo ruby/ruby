@@ -349,7 +349,7 @@
             │   │           │               └── @ AssocNode (location: (29,4)-(29,6))
             │   │           │                   ├── key:
             │   │           │                   │   @ SymbolNode (location: (29,4)-(29,6))
-            │   │           │                   │   ├── flags: ∅
+            │   │           │                   │   ├── flags: forced_us_ascii_encoding
             │   │           │                   │   ├── opening_loc: ∅
             │   │           │                   │   ├── value_loc: (29,4)-(29,5) = "b"
             │   │           │                   │   ├── closing_loc: (29,5)-(29,6) = ":"

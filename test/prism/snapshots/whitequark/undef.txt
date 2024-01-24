@@ -12,7 +12,7 @@
             │   │   ├── closing_loc: ∅
             │   │   └── unescaped: "foo"
             │   ├── @ SymbolNode (location: (1,11)-(1,15))
-            │   │   ├── flags: ∅
+            │   │   ├── flags: forced_us_ascii_encoding
             │   │   ├── opening_loc: (1,11)-(1,12) = ":"
             │   │   ├── value_loc: (1,12)-(1,15) = "bar"
             │   │   ├── closing_loc: ∅

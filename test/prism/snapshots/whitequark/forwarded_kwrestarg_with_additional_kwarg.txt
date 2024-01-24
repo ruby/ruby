@@ -44,7 +44,7 @@
             │           │               └── @ AssocNode (location: (1,21)-(1,35))
             │           │                   ├── key:
             │           │                   │   @ SymbolNode (location: (1,21)-(1,30))
-            │           │                   │   ├── flags: ∅
+            │           │                   │   ├── flags: forced_us_ascii_encoding
             │           │                   │   ├── opening_loc: ∅
             │           │                   │   ├── value_loc: (1,21)-(1,29) = "from_foo"
             │           │                   │   ├── closing_loc: (1,29)-(1,30) = ":"
