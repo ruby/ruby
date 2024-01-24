@@ -4757,7 +4757,12 @@
         │   │   │       │       │   ├── value_loc: (202,15)-(202,16) = "x"
         │   │   │       │       │   ├── closing_loc: (202,16)-(202,17) = ":"
         │   │   │       │       │   └── unescaped: "x"
-        │   │   │       │       ├── value: ∅
+        │   │   │       │       ├── value:
+        │   │   │       │       │   @ ImplicitNode (location: (202,15)-(202,16))
+        │   │   │       │       │   └── value:
+        │   │   │       │       │       @ LocalVariableTargetNode (location: (202,15)-(202,16))
+        │   │   │       │       │       ├── name: :x
+        │   │   │       │       │       └── depth: 0
         │   │   │       │       └── operator_loc: ∅
         │   │   │       ├── rest: ∅
         │   │   │       ├── opening_loc: (202,14)-(202,15) = "{"

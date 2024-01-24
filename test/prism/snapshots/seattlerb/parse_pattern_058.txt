@@ -35,7 +35,12 @@
             │       │   │       │   ├── value_loc: (2,4)-(2,5) = "a"
             │       │   │       │   ├── closing_loc: (2,5)-(2,6) = ":"
             │       │   │       │   └── unescaped: "a"
-            │       │   │       ├── value: ∅
+            │       │   │       ├── value:
+            │       │   │       │   @ ImplicitNode (location: (2,4)-(2,5))
+            │       │   │       │   └── value:
+            │       │   │       │       @ LocalVariableTargetNode (location: (2,4)-(2,5))
+            │       │   │       │       ├── name: :a
+            │       │   │       │       └── depth: 0
             │       │   │       └── operator_loc: ∅
             │       │   ├── rest:
             │       │   │   @ AssocSplatNode (location: (2,8)-(2,14))

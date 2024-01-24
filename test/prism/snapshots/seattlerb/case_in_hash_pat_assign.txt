@@ -60,7 +60,12 @@
             │       │   │       │   ├── value_loc: (2,30)-(2,31) = "f"
             │       │   │       │   ├── closing_loc: (2,31)-(2,32) = ":"
             │       │   │       │   └── unescaped: "f"
-            │       │   │       ├── value: ∅
+            │       │   │       ├── value:
+            │       │   │       │   @ ImplicitNode (location: (2,30)-(2,31))
+            │       │   │       │   └── value:
+            │       │   │       │       @ LocalVariableTargetNode (location: (2,30)-(2,31))
+            │       │   │       │       ├── name: :f
+            │       │   │       │       └── depth: 0
             │       │   │       └── operator_loc: ∅
             │       │   ├── rest: ∅
             │       │   ├── opening_loc: (2,3)-(2,4) = "{"

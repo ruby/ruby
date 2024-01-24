@@ -91,7 +91,12 @@
         │   │   │       │   ├── value_loc: (5,10)-(5,11) = "a"
         │   │   │       │   ├── closing_loc: (5,11)-(5,12) = ":"
         │   │   │       │   └── unescaped: "a"
-        │   │   │       ├── value: ∅
+        │   │   │       ├── value:
+        │   │   │       │   @ ImplicitNode (location: (5,10)-(5,11))
+        │   │   │       │   └── value:
+        │   │   │       │       @ LocalVariableTargetNode (location: (5,10)-(5,11))
+        │   │   │       │       ├── name: :a
+        │   │   │       │       └── depth: 0
         │   │   │       └── operator_loc: ∅
         │   │   ├── rest: ∅
         │   │   ├── opening_loc: ∅
@@ -130,7 +135,12 @@
         │   │   │       │   ├── value_loc: (7,10)-(7,11) = "a"
         │   │   │       │   ├── closing_loc: (7,11)-(7,12) = ":"
         │   │   │       │   └── unescaped: "a"
-        │   │   │       ├── value: ∅
+        │   │   │       ├── value:
+        │   │   │       │   @ ImplicitNode (location: (7,10)-(7,11))
+        │   │   │       │   └── value:
+        │   │   │       │       @ LocalVariableTargetNode (location: (7,10)-(7,11))
+        │   │   │       │       ├── name: :a
+        │   │   │       │       └── depth: 0
         │   │   │       └── operator_loc: ∅
         │   │   ├── rest: ∅
         │   │   ├── opening_loc: ∅

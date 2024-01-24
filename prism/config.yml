@@ -580,9 +580,9 @@ nodes:
               { def a; end => 1 }
                 ^^^^^^^^^^
       - name: value
-        type: node?
+        type: node
         comment: |
-          The value of the association, if present. This can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression). It can be optionally omitted if this node is an element in a `HashPatternNode`.
+          The value of the association, if present. This can be any [non-void expression](https://github.com/ruby/prism/blob/main/docs/parsing_rules.md#non-void-expression).
 
               { foo => bar }
                        ^^^
@@ -1634,6 +1634,9 @@ nodes:
 
           { Foo: }
             ^^^^
+
+          foo in { bar: }
+                   ^^^^
   - name: ImplicitRestNode
     comment: |
       Represents using a trailing comma to indicate an implicit rest parameter.

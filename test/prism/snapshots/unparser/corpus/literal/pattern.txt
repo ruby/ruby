@@ -89,7 +89,12 @@
         │   │   │   │   │       │   ├── value_loc: (6,5)-(6,6) = "x"
         │   │   │   │   │       │   ├── closing_loc: (6,6)-(6,7) = ":"
         │   │   │   │   │       │   └── unescaped: "x"
-        │   │   │   │   │       ├── value: ∅
+        │   │   │   │   │       ├── value:
+        │   │   │   │   │       │   @ ImplicitNode (location: (6,5)-(6,6))
+        │   │   │   │   │       │   └── value:
+        │   │   │   │   │       │       @ LocalVariableTargetNode (location: (6,5)-(6,6))
+        │   │   │   │   │       │       ├── name: :x
+        │   │   │   │   │       │       └── depth: 0
         │   │   │   │   │       └── operator_loc: ∅
         │   │   │   │   ├── rest: ∅
         │   │   │   │   ├── opening_loc: (6,4)-(6,5) = "("

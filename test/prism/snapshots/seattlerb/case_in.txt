@@ -25,7 +25,12 @@
         │   │       │   │       │   ├── value_loc: (2,5)-(2,6) = "b"
         │   │       │   │       │   ├── closing_loc: (2,6)-(2,8) = "\":"
         │   │       │   │       │   └── unescaped: "b"
-        │   │       │   │       ├── value: ∅
+        │   │       │   │       ├── value:
+        │   │       │   │       │   @ ImplicitNode (location: (2,5)-(2,6))
+        │   │       │   │       │   └── value:
+        │   │       │   │       │       @ LocalVariableTargetNode (location: (2,5)-(2,6))
+        │   │       │   │       │       ├── name: :b
+        │   │       │   │       │       └── depth: 0
         │   │       │   │       └── operator_loc: ∅
         │   │       │   ├── rest: ∅
         │   │       │   ├── opening_loc: ∅
@@ -905,7 +910,12 @@
         │   │       │   │       │   ├── value_loc: (106,6)-(106,7) = "b"
         │   │       │   │       │   ├── closing_loc: (106,7)-(106,9) = "\":"
         │   │       │   │       │   └── unescaped: "b"
-        │   │       │   │       ├── value: ∅
+        │   │       │   │       ├── value:
+        │   │       │   │       │   @ ImplicitNode (location: (106,6)-(106,7))
+        │   │       │   │       │   └── value:
+        │   │       │   │       │       @ LocalVariableTargetNode (location: (106,6)-(106,7))
+        │   │       │   │       │       ├── name: :b
+        │   │       │   │       │       └── depth: 0
         │   │       │   │       └── operator_loc: ∅
         │   │       │   ├── rest: ∅
         │   │       │   ├── opening_loc: (106,3)-(106,4) = "{"
