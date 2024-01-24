@@ -58,7 +58,6 @@ module SyncDefaultGems
     stringio: 'ruby/stringio',
     strscan: 'ruby/strscan',
     syntax_suggest: ["ruby/syntax_suggest", "main"],
-    syslog: "ruby/syslog",
     tempfile: "ruby/tempfile",
     time: "ruby/time",
     timeout: "ruby/timeout",
@@ -316,14 +315,6 @@ module SyncDefaultGems
       cp_r("#{upstream}/test/erb", "test")
       cp_r("#{upstream}/erb.gemspec", "lib")
       cp_r("#{upstream}/libexec/erb", "libexec")
-    when "syslog"
-      rm_rf(%w[ext/syslog test/syslog test/test_syslog.rb])
-      cp_r("#{upstream}/ext/syslog", "ext")
-      cp_r("#{upstream}/lib", "ext/syslog")
-      cp_r("#{upstream}/test/syslog", "test")
-      cp_r("#{upstream}/test/test_syslog.rb", "test")
-      cp_r("#{upstream}/syslog.gemspec", "ext/syslog")
-      `git checkout ext/syslog/depend`
     when "pathname"
       rm_rf(%w[ext/pathname test/pathname])
       cp_r("#{upstream}/ext/pathname", "ext")
