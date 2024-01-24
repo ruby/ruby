@@ -2033,6 +2033,14 @@ end
           prism_test_forwarding_arguments_node(1,2, 3, ...)
         end
       CODE
+
+      assert_prism_eval(<<~RUBY)
+        o = Object.new
+        def o.bar(a, b, c) = [a, b, c]
+        def o.foo(...) = 1.times { bar(...) }
+
+        o.foo(1, 2, 3)
+      RUBY
     end
 
     def test_ForwardingSuperNode
