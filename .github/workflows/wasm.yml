@@ -136,7 +136,7 @@ jobs:
       - run: tar cfz ../install.tar.gz -C ../install .
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
+        uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         with:
           name: ruby-wasm-install
           path: ${{ github.workspace }}/install.tar.gz
@@ -164,7 +164,7 @@ jobs:
       - name: Save Pull Request number
         if: ${{ github.event_name == 'pull_request' }}
         run: echo "${{ github.event.pull_request.number }}" >> ${{ github.workspace }}/github-pr-info.txt
-      - uses: actions/upload-artifact@694cdabd8bdb0f10b2cea11669e1bf5453eed0a6 # v4.2.0
+      - uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
         if: ${{ github.event_name == 'pull_request' }}
         with:
           name: github-pr-info
