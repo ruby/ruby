@@ -6732,6 +6732,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         //********STEP 4**********
         // Goal: fill in the method body locals
         // To be explicit, these are the non-parameter locals
+        // We fill in the block_locals, if they exist
+        // lambda { |x; y| y }
+        //              ^
+        if (block_locals && block_locals->size) {
+            for (size_t i = 0; i < block_locals->size; i++, local_index++) {
+                pm_constant_id_t constant_id = ((pm_block_local_variable_node_t *)block_locals->nodes[i])->name;
+                pm_insert_local_index(constant_id, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+            }
+        }
+
+        // Fill in any locals we missed
         if (scope_node->locals.size) {
             for (size_t i = 0; i < scope_node->locals.size; i++) {
                 pm_constant_id_t constant_id = locals->ids[i];
@@ -6745,16 +6756,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
                     local_index = ctx.local_index;
                 }
-            }
-        }
-
-        // We fill in the block_locals, if they exist
-        // lambda { |x; y| y }
-        //              ^
-        if (block_locals && block_locals->size) {
-            for (size_t i = 0; i < block_locals->size; i++, local_index++) {
-                pm_constant_id_t constant_id = ((pm_block_local_variable_node_t *)block_locals->nodes[i])->name;
-                pm_insert_local_index(constant_id, local_index, index_lookup_table, local_table_for_iseq, scope_node);
             }
         }
 
@@ -6774,7 +6775,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // Goal: compile anything that needed to be compiled
         if (keywords_list && keywords_list->size) {
             size_t optional_index = 0;
-            for (size_t i = 0; i < keywords_list->size; i++, local_index++) {
+            for (size_t i = 0; i < keywords_list->size; i++) {
                 pm_node_t *keyword_parameter_node = keywords_list->nodes[i];
                 pm_constant_id_t name;
 
@@ -6825,7 +6826,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // a pointer to the label it should fill out?  We already
             // have a list of labels allocated above so it seems wasteful
             // to do the copies.
-            for (size_t i = 0; i < optionals_list->size; i++, local_index++) {
+            for (size_t i = 0; i < optionals_list->size; i++) {
                 label = NEW_LABEL(lineno);
                 opt_table[i] = label;
                 ADD_LABEL(ret, label);
