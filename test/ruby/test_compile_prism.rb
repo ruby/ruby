@@ -2151,6 +2151,14 @@ end
 
     def test_OptionalKeywordParameterNode
       assert_prism_eval("def prism_test_optional_keyword_param_node(bar: nil); end")
+
+      # Test with optional argument and method call in OptionalKeywordParameterNode
+      assert_prism_eval(<<~RUBY)
+        o = Object.new
+        def o.foo = 1
+        def o.bar(a = nil, b: foo) = b
+        o.bar
+      RUBY
     end
 
     def test_ParametersNode
