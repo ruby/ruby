@@ -468,7 +468,7 @@ apply2files(int (*func)(const char *, void *), int argc, VALUE *argv, void *arg)
         aa->fn[aa->i].path = path;
     }
 
-    rb_thread_call_without_gvl(no_gvl_apply2files, aa, RUBY_UBF_IO, 0);
+    IO_WITHOUT_GVL(no_gvl_apply2files, aa);
     if (aa->errnum) {
 #ifdef UTIME_EINVAL
         if (func == utime_internal) {
@@ -1168,8 +1168,7 @@ stat_without_gvl(const char *path, struct stat *st)
     data.file.path = path;
     data.st = st;
 
-    return (int)(VALUE)rb_thread_call_without_gvl(no_gvl_stat, &data,
-                                                  RUBY_UBF_IO, NULL);
+    return IO_WITHOUT_GVL_INT(no_gvl_stat, &data);
 }
 
 #if !defined(HAVE_STRUCT_STAT_ST_BIRTHTIMESPEC) && \
@@ -1219,8 +1218,7 @@ statx_without_gvl(const char *path, struct statx *stx, unsigned int mask)
     no_gvl_statx_data data = {stx, AT_FDCWD, path, 0, mask};
 
     /* call statx(2) with pathname */
-    return (int)(VALUE)rb_thread_call_without_gvl(no_gvl_statx, &data,
-                                                  RUBY_UBF_IO, NULL);
+    return IO_WITHOUT_GVL_INT(no_gvl_statx, &data);
 }
 
 static int
@@ -1382,8 +1380,7 @@ lstat_without_gvl(const char *path, struct stat *st)
     data.file.path = path;
     data.st = st;
 
-    return (int)(VALUE)rb_thread_call_without_gvl(no_gvl_lstat, &data,
-                                                    RUBY_UBF_IO, NULL);
+    return IO_WITHOUT_GVL_INT(no_gvl_lstat, &data);
 }
 #endif /* HAVE_LSTAT */
 
@@ -1557,8 +1554,7 @@ rb_eaccess(VALUE fname, int mode)
     aa.path = StringValueCStr(fname);
     aa.mode = mode;
 
-    return (int)(VALUE)rb_thread_call_without_gvl(nogvl_eaccess, &aa,
-                                                RUBY_UBF_IO, 0);
+    return IO_WITHOUT_GVL_INT(nogvl_eaccess, &aa);
 }
 
 static void *
@@ -1579,8 +1575,7 @@ rb_access(VALUE fname, int mode)
     aa.path = StringValueCStr(fname);
     aa.mode = mode;
 
-    return (int)(VALUE)rb_thread_call_without_gvl(nogvl_access, &aa,
-                                                RUBY_UBF_IO, 0);
+    return IO_WITHOUT_GVL_INT(nogvl_access, &aa);
 }
 
 /*
@@ -3140,8 +3135,7 @@ readlink_without_gvl(VALUE path, VALUE buf, size_t size)
     ra.buf = RSTRING_PTR(buf);
     ra.size = size;
 
-    return (ssize_t)rb_thread_call_without_gvl(nogvl_readlink, &ra,
-                                                RUBY_UBF_IO, 0);
+    return (ssize_t)IO_WITHOUT_GVL(nogvl_readlink, &ra);
 }
 
 VALUE
@@ -3242,8 +3236,7 @@ rb_file_s_rename(VALUE klass, VALUE from, VALUE to)
 #if defined __CYGWIN__
     errno = 0;
 #endif
-    if ((int)(VALUE)rb_thread_call_without_gvl(no_gvl_rename, &ra,
-                                         RUBY_UBF_IO, 0) < 0) {
+    if (IO_WITHOUT_GVL_INT(no_gvl_rename, &ra) < 0) {
         int e = errno;
 #if defined DOSISH
         switch (e) {
@@ -5128,8 +5121,7 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
     path = rb_str_encode_ospath(path);
     ta.path = StringValueCStr(path);
 
-    r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_truncate, &ta,
-                                                RUBY_UBF_IO, NULL);
+    r = IO_WITHOUT_GVL_INT(nogvl_truncate, &ta);
     if (r < 0)
         rb_sys_fail_path(path);
     return INT2FIX(0);
@@ -6201,7 +6193,7 @@ rb_file_s_mkfifo(int argc, VALUE *argv, VALUE _)
     FilePathValue(path);
     path = rb_str_encode_ospath(path);
     ma.path = RSTRING_PTR(path);
-    if (rb_thread_call_without_gvl(nogvl_mkfifo, &ma, RUBY_UBF_IO, 0)) {
+    if (IO_WITHOUT_GVL(nogvl_mkfifo, &ma)) {
         rb_sys_fail_path(path);
     }
     return INT2FIX(0);

@@ -5429,7 +5429,7 @@ maygvl_close(int fd, int keepgvl)
      * close() may block for certain file types (NFS, SO_LINGER sockets,
      * inotify), so let other threads run.
      */
-    return (int)(intptr_t)rb_thread_call_without_gvl(nogvl_close, &fd, RUBY_UBF_IO, 0);
+    return IO_WITHOUT_GVL_INT(nogvl_close, &fd);
 }
 
 static void*
@@ -5446,7 +5446,7 @@ maygvl_fclose(FILE *file, int keepgvl)
     if (keepgvl)
         return fclose(file);
 
-    return (int)(intptr_t)rb_thread_call_without_gvl(nogvl_fclose, file, RUBY_UBF_IO, 0);
+    return IO_WITHOUT_GVL_INT(nogvl_fclose, file);
 }
 
 static void free_io_buffer(rb_io_buffer_t *buf);
@@ -6967,8 +6967,7 @@ sysopen_func(void *ptr)
 static inline int
 rb_sysopen_internal(struct sysopen_struct *data)
 {
-    int fd;
-    fd = (int)(VALUE)rb_thread_call_without_gvl(sysopen_func, data, RUBY_UBF_IO, 0);
+    int fd = IO_WITHOUT_GVL_INT(sysopen_func, data);
     if (0 <= fd)
         rb_update_max_fd(fd);
     return fd;
@@ -13260,7 +13259,7 @@ copy_stream_body(VALUE arg)
         return copy_stream_fallback(stp);
     }
 
-    rb_thread_call_without_gvl(nogvl_copy_stream_func, (void*)stp, RUBY_UBF_IO, 0);
+    IO_WITHOUT_GVL(nogvl_copy_stream_func, stp);
     return Qnil;
 }
 
