@@ -745,18 +745,36 @@ module RbInstall
       end
 
       def collect
-        ruby_libraries.sort
+        libraries.sort
       end
 
       class Ext < self
-        def ruby_libraries
+        def libraries
           # install ext only when it's configured
-          return [] unless File.exist?("#{makefile_dir}/Makefile")
+          return [] unless File.exist?(makefile_path)
 
-          Dir.glob("lib/**/*.rb", base: makefile_dir)
+          ruby_libraries + ext_libraries
         end
 
         private
+
+        def ruby_libraries
+          Dir.glob("**/*.rb", base: "#{makefile_dir}/lib")
+        end
+
+        def ext_libraries
+          makefile = File.read(makefile_path)
+
+          name = makefile[/^TARGET[ \t]*=[ \t]*((?:.*\\\n)*.*)/, 1]
+          return [] if name.empty?
+
+          feature = makefile[/^DLLIB[ \t]*=[ \t]*((?:.*\\\n)*.*)/, 1]
+          Array(feature.sub("$(TARGET)", name))
+        end
+
+        def makefile_path
+          "#{makefile_dir}/Makefile"
+        end
 
         def makefile_dir
           File.expand_path("#{$ext_build_dir}/#{relative_base}", srcdir)
@@ -764,7 +782,7 @@ module RbInstall
       end
 
       class Lib < self
-        def ruby_libraries
+        def libraries
           gemname = File.basename(gemspec, ".gemspec")
           base = relative_base || gemname
           # for lib/net/net-smtp.gemspec
