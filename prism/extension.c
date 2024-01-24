@@ -368,6 +368,19 @@ parser_magic_comments(pm_parser_t *parser, VALUE source) {
     return magic_comments;
 }
 
+static VALUE get_diagnostic_level_symbol(uint8_t level) {
+    switch (level) {
+        case 0:
+            return ID2SYM(rb_intern("error_default"));
+        case 1:
+            return ID2SYM(rb_intern("warning_verbose_not_nil"));
+        case 2:
+            return ID2SYM(rb_intern("warning_verbose_true"));
+        default:
+            rb_raise(rb_eRuntimeError, "Unknown level: %" PRIu8, level);
+    }
+}
+
 /**
  * Extract out the data location from the parser into a Location instance if one
  * exists.
@@ -404,10 +417,11 @@ parser_errors(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
 
         VALUE error_argv[] = {
             rb_enc_str_new_cstr(error->message, encoding),
-            rb_class_new_instance(3, location_argv, rb_cPrismLocation)
+            rb_class_new_instance(3, location_argv, rb_cPrismLocation),
+            get_diagnostic_level_symbol(error->level)
         };
 
-        rb_ary_push(errors, rb_class_new_instance(2, error_argv, rb_cPrismParseError));
+        rb_ary_push(errors, rb_class_new_instance(3, error_argv, rb_cPrismParseError));
     }
 
     return errors;
@@ -430,10 +444,11 @@ parser_warnings(pm_parser_t *parser, rb_encoding *encoding, VALUE source) {
 
         VALUE warning_argv[] = {
             rb_enc_str_new_cstr(warning->message, encoding),
-            rb_class_new_instance(3, location_argv, rb_cPrismLocation)
+            rb_class_new_instance(3, location_argv, rb_cPrismLocation),
+            get_diagnostic_level_symbol(warning->level)
         };
 
-        rb_ary_push(warnings, rb_class_new_instance(2, warning_argv, rb_cPrismParseWarning));
+        rb_ary_push(warnings, rb_class_new_instance(3, warning_argv, rb_cPrismParseWarning));
     }
 
     return warnings;
