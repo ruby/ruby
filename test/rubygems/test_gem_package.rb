@@ -523,42 +523,7 @@ class TestGemPackage < Gem::Package::TarTestCase
     filepath = File.join @destination, "README.rdoc"
     assert_path_exist filepath
 
-    assert_equal 0o100444.to_s(8), File.stat(filepath).mode.to_s(8)
-  end
-
-  def test_extract_file_umask_global_permissions
-    pend "chmod not supported" if Gem.win_platform?
-
-    package = Gem::Package.new @gem
-
-    tgz_io = util_tar_gz do |tar|
-      tar.mkdir "lib", 0o777
-      tar.add_file "bin/global", 0o777 do |io|
-        io.write "#!/bin/ruby\nputs 'hello world'"
-      end
-      tar.add_file "lib/global.rb", 0o666 do |io|
-        io.write "puts 'hello world'"
-      end
-    end
-
-    package.extract_tar_gz tgz_io, @destination
-
-    dirpath = File.join @destination, "lib"
-    assert_path_exist dirpath
-    mode = 0o40755 & (~File.umask)
-    assert_equal mode.to_s(8), File.stat(dirpath).mode.to_s(8)
-
-    filepath = File.join @destination, "lib", "global.rb"
-    assert_path_exist filepath
-    assert_equal "puts 'hello world'", File.read(filepath)
-    mode = 0o100644 & (~File.umask)
-    assert_equal mode.to_s(8), File.stat(filepath).mode.to_s(8)
-
-    filepath = File.join @destination, "bin", "global"
-    assert_path_exist filepath
-    assert_equal "#!/bin/ruby\nputs 'hello world'", File.read(filepath)
-    mode = 0o100755 & (~File.umask)
-    assert_equal mode.to_s(8), File.stat(filepath).mode.to_s(8)
+    assert_equal 0o104444, File.stat(filepath).mode
   end
 
   def test_extract_tar_gz_absolute

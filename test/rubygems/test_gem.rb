@@ -161,17 +161,13 @@ class TestGem < Gem::TestCase
       format_executable: format_executable,
     }
     Dir.chdir @tempdir do
-      # use chmod to set global permissions (so umask doesn't bypass our choice) to ensure they are masked on install
       Dir.mkdir "bin"
-      File.chmod 0o777, "bin"
       Dir.mkdir "data"
-      File.chmod 0o777, "data"
 
       File.write "bin/foo", "#!/usr/bin/env ruby\n"
-      File.chmod 0o777, "bin/foo"
+      File.chmod 0o755, "bin/foo"
 
       File.write "data/foo.txt", "blah\n"
-      File.chmod 0o666, "data/foo.txt"
 
       spec_fetcher do |f|
         f.gem "foo", 1 do |s|
@@ -184,7 +180,7 @@ class TestGem < Gem::TestCase
 
     prog_mode = (options[:prog_mode] & mask).to_s(8)
     dir_mode = (options[:dir_mode] & mask).to_s(8)
-    data_mode = (options[:data_mode] & mask & (~File.umask)).to_s(8)
+    data_mode = (options[:data_mode] & mask).to_s(8)
     prog_name = "foo"
     prog_name = RbConfig::CONFIG["ruby_install_name"].sub("ruby", "foo") if options[:format_executable]
     expected = {
