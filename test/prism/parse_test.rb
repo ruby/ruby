@@ -87,7 +87,7 @@ module Prism
 
     relatives.each do |relative|
       # These fail on TruffleRuby due to a difference in Symbol#inspect: :测试 vs :"测试"
-      next if RUBY_ENGINE == "truffleruby" and %w[seattlerb/bug202.txt seattlerb/magic_encoding_comment.txt].include?(relative)
+      next if RUBY_ENGINE == "truffleruby" and %w[emoji_method_calls.txt seattlerb/bug202.txt seattlerb/magic_encoding_comment.txt].include?(relative)
 
       filepath = File.join(base, relative)
       snapshot = File.expand_path(File.join("snapshots", relative), __dir__)

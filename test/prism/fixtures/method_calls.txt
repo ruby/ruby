@@ -20,8 +20,6 @@ a::b c
 
 foo.bar = 1
 
-foo.🌊 = 1
-
 a?
 
 a(&block)
