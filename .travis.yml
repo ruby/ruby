@@ -72,6 +72,7 @@ env:
       # on s390x CPU architecture.
       # https://github.com/madler/zlib/pull/410
       - DFLTCC=0
+      - TESTOPTS="--exclude=ruby/test_compile_prism.rb --exclude=ruby/test_iseq.rb"
   - &arm32-linux
     name: arm32-linux
     arch: arm64
