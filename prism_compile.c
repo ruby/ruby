@@ -1188,8 +1188,8 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
 
                 ADD_INSN1(ret, &dummy_line_node, splatarray, RBOOL(arguments_node_list.size > 1));
 
-                pm_local_index_t dot3_index = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_DOT3, 0);
-                ADD_INSN2(ret, &dummy_line_node, getblockparamproxy, INT2FIX(dot3_index.index), INT2FIX(dot3_index.level));
+                pm_local_index_t and_index = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_AND, 0);
+                ADD_INSN2(ret, &dummy_line_node, getblockparamproxy, INT2FIX(and_index.index + VM_ENV_DATA_SIZE - 1), INT2FIX(and_index.level));
 
                 break;
               }
