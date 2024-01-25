@@ -993,10 +993,42 @@ module Prism
 
     def test_UntilNode
       assert_prism_eval("a = 0; until a == 1; a = a + 1; end")
+
+      # Test UntilNode in rescue
+      assert_prism_eval(<<~RUBY)
+        o = Object.new
+        o.instance_variable_set(:@ret, [])
+        def o.foo = @ret << @ret.length
+        def o.bar = @ret.length > 3
+
+        begin
+          raise
+        rescue
+          o.foo until o.bar
+        end
+
+        o.instance_variable_get(:@ret)
+      RUBY
     end
 
     def test_WhileNode
       assert_prism_eval("a = 0; while a != 1; a = a + 1; end")
+
+      # Test WhileNode in rescue
+      assert_prism_eval(<<~RUBY)
+        o = Object.new
+        o.instance_variable_set(:@ret, [])
+        def o.foo = @ret << @ret.length
+        def o.bar = @ret.length < 3
+
+        begin
+          raise
+        rescue
+          o.foo while o.bar
+        end
+
+        o.instance_variable_get(:@ret)
+      RUBY
     end
 
     def test_ForNode

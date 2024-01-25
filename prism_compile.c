@@ -662,10 +662,16 @@ pm_compile_while(rb_iseq_t *iseq, int lineno, pm_node_flags_t flags, enum pm_nod
     LABEL *prev_end_label = ISEQ_COMPILE_DATA(iseq)->end_label;
     LABEL *prev_redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label;
 
-    // TODO: Deal with ensures in here
     LABEL *next_label = ISEQ_COMPILE_DATA(iseq)->start_label = NEW_LABEL(lineno); /* next  */
     LABEL *redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label = NEW_LABEL(lineno);  /* redo  */
-    LABEL *break_label = ISEQ_COMPILE_DATA(iseq)->end_label = NEW_LABEL(lineno);  /* break */
+    /* An existing end label could come from a rescue node, so we don't want to
+     * overwrite it. */
+    bool existing_end_label = true;
+    if (!ISEQ_COMPILE_DATA(iseq)->end_label) {
+        existing_end_label = false;
+        ISEQ_COMPILE_DATA(iseq)->end_label = NEW_LABEL(lineno);
+    }
+    LABEL *break_label = ISEQ_COMPILE_DATA(iseq)->end_label;  /* break */
     LABEL *end_label = NEW_LABEL(lineno);
     LABEL *adjust_label = NEW_LABEL(lineno);
 
@@ -707,7 +713,7 @@ pm_compile_while(rb_iseq_t *iseq, int lineno, pm_node_flags_t flags, enum pm_nod
 
     PM_PUTNIL;
 
-    ADD_LABEL(ret, break_label);
+    if (!existing_end_label) ADD_LABEL(ret, break_label);
 
     PM_POP_IF_POPPED;
 
