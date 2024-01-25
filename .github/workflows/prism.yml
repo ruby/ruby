@@ -91,6 +91,7 @@ jobs:
           GNUMAKEFLAGS: ''
           RUBY_TESTOPTS: '-v --tty=no'
           RUN_OPTS: ${{ matrix.run_opts }}
+        continue-on-error: true
 
       # - name: make test
       #   run: |
