@@ -3192,7 +3192,7 @@ optimize_args_splat_no_copy(rb_iseq_t *iseq, INSN *insn, LINK_ELEMENT *niobj,
                                  unsigned int set_flags, unsigned int unset_flags)
 {
     LINK_ELEMENT *iobj = (LINK_ELEMENT *)insn;
-    if (!IS_NEXT_INSN_ID(niobj, send)) {
+    if (!IS_NEXT_INSN_ID(niobj, send) && !IS_NEXT_INSN_ID(niobj, invokesuper)) {
         return false;
     }
     niobj = niobj->next;
