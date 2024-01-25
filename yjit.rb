@@ -271,6 +271,7 @@ module RubyVM::YJIT
         branchunless
         definedivar
         expandarray
+        invokebuiltin
         jump
         leave
         objtostring

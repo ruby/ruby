@@ -468,6 +468,8 @@ make_counters! {
 
     setlocal_wb_required,
 
+    invokebuiltin_too_many_args,
+
     opt_plus_overflow,
     opt_minus_overflow,
     opt_mult_overflow,
