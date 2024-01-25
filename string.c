@@ -11693,17 +11693,6 @@ sym_inspect(VALUE sym)
     return str;
 }
 
-/*
- *  call-seq:
- *    to_s -> string
- *
- *  Returns a string representation of +self+ (not including the leading colon):
- *
- *    :foo.to_s # => "foo"
- *
- *  Related: Symbol#inspect, Symbol#name.
- */
-
 VALUE
 rb_sym_to_s(VALUE sym)
 {
@@ -12182,8 +12171,6 @@ Init_String(void)
     rb_define_method(rb_cString, "<<", rb_str_concat, 1);
     rb_define_method(rb_cString, "prepend", rb_str_prepend_multi, -1);
     rb_define_method(rb_cString, "crypt", rb_str_crypt, 1);
-    rb_define_method(rb_cString, "intern", rb_str_intern, 0); /* in symbol.c */
-    rb_define_method(rb_cString, "to_sym", rb_str_intern, 0); /* in symbol.c */
     rb_define_method(rb_cString, "ord", rb_str_ord, 0);
 
     rb_define_method(rb_cString, "include?", rb_str_include, 1);
@@ -12270,8 +12257,6 @@ Init_String(void)
     rb_define_method(rb_cSymbol, "==", sym_equal, 1);
     rb_define_method(rb_cSymbol, "===", sym_equal, 1);
     rb_define_method(rb_cSymbol, "inspect", sym_inspect, 0);
-    rb_define_method(rb_cSymbol, "to_s", rb_sym_to_s, 0);
-    rb_define_method(rb_cSymbol, "id2name", rb_sym_to_s, 0);
     rb_define_method(rb_cSymbol, "name", rb_sym2str, 0); /* in symbol.c */
     rb_define_method(rb_cSymbol, "to_proc", rb_sym_to_proc, 0); /* in proc.c */
     rb_define_method(rb_cSymbol, "succ", sym_succ, 0);
@@ -12300,3 +12285,5 @@ Init_String(void)
 
     rb_define_method(rb_cSymbol, "encoding", sym_encoding, 0);
 }
+
+#include "string.rbinc"

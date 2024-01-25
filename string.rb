@@ -548,5 +548,28 @@
 #  - #each_line: Calls the given block with each successive line in +self+,
 #    as determined by a given record separator.
 #  - #upto: Calls the given block with each string value returned by successive calls to #succ.
+class String
+  # call-seq:
+  #    str.intern   -> symbol
+  #    str.to_sym   -> symbol
+  #
+  # Returns the Symbol corresponding to <i>str</i>, creating the
+  # symbol if it did not previously exist. See Symbol#id2name.
+  #
+  #    "Koala".intern         #=> :Koala
+  #    s = 'cat'.to_sym       #=> :cat
+  #    s == :cat              #=> true
+  #    s = '@cat'.to_sym      #=> :@cat
+  #    s == :@cat             #=> true
+  #
+  # This can also be used to create symbols that cannot be represented using the
+  # <code>:xxx</code> notation.
+  #
+  #    'cat and dog'.to_sym   #=> :"cat and dog"
+  def to_sym
+    Primitive.attr! :leaf
+    Primitive.cexpr! 'rb_str_intern(self)'
+  end
 
-class String; end
+  alias intern to_sym
+end
