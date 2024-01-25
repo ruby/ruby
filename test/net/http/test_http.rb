@@ -1270,21 +1270,30 @@ class TestNetHTTPLocalBind < Test::Unit::TestCase
     @server.mount_proc('/show_ip') { |req, res| res.body = req.remote_ip }
 
     http = Net::HTTP.new(config('host'), config('port'))
-    http.local_host = Addrinfo.tcp(config('host'), config('port')).ip_address
+    http.local_host = config('host')
     assert_not_nil(http.local_host)
     assert_nil(http.local_port)
 
     res = http.get('/show_ip')
-    assert_equal(http.local_host, res.body)
+    # Verify that what got returned from /show_ip is at least _one_ of
+    # the IP addresses for http.local_host (depending on whether we made
+    # the outgoing connection over IPv4 or 6, res.body will be '::1' or '127.0.0.1',
+    # whilst http.local_host will be the string "localhost")
+    all_ips = Addrinfo.getaddrinfo('localhost', 0, nil, :SOCK_STREAM).map(&:ip_address)
+    assert_includes(all_ips, res.body)
   end
 
   def test_bind_to_local_port
     @server.mount_proc('/show_port') { |req, res| res.body = req.peeraddr[1].to_s }
 
     http = Net::HTTP.new(config('host'), config('port'))
-    http.local_host = Addrinfo.tcp(config('host'), config('port')).ip_address
-    http.local_port = Addrinfo.tcp(config('host'), 0).bind {|s|
-      s.local_address.ip_port.to_s
+    http.local_host = config('host')
+    # The point of this is to listen to socket (with all address families) on the specified
+    # interface (probably lo), get its port number (which will be the same for both ipv4 and 6),
+    # and then close the socket and hope nothing else uses the same socket number in between
+    # this part of the test and the connection being made.
+    http.local_port = Socket.tcp_server_sockets(config('host'), 0) { |sockets|
+      sockets[0].local_address.ip_port.to_s
     }
     assert_not_nil(http.local_host)
     assert_not_nil(http.local_port)
@@ -1310,7 +1319,7 @@ class TestNetHTTPForceEncoding < Test::Unit::TestCase
     end
 
     http = Net::HTTP.new(config('host'), config('port'))
-    http.local_host = Addrinfo.tcp(config('host'), config('port')).ip_address
+    http.local_host = config('host')
     assert_not_nil(http.local_host)
     assert_nil(http.local_port)
 
