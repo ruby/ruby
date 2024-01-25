@@ -1206,6 +1206,15 @@ a
           next
         end
       CODE
+
+      assert_prism_eval(<<~CODE)
+        [].each do
+          begin
+          rescue
+            next
+          end
+        end
+      CODE
     end
 
     def test_RedoNode
