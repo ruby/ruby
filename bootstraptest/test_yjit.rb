@@ -4459,3 +4459,17 @@ assert_equal '[[{:a=>1}], {}]', %q{
 
   body
 }
+
+# concatarray
+assert_equal '[1, 2]', %q{
+  def foo(a, b) = [a, b]
+  arr = [2]
+  foo(*[1], *arr)
+}
+
+# pushtoarray
+assert_equal '[1, 2]', %q{
+  def foo(a, b) = [a, b]
+  arr = [1]
+  foo(*arr, 2)
+}
