@@ -203,11 +203,10 @@ require_relative "irb/pager"
 #
 # === Input Command History
 #
-# By default, \IRB stores a history of up to 1000 input commands
-# in file <tt>~/.irb_history</tt>
-# (or, if a {configuration file}[rdoc-ref:IRB@Configuration+File]
-# is found, in file +.irb_history+
-# inin the same directory as that file).
+# By default, \IRB stores a history of up to 1000 input commands in a
+# file named <tt>.irb_history</tt>. The history file will be in the same directory
+# as the {configuration file}[rdoc-ref:IRB@Configuration+File] if one is found, or
+# in <tt>~/</tt> otherwise.
 #
 # A new \IRB session creates the history file if it does not exist,
 # and appends to the file if it does exist.
