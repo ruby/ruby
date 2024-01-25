@@ -312,8 +312,8 @@ EOT
   end
 
   def test_header
-    assert_raise(ArgumentError) { eval("# encoding:utf-16le\nfoo") }
-    assert_raise(ArgumentError) { eval("# encoding:utf-16be\nfoo") }
+    assert_raise(SyntaxError) { eval("# encoding:utf-16le\nfoo") }
+    assert_raise(SyntaxError) { eval("# encoding:utf-16be\nfoo") }
   end
 
 

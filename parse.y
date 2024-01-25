@@ -9592,7 +9592,6 @@ static void
 parser_set_encode(struct parser_params *p, const char *name)
 {
     rb_encoding *enc;
-    VALUE excargs[3];
     int idx = 0;
 
     const char *wrong = 0;
@@ -9606,16 +9605,13 @@ parser_set_encode(struct parser_params *p, const char *name)
     idx = rb_enc_find_index(name);
     if (idx < 0) {
       unknown:
-        excargs[1] = rb_sprintf("unknown encoding name: %s", name);
+        compile_error(p, "unknown encoding name: %s", name);
       error:
-        excargs[0] = rb_eArgError;
-        excargs[2] = rb_make_backtrace();
-        rb_ary_unshift(excargs[2], rb_sprintf("%"PRIsVALUE":%d", p->ruby_sourcefile_string, p->ruby_sourceline));
-        rb_exc_raise(rb_make_exception(3, excargs));
+        return;
     }
     enc = rb_enc_from_index(idx);
     if (!rb_enc_asciicompat(enc)) {
-        excargs[1] = rb_sprintf("%s is not ASCII compatible", rb_enc_name(enc));
+        compile_error(p, "%s is not ASCII compatible", rb_enc_name(enc));
         goto error;
     }
     p->enc = enc;
