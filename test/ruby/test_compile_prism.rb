@@ -724,11 +724,7 @@ module Prism
 
     def test_InterpolatedXStringNode
       assert_prism_eval('`echo #{1}`')
-      if /mswin|ucrt/ =~ RUBY_PLATFORM
-        assert_prism_eval('`echo #{"100"}`')
-      else
-        assert_prism_eval('`printf #{"100"}`')
-      end
+      assert_prism_eval('`echo #{"100"}`')
     end
 
     def test_MatchLastLineNode
