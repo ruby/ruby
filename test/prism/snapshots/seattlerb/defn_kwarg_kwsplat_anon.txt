@@ -29,8 +29,8 @@
             │   │   └── operator_loc: (1,12)-(1,14) = "**"
             │   └── block: ∅
             ├── body: ∅
-            ├── locals: [:b, :**]
-            ├── locals_body_index: 2
+            ├── locals: [:b]
+            ├── locals_body_index: 1
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,5)-(1,6) = "("

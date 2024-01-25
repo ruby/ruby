@@ -1616,6 +1616,30 @@ a
       CODE
     end
 
+    def test_pow_parameters
+      assert_prism_eval("def self.m(a, **); end; method(:m).parameters")
+    end
+
+    def test_star_parameters
+      assert_prism_eval("def self.m(a, *, b); end; method(:m).parameters")
+    end
+
+    def test_repeated_block_params
+      assert_prism_eval("def self.x(&blk); blk; end; x { |_, _, _ = 1, *_, _:, _: 2, **_, &_| }.parameters")
+    end
+
+    def test_repeated_proc_params
+      assert_prism_eval("proc {|_, _, _ = 1, *_, _:, _: 2, **_, &_| }.parameters")
+    end
+
+    def test_forward_parameters_block
+      assert_prism_eval("def self.m(&); end; method(:m).parameters")
+    end
+
+    def test_forward_parameters
+      assert_prism_eval("def self.m(...); end; method(:m).parameters")
+    end
+
     def test_repeated_block_underscore
       assert_prism_eval("def self.m(_, **_, &_); _; end; method(:m).parameters")
     end

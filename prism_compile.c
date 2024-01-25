@@ -801,7 +801,7 @@ pm_interpolated_node_compile(pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_
 
 // This recurses through scopes and finds the local index at any scope level
 // It also takes a pointer to depth, and increments depth appropriately
-// according to the depth of the local
+// according to the depth of the local.
 static pm_local_index_t
 pm_lookup_local_index(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, pm_constant_id_t constant_id, int start_depth)
 {
@@ -815,6 +815,7 @@ pm_lookup_local_index(rb_iseq_t *iseq, const pm_scope_node_t *scope_node, pm_con
 
     while (!st_lookup(scope_node->index_lookup_table, constant_id, &local_index)) {
         level++;
+
         if (scope_node->previous) {
             scope_node = scope_node->previous;
         } else {
@@ -1151,6 +1152,7 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
               case PM_SPLAT_NODE: {
                 *flags |= VM_CALL_ARGS_SPLAT;
                 pm_splat_node_t *splat_node = (pm_splat_node_t *)argument;
+
                 if (splat_node->expression) {
                     PM_COMPILE_NOT_POPPED(splat_node->expression);
                 }
@@ -1197,16 +1199,26 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                 break;
               }
               case PM_FORWARDING_ARGUMENTS_NODE: {
-                orig_argc++;
-                *flags |= VM_CALL_ARGS_BLOCKARG | VM_CALL_ARGS_SPLAT;
+                orig_argc += 2;
+                *flags |= VM_CALL_ARGS_SPLAT | VM_CALL_ARGS_SPLAT_MUT | VM_CALL_ARGS_BLOCKARG | VM_CALL_KW_SPLAT;
 
-                pm_local_index_t mult_index = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_MULT, 0);
-                ADD_GETLOCAL(ret, &dummy_line_node, mult_index.index, mult_index.level);
+                // Forwarding arguments nodes are treated as foo(*, **, &)
+                // So foo(...) equals foo(*, **, &) and as such the local
+                // table for this method is known in advance
+                //
+                // Push the *
+                pm_local_index_t mult_local = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_MULT, 0);
+                ADD_GETLOCAL(ret, &dummy_line_node, mult_local.index, mult_local.level);
+                ADD_INSN1(ret, &dummy_line_node, splatarray, Qtrue);
 
-                ADD_INSN1(ret, &dummy_line_node, splatarray, RBOOL(arguments_node_list.size > 1));
+                // Push the **
+                pm_local_index_t pow_local = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_POW, 0);
+                ADD_GETLOCAL(ret, &dummy_line_node, pow_local.index, pow_local.level);
 
-                pm_local_index_t and_index = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_AND, 0);
-                ADD_INSN2(ret, &dummy_line_node, getblockparamproxy, INT2FIX(and_index.index + VM_ENV_DATA_SIZE - 1), INT2FIX(and_index.level));
+                // Push the &
+                pm_local_index_t and_local = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_AND, 0);
+                ADD_INSN2(ret, &dummy_line_node, getblockparamproxy, INT2FIX(and_local.index + VM_ENV_DATA_SIZE - 1), INT2FIX(and_local.level));
+                ADD_INSN(ret, &dummy_line_node, splatkw);
 
                 break;
               }
@@ -2863,6 +2875,11 @@ pm_local_table_insert_func(st_data_t *key, st_data_t *value, st_data_t arg, int 
     return ST_CONTINUE;
 }
 
+/**
+ * Insert a local into the local table for the iseq. This is used to create the
+ * local table in the correct order while compiling the scope. The locals being
+ * inserted are regular named locals, as opposed to special forwarding locals.
+ */
 static void
 pm_insert_local_index(pm_constant_id_t constant_id, int local_index, st_table *index_lookup_table, rb_ast_id_table_t *local_table_for_iseq, pm_scope_node_t *scope_node)
 {
@@ -2870,7 +2887,18 @@ pm_insert_local_index(pm_constant_id_t constant_id, int local_index, st_table *i
 
     ID local = pm_constant_id_lookup(scope_node, constant_id);
     local_table_for_iseq->ids[local_index] = local;
-    st_insert(index_lookup_table, (st_data_t)constant_id, local_index);
+    st_insert(index_lookup_table, (st_data_t) constant_id, (st_data_t) local_index);
+}
+
+/**
+ * Insert a local into the local table for the iseq that is a special forwarding
+ * local variable.
+ */
+static void
+pm_insert_local_special(ID local_name, int local_index, st_table *index_lookup_table, rb_ast_id_table_t *local_table_for_iseq)
+{
+    local_table_for_iseq->ids[local_index] = local_name;
+    st_insert(index_lookup_table, (st_data_t) (local_name | PM_SPECIAL_CONSTANT_FLAG), (st_data_t) local_index);
 }
 
 /**
@@ -3904,13 +3932,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_BLOCK_ARGUMENT_NODE: {
-        pm_block_argument_node_t *block_argument_node = (pm_block_argument_node_t *) node;
-        if (block_argument_node->expression) {
-            PM_COMPILE(block_argument_node->expression);
+        pm_block_argument_node_t *cast = (pm_block_argument_node_t *) node;
+
+        if (cast->expression) {
+            PM_COMPILE(cast->expression);
         }
         else {
-            pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_AND, 0);
-            ADD_GETLOCAL(ret, &dummy_line_node, index.index, index.level);
+            // If there's no expression, this must be block forwarding.
+            pm_local_index_t local_index = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_AND, 0);
+            ADD_INSN2(ret, &dummy_line_node, getblockparamproxy, INT2FIX(local_index.index + VM_ENV_DATA_SIZE - 1), INT2FIX(local_index.level));
         }
         return;
       }
@@ -4913,7 +4943,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
             argc += local_body->param.lead_num;
         }
-
 
         if (local_body->param.flags.has_opt) {
             /* optional arguments */
@@ -6332,7 +6361,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_node_list_t *posts_list = NULL;
         pm_node_list_t *requireds_list = NULL;
         pm_node_list_t *block_locals = NULL;
-        pm_node_t *block_param_keyword_rest = NULL;
         bool trailing_comma = false;
 
         struct rb_iseq_constant_body *body = ISEQ_BODY(iseq);
@@ -6344,7 +6372,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 parameters_node = block_parameters_node->parameters;
                 block_locals = &block_parameters_node->locals;
                 if (parameters_node) {
-                    block_param_keyword_rest = parameters_node->keyword_rest;
                     if (parameters_node->rest && PM_NODE_TYPE_P(parameters_node->rest, PM_IMPLICIT_REST_NODE)) {
                         trailing_comma = true;
                     }
@@ -6440,10 +6467,24 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 }
             }
 
-            // def underscore_parameters(_, **_); _; end
-            //                              ^^^
-            if (parameters_node->keyword_rest && PM_NODE_FLAG_P(parameters_node->keyword_rest, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
-                table_size++;
+            // def foo(_, **_); _; end
+            //            ^^^
+            if (parameters_node->keyword_rest) {
+                // def foo(...); end
+                //         ^^^
+                // When we have a `...` as the keyword_rest, it's a forwarding_parameter_node and
+                // we need to leave space for 4 locals: *, **, &, ...
+                if (PM_NODE_TYPE_P(parameters_node->keyword_rest, PM_FORWARDING_PARAMETER_NODE)) {
+                    table_size += 4;
+                }
+                else {
+                    pm_keyword_rest_parameter_node_t * kw_rest = (pm_keyword_rest_parameter_node_t *)parameters_node->keyword_rest;
+
+                    // If it's anonymous or repeated, then we need to allocate stack space
+                    if (!kw_rest->name || PM_NODE_FLAG_P(kw_rest, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
+                        table_size++;
+                    }
+                }
             }
         }
 
@@ -6468,21 +6509,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
         }
 
-        if (block_param_keyword_rest) {
-            table_size++;
-        }
-
         if (parameters_node && parameters_node->block) {
-            if (PM_NODE_FLAG_P(parameters_node->block, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
+            pm_block_parameter_node_t * block_node = (pm_block_parameter_node_t *)parameters_node->block;
+
+            if (PM_NODE_FLAG_P(block_node, PM_PARAMETER_FLAGS_REPEATED_PARAMETER) || !block_node->name) {
                 table_size++;
             }
-        }
-
-        // When we have a `...` as the keyword_rest, it's a forwarding_parameter_node and
-        // we need to leave space for 2 more locals on the locals table (`*` and `&`)
-        if (parameters_node && parameters_node->keyword_rest &&
-                PM_NODE_TYPE_P(parameters_node->keyword_rest, PM_FORWARDING_PARAMETER_NODE)) {
-            table_size += 2;
         }
 
         // We can create local_table_for_iseq with the correct size
@@ -6522,10 +6554,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         if (requireds_list && requireds_list->size) {
             for (size_t i = 0; i < requireds_list->size; i++, local_index++) {
                 ID local;
-                // For each MultiTargetNode, we're going to have one
-                // additional anonymous local not represented in the locals table
-                // We want to account for this in our table size
+
+                // For each MultiTargetNode, we're going to have one additional
+                // anonymous local not represented in the locals table. We want
+                // to account for this in our table size.
                 pm_node_t *required = requireds_list->nodes[i];
+
                 switch (PM_NODE_TYPE(required)) {
                   // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
                   //            ^^^^^^^^^^
@@ -6546,6 +6580,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     else {
                         pm_insert_local_index(param->name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
                     }
+
                     break;
                   }
                   default: {
@@ -6582,13 +6617,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         //                               ^^
         if (parameters_node && parameters_node->rest) {
             body->param.rest_start = local_index;
+
             // If there's a trailing comma, we'll have an implicit rest node,
             // and we don't want it to impact the rest variables on param
             if (!(PM_NODE_TYPE_P(parameters_node->rest, PM_IMPLICIT_REST_NODE))) {
                 body->param.flags.has_rest = true;
                 assert(body->param.rest_start != -1);
 
-                pm_constant_id_t name = ((pm_rest_parameter_node_t *)parameters_node->rest)->name;
+                pm_constant_id_t name = ((pm_rest_parameter_node_t *) parameters_node->rest)->name;
+
                 if (name) {
                     // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
                     //                               ^^
@@ -6603,9 +6640,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 else {
                     // def foo(a, (b, *c, d), e = 1, *, g, (h, *i, j),  k:, l: 1, **m, &n)
                     //                               ^
-                    local_table_for_iseq->ids[local_index] = PM_CONSTANT_MULT;
-                    st_insert(index_lookup_table, (st_data_t)PM_CONSTANT_MULT, local_index);
+                    pm_insert_local_special(idMULT, local_index, index_lookup_table, local_table_for_iseq);
                 }
+
                 local_index++;
             }
         }
@@ -6636,12 +6673,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                   //                                   ^
                   case PM_REQUIRED_PARAMETER_NODE: {
                     pm_required_parameter_node_t * param = (pm_required_parameter_node_t *)post_node;
+
                     if (PM_NODE_FLAG_P(param, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
                         ID local = pm_constant_id_lookup(scope_node, param->name);
                         local_table_for_iseq->ids[local_index] = local;
                     }
                     else {
-
                         pm_insert_local_index(param->name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
                     }
                     break;
@@ -6760,7 +6797,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                   // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **nil, &n)
                   //                                                             ^^^^^
                   case PM_NO_KEYWORDS_PARAMETER_NODE: {
-
                     body->param.flags.accepts_no_kwarg = true;
                     break;
                   }
@@ -6786,9 +6822,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                         }
                     }
                     else {
-                        local_table_for_iseq->ids[local_index] = PM_CONSTANT_POW;
-                        st_insert(index_lookup_table, (st_data_t)PM_CONSTANT_POW, local_index);
+                        pm_insert_local_special(idPow, local_index, index_lookup_table, local_table_for_iseq);
                     }
+
                     local_index++;
                     break;
                   }
@@ -6797,19 +6833,28 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                   case PM_FORWARDING_PARAMETER_NODE: {
                     body->param.rest_start = local_index;
                     body->param.flags.has_rest = true;
-                    local_table_for_iseq->ids[local_index] = PM_CONSTANT_MULT;
-                    st_insert(index_lookup_table, (st_data_t)PM_CONSTANT_MULT, local_index);
-                    local_index++;
+
+                    // Add the leading *
+                    pm_insert_local_special(idMULT, local_index++, index_lookup_table, local_table_for_iseq);
+
+                    // Add the kwrest **
+                    RUBY_ASSERT(!body->param.flags.has_kw);
+
+                    // There are no keywords declared (in the text of the program)
+                    // but the forwarding node implies we support kwrest (**)
+                    body->param.flags.has_kw = false;
+                    body->param.flags.has_kwrest = true;
+                    body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
+
+                    keyword->rest_start = local_index;
+
+                    pm_insert_local_special(idPow, local_index++, index_lookup_table, local_table_for_iseq);
 
                     body->param.block_start = local_index;
                     body->param.flags.has_block = true;
-                    local_table_for_iseq->ids[local_index] = PM_CONSTANT_AND;
-                    st_insert(index_lookup_table, (st_data_t)PM_CONSTANT_AND, local_index);
-                    local_index++;
 
-                    local_table_for_iseq->ids[local_index] = PM_CONSTANT_DOT3;
-                    st_insert(index_lookup_table, (st_data_t)PM_CONSTANT_DOT3, local_index);
-                    local_index++;
+                    pm_insert_local_special(idAnd, local_index++, index_lookup_table, local_table_for_iseq);
+                    pm_insert_local_special(idDot3, local_index++, index_lookup_table, local_table_for_iseq);
                     break;
                   }
                   default: {
@@ -6824,13 +6869,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 body->param.block_start = local_index;
                 body->param.flags.has_block = true;
 
-                pm_constant_id_t name = ((pm_block_parameter_node_t *)parameters_node->block)->name;
+                pm_constant_id_t name = ((pm_block_parameter_node_t *) parameters_node->block)->name;
 
-                if (name == 0) {
-                    local_table_for_iseq->ids[local_index] = PM_CONSTANT_AND;
-                    st_insert(index_lookup_table, (st_data_t)PM_CONSTANT_AND, local_index);
-                }
-                else {
+                if (name) {
                     if (PM_NODE_FLAG_P(parameters_node->block, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
                         ID local = pm_constant_id_lookup(scope_node, name);
                         local_table_for_iseq->ids[local_index] = local;
@@ -6839,6 +6880,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                         pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
                     }
                 }
+                else {
+                    pm_insert_local_special(idAnd, local_index, index_lookup_table, local_table_for_iseq);
+                }
+
                 local_index++;
             }
         }
