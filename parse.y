@@ -9630,16 +9630,11 @@ parser_set_encode(struct parser_params *p, const char *name)
 #endif
 }
 
-static int
+static bool
 comment_at_top(struct parser_params *p)
 {
-    const char *ptr = p->lex.pbeg, *ptr_end = p->lex.pcur - 1;
-    if (p->line_count != (p->has_shebang ? 2 : 1)) return 0;
-    while (ptr < ptr_end) {
-        if (!ISSPACE(*ptr)) return 0;
-        ptr++;
-    }
-    return 1;
+    if (p->token_seen) return false;
+    return (p->line_count == (p->has_shebang ? 2 : 1));
 }
 
 typedef long (*rb_magic_comment_length_t)(struct parser_params *p, const char *name, long len);
