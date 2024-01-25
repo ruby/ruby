@@ -114,6 +114,7 @@ pub use autogened::*;
 extern "C" {
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
     pub fn rb_vm_concat_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
+    pub fn rb_vm_concat_to_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
     pub fn rb_vm_defined(
         ec: EcPtr,
         reg_cfp: CfpPtr,
