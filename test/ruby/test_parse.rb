@@ -795,6 +795,24 @@ x = __ENCODING__
 x = __ENCODING__
       END
     end
+
+    e = assert_raise(SyntaxError) do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# coding: foo
+end #
+      END
+    end
+    assert_include(e.message, "# coding: foo\n          ^~~")
+    assert_include(e.message, "end #")
+
+    e = assert_raise(SyntaxError) do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# coding = foo
+end #
+      END
+    end
+    assert_include(e.message, "# coding = foo\n           ^~~")
+    assert_include(e.message, "end #")
   end
 
   def test_utf8_bom
