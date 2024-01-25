@@ -2170,7 +2170,7 @@ EOS
       "c\u{1EE7}a",
     ].each do |arg|
       begin
-        arg = arg.encode(Encoding.find("locale"))
+        arg = arg.encode(Encoding.local_charmap)
       rescue
       else
         assert_in_out_err([], "#{<<-"begin;"}\n#{<<-"end;"}", [arg], [], bug12841)
