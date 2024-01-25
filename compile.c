@@ -3192,6 +3192,10 @@ optimize_args_splat_no_copy(rb_iseq_t *iseq, INSN *insn, LINK_ELEMENT *niobj,
                                  unsigned int set_flags, unsigned int unset_flags)
 {
     LINK_ELEMENT *iobj = (LINK_ELEMENT *)insn;
+    if ((set_flags & VM_CALL_ARGS_BLOCKARG) && (set_flags & VM_CALL_KW_SPLAT) &&
+            IS_NEXT_INSN_ID(niobj, splatkw)) {
+        niobj = niobj->next;
+    }
     if (!IS_NEXT_INSN_ID(niobj, send) && !IS_NEXT_INSN_ID(niobj, invokesuper)) {
         return false;
     }
