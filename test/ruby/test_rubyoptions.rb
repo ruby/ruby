@@ -366,18 +366,10 @@ class TestRubyOptions < Test::Unit::TestCase
     assert_in_out_err(%w(--encoding test_ruby_test_rubyoptions_foobarbazqux), "", [],
                       /unknown encoding name - test_ruby_test_rubyoptions_foobarbazqux \(RuntimeError\)/)
 
-    if /mswin|mingw|aix|android/ =~ RUBY_PLATFORM &&
-      (str = "\u3042".force_encoding(Encoding.find("external"))).valid_encoding?
-      # This result depends on locale because LANG=C doesn't affect locale
-      # on Windows.
-      # On AIX, the source encoding of stdin with LANG=C is ISO-8859-1,
-      # which allows \u3042.
-      out, err = [str], []
-    else
-      out, err = [], /invalid multibyte char/
-    end
-    assert_in_out_err(%w(-Eutf-8), "puts '\u3042'", out, err)
-    assert_in_out_err(%w(--encoding utf-8), "puts '\u3042'", out, err)
+    assert_in_out_err(%w(-Eutf-8), 'puts Encoding::default_external', ["UTF-8"])
+    assert_in_out_err(%w(-Ecesu-8), 'puts Encoding::default_external', ["CESU-8"])
+    assert_in_out_err(%w(--encoding utf-8), 'puts Encoding::default_external', ["UTF-8"])
+    assert_in_out_err(%w(--encoding cesu-8), 'puts Encoding::default_external', ["CESU-8"])
   end
 
   def test_syntax_check
