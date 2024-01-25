@@ -2444,30 +2444,30 @@ end
     ############################################################################
 
     def test_ScopeNode
-      assert_separately(%w[], "#{<<-'begin;'}\n#{<<-'end;'}")
-                        begin;
-    def compare_eval(source)
-      ruby_eval = RubyVM::InstructionSequence.compile("module A; " + source + "; end").eval
-      prism_eval = RubyVM::InstructionSequence.compile_prism("module B; " + source + "; end").eval
+      assert_separately(%w[], <<~'RUBY')
+        def compare_eval(source)
+          ruby_eval = RubyVM::InstructionSequence.compile("module A; " + source + "; end").eval
+          prism_eval = RubyVM::InstructionSequence.compile_prism("module B; " + source + "; end").eval
 
-      assert_equal ruby_eval, prism_eval
-    end
+          assert_equal ruby_eval, prism_eval
+        end
 
-    def assert_prism_eval(source)
-      $VERBOSE, verbose_bak = nil, $VERBOSE
+        def assert_prism_eval(source)
+          $VERBOSE, verbose_bak = nil, $VERBOSE
 
-      begin
-        compare_eval(source)
+          begin
+            compare_eval(source)
 
-        # Test "popped" functionality
-        compare_eval("#{source}; 1")
-      ensure
-        $VERBOSE = verbose_bak
-      end
-    end
-      assert_prism_eval("a = 1; 1.times do; { a: }; end")
-      assert_prism_eval("a = 1; def foo(a); a; end")
-                        end;
+            # Test "popped" functionality
+            compare_eval("#{source}; 1")
+          ensure
+            $VERBOSE = verbose_bak
+          end
+        end
+
+        assert_prism_eval("a = 1; 1.times do; { a: }; end")
+        assert_prism_eval("a = 1; def foo(a); a; end")
+      RUBY
     end
 
     ############################################################################
