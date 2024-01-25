@@ -30,7 +30,7 @@ module TestIRB
       end
     end
 
-    def test_eval_history_is_diabled_by_default
+    def test_eval_history_is_disabled_by_default
       out, err = execute_lines(
         "a = 1",
         "__"
