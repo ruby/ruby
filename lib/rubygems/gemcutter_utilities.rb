@@ -130,8 +130,8 @@ module Gem::GemcutterUtilities
 
     say "The existing key doesn't have access of #{scope} on #{pretty_host}. Please sign in to update access."
 
-    email    = ask "   Email: "
-    password = ask_for_password "Password: "
+    email    = ask "Username/email: "
+    password = ask_for_password "      Password: "
 
     response = rubygems_api_request(:put, "api/v1/api_key",
                                     sign_in_host, scope: scope) do |request|
