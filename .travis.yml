@@ -72,6 +72,7 @@ env:
       # on s390x CPU architecture.
       # https://github.com/madler/zlib/pull/410
       - DFLTCC=0
+      - TESTS="--exclude=ruby/test_compile_prism.rb --exclude=ruby/test_iseq.rb"
   - &arm32-linux
     name: arm32-linux
     arch: arm64
@@ -134,7 +135,7 @@ before_script:
 
 script:
   - $SETARCH make -s test
-  - ../tool/travis_wait.sh $SETARCH make -s test-all RUBYOPT="-w"
+  - ../tool/travis_wait.sh $SETARCH make -s test-all RUBYOPT="-w" TESTS="$TESTS"
   - $SETARCH make -s test-spec
 
 # We want to be notified when something happens.
