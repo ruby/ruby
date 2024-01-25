@@ -59,10 +59,7 @@ module Prism
     end
 
     def test_SourceLineNode
-      ruby_eval = RubyVM::InstructionSequence.compile("__LINE__").eval
-      prism_eval = RubyVM::InstructionSequence.compile_prism("__LINE__").eval
-
-      assert_equal ruby_eval, prism_eval
+      assert_prism_eval("__LINE__", raw: true)
     end
 
     def test_TrueNode
@@ -776,10 +773,7 @@ module Prism
           "hello".equal?("hello")
         RUBY
       ].each do |src|
-        ruby_eval = RubyVM::InstructionSequence.compile(src).eval
-        prism_eval = RubyVM::InstructionSequence.compile_prism(src).eval
-
-        assert_equal ruby_eval, prism_eval, src
+        assert_prism_eval(src, raw: true)
       end
     end
 
@@ -1710,15 +1704,8 @@ end
     end
 
     def test_PreExecutionNode
-      # BEGIN {} must be defined at the top level, so we need to manually
-      # call the evals here instead of calling `assert_prism_eval`
-      ruby_eval = RubyVM::InstructionSequence.compile("BEGIN { a = 1 }; 2").eval
-      prism_eval = RubyVM::InstructionSequence.compile_prism("BEGIN { a = 1 }; 2").eval
-      assert_equal ruby_eval, prism_eval
-
-      ruby_eval = RubyVM::InstructionSequence.compile("b = 2; BEGIN { a = 1 }; a + b").eval
-      prism_eval = RubyVM::InstructionSequence.compile_prism("b = 2; BEGIN { a = 1 }; a + b").eval
-      assert_equal ruby_eval, prism_eval
+      assert_prism_eval("BEGIN { a = 1 }; 2", raw: true)
+      assert_prism_eval("b = 2; BEGIN { a = 1 }; a + b", raw: true)
     end
 
     def test_PostExecutionNode
@@ -2498,8 +2485,8 @@ end
 
     private
 
-    def compare_eval(source)
-      source = "class Prism::TestCompilePrism\n#{source}\nend"
+    def compare_eval(source, raw:)
+      source = raw ? source : "class Prism::TestCompilePrism\n#{source}\nend"
 
       ruby_eval = RubyVM::InstructionSequence.compile(source).eval
       prism_eval = RubyVM::InstructionSequence.compile_prism(source).eval
@@ -2511,14 +2498,14 @@ end
       end
     end
 
-    def assert_prism_eval(source)
+    def assert_prism_eval(source, raw: false)
       $VERBOSE, verbose_bak = nil, $VERBOSE
 
       begin
-        compare_eval(source)
+        compare_eval(source, raw:)
 
         # Test "popped" functionality
-        compare_eval("#{source}; 1")
+        compare_eval("#{source}; 1", raw:)
       ensure
         $VERBOSE = verbose_bak
       end
