@@ -392,7 +392,7 @@ require_relative "irb/pager"
 #   (The default value for this entry is +niL+, which means the same as +:truncate+.)
 # - Giving command-line option <tt>--noecho-on-assignment</tt>
 #   or <tt>--echo-on-assignment</tt>.
-#   (The default is <tt>--truncate-echo-on-assigment</tt>.)
+#   (The default is <tt>--truncate-echo-on-assignment</tt>.)
 #
 # During the session, you can change the current setting
 # with configuration method <tt>conf.echo_on_assignment=</tt>
