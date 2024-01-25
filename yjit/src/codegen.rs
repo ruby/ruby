@@ -8786,6 +8786,7 @@ fn gen_invokebuiltin(
 
     // ec, self, and arguments
     if bf_argc + 2 > C_ARG_OPNDS.len() {
+        incr_counter!(invokebuiltin_too_many_args);
         return None;
     }
 
@@ -8825,6 +8826,7 @@ fn gen_opt_invokebuiltin_delegate(
 
     // ec, self, and arguments
     if bf_argc + 2 > (C_ARG_OPNDS.len() as i32) {
+        incr_counter!(invokebuiltin_too_many_args);
         return None;
     }
 
