@@ -2341,8 +2341,8 @@
         │   │           │           └── expression: ∅
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
-        │   ├── locals: [:*]
-        │   ├── locals_body_index: 1
+        │   ├── locals: []
+        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (149,0)-(149,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (149,5)-(149,6) = "("

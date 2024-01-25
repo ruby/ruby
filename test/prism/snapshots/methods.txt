@@ -202,8 +202,8 @@
         │   │   │   @ ForwardingParameterNode (location: (19,6)-(19,9))
         │   │   └── block: ∅
         │   ├── body: ∅
-        │   ├── locals: [:"..."]
-        │   ├── locals_body_index: 1
+        │   ├── locals: []
+        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (19,0)-(19,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (19,5)-(19,6) = "("
@@ -370,8 +370,8 @@
         │   │   │   └── operator_loc: (41,6)-(41,8) = "**"
         │   │   └── block: ∅
         │   ├── body: ∅
-        │   ├── locals: [:**]
-        │   ├── locals_body_index: 1
+        │   ├── locals: []
+        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (41,0)-(41,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (41,5)-(41,6) = "("
@@ -743,8 +743,8 @@
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
         │   ├── body: ∅
-        │   ├── locals: [:*]
-        │   ├── locals_body_index: 1
+        │   ├── locals: []
+        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (82,0)-(82,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (82,5)-(82,6) = "("
@@ -983,8 +983,8 @@
         │   │           │           └── expression: ∅
         │   │           ├── closing_loc: (110,13)-(110,14) = ")"
         │   │           └── block: ∅
-        │   ├── locals: [:*]
-        │   ├── locals_body_index: 1
+        │   ├── locals: []
+        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (110,0)-(110,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (110,5)-(110,6) = "("
@@ -1022,8 +1022,8 @@
         │   │           │       └── @ ForwardingArgumentsNode (location: (112,14)-(112,17))
         │   │           ├── closing_loc: (112,17)-(112,18) = ")"
         │   │           └── block: ∅
-        │   ├── locals: [:"..."]
-        │   ├── locals_body_index: 1
+        │   ├── locals: []
+        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (112,0)-(112,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (112,5)-(112,6) = "("
@@ -1065,8 +1065,8 @@
         │   │           │       └── @ ForwardingArgumentsNode (location: (114,20)-(114,23))
         │   │           ├── closing_loc: (114,23)-(114,24) = ")"
         │   │           └── block: ∅
-        │   ├── locals: [:"..."]
-        │   ├── locals_body_index: 1
+        │   ├── locals: []
+        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (114,0)-(114,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (114,5)-(114,6) = "("
@@ -1153,8 +1153,8 @@
         │   │       ├── name_loc: ∅
         │   │       └── operator_loc: (122,6)-(122,7) = "&"
         │   ├── body: ∅
-        │   ├── locals: [:&]
-        │   ├── locals_body_index: 1
+        │   ├── locals: []
+        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (122,0)-(122,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (122,5)-(122,6) = "("
@@ -1296,8 +1296,8 @@
         │   │           │       │           └── block: ∅
         │   │           │       └── closing_loc: (136,24)-(136,25) = "}"
         │   │           └── closing_loc: (136,25)-(136,26) = "\""
-        │   ├── locals: [:"..."]
-        │   ├── locals_body_index: 1
+        │   ├── locals: []
+        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (136,0)-(136,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (136,5)-(136,6) = "("
@@ -1747,8 +1747,8 @@
         │   │           │       └── expression: ∅
         │   │           ├── opening_loc: (167,10)-(167,11) = "["
         │   │           └── closing_loc: (167,12)-(167,13) = "]"
-        │   ├── locals: [:*]
-        │   ├── locals_body_index: 1
+        │   ├── locals: []
+        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (167,0)-(167,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (167,5)-(167,6) = "("
@@ -1959,8 +1959,8 @@
         │   │               @ BlockArgumentNode (location: (178,6)-(178,7))
         │   │               ├── expression: ∅
         │   │               └── operator_loc: (178,6)-(178,7) = "&"
-        │   ├── locals: [:"..."]
-        │   ├── locals_body_index: 1
+        │   ├── locals: []
+        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (177,0)-(177,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (177,7)-(177,8) = "("
