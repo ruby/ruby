@@ -1180,7 +1180,6 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/trace_point.rb \
 		$(srcdir)/warning.rb \
 		$(srcdir)/array.rb \
-		$(srcdir)/class.rb \
 		$(srcdir)/kernel.rb \
 		$(srcdir)/module.rb \
 		$(srcdir)/ractor.rb \
@@ -2903,8 +2902,6 @@ class.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 class.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 class.$(OBJEXT): {$(VPATH)}builtin.h
 class.$(OBJEXT): {$(VPATH)}class.c
-class.$(OBJEXT): {$(VPATH)}class.rb
-class.$(OBJEXT): {$(VPATH)}class.rbinc
 class.$(OBJEXT): {$(VPATH)}config.h
 class.$(OBJEXT): {$(VPATH)}constant.h
 class.$(OBJEXT): {$(VPATH)}debug_counter.h
@@ -10144,7 +10141,6 @@ miniinit.$(OBJEXT): {$(VPATH)}backward/2/long_long.h
 miniinit.$(OBJEXT): {$(VPATH)}backward/2/stdalign.h
 miniinit.$(OBJEXT): {$(VPATH)}backward/2/stdarg.h
 miniinit.$(OBJEXT): {$(VPATH)}builtin.h
-miniinit.$(OBJEXT): {$(VPATH)}class.rb
 miniinit.$(OBJEXT): {$(VPATH)}config.h
 miniinit.$(OBJEXT): {$(VPATH)}constant.h
 miniinit.$(OBJEXT): {$(VPATH)}defines.h

@@ -95,7 +95,6 @@ rb_call_builtin_inits(void)
     BUILTIN(pack);
     BUILTIN(warning);
     BUILTIN(array);
-    BUILTIN(class);
     BUILTIN(kernel);
     BUILTIN(module);
     BUILTIN(string);

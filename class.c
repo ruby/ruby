@@ -2644,4 +2644,6 @@ rb_scan_args_kw(int kw_flag, int argc, const VALUE *argv, const char *fmt, ...)
     return rb_scan_args_result(&arg, argc);
 }
 
-#include "class.rbinc"
+/*!
+ * \}
+ */

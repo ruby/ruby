@@ -2151,6 +2151,33 @@ rb_class_new_instance(int argc, const VALUE *argv, VALUE klass)
     return rb_class_new_instance_kw(argc, argv, klass, RB_NO_KEYWORDS);
 }
 
+/**
+ *  call-seq:
+ *     class.superclass -> a_super_class or nil
+ *
+ *  Returns the superclass of <i>class</i>, or <code>nil</code>.
+ *
+ *     File.superclass          #=> IO
+ *     IO.superclass            #=> Object
+ *     Object.superclass        #=> BasicObject
+ *     class Foo; end
+ *     class Bar < Foo; end
+ *     Bar.superclass           #=> Foo
+ *
+ *  Returns nil when the given class does not have a parent class:
+ *
+ *     BasicObject.superclass   #=> nil
+ *
+ *--
+ * Returns the superclass of \a klass. Equivalent to \c Class\#superclass in Ruby.
+ *
+ * It skips modules.
+ * \param[in] klass a Class object
+ * \return the superclass, or \c Qnil if \a klass does not have a parent class.
+ * \sa rb_class_get_superclass
+ *++
+ */
+
 VALUE
 rb_class_superclass(VALUE klass)
 {
@@ -4449,6 +4476,7 @@ InitVM_Object(void)
     rb_define_method(rb_cClass, "allocate", rb_class_alloc_m, 0);
     rb_define_method(rb_cClass, "new", rb_class_new_instance_pass_kw, -1);
     rb_define_method(rb_cClass, "initialize", rb_class_initialize, -1);
+    rb_define_method(rb_cClass, "superclass", rb_class_superclass, 0);
     rb_define_method(rb_cClass, "subclasses", rb_class_subclasses, 0); /* in class.c */
     rb_define_method(rb_cClass, "attached_object", rb_class_attached_object, 0); /* in class.c */
     rb_define_alloc_func(rb_cClass, rb_class_s_alloc);
