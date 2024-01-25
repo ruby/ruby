@@ -65,7 +65,7 @@ module Prism
 
       filepath = File.join(base, relative)
       define_method("test_#{relative}") { assert_locals(filepath) }
-    end if false # skip until ... uses * and ** and not ruby2_keywords
+    end
 
     def setup
       @previous_default_external = Encoding.default_external

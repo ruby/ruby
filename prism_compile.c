@@ -1153,6 +1153,7 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
                     //        ^^
                     if (index + 1 < arguments_node_list.size) {
                         ADD_INSN1(ret, &dummy_line_node, splatarray, Qtrue);
+                        *flags |= VM_CALL_ARGS_SPLAT_MUT;
                     }
                     // If this is the first spalt array seen and it's the last
                     // parameter, we don't want splatarray to dup it.
