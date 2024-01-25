@@ -413,7 +413,7 @@ require_relative "irb/pager"
 #
 # By default, \IRB prefixes a newline to a multiline response.
 #
-# You can change the initial default value by adding to the configuation file:
+# You can change the initial default value by adding to the configuration file:
 #
 #   IRB.conf[:NEWLINE_BEFORE_MULTILINE_OUTPUT] = false
 #
