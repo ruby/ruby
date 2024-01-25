@@ -1436,6 +1436,7 @@ fn gen_splatarray(
 }
 
 // call to_hash on hash to keyword splat before converting block
+// e.g. foo(**object, &block)
 fn gen_splatkw(
     jit: &mut JITState,
     asm: &mut Assembler,
