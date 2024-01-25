@@ -356,7 +356,7 @@ fn jit_prepare_routine_call(
 
     // In case the routine calls Ruby methods, it can set local variables
     // through Kernel#binding and other means.
-    asm.ctx.clear_local_types();
+    asm.clear_local_types();
 }
 
 /// Record the current codeblock write position for rewriting into a jump into
@@ -5817,7 +5817,7 @@ fn gen_send_cfunc(
     asm.store(ec_cfp_opnd, CFP);
 
     // cfunc calls may corrupt types
-    asm.ctx.clear_local_types();
+    asm.clear_local_types();
 
     // Note: the return block of gen_send_iseq() has ctx->sp_offset == 1
     // which allows for sharing the same successor.
@@ -6876,7 +6876,7 @@ fn gen_send_iseq(
     callee_ctx.upgrade_opnd_type(SelfOpnd, recv_type);
 
     // The callee might change locals through Kernel#binding and other means.
-    asm.ctx.clear_local_types();
+    asm.clear_local_types();
 
     // Pop arguments and receiver in return context and
     // mark it as a continuation of gen_leave()
@@ -7937,7 +7937,7 @@ fn gen_invokeblock_specialized(
         asm.mov(stack_ret, ret);
 
         // cfunc calls may corrupt types
-        asm.ctx.clear_local_types();
+        asm.clear_local_types();
 
         // Share the successor with other chains
         jump_to_next_insn(jit, asm, ocb);
@@ -8095,7 +8095,7 @@ fn gen_invokesuper_specialized(
     jit.assume_method_lookup_stable(asm, ocb, cme);
 
     // Method calls may corrupt types
-    asm.ctx.clear_local_types();
+    asm.clear_local_types();
 
     match cme_def_type {
         VM_METHOD_TYPE_ISEQ => {

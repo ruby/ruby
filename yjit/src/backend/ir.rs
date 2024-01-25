@@ -1173,6 +1173,13 @@ impl Assembler
         }
     }
 
+    /// Erase local variable type information
+    /// eg: because of a call we can't track
+    pub fn clear_local_types(&mut self) {
+        asm_comment!(self, "clear local variable types");
+        self.ctx.clear_local_types();
+    }
+
     /// Spill all live stack temps from registers to the stack
     pub fn spill_temps(&mut self) {
         // Forget registers above the stack top
