@@ -11143,8 +11143,7 @@ parse_targets(pm_parser_t *parser, pm_node_t *first_target, pm_binding_power_t b
 static pm_node_t *
 parse_targets_validate(pm_parser_t *parser, pm_node_t *first_target, pm_binding_power_t binding_power) {
     pm_node_t *result = parse_targets(parser, first_target, binding_power);
-
-    while (accept1(parser, PM_TOKEN_NEWLINE));
+    accept1(parser, PM_TOKEN_NEWLINE);
 
     // Ensure that we have either an = or a ) after the targets.
     if (!match2(parser, PM_TOKEN_EQUAL, PM_TOKEN_PARENTHESIS_RIGHT)) {
