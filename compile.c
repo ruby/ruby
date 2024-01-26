@@ -3579,7 +3579,6 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
 
     if (IS_INSN_ID(iobj, newarray) ||
         IS_INSN_ID(iobj, duparray) ||
-        IS_INSN_ID(iobj, expandarray) ||
         IS_INSN_ID(iobj, concatarray) ||
         IS_INSN_ID(iobj, splatarray) ||
         0) {
