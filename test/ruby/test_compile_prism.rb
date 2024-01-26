@@ -2134,6 +2134,16 @@ end
     def test_KeywordRestParameterNode
       assert_prism_eval("def prism_test_keyword_rest_parameter_node(a, **b); end")
       assert_prism_eval("Object.tap { |**| }")
+
+      # Test that KeywordRestParameterNode creates a copy
+      assert_prism_eval(<<~RUBY)
+        hash = {}
+        o = Object.new
+        def o.foo(**a) = a[:foo] = 1
+
+        o.foo(**hash)
+        hash
+      RUBY
     end
 
     def test_NoKeywordsParameterNode
