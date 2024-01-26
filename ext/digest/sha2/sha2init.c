@@ -40,8 +40,11 @@ Init_sha2(void)
 
     FOREACH_BITLEN(DECLARE_ALGO_CLASS)
 
+#if 0
+    mDigest = rb_define_module("Digest"); /* let rdoc know */
+#endif
     mDigest = rb_digest_namespace();
-    cDigest_Base = rb_path2class("Digest::Base");
+    cDigest_Base = rb_const_get(mDigest, rb_intern_const("Base"));
 
 #define DEFINE_ALGO_CLASS(bitlen) \
     cDigest_SHA##bitlen = rb_define_class_under(mDigest, "SHA" #bitlen, cDigest_Base); \
