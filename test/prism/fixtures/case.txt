@@ -43,6 +43,11 @@ end
 
 case 1 in 2; in 3; end
 
+case a
+in b if c and d
+  e
+end
+
 1.then do
   case 1
   in ^_1
