@@ -3377,15 +3377,15 @@ iseq_peephole_optimize(rb_iseq_t *iseq, LINK_ELEMENT *list, const int do_tailcal
     /*
      *  ...
      *  duparray [...]
-     *  concatarray
+     *  concatarray | concattoarray
      * =>
      *  ...
      *  putobject [...]
-     *  concatarray
+     *  concatarray | concattoarray
      */
     if (IS_INSN_ID(iobj, duparray)) {
         LINK_ELEMENT *next = iobj->link.next;
-        if (IS_INSN(next) && IS_INSN_ID(next, concatarray)) {
+        if (IS_INSN(next) && (IS_INSN_ID(next, concatarray) || IS_INSN_ID(next, concattoarray))) {
             iobj->insn_id = BIN(putobject);
         }
     }
@@ -4913,25 +4913,6 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
 
     FLUSH_CHUNK;
 #undef FLUSH_CHUNK
-    return 1;
-}
-
-/* Compile an array containing the single element represented by node */
-static int
-compile_array_1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node)
-{
-    if (static_literal_node_p(node, iseq, false)) {
-        VALUE ary = rb_ary_hidden_new(1);
-        rb_ary_push(ary, static_literal_value(node, iseq));
-        OBJ_FREEZE(ary);
-
-        ADD_INSN1(ret, node, duparray, ary);
-    }
-    else {
-        CHECK(COMPILE_(ret, "array element", node, FALSE));
-        ADD_INSN1(ret, node, newarray, INT2FIX(1));
-    }
-
     return 1;
 }
 
@@ -10412,7 +10393,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         else {
             CHECK(COMPILE(ret, "argscat head", RNODE_ARGSCAT(node)->nd_head));
             CHECK(COMPILE(ret, "argscat body", RNODE_ARGSCAT(node)->nd_body));
-            ADD_INSN(ret, node, concatarray);
+            ADD_INSN(ret, node, concattoarray);
         }
         break;
       }
@@ -10425,8 +10406,14 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         else {
             CHECK(COMPILE(ret, "argspush head", RNODE_ARGSPUSH(node)->nd_head));
-            CHECK(compile_array_1(iseq, ret, RNODE_ARGSPUSH(node)->nd_body));
-            ADD_INSN(ret, node, concatarray);
+            const NODE *body_node = RNODE_ARGSPUSH(node)->nd_body;
+            if (static_literal_node_p(body_node, iseq, false)) {
+                ADD_INSN1(ret, body_node, putobject, static_literal_value(body_node, iseq));
+            }
+            else {
+                CHECK(COMPILE_(ret, "array element", body_node, FALSE));
+            }
+            ADD_INSN1(ret, node, pushtoarray, INT2FIX(1));
         }
         break;
       }
