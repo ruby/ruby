@@ -1085,7 +1085,6 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
 
                 if (has_keyword_splat || has_splat) {
                     *flags |= VM_CALL_KW_SPLAT;
-                    *flags |= VM_CALL_KW_SPLAT_MUT;
 
                     has_keyword_splat = true;
 
