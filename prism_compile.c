@@ -2816,7 +2816,7 @@ static int
 pm_local_table_insert_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 {
     if (!existing) {
-        pm_constant_id_t constant_id = *(pm_constant_id_t *)key;
+        pm_constant_id_t constant_id = (pm_constant_id_t)*key;
         struct pm_local_table_insert_ctx * ctx = (struct pm_local_table_insert_ctx *)arg;
 
         pm_scope_node_t *scope_node = ctx->scope_node;
@@ -2826,7 +2826,7 @@ pm_local_table_insert_func(st_data_t *key, st_data_t *value, st_data_t arg, int 
         ID local = pm_constant_id_lookup(scope_node, constant_id);
         local_table_for_iseq->ids[local_index] = local;
 
-        *value = local_index;
+        *value = (st_data_t)local_index;
 
         ctx->local_index++;
     }
@@ -2841,7 +2841,7 @@ pm_insert_local_index(pm_constant_id_t constant_id, int local_index, st_table *i
 
     ID local = pm_constant_id_lookup(scope_node, constant_id);
     local_table_for_iseq->ids[local_index] = local;
-    st_insert(index_lookup_table, constant_id, local_index);
+    st_insert(index_lookup_table, (st_data_t)constant_id, local_index);
 }
 
 /**
@@ -6543,7 +6543,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     // def foo(a, (b, *c, d), e = 1, *, g, (h, *i, j),  k:, l: 1, **m, &n)
                     //                               ^
                     local_table_for_iseq->ids[local_index] = PM_CONSTANT_MULT;
-                    st_insert(index_lookup_table, PM_CONSTANT_MULT, local_index);
+                    st_insert(index_lookup_table, (st_data_t)PM_CONSTANT_MULT, local_index);
                 }
                 local_index++;
             }
@@ -6726,7 +6726,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     }
                     else {
                         local_table_for_iseq->ids[local_index] = PM_CONSTANT_POW;
-                        st_insert(index_lookup_table, PM_CONSTANT_POW, local_index);
+                        st_insert(index_lookup_table, (st_data_t)PM_CONSTANT_POW, local_index);
                     }
                     local_index++;
                     break;
@@ -6737,17 +6737,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     body->param.rest_start = local_index;
                     body->param.flags.has_rest = true;
                     local_table_for_iseq->ids[local_index] = PM_CONSTANT_MULT;
-                    st_insert(index_lookup_table, PM_CONSTANT_MULT, local_index);
+                    st_insert(index_lookup_table, (st_data_t)PM_CONSTANT_MULT, local_index);
                     local_index++;
 
                     body->param.block_start = local_index;
                     body->param.flags.has_block = true;
                     local_table_for_iseq->ids[local_index] = PM_CONSTANT_AND;
-                    st_insert(index_lookup_table, PM_CONSTANT_AND, local_index);
+                    st_insert(index_lookup_table, (st_data_t)PM_CONSTANT_AND, local_index);
                     local_index++;
 
                     local_table_for_iseq->ids[local_index] = PM_CONSTANT_DOT3;
-                    st_insert(index_lookup_table, PM_CONSTANT_DOT3, local_index);
+                    st_insert(index_lookup_table, (st_data_t)PM_CONSTANT_DOT3, local_index);
                     local_index++;
                     break;
                   }
@@ -6767,7 +6767,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
                 if (name == 0) {
                     local_table_for_iseq->ids[local_index] = PM_CONSTANT_AND;
-                    st_insert(index_lookup_table, PM_CONSTANT_AND, local_index);
+                    st_insert(index_lookup_table, (st_data_t)PM_CONSTANT_AND, local_index);
                 }
                 else {
                     if (PM_NODE_FLAG_P(parameters_node->block, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
@@ -6866,7 +6866,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     ctx.local_table_for_iseq = local_table_for_iseq;
                     ctx.local_index = local_index;
 
-                    st_update(index_lookup_table, constant_id, pm_local_table_insert_func, (st_data_t)&ctx);
+                    st_update(index_lookup_table, (st_data_t)constant_id, pm_local_table_insert_func, (st_data_t)&ctx);
 
                     local_index = ctx.local_index;
                 }
