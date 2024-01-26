@@ -779,6 +779,12 @@ module Prism
 
     def test_SymbolNode
       assert_prism_eval(":pit")
+
+      # Test UTF-8 symbol in a US-ASCII file
+      assert_prism_eval(<<~'RUBY', raw: true)
+        # -*- coding: us-ascii -*-
+        :"\u{e9}"
+      RUBY
     end
 
     def test_XStringNode

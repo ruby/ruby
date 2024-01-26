@@ -200,23 +200,24 @@ parse_string_encoded(const pm_node_t *node, const pm_string_t *string, const pm_
 }
 
 static inline ID
-parse_symbol(const uint8_t *start, const uint8_t *end, const pm_parser_t *parser)
+parse_symbol(const uint8_t *start, const uint8_t *end, const char *encoding)
 {
-    rb_encoding *enc = rb_enc_from_index(rb_enc_find_index(parser->encoding->name));
+    rb_encoding *enc = rb_enc_from_index(rb_enc_find_index(encoding));
     return rb_intern3((const char *) start, end - start, enc);
 }
 
 static inline ID
-parse_string_symbol(const pm_string_t *string, const pm_parser_t *parser)
+parse_string_symbol(const pm_symbol_node_t *symbol, const pm_parser_t *parser)
 {
-    const uint8_t *start = pm_string_source(string);
-    return parse_symbol(start, start + pm_string_length(string), parser);
+    const char *encoding = symbol->base.flags & PM_SYMBOL_FLAGS_FORCED_UTF8_ENCODING ? "UTF-8" : parser->encoding->name;
+    const uint8_t *start = pm_string_source(&symbol->unescaped);
+    return parse_symbol(start, start + pm_string_length(&symbol->unescaped), encoding);
 }
 
 static inline ID
 parse_location_symbol(const pm_location_t *location, const pm_parser_t *parser)
 {
-    return parse_symbol(location->start, location->end, parser);
+    return parse_symbol(location->start, location->end, parser->encoding->name);
 }
 
 static int
@@ -395,7 +396,7 @@ pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node
       case PM_STRING_NODE:
         return parse_string(&((pm_string_node_t *) node)->unescaped, parser);
       case PM_SYMBOL_NODE:
-        return ID2SYM(parse_string_symbol(&((pm_symbol_node_t *) node)->unescaped, parser));
+        return ID2SYM(parse_string_symbol((pm_symbol_node_t *)node, parser));
       case PM_TRUE_NODE:
         return Qtrue;
       default:
@@ -1870,7 +1871,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
                 const pm_node_t *key = ((const pm_assoc_node_t *) element)->key;
                 assert(PM_NODE_TYPE_P(key, PM_SYMBOL_NODE));
 
-                VALUE symbol = ID2SYM(parse_string_symbol(&((const pm_symbol_node_t *) key)->unescaped, scope_node->parser));
+                VALUE symbol = ID2SYM(parse_string_symbol((const pm_symbol_node_t *)key, scope_node->parser));
                 rb_ary_push(keys, symbol);
             }
         }
@@ -1915,7 +1916,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
                 const pm_node_t *key = assoc->key;
                 assert(PM_NODE_TYPE_P(key, PM_SYMBOL_NODE));
 
-                VALUE symbol = ID2SYM(parse_string_symbol(&((const pm_symbol_node_t *) key)->unescaped, scope_node->parser));
+                VALUE symbol = ID2SYM(parse_string_symbol((const pm_symbol_node_t *)key, scope_node->parser));
                 ADD_INSN(ret, &line.node, dup);
                 ADD_INSN1(ret, &line.node, putobject, symbol);
                 ADD_SEND(ret, &line.node, rb_intern("key?"), INT2FIX(1));
