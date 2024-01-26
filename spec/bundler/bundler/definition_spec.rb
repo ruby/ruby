@@ -9,9 +9,10 @@ RSpec.describe Bundler::Definition do
       allow(Bundler::SharedHelpers).to receive(:find_gemfile) { Pathname.new("Gemfile") }
       allow(Bundler).to receive(:ui) { double("UI", info: "", debug: "") }
     end
-    context "when it's not possible to write to the file" do
-      subject { Bundler::Definition.new("Gemfile.lock", [], Bundler::SourceList.new, []) }
 
+    subject { Bundler::Definition.new("Gemfile.lock", [], Bundler::SourceList.new, []) }
+
+    context "when it's not possible to write to the file" do
       it "raises an PermissionError with explanation" do
         allow(File).to receive(:open).and_call_original
         expect(File).to receive(:open).with("Gemfile.lock", "wb").
@@ -21,8 +22,6 @@ RSpec.describe Bundler::Definition do
       end
     end
     context "when a temporary resource access issue occurs" do
-      subject { Bundler::Definition.new("Gemfile.lock", [], Bundler::SourceList.new, []) }
-
       it "raises a TemporaryResourceError with explanation" do
         allow(File).to receive(:open).and_call_original
         expect(File).to receive(:open).with("Gemfile.lock", "wb").
@@ -32,7 +31,6 @@ RSpec.describe Bundler::Definition do
       end
     end
     context "when Bundler::Definition.no_lock is set to true" do
-      subject { Bundler::Definition.new("Gemfile.lock", [], Bundler::SourceList.new, []) }
       before { Bundler::Definition.no_lock = true }
       after { Bundler::Definition.no_lock = false }
 
