@@ -35,7 +35,7 @@ RSpec.describe Bundler::Definition do
 
       it "does not create a lock file" do
         subject.lock
-        expect(File.file?("Gemfile.lock")).to eq false
+        expect(bundled_app_lock).not_to be_file
       end
     end
   end
