@@ -6094,7 +6094,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     checkmatch_flags |= VM_CHECKMATCH_ARRAY;
                 }
                 ADD_INSN1(ret, &dummy_line_node, checkmatch, INT2FIX(checkmatch_flags));
-                ADD_INSN1(ret, &dummy_line_node, branchif, exception_match_label);
+                ADD_INSNL(ret, &dummy_line_node, branchif, exception_match_label);
             }
         } else {
             ADD_GETLOCAL(ret, &dummy_line_node, LVAR_ERRINFO, 0);
