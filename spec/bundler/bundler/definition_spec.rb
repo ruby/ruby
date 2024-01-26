@@ -10,7 +10,7 @@ RSpec.describe Bundler::Definition do
       allow(Bundler).to receive(:ui) { double("UI", info: "", debug: "") }
     end
 
-    subject { Bundler::Definition.new("Gemfile.lock", [], Bundler::SourceList.new, []) }
+    subject { Bundler::Definition.new("Gemfile.lock", [], Bundler::SourceList.new, {}) }
 
     context "when it's not possible to write to the file" do
       it "raises an PermissionError with explanation" do
