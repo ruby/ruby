@@ -2761,7 +2761,10 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         ADD_INSNL(ret, &dummy_line_node, jump, end_label);
         ADD_LABEL(ret, else_label);
     }
-    ADD_LABEL(ret, end_label);
+
+    if ((block_iseq && ISEQ_BODY(block_iseq)->catch_table) || (call_node->base.flags & PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
+        ADD_LABEL(ret, end_label);
+    }
 
     PM_POP_IF_POPPED;
 }
@@ -6073,7 +6076,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // this compilation block.
         LABEL *exception_match_label = NEW_LABEL(lineno);
         LABEL *rescue_end_label = NEW_LABEL(lineno);
-        ISEQ_COMPILE_DATA(iseq)->end_label = rescue_end_label;
 
         // Next, compile each of the exceptions that we're going to be
         // handling. For each one, we'll add instructions to check if the
@@ -6098,12 +6100,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             ADD_GETLOCAL(ret, &dummy_line_node, LVAR_ERRINFO, 0);
             ADD_INSN1(ret, &dummy_line_node, putobject, rb_eStandardError);
             ADD_INSN1(ret, &dummy_line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
-            ADD_INSN1(ret, &dummy_line_node, branchif, exception_match_label);
+            ADD_INSNL(ret, &dummy_line_node, branchif, exception_match_label);
         }
 
         // If none of the exceptions that we are matching against matched, then
         // we'll jump straight to the rescue_end_label label.
-        ADD_INSN1(ret, &dummy_line_node, jump, rescue_end_label);
+        ADD_INSNL(ret, &dummy_line_node, jump, rescue_end_label);
 
         // Here we have the exception_match_label, which is where the
         // control-flow goes in the case that one of the exceptions matched.
@@ -7081,8 +7083,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 ADD_GETLOCAL(ret, &dummy_line_node, LVAR_ERRINFO, 0);
                 ADD_INSN1(ret, &dummy_line_node, putobject, rb_eStandardError);
                 ADD_INSN1(ret, &dummy_line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
-                ADD_INSN1(ret, &dummy_line_node, branchif, lab);
-                ADD_INSN1(ret, &dummy_line_node, jump, rescue_end);
+                ADD_INSNL(ret, &dummy_line_node, branchif, lab);
+                ADD_INSNL(ret, &dummy_line_node, jump, rescue_end);
                 ADD_LABEL(ret, lab);
                 PM_COMPILE((pm_node_t *)scope_node->body);
                 ADD_INSN(ret, &dummy_line_node, leave);
