@@ -96,8 +96,8 @@ module Prism
         comments = load_comments
         magic_comments = load_varuint.times.map { MagicComment.new(load_location, load_location) }
         data_loc = load_optional_location
-        errors = load_varuint.times.map { ParseError.new(load_embedded_string, load_location, load_diagnostic_level) }
-        warnings = load_varuint.times.map { ParseWarning.new(load_embedded_string, load_location, load_diagnostic_level) }
+        errors = load_varuint.times.map { ParseError.new(load_embedded_string, load_location, load_error_level) }
+        warnings = load_varuint.times.map { ParseWarning.new(load_embedded_string, load_location, load_warning_level) }
         [comments, magic_comments, data_loc, errors, warnings]
       end
 
@@ -231,15 +231,25 @@ module Prism
         load_constant(index - 1) if index != 0
       end
 
-      def load_diagnostic_level
+      def load_error_level
         level = io.getbyte
+
         case level
         when 0
-          :error_default
+          :fatal
+        else
+          raise "Unknown level: #{level}"
+        end
+      end
+
+      def load_warning_level
+        level = io.getbyte
+
+        case level
+        when 0
+          :default
         when 1
-          :warning_verbose_not_nil
-        when 2
-          :warning_verbose_true
+          :verbose
         else
           raise "Unknown level: #{level}"
         end

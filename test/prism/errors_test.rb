@@ -1874,11 +1874,11 @@ module Prism
     def test_warnings_verbosity
       warning = Prism.parse("def foo; END { }; end").warnings[0]
       assert_equal "END in method; use at_exit", warning.message
-      assert_equal :warning_verbose_not_nil, warning.level
+      assert_equal :default, warning.level
 
       warning = Prism.parse("foo /regexp/").warnings[0]
       assert_equal "ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator", warning.message
-      assert_equal :warning_verbose_true, warning.level
+      assert_equal :verbose, warning.level
     end
 
     def test_statement_operators
