@@ -10859,7 +10859,7 @@ dump_disasm_list_with_cursor(const LINK_ELEMENT *link, const LINK_ELEMENT *curr,
           case ISEQ_ELEMENT_LABEL:
             {
                 lobj = (LABEL *)link;
-                printf(LABEL_FORMAT" [sp: %d]%s\n", lobj->label_no, lobj->sp,
+                printf(LABEL_FORMAT" [sp: %d, unremovable: %d, refcnt: %d]%s\n", lobj->label_no, lobj->sp, lobj->unremovable, lobj->refcnt,
                        dest == lobj ? " <---" : "");
                 break;
             }
