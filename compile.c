@@ -5412,11 +5412,31 @@ compile_massign_lhs(rb_iseq_t *iseq, LINK_ANCHOR *const pre, LINK_ANCHOR *const 
         ADD_ELEM(lhs, (LINK_ELEMENT *)iobj);
         if (vm_ci_flag(ci) & VM_CALL_ARGS_SPLAT) {
             int argc = vm_ci_argc(ci);
+            bool dupsplat = false;
             ci = ci_argc_set(iseq, ci, argc - 1);
+            if (!(vm_ci_flag(ci) & VM_CALL_ARGS_SPLAT_MUT)) {
+                /* Given h[*a], _ = ary
+                 * setup_args sets VM_CALL_ARGS_SPLAT and not VM_CALL_ARGS_SPLAT_MUT
+                 * `a` must be dupped, because it will be appended with ary[0]
+                 * Since you are dupping `a`, you can set VM_CALL_ARGS_SPLAT_MUT
+                 */
+                dupsplat = true;
+                ci = ci_flag_set(iseq, ci, VM_CALL_ARGS_SPLAT_MUT);
+            }
             OPERAND_AT(iobj, 0) = (VALUE)ci;
             RB_OBJ_WRITTEN(iseq, Qundef, iobj);
-            INSERT_BEFORE_INSN1(iobj, line_node, newarray, INT2FIX(1));
-            INSERT_BEFORE_INSN(iobj, line_node, concatarray);
+            /* Given: h[*a], h[*b, 1] = ary
+             *  h[*a] uses splatarray false and does not set VM_CALL_ARGS_SPLAT_MUT,
+             *    so this uses splatarray true on a to dup it before using pushtoarray
+             *  h[*b, 1] uses splatarray true and sets VM_CALL_ARGS_SPLAT_MUT,
+             *    so you can use pushtoarray directly
+             */
+            if (dupsplat) {
+                INSERT_BEFORE_INSN(iobj, line_node, swap);
+                INSERT_BEFORE_INSN1(iobj, line_node, splatarray, Qtrue);
+                INSERT_BEFORE_INSN(iobj, line_node, swap);
+            }
+            INSERT_BEFORE_INSN1(iobj, line_node, pushtoarray, INT2FIX(1));
         }
         ADD_INSN(lhs, line_node, pop);
         if (argc != 1) {
