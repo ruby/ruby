@@ -216,6 +216,9 @@ parse_string_symbol(const pm_symbol_node_t *symbol, const pm_parser_t *parser)
     else if (symbol->base.flags & PM_SYMBOL_FLAGS_FORCED_BINARY_ENCODING) {
         encoding = "ASCII-8BIT";
     }
+    else if (symbol->base.flags & PM_SYMBOL_FLAGS_FORCED_US_ASCII_ENCODING) {
+        encoding = "US-ASCII";
+    }
     const uint8_t *start = pm_string_source(&symbol->unescaped);
     return parse_symbol(start, start + pm_string_length(&symbol->unescaped), encoding);
 }
