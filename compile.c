@@ -9091,20 +9091,28 @@ compile_op_asgn1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
         if (flag & VM_CALL_ARGS_SPLAT) {
             if (flag & VM_CALL_KW_SPLAT) {
                 ADD_INSN1(ret, node, topn, INT2FIX(2 + boff));
+                if (!(flag & VM_CALL_ARGS_SPLAT_MUT)) {
+                    ADD_INSN1(ret, node, splatarray, Qtrue);
+                    flag |= VM_CALL_ARGS_SPLAT_MUT;
+                }
                 ADD_INSN(ret, node, swap);
-                ADD_INSN1(ret, node, newarray, INT2FIX(1));
-                ADD_INSN(ret, node, concatarray);
+                ADD_INSN1(ret, node, pushtoarray, INT2FIX(1));
                 ADD_INSN1(ret, node, setn, INT2FIX(2 + boff));
                 ADD_INSN(ret, node, pop);
             }
             else {
-                ADD_INSN1(ret, node, newarray, INT2FIX(1));
                 if (boff > 0) {
                     ADD_INSN1(ret, node, dupn, INT2FIX(3));
                     ADD_INSN(ret, node, swap);
                     ADD_INSN(ret, node, pop);
                 }
-                ADD_INSN(ret, node, concatarray);
+                if (!(flag & VM_CALL_ARGS_SPLAT_MUT)) {
+                    ADD_INSN(ret, node, swap);
+                    ADD_INSN1(ret, node, splatarray, Qtrue);
+                    ADD_INSN(ret, node, swap);
+                    flag |= VM_CALL_ARGS_SPLAT_MUT;
+                }
+                ADD_INSN1(ret, node, pushtoarray, INT2FIX(1));
                 if (boff > 0) {
                     ADD_INSN1(ret, node, setn, INT2FIX(3));
                     ADD_INSN(ret, node, pop);
@@ -9151,20 +9159,28 @@ compile_op_asgn1(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node
         if (flag & VM_CALL_ARGS_SPLAT) {
             if (flag & VM_CALL_KW_SPLAT) {
                 ADD_INSN1(ret, node, topn, INT2FIX(2 + boff));
+                if (!(flag & VM_CALL_ARGS_SPLAT_MUT)) {
+                    ADD_INSN1(ret, node, splatarray, Qtrue);
+                    flag |= VM_CALL_ARGS_SPLAT_MUT;
+                }
                 ADD_INSN(ret, node, swap);
-                ADD_INSN1(ret, node, newarray, INT2FIX(1));
-                ADD_INSN(ret, node, concatarray);
+                ADD_INSN1(ret, node, pushtoarray, INT2FIX(1));
                 ADD_INSN1(ret, node, setn, INT2FIX(2 + boff));
                 ADD_INSN(ret, node, pop);
             }
             else {
-                ADD_INSN1(ret, node, newarray, INT2FIX(1));
                 if (boff > 0) {
                     ADD_INSN1(ret, node, dupn, INT2FIX(3));
                     ADD_INSN(ret, node, swap);
                     ADD_INSN(ret, node, pop);
                 }
-                ADD_INSN(ret, node, concatarray);
+                if (!(flag & VM_CALL_ARGS_SPLAT_MUT)) {
+                    ADD_INSN(ret, node, swap);
+                    ADD_INSN1(ret, node, splatarray, Qtrue);
+                    ADD_INSN(ret, node, swap);
+                    flag |= VM_CALL_ARGS_SPLAT_MUT;
+                }
+                ADD_INSN1(ret, node, pushtoarray, INT2FIX(1));
                 if (boff > 0) {
                     ADD_INSN1(ret, node, setn, INT2FIX(3));
                     ADD_INSN(ret, node, pop);
