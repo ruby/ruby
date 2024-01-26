@@ -334,7 +334,9 @@ module Bundler
           "Instead, instantiate a new definition passing `#{target_lockfile}`, and call `lock` without a file argument on that definition"
         end
 
-        warn "Passing a file to `Definition#lock` is deprecated. #{suggestion}"
+        msg = "`Definition#lock` was passed a target file argument. #{suggestion}"
+
+        Bundler::SharedHelpers.major_deprecation 2, msg
       end
 
       write_lock(target_lockfile, preserve_unknown_sections)
