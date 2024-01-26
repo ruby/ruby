@@ -209,7 +209,13 @@ parse_symbol(const uint8_t *start, const uint8_t *end, const char *encoding)
 static inline ID
 parse_string_symbol(const pm_symbol_node_t *symbol, const pm_parser_t *parser)
 {
-    const char *encoding = symbol->base.flags & PM_SYMBOL_FLAGS_FORCED_UTF8_ENCODING ? "UTF-8" : parser->encoding->name;
+    const char *encoding = parser->encoding->name;
+    if (symbol->base.flags & PM_SYMBOL_FLAGS_FORCED_UTF8_ENCODING) {
+        encoding = "UTF-8";
+    }
+    else if (symbol->base.flags & PM_SYMBOL_FLAGS_FORCED_BINARY_ENCODING) {
+        encoding = "ASCII-8BIT";
+    }
     const uint8_t *start = pm_string_source(&symbol->unescaped);
     return parse_symbol(start, start + pm_string_length(&symbol->unescaped), encoding);
 }
