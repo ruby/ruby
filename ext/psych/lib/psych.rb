@@ -340,7 +340,7 @@ module Psych
   # provided, the object contained in the first document will be returned.
   # +filename+ will be used in the exception message if any exception
   # is raised while parsing.  If +yaml+ is empty, it returns
-  # the specified +fallback+ return value, which defaults to +false+.
+  # the specified +fallback+ return value, which defaults to +nil+.
   #
   # Raises a Psych::SyntaxError when a YAML syntax error is detected.
   #
@@ -667,7 +667,7 @@ module Psych
   ###
   # Safely loads the document contained in +filename+.  Returns the yaml contained in
   # +filename+ as a Ruby object, or if the file is empty, it returns
-  # the specified +fallback+ return value, which defaults to +false+.
+  # the specified +fallback+ return value, which defaults to +nil+.
   # See safe_load for options.
   def self.safe_load_file filename, **kwargs
     File.open(filename, 'r:bom|utf-8') { |f|
@@ -678,7 +678,7 @@ module Psych
   ###
   # Loads the document contained in +filename+.  Returns the yaml contained in
   # +filename+ as a Ruby object, or if the file is empty, it returns
-  # the specified +fallback+ return value, which defaults to +false+.
+  # the specified +fallback+ return value, which defaults to +nil+.
   # See load for options.
   def self.load_file filename, **kwargs
     File.open(filename, 'r:bom|utf-8') { |f|
