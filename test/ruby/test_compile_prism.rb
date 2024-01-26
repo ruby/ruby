@@ -791,6 +791,12 @@ module Prism
         # -*- coding: us-ascii -*-
         :"\xff"
       RUBY
+
+      # Test US-ASCII symbol in a ASCII-8BIT file
+      assert_prism_eval(<<~'RUBY', raw: true)
+        # -*- coding: ascii-8bit -*-
+        :a
+      RUBY
     end
 
     def test_XStringNode
