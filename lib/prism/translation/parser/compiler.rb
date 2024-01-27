@@ -80,10 +80,14 @@ module Prism
         # foo => [bar]
         #        ^^^^^
         def visit_array_pattern_node(node)
+          elements = [*node.requireds]
+          elements << node.rest if !node.rest.nil? && !node.rest.is_a?(ImplicitRestNode)
+          elements.concat(node.posts)
+
           if node.constant
-            builder.const_pattern(visit(node.constant), token(node.opening_loc), builder.array_pattern(nil, visit_all([*node.requireds, *node.rest, *node.posts]), nil), token(node.closing_loc))
+            builder.const_pattern(visit(node.constant), token(node.opening_loc), builder.array_pattern(nil, visit_all(elements), nil), token(node.closing_loc))
           else
-            builder.array_pattern(token(node.opening_loc), visit_all([*node.requireds, *node.rest, *node.posts]), token(node.closing_loc))
+            builder.array_pattern(token(node.opening_loc), visit_all(elements), token(node.closing_loc))
           end
         end
 
@@ -603,10 +607,14 @@ module Prism
         # foo => [*, bar, *]
         #        ^^^^^^^^^^^
         def visit_find_pattern_node(node)
+          elements = [*node.requireds]
+          elements << node.rest if !node.rest.nil? && !node.rest.is_a?(ImplicitRestNode)
+          elements.concat(node.posts)
+
           if node.constant
-            builder.const_pattern(visit(node.constant), token(node.opening_loc), builder.find_pattern(nil, visit_all([node.left, *node.requireds, node.right]), nil), token(node.closing_loc))
+            builder.const_pattern(visit(node.constant), token(node.opening_loc), builder.find_pattern(nil, visit_all(elements), nil), token(node.closing_loc))
           else
-            builder.find_pattern(token(node.opening_loc), visit_all([node.left, *node.requireds, node.right]), token(node.closing_loc))
+            builder.find_pattern(token(node.opening_loc), visit_all(elements), token(node.closing_loc))
           end
         end
 
@@ -1098,11 +1106,13 @@ module Prism
         # foo, bar = baz
         # ^^^^^^^^
         def visit_multi_target_node(node)
-          node = node.copy(rest: nil) if node.rest.is_a?(ImplicitRestNode)
+          elements = [*node.lefts]
+          elements << node.rest if !node.rest.nil? && !node.rest.is_a?(ImplicitRestNode)
+          elements.concat(node.rights)
 
           builder.multi_lhs(
             token(node.lparen_loc),
-            visit_all([*node.lefts, *node.rest, *node.rights]),
+            visit_all(elements),
             token(node.rparen_loc)
           )
         end
@@ -1110,12 +1120,14 @@ module Prism
         # foo, bar = baz
         # ^^^^^^^^^^^^^^
         def visit_multi_write_node(node)
-          node = node.copy(rest: nil) if node.rest.is_a?(ImplicitRestNode)
+          elements = [*node.lefts]
+          elements << node.rest if !node.rest.nil? && !node.rest.is_a?(ImplicitRestNode)
+          elements.concat(node.rights)
 
           builder.multi_assign(
             builder.multi_lhs(
               token(node.lparen_loc),
-              visit_all([*node.lefts, *node.rest, *node.rights]),
+              visit_all(elements),
               token(node.rparen_loc)
             ),
             token(node.operator_loc),
