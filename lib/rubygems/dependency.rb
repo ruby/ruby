@@ -330,7 +330,7 @@ class Gem::Dependency
     unless prerelease?
       # Move prereleases to the end of the list for >= 0 requirements
       pre, matches = matches.partition {|spec| spec.version.prerelease? }
-      matches += pre if requirement == Gem::Requirement.default
+      matches += pre if requirement == Gem::Requirement.default || matches.empty?
     end
 
     matches.first

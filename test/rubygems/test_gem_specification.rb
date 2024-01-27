@@ -3801,6 +3801,13 @@ end
     assert Gem::Specification.find_by_name "q"
   end
 
+  def test_find_by_name_with_only_prereleases_with_requirements
+    q = util_spec "q", "2.a"
+    install_specs q
+
+    assert Gem::Specification.find_by_name "q", ">= 1"
+  end
+
   def test_find_by_name_prerelease
     b = util_spec "b", "2.a"
 
