@@ -14296,12 +14296,21 @@ value_expr_check(struct parser_params *p, NODE *node)
     }
     while (node) {
         switch (nd_type(node)) {
+          case NODE_ENSURE:
+            vn = RNODE_ENSURE(node)->nd_head;
+            node = RNODE_ENSURE(node)->nd_ensr;
+            /* nd_ensr should not be NULL, check it out next */
+            if (vn && (vn = value_expr_check(p, vn))) {
+                goto found;
+            }
+            break;
+
           case NODE_RETURN:
           case NODE_BREAK:
           case NODE_NEXT:
           case NODE_REDO:
           case NODE_RETRY:
-            return void_node ? void_node : node;
+            goto found;
 
           case NODE_CASE3:
             if (!RNODE_CASE3(node)->nd_body || !nd_type_p(RNODE_CASE3(node)->nd_body, NODE_IN)) {
@@ -14312,7 +14321,7 @@ value_expr_check(struct parser_params *p, NODE *node)
                 return NULL;
             }
             /* single line pattern matching with "=>" operator */
-            return void_node ? void_node : node;
+            goto found;
 
           case NODE_BLOCK:
             while (RNODE_BLOCK(node)->nd_next) {
@@ -14356,6 +14365,10 @@ value_expr_check(struct parser_params *p, NODE *node)
     }
 
     return NULL;
+
+  found:
+    /* return the first found node */
+    return void_node ? void_node : node;
 }
 
 static int

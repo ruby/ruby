@@ -1434,7 +1434,12 @@ x = __ENCODING__
 
   def test_void_value_in_rhs
     w = "void value expression"
-    ["x = return 1", "x = return, 1", "x = 1, return", "x, y = return"].each do |code|
+    [
+      "x = return 1", "x = return, 1", "x = 1, return", "x, y = return",
+      "x = begin return ensure end",
+      "x = begin ensure return end",
+      "x = begin return ensure return end",
+    ].each do |code|
       ex = assert_syntax_error(code, w)
       assert_equal(1, ex.message.scan(w).size, ->{"same #{w.inspect} warning should be just once\n#{w.message}"})
     end
