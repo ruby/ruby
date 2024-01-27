@@ -329,7 +329,7 @@ module Prism
 
     # Returns a string representation of this error.
     def inspect
-      "#<Prism::ParseError @message=#{@message.inspect} @location=#{@location.inspect} @level=#{@level}>"
+      "#<Prism::ParseError @message=#{@message.inspect} @location=#{@location.inspect} @level=#{@level.inspect}>"
     end
   end
 
@@ -358,7 +358,7 @@ module Prism
 
     # Returns a string representation of this warning.
     def inspect
-      "#<Prism::ParseWarning @message=#{@message.inspect} @location=#{@location.inspect} @level=#{@level}>"
+      "#<Prism::ParseWarning @message=#{@message.inspect} @location=#{@location.inspect} @level=#{@level.inspect}>"
     end
   end
 
