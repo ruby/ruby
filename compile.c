@@ -4894,7 +4894,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
 
             if (!RNODE_LIST(node)->nd_next && keyword_node_p(RNODE_LIST(node)->nd_head)) {
                 /* Reached the end, and the last element is a keyword */
-                ADD_INSN1(ret, line_node, newarraykwsplat, INT2FIX(stack_len)); \
+                ADD_INSN1(ret, line_node, newarraykwsplat, INT2FIX(stack_len));
                 if (!first_chunk) ADD_INSN(ret, line_node, concattoarray);
                 return 1;
             }
