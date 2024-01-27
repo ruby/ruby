@@ -32,7 +32,6 @@ module Bundler
 
       validate_ext_name if @extension
       validate_rust_builder_rubygems_version if @extension == "rust"
-      travis_removal_info
     end
 
     def run
@@ -446,19 +445,6 @@ module Bundler
 
     def standard_version
       "1.3"
-    end
-
-    # TODO: remove at next minor release
-    def travis_removal_info
-      if options[:ci] == "travis"
-        Bundler.ui.error "Support for Travis CI was removed from gem skeleton generator."
-        exit 1
-      end
-
-      if Bundler.settings["gem.ci"] == "travis"
-        Bundler.ui.error "Support for Travis CI was removed from gem skeleton generator, but it is present in bundle config. Please configure another provider using `bundle config set gem.ci SERVICE` (where SERVICE is one of github/gitlab/circle) or unset configuration using `bundle config unset gem.ci`."
-        exit 1
-      end
     end
 
     def validate_rust_builder_rubygems_version
