@@ -41,7 +41,7 @@ module Lrama
     def yyfinal
       @states.states.find do |state|
         state.items.find do |item|
-          item.rule.lhs.accept_symbol? && item.end_of_rule?
+          item.lhs.accept_symbol? && item.end_of_rule?
         end
       end.id
     end
@@ -221,7 +221,7 @@ module Lrama
 
         if state.reduces.map(&:selected_look_ahead).any? {|la| !la.empty? }
           # Iterate reduces with reverse order so that first rule is used.
-          state.reduces.reverse.each do |reduce|
+          state.reduces.reverse_each do |reduce|
             reduce.look_ahead.each do |term|
               actions[term.number] = rule_id_to_action_number(reduce.rule.id)
             end
