@@ -1,5 +1,8 @@
 module Lrama
   class Command
+    LRAMA_LIB = File.realpath(File.join(File.dirname(__FILE__)))
+    STDLIB_FILE_PATH = File.join(LRAMA_LIB, 'grammar', 'stdlib.y')
+
     def run(argv)
       begin
         options = OptionParser.new.parse(argv)
@@ -14,9 +17,14 @@ module Lrama
       warning = Lrama::Warning.new
       text = options.y.read
       options.y.close if options.y != STDIN
-      parser = Lrama::Parser.new(text, options.grammar_file, options.debug)
       begin
-        grammar = parser.parse
+        grammar = Lrama::Parser.new(text, options.grammar_file, options.debug).parse
+        unless grammar.no_stdlib
+          stdlib_grammar = Lrama::Parser.new(File.read(STDLIB_FILE_PATH), STDLIB_FILE_PATH, options.debug).parse
+          grammar.insert_before_parameterizing_rules(stdlib_grammar.parameterizing_rules)
+        end
+        grammar.prepare
+        grammar.validate!
       rescue => e
         raise e if options.debug
         message = e.message

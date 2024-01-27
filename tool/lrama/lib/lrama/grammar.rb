@@ -24,7 +24,7 @@ module Lrama
                   :lex_param, :parse_param, :initial_action,
                   :symbols, :types,
                   :rules, :rule_builders,
-                  :sym_to_rules
+                  :sym_to_rules, :no_stdlib
 
     def initialize(rule_counter)
       @rule_counter = rule_counter
@@ -45,6 +45,7 @@ module Lrama
       @undef_symbol = nil
       @accept_symbol = nil
       @aux = Auxiliary.new
+      @no_stdlib = false
 
       append_special_symbols
     end
@@ -134,6 +135,14 @@ module Lrama
 
     def add_parameterizing_rule(rule)
       @parameterizing_rule_resolver.add_parameterizing_rule(rule)
+    end
+
+    def parameterizing_rules
+      @parameterizing_rule_resolver.rules
+    end
+
+    def insert_before_parameterizing_rules(rules)
+      @parameterizing_rule_resolver.rules = rules + @parameterizing_rule_resolver.rules
     end
 
     def prologue_first_lineno=(prologue_first_lineno)
@@ -234,7 +243,7 @@ module Lrama
     def compute_nullable
       @rules.each do |rule|
         case
-        when rule.rhs.empty?
+        when rule.empty_rule?
           rule.nullable = true
         when rule.rhs.any?(&:term)
           rule.nullable = false

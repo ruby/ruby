@@ -1,5 +1,14 @@
 # NEWS for Lrama
 
+## Lrama 0.6.2 (2024-01-27)
+
+### %no-stdlib directive
+
+If `%no-stdlib` directive is set, Lrama doesn't load Lrama standard library for
+parameterizing rules, stdlib.y.
+
+https://github.com/ruby/lrama/pull/344
+
 ## Lrama 0.6.1 (2024-01-13)
 
 ### Nested parameterizing rules
