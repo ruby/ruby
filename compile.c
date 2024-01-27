@@ -4822,8 +4822,8 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
      *
      *   [x1,x2,...,x10000] =>
      *     push x1  ; push x2  ; ...; push x256; newarray 256;
-     *     push x257; push x258; ...; push x512; newarray 256; concatarray;
-     *     push x513; push x514; ...; push x768; newarray 256; concatarray;
+     *     push x257; push x258; ...; push x512; pushtoarray 256;
+     *     push x513; push x514; ...; push x768; pushtoarray 256;
      *     ...
      *
      * - Long subarray can be optimized by pre-allocating a hidden array.
@@ -4833,8 +4833,8 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
      *
      *   [x, 1,2,3,...,100, z] =>
      *     push x; newarray 1;
-     *     putobject [1,2,3,...,100] (<- hidden array); concatarray;
-     *     push z; newarray 1; concatarray
+     *     putobject [1,2,3,...,100] (<- hidden array); concattoarray;
+     *     push z; pushtoarray 1;
      *
      * - If the last element is a keyword, newarraykwsplat should be emitted
      *   to check and remove empty keyword arguments hash from array.
@@ -4849,11 +4849,11 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
     int stack_len = 0;
     int first_chunk = 1;
 
-    /* Convert pushed elements to an array, and concatarray if needed */
-#define FLUSH_CHUNK(newarrayinsn)                               \
+    /* Either create a new array, or push to the existing array */
+#define FLUSH_CHUNK \
     if (stack_len) {                                            \
-        ADD_INSN1(ret, line_node, newarrayinsn, INT2FIX(stack_len)); \
-        if (!first_chunk) ADD_INSN(ret, line_node, concatarray);     \
+        if (first_chunk) ADD_INSN1(ret, line_node, newarray, INT2FIX(stack_len)); \
+        else ADD_INSN1(ret, line_node, pushtoarray, INT2FIX(stack_len));     \
         first_chunk = stack_len = 0;                            \
     }
 
@@ -4877,14 +4877,14 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
                 OBJ_FREEZE(ary);
 
                 /* Emit optimized code */
-                FLUSH_CHUNK(newarray);
+                FLUSH_CHUNK;
                 if (first_chunk) {
                     ADD_INSN1(ret, line_node, duparray, ary);
                     first_chunk = 0;
                 }
                 else {
                     ADD_INSN1(ret, line_node, putobject, ary);
-                    ADD_INSN(ret, line_node, concatarray);
+                    ADD_INSN(ret, line_node, concattoarray);
                 }
                 RB_OBJ_WRITTEN(iseq, Qundef, ary);
             }
@@ -4901,16 +4901,17 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
 
             if (!RNODE_LIST(node)->nd_next && keyword_node_p(RNODE_LIST(node)->nd_head)) {
                 /* Reached the end, and the last element is a keyword */
-                FLUSH_CHUNK(newarraykwsplat);
+                ADD_INSN1(ret, line_node, newarraykwsplat, INT2FIX(stack_len));
+                if (!first_chunk) ADD_INSN(ret, line_node, concattoarray);
                 return 1;
             }
 
             /* If there are many pushed elements, flush them to avoid stack overflow */
-            if (stack_len >= max_stack_len) FLUSH_CHUNK(newarray);
+            if (stack_len >= max_stack_len) FLUSH_CHUNK;
         }
     }
 
-    FLUSH_CHUNK(newarray);
+    FLUSH_CHUNK;
 #undef FLUSH_CHUNK
     return 1;
 }
