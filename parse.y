@@ -2415,7 +2415,7 @@ rb_str_to_parser_string(rb_parser_t *p, VALUE str)
 %type <node_args> block_param opt_block_param block_param_def
 %type <node_opt_arg> f_opt
 %type <node_kw_arg> f_kwarg f_kw f_block_kwarg f_block_kw
-%type <node> bv_decls opt_bv_decl bvar
+%type <id> bv_decls opt_bv_decl bvar
 %type <node> lambda lambda_body brace_body do_body
 %type <node_args> f_larglist
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
