@@ -264,6 +264,41 @@ class TestSyntax < Test::Unit::TestCase
     assert_equal([h, {:a=>2}], [h, **h, **{}, a: 2])
   end
 
+  def test_array_splat_kwsplat_hash
+    a = []
+    kw = {}
+    h = {a: 1}
+    assert_equal([], [*a, **{}])
+    assert_equal([], [*a, **kw])
+    assert_equal([h], [*a, **h])
+    assert_equal([{}], [*a, {}])
+    assert_equal([kw], [*a, kw])
+    assert_equal([h], [*a, h])
+
+    assert_equal([1], [1, *a, **{}])
+    assert_equal([1], [1, *a, **kw])
+    assert_equal([1, h], [1, *a, **h])
+    assert_equal([1, {}], [1, *a, {}])
+    assert_equal([1, kw], [1, *a, kw])
+    assert_equal([1, h], [1, *a, h])
+
+    assert_equal([], [*a, **kw, **kw])
+    assert_equal([], [*a, **kw, **{}, **kw])
+    assert_equal([1], [1, *a, **kw, **{}, **kw])
+
+    assert_equal([{}], [*a, {}, *a, **kw, **kw])
+    assert_equal([kw], [*a, kw, *a, **kw, **kw])
+    assert_equal([h], [*a, h, *a, **kw, **kw])
+    assert_equal([h, h], [*a, h, *a, **kw, **kw, **h])
+
+    assert_equal([h, {:a=>2}], [*a, h, *a, **{}, **h, a: 2])
+    assert_equal([h, h], [*a, h, *a, **{}, a: 2, **h])
+    assert_equal([h, h], [*a, h, *a, a: 2, **{}, **h])
+    assert_equal([h, h], [*a, h, *a, a: 2, **h, **{}])
+    assert_equal([h, {:a=>2}], [*a, h, *a, **h, a: 2, **{}])
+    assert_equal([h, {:a=>2}], [*a, h, *a, **h, **{}, a: 2])
+  end
+
   def test_normal_argument
     assert_valid_syntax('def foo(x) end')
     assert_syntax_error('def foo(X) end', /constant/)

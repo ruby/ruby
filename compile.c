@@ -10444,11 +10444,18 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
             const NODE *body_node = RNODE_ARGSPUSH(node)->nd_body;
             if (static_literal_node_p(body_node, iseq, false)) {
                 ADD_INSN1(ret, body_node, putobject, static_literal_value(body_node, iseq));
+                ADD_INSN1(ret, node, pushtoarray, INT2FIX(1));
             }
             else {
                 CHECK(COMPILE_(ret, "array element", body_node, FALSE));
+                if (keyword_node_p(body_node)) {
+                    ADD_INSN1(ret, node, newarraykwsplat, INT2FIX(1));
+                    ADD_INSN(ret, node, concattoarray);
+                }
+                else {
+                    ADD_INSN1(ret, node, pushtoarray, INT2FIX(1));
+                }
             }
-            ADD_INSN1(ret, node, pushtoarray, INT2FIX(1));
         }
         break;
       }
