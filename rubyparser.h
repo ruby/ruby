@@ -160,6 +160,7 @@ enum node_type {
     NODE_ERROR,
     NODE_LINE,
     NODE_FILE,
+    NODE_ENCODING,
     NODE_RIPPER,
     NODE_RIPPER_VALUES,
     NODE_LAST
@@ -1005,6 +1006,11 @@ typedef struct RNode_FILE {
     struct rb_parser_string *path;
 } rb_node_file_t;
 
+typedef struct RNode_ENCODING {
+    NODE node;
+    rb_encoding *enc;
+} rb_node_encoding_t;
+
 typedef struct RNode_ERROR {
     NODE node;
 } rb_node_error_t;
@@ -1121,6 +1127,7 @@ typedef struct RNode_ERROR {
 #define RNODE_FNDPTN(node) ((struct RNode_FNDPTN *)(node))
 #define RNODE_LINE(node) ((struct RNode_LINE *)(node))
 #define RNODE_FILE(node) ((struct RNode_FILE *)(node))
+#define RNODE_ENCODING(node) ((struct RNode_ENCODING *)(node))
 
 #ifdef RIPPER
 typedef struct RNode_RIPPER {

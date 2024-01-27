@@ -1149,6 +1149,13 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_VALUE(path, rb_node_file_path_val(node), "path");
         return;
 
+      case NODE_ENCODING:
+        ANN("encoding");
+        ANN("format: [enc]");
+        ANN("example: __ENCODING__");
+        F_VALUE(enc, rb_node_encoding_val(node), "enc");
+        break;
+
       case NODE_ERROR:
         ANN("Broken input recovered by Error Tolerant mode");
         return;

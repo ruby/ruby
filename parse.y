@@ -232,6 +232,8 @@ node_cdhash_hash(VALUE a)
           case NODE_FILE:
             /* Same with String in rb_iseq_cdhash_hash */
             return rb_str_hash(rb_node_file_path_val(node));
+          case NODE_ENCODING:
+            return rb_node_encoding_val(node);
           default:
             rb_bug("unexpected node: %s", ruby_node_name(type));
         }
@@ -1272,6 +1274,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_FNDPTN(pre,a,post,loc) (NODE *)rb_node_fndptn_new(p,pre,a,post,loc)
 #define NEW_LINE(loc) (NODE *)rb_node_line_new(p,loc)
 #define NEW_FILE(str,loc) (NODE *)rb_node_file_new(p,str,loc)
+#define NEW_ENCODING(loc) (NODE *)rb_node_encoding_new(p,loc)
 #define NEW_ERROR(loc) (NODE *)rb_node_error_new(p,loc)
 
 #endif
@@ -6942,6 +6945,7 @@ singleton	: var_ref
                           case NODE_SYM:
                           case NODE_LINE:
                           case NODE_FILE:
+                          case NODE_ENCODING:
                           case NODE_INTEGER:
                           case NODE_FLOAT:
                           case NODE_RATIONAL:
@@ -12589,6 +12593,15 @@ rb_node_file_new(struct parser_params *p, VALUE str, const YYLTYPE *loc)
     return n;
 }
 
+static rb_node_encoding_t *
+rb_node_encoding_new(struct parser_params *p, const YYLTYPE *loc)
+{
+    rb_node_encoding_t *n = NODE_NEWNODE(NODE_ENCODING, rb_node_encoding_t, loc);
+    n->enc = p->enc;
+
+    return n;
+}
+
 static rb_node_cdecl_t *
 rb_node_cdecl_new(struct parser_params *p, ID nd_vid, NODE *nd_value, NODE *nd_else, const YYLTYPE *loc)
 {
@@ -13195,9 +13208,7 @@ gettable(struct parser_params *p, ID id, const YYLTYPE *loc)
       case keyword__LINE__:
         return NEW_LINE(loc);
       case keyword__ENCODING__:
-        node = NEW_LIT(rb_enc_from_encoding(p->enc), loc);
-        RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(node)->nd_lit);
-        return node;
+        return NEW_ENCODING(loc);
 
     }
     switch (id_type(id)) {
@@ -14059,6 +14070,8 @@ shareable_literal_value(struct parser_params *p, NODE *node)
         return rb_node_rational_literal_val(node);
       case NODE_IMAGINARY:
         return rb_node_imaginary_literal_val(node);
+      case NODE_ENCODING:
+        return rb_node_encoding_val(node);
       case NODE_LIT:
         return RNODE_LIT(node)->nd_lit;
       default:
@@ -14091,6 +14104,7 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
       case NODE_FLOAT:
       case NODE_RATIONAL:
       case NODE_IMAGINARY:
+      case NODE_ENCODING:
         return value;
 
       case NODE_DSTR:
@@ -14407,6 +14421,7 @@ void_expr(struct parser_params *p, NODE *node)
       case NODE_SYM:
       case NODE_LINE:
       case NODE_FILE:
+      case NODE_ENCODING:
       case NODE_INTEGER:
       case NODE_FLOAT:
       case NODE_RATIONAL:
@@ -14551,6 +14566,7 @@ is_static_content(NODE *node)
       case NODE_SYM:
       case NODE_LINE:
       case NODE_FILE:
+      case NODE_ENCODING:
       case NODE_INTEGER:
       case NODE_FLOAT:
       case NODE_RATIONAL:
@@ -14697,6 +14713,10 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
         break;
 
       case NODE_LINE:
+        SWITCH_BY_COND_TYPE(type, warning, "");
+        break;
+
+      case NODE_ENCODING:
         SWITCH_BY_COND_TYPE(type, warning, "");
         break;
 
@@ -15096,6 +15116,8 @@ nd_st_key(struct parser_params *p, NODE *node)
         return rb_node_sym_string_val(node);
       case NODE_LINE:
         return rb_node_line_lineno_val(node);
+      case NODE_ENCODING:
+        return rb_node_encoding_val(node);
       case NODE_FILE:
         return rb_node_file_path_val(node);
       default:

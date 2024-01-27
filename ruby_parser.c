@@ -1008,3 +1008,9 @@ rb_node_file_path_val(const NODE *node)
 {
     return rb_str_new_parser_string(RNODE_FILE(node)->path);
 }
+
+VALUE
+rb_node_encoding_val(const NODE *node)
+{
+    return rb_enc_from_encoding(RNODE_ENCODING(node)->enc);
+}
