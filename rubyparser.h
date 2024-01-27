@@ -346,7 +346,6 @@ typedef struct RNode_ENSURE {
     NODE node;
 
     struct RNode *nd_head;
-    struct RNode *nd_resq; /* Maybe not used other than reduce_nodes */
     struct RNode *nd_ensr;
 } rb_node_ensure_t;
 

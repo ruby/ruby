@@ -11666,7 +11666,6 @@ rb_node_ensure_new(struct parser_params *p, NODE *nd_head, NODE *nd_ensr, const 
 {
     rb_node_ensure_t *n = NODE_NEWNODE(NODE_ENSURE, rb_node_ensure_t, loc);
     n->nd_head = nd_head;
-    n->nd_resq = 0;
     n->nd_ensr = nd_ensr;
 
     return n;
@@ -14531,7 +14530,7 @@ reduce_nodes(struct parser_params *p, NODE **body)
             if (!subnodes(RNODE_WHEN, nd_body, nd_next)) goto end;
             break;
           case NODE_ENSURE:
-            if (!subnodes(RNODE_ENSURE, nd_head, nd_resq)) goto end;
+            body = &RNODE_ENSURE(node)->nd_head;
             break;
           case NODE_RESCUE:
             newline = 0; // RESBODY should not be a NEWLINE
