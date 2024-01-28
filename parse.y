@@ -5879,7 +5879,10 @@ p_var_ref	: '^' tIDENTIFIER
                     {
                     /*%%%*/
                         NODE *n = gettable(p, $2, &@$);
-                        if (!(nd_type_p(n, NODE_LVAR) || nd_type_p(n, NODE_DVAR))) {
+                        if (!n) {
+                            n = NEW_ERROR(&@$);
+                        }
+                        else if (!(nd_type_p(n, NODE_LVAR) || nd_type_p(n, NODE_DVAR))) {
                             compile_error(p, "%"PRIsVALUE": no such local variable", rb_id2str($2));
                         }
                         $$ = n;
