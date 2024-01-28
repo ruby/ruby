@@ -14305,6 +14305,26 @@ value_expr_check(struct parser_params *p, NODE *node)
             }
             break;
 
+          case NODE_RESCUE:
+            /* void only if all children are void */
+            vn = RNODE_RESCUE(node)->nd_head;
+            if (!vn || !(vn = value_expr_check(p, vn))) return NULL;
+            if (!void_node) void_node = vn;
+            for (NODE *r = RNODE_RESCUE(node)->nd_resq; r; r = RNODE_RESBODY(r)->nd_next) {
+                if (!nd_type_p(r, NODE_RESBODY)) {
+                    compile_error(p, "unexpected node");
+                    return NULL;
+                }
+                if (!(vn = value_expr_check(p, RNODE_RESBODY(r)->nd_body))) {
+                    void_node = 0;
+                    break;
+                }
+                if (!void_node) void_node = vn;
+            }
+            node = RNODE_RESCUE(node)->nd_else;
+            if (!node) return void_node;
+            break;
+
           case NODE_RETURN:
           case NODE_BREAK:
           case NODE_NEXT:
