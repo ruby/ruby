@@ -8556,6 +8556,12 @@ rb_io_printf(int argc, const VALUE *argv, VALUE out)
     return Qnil;
 }
 
+static VALUE
+argf_printf(int argc, const VALUE *argv, VALUE out)
+{
+  return rb_io_printf(argc, argv, out);
+}
+
 /*
  *  call-seq:
  *    printf(format_string, *objects)               -> nil
@@ -8703,6 +8709,12 @@ rb_io_print(int argc, const VALUE *argv, VALUE out)
     return Qnil;
 }
 
+static VALUE
+argf_print(int argc, const VALUE *argv, VALUE out)
+{
+  return rb_io_print(argc, argv, out);
+}
+
 /*
  *  call-seq:
  *    print(*objects) -> nil
@@ -8793,6 +8805,12 @@ rb_io_putc(VALUE io, VALUE ch)
     }
     rb_io_write(io, str);
     return ch;
+}
+
+static VALUE
+argf_putc(VALUE io, VALUE ch)
+{
+  return rb_io_putc(io, ch);
 }
 
 #define forward(obj, id, argc, argv) \
@@ -8945,6 +8963,12 @@ rb_io_puts(int argc, const VALUE *argv, VALUE out)
     }
 
     return Qnil;
+}
+
+static VALUE
+argf_puts(int argc, const VALUE *argv, VALUE out)
+{
+  return rb_io_puts(argc, argv, out);
 }
 
 /*
@@ -15820,10 +15844,10 @@ Init_IO(void)
     rb_define_method(rb_cARGF, "binmode?", argf_binmode_p, 0);
 
     rb_define_method(rb_cARGF, "write", argf_write, 1);
-    rb_define_method(rb_cARGF, "print", rb_io_print, -1);
-    rb_define_method(rb_cARGF, "putc", rb_io_putc, 1);
-    rb_define_method(rb_cARGF, "puts", rb_io_puts, -1);
-    rb_define_method(rb_cARGF, "printf", rb_io_printf, -1);
+    rb_define_method(rb_cARGF, "print", argf_print, -1);
+    rb_define_method(rb_cARGF, "putc", argf_putc, 1);
+    rb_define_method(rb_cARGF, "puts", argf_puts, -1);
+    rb_define_method(rb_cARGF, "printf", argf_printf, -1);
 
     rb_define_method(rb_cARGF, "filename", argf_filename, 0);
     rb_define_method(rb_cARGF, "path", argf_filename, 0);
