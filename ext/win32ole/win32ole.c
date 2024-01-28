@@ -1962,7 +1962,7 @@ ole_bind_obj(VALUE moniker, int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     connect( ole ) --> aWIN32OLE
+ *     connect(ole) --> aWIN32OLE
  *
  *  Returns running OLE Automation object or WIN32OLE object from moniker.
  *  1st argument should be OLE program id or class id or moniker.
@@ -2019,7 +2019,7 @@ fole_s_connect(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     const_load( ole, mod = WIN32OLE)
+ *     const_load(ole, mod = WIN32OLE)
  *
  *  Defines the constants of OLE Automation server as mod's constants.
  *  The first argument is WIN32OLE object or type library name.
