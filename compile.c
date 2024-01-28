@@ -8275,7 +8275,7 @@ compile_resbody(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node,
         }
         ADD_INSN(ret, line_node, leave);
         ADD_LABEL(ret, label_miss);
-        resq = RNODE_RESBODY(resq)->nd_head;
+        resq = RNODE_RESBODY(resq)->nd_next;
     }
     return COMPILE_OK;
 }

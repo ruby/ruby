@@ -351,7 +351,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_NODE(nd_args, RNODE_RESBODY, "rescue exceptions");
         F_NODE(nd_body, RNODE_RESBODY, "rescue clause");
         LAST_NODE;
-        F_NODE(nd_head, RNODE_RESBODY, "next rescue clause");
+        F_NODE(nd_next, RNODE_RESBODY, "next rescue clause");
         return;
 
       case NODE_ENSURE:

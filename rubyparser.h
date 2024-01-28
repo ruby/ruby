@@ -337,9 +337,9 @@ typedef struct RNode_RESCUE {
 typedef struct RNode_RESBODY {
     NODE node;
 
-    struct RNode *nd_head;
-    struct RNode *nd_body;
     struct RNode *nd_args;
+    struct RNode *nd_body;
+    struct RNode *nd_next;
 } rb_node_resbody_t;
 
 typedef struct RNode_ENSURE {
