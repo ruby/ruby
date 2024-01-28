@@ -413,6 +413,11 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
 static COROUTINE
 co_start(struct coroutine_context *from, struct coroutine_context *self)
 {
+#ifdef RUBY_ASAN_ENABLED
+    __sanitizer_finish_switch_fiber(self->fake_stack,
+                                    (const void**)&from->stack_base, &from->stack_size);
+#endif
+
     rb_thread_t *th = (rb_thread_t *)self->argument;
     struct rb_thread_sched *sched = TH_SCHED(th);
     VM_ASSERT(th->nt != NULL);
@@ -447,13 +452,13 @@ co_start(struct coroutine_context *from, struct coroutine_context *self)
     if (!has_ready_ractor && next_th && !next_th->nt) {
         // switch to the next thread
         thread_sched_set_lock_owner(sched, NULL);
-        thread_sched_switch0(th->sched.context, next_th, nt);
+        thread_sched_switch0(th->sched.context, next_th, nt, true);
         th->sched.finished = true;
     }
     else {
         // switch to the next Ractor
         th->sched.finished = true;
-        coroutine_transfer(self, nt->nt_context);
+        coroutine_transfer0(self, nt->nt_context, true);
     }
     rb_bug("unreachable");
 }
