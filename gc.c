@@ -3984,15 +3984,13 @@ objspace_each_objects_try(VALUE arg)
             uintptr_t pstart = (uintptr_t)page->start;
             uintptr_t pend = pstart + (page->total_slots * size_pool->slot_size);
 
-            if (!__asan_region_is_poisoned((void *)pstart, pend - pstart)) {
-                if (data->each_obj_callback &&
-                    (*data->each_obj_callback)((void *)pstart, (void *)pend, size_pool->slot_size, data->data)) {
-                    break;
-                }
-                if (data->each_page_callback &&
-                    (*data->each_page_callback)(page, data->data)) {
-                    break;
-                }
+            if (data->each_obj_callback &&
+                (*data->each_obj_callback)((void *)pstart, (void *)pend, size_pool->slot_size, data->data)) {
+                break;
+            }
+            if (data->each_page_callback &&
+                (*data->each_page_callback)(page, data->data)) {
+                break;
             }
 
             page = ccan_list_next(&SIZE_POOL_EDEN_HEAP(size_pool)->pages, page, page_node);
