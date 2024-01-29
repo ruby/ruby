@@ -5351,7 +5351,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_INTERPOLATED_STRING_NODE: {
         pm_interpolated_string_node_t *interp_string_node = (pm_interpolated_string_node_t *) node;
-        int number_of_items_pushed = pm_interpolated_node_compile(&interp_string_node->parts, iseq, dummy_line_node, ret, src, popped, scope_node, parser);
+        int number_of_items_pushed = 0;
+        if (!PM_NODE_TYPE_P(interp_string_node->parts.nodes[0], PM_STRING_NODE)) {
+            ADD_INSN1(ret, &dummy_line_node, putstring, rb_str_new(0, 0));
+            number_of_items_pushed++;
+        }
+        number_of_items_pushed += pm_interpolated_node_compile(&interp_string_node->parts, iseq, dummy_line_node, ret, src, popped, scope_node, parser);
 
         if (number_of_items_pushed > 1) {
             ADD_INSN1(ret, &dummy_line_node, concatstrings, INT2FIX(number_of_items_pushed));
