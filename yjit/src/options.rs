@@ -228,21 +228,31 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             _ => return None,
          },
 
-        ("dump-disasm", _) => match opt_val {
-            "" => unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::Stdout) },
-            directory => {
-                let path = format!("{directory}/yjit_{}.log", std::process::id());
-                match File::options().create(true).append(true).open(&path) {
-                    Ok(_) => {
-                        eprintln!("YJIT disasm dump: {path}");
-                        unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(path)) }
+        ("dump-disasm", _) => {
+            if !cfg!(feature = "disasm") {
+                eprintln!("WARNING: the {} option is only available when YJIT is built in dev mode, i.e. ./configure --enable-yjit=dev", opt_name);
+            }
+
+            match opt_val {
+                "" => unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::Stdout) },
+                directory => {
+                    let path = format!("{directory}/yjit_{}.log", std::process::id());
+                    match File::options().create(true).append(true).open(&path) {
+                        Ok(_) => {
+                            eprintln!("YJIT disasm dump: {path}");
+                            unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(path)) }
+                        }
+                        Err(err) => eprintln!("Failed to create {path}: {err}"),
                     }
-                    Err(err) => eprintln!("Failed to create {path}: {err}"),
                 }
             }
-         },
+        },
 
         ("dump-iseq-disasm", _) => unsafe {
+            if !cfg!(feature = "disasm") {
+                eprintln!("WARNING: the {} option is only available when YJIT is built in dev mode, i.e. ./configure --enable-yjit=dev", opt_name);
+            }
+
             OPTIONS.dump_iseq_disasm = Some(opt_val.to_string());
         },
 
