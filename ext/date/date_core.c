@@ -4464,12 +4464,6 @@ check_limit(VALUE str, VALUE opt)
 {
     size_t slen, limit;
     if (NIL_P(str)) return;
-    if (SYMBOL_P(str)) {
-	rb_category_warn(RB_WARN_CATEGORY_DEPRECATED,
-			 "The ability to parse Symbol is an unintentional bug and is deprecated");
-	str = rb_sym2str(str);
-    }
-
     StringValue(str);
     slen = RSTRING_LEN(str);
     limit = get_limit(opt);
