@@ -10385,8 +10385,8 @@ parser_lex(pm_parser_t *parser) {
 typedef enum {
     PM_BINDING_POWER_UNSET =             0, // used to indicate this token cannot be used as an infix operator
     PM_BINDING_POWER_STATEMENT =         2,
-    PM_BINDING_POWER_MODIFIER =          4, // if unless until while
-    PM_BINDING_POWER_MODIFIER_RESCUE =   6, // rescue
+    PM_BINDING_POWER_MODIFIER_RESCUE =   4, // rescue
+    PM_BINDING_POWER_MODIFIER =          6, // if unless until while
     PM_BINDING_POWER_COMPOSITION =       8, // and or
     PM_BINDING_POWER_NOT =              10, // not
     PM_BINDING_POWER_MATCH =            12, // => in
@@ -10440,14 +10440,14 @@ typedef struct {
 #define RIGHT_ASSOCIATIVE_UNARY(precedence) { precedence, precedence, false, false }
 
 pm_binding_powers_t pm_binding_powers[PM_TOKEN_MAXIMUM] = {
+    // rescue
+    [PM_TOKEN_KEYWORD_RESCUE_MODIFIER] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_MODIFIER_RESCUE),
+
     // if unless until while
     [PM_TOKEN_KEYWORD_IF_MODIFIER] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_MODIFIER),
     [PM_TOKEN_KEYWORD_UNLESS_MODIFIER] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_MODIFIER),
     [PM_TOKEN_KEYWORD_UNTIL_MODIFIER] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_MODIFIER),
     [PM_TOKEN_KEYWORD_WHILE_MODIFIER] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_MODIFIER),
-
-    // rescue
-    [PM_TOKEN_KEYWORD_RESCUE_MODIFIER] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_MODIFIER_RESCUE),
 
     // and or
     [PM_TOKEN_KEYWORD_AND] = LEFT_ASSOCIATIVE(PM_BINDING_POWER_COMPOSITION),
@@ -17472,7 +17472,7 @@ parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool acc
         case PM_UNDEF_NODE:
             // These expressions are statements, and cannot be followed by
             // operators (except modifiers).
-            if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER_RESCUE) {
+            if (pm_binding_powers[parser->current.type].left > PM_BINDING_POWER_MODIFIER) {
                 return node;
             }
             break;
