@@ -148,10 +148,23 @@ module Prism
     # encoding that prism supports.
     escapes = ["\\x00", "\\x7F", "\\x80", "\\xFF", "\\u{00}", "\\u{7F}", "\\u{80}", "\\M-\\C-?"]
     escapes = escapes.concat(escapes.product(escapes).map(&:join))
+    symbols = [:a, :ą, :+]
 
     encodings.each_key do |encoding|
       define_method(:"test_encoding_flags_#{encoding.name}") do
         assert_encoding_flags(encoding, escapes)
+      end
+    end
+
+    encodings.each_key do |encoding|
+      define_method(:"test_symbol_encoding_flags_#{encoding.name}") do
+        assert_symbol_encoding_flags(encoding, symbols)
+      end
+    end
+
+    encodings.each_key do |encoding|
+      define_method(:"test_symbol_character_escape_encoding_flags_#{encoding.name}") do
+        assert_symbol_character_escape_encoding_flags(encoding, escapes)
       end
     end
 
@@ -326,6 +339,91 @@ module Prism
                 Encoding::UTF_8
               elsif string.forced_binary_encoding?
                 Encoding::ASCII_8BIT
+              else
+                encoding
+              end
+            else
+              error = result.errors.first
+
+              if error.message.include?("mixed")
+                error.message
+              else
+                raise error.message
+              end
+            end
+          end
+
+        assert_equal expected, actual
+      end
+    end
+
+    # Test Symbol literals without any interpolation or escape sequences.
+    def assert_symbol_encoding_flags(encoding, symbols)
+      symbols.each do |symbol|
+        source = "# encoding: #{encoding.name}\n#{symbol.inspect}"
+
+        expected =
+          begin
+            eval(source).encoding
+          rescue SyntaxError => error
+            unless error.message.include?("invalid multibyte char")
+              raise
+            end
+          end
+
+        actual =
+          Prism.parse(source).then do |result|
+            if result.success?
+              symbol = result.value.statements.body.first
+
+              if symbol.forced_utf8_encoding?
+                Encoding::UTF_8
+              elsif symbol.forced_binary_encoding?
+                Encoding::ASCII_8BIT
+              elsif symbol.forced_us_ascii_encoding?
+                Encoding::US_ASCII
+              else
+                encoding
+              end
+            else
+              error = result.errors.last
+
+              unless error.message.include?("invalid symbol")
+                raise error.message
+              end
+            end
+          end
+
+        assert_equal expected, actual
+      end
+    end
+
+    def assert_symbol_character_escape_encoding_flags(encoding, escapes)
+      escapes.each do |escaped|
+        source = "# encoding: #{encoding.name}\n:\"#{escaped}\""
+
+        expected =
+          begin
+            eval(source).encoding
+          rescue SyntaxError => error
+            if error.message.include?("UTF-8 mixed within")
+              error.message[/: (.+?)\n/, 1]
+            else
+              raise
+            end
+          end
+
+        actual =
+          Prism.parse(source).then do |result|
+            if result.success?
+              symbol = result.value.statements.body.first
+
+              if symbol.forced_utf8_encoding?
+                Encoding::UTF_8
+              elsif symbol.forced_binary_encoding?
+                Encoding::ASCII_8BIT
+              elsif symbol.forced_us_ascii_encoding?
+                Encoding::US_ASCII
               else
                 encoding
               end

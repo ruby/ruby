@@ -14,7 +14,7 @@ if defined?(WIN32OLE)
       t = Thread.__send__(meth) {
         WIN32OLE.new('Scripting.Dictionary')
       }
-      assert_nothing_raised(WIN32OLERuntimeError, "[Bug #2618] Thread.#{meth}") {
+      assert_nothing_raised(WIN32OLE::RuntimeError, "[Bug #2618] Thread.#{meth}") {
         t.join
       }
     end

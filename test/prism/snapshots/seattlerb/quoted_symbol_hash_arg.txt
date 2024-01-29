@@ -20,7 +20,7 @@
             │               └── @ AssocNode (location: (1,5)-(1,12))
             │                   ├── key:
             │                   │   @ SymbolNode (location: (1,5)-(1,9))
-            │                   │   ├── flags: ∅
+            │                   │   ├── flags: forced_us_ascii_encoding
             │                   │   ├── opening_loc: (1,5)-(1,6) = "'"
             │                   │   ├── value_loc: (1,6)-(1,7) = "a"
             │                   │   ├── closing_loc: (1,7)-(1,9) = "':"

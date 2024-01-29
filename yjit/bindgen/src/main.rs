@@ -119,6 +119,7 @@ fn main() {
         .allowlist_function("rb_hash_new_with_size")
         .allowlist_function("rb_hash_resurrect")
         .allowlist_function("rb_hash_stlike_foreach")
+        .allowlist_function("rb_to_hash_type")
 
         // From include/ruby/st.h
         .allowlist_type("st_retval")
@@ -133,6 +134,7 @@ fn main() {
         .allowlist_function("rb_ary_new_capa")
         .allowlist_function("rb_ary_store")
         .allowlist_function("rb_ary_resurrect")
+        .allowlist_function("rb_ary_cat")
         .allowlist_function("rb_ary_clear")
         .allowlist_function("rb_ary_dup")
         .allowlist_function("rb_ary_push")

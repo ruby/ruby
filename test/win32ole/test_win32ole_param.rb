@@ -5,45 +5,45 @@ rescue LoadError
 end
 require "test/unit"
 
-if defined?(WIN32OLE_PARAM)
+if defined?(WIN32OLE::Param)
   class TestWIN32OLE_PARAM < Test::Unit::TestCase
 
     def setup
-      ole_type = WIN32OLE_TYPE.new("Microsoft Shell Controls And Automation", "ShellLinkObject")
-      m_geticonlocation = WIN32OLE_METHOD.new(ole_type, "GetIconLocation")
+      ole_type = WIN32OLE::Type.new("Microsoft Shell Controls And Automation", "ShellLinkObject")
+      m_geticonlocation = WIN32OLE::Method.new(ole_type, "GetIconLocation")
       @param_pbs = m_geticonlocation.params[0]
 
-      ole_type = WIN32OLE_TYPE.new("Microsoft HTML Object Library", "FontNames")
-      m_count = WIN32OLE_METHOD.new(ole_type, "Count")
+      ole_type = WIN32OLE::Type.new("Microsoft HTML Object Library", "FontNames")
+      m_count = WIN32OLE::Method.new(ole_type, "Count")
       @param_p = m_count.params[0]
 
-      ole_type = WIN32OLE_TYPE.new("Microsoft Scripting Runtime", "FileSystemObject")
-      m_copyfile = WIN32OLE_METHOD.new(ole_type, "CopyFile")
+      ole_type = WIN32OLE::Type.new("Microsoft Scripting Runtime", "FileSystemObject")
+      m_copyfile = WIN32OLE::Method.new(ole_type, "CopyFile")
       @param_source = m_copyfile.params[0]
       @param_overwritefiles = m_copyfile.params[2]
 
-      ole_type = WIN32OLE_TYPE.new("Microsoft Scripting Runtime", "Dictionary")
-      m_add = WIN32OLE_METHOD.new(ole_type, "Add")
+      ole_type = WIN32OLE::Type.new("Microsoft Scripting Runtime", "Dictionary")
+      m_add = WIN32OLE::Method.new(ole_type, "Add")
       @param_key = m_add.params[0]
     end
 
     def test_s_new
       assert_raise(ArgumentError) {
-        WIN32OLE_PARAM.new("hoge")
+        WIN32OLE::Param.new("hoge")
       }
-      ole_type = WIN32OLE_TYPE.new("Microsoft Scripting Runtime", "FileSystemObject")
-      m_copyfile = WIN32OLE_METHOD.new(ole_type, "CopyFile")
+      ole_type = WIN32OLE::Type.new("Microsoft Scripting Runtime", "FileSystemObject")
+      m_copyfile = WIN32OLE::Method.new(ole_type, "CopyFile")
       assert_raise(IndexError) {
-        WIN32OLE_PARAM.new(m_copyfile, 4);
+        WIN32OLE::Param.new(m_copyfile, 4);
       }
       assert_raise(IndexError) {
-        WIN32OLE_PARAM.new(m_copyfile, 0);
+        WIN32OLE::Param.new(m_copyfile, 0);
       }
-      param = WIN32OLE_PARAM.new(m_copyfile, 3)
+      param = WIN32OLE::Param.new(m_copyfile, 3)
       assert_equal("OverWriteFiles", param.name)
-      assert_equal(WIN32OLE_PARAM, param.class)
+      assert_equal(WIN32OLE::Param, param.class)
       assert_equal(true, param.default)
-      assert_equal("#<WIN32OLE_PARAM:OverWriteFiles=true>", param.inspect)
+      assert_equal("#<WIN32OLE::Param:OverWriteFiles=true>", param.inspect)
     end
 
     def test_name
@@ -91,8 +91,8 @@ if defined?(WIN32OLE_PARAM)
     end
 
     def test_inspect
-      assert_equal("#<WIN32OLE_PARAM:Source>", @param_source.inspect)
-      assert_equal("#<WIN32OLE_PARAM:OverWriteFiles=true>", @param_overwritefiles.inspect)
+      assert_equal("#<WIN32OLE::Param:Source>", @param_source.inspect)
+      assert_equal("#<WIN32OLE::Param:OverWriteFiles=true>", @param_overwritefiles.inspect)
     end
   end
 end

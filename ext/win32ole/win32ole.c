@@ -1962,7 +1962,7 @@ ole_bind_obj(VALUE moniker, int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE.connect( ole ) --> aWIN32OLE
+ *     connect(ole) --> aWIN32OLE
  *
  *  Returns running OLE Automation object or WIN32OLE object from moniker.
  *  1st argument should be OLE program id or class id or moniker.
@@ -2019,7 +2019,7 @@ fole_s_connect(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE.const_load( ole, mod = WIN32OLE)
+ *     const_load(ole, mod = WIN32OLE)
  *
  *  Defines the constants of OLE Automation server as mod's constants.
  *  The first argument is WIN32OLE object or type library name.
@@ -2124,7 +2124,7 @@ reference_count(struct oledata * pole)
 
 /*
  *  call-seq:
- *     WIN32OLE.ole_reference_count(aWIN32OLE) --> number
+ *     ole_reference_count(aWIN32OLE) --> number
  *
  *  Returns reference counter of Dispatch interface of WIN32OLE object.
  *  You should not use this method because this method
@@ -2140,7 +2140,7 @@ fole_s_reference_count(VALUE self, VALUE obj)
 
 /*
  *  call-seq:
- *     WIN32OLE.ole_free(aWIN32OLE) --> number
+ *     ole_free(aWIN32OLE) --> number
  *
  *  Invokes Release method of Dispatch interface of WIN32OLE object.
  *  You should not use this method because this method
@@ -2184,10 +2184,10 @@ ole_show_help(VALUE helpfile, VALUE helpcontext)
 
 /*
  *  call-seq:
- *     WIN32OLE.ole_show_help(obj [,helpcontext])
+ *     ole_show_help(obj [,helpcontext])
  *
- *  Displays helpfile. The 1st argument specifies WIN32OLE_TYPE
- *  object or WIN32OLE_METHOD object or helpfile.
+ *  Displays helpfile. The 1st argument specifies WIN32OLE::Type
+ *  object or WIN32OLE::Method object or helpfile.
  *
  *     excel = WIN32OLE.new('Excel.Application')
  *     typeobj = excel.ole_type
@@ -2215,7 +2215,7 @@ fole_s_show_help(int argc, VALUE *argv, VALUE self)
         helpfile = target;
     }
     if (!RB_TYPE_P(helpfile, T_STRING)) {
-        rb_raise(rb_eTypeError, "1st parameter must be (String|WIN32OLE_TYPE|WIN32OLE_METHOD)");
+        rb_raise(rb_eTypeError, "1st parameter must be (String|WIN32OLE::Type|WIN32OLE::Method)");
     }
     hwnd = ole_show_help(helpfile, helpcontext);
     if(hwnd == 0) {
@@ -2227,7 +2227,7 @@ fole_s_show_help(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE.codepage
+ *     codepage
  *
  *  Returns current codepage.
  *     WIN32OLE.codepage # => WIN32OLE::CP_ACP
@@ -2258,7 +2258,7 @@ code_page_installed(UINT cp)
 
 /*
  *  call-seq:
- *     WIN32OLE.codepage = CP
+ *     codepage = CP
  *
  *  Sets current codepage.
  *  The WIN32OLE.codepage is initialized according to
@@ -2282,7 +2282,7 @@ fole_s_set_code_page(VALUE self, VALUE vcp)
 
 /*
  *  call-seq:
- *     WIN32OLE.locale -> locale id.
+ *     locale -> locale id.
  *
  *  Returns current locale id (lcid). The default locale is
  *  WIN32OLE::LOCALE_SYSTEM_DEFAULT.
@@ -2316,12 +2316,12 @@ lcid_installed(LCID lcid)
 
 /*
  *  call-seq:
- *     WIN32OLE.locale = lcid
+ *     locale = lcid
  *
  *  Sets current locale id (lcid).
  *
  *     WIN32OLE.locale = 1033 # set locale English(U.S)
- *     obj = WIN32OLE_VARIANT.new("$100,000", WIN32OLE::VARIANT::VT_CY)
+ *     obj = WIN32OLE::Variant.new("$100,000", WIN32OLE::VARIANT::VT_CY)
  *
  */
 static VALUE
@@ -2345,7 +2345,7 @@ fole_s_set_locale(VALUE self, VALUE vlcid)
 
 /*
  *  call-seq:
- *     WIN32OLE.create_guid
+ *     create_guid
  *
  *  Creates GUID.
  *     WIN32OLE.create_guid # => {1CB530F1-F6B1-404D-BCE6-1959BF91F4A8}
@@ -2393,9 +2393,9 @@ fole_s_ole_uninitialize(VALUE self)
 /*
  * Document-class: WIN32OLE
  *
- *   <code>WIN32OLE</code> objects represent OLE Automation object in Ruby.
+ *   +WIN32OLE+ objects represent OLE Automation object in Ruby.
  *
- *   By using WIN32OLE, you can access OLE server like VBScript.
+ *   By using +WIN32OLE+, you can access OLE server like VBScript.
  *
  *   Here is sample script.
  *
@@ -2419,18 +2419,18 @@ fole_s_ole_uninitialize(VALUE self)
  *     excel.ActiveWorkbook.Close(0);
  *     excel.Quit();
  *
- *   Unfortunately, Win32OLE doesn't support the argument passed by
+ *   Unfortunately, +WIN32OLE+ doesn't support the argument passed by
  *   reference directly.
- *   Instead, Win32OLE provides WIN32OLE::ARGV or WIN32OLE_VARIANT object.
+ *   Instead, +WIN32OLE+ provides WIN32OLE::ARGV or WIN32OLE::Variant object.
  *   If you want to get the result value of argument passed by reference,
- *   you can use WIN32OLE::ARGV or WIN32OLE_VARIANT.
+ *   you can use WIN32OLE::ARGV or WIN32OLE::Variant.
  *
  *     oleobj.method(arg1, arg2, refargv3)
  *     puts WIN32OLE::ARGV[2]   # the value of refargv3 after called oleobj.method
  *
  *   or
  *
- *     refargv3 = WIN32OLE_VARIANT.new(XXX,
+ *     refargv3 = WIN32OLE::Variant.new(XXX,
  *                 WIN32OLE::VARIANT::VT_BYREF|WIN32OLE::VARIANT::VT_XXX)
  *     oleobj.method(arg1, arg2, refargv3)
  *     p refargv3.value # the value of refargv3 after called oleobj.method.
@@ -2439,7 +2439,7 @@ fole_s_ole_uninitialize(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE.new(server, [host]) -> WIN32OLE object
+ *     new(server, [host]) -> WIN32OLE object
  *     WIN32OLE.new(server, license: 'key') -> WIN32OLE object
  *
  *  Returns a new WIN32OLE object(OLE Automation object).
@@ -2826,7 +2826,7 @@ ole_invoke(int argc, VALUE *argv, VALUE self, USHORT wFlags, BOOL is_bracket)
 
 /*
  *  call-seq:
- *     WIN32OLE#invoke(method, [arg1,...])  => return value of method.
+ *     invoke(method, [arg1,...])  => return value of method.
  *
  *  Runs OLE method.
  *  The first argument specifies the method name of OLE Automation object.
@@ -3038,7 +3038,7 @@ ole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types, USHORT dispkind)
 
 /*
  *   call-seq:
- *      WIN32OLE#_invoke(dispid, args, types)
+ *      _invoke(dispid, args, types)
  *
  *   Runs the early binding method.
  *   The 1st argument specifies dispatch ID,
@@ -3056,7 +3056,7 @@ fole_invoke2(VALUE self, VALUE dispid, VALUE args, VALUE types)
 
 /*
  *  call-seq:
- *     WIN32OLE#_getproperty(dispid, args, types)
+ *     _getproperty(dispid, args, types)
  *
  *  Runs the early binding method to get property.
  *  The 1st argument specifies dispatch ID,
@@ -3074,7 +3074,7 @@ fole_getproperty2(VALUE self, VALUE dispid, VALUE args, VALUE types)
 
 /*
  *   call-seq:
- *      WIN32OLE#_setproperty(dispid, args, types)
+ *      _setproperty(dispid, args, types)
  *
  *   Runs the early binding method to set property.
  *   The 1st argument specifies dispatch ID,
@@ -3120,7 +3120,7 @@ fole_setproperty_with_bracket(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE.setproperty('property', [arg1, arg2,...] val)
+ *     setproperty('property', [arg1, arg2,...] val)
  *
  *  Sets property of OLE object.
  *  When you want to set property with argument, you can use this method.
@@ -3226,7 +3226,7 @@ ole_propertyput(VALUE self, VALUE property, VALUE value)
 
 /*
  *  call-seq:
- *     WIN32OLE#ole_free
+ *     ole_free
  *
  *  invokes Release method of Dispatch interface of WIN32OLE object.
  *  Usually, you do not need to call this method because Release method
@@ -3269,7 +3269,7 @@ ole_ienum_free(VALUE pEnumV)
 
 /*
  *  call-seq:
- *     WIN32OLE#each {|i|...}
+ *     each {|i|...}
  *
  *  Iterates over each item of OLE collection which has IEnumVARIANT interface.
  *
@@ -3340,7 +3340,7 @@ fole_each(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE#method_missing(id [,arg1, arg2, ...])
+ *     method_missing(id [,arg1, arg2, ...])
  *
  *  Calls WIN32OLE#invoke method.
  */
@@ -3438,9 +3438,9 @@ ole_methods(VALUE self, int mask)
 
 /*
  *  call-seq:
- *     WIN32OLE#ole_methods
+ *     ole_methods
  *
- *  Returns the array of WIN32OLE_METHOD object.
+ *  Returns the array of WIN32OLE::Method object.
  *  The element is OLE method of WIN32OLE object.
  *
  *     excel = WIN32OLE.new('Excel.Application')
@@ -3455,9 +3455,9 @@ fole_methods(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE#ole_get_methods
+ *     ole_get_methods
  *
- *  Returns the array of WIN32OLE_METHOD object .
+ *  Returns the array of WIN32OLE::Method object .
  *  The element of the array is property (gettable) of WIN32OLE object.
  *
  *     excel = WIN32OLE.new('Excel.Application')
@@ -3471,9 +3471,9 @@ fole_get_methods(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE#ole_put_methods
+ *     ole_put_methods
  *
- *  Returns the array of WIN32OLE_METHOD object .
+ *  Returns the array of WIN32OLE::Method object .
  *  The element of the array is property (settable) of WIN32OLE object.
  *
  *     excel = WIN32OLE.new('Excel.Application')
@@ -3487,9 +3487,9 @@ fole_put_methods(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE#ole_func_methods
+ *     ole_func_methods
  *
- *  Returns the array of WIN32OLE_METHOD object .
+ *  Returns the array of WIN32OLE::Method object .
  *  The element of the array is property (settable) of WIN32OLE object.
  *
  *     excel = WIN32OLE.new('Excel.Application')
@@ -3504,9 +3504,9 @@ fole_func_methods(VALUE self)
 
 /*
  *   call-seq:
- *      WIN32OLE#ole_type
+ *      ole_type
  *
- *   Returns WIN32OLE_TYPE object.
+ *   Returns WIN32OLE::Type object.
  *
  *      excel = WIN32OLE.new('Excel.Application')
  *      tobj = excel.ole_type
@@ -3529,16 +3529,16 @@ fole_type(VALUE self)
     type = ole_type_from_itypeinfo(pTypeInfo);
     OLE_RELEASE(pTypeInfo);
     if (type == Qnil) {
-        rb_raise(rb_eRuntimeError, "failed to create WIN32OLE_TYPE obj from ITypeInfo");
+        rb_raise(rb_eRuntimeError, "failed to create WIN32OLE::Type obj from ITypeInfo");
     }
     return type;
 }
 
 /*
  *  call-seq:
- *     WIN32OLE#ole_typelib -> The WIN32OLE_TYPELIB object
+ *     ole_typelib -> The WIN32OLE_TYPELIB object
  *
- *  Returns the WIN32OLE_TYPELIB object. The object represents the
+ *  Returns the WIN32OLE::TypeLib object. The object represents the
  *  type library which contains the WIN32OLE object.
  *
  *     excel = WIN32OLE.new('Excel.Application')
@@ -3570,7 +3570,7 @@ fole_typelib(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE#ole_query_interface(iid) -> WIN32OLE object
+ *     ole_query_interface(iid) -> WIN32OLE object
  *
  *  Returns WIN32OLE object for a specific dispatch or dual
  *  interface specified by iid.
@@ -3616,7 +3616,7 @@ fole_query_interface(VALUE self, VALUE str_iid)
 
 /*
  *  call-seq:
- *     WIN32OLE#ole_respond_to?(method) -> true or false
+ *     ole_respond_to?(method) -> true or false
  *
  *  Returns true when OLE object has OLE method, otherwise returns false.
  *
@@ -3825,9 +3825,9 @@ ole_typedesc2val(ITypeInfo *pTypeInfo, TYPEDESC *pTypeDesc, VALUE typedetails)
 
 /*
  *   call-seq:
- *      WIN32OLE#ole_method_help(method)
+ *      ole_method_help(method)
  *
- *   Returns WIN32OLE_METHOD object corresponding with method
+ *   Returns WIN32OLE::Method object corresponding with method
  *   specified by 1st argument.
  *
  *      excel = WIN32OLE.new('Excel.Application')
@@ -3859,7 +3859,7 @@ fole_method_help(VALUE self, VALUE cmdname)
 
 /*
  *  call-seq:
- *     WIN32OLE#ole_activex_initialize() -> Qnil
+ *     ole_activex_initialize() -> Qnil
  *
  *  Initialize WIN32OLE object(ActiveX Control) by calling
  *  IPersistMemory::InitNew.
@@ -4073,7 +4073,7 @@ Init_win32ole(void)
      *   p c # => 0
      *   p WIN32OLE::ARGV # => [10, 20, 30]
      *
-     * You can use WIN32OLE_VARIANT object to retrieve the value of reference
+     * You can use WIN32OLE::Variant object to retrieve the value of reference
      * arguments instead of referring WIN32OLE::ARGV.
      *
      */

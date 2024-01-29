@@ -64,9 +64,9 @@ create_win32ole_param(ITypeInfo *pTypeInfo, UINT method_index, UINT index, VALUE
 }
 
 /*
- * Document-class: WIN32OLE_PARAM
+ * Document-class: WIN32OLE::Param
  *
- *   <code>WIN32OLE_PARAM</code> objects represent param information of
+ *   +WIN32OLE::Param+ objects represent param information of
  *   the OLE method.
  */
 static VALUE
@@ -131,15 +131,15 @@ oleparam_ole_param(VALUE self, VALUE olemethod, int n)
 
 /*
  * call-seq:
- *    WIN32OLE_PARAM.new(method, n) -> WIN32OLE_PARAM object
+ *    new(method, n) -> WIN32OLE::Param object
  *
- * Returns WIN32OLE_PARAM object which represents OLE parameter information.
- * 1st argument should be WIN32OLE_METHOD object.
+ * Returns WIN32OLE::Param object which represents OLE parameter information.
+ * 1st argument should be WIN32OLE::Method object.
  * 2nd argument `n' is n-th parameter of the method specified by 1st argument.
  *
- *    tobj = WIN32OLE_TYPE.new('Microsoft Scripting Runtime', 'IFileSystem')
- *    method = WIN32OLE_METHOD.new(tobj, 'CreateTextFile')
- *    param = WIN32OLE_PARAM.new(method, 2) # => #<WIN32OLE_PARAM:Overwrite=true>
+ *    tobj = WIN32OLE::Type.new('Microsoft Scripting Runtime', 'IFileSystem')
+ *    method = WIN32OLE::Method.new(tobj, 'CreateTextFile')
+ *    param = WIN32OLE::Param.new(method, 2) # => #<WIN32OLE::Param:Overwrite=true>
  *
  */
 static VALUE
@@ -147,7 +147,7 @@ foleparam_initialize(VALUE self, VALUE olemethod, VALUE n)
 {
     int idx;
     if (!rb_obj_is_kind_of(olemethod, cWIN32OLE_METHOD)) {
-        rb_raise(rb_eTypeError, "1st parameter must be WIN32OLE_METHOD object");
+        rb_raise(rb_eTypeError, "1st parameter must be WIN32OLE::Method object");
     }
     idx = RB_FIX2INT(n);
     return oleparam_ole_param(self, olemethod, idx);
@@ -155,11 +155,11 @@ foleparam_initialize(VALUE self, VALUE olemethod, VALUE n)
 
 /*
  *  call-seq:
- *     WIN32OLE_PARAM#name
+ *     name
  *
  *  Returns name.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
- *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE::Method.new(tobj, 'SaveAs')
  *     param1 = method.params[0]
  *     puts param1.name # => Filename
  */
@@ -186,11 +186,11 @@ ole_param_ole_type(ITypeInfo *pTypeInfo, UINT method_index, UINT index)
 
 /*
  *  call-seq:
- *     WIN32OLE_PARAM#ole_type
+ *     ole_type
  *
- *  Returns OLE type of WIN32OLE_PARAM object(parameter of OLE method).
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
- *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
+ *  Returns OLE type of WIN32OLE::Param object(parameter of OLE method).
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE::Method.new(tobj, 'SaveAs')
  *     param1 = method.params[0]
  *     puts param1.ole_type # => VARIANT
  */
@@ -220,11 +220,11 @@ ole_param_ole_type_detail(ITypeInfo *pTypeInfo, UINT method_index, UINT index)
 
 /*
  *  call-seq:
- *     WIN32OLE_PARAM#ole_type_detail
+ *     ole_type_detail
  *
  *  Returns detail information of type of argument.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'IWorksheetFunction')
- *     method = WIN32OLE_METHOD.new(tobj, 'SumIf')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'IWorksheetFunction')
+ *     method = WIN32OLE::Method.new(tobj, 'SumIf')
  *     param1 = method.params[0]
  *     p param1.ole_type_detail # => ["PTR", "USERDEFINED", "Range"]
  */
@@ -254,11 +254,11 @@ ole_param_flag_mask(ITypeInfo *pTypeInfo, UINT method_index, UINT index, USHORT 
 
 /*
  *  call-seq:
- *     WIN32OLE_PARAM#input?
+ *     input?
  *
  *  Returns true if the parameter is input.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
- *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE::Method.new(tobj, 'SaveAs')
  *     param1 = method.params[0]
  *     puts param1.input? # => true
  */
@@ -273,22 +273,22 @@ foleparam_input(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE#output?
+ *     output?
  *
  *  Returns true if argument is output.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Internet Controls', 'DWebBrowserEvents')
- *     method = WIN32OLE_METHOD.new(tobj, 'NewWindow')
+ *     tobj = WIN32OLE::Type.new('Microsoft Internet Controls', 'DWebBrowserEvents')
+ *     method = WIN32OLE::Method.new(tobj, 'NewWindow')
  *     method.params.each do |param|
  *       puts "#{param.name} #{param.output?}"
  *     end
  *
- *     The result of above script is following:
- *       URL false
- *       Flags false
- *       TargetFrameName false
- *       PostData false
- *       Headers false
- *       Processed true
+ *  The result of above script is following:
+ *    URL false
+ *    Flags false
+ *    TargetFrameName false
+ *    PostData false
+ *    Headers false
+ *    Processed true
  */
 static VALUE
 foleparam_output(VALUE self)
@@ -301,11 +301,11 @@ foleparam_output(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_PARAM#optional?
+ *     optional?
  *
  *  Returns true if argument is optional.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
- *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE::Method.new(tobj, 'SaveAs')
  *     param1 = method.params[0]
  *     puts "#{param1.name} #{param1.optional?}" # => Filename true
  */
@@ -320,12 +320,12 @@ foleparam_optional(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_PARAM#retval?
+ *     retval?
  *
  *  Returns true if argument is return value.
- *     tobj = WIN32OLE_TYPE.new('DirectX 7 for Visual Basic Type Library',
- *                              'DirectPlayLobbyConnection')
- *     method = WIN32OLE_METHOD.new(tobj, 'GetPlayerShortName')
+ *     tobj = WIN32OLE::Type.new('DirectX 7 for Visual Basic Type Library',
+ *                               'DirectPlayLobbyConnection')
+ *     method = WIN32OLE::Method.new(tobj, 'GetPlayerShortName')
  *     param = method.params[0]
  *     puts "#{param.name} #{param.retval?}"  # => name true
  */
@@ -363,12 +363,12 @@ ole_param_default(ITypeInfo *pTypeInfo, UINT method_index, UINT index)
 
 /*
  *  call-seq:
- *     WIN32OLE_PARAM#default
+ *     default
  *
  *  Returns default value. If the default value does not exist,
  *  this method returns nil.
- *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Workbook')
- *     method = WIN32OLE_METHOD.new(tobj, 'SaveAs')
+ *     tobj = WIN32OLE::Type.new('Microsoft Excel 9.0 Object Library', 'Workbook')
+ *     method = WIN32OLE::Method.new(tobj, 'SaveAs')
  *     method.params.each do |param|
  *       if param.default
  *         puts "#{param.name} (= #{param.default})"
@@ -401,7 +401,7 @@ foleparam_default(VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_PARAM#inspect -> String
+ *     inspect -> String
  *
  *  Returns the parameter name with class name. If the parameter has default value,
  *  then returns name=value string with class name.
@@ -416,13 +416,14 @@ foleparam_inspect(VALUE self)
         rb_str_cat2(detail, "=");
         rb_str_concat(detail, rb_inspect(defval));
     }
-    return make_inspect("WIN32OLE_PARAM", detail);
+    return make_inspect("WIN32OLE::Param", detail);
 }
 
 void
 Init_win32ole_param(void)
 {
     cWIN32OLE_PARAM = rb_define_class_under(cWIN32OLE, "Param", rb_cObject);
+    /* Alias of WIN32OLE::Param, for the backward compatibility */
     rb_define_const(rb_cObject, "WIN32OLE_PARAM", cWIN32OLE_PARAM);
     rb_define_alloc_func(cWIN32OLE_PARAM, foleparam_s_allocate);
     rb_define_method(cWIN32OLE_PARAM, "initialize", foleparam_initialize, 2);

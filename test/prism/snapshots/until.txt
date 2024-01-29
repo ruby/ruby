@@ -91,13 +91,13 @@
         │               │   ├── flags: ∅
         │               │   └── arguments: (length: 2)
         │               │       ├── @ SymbolNode (location: (11,4)-(11,6))
-        │               │       │   ├── flags: ∅
+        │               │       │   ├── flags: forced_us_ascii_encoding
         │               │       │   ├── opening_loc: (11,4)-(11,5) = ":"
         │               │       │   ├── value_loc: (11,5)-(11,6) = "a"
         │               │       │   ├── closing_loc: ∅
         │               │       │   └── unescaped: "a"
         │               │       └── @ SymbolNode (location: (11,8)-(11,10))
-        │               │           ├── flags: ∅
+        │               │           ├── flags: forced_us_ascii_encoding
         │               │           ├── opening_loc: (11,8)-(11,9) = ":"
         │               │           ├── value_loc: (11,9)-(11,10) = "b"
         │               │           ├── closing_loc: ∅

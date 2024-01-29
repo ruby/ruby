@@ -5,42 +5,42 @@ rescue LoadError
 end
 require "test/unit"
 
-if defined?(WIN32OLE_METHOD)
+if defined?(WIN32OLE::Method)
   class TestWIN32OLE_METHOD < Test::Unit::TestCase
 
     def setup
-      ole_type = WIN32OLE_TYPE.new("Microsoft Shell Controls And Automation", "Shell")
-      @m_open = WIN32OLE_METHOD.new(ole_type, "open")
-      @m_namespace = WIN32OLE_METHOD.new(ole_type, "namespace")
-      @m_parent = WIN32OLE_METHOD.new(ole_type, "parent")
-      @m_invoke = WIN32OLE_METHOD.new(ole_type, "invoke")
-      @m_browse_for_folder = WIN32OLE_METHOD.new(ole_type, "BrowseForFolder")
+      ole_type = WIN32OLE::Type.new("Microsoft Shell Controls And Automation", "Shell")
+      @m_open = WIN32OLE::Method.new(ole_type, "open")
+      @m_namespace = WIN32OLE::Method.new(ole_type, "namespace")
+      @m_parent = WIN32OLE::Method.new(ole_type, "parent")
+      @m_invoke = WIN32OLE::Method.new(ole_type, "invoke")
+      @m_browse_for_folder = WIN32OLE::Method.new(ole_type, "BrowseForFolder")
 
-      ole_type = WIN32OLE_TYPE.new("Microsoft Scripting Runtime", "File")
-      @m_file_name = WIN32OLE_METHOD.new(ole_type, "name")
+      ole_type = WIN32OLE::Type.new("Microsoft Scripting Runtime", "File")
+      @m_file_name = WIN32OLE::Method.new(ole_type, "name")
     end
 
     def test_initialize
-      ole_type = WIN32OLE_TYPE.new("Microsoft Shell Controls And Automation", "Shell")
+      ole_type = WIN32OLE::Type.new("Microsoft Shell Controls And Automation", "Shell")
       assert_raise(TypeError) {
-        WIN32OLE_METHOD.new(1, 2)
+        WIN32OLE::Method.new(1, 2)
       }
       assert_raise(ArgumentError) {
-        WIN32OLE_METHOD.new("foo")
+        WIN32OLE::Method.new("foo")
       }
       assert_raise(ArgumentError) {
-        WIN32OLE_METHOD.new(ole_type)
+        WIN32OLE::Method.new(ole_type)
       }
-      assert_raise(WIN32OLERuntimeError) {
-        WIN32OLE_METHOD.new(ole_type, "NonExistMethod")
+      assert_raise(WIN32OLE::RuntimeError) {
+        WIN32OLE::Method.new(ole_type, "NonExistMethod")
       }
       assert_raise(TypeError) {
-        WIN32OLE_METHOD.new(ole_type, 1)
+        WIN32OLE::Method.new(ole_type, 1)
       }
-      method  = WIN32OLE_METHOD.new(ole_type, "Open")
-      assert_instance_of(WIN32OLE_METHOD, method)
-      method  = WIN32OLE_METHOD.new(ole_type, "open")
-      assert_instance_of(WIN32OLE_METHOD, method)
+      method  = WIN32OLE::Method.new(ole_type, "Open")
+      assert_instance_of(WIN32OLE::Method, method)
+      method  = WIN32OLE::Method.new(ole_type, "open")
+      assert_instance_of(WIN32OLE::Method, method)
     end
 
     def test_name
@@ -119,7 +119,7 @@ if defined?(WIN32OLE_METHOD)
       params = @m_browse_for_folder.params
       assert_instance_of(Array, params)
       assert_equal(4, params.size)
-      assert_instance_of(WIN32OLE_PARAM, params[0])
+      assert_instance_of(WIN32OLE::Param, params[0])
     end
 
     def test_to_s
@@ -127,7 +127,7 @@ if defined?(WIN32OLE_METHOD)
     end
 
     def test_inspect
-      assert_equal("#<WIN32OLE_METHOD:NameSpace>", @m_namespace.inspect)
+      assert_equal("#<WIN32OLE::Method:NameSpace>", @m_namespace.inspect)
     end
 
   end

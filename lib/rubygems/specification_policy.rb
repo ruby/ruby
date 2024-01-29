@@ -427,13 +427,13 @@ or set it to nil if you don't want to specify a license.
 
     # Make sure a homepage is valid HTTP/HTTPS URI
     if homepage && !homepage.empty?
-      require "uri"
+      require_relative "vendor/uri/lib/uri"
       begin
-        homepage_uri = URI.parse(homepage)
-        unless [URI::HTTP, URI::HTTPS].member? homepage_uri.class
+        homepage_uri = Gem::URI.parse(homepage)
+        unless [Gem::URI::HTTP, Gem::URI::HTTPS].member? homepage_uri.class
           error "\"#{homepage}\" is not a valid HTTP URI"
         end
-      rescue URI::InvalidURIError
+      rescue Gem::URI::InvalidURIError
         error "\"#{homepage}\" is not a valid HTTP URI"
       end
     end

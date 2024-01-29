@@ -737,7 +737,7 @@ pm_interpolated_node_compile(pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_
 
             if (PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
                 pm_string_node_t *string_node = (pm_string_node_t *)part;
-                VALUE string_value = parse_string(&string_node->unescaped, parser);
+                VALUE string_value = parse_string_encoded((pm_node_t *)string_node, &string_node->unescaped, parser);
                 if (RTEST(current_string)) {
                     current_string = rb_str_concat(current_string, string_value);
                 }
@@ -1085,7 +1085,6 @@ pm_setup_args(pm_arguments_node_t *arguments_node, int *flags, struct rb_callinf
 
                 if (has_keyword_splat || has_splat) {
                     *flags |= VM_CALL_KW_SPLAT;
-                    *flags |= VM_CALL_KW_SPLAT_MUT;
 
                     has_keyword_splat = true;
 
@@ -2762,7 +2761,10 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         ADD_INSNL(ret, &dummy_line_node, jump, end_label);
         ADD_LABEL(ret, else_label);
     }
-    ADD_LABEL(ret, end_label);
+
+    if ((block_iseq && ISEQ_BODY(block_iseq)->catch_table) || (call_node->base.flags & PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
+        ADD_LABEL(ret, end_label);
+    }
 
     PM_POP_IF_POPPED;
 }
@@ -2817,7 +2819,7 @@ static int
 pm_local_table_insert_func(st_data_t *key, st_data_t *value, st_data_t arg, int existing)
 {
     if (!existing) {
-        pm_constant_id_t constant_id = *(pm_constant_id_t *)key;
+        pm_constant_id_t constant_id = (pm_constant_id_t)*key;
         struct pm_local_table_insert_ctx * ctx = (struct pm_local_table_insert_ctx *)arg;
 
         pm_scope_node_t *scope_node = ctx->scope_node;
@@ -2827,7 +2829,7 @@ pm_local_table_insert_func(st_data_t *key, st_data_t *value, st_data_t arg, int 
         ID local = pm_constant_id_lookup(scope_node, constant_id);
         local_table_for_iseq->ids[local_index] = local;
 
-        *value = local_index;
+        *value = (st_data_t)local_index;
 
         ctx->local_index++;
     }
@@ -2842,7 +2844,7 @@ pm_insert_local_index(pm_constant_id_t constant_id, int local_index, st_table *i
 
     ID local = pm_constant_id_lookup(scope_node, constant_id);
     local_table_for_iseq->ids[local_index] = local;
-    st_insert(index_lookup_table, constant_id, local_index);
+    st_insert(index_lookup_table, (st_data_t)constant_id, local_index);
 }
 
 /**
@@ -6074,7 +6076,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // this compilation block.
         LABEL *exception_match_label = NEW_LABEL(lineno);
         LABEL *rescue_end_label = NEW_LABEL(lineno);
-        ISEQ_COMPILE_DATA(iseq)->end_label = rescue_end_label;
 
         // Next, compile each of the exceptions that we're going to be
         // handling. For each one, we'll add instructions to check if the
@@ -6093,18 +6094,18 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     checkmatch_flags |= VM_CHECKMATCH_ARRAY;
                 }
                 ADD_INSN1(ret, &dummy_line_node, checkmatch, INT2FIX(checkmatch_flags));
-                ADD_INSN1(ret, &dummy_line_node, branchif, exception_match_label);
+                ADD_INSNL(ret, &dummy_line_node, branchif, exception_match_label);
             }
         } else {
             ADD_GETLOCAL(ret, &dummy_line_node, LVAR_ERRINFO, 0);
             ADD_INSN1(ret, &dummy_line_node, putobject, rb_eStandardError);
             ADD_INSN1(ret, &dummy_line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
-            ADD_INSN1(ret, &dummy_line_node, branchif, exception_match_label);
+            ADD_INSNL(ret, &dummy_line_node, branchif, exception_match_label);
         }
 
         // If none of the exceptions that we are matching against matched, then
         // we'll jump straight to the rescue_end_label label.
-        ADD_INSN1(ret, &dummy_line_node, jump, rescue_end_label);
+        ADD_INSNL(ret, &dummy_line_node, jump, rescue_end_label);
 
         // Here we have the exception_match_label, which is where the
         // control-flow goes in the case that one of the exceptions matched.
@@ -6544,7 +6545,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     // def foo(a, (b, *c, d), e = 1, *, g, (h, *i, j),  k:, l: 1, **m, &n)
                     //                               ^
                     local_table_for_iseq->ids[local_index] = PM_CONSTANT_MULT;
-                    st_insert(index_lookup_table, PM_CONSTANT_MULT, local_index);
+                    st_insert(index_lookup_table, (st_data_t)PM_CONSTANT_MULT, local_index);
                 }
                 local_index++;
             }
@@ -6727,7 +6728,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     }
                     else {
                         local_table_for_iseq->ids[local_index] = PM_CONSTANT_POW;
-                        st_insert(index_lookup_table, PM_CONSTANT_POW, local_index);
+                        st_insert(index_lookup_table, (st_data_t)PM_CONSTANT_POW, local_index);
                     }
                     local_index++;
                     break;
@@ -6738,17 +6739,17 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     body->param.rest_start = local_index;
                     body->param.flags.has_rest = true;
                     local_table_for_iseq->ids[local_index] = PM_CONSTANT_MULT;
-                    st_insert(index_lookup_table, PM_CONSTANT_MULT, local_index);
+                    st_insert(index_lookup_table, (st_data_t)PM_CONSTANT_MULT, local_index);
                     local_index++;
 
                     body->param.block_start = local_index;
                     body->param.flags.has_block = true;
                     local_table_for_iseq->ids[local_index] = PM_CONSTANT_AND;
-                    st_insert(index_lookup_table, PM_CONSTANT_AND, local_index);
+                    st_insert(index_lookup_table, (st_data_t)PM_CONSTANT_AND, local_index);
                     local_index++;
 
                     local_table_for_iseq->ids[local_index] = PM_CONSTANT_DOT3;
-                    st_insert(index_lookup_table, PM_CONSTANT_DOT3, local_index);
+                    st_insert(index_lookup_table, (st_data_t)PM_CONSTANT_DOT3, local_index);
                     local_index++;
                     break;
                   }
@@ -6768,7 +6769,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
                 if (name == 0) {
                     local_table_for_iseq->ids[local_index] = PM_CONSTANT_AND;
-                    st_insert(index_lookup_table, PM_CONSTANT_AND, local_index);
+                    st_insert(index_lookup_table, (st_data_t)PM_CONSTANT_AND, local_index);
                 }
                 else {
                     if (PM_NODE_FLAG_P(parameters_node->block, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
@@ -6867,7 +6868,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     ctx.local_table_for_iseq = local_table_for_iseq;
                     ctx.local_index = local_index;
 
-                    st_update(index_lookup_table, constant_id, pm_local_table_insert_func, (st_data_t)&ctx);
+                    st_update(index_lookup_table, (st_data_t)constant_id, pm_local_table_insert_func, (st_data_t)&ctx);
 
                     local_index = ctx.local_index;
                 }
@@ -7082,8 +7083,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 ADD_GETLOCAL(ret, &dummy_line_node, LVAR_ERRINFO, 0);
                 ADD_INSN1(ret, &dummy_line_node, putobject, rb_eStandardError);
                 ADD_INSN1(ret, &dummy_line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
-                ADD_INSN1(ret, &dummy_line_node, branchif, lab);
-                ADD_INSN1(ret, &dummy_line_node, jump, rescue_end);
+                ADD_INSNL(ret, &dummy_line_node, branchif, lab);
+                ADD_INSNL(ret, &dummy_line_node, jump, rescue_end);
                 ADD_LABEL(ret, lab);
                 PM_COMPILE((pm_node_t *)scope_node->body);
                 ADD_INSN(ret, &dummy_line_node, leave);

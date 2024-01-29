@@ -49,9 +49,8 @@ Init_rmd160(void)
     mDigest = rb_define_module("Digest"); /* let rdoc know */
 #endif
     mDigest = rb_digest_namespace();
-    cDigest_Base = rb_path2class("Digest::Base");
+    cDigest_Base = rb_const_get(mDigest, rb_intern_const("Base"));
 
     cDigest_RMD160 = rb_define_class_under(mDigest, "RMD160", cDigest_Base);
-
     rb_iv_set(cDigest_RMD160, "metadata", rb_digest_make_metadata(&rmd160));
 }

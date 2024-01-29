@@ -121,7 +121,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ SymbolNode (location: (17,4)-(20,0))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: forced_us_ascii_encoding
         │   │           ├── opening_loc: (17,4)-(18,0) = "%s\n"
         │   │           ├── value_loc: (18,0)-(18,0) = ""
         │   │           ├── closing_loc: (19,0)-(20,0) = "\n"

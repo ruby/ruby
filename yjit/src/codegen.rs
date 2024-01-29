@@ -1435,6 +1435,33 @@ fn gen_splatarray(
     Some(KeepCompiling)
 }
 
+// call to_hash on hash to keyword splat before converting block
+// e.g. foo(**object, &block)
+fn gen_splatkw(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+) -> Option<CodegenStatus> {
+    // Save the PC and SP because the callee may allocate
+    jit_prepare_routine_call(jit, asm);
+
+    // Get the operands from the stack
+    let block_opnd = asm.stack_opnd(0);
+    let block_type = asm.ctx.get_opnd_type(block_opnd.into());
+    let hash_opnd = asm.stack_opnd(1);
+
+    let hash = asm.ccall(rb_to_hash_type as *const u8, vec![hash_opnd]);
+    asm.stack_pop(2); // Keep it on stack during ccall for GC
+
+    let stack_ret = asm.stack_push(Type::Hash);
+    asm.mov(stack_ret, hash);
+    asm.stack_push(block_type);
+    // Leave block_opnd spilled by ccall as is
+    asm.ctx.dealloc_temp_reg(asm.ctx.get_stack_size() - 1);
+
+    Some(KeepCompiling)
+}
+
 // concat two arrays
 fn gen_concatarray(
     jit: &mut JITState,
@@ -1452,6 +1479,54 @@ fn gen_concatarray(
     // Call rb_vm_concat_array(ary1, ary2st)
     let ary = asm.ccall(rb_vm_concat_array as *const u8, vec![ary1_opnd, ary2st_opnd]);
     asm.stack_pop(2); // Keep them on stack during ccall for GC
+
+    let stack_ret = asm.stack_push(Type::TArray);
+    asm.mov(stack_ret, ary);
+
+    Some(KeepCompiling)
+}
+
+// concat second array to first array.
+// first argument must already be an array.
+// attempts to convert second object to array using to_a.
+fn gen_concattoarray(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+) -> Option<CodegenStatus> {
+    // Save the PC and SP because the callee may allocate
+    jit_prepare_routine_call(jit, asm);
+
+    // Get the operands from the stack
+    let ary2_opnd = asm.stack_opnd(0);
+    let ary1_opnd = asm.stack_opnd(1);
+
+    let ary = asm.ccall(rb_vm_concat_to_array as *const u8, vec![ary1_opnd, ary2_opnd]);
+    asm.stack_pop(2); // Keep them on stack during ccall for GC
+
+    let stack_ret = asm.stack_push(Type::TArray);
+    asm.mov(stack_ret, ary);
+
+    Some(KeepCompiling)
+}
+
+// push given number of objects to array directly before.
+fn gen_pushtoarray(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+) -> Option<CodegenStatus> {
+    let num = jit.get_arg(0).as_u64();
+
+    // Save the PC and SP because the callee may allocate
+    jit_prepare_routine_call(jit, asm);
+
+    // Get the operands from the stack
+    let ary_opnd = asm.stack_opnd(num as i32);
+    let objp_opnd = asm.lea(asm.ctx.sp_opnd(-(num as isize) * SIZEOF_VALUE as isize));
+
+    let ary = asm.ccall(rb_ary_cat as *const u8, vec![ary_opnd, objp_opnd, num.into()]);
+    asm.stack_pop(num as usize + 1); // Keep it on stack during ccall for GC
 
     let stack_ret = asm.stack_push(Type::TArray);
     asm.mov(stack_ret, ary);
@@ -8903,7 +8978,10 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_str_uminus => Some(gen_opt_str_uminus),
         YARVINSN_opt_newarray_send => Some(gen_opt_newarray_send),
         YARVINSN_splatarray => Some(gen_splatarray),
+        YARVINSN_splatkw => Some(gen_splatkw),
         YARVINSN_concatarray => Some(gen_concatarray),
+        YARVINSN_concattoarray => Some(gen_concattoarray),
+        YARVINSN_pushtoarray => Some(gen_pushtoarray),
         YARVINSN_newrange => Some(gen_newrange),
         YARVINSN_putstring => Some(gen_putstring),
         YARVINSN_expandarray => Some(gen_expandarray),

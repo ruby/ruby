@@ -160,6 +160,7 @@ enum node_type {
     NODE_ERROR,
     NODE_LINE,
     NODE_FILE,
+    NODE_ENCODING,
     NODE_RIPPER,
     NODE_RIPPER_VALUES,
     NODE_LAST
@@ -336,16 +337,15 @@ typedef struct RNode_RESCUE {
 typedef struct RNode_RESBODY {
     NODE node;
 
-    struct RNode *nd_head;
-    struct RNode *nd_body;
     struct RNode *nd_args;
+    struct RNode *nd_body;
+    struct RNode *nd_next;
 } rb_node_resbody_t;
 
 typedef struct RNode_ENSURE {
     NODE node;
 
     struct RNode *nd_head;
-    struct RNode *nd_resq; /* Maybe not used other than reduce_nodes */
     struct RNode *nd_ensr;
 } rb_node_ensure_t;
 
@@ -1005,6 +1005,11 @@ typedef struct RNode_FILE {
     struct rb_parser_string *path;
 } rb_node_file_t;
 
+typedef struct RNode_ENCODING {
+    NODE node;
+    rb_encoding *enc;
+} rb_node_encoding_t;
+
 typedef struct RNode_ERROR {
     NODE node;
 } rb_node_error_t;
@@ -1121,6 +1126,7 @@ typedef struct RNode_ERROR {
 #define RNODE_FNDPTN(node) ((struct RNode_FNDPTN *)(node))
 #define RNODE_LINE(node) ((struct RNode_LINE *)(node))
 #define RNODE_FILE(node) ((struct RNode_FILE *)(node))
+#define RNODE_ENCODING(node) ((struct RNode_ENCODING *)(node))
 
 #ifdef RIPPER
 typedef struct RNode_RIPPER {

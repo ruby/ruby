@@ -6,7 +6,7 @@
         └── @ CaseMatchNode (location: (1,0)-(4,3))
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
-            │   ├── flags: ∅
+            │   ├── flags: forced_us_ascii_encoding
             │   ├── opening_loc: (1,5)-(1,6) = ":"
             │   ├── value_loc: (1,6)-(1,7) = "a"
             │   ├── closing_loc: ∅
@@ -23,13 +23,13 @@
             │       │   │   └── expression: ∅
             │       │   ├── posts: (length: 2)
             │       │   │   ├── @ SymbolNode (location: (2,7)-(2,9))
-            │       │   │   │   ├── flags: ∅
+            │       │   │   │   ├── flags: forced_us_ascii_encoding
             │       │   │   │   ├── opening_loc: (2,7)-(2,8) = ":"
             │       │   │   │   ├── value_loc: (2,8)-(2,9) = "b"
             │       │   │   │   ├── closing_loc: ∅
             │       │   │   │   └── unescaped: "b"
             │       │   │   └── @ SymbolNode (location: (2,11)-(2,13))
-            │       │   │       ├── flags: ∅
+            │       │   │       ├── flags: forced_us_ascii_encoding
             │       │   │       ├── opening_loc: (2,11)-(2,12) = ":"
             │       │   │       ├── value_loc: (2,12)-(2,13) = "c"
             │       │   │       ├── closing_loc: ∅
@@ -40,7 +40,7 @@
             │       │   @ StatementsNode (location: (3,2)-(3,4))
             │       │   └── body: (length: 1)
             │       │       └── @ SymbolNode (location: (3,2)-(3,4))
-            │       │           ├── flags: ∅
+            │       │           ├── flags: forced_us_ascii_encoding
             │       │           ├── opening_loc: (3,2)-(3,3) = ":"
             │       │           ├── value_loc: (3,3)-(3,4) = "d"
             │       │           ├── closing_loc: ∅

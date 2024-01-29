@@ -28,17 +28,17 @@ swbemsink_available =
     end
   end
 
-if defined?(WIN32OLE_EVENT)
+if defined?(WIN32OLE::Event)
   class TestWIN32OLE_EVENT < Test::Unit::TestCase
     def test_s_new_exception
       assert_raise(TypeError) {
-        WIN32OLE_EVENT.new("A")
+        WIN32OLE::Event.new("A")
       }
     end
     def test_s_new_non_exist_event
       dict = WIN32OLE.new('Scripting.Dictionary')
       assert_raise(RuntimeError) {
-        WIN32OLE_EVENT.new(dict)
+        WIN32OLE::Event.new(dict)
       }
     end
   end
@@ -58,7 +58,7 @@ if defined?(WIN32OLE_EVENT)
         end
 
         2.times do
-          WIN32OLE_EVENT.message_loop
+          WIN32OLE::Event.message_loop
           sleep 1
         end
 
@@ -68,7 +68,7 @@ if defined?(WIN32OLE_EVENT)
           seconds = EnvUtil.apply_timeout_scale(1)
           while tries < 5 && instance_variable_get(watch_ivar) == orig_ivar
             $stderr.puts "test_win32ole_event.rb: retrying and sleeping #{seconds}s until #{watch_ivar} is changed from #{orig_ivar.inspect}..."
-            WIN32OLE_EVENT.message_loop
+            WIN32OLE::Event.message_loop
             sleep(seconds)
             tries += 1
             seconds *= 2 # sleep at most 31s in total
@@ -86,24 +86,24 @@ if defined?(WIN32OLE_EVENT)
 
       def test_s_new_non_exist_event
         assert_raise(RuntimeError) {
-          WIN32OLE_EVENT.new(@sws, 'XXXXX')
+          WIN32OLE::Event.new(@sws, 'XXXXX')
         }
       end
 
       def test_s_new
-        obj = WIN32OLE_EVENT.new(@sws, 'ISWbemSinkEvents')
-        assert_instance_of(WIN32OLE_EVENT, obj)
-        obj = WIN32OLE_EVENT.new(@sws)
-        assert_instance_of(WIN32OLE_EVENT, obj)
+        obj = WIN32OLE::Event.new(@sws, 'ISWbemSinkEvents')
+        assert_instance_of(WIN32OLE::Event, obj)
+        obj = WIN32OLE::Event.new(@sws)
+        assert_instance_of(WIN32OLE::Event, obj)
       end
 
       def test_s_new_loop
         exec_notification_query_async
-        ev = WIN32OLE_EVENT.new(@sws)
+        ev = WIN32OLE::Event.new(@sws)
         ev.on_event {|*args| default_handler(*args)}
         message_loop
         10.times do |i|
-          WIN32OLE_EVENT.new(@sws)
+          WIN32OLE::Event.new(@sws)
           message_loop
           GC.start
         end
@@ -115,7 +115,7 @@ if defined?(WIN32OLE_EVENT)
 
       def test_on_event
         exec_notification_query_async
-        ev = WIN32OLE_EVENT.new(@sws, 'ISWbemSinkEvents')
+        ev = WIN32OLE::Event.new(@sws, 'ISWbemSinkEvents')
         ev.on_event {|*args| default_handler(*args)}
         message_loop(:@event)
         assert_match(/OnObjectReady/, @event)
@@ -123,7 +123,7 @@ if defined?(WIN32OLE_EVENT)
 
       def test_on_event_symbol
         exec_notification_query_async
-        ev = WIN32OLE_EVENT.new(@sws)
+        ev = WIN32OLE::Event.new(@sws)
         ev.on_event(:OnObjectReady) {|*args|
           handler1
         }
@@ -163,7 +163,7 @@ if defined?(WIN32OLE_EVENT)
       module ADO
       end
       def message_loop
-        WIN32OLE_EVENT.message_loop
+        WIN32OLE::Event.message_loop
       end
 
       def default_handler(event, *args)
@@ -182,7 +182,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_on_event2
-        ev = WIN32OLE_EVENT.new(@db, 'ConnectionEvents')
+        ev = WIN32OLE::Event.new(@db, 'ConnectionEvents')
         ev.on_event('WillConnect') {|*args| handler1}
         ev.on_event('WillConnect') {|*args| handler2}
         @db.open
@@ -191,7 +191,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_on_event4
-        ev = WIN32OLE_EVENT.new(@db, 'ConnectionEvents')
+        ev = WIN32OLE::Event.new(@db, 'ConnectionEvents')
         ev.on_event{|*args| handler1}
         ev.on_event{|*args| handler2}
         ev.on_event('WillConnect'){|*args| handler3(*args)}
@@ -202,7 +202,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_on_event5
-        ev = WIN32OLE_EVENT.new(@db, 'ConnectionEvents')
+        ev = WIN32OLE::Event.new(@db, 'ConnectionEvents')
         ev.on_event {|*args| default_handler(*args)}
         ev.on_event('WillConnect'){|*args| handler3(*args)}
         @db.open
@@ -213,7 +213,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_unadvise
-        ev = WIN32OLE_EVENT.new(@db, 'ConnectionEvents')
+        ev = WIN32OLE::Event.new(@db, 'ConnectionEvents')
         ev.on_event {|*args| default_handler(*args)}
         @db.open
         message_loop
@@ -224,16 +224,16 @@ if defined?(WIN32OLE_EVENT)
         @db.open
         message_loop
         assert_equal("", @event);
-        assert_raise(WIN32OLERuntimeError) {
+        assert_raise(WIN32OLE::RuntimeError) {
           ev.on_event {|*args| default_handler(*args)}
         }
       end
 
 
       def test_on_event_with_outargs
-        ev = WIN32OLE_EVENT.new(@db)
+        ev = WIN32OLE::Event.new(@db)
         @db.connectionString = 'XXX' # set illegal connection string
-        assert_raise(WIN32OLERuntimeError) {
+        assert_raise(WIN32OLE::RuntimeError) {
           @db.open
         }
         ev.on_event_with_outargs('WillConnect'){|*args|
@@ -245,7 +245,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_on_event_hash_return
-        ev = WIN32OLE_EVENT.new(@db)
+        ev = WIN32OLE::Event.new(@db)
         ev.on_event('WillConnect'){|*args|
           {:return => 1, :ConnectionString => CONNSTR}
         }
@@ -255,7 +255,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_on_event_hash_return2
-        ev = WIN32OLE_EVENT.new(@db)
+        ev = WIN32OLE::Event.new(@db)
         ev.on_event('WillConnect'){|*args|
           {:ConnectionString => CONNSTR}
         }
@@ -265,7 +265,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_on_event_hash_return3
-        ev = WIN32OLE_EVENT.new(@db)
+        ev = WIN32OLE::Event.new(@db)
         ev.on_event('WillConnect'){|*args|
           {'ConnectionString' => CONNSTR}
         }
@@ -275,7 +275,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_on_event_hash_return4
-        ev = WIN32OLE_EVENT.new(@db)
+        ev = WIN32OLE::Event.new(@db)
         ev.on_event('WillConnect'){|*args|
           {'return' => 1, 'ConnectionString' => CONNSTR}
         }
@@ -285,7 +285,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_on_event_hash_return5
-        ev = WIN32OLE_EVENT.new(@db)
+        ev = WIN32OLE::Event.new(@db)
         ev.on_event('WillConnect'){|*args|
           {0 => CONNSTR}
         }
@@ -295,7 +295,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_off_event
-        ev = WIN32OLE_EVENT.new(@db)
+        ev = WIN32OLE::Event.new(@db)
         ev.on_event{handler1}
         ev.off_event
         @db.open
@@ -304,7 +304,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_off_event_arg
-        ev = WIN32OLE_EVENT.new(@db)
+        ev = WIN32OLE::Event.new(@db)
         ev.on_event('WillConnect'){handler1}
         ev.off_event('WillConnect')
         @db.open
@@ -313,7 +313,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_off_event_arg2
-        ev = WIN32OLE_EVENT.new(@db)
+        ev = WIN32OLE::Event.new(@db)
         ev.on_event('WillConnect'){handler1}
         ev.on_event('ConnectComplete'){handler1}
         ev.off_event('WillConnect')
@@ -323,7 +323,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_off_event_sym_arg
-        ev = WIN32OLE_EVENT.new(@db)
+        ev = WIN32OLE::Event.new(@db)
         ev.on_event('WillConnect'){handler1}
         ev.off_event(:WillConnect)
         @db.open
@@ -382,7 +382,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_handler1
-        ev = WIN32OLE_EVENT.new(@db)
+        ev = WIN32OLE::Event.new(@db)
         h1 = Handler1.new
         ev.handler = h1
         @db.open
@@ -395,7 +395,7 @@ if defined?(WIN32OLE_EVENT)
       end
 
       def test_handler2
-        ev = WIN32OLE_EVENT.new(@db)
+        ev = WIN32OLE::Event.new(@db)
         h2 = Handler2.new
         ev.handler = h2
         @db.open

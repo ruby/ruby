@@ -19,7 +19,7 @@ module Lrama
       # TODO: Change this to display_name
       def to_s
         l = lhs.id.s_value
-        r = rhs.empty? ? "ε" : rhs.map {|r| r.id.s_value }.join(", ")
+        r = empty_rule? ? "ε" : rhs.map {|r| r.id.s_value }.join(", ")
 
         "#{l} -> #{r}"
       end
@@ -27,7 +27,7 @@ module Lrama
       # Used by #user_actions
       def as_comment
         l = lhs.id.s_value
-        r = rhs.empty? ? "%empty" : rhs.map(&:display_name).join(" ")
+        r = empty_rule? ? "%empty" : rhs.map(&:display_name).join(" ")
 
         "#{l}: #{r}"
       end

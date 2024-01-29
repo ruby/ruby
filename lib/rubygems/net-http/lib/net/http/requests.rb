@@ -6,7 +6,7 @@
 # {HTTP method GET}[https://en.wikipedia.org/w/index.php?title=Hypertext_Transfer_Protocol#GET_method]:
 #
 #   require 'rubygems/net-http/lib/net/http'
-#   uri = URI('http://example.com')
+#   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Get.new(uri) # => #<Gem::Net::HTTP::Get GET>
 #   res = Gem::Net::HTTP.start(hostname) do |http|
@@ -38,7 +38,7 @@ end
 # {HTTP method HEAD}[https://en.wikipedia.org/w/index.php?title=Hypertext_Transfer_Protocol#HEAD_method]:
 #
 #   require 'rubygems/net-http/lib/net/http'
-#   uri = URI('http://example.com')
+#   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Head.new(uri) # => #<Gem::Net::HTTP::Head HEAD>
 #   res = Gem::Net::HTTP.start(hostname) do |http|
@@ -69,7 +69,7 @@ end
 # {HTTP method POST}[https://en.wikipedia.org/w/index.php?title=Hypertext_Transfer_Protocol#POST_method]:
 #
 #   require 'rubygems/net-http/lib/net/http'
-#   uri = URI('http://example.com')
+#   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   uri.path = '/posts'
 #   req = Gem::Net::HTTP::Post.new(uri) # => #<Gem::Net::HTTP::Post POST>
@@ -104,7 +104,7 @@ end
 # {HTTP method PUT}[https://en.wikipedia.org/w/index.php?title=Hypertext_Transfer_Protocol#PUT_method]:
 #
 #   require 'rubygems/net-http/lib/net/http'
-#   uri = URI('http://example.com')
+#   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   uri.path = '/posts'
 #   req = Gem::Net::HTTP::Put.new(uri) # => #<Gem::Net::HTTP::Put PUT>
@@ -134,7 +134,7 @@ end
 # {HTTP method DELETE}[https://en.wikipedia.org/w/index.php?title=Hypertext_Transfer_Protocol#DELETE_method]:
 #
 #   require 'rubygems/net-http/lib/net/http'
-#   uri = URI('http://example.com')
+#   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   uri.path = '/posts/1'
 #   req = Gem::Net::HTTP::Delete.new(uri) # => #<Gem::Net::HTTP::Delete DELETE>
@@ -166,7 +166,7 @@ end
 # {HTTP method OPTIONS}[https://en.wikipedia.org/w/index.php?title=Hypertext_Transfer_Protocol#OPTIONS_method]:
 #
 #   require 'rubygems/net-http/lib/net/http'
-#   uri = URI('http://example.com')
+#   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Options.new(uri) # => #<Gem::Net::HTTP::Options OPTIONS>
 #   res = Gem::Net::HTTP.start(hostname) do |http|
@@ -197,7 +197,7 @@ end
 # {HTTP method TRACE}[https://en.wikipedia.org/w/index.php?title=Hypertext_Transfer_Protocol#TRACE_method]:
 #
 #   require 'rubygems/net-http/lib/net/http'
-#   uri = URI('http://example.com')
+#   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Trace.new(uri) # => #<Gem::Net::HTTP::Trace TRACE>
 #   res = Gem::Net::HTTP.start(hostname) do |http|
@@ -228,7 +228,7 @@ end
 # {HTTP method PATCH}[https://en.wikipedia.org/w/index.php?title=Hypertext_Transfer_Protocol#PATCH_method]:
 #
 #   require 'rubygems/net-http/lib/net/http'
-#   uri = URI('http://example.com')
+#   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   uri.path = '/posts'
 #   req = Gem::Net::HTTP::Patch.new(uri) # => #<Gem::Net::HTTP::Patch PATCH>
@@ -266,7 +266,7 @@ end
 # {WebDAV method PROPFIND}[http://www.webdav.org/specs/rfc4918.html#METHOD_PROPFIND]:
 #
 #   require 'rubygems/net-http/lib/net/http'
-#   uri = URI('http://example.com')
+#   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Propfind.new(uri) # => #<Gem::Net::HTTP::Propfind PROPFIND>
 #   res = Gem::Net::HTTP.start(hostname) do |http|
@@ -289,7 +289,7 @@ end
 # {WebDAV method PROPPATCH}[http://www.webdav.org/specs/rfc4918.html#METHOD_PROPPATCH]:
 #
 #   require 'rubygems/net-http/lib/net/http'
-#   uri = URI('http://example.com')
+#   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Proppatch.new(uri) # => #<Gem::Net::HTTP::Proppatch PROPPATCH>
 #   res = Gem::Net::HTTP.start(hostname) do |http|
@@ -312,7 +312,7 @@ end
 # {WebDAV method MKCOL}[http://www.webdav.org/specs/rfc4918.html#METHOD_MKCOL]:
 #
 #   require 'rubygems/net-http/lib/net/http'
-#   uri = URI('http://example.com')
+#   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Mkcol.new(uri) # => #<Gem::Net::HTTP::Mkcol MKCOL>
 #   res = Gem::Net::HTTP.start(hostname) do |http|
@@ -335,7 +335,7 @@ end
 # {WebDAV method COPY}[http://www.webdav.org/specs/rfc4918.html#METHOD_COPY]:
 #
 #   require 'rubygems/net-http/lib/net/http'
-#   uri = URI('http://example.com')
+#   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Copy.new(uri) # => #<Gem::Net::HTTP::Copy COPY>
 #   res = Gem::Net::HTTP.start(hostname) do |http|
@@ -358,7 +358,7 @@ end
 # {WebDAV method MOVE}[http://www.webdav.org/specs/rfc4918.html#METHOD_MOVE]:
 #
 #   require 'rubygems/net-http/lib/net/http'
-#   uri = URI('http://example.com')
+#   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Move.new(uri) # => #<Gem::Net::HTTP::Move MOVE>
 #   res = Gem::Net::HTTP.start(hostname) do |http|
@@ -381,7 +381,7 @@ end
 # {WebDAV method LOCK}[http://www.webdav.org/specs/rfc4918.html#METHOD_LOCK]:
 #
 #   require 'rubygems/net-http/lib/net/http'
-#   uri = URI('http://example.com')
+#   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Lock.new(uri) # => #<Gem::Net::HTTP::Lock LOCK>
 #   res = Gem::Net::HTTP.start(hostname) do |http|
@@ -404,7 +404,7 @@ end
 # {WebDAV method UNLOCK}[http://www.webdav.org/specs/rfc4918.html#METHOD_UNLOCK]:
 #
 #   require 'rubygems/net-http/lib/net/http'
-#   uri = URI('http://example.com')
+#   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Unlock.new(uri) # => #<Gem::Net::HTTP::Unlock UNLOCK>
 #   res = Gem::Net::HTTP.start(hostname) do |http|

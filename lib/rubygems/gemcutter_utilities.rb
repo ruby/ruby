@@ -93,8 +93,8 @@ module Gem::GemcutterUtilities
     end
 
     if allowed_push_host
-      allowed_host_uri = URI.parse(allowed_push_host)
-      host_uri         = URI.parse(self.host)
+      allowed_host_uri = Gem::URI.parse(allowed_push_host)
+      host_uri         = Gem::URI.parse(self.host)
 
       unless (host_uri.scheme == allowed_host_uri.scheme) && (host_uri.host == allowed_host_uri.host)
         alert_error "#{self.host.inspect} is not allowed by the gemspec, which only allows #{allowed_push_host.inspect}"
@@ -102,7 +102,7 @@ module Gem::GemcutterUtilities
       end
     end
 
-    uri = URI.parse "#{self.host}/#{path}"
+    uri = Gem::URI.parse "#{self.host}/#{path}"
     response = request_with_otp(method, uri, &block)
 
     if mfa_unauthorized?(response)
@@ -136,7 +136,7 @@ module Gem::GemcutterUtilities
                                     sign_in_host, scope: scope) do |request|
       request.basic_auth email, password
       request["OTP"] = otp if otp
-      request.body = URI.encode_www_form({ api_key: api_key }.merge(update_scope_params))
+      request.body = Gem::URI.encode_www_form({ api_key: api_key }.merge(update_scope_params))
     end
 
     with_response response do |_resp|
@@ -176,7 +176,7 @@ module Gem::GemcutterUtilities
                                     sign_in_host, credentials: credentials, scope: scope) do |request|
       request.basic_auth email, password
       request["OTP"] = otp if otp
-      request.body = URI.encode_www_form({ name: key_name }.merge(all_params))
+      request.body = Gem::URI.encode_www_form({ name: key_name }.merge(all_params))
     end
 
     with_response response do |resp|

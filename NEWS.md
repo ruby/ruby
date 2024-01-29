@@ -39,7 +39,7 @@ The following bundled gems are updated.
 * net-ftp 0.3.4
 * net-imap 0.4.9.1
 * net-smtp 0.4.0.1
-* rbs 3.4.2
+* rbs 3.4.3
 * typeprof 0.21.9
 * debug 1.9.1
 

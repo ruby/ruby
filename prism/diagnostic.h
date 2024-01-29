@@ -15,6 +15,24 @@
 #include <assert.h>
 
 /**
+ * The levels of errors generated during parsing.
+ */
+typedef enum {
+    /** For errors that cannot be recovered from. */
+    PM_ERROR_LEVEL_FATAL = 0
+} pm_error_level_t;
+
+/**
+ * The levels of warnings generated during parsing.
+ */
+typedef enum {
+    /** For warnings which should be emitted if $VERBOSE != nil. */
+    PM_WARNING_LEVEL_DEFAULT = 0,
+    /** For warnings which should be emitted if $VERBOSE == true. */
+    PM_WARNING_LEVEL_VERBOSE = 1
+} pm_warning_level_t;
+
+/**
  * This struct represents a diagnostic generated during parsing.
  *
  * @extends pm_list_node_t
@@ -35,6 +53,12 @@ typedef struct {
      * diagnostic is freed.
      */
     bool owned;
+
+    /**
+     * The level of the diagnostic, see `pm_error_level_t` and
+     * `pm_warning_level_t` for possible values.
+     */
+    uint8_t level;
 } pm_diagnostic_t;
 
 /**

@@ -29,7 +29,7 @@
                 │   │   │       ├── operator_loc: (1,7)-(1,8) = "="
                 │   │   │       └── value:
                 │   │   │           @ SymbolNode (location: (1,9)-(1,11))
-                │   │   │           ├── flags: ∅
+                │   │   │           ├── flags: forced_us_ascii_encoding
                 │   │   │           ├── opening_loc: (1,9)-(1,10) = ":"
                 │   │   │           ├── value_loc: (1,10)-(1,11) = "c"
                 │   │   │           ├── closing_loc: ∅
