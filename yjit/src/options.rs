@@ -245,7 +245,7 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
                         Err(err) => eprintln!("Failed to create {path}: {err}"),
                     }
                 }
-             }
+            }
         },
 
         ("dump-iseq-disasm", _) => unsafe {
