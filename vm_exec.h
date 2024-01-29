@@ -180,6 +180,9 @@ default:                        \
     if (val == Qundef && GET_CFP() != ec->cfp && (func = jit_compile(ec))) { \
         val = func(ec, ec->cfp); \
         RESTORE_REGS(); /* fix cfp for tailcall */ \
+        if (val == Qundef) { \
+            EXEC_EVENT_HOOK(ec, RUBY_INTERNAL_EVENT_JIT_SIDE_EXIT, ec->cfp->self, 0, 0, 0, Qundef); \
+        } \
         if (ec->tag->state) THROW_EXCEPTION(val); \
     } \
 } while (0)

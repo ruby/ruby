@@ -458,7 +458,11 @@ jit_exec(rb_execution_context_t *ec)
     rb_jit_func_t func = jit_compile(ec);
     if (func) {
         // Call the JIT code
-        return func(ec, ec->cfp);
+        VALUE val = func(ec, ec->cfp);
+        if (val == Qundef) {
+            EXEC_EVENT_HOOK(ec, RUBY_INTERNAL_EVENT_JIT_SIDE_EXIT, ec->cfp->self, 0, 0, 0, Qundef);
+        }
+        return val;
     }
     else {
         return Qundef;
