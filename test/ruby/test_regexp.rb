@@ -2039,7 +2039,7 @@ class TestRegexp < Test::Unit::TestCase
 
   def test_bug_20212 # [Bug #20212]
     regex = Regexp.new(
-      /\A((?=.*?[a-z])(?!.*--)[a-z\d]+[a-z\d-]*[a-z\d]+).((?=.*?[a-z])(?!.*--)[a-z\d]+[a-z\d-]*[a-z\d]+).((?=.*?[a-z])(?!.*--)[a-zd]+[a-zd-]*[a-zd]+).((?=.*?[a-z])(?!.*--)[a-zd]+[a-zd-]*[a-zd]+)\Z/x
+      /\A((?=.*?[a-z])(?!.*--)[a-z\d]+[a-z\d-]*[a-z\d]+).((?=.*?[a-z])(?!.*--)[a-z\d]+[a-z\d-]*[a-z\d]+).((?=.*?[a-z])(?!.*--)[a-z]+[a-z-]*[a-z]+).((?=.*?[a-z])(?!.*--)[a-z]+[a-z-]*[a-z]+)\Z/x
     )
     string = "www.google.com"
     100.times.each { assert(regex.match?(string)) }
