@@ -56,4 +56,5 @@ Gem::Specification.new do |spec|
   spec.required_ruby_version = ">= 2.5.0"
 
   spec.metadata["msys2_mingw_dependencies"] = "libffi"
+  spec.metadata["changelog_uri"] = "https://github.com/ruby/fiddle/releases"
 end
