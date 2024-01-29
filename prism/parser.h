@@ -259,6 +259,9 @@ typedef struct pm_parser pm_parser_t;
  * token that is understood by a parent context but not by the current context.
  */
 typedef enum {
+    /** a null context, used for returning a value from a function */
+    PM_CONTEXT_NONE = 0,
+
     /** a begin statement */
     PM_CONTEXT_BEGIN,
 

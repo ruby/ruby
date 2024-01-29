@@ -9,8 +9,8 @@ module Prism
     def test_format_errors
       assert_equal <<~ERROR, Debug.format_errors("<>", false)
         > 1 | <>
-            | ^ cannot parse the expression
-            |  ^ cannot parse the expression
+            | ^ unexpected '<', ignoring it
+            |  ^ unexpected '>', ignoring it
       ERROR
     end
   end

@@ -71,6 +71,8 @@ typedef struct {
  * * `PM_WARNING_LEVEL_VERBOSE` - Warnings that appear with `-w`, as in `ruby -w -c -e 'code'`.
  */
 static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
+    [PM_ERR_CANNOT_PARSE_EXPRESSION]            = { "cannot parse the expression", PM_ERROR_LEVEL_FATAL },
+
     // Errors
     [PM_ERR_ALIAS_ARGUMENT]                     = { "invalid argument being passed to `alias`; expected a bare word, symbol, constant, or global variable", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_AMPAMPEQ_MULTI_ASSIGN]              = { "unexpected `&&=` in a multiple assignment", PM_ERROR_LEVEL_FATAL },
@@ -106,7 +108,6 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_BLOCK_PARAM_PIPE_TERM]              = { "expected the block parameters to end with `|`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_BLOCK_TERM_BRACE]                   = { "expected a block beginning with `{` to end with `}`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_BLOCK_TERM_END]                     = { "expected a block beginning with `do` to end with `end`", PM_ERROR_LEVEL_FATAL },
-    [PM_ERR_CANNOT_PARSE_EXPRESSION]            = { "cannot parse the expression", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_CANNOT_PARSE_STRING_PART]           = { "cannot parse the string part", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_CASE_EXPRESSION_AFTER_CASE]         = { "expected an expression after `case`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_CASE_EXPRESSION_AFTER_WHEN]         = { "expected an expression after `when`", PM_ERROR_LEVEL_FATAL },
@@ -277,6 +278,8 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_UNARY_RECEIVER_BANG]                = { "expected a receiver for unary `!`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_UNARY_RECEIVER_MINUS]               = { "expected a receiver for unary `-`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_UNARY_RECEIVER_PLUS]                = { "expected a receiver for unary `+`", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_UNEXPECTED_TOKEN_CLOSE_CONTEXT]     = { "unexpected %s, assuming it is closing the parent %s", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_UNEXPECTED_TOKEN_IGNORE]            = { "unexpected %s, ignoring it", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_UNARY_RECEIVER_TILDE]               = { "expected a receiver for unary `~`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_UNTIL_TERM]                         = { "expected an `end` to close the `until` statement", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_VOID_EXPRESSION]                    = { "unexpected void value expression", PM_ERROR_LEVEL_FATAL },

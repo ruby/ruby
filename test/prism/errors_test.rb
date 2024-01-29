@@ -26,7 +26,8 @@ module Prism
       )
 
       assert_errors expected, "module Parent module end", [
-        ["expected a constant name after `module`", 20..20]
+        ["expected a constant name after `module`", 14..20],
+        ["unexpected 'end', assuming it is closing the parent module definition", 21..24]
       ]
     end
 
@@ -98,7 +99,8 @@ module Prism
       )
 
       assert_errors expected, "BEGIN { 1 + }", [
-        ["expected an expression after the operator", 11..11]
+        ["expected an expression after the operator", 10..11],
+        ["unexpected '}', assuming it is closing the parent 'BEGIN' block", 12..13]
       ]
     end
 
@@ -189,7 +191,7 @@ module Prism
     def test_unterminated_parenthesized_expression
       assert_errors expression('(1 + 2'), '(1 + 2', [
         ["expected a newline or semicolon after the statement", 6..6],
-        ["cannot parse the expression", 6..6],
+        ["unexpected end of file, assuming it is closing the parent top level context", 6..6],
         ["expected a matching `)`", 6..6]
       ]
     end
@@ -203,7 +205,8 @@ module Prism
     def test_unterminated_argument_expression
       assert_errors expression('a %'), 'a %', [
         ["invalid `%` token", 2..3],
-        ["expected an expression after the operator", 3..3],
+        ["expected an expression after the operator", 2..3],
+        ["unexpected end of file, assuming it is closing the parent top level context", 3..3]
       ]
     end
 
@@ -222,62 +225,62 @@ module Prism
     def test_1_2_3
       assert_errors expression("(1, 2, 3)"), "(1, 2, 3)", [
         ["expected a newline or semicolon after the statement", 2..2],
-        ["cannot parse the expression", 2..2],
+        ["unexpected ',', ignoring it", 2..3],
         ["expected a matching `)`", 2..2],
         ["expected a newline or semicolon after the statement", 2..2],
-        ["cannot parse the expression", 2..2],
+        ["unexpected ',', ignoring it", 2..3],
         ["expected a newline or semicolon after the statement", 5..5],
-        ["cannot parse the expression", 5..5],
+        ["unexpected ',', ignoring it", 5..6],
         ["expected a newline or semicolon after the statement", 8..8],
-        ["cannot parse the expression", 8..8]
+        ["unexpected ')', ignoring it", 8..9]
       ]
     end
 
     def test_return_1_2_3
       assert_error_messages "return(1, 2, 3)", [
         "expected a newline or semicolon after the statement",
-        "cannot parse the expression",
+        "unexpected ',', ignoring it",
         "expected a matching `)`",
         "expected a newline or semicolon after the statement",
-        "cannot parse the expression"
+        "unexpected ')', ignoring it"
       ]
     end
 
     def test_return_1
       assert_errors expression("return 1,;"), "return 1,;", [
-        ["expected an argument", 9..9]
+        ["expected an argument", 8..9]
       ]
     end
 
     def test_next_1_2_3
       assert_errors expression("next(1, 2, 3)"), "next(1, 2, 3)", [
         ["expected a newline or semicolon after the statement", 6..6],
-        ["cannot parse the expression", 6..6],
+        ["unexpected ',', ignoring it", 6..7],
         ["expected a matching `)`", 6..6],
         ["expected a newline or semicolon after the statement", 12..12],
-        ["cannot parse the expression", 12..12]
+        ["unexpected ')', ignoring it", 12..13]
       ]
     end
 
     def test_next_1
       assert_errors expression("next 1,;"), "next 1,;", [
-        ["expected an argument", 7..7]
+        ["expected an argument", 6..7]
       ]
     end
 
     def test_break_1_2_3
       assert_errors expression("break(1, 2, 3)"), "break(1, 2, 3)", [
         ["expected a newline or semicolon after the statement", 7..7],
-        ["cannot parse the expression", 7..7],
+        ["unexpected ',', ignoring it", 7..8],
         ["expected a matching `)`", 7..7],
         ["expected a newline or semicolon after the statement", 13..13],
-        ["cannot parse the expression", 13..13]
+        ["unexpected ')', ignoring it", 13..14]
       ]
     end
 
     def test_break_1
       assert_errors expression("break 1,;"), "break 1,;", [
-        ["expected an argument", 8..8]
+        ["expected an argument", 7..8]
       ]
     end
 
@@ -338,22 +341,22 @@ module Prism
         ["expected a matching `)`", 8..8],
         ["expected a `.` or `::` after the receiver in a method definition", 8..8],
         ["expected a delimiter to close the parameters", 9..9],
-        ["cannot parse the expression", 9..9],
-        ["cannot parse the expression", 11..11]
+        ["unexpected ')', ignoring it", 10..11],
+        ["unexpected '.', ignoring it", 11..12]
       ]
     end
 
     def test_def_with_empty_expression_receiver
       assert_errors expression("def ().a; end"), "def ().a; end", [
-        ["expected a receiver for the method definition", 5..5]
+        ["expected a receiver for the method definition", 4..5]
       ]
     end
 
     def test_block_beginning_with_brace_and_ending_with_end
       assert_error_messages "x.each { x end", [
         "expected a newline or semicolon after the statement",
-        "cannot parse the expression",
-        "cannot parse the expression",
+        "unexpected 'end', ignoring it",
+        "unexpected end of file, assuming it is closing the parent top level context",
         "expected a block beginning with `{` to end with `}`"
       ]
     end
@@ -401,7 +404,7 @@ module Prism
       assert_error_messages "foo(*bar and baz)", [
         "expected a `)` to close the arguments",
         "expected a newline or semicolon after the statement",
-        "cannot parse the expression"
+        "unexpected ')', ignoring it"
       ]
     end
 
@@ -1490,8 +1493,8 @@ module Prism
       assert_errors expression(source), source, [
         ["expected a `do` keyword or a `{` to open the lambda block", 3..3],
         ["expected a newline or semicolon after the statement", 7..7],
-        ["cannot parse the expression", 7..7],
-        ["expected a lambda block beginning with `do` to end with `end`", 7..7],
+        ["unexpected end of file, assuming it is closing the parent top level context", 7..7],
+        ["expected a lambda block beginning with `do` to end with `end`", 7..7]
       ]
     end
 
@@ -1546,10 +1549,11 @@ module Prism
 
     def test_while_endless_method
       source = "while def f = g do end"
+
       assert_errors expression(source), source, [
-        ['expected a predicate expression for the `while` statement', 22..22],
-        ['cannot parse the expression', 22..22],
-        ['expected an `end` to close the `while` statement', 22..22]
+        ["expected a predicate expression for the `while` statement", 22..22],
+        ["unexpected end of file, assuming it is closing the parent top level context", 22..22],
+        ["expected an `end` to close the `while` statement", 22..22]
       ]
     end
 
@@ -1558,13 +1562,12 @@ module Prism
         a in b + c
         a => b + c
       RUBY
-      message1 = 'expected a newline or semicolon after the statement'
-      message2 = 'cannot parse the expression'
+
       assert_errors expression(source), source, [
-        [message1, 6..6],
-        [message2, 6..6],
-        [message1, 17..17],
-        [message2, 17..17],
+        ["expected a newline or semicolon after the statement", 6..6],
+        ["unexpected '+', ignoring it", 7..8],
+        ["expected a newline or semicolon after the statement", 17..17],
+        ["unexpected '+', ignoring it", 18..19]
       ]
     end
 
@@ -1859,9 +1862,10 @@ module Prism
 
     def test_non_assoc_range
       source = '1....2'
+
       assert_errors expression(source), source, [
-        ['expected a newline or semicolon after the statement', 4..4],
-        ['cannot parse the expression', 4..4],
+        ["expected a newline or semicolon after the statement", 4..4],
+        ["unexpected '.', ignoring it", 4..5]
       ]
     end
 
@@ -1892,25 +1896,24 @@ module Prism
         undef x + 1
         undef x.z
       RUBY
-      message1 = 'expected a newline or semicolon after the statement'
-      message2 = 'cannot parse the expression'
+
       assert_errors expression(source), source, [
-        [message1, 9..9],
-        [message2, 9..9],
-        [message1, 23..23],
-        [message2, 23..23],
-        [message1, 39..39],
-        [message2, 39..39],
-        [message1, 57..57],
-        [message2, 57..57],
-        [message1, 71..71],
-        [message2, 71..71],
-        [message1, 87..87],
-        [message2, 87..87],
-        [message1, 97..97],
-        [message2, 97..97],
-        [message1, 109..109],
-        [message2, 109..109],
+        ["expected a newline or semicolon after the statement", 9..9],
+        ["unexpected '+', ignoring it", 10..11],
+        ["expected a newline or semicolon after the statement", 23..23],
+        ["unexpected '.', ignoring it", 23..24],
+        ["expected a newline or semicolon after the statement", 39..39],
+        ["unexpected '+', ignoring it", 40..41],
+        ["expected a newline or semicolon after the statement", 57..57],
+        ["unexpected '.', ignoring it", 57..58],
+        ["expected a newline or semicolon after the statement", 71..71],
+        ["unexpected '+', ignoring it", 72..73],
+        ["expected a newline or semicolon after the statement", 87..87],
+        ["unexpected '.', ignoring it", 87..88],
+        ["expected a newline or semicolon after the statement", 97..97],
+        ["unexpected '+', ignoring it", 98..99],
+        ["expected a newline or semicolon after the statement", 109..109],
+        ["unexpected '.', ignoring it", 109..110]
       ]
     end
 
@@ -1934,13 +1937,12 @@ module Prism
         ..1..
         ...1..
       RUBY
-      message1 = 'expected a newline or semicolon after the statement'
-      message2 =  'cannot parse the expression'
+
       assert_errors expression(source), source, [
-        [message1, 3..3],
-        [message2, 3..3],
-        [message1, 10..10],
-        [message2, 10..10],
+        ["expected a newline or semicolon after the statement", 3..3],
+        ["unexpected '..', ignoring it", 3..5],
+        ["expected a newline or semicolon after the statement", 10..10],
+        ["unexpected '..', ignoring it", 10..12]
       ]
     end
 
@@ -2047,21 +2049,20 @@ module Prism
         1 !~ 2 !~ 3
         1 <=> 2 <=> 3
       RUBY
-      message1 = 'expected a newline or semicolon after the statement'
-      message2 = 'cannot parse the expression'
+
       assert_errors expression(source), source, [
-        [message1, 6..6],
-        [message2, 6..6],
-        [message1, 18..18],
-        [message2, 18..18],
-        [message1, 31..31],
-        [message2, 31..31],
-        [message1, 44..44],
-        [message2, 44..44],
-        [message1, 56..56],
-        [message2, 56..56],
-        [message1, 69..69],
-        [message2, 69..69],
+        ["expected a newline or semicolon after the statement", 6..6],
+        ["unexpected '==', ignoring it", 7..9],
+        ["expected a newline or semicolon after the statement", 18..18],
+        ["unexpected '!=', ignoring it", 19..21],
+        ["expected a newline or semicolon after the statement", 31..31],
+        ["unexpected '===', ignoring it", 32..35],
+        ["expected a newline or semicolon after the statement", 44..44],
+        ["unexpected '=~', ignoring it", 45..47],
+        ["expected a newline or semicolon after the statement", 56..56],
+        ["unexpected '!~', ignoring it", 57..59],
+        ["expected a newline or semicolon after the statement", 69..69],
+        ["unexpected '<=>', ignoring it", 70..73]
       ]
     end
 

@@ -66,6 +66,11 @@ typedef struct {
  * of errors between the parser and the user.
  */
 typedef enum {
+    // This is a special error that we can potentially replace by others. For
+    // an example of how this is used, see parse_expression_prefix.
+    PM_ERR_CANNOT_PARSE_EXPRESSION,
+
+    // These are the error codes.
     PM_ERR_ALIAS_ARGUMENT,
     PM_ERR_AMPAMPEQ_MULTI_ASSIGN,
     PM_ERR_ARGUMENT_AFTER_BLOCK,
@@ -100,7 +105,6 @@ typedef enum {
     PM_ERR_BLOCK_PARAM_PIPE_TERM,
     PM_ERR_BLOCK_TERM_BRACE,
     PM_ERR_BLOCK_TERM_END,
-    PM_ERR_CANNOT_PARSE_EXPRESSION,
     PM_ERR_CANNOT_PARSE_STRING_PART,
     PM_ERR_CASE_EXPRESSION_AFTER_CASE,
     PM_ERR_CASE_EXPRESSION_AFTER_WHEN,
@@ -272,6 +276,8 @@ typedef enum {
     PM_ERR_UNARY_RECEIVER_MINUS,
     PM_ERR_UNARY_RECEIVER_PLUS,
     PM_ERR_UNARY_RECEIVER_TILDE,
+    PM_ERR_UNEXPECTED_TOKEN_CLOSE_CONTEXT,
+    PM_ERR_UNEXPECTED_TOKEN_IGNORE,
     PM_ERR_UNDEF_ARGUMENT,
     PM_ERR_UNTIL_TERM,
     PM_ERR_VOID_EXPRESSION,
@@ -280,13 +286,15 @@ typedef enum {
     PM_ERR_WRITE_TARGET_READONLY,
     PM_ERR_WRITE_TARGET_UNEXPECTED,
     PM_ERR_XSTRING_TERM,
+
+    // These are the warning codes.
     PM_WARN_AMBIGUOUS_FIRST_ARGUMENT_MINUS,
     PM_WARN_AMBIGUOUS_FIRST_ARGUMENT_PLUS,
     PM_WARN_AMBIGUOUS_PREFIX_STAR,
     PM_WARN_AMBIGUOUS_SLASH,
     PM_WARN_END_IN_METHOD,
 
-    /* This must be the last member. */
+    // This is the number of diagnostic codes.
     PM_DIAGNOSTIC_ID_LEN,
 } pm_diagnostic_id_t;
 

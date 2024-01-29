@@ -164,7 +164,7 @@ debug_state(pm_parser_t *parser) {
 
 PRISM_ATTRIBUTE_UNUSED static void
 debug_token(pm_token_t * token) {
-    fprintf(stderr, "%s: \"%.*s\"\n", pm_token_type_to_str(token->type), (int) (token->end - token->start), token->start);
+    fprintf(stderr, "%s: \"%.*s\"\n", pm_token_type_human(token->type), (int) (token->end - token->start), token->start);
 }
 
 #endif
@@ -6719,21 +6719,27 @@ context_terminator(pm_context_t context, pm_token_t *token) {
             return token->type == PM_TOKEN_BRACE_RIGHT;
         case PM_CONTEXT_PREDICATE:
             return token->type == PM_TOKEN_KEYWORD_THEN || token->type == PM_TOKEN_NEWLINE || token->type == PM_TOKEN_SEMICOLON;
+        case PM_CONTEXT_NONE:
+            return false;
     }
 
     return false;
 }
 
-static bool
-context_recoverable(pm_parser_t *parser, pm_token_t *token) {
+/**
+ * Returns the context that the given token is found to be terminating, or
+ * returns PM_CONTEXT_NONE.
+ */
+static pm_context_t
+context_recoverable(const pm_parser_t *parser, pm_token_t *token) {
     pm_context_node_t *context_node = parser->current_context;
 
     while (context_node != NULL) {
-        if (context_terminator(context_node->context, token)) return true;
+        if (context_terminator(context_node->context, token)) return context_node->context;
         context_node = context_node->prev;
     }
 
-    return false;
+    return PM_CONTEXT_NONE;
 }
 
 static bool
@@ -6761,7 +6767,7 @@ context_pop(pm_parser_t *parser) {
 }
 
 static bool
-context_p(pm_parser_t *parser, pm_context_t context) {
+context_p(const pm_parser_t *parser, pm_context_t context) {
     pm_context_node_t *context_node = parser->current_context;
 
     while (context_node != NULL) {
@@ -6773,7 +6779,7 @@ context_p(pm_parser_t *parser, pm_context_t context) {
 }
 
 static bool
-context_def_p(pm_parser_t *parser) {
+context_def_p(const pm_parser_t *parser) {
     pm_context_node_t *context_node = parser->current_context;
 
     while (context_node != NULL) {
@@ -6794,6 +6800,55 @@ context_def_p(pm_parser_t *parser) {
     }
 
     return false;
+}
+
+/**
+ * Returns a human readable string for the given context, used in error
+ * messages.
+ */
+static const char *
+context_human(pm_context_t context) {
+    switch (context) {
+        case PM_CONTEXT_NONE:
+            assert(false && "unreachable");
+            return "";
+        case PM_CONTEXT_BEGIN: return "begin statement";
+        case PM_CONTEXT_BLOCK_BRACES: return "'{'..'}' block";
+        case PM_CONTEXT_BLOCK_KEYWORDS: return "'do'..'end' block";
+        case PM_CONTEXT_CASE_WHEN: return "'when' clause";
+        case PM_CONTEXT_CASE_IN: return "'in' clause";
+        case PM_CONTEXT_CLASS: return "class definition";
+        case PM_CONTEXT_DEF: return "method definition";
+        case PM_CONTEXT_DEF_PARAMS: return "method parameters";
+        case PM_CONTEXT_DEFAULT_PARAMS: return "parameter default value";
+        case PM_CONTEXT_ELSE: return "'else' clause";
+        case PM_CONTEXT_ELSIF: return "'elsif' clause";
+        case PM_CONTEXT_EMBEXPR: return "embedded expression";
+        case PM_CONTEXT_ENSURE: return "'ensure' clause";
+        case PM_CONTEXT_ENSURE_DEF: return "'ensure' clause";
+        case PM_CONTEXT_FOR: return "for loop";
+        case PM_CONTEXT_FOR_INDEX: return "for loop index";
+        case PM_CONTEXT_IF: return "if statement";
+        case PM_CONTEXT_LAMBDA_BRACES: return "'{'..'}' lambda block";
+        case PM_CONTEXT_LAMBDA_DO_END: return "'do'..'end' lambda block";
+        case PM_CONTEXT_MAIN: return "top level context";
+        case PM_CONTEXT_MODULE: return "module definition";
+        case PM_CONTEXT_PARENS: return "parentheses";
+        case PM_CONTEXT_POSTEXE: return "'END' block";
+        case PM_CONTEXT_PREDICATE: return "predicate";
+        case PM_CONTEXT_PREEXE: return "'BEGIN' block";
+        case PM_CONTEXT_RESCUE_ELSE: return "'else' clause";
+        case PM_CONTEXT_RESCUE_ELSE_DEF: return "'else' clause";
+        case PM_CONTEXT_RESCUE: return "'rescue' clause";
+        case PM_CONTEXT_RESCUE_DEF: return "'rescue' clause";
+        case PM_CONTEXT_SCLASS: return "singleton class definition";
+        case PM_CONTEXT_UNLESS: return "unless statement";
+        case PM_CONTEXT_UNTIL: return "until statement";
+        case PM_CONTEXT_WHILE: return "while statement";
+    }
+
+    assert(false && "unreachable");
+    return "";
 }
 
 /******************************************************************************/
@@ -14177,7 +14232,7 @@ parse_strings(pm_parser_t *parser, pm_node_t *current) {
  * Parse an expression that begins with the previous node that we just lexed.
  */
 static inline pm_node_t *
-parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, bool accepts_command_call) {
+parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, bool accepts_command_call, pm_diagnostic_id_t diag_id) {
     switch (parser->current.type) {
         case PM_TOKEN_BRACKET_LEFT_ARRAY: {
             parser_lex(parser);
@@ -14595,30 +14650,30 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
             if ((binding_power == PM_BINDING_POWER_STATEMENT) && match1(parser, PM_TOKEN_COMMA)) {
                 node = parse_targets_validate(parser, node, PM_BINDING_POWER_INDEX);
-            }
-            else {
+            } else {
                 // Check if `it` is not going to be assigned.
                 switch (parser->current.type) {
-                  case PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL:
-                  case PM_TOKEN_AMPERSAND_EQUAL:
-                  case PM_TOKEN_CARET_EQUAL:
-                  case PM_TOKEN_EQUAL:
-                  case PM_TOKEN_GREATER_GREATER_EQUAL:
-                  case PM_TOKEN_LESS_LESS_EQUAL:
-                  case PM_TOKEN_MINUS_EQUAL:
-                  case PM_TOKEN_PARENTHESIS_RIGHT:
-                  case PM_TOKEN_PERCENT_EQUAL:
-                  case PM_TOKEN_PIPE_EQUAL:
-                  case PM_TOKEN_PIPE_PIPE_EQUAL:
-                  case PM_TOKEN_PLUS_EQUAL:
-                  case PM_TOKEN_SLASH_EQUAL:
-                  case PM_TOKEN_STAR_EQUAL:
-                  case PM_TOKEN_STAR_STAR_EQUAL:
-                    break;
-                  default:
-                    // Once we know it's neither a method call nor an assignment,
-                    // we can finally create `it` default parameter.
-                    node = pm_node_check_it(parser, node);
+                    case PM_TOKEN_AMPERSAND_AMPERSAND_EQUAL:
+                    case PM_TOKEN_AMPERSAND_EQUAL:
+                    case PM_TOKEN_CARET_EQUAL:
+                    case PM_TOKEN_EQUAL:
+                    case PM_TOKEN_GREATER_GREATER_EQUAL:
+                    case PM_TOKEN_LESS_LESS_EQUAL:
+                    case PM_TOKEN_MINUS_EQUAL:
+                    case PM_TOKEN_PARENTHESIS_RIGHT:
+                    case PM_TOKEN_PERCENT_EQUAL:
+                    case PM_TOKEN_PIPE_EQUAL:
+                    case PM_TOKEN_PIPE_PIPE_EQUAL:
+                    case PM_TOKEN_PLUS_EQUAL:
+                    case PM_TOKEN_SLASH_EQUAL:
+                    case PM_TOKEN_STAR_EQUAL:
+                    case PM_TOKEN_STAR_STAR_EQUAL:
+                        break;
+                    default:
+                        // Once we know it's neither a method call nor an
+                        // assignment, we can finally create `it` default
+                        // parameter.
+                        node = pm_node_check_it(parser, node);
                 }
             }
 
@@ -14656,6 +14711,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 // If we get here, then we tried to find something in the
                 // heredoc but couldn't actually parse anything, so we'll just
                 // return a missing node.
+                //
+                // parse_string_part handles its own errors, so there is no need
+                // for us to add one here.
                 node = (pm_node_t *) pm_missing_node_create(parser, parser->previous.start, parser->previous.end);
             } else if (PM_NODE_TYPE_P(part, PM_STRING_NODE) && match2(parser, PM_TOKEN_HEREDOC_END, PM_TOKEN_EOF)) {
                 // If we get here, then the part that we parsed was plain string
@@ -16301,6 +16359,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             // context of a multiple assignment. We enforce that here. We'll
             // still lex past it though and create a missing node place.
             if (binding_power != PM_BINDING_POWER_STATEMENT) {
+                pm_parser_err_previous(parser, diag_id);
                 return (pm_node_t *) pm_missing_node_create(parser, parser->previous.start, parser->previous.end);
             }
 
@@ -16487,12 +16546,34 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
 
             return parse_symbol(parser, &lex_mode, PM_LEX_STATE_END);
         }
-        default:
-            if (context_recoverable(parser, &parser->current)) {
+        default: {
+            pm_context_t recoverable = context_recoverable(parser, &parser->current);
+
+            if (recoverable != PM_CONTEXT_NONE) {
                 parser->recovering = true;
+
+                // If the given error is not the generic one, then we'll add it
+                // here because it will provide more context in addition to the
+                // recoverable error that we will also add.
+                if (diag_id != PM_ERR_CANNOT_PARSE_EXPRESSION) {
+                    pm_parser_err_previous(parser, diag_id);
+                }
+
+                // If we get here, then we are assuming this token is closing a
+                // parent context, so we'll indicate that to the user so that
+                // they know how we behaved.
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_UNEXPECTED_TOKEN_CLOSE_CONTEXT, pm_token_type_human(parser->current.type), context_human(recoverable));
+            } else if (diag_id == PM_ERR_CANNOT_PARSE_EXPRESSION) {
+                // We're going to make a special case here, because "cannot
+                // parse expression" is pretty generic, and we know here that we
+                // have an unexpected token.
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_UNEXPECTED_TOKEN_IGNORE, pm_token_type_human(parser->current.type));
+            } else {
+                pm_parser_err_previous(parser, diag_id);
             }
 
             return (pm_node_t *) pm_missing_node_create(parser, parser->previous.start, parser->previous.end);
+        }
     }
 }
 
@@ -17455,15 +17536,12 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
  */
 static pm_node_t *
 parse_expression(pm_parser_t *parser, pm_binding_power_t binding_power, bool accepts_command_call, pm_diagnostic_id_t diag_id) {
-    pm_token_t recovery = parser->previous;
-    pm_node_t *node = parse_expression_prefix(parser, binding_power, accepts_command_call);
+    pm_node_t *node = parse_expression_prefix(parser, binding_power, accepts_command_call, diag_id);
 
     switch (PM_NODE_TYPE(node)) {
         case PM_MISSING_NODE:
             // If we found a syntax error, then the type of node returned by
-            // parse_expression_prefix is going to be a missing node. In that
-            // case we need to add the error message to the parser's error list.
-            pm_parser_err(parser, recovery.end, recovery.end, diag_id);
+            // parse_expression_prefix is going to be a missing node.
             return node;
         case PM_PRE_EXECUTION_NODE:
         case PM_POST_EXECUTION_NODE:

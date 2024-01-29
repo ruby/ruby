@@ -19,7 +19,7 @@ pm_location_new(pm_parser_t *parser, const uint8_t *start, const uint8_t *end, V
 
 VALUE
 pm_token_new(pm_parser_t *parser, pm_token_t *token, rb_encoding *encoding, VALUE source) {
-    ID type = rb_intern(pm_token_type_to_str(token->type));
+    ID type = rb_intern(pm_token_type_name(token->type));
     VALUE location = pm_location_new(parser, token->start, token->end, source);
 
     VALUE argv[] = {
