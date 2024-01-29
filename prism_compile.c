@@ -2749,12 +2749,16 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         else if (!popped) {
             ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(orig_argc + 1));
         }
-
-        ADD_SEND_R(ret, &dummy_line_node, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
-        PM_POP_UNLESS_POPPED;
     }
-    else {
-        ADD_SEND_R(ret, &dummy_line_node, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
+
+    if ((flags & VM_CALL_KW_SPLAT) && (flags & VM_CALL_ARGS_BLOCKARG) && !(flags & VM_CALL_KW_SPLAT_MUT)) {
+        ADD_INSN(ret, &dummy_line_node, splatkw);
+    }
+
+    ADD_SEND_R(ret, &dummy_line_node, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
+
+    if (pm_node->flags & PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) {
+        PM_POP_UNLESS_POPPED;
     }
 
     if (call_node->base.flags & PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) {

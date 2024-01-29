@@ -827,6 +827,28 @@ module Prism
 
         o.bar(hello: "world")
       RUBY
+
+      # Test that AssocSplatNode is evaluated before BlockArgumentNode using
+      # the splatkw instruction
+      assert_prism_eval(<<~RUBY)
+        o = Struct.new(:ary) do
+          def to_hash
+            ary << :to_hash
+            {}
+          end
+
+          def to_proc
+            ary << :to_proc
+            -> {}
+          end
+
+          def t(...); end
+        end.new
+        o.ary = []
+
+        o.t(**o, &o)
+        o.ary
+      RUBY
     end
 
     def test_HashNode
