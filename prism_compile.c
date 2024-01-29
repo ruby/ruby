@@ -68,6 +68,13 @@ pm_iseq_new_with_opt(pm_scope_node_t *scope_node, pm_parser_t *parser, VALUE nam
                      int first_lineno, const rb_iseq_t *parent, int isolated_depth,
                      enum rb_iseq_type type, const rb_compile_option_t *option);
 
+static int
+pm_line_number(const pm_parser_t *parser, const pm_node_t *node)
+{
+    pm_line_column_t line_column = pm_newline_list_line_column(&parser->newline_list, node->location.start);
+    return (int) line_column.line;
+}
+
 static VALUE
 parse_integer(const pm_integer_node_t *node)
 {
@@ -3528,11 +3535,15 @@ pm_compile_rescue(rb_iseq_t *iseq, pm_begin_node_t *begin_node, LINK_ANCHOR *con
     LABEL *lcont = NEW_LABEL(lineno);
 
     pm_scope_node_t rescue_scope_node;
-    pm_scope_node_init((pm_node_t *)begin_node->rescue_clause, &rescue_scope_node, scope_node, parser);
-    rb_iseq_t *rescue_iseq = NEW_CHILD_ISEQ(&rescue_scope_node,
-            rb_str_concat(rb_str_new2("rescue in"),
-                ISEQ_BODY(iseq)->location.label),
-            ISEQ_TYPE_RESCUE, 1);
+    pm_scope_node_init((pm_node_t *) begin_node->rescue_clause, &rescue_scope_node, scope_node, parser);
+
+    rb_iseq_t *rescue_iseq = NEW_CHILD_ISEQ(
+        &rescue_scope_node,
+        rb_str_concat(rb_str_new2("rescue in "), ISEQ_BODY(iseq)->location.label),
+        ISEQ_TYPE_RESCUE,
+        pm_line_number(parser, (const pm_node_t *) begin_node->rescue_clause)
+    );
+
     pm_scope_node_destroy(&rescue_scope_node);
 
     lstart->rescued = LABEL_RESCUE_BEG;
@@ -3599,9 +3610,14 @@ pm_compile_ensure(rb_iseq_t *iseq, pm_begin_node_t *begin_node, LINK_ANCHOR *con
 
     pm_scope_node_t next_scope_node;
     pm_scope_node_init((pm_node_t *)begin_node->ensure_clause, &next_scope_node, scope_node, parser);
-    rb_iseq_t * child_iseq = NEW_CHILD_ISEQ(&next_scope_node,
-            rb_str_new2("ensure in"),
-            ISEQ_TYPE_ENSURE, lineno);
+
+    rb_iseq_t *child_iseq = NEW_CHILD_ISEQ(
+        &next_scope_node,
+        rb_str_concat(rb_str_new2("ensure in "), ISEQ_BODY(iseq)->location.label),
+        ISEQ_TYPE_ENSURE,
+        pm_line_number(parser, (const pm_node_t *) begin_node->ensure_clause)
+    );
+
     pm_scope_node_destroy(&next_scope_node);
 
     ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq;
@@ -6167,7 +6183,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // If we have statements to execute, we'll compile them here. Otherwise
         // we'll push nil onto the stack.
         if (cast->statements) {
-
             // We'll temporarily remove the end_label location from the iseq
             // when compiling the statements so that next/redo statements
             // inside the body will throw to the correct place instead of
@@ -6199,14 +6214,18 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_RESCUE_MODIFIER_NODE: {
-        pm_rescue_modifier_node_t *rescue_node = (pm_rescue_modifier_node_t *)node;
+        pm_rescue_modifier_node_t *cast = (pm_rescue_modifier_node_t *) node;
 
         pm_scope_node_t rescue_scope_node;
-        pm_scope_node_init((pm_node_t *)rescue_node, &rescue_scope_node, scope_node, parser);
-        rb_iseq_t *rescue_iseq = NEW_CHILD_ISEQ(&rescue_scope_node,
-                                                rb_str_concat(rb_str_new2("rescue in"),
-                                                              ISEQ_BODY(iseq)->location.label),
-                                                ISEQ_TYPE_RESCUE, 1);
+        pm_scope_node_init((pm_node_t *) cast, &rescue_scope_node, scope_node, parser);
+
+        rb_iseq_t *rescue_iseq = NEW_CHILD_ISEQ(
+            &rescue_scope_node,
+            rb_str_concat(rb_str_new2("rescue in "), ISEQ_BODY(iseq)->location.label),
+            ISEQ_TYPE_RESCUE,
+            pm_line_number(parser, cast->rescue_expression)
+        );
+
         pm_scope_node_destroy(&rescue_scope_node);
 
         LABEL *lstart = NEW_LABEL(lineno);
@@ -6216,7 +6235,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         lstart->rescued = LABEL_RESCUE_BEG;
         lend->rescued = LABEL_RESCUE_END;
         ADD_LABEL(ret, lstart);
-        PM_COMPILE_NOT_POPPED((pm_node_t *)rescue_node->expression);
+        PM_COMPILE_NOT_POPPED(cast->expression);
         ADD_LABEL(ret, lend);
         PM_NOP;
         ADD_LABEL(ret, lcont);
