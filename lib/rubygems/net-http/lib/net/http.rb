@@ -22,7 +22,7 @@
 
 require_relative '../../../net-protocol/lib/net/protocol'
 require_relative '../../../vendor/uri/lib/uri'
-require_relative '../../../resolv/lib/resolv'
+require_relative '../../../vendor/resolv/lib/resolv'
 autoload :OpenSSL, 'openssl'
 
 module Gem::Net   #:nodoc:
