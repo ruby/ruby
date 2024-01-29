@@ -2874,8 +2874,10 @@ pm_compile_destructured_param_locals(const pm_multi_target_node_t *node, st_tabl
         const pm_node_t *left = node->lefts.nodes[index];
 
         if (PM_NODE_TYPE_P(left, PM_REQUIRED_PARAMETER_NODE)) {
-            pm_insert_local_index(((const pm_required_parameter_node_t *) left)->name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
-            local_index++;
+            if (!PM_NODE_FLAG_P(left, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
+                pm_insert_local_index(((const pm_required_parameter_node_t *) left)->name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                local_index++;
+            }
         } else {
             RUBY_ASSERT(PM_NODE_TYPE_P(left, PM_MULTI_TARGET_NODE));
             local_index = pm_compile_destructured_param_locals((const pm_multi_target_node_t *) left, index_lookup_table, local_table_for_iseq, scope_node, local_index);
