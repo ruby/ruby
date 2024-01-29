@@ -32,7 +32,7 @@
 # method, which fetches the array of child nodes and then iterates over that
 # array using the user-supplied block.
 #
-#   require 'rubygems/tsort/lib/tsort'
+#   require 'rubygems/vendor/tsort/lib/tsort'
 #
 #   class Hash
 #     include Gem::TSort
@@ -52,7 +52,7 @@
 #
 # A very simple `make' like tool can be implemented as follows:
 #
-#   require 'rubygems/tsort/lib/tsort'
+#   require 'rubygems/vendor/tsort/lib/tsort'
 #
 #   class Make
 #     def initialize
