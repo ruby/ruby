@@ -9077,7 +9077,7 @@ proc_warmup(VALUE _)
  *
  *   /bin/bash: CONTRIBUTING.md COPYING COPYING.ja
  *
- * === Execution Shell on Windows
+ * ==== Execution Shell on Windows
  *
  * On Windows, the shell invoked is determined by environment variable
  * +RUBYSHELL+, if defined, or +COMSPEC+ otherwise; the entire string
