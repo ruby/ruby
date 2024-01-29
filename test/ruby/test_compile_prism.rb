@@ -2203,6 +2203,11 @@ end
       assert_prism_eval("Object.tap { || }")
       assert_prism_eval("[1].map { |num| num }")
       assert_prism_eval("[1].map { |a; b| b = 2; a + b}")
+
+      # Test block parameters with multiple _
+      assert_prism_eval(<<~RUBY)
+        [[1, 2, 3, 4, 5, 6]].map { |(_, _, _, _, _, _)| _ }
+      RUBY
     end
 
     def test_FowardingParameterNode
