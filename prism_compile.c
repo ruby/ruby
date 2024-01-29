@@ -737,7 +737,7 @@ pm_interpolated_node_compile(pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_
 
             if (PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
                 pm_string_node_t *string_node = (pm_string_node_t *)part;
-                VALUE string_value = parse_string(&string_node->unescaped, parser);
+                VALUE string_value = parse_string_encoded((pm_node_t *)string_node, &string_node->unescaped, parser);
                 if (RTEST(current_string)) {
                     current_string = rb_str_concat(current_string, string_value);
                 }
