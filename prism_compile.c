@@ -2697,8 +2697,13 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 {
     pm_parser_t *parser = scope_node->parser;
     pm_newline_list_t newline_list = parser->newline_list;
-    int lineno = (int)pm_newline_list_line_column(&newline_list, ((pm_node_t *)call_node)->location.start).line;
+
+    const uint8_t *call_start = call_node->message_loc.start;
+    if (call_start == NULL) call_start = call_node->base.location.start;
+
+    int lineno = (int) pm_newline_list_line_column(&newline_list, call_start).line;
     NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
+
     LABEL *else_label = NEW_LABEL(lineno);
     LABEL *end_label = NEW_LABEL(lineno);
 
