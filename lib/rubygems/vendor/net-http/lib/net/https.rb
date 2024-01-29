@@ -4,7 +4,7 @@
 = net/https -- SSL/TLS enhancement for Gem::Net::HTTP.
 
   This file has been merged with net/http.  There is no longer any need to
-  require 'rubygems/net-http/lib/net/https' to use HTTPS.
+  require 'rubygems/vendor/net-http/lib/net/https' to use HTTPS.
 
   See Gem::Net::HTTP for details on how to make HTTPS connections.
 

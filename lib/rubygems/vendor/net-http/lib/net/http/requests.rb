@@ -5,7 +5,7 @@
 # \Class for representing
 # {HTTP method GET}[https://en.wikipedia.org/w/index.php?title=Hypertext_Transfer_Protocol#GET_method]:
 #
-#   require 'rubygems/net-http/lib/net/http'
+#   require 'rubygems/vendor/net-http/lib/net/http'
 #   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Get.new(uri) # => #<Gem::Net::HTTP::Get GET>
@@ -37,7 +37,7 @@ end
 # \Class for representing
 # {HTTP method HEAD}[https://en.wikipedia.org/w/index.php?title=Hypertext_Transfer_Protocol#HEAD_method]:
 #
-#   require 'rubygems/net-http/lib/net/http'
+#   require 'rubygems/vendor/net-http/lib/net/http'
 #   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Head.new(uri) # => #<Gem::Net::HTTP::Head HEAD>
@@ -68,7 +68,7 @@ end
 # \Class for representing
 # {HTTP method POST}[https://en.wikipedia.org/w/index.php?title=Hypertext_Transfer_Protocol#POST_method]:
 #
-#   require 'rubygems/net-http/lib/net/http'
+#   require 'rubygems/vendor/net-http/lib/net/http'
 #   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   uri.path = '/posts'
@@ -103,7 +103,7 @@ end
 # \Class for representing
 # {HTTP method PUT}[https://en.wikipedia.org/w/index.php?title=Hypertext_Transfer_Protocol#PUT_method]:
 #
-#   require 'rubygems/net-http/lib/net/http'
+#   require 'rubygems/vendor/net-http/lib/net/http'
 #   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   uri.path = '/posts'
@@ -133,7 +133,7 @@ end
 # \Class for representing
 # {HTTP method DELETE}[https://en.wikipedia.org/w/index.php?title=Hypertext_Transfer_Protocol#DELETE_method]:
 #
-#   require 'rubygems/net-http/lib/net/http'
+#   require 'rubygems/vendor/net-http/lib/net/http'
 #   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   uri.path = '/posts/1'
@@ -165,7 +165,7 @@ end
 # \Class for representing
 # {HTTP method OPTIONS}[https://en.wikipedia.org/w/index.php?title=Hypertext_Transfer_Protocol#OPTIONS_method]:
 #
-#   require 'rubygems/net-http/lib/net/http'
+#   require 'rubygems/vendor/net-http/lib/net/http'
 #   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Options.new(uri) # => #<Gem::Net::HTTP::Options OPTIONS>
@@ -196,7 +196,7 @@ end
 # \Class for representing
 # {HTTP method TRACE}[https://en.wikipedia.org/w/index.php?title=Hypertext_Transfer_Protocol#TRACE_method]:
 #
-#   require 'rubygems/net-http/lib/net/http'
+#   require 'rubygems/vendor/net-http/lib/net/http'
 #   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Trace.new(uri) # => #<Gem::Net::HTTP::Trace TRACE>
@@ -227,7 +227,7 @@ end
 # \Class for representing
 # {HTTP method PATCH}[https://en.wikipedia.org/w/index.php?title=Hypertext_Transfer_Protocol#PATCH_method]:
 #
-#   require 'rubygems/net-http/lib/net/http'
+#   require 'rubygems/vendor/net-http/lib/net/http'
 #   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   uri.path = '/posts'
@@ -265,7 +265,7 @@ end
 # \Class for representing
 # {WebDAV method PROPFIND}[http://www.webdav.org/specs/rfc4918.html#METHOD_PROPFIND]:
 #
-#   require 'rubygems/net-http/lib/net/http'
+#   require 'rubygems/vendor/net-http/lib/net/http'
 #   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Propfind.new(uri) # => #<Gem::Net::HTTP::Propfind PROPFIND>
@@ -288,7 +288,7 @@ end
 # \Class for representing
 # {WebDAV method PROPPATCH}[http://www.webdav.org/specs/rfc4918.html#METHOD_PROPPATCH]:
 #
-#   require 'rubygems/net-http/lib/net/http'
+#   require 'rubygems/vendor/net-http/lib/net/http'
 #   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Proppatch.new(uri) # => #<Gem::Net::HTTP::Proppatch PROPPATCH>
@@ -311,7 +311,7 @@ end
 # \Class for representing
 # {WebDAV method MKCOL}[http://www.webdav.org/specs/rfc4918.html#METHOD_MKCOL]:
 #
-#   require 'rubygems/net-http/lib/net/http'
+#   require 'rubygems/vendor/net-http/lib/net/http'
 #   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Mkcol.new(uri) # => #<Gem::Net::HTTP::Mkcol MKCOL>
@@ -334,7 +334,7 @@ end
 # \Class for representing
 # {WebDAV method COPY}[http://www.webdav.org/specs/rfc4918.html#METHOD_COPY]:
 #
-#   require 'rubygems/net-http/lib/net/http'
+#   require 'rubygems/vendor/net-http/lib/net/http'
 #   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Copy.new(uri) # => #<Gem::Net::HTTP::Copy COPY>
@@ -357,7 +357,7 @@ end
 # \Class for representing
 # {WebDAV method MOVE}[http://www.webdav.org/specs/rfc4918.html#METHOD_MOVE]:
 #
-#   require 'rubygems/net-http/lib/net/http'
+#   require 'rubygems/vendor/net-http/lib/net/http'
 #   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Move.new(uri) # => #<Gem::Net::HTTP::Move MOVE>
@@ -380,7 +380,7 @@ end
 # \Class for representing
 # {WebDAV method LOCK}[http://www.webdav.org/specs/rfc4918.html#METHOD_LOCK]:
 #
-#   require 'rubygems/net-http/lib/net/http'
+#   require 'rubygems/vendor/net-http/lib/net/http'
 #   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Lock.new(uri) # => #<Gem::Net::HTTP::Lock LOCK>
@@ -403,7 +403,7 @@ end
 # \Class for representing
 # {WebDAV method UNLOCK}[http://www.webdav.org/specs/rfc4918.html#METHOD_UNLOCK]:
 #
-#   require 'rubygems/net-http/lib/net/http'
+#   require 'rubygems/vendor/net-http/lib/net/http'
 #   uri = Gem::URI('http://example.com')
 #   hostname = uri.hostname # => "example.com"
 #   req = Gem::Net::HTTP::Unlock.new(uri) # => #<Gem::Net::HTTP::Unlock UNLOCK>

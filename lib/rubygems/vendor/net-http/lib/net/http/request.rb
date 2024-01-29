@@ -8,7 +8,7 @@
 #
 # An request object may be created with either a Gem::URI or a string hostname:
 #
-#   require 'rubygems/net-http/lib/net/http'
+#   require 'rubygems/vendor/net-http/lib/net/http'
 #   uri = Gem::URI('https://jsonplaceholder.typicode.com/')
 #   req = Gem::Net::HTTP::Get.new(uri)          # => #<Gem::Net::HTTP::Get GET>
 #   req = Gem::Net::HTTP::Get.new(uri.hostname) # => #<Gem::Net::HTTP::Get GET>
