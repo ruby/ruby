@@ -83,11 +83,16 @@ module Prism
           elements = [*node.requireds]
           elements << node.rest if !node.rest.nil? && !node.rest.is_a?(ImplicitRestNode)
           elements.concat(node.posts)
+          visited = visit_all(elements)
+
+          if node.rest.is_a?(ImplicitRestNode)
+            visited[-1] = builder.match_with_trailing_comma(visited[-1], token(node.rest.location))
+          end
 
           if node.constant
-            builder.const_pattern(visit(node.constant), token(node.opening_loc), builder.array_pattern(nil, visit_all(elements), nil), token(node.closing_loc))
+            builder.const_pattern(visit(node.constant), token(node.opening_loc), builder.array_pattern(nil, visited, nil), token(node.closing_loc))
           else
-            builder.array_pattern(token(node.opening_loc), visit_all(elements), token(node.closing_loc))
+            builder.array_pattern(token(node.opening_loc), visited, token(node.closing_loc))
           end
         end
 
