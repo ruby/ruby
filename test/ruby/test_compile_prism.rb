@@ -1986,6 +1986,16 @@ end
         end
         test_prism_call_node
       CODE
+
+      # Test opt_str_freeze instruction when calling #freeze on a string literal
+      assert_prism_eval(<<~RUBY)
+        "foo".freeze.equal?("foo".freeze)
+      RUBY
+      # Test encoding in opt_str_freeze
+      assert_prism_eval(<<~'RUBY', raw: true)
+        # -*- coding: us-ascii -*-
+        "\xff".freeze.encoding
+      RUBY
     end
 
     def test_CallAndWriteNode

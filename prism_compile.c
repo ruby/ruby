@@ -3970,11 +3970,21 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         if (call_node->receiver == NULL) {
             PM_PUTSELF;
-        } else {
+            pm_compile_call(iseq, call_node, ret, src, popped, scope_node, method_id, start);
+        }
+        else if (method_id == idFreeze &&
+                PM_NODE_TYPE_P(call_node->receiver, PM_STRING_NODE) &&
+                call_node->arguments == NULL &&
+                call_node->block == NULL &&
+                ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
+            VALUE str = rb_fstring(parse_string_encoded(call_node->receiver, &((pm_string_node_t *)call_node->receiver)->unescaped, parser));
+            ADD_INSN2(ret, &dummy_line_node, opt_str_freeze, str, new_callinfo(iseq, idFreeze, 0, 0, NULL, FALSE));
+        }
+        else {
             PM_COMPILE_NOT_POPPED(call_node->receiver);
+            pm_compile_call(iseq, call_node, ret, src, popped, scope_node, method_id, start);
         }
 
-        pm_compile_call(iseq, call_node, ret, src, popped, scope_node, method_id, start);
         return;
       }
       case PM_CALL_AND_WRITE_NODE: {
