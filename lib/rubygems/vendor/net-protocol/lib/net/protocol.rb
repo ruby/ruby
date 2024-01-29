@@ -20,7 +20,7 @@
 #
 
 require 'socket'
-require_relative '../../../../timeout/lib/timeout'
+require_relative '../../../timeout/lib/timeout'
 require 'io/wait'
 
 module Gem::Net # :nodoc:

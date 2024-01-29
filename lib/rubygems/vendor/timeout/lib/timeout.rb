@@ -3,7 +3,7 @@
 #
 # == Synopsis
 #
-#   require 'rubygems/timeout/lib/timeout'
+#   require 'rubygems/vendor/timeout/lib/timeout'
 #   status = Gem::Timeout::timeout(5) {
 #     # Something that should be interrupted if it takes more than 5 seconds...
 #   }

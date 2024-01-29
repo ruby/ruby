@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require 'socket'
-require_relative '../../../timeout/lib/timeout'
+require_relative '../../timeout/lib/timeout'
 require 'io/wait'
 
 begin
