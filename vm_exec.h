@@ -179,7 +179,6 @@ default:                        \
     /* don't run tailcalls since that breaks FINISH */ \
     if (val == Qundef && GET_CFP() != ec->cfp && (func = jit_compile(ec))) { \
         val = func(ec, ec->cfp); \
-        RESTORE_REGS(); /* fix cfp for tailcall */ \
         if (ec->tag->state) THROW_EXCEPTION(val); \
     } \
 } while (0)
