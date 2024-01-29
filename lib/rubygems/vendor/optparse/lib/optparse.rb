@@ -73,7 +73,7 @@
 #
 # === Minimal example
 #
-#   require 'rubygems/optparse/lib/optparse'
+#   require 'rubygems/vendor/optparse/lib/optparse'
 #
 #   options = {}
 #   Gem::OptionParser.new do |parser|
@@ -92,7 +92,7 @@
 # Gem::OptionParser can be used to automatically generate help for the commands you
 # write:
 #
-#   require 'rubygems/optparse/lib/optparse'
+#   require 'rubygems/vendor/optparse/lib/optparse'
 #
 #   Options = Struct.new(:name)
 #
@@ -130,7 +130,7 @@
 # option name in all caps. If an option is used without the required argument,
 # an exception will be raised.
 #
-#   require 'rubygems/optparse/lib/optparse'
+#   require 'rubygems/vendor/optparse/lib/optparse'
 #
 #   options = {}
 #   Gem::OptionParser.new do |parser|
@@ -183,8 +183,8 @@
 # as a +Time+. If it succeeds, that time will be passed to the
 # handler block. Otherwise, an exception will be raised.
 #
-#   require 'rubygems/optparse/lib/optparse'
-#   require 'rubygems/optparse/lib/optparse/time'
+#   require 'rubygems/vendor/optparse/lib/optparse'
+#   require 'rubygems/vendor/optparse/lib/optparse/time'
 #   Gem::OptionParser.new do |parser|
 #     parser.on("-t", "--time [TIME]", Time, "Begin execution at given time") do |time|
 #       p time
@@ -206,7 +206,7 @@
 # It specifies which conversion block to call whenever a class is specified.
 # The example below uses it to fetch a +User+ object before the +on+ handler receives it.
 #
-#   require 'rubygems/optparse/lib/optparse'
+#   require 'rubygems/vendor/optparse/lib/optparse'
 #
 #   User = Struct.new(:id, :name)
 #
@@ -242,7 +242,7 @@
 #
 # The +into+ option of +order+, +parse+ and so on methods stores command line options into a Hash.
 #
-#   require 'rubygems/optparse/lib/optparse'
+#   require 'rubygems/vendor/optparse/lib/optparse'
 #
 #   options = {}
 #   Gem::OptionParser.new do |parser|
@@ -268,8 +268,8 @@
 # effect of specifying various options.  This is probably the best way to learn
 # the features of +optparse+.
 #
-#   require 'rubygems/optparse/lib/optparse'
-#   require 'rubygems/optparse/lib/optparse/time'
+#   require 'rubygems/vendor/optparse/lib/optparse'
+#   require 'rubygems/vendor/optparse/lib/optparse/time'
 #   require 'ostruct'
 #   require 'pp'
 #
@@ -1084,7 +1084,7 @@ XXX
     Switch::OptionalArgument.new do |pkg|
       if pkg
         begin
-          require 'rubygems/optparse/lib/optparse/version'
+          require 'rubygems/vendor/optparse/lib/optparse/version'
         rescue LoadError
         else
           show_version(*pkg.split(/,/)) or
