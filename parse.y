@@ -13991,31 +13991,7 @@ const_decl_path(struct parser_params *p, NODE **dest)
     NODE *n = *dest;
     if (!nd_type_p(n, NODE_CALL)) {
         const YYLTYPE *loc = &n->nd_loc;
-        VALUE path;
-        if (RNODE_CDECL(n)->nd_vid) {
-             path = rb_id2str(RNODE_CDECL(n)->nd_vid);
-        }
-        else {
-            n = RNODE_CDECL(n)->nd_else;
-            path = rb_ary_new();
-            for (; n && nd_type_p(n, NODE_COLON2); n = RNODE_COLON2(n)->nd_head) {
-                rb_ary_push(path, rb_id2str(RNODE_COLON2(n)->nd_mid));
-            }
-            if (n && nd_type_p(n, NODE_CONST)) {
-                // Const::Name
-                rb_ary_push(path, rb_id2str(RNODE_CONST(n)->nd_vid));
-            }
-            else if (n && nd_type_p(n, NODE_COLON3)) {
-                // ::Const::Name
-                rb_ary_push(path, rb_str_new(0, 0));
-            }
-            else {
-                // expression::Name
-                rb_ary_push(path, rb_str_new_cstr("..."));
-            }
-            path = rb_ary_join(rb_ary_reverse(path), rb_str_new_cstr("::"));
-            path = rb_fstring(path);
-        }
+        VALUE path = rb_node_const_decl_val(n);
         *dest = n = NEW_LIT(path, loc);
         RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(n)->nd_lit);
     }
