@@ -4786,7 +4786,7 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
 }
 
 static int
-compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped, int first_chunk)
+compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped, bool first_chunk)
 {
     const NODE *line_node = node;
 
@@ -4852,7 +4852,8 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
     if (stack_len) {                                            \
         if (first_chunk) ADD_INSN1(ret, line_node, newarray, INT2FIX(stack_len)); \
         else ADD_INSN1(ret, line_node, pushtoarray, INT2FIX(stack_len));     \
-        first_chunk = stack_len = 0;                            \
+        first_chunk = FALSE; \
+        stack_len = 0;                            \
     }
 
     while (node) {
@@ -4878,7 +4879,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
                 FLUSH_CHUNK;
                 if (first_chunk) {
                     ADD_INSN1(ret, line_node, duparray, ary);
-                    first_chunk = 0;
+                    first_chunk = FALSE;
                 }
                 else {
                     ADD_INSN1(ret, line_node, putobject, ary);
@@ -10173,7 +10174,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         CHECK(compile_super(iseq, ret, node, popped, type));
         break;
       case NODE_LIST:{
-        CHECK(compile_array(iseq, ret, node, popped, 1) >= 0);
+        CHECK(compile_array(iseq, ret, node, popped, TRUE) >= 0);
         break;
       }
       case NODE_ZLIST:{
@@ -10428,7 +10429,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
             CHECK(COMPILE(ret, "argscat head", RNODE_ARGSCAT(node)->nd_head));
             const NODE *body_node = RNODE_ARGSCAT(node)->nd_body;
             if (nd_type_p(body_node, NODE_LIST)) {
-                CHECK(compile_array(iseq, ret, body_node, popped, 0) >= 0);
+                CHECK(compile_array(iseq, ret, body_node, popped, FALSE) >= 0);
             }
             else {
                 CHECK(COMPILE(ret, "argscat body", body_node));
