@@ -1,6 +1,6 @@
 # Simple DSL implementation for Ripper code generation
 #
-# input: /*% ripper: stmts_add(stmts_new, void_stmt) %*/
+# input: /*% ripper: stmts_add!(stmts_new!, void_stmt!) %*/
 # output:
 #   VALUE v1, v2;
 #   v1 = dispatch0(stmts_new);
