@@ -70,6 +70,8 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 
 ## Implementation improvements
 
+* `Array#each` is rewritten in Ruby for better performance.
+
 ## JIT
 
 [Feature #18980]: https://bugs.ruby-lang.org/issues/18980
