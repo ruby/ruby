@@ -712,6 +712,16 @@ module Prism
 
         ("a""#{1}""b").frozen?
       CODE
+
+      # Test encoding of interpolated strings
+      assert_prism_eval(<<~'RUBY')
+        "#{"foo"}s".encoding
+      RUBY
+      assert_prism_eval(<<~'RUBY')
+        a = "foo"
+        b = "#{a}" << "Bar"
+        [a, b, b.encoding]
+      RUBY
     end
 
     def test_InterpolatedSymbolNode
