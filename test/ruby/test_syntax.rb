@@ -233,6 +233,7 @@ class TestSyntax < Test::Unit::TestCase
   def test_array_kwsplat_hash
     kw = {}
     h = {a: 1}
+    a = []
     assert_equal([], [**{}])
     assert_equal([], [**kw])
     assert_equal([h], [**h])
@@ -246,6 +247,20 @@ class TestSyntax < Test::Unit::TestCase
     assert_equal([1, {}], [1, {}])
     assert_equal([1, kw], [1, kw])
     assert_equal([1, h], [1, h])
+
+    assert_equal([], [*a, **{}])
+    assert_equal([], [*a, **kw])
+    assert_equal([h], [*a, **h])
+    assert_equal([{}], [*a, {}])
+    assert_equal([kw], [*a, kw])
+    assert_equal([h], [*a, h])
+
+    assert_equal([1], [1, *a, **{}])
+    assert_equal([1], [1, *a, **kw])
+    assert_equal([1, h], [1, *a, **h])
+    assert_equal([1, {}], [1, *a, {}])
+    assert_equal([1, kw], [1, *a, kw])
+    assert_equal([1, h], [1, *a, h])
 
     assert_equal([], [**kw, **kw])
     assert_equal([], [**kw, **{}, **kw])

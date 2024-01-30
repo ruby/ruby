@@ -462,6 +462,20 @@ newarraykwsplat
     }
 }
 
+/* push hash onto array unless the hash is empty (as empty keyword
+   splats should be ignored).
+ */
+DEFINE_INSN
+pushtoarraykwsplat
+()
+(VALUE ary, VALUE hash)
+(VALUE ary)
+{
+    if (!RHASH_EMPTY_P(hash)) {
+        rb_ary_push(ary, hash);
+    }
+}
+
 /* dup array */
 DEFINE_INSN
 duparray
