@@ -1011,6 +1011,7 @@ module Prism
       assert_prism_eval('if ..1; end')
       assert_prism_eval('if 1..; end')
       assert_prism_eval('if 1..2; end')
+      assert_prism_eval('if true or true; end');
     end
 
     def test_OrNode

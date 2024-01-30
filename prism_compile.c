@@ -495,7 +495,9 @@ pm_compile_logical(rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_node_t *cond,
             return;
     }
     if (!label->refcnt) {
-        PM_PUTNIL;
+        if (popped) {
+            PM_PUTNIL;
+        }
     }
     else {
         ADD_LABEL(seq, label);
