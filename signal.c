@@ -597,7 +597,7 @@ ruby_signal(int signum, sighandler_t handler)
 #endif
 
     sigemptyset(&sigact.sa_mask);
-#ifdef USE_SIGALTSTACK
+#if defined(USE_SIGALTSTACK) && !defined(__wasm__)
     if (handler == SIG_IGN || handler == SIG_DFL) {
         sigact.sa_handler = handler;
         sigact.sa_flags = 0;
