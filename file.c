@@ -5346,11 +5346,11 @@ test_check(int n, int argc, VALUE *argv)
  *      | <tt>'e'</tt> | Whether the entity is an existing entity. |
  *      | <tt>'f'</tt> | Whether the entity is an existing regular file. |
  *      | <tt>'g'</tt> | Whether the entity's setgid bit is set. |
- *      | <tt>'G'</tt> | Like <tt>'g'</tt>, but also tests whether the ownership is equal to the caller's. |
+ *      | <tt>'G'</tt> | Whether the entity's group ownership is equal to the caller's. |
  *      | <tt>'k'</tt> | Whether the entity's sticky bit is set. |
  *      | <tt>'l'</tt> | Whether the entity is a symbolic link. |
- *      | <tt>'o'</tt> | Whether the entity is owned by the caller's effective uid/gid. |
- *      | <tt>'O'</tt> | Like <tt>'o'</tt>, but uses the real uid/gid (not the effective uid/gid). |
+ *      | <tt>'o'</tt> | Whether the entity is owned by the caller's effective uid. |
+ *      | <tt>'O'</tt> | Like <tt>'o'</tt>, but uses the real uid (not the effective uid). |
  *      | <tt>'p'</tt> | Whether the entity is a FIFO device (named pipe). |
  *      | <tt>'r'</tt> | Whether the entity is readable by the caller's effecive uid/gid. |
  *      | <tt>'R'</tt> | Like <tt>'r'</tt>, but uses the real uid/gid (not the effective uid/gid). |
