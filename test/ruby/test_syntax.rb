@@ -381,6 +381,7 @@ class TestSyntax < Test::Unit::TestCase
     assert_syntax_error("def foo(var: var) var end", message)
     assert_syntax_error("def foo(var: bar(var)) var end", message)
     assert_syntax_error("def foo(var: bar {var}) var end", message)
+    assert_syntax_error("def foo(var: (1 in ^var)); end", message)
 
     o = Object.new
     assert_warn("") do
@@ -446,6 +447,7 @@ class TestSyntax < Test::Unit::TestCase
     assert_syntax_error("def foo(var = bar {var}) var end", message)
     assert_syntax_error("def foo(var = (def bar;end; var)) var end", message)
     assert_syntax_error("def foo(var = (def self.bar;end; var)) var end", message)
+    assert_syntax_error("def foo(var = (1 in ^var)); end", message)
 
     o = Object.new
     assert_warn("") do
@@ -1411,7 +1413,6 @@ eom
       "#{return}"
       raise((return; "should not raise"))
       begin raise; ensure return; end; self
-      begin raise; ensure return; end and self
       nil&defined?0--begin e=no_method_error(); return; 0;end
       return puts('ignored') #=> ignored
       BEGIN {return}

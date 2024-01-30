@@ -36,6 +36,44 @@ module Prism
     def to_dot
       DotVisitor.new.tap { |visitor| accept(visitor) }.to_dot
     end
+
+    # --------------------------------------------------------------------------
+    # :section: Node interface
+    # These methods are effectively abstract methods that must be implemented by
+    # the various subclasses of Node. They are here to make it easier to work
+    # with typecheckers.
+    # --------------------------------------------------------------------------
+
+    # Accepts a visitor and calls back into the specialized visit function.
+    def accept(visitor)
+      raise NoMethodError, "undefined method `accept' for #{inspect}"
+    end
+
+    # Returns an array of child nodes, including `nil`s in the place of optional
+    # nodes that were not present.
+    def child_nodes
+      raise NoMethodError, "undefined method `#{__method__}' for #{inspect}"
+    end
+
+    alias deconstruct child_nodes
+
+    # Returns an array of child nodes, excluding any `nil`s in the place of
+    # optional nodes that were not present.
+    def compact_child_nodes
+      raise NoMethodError, "undefined method `compact_child_nodes' for #{inspect}"
+    end
+
+    # Returns an array of child nodes and locations that could potentially have
+    # comments attached to them.
+    def comment_targets
+      raise NoMethodError, "undefined method `comment_targets' for #{inspect}"
+    end
+
+    # Returns a symbol symbolizing the type of node that this represents. This
+    # is particularly useful for case statements and array comparisons.
+    def type
+      raise NoMethodError, "undefined method `type' for #{inspect}"
+    end
   end
   <%- nodes.each do |node| -%>
 

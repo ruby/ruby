@@ -119,6 +119,7 @@ fn main() {
         .allowlist_function("rb_hash_new_with_size")
         .allowlist_function("rb_hash_resurrect")
         .allowlist_function("rb_hash_stlike_foreach")
+        .allowlist_function("rb_to_hash_type")
 
         // From include/ruby/st.h
         .allowlist_type("st_retval")
@@ -133,6 +134,7 @@ fn main() {
         .allowlist_function("rb_ary_new_capa")
         .allowlist_function("rb_ary_store")
         .allowlist_function("rb_ary_resurrect")
+        .allowlist_function("rb_ary_cat")
         .allowlist_function("rb_ary_clear")
         .allowlist_function("rb_ary_dup")
         .allowlist_function("rb_ary_push")
@@ -348,6 +350,7 @@ fn main() {
         .allowlist_function("rb_iseqw_to_iseq")
         .allowlist_function("rb_iseq_label")
         .allowlist_function("rb_iseq_line_no")
+        .allowlist_type("defined_type")
 
         // From builtin.h
         .allowlist_type("rb_builtin_function.*")
@@ -425,9 +428,9 @@ fn main() {
         .allowlist_function("rb_yarv_str_eql_internal")
         .allowlist_function("rb_str_neq_internal")
         .allowlist_function("rb_yarv_ary_entry_internal")
+        .allowlist_function("rb_yjit_ruby2_keywords_splat_p")
         .allowlist_function("rb_yjit_fix_div_fix")
         .allowlist_function("rb_yjit_fix_mod_fix")
-        .allowlist_function("rb_yjit_fix_mul_fix")
         .allowlist_function("rb_FL_TEST")
         .allowlist_function("rb_FL_TEST_RAW")
         .allowlist_function("rb_RB_TYPE_P")
@@ -446,6 +449,7 @@ fn main() {
         .allowlist_function("rb_obj_is_proc")
         .allowlist_function("rb_vm_base_ptr")
         .allowlist_function("rb_ec_stack_check")
+        .allowlist_function("rb_vm_top_self")
 
         // We define VALUE manually, don't import it
         .blocklist_type("VALUE")

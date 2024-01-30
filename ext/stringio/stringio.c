@@ -915,9 +915,6 @@ strio_extend(struct StringIO *ptr, long pos, long len)
 	if (pos > olen)
 	    MEMZERO(RSTRING_PTR(ptr->string) + olen, char, pos - olen);
     }
-    else {
-	rb_str_modify(ptr->string);
-    }
 }
 
 /*
@@ -1465,6 +1462,7 @@ strio_write(VALUE self, VALUE str)
     }
     else {
 	strio_extend(ptr, ptr->pos, len);
+	rb_str_modify(ptr->string);
 	memmove(RSTRING_PTR(ptr->string)+ptr->pos, RSTRING_PTR(str), len);
     }
     RB_GC_GUARD(str);

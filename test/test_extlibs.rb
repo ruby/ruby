@@ -34,14 +34,13 @@ class TestExtLibs < Test::Unit::TestCase
   end.flatten.compact
   excluded << '+' if excluded.empty?
   if windows?
-    excluded.map! {|i| i == '+' ? ['pty', 'syslog'] : i}
+    excluded.map! {|i| i == '+' ? ['pty'] : i}
     excluded.flatten!
   else
     excluded.map! {|i| i == '+' ? '*win32*' : i}
   end
   @excluded = excluded
 
-  check_existence "bigdecimal"
   check_existence "continuation"
   check_existence "coverage"
   check_existence "date"
@@ -59,7 +58,6 @@ class TestExtLibs < Test::Unit::TestCase
   check_existence "io/nonblock"
   check_existence "io/wait"
   check_existence "json"
-  check_existence "nkf"
   check_existence "objspace"
   check_existence "openssl", "this may be false positive, but should assert because rubygems requires this"
   check_existence "pathname"
@@ -70,7 +68,6 @@ class TestExtLibs < Test::Unit::TestCase
   check_existence "socket"
   check_existence "stringio"
   check_existence "strscan"
-  check_existence "syslog"
   check_existence "thread"
   check_existence "win32ole"
   check_existence "zlib", "this may be false positive, but should assert because rubygems requires this"

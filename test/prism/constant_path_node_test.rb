@@ -52,5 +52,16 @@ module Prism
       node = Prism.parse(source).value.statements.body.first
       assert_equal("Foo::Bar::Baz::Qux", node.lefts.first.full_name)
     end
+
+    def test_full_name_for_constant_path_with_stovetop_start
+      source = <<~RUBY
+        ::Foo:: # comment
+          Bar::Baz::
+            Qux, Something = [1, 2]
+      RUBY
+
+      node = Prism.parse(source).value.statements.body.first
+      assert_equal("::Foo::Bar::Baz::Qux", node.lefts.first.full_name)
+    end
   end
 end

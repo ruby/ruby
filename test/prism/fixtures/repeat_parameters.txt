@@ -1,0 +1,38 @@
+def foo(a, _)
+end
+
+def foo(a, _, _)
+end
+
+def foo(a, _, _, _b)
+end
+
+def foo(a, _, _, _b, _b)
+end
+
+def foo(a, (b, *_c, d), (e, *_c, f))
+end
+
+def foo(_a, _a, b, c)
+end
+
+def foo((a, *_b, c), (d, *_b, e))
+end
+
+def foo(_a = 1, _a = 2)
+end
+
+def foo(_a:, _a:)
+end
+
+def foo(_a: 1, _a: 2)
+end
+
+def foo(_a, **_a)
+end
+
+def foo(_a, &_a)
+end
+
+def foo(_a, *_a)
+end

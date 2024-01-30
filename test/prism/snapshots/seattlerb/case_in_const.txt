@@ -16,7 +16,7 @@
             │       │   @ StatementsNode (location: (3,2)-(3,4))
             │       │   └── body: (length: 1)
             │       │       └── @ SymbolNode (location: (3,2)-(3,4))
-            │       │           ├── flags: ∅
+            │       │           ├── flags: forced_us_ascii_encoding
             │       │           ├── opening_loc: (3,2)-(3,3) = ":"
             │       │           ├── value_loc: (3,3)-(3,4) = "b"
             │       │           ├── closing_loc: ∅

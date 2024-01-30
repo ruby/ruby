@@ -429,7 +429,7 @@ node_children(rb_ast_t *ast, const NODE *node)
       case NODE_RESCUE:
         return rb_ary_new_from_node_args(ast, 3, RNODE_RESCUE(node)->nd_head, RNODE_RESCUE(node)->nd_resq, RNODE_RESCUE(node)->nd_else);
       case NODE_RESBODY:
-        return rb_ary_new_from_node_args(ast, 3, RNODE_RESBODY(node)->nd_args, RNODE_RESBODY(node)->nd_body, RNODE_RESBODY(node)->nd_head);
+        return rb_ary_new_from_node_args(ast, 3, RNODE_RESBODY(node)->nd_args, RNODE_RESBODY(node)->nd_body, RNODE_RESBODY(node)->nd_next);
       case NODE_ENSURE:
         return rb_ary_new_from_node_args(ast, 2, RNODE_ENSURE(node)->nd_head, RNODE_ENSURE(node)->nd_ensr);
       case NODE_AND:
@@ -706,6 +706,8 @@ node_children(rb_ast_t *ast, const NODE *node)
         return rb_ary_new_from_args(1, rb_node_line_lineno_val(node));
       case NODE_FILE:
         return rb_ary_new_from_args(1, rb_node_file_path_val(node));
+      case NODE_ENCODING:
+        return rb_ary_new_from_args(1, rb_node_encoding_val(node));
       case NODE_ERROR:
         return rb_ary_new_from_node_args(ast, 0);
       case NODE_ARGS_AUX:

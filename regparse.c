@@ -478,7 +478,6 @@ typedef st_data_t HashDataType;   /* 1.6 st.h doesn't define st_data_t type */
 static int
 i_print_name_entry(HashDataType key_, HashDataType e_, HashDataType arg_)
 {
-  UChar* key = (UChar *)key_;
   NameEntry* e = (NameEntry *)e_;
   void* arg = (void *)arg_;
   int i;
@@ -764,10 +763,9 @@ names_clear(regex_t* reg)
 	e->back_refs = (int* )NULL;
       }
     }
-    if (IS_NOT_NULL(t->e)) {
-      xfree(t->e);
-      t->e = NULL;
-    }
+
+    xfree(t->e);
+    t->e = NULL;
     t->num = 0;
   }
   return 0;

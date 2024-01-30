@@ -161,6 +161,17 @@ pm_buffer_append_varsint(pm_buffer_t *buffer, int32_t value) {
 }
 
 /**
+ * Prepend the given string to the buffer.
+ */
+void
+pm_buffer_prepend_string(pm_buffer_t *buffer, const char *value, size_t length) {
+    size_t cursor = buffer->length;
+    pm_buffer_append_length(buffer, length);
+    memmove(buffer->value + length, buffer->value, cursor);
+    memcpy(buffer->value, value, length);
+}
+
+/**
  * Concatenate one buffer onto another.
  */
 void

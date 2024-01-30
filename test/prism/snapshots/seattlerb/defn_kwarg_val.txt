@@ -11,12 +11,14 @@
             │   @ ParametersNode (location: (1,6)-(1,12))
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (1,6)-(1,7))
+            │   │       ├── flags: ∅
             │   │       └── name: :a
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
             │   ├── posts: (length: 0)
             │   ├── keywords: (length: 1)
             │   │   └── @ OptionalKeywordParameterNode (location: (1,9)-(1,12))
+            │   │       ├── flags: ∅
             │   │       ├── name: :b
             │   │       ├── name_loc: (1,9)-(1,11) = "b:"
             │   │       └── value:

@@ -1395,14 +1395,14 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
     (((allow_envopt) || !envopt) ? (void)0 :                            \
      rb_raise(rb_eRuntimeError, "invalid switch in RUBYOPT: --" name))
 # define need_argument(name, s, needs_arg, next_arg)                    \
-    ((*(s) ? !*++(s) : (next_arg) && (!argc || !((s) = argv[1]) || (--argc, ++argv, 0))) && (needs_arg) ? \
+    ((*(s) ? !*++(s) : (next_arg) && (argc <= 1 || !((s) = argv[1]) || (--argc, ++argv, 0))) && (needs_arg) ? \
      rb_raise(rb_eRuntimeError, "missing argument for --" name)         \
      : (void)0)
 # define is_option_with_arg(name, allow_hyphen, allow_envopt)           \
     is_option_with_optarg(name, allow_hyphen, allow_envopt, Qtrue, Qtrue)
 # define is_option_with_optarg(name, allow_hyphen, allow_envopt, needs_arg, next_arg) \
     (strncmp((name), s, n = sizeof(name) - 1) == 0 && is_option_end(s[n], (allow_hyphen)) && \
-     (s[n] != '-' || s[n+1]) ?                                          \
+     (s[n] != '-' || (s[n] && s[n+1])) ?                                \
      (check_envopt(name, (allow_envopt)), s += n,                       \
       need_argument(name, s, needs_arg, next_arg), 1) : 0)
 
@@ -2467,7 +2467,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
                 pm_options_filepath_set(&options, RSTRING_PTR(opt->script_name));
             }
 
-            iseq = rb_iseq_new_main_prism(&input, &options, path);
+            VALUE optimize = dump & DUMP_BIT(insns_without_opt) ? Qfalse : Qnil;
+            iseq = rb_iseq_new_main_prism(&input, &options, opt->script_name, path, optimize);
             ruby_opt_init(opt);
 
             pm_string_free(&input);
@@ -2527,7 +2528,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 static void
 warn_cr_in_shebang(const char *str, long len)
 {
-    if (str[len-1] == '\n' && str[len-2] == '\r') {
+    if (len > 1 && str[len-1] == '\n' && str[len-2] == '\r') {
         rb_warn("shebang line ending with \\r may cause problems");
     }
 }

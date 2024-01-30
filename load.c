@@ -747,7 +747,7 @@ load_iseq_eval(rb_execution_context_t *ec, VALUE fname)
             pm_parser_t parser;
             pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), &options);
 
-            iseq = rb_iseq_new_main_prism(&input, &options, fname);
+            iseq = rb_iseq_new_main_prism(&input, &options, fname, fname, Qnil);
 
             pm_string_free(&input);
             pm_options_free(&options);
@@ -883,9 +883,8 @@ rb_load_protect(VALUE fname, int wrap, int *pstate)
  *  LoadError will be raised.
  *
  *  If the optional _wrap_ parameter is +true+, the loaded script will
- *  be executed under an anonymous module, protecting the calling
- *  program's global namespace.  If the optional _wrap_ parameter is a
- *  module, the loaded script will be executed under the given module.
+ *  be executed under an anonymous module. If the optional _wrap_ parameter
+ *  is a module, the loaded script will be executed under the given module.
  *  In no circumstance will any local variables in the loaded file be
  *  propagated to the loading environment.
  */

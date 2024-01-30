@@ -4,8 +4,8 @@
     @ StatementsNode (location: (1,0)-(1,17))
     └── body: (length: 1)
         └── @ DefNode (location: (1,0)-(1,17))
-            ├── name: :"!@"
-            ├── name_loc: (1,4)-(1,6) = "!@"
+            ├── name: :!
+            ├── name_loc: (1,4)-(1,5) = "!"
             ├── receiver: ∅
             ├── parameters: ∅
             ├── body:

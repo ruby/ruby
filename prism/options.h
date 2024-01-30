@@ -25,9 +25,9 @@ typedef struct pm_options_scope {
 } pm_options_scope_t;
 
 /**
- * The version of prism that we should be parsing with. This is used to allow
- * consumers to specify which behavior they want in case they need to parse
- * exactly as a specific version of CRuby.
+ * The version of Ruby syntax that we should be parsing with. This is used to
+ * allow consumers to specify which behavior they want in case they need to
+ * parse in the same way as a specific version of CRuby would have.
  */
 typedef enum {
     /** The current version of prism. */
@@ -64,7 +64,8 @@ typedef struct {
     /**
      * The scopes surrounding the code that is being parsed. For most parses
      * this will be NULL, but for evals it will be the locals that are in scope
-     * surrounding the eval.
+     * surrounding the eval. Scopes are ordered from the outermost scope to the
+     * innermost one.
      */
     pm_options_scope_t *scopes;
 

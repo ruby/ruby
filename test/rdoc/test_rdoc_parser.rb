@@ -151,6 +151,20 @@ class TestRDocParser < RDoc::TestCase
     File.unlink readme_ext
   end
 
+  def test_can_parse_modeline_c
+    readme_inc = File.join Dir.tmpdir, "README.inc.#{$$}"
+
+    File.open readme_inc, 'w' do |io|
+      io.puts "/* README.inc -  -*- c -*- created at: Mon Aug 7 16:45:54 JST 1995 */"
+      io.puts
+      io.puts "/* This document explains how to make extension libraries for Ruby. */"
+    end
+
+    assert_equal RDoc::Parser::C, @RP.can_parse(readme_inc)
+  ensure
+    File.unlink readme_inc
+  end
+
   ##
   # Selenium hides a .jar file using a .txt extension.
 

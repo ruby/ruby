@@ -33,29 +33,22 @@ Socket:: Access underlying OS socket implementations
 
 == Libraries
 
-Abbrev:: Calculates a set of unique abbreviations for a given set of strings
-Base64:: Support for encoding and decoding binary data using a Base64 representation
 Benchmark:: Provides methods to measure and report the time used to execute code
 Bundler:: Manage your Ruby application's gem dependencies
 CGI:: Support for the Common Gateway Interface protocol
-CSV:: Provides an interface to read and write CSV files and data
 Delegator:: Provides three abilities to delegate method calls to an object
 DidYouMean:: "Did you mean?" experience in Ruby
-DRb:: Distributed object system for Ruby
 English:: Provides references to special global variables with less cryptic names
 ERB:: An easy to use but powerful templating system for Ruby
 ErrorHighlight:: Highlight error location in your code
 FileUtils:: Several file utility methods for copying, moving, removing, etc
 Find:: This module supports top-down traversal of a set of file paths
 Forwardable:: Provides delegation of specified methods to a designated object
-GetoptLong:: Parse command line options similar to the GNU C getopt_long()
 IPAddr:: Provides methods to manipulate IPv4 and IPv6 IP addresses
 IRB:: Interactive Ruby command-line tool for REPL (Read Eval Print Loop)
 OptionParser:: Ruby-oriented class for command-line option analysis
 Logger:: Provides a simple logging utility for outputting messages
-Mutex_m:: Mixin to extend objects to be handled like a Mutex
 Net::HTTP:: HTTP client api for Ruby
-Observable:: Provides a mechanism for publish/subscribe pattern in Ruby
 Open3:: Provides access to stdin, stdout and stderr when running other programs
 OpenStruct:: Class to build custom data structures, similar to a Hash
 OpenURI:: An easy-to-use wrapper for Net::HTTP, Net::HTTPS and Net::FTP
@@ -66,9 +59,7 @@ PStore:: Implements a file based persistence mechanism based on a Hash
 Readline:: Wrapper for Readline extencion and Reline
 Reline:: GNU Readline and Editline by pure Ruby implementation.
 Resolv::  Thread-aware DNS resolver library in Ruby
-resolv-replace.rb:: Replace Socket DNS with Resolv
 RDoc:: Produces HTML and command-line documentation for Ruby
-Rinda:: The Linda distributed computing paradigm in Ruby
 SecureRandom:: Interface for secure random number generator
 Set:: Provides a class to deal with collections of unordered, unique values
 Shellwords:: Manipulates strings with word parsing rules of UNIX Bourne shell
@@ -85,7 +76,6 @@ WeakRef:: Allows a referenced object to be garbage-collected
 
 == Extensions
 
-BigDecimal:: Provides arbitrary-precision floating point decimal arithmetic
 Date:: A subclass of Object includes Comparable module for handling dates
 DateTime:: Subclass of Date to handling dates, hours, minutes, seconds, offsets
 Digest:: Provides a framework for message digest libraries
@@ -94,13 +84,11 @@ Fcntl:: Loads constants defined in the OS fcntl.h C header file
 Fiddle:: A libffi wrapper for Ruby
 IO:: Extensions for Ruby IO class, including #wait, #nonblock and ::console
 JSON:: Implements Javascript Object Notation for Ruby
-NKF:: Ruby extension for Network Kanji Filter
 OpenSSL:: Provides SSL, TLS and general purpose cryptography for Ruby
 Pathname:: Representation of the name of a file or directory on the filesystem
 Psych:: A YAML parser and emitter for Ruby
 StringIO:: Pseudo I/O on String objects
 StringScanner:: Provides lexical scanning operations on a String
-Syslog:: Ruby interface for the POSIX system logging facility
 WIN32OLE:: Provides an interface for OLE Automation in Ruby
 Zlib:: Ruby interface for the zlib compression/decompression library
 
@@ -130,3 +118,15 @@ RBS:: RBS is a language to describe the structure of Ruby programs
 TypeProf:: A type analysis tool for Ruby code based on abstract interpretation
 DEBUGGER__:: Debugging functionality for Ruby
 Racc:: A LALR(1) parser generator written in Ruby.
+Mutex_m:: Mixin to extend objects to be handled like a Mutex
+GetoptLong:: Parse command line options similar to the GNU C getopt_long()
+Base64:: Support for encoding and decoding binary data using a Base64 representation
+BigDecimal:: Provides arbitrary-precision floating point decimal arithmetic
+Observable:: Provides a mechanism for publish/subscribe pattern in Ruby
+Abbrev:: Calculates a set of unique abbreviations for a given set of strings
+resolv-replace.rb:: Replace Socket DNS with Resolv
+Rinda:: The Linda distributed computing paradigm in Ruby
+DRb:: Distributed object system for Ruby
+NKF:: Ruby extension for Network Kanji Filter
+Syslog:: Ruby interface for the POSIX system logging facility
+CSV:: Provides an interface to read and write CSV files and data

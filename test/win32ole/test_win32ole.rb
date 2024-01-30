@@ -34,23 +34,23 @@ if defined?(WIN32OLE)
       assert_equal(1, @dict2.item("one"))
     end
     def test_non_exist_property
-      assert_raise(WIN32OLERuntimeError) {
+      assert_raise(WIN32OLE::RuntimeError) {
         @dict1.unknown_property = 1
       }
     end
 
     def test_raise_message
-      exc = assert_raise(WIN32OLERuntimeError) {
+      exc = assert_raise(WIN32OLE::RuntimeError) {
         @dict1.add
       }
       assert_match(/^\(in OLE method `add': \)/, exc.message) #`
 
-      exc = assert_raise(WIN32OLERuntimeError) {
+      exc = assert_raise(WIN32OLE::RuntimeError) {
         @dict1._invoke(1, [], [])
       }
       assert_match(/^\(in OLE method `<dispatch id:1>': \)/, exc.message) #`
 
-      exc = assert_raise(WIN32OLERuntimeError) {
+      exc = assert_raise(WIN32OLE::RuntimeError) {
         @dict1.compareMode = -1
       }
       assert_match(/^\(in setting property `compareMode': \)/, exc.message) #`
@@ -184,7 +184,7 @@ if defined?(WIN32OLE)
     def test_s_new_from_clsid
       shell = WIN32OLE.new("{13709620-C279-11CE-A49E-444553540000}")
       assert_instance_of(WIN32OLE, shell)
-      exc = assert_raise(WIN32OLERuntimeError) {
+      exc = assert_raise(WIN32OLE::RuntimeError) {
         WIN32OLE.new("{000}")
       }
       assert_match(/unknown OLE server: `\{000\}'/, exc.message) #`
@@ -341,13 +341,13 @@ if defined?(WIN32OLE)
       fso = WIN32OLE.new("Scripting.FileSystemObject")
       fname = fso.getTempName
       begin
-        obj = WIN32OLE_VARIANT.new([0x3042].pack("U*").force_encoding("UTF-8"))
+        obj = WIN32OLE::Variant.new([0x3042].pack("U*").force_encoding("UTF-8"))
         WIN32OLE.codepage = WIN32OLE::CP_UTF8
         assert_equal("\xE3\x81\x82".force_encoding("CP65001"), obj.value)
 
         begin
           WIN32OLE.codepage = 932 # Windows-31J
-        rescue WIN32OLERuntimeError
+        rescue WIN32OLE::RuntimeError
         end
         if (WIN32OLE.codepage == 932)
           assert_equal("\x82\xA0".force_encoding("CP932"), obj.value)
@@ -355,7 +355,7 @@ if defined?(WIN32OLE)
 
         begin
           WIN32OLE.codepage = 20932 # MS EUC-JP
-        rescue WIN32OLERuntimeError
+        rescue WIN32OLE::RuntimeError
         end
         if (WIN32OLE.codepage == 20932)
           assert_equal("\xA4\xA2".force_encoding("CP20932"), obj.value)
@@ -378,7 +378,7 @@ if defined?(WIN32OLE)
         # This test fail if codepage 20932 (euc) is not installed.
         begin
           WIN32OLE.codepage = 20932
-        rescue WIN32OLERuntimeError
+        rescue WIN32OLE::RuntimeError
         end
         if (WIN32OLE.codepage == 20932)
           WIN32OLE.codepage = cp
@@ -405,7 +405,7 @@ if defined?(WIN32OLE)
     def test_cp51932
       cp = WIN32OLE.codepage
       begin
-        obj = WIN32OLE_VARIANT.new([0x3042].pack("U*").force_encoding("UTF-8"))
+        obj = WIN32OLE::Variant.new([0x3042].pack("U*").force_encoding("UTF-8"))
         begin
           WIN32OLE.codepage = 51932
         rescue
@@ -426,13 +426,13 @@ if defined?(WIN32OLE)
       begin
         begin
           WIN32OLE.locale = 1041
-        rescue WIN32OLERuntimeError
+        rescue WIN32OLE::RuntimeError
           STDERR.puts("\n#{__FILE__}:#{__LINE__}:#{self.class.name}.test_s_locale_set is skipped(Japanese locale is not installed)")
           return
         end
         assert_equal(1041, WIN32OLE.locale)
         WIN32OLE.locale = WIN32OLE::LOCALE_SYSTEM_DEFAULT
-        assert_raise(WIN32OLERuntimeError) {
+        assert_raise(WIN32OLE::RuntimeError) {
           WIN32OLE.locale = 111
         }
         assert_equal(WIN32OLE::LOCALE_SYSTEM_DEFAULT, WIN32OLE.locale)
@@ -445,13 +445,13 @@ if defined?(WIN32OLE)
       begin
         begin
           WIN32OLE.locale = 0x0411
-        rescue WIN32OLERuntimeError
+        rescue WIN32OLE::RuntimeError
         end
         if WIN32OLE.locale == 0x0411
-          obj = WIN32OLE_VARIANT.new("\\100,000", WIN32OLE::VARIANT::VT_CY)
+          obj = WIN32OLE::Variant.new("\\100,000", WIN32OLE::VARIANT::VT_CY)
           assert_equal("100000", obj.value)
-          assert_raise(WIN32OLERuntimeError) {
-            obj = WIN32OLE_VARIANT.new("$100.000", WIN32OLE::VARIANT::VT_CY)
+          assert_raise(WIN32OLE::RuntimeError) {
+            obj = WIN32OLE::Variant.new("$100.000", WIN32OLE::VARIANT::VT_CY)
           }
         else
           STDERR.puts("\n#{__FILE__}:#{__LINE__}:#{self.class.name}.test_s_locale_change is skipped(Japanese locale is not installed)")
@@ -459,10 +459,10 @@ if defined?(WIN32OLE)
 
         begin
           WIN32OLE.locale = 1033
-        rescue WIN32OLERuntimeError
+        rescue WIN32OLE::RuntimeError
         end
         if WIN32OLE.locale == 1033
-          obj = WIN32OLE_VARIANT.new("$100,000", WIN32OLE::VARIANT::VT_CY)
+          obj = WIN32OLE::Variant.new("$100,000", WIN32OLE::VARIANT::VT_CY)
           assert_equal("100000", obj.value)
         else
           STDERR.puts("\n#{__FILE__}:#{__LINE__}:#{self.class.name}.test_s_locale_change is skipped(US English locale is not installed)")

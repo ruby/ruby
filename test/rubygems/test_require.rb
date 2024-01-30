@@ -489,6 +489,17 @@ class TestGemRequire < Gem::TestCase
     assert_equal %w[default-3.0], loaded_spec_names
   end
 
+  def test_normal_gem_does_not_shadow_default_gem
+    default_gem_spec = new_default_spec("foo", "2.0", nil, "foo.rb")
+    install_default_gems(default_gem_spec)
+
+    normal_gem_spec = util_spec("fake-foo", "3.0", nil, "lib/foo.rb")
+    install_specs(normal_gem_spec)
+
+    assert_require "foo"
+    assert_equal %w[foo-2.0], loaded_spec_names
+  end
+
   def test_normal_gems_with_overridden_load_error_message
     normal_gem_spec = util_spec("normal", "3.0", nil, "lib/normal/gem.rb")
 
@@ -527,6 +538,65 @@ class TestGemRequire < Gem::TestCase
 
     assert_require "default/gem"
     assert_equal %w[default-3.0.0.rc2], loaded_spec_names
+  end
+
+  def test_default_gem_with_unresolved_gems_depending_on_it
+    my_http_old = util_spec "my-http", "0.1.1", nil, "lib/my/http.rb"
+    install_gem my_http_old
+
+    my_http_default = new_default_spec "my-http", "0.3.0", nil, "my/http.rb"
+    install_default_gems my_http_default
+
+    faraday_1 = util_spec "faraday", "1", { "my-http" => ">= 0" }
+    install_gem faraday_1
+
+    faraday_2 = util_spec "faraday", "2", { "my-http" => ">= 0" }
+    install_gem faraday_2
+
+    chef = util_spec "chef", "1", { "faraday" => [">= 1", "< 3"] }, "lib/chef.rb"
+    install_gem chef
+
+    assert_require "chef"
+    assert_require "my/http"
+  end
+
+  def test_default_gem_required_circulary_with_unresolved_gems_depending_on_it
+    my_http_old = util_spec "my-http", "0.1.1", nil, "lib/my/http.rb"
+    install_gem my_http_old
+
+    my_http_default = new_default_spec "my-http", "0.3.0", nil, "my/http.rb"
+    my_http_default_path = File.join(@tempdir, "default_gems", "lib", "my/http.rb")
+    install_default_gems my_http_default
+    File.write(my_http_default_path, 'require "my/http"')
+
+    faraday_1 = util_spec "faraday", "1", { "my-http" => ">= 0" }
+    install_gem faraday_1
+
+    faraday_2 = util_spec "faraday", "2", { "my-http" => ">= 0" }
+    install_gem faraday_2
+
+    chef = util_spec "chef", "1", { "faraday" => [">= 1", "< 3"] }, "lib/chef.rb"
+    install_gem chef
+
+    assert_require "chef"
+
+    out, err = capture_output do
+      assert_require "my/http"
+    end
+
+    assert_empty out
+
+    circular_require_warning = false
+
+    err_lines = err.split("\n").reject do |line|
+      if line.include?("circular require")
+        circular_require_warning = true
+      elsif circular_require_warning # ignore backtrace lines for circular require warning
+        circular_require_warning = line.start_with?(/[\s]/)
+      end
+    end
+
+    assert_empty err_lines
   end
 
   def loaded_spec_names

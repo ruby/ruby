@@ -109,6 +109,7 @@ jobs:
           - test_task: 'yjit-bench'
             configure: '--enable-yjit=dev'
             yjit_bench_opts: '--yjit-stats'
+            continue-on-test_task: true
 
     env:
       GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
@@ -169,11 +170,11 @@ jobs:
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'rbs'
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
           PRECHECK_BUNDLED_GEMS: 'no'
           SYNTAX_SUGGEST_TIMEOUT: '5'
           YJIT_BINDGEN_DIFF_OPTS: '--exit-code'
-        continue-on-error: ${{ matrix.test_task == 'yjit-bench' }}
+        continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
       - name: Show ${{ github.event.pull_request.base.ref }} GitHub URL for yjit-bench comparison
         run: echo "https://github.com/${BASE_REPO}/commit/${BASE_SHA}"

@@ -160,6 +160,7 @@ enum node_type {
     NODE_ERROR,
     NODE_LINE,
     NODE_FILE,
+    NODE_ENCODING,
     NODE_RIPPER,
     NODE_RIPPER_VALUES,
     NODE_LAST
@@ -336,16 +337,15 @@ typedef struct RNode_RESCUE {
 typedef struct RNode_RESBODY {
     NODE node;
 
-    struct RNode *nd_head;
-    struct RNode *nd_body;
     struct RNode *nd_args;
+    struct RNode *nd_body;
+    struct RNode *nd_next;
 } rb_node_resbody_t;
 
 typedef struct RNode_ENSURE {
     NODE node;
 
     struct RNode *nd_head;
-    struct RNode *nd_resq; /* Maybe not used other than reduce_nodes */
     struct RNode *nd_ensr;
 } rb_node_ensure_t;
 
@@ -1005,6 +1005,11 @@ typedef struct RNode_FILE {
     struct rb_parser_string *path;
 } rb_node_file_t;
 
+typedef struct RNode_ENCODING {
+    NODE node;
+    rb_encoding *enc;
+} rb_node_encoding_t;
+
 typedef struct RNode_ERROR {
     NODE node;
 } rb_node_error_t;
@@ -1121,6 +1126,7 @@ typedef struct RNode_ERROR {
 #define RNODE_FNDPTN(node) ((struct RNode_FNDPTN *)(node))
 #define RNODE_LINE(node) ((struct RNode_LINE *)(node))
 #define RNODE_FILE(node) ((struct RNode_FILE *)(node))
+#define RNODE_ENCODING(node) ((struct RNode_ENCODING *)(node))
 
 #ifdef RIPPER
 typedef struct RNode_RIPPER {
@@ -1194,14 +1200,6 @@ typedef struct rb_imemo_tmpbuf_struct rb_imemo_tmpbuf_t;
 
 #ifdef UNIVERSAL_PARSER
 typedef struct rb_parser_config_struct {
-    /*
-     * Reference counter.
-     *   This is needed because both parser and ast refer
-     *   same config pointer.
-     *   We can remove this, once decuple parser and ast from Ruby GC.
-     */
-    int counter;
-
     /* Memory */
     void *(*malloc)(size_t size);
     void *(*calloc)(size_t number, size_t size);
@@ -1425,8 +1423,8 @@ typedef struct rb_parser_config_struct {
     VALUE qtrue;
     VALUE qfalse;
     VALUE qundef;
-    VALUE eArgError;
-    VALUE mRubyVMFrozenCore;
+    VALUE (*eArgError)(void);
+    VALUE (*mRubyVMFrozenCore)(void);
     int (*long2int)(long);
     int (*special_const_p)(VALUE);
     int (*builtin_type)(VALUE);
@@ -1447,10 +1445,8 @@ void rb_ruby_parser_free(void *ptr);
 rb_ast_t* rb_ruby_parser_compile_string(rb_parser_t *p, const char *f, VALUE s, int line);
 
 #ifdef UNIVERSAL_PARSER
-rb_parser_config_t *rb_ruby_parser_config_new(void *(*malloc)(size_t size));
-void rb_ruby_parser_config_free(rb_parser_config_t *config);
-rb_parser_t *rb_ruby_parser_allocate(rb_parser_config_t *config);
-rb_parser_t *rb_ruby_parser_new(rb_parser_config_t *config);
+rb_parser_t *rb_ruby_parser_allocate(const rb_parser_config_t *config);
+rb_parser_t *rb_ruby_parser_new(const rb_parser_config_t *config);
 #endif
 
 long rb_parser_string_length(rb_parser_string_t *str);

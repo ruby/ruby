@@ -9,7 +9,7 @@
             │   └── @ AssocNode (location: (2,0)-(2,8))
             │       ├── key:
             │       │   @ SymbolNode (location: (2,0)-(2,3))
-            │       │   ├── flags: ∅
+            │       │   ├── flags: forced_us_ascii_encoding
             │       │   ├── opening_loc: (2,0)-(2,1) = ":"
             │       │   ├── value_loc: (2,1)-(2,3) = "s1"
             │       │   ├── closing_loc: ∅

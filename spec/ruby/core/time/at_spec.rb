@@ -32,10 +32,12 @@ describe "Time.at" do
       t2.nsec.should == t.nsec
     end
 
-    describe "passed BigDecimal" do
-      it "doesn't round input value" do
-        require 'bigdecimal'
-        Time.at(BigDecimal('1.1')).to_f.should == 1.1
+    ruby_version_is ""..."3.4" do
+      describe "passed BigDecimal" do
+        it "doesn't round input value" do
+          require 'bigdecimal'
+          Time.at(BigDecimal('1.1')).to_f.should == 1.1
+        end
       end
     end
 

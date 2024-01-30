@@ -17,6 +17,7 @@
         │   │   ├── keyword_rest: ∅
         │   │   └── block:
         │   │       @ BlockParameterNode (location: (1,8)-(1,9))
+        │   │       ├── flags: ∅
         │   │       ├── name: ∅
         │   │       ├── name_loc: ∅
         │   │       └── operator_loc: (1,8)-(1,9) = "&"
@@ -52,6 +53,7 @@
             │   @ ParametersNode (location: (5,8)-(5,12))
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (5,8)-(5,9))
+            │   │       ├── flags: ∅
             │   │       └── name: :a
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅
@@ -60,6 +62,7 @@
             │   ├── keyword_rest: ∅
             │   └── block:
             │       @ BlockParameterNode (location: (5,11)-(5,12))
+            │       ├── flags: ∅
             │       ├── name: ∅
             │       ├── name_loc: ∅
             │       └── operator_loc: (5,11)-(5,12) = "&"

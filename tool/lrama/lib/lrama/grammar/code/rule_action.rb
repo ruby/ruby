@@ -22,7 +22,7 @@ module Lrama
         # For the semantic action of original rule:
         #
         # "Rule"                class: keyword_class { $1 } tSTRING { $2 + $3 } keyword_end { $class = $1 + $keyword_end }
-        # "Position in grammar"                   $1     $2      $3          $4          $5                             $6
+        # "Position in grammar"                   $1     $2      $3          $4          $5
         # "Index for yyvsp"                       -4     -3      -2          -1           0
         #
         #

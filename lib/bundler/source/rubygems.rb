@@ -349,9 +349,9 @@ module Bundler
       def normalize_uri(uri)
         uri = URINormalizer.normalize_suffix(uri.to_s)
         require_relative "../vendored_uri"
-        uri = Bundler::URI(uri)
+        uri = Gem::URI(uri)
         raise ArgumentError, "The source must be an absolute URI. For example:\n" \
-          "source 'https://rubygems.org'" if !uri.absolute? || (uri.is_a?(Bundler::URI::HTTP) && uri.host.nil?)
+          "source 'https://rubygems.org'" if !uri.absolute? || (uri.is_a?(Gem::URI::HTTP) && uri.host.nil?)
         uri
       end
 

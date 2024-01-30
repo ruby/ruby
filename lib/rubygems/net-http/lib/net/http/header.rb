@@ -782,7 +782,7 @@ module Gem::Net::HTTPHeader
   # The resulting request is suitable for HTTP request +POST+ or +PUT+.
   #
   # Argument +params+ must be suitable for use as argument +enum+ to
-  # {URI.encode_www_form}[https://docs.ruby-lang.org/en/master/URI.html#method-c-encode_www_form].
+  # {Gem::URI.encode_www_form}[https://docs.ruby-lang.org/en/master/Gem::URI.html#method-c-encode_www_form].
   #
   # With only argument +params+ given,
   # sets the body to a URL-encoded string with the default separator <tt>'&'</tt>:
@@ -810,7 +810,7 @@ module Gem::Net::HTTPHeader
   #
   # Gem::Net::HTTPHeader#form_data= is an alias for Gem::Net::HTTPHeader#set_form_data.
   def set_form_data(params, sep = '&')
-    query = URI.encode_www_form(params)
+    query = Gem::URI.encode_www_form(params)
     query.gsub!(/&/, sep) if sep != '&'
     self.body = query
     self.content_type = 'application/x-www-form-urlencoded'

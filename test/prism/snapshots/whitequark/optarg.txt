@@ -12,6 +12,7 @@
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (1,6)-(1,13))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :foo
         │   │   │       ├── name_loc: (1,6)-(1,9) = "foo"
         │   │   │       ├── operator_loc: (1,10)-(1,11) = "="
@@ -41,6 +42,7 @@
             │   ├── requireds: (length: 0)
             │   ├── optionals: (length: 2)
             │   │   ├── @ OptionalParameterNode (location: (3,6)-(3,11))
+            │   │   │   ├── flags: ∅
             │   │   │   ├── name: :foo
             │   │   │   ├── name_loc: (3,6)-(3,9) = "foo"
             │   │   │   ├── operator_loc: (3,9)-(3,10) = "="
@@ -48,6 +50,7 @@
             │   │   │       @ IntegerNode (location: (3,10)-(3,11))
             │   │   │       └── flags: decimal
             │   │   └── @ OptionalParameterNode (location: (3,13)-(3,18))
+            │   │       ├── flags: ∅
             │   │       ├── name: :bar
             │   │       ├── name_loc: (3,13)-(3,16) = "bar"
             │   │       ├── operator_loc: (3,16)-(3,17) = "="

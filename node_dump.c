@@ -351,7 +351,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         F_NODE(nd_args, RNODE_RESBODY, "rescue exceptions");
         F_NODE(nd_body, RNODE_RESBODY, "rescue clause");
         LAST_NODE;
-        F_NODE(nd_head, RNODE_RESBODY, "next rescue clause");
+        F_NODE(nd_next, RNODE_RESBODY, "next rescue clause");
         return;
 
       case NODE_ENSURE:
@@ -1148,6 +1148,13 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("example: __FILE__");
         F_VALUE(path, rb_node_file_path_val(node), "path");
         return;
+
+      case NODE_ENCODING:
+        ANN("encoding");
+        ANN("format: [enc]");
+        ANN("example: __ENCODING__");
+        F_VALUE(enc, rb_node_encoding_val(node), "enc");
+        break;
 
       case NODE_ERROR:
         ANN("Broken input recovered by Error Tolerant mode");

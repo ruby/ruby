@@ -11,6 +11,7 @@
         │   │   @ ParametersNode (location: (1,6)-(1,9))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (1,6)-(1,9))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :foo
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -35,8 +36,10 @@
             │   @ ParametersNode (location: (3,6)-(3,14))
             │   ├── requireds: (length: 2)
             │   │   ├── @ RequiredParameterNode (location: (3,6)-(3,9))
+            │   │   │   ├── flags: ∅
             │   │   │   └── name: :foo
             │   │   └── @ RequiredParameterNode (location: (3,11)-(3,14))
+            │   │       ├── flags: ∅
             │   │       └── name: :bar
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅

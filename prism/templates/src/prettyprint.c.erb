@@ -40,7 +40,7 @@ static inline void
 prettyprint_location(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm_location_t *location) {
     pm_line_column_t start = pm_newline_list_line_column(&parser->newline_list, location->start);
     pm_line_column_t end = pm_newline_list_line_column(&parser->newline_list, location->end);
-    pm_buffer_append_format(output_buffer, "(%lu,%lu)-(%lu,%lu)", (unsigned long) (start.line + 1), (unsigned long) start.column, (unsigned long) (end.line + 1), (unsigned long) end.column);
+    pm_buffer_append_format(output_buffer, "(%lu,%lu)-(%lu,%lu)", (unsigned long) start.line, (unsigned long) start.column, (unsigned long) end.line, (unsigned long) end.column);
 }
 
 static inline void
@@ -152,8 +152,10 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                     prettyprint_source(output_buffer, location->start, (size_t) (location->end - location->start));
                     pm_buffer_append_string(output_buffer, "\"\n", 2);
                 }
-            <%- when Prism::UInt8Field, Prism::UInt32Field -%>
-                pm_buffer_append_format(output_buffer, " %d\n", cast-><%= field.name %>);
+            <%- when Prism::UInt8Field -%>
+                pm_buffer_append_format(output_buffer, " %" PRIu8 "\n", cast-><%= field.name %>);
+            <%- when Prism::UInt32Field -%>
+                pm_buffer_append_format(output_buffer, " %" PRIu32 "\n", cast-><%= field.name %>);
             <%- when Prism::FlagsField -%>
                 bool found = false;
                 <%- found = flags.find { |flag| flag.name == field.kind }.tap { |found| raise "Expected to find #{field.kind}" unless found } -%>

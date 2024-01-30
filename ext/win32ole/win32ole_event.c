@@ -1,9 +1,9 @@
 #include "win32ole.h"
 
 /*
- * Document-class: WIN32OLE_EVENT
+ * Document-class: WIN32OLE::Event
  *
- *   <code>WIN32OLE_EVENT</code> objects controls OLE event.
+ *   +WIN32OLE::Event+ objects controls OLE event.
  */
 
 RUBY_EXTERN void rb_write_error_str(VALUE mesg);
@@ -974,13 +974,13 @@ ev_advise(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_EVENT.new(ole, event) #=> WIN32OLE_EVENT object.
+ *     new(ole, event) #=> WIN32OLE::Event object.
  *
  *  Returns OLE event object.
  *  The first argument specifies WIN32OLE object.
  *  The second argument specifies OLE event name.
  *     ie = WIN32OLE.new('InternetExplorer.Application')
- *     ev = WIN32OLE_EVENT.new(ie, 'DWebBrowserEvents')
+ *     ev = WIN32OLE::Event.new(ie, 'DWebBrowserEvents')
  */
 static VALUE
 fev_initialize(int argc, VALUE *argv, VALUE self)
@@ -1004,7 +1004,7 @@ ole_msg_loop(void)
 
 /*
  *  call-seq:
- *     WIN32OLE_EVENT.message_loop
+ *     message_loop
  *
  *  Translates and dispatches Windows message.
  */
@@ -1052,7 +1052,7 @@ ev_on_event(int argc, VALUE *argv, VALUE self, VALUE is_ary_arg)
 
 /*
  *  call-seq:
- *     WIN32OLE_EVENT#on_event([event]){...}
+ *     on_event([event]){...}
  *
  *  Defines the callback event.
  *  If argument is omitted, this method defines the callback of all events.
@@ -1061,12 +1061,12 @@ ev_on_event(int argc, VALUE *argv, VALUE self, VALUE is_ary_arg)
  *  use `return' or :return.
  *
  *    ie = WIN32OLE.new('InternetExplorer.Application')
- *    ev = WIN32OLE_EVENT.new(ie)
+ *    ev = WIN32OLE::Event.new(ie)
  *    ev.on_event("NavigateComplete") {|url| puts url}
  *    ev.on_event() {|ev, *args| puts "#{ev} fired"}
  *
  *    ev.on_event("BeforeNavigate2") {|*args|
- *      ...
+ *      # ...
  *      # set true to BeforeNavigate reference argument `Cancel'.
  *      # Cancel is 7-th argument of BeforeNavigate,
  *      # so you can use 6 as key of hash instead of 'Cancel'.
@@ -1075,7 +1075,7 @@ ev_on_event(int argc, VALUE *argv, VALUE self, VALUE is_ary_arg)
  *      {:Cancel => true}  # or {'Cancel' => true} or {6 => true}
  *    }
  *
- *    ev.on_event(...) {|*args|
+ *    ev.on_event(event_name) {|*args|
  *      {:return => 1, :xxx => yyy}
  *    }
  */
@@ -1087,14 +1087,14 @@ fev_on_event(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_EVENT#on_event_with_outargs([event]){...}
+ *     on_event_with_outargs([event]){...}
  *
  *  Defines the callback of event.
  *  If you want modify argument in callback,
- *  you could use this method instead of WIN32OLE_EVENT#on_event.
+ *  you could use this method instead of WIN32OLE::Event#on_event.
  *
  *    ie = WIN32OLE.new('InternetExplorer.Application')
- *    ev = WIN32OLE_EVENT.new(ie)
+ *    ev = WIN32OLE::Event.new(ie)
  *    ev.on_event_with_outargs('BeforeNavigate2') {|*args|
  *      args.last[6] = true
  *    }
@@ -1107,18 +1107,18 @@ fev_on_event_with_outargs(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_EVENT#off_event([event])
+ *     off_event([event])
  *
  *  removes the callback of event.
  *
  *    ie = WIN32OLE.new('InternetExplorer.Application')
- *    ev = WIN32OLE_EVENT.new(ie)
+ *    ev = WIN32OLE::Event.new(ie)
  *    ev.on_event('BeforeNavigate2') {|*args|
  *      args.last[6] = true
  *    }
- *      ...
+ *    # ...
  *    ev.off_event('BeforeNavigate2')
- *      ...
+ *    # ...
  */
 static VALUE
 fev_off_event(int argc, VALUE *argv, VALUE self)
@@ -1145,16 +1145,16 @@ fev_off_event(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
- *     WIN32OLE_EVENT#unadvise -> nil
+ *     unadvise -> nil
  *
- *  disconnects OLE server. If this method called, then the WIN32OLE_EVENT object
+ *  disconnects OLE server. If this method called, then the WIN32OLE::Event object
  *  does not receive the OLE server event any more.
  *  This method is trial implementation.
  *
  *      ie = WIN32OLE.new('InternetExplorer.Application')
- *      ev = WIN32OLE_EVENT.new(ie)
- *      ev.on_event() {...}
- *         ...
+ *      ev = WIN32OLE::Event.new(ie)
+ *      ev.on_event() { something }
+ *      # ...
  *      ev.unadvise
  *
  */
@@ -1201,7 +1201,7 @@ evs_length(void)
 
 /*
  *  call-seq:
- *     WIN32OLE_EVENT#handler=
+ *     handler=
  *
  *  sets event handler object. If handler object has onXXX
  *  method according to XXX event, then onXXX method is called
@@ -1212,7 +1212,7 @@ evs_length(void)
  *  called and 1-st argument is event name.
  *
  *  If handler object has onXXX method and there is block
- *  defined by WIN32OLE_EVENT#on_event('XXX'){},
+ *  defined by <code>on_event('XXX'){}</code>,
  *  then block is executed but handler object method is not called
  *  when XXX event occurs.
  *
@@ -1230,7 +1230,7 @@ evs_length(void)
  *
  *      handler = Handler.new
  *      ie = WIN32OLE.new('InternetExplorer.Application')
- *      ev = WIN32OLE_EVENT.new(ie)
+ *      ev = WIN32OLE::Event.new(ie)
  *      ev.on_event("StatusTextChange") {|*args|
  *        puts "this block executed."
  *        puts "handler.onStatusTextChange method is not called."
@@ -1246,7 +1246,7 @@ fev_set_handler(VALUE self, VALUE val)
 
 /*
  *  call-seq:
- *     WIN32OLE_EVENT#handler
+ *     handler
  *
  *  returns handler object.
  *
@@ -1265,6 +1265,7 @@ Init_win32ole_event(void)
     rb_gc_register_mark_object(ary_ole_event);
     id_events = rb_intern("events");
     cWIN32OLE_EVENT = rb_define_class_under(cWIN32OLE, "Event", rb_cObject);
+    /* Alias of WIN32OLE::Event, for the backward compatibility */
     rb_define_const(rb_cObject, "WIN32OLE_EVENT", cWIN32OLE_EVENT);
     rb_define_singleton_method(cWIN32OLE_EVENT, "message_loop", fev_s_msg_loop, 0);
     rb_define_alloc_func(cWIN32OLE_EVENT, fev_s_allocate);

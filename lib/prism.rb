@@ -26,6 +26,7 @@ module Prism
   autoload :Pack, "prism/pack"
   autoload :Pattern, "prism/pattern"
   autoload :Serialize, "prism/serialize"
+  autoload :Translation, "prism/translation"
   autoload :Visitor, "prism/visitor"
 
   # Some of these constants are not meant to be exposed, so marking them as

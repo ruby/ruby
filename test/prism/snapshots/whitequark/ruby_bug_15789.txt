@@ -27,6 +27,7 @@
         │   │           │   │   ├── requireds: (length: 0)
         │   │           │   │   ├── optionals: (length: 1)
         │   │           │   │   │   └── @ OptionalParameterNode (location: (1,5)-(1,15))
+        │   │           │   │   │       ├── flags: ∅
         │   │           │   │   │       ├── name: :a
         │   │           │   │   │       ├── name_loc: (1,5)-(1,6) = "a"
         │   │           │   │   │       ├── operator_loc: (1,7)-(1,8) = "="
@@ -89,6 +90,7 @@
             │           │   │   ├── posts: (length: 0)
             │           │   │   ├── keywords: (length: 1)
             │           │   │   │   └── @ OptionalKeywordParameterNode (location: (3,5)-(3,14))
+            │           │   │   │       ├── flags: ∅
             │           │   │   │       ├── name: :a
             │           │   │   │       ├── name_loc: (3,5)-(3,7) = "a:"
             │           │   │   │       └── value:

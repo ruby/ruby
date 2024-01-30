@@ -301,7 +301,7 @@ class Gem::Specification < Gem::BasicSpecification
   #
   # Usage:
   #
-  #   spec.description = <<-EOF
+  #   spec.description = <<~EOF
   #     Rake is a Make-like program implemented in Ruby. Tasks and
   #     dependencies are specified in standard Ruby syntax.
   #   EOF
@@ -1003,8 +1003,6 @@ class Gem::Specification < Gem::BasicSpecification
   def self.find_all_by_name(name, *requirements)
     requirements = Gem::Requirement.default if requirements.empty?
 
-    # TODO: maybe try: find_all { |s| spec === dep }
-
     Gem::Dependency.new(name, *requirements).matching_specs
   end
 
@@ -1021,8 +1019,6 @@ class Gem::Specification < Gem::BasicSpecification
 
   def self.find_by_name(name, *requirements)
     requirements = Gem::Requirement.default if requirements.empty?
-
-    # TODO: maybe try: find { |s| spec === dep }
 
     Gem::Dependency.new(name, *requirements).to_spec
   end

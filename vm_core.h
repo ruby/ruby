@@ -94,6 +94,7 @@ extern int ruby_assert_critical_section_entered;
 #include "internal.h"
 #include "internal/array.h"
 #include "internal/basic_operators.h"
+#include "internal/sanitizers.h"
 #include "internal/serial.h"
 #include "internal/vm.h"
 #include "method.h"
@@ -369,10 +370,10 @@ enum rb_iseq_type {
 enum rb_builtin_attr {
     // The iseq does not call methods.
     BUILTIN_ATTR_LEAF = 0x01,
-    // The iseq does not allocate objects.
-    BUILTIN_ATTR_NO_GC = 0x02,
     // This iseq only contains single `opt_invokebuiltin_delegate_leave` instruction with 0 arguments.
-    BUILTIN_ATTR_SINGLE_NOARG_INLINE = 0x04,
+    BUILTIN_ATTR_SINGLE_NOARG_LEAF = 0x02,
+    // This attribute signals JIT to duplicate the iseq for each block iseq so that its `yield` will be monomorphic.
+    BUILTIN_ATTR_INLINE_BLOCK = 0x04,
 };
 
 typedef VALUE (*rb_jit_func_t)(struct rb_execution_context_struct *, struct rb_control_frame_struct *);
@@ -419,6 +420,8 @@ struct rb_iseq_constant_body {
             unsigned int ambiguous_param0 : 1; /* {|a|} */
             unsigned int accepts_no_kwarg : 1;
             unsigned int ruby2_keywords: 1;
+            unsigned int anon_rest: 1;
+            unsigned int anon_kwrest: 1;
         } flags;
 
         unsigned int size;
@@ -752,7 +755,6 @@ typedef struct rb_vm_struct {
     st_table *frozen_strings;
 
     const struct rb_builtin_function *builtin_function_table;
-    int builtin_inline_index;
 
     struct rb_id_table *negative_cme_table;
     st_table *overloaded_cme_table; // cme -> overloaded_cme
@@ -1159,6 +1161,10 @@ typedef struct rb_thread_struct {
     void **specific_storage;
 
     struct rb_ext_config ext_config;
+
+#ifdef RUBY_ASAN_ENABLED
+    void *asan_fake_stack_handle;
+#endif
 
 #if USE_MMTK
     /* Point to a MMTk Mutator struct allocated by MMTk core. */
@@ -1873,7 +1879,7 @@ rb_control_frame_t *rb_vm_get_binding_creatable_next_cfp(const rb_execution_cont
 VALUE *rb_vm_svar_lep(const rb_execution_context_t *ec, const rb_control_frame_t *cfp);
 int rb_vm_get_sourceline(const rb_control_frame_t *);
 void rb_vm_stack_to_heap(rb_execution_context_t *ec);
-void ruby_thread_init_stack(rb_thread_t *th);
+void ruby_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame);
 rb_thread_t * ruby_thread_from_native(void);
 int ruby_thread_set_native(rb_thread_t *th);
 int rb_vm_control_frame_id_and_class(const rb_control_frame_t *cfp, ID *idp, ID *called_idp, VALUE *klassp);

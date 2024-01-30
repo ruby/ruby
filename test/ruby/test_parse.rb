@@ -767,6 +767,34 @@ x = __ENCODING__
       END
     end
     assert_equal(__ENCODING__, x)
+
+    assert_raise(ArgumentError) do
+      EnvUtil.with_default_external(Encoding::US_ASCII) {eval <<-END, nil, __FILE__, __LINE__+1}
+# coding = external
+x = __ENCODING__
+      END
+    end
+
+    assert_raise(ArgumentError) do
+      EnvUtil.with_default_internal(Encoding::US_ASCII) {eval <<-END, nil, __FILE__, __LINE__+1}
+# coding = internal
+x = __ENCODING__
+      END
+    end
+
+    assert_raise(ArgumentError) do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# coding = filesystem
+x = __ENCODING__
+      END
+    end
+
+    assert_raise(ArgumentError) do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# coding = locale
+x = __ENCODING__
+      END
+    end
   end
 
   def test_utf8_bom
@@ -1406,9 +1434,22 @@ x = __ENCODING__
 
   def test_void_value_in_rhs
     w = "void value expression"
-    ["x = return 1", "x = return, 1", "x = 1, return", "x, y = return"].each do |code|
+    [
+      "x = return 1", "x = return, 1", "x = 1, return", "x, y = return",
+      "x = begin return ensure end",
+      "x = begin ensure return end",
+      "x = begin return ensure return end",
+      "x = begin return; rescue; return end",
+      "x = begin return; rescue; return; else return end",
+    ].each do |code|
       ex = assert_syntax_error(code, w)
       assert_equal(1, ex.message.scan(w).size, ->{"same #{w.inspect} warning should be just once\n#{w.message}"})
+    end
+    [
+      "x = begin return; rescue; end",
+      "x = begin return; rescue; return; else end",
+    ].each do |code|
+      assert_valid_syntax(code)
     end
   end
 

@@ -229,6 +229,7 @@ class Integer
   #
   # With no block given, returns an Enumerator.
   def times
+    Primitive.attr! :inline_block
     unless block_given?
       return to_enum(:times) { self < 0 ? 0 : self }
     end

@@ -65,6 +65,7 @@ module Psych
             fail(ArgumentError, "Invalid line_width #{@line_width}, must be non-negative or -1 for unlimited.")
           end
         end
+        @stringify_names = options[:stringify_names]
         @coders     = []
 
         @dispatch_cache = Hash.new do |h,klass|
@@ -267,7 +268,7 @@ module Psych
           tag   = 'tag:yaml.org,2002:str'
           plain = false
           quote = false
-        elsif o == 'y' || o == 'n'
+        elsif o == 'y' || o == 'Y' || o == 'n' || o == 'N'
           style = Nodes::Scalar::DOUBLE_QUOTED
         elsif @line_width && o.length > @line_width
           style = Nodes::Scalar::FOLDED
@@ -323,7 +324,7 @@ module Psych
         if o.class == ::Hash
           register(o, @emitter.start_mapping(nil, nil, true, Psych::Nodes::Mapping::BLOCK))
           o.each do |k,v|
-            accept k
+            accept(@stringify_names && Symbol === k ? k.to_s : k)
             accept v
           end
           @emitter.end_mapping
@@ -336,7 +337,7 @@ module Psych
         register(o, @emitter.start_mapping(nil, '!set', false, Psych::Nodes::Mapping::BLOCK))
 
         o.each do |k,v|
-          accept k
+          accept(@stringify_names && Symbol === k ? k.to_s : k)
           accept v
         end
 

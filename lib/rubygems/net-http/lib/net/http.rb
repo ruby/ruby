@@ -21,7 +21,7 @@
 #
 
 require_relative '../../../net-protocol/lib/net/protocol'
-require 'uri'
+require_relative '../../../vendor/uri/lib/uri'
 require_relative '../../../resolv/lib/resolv'
 autoload :OpenSSL, 'openssl'
 
@@ -106,20 +106,20 @@ module Gem::Net   #:nodoc:
   # It consists of some or all of: scheme, hostname, path, query, and fragment;
   # see {URI syntax}[https://en.wikipedia.org/wiki/Uniform_Resource_Identifier#Syntax].
   #
-  # A Ruby {URI::Generic}[rdoc-ref:URI::Generic] object
+  # A Ruby {Gem::URI::Generic}[https://docs.ruby-lang.org/en/master/Gem/URI/Generic.html] object
   # represents an internet URI.
   # It provides, among others, methods
   # +scheme+, +hostname+, +path+, +query+, and +fragment+.
   #
   # === Schemes
   #
-  # An internet \URI has
+  # An internet \Gem::URI has
   # a {scheme}[https://en.wikipedia.org/wiki/List_of_URI_schemes].
   #
   # The two schemes supported in \Gem::Net::HTTP are <tt>'https'</tt> and <tt>'http'</tt>:
   #
   #   uri.scheme                       # => "https"
-  #   URI('http://example.com').scheme # => "http"
+  #   Gem::URI('http://example.com').scheme # => "http"
   #
   # === Hostnames
   #
@@ -146,8 +146,8 @@ module Gem::Net   #:nodoc:
   #
   #   _uri = uri.dup
   #   params = {userId: 1, completed: false}
-  #   _uri.query = URI.encode_www_form(params)
-  #   _uri # => #<URI::HTTPS https://jsonplaceholder.typicode.com?userId=1&completed=false>
+  #   _uri.query = Gem::URI.encode_www_form(params)
+  #   _uri # => #<Gem::URI::HTTPS https://jsonplaceholder.typicode.com?userId=1&completed=false>
   #   Gem::Net::HTTP.get(_uri)
   #
   # === Fragments
@@ -273,7 +273,7 @@ module Gem::Net   #:nodoc:
   #     # You should choose a better exception.
   #     raise ArgumentError, 'Too many HTTP redirects' if limit == 0
   #
-  #     res = Gem::Net::HTTP.get_response(URI(uri))
+  #     res = Gem::Net::HTTP.get_response(Gem::URI(uri))
   #     case res
   #     when Gem::Net::HTTPSuccess     # Any success class.
   #       res
@@ -327,9 +327,9 @@ module Gem::Net   #:nodoc:
   #
   # Or if you simply want to make a GET request, you may pass in a URI
   # object that has an \HTTPS URL. \Gem::Net::HTTP automatically turns on TLS
-  # verification if the URI object has a 'https' URI scheme:
+  # verification if the URI object has a 'https' :URI scheme:
   #
-  #   uri # => #<URI::HTTPS https://jsonplaceholder.typicode.com/>
+  #   uri # => #<Gem::URI::HTTPS https://jsonplaceholder.typicode.com/>
   #   Gem::Net::HTTP.get(uri)
   #
   # == Proxy Server
@@ -371,9 +371,9 @@ module Gem::Net   #:nodoc:
   # === Proxy Using '<tt>ENV['http_proxy']</tt>'
   #
   # When environment variable <tt>'http_proxy'</tt>
-  # is set to a \URI string,
+  # is set to a \Gem::URI string,
   # the returned +http+ will have the server at that URI as its proxy;
-  # note that the \URI string must have a protocol
+  # note that the \Gem::URI string must have a protocol
   # such as <tt>'http'</tt> or <tt>'https'</tt>:
   #
   #   ENV['http_proxy'] = 'http://example.com'
@@ -386,7 +386,7 @@ module Gem::Net   #:nodoc:
   #   http.proxy_user      # => nil
   #   http.proxy_pass      # => nil
   #
-  # The \URI string may include proxy username, password, and port number:
+  # The \Gem::URI string may include proxy username, password, and port number:
   #
   #   ENV['http_proxy'] = 'http://pname:ppass@example.com:8000'
   #   http = Gem::Net::HTTP.new(hostname)
@@ -790,7 +790,7 @@ module Gem::Net   #:nodoc:
     #
     # With URI object +uri+ and optional hash argument +headers+:
     #
-    #   uri = URI('https://jsonplaceholder.typicode.com/todos/1')
+    #   uri = Gem::URI('https://jsonplaceholder.typicode.com/todos/1')
     #   headers = {'Content-type' => 'application/json; charset=UTF-8'}
     #   Gem::Net::HTTP.get(uri, headers)
     #
@@ -1074,7 +1074,7 @@ module Gem::Net   #:nodoc:
       elsif p_addr == :ENV then
         http.proxy_from_env = true
       else
-        if p_addr && p_no_proxy && !URI::Generic.use_proxy?(address, address, port, p_no_proxy)
+        if p_addr && p_no_proxy && !Gem::URI::Generic.use_proxy?(address, address, port, p_no_proxy)
           p_addr = nil
           p_port = nil
         end
@@ -1796,7 +1796,7 @@ module Gem::Net   #:nodoc:
     # The proxy URI determined from the environment for this connection.
     def proxy_uri # :nodoc:
       return if @proxy_uri == false
-      @proxy_uri ||= URI::HTTP.new(
+      @proxy_uri ||= Gem::URI::HTTP.new(
         "http", nil, address, port, nil, nil, nil, nil, nil
       ).find_proxy || false
       @proxy_uri || nil

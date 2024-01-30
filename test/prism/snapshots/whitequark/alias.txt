@@ -6,14 +6,14 @@
         └── @ AliasMethodNode (location: (1,0)-(1,14))
             ├── new_name:
             │   @ SymbolNode (location: (1,6)-(1,10))
-            │   ├── flags: ∅
+            │   ├── flags: forced_us_ascii_encoding
             │   ├── opening_loc: (1,6)-(1,7) = ":"
             │   ├── value_loc: (1,7)-(1,10) = "foo"
             │   ├── closing_loc: ∅
             │   └── unescaped: "foo"
             ├── old_name:
             │   @ SymbolNode (location: (1,11)-(1,14))
-            │   ├── flags: ∅
+            │   ├── flags: forced_us_ascii_encoding
             │   ├── opening_loc: ∅
             │   ├── value_loc: (1,11)-(1,14) = "bar"
             │   ├── closing_loc: ∅

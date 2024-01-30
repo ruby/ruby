@@ -170,7 +170,7 @@
         │   │   │   │       │   ├── equal_loc: ∅
         │   │   │   │       │   └── end_keyword_loc: (17,0)-(17,3) = "end"
         │   │   │   │       └── @ SymbolNode (location: (17,5)-(17,9))
-        │   │   │   │           ├── flags: ∅
+        │   │   │   │           ├── flags: forced_us_ascii_encoding
         │   │   │   │           ├── opening_loc: (17,5)-(17,6) = ":"
         │   │   │   │           ├── value_loc: (17,6)-(17,9) = "bar"
         │   │   │   │           ├── closing_loc: ∅
@@ -440,7 +440,7 @@
         │   │   │           │   ├── flags: ∅
         │   │   │           │   └── arguments: (length: 1)
         │   │   │           │       └── @ SymbolNode (location: (37,10)-(37,14))
-        │   │   │           │           ├── flags: ∅
+        │   │   │           │           ├── flags: forced_us_ascii_encoding
         │   │   │           │           ├── opening_loc: (37,10)-(37,11) = ":"
         │   │   │           │           ├── value_loc: (37,11)-(37,14) = "foo"
         │   │   │           │           ├── closing_loc: ∅
@@ -544,7 +544,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ SymbolNode (location: (40,9)-(40,13))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: forced_us_ascii_encoding
         │   │           ├── opening_loc: (40,9)-(40,10) = ":"
         │   │           ├── value_loc: (40,10)-(40,13) = "foo"
         │   │           ├── closing_loc: ∅
@@ -1207,7 +1207,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ SymbolNode (location: (62,8)-(62,12))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: forced_us_ascii_encoding
         │   │           ├── opening_loc: (62,8)-(62,9) = ":"
         │   │           ├── value_loc: (62,9)-(62,12) = "baz"
         │   │           ├── closing_loc: ∅
@@ -1254,7 +1254,7 @@
         │   │               └── @ AssocNode (location: (63,8)-(63,16))
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (63,8)-(63,12))
-        │   │                   │   ├── flags: ∅
+        │   │                   │   ├── flags: forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: ∅
         │   │                   │   ├── value_loc: (63,8)-(63,11) = "baz"
         │   │                   │   ├── closing_loc: (63,11)-(63,12) = ":"
@@ -1498,7 +1498,7 @@
         │   │       │   │   └── @ AssocNode (location: (68,10)-(68,18))
         │   │       │   │       ├── key:
         │   │       │   │       │   @ SymbolNode (location: (68,10)-(68,14))
-        │   │       │   │       │   ├── flags: ∅
+        │   │       │   │       │   ├── flags: forced_us_ascii_encoding
         │   │       │   │       │   ├── opening_loc: ∅
         │   │       │   │       │   ├── value_loc: (68,10)-(68,13) = "foo"
         │   │       │   │       │   ├── closing_loc: (68,13)-(68,14) = ":"
@@ -1550,7 +1550,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ SymbolNode (location: (69,8)-(69,12))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: forced_us_ascii_encoding
         │   │           ├── opening_loc: (69,8)-(69,9) = ":"
         │   │           ├── value_loc: (69,9)-(69,12) = "baz"
         │   │           ├── closing_loc: ∅
@@ -1574,7 +1574,7 @@
         │   │               └── @ AssocNode (location: (70,4)-(70,8))
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (70,4)-(70,6))
-        │   │                   │   ├── flags: ∅
+        │   │                   │   ├── flags: forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: ∅
         │   │                   │   ├── value_loc: (70,4)-(70,5) = "a"
         │   │                   │   ├── closing_loc: (70,5)-(70,6) = ":"
@@ -1620,7 +1620,7 @@
         │   │               └── @ AssocNode (location: (71,6)-(71,10))
         │   │                   ├── key:
         │   │                   │   @ SymbolNode (location: (71,6)-(71,8))
-        │   │                   │   ├── flags: ∅
+        │   │                   │   ├── flags: forced_us_ascii_encoding
         │   │                   │   ├── opening_loc: ∅
         │   │                   │   ├── value_loc: (71,6)-(71,7) = "a"
         │   │                   │   ├── closing_loc: (71,7)-(71,8) = ":"
@@ -1785,7 +1785,7 @@
         │   │   ├── flags: ∅
         │   │   └── arguments: (length: 1)
         │   │       └── @ SymbolNode (location: (77,9)-(77,13))
-        │   │           ├── flags: ∅
+        │   │           ├── flags: forced_us_ascii_encoding
         │   │           ├── opening_loc: (77,9)-(77,10) = ":"
         │   │           ├── value_loc: (77,10)-(77,13) = "bar"
         │   │           ├── closing_loc: ∅

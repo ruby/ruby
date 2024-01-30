@@ -23,6 +23,7 @@
                 │   │   ├── requireds: (length: 0)
                 │   │   ├── optionals: (length: 1)
                 │   │   │   └── @ OptionalParameterNode (location: (1,5)-(1,10))
+                │   │   │       ├── flags: ∅
                 │   │   │       ├── name: :b
                 │   │   │       ├── name_loc: (1,5)-(1,6) = "b"
                 │   │   │       ├── operator_loc: (1,7)-(1,8) = "="

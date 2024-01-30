@@ -190,6 +190,8 @@ pm_serialize_diagnostic(pm_parser_t *parser, pm_diagnostic_t *diagnostic, pm_buf
 
     // serialize location
     pm_serialize_location(parser, &diagnostic->location, buffer);
+
+    pm_buffer_append_byte(buffer, diagnostic->level);
 }
 
 static void

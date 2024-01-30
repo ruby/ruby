@@ -271,6 +271,7 @@ module RubyVM::YJIT
         branchunless
         definedivar
         expandarray
+        invokebuiltin
         jump
         leave
         objtostring
@@ -284,11 +285,13 @@ module RubyVM::YJIT
         opt_mod
         opt_mult
         opt_plus
+        opt_succ
         setlocal
       ].each do |insn|
         print_counters(stats, out: out, prefix: "#{insn}_", prompt: "#{insn} exit reasons:", optional: true)
       end
       print_counters(stats, out: out, prefix: 'lshift_', prompt: 'left shift (opt_ltlt) exit reasons: ')
+      print_counters(stats, out: out, prefix: 'rshift_', prompt: 'right shift (>>) exit reasons: ')
       print_counters(stats, out: out, prefix: 'invalidate_', prompt: 'invalidation reasons: ')
     end
 
@@ -343,6 +346,7 @@ module RubyVM::YJIT
       if stats[:compiled_blockid_count] != 0
         out.puts "versions_per_block:    " + format_number(13, "%4.3f" % (stats[:compiled_block_count].fdiv(stats[:compiled_blockid_count])))
       end
+      out.puts "max_inline_versions:   " + format_number(13, stats[:max_inline_versions])
       out.puts "compiled_branch_count: " + format_number(13, stats[:compiled_branch_count])
       out.puts "compile_time_ms:       " + format_number(13, stats[:compile_time_ns] / (1000 * 1000))
       out.puts "block_next_count:      " + format_number(13, stats[:block_next_count])

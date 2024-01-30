@@ -16,9 +16,9 @@ class Gem::Uri
   # Parses uri, raising if it's invalid
 
   def self.parse!(uri)
-    require "uri"
+    require_relative "vendor/uri/lib/uri"
 
-    raise URI::InvalidURIError unless uri
+    raise Gem::URI::InvalidURIError unless uri
 
     return uri unless uri.is_a?(String)
 
@@ -28,9 +28,9 @@ class Gem::Uri
     # as "%7BDESede%7D". If this is escaped again the percentage
     # symbols will be escaped.
     begin
-      URI.parse(uri)
-    rescue URI::InvalidURIError
-      URI.parse(URI::DEFAULT_PARSER.escape(uri))
+      Gem::URI.parse(uri)
+    rescue Gem::URI::InvalidURIError
+      Gem::URI.parse(Gem::URI::DEFAULT_PARSER.escape(uri))
     end
   end
 
@@ -39,7 +39,7 @@ class Gem::Uri
 
   def self.parse(uri)
     parse!(uri)
-  rescue URI::InvalidURIError
+  rescue Gem::URI::InvalidURIError
     uri
   end
 

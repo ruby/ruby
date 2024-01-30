@@ -519,7 +519,7 @@ opendir_without_gvl(const char *path)
 
         u.in = path;
 
-        return rb_thread_call_without_gvl(nogvl_opendir, u.out, RUBY_UBF_IO, 0);
+        return IO_WITHOUT_GVL(nogvl_opendir, u.out);
     }
     else
         return opendir(path);
@@ -1096,8 +1096,7 @@ chdir_path(VALUE path, bool yield_path)
     }
     else {
         char *p = RSTRING_PTR(path);
-        int r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_chdir, p,
-                                                        RUBY_UBF_IO, 0);
+        int r = IO_WITHOUT_GVL_INT(nogvl_chdir, p);
         if (r < 0)
             rb_sys_fail_path(path);
     }
@@ -1309,8 +1308,7 @@ dir_s_fchdir(VALUE klass, VALUE fd_value)
         return rb_ensure(fchdir_yield, (VALUE)&args, fchdir_restore, (VALUE)&args);
     }
     else {
-        int r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_fchdir, &fd,
-                                                       RUBY_UBF_IO, 0);
+        int r = IO_WITHOUT_GVL_INT(nogvl_fchdir, &fd);
         if (r < 0)
             rb_sys_fail("fchdir");
     }
@@ -1506,7 +1504,7 @@ dir_s_mkdir(int argc, VALUE *argv, VALUE obj)
 
     path = check_dirname(path);
     m.path = RSTRING_PTR(path);
-    r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_mkdir, &m, RUBY_UBF_IO, 0);
+    r = IO_WITHOUT_GVL_INT(nogvl_mkdir, &m);
     if (r < 0)
         rb_sys_fail_path(path);
 
@@ -1539,7 +1537,7 @@ dir_s_rmdir(VALUE obj, VALUE dir)
 
     dir = check_dirname(dir);
     p = RSTRING_PTR(dir);
-    r = (int)(VALUE)rb_thread_call_without_gvl(nogvl_rmdir, (void *)p, RUBY_UBF_IO, 0);
+    r = IO_WITHOUT_GVL_INT(nogvl_rmdir, (void *)p);
     if (r < 0)
         rb_sys_fail_path(dir);
 
@@ -1758,7 +1756,7 @@ opendir_at(int basefd, const char *path)
     oaa.path = path;
 
     if (vm_initialized)
-        return rb_thread_call_without_gvl(nogvl_opendir_at, &oaa, RUBY_UBF_IO, 0);
+        return IO_WITHOUT_GVL(nogvl_opendir_at, &oaa);
     else
         return nogvl_opendir_at(&oaa);
 }
@@ -3509,7 +3507,7 @@ dir_s_home(int argc, VALUE *argv, VALUE obj)
     rb_check_arity(argc, 0, 1);
     user = (argc > 0) ? argv[0] : Qnil;
     if (!NIL_P(user)) {
-        SafeStringValue(user);
+        StringValue(user);
         rb_must_asciicompat(user);
         u = StringValueCStr(user);
         if (*u) {
@@ -3618,8 +3616,7 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
     }
 #endif
 
-    result = (VALUE)rb_thread_call_without_gvl(nogvl_dir_empty_p, (void *)path,
-                                            RUBY_UBF_IO, 0);
+    result = (VALUE)IO_WITHOUT_GVL(nogvl_dir_empty_p, (void *)path);
     if (FIXNUM_P(result)) {
         rb_syserr_fail_path((int)FIX2LONG(result), orig);
     }

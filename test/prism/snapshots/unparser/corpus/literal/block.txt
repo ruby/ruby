@@ -39,6 +39,7 @@
         │       │   │   @ ParametersNode (location: (3,7)-(3,8))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (3,7)-(3,8))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :a
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -71,6 +72,7 @@
         │       │   │   @ ParametersNode (location: (5,7)-(5,9))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (5,7)-(5,8))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :a
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest:
@@ -104,6 +106,7 @@
         │       │   │   @ ParametersNode (location: (7,7)-(7,9))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (7,7)-(7,8))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :a
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest:
@@ -114,6 +117,7 @@
         │       │   │   └── block: ∅
         │       │   ├── locals: (length: 1)
         │       │   │   └── @ BlockLocalVariableNode (location: (7,11)-(7,12))
+        │       │   │       ├── flags: ∅
         │       │   │       └── name: :x
         │       │   ├── opening_loc: (7,6)-(7,7) = "|"
         │       │   └── closing_loc: (7,12)-(7,13) = "|"
@@ -139,8 +143,10 @@
         │       │   │   @ ParametersNode (location: (9,7)-(9,11))
         │       │   │   ├── requireds: (length: 2)
         │       │   │   │   ├── @ RequiredParameterNode (location: (9,7)-(9,8))
+        │       │   │   │   │   ├── flags: ∅
         │       │   │   │   │   └── name: :a
         │       │   │   │   └── @ RequiredParameterNode (location: (9,10)-(9,11))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :b
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -198,10 +204,12 @@
         │       │   │   @ ParametersNode (location: (14,7)-(14,12))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (14,7)-(14,8))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :a
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest:
         │       │   │   │   @ RestParameterNode (location: (14,10)-(14,12))
+        │       │   │   │   ├── flags: ∅
         │       │   │   │   ├── name: :b
         │       │   │   │   ├── name_loc: (14,11)-(14,12) = "b"
         │       │   │   │   └── operator_loc: (14,10)-(14,11) = "*"
@@ -237,10 +245,12 @@
         │       │   │   @ ParametersNode (location: (17,7)-(17,11))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (17,7)-(17,8))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :a
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest:
         │       │   │   │   @ RestParameterNode (location: (17,10)-(17,11))
+        │       │   │   │   ├── flags: ∅
         │       │   │   │   ├── name: ∅
         │       │   │   │   ├── name_loc: ∅
         │       │   │   │   └── operator_loc: (17,10)-(17,11) = "*"
@@ -317,14 +327,17 @@
         │       │   │   │   ├── @ MultiTargetNode (location: (23,11)-(23,17))
         │       │   │   │   │   ├── lefts: (length: 2)
         │       │   │   │   │   │   ├── @ RequiredParameterNode (location: (23,12)-(23,13))
+        │       │   │   │   │   │   │   ├── flags: ∅
         │       │   │   │   │   │   │   └── name: :a
         │       │   │   │   │   │   └── @ RequiredParameterNode (location: (23,15)-(23,16))
+        │       │   │   │   │   │       ├── flags: ∅
         │       │   │   │   │   │       └── name: :b
         │       │   │   │   │   ├── rest: ∅
         │       │   │   │   │   ├── rights: (length: 0)
         │       │   │   │   │   ├── lparen_loc: (23,11)-(23,12) = "("
         │       │   │   │   │   └── rparen_loc: (23,16)-(23,17) = ")"
         │       │   │   │   └── @ RequiredParameterNode (location: (23,19)-(23,20))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :c
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -381,6 +394,7 @@
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest:
         │       │   │   │   @ RestParameterNode (location: (26,11)-(26,13))
+        │       │   │   │   ├── flags: ∅
         │       │   │   │   ├── name: :a
         │       │   │   │   ├── name_loc: (26,12)-(26,13) = "a"
         │       │   │   │   └── operator_loc: (26,11)-(26,12) = "*"
@@ -390,6 +404,7 @@
         │       │   │   └── block: ∅
         │       │   ├── locals: (length: 1)
         │       │   │   └── @ BlockLocalVariableNode (location: (26,15)-(26,16))
+        │       │   │       ├── flags: ∅
         │       │   │       └── name: :b
         │       │   ├── opening_loc: (26,10)-(26,11) = "|"
         │       │   └── closing_loc: (26,16)-(26,17) = "|"
@@ -425,6 +440,7 @@
         │       │   │   @ ParametersNode (location: (28,11)-(28,12))
         │       │   │   ├── requireds: (length: 1)
         │       │   │   │   └── @ RequiredParameterNode (location: (28,11)-(28,12))
+        │       │   │   │       ├── flags: ∅
         │       │   │   │       └── name: :a
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest: ∅
@@ -434,6 +450,7 @@
         │       │   │   └── block: ∅
         │       │   ├── locals: (length: 1)
         │       │   │   └── @ BlockLocalVariableNode (location: (28,14)-(28,15))
+        │       │   │       ├── flags: ∅
         │       │   │       └── name: :b
         │       │   ├── opening_loc: (28,10)-(28,11) = "|"
         │       │   └── closing_loc: (28,15)-(28,16) = "|"
@@ -468,8 +485,10 @@
         │       │   ├── parameters: ∅
         │       │   ├── locals: (length: 2)
         │       │   │   ├── @ BlockLocalVariableNode (location: (30,13)-(30,14))
+        │       │   │   │   ├── flags: ∅
         │       │   │   │   └── name: :a
         │       │   │   └── @ BlockLocalVariableNode (location: (30,16)-(30,17))
+        │       │   │       ├── flags: ∅
         │       │   │       └── name: :b
         │       │   ├── opening_loc: (30,10)-(30,11) = "|"
         │       │   └── closing_loc: (30,17)-(30,18) = "|"
@@ -507,6 +526,7 @@
         │       │   │   ├── optionals: (length: 0)
         │       │   │   ├── rest:
         │       │   │   │   @ RestParameterNode (location: (32,11)-(32,12))
+        │       │   │   │   ├── flags: ∅
         │       │   │   │   ├── name: ∅
         │       │   │   │   ├── name_loc: ∅
         │       │   │   │   └── operator_loc: (32,11)-(32,12) = "*"
@@ -691,6 +711,7 @@
         │       │   │   │   └── @ MultiTargetNode (location: (41,11)-(41,19))
         │       │   │   │       ├── lefts: (length: 2)
         │       │   │   │       │   ├── @ RequiredParameterNode (location: (41,12)-(41,13))
+        │       │   │   │       │   │   ├── flags: ∅
         │       │   │   │       │   │   └── name: :a
         │       │   │   │       │   └── @ MultiTargetNode (location: (41,15)-(41,18))
         │       │   │   │       │       ├── lefts: (length: 0)
@@ -760,8 +781,10 @@
         │       │   │   │   └── @ MultiTargetNode (location: (44,11)-(44,17))
         │       │   │   │       ├── lefts: (length: 2)
         │       │   │   │       │   ├── @ RequiredParameterNode (location: (44,12)-(44,13))
+        │       │   │   │       │   │   ├── flags: ∅
         │       │   │   │       │   │   └── name: :a
         │       │   │   │       │   └── @ RequiredParameterNode (location: (44,15)-(44,16))
+        │       │   │   │       │       ├── flags: ∅
         │       │   │   │       │       └── name: :b
         │       │   │   │       ├── rest: ∅
         │       │   │   │       ├── rights: (length: 0)

@@ -65,7 +65,7 @@ module IRB
             begin
               hist = hist.last(num) if hist.size > num and num > 0
             rescue RangeError # bignum too big to convert into `long'
-              # Do nothing because the bignum should be treated as inifinity
+              # Do nothing because the bignum should be treated as infinity
             end
           end
           f.puts(hist)

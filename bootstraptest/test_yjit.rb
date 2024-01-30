@@ -1,5 +1,79 @@
 return if mmtk?
 
+# regression test for popping before side exit
+assert_equal "ok", %q{
+  def foo(a, *) = a
+
+  def call(args, &)
+    foo(1) # spill at where the block arg will be
+    foo(*args, &)
+  end
+
+  call([1, 2])
+
+  begin
+    call([])
+  rescue ArgumentError
+    :ok
+  end
+}
+
+# regression test for send processing before side exit
+assert_equal "ok", %q{
+  def foo(a, *) = :foo
+
+  def call(args)
+    send(:foo, *args)
+  end
+
+  call([1, 2])
+
+  begin
+    call([])
+  rescue ArgumentError
+    :ok
+  end
+}
+
+# test discarding extra yield arguments
+assert_equal "2210150001501015", %q{
+  def splat_kw(ary) = yield *ary, a: 1
+
+  def splat(ary) = yield *ary
+
+  def kw = yield 1, 2, a: 0
+
+  def simple = yield 0, 1
+
+  def calls
+    [
+      splat([1, 1, 2]) { |x, y| x + y },
+      splat([1, 1, 2]) { |y, opt = raise| opt + y},
+      splat_kw([0, 1]) { |a:| a },
+      kw { |a:| a },
+      kw { |a| a },
+      simple { 5.itself },
+      simple { |a| a },
+      simple { |opt = raise| opt },
+      simple { |*rest| rest },
+      simple { |opt_kw: 5| opt_kw },
+      # autosplat ineractions
+      [0, 1, 2].yield_self { |a, b| [a, b] },
+      [0, 1, 2].yield_self { |a, opt = raise| [a, opt] },
+      [1].yield_self { |a, opt = 4| a + opt },
+    ]
+  end
+
+  calls.join
+}
+
+# test autosplat with empty splat
+assert_equal "ok", %q{
+  def m(pos, splat) = yield pos, *splat
+
+  m([:ok], []) {|v0,| v0 }
+}
+
 # regression test for send stack shifting
 assert_normal_exit %q{
   def foo(a, b)
@@ -11,6 +85,13 @@ assert_normal_exit %q{
   end
 
   call_foo
+}
+
+# regression test for keyword splat with yield
+assert_equal 'nil', %q{
+  def splat_kw(kwargs) = yield(**kwargs)
+
+  splat_kw({}) { _1 }.inspect
 }
 
 # regression test for arity check with splat
@@ -2442,6 +2523,18 @@ assert_equal '[1, 2, 3, 4, 5]', %q{
   splatarray
 }
 
+# splatkw
+assert_equal '[1, 2]', %q{
+  def foo(a:) = [a, yield]
+
+  def entry(&block)
+    a = { a: 1 }
+    foo(**a, &block)
+  end
+
+  entry { 2 }
+}
+
 assert_equal '[1, 1, 2, 1, 2, 3]', %q{
   def expandarray
     arr = [1, 2, 3]
@@ -2495,6 +2588,23 @@ assert_equal '[:not_array, nil, nil]', %q{
   expandarray_not_array(obj)
   expandarray_not_array(obj)
 }
+
+assert_equal '[1, 2]', %q{
+  class NilClass
+    private
+    def to_ary
+      [1, 2]
+    end
+  end
+
+  def expandarray_redefined_nilclass
+    a, b = nil
+    [a, b]
+  end
+
+  expandarray_redefined_nilclass
+  expandarray_redefined_nilclass
+} unless rjit_enabled?
 
 assert_equal '[1, 2, nil]', %q{
   def expandarray_rhs_too_small
@@ -4331,4 +4441,49 @@ assert_equal '0', %q{
   end
 
   entry
+}
+
+# Integer succ and overflow
+assert_equal '[2, 4611686018427387904]', %q{
+  [1.succ, 4611686018427387903.succ]
+}
+
+# Integer right shift
+assert_equal '[0, 1, -4]', %q{
+  [0 >> 1, 2 >> 1, -7 >> 1]
+}
+
+assert_equal '[nil, "yield"]', %q{
+  def defined_yield = defined?(yield)
+  [defined_yield, defined_yield {}]
+}
+
+# splat with ruby2_keywords into rest parameter
+assert_equal '[[{:a=>1}], {}]', %q{
+  ruby2_keywords def foo(*args) = args
+
+  def bar(*args, **kw) = [args, kw]
+
+  def pass_bar(*args) = bar(*args)
+
+  def body
+    args = foo(a: 1)
+    pass_bar(*args)
+  end
+
+  body
+}
+
+# concatarray
+assert_equal '[1, 2]', %q{
+  def foo(a, b) = [a, b]
+  arr = [2]
+  foo(*[1], *arr)
+}
+
+# pushtoarray
+assert_equal '[1, 2]', %q{
+  def foo(a, b) = [a, b]
+  arr = [1]
+  foo(*arr, 2)
 }

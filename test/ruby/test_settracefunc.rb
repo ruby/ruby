@@ -504,7 +504,7 @@ class TestSetTraceFunc < Test::Unit::TestCase
     1: trace = TracePoint.trace(*trace_events){|tp| next if !target_thread?
     2:   events << [tp.event, tp.lineno, tp.path, _defined_class.(tp), tp.method_id, tp.self, tp.binding&.eval("_local_var"), _get_data.(tp)] if tp.path == 'xyzzy'
     3: }
-    4: [1].each{|;_local_var| _local_var = :inner
+    4: [1].reverse_each{|;_local_var| _local_var = :inner
     5:   tap{}
     6: }
     7: class XYZZY
@@ -531,10 +531,10 @@ class TestSetTraceFunc < Test::Unit::TestCase
     answer_events = [
      #
      [:line,     4, 'xyzzy', self.class,  method,           self,        :outer, :nothing],
-     [:c_call,   4, 'xyzzy', Array,       :each,            [1],         nil,    :nothing],
+     [:c_call,   4, 'xyzzy', Array,       :reverse_each,    [1],         nil,    :nothing],
      [:line,     4, 'xyzzy', self.class,  method,           self,        nil,    :nothing],
      [:line,     5, 'xyzzy', self.class,  method,           self,        :inner, :nothing],
-     [:c_return, 4, "xyzzy", Array,       :each,            [1],         nil, [1]],
+     [:c_return, 4, "xyzzy", Array,       :reverse_each,    [1],         nil, [1]],
      [:line,     7, 'xyzzy', self.class,  method,           self,        :outer, :nothing],
      [:c_call,   7, "xyzzy", Module,      :const_added,     TestSetTraceFunc, nil, :nothing],
      [:c_return, 7, "xyzzy", Module,      :const_added,     TestSetTraceFunc, nil, nil],
@@ -623,6 +623,19 @@ code = proc { TracePoint.new(:line) { } }
 PREP
 1_000_000.times(&code)
 CODE
+  end
+
+  def test_tracepoint_bmethod_memory_leak
+    assert_no_memory_leak([], '', "#{<<~"begin;"}\n#{<<~'end;'}", "[Bug #20194]", rss: true)
+      obj = Object.new
+      obj.define_singleton_method(:foo) {}
+      bmethod = obj.method(:foo)
+      tp = TracePoint.new(:return) {}
+    begin;
+      1_000_000.times do
+        tp.enable(target: bmethod) {}
+      end
+    end;
   end
 
   def trace_by_set_trace_func

@@ -6,7 +6,7 @@
         └── @ CaseMatchNode (location: (1,0)-(3,3))
             ├── predicate:
             │   @ SymbolNode (location: (1,5)-(1,7))
-            │   ├── flags: ∅
+            │   ├── flags: forced_us_ascii_encoding
             │   ├── opening_loc: (1,5)-(1,6) = ":"
             │   ├── value_loc: (1,6)-(1,7) = "a"
             │   ├── closing_loc: ∅

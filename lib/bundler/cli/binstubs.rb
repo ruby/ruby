@@ -45,7 +45,7 @@ module Bundler
             next
           end
 
-          Bundler.settings.temporary(path: (Bundler.settings[:path] || Bundler.root)) do
+          Bundler.settings.temporary(path: Bundler.settings[:path] || Bundler.root) do
             installer.generate_standalone_bundler_executable_stubs(spec, installer_opts)
           end
         else

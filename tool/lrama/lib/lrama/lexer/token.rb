@@ -46,6 +46,11 @@ module Lrama
       def last_column
         location.last_column
       end
+
+      def invalid_ref(ref, message)
+        location = self.location.partial_location(ref.first_column, ref.last_column)
+        raise location.generate_error_message(message)
+      end
     end
   end
 end

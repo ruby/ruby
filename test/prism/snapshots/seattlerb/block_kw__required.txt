@@ -26,6 +26,7 @@
                 │   │   ├── posts: (length: 0)
                 │   │   ├── keywords: (length: 1)
                 │   │   │   └── @ RequiredKeywordParameterNode (location: (1,9)-(1,11))
+                │   │   │       ├── flags: ∅
                 │   │   │       ├── name: :k
                 │   │   │       └── name_loc: (1,9)-(1,11) = "k:"
                 │   │   ├── keyword_rest: ∅

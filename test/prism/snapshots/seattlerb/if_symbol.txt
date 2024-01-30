@@ -18,7 +18,7 @@
             │   │   ├── flags: ∅
             │   │   └── arguments: (length: 1)
             │   │       └── @ SymbolNode (location: (1,5)-(1,7))
-            │   │           ├── flags: ∅
+            │   │           ├── flags: forced_us_ascii_encoding
             │   │           ├── opening_loc: (1,5)-(1,6) = ":"
             │   │           ├── value_loc: (1,6)-(1,7) = "x"
             │   │           ├── closing_loc: ∅

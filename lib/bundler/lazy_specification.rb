@@ -4,6 +4,7 @@ require_relative "force_platform"
 
 module Bundler
   class LazySpecification
+    include MatchMetadata
     include MatchPlatform
     include ForcePlatform
 

@@ -416,7 +416,7 @@ module Prism
         ArgumentsNode(0, [
           KeywordHashNode(1, [
             AssocNode(
-              SymbolNode(0, nil, Location(), Location(), "foo"),
+              SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, nil, Location(), Location(), "foo"),
               expression("bar"),
               nil
             )
@@ -566,10 +566,10 @@ module Prism
         Location(),
         nil,
         ParametersNode([
-          RequiredParameterNode(:A),
-          RequiredParameterNode(:@a),
-          RequiredParameterNode(:$A),
-          RequiredParameterNode(:@@a),
+          RequiredParameterNode(0, :A),
+          RequiredParameterNode(0, :@a),
+          RequiredParameterNode(0, :$A),
+          RequiredParameterNode(0, :@@a),
         ], [], nil, [], [], nil, nil),
         nil,
         [:A, :@a, :$A, :@@a],
@@ -594,16 +594,16 @@ module Prism
       expected = BeginNode(
         Location(),
         StatementsNode([
-          LocalVariableWriteNode(:_1, 0, Location(), SymbolNode(0, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_2, 0, Location(), SymbolNode(0, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_3, 0, Location(), SymbolNode(0, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_4, 0, Location(), SymbolNode(0, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_5, 0, Location(), SymbolNode(0, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_6, 0, Location(), SymbolNode(0, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_7, 0, Location(), SymbolNode(0, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_8, 0, Location(), SymbolNode(0, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_9, 0, Location(), SymbolNode(0, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_10, 0, Location(), SymbolNode(0, Location(), Location(), nil, "a"), Location())
+          LocalVariableWriteNode(:_1, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+          LocalVariableWriteNode(:_2, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+          LocalVariableWriteNode(:_3, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+          LocalVariableWriteNode(:_4, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+          LocalVariableWriteNode(:_5, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+          LocalVariableWriteNode(:_6, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+          LocalVariableWriteNode(:_7, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+          LocalVariableWriteNode(:_8, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+          LocalVariableWriteNode(:_9, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+          LocalVariableWriteNode(:_10, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location())
         ]),
         nil,
         nil,
@@ -635,7 +635,7 @@ module Prism
         Location(),
         nil,
         ParametersNode(
-          [RequiredParameterNode(:a), RequiredParameterNode(:b), RequiredParameterNode(:c)],
+          [RequiredParameterNode(0, :a), RequiredParameterNode(0, :b), RequiredParameterNode(0, :c)],
           [],
           nil,
           [],
@@ -667,7 +667,7 @@ module Prism
         Location(),
         Location(),
         BlockParametersNode(
-          ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b)], [], nil, [], [], nil, nil),
+          ParametersNode([RequiredParameterNode(0, :a), RequiredParameterNode(0, :b)], [], nil, [], [], nil, nil),
           [],
           Location(),
           Location()
@@ -724,10 +724,10 @@ module Prism
           [],
           [],
           nil,
-          [RequiredParameterNode(:a)],
+          [RequiredParameterNode(0, :a)],
           [],
           nil,
-          BlockParameterNode(:block, Location(), Location())
+          BlockParameterNode(0, :block, Location(), Location())
         ),
         nil,
         [:block, :a],
@@ -749,7 +749,7 @@ module Prism
         :foo,
         Location(),
         nil,
-        ParametersNode([], [], nil, [RequiredParameterNode(:a)], [], nil, BlockParameterNode(nil, nil, Location())),
+        ParametersNode([], [], nil, [RequiredParameterNode(0, :a)], [], nil, BlockParameterNode(0, nil, nil, Location())),
         nil,
         [:&, :a],
         2,
@@ -775,7 +775,7 @@ module Prism
           [],
           [],
           nil,
-          [RequiredParameterNode(:a)],
+          [RequiredParameterNode(0, :a)],
           [],
           ForwardingParameterNode(),
           nil
@@ -804,8 +804,8 @@ module Prism
           [],
           [],
           nil,
-          [RequiredParameterNode(:a)],
-          [RequiredKeywordParameterNode(:b, Location())],
+          [RequiredParameterNode(0, :a)],
+          [RequiredKeywordParameterNode(0, :b, Location())],
           nil,
           nil
         ),
@@ -834,8 +834,8 @@ module Prism
           [],
           nil,
           [],
-          [RequiredKeywordParameterNode(:b, Location())],
-          KeywordRestParameterNode(:rest, Location(), Location()),
+          [RequiredKeywordParameterNode(0, :b, Location())],
+          KeywordRestParameterNode(0, :rest, Location(), Location()),
           nil
         ),
         nil,
@@ -885,9 +885,9 @@ module Prism
           [],
           [],
           nil,
-          [RequiredParameterNode(:a)],
-          [RequiredKeywordParameterNode(:b, Location())],
-          KeywordRestParameterNode(:args, Location(), Location()),
+          [RequiredParameterNode(0, :a)],
+          [RequiredKeywordParameterNode(0, :b, Location())],
+          KeywordRestParameterNode(0, :args, Location(), Location()),
           nil
         ),
         nil,
@@ -916,9 +916,9 @@ module Prism
           [],
           [],
           nil,
-          [RequiredParameterNode(:a)],
-          [RequiredKeywordParameterNode(:b, Location())],
-          KeywordRestParameterNode(:args, Location(), Location()),
+          [RequiredParameterNode(0, :a)],
+          [RequiredKeywordParameterNode(0, :b, Location())],
+          KeywordRestParameterNode(0, :args, Location(), Location()),
           nil
         ),
         nil,
@@ -947,9 +947,9 @@ module Prism
           [],
           [],
           nil,
-          [RequiredParameterNode(:a)],
-          [RequiredKeywordParameterNode(:b, Location())],
-          KeywordRestParameterNode(:args, Location(), Location()),
+          [RequiredParameterNode(0, :a)],
+          [RequiredKeywordParameterNode(0, :b, Location())],
+          KeywordRestParameterNode(0, :args, Location(), Location()),
           nil
         ),
         nil,
@@ -975,13 +975,13 @@ module Prism
         Location(),
         nil,
         ParametersNode(
-          [RequiredParameterNode(:a)],
+          [RequiredParameterNode(0, :a)],
           [
-            OptionalParameterNode(:b, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL)),
-            OptionalParameterNode(:d, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL))
+            OptionalParameterNode(0, :b, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL)),
+            OptionalParameterNode(0, :d, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL))
           ],
           nil,
-          [RequiredParameterNode(:c), RequiredParameterNode(:e)],
+          [RequiredParameterNode(0, :c), RequiredParameterNode(0, :e)],
           [],
           nil,
           nil
@@ -1004,7 +1004,7 @@ module Prism
 
     def test_case_without_when_clauses_errors_on_else_clause
       expected = CaseMatchNode(
-        SymbolNode(0, Location(), Location(), nil, "a"),
+        SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"),
         [],
         ElseNode(Location(), nil, Location()),
         Location(),
@@ -1018,7 +1018,7 @@ module Prism
 
     def test_case_without_clauses
       expected = CaseNode(
-        SymbolNode(0, Location(), Location(), nil, "a"),
+        SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"),
         [],
         nil,
         Location(),
@@ -1152,7 +1152,7 @@ module Prism
           :foo,
           Location(),
           nil,
-          ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b), RequiredParameterNode(:a)], [], nil, [], [], nil, nil),
+          ParametersNode([RequiredParameterNode(0, :a), RequiredParameterNode(0, :b), RequiredParameterNode(ParameterFlags::REPEATED_PARAMETER, :a)], [], nil, [], [], nil, nil),
           nil,
           [:a, :b],
           2,
@@ -1173,7 +1173,7 @@ module Prism
         :foo,
         Location(),
         nil,
-        ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b)], [], RestParameterNode(:a, Location(), Location()), [], [], nil, nil),
+        ParametersNode([RequiredParameterNode(0, :a), RequiredParameterNode(0, :b)], [], RestParameterNode(ParameterFlags::REPEATED_PARAMETER, :a, Location(), Location()), [], [], nil, nil),
         nil,
         [:a, :b],
         2,
@@ -1193,7 +1193,7 @@ module Prism
         :foo,
         Location(),
         nil,
-        ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b)], [], nil, [], [], KeywordRestParameterNode(:a, Location(), Location()), nil),
+        ParametersNode([RequiredParameterNode(0, :a), RequiredParameterNode(0, :b)], [], nil, [], [], KeywordRestParameterNode(ParameterFlags::REPEATED_PARAMETER, :a, Location(), Location()), nil),
         nil,
         [:a, :b],
         2,
@@ -1213,7 +1213,7 @@ module Prism
         :foo,
         Location(),
         nil,
-        ParametersNode([RequiredParameterNode(:a), RequiredParameterNode(:b)], [], nil, [], [], nil, BlockParameterNode(:a, Location(), Location())),
+        ParametersNode([RequiredParameterNode(0, :a), RequiredParameterNode(0, :b)], [], nil, [], [], nil, BlockParameterNode(ParameterFlags::REPEATED_PARAMETER, :a, Location(), Location())),
         nil,
         [:a, :b],
         2,
@@ -1233,7 +1233,7 @@ module Prism
         :foo,
         Location(),
         nil,
-        ParametersNode([], [OptionalParameterNode(:a, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL))], RestParameterNode(:c, Location(), Location()), [RequiredParameterNode(:b)], [], nil, nil),
+        ParametersNode([], [OptionalParameterNode(0, :a, Location(), Location(), IntegerNode(IntegerBaseFlags::DECIMAL))], RestParameterNode(0, :c, Location(), Location()), [RequiredParameterNode(0, :b)], [], nil, nil),
         nil,
         [:a, :b, :c],
         3,
@@ -1871,6 +1871,16 @@ module Prism
       ]
     end
 
+    def test_warnings_verbosity
+      warning = Prism.parse("def foo; END { }; end").warnings[0]
+      assert_equal "END in method; use at_exit", warning.message
+      assert_equal :default, warning.level
+
+      warning = Prism.parse("foo /regexp/").warnings[0]
+      assert_equal "ambiguous `/`; wrap regexp in parentheses or add a space after `/` operator", warning.message
+      assert_equal :verbose, warning.level
+    end
+
     def test_statement_operators
       source = <<~RUBY
         alias x y + 1
@@ -2067,6 +2077,13 @@ module Prism
       assert_errors expression(source), source, [
         ['both a block argument and a forwarding argument; only one block is allowed', 24..27]
       ], compare_ripper: false # Ripper does not check 'both block arg and actual block given'.
+    end
+
+    def test_it_with_ordinary_parameter
+      source = "proc { || it }"
+      errors = [["`it` is not allowed when an ordinary parameter is defined", 10..12]]
+
+      assert_errors expression(source), source, errors, compare_ripper: false
     end
 
     private

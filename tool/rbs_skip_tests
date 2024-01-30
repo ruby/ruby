@@ -22,6 +22,8 @@ test_collection_install_frozen(RBS::CliTest) running tests without Bundler
 test_collection_install_gemspec(RBS::CliTest) running tests without Bundler
 test_collection_update(RBS::CliTest) running tests without Bundler
 
+test_loading_from_rbs_collection__gem_version_mismatch(RBS::EnvironmentLoaderTest) running test without rbs-amber testing gem
+
 test_defs(RBS::RbPrototypeTest) Numeric Nodes are added
 test_defs_return_type(RBS::RbPrototypeTest) Numeric Nodes are added
 test_defs_return_type_with_block(RBS::RbPrototypeTest) Numeric Nodes are added
@@ -46,6 +48,7 @@ test_parameter(RBS::RbiPrototypeTest) Symbol Node is added
 test_parameter_type_member_variance(RBS::RbiPrototypeTest) Symbol Node is added
 test_tuple(RBS::RbiPrototypeTest) Symbol Node is added
 test_untyped_block(RBS::RbiPrototypeTest) Symbol Node is added
+test_argument_forwarding(RBS::RbPrototypeTest) `...` args handling is changed
 
 test_TOPDIR(RbConfigSingletonTest) `TOPDIR` is `nil` during CI while RBS type is declared as `String`
 

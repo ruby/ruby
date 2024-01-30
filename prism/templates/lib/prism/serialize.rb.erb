@@ -96,8 +96,8 @@ module Prism
         comments = load_comments
         magic_comments = load_varuint.times.map { MagicComment.new(load_location, load_location) }
         data_loc = load_optional_location
-        errors = load_varuint.times.map { ParseError.new(load_embedded_string, load_location) }
-        warnings = load_varuint.times.map { ParseWarning.new(load_embedded_string, load_location) }
+        errors = load_varuint.times.map { ParseError.new(load_embedded_string, load_location, load_error_level) }
+        warnings = load_varuint.times.map { ParseWarning.new(load_embedded_string, load_location, load_warning_level) }
         [comments, magic_comments, data_loc, errors, warnings]
       end
 
@@ -211,9 +211,9 @@ module Prism
 
           constant =
             if start.nobits?(1 << 31)
-              input.byteslice(start, length).to_sym
+              input.byteslice(start, length).force_encoding(@encoding).to_sym
             else
-              serialized.byteslice(start & ((1 << 31) - 1), length).to_sym
+              serialized.byteslice(start & ((1 << 31) - 1), length).force_encoding(@encoding).to_sym
             end
 
           constant_pool[index] = constant
@@ -229,6 +229,30 @@ module Prism
       def load_optional_constant
         index = load_varuint
         load_constant(index - 1) if index != 0
+      end
+
+      def load_error_level
+        level = io.getbyte
+
+        case level
+        when 0
+          :fatal
+        else
+          raise "Unknown level: #{level}"
+        end
+      end
+
+      def load_warning_level
+        level = io.getbyte
+
+        case level
+        when 0
+          :default
+        when 1
+          :verbose
+        else
+          raise "Unknown level: #{level}"
+        end
       end
 
       if RUBY_ENGINE == 'ruby'

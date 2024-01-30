@@ -73,7 +73,7 @@
 #include "ruby/random.h"
 #include "ruby/ractor.h"
 
-typedef int int_must_be_32bit_at_least[sizeof(int) * CHAR_BIT < 32 ? -1 : 1];
+STATIC_ASSERT(int_must_be_32bit_at_least, sizeof(int) * CHAR_BIT >= 32);
 
 #include "missing/mt19937.c"
 

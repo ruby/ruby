@@ -17,10 +17,10 @@ class Gem::Net::HTTPGenericRequest
     @request_has_body = reqbody
     @response_has_body = resbody
 
-    if URI === uri_or_path then
-      raise ArgumentError, "not an HTTP URI" unless URI::HTTP === uri_or_path
+    if Gem::URI === uri_or_path then
+      raise ArgumentError, "not an HTTP Gem::URI" unless Gem::URI::HTTP === uri_or_path
       hostname = uri_or_path.hostname
-      raise ArgumentError, "no host component for URI" unless (hostname && hostname.length > 0)
+      raise ArgumentError, "no host component for Gem::URI" unless (hostname && hostname.length > 0)
       @uri = uri_or_path.dup
       host = @uri.hostname.dup
       host << ":" << @uri.port.to_s if @uri.port != @uri.default_port
@@ -71,10 +71,10 @@ class Gem::Net::HTTPGenericRequest
   #
   attr_reader :path
 
-  # Returns the URI object for the request, or +nil+ if none:
+  # Returns the Gem::URI object for the request, or +nil+ if none:
   #
   #   Gem::Net::HTTP::Get.new(uri).uri
-  #   # => #<URI::HTTPS https://jsonplaceholder.typicode.com/>
+  #   # => #<Gem::URI::HTTPS https://jsonplaceholder.typicode.com/>
   #   Gem::Net::HTTP::Get.new('example.com').uri # => nil
   #
   attr_reader :uri
@@ -213,10 +213,10 @@ class Gem::Net::HTTPGenericRequest
 
     if ssl
       scheme = 'https'
-      klass = URI::HTTPS
+      klass = Gem::URI::HTTPS
     else
       scheme = 'http'
-      klass = URI::HTTP
+      klass = Gem::URI::HTTP
     end
 
     if host = self['host']
@@ -225,7 +225,7 @@ class Gem::Net::HTTPGenericRequest
     else
      host = addr
     end
-    # convert the class of the URI
+    # convert the class of the Gem::URI
     if @uri.is_a?(klass)
       @uri.host = host
       @uri.port = port
@@ -286,7 +286,7 @@ class Gem::Net::HTTPGenericRequest
   def send_request_with_body_data(sock, ver, path, params)
     if /\Amultipart\/form-data\z/i !~ self.content_type
       self.content_type = 'application/x-www-form-urlencoded'
-      return send_request_with_body(sock, ver, path, URI.encode_www_form(params))
+      return send_request_with_body(sock, ver, path, Gem::URI.encode_www_form(params))
     end
 
     opt = @form_option.dup

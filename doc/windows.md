@@ -88,10 +88,11 @@ make
     scoop install git ruby sed patch
     ```
 
-5. You need to install required libraries using [vcpkg](https://vcpkg.io/) like:
+5.  You need to install required libraries using [vcpkg](https://vcpkg.io/) on
+    directory of ruby repository like:
 
     ```
-    vcpkg --triplet x64-windows install openssl libffi libyaml zlib
+    vcpkg --triplet x64-windows install
     ```
 
 6.  Enable Command Extension of your command line.  It's the default behavior
@@ -117,7 +118,7 @@ make
     executable without console window if also you want.
 
 3.  You need specify vcpkg directory to use `--with-opt-dir`
-    option like `configure --with-opt-dir=C:\vcpkg\installed\x64-windows`
+    option like `win32\configure.bat --with-opt-dir=vcpkg_installed\x64-windows`
 
 4.  Run `nmake up` if you are building from GIT source.
 
