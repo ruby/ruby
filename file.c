@@ -3710,7 +3710,15 @@ append_fspath(VALUE result, VALUE fname, char *dir, rb_encoding **enc, rb_encodi
     size_t dirlen = strlen(dir), buflen = rb_str_capacity(result);
 
     if (NORMALIZE_UTF8PATH || *enc != fsenc) {
-        rb_encoding *direnc = fs_enc_check(fname, dirname = ospath_new(dir, dirlen, fsenc));
+        dirname = ospath_new(dir, dirlen, fsenc);
+        if (!rb_enc_compatible(fname, dirname)) {
+            xfree(dir);
+            /* rb_enc_check must raise because the two encodings are not
+             * compatible. */
+            rb_enc_check(fname, dirname);
+            rb_bug("unreachable");
+        }
+        rb_encoding *direnc = fs_enc_check(fname, dirname);
         if (direnc != fsenc) {
             dirname = rb_str_conv_enc(dirname, fsenc, direnc);
             RSTRING_GETMEM(dirname, cwdp, dirlen);
