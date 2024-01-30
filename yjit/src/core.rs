@@ -50,7 +50,6 @@ pub enum Type {
     False,
     Fixnum,
     Flonum,
-    Hash,
     ImmSymbol,
 
     #[allow(unused)]
@@ -59,6 +58,7 @@ pub enum Type {
     TString, // An object with the T_STRING flag set, possibly an rb_cString
     CString, // An un-subclassed string of type rb_cString (can have instance vars in some cases)
     TArray, // An object with the T_ARRAY flag set, possibly an rb_cArray
+    THash, // An object with the T_HASH flag set, possibly an rb_cHash
 
     TProc, // A proc object. Could be an instance of a subclass of ::rb_cProc
 
@@ -111,7 +111,7 @@ impl Type {
             }
             match val.builtin_type() {
                 RUBY_T_ARRAY => Type::TArray,
-                RUBY_T_HASH => Type::Hash,
+                RUBY_T_HASH => Type::THash,
                 RUBY_T_STRING => Type::TString,
                 #[cfg(not(test))]
                 RUBY_T_DATA if unsafe { rb_obj_is_proc(val).test() } => Type::TProc,
@@ -154,7 +154,7 @@ impl Type {
         match self {
             Type::UnknownHeap => true,
             Type::TArray => true,
-            Type::Hash => true,
+            Type::THash => true,
             Type::HeapSymbol => true,
             Type::TString => true,
             Type::CString => true,
@@ -167,6 +167,11 @@ impl Type {
     /// Check if it's a T_ARRAY object (both TArray and CArray are T_ARRAY)
     pub fn is_array(&self) -> bool {
         matches!(self, Type::TArray)
+    }
+
+    /// Check if it's a T_HASH object
+    pub fn is_hash(&self) -> bool {
+        matches!(self, Type::THash)
     }
 
     /// Check if it's a T_STRING object (both TString and CString are T_STRING)
@@ -187,7 +192,7 @@ impl Type {
             Type::Fixnum => Some(RUBY_T_FIXNUM),
             Type::Flonum => Some(RUBY_T_FLOAT),
             Type::TArray => Some(RUBY_T_ARRAY),
-            Type::Hash => Some(RUBY_T_HASH),
+            Type::THash => Some(RUBY_T_HASH),
             Type::ImmSymbol | Type::HeapSymbol => Some(RUBY_T_SYMBOL),
             Type::TString | Type::CString => Some(RUBY_T_STRING),
             Type::TProc => Some(RUBY_T_DATA),
