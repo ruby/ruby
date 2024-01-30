@@ -52,7 +52,6 @@ class TestIO_Console < Test::Unit::TestCase
   end if FailedPathExceptions
 
   def test_bad_keyword
-    omit if RUBY_ENGINE == 'jruby'
     assert_raise_with_message(ArgumentError, /unknown keyword:.*bad/) do
       File.open(IO::NULL) do |f|
         f.raw(bad: 0)
