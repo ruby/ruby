@@ -254,6 +254,14 @@ module EnvUtil
   end
   module_function :under_gc_compact_stress
 
+  def without_gc
+    prev_disabled = GC.disable
+    yield
+  ensure
+    GC.enable unless prev_disabled
+  end
+  module_function :without_gc
+
   def with_default_external(enc)
     suppress_warning { Encoding.default_external = enc }
     yield

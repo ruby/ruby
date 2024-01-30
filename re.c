@@ -1747,14 +1747,17 @@ rb_reg_search_set_match(VALUE re, VALUE str, long pos, int reverse, int set_back
         .range = reverse ? 0 : len,
     };
 
-    VALUE match = match_alloc(rb_cMatch);
-    struct re_registers *regs = RMATCH_REGS(match);
+    struct re_registers regs = {0};
 
-    OnigPosition result = rb_reg_onig_match(re, str, reg_onig_search, &args, regs);
+    OnigPosition result = rb_reg_onig_match(re, str, reg_onig_search, &args, &regs);
     if (result == ONIG_MISMATCH) {
         rb_backref_set(Qnil);
         return ONIG_MISMATCH;
     }
+
+    VALUE match = match_alloc(rb_cMatch);
+    rb_matchext_t *rm = RMATCH_EXT(match);
+    rm->regs = regs;
 
     if (set_backref_str) {
         RB_OBJ_WRITE(match, &RMATCH(match)->str, rb_str_new4(str));
