@@ -549,6 +549,7 @@ pm_compile_flip_flop(pm_flip_flop_node_t *flip_flop_node, LABEL *else_label, LAB
 }
 
 void pm_compile_defined_expr(rb_iseq_t *iseq, const pm_node_t *defined_node, LINK_ANCHOR *const ret, const uint8_t *src, bool popped, pm_scope_node_t *scope_node,  NODE dummy_line_node, int lineno, bool in_condition);
+
 static void
 pm_compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const pm_node_t *cond,
                          LABEL *then_label, LABEL *else_label, const uint8_t *src, bool popped, pm_scope_node_t *scope_node)
@@ -597,11 +598,7 @@ again:
         break;
       }
       default: {
-        DECL_ANCHOR(cond_seq);
-        INIT_ANCHOR(cond_seq);
-
-        pm_compile_node(iseq, cond, cond_seq, src, false, scope_node);
-        ADD_SEQ(ret, cond_seq);
+        pm_compile_node(iseq, cond, ret, src, false, scope_node);
         break;
       }
     }
@@ -615,17 +612,13 @@ pm_compile_if(rb_iseq_t *iseq, const int line, pm_statements_node_t *node_body, 
 {
     NODE dummy_line_node = generate_dummy_line_node(line, line);
 
-    DECL_ANCHOR(cond_seq);
-
     LABEL *then_label, *else_label, *end_label;
 
-    INIT_ANCHOR(cond_seq);
     then_label = NEW_LABEL(line);
     else_label = NEW_LABEL(line);
     end_label = 0;
 
-    pm_compile_branch_condition(iseq, cond_seq, predicate, then_label, else_label, src, false, scope_node);
-    ADD_SEQ(ret, cond_seq);
+    pm_compile_branch_condition(iseq, ret, predicate, then_label, else_label, src, false, scope_node);
 
     if (then_label->refcnt) {
         ADD_LABEL(ret, then_label);
