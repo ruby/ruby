@@ -3800,9 +3800,9 @@ args		: arg_value
                 | args ',' arg_splat
                     {
                     /*%%%*/
-                        $$ = rest_arg_append(p, $args, $arg_splat, &@$);
+                        $$ = rest_arg_append(p, $1, $3, &@$);
                     /*% %*/
-                    /*% ripper: args_add_star!($args, $arg_splat) %*/
+                    /*% ripper: args_add_star!($1, $3) %*/
                     }
                 ;
 
