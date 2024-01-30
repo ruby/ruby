@@ -120,8 +120,10 @@ An example of reproducing a gem build:
 
   def get_timestamp(file)
     mtime = nil
-    Gem::Package::TarReader.new(File.open(file)) do |tar|
-      mtime = tar.seek("metadata.gz") {|f| f.header.mtime }
+    File.open(file, "rb") do |f|
+      Gem::Package::TarReader.new(f) do |tar|
+        mtime = tar.seek("metadata.gz") {|tf| tf.header.mtime }
+      end
     end
 
     mtime
