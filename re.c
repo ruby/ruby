@@ -4605,8 +4605,8 @@ re_warn(const char *s)
 rb_hrtime_t rb_reg_match_time_limit = 0;
 
 // This function is periodically called during regexp matching
-void
-rb_reg_check_timeout(regex_t *reg, void *end_time_)
+bool
+rb_reg_timeout_p(regex_t *reg, void *end_time_)
 {
     rb_hrtime_t *end_time = (rb_hrtime_t *)end_time_;
 
@@ -4631,10 +4631,18 @@ rb_reg_check_timeout(regex_t *reg, void *end_time_)
     }
     else {
         if (*end_time < rb_hrtime_now()) {
-            // timeout is exceeded
-            rb_raise(rb_eRegexpTimeoutError, "regexp match timeout");
+            // Timeout has exceeded
+            return true;
         }
     }
+
+    return false;
+}
+
+void
+rb_reg_raise_timeout(void)
+{
+    rb_raise(rb_eRegexpTimeoutError, "regexp match timeout");
 }
 
 /*
