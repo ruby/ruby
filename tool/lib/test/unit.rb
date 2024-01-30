@@ -854,6 +854,38 @@ module Test
           end
         end
         # (((@record ||= {})[suite] ||= {})[method]) = [assertions, time, error]
+        if writer = @options[:launchable_test_reports]
+          location = suite.instance_method(method).source_location
+          if location && path = location.first
+            # Launchable JSON schema is defined at
+            # https://github.com/search?q=repo%3Alaunchableinc%2Fcli+https%3A%2F%2Flaunchableinc.com%2Fschema%2FRecordTestInput&type=code.
+            e = case error
+                when nil
+                  status = 'TEST_PASSED'
+                  nil
+                when Test::Unit::PendedError
+                  status = 'TEST_SKIPPED'
+                  "Skipped:\n#{klass}##{meth} [#{location e}]:\n#{e.message}\n"
+                when Test::Unit::AssertionFailedError
+                  status = 'TEST_FAILED'
+                  "Failure:\n#{klass}##{meth} [#{location e}]:\n#{e.message}\n"
+                when Timeout::Error
+                  status = 'TEST_FAILED'
+                  "Timeout:\n#{klass}##{meth}\n"
+                else
+                  status = 'TEST_FAILED'
+                  bt = Test::filter_backtrace(e.backtrace).join "\n    "
+                  "Error:\n#{klass}##{meth}:\n#{e.class}: #{e.message.b}\n    #{bt}\n"
+                end
+            writer.write_object do
+              writer.write_key_value('testPath', "file=#{path}#class=#{suite.name}#testcase=#{method}",)
+              writer.write_key_value('status', status)
+              writer.write_key_value('duration', time)
+              writer.write_key_value('createdAt', Time.now)
+              writer.write_key_value('stderr', e) if e
+            end
+          end
+        end
         super
       end
 
@@ -881,6 +913,94 @@ module Test
         end
         opts.on '--most-asserted=N', Integer, 'Show most asserted N tests' do |n|
           options[:most_asserted] = n
+        end
+        opts.on '--launchable-test-reports=PATH', String, 'Report test results in Launchable JSON format' do |path|
+          require 'json'
+          options[:launchable_test_reports] = writer = JsonStreamWriter.new(path)
+          writer.write_array('testCases')
+          at_exit{ writer.close }
+        end
+      end
+      ##
+      # JsonStreamWriter writes a JSON file using a stream.
+      # By utilizing a stream, we can minimize memory usage, especially for large files.
+      class JsonStreamWriter
+        def initialize(path)
+          @file = File.open(path, "w")
+          @file.write("{")
+          @indent_level = 0
+          @is_first_key_val = true
+          @is_first_obj = true
+          write_new_line
+        end
+        def write_object
+          if @is_first_obj
+            @is_first_obj = false
+          else
+            write_comma
+            write_new_line
+          end
+          @indent_level += 1
+          write_indent
+          @file.write("{")
+          write_new_line
+          @indent_level += 1
+          yield
+          @indent_level -= 1
+          write_new_line
+          write_indent
+          @file.write("}")
+          @indent_level -= 1
+          @is_first_key_val = true
+        end
+        def write_array(key)
+          @indent_level += 1
+          write_indent
+          @file.write(to_json_str(key))
+          write_colon
+          @file.write(" ", "[")
+          write_new_line
+        end
+        def write_key_value(key, value)
+          if @is_first_key_val
+            @is_first_key_val = false
+          else
+            write_comma
+            write_new_line
+          end
+          write_indent
+          @file.write(to_json_str(key))
+          write_colon
+          @file.write(" ")
+          @file.write(to_json_str(value))
+        end
+        def close
+          close_array
+          @indent_level -= 1
+          write_new_line
+          @file.write("}")
+        end
+        private
+        def to_json_str(obj)
+          JSON.dump(obj)
+        end
+        def write_indent
+          @file.write(" " * 2 * @indent_level)
+        end
+        def write_new_line
+          @file.write("\n")
+        end
+        def write_comma
+          @file.write(',')
+        end
+        def write_colon
+          @file.write(":")
+        end
+        def close_array
+          write_new_line
+          write_indent
+          @file.write("]")
+          @indent_level -= 1
         end
       end
     end
