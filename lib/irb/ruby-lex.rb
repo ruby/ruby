@@ -290,7 +290,7 @@ module IRB
         when :on_embdoc_beg
           indent_level = 0
         else
-          indent_level += 1
+          indent_level += 1 unless t.tok == 'alias' || t.tok == 'undef'
         end
       end
       indent_level
