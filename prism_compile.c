@@ -751,18 +751,33 @@ pm_interpolated_node_compile(pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_
                     current_string = string_value;
                 }
             }
-            else {
+            else if (PM_NODE_TYPE_P(part, PM_EMBEDDED_STATEMENTS_NODE) &&
+                    ((pm_embedded_statements_node_t *)part)->statements->body.size == 1 &&
+                    PM_NODE_TYPE_P(((pm_embedded_statements_node_t *)part)->statements->body.nodes[0], PM_STRING_NODE)) {
+                pm_string_node_t *string_node = (pm_string_node_t *)((pm_embedded_statements_node_t *)part)->statements->body.nodes[0];
+                VALUE string_value = parse_string_encoded((pm_node_t *)string_node, &string_node->unescaped, parser);
                 if (RTEST(current_string)) {
-                    current_string = rb_fstring(current_string);
-                    if (parser->frozen_string_literal) {
-                        ADD_INSN1(ret, &dummy_line_node, putobject, current_string);
-                    }
-                    else {
-                        ADD_INSN1(ret, &dummy_line_node, putstring, current_string);
-                    }
-                    current_string = Qnil;
-                    number_of_items_pushed++;
+                    current_string = rb_str_concat(current_string, string_value);
                 }
+                else {
+                    current_string = string_value;
+                }
+            }
+            else {
+                if (!RTEST(current_string)) {
+                    rb_encoding *enc = rb_enc_from_index(rb_enc_find_index(parser->encoding->name));
+                    current_string = rb_enc_str_new(NULL, 0, enc);
+                }
+
+                if (parser->frozen_string_literal) {
+                    ADD_INSN1(ret, &dummy_line_node, putobject, rb_str_freeze(current_string));
+                }
+                else {
+                    ADD_INSN1(ret, &dummy_line_node, putstring, rb_str_freeze(current_string));
+                }
+                current_string = Qnil;
+                number_of_items_pushed++;
+
                 PM_COMPILE_NOT_POPPED(part);
                 PM_DUP;
                 ADD_INSN1(ret, &dummy_line_node, objtostring, new_callinfo(iseq, idTo_s, 0, VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE , NULL, FALSE));
@@ -5515,10 +5530,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         pm_interpolated_match_last_line_node_t *cast = (pm_interpolated_match_last_line_node_t *) node;
 
         int parts_size = (int)cast->parts.size;
-        if (parts_size > 0 && !PM_NODE_TYPE_P(cast->parts.nodes[0], PM_STRING_NODE)) {
-            ADD_INSN1(ret, &dummy_line_node, putobject, rb_str_new(0, 0));
-            parts_size++;
-        }
 
         pm_interpolated_node_compile(&cast->parts, iseq, dummy_line_node, ret, popped, scope_node, parser);
 
@@ -5551,13 +5562,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         pm_interpolated_regular_expression_node_t *cast = (pm_interpolated_regular_expression_node_t *) node;
 
-        int parts_size = (int)cast->parts.size;
-        if (cast->parts.size > 0 && !PM_NODE_TYPE_P(cast->parts.nodes[0], PM_STRING_NODE)) {
-            ADD_INSN1(ret, &dummy_line_node, putobject, rb_str_new(0, 0));
-            parts_size++;
-        }
-
-        pm_interpolated_node_compile(&cast->parts, iseq, dummy_line_node, ret, popped, scope_node, parser);
+        int parts_size = pm_interpolated_node_compile(&cast->parts, iseq, dummy_line_node, ret, popped, scope_node, parser);
 
         ADD_INSN2(ret, &dummy_line_node, toregexp, INT2FIX(pm_reg_flags(node)), INT2FIX(parts_size));
         PM_POP_IF_POPPED;
@@ -5565,12 +5570,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       }
       case PM_INTERPOLATED_STRING_NODE: {
         pm_interpolated_string_node_t *interp_string_node = (pm_interpolated_string_node_t *) node;
-        int number_of_items_pushed = 0;
-        if (!PM_NODE_TYPE_P(interp_string_node->parts.nodes[0], PM_STRING_NODE)) {
-            ADD_INSN1(ret, &dummy_line_node, putstring, rb_str_new(0, 0));
-            number_of_items_pushed++;
-        }
-        number_of_items_pushed += pm_interpolated_node_compile(&interp_string_node->parts, iseq, dummy_line_node, ret, popped, scope_node, parser);
+        int number_of_items_pushed = pm_interpolated_node_compile(&interp_string_node->parts, iseq, dummy_line_node, ret, popped, scope_node, parser);
 
         if (number_of_items_pushed > 1) {
             ADD_INSN1(ret, &dummy_line_node, concatstrings, INT2FIX(number_of_items_pushed));
@@ -7273,13 +7273,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                   case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
                     pm_interpolated_regular_expression_node_t *cast = (pm_interpolated_regular_expression_node_t *) scope_node->ast_node;
 
-                    int parts_size = (int)cast->parts.size;
-                    if (parts_size > 0 && !PM_NODE_TYPE_P(cast->parts.nodes[0], PM_STRING_NODE)) {
-                        ADD_INSN1(ret, &dummy_line_node, putobject, rb_str_new(0, 0));
-                        parts_size++;
-                    }
+                    int parts_size = pm_interpolated_node_compile(&cast->parts, iseq, dummy_line_node, ret, popped, scope_node, parser);
 
-                    pm_interpolated_node_compile(&cast->parts, iseq, dummy_line_node, ret, false, scope_node, parser);
                     ADD_INSN2(ret, &dummy_line_node, toregexp, INT2FIX(pm_reg_flags((pm_node_t *)cast)), INT2FIX(parts_size));
                     break;
                   }
