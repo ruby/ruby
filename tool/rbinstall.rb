@@ -97,7 +97,7 @@ def parse_args(argv = ARGV)
   opt.on('--debug-symbols=SUFFIX', /\w+/) {|name| $debug_symbols = ".#{name}"}
 
   unless $install_procs.empty?
-    w = (w = ENV["COLUMNS"] and (w = w.to_i) > 80 ? w - 30 : 50)
+    w = (w = ENV["COLUMNS"] and (w = w.to_i) > 80) ? w - 30 : 50
     opt.on("\n""Types for --install and --exclude:")
     mesg = " "
     $install_procs.each_key do |t|
