@@ -1,3 +1,6 @@
+# To run the tests in this file only, with YJIT enabled:
+# make btest BTESTS=bootstraptest/test_yjit.rb RUN_OPTS="--yjit-call-threshold=1"
+
 # regression test for popping before side exit
 assert_equal "ok", %q{
   def foo(a, *) = a
@@ -4449,6 +4452,11 @@ assert_equal '[2, 4611686018427387904]', %q{
 # Integer right shift
 assert_equal '[0, 1, -4]', %q{
   [0 >> 1, 2 >> 1, -7 >> 1]
+}
+
+# Integer XOR
+assert_equal '[0, 0, 4]', %q{
+  [0 ^ 0, 1 ^ 1, 7 ^ 3]
 }
 
 assert_equal '[nil, "yield"]', %q{
