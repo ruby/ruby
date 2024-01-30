@@ -5335,7 +5335,8 @@ test_check(int n, int argc, VALUE *argv)
  *  The tests:
  *
  *  - Each of these tests operates only on the entity at `path0`,
- *    and returns `true` or `false`:
+ *    and returns `true` or `false`;
+ *    for a non-existent entity, returns `false` (does not raise exception):
  *
  *      | Character | Test |
  *      |:---------:|:----- |
@@ -5347,8 +5348,8 @@ test_check(int n, int argc, VALUE *argv)
  *      | <tt>'g'</tt> | Whether the entity's setgid bit is set. |
  *      | <tt>'G'</tt> | Like <tt>'g'</tt>, but also tests whether the ownership is equal to the caller's. |
  *      | <tt>'k'</tt> | Whether the entity's sticky bit is set. |
- *      | <tt>'l'</tt> | Whether the entry is a symbolic link. |
- *      | <tt>'o'</tt> | Whether the entity is owned by the caller's effective uid. |
+ *      | <tt>'l'</tt> | Whether the entity is a symbolic link. |
+ *      | <tt>'o'</tt> | Whether the entity is owned by the caller's effective uid/gid. |
  *      | <tt>'O'</tt> | Like <tt>'o'</tt>, but uses the real uid/gid (not the effective uid/gid). |
  *      | <tt>'p'</tt> | Whether the entity is a FIFO device (named pipe). |
  *      | <tt>'r'</tt> | Whether the entity is readable by the caller's effecive uid/gid. |
@@ -5395,9 +5396,9 @@ test_check(int n, int argc, VALUE *argv)
  *
  *      | Character | Test |
  *      |:---------:|:----- |
- *      | <tt>'-'</tt> | Whether the entities exist and have the same content. |
+ *      | <tt>'-'</tt> | Whether the entities exist and are identical. |
  *
- */s
+ */
 
 static VALUE
 rb_f_test(int argc, VALUE *argv, VALUE _)
