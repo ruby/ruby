@@ -42,6 +42,8 @@ enum {
 
     // This is used to validate the flags given by the user.
     RB_IO_BUFFER_FLAGS_MASK = RB_IO_BUFFER_EXTERNAL | RB_IO_BUFFER_INTERNAL | RB_IO_BUFFER_MAPPED | RB_IO_BUFFER_SHARED | RB_IO_BUFFER_LOCKED | RB_IO_BUFFER_PRIVATE | RB_IO_BUFFER_READONLY,
+
+    RB_IO_BUFFER_DEBUG = 0,
 };
 
 struct rb_io_buffer {
@@ -113,6 +115,7 @@ io_buffer_map_file(struct rb_io_buffer *buffer, int descriptor, size_t size, rb_
     }
 
     HANDLE mapping = CreateFileMapping(file, NULL, protect, 0, 0, NULL);
+    if (RB_IO_BUFFER_DEBUG) fprintf(stderr, "io_buffer_map_file:CreateFileMapping -> %p\n", mapping);
     if (!mapping) rb_sys_fail("io_buffer_map_descriptor:CreateFileMapping");
 
     void *base = MapViewOfFile(mapping, access, (DWORD)(offset >> 32), (DWORD)(offset & 0xFFFFFFFF), size);
@@ -213,9 +216,13 @@ io_buffer_initialize(VALUE self, struct rb_io_buffer *buffer, void *base, size_t
     buffer->size = size;
     buffer->flags = flags;
     RB_OBJ_WRITE(self, &buffer->source, source);
+
+#if defined(_WIN32)
+    buffer->mapping = NULL;
+#endif
 }
 
-static int
+static void
 io_buffer_free(struct rb_io_buffer *buffer)
 {
     if (buffer->base) {
@@ -247,18 +254,17 @@ io_buffer_free(struct rb_io_buffer *buffer)
         buffer->size = 0;
         buffer->flags = 0;
         buffer->source = Qnil;
-
-        return 1;
     }
 
 #if defined(_WIN32)
     if (buffer->mapping) {
-        CloseHandle(buffer->mapping);
+        if (RB_IO_BUFFER_DEBUG) fprintf(stderr, "io_buffer_free:CloseHandle -> %p\n", buffer->mapping);
+        if (!CloseHandle(buffer->mapping)) {
+            fprintf(stderr, "io_buffer_free:GetLastError -> %d\n", GetLastError());
+        }
         buffer->mapping = NULL;
     }
 #endif
-
-    return 0;
 }
 
 void
