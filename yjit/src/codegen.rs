@@ -1658,7 +1658,7 @@ fn guard_object_is_hash(
     let flags_opnd = Opnd::mem(VALUE_BITS, object_reg, RUBY_OFFSET_RBASIC_FLAGS);
     let flags_opnd = asm.and(flags_opnd, (RUBY_T_MASK as u64).into());
 
-    // Compare the result with T_ARRAY
+    // Compare the result with T_HASH
     asm.cmp(flags_opnd, (RUBY_T_HASH as u64).into());
     asm.jne(Target::side_exit(counter));
 
