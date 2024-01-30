@@ -25,8 +25,8 @@ module Prism
         # offsets in the file.
         attr_reader :offset_cache
 
-        # The locals in the current scope.
-        attr_reader :locals
+        # The types of values that can be forwarded in the current scope.
+        attr_reader :forwarding
 
         # Whether or not the current node is in a destructure.
         attr_reader :in_destructure
@@ -36,13 +36,13 @@ module Prism
 
         # Initialize a new compiler with the given parser, offset cache, and
         # options.
-        def initialize(parser, offset_cache, locals: nil, in_destructure: false, in_pattern: false)
+        def initialize(parser, offset_cache, forwarding: [], in_destructure: false, in_pattern: false)
           @parser = parser
           @builder = parser.builder
           @source_buffer = parser.source_buffer
           @offset_cache = offset_cache
 
-          @locals = locals
+          @forwarding = forwarding
           @in_destructure = in_destructure
           @in_pattern = in_pattern
         end
@@ -135,7 +135,7 @@ module Prism
         # { **foo }
         #   ^^^^^
         def visit_assoc_splat_node(node)
-          if node.value.nil? && locals.include?(:**)
+          if node.value.nil? && forwarding.include?(:**)
             builder.forwarded_kwrestarg(token(node.operator_loc))
           else
             builder.kwsplat(token(node.operator_loc), visit(node.value))
@@ -372,7 +372,7 @@ module Prism
             visit(node.constant_path),
             token(node.inheritance_operator_loc),
             visit(node.superclass),
-            node.body&.accept(copy_compiler(locals: node.locals)),
+            node.body&.accept(copy_compiler(forwarding: [])),
             token(node.end_keyword_loc)
           )
         end
@@ -519,6 +519,8 @@ module Prism
         # def self.foo; end
         # ^^^^^^^^^^^^^^^^^
         def visit_def_node(node)
+          forwarding = find_forwarding(node.parameters)
+
           if node.equal_loc
             if node.receiver
               builder.def_endless_singleton(
@@ -528,7 +530,7 @@ module Prism
                 token(node.name_loc),
                 builder.args(token(node.lparen_loc), visit(node.parameters) || [], token(node.rparen_loc), false),
                 token(node.equal_loc),
-                node.body&.accept(copy_compiler(locals: node.locals))
+                node.body&.accept(copy_compiler(forwarding: forwarding))
               )
             else
               builder.def_endless_method(
@@ -536,7 +538,7 @@ module Prism
                 token(node.name_loc),
                 builder.args(token(node.lparen_loc), visit(node.parameters) || [], token(node.rparen_loc), false),
                 token(node.equal_loc),
-                node.body&.accept(copy_compiler(locals: node.locals))
+                node.body&.accept(copy_compiler(forwarding: forwarding))
               )
             end
           elsif node.receiver
@@ -546,7 +548,7 @@ module Prism
               token(node.operator_loc),
               token(node.name_loc),
               builder.args(token(node.lparen_loc), visit(node.parameters) || [], token(node.rparen_loc), false),
-              node.body&.accept(copy_compiler(locals: node.locals)),
+              node.body&.accept(copy_compiler(forwarding: forwarding)),
               token(node.end_keyword_loc)
             )
           else
@@ -554,7 +556,7 @@ module Prism
               token(node.def_keyword_loc),
               token(node.name_loc),
               builder.args(token(node.lparen_loc), visit(node.parameters) || [], token(node.rparen_loc), false),
-              node.body&.accept(copy_compiler(locals: node.locals)),
+              node.body&.accept(copy_compiler(forwarding: forwarding)),
               token(node.end_keyword_loc)
             )
           end
@@ -1008,7 +1010,7 @@ module Prism
             else
               builder.args(nil, [], nil, false)
             end,
-            node.body&.accept(copy_compiler(locals: node.locals)),
+            node.body&.accept(copy_compiler(forwarding: find_forwarding(node.parameters&.parameters))),
             [node.closing, srange(node.closing_loc)]
           )
         end
@@ -1103,7 +1105,7 @@ module Prism
           builder.def_module(
             token(node.module_keyword_loc),
             visit(node.constant_path),
-            node.body&.accept(copy_compiler(locals: node.locals)),
+            node.body&.accept(copy_compiler(forwarding: [])),
             token(node.end_keyword_loc)
           )
         end
@@ -1284,7 +1286,7 @@ module Prism
 
         # The top-level program node.
         def visit_program_node(node)
-          node.statements.accept(copy_compiler(locals: node.locals))
+          visit(node.statements)
         end
 
         # 0..5
@@ -1415,7 +1417,7 @@ module Prism
             token(node.class_keyword_loc),
             token(node.operator_loc),
             visit(node.expression),
-            node.body&.accept(copy_compiler(locals: node.locals)),
+            node.body&.accept(copy_compiler(forwarding: [])),
             token(node.end_keyword_loc)
           )
         end
@@ -1447,7 +1449,7 @@ module Prism
         # def foo(*); bar(*); end
         #                 ^
         def visit_splat_node(node)
-          if node.expression.nil? && locals.include?(:*)
+          if node.expression.nil? && forwarding.include?(:*)
             builder.forwarded_restarg(token(node.operator_loc))
           elsif in_destructure
             builder.restarg(token(node.operator_loc), token(node.expression&.location))
@@ -1658,8 +1660,23 @@ module Prism
 
         # Initialize a new compiler with the given option overrides, used to
         # visit a subtree with the given options.
-        def copy_compiler(locals: self.locals, in_destructure: self.in_destructure, in_pattern: self.in_pattern)
-          Compiler.new(parser, offset_cache, locals: locals, in_destructure: in_destructure, in_pattern: in_pattern)
+        def copy_compiler(forwarding: self.forwarding, in_destructure: self.in_destructure, in_pattern: self.in_pattern)
+          Compiler.new(parser, offset_cache, forwarding: forwarding, in_destructure: in_destructure, in_pattern: in_pattern)
+        end
+
+        # When *, **, &, or ... are used as an argument in a method call, we
+        # check if they were allowed by the current context. To determine that
+        # we build this lookup table.
+        def find_forwarding(node)
+          return [] if node.nil?
+
+          forwarding = []
+          forwarding << :* if node.rest.is_a?(RestParameterNode) && node.rest.name.nil?
+          forwarding << :** if node.keyword_rest.is_a?(KeywordRestParameterNode) && node.keyword_rest.name.nil?
+          forwarding << :& if !node.block.nil? && node.block.name.nil?
+          forwarding |= [:&, :"..."] if node.keyword_rest.is_a?(ForwardingParameterNode)
+
+          forwarding
         end
 
         # Blocks can have a special set of parameters that automatically expand
@@ -1732,7 +1749,7 @@ module Prism
               else
                 builder.args(nil, [], nil, false)
               end,
-              visit(block.body),
+              block.body&.accept(copy_compiler(forwarding: find_forwarding(block.parameters&.parameters))),
               token(block.closing_loc)
             )
           else
