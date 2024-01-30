@@ -1182,6 +1182,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/array.rb \
 		$(srcdir)/kernel.rb \
 		$(srcdir)/ractor.rb \
+		$(srcdir)/regexp.rb \
 		$(srcdir)/symbol.rb \
 		$(srcdir)/timev.rb \
 		$(srcdir)/thread_sync.rb \
@@ -10317,6 +10318,7 @@ miniinit.$(OBJEXT): {$(VPATH)}prism/ast.h
 miniinit.$(OBJEXT): {$(VPATH)}prism/version.h
 miniinit.$(OBJEXT): {$(VPATH)}prism_compile.h
 miniinit.$(OBJEXT): {$(VPATH)}ractor.rb
+miniinit.$(OBJEXT): {$(VPATH)}regexp.rb
 miniinit.$(OBJEXT): {$(VPATH)}rjit.rb
 miniinit.$(OBJEXT): {$(VPATH)}rjit_c.rb
 miniinit.$(OBJEXT): {$(VPATH)}ruby_assert.h
@@ -14150,6 +14152,8 @@ re.$(OBJEXT): {$(VPATH)}re.c
 re.$(OBJEXT): {$(VPATH)}re.h
 re.$(OBJEXT): {$(VPATH)}regenc.h
 re.$(OBJEXT): {$(VPATH)}regex.h
+re.$(OBJEXT): {$(VPATH)}regexp.rb
+re.$(OBJEXT): {$(VPATH)}regexp.rbinc
 re.$(OBJEXT): {$(VPATH)}regint.h
 re.$(OBJEXT): {$(VPATH)}ruby_assert.h
 re.$(OBJEXT): {$(VPATH)}ruby_atomic.h

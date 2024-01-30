@@ -23,6 +23,7 @@ numeric.rb
 nilclass.rb
 pack.rb
 ractor.rb
+regexp.rb
 string.rb
 symbol.rb
 timev.rb

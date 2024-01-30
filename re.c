@@ -3775,29 +3775,6 @@ rb_reg_match_m(int argc, VALUE *argv, VALUE re)
     return result;
 }
 
-/*
- *  call-seq:
- *    match?(string) -> true or false
- *    match?(string, offset = 0) -> true or false
- *
- *  Returns <code>true</code> or <code>false</code> to indicate whether the
- *  regexp is matched or not without updating $~ and other related variables.
- *  If the second parameter is present, it specifies the position in the string
- *  to begin the search.
- *
- *     /R.../.match?("Ruby")    # => true
- *     /R.../.match?("Ruby", 1) # => false
- *     /P.../.match?("Ruby")    # => false
- *     $&                       # => nil
- */
-
-static VALUE
-rb_reg_match_m_p(int argc, VALUE *argv, VALUE re)
-{
-    long pos = rb_check_arity(argc, 1, 2) > 1 ? NUM2LONG(argv[1]) : 0;
-    return rb_reg_match_p(re, argv[0], pos);
-}
-
 VALUE
 rb_reg_match_p(VALUE re, VALUE str, long pos)
 {
@@ -4760,7 +4737,6 @@ Init_Regexp(void)
     rb_define_method(rb_cRegexp, "===", rb_reg_eqq, 1);
     rb_define_method(rb_cRegexp, "~", rb_reg_match2, 0);
     rb_define_method(rb_cRegexp, "match", rb_reg_match_m, -1);
-    rb_define_method(rb_cRegexp, "match?", rb_reg_match_m_p, -1);
     rb_define_method(rb_cRegexp, "to_s", rb_reg_to_s, 0);
     rb_define_method(rb_cRegexp, "inspect", rb_reg_inspect, 0);
     rb_define_method(rb_cRegexp, "source", rb_reg_source, 0);
@@ -4821,3 +4797,5 @@ Init_Regexp(void)
     rb_define_method(rb_cMatch, "eql?", match_equal, 1);
     rb_define_method(rb_cMatch, "==", match_equal, 1);
 }
+
+#include "regexp.rbinc"
