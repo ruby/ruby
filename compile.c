@@ -4786,7 +4786,7 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
 }
 
 static int
-compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped)
+compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int popped, int first_chunk)
 {
     const NODE *line_node = node;
 
@@ -4846,7 +4846,6 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
     const int max_stack_len = 0x100;
     const int min_tmp_ary_len = 0x40;
     int stack_len = 0;
-    int first_chunk = 1;
 
     /* Either create a new array, or push to the existing array */
 #define FLUSH_CHUNK \
@@ -10174,7 +10173,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         CHECK(compile_super(iseq, ret, node, popped, type));
         break;
       case NODE_LIST:{
-        CHECK(compile_array(iseq, ret, node, popped) >= 0);
+        CHECK(compile_array(iseq, ret, node, popped, 1) >= 0);
         break;
       }
       case NODE_ZLIST:{
@@ -10427,8 +10426,14 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         }
         else {
             CHECK(COMPILE(ret, "argscat head", RNODE_ARGSCAT(node)->nd_head));
-            CHECK(COMPILE(ret, "argscat body", RNODE_ARGSCAT(node)->nd_body));
-            ADD_INSN(ret, node, concattoarray);
+            const NODE *body_node = RNODE_ARGSCAT(node)->nd_body;
+            if (nd_type_p(body_node, NODE_LIST)) {
+                CHECK(compile_array(iseq, ret, body_node, popped, 0) >= 0);
+            }
+            else {
+                CHECK(COMPILE(ret, "argscat body", body_node));
+                ADD_INSN(ret, node, concattoarray);
+            }
         }
         break;
       }
