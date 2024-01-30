@@ -1243,8 +1243,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*ary_unshift)(VALUE ary, VALUE item);
     VALUE (*ary_new2)(long capa); // ary_new_capa
     VALUE (*ary_entry)(VALUE ary, long offset);
-    VALUE (*ary_join)(VALUE ary, VALUE sep);
-    VALUE (*ary_reverse)(VALUE ary);
     VALUE (*ary_clear)(VALUE ary);
     void (*ary_modify)(VALUE ary);
     long (*array_len)(VALUE a);

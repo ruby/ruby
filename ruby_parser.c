@@ -2,6 +2,7 @@
 
 #include "internal/ruby_parser.h"
 
+#include "node.h"
 #include "rubyparser.h"
 #include "internal/error.h"
 
@@ -26,7 +27,6 @@
 #include "ruby/ractor.h"
 #include "ruby/ruby.h"
 #include "ruby/util.h"
-#include "node.h"
 #include "internal.h"
 #include "vm_core.h"
 #include "symbol.h"
@@ -522,8 +522,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .ary_unshift = rb_ary_unshift,
     .ary_new2 = rb_ary_new2,
     .ary_entry = rb_ary_entry,
-    .ary_join = rb_ary_join,
-    .ary_reverse = rb_ary_reverse,
     .ary_clear = rb_ary_clear,
     .ary_modify = rb_ary_modify,
     .array_len = rb_array_len,
@@ -1013,4 +1011,35 @@ VALUE
 rb_node_encoding_val(const NODE *node)
 {
     return rb_enc_from_encoding(RNODE_ENCODING(node)->enc);
+}
+
+VALUE
+rb_node_const_decl_val(const NODE *node)
+{
+    VALUE path;
+    if (RNODE_CDECL(node)->nd_vid) {
+        path = rb_id2str(RNODE_CDECL(node)->nd_vid);
+    }
+    else {
+        NODE *n = RNODE_CDECL(node)->nd_else;
+        path = rb_ary_new();
+        for (; n && nd_type_p(n, NODE_COLON2); n = RNODE_COLON2(n)->nd_head) {
+            rb_ary_push(path, rb_id2str(RNODE_COLON2(n)->nd_mid));
+        }
+        if (n && nd_type_p(n, NODE_CONST)) {
+            // Const::Name
+            rb_ary_push(path, rb_id2str(RNODE_CONST(n)->nd_vid));
+        }
+        else if (n && nd_type_p(n, NODE_COLON3)) {
+            // ::Const::Name
+            rb_ary_push(path, rb_str_new(0, 0));
+        }
+        else {
+            // expression::Name
+            rb_ary_push(path, rb_str_new_cstr("..."));
+        }
+        path = rb_ary_join(rb_ary_reverse(path), rb_str_new_cstr("::"));
+        path = rb_fstring(path);
+    }
+    return path;
 }
