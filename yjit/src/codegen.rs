@@ -1442,15 +1442,15 @@ fn gen_splatkw(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus> {
-    // Defer compilation so we can specialize on a runtime `self`
+    // Defer compilation so we can specialize on a runtime hash operand
     if !jit.at_current_insn() {
         defer_compilation(jit, asm, ocb);
         return Some(EndBlock);
     }
 
-    let comptime_hash = jit.peek_at_stack(&asm.ctx, 0);
+    let comptime_hash = jit.peek_at_stack(&asm.ctx, 1);
     if comptime_hash.hash_p() {
-        // If compile-time hash operand is T_HASH, just guard that it's T_HASH.
+        // If a compile-time hash operand is T_HASH, just guard that it's T_HASH.
         let hash_opnd = asm.stack_opnd(1);
         guard_object_is_hash(asm, hash_opnd, hash_opnd.into(), Counter::splatkw_not_hash);
     } else {
