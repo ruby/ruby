@@ -11,7 +11,7 @@ require_relative "util/list"
 # all the requirements.
 
 class Gem::Resolver
-  require_relative "resolver/molinillo"
+  require_relative "vendored_molinillo"
 
   ##
   # If the DEBUG_RESOLVER environment variable is set then debugging mode is
