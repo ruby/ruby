@@ -65,7 +65,7 @@ module Bundler
 
       platforms.concat(new_platforms)
 
-      less_specific_platform = new_platforms.find {|platform| platform != Gem::Platform::RUBY && platform === Bundler.local_platform }
+      less_specific_platform = new_platforms.find {|platform| platform != Gem::Platform::RUBY && Bundler.local_platform === platform }
       platforms.delete(Bundler.local_platform) if less_specific_platform
 
       platforms
