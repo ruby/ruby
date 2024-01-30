@@ -379,6 +379,11 @@ impl VALUE {
         }
     }
 
+    /// Returns true if the value is T_HASH
+    pub fn hash_p(self) -> bool {
+        !self.special_const_p() && self.builtin_type() == RUBY_T_HASH
+    }
+
     /// Returns true or false depending on whether the value is nil
     pub fn nil_p(self) -> bool {
         self == Qnil

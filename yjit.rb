@@ -287,6 +287,7 @@ module RubyVM::YJIT
         opt_plus
         opt_succ
         setlocal
+        splatkw
       ].each do |insn|
         print_counters(stats, out: out, prefix: "#{insn}_", prompt: "#{insn} exit reasons:", optional: true)
       end

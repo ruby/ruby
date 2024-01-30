@@ -2535,6 +2535,18 @@ assert_equal '[1, 2]', %q{
 
   entry { 2 }
 }
+assert_equal '[1, 2]', %q{
+  def foo(a:) = [a, yield]
+
+  def entry(obj, &block)
+    foo(**obj, &block)
+  end
+
+  entry({ a: 3 }) { 2 }
+  obj = Object.new
+  def obj.to_hash = { a: 1 }
+  entry(obj) { 2 }
+}
 
 assert_equal '[1, 1, 2, 1, 2, 3]', %q{
   def expandarray
