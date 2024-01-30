@@ -4877,6 +4877,33 @@ fn jit_rb_int_rshift(
     true
 }
 
+fn jit_rb_int_xor(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    if asm.ctx.two_fixnums_on_stack(jit) != Some(true) {
+        return false;
+    }
+    guard_two_fixnums(jit, asm, ocb);
+
+    let rhs = asm.stack_pop(1);
+    let lhs = asm.stack_pop(1);
+
+    // XOR and then re-tag the resulting fixnum
+    let out_val = asm.xor(lhs, rhs);
+    let out_val = asm.or(out_val, 1.into());
+
+    let ret_opnd = asm.stack_push(Type::Fixnum);
+    asm.mov(ret_opnd, out_val);
+    true
+}
+
 fn jit_rb_int_aref(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -9090,6 +9117,7 @@ pub fn yjit_reg_method_codegen_fns() {
         yjit_reg_method(rb_cInteger, "/", jit_rb_int_div);
         yjit_reg_method(rb_cInteger, "<<", jit_rb_int_lshift);
         yjit_reg_method(rb_cInteger, ">>", jit_rb_int_rshift);
+        yjit_reg_method(rb_cInteger, "^", jit_rb_int_xor);
         yjit_reg_method(rb_cInteger, "[]", jit_rb_int_aref);
 
         yjit_reg_method(rb_cString, "empty?", jit_rb_str_empty_p);
