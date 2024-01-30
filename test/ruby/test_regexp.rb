@@ -1979,6 +1979,14 @@ class TestRegexp < Test::Unit::TestCase
     end
   end
 
+  def test_bug_20083 # [Bug #20083]
+    re = /([\s]*ABC)$/i
+    (1..100).each do |n|
+      text = "#{"0" * n}ABC"
+      assert text.match?(re)
+    end
+  end
+
   def test_linear_time_p
     assert_send [Regexp, :linear_time?, /a/]
     assert_send [Regexp, :linear_time?, 'a']
