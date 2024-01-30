@@ -2046,6 +2046,14 @@ assert_equal '[97, :nil, 97, :nil, :raised]', %q{
   [getbyte("a", 0), getbyte("a", 1), getbyte("a", -1), getbyte("a", -2), getbyte("a", "a")]
 } unless rjit_enabled? # Not yet working on RJIT
 
+# Basic test for setbyte
+assert_equal 'AoZ', %q{
+  s = "foo"
+  s.setbyte(0, 65)
+  s.setbyte(-1, 90)
+  s
+}
+
 # Test << operator on string subclass
 assert_equal 'abab', %q{
   class MyString < String; end
