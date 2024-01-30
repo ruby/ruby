@@ -2252,7 +2252,7 @@ rb_obj_remove_instance_variable(VALUE obj, VALUE name)
     if (id) {
         VALUE val = rb_ivar_delete(obj, id, Qundef);
 
-        if (val != Qundef) return val;
+        if (!UNDEF_P(val)) return val;
     }
 
     rb_name_err_raise("instance variable %1$s not defined",

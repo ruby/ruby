@@ -772,7 +772,7 @@ static VALUE
 wkmap_aref(VALUE self, VALUE key)
 {
     VALUE obj = wkmap_lookup(self, key);
-    return obj != Qundef ? obj : Qnil;
+    return !UNDEF_P(obj) ? obj : Qnil;
 }
 
 struct wkmap_aset_args {
@@ -927,7 +927,7 @@ wkmap_getkey(VALUE self, VALUE key)
 static VALUE
 wkmap_has_key(VALUE self, VALUE key)
 {
-    return RBOOL(wkmap_lookup(self, key) != Qundef);
+    return RBOOL(!UNDEF_P(wkmap_lookup(self, key)));
 }
 
 /*

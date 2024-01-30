@@ -1690,7 +1690,7 @@ mnew_internal(const rb_method_entry_t *me, VALUE klass, VALUE iclass,
 
     method = TypedData_Make_Struct(mclass, struct METHOD, &method_data_type, data);
 
-    if (obj == Qundef) {
+    if (UNDEF_P(obj)) {
         RB_OBJ_WRITE(method, &data->recv, Qundef);
         RB_OBJ_WRITE(method, &data->klass, Qundef);
     }
@@ -3126,7 +3126,7 @@ method_inspect(VALUE method)
         defined_class = RBASIC_CLASS(defined_class);
     }
 
-    if (data->recv == Qundef) {
+    if (UNDEF_P(data->recv)) {
         // UnboundMethod
         rb_str_buf_append(str, rb_inspect(defined_class));
     }

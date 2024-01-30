@@ -1067,7 +1067,7 @@ complex_pow_for_special_angle(VALUE self, VALUE other)
         dir = 3;
     }
 
-    if (x == Qundef) return x;
+    if (UNDEF_P(x)) return x;
 
     if (f_negative_p(x)) {
         x = f_negate(x);
@@ -1139,7 +1139,7 @@ rb_complex_pow(VALUE self, VALUE other)
     }
 
     VALUE result = complex_pow_for_special_angle(self, other);
-    if (result != Qundef) return result;
+    if (!UNDEF_P(result)) return result;
 
     if (RB_TYPE_P(other, T_COMPLEX)) {
         VALUE r, theta, nr, ntheta;

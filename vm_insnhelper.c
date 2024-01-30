@@ -1343,7 +1343,7 @@ vm_getivar(VALUE obj, ID id, const rb_iseq_t *iseq, IVC ic, const struct rb_call
 
     }
 
-    if (default_value != Qundef) {
+    if (!UNDEF_P(default_value)) {
         RUBY_ASSERT(!UNDEF_P(val));
     }
 
