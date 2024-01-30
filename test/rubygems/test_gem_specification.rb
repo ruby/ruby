@@ -1194,10 +1194,13 @@ dependencies: []
     assert_same spec.bindir, dup_spec.bindir
 
     assert_equal ">= 0", spec.required_ruby_version.to_s
-    assert_same spec.required_ruby_version, dup_spec.required_ruby_version
+    assert_equal spec.required_ruby_version, dup_spec.required_ruby_version
+    refute_same spec.required_ruby_version, dup_spec.required_ruby_version
 
     assert_equal ">= 0", spec.required_rubygems_version.to_s
-    assert_same spec.required_rubygems_version,
+    assert_equal spec.required_rubygems_version,
+                 dup_spec.required_rubygems_version
+    refute_same spec.required_rubygems_version,
                 dup_spec.required_rubygems_version
   end
 
