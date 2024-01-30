@@ -4813,12 +4813,12 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
      *     putobject [1,2,3,...,100] (<- hidden array); concattoarray;
      *     push z; pushtoarray 1;
      *
-     * - If the last element is a keyword, newarraykwsplat should be emitted
-     *   to check and remove empty keyword arguments hash from array.
+     * - If the last element is a keyword, pushtoarraykwsplat should be emitted
+     *   to only push it onto the array if it is not empty
      *   (Note: a keyword is NODE_HASH which is not static_literal_node_p.)
      *
      *   [1,2,3,**kw] =>
-     *     putobject 1; putobject 2; putobject 3; push kw; newarraykwsplat
+     *     putobject 1; putobject 2; putobject 3; newarray 3; ...; pushtoarraykwsplat kw
      */
 
     const int max_stack_len = 0x100;
@@ -4873,14 +4873,21 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
                 EXPECT_NODE("compile_array", node, NODE_LIST, -1);
             }
 
-            NO_CHECK(COMPILE_(ret, "array element", RNODE_LIST(node)->nd_head, 0));
-            stack_len++;
-
             if (!RNODE_LIST(node)->nd_next && keyword_node_p(RNODE_LIST(node)->nd_head)) {
-                /* Reached the end, and the last element is a keyword */
-                ADD_INSN1(ret, line_node, newarraykwsplat, INT2FIX(stack_len));
-                if (!first_chunk) ADD_INSN(ret, line_node, concattoarray);
+                /* Create array or push existing non-keyword elements onto array */
+                if (stack_len == 0 && first_chunk) {
+                    ADD_INSN1(ret, line_node, newarray, INT2FIX(0));
+                }
+                else {
+                    FLUSH_CHUNK;
+                }
+                NO_CHECK(COMPILE_(ret, "array element", RNODE_LIST(node)->nd_head, 0));
+                ADD_INSN(ret, line_node, pushtoarraykwsplat);
                 return 1;
+            }
+            else {
+                NO_CHECK(COMPILE_(ret, "array element", RNODE_LIST(node)->nd_head, 0));
+                stack_len++;
             }
 
             /* If there are many pushed elements, flush them to avoid stack overflow */
@@ -10426,13 +10433,18 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
         else {
             CHECK(COMPILE(ret, "argspush head", RNODE_ARGSPUSH(node)->nd_head));
             const NODE *body_node = RNODE_ARGSPUSH(node)->nd_body;
-            if (static_literal_node_p(body_node, iseq, false)) {
+            if (keyword_node_p(body_node)) {
+                CHECK(COMPILE_(ret, "array element", body_node, FALSE));
+                ADD_INSN(ret, node, pushtoarraykwsplat);
+            }
+            else if (static_literal_node_p(body_node, iseq, false)) {
                 ADD_INSN1(ret, body_node, putobject, static_literal_value(body_node, iseq));
+                ADD_INSN1(ret, node, pushtoarray, INT2FIX(1));
             }
             else {
                 CHECK(COMPILE_(ret, "array element", body_node, FALSE));
+                ADD_INSN1(ret, node, pushtoarray, INT2FIX(1));
             }
-            ADD_INSN1(ret, node, pushtoarray, INT2FIX(1));
         }
         break;
       }
