@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Spec
-  CommandExecution = Struct.new(:command, :working_directory, :exitstatus, :stdout, :stderr) do
+  CommandExecution = Struct.new(:command, :working_directory, :exitstatus, :original_stdout, :original_stderr) do
     def to_s
       "$ #{command}"
     end
@@ -9,6 +9,19 @@ module Spec
 
     def stdboth
       @stdboth ||= [stderr, stdout].join("\n").strip
+    end
+
+    def stdout
+      original_stdout
+    end
+
+    # Can be removed once/if https://github.com/oneclick/rubyinstaller2/pull/369 is resolved
+    def stderr
+      return original_stderr unless Gem.win_platform?
+
+      original_stderr.split("\n").reject do |l|
+        l.include?("operating_system_defaults")
+      end.join("\n")
     end
 
     def to_s_verbose
