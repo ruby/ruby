@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Gem::Resolver::Molinillo
+module Gem::Molinillo
   class DependencyGraph
     # An action that modifies a {DependencyGraph} that is reversible.
     # @abstract

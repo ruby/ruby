@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Gem::Resolver::Molinillo
+module Gem::Molinillo
   # An error that occurred during the resolution process
   class ResolverError < StandardError; end
 

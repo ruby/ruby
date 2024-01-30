@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-module Gem::Resolver::Molinillo
+module Gem::Molinillo
   # Provides information about specifications and dependencies to the resolver,
   # allowing the {Resolver} class to remain generic while still providing power
   # and flexibility.
   #
-  # This module contains the methods that users of Gem::Resolver::Molinillo must to implement,
+  # This module contains the methods that users of Gem::Molinillo must to implement,
   # using knowledge of their own model classes.
   module SpecificationProvider
     # Search for the specifications that match the given dependency.

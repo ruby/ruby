@@ -2,7 +2,7 @@
 
 require_relative 'dependency_graph'
 
-module Gem::Resolver::Molinillo
+module Gem::Molinillo
   # This class encapsulates a dependency resolver.
   # The resolver is responsible for determining which set of dependencies to
   # activate, with feedback from the {#specification_provider}

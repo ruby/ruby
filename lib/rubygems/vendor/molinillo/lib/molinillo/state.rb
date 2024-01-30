@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Gem::Resolver::Molinillo
+module Gem::Molinillo
   # A state that a {Resolution} can be in
   # @attr [String] name the name of the current requirement
   # @attr [Array<Object>] requirements currently unsatisfied requirements

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Gem::Resolver::Molinillo
+module Gem::Molinillo
   class DependencyGraph
     # A vertex in a {DependencyGraph} that encapsulates a {#name} and a
     # {#payload}

@@ -7,7 +7,7 @@ require_relative 'detach_vertex_named'
 require_relative 'set_payload'
 require_relative 'tag'
 
-module Gem::Resolver::Molinillo
+module Gem::Molinillo
   class DependencyGraph
     # A log for dependency graph actions
     class Log

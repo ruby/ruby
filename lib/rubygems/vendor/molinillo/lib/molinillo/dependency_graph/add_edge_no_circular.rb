@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'action'
-module Gem::Resolver::Molinillo
+module Gem::Molinillo
   class DependencyGraph
     # @!visibility private
     # (see DependencyGraph#add_edge_no_circular)

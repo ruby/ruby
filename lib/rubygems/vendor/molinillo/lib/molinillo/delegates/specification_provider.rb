@@ -1,67 +1,67 @@
 # frozen_string_literal: true
 
-module Gem::Resolver::Molinillo
+module Gem::Molinillo
   module Delegates
-    # Delegates all {Gem::Resolver::Molinillo::SpecificationProvider} methods to a
+    # Delegates all {Gem::Molinillo::SpecificationProvider} methods to a
     # `#specification_provider` property.
     module SpecificationProvider
-      # (see Gem::Resolver::Molinillo::SpecificationProvider#search_for)
+      # (see Gem::Molinillo::SpecificationProvider#search_for)
       def search_for(dependency)
         with_no_such_dependency_error_handling do
           specification_provider.search_for(dependency)
         end
       end
 
-      # (see Gem::Resolver::Molinillo::SpecificationProvider#dependencies_for)
+      # (see Gem::Molinillo::SpecificationProvider#dependencies_for)
       def dependencies_for(specification)
         with_no_such_dependency_error_handling do
           specification_provider.dependencies_for(specification)
         end
       end
 
-      # (see Gem::Resolver::Molinillo::SpecificationProvider#requirement_satisfied_by?)
+      # (see Gem::Molinillo::SpecificationProvider#requirement_satisfied_by?)
       def requirement_satisfied_by?(requirement, activated, spec)
         with_no_such_dependency_error_handling do
           specification_provider.requirement_satisfied_by?(requirement, activated, spec)
         end
       end
 
-      # (see Gem::Resolver::Molinillo::SpecificationProvider#dependencies_equal?)
+      # (see Gem::Molinillo::SpecificationProvider#dependencies_equal?)
       def dependencies_equal?(dependencies, other_dependencies)
         with_no_such_dependency_error_handling do
           specification_provider.dependencies_equal?(dependencies, other_dependencies)
         end
       end
 
-      # (see Gem::Resolver::Molinillo::SpecificationProvider#name_for)
+      # (see Gem::Molinillo::SpecificationProvider#name_for)
       def name_for(dependency)
         with_no_such_dependency_error_handling do
           specification_provider.name_for(dependency)
         end
       end
 
-      # (see Gem::Resolver::Molinillo::SpecificationProvider#name_for_explicit_dependency_source)
+      # (see Gem::Molinillo::SpecificationProvider#name_for_explicit_dependency_source)
       def name_for_explicit_dependency_source
         with_no_such_dependency_error_handling do
           specification_provider.name_for_explicit_dependency_source
         end
       end
 
-      # (see Gem::Resolver::Molinillo::SpecificationProvider#name_for_locking_dependency_source)
+      # (see Gem::Molinillo::SpecificationProvider#name_for_locking_dependency_source)
       def name_for_locking_dependency_source
         with_no_such_dependency_error_handling do
           specification_provider.name_for_locking_dependency_source
         end
       end
 
-      # (see Gem::Resolver::Molinillo::SpecificationProvider#sort_dependencies)
+      # (see Gem::Molinillo::SpecificationProvider#sort_dependencies)
       def sort_dependencies(dependencies, activated, conflicts)
         with_no_such_dependency_error_handling do
           specification_provider.sort_dependencies(dependencies, activated, conflicts)
         end
       end
 
-      # (see Gem::Resolver::Molinillo::SpecificationProvider#allow_missing?)
+      # (see Gem::Molinillo::SpecificationProvider#allow_missing?)
       def allow_missing?(dependency)
         with_no_such_dependency_error_handling do
           specification_provider.allow_missing?(dependency)

@@ -5,7 +5,7 @@ require_relative '../../../../tsort'
 require_relative 'dependency_graph/log'
 require_relative 'dependency_graph/vertex'
 
-module Gem::Resolver::Molinillo
+module Gem::Molinillo
   # A directed acyclic graph that is tuned to hold named dependencies
   class DependencyGraph
     include Enumerable

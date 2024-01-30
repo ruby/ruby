@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Gem::Resolver::Molinillo
+module Gem::Molinillo
   # Conveys information about the resolution process to a user.
   module UI
     # The {IO} object that should be used to print output. `STDOUT`, by default.

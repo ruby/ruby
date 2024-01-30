@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module Gem::Resolver::Molinillo
+module Gem::Molinillo
   class Resolver
     # A specific resolution from a given {Resolver}
     class Resolution
@@ -244,8 +244,8 @@ module Gem::Resolver::Molinillo
       require_relative 'delegates/resolution_state'
       require_relative 'delegates/specification_provider'
 
-      include Gem::Resolver::Molinillo::Delegates::ResolutionState
-      include Gem::Resolver::Molinillo::Delegates::SpecificationProvider
+      include Gem::Molinillo::Delegates::ResolutionState
+      include Gem::Molinillo::Delegates::SpecificationProvider
 
       # Processes the topmost available {RequirementState} on the stack
       # @return [void]
