@@ -4989,14 +4989,11 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             if (local_body->param.flags.has_kwrest) {
                 int idx = local_body->local_table_size - local_keyword->rest_start;
                 ADD_GETLOCAL(args, &dummy_line_node, idx, depth);
-                if (local_keyword->num > 0) {
-                    ADD_SEND(args, &dummy_line_node, rb_intern("dup"), INT2FIX(0));
-                    flag |= VM_CALL_KW_SPLAT_MUT;
-                }
+                RUBY_ASSERT(local_keyword->num > 0);
+                ADD_SEND(args, &dummy_line_node, rb_intern("dup"), INT2FIX(0));
             }
             else {
                 ADD_INSN1(args, &dummy_line_node, newhash, INT2FIX(0));
-                flag |= VM_CALL_KW_SPLAT_MUT;
             }
             int i = 0;
             for (; i < local_keyword->num; ++i) {
@@ -5006,13 +5003,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 ADD_GETLOCAL(args, &dummy_line_node, idx, depth);
             }
             ADD_SEND(args, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(i * 2 + 1));
-            flag |= VM_CALL_KW_SPLAT;
+            flag |= VM_CALL_KW_SPLAT| VM_CALL_KW_SPLAT_MUT;
         }
         else if (local_body->param.flags.has_kwrest) {
             int idx = local_body->local_table_size - local_keyword->rest_start;
             ADD_GETLOCAL(args, &dummy_line_node, idx, depth);
             argc++;
-            flag |= VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT;
+            flag |= VM_CALL_KW_SPLAT;
         }
 
         ADD_SEQ(ret, args);
