@@ -868,17 +868,17 @@ module Test
                   nil
                 when Test::Unit::PendedError
                   status = 'TEST_SKIPPED'
-                  "Skipped:\n#{klass}##{meth} [#{location e}]:\n#{e.message}\n"
+                  "Skipped:\n#{suite.name}##{meth} [#{location e}]:\n#{e.message}\n"
                 when Test::Unit::AssertionFailedError
                   status = 'TEST_FAILED'
-                  "Failure:\n#{klass}##{meth} [#{location e}]:\n#{e.message}\n"
+                  "Failure:\n#{suite.name}##{meth} [#{location e}]:\n#{e.message}\n"
                 when Timeout::Error
                   status = 'TEST_FAILED'
-                  "Timeout:\n#{klass}##{meth}\n"
+                  "Timeout:\n#{suite.name}##{meth}\n"
                 else
                   status = 'TEST_FAILED'
                   bt = Test::filter_backtrace(e.backtrace).join "\n    "
-                  "Error:\n#{klass}##{meth}:\n#{e.class}: #{e.message.b}\n    #{bt}\n"
+                  "Error:\n#{suite.name}##{meth}:\n#{e.class}: #{e.message.b}\n    #{bt}\n"
                 end
             writer.write_object do
               writer.write_key_value('testPath', "file=#{path}#class=#{suite.name}#testcase=#{method}",)
