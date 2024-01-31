@@ -112,7 +112,7 @@ jobs:
           TESTS: "${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}"
       - run: echo "TESTS=--repeat-count=2" >> "$GITHUB_ENV"
         if: ${{ startsWith(  matrix.test_task , 'test-all' ) }}
-      - run: echo "TESTS='$TESTS --launchable-test-reports=macos.json'" >> "$GITHUB_ENV"
+      - run: echo "TESTS=$TESTS --launchable-test-reports=macos.json" >> "$GITHUB_ENV"
 
       - name: make ${{ matrix.test_task }}
         run: |
