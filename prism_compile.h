@@ -35,3 +35,23 @@ typedef struct pm_scope_node {
 void pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous, pm_parser_t *parser);
 void pm_scope_node_destroy(pm_scope_node_t *scope_node);
 bool *rb_ruby_prism_ptr(void);
+
+typedef struct {
+    pm_parser_t parser;
+    pm_options_t options;
+    pm_string_t input;
+    pm_scope_node_t node;
+    bool parsed;
+} pm_parse_result_t;
+
+VALUE pm_parse_file(pm_parse_result_t *result, VALUE filepath);
+VALUE pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath);
+void pm_parse_result_free(pm_parse_result_t *result);
+
+rb_iseq_t *pm_iseq_new(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent, enum rb_iseq_type);
+rb_iseq_t *pm_iseq_new_top(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, const rb_iseq_t *parent);
+rb_iseq_t *pm_iseq_new_main(pm_scope_node_t *node, VALUE path, VALUE realpath, const rb_iseq_t *parent, int opt);
+rb_iseq_t *pm_iseq_new_eval(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth);
+rb_iseq_t *pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath, int first_lineno, const rb_iseq_t *parent, int isolated_depth, enum rb_iseq_type, const rb_compile_option_t*);
+
+VALUE pm_iseq_compile_node(rb_iseq_t *iseq, pm_scope_node_t *node);

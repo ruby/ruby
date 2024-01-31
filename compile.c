@@ -26,6 +26,7 @@
 #include "internal/error.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
+#include "internal/io.h"
 #include "internal/numeric.h"
 #include "internal/object.h"
 #include "internal/rational.h"
@@ -976,20 +977,6 @@ rb_iseq_compile_node(rb_iseq_t *iseq, const NODE *node)
         validate_labels(iseq, labels_table);
     }
 #endif
-    CHECK(iseq_setup_insn(iseq, ret));
-    return iseq_setup(iseq, ret);
-}
-
-static VALUE rb_translate_prism(pm_parser_t *parser, rb_iseq_t *iseq, pm_scope_node_t *scope_node, LINK_ANCHOR *const ret);
-
-VALUE
-rb_iseq_compile_prism_node(rb_iseq_t * iseq, pm_scope_node_t *scope_node, pm_parser_t *parser)
-{
-    DECL_ANCHOR(ret);
-    INIT_ANCHOR(ret);
-
-    CHECK(rb_translate_prism(parser, iseq, scope_node, ret));
-
     CHECK(iseq_setup_insn(iseq, ret));
     return iseq_setup(iseq, ret);
 }
