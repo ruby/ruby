@@ -1398,9 +1398,10 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
     return iseqw_new(rb_iseq_compile_with_option(src, file, path, line, opt));
 }
 
-static void
-iseqw_s_compile_prism_compile(pm_parser_t *parser, VALUE optimize, rb_iseq_t *iseq, VALUE file, VALUE path, int first_lineno)
+static rb_iseq_t *
+iseqw_s_compile_prism_compile(pm_parser_t *parser, VALUE optimize, VALUE file, VALUE path, int first_lineno)
 {
+    rb_iseq_t *iseq = iseq_alloc();
     pm_node_t *node = pm_parse(parser);
 
     if (parser->error_list.size > 0) {
@@ -1443,6 +1444,7 @@ iseqw_s_compile_prism_compile(pm_parser_t *parser, VALUE optimize, rb_iseq_t *is
         pm_node_destroy(parser, node);
         free(constants);
     }
+    return iseq;
 }
 
 static VALUE
@@ -1491,8 +1493,7 @@ iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
 
     pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), &options);
 
-    rb_iseq_t *iseq = iseq_alloc();
-    iseqw_s_compile_prism_compile(&parser, opt, iseq, file, path, start_line);
+    rb_iseq_t *iseq = iseqw_s_compile_prism_compile(&parser, opt, file, path, start_line);
     RB_GC_GUARD(file_path);
     pm_parser_free(&parser);
     pm_options_free(&options);
@@ -1524,8 +1525,7 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
     pm_parser_t parser;
     pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), &options);
 
-    rb_iseq_t *iseq = iseq_alloc();
-    iseqw_s_compile_prism_compile(&parser, opt, iseq, file, rb_realpath_internal(Qnil, file, 1), 1);
+    rb_iseq_t *iseq = iseqw_s_compile_prism_compile(&parser, opt, file, rb_realpath_internal(Qnil, file, 1), 1);
     pm_parser_free(&parser);
     pm_string_free(&input);
     pm_options_free(&options);
@@ -1543,8 +1543,7 @@ rb_iseq_new_main_prism(pm_string_t *input, pm_options_t *options, VALUE script_n
     int start_line = 0;
     pm_options_line_set(options, start_line);
 
-    rb_iseq_t *iseq = iseq_alloc();
-    iseqw_s_compile_prism_compile(&parser, optimize, iseq, script_name, path, start_line);
+    rb_iseq_t *iseq = iseqw_s_compile_prism_compile(&parser, optimize, script_name, path, start_line);
 
     pm_parser_free(&parser);
     return iseq;
