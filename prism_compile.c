@@ -930,11 +930,13 @@ pm_compile_call_and_or_write_node(bool and_node, pm_node_t *receiver, pm_node_t 
 }
 
 static void
-pm_compile_index_write_nodes_add_send(bool popped, LINK_ANCHOR *const ret, rb_iseq_t *iseq, NODE dummy_line_node, VALUE argc, int flag, int block_offset, struct rb_callinfo_kwarg *keywords)
+pm_compile_index_write_nodes_add_send(bool popped, bool operator, LINK_ANCHOR *const ret, rb_iseq_t *iseq, NODE dummy_line_node, VALUE argc, int flag, int block_offset, struct rb_callinfo_kwarg *keywords)
 {
     if (!popped) {
         ADD_INSN1(ret, &dummy_line_node, setn, FIXNUM_INC(argc, 2 + block_offset + (keywords ? keywords->keyword_len : 0)));
     }
+
+    if (operator) PM_DUP;
 
     if (flag & VM_CALL_ARGS_SPLAT) {
         ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(1));
@@ -962,8 +964,9 @@ pm_compile_index_write_nodes_add_send(bool popped, LINK_ANCHOR *const ret, rb_is
         ADD_SEND_R(ret, &dummy_line_node, idASET, FIXNUM_INC(argc, 1), NULL, INT2FIX(flag), keywords);
     }
     else if (keywords && keywords->keyword_len) {
-        ADD_INSN1(ret, &dummy_line_node, opt_reverse, INT2FIX(keywords->keyword_len + block_offset + 1));
-        ADD_INSN1(ret, &dummy_line_node, opt_reverse, INT2FIX(keywords->keyword_len + block_offset + 0));
+        ADD_INSN1(ret, &dummy_line_node, opt_reverse, INT2FIX(keywords->keyword_len + block_offset + (operator ? 2 : 1)));
+        ADD_INSN1(ret, &dummy_line_node, opt_reverse, INT2FIX(keywords->keyword_len + block_offset + (operator ? 1 : 0)));
+        if (operator) PM_POP;
         ADD_SEND_R(ret, &dummy_line_node, idASET, FIXNUM_INC(argc, 1), NULL, INT2FIX(flag), keywords);
     }
     else {
@@ -1298,7 +1301,6 @@ pm_compile_index_and_or_write_node(bool and_node, pm_node_t *receiver, pm_node_t
     }
 
     ADD_INSN1(ret, &dummy_line_node, dupn, FIXNUM_INC(argc, 1 + block_offset + (keywords ? keywords->keyword_len : 0)));
-
     ADD_SEND_R(ret, &dummy_line_node, idAREF, argc, NULL, INT2FIX(flag), keywords);
 
     LABEL *label = NEW_LABEL(lineno);
@@ -1318,7 +1320,7 @@ pm_compile_index_and_or_write_node(bool and_node, pm_node_t *receiver, pm_node_t
 
     PM_COMPILE_NOT_POPPED(value);
 
-    pm_compile_index_write_nodes_add_send(popped, ret, iseq, dummy_line_node, argc, flag, block_offset, keywords);
+    pm_compile_index_write_nodes_add_send(popped, false, ret, iseq, dummy_line_node, argc, flag, block_offset, keywords);
 
     ADD_INSNL(ret, &dummy_line_node, jump, lfin);
     ADD_LABEL(ret, label);
@@ -5257,16 +5259,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             block_offset = 1;
         }
 
-        ADD_INSN1(ret, &dummy_line_node, dupn, FIXNUM_INC(argc, 1 + block_offset));
-
-        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idAREF, argc, INT2FIX(flag));
+        ADD_INSN1(ret, &dummy_line_node, dupn, FIXNUM_INC(argc, 1 + block_offset + (keywords ? keywords->keyword_len : 0)));
+        ADD_SEND_R(ret, &dummy_line_node, idAREF, argc, NULL, INT2FIX(flag), keywords);
 
         PM_COMPILE_NOT_POPPED(index_operator_write_node->value);
 
         ID method_id = pm_constant_id_lookup(scope_node, index_operator_write_node->operator);
         ADD_SEND(ret, &dummy_line_node, method_id, INT2FIX(1));
 
-        pm_compile_index_write_nodes_add_send(popped, ret, iseq, dummy_line_node, argc, flag, block_offset, NULL);
+        pm_compile_index_write_nodes_add_send(popped, true, ret, iseq, dummy_line_node, argc, flag, block_offset, keywords);
 
         return;
       }
