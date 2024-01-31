@@ -925,6 +925,14 @@ rb_iseq_new_eval(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpat
                                 parent, isolated_depth, ISEQ_TYPE_EVAL, &COMPILE_OPTION_DEFAULT);
 }
 
+rb_iseq_t *
+pm_iseq_new_eval(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
+                     int first_lineno, const rb_iseq_t *parent, int isolated_depth)
+{
+        return pm_iseq_new_with_opt(node, name, path, realpath, first_lineno,
+                                    parent, isolated_depth, ISEQ_TYPE_EVAL, &COMPILE_OPTION_DEFAULT);
+}
+
 static inline rb_iseq_t *
 iseq_translate(rb_iseq_t *iseq)
 {

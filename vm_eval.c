@@ -1643,9 +1643,40 @@ get_eval_default_path(void)
 }
 
 static const rb_iseq_t *
+pm_eval_make_iseq(VALUE src, VALUE fname, int line,
+        const struct rb_block *base_block)
+{
+    rb_iseq_t *iseq = NULL;
+    const rb_iseq_t *const parent = vm_block_iseq(base_block);
+    const rb_iseq_t *iseq = parent;
+    VALUE name = rb_fstring_lit("<compiled>");
+    fname = rb_fstring_lit("<compiled>");
+
+    pm_parse_result_t result = { 0 };
+    VALUE error;
+
+
+    error = pm_parse_string(&result, src, fname);
+
+    if (error == Qnil) {
+        iseq = pm_iseq_new_eval(&result.node, name, fname, fname, ln, parent, 0);
+        pm_parse_result_free(&result);
+    }
+    else {
+        pm_parse_result_free(&result);
+        rb_exc_raise(error);
+    }
+
+    return iseq;
+}
+
+static const rb_iseq_t *
 eval_make_iseq(VALUE src, VALUE fname, int line,
                const struct rb_block *base_block)
 {
+    if (*rb_ruby_prism_ptr()) {
+        return pm_eval_make_iseq(src, fname, line, base_block);
+    }
     const VALUE parser = rb_parser_new();
     const rb_iseq_t *const parent = vm_block_iseq(base_block);
     rb_iseq_t *iseq = NULL;
