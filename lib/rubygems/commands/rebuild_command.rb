@@ -3,6 +3,7 @@
 require "date"
 require "digest"
 require "fileutils"
+require "tmpdir"
 require_relative "../package"
 
 class Gem::Commands::RebuildCommand < Gem::Command
@@ -167,13 +168,9 @@ An example of reproducing a gem build:
   end
 
   def prep_dirs
-    rebuild_dir = File.expand_path("rebuild")
+    rebuild_dir = Dir.mktmpdir("gem_rebuild")
     old_dir = File.join(rebuild_dir, "old")
     new_dir = File.join(rebuild_dir, "new")
-
-    if File.directory?(rebuild_dir)
-      FileUtils.remove_dir(rebuild_dir)
-    end
 
     FileUtils.mkdir_p(old_dir)
     FileUtils.mkdir_p(new_dir)
