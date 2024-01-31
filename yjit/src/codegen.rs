@@ -346,13 +346,13 @@ fn gen_save_sp_with_offset(asm: &mut Assembler, offset: i8) {
 ///  - Take the VM lock through RB_VM_LOCK_ENTER()
 ///  - Perform Ruby method call
 ///
-/// If the routine doesn't call arbitrary methods, use jit_prepare_for_gc() instead.
+/// If the routine doesn't call arbitrary methods, use jit_prepare_call_with_gc() instead.
 fn jit_prepare_non_leaf_call(
     jit: &mut JITState,
     asm: &mut Assembler
 ) {
     // Prepare for GC. This also sets PC, which prepares for showing a backtrace.
-    jit_prepare_for_gc(jit, asm);
+    jit_prepare_call_with_gc(jit, asm);
 
     // In case the routine calls Ruby methods, it can set local variables
     // through Kernel#binding, rb_debug_inspector API, and other means.
@@ -362,7 +362,7 @@ fn jit_prepare_non_leaf_call(
 /// jit_save_pc() + gen_save_sp(). Should be used before calling a routine that could:
 ///  - Perform GC allocation
 ///  - Take the VM lock through RB_VM_LOCK_ENTER()
-fn jit_prepare_for_gc(
+fn jit_prepare_call_with_gc(
     jit: &mut JITState,
     asm: &mut Assembler
 ) {
@@ -1350,7 +1350,7 @@ fn gen_newarray(
     let n = jit.get_arg(0).as_u32();
 
     // Save the PC and SP because we are allocating
-    jit_prepare_for_gc(jit, asm);
+    jit_prepare_call_with_gc(jit, asm);
 
     // If n is 0, then elts is never going to be read, so we can just pass null
     let values_ptr = if n == 0 {
@@ -1388,7 +1388,7 @@ fn gen_duparray(
     let ary = jit.get_arg(0);
 
     // Save the PC and SP because we are allocating
-    jit_prepare_for_gc(jit, asm);
+    jit_prepare_call_with_gc(jit, asm);
 
     // call rb_ary_resurrect(VALUE ary);
     let new_ary = asm.ccall(
@@ -1411,7 +1411,7 @@ fn gen_duphash(
     let hash = jit.get_arg(0);
 
     // Save the PC and SP because we are allocating
-    jit_prepare_for_gc(jit, asm);
+    jit_prepare_call_with_gc(jit, asm);
 
     // call rb_hash_resurrect(VALUE hash);
     let hash = asm.ccall(rb_hash_resurrect as *const u8, vec![hash.into()]);
@@ -1546,7 +1546,7 @@ fn gen_pushtoarray(
     let num = jit.get_arg(0).as_u64();
 
     // Save the PC and SP because the callee may allocate
-    jit_prepare_for_gc(jit, asm);
+    jit_prepare_call_with_gc(jit, asm);
 
     // Get the operands from the stack
     let ary_opnd = asm.stack_opnd(num as i32);
@@ -2029,7 +2029,7 @@ fn gen_setlocal_generic(
     if asm.ctx.get_chain_depth() > 0
     {
         // Save the PC and SP because it runs GC
-        jit_prepare_for_gc(jit, asm);
+        jit_prepare_call_with_gc(jit, asm);
 
         // Pop the value to write from the stack
         let value_opnd = asm.stack_opnd(0);
@@ -2125,7 +2125,7 @@ fn gen_newhash(
     let num: u64 = jit.get_arg(0).as_u64();
 
     // Save the PC and SP because we are allocating
-    jit_prepare_for_gc(jit, asm);
+    jit_prepare_call_with_gc(jit, asm);
 
     if num != 0 {
         // val = rb_hash_new_with_size(num / 2);
@@ -2175,7 +2175,7 @@ fn gen_putstring(
     let put_val = jit.get_arg(0);
 
     // Save the PC and SP because the callee will allocate
-    jit_prepare_for_gc(jit, asm);
+    jit_prepare_call_with_gc(jit, asm);
 
     let str_opnd = asm.ccall(
         rb_ec_str_resurrect as *const u8,
@@ -2970,7 +2970,7 @@ fn gen_concatstrings(
     let n = jit.get_arg(0).as_usize();
 
     // Save the PC and SP because we are allocating
-    jit_prepare_for_gc(jit, asm);
+    jit_prepare_call_with_gc(jit, asm);
 
     let values_ptr = asm.lea(asm.ctx.sp_opnd(-((SIZEOF_VALUE as isize) * n as isize)));
 
