@@ -2708,9 +2708,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     LABEL *else_label = NEW_LABEL(lineno);
     LABEL *end_label = NEW_LABEL(lineno);
 
-    pm_node_t *pm_node = (pm_node_t *)call_node;
-
-    if (call_node->base.flags & PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) {
+    if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
         PM_DUP;
         ADD_INSNL(ret, &dummy_line_node, branchnil, else_label);
     }
@@ -2719,8 +2717,8 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     struct rb_callinfo_kwarg *kw_arg = NULL;
 
     int orig_argc = pm_setup_args(call_node->arguments, &flags, &kw_arg, iseq, ret, popped, scope_node, dummy_line_node, parser);
-
     const rb_iseq_t *block_iseq = NULL;
+
     if (call_node->block != NULL && PM_NODE_TYPE_P(call_node->block, PM_BLOCK_NODE)) {
         // Scope associated with the block
         pm_scope_node_t next_scope_node;
@@ -2734,7 +2732,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         ISEQ_COMPILE_DATA(iseq)->current_block = block_iseq;
     }
     else {
-        if (pm_node->flags & PM_CALL_NODE_FLAGS_VARIABLE_CALL) {
+        if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_VARIABLE_CALL)) {
             flags |= VM_CALL_VCALL;
         }
 
@@ -2748,11 +2746,11 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         }
     }
 
-    if (call_node->receiver == NULL || PM_NODE_TYPE_P(call_node->receiver, PM_SELF_NODE)) {
+    if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_IGNORE_VISIBILITY)) {
         flags |= VM_CALL_FCALL;
     }
 
-    if (pm_node->flags & PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) {
+    if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE)) {
         if (flags & VM_CALL_ARGS_BLOCKARG) {
             ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
             if (flags & VM_CALL_ARGS_SPLAT) {
@@ -2780,17 +2778,17 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 
     ADD_SEND_R(ret, &dummy_line_node, method_id, INT2FIX(orig_argc), block_iseq, INT2FIX(flags), kw_arg);
 
-    if (pm_node->flags & PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) {
-        PM_POP_UNLESS_POPPED;
-    }
-
-    if (call_node->base.flags & PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) {
+    if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
         ADD_INSNL(ret, &dummy_line_node, jump, end_label);
         ADD_LABEL(ret, else_label);
     }
 
-    if ((block_iseq && ISEQ_BODY(block_iseq)->catch_table) || (call_node->base.flags & PM_CALL_NODE_FLAGS_SAFE_NAVIGATION)) {
+    if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) || (block_iseq && ISEQ_BODY(block_iseq)->catch_table)) {
         ADD_LABEL(ret, end_label);
+    }
+
+    if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE)) {
+        PM_POP_UNLESS_POPPED;
     }
 
     PM_POP_IF_POPPED;
