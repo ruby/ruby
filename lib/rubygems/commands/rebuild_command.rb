@@ -55,35 +55,12 @@ This command assumes the gemspec can be built with the `gem build` command.
 If you use either `gem build` or `rake build`/`rake release` to build/release
 a gem, it is a potential candidate.
 
-If the gem includes top-level files that change frequently (e.g. Gemfile.lock),
-it may require more effort to reproduce a build. For example, it might require
-more precisely matched versions of Ruby, RubyGems, or Bundler to be used.
+You will likely need to match the RubyGems version used, since this is
+included in the Gem metadata.
 
-An example of reproducing a gem build:
-
-  $ pwd
-  /usr/home/puppy/test/rebuild
-  $ ls -a
-  ./  ../
-  $ git clone --branch v12.0.2 https://github.com/duckinator/okay.git
-  $ gem rebuild -C ./okay --gemspec okay.gemspec okay 12.0.2
-  Fetching okay-12.0.2.gem
-  Downloaded okay version 12.0.2 as /usr/home/puppy/test/rebuild/rebuild/old/okay-12.0.2.gem.
-    Successfully built RubyGem
-    Name: okay
-    Version: 12.0.2
-    File: okay-12.0.2.gem
-
-  Built at: 2023-08-31 21:39:02 EDT (1693532342)
-  Original build saved to:   /usr/home/puppy/test/rebuild/rebuild/old/okay-12.0.2.gem
-  Reproduced build saved to: /usr/home/puppy/test/rebuild/rebuild/new/okay-12.0.2.gem
-  Working directory: ./okay
-
-  Hash comparison:
-    38a8bd78ce10bc19189ead0b56fa490d03788a2f926a6481b2f1f5d5fa5ab75b      /usr/home/puppy/test/rebuild/rebuild/old/okay-12.0.2.gem
-    38a8bd78ce10bc19189ead0b56fa490d03788a2f926a6481b2f1f5d5fa5ab75b      /usr/home/puppy/test/rebuild/rebuild/new/okay-12.0.2.gem
-
-  SUCCESS - original and rebuild hashes matched
+If the gem includes lockfiles (e.g. Gemfile.lock) and similar, it will require
+more effort to reproduce a build. For example, it might require more precisely
+matched versions of Ruby and/or Bundler to be used.
     EOF
   end
 
