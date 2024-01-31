@@ -7549,6 +7549,43 @@ pm_parse_input(pm_parse_result_t *result, VALUE filepath)
 }
 
 /**
+ * Returns an array of ruby String objects that represent the lines of the
+ * source file that the given parser parsed.
+ */
+static inline VALUE
+pm_parse_file_script_lines(const pm_parser_t *parser)
+{
+    const char *start = (const char *) parser->start;
+    const char *end = (const char *) parser->end;
+
+    rb_encoding *encoding = rb_enc_find(parser->encoding->name);
+    const pm_newline_list_t *newline_list = &parser->newline_list;
+
+    // If we end exactly on a newline, then there's no need to push on a final
+    // segment. If we don't, then we need to push on the last offset up to the
+    // end of the string.
+    size_t last_offset = newline_list->offsets[newline_list->size - 1];
+    bool last_push = start + last_offset != end;
+
+    // Create the ruby strings that represent the lines of the source.
+    VALUE lines = rb_ary_new_capa(newline_list->size - (last_push ? 0 : 1));
+
+    for (size_t index = 0; index < newline_list->size - 1; index++) {
+        size_t offset = newline_list->offsets[index];
+        size_t length = newline_list->offsets[index + 1] - offset;
+
+        rb_ary_push(lines, rb_enc_str_new(start + offset, length, encoding));
+    }
+
+    // Push on the last line if we need to.
+    if (last_push) {
+        rb_ary_push(lines, rb_enc_str_new(start + last_offset, end - (start + last_offset), encoding));
+    }
+
+    return lines;
+}
+
+/**
  * Parse the given filepath and store the resulting scope node in the given
  * parse result struct. It returns a Ruby error if the file cannot be read or
  * if it cannot be parsed properly. It is assumed that the parse result object
@@ -7563,7 +7600,22 @@ pm_parse_file(pm_parse_result_t *result, VALUE filepath)
         return rb_exc_new3(rb_eRuntimeError, rb_sprintf("Failed to map file: %s", RSTRING_PTR(filepath)));
     }
 
-    return pm_parse_input(result, filepath);
+    VALUE error = pm_parse_input(result, filepath);
+
+    // If we're parsing a filepath, then we need to potentially support the
+    // SCRIPT_LINES__ constant, which can be a hash that has an array of lines
+    // of every read file.
+    ID id_script_lines = rb_intern("SCRIPT_LINES__");
+
+    if (rb_const_defined_at(rb_cObject, id_script_lines)) {
+        VALUE script_lines = rb_const_get_at(rb_cObject, id_script_lines);
+
+        if (RB_TYPE_P(script_lines, T_HASH)) {
+            rb_hash_aset(script_lines, filepath, pm_parse_file_script_lines(&result->parser));
+        }
+    }
+
+    return error;
 }
 
 /**
