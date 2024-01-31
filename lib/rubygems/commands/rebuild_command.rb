@@ -97,12 +97,12 @@ matched versions of Ruby and/or Bundler to be used.
   private
 
   def sha256(file)
-    Digest::SHA256.hexdigest(File.read(file))
+    Digest::SHA256.hexdigest(Gem.read_binary(file))
   end
 
   def get_timestamp(file)
     mtime = nil
-    File.open(file, "rb") do |f|
+    File.open(file, Gem.binary_mode) do |f|
       Gem::Package::TarReader.new(f) do |tar|
         mtime = tar.seek("metadata.gz") {|tf| tf.header.mtime }
       end
