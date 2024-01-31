@@ -1123,10 +1123,25 @@ rb_report_bug_valist(VALUE file, int line, const char *fmt, va_list args)
 void
 rb_assert_failure(const char *file, int line, const char *name, const char *expr)
 {
+    rb_assert_failure_detail(file, line, name, expr, NULL);
+}
+
+void
+rb_assert_failure_detail(const char *file, int line, const char *name, const char *expr,
+                         const char *fmt, ...)
+{
     FILE *out = stderr;
     fprintf(out, "Assertion Failed: %s:%d:", file, line);
     if (name) fprintf(out, "%s:", name);
     fprintf(out, "%s\n%s\n\n", expr, rb_dynamic_description);
+
+    if (fmt && *fmt) {
+        va_list args;
+        va_start(args, fmt);
+        vfprintf(out, fmt, args);
+        va_end(args);
+    }
+
     preface_dump(out);
     rb_vm_bugreport(NULL, out);
     bug_report_end(out, -1);
