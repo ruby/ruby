@@ -6468,7 +6468,7 @@ fn gen_send_iseq(
             // The callee may allocate, e.g. Integer#abs on a Bignum.
             // Save SP for GC, save PC for allocation tracing, and prepare
             // for global invalidation after GC's VM lock contention.
-            jit_prepare_non_leaf_call(jit, asm);
+            jit_prepare_call_with_gc(jit, asm);
 
             // Call the builtin func (ec, recv, arg1, arg2, ...)
             let mut args = vec![EC];
