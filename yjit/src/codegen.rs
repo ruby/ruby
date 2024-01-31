@@ -4242,7 +4242,7 @@ fn gen_throw(
     }
 
     // THROW_DATA_NEW allocates. Save SP for GC and PC for allocation tracing as
-    // well as handling the catch table. However, not using jit_prepare_routine_call
+    // well as handling the catch table. However, not using jit_prepare_non_leaf_call
     // since we don't need a patch point for this implementation.
     jit_save_pc(jit, asm);
     gen_save_sp(asm);
@@ -4674,7 +4674,7 @@ fn jit_rb_mod_eqq(
     asm_comment!(asm, "Module#===");
     // By being here, we know that the receiver is a T_MODULE or a T_CLASS, because Module#=== can
     // only live on these objects. With that, we can call rb_obj_is_kind_of() without
-    // jit_prepare_routine_call() or a control frame push because it can't raise, allocate, or call
+    // jit_prepare_non_leaf_call() or a control frame push because it can't raise, allocate, or call
     // Ruby methods with these inputs.
     // Note the difference in approach from Kernel#is_a? because we don't get a free guard for the
     // right hand side.
@@ -5022,7 +5022,7 @@ fn jit_rb_float_plus(
     }
 
     // Save the PC and SP because the callee may allocate Float on heap
-    jit_prepare_routine_call(jit, asm);
+    jit_prepare_non_leaf_call(jit, asm);
 
     asm_comment!(asm, "Float#+");
     let obj = asm.stack_opnd(0);
@@ -5066,7 +5066,7 @@ fn jit_rb_float_minus(
     }
 
     // Save the PC and SP because the callee may allocate Float on heap
-    jit_prepare_routine_call(jit, asm);
+    jit_prepare_non_leaf_call(jit, asm);
 
     asm_comment!(asm, "Float#-");
     let obj = asm.stack_opnd(0);
@@ -5110,7 +5110,7 @@ fn jit_rb_float_mul(
     }
 
     // Save the PC and SP because the callee may allocate Float on heap
-    jit_prepare_routine_call(jit, asm);
+    jit_prepare_non_leaf_call(jit, asm);
 
     asm_comment!(asm, "Float#*");
     let obj = asm.stack_opnd(0);
@@ -5154,7 +5154,7 @@ fn jit_rb_float_div(
     }
 
     // Save the PC and SP because the callee may allocate Float on heap
-    jit_prepare_routine_call(jit, asm);
+    jit_prepare_non_leaf_call(jit, asm);
 
     asm_comment!(asm, "Float#/");
     let obj = asm.stack_opnd(0);
@@ -6745,7 +6745,7 @@ fn gen_send_iseq(
             // come later, we can't hold this value in a register and place it
             // near the end when we push a new control frame.
             asm_comment!(asm, "guard block arg is a proc");
-            // Simple predicate, no need for jit_prepare_routine_call().
+            // Simple predicate, no need for jit_prepare_non_leaf_call().
             let is_proc = asm.ccall(rb_obj_is_proc as _, vec![asm.stack_opnd(0)]);
             asm.cmp(is_proc, Qfalse.into());
             jit_chain_guard(
@@ -9006,7 +9006,7 @@ fn gen_getblockparamproxy(
             }
         }
 
-        // Simple predicate, no need to jit_prepare_routine_call()
+        // Simple predicate, no need to jit_prepare_non_leaf_call()
         let proc_or_false = asm.ccall(is_proc as _, vec![block_handler]);
 
         // Guard for proc
