@@ -83,6 +83,22 @@ matched versions of Ruby and/or Bundler to be used.
       download_gem(gem_name, gem_version, old_file)
     end
 
+    rg_version = rubygems_version(old_file)
+    unless rg_version == Gem::VERSION
+      alert_error <<-EOF
+You need to use the same RubyGems version #{gem_name} v#{gem_version} was built with.
+
+#{gem_name} v#{gem_version} was built using RubyGems v#{rg_version}.
+Gem files include the version of RubyGems used to build them.
+This means in order to reproduce #{gem_filename}, you must also use RubyGems v#{rg_version}.
+
+You're using RubyGems v#{Gem::VERSION}.
+
+Please install RubyGems v#{rg_version} and try again.
+      EOF
+      terminate_interaction 1
+    end
+
     source_date_epoch = get_timestamp(old_file).to_s
 
     if build_path = options[:build_path]
@@ -246,5 +262,9 @@ matched versions of Ruby and/or Bundler to be used.
     FileUtils.move(download_path, old_file)
 
     say "Downloaded #{gem_name} version #{gem_version} as #{old_file}."
+  end
+
+  def rubygems_version(gem_file)
+    Gem::Package.new(gem_file).spec.rubygems_version
   end
 end
