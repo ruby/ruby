@@ -2,7 +2,7 @@
 
 require_relative "helper"
 require "rubygems/request"
-require "rubygems/timeout"
+require "rubygems/vendored_timeout"
 
 class TestGemRequestConnectionPool < Gem::TestCase
   class FakeHttp

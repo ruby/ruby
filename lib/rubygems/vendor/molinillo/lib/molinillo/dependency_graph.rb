@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-require_relative '../../../../tsort'
+require_relative '../../../tsort/lib/tsort'
 
 require_relative 'dependency_graph/log'
 require_relative 'dependency_graph/vertex'
