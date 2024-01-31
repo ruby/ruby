@@ -180,7 +180,7 @@ module Test
         else
           error = ProxyError.new(error)
         end
-        _report "record", Marshal.dump([suite.name, method, assertions, time, error])
+        _report "record", Marshal.dump([suite.name, method, assertions, time, error, suite.instance_method(method).source_location])
         super
       end
     end
