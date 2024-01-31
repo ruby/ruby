@@ -116,7 +116,7 @@ jobs:
 
       - name: make ${{ matrix.test_task }}
         run: |
-          make -s ${{ matrix.test_task }} TESTS=$TESTS
+          make -s ${{ matrix.test_task }}
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
