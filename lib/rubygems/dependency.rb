@@ -328,9 +328,9 @@ class Gem::Dependency
     return active if active
 
     unless prerelease?
-      # Move prereleases to the end of the list for >= 0 requirements
+      # Consider prereleases only as a fallback
       pre, matches = matches.partition {|spec| spec.version.prerelease? }
-      matches += pre if requirement == Gem::Requirement.default || matches.empty?
+      matches = pre if matches.empty?
     end
 
     matches.first
