@@ -80,6 +80,16 @@ typedef struct {
 #define PRISM_ENCODING_UPPERCASE_BIT 1 << 2
 
 /**
+ * Return the size of the next character in the UTF-8 encoding.
+ *
+ * @param b The bytes to read.
+ * @param n The number of bytes that can be read.
+ * @returns The number of bytes that the next character takes if it is valid in
+ *     the encoding, or 0 if it is not.
+ */
+size_t pm_encoding_utf_8_char_width(const uint8_t *b, ptrdiff_t n);
+
+/**
  * Return the size of the next character in the UTF-8 encoding if it is an
  * alphabetical character.
  *
