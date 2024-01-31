@@ -13,6 +13,21 @@ on:
     # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/collaborating-on-repositories-with-code-quality-features/troubleshooting-required-status-checks#handling-skipped-but-required-checks
   merge_group:
 
+env:
+  # GITHUB_PULL_REQUEST_URL are used for commenting test reports in Launchable Github App.
+  # https://github.com/launchableinc/cli/blob/v1.80.1/launchable/utils/link.py#L42
+  GITHUB_PULL_REQUEST_URL: ${{ github.event.pull_request.html_url }}
+  # The following envs are necessary in Launchable tokenless authentication.
+  # https://github.com/launchableinc/cli/blob/v1.80.1/launchable/utils/authentication.py#L20
+  LAUNCHABLE_ORGANIZATION: ${{ github.repository_owner }}
+  LAUNCHABLE_WORKSPACE: ${{ github.event.repository.name }}
+  # https://github.com/launchableinc/cli/blob/v1.80.1/launchable/utils/authentication.py#L71
+  GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  # This secret setting is needed if you want to run Launchable on your forked
+  # repository.
+  # See https://github.com/ruby/ruby/wiki/CI-Servers#launchable-ci for details.
+  LAUNCHABLE_TOKEN: ${{ secrets.LAUNCHABLE_TOKEN }}
+
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
   cancel-in-progress: ${{ startsWith(github.event_name, 'pull') }}
@@ -25,12 +40,14 @@ jobs:
     strategy:
       matrix:
         test_task: ['check']
+        test_opts: ['']
         os:
           - macos-12
           - macos-13
           - ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
         include:
-          - test_task: test-all TESTS=--repeat-count=2
+          - test_task: test-all
+            test_opts: --repeat-count=2
             os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
           - test_task: test-bundled-gems
             os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-14' }}
@@ -50,10 +67,23 @@ jobs:
       )}}
 
     steps:
+      - name: Enable Launchable conditionally
+        id: enable_launchable
+        run: echo "enable_launchable=true" >> $GITHUB_OUTPUT
+        working-directory:
+        if: >-
+          ${{
+          (github.repository == 'ruby/ruby' ||
+          (github.repository != 'ruby/ruby' && env.LAUNCHABLE_TOKEN)) &&
+          (matrix.test_task == 'check' || matrix.test_task == 'test-all')
+          }}
+
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
+          # Set fetch-depth: 0 so that Launchable can receive commits information.
+          fetch-depth: 0
 
       - name: Install libraries
         uses: ./.github/actions/setup/macos
@@ -80,6 +110,41 @@ jobs:
           echo "TESTS=${TESTS}" >> $GITHUB_ENV
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
 
+      # Launchable CLI requires Python and Java
+      # https://www.launchableinc.com/docs/resources/cli-reference/
+      - name: Set up Python
+        uses: actions/setup-python@871daa956ca9ea99f3c3e30acb424b7960676734 # v5.0.0
+        with:
+          python-version: "3.10"
+        if: steps.enable_launchable.outputs.enable_launchable
+
+      - name: Set up Java
+        uses: actions/setup-java@7a445ee88d4e23b52c33fdc7601e40278616c7f8 # v4.0.0
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+        if: steps.enable_launchable.outputs.enable_launchable
+
+      - name: Set up Launchable
+        run: |
+          set -x
+          pip install launchable
+          launchable verify
+          : # The build name cannot include a slash, so we replace the string here.
+          github_ref="$(echo ${{ github.ref }} | sed 's/\//_/g')"
+          : # With the --name option, we need to configure a unique identifier for this build.
+          : # To avoid setting the same build name as the CI which runs on other branches, we use the branch name here.
+          : #
+          : # FIXME: Need to fix `WARNING: Failed to process a change to a file`.
+          : # https://github.com/launchableinc/cli/issues/786
+          launchable record build --name ${github_ref}_${GITHUB_PR_HEAD_SHA}
+          echo "TESTS=${TESTS} --launchable-test-reports=launchable_reports.json" >> $GITHUB_ENV
+        if: steps.enable_launchable.outputs.enable_launchable
+
+      - name: Set extra test options
+        run: echo "TESTS=$TESTS ${{ matrix.test_opts }}" >> $GITHUB_ENV
+        if: matrix.test_opts
+
       - name: make ${{ matrix.test_task }}
         run: |
           make -s ${{ matrix.test_task }} ${TESTS:+TESTS="$TESTS"}
@@ -98,6 +163,10 @@ jobs:
           PRECHECK_BUNDLED_GEMS: 'no'
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
+
+      - name: Launchable - record tests
+        run: launchable record tests --flavor os=${{ matrix.os }} --flavor test_task=${{ matrix.test_task }} raw launchable_reports.json
+        if: ${{ always() && steps.enable_launchable.outputs.enable_launchable }}
 
       - uses: ./.github/actions/slack
         with:
