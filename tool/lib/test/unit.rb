@@ -856,7 +856,7 @@ module Test
         # (((@record ||= {})[suite] ||= {})[method]) = [assertions, time, error]
         if writer = @options[:launchable_test_reports]
           location = nil
-          if suite.method_defined?(:instance_method)
+          if suite.respond_to?(:instance_method)
             location = suite.instance_method(method).source_location
           end
           if location && path = location.first
