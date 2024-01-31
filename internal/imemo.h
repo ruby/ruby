@@ -171,7 +171,7 @@ imemo_type_p(VALUE imemo, enum imemo_type imemo_type)
     }
 }
 
-#define IMEMO_TYPE_P(v, t) imemo_type_p((VALUE)v, t)
+#define IMEMO_TYPE_P(v, t) imemo_type_p((VALUE)(v), t)
 
 static inline bool
 imemo_throw_data_p(VALUE imemo)
