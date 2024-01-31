@@ -120,7 +120,7 @@ class TestGemSafeMarshal < Gem::TestCase
   define_method("test_safe_load_marshal Time 2001-01-01 07:59:59 UTC") { assert_safe_load_marshal "\x04\bIu:\tTime\r'@\x19\xC0\x00\x00\xB0\xEF\x06:\tzoneI\"\bUTC\x06:\x06EF", additional_methods: [:ctime, :to_f, :to_r, :to_i, :zone, :subsec, :instance_variables, :dst?, :to_a] }
   define_method("test_safe_load_marshal Time 2001-01-01 11:59:59 +0400") { assert_safe_load_marshal "\x04\bIu:\tTime\r'@\x19\x80\x00\x00\xB0\xEF\a:\voffseti\x02@8:\tzone0", additional_methods: [:ctime, :to_f, :to_r, :to_i, :zone, :subsec, :instance_variables, :dst?, :to_a] }
   define_method("test_safe_load_marshal Time 2023-08-24 10:10:39.09565 -0700") { assert_safe_load_marshal "\x04\bIu:\tTime\r\x11\xDF\x1E\x80\xA2uq*\a:\voffseti\xFE\x90\x9D:\tzoneI\"\bPDT\x06:\x06EF" }
-  define_method("test_safe_load_marshal Time 2023-08-24 10:10:39.098453 -0700") { assert_safe_load_marshal "\x04\bIu:\tTime\r\x11\xDF\x1E\x80\x95\x80q*\b:\n@typeI\"\fruntime\x06:\x06ET:\voffseti\xFE\x90\x9D:\tzoneI\"\bPDT\x06;\aF", permitted_ivars: { "Time" => %w[@type offset zone], "String" => %w[E @debug_created_info] }, marshal_dump_equality: RUBY_ENGINE != "truffleruby" || RUBY_ENGINE_VERSION >= "23" }
+  define_method("test_safe_load_marshal Time 2023-08-24 10:10:39.098453 -0700") { assert_safe_load_marshal "\x04\bIu:\tTime\r\x11\xDF\x1E\x80\x95\x80q*\b:\n@typeI\"\fruntime\x06:\x06ET:\voffseti\xFE\x90\x9D:\tzoneI\"\bPDT\x06;\aF", permitted_ivars: { "Time" => %w[@type offset zone], "String" => %w[E @debug_created_info] }, marshal_dump_equality: true }
 
   def test_repeated_symbol
     assert_safe_load_as [:development, :development]
@@ -188,7 +188,7 @@ class TestGemSafeMarshal < Gem::TestCase
     pend "Marshal.load of Time with ivars is broken on jruby, see https://github.com/jruby/jruby/issues/7902" if RUBY_ENGINE == "jruby"
 
     with_const(Gem::SafeMarshal, :PERMITTED_IVARS, { "Time" => %w[@type offset zone nano_num nano_den submicro], "String" => %w[E @debug_created_info] }) do
-      assert_safe_load_as Time.new.tap {|t| t.instance_variable_set :@type, "runtime" }, marshal_dump_equality: RUBY_ENGINE != "truffleruby" || RUBY_ENGINE_VERSION >= "23"
+      assert_safe_load_as Time.new.tap {|t| t.instance_variable_set :@type, "runtime" }, marshal_dump_equality: true
     end
   end
 
@@ -211,17 +211,10 @@ class TestGemSafeMarshal < Gem::TestCase
     Time.at(secs, 1.001, :nanosecond),
     Time.at(secs, 1.00001, :nanosecond),
     Time.at(secs, 1.00001, :nanosecond),
-  ].tap do |times|
-    unless RUBY_ENGINE == "truffleruby" && RUBY_ENGINE_VERSION < "23"
-      times.concat [
-        Time.at(secs, in: "UTC"),
-        Time.at(secs, in: "Z"),
-      ]
-    end
-  end.each_with_index do |t, i|
+    Time.at(secs, in: "UTC"),
+    Time.at(secs, in: "Z"),
+  ].each_with_index do |t, i|
     define_method("test_time_#{i} #{t.inspect}") do
-      pend "Marshal.load of Time with custom zone is broken before Truffleruby 23" if t.zone.nil? && RUBY_ENGINE == "truffleruby" && RUBY_ENGINE_VERSION < "23"
-
       additional_methods = [:ctime, :to_f, :to_r, :to_i, :zone, :subsec, :instance_variables, :dst?, :to_a]
       assert_safe_load_as t, additional_methods: additional_methods
     end
@@ -293,8 +286,6 @@ class TestGemSafeMarshal < Gem::TestCase
   end
 
   def test_rational
-    pend "truffleruby dumps rationals with ivars set on array, see https://github.com/oracle/truffleruby/issues/3228" if RUBY_ENGINE == "truffleruby"
-
     assert_safe_load_as Rational(1, 3)
   end
 
