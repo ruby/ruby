@@ -46,7 +46,7 @@ typedef struct {
 
     /**
      * The line within the file that the parse starts on. This value is
-     * 0-indexed.
+     * 1-indexed.
      */
     int32_t line;
 
