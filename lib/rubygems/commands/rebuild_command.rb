@@ -11,6 +11,10 @@ class Gem::Commands::RebuildCommand < Gem::Command
   def initialize
     super "rebuild", "Attempt to reproduce a build of a gem."
 
+    add_option "--diff", "If the files don't match, compare them using diffoscope." do |_value, options|
+      options[:diff] = true
+    end
+
     add_option "--force", "Skip validation of the spec." do |_value, options|
       options[:force] = true
     end
@@ -150,6 +154,14 @@ An example of reproducing a gem build:
       say "SUCCESS - original and rebuild hashes matched"
     else
       say "FAILURE - original and rebuild hashes did not match"
+
+      if options[:diff]
+        say
+        if system("diffoscope", old_file, new_file).nil?
+          alert_error "error: could not find `diffoscope` executable"
+        end
+      end
+
       terminate_interaction 1
     end
   end
