@@ -2809,6 +2809,24 @@ class TestKeywordArguments < Test::Unit::TestCase
     assert_raise(FrozenError) { c.send(:ruby2_keywords, :baz) }
   end
 
+  def test_anon_splat_ruby2_keywords
+    singleton_class.class_exec do
+      def bar(*a, **kw)
+        [a, kw]
+      end
+
+      ruby2_keywords def bar_anon(*)
+        bar(*)
+      end
+    end
+
+    a = [1, 2]
+    kw = {a: 1}
+    assert_equal([[1, 2], {a: 1}], bar_anon(*a, **kw))
+    assert_equal([1, 2], a)
+    assert_equal({a: 1}, kw)
+  end
+
   def test_top_ruby2_keywords
     assert_in_out_err([], <<-INPUT, ["[1, 2, 3]", "{:k=>1}"], [])
       def bar(*a, **kw)
