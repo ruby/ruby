@@ -39,6 +39,10 @@ module TestIRB
     end
 
     def test_evaluate_with_encoding_error_without_lineno
+      if RUBY_ENGINE == 'truffleruby'
+        omit "Remove me after https://github.com/ruby/prism/issues/2129 is addressed and adopted in TruffleRuby"
+      end
+
       assert_raise_with_message(EncodingError, /invalid symbol/) {
         @context.evaluate(%q[:"\xAE"], 1)
         # The backtrace of this invalid encoding hash doesn't contain lineno.

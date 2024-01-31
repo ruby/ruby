@@ -221,6 +221,10 @@ module TestIRB
     end
 
     def assert_code_block_open(lines, expected, local_variables: [])
+      if RUBY_ENGINE == 'truffleruby'
+        omit "Remove me after https://github.com/ruby/prism/issues/2129 is addressed and adopted in TruffleRuby"
+      end
+
       _indent_level, _continue, code_block_open = check_state(lines, local_variables: local_variables)
       error_message = "Wrong result of code_block_open for:\n #{lines.join("\n")}"
       assert_equal(expected, code_block_open, error_message)
