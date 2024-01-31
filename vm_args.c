@@ -518,6 +518,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
                 given_argc == ISEQ_BODY(iseq)->param.lead_num + (kw_flag ? 2 : 1) &&
                 !ISEQ_BODY(iseq)->param.flags.has_opt &&
                 !ISEQ_BODY(iseq)->param.flags.has_post &&
+                !ISEQ_BODY(iseq)->param.flags.ruby2_keywords &&
                 (!kw_flag ||
                 !ISEQ_BODY(iseq)->param.flags.has_kw ||
                 !ISEQ_BODY(iseq)->param.flags.has_kwrest ||
