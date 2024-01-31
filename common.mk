@@ -16081,6 +16081,7 @@ ruby_parser.$(OBJEXT): {$(VPATH)}internal/variable.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 ruby_parser.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 ruby_parser.$(OBJEXT): {$(VPATH)}missing.h
+ruby_parser.$(OBJEXT): {$(VPATH)}node.h
 ruby_parser.$(OBJEXT): {$(VPATH)}onigmo.h
 ruby_parser.$(OBJEXT): {$(VPATH)}oniguruma.h
 ruby_parser.$(OBJEXT): {$(VPATH)}ruby_assert.h
