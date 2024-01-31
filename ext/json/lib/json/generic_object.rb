@@ -1,5 +1,8 @@
 #frozen_string_literal: false
-require 'ostruct'
+begin
+  require 'ostruct'
+rescue LoadError
+end
 
 module JSON
   class GenericObject < OpenStruct
@@ -67,5 +70,5 @@ module JSON
     def to_json(*a)
       as_json.to_json(*a)
     end
-  end
+  end if defined?(::OpenStruct)
 end
