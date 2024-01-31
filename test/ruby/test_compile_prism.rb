@@ -1486,6 +1486,13 @@ a
         end
         prism_test_return_node
       CODE
+
+      assert_prism_eval(<<-CODE)
+        def self.prism_test_return_node(*args, **kwargs)
+          return *args, *args, **kwargs
+        end
+        prism_test_return_node(1, foo: 0)
+      CODE
     end
 
     ############################################################################
