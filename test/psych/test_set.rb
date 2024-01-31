@@ -46,5 +46,12 @@ bar: baz
       @set['self'] = @set
       assert_cycle(@set)
     end
+
+    def test_stringify_names
+      @set[:symbol] = :value
+
+      assert_match(/^:symbol: :value/, Psych.dump(@set))
+      assert_match(/^symbol: :value/, Psych.dump(@set, stringify_names: true))
+    end
   end
 end

@@ -271,7 +271,11 @@ impl Assembler
                                 *truthy = asm.load(*truthy);
                             }
                         },
-                        Opnd::UImm(_) | Opnd::Imm(_) | Opnd::Value(_) => {
+                        Opnd::UImm(_) | Opnd::Imm(_) => {
+                            *truthy = asm.load(*truthy);
+                        },
+                        // Opnd::Value could have already been split
+                        Opnd::Value(_) if !matches!(truthy, Opnd::InsnOut { .. }) => {
                             *truthy = asm.load(*truthy);
                         },
                         _ => {}
@@ -1268,6 +1272,24 @@ mod tests {
             0x5: mov eax, 4
             0xa: cmovg rax, qword ptr [rbx]
             0xe: mov qword ptr [rbx], rax
+        "});
+    }
+
+    #[test]
+    fn test_csel_split() {
+        let (mut asm, mut cb) = setup_asm();
+
+        let stack_top = Opnd::mem(64, SP, 0);
+        let elem_opnd = asm.csel_ne(VALUE(0x7f22c88d1930).into(), Qnil.into());
+        asm.mov(stack_top, elem_opnd);
+
+        asm.compile_with_num_regs(&mut cb, 3);
+
+        assert_disasm!(cb, "48b830198dc8227f0000b904000000480f44c1488903", {"
+            0x0: movabs rax, 0x7f22c88d1930
+            0xa: mov ecx, 4
+            0xf: cmove rax, rcx
+            0x13: mov qword ptr [rbx], rax
         "});
     }
 }

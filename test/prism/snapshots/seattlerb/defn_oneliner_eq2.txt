@@ -22,6 +22,7 @@
             │           │   @ ParametersNode (location: (2,9)-(2,10))
             │           │   ├── requireds: (length: 1)
             │           │   │   └── @ RequiredParameterNode (location: (2,9)-(2,10))
+            │           │   │       ├── flags: ∅
             │           │   │       └── name: :o
             │           │   ├── optionals: (length: 0)
             │           │   ├── rest: ∅

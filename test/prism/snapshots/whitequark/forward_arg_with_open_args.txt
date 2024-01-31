@@ -163,6 +163,7 @@
         │   │   @ ParametersNode (location: (12,8)-(12,14))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (12,8)-(12,9))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :a
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -204,6 +205,7 @@
         │   │   @ ParametersNode (location: (16,8)-(16,14))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (16,8)-(16,9))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :a
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -245,9 +247,11 @@
         │   │   @ ParametersNode (location: (18,8)-(18,21))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (18,8)-(18,9))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :a
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (18,11)-(18,16))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :b
         │   │   │       ├── name_loc: (18,11)-(18,12) = "b"
         │   │   │       ├── operator_loc: (18,13)-(18,14) = "="
@@ -278,6 +282,7 @@
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (21,8)-(21,13))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :b
         │   │   │       ├── name_loc: (21,8)-(21,9) = "b"
         │   │   │       ├── operator_loc: (21,10)-(21,11) = "="
@@ -324,6 +329,7 @@
         │   │   ├── requireds: (length: 0)
         │   │   ├── optionals: (length: 1)
         │   │   │   └── @ OptionalParameterNode (location: (25,8)-(25,13))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :b
         │   │   │       ├── name_loc: (25,8)-(25,9) = "b"
         │   │   │       ├── operator_loc: (25,10)-(25,11) = "="
@@ -369,6 +375,7 @@
             │   @ ParametersNode (location: (27,8)-(27,14))
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (27,8)-(27,9))
+            │   │       ├── flags: ∅
             │   │       └── name: :a
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅

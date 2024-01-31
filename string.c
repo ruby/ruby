@@ -3919,8 +3919,12 @@ rb_str_concat(VALUE str1, VALUE str2)
         }
         rb_str_resize(str1, pos+len);
         memcpy(RSTRING_PTR(str1) + pos, buf, len);
-        if (cr == ENC_CODERANGE_7BIT && code > 127)
+        if (cr == ENC_CODERANGE_7BIT && code > 127) {
             cr = ENC_CODERANGE_VALID;
+        }
+        else if (cr == ENC_CODERANGE_BROKEN) {
+            cr = ENC_CODERANGE_UNKNOWN;
+        }
         ENC_CODERANGE_SET(str1, cr);
     }
     return str1;
@@ -8388,7 +8392,14 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
         while (s < send) {
             int may_modify = 0;
 
-            c0 = c = rb_enc_codepoint_len((char *)s, (char *)send, &clen, e1);
+            int r = rb_enc_precise_mbclen((char *)s, (char *)send, e1);
+            if (!MBCLEN_CHARFOUND_P(r)) {
+                xfree(buf);
+                rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(e1));
+            }
+            clen = MBCLEN_CHARFOUND_LEN(r);
+            c0 = c = rb_enc_mbc_to_codepoint((char *)s, (char *)send, e1);
+
             tlen = enc == e1 ? clen : rb_enc_codelen(c, enc);
 
             s += clen;
@@ -8484,7 +8495,15 @@ tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)
 
         while (s < send) {
             int may_modify = 0;
-            c0 = c = rb_enc_codepoint_len((char *)s, (char *)send, &clen, e1);
+
+            int r = rb_enc_precise_mbclen((char *)s, (char *)send, e1);
+            if (!MBCLEN_CHARFOUND_P(r)) {
+                xfree(buf);
+                rb_raise(rb_eArgError, "invalid byte sequence in %s", rb_enc_name(e1));
+            }
+            clen = MBCLEN_CHARFOUND_LEN(r);
+            c0 = c = rb_enc_mbc_to_codepoint((char *)s, (char *)send, e1);
+
             tlen = enc == e1 ? clen : rb_enc_codelen(c, enc);
 
             if (c < 256) {

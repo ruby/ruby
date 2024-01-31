@@ -198,7 +198,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     Gem::Specification.reset
 
     FileUtils.mv @a1_gem, @tempdir
-    FileUtils.mv  a2_gem, @tempdir # not in index
+    FileUtils.mv a2_gem, @tempdir # not in index
     FileUtils.mv @b1_gem, @tempdir
     inst = nil
 
@@ -237,7 +237,7 @@ class TestGemDependencyInstaller < Gem::TestCase
     Gem::Specification.reset
 
     FileUtils.mv @a1_gem, @tempdir
-    FileUtils.mv  a2_gem, @tempdir # not in index
+    FileUtils.mv a2_gem, @tempdir # not in index
     FileUtils.mv @b1_gem, @tempdir
     FileUtils.mv a3_gem, @tempdir
 
@@ -489,7 +489,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     # compact index is available
     compact_index_response = Gem::Net::HTTPResponse.new "1.1", 200, "OK"
-    compact_index_response.uri = URI("http://gems.example.com")
+    compact_index_response.uri = Gem::URI("http://gems.example.com")
     @fetcher.data["http://gems.example.com/"] = compact_index_response
 
     # but private local gem not present there
@@ -621,7 +621,7 @@ class TestGemDependencyInstaller < Gem::TestCase
 
     env = "/\\S+/env" unless Gem.win_platform?
 
-    assert_match(/\A#!#{env} #{RbConfig::CONFIG['ruby_install_name']}\n/,
+    assert_match(/\A#!#{env} #{RbConfig::CONFIG["ruby_install_name"]}\n/,
                  File.read(File.join(@gemhome, "bin", "a_bin")))
   end
 

@@ -1,4 +1,5 @@
 require "lrama/grammar/auxiliary"
+require "lrama/grammar/binding"
 require "lrama/grammar/code"
 require "lrama/grammar/counter"
 require "lrama/grammar/error_token"
@@ -8,9 +9,6 @@ require "lrama/grammar/printer"
 require "lrama/grammar/reference"
 require "lrama/grammar/rule"
 require "lrama/grammar/rule_builder"
-require "lrama/grammar/parameterizing_rule_builder"
-require "lrama/grammar/parameterizing_rule_resolver"
-require "lrama/grammar/parameterizing_rule_rhs_builder"
 require "lrama/grammar/parameterizing_rule"
 require "lrama/grammar/symbol"
 require "lrama/grammar/type"
@@ -26,7 +24,7 @@ module Lrama
                   :lex_param, :parse_param, :initial_action,
                   :symbols, :types,
                   :rules, :rule_builders,
-                  :sym_to_rules
+                  :sym_to_rules, :no_stdlib
 
     def initialize(rule_counter)
       @rule_counter = rule_counter
@@ -40,19 +38,20 @@ module Lrama
       @rule_builders = []
       @rules = []
       @sym_to_rules = {}
-      @parameterizing_resolver = ParameterizingRuleResolver.new
+      @parameterizing_rule_resolver = ParameterizingRule::Resolver.new
       @empty_symbol = nil
       @eof_symbol = nil
       @error_symbol = nil
       @undef_symbol = nil
       @accept_symbol = nil
       @aux = Auxiliary.new
+      @no_stdlib = false
 
       append_special_symbols
     end
 
     def add_percent_code(id:, code:)
-      @percent_codes << PercentCode.new(id, code)
+      @percent_codes << PercentCode.new(id.s_value, code.s_value)
     end
 
     def add_printer(ident_or_tags:, token_code:, lineno:)
@@ -134,8 +133,16 @@ module Lrama
       @rule_builders << builder
     end
 
-    def add_parameterizing_rule_builder(builder)
-      @parameterizing_resolver.add_parameterizing_rule_builder(builder)
+    def add_parameterizing_rule(rule)
+      @parameterizing_rule_resolver.add_parameterizing_rule(rule)
+    end
+
+    def parameterizing_rules
+      @parameterizing_rule_resolver.rules
+    end
+
+    def insert_before_parameterizing_rules(rules)
+      @parameterizing_rule_resolver.rules = rules + @parameterizing_rule_resolver.rules
     end
 
     def prologue_first_lineno=(prologue_first_lineno)
@@ -171,7 +178,7 @@ module Lrama
 
     # TODO: More validation methods
     #
-    # * Validaiton for no_declared_type_reference
+    # * Validation for no_declared_type_reference
     def validate!
       validate_symbol_number_uniqueness!
       validate_symbol_alias_name_uniqueness!
@@ -236,7 +243,7 @@ module Lrama
     def compute_nullable
       @rules.each do |rule|
         case
-        when rule.rhs.empty?
+        when rule.empty_rule?
           rule.nullable = true
         when rule.rhs.any?(&:term)
           rule.nullable = false
@@ -319,7 +326,7 @@ module Lrama
 
     def setup_rules
       @rule_builders.each do |builder|
-        builder.setup_rules(@parameterizing_resolver)
+        builder.setup_rules(@parameterizing_rule_resolver)
       end
     end
 

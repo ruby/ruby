@@ -11,6 +11,7 @@
         │   │   @ ParametersNode (location: (1,7)-(1,12))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (1,7)-(1,12))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :other
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -47,6 +48,7 @@
         │   │   @ ParametersNode (location: (3,7)-(3,12))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (3,7)-(3,12))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :other
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -83,6 +85,7 @@
         │   │   @ ParametersNode (location: (5,7)-(5,12))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (5,7)-(5,12))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :other
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -119,6 +122,7 @@
         │   │   @ ParametersNode (location: (7,7)-(7,12))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (7,7)-(7,12))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :other
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -155,6 +159,7 @@
         │   │   @ ParametersNode (location: (9,8)-(9,13))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (9,8)-(9,13))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :other
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -191,6 +196,7 @@
             │   @ ParametersNode (location: (11,7)-(11,12))
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (11,7)-(11,12))
+            │   │       ├── flags: ∅
             │   │       └── name: :other
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅

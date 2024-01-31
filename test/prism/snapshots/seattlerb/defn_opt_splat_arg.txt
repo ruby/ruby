@@ -12,6 +12,7 @@
             │   ├── requireds: (length: 0)
             │   ├── optionals: (length: 1)
             │   │   └── @ OptionalParameterNode (location: (1,7)-(1,12))
+            │   │       ├── flags: ∅
             │   │       ├── name: :a
             │   │       ├── name_loc: (1,7)-(1,8) = "a"
             │   │       ├── operator_loc: (1,9)-(1,10) = "="
@@ -20,11 +21,13 @@
             │   │           └── flags: decimal
             │   ├── rest:
             │   │   @ RestParameterNode (location: (1,14)-(1,16))
+            │   │   ├── flags: ∅
             │   │   ├── name: :b
             │   │   ├── name_loc: (1,15)-(1,16) = "b"
             │   │   └── operator_loc: (1,14)-(1,15) = "*"
             │   ├── posts: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (1,18)-(1,19))
+            │   │       ├── flags: ∅
             │   │       └── name: :c
             │   ├── keywords: (length: 0)
             │   ├── keyword_rest: ∅

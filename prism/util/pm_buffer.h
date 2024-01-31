@@ -129,6 +129,15 @@ void pm_buffer_append_varuint(pm_buffer_t *buffer, uint32_t value);
 void pm_buffer_append_varsint(pm_buffer_t *buffer, int32_t value);
 
 /**
+ * Prepend the given string to the buffer.
+ *
+ * @param buffer The buffer to prepend to.
+ * @param value The string to prepend.
+ * @param length The length of the string to prepend.
+ */
+void pm_buffer_prepend_string(pm_buffer_t *buffer, const char *value, size_t length);
+
+/**
  * Concatenate one buffer onto another.
  *
  * @param destination The buffer to concatenate onto.

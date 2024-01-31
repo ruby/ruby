@@ -6,7 +6,7 @@
         └── @ UndefNode (location: (1,0)-(1,13))
             ├── names: (length: 1)
             │   └── @ SymbolNode (location: (1,6)-(1,13))
-            │       ├── flags: ∅
+            │       ├── flags: forced_us_ascii_encoding
             │       ├── opening_loc: (1,6)-(1,9) = "%s("
             │       ├── value_loc: (1,9)-(1,12) = "foo"
             │       ├── closing_loc: (1,12)-(1,13) = ")"

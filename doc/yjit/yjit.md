@@ -165,7 +165,7 @@ The machine code generated for a given method can be printed by adding `puts Rub
 YJIT supports all command-line options supported by upstream CRuby, but also adds a few YJIT-specific options:
 
 - `--yjit`: enable YJIT (disabled by default)
-- `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 64 MiB)
+- `--yjit-exec-mem-size=N`: size of the executable memory block to allocate, in MiB (default 48 MiB)
 - `--yjit-call-threshold=N`: number of calls after which YJIT begins to compile a function.
   It defaults to 30, and it's then increased to 120 when the number of ISEQs in the process reaches 40,000.
 - `--yjit-cold-threshold=N`: number of global calls after which an ISEQ is considered cold and not
@@ -243,8 +243,8 @@ which often consumes more memory than JIT code. Generally, YJIT adds memory over
 3-4x of `--yjit-exec-mem-size` in production as of Ruby 3.3. You should multiply that by the number
 of worker processes to estimate the worst case memory overhead.
 
-We use `--yjit-exec-mem-size=64` for Shopify's Rails monolith, which is Ruby 3.3's default,
-but smaller values like 32 MiB or 48 MiB might make sense for your application.
+`--yjit-exec-mem-size=48` is the default since Ruby 3.3.1,
+but smaller values like 32 MiB might make sense for your application.
 While doing so, you may want to monitor `RubyVM::YJIT.runtime_stats[:ratio_in_yjit]` as explained above.
 
 ### Enabling YJIT lazily

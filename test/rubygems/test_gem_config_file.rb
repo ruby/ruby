@@ -548,4 +548,14 @@ if you believe they were disclosed to a third party.
 
     assert_equal("---\n:foo: \"bar\"\n", actual)
   end
+
+  def test_handle_comment
+    yaml = <<~YAML
+      ---
+      :foo: bar # buzz
+    YAML
+
+    actual = Gem::ConfigFile.load_with_rubygems_config_hash(yaml)
+    assert_equal("bar", actual[:foo])
+  end
 end

@@ -76,5 +76,5 @@ DESCRIPTION
   end
 
   s.metadata['msys2_mingw_dependencies'] = 'libyaml'
-
+  s.metadata['changelog_uri'] = s.homepage + '/releases'
 end

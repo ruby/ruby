@@ -19,6 +19,7 @@
             │   │   ├── posts: (length: 0)
             │   │   ├── keywords: (length: 1)
             │   │   │   └── @ OptionalKeywordParameterNode (location: (1,4)-(1,8))
+            │   │   │       ├── flags: ∅
             │   │   │       ├── name: :k
             │   │   │       ├── name_loc: (1,4)-(1,6) = "k:"
             │   │   │       └── value:

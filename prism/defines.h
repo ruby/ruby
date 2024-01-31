@@ -17,6 +17,14 @@
 #include <string.h>
 
 /**
+ * We want to be able to use the PRI* macros for printing out integers, but on
+ * some platforms they aren't included unless this is already defined.
+ */
+#define __STDC_FORMAT_MACROS
+
+#include <inttypes.h>
+
+/**
  * By default, we compile with -fvisibility=hidden. When this is enabled, we
  * need to mark certain functions as being publically-visible. This macro does
  * that in a compiler-agnostic way.

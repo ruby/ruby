@@ -229,7 +229,7 @@ module OpenSSL::Buffering
   #
   # Unlike IO#gets the separator must be provided if a limit is provided.
 
-  def gets(eol=$/, limit=nil)
+  def gets(eol=$/, limit=nil, chomp: false)
     idx = @rbuffer.index(eol)
     until @eof
       break if idx
@@ -244,7 +244,11 @@ module OpenSSL::Buffering
     if size && limit && limit >= 0
       size = [size, limit].min
     end
-    consume_rbuff(size)
+    line = consume_rbuff(size)
+    if chomp && line
+      line.chomp!(eol)
+    end
+    line
   end
 
   ##

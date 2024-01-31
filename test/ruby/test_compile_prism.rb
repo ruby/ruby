@@ -59,10 +59,7 @@ module Prism
     end
 
     def test_SourceLineNode
-      ruby_eval = RubyVM::InstructionSequence.compile("__LINE__").eval
-      prism_eval = RubyVM::InstructionSequence.compile_prism("__LINE__").eval
-
-      assert_equal ruby_eval, prism_eval
+      assert_prism_eval("__LINE__", raw: true)
     end
 
     def test_TrueNode
@@ -209,6 +206,60 @@ module Prism
 
       assert_prism_eval("defined?(a(itself))")
       assert_prism_eval("defined?(itself(itself))")
+
+      # Method chain on a constant
+      assert_prism_eval(<<~RUBY)
+        class PrismDefinedNode
+          def m1; end
+        end
+
+        defined?(PrismDefinedNode.new.m1)
+      RUBY
+
+      assert_prism_eval("defined?(next)")
+      assert_prism_eval("defined?(break)")
+      assert_prism_eval("defined?(redo)")
+      assert_prism_eval("defined?(retry)")
+
+      assert_prism_eval(<<~RUBY)
+        class PrismDefinedReturnNode
+          def self.m1; defined?(return) end
+        end
+
+        PrismDefinedReturnNode.m1
+      RUBY
+
+      assert_prism_eval("defined?(begin; 1; end)")
+
+      assert_prism_eval("defined?(defined?(a))")
+      assert_prism_eval('defined?(:"#{1}")')
+      assert_prism_eval("defined?(`echo #{1}`)")
+
+      assert_prism_eval("defined?(PrismTestSubclass.test_call_and_write_node &&= 1)")
+      assert_prism_eval("defined?(PrismTestSubclass.test_call_operator_write_node += 1)")
+      assert_prism_eval("defined?(PrismTestSubclass.test_call_or_write_node ||= 1)")
+      assert_prism_eval("defined?(Prism::CPAWN &&= 1)")
+      assert_prism_eval("defined?(Prism::CPOWN += 1)")
+      assert_prism_eval("defined?(Prism::CPOrWN ||= 1)")
+      assert_prism_eval("defined?(Prism::CPWN = 1)")
+      assert_prism_eval("defined?([0][0] &&= 1)")
+      assert_prism_eval("defined?([0][0] += 1)")
+      assert_prism_eval("defined?([0][0] ||= 1)")
+
+      assert_prism_eval("defined?(case :a; when :a; 1; else; 2; end)")
+      assert_prism_eval("defined?(case [1, 2, 3]; in [1, 2, 3]; 4; end)")
+      assert_prism_eval("defined?(class PrismClassA; end)")
+      assert_prism_eval("defined?(def prism_test_def_node; end)")
+      assert_prism_eval("defined?(for i in [1,2] do; i; end)")
+      assert_prism_eval("defined?(if true; 1; end)")
+      assert_prism_eval("defined?(/(?<foo>bar)/ =~ 'barbar')")
+      assert_prism_eval("defined?(1 => 1)")
+      assert_prism_eval("defined?(module M; end)")
+      assert_prism_eval("defined?(1.2r)")
+      assert_prism_eval("defined?(class << self; end)")
+      assert_prism_eval("defined?(while a != 1; end)")
+      assert_prism_eval("defined?(until a == 1; end)")
+      assert_prism_eval("defined?(unless true; 1; end)")
     end
 
     def test_GlobalVariableReadNode
@@ -331,6 +382,24 @@ module Prism
         hash["key", &(Proc.new { _1.upcase })] &&= "value"
         hash
       CODE
+
+      # Test with keyword arguments
+      assert_prism_eval(<<~RUBY)
+        h = Object.new
+        def h.[](**b) = 0
+        def h.[]=(*a, **b); end
+
+        h[foo: 1] &&= 2
+      RUBY
+
+      # Test with keyword splat
+      assert_prism_eval(<<~RUBY)
+        h = Object.new
+        def h.[](**b) = 1
+        def h.[]=(*a, **b); end
+
+        h[**{}] &&= 2
+      RUBY
     end
 
     def test_IndexOrWriteNode
@@ -352,6 +421,24 @@ module Prism
         hash["key", &(Proc.new { _1.upcase })] ||= "value"
         hash
       CODE
+
+      # Test with keyword arguments
+      assert_prism_eval(<<~RUBY)
+        h = Object.new
+        def h.[](**b) = 0
+        def h.[]=(*a, **b); end
+
+        h[foo: 1] ||= 2
+      RUBY
+
+      # Test with keyword splat
+      assert_prism_eval(<<~RUBY)
+        h = Object.new
+        def h.[](**b) = nil
+        def h.[]=(*a, **b); end
+
+        h[**{}] ||= 2
+      RUBY
     end
 
     def test_IndexOperatorWriteNode
@@ -529,10 +616,15 @@ module Prism
       assert_prism_eval("(a, b, c), *, (d, e) = [1, 3], 4, 5, [6, 7]; b")
       assert_prism_eval("(a, b, c), *, (d, e) = [1, 3], 4, 5, [6, 7]; d")
       assert_prism_eval("((a, *, b), *, (c, *, (d, *, e, f, g))), *, ((h, i, *, j), *, (k, l, m, *, n, o, p), q, r) = 1; a")
+      assert_prism_eval("*a = 1; a")
       assert_prism_eval("_, {}[:foo] = 1")
       assert_prism_eval("_, {}[:foo], _ = 1")
       assert_prism_eval("_, {}[:foo], _ = 1")
       assert_prism_eval("_,{}[:foo], _, {}[:bar] = 1")
+      assert_prism_eval("* = :foo")
+      assert_prism_eval("* = *[]")
+      assert_prism_eval("a, * = :foo")
+
 
       assert_prism_eval(<<~CODE)
         class Foo
@@ -558,6 +650,21 @@ module Prism
         foo = Foo.new
         _, foo.bar, _, foo.baz = 1
       CODE
+
+      # Test nested writes with method calls
+      assert_prism_eval(<<~RUBY)
+        class Foo
+          attr_accessor :bar
+        end
+
+        a = Foo.new
+
+        (a.bar, a.bar), b = [1], 2
+      RUBY
+      assert_prism_eval(<<~RUBY)
+        h = {}
+        (h[:foo], h[:bar]), a = [1], 2
+      RUBY
     end
 
     ############################################################################
@@ -589,6 +696,22 @@ module Prism
       assert_prism_eval('$pit = 1; "1 #$pit 1"')
       assert_prism_eval('"1 #{1 + 2} 1"')
       assert_prism_eval('"Prism" "::" "TestCompilePrism"')
+      assert_prism_eval('("a""b").frozen?')
+      assert_prism_eval(<<-CODE)
+        # frozen_string_literal: true
+
+        ("a""b").frozen?
+      CODE
+      assert_prism_eval(<<-CODE)
+        # frozen_string_literal: true
+
+        ("a""b""#{1}").frozen?
+      CODE
+      assert_prism_eval(<<-CODE)
+        # frozen_string_literal: true
+
+        ("a""#{1}""b").frozen?
+      CODE
     end
 
     def test_InterpolatedSymbolNode
@@ -598,7 +721,7 @@ module Prism
 
     def test_InterpolatedXStringNode
       assert_prism_eval('`echo #{1}`')
-      assert_prism_eval('`printf #{"100"}`')
+      assert_prism_eval('`echo #{"100"}`')
     end
 
     def test_MatchLastLineNode
@@ -650,15 +773,30 @@ module Prism
           "hello".equal?("hello")
         RUBY
       ].each do |src|
-        ruby_eval = RubyVM::InstructionSequence.compile(src).eval
-        prism_eval = RubyVM::InstructionSequence.compile_prism(src).eval
-
-        assert_equal ruby_eval, prism_eval, src
+        assert_prism_eval(src, raw: true)
       end
     end
 
     def test_SymbolNode
       assert_prism_eval(":pit")
+
+      # Test UTF-8 symbol in a US-ASCII file
+      assert_prism_eval(<<~'RUBY', raw: true)
+        # -*- coding: us-ascii -*-
+        :"\u{e9}"
+      RUBY
+
+      # Test ASCII-8BIT symbol in a US-ASCII file
+      assert_prism_eval(<<~'RUBY', raw: true)
+        # -*- coding: us-ascii -*-
+        :"\xff"
+      RUBY
+
+      # Test US-ASCII symbol in a ASCII-8BIT file
+      assert_prism_eval(<<~'RUBY', raw: true)
+        # -*- coding: ascii-8bit -*-
+        :a
+      RUBY
     end
 
     def test_XStringNode
@@ -686,6 +824,9 @@ module Prism
       assert_prism_eval("[-1, true, 0, *1..2, 3, 4, *5..6, 7, 8, *9..11]")
       assert_prism_eval("a = [1,2]; [0, *a, 3, 4, *5..6, 7, 8, *9..11]")
       assert_prism_eval("[[*1..2], 3, *4..5]")
+
+      # Test keyword splat inside of array
+      assert_prism_eval("[**{x: 'hello'}]")
     end
 
     def test_AssocNode
@@ -696,6 +837,36 @@ module Prism
       assert_prism_eval("foo = { a: 1 }; { **foo }")
       assert_prism_eval("foo = { a: 1 }; bar = foo; { **foo, b: 2, **bar, c: 3 }")
       assert_prism_eval("foo = { a: 1 }; { b: 2, **foo, c: 3}")
+
+      # Test anonymous AssocSplatNode
+      assert_prism_eval(<<~RUBY)
+        o = Object.new
+        def o.bar(**) = Hash(**)
+
+        o.bar(hello: "world")
+      RUBY
+
+      # Test that AssocSplatNode is evaluated before BlockArgumentNode using
+      # the splatkw instruction
+      assert_prism_eval(<<~RUBY)
+        o = Struct.new(:ary) do
+          def to_hash
+            ary << :to_hash
+            {}
+          end
+
+          def to_proc
+            ary << :to_proc
+            -> {}
+          end
+
+          def t(...); end
+        end.new
+        o.ary = []
+
+        o.t(**o, &o)
+        o.ary
+      RUBY
     end
 
     def test_HashNode
@@ -735,6 +906,13 @@ module Prism
       assert_prism_eval("*b, c = [1, 2, 3]; c")
       assert_prism_eval("a, *, c = [1, 2, 3]; a")
       assert_prism_eval("a, *, c = [1, 2, 3]; c")
+
+      # Test anonymous splat node
+      assert_prism_eval(<<~RUBY)
+        def self.bar(*) = Array(*)
+
+        bar([1, 2, 3])
+      RUBY
     end
 
     ############################################################################
@@ -767,6 +945,48 @@ module Prism
         end
         prism_test_case_node
       CODE
+
+      # Test splat in when
+      assert_prism_eval(<<~RUBY)
+        ary = [1, 2]
+        case 1
+        when *ary
+          :ok
+        else
+          :ng
+        end
+      RUBY
+
+      # Test splat in when
+      assert_prism_eval(<<~RUBY)
+        ary = [1, 2]
+        case 1
+        when :foo, *ary
+          :ok
+        else
+          :ng
+        end
+      RUBY
+
+      # Test case without predicate
+      assert_prism_eval(<<~RUBY)
+        case
+        when 1 == 2
+          :ng
+        else
+          :ok
+        end
+      RUBY
+
+      # test splat with no predicate
+      assert_prism_eval(<<~RUBY)
+        case
+        when *[true]
+          :ok
+        else
+          :ng
+        end
+      RUBY
     end
 
     def test_ElseNode
@@ -807,10 +1027,38 @@ module Prism
 
     def test_UntilNode
       assert_prism_eval("a = 0; until a == 1; a = a + 1; end")
+
+      # Test UntilNode in rescue
+      assert_prism_eval(<<~RUBY)
+        o = Object.new
+        o.instance_variable_set(:@ret, [])
+        def o.foo = @ret << @ret.length
+        def o.bar = @ret.length > 3
+        begin
+          raise
+        rescue
+          o.foo until o.bar
+        end
+        o.instance_variable_get(:@ret)
+      RUBY
     end
 
     def test_WhileNode
       assert_prism_eval("a = 0; while a != 1; a = a + 1; end")
+
+      # Test WhileNode in rescue
+      assert_prism_eval(<<~RUBY)
+        o = Object.new
+        o.instance_variable_set(:@ret, [])
+        def o.foo = @ret << @ret.length
+        def o.bar = @ret.length < 3
+        begin
+          raise
+        rescue
+          o.foo while o.bar
+        end
+        o.instance_variable_get(:@ret)
+      RUBY
     end
 
     def test_ForNode
@@ -841,6 +1089,32 @@ module Prism
       assert_prism_eval("[true].map { break }")
     end
 
+    def test_ensure_in_methods
+      assert_prism_eval(<<-CODE)
+def self.m
+  a = []
+ensure
+  a << 5
+  return a
+end
+m
+      CODE
+    end
+
+    def test_break_runs_ensure
+      assert_prism_eval(<<-CODE)
+a = []
+while true
+  begin
+    break
+  ensure
+    a << 1
+  end
+end
+a
+      CODE
+    end
+
     def test_EnsureNode
       assert_prism_eval("begin; 1; ensure; 2; end")
       assert_prism_eval("begin; 1; begin; 3; ensure; 4; end; ensure; 2; end")
@@ -858,6 +1132,21 @@ module Prism
         end
         a
       CODE
+
+      # Test that ensure block only evaluated once
+      assert_prism_eval(<<~RUBY)
+        res = []
+        begin
+          begin
+            raise
+          ensure
+            res << $!.to_s
+          end
+        rescue
+          res
+        end
+      RUBY
+
       assert_prism_eval(<<-CODE)
         a = 1
         begin
@@ -912,6 +1201,22 @@ module Prism
         end
         prism_test_ensure_node
       CODE
+
+      # Test empty ensure block
+      assert_prism_eval(<<~RUBY)
+        res = []
+
+        begin
+          begin
+            raise
+          ensure
+          end
+        rescue
+          res << "rescue"
+        end
+
+        res
+      RUBY
     end
 
     def test_NextNode
@@ -961,6 +1266,15 @@ module Prism
           ensure
           end
           next
+        end
+      CODE
+
+      assert_prism_eval(<<~CODE)
+        [].each do
+          begin
+          rescue
+            next
+          end
         end
       CODE
     end
@@ -1082,7 +1396,7 @@ module Prism
       CODE
     end
 
-    def test_RescueModiferNode
+    def test_RescueModifierNode
       assert_prism_eval("1.nil? rescue false")
       assert_prism_eval("1.nil? rescue 1")
       assert_prism_eval("raise 'bang' rescue nil")
@@ -1177,6 +1491,9 @@ module Prism
       assert_prism_eval("[[]].map { |a,b=1| a }")
       assert_prism_eval("[{}].map { |a,| }")
       assert_prism_eval("[{}].map { |a| a }")
+
+      # Test blocks with MultiTargetNode
+      assert_prism_eval("[[1, 2]].each.map { |(a), (b)| [a, b] }")
     end
 
     def test_ClassNode
@@ -1299,6 +1616,116 @@ module Prism
       CODE
     end
 
+    def test_repeated_block_underscore
+      assert_prism_eval("def self.m(_, **_, &_); _; end; method(:m).parameters")
+    end
+
+    def test_repeated_kw_rest_underscore
+      assert_prism_eval("def self.m(_, **_); _; end; method(:m).parameters")
+    end
+
+    def test_repeated_required_keyword_underscore
+      assert_prism_eval("def self.m(_, _, *_, _, _:); _; end; method(:m).parameters")
+      assert_prism_eval("def self.m(_, _, *_, _, _:, _: 2); _; end; method(:m).parameters")
+    end
+
+    def test_repeated_required_post_underscore
+      assert_prism_eval("def self.m(_, _, *_, _); _; end; method(:m).parameters")
+    end
+
+    def test_repeated_splat_underscore
+      assert_prism_eval("def self.m(_, _, _ = 1, _ = 2, *_); end; method(:m).parameters")
+    end
+
+    def test_repeated_optional_underscore
+      assert_prism_eval("def self.m(a, _, _, _ = 1, _ = 2, b); end; method(:m).parameters")
+    end
+
+    def test_repeated_required_underscore
+      assert_prism_eval("def self.m(a, _, _, b); end; method(:m).parameters")
+    end
+
+    def test_locals_in_parameters
+      assert_prism_eval("def self.m(a = b = c = 1); [a, b, c]; end; self.m")
+    end
+
+    def test_trailing_comma_on_block
+      assert_prism_eval("def self.m; yield [:ok]; end; m {|v0,| v0 }")
+    end
+
+    def test_complex_default_params
+      assert_prism_eval("def self.foo(a:, b: '2'.to_i); [a, b]; end; foo(a: 1)")
+      assert_prism_eval("def self.foo(a:, b: 2, c: '3'.to_i); [a, b, c]; end; foo(a: 1)")
+    end
+
+    def test_rescue_with_ensure
+      assert_prism_eval(<<-CODE)
+begin
+  begin
+    raise "a"
+  rescue
+    raise "b"
+  ensure
+    raise "c"
+  end
+rescue => e
+  e.message
+end
+      CODE
+    end
+
+    def test_required_kwarg_ordering
+      assert_prism_eval("def self.foo(a: 1, b:); [a, b]; end; foo(b: 2)")
+    end
+
+    def test_trailing_keyword_method_params
+      # foo(1, b: 2, c: 3) # argc -> 3
+      assert_prism_eval("def self.foo(a, b:, c:); [a, b, c]; end; foo(1, b: 2, c: 3)")
+    end
+
+    def test_keyword_method_params_only
+      # foo(a: 1, b: 2) # argc -> 2
+      assert_prism_eval("def self.foo(a:, b:); [a, b]; end; foo(a: 1, b: 2)")
+    end
+
+    def test_keyword_method_params_with_splat
+      # foo(a: 1, **b) # argc -> 1
+      assert_prism_eval("def self.foo(a:, b:); [a, b]; end; b = { b: 2 }; foo(a: 1, **b)")
+    end
+
+    def test_positional_and_splat_keyword_method_params
+      # foo(a, **b) # argc -> 2
+      assert_prism_eval("def self.foo(a, b); [a, b]; end; b = { b: 2 }; foo(1, **b)")
+    end
+
+    def test_positional_and_splat_method_params
+      # foo(a, *b, c, *d, e) # argc -> 2
+      assert_prism_eval("def self.foo(a, b, c, d, e); [a, b, c, d, e]; end; b = [2]; d = [4]; foo(1, *b, 3, *d, 5)")
+    end
+
+    def test_positional_with_splat_and_splat_keyword_method_params
+      # foo(a, *b, c, *d, **e) # argc -> 3
+      assert_prism_eval("def self.foo(a, b, c, d, e); [a, b, c, d, e]; end; b = [2]; d = [4]; e = { e: 5 }; foo(1, *b, 3, *d, **e)")
+    end
+
+    def test_positional_with_splat_and_keyword_method_params
+      # foo(a, *b, c, *d, e:) # argc -> 3
+      assert_prism_eval("def self.foo(a, b, c, d, e:); [a, b, c, d, e]; end; b = [2]; d = [4]; foo(1, *b, 3, *d, e: 5)")
+    end
+
+    def test_leading_splat_and_keyword_method_params
+      # foo(*a, b:) # argc -> 2
+      assert_prism_eval("def self.foo(a, b:); [a, b]; end; a = [1]; foo(*a, b: 2)")
+    end
+
+    def test_repeated_method_params
+      assert_prism_eval("def self.foo(_a, _a); _a; end; foo(1, 2)")
+    end
+
+    def test_splat_params_with_no_lefties
+      assert_prism_eval("def self.foo(v, (*)); v; end; foo(1, [2, 3, 4])")
+    end
+
     def test_method_parameters
       assert_prism_eval(<<-CODE)
         def self.prism_test_method_parameters(a, b=1, *c, d:, e: 2, **f, &g)
@@ -1345,15 +1772,8 @@ module Prism
     end
 
     def test_PreExecutionNode
-      # BEGIN {} must be defined at the top level, so we need to manually
-      # call the evals here instead of calling `assert_prism_eval`
-      ruby_eval = RubyVM::InstructionSequence.compile("BEGIN { a = 1 }; 2").eval
-      prism_eval = RubyVM::InstructionSequence.compile_prism("BEGIN { a = 1 }; 2").eval
-      assert_equal ruby_eval, prism_eval
-
-      ruby_eval = RubyVM::InstructionSequence.compile("b = 2; BEGIN { a = 1 }; a + b").eval
-      prism_eval = RubyVM::InstructionSequence.compile_prism("b = 2; BEGIN { a = 1 }; a + b").eval
-      assert_equal ruby_eval, prism_eval
+      assert_prism_eval("BEGIN { a = 1 }; 2", raw: true)
+      assert_prism_eval("b = 2; BEGIN { a = 1 }; a + b", raw: true)
     end
 
     def test_PostExecutionNode
@@ -1397,6 +1817,24 @@ module Prism
 
     def test_BlockArgumentNode
       assert_prism_eval("1.then(&:to_s)")
+
+      # Test anonymous block forwarding
+      assert_prism_eval(<<~RUBY)
+        o = Object.new
+        def o.foo(&) = yield
+        def o.bar(&) = foo(&)
+
+        o.bar { :ok }
+      RUBY
+
+      # Test anonymous block forwarding from argument forwarding
+      assert_prism_eval(<<~RUBY)
+        o = Object.new
+        def o.foo = yield
+        def o.bar(...) = foo(&)
+
+        o.bar { :ok }
+      RUBY
     end
 
     def test_BlockLocalVariableNode
@@ -1441,6 +1879,11 @@ module Prism
 
       assert_prism_eval("prism_test_call_node_splat(*[], 1, 2)")
 
+      assert_prism_eval(<<~RUBY)
+        def self.prism_test_call_node_splat_and_double_splat(a, b, **opts); end
+        prism_test_call_node_splat_and_double_splat(*[1], 2, **{})
+      RUBY
+
       assert_prism_eval(<<-CODE)
         class Foo
           def []=(a, b)
@@ -1474,6 +1917,31 @@ module Prism
         def foo.[]=(k,v); 42; end
         foo.[]=(1,2)
       CODE
+
+      # With splat inside of []=
+      assert_prism_eval(<<~RUBY)
+        obj = Object.new
+        def obj.[]=(a, b); 10; end
+        obj[*[1]] = 3
+      RUBY
+
+      # Test passing block inside of []=
+      assert_prism_eval(<<~RUBY)
+        obj = Object.new
+        def obj.[]=(a); end
+
+        p = proc {}
+        obj[&p] = 4
+      RUBY
+
+      # Test splat and block inside of []=
+      assert_prism_eval(<<~RUBY)
+        obj = Object.new
+        def obj.[]=(a, b); end
+
+        p = proc {}
+        obj[*[1], &p] = 4
+      RUBY
 
       assert_prism_eval(<<-CODE)
         def self.prism_opt_var_trail_hash(a = nil, *b, c, **d); end
@@ -1518,6 +1986,16 @@ module Prism
         end
         test_prism_call_node
       CODE
+
+      # Test opt_str_freeze instruction when calling #freeze on a string literal
+      assert_prism_eval(<<~RUBY)
+        "foo".freeze.equal?("foo".freeze)
+      RUBY
+      # Test encoding in opt_str_freeze
+      assert_prism_eval(<<~'RUBY', raw: true)
+        # -*- coding: us-ascii -*-
+        "\xff".freeze.encoding
+      RUBY
     end
 
     def test_CallAndWriteNode
@@ -1645,31 +2123,6 @@ module Prism
     end
 
     def test_ForwardingArgumentsNode
-      # http://ci.rvm.jp/results/trunk-iseq_binary@ruby-sp2-docker/4779277
-      #
-      # expected:
-      # == disasm: #<ISeq:prism_test_forwarding_arguments_node1@<compiled>:2 (2,8)-(4,11)>
-      # local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: 1])
-      # [ 1] "..."@0
-      # 0000 putself                                                          (   3)
-      # 0001 getlocal_WC_0                          ?@-2
-      # 0003 splatarray                             false
-      # 0005 getblockparamproxy                     ?@-1, 0
-      # 0008 send                                   <calldata!mid:prism_test_forwarding_arguments_node, argc:1, ARGS_SPLAT|ARGS_BLOCKARG|FCALL>, nil
-      # 0011 leave                                                            (   2)
-      # actual:
-      # == disasm: #<ISeq:prism_test_forwarding_arguments_node1@<compiled>:2 (2,8)-(4,11)>
-      # local table (size: 1, argc: 0 [opts: 0, rest: -1, post: 0, block: -1, kw: -1@-1, kwrest: 1])
-      # [ 1] "..."@0
-      # 0000 putself                                                          (   3)
-      # 0001 getlocal_WC_0                          ?@-2
-      # 0003 splatarray                             false
-      # 0005 getblockparamproxy                     "!"@-1, 0
-      # 0008 send                                   <calldata!mid:prism_test_forwarding_arguments_node, argc:1, ARGS_SPLAT|ARGS_BLOCKARG|FCALL>, nil
-      # 0011 leave                                                            (   2)
-
-      omit "fails on trunk-iseq_binary"
-
       assert_prism_eval(<<-CODE)
         def prism_test_forwarding_arguments_node(...); end;
         def prism_test_forwarding_arguments_node1(...)
@@ -1683,6 +2136,14 @@ module Prism
           prism_test_forwarding_arguments_node(1,2, 3, ...)
         end
       CODE
+
+      assert_prism_eval(<<~RUBY)
+        o = Object.new
+        def o.bar(a, b, c) = [a, b, c]
+        def o.foo(...) = 1.times { bar(...) }
+
+        o.foo(1, 2, 3)
+      RUBY
     end
 
     def test_ForwardingSuperNode
@@ -1732,12 +2193,21 @@ module Prism
     def test_BlockParameterNode
       assert_prism_eval("def prism_test_block_parameter_node(&bar) end")
       assert_prism_eval("->(b, c=1, *d, e, &f){}")
+
+      # Test BlockParameterNode with no name
+      assert_prism_eval("->(&){}")
+      assert_prism_eval("def prism_test_block_parameter_node(&); end")
     end
 
     def test_BlockParametersNode
       assert_prism_eval("Object.tap { || }")
       assert_prism_eval("[1].map { |num| num }")
       assert_prism_eval("[1].map { |a; b| b = 2; a + b}")
+
+      # Test block parameters with multiple _
+      assert_prism_eval(<<~RUBY)
+        [[1, 2, 3, 4, 5, 6]].map { |(_, _, _, _, _, _)| _ }
+      RUBY
     end
 
     def test_FowardingParameterNode
@@ -1747,6 +2217,16 @@ module Prism
     def test_KeywordRestParameterNode
       assert_prism_eval("def prism_test_keyword_rest_parameter_node(a, **b); end")
       assert_prism_eval("Object.tap { |**| }")
+
+      # Test that KeywordRestParameterNode creates a copy
+      assert_prism_eval(<<~RUBY)
+        hash = {}
+        o = Object.new
+        def o.foo(**a) = a[:foo] = 1
+
+        o.foo(**hash)
+        hash
+      RUBY
     end
 
     def test_NoKeywordsParameterNode
@@ -1760,6 +2240,14 @@ module Prism
 
     def test_OptionalKeywordParameterNode
       assert_prism_eval("def prism_test_optional_keyword_param_node(bar: nil); end")
+
+      # Test with optional argument and method call in OptionalKeywordParameterNode
+      assert_prism_eval(<<~RUBY)
+        o = Object.new
+        def o.foo = 1
+        def o.bar(a = nil, b: foo) = b
+        o.bar
+      RUBY
     end
 
     def test_ParametersNode
@@ -2045,30 +2533,30 @@ module Prism
     ############################################################################
 
     def test_ScopeNode
-      assert_separately(%w[], "#{<<-'begin;'}\n#{<<-'end;'}")
-                        begin;
-    def compare_eval(source)
-      ruby_eval = RubyVM::InstructionSequence.compile("module A; " + source + "; end").eval
-      prism_eval = RubyVM::InstructionSequence.compile_prism("module B; " + source + "; end").eval
+      assert_separately(%w[], <<~'RUBY')
+        def compare_eval(source)
+          ruby_eval = RubyVM::InstructionSequence.compile("module A; " + source + "; end").eval
+          prism_eval = RubyVM::InstructionSequence.compile_prism("module B; " + source + "; end").eval
 
-      assert_equal ruby_eval, prism_eval
-    end
+          assert_equal ruby_eval, prism_eval
+        end
 
-    def assert_prism_eval(source)
-      $VERBOSE, verbose_bak = nil, $VERBOSE
+        def assert_prism_eval(source)
+          $VERBOSE, verbose_bak = nil, $VERBOSE
 
-      begin
-        compare_eval(source)
+          begin
+            compare_eval(source)
 
-        # Test "popped" functionality
-        compare_eval("#{source}; 1")
-      ensure
-        $VERBOSE = verbose_bak
-      end
-    end
-      assert_prism_eval("a = 1; 1.times do; { a: }; end")
-      assert_prism_eval("a = 1; def foo(a); a; end")
-                        end;
+            # Test "popped" functionality
+            compare_eval("#{source}; 1")
+          ensure
+            $VERBOSE = verbose_bak
+          end
+        end
+
+        assert_prism_eval("a = 1; 1.times do; { a: }; end")
+        assert_prism_eval("a = 1; def foo(a); a; end")
+      RUBY
     end
 
     ############################################################################
@@ -2090,8 +2578,8 @@ module Prism
 
     private
 
-    def compare_eval(source)
-      source = "class Prism::TestCompilePrism\n#{source}\nend"
+    def compare_eval(source, raw:)
+      source = raw ? source : "class Prism::TestCompilePrism\n#{source}\nend"
 
       ruby_eval = RubyVM::InstructionSequence.compile(source).eval
       prism_eval = RubyVM::InstructionSequence.compile_prism(source).eval
@@ -2103,14 +2591,14 @@ module Prism
       end
     end
 
-    def assert_prism_eval(source)
+    def assert_prism_eval(source, raw: false)
       $VERBOSE, verbose_bak = nil, $VERBOSE
 
       begin
-        compare_eval(source)
+        compare_eval(source, raw:)
 
         # Test "popped" functionality
-        compare_eval("#{source}; 1")
+        compare_eval("#{source}; 1", raw:)
       ensure
         $VERBOSE = verbose_bak
       end

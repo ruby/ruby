@@ -22,7 +22,7 @@
             │               ├── @ AssocNode (location: (1,5)-(1,10))
             │               │   ├── key:
             │               │   │   @ SymbolNode (location: (1,5)-(1,8))
-            │               │   │   ├── flags: ∅
+            │               │   │   ├── flags: forced_us_ascii_encoding
             │               │   │   ├── opening_loc: ∅
             │               │   │   ├── value_loc: (1,5)-(1,7) = "kw"
             │               │   │   ├── closing_loc: (1,7)-(1,8) = ":"

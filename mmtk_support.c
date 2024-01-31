@@ -554,6 +554,7 @@ rb_mmtk_is_ppp(VALUE obj) {
         return true;
       case T_IMEMO:
         switch (imemo_type(obj)) {
+          case imemo_iseq:
           case imemo_tmpbuf:
           case imemo_ast:
           case imemo_ifunc:

@@ -182,6 +182,7 @@ object_tracing.o: $(top_srcdir)/internal/basic_operators.h
 object_tracing.o: $(top_srcdir)/internal/compilers.h
 object_tracing.o: $(top_srcdir)/internal/gc.h
 object_tracing.o: $(top_srcdir)/internal/imemo.h
+object_tracing.o: $(top_srcdir)/internal/sanitizers.h
 object_tracing.o: $(top_srcdir)/internal/serial.h
 object_tracing.o: $(top_srcdir)/internal/static_assert.h
 object_tracing.o: $(top_srcdir)/internal/vm.h

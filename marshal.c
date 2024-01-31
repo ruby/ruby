@@ -2294,10 +2294,8 @@ r_object(struct load_arg *arg)
 static void
 clear_load_arg(struct load_arg *arg)
 {
-    if (arg->buf) {
-        xfree(arg->buf);
-        arg->buf = 0;
-    }
+    xfree(arg->buf);
+    arg->buf = NULL;
     arg->buflen = 0;
     arg->offset = 0;
     arg->readable = 0;

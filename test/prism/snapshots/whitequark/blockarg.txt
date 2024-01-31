@@ -17,6 +17,7 @@
             │   ├── keyword_rest: ∅
             │   └── block:
             │       @ BlockParameterNode (location: (1,6)-(1,12))
+            │       ├── flags: ∅
             │       ├── name: :block
             │       ├── name_loc: (1,7)-(1,12) = "block"
             │       └── operator_loc: (1,6)-(1,7) = "&"

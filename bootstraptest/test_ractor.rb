@@ -1555,7 +1555,7 @@ assert_equal "ok", %q{
 
   1_000.times { idle_worker, tmp_reporter = Ractor.select(*workers) }
   "ok"
-} unless ENV['RUN_OPTS'] =~ /rjit/ # flaky
+} unless yjit_enabled? || rjit_enabled? # flaky
 
 assert_equal "ok", %q{
   def foo(*); ->{ super }; end
@@ -1752,7 +1752,6 @@ assert_equal '30', %q{
 } if defined? Ractor::Selector
 
 # Selector#wait can support dynamic addition
-yjit_enabled = ENV.key?('RUBY_YJIT_ENABLE') || ENV.fetch('RUN_OPTS', '').include?('yjit') || BT.ruby.include?('yjit')
 assert_equal '600', %q{
   skip 600 unless defined? Ractor::Selector
 
@@ -1781,7 +1780,7 @@ assert_equal '600', %q{
   end
 
   h.sum{|k, v| v}
-} unless yjit_enabled # http://ci.rvm.jp/results/trunk-yjit@ruby-sp2-docker/4466770
+} unless yjit_enabled? # http://ci.rvm.jp/results/trunk-yjit@ruby-sp2-docker/4466770
 
 # Selector should be GCed (free'ed) without trouble
 assert_equal 'ok', %q{

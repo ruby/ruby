@@ -55,9 +55,8 @@ Init_sha1(void)
     mDigest = rb_define_module("Digest"); /* let rdoc know */
 #endif
     mDigest = rb_digest_namespace();
-    cDigest_Base = rb_path2class("Digest::Base");
+    cDigest_Base = rb_const_get(mDigest, rb_intern_const("Base"));
 
     cDigest_SHA1 = rb_define_class_under(mDigest, "SHA1", cDigest_Base);
-
     rb_iv_set(cDigest_SHA1, "metadata", rb_digest_make_metadata(&sha1));
 }

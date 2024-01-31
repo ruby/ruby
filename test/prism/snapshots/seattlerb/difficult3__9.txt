@@ -22,6 +22,7 @@
                 │   │   @ ParametersNode (location: (1,5)-(1,12))
                 │   │   ├── requireds: (length: 2)
                 │   │   │   ├── @ RequiredParameterNode (location: (1,5)-(1,6))
+                │   │   │   │   ├── flags: ∅
                 │   │   │   │   └── name: :a
                 │   │   │   └── @ MultiTargetNode (location: (1,8)-(1,12))
                 │   │   │       ├── lefts: (length: 0)
@@ -30,6 +31,7 @@
                 │   │   │       │   ├── operator_loc: (1,9)-(1,10) = "*"
                 │   │   │       │   └── expression:
                 │   │   │       │       @ RequiredParameterNode (location: (1,10)-(1,11))
+                │   │   │       │       ├── flags: ∅
                 │   │   │       │       └── name: :b
                 │   │   │       ├── rights: (length: 0)
                 │   │   │       ├── lparen_loc: (1,8)-(1,9) = "("

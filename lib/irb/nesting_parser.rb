@@ -61,17 +61,17 @@ module IRB
             if args.include?(:arg)
               case t.event
               when :on_nl, :on_semicolon
-                # def recever.f;
+                # def receiver.f;
                 body = :normal
               when :on_lparen
-                # def recever.f()
+                # def receiver.f()
                 next_args << :eq
               else
                 if t.event == :on_op && t.tok == '='
                   # def receiver.f =
                   body = :oneliner
                 else
-                  # def recever.f arg
+                  # def receiver.f arg
                   next_args << :arg_without_paren
                 end
               end

@@ -489,6 +489,10 @@ module Psych
   #
   #                           Default: <tt>false</tt>.
   #
+  # [<tt>:stringify_names</tt>] Dump symbol keys in Hash objects as string.
+  #
+  #                             Default: <tt>false</tt>.
+  #
   # Example:
   #
   #   # Dump an array, get back a YAML string
@@ -502,6 +506,9 @@ module Psych
   #
   #   # Dump an array to an IO with indentation set
   #   Psych.dump(['a', ['b']], StringIO.new, indentation: 3)
+  #
+  #   # Dump hash with symbol keys as string
+  #   Psych.dump({a: "b"}, stringify_names: true) # => "---\na: b\n"
   def self.dump o, io = nil, options = {}
     if Hash === io
       options = io
@@ -562,6 +569,10 @@ module Psych
   #
   #                           Default: <tt>false</tt>.
   #
+  # [<tt>:stringify_names</tt>] Dump symbol keys in Hash objects as string.
+  #
+  #                             Default: <tt>false</tt>.
+  #
   # Example:
   #
   #   # Dump an array, get back a YAML string
@@ -575,6 +586,9 @@ module Psych
   #
   #   # Dump an array to an IO with indentation set
   #   Psych.safe_dump(['a', ['b']], StringIO.new, indentation: 3)
+  #
+  #   # Dump hash with symbol keys as string
+  #   Psych.dump({a: "b"}, stringify_names: true) # => "---\na: b\n"
   def self.safe_dump o, io = nil, options = {}
     if Hash === io
       options = io

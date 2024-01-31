@@ -111,8 +111,6 @@ jobs:
 
       ### test-spec doesn't work: https://github.com/ruby/ruby/actions/runs/4340193212/jobs/7578505652
       # - run: make test-spec
-      #   env:
-      #     CHECK_LEAKS: true
 
       - run: make test-annocheck
 

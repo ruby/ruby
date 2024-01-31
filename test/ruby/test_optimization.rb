@@ -451,6 +451,17 @@ class TestRubyOptimization < Test::Unit::TestCase
     assert_equal(3, one_plus_two)
   end
 
+  def test_tailcall_and_post_arg
+    tailcall(<<~RUBY)
+      def ret_const = :ok
+
+      def post_arg(_a = 1, _b) = ret_const
+    RUBY
+
+    # YJIT probably uses a fallback on the call to post_arg
+    assert_equal(:ok, post_arg(0))
+  end
+
   def test_tailcall_interrupted_by_sigint
     bug12576 = 'ruby-core:76327'
     script = "#{<<-"begin;"}\n#{<<~'end;'}"

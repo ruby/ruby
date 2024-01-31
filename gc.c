@@ -963,6 +963,11 @@ typedef struct rb_objspace {
 
     rb_darray(VALUE *) weak_references;
     rb_postponed_job_handle_t finalize_deferred_pjob;
+
+#ifdef RUBY_ASAN_ENABLED
+    rb_execution_context_t *marking_machine_context_ec;
+#endif
+
 } rb_objspace_t;
 
 
@@ -1481,6 +1486,7 @@ static inline void gc_prof_set_heap_info(rb_objspace_t *);
 #endif
 PRINTF_ARGS(static void gc_report_body(int level, rb_objspace_t *objspace, const char *fmt, ...), 3, 4);
 static const char *obj_info(VALUE obj);
+static const char *obj_info_basic(VALUE obj);
 static const char *obj_type_name(VALUE obj);
 
 static void gc_finalize_deferred(void *dmy);
@@ -2754,7 +2760,7 @@ newobj_init(VALUE klass, VALUE flags, int wb_protected, rb_objspace_t *objspace,
     GC_ASSERT(!SPECIAL_CONST_P(obj)); /* check alignment */
 #endif
 
-    gc_report(5, objspace, "newobj: %s\n", obj_info(obj));
+    gc_report(5, objspace, "newobj: %s\n", obj_info_basic(obj));
 
     // RUBY_DEBUG_LOG("obj:%p (%s)", (void *)obj, obj_type_name(obj));
     return obj;
@@ -3904,7 +3910,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
         if (rb_shape_obj_too_complex(obj)) {
             st_free_table((st_table *)RCLASS_IVPTR(obj));
         }
-        else if (RCLASS_IVPTR(obj)) {
+        else {
             xfree(RCLASS_IVPTR(obj));
         }
 
@@ -4005,8 +4011,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             }
 #endif
             onig_region_free(&rm->regs, 0);
-            if (rm->char_offset)
-                xfree(rm->char_offset);
+            xfree(rm->char_offset);
 
             RB_DEBUG_COUNTER_INC(obj_match_ptr);
         }
@@ -5166,7 +5171,7 @@ rb_objspace_call_finalizer(rb_objspace_t *objspace)
             void *poisoned = asan_unpoison_object_temporary(vp);
             switch (BUILTIN_TYPE(vp)) {
               case T_DATA:
-                if (!DATA_PTR(p) || !RANY(p)->as.data.dfree) break;
+                if (!rb_free_at_exit && (!DATA_PTR(p) || !RANY(p)->as.data.dfree)) break;
                 if (rb_obj_is_thread(vp)) break;
                 if (rb_obj_is_mutex(vp)) break;
                 if (rb_obj_is_fiber(vp)) break;
@@ -7338,6 +7343,26 @@ mark_const_tbl(rb_objspace_t *objspace, struct rb_id_table *tbl)
 static void each_stack_location(rb_objspace_t *objspace, const rb_execution_context_t *ec,
                                  const VALUE *stack_start, const VALUE *stack_end, void (*cb)(rb_objspace_t *, VALUE));
 
+static void
+gc_mark_machine_stack_location_maybe(rb_objspace_t *objspace, VALUE obj)
+{
+    gc_mark_maybe(objspace, obj);
+
+#ifdef RUBY_ASAN_ENABLED
+    rb_execution_context_t *ec = objspace->marking_machine_context_ec;
+    void *fake_frame_start;
+    void *fake_frame_end;
+    bool is_fake_frame = asan_get_fake_stack_extents(
+        ec->thread_ptr->asan_fake_stack_handle, obj,
+        ec->machine.stack_start, ec->machine.stack_end,
+        &fake_frame_start, &fake_frame_end
+    );
+    if (is_fake_frame) {
+        each_stack_location(objspace, ec, fake_frame_start, fake_frame_end, gc_mark_maybe);
+    }
+#endif
+}
+
 #if defined(__wasm__)
 
 
@@ -7399,9 +7424,16 @@ mark_current_machine_context(rb_objspace_t *objspace, rb_execution_context_t *ec
     SET_STACK_END;
     GET_STACK_BOUNDS(stack_start, stack_end, 1);
 
-    each_location(objspace, save_regs_gc_mark.v, numberof(save_regs_gc_mark.v), gc_mark_maybe);
+#ifdef RUBY_ASAN_ENABLED
+    objspace->marking_machine_context_ec = ec;
+#endif
 
-    each_stack_location(objspace, ec, stack_start, stack_end, gc_mark_maybe);
+    each_location(objspace, save_regs_gc_mark.v, numberof(save_regs_gc_mark.v), gc_mark_machine_stack_location_maybe);
+    each_stack_location(objspace, ec, stack_start, stack_end, gc_mark_machine_stack_location_maybe);
+
+#ifdef RUBY_ASAN_ENABLED
+    objspace->marking_machine_context_ec = NULL;
+#endif
 }
 #endif
 
@@ -11835,11 +11867,19 @@ gc_update_references(rb_objspace_t *objspace)
  *
  * Returns information about object moved in the most recent \GC compaction.
  *
- * The returned hash has two keys :considered and :moved.  The hash for
- * :considered lists the number of objects that were considered for movement
- * by the compactor, and the :moved hash lists the number of objects that
- * were actually moved.  Some objects can't be moved (maybe they were pinned)
- * so these numbers can be used to calculate compaction efficiency.
+ * The returned +hash+ has the following keys:
+ *
+ * - +:considered+: a hash containing the type of the object as the key and
+ *   the number of objects of that type that were considered for movement.
+ * - +:moved+: a hash containing the type of the object as the key and the
+ *   number of objects of that type that were actually moved.
+ * - +:moved_up+: a hash containing the type of the object as the key and the
+ *   number of objects of that type that were increased in size.
+ * - +:moved_down+: a hash containing the type of the object as the key and
+ *   the number of objects of that type that were decreased in size.
+ *
+ * Some objects can't be moved (due to pinning) so these numbers can be used to
+ * calculate compaction efficiency.
  */
 static VALUE
 gc_compact_stats(VALUE self)
@@ -11932,16 +11972,16 @@ heap_check_moved_i(void *vstart, void *vend, size_t stride, void *data)
 
 /*
  *  call-seq:
- *     GC.compact
+ *     GC.compact -> hash
  *
- * This function compacts objects together in Ruby's heap.  It eliminates
+ * This function compacts objects together in Ruby's heap. It eliminates
  * unused space (or fragmentation) in the heap by moving objects in to that
- * unused space.  This function returns a hash which contains statistics about
- * which objects were moved. See <tt>GC.latest_compact_info</tt> for details
- * about compaction statistics.
+ * unused space.
  *
- * This method is implementation specific and not expected to be implemented
- * in any implementation besides MRI.
+ * The returned +hash+ contains statistics about the objects that were moved;
+ * see GC.latest_compact_info.
+ *
+ * This method is only expected to work on CRuby.
  *
  * To test whether \GC compaction is supported, use the idiom:
  *
@@ -15002,6 +15042,17 @@ rb_raw_obj_info(char *const buff, const size_t buff_size, VALUE obj)
     return buff;
 }
 
+const char *
+rb_raw_obj_info_basic(char *const buff, const size_t buff_size, VALUE obj)
+{
+    asan_unpoisoning_object(obj) {
+        size_t pos = rb_raw_obj_info_common(buff, buff_size, obj);
+        if (pos >= buff_size) {} // truncated
+    }
+
+    return buff;
+}
+
 #undef APPEND_S
 #undef APPEND_F
 #undef BUFF_ARGS
@@ -15033,12 +15084,27 @@ obj_info(VALUE obj)
     char *const buff = obj_info_buffers[index];
     return rb_raw_obj_info(buff, OBJ_INFO_BUFFERS_SIZE, obj);
 }
+
+static const char *
+obj_info_basic(VALUE obj)
+{
+    rb_atomic_t index = atomic_inc_wraparound(&obj_info_buffers_index, OBJ_INFO_BUFFERS_NUM);
+    char *const buff = obj_info_buffers[index];
+    return rb_raw_obj_info_basic(buff, OBJ_INFO_BUFFERS_SIZE, obj);
+}
 #else
 static const char *
 obj_info(VALUE obj)
 {
     return obj_type_name(obj);
 }
+
+static const char *
+obj_info_basic(VALUE obj)
+{
+    return obj_type_name(obj);
+}
+
 #endif
 
 const char *

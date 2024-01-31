@@ -25,7 +25,7 @@
             │       │       @ StatementsNode (location: (1,7)-(1,13))
             │       │       └── body: (length: 1)
             │       │           └── @ SymbolNode (location: (1,7)-(1,13))
-            │       │               ├── flags: ∅
+            │       │               ├── flags: forced_us_ascii_encoding
             │       │               ├── opening_loc: (1,7)-(1,8) = ":"
             │       │               ├── value_loc: (1,8)-(1,13) = "hello"
             │       │               ├── closing_loc: ∅
@@ -36,7 +36,7 @@
             │               └── @ AssocNode (location: (1,17)-(1,21))
             │                   ├── key:
             │                   │   @ SymbolNode (location: (1,17)-(1,19))
-            │                   │   ├── flags: ∅
+            │                   │   ├── flags: forced_us_ascii_encoding
             │                   │   ├── opening_loc: ∅
             │                   │   ├── value_loc: (1,17)-(1,18) = "a"
             │                   │   ├── closing_loc: (1,18)-(1,19) = ":"

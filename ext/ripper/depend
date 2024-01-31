@@ -593,6 +593,7 @@ ripper.o: $(top_srcdir)/internal/parse.h
 ripper.o: $(top_srcdir)/internal/rational.h
 ripper.o: $(top_srcdir)/internal/re.h
 ripper.o: $(top_srcdir)/internal/ruby_parser.h
+ripper.o: $(top_srcdir)/internal/sanitizers.h
 ripper.o: $(top_srcdir)/internal/serial.h
 ripper.o: $(top_srcdir)/internal/static_assert.h
 ripper.o: $(top_srcdir)/internal/string.h

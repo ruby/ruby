@@ -22,7 +22,6 @@ module OpenSSL
   module SSL
     class SSLContext
       DEFAULT_PARAMS = { # :nodoc:
-        :min_version => OpenSSL::SSL::TLS1_VERSION,
         :verify_mode => OpenSSL::SSL::VERIFY_PEER,
         :verify_hostname => true,
         :options => -> {
@@ -55,6 +54,7 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
       if !(OpenSSL::OPENSSL_VERSION.start_with?("OpenSSL") &&
            OpenSSL::OPENSSL_VERSION_NUMBER >= 0x10100000)
         DEFAULT_PARAMS.merge!(
+          min_version: OpenSSL::SSL::TLS1_VERSION,
           ciphers: %w{
             ECDHE-ECDSA-AES128-GCM-SHA256
             ECDHE-RSA-AES128-GCM-SHA256
@@ -252,6 +252,14 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
         to_io.peeraddr
       end
 
+      def local_address
+        to_io.local_address
+      end
+
+      def remote_address
+        to_io.remote_address
+      end
+
       def setsockopt(level, optname, optval)
         to_io.setsockopt(level, optname, optval)
       end
@@ -270,6 +278,36 @@ ssbzSibBsu/6iGtCOGEoXJf//////////wIBAg==
 
       def do_not_reverse_lookup=(flag)
         to_io.do_not_reverse_lookup = flag
+      end
+
+      def close_on_exec=(value)
+        to_io.close_on_exec = value
+      end
+
+      def close_on_exec?
+        to_io.close_on_exec?
+      end
+
+      def wait(*args)
+        to_io.wait(*args)
+      end
+
+      def wait_readable(*args)
+        to_io.wait_readable(*args)
+      end
+
+      def wait_writable(*args)
+        to_io.wait_writable(*args)
+      end
+
+      if IO.method_defined?(:timeout)
+        def timeout
+          to_io.timeout
+        end
+
+        def timeout=(value)
+          to_io.timeout=(value)
+        end
       end
     end
 

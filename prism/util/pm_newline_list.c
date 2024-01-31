@@ -62,7 +62,7 @@ pm_newline_list_line_column(const pm_newline_list_t *list, const uint8_t *cursor
         size_t mid = left + (right - left) / 2;
 
         if (list->offsets[mid] == offset) {
-            return ((pm_line_column_t) { mid, 0 });
+            return ((pm_line_column_t) { mid + 1, 0 });
         }
 
         if (list->offsets[mid] < offset) {
@@ -72,7 +72,7 @@ pm_newline_list_line_column(const pm_newline_list_t *list, const uint8_t *cursor
         }
     }
 
-    return ((pm_line_column_t) { left - 1, offset - list->offsets[left - 1] });
+    return ((pm_line_column_t) { left, offset - list->offsets[left - 1] });
 }
 
 /**

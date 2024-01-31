@@ -199,6 +199,14 @@ class TestIOBuffer < Test::Unit::TestCase
     assert_positive buffer2 <=> buffer1
   end
 
+  def test_compare_zero_length
+    buffer1 = IO::Buffer.new(0)
+    buffer2 = IO::Buffer.new(1)
+
+    assert_negative buffer1 <=> buffer2
+    assert_positive buffer2 <=> buffer1
+  end
+
   def test_slice
     buffer = IO::Buffer.new(128)
     slice = buffer.slice(8, 32)
@@ -270,6 +278,14 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_zero_length_get_string
+    buffer = IO::Buffer.new.slice(0, 0)
+    assert_equal "", buffer.get_string
+
+    buffer = IO::Buffer.new(0)
+    assert_equal "", buffer.get_string
+  end
+
   # We check that values are correctly round tripped.
   RANGES = {
     :U8 => [0, 2**8-1],
@@ -316,6 +332,13 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_zero_length_get_set_values
+    buffer = IO::Buffer.new(0)
+
+    assert_equal [], buffer.get_values([], 0)
+    assert_equal 0, buffer.set_values([], 0, [])
+  end
+
   def test_values
     buffer = IO::Buffer.new(128)
 
@@ -340,11 +363,23 @@ class TestIOBuffer < Test::Unit::TestCase
     end
   end
 
+  def test_zero_length_each
+    buffer = IO::Buffer.new(0)
+
+    assert_equal [], buffer.each(:U8).to_a
+  end
+
   def test_each_byte
     string = "The quick brown fox jumped over the lazy dog."
     buffer = IO::Buffer.for(string)
 
     assert_equal string.bytes, buffer.each_byte.to_a
+  end
+
+  def test_zero_length_each_byte
+    buffer = IO::Buffer.new(0)
+
+    assert_equal [], buffer.each_byte.to_a
   end
 
   def test_clear

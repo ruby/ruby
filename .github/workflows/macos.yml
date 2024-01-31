@@ -33,10 +33,12 @@ jobs:
       matrix:
         test_task: ['check']
         configure: ['']
-        os: ${{ fromJSON(format('["macos-11","macos-12"{0}]', (github.repository == 'ruby/ruby' && ',"macos-arm-oss"' || ''))) }}
+        os: ${{ fromJSON(format('["macos-12","macos-13"{0}]', (github.repository == 'ruby/ruby' && ',"macos-arm-oss"' || ''))) }}
         include:
           - test_task: test-all TESTS=--repeat-count=2
-            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-12' }}
+            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-13' }}
+          - test_task: test-bundled-gems
+            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-13' }}
       fail-fast: false
 
     env:
@@ -83,7 +85,7 @@ jobs:
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TESTS: ${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
           PRECHECK_BUNDLED_GEMS: 'no'
 
       - name: make skipped tests

@@ -178,7 +178,7 @@ module IRB
 
     private def build_type_completor
       if RUBY_ENGINE == 'truffleruby'
-        # Avoid SynatxError. truffleruby does not support endless method definition yet.
+        # Avoid SyntaxError. truffleruby does not support endless method definition yet.
         warn 'TypeCompletor is not supported on TruffleRuby yet'
         return
       end

@@ -86,6 +86,7 @@
         │   │   @ ParametersNode (location: (12,6)-(12,14))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (12,6)-(12,7))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :a
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅

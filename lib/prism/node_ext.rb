@@ -81,7 +81,7 @@ module Prism
   class RationalNode < Node
     # Returns the value of the node as a Ruby Rational.
     def value
-      Rational(numeric.is_a?(IntegerNode) && !numeric.decimal? ? numeric.value : slice.chomp("r"))
+      Rational(numeric.is_a?(IntegerNode) ? numeric.value : slice.chomp("r"))
     end
   end
 
@@ -118,7 +118,7 @@ module Prism
         current = current.parent
       end
 
-      unless current.is_a?(ConstantReadNode)
+      if !current.is_a?(ConstantReadNode) && !current.nil?
         raise DynamicPartsInConstantPathError, "Constant path contains dynamic parts. Cannot compute full name"
       end
 

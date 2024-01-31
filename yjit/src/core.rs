@@ -439,6 +439,11 @@ impl RegTemps {
     }
 }
 
+/// Bits for chain_depth_return_landing_defer
+const RETURN_LANDING_BIT: u8 = 0b10000000;
+const DEFER_BIT: u8          = 0b01000000;
+const CHAIN_DEPTH_MASK: u8   = 0b00111111; // 63
+
 /// Code generation context
 /// Contains information we can use to specialize/optimize code
 /// There are a lot of context objects so we try to keep the size small.
@@ -456,10 +461,10 @@ pub struct Context {
     reg_temps: RegTemps,
 
     /// Fields packed into u8
-    /// - Lower 7 bits: Depth of this block in the sidechain (eg: inline-cache chain)
-    /// - Top bit: Whether this code is the target of a JIT-to-JIT Ruby return
-    ///   ([Self::is_return_landing])
-    chain_depth_return_landing: u8,
+    /// - 1st bit from the left: Whether this code is the target of a JIT-to-JIT Ruby return ([Self::is_return_landing])
+    /// - 2nd bit from the left: Whether the compilation of this code has been deferred ([Self::is_deferred])
+    /// - Last 6 bits (max: 63): Depth of this block in the sidechain (eg: inline-cache chain)
+    chain_depth_and_flags: u8,
 
     // Type we track for self
     self_type: Type,
@@ -475,6 +480,13 @@ pub struct Context {
     // Stack slot type/local_idx we track
     // 8 temp types * 4 bits, total 32 bits
     temp_payload: u32,
+
+    /// A pointer to a block ISEQ supplied by the caller. 0 if not inlined.
+    /// Not using IseqPtr to satisfy Default trait, and not using Option for #[repr(packed)]
+    /// TODO: This could be u16 if we have a global or per-ISEQ HashMap to convert IseqPtr
+    /// to serial indexes. We're thinking of overhauling Context structure in Ruby 3.4 which
+    /// could allow this to consume no bytes, so we're leaving this as is.
+    inline_block: u64,
 }
 
 /// Tuple of (iseq, idx) used to identify basic blocks
@@ -1395,14 +1407,19 @@ pub fn take_version_list(blockid: BlockId) -> VersionList {
 }
 
 /// Count the number of block versions matching a given blockid
-fn get_num_versions(blockid: BlockId) -> usize {
+/// `inlined: true` counts inlined versions, and `inlined: false` counts other versions.
+fn get_num_versions(blockid: BlockId, inlined: bool) -> usize {
     let insn_idx = blockid.idx.as_usize();
     match get_iseq_payload(blockid.iseq) {
         Some(payload) => {
             payload
                 .version_map
                 .get(insn_idx)
-                .map(|versions| versions.len())
+                .map(|versions| {
+                    versions.iter().filter(|&&version|
+                        unsafe { version.as_ref() }.ctx.inline() == inlined
+                    ).count()
+                })
                 .unwrap_or(0)
         }
         None => 0,
@@ -1460,6 +1477,9 @@ fn find_block_version(blockid: BlockId, ctx: &Context) -> Option<BlockRef> {
     return best_version;
 }
 
+/// Allow inlining a Block up to MAX_INLINE_VERSIONS times.
+const MAX_INLINE_VERSIONS: usize = 1000;
+
 /// Produce a generic context when the block version limit is hit for a blockid
 pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
     // Guard chains implement limits separately, do nothing
@@ -1467,21 +1487,39 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
         return *ctx;
     }
 
+    let next_versions = get_num_versions(blockid, ctx.inline()) + 1;
+    let max_versions = if ctx.inline() {
+        MAX_INLINE_VERSIONS
+    } else {
+        get_option!(max_versions)
+    };
+
     // If this block version we're about to add will hit the version limit
-    if get_num_versions(blockid) + 1 >= get_option!(max_versions) {
+    if next_versions >= max_versions {
         // Produce a generic context that stores no type information,
         // but still respects the stack_size and sp_offset constraints.
         // This new context will then match all future requests.
         let generic_ctx = ctx.get_generic_ctx();
 
-        debug_assert_ne!(
-            TypeDiff::Incompatible,
-            ctx.diff(&generic_ctx),
-            "should substitute a compatible context",
-        );
+        if cfg!(debug_assertions) {
+            let mut ctx = ctx.clone();
+            if ctx.inline() {
+                // Suppress TypeDiff::Incompatible from ctx.diff(). We return TypeDiff::Incompatible
+                // to keep inlining blocks until we hit the limit, but it's safe to give up inlining.
+                ctx.inline_block = 0;
+                assert!(generic_ctx.inline_block == 0);
+            }
+
+            assert_ne!(
+                TypeDiff::Incompatible,
+                ctx.diff(&generic_ctx),
+                "should substitute a compatible context",
+            );
+        }
 
         return generic_ctx;
     }
+    incr_counter_to!(max_inline_versions, next_versions);
 
     return *ctx;
 }
@@ -1674,6 +1712,9 @@ impl Context {
         if self.is_return_landing() {
             generic_ctx.set_as_return_landing();
         }
+        if self.is_deferred() {
+            generic_ctx.mark_as_deferred();
+        }
         generic_ctx
     }
 
@@ -1704,30 +1745,39 @@ impl Context {
     }
 
     pub fn get_chain_depth(&self) -> u8 {
-        self.chain_depth_return_landing & 0x7f
+        self.chain_depth_and_flags & CHAIN_DEPTH_MASK
     }
 
-    pub fn reset_chain_depth(&mut self) {
-        self.chain_depth_return_landing &= 0x80;
+    pub fn reset_chain_depth_and_defer(&mut self) {
+        self.chain_depth_and_flags &= !CHAIN_DEPTH_MASK;
+        self.chain_depth_and_flags &= !DEFER_BIT;
     }
 
     pub fn increment_chain_depth(&mut self) {
-        if self.get_chain_depth() == 0x7f {
+        if self.get_chain_depth() == CHAIN_DEPTH_MASK {
             panic!("max block version chain depth reached!");
         }
-        self.chain_depth_return_landing += 1;
+        self.chain_depth_and_flags += 1;
     }
 
     pub fn set_as_return_landing(&mut self) {
-        self.chain_depth_return_landing |= 0x80;
+        self.chain_depth_and_flags |= RETURN_LANDING_BIT;
     }
 
     pub fn clear_return_landing(&mut self) {
-        self.chain_depth_return_landing &= 0x7f;
+        self.chain_depth_and_flags &= !RETURN_LANDING_BIT;
     }
 
     pub fn is_return_landing(&self) -> bool {
-        self.chain_depth_return_landing & 0x80 > 0
+        self.chain_depth_and_flags & RETURN_LANDING_BIT != 0
+    }
+
+    pub fn mark_as_deferred(&mut self) {
+        self.chain_depth_and_flags |= DEFER_BIT;
+    }
+
+    pub fn is_deferred(&self) -> bool {
+        self.chain_depth_and_flags & DEFER_BIT != 0
     }
 
     /// Get an operand for the adjusted stack pointer address
@@ -2003,6 +2053,16 @@ impl Context {
         self.local_types = 0;
     }
 
+    /// Return true if the code is inlined by the caller
+    pub fn inline(&self) -> bool {
+        self.inline_block != 0
+    }
+
+    /// Set a block ISEQ given to the Block of this Context
+    pub fn set_inline_block(&mut self, iseq: IseqPtr) {
+        self.inline_block = iseq as u64
+    }
+
     /// Compute a difference score for two context objects
     pub fn diff(&self, dst: &Context) -> TypeDiff {
         // Self is the source context (at the end of the predecessor)
@@ -2020,6 +2080,10 @@ impl Context {
         }
 
         if src.is_return_landing() != dst.is_return_landing() {
+            return TypeDiff::Incompatible;
+        }
+
+        if src.is_deferred() != dst.is_deferred() {
             return TypeDiff::Incompatible;
         }
 
@@ -2043,6 +2107,13 @@ impl Context {
             TypeDiff::Compatible(diff) => diff,
             TypeDiff::Incompatible => return TypeDiff::Incompatible,
         };
+
+        // Check the block to inline
+        if src.inline_block != dst.inline_block {
+            // find_block_version should not find existing blocks with different
+            // inline_block so that their yield will not be megamorphic.
+            return TypeDiff::Incompatible;
+        }
 
         // For each local type we track
         for i in 0.. MAX_LOCAL_TYPES {
@@ -3021,13 +3092,13 @@ pub fn defer_compilation(
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
 ) {
-    if asm.ctx.get_chain_depth() != 0 {
+    if asm.ctx.is_deferred() {
         panic!("Double defer!");
     }
 
     let mut next_ctx = asm.ctx;
 
-    next_ctx.increment_chain_depth();
+    next_ctx.mark_as_deferred();
 
     let branch = new_pending_branch(jit, BranchGenFn::JumpToTarget0(Cell::new(BranchShape::Default)));
 
@@ -3435,7 +3506,7 @@ mod tests {
 
     #[test]
     fn context_size() {
-        assert_eq!(mem::size_of::<Context>(), 15);
+        assert_eq!(mem::size_of::<Context>(), 23);
     }
 
     #[test]
@@ -3503,6 +3574,32 @@ mod tests {
         assert!(top_type == Type::Fixnum);
 
         // TODO: write more tests for Context type diff
+    }
+
+    #[test]
+    fn context_chain_depth() {
+        let mut ctx = Context::default();
+        assert_eq!(ctx.get_chain_depth(), 0);
+        assert_eq!(ctx.is_return_landing(), false);
+        assert_eq!(ctx.is_deferred(), false);
+
+        for _ in 0..5 {
+            ctx.increment_chain_depth();
+        }
+        assert_eq!(ctx.get_chain_depth(), 5);
+
+        ctx.set_as_return_landing();
+        assert_eq!(ctx.is_return_landing(), true);
+
+        ctx.clear_return_landing();
+        assert_eq!(ctx.is_return_landing(), false);
+
+        ctx.mark_as_deferred();
+        assert_eq!(ctx.is_deferred(), true);
+
+        ctx.reset_chain_depth_and_defer();
+        assert_eq!(ctx.get_chain_depth(), 0);
+        assert_eq!(ctx.is_deferred(), false);
     }
 
     #[test]

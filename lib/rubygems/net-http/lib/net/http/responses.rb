@@ -379,7 +379,7 @@ module Gem::Net
 
   # Response class for <tt>See Other</tt> responses (status code 303).
   #
-  # The response to the request can be found under another URI using the GET method.
+  # The response to the request can be found under another Gem::URI using the GET method.
   #
   # :include: doc/net-http/included_getters.rdoc
   #
@@ -428,8 +428,8 @@ module Gem::Net
 
   # Response class for <tt>Temporary Redirect</tt> responses (status code 307).
   #
-  # The request should be repeated with another URI;
-  # however, future requests should still use the original URI.
+  # The request should be repeated with another Gem::URI;
+  # however, future requests should still use the original Gem::URI.
   #
   # :include: doc/net-http/included_getters.rdoc
   #
@@ -445,7 +445,7 @@ module Gem::Net
 
   # Response class for <tt>Permanent Redirect</tt> responses (status code 308).
   #
-  # This and all future requests should be directed to the given URI.
+  # This and all future requests should be directed to the given Gem::URI.
   #
   # :include: doc/net-http/included_getters.rdoc
   #
@@ -690,9 +690,9 @@ module Gem::Net
   end
   HTTPRequestEntityTooLarge = HTTPPayloadTooLarge
 
-  # Response class for <tt>URI Too Long</tt> responses (status code 414).
+  # Response class for <tt>Gem::URI Too Long</tt> responses (status code 414).
   #
-  # The URI provided was too long for the server to process.
+  # The Gem::URI provided was too long for the server to process.
   #
   # :include: doc/net-http/included_getters.rdoc
   #

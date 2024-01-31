@@ -26,6 +26,9 @@ describe "File.mtime" do
         else
           File.mtime(__FILE__).usec.should == 0
         end
+      rescue Errno::ENOENT => e
+        # Windows don't have stat command.
+        skip e.message
       end
     end
   end

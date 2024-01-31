@@ -216,8 +216,8 @@ class Gem::Net::HTTPResponse
   attr_reader :message
   alias msg message   # :nodoc: obsolete
 
-  # The URI used to fetch this response.  The response URI is only available
-  # if a URI was used to create the request.
+  # The Gem::URI used to fetch this response.  The response Gem::URI is only available
+  # if a Gem::URI was used to create the request.
   attr_reader :uri
 
   # Set to true automatically when the request did not contain an

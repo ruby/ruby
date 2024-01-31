@@ -135,6 +135,7 @@
         │   │   │       │   │   @ ParametersNode (location: (17,12)-(17,15))
         │   │   │       │   │   ├── requireds: (length: 1)
         │   │   │       │   │   │   └── @ RequiredParameterNode (location: (17,12)-(17,15))
+        │   │   │       │   │   │       ├── flags: ∅
         │   │   │       │   │   │       └── name: :bar
         │   │   │       │   │   ├── optionals: (length: 0)
         │   │   │       │   │   ├── rest: ∅

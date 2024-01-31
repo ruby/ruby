@@ -203,11 +203,10 @@ require_relative "irb/pager"
 #
 # === Input Command History
 #
-# By default, \IRB stores a history of up to 1000 input commands
-# in file <tt>~/.irb_history</tt>
-# (or, if a {configuration file}[rdoc-ref:IRB@Configuration+File]
-# is found, in file +.irb_history+
-# inin the same directory as that file).
+# By default, \IRB stores a history of up to 1000 input commands in a
+# file named <tt>.irb_history</tt>. The history file will be in the same directory
+# as the {configuration file}[rdoc-ref:IRB@Configuration+File] if one is found, or
+# in <tt>~/</tt> otherwise.
 #
 # A new \IRB session creates the history file if it does not exist,
 # and appends to the file if it does exist.
@@ -365,7 +364,7 @@ require_relative "irb/pager"
 # You can change the initial behavior and suppress all echoing by:
 #
 # - Adding to the configuration file: <tt>IRB.conf[:ECHO] = false</tt>.
-#   (The default value for this entry is +niL+, which means the same as +true+.)
+#   (The default value for this entry is +nil+, which means the same as +true+.)
 # - Giving command-line option <tt>--noecho</tt>.
 #   (The default is <tt>--echo</tt>.)
 #
@@ -392,7 +391,7 @@ require_relative "irb/pager"
 #   (The default value for this entry is +niL+, which means the same as +:truncate+.)
 # - Giving command-line option <tt>--noecho-on-assignment</tt>
 #   or <tt>--echo-on-assignment</tt>.
-#   (The default is <tt>--truncate-echo-on-assigment</tt>.)
+#   (The default is <tt>--truncate-echo-on-assignment</tt>.)
 #
 # During the session, you can change the current setting
 # with configuration method <tt>conf.echo_on_assignment=</tt>
@@ -413,7 +412,7 @@ require_relative "irb/pager"
 #
 # By default, \IRB prefixes a newline to a multiline response.
 #
-# You can change the initial default value by adding to the configuation file:
+# You can change the initial default value by adding to the configuration file:
 #
 #   IRB.conf[:NEWLINE_BEFORE_MULTILINE_OUTPUT] = false
 #
@@ -945,7 +944,7 @@ module IRB
       # Irb#eval_input will simply return the input, and we need to pass it to the debugger.
       input = if IRB.conf[:SAVE_HISTORY] && context.io.support_history_saving?
         # Previous IRB session's history has been saved when `Irb#run` is exited
-        # We need to make sure the saved history is not saved again by reseting the counter
+        # We need to make sure the saved history is not saved again by resetting the counter
         context.io.reset_history_counter
 
         begin

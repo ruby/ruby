@@ -193,6 +193,24 @@ class OpenSSL::TestSSL < OpenSSL::SSLTestCase
     }
   end
 
+  def test_read_with_timeout
+    omit "does not support timeout" unless IO.method_defined?(:timeout)
+
+    start_server do |port|
+      server_connect(port) do |ssl|
+        str = +("x" * 100 + "\n")
+        ssl.syswrite(str)
+        assert_equal(str, ssl.sysread(str.bytesize))
+
+        ssl.timeout = 1
+        assert_raise(IO::TimeoutError) {ssl.read(1)}
+
+        ssl.syswrite(str)
+        assert_equal(str, ssl.sysread(str.bytesize))
+      end
+    end
+  end
+
   def test_getbyte
     start_server { |port|
       server_connect(port) { |ssl|

@@ -422,8 +422,10 @@ end
 
 class Data # :nodoc:
   def pretty_print(q) # :nodoc:
-    q.group(1, sprintf("#<data %s", PP.mcall(self, Kernel, :class).name), '>') {
-      q.seplist(PP.mcall(self, Data, :members), lambda { q.text "," }) {|member|
+    class_name = PP.mcall(self, Kernel, :class).name
+    class_name = " #{class_name}" if class_name
+    q.group(1, "#<data#{class_name}", '>') {
+      q.seplist(PP.mcall(self, Kernel, :class).members, lambda { q.text "," }) {|member|
         q.breakable
         q.text member.to_s
         q.text '='
@@ -438,11 +440,11 @@ class Data # :nodoc:
   def pretty_print_cycle(q) # :nodoc:
     q.text sprintf("#<data %s:...>", PP.mcall(self, Kernel, :class).name)
   end
-end if "3.2" <= RUBY_VERSION
+end if defined?(Data.define)
 
 class Range # :nodoc:
   def pretty_print(q) # :nodoc:
-    q.pp self.begin
+    q.pp self.begin if self.begin
     q.breakable ''
     q.text(self.exclude_end? ? '...' : '..')
     q.breakable ''

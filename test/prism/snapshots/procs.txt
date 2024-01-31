@@ -15,6 +15,7 @@
         │   │   │   @ ParametersNode (location: (1,4)-(1,5))
         │   │   │   ├── requireds: (length: 1)
         │   │   │   │   └── @ RequiredParameterNode (location: (1,4)-(1,5))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       └── name: :a
         │   │   │   ├── optionals: (length: 0)
         │   │   │   ├── rest: ∅
@@ -24,10 +25,13 @@
         │   │   │   └── block: ∅
         │   │   ├── locals: (length: 3)
         │   │   │   ├── @ BlockLocalVariableNode (location: (1,7)-(1,8))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── name: :b
         │   │   │   ├── @ BlockLocalVariableNode (location: (1,10)-(1,11))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   └── name: :c
         │   │   │   └── @ BlockLocalVariableNode (location: (1,13)-(1,14))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :d
         │   │   ├── opening_loc: (1,3)-(1,4) = "("
         │   │   └── closing_loc: (1,14)-(1,15) = ")"
@@ -138,9 +142,11 @@
         │   │   │   @ ParametersNode (location: (17,3)-(17,23))
         │   │   │   ├── requireds: (length: 1)
         │   │   │   │   └── @ RequiredParameterNode (location: (17,3)-(17,4))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       └── name: :a
         │   │   │   ├── optionals: (length: 1)
         │   │   │   │   └── @ OptionalParameterNode (location: (17,6)-(17,11))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       ├── name: :b
         │   │   │   │       ├── name_loc: (17,6)-(17,7) = "b"
         │   │   │   │       ├── operator_loc: (17,8)-(17,9) = "="
@@ -151,14 +157,17 @@
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 2)
         │   │   │   │   ├── @ RequiredKeywordParameterNode (location: (17,13)-(17,15))
+        │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   ├── name: :c
         │   │   │   │   │   └── name_loc: (17,13)-(17,15) = "c:"
         │   │   │   │   └── @ RequiredKeywordParameterNode (location: (17,17)-(17,19))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       ├── name: :d
         │   │   │   │       └── name_loc: (17,17)-(17,19) = "d:"
         │   │   │   ├── keyword_rest: ∅
         │   │   │   └── block:
         │   │   │       @ BlockParameterNode (location: (17,21)-(17,23))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :e
         │   │   │       ├── name_loc: (17,22)-(17,23) = "e"
         │   │   │       └── operator_loc: (17,21)-(17,22) = "&"
@@ -183,9 +192,11 @@
         │   │   │   @ ParametersNode (location: (19,4)-(19,33))
         │   │   │   ├── requireds: (length: 1)
         │   │   │   │   └── @ RequiredParameterNode (location: (19,4)-(19,5))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       └── name: :a
         │   │   │   ├── optionals: (length: 1)
         │   │   │   │   └── @ OptionalParameterNode (location: (19,7)-(19,12))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       ├── name: :b
         │   │   │   │       ├── name_loc: (19,7)-(19,8) = "b"
         │   │   │   │       ├── operator_loc: (19,9)-(19,10) = "="
@@ -194,24 +205,29 @@
         │   │   │   │           └── flags: decimal
         │   │   │   ├── rest:
         │   │   │   │   @ RestParameterNode (location: (19,14)-(19,16))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── name: :c
         │   │   │   │   ├── name_loc: (19,15)-(19,16) = "c"
         │   │   │   │   └── operator_loc: (19,14)-(19,15) = "*"
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 2)
         │   │   │   │   ├── @ RequiredKeywordParameterNode (location: (19,18)-(19,20))
+        │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   ├── name: :d
         │   │   │   │   │   └── name_loc: (19,18)-(19,20) = "d:"
         │   │   │   │   └── @ RequiredKeywordParameterNode (location: (19,22)-(19,24))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       ├── name: :e
         │   │   │   │       └── name_loc: (19,22)-(19,24) = "e:"
         │   │   │   ├── keyword_rest:
         │   │   │   │   @ KeywordRestParameterNode (location: (19,26)-(19,29))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── name: :f
         │   │   │   │   ├── name_loc: (19,28)-(19,29) = "f"
         │   │   │   │   └── operator_loc: (19,26)-(19,28) = "**"
         │   │   │   └── block:
         │   │   │       @ BlockParameterNode (location: (19,31)-(19,33))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :g
         │   │   │       ├── name_loc: (19,32)-(19,33) = "g"
         │   │   │       └── operator_loc: (19,31)-(19,32) = "&"
@@ -236,9 +252,11 @@
         │   │   │   @ ParametersNode (location: (21,4)-(21,33))
         │   │   │   ├── requireds: (length: 1)
         │   │   │   │   └── @ RequiredParameterNode (location: (21,4)-(21,5))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       └── name: :a
         │   │   │   ├── optionals: (length: 1)
         │   │   │   │   └── @ OptionalParameterNode (location: (21,7)-(21,12))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       ├── name: :b
         │   │   │   │       ├── name_loc: (21,7)-(21,8) = "b"
         │   │   │   │       ├── operator_loc: (21,9)-(21,10) = "="
@@ -247,24 +265,29 @@
         │   │   │   │           └── flags: decimal
         │   │   │   ├── rest:
         │   │   │   │   @ RestParameterNode (location: (21,14)-(21,16))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── name: :c
         │   │   │   │   ├── name_loc: (21,15)-(21,16) = "c"
         │   │   │   │   └── operator_loc: (21,14)-(21,15) = "*"
         │   │   │   ├── posts: (length: 0)
         │   │   │   ├── keywords: (length: 2)
         │   │   │   │   ├── @ RequiredKeywordParameterNode (location: (21,18)-(21,20))
+        │   │   │   │   │   ├── flags: ∅
         │   │   │   │   │   ├── name: :d
         │   │   │   │   │   └── name_loc: (21,18)-(21,20) = "d:"
         │   │   │   │   └── @ RequiredKeywordParameterNode (location: (21,22)-(21,24))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       ├── name: :e
         │   │   │   │       └── name_loc: (21,22)-(21,24) = "e:"
         │   │   │   ├── keyword_rest:
         │   │   │   │   @ KeywordRestParameterNode (location: (21,26)-(21,29))
+        │   │   │   │   ├── flags: ∅
         │   │   │   │   ├── name: :f
         │   │   │   │   ├── name_loc: (21,28)-(21,29) = "f"
         │   │   │   │   └── operator_loc: (21,26)-(21,28) = "**"
         │   │   │   └── block:
         │   │   │       @ BlockParameterNode (location: (21,31)-(21,33))
+        │   │   │       ├── flags: ∅
         │   │   │       ├── name: :g
         │   │   │       ├── name_loc: (21,32)-(21,33) = "g"
         │   │   │       └── operator_loc: (21,31)-(21,32) = "&"
@@ -289,6 +312,7 @@
         │   │   │   @ ParametersNode (location: (25,4)-(25,5))
         │   │   │   ├── requireds: (length: 1)
         │   │   │   │   └── @ RequiredParameterNode (location: (25,4)-(25,5))
+        │   │   │   │       ├── flags: ∅
         │   │   │   │       └── name: :a
         │   │   │   ├── optionals: (length: 0)
         │   │   │   ├── rest: ∅
@@ -314,6 +338,7 @@
         │               │   │   @ ParametersNode (location: (25,12)-(25,13))
         │               │   │   ├── requireds: (length: 1)
         │               │   │   │   └── @ RequiredParameterNode (location: (25,12)-(25,13))
+        │               │   │   │       ├── flags: ∅
         │               │   │   │       └── name: :b
         │               │   │   ├── optionals: (length: 0)
         │               │   │   ├── rest: ∅
@@ -360,8 +385,10 @@
             │   │   │   └── @ MultiTargetNode (location: (27,4)-(27,10))
             │   │   │       ├── lefts: (length: 2)
             │   │   │       │   ├── @ RequiredParameterNode (location: (27,5)-(27,6))
+            │   │   │       │   │   ├── flags: ∅
             │   │   │       │   │   └── name: :a
             │   │   │       │   └── @ RequiredParameterNode (location: (27,8)-(27,9))
+            │   │   │       │       ├── flags: ∅
             │   │   │       │       └── name: :b
             │   │   │       ├── rest: ∅
             │   │   │       ├── rights: (length: 0)
@@ -370,6 +397,7 @@
             │   │   ├── optionals: (length: 0)
             │   │   ├── rest:
             │   │   │   @ RestParameterNode (location: (27,12)-(27,14))
+            │   │   │   ├── flags: ∅
             │   │   │   ├── name: :c
             │   │   │   ├── name_loc: (27,13)-(27,14) = "c"
             │   │   │   └── operator_loc: (27,12)-(27,13) = "*"

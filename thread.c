@@ -526,9 +526,12 @@ static VALUE rb_threadptr_raise(rb_thread_t *, int, VALUE *);
 static VALUE rb_thread_to_s(VALUE thread);
 
 void
-ruby_thread_init_stack(rb_thread_t *th)
+ruby_thread_init_stack(rb_thread_t *th, void *local_in_parent_frame)
 {
-    native_thread_init_stack(th);
+    native_thread_init_stack(th, local_in_parent_frame);
+#ifdef RUBY_ASAN_ENABLED
+    th->asan_fake_stack_handle = asan_get_thread_fake_stack_handle();
+#endif
 }
 
 const VALUE *
@@ -640,8 +643,6 @@ void rb_ec_clear_current_thread_trace_func(const rb_execution_context_t *ec);
 static int
 thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
 {
-    STACK_GROW_DIR_DETECTION;
-
     RUBY_DEBUG_LOG("th:%u", rb_th_serial(th));
     VM_ASSERT(th != th->vm->ractor.main_thread);
 

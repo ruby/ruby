@@ -2727,7 +2727,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
         @a1.validate
       end
 
-      assert_match(/add rake as a dependency/, @ui.error)
+      assert_match(/add rake as a runtime dependency/, @ui.error)
     end
   end
 
@@ -2743,7 +2743,7 @@ duplicate dependency on c (>= 1.2.3, development), (~> 1.2) use:
         @a1.validate
       end
 
-      refute_match(/add rake as a dependency/, @ui.error)
+      refute_match(/add rake as a runtime dependency/, @ui.error)
     end
   end
 

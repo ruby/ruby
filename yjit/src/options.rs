@@ -81,7 +81,7 @@ pub struct Options {
 
 // Initialize the options to default values
 pub static mut OPTIONS: Options = Options {
-    exec_mem_size: 64 * 1024 * 1024,
+    exec_mem_size: 48 * 1024 * 1024,
     no_type_prop: false,
     max_versions: 4,
     num_temp_regs: 5,
@@ -101,7 +101,7 @@ pub static mut OPTIONS: Options = Options {
 
 /// YJIT option descriptions for `ruby --help`.
 static YJIT_OPTIONS: [(&str, &str); 9] = [
-    ("--yjit-exec-mem-size=num",           "Size of executable memory block in MiB (default: 64)"),
+    ("--yjit-exec-mem-size=num",           "Size of executable memory block in MiB (default: 48)"),
     ("--yjit-call-threshold=num",          "Number of calls to trigger JIT"),
     ("--yjit-cold-threshold=num",          "Global calls after which ISEQs not compiled (default: 200K)"),
     ("--yjit-stats",                       "Enable collecting YJIT statistics"),
@@ -228,21 +228,31 @@ pub fn parse_option(str_ptr: *const std::os::raw::c_char) -> Option<()> {
             _ => return None,
          },
 
-        ("dump-disasm", _) => match opt_val {
-            "" => unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::Stdout) },
-            directory => {
-                let path = format!("{directory}/yjit_{}.log", std::process::id());
-                match File::options().create(true).append(true).open(&path) {
-                    Ok(_) => {
-                        eprintln!("YJIT disasm dump: {path}");
-                        unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(path)) }
+        ("dump-disasm", _) => {
+            if !cfg!(feature = "disasm") {
+                eprintln!("WARNING: the {} option is only available when YJIT is built in dev mode, i.e. ./configure --enable-yjit=dev", opt_name);
+            }
+
+            match opt_val {
+                "" => unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::Stdout) },
+                directory => {
+                    let path = format!("{directory}/yjit_{}.log", std::process::id());
+                    match File::options().create(true).append(true).open(&path) {
+                        Ok(_) => {
+                            eprintln!("YJIT disasm dump: {path}");
+                            unsafe { OPTIONS.dump_disasm = Some(DumpDisasm::File(path)) }
+                        }
+                        Err(err) => eprintln!("Failed to create {path}: {err}"),
                     }
-                    Err(err) => eprintln!("Failed to create {path}: {err}"),
                 }
             }
-         },
+        },
 
         ("dump-iseq-disasm", _) => unsafe {
+            if !cfg!(feature = "disasm") {
+                eprintln!("WARNING: the {} option is only available when YJIT is built in dev mode, i.e. ./configure --enable-yjit=dev", opt_name);
+            }
+
             OPTIONS.dump_iseq_disasm = Some(opt_val.to_string());
         },
 

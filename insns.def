@@ -505,7 +505,9 @@ expandarray
     vm_expandarray(GET_CFP(), ary, num, (int)flag);
 }
 
-/* concat two arrays */
+/* concat two arrays, without modifying first array.
+ * attempts to convert both objects to arrays using to_a.
+ */
 DEFINE_INSN
 concatarray
 ()
@@ -514,6 +516,32 @@ concatarray
 // attr bool leaf = false; /* has rb_check_array_type() */
 {
     ary = vm_concat_array(ary1, ary2);
+}
+
+/* concat second array to first array.
+ * first argument must already be an array.
+ * attempts to convert second object to array using to_a.
+ */
+DEFINE_INSN
+concattoarray
+()
+(VALUE ary1, VALUE ary2)
+(VALUE ary)
+// attr bool leaf = false; /* has rb_check_array_type() */
+{
+    ary = vm_concat_to_array(ary1, ary2);
+}
+
+/* push given number of objects to array directly before. */
+DEFINE_INSN
+pushtoarray
+(rb_num_t num)
+(...)
+(VALUE val)
+// attr rb_snum_t sp_inc = -(rb_snum_t)num;
+{
+    const VALUE *objp = STACK_ADDR_FROM_TOP(num);
+    val = rb_ary_cat(*(objp-1), objp, num);
 }
 
 /* call to_a on array ary to splat */

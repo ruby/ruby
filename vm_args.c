@@ -434,6 +434,10 @@ fill_keys_values(st_data_t key, st_data_t val, st_data_t ptr)
 static inline int
 ignore_keyword_hash_p(VALUE keyword_hash, const rb_iseq_t * const iseq, unsigned int * kw_flag, VALUE * converted_keyword_hash)
 {
+    if (keyword_hash == Qnil) {
+        return 1;
+    }
+
     if (!RB_TYPE_P(keyword_hash, T_HASH)) {
         keyword_hash = rb_to_hash_type(keyword_hash);
     }
@@ -471,7 +475,8 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     const int min_argc = ISEQ_BODY(iseq)->param.lead_num + ISEQ_BODY(iseq)->param.post_num;
     const int max_argc = (ISEQ_BODY(iseq)->param.flags.has_rest == FALSE) ? min_argc + ISEQ_BODY(iseq)->param.opt_num : UNLIMITED_ARGUMENTS;
     int given_argc;
-    unsigned int kw_flag = vm_ci_flag(ci) & (VM_CALL_KWARG | VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT);
+    unsigned int ci_flag = vm_ci_flag(ci);
+    unsigned int kw_flag = ci_flag & (VM_CALL_KWARG | VM_CALL_KW_SPLAT | VM_CALL_KW_SPLAT_MUT);
     int opt_pc = 0, allow_autosplat = !kw_flag;
     struct args_info args_body, *args;
     VALUE keyword_hash = Qnil;
@@ -506,7 +511,26 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     args = &args_body;
     given_argc = args->argc = calling->argc;
     args->argv = locals;
-    args->rest_dupped = FALSE;
+    args->rest_dupped = ci_flag & VM_CALL_ARGS_SPLAT_MUT;
+
+    if (UNLIKELY(ISEQ_BODY(iseq)->param.flags.anon_rest)) {
+        if ((ci_flag & VM_CALL_ARGS_SPLAT) &&
+                given_argc == ISEQ_BODY(iseq)->param.lead_num + (kw_flag ? 2 : 1) &&
+                !ISEQ_BODY(iseq)->param.flags.has_opt &&
+                !ISEQ_BODY(iseq)->param.flags.has_post &&
+                (!kw_flag ||
+                !ISEQ_BODY(iseq)->param.flags.has_kw ||
+                !ISEQ_BODY(iseq)->param.flags.has_kwrest ||
+                !ISEQ_BODY(iseq)->param.flags.accepts_no_kwarg)) {
+            args->rest_dupped = true;
+        }
+    }
+
+    if (UNLIKELY(ISEQ_BODY(iseq)->param.flags.anon_kwrest)) {
+        if (kw_flag & VM_CALL_KW_SPLAT) {
+            kw_flag |= VM_CALL_KW_SPLAT_MUT;
+        }
+    }
 
     if (kw_flag & VM_CALL_KWARG) {
         args->kw_arg = vm_ci_kwarg(ci);
@@ -530,7 +554,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         args->kw_argv = NULL;
     }
 
-    if ((vm_ci_flag(ci) & VM_CALL_ARGS_SPLAT) && (vm_ci_flag(ci) & VM_CALL_KW_SPLAT)) {
+    if ((ci_flag & VM_CALL_ARGS_SPLAT) && (ci_flag & VM_CALL_KW_SPLAT)) {
         // f(*a, **kw)
         args->rest_index = 0;
         keyword_hash = locals[--args->argc];
@@ -559,7 +583,7 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         int len = RARRAY_LENINT(args->rest);
         given_argc += len - 2;
     }
-    else if (vm_ci_flag(ci) & VM_CALL_ARGS_SPLAT) {
+    else if (ci_flag & VM_CALL_ARGS_SPLAT) {
         // f(*a)
         args->rest_index = 0;
         args->rest = locals[--args->argc];

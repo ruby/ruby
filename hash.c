@@ -848,7 +848,9 @@ ar_general_foreach(VALUE hash, st_foreach_check_callback_func *func, st_update_c
             if (ar_cleared_entry(hash, i)) continue;
 
             ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, i);
-            enum st_retval retval = (*func)(pair->key, pair->val, arg, 0);
+            st_data_t key = (st_data_t)pair->key;
+            st_data_t val = (st_data_t)pair->val;
+            enum st_retval retval = (*func)(key, val, arg, 0);
             ensure_ar_table(hash);
             /* pair may be not valid here because of theap */
 
@@ -860,14 +862,12 @@ ar_general_foreach(VALUE hash, st_foreach_check_callback_func *func, st_update_c
                 return 0;
               case ST_REPLACE:
                 if (replace) {
-                    VALUE key = pair->key;
-                    VALUE val = pair->val;
                     retval = (*replace)(&key, &val, arg, TRUE);
 
                     // TODO: pair should be same as pair before.
-                    ar_table_pair *pair = RHASH_AR_TABLE_REF(hash, i);
-                    pair->key = key;
-                    pair->val = val;
+                    pair = RHASH_AR_TABLE_REF(hash, i);
+                    pair->key = (VALUE)key;
+                    pair->val = (VALUE)val;
                 }
                 break;
               case ST_DELETE:
@@ -4922,7 +4922,7 @@ static inline const char *
 env_name(volatile VALUE *s)
 {
     const char *name;
-    SafeStringValue(*s);
+    StringValue(*s);
     get_env_ptr(name, *s);
     return name;
 }
@@ -5399,8 +5399,8 @@ env_aset(VALUE nm, VALUE val)
         env_delete(nm);
         return Qnil;
     }
-    SafeStringValue(nm);
-    SafeStringValue(val);
+    StringValue(nm);
+    StringValue(val);
     /* nm can be modified in `val.to_str`, don't get `name` before
      * check for `val` */
     get_env_ptr(name, nm);
@@ -6263,7 +6263,7 @@ env_rassoc(VALUE dmy, VALUE obj)
 static VALUE
 env_key(VALUE dmy, VALUE value)
 {
-    SafeStringValue(value);
+    StringValue(value);
     VALUE str = Qnil;
 
     ENV_LOCK();

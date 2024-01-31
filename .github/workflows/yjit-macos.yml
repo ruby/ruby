@@ -119,6 +119,7 @@ jobs:
           TESTS: ${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: ''
           PRECHECK_BUNDLED_GEMS: 'no'
+        continue-on-error: ${{ matrix.continue-on-test_task || false }}
 
       - name: make skipped tests
         run: |

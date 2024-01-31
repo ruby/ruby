@@ -96,7 +96,13 @@ jobs:
             ${{ steps.find-tools.outputs.needs }}
         if: ${{ steps.find-tools.outputs.needs != '' }}
 
-      - uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
+      - uses: ruby/setup-ruby@5daca165445f0ae10478593083f72ca2625e241d # v1.169.0
+        with:
+          ruby-version: '2.7'
+          bundler: none
+          windows-toolchain: none
+
+      - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
         with:
           path: C:\vcpkg\downloads
           key: ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-${{ github.sha }}
@@ -104,7 +110,7 @@ jobs:
             ${{ runner.os }}-vcpkg-download-${{ env.OS_VER }}-
             ${{ runner.os }}-vcpkg-download-
 
-      - uses: actions/cache@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
+      - uses: actions/cache@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
         with:
           path: C:\vcpkg\installed
           key: ${{ runner.os }}-vcpkg-installed-${{ env.OS_VER }}-${{ github.sha }}
@@ -133,6 +139,7 @@ jobs:
           builddir: build
 
       - name: setup env
+        # Available Ruby versions: https://github.com/actions/runner-images/blob/main/images/windows/Windows2019-Readme.md#ruby
         # %TEMP% is inconsistent with %TMP% and test-all expects they are consistent.
         # https://github.com/actions/virtual-environments/issues/712#issuecomment-613004302
         run: |
@@ -149,6 +156,9 @@ jobs:
           set | C:\msys64\usr\bin\sort > new.env
           C:\msys64\usr\bin\comm -13 old.env new.env >> %GITHUB_ENV%
           del *.env
+
+      - name: baseruby version
+        run: ruby -v
 
       - name: compiler version
         run: cl

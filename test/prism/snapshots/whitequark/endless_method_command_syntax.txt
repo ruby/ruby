@@ -81,6 +81,7 @@
         │   │   @ ParametersNode (location: (5,8)-(5,9))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (5,8)-(5,9))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :x
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -223,6 +224,7 @@
         │   │   @ ParametersNode (location: (11,12)-(11,13))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (11,12)-(11,13))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :x
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -265,6 +267,7 @@
         │   │   @ ParametersNode (location: (13,12)-(13,13))
         │   │   ├── requireds: (length: 1)
         │   │   │   └── @ RequiredParameterNode (location: (13,12)-(13,13))
+        │   │   │       ├── flags: ∅
         │   │   │       └── name: :x
         │   │   ├── optionals: (length: 0)
         │   │   ├── rest: ∅
@@ -334,6 +337,7 @@
             │   @ ParametersNode (location: (15,17)-(15,18))
             │   ├── requireds: (length: 1)
             │   │   └── @ RequiredParameterNode (location: (15,17)-(15,18))
+            │   │       ├── flags: ∅
             │   │       └── name: :x
             │   ├── optionals: (length: 0)
             │   ├── rest: ∅

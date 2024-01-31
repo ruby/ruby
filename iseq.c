@@ -28,6 +28,7 @@
 #include "internal/file.h"
 #include "internal/gc.h"
 #include "internal/hash.h"
+#include "internal/io.h"
 #include "internal/ruby_parser.h"
 #include "internal/sanitizers.h"
 #include "internal/symbol.h"
@@ -181,10 +182,7 @@ rb_iseq_free(const rb_iseq_t *iseq)
         if (LIKELY(body->local_table != rb_iseq_shared_exc_local_tbl))
             ruby_xfree((void *)body->local_table);
         ruby_xfree((void *)body->is_entries);
-
-        if (body->call_data) {
-            ruby_xfree(body->call_data);
-        }
+        ruby_xfree(body->call_data);
         ruby_xfree((void *)body->catch_table);
         ruby_xfree((void *)body->param.opt_table);
         if (ISEQ_MBITS_BUFLEN(body->iseq_size) > 1 && body->mark_bits.list) {
@@ -1428,22 +1426,50 @@ iseqw_s_compile(int argc, VALUE *argv, VALUE self)
 }
 
 static void
-iseqw_s_compile_prism_compile(pm_parser_t *parser, VALUE opt, rb_iseq_t *iseq, VALUE file, VALUE path, int first_lineno)
+iseqw_s_compile_prism_compile(pm_parser_t *parser, VALUE optimize, rb_iseq_t *iseq, VALUE file, VALUE path, int first_lineno)
 {
     pm_node_t *node = pm_parse(parser);
-    rb_code_location_t code_location;
-    pm_code_location(&code_location, &parser->newline_list, &node->location);
 
-    rb_compile_option_t option;
-    make_compile_option(&option, opt);
-    prepare_iseq_build(iseq, rb_fstring_lit("<compiled>"), file, path, first_lineno, &code_location, -1, NULL, 0, ISEQ_TYPE_TOP, Qnil, &option);
+    if (parser->error_list.size > 0) {
+        pm_buffer_t buffer = { 0 };
+        pm_parser_errors_format(parser, &buffer, rb_stderr_tty_p());
 
-    pm_scope_node_t scope_node;
-    pm_scope_node_init(node, &scope_node, NULL, parser);
-    rb_iseq_compile_prism_node(iseq, &scope_node, parser);
+        pm_buffer_prepend_string(&buffer, "syntax errors found\n", 20);
+        VALUE error = rb_exc_new(rb_eSyntaxError, pm_buffer_value(&buffer), pm_buffer_length(&buffer));
 
-    finish_iseq_build(iseq);
-    pm_node_destroy(parser, node);
+        pm_buffer_free(&buffer);
+        pm_node_destroy(parser, node);
+
+        // TODO: We need to set the backtrace based on the ISEQ.
+        // VALUE path = pathobj_path(ISEQ_BODY(iseq)->location.pathobj);
+        // rb_funcallv(error, rb_intern("set_backtrace"), 1, &path);
+        rb_exc_raise(error);
+    } else {
+        rb_code_location_t code_location;
+        pm_code_location(&code_location, &parser->newline_list, &node->location);
+
+        rb_compile_option_t option;
+        make_compile_option(&option, optimize);
+        prepare_iseq_build(iseq, rb_fstring_lit("<compiled>"), file, path, first_lineno, &code_location, -1, NULL, 0, ISEQ_TYPE_TOP, Qnil, &option);
+
+        pm_scope_node_t scope_node;
+        pm_scope_node_init(node, &scope_node, NULL, parser);
+
+        ID *constants = calloc(parser->constant_pool.size, sizeof(ID));
+        rb_encoding *encoding = rb_enc_find(parser->encoding->name);
+        for (uint32_t index = 0; index < parser->constant_pool.size; index++) {
+            pm_constant_t *constant = &parser->constant_pool.constants[index];
+            constants[index] = rb_intern3((const char *) constant->start, constant->length, encoding);
+        }
+        scope_node.constants = constants;
+
+        rb_iseq_compile_prism_node(iseq, &scope_node, parser);
+
+        finish_iseq_build(iseq);
+        pm_scope_node_destroy(&scope_node);
+        pm_node_destroy(parser, node);
+        free(constants);
+    }
 }
 
 static VALUE
@@ -1476,23 +1502,28 @@ iseqw_s_compile_prism(int argc, VALUE *argv, VALUE self)
 
     pm_parser_t parser;
 
+    VALUE file_path = Qnil;
+    pm_string_t input;
     if (RB_TYPE_P(src, T_FILE)) {
-        FilePathValue(src);
-        file = rb_fstring(src); /* rb_io_t->pathv gets frozen anyways */
+        file_path = rb_io_path(src); /* rb_io_t->pathv gets frozen anyways */
 
-        pm_string_t input;
-        pm_string_mapped_init(&input, RSTRING_PTR(file));
-
-        pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), &options);
+        pm_string_mapped_init(&input, RSTRING_PTR(file_path));
     }
     else {
-        pm_parser_init(&parser, (const uint8_t *) RSTRING_PTR(src), RSTRING_LEN(src), &options);
+        Check_Type(src, T_STRING);
+        input.source = (const uint8_t *)RSTRING_PTR(src);
+        input.length = RSTRING_LEN(src);
+        input.type = PM_STRING_SHARED;
     }
+
+    pm_parser_init(&parser, pm_string_source(&input), pm_string_length(&input), &options);
 
     rb_iseq_t *iseq = iseq_alloc();
     iseqw_s_compile_prism_compile(&parser, opt, iseq, file, path, start_line);
+    RB_GC_GUARD(file_path);
     pm_parser_free(&parser);
     pm_options_free(&options);
+    pm_string_free(&input);
 
     return iseqw_new(iseq);
 }
@@ -1530,7 +1561,7 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
 }
 
 rb_iseq_t *
-rb_iseq_new_main_prism(pm_string_t *input, pm_options_t *options, VALUE path)
+rb_iseq_new_main_prism(pm_string_t *input, pm_options_t *options, VALUE script_name, VALUE path, VALUE optimize)
 {
     pm_parser_t parser;
     pm_parser_init(&parser, pm_string_source(input), pm_string_length(input), options);
@@ -1540,7 +1571,7 @@ rb_iseq_new_main_prism(pm_string_t *input, pm_options_t *options, VALUE path)
     pm_options_line_set(options, start_line);
 
     rb_iseq_t *iseq = iseq_alloc();
-    iseqw_s_compile_prism_compile(&parser, Qnil, iseq, path, path, start_line);
+    iseqw_s_compile_prism_compile(&parser, optimize, iseq, script_name, path, start_line);
 
     pm_parser_free(&parser);
     return iseq;
@@ -2311,6 +2342,7 @@ rb_insn_operand_intern(const rb_iseq_t *iseq,
                 VALUE flags = rb_ary_new();
 # define CALL_FLAG(n) if (vm_ci_flag(ci) & VM_CALL_##n) rb_ary_push(flags, rb_str_new2(#n))
                 CALL_FLAG(ARGS_SPLAT);
+                CALL_FLAG(ARGS_SPLAT_MUT);
                 CALL_FLAG(ARGS_BLOCKARG);
                 CALL_FLAG(FCALL);
                 CALL_FLAG(VCALL);
@@ -2521,6 +2553,15 @@ rb_iseq_disasm_recursive(const rb_iseq_t *iseq, VALUE indent)
     if ((l = RSTRING_LEN(str) - indent_len) < header_minlen) {
         rb_str_modify_expand(str, header_minlen - l);
         memset(RSTRING_END(str), '=', header_minlen - l);
+    }
+    if (iseq->body->builtin_attrs) {
+#define disasm_builtin_attr(str, iseq, attr) \
+        if (iseq->body->builtin_attrs & BUILTIN_ATTR_ ## attr) { \
+            rb_str_cat2(str, " " #attr); \
+        }
+        disasm_builtin_attr(str, iseq, LEAF);
+        disasm_builtin_attr(str, iseq, SINGLE_NOARG_LEAF);
+        disasm_builtin_attr(str, iseq, INLINE_BLOCK);
     }
     rb_str_cat2(str, "\n");
 

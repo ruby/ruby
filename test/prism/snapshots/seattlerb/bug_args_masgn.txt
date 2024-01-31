@@ -24,14 +24,17 @@
                 │   │   │   ├── @ MultiTargetNode (location: (1,5)-(1,11))
                 │   │   │   │   ├── lefts: (length: 2)
                 │   │   │   │   │   ├── @ RequiredParameterNode (location: (1,6)-(1,7))
+                │   │   │   │   │   │   ├── flags: ∅
                 │   │   │   │   │   │   └── name: :a
                 │   │   │   │   │   └── @ RequiredParameterNode (location: (1,9)-(1,10))
+                │   │   │   │   │       ├── flags: ∅
                 │   │   │   │   │       └── name: :b
                 │   │   │   │   ├── rest: ∅
                 │   │   │   │   ├── rights: (length: 0)
                 │   │   │   │   ├── lparen_loc: (1,5)-(1,6) = "("
                 │   │   │   │   └── rparen_loc: (1,10)-(1,11) = ")"
                 │   │   │   └── @ RequiredParameterNode (location: (1,13)-(1,14))
+                │   │   │       ├── flags: ∅
                 │   │   │       └── name: :c
                 │   │   ├── optionals: (length: 0)
                 │   │   ├── rest: ∅

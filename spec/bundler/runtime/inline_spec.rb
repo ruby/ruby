@@ -601,8 +601,6 @@ RSpec.describe "bundler/inline#gemfile" do
 
     realworld_system_gems "pathname --version 0.2.0"
 
-    realworld_system_gems "uri" # this spec uses net/http which requires this default gem
-
     script <<-RUBY, dir: tmp("path_without_gemfile"), env: { "BUNDLER_GEM_DEFAULT_DIR" => system_gem_path.to_s }
       require "bundler/inline"
 
