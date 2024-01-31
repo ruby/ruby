@@ -2484,6 +2484,16 @@ assert_equal '[true, false, true, false]', %q{
   [is_odd(123), is_odd(456), is_odd(bignum), is_odd(bignum+1)]
 }
 
+# Flonum and Flonum
+assert_equal '[2.0, 0.0, 1.0, 4.0]', %q{
+  [1.0 + 1.0, 1.0 - 1.0, 1.0 * 1.0, 8.0 / 2.0]
+}
+
+# Flonum and Fixnum
+assert_equal '[2.0, 0.0, 1.0, 4.0]', %q{
+  [1.0 + 1, 1.0 - 1, 1.0 * 1, 8.0 / 2]
+}
+
 # Call to static and dynamic symbol
 assert_equal 'bar', %q{
   def to_string(obj)

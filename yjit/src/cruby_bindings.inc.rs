@@ -1030,6 +1030,10 @@ extern "C" {
     ) -> ::std::os::raw::c_int;
     pub fn rb_insn_len(insn: VALUE) -> ::std::os::raw::c_int;
     pub fn rb_vm_insn_decode(encoded: VALUE) -> ::std::os::raw::c_int;
+    pub fn rb_float_plus(x: VALUE, y: VALUE) -> VALUE;
+    pub fn rb_float_minus(x: VALUE, y: VALUE) -> VALUE;
+    pub fn rb_float_mul(x: VALUE, y: VALUE) -> VALUE;
+    pub fn rb_float_div(x: VALUE, y: VALUE) -> VALUE;
     pub fn rb_fix_aref(fix: VALUE, idx: VALUE) -> VALUE;
     pub fn rb_vm_insn_addr2opcode(addr: *const ::std::os::raw::c_void) -> ::std::os::raw::c_int;
     pub fn rb_iseq_line_no(iseq: *const rb_iseq_t, pos: usize) -> ::std::os::raw::c_uint;

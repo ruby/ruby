@@ -217,6 +217,10 @@ fn main() {
 
         // From internal/numeric.h
         .allowlist_function("rb_fix_aref")
+        .allowlist_function("rb_float_plus")
+        .allowlist_function("rb_float_minus")
+        .allowlist_function("rb_float_mul")
+        .allowlist_function("rb_float_div")
 
         // From internal/string.h
         .allowlist_function("rb_ec_str_resurrect")
