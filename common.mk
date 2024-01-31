@@ -1182,6 +1182,7 @@ BUILTIN_RB_SRCS = \
 		$(srcdir)/array.rb \
 		$(srcdir)/kernel.rb \
 		$(srcdir)/ractor.rb \
+		$(srcdir)/string.rb \
 		$(srcdir)/symbol.rb \
 		$(srcdir)/timev.rb \
 		$(srcdir)/thread_sync.rb \
@@ -8072,6 +8073,8 @@ inits.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
 inits.$(OBJEXT): {$(VPATH)}missing.h
 inits.$(OBJEXT): {$(VPATH)}prelude.rbinc
 inits.$(OBJEXT): {$(VPATH)}st.h
+inits.$(OBJEXT): {$(VPATH)}string.rb
+inits.$(OBJEXT): {$(VPATH)}string.rbinc
 inits.$(OBJEXT): {$(VPATH)}subst.h
 io.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 io.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
@@ -17627,6 +17630,8 @@ string.$(OBJEXT): {$(VPATH)}rubyparser.h
 string.$(OBJEXT): {$(VPATH)}shape.h
 string.$(OBJEXT): {$(VPATH)}st.h
 string.$(OBJEXT): {$(VPATH)}string.c
+string.$(OBJEXT): {$(VPATH)}string.rb
+string.$(OBJEXT): {$(VPATH)}string.rbinc
 string.$(OBJEXT): {$(VPATH)}subst.h
 string.$(OBJEXT): {$(VPATH)}thread_$(THREAD_MODEL).h
 string.$(OBJEXT): {$(VPATH)}thread_native.h

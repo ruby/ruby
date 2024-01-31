@@ -549,4 +549,9 @@
 #    as determined by a given record separator.
 #  - #upto: Calls the given block with each string value returned by successive calls to #succ.
 
-class String; end
+class String
+  def setbyte(index, value)
+    Primitive.attr! :leaf
+    Primitive.cexpr! 'rb_str_setbyte(self, index, value)'
+  end
+end
