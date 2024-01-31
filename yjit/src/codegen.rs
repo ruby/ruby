@@ -5022,7 +5022,7 @@ fn jit_rb_float_plus(
     }
 
     // Save the PC and SP because the callee may allocate Float on heap
-    jit_prepare_non_leaf_call(jit, asm);
+    jit_prepare_call_with_gc(jit, asm);
 
     asm_comment!(asm, "Float#+");
     let obj = asm.stack_opnd(0);
@@ -5066,7 +5066,7 @@ fn jit_rb_float_minus(
     }
 
     // Save the PC and SP because the callee may allocate Float on heap
-    jit_prepare_non_leaf_call(jit, asm);
+    jit_prepare_call_with_gc(jit, asm);
 
     asm_comment!(asm, "Float#-");
     let obj = asm.stack_opnd(0);
@@ -5110,7 +5110,7 @@ fn jit_rb_float_mul(
     }
 
     // Save the PC and SP because the callee may allocate Float on heap
-    jit_prepare_non_leaf_call(jit, asm);
+    jit_prepare_call_with_gc(jit, asm);
 
     asm_comment!(asm, "Float#*");
     let obj = asm.stack_opnd(0);
@@ -5154,7 +5154,7 @@ fn jit_rb_float_div(
     }
 
     // Save the PC and SP because the callee may allocate Float on heap
-    jit_prepare_non_leaf_call(jit, asm);
+    jit_prepare_call_with_gc(jit, asm);
 
     asm_comment!(asm, "Float#/");
     let obj = asm.stack_opnd(0);
