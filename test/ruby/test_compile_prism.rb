@@ -1395,6 +1395,23 @@ a
           end
         end
       CODE
+
+      # Test RescueNode with ElseNode
+      assert_prism_eval(<<~RUBY)
+        calls = []
+        begin
+          begin
+          rescue RuntimeError
+            calls << 1
+          else
+            calls << 2
+            raise RuntimeError
+          end
+        rescue RuntimeError
+        end
+
+        calls
+      RUBY
     end
 
     def test_RescueModifierNode

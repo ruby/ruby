@@ -3583,12 +3583,13 @@ pm_compile_rescue(rb_iseq_t *iseq, pm_begin_node_t *begin_node, LINK_ANCHOR *con
     }
     ISEQ_COMPILE_DATA(iseq)->in_rescue = prev_in_rescue;
 
+    ADD_LABEL(ret, lend);
+
     if (begin_node->else_clause) {
         PM_POP_UNLESS_POPPED;
         PM_COMPILE((pm_node_t *)begin_node->else_clause);
     }
 
-    ADD_LABEL(ret, lend);
     PM_NOP;
     ADD_LABEL(ret, lcont);
 
