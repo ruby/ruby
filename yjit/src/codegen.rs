@@ -4980,6 +4980,182 @@ fn jit_rb_int_aref(
     true
 }
 
+fn jit_rb_float_plus(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    // Guard obj is Fixnum or Flonum to avoid rb_funcall on rb_num_coerce_bin
+    let comptime_obj = jit.peek_at_stack(&asm.ctx, 0);
+    if comptime_obj.fixnum_p() || comptime_obj.flonum_p() {
+        let obj = asm.stack_opnd(0);
+        jit_guard_known_klass(
+            jit,
+            asm,
+            ocb,
+            comptime_obj.class_of(),
+            obj,
+            obj.into(),
+            comptime_obj,
+            SEND_MAX_DEPTH,
+            Counter::guard_send_not_fixnum_or_flonum,
+        );
+    } else {
+        return false;
+    }
+
+    // Save the PC and SP because the callee may allocate Float on heap
+    jit_prepare_routine_call(jit, asm);
+
+    asm_comment!(asm, "Float#+");
+    let obj = asm.stack_opnd(0);
+    let recv = asm.stack_opnd(1);
+
+    let ret = asm.ccall(rb_float_plus as *const u8, vec![recv, obj]);
+    asm.stack_pop(2); // Keep recv during ccall for GC
+
+    let ret_opnd = asm.stack_push(Type::Unknown); // Flonum or heap Float
+    asm.mov(ret_opnd, ret);
+    true
+}
+
+fn jit_rb_float_minus(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    // Guard obj is Fixnum or Flonum to avoid rb_funcall on rb_num_coerce_bin
+    let comptime_obj = jit.peek_at_stack(&asm.ctx, 0);
+    if comptime_obj.fixnum_p() || comptime_obj.flonum_p() {
+        let obj = asm.stack_opnd(0);
+        jit_guard_known_klass(
+            jit,
+            asm,
+            ocb,
+            comptime_obj.class_of(),
+            obj,
+            obj.into(),
+            comptime_obj,
+            SEND_MAX_DEPTH,
+            Counter::guard_send_not_fixnum_or_flonum,
+        );
+    } else {
+        return false;
+    }
+
+    // Save the PC and SP because the callee may allocate Float on heap
+    jit_prepare_routine_call(jit, asm);
+
+    asm_comment!(asm, "Float#-");
+    let obj = asm.stack_opnd(0);
+    let recv = asm.stack_opnd(1);
+
+    let ret = asm.ccall(rb_float_minus as *const u8, vec![recv, obj]);
+    asm.stack_pop(2); // Keep recv during ccall for GC
+
+    let ret_opnd = asm.stack_push(Type::Unknown); // Flonum or heap Float
+    asm.mov(ret_opnd, ret);
+    true
+}
+
+fn jit_rb_float_mul(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    // Guard obj is Fixnum or Flonum to avoid rb_funcall on rb_num_coerce_bin
+    let comptime_obj = jit.peek_at_stack(&asm.ctx, 0);
+    if comptime_obj.fixnum_p() || comptime_obj.flonum_p() {
+        let obj = asm.stack_opnd(0);
+        jit_guard_known_klass(
+            jit,
+            asm,
+            ocb,
+            comptime_obj.class_of(),
+            obj,
+            obj.into(),
+            comptime_obj,
+            SEND_MAX_DEPTH,
+            Counter::guard_send_not_fixnum_or_flonum,
+        );
+    } else {
+        return false;
+    }
+
+    // Save the PC and SP because the callee may allocate Float on heap
+    jit_prepare_routine_call(jit, asm);
+
+    asm_comment!(asm, "Float#*");
+    let obj = asm.stack_opnd(0);
+    let recv = asm.stack_opnd(1);
+
+    let ret = asm.ccall(rb_float_mul as *const u8, vec![recv, obj]);
+    asm.stack_pop(2); // Keep recv during ccall for GC
+
+    let ret_opnd = asm.stack_push(Type::Unknown); // Flonum or heap Float
+    asm.mov(ret_opnd, ret);
+    true
+}
+
+fn jit_rb_float_div(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    // Guard obj is Fixnum or Flonum to avoid rb_funcall on rb_num_coerce_bin
+    let comptime_obj = jit.peek_at_stack(&asm.ctx, 0);
+    if comptime_obj.fixnum_p() || comptime_obj.flonum_p() {
+        let obj = asm.stack_opnd(0);
+        jit_guard_known_klass(
+            jit,
+            asm,
+            ocb,
+            comptime_obj.class_of(),
+            obj,
+            obj.into(),
+            comptime_obj,
+            SEND_MAX_DEPTH,
+            Counter::guard_send_not_fixnum_or_flonum,
+        );
+    } else {
+        return false;
+    }
+
+    // Save the PC and SP because the callee may allocate Float on heap
+    jit_prepare_routine_call(jit, asm);
+
+    asm_comment!(asm, "Float#/");
+    let obj = asm.stack_opnd(0);
+    let recv = asm.stack_opnd(1);
+
+    let ret = asm.ccall(rb_float_div as *const u8, vec![recv, obj]);
+    asm.stack_pop(2); // Keep recv during ccall for GC
+
+    let ret_opnd = asm.stack_push(Type::Unknown); // Flonum or heap Float
+    asm.mov(ret_opnd, ret);
+    true
+}
+
 /// If string is frozen, duplicate it to get a non-frozen string. Otherwise, return it.
 fn jit_rb_str_uplus(
     jit: &mut JITState,
@@ -9166,6 +9342,11 @@ pub fn yjit_reg_method_codegen_fns() {
         yjit_reg_method(rb_cInteger, ">>", jit_rb_int_rshift);
         yjit_reg_method(rb_cInteger, "^", jit_rb_int_xor);
         yjit_reg_method(rb_cInteger, "[]", jit_rb_int_aref);
+
+        yjit_reg_method(rb_cFloat, "+", jit_rb_float_plus);
+        yjit_reg_method(rb_cFloat, "-", jit_rb_float_minus);
+        yjit_reg_method(rb_cFloat, "*", jit_rb_float_mul);
+        yjit_reg_method(rb_cFloat, "/", jit_rb_float_div);
 
         yjit_reg_method(rb_cString, "empty?", jit_rb_str_empty_p);
         yjit_reg_method(rb_cString, "to_s", jit_rb_str_to_s);
