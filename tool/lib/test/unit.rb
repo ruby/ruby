@@ -855,7 +855,10 @@ module Test
         end
         # (((@record ||= {})[suite] ||= {})[method]) = [assertions, time, error]
         if writer = @options[:launchable_test_reports]
-          location = suite&.instance_method(method).source_location
+          location = nil
+          if suite.method_defined?(:instance_method)
+            location = suite.instance_method(method).source_location
+          end
           if location && path = location.first
             # Launchable JSON schema is defined at
             # https://github.com/search?q=repo%3Alaunchableinc%2Fcli+https%3A%2F%2Flaunchableinc.com%2Fschema%2FRecordTestInput&type=code.
