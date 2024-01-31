@@ -7,7 +7,6 @@ RSpec.describe "installing a gem with native extensions" do
         s.extensions = ["ext/extconf.rb"]
         s.write "ext/extconf.rb", <<-E
           require "mkmf"
-          $extout = "$(topdir)/" + RbConfig::CONFIG["EXTOUT"]
           name = "c_extension_bundle"
           dir_config(name)
           raise "OMG" unless with_config("c_extension") == "hello"
@@ -52,7 +51,6 @@ RSpec.describe "installing a gem with native extensions" do
       s.extensions = ["ext/extconf.rb"]
       s.write "ext/extconf.rb", <<-E
         require "mkmf"
-        $extout = "$(topdir)/" + RbConfig::CONFIG["EXTOUT"]
         name = "c_extension_bundle"
         dir_config(name)
         raise "OMG" unless with_config("c_extension") == "hello"
@@ -97,7 +95,6 @@ RSpec.describe "installing a gem with native extensions" do
           s.extensions = ["ext/extconf.rb"]
           s.write "ext/extconf.rb", <<-E
             require "mkmf"
-            $extout = "$(topdir)/" + RbConfig::CONFIG["EXTOUT"]
             name = "c_extension_bundle_#{n}"
             dir_config(name)
             raise "OMG" unless with_config("c_extension_#{n}") == "#{n}"
@@ -150,7 +147,6 @@ RSpec.describe "installing a gem with native extensions" do
       s.extensions = ["ext/extconf.rb"]
       s.write "ext/extconf.rb", <<-E
         require "mkmf"
-        $extout = "$(topdir)/" + RbConfig::CONFIG["EXTOUT"]
         name = "c_extension_bundle"
         dir_config(name)
         raise "OMG" unless with_config("c_extension") == "hello" && with_config("c_extension_bundle-dir") == "hola"

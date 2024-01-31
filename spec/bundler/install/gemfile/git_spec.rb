@@ -1279,7 +1279,6 @@ RSpec.describe "bundle install with git sources" do
         s.extensions = ["ext/extconf.rb"]
         s.write "ext/extconf.rb", <<-RUBY
           require "mkmf"
-          $extout = "$(topdir)/" + RbConfig::CONFIG["EXTOUT"]
           create_makefile("foo")
         RUBY
         s.write "ext/foo.c", "void Init_foo() {}"
