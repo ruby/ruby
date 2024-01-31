@@ -118,7 +118,7 @@ rb_vm_mtbl_dump(const char *msg, VALUE klass, ID target_mid)
 static inline void
 vm_cme_invalidate(rb_callable_method_entry_t *cme)
 {
-    VM_ASSERT(IMEMO_TYPE_P(cme, imemo_ment));
+    VM_ASSERT(IMEMO_TYPE_P(cme, imemo_ment), "cme: %d", imemo_type((VALUE)cme));
     VM_ASSERT(callable_method_entry_p(cme));
     METHOD_ENTRY_INVALIDATED_SET(cme);
     RB_DEBUG_COUNTER_INC(cc_cme_invalidate);

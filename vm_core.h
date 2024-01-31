@@ -56,12 +56,12 @@
 #define RVALUE_SIZE (sizeof(struct RBasic) + sizeof(VALUE[RBIMPL_RVALUE_EMBED_LEN_MAX]))
 
 #if VM_CHECK_MODE > 0
-#define VM_ASSERT(expr) RUBY_ASSERT_MESG_WHEN(VM_CHECK_MODE > 0, expr, #expr)
+#define VM_ASSERT(/*expr, */...) RUBY_ASSERT_WHEN(VM_CHECK_MODE > 0, __VA_ARGS__)
 #define VM_UNREACHABLE(func) rb_bug(#func ": unreachable")
 #define RUBY_ASSERT_CRITICAL_SECTION
 #define RUBY_DEBUG_THREAD_SCHEDULE() rb_thread_schedule()
 #else
-#define VM_ASSERT(expr) ((void)0)
+#define VM_ASSERT(/*expr, */...) ((void)0)
 #define VM_UNREACHABLE(func) UNREACHABLE
 #define RUBY_DEBUG_THREAD_SCHEDULE()
 #endif
