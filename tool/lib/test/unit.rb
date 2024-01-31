@@ -933,6 +933,7 @@ module Test
           @is_first_obj = true
           write_new_line
         end
+
         def write_object
           if @is_first_obj
             @is_first_obj = false
@@ -953,6 +954,7 @@ module Test
           @indent_level -= 1
           @is_first_key_val = true
         end
+
         def write_array(key)
           @indent_level += 1
           write_indent
@@ -961,6 +963,7 @@ module Test
           @file.write(" ", "[")
           write_new_line
         end
+
         def write_key_value(key, value)
           if @is_first_key_val
             @is_first_key_val = false
@@ -974,28 +977,35 @@ module Test
           @file.write(" ")
           @file.write(to_json_str(value))
         end
+
         def close
           close_array
           @indent_level -= 1
           write_new_line
           @file.write("}")
         end
+
         private
         def to_json_str(obj)
           JSON.dump(obj)
         end
+
         def write_indent
           @file.write(" " * 2 * @indent_level)
         end
+
         def write_new_line
           @file.write("\n")
         end
+
         def write_comma
           @file.write(',')
         end
+
         def write_colon
           @file.write(":")
         end
+
         def close_array
           write_new_line
           write_indent
