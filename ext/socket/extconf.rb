@@ -607,8 +607,6 @@ You can try --enable-wide-getaddrinfo.
 EOS
   end
 
-  have_const('AI_ADDRCONFIG', headers)
-
   case with_config("lookup-order-hack", "UNSPEC")
   when "INET"
     $defs << "-DLOOKUP_ORDER_HACK_INET"
