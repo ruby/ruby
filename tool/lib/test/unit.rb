@@ -868,10 +868,10 @@ module Test
                   nil
                 when Test::Unit::PendedError
                   status = 'TEST_SKIPPED'
-                  "Skipped:\n#{suite.name}##{method} [#{location e}]:\n#{e.message}\n"
+                  "Skipped:\n#{suite.name}##{method} [#{location error}]:\n#{e.message}\n"
                 when Test::Unit::AssertionFailedError
                   status = 'TEST_FAILED'
-                  "Failure:\n#{suite.name}##{method} [#{location e}]:\n#{e.message}\n"
+                  "Failure:\n#{suite.name}##{method} [#{location error}]:\n#{e.message}\n"
                 when Timeout::Error
                   status = 'TEST_FAILED'
                   "Timeout:\n#{suite.name}##{method}\n"
