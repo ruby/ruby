@@ -70,6 +70,7 @@ jobs:
         with:
           sparse-checkout-cone-mode: false
           sparse-checkout: /.github
+          fetch-depth: 0
 
       - name: Install libraries
         uses: ./.github/actions/setup/macos
@@ -116,7 +117,7 @@ jobs:
 
       - name: make ${{ matrix.test_task }}
         run: |
-          make -s ${{ matrix.test_task }} TESTS=`echo $TESTS`
+          make -s ${{ matrix.test_task }} TESTS='--repeat-count=2 --launchable-test-reports=macos.json'
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
