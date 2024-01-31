@@ -3273,6 +3273,7 @@ compile.$(OBJEXT): $(top_srcdir)/internal/fixnum.h
 compile.$(OBJEXT): $(top_srcdir)/internal/gc.h
 compile.$(OBJEXT): $(top_srcdir)/internal/hash.h
 compile.$(OBJEXT): $(top_srcdir)/internal/imemo.h
+compile.$(OBJEXT): $(top_srcdir)/internal/io.h
 compile.$(OBJEXT): $(top_srcdir)/internal/numeric.h
 compile.$(OBJEXT): $(top_srcdir)/internal/object.h
 compile.$(OBJEXT): $(top_srcdir)/internal/rational.h
@@ -3484,6 +3485,7 @@ compile.$(OBJEXT): {$(VPATH)}internal/value_type.h
 compile.$(OBJEXT): {$(VPATH)}internal/variable.h
 compile.$(OBJEXT): {$(VPATH)}internal/warning_push.h
 compile.$(OBJEXT): {$(VPATH)}internal/xmalloc.h
+compile.$(OBJEXT): {$(VPATH)}io.h
 compile.$(OBJEXT): {$(VPATH)}iseq.h
 compile.$(OBJEXT): {$(VPATH)}method.h
 compile.$(OBJEXT): {$(VPATH)}missing.h

@@ -2404,10 +2404,13 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             }
         }
 
+        rb_binding_t *toplevel_binding;
+        GetBindingPtr(rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING")), toplevel_binding);
+        const struct rb_block *base_block = toplevel_context(toplevel_binding);
 
         if ((*rb_ruby_prism_ptr())) {
-            pm_string_t input;
-            pm_options_t options = { 0 };
+            pm_parse_result_t result = { 0 };
+            VALUE error;
 
             if (strcmp(opt->script, "-") == 0) {
                 int xflag = opt->xflag;
@@ -2415,30 +2418,26 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
                 opt->xflag = xflag != 0;
 
                 rb_warn("Prism support for streaming code from stdin is not currently supported");
-                pm_string_constant_init(&input, RSTRING_PTR(rb_source), RSTRING_LEN(rb_source));
-                pm_options_filepath_set(&options, RSTRING_PTR(opt->script_name));
+                error = pm_parse_string(&result, rb_source, opt->script_name);
             }
             else if (opt->e_script) {
-                pm_string_constant_init(&input, RSTRING_PTR(opt->e_script), RSTRING_LEN(opt->e_script));
-                pm_options_filepath_set(&options, "-e");
+                error = pm_parse_string(&result, opt->e_script, rb_str_new2("-e"));
             }
             else {
-                pm_string_mapped_init(&input, RSTRING_PTR(opt->script_name));
-                pm_options_filepath_set(&options, RSTRING_PTR(opt->script_name));
+                error = pm_parse_file(&result, opt->script_name);
             }
 
-            VALUE optimize = dump & DUMP_BIT(insns_without_opt) ? Qfalse : Qnil;
-            iseq = rb_iseq_new_main_prism(&input, &options, opt->script_name, path, optimize);
-            ruby_opt_init(opt);
-
-            pm_string_free(&input);
-            pm_options_free(&options);
+            if (error == Qnil) {
+                ruby_opt_init(opt);
+                iseq = pm_iseq_new_main(&result.node, opt->script_name, path, vm_block_iseq(base_block), !(dump & DUMP_BIT(insns_without_opt)));
+                pm_parse_result_free(&result);
+            }
+            else {
+                pm_parse_result_free(&result);
+                rb_exc_raise(error);
+            }
         }
         else {
-            rb_binding_t *toplevel_binding;
-            GetBindingPtr(rb_const_get(rb_cObject, rb_intern("TOPLEVEL_BINDING")),
-                          toplevel_binding);
-            const struct rb_block *base_block = toplevel_context(toplevel_binding);
             iseq = rb_iseq_new_main(&ast->body, opt->script_name, path, vm_block_iseq(base_block), !(dump & DUMP_BIT(insns_without_opt)));
             rb_ast_dispose(ast);
         }
