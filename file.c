@@ -5338,45 +5338,45 @@ test_check(int n, int argc, VALUE *argv)
  *    and returns `true` or `false`;
  *    for a non-existent entity, returns `false` (does not raise exception):
  *
- *      | Character | Test |
- *      |:---------:|:----- |
- *      | <tt>'b'</tt> | Whether the entity is a block device. |
- *      | <tt>'c'</tt> | Whether the entity is a character device. |
- *      | <tt>'d'</tt> | Whether the entity is a directory. |
- *      | <tt>'e'</tt> | Whether the entity is an existing entity. |
- *      | <tt>'f'</tt> | Whether the entity is an existing regular file. |
- *      | <tt>'g'</tt> | Whether the entity's setgid bit is set. |
- *      | <tt>'G'</tt> | Whether the entity's group ownership is equal to the caller's. |
- *      | <tt>'k'</tt> | Whether the entity's sticky bit is set. |
- *      | <tt>'l'</tt> | Whether the entity is a symbolic link. |
- *      | <tt>'o'</tt> | Whether the entity is owned by the caller's effective uid. |
- *      | <tt>'O'</tt> | Like <tt>'o'</tt>, but uses the real uid (not the effective uid). |
- *      | <tt>'p'</tt> | Whether the entity is a FIFO device (named pipe). |
- *      | <tt>'r'</tt> | Whether the entity is readable by the caller's effecive uid/gid. |
+ *      | Character    | Test                                                                      |
+ *      |:------------:|:--------------------------------------------------------------------------|
+ *      | <tt>'b'</tt> | Whether the entity is a block device.                                     |
+ *      | <tt>'c'</tt> | Whether the entity is a character device.                                 |
+ *      | <tt>'d'</tt> | Whether the entity is a directory.                                        |
+ *      | <tt>'e'</tt> | Whether the entity is an existing entity.                                 |
+ *      | <tt>'f'</tt> | Whether the entity is an existing regular file.                           |
+ *      | <tt>'g'</tt> | Whether the entity's setgid bit is set.                                   |
+ *      | <tt>'G'</tt> | Whether the entity's group ownership is equal to the caller's.            |
+ *      | <tt>'k'</tt> | Whether the entity's sticky bit is set.                                   |
+ *      | <tt>'l'</tt> | Whether the entity is a symbolic link.                                    |
+ *      | <tt>'o'</tt> | Whether the entity is owned by the caller's effective uid.                |
+ *      | <tt>'O'</tt> | Like <tt>'o'</tt>, but uses the real uid (not the effective uid).         |
+ *      | <tt>'p'</tt> | Whether the entity is a FIFO device (named pipe).                         |
+ *      | <tt>'r'</tt> | Whether the entity is readable by the caller's effecive uid/gid.          |
  *      | <tt>'R'</tt> | Like <tt>'r'</tt>, but uses the real uid/gid (not the effective uid/gid). |
- *      | <tt>'S'</tt> | Whether the entity is a socket. |
- *      | <tt>'u'</tt> | Whether the entity's setuid bit is set. |
- *      | <tt>'w'</tt> | Whether the entity is writable by the caller's effective uid/gid. |
+ *      | <tt>'S'</tt> | Whether the entity is a socket.                                           |
+ *      | <tt>'u'</tt> | Whether the entity's setuid bit is set.                                   |
+ *      | <tt>'w'</tt> | Whether the entity is writable by the caller's effective uid/gid.         |
  *      | <tt>'W'</tt> | Like <tt>'w'</tt>, but uses the real uid/gid (not the effective uid/gid). |
- *      | <tt>'x'</tt> | Whether the entity is executable by the caller's effective uid/gid. |
- *      | <tt>'X'</tt> | Like <tt>'x'</tt>, but uses the real uid/gid (not the effecive uid/git). |
- *      | <tt>'z'</tt> | Whether the entity exists and is of length zero. |
+ *      | <tt>'x'</tt> | Whether the entity is executable by the caller's effective uid/gid.       |
+ *      | <tt>'X'</tt> | Like <tt>'x'</tt>, but uses the real uid/gid (not the effecive uid/git).  |
+ *      | <tt>'z'</tt> | Whether the entity exists and is of length zero.                          |
  *
  *  - This test operates only on the entity at `path0`,
  *    and returns an integer size or +nil+:
  *
- *      | Character | Test |
- *      |:---------:|:----- |
+ *      | Character    | Test                                                                                         |
+ *      |:------------:|:---------------------------------------------------------------------------------------------|
  *      | <tt>'s'</tt> | Returns positive integer size if the entity exists and has non-zero length, +nil+ otherwise. |
  *
  *  - Each of these tests operates only on the entity at `path0`,
  *    and returns a Time object;
  *    raises an exception if the entity does not exist:
  *
- *      | Character | Test |
- *      |:---------:|:----- |
- *      | <tt>'A'</tt> | Last access time for the entity. |
- *      | <tt>'C'</tt> | Last change time for the entity. |
+ *      | Character    | Test                                   |
+ *      |:------------:|:---------------------------------------|
+ *      | <tt>'A'</tt> | Last access time for the entity.       |
+ *      | <tt>'C'</tt> | Last change time for the entity.       |
  *      | <tt>'M'</tt> | Last modification time for the entity. |
  *
  *  - Each of these tests operates on the modification time (`mtime`)
@@ -5384,18 +5384,18 @@ test_check(int n, int argc, VALUE *argv)
  *    and returns a `true` or `false`;
  *    returns `false` if either entity does not exist:
  *
- *      | Character | Test |
- *      |:---------:|:----- |
- *      | <tt>'<'</tt> | Whether the `mtime` at `path0` is less than that at `path1`. |
- *      | <tt>'='</tt> | Whether the `mtime` at `path0` is equal to that at `path1`. |
+ *      | Character    | Test                                                            |
+ *      |:------------:|:----------------------------------------------------------------|
+ *      | <tt>'<'</tt> | Whether the `mtime` at `path0` is less than that at `path1`.    |
+ *      | <tt>'='</tt> | Whether the `mtime` at `path0` is equal to that at `path1`.     |
  *      | <tt>'>'</tt> | Whether the `mtime` at `path0` is greater than that at `path1`. |
  *
  *  - This test operates on the content of each of the entities at `path0` and `path1`,
  *    and returns a `true` or `false`;
  *    returns `false` if either entity does not exist:
  *
- *      | Character | Test |
- *      |:---------:|:----- |
+ *      | Character    | Test                                          |
+ *      |:------------:|:----------------------------------------------|
  *      | <tt>'-'</tt> | Whether the entities exist and are identical. |
  *
  */
