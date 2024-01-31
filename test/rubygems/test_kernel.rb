@@ -56,7 +56,7 @@ class TestGemKernel < Gem::TestCase
     quick_gem "d", "1.1.a"
 
     assert gem("d", ">= 1"), "release requirement may load prerelease when sole option"
-    assert $:.one? {|p| p.include?("1.1.a/lib") }
+    assert $:.one? {|p| p.include?("/d-1.1.a/lib") }
   end
 
   def test_release_favored_over_prerelease
@@ -64,8 +64,8 @@ class TestGemKernel < Gem::TestCase
     quick_gem "d", "1.2"
     gem("d", ">= 1")
 
-    refute $:.any? {|p| p.include?("1.1.a/lib") }
-    assert $:.one? {|p| p.include?("1.2/lib") }
+    refute $:.any? {|p| p.include?("/d-1.1.a/lib") }
+    assert $:.one? {|p| p.include?("/d-1.2/lib") }
   end
 
   def test_gem_env_req
