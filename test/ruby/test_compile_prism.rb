@@ -834,6 +834,13 @@ module Prism
 
       # Test keyword splat inside of array
       assert_prism_eval("[**{x: 'hello'}]")
+
+      # Test UTF-8 string array literal in a US-ASCII file
+      assert_prism_eval(<<~'RUBY', raw: true)
+        # -*- coding: us-ascii -*-
+        # frozen_string_literal: true
+        %W"\u{1f44b} \u{1f409}"
+      RUBY
     end
 
     def test_AssocNode
