@@ -251,10 +251,6 @@ module TestIRB
 
   class IRBHistoryIntegrationTest < IntegrationTestCase
     def test_history_saving_with_debug
-      if ruby_core?
-        omit "This test works only under ruby/irb"
-      end
-
       write_history ""
 
       write_ruby <<~'RUBY'
@@ -291,6 +287,53 @@ module TestIRB
         puts Reline::HISTORY.to_a.to_s
         q!
       HISTORY
+    end
+
+    def test_history_saving_with_debug_without_prior_history
+      tmpdir = Dir.mktmpdir("test_irb_history_")
+      # Intentionally not creating the file so we test the reset counter logic
+      history_file = File.join(tmpdir, "irb_history")
+
+      write_rc <<~RUBY
+        IRB.conf[:HISTORY_FILE] = "#{history_file}"
+      RUBY
+
+      write_ruby <<~'RUBY'
+        def foo
+        end
+
+        binding.irb
+
+        foo
+      RUBY
+
+      output = run_ruby_file do
+        type "'irb session'"
+        type "next"
+        type "'irb:debug session'"
+        type "step"
+        type "irb_info"
+        type "puts Reline::HISTORY.to_a.to_s"
+        type "q!"
+      end
+
+      assert_include(output, "InputMethod: RelineInputMethod")
+      # check that in-memory history is preserved across sessions
+      assert_include output, %q(
+        ["'irb session'", "next", "'irb:debug session'", "step", "irb_info", "puts Reline::HISTORY.to_a.to_s"]
+      ).strip
+
+      assert_equal <<~HISTORY, File.read(history_file)
+        'irb session'
+        next
+        'irb:debug session'
+        step
+        irb_info
+        puts Reline::HISTORY.to_a.to_s
+        q!
+      HISTORY
+    ensure
+      FileUtils.rm_rf(tmpdir)
     end
 
     def test_history_saving_with_nested_sessions
