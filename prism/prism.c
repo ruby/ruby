@@ -5430,7 +5430,7 @@ pm_source_file_node_create(pm_parser_t *parser, const pm_token_t *file_keyword) 
             .flags = PM_NODE_FLAG_STATIC_LITERAL,
             .location = PM_LOCATION_TOKEN_VALUE(file_keyword),
         },
-        .filepath = parser->filepath_string,
+        .filepath = parser->filepath,
     };
 
     return node;
@@ -17752,7 +17752,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         .encoding_changed_callback = NULL,
         .encoding_comment_start = source,
         .lex_callback = NULL,
-        .filepath_string = { 0 },
+        .filepath = { 0 },
         .constant_pool = { 0 },
         .newline_list = { 0 },
         .integer_base = 0,
@@ -17795,7 +17795,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
     // If options were provided to this parse, establish them here.
     if (options != NULL) {
         // filepath option
-        parser->filepath_string = options->filepath;
+        parser->filepath = options->filepath;
 
         // line option
         parser->start_line = options->line;
@@ -17897,7 +17897,7 @@ pm_magic_comment_list_free(pm_list_t *list) {
  */
 PRISM_EXPORTED_FUNCTION void
 pm_parser_free(pm_parser_t *parser) {
-    pm_string_free(&parser->filepath_string);
+    pm_string_free(&parser->filepath);
     pm_diagnostic_list_free(&parser->error_list);
     pm_diagnostic_list_free(&parser->warning_list);
     pm_comment_list_free(&parser->comment_list);
