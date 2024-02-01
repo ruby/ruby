@@ -15,6 +15,7 @@ use crate::utils::*;
 use crate::disasm::*;
 use core::ffi::c_void;
 use std::cell::*;
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt;
 use std::mem;
@@ -492,6 +493,9 @@ pub struct Context {
     /// to serial indexes. We're thinking of overhauling Context structure in Ruby 3.4 which
     /// could allow this to consume no bytes, so we're leaving this as is.
     inline_block: u64,
+
+    /// Class used by send dispatch
+    dispatch_class: u64,
 }
 
 /// Tuple of (iseq, idx) used to identify basic blocks
@@ -526,9 +530,11 @@ pub enum BranchGenFn {
     JBToTarget0,
     JOMulToTarget0,
     JITReturn,
+    SendDispatch(HashMap<usize, *const u8>),
 }
 
 impl BranchGenFn {
+    /// Generate code for given targets and the current BranchShape
     pub fn call(&self, asm: &mut Assembler, target0: Target, target1: Option<Target>) {
         match self {
             BranchGenFn::BranchIf(shape) => {
@@ -590,26 +596,35 @@ impl BranchGenFn {
                 let raw_ptr = asm.lea_jump_target(target0);
                 asm.mov(Opnd::mem(64, CFP, jit_return), raw_ptr);
             }
+            BranchGenFn::SendDispatch(_) => {
+                asm.jmp_opnd(C_RET_OPND) // always jump to what send_dispatch_hit returns
+            }
         }
     }
 
+    /// Return the BranchShape of a given BranchGenFn
     pub fn get_shape(&self) -> BranchShape {
         match self {
+            // The following functions may generate different code depending on block ordering
             BranchGenFn::BranchIf(shape) |
             BranchGenFn::BranchNil(shape) |
             BranchGenFn::BranchUnless(shape) |
             BranchGenFn::JumpToTarget0(shape) => shape.get(),
+            // The following functions always generate the same kind of code
             BranchGenFn::JNZToTarget0 |
             BranchGenFn::JZToTarget0 |
             BranchGenFn::JBEToTarget0 |
             BranchGenFn::JBToTarget0 |
             BranchGenFn::JOMulToTarget0 |
-            BranchGenFn::JITReturn => BranchShape::Default,
+            BranchGenFn::JITReturn |
+            BranchGenFn::SendDispatch(_) => BranchShape::Default,
         }
     }
 
+    /// Set a BranchShape to a given BranchGenFn
     pub fn set_shape(&self, new_shape: BranchShape) {
         match self {
+            // The following functions may generate different code depending on block ordering
             BranchGenFn::BranchIf(shape) |
             BranchGenFn::BranchNil(shape) |
             BranchGenFn::BranchUnless(shape) => {
@@ -621,12 +636,14 @@ impl BranchGenFn {
                 }
                 shape.set(new_shape);
             }
+            // The following functions always generate the same kind of code
             BranchGenFn::JNZToTarget0 |
             BranchGenFn::JZToTarget0 |
             BranchGenFn::JBEToTarget0 |
             BranchGenFn::JBToTarget0 |
             BranchGenFn::JOMulToTarget0 |
-            BranchGenFn::JITReturn => {
+            BranchGenFn::JITReturn |
+            BranchGenFn::SendDispatch(_) => {
                 assert_eq!(new_shape, BranchShape::Default);
             }
         }
@@ -785,9 +802,14 @@ impl std::fmt::Debug for Branch {
 }
 
 impl PendingBranch {
+    /// Get the address of the Branch created by this PendingBranch
+    pub fn get_branch_struct_address(&self) -> usize {
+        self.uninit_branch.as_ptr() as usize
+    }
+
     /// Set up a branch target at `target_idx`. Find an existing block to branch to
     /// or generate a stub for one.
-    fn set_target(
+    pub fn set_target(
         &self,
         target_idx: u32,
         target: BlockId,
@@ -806,7 +828,7 @@ impl PendingBranch {
 
         // The branch struct is uninitialized right now but as a stable address.
         // We make sure the stub runs after the branch is initialized.
-        let branch_struct_addr = self.uninit_branch.as_ptr() as usize;
+        let branch_struct_addr = self.get_branch_struct_address();
         let stub_addr = gen_branch_stub(ctx, ocb, branch_struct_addr, target_idx);
 
         if let Some(stub_addr) = stub_addr {
@@ -1413,7 +1435,7 @@ pub fn take_version_list(blockid: BlockId) -> VersionList {
 
 /// Count the number of block versions matching a given blockid
 /// `inlined: true` counts inlined versions, and `inlined: false` counts other versions.
-fn get_num_versions(blockid: BlockId, inlined: bool) -> usize {
+fn get_num_versions(blockid: BlockId, inlined: bool, dispatch: bool) -> usize {
     let insn_idx = blockid.idx.as_usize();
     match get_iseq_payload(blockid.iseq) {
         Some(payload) => {
@@ -1422,7 +1444,8 @@ fn get_num_versions(blockid: BlockId, inlined: bool) -> usize {
                 .get(insn_idx)
                 .map(|versions| {
                     versions.iter().filter(|&&version|
-                        unsafe { version.as_ref() }.ctx.inline() == inlined
+                        unsafe { version.as_ref() }.ctx.inline() == inlined &&
+                        unsafe { version.as_ref() }.ctx.dispatch() == dispatch
                     ).count()
                 })
                 .unwrap_or(0)
@@ -1492,8 +1515,8 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
         return *ctx;
     }
 
-    let next_versions = get_num_versions(blockid, ctx.inline()) + 1;
-    let max_versions = if ctx.inline() {
+    let next_versions = get_num_versions(blockid, ctx.inline(), ctx.dispatch()) + 1;
+    let max_versions = if ctx.inline() || ctx.dispatch() {
         MAX_INLINE_VERSIONS
     } else {
         get_option!(max_versions)
@@ -1513,6 +1536,10 @@ pub fn limit_block_versions(blockid: BlockId, ctx: &Context) -> Context {
                 // to keep inlining blocks until we hit the limit, but it's safe to give up inlining.
                 ctx.inline_block = 0;
                 assert!(generic_ctx.inline_block == 0);
+            }
+            if ctx.dispatch() {
+                ctx.dispatch_class = 0;
+                assert!(generic_ctx.dispatch_class == 0);
             }
 
             assert_ne!(
@@ -2068,6 +2095,14 @@ impl Context {
         self.inline_block = iseq as u64
     }
 
+    pub fn dispatch(&self) -> bool {
+        self.dispatch_class != 0
+    }
+
+    pub fn reset_dispatch(&mut self) {
+        self.dispatch_class = 0;
+    }
+
     /// Compute a difference score for two context objects
     pub fn diff(&self, dst: &Context) -> TypeDiff {
         // Self is the source context (at the end of the predecessor)
@@ -2117,6 +2152,10 @@ impl Context {
         if src.inline_block != dst.inline_block {
             // find_block_version should not find existing blocks with different
             // inline_block so that their yield will not be megamorphic.
+            return TypeDiff::Incompatible;
+        }
+
+        if src.dispatch_class != dst.dispatch_class {
             return TypeDiff::Incompatible;
         }
 
@@ -2973,6 +3012,141 @@ fn caller_saved_temp_regs() -> impl Iterator<Item = &'static Reg> + DoubleEndedI
     }
 }
 
+c_callable! {
+    /// Generated code calls this function with the SysV calling convention.
+    /// See [gen_send_dispatch].
+    fn send_dispatch_hit(branch_ptr: *const c_void, klass: usize, ec: EcPtr) -> *const u8 {
+        // Extract a Branch to get the dispatch table
+        let branch_ref = NonNull::<Branch>::new(branch_ptr as *mut Branch).unwrap();
+        let branch = unsafe { branch_ref.as_ref() };
+
+        // Look up the dispatch table
+        if let BranchGenFn::SendDispatch(dispatch_table) = &branch.gen_fn {
+            if let Some(&jump_addr) = dispatch_table.get(&klass) {
+                return jump_addr; // cache hit
+            }
+        } else {
+            unreachable!("send_dispatch_hit may be used only with MegamorphicSend")
+        }
+
+        // If the lookup fails for the receiver class, generate code for the current block
+        with_vm_lock(src_loc!(), || {
+            with_compile_time(|| { send_dispatch_hit_body(branch_ptr, klass, ec) })
+        })
+    }
+}
+
+/// Compile the current block and insert it to the send dispatch table
+fn send_dispatch_hit_body(branch_ptr: *const c_void, klass: usize, ec: EcPtr) -> *const u8 {
+    // Extract a Branch again since we can't pass &Branch over with_vm_lock()
+    let mut branch_ref = NonNull::<Branch>::new(branch_ptr as *mut Branch).unwrap();
+    let branch = unsafe { branch_ref.as_mut() };
+
+    let cb = CodegenGlobals::get_inline_cb();
+    let ocb = CodegenGlobals::get_outlined_cb();
+
+    // Get BlockId and Context to be compiled
+    let (blockid, ctx) = unsafe { // SAFETY: no mutation.
+        branch.targets[0].ref_unchecked().as_ref().map(|target| (target.get_blockid(), target.get_ctx()))
+    }.unwrap();
+
+    // Update PC and SP for compilation and a side exit
+    let (cfp, original_interp_sp) = unsafe {
+        let cfp = get_ec_cfp(ec);
+        let original_interp_sp = get_cfp_sp(cfp);
+
+        let running_iseq = get_cfp_iseq(cfp);
+        let reconned_pc = rb_iseq_pc_at_idx(blockid.iseq, blockid.idx.into());
+        let reconned_sp = original_interp_sp.offset(ctx.sp_offset.into());
+        // Unlike in the interpreter, our `leave` doesn't write to the caller's
+        // SP -- we do it in the returned-to code. Account for this difference.
+        let reconned_sp = reconned_sp.add(ctx.is_return_landing().into());
+
+        assert_eq!(running_iseq, blockid.iseq as _, "each dispatch expects a particular iseq");
+
+        // Update the PC and SP in the current CFP, because they may be out of sync in JITted code
+        rb_set_cfp_pc(cfp, reconned_pc);
+        rb_set_cfp_sp(cfp, reconned_sp);
+
+        // Bail if code GC is disabled and we've already run out of spaces.
+        if !get_option!(code_gc) && (cb.has_dropped_bytes() || ocb.unwrap().has_dropped_bytes()) {
+            return CodegenGlobals::get_stub_exit_code().raw_ptr(cb);
+        }
+
+        // Bail if we're about to run out of native stack space.
+        // We've just reconstructed interpreter state.
+        if rb_ec_stack_check(ec as _) != 0 {
+            return CodegenGlobals::get_stub_exit_code().raw_ptr(cb);
+        }
+
+        (cfp, original_interp_sp)
+    };
+
+    // Make the Context unique per receiver class
+    let mut ctx = ctx;
+    ctx.dispatch_class = klass as u64;
+
+    // Generate code for the current receiver class
+    // TODO: assert cfp->self's class == klass
+    // TODO: assert there's no such existing block
+    let dst_addr = match gen_block_series(blockid, &ctx, ec, cb, ocb) {
+        Some(new_block) => {
+            let new_block = unsafe { new_block.as_ref() };
+
+            // Add this branch to the list of incoming branches for the target
+            // new_block.push_incoming(branch_ref); // FIXME: invalidation is not working with this
+
+            // Insert the new block to the dispatch table
+            if let BranchGenFn::SendDispatch(dispatch_table) = &mut branch.gen_fn {
+                dispatch_table.insert(klass, new_block.start_addr.raw_ptr(cb));
+            } else {
+                unreachable!("send_dispatch_hit may be used only with MegamorphicSend")
+            }
+
+            // Restore interpreter sp, since the code hitting the stub expects the original.
+            unsafe { rb_set_cfp_sp(cfp, original_interp_sp) };
+
+            new_block.start_addr
+        }
+        None => {
+            if get_option!(code_gc) {
+                cb.code_gc(ocb);
+            }
+            CodegenGlobals::get_stub_exit_code()
+        }
+    };
+
+    ocb.unwrap().mark_all_executable();
+    cb.mark_all_executable();
+
+    // Return a pointer to the compiled block version
+    dst_addr.raw_ptr(cb)
+}
+
+/// Generate code that dispatches a method based on the class of a receiver
+pub fn gen_send_dispatch(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    ocb: &mut OutlinedCb,
+    klass_opnd: Opnd,
+    target: BlockId,
+) {
+    // Create a Branch with a HashMap to dispatch send
+    let branch = new_pending_branch(jit, BranchGenFn::SendDispatch(HashMap::new()));
+
+    // Dispatch a jump destination using the HashMap
+    let jump_addr = asm.ccall(
+        send_dispatch_hit as *mut u8,
+        vec![branch.get_branch_struct_address().into(), klass_opnd, EC],
+    );
+    branch.set_target(0, target, &asm.ctx, ocb); // setting Context after spill on ccall
+
+    // Jump to the dispatched destination
+    asm.mark_branch_start(&branch);
+    asm.jmp_opnd(jump_addr);
+    asm.mark_branch_end(&branch);
+}
+
 impl Assembler
 {
     /// Mark the start position of a patchable entry point in the machine code
@@ -3511,7 +3685,7 @@ mod tests {
 
     #[test]
     fn context_size() {
-        assert_eq!(mem::size_of::<Context>(), 23);
+        assert_eq!(mem::size_of::<Context>(), 31);
     }
 
     #[test]

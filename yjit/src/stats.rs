@@ -421,7 +421,9 @@ make_counters! {
     // Method calls that exit to the interpreter
     guard_send_block_arg_type,
     guard_send_getter_splat_non_empty,
-    guard_send_klass_megamorphic,
+    guard_send_megamorphic_jump_failed,
+    guard_send_megamorphic_klass,
+    guard_send_megamorphic_not_heap,
     guard_send_se_cf_overflow,
     guard_send_se_protected_check_failed,
     guard_send_splatarray_length_not_equal,

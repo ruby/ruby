@@ -2301,7 +2301,7 @@ pub const OPT_AREF_MAX_CHAIN_DEPTH: i32 = 2;
 pub const EXPANDARRAY_MAX_CHAIN_DEPTH: i32 = 4;
 
 // up to 5 different methods for send
-pub const SEND_MAX_DEPTH: i32 = 5;
+pub const SEND_MAX_DEPTH: i32 = 6;
 
 // up to 20 different offsets for case-when
 pub const CASE_WHEN_MAX_DEPTH: i32 = 20;
@@ -7503,7 +7503,7 @@ fn gen_struct_aset(
     Some(EndBlock)
 }
 
-// Generate code that calls a method with dynamic dispatch
+/// Generate code that dispatches a method using the interpreter's implementation
 fn gen_send_dynamic<F: Fn(&mut Assembler) -> Opnd>(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -7612,23 +7612,44 @@ fn gen_send_general(
     if asm.ctx.get_chain_depth() > 1 {
         gen_counter_incr(asm, Counter::num_send_polymorphic);
     }
-    // If megamorphic, let the caller fallback to dynamic dispatch
-    if asm.ctx.get_chain_depth() as i32 >= SEND_MAX_DEPTH {
+
+    // Handle megamorphic callsites
+    if asm.ctx.get_chain_depth() as i32 == SEND_MAX_DEPTH - 1 && !asm.ctx.dispatch() {
+        // If it's about to be megamorphic due to heap object classes,
+        // attempt to dispatch the remaining chains with a hash table.
+        let known_type = asm.ctx.get_opnd_type(recv_opnd);
+        if comptime_recv.heap_object_p() && known_type.known_class() != Some(comptime_recv_klass) {
+            // Guard it's heap. Most likely generate nothing thanks to a heap guard in previous chains.
+            guard_object_is_heap(asm, recv, recv_opnd, Counter::guard_send_megamorphic_not_heap);
+
+            // Dispatch a block based on the receiver class
+            asm_comment!(asm, "dispatch send by receiver class");
+            let recv_reg = asm.load(recv);
+            let klass_opnd = Opnd::mem(64, recv_reg, RUBY_OFFSET_RBASIC_KLASS);
+            gen_send_dispatch(jit, asm, ocb, klass_opnd, BlockId { iseq: jit.iseq, idx: jit.insn_idx });
+
+            return Some(EndBlock);
+        }
+    } else if asm.ctx.get_chain_depth() as i32 >= SEND_MAX_DEPTH {
+        // If megamorphic, let the caller fallback to dynamic dispatch
         gen_counter_incr(asm, Counter::send_megamorphic);
         return None;
     }
 
-    jit_guard_known_klass(
-        jit,
-        asm,
-        ocb,
-        comptime_recv_klass,
-        recv,
-        recv_opnd,
-        comptime_recv,
-        SEND_MAX_DEPTH,
-        Counter::guard_send_klass_megamorphic,
-    );
+    if !asm.ctx.dispatch() { // Skip the class check if already checked by send dispatch (TODO: assert class)
+        jit_guard_known_klass(
+            jit,
+            asm,
+            ocb,
+            comptime_recv_klass,
+            recv,
+            recv_opnd,
+            comptime_recv,
+            SEND_MAX_DEPTH,
+            Counter::guard_send_megamorphic_klass,
+        );
+    }
+    asm.ctx.reset_dispatch(); // Make sure it doesn't impact subsequent instructions
 
     // Do method lookup
     let mut cme = unsafe { rb_callable_method_entry(comptime_recv_klass, mid) };
