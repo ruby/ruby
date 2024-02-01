@@ -7515,7 +7515,7 @@ fn gen_iseq_kw_call(
         unsafe { get_cikw_keyword_len(ci_kwarg) }
     };
     let caller_keyword_len: usize = caller_keyword_len_i32.try_into().unwrap();
-    let anon_kwrest = unsafe { rb_get_iseq_flags_anon_kwrest(iseq) };
+    let anon_kwrest = unsafe { rb_get_iseq_flags_anon_kwrest(iseq) && !get_iseq_flags_has_kw(iseq) };
 
     // This struct represents the metadata about the callee-specified
     // keyword parameters.
