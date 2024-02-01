@@ -1514,7 +1514,7 @@ class Binding
   # See IRB for more information.
   def irb(show_code: true)
     # Setup IRB with the current file's path and no command line arguments
-    IRB.setup(source_location[0], argv: [])
+    IRB.setup(source_location[0], argv: []) unless IRB.initialized?
     # Create a new workspace using the current binding
     workspace = IRB::WorkSpace.new(self)
     # Print the code around the binding if show_code is true

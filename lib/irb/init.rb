@@ -6,6 +6,7 @@
 
 module IRB # :nodoc:
   @CONF = {}
+  @INITIALIZED = false
   # Displays current configuration.
   #
   # Modifying the configuration is achieved by sending a message to IRB.conf.
@@ -41,6 +42,10 @@ module IRB # :nodoc:
     format("irb %s (%s)", @RELEASE_VERSION, @LAST_UPDATE_DATE)
   end
 
+  def IRB.initialized?
+    !!@INITIALIZED
+  end
+
   # initialize config
   def IRB.setup(ap_path, argv: ::ARGV)
     IRB.init_config(ap_path)
@@ -52,6 +57,7 @@ module IRB # :nodoc:
     unless @CONF[:PROMPT][@CONF[:PROMPT_MODE]]
       fail UndefinedPromptMode, @CONF[:PROMPT_MODE]
     end
+    @INITIALIZED = true
   end
 
   # @CONF default setting
