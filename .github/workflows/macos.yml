@@ -107,6 +107,7 @@ jobs:
           pip install launchable
           launchable verify
           launchable record build --name ${GITHUB_PR_HEAD_SHA}
+          : # To avoid file name conflicts, we use a random number here as a ID.
           random_number=$RANDOM
           echo "random_number=$random_number" >> $GITHUB_OUTPUT
           echo "TESTS=--launchable-test-reports=$random_number.json " >> $GITHUB_ENV
