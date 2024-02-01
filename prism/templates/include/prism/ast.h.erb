@@ -109,7 +109,7 @@ static const pm_node_flags_t PM_NODE_FLAG_COMMON_MASK = (1 << (PM_NODE_FLAG_BITS
  * Cast the type to an enum to allow the compiler to provide exhaustiveness
  * checking.
  */
-#define PM_NODE_TYPE(node) ((enum pm_node_type) node->type)
+#define PM_NODE_TYPE(node) ((enum pm_node_type) (node)->type)
 
 /**
  * Return true if the type of the given node matches the given type.
