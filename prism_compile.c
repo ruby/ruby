@@ -396,8 +396,8 @@ pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node
         return rb_enc_from_encoding(encoding);
       }
       case PM_SOURCE_FILE_NODE: {
-        pm_source_file_node_t *cast = (pm_source_file_node_t *)node;
-        return cast->filepath.length ? parse_string(&cast->filepath, parser) : rb_fstring_lit("<compiled>");
+        const pm_source_file_node_t *cast = (const pm_source_file_node_t *) node;
+        return rb_utf8_str_new((const char *) pm_string_source(&cast->filepath), pm_string_length(&cast->filepath));
       }
       case PM_SOURCE_LINE_NODE: {
         int source_line = (int) pm_newline_list_line_column(&scope_node->parser->newline_list, node->location.start).line;
@@ -405,7 +405,7 @@ pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node
         return INT2FIX(source_line);
       }
       case PM_STRING_NODE:
-        return parse_string(&((pm_string_node_t *) node)->unescaped, parser);
+        return parse_string_encoded(node, &((pm_string_node_t *) node)->unescaped, parser);
       case PM_SYMBOL_NODE:
         return ID2SYM(parse_string_symbol((pm_symbol_node_t *)node, parser));
       case PM_TRUE_NODE:
