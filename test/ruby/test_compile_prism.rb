@@ -2052,6 +2052,18 @@ end
         # -*- coding: us-ascii -*-
         "\xff".freeze.encoding
       RUBY
+
+      # Test opt_aref_with instruction when calling [] with a string
+      assert_prism_eval(<<~RUBY)
+        ObjectSpace.count_objects
+
+        h = {"abc" => 1}
+        before = ObjectSpace.count_objects[:T_STRING]
+        5.times{ h["abc"] }
+        after = ObjectSpace.count_objects[:T_STRING]
+
+        before == after
+      RUBY
     end
 
     def test_CallAndWriteNode
