@@ -117,7 +117,7 @@ jobs:
 
       - name: make ${{ matrix.test_task }}
         run: |
-          make -s ${{ matrix.test_task }} TESTS='--repeat-count=2 --launchable-test-reports=macos.json'
+          make -s ${{ matrix.test_task }} TESTS="$TESTS"
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
