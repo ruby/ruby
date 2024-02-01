@@ -972,6 +972,7 @@ module Test
 
         def write_key_value(key, value)
           if @is_first_key_val
+            puts "first write"
             @is_first_key_val = false
           else
             write_comma
@@ -985,7 +986,6 @@ module Test
         end
 
         def close
-          @file.flock(File::LOCK_EX)
           close_array
           @indent_level -= 1
           write_new_line
