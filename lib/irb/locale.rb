@@ -94,7 +94,7 @@ module IRB # :nodoc:
       end
     end
 
-    def find(file , paths = $:)
+    def find(file, paths = $:)
       dir = File.dirname(file)
       dir = "" if dir == "."
       base = File.basename(file)
