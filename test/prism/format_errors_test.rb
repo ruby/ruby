@@ -12,6 +12,13 @@ module Prism
             | ^ unexpected '<', ignoring it
             |  ^ unexpected '>', ignoring it
       ERROR
+
+      assert_equal <<~'ERROR', Debug.format_errors('"%W"\u"', false)
+        > 1 | "%W"\u"
+            |     ^ expected a newline or semicolon after the statement
+            |     ^ invalid token
+            |        ^ expected a closing delimiter for the string literal
+      ERROR
     end
   end
 end

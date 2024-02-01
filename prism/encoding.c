@@ -2252,7 +2252,7 @@ static const uint8_t pm_utf_8_dfa[] = {
  */
 static pm_unicode_codepoint_t
 pm_utf_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
-    assert(n >= 1);
+    assert(n >= 0);
     size_t maximum = (size_t) n;
 
     uint32_t codepoint;
