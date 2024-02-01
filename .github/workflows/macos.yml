@@ -144,7 +144,7 @@ jobs:
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
 
       - name: Launchable - record tests
-        run: launchable record tests --flavor os=${{ matrix.os }} raw ${{ steps.setup_launchable.outputs.random_number }}.json
+        run: launchable record tests --flavor os=${{ matrix.os }} --flavor test_task=${{ matrix.test_task }} raw ${{ steps.setup_launchable.outputs.random_number }}.json
         if: ${{ matrix.test_task == 'check' || matrix.test_task == 'test-all' }}
 
       - uses: ./.github/actions/slack

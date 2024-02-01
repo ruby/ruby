@@ -920,11 +920,12 @@ module Test
           options[:most_asserted] = n
         end
         opts.on '--launchable-test-reports=PATH', String, 'Report test results in Launchable JSON format' do |path|
-          puts self
           if Test::Unit::AutoRunner::Runner === self
+            $stderr.puts self
             require 'json'
             options[:launchable_test_reports] = writer = JsonStreamWriter.new(path)
             writer.write_array('testCases')
+            $stderr.puts path
             at_exit{ writer.close }
           end
         end
