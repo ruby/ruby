@@ -985,12 +985,12 @@ module Test
         end
 
         def close
-          close_array
-          @indent_level -= 1
-          write_new_line
-          @file.write("}")
-          @file.flush
-          @file.close
+          # close_array
+          # @indent_level -= 1
+          # write_new_line
+          # @file.write("}")
+          # @file.flush
+          # @file.close
         end
 
         private
