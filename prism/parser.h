@@ -626,7 +626,7 @@ struct pm_parser {
      * This is the path of the file being parsed. We use the filepath when
      * constructing SourceFileNodes.
      */
-    pm_string_t filepath_string;
+    pm_string_t filepath;
 
     /**
      * This constant pool keeps all of the constants defined throughout the file

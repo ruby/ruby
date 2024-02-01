@@ -7620,7 +7620,20 @@ pm_parse_input(pm_parse_result_t *result, VALUE filepath)
         return error;
     }
 
-    // TODO: we should be emitting warnings here as well.
+    // Emit all of the various warnings from the parse.
+    const pm_diagnostic_t *warning;
+    const char *warning_filepath = (const char *) pm_string_source(&result->parser.filepath);
+
+    for (warning = (pm_diagnostic_t *) result->parser.warning_list.head; warning != NULL; warning = (pm_diagnostic_t *) warning->node.next) {
+        int line = (int) pm_newline_list_line_column(&result->parser.newline_list, warning->location.start).line;
+
+        if (warning->level == PM_WARNING_LEVEL_VERBOSE) {
+            rb_compile_warning(warning_filepath, line, "%s", warning->message);
+        }
+        else {
+            rb_compile_warn(warning_filepath, line, "%s", warning->message);
+        }
+    }
 
     // Now set up the constant pool and intern all of the various constants into
     // their corresponding IDs.
