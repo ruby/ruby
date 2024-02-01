@@ -3756,14 +3756,15 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 
     CASE(OP_PUSH_IF_PEEK_NEXT)  MOP_IN(OP_PUSH_IF_PEEK_NEXT);
       GET_RELADDR_INC(addr, p);
+      CHECK_MATCH_CACHE;
       if (*p == *s) {
 	p++;
-	CHECK_MATCH_CACHE;
 	STACK_PUSH_ALT(p + addr, s, sprev, pkeep);
 	MOP_OUT;
 	JUMP;
       }
       p++;
+      INC_NUM_FAILS;
       MOP_OUT;
       JUMP;
 
