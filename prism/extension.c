@@ -21,7 +21,6 @@ ID rb_option_id_filepath;
 ID rb_option_id_encoding;
 ID rb_option_id_line;
 ID rb_option_id_frozen_string_literal;
-ID rb_option_id_verbose;
 ID rb_option_id_version;
 ID rb_option_id_scopes;
 
@@ -130,8 +129,6 @@ build_options_i(VALUE key, VALUE value, VALUE argument) {
         if (!NIL_P(value)) pm_options_line_set(options, NUM2INT(value));
     } else if (key_id == rb_option_id_frozen_string_literal) {
         if (!NIL_P(value)) pm_options_frozen_string_literal_set(options, value == Qtrue);
-    } else if (key_id == rb_option_id_verbose) {
-        pm_options_suppress_warnings_set(options, value != Qtrue);
     } else if (key_id == rb_option_id_version) {
         if (!NIL_P(value)) {
             const char *version = check_string(value);
@@ -667,8 +664,6 @@ parse_input(pm_string_t *input, const pm_options_t *options) {
  *       integer or nil. Note that this is 1-indexed.
  * * `frozen_string_literal` - whether or not the frozen string literal pragma
  *       has been set. This should be a boolean or nil.
- * * `verbose` - the current level of verbosity. This controls whether or not
- *       the parser emits warnings. This should be a boolean or nil.
  * * `version` - the version of prism that should be used to parse Ruby code. By
  *       default prism assumes you want to parse with the latest vesion of
  *       prism (which you can trigger with `nil` or `"latest"`). If you want to
@@ -1079,7 +1074,6 @@ Init_prism(void) {
     rb_option_id_encoding = rb_intern_const("encoding");
     rb_option_id_line = rb_intern_const("line");
     rb_option_id_frozen_string_literal = rb_intern_const("frozen_string_literal");
-    rb_option_id_verbose = rb_intern_const("verbose");
     rb_option_id_version = rb_intern_const("version");
     rb_option_id_scopes = rb_intern_const("scopes");
 

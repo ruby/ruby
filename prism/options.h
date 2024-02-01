@@ -78,13 +78,6 @@ typedef struct {
 
     /** Whether or not the frozen string literal option has been set. */
     bool frozen_string_literal;
-
-    /**
-     * Whether or not we should suppress warnings. This is purposefully negated
-     * so that the default is to not suppress warnings, which allows us to still
-     * create an options struct with zeroed memory.
-     */
-    bool suppress_warnings;
 } pm_options_t;
 
 /**
@@ -118,14 +111,6 @@ PRISM_EXPORTED_FUNCTION void pm_options_encoding_set(pm_options_t *options, cons
  * @param frozen_string_literal The frozen string literal value to set.
  */
 PRISM_EXPORTED_FUNCTION void pm_options_frozen_string_literal_set(pm_options_t *options, bool frozen_string_literal);
-
-/**
- * Set the suppress warnings option on the given options struct.
- *
- * @param options The options struct to set the suppress warnings value on.
- * @param suppress_warnings The suppress warnings value to set.
- */
-PRISM_EXPORTED_FUNCTION void pm_options_suppress_warnings_set(pm_options_t *options, bool suppress_warnings);
 
 /**
  * Set the version option on the given options struct by parsing the given
