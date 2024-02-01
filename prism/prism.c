@@ -871,6 +871,105 @@ pm_arguments_validate_block(pm_parser_t *parser, pm_arguments_t *arguments, pm_b
 }
 
 /******************************************************************************/
+/* Basic character checks                                                     */
+/******************************************************************************/
+
+/**
+ * This function is used extremely frequently to lex all of the identifiers in a
+ * source file, so it's important that it be as fast as possible. For this
+ * reason we have the encoding_changed boolean to check if we need to go through
+ * the function pointer or can just directly use the UTF-8 functions.
+ */
+static inline size_t
+char_is_identifier_start(const pm_parser_t *parser, const uint8_t *b) {
+    if (parser->encoding_changed) {
+        size_t width;
+        if ((width = parser->encoding->alpha_char(b, parser->end - b)) != 0) {
+            return width;
+        } else if (*b == '_') {
+            return 1;
+        } else if (*b >= 0x80) {
+            return parser->encoding->char_width(b, parser->end - b);
+        } else {
+            return 0;
+        }
+    } else if (*b < 0x80) {
+        return (pm_encoding_unicode_table[*b] & PRISM_ENCODING_ALPHABETIC_BIT ? 1 : 0) || (*b == '_');
+    } else {
+        return pm_encoding_utf_8_char_width(b, parser->end - b);
+    }
+}
+
+/**
+ * Similar to char_is_identifier but this function assumes that the encoding
+ * has not been changed.
+ */
+static inline size_t
+char_is_identifier_utf8(const uint8_t *b, const uint8_t *end) {
+    if (*b < 0x80) {
+        return (*b == '_') || (pm_encoding_unicode_table[*b] & PRISM_ENCODING_ALPHANUMERIC_BIT ? 1 : 0);
+    } else {
+        return pm_encoding_utf_8_char_width(b, end - b);
+    }
+}
+
+/**
+ * Like the above, this function is also used extremely frequently to lex all of
+ * the identifiers in a source file once the first character has been found. So
+ * it's important that it be as fast as possible.
+ */
+static inline size_t
+char_is_identifier(pm_parser_t *parser, const uint8_t *b) {
+    if (parser->encoding_changed) {
+        size_t width;
+        if ((width = parser->encoding->alnum_char(b, parser->end - b)) != 0) {
+            return width;
+        } else if (*b == '_') {
+            return 1;
+        } else if (*b >= 0x80) {
+            return parser->encoding->char_width(b, parser->end - b);
+        } else {
+            return 0;
+        }
+    }
+    return char_is_identifier_utf8(b, parser->end);
+}
+
+// Here we're defining a perfect hash for the characters that are allowed in
+// global names. This is used to quickly check the next character after a $ to
+// see if it's a valid character for a global name.
+#define BIT(c, idx) (((c) / 32 - 1 == idx) ? (1U << ((c) % 32)) : 0)
+#define PUNCT(idx) ( \
+                BIT('~', idx) | BIT('*', idx) | BIT('$', idx) | BIT('?', idx) | \
+                BIT('!', idx) | BIT('@', idx) | BIT('/', idx) | BIT('\\', idx) | \
+                BIT(';', idx) | BIT(',', idx) | BIT('.', idx) | BIT('=', idx) | \
+                BIT(':', idx) | BIT('<', idx) | BIT('>', idx) | BIT('\"', idx) | \
+                BIT('&', idx) | BIT('`', idx) | BIT('\'', idx) | BIT('+', idx) | \
+                BIT('0', idx))
+
+const unsigned int pm_global_name_punctuation_hash[(0x7e - 0x20 + 31) / 32] = { PUNCT(0), PUNCT(1), PUNCT(2) };
+
+#undef BIT
+#undef PUNCT
+
+static inline bool
+char_is_global_name_punctuation(const uint8_t b) {
+    const unsigned int i = (const unsigned int) b;
+    if (i <= 0x20 || 0x7e < i) return false;
+
+    return (pm_global_name_punctuation_hash[(i - 0x20) / 32] >> (i % 32)) & 1;
+}
+
+static inline bool
+token_is_setter_name(pm_token_t *token) {
+    return (
+        (token->type == PM_TOKEN_IDENTIFIER) &&
+        (token->end - token->start >= 2) &&
+        (token->end[-1] == '=')
+    );
+}
+
+/******************************************************************************/
 /* Node flag handling functions                                               */
 /******************************************************************************/
 
@@ -1923,11 +2022,12 @@ pm_call_node_index_p(pm_call_node_t *node) {
  * operator assignment.
  */
 static inline bool
-pm_call_node_writable_p(pm_call_node_t *node) {
+pm_call_node_writable_p(const pm_parser_t *parser, const pm_call_node_t *node) {
     return (
         (node->message_loc.start != NULL) &&
         (node->message_loc.end[-1] != '!') &&
         (node->message_loc.end[-1] != '?') &&
+        char_is_identifier_start(parser, node->message_loc.start) &&
         (node->opening_loc.start == NULL) &&
         (node->arguments == NULL) &&
         (node->block == NULL)
@@ -6257,105 +6357,6 @@ pm_parser_scope_pop(pm_parser_t *parser) {
     pm_scope_t *scope = parser->current_scope;
     parser->current_scope = scope->previous;
     free(scope);
-}
-
-/******************************************************************************/
-/* Basic character checks                                                     */
-/******************************************************************************/
-
-/**
- * This function is used extremely frequently to lex all of the identifiers in a
- * source file, so it's important that it be as fast as possible. For this
- * reason we have the encoding_changed boolean to check if we need to go through
- * the function pointer or can just directly use the UTF-8 functions.
- */
-static inline size_t
-char_is_identifier_start(pm_parser_t *parser, const uint8_t *b) {
-    if (parser->encoding_changed) {
-        size_t width;
-        if ((width = parser->encoding->alpha_char(b, parser->end - b)) != 0) {
-            return width;
-        } else if (*b == '_') {
-            return 1;
-        } else if (*b >= 0x80) {
-            return parser->encoding->char_width(b, parser->end - b);
-        } else {
-            return 0;
-        }
-    } else if (*b < 0x80) {
-        return (pm_encoding_unicode_table[*b] & PRISM_ENCODING_ALPHABETIC_BIT ? 1 : 0) || (*b == '_');
-    } else {
-        return pm_encoding_utf_8_char_width(b, parser->end - b);
-    }
-}
-
-/**
- * Similar to char_is_identifier but this function assumes that the encoding
- * has not been changed.
- */
-static inline size_t
-char_is_identifier_utf8(const uint8_t *b, const uint8_t *end) {
-    if (*b < 0x80) {
-        return (*b == '_') || (pm_encoding_unicode_table[*b] & PRISM_ENCODING_ALPHANUMERIC_BIT ? 1 : 0);
-    } else {
-        return pm_encoding_utf_8_char_width(b, end - b);
-    }
-}
-
-/**
- * Like the above, this function is also used extremely frequently to lex all of
- * the identifiers in a source file once the first character has been found. So
- * it's important that it be as fast as possible.
- */
-static inline size_t
-char_is_identifier(pm_parser_t *parser, const uint8_t *b) {
-    if (parser->encoding_changed) {
-        size_t width;
-        if ((width = parser->encoding->alnum_char(b, parser->end - b)) != 0) {
-            return width;
-        } else if (*b == '_') {
-            return 1;
-        } else if (*b >= 0x80) {
-            return parser->encoding->char_width(b, parser->end - b);
-        } else {
-            return 0;
-        }
-    }
-    return char_is_identifier_utf8(b, parser->end);
-}
-
-// Here we're defining a perfect hash for the characters that are allowed in
-// global names. This is used to quickly check the next character after a $ to
-// see if it's a valid character for a global name.
-#define BIT(c, idx) (((c) / 32 - 1 == idx) ? (1U << ((c) % 32)) : 0)
-#define PUNCT(idx) ( \
-                BIT('~', idx) | BIT('*', idx) | BIT('$', idx) | BIT('?', idx) | \
-                BIT('!', idx) | BIT('@', idx) | BIT('/', idx) | BIT('\\', idx) | \
-                BIT(';', idx) | BIT(',', idx) | BIT('.', idx) | BIT('=', idx) | \
-                BIT(':', idx) | BIT('<', idx) | BIT('>', idx) | BIT('\"', idx) | \
-                BIT('&', idx) | BIT('`', idx) | BIT('\'', idx) | BIT('+', idx) | \
-                BIT('0', idx))
-
-const unsigned int pm_global_name_punctuation_hash[(0x7e - 0x20 + 31) / 32] = { PUNCT(0), PUNCT(1), PUNCT(2) };
-
-#undef BIT
-#undef PUNCT
-
-static inline bool
-char_is_global_name_punctuation(const uint8_t b) {
-    const unsigned int i = (const unsigned int) b;
-    if (i <= 0x20 || 0x7e < i) return false;
-
-    return (pm_global_name_punctuation_hash[(i - 0x20) / 32] >> (i % 32)) & 1;
-}
-
-static inline bool
-token_is_setter_name(pm_token_t *token) {
-    return (
-        (token->type == PM_TOKEN_IDENTIFIER) &&
-        (token->end - token->start >= 2) &&
-        (token->end[-1] == '=')
-    );
 }
 
 /******************************************************************************/
@@ -16927,7 +16928,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     }
 
                     // If this node cannot be writable, then we have an error.
-                    if (pm_call_node_writable_p(cast)) {
+                    if (pm_call_node_writable_p(parser, cast)) {
                         parse_write_name(parser, &cast->name);
                     } else {
                         pm_parser_err_node(parser, node, PM_ERR_WRITE_TARGET_UNEXPECTED);
@@ -17038,7 +17039,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     }
 
                     // If this node cannot be writable, then we have an error.
-                    if (pm_call_node_writable_p(cast)) {
+                    if (pm_call_node_writable_p(parser, cast)) {
                         parse_write_name(parser, &cast->name);
                     } else {
                         pm_parser_err_node(parser, node, PM_ERR_WRITE_TARGET_UNEXPECTED);
@@ -17159,7 +17160,7 @@ parse_expression_infix(pm_parser_t *parser, pm_node_t *node, pm_binding_power_t 
                     }
 
                     // If this node cannot be writable, then we have an error.
-                    if (pm_call_node_writable_p(cast)) {
+                    if (pm_call_node_writable_p(parser, cast)) {
                         parse_write_name(parser, &cast->name);
                     } else {
                         pm_parser_err_node(parser, node, PM_ERR_WRITE_TARGET_UNEXPECTED);
