@@ -30,7 +30,7 @@ env:
   LAUNCHABLE_WORKSPACE: "ruby"
   # https://github.com/launchableinc/cli/blob/v1.80.1/launchable/utils/authentication.py#L71
   GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-  RANDOM_VALUE: $RANDOM
+  RANDOM_VALUE: ${RANDOM}
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
