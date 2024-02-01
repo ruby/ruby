@@ -1,12 +1,13 @@
 #!/usr/bin/ruby
 require_relative 'lib/colorize'
+require 'shellwords'
 
 until ARGV.empty?
   case ARGV[0]
   when /\A SYMBOL_PREFIX=(.*)/x
     SYMBOL_PREFIX = $1
   when /\A NM=(.*)/x            # may be multiple words
-    NM = $1
+    NM = $1.shellsplit
   when /\A PLATFORM=(.+)?/x
     platform = $1
   when /\A SOEXT=(.+)?/x
@@ -69,7 +70,13 @@ if soext
     so = soext =~ ARGV.first
   end
 end
-IO.foreach("|#{NM} #{ARGV.join(' ')}") do |line|
+
+Pipe = Struct.new(:command) do
+  def open(&block) IO.popen(command, &block) end
+  def each(&block) open {|f| f.each(&block)} end
+end
+
+Pipe.new(NM + ARGV).each do |line|
   line.chomp!
   next so = nil if line.empty?
   if so.nil? and line.chomp!(":")
