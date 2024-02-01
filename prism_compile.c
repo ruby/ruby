@@ -7430,7 +7430,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         PM_PUTSELF;
 
         int argc = pm_setup_args(super_node->arguments, &flags, &keywords, iseq, ret, popped, scope_node, dummy_line_node, parser);
-
         flags |= VM_CALL_SUPER | VM_CALL_FCALL;
 
         if (super_node->block) {
@@ -7451,6 +7450,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 rb_bug("Unexpected node type on a SuperNode's block: %s", pm_node_type_to_str(PM_NODE_TYPE(super_node->block)));
               }
             }
+        }
+
+        if ((flags & VM_CALL_ARGS_BLOCKARG) && (flags & VM_CALL_KW_SPLAT) && !(flags & VM_CALL_KW_SPLAT_MUT)) {
+            ADD_INSN(args, &dummy_line_node, splatkw);
         }
 
         ADD_SEQ(ret, args);
