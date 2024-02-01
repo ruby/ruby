@@ -880,8 +880,8 @@ module Test
                   bt = Test::filter_backtrace(error.backtrace).join "\n    "
                   "Error:\n#{suite.name}##{method}:\n#{error.class}: #{error.message.b}\n    #{bt}\n"
                 end
-                repo_path = File.expand_path("#{__dir__}/../../../")
-                relative_path = path.delete_prefix("#{repo_path}/")
+            repo_path = File.expand_path("#{__dir__}/../../../")
+            relative_path = path.delete_prefix("#{repo_path}/")
             writer.write_object do
               writer.write_key_value('testPath', "file=#{relative_path}#class=#{suite.name}#testcase=#{method}",)
               writer.write_key_value('status', status)
@@ -924,7 +924,7 @@ module Test
             require 'json'
             options[:launchable_test_reports] = writer = JsonStreamWriter.new(path)
             writer.write_array('testCases')
-            at_exit{ $stdout.puts(self); writer.close }
+            at_exit{ $stdout.puts("debug: #{self}"); writer.close }
           end
         end
       end
@@ -986,6 +986,7 @@ module Test
         end
 
         def close
+          return if @file.closed?
           close_array
           @indent_level -= 1
           write_new_line
