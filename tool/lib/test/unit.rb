@@ -1650,6 +1650,7 @@ module Test
         # In parallel testing, `at_exit` block is called before all tests are finished.
         # Therefore, we invoke the `close` method here.
         if writer = @options[:launchable_test_reports]
+          puts "called"
           writer.close
         end
 
