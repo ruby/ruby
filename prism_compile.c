@@ -4148,6 +4148,22 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 ADD_INSN2(ret, &dummy_line_node, opt_str_freeze, str, new_callinfo(iseq, idFreeze, 0, 0, NULL, FALSE));
             }
         }
+        else if (method_id == idAREF && call_node->arguments &&
+                PM_NODE_TYPE_P((pm_node_t *)call_node->arguments, PM_ARGUMENTS_NODE) &&
+                ((pm_arguments_node_t *)call_node->arguments)->arguments.size == 1 &&
+                PM_NODE_TYPE_P(((pm_arguments_node_t *)call_node->arguments)->arguments.nodes[0], PM_STRING_NODE) &&
+                call_node->block == NULL &&
+                !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
+                ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
+            pm_string_node_t *str_node = (pm_string_node_t *)((pm_arguments_node_t *)call_node->arguments)->arguments.nodes[0];
+            VALUE str = rb_fstring(parse_string_encoded((pm_node_t *)str_node, &str_node->unescaped, parser));
+            PM_COMPILE_NOT_POPPED(call_node->receiver);
+            ADD_INSN2(ret, &dummy_line_node, opt_aref_with, str, new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE));
+            RB_OBJ_WRITTEN(iseq, Qundef, str);
+            if (popped) {
+                ADD_INSN(ret, &dummy_line_node, pop);
+            }
+        }
         else {
             PM_COMPILE_NOT_POPPED(call_node->receiver);
             pm_compile_call(iseq, call_node, ret, popped, scope_node, method_id, start);
