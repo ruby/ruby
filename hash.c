@@ -1557,7 +1557,15 @@ hash_copy(VALUE ret, VALUE hash)
 static VALUE
 hash_dup_with_compare_by_id(VALUE hash)
 {
-    return hash_copy(copy_compare_by_id(rb_hash_new(), hash), hash);
+    VALUE dup = hash_alloc_flags(rb_cHash, 0, Qnil, RHASH_ST_TABLE_P(hash));
+    if (RHASH_ST_TABLE_P(hash)) {
+        RHASH_SET_ST_FLAG(dup);
+    }
+    else {
+        RHASH_UNSET_ST_FLAG(dup);
+    }
+
+    return hash_copy(dup, hash);
 }
 
 static VALUE
