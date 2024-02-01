@@ -972,7 +972,6 @@ module Test
 
         def write_key_value(key, value)
           if @is_first_key_val
-            puts "first write"
             @is_first_key_val = false
           else
             write_comma
@@ -990,6 +989,7 @@ module Test
           @indent_level -= 1
           write_new_line
           @file.write("}")
+          @file.flush
           @file.close
         end
 
