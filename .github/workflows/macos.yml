@@ -30,6 +30,7 @@ env:
   LAUNCHABLE_WORKSPACE: "ruby"
   # https://github.com/launchableinc/cli/blob/v1.80.1/launchable/utils/authentication.py#L71
   GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+  RANDOM_VALUE: $RANDOM
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -113,7 +114,7 @@ jobs:
           TESTS: "${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}"
       - run: echo "TESTS=--repeat-count=2" >> "$GITHUB_ENV"
         if: ${{ startsWith(  matrix.test_task , 'test-all' ) }}
-      - run: echo "TESTS=$TESTS --launchable-test-reports=${{ github.run_number }}.json" >> "$GITHUB_ENV"
+      - run: echo "TESTS=$TESTS --launchable-test-reports=${RANDOM_VALUE}.json" >> "$GITHUB_ENV"
 
       - name: make ${{ matrix.test_task }}
         run: |
@@ -136,7 +137,7 @@ jobs:
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
 
       - name: Launchable - record tests
-        run: launchable record tests --flavor os=${{ matrix.os }} raw ${{ github.run_number }}.json
+        run: launchable record tests --flavor os=${{ matrix.os }} raw ${RANDOM_VALUE}.json
         if: ${{ startsWith(  matrix.test_task , 'test-all' ) && matrix.os == 'macos-arm-oss'}}
 
       - uses: ./.github/actions/slack
