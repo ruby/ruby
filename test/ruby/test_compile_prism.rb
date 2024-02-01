@@ -1721,6 +1721,11 @@ a
       assert_prism_eval("def self.foo(a:, b: 2, c: '3'.to_i); [a, b, c]; end; foo(a: 1)")
     end
 
+    def test_numbered_params
+      assert_prism_eval("[1, 2, 3].then { _3 }")
+      assert_prism_eval("1.then { one = 1; one + _1 }")
+    end
+
     def test_rescue_with_ensure
       assert_prism_eval(<<-CODE)
 begin

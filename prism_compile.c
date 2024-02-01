@@ -7039,10 +7039,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // Fill in any NumberedParameters, if they exist
         if (scope_node->parameters && PM_NODE_TYPE_P(scope_node->parameters, PM_NUMBERED_PARAMETERS_NODE)) {
             int maximum = ((pm_numbered_parameters_node_t *)scope_node->parameters)->maximum;
+            RUBY_ASSERT(0 < maximum && maximum <= 9);
             for (int i = 0; i < maximum; i++, local_index++) {
-                pm_constant_id_t constant_id = locals->ids[i];
+                const uint8_t param_name[] = { '_', '1' + i };
+                pm_constant_id_t constant_id = pm_constant_pool_find(&parser->constant_pool, param_name, 2);
+                RUBY_ASSERT(constant_id && "parser should fill in any gaps in numbered parameters");
                 pm_insert_local_index(constant_id, local_index, index_lookup_table, local_table_for_iseq, scope_node);
             }
+            body->param.lead_num = maximum;
+            body->param.flags.has_lead = true;
         }
         //********END OF STEP 3**********
 
