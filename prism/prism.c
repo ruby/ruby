@@ -553,9 +553,7 @@ pm_parser_err_token(pm_parser_t *parser, const pm_token_t *token, pm_diagnostic_
  */
 static inline void
 pm_parser_warn(pm_parser_t *parser, const uint8_t *start, const uint8_t *end, pm_diagnostic_id_t diag_id) {
-    if (!parser->suppress_warnings) {
-        pm_diagnostic_list_append(&parser->warning_list, start, end, diag_id);
-    }
+    pm_diagnostic_list_append(&parser->warning_list, start, end, diag_id);
 }
 
 /**
@@ -17767,8 +17765,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         .in_keyword_arg = false,
         .current_param_name = 0,
         .semantic_token_seen = false,
-        .frozen_string_literal = false,
-        .suppress_warnings = false
+        .frozen_string_literal = false
     };
 
     // Initialize the constant pool. We're going to completely guess as to the
@@ -17812,11 +17809,6 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         // frozen_string_literal option
         if (options->frozen_string_literal) {
             parser->frozen_string_literal = true;
-        }
-
-        // suppress_warnings option
-        if (options->suppress_warnings) {
-            parser->suppress_warnings = true;
         }
 
         // version option

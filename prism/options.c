@@ -33,14 +33,6 @@ pm_options_frozen_string_literal_set(pm_options_t *options, bool frozen_string_l
 }
 
 /**
- * Set the suppress warnings option on the given options struct.
- */
-PRISM_EXPORTED_FUNCTION void
-pm_options_suppress_warnings_set(pm_options_t *options, bool suppress_warnings) {
-    options->suppress_warnings = suppress_warnings;
-}
-
-/**
  * Set the version option on the given options struct by parsing the given
  * string. If the string contains an invalid option, this returns false.
  * Otherwise, it returns true.
@@ -189,7 +181,6 @@ pm_options_read(pm_options_t *options, const char *data) {
     }
 
     options->frozen_string_literal = *data++;
-    options->suppress_warnings = *data++;
     options->version = (pm_options_version_t) *data++;
 
     uint32_t scopes_count = pm_options_read_u32(data);

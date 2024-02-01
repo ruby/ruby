@@ -312,9 +312,6 @@ module Prism
       values << (options.fetch(:frozen_string_literal, false) ? 1 : 0)
 
       template << "C"
-      values << (options.fetch(:verbose, true) ? 0 : 1)
-
-      template << "C"
       values << { nil => 0, "3.3.0" => 1, "latest" => 0 }.fetch(options[:version])
 
       template << "L"
