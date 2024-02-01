@@ -880,8 +880,8 @@ module Test
                   bt = Test::filter_backtrace(error.backtrace).join "\n    "
                   "Error:\n#{suite.name}##{method}:\n#{error.class}: #{error.message.b}\n    #{bt}\n"
                 end
-            writer.sync_write_object do
-              writer.write_key_value('testPath', "file=#{path}#class=#{suite.name}#testcase=#{method}")
+            writer.write_object do
+              writer.write_key_value('testPath', "file=#{path}#class=#{suite.name}#testcase=#{method}",)
               writer.write_key_value('status', status)
               writer.write_key_value('duration', time)
               writer.write_key_value('createdAt', Time.now.to_s)
@@ -918,9 +918,12 @@ module Test
           options[:most_asserted] = n
         end
         opts.on '--launchable-test-reports=PATH', String, 'Report test results in Launchable JSON format' do |path|
-          require 'json'
-          options[:launchable_test_reports] = writer = JsonStreamWriter.new(path)
-          writer.write_array('testCases')
+          if Test::Unit::AutoRunner::Runner === self
+            require 'json'
+            options[:launchable_test_reports] = writer = JsonStreamWriter.new(path)
+            writer.write_array('testCases')
+            at_exit{ writer.close }
+          end
         end
       end
       ##
@@ -928,51 +931,42 @@ module Test
       # By utilizing a stream, we can minimize memory usage, especially for large files.
       class JsonStreamWriter
         def initialize(path)
-          @path = path
+          @file = File.open(path, "w")
+          @file.write("{")
           @indent_level = 0
           @is_first_key_val = true
           @is_first_obj = true
-          @file = nil
+          write_new_line
         end
 
-        # In parallel testing, test results are sometimes written simultaneously.
-        # To address this, this method locks the file during the writing process.
-        def sync_write_object
-          File.open(@path, File::RDWR|File::CREAT, 0644) {|f|
-            @file = f
-            if @is_first_obj
-              @file.write("{")
-              write_new_line
-              @is_first_obj = false
-            else
-              write_comma
-              write_new_line
-            end
-            @indent_level += 1
-            write_indent
-            @file.write("{")
+        def write_object
+          if @is_first_obj
+            @is_first_obj = false
+          else
+            write_comma
             write_new_line
-            @indent_level += 1
-            yield
-            @indent_level -= 1
-            write_new_line
-            write_indent
-            @file.write("}")
-            @indent_level -= 1
-            @is_first_key_val = true
-          }
+          end
+          @indent_level += 1
+          write_indent
+          @file.write("{")
+          write_new_line
+          @indent_level += 1
+          yield
+          @indent_level -= 1
+          write_new_line
+          write_indent
+          @file.write("}")
+          @indent_level -= 1
+          @is_first_key_val = true
         end
 
         def write_array(key)
-          File.open(@path, File::RDWR|File::CREAT, 0644) {|f|
-            @file = f
-            @indent_level += 1
-            write_indent
-            @file.write(to_json_str(key))
-            write_colon
-            @file.write(" ", "[")
-            write_new_line
-          }
+          @indent_level += 1
+          write_indent
+          @file.write(to_json_str(key))
+          write_colon
+          @file.write(" ", "[")
+          write_new_line
         end
 
         def write_key_value(key, value)
@@ -990,15 +984,10 @@ module Test
         end
 
         def close
-          File.open(@path, File::RDWR|File::CREAT, 0644) {|f|
-            @file = f
-            close_array
-            @indent_level -= 1
-            write_new_line
-            @file.write("}")
-            @file.flush
-            @file.close
-          }
+          close_array
+          @indent_level -= 1
+          write_new_line
+          @file.write("}")
         end
 
         private
@@ -1655,13 +1644,6 @@ module Test
         puts
         @test_count      = test_count
         @assertion_count = assertion_count
-
-        # In parallel testing, `at_exit` block is called before all tests are finished.
-        # Therefore, we invoke the `close` method here.
-        if writer = @options[:launchable_test_reports]
-          puts "called"
-          writer.close
-        end
 
         status
       end
