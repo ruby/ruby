@@ -753,11 +753,12 @@ pm_interpolated_node_compile(pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_
             }
             else {
                 if (RTEST(current_string)) {
+                    current_string = rb_fstring(current_string);
                     if (parser->frozen_string_literal) {
-                        ADD_INSN1(ret, &dummy_line_node, putobject, rb_str_freeze(current_string));
+                        ADD_INSN1(ret, &dummy_line_node, putobject, current_string);
                     }
                     else {
-                        ADD_INSN1(ret, &dummy_line_node, putstring, rb_str_freeze(current_string));
+                        ADD_INSN1(ret, &dummy_line_node, putstring, current_string);
                     }
                     current_string = Qnil;
                     number_of_items_pushed++;
@@ -772,11 +773,12 @@ pm_interpolated_node_compile(pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_
         }
 
         if (RTEST(current_string)) {
+            current_string = rb_fstring(current_string);
             if (parser->frozen_string_literal) {
-                ADD_INSN1(ret, &dummy_line_node, putobject, rb_str_freeze(current_string));
+                ADD_INSN1(ret, &dummy_line_node, putobject, current_string);
             }
             else {
-                ADD_INSN1(ret, &dummy_line_node, putstring, rb_str_freeze(current_string));
+                ADD_INSN1(ret, &dummy_line_node, putstring, current_string);
             }
             current_string = Qnil;
             number_of_items_pushed++;
@@ -7377,8 +7379,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         if (!popped) {
             pm_string_node_t *cast = (pm_string_node_t *) node;
             VALUE value = parse_string_encoded(node, &cast->unescaped, parser);
+            value = rb_fstring(value);
             if (node->flags & PM_STRING_FLAGS_FROZEN) {
-                ADD_INSN1(ret, &dummy_line_node, putobject, rb_fstring(value));
+                ADD_INSN1(ret, &dummy_line_node, putobject, value);
             }
             else {
                 ADD_INSN1(ret, &dummy_line_node, putstring, value);
