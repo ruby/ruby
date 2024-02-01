@@ -887,7 +887,7 @@ module Test
               writer.write_key_value('status', status)
               writer.write_key_value('duration', time)
               writer.write_key_value('createdAt', Time.now.to_s)
-              writer.write_key_value('stderr', e) if e
+              writer.write_key_value('stderr', e)
             end
           end
         end
