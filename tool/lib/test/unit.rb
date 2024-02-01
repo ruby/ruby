@@ -985,11 +985,13 @@ module Test
         end
 
         def close
+          @file.flock(File::LOCK_EX)
           close_array
           @indent_level -= 1
           write_new_line
           @file.write("}")
           @file.close
+          @file.flock(File::LOCK_UN)
         end
 
         private
