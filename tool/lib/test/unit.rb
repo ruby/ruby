@@ -991,7 +991,6 @@ module Test
           write_new_line
           @file.write("}")
           @file.close
-          @file.flock(File::LOCK_UN)
         end
 
         private
