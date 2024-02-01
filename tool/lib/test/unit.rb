@@ -986,6 +986,7 @@ module Test
           @indent_level -= 1
           write_new_line
           @file.write("}")
+          @file.close
         end
 
         private
