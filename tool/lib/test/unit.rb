@@ -880,11 +880,11 @@ module Test
                   bt = Test::filter_backtrace(error.backtrace).join "\n    "
                   "Error:\n#{suite.name}##{method}:\n#{error.class}: #{error.message.b}\n    #{bt}\n"
                 end
-            writer.write_object do
+            writer.sync_write_object do
               writer.write_key_value('testPath', "file=#{path}#class=#{suite.name}#testcase=#{method}",)
               writer.write_key_value('status', status)
               writer.write_key_value('duration', time)
-              writer.write_key_value('createdAt', Time.now)
+              writer.write_key_value('createdAt', Time.now.to_s)
               writer.write_key_value('stderr', e) if e
             end
           end
@@ -921,7 +921,6 @@ module Test
           require 'json'
           options[:launchable_test_reports] = writer = JsonStreamWriter.new(path)
           writer.write_array('testCases')
-          at_exit{ writer.close }
         end
       end
       ##
@@ -937,7 +936,10 @@ module Test
           write_new_line
         end
 
-        def write_object
+        # In parallel testing, test results are sometimes written simultaneously.
+        # To address this, this method locks the file during the writing process.
+        def sync_write_object
+          @file.flock(File::LOCK_EX)
           if @is_first_obj
             @is_first_obj = false
           else
@@ -956,6 +958,7 @@ module Test
           @file.write("}")
           @indent_level -= 1
           @is_first_key_val = true
+          @file.flock(File::LOCK_UN)
         end
 
         def write_array(key)
@@ -1643,6 +1646,12 @@ module Test
         puts
         @test_count      = test_count
         @assertion_count = assertion_count
+
+        # In parallel testing, `at_exit` block is called before all tests are finished.
+        # Therefore, we invoke the `close` method here.
+        if writer = @options[:launchable_test_reports]
+          writer.close
+        end
 
         status
       end
