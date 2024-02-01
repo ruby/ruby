@@ -85,7 +85,6 @@
         │   │           ├── closing_loc: ∅
         │   │           └── block: ∅
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (7,0)-(7,3) = "def"
         │   ├── operator_loc: (7,8)-(7,9) = "."
         │   ├── lparen_loc: ∅

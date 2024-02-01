@@ -10,7 +10,6 @@
             ├── value:
             │   @ LambdaNode (location: (1,4)-(1,19))
             │   ├── locals: [:args]
-            │   ├── locals_body_index: 1
             │   ├── operator_loc: (1,4)-(1,6) = "->"
             │   ├── opening_loc: (1,13)-(1,15) = "do"
             │   ├── closing_loc: (1,16)-(1,19) = "end"

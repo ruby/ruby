@@ -22,7 +22,6 @@
             │           ├── closing_loc: ∅
             │           └── block: ∅
             ├── locals: []
-            ├── locals_body_index: 0
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,8)-(1,9) = "("

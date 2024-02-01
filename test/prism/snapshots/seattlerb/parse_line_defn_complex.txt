@@ -57,7 +57,6 @@
             │                       ├── name: :y
             │                       └── depth: 0
             ├── locals: [:y]
-            ├── locals_body_index: 1
             ├── def_keyword_loc: (1,0)-(1,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: (1,5)-(1,6) = "("

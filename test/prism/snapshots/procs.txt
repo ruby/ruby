@@ -5,7 +5,6 @@
     └── body: (length: 10)
         ├── @ LambdaNode (location: (1,0)-(1,21))
         │   ├── locals: [:a, :b, :c, :d]
-        │   ├── locals_body_index: 4
         │   ├── operator_loc: (1,0)-(1,2) = "->"
         │   ├── opening_loc: (1,16)-(1,17) = "{"
         │   ├── closing_loc: (1,20)-(1,21) = "}"
@@ -43,7 +42,6 @@
         │               └── depth: 0
         ├── @ LambdaNode (location: (3,0)-(5,3))
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── operator_loc: (3,0)-(3,2) = "->"
         │   ├── opening_loc: (3,3)-(3,5) = "do"
         │   ├── closing_loc: (5,0)-(5,3) = "end"
@@ -62,7 +60,6 @@
         │       └── end_keyword_loc: (5,0)-(5,3) = "end"
         ├── @ LambdaNode (location: (7,0)-(11,3))
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── operator_loc: (7,0)-(7,2) = "->"
         │   ├── opening_loc: (7,3)-(7,5) = "do"
         │   ├── closing_loc: (11,0)-(11,3) = "end"
@@ -92,7 +89,6 @@
         │       └── end_keyword_loc: (11,0)-(11,3) = "end"
         ├── @ LambdaNode (location: (13,0)-(13,10))
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── operator_loc: (13,0)-(13,2) = "->"
         │   ├── opening_loc: (13,3)-(13,4) = "{"
         │   ├── closing_loc: (13,9)-(13,10) = "}"
@@ -112,7 +108,6 @@
         │               └── block: ∅
         ├── @ LambdaNode (location: (15,0)-(15,15))
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── operator_loc: (15,0)-(15,2) = "->"
         │   ├── opening_loc: (15,3)-(15,5) = "do"
         │   ├── closing_loc: (15,12)-(15,15) = "end"
@@ -132,7 +127,6 @@
         │               └── block: ∅
         ├── @ LambdaNode (location: (17,0)-(17,29))
         │   ├── locals: [:a, :b, :c, :d, :e]
-        │   ├── locals_body_index: 5
         │   ├── operator_loc: (17,0)-(17,2) = "->"
         │   ├── opening_loc: (17,24)-(17,25) = "{"
         │   ├── closing_loc: (17,28)-(17,29) = "}"
@@ -182,7 +176,6 @@
         │               └── depth: 0
         ├── @ LambdaNode (location: (19,0)-(19,40))
         │   ├── locals: [:a, :b, :c, :d, :e, :f, :g]
-        │   ├── locals_body_index: 7
         │   ├── operator_loc: (19,0)-(19,2) = "->"
         │   ├── opening_loc: (19,35)-(19,36) = "{"
         │   ├── closing_loc: (19,39)-(19,40) = "}"
@@ -242,7 +235,6 @@
         │               └── depth: 0
         ├── @ LambdaNode (location: (21,0)-(23,3))
         │   ├── locals: [:a, :b, :c, :d, :e, :f, :g]
-        │   ├── locals_body_index: 7
         │   ├── operator_loc: (21,0)-(21,2) = "->"
         │   ├── opening_loc: (21,35)-(21,37) = "do"
         │   ├── closing_loc: (23,0)-(23,3) = "end"
@@ -302,7 +294,6 @@
         │               └── depth: 0
         ├── @ LambdaNode (location: (25,0)-(25,25))
         │   ├── locals: [:a]
-        │   ├── locals_body_index: 1
         │   ├── operator_loc: (25,0)-(25,2) = "->"
         │   ├── opening_loc: (25,7)-(25,8) = "{"
         │   ├── closing_loc: (25,24)-(25,25) = "}"
@@ -328,7 +319,6 @@
         │       └── body: (length: 1)
         │           └── @ LambdaNode (location: (25,9)-(25,23))
         │               ├── locals: [:b]
-        │               ├── locals_body_index: 1
         │               ├── operator_loc: (25,9)-(25,11) = "->"
         │               ├── opening_loc: (25,14)-(25,15) = "{"
         │               ├── closing_loc: (25,22)-(25,23) = "}"
@@ -373,7 +363,6 @@
         │                           └── block: ∅
         └── @ LambdaNode (location: (27,0)-(27,19))
             ├── locals: [:a, :b, :c]
-            ├── locals_body_index: 3
             ├── operator_loc: (27,0)-(27,2) = "->"
             ├── opening_loc: (27,16)-(27,17) = "{"
             ├── closing_loc: (27,18)-(27,19) = "}"

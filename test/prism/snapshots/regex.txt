@@ -327,7 +327,6 @@
             └── block:
                 @ BlockNode (location: (40,4)-(40,24))
                 ├── locals: []
-                ├── locals_body_index: 0
                 ├── parameters: ∅
                 ├── body:
                 │   @ StatementsNode (location: (40,6)-(40,22))

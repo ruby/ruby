@@ -439,7 +439,6 @@
             └── block:
                 @ BlockNode (location: (51,7)-(55,3))
                 ├── locals: [:_1]
-                ├── locals_body_index: 1
                 ├── parameters:
                 │   @ NumberedParametersNode (location: (51,7)-(55,3))
                 │   └── maximum: 1

@@ -5,7 +5,6 @@
     └── body: (length: 4)
         ├── @ LambdaNode (location: (1,0)-(1,17))
         │   ├── locals: [:_1, :_2, :_3, :_4, :_5, :_6, :_7, :_8, :_9]
-        │   ├── locals_body_index: 9
         │   ├── operator_loc: (1,0)-(1,2) = "->"
         │   ├── opening_loc: (1,3)-(1,5) = "do"
         │   ├── closing_loc: (1,14)-(1,17) = "end"
@@ -36,7 +35,6 @@
         │               └── block: ∅
         ├── @ LambdaNode (location: (3,0)-(3,13))
         │   ├── locals: [:_1, :_2, :_3, :_4, :_5, :_6, :_7, :_8, :_9]
-        │   ├── locals_body_index: 9
         │   ├── operator_loc: (3,0)-(3,2) = "->"
         │   ├── opening_loc: (3,3)-(3,4) = "{"
         │   ├── closing_loc: (3,12)-(3,13) = "}"
@@ -77,7 +75,6 @@
         │   └── block:
         │       @ BlockNode (location: (5,2)-(5,16))
         │       ├── locals: [:_1, :_2, :_3, :_4, :_5, :_6, :_7, :_8, :_9]
-        │       ├── locals_body_index: 9
         │       ├── parameters:
         │       │   @ NumberedParametersNode (location: (5,2)-(5,16))
         │       │   └── maximum: 9
@@ -117,7 +114,6 @@
             └── block:
                 @ BlockNode (location: (7,2)-(7,13))
                 ├── locals: [:_1, :_2, :_3, :_4, :_5, :_6, :_7, :_8, :_9]
-                ├── locals_body_index: 9
                 ├── parameters:
                 │   @ NumberedParametersNode (location: (7,2)-(7,13))
                 │   └── maximum: 9

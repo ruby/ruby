@@ -5,7 +5,6 @@
     └── body: (length: 3)
         ├── @ LambdaNode (location: (1,0)-(1,12))
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── operator_loc: (1,0)-(1,2) = "->"
         │   ├── opening_loc: (1,10)-(1,11) = "{"
         │   ├── closing_loc: (1,11)-(1,12) = "}"
@@ -45,7 +44,6 @@
         │   │   └── block: ∅
         │   ├── body: ∅
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (3,0)-(3,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: (3,5)-(3,6) = "("
@@ -64,7 +62,6 @@
             └── block:
                 @ BlockNode (location: (5,2)-(5,13))
                 ├── locals: []
-                ├── locals_body_index: 0
                 ├── parameters:
                 │   @ BlockParametersNode (location: (5,4)-(5,11))
                 │   ├── parameters:

@@ -1073,7 +1073,6 @@
         │   └── block:
         │       @ BlockNode (location: (83,4)-(86,1))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (84,2)-(85,7))

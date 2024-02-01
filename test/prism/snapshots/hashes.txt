@@ -279,7 +279,6 @@
         │   └── block:
         │       @ BlockNode (location: (23,4)-(26,3))
         │       ├── locals: [:b]
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (24,2)-(25,20))

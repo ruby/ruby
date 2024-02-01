@@ -488,7 +488,6 @@
         │   ├── pattern:
         │   │   @ LambdaNode (location: (26,7)-(26,17))
         │   │   ├── locals: []
-        │   │   ├── locals_body_index: 0
         │   │   ├── operator_loc: (26,7)-(26,9) = "->"
         │   │   ├── opening_loc: (26,10)-(26,11) = "{"
         │   │   ├── closing_loc: (26,16)-(26,17) = "}"
@@ -1208,7 +1207,6 @@
         │   │   ├── left:
         │   │   │   @ LambdaNode (location: (52,7)-(52,17))
         │   │   │   ├── locals: []
-        │   │   │   ├── locals_body_index: 0
         │   │   │   ├── operator_loc: (52,7)-(52,9) = "->"
         │   │   │   ├── opening_loc: (52,10)-(52,11) = "{"
         │   │   │   ├── closing_loc: (52,16)-(52,17) = "}"
@@ -1222,7 +1220,6 @@
         │   │   ├── right:
         │   │   │   @ LambdaNode (location: (52,21)-(52,31))
         │   │   │   ├── locals: []
-        │   │   │   ├── locals_body_index: 0
         │   │   │   ├── operator_loc: (52,21)-(52,23) = "->"
         │   │   │   ├── opening_loc: (52,24)-(52,25) = "{"
         │   │   │   ├── closing_loc: (52,30)-(52,31) = "}"
@@ -2822,7 +2819,6 @@
         │   ├── pattern:
         │   │   @ LambdaNode (location: (125,7)-(125,17))
         │   │   ├── locals: []
-        │   │   ├── locals_body_index: 0
         │   │   ├── operator_loc: (125,7)-(125,9) = "->"
         │   │   ├── opening_loc: (125,10)-(125,11) = "{"
         │   │   ├── closing_loc: (125,16)-(125,17) = "}"
@@ -3496,7 +3492,6 @@
         │   │       ├── pattern:
         │   │       │   @ LambdaNode (location: (152,13)-(152,23))
         │   │       │   ├── locals: []
-        │   │       │   ├── locals_body_index: 0
         │   │       │   ├── operator_loc: (152,13)-(152,15) = "->"
         │   │       │   ├── opening_loc: (152,16)-(152,17) = "{"
         │   │       │   ├── closing_loc: (152,22)-(152,23) = "}"
@@ -4485,7 +4480,6 @@
         │   │       │   │   └── body: (length: 1)
         │   │       │   │       └── @ LambdaNode (location: (179,13)-(179,23))
         │   │       │   │           ├── locals: []
-        │   │       │   │           ├── locals_body_index: 0
         │   │       │   │           ├── operator_loc: (179,13)-(179,15) = "->"
         │   │       │   │           ├── opening_loc: (179,16)-(179,17) = "{"
         │   │       │   │           ├── closing_loc: (179,22)-(179,23) = "}"
@@ -4695,7 +4689,6 @@
         │   └── block:
         │       @ BlockNode (location: (198,4)-(200,3))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body:
         │       │   @ StatementsNode (location: (199,2)-(199,29))
@@ -4786,7 +4779,6 @@
         │   └── block:
         │       @ BlockNode (location: (204,7)-(204,19))
         │       ├── locals: [:_1]
-        │       ├── locals_body_index: 1
         │       ├── parameters:
         │       │   @ NumberedParametersNode (location: (204,7)-(204,19))
         │       │   └── maximum: 1

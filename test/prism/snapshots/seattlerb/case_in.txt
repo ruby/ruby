@@ -552,7 +552,6 @@
         │   │       │   ├── requireds: (length: 2)
         │   │       │   │   ├── @ LambdaNode (location: (70,4)-(70,18))
         │   │       │   │   │   ├── locals: [:b]
-        │   │       │   │   │   ├── locals_body_index: 1
         │   │       │   │   │   ├── operator_loc: (70,4)-(70,6) = "->"
         │   │       │   │   │   ├── opening_loc: (70,10)-(70,11) = "{"
         │   │       │   │   │   ├── closing_loc: (70,17)-(70,18) = "}"

@@ -51,7 +51,6 @@
         │   │           ├── opening_loc: (2,2)-(2,3) = "("
         │   │           └── closing_loc: (2,8)-(2,9) = ")"
         │   ├── locals: []
-        │   ├── locals_body_index: 0
         │   ├── def_keyword_loc: (1,0)-(1,3) = "def"
         │   ├── operator_loc: ∅
         │   ├── lparen_loc: ∅
@@ -83,7 +82,6 @@
             │               @ ConstantReadNode (location: (6,11)-(6,20))
             │               └── name: :Exception
             ├── locals: []
-            ├── locals_body_index: 0
             ├── def_keyword_loc: (5,0)-(5,3) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: ∅

@@ -34,7 +34,6 @@
                         └── block:
                             @ BlockNode (location: (1,15)-(1,27))
                             ├── locals: [:bar]
-                            ├── locals_body_index: 1
                             ├── parameters:
                             │   @ BlockParametersNode (location: (1,18)-(1,23))
                             │   ├── parameters:

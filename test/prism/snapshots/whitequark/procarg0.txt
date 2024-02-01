@@ -15,7 +15,6 @@
         │   └── block:
         │       @ BlockNode (location: (1,2)-(1,18))
         │       ├── locals: [:foo, :bar]
-        │       ├── locals_body_index: 2
         │       ├── parameters:
         │       │   @ BlockParametersNode (location: (1,4)-(1,16))
         │       │   ├── parameters:
@@ -57,7 +56,6 @@
             └── block:
                 @ BlockNode (location: (3,2)-(3,11))
                 ├── locals: [:foo]
-                ├── locals_body_index: 1
                 ├── parameters:
                 │   @ BlockParametersNode (location: (3,4)-(3,9))
                 │   ├── parameters:

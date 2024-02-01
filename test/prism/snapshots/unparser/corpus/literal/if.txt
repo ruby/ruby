@@ -232,7 +232,6 @@
             │   └── block:
             │       @ BlockNode (location: (31,7)-(33,1))
             │       ├── locals: [:pair]
-            │       ├── locals_body_index: 1
             │       ├── parameters:
             │       │   @ BlockParametersNode (location: (31,9)-(31,15))
             │       │   ├── parameters:

@@ -36,7 +36,6 @@
         │   └── block:
         │       @ BlockNode (location: (1,12)-(1,14))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (1,12)-(1,13) = "{"
@@ -74,7 +73,6 @@
         │   └── block:
         │       @ BlockNode (location: (3,13)-(3,15))
         │       ├── locals: []
-        │       ├── locals_body_index: 0
         │       ├── parameters: ∅
         │       ├── body: ∅
         │       ├── opening_loc: (3,13)-(3,14) = "{"
@@ -102,7 +100,6 @@
             └── block:
                 @ BlockNode (location: (5,8)-(5,10))
                 ├── locals: []
-                ├── locals_body_index: 0
                 ├── parameters: ∅
                 ├── body: ∅
                 ├── opening_loc: (5,8)-(5,9) = "{"

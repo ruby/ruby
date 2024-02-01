@@ -318,7 +318,6 @@
             └── block:
                 @ BlockNode (location: (34,16)-(37,1))
                 ├── locals: [:x]
-                ├── locals_body_index: 1
                 ├── parameters:
                 │   @ BlockParametersNode (location: (34,18)-(34,21))
                 │   ├── parameters:

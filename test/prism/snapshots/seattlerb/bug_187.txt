@@ -44,13 +44,11 @@
             │           │           └── block:
             │           │               @ BlockNode (location: (2,4)-(2,10))
             │           │               ├── locals: []
-            │           │               ├── locals_body_index: 0
             │           │               ├── parameters: ∅
             │           │               ├── body: ∅
             │           │               ├── opening_loc: (2,4)-(2,6) = "do"
             │           │               └── closing_loc: (2,7)-(2,10) = "end"
             │           ├── locals: []
-            │           ├── locals_body_index: 0
             │           ├── def_keyword_loc: (1,8)-(1,11) = "def"
             │           ├── operator_loc: ∅
             │           ├── lparen_loc: ∅

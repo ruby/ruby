@@ -30,7 +30,6 @@
             │           ├── consequent: ∅
             │           └── end_keyword_loc: (4,8)-(4,11) = "end"
             ├── locals: []
-            ├── locals_body_index: 0
             ├── def_keyword_loc: (1,6)-(1,9) = "def"
             ├── operator_loc: ∅
             ├── lparen_loc: ∅

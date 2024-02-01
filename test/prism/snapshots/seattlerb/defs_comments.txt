@@ -11,7 +11,6 @@
             ├── parameters: ∅
             ├── body: ∅
             ├── locals: []
-            ├── locals_body_index: 0
             ├── def_keyword_loc: (4,0)-(4,3) = "def"
             ├── operator_loc: (4,8)-(4,9) = "."
             ├── lparen_loc: ∅

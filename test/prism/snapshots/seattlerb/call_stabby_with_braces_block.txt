@@ -16,7 +16,6 @@
             │   └── arguments: (length: 1)
             │       └── @ LambdaNode (location: (1,2)-(1,10))
             │           ├── locals: []
-            │           ├── locals_body_index: 0
             │           ├── operator_loc: (1,2)-(1,4) = "->"
             │           ├── opening_loc: (1,5)-(1,6) = "{"
             │           ├── closing_loc: (1,9)-(1,10) = "}"
@@ -30,7 +29,6 @@
             └── block:
                 @ BlockNode (location: (1,11)-(1,19))
                 ├── locals: []
-                ├── locals_body_index: 0
                 ├── parameters: ∅
                 ├── body:
                 │   @ StatementsNode (location: (1,14)-(1,15))

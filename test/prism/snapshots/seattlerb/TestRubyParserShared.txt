@@ -168,7 +168,6 @@
         │   │           │           ├── closing_loc: ∅
         │   │           │           └── block: ∅
         │   │           ├── locals: [:a, :b]
-        │   │           ├── locals_body_index: 2
         │   │           ├── def_keyword_loc: (52,2)-(52,5) = "def"
         │   │           ├── operator_loc: (52,10)-(52,11) = "."
         │   │           ├── lparen_loc: (52,12)-(52,13) = "("
@@ -263,7 +262,6 @@
         │   │           │           ├── closing_loc: ∅
         │   │           │           └── block: ∅
         │   │           ├── locals: [:a, :b]
-        │   │           ├── locals_body_index: 2
         │   │           ├── def_keyword_loc: (67,2)-(67,5) = "def"
         │   │           ├── operator_loc: ∅
         │   │           ├── lparen_loc: (67,7)-(67,8) = "("

@@ -30,7 +30,6 @@
             └── block:
                 @ BlockNode (location: (1,9)-(1,22))
                 ├── locals: []
-                ├── locals_body_index: 0
                 ├── parameters: ∅
                 ├── body:
                 │   @ StatementsNode (location: (1,11)-(1,20))
@@ -47,7 +46,6 @@
                 │           └── block:
                 │               @ BlockNode (location: (1,13)-(1,20))
                 │               ├── locals: []
-                │               ├── locals_body_index: 0
                 │               ├── parameters: ∅
                 │               ├── body: ∅
                 │               ├── opening_loc: (1,13)-(1,15) = "do"

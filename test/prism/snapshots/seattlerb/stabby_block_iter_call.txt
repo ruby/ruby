@@ -16,7 +16,6 @@
             │   └── arguments: (length: 1)
             │       └── @ LambdaNode (location: (1,2)-(4,3))
             │           ├── locals: []
-            │           ├── locals_body_index: 0
             │           ├── operator_loc: (1,2)-(1,4) = "->"
             │           ├── opening_loc: (1,8)-(1,10) = "do"
             │           ├── closing_loc: (4,0)-(4,3) = "end"
@@ -51,7 +50,6 @@
             │                       └── block:
             │                           @ BlockNode (location: (2,4)-(3,3))
             │                           ├── locals: []
-            │                           ├── locals_body_index: 0
             │                           ├── parameters: ∅
             │                           ├── body: ∅
             │                           ├── opening_loc: (2,4)-(2,6) = "do"
