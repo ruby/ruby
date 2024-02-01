@@ -882,7 +882,6 @@ module Test
                 end
             repo_path = File.expand_path("#{__dir__}/../../../")
             relative_path = path.delete_prefix("#{repo_path}/")
-            $stderr.puts repo_path
             writer.write_object do
               writer.write_key_value('testPath', "file=#{relative_path}#class=#{suite.name}#testcase=#{method}",)
               writer.write_key_value('status', status)
