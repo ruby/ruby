@@ -9128,12 +9128,10 @@ parser_lex(pm_parser_t *parser) {
                         LEX(PM_TOKEN_PLUS_EQUAL);
                     }
 
-                    bool spcarg = lex_state_spcarg_p(parser, space_seen);
-                    if (spcarg) {
-                        pm_parser_warn_token(parser, &parser->current, PM_WARN_AMBIGUOUS_FIRST_ARGUMENT_PLUS);
-                    }
-
-                    if (lex_state_beg_p(parser) || spcarg) {
+                    if (
+                        lex_state_beg_p(parser) ||
+                        (lex_state_spcarg_p(parser, space_seen) ? (pm_parser_warn_token(parser, &parser->current, PM_WARN_AMBIGUOUS_FIRST_ARGUMENT_PLUS), true) : false)
+                    ) {
                         lex_state_set(parser, PM_LEX_STATE_BEG);
 
                         if (pm_char_is_decimal_digit(peek(parser))) {
