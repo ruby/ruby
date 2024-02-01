@@ -884,6 +884,7 @@ module Test
               writer.write_key_value('duration', time)
               writer.write_key_value('createdAt', Time.now.to_s)
               writer.write_key_value('stderr', e)
+              writer.write_key_value('stdout', nil)
             end
           end
         end
