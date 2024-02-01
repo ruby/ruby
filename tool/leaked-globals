@@ -47,7 +47,9 @@ if platform and !platform.empty?
 end
 missing = File.dirname(config) + "/missing/"
 ARGV.reject! do |n|
-  unless (src = Dir.glob(missing + File.basename(n, ".*") + ".[cS]")).empty?
+  base = File.basename(n, ".*")
+  next true if REPLACE.include?(base)
+  unless (src = Dir.glob(missing + base + ".[cS]")).empty?
     puts "Ignore #{col.skip(n)} because of #{src.map {|s| File.basename(s)}.join(', ')} under missing"
     true
   end
