@@ -1976,8 +1976,11 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
     keyword->num = kw;
 
     if (RNODE_DVAR(args->kw_rest_arg)->nd_vid != 0) {
+        ID kw_id = iseq->body->local_table[arg_size];
         keyword->rest_start = arg_size++;
         body->param.flags.has_kwrest = TRUE;
+
+        if (kw_id == idPow) body->param.flags.anon_kwrest = TRUE;
     }
     keyword->required_num = rkw;
     keyword->table = &body->local_table[keyword->bits_start - keyword->num];
