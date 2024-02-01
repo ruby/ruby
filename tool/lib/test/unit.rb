@@ -921,7 +921,7 @@ module Test
             require 'json'
             options[:launchable_test_reports] = writer = JsonStreamWriter.new(path)
             writer.write_array('testCases')
-            at_exit{ $stdout.puts("debug: #{self}"); writer.close }
+            at_exit{ writer.close }
           end
         end
       end
