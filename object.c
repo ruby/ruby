@@ -301,8 +301,7 @@ rb_obj_copy_ivar(VALUE dest, VALUE obj)
 
     if (rb_shape_obj_too_complex(obj)) {
         // obj is TOO_COMPLEX so we can copy its iv_hash
-        st_table * table = rb_st_init_numtable_with_size(rb_st_table_size(ROBJECT_IV_HASH(obj)));
-        st_replace(table, ROBJECT_IV_HASH(obj));
+        st_table *table = st_copy(ROBJECT_IV_HASH(obj));
         rb_obj_convert_to_too_complex(dest, table);
 
         return;
