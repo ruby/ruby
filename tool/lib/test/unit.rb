@@ -921,11 +921,9 @@ module Test
         end
         opts.on '--launchable-test-reports=PATH', String, 'Report test results in Launchable JSON format' do |path|
           if Test::Unit::AutoRunner::Runner === self
-            p self
             require 'json'
             options[:launchable_test_reports] = writer = JsonStreamWriter.new(path)
             writer.write_array('testCases')
-            p path
             at_exit{ writer.close }
           end
         end
@@ -992,6 +990,8 @@ module Test
           @indent_level -= 1
           write_new_line
           @file.write("}")
+          @file.flush
+          @file.close
         end
 
         private
