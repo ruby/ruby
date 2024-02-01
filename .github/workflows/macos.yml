@@ -113,7 +113,7 @@ jobs:
           TESTS: "${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}"
       - run: echo "TESTS=--repeat-count=2" >> "$GITHUB_ENV"
         if: ${{ startsWith(  matrix.test_task , 'test-all' ) }}
-      - run: echo "TESTS=$TESTS --launchable-test-reports=macos.json" >> "$GITHUB_ENV"
+      - run: echo "TESTS=$TESTS --launchable-test-reports=${{ github.run_number }}.json" >> "$GITHUB_ENV"
 
       - name: make ${{ matrix.test_task }}
         run: |
@@ -123,8 +123,6 @@ jobs:
           RUBY_TESTOPTS: '-q --tty=no'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
           PRECHECK_BUNDLED_GEMS: 'no'
-      
-      - run: cat macos.json
 
       - name: make skipped tests
         run: |
@@ -138,7 +136,7 @@ jobs:
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
 
       - name: Launchable - record tests
-        run: launchable record tests --flavor os=${{ matrix.os }} raw macos.json
+        run: launchable record tests --flavor os=${{ matrix.os }} raw ${{ github.run_number }}.json
         if: ${{ startsWith(  matrix.test_task , 'test-all' ) && matrix.os == 'macos-arm-oss'}}
 
       - uses: ./.github/actions/slack
