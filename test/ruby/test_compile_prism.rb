@@ -720,8 +720,15 @@ module Prism
     end
 
     def test_InterpolatedXStringNode
-      assert_prism_eval('`echo #{1}`')
-      assert_prism_eval('`echo #{"100"}`')
+      assert_prism_eval(<<~RUBY)
+        def self.`(command) = command * 2
+        `echo \#{1}`
+      RUBY
+
+      assert_prism_eval(<<~RUBY)
+        def self.`(command) = command * 2
+        `echo \#{"100"}`
+      RUBY
     end
 
     def test_MatchLastLineNode
