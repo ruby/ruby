@@ -2087,6 +2087,52 @@ module Prism
       assert_errors expression(source), source, errors, compare_ripper: false
     end
 
+    def test_singleton_method_for_literals
+      source = <<~'RUBY'
+        def (1).g; end
+        def ((a; 1)).foo; end
+        def ((return; 1)).bar; end
+        def (((1))).foo; end
+        def (__FILE__).foo; end
+        def (__ENCODING__).foo; end
+        def (__LINE__).foo; end
+        def ("foo").foo; end
+        def (3.14).foo; end
+        def (3.14i).foo; end
+        def (:foo).foo; end
+        def (:'foo').foo; end
+        def (:'f{o}').foo; end
+        def ('foo').foo; end
+        def ("foo").foo; end
+        def ("#{fo}o").foo; end
+        def (/foo/).foo; end
+        def (/f#{oo}/).foo; end
+        def ([1]).foo; end
+      RUBY
+      errors = [
+        ["cannot define singleton method for literals", 5..6],
+        ["cannot define singleton method for literals", 24..25],
+        ["cannot define singleton method for literals", 51..52],
+        ["cannot define singleton method for literals", 71..72],
+        ["cannot define singleton method for literals", 90..98],
+        ["cannot define singleton method for literals", 114..126],
+        ["cannot define singleton method for literals", 142..150],
+        ["cannot define singleton method for literals", 166..171],
+        ["cannot define singleton method for literals", 187..191],
+        ["cannot define singleton method for literals", 207..212],
+        ["cannot define singleton method for literals", 228..232],
+        ["cannot define singleton method for literals", 248..254],
+        ["cannot define singleton method for literals", 270..277],
+        ["cannot define singleton method for literals", 293..298],
+        ["cannot define singleton method for literals", 314..319],
+        ["cannot define singleton method for literals", 335..343],
+        ["cannot define singleton method for literals", 359..364],
+        ["cannot define singleton method for literals", 380..388],
+        ["cannot define singleton method for literals", 404..407]
+      ]
+      assert_errors expression(source), source, errors, compare_ripper: false
+    end
+
     private
 
     def assert_errors(expected, source, errors, compare_ripper: RUBY_ENGINE == "ruby")

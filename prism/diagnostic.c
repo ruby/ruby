@@ -261,6 +261,7 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_RESCUE_TERM]                        = { "expected a closing delimiter for the `rescue` clause", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_RESCUE_VARIABLE]                    = { "expected an exception variable after `=>` in a rescue statement", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_RETURN_INVALID]                     = { "invalid `return` in a class or module body", PM_ERROR_LEVEL_FATAL },
+    [PM_ERR_SINGLETON_FOR_LITERALS]             = { "cannot define singleton method for literals", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_STATEMENT_ALIAS]                    = { "unexpected an `alias` at a non-statement position", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_STATEMENT_POSTEXE_END]              = { "unexpected an `END` at a non-statement position", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_STATEMENT_PREEXE_BEGIN]             = { "unexpected a `BEGIN` at a non-statement position", PM_ERROR_LEVEL_FATAL },

@@ -2744,6 +2744,45 @@ pm_constant_write_node_create(pm_parser_t *parser, pm_constant_read_node_t *targ
 }
 
 /**
+ * Check if the receiver of a `def` node is allowed.
+ */
+static void
+pm_check_def_receiver(pm_parser_t *parser, pm_node_t *receiver) {
+    switch (receiver->type) {
+        case PM_BEGIN_NODE: {
+            pm_begin_node_t *begin_node = (pm_begin_node_t *)receiver;
+            pm_check_def_receiver(parser, (pm_node_t *) begin_node->statements);
+            break;
+        }
+        case PM_PARENTHESES_NODE:
+            pm_check_def_receiver(parser, ((pm_parentheses_node_t *) receiver)->body);
+            break;
+        case PM_STATEMENTS_NODE: {
+            pm_statements_node_t *statements_node = (pm_statements_node_t *)receiver;
+            pm_check_def_receiver(parser, statements_node->body.nodes[statements_node->body.size - 1]);
+            break;
+        }
+        case PM_ARRAY_NODE:
+        case PM_FLOAT_NODE:
+        case PM_IMAGINARY_NODE:
+        case PM_INTEGER_NODE:
+        case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE:
+        case PM_INTERPOLATED_STRING_NODE:
+        case PM_INTERPOLATED_SYMBOL_NODE:
+        case PM_INTERPOLATED_X_STRING_NODE:
+        case PM_RATIONAL_NODE:
+        case PM_REGULAR_EXPRESSION_NODE:
+        case PM_SOURCE_ENCODING_NODE:
+        case PM_SOURCE_FILE_NODE:
+        case PM_SOURCE_LINE_NODE:
+        case PM_STRING_NODE:
+        case PM_SYMBOL_NODE:
+        case PM_X_STRING_NODE:
+            pm_parser_err_node(parser, receiver, PM_ERR_SINGLETON_FOR_LITERALS);
+    }
+}
+
+/**
  * Allocate and initialize a new DefNode node.
  */
 static pm_def_node_t *
@@ -2769,6 +2808,10 @@ pm_def_node_create(
         end = body->location.end;
     } else {
         end = end_keyword->end;
+    }
+
+    if ((receiver != NULL) && PM_NODE_TYPE_P(receiver, PM_PARENTHESES_NODE)) {
+        pm_check_def_receiver(parser, receiver);
     }
 
     *node = (pm_def_node_t) {
