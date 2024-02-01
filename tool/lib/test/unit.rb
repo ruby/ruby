@@ -842,7 +842,7 @@ module Test
         end
       end
 
-      def record(suite, method, assertions, time, error)
+      def record(suite, method, assertions, time, error, source_location = nil)
         if @options.values_at(:longest, :most_asserted).any?
           @tops ||= {}
           rec = [suite.name, method, assertions, time, error]
@@ -1730,7 +1730,7 @@ module Test
       # failure or error in teardown, it will be sent again with the
       # error or failure.
 
-      def record suite, method, assertions, time, error
+      def record suite, method, assertions, time, error, source_location = nil
       end
 
       def location e # :nodoc:
