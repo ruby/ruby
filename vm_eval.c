@@ -1646,26 +1646,94 @@ static const rb_iseq_t *
 pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         const struct rb_block *base_block)
 {
-    rb_iseq_t *iseq = NULL;
     const rb_iseq_t *const parent = vm_block_iseq(base_block);
     const rb_iseq_t *iseq = parent;
     VALUE name = rb_fstring_lit("<compiled>");
     fname = rb_fstring_lit("<compiled>");
 
     pm_parse_result_t result = { 0 };
-    VALUE error;
 
+    // Cout scopes, one for each parent iseq, plus one for our local scope
+    int scopes_count = 0;
+    do {
+        scopes_count++;
+    } while ((iseq = ISEQ_BODY(iseq)->parent_iseq) && (ISEQ_BODY(iseq)->type != ISEQ_TYPE_TOP));
+    pm_options_scopes_init(&result.options, scopes_count + 1);
 
-    error = pm_parse_string(&result, src, fname);
+    // Walk over the scope tree, adding known locals at the correct depths. The
+    // scope array should be deepest -> shallowest. so lower indexes in the
+    // scopes array refer to root nodes on the tree, and higher indexes are the
+    // leaf nodes.
+    iseq = parent;
+    for (int scopes_index = 0; scopes_index < scopes_count; scopes_index++) {
+        int locals_count = ISEQ_BODY(iseq)->local_table_size;
+        pm_options_scope_t *options_scope = &result.options.scopes[scopes_count - scopes_index - 1];
+        pm_options_scope_init(options_scope, locals_count);
 
-    if (error == Qnil) {
-        iseq = pm_iseq_new_eval(&result.node, name, fname, fname, ln, parent, 0);
-        pm_parse_result_free(&result);
+        for (int local_index = 0; local_index < locals_count; local_index++) {
+            pm_string_t *scope_local = &options_scope->locals[local_index];
+            const char *name = rb_id2name(ISEQ_BODY(iseq)->local_table[local_index]);
+            if (name) pm_string_constant_init(scope_local, name, strlen(name));
+        }
+
+        iseq = ISEQ_BODY(iseq)->parent_iseq;
     }
-    else {
+
+    // Add our empty local scope at the very end of the array for our eval
+    // scope's locals.
+    pm_options_scope_init(&result.options.scopes[scopes_count], 0);
+    VALUE error = pm_parse_string(&result, src, fname);
+
+    // If the parse failed, clean up and raise.
+    if (error != Qnil) {
         pm_parse_result_free(&result);
         rb_exc_raise(error);
     }
+    // Create one scope node for each scope passed in, initialize the local
+    // lookup table with all the local variable information attached to the
+    // scope used by the parser.
+    pm_scope_node_t *node = &result.node;
+    iseq = parent;
+
+    for (int scopes_index = 0; scopes_index < scopes_count; scopes_index++) {
+        pm_scope_node_t *parent_scope = ruby_xcalloc(1, sizeof(pm_scope_node_t));
+        if (parent_scope == NULL) abort();
+
+        pm_options_scope_t *options_scope = &result.options.scopes[scopes_count - scopes_index - 1];
+        parent_scope->parser = &result.parser;
+        parent_scope->index_lookup_table = st_init_numtable();
+
+        int locals_count = ISEQ_BODY(iseq)->local_table_size;
+        parent_scope->local_table_for_iseq_size = locals_count;
+        pm_constant_id_list_init(&parent_scope->locals);
+
+        for (int local_index = 0; local_index < locals_count; local_index++) {
+            const pm_string_t *scope_local = &options_scope->locals[local_index];
+
+            pm_constant_id_t constant_id = 0;
+            if (pm_string_length(scope_local) > 0) {
+                constant_id = pm_constant_pool_insert_constant(
+                        &result.parser.constant_pool, pm_string_source(scope_local),
+                        pm_string_length(scope_local));
+                st_insert(parent_scope->index_lookup_table, (st_data_t)constant_id, (st_data_t)local_index);
+            }
+            pm_constant_id_list_append(&parent_scope->locals, constant_id);
+        }
+
+        node->previous = parent_scope;
+        node = parent_scope;
+        iseq = ISEQ_BODY(iseq)->parent_iseq;
+    }
+
+    iseq = pm_iseq_new_eval(&result.node, name, fname, fname, line, parent, 0);
+
+    pm_scope_node_t *prev = result.node.previous;
+    while (prev) {
+        pm_scope_node_t *next = prev->previous;
+        ruby_xfree(prev);
+        prev = next;
+    }
+    pm_parse_result_free(&result);
 
     return iseq;
 }
