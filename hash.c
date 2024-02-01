@@ -2936,16 +2936,15 @@ NOINSERT_UPDATE_CALLBACK(hash_aset_str)
 VALUE
 rb_hash_aset(VALUE hash, VALUE key, VALUE val)
 {
-    bool iter_p = hash_iterating_p(hash);
-
     rb_hash_modify(hash);
 
     if (RHASH_TYPE(hash) == &identhash || rb_obj_class(key) != rb_cString) {
-        RHASH_UPDATE_ITER(hash, iter_p, key, hash_aset, val);
+        RHASH_UPDATE(hash, key, hash_aset, val);
     }
     else {
-        RHASH_UPDATE_ITER(hash, iter_p, key, hash_aset_str, val);
+        RHASH_UPDATE(hash, key, hash_aset_str, val);
     }
+
     return val;
 }
 
