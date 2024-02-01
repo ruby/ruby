@@ -129,7 +129,7 @@ jobs:
           RUBY_TESTOPTS: '-q --tty=no'
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
           PRECHECK_BUNDLED_GEMS: 'no'
-      
+
       - run: cat ${{ steps.setup_launchable.outputs.random_number }}.json
 
       - name: make skipped tests
