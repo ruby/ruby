@@ -1168,6 +1168,7 @@ s,@top_srcdir@,$(srcdir),;t t
 s,@try_header@,try_compile,;t t
 s,@ruby_pc@,$(ruby_pc),;t t
 s,@RJIT_SUPPORT@,$(RJIT_SUPPORT),;t t
+s,@PKG_CONFIG@,$(PKG_CONFIG),;t t
 <<KEEP
 
 !if "$(HAVE_BASERUBY)" != "yes" || "$(CROSS_COMPILING)" == "yes"
