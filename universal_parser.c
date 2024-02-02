@@ -235,6 +235,7 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_enc_isalnum          p->config->enc_isalnum
 #define rb_enc_precise_mbclen   p->config->enc_precise_mbclen
 #define MBCLEN_CHARFOUND_P      p->config->mbclen_charfound_p
+#define MBCLEN_CHARFOUND_LEN    p->config->mbclen_charfound_len
 #define rb_enc_name             p->config->enc_name
 #define rb_enc_prev_char        p->config->enc_prev_char
 #define rb_enc_get              p->config->enc_get

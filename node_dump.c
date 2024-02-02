@@ -707,18 +707,19 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("literal");
         ANN("format: [nd_lit]");
         ANN("example: :sym, /foo/");
-        goto lit;
+        F_LIT(nd_lit, RNODE_LIT, "literal");
+        return;
       case NODE_STR:
         ANN("string literal");
         ANN("format: [nd_lit]");
         ANN("example: 'foo'");
-        goto lit;
+        goto str;
       case NODE_XSTR:
         ANN("xstring literal");
         ANN("format: [nd_lit]");
         ANN("example: `foo`");
-      lit:
-        F_LIT(nd_lit, RNODE_LIT, "literal");
+      str:
+        F_VALUE(string, rb_node_str_string_val(node), "literal");
         return;
 
       case NODE_INTEGER:
@@ -777,7 +778,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: [nd_lit]");
         ANN("example: :\"foo#{ bar }baz\"");
       dlit:
-        F_LIT(nd_lit, RNODE_DSTR, "preceding string");
+        F_VALUE(string, rb_node_dstr_string_val(node), "preceding string");
         if (!RNODE_DSTR(node)->nd_next) return;
         F_NODE(nd_next->nd_head, RNODE_DSTR, "interpolation");
         LAST_NODE;
