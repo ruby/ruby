@@ -182,6 +182,31 @@ pm_constant_pool_id_to_constant(const pm_constant_pool_t *pool, pm_constant_id_t
 }
 
 /**
+ * Find a constant in a constant pool. Returns the id of the constant, or 0 if
+ * the constant is not found.
+ */
+pm_constant_id_t
+pm_constant_pool_find(pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
+    assert(is_power_of_two(pool->capacity));
+    const uint32_t mask = pool->capacity - 1;
+
+    uint32_t hash = pm_constant_pool_hash(start, length);
+    uint32_t index = hash & mask;
+    pm_constant_pool_bucket_t *bucket;
+
+    while (bucket = &pool->buckets[index], bucket->id != PM_CONSTANT_ID_UNSET) {
+        pm_constant_t *constant = &pool->constants[bucket->id - 1];
+        if ((constant->length == length) && memcmp(constant->start, start, length) == 0) {
+            return bucket->id;
+        }
+
+        index = (index + 1) & mask;
+    }
+
+    return PM_CONSTANT_ID_UNSET;
+}
+
+/**
  * Insert a constant into a constant pool and return its index in the pool.
  */
 static inline pm_constant_id_t
