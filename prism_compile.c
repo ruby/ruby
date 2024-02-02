@@ -2413,89 +2413,89 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
     pm_constant_id_list_init(&scope->locals);
 
     switch (PM_NODE_TYPE(node)) {
-        case PM_BLOCK_NODE: {
-            pm_block_node_t *cast = (pm_block_node_t *) node;
-            scope->body = cast->body;
-            scope->locals = cast->locals;
-            scope->parameters = cast->parameters;
-            break;
-        }
-        case PM_CLASS_NODE: {
-            pm_class_node_t *cast = (pm_class_node_t *) node;
-            scope->body = cast->body;
-            scope->locals = cast->locals;
-            break;
-        }
-        case PM_DEF_NODE: {
-            pm_def_node_t *cast = (pm_def_node_t *) node;
-            scope->parameters = (pm_node_t *)cast->parameters;
-            scope->body = cast->body;
-            scope->locals = cast->locals;
-            break;
-        }
-        case PM_ENSURE_NODE: {
-            scope->body = (pm_node_t *)node;
-            break;
-        }
-        case PM_FOR_NODE: {
-            pm_for_node_t *cast = (pm_for_node_t *)node;
-            scope->body = (pm_node_t *)cast->statements;
-            break;
-        }
-        case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
-            RUBY_ASSERT(node->flags & PM_REGULAR_EXPRESSION_FLAGS_ONCE);
-            scope->body = (pm_node_t *)node;
-            break;
-        }
-        case PM_LAMBDA_NODE: {
-            pm_lambda_node_t *cast = (pm_lambda_node_t *) node;
-            scope->parameters = cast->parameters;
-            scope->body = cast->body;
-            scope->locals = cast->locals;
-            break;
-        }
-        case PM_MODULE_NODE: {
-            pm_module_node_t *cast = (pm_module_node_t *) node;
-            scope->body = cast->body;
-            scope->locals = cast->locals;
-            break;
-        }
-        case PM_POST_EXECUTION_NODE: {
-            pm_post_execution_node_t *cast = (pm_post_execution_node_t *) node;
-            scope->body = (pm_node_t *) cast->statements;
-            break;
-        }
-        case PM_PROGRAM_NODE: {
-            pm_program_node_t *cast = (pm_program_node_t *) node;
-            scope->body = (pm_node_t *) cast->statements;
-            scope->locals = cast->locals;
-            break;
-        }
-        case PM_RESCUE_NODE: {
-            pm_rescue_node_t *cast = (pm_rescue_node_t *)node;
-            scope->body = (pm_node_t *)cast->statements;
-            break;
-        }
-        case PM_RESCUE_MODIFIER_NODE: {
-            pm_rescue_modifier_node_t *cast = (pm_rescue_modifier_node_t *)node;
-            scope->body = (pm_node_t *)cast->rescue_expression;
-            break;
-        }
-        case PM_SINGLETON_CLASS_NODE: {
-            pm_singleton_class_node_t *cast = (pm_singleton_class_node_t *) node;
-            scope->body = cast->body;
-            scope->locals = cast->locals;
-            break;
-        }
-        case PM_STATEMENTS_NODE: {
-            pm_statements_node_t *cast = (pm_statements_node_t *) node;
-            scope->body = (pm_node_t *)cast;
-            break;
-        }
-        default:
-            assert(false && "unreachable");
-            break;
-    }
+      case PM_BLOCK_NODE: {
+        pm_block_node_t *cast = (pm_block_node_t *) node;
+        scope->body = cast->body;
+        scope->locals = cast->locals;
+        scope->parameters = cast->parameters;
+        break;
+      }
+      case PM_CLASS_NODE: {
+        pm_class_node_t *cast = (pm_class_node_t *) node;
+        scope->body = cast->body;
+        scope->locals = cast->locals;
+        break;
+      }
+      case PM_DEF_NODE: {
+        pm_def_node_t *cast = (pm_def_node_t *) node;
+        scope->parameters = (pm_node_t *)cast->parameters;
+        scope->body = cast->body;
+        scope->locals = cast->locals;
+        break;
+      }
+      case PM_ENSURE_NODE: {
+        scope->body = (pm_node_t *)node;
+        break;
+      }
+      case PM_FOR_NODE: {
+        pm_for_node_t *cast = (pm_for_node_t *)node;
+        scope->body = (pm_node_t *)cast->statements;
+        break;
+      }
+      case PM_INTERPOLATED_REGULAR_EXPRESSION_NODE: {
+        RUBY_ASSERT(node->flags & PM_REGULAR_EXPRESSION_FLAGS_ONCE);
+        scope->body = (pm_node_t *)node;
+        break;
+      }
+      case PM_LAMBDA_NODE: {
+        pm_lambda_node_t *cast = (pm_lambda_node_t *) node;
+        scope->parameters = cast->parameters;
+        scope->body = cast->body;
+        scope->locals = cast->locals;
+        break;
+      }
+      case PM_MODULE_NODE: {
+        pm_module_node_t *cast = (pm_module_node_t *) node;
+        scope->body = cast->body;
+        scope->locals = cast->locals;
+        break;
+      }
+      case PM_POST_EXECUTION_NODE: {
+        pm_post_execution_node_t *cast = (pm_post_execution_node_t *) node;
+        scope->body = (pm_node_t *) cast->statements;
+        break;
+      }
+      case PM_PROGRAM_NODE: {
+        pm_program_node_t *cast = (pm_program_node_t *) node;
+        scope->body = (pm_node_t *) cast->statements;
+        scope->locals = cast->locals;
+        break;
+      }
+      case PM_RESCUE_NODE: {
+        pm_rescue_node_t *cast = (pm_rescue_node_t *)node;
+        scope->body = (pm_node_t *)cast->statements;
+        break;
+      }
+      case PM_RESCUE_MODIFIER_NODE: {
+        pm_rescue_modifier_node_t *cast = (pm_rescue_modifier_node_t *)node;
+        scope->body = (pm_node_t *)cast->rescue_expression;
+        break;
+      }
+      case PM_SINGLETON_CLASS_NODE: {
+        pm_singleton_class_node_t *cast = (pm_singleton_class_node_t *) node;
+        scope->body = cast->body;
+        scope->locals = cast->locals;
+        break;
+      }
+      case PM_STATEMENTS_NODE: {
+        pm_statements_node_t *cast = (pm_statements_node_t *) node;
+        scope->body = (pm_node_t *)cast;
+        break;
+      }
+      default:
+        assert(false && "unreachable");
+        break;
+      }
 }
 
 void
