@@ -18061,7 +18061,9 @@ pm_parser_errors_format_sort(const pm_list_t *error_list, const pm_newline_list_
 
         // Now we're going to shift all of the errors after this one down one
         // index to make room for the new error.
-        memcpy(&errors[index + 1], &errors[index], sizeof(pm_error_t) * (error_list->size - index - 1));
+        if (index + 1 < error_list->size) {
+            memmove(&errors[index + 1], &errors[index], sizeof(pm_error_t) * (error_list->size - index - 1));
+        }
 
         // Finally, we'll insert the error into the array.
         uint32_t column_end;
