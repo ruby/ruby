@@ -30,6 +30,7 @@ env:
   LAUNCHABLE_WORKSPACE: "ruby"
   # https://github.com/launchableinc/cli/blob/v1.80.1/launchable/utils/authentication.py#L71
   GITHUB_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+  LANCHABLE_REPORT_FILE_NAME: $RANDOM
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
@@ -114,12 +115,15 @@ jobs:
         if: ${{ github.repository == 'ruby/ruby' && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
 
       # Set environment variable TESTS for make ${{ matrix.test_task }}
-      - run: echo "${TESTS:+TESTS=`echo \"$TESTS\" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}" >> "$GITHUB_ENV"
+      - name: Set skipped tests to TESTS for make ${{ matrix.test_task }}
+        run: echo "${TESTS:+TESTS=`echo \"$TESTS\" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}" >> "$GITHUB_ENV"
         env:
-          TESTS: "${{ matrix.test_task == 'check' && 'test/ruby/test_array.rb' }}"
-      - run: echo "TESTS=--repeat-count=2" >> "$GITHUB_ENV"
+          TESTS: "${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}"
+      - name: Set repeat-count option to TESTS for make ${{ matrix.test_task }}
+        run: echo "TESTS=--repeat-count=2" >> "$GITHUB_ENV"
         if: ${{ startsWith(  matrix.test_task , 'test-all' ) }}
-      - run: echo "TESTS=$TESTS --launchable-test-reports=${{ steps.setup_launchable.outputs.random_number }}.json" >> $GITHUB_ENV
+      - name: Set launchable-test-reports to TESTS for make ${{ matrix.test_task }}
+        run: echo "TESTS=$TESTS --launchable-test-reports=$LANCHABLE_REPORT_FILE_NAME.json" >> $GITHUB_ENV
         if: ${{ github.repository == 'ruby/ruby' && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
 
       - name: make ${{ matrix.test_task }}
@@ -132,19 +136,27 @@ jobs:
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
           PRECHECK_BUNDLED_GEMS: 'no'
 
+      - name: Set skipped tests to TESTS for make skipped tests
+        run: echo "TESTS=`echo \"$TESTS\" | sed 's| |$$/ -n/|g;s|^|-n/|;s|$|$$/|'`" >> "$GITHUB_ENV"
+        env:
+          TESTS: ${{ matrix.skipped_tests }}
+      - name: Set launchable-test-reports to TESTS for make skipped tests
+        run: echo "TESTS=$TESTS --launchable-test-reports=$LANCHABLE_REPORT_FILE_NAME.json" >> $GITHUB_ENV
+        if: ${{ github.repository == 'ruby/ruby' && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
+
       - name: make skipped tests
         run: |
-          make -s test-all TESTS=`echo "$TESTS" | sed 's| |$$/ -n/|g;s|^|-n/|;s|$|$$/|'`
+          make -s test-all TESTS="$TESTS"
+          echo "TESTS=''" >> "$GITHUB_ENV"
         env:
           GNUMAKEFLAGS: ''
           RUBY_TESTOPTS: '-v --tty=no'
-          TESTS: ${{ matrix.skipped_tests }}
           PRECHECK_BUNDLED_GEMS: 'no'
         if: ${{ matrix.test_task == 'check' && matrix.skipped_tests != '' }}
         continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
 
       - name: Launchable - record tests
-        run: launchable record tests --flavor os=${{ matrix.os }} --flavor test_task=${{ matrix.test_task }} raw ${{ steps.setup_launchable.outputs.random_number }}.json
+        run: launchable record tests --flavor os=${{ matrix.os }} --flavor test_task=${{ matrix.test_task }} raw $LANCHABLE_REPORT_FILE_NAME.json
         if: ${{ github.repository == 'ruby/ruby' && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
 
       - uses: ./.github/actions/slack
