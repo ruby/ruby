@@ -423,6 +423,9 @@ pub enum Insn {
     /// Jump if greater
     Jg(Target),
 
+    /// Jump if greater or equal
+    Jge(Target),
+
     // Unconditional jump to a branch target
     Jmp(Target),
 
@@ -532,6 +535,7 @@ impl Insn {
             Insn::Je(target) |
             Insn::Jl(target) |
             Insn::Jg(target) |
+            Insn::Jge(target) |
             Insn::Jmp(target) |
             Insn::Jne(target) |
             Insn::Jnz(target) |
@@ -578,6 +582,7 @@ impl Insn {
             Insn::Je(_) => "Je",
             Insn::Jl(_) => "Jl",
             Insn::Jg(_) => "Jg",
+            Insn::Jge(_) => "Jge",
             Insn::Jmp(_) => "Jmp",
             Insn::JmpOpnd(_) => "JmpOpnd",
             Insn::Jne(_) => "Jne",
@@ -682,6 +687,7 @@ impl Insn {
             Insn::Je(target) |
             Insn::Jl(target) |
             Insn::Jg(target) |
+            Insn::Jge(target) |
             Insn::Jmp(target) |
             Insn::Jne(target) |
             Insn::Jnz(target) |
@@ -733,6 +739,7 @@ impl<'a> Iterator for InsnOpndIterator<'a> {
             Insn::Je(_) |
             Insn::Jl(_) |
             Insn::Jg(_) |
+            Insn::Jge(_) |
             Insn::Jmp(_) |
             Insn::Jne(_) |
             Insn::Jnz(_) |
@@ -834,6 +841,7 @@ impl<'a> InsnOpndMutIterator<'a> {
             Insn::Je(_) |
             Insn::Jl(_) |
             Insn::Jg(_) |
+            Insn::Jge(_) |
             Insn::Jmp(_) |
             Insn::Jne(_) |
             Insn::Jnz(_) |
@@ -1803,6 +1811,11 @@ impl Assembler {
     #[allow(dead_code)]
     pub fn jg(&mut self, target: Target) {
         self.push_insn(Insn::Jg(target));
+    }
+
+    #[allow(dead_code)]
+    pub fn jge(&mut self, target: Target) {
+        self.push_insn(Insn::Jge(target));
     }
 
     pub fn jmp(&mut self, target: Target) {
