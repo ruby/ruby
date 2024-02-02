@@ -111,16 +111,16 @@ jobs:
           : # To avoid file name conflicts, we use a random number here as a ID.
           random_number=$RANDOM
           echo "random_number=$random_number" >> $GITHUB_OUTPUT
-          echo "TESTS=--launchable-test-reports=$random_number.json " >> $GITHUB_ENV
         if: ${{ github.repository == 'ruby/ruby' && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
 
       # Set environment variable TESTS for make ${{ matrix.test_task }}
-      # Set environment variable TESTS for make ${{ matrix.test_task }}
-      - run: echo "${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}" >> "$GITHUB_ENV"
+      - run: echo "${TESTS:+TESTS=`echo \"$TESTS\" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}" >> "$GITHUB_ENV"
         env:
           TESTS: "${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}"
-      - run: echo "TESTS=$TESTS--repeat-count=2" >> "$GITHUB_ENV"
+      - run: echo "TESTS=--repeat-count=2" >> "$GITHUB_ENV"
         if: ${{ startsWith(  matrix.test_task , 'test-all' ) }}
+      - run: echo "TESTS=$TESTS --launchable-test-reports=$random_number.json" >> $GITHUB_ENV
+        if: ${{ github.repository == 'ruby/ruby' && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
 
       - name: make ${{ matrix.test_task }}
         run: |
