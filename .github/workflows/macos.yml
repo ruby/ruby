@@ -116,7 +116,7 @@ jobs:
       # Set environment variable TESTS for make ${{ matrix.test_task }}
       - run: echo "${TESTS:+TESTS=`echo \"$TESTS\" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}" >> "$GITHUB_ENV"
         env:
-          TESTS: "${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}"
+          TESTS: "${{ matrix.test_task == 'check' && 'test/ruby/test_array.rb' }}"
       - run: echo "TESTS=--repeat-count=2" >> "$GITHUB_ENV"
         if: ${{ startsWith(  matrix.test_task , 'test-all' ) }}
       - run: echo "TESTS=$TESTS --launchable-test-reports=${{ steps.setup_launchable.outputs.random_number }}.json" >> $GITHUB_ENV
