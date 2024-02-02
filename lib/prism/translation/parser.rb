@@ -26,7 +26,7 @@ module Prism
       Racc_debug_parser = false # :nodoc:
 
       def version # :nodoc:
-        33
+        34
       end
 
       # The default encoding for Ruby files is UTF-8.
@@ -42,9 +42,10 @@ module Prism
         @source_buffer = source_buffer
         source = source_buffer.source
 
-        result = unwrap(Prism.parse(source, filepath: source_buffer.name))
+        offset_cache = build_offset_cache(source)
+        result = unwrap(Prism.parse(source, filepath: source_buffer.name), offset_cache)
 
-        build_ast(result.value, build_offset_cache(source))
+        build_ast(result.value, offset_cache)
       ensure
         @source_buffer = nil
       end
@@ -55,7 +56,7 @@ module Prism
         source = source_buffer.source
 
         offset_cache = build_offset_cache(source)
-        result = unwrap(Prism.parse(source, filepath: source_buffer.name))
+        result = unwrap(Prism.parse(source, filepath: source_buffer.name), offset_cache)
 
         [
           build_ast(result.value, offset_cache),
@@ -72,7 +73,7 @@ module Prism
         source = source_buffer.source
 
         offset_cache = build_offset_cache(source)
-        result = unwrap(Prism.parse_lex(source, filepath: source_buffer.name))
+        result = unwrap(Prism.parse_lex(source, filepath: source_buffer.name), offset_cache)
 
         program, tokens = result.value
 
@@ -93,16 +94,23 @@ module Prism
 
       private
 
+      # This is a hook to allow consumers to disable some errors if they don't
+      # want them to block creating the syntax tree.
+      def valid_error?(error)
+        true
+      end
+
       # If there was a error generated during the parse, then raise an
       # appropriate syntax error. Otherwise return the result.
-      def unwrap(result)
-        return result if result.success?
+      def unwrap(result, offset_cache)
+        result.errors.each do |error|
+          next unless valid_error?(error)
 
-        error = result.errors.first
-        offset_cache = build_offset_cache(source_buffer.source)
+          location = build_range(error.location, offset_cache)
+          diagnostics.process(Diagnostic.new(error.message, location))
+        end
 
-        diagnostic = Diagnostic.new(error.message, build_range(error.location, offset_cache))
-        raise ::Parser::SyntaxError, diagnostic
+        result
       end
 
       # Prism deals with offsets in bytes, while the parser gem deals with
