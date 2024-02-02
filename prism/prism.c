@@ -2844,19 +2844,21 @@ pm_constant_write_node_create(pm_parser_t *parser, pm_constant_read_node_t *targ
  * Check if the receiver of a `def` node is allowed.
  */
 static void
-pm_check_def_receiver(pm_parser_t *parser, pm_node_t *receiver) {
-    switch (receiver->type) {
+pm_def_node_receiver_check(pm_parser_t *parser, const pm_node_t *node) {
+    switch (PM_NODE_TYPE(node)) {
         case PM_BEGIN_NODE: {
-            pm_begin_node_t *begin_node = (pm_begin_node_t *)receiver;
-            pm_check_def_receiver(parser, (pm_node_t *) begin_node->statements);
+            const pm_begin_node_t *cast = (pm_begin_node_t *) node;
+            if (cast->statements != NULL) pm_def_node_receiver_check(parser, (pm_node_t *) cast->statements);
             break;
         }
-        case PM_PARENTHESES_NODE:
-            pm_check_def_receiver(parser, ((pm_parentheses_node_t *) receiver)->body);
+        case PM_PARENTHESES_NODE: {
+            const pm_parentheses_node_t *cast = (const pm_parentheses_node_t *) node;
+            if (cast->body != NULL) pm_def_node_receiver_check(parser, cast->body);
             break;
+        }
         case PM_STATEMENTS_NODE: {
-            pm_statements_node_t *statements_node = (pm_statements_node_t *)receiver;
-            pm_check_def_receiver(parser, statements_node->body.nodes[statements_node->body.size - 1]);
+            const pm_statements_node_t *cast = (const pm_statements_node_t *) node;
+            pm_def_node_receiver_check(parser, cast->body.nodes[cast->body.size - 1]);
             break;
         }
         case PM_ARRAY_NODE:
@@ -2875,7 +2877,10 @@ pm_check_def_receiver(pm_parser_t *parser, pm_node_t *receiver) {
         case PM_STRING_NODE:
         case PM_SYMBOL_NODE:
         case PM_X_STRING_NODE:
-            pm_parser_err_node(parser, receiver, PM_ERR_SINGLETON_FOR_LITERALS);
+            pm_parser_err_node(parser, node, PM_ERR_SINGLETON_FOR_LITERALS);
+            break;
+        default:
+            break;
     }
 }
 
@@ -2907,7 +2912,7 @@ pm_def_node_create(
     }
 
     if ((receiver != NULL) && PM_NODE_TYPE_P(receiver, PM_PARENTHESES_NODE)) {
-        pm_check_def_receiver(parser, receiver);
+        pm_def_node_receiver_check(parser, receiver);
     }
 
     *node = (pm_def_node_t) {
