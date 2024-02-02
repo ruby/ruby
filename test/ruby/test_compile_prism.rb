@@ -2076,6 +2076,18 @@ end
 
         before == after
       RUBY
+
+      # Test opt_aset_with instruction when calling []= with a string key
+      assert_prism_eval(<<~RUBY)
+        ObjectSpace.count_objects
+
+        h = {"abc" => 1}
+        before = ObjectSpace.count_objects[:T_STRING]
+        5.times{ h["abc"] = 2}
+        after = ObjectSpace.count_objects[:T_STRING]
+
+        before == after
+      RUBY
     end
 
     def test_CallAndWriteNode
