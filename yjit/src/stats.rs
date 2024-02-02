@@ -546,6 +546,16 @@ make_counters! {
 
     objtostring_not_string,
 
+
+
+    getbyte_idx_not_fixnum,
+    getbyte_idx_negative,
+    getbyte_idx_out_of_bounds,
+
+
+
+
+
     splatkw_not_hash,
 
     binding_allocations,
