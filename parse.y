@@ -10647,13 +10647,13 @@ static enum yytokentype
 parse_ident(struct parser_params *p, int c, int cmd_state)
 {
     enum yytokentype result;
-    int mb = ENC_CODERANGE_7BIT;
+    bool is_ascii = true;
     const enum lex_state_e last_state = p->lex.state;
     ID ident;
     int enforce_keyword_end = 0;
 
     do {
-        if (!ISASCII(c)) mb = ENC_CODERANGE_UNKNOWN;
+        if (!ISASCII(c)) is_ascii = false;
         if (tokadd_mbchar(p, c) == -1) return 0;
         c = nextc(p);
     } while (parser_is_identchar(p));
@@ -10707,7 +10707,7 @@ parse_ident(struct parser_params *p, int c, int cmd_state)
     }
 #endif
 
-    if (mb == ENC_CODERANGE_7BIT && (!IS_lex_state(EXPR_DOT) || enforce_keyword_end)) {
+    if (is_ascii && (!IS_lex_state(EXPR_DOT) || enforce_keyword_end)) {
         const struct kwtable *kw;
 
         /* See if it is a reserved word.  */
