@@ -115,17 +115,20 @@ jobs:
         if: ${{ github.repository == 'ruby/ruby' && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
 
       # Set environment variable TESTS for make ${{ matrix.test_task }}
+      # Set environment variable TESTS for make ${{ matrix.test_task }}
+      - run: echo "${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}" >> "$GITHUB_ENV"
+        env:
+          TESTS: "${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}"
       - run: echo "TESTS=$TESTS--repeat-count=2" >> "$GITHUB_ENV"
         if: ${{ startsWith(  matrix.test_task , 'test-all' ) }}
 
       - name: make ${{ matrix.test_task }}
         run: |
-          make -s ${{ matrix.test_task }} TESTS="$TESTS" ${TESTS:+TESTS=`echo "$TEST_PATHS" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}
+          make -s ${{ matrix.test_task }} TESTS="$TESTS"
           echo "TESTS=''" >> "$GITHUB_ENV"
         timeout-minutes: 60
         env:
           RUBY_TESTOPTS: '-q --tty=no'
-          TEST_PATHS: ${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}
           TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
           PRECHECK_BUNDLED_GEMS: 'no'
 
