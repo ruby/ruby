@@ -1186,7 +1186,6 @@ static void fixpos(NODE*,NODE*);
 static int value_expr_gen(struct parser_params*,NODE*);
 static void void_expr(struct parser_params*,NODE*);
 static NODE *remove_begin(NODE*);
-static NODE *remove_begin_all(NODE*);
 #define value_expr(node) value_expr_gen(p, (node))
 static NODE *void_stmts(struct parser_params*,NODE*);
 static void reduce_nodes(struct parser_params*,NODE**);
@@ -3894,7 +3893,7 @@ primary		: literal
                     {
                     /*%%%*/
                         if (nd_type_p($2, NODE_SELF)) RNODE_SELF($2)->nd_state = 0;
-                        $$ = NEW_BEGIN($2, &@$);
+                        $$ = NEW_BLOCK($2, &@$);
                     /*% %*/
                     /*% ripper: paren!($2) %*/
                     }
@@ -5545,7 +5544,7 @@ p_var_ref	: '^' tIDENTIFIER
 p_expr_ref	: '^' tLPAREN expr_value rparen
                     {
                     /*%%%*/
-                        $$ = NEW_BEGIN($3, &@$);
+                        $$ = NEW_BLOCK($3, &@$);
                     /*% %*/
                     /*% ripper: begin!($3) %*/
                     }
@@ -12830,7 +12829,19 @@ kwd_append(rb_node_kw_arg_t *kwlist, rb_node_kw_arg_t *kw)
 static NODE *
 new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc)
 {
-    return NEW_DEFINED(remove_begin_all(expr), loc);
+    NODE *n = expr;
+    while (n) {
+        if (nd_type_p(n, NODE_BEGIN)) {
+            n = RNODE_BEGIN(n)->nd_body;
+        }
+        else if (nd_type_p(n, NODE_BLOCK) && RNODE_BLOCK(n)->nd_end == n) {
+            n = RNODE_BLOCK(n)->nd_head;
+        }
+        else {
+            break;
+        }
+    }
+    return NEW_DEFINED(n, loc);
 }
 
 static NODE*
@@ -13970,16 +13981,6 @@ remove_begin(NODE *node)
     return node;
 }
 
-static NODE *
-remove_begin_all(NODE *node)
-{
-    NODE **n = &node, *n1 = node;
-    while (n1 && nd_type_p(n1, NODE_BEGIN)) {
-        *n = n1 = RNODE_BEGIN(n1)->nd_body;
-    }
-    return node;
-}
-
 static void
 reduce_nodes(struct parser_params *p, NODE **body)
 {
@@ -14149,7 +14150,12 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
         return NEW_MATCH2(node, NEW_GVAR(idLASTLINE, loc), loc);
 
       case NODE_BLOCK:
-        RNODE_BLOCK(RNODE_BLOCK(node)->nd_end)->nd_head = cond0(p, RNODE_BLOCK(RNODE_BLOCK(node)->nd_end)->nd_head, type, loc, false);
+        {
+            NODE *end = RNODE_BLOCK(node)->nd_end;
+            NODE **expr = &RNODE_BLOCK(end)->nd_head;
+            if (top) top = node == end;
+            *expr = cond0(p, *expr, type, loc, top);
+        }
         break;
 
       case NODE_AND:
