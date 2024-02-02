@@ -885,7 +885,9 @@ module Test
         end
         super
       ensure
-        if writer
+        if writer && test_path && status
+          # Occasionally, the file writing operation may be paused, especially when `--repeat-count` is specified.
+          # In such cases, we proceed to execute the operation here.
           writer.write_object do
             writer.write_key_value('testPath', test_path)
             writer.write_key_value('status', status)
