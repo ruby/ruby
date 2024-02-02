@@ -119,7 +119,7 @@ jobs:
           TESTS: "${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}"
       - run: echo "TESTS=--repeat-count=2" >> "$GITHUB_ENV"
         if: ${{ startsWith(  matrix.test_task , 'test-all' ) }}
-      - run: echo "TESTS=$TESTS --launchable-test-reports=$random_number.json" >> $GITHUB_ENV
+      - run: echo "TESTS=$TESTS --launchable-test-reports=${{ steps.setup_launchable.outputs.random_number }}.json" >> $GITHUB_ENV
         if: ${{ github.repository == 'ruby/ruby' && (matrix.test_task == 'check' || matrix.test_task == 'test-all') }}
 
       - name: make ${{ matrix.test_task }}
