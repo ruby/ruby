@@ -604,9 +604,9 @@ MSG
     yield(opt, opts)
   end
 
-  def try_link0(src, opt = "", **opts, &b) # :nodoc:
+  def try_link0(src, opt = "", ldflags: "", **opts, &b) # :nodoc:
     exe = CONFTEST+$EXEEXT
-    cmd = link_command("", opt)
+    cmd = link_command(ldflags, opt)
     if $universal
       require 'tmpdir'
       Dir.mktmpdir("mkmf_", oldtmpdir = ENV["TMPDIR"]) do |tmpdir|
@@ -750,7 +750,7 @@ MSG
 
   # :nodoc:
   def try_ldflags(flags, werror: $mswin, **opts)
-    try_link(MAIN_DOES_NOTHING, flags, werror: werror, **opts)
+    try_link(MAIN_DOES_NOTHING, "", ldflags: flags, werror: werror, **opts)
   end
 
   # :startdoc:
@@ -1968,7 +1968,7 @@ SRC
       if pkgconfig = with_config("#{pkg}-config") and find_executable0(pkgconfig)
       # if and only if package specific config command is given
       elsif ($PKGCONFIG ||=
-             (pkgconfig = with_config("pkg-config") {config_string("PKG_CONFIG") || "pkg-config"}) &&
+             (pkgconfig = with_config("pkg-config") {config_string("PKG_CONFIG") || ENV["PKG_CONFIG"] || "pkg-config"}) &&
              find_executable0(pkgconfig) && pkgconfig) and
            xsystem([*envs, $PKGCONFIG, "--exists", pkg])
         # default to pkg-config command
@@ -1980,11 +1980,34 @@ SRC
         pkgconfig = nil
       end
       if pkgconfig
+        has_ms_win_syntax = false
+        if $mswin
+          has_ms_win_syntax = xpopen([pkgconfig, "--help"]).read.include?('msvc-syntax')
+          if has_ms_win_syntax
+            args << "--msvc-syntax"
+          else
+            Logging.message("WARNING: #{pkgconfig} does not support the --msvc-syntax. Try using a recent pkgconf instead")
+          end
+        end
         get = proc {|opts|
           opts = Array(opts).map { |o| "--#{o}" }
           opts = xpopen([*envs, pkgconfig, *opts, *args], err:[:child, :out], &:read)
           Logging.open {puts opts.each_line.map{|s|"=> #{s.inspect}"}}
-          opts.strip if $?.success?
+          if $?.success?
+            opts = opts.strip
+            if $mswin and not has_ms_win_syntax
+              opts = Shellwords.shellwords(opts).map { |s|
+                if s.start_with?('-l')
+                  "#{s[2..]}.lib"
+                elsif s.start_with?('-L')
+                  "/libpath:#{s[2..]}"
+                else
+                  s
+                end
+              }.quote.join(" ")
+            end
+            opts
+          end
         }
       end
       orig_ldflags = $LDFLAGS
