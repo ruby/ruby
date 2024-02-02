@@ -1,3 +1,5 @@
+require "pathname"
+
 module IRB
   module HistorySavingAbility # :nodoc:
     def support_history_saving?
