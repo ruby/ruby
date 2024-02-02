@@ -4142,17 +4142,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
 
         ID method_id = pm_constant_id_lookup(scope_node, call_node->name);
-        if (node->flags & PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) {
-            if (!popped) {
-                PM_PUTNIL;
-            }
-        }
 
-        if (call_node->receiver == NULL) {
-            PM_PUTSELF;
-            pm_compile_call(iseq, call_node, ret, popped, scope_node, method_id, start);
-        }
-        else if ((method_id == idUMinus || method_id == idFreeze) &&
+        if ((method_id == idUMinus || method_id == idFreeze) &&
                 !PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&
                 PM_NODE_TYPE_P(call_node->receiver, PM_STRING_NODE) &&
                 call_node->arguments == NULL &&
@@ -4185,7 +4176,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
         }
         else {
-            PM_COMPILE_NOT_POPPED(call_node->receiver);
+            if ((node->flags & PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) && !popped) {
+                PM_PUTNIL;
+            }
+
+            if (call_node->receiver == NULL) {
+                PM_PUTSELF;
+            }
+            else {
+                PM_COMPILE_NOT_POPPED(call_node->receiver);
+            }
             pm_compile_call(iseq, call_node, ret, popped, scope_node, method_id, start);
         }
 
