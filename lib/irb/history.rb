@@ -59,6 +59,12 @@ module IRB
           append_history = true
         end
 
+        pathname = Pathname.new(history_file)
+        unless Dir.exist?(pathname.dirname)
+          warn "Warning: The directory to save IRB's history file does not exist. Please double check `IRB.conf[:HISTORY_FILE]`'s value."
+          return
+        end
+
         File.open(history_file, (append_history ? 'a' : 'w'), 0o600, encoding: IRB.conf[:LC_MESSAGES]&.encoding) do |f|
           hist = history.map{ |l| l.scrub.split("\n").join("\\\n") }
           unless append_history

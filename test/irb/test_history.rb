@@ -167,6 +167,19 @@ module TestIRB
       $VERBOSE = verbose_bak
     end
 
+    def test_history_does_not_raise_when_history_file_directory_does_not_exist
+      backup_history_file = IRB.conf[:HISTORY_FILE]
+      IRB.conf[:SAVE_HISTORY] = 1
+      IRB.conf[:HISTORY_FILE] = "fake/fake/fake/history_file"
+      io = TestInputMethodWithRelineHistory.new
+
+      assert_nothing_raised do
+        io.save_history
+      end
+    ensure
+      IRB.conf[:HISTORY_FILE] = backup_history_file
+    end
+
     private
 
     def history_concurrent_use_for_input_method(input_method)
