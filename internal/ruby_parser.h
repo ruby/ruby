@@ -76,7 +76,10 @@ RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_str_new_parser_string(rb_parser_string_t *str);
 RUBY_SYMBOL_EXPORT_END
 
+VALUE rb_node_str_string_val(const NODE *);
 VALUE rb_node_sym_string_val(const NODE *);
+VALUE rb_node_dstr_string_val(const NODE *);
+VALUE rb_node_dregx_string_val(const NODE *);
 VALUE rb_node_line_lineno_val(const NODE *);
 VALUE rb_node_file_path_val(const NODE *);
 VALUE rb_node_encoding_val(const NODE *);

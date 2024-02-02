@@ -838,7 +838,7 @@ get_string_value(const NODE *node)
 {
     switch (nd_type(node)) {
       case NODE_STR:
-        return RNODE_STR(node)->nd_lit;
+        return rb_node_str_string_val(node);
       case NODE_FILE:
         return rb_node_file_path_val(node);
       default:
@@ -4310,7 +4310,7 @@ static int
 compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, int *cntp)
 {
     const struct RNode_LIST *list = RNODE_DSTR(node)->nd_next;
-    VALUE lit = RNODE_DSTR(node)->nd_lit;
+    VALUE lit = rb_node_dstr_string_val(node);
     LINK_ELEMENT *first_lit = 0;
     int cnt = 0;
 
@@ -4331,7 +4331,7 @@ compile_dstr_fragments(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *cons
     while (list) {
         const NODE *const head = list->nd_head;
         if (nd_type_p(head, NODE_STR)) {
-            lit = rb_fstring(RNODE_STR(head)->nd_lit);
+            lit = rb_fstring(rb_node_str_string_val(head));
             ADD_INSN1(ret, head, putobject, lit);
             RB_OBJ_WRITTEN(iseq, Qundef, lit);
             lit = Qnil;
@@ -4370,7 +4370,7 @@ compile_dstr(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node)
 {
     int cnt;
     if (!RNODE_DSTR(node)->nd_next) {
-        VALUE lit = rb_fstring(RNODE_DSTR(node)->nd_lit);
+        VALUE lit = rb_fstring(rb_node_dstr_string_val(node));
         ADD_INSN1(ret, node, putstring, lit);
         RB_OBJ_WRITTEN(iseq, Qundef, lit);
     }
@@ -4387,14 +4387,13 @@ compile_dregx(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     int cnt;
 
     if (!RNODE_DREGX(node)->nd_next) {
-        VALUE match = RNODE_DREGX(node)->nd_lit;
-        if (RB_TYPE_P(match, T_REGEXP)) {
-            if (!popped) {
-                ADD_INSN1(ret, node, putobject, match);
-                RB_OBJ_WRITTEN(iseq, Qundef, match);
-            }
-            return COMPILE_OK;
+        if (!popped) {
+            VALUE src = rb_node_dregx_string_val(node);
+            VALUE match = rb_reg_compile(src, (int)RNODE_DREGX(node)->nd_cflag, NULL, 0);
+            ADD_INSN1(ret, node, putobject, match);
+            RB_OBJ_WRITTEN(iseq, Qundef, match);
         }
+        return COMPILE_OK;
     }
 
     CHECK(compile_dstr_fragments(iseq, ret, node, &cnt));
@@ -5135,7 +5134,7 @@ rb_node_case_when_optimizable_literal(const NODE *const node)
       case NODE_LINE:
         return rb_node_line_lineno_val(node);
       case NODE_STR:
-        return rb_fstring(RNODE_STR(node)->nd_lit);
+        return rb_fstring(rb_node_str_string_val(node));
       case NODE_FILE:
         return rb_fstring(rb_node_file_path_val(node));
     }
@@ -10364,7 +10363,7 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       }
       case NODE_XSTR:{
         ADD_CALL_RECEIVER(ret, node);
-        VALUE str = rb_fstring(RNODE_XSTR(node)->nd_lit);
+        VALUE str = rb_fstring(rb_node_str_string_val(node));
         ADD_INSN1(ret, node, putobject, str);
         RB_OBJ_WRITTEN(iseq, Qundef, str);
         ADD_CALL(ret, node, idBackquote, INT2FIX(1));

@@ -166,6 +166,12 @@ mbclen_charfound_p(int len)
     return MBCLEN_CHARFOUND_P(len);
 }
 
+static int
+mbclen_charfound_len(int len)
+{
+    return MBCLEN_CHARFOUND_LEN(len);
+}
+
 static const char *
 enc_name(void *enc)
 {
@@ -598,6 +604,7 @@ static const rb_parser_config_t rb_global_parser_config = {
     .enc_isalnum = enc_isalnum,
     .enc_precise_mbclen = enc_precise_mbclen,
     .mbclen_charfound_p = mbclen_charfound_p,
+    .mbclen_charfound_len = mbclen_charfound_len,
     .enc_name = enc_name,
     .enc_prev_char = enc_prev_char,
     .enc_get = enc_get,
@@ -989,10 +996,31 @@ rb_node_imaginary_literal_val(const NODE *n)
 }
 
 VALUE
+rb_node_str_string_val(const NODE *node)
+{
+    rb_parser_string_t *str = RNODE_STR(node)->string;
+    return rb_str_new_parser_string(str);
+}
+
+VALUE
 rb_node_sym_string_val(const NODE *node)
 {
     rb_parser_string_t *str = RNODE_SYM(node)->string;
     return ID2SYM(rb_intern3(str->ptr, str->len, str->enc));
+}
+
+VALUE
+rb_node_dstr_string_val(const NODE *node)
+{
+    rb_parser_string_t *str = RNODE_DSTR(node)->string;
+    return str ? rb_str_new_parser_string(str) : Qnil;
+}
+
+VALUE
+rb_node_dregx_string_val(const NODE *node)
+{
+    rb_parser_string_t *str = RNODE_DREGX(node)->string;
+    return rb_str_new_parser_string(str);
 }
 
 VALUE

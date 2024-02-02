@@ -555,9 +555,10 @@ node_children(rb_ast_t *ast, const NODE *node)
         return rb_ary_new_from_node_args(ast, 2, RNODE_MATCH3(node)->nd_recv, RNODE_MATCH3(node)->nd_value);
       case NODE_MATCH:
       case NODE_LIT:
+        return rb_ary_new_from_args(1, RNODE_LIT(node)->nd_lit);
       case NODE_STR:
       case NODE_XSTR:
-        return rb_ary_new_from_args(1, RNODE_LIT(node)->nd_lit);
+        return rb_ary_new_from_args(1, rb_node_str_string_val(node));
       case NODE_INTEGER:
         return rb_ary_new_from_args(1, rb_node_integer_literal_val(node));
       case NODE_FLOAT:
@@ -579,7 +580,7 @@ node_children(rb_ast_t *ast, const NODE *node)
                 head = NEW_CHILD(ast, n->nd_head);
                 next = NEW_CHILD(ast, n->nd_next);
             }
-            return rb_ary_new_from_args(3, RNODE_DSTR(node)->nd_lit, head, next);
+            return rb_ary_new_from_args(3, rb_node_dstr_string_val(node), head, next);
         }
       case NODE_SYM:
         return rb_ary_new_from_args(1, rb_node_sym_string_val(node));
