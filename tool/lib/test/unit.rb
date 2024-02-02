@@ -930,6 +930,7 @@ module Test
             require 'uri'
             options[:launchable_test_reports] = writer = JsonStreamWriter.new(path)
             writer.write_array('testCases')
+            at_exit {writer.close}
           end
         end
       end
@@ -1654,12 +1655,6 @@ module Test
         puts
         @test_count      = test_count
         @assertion_count = assertion_count
-
-        # In parallel testing, `at_exit` block is called before all tests are finished.
-        # Therefore, we invoke the `close` method here.
-        if writer = @options[:launchable_test_reports]
-          writer.close
-        end
 
         status
       end
