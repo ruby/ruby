@@ -878,8 +878,9 @@ module Test
                 end
             repo_path = File.expand_path("#{__dir__}/../../../")
             relative_path = path.delete_prefix("#{repo_path}/")
+            test_path = URI.encode_www_form({file: relative_path, class: suite.name, testcase: method})
             writer.write_object do
-              writer.write_key_value('testPath', "file=#{relative_path}#class=#{suite.name}#testcase=#{method}",)
+              writer.write_key_value('testPath', test_path)
               writer.write_key_value('status', status)
               writer.write_key_value('duration', time)
               writer.write_key_value('createdAt', Time.now.to_s)
@@ -919,6 +920,7 @@ module Test
         opts.on '--launchable-test-reports=PATH', String, 'Report test results in Launchable JSON format' do |path|
           if Test::Unit::AutoRunner::Runner === self
             require 'json'
+            require 'uri'
             options[:launchable_test_reports] = writer = JsonStreamWriter.new(path)
             writer.write_array('testCases')
             at_exit{ writer.close }
