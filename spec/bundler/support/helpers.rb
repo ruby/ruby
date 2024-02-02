@@ -11,6 +11,12 @@ module Spec
     include Spec::Options
     include Spec::Subprocess
 
+    def self.extended(mod)
+      mod.extend Spec::Path
+      mod.extend Spec::Options
+      mod.extend Spec::Subprocess
+    end
+
     def reset!
       Dir.glob("#{tmp}/{gems/*,*}", File::FNM_DOTMATCH).each do |dir|
         next if %w[base base_system remote1 rubocop standard gems rubygems . ..].include?(File.basename(dir))
@@ -267,6 +273,12 @@ module Spec
       end
     end
 
+    def self.install_dev_bundler
+      extend self
+
+      system_gems :bundler, path: pristine_system_gem_path
+    end
+
     def install_gem(path, install_dir, default = false)
       raise "OMG `#{path}` does not exist!" unless File.exist?(path)
 
@@ -277,6 +289,8 @@ module Spec
     end
 
     def with_built_bundler(version = nil, &block)
+      require_relative "builders"
+
       Builders::BundlerBuilder.new(self, "bundler", version)._build(&block)
     end
 
