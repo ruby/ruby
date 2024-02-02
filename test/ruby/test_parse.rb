@@ -527,7 +527,7 @@ class TestParse < Test::Unit::TestCase
         def t.`(x); "foo" + x + "bar"; end
       END
     end
-    a = b = nil
+    a = b = c = nil
     assert_nothing_raised do
       eval <<-END, nil, __FILE__, __LINE__+1
         a = t.` "zzz"
@@ -535,10 +535,12 @@ class TestParse < Test::Unit::TestCase
       END
       t.instance_eval <<-END, __FILE__, __LINE__+1
         b = `zzz`
+        c = %x(ccc)
       END
     end
     assert_equal("foozzzbar", a)
     assert_equal("foozzzbar", b)
+    assert_equal("foocccbar", c)
   end
 
   def test_carrige_return
