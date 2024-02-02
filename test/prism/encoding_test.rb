@@ -225,6 +225,19 @@ module Prism
       assert_equal Encoding::SHIFT_JIS, slice.encoding
     end
 
+    def test_multibyte_escapes
+      [
+        ["'", "'"],
+        ["\"", "\""],
+        ["`", "`"],
+        ["/", "/"],
+        ["<<'HERE'\n", "\nHERE"],
+        ["<<-HERE\n", "\nHERE"]
+      ].each do |opening, closing|
+        assert Prism.parse_success?("# encoding: shift_jis\n'\\\x82\xA0'\n")
+      end
+    end
+
     private
 
     class ConstantContext < BasicObject

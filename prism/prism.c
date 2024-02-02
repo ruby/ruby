@@ -7675,6 +7675,28 @@ escape_write_byte_encoded(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t byte
 }
 
 /**
+ * Write each byte of the given escaped character into the buffer.
+ */
+static inline void
+escape_write_escape_encoded(pm_parser_t *parser, pm_buffer_t *buffer) {
+    size_t width;
+    if (parser->encoding_changed) {
+        width = parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
+    } else {
+        width = pm_encoding_utf_8_char_width(parser->current.end, parser->end - parser->current.end);
+    }
+
+    // TODO: If the character is invalid in the given encoding, then we'll just
+    // push one byte into the buffer. This should actually be an error.
+    width = (width == 0) ? 1 : width;
+
+    for (size_t index = 0; index < width; index++) {
+        escape_write_byte_encoded(parser, buffer, *parser->current.end);
+        parser->current.end++;
+    }
+}
+
+/**
  * The regular expression engine doesn't support the same escape sequences as
  * Ruby does. So first we have to read the escape sequence, and then we have to
  * format it like the regular expression engine expects it. For example, in Ruby
@@ -8012,7 +8034,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
         /* fallthrough */
         default: {
             if (parser->current.end < parser->end) {
-                escape_write_byte_encoded(parser, buffer, *parser->current.end++);
+                escape_write_escape_encoded(parser, buffer);
             }
             return;
         }
@@ -8289,8 +8311,38 @@ typedef struct {
  * Push the given byte into the token buffer.
  */
 static inline void
-pm_token_buffer_push(pm_token_buffer_t *token_buffer, uint8_t byte) {
+pm_token_buffer_push_byte(pm_token_buffer_t *token_buffer, uint8_t byte) {
     pm_buffer_append_byte(&token_buffer->buffer, byte);
+}
+
+/**
+ * Append the given bytes into the token buffer.
+ */
+static inline void
+pm_token_buffer_push_bytes(pm_token_buffer_t *token_buffer, const uint8_t *bytes, size_t length) {
+    pm_buffer_append_bytes(&token_buffer->buffer, bytes, length);
+}
+
+/**
+ * Push an escaped character into the token buffer.
+ */
+static inline void
+pm_token_buffer_push_escaped(pm_token_buffer_t *token_buffer, pm_parser_t *parser) {
+    // First, determine the width of the character to be escaped.
+    size_t width;
+    if (parser->encoding_changed) {
+        width = parser->encoding->char_width(parser->current.end, parser->end - parser->current.end);
+    } else {
+        width = pm_encoding_utf_8_char_width(parser->current.end, parser->end - parser->current.end);
+    }
+
+    // TODO: If the character is invalid in the given encoding, then we'll just
+    // push one byte into the buffer. This should actually be an error.
+    width = (width == 0 ? 1 : width);
+
+    // Now, push the bytes into the buffer.
+    pm_token_buffer_push_bytes(token_buffer, parser->current.end, width);
+    parser->current.end += width;
 }
 
 /**
@@ -9705,18 +9757,18 @@ parser_lex(pm_parser_t *parser) {
                         case '\t':
                         case '\v':
                         case '\\':
-                            pm_token_buffer_push(&token_buffer, peeked);
+                            pm_token_buffer_push_byte(&token_buffer, peeked);
                             parser->current.end++;
                             break;
                         case '\r':
                             parser->current.end++;
                             if (peek(parser) != '\n') {
-                                pm_token_buffer_push(&token_buffer, '\r');
+                                pm_token_buffer_push_byte(&token_buffer, '\r');
                                 break;
                             }
                         /* fallthrough */
                         case '\n':
-                            pm_token_buffer_push(&token_buffer, '\n');
+                            pm_token_buffer_push_byte(&token_buffer, '\n');
 
                             if (parser->heredoc_end) {
                                 // ... if we are on the same line as a heredoc,
@@ -9734,14 +9786,13 @@ parser_lex(pm_parser_t *parser) {
                             break;
                         default:
                             if (peeked == lex_mode->as.list.incrementor || peeked == lex_mode->as.list.terminator) {
-                                pm_token_buffer_push(&token_buffer, peeked);
+                                pm_token_buffer_push_byte(&token_buffer, peeked);
                                 parser->current.end++;
                             } else if (lex_mode->as.list.interpolation) {
                                 escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
                             } else {
-                                pm_token_buffer_push(&token_buffer, '\\');
-                                pm_token_buffer_push(&token_buffer, peeked);
-                                parser->current.end++;
+                                pm_token_buffer_push_byte(&token_buffer, '\\');
+                                pm_token_buffer_push_escaped(&token_buffer, parser);
                             }
 
                             break;
@@ -9899,9 +9950,9 @@ parser_lex(pm_parser_t *parser) {
                             parser->current.end++;
                             if (peek(parser) != '\n') {
                                 if (lex_mode->as.regexp.terminator != '\r') {
-                                    pm_token_buffer_push(&token_buffer, '\\');
+                                    pm_token_buffer_push_byte(&token_buffer, '\\');
                                 }
-                                pm_token_buffer_push(&token_buffer, '\r');
+                                pm_token_buffer_push_byte(&token_buffer, '\r');
                                 break;
                             }
                         /* fallthrough */
@@ -9936,20 +9987,19 @@ parser_lex(pm_parser_t *parser) {
                                     case '$': case ')': case '*': case '+':
                                     case '.': case '>': case '?': case ']':
                                     case '^': case '|': case '}':
-                                        pm_token_buffer_push(&token_buffer, '\\');
+                                        pm_token_buffer_push_byte(&token_buffer, '\\');
                                         break;
                                     default:
                                         break;
                                 }
 
-                                pm_token_buffer_push(&token_buffer, peeked);
+                                pm_token_buffer_push_byte(&token_buffer, peeked);
                                 parser->current.end++;
                                 break;
                             }
 
-                            if (peeked < 0x80) pm_token_buffer_push(&token_buffer, '\\');
-                            pm_token_buffer_push(&token_buffer, peeked);
-                            parser->current.end++;
+                            if (peeked < 0x80) pm_token_buffer_push_byte(&token_buffer, '\\');
+                            pm_token_buffer_push_escaped(&token_buffer, parser);
                             break;
                     }
 
@@ -10116,23 +10166,23 @@ parser_lex(pm_parser_t *parser) {
 
                         switch (peeked) {
                             case '\\':
-                                pm_token_buffer_push(&token_buffer, '\\');
+                                pm_token_buffer_push_byte(&token_buffer, '\\');
                                 parser->current.end++;
                                 break;
                             case '\r':
                                 parser->current.end++;
                                 if (peek(parser) != '\n') {
                                     if (!lex_mode->as.string.interpolation) {
-                                        pm_token_buffer_push(&token_buffer, '\\');
+                                        pm_token_buffer_push_byte(&token_buffer, '\\');
                                     }
-                                    pm_token_buffer_push(&token_buffer, '\r');
+                                    pm_token_buffer_push_byte(&token_buffer, '\r');
                                     break;
                                 }
                             /* fallthrough */
                             case '\n':
                                 if (!lex_mode->as.string.interpolation) {
-                                    pm_token_buffer_push(&token_buffer, '\\');
-                                    pm_token_buffer_push(&token_buffer, '\n');
+                                    pm_token_buffer_push_byte(&token_buffer, '\\');
+                                    pm_token_buffer_push_byte(&token_buffer, '\n');
                                 }
 
                                 if (parser->heredoc_end) {
@@ -10151,17 +10201,16 @@ parser_lex(pm_parser_t *parser) {
                                 break;
                             default:
                                 if (lex_mode->as.string.incrementor != '\0' && peeked == lex_mode->as.string.incrementor) {
-                                    pm_token_buffer_push(&token_buffer, peeked);
+                                    pm_token_buffer_push_byte(&token_buffer, peeked);
                                     parser->current.end++;
                                 } else if (lex_mode->as.string.terminator != '\0' && peeked == lex_mode->as.string.terminator) {
-                                    pm_token_buffer_push(&token_buffer, peeked);
+                                    pm_token_buffer_push_byte(&token_buffer, peeked);
                                     parser->current.end++;
                                 } else if (lex_mode->as.string.interpolation) {
                                     escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
                                 } else {
-                                    pm_token_buffer_push(&token_buffer, '\\');
-                                    pm_token_buffer_push(&token_buffer, peeked);
-                                    parser->current.end++;
+                                    pm_token_buffer_push_byte(&token_buffer, '\\');
+                                    pm_token_buffer_push_escaped(&token_buffer, parser);
                                 }
 
                                 break;
@@ -10418,21 +10467,20 @@ parser_lex(pm_parser_t *parser) {
                                 case '\r':
                                     parser->current.end++;
                                     if (peek(parser) != '\n') {
-                                        pm_token_buffer_push(&token_buffer, '\\');
-                                        pm_token_buffer_push(&token_buffer, '\r');
+                                        pm_token_buffer_push_byte(&token_buffer, '\\');
+                                        pm_token_buffer_push_byte(&token_buffer, '\r');
                                         break;
                                     }
                                 /* fallthrough */
                                 case '\n':
-                                    pm_token_buffer_push(&token_buffer, '\\');
-                                    pm_token_buffer_push(&token_buffer, '\n');
+                                    pm_token_buffer_push_byte(&token_buffer, '\\');
+                                    pm_token_buffer_push_byte(&token_buffer, '\n');
                                     token_buffer.cursor = parser->current.end + 1;
                                     breakpoint = parser->current.end;
                                     continue;
                                 default:
-                                    parser->current.end++;
-                                    pm_token_buffer_push(&token_buffer, '\\');
-                                    pm_token_buffer_push(&token_buffer, peeked);
+                                    pm_token_buffer_push_byte(&token_buffer, '\\');
+                                    pm_token_buffer_push_escaped(&token_buffer, parser);
                                     break;
                             }
                         } else {
@@ -10440,7 +10488,7 @@ parser_lex(pm_parser_t *parser) {
                                 case '\r':
                                     parser->current.end++;
                                     if (peek(parser) != '\n') {
-                                        pm_token_buffer_push(&token_buffer, '\r');
+                                        pm_token_buffer_push_byte(&token_buffer, '\r');
                                         break;
                                     }
                                 /* fallthrough */
