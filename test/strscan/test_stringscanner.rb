@@ -841,4 +841,12 @@ class TestStringScannerFixedAnchor < Test::Unit::TestCase
     assert_equal 1, s.skip(/a/)
     assert_nil      s.skip(/^b/)
   end
+
+  # ruby/strscan#86
+  def test_scan_shared_string
+    s = "hellohello"[5..-1]
+    ss = StringScanner.new(s).scan(/hello/)
+
+    assert_equal "hello", ss
+  end
 end
