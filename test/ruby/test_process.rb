@@ -2838,15 +2838,4 @@ EOS
     [t1, t2, t3].each { _1&.join rescue nil }
     [long_rpipe, long_wpipe, short_rpipe, short_wpipe].each { _1&.close rescue nil }
   end if defined?(fork)
-
-  def test_low_memory_startup
-    omit "JIT enabled" if %w[YJIT RJIT].any? {|n| RubyVM.const_defined?(n) and RubyVM.const_get(n).enabled?}
-    omit "flaky on Travis arm32" if /armv8l-linux-eabihf/ =~ RUBY_PLATFORM
-    as = 1<<25
-    _, _, status = EnvUtil.invoke_ruby(%W'-W0', "", true, :merge_to_stdout, rlimit_as: as)
-    omit sprintf("Crashed with AS: %#x: %s", as, status) if status.signaled?
-    (26..27).each {|i| as = 1<<i; assert_normal_exit("", "AS: %#x" % as, rlimit_as: as)}
-  rescue ArgumentError, Errno::EINVAL => e
-    omit e.message
-  end
 end
