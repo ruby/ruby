@@ -1009,8 +1009,9 @@ pm_arg_compile_keyword_hash_node(pm_keyword_hash_node_t *node, rb_iseq_t *iseq, 
     }
 }
 
+// This is details. Users should call pm_setup_args() instead.
 static int
-pm_setup_args(const pm_arguments_node_t *arguments_node, int *flags, struct rb_callinfo_kwarg **kw_arg, rb_iseq_t *iseq, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, NODE dummy_line_node, pm_parser_t *parser)
+pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *block, int *flags, const bool has_regular_blockarg, struct rb_callinfo_kwarg **kw_arg, rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, NODE dummy_line_node, pm_parser_t *parser)
 {
     int orig_argc = 0;
     bool has_splat = false;
@@ -1106,7 +1107,7 @@ pm_setup_args(const pm_arguments_node_t *arguments_node, int *flags, struct rb_c
                     //
                     // foo(a, *b, c)
                     //        ^^
-                    if (index + 1 < arguments_node_list.size) {
+                    if (index + 1 < arguments_node_list.size || has_regular_blockarg) {
                         ADD_INSN1(ret, &dummy_line_node, splatarray, Qtrue);
                         *flags |= VM_CALL_ARGS_SPLAT_MUT;
                     }
@@ -1225,6 +1226,42 @@ pm_setup_args(const pm_arguments_node_t *arguments_node, int *flags, struct rb_c
     return orig_argc;
 }
 
+// Compile the argument parts of a call
+static int
+pm_setup_args(const pm_arguments_node_t *arguments_node, const pm_node_t *block, int *flags, struct rb_callinfo_kwarg **kw_arg, rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node, NODE dummy_line_node, pm_parser_t *parser)
+{
+    if (block && PM_NODE_TYPE_P(block, PM_BLOCK_ARGUMENT_NODE)) {
+        // We compile the `&block_arg` expression first and stitch it later
+        // since the nature of the expression influences whether splat should
+        // duplicate the array.
+        bool regular_block_arg = true;
+        DECL_ANCHOR(block_arg);
+        INIT_ANCHOR(block_arg);
+        pm_compile_node(iseq, block, block_arg, false, scope_node);
+
+        *flags |= VM_CALL_ARGS_BLOCKARG;
+
+        if (LIST_INSN_SIZE_ONE(block_arg)) {
+            LINK_ELEMENT *elem = FIRST_ELEMENT(block_arg);
+            if (IS_INSN(elem)) {
+                INSN *iobj = (INSN *)elem;
+                if (iobj->insn_id == BIN(getblockparam)) {
+                    iobj->insn_id = BIN(getblockparamproxy);
+                }
+                // Allow splat without duplication for simple one-instruction
+                // block arguments like `&arg`. It is known that this optimization
+                // can be too aggressive in some cases. See [Bug #16504].
+                regular_block_arg = false;
+            }
+        }
+
+        int argc = pm_setup_args_core(arguments_node, block, flags, regular_block_arg, kw_arg, iseq, ret, scope_node, dummy_line_node, parser);
+        ADD_SEQ(ret, block_arg);
+        return argc;
+    }
+    return pm_setup_args_core(arguments_node, block, flags, false, kw_arg, iseq, ret, scope_node, dummy_line_node, parser);
+}
+
 /**
  * Compile an index operator write node, which is a node that is writing a value
  * using the [] and []= methods. It looks like:
@@ -1250,12 +1287,7 @@ pm_compile_index_operator_write_node(pm_scope_node_t *scope_node, const pm_index
     int boff = (node->block == NULL ? 0 : 1);
     int flag = PM_NODE_TYPE_P(node->receiver, PM_SELF_NODE) ? VM_CALL_FCALL : 0;
     struct rb_callinfo_kwarg *keywords = NULL;
-    int argc = pm_setup_args(node->arguments, &flag, &keywords, iseq, ret, popped, scope_node, dummy_line_node, scope_node->parser);
-
-    if (node->block != NULL) {
-        flag |= VM_CALL_ARGS_BLOCKARG;
-        PM_COMPILE_NOT_POPPED(node->block);
-    }
+    int argc = pm_setup_args(node->arguments, node->block, &flag, &keywords, iseq, ret, scope_node, dummy_line_node, scope_node->parser);
 
     if ((argc > 0 || boff) && (flag & VM_CALL_KW_SPLAT)) {
         if (boff) {
@@ -1375,12 +1407,7 @@ pm_compile_index_control_flow_write_node(pm_scope_node_t *scope_node, const pm_n
     int boff = (block == NULL ? 0 : 1);
     int flag = PM_NODE_TYPE_P(receiver, PM_SELF_NODE) ? VM_CALL_FCALL : 0;
     struct rb_callinfo_kwarg *keywords = NULL;
-    int argc = pm_setup_args(arguments, &flag, &keywords, iseq, ret, popped, scope_node, dummy_line_node, scope_node->parser);
-
-    if (block != NULL) {
-        flag |= VM_CALL_ARGS_BLOCKARG;
-        PM_COMPILE_NOT_POPPED(block);
-    }
+    int argc = pm_setup_args(arguments, block, &flag, &keywords, iseq, ret, scope_node, dummy_line_node, scope_node->parser);
 
     if ((argc > 0 || boff) && (flag & VM_CALL_KW_SPLAT)) {
         if (boff) {
@@ -2867,7 +2894,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     int flags = 0;
     struct rb_callinfo_kwarg *kw_arg = NULL;
 
-    int orig_argc = pm_setup_args(call_node->arguments, &flags, &kw_arg, iseq, ret, popped, scope_node, dummy_line_node, parser);
+    int orig_argc = pm_setup_args(call_node->arguments, call_node->block, &flags, &kw_arg, iseq, ret, scope_node, dummy_line_node, parser);
     const rb_iseq_t *block_iseq = NULL;
 
     if (call_node->block != NULL && PM_NODE_TYPE_P(call_node->block, PM_BLOCK_NODE)) {
@@ -2885,11 +2912,6 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
     else {
         if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_VARIABLE_CALL)) {
             flags |= VM_CALL_VCALL;
-        }
-
-        if (call_node->block != NULL) {
-            PM_COMPILE_NOT_POPPED(call_node->block);
-            flags |= VM_CALL_ARGS_BLOCKARG;
         }
 
         if (!flags) {
@@ -3448,12 +3470,7 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
 
         int flags = 0;
         struct rb_callinfo_kwarg *kwargs = NULL;
-        int argc = pm_setup_args(cast->arguments, &flags, &kwargs, iseq, parents, false, scope_node, dummy_line_node, scope_node->parser);
-
-        if (cast->block != NULL) {
-            flags |= VM_CALL_ARGS_BLOCKARG;
-            if (cast->block != NULL) pm_compile_node(iseq, cast->block, parents, false, scope_node);
-        }
+        int argc = pm_setup_args(cast->arguments, cast->block, &flags, &kwargs, iseq, parents, scope_node, dummy_line_node, scope_node->parser);
 
         if (state != NULL) {
             ADD_INSN1(writes, &dummy_line_node, topn, INT2FIX(argc + 1));
@@ -7429,27 +7446,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         PM_PUTSELF;
 
-        int argc = pm_setup_args(super_node->arguments, &flags, &keywords, iseq, ret, popped, scope_node, dummy_line_node, parser);
+        int argc = pm_setup_args(super_node->arguments, super_node->block, &flags, &keywords, iseq, ret, scope_node, dummy_line_node, parser);
         flags |= VM_CALL_SUPER | VM_CALL_FCALL;
 
-        if (super_node->block) {
-            switch (PM_NODE_TYPE(super_node->block)) {
-              case PM_BLOCK_ARGUMENT_NODE: {
-                PM_COMPILE_NOT_POPPED(super_node->block);
-                flags |= VM_CALL_ARGS_BLOCKARG;
-                break;
-              }
-              case PM_BLOCK_NODE: {
-                pm_scope_node_t next_scope_node;
-                pm_scope_node_init(super_node->block, &next_scope_node, scope_node, parser);
-                parent_block = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
-                pm_scope_node_destroy(&next_scope_node);
-                break;
-              }
-              default: {
-                rb_bug("Unexpected node type on a SuperNode's block: %s", pm_node_type_to_str(PM_NODE_TYPE(super_node->block)));
-              }
-            }
+        if (super_node->block && PM_NODE_TYPE_P(super_node->block, PM_BLOCK_NODE)) {
+            pm_scope_node_t next_scope_node;
+            pm_scope_node_init(super_node->block, &next_scope_node, scope_node, parser);
+            parent_block = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+            pm_scope_node_destroy(&next_scope_node);
         }
 
         if ((flags & VM_CALL_ARGS_BLOCKARG) && (flags & VM_CALL_KW_SPLAT) && !(flags & VM_CALL_KW_SPLAT_MUT)) {
@@ -7554,7 +7558,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         int argc = 0;
 
         if (yield_node->arguments) {
-            argc = pm_setup_args(yield_node->arguments, &flags, &keywords, iseq, ret, popped, scope_node, dummy_line_node, parser);
+            argc = pm_setup_args(yield_node->arguments, NULL, &flags, &keywords, iseq, ret, scope_node, dummy_line_node, parser);
         }
 
         ADD_INSN1(ret, &dummy_line_node, invokeblock, new_callinfo(iseq, 0, argc, flags, keywords, FALSE));
