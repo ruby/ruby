@@ -182,7 +182,7 @@ class TestNetHTTPS < Test::Unit::TestCase
     http.get("/")
 
     socket = http.instance_variable_get(:@socket).io
-    assert_equal false, socket.session_reused?
+    assert_equal false, socket.session_reused?, "NOTE: OpenSSL library version is #{OpenSSL::OPENSSL_LIBRARY_VERSION}"
 
     http.finish
   end
