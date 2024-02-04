@@ -67,7 +67,19 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
-  def test_yjit_enable_stats
+  def test_yjit_enable_stats_false
+    assert_separately(["--yjit-disable", "--yjit-stats"], <<~RUBY, ignore_stderr: true)
+      assert_false RubyVM::YJIT.enabled?
+      assert_nil RubyVM::YJIT.runtime_stats
+
+      RubyVM::YJIT.enable
+
+      assert_true RubyVM::YJIT.enabled?
+      assert_true RubyVM::YJIT.runtime_stats[:all_stats]
+    RUBY
+  end
+
+  def test_yjit_enable_stats_true
     args = []
     args << "--disable=yjit" if RubyVM::YJIT.enabled?
     assert_separately(args, <<~RUBY, ignore_stderr: true)
