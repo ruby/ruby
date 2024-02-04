@@ -263,11 +263,17 @@ end
 
 def generate_cexpr(ofile, lineno, line_file, body_lineno, text, locals, func_name)
   f = StringIO.new
+
+  # Avoid generating fetches of lvars we don't need. This is imperfect as it
+  # will match text inside strings or other false positives.
+  local_candidates = text.scan(/[a-zA-Z_][a-zA-Z0-9_]*/)
+
   f.puts '{'
   lineno += 1
   # locals is nil outside methods
   locals&.reverse_each&.with_index{|param, i|
     next unless Symbol === param
+    next unless local_candidates.include?(param.to_s)
     f.puts "MAYBE_UNUSED(const VALUE) #{param} = rb_vm_lvar(ec, #{-3 - i});"
     lineno += 1
   }
