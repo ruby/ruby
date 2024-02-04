@@ -1995,17 +1995,16 @@ SRC
           Logging.open {puts opts.each_line.map{|s|"=> #{s.inspect}"}}
           if $?.success?
             opts = opts.strip
-            if $mswin and not has_ms_win_syntax
-              opts = Shellwords.shellwords(opts).map { |s|
-                if s.start_with?('-l')
-                  "#{s[2..]}.lib"
-                elsif s.start_with?('-L')
-                  "/libpath:#{s[2..]}"
-                else
-                  s
-                end
-              }.quote.join(" ")
-            end
+            libarg, libpath = LIBARG, LIBPATHFLAG.strip
+            opts = opts.shellsplit.map { |s|
+              if s.start_with?('-l')
+                libarg % s[2..]
+              elsif s.start_with?('-L')
+                libpath % s[2..]
+              else
+                s
+              end
+            }.quote.join(" ")
             opts
           end
         }
