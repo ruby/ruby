@@ -4166,7 +4166,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 ADD_INSN2(ret, &dummy_line_node, opt_str_freeze, str, new_callinfo(iseq, idFreeze, 0, 0, NULL, FALSE));
             }
         }
-        else if (method_id == idAREF && call_node->arguments &&
+        else if (method_id == idAREF &&
+                !PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&
+                call_node->arguments &&
                 PM_NODE_TYPE_P((pm_node_t *)call_node->arguments, PM_ARGUMENTS_NODE) &&
                 ((pm_arguments_node_t *)call_node->arguments)->arguments.size == 1 &&
                 PM_NODE_TYPE_P(((pm_arguments_node_t *)call_node->arguments)->arguments.nodes[0], PM_STRING_NODE) &&
