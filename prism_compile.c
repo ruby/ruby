@@ -4136,6 +4136,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             pm_compile_call(iseq, call_node, ret, popped, scope_node, method_id, start);
         }
         else if ((method_id == idUMinus || method_id == idFreeze) &&
+                !PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&
                 PM_NODE_TYPE_P(call_node->receiver, PM_STRING_NODE) &&
                 call_node->arguments == NULL &&
                 call_node->block == NULL &&
