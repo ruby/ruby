@@ -1,5 +1,5 @@
 %# -*- C -*-
-% extinits = ARGV.map {|n| [n[%r[[^/.]+(?=\.[^/]*)?\z]], n]}
+% extinits = ARGV.map {|n| [n.tr('/', '_'), n]}
 #include "ruby/ruby.h"
 
 #define init(func, name) {	\
