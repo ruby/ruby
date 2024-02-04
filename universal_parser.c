@@ -115,13 +115,9 @@ struct rb_imemo_tmpbuf_struct {
 
 #define compile_callback         p->config->compile_callback
 #define reg_named_capture_assign p->config->reg_named_capture_assign
-#define script_lines_defined     p->config->script_lines_defined
-#define script_lines_get         p->config->script_lines_get
 
 #define rb_obj_freeze p->config->obj_freeze
 #define rb_obj_hide p->config->obj_hide
-#undef RB_OBJ_FROZEN
-#define RB_OBJ_FROZEN p->config->obj_frozen
 #undef RB_TYPE_P
 #define RB_TYPE_P p->config->type_p
 #undef OBJ_FREEZE_RAW
@@ -138,20 +134,15 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_ary_push          p->config->ary_push
 #undef rb_ary_new_from_args
 #define rb_ary_new_from_args p->config->ary_new_from_args
-#define rb_ary_pop           p->config->ary_pop
-#define rb_ary_last          p->config->ary_last
 #define rb_ary_unshift       p->config->ary_unshift
 #undef rb_ary_new2
 #define rb_ary_new2          p->config->ary_new2
-#define rb_ary_entry         p->config->ary_entry
 #define rb_ary_clear         p->config->ary_clear
 #define rb_ary_modify        p->config->ary_modify
 #undef RARRAY_LEN
 #define RARRAY_LEN           p->config->array_len
 #define RARRAY_AREF          p->config->array_aref
 
-#undef rb_sym_intern_ascii_cstr
-#define rb_sym_intern_ascii_cstr p->config->sym_intern_ascii_cstr
 #define rb_make_temporary_id     p->config->make_temporary_id
 #define is_local_id              p->config->is_local_id
 #define is_attrset_id            p->config->is_attrset_id
@@ -165,10 +156,8 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_intern_str            p->config->intern_str
 #define is_notop_id              p->config->is_notop_id
 #define rb_enc_symname_type      p->config->enc_symname_type
-#define rb_str_intern            p->config->str_intern
 #define rb_id2name               p->config->id2name
 #define rb_id2str                p->config->id2str
-#define rb_id2sym                p->config->id2sym
 #undef ID2SYM
 #define ID2SYM                   p->config->id2sym
 #undef SYM2ID
@@ -178,7 +167,6 @@ struct rb_imemo_tmpbuf_struct {
 #undef rb_str_cat_cstr
 #define rb_str_cat_cstr                   p->config->str_cat_cstr
 #define rb_str_subseq                     p->config->str_subseq
-#define rb_str_dup                        p->config->str_dup
 #define rb_str_new_frozen                 p->config->str_new_frozen
 #define rb_str_buf_new                    p->config->str_buf_new
 #undef rb_str_buf_cat
@@ -262,7 +250,6 @@ struct rb_imemo_tmpbuf_struct {
 
 #define rb_ractor_make_shareable p->config->ractor_make_shareable
 
-#define ruby_vm_keep_script_lines p->config->vm_keep_script_lines()
 #define rb_local_defined          p->config->local_defined
 #define rb_dvar_defined           p->config->dvar_defined
 
@@ -333,7 +320,6 @@ struct rb_imemo_tmpbuf_struct {
 #define SPECIAL_CONST_P p->config->special_const_p
 #undef BUILTIN_TYPE
 #define BUILTIN_TYPE p->config->builtin_type
-#define ruby_snprintf p->config->snprintf
 
 #define rb_node_case_when_optimizable_literal p->config->node_case_when_optimizable_literal
 
