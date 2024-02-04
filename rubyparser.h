@@ -1211,7 +1211,6 @@ typedef struct rb_parser_config_struct {
     /* Object */
     VALUE (*obj_freeze)(VALUE obj);
     VALUE (*obj_hide)(VALUE obj);
-    int (*obj_frozen)(VALUE obj);
     int (*type_p)(VALUE, int);
     void (*obj_freeze_raw)(VALUE obj);
 
@@ -1225,18 +1224,14 @@ typedef struct rb_parser_config_struct {
     VALUE (*ary_new)(void);
     VALUE (*ary_push)(VALUE ary, VALUE elem);
     VALUE (*ary_new_from_args)(long n, ...);
-    VALUE (*ary_pop)(VALUE ary);
-    VALUE (*ary_last)(int argc, const VALUE *argv, VALUE ary);
     VALUE (*ary_unshift)(VALUE ary, VALUE item);
     VALUE (*ary_new2)(long capa); // ary_new_capa
-    VALUE (*ary_entry)(VALUE ary, long offset);
     VALUE (*ary_clear)(VALUE ary);
     void (*ary_modify)(VALUE ary);
     long (*array_len)(VALUE a);
     VALUE (*array_aref)(VALUE, long);
 
     /* Symbol */
-    VALUE (*sym_intern_ascii_cstr)(const char *ptr);
     ID (*make_temporary_id)(size_t n);
     int (*is_local_id)(ID);
     int (*is_attrset_id)(ID);
@@ -1249,7 +1244,6 @@ typedef struct rb_parser_config_struct {
     ID (*intern_str)(VALUE str);
     int (*is_notop_id)(ID);
     int (*enc_symname_type)(const char *name, long len, rb_encoding *enc, unsigned int allowed_attrset);
-    VALUE (*str_intern)(VALUE str);
     const char *(*id2name)(ID id);
     VALUE (*id2str)(ID id);
     VALUE (*id2sym)(ID x);
@@ -1260,7 +1254,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*str_catf)(VALUE str, const char *format, ...);
     VALUE (*str_cat_cstr)(VALUE str, const char *ptr);
     VALUE (*str_subseq)(VALUE str, long beg, long len);
-    VALUE (*str_dup)(VALUE str);
     VALUE (*str_new_frozen)(VALUE orig);
     VALUE (*str_buf_new)(long capa);
     VALUE (*str_buf_cat)(VALUE, const char*, long);
