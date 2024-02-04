@@ -104,7 +104,7 @@ def extract_makefile(makefile, keep = true)
     end
     return false
   end
-  srcs = Dir[File.join($srcdir, "*.{#{SRC_EXT.join(%q{,})}}")].map {|fn| File.basename(fn)}.sort
+  srcs = Dir[*SRC_EXT.map {|e| "*.#{e}"}, base: $srcdir].map {|fn| File.basename(fn)}.sort
   if !srcs.empty?
     old_srcs = m[/^ORIG_SRCS[ \t]*=[ \t](.*)/, 1] or return false
     (old_srcs.split - srcs).empty? or return false
@@ -507,10 +507,8 @@ cond = proc {|ext, *|
 }
 ($extension || %w[*]).each do |e|
   e = e.sub(/\A(?:\.\/)+/, '')
-  incl, excl = Dir.glob("#{ext_prefix}/#{e}/**/extconf.rb").collect {|d|
-    d = File.dirname(d)
-    d.slice!(0, ext_prefix.length + 1)
-    d
+  incl, excl = Dir.glob("#{e}/**/extconf.rb", base: "#$top_srcdir/#{ext_prefix}").collect {|d|
+    File.dirname(d)
   }.partition {|ext|
     with_config(ext, &cond)
   }
@@ -522,7 +520,7 @@ cond = proc {|ext, *|
     exts.delete_if {|d| File.fnmatch?("-*", d)}
   end
 end
-ext_prefix = ext_prefix[$top_srcdir.size+1..-2]
+ext_prefix.chomp!("/")
 
 @ext_prefix = ext_prefix
 @inplace = inplace
