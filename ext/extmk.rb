@@ -472,12 +472,13 @@ if exts = ARGV.shift
   $extension = [exts] if exts
   if ext_prefix.start_with?('.')
     @gemname = exts
-  elsif exts
-    $static_ext.delete_if {|t, *| !File.fnmatch(t, exts)}
+    exts = []
+  else
+    exts &&= $static_ext.select {|t, *| File.fnmatch(t, exts)}
   end
 end
-ext_prefix = "#{$top_srcdir}/#{ext_prefix || 'ext'}"
-exts = $static_ext.sort_by {|t, i| i}.collect {|t, i| t}
+ext_prefix ||= 'ext'
+exts = (exts || $static_ext).sort_by {|t, i| i}.collect {|t, i| t}
 default_exclude_exts =
   case
   when $cygwin
@@ -626,7 +627,9 @@ $hdrdir = ($top_srcdir = relative_from(srcdir, $topdir = "..")) + "/include"
 extso = []
 fails = []
 exts.each do |d|
-  $static = $force_static ? true : $static_ext[d]
+  $static = $force_static ? true : $static_ext.fetch(d) do
+    $static_ext.any? {|t, | File.fnmatch?(t, d)}
+  end
 
   if !$nodynamic or $static
     result = extmake(d, ext_prefix, !@gemname) or abort
