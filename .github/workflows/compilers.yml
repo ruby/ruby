@@ -110,7 +110,7 @@ jobs:
             shared: disable
             # check: true
 
-          - { name: ext/Setup }
+          - { name: ext/Setup, static-exts: 'etc,json/*,*/escape' }
 
 #         - { name: aarch64-linux-gnu,     crosshost: aarch64-linux-gnu, container: crossbuild-essential-arm64 }
 #         - { name: arm-linux-gnueabi,     crosshost: arm-linux-gnueabi }
@@ -258,9 +258,14 @@ jobs:
           }}
           --${{ matrix.entry.shared || 'enable' }}-shared
 
-      - name: Add to ext/Setup # statically link just the etc extension
-        run: mkdir ext && echo etc >> ext/Setup
-        if: ${{ matrix.entry.name == 'ext/Setup' }}
+      - name: Add to ext/Setup
+        run: |
+          mkdir ext
+          cd ext
+          for ext in {${{ matrix.entry.static-exts }}}/extconf.rb; do
+            echo ${ext%/extconf.rb}
+          done >> Setup
+        if: ${{ (matrix.entry.static-exts || '') != '' }}
 
       - run: make showflags
 
