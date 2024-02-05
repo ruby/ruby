@@ -1817,11 +1817,13 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
         const size_t posts_size = cast->posts.size;
         const size_t minimum_size = requireds_size + posts_size;
 
-        bool use_rest_size = (
-            cast->rest != NULL &&
-            PM_NODE_TYPE_P(cast->rest, PM_SPLAT_NODE) &&
-            ((((const pm_splat_node_t *) cast->rest)->expression != NULL) || posts_size > 0)
-        );
+        bool rest_named = false;
+        bool use_rest_size = false;
+
+        if (cast->rest != NULL) {
+            rest_named = (PM_NODE_TYPE_P(cast->rest, PM_SPLAT_NODE) && ((const pm_splat_node_t *) cast->rest)->expression != NULL);
+            use_rest_size = (rest_named || (!rest_named && posts_size > 0));
+        }
 
         LABEL *match_failed_label = NEW_LABEL(line.lineno);
         LABEL *type_error_label = NEW_LABEL(line.lineno);
@@ -1859,7 +1861,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
         }
 
         if (cast->rest != NULL) {
-            if (((const pm_splat_node_t *) cast->rest)->expression != NULL) {
+            if (rest_named) {
                 ADD_INSN(ret, &line.node, dup);
                 ADD_INSN1(ret, &line.node, putobject, INT2FIX(requireds_size));
                 ADD_INSN1(ret, &line.node, topn, INT2FIX(1));
