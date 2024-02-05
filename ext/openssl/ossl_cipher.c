@@ -386,11 +386,23 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
     in = (unsigned char *)RSTRING_PTR(data);
     in_len = RSTRING_LEN(data);
     GetCipher(self, ctx);
-    out_len = in_len+EVP_CIPHER_CTX_block_size(ctx);
-    if (out_len <= 0) {
+
+    /*
+     * As of OpenSSL 3.2, there is no reliable way to determine the required
+     * output buffer size for arbitrary cipher modes.
+     * https://github.com/openssl/openssl/issues/22628
+     *
+     * in_len+block_size is usually sufficient, but AES key wrap with padding
+     * ciphers require in_len+15 even though they have a block size of 8 bytes.
+     *
+     * Using EVP_MAX_BLOCK_LENGTH (32) as a safe upper bound for ciphers
+     * currently implemented in OpenSSL, but this can change in the future.
+     */
+    if (in_len > LONG_MAX - EVP_MAX_BLOCK_LENGTH) {
 	ossl_raise(rb_eRangeError,
 		   "data too big to make output buffer: %ld bytes", in_len);
     }
+    out_len = in_len + EVP_MAX_BLOCK_LENGTH;
 
     if (NIL_P(str)) {
         str = rb_str_new(0, out_len);
@@ -401,7 +413,7 @@ ossl_cipher_update(int argc, VALUE *argv, VALUE self)
 
     if (!ossl_cipher_update_long(ctx, (unsigned char *)RSTRING_PTR(str), &out_len, in, in_len))
 	ossl_raise(eCipherError, NULL);
-    assert(out_len < RSTRING_LEN(str));
+    assert(out_len <= RSTRING_LEN(str));
     rb_str_set_len(str, out_len);
 
     return str;
