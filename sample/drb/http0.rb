@@ -14,7 +14,7 @@ module DRb
         begin
           return @buf[0,n]
         ensure
-          @buf[0,n] = ''
+          @buf = @buf[n, @buf.size]
         end
       end
 
