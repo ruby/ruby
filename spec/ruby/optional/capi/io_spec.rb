@@ -426,10 +426,6 @@ describe "C-API IO function" do
         @o.rb_io_maybe_wait(Errno::EINTR::Errno, @w_io, IO::WRITABLE, nil).should == IO::WRITABLE
       end
 
-      it "returns false if there is no error condition" do
-        @o.rb_io_maybe_wait(0, @w_io, IO::WRITABLE, nil).should == false
-      end
-
       it "raises an IOError if the IO is closed" do
         @w_io.close
         -> { @o.rb_io_maybe_wait(0, @w_io, IO::WRITABLE, nil) }.should raise_error(IOError, "closed stream")
@@ -440,10 +436,17 @@ describe "C-API IO function" do
       end
     end
   end
+
+  ruby_version_is "3.4" do
+    describe "rb_io_maybe_wait" do
+      it "returns nil if there is no error condition" do
+        @o.rb_io_maybe_wait(0, @w_io, IO::WRITABLE, nil).should == nil
+      end
+    end
+  end
 end
 
 describe "rb_fd_fix_cloexec" do
-
   before :each do
     @o = CApiIOSpecs.new
 
