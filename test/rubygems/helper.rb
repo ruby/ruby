@@ -105,39 +105,32 @@ class Gem::TestCase < Test::Unit::TestCase
     refute File.directory?(path), msg
   end
 
-  # https://github.com/seattlerb/minitest/blob/21d9e804b63c619f602f3f4ece6c71b48974707a/lib/minitest/assertions.rb#L188
-  def _synchronize
-    yield
-  end
-
-  # https://github.com/seattlerb/minitest/blob/21d9e804b63c619f602f3f4ece6c71b48974707a/lib/minitest/assertions.rb#L546
+  # Originally copied from minitest/assertions.rb
   def capture_subprocess_io
-    _synchronize do
-      require "tempfile"
+    require "tempfile"
 
-      captured_stdout = Tempfile.new("out")
-      captured_stderr = Tempfile.new("err")
+    captured_stdout = Tempfile.new("out")
+    captured_stderr = Tempfile.new("err")
 
-      orig_stdout = $stdout.dup
-      orig_stderr = $stderr.dup
-      $stdout.reopen captured_stdout
-      $stderr.reopen captured_stderr
+    orig_stdout = $stdout.dup
+    orig_stderr = $stderr.dup
+    $stdout.reopen captured_stdout
+    $stderr.reopen captured_stderr
 
-      yield
+    yield
 
-      $stdout.rewind
-      $stderr.rewind
+    $stdout.rewind
+    $stderr.rewind
 
-      return captured_stdout.read, captured_stderr.read
-    ensure
-      $stdout.reopen orig_stdout
-      $stderr.reopen orig_stderr
+    [captured_stdout.read, captured_stderr.read]
+  ensure
+    $stdout.reopen orig_stdout
+    $stderr.reopen orig_stderr
 
-      orig_stdout.close
-      orig_stderr.close
-      captured_stdout.close!
-      captured_stderr.close!
-    end
+    orig_stdout.close
+    orig_stderr.close
+    captured_stdout.close!
+    captured_stderr.close!
   end
 
   ##

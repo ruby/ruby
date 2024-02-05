@@ -19,8 +19,8 @@ class CompactIndexAPI < Endpoint
     def etag_response
       response_body = yield
       etag = Digest::MD5.hexdigest(response_body)
-      return if not_modified?(etag)
       headers "ETag" => quote(etag)
+      return if not_modified?(etag)
       headers "Repr-Digest" => "sha-256=:#{Digest::SHA256.base64digest(response_body)}:"
       headers "Surrogate-Control" => "max-age=2592000, stale-while-revalidate=60"
       content_type "text/plain"
@@ -35,7 +35,6 @@ class CompactIndexAPI < Endpoint
       etags = parse_etags(request.env["HTTP_IF_NONE_MATCH"])
 
       return unless etags.include?(etag)
-      headers "ETag" => quote(etag)
       status 304
       body ""
     end

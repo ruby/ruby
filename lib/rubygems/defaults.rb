@@ -24,7 +24,7 @@ module Gem
     default_spec_cache_dir = File.join Gem.user_home, ".gem", "specs"
 
     unless File.exist?(default_spec_cache_dir)
-      default_spec_cache_dir = File.join Gem.data_home, "gem", "specs"
+      default_spec_cache_dir = File.join Gem.cache_home, "gem", "specs"
     end
 
     default_spec_cache_dir

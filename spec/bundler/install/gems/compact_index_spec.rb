@@ -924,15 +924,19 @@ RSpec.describe "compact index api" do
       gem 'rack', '0.9.1'
     G
 
-    rake_info_path = File.join(Bundler.rubygems.user_home, ".bundle", "cache", "compact_index",
-      "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "info", "rack")
-
     bundle :install, artifice: "compact_index"
 
+    # We must remove the etag so that we don't ignore the range and get a 304 Not Modified.
+    rake_info_etag_path = File.join(Bundler.rubygems.user_home, ".bundle", "cache", "compact_index",
+      "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "info-etags", "rack-11690b09f16021ff06a6857d784a1870")
+    File.unlink(rake_info_etag_path) if File.exist?(rake_info_etag_path)
+
+    rake_info_path = File.join(Bundler.rubygems.user_home, ".bundle", "cache", "compact_index",
+      "localgemserver.test.80.dd34752a738ee965a2a4298dc16db6c5", "info", "rack")
     expected_rack_info_content = File.read(rake_info_path)
 
-    # Modify the cache files. We expect them to be reset to the normal ones when we re-run :install
-    File.open(rake_info_path, "a") {|f| f << "this is different" }
+    # Modify the cache files to make the range not satisfiable
+    File.open(rake_info_path, "a") {|f| f << "0.9.2 |checksum:c55b525b421fd833a93171ad3d7f04528ca8e87d99ac273f8933038942a5888c" }
 
     # Update the Gemfile so the next install does its normal things
     gemfile <<-G
