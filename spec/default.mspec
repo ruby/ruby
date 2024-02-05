@@ -4,7 +4,7 @@ if (opt = ENV["RUBYOPT"]) and (opt = opt.dup).sub!(/(?:\A|\s)-w(?=\z|\s)/, '')
   ENV["RUBYOPT"] = opt
 end
 
-# Enabld leakcheckers by ruby/mspec
+# Enable leakcheckers by ruby/mspec
 ENV["CHECK_LEAKS"] ||= "true"
 
 require "./rbconfig" unless defined?(RbConfig)
