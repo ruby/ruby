@@ -20,3 +20,19 @@ describe "FrozenError#receiver" do
     end
   end
 end
+
+describe "Modifying a frozen object" do
+  context "#inspect is redefined and modifies the object" do
+    it "returns ... instead of String representation of object" do
+      object = Object.new
+      def object.inspect; @a = 1 end
+      def object.modify; @a = 2 end
+
+      object.freeze
+
+      # CRuby's message contains multiple whitespaces before '...'.
+      # So handle both multiple and single whitespace.
+      -> { object.modify }.should raise_error(FrozenError, /can't modify frozen .*?: \s*.../)
+    end
+  end
+end

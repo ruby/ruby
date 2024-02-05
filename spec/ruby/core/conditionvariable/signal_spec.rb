@@ -1,5 +1,4 @@
 require_relative '../../spec_helper'
-require 'thread'
 
 describe "ConditionVariable#signal" do
   it "releases the first thread waiting in line for this resource" do

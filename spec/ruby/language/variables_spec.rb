@@ -367,8 +367,13 @@ describe "Multiple assignment" do
 
     it "assigns indexed elements" do
       a = []
-      a[1], a[2] = 1
-      a.should == [nil, 1, nil]
+      a[1], a[2] = 1, 2
+      a.should == [nil, 1, 2]
+
+      # with splatted argument
+      a = []
+      a[*[1]], a[*[2]] = 1, 2
+      a.should == [nil, 1, 2]
     end
 
     it "assigns constants" do

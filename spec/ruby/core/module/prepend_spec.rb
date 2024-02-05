@@ -726,6 +726,17 @@ describe "Module#prepend" do
     ary.should == [3, 2, 1]
   end
 
+  it "does not prepend a second copy if the module already indirectly exists in the hierarchy" do
+    mod = Module.new do; end
+    submod = Module.new do; end
+    klass = Class.new do; end
+    klass.include(mod)
+    mod.prepend(submod)
+    klass.include(mod)
+
+    klass.ancestors.take(4).should == [klass, submod, mod, Object]
+  end
+
   describe "called on a module" do
     describe "included into a class"
     it "does not obscure the module's methods from reflective access" do

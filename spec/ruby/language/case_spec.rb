@@ -399,6 +399,22 @@ describe "The 'case'-construct" do
       :called
     end.should == :called
   end
+
+  it "supports declaring variables in the case target expression" do
+    def test(v)
+      case new_variable_in_expression = v
+      when true
+        # This extra block is a test that `new_variable_in_expression` is declared outside of it and not inside
+        self.then { new_variable_in_expression }
+      else
+        # Same
+        self.then { new_variable_in_expression.casecmp?("foo") }
+      end
+    end
+
+    self.test("bar").should == false
+    self.test(true).should == true
+  end
 end
 
 describe "The 'case'-construct with no target expression" do

@@ -339,6 +339,16 @@ VALUE io_spec_mode_sync_flag(VALUE self, VALUE io) {
   }
 }
 
+#if defined(RUBY_VERSION_IS_3_3) || defined(TRUFFLERUBY)
+static VALUE io_spec_rb_io_mode(VALUE self, VALUE io) {
+  return INT2FIX(rb_io_mode(io));
+}
+
+static VALUE io_spec_rb_io_path(VALUE self, VALUE io) {
+  return rb_io_path(io);
+}
+#endif
+
 void Init_io_spec(void) {
   VALUE cls = rb_define_class("CApiIOSpecs", rb_cObject);
   rb_define_method(cls, "GetOpenFile_fd", io_spec_GetOpenFile_fd, 1);
@@ -372,6 +382,10 @@ void Init_io_spec(void) {
   rb_define_method(cls, "rb_cloexec_open", io_spec_rb_cloexec_open, 3);
   rb_define_method(cls, "errno=", io_spec_errno_set, 1);
   rb_define_method(cls, "rb_io_mode_sync_flag", io_spec_mode_sync_flag, 1);
+#if defined(RUBY_VERSION_IS_3_3) || defined(TRUFFLERUBY)
+  rb_define_method(cls, "rb_io_mode", io_spec_rb_io_mode, 1);
+  rb_define_method(cls, "rb_io_path", io_spec_rb_io_path, 1);
+#endif
 }
 
 #ifdef __cplusplus

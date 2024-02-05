@@ -264,6 +264,14 @@ describe "Signal.trap" do
       end
     end
 
+    %w[SEGV BUS ILL FPE VTALRM].each do |signal|
+      it "raises ArgumentError for SIG#{signal} which is reserved by Ruby" do
+        -> {
+          Signal.trap(signal, -> {})
+        }.should raise_error(ArgumentError, "can't trap reserved signal: SIG#{signal}")
+      end
+    end
+
     it "allows to register a handler for all known signals, except reserved signals for which it raises ArgumentError" do
       out = ruby_exe(fixture(__FILE__, "trap_all.rb"), args: "2>&1")
       out.should == "OK\n"

@@ -440,10 +440,27 @@ describe "C-API IO function" do
       end
     end
   end
+
+  ruby_version_is "3.3" do
+    describe "rb_io_mode" do
+      it "returns the mode" do
+        (@o.rb_io_mode(@r_io) & 0b11).should == 0b01
+        (@o.rb_io_mode(@w_io) & 0b11).should == 0b10
+        (@o.rb_io_mode(@rw_io) & 0b11).should == 0b11
+      end
+    end
+
+    describe "rb_io_path" do
+      it "returns the IO#path" do
+        @o.rb_io_path(@r_io).should == @r_io.path
+        @o.rb_io_path(@rw_io).should == @rw_io.path
+        @o.rb_io_path(@rw_io).should == @name
+      end
+    end
+  end
 end
 
 describe "rb_fd_fix_cloexec" do
-
   before :each do
     @o = CApiIOSpecs.new
 

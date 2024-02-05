@@ -95,6 +95,11 @@ describe "Proc#parameters" do
     -> x {}.parameters.should == [[:req, :x]]
   end
 
+  it "ignores implicit rest arguments" do
+    proc { |x, | }.parameters.should == [[:opt, :x]]
+    -> x { }.parameters.should == [[:req, :x]]
+  end
+
   ruby_version_is '3.2' do
     it "adds rest arg with name * for \"star\" argument" do
       -> * {}.parameters.should == [[:rest, :*]]

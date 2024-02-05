@@ -331,7 +331,7 @@ describe "IO#read" do
     @io.read(0).should == ''
     @io.pos.should == 0
 
-    @io.getc.chr.should == '1'
+    @io.getc.should == '1'
   end
 
   it "is at end-of-file when everything has been read" do

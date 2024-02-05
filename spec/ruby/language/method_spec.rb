@@ -1335,6 +1335,7 @@ describe "An endless method definition" do
     end
   end
 
+  # tested more thoroughly in language/delegation_spec.rb
   context "with args forwarding" do
     evaluate <<-ruby do
         def mm(word, num:)

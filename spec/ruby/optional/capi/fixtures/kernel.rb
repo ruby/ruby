@@ -1,19 +1,19 @@
 class CApiKernelSpecs
   class ClassWithPublicMethod
     def public_method(*, **)
-      0
+      :public
     end
   end
 
   class ClassWithPrivateMethod
     private def private_method(*, **)
-      0
+      :private
     end
   end
 
   class ClassWithProtectedMethod
     protected def protected_method(*, **)
-      0
+      :protected
     end
   end
 end
