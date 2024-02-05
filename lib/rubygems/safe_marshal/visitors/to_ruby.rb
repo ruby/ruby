@@ -109,7 +109,7 @@ module Gem::SafeMarshal
               marshal_string.concat(k.size + 5)
               marshal_string.concat(k.to_s)
               dumped = Marshal.dump(v)
-              dumped[0, 2] = ""
+              dumped = dumped[2, dumped.size]
               marshal_string.concat(dumped)
             end
 
