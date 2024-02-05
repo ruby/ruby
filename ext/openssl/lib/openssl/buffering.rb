@@ -349,13 +349,18 @@ module OpenSSL::Buffering
     @wbuffer << s
     @wbuffer.force_encoding(Encoding::BINARY)
     @sync ||= false
-    if @sync or @wbuffer.size > BLOCK_SIZE
-      until @wbuffer.empty?
-        begin
-          nwrote = syswrite(@wbuffer)
-        rescue Errno::EAGAIN
-          retry
+    buffer_size = @wbuffer.size
+    if @sync or buffer_size > BLOCK_SIZE
+      nwrote = 0
+      begin
+        while nwrote < buffer_size do
+          begin
+            nwrote += syswrite(@wbuffer[nwrote, buffer_size - nwrote])
+          rescue Errno::EAGAIN
+            retry
+          end
         end
+      ensure
         @wbuffer[0, nwrote] = ""
       end
     end
