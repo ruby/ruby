@@ -7316,7 +7316,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             } else {
                 PM_PUTNIL;
             }
+
             ADD_TRACE(ret, RUBY_EVENT_RETURN);
+            ISEQ_COMPILE_DATA(iseq)->last_line = body->location.code_location.end_pos.lineno;
 
             break;
           }
