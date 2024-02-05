@@ -2444,6 +2444,18 @@ assert_equal '[0, 2]', %q{
   B.new.foo
 }
 
+# invokesuper zsuper in a bmethod
+assert_equal 'ok', %q{
+  class Foo
+    define_method(:itself) { super }
+  end
+  begin
+    Foo.new.itself
+  rescue RuntimeError
+    :ok
+  end
+}
+
 # Call to fixnum
 assert_equal '[true, false]', %q{
   def is_odd(obj)

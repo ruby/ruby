@@ -5887,15 +5887,6 @@ fn gen_send_cfunc(
         return None;
     }
 
-    if flags & VM_CALL_ARGS_SPLAT != 0 && flags & VM_CALL_ZSUPER != 0 {
-        // zsuper methods are super calls without any arguments.
-        // They are also marked as splat, but don't actually have an array
-        // they pull arguments from, instead we need to change to call
-        // a different method with the current stack.
-        gen_counter_incr(asm, Counter::send_args_splat_cfunc_zuper);
-        return None;
-    }
-
     let kw_arg = unsafe { vm_ci_kwarg(ci) };
     let kw_arg_num = if kw_arg.is_null() {
         0
@@ -6425,7 +6416,6 @@ fn gen_send_iseq(
     exit_if_has_rest_and_supplying_kws(asm, iseq_has_rest, iseq, supplying_kws)?;
     exit_if_supplying_kw_and_has_no_kw(asm, supplying_kws, iseq)?;
     exit_if_supplying_kws_and_accept_no_kwargs(asm, supplying_kws, iseq)?;
-    exit_if_splat_and_zsuper(asm, flags)?;
     exit_if_doing_kw_and_splat(asm, doing_kw_call, flags)?;
     exit_if_wrong_number_arguments(asm, arg_setup_block, opts_filled, flags, opt_num, iseq_has_rest)?;
     exit_if_doing_kw_and_opts_missing(asm, doing_kw_call, opts_missing)?;
@@ -7325,15 +7315,6 @@ fn exit_if_supplying_kws_and_accept_no_kwargs(asm: &mut Assembler, supplying_kws
         supplying_kws && unsafe { get_iseq_flags_accepts_no_kwarg(iseq) },
         Counter::send_iseq_accepts_no_kwarg
     )
-}
-
-#[must_use]
-fn exit_if_splat_and_zsuper(asm: &mut Assembler, flags: u32) -> Option<()> {
-    // zsuper methods are super calls without any arguments.
-    // They are also marked as splat, but don't actually have an array
-    // they pull arguments from, instead we need to change to call
-    // a different method with the current stack.
-    exit_if(asm, flags & VM_CALL_ARGS_SPLAT != 0 && flags & VM_CALL_ZSUPER != 0, Counter::send_iseq_zsuper)
 }
 
 #[must_use]
