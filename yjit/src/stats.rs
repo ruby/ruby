@@ -300,6 +300,7 @@ make_counters! {
     // Method calls that fallback to dynamic dispatch
     send_keywords,
     send_kw_splat,
+    send_singleton_class,
     send_args_splat_super,
     send_iseq_zsuper,
     send_block_arg,
@@ -380,6 +381,7 @@ make_counters! {
     invokesuper_no_me,
     invokesuper_not_iseq_or_cfunc,
     invokesuper_refinement,
+    invokesuper_singleton_class,
 
     invokeblock_megamorphic,
     invokeblock_none,
