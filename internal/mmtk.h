@@ -143,7 +143,9 @@ bool mmtk_will_never_move(MMTk_ObjectReference object);
 
 void mmtk_initialize_collection(MMTk_VMThread tls);
 
-void mmtk_uninitialize_collection(void);
+void mmtk_prepare_to_fork(void);
+
+void mmtk_after_fork(MMTk_VMThread tls);
 
 void mmtk_enable_collection(void);
 

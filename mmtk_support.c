@@ -1104,12 +1104,12 @@ rb_mmtk_pin_array_buffer(VALUE array, volatile VALUE *stack_slot)
 void
 rb_mmtk_shutdown_gc_threads(void)
 {
-    mmtk_uninitialize_collection();
+    mmtk_prepare_to_fork();
 }
 
 void rb_mmtk_respawn_gc_threads(void)
 {
-    mmtk_initialize_collection(GET_THREAD());
+    mmtk_after_fork(GET_THREAD());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
