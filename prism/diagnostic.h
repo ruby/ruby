@@ -19,7 +19,10 @@
  */
 typedef enum {
     /** For errors that cannot be recovered from. */
-    PM_ERROR_LEVEL_FATAL = 0
+    PM_ERROR_LEVEL_FATAL = 0,
+
+    /** For errors that should raise an argument error. */
+    PM_ERROR_LEVEL_ARGUMENT = 1
 } pm_error_level_t;
 
 /**
@@ -28,6 +31,7 @@ typedef enum {
 typedef enum {
     /** For warnings which should be emitted if $VERBOSE != nil. */
     PM_WARNING_LEVEL_DEFAULT = 0,
+
     /** For warnings which should be emitted if $VERBOSE == true. */
     PM_WARNING_LEVEL_VERBOSE = 1
 } pm_warning_level_t;

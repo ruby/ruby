@@ -63,7 +63,8 @@ typedef struct {
  *
  * For errors, they are:
  *
- * * `PM_ERROR_LEVEL_FATAL` - The level for all errors.
+ * * `PM_ERROR_LEVEL_FATAL` - The default level for errors.
+ * * `PM_ERROR_LEVEL_ARGUMENT` - Errors that should raise ArgumentError.
  *
  * For warnings, they are:
  *
@@ -71,9 +72,13 @@ typedef struct {
  * * `PM_WARNING_LEVEL_VERBOSE` - Warnings that appear with `-w`, as in `ruby -w -c -e 'code'`.
  */
 static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
+    // Special error that can be replaced
     [PM_ERR_CANNOT_PARSE_EXPRESSION]            = { "cannot parse the expression", PM_ERROR_LEVEL_FATAL },
 
-    // Errors
+    // Errors that should raise argument errors
+    [PM_ERR_INVALID_ENCODING_MAGIC_COMMENT]     = { "unknown or invalid encoding in the magic comment", PM_ERROR_LEVEL_ARGUMENT },
+
+    // Errors that should raise syntax errors
     [PM_ERR_ALIAS_ARGUMENT]                     = { "invalid argument being passed to `alias`; expected a bare word, symbol, constant, or global variable", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_AMPAMPEQ_MULTI_ASSIGN]              = { "unexpected `&&=` in a multiple assignment", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_ARGUMENT_AFTER_BLOCK]               = { "unexpected argument after a block argument", PM_ERROR_LEVEL_FATAL },
@@ -187,7 +192,6 @@ static const pm_diagnostic_data_t diagnostic_messages[PM_DIAGNOSTIC_ID_LEN] = {
     [PM_ERR_INCOMPLETE_QUESTION_MARK]           = { "incomplete expression at `?`", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INCOMPLETE_VARIABLE_CLASS]          = { "incomplete class variable", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INCOMPLETE_VARIABLE_INSTANCE]       = { "incomplete instance variable", PM_ERROR_LEVEL_FATAL },
-    [PM_ERR_INVALID_ENCODING_MAGIC_COMMENT]     = { "unknown or invalid encoding in the magic comment", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_FLOAT_EXPONENT]             = { "invalid exponent", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_NUMBER_BINARY]              = { "invalid binary number", PM_ERROR_LEVEL_FATAL },
     [PM_ERR_INVALID_NUMBER_DECIMAL]             = { "invalid decimal number", PM_ERROR_LEVEL_FATAL },
