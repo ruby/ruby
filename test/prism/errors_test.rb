@@ -588,43 +588,45 @@ module Prism
       ]
     end
 
-    def test_cannot_assign_to_a_reserved_numbered_parameter
-      expected = BeginNode(
-        Location(),
-        StatementsNode([
-          LocalVariableWriteNode(:_1, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_2, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_3, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_4, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_5, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_6, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_7, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_8, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_9, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
-          LocalVariableWriteNode(:_10, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location())
-        ]),
-        nil,
-        nil,
-        nil,
-        Location()
-      )
-      source = <<~RUBY
-      begin
-        _1=:a;_2=:a;_3=:a;_4=:a;_5=:a
-        _6=:a;_7=:a;_8=:a;_9=:a;_10=:a
+    if RUBY_VERSION >= "3.0"
+      def test_cannot_assign_to_a_reserved_numbered_parameter
+        expected = BeginNode(
+          Location(),
+          StatementsNode([
+            LocalVariableWriteNode(:_1, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+            LocalVariableWriteNode(:_2, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+            LocalVariableWriteNode(:_3, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+            LocalVariableWriteNode(:_4, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+            LocalVariableWriteNode(:_5, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+            LocalVariableWriteNode(:_6, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+            LocalVariableWriteNode(:_7, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+            LocalVariableWriteNode(:_8, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+            LocalVariableWriteNode(:_9, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location()),
+            LocalVariableWriteNode(:_10, 0, Location(), SymbolNode(SymbolFlags::FORCED_US_ASCII_ENCODING, Location(), Location(), nil, "a"), Location())
+          ]),
+          nil,
+          nil,
+          nil,
+          Location()
+        )
+        source = <<~RUBY
+        begin
+          _1=:a;_2=:a;_3=:a;_4=:a;_5=:a
+          _6=:a;_7=:a;_8=:a;_9=:a;_10=:a
+        end
+        RUBY
+        assert_errors expected, source, [
+          ["_1 is reserved for numbered parameters", 8..10],
+          ["_2 is reserved for numbered parameters", 14..16],
+          ["_3 is reserved for numbered parameters", 20..22],
+          ["_4 is reserved for numbered parameters", 26..28],
+          ["_5 is reserved for numbered parameters", 32..34],
+          ["_6 is reserved for numbered parameters", 40..42],
+          ["_7 is reserved for numbered parameters", 46..48],
+          ["_8 is reserved for numbered parameters", 52..54],
+          ["_9 is reserved for numbered parameters", 58..60],
+        ]
       end
-      RUBY
-      assert_errors expected, source, [
-        ["_1 is reserved for numbered parameters", 8..10],
-        ["_2 is reserved for numbered parameters", 14..16],
-        ["_3 is reserved for numbered parameters", 20..22],
-        ["_4 is reserved for numbered parameters", 26..28],
-        ["_5 is reserved for numbered parameters", 32..34],
-        ["_6 is reserved for numbered parameters", 40..42],
-        ["_7 is reserved for numbered parameters", 46..48],
-        ["_8 is reserved for numbered parameters", 52..54],
-        ["_9 is reserved for numbered parameters", 58..60],
-      ]
     end
 
     def test_do_not_allow_trailing_commas_in_method_parameters
@@ -1344,23 +1346,25 @@ module Prism
       ]
     end
 
-    def test_writing_numbered_parameter
-      assert_errors expression("-> { _1 = 0 }"), "-> { _1 = 0 }", [
-        ["_1 is reserved for numbered parameters", 5..7]
-      ]
-    end
+    if RUBY_VERSION >= "3.0"
+      def test_writing_numbered_parameter
+        assert_errors expression("-> { _1 = 0 }"), "-> { _1 = 0 }", [
+          ["_1 is reserved for numbered parameters", 5..7]
+        ]
+      end
 
-    def test_targeting_numbered_parameter
-      assert_errors expression("-> { _1, = 0 }"), "-> { _1, = 0 }", [
-        ["_1 is reserved for numbered parameters", 5..7]
-      ]
-    end
+      def test_targeting_numbered_parameter
+        assert_errors expression("-> { _1, = 0 }"), "-> { _1, = 0 }", [
+          ["_1 is reserved for numbered parameters", 5..7]
+        ]
+      end
 
-    def test_defining_numbered_parameter
-      error_messages = ["_1 is reserved for numbered parameters"]
+      def test_defining_numbered_parameter
+        error_messages = ["_1 is reserved for numbered parameters"]
 
-      assert_error_messages "def _1; end", error_messages
-      assert_error_messages "def self._1; end", error_messages
+        assert_error_messages "def _1; end", error_messages
+        assert_error_messages "def self._1; end", error_messages
+      end
     end
 
     def test_double_scope_numbered_parameters
@@ -1409,11 +1413,13 @@ module Prism
       ]
     end
 
-    def test_numbered_parameters_in_block_arguments
-      source = "foo { |_1| }"
-      assert_errors expression(source), source, [
-        ["_1 is reserved for numbered parameters", 7..9],
-      ]
+    if RUBY_VERSION >= "3.0"
+      def test_numbered_parameters_in_block_arguments
+        source = "foo { |_1| }"
+        assert_errors expression(source), source, [
+          ["_1 is reserved for numbered parameters", 7..9],
+        ]
+      end
     end
 
     def test_conditional_predicate_closed

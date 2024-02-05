@@ -1062,12 +1062,22 @@ module Prism
 
         # foo in bar
         # ^^^^^^^^^^
-        def visit_match_predicate_node(node)
-          builder.match_pattern_p(
-            visit(node.value),
-            token(node.operator_loc),
-            within_pattern { |compiler| node.pattern.accept(compiler) }
-          )
+        if RUBY_VERSION >= "3.0"
+          def visit_match_predicate_node(node)
+            builder.match_pattern_p(
+              visit(node.value),
+              token(node.operator_loc),
+              within_pattern { |compiler| node.pattern.accept(compiler) }
+            )
+          end
+        else
+          def visit_match_predicate_node(node)
+            builder.match_pattern(
+              visit(node.value),
+              token(node.operator_loc),
+              within_pattern { |compiler| node.pattern.accept(compiler) }
+            )
+          end
         end
 
         # foo => bar

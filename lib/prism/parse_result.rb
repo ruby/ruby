@@ -91,7 +91,8 @@ module Prism
   class Location
     # A Source object that is used to determine more information from the given
     # offset and length.
-    protected attr_reader :source
+    attr_reader :source
+    protected :source
 
     # The byte offset from the beginning of the source where this location
     # starts.

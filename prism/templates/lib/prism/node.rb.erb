@@ -89,11 +89,12 @@ module Prism
     #<%= line %>
     <%- end -%>
     <%- end -%>
-    <%= "private " if field.is_a?(Prism::FlagsField) %>attr_reader :<%= field.name %>
+    attr_reader :<%= field.name -%><%= "\n    private :#{field.name}" if field.is_a?(Prism::FlagsField) %>
 
     <%- end -%>
     # def initialize: (<%= (node.fields.map { |field| "#{field.rbs_class} #{field.name}" } + ["Location location"]).join(", ") %>) -> void
     def initialize(<%= (node.fields.map(&:name) + ["location"]).join(", ") %>)
+      @newline = false
       <%- node.fields.each do |field| -%>
       @<%= field.name %> = <%= field.name %>
       <%- end -%>
