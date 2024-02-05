@@ -65,7 +65,6 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
     HANDLE file = CreateFile(filepath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
     if (file == INVALID_HANDLE_VALUE) {
-        perror("CreateFile failed");
         return false;
     }
 
@@ -73,7 +72,6 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
     DWORD file_size = GetFileSize(file, NULL);
     if (file_size == INVALID_FILE_SIZE) {
         CloseHandle(file);
-        perror("GetFileSize failed");
         return false;
     }
 
@@ -90,7 +88,6 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
     HANDLE mapping = CreateFileMapping(file, NULL, PAGE_READONLY, 0, 0, NULL);
     if (mapping == NULL) {
         CloseHandle(file);
-        perror("CreateFileMapping failed");
         return false;
     }
 
@@ -100,7 +97,6 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
     CloseHandle(file);
 
     if (source == NULL) {
-        perror("MapViewOfFile failed");
         return false;
     }
 
@@ -110,7 +106,6 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
     // Open the file for reading
     int fd = open(filepath, O_RDONLY);
     if (fd == -1) {
-        perror("open");
         return false;
     }
 
@@ -118,7 +113,6 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
     struct stat sb;
     if (fstat(fd, &sb) == -1) {
         close(fd);
-        perror("fstat");
         return false;
     }
 
@@ -135,7 +129,6 @@ pm_string_mapped_init(pm_string_t *string, const char *filepath) {
 
     source = mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
     if (source == MAP_FAILED) {
-        perror("Map failed");
         return false;
     }
 

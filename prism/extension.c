@@ -1,5 +1,9 @@
 #include "prism/extension.h"
 
+#ifdef _WIN32
+#include <ruby/win32.h>
+#endif
+
 // NOTE: this file should contain only bindings. All non-trivial logic should be
 // in libprism so it can be shared its the various callers.
 
@@ -212,20 +216,29 @@ string_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options)
 /**
  * Read options for methods that look like (filepath, **options).
  */
-static bool
+static void
 file_options(int argc, VALUE *argv, pm_string_t *input, pm_options_t *options) {
     VALUE filepath;
     VALUE keywords;
     rb_scan_args(argc, argv, "1:", &filepath, &keywords);
 
+    Check_Type(filepath, T_STRING);
+
     extract_options(options, filepath, keywords);
 
-    if (!pm_string_mapped_init(input, (const char *) pm_string_source(&options->filepath))) {
-        pm_options_free(options);
-        return false;
-    }
+    const char * string_source = (const char *) pm_string_source(&options->filepath);
 
-    return true;
+    if (!pm_string_mapped_init(input, string_source)) {
+        pm_options_free(options);
+
+#ifdef _WIN32
+        int e = rb_w32_map_errno(GetLastError());
+#else
+        int e = errno;
+#endif
+
+        rb_syserr_fail(e, string_source);
+    }
 }
 
 /******************************************************************************/
@@ -299,7 +312,8 @@ static VALUE
 dump_file(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     pm_options_t options = { 0 };
-    if (!file_options(argc, argv, &input, &options)) return Qnil;
+
+    file_options(argc, argv, &input, &options);
 
     VALUE value = dump_input(&input, &options);
     pm_string_free(&input);
@@ -609,7 +623,8 @@ static VALUE
 lex_file(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     pm_options_t options = { 0 };
-    if (!file_options(argc, argv, &input, &options)) return Qnil;
+
+    file_options(argc, argv, &input, &options);
 
     VALUE value = parse_lex_input(&input, &options, false);
     pm_string_free(&input);
@@ -710,7 +725,8 @@ static VALUE
 parse_file(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     pm_options_t options = { 0 };
-    if (!file_options(argc, argv, &input, &options)) return Qnil;
+
+    file_options(argc, argv, &input, &options);
 
     VALUE value = parse_input(&input, &options);
     pm_string_free(&input);
@@ -770,7 +786,8 @@ static VALUE
 parse_file_comments(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     pm_options_t options = { 0 };
-    if (!file_options(argc, argv, &input, &options)) return Qnil;
+
+    file_options(argc, argv, &input, &options);
 
     VALUE value = parse_input_comments(&input, &options);
     pm_string_free(&input);
@@ -824,7 +841,8 @@ static VALUE
 parse_lex_file(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     pm_options_t options = { 0 };
-    if (!file_options(argc, argv, &input, &options)) return Qnil;
+
+    file_options(argc, argv, &input, &options);
 
     VALUE value = parse_lex_input(&input, &options, true);
     pm_string_free(&input);
@@ -881,7 +899,8 @@ static VALUE
 parse_file_success_p(int argc, VALUE *argv, VALUE self) {
     pm_string_t input;
     pm_options_t options = { 0 };
-    if (!file_options(argc, argv, &input, &options)) return Qnil;
+
+    file_options(argc, argv, &input, &options);
 
     VALUE result = parse_input_success_p(&input, &options);
     pm_string_free(&input);
@@ -959,7 +978,17 @@ profile_file(VALUE self, VALUE filepath) {
     pm_string_t input;
 
     const char *checked = check_string(filepath);
-    if (!pm_string_mapped_init(&input, checked)) return Qnil;
+    Check_Type(filepath, T_STRING);
+
+    if (!pm_string_mapped_init(&input, checked)) {
+#ifdef _WIN32
+        int e = rb_w32_map_errno(GetLastError());
+#else
+        int e = errno;
+#endif
+
+        rb_syserr_fail(e, checked);
+    }
 
     pm_options_t options = { 0 };
     pm_options_filepath_set(&options, checked);
