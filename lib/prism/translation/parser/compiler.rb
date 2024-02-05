@@ -614,9 +614,7 @@ module Prism
         # foo => [*, bar, *]
         #        ^^^^^^^^^^^
         def visit_find_pattern_node(node)
-          elements = [*node.requireds]
-          elements << node.rest if !node.rest.nil? && !node.rest.is_a?(ImplicitRestNode)
-          elements.concat(node.posts)
+          elements = [node.left, *node.requireds, node.right]
 
           if node.constant
             builder.const_pattern(visit(node.constant), token(node.opening_loc), builder.find_pattern(nil, visit_all(elements), nil), token(node.closing_loc))
