@@ -2149,6 +2149,7 @@ DLDFLAGS = $(ldflags) $(dldflags) $(ARCH_FLAG)
 LDSHARED = #{CONFIG['LDSHARED']}
 LDSHAREDXX = #{config_string('LDSHAREDXX') || '$(LDSHARED)'}
 AR = #{CONFIG['AR']}
+LD = #{CONFIG['LD']}
 EXEEXT = #{CONFIG['EXEEXT']}
 
 }
