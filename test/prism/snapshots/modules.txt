@@ -84,7 +84,7 @@
         │   │   @ ConstantReadNode (location: (8,7)-(8,8))
         │   │   └── name: :A
         │   ├── body:
-        │   │   @ BeginNode (location: (9,1)-(9,19))
+        │   │   @ BeginNode (location: (8,0)-(9,19))
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (9,1)-(9,6))

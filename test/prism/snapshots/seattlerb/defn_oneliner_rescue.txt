@@ -20,7 +20,7 @@
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
         │   ├── body:
-        │   │   @ BeginNode (location: (2,2)-(5,3))
+        │   │   @ BeginNode (location: (1,0)-(5,3))
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (2,2)-(2,13))

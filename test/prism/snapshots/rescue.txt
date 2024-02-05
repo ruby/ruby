@@ -325,7 +325,7 @@
         │   ├── receiver: ∅
         │   ├── parameters: ∅
         │   ├── body:
-        │   │   @ BeginNode (location: (29,2)-(31,3))
+        │   │   @ BeginNode (location: (28,0)-(31,3))
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements:
         │   │   │   @ StatementsNode (location: (29,2)-(29,6))

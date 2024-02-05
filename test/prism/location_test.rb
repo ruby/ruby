@@ -63,8 +63,8 @@ module Prism
       assert_location(BeginNode, "begin foo; rescue bar\nelse baz end")
       assert_location(BeginNode, "begin foo; rescue bar\nelse baz\nensure qux end")
 
-      assert_location(BeginNode, "class Foo\nrescue then end", 10..25, &:body)
-      assert_location(BeginNode, "module Foo\nrescue then end", 11..26, &:body)
+      assert_location(BeginNode, "class Foo\nrescue then end", 0..25, &:body)
+      assert_location(BeginNode, "module Foo\nrescue then end", 0..26, &:body)
     end
 
     def test_BlockArgumentNode

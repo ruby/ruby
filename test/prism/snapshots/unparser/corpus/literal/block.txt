@@ -846,7 +846,7 @@
         │       ├── locals: [:e]
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (50,0)-(51,3))
+        │       │   @ BeginNode (location: (49,2)-(51,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements: ∅
         │       │   ├── rescue_clause:
@@ -881,7 +881,7 @@
         │       ├── locals: [:bar]
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (53,2)-(56,3))
+        │       │   @ BeginNode (location: (52,2)-(56,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements:
         │       │   │   @ StatementsNode (location: (53,2)-(53,5))
@@ -933,7 +933,7 @@
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (58,2)-(61,3))
+        │       │   @ BeginNode (location: (57,2)-(61,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements:
         │       │   │   @ StatementsNode (location: (58,2)-(58,5))
@@ -1002,7 +1002,7 @@
         │       ├── locals: [:exception]
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (63,2)-(66,3))
+        │       │   @ BeginNode (location: (62,2)-(66,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements:
         │       │   │   @ StatementsNode (location: (63,2)-(63,5))
@@ -1074,7 +1074,7 @@
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (68,2)-(71,3))
+        │       │   @ BeginNode (location: (67,2)-(71,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements:
         │       │   │   @ StatementsNode (location: (68,2)-(68,5))
@@ -1141,7 +1141,7 @@
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (73,2)-(75,3))
+        │       │   @ BeginNode (location: (72,2)-(75,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements:
         │       │   │   @ StatementsNode (location: (73,2)-(73,5))
@@ -1185,7 +1185,7 @@
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (77,2)-(81,3))
+        │       │   @ BeginNode (location: (76,2)-(81,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements:
         │       │   │   @ StatementsNode (location: (77,2)-(77,5))
@@ -1243,7 +1243,7 @@
         │       ├── locals: [:exception]
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (83,2)-(86,3))
+        │       │   @ BeginNode (location: (82,2)-(86,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements:
         │       │   │   @ StatementsNode (location: (83,2)-(83,5))
@@ -1313,7 +1313,7 @@
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (88,0)-(89,3))
+        │       │   @ BeginNode (location: (87,2)-(89,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements: ∅
         │       │   ├── rescue_clause: ∅
@@ -1340,7 +1340,7 @@
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (91,0)-(93,3))
+        │       │   @ BeginNode (location: (90,2)-(93,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements: ∅
         │       │   ├── rescue_clause:

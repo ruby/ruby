@@ -17,7 +17,7 @@
                 ├── locals: []
                 ├── parameters: ∅
                 ├── body:
-                │   @ BeginNode (location: (2,2)-(9,3))
+                │   @ BeginNode (location: (1,4)-(9,3))
                 │   ├── begin_keyword_loc: ∅
                 │   ├── statements:
                 │   │   @ StatementsNode (location: (2,2)-(2,7))

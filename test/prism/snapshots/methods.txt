@@ -95,7 +95,7 @@
         │   ├── receiver: ∅
         │   ├── parameters: ∅
         │   ├── body:
-        │   │   @ BeginNode (location: (8,7)-(8,18))
+        │   │   @ BeginNode (location: (8,0)-(8,18))
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements: ∅
         │   │   ├── rescue_clause: ∅
@@ -643,7 +643,7 @@
         │   ├── receiver: ∅
         │   ├── parameters: ∅
         │   ├── body:
-        │   │   @ BeginNode (location: (77,7)-(77,32))
+        │   │   @ BeginNode (location: (77,0)-(77,32))
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements: ∅
         │   │   ├── rescue_clause:

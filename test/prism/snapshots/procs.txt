@@ -47,7 +47,7 @@
         │   ├── closing_loc: (5,0)-(5,3) = "end"
         │   ├── parameters: ∅
         │   └── body:
-        │       @ BeginNode (location: (4,0)-(5,3))
+        │       @ BeginNode (location: (3,3)-(5,3))
         │       ├── begin_keyword_loc: ∅
         │       ├── statements: ∅
         │       ├── rescue_clause: ∅
@@ -65,7 +65,7 @@
         │   ├── closing_loc: (11,0)-(11,3) = "end"
         │   ├── parameters: ∅
         │   └── body:
-        │       @ BeginNode (location: (8,0)-(11,3))
+        │       @ BeginNode (location: (7,3)-(11,3))
         │       ├── begin_keyword_loc: ∅
         │       ├── statements: ∅
         │       ├── rescue_clause:

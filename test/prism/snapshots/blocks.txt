@@ -373,7 +373,7 @@
         │       ├── locals: []
         │       ├── parameters: ∅
         │       ├── body:
-        │       │   @ BeginNode (location: (21,0)-(22,3))
+        │       │   @ BeginNode (location: (20,4)-(22,3))
         │       │   ├── begin_keyword_loc: ∅
         │       │   ├── statements: ∅
         │       │   ├── rescue_clause:

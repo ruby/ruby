@@ -2157,7 +2157,7 @@
         │   │   ├── keyword_rest: ∅
         │   │   └── block: ∅
         │   ├── body:
-        │   │   @ BeginNode (location: (140,10)-(140,29))
+        │   │   @ BeginNode (location: (140,0)-(140,29))
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements: ∅
         │   │   ├── rescue_clause:
@@ -2220,7 +2220,7 @@
             │   ├── keyword_rest: ∅
             │   └── block: ∅
             ├── body:
-            │   @ BeginNode (location: (142,10)-(142,32))
+            │   @ BeginNode (location: (142,0)-(142,32))
             │   ├── begin_keyword_loc: ∅
             │   ├── statements: ∅
             │   ├── rescue_clause:

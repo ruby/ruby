@@ -33,7 +33,7 @@
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
-        │   │   @ BeginNode (location: (3,9)-(3,20))
+        │   │   @ BeginNode (location: (3,0)-(3,20))
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements: ∅
         │   │   ├── rescue_clause: ∅
@@ -55,7 +55,7 @@
         │   ├── inheritance_operator_loc: ∅
         │   ├── superclass: ∅
         │   ├── body:
-        │   │   @ BeginNode (location: (5,9)-(5,34))
+        │   │   @ BeginNode (location: (5,0)-(5,34))
         │   │   ├── begin_keyword_loc: ∅
         │   │   ├── statements: ∅
         │   │   ├── rescue_clause:
@@ -147,7 +147,7 @@
         │   │           ├── expression:
         │   │           │   @ SelfNode (location: (14,18)-(14,22))
         │   │           ├── body:
-        │   │           │   @ BeginNode (location: (14,24)-(14,35))
+        │   │           │   @ BeginNode (location: (14,9)-(14,35))
         │   │           │   ├── begin_keyword_loc: ∅
         │   │           │   ├── statements: ∅
         │   │           │   ├── rescue_clause: ∅
@@ -179,7 +179,7 @@
         │   │           ├── expression:
         │   │           │   @ SelfNode (location: (16,18)-(16,22))
         │   │           ├── body:
-        │   │           │   @ BeginNode (location: (16,24)-(16,49))
+        │   │           │   @ BeginNode (location: (16,9)-(16,49))
         │   │           │   ├── begin_keyword_loc: ∅
         │   │           │   ├── statements: ∅
         │   │           │   ├── rescue_clause:
