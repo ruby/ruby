@@ -194,7 +194,7 @@ class Gem::Specification < Gem::BasicSpecification
   NOT_FOUND = Struct.new(:to_spec, :this).new # :nodoc:
 
   # Tracking removed method calls to warn users during build time.
-  REMOVED_METHODS = [:rubyforge_project=].freeze # :nodoc:
+  REMOVED_METHODS = [:rubyforge_project=, :mark_version].freeze # :nodoc:
   def removed_method_calls
     @removed_method_calls ||= []
   end
@@ -1874,8 +1874,6 @@ class Gem::Specification < Gem::BasicSpecification
   end
 
   def encode_with(coder) # :nodoc:
-    mark_version
-
     coder.add "name", @name
     coder.add "version", @version
     platform = case @original_platform
@@ -2168,13 +2166,6 @@ class Gem::Specification < Gem::BasicSpecification
     @ri_dir        = nil
     @spec_dir      = nil
     @spec_file     = nil
-  end
-
-  ##
-  # Sets the rubygems_version to the current RubyGems version.
-
-  def mark_version
-    @rubygems_version = Gem::VERSION
   end
 
   ##
@@ -2494,7 +2485,6 @@ class Gem::Specification < Gem::BasicSpecification
   # still have their default values are omitted.
 
   def to_ruby
-    mark_version
     result = []
     result << "# -*- encoding: utf-8 -*-"
     result << "#{Gem::StubSpecification::PREFIX}#{name} #{version} #{platform} #{raw_require_paths.join("\0")}"

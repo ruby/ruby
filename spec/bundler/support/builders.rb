@@ -518,7 +518,6 @@ module Spec
 
         if options[:rubygems_version]
           @spec.rubygems_version = options[:rubygems_version]
-          def @spec.mark_version; end
 
           def @spec.validate(*); end
         end
