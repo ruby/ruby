@@ -4160,6 +4160,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         if ((method_id == idUMinus || method_id == idFreeze) &&
                 !PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&
+                call_node->receiver != NULL &&
                 PM_NODE_TYPE_P(call_node->receiver, PM_STRING_NODE) &&
                 call_node->arguments == NULL &&
                 call_node->block == NULL &&
@@ -4192,7 +4193,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
         else if (method_id == idASET &&
                 !PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&
-                call_node->arguments &&
+                call_node->arguments != NULL &&
                 PM_NODE_TYPE_P((pm_node_t *)call_node->arguments, PM_ARGUMENTS_NODE) &&
                 ((pm_arguments_node_t *)call_node->arguments)->arguments.size == 2 &&
                 PM_NODE_TYPE_P(((pm_arguments_node_t *)call_node->arguments)->arguments.nodes[0], PM_STRING_NODE) &&
