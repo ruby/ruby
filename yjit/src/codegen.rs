@@ -1435,6 +1435,33 @@ fn gen_splatarray(
     Some(KeepCompiling)
 }
 
+// call to_hash on hash to keyword splat before converting block
+// e.g. foo(**object, &block)
+fn gen_splatkw(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+) -> Option<CodegenStatus> {
+    // Save the PC and SP because the callee may allocate
+    jit_prepare_routine_call(jit, asm);
+
+    // Get the operands from the stack
+    let block_opnd = asm.stack_opnd(0);
+    let block_type = asm.ctx.get_opnd_type(block_opnd.into());
+    let hash_opnd = asm.stack_opnd(1);
+
+    let hash = asm.ccall(rb_to_hash_type as *const u8, vec![hash_opnd]);
+    asm.stack_pop(2); // Keep it on stack during ccall for GC
+
+    let stack_ret = asm.stack_push(Type::Hash);
+    asm.mov(stack_ret, hash);
+    asm.stack_push(block_type);
+    // Leave block_opnd spilled by ccall as is
+    asm.ctx.dealloc_temp_reg(asm.ctx.get_stack_size() - 1);
+
+    Some(KeepCompiling)
+}
+
 // concat two arrays
 fn gen_concatarray(
     jit: &mut JITState,
@@ -8706,6 +8733,7 @@ fn get_gen_fn(opcode: VALUE) -> Option<InsnGenFn> {
         YARVINSN_opt_str_uminus => Some(gen_opt_str_uminus),
         YARVINSN_opt_newarray_send => Some(gen_opt_newarray_send),
         YARVINSN_splatarray => Some(gen_splatarray),
+        YARVINSN_splatkw => Some(gen_splatkw),
         YARVINSN_concatarray => Some(gen_concatarray),
         YARVINSN_newrange => Some(gen_newrange),
         YARVINSN_putstring => Some(gen_putstring),

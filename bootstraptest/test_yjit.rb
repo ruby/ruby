@@ -2440,6 +2440,18 @@ assert_equal '[1, 2, 3, 4, 5]', %q{
   splatarray
 }
 
+# splatkw
+assert_equal '[1, 2]', %q{
+  def foo(a:) = [a, yield]
+
+  def entry(&block)
+    a = { a: 1 }
+    foo(**a, &block)
+  end
+
+  entry { 2 }
+}
+
 assert_equal '[1, 1, 2, 1, 2, 3]', %q{
   def expandarray
     arr = [1, 2, 3]
