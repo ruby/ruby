@@ -7654,17 +7654,38 @@ pm_parse_input(pm_parse_result_t *result, VALUE filepath)
 
     // If there are errors, raise an appropriate error and free the result.
     if (result->parser.error_list.size > 0) {
+        // Determine the error to raise. Any errors with the level
+        // PM_ERROR_LEVEL_ARGUMENT effectively take over as the only argument
+        // that gets raised.
+        const pm_diagnostic_t *error_argument = NULL;
+        for (const pm_diagnostic_t *error = (pm_diagnostic_t *) result->parser.error_list.head; error != NULL; error = (pm_diagnostic_t *) error->node.next) {
+            if (error->level == PM_ERROR_LEVEL_ARGUMENT) {
+                error_argument = error;
+                break;
+            }
+        }
+
+        VALUE error_class;
         pm_buffer_t buffer = { 0 };
-        pm_parser_errors_format(&result->parser, &buffer, rb_stderr_tty_p());
 
-        pm_buffer_prepend_string(&buffer, "syntax errors found\n", 20);
-        VALUE error = rb_exc_new(rb_eSyntaxError, pm_buffer_value(&buffer), pm_buffer_length(&buffer));
+        // If we found an error argument, then we need to use that as the error
+        // message. Otherwise, we will format all of the parser error together.
+        if (error_argument == NULL) {
+            error_class = rb_eSyntaxError;
+            pm_buffer_append_string(&buffer, "syntax errors found\n", 20);
+            pm_parser_errors_format(&result->parser, &buffer, rb_stderr_tty_p());
+        }
+        else {
+            error_class = rb_eArgError;
+            pm_buffer_append_string(&buffer, error_argument->message, strlen(error_argument->message));
+        }
 
+        VALUE error_object = rb_exc_new(error_class, pm_buffer_value(&buffer), pm_buffer_length(&buffer));
         pm_buffer_free(&buffer);
 
         // TODO: We need to set the backtrace.
         // rb_funcallv(error, rb_intern("set_backtrace"), 1, &path);
-        return error;
+        return error_object;
     }
 
     // Emit all of the various warnings from the parse.
