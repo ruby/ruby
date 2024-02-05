@@ -530,7 +530,7 @@ class CGI
             if head && buf.size > boundary_size
               len = buf.size - boundary_size
               body.print(buf[0, len])
-              buf[0, len] = ''
+              buf = buf[len, buf.size]
             end
             c = stdin.read(bufsize < content_length ? bufsize : content_length)
             raise EOFError.new("bad content body") if c.nil? || c.empty?
