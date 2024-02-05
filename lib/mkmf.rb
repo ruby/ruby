@@ -989,7 +989,7 @@ SRC
       f = nil
       Dir.glob(files) do |fx|
         f = fx
-        f[0..len] = "" if len
+        f = f[len, f.size] if len
         case File.basename(f)
         when *$NONINSTALLFILES
           next
