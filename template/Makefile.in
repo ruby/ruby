@@ -442,6 +442,7 @@ $(srcdir)/enc/jis/props.h: enc/jis/props.kwd
 
 .c.$(OBJEXT):
 	@$(ECHO) compiling $<
+	$(Q) $(MAKEDIRS) $(dir $@)
 	$(Q) $(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) $(COUTFLAG)$@ -c $<
 
 .$(ASMEXT).$(OBJEXT):
