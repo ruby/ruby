@@ -50,4 +50,15 @@ describe "Array#transpose" do
     result[0].should be_an_instance_of(Array)
     result[1].should be_an_instance_of(Array)
   end
+
+  ruby_version_is "3.3" do
+    it "takes an optional element size argument" do
+      [[1, 'a'], [2, 'b'], [3, 'c']].transpose(2).should == [[1, 2, 3], ["a", "b", "c"]]
+      -> { [[1, 'a'], [2, 'b'], [3, 'c']].transpose(3) }.should raise_error(IndexError)
+      [[1, 2, 3], ["a", "b", "c"]].transpose(3).should == [[1, 'a'], [2, 'b'], [3, 'c']]
+      -> { [[1, 2, 3], ["a", "b", "c"]].transpose(2) }.should raise_error(IndexError)
+      [].transpose(2).should == [[], []]
+      [].transpose(3).should == [[], [], []]
+    end
+  end
 end
