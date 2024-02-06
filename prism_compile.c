@@ -6703,14 +6703,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // those anonymous items temporary names (as below)
         int local_index = 0;
 
-        // We will assign these values now, if applicable, and use them for
-        // the ISEQs on these multis
-        int post_multis_hidden_index = 0;
-
         // Here we figure out local table indices and insert them in to the
         // index lookup table and local tables.
         //
-        // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+        // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
         //         ^^^^^^^^^^^^^
         if (requireds_list && requireds_list->size) {
             for (size_t i = 0; i < requireds_list->size; i++, local_index++) {
@@ -6722,14 +6718,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 pm_node_t *required = requireds_list->nodes[i];
 
                 switch (PM_NODE_TYPE(required)) {
-                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
                   //            ^^^^^^^^^^
                   case PM_MULTI_TARGET_NODE: {
                     local = rb_make_temporary_id(local_index);
                     local_table_for_iseq->ids[local_index] = local;
                     break;
                   }
-                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
                   //         ^
                   case PM_REQUIRED_PARAMETER_NODE: {
                     pm_required_parameter_node_t * param = (pm_required_parameter_node_t *)required;
@@ -6754,7 +6750,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             body->param.flags.has_lead = true;
         }
 
-        // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+        // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
         //                        ^^^^^
         if (optionals_list && optionals_list->size) {
             body->param.opt_num = (int) optionals_list->size;
@@ -6774,7 +6770,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
         }
 
-        // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+        // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
         //                               ^^
         if (parameters_node && parameters_node->rest) {
             body->param.rest_start = local_index;
@@ -6788,7 +6784,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 pm_constant_id_t name = ((pm_rest_parameter_node_t *) parameters_node->rest)->name;
 
                 if (name) {
-                    // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+                    // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
                     //                               ^^
                     if (PM_NODE_FLAG_P(parameters_node->rest, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
                         ID local = pm_constant_id_lookup(scope_node, name);
@@ -6799,7 +6795,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     }
                 }
                 else {
-                    // def foo(a, (b, *c, d), e = 1, *, g, (h, *i, j),  k:, l: 1, **m, &n)
+                    // def foo(a, (b, *c, d), e = 1, *, g, (h, *i, j), k:, l: 1, **m, &n)
                     //                               ^
                     pm_insert_local_special(idMULT, local_index, index_lookup_table, local_table_for_iseq);
                 }
@@ -6808,7 +6804,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
         }
 
-        // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+        // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
         //                                   ^^^^^^^^^^^^^
         if (posts_list && posts_list->size) {
             body->param.post_num = (int) posts_list->size;
@@ -6817,23 +6813,24 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             for (size_t i = 0; i < posts_list->size; i++, local_index++) {
                 ID local;
-                // For each MultiTargetNode, we're going to have one
-                // additional anonymous local not represented in the locals table
-                // We want to account for this in our table size
-                pm_node_t *post_node = posts_list->nodes[i];
+
+                // For each MultiTargetNode, we're going to have one additional
+                // anonymous local not represented in the locals table. We want
+                // to account for this in our table size.
+                const pm_node_t *post_node = posts_list->nodes[i];
+
                 switch (PM_NODE_TYPE(post_node)) {
-                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
                   //                                      ^^^^^^^^^^
                   case PM_MULTI_TARGET_NODE: {
-                    post_multis_hidden_index = local_index;
                     local = rb_make_temporary_id(local_index);
                     local_table_for_iseq->ids[local_index] = local;
                     break;
                   }
-                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
                   //                                   ^
                   case PM_REQUIRED_PARAMETER_NODE: {
-                    pm_required_parameter_node_t * param = (pm_required_parameter_node_t *)post_node;
+                    const pm_required_parameter_node_t *param = (const pm_required_parameter_node_t *) post_node;
 
                     if (PM_NODE_FLAG_P(param, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
                         ID local = pm_constant_id_lookup(scope_node, param->name);
@@ -6851,7 +6848,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             }
         }
 
-        // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+        // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
         //                                                   ^^^^^^^^
         // Keywords create an internal variable on the parse tree
         if (keywords_list && keywords_list->size) {
@@ -6870,7 +6867,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 pm_node_t *keyword_parameter_node = keywords_list->nodes[i];
                 pm_constant_id_t name;
 
-                // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+                // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
                 //                                                   ^^
                 if (PM_NODE_TYPE_P(keyword_parameter_node, PM_REQUIRED_KEYWORD_PARAMETER_NODE)) {
                     name = ((pm_required_keyword_parameter_node_t *)keyword_parameter_node)->name;
@@ -6892,7 +6889,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 pm_node_t *keyword_parameter_node = keywords_list->nodes[i];
                 pm_constant_id_t name;
 
-                // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+                // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
                 //                                                       ^^^^
                 if (PM_NODE_TYPE_P(keyword_parameter_node, PM_OPTIONAL_KEYWORD_PARAMETER_NODE)) {
                     pm_optional_keyword_parameter_node_t *cast = ((pm_optional_keyword_parameter_node_t *)keyword_parameter_node);
@@ -6951,20 +6948,20 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
 
         if (parameters_node) {
-            // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+            // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
             //                                                             ^^^
             if (parameters_node->keyword_rest) {
                 switch (PM_NODE_TYPE(parameters_node->keyword_rest)) {
-                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **nil, &n)
+                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **nil, &n)
                   //                                                             ^^^^^
                   case PM_NO_KEYWORDS_PARAMETER_NODE: {
                     body->param.flags.accepts_no_kwarg = true;
                     break;
                   }
-                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
                   //                                                             ^^^
                   case PM_KEYWORD_REST_PARAMETER_NODE: {
-                    pm_keyword_rest_parameter_node_t *kw_rest_node = (pm_keyword_rest_parameter_node_t *)parameters_node->keyword_rest;
+                    const pm_keyword_rest_parameter_node_t *kw_rest_node = (const pm_keyword_rest_parameter_node_t *) parameters_node->keyword_rest;
                     if (!body->param.flags.has_kw) {
                         body->param.keyword = keyword = ZALLOC_N(struct rb_iseq_param_keyword, 1);
                     }
@@ -7024,7 +7021,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 }
             }
 
-            // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+            // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
             //                                                                  ^^
             if (parameters_node->block) {
                 body->param.block_start = local_index;
@@ -7066,9 +7063,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 // For each MultiTargetNode, we're going to have one
                 // additional anonymous local not represented in the locals table
                 // We want to account for this in our table size
-                pm_node_t *required = requireds_list->nodes[i];
+                const pm_node_t *required = requireds_list->nodes[i];
+
                 if (PM_NODE_TYPE_P(required, PM_MULTI_TARGET_NODE)) {
-                    local_index = pm_compile_destructured_param_locals((pm_multi_target_node_t *)required, index_lookup_table, local_table_for_iseq, scope_node, local_index);
+                    local_index = pm_compile_destructured_param_locals((const pm_multi_target_node_t *) required, index_lookup_table, local_table_for_iseq, scope_node, local_index);
                 }
             }
         }
@@ -7079,9 +7077,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 // For each MultiTargetNode, we're going to have one
                 // additional anonymous local not represented in the locals table
                 // We want to account for this in our table size
-                pm_node_t *post= posts_list->nodes[i];
+                const pm_node_t *post = posts_list->nodes[i];
+
                 if (PM_NODE_TYPE_P(post, PM_MULTI_TARGET_NODE)) {
-                    local_index = pm_compile_destructured_param_locals((pm_multi_target_node_t *)post, index_lookup_table, local_table_for_iseq, scope_node, local_index);
+                    local_index = pm_compile_destructured_param_locals((const pm_multi_target_node_t *) post, index_lookup_table, local_table_for_iseq, scope_node, local_index);
                 }
             }
         }
@@ -7190,7 +7189,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 pm_constant_id_t name;
 
                 switch (PM_NODE_TYPE(keyword_parameter_node)) {
-                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
                   //                                                       ^^^^
                   case PM_OPTIONAL_KEYWORD_PARAMETER_NODE: {
                     pm_optional_keyword_parameter_node_t *cast = ((pm_optional_keyword_parameter_node_t *)keyword_parameter_node);
@@ -7216,7 +7215,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     optional_index++;
                     break;
                   }
-                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j),  k:, l: 1, **m, &n)
+                  // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
                   //                                                   ^^
                   case PM_REQUIRED_KEYWORD_PARAMETER_NODE: {
                     break;
@@ -7250,7 +7249,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 const pm_node_t *post = posts_list->nodes[i];
 
                 if (PM_NODE_TYPE_P(post, PM_MULTI_TARGET_NODE)) {
-                    ADD_GETLOCAL(ret, &dummy_line_node, table_size - post_multis_hidden_index, 0);
+                    ADD_GETLOCAL(ret, &dummy_line_node, table_size - body->param.post_start - (int) i, 0);
                     pm_compile_destructured_param_writes(iseq, (const pm_multi_target_node_t *) post, ret, scope_node);
                 }
             }
