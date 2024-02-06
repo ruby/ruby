@@ -447,7 +447,6 @@ module Test
         flush_job_tokens
         warn e if e
         real_file = worker.real_file and warn "running file: #{real_file}"
-        @need_quit = true
         warn ""
         warn "A test worker crashed. It might be an interpreter bug or"
         warn "a bug in test/unit/parallel.rb. Try again without the -j"
@@ -475,7 +474,6 @@ module Test
 
       def after_worker_quit(worker)
         return unless @options[:parallel]
-        return if @interrupt
         worker.close
         if @jobserver and (token = @job_tokens.slice!(0))
           @jobserver[1] << token
@@ -553,6 +551,7 @@ module Test
         (@fake_classes ||= {})[name] ||= FakeClass.new(name)
       end
 
+      # return true if worker is in error state
       def deal(io, type, result, rep, shutting_down = false)
         worker = @workers_hash[io]
         cmd = worker.read
@@ -560,7 +559,7 @@ module Test
 
         case cmd
         when ''
-          # just only dots, ignore
+          # just dots, ignore
         when /^okay$/
           worker.status = :running
         when /^ready(!)?$/
@@ -610,10 +609,36 @@ module Test
             return true
           end
           record(fake_class(r[0]), *r[1..-1])
-        when /^p (.+?)$/
-          del_jobs_status
-          print $1.unpack1("m")
-          jobs_status(worker) if @options[:job_status] == :replace
+        when /^p (.+?)$/ # test runner output like '.' or 'E'
+          match = $1
+          # error/failure/skip with message
+          if (!@verbose && match =~ /\A([EFS]) (.+)\z/) ||
+              (@verbose && match =~ /\A(.+? s = ([EFS])) \|\| (.+?)\z/)
+            if !@verbose
+              msg = $1
+              err = $2.unpack1("m")
+            else
+              msg = $1 + "\n"
+              err = $3.unpack1("m")
+            end
+            @report << err
+            del_status_line
+            if !@verbose
+              print(msg)
+            else
+              $stdout.print(msg)
+              failed(nil)
+            end
+            jobs_status(worker: worker) if @options[:job_status] == :replace
+          else
+            status_msg = match.unpack1("m")
+            if !@verbose
+              print(status_msg)
+            else
+              $stdout.print(status_msg)
+            end
+            jobs_status(worker: worker) if @options[:job_status] == :replace
+          end
         when /^after (.+?)$/
           @warnings << Marshal.load($1.unpack1("m"))
         when /^bye (.+?)$/
@@ -642,7 +667,6 @@ module Test
         require 'timeout'
         @tasks = @order.group(@order.sort_by_string(@files)) # Array of filenames.
 
-        @need_quit = false
         @dead_workers = []  # Array of dead workers.
         @warnings = []
         @total_tests = @tasks.size.to_s(10)
@@ -652,6 +676,7 @@ module Test
         @workers_hash = {} # out-IO => worker
         @ios          = [] # Array of worker IOs
         @job_tokens   = String.new(encoding: Encoding::ASCII_8BIT) if @jobserver
+        start = Time.now
         begin
           while true
             newjobs = [@tasks.size, @options[:parallel]].min - @workers.size
@@ -669,12 +694,14 @@ module Test
             if !(_io = IO.select(@ios, nil, nil, timeout))
               timeout = Time.now - @worker_timeout
               quit_workers {|w| w.response_at&.<(timeout) }&.map {|w|
-                rep << {file: w.real_file, result: nil, testcase: w.current[0], error: w.current}
+                rep << {
+                  file: w.real_file, result: nil, testcase: w.current[0],
+                  error: w.current, timeout_error: true
+                }
               }
             elsif _io.first.any? {|io|
-              @need_quit or
-                (deal(io, type, result, rep).nil? and
-                 !@workers.any? {|x| [:running, :prepare].include? x.status})
+                deal(io, type, result, rep).nil? and
+                 !@workers.any? {|x| [:running, :prepare].include? x.status}
             }
               break
             end
@@ -705,32 +732,50 @@ module Test
           quit_workers
           flush_job_tokens
 
-          unless @interrupt || !@options[:retry] || @need_quit
-            parallel = @options[:parallel]
-            @options[:parallel] = false
-            suites, rep = rep.partition {|r|
+          time_taken = Time.now - start
+
+          if @interrupt
+            parallel_report(result, rep, time_taken, type)
+            abort "Interrupted"
+          end
+
+          if @options[:retry]
+            orig_rep = rep
+            all_failed_suites, rep = rep.partition {|r|
               r[:testcase] && r[:file] &&
                 (!r.key?(:report) || r[:report].any? {|e| !e[2].is_a?(Test::Unit::PendedError)})
             }
-            suites.map {|r| File.realpath(r[:file])}.uniq.each {|file| require file}
-            del_status_line or puts
-            error, suites = suites.partition {|r| r[:error]}
-            unless suites.empty?
-              puts "\n""Retrying..."
-              @verbose = options[:verbose]
-              suites.map! {|r| ::Object.const_get(r[:testcase])}
-              _run_suites(suites, type)
+            timed_out_suites, failed_suites = all_failed_suites.partition {|r| r[:timeout_error]}
+
+            # Report about the run before retrying
+            if failed_suites.any? || timed_out_suites.any?
+              parallel_report(result, orig_rep, time_taken, type)
+              puts "#{timed_out_suites.size} timeouts" if timed_out_suites.any?
             end
-            unless error.empty?
+
+            parallel = @options[:parallel]
+            @options[:parallel] = false
+            all_failed_suites.map {|r| File.realpath(r[:file])}.uniq.each {|file| require file}
+            del_status_line or puts
+            if failed_suites.any?
+              puts "\n""Retrying files:"
+              failed_suites.each do |r|
+                puts "  #{r[:file]} (#{r[:result][1]} failures, #{r[:result][0]} errors)"
+              end
+              puts "\n"
+              failed_suites.map! {|r| ::Object.const_get(r[:testcase])}
+              _run_suites(failed_suites, type)
+            end
+            if timed_out_suites.any?
               puts "\n""Retrying hung up testcases..."
-              error = error.map do |r|
+              timed_out_suites = timed_out_suites.map do |r|
                 begin
                   ::Object.const_get(r[:testcase])
                 rescue NameError
                   # testcase doesn't specify the correct case, so show `r` for information
                   require 'pp'
 
-                  $stderr.puts "Retrying is failed because the file and testcase is not consistent:"
+                  $stderr.puts "Retrying failed because the file and testcase is not consistent:"
                   PP.pp r, $stderr
                   @errors += 1
                   nil
@@ -740,7 +785,7 @@ module Test
               job_status = options[:job_status]
               options[:verbose] = @verbose = true
               options[:job_status] = :normal
-              result.concat _run_suites(error, type)
+              result.concat _run_suites(timed_out_suites, type)
               options[:verbose] = @verbose = verbose
               options[:job_status] = job_status
             end
@@ -749,7 +794,16 @@ module Test
           unless @options[:retry]
             del_status_line or puts
           end
-          unless rep.empty?
+          if rep.any? && !@options[:retry]
+            rep.each do |x|
+              (e, f, s = x[:result]) or next
+              @errors   += e
+              @failures += f
+              @skips    += s
+            end
+          end
+          # during tests (make test-tool), errors aren't output right away
+          if @options[:testing] && rep.any?
             rep.each do |r|
               if r[:error]
                 puke(*r[:error], Timeout::Error.new)
@@ -757,14 +811,6 @@ module Test
               end
               r[:report]&.each do |f|
                 puke(*f) if f
-              end
-            end
-            if @options[:retry]
-              rep.each do |x|
-                (e, f, s = x[:result]) or next
-                @errors   += e
-                @failures += f
-                @skips    += s
               end
             end
           end
@@ -800,6 +846,26 @@ module Test
         del_status_line
         result
       end
+
+      # Report on all suites ran
+      def parallel_report(result, report, time_taken, type)
+        test_count = assertions = errors = failures = skips = 0
+        result.each do |r|
+          test_count += r[0]
+          assertions += r[1]
+        end
+        report.each do |r|
+          next if r[:result].nil?
+          errors   += r[:result][0]
+          failures += r[:result][1]
+          skips    += r[:result][2]
+        end
+        del_status_line
+        puts "\nFinished%s %ss in %.6fs, %.4f tests/s, %.4f assertions/s.\n" %
+          [(@repeat_count ? " (#{self.class.current_repeat_count+1}/#{@repeat_count})" : ""), type,
+           time_taken, test_count.fdiv(time_taken), assertions.fdiv(time_taken)]
+        puts "#{test_count} tests, #{assertions} assertions, #{failures} failures, #{errors} errors, #{skips} skips"
+      end
     end
 
     module Skipping # :nodoc: all
@@ -826,8 +892,8 @@ module Test
 
       def _run_suites(suites, type)
         result = super
-        report.reject!{|r| r.start_with? "Skipped:" } if @options[:hide_skip]
-        report.sort_by!{|r| r.start_with?("Skipped:") ? 0 : \
+        @report.reject!{|r| r.start_with? "Skipped:" } if @options[:hide_skip]
+        @report.sort_by!{|r| r.start_with?("Skipped:") ? 0 : \
                            (r.start_with?("Failure:") ? 1 : 2) }
         failed(nil)
         result
@@ -1046,7 +1112,7 @@ module Test
         if @options[:job_status] == :replace
           line = line[0...(terminal_width-@status_line_size)]
         end
-        print line
+        $stdout.print line
         @status_line_size += line.size
       end
 
@@ -1079,10 +1145,7 @@ module Test
         else
           color = false
         end
-        @colorize = Colorize.new(color, colors_file: File.join(__dir__, "../../colors"))
-        if color or @options[:job_status] == :replace
-          @verbose = !options[:parallel]
-        end
+        @colorize ||= Colorize.new(color, colors_file: File.join(__dir__, "../../colors"))
         @output = Output.new(self) unless @options[:testing]
         filter = options[:filter]
         type = "#{type}_methods"
@@ -1096,11 +1159,17 @@ module Test
         }
         @test_count = 0
         @total_tests = total.to_s(10)
+        @report_count = 0
+        @report.clear
       end
 
       def new_test(s)
         @test_count += 1
-        update_status(s)
+        if @verbose
+          $stdout.print s
+        else
+          update_status(s)
+        end
       end
 
       def update_status(s)
@@ -1119,7 +1188,7 @@ module Test
         return if s and @options[:job_status] != :replace
         sep = "\n"
         @report_count ||= 0
-        report.each do |msg|
+        @report.each do |msg|
           if msg.start_with? "Skipped:"
             if @options[:hide_skip]
               del_status_line
@@ -1134,7 +1203,8 @@ module Test
           @failed_output.print(sep, @colorize.decorate(first, color), msg, "\n")
           sep = nil
         end
-        report.clear
+        @failed_output.flush if @report.any?
+        @report.clear
       end
 
       def initialize
@@ -1586,6 +1656,10 @@ module Test
         @test_count ||= 0
       end
 
+      def worker_process?
+        false
+      end
+
       ##
       # Runner for a given +type+ (eg, test vs bench).
 
@@ -1628,7 +1702,7 @@ module Test
               [(@repeat_count ? "(#{@@current_repeat_count}/#{@repeat_count}) " : ""), type,
                 t, @test_count.fdiv(t), @assertion_count.fdiv(t)]
         end while @repeat_count && @@current_repeat_count < @repeat_count &&
-                  report.empty? && failures.zero? && errors.zero?
+                  @report.empty? && @failures.zero? && @errors.zero?
 
         output.sync = old_sync if sync
 
@@ -1672,7 +1746,8 @@ module Test
           _start_method(inst)
           inst._assertions = 0
 
-          print "#{suite}##{method.inspect.sub(/\A:/, '')} = " if @verbose
+          # These print to the Output object
+          print "#{suite}##{method.inspect.sub(/\A:/, '')} = " if @verbose || !worker_process?
 
           start_time = Time.now if @verbose
           result =
@@ -1778,7 +1853,7 @@ module Test
           break unless report.empty?
         end
 
-        return (failures + errors).nonzero? # or return nil...
+        return (@failures + @errors).nonzero? # or return nil...
       rescue Interrupt
         abort 'Interrupted'
       end

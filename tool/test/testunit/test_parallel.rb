@@ -181,13 +181,13 @@ module TestParallel
     def test_should_retry_failed_on_workers
       spawn_runner
       buf = Timeout.timeout(TIMEOUT) {@test_out.read}
-      assert_match(/^Retrying\.+$/,buf)
+      assert_match(/^Retrying files:$/,buf)
     end
 
     def test_no_retry_option
       spawn_runner "--no-retry"
       buf = Timeout.timeout(TIMEOUT) {@test_out.read}
-      refute_match(/^Retrying\.+$/,buf)
+      refute_match(/^Retrying files:$/,buf)
       assert_match(/^ +\d+\) Failure:\nTestD#test_fail_at_worker/,buf)
     end
 

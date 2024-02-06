@@ -13,6 +13,10 @@ module Test
       undef _run_suites
       undef run
 
+      def worker_process?
+        true
+      end
+
       def increment_io(orig) # :nodoc:
         *rest, io = 32.times.inject([orig.dup]){|ios, | ios << ios.last.dup }
         rest.each(&:close)
@@ -38,9 +42,18 @@ module Test
         orig_stdin, orig_stdout = $stdin, $stdout
 
         th = Thread.new do
+          readbuf = []
           begin
-            while buf = (self.verbose ? i.gets : i.readpartial(1024))
-              _report "p", buf or break
+            # buf here is '.', 'S', 'E', 'F' unless in verbose mode
+            while buf = (readbuf.shift || (@verbose ? i.gets : i.readpartial(1024)))
+              outbuf = buf
+              # We want outbuf to be 1 character so that if it's 'E' or 'F',
+              # we send the error message with it. See `_report`
+              if !@verbose && outbuf =~ /\A[EFS]/ && buf.size > 1 && @report.size > 0
+                outbuf = buf[0]
+                readbuf.concat buf[1..-1].chars
+              end
+              _report "p", outbuf unless @need_exit
             end
           rescue IOError
           end
@@ -48,12 +61,7 @@ module Test
 
         e, f, s = @errors, @failures, @skips
 
-        begin
-          result = orig_run_suite(suite, type)
-        rescue Interrupt
-          @need_exit = true
-          result = [nil,nil]
-        end
+        result = orig_run_suite(suite, type)
 
         Test::Unit::Runner.output = orig_testout
         $stdin = orig_stdin
@@ -119,7 +127,11 @@ module Test
                 _report "ready"
                 next
               end
-              _run_suites Test::Unit::TestCase.test_suites-suites, $2.to_sym
+              begin
+                _run_suites Test::Unit::TestCase.test_suites-suites, $2.to_sym
+              rescue Interrupt
+                @need_exit = true
+              end
 
               if @need_exit
                 _report "bye"
@@ -149,6 +161,16 @@ module Test
       end
 
       def _report(res, *args) # :nodoc:
+        if !@verbose && res == "p" && args[0] && args[0] =~ /\A[EFS]\z/ && @report.size > 0
+          args << @report.shift # the error message
+          @stdout.write("#{res} #{args[0]} #{args[1..-1].pack("m0")}\n")
+          return true
+        elsif @verbose && res == "p" && args[0] && args[0] =~ /\A.+ s = [EFS]$/ && @report.size > 0
+          args << @report.shift # the error message
+          msg = args[0][0...-1] # take off "\n"
+          @stdout.write("#{res} #{msg} || #{args[1..-1].pack("m0")}\n")
+          return true
+        end
         @stdout.write(args.empty? ? "#{res}\n" : "#{res} #{args.pack("m0")}\n")
         true
       rescue Errno::EPIPE
