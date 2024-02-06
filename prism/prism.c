@@ -9590,11 +9590,21 @@ parser_lex(pm_parser_t *parser) {
                     if (*parser->current.start != '_') {
                         size_t width = char_is_identifier_start(parser, parser->current.start);
 
-                        // If this isn't the beginning of an identifier, then it's an invalid
-                        // token as we've exhausted all of the other options. We'll skip past
-                        // it and return the next token.
+                        // If this isn't the beginning of an identifier, then
+                        // it's an invalid token as we've exhausted all of the
+                        // other options. We'll skip past it and return the next
+                        // token after adding an appropriate error message.
                         if (!width) {
-                            pm_parser_err_current(parser, PM_ERR_INVALID_TOKEN);
+                            pm_diagnostic_id_t diag_id;
+                            if (*parser->current.start >= 0x80) {
+                                diag_id = PM_ERR_INVALID_MULTIBYTE_CHARACTER;
+                            } else if (char_is_ascii_printable(*parser->current.start) || (*parser->current.start == '\\')) {
+                                diag_id = PM_ERR_INVALID_PRINTABLE_CHARACTER;
+                            } else {
+                                diag_id = PM_ERR_INVALID_CHARACTER;
+                            }
+
+                            PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, diag_id, *parser->current.start);
                             goto lex_next_token;
                         }
 
