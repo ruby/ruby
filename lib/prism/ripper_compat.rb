@@ -108,15 +108,49 @@ module Prism
 
     # Visit a CallNode node.
     def visit_call_node(node)
-      if !node.message.match?(/^[[:alpha:]_]/) && node.opening_loc.nil? && node.arguments&.arguments&.length == 1
-        left = visit(node.receiver)
-        right = visit(node.arguments.arguments.first)
+      bounds(node.location)
 
-        bounds(node.location)
-        on_binary(left, node.name, right)
-      else
-        raise NotImplementedError
+      if node.message.match?(/^[[:alpha:]_]/)
+        val = on_ident(node.message)
+
+        return on_vcall(val)
       end
+
+      if node.opening_loc.nil?
+        left = visit(node.receiver)
+        if node.arguments&.arguments&.length == 1
+          right = visit(node.arguments.arguments.first)
+
+          on_binary(left, node.name, right)
+        elsif !node.arguments || node.arguments.empty?
+          on_unary(node.name, left)
+        else
+          raise NotImplementedError, "More than two arguments for operator"
+        end
+      else
+        # This is a method call, not an operator
+        raise NotImplementedError, "Non-nil opening_loc"
+      end
+    end
+
+    # Visit a RangeNode
+    def visit_range_node(node)
+      bounds(node.location)
+      left = visit(node.left)
+      right = visit(node.right)
+
+      if node.operator_loc.slice == "..."
+        on_dot3(left, right)
+      else
+        on_dot2(left, right)
+      end
+    end
+
+    # Visit a ParenthesesNode
+    def visit_parentheses_node(node)
+      bounds(node.location)
+      val = visit(node.body)
+      on_paren(val)
     end
 
     # Visit a FloatNode node.
@@ -133,8 +167,22 @@ module Prism
 
     # Visit an IntegerNode node.
     def visit_integer_node(node)
-      bounds(node.location)
-      on_int(node.slice)
+      text = node.slice
+      loc = node.location
+      if text[0] == "-"
+        # TODO: This is ugly. We test that a newline between - and 7 doesn't give an error, but this could still be bad somehow.
+        bounds_line_col(loc.start_line, loc.start_column + 1)
+        on_int_val = on_int(text[1..-1])
+        bounds(node.location)
+        if RUBY_ENGINE == "jruby"
+          on_unary(:-, on_int_val)
+        else
+          on_unary(:-@, on_int_val)
+        end
+      else
+        bounds(node.location)
+        on_int(text)
+      end
     end
 
     # Visit a RationalNode node.
@@ -182,6 +230,13 @@ module Prism
     def bounds(location)
       @lineno = location.start_line
       @column = location.start_column
+    end
+
+    # If we need to do something unusual, we can directly update the line number
+    # and column to reflect the current node.
+    def bounds_line_col(lineno, column)
+      @lineno = lineno
+      @column = column
     end
 
     # Lazily initialize the parse result.
