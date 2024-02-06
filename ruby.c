@@ -2260,7 +2260,45 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     ruby_set_argv(argc, argv);
     opt->sflag = process_sflag(opt->sflag);
 
-    if (!(*rb_ruby_prism_ptr())) {
+    if (dump & (DUMP_BIT(prism_parsetree))) {
+        pm_parse_result_t result = { 0 };
+        VALUE error;
+
+        if (strcmp(opt->script, "-") == 0) {
+            int xflag = opt->xflag;
+            VALUE rb_source = open_load_file(opt->script_name, &xflag);
+            opt->xflag = xflag != 0;
+
+            rb_warn("Prism support for streaming code from stdin is not currently supported");
+            error = pm_parse_string(&result, rb_source, opt->script_name);
+        }
+        else if (opt->e_script) {
+            error = pm_parse_string(&result, opt->e_script, rb_str_new2("-e"));
+        }
+        else {
+            error = pm_parse_file(&result, opt->script_name);
+        }
+
+        if (error == Qnil) {
+            pm_buffer_t output_buffer = { 0 };
+
+            pm_prettyprint(&output_buffer, &result.parser, result.node.ast_node);
+            rb_io_write(rb_stdout, rb_str_new((const char *) output_buffer.value, output_buffer.length));
+            rb_io_flush(rb_stdout);
+
+            pm_buffer_free(&output_buffer);
+            pm_parse_result_free(&result);
+        }
+        else {
+            pm_parse_result_free(&result);
+            rb_exc_raise(error);
+        }
+
+        dump &= ~DUMP_BIT(prism_parsetree);
+        if (!dump) return Qtrue;
+    }
+
+    if (!(*rb_ruby_prism_ptr()) && !(dump & (DUMP_BIT(prism_parsetree)))) {
         if (opt->e_script) {
             VALUE progname = rb_progname;
             rb_encoding *eenc;
@@ -2338,44 +2376,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         rb_define_global_function("gsub", rb_f_gsub, -1);
         rb_define_global_function("chop", rb_f_chop, 0);
         rb_define_global_function("chomp", rb_f_chomp, -1);
-    }
-
-    if (dump & (DUMP_BIT(prism_parsetree))) {
-        pm_parse_result_t result = { 0 };
-        VALUE error;
-
-        if (strcmp(opt->script, "-") == 0) {
-            int xflag = opt->xflag;
-            VALUE rb_source = open_load_file(opt->script_name, &xflag);
-            opt->xflag = xflag != 0;
-
-            rb_warn("Prism support for streaming code from stdin is not currently supported");
-            error = pm_parse_string(&result, rb_source, opt->script_name);
-        }
-        else if (opt->e_script) {
-            error = pm_parse_string(&result, opt->e_script, rb_str_new2("-e"));
-        }
-        else {
-            error = pm_parse_file(&result, opt->script_name);
-        }
-
-        if (error == Qnil) {
-            pm_buffer_t output_buffer = { 0 };
-
-            pm_prettyprint(&output_buffer, &result.parser, result.node.ast_node);
-            rb_io_write(rb_stdout, rb_str_new((const char *) output_buffer.value, output_buffer.length));
-            rb_io_flush(rb_stdout);
-
-            pm_buffer_free(&output_buffer);
-            pm_parse_result_free(&result);
-        }
-        else {
-            pm_parse_result_free(&result);
-            rb_exc_raise(error);
-        }
-
-        dump &= ~DUMP_BIT(prism_parsetree);
-        if (!dump) return Qtrue;
     }
 
     if (dump & (DUMP_BIT(parsetree)|DUMP_BIT(parsetree_with_comment))) {
