@@ -2557,6 +2557,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
 {
     // in_condition is the same as compile.c's needstr
     enum defined_type dtype = DEFINED_NOT_DEFINED;
+
     switch (PM_NODE_TYPE(node)) {
       case PM_ARGUMENTS_NODE: {
         const pm_arguments_node_t *cast = (pm_arguments_node_t *) node;
@@ -2577,14 +2578,25 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
         dtype = DEFINED_NIL;
         break;
       case PM_PARENTHESES_NODE: {
-          pm_parentheses_node_t *parentheses_node = (pm_parentheses_node_t *) node;
+        const pm_parentheses_node_t *cast = (const pm_parentheses_node_t *) node;
 
-          if (parentheses_node->body == NULL) {
-              dtype = DEFINED_NIL;
-          } else {
-              dtype = DEFINED_EXPR;
-          }
-          break;
+        if (cast->body == NULL) {
+            // If we have empty parentheses, then we want to return "nil".
+            dtype = DEFINED_NIL;
+        }
+        else if (PM_NODE_TYPE_P(cast->body, PM_STATEMENTS_NODE) && ((const pm_statements_node_t *) cast->body)->body.size == 1) {
+            // If we have a parentheses node that is wrapping a single statement
+            // then we want to recurse down to that statement and compile it.
+            pm_compile_defined_expr0(iseq, ((const pm_statements_node_t *) cast->body)->body.nodes[0], ret, popped, scope_node, dummy_line_node, lineno, in_condition, lfinish, explicit_receiver);
+            return;
+        }
+        else {
+            // Otherwise, we have parentheses wrapping multiple statements, in
+            // which case this is defined as "expression".
+            dtype = DEFINED_EXPR;
+        }
+
+        break;
       }
       case PM_SELF_NODE:
         dtype = DEFINED_SELF;
@@ -2596,13 +2608,16 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
         dtype = DEFINED_FALSE;
         break;
       case PM_ARRAY_NODE: {
-          pm_array_node_t *array_node = (pm_array_node_t *) node;
-          if (!(array_node->base.flags & PM_ARRAY_NODE_FLAGS_CONTAINS_SPLAT)) {
-              for (size_t index = 0; index < array_node->elements.size; index++) {
-                  pm_compile_defined_expr0(iseq, array_node->elements.nodes[index], ret, popped, scope_node, dummy_line_node, lineno, true, lfinish, false);
+          pm_array_node_t *cast = (pm_array_node_t *) node;
+
+          if (!PM_NODE_FLAG_P(cast, PM_ARRAY_NODE_FLAGS_CONTAINS_SPLAT)) {
+              for (size_t index = 0; index < cast->elements.size; index++) {
+                  pm_compile_defined_expr0(iseq, cast->elements.nodes[index], ret, popped, scope_node, dummy_line_node, lineno, true, lfinish, false);
+
                   if (!lfinish[1]) {
                       lfinish[1] = NEW_LABEL(lineno);
                   }
+
                   ADD_INSNL(ret, &dummy_line_node, branchunless, lfinish[1]);
               }
           }
