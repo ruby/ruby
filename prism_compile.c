@@ -2939,7 +2939,10 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         // Scope associated with the block
         pm_scope_node_t next_scope_node;
         pm_scope_node_init(call_node->block, &next_scope_node, scope_node, parser);
-        block_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
+
+        int block_lineno = (int) pm_newline_list_line_column(&newline_list, call_node->block->location.start).line;
+        block_iseq = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, block_lineno);
+
         pm_scope_node_destroy(&next_scope_node);
 
         if (ISEQ_BODY(block_iseq)->catch_table) {

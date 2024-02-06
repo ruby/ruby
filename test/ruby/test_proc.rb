@@ -1846,4 +1846,3 @@ class TestProcKeywords < Test::Unit::TestCase
     assert_raise(ArgumentError) { (f >> g).call(**{})[:a] }
   end
 end
-
