@@ -7634,6 +7634,71 @@ pm_parse_result_free(pm_parse_result_t *result)
 }
 
 /**
+ * Check if the given source slice is valid UTF-8.
+ */
+static bool
+pm_parse_input_error_utf8_p(const uint8_t *start, const uint8_t *end)
+{
+    size_t width;
+
+    while (start < end) {
+        if ((width = pm_encoding_utf_8_char_width(start, end - start)) == 0) return false;
+        start += width;
+    }
+
+    return true;
+}
+
+/**
+ * Generate an error object from the given parser that contains as much
+ * information as possible about the errors that were encountered.
+ */
+static VALUE
+pm_parse_input_error(const pm_parse_result_t *result)
+{
+    const pm_diagnostic_t *head = (const pm_diagnostic_t *) result->parser.error_list.head;
+    bool valid_utf8 = true;
+
+    for (const pm_diagnostic_t *error = head; error != NULL; error = (const pm_diagnostic_t *) error->node.next) {
+        // Any errors with the level PM_ERROR_LEVEL_ARGUMENT effectively take
+        // over as the only argument that gets raised. This is to allow priority
+        // messages that should be handled before anything else.
+        if (error->level == PM_ERROR_LEVEL_ARGUMENT) {
+            return rb_exc_new(rb_eArgError, error->message, strlen(error->message));
+        }
+
+        // It is implicitly assumed that the error messages will be encodeable
+        // as UTF-8. Because of this, we can't include source examples that
+        // contain invalid byte sequences. So if any source examples include
+        // invalid UTF-8 byte sequences, we will skip showing source examples
+        // entirely.
+        if (valid_utf8 && !pm_parse_input_error_utf8_p(error->location.start, error->location.end)) {
+            valid_utf8 = false;
+        }
+    }
+
+    pm_buffer_t buffer = { 0 };
+    pm_buffer_append_string(&buffer, "syntax errors found\n", 20);
+
+    if (valid_utf8) {
+        pm_parser_errors_format(&result->parser, &buffer, rb_stderr_tty_p());
+    }
+    else {
+        const pm_string_t *filepath = &result->parser.filepath;
+
+        for (const pm_diagnostic_t *error = head; error != NULL; error = (pm_diagnostic_t *) error->node.next) {
+            if (error != head) pm_buffer_append_byte(&buffer, '\n');
+            pm_buffer_append_format(&buffer, "%.*s:%" PRIu32 ": %s", (int) pm_string_length(filepath), pm_string_source(filepath), (uint32_t) pm_newline_list_line_column(&result->parser.newline_list, error->location.start).line, error->message);
+        }
+    }
+
+    VALUE error = rb_exc_new(rb_eSyntaxError, pm_buffer_value(&buffer), pm_buffer_length(&buffer));
+    pm_buffer_free(&buffer);
+
+    return error;
+}
+
+/**
  * Parse the parse result and raise a Ruby error if there are any syntax errors.
  * It returns an error if one should be raised. It is assumed that the parse
  * result object is zeroed out.
@@ -7648,38 +7713,11 @@ pm_parse_input(pm_parse_result_t *result, VALUE filepath)
 
     // If there are errors, raise an appropriate error and free the result.
     if (result->parser.error_list.size > 0) {
-        // Determine the error to raise. Any errors with the level
-        // PM_ERROR_LEVEL_ARGUMENT effectively take over as the only argument
-        // that gets raised.
-        const pm_diagnostic_t *error_argument = NULL;
-        for (const pm_diagnostic_t *error = (pm_diagnostic_t *) result->parser.error_list.head; error != NULL; error = (pm_diagnostic_t *) error->node.next) {
-            if (error->level == PM_ERROR_LEVEL_ARGUMENT) {
-                error_argument = error;
-                break;
-            }
-        }
-
-        VALUE error_class;
-        pm_buffer_t buffer = { 0 };
-
-        // If we found an error argument, then we need to use that as the error
-        // message. Otherwise, we will format all of the parser error together.
-        if (error_argument == NULL) {
-            error_class = rb_eSyntaxError;
-            pm_buffer_append_string(&buffer, "syntax errors found\n", 20);
-            pm_parser_errors_format(&result->parser, &buffer, rb_stderr_tty_p());
-        }
-        else {
-            error_class = rb_eArgError;
-            pm_buffer_append_string(&buffer, error_argument->message, strlen(error_argument->message));
-        }
-
-        VALUE error_object = rb_exc_new(error_class, pm_buffer_value(&buffer), pm_buffer_length(&buffer));
-        pm_buffer_free(&buffer);
+        VALUE error = pm_parse_input_error(result);
 
         // TODO: We need to set the backtrace.
         // rb_funcallv(error, rb_intern("set_backtrace"), 1, &path);
-        return error_object;
+        return error;
     }
 
     // Emit all of the various warnings from the parse.
