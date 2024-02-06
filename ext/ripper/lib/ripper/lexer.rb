@@ -67,7 +67,7 @@ class Ripper
         when 0, :to_int
           @to_int
         when 1, :to_s
-          @event
+          @to_s
         else
           nil
         end

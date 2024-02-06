@@ -253,6 +253,14 @@ world"
     assert_equal(code, Ripper.tokenize(code).join(""), bug)
   end
 
+  def test_lexer_state_bracket
+    state = Ripper.lex("1 + 2").last.last
+    assert_equal(2, state[0])
+    assert_equal(2, state[:to_int])
+    assert_equal("END", state[1])
+    assert_equal("END", state[:to_s])
+  end
+
   def test_heredoc_inside_block_param
     bug = '[Bug #19399]'
     code = <<~CODE
