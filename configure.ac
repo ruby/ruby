@@ -4603,6 +4603,9 @@ AC_CONFIG_FILES(Makefile:template/Makefile.in, [
     ]) && mv -f $tmpmk Makefile],
 [EXEEXT='$EXEEXT' MAKE='${MAKE-make}' gnumake='$gnumake' GIT='$GIT' YJIT_SUPPORT='$YJIT_SUPPORT'])
 
+dnl Make subdirectories where object files live, so that the compiler can write .o files to them
+AC_CONFIG_COMMANDS([enc], [mkdir -p enc])
+
 AC_ARG_WITH([ruby-pc],
 	    AS_HELP_STRING([--with-ruby-pc=FILENAME], [pc file basename]),
 	    [ruby_pc="$withval"],
