@@ -1203,8 +1203,7 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
                     //   foo(*a, b)
                     if (index == arguments_node_list.size - 1) {
                         RUBY_ASSERT(post_splat_counter > 0);
-                        ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(post_splat_counter));
-                        ADD_INSN(ret, &dummy_line_node, concatarray);
+                        ADD_INSN1(ret, &dummy_line_node, pushtoarray, INT2FIX(post_splat_counter));
                     }
                     else {
                         pm_node_t *next_arg = arguments_node_list.nodes[index + 1];
@@ -2959,7 +2958,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
         flags |= VM_CALL_FCALL;
     }
 
-    if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE)) {
+    if (!popped && PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE)) {
         if (flags & VM_CALL_ARGS_BLOCKARG) {
             ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
             if (flags & VM_CALL_ARGS_SPLAT) {
@@ -2976,7 +2975,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
             ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(orig_argc + 2));
             PM_POP;
         }
-        else if (!popped) {
+        else {
             ADD_INSN1(ret, &dummy_line_node, setn, INT2FIX(orig_argc + 1));
         }
     }
@@ -3955,6 +3954,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             pm_array_node_t *cast = (pm_array_node_t *)node;
             elements = &cast->elements;
         }
+
         // If every node in the array is static, then we can compile the entire
         // array now instead of later.
         if (pm_static_literal_p(node)) {
@@ -3981,13 +3981,14 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // If this array is popped, then this serves only to ensure we enact
             // all side-effects (like method calls) that are contained within
             // the array contents.
-
+            //
             // We treat all sequences of non-splat elements as their
             // own arrays, followed by a newarray, and then continually
-            // concat the arrays with the SplatNodes
+            // concat the arrays with the SplatNode nodes.
             int new_array_size = 0;
             bool need_to_concat_array = false;
             bool has_kw_splat = false;
+
             for (size_t index = 0; index < elements->size; index++) {
                 pm_node_t *array_element = elements->nodes[index];
                 if (PM_NODE_TYPE_P(array_element, PM_SPLAT_NODE)) {
