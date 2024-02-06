@@ -71,6 +71,7 @@ VALUE rb_cNilClass;
 VALUE rb_cTrueClass;
 VALUE rb_cFalseClass;
 
+VALUE rb_mImmutable;
 static VALUE rb_cNilClass_to_s;
 static VALUE rb_cTrueClass_to_s;
 static VALUE rb_cFalseClass_to_s;
@@ -376,12 +377,27 @@ init_copy(VALUE dest, VALUE obj)
 
 static VALUE immutable_obj_clone(VALUE obj, VALUE kwfreeze);
 static VALUE mutable_obj_clone(VALUE obj, VALUE kwfreeze);
-PUREFUNC(static inline int special_object_p(VALUE obj)); /*!< \private */
+
+// This should be promoted to use a flag.
 static inline int
-special_object_p(VALUE obj)
+object_is_immutable(VALUE object) {
+    return RB_TEST(rb_ivar_get(object, idImmutable));
+}
+
+void rb_ivar_set_internal(VALUE obj, ID id, VALUE val);
+
+static inline void
+object_set_immutable(VALUE object) {
+    rb_ivar_set_internal(object, idImmutable, Qtrue);
+}
+
+PUREFUNC(int rb_immutable_p(VALUE obj));
+int
+rb_immutable_p(VALUE object)
 {
-    if (SPECIAL_CONST_P(obj)) return TRUE;
-    switch (BUILTIN_TYPE(obj)) {
+    if (SPECIAL_CONST_P(object)) return TRUE;
+
+    switch (BUILTIN_TYPE(object)) {
       case T_BIGNUM:
       case T_FLOAT:
       case T_SYMBOL:
@@ -390,8 +406,14 @@ special_object_p(VALUE obj)
         /* not a comprehensive list */
         return TRUE;
       default:
-        return FALSE;
+        return object_is_immutable(object);
     }
+}
+
+static VALUE
+immutable_p(VALUE self)
+{
+    return RBOOL(rb_immutable_p(self));
 }
 
 static VALUE
@@ -413,8 +435,10 @@ static VALUE
 rb_obj_clone2(rb_execution_context_t *ec, VALUE obj, VALUE freeze)
 {
     VALUE kwfreeze = obj_freeze_opt(freeze);
-    if (!special_object_p(obj))
+
+    if (!rb_immutable_p(obj))
         return mutable_obj_clone(obj, kwfreeze);
+
     return immutable_obj_clone(obj, kwfreeze);
 }
 
@@ -532,7 +556,7 @@ mutable_obj_clone(VALUE obj, VALUE kwfreeze)
 VALUE
 rb_obj_clone(VALUE obj)
 {
-    if (special_object_p(obj)) return obj;
+    if (rb_immutable_p(obj)) return obj;
     return mutable_obj_clone(obj, Qnil);
 }
 
@@ -580,9 +604,10 @@ rb_obj_dup(VALUE obj)
 {
     VALUE dup;
 
-    if (special_object_p(obj)) {
+    if (rb_immutable_p(obj)) {
         return obj;
     }
+
     dup = rb_obj_alloc(rb_obj_class(obj));
     init_copy(dup, obj);
     rb_funcall(dup, id_init_dup, 1, obj);
@@ -3947,6 +3972,42 @@ f_sprintf(int c, const VALUE *v, VALUE _)
     return rb_f_sprintf(c, v);
 }
 
+// The semantics of this aren't quite right but it's enough for a PoC:
+VALUE rb_ractor_make_shareable(VALUE obj);
+VALUE rb_ractor_make_shareable_copy(VALUE obj);
+
+VALUE
+rb_immutable(VALUE object, int copy) {
+    if (rb_immutable_p(object)) return object;
+
+    if (copy) {
+        object = rb_ractor_make_shareable_copy(object);
+    } else {
+        object = rb_ractor_make_shareable(object);
+    }
+
+    object_set_immutable(object);
+
+    return object;
+}
+
+static VALUE
+immutable(int argc, VALUE *argv, VALUE self) {
+    VALUE object, copy;
+
+    rb_scan_args(argc, argv, "11", &object, &copy);
+
+    return rb_immutable(object, RTEST(copy));
+}
+
+static VALUE
+rb_immutable_new(int argc, VALUE *argv, VALUE self)
+{
+    VALUE result = rb_call_super(argc, argv);
+
+    return rb_immutable(result, 0);
+}
+
 /*
  *  Document-class: Class
  *
@@ -4373,6 +4434,7 @@ InitVM_Object(void)
     rb_define_method(rb_mKernel, "initialize_clone", rb_obj_init_clone, -1);
 
     rb_define_method(rb_mKernel, "freeze", rb_obj_freeze, 0);
+    rb_define_method(rb_mKernel, "immutable?", immutable_p, 0);
 
     rb_define_method(rb_mKernel, "to_s", rb_any_to_s, 0);
     rb_define_method(rb_mKernel, "inspect", rb_obj_inspect, 0);
@@ -4508,6 +4570,10 @@ InitVM_Object(void)
     rb_define_method(rb_cFalseClass, "===", case_equal, 1);
     rb_undef_alloc_func(rb_cFalseClass);
     rb_undef_method(CLASS_OF(rb_cFalseClass), "new");
+
+    rb_mImmutable = rb_define_module("Immutable");
+    rb_define_method(rb_mImmutable, "new", rb_immutable_new, -1);
+    rb_define_global_function("Immutable", immutable, -1);
 }
 
 #include "kernel.rbinc"

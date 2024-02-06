@@ -162,6 +162,33 @@ VALUE rb_obj_is_kind_of(VALUE obj, VALUE klass);
  */
 VALUE rb_obj_alloc(VALUE klass);
 
+RBIMPL_ATTR_PURE()
+
+/**
+ * Queries if the given value/object is immutable.
+ *
+ * @param[in]  object          Arbitrary ruby object.
+ * @retval     TRUE            The object is immutable.
+ * @retval     FALSE           Otherwise.
+ */
+int rb_immutable_p(VALUE object);
+
+/**
+ * Makes the given object immutable.
+ *
+ * Immutability means that the object's state cannot be changed. It is achieved
+ * by freezing the object, and all things the object references.
+ *
+ * If the object is already immutable, this function does nothing.
+ *
+ * If copy is specified, references which are not frozen are copied before they
+ * are frozen.
+ *
+ * @param[in]  object          Arbitrary ruby object.
+ * @retval     object          The given object.
+ */
+VALUE rb_immutable(VALUE object, int copy);
+
 /**
  * Produces a shallow copy of the given object.  Its list of instance variables
  * are copied, but  not the objects they reference.  It  also copies the frozen
