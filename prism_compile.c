@@ -7811,7 +7811,13 @@ VALUE
 pm_parse_file(pm_parse_result_t *result, VALUE filepath)
 {
     if (!pm_string_mapped_init(&result->input, RSTRING_PTR(filepath))) {
-        return rb_exc_new3(rb_eRuntimeError, rb_sprintf("Failed to map file: %s", RSTRING_PTR(filepath)));
+#ifdef _WIN32
+        int e = rb_w32_map_errno(GetLastError());
+#else
+        int e = errno;
+#endif
+
+        return rb_syserr_new(e, RSTRING_PTR(filepath));
     }
 
     VALUE error = pm_parse_input(result, filepath);

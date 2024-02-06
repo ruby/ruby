@@ -2678,6 +2678,22 @@ end
       assert_prism_eval(":però")
     end
 
+    def test_parse_file
+      assert_nothing_raised do
+        RubyVM::InstructionSequence.compile_file_prism(__FILE__)
+      end
+
+      error = assert_raise Errno::ENOENT do
+        RubyVM::InstructionSequence.compile_file_prism("idontexist.rb")
+      end
+
+      assert_equal "No such file or directory - idontexist.rb", error.message
+
+      assert_raise TypeError do
+        RubyVM::InstructionSequence.compile_file_prism(nil)
+      end
+    end
+
     private
 
     def compare_eval(source, raw:)
