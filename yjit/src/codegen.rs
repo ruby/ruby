@@ -7516,6 +7516,10 @@ fn gen_send_dynamic<F: Fn(&mut Assembler) -> Opnd>(
         return None;
     }
 
+    // Rewind stack_size using ctx.with_stack_size to allow stack_size changes
+    // before you return None.
+    asm.ctx = asm.ctx.with_stack_size(jit.stack_size_for_pc);
+
     // Save PC and SP to prepare for dynamic dispatch
     jit_prepare_non_leaf_call(jit, asm);
 

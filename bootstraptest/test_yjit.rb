@@ -4527,3 +4527,14 @@ assert_equal '[1, 2]', %q{
   arr = [1]
   foo(*arr, 2)
 }
+
+# pop before fallback
+assert_normal_exit %q{
+  class Foo
+    attr_reader :foo
+
+    def try = foo(0, &nil)
+  end
+
+  Foo.new.try
+}
