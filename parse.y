@@ -16070,6 +16070,11 @@ rb_ruby_parser_free(void *ptr)
         }
     }
     string_buffer_free(p);
+
+    if (p->pvtbl) {
+        st_free_table(p->pvtbl);
+    }
+
     xfree(ptr);
 }
 
