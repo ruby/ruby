@@ -83,33 +83,23 @@ jobs:
 
       - run: $SETARCH make
 
-      - name: make btest
+      - name: make test
         run: |
-          make -s btest RUN_OPTS="$RUN_OPTS"
+          $SETARCH make -s test RUN_OPTS="$RUN_OPTS"
         timeout-minutes: 30
         env:
           GNUMAKEFLAGS: ''
           RUBY_TESTOPTS: '-v --tty=no'
           RUN_OPTS: ${{ matrix.run_opts }}
-        continue-on-error: true
 
-      # - name: make test
-      #   run: |
-      #     $SETARCH make -s test RUN_OPTS="$RUN_OPTS"
-      #   timeout-minutes: 30
-      #   env:
-      #     GNUMAKEFLAGS: ''
-      #     RUBY_TESTOPTS: '-v --tty=no'
-      #     RUN_OPTS: ${{ matrix.run_opts }}
-
-      # - name: make test-all
-      #   run: |
-      #     $SETARCH make -s test-all RUN_OPTS="$RUN_OPTS"
-      #   timeout-minutes: 40
-      #   env:
-      #     GNUMAKEFLAGS: ''
-      #     RUBY_TESTOPTS: '-q --tty=no'
-      #     RUN_OPTS: ${{ matrix.run_opts }}
+      - name: make test-all
+        run: |
+          $SETARCH make -s test-all RUN_OPTS="$RUN_OPTS"
+        timeout-minutes: 40
+        env:
+          GNUMAKEFLAGS: ''
+          RUBY_TESTOPTS: '-q --tty=no --excludes-dir="../src/test/.excludes-prism" --exclude="test_ast.rb" --exclude="test_regexp.rb" --exclude="error_highlight/test_error_highlight.rb"'
+          RUN_OPTS: ${{ matrix.run_opts }}
 
       # - name: make test-spec
       #   run: |

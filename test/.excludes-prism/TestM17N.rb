@@ -1,0 +1,5 @@
+exclude(:test_regexp_embed, "https://github.com/ruby/prism/issues/1997")
+exclude(:test_dynamic_eucjp_regexp, "https://github.com/ruby/prism/issues/1997")
+exclude(:test_regexp_ascii, "https://github.com/ruby/prism/issues/1997")
+exclude(:test_dynamic_utf8_regexp, "https://github.com/ruby/prism/issues/1997")
+exclude(:test_dynamic_sjis_regexp, "https://github.com/ruby/prism/issues/1997")
