@@ -3480,7 +3480,10 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
             ADD_INSN(writes, &dummy_line_node, swap);
         }
 
-        ADD_SEND(writes, &dummy_line_node, method_id, INT2NUM(1));
+        int flags = VM_CALL_ARGS_SIMPLE;
+        if (PM_NODE_FLAG_P(cast, PM_CALL_NODE_FLAGS_IGNORE_VISIBILITY)) flags |= VM_CALL_FCALL;
+
+        ADD_SEND_WITH_FLAG(writes, &dummy_line_node, method_id, INT2FIX(1), INT2FIX(flags));
         ADD_INSN(writes, &dummy_line_node, pop);
 
         if (state != NULL) {
@@ -4306,20 +4309,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         return;
       }
-      case PM_CALL_TARGET_NODE: {
-        // Call targets can be used to indirectly call a method in places like
-        // rescue references, for loops, and multiple assignment. In those
-        // circumstances, it's necessary to first compile the receiver, then to
-        // compile the method call itself.
-        //
-        // Therefore in the main switch case here where we're compiling a call
-        // target, we're only going to compile the receiver. Then wherever
-        // we've called into pm_compile_node when we're compiling call targets,
-        // we'll need to make sure we compile the method call as well.
-        pm_call_target_node_t *cast = (pm_call_target_node_t*) node;
-        PM_COMPILE_NOT_POPPED(cast->receiver);
-        return;
-      }
       case PM_CASE_NODE: {
         pm_case_node_t *case_node = (pm_case_node_t *)node;
         bool has_predicate = case_node->predicate;
@@ -4820,25 +4809,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
 
         ADD_INSN1(ret, &dummy_line_node, setconstant, child_name);
-        return;
-      }
-      case PM_CONSTANT_PATH_TARGET_NODE: {
-        // Constant path targets can be used to indirectly write a constant in
-        // places like rescue references, for loops, and multiple assignment. In
-        // those circumstances, it's necessary to first compile the parent, then
-        // to compile the child.
-        //
-        // Therefore in the main switch case here where we're compiling a
-        // constant path target, we're only going to compile the parent. Then
-        // wherever we've called into pm_compile_node when we're compiling
-        // constant path targets, we'll need to make sure we compile the child
-        // as well.
-        pm_constant_path_target_node_t *cast = (pm_constant_path_target_node_t *) node;
-
-        if (cast->parent) {
-            PM_COMPILE_NOT_POPPED(cast->parent);
-        }
-
         return;
       }
       case PM_CONSTANT_PATH_WRITE_NODE: {
