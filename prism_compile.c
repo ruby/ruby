@@ -738,12 +738,14 @@ pm_interpolated_node_compile(pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_
 
     if (parts_size > 0) {
         VALUE current_string = Qnil;
+
         for (size_t index = 0; index < parts_size; index++) {
-            pm_node_t *part = parts->nodes[index];
+            const pm_node_t *part = parts->nodes[index];
 
             if (PM_NODE_TYPE_P(part, PM_STRING_NODE)) {
-                pm_string_node_t *string_node = (pm_string_node_t *)part;
+                const pm_string_node_t *string_node = (const pm_string_node_t *)part;
                 VALUE string_value = parse_string_encoded((pm_node_t *)string_node, &string_node->unescaped, parser);
+
                 if (RTEST(current_string)) {
                     current_string = rb_str_concat(current_string, string_value);
                 }
@@ -752,10 +754,12 @@ pm_interpolated_node_compile(pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_
                 }
             }
             else if (PM_NODE_TYPE_P(part, PM_EMBEDDED_STATEMENTS_NODE) &&
-                    ((pm_embedded_statements_node_t *)part)->statements->body.size == 1 &&
-                    PM_NODE_TYPE_P(((pm_embedded_statements_node_t *)part)->statements->body.nodes[0], PM_STRING_NODE)) {
-                pm_string_node_t *string_node = (pm_string_node_t *)((pm_embedded_statements_node_t *)part)->statements->body.nodes[0];
+                    ((const pm_embedded_statements_node_t *) part)->statements != NULL &&
+                    ((const pm_embedded_statements_node_t *) part)->statements->body.size == 1 &&
+                    PM_NODE_TYPE_P(((const pm_embedded_statements_node_t *) part)->statements->body.nodes[0], PM_STRING_NODE)) {
+                const pm_string_node_t *string_node = (const pm_string_node_t *) ((const pm_embedded_statements_node_t *) part)->statements->body.nodes[0];
                 VALUE string_value = parse_string_encoded((pm_node_t *)string_node, &string_node->unescaped, parser);
+
                 if (RTEST(current_string)) {
                     current_string = rb_str_concat(current_string, string_value);
                 }
