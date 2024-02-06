@@ -5942,8 +5942,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         }
 
         // Finally, we can push the end label for either case.
-        PM_POP_IF_POPPED;
         ADD_LABEL(ret, end_label);
+        PM_POP_IF_POPPED;
         return;
       }
       case PM_MISSING_NODE: {
