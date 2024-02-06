@@ -773,12 +773,13 @@ pm_interpolated_node_compile(pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_
                     current_string = rb_enc_str_new(NULL, 0, enc);
                 }
 
-                if (parser->frozen_string_literal) {
+                if (ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal) {
                     ADD_INSN1(ret, &dummy_line_node, putobject, rb_str_freeze(current_string));
                 }
                 else {
                     ADD_INSN1(ret, &dummy_line_node, putstring, rb_str_freeze(current_string));
                 }
+
                 current_string = Qnil;
                 number_of_items_pushed++;
 
@@ -793,12 +794,14 @@ pm_interpolated_node_compile(pm_node_list_t *parts, rb_iseq_t *iseq, NODE dummy_
 
         if (RTEST(current_string)) {
             current_string = rb_fstring(current_string);
-            if (parser->frozen_string_literal) {
+
+            if (ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal) {
                 ADD_INSN1(ret, &dummy_line_node, putobject, current_string);
             }
             else {
                 ADD_INSN1(ret, &dummy_line_node, putstring, current_string);
             }
+
             current_string = Qnil;
             number_of_items_pushed++;
         }
