@@ -6,6 +6,10 @@ describe "Module.new" do
     Module.new.is_a?(Module).should == true
   end
 
+  it "creates a module without a name" do
+    Module.new.name.should be_nil
+  end
+
   it "creates a new Module and passes it to the provided block" do
     test_mod = nil
     m = Module.new do |mod|
