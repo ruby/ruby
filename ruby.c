@@ -2327,7 +2327,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     opt->sflag = process_sflag(opt->sflag);
     opt->xflag = 0;
 
-    if (dump & DUMP_BIT(syntax)) {
+    if (!(*rb_ruby_prism_ptr()) && dump & DUMP_BIT(syntax)) {
         printf("Syntax OK\n");
         dump &= ~DUMP_BIT(syntax);
         if (!dump) return Qtrue;
@@ -2429,6 +2429,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
                 ruby_opt_init(opt);
                 iseq = pm_iseq_new_main(&result.node, opt->script_name, path, vm_block_iseq(base_block), !(dump & DUMP_BIT(insns_without_opt)));
                 pm_parse_result_free(&result);
+                if (dump & DUMP_BIT(syntax)) {
+                    printf("Syntax OK\n");
+                    return Qtrue;
+                }
             }
             else {
                 pm_parse_result_free(&result);
