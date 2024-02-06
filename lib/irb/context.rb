@@ -161,6 +161,11 @@ module IRB
 
     private_constant :KEYWORD_ALIASES
 
+    def use_tracer=(val)
+      require_relative "ext/tracer"
+      @use_tracer = val
+    end
+
     private def build_completor
       completor_type = IRB.conf[:COMPLETOR]
       case completor_type

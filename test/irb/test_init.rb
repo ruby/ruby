@@ -216,6 +216,12 @@ module TestIRB
       assert_equal(['-f'], argv)
     end
 
+    def test_option_tracer
+      argv = %w[--tracer]
+      IRB.setup(eval("__FILE__"), argv: argv)
+      assert_equal(true, IRB.conf[:USE_TRACER])
+    end
+
     private
 
     def with_argv(argv)
