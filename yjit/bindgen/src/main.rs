@@ -196,8 +196,6 @@ fn main() {
         .allowlist_type("rb_call_data")
         .blocklist_type("rb_callcache.*")      // Not used yet - opaque to make it easy to import rb_call_data
         .opaque_type("rb_callcache.*")
-        .blocklist_type("rb_callinfo_kwarg") // Contains a VALUE[] array of undefined size, so we don't import
-        .opaque_type("rb_callinfo_kwarg")
         .allowlist_type("rb_callinfo")
 
         // From vm_insnhelper.h
@@ -267,6 +265,7 @@ fn main() {
         .allowlist_var("VM_BLOCK_HANDLER_NONE")
         .allowlist_type("vm_frame_env_flags")
         .allowlist_type("rb_seq_param_keyword_struct")
+        .allowlist_type("rb_callinfo_kwarg")
         .allowlist_type("ruby_basic_operators")
         .allowlist_var(".*_REDEFINED_OP_FLAG")
         .allowlist_type("rb_num_t")

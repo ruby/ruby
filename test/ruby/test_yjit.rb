@@ -1532,6 +1532,34 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_kwrest
+    assert_compiles(<<~RUBY, result: true, no_send_fallbacks: true)
+      def req_rest(r1:, **kwrest) = [r1, kwrest]
+      def opt_rest(r1: 1.succ, **kwrest) = [r1, kwrest]
+      def kwrest(**kwrest) = kwrest
+
+      def calls
+        [
+          [1, {}] == req_rest(r1: 1),
+          [1, {:r2=>2, :r3=>3}] == req_rest(r1: 1, r2: 2, r3: 3),
+          [1, {:r2=>2, :r3=>3}] == req_rest(r2: 2, r1:1, r3: 3),
+          [1, {:r2=>2, :r3=>3}] == req_rest(r2: 2, r3: 3, r1: 1),
+
+          [2, {}] == opt_rest,
+          [2, { r2: 2, r3: 3 }] == opt_rest(r2: 2, r3: 3),
+          [0, { r2: 2, r3: 3 }] == opt_rest(r1: 0, r3: 3, r2: 2),
+          [0, { r2: 2, r3: 3 }] == opt_rest(r2: 2, r1: 0, r3: 3),
+          [1, { r2: 2, r3: 3 }] == opt_rest(r2: 2, r3: 3, r1: 1),
+
+          {} == kwrest,
+          { r0: 88, r1: 99 } == kwrest(r0: 88, r1: 99),
+        ]
+      end
+
+      calls.all?
+    RUBY
+  end
+
   private
 
   def code_gc_helpers

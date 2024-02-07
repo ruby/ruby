@@ -294,13 +294,6 @@ pub struct rb_callcache {
     _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
 }
 
-/// Opaque call-info type from vm_callinfo.h
-#[repr(C)]
-pub struct rb_callinfo_kwarg {
-    _data: [u8; 0],
-    _marker: core::marker::PhantomData<(*mut u8, core::marker::PhantomPinned)>,
-}
-
 /// Opaque control_frame (CFP) struct from vm_core.h
 #[repr(C)]
 pub struct rb_control_frame_struct {
