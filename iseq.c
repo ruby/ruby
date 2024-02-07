@@ -1002,15 +1002,8 @@ pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpa
         .end_pos = { .lineno = (int) end.line, .column = (int) end.column }
     };
 
-    rb_compile_option_t *current_option = (rb_compile_option_t *) option;
-    if (node->parser->frozen_string_literal) {
-        rb_compile_option_t new_option = *option;
-        new_option.frozen_string_literal = true;
-        current_option = &new_option;
-    }
-
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, &code_location, -1,
-                       parent, isolated_depth, type, Qnil, current_option);
+                       parent, isolated_depth, type, Qnil, option);
 
     pm_iseq_compile_node(iseq, node);
     finish_iseq_build(iseq);
