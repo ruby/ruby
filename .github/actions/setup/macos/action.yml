@@ -18,7 +18,7 @@ runs:
     - name: Set ENV
       shell: bash
       run: |
-        for lib in openssl@1.1; do
+        for lib in openssl@1.1 gmp; do
           CONFIGURE_ARGS="${CONFIGURE_ARGS:+$CONFIGURE_ARGS }--with-${lib%@*}-dir=$(brew --prefix $lib)"
         done
         echo CONFIGURE_ARGS="${CONFIGURE_ARGS}" >> $GITHUB_ENV
