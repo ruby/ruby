@@ -32,7 +32,7 @@ permissions: # added using https://github.com/step-security/secure-workflows
 jobs:
   analyze:
     name: Analyze
-    runs-on: macos-arm-oss
+    runs-on: ${{ matrix.os }}
     permissions:
       actions: read # for github/codeql-action/init to get workflow details
       contents: read # for actions/checkout to fetch code
@@ -52,16 +52,31 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: ['cpp', 'ruby']
+        include:
+          - language: cpp
+            os: ubuntu-latest
+            ram: 8192
+          - language: ruby
+            os: macos-arm-oss
+            ram: 13312
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Install libraries
+        if: ${{ matrix.os == 'macos-arm-oss' }}
         uses: ./.github/actions/setup/macos
 
+      - name: Install libraries
+        if : ${{ matrix.os == 'ubuntu-latest' }}
+        uses: ./.github/actions/setup/ubuntu
+
       - uses: ./.github/actions/setup/directories
+
+      - name: Remove an obsolete rubygems vendored file
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: sudo rm /usr/lib/ruby/vendor_ruby/rubygems/defaults/operating_system.rb
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@e8893c57a1f3a2b659b6b55564fdfdbbd2982911 # v3.24.0
@@ -77,6 +92,7 @@ jobs:
           category: '/language:${{ matrix.language }}'
           upload: False
           output: sarif-results
+          ram: ${{ matrix.ram }}
         # CodeQL randomly hits `OutOfMemoryError "Java heap space"`.
         # GitHub recommends running a larger runner to fix it, but we don't pay for it.
         continue-on-error: true
