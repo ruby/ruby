@@ -116,30 +116,78 @@ module Prism
     end
 
     # Visit a CallNode node.
+    # Ripper distinguishes between many different method-call
+    # nodes -- unary and binary operators, "command" calls with
+    # no parentheses, and call/fcall/vcall.
     def visit_call_node(node)
       if node.variable_call?
-        if node.message.match?(/^[[:alpha:]_]/)
-          bounds(node.message_loc)
-          return on_vcall(on_ident(node.message))
-        end
+        raise NotImplementedError unless node.receiver.nil?
 
-        raise NotImplementedError, "Non-alpha variable call"
+        bounds(node.message_loc)
+        return on_vcall(on_ident(node.message))
       end
 
       if node.opening_loc.nil?
-        left = visit(node.receiver)
-        if node.arguments&.arguments&.length == 1
-          right = visit(node.arguments.arguments.first)
+        # No opening_loc can mean an operator. It can also mean a
+        # method call with no parentheses.
+        if node.message.match?(/^[[:punct:]]/)
+          left = visit(node.receiver)
+          if node.arguments&.arguments&.length == 1
+            right = visit(node.arguments.arguments.first)
 
-          on_binary(left, node.name, right)
-        elsif !node.arguments || node.arguments.empty?
-          on_unary(node.name, left)
+            return on_binary(left, node.name, right)
+          elsif !node.arguments || node.arguments.empty?
+            return on_unary(node.name, left)
+          else
+            raise NotImplementedError, "More than two arguments for operator"
+          end
+        elsif node.call_operator_loc.nil?
+          # In Ripper a method call like "puts myvar" with no parenthesis is a "command"
+          bounds(node.message_loc)
+          ident_val = on_ident(node.message)
+          args = args_node_to_arguments(node.arguments)
+          return on_command(ident_val, args)
         else
-          raise NotImplementedError, "More than two arguments for operator"
+          operator = node.call_operator_loc.slice
+          if operator == "."
+            left_val = visit(node.receiver)
+
+            bounds(node.call_operator_loc)
+            dot_val = on_period(node.call_operator)
+
+            bounds(node.message_loc)
+            right_val = on_ident(node.message)
+
+            return on_call(left_val, dot_val, right_val)
+          else
+            raise NotImplementedError, "operator other than dot for call: #{operator.inspect}"
+          end
         end
-      else
-        raise NotImplementedError, "Non-nil opening_loc"
       end
+
+      # A non-operator method call with parentheses
+      args = on_arg_paren(args_node_to_arguments(node.arguments))
+
+      bounds(node.message_loc)
+      ident_val = on_ident(node.message)
+
+      bounds(node.location)
+      args_call_val = on_method_add_arg(on_fcall(ident_val), args)
+      if node.block
+        raise NotImplementedError, "Method call with a block!"
+      else
+        return args_call_val
+      end
+    end
+
+    # Visit an AndNode
+    def visit_and_node(node)
+      visit_binary_operator(node)
+    end
+
+    # Visit an AndNode
+    def visit_or_node(node)
+      visit_binary_operator(node)
     end
 
     # Visit a FloatNode node.
@@ -203,6 +251,24 @@ module Prism
       end
     end
 
+    private
+
+    # Ripper generates an interesting format of argument list.
+    # We'd like to convert an ArgumentsNode to one.
+    def args_node_to_arguments(args_node)
+      return nil if args_node.nil?
+
+      args = on_args_new
+      args_node.arguments.each do |arg|
+        bounds(arg.location)
+        args = on_args_add(args, visit(arg))
+      end
+
+      on_args_add_block(args, false)
+    end
+
+    public
+
     ############################################################################
     # Entrypoints for subclasses
     ############################################################################
@@ -238,11 +304,18 @@ module Prism
         value = yield slice[1..-1]
 
         bounds(node.location)
-        on_unary(RUBY_ENGINE == "jruby" ? :- : :-@, value)
+        on_unary(RUBY_ENGINE == "jruby" && JRUBY_VERSION < "9.4.6.0" ? :- : :-@, value)
       else
         bounds(location)
         yield slice
       end
+    end
+
+    # Visit a binary operator node like an AndNode or OrNode
+    def visit_binary_operator(node)
+      left_val = visit(node.left)
+      right_val = visit(node.right)
+      on_binary(left_val, node.operator_loc.slice.to_sym, right_val)
     end
 
     # This method is responsible for updating lineno and column information
