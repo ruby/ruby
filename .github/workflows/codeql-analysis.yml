@@ -77,7 +77,6 @@ jobs:
           category: '/language:${{ matrix.language }}'
           upload: False
           output: sarif-results
-          ram: 8192
         # CodeQL randomly hits `OutOfMemoryError "Java heap space"`.
         # GitHub recommends running a larger runner to fix it, but we don't pay for it.
         continue-on-error: true
