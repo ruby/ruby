@@ -352,7 +352,7 @@ module Prism
     def visit_binary_operator(node)
       left_val = visit(node.left)
       right_val = visit(node.right)
-      on_binary(left_val, node.operator_loc.slice.to_sym, right_val)
+      on_binary(left_val, node.operator.to_sym, right_val)
     end
 
     # This method is responsible for updating lineno and column information
