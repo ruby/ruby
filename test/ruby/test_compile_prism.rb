@@ -1838,6 +1838,15 @@ end
       assert_prism_eval("-> { to_s }.call")
     end
 
+    def test_LambdaNode_with_multiline_args
+      assert_prism_eval(<<-CODE)
+        -> (a,
+            b) {
+              a + b
+            }.call(1, 2)
+      CODE
+    end
+
     def test_ModuleNode
       assert_prism_eval("module M; end")
       assert_prism_eval("module M::N; end")
