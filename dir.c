@@ -1041,8 +1041,44 @@ dir_chdir0(VALUE path)
         rb_sys_fail_path(path);
 }
 
-static int chdir_blocking = 0;
-static VALUE chdir_thread = Qnil;
+static struct {
+    VALUE thread;
+    int blocking;
+} chdir_lock = {
+    .blocking = 0, .thread = Qnil,
+};
+
+static void
+chdir_enter(void)
+{
+    chdir_lock.blocking++;
+    if (NIL_P(chdir_lock.thread)) {
+        chdir_lock.thread = rb_thread_current();
+    }
+}
+
+static void
+chdir_leave(void)
+{
+    chdir_lock.blocking--;
+    if (chdir_lock.blocking == 0) {
+        chdir_lock.thread = Qnil;
+    }
+}
+
+static int
+chdir_alone_block_p(void)
+{
+    int block_given = rb_block_given_p();
+    if (chdir_lock.blocking > 0) {
+        if (rb_thread_current() != chdir_lock.thread)
+            rb_raise(rb_eRuntimeError, "conflicting chdir during another chdir block");
+        if (!block_given) {
+            rb_warn("conflicting chdir during another chdir block");
+        }
+    }
+    return block_given;
+}
 
 struct chdir_data {
     VALUE old_path, new_path;
@@ -1056,9 +1092,7 @@ chdir_yield(VALUE v)
     struct chdir_data *args = (void *)v;
     dir_chdir0(args->new_path);
     args->done = TRUE;
-    chdir_blocking++;
-    if (NIL_P(chdir_thread))
-        chdir_thread = rb_thread_current();
+    chdir_enter();
     return args->yield_path ? rb_yield(args->new_path) : rb_yield_values2(0, NULL);
 }
 
@@ -1067,9 +1101,7 @@ chdir_restore(VALUE v)
 {
     struct chdir_data *args = (void *)v;
     if (args->done) {
-        chdir_blocking--;
-        if (chdir_blocking == 0)
-            chdir_thread = Qnil;
+        chdir_leave();
         dir_chdir0(args->old_path);
     }
     return Qnil;
@@ -1078,14 +1110,7 @@ chdir_restore(VALUE v)
 static VALUE
 chdir_path(VALUE path, bool yield_path)
 {
-    if (chdir_blocking > 0) {
-        if (rb_thread_current() != chdir_thread)
-            rb_raise(rb_eRuntimeError, "conflicting chdir during another chdir block");
-        if (!rb_block_given_p())
-            rb_warn("conflicting chdir during another chdir block");
-    }
-
-    if (rb_block_given_p()) {
+    if (chdir_alone_block_p()) {
         struct chdir_data args;
 
         args.old_path = rb_str_encode_ospath(rb_dir_getwd());
@@ -1215,9 +1240,7 @@ fchdir_yield(VALUE v)
     struct fchdir_data *args = (void *)v;
     dir_fchdir(args->fd);
     args->done = TRUE;
-    chdir_blocking++;
-    if (NIL_P(chdir_thread))
-        chdir_thread = rb_thread_current();
+    chdir_enter();
     return rb_yield_values(0);
 }
 
@@ -1226,9 +1249,7 @@ fchdir_restore(VALUE v)
 {
     struct fchdir_data *args = (void *)v;
     if (args->done) {
-        chdir_blocking--;
-        if (chdir_blocking == 0)
-            chdir_thread = Qnil;
+        chdir_leave();
         dir_fchdir(RB_NUM2INT(dir_fileno(args->old_dir)));
     }
     dir_close(args->old_dir);
@@ -1292,14 +1313,7 @@ dir_s_fchdir(VALUE klass, VALUE fd_value)
 {
     int fd = RB_NUM2INT(fd_value);
 
-    if (chdir_blocking > 0) {
-        if (rb_thread_current() != chdir_thread)
-            rb_raise(rb_eRuntimeError, "conflicting chdir during another chdir block");
-        if (!rb_block_given_p())
-            rb_warn("conflicting chdir during another chdir block");
-    }
-
-    if (rb_block_given_p()) {
+    if (chdir_alone_block_p()) {
         struct fchdir_data args;
         args.old_dir = dir_s_alloc(klass);
         dir_initialize(NULL, args.old_dir, rb_fstring_cstr("."), Qnil);
