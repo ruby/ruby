@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "delegate"
+require "ripper"
 
 module Prism
   # This class is responsible for lexing the source using prism and then
