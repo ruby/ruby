@@ -32,7 +32,7 @@ permissions: # added using https://github.com/step-security/secure-workflows
 jobs:
   analyze:
     name: Analyze
-    runs-on: ubuntu-latest
+    runs-on: macos-arm-oss
     permissions:
       actions: read # for github/codeql-action/init to get workflow details
       contents: read # for actions/checkout to fetch code
@@ -59,12 +59,9 @@ jobs:
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
       - name: Install libraries
-        uses: ./.github/actions/setup/ubuntu
+        uses: ./.github/actions/setup/macos
 
       - uses: ./.github/actions/setup/directories
-
-      - name: Remove an obsolete rubygems vendored file
-        run: sudo rm /usr/lib/ruby/vendor_ruby/rubygems/defaults/operating_system.rb
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@e8893c57a1f3a2b659b6b55564fdfdbbd2982911 # v3.24.0
