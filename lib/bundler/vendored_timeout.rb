@@ -3,6 +3,10 @@
 begin
   require "rubygems/vendored_timeout"
 rescue LoadError
-  require "timeout"
-  Gem::Timeout = Timeout
+  begin
+    require "rubygems/timeout"
+  rescue LoadError
+    require "timeout"
+    Gem::Timeout = Timeout
+  end
 end
