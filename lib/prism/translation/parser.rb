@@ -68,17 +68,23 @@ module Prism
 
       # Parses a source buffer and returns the AST, the source code comments,
       # and the tokens emitted by the lexer.
-      def tokenize(source_buffer, _recover = false)
+      def tokenize(source_buffer, recover = false)
         @source_buffer = source_buffer
         source = source_buffer.source
 
         offset_cache = build_offset_cache(source)
-        result = unwrap(Prism.parse_lex(source, filepath: source_buffer.name), offset_cache)
+        result =
+          begin
+            unwrap(Prism.parse_lex(source, filepath: source_buffer.name), offset_cache)
+          rescue ::Parser::SyntaxError
+            raise if !recover
+          end
 
         program, tokens = result.value
+        ast = build_ast(program, offset_cache) if result.success?
 
         [
-          build_ast(program, offset_cache),
+          ast,
           build_comments(result.comments, offset_cache),
           build_tokens(tokens, offset_cache)
         ]
