@@ -214,6 +214,18 @@ rb_mmtk_system_physical_memory(void)
         rb_bug("failed to get system physical memory size");
     }
     return (size_t) physical_pages * (size_t) page_size;
+#elif __APPLE__
+    #include <sys/sysctl.h>
+    int mib[2];
+    mib[0] = CTL_HW;
+    mib[1] = HW_MEMSIZE; // total physical memory
+    int64_t physical_memory;
+    size_t length = sizeof(int64_t);
+    if (sysctl(mib, 2, &physical_memory, &length, NULL, 0) == -1)
+    {
+        rb_bug("failed to get system physical memory size");
+    }
+    return (size_t) physical_memory;
 #else
 #error no implementation of rb_mmtk_system_physical_memory on this platform
 #endif
