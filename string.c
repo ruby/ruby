@@ -78,24 +78,39 @@
 VALUE rb_cString;
 VALUE rb_cSymbol;
 
-/* FLAGS of RString
+/* Flags of RString
  *
  * 1:     RSTRING_NOEMBED
- * 2:     STR_SHARED (== ELTS_SHARED)
- * 5:     STR_SHARED_ROOT (RSTRING_NOEMBED==1 && STR_SHARED == 0, there may be
- *                         other strings that rely on this string's buffer)
- * 6:     STR_BORROWED (when RSTRING_NOEMBED==1 && klass==0, unsafe to recycle
- *                      early, specific to rb_str_tmp_frozen_{acquire,release})
- * 7:     STR_TMPLOCK (set when a pointer to the buffer is passed to syscall
- *                     such as read(2). Any modification and realloc is prohibited)
- *
- * 8-9:   ENC_CODERANGE (2 bits)
- * 10-16: ENCODING (7 bits == 128)
+ *            The string is not embedded. When a string is embedded, the contents
+ *            follow the header. When a string is not embedded, the contents is
+ *            on a separately allocated buffer.
+ * 2:     STR_SHARED (equal to ELTS_SHARED)
+ *            The string is shared. The buffer this string points to is owned by
+ *            another string (the shared root).
+ * 5:     STR_SHARED_ROOT
+ *            Other strings may point to the contents of this string. When this
+ *            flag is set, STR_SHARED must not be set.
+ * 6:     STR_BORROWED
+ *            When RSTRING_NOEMBED is set and klass is 0, this string is unsafe
+ *            to be unshared by rb_str_tmp_frozen_release.
+ * 7:     STR_TMPLOCK
+ *            The pointer to the buffer is passed to a system call such as
+ *            read(2). Any modification and realloc is prohibited.
+ * 8-9:   ENC_CODERANGE
+ *            Stores the coderange of the string.
+ * 10-16: ENCODING
+ *            Stores the encoding of the string.
  * 17:    RSTRING_FSTR
- * 18:    STR_NOFREE (do not free this string's buffer when a String is freed.
- *                    used for a string object based on C string literal)
- * 19:    STR_FAKESTR (when RVALUE is not managed by GC. Typically, the string
- *                     object header is temporarily allocated on C stack)
+ *            The string is a fstring. The string is deduplicated in the fstring
+ *            table.
+ * 18:    STR_NOFREE
+ *            Do not free this string's buffer when the string is reclaimed
+ *            by the garbage collector. Used for when the string buffer is a C
+ *            string literal.
+ * 19:    STR_FAKESTR
+ *            The string is not allocated or managed by the garbage collector.
+ *            Typically, the string object header (struct RString) is temporarily
+ *            allocated on C stack.
  */
 
 #define RUBY_MAX_CHAR_LEN 16
