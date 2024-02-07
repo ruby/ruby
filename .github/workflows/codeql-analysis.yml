@@ -39,7 +39,8 @@ jobs:
       security-events: write # for github/codeql-action/autobuild to send a status report
     # CodeQL fails to run pull requests from dependabot due to missing write access to upload results.
     if: >-
-      ${{!(false
+      ${{github.repository == 'ruby/ruby' &&
+      !(false
       || contains(github.event.head_commit.message, '[DOC]')
       || contains(github.event.pull_request.title, '[DOC]')
       || contains(github.event.pull_request.labels.*.name, 'Documentation')
