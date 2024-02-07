@@ -128,57 +128,7 @@ module Prism
       end
 
       if node.opening_loc.nil?
-        # No opening_loc can mean an operator. It can also mean a
-        # method call with no parentheses.
-        if node.message.match?(/^[[:punct:]]/)
-          left = visit(node.receiver)
-          if node.arguments&.arguments&.length == 1
-            right = visit(node.arguments.arguments.first)
-
-            return on_binary(left, node.name, right)
-          elsif !node.arguments || node.arguments.empty?
-            return on_unary(node.name, left)
-          else
-            raise NotImplementedError, "More than two arguments for operator"
-          end
-        elsif node.call_operator_loc.nil?
-          # In Ripper a method call like "puts myvar" with no parenthesis is a "command".
-          bounds(node.message_loc)
-          ident_val = on_ident(node.message)
-          args = node.arguments.nil? ? nil : args_node_to_arguments(node.arguments)
-
-          # Unless it has a block, and then it's an fcall (e.g. "foo { bar }")
-          if node.block
-            block_val = visit(node.block)
-            # In these calls, even if node.arguments is nil, we still get an :args_new call.
-            method_args_val = on_method_add_arg(on_fcall(ident_val), args_node_to_arguments(node.arguments))
-            return on_method_add_block(method_args_val, on_brace_block(nil, block_val))
-          else
-            return on_command(ident_val, args)
-          end
-        else
-          operator = node.call_operator_loc.slice
-          if operator == "." || operator == "&."
-            left_val = visit(node.receiver)
-
-            bounds(node.call_operator_loc)
-            operator_val = operator == "." ? on_period(node.call_operator) : on_op(node.call_operator)
-
-            bounds(node.message_loc)
-            right_val = on_ident(node.message)
-
-            call_val = on_call(left_val, operator_val, right_val)
-
-            if node.block
-              block_val = visit(node.block)
-              return on_method_add_block(call_val, on_brace_block(nil, block_val))
-            else
-              return call_val
-            end
-          else
-            raise NotImplementedError, "operator other than . or &. for call: #{operator.inspect}"
-          end
-        end
+        return visit_no_paren_call(node)
       end
 
       # A non-operator method call with parentheses
@@ -212,7 +162,7 @@ module Prism
       visit_binary_operator(node)
     end
 
-    # Visit an AndNode
+    # Visit an OrNode
     def visit_or_node(node)
       visit_binary_operator(node)
     end
@@ -278,24 +228,6 @@ module Prism
       end
     end
 
-    private
-
-    # Ripper generates an interesting format of argument list.
-    # We'd like to convert an ArgumentsNode to one.
-    def args_node_to_arguments(args_node)
-      return on_args_new if args_node.nil?
-
-      args = on_args_new
-      args_node.arguments.each do |arg|
-        bounds(arg.location)
-        args = on_args_add(args, visit(arg))
-      end
-
-      on_args_add_block(args, false)
-    end
-
-    public
-
     ############################################################################
     # Entrypoints for subclasses
     ############################################################################
@@ -311,6 +243,72 @@ module Prism
     end
 
     private
+
+    # Generate Ripper events for a CallNode with no opening_loc
+    def visit_no_paren_call(node)
+      # No opening_loc can mean an operator. It can also mean a
+      # method call with no parentheses.
+      if node.message.match?(/^[[:punct:]]/)
+        left = visit(node.receiver)
+        if node.arguments&.arguments&.length == 1
+          right = visit(node.arguments.arguments.first)
+
+          return on_binary(left, node.name, right)
+        elsif !node.arguments || node.arguments.empty?
+          return on_unary(node.name, left)
+        else
+          raise NotImplementedError, "More than two arguments for operator"
+        end
+      elsif node.call_operator_loc.nil?
+        # In Ripper a method call like "puts myvar" with no parenthesis is a "command".
+        bounds(node.message_loc)
+        ident_val = on_ident(node.message)
+
+        # Unless it has a block, and then it's an fcall (e.g. "foo { bar }")
+        if node.block
+          block_val = visit(node.block)
+          # In these calls, even if node.arguments is nil, we still get an :args_new call.
+          method_args_val = on_method_add_arg(on_fcall(ident_val), args_node_to_arguments(node.arguments))
+          return on_method_add_block(method_args_val, on_brace_block(nil, block_val))
+        else
+          args = node.arguments.nil? ? nil : args_node_to_arguments(node.arguments)
+          return on_command(ident_val, args)
+        end
+      else
+        operator = node.call_operator_loc.slice
+        if operator == "." || operator == "&."
+          left_val = visit(node.receiver)
+
+          bounds(node.call_operator_loc)
+          operator_val = operator == "." ? on_period(node.call_operator) : on_op(node.call_operator)
+
+          bounds(node.message_loc)
+          right_val = on_ident(node.message)
+
+          call_val = on_call(left_val, operator_val, right_val)
+
+          if node.block
+            block_val = visit(node.block)
+            return on_method_add_block(call_val, on_brace_block(nil, block_val))
+          else
+            return call_val
+          end
+        else
+          raise NotImplementedError, "operator other than . or &. for call: #{operator.inspect}"
+        end
+      end
+    end
+
+    # Ripper generates an interesting format of argument list.
+    # It seems to be very location-specific. We should get rid of
+    # this method and make it clearer how it's done in each place.
+    def args_node_to_arguments(args_node)
+      return on_args_new if args_node.nil?
+
+      args = visit_elements(args_node.arguments)
+
+      on_args_add_block(args, false)
+    end
 
     # Visit a list of elements, like the elements of an array or arguments.
     def visit_elements(elements)
@@ -331,10 +329,22 @@ module Prism
         value = yield slice[1..-1]
 
         bounds(node.location)
-        on_unary(RUBY_ENGINE == "jruby" && JRUBY_VERSION < "9.4.6.0" ? :- : :-@, value)
+        on_unary(visit_unary_operator(:-@), value)
       else
         bounds(location)
         yield slice
+      end
+    end
+
+    if RUBY_ENGINE == "jruby" && Gem::Version.new(JRUBY_VERSION) < Gem::Version.new("9.4.6.0")
+      # JRuby before 9.4.6.0 uses :- for unary minus instead of :-@
+      def visit_unary_operator(value)
+        value == :-@ ? :- : value
+      end
+    else
+      # For most Rubies and JRuby after 9.4.6.0 this is a no-op.
+      def visit_unary_operator(value)
+        value
       end
     end
 
