@@ -15172,16 +15172,10 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *    f = File.new('t.txt')
  *    $/ = 'l'
- *    p f.gets
- *    p f.gets
- *    p f.gets
+ *    f.gets # => "First l"
+ *    f.gets # => "ine\nSecond l"
+ *    f.gets # => "ine\n\nFourth l"
  *    f.close
- *
- *  Output:
- *
- *    "First l"
- *    "ine\nSecond l"
- *    "ine\n\nFourth l"
  *
  *  ===== Special Line Separator Values
  *
