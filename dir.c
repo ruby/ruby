@@ -1043,14 +1043,20 @@ dir_chdir0(VALUE path)
 
 static struct {
     VALUE thread;
+    VALUE path;
+    int line;
     int blocking;
 } chdir_lock = {
     .blocking = 0, .thread = Qnil,
+    .path = Qnil, .line = 0,
 };
 
 static void
 chdir_enter(void)
 {
+    if (chdir_lock.blocking == 0) {
+        chdir_lock.path = rb_source_location(&chdir_lock.line);
+    }
     chdir_lock.blocking++;
     if (NIL_P(chdir_lock.thread)) {
         chdir_lock.thread = rb_thread_current();
@@ -1063,6 +1069,8 @@ chdir_leave(void)
     chdir_lock.blocking--;
     if (chdir_lock.blocking == 0) {
         chdir_lock.thread = Qnil;
+        chdir_lock.path = Qnil;
+        chdir_lock.line = 0;
     }
 }
 
@@ -1075,6 +1083,9 @@ chdir_alone_block_p(void)
             rb_raise(rb_eRuntimeError, "conflicting chdir during another chdir block");
         if (!block_given) {
             rb_warn("conflicting chdir during another chdir block");
+            if (!NIL_P(chdir_lock.path)) {
+                rb_compile_warn(RSTRING_PTR(chdir_lock.path), chdir_lock.line, "here");
+            }
         }
     }
     return block_given;
@@ -3640,6 +3651,8 @@ rb_dir_s_empty_p(VALUE obj, VALUE dirname)
 void
 Init_Dir(void)
 {
+    rb_gc_register_address(&chdir_lock.path);
+
     rb_cDir = rb_define_class("Dir", rb_cObject);
 
     rb_include_module(rb_cDir, rb_mEnumerable);
