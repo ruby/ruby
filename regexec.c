@@ -3521,7 +3521,7 @@ match_at(regex_t* reg, const UChar* str, const UChar* end,
 	n = pend - pstart;
 	DATA_ENSURE(n);
 	sprev = s;
-	STRING_CMP_IC(case_fold_flag, pstart, &s, (int)n, end);
+	STRING_CMP_IC(case_fold_flag, pstart, &s, n, end);
 	while (sprev + (len = enclen(encode, sprev, end)) < s)
 	  sprev += len;
 
