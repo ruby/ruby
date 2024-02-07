@@ -13,6 +13,13 @@ rescue LoadError
 end
 
 module IRB
+  class CallTracer < ::CallTracer
+    IRB_DIR = File.expand_path('../..', __dir__)
+
+    def skip?(tp)
+      super || tp.path.match?(IRB_DIR) || tp.path.match?('<internal:prelude>')
+    end
+  end
   class WorkSpace
     alias __evaluate__ evaluate
     # Evaluate the context of this workspace and use the Tracer library to

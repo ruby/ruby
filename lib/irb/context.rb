@@ -61,7 +61,7 @@ module IRB
       @io = nil
 
       self.inspect_mode = IRB.conf[:INSPECT_MODE]
-      self.use_tracer = IRB.conf[:USE_TRACER] if IRB.conf[:USE_TRACER]
+      self.use_tracer = IRB.conf[:USE_TRACER]
       self.use_loader = IRB.conf[:USE_LOADER] if IRB.conf[:USE_LOADER]
       self.eval_history = IRB.conf[:EVAL_HISTORY] if IRB.conf[:EVAL_HISTORY]
 
@@ -162,8 +162,8 @@ module IRB
     private_constant :KEYWORD_ALIASES
 
     def use_tracer=(val)
-      require_relative "ext/tracer"
-      @use_tracer = val
+      require_relative "ext/tracer" if val
+      IRB.conf[:USE_TRACER] = val
     end
 
     private def build_completor

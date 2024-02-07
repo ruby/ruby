@@ -62,9 +62,6 @@ module IRB # :nodoc:
 
   # @CONF default setting
   def IRB.init_config(ap_path)
-    # class instance variables
-    @TRACER_INITIALIZED = false
-
     # default configurations
     unless ap_path and @CONF[:AP_NAME]
       ap_path = File.join(File.dirname(File.dirname(__FILE__)), "irb.rb")

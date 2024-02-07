@@ -10,7 +10,9 @@ module TestIRB
     def setup
       super
 
-      @envs.merge!("NO_COLOR" => "true", "RUBY_DEBUG_HISTORY_FILE" => '')
+      omit "Tracer gem is not available when running on TruffleRuby" if RUBY_ENGINE == "truffleruby"
+
+      @envs.merge!("NO_COLOR" => "true")
     end
 
     def example_ruby_file
@@ -29,54 +31,30 @@ module TestIRB
       RUBY
     end
 
-    def test_use_tracer_is_disabled_by_default
+    def test_use_tracer_enabled_when_gem_is_unavailable
       write_rc <<~RUBY
-        IRB.conf[:USE_TRACER] = false
+        # Simulate the absence of the tracer gem
+        ::Kernel.send(:alias_method, :irb_original_require, :require)
+
+        ::Kernel.define_method(:require) do |name|
+          raise LoadError, "cannot load such file -- tracer (test)" if name.match?("tracer")
+          ::Kernel.send(:irb_original_require, name)
+        end
+
+        IRB.conf[:USE_TRACER] = true
       RUBY
 
       write_ruby example_ruby_file
 
       output = run_ruby_file do
         type "bar(Foo)"
-        type "exit!"
+        type "exit"
       end
 
-      assert_nil IRB.conf[:USER_TRACER]
-      assert_not_include(output, "#depth:")
-      assert_not_include(output, "Foo.foo")
-    end
-
-    def test_use_tracer_enabled_when_gem_is_unavailable
-      begin
-        gem 'tracer'
-        omit "Skipping because 'tracer' gem is available."
-      rescue Gem::LoadError
-        write_rc <<~RUBY
-          IRB.conf[:USE_TRACER] = true
-        RUBY
-
-        write_ruby example_ruby_file
-
-        output = run_ruby_file do
-          type "bar(Foo)"
-          type "exit!"
-        end
-
-        assert_include(output, "Tracer extension of IRB is enabled but tracer gem wasn't found.")
-      end
+      assert_include(output, "Tracer extension of IRB is enabled but tracer gem wasn't found.")
     end
 
     def test_use_tracer_enabled_when_gem_is_available
-      if Gem::Version.new(RUBY_VERSION) < Gem::Version.new('3.1.0')
-        omit "Ruby version before 3.1.0 does not support Tracer integration. Skipping this test."
-      end
-
-      begin
-        gem 'tracer'
-      rescue Gem::LoadError
-        omit "Skipping because 'tracer' gem is not available. Enable with WITH_TRACER=true."
-      end
-
       write_rc <<~RUBY
         IRB.conf[:USE_TRACER] = true
       RUBY
@@ -85,13 +63,29 @@ module TestIRB
 
       output = run_ruby_file do
         type "bar(Foo)"
-        type "exit!"
+        type "exit"
       end
 
       assert_include(output, "Object#bar at")
       assert_include(output, "Foo.foo at")
       assert_include(output, "Foo.foo #=> 100")
       assert_include(output, "Object#bar #=> 100")
+
+      # Test that the tracer output does not include IRB's own files
+      assert_not_include(output, "irb/workspace.rb")
     end
+
+    def test_use_tracer_is_disabled_by_default
+      write_ruby example_ruby_file
+
+      output = run_ruby_file do
+        type "bar(Foo)"
+        type "exit"
+      end
+
+      assert_not_include(output, "#depth:")
+      assert_not_include(output, "Foo.foo")
+    end
+
   end
 end
