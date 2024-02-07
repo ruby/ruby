@@ -132,7 +132,12 @@ module Prism
       end
 
       # A non-operator method call with parentheses
-      args = on_arg_paren(node.arguments.nil? ? nil : args_node_to_arguments(node.arguments))
+
+      args = if node.arguments.nil?
+        on_arg_paren(nil)
+      else
+        on_arg_paren(on_args_add_block(visit_elements(node.arguments.arguments), false))
+      end
 
       bounds(node.message_loc)
       ident_val = on_ident(node.message)
@@ -142,29 +147,90 @@ module Prism
       if node.block
         block_val = visit(node.block)
 
-        return on_method_add_block(args_call_val, on_brace_block(nil, block_val))
+        return on_method_add_block(args_call_val, block_val)
       else
         return args_call_val
       end
     end
 
-    # Visit a BlockNode
-    def visit_block_node(node)
-      if node.body.nil?
-        on_stmts_add(on_stmts_new, on_void_stmt)
-      else
-        visit(node.body)
-      end
+    # Visit a LocalVariableAndWriteNode.
+    def visit_local_variable_and_write_node(node)
+      visit_binary_op_assign(node)
     end
 
-    # Visit an AndNode
+    # Visit a LocalVariableOrWriteNode.
+    def visit_local_variable_or_write_node(node)
+      visit_binary_op_assign(node)
+    end
+
+    # Visit nodes for +=, *=, -=, etc., called LocalVariableOperatorWriteNodes.
+    def visit_local_variable_operator_write_node(node)
+      visit_binary_op_assign(node, operator: node.operator.to_s + "=")
+    end
+
+    # Visit a LocalVariableReadNode.
+    def visit_local_variable_read_node(node)
+      bounds(node.location)
+      ident_val = on_ident(node.slice)
+
+      on_var_ref(ident_val)
+    end
+
+    # Visit a BlockNode.
+    def visit_block_node(node)
+      params_val = node.parameters.nil? ? nil : visit(node.parameters)
+
+      body_val = node.body.nil? ? on_stmts_add(on_stmts_new, on_void_stmt) : visit(node.body)
+
+      on_brace_block(params_val, body_val)
+    end
+
+    # Visit a BlockParametersNode.
+    def visit_block_parameters_node(node)
+      on_block_var(visit(node.parameters), no_block_value)
+    end
+
+    # Visit a ParametersNode.
+    # This will require expanding as we support more kinds of parameters.
+    def visit_parameters_node(node)
+      #on_params(required, optional, nil, nil, nil, nil, nil)
+      on_params(node.requireds.map { |n| visit(n) }, nil, nil, nil, nil, nil, nil)
+    end
+
+    # Visit a RequiredParameterNode.
+    def visit_required_parameter_node(node)
+      bounds(node.location)
+      on_ident(node.name.to_s)
+    end
+
+    # Visit a BreakNode.
+    def visit_break_node(node)
+      return on_break(on_args_new) if node.arguments.nil?
+
+      args_val = visit_elements(node.arguments.arguments)
+      on_break(on_args_add_block(args_val,false))
+    end
+
+    # Visit an AndNode.
     def visit_and_node(node)
       visit_binary_operator(node)
     end
 
-    # Visit an OrNode
+    # Visit an OrNode.
     def visit_or_node(node)
       visit_binary_operator(node)
+    end
+
+    # Visit a TrueNode.
+    def visit_true_node(node)
+      bounds(node.location)
+      on_var_ref(on_kw(node.slice))
+    end
+
+    # Visit a FalseNode.
+    def visit_false_node(node)
+      bounds(node.location)
+      on_var_ref(on_kw(node.slice))
     end
 
     # Visit a FloatNode node.
@@ -193,6 +259,19 @@ module Prism
 
       bounds(node.location)
       on_paren(body)
+    end
+
+    # Visit a BeginNode node.
+    # This is not at all bulletproof against different structures of begin/rescue/else/ensure/end.
+    def visit_begin_node(node)
+      rescue_val = node.rescue_clause ? on_rescue(nil, nil, visit(node.rescue_clause), nil) : nil
+      ensure_val = node.ensure_clause ? on_ensure(visit(node.ensure_clause.statements)) : nil
+      on_begin(on_bodystmt(visit(node.statements), rescue_val, nil, ensure_val))
+    end
+
+    # Visit a RescueNode node.
+    def visit_rescue_node(node)
+      visit(node.statements)
     end
 
     # Visit a ProgramNode node.
@@ -260,7 +339,7 @@ module Prism
           raise NotImplementedError, "More than two arguments for operator"
         end
       elsif node.call_operator_loc.nil?
-        # In Ripper a method call like "puts myvar" with no parenthesis is a "command".
+        # In Ripper a method call like "puts myvar" with no parentheses is a "command".
         bounds(node.message_loc)
         ident_val = on_ident(node.message)
 
@@ -268,11 +347,20 @@ module Prism
         if node.block
           block_val = visit(node.block)
           # In these calls, even if node.arguments is nil, we still get an :args_new call.
-          method_args_val = on_method_add_arg(on_fcall(ident_val), args_node_to_arguments(node.arguments))
-          return on_method_add_block(method_args_val, on_brace_block(nil, block_val))
+          args = if node.arguments.nil?
+            on_args_new
+          else
+            on_args_add_block(visit_elements(node.arguments.arguments))
+          end
+          method_args_val = on_method_add_arg(on_fcall(ident_val), args)
+          return on_method_add_block(method_args_val, block_val)
         else
-          args = node.arguments.nil? ? nil : args_node_to_arguments(node.arguments)
-          return on_command(ident_val, args)
+          if node.arguments.nil?
+            return on_command(ident_val, nil)
+          else
+            args = on_args_add_block(visit_elements(node.arguments.arguments), false)
+            return on_command(ident_val, args)
+          end
         end
       else
         operator = node.call_operator_loc.slice
@@ -289,7 +377,7 @@ module Prism
 
           if node.block
             block_val = visit(node.block)
-            return on_method_add_block(call_val, on_brace_block(nil, block_val))
+            return on_method_add_block(call_val, block_val)
           else
             return call_val
           end
@@ -299,23 +387,23 @@ module Prism
       end
     end
 
-    # Ripper generates an interesting format of argument list.
-    # It seems to be very location-specific. We should get rid of
-    # this method and make it clearer how it's done in each place.
-    def args_node_to_arguments(args_node)
-      return on_args_new if args_node.nil?
-
-      args = visit_elements(args_node.arguments)
-
-      on_args_add_block(args, false)
-    end
-
     # Visit a list of elements, like the elements of an array or arguments.
     def visit_elements(elements)
       bounds(elements.first.location)
       elements.inject(on_args_new) do |args, element|
         on_args_add(args, visit(element))
       end
+    end
+
+    # Visit an operation-and-assign node, such as +=.
+    def visit_binary_op_assign(node, operator: node.operator)
+      bounds(node.name_loc)
+      ident_val = on_ident(node.name.to_s)
+
+      bounds(node.operator_loc)
+      op_val = on_op(operator)
+
+      on_opassign(on_var_field(ident_val), op_val, visit(node.value))
     end
 
     # Visit a node that represents a number. We need to explicitly handle the
@@ -345,6 +433,18 @@ module Prism
       # For most Rubies and JRuby after 9.4.6.0 this is a no-op.
       def visit_unary_operator(value)
         value
+      end
+    end
+
+    if RUBY_ENGINE == "jruby"
+      # For JRuby, "no block" in an on_block_var is nil
+      def no_block_value
+        nil
+      end
+    else
+      # For CRuby et al, "no block" in an on_block_var is false
+      def no_block_value
+        false
       end
     end
 

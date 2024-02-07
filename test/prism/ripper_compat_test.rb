@@ -27,6 +27,7 @@ module Prism
     def test_method_calls_with_variable_names
       assert_equivalent("foo")
       assert_equivalent("foo()")
+      assert_equivalent("foo -7")
       assert_equivalent("foo(-7)")
       assert_equivalent("foo(1, 2, 3)")
       assert_equivalent("foo 1")
@@ -49,9 +50,16 @@ module Prism
       assert_equivalent("foo(1) { bar }")
       assert_equivalent("foo(bar)")
       assert_equivalent("foo(bar(1))")
+      assert_equivalent("foo(bar(1)) { 7 }")
       assert_equivalent("foo bar(1)")
-      # assert_equivalent("foo(bar 1)") # This succeeds for me locally but fails on CI
+    end
+
+    def test_method_call_blocks
+      assert_equivalent("foo { |a| a }")
+
+      # assert_equivalent("foo(bar 1)")
       # assert_equivalent("foo bar 1")
+      # assert_equivalent("foo(bar 1) { 7 }")
     end
 
     def test_method_calls_on_immediate_values
@@ -85,6 +93,23 @@ module Prism
       assert_equivalent("[1ri, -1ri, +1ri, 1.5ri, -1.5ri, +1.5ri]")
     end
 
+    def test_begin_rescue
+      assert_equivalent("begin a; rescue; c; ensure b; end")
+    end
+
+    def test_break
+      assert_equivalent("foo { break }")
+      assert_equivalent("foo { break 7 }")
+      assert_equivalent("foo { break [1, 2, 3] }")
+    end
+
+    def test_op_assign
+      assert_equivalent("a += b")
+      assert_equivalent("a -= b")
+      assert_equivalent("a *= b")
+      assert_equivalent("a /= b")
+    end
+
     private
 
     def assert_equivalent(source)
@@ -100,6 +125,9 @@ module Prism
     #relatives = ENV["FOCUS"] ? [ENV["FOCUS"]] : Dir["**/*.txt", base: base]
     relatives = [
       "arithmetic.txt",
+      "booleans.txt",
+      "boolean_operators.txt",
+      # "break.txt", # No longer parseable by Ripper in CRuby 3.3.0+
       "comments.txt",
       "integer_operations.txt",
     ]
