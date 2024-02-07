@@ -38,6 +38,10 @@ module Prism
       assert_equivalent("foo.🗻")
       assert_equivalent("🗻.😮!")
       assert_equivalent("🗻 🗻,🗻,🗻")
+      assert_equivalent("foo&.bar")
+      assert_equivalent("foo { bar }")
+      assert_equivalent("foo.bar { 7 }")
+      assert_equivalent("foo(1) { bar }")
     end
 
     def test_method_calls_on_immediate_values
@@ -84,7 +88,11 @@ module Prism
   class RipperCompatFixturesTest < TestCase
     #base = File.join(__dir__, "fixtures")
     #relatives = ENV["FOCUS"] ? [ENV["FOCUS"]] : Dir["**/*.txt", base: base]
-    relatives = ["arithmetic.txt", "integer_operations.txt"]
+    relatives = [
+      "arithmetic.txt",
+      "comments.txt",
+      "integer_operations.txt",
+    ]
 
     relatives.each do |relative|
       define_method "test_ripper_filepath_#{relative}" do
@@ -95,6 +103,9 @@ module Prism
         source = File.read(path, binmode: true, external_encoding: Encoding::UTF_8)
 
         expected = Ripper.sexp_raw(source)
+        if expected.nil?
+          puts "Could not parse #{path.inspect}!"
+        end
         refute_nil expected
         assert_equal expected, RipperCompat.sexp_raw(source)
       end

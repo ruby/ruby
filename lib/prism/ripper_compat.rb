@@ -142,31 +142,47 @@ module Prism
             raise NotImplementedError, "More than two arguments for operator"
           end
         elsif node.call_operator_loc.nil?
-          # In Ripper a method call like "puts myvar" with no parenthesis is a "command"
+          # In Ripper a method call like "puts myvar" with no parenthesis is a "command".
           bounds(node.message_loc)
           ident_val = on_ident(node.message)
-          args = args_node_to_arguments(node.arguments)
-          return on_command(ident_val, args)
+          args = node.arguments.nil? ? nil : args_node_to_arguments(node.arguments)
+
+          # Unless it has a block, and then it's an fcall (e.g. "foo { bar }")
+          if node.block
+            block_val = visit(node.block)
+            # In these calls, even if node.arguments is nil, we still get an :args_new call.
+            method_args_val = on_method_add_arg(on_fcall(ident_val), args_node_to_arguments(node.arguments))
+            return on_method_add_block(method_args_val, on_brace_block(nil, block_val))
+          else
+            return on_command(ident_val, args)
+          end
         else
           operator = node.call_operator_loc.slice
-          if operator == "."
+          if operator == "." || operator == "&."
             left_val = visit(node.receiver)
 
             bounds(node.call_operator_loc)
-            dot_val = on_period(node.call_operator)
+            operator_val = operator == "." ? on_period(node.call_operator) : on_op(node.call_operator)
 
             bounds(node.message_loc)
             right_val = on_ident(node.message)
 
-            return on_call(left_val, dot_val, right_val)
+            call_val = on_call(left_val, operator_val, right_val)
+
+            if node.block
+              block_val = visit(node.block)
+              return on_method_add_block(call_val, on_brace_block(nil, block_val))
+            else
+              return call_val
+            end
           else
-            raise NotImplementedError, "operator other than dot for call: #{operator.inspect}"
+            raise NotImplementedError, "operator other than . or &. for call: #{operator.inspect}"
           end
         end
       end
 
       # A non-operator method call with parentheses
-      args = on_arg_paren(args_node_to_arguments(node.arguments))
+      args = on_arg_paren(node.arguments.nil? ? nil : args_node_to_arguments(node.arguments))
 
       bounds(node.message_loc)
       ident_val = on_ident(node.message)
@@ -174,9 +190,20 @@ module Prism
       bounds(node.location)
       args_call_val = on_method_add_arg(on_fcall(ident_val), args)
       if node.block
-        raise NotImplementedError, "Method call with a block!"
+        block_val = visit(node.block)
+
+        return on_method_add_block(args_call_val, on_brace_block(nil, block_val))
       else
         return args_call_val
+      end
+    end
+
+    # Visit a BlockNode
+    def visit_block_node(node)
+      if node.body.nil?
+        on_stmts_add(on_stmts_new, on_void_stmt)
+      else
+        visit(node.body)
       end
     end
 
@@ -256,7 +283,7 @@ module Prism
     # Ripper generates an interesting format of argument list.
     # We'd like to convert an ArgumentsNode to one.
     def args_node_to_arguments(args_node)
-      return nil if args_node.nil?
+      return on_args_new if args_node.nil?
 
       args = on_args_new
       args_node.arguments.each do |arg|
