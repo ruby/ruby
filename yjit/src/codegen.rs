@@ -5499,6 +5499,27 @@ fn jit_rb_ary_push(
     true
 }
 
+// Just a leaf method, but not using `Primitive.attr! :leaf` since BOP methods can't use it.
+fn jit_rb_hash_empty_p(
+    _jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    _cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: *const VALUE,
+) -> bool {
+    asm_comment!(asm, "Hash#empty?");
+
+    let hash_opnd = asm.stack_pop(1);
+    let ret = asm.ccall(rb_hash_empty_p as *const u8, vec![hash_opnd]);
+
+    let ret_opnd = asm.stack_push(Type::UnknownImm);
+    asm.mov(ret_opnd, ret);
+    true
+}
+
 fn jit_obj_respond_to(
     jit: &mut JITState,
     asm: &mut Assembler,
@@ -9359,6 +9380,8 @@ pub fn yjit_reg_method_codegen_fns() {
         yjit_reg_method(rb_cArray, "length", jit_rb_ary_length);
         yjit_reg_method(rb_cArray, "size", jit_rb_ary_length);
         yjit_reg_method(rb_cArray, "<<", jit_rb_ary_push);
+
+        yjit_reg_method(rb_cHash, "empty?", jit_rb_hash_empty_p);
 
         yjit_reg_method(rb_mKernel, "respond_to?", jit_obj_respond_to);
         yjit_reg_method(rb_mKernel, "block_given?", jit_rb_f_block_given_p);

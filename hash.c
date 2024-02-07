@@ -3015,7 +3015,7 @@ rb_hash_size_num(VALUE hash)
  *    {foo: 0, bar: 1, baz: 2}.empty? # => false
  */
 
-static VALUE
+VALUE
 rb_hash_empty_p(VALUE hash)
 {
     return RBOOL(RHASH_EMPTY_P(hash));
