@@ -25,8 +25,11 @@ module Gem
       runtime
     ].freeze
 
+    ALIASES = true # :nodoc:
+    private_constant :ALIASES
+
     def self.safe_load(input)
-      ::Psych.safe_load(input, permitted_classes: PERMITTED_CLASSES, permitted_symbols: PERMITTED_SYMBOLS, aliases: true)
+      ::Psych.safe_load(input, permitted_classes: PERMITTED_CLASSES, permitted_symbols: PERMITTED_SYMBOLS, aliases: ALIASES)
     end
 
     def self.load(input)
