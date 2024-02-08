@@ -2262,7 +2262,7 @@ fn jit_chain_guard(
     jit: &mut JITState,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
-    depth_limit: i32,
+    depth_limit: u8,
     counter: Counter,
 ) {
     let target0_gen_fn = match jcc {
@@ -2273,7 +2273,7 @@ fn jit_chain_guard(
         JCC_JO_MUL => BranchGenFn::JOMulToTarget0,
     };
 
-    if (asm.ctx.get_chain_depth() as i32) < depth_limit {
+    if asm.ctx.get_chain_depth() < depth_limit {
         // Rewind Context to use the stack_size at the beginning of this instruction.
         let mut deeper = asm.ctx.with_stack_size(jit.stack_size_for_pc);
         deeper.increment_chain_depth();
@@ -2289,22 +2289,22 @@ fn jit_chain_guard(
 }
 
 // up to 8 different shapes for each
-pub const GET_IVAR_MAX_DEPTH: i32 = 8;
+pub const GET_IVAR_MAX_DEPTH: u8 = 8;
 
 // up to 8 different shapes for each
-pub const SET_IVAR_MAX_DEPTH: i32 = 8;
+pub const SET_IVAR_MAX_DEPTH: u8 = 8;
 
 // hashes and arrays
-pub const OPT_AREF_MAX_CHAIN_DEPTH: i32 = 2;
+pub const OPT_AREF_MAX_CHAIN_DEPTH: u8 = 2;
 
 // expandarray
-pub const EXPANDARRAY_MAX_CHAIN_DEPTH: i32 = 4;
+pub const EXPANDARRAY_MAX_CHAIN_DEPTH: u8 = 4;
 
 // up to 5 different methods for send
-pub const SEND_MAX_DEPTH: i32 = 5;
+pub const SEND_MAX_DEPTH: u8 = 5;
 
 // up to 20 different offsets for case-when
-pub const CASE_WHEN_MAX_DEPTH: i32 = 20;
+pub const CASE_WHEN_MAX_DEPTH: u8 = 20;
 
 pub const MAX_SPLAT_LENGTH: i32 = 127;
 
@@ -2359,7 +2359,7 @@ fn gen_get_ivar(
     jit: &mut JITState,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
-    max_chain_depth: i32,
+    max_chain_depth: u8,
     comptime_receiver: VALUE,
     ivar_name: ID,
     recv: Opnd,
@@ -2386,7 +2386,7 @@ fn gen_get_ivar(
     // Check if the comptime receiver is a T_OBJECT
     let receiver_t_object = unsafe { RB_TYPE_P(comptime_receiver, RUBY_T_OBJECT) };
     // Use a general C call at the last chain to avoid exits on megamorphic shapes
-    let megamorphic = asm.ctx.get_chain_depth() as i32 >= max_chain_depth;
+    let megamorphic = asm.ctx.get_chain_depth() >= max_chain_depth;
     if megamorphic {
         gen_counter_incr(asm, Counter::num_getivar_megamorphic);
     }
@@ -2598,7 +2598,7 @@ fn gen_setinstancevariable(
     // Check if the comptime receiver is a T_OBJECT
     let receiver_t_object = unsafe { RB_TYPE_P(comptime_receiver, RUBY_T_OBJECT) };
     // Use a general C call at the last chain to avoid exits on megamorphic shapes
-    let megamorphic = asm.ctx.get_chain_depth() as i32 >= SET_IVAR_MAX_DEPTH;
+    let megamorphic = asm.ctx.get_chain_depth() >= SET_IVAR_MAX_DEPTH;
     if megamorphic {
         gen_counter_incr(asm, Counter::num_setivar_megamorphic);
     }
@@ -2850,7 +2850,7 @@ fn gen_definedivar(
     // Specialize base on compile time values
     let comptime_receiver = jit.peek_at_self();
 
-    if comptime_receiver.shape_too_complex() || asm.ctx.get_chain_depth() as i32 >= GET_IVAR_MAX_DEPTH {
+    if comptime_receiver.shape_too_complex() || asm.ctx.get_chain_depth() >= GET_IVAR_MAX_DEPTH {
         // Fall back to calling rb_ivar_defined
 
         // Save the PC and SP because the callee may allocate
@@ -4306,7 +4306,7 @@ fn jit_guard_known_klass(
     obj_opnd: Opnd,
     insn_opnd: YARVOpnd,
     sample_instance: VALUE,
-    max_chain_depth: i32,
+    max_chain_depth: u8,
     counter: Counter,
 ) {
     let val_type = asm.ctx.get_opnd_type(insn_opnd);
@@ -7639,7 +7639,7 @@ fn gen_send_general(
         gen_counter_incr(asm, Counter::num_send_polymorphic);
     }
     // If megamorphic, let the caller fallback to dynamic dispatch
-    if asm.ctx.get_chain_depth() as i32 >= SEND_MAX_DEPTH {
+    if asm.ctx.get_chain_depth() >= SEND_MAX_DEPTH {
         gen_counter_incr(asm, Counter::send_megamorphic);
         return None;
     }
@@ -8158,7 +8158,7 @@ fn gen_invokeblock_specialized(
     }
 
     // Fallback to dynamic dispatch if this callsite is megamorphic
-    if asm.ctx.get_chain_depth() as i32 >= SEND_MAX_DEPTH {
+    if asm.ctx.get_chain_depth() >= SEND_MAX_DEPTH {
         gen_counter_incr(asm, Counter::invokeblock_megamorphic);
         return None;
     }
@@ -8339,7 +8339,7 @@ fn gen_invokesuper_specialized(
     };
 
     // Fallback to dynamic dispatch if this callsite is megamorphic
-    if asm.ctx.get_chain_depth() as i32 >= SEND_MAX_DEPTH {
+    if asm.ctx.get_chain_depth() >= SEND_MAX_DEPTH {
         gen_counter_incr(asm, Counter::invokesuper_megamorphic);
         return None;
     }
