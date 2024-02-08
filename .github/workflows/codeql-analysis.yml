@@ -56,10 +56,9 @@ jobs:
         include:
           - language: cpp
             os: ubuntu-latest
-            ram: 8192
+          # ruby analysis used large memory. We need to use a larger runner.
           - language: ruby
             os: macos-arm-oss
-            ram: 13312
 
     steps:
       - name: Checkout repository
@@ -93,10 +92,6 @@ jobs:
           category: '/language:${{ matrix.language }}'
           upload: False
           output: sarif-results
-          ram: ${{ matrix.ram }}
-        # CodeQL randomly hits `OutOfMemoryError "Java heap space"`.
-        # GitHub recommends running a larger runner to fix it, but we don't pay for it.
-        continue-on-error: true
 
       - name: filter-sarif
         uses: advanced-security/filter-sarif@f3b8118a9349d88f7b1c0c488476411145b6270d # v1.0.1
