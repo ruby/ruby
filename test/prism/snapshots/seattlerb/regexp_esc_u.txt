@@ -4,7 +4,7 @@
     @ StatementsNode (location: (1,0)-(1,17))
     └── body: (length: 1)
         └── @ RegularExpressionNode (location: (1,0)-(1,17))
-            ├── flags: ∅
+            ├── flags: forced_us_ascii_encoding
             ├── opening_loc: (1,0)-(1,1) = "/"
             ├── content_loc: (1,1)-(1,16) = "[\\u0021-\\u0027]"
             ├── closing_loc: (1,16)-(1,17) = "/"

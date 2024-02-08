@@ -55,7 +55,7 @@
         │   ├── closing_loc: (17,1)-(17,2) = "}"
         │   └── unescaped: "a\\\nb"
         ├── @ RegularExpressionNode (location: (19,0)-(20,2))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (19,0)-(19,3) = "%r{"
         │   ├── content_loc: (19,3)-(20,1) = "a\\\nb"
         │   ├── closing_loc: (20,1)-(20,2) = "}"
@@ -96,7 +96,7 @@
         │   ├── closing_loc: (35,1)-(35,2) = "'"
         │   └── unescaped: "a\\\nb"
         ├── @ RegularExpressionNode (location: (37,0)-(38,2))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (37,0)-(37,1) = "/"
         │   ├── content_loc: (37,1)-(38,1) = "a\\\nb"
         │   ├── closing_loc: (38,1)-(38,2) = "/"

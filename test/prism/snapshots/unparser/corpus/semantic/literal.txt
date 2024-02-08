@@ -31,13 +31,13 @@
         │   ├── closing_loc: ∅
         │   └── unescaped: "c"
         ├── @ RegularExpressionNode (location: (9,0)-(9,5))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (9,0)-(9,3) = "%r("
         │   ├── content_loc: (9,3)-(9,4) = "/"
         │   ├── closing_loc: (9,4)-(9,5) = ")"
         │   └── unescaped: "/"
         ├── @ RegularExpressionNode (location: (10,0)-(10,6))
-        │   ├── flags: ∅
+        │   ├── flags: forced_us_ascii_encoding
         │   ├── opening_loc: (10,0)-(10,3) = "%r("
         │   ├── content_loc: (10,3)-(10,5) = "\\)"
         │   ├── closing_loc: (10,5)-(10,6) = ")"

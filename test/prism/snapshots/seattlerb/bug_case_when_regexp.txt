@@ -16,7 +16,7 @@
             │       ├── keyword_loc: (1,9)-(1,13) = "when"
             │       ├── conditions: (length: 1)
             │       │   └── @ RegularExpressionNode (location: (1,14)-(1,17))
-            │       │       ├── flags: ∅
+            │       │       ├── flags: forced_us_ascii_encoding
             │       │       ├── opening_loc: (1,14)-(1,15) = "/"
             │       │       ├── content_loc: (1,15)-(1,16) = "x"
             │       │       ├── closing_loc: (1,16)-(1,17) = "/"

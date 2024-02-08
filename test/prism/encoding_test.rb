@@ -149,6 +149,7 @@ module Prism
     escapes = ["\\x00", "\\x7F", "\\x80", "\\xFF", "\\u{00}", "\\u{7F}", "\\u{80}", "\\M-\\C-?"]
     escapes = escapes.concat(escapes.product(escapes).map(&:join))
     symbols = [:a, :ą, :+]
+    regexps = [/a/, /ą/, //]
 
     encodings.each_key do |encoding|
       define_method(:"test_encoding_flags_#{encoding.name}") do
@@ -165,6 +166,18 @@ module Prism
     encodings.each_key do |encoding|
       define_method(:"test_symbol_character_escape_encoding_flags_#{encoding.name}") do
         assert_symbol_character_escape_encoding_flags(encoding, escapes)
+      end
+    end
+
+    encodings.each_key do |encoding|
+      define_method(:"test_regular_expression_encoding_flags_#{encoding.name}") do
+        assert_regular_expression_encoding_flags(encoding, regexps.map(&:inspect))
+      end
+    end
+
+    encodings.each_key do |encoding|
+      define_method(:"test_regular_expression_escape_encoding_flags_#{encoding.name}") do
+        assert_regular_expression_encoding_flags(encoding, escapes.map { |e| "/#{e}/" })
       end
     end
 
@@ -446,6 +459,51 @@ module Prism
               if error.message.include?("mixed")
                 error.message
               else
+                raise error.message
+              end
+            end
+          end
+
+        assert_equal expected, actual
+      end
+    end
+
+    def assert_regular_expression_encoding_flags(encoding, regexps)
+      regexps.each do |regexp|
+        source = "# encoding: #{encoding.name}\n#{regexp}"
+
+        expected =
+          begin
+            eval(source).encoding
+          rescue SyntaxError => error
+            if error.message.include?("UTF-8 character in non UTF-8 regexp") || error.message.include?("escaped non ASCII character in UTF-8 regexp")
+              error.message[/: (.+?)\n/, 1]
+            elsif error.message.include?("invalid multibyte char")
+              # TODO (nirvdrum 26-Jan-2024): Bail out early of the rest of the test due to https://github.com/ruby/prism/issues/2104.
+              next
+            else
+              raise
+            end
+          end
+
+        actual =
+          Prism.parse(source).then do |result|
+            if result.success?
+              regexp = result.value.statements.body.first
+
+              if regexp.forced_utf8_encoding?
+                Encoding::UTF_8
+              elsif regexp.forced_binary_encoding?
+                Encoding::ASCII_8BIT
+              elsif regexp.forced_us_ascii_encoding?
+                Encoding::US_ASCII
+              else
+                encoding
+              end
+            else
+              error = result.errors.last
+
+              unless error.message.include?("UTF-8 mixed within")
                 raise error.message
               end
             end

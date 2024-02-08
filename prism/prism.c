@@ -5950,6 +5950,34 @@ parse_symbol_encoding(const pm_parser_t *parser, const pm_string_t *contents) {
 }
 
 /**
+ * Ruby "downgrades" the encoding of Regexps to US-ASCII if the associated encoding is ASCII-compatible and
+ * the unescaped representation of a Regexp source consists only of US-ASCII code points. This is true even
+ * when the Regexp is explicitly given an ASCII-8BIT encoding via the (/n) modifier. Otherwise, the encoding
+ * may be explicitly set with an escape sequence.
+ */
+static inline pm_node_flags_t
+parse_regular_expression_encoding(const pm_parser_t *parser, const pm_string_t *contents) {
+    // Ruby stipulates that all source files must use an ASCII-compatible encoding. Thus, all regular expressions
+    // appearing in source are eligible for "downgrading" to US-ASCII.
+    if (pm_ascii_only_p(contents)) {
+        return PM_REGULAR_EXPRESSION_FLAGS_FORCED_US_ASCII_ENCODING;
+    }
+
+    // A Regexp may optionally have its encoding explicitly set via a character escape sequence in the source string
+    // or by specifying a modifier.
+    //
+    // NB: an explicitly set encoding is ignored by Ruby if the Regexp consists of only US ASCII code points.
+    if (parser->explicit_encoding != NULL) {
+        if (parser->explicit_encoding == PM_ENCODING_UTF_8_ENTRY) {
+            return PM_REGULAR_EXPRESSION_FLAGS_FORCED_UTF8_ENCODING;
+        } else if (parser->encoding == PM_ENCODING_US_ASCII_ENTRY) {
+            return PM_REGULAR_EXPRESSION_FLAGS_FORCED_BINARY_ENCODING;
+        }
+    }
+    return 0;
+}
+
+/**
  * Allocate and initialize a new SymbolNode node with the given unescaped
  * string.
  */
@@ -8130,34 +8158,34 @@ escape_write_escape_encoded(pm_parser_t *parser, pm_buffer_t *buffer) {
  * source so that the regular expression engine will perform its own unescaping.
  */
 static inline void
-escape_write_byte(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags, uint8_t byte) {
+escape_write_byte(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expression_buffer, uint8_t flags, uint8_t byte) {
     if (flags & PM_ESCAPE_FLAG_REGEXP) {
-        pm_buffer_append_bytes(buffer, (const uint8_t *) "\\x", 2);
+        pm_buffer_append_bytes(regular_expression_buffer, (const uint8_t *) "\\x", 2);
 
         uint8_t byte1 = (uint8_t) ((byte >> 4) & 0xF);
         uint8_t byte2 = (uint8_t) (byte & 0xF);
 
         if (byte1 >= 0xA) {
-            pm_buffer_append_byte(buffer, (uint8_t) ((byte1 - 0xA) + 'A'));
+            pm_buffer_append_byte(regular_expression_buffer, (uint8_t) ((byte1 - 0xA) + 'A'));
         } else {
-            pm_buffer_append_byte(buffer, (uint8_t) (byte1 + '0'));
+            pm_buffer_append_byte(regular_expression_buffer, (uint8_t) (byte1 + '0'));
         }
 
         if (byte2 >= 0xA) {
-            pm_buffer_append_byte(buffer, (uint8_t) (byte2 - 0xA + 'A'));
+            pm_buffer_append_byte(regular_expression_buffer, (uint8_t) (byte2 - 0xA + 'A'));
         } else {
-            pm_buffer_append_byte(buffer, (uint8_t) (byte2 + '0'));
+            pm_buffer_append_byte(regular_expression_buffer, (uint8_t) (byte2 + '0'));
         }
-    } else {
-        escape_write_byte_encoded(parser, buffer, byte);
     }
+
+    escape_write_byte_encoded(parser, buffer, byte);
 }
 
 /**
  * Read the value of an escape into the buffer.
  */
 static void
-escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
+escape_read(pm_parser_t *parser, pm_buffer_t *buffer, pm_buffer_t *regular_expression_buffer, uint8_t flags) {
     switch (peek(parser)) {
         case '\\': {
             parser->current.end++;
@@ -8248,10 +8276,10 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                 }
 
                 if (flags & PM_ESCAPE_FLAG_REGEXP) {
-                    pm_buffer_append_bytes(buffer, start, (size_t) (parser->current.end - start));
-                } else {
-                    escape_write_byte_encoded(parser, buffer, value);
+                    pm_buffer_append_bytes(regular_expression_buffer, start, (size_t) (parser->current.end - start));
                 }
+
+                escape_write_byte_encoded(parser, buffer, value);
             } else {
                 pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_HEXADECIMAL);
             }
@@ -8272,10 +8300,9 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                 uint32_t value = escape_unicode(parser->current.end, 4);
 
                 if (flags & PM_ESCAPE_FLAG_REGEXP) {
-                    pm_buffer_append_bytes(buffer, start, (size_t) (parser->current.end + 4 - start));
-                } else {
-                    escape_write_unicode(parser, buffer, flags, start, parser->current.end + 4, value);
+                    pm_buffer_append_bytes(regular_expression_buffer, start, (size_t) (parser->current.end + 4 - start));
                 }
+                escape_write_unicode(parser, buffer, flags, start, parser->current.end + 4, value);
 
                 parser->current.end += 4;
             } else if (peek(parser) == '{') {
@@ -8306,10 +8333,8 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                         extra_codepoints_start = unicode_start;
                     }
 
-                    if (!(flags & PM_ESCAPE_FLAG_REGEXP)) {
-                        uint32_t value = escape_unicode(unicode_start, hexadecimal_length);
-                        escape_write_unicode(parser, buffer, flags, unicode_start, parser->current.end, value);
-                    }
+                    uint32_t value = escape_unicode(unicode_start, hexadecimal_length);
+                    escape_write_unicode(parser, buffer, flags, unicode_start, parser->current.end, value);
 
                     parser->current.end += pm_strspn_whitespace(parser->current.end, parser->end - parser->current.end);
                 }
@@ -8327,7 +8352,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                 }
 
                 if (flags & PM_ESCAPE_FLAG_REGEXP) {
-                    pm_buffer_append_bytes(buffer, unicode_codepoints_start, (size_t) (parser->current.end - unicode_codepoints_start));
+                    pm_buffer_append_bytes(regular_expression_buffer, unicode_codepoints_start, (size_t) (parser->current.end - unicode_codepoints_start));
                 }
             } else {
                 pm_parser_err_current(parser, PM_ERR_ESCAPE_INVALID_UNICODE);
@@ -8346,7 +8371,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
             switch (peeked) {
                 case '?': {
                     parser->current.end++;
-                    escape_write_byte(parser, buffer, flags, escape_byte(0x7f, flags));
+                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(0x7f, flags));
                     return;
                 }
                 case '\\':
@@ -8355,7 +8380,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                         return;
                     }
                     parser->current.end++;
-                    escape_read(parser, buffer, flags | PM_ESCAPE_FLAG_CONTROL);
+                    escape_read(parser, buffer, regular_expression_buffer, flags | PM_ESCAPE_FLAG_CONTROL);
                     return;
                 default: {
                     if (!char_is_ascii_printable(peeked)) {
@@ -8364,7 +8389,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                     }
 
                     parser->current.end++;
-                    escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
+                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
                 }
             }
@@ -8386,7 +8411,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
             switch (peeked) {
                 case '?': {
                     parser->current.end++;
-                    escape_write_byte(parser, buffer, flags, escape_byte(0x7f, flags));
+                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(0x7f, flags));
                     return;
                 }
                 case '\\':
@@ -8395,7 +8420,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                         return;
                     }
                     parser->current.end++;
-                    escape_read(parser, buffer, flags | PM_ESCAPE_FLAG_CONTROL);
+                    escape_read(parser, buffer, regular_expression_buffer, flags | PM_ESCAPE_FLAG_CONTROL);
                     return;
                 default: {
                     if (!char_is_ascii_printable(peeked)) {
@@ -8404,7 +8429,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                     }
 
                     parser->current.end++;
-                    escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
+                    escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_CONTROL));
                     return;
                 }
             }
@@ -8429,7 +8454,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
                     return;
                 }
                 parser->current.end++;
-                escape_read(parser, buffer, flags | PM_ESCAPE_FLAG_META);
+                escape_read(parser, buffer, regular_expression_buffer, flags | PM_ESCAPE_FLAG_META);
                 return;
             }
 
@@ -8439,7 +8464,7 @@ escape_read(pm_parser_t *parser, pm_buffer_t *buffer, uint8_t flags) {
             }
 
             parser->current.end++;
-            escape_write_byte(parser, buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
+            escape_write_byte(parser, buffer, regular_expression_buffer, flags, escape_byte(peeked, flags | PM_ESCAPE_FLAG_META));
             return;
         }
         case '\r': {
@@ -8510,7 +8535,7 @@ lex_question_mark(pm_parser_t *parser) {
         pm_buffer_t buffer;
         pm_buffer_init_capacity(&buffer, 3);
 
-        escape_read(parser, &buffer, PM_ESCAPE_FLAG_SINGLE);
+        escape_read(parser, &buffer, NULL, PM_ESCAPE_FLAG_SINGLE);
         pm_string_owned_init(&parser->current_string, (uint8_t *) buffer.value, buffer.length);
 
         return PM_TOKEN_CHARACTER_LITERAL;
@@ -8724,7 +8749,7 @@ parser_end_of_line_p(const pm_parser_t *parser) {
  *     "foo\n"
  *
  * then the bytes in the string are "f", "o", "o", "\", "n", but we want to
- * provide out consumers with the string content "f", "o", "o", "\n". In these
+ * provide our consumers with the string content "f", "o", "o", "\n". In these
  * cases, when we find the first escape sequence, we initialize a pm_buffer_t
  * to keep track of the string content. Then in the parser, it will
  * automatically attach the string content to the node that it belongs to.
@@ -8735,6 +8760,20 @@ typedef struct {
      * only be initialized if we receive an escape sequence.
      */
     pm_buffer_t buffer;
+
+    /**
+    * In order to properly set a regular expression's encoding and to validate
+    * the byte sequence for the underlying encoding we must process any escape
+    * sequences. The unescaped byte sequence will be stored in `buffer` just like
+    * for other string-like types. However, we also need to store the regular
+    * expression's source string. That string may different from the what we see
+    * during lexing because some escape sequences rewrite the source.
+    *
+    * This value will only be initialized for regular expressions and only if we
+    * receive an escape sequence. It will contain the regular expression's source
+    * string's byte sequence.
+    */
+    pm_buffer_t regular_expression_buffer;
 
     /**
      * The cursor into the source string that points to how far we have
@@ -8751,19 +8790,29 @@ pm_token_buffer_push_byte(pm_token_buffer_t *token_buffer, uint8_t byte) {
     pm_buffer_append_byte(&token_buffer->buffer, byte);
 }
 
+static inline void
+pm_token_buffer_push_byte_regular_expression(pm_token_buffer_t *token_buffer, uint8_t byte) {
+    pm_buffer_append_byte(&token_buffer->regular_expression_buffer, byte);
+}
+
+
 /**
  * Append the given bytes into the token buffer.
  */
 static inline void
-pm_token_buffer_push_bytes(pm_token_buffer_t *token_buffer, const uint8_t *bytes, size_t length) {
+pm_token_buffer_push_bytes(pm_token_buffer_t *token_buffer, const uint8_t *bytes, size_t length, uint8_t flags) {
     pm_buffer_append_bytes(&token_buffer->buffer, bytes, length);
+
+    if (flags & PM_ESCAPE_FLAG_REGEXP) {
+        pm_buffer_append_bytes(&token_buffer->regular_expression_buffer, bytes, length);
+    }
 }
 
 /**
  * Push an escaped character into the token buffer.
  */
 static inline void
-pm_token_buffer_push_escaped(pm_token_buffer_t *token_buffer, pm_parser_t *parser) {
+pm_token_buffer_push_escaped(pm_token_buffer_t *token_buffer, pm_parser_t *parser, uint8_t flags) {
     // First, determine the width of the character to be escaped.
     size_t width;
     if (parser->encoding_changed) {
@@ -8777,7 +8826,7 @@ pm_token_buffer_push_escaped(pm_token_buffer_t *token_buffer, pm_parser_t *parse
     width = (width == 0 ? 1 : width);
 
     // Now, push the bytes into the buffer.
-    pm_token_buffer_push_bytes(token_buffer, parser->current.end, width);
+    pm_token_buffer_push_bytes(token_buffer, parser->current.end, width, flags);
     parser->current.end += width;
 }
 
@@ -8790,6 +8839,7 @@ pm_token_buffer_push_escaped(pm_token_buffer_t *token_buffer, pm_parser_t *parse
 static inline void
 pm_token_buffer_copy(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
     pm_string_owned_init(&parser->current_string, (uint8_t *) token_buffer->buffer.value, token_buffer->buffer.length);
+    pm_string_owned_init(&parser->current_regular_expression_source, (uint8_t *) token_buffer->regular_expression_buffer.value, token_buffer->regular_expression_buffer.length);
 }
 
 /**
@@ -8805,8 +8855,10 @@ static void
 pm_token_buffer_flush(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
     if (token_buffer->cursor == NULL) {
         pm_string_shared_init(&parser->current_string, parser->current.start, parser->current.end);
+        pm_string_shared_init(&parser->current_regular_expression_source, parser->current.start, parser->current.end);
     } else {
         pm_buffer_append_bytes(&token_buffer->buffer, token_buffer->cursor, (size_t) (parser->current.end - token_buffer->cursor));
+        pm_buffer_append_bytes(&token_buffer->regular_expression_buffer, token_buffer->cursor, (size_t) (parser->current.end - token_buffer->cursor));
         pm_token_buffer_copy(parser, token_buffer);
     }
 }
@@ -8824,6 +8876,7 @@ pm_token_buffer_escape(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
     const uint8_t *start;
     if (token_buffer->cursor == NULL) {
         pm_buffer_init_capacity(&token_buffer->buffer, 16);
+        pm_buffer_init_capacity(&token_buffer->regular_expression_buffer, 16);
         start = parser->current.start;
     } else {
         start = token_buffer->cursor;
@@ -8831,6 +8884,7 @@ pm_token_buffer_escape(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
 
     const uint8_t *end = parser->current.end - 1;
     pm_buffer_append_bytes(&token_buffer->buffer, start, (size_t) (end - start));
+    pm_buffer_append_bytes(&token_buffer->regular_expression_buffer, start, (size_t) (end - start));
 
     token_buffer->cursor = end;
 }
@@ -10143,7 +10197,7 @@ parser_lex(pm_parser_t *parser) {
 
             // If we haven't found an escape yet, then this buffer will be
             // unallocated since we can refer directly to the source string.
-            pm_token_buffer_t token_buffer = { { 0 }, 0 };
+            pm_token_buffer_t token_buffer = { { 0 }, { 0 }, 0 };
 
             while (breakpoint != NULL) {
                 // If we hit a null byte, skip directly past it.
@@ -10242,10 +10296,10 @@ parser_lex(pm_parser_t *parser) {
                                 pm_token_buffer_push_byte(&token_buffer, peeked);
                                 parser->current.end++;
                             } else if (lex_mode->as.list.interpolation) {
-                                escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
+                                escape_read(parser, &token_buffer.buffer, NULL, PM_ESCAPE_FLAG_NONE);
                             } else {
                                 pm_token_buffer_push_byte(&token_buffer, '\\');
-                                pm_token_buffer_push_escaped(&token_buffer, parser);
+                                pm_token_buffer_push_escaped(&token_buffer, parser, PM_ESCAPE_FLAG_NONE);
                             }
 
                             break;
@@ -10320,7 +10374,7 @@ parser_lex(pm_parser_t *parser) {
             // characters.
             const uint8_t *breakpoints = lex_mode->as.regexp.breakpoints;
             const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
-            pm_token_buffer_t token_buffer = { { 0 }, 0 };
+            pm_token_buffer_t token_buffer = { { 0 },  { 0 }, 0 };
 
             while (breakpoint != NULL) {
                 // If we hit a null byte, skip directly past it.
@@ -10403,9 +10457,10 @@ parser_lex(pm_parser_t *parser) {
                             parser->current.end++;
                             if (peek(parser) != '\n') {
                                 if (lex_mode->as.regexp.terminator != '\r') {
-                                    pm_token_buffer_push_byte(&token_buffer, '\\');
+                                    pm_token_buffer_push_byte_regular_expression(&token_buffer, '\\');
                                 }
                                 pm_token_buffer_push_byte(&token_buffer, '\r');
+                                pm_token_buffer_push_byte_regular_expression(&token_buffer, '\r');
                                 break;
                             }
                         /* fallthrough */
@@ -10429,7 +10484,7 @@ parser_lex(pm_parser_t *parser) {
                         case 'M':
                         case 'u':
                         case 'x':
-                            escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_REGEXP);
+                            escape_read(parser, &token_buffer.buffer, &token_buffer.regular_expression_buffer, PM_ESCAPE_FLAG_REGEXP);
                             break;
                         default:
                             if (lex_mode->as.regexp.terminator == peeked) {
@@ -10440,19 +10495,20 @@ parser_lex(pm_parser_t *parser) {
                                     case '$': case ')': case '*': case '+':
                                     case '.': case '>': case '?': case ']':
                                     case '^': case '|': case '}':
-                                        pm_token_buffer_push_byte(&token_buffer, '\\');
+                                        pm_token_buffer_push_byte_regular_expression(&token_buffer, '\\');
                                         break;
                                     default:
                                         break;
                                 }
 
                                 pm_token_buffer_push_byte(&token_buffer, peeked);
+                                pm_token_buffer_push_byte_regular_expression(&token_buffer, peeked);
                                 parser->current.end++;
                                 break;
                             }
 
-                            if (peeked < 0x80) pm_token_buffer_push_byte(&token_buffer, '\\');
-                            pm_token_buffer_push_escaped(&token_buffer, parser);
+                            if (peeked < 0x80) pm_token_buffer_push_byte_regular_expression(&token_buffer, '\\');
+                            pm_token_buffer_push_escaped(&token_buffer, parser, PM_ESCAPE_FLAG_REGEXP);
                             break;
                     }
 
@@ -10525,7 +10581,7 @@ parser_lex(pm_parser_t *parser) {
 
             // If we haven't found an escape yet, then this buffer will be
             // unallocated since we can refer directly to the source string.
-            pm_token_buffer_t token_buffer = { { 0 }, 0 };
+            pm_token_buffer_t token_buffer = { { 0 }, { 0 }, 0 };
 
             while (breakpoint != NULL) {
                 // If we hit the incrementor, then we'll increment then nesting and
@@ -10660,10 +10716,10 @@ parser_lex(pm_parser_t *parser) {
                                     pm_token_buffer_push_byte(&token_buffer, peeked);
                                     parser->current.end++;
                                 } else if (lex_mode->as.string.interpolation) {
-                                    escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
+                                    escape_read(parser, &token_buffer.buffer, NULL, PM_ESCAPE_FLAG_NONE);
                                 } else {
                                     pm_token_buffer_push_byte(&token_buffer, '\\');
-                                    pm_token_buffer_push_escaped(&token_buffer, parser);
+                                    pm_token_buffer_push_escaped(&token_buffer, parser, PM_ESCAPE_FLAG_NONE);
                                 }
 
                                 break;
@@ -10813,7 +10869,7 @@ parser_lex(pm_parser_t *parser) {
             }
 
             const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
-            pm_token_buffer_t token_buffer = { { 0 }, 0 };
+            pm_token_buffer_t token_buffer = { { 0 }, { 0 }, 0 };
             bool was_line_continuation = false;
 
             while (breakpoint != NULL) {
@@ -10935,7 +10991,7 @@ parser_lex(pm_parser_t *parser) {
                                     continue;
                                 default:
                                     pm_token_buffer_push_byte(&token_buffer, '\\');
-                                    pm_token_buffer_push_escaped(&token_buffer, parser);
+                                    pm_token_buffer_push_escaped(&token_buffer, parser, PM_ESCAPE_FLAG_NONE);
                                     break;
                             }
                         } else {
@@ -10972,7 +11028,7 @@ parser_lex(pm_parser_t *parser) {
                                     breakpoint = parser->current.end;
                                     continue;
                                 default:
-                                    escape_read(parser, &token_buffer.buffer, PM_ESCAPE_FLAG_NONE);
+                                    escape_read(parser, &token_buffer.buffer, NULL, PM_ESCAPE_FLAG_NONE);
                                     break;
                             }
                         }
@@ -16948,7 +17004,11 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 };
 
                 parser_lex(parser);
-                return (pm_node_t *) pm_regular_expression_node_create(parser, &opening, &content, &parser->previous);
+
+                pm_node_t *regular_expression_node = (pm_node_t *) (pm_node_t *) pm_regular_expression_node_create(parser, &opening, &content, &parser->previous);
+                pm_node_flag_set(regular_expression_node, PM_REGULAR_EXPRESSION_FLAGS_FORCED_US_ASCII_ENCODING);
+
+                return regular_expression_node;
             }
 
             pm_interpolated_regular_expression_node_t *node;
@@ -16959,6 +17019,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 // following token is the end (in which case we can return a plain
                 // regular expression) or if it's not then it has interpolation.
                 pm_string_t unescaped = parser->current_string;
+                pm_string_t source = parser->current_regular_expression_source;
                 pm_token_t content = parser->current;
                 parser_lex(parser);
 
@@ -16966,7 +17027,9 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 // without interpolation, which can be represented more succinctly and
                 // more easily compiled.
                 if (accept1(parser, PM_TOKEN_REGEXP_END)) {
-                    return (pm_node_t *) pm_regular_expression_node_create_unescaped(parser, &opening, &content, &parser->previous, &unescaped);
+                    pm_node_t *regular_expression_node = (pm_node_t *) pm_regular_expression_node_create_unescaped(parser, &opening, &content, &parser->previous, &source);
+                    pm_node_flag_set(regular_expression_node, parse_regular_expression_encoding(parser, &unescaped));
+                    return regular_expression_node;
                 }
 
                 // If we get here, then we have interpolation so we'll need to create
@@ -18527,6 +18590,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         .newline_list = { 0 },
         .integer_base = 0,
         .current_string = PM_STRING_EMPTY,
+        .current_regular_expression_source = PM_STRING_EMPTY,
         .start_line = 1,
         .explicit_encoding = NULL,
         .command_line = 0,

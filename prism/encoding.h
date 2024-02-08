@@ -248,7 +248,7 @@ extern const pm_encoding_t pm_encodings[PM_ENCODING_MAXIMUM];
 /**
  * This is the ASCII-8BIT encoding. We need a reference to it so that pm_strpbrk
  * can compare against it because invalid multibyte characters are not a thing
- * in this encoding.
+ * in this encoding. It is also needed for handling Regexp encoding flags.
  */
 #define PM_ENCODING_ASCII_8BIT_ENTRY (&pm_encodings[PM_ENCODING_ASCII_8BIT])
 

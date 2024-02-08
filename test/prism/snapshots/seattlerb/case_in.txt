@@ -338,7 +338,7 @@
         │   │   └── @ InNode (location: (46,0)-(46,11))
         │   │       ├── pattern:
         │   │       │   @ RegularExpressionNode (location: (46,3)-(46,11))
-        │   │       │   ├── flags: ∅
+        │   │       │   ├── flags: forced_us_ascii_encoding
         │   │       │   ├── opening_loc: (46,3)-(46,4) = "/"
         │   │       │   ├── content_loc: (46,4)-(46,10) = "regexp"
         │   │       │   ├── closing_loc: (46,10)-(46,11) = "/"
