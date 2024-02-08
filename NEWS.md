@@ -32,7 +32,7 @@ The following default gems are updated.
 * prism 0.22.0
 * reline 0.4.2
 * stringio 3.1.1
-* strscan 3.0.9
+* strscan 3.1.1
 
 The following bundled gems are updated.
 
