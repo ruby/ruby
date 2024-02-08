@@ -4463,76 +4463,108 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_CASE_NODE: {
-        pm_case_node_t *case_node = (pm_case_node_t *)node;
-        bool has_predicate = case_node->predicate;
-        if (has_predicate) {
-            PM_COMPILE_NOT_POPPED(case_node->predicate);
-        }
+        // case foo; when bar; end
+        // ^^^^^^^^^^^^^^^^^^^^^^^
+        const pm_case_node_t *cast = (const pm_case_node_t *) node;
+        const pm_node_list_t *conditions = &cast->conditions;
+        bool has_predicate = cast->predicate != NULL;
+
+        // This is the anchor that we will compile the conditions of the various
+        // `when` nodes into. If a match is found, they will need to jump into
+        // the body_seq anchor to the correct spot.
+        DECL_ANCHOR(cond_seq);
+        INIT_ANCHOR(cond_seq);
+
+        // This is the anchor that we will compile the bodies of the various
+        // `when` nodes into. We'll make sure that the clauses that are compiled
+        // jump into the correct spots within this anchor.
+        DECL_ANCHOR(body_seq);
+        INIT_ANCHOR(body_seq);
+
+        // This is the label where all of the when clauses will jump to if they
+        // have matched and are done executing their bodies.
         LABEL *end_label = NEW_LABEL(lineno);
 
-        pm_node_list_t conditions = case_node->conditions;
+        // We're going to loop through each of the conditions in the case node
+        // and compile each of their contents into both the cond_seq and the
+        // body_seq. Each condition will use its own label to jump from its
+        // conditions into its body.
+        //
+        // Note that none of the code in the loop below should be adding
+        // anything to ret, as we're going to be laying out the entire case node
+        // instructions later.
+        for (size_t clause_index = 0; clause_index < conditions->size; clause_index++) {
+            const pm_when_node_t *clause = (const pm_when_node_t *) conditions->nodes[clause_index];
+            const pm_node_list_t *conditions = &clause->conditions;
 
-        LABEL **conditions_labels = (LABEL **)ALLOCA_N(VALUE, conditions.size + 1);
-        LABEL *label;
+            LABEL *label = NEW_LABEL(lineno);
 
-        for (size_t i = 0; i < conditions.size; i++) {
-            label = NEW_LABEL(lineno);
-            conditions_labels[i] = label;
-            pm_when_node_t *when_node = (pm_when_node_t *)conditions.nodes[i];
+            // Compile each of the conditions for the when clause into the
+            // cond_seq. Each one should have a unique comparison that then
+            // jumps into the body if it matches.
+            for (size_t condition_index = 0; condition_index < conditions->size; condition_index++) {
+                const pm_node_t *condition = conditions->nodes[condition_index];
 
-            for (size_t i = 0; i < when_node->conditions.size; i++) {
-                pm_node_t *condition_node = when_node->conditions.nodes[i];
+                if (PM_NODE_TYPE_P(condition, PM_SPLAT_NODE)) {
+                    ADD_INSN(cond_seq, &dummy_line_node, dup);
+                    pm_compile_node(iseq, condition, cond_seq, false, scope_node);
 
-                if (PM_NODE_TYPE_P(condition_node, PM_SPLAT_NODE)) {
-                    int checkmatch_type = has_predicate ? VM_CHECKMATCH_TYPE_CASE : VM_CHECKMATCH_TYPE_WHEN;
-                    ADD_INSN (ret, &dummy_line_node, dup);
-                    PM_COMPILE_NOT_POPPED(condition_node);
-                    ADD_INSN1(ret, &dummy_line_node, checkmatch,
-                              INT2FIX(checkmatch_type | VM_CHECKMATCH_ARRAY));
+                    int type = has_predicate ? VM_CHECKMATCH_TYPE_CASE : VM_CHECKMATCH_TYPE_WHEN;
+                    ADD_INSN1(cond_seq, &dummy_line_node, checkmatch, INT2FIX(type | VM_CHECKMATCH_ARRAY));
                 }
                 else {
-                    PM_COMPILE_NOT_POPPED(condition_node);
+                    pm_compile_node(iseq, condition, cond_seq, false, scope_node);
+
                     if (has_predicate) {
-                        ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
-                        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idEqq, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
+                        ADD_INSN1(cond_seq, &dummy_line_node, topn, INT2FIX(1));
+                        ADD_SEND_WITH_FLAG(cond_seq, &dummy_line_node, idEqq, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
                     }
                 }
 
-                ADD_INSNL(ret, &dummy_line_node, branchif, label);
+                ADD_INSNL(cond_seq, &dummy_line_node, branchif, label);
             }
+
+            // Now, add the label to the body and compile the body of the when
+            // clause. This involves popping the predicate if there was one,
+            // compiling the statements to be executed, and then compiling a
+            // jump to the end of the case node.
+            ADD_LABEL(body_seq, label);
+            if (has_predicate) {
+                ADD_INSN(body_seq, &dummy_line_node, pop);
+            }
+
+            if (clause->statements != NULL) {
+                pm_compile_node(iseq, (const pm_node_t *) clause->statements, body_seq, popped, scope_node);
+            }
+            else if (!popped) {
+                ADD_INSN(body_seq, &dummy_line_node, putnil);
+            }
+
+            ADD_INSNL(body_seq, &dummy_line_node, jump, end_label);
         }
 
+        // Now that we have compiled the conditions and the bodies of the
+        // various when clauses, we can compile the predicate, lay out the
+        // conditions, compile the fallback consequent if there is one, and
+        // finally put in the bodies of the when clauses.
+        if (has_predicate) {
+            PM_COMPILE_NOT_POPPED(cast->predicate);
+        }
+
+        ADD_SEQ(ret, cond_seq);
         if (has_predicate) {
             PM_POP;
         }
 
-        if (case_node->consequent) {
-             PM_COMPILE((pm_node_t *)case_node->consequent);
+        if (cast->consequent != NULL) {
+            PM_COMPILE((const pm_node_t *) cast->consequent);
         }
         else {
             PM_PUTNIL_UNLESS_POPPED;
         }
 
         ADD_INSNL(ret, &dummy_line_node, jump, end_label);
-
-        for (size_t i = 0; i < conditions.size; i++) {
-            label = conditions_labels[i];
-            ADD_LABEL(ret, label);
-            if (has_predicate) {
-                PM_POP;
-            }
-
-            pm_while_node_t *condition_node = (pm_while_node_t *)conditions.nodes[i];
-            if (condition_node->statements) {
-                PM_COMPILE((pm_node_t *)condition_node->statements);
-            }
-            else {
-                PM_PUTNIL_UNLESS_POPPED;
-            }
-
-            ADD_INSNL(ret, &dummy_line_node, jump, end_label);
-        }
-
+        ADD_SEQ(ret, body_seq);
         ADD_LABEL(ret, end_label);
         return;
       }
