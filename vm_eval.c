@@ -1649,7 +1649,16 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     const rb_iseq_t *const parent = vm_block_iseq(base_block);
     const rb_iseq_t *iseq = parent;
     VALUE name = rb_fstring_lit("<compiled>");
-    fname = rb_fstring_lit("<compiled>");
+    if (!fname) {
+        fname = rb_source_location(&line);
+    }
+
+    if (!UNDEF_P(fname)) {
+        if (!NIL_P(fname)) fname = rb_fstring(fname);
+    }
+    else {
+        fname = get_eval_default_path();
+    }
 
     pm_parse_result_t result = { 0 };
 
