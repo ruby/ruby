@@ -1643,7 +1643,7 @@ get_eval_default_path(void)
 }
 
 static const rb_iseq_t *
-eval_make_iseq(VALUE src, VALUE fname, int line, const rb_binding_t *bind,
+eval_make_iseq(VALUE src, VALUE fname, int line,
                const struct rb_block *base_block)
 {
     const VALUE parser = rb_parser_new();
@@ -1724,7 +1724,7 @@ eval_string_with_cref(VALUE self, VALUE src, rb_cref_t *cref, VALUE file, int li
     block.as.captured.code.iseq = cfp->iseq;
     block.type = block_type_iseq;
 
-    iseq = eval_make_iseq(src, file, line, NULL, &block);
+    iseq = eval_make_iseq(src, file, line, &block);
     if (!iseq) {
         rb_exc_raise(ec->errinfo);
     }
@@ -1745,7 +1745,7 @@ eval_string_with_scope(VALUE scope, VALUE src, VALUE file, int line)
 {
     rb_execution_context_t *ec = GET_EC();
     rb_binding_t *bind = Check_TypedStruct(scope, &ruby_binding_data_type);
-    const rb_iseq_t *iseq = eval_make_iseq(src, file, line, bind, &bind->block);
+    const rb_iseq_t *iseq = eval_make_iseq(src, file, line, &bind->block);
     if (!iseq) {
         rb_exc_raise(ec->errinfo);
     }
