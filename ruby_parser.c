@@ -292,6 +292,18 @@ enc_symname_type(const char *name, long len, void *enc, unsigned int allowed_att
     return rb_enc_symname_type(name, len, (rb_encoding *)enc, allowed_attrset);
 }
 
+static ID
+check_id_cstr(const char *ptr, long len, void *enc)
+{
+    return rb_check_id_cstr(ptr, len, (rb_encoding *)enc);
+}
+
+static VALUE
+setup_fake_str(struct RString *fake_str, const char *name, long len, void *enc)
+{
+    return rb_setup_fake_str(fake_str, name, len, (rb_encoding *)enc);
+}
+
 typedef struct {
     struct parser_params *parser;
     rb_encoding *enc;
@@ -551,6 +563,7 @@ static const rb_parser_config_t rb_global_parser_config = {
     .id2str = rb_id2str,
     .id2sym = rb_id2sym,
     .sym2id = rb_sym2id,
+    .check_id_cstr = check_id_cstr,
 
     .str_catf = rb_str_catf,
     .str_cat_cstr = rb_str_cat_cstr,
@@ -565,10 +578,12 @@ static const rb_parser_config_t rb_global_parser_config = {
     .str_resize = rb_str_resize,
     .str_new = rb_str_new,
     .str_new_cstr = rb_str_new_cstr,
+    .setup_fake_str = setup_fake_str,
     .fstring = rb_fstring,
     .is_ascii_string = is_ascii_string2,
     .enc_str_new = enc_str_new,
     .enc_str_buf_cat = enc_str_buf_cat,
+    .enc_str_coderange = rb_enc_str_coderange,
     .str_buf_append = rb_str_buf_append,
     .str_vcatf = rb_str_vcatf,
     .string_value_cstr = rb_string_value_cstr,
@@ -628,6 +643,7 @@ static const rb_parser_config_t rb_global_parser_config = {
     .encoding_set = encoding_set,
     .encoding_is_ascii8bit = encoding_is_ascii8bit,
     .usascii_encoding = usascii_encoding,
+    .enc_coderange_broken = ENC_CODERANGE_BROKEN,
 
     .ractor_make_shareable = rb_ractor_make_shareable,
 
