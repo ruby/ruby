@@ -2407,6 +2407,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         const struct rb_block *base_block = toplevel_context(toplevel_binding);
 
         if ((*rb_ruby_prism_ptr())) {
+            ruby_opt_init(opt);
             pm_parse_result_t result = { 0 };
             VALUE error;
 
@@ -2426,7 +2427,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             }
 
             if (error == Qnil) {
-                ruby_opt_init(opt);
                 iseq = pm_iseq_new_main(&result.node, opt->script_name, path, vm_block_iseq(base_block), !(dump & DUMP_BIT(insns_without_opt)));
                 pm_parse_result_free(&result);
             }
