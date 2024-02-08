@@ -21,7 +21,7 @@ typedef struct pm_scope_node {
     pm_node_t *parameters;
     pm_node_t *body;
     pm_constant_id_list_t locals;
-    pm_parser_t *parser;
+    const pm_parser_t *parser;
 
     // The size of the local table
     // on the iseq which includes
@@ -32,7 +32,7 @@ typedef struct pm_scope_node {
     st_table *index_lookup_table;
 } pm_scope_node_t;
 
-void pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous, pm_parser_t *parser);
+void pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous, const pm_parser_t *parser);
 void pm_scope_node_destroy(pm_scope_node_t *scope_node);
 bool *rb_ruby_prism_ptr(void);
 
