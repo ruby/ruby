@@ -159,13 +159,19 @@ RBIMPL_SYMBOL_EXPORT_END()
  * cases. */
 RBIMPL_WARNING_IGNORED(-Wgnu-zero-variadic-macro-arguments)
 # endif
+# define RBIMPL_VA_OPT_ARGS(...) __VA_OPT__(,) __VA_ARGS__
+
 # define RUBY_ASSERT_FAIL(mesg, ...) \
     rb_assert_failure##__VA_OPT__(_detail)( \
-        __FILE__, __LINE__, RBIMPL_ASSERT_FUNC, mesg __VA_OPT__(,) __VA_ARGS__)
+        __FILE__, __LINE__, RBIMPL_ASSERT_FUNC, mesg RBIMPL_VA_OPT_ARGS(__VA_ARGS__))
 #elif !defined(__cplusplus)
+# define RBIMPL_VA_OPT_ARGS(...)
+
 # define RUBY_ASSERT_FAIL(mesg, ...) \
     rb_assert_failure(__FILE__, __LINE__, RBIMPL_ASSERT_FUNC, mesg)
 #else
+# undef RBIMPL_VA_OPT_ARGS
+
 # define RUBY_ASSERT_FAIL(mesg) \
     rb_assert_failure(__FILE__, __LINE__, RBIMPL_ASSERT_FUNC, mesg)
 #endif
@@ -176,7 +182,7 @@ RBIMPL_WARNING_IGNORED(-Wgnu-zero-variadic-macro-arguments)
  * @param  expr  What supposedly evaluates to true.
  * @param  mesg  The message to display on failure.
  */
-#if defined(HAVE___VA_OPT__) || !defined(__cplusplus)
+#if defined(RBIMPL_VA_OPT_ARGS)
 # define RUBY_ASSERT_MESG(expr, ...) \
     (RB_LIKELY(expr) ? RBIMPL_ASSERT_NOTHING : RUBY_ASSERT_FAIL(__VA_ARGS__))
 #else
@@ -189,11 +195,9 @@ RBIMPL_WARNING_IGNORED(-Wgnu-zero-variadic-macro-arguments)
  *
  * @copydetails #RUBY_ASSERT
  */
-#if defined(HAVE___VA_OPT__)
+#if defined(RBIMPL_VA_OPT_ARGS)
 # define RUBY_ASSERT_ALWAYS(expr, ...) \
-    RUBY_ASSERT_MESG(expr, #expr __VA_OPT__(,) __VA_ARGS__)
-#elif !defined(__cplusplus)
-# define RUBY_ASSERT_ALWAYS(expr, ...) RUBY_ASSERT_MESG(expr, #expr)
+    RUBY_ASSERT_MESG(expr, #expr RBIMPL_VA_OPT_ARGS(__VA_ARGS__))
 #else
 # define RUBY_ASSERT_ALWAYS(expr) RUBY_ASSERT_MESG((expr), #expr)
 #endif
@@ -204,16 +208,14 @@ RBIMPL_WARNING_IGNORED(-Wgnu-zero-variadic-macro-arguments)
  * @param  expr  What supposedly evaluates to true.
  */
 #if RUBY_DEBUG
-# if defined(HAVE___VA_OPT__)
+# if defined(RBIMPL_VA_OPT_ARGS)
 #   define RUBY_ASSERT(expr, ...) \
-    RUBY_ASSERT_MESG((expr), #expr __VA_OPT__(,) __VA_ARGS__)
-# elif !defined(__cplusplus)
-#   define RUBY_ASSERT(expr, ...) RUBY_ASSERT_MESG((expr), #expr)
+    RUBY_ASSERT_MESG((expr), #expr RBIMPL_VA_OPT_ARGS(__VA_ARGS__))
 # else
 #   define RUBY_ASSERT(expr) RUBY_ASSERT_MESG((expr), #expr)
 # endif
 #else
-# if defined(HAVE___VA_OPT__) || !defined(__cplusplus)
+# if defined(RBIMPL_VA_OPT_ARGS)
 #   define RUBY_ASSERT(/* expr, */...) RBIMPL_ASSERT_NOTHING
 # else
 #   define RUBY_ASSERT(expr) RBIMPL_ASSERT_NOTHING
@@ -230,17 +232,15 @@ RBIMPL_WARNING_IGNORED(-Wgnu-zero-variadic-macro-arguments)
 /* Currently  `RUBY_DEBUG == ! defined(NDEBUG)` is  always true.   There is  no
  * difference any longer between this one and `RUBY_ASSERT`. */
 #if defined(NDEBUG)
-# if defined(HAVE___VA_OPT__) || !defined(__cplusplus)
+# if defined(RBIMPL_VA_OPT_ARGS)
 #   define RUBY_ASSERT_NDEBUG(/* expr, */...) RBIMPL_ASSERT_NOTHING
 # else
 #   define RUBY_ASSERT_NDEBUG(expr) RBIMPL_ASSERT_NOTHING
 # endif
 #else
-# if defined(HAVE___VA_OPT__)
+# if defined(RBIMPL_VA_OPT_ARGS)
 #   define RUBY_ASSERT_NDEBUG(expr, ...) \
-    RUBY_ASSERT_MESG((expr), #expr __VA_OPT__(,) __VA_ARGS__)
-# elif !defined(__cplusplus)
-#   define RUBY_ASSERT_NDEBUG(expr, ...) RUBY_ASSERT_MESG((expr), #expr)
+    RUBY_ASSERT_MESG((expr), #expr RBIMPL_VA_OPT_ARGS(__VA_ARGS__))
 # else
 #   define RUBY_ASSERT_NDEBUG(expr) RUBY_ASSERT_MESG((expr), #expr)
 # endif
@@ -251,14 +251,14 @@ RBIMPL_WARNING_IGNORED(-Wgnu-zero-variadic-macro-arguments)
  * @param  mesg  The message to display on failure.
  */
 #if RUBY_DEBUG
-# if defined(HAVE___VA_OPT__) || !defined(__cplusplus)
+# if defined(RBIMPL_VA_OPT_ARGS)
 #   define RUBY_ASSERT_MESG_WHEN(cond, /* expr, */...)  \
     RUBY_ASSERT_MESG(__VA_ARGS__)
 # else
 #   define RUBY_ASSERT_MESG_WHEN(cond, expr, mesg) RUBY_ASSERT_MESG((expr), (mesg))
 # endif
 #else
-# if defined(HAVE___VA_OPT__) || !defined(__cplusplus)
+# if defined(RBIMPL_VA_OPT_ARGS)
 #   define RUBY_ASSERT_MESG_WHEN(cond, expr, ...) \
     ((cond) ? RUBY_ASSERT_MESG((expr), __VA_ARGS__) : RBIMPL_ASSERT_NOTHING)
 # else
@@ -274,11 +274,9 @@ RBIMPL_WARNING_IGNORED(-Wgnu-zero-variadic-macro-arguments)
  * @param  cond  Extra condition that shall hold for assertion to take effect.
  * @param  expr  What supposedly evaluates to true.
  */
-#if defined(HAVE___VA_OPT__)
+#if defined(RBIMPL_VA_OPT_ARGS)
 # define RUBY_ASSERT_WHEN(cond, expr, ...) \
-    RUBY_ASSERT_MESG_WHEN(cond, expr, #expr __VA_OPT__(,) __VA_ARGS__)
-#elif !defined(__cplusplus)
-# define RUBY_ASSERT_WHEN(cond, expr, ...) RUBY_ASSERT_MESG_WHEN(cond, expr, #expr)
+    RUBY_ASSERT_MESG_WHEN(cond, expr, #expr RBIMPL_VA_OPT_ARGS(__VA_ARGS__))
 #else
 # define RUBY_ASSERT_WHEN(cond, expr) RUBY_ASSERT_MESG_WHEN((cond), (expr), #expr)
 #endif
