@@ -6556,22 +6556,6 @@ vm_trace_hook(rb_execution_context_t *ec, rb_control_frame_t *reg_cfp, const VAL
     }
 }
 
-// Return true if given cc has cfunc which is NOT handled by opt_send_without_block.
-bool
-rb_vm_opt_cfunc_p(CALL_CACHE cc, int insn)
-{
-    switch (insn) {
-      case BIN(opt_eq):
-        return check_cfunc(vm_cc_cme(cc), rb_obj_equal);
-      case BIN(opt_nil_p):
-        return check_cfunc(vm_cc_cme(cc), rb_false);
-      case BIN(opt_not):
-        return check_cfunc(vm_cc_cme(cc), rb_obj_not);
-      default:
-        return false;
-    }
-}
-
 #define VM_TRACE_HOOK(target_event, val) do { \
     if ((pc_events & (target_event)) & enabled_flags) { \
         vm_trace_hook(ec, reg_cfp, pc, pc_events, (target_event), global_hooks, local_hooks_ptr, (val)); \
