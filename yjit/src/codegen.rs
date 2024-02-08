@@ -2326,7 +2326,7 @@ fn gen_set_ivar(
         handle_opt_send_shift_stack(asm, argc);
     }
 
-    // Save the PC and SP because the callee may allocate
+    // Save the PC and SP because the callee may allocate or raise FrozenError
     // Note that this modifies REG_SP, which is why we do it first
     jit_prepare_non_leaf_call(jit, asm);
 
@@ -2401,7 +2401,7 @@ fn gen_get_ivar(
         // VALUE rb_ivar_get(VALUE obj, ID id)
         asm_comment!(asm, "call rb_ivar_get()");
 
-        // The function could raise exceptions.
+        // The function could raise RactorIsolationError.
         jit_prepare_non_leaf_call(jit, asm);
 
         let ivar_val = asm.ccall(rb_ivar_get as *const u8, vec![recv, Opnd::UImm(ivar_name)]);
@@ -2658,7 +2658,7 @@ fn gen_setinstancevariable(
 
         let ic = jit.get_arg(1).as_u64(); // type IVC
 
-        // The function could raise exceptions.
+        // The function could raise FrozenError.
         // Note that this modifies REG_SP, which is why we do it first
         jit_prepare_non_leaf_call(jit, asm);
 
@@ -2716,7 +2716,7 @@ fn gen_setinstancevariable(
 
                     // It allocates so can trigger GC, which takes the VM lock
                     // so could yield to a different ractor.
-                    jit_prepare_non_leaf_call(jit, asm);
+                    jit_prepare_call_with_gc(jit, asm);
                     asm.ccall(rb_ensure_iv_list_size as *const u8,
                               vec![
                                   recv,
@@ -2797,7 +2797,7 @@ fn gen_defined(
             gen_block_given(jit, asm, out_opnd, pushval.into(), Qnil.into());
         }
         _ => {
-            // Save the PC and SP because the callee may allocate
+            // Save the PC and SP because the callee may allocate or call #respond_to?
             // Note that this modifies REG_SP, which is why we do it first
             jit_prepare_non_leaf_call(jit, asm);
 
@@ -2855,7 +2855,7 @@ fn gen_definedivar(
 
         // Save the PC and SP because the callee may allocate
         // Note that this modifies REG_SP, which is why we do it first
-        jit_prepare_non_leaf_call(jit, asm);
+        jit_prepare_call_with_gc(jit, asm);
 
         // Call rb_ivar_defined(recv, ivar_name)
         let def_result = asm.ccall(rb_ivar_defined as *const u8, vec![recv, ivar_name.into()]);
@@ -3504,6 +3504,7 @@ fn gen_opt_aref_with(
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus>{
+    // We might allocate or raise
     jit_prepare_non_leaf_call(jit, asm);
 
     let key_opnd = Opnd::Value(jit.get_arg(0));
@@ -3830,7 +3831,7 @@ fn gen_opt_newarray_max(
 ) -> Option<CodegenStatus> {
     let num = jit.get_arg(0).as_u32();
 
-    // Save the PC and SP because we may allocate
+    // Save the PC and SP because we may call #max
     jit_prepare_non_leaf_call(jit, asm);
 
     extern "C" {
@@ -3883,7 +3884,7 @@ fn gen_opt_newarray_hash(
 
     let num = jit.get_arg(0).as_u32();
 
-    // Save the PC and SP because we may allocate
+    // Save the PC and SP because we may call #hash
     jit_prepare_non_leaf_call(jit, asm);
 
     extern "C" {
@@ -3918,7 +3919,7 @@ fn gen_opt_newarray_min(
 
     let num = jit.get_arg(0).as_u32();
 
-    // Save the PC and SP because we may allocate
+    // Save the PC and SP because we may call #min
     jit_prepare_non_leaf_call(jit, asm);
 
     extern "C" {
@@ -4242,7 +4243,7 @@ fn gen_throw(
     }
 
     // THROW_DATA_NEW allocates. Save SP for GC and PC for allocation tracing as
-    // well as handling the catch table. However, not using jit_prepare_non_leaf_call
+    // well as handling the catch table. However, not using jit_prepare_call_with_gc
     // since we don't need a patch point for this implementation.
     jit_save_pc(jit, asm);
     gen_save_sp(asm);
@@ -4800,7 +4801,7 @@ fn jit_rb_int_div(
     guard_two_fixnums(jit, asm, ocb);
 
     // rb_fix_div_fix may GC-allocate for Bignum
-    jit_prepare_non_leaf_call(jit, asm);
+    jit_prepare_call_with_gc(jit, asm);
 
     asm_comment!(asm, "Integer#/");
     let obj = asm.stack_opnd(0);
@@ -5185,7 +5186,7 @@ fn jit_rb_str_uplus(
     }
 
     // We allocate when we dup the string
-    jit_prepare_non_leaf_call(jit, asm);
+    jit_prepare_call_with_gc(jit, asm);
     asm.spill_temps(); // For ccall. Unconditionally spill them for RegTemps consistency.
 
     asm_comment!(asm, "Unary plus on string");
@@ -5487,7 +5488,7 @@ fn jit_rb_ary_push(
     asm_comment!(asm, "Array#<<");
 
     // rb_ary_push allocates memory for buffer extension
-    jit_prepare_non_leaf_call(jit, asm);
+    jit_prepare_call_with_gc(jit, asm);
 
     let item_opnd = asm.stack_opnd(0);
     let ary_opnd = asm.stack_opnd(1);
@@ -8596,7 +8597,7 @@ fn gen_intern(
     _ocb: &mut OutlinedCb,
 ) -> Option<CodegenStatus> {
     // Save the PC and SP because we might allocate
-    jit_prepare_non_leaf_call(jit, asm);
+    jit_prepare_call_with_gc(jit, asm);
 
     let str = asm.stack_opnd(0);
     let sym = asm.ccall(rb_str_intern as *const u8, vec![str]);
@@ -9046,7 +9047,7 @@ fn gen_getblockparam(
     let level = jit.get_arg(1).as_u32();
 
     // Save the PC and SP because we might allocate
-    jit_prepare_non_leaf_call(jit, asm);
+    jit_prepare_call_with_gc(jit, asm);
     asm.spill_temps(); // For ccall. Unconditionally spill them for RegTemps consistency.
 
     // A mirror of the interpreter code. Checking for the case
