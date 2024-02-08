@@ -253,9 +253,9 @@ features_index_add_single_callback(st_data_t *key, st_data_t *value, st_data_t r
             rb_darray_set(feature_indexes, top^0, FIX2LONG(this_feature_index));
             rb_darray_set(feature_indexes, top^1, FIX2LONG(offset));
 
-            assert(rb_darray_size(feature_indexes) == 2);
+            RUBY_ASSERT(rb_darray_size(feature_indexes) == 2);
             // assert feature_indexes does not look like a special const
-            assert(!SPECIAL_CONST_P((VALUE)feature_indexes));
+            RUBY_ASSERT(!SPECIAL_CONST_P((VALUE)feature_indexes));
 
             *value = (st_data_t)feature_indexes;
         }
