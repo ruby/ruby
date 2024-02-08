@@ -2060,7 +2060,7 @@ iseq_set_arguments(rb_iseq_t *iseq, LINK_ANCHOR *const optargs, const NODE *cons
             body->param.rest_start = arg_size++;
             body->param.flags.has_rest = TRUE;
             if (rest_id == '*') body->param.flags.anon_rest = TRUE;
-            assert(body->param.rest_start != -1);
+            RUBY_ASSERT(body->param.rest_start != -1);
         }
 
         if (args->first_post_arg) {
@@ -2680,7 +2680,7 @@ iseq_set_sequence(rb_iseq_t *iseq, LINK_ANCHOR *const anchor)
                       case TS_CALLDATA:
                         {
                             const struct rb_callinfo *source_ci = (const struct rb_callinfo *)operands[j];
-                            assert(ISEQ_COMPILE_DATA(iseq)->ci_index <= body->ci_size);
+                            RUBY_ASSERT(ISEQ_COMPILE_DATA(iseq)->ci_index <= body->ci_size);
                             struct rb_call_data *cd = &body->call_data[ISEQ_COMPILE_DATA(iseq)->ci_index++];
                             cd->ci = source_ci;
                             cd->cc = vm_cc_empty();
@@ -4615,7 +4615,7 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
             const NODE *key_node = RNODE_LIST(node)->nd_head;
             seen_nodes++;
 
-            assert(nd_type_p(node, NODE_LIST));
+            RUBY_ASSERT(nd_type_p(node, NODE_LIST));
             if (key_node && nd_type_p(key_node, NODE_LIT) && SYMBOL_P(RNODE_LIT(key_node)->nd_lit)) {
                 /* can be keywords */
             }
@@ -4665,7 +4665,7 @@ compile_keyword_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
                 }
                 NO_CHECK(COMPILE_(ret, "keyword values", val_node, popped));
             }
-            assert(j == len);
+            RUBY_ASSERT(j == len);
             return TRUE;
         }
     }
@@ -5935,7 +5935,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
         break;
     }
 
-    assert(expr_type != DEFINED_NOT_DEFINED);
+    RUBY_ASSERT(expr_type != DEFINED_NOT_DEFINED);
 
     if (needstr != Qfalse) {
         VALUE str = rb_iseq_defined_string(expr_type);
@@ -6076,7 +6076,7 @@ can_add_ensure_iseq(const rb_iseq_t *iseq)
 static void
 add_ensure_iseq(LINK_ANCHOR *const ret, rb_iseq_t *iseq, int is_return)
 {
-    assert(can_add_ensure_iseq(iseq));
+    RUBY_ASSERT(can_add_ensure_iseq(iseq));
 
     struct iseq_compile_data_ensure_node_stack *enlp =
         ISEQ_COMPILE_DATA(iseq)->ensure_node_stack;
@@ -9537,7 +9537,7 @@ compile_super(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
             if (local_body->param.flags.has_kwrest) {
                 int idx = local_body->local_table_size - local_kwd->rest_start;
                 ADD_GETLOCAL(args, node, idx, lvar_level);
-                assert(local_kwd->num > 0);
+                RUBY_ASSERT(local_kwd->num > 0);
                 ADD_SEND (args, node, rb_intern("dup"), INT2FIX(0));
             }
             else {
@@ -12022,7 +12022,7 @@ ibf_dump_code(struct ibf_dump *dump, const rb_iseq_t *iseq)
             ibf_dump_write_small_value(dump, wv);
           skip_wv:;
         }
-        assert(insn_len(insn) == op_index+1);
+        RUBY_ASSERT(insn_len(insn) == op_index+1);
     }
 
     return offset;
@@ -12187,8 +12187,8 @@ ibf_load_code(const struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t bytecod
         }
     }
 
-    assert(code_index == iseq_size);
-    assert(reading_pos == bytecode_offset + bytecode_size);
+    RUBY_ASSERT(code_index == iseq_size);
+    RUBY_ASSERT(reading_pos == bytecode_offset + bytecode_size);
     return code;
 }
 
@@ -12598,7 +12598,7 @@ ibf_load_outer_variables(const struct ibf_load * load, ibf_offset_t outer_variab
 static ibf_offset_t
 ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
 {
-    assert(dump->current_buffer == &dump->global_buffer);
+    RUBY_ASSERT(dump->current_buffer == &dump->global_buffer);
 
     unsigned int *positions;
 
