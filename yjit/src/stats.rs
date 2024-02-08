@@ -128,7 +128,7 @@ impl YjitExitLocations {
     /// Initialize the yjit exit locations
     pub fn init() {
         // Return if --yjit-trace-exits isn't enabled
-        if !get_option!(gen_trace_exits) {
+        if get_option!(trace_exits).is_none() {
             return;
         }
 
@@ -177,7 +177,7 @@ impl YjitExitLocations {
         }
 
         // Return if --yjit-trace-exits isn't enabled
-        if !get_option!(gen_trace_exits) {
+        if get_option!(trace_exits).is_none() {
             return;
         }
 
@@ -219,6 +219,14 @@ macro_rules! make_counters {
         pub enum Counter { $($counter_name),+ }
 
         impl Counter {
+            /// Map a counter name string to a counter enum
+            pub fn get(name: &str) -> Option<Counter> {
+                match name {
+                    $( stringify!($counter_name) => { Some(Counter::$counter_name) } ),+
+                    _ => None,
+                }
+            }
+
             /// Get a counter name string
             pub fn get_name(&self) -> String {
                 match self {
@@ -636,7 +644,7 @@ pub extern "C" fn rb_yjit_get_stats(_ec: EcPtr, _ruby_self: VALUE, context: VALU
 /// to be enabled.
 #[no_mangle]
 pub extern "C" fn rb_yjit_trace_exit_locations_enabled_p(_ec: EcPtr, _ruby_self: VALUE) -> VALUE {
-    if get_option!(gen_trace_exits) {
+    if get_option!(trace_exits).is_some() {
         return Qtrue;
     }
 
@@ -653,7 +661,7 @@ pub extern "C" fn rb_yjit_get_exit_locations(_ec: EcPtr, _ruby_self: VALUE) -> V
     }
 
     // Return if --yjit-trace-exits isn't enabled
-    if !get_option!(gen_trace_exits) {
+    if get_option!(trace_exits).is_none() {
         return Qnil;
     }
 
@@ -834,7 +842,7 @@ pub extern "C" fn rb_yjit_record_exit_stack(_exit_pc: *const VALUE)
     }
 
     // Return if --yjit-trace-exits isn't enabled
-    if !get_option!(gen_trace_exits) {
+    if get_option!(trace_exits).is_none() {
         return;
     }
 
