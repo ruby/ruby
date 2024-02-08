@@ -2797,9 +2797,9 @@ fn gen_defined(
             gen_block_given(jit, asm, out_opnd, pushval.into(), Qnil.into());
         }
         _ => {
-            // Save the PC and SP because the callee may allocate
+            // Save the PC and SP because the callee may allocate or call #respond_to?
             // Note that this modifies REG_SP, which is why we do it first
-            jit_prepare_call_with_gc(jit, asm);
+            jit_prepare_non_leaf_call(jit, asm);
 
             // Get the operands from the stack
             let v_opnd = asm.stack_opnd(0);
