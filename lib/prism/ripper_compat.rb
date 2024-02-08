@@ -230,7 +230,7 @@ module Prism
     # Visit a FalseNode.
     def visit_false_node(node)
       bounds(node.location)
-      on_var_ref(on_kw(node.slice))
+      on_var_ref(on_kw("false"))
     end
 
     # Visit a FloatNode node.
