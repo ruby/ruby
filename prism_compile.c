@@ -3874,6 +3874,61 @@ pm_compile_ensure(rb_iseq_t *iseq, pm_begin_node_t *begin_node, LINK_ANCHOR *con
     }
 }
 
+/**
+ * Returns true if the given call node can use the opt_str_uminus or
+ * opt_str_freeze instructions as an optimization with the current iseq options.
+ */
+static inline bool
+pm_opt_str_freeze_p(const rb_iseq_t *iseq, const pm_call_node_t *node)
+{
+    return (
+        !PM_NODE_FLAG_P(node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&
+        node->receiver != NULL &&
+        PM_NODE_TYPE_P(node->receiver, PM_STRING_NODE) &&
+        node->arguments == NULL &&
+        node->block == NULL &&
+        ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction
+    );
+}
+
+/**
+ * Returns true if the given call node can use the opt_aref_with optimization
+ * with the current iseq options.
+ */
+static inline bool
+pm_opt_aref_with_p(const rb_iseq_t *iseq, const pm_call_node_t *node)
+{
+    return (
+        !PM_NODE_FLAG_P(node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&
+        node->arguments != NULL &&
+        PM_NODE_TYPE_P((const pm_node_t *) node->arguments, PM_ARGUMENTS_NODE) &&
+        ((const pm_arguments_node_t *) node->arguments)->arguments.size == 1 &&
+        PM_NODE_TYPE_P(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0], PM_STRING_NODE) &&
+        node->block == NULL &&
+        !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
+        ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction
+    );
+}
+
+/**
+ * Returns true if the given call node can use the opt_aset_with optimization
+ * with the current iseq options.
+ */
+static inline bool
+pm_opt_aset_with_p(const rb_iseq_t *iseq, const pm_call_node_t *node)
+{
+    return (
+        !PM_NODE_FLAG_P(node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&
+        node->arguments != NULL &&
+        PM_NODE_TYPE_P((const pm_node_t *) node->arguments, PM_ARGUMENTS_NODE) &&
+        ((const pm_arguments_node_t *) node->arguments)->arguments.size == 2 &&
+        PM_NODE_TYPE_P(((const pm_arguments_node_t *) node->arguments)->arguments.nodes[0], PM_STRING_NODE) &&
+        node->block == NULL &&
+        !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
+        ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction
+    );
+}
+
 /*
  * Compiles a prism node into instruction sequences
  *
@@ -4180,7 +4235,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_CALL_NODE: {
-        pm_call_node_t *call_node = (pm_call_node_t *) node;
+        const pm_call_node_t *call_node = (const pm_call_node_t *) node;
         LABEL *start = NEW_LABEL(lineno);
 
         if (call_node->block) {
@@ -4189,74 +4244,71 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         ID method_id = pm_constant_id_lookup(scope_node, call_node->name);
 
-        if ((method_id == idUMinus || method_id == idFreeze) &&
-                !PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&
-                call_node->receiver != NULL &&
-                PM_NODE_TYPE_P(call_node->receiver, PM_STRING_NODE) &&
-                call_node->arguments == NULL &&
-                call_node->block == NULL &&
-                ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-            VALUE str = rb_fstring(parse_string_encoded(call_node->receiver, &((pm_string_node_t *)call_node->receiver)->unescaped, parser));
-            if (method_id == idUMinus) {
-                ADD_INSN2(ret, &dummy_line_node, opt_str_uminus, str, new_callinfo(iseq, idUMinus, 0, 0, NULL, FALSE));
+        switch (method_id) {
+          case idUMinus: {
+            if (pm_opt_str_freeze_p(iseq, call_node)) {
+                VALUE value = rb_fstring(parse_string_encoded(call_node->receiver, &((const pm_string_node_t * )call_node->receiver)->unescaped, parser));
+                ADD_INSN2(ret, &dummy_line_node, opt_str_uminus, value, new_callinfo(iseq, idUMinus, 0, 0, NULL, FALSE));
+                return;
             }
-            else {
-                ADD_INSN2(ret, &dummy_line_node, opt_str_freeze, str, new_callinfo(iseq, idFreeze, 0, 0, NULL, FALSE));
+            break;
+          }
+          case idFreeze: {
+            if (pm_opt_str_freeze_p(iseq, call_node)) {
+                VALUE value = rb_fstring(parse_string_encoded(call_node->receiver, &((const pm_string_node_t * )call_node->receiver)->unescaped, parser));
+                ADD_INSN2(ret, &dummy_line_node, opt_str_freeze, value, new_callinfo(iseq, idFreeze, 0, 0, NULL, FALSE));
+                return;
             }
-        }
-        else if (method_id == idAREF &&
-                !PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&
-                call_node->arguments &&
-                PM_NODE_TYPE_P((pm_node_t *)call_node->arguments, PM_ARGUMENTS_NODE) &&
-                ((pm_arguments_node_t *)call_node->arguments)->arguments.size == 1 &&
-                PM_NODE_TYPE_P(((pm_arguments_node_t *)call_node->arguments)->arguments.nodes[0], PM_STRING_NODE) &&
-                call_node->block == NULL &&
-                !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
-                ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-            pm_string_node_t *str_node = (pm_string_node_t *)((pm_arguments_node_t *)call_node->arguments)->arguments.nodes[0];
-            VALUE str = rb_fstring(parse_string_encoded((pm_node_t *)str_node, &str_node->unescaped, parser));
-            PM_COMPILE_NOT_POPPED(call_node->receiver);
-            ADD_INSN2(ret, &dummy_line_node, opt_aref_with, str, new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE));
-            RB_OBJ_WRITTEN(iseq, Qundef, str);
-            if (popped) {
+            break;
+          }
+          case idAREF: {
+            if (pm_opt_aref_with_p(iseq, call_node)) {
+                const pm_string_node_t *string = (const pm_string_node_t *) ((const pm_arguments_node_t *) call_node->arguments)->arguments.nodes[0];
+                VALUE value = rb_fstring(parse_string_encoded((const pm_node_t *) string, &string->unescaped, parser));
+
+                PM_COMPILE_NOT_POPPED(call_node->receiver);
+                ADD_INSN2(ret, &dummy_line_node, opt_aref_with, value, new_callinfo(iseq, idAREF, 1, 0, NULL, FALSE));
+
+                if (popped) {
+                    ADD_INSN(ret, &dummy_line_node, pop);
+                }
+                return;
+            }
+            break;
+          }
+          case idASET: {
+            if (pm_opt_aset_with_p(iseq, call_node)) {
+                const pm_string_node_t *string = (const pm_string_node_t *) ((const pm_arguments_node_t *) call_node->arguments)->arguments.nodes[0];
+                VALUE value = rb_fstring(parse_string_encoded((const pm_node_t *) string, &string->unescaped, parser));
+
+                PM_COMPILE_NOT_POPPED(call_node->receiver);
+                PM_COMPILE_NOT_POPPED(((const pm_arguments_node_t *) call_node->arguments)->arguments.nodes[1]);
+
+                if (!popped) {
+                    ADD_INSN(ret, &dummy_line_node, swap);
+                    ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
+                }
+
+                ADD_INSN2(ret, &dummy_line_node, opt_aset_with, value, new_callinfo(iseq, idASET, 2, 0, NULL, FALSE));
                 ADD_INSN(ret, &dummy_line_node, pop);
+                return;
             }
+            break;
+          }
         }
-        else if (method_id == idASET &&
-                !PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_SAFE_NAVIGATION) &&
-                call_node->arguments != NULL &&
-                PM_NODE_TYPE_P((pm_node_t *)call_node->arguments, PM_ARGUMENTS_NODE) &&
-                ((pm_arguments_node_t *)call_node->arguments)->arguments.size == 2 &&
-                PM_NODE_TYPE_P(((pm_arguments_node_t *)call_node->arguments)->arguments.nodes[0], PM_STRING_NODE) &&
-                call_node->block == NULL &&
-                !ISEQ_COMPILE_DATA(iseq)->option->frozen_string_literal &&
-                ISEQ_COMPILE_DATA(iseq)->option->specialized_instruction) {
-            pm_string_node_t *str_node = (pm_string_node_t *)((pm_arguments_node_t *)call_node->arguments)->arguments.nodes[0];
-            VALUE str = rb_fstring(parse_string_encoded((pm_node_t *)str_node, &str_node->unescaped, parser));
-            PM_COMPILE_NOT_POPPED(call_node->receiver);
-            PM_COMPILE_NOT_POPPED(((pm_arguments_node_t *)call_node->arguments)->arguments.nodes[1]);
-            if (!popped) {
-                ADD_INSN(ret, &dummy_line_node, swap);
-                ADD_INSN1(ret, &dummy_line_node, topn, INT2FIX(1));
-            }
-            ADD_INSN2(ret, &dummy_line_node, opt_aset_with, str, new_callinfo(iseq, idASET, 2, 0, NULL, FALSE));
-            RB_OBJ_WRITTEN(iseq, Qundef, str);
-            ADD_INSN(ret, &dummy_line_node, pop);
+
+        if (PM_NODE_FLAG_P(call_node, PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) && !popped) {
+            PM_PUTNIL;
+        }
+
+        if (call_node->receiver == NULL) {
+            PM_PUTSELF;
         }
         else {
-            if ((node->flags & PM_CALL_NODE_FLAGS_ATTRIBUTE_WRITE) && !popped) {
-                PM_PUTNIL;
-            }
-
-            if (call_node->receiver == NULL) {
-                PM_PUTSELF;
-            }
-            else {
-                PM_COMPILE_NOT_POPPED(call_node->receiver);
-            }
-            pm_compile_call(iseq, call_node, ret, popped, scope_node, method_id, start);
+            PM_COMPILE_NOT_POPPED(call_node->receiver);
         }
 
+        pm_compile_call(iseq, call_node, ret, popped, scope_node, method_id, start);
         return;
       }
       case PM_CALL_AND_WRITE_NODE: {
