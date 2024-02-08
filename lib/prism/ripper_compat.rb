@@ -200,7 +200,7 @@ module Prism
     # Visit a RequiredParameterNode.
     def visit_required_parameter_node(node)
       bounds(node.location)
-      on_ident(node.name.to_s)
+      on_ident(node.name.name)
     end
 
     # Visit a BreakNode.
