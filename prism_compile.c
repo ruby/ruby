@@ -7960,6 +7960,15 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
       case PM_YIELD_NODE: {
         pm_yield_node_t *yield_node = (pm_yield_node_t *)node;
 
+        switch (ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->type) {
+          case ISEQ_TYPE_TOP:
+          case ISEQ_TYPE_MAIN:
+          case ISEQ_TYPE_CLASS:
+            COMPILE_ERROR(ERROR_ARGS "Invalid yield");
+            return;
+          default: /* valid */;
+        }
+
         int flags = 0;
         struct rb_callinfo_kwarg *keywords = NULL;
 
