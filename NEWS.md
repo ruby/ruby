@@ -36,12 +36,12 @@ The following default gems are updated.
 
 The following bundled gems are updated.
 
-* minitest 5.21.2
+* minitest 5.22.2
 * net-ftp 0.3.4
-* net-imap 0.4.9.1
+* net-imap 0.4.10
 * net-smtp 0.4.0.1
 * rbs 3.4.3
-* typeprof 0.21.9
+* typeprof 0.21.10
 * debug 1.9.1
 
 The following bundled gems are promoted from default gems.
