@@ -593,7 +593,9 @@ pub fn gen_counted_exit(exit_pc: *mut VALUE, side_exit: CodePtr, ocb: &mut Outli
     // Trace a counted exit if --yjit-trace-exits=counter is given.
     // TraceExits::All is handled by gen_exit().
     if get_option!(trace_exits) == Some(TraceExits::CountedExit(counter)) {
-        asm.ccall(rb_yjit_record_exit_stack as *const u8, vec![Opnd::const_ptr(exit_pc as *const u8)]);
+        with_caller_saved_temp_regs(&mut asm, |asm| {
+            asm.ccall(rb_yjit_record_exit_stack as *const u8, vec![Opnd::const_ptr(exit_pc as *const u8)]);
+        });
     }
 
     // Jump to the existing side exit
@@ -601,6 +603,18 @@ pub fn gen_counted_exit(exit_pc: *mut VALUE, side_exit: CodePtr, ocb: &mut Outli
 
     let ocb = ocb.unwrap();
     asm.compile(ocb, None).map(|(code_ptr, _)| code_ptr)
+}
+
+/// Preserve caller-saved stack temp registers during the call of a given block
+fn with_caller_saved_temp_regs<F, R>(asm: &mut Assembler, block: F) -> R where F: FnOnce(&mut Assembler) -> R {
+    for &reg in caller_saved_temp_regs() {
+        asm.cpush(Opnd::Reg(reg)); // save stack temps
+    }
+    let ret = block(asm);
+    for &reg in caller_saved_temp_regs().rev() {
+        asm.cpop_into(Opnd::Reg(reg)); // restore stack temps
+    }
+    ret
 }
 
 // Ensure that there is an exit for the start of the block being compiled.
