@@ -224,7 +224,7 @@ module Prism
     # Visit a TrueNode.
     def visit_true_node(node)
       bounds(node.location)
-      on_var_ref(on_kw(node.slice))
+      on_var_ref(on_kw("true"))
     end
 
     # Visit a FalseNode.
