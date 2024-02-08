@@ -1266,11 +1266,11 @@ rb_int_range_last(int argc, VALUE *argv, VALUE range)
     int x;
     long n;
 
-    assert(argc > 0);
+    RUBY_ASSERT(argc > 0);
 
     b = RANGE_BEG(range);
     e = RANGE_END(range);
-    assert(RB_INTEGER_TYPE_P(b) && RB_INTEGER_TYPE_P(e));
+    RUBY_ASSERT(RB_INTEGER_TYPE_P(b) && RB_INTEGER_TYPE_P(e));
 
     x = EXCL(range);
 
