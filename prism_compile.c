@@ -4442,7 +4442,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 }
                 else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_EVAL) {
                     COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with break");
-                    rb_bug("Can't escape from eval with break");
+                    return;
                 }
                 else {
                     ip = ISEQ_BODY(ip)->parent_iseq;
@@ -6435,7 +6435,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     break;
                 }
                 else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_EVAL) {
-                    rb_raise(rb_eSyntaxError, "Can't escape from eval with next");
+                    COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with next");
                     return;
                 }
 
@@ -6651,7 +6651,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                   break;
               }
               else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_EVAL) {
-                  rb_bug("Invalid redo\n");
+                  COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with redo");
+                  return;
               }
 
               ip = ISEQ_BODY(ip)->parent_iseq;
@@ -6663,7 +6664,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
               PM_POP_IF_POPPED;
           }
           else {
-              rb_bug("Invalid redo\n");
+            COMPILE_ERROR(ERROR_ARGS "Invalid redo");
+            return;
           }
         }
         return;
@@ -6871,7 +6873,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PM_POP_IF_POPPED;
         } else {
             COMPILE_ERROR(ERROR_ARGS "Invalid retry");
-            rb_bug("Invalid retry");
+            return;
         }
         return;
       }
