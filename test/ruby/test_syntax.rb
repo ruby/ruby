@@ -1365,6 +1365,21 @@ eom
     assert_valid_syntax 'p :foo, {proc do end => proc do end, b: proc do end}', bug13073
   end
 
+  def test_invalid_symbol_in_hash_memory_leak
+    assert_no_memory_leak([], "#{<<-'begin;'}", "#{<<-'end;'}", rss: true)
+      str = '{"\xC3": 1}'.force_encoding("UTF-8")
+      code = proc do
+        eval(str)
+        raise "unreachable"
+      rescue EncodingError
+      end
+
+      1_000.times(&code)
+    begin;
+      1_000_000.times(&code)
+    end;
+  end
+
   def test_do_after_local_variable
     obj = Object.new
     def obj.m; yield; end

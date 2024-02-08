@@ -15550,6 +15550,23 @@ nd_value(struct parser_params *p, NODE *node)
 }
 
 static void
+warn_duplicate_keys_check_key(struct parser_params *p, st_data_t key, st_table *literal_keys)
+{
+    if (OBJ_BUILTIN_TYPE(key) == T_NODE && nd_type(key) == NODE_SYM) {
+        rb_parser_string_t *parser_str = RNODE_SYM(key)->string;
+        struct RString fake_str;
+        VALUE str = rb_setup_fake_str(&fake_str, parser_str->ptr, parser_str->len, parser_str->enc);
+        if (rb_enc_asciicompat(parser_str->enc) && rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN) {
+            st_free_table(literal_keys);
+            /* Since we have a ASCII compatible encoding and the coderange is
+             * broken, sym_check_asciionly should raise an EncodingError. */
+            rb_check_id_cstr(parser_str->ptr, parser_str->len, parser_str->enc);
+            rb_bug("unreachable");
+        }
+    }
+}
+
+static void
 warn_duplicate_keys(struct parser_params *p, NODE *hash)
 {
     struct st_hash_type literal_type = {
@@ -15567,12 +15584,18 @@ warn_duplicate_keys(struct parser_params *p, NODE *hash)
         if (!head) {
             key = (st_data_t)value;
         }
-        else if (nd_type_st_key_enable_p(head) &&
-                 st_delete(literal_keys, (key = (st_data_t)nd_st_key(p, head), &key), &data)) {
-            rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
-                            "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
-                            nd_value(p, head), nd_line(head));
+        else if (nd_type_st_key_enable_p(head)) {
+            warn_duplicate_keys_check_key(p, (st_data_t)head, literal_keys);
+
+            key = (st_data_t)nd_st_key(p, head);
+            if (st_delete(literal_keys, &key, &data)) {
+                rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
+                                "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
+                                nd_value(p, head), nd_line(head));
+            }
         }
+
+        warn_duplicate_keys_check_key(p, key, literal_keys);
         st_insert(literal_keys, (st_data_t)key, (st_data_t)hash);
         hash = next;
     }
