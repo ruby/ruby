@@ -17,7 +17,7 @@ module Prism
   #
   # To use this class, you treat `Prism::RipperCompat` effectively as you would
   # treat the `Ripper` class.
-  class RipperCompat < Visitor
+  class RipperCompat < Compiler
     # This class mirrors the ::Ripper::SexpBuilder subclass of ::Ripper that
     # returns the arrays of [type, *children].
     class SexpBuilder < RipperCompat
@@ -194,7 +194,7 @@ module Prism
     # This will require expanding as we support more kinds of parameters.
     def visit_parameters_node(node)
       #on_params(required, optional, nil, nil, nil, nil, nil)
-      on_params(node.requireds.map { |n| visit(n) }, nil, nil, nil, nil, nil, nil)
+      on_params(visit_all(node.requireds), nil, nil, nil, nil, nil, nil)
     end
 
     # Visit a RequiredParameterNode.
