@@ -8,8 +8,9 @@
 #include "prism.h"
 
 VALUE pm_source_new(pm_parser_t *parser, rb_encoding *encoding);
+void pm_source_init(VALUE source, pm_parser_t *parser);
 VALUE pm_token_new(pm_parser_t *parser, pm_token_t *token, rb_encoding *encoding, VALUE source);
-VALUE pm_ast_new(pm_parser_t *parser, pm_node_t *node, rb_encoding *encoding);
+VALUE pm_ast_new(pm_parser_t *parser, pm_node_t *node, rb_encoding *encoding, VALUE source);
 
 void Init_prism_api_node(void);
 void Init_prism_pack(void);

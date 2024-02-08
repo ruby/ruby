@@ -82,6 +82,10 @@ module Prism
         source.start_line = load_varsint
       end
 
+      def load_line_offsets
+        source.offsets = load_varuint.times.map { load_varuint }
+      end
+
       def load_comments
         load_varuint.times.map do
           case load_varuint
@@ -118,6 +122,7 @@ module Prism
         tokens = load_tokens
         encoding = load_encoding
         load_start_line
+        load_line_offsets
         comments, magic_comments, data_loc, errors, warnings = load_metadata
         tokens.each { |token,| token.value.force_encoding(encoding) }
 
@@ -129,6 +134,7 @@ module Prism
         load_header
         load_encoding
         load_start_line
+        load_line_offsets
 
         comments, magic_comments, data_loc, errors, warnings = load_metadata
 

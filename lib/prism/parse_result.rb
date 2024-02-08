@@ -12,15 +12,13 @@ module Prism
     attr_accessor :start_line
 
     # The list of newline byte offsets in the source code.
-    attr_reader :offsets
+    attr_accessor :offsets
 
-    # Create a new source object with the given source code and newline byte
-    # offsets. If no newline byte offsets are given, they will be computed from
-    # the source code.
-    def initialize(source, start_line = 1, offsets = compute_offsets(source))
+    # Create a new source object with the given source code.
+    def initialize(source)
       @source = source
-      @start_line = start_line
-      @offsets = offsets
+      @start_line = 1 # set after parsing is done
+      @offsets = [] # set after parsing is done
     end
 
     # Perform a byteslice on the source code using the given byte offset and
@@ -93,14 +91,6 @@ module Prism
       end
 
       left - 1
-    end
-
-    # Find all of the newlines in the source code and return their byte offsets
-    # from the start of the string an array.
-    def compute_offsets(code)
-      offsets = [0]
-      code.b.scan("\n") { offsets << $~.end(0) }
-      offsets
     end
   end
 
