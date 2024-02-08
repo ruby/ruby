@@ -208,7 +208,7 @@ module Prism
       return on_break(on_args_new) if node.arguments.nil?
 
       args_val = visit_elements(node.arguments.arguments)
-      on_break(on_args_add_block(args_val,false))
+      on_break(on_args_add_block(args_val, false))
     end
 
     # Visit an AndNode.
