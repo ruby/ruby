@@ -351,7 +351,7 @@ module Prism
 
     # Visit a SymbolNode node.
     def visit_symbol_node(node)
-      if node.opening && ['"', "'", "("].include?(node.opening[-1])
+      if (opening = node.opening) && (['"', "'"].include?(opening[-1]) || opening.start_with?("%s"))
         bounds(node.value_loc)
         tstring_val = on_tstring_content(node.value.to_s)
         return on_dyna_symbol(on_string_add(on_string_content, tstring_val))
