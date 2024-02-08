@@ -17791,6 +17791,7 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         .current = { .type = PM_TOKEN_EOF, .start = source, .end = source },
         .next_start = NULL,
         .heredoc_end = NULL,
+        .data_loc = { .start = NULL, .end = NULL },
         .comment_list = { 0 },
         .magic_comment_list = { 0 },
         .warning_list = { 0 },

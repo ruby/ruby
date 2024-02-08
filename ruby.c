@@ -2423,6 +2423,21 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
             }
             else {
                 error = pm_parse_file(&result, opt->script_name);
+
+                // If we found an __END__ marker, then we're going to define a
+                // global DATA constant that is a file object that can be read
+                // to read the contents after the marker.
+                if (error == Qnil && result.parser.data_loc.start != NULL) {
+                    int xflag = opt->xflag;
+                    VALUE file = open_load_file(opt->script_name, &xflag);
+
+                    size_t offset = result.parser.data_loc.start - result.parser.start + 7;
+                    if ((result.parser.start + offset < result.parser.end) && result.parser.start[offset] == '\r') offset++;
+                    if ((result.parser.start + offset < result.parser.end) && result.parser.start[offset] == '\n') offset++;
+
+                    rb_funcall(file, rb_intern("seek"), 2, LONG2NUM(offset), INT2FIX(SEEK_SET));
+                    rb_define_global_const("DATA", file);
+                }
             }
 
             if (error == Qnil) {
