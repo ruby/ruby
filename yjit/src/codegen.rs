@@ -4037,7 +4037,13 @@ fn gen_opt_case_dispatch(
         all_fixnum
     }
 
-    if comptime_key.fixnum_p() && comptime_key.0 <= u32::MAX.as_usize() && case_hash_all_fixnum_p(case_hash) {
+    // If megamorphic, fallback to compiling branch instructions after opt_case_dispatch
+    let megamorphic = asm.ctx.get_chain_depth() >= CASE_WHEN_MAX_DEPTH;
+    if megamorphic {
+        gen_counter_incr(asm, Counter::num_opt_case_dispatch_megamorphic);
+    }
+
+    if comptime_key.fixnum_p() && comptime_key.0 <= u32::MAX.as_usize() && case_hash_all_fixnum_p(case_hash) && !megamorphic {
         if !assume_bop_not_redefined(jit, asm, ocb, INTEGER_REDEFINED_OP_FLAG, BOP_EQQ) {
             return None;
         }

@@ -323,8 +323,9 @@ module RubyVM::YJIT
         out.puts "num_send_x86_rel32:    " + format_number(13,  stats[:num_send_x86_rel32])
         out.puts "num_send_x86_reg:      " + format_number(13, stats[:num_send_x86_reg])
       end
-      out.puts "num_getivar_megamorphic: " + format_number(13, stats[:num_getivar_megamorphic])
-      out.puts "num_setivar_megamorphic: " + format_number(13, stats[:num_setivar_megamorphic])
+      out.puts "num_getivar_megamorphic: " + format_number(11, stats[:num_getivar_megamorphic])
+      out.puts "num_setivar_megamorphic: " + format_number(11, stats[:num_setivar_megamorphic])
+      out.puts "num_opt_case_megamorphic: " + format_number(10, stats[:num_opt_case_dispatch_megamorphic])
       out.puts "num_throw:             " + format_number(13, stats[:num_throw])
       out.puts "num_throw_break:       " + format_number_pct(13, stats[:num_throw_break], stats[:num_throw])
       out.puts "num_throw_retry:       " + format_number_pct(13, stats[:num_throw_retry], stats[:num_throw])
