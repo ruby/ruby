@@ -186,7 +186,7 @@ pm_constant_pool_id_to_constant(const pm_constant_pool_t *pool, pm_constant_id_t
  * the constant is not found.
  */
 pm_constant_id_t
-pm_constant_pool_find(pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
+pm_constant_pool_find(const pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
     assert(is_power_of_two(pool->capacity));
     const uint32_t mask = pool->capacity - 1;
 

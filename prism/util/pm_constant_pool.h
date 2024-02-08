@@ -163,7 +163,7 @@ pm_constant_t * pm_constant_pool_id_to_constant(const pm_constant_pool_t *pool, 
  * @param length The length of the constant.
  * @return The id of the constant.
  */
-pm_constant_id_t pm_constant_pool_find(pm_constant_pool_t *pool, const uint8_t *start, size_t length);
+pm_constant_id_t pm_constant_pool_find(const pm_constant_pool_t *pool, const uint8_t *start, size_t length);
 
 /**
  * Insert a constant into a constant pool that is a slice of a source string.
