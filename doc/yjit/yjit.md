@@ -177,8 +177,9 @@ YJIT supports all command-line options supported by upstream CRuby, but also add
   It will cause all machine code to be discarded when the executable memory size limit is hit, meaning JIT compilation will then start over.
   This can allow you to use a lower executable memory size limit, but may cause a slight drop in performance when the limit is hit.
 - `--yjit-perf`: enable frame pointers and profiling with the `perf` tool
-- `--yjit-trace-exits`: produce a Marshal dump of backtraces from specific exits. Automatically enables `--yjit-stats`
-- `--yjit-trace-exits-sample-rate=N`: trace exit locations only every Nth occurrence
+- `--yjit-trace-exits`: produce a Marshal dump of backtraces from all exits. Automatically enables `--yjit-stats`
+- `--yjit-trace-exits=COUNTER`: produce a Marshal dump of backtraces from specified exits. Automatically enables `--yjit-stats`
+- `--yjit-trace-exits-sample-rate=N`: trace exit locations only every Nth occurrence. Automatically enables `--yjit-trace-exits`
 
 Note that there is also an environment variable `RUBY_YJIT_ENABLE` which can be used to enable YJIT.
 This can be useful for some deployment scripts where specifying an extra command-line option to Ruby is not practical.

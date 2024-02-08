@@ -532,9 +532,9 @@ fn gen_exit(exit_pc: *mut VALUE, asm: &mut Assembler) {
             vec![Opnd::const_ptr(exit_pc as *const u8)]
         );
 
-        // If --yjit-trace-exits option is enabled, record the exit stack
-        // while recording the side exits.
-        if get_option!(gen_trace_exits) {
+        // If --yjit-trace-exits is enabled, record the exit stack while recording
+        // the side exits. TraceExits::Counter is handled by gen_counted_exit().
+        if get_option!(trace_exits) == Some(TraceExits::All) {
             asm.ccall(
                 rb_yjit_record_exit_stack as *const u8,
                 vec![Opnd::const_ptr(exit_pc as *const u8)]
@@ -575,7 +575,7 @@ pub fn gen_outlined_exit(exit_pc: *mut VALUE, ctx: &Context, ocb: &mut OutlinedC
 }
 
 /// Get a side exit. Increment a counter in it if --yjit-stats is enabled.
-pub fn gen_counted_exit(side_exit: CodePtr, ocb: &mut OutlinedCb, counter: Option<Counter>) -> Option<CodePtr> {
+pub fn gen_counted_exit(exit_pc: *mut VALUE, side_exit: CodePtr, ocb: &mut OutlinedCb, counter: Option<Counter>) -> Option<CodePtr> {
     // The counter is only incremented when stats are enabled
     if !get_option!(gen_stats) {
         return Some(side_exit);
@@ -587,13 +587,14 @@ pub fn gen_counted_exit(side_exit: CodePtr, ocb: &mut OutlinedCb, counter: Optio
 
     let mut asm = Assembler::new();
 
-    // Load the pointer into a register
-    asm_comment!(asm, "increment counter {}", counter.get_name());
-    let ptr_reg = asm.load(Opnd::const_ptr(get_counter_ptr(&counter.get_name()) as *const u8));
-    let counter_opnd = Opnd::mem(64, ptr_reg, 0);
+    // Increment a counter
+    gen_counter_incr(&mut asm, counter);
 
-    // Increment and store the updated value
-    asm.incr_counter(counter_opnd, Opnd::UImm(1));
+    // Trace a counted exit if --yjit-trace-exits=counter is given.
+    // TraceExits::All is handled by gen_exit().
+    if get_option!(trace_exits) == Some(TraceExits::CountedExit(counter)) {
+        asm.ccall(rb_yjit_record_exit_stack as *const u8, vec![Opnd::const_ptr(exit_pc as *const u8)]);
+    }
 
     // Jump to the existing side exit
     asm.jmp(Target::CodePtr(side_exit));

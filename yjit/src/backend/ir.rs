@@ -1117,7 +1117,7 @@ impl Assembler
         };
 
         // Wrap a counter if needed
-        gen_counted_exit(side_exit, ocb, counter)
+        gen_counted_exit(side_exit_context.pc, side_exit, ocb, counter)
     }
 
     /// Create a new label instance that we can jump to
