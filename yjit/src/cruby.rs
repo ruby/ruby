@@ -107,11 +107,12 @@ pub use autogened::*;
 // TODO: For #defines that affect memory layout, we need to check for them
 // on build and fail if they're wrong. e.g. USE_FLONUM *must* be true.
 
-// These are functions we expose from vm_insnhelper.c, not in any header.
+// These are functions we expose from C files, not in any header.
 // Parsing it would result in a lot of duplicate definitions.
 // Use bindgen for functions that are defined in headers or in yjit.c.
 #[cfg_attr(test, allow(unused))] // We don't link against C code when testing
 extern "C" {
+    pub fn rb_hash_empty_p(hash: VALUE) -> VALUE;
     pub fn rb_vm_splat_array(flag: VALUE, ary: VALUE) -> VALUE;
     pub fn rb_vm_concat_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
     pub fn rb_vm_concat_to_array(ary1: VALUE, ary2st: VALUE) -> VALUE;
