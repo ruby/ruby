@@ -165,7 +165,7 @@ module Prism
 
     # Visit nodes for +=, *=, -=, etc., called LocalVariableOperatorWriteNodes.
     def visit_local_variable_operator_write_node(node)
-      visit_binary_op_assign(node, operator: node.operator.to_s + "=")
+      visit_binary_op_assign(node, operator: "#{node.operator}=")
     end
 
     # Visit a LocalVariableReadNode.
