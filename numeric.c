@@ -836,7 +836,7 @@ int_zero_p(VALUE num)
     if (FIXNUM_P(num)) {
         return FIXNUM_ZERO_P(num);
     }
-    assert(RB_BIGNUM_TYPE_P(num));
+    RUBY_ASSERT(RB_BIGNUM_TYPE_P(num));
     return rb_bigzero_p(num);
 }
 
@@ -3574,7 +3574,7 @@ rb_int_odd_p(VALUE num)
         return RBOOL(num & 2);
     }
     else {
-        assert(RB_BIGNUM_TYPE_P(num));
+        RUBY_ASSERT(RB_BIGNUM_TYPE_P(num));
         return rb_big_odd_p(num);
     }
 }
@@ -3586,7 +3586,7 @@ int_even_p(VALUE num)
         return RBOOL((num & 2) == 0);
     }
     else {
-        assert(RB_BIGNUM_TYPE_P(num));
+        RUBY_ASSERT(RB_BIGNUM_TYPE_P(num));
         return rb_big_even_p(num);
     }
 }
@@ -3843,7 +3843,7 @@ rb_int_uminus(VALUE num)
         return fix_uminus(num);
     }
     else {
-        assert(RB_BIGNUM_TYPE_P(num));
+        RUBY_ASSERT(RB_BIGNUM_TYPE_P(num));
         return rb_big_uminus(num);
     }
 }
@@ -4359,7 +4359,7 @@ int_remainder(VALUE x, VALUE y)
     if (FIXNUM_P(x)) {
         if (FIXNUM_P(y)) {
             VALUE z = fix_mod(x, y);
-            assert(FIXNUM_P(z));
+            RUBY_ASSERT(FIXNUM_P(z));
             if (z != INT2FIX(0) && (SIGNED_VALUE)(x ^ y) < 0)
                 z = fix_minus(z, y);
             return z;
@@ -5444,7 +5444,7 @@ rb_fix_digits(VALUE fix, long base)
     VALUE digits;
     long x = FIX2LONG(fix);
 
-    assert(x >= 0);
+    RUBY_ASSERT(x >= 0);
 
     if (base < 2)
         rb_raise(rb_eArgError, "invalid radix %ld", base);
@@ -5467,7 +5467,7 @@ rb_int_digits_bigbase(VALUE num, VALUE base)
 {
     VALUE digits, bases;
 
-    assert(!rb_num_negative_p(num));
+    RUBY_ASSERT(!rb_num_negative_p(num));
 
     if (RB_BIGNUM_TYPE_P(base))
         base = rb_big_norm(base);
