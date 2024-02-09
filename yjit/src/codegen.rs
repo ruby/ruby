@@ -5966,32 +5966,6 @@ fn gen_send_cfunc(
         }
     }
 
-    // Log the name of the method we're calling to,
-    // note that we intentionally don't do this for inlined cfuncs
-    if get_option!(gen_stats) {
-        // TODO: extract code to get method name string into its own function
-
-        // Assemble the method name string
-        let mid = unsafe { vm_ci_mid(ci) };
-        let class_name = if let Some(class) = recv_known_class {
-            unsafe { cstr_to_rust_string(rb_class2name(class)) }.unwrap()
-        } else {
-            "Unknown".to_string()
-        };
-        let method_name = if mid != 0 {
-            unsafe { cstr_to_rust_string(rb_id2name(mid)) }.unwrap()
-        } else {
-            "Unknown".to_string()
-        };
-        let name_str = format!("{}#{}", class_name, method_name);
-
-        // Get an index for this cfunc name
-        let cfunc_idx = get_cfunc_idx(&name_str);
-
-        // Increment the counter for this cfunc
-        asm.ccall(incr_cfunc_counter as *const u8, vec![cfunc_idx.into()]);
-    }
-
     // Check for interrupts
     gen_check_ints(asm, Counter::guard_send_interrupted);
 
@@ -6180,6 +6154,20 @@ fn gen_send_cfunc(
     let stack_ret = asm.stack_push(Type::Unknown);
     asm.mov(stack_ret, ret);
 
+    // Log the name of the method we're calling to. We intentionally don't do this for inlined cfuncs.
+    // We also do this after the C call to minimize the impact of spill_temps() on asm.ccall().
+    if get_option!(gen_stats) {
+        // Assemble the method name string
+        let mid = unsafe { vm_ci_mid(ci) };
+        let name_str = get_method_name(recv_known_class, mid);
+
+        // Get an index for this cfunc name
+        let cfunc_idx = get_cfunc_idx(&name_str);
+
+        // Increment the counter for this cfunc
+        asm.ccall(incr_cfunc_counter as *const u8, vec![cfunc_idx.into()]);
+    }
+
     // Pop the stack frame (ec->cfp++)
     // Instead of recalculating, we can reuse the previous CFP, which is stored in a callee-saved
     // register
@@ -6358,7 +6346,7 @@ fn gen_send_bmethod(
     }
 
     let frame_type = VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_BMETHOD | VM_FRAME_FLAG_LAMBDA;
-    gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, Some(capture.ep), cme, block, flags, argc, None)
+    gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, Some(capture.ep), cme, block, None, flags, argc, None)
 }
 
 /// Return the ISEQ's return value if it consists of only putnil/putobject and leave.
@@ -6396,6 +6384,7 @@ fn gen_send_iseq(
     prev_ep: Option<*const VALUE>,
     cme: *const rb_callable_method_entry_t,
     block: Option<BlockHandler>,
+    recv_known_class: Option<VALUE>,
     flags: u32,
     argc: i32,
     captured_opnd: Option<Opnd>,
@@ -6650,6 +6639,9 @@ fn gen_send_iseq(
         }
     }
 
+    // Increment total ISEQ send count
+    gen_counter_incr(asm, Counter::num_send_iseq);
+
     // Shortcut for special `Primitive.attr! :leaf` builtins
     let builtin_attrs = unsafe { rb_yjit_iseq_builtin_attrs(iseq) };
     let builtin_func_raw = unsafe { rb_yjit_builtin_function(iseq) };
@@ -6671,7 +6663,7 @@ fn gen_send_iseq(
             }
 
             asm_comment!(asm, "inlined leaf builtin");
-            gen_counter_incr(asm, Counter::num_send_leaf_builtin);
+            gen_counter_incr(asm, Counter::num_send_iseq_leaf);
 
             // The callee may allocate, e.g. Integer#abs on a Bignum.
             // Save SP for GC, save PC for allocation tracing, and prepare
@@ -6705,7 +6697,7 @@ fn gen_send_iseq(
     // Inline simple ISEQs whose return value is known at compile time
     if let (Some(value), None, false) = (iseq_get_return_value(iseq), block_arg_type, opt_send_call) {
         asm_comment!(asm, "inlined simple ISEQ");
-        gen_counter_incr(asm, Counter::num_send_inline);
+        gen_counter_incr(asm, Counter::num_send_iseq_inline);
 
         // Pop receiver and arguments
         asm.stack_pop(argc as usize + if captured_opnd.is_some() { 0 } else { 1 });
@@ -7210,6 +7202,20 @@ fn gen_send_iseq(
         pc: None, // We are calling into jitted code, which will set the PC as necessary
     });
 
+    // Log the name of the method we're calling to. We intentionally don't do this for inlined ISEQs.
+    // We also do this after gen_push_frame() to minimize the impact of spill_temps() on asm.ccall().
+    if get_option!(gen_stats) && recv_known_class.is_some() {
+        // Assemble the method name string
+        let mid = unsafe { vm_ci_mid(ci) };
+        let name_str = get_method_name(recv_known_class, mid);
+
+        // Get an index for this ISEQ name
+        let iseq_idx = get_iseq_idx(&name_str);
+
+        // Increment the counter for this cfunc
+        asm.ccall(incr_iseq_counter as *const u8, vec![iseq_idx.into()]);
+    }
+
     // No need to set cfp->pc since the callee sets it whenever calling into routines
     // that could look at it through jit_save_pc().
     // mov(cb, REG0, const_ptr_opnd(start_pc));
@@ -7639,16 +7645,7 @@ fn gen_send_general(
 
     // Log the name of the method we're calling to
     #[cfg(feature = "disasm")]
-    {
-        let class_name = unsafe { cstr_to_rust_string(rb_class2name(comptime_recv_klass)) };
-        let method_name = unsafe { cstr_to_rust_string(rb_id2name(mid)) };
-        match (class_name, method_name) {
-            (Some(class_name), Some(method_name)) => {
-                asm_comment!(asm, "call to {}#{}", class_name, method_name);
-            }
-            _ => {}
-        }
-    }
+    asm_comment!(asm, "call to {}", get_method_name(Some(comptime_recv_klass), mid));
 
     // Gather some statistics about sends
     gen_counter_incr(asm, Counter::num_send);
@@ -7721,7 +7718,21 @@ fn gen_send_general(
             VM_METHOD_TYPE_ISEQ => {
                 let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
                 let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
-                return gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, None, cme, block, flags, argc, None);
+                return gen_send_iseq(
+                    jit,
+                    asm,
+                    ocb,
+                    iseq,
+                    ci,
+                    frame_type,
+                    None,
+                    cme,
+                    block,
+                    Some(comptime_recv_klass),
+                    flags,
+                    argc,
+                    None,
+                );
             }
             VM_METHOD_TYPE_CFUNC => {
                 return gen_send_cfunc(
@@ -8069,6 +8080,18 @@ fn gen_send_general(
     }
 }
 
+/// Assemble "{class_name}#{method_name}" from a class pointer and a method ID
+fn get_method_name(class: Option<VALUE>, mid: u64) -> String {
+    let class_name = class.and_then(|class| unsafe {
+        cstr_to_rust_string(rb_class2name(class))
+    }).unwrap_or_else(|| "Unknown".to_string());
+    let method_name = if mid != 0 {
+        unsafe { cstr_to_rust_string(rb_id2name(mid)) }
+    } else {
+        None
+    }.unwrap_or_else(|| "Unknown".to_string());
+    format!("{}#{}", class_name, method_name)
+}
 
 /// Shifts the stack for send in order to remove the name of the method
 /// Comment below borrow from vm_call_opt_send in vm_insnhelper.c
@@ -8248,6 +8271,7 @@ fn gen_invokeblock_specialized(
             VM_FRAME_MAGIC_BLOCK,
             None,
             0 as _,
+            None,
             None,
             flags,
             argc,
@@ -8465,7 +8489,7 @@ fn gen_invokesuper_specialized(
         VM_METHOD_TYPE_ISEQ => {
             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
             let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
-            gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, None, cme, Some(block), ci_flags, argc, None)
+            gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, None, cme, Some(block), None, ci_flags, argc, None)
         }
         VM_METHOD_TYPE_CFUNC => {
             gen_send_cfunc(jit, asm, ocb, ci, cme, Some(block), None, ci_flags, argc)
