@@ -124,20 +124,21 @@ module Prism
       # build the parser gem AST.
       #
       # If the bytesize of the source is the same as the length, then we can
-      # just use the offset directly. Otherwise, we build a hash that functions
-      # as a cache for the conversion.
-      #
-      # This is a good opportunity for some optimizations. If the source file
-      # has any multi-byte characters, this can tank the performance of the
-      # translator. We could make this significantly faster by using a
-      # different data structure for the cache.
+      # just use the offset directly. Otherwise, we build an array where the
+      # index is the byte offset and the value is the character offset.
       def build_offset_cache(source)
         if source.bytesize == source.length
           -> (offset) { offset }
         else
-          Hash.new do |hash, offset|
-            hash[offset] = source.byteslice(0, offset).length
+          offset_cache = []
+          offset = 0
+
+          source.each_char do |char|
+            char.bytesize.times { offset_cache << offset }
+            offset += 1
           end
+
+          offset_cache << offset
         end
       end
 
