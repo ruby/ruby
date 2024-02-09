@@ -3479,6 +3479,25 @@ obj_free_object_id(rb_objspace_t *objspace, VALUE obj)
     }
 }
 
+void rb_obj_switch_obj_id(VALUE src, VALUE dst)
+{
+    st_data_t id;
+    rb_objspace_t *objspace = &rb_objspace;
+    if (!FL_TEST(src, FL_SEEN_OBJ_ID)) {
+        return;
+    }
+    RB_VM_LOCK_ENTER();
+    {
+        if (st_lookup(objspace->obj_to_id_tbl, (st_data_t)src, &id)) {
+            st_insert(objspace->obj_to_id_tbl, (st_data_t)dst, id);
+            st_insert(objspace->id_to_obj_tbl, id, (st_data_t)dst);
+            FL_UNSET(src, FL_SEEN_OBJ_ID);
+            FL_SET(dst, FL_SEEN_OBJ_ID);
+        }
+    }
+    RB_VM_LOCK_LEAVE();
+}
+
 static bool
 rb_data_free(rb_objspace_t *objspace, VALUE obj)
 {
