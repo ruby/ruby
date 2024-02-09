@@ -308,6 +308,7 @@ fn main() {
         .allowlist_function("rb_yjit_mark_unused")
         .allowlist_function("rb_yjit_get_page_size")
         .allowlist_function("rb_yjit_iseq_builtin_attrs")
+        .allowlist_function("rb_yjit_iseq_inspect")
         .allowlist_function("rb_yjit_builtin_function")
         .allowlist_function("rb_set_cfp_(pc|sp)")
         .allowlist_function("rb_yjit_multi_ractor_p")
@@ -377,6 +378,7 @@ fn main() {
         // From gc.h and internal/gc.h
         .allowlist_function("rb_class_allocate_instance")
         .allowlist_function("rb_obj_info")
+        .allowlist_function("ruby_xfree")
 
         // From include/ruby/debug.h
         .allowlist_function("rb_profile_frames")

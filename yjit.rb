@@ -406,10 +406,8 @@ module RubyVM::YJIT
       out.puts "Top-#{pairs.size} most frequent #{type} calls (#{"%.1f" % top_n_pct}% of #{type} calls):"
 
       pairs.each do |name, count|
-        padding = longest_name_len + left_pad
-        padded_name = "%#{padding}s" % name
         padded_count = format_number_pct(10, count, num_calls)
-        out.puts("#{padded_name}: #{padded_count}")
+        out.puts("#{padded_count}: #{name}")
       end
     end
 
@@ -433,10 +431,8 @@ module RubyVM::YJIT
 
         longest_insn_name_len = exits.max_by { |name, count| name.length }.first.length
         exits.each do |name, count|
-          padding = longest_insn_name_len + left_pad
-          padded_name = "%#{padding}s" % name
           padded_count = format_number_pct(10, count, total_exits)
-          out.puts("#{padded_name}: #{padded_count}")
+          out.puts("#{padded_count}: #{name}")
         end
       else
         out.puts "total_exits:           " + format_number(10, total_exits)

@@ -16,6 +16,7 @@ use std::cell::Cell;
 use std::cmp;
 use std::cmp::min;
 use std::collections::HashMap;
+use std::ffi::c_void;
 use std::ffi::CStr;
 use std::mem;
 use std::os::raw::c_int;
@@ -6346,7 +6347,7 @@ fn gen_send_bmethod(
     }
 
     let frame_type = VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_BMETHOD | VM_FRAME_FLAG_LAMBDA;
-    gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, Some(capture.ep), cme, block, None, flags, argc, None)
+    gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, Some(capture.ep), cme, block, flags, argc, None)
 }
 
 /// Return the ISEQ's return value if it consists of only putnil/putobject and leave.
@@ -6384,7 +6385,6 @@ fn gen_send_iseq(
     prev_ep: Option<*const VALUE>,
     cme: *const rb_callable_method_entry_t,
     block: Option<BlockHandler>,
-    recv_known_class: Option<VALUE>,
     flags: u32,
     argc: i32,
     captured_opnd: Option<Opnd>,
@@ -7204,10 +7204,9 @@ fn gen_send_iseq(
 
     // Log the name of the method we're calling to. We intentionally don't do this for inlined ISEQs.
     // We also do this after gen_push_frame() to minimize the impact of spill_temps() on asm.ccall().
-    if get_option!(gen_stats) && recv_known_class.is_some() {
-        // Assemble the method name string
-        let mid = unsafe { vm_ci_mid(ci) };
-        let name_str = get_method_name(recv_known_class, mid);
+    if get_option!(gen_stats) {
+        // Assemble the ISEQ name string
+        let name_str = get_iseq_name(iseq);
 
         // Get an index for this ISEQ name
         let iseq_idx = get_iseq_idx(&name_str);
@@ -7718,21 +7717,7 @@ fn gen_send_general(
             VM_METHOD_TYPE_ISEQ => {
                 let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
                 let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
-                return gen_send_iseq(
-                    jit,
-                    asm,
-                    ocb,
-                    iseq,
-                    ci,
-                    frame_type,
-                    None,
-                    cme,
-                    block,
-                    Some(comptime_recv_klass),
-                    flags,
-                    argc,
-                    None,
-                );
+                return gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, None, cme, block, flags, argc, None);
             }
             VM_METHOD_TYPE_CFUNC => {
                 return gen_send_cfunc(
@@ -8093,6 +8078,15 @@ fn get_method_name(class: Option<VALUE>, mid: u64) -> String {
     format!("{}#{}", class_name, method_name)
 }
 
+/// Assemble "{label}@{iseq_path}:{lineno}" (iseq_inspect() format) from an ISEQ
+fn get_iseq_name(iseq: IseqPtr) -> String {
+    let c_string = unsafe { rb_yjit_iseq_inspect(iseq) };
+    let string = unsafe { CStr::from_ptr(c_string) }.to_str()
+        .unwrap_or_else(|_| "not UTF-8").to_string();
+    unsafe { ruby_xfree(c_string as *mut c_void); }
+    string
+}
+
 /// Shifts the stack for send in order to remove the name of the method
 /// Comment below borrow from vm_call_opt_send in vm_insnhelper.c
 /// E.g. when argc == 2
@@ -8262,21 +8256,7 @@ fn gen_invokeblock_specialized(
             Counter::guard_invokeblock_iseq_block_changed,
         );
 
-        gen_send_iseq(
-            jit,
-            asm,
-            ocb,
-            comptime_iseq,
-            ci,
-            VM_FRAME_MAGIC_BLOCK,
-            None,
-            0 as _,
-            None,
-            None,
-            flags,
-            argc,
-            Some(captured_opnd),
-        )
+        gen_send_iseq(jit, asm, ocb, comptime_iseq, ci, VM_FRAME_MAGIC_BLOCK, None, 0 as _, None, flags, argc, Some(captured_opnd))
     } else if comptime_handler.0 & 0x3 == 0x3 { // VM_BH_IFUNC_P
         // We aren't handling CALLER_SETUP_ARG and CALLER_REMOVE_EMPTY_KW_SPLAT yet.
         if flags & VM_CALL_ARGS_SPLAT != 0 {
@@ -8489,7 +8469,7 @@ fn gen_invokesuper_specialized(
         VM_METHOD_TYPE_ISEQ => {
             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
             let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
-            gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, None, cme, Some(block), None, ci_flags, argc, None)
+            gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, None, cme, Some(block), ci_flags, argc, None)
         }
         VM_METHOD_TYPE_CFUNC => {
             gen_send_cfunc(jit, asm, ocb, ci, cme, Some(block), None, ci_flags, argc)
