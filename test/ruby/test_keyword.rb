@@ -189,6 +189,7 @@ class TestKeywordArguments < Test::Unit::TestCase
     def self.a0; end
     assert_equal(nil, a0(**nil))
     assert_equal(nil, :a0.to_proc.call(self, **nil))
+    assert_equal(nil, a0(**nil, &:block))
 
     def self.o(x=1); x end
     assert_equal(1, o(**nil))
