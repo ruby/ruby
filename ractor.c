@@ -3444,8 +3444,13 @@ obj_traverse_replace_i(VALUE obj, struct obj_traverse_replace_data *data)
             long len = RSTRUCT_LEN(obj);
             const VALUE *ptr = RSTRUCT_CONST_PTR(obj);
 
+            bool moved_and_embedded = data->move && FL_TEST_RAW(replacement, RSTRUCT_EMBED_LEN_MASK);
+
             for (long i=0; i<len; i++) {
                 CHECK_AND_REPLACE(ptr[i]);
+                if (moved_and_embedded) {
+                    RSTRUCT_SET(replacement, i, data->replacement);
+                }
             }
         }
         break;
@@ -3572,9 +3577,13 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
 
     dst->flags = (dst->flags & ~fl_users) | (src->flags & fl_users);
 
-    dst->v1 = src->v1;
-    dst->v2 = src->v2;
-    dst->v3 = src->v3;
+    if (RB_TYPE_P(obj, T_STRUCT) && FL_TEST_RAW(v, RSTRUCT_EMBED_LEN_MASK)) {
+    }
+    else {
+        dst->v1 = src->v1;
+        dst->v2 = src->v2;
+        dst->v3 = src->v3;
+    }
 
     if (UNLIKELY(FL_TEST_RAW(obj, FL_EXIVAR))) {
         rb_replace_generic_ivar(v, obj);
