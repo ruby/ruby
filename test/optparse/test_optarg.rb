@@ -9,6 +9,7 @@ class TestOptionParserOptArg < TestOptionParser
     @opt.def_option("--regexp[=REGEXP]", Regexp) {|x| @reopt = x}
     @opt.def_option "--with_underscore[=VAL]" do |x| @flag = x end
     @opt.def_option "--with-hyphen[=VAL]" do |x| @flag = x end
+    @opt.def_option("--fallback[=VAL]") do |x = "fallback"| @flag = x end
     @reopt = nil
   end
 
@@ -56,5 +57,12 @@ class TestOptionParserOptArg < TestOptionParser
     assert_equal("foo3", @flag)
     assert_equal(%w"", no_error {@opt.parse!(%w"--with_hyphen=foo4")})
     assert_equal("foo4", @flag)
+  end
+
+  def test_default_argument
+    assert_equal(%w"", no_error {@opt.parse!(%w"--fallback=val1")})
+    assert_equal("val1", @flag)
+    assert_equal(%w"", no_error {@opt.parse!(%w"--fallback")})
+    assert_equal("fallback", @flag)
   end
 end

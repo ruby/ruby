@@ -73,10 +73,17 @@ class TestOptionParser < Test::Unit::TestCase
     @opt.def_option "-p", "--port=PORT", "port", Integer
     @opt.def_option "-v", "--verbose" do @verbose = true end
     @opt.def_option "-q", "--quiet" do @quiet = true end
+    @opt.def_option "-o", "--option [OPT]" do |opt| @option = opt end
     result = {}
     @opt.parse %w(--host localhost --port 8000 -v), into: result
     assert_equal({host: "localhost", port: 8000, verbose: true}, result)
     assert_equal(true, @verbose)
+    result = {}
+    @opt.parse %w(--option -q), into: result
+    assert_equal({quiet: true, option: nil}, result)
+    result = {}
+    @opt.parse %w(--option OPTION -v), into: result
+    assert_equal({verbose: true, option: "OPTION"}, result)
   end
 
   def test_require_exact

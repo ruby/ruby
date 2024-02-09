@@ -697,6 +697,11 @@ class OptionParser
       q.object_group(self) {pretty_print_contents(q)}
     end
 
+    def omitted_argument(val)   # :nodoc:
+      val.pop if val.size == 3 and val.last.nil?
+      val
+    end
+
     #
     # Switch that takes no arguments.
     #
@@ -755,7 +760,7 @@ class OptionParser
         if arg
           conv_arg(*parse_arg(arg, &error))
         else
-          conv_arg(arg)
+          omitted_argument conv_arg(arg)
         end
       end
 
@@ -774,13 +779,14 @@ class OptionParser
       #
       def parse(arg, argv, &error)
         if !(val = arg) and (argv.empty? or /\A-./ =~ (val = argv[0]))
-          return nil, block, nil
+          return nil, block
         end
         opt = (val = parse_arg(val, &error))[1]
         val = conv_arg(*val)
         if opt and !arg
           argv.shift
         else
+          omitted_argument val
           val[0] = nil
         end
         val
@@ -1633,7 +1639,7 @@ XXX
   # Non-option arguments remain in +argv+.
   #
   def order!(argv = default_argv, into: nil, &nonopt)
-    setter = ->(name, val) {into[name.to_sym] = val} if into
+    setter = ->(name, val = nil) {into[name.to_sym] = val} if into
     parse_in_order(argv, setter, &nonopt)
   end
 
@@ -1658,9 +1664,9 @@ XXX
             raise $!.set_option(arg, true)
           end
           begin
-            opt, cb, val = sw.parse(rest, argv) {|*exc| raise(*exc)}
-            val = cb.call(val) if cb
-            setter.call(sw.switch_name, val) if setter
+            opt, cb, *val = sw.parse(rest, argv) {|*exc| raise(*exc)}
+            val = cb.call(*val) if cb
+            setter.call(sw.switch_name, *val) if setter
           rescue ParseError
             raise $!.set_option(arg, rest)
           end
@@ -1690,7 +1696,7 @@ XXX
             raise $!.set_option(arg, true)
           end
           begin
-            opt, cb, val = sw.parse(val, argv) {|*exc| raise(*exc) if eq}
+            opt, cb, *val = sw.parse(val, argv) {|*exc| raise(*exc) if eq}
           rescue ParseError
             raise $!.set_option(arg, arg.length > 2)
           else
@@ -1698,8 +1704,8 @@ XXX
           end
           begin
             argv.unshift(opt) if opt and (!rest or (opt = opt.sub(/\A-*/, '-')) != '-')
-            val = cb.call(val) if cb
-            setter.call(sw.switch_name, val) if setter
+            val = cb.call(*val) if cb
+            setter.call(sw.switch_name, *val) if setter
           rescue ParseError
             raise $!.set_option(arg, arg.length > 2)
           end
