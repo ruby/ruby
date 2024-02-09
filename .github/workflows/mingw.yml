@@ -19,14 +19,6 @@ on:
       - '.*.yml'
       - '.*.yml'
   merge_group:
-    paths-ignore:
-      - 'doc/**'
-      - '**/man'
-      - '**.md'
-      - '**.rdoc'
-      - '**/.document'
-      - '.*.yml'
-      - '.*.yml'
 
 concurrency:
   group: ${{ github.workflow }} / ${{ startsWith(github.event_name, 'pull') && github.ref_name || github.sha }}
