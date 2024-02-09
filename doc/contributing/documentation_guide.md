@@ -173,19 +173,11 @@ Code that is a simple string should include the quote marks.
 In general, \RDoc's auto-linking should not be suppressed.
 For example, we should write `Array`, not `\Array`.
 
-Suppress when:
-
-- The word in question does not refer to a Ruby entity
-  (e.g., some uses of _Class_ or _English_).
-- The reference is to a class or module that users
-  usually don't deal with, including these:
-
-    - \Class.
-    - \Method.
-    - \Module.
+However, suppress when the word in question does not refer to a Ruby entity
+(e.g., some uses of _Class_ or _English_).
 
 Most often, the name of a class, module, or method
-will be autolinked:
+will be auto-linked:
 
 - Array.
 - Enumerable.
