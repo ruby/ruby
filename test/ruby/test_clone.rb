@@ -73,6 +73,13 @@ class TestClone < Test::Unit::TestCase
     assert_equal(cloned_obj.instance_variable_get(:@a), 1)
   end
 
+  def test_proc_obj_id_flag_reset
+    # [Bug #20250]
+    proc = Proc.new { }
+    proc.object_id
+    proc.clone.object_id # Would crash with RUBY_DEBUG=1
+  end
+
   def test_user_flags
     assert_separately([], <<-EOS)
       #
