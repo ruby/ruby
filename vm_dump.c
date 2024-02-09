@@ -1108,16 +1108,11 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
     }
 
     // Print a "minimal" crash report when errout is a TTY
-    int full_crash_report = !(isatty(fileno(errout)));
+    bool full_crash_report = !(isatty(fileno(errout)));
     // RUBY_FULL_CRASH_REPORT takes precedence over the default
     const char *ruby_full_crash_report_env = getenv("RUBY_FULL_CRASH_REPORT");
     if (ruby_full_crash_report_env != NULL) {
-        if (strcmp(ruby_full_crash_report_env, "0") == 0) {
-            full_crash_report = false;
-        }
-        else {
-            full_crash_report = true;
-        }
+        full_crash_report = strtoul(ruby_full_crash_report_env, 0, 0) != 0;
     }
 
     // Thread unsafe best effort attempt to stop printing the bug report in an
