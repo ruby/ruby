@@ -1466,7 +1466,7 @@ fn gen_splatkw(
         let hash_opnd = asm.stack_opnd(1);
         guard_object_is_hash(asm, hash_opnd, hash_opnd.into(), Counter::splatkw_not_hash);
     } else {
-        // Otherwise, call #to_hash operand to get T_HASH.
+        // Otherwise, call #to_hash on the operand if it's not nil.
 
         // Save the PC and SP because the callee may call #to_hash
         jit_prepare_non_leaf_call(jit, asm);
@@ -1476,10 +1476,19 @@ fn gen_splatkw(
         let block_type = asm.ctx.get_opnd_type(block_opnd.into());
         let hash_opnd = asm.stack_opnd(1);
 
-        let hash = asm.ccall(rb_to_hash_type as *const u8, vec![hash_opnd]);
+        c_callable! {
+            fn to_hash_if_not_nil(mut obj: VALUE) -> VALUE {
+                if obj != Qnil {
+                    obj = unsafe { rb_to_hash_type(obj) };
+                }
+                obj
+            }
+        }
+
+        let hash = asm.ccall(to_hash_if_not_nil as _, vec![hash_opnd]);
         asm.stack_pop(2); // Keep it on stack during ccall for GC
 
-        let stack_ret = asm.stack_push(Type::THash);
+        let stack_ret = asm.stack_push(Type::Unknown);
         asm.mov(stack_ret, hash);
         asm.stack_push(block_type);
         // Leave block_opnd spilled by ccall as is
