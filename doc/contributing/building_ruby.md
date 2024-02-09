@@ -173,7 +173,7 @@ You should configure Ruby without optimization and other flags that may interfer
 
 ### Building with Address Sanitizer
 
-`Please note!`. Until https://bugs.ruby-lang.org/issues/20248 is resolved, compiling Ruby with ASAN does not work when using the clang.
+`Please note!` Until https://bugs.ruby-lang.org/issues/20248 is resolved, compiling Ruby with ASAN does not work when using the clang.
 
 Using the address sanitizer is a great way to detect memory issues.
 
