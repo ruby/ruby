@@ -6,6 +6,7 @@ module TestOptionParserReqArg
     super
     @opt.def_option "--with_underscore=VAL" do |x| @flag = x end
     @opt.def_option "--with-hyphen=VAL" do |x| @flag = x end
+    @opt.def_option("--lambda=VAL", &->(x) {@flag = x})
   end
 
   class Def1 < TestOptionParser
@@ -79,6 +80,11 @@ module TestOptionParserReqArg
     assert_equal("foo3", @flag)
     assert_equal(%w"", no_error {@opt.parse!(%w"--with_hyphen foo4")})
     assert_equal("foo4", @flag)
+  end
+
+  def test_lambda
+    assert_equal(%w"", no_error {@opt.parse!(%w"--lambda=lambda1")})
+    assert_equal("lambda1", @flag)
   end
 
   class TestOptionParser::WithPattern < TestOptionParser

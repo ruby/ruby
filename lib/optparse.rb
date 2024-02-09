@@ -1639,7 +1639,7 @@ XXX
   # Non-option arguments remain in +argv+.
   #
   def order!(argv = default_argv, into: nil, &nonopt)
-    setter = ->(name, val = nil) {into[name.to_sym] = val} if into
+    setter = ->(name, val) {into[name.to_sym] = val} if into
     parse_in_order(argv, setter, &nonopt)
   end
 
@@ -1665,8 +1665,8 @@ XXX
           end
           begin
             opt, cb, *val = sw.parse(rest, argv) {|*exc| raise(*exc)}
-            val = cb.call(*val) if cb
-            setter.call(sw.switch_name, *val) if setter
+            val = callback!(cb, 1, *val) if cb
+            callback!(setter, 2, sw.switch_name, *val) if setter
           rescue ParseError
             raise $!.set_option(arg, rest)
           end
@@ -1704,8 +1704,8 @@ XXX
           end
           begin
             argv.unshift(opt) if opt and (!rest or (opt = opt.sub(/\A-*/, '-')) != '-')
-            val = cb.call(*val) if cb
-            setter.call(sw.switch_name, *val) if setter
+            val = callback!(cb, 1, *val) if cb
+            callback!(setter, 2, sw.switch_name, *val) if setter
           rescue ParseError
             raise $!.set_option(arg, arg.length > 2)
           end
@@ -1730,6 +1730,17 @@ XXX
     argv
   end
   private :parse_in_order
+
+  # Calls callback with _val_.
+  def callback!(cb, max_arity, *args) # :nodoc:
+    if (size = args.size) < max_arity and cb.to_proc.lambda?
+      (arity = cb.arity) < 0 and arity = (1-arity)
+      arity = max_arity if arity > max_arity
+      args[arity - 1] = nil if arity > size
+    end
+    cb.call(*args)
+  end
+  private :callback!
 
   #
   # Parses command line arguments +argv+ in permutation mode and returns
