@@ -592,6 +592,7 @@ make_counters! {
 
     num_getivar_megamorphic,
     num_setivar_megamorphic,
+    num_opt_case_dispatch_megamorphic,
 
     num_throw,
     num_throw_break,
