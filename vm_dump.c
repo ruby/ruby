@@ -1107,6 +1107,19 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
         }
     }
 
+    // Print a "minimal" crash report when errout is a TTY
+    int full_crash_report = !(isatty(fileno(errout)));
+    // RUBY_FULL_CRASH_REPORT takes precedence over the default
+    const char *ruby_full_crash_report_env = getenv("RUBY_FULL_CRASH_REPORT");
+    if (ruby_full_crash_report_env != NULL) {
+        if (strcmp(ruby_full_crash_report_env, "0") == 0) {
+            full_crash_report = false;
+        }
+        else {
+            full_crash_report = true;
+        }
+    }
+
     // Thread unsafe best effort attempt to stop printing the bug report in an
     // infinite loop. Can happen with corrupt Ruby stack.
     {
@@ -1154,11 +1167,11 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
     kprintf("\n");
 #endif /* USE_BACKTRACE */
 
-    if (other_runtime_info || vm) {
+    if (full_crash_report && (other_runtime_info || vm)) {
         kprintf("-- Other runtime information "
                 "-----------------------------------------------\n\n");
     }
-    if (vm && !rb_during_gc()) {
+    if (full_crash_report && (vm && !rb_during_gc())) {
         int i;
         VALUE name;
         long len;
@@ -1207,7 +1220,7 @@ rb_vm_bugreport(const void *ctx, FILE *errout)
         kprintf("\n");
     }
 
-    {
+    if (full_crash_report) {
 #ifdef PROC_MAPS_NAME
         {
             FILE *fp = fopen(PROC_MAPS_NAME, "r");
