@@ -2439,6 +2439,10 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
 void
 pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous, const pm_parser_t *parser)
 {
+    // This is very important, otherwise the scope node could be seen as having
+    // certain flags set that _should not_ be set.
+    memset(scope, 0, sizeof(pm_scope_node_t));
+
     scope->base.type = PM_SCOPE_NODE;
     scope->base.location.start = node->location.start;
     scope->base.location.end = node->location.end;
@@ -2446,17 +2450,10 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
     scope->previous = previous;
     scope->parser = parser;
     scope->ast_node = (pm_node_t *)node;
-    scope->parameters = NULL;
-    scope->body = NULL;
-    scope->constants = NULL;
-    scope->local_table_for_iseq_size = 0;
 
     if (previous) {
         scope->constants = previous->constants;
     }
-    scope->index_lookup_table = NULL;
-
-    pm_constant_id_list_init(&scope->locals);
 
     switch (PM_NODE_TYPE(node)) {
       case PM_BLOCK_NODE: {
@@ -2541,7 +2538,7 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
       default:
         assert(false && "unreachable");
         break;
-      }
+    }
 }
 
 void
