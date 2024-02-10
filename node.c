@@ -195,6 +195,10 @@ free_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
       case NODE_SYM:
         parser_string_free(ast, RNODE_SYM(node)->string);
         break;
+      case NODE_REGX:
+      case NODE_MATCH:
+        parser_string_free(ast, RNODE_REGX(node)->string);
+        break;
       case NODE_DSYM:
         parser_string_free(ast, RNODE_DSYM(node)->string);
         break;
@@ -268,7 +272,6 @@ static bool
 nodetype_markable_p(enum node_type type)
 {
     switch (type) {
-      case NODE_MATCH:
       case NODE_LIT:
         return true;
       default:
@@ -374,7 +377,6 @@ mark_and_move_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
 #endif
 
     switch (nd_type(node)) {
-      case NODE_MATCH:
       case NODE_LIT:
         rb_gc_mark_and_move(&RNODE_LIT(node)->nd_lit);
         break;

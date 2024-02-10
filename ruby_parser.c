@@ -1,5 +1,6 @@
 /* This is a wrapper for parse.y */
 
+#include "internal/re.h"
 #include "internal/ruby_parser.h"
 
 #include "node.h"
@@ -1008,6 +1009,16 @@ rb_node_dregx_string_val(const NODE *node)
 {
     rb_parser_string_t *str = RNODE_DREGX(node)->string;
     return rb_str_new_parser_string(str);
+}
+
+VALUE
+rb_node_regx_string_val(const NODE *node)
+{
+    rb_node_regx_t *node_reg = RNODE_REGX(node);
+    rb_parser_string_t *string = node_reg->string;
+    VALUE str = rb_enc_str_new(string->ptr, string->len, string->enc);
+
+    return rb_reg_compile(str, node_reg->options, NULL, 0);
 }
 
 VALUE

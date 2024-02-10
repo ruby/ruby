@@ -1931,6 +1931,9 @@ iseq_set_arguments_keywords(rb_iseq_t *iseq, LINK_ANCHOR *const optargs,
               case NODE_SYM:
                 dv = rb_node_sym_string_val(val_node);
                 break;
+              case NODE_REGX:
+                dv = rb_node_regx_string_val(val_node);
+                break;
               case NODE_LINE:
                 dv = rb_node_line_lineno_val(val_node);
                 break;
@@ -4499,6 +4502,7 @@ compile_branch_condition(rb_iseq_t *iseq, LINK_ANCHOR *ret, const NODE *cond,
       case NODE_IMAGINARY:  /* NODE_IMAGINARY is always true */
       case NODE_TRUE:
       case NODE_STR:
+      case NODE_REGX:
       case NODE_ZLIST:
       case NODE_LAMBDA:
         /* printf("useless condition eliminate (%s)\n",  ruby_node_name(nd_type(cond))); */
@@ -4702,6 +4706,7 @@ static_literal_node_p(const NODE *node, const rb_iseq_t *iseq, bool hash_key)
     switch (nd_type(node)) {
       case NODE_LIT:
       case NODE_SYM:
+      case NODE_REGX:
       case NODE_LINE:
       case NODE_ENCODING:
       case NODE_INTEGER:
@@ -4740,6 +4745,8 @@ static_literal_value(const NODE *node, rb_iseq_t *iseq)
         return Qfalse;
       case NODE_SYM:
         return rb_node_sym_string_val(node);
+      case NODE_REGX:
+        return rb_node_regx_string_val(node);
       case NODE_LINE:
         return rb_node_line_lineno_val(node);
       case NODE_ENCODING:
@@ -5785,6 +5792,7 @@ defined_expr0(rb_iseq_t *iseq, LINK_ANCHOR *const ret,
       case NODE_STR:
       case NODE_LIT:
       case NODE_SYM:
+      case NODE_REGX:
       case NODE_LINE:
       case NODE_FILE:
       case NODE_ENCODING:
@@ -7212,6 +7220,7 @@ iseq_compile_pattern_each(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *c
       }
       case NODE_LIT:
       case NODE_SYM:
+      case NODE_REGX:
       case NODE_LINE:
       case NODE_INTEGER:
       case NODE_FLOAT:
@@ -9637,7 +9646,7 @@ compile_match(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, i
     INIT_ANCHOR(val);
     switch ((int)type) {
       case NODE_MATCH:
-        ADD_INSN1(recv, node, putobject, RNODE_MATCH(node)->nd_lit);
+        ADD_INSN1(recv, node, putobject, rb_node_regx_string_val(node));
         ADD_INSN2(val, node, getspecial, INT2FIX(0),
                   INT2FIX(0));
         break;
@@ -9799,6 +9808,7 @@ compile_kw_arg(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const node, 
     }
     else if (nd_type_p(default_value, NODE_LIT) ||
              nd_type_p(default_value, NODE_SYM) ||
+             nd_type_p(default_value, NODE_REGX) ||
              nd_type_p(default_value, NODE_LINE) ||
              nd_type_p(default_value, NODE_INTEGER) ||
              nd_type_p(default_value, NODE_FLOAT) ||
@@ -10385,6 +10395,14 @@ iseq_compile_each0(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *const no
       case NODE_EVSTR:
         CHECK(compile_evstr(iseq, ret, RNODE_EVSTR(node)->nd_body, popped));
         break;
+      case NODE_REGX:{
+        if (!popped) {
+            VALUE lit = rb_node_regx_string_val(node);
+            ADD_INSN1(ret, node, putobject, lit);
+            RB_OBJ_WRITTEN(iseq, Qundef, lit);
+        }
+        break;
+      }
       case NODE_DREGX:
         compile_dregx(iseq, ret, node, popped);
         break;

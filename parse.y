@@ -88,6 +88,7 @@ hash_literal_key_p(VALUE k)
           case NODE_IMAGINARY:
           case NODE_STR:
           case NODE_SYM:
+          case NODE_REGX:
           case NODE_LINE:
           case NODE_FILE:
           case NODE_ENCODING:
@@ -134,6 +135,13 @@ node_imaginary_cmp(rb_node_imaginary_t *n1, rb_node_imaginary_t *n2)
             n1->seen_point != n2->seen_point ||
             n1->type != n2->type ||
             strcmp(n1->val, n2->val));
+}
+
+static int
+rb_parser_regx_hash_cmp(rb_node_regx_t *n1, rb_node_regx_t *n2)
+{
+    return (n1->options != n2->options ||
+            rb_parser_string_hash_cmp(n1->string, n2->string));
 }
 
 static int
@@ -190,6 +198,8 @@ node_cdhash_cmp(VALUE val, VALUE lit)
             return rb_parser_string_hash_cmp(RNODE_STR(node_val)->string, RNODE_STR(node_lit)->string);
           case NODE_SYM:
             return rb_parser_string_hash_cmp(RNODE_SYM(node_val)->string, RNODE_SYM(node_lit)->string);
+          case NODE_REGX:
+            return rb_parser_regx_hash_cmp(RNODE_REGX(node_val), RNODE_REGX(node_lit));
           case NODE_LINE:
             return node_val->nd_loc.beg_pos.lineno != node_lit->nd_loc.beg_pos.lineno;
           case NODE_FILE:
@@ -236,6 +246,8 @@ node_cdhash_hash(VALUE a)
             return rb_parser_str_hash(RNODE_STR(node)->string);
           case NODE_SYM:
             return rb_parser_str_hash(RNODE_SYM(node)->string);
+          case NODE_REGX:
+            return rb_parser_str_hash(RNODE_REGX(node)->string);
           case NODE_LINE:
             /* Same with NODE_INTEGER FIXNUM case */
             return (st_index_t)node->nd_loc.beg_pos.lineno;
@@ -1211,6 +1223,7 @@ static rb_node_dstr_t *rb_node_dstr_new(struct parser_params *p, rb_parser_strin
 static rb_node_xstr_t *rb_node_xstr_new(struct parser_params *p, rb_parser_string_t *string, const YYLTYPE *loc);
 static rb_node_dxstr_t *rb_node_dxstr_new(struct parser_params *p, rb_parser_string_t *string, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
 static rb_node_evstr_t *rb_node_evstr_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
+static rb_node_regx_t *rb_node_regx_new(struct parser_params *p, rb_parser_string_t *string, int options, const YYLTYPE *loc);
 static rb_node_once_t *rb_node_once_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_args_t *rb_node_args_new(struct parser_params *p, const YYLTYPE *loc);
 static rb_node_args_aux_t *rb_node_args_aux_new(struct parser_params *p, ID nd_pid, long nd_plen, const YYLTYPE *loc);
@@ -1319,6 +1332,7 @@ static rb_node_error_t *rb_node_error_new(struct parser_params *p, const YYLTYPE
 #define NEW_XSTR(s,loc) (NODE *)rb_node_xstr_new(p,s,loc)
 #define NEW_DXSTR(s,l,n,loc) (NODE *)rb_node_dxstr_new(p,s,l,n,loc)
 #define NEW_EVSTR(n,loc) (NODE *)rb_node_evstr_new(p,n,loc)
+#define NEW_REGX(str,opts,loc) (NODE *)rb_node_regx_new(p,str,opts,loc)
 #define NEW_ONCE(b,loc) (NODE *)rb_node_once_new(p,b,loc)
 #define NEW_ARGS(loc) rb_node_args_new(p,loc)
 #define NEW_ARGS_AUX(r,b,loc) rb_node_args_aux_new(p,r,b,loc)
@@ -1567,8 +1581,8 @@ static NODE *match_op(struct parser_params*,NODE*,NODE*,const YYLTYPE*,const YYL
 
 static rb_ast_id_table_t *local_tbl(struct parser_params*);
 
-static VALUE reg_compile(struct parser_params*, VALUE, int);
-static void reg_fragment_setenc(struct parser_params*, VALUE, int);
+static VALUE reg_compile(struct parser_params*, rb_parser_string_t*, int);
+static void reg_fragment_setenc(struct parser_params*, rb_parser_string_t*, int);
 #define reg_fragment_check rb_parser_reg_fragment_check
 int reg_fragment_check(struct parser_params*, rb_parser_string_t*, int);
 
@@ -1592,7 +1606,7 @@ static int id_is_var(struct parser_params *p, ID id);
 
 RUBY_SYMBOL_EXPORT_BEGIN
 VALUE rb_parser_reg_compile(struct parser_params* p, VALUE str, int options);
-int rb_reg_fragment_setenc(struct parser_params*, VALUE, int);
+int rb_reg_fragment_setenc(struct parser_params*, rb_parser_string_t *, int);
 enum lex_state_e rb_parser_trace_lex_state(struct parser_params *, enum lex_state_e, enum lex_state_e, int);
 VALUE rb_parser_lex_state_name(struct parser_params *p, enum lex_state_e state);
 void rb_parser_show_bitstack(struct parser_params *, stack_type, const char *, int);
@@ -1647,6 +1661,9 @@ static void numparam_pop(struct parser_params *p, NODE *prev_inner);
 #define idFWD_ALL    idDot3
 #define arg_FWD_BLOCK idFWD_BLOCK
 
+#define RE_ONIG_OPTION_IGNORECASE 1
+#define RE_ONIG_OPTION_EXTEND     (RE_ONIG_OPTION_IGNORECASE<<1)
+#define RE_ONIG_OPTION_MULTILINE  (RE_ONIG_OPTION_EXTEND<<1)
 #define RE_OPTION_ONCE (1<<16)
 #define RE_OPTION_ENCODING_SHIFT 8
 #define RE_OPTION_ENCODING(e) (((e)&0xff)<<RE_OPTION_ENCODING_SHIFT)
@@ -2237,6 +2254,14 @@ rb_parser_str_get_encoding(rb_parser_string_t *str)
     return str->enc;
 }
 
+#ifndef RIPPER
+static bool
+PARSER_ENCODING_IS_ASCII8BIT(struct parser_params *p, rb_parser_string_t *str)
+{
+    return rb_parser_str_get_encoding(str) == rb_ascii8bit_encoding();
+}
+#endif
+
 static int
 PARSER_ENC_CODERANGE(rb_parser_string_t *str)
 {
@@ -2257,10 +2282,18 @@ PARSER_ENCODING_CODERANGE_SET(rb_parser_string_t *str, rb_encoding *enc, enum rb
 }
 
 static void
-PARSER_ENCODING_CODERANGE_CLEAR(rb_parser_string_t *str)
+PARSER_ENC_CODERANGE_CLEAR(rb_parser_string_t *str)
 {
     str->coderange = RB_PARSER_ENC_CODERANGE_UNKNOWN;
 }
+
+#ifndef RIPPER
+static bool
+PARSER_ENC_CODERANGE_ASCIIONLY(rb_parser_string_t *str)
+{
+    return PARSER_ENC_CODERANGE(str) == RB_PARSER_ENC_CODERANGE_7BIT;
+}
+#endif
 
 static bool
 PARSER_ENC_CODERANGE_CLEAN_P(int cr)
@@ -2324,6 +2357,21 @@ rb_parser_enc_str_coderange(struct parser_params *p, rb_parser_string_t *str)
 
     return cr;
 }
+
+#ifndef RIPPER
+static rb_parser_string_t *
+rb_parser_enc_associate(struct parser_params *p, rb_parser_string_t *str, rb_encoding *enc)
+{
+    if (rb_parser_str_get_encoding(str) == enc)
+        return str;
+    if (!PARSER_ENC_CODERANGE_ASCIIONLY(str) ||
+        !rb_enc_asciicompat(enc)) {
+        PARSER_ENC_CODERANGE_CLEAR(str);
+    }
+    rb_parser_string_set_encoding(str, enc);
+    return str;
+}
+#endif
 
 static bool
 rb_parser_is_ascii_string(struct parser_params *p, rb_parser_string_t *str)
@@ -2394,7 +2442,7 @@ rb_parser_enc_compatible(struct parser_params *p, rb_parser_string_t *str1, rb_p
 static void
 rb_parser_str_modify(rb_parser_string_t *str)
 {
-    PARSER_ENCODING_CODERANGE_CLEAR(str);
+    PARSER_ENC_CODERANGE_CLEAR(str);
 }
 
 static void
@@ -2557,7 +2605,7 @@ rb_parser_str_resize(struct parser_params *p, rb_parser_string_t *str, long len)
     long slen = PARSER_STRING_LEN(str);
 
     if (slen > len && PARSER_ENC_CODERANGE(str) != RB_PARSER_ENC_CODERANGE_7BIT) {
-        PARSER_ENCODING_CODERANGE_CLEAR(str);
+        PARSER_ENC_CODERANGE_CLEAR(str);
     }
 
     {
@@ -6828,6 +6876,7 @@ singleton	: var_ref
                           case NODE_DSTR:
                           case NODE_XSTR:
                           case NODE_DXSTR:
+                          case NODE_REGX:
                           case NODE_DREGX:
                           case NODE_LIT:
                           case NODE_SYM:
@@ -8394,6 +8443,61 @@ tokadd_escape(struct parser_params *p)
 }
 
 static int
+char_to_option(int c)
+{
+    int val;
+
+    switch (c) {
+      case 'i':
+        val = RE_ONIG_OPTION_IGNORECASE;
+        break;
+      case 'x':
+        val = RE_ONIG_OPTION_EXTEND;
+        break;
+      case 'm':
+        val = RE_ONIG_OPTION_MULTILINE;
+        break;
+      default:
+        val = 0;
+        break;
+    }
+    return val;
+}
+
+#define ARG_ENCODING_FIXED   16
+#define ARG_ENCODING_NONE    32
+#define ENC_ASCII8BIT   1
+#define ENC_EUC_JP      2
+#define ENC_Windows_31J 3
+#define ENC_UTF8        4
+
+static int
+char_to_option_kcode(int c, int *option, int *kcode)
+{
+    *option = 0;
+
+    switch (c) {
+      case 'n':
+        *kcode = ENC_ASCII8BIT;
+        return (*option = ARG_ENCODING_NONE);
+      case 'e':
+        *kcode = ENC_EUC_JP;
+        break;
+      case 's':
+        *kcode = ENC_Windows_31J;
+        break;
+      case 'u':
+        *kcode = ENC_UTF8;
+        break;
+      default:
+        *kcode = -1;
+        return (*option = char_to_option(c));
+    }
+    *option = ARG_ENCODING_FIXED;
+    return 1;
+}
+
+static int
 regx_options(struct parser_params *p)
 {
     int kcode = 0;
@@ -8406,9 +8510,9 @@ regx_options(struct parser_params *p)
         if (c == 'o') {
             options |= RE_OPTION_ONCE;
         }
-        else if (rb_char_to_option_kcode(c, &opt, &kc)) {
+        else if (char_to_option_kcode(c, &opt, &kc)) {
             if (kc >= 0) {
-                if (kc != rb_ascii8bit_encindex()) kcode = c;
+                if (kc != ENC_ASCII8BIT) kcode = c;
                 kopt = opt;
             }
             else {
@@ -12222,6 +12326,16 @@ rb_node_evstr_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc)
     return n;
 }
 
+static rb_node_regx_t *
+rb_node_regx_new(struct parser_params *p, rb_parser_string_t *string, int options, const YYLTYPE *loc)
+{
+    rb_node_regx_t *n = NODE_NEWNODE(NODE_REGX, rb_node_regx_t, loc);
+    n->string = string;
+    n->options = options & RE_OPTION_MASK;
+
+    return n;
+}
+
 static rb_node_call_t *
 rb_node_call_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_args, const YYLTYPE *loc)
 {
@@ -12848,6 +12962,18 @@ str2dstr(struct parser_params *p, NODE *node)
 }
 
 static NODE *
+str2regx(struct parser_params *p, NODE *node, int options)
+{
+    NODE *new_node = (NODE *)NODE_NEW_INTERNAL(NODE_REGX, rb_node_regx_t);
+    nd_copy_flag(new_node, node);
+    RNODE_REGX(new_node)->string = RNODE_STR(node)->string;
+    RNODE_REGX(new_node)->options = options;
+    RNODE_STR(node)->string = 0;
+
+    return new_node;
+}
+
+static NODE *
 evstr2dstr(struct parser_params *p, NODE *node)
 {
     if (nd_type_p(node, NODE_EVSTR)) {
@@ -12949,9 +13075,9 @@ match_op(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *op_lo
                 return match;
             }
 
-          case NODE_LIT:
-            if (RB_TYPE_P(RNODE_LIT(n)->nd_lit, T_REGEXP)) {
-                const VALUE lit = RNODE_LIT(n)->nd_lit;
+          case NODE_REGX:
+            {
+                const VALUE lit = rb_node_regx_string_val(n);
                 NODE *match = NEW_MATCH2(node1, node2, loc);
                 RNODE_MATCH2(match)->nd_args = reg_named_capture_assign(p, lit, loc);
                 nd_set_line(match, line);
@@ -12964,9 +13090,6 @@ match_op(struct parser_params *p, NODE *node1, NODE *node2, const YYLTYPE *op_lo
         NODE *match3;
 
         switch (nd_type(n)) {
-          case NODE_LIT:
-            if (!RB_TYPE_P(RNODE_LIT(n)->nd_lit, T_REGEXP)) break;
-            /* fallthru */
           case NODE_DREGX:
             match3 = NEW_MATCH3(node2, node1, loc);
             return match3;
@@ -13210,16 +13333,18 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
     NODE *prev;
 
     if (!node) {
-        node = NEW_LIT(reg_compile(p, STR_NEW0(), options), loc);
-        RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(node)->nd_lit);
+        /* Check string is valid regex */
+        rb_parser_string_t *str = STRING_NEW0();
+        reg_compile(p, str, options);
+        node = NEW_REGX(str, options, loc);
         return node;
     }
     switch (nd_type(node)) {
       case NODE_STR:
         {
-            VALUE src = rb_node_str_string_val(node);
-            node = NEW_LIT(reg_compile(p, src, options), loc);
-            RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(node)->nd_lit);
+            /* Check string is valid regex */
+            reg_compile(p, RNODE_STR(node)->string, options);
+            node = str2regx(p, node, options);
         }
         break;
       default:
@@ -13255,9 +13380,8 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
             }
         }
         if (!RNODE_DREGX(node)->nd_next) {
-            VALUE src = rb_node_dregx_string_val(node);
             /* Check string is valid regex */
-            reg_compile(p, src, options);
+            reg_compile(p, RNODE_DREGX(node)->string, options);
         }
         if (options & RE_OPTION_ONCE) {
             node = NEW_ONCE(node, loc);
@@ -13916,6 +14040,8 @@ shareable_literal_value(struct parser_params *p, NODE *node)
         return rb_node_imaginary_literal_val(node);
       case NODE_ENCODING:
         return rb_node_encoding_val(node);
+      case NODE_REGX:
+        return rb_node_regx_string_val(node);
       case NODE_LIT:
         return RNODE_LIT(node)->nd_lit;
       default:
@@ -13943,6 +14069,7 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
       case NODE_NIL:
       case NODE_LIT:
       case NODE_SYM:
+      case NODE_REGX:
       case NODE_LINE:
       case NODE_INTEGER:
       case NODE_FLOAT:
@@ -14305,6 +14432,7 @@ void_expr(struct parser_params *p, NODE *node)
       case NODE_IMAGINARY:
       case NODE_STR:
       case NODE_DSTR:
+      case NODE_REGX:
       case NODE_DREGX:
         useless = "a literal";
         break;
@@ -14441,6 +14569,7 @@ is_static_content(NODE *node)
         } while ((node = RNODE_LIST(node)->nd_next) != 0);
       case NODE_LIT:
       case NODE_SYM:
+      case NODE_REGX:
       case NODE_LINE:
       case NODE_FILE:
       case NODE_ENCODING:
@@ -14537,6 +14666,11 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
         SWITCH_BY_COND_TYPE(type, warn, "string ");
         break;
 
+      case NODE_REGX:
+        if (!e_option_supplied(p)) SWITCH_BY_COND_TYPE(type, warn, "regex ");
+        nd_set_type(node, NODE_MATCH);
+        break;
+
       case NODE_DREGX:
         if (!e_option_supplied(p)) SWITCH_BY_COND_TYPE(type, warning, "regex ");
 
@@ -14573,12 +14707,8 @@ cond0(struct parser_params *p, NODE *node, enum cond_type type, const YYLTYPE *l
         break;
 
       case NODE_LIT:
-        if (RB_TYPE_P(RNODE_LIT(node)->nd_lit, T_REGEXP)) {
-            if (!e_option_supplied(p)) SWITCH_BY_COND_TYPE(type, warn, "regex ");
-            nd_set_type(node, NODE_MATCH);
-        }
-        else if (RNODE_LIT(node)->nd_lit == Qtrue ||
-                 RNODE_LIT(node)->nd_lit == Qfalse) {
+        if (RNODE_LIT(node)->nd_lit == Qtrue ||
+            RNODE_LIT(node)->nd_lit == Qfalse) {
             /* booleans are OK, e.g., while true */
         }
         else if (SYMBOL_P(RNODE_LIT(node)->nd_lit)) {
@@ -14963,6 +15093,7 @@ nd_type_st_key_enable_p(NODE *node)
       case NODE_IMAGINARY:
       case NODE_STR:
       case NODE_SYM:
+      case NODE_REGX:
       case NODE_LINE:
       case NODE_FILE:
       case NODE_ENCODING:
@@ -14984,6 +15115,7 @@ nd_st_key(struct parser_params *p, NODE *node)
       case NODE_RATIONAL:
       case NODE_IMAGINARY:
       case NODE_SYM:
+      case NODE_REGX:
       case NODE_LINE:
       case NODE_ENCODING:
       case NODE_FILE:
@@ -15012,6 +15144,8 @@ nd_value(struct parser_params *p, NODE *node)
         return rb_node_imaginary_literal_val(node);
       case NODE_SYM:
         return rb_node_sym_string_val(node);
+      case NODE_REGX:
+        return rb_node_regx_string_val(node);
       case NODE_LINE:
         return rb_node_line_lineno_val(node);
       case NODE_ENCODING:
@@ -15634,43 +15768,83 @@ dvar_curr(struct parser_params *p, ID id)
 }
 
 static void
-reg_fragment_enc_error(struct parser_params* p, VALUE str, int c)
+reg_fragment_enc_error(struct parser_params* p, rb_parser_string_t *str, int c)
 {
     compile_error(p,
         "regexp encoding option '%c' differs from source encoding '%s'",
-        c, rb_enc_name(rb_enc_get(str)));
+        c, rb_enc_name(rb_parser_str_get_encoding(str)));
 }
 
 #ifndef RIPPER
+static rb_encoding *
+find_enc(struct parser_params* p, const char *name)
+{
+    int idx = rb_enc_find_index(name);
+    if (idx < 0) {
+        rb_bug("unknown encoding name: %s", name);
+    }
+
+    return rb_enc_from_index(idx);
+}
+
+static rb_encoding *
+kcode_to_enc(struct parser_params* p, int kcode)
+{
+    rb_encoding *enc;
+
+    switch (kcode) {
+      case ENC_ASCII8BIT:
+        enc = rb_ascii8bit_encoding();
+        break;
+      case ENC_EUC_JP:
+        enc = find_enc(p, "EUC-JP");
+        break;
+      case ENC_Windows_31J:
+        enc = find_enc(p, "Windows-31J");
+        break;
+      case ENC_UTF8:
+        enc = rb_utf8_encoding();
+        break;
+      default:
+        enc = NULL;
+        break;
+    }
+
+    return enc;
+}
+
 int
-rb_reg_fragment_setenc(struct parser_params* p, VALUE str, int options)
+rb_reg_fragment_setenc(struct parser_params* p, rb_parser_string_t *str, int options)
 {
     int c = RE_OPTION_ENCODING_IDX(options);
 
     if (c) {
         int opt, idx;
-        rb_char_to_option_kcode(c, &opt, &idx);
-        if (idx != ENCODING_GET(str) &&
-            !is_ascii_string(str)) {
+        rb_encoding *enc;
+
+        char_to_option_kcode(c, &opt, &idx);
+        enc = kcode_to_enc(p, idx);
+        if (enc != rb_parser_str_get_encoding(str) &&
+            !rb_parser_is_ascii_string(p, str)) {
             goto error;
         }
-        ENCODING_SET(str, idx);
+        rb_parser_string_set_encoding(str, enc);
     }
     else if (RE_OPTION_ENCODING_NONE(options)) {
-        if (!ENCODING_IS_ASCII8BIT(str) &&
-            !is_ascii_string(str)) {
+        if (!PARSER_ENCODING_IS_ASCII8BIT(p, str) &&
+            !rb_parser_is_ascii_string(p, str)) {
             c = 'n';
             goto error;
         }
-        rb_enc_associate(str, rb_ascii8bit_encoding());
+        rb_parser_enc_associate(p, str, rb_ascii8bit_encoding());
     }
     else if (rb_is_usascii_enc(p->enc)) {
-        if (!is_ascii_string(str)) {
+        if (!rb_parser_is_ascii_string(p, str)) {
             /* raise in re.c */
-            rb_enc_associate(str, rb_usascii_encoding());
+            rb_parser_enc_associate(p, str, rb_usascii_encoding());
         }
         else {
-            rb_enc_associate(str, rb_ascii8bit_encoding());
+            rb_parser_enc_associate(p, str, rb_ascii8bit_encoding());
         }
     }
     return 0;
@@ -15681,7 +15855,7 @@ rb_reg_fragment_setenc(struct parser_params* p, VALUE str, int options)
 #endif
 
 static void
-reg_fragment_setenc(struct parser_params* p, VALUE str, int options)
+reg_fragment_setenc(struct parser_params* p, rb_parser_string_t *str, int options)
 {
     int c = rb_reg_fragment_setenc(p, str, options);
     if (c) reg_fragment_enc_error(p, str, c);
@@ -15692,10 +15866,9 @@ int
 reg_fragment_check(struct parser_params* p, rb_parser_string_t *str, int options)
 {
     VALUE err, str2;
+    reg_fragment_setenc(p, str, options);
     /* TODO */
     str2 = rb_str_new_parser_string(str);
-    reg_fragment_setenc(p, str2, options);
-    str->enc = rb_enc_get(str2);
     err = rb_reg_check_preprocess(str2);
     if (err != Qnil) {
         err = rb_obj_as_string(err);
@@ -15769,10 +15942,12 @@ rb_reg_named_capture_assign_iter_impl(struct parser_params *p, const char *s, lo
 #endif
 
 static VALUE
-parser_reg_compile(struct parser_params* p, VALUE str, int options)
+parser_reg_compile(struct parser_params* p, rb_parser_string_t *str, int options)
 {
+    VALUE str2;
     reg_fragment_setenc(p, str, options);
-    return rb_parser_reg_compile(p, str, options);
+    str2 = rb_str_new_parser_string(str);
+    return rb_parser_reg_compile(p, str2, options);
 }
 
 #ifndef RIPPER
@@ -15784,7 +15959,7 @@ rb_parser_reg_compile(struct parser_params* p, VALUE str, int options)
 #endif
 
 static VALUE
-reg_compile(struct parser_params* p, VALUE str, int options)
+reg_compile(struct parser_params* p, rb_parser_string_t *str, int options)
 {
     VALUE re;
     VALUE err;
