@@ -11,6 +11,7 @@
 
 #define rb_encoding void
 #define OnigCodePoint unsigned int
+#define st_data_t parser_st_data_t
 #include "parser_st.h"
 #ifndef RUBY_RUBY_H
 #include "parser_value.h"
@@ -53,6 +54,10 @@ typedef struct rb_parser_string {
     /* Pointer to the contents of the string. */
     char *ptr;
 } rb_parser_string_t;
+
+typedef void free_func_t(void *ptr);
+typedef struct rb_parser_bignum rb_parser_bignum_t;
+void rb_parser_bigfree(free_func_t *func, rb_parser_bignum_t *big);
 
 /*
  * AST Node
@@ -195,6 +200,16 @@ typedef struct RNode {
     rb_code_location_t nd_loc;
     int node_id;
 } NODE;
+
+typedef void rb_node_hash_data;
+
+typedef struct RNode_hash_data {
+    st_data_t hash;
+    union {
+        rb_node_hash_data *ptr;
+        double d;
+    } data;
+} rb_node_hash_data_t;
 
 typedef struct RNode_SCOPE {
     NODE node;
@@ -645,7 +660,8 @@ typedef struct RNode_LIT {
 typedef struct RNode_INTEGER {
     NODE node;
 
-    char* val;
+    struct RNode_hash_data hash;
+    char *val;
     int minus;
     int base;
 } rb_node_integer_t;
@@ -653,14 +669,16 @@ typedef struct RNode_INTEGER {
 typedef struct RNode_FLOAT {
     NODE node;
 
-    char* val;
+    struct RNode_hash_data hash;
+    char *val;
     int minus;
 } rb_node_float_t;
 
 typedef struct RNode_RATIONAL {
     NODE node;
 
-    char* val;
+    struct RNode_hash_data hash;
+    char *val;
     int minus;
     int base;
     int seen_point;
@@ -675,7 +693,8 @@ enum rb_numeric_type {
 typedef struct RNode_IMAGINARY {
     NODE node;
 
-    char* val;
+    struct RNode_hash_data hash;
+    char *val;
     int minus;
     int base;
     int seen_point;
@@ -1014,6 +1033,8 @@ typedef struct RNode_FNDPTN {
 
 typedef struct RNode_LINE {
     NODE node;
+
+    struct RNode_hash_data hash;
 } rb_node_line_t;
 
 typedef struct RNode_FILE {

@@ -872,7 +872,7 @@ static VALUE
 rational_value(const char *node_val, int base, int seen_point)
 {
     VALUE lit;
-    char* val = strdup(node_val);
+    char *val = strdup(node_val);
     if (seen_point > 0) {
         int len = (int)(strlen(val));
         char *point = &val[seen_point];

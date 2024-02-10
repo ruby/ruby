@@ -508,6 +508,48 @@ class TestRubyLiteral < Test::Unit::TestCase
       assert_warning(/key #{Regexp.quote(eval(key).inspect)} is duplicated/) { eval("{#{key} => :bar, #{key} => :foo}") }
     end
 
+    # Integer
+    assert_warning(/key 1 is duplicated/) { eval("{1 => :bar, 0x1 => :foo}") }
+    assert_warning(/key 1 is duplicated/) { eval("{1 => :bar, 0b1 => :foo}") }
+    assert_warning(/key 1 is duplicated/) { eval("{1 => :bar, 0d1 => :foo}") }
+    assert_warning(/key 1 is duplicated/) { eval("{1 => :bar, 0o1 => :foo}") }
+    assert_warning(/key -1 is duplicated/) { eval("{-1 => :bar, -0x1 => :foo}") }
+    assert_warning(/key -1 is duplicated/) { eval("{-1 => :bar, -0b1 => :foo}") }
+    assert_warning(/key -1 is duplicated/) { eval("{-1 => :bar, -0d1 => :foo}") }
+    assert_warning(/key -1 is duplicated/) { eval("{-1 => :bar, -0o1 => :foo}") }
+    assert_warning("") { eval("{-1 => :bar,   1 => :foo}") }
+    assert_warning("") { eval("{-1 => :bar, 0x1 => :foo}") }
+    assert_warning("") { eval("{-1 => :bar, 0b1 => :foo}") }
+    assert_warning("") { eval("{-1 => :bar, 0d1 => :foo}") }
+    assert_warning("") { eval("{-1 => :bar, 0o1 => :foo}") }
+
+    # Float
+    assert_warning(/key 1234\.5 is duplicated/) { eval("{ 12.345e2 => :bar, 123.45e1 => :foo}") }
+    assert_warning(/key -1234\.5 is duplicated/) { eval("{ -12.345e2 => :bar, -123.45e1 => :foo}") }
+    assert_warning("") { eval("{ 12.345e2 => :bar, -123.45e1 => :foo}") }
+
+    # Rational
+    assert_warning(/key \(101\/100\) is duplicated/) { eval("{1.01r => :bar, 1.010r => :foo}") }
+    assert_warning(/key \(1\/1\) is duplicated/) { eval("{1.00r => :bar, 1.0r => :foo}") }
+    assert_warning(/key \(1\/1\) is duplicated/) { eval("{1.0r => :bar, 1r => :foo}") }
+    assert_warning(/key \(-101\/100\) is duplicated/) { eval("{-1.01r => :bar, -1.010r => :foo}") }
+    assert_warning(/key \(-1\/1\) is duplicated/) { eval("{-1.00r => :bar, -1.0r => :foo}") }
+    assert_warning(/key \(-1\/1\) is duplicated/) { eval("{-1.0r => :bar, -1r => :foo}") }
+    assert_warning("") { eval("{1.01r => :bar, -1.010r => :foo}") }
+    assert_warning("") { eval("{1.00r => :bar, -1.0r => :foo}") }
+    assert_warning("") { eval("{1.0r => :bar, -1r => :foo}") }
+
+    # Imaginary
+    assert_warning(/key \(0\+1i\) is duplicated/) { eval("{1i => :bar, 0x1i => :foo}") }
+    assert_warning(/key \(0\+1\.01i\) is duplicated/) { eval("{1.01i => :bar, 1.010i => :foo}") }
+    assert_warning(/key \(0\+\(101\/100\)\*i\) is duplicated/) { eval("{1.01ri => :bar, 1.010ri => :foo}") }
+    assert_warning(/key \(0-1i\) is duplicated/) { eval("{-1i => :bar, -0x1i => :foo}") }
+    assert_warning(/key \(0-1\.01i\) is duplicated/) { eval("{-1.01i => :bar, -1.010i => :foo}") }
+    assert_warning(/key \(0-\(101\/100\)\*i\) is duplicated/) { eval("{-1.01ri => :bar, -1.010ri => :foo}") }
+    assert_warning("") { eval("{1i => :bar, -0x1i => :foo}") }
+    assert_warning("") { eval("{1.01i => :bar, -1.010i => :foo}") }
+    assert_warning("") { eval("{1.01ri => :bar, -1.010ri => :foo}") }
+
     assert_warning(/key 1 is duplicated/) { eval("{__LINE__ => :bar, 1 => :foo}") }
     assert_warning(/key \"FILENAME\" is duplicated/) { eval("{__FILE__ => :bar, 'FILENAME' => :foo}", binding, "FILENAME") }
   end
