@@ -379,6 +379,24 @@ module TestIRB
       HISTORY
     end
 
+    def test_history_saving_with_exit!
+      write_history ""
+
+      write_ruby <<~'RUBY'
+        binding.irb
+      RUBY
+
+      run_ruby_file do
+        type "'starting session'"
+        type "exit!"
+      end
+
+      assert_equal <<~HISTORY, @history_file.open.read
+        'starting session'
+        exit!
+      HISTORY
+    end
+
     def test_history_saving_with_nested_sessions_and_prior_history
       write_history <<~HISTORY
         old_history_1

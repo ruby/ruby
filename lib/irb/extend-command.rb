@@ -37,6 +37,11 @@ module IRB # :nodoc:
         [:irb_quit, OVERRIDE_PRIVATE_ONLY],
       ],
       [
+        :irb_exit!, :ExitForcedAction, "cmd/exit_forced_action",
+        [:exit!, OVERRIDE_PRIVATE_ONLY],
+      ],
+
+      [
         :irb_current_working_workspace, :CurrentWorkingWorkspace, "cmd/chws",
         [:cwws, NO_OVERRIDE],
         [:pwws, NO_OVERRIDE],
