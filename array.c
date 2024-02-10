@@ -741,6 +741,12 @@ rb_ary_new_capa(long capa)
 }
 
 VALUE
+rb_ary_new_capa_with_klass(VALUE klass, long capa)
+{
+    return ary_new(klass, capa);
+}
+
+VALUE
 rb_ary_new(void)
 {
     return rb_ary_new_capa(0);
