@@ -400,7 +400,6 @@ module RubyVM::YJIT
 
       top_n_total = pairs.sum { |name, count| count }
       top_n_pct = 100.0 * top_n_total / num_calls
-      longest_name_len = pairs.max_by { |name, count| name.length }.first.length
 
       out.puts "Top-#{pairs.size} most frequent #{type} calls (#{"%.1f" % top_n_pct}% of #{type} calls):"
 
