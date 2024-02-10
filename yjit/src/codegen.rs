@@ -7679,6 +7679,10 @@ fn gen_send_general(
         return None;
     }
 
+    // Load an overloaded cme if applicable. See vm_search_cc().
+    // It allows you to use a faster ISEQ if possible.
+    cme = unsafe { rb_check_overloaded_cme(cme, ci) };
+
     let visi = unsafe { METHOD_ENTRY_VISI(cme) };
     match visi {
         METHOD_VISI_PUBLIC => {
