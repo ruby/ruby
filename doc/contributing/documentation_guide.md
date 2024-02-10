@@ -178,7 +178,9 @@ However, suppress when the word in question:
 - Does not refer to a Ruby entity
   (e.g., some uses of _Class_ or _English_).
 - Refers to the current document
-  (e.g., _Array_ in the documentation for class `Array`).
+  (e.g., _Array_ in the documentation for class `Array`);
+  in that case, the word should be forced to
+  [monofont](rdoc-ref:RDoc::MarkupReference@Monofont).
 
 Most often, the name of a class, module, or method
 will be auto-linked:
