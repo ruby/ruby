@@ -3,11 +3,14 @@
 require_relative "test_helper"
 
 begin
+  verbose, $VERBOSE = $VERBOSE, nil
   require "parser/current"
 rescue LoadError
   # In CRuby's CI, we're not going to test against the parser gem because we
   # don't want to have to install it. So in this case we'll just skip this test.
   return
+ensure
+  $VERBOSE = verbose
 end
 
 # First, opt in to every AST feature.
