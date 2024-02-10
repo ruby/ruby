@@ -678,7 +678,8 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("match expression (against $_ implicitly)");
         ANN("format: [nd_lit] (in condition)");
         ANN("example: if /foo/; foo; end");
-        F_LIT(nd_lit, RNODE_MATCH, "regexp");
+        LAST_NODE;
+        F_VALUE(string, rb_node_regx_string_val(node), "string");
         return;
 
       case NODE_MATCH2:
@@ -748,6 +749,14 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: [val]");
         ANN("example: 1i");
         F_VALUE(val, rb_node_imaginary_literal_val(node), "val");
+        return;
+
+      case NODE_REGX:
+        ANN("regexp literal");
+        ANN("format: [string]");
+        ANN("example: /foo/");
+        LAST_NODE;
+        F_VALUE(string, rb_node_regx_string_val(node), "string");
         return;
 
       case NODE_ONCE:

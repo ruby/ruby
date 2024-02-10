@@ -567,6 +567,8 @@ node_children(rb_ast_t *ast, const NODE *node)
         return rb_ary_new_from_args(1, rb_node_rational_literal_val(node));
       case NODE_IMAGINARY:
         return rb_ary_new_from_args(1, rb_node_imaginary_literal_val(node));
+      case NODE_REGX:
+        return rb_ary_new_from_args(1, rb_node_regx_string_val(node));
       case NODE_ONCE:
         return rb_ary_new_from_node_args(ast, 1, RNODE_ONCE(node)->nd_body);
       case NODE_DSTR:
