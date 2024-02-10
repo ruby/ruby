@@ -171,7 +171,7 @@ Code that is a simple string should include the quote marks.
 ### Auto-Linking
 
 In general, \RDoc's auto-linking should not be suppressed.
-For example, we should write `Array`, not `\Array`
+For example, we should write `Array`, not `\Array`.
 
 However, suppress when the word in question:
 
