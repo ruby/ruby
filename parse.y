@@ -2265,7 +2265,7 @@ rb_parser_coderange_scan(struct parser_params *p, const char *ptr, long len, rb_
     if (enc == rb_ascii8bit_encoding()) {
         /* enc is ASCII-8BIT.  ASCII-8BIT string never be broken. */
         ptr = rb_parser_search_nonascii(ptr, e);
-        return p ? RB_PARSER_ENC_CODERANGE_VALID : RB_PARSER_ENC_CODERANGE_7BIT;
+        return ptr ? RB_PARSER_ENC_CODERANGE_VALID : RB_PARSER_ENC_CODERANGE_7BIT;
     }
 
     /* parser string encoding is always asciicompat */
