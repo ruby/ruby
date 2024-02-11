@@ -889,10 +889,6 @@ module IRB
     throw :IRB_EXIT, false
   end
 
-  def IRB.irb_exit!(*)
-    throw :IRB_EXIT, true
-  end
-
   # Aborts then interrupts irb.
   #
   # Will raise an Abort exception, or the given +exception+.
@@ -972,8 +968,7 @@ module IRB
       conf[:IRB_RC].call(context) if conf[:IRB_RC]
       conf[:MAIN_CONTEXT] = context
 
-      supports_history_saving = conf[:SAVE_HISTORY] && context.io.support_history_saving?
-      save_history = !in_nested_session && supports_history_saving
+      save_history = !in_nested_session && conf[:SAVE_HISTORY] && context.io.support_history_saving?
 
       if save_history
         context.io.load_history
@@ -993,12 +988,8 @@ module IRB
         trap("SIGINT", prev_trap)
         conf[:AT_EXIT].each{|hook| hook.call}
 
-        if forced_exit
-          context.io.save_history if supports_history_saving
-          Kernel.exit(0)
-        else
-          context.io.save_history if save_history
-        end
+        context.io.save_history if save_history
+        Kernel.exit(0) if forced_exit
       end
     end
 

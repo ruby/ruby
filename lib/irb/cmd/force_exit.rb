@@ -6,12 +6,12 @@ module IRB
   # :stopdoc:
 
   module ExtendCommand
-    class ExitForcedAction < Nop
+    class ForceExit < Nop
       category "IRB"
       description "Exit the current process."
 
       def execute(*)
-        IRB.irb_exit!
+        throw :IRB_EXIT, true
       rescue UncaughtThrowError
         Kernel.exit(0)
       end

@@ -37,7 +37,7 @@ module IRB # :nodoc:
         [:irb_quit, OVERRIDE_PRIVATE_ONLY],
       ],
       [
-        :irb_exit!, :ExitForcedAction, "cmd/exit_forced_action",
+        :irb_exit!, :ForceExit, "cmd/force_exit",
         [:exit!, OVERRIDE_PRIVATE_ONLY],
       ],
 
