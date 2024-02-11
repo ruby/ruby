@@ -110,6 +110,38 @@ module Prism
       assert_equivalent("a /= b")
     end
 
+    def test_arrays
+      assert_equivalent("[1, 2, 7]")
+      assert_equivalent("[1, [2, 7]]")
+    end
+
+    def test_array_refs
+      assert_equivalent("a[1]")
+      assert_equivalent("a[1] = 7")
+    end
+
+    def test_strings
+      assert_equivalent("'a'")
+      assert_equivalent("'a\01'")
+      assert_equivalent("`a`")
+      assert_equivalent("`a\07`")
+      assert_equivalent('"a#{1}c"')
+      assert_equivalent('"a#{1}b#{2}c"')
+      assert_equivalent("`f\oo`")
+    end
+
+    def test_symbols
+      assert_equivalent(":a")
+      assert_equivalent(":'a'")
+      assert_equivalent(':"a"')
+      assert_equivalent("%s(foo)")
+    end
+
+    def test_assign
+      assert_equivalent("a = b")
+      assert_equivalent("a = 1")
+    end
+
     private
 
     def assert_equivalent(source)

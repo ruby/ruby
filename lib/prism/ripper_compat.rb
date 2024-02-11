@@ -120,6 +120,9 @@ module Prism
     # nodes -- unary and binary operators, "command" calls with
     # no parentheses, and call/fcall/vcall.
     def visit_call_node(node)
+      return visit_aref_node(node) if node.name == :[]
+      return visit_aref_field_node(node) if node.name == :[]=
+
       if node.variable_call?
         raise NotImplementedError unless node.receiver.nil?
 
@@ -151,6 +154,13 @@ module Prism
       else
         return args_call_val
       end
+    end
+
+    # Visit a LocalVariableWriteNode.
+    def visit_local_variable_write_node(node)
+      bounds(node.name_loc)
+      ident_val = on_ident(node.name.to_s)
+      on_assign(on_var_field(ident_val), visit(node.value))
     end
 
     # Visit a LocalVariableAndWriteNode.
@@ -299,6 +309,59 @@ module Prism
       visit_number(node) { |text| on_rational(text) }
     end
 
+    # Visit a StringNode node.
+    def visit_string_node(node)
+      bounds(node.content_loc)
+      tstring_val = on_tstring_content(node.unescaped.to_s)
+      on_string_literal(on_string_add(on_string_content, tstring_val))
+    end
+
+    # Visit an XStringNode node.
+    def visit_x_string_node(node)
+      bounds(node.content_loc)
+      tstring_val = on_tstring_content(node.unescaped.to_s)
+      on_xstring_literal(on_xstring_add(on_xstring_new, tstring_val))
+    end
+
+    # Visit an InterpolatedStringNode node.
+    def visit_interpolated_string_node(node)
+      parts = node.parts.map do |part|
+        case part
+        when StringNode
+          bounds(part.content_loc)
+          on_tstring_content(part.content)
+        when EmbeddedStatementsNode
+          on_string_embexpr(visit(part))
+        else
+          raise NotImplementedError, "Unexpected node type in InterpolatedStringNode"
+        end
+      end
+
+      string_list = parts.inject(on_string_content) do |items, item|
+        on_string_add(items, item)
+      end
+
+      on_string_literal(string_list)
+    end
+
+    # Visit an EmbeddedStatementsNode node.
+    def visit_embedded_statements_node(node)
+      visit(node.statements)
+    end
+
+    # Visit a SymbolNode node.
+    def visit_symbol_node(node)
+      if (opening = node.opening) && (['"', "'"].include?(opening[-1]) || opening.start_with?("%s"))
+        bounds(node.value_loc)
+        tstring_val = on_tstring_content(node.value.to_s)
+        return on_dyna_symbol(on_string_add(on_string_content, tstring_val))
+      end
+
+      bounds(node.value_loc)
+      ident_val = on_ident(node.value.to_s)
+      on_symbol_literal(on_symbol(ident_val))
+    end
+
     # Visit a StatementsNode node.
     def visit_statements_node(node)
       bounds(node.location)
@@ -404,6 +467,23 @@ module Prism
       op_val = on_op(operator)
 
       on_opassign(on_var_field(ident_val), op_val, visit(node.value))
+    end
+
+    # In Prism this is a CallNode with :[] as the operator.
+    # In Ripper it's an :aref.
+    def visit_aref_node(node)
+      first_arg_val = visit(node.arguments.arguments[0])
+      args_val = on_args_add_block(on_args_add(on_args_new, first_arg_val), false)
+      on_aref(visit(node.receiver), args_val)
+    end
+
+    # In Prism this is a CallNode with :[]= as the operator.
+    # In Ripper it's an :aref_field.
+    def visit_aref_field_node(node)
+      first_arg_val = visit(node.arguments.arguments[0])
+      args_val = on_args_add_block(on_args_add(on_args_new, first_arg_val), false)
+      assign_val = visit(node.arguments.arguments[1])
+      on_assign(on_aref_field(visit(node.receiver), args_val), assign_val)
     end
 
     # Visit a node that represents a number. We need to explicitly handle the

@@ -34,17 +34,17 @@ module TestIRB
     end
 
     def execute_lines(*lines, conf: {}, main: self, irb_path: nil)
-      IRB.init_config(nil)
-      IRB.conf[:VERBOSE] = false
-      IRB.conf[:PROMPT_MODE] = :SIMPLE
-      IRB.conf[:USE_PAGER] = false
-      IRB.conf.merge!(conf)
-      input = TestInputMethod.new(lines)
-      irb = IRB::Irb.new(IRB::WorkSpace.new(main), input)
-      irb.context.return_format = "=> %s\n"
-      irb.context.irb_path = irb_path if irb_path
-      IRB.conf[:MAIN_CONTEXT] = irb.context
       capture_output do
+        IRB.init_config(nil)
+        IRB.conf[:VERBOSE] = false
+        IRB.conf[:PROMPT_MODE] = :SIMPLE
+        IRB.conf[:USE_PAGER] = false
+        IRB.conf.merge!(conf)
+        input = TestInputMethod.new(lines)
+        irb = IRB::Irb.new(IRB::WorkSpace.new(main), input)
+        irb.context.return_format = "=> %s\n"
+        irb.context.irb_path = irb_path if irb_path
+        IRB.conf[:MAIN_CONTEXT] = irb.context
         irb.eval_input
       end
     end
@@ -58,7 +58,9 @@ module TestIRB
         "irb_info",
         main: main
       )
-      assert_empty err
+      # Because the main object is frozen, IRB would wrap a delegator around it
+      # Which's exit! method can't be overridden and would raise a warning
+      assert_match(/delegator does not forward private method #exit\!/, err)
       assert_match(/RUBY_PLATFORM/, out)
     end
   end

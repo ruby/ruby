@@ -2439,6 +2439,10 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
 void
 pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_t *previous, const pm_parser_t *parser)
 {
+    // This is very important, otherwise the scope node could be seen as having
+    // certain flags set that _should not_ be set.
+    memset(scope, 0, sizeof(pm_scope_node_t));
+
     scope->base.type = PM_SCOPE_NODE;
     scope->base.location.start = node->location.start;
     scope->base.location.end = node->location.end;
@@ -2446,17 +2450,10 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
     scope->previous = previous;
     scope->parser = parser;
     scope->ast_node = (pm_node_t *)node;
-    scope->parameters = NULL;
-    scope->body = NULL;
-    scope->constants = NULL;
-    scope->local_table_for_iseq_size = 0;
 
     if (previous) {
         scope->constants = previous->constants;
     }
-    scope->index_lookup_table = NULL;
-
-    pm_constant_id_list_init(&scope->locals);
 
     switch (PM_NODE_TYPE(node)) {
       case PM_BLOCK_NODE: {
@@ -2541,7 +2538,7 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
       default:
         assert(false && "unreachable");
         break;
-      }
+    }
 }
 
 void
@@ -2555,7 +2552,7 @@ pm_scope_node_destroy(pm_scope_node_t *scope_node)
 static void pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, ID method_id, LABEL *start);
 
 void
-pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node,  NODE dummy_line_node, int lineno, bool in_condition, LABEL **lfinish, bool explicit_receiver)
+pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, NODE dummy_line_node, int lineno, bool in_condition, LABEL **lfinish, bool explicit_receiver)
 {
     // in_condition is the same as compile.c's needstr
     enum defined_type dtype = DEFINED_NOT_DEFINED;
@@ -2893,7 +2890,7 @@ pm_compile_defined_expr(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *con
     }
 
     if (lfinish[1]) {
-        ELEM_INSERT_NEXT(last, &new_insn_body(iseq, &dummy_line_node, BIN(putnil), 0)->link);
+        ELEM_INSERT_NEXT(last, &new_insn_body(iseq, nd_line(&dummy_line_node), nd_node_id(&dummy_line_node), BIN(putnil), 0)->link);
         PM_SWAP;
         if (lfinish[2]) {
             ADD_LABEL(ret, lfinish[2]);
@@ -8156,7 +8153,13 @@ VALUE
 pm_parse_file(pm_parse_result_t *result, VALUE filepath)
 {
     if (!pm_string_mapped_init(&result->input, RSTRING_PTR(filepath))) {
-        return rb_exc_new3(rb_eRuntimeError, rb_sprintf("Failed to map file: %s", RSTRING_PTR(filepath)));
+#ifdef _WIN32
+        int e = rb_w32_map_errno(GetLastError());
+#else
+        int e = errno;
+#endif
+
+        return rb_syserr_new(e, RSTRING_PTR(filepath));
     }
 
     VALUE error = pm_parse_input(result, filepath);

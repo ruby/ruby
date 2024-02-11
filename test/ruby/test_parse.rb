@@ -1537,11 +1537,70 @@ x = __ENCODING__
   end
 
   def test_shareable_constant_value_unshareable_literal
-    assert_raise_separately(Ractor::IsolationError, /unshareable/,
+    assert_raise_separately(Ractor::IsolationError, /unshareable object to C/,
                             "#{<<~"begin;"}\n#{<<~'end;'}")
     begin;
       # shareable_constant_value: literal
       C = ["Not " + "shareable"]
+    end;
+
+    assert_raise_separately(Ractor::IsolationError, /unshareable object to B::C/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      B = Class.new
+      B::C = ["Not " + "shareable"]
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_raise_with_message(Ractor::IsolationError, /unshareable object to ::C/) do
+        # shareable_constant_value: literal
+        ::C = ["Not " + "shareable"]
+      end
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_raise_with_message(Ractor::IsolationError, /unshareable object to ::B::C/) do
+        # shareable_constant_value: literal
+        ::B = Class.new
+        ::B::C = ["Not " + "shareable"]
+      end
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_raise_with_message(Ractor::IsolationError, /unshareable object to ::C/) do
+        # shareable_constant_value: literal
+        ::C ||= ["Not " + "shareable"]
+      end
+    end;
+
+    assert_raise_separately(Ractor::IsolationError, /unshareable object to B::C/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      B = Class.new
+      B::C ||= ["Not " + "shareable"]
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      assert_raise_with_message(Ractor::IsolationError, /unshareable object to ::B::C/) do
+        # shareable_constant_value: literal
+        ::B = Class.new
+        ::B::C ||= ["Not " + "shareable"]
+      end
+    end;
+
+    assert_raise_separately(Ractor::IsolationError, /unshareable object to ...::C/,
+                            "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      # shareable_constant_value: literal
+      B = Class.new
+      def self.expr; B; end
+      expr::C ||= ["Not " + "shareable"]
     end;
   end
 

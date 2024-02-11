@@ -16,6 +16,7 @@ use std::cell::Cell;
 use std::cmp;
 use std::cmp::min;
 use std::collections::HashMap;
+use std::ffi::c_void;
 use std::ffi::CStr;
 use std::mem;
 use std::os::raw::c_int;
@@ -5966,32 +5967,6 @@ fn gen_send_cfunc(
         }
     }
 
-    // Log the name of the method we're calling to,
-    // note that we intentionally don't do this for inlined cfuncs
-    if get_option!(gen_stats) {
-        // TODO: extract code to get method name string into its own function
-
-        // Assemble the method name string
-        let mid = unsafe { vm_ci_mid(ci) };
-        let class_name = if let Some(class) = recv_known_class {
-            unsafe { cstr_to_rust_string(rb_class2name(class)) }.unwrap()
-        } else {
-            "Unknown".to_string()
-        };
-        let method_name = if mid != 0 {
-            unsafe { cstr_to_rust_string(rb_id2name(mid)) }.unwrap()
-        } else {
-            "Unknown".to_string()
-        };
-        let name_str = format!("{}#{}", class_name, method_name);
-
-        // Get an index for this cfunc name
-        let cfunc_idx = get_cfunc_idx(&name_str);
-
-        // Increment the counter for this cfunc
-        asm.ccall(incr_cfunc_counter as *const u8, vec![cfunc_idx.into()]);
-    }
-
     // Check for interrupts
     gen_check_ints(asm, Counter::guard_send_interrupted);
 
@@ -6179,6 +6154,20 @@ fn gen_send_cfunc(
     // Push the return value on the Ruby stack
     let stack_ret = asm.stack_push(Type::Unknown);
     asm.mov(stack_ret, ret);
+
+    // Log the name of the method we're calling to. We intentionally don't do this for inlined cfuncs.
+    // We also do this after the C call to minimize the impact of spill_temps() on asm.ccall().
+    if get_option!(gen_stats) {
+        // Assemble the method name string
+        let mid = unsafe { vm_ci_mid(ci) };
+        let name_str = get_method_name(recv_known_class, mid);
+
+        // Get an index for this cfunc name
+        let cfunc_idx = get_cfunc_idx(&name_str);
+
+        // Increment the counter for this cfunc
+        asm.ccall(incr_cfunc_counter as *const u8, vec![cfunc_idx.into()]);
+    }
 
     // Pop the stack frame (ec->cfp++)
     // Instead of recalculating, we can reuse the previous CFP, which is stored in a callee-saved
@@ -6650,6 +6639,9 @@ fn gen_send_iseq(
         }
     }
 
+    // Increment total ISEQ send count
+    gen_counter_incr(asm, Counter::num_send_iseq);
+
     // Shortcut for special `Primitive.attr! :leaf` builtins
     let builtin_attrs = unsafe { rb_yjit_iseq_builtin_attrs(iseq) };
     let builtin_func_raw = unsafe { rb_yjit_builtin_function(iseq) };
@@ -6671,7 +6663,7 @@ fn gen_send_iseq(
             }
 
             asm_comment!(asm, "inlined leaf builtin");
-            gen_counter_incr(asm, Counter::num_send_leaf_builtin);
+            gen_counter_incr(asm, Counter::num_send_iseq_leaf);
 
             // The callee may allocate, e.g. Integer#abs on a Bignum.
             // Save SP for GC, save PC for allocation tracing, and prepare
@@ -6705,7 +6697,7 @@ fn gen_send_iseq(
     // Inline simple ISEQs whose return value is known at compile time
     if let (Some(value), None, false) = (iseq_get_return_value(iseq), block_arg_type, opt_send_call) {
         asm_comment!(asm, "inlined simple ISEQ");
-        gen_counter_incr(asm, Counter::num_send_inline);
+        gen_counter_incr(asm, Counter::num_send_iseq_inline);
 
         // Pop receiver and arguments
         asm.stack_pop(argc as usize + if captured_opnd.is_some() { 0 } else { 1 });
@@ -7210,6 +7202,19 @@ fn gen_send_iseq(
         pc: None, // We are calling into jitted code, which will set the PC as necessary
     });
 
+    // Log the name of the method we're calling to. We intentionally don't do this for inlined ISEQs.
+    // We also do this after gen_push_frame() to minimize the impact of spill_temps() on asm.ccall().
+    if get_option!(gen_stats) {
+        // Assemble the ISEQ name string
+        let name_str = get_iseq_name(iseq);
+
+        // Get an index for this ISEQ name
+        let iseq_idx = get_iseq_idx(&name_str);
+
+        // Increment the counter for this cfunc
+        asm.ccall(incr_iseq_counter as *const u8, vec![iseq_idx.into()]);
+    }
+
     // No need to set cfp->pc since the callee sets it whenever calling into routines
     // that could look at it through jit_save_pc().
     // mov(cb, REG0, const_ptr_opnd(start_pc));
@@ -7639,16 +7644,7 @@ fn gen_send_general(
 
     // Log the name of the method we're calling to
     #[cfg(feature = "disasm")]
-    {
-        let class_name = unsafe { cstr_to_rust_string(rb_class2name(comptime_recv_klass)) };
-        let method_name = unsafe { cstr_to_rust_string(rb_id2name(mid)) };
-        match (class_name, method_name) {
-            (Some(class_name), Some(method_name)) => {
-                asm_comment!(asm, "call to {}#{}", class_name, method_name);
-            }
-            _ => {}
-        }
-    }
+    asm_comment!(asm, "call to {}", get_method_name(Some(comptime_recv_klass), mid));
 
     // Gather some statistics about sends
     gen_counter_incr(asm, Counter::num_send);
@@ -8069,6 +8065,27 @@ fn gen_send_general(
     }
 }
 
+/// Assemble "{class_name}#{method_name}" from a class pointer and a method ID
+fn get_method_name(class: Option<VALUE>, mid: u64) -> String {
+    let class_name = class.and_then(|class| unsafe {
+        cstr_to_rust_string(rb_class2name(class))
+    }).unwrap_or_else(|| "Unknown".to_string());
+    let method_name = if mid != 0 {
+        unsafe { cstr_to_rust_string(rb_id2name(mid)) }
+    } else {
+        None
+    }.unwrap_or_else(|| "Unknown".to_string());
+    format!("{}#{}", class_name, method_name)
+}
+
+/// Assemble "{label}@{iseq_path}:{lineno}" (iseq_inspect() format) from an ISEQ
+fn get_iseq_name(iseq: IseqPtr) -> String {
+    let c_string = unsafe { rb_yjit_iseq_inspect(iseq) };
+    let string = unsafe { CStr::from_ptr(c_string) }.to_str()
+        .unwrap_or_else(|_| "not UTF-8").to_string();
+    unsafe { ruby_xfree(c_string as *mut c_void); }
+    string
+}
 
 /// Shifts the stack for send in order to remove the name of the method
 /// Comment below borrow from vm_call_opt_send in vm_insnhelper.c
@@ -8239,20 +8256,7 @@ fn gen_invokeblock_specialized(
             Counter::guard_invokeblock_iseq_block_changed,
         );
 
-        gen_send_iseq(
-            jit,
-            asm,
-            ocb,
-            comptime_iseq,
-            ci,
-            VM_FRAME_MAGIC_BLOCK,
-            None,
-            0 as _,
-            None,
-            flags,
-            argc,
-            Some(captured_opnd),
-        )
+        gen_send_iseq(jit, asm, ocb, comptime_iseq, ci, VM_FRAME_MAGIC_BLOCK, None, 0 as _, None, flags, argc, Some(captured_opnd))
     } else if comptime_handler.0 & 0x3 == 0x3 { // VM_BH_IFUNC_P
         // We aren't handling CALLER_SETUP_ARG and CALLER_REMOVE_EMPTY_KW_SPLAT yet.
         if flags & VM_CALL_ARGS_SPLAT != 0 {
