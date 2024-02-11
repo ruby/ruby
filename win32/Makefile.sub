@@ -330,8 +330,7 @@ COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 COROUTINE_OBJ = coroutine/win32/Context.obj
 COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.asm)
 !else
-COROUTINE_OBJ = coroutine/copy/Context.obj
-COROUTINE_SRC = $(COROUTINE_OBJ:.obj=.c)
+!error copy coroutine has been replaced with pthread implementation at 42130a64f02294dc8025af3a51bda518c67ab33d
 !endif
 COROUTINE_H = $(COROUTINE_OBJ:.obj=.h)
 
