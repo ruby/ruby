@@ -245,6 +245,17 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
+  def test_gets_rs_sym_slurp
+    pipe(proc do |w|
+      w.print "a\n\nb\n\n"
+      w.close
+    end, proc do |r|
+      assert_equal "a\n\nb\n\n", r.gets(:slurp)
+      assert_nil r.gets("")
+      r.close
+    end)
+  end
+
   def test_gets_rs_377
     pipe(proc do |w|
       w.print "\377xyz"
@@ -256,12 +267,24 @@ class TestIO < Test::Unit::TestCase
     end)
   end
 
-  def test_gets_paragraph
+  def test_gets_rs_empty_string
     pipe(proc do |w|
       w.print "a\n\nb\n\n"
       w.close
     end, proc do |r|
       assert_equal "a\n\n", r.gets(""), "[ruby-core:03771]"
+      assert_equal "b\n\n", r.gets("")
+      assert_nil r.gets("")
+      r.close
+    end)
+  end
+
+  def test_gets_rs_sym_paragraph
+    pipe(proc do |w|
+      w.print "a\n\nb\n\n"
+      w.close
+    end, proc do |r|
+      assert_equal "a\n\n", r.gets(:paragraph)
       assert_equal "b\n\n", r.gets("")
       assert_nil r.gets("")
       r.close
