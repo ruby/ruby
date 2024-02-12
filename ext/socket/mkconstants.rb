@@ -762,6 +762,7 @@ IPV6_NEXTHOP	nil	Next hop address
 IPV6_PATHMTU	nil	Retrieve current path MTU
 IPV6_PKTINFO	nil	Receive packet information with datagram
 IPV6_RECVDSTOPTS	nil	Receive all IP6 options for response
+IPV6_RECVERR	nil	Enable extended reliable error message passing
 IPV6_RECVHOPLIMIT	nil	Receive hop limit with datagram
 IPV6_RECVHOPOPTS	nil	Receive hop-by-hop options
 IPV6_RECVPKTINFO	nil	Receive destination IP address and incoming interface
