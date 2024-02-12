@@ -63,7 +63,9 @@ main(int argc, char **argv)
 /* Compile in the ASAN options Ruby needs, rather than relying on environment variables, so
  * that even tests which fork ruby with a clean environment will run ASAN with the right
  * settings */
-const char *__asan_default_options(void) {
-  return "use_sigaltstack=0:detect_leaks=0";
+const char *
+__asan_default_options(void)
+{
+    return "use_sigaltstack=0:detect_leaks=0";
 }
 #endif
