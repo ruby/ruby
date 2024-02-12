@@ -999,6 +999,8 @@ pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpa
                      enum rb_iseq_type type, const rb_compile_option_t *option)
 {
     rb_iseq_t *iseq = iseq_alloc();
+    ISEQ_BODY(iseq)->prism = true;
+
     if (!option) option = &COMPILE_OPTION_DEFAULT;
 
     pm_location_t *location = &node->base.location;
@@ -1140,6 +1142,10 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
         tmp_loc.beg_pos.column = NUM2INT(rb_ary_entry(code_location, 1));
         tmp_loc.end_pos.lineno = NUM2INT(rb_ary_entry(code_location, 2));
         tmp_loc.end_pos.column = NUM2INT(rb_ary_entry(code_location, 3));
+    }
+
+    if (RTEST(rb_hash_aref(misc, ID2SYM(rb_intern("prism"))))) {
+        ISEQ_BODY(iseq)->prism = true;
     }
 
     make_compile_option(&option, opt);
@@ -3374,6 +3380,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 #ifdef USE_ISEQ_NODE_ID
     rb_hash_aset(misc, ID2SYM(rb_intern("node_ids")), node_ids);
 #endif
+    rb_hash_aset(misc, ID2SYM(rb_intern("prism")), iseq_body->prism ? Qtrue : Qfalse);
 
     /*
      * [:magic, :major_version, :minor_version, :format_type, :misc,

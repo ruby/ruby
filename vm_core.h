@@ -496,6 +496,8 @@ struct rb_iseq_constant_body {
 
     unsigned int builtin_attrs; // Union of rb_builtin_attr
 
+    bool prism; // ISEQ was generated from prism compiler
+
     union {
         iseq_bits_t * list; /* Find references for GC */
         iseq_bits_t single;

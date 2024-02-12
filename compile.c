@@ -12740,6 +12740,7 @@ ibf_dump_iseq_each(struct ibf_dump *dump, const rb_iseq_t *iseq)
     ibf_dump_write_small_value(dump, body->ci_size);
     ibf_dump_write_small_value(dump, body->stack_max);
     ibf_dump_write_small_value(dump, body->builtin_attrs);
+    ibf_dump_write_small_value(dump, body->prism ? 1 : 0);
 
 #undef IBF_BODY_OFFSET
 
@@ -12852,6 +12853,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     const unsigned int ci_size = (unsigned int)ibf_load_small_value(load, &reading_pos);
     const unsigned int stack_max = (unsigned int)ibf_load_small_value(load, &reading_pos);
     const unsigned int builtin_attrs = (unsigned int)ibf_load_small_value(load, &reading_pos);
+    const bool prism = (bool)ibf_load_small_value(load, &reading_pos);
 
     // setup fname and dummy frame
     VALUE path = ibf_load_object(load, location_pathobj_index);
@@ -12926,6 +12928,7 @@ ibf_load_iseq_each(struct ibf_load *load, rb_iseq_t *iseq, ibf_offset_t offset)
     load_body->location.code_location.end_pos.lineno = location_code_location_end_pos_lineno;
     load_body->location.code_location.end_pos.column = location_code_location_end_pos_column;
     load_body->builtin_attrs = builtin_attrs;
+    load_body->prism = prism;
 
     load_body->ivc_size             = ivc_size;
     load_body->icvarc_size          = icvarc_size;
