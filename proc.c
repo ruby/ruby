@@ -51,23 +51,6 @@ static VALUE proc_binding(VALUE self);
 
 #define IS_METHOD_PROC_IFUNC(ifunc) ((ifunc)->func == bmcall)
 
-/* :FIXME: The way procs are cloned has been historically different from the
- * way everything else are.  @shyouhei is not sure for the intention though.
- */
-#undef CLONESETUP
-static inline void
-CLONESETUP(VALUE clone, VALUE obj)
-{
-    RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(obj));
-    RBIMPL_ASSERT_OR_ASSUME(! RB_SPECIAL_CONST_P(clone));
-
-    const VALUE flags = RUBY_FL_PROMOTED | RUBY_FL_FINALIZE;
-    rb_obj_setup(clone, rb_singleton_class_clone(obj),
-                 RB_FL_TEST_RAW(obj, ~flags));
-    rb_singleton_class_attached(RBASIC_CLASS(clone), clone);
-    if (RB_FL_TEST(obj, RUBY_FL_EXIVAR)) rb_copy_generic_ivar(clone, obj);
-}
-
 static void
 block_mark_and_move(struct rb_block *block)
 {
@@ -142,9 +125,7 @@ static VALUE
 proc_clone(VALUE self)
 {
     VALUE procval = rb_proc_dup(self);
-    CLONESETUP(procval, self);
-    rb_check_funcall(procval, idInitialize_clone, 1, &self);
-    return procval;
+    return rb_obj_clone_setup(self, procval, Qnil);
 }
 
 /* :nodoc: */
@@ -152,8 +133,7 @@ static VALUE
 proc_dup(VALUE self)
 {
     VALUE procval = rb_proc_dup(self);
-    rb_check_funcall(procval, idInitialize_dup, 1, &self);
-    return procval;
+    return rb_obj_dup_setup(self, procval);
 }
 
 /*
@@ -328,7 +308,7 @@ binding_dup(VALUE self)
     rb_vm_block_copy(bindval, &dst->block, &src->block);
     RB_OBJ_WRITE(bindval, &dst->pathobj, src->pathobj);
     dst->first_lineno = src->first_lineno;
-    return bindval;
+    return rb_obj_dup_setup(self, bindval);
 }
 
 /* :nodoc: */
@@ -336,8 +316,7 @@ static VALUE
 binding_clone(VALUE self)
 {
     VALUE bindval = binding_dup(self);
-    CLONESETUP(bindval, self);
-    return bindval;
+    return rb_obj_clone_setup(self, bindval, Qnil);
 }
 
 VALUE
@@ -2385,7 +2364,25 @@ method_clone(VALUE self)
 
     TypedData_Get_Struct(self, struct METHOD, &method_data_type, orig);
     clone = TypedData_Make_Struct(CLASS_OF(self), struct METHOD, &method_data_type, data);
-    CLONESETUP(clone, self);
+    rb_obj_clone_setup(self, clone, Qnil);
+    RB_OBJ_WRITE(clone, &data->recv, orig->recv);
+    RB_OBJ_WRITE(clone, &data->klass, orig->klass);
+    RB_OBJ_WRITE(clone, &data->iclass, orig->iclass);
+    RB_OBJ_WRITE(clone, &data->owner, orig->owner);
+    RB_OBJ_WRITE(clone, &data->me, rb_method_entry_clone(orig->me));
+    return clone;
+}
+
+/* :nodoc: */
+static VALUE
+method_dup(VALUE self)
+{
+    VALUE clone;
+    struct METHOD *orig, *data;
+
+    TypedData_Get_Struct(self, struct METHOD, &method_data_type, orig);
+    clone = TypedData_Make_Struct(CLASS_OF(self), struct METHOD, &method_data_type, data);
+    rb_obj_dup_setup(self, clone);
     RB_OBJ_WRITE(clone, &data->recv, orig->recv);
     RB_OBJ_WRITE(clone, &data->klass, orig->klass);
     RB_OBJ_WRITE(clone, &data->iclass, orig->iclass);
@@ -4295,6 +4292,7 @@ Init_Proc(void)
     rb_define_method(rb_cMethod, "eql?", method_eq, 1);
     rb_define_method(rb_cMethod, "hash", method_hash, 0);
     rb_define_method(rb_cMethod, "clone", method_clone, 0);
+    rb_define_method(rb_cMethod, "dup", method_dup, 0);
     rb_define_method(rb_cMethod, "call", rb_method_call_pass_called_kw, -1);
     rb_define_method(rb_cMethod, "===", rb_method_call_pass_called_kw, -1);
     rb_define_method(rb_cMethod, "curry", rb_method_curry, -1);
@@ -4325,6 +4323,7 @@ Init_Proc(void)
     rb_define_method(rb_cUnboundMethod, "eql?", unbound_method_eq, 1);
     rb_define_method(rb_cUnboundMethod, "hash", method_hash, 0);
     rb_define_method(rb_cUnboundMethod, "clone", method_clone, 0);
+    rb_define_method(rb_cUnboundMethod, "dup", method_dup, 0);
     rb_define_method(rb_cUnboundMethod, "arity", method_arity_m, 0);
     rb_define_method(rb_cUnboundMethod, "inspect", method_inspect, 0);
     rb_define_method(rb_cUnboundMethod, "to_s", method_inspect, 0);
