@@ -86,6 +86,7 @@ hash_literal_key_p(VALUE k)
           case NODE_FLOAT:
           case NODE_RATIONAL:
           case NODE_IMAGINARY:
+          case NODE_STR:
           case NODE_SYM:
           case NODE_LINE:
           case NODE_FILE:
@@ -149,14 +150,6 @@ node_cdhash_cmp(VALUE val, VALUE lit)
         return 0;
     }
 
-    /* Special case for __FILE__ and String */
-    if (OBJ_BUILTIN_TYPE(val) == T_NODE && nd_type(RNODE(val)) == NODE_FILE && RB_TYPE_P(lit, T_STRING)) {
-        return rb_str_hash_cmp(rb_node_file_path_val(RNODE(val)), lit);
-    }
-    if (OBJ_BUILTIN_TYPE(lit) == T_NODE && nd_type(RNODE(lit)) == NODE_FILE && RB_TYPE_P(val, T_STRING)) {
-        return rb_str_hash_cmp(rb_node_file_path_val(RNODE(lit)), val);
-    }
-
     if ((OBJ_BUILTIN_TYPE(val) == T_NODE) && (OBJ_BUILTIN_TYPE(lit) == T_NODE)) {
         NODE *node_val = RNODE(val);
         NODE *node_lit = RNODE(lit);
@@ -169,6 +162,14 @@ node_cdhash_cmp(VALUE val, VALUE lit)
         }
         if (type_lit == NODE_INTEGER && type_val == NODE_LINE) {
             return node_integer_line_cmp(node_lit, node_val);
+        }
+
+        /* Special case for String and __FILE__ */
+        if (type_val == NODE_STR && type_lit == NODE_FILE) {
+            return rb_parser_string_hash_cmp(RNODE_STR(node_val)->string, RNODE_FILE(node_lit)->path);
+        }
+        if (type_lit == NODE_STR && type_val == NODE_FILE) {
+            return rb_parser_string_hash_cmp(RNODE_STR(node_lit)->string, RNODE_FILE(node_val)->path);
         }
 
         if (type_val != type_lit) {
@@ -184,6 +185,8 @@ node_cdhash_cmp(VALUE val, VALUE lit)
             return node_rational_cmp(RNODE_RATIONAL(node_val), RNODE_RATIONAL(node_lit));
           case NODE_IMAGINARY:
             return node_imaginary_cmp(RNODE_IMAGINARY(node_val), RNODE_IMAGINARY(node_lit));
+          case NODE_STR:
+            return rb_parser_string_hash_cmp(RNODE_STR(node_val)->string, RNODE_STR(node_lit)->string);
           case NODE_SYM:
             return rb_parser_string_hash_cmp(RNODE_SYM(node_val)->string, RNODE_SYM(node_lit)->string);
           case NODE_LINE:
@@ -224,13 +227,15 @@ node_cdhash_hash(VALUE a)
           case NODE_IMAGINARY:
             val = rb_node_imaginary_literal_val(node);
             return rb_complex_hash(val);
+          case NODE_STR:
+            return rb_str_hash(rb_node_str_string_val(node));
           case NODE_SYM:
             return rb_node_sym_string_val(node);
           case NODE_LINE:
             /* Same with NODE_INTEGER FIXNUM case */
             return (st_index_t)node->nd_loc.beg_pos.lineno;
           case NODE_FILE:
-            /* Same with String in rb_iseq_cdhash_hash */
+            /* Same with NODE_STR */
             return rb_str_hash(rb_node_file_path_val(node));
           case NODE_ENCODING:
             return rb_node_encoding_val(node);
@@ -15462,8 +15467,30 @@ nd_type_st_key_enable_p(NODE *node)
     }
 }
 
-static VALUE
+static NODE *
 nd_st_key(struct parser_params *p, NODE *node)
+{
+    switch (nd_type(node)) {
+      case NODE_LIT:
+        return (NODE *)RNODE_LIT(node)->nd_lit;
+      case NODE_STR:
+      case NODE_INTEGER:
+      case NODE_FLOAT:
+      case NODE_RATIONAL:
+      case NODE_IMAGINARY:
+      case NODE_SYM:
+      case NODE_LINE:
+      case NODE_ENCODING:
+      case NODE_FILE:
+        return node;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+        UNREACHABLE_RETURN(0);
+    }
+}
+
+static VALUE
+nd_value(struct parser_params *p, NODE *node)
 {
     switch (nd_type(node)) {
       case NODE_LIT:
@@ -15514,7 +15541,7 @@ warn_duplicate_keys(struct parser_params *p, NODE *hash)
                  st_delete(literal_keys, (key = (st_data_t)nd_st_key(p, head), &key), &data)) {
             rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
                             "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
-                            nd_st_key(p, head), nd_line(head));
+                            nd_value(p, head), nd_line(head));
         }
         st_insert(literal_keys, (st_data_t)key, (st_data_t)hash);
         hash = next;
