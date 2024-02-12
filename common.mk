@@ -983,7 +983,7 @@ $(RBCONFIG): $(tooldir)/mkconfig.rb config.status $(srcdir)/version.h $(srcdir)/
 test-rubyspec: test-spec
 yes-test-rubyspec: yes-test-spec
 
-yes-test-spec-precheck: yes-test-all-precheck yes-fake extract-gems
+yes-test-spec-precheck: yes-test-all-precheck yes-fake prepare-gems
 
 test-spec: $(TEST_RUNNABLE)-test-spec
 yes-test-spec: yes-test-spec-precheck
