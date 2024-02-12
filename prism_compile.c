@@ -7979,11 +7979,19 @@ pm_parse_result_free(pm_parse_result_t *result)
 }
 
 /**
- * Check if the given source slice is valid UTF-8.
+ * Check if the given source slice is valid UTF-8. The location represents the
+ * location of the error, but the slice of the source will include the content
+ * of all of the lines that the error touches, so we need to check those parts
+ * as well.
  */
 static bool
-pm_parse_input_error_utf8_p(const uint8_t *start, const uint8_t *end)
+pm_parse_input_error_utf8_p(const pm_parser_t *parser, const pm_location_t *location)
 {
+    const pm_line_column_t start_location = pm_newline_list_line_column(&parser->newline_list, location->start);
+    const pm_line_column_t end_location = pm_newline_list_line_column(&parser->newline_list, location->end);
+
+    const uint8_t *start = parser->start + parser->newline_list.offsets[start_location.line - 1];
+    const uint8_t *end = ((end_location.line == parser->newline_list.size) ? parser->end : (parser->start + parser->newline_list.offsets[end_location.line]));
     size_t width;
 
     while (start < end) {
@@ -8017,7 +8025,7 @@ pm_parse_input_error(const pm_parse_result_t *result)
         // contain invalid byte sequences. So if any source examples include
         // invalid UTF-8 byte sequences, we will skip showing source examples
         // entirely.
-        if (valid_utf8 && !pm_parse_input_error_utf8_p(error->location.start, error->location.end)) {
+        if (valid_utf8 && !pm_parse_input_error_utf8_p(&result->parser, &error->location)) {
             valid_utf8 = false;
         }
     }
