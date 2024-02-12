@@ -7,5 +7,6 @@ module Prism
   # seattlerb/ruby_parser gem's syntax tree as well.
   module Translation
     autoload :Parser, "prism/translation/parser"
+    autoload :Ripper, "prism/translation/ripper"
   end
 end

@@ -22,7 +22,6 @@ module Prism
   autoload :LexRipper, "prism/lex_compat"
   autoload :MutationCompiler, "prism/mutation_compiler"
   autoload :NodeInspector, "prism/node_inspector"
-  autoload :RipperCompat, "prism/ripper_compat"
   autoload :Pack, "prism/pack"
   autoload :Pattern, "prism/pattern"
   autoload :Serialize, "prism/serialize"

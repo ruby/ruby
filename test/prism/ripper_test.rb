@@ -3,7 +3,7 @@
 require_relative "test_helper"
 
 module Prism
-  class RipperCompatTest < TestCase
+  class RipperTest < TestCase
     def test_binary
       assert_equivalent("1 + 2")
       assert_equivalent("3 - 4 * 5")
@@ -148,11 +148,11 @@ module Prism
       expected = Ripper.sexp_raw(source)
 
       refute_nil expected
-      assert_equal expected, RipperCompat.sexp_raw(source)
+      assert_equal expected, Prism::Translation::Ripper.sexp_raw(source)
     end
   end
 
-  class RipperCompatFixturesTest < TestCase
+  class RipperFixturesTest < TestCase
     #base = File.join(__dir__, "fixtures")
     #relatives = ENV["FOCUS"] ? [ENV["FOCUS"]] : Dir["**/*.txt", base: base]
     relatives = [
@@ -177,7 +177,7 @@ module Prism
           puts "Could not parse #{path.inspect}!"
         end
         refute_nil expected
-        assert_equal expected, RipperCompat.sexp_raw(source)
+        assert_equal expected, Translation::Ripper.sexp_raw(source)
       end
     end
 
