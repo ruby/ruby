@@ -187,7 +187,8 @@ parse_string(pm_string_t *string, const pm_parser_t *parser)
  * creating those strings based on the flags set on the owning node.
  */
 static inline VALUE
-parse_string_encoded(const pm_node_t *node, const pm_string_t *string, const pm_parser_t *parser) {
+parse_string_encoded(const pm_node_t *node, const pm_string_t *string, const pm_parser_t *parser)
+{
     rb_encoding *encoding;
 
     if (node->flags & PM_ENCODING_FLAGS_FORCED_BINARY_ENCODING) {
@@ -286,7 +287,8 @@ pm_reg_flags(const pm_node_t *node) {
 }
 
 static rb_encoding *
-pm_reg_enc(const pm_regular_expression_node_t *node, const pm_parser_t *parser) {
+pm_reg_enc(const pm_regular_expression_node_t *node, const pm_parser_t *parser)
+{
     if (node->base.flags & PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT) {
         return rb_ascii8bit_encoding();
     }
@@ -318,7 +320,8 @@ pm_static_literal_p(const pm_node_t *node)
 }
 
 static VALUE
-pm_new_regex(pm_regular_expression_node_t * cast, const pm_parser_t * parser) {
+pm_new_regex(pm_regular_expression_node_t * cast, const pm_parser_t * parser)
+{
     VALUE regex_str = parse_string(&cast->unescaped, parser);
     rb_encoding * enc = pm_reg_enc(cast, parser);
 
@@ -3286,7 +3289,8 @@ typedef struct {
  * Push a new state node onto the multi target state.
  */
 static void
-pm_multi_target_state_push(pm_multi_target_state_t *state, INSN *topn, size_t stack_size) {
+pm_multi_target_state_push(pm_multi_target_state_t *state, INSN *topn, size_t stack_size)
+{
     pm_multi_target_state_node_t *node = ALLOC(pm_multi_target_state_node_t);
     node->topn = topn;
     node->stack_index = state->stack_size + 1;
@@ -3311,7 +3315,8 @@ pm_multi_target_state_push(pm_multi_target_state_t *state, INSN *topn, size_t st
  * correctly retrieve their parent expressions.
  */
 static void
-pm_multi_target_state_update(pm_multi_target_state_t *state) {
+pm_multi_target_state_update(pm_multi_target_state_t *state)
+{
     // If nothing was ever pushed onto the stack, then we don't need to do any
     // kind of updates.
     if (state->stack_size == 0) return;
@@ -3380,7 +3385,8 @@ pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR
  * the containing node.
  */
 static void
-pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const parents, LINK_ANCHOR *const writes, LINK_ANCHOR *const cleanup, pm_scope_node_t *scope_node, pm_multi_target_state_t *state) {
+pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const parents, LINK_ANCHOR *const writes, LINK_ANCHOR *const cleanup, pm_scope_node_t *scope_node, pm_multi_target_state_t *state)
+{
     int lineno = (int) pm_newline_list_line_column(&scope_node->parser->newline_list, node->location.start).line;
     NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
 
@@ -3593,7 +3599,8 @@ pm_compile_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *cons
  * targets.
  */
 static size_t
-pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const parents, LINK_ANCHOR *const writes, LINK_ANCHOR *const cleanup, pm_scope_node_t *scope_node, pm_multi_target_state_t *state) {
+pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const parents, LINK_ANCHOR *const writes, LINK_ANCHOR *const cleanup, pm_scope_node_t *scope_node, pm_multi_target_state_t *state)
+{
     int lineno = (int) pm_newline_list_line_column(&scope_node->parser->newline_list, node->location.start).line;
     NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
 
@@ -3683,7 +3690,8 @@ pm_compile_multi_target_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR
  * compilation.
  */
 static void
-pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node) {
+pm_compile_for_node_index(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node)
+{
     int lineno = (int) pm_newline_list_line_column(&scope_node->parser->newline_list, node->location.start).line;
     NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
 
@@ -4093,7 +4101,7 @@ pm_compile_case_node_dispatch(VALUE dispatch, const pm_node_t *node, LABEL *labe
 }
 
 /*
- * Compiles a prism node into instruction sequences
+ * Compiles a prism node into instruction sequences.
  *
  * iseq -            The current instruction sequence object (used for locals)
  * node -            The prism node to compile
