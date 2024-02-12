@@ -748,6 +748,7 @@ SHUT_RDWR	2	Shut down the both sides of the socket
 
 IPV6_JOIN_GROUP	nil	Join a group membership
 IPV6_LEAVE_GROUP	nil	Leave a group membership
+IPV6_MTU_DISCOVER nil Path MTU discovery
 IPV6_MULTICAST_HOPS	nil	IP6 multicast hops
 IPV6_MULTICAST_IF	nil	IP6 multicast interface
 IPV6_MULTICAST_LOOP	nil	IP6 multicast loopback
