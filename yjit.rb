@@ -234,7 +234,8 @@ module RubyVM::YJIT
     at_exit { print_and_dump_stats }
   end
 
-  class << self # :stopdoc:
+  class << self
+    # :stopdoc:
     private
 
     # Print stats and dump exit locations
@@ -487,5 +488,7 @@ module RubyVM::YJIT
       formatted_pct = "%4.1f%%" % percentage
       "#{padded_count} (#{formatted_pct})"
     end
+
+    # :startdoc:
   end
 end
