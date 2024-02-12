@@ -1174,11 +1174,11 @@ fn gen_swap(
 
 fn stack_swap(
     asm: &mut Assembler,
-    offset0: i32,
-    offset1: i32,
+    offset0: u16,
+    offset1: u16,
 ) {
-    let stack0_mem = asm.stack_opnd(offset0);
-    let stack1_mem = asm.stack_opnd(offset1);
+    let stack0_mem = asm.stack_opnd(offset0 as i32);
+    let stack1_mem = asm.stack_opnd(offset1 as i32);
 
     let mapping0 = asm.ctx.get_opnd_mapping(stack0_mem.into());
     let mapping1 = asm.ctx.get_opnd_mapping(stack1_mem.into());
@@ -6412,8 +6412,7 @@ fn gen_send_iseq(
     // that the callee could use to know which keywords are unspecified
     // (see the `checkkeyword` instruction and check `ruby --dump=insn -e 'def foo(k:itself)=k'`).
     // We always need to set up this local if the call goes through.
-    let has_kwrest = unsafe { get_iseq_flags_has_kwrest(iseq) };
-    let doing_kw_call = unsafe { get_iseq_flags_has_kw(iseq) } || has_kwrest;
+    let doing_kw_call = unsafe { get_iseq_flags_has_kw(iseq) };
     let supplying_kws = unsafe { vm_ci_flag(ci) & VM_CALL_KWARG } != 0;
     let iseq_has_rest = unsafe { get_iseq_flags_has_rest(iseq) };
     let iseq_has_block_param = unsafe { get_iseq_flags_has_block(iseq) };
@@ -6451,11 +6450,11 @@ fn gen_send_iseq(
     exit_if_stack_too_large(iseq)?;
     exit_if_tail_call(asm, ci)?;
     exit_if_has_post(asm, iseq)?;
+    exit_if_has_kwrest(asm, iseq)?;
     exit_if_kw_splat(asm, flags)?;
     exit_if_has_rest_and_captured(asm, iseq_has_rest, captured_opnd)?;
-    exit_if_has_kwrest_and_captured(asm, has_kwrest, captured_opnd)?;
-    exit_if_has_rest_and_supplying_kws(asm, iseq_has_rest, supplying_kws)?;
-    exit_if_supplying_kw_and_has_no_kw(asm, supplying_kws, doing_kw_call)?;
+    exit_if_has_rest_and_supplying_kws(asm, iseq_has_rest, iseq, supplying_kws)?;
+    exit_if_supplying_kw_and_has_no_kw(asm, supplying_kws, iseq)?;
     exit_if_supplying_kws_and_accept_no_kwargs(asm, supplying_kws, iseq)?;
     exit_if_doing_kw_and_splat(asm, doing_kw_call, flags)?;
     exit_if_wrong_number_arguments(asm, arg_setup_block, opts_filled, flags, opt_num, iseq_has_rest)?;
@@ -6482,9 +6481,10 @@ fn gen_send_iseq(
         }
     }
 
-    // Check that required keyword arguments are supplied and find any extras
-    // that should go into the keyword rest parameter (**kw_rest).
     if doing_kw_call {
+        // Here we're calling a method with keyword arguments and specifying
+        // keyword arguments at this call site.
+
         // This struct represents the metadata about the callee-specified
         // keyword parameters.
         let keyword = unsafe { get_iseq_body_param_keyword(iseq) };
@@ -6493,10 +6493,10 @@ fn gen_send_iseq(
 
         let mut required_kwargs_filled = 0;
 
-        if keyword_num > 30 || kw_arg_num > 64 {
+        if keyword_num > 30 {
             // We have so many keywords that (1 << num) encoded as a FIXNUM
             // (which shifts it left one more) no longer fits inside a 32-bit
-            // immediate. Similarly, we use a u64 in case of keyword rest parameter.
+            // immediate.
             gen_counter_incr(asm, Counter::send_iseq_too_many_kwargs);
             return None;
         }
@@ -6506,11 +6506,7 @@ fn gen_send_iseq(
             // This is the list of keyword arguments that the callee specified
             // in its initial declaration.
             // SAFETY: see compile.c for sizing of this slice.
-            let callee_kwargs = if keyword_num == 0 {
-                &[]
-            } else {
-                unsafe { slice::from_raw_parts((*keyword).table, keyword_num) }
-            };
+            let callee_kwargs = unsafe { slice::from_raw_parts((*keyword).table, keyword_num) };
 
             // Here we're going to build up a list of the IDs that correspond to
             // the caller-specified keyword arguments. If they're not in the
@@ -6535,7 +6531,7 @@ fn gen_send_iseq(
                     .find(|(_, &kwarg)| kwarg == caller_kwarg);
 
                 match search_result {
-                    None if !has_kwrest => {
+                    None => {
                         // If the keyword was never found, then we know we have a
                         // mismatch in the names of the keyword arguments, so we need to
                         // bail.
@@ -6958,17 +6954,24 @@ fn gen_send_iseq(
         }
     }
 
-    // Keyword argument passing
     if doing_kw_call {
+        // Here we're calling a method with keyword arguments and specifying
+        // keyword arguments at this call site.
+
+        // Number of positional arguments the callee expects before the first
+        // keyword argument
+        let args_before_kw = required_num + opt_num;
+
         // This struct represents the metadata about the caller-specified
         // keyword arguments.
         let ci_kwarg = unsafe { vm_ci_kwarg(ci) };
-        let caller_keyword_len_i32: i32 = if ci_kwarg.is_null() {
+        let caller_keyword_len: usize = if ci_kwarg.is_null() {
             0
         } else {
             unsafe { get_cikw_keyword_len(ci_kwarg) }
+                .try_into()
+                .unwrap()
         };
-        let caller_keyword_len: usize = caller_keyword_len_i32.try_into().unwrap();
 
         // This struct represents the metadata about the callee-specified
         // keyword parameters.
@@ -6979,189 +6982,114 @@ fn gen_send_iseq(
         // This is the list of keyword arguments that the callee specified
         // in its initial declaration.
         let callee_kwargs = unsafe { (*keyword).table };
-        let callee_kw_count_i32: i32 = unsafe { (*keyword).num };
-        let callee_kw_count: usize = callee_kw_count_i32.try_into().unwrap();
-        let keyword_required_num: usize = unsafe { (*keyword).required_num }.try_into().unwrap();
+        let total_kwargs: usize = unsafe { (*keyword).num }.try_into().unwrap();
 
         // Here we're going to build up a list of the IDs that correspond to
         // the caller-specified keyword arguments. If they're not in the
         // same order as the order specified in the callee declaration, then
         // we're going to need to generate some code to swap values around
         // on the stack.
-        let mut kwargs_order: Vec<ID> = vec![0; cmp::max(caller_keyword_len, callee_kw_count)];
+        let mut caller_kwargs: Vec<ID> = vec![0; total_kwargs];
+
         for kwarg_idx in 0..caller_keyword_len {
             let sym = unsafe { get_cikw_keywords_idx(ci_kwarg, kwarg_idx.try_into().unwrap()) };
-            kwargs_order[kwarg_idx] = unsafe { rb_sym2id(sym) };
+            caller_kwargs[kwarg_idx] = unsafe { rb_sym2id(sym) };
         }
+        let mut kwarg_idx = caller_keyword_len;
 
         let mut unspecified_bits = 0;
 
-        // Start by ensuring the stack is large enough for the callee
-        for _ in caller_keyword_len..callee_kw_count {
-            argc += 1;
-            asm.stack_push(Type::Unknown);
-        }
-        // Now this is the stack_opnd() index to the 0th keyword argument.
-        let kwargs_stack_base = kwargs_order.len() as i32 - 1;
+        let keyword_required_num: usize = unsafe { (*keyword).required_num }.try_into().unwrap();
+        for callee_idx in keyword_required_num..total_kwargs {
+            let mut already_passed = false;
+            let callee_kwarg = unsafe { *(callee_kwargs.offset(callee_idx.try_into().unwrap())) };
 
-        // Build the keyword rest parameter hash before we make any changes to the order of
-        // the supplied keyword arguments
-        if has_kwrest {
-            c_callable! {
-                fn build_kw_rest(rest_mask: u64, stack_kwargs: *const VALUE, keywords: *const rb_callinfo_kwarg) -> VALUE {
-                    if keywords.is_null() {
-                        return unsafe { rb_hash_new() };
-                    }
-
-                    // Use the total number of supplied keywords as a size upper bound
-                    let keyword_len = unsafe { (*keywords).keyword_len } as usize;
-                    let hash = unsafe { rb_hash_new_with_size(keyword_len as u64) };
-
-                    // Put pairs into the kwrest hash as the mask describes
-                    for kwarg_idx in 0..keyword_len {
-                        if (rest_mask & (1 << kwarg_idx)) != 0 {
-                            unsafe {
-                                let keyword_symbol = (*keywords).keywords.as_ptr().add(kwarg_idx).read();
-                                let keyword_value = stack_kwargs.add(kwarg_idx).read();
-                                rb_hash_aset(hash, keyword_symbol, keyword_value);
-                            }
-                        }
-                    }
-                    return hash;
+            for caller_idx in 0..caller_keyword_len {
+                if caller_kwargs[caller_idx] == callee_kwarg {
+                    already_passed = true;
+                    break;
                 }
             }
 
-            asm_comment!(asm, "build kwrest hash");
+            if !already_passed {
+                // Reserve space on the stack for each default value we'll be
+                // filling in (which is done in the next loop). Also increments
+                // argc so that the callee's SP is recorded correctly.
+                argc += 1;
+                let default_arg = asm.stack_push(Type::Unknown);
 
-            // Make a bit mask describing which keywords should go into kwrest.
-            let mut rest_mask: u64 = 0;
-            // Index for one argument that will go into kwrest.
-            let mut rest_collected_idx = None;
-            for (supplied_kw_idx, &supplied_kw) in kwargs_order.iter().take(caller_keyword_len).enumerate() {
-                let mut found = false;
-                for callee_idx in 0..callee_kw_count {
-                    let callee_kw = unsafe { callee_kwargs.add(callee_idx).read() };
-                    if callee_kw == supplied_kw {
-                        found = true;
-                        break;
-                    }
+                // callee_idx - keyword->required_num is used in a couple of places below.
+                let req_num: isize = unsafe { (*keyword).required_num }.try_into().unwrap();
+                let callee_idx_isize: isize = callee_idx.try_into().unwrap();
+                let extra_args = callee_idx_isize - req_num;
+
+                //VALUE default_value = keyword->default_values[callee_idx - keyword->required_num];
+                let mut default_value = unsafe { *((*keyword).default_values.offset(extra_args)) };
+
+                if default_value == Qundef {
+                    // Qundef means that this value is not constant and must be
+                    // recalculated at runtime, so we record it in unspecified_bits
+                    // (Qnil is then used as a placeholder instead of Qundef).
+                    unspecified_bits |= 0x01 << extra_args;
+                    default_value = Qnil;
                 }
-                if !found {
-                    rest_mask |= 1 << supplied_kw_idx;
-                    if rest_collected_idx.is_none() {
-                        rest_collected_idx = Some(supplied_kw_idx as i32);
-                    }
-                }
-            }
 
-            // Save PC and SP before allocating
-            jit_save_pc(jit, asm);
-            gen_save_sp(asm);
+                asm.mov(default_arg, default_value.into());
 
-            // Build the kwrest hash. `struct rb_callinfo_kwarg` is malloc'd, so no GC concerns.
-            let kwargs_start = asm.lea(asm.ctx.sp_opnd(-(kwargs_order.len() as i32 * SIZEOF_VALUE_I32) as isize));
-            let kwrest = asm.ccall(
-                build_kw_rest as _,
-                vec![rest_mask.into(), kwargs_start, Opnd::const_ptr(ci_kwarg.cast())]
-            );
-            // The kwrest parameter sits after `unspecified_bits` if the callee specifies any
-            // keywords.
-            let stack_kwrest_idx = kwargs_stack_base - callee_kw_count_i32 - i32::from(callee_kw_count > 0);
-            let stack_kwrest = asm.stack_opnd(stack_kwrest_idx);
-            // If `stack_kwrest` already has another argument there, we need to stow it elsewhere
-            // first before putting kwrest there. Use `rest_collected_idx` because that value went
-            // into kwrest so the slot is now free.
-            let kwrest_idx = callee_kw_count + usize::from(callee_kw_count > 0);
-            if let (Some(rest_collected_idx), true) = (rest_collected_idx, kwrest_idx < kwargs_order.len()) {
-                let rest_collected = asm.stack_opnd(kwargs_stack_base - rest_collected_idx);
-                let mapping = asm.ctx.get_opnd_mapping(stack_kwrest.into());
-                asm.mov(rest_collected, stack_kwrest);
-                asm.ctx.set_opnd_mapping(rest_collected.into(), mapping);
-                // Update our bookkeeping to inform the reordering step later.
-                kwargs_order[rest_collected_idx as usize] = kwargs_order[kwrest_idx];
-                kwargs_order[kwrest_idx] = 0;
-            }
-            // Put kwrest straight into memory, since we might pop it later
-            asm.ctx.dealloc_temp_reg(stack_kwrest.stack_idx());
-            asm.mov(stack_kwrest, kwrest);
-            if stack_kwrest_idx >= 0 {
-                asm.ctx.set_opnd_mapping(stack_kwrest.into(), TempMapping::map_to_stack(Type::THash));
+                caller_kwargs[kwarg_idx] = callee_kwarg;
+                kwarg_idx += 1;
             }
         }
+
+        assert!(kwarg_idx == total_kwargs);
 
         // Next, we're going to loop through every keyword that was
         // specified by the caller and make sure that it's in the correct
         // place. If it's not we're going to swap it around with another one.
-        for kwarg_idx in 0..callee_kw_count {
-            let callee_kwarg = unsafe { callee_kwargs.add(kwarg_idx).read() };
+        for kwarg_idx in 0..total_kwargs {
+            let kwarg_idx_isize: isize = kwarg_idx.try_into().unwrap();
+            let callee_kwarg = unsafe { *(callee_kwargs.offset(kwarg_idx_isize)) };
 
             // If the argument is already in the right order, then we don't
             // need to generate any code since the expected value is already
             // in the right place on the stack.
-            if callee_kwarg == kwargs_order[kwarg_idx] {
+            if callee_kwarg == caller_kwargs[kwarg_idx] {
                 continue;
             }
 
             // In this case the argument is not in the right place, so we
             // need to find its position where it _should_ be and swap with
             // that location.
-            for swap_idx in 0..kwargs_order.len() {
-                if callee_kwarg == kwargs_order[swap_idx] {
+            for swap_idx in (kwarg_idx + 1)..total_kwargs {
+                if callee_kwarg == caller_kwargs[swap_idx] {
                     // First we're going to generate the code that is going
                     // to perform the actual swapping at runtime.
                     let swap_idx_i32: i32 = swap_idx.try_into().unwrap();
                     let kwarg_idx_i32: i32 = kwarg_idx.try_into().unwrap();
-                    let offset0 = kwargs_stack_base - swap_idx_i32;
-                    let offset1 = kwargs_stack_base - kwarg_idx_i32;
+                    let offset0: u16 = (argc - 1 - swap_idx_i32 - args_before_kw)
+                        .try_into()
+                        .unwrap();
+                    let offset1: u16 = (argc - 1 - kwarg_idx_i32 - args_before_kw)
+                        .try_into()
+                        .unwrap();
                     stack_swap(asm, offset0, offset1);
 
                     // Next we're going to do some bookkeeping on our end so
                     // that we know the order that the arguments are
                     // actually in now.
-                    kwargs_order.swap(kwarg_idx, swap_idx);
+                    caller_kwargs.swap(kwarg_idx, swap_idx);
 
                     break;
                 }
             }
         }
 
-        // Now that every caller specified kwarg is in the right place, filling
-        // in unspecified default paramters won't overwrite anything.
-        for kwarg_idx in keyword_required_num..callee_kw_count {
-            if kwargs_order[kwarg_idx] != unsafe { callee_kwargs.add(kwarg_idx).read() } {
-                let default_param_idx = kwarg_idx - keyword_required_num;
-                let mut default_value = unsafe { (*keyword).default_values.add(default_param_idx).read() };
-
-                if default_value == Qundef {
-                    // Qundef means that this value is not constant and must be
-                    // recalculated at runtime, so we record it in unspecified_bits
-                    // (Qnil is then used as a placeholder instead of Qundef).
-                    unspecified_bits |= 0x01 << default_param_idx;
-                    default_value = Qnil;
-                }
-
-                let default_param = asm.stack_opnd(kwargs_stack_base - kwarg_idx as i32);
-                let param_type = Type::from(default_value);
-                asm.mov(default_param, default_value.into());
-                asm.ctx.set_opnd_mapping(default_param.into(), TempMapping::map_to_stack(param_type));
-            }
-        }
-
-        // Pop extra arguments that went into kwrest now that they're at stack top
-        if has_kwrest && caller_keyword_len > callee_kw_count {
-            let extra_kwarg_count = caller_keyword_len - callee_kw_count;
-            asm.stack_pop(extra_kwarg_count);
-            argc = argc - extra_kwarg_count as i32;
-        }
-
         // Keyword arguments cause a special extra local variable to be
         // pushed onto the stack that represents the parameters that weren't
         // explicitly given a value and have a non-constant default.
-        if callee_kw_count > 0 {
-            let unspec_opnd = VALUE::fixnum_from_usize(unspecified_bits).as_u64();
-            asm.ctx.dealloc_temp_reg(asm.stack_opnd(-1).stack_idx()); // avoid using a register for unspecified_bits
-            asm.mov(asm.stack_opnd(-1), unspec_opnd.into());
-        }
+        let unspec_opnd = VALUE::fixnum_from_usize(unspecified_bits).as_u64();
+        asm.ctx.dealloc_temp_reg(asm.stack_opnd(-1).stack_idx()); // avoid using a register for unspecified_bits
+        asm.mov(asm.stack_opnd(-1), unspec_opnd.into());
     }
 
     // Same as vm_callee_setup_block_arg_arg0_check and vm_callee_setup_block_arg_arg0_splat
@@ -7399,6 +7327,11 @@ fn exit_if_has_post(asm: &mut Assembler, iseq: *const rb_iseq_t) -> Option<()> {
 }
 
 #[must_use]
+fn exit_if_has_kwrest(asm: &mut Assembler, iseq: *const rb_iseq_t) -> Option<()> {
+    exit_if(asm, unsafe { get_iseq_flags_has_kwrest(iseq) }, Counter::send_iseq_has_kwrest)
+}
+
+#[must_use]
 fn exit_if_kw_splat(asm: &mut Assembler, flags: u32) -> Option<()> {
     exit_if(asm, flags & VM_CALL_KW_SPLAT != 0, Counter::send_iseq_kw_splat)
 }
@@ -7409,31 +7342,22 @@ fn exit_if_has_rest_and_captured(asm: &mut Assembler, iseq_has_rest: bool, captu
 }
 
 #[must_use]
-fn exit_if_has_kwrest_and_captured(asm: &mut Assembler, iseq_has_kwrest: bool, captured_opnd: Option<Opnd>) -> Option<()> {
-    // We need to call a C function to allocate the kwrest hash, but also need to hold the captred
-    // block across the call, which we can't do.
-    exit_if(asm, iseq_has_kwrest && captured_opnd.is_some(), Counter::send_iseq_has_kwrest_and_captured)
-}
-
-#[must_use]
-fn exit_if_has_rest_and_supplying_kws(asm: &mut Assembler, iseq_has_rest: bool, supplying_kws: bool) -> Option<()> {
-    // There can be a gap between the rest parameter array and the supplied keywords, or
-    // no space to put the rest array (e.g. `def foo(*arr, k:) = arr; foo(k: 1)` 1 is
-    // sitting where the rest array should be).
+fn exit_if_has_rest_and_supplying_kws(asm: &mut Assembler, iseq_has_rest: bool, iseq: *const rb_iseq_t, supplying_kws: bool) -> Option<()> {
     exit_if(
         asm,
-        iseq_has_rest && supplying_kws,
+        iseq_has_rest && unsafe { get_iseq_flags_has_kw(iseq) } && supplying_kws,
         Counter::send_iseq_has_rest_and_kw_supplied,
     )
 }
 
 #[must_use]
-fn exit_if_supplying_kw_and_has_no_kw(asm: &mut Assembler, supplying_kws: bool, callee_kws: bool) -> Option<()> {
-    // Passing keyword arguments to a callee means allocating a hash and treating
-    // that as a positional argument. Bail for now.
+fn exit_if_supplying_kw_and_has_no_kw(asm: &mut Assembler, supplying_kws: bool, iseq: *const rb_iseq_t) -> Option<()> {
+    // If we have keyword arguments being passed to a callee that only takes
+    // positionals, then we need to allocate a hash. For now we're going to
+    // call that too complex and bail.
     exit_if(
         asm,
-        supplying_kws && !callee_kws,
+        supplying_kws && !unsafe { get_iseq_flags_has_kw(iseq) },
         Counter::send_iseq_has_no_kw,
     )
 }
