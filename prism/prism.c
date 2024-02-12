@@ -2891,7 +2891,7 @@ static pm_def_node_t *
 pm_def_node_create(
     pm_parser_t *parser,
     pm_constant_id_t name,
-    const pm_location_t *name_loc,
+    const pm_token_t *name_loc,
     pm_node_t *receiver,
     pm_parameters_node_t *parameters,
     pm_node_t *body,
@@ -2922,7 +2922,7 @@ pm_def_node_create(
             .location = { .start = def_keyword->start, .end = end },
         },
         .name = name,
-        .name_loc = *name_loc,
+        .name_loc = PM_LOCATION_TOKEN_VALUE(name_loc),
         .receiver = receiver,
         .parameters = parameters,
         .body = body,
@@ -15627,13 +15627,12 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
              * methods to override the unary operators, we should ignore
              * the @ in the same way we do for symbols.
              */
-            pm_constant_id_t name_id = pm_parser_constant_id_token(parser, &name);
-            pm_location_t name_loc = { .start = name.start, .end = parse_operator_symbol_name(&name) };
+            pm_constant_id_t name_id = pm_parser_constant_id_location(parser, name.start, parse_operator_symbol_name(&name));
 
             return (pm_node_t *) pm_def_node_create(
                 parser,
                 name_id,
-                &name_loc,
+                &name,
                 receiver,
                 params,
                 statements,
