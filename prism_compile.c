@@ -1,5 +1,27 @@
 #include "prism.h"
 
+/******************************************************************************/
+/* These macros operate on pm_line_column_t structs as opposed to NODE*s.     */
+/******************************************************************************/
+
+#define PUSH_INSN(seq, location, insn) \
+  ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (int) (location).line, (int) (location).column, BIN(insn), 0))
+
+#define PUSH_INSN1(seq, location, insn, op1) \
+  ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (int) (location).line, (int) (location).column, BIN(insn), 1, (VALUE)(op1)))
+
+#define PUSH_INSNL(seq, location, insn, label) (PUSH_INSN1(seq, location, insn, label), LABEL_REF(label))
+
+#define PUSH_SEND_R(seq, location, id, argc, block, flag, keywords) \
+  ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_send(iseq, (int) (location).line, (int) (location).column, (id), (VALUE)(argc), (block), (VALUE)(flag), (keywords)))
+
+#define PUSH_SEND(seq, location, id, argc) \
+  PUSH_SEND_R((seq), location, (id), (argc), NULL, (VALUE)INT2FIX(0), NULL)
+
+/******************************************************************************/
+/* These are helper macros for the compiler.                                  */
+/******************************************************************************/
+
 #define OLD_ISEQ NEW_ISEQ
 #undef NEW_ISEQ
 
@@ -4117,7 +4139,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
     int lineno = (int) pm_newline_list_line_column(&parser->newline_list, node->location.start).line;
     NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
 
-    if (node->flags & PM_NODE_FLAG_NEWLINE && ISEQ_COMPILE_DATA(iseq)->last_line != lineno) {
+    if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_NEWLINE) && ISEQ_COMPILE_DATA(iseq)->last_line != lineno) {
         int event = RUBY_EVENT_LINE;
 
         ISEQ_COMPILE_DATA(iseq)->last_line = lineno;
@@ -4129,44 +4151,52 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
     switch (PM_NODE_TYPE(node)) {
       case PM_ALIAS_GLOBAL_VARIABLE_NODE: {
-        pm_alias_global_variable_node_t *alias_node = (pm_alias_global_variable_node_t *) node;
+        // alias $foo $bar
+        // ^^^^^^^^^^^^^^^
+        const pm_alias_global_variable_node_t *cast = (const pm_alias_global_variable_node_t *) node;
+        const pm_line_column_t location = pm_newline_list_line_column(&scope_node->parser->newline_list, cast->base.location.start);
 
-        ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+        PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+        PUSH_INSN1(ret, location, putobject, ID2SYM(parse_location_symbol(&cast->new_name->location, parser)));
+        PUSH_INSN1(ret, location, putobject, ID2SYM(parse_location_symbol(&cast->old_name->location, parser)));
 
-        ADD_INSN1(ret, &dummy_line_node, putobject, ID2SYM(parse_location_symbol(&alias_node->new_name->location, parser)));
-        ADD_INSN1(ret, &dummy_line_node, putobject, ID2SYM(parse_location_symbol(&alias_node->old_name->location, parser)));
+        PUSH_SEND(ret, location, id_core_set_variable_alias, INT2FIX(2));
+        if (popped) PUSH_INSN(ret, location, pop);
 
-        ADD_SEND(ret, &dummy_line_node, id_core_set_variable_alias, INT2FIX(2));
-
-        PM_POP_IF_POPPED;
         return;
       }
       case PM_ALIAS_METHOD_NODE: {
-        pm_alias_method_node_t *alias_node = (pm_alias_method_node_t *) node;
+        // alias foo bar
+        // ^^^^^^^^^^^^^
+        const pm_alias_method_node_t *cast = (const pm_alias_method_node_t *) node;
+        const pm_line_column_t location = pm_newline_list_line_column(&scope_node->parser->newline_list, cast->base.location.start);
 
-        ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-        ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
+        PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+        PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
+        PM_COMPILE_NOT_POPPED(cast->new_name);
+        PM_COMPILE_NOT_POPPED(cast->old_name);
 
-        PM_COMPILE_NOT_POPPED(alias_node->new_name);
-        PM_COMPILE_NOT_POPPED(alias_node->old_name);
-
-        ADD_SEND(ret, &dummy_line_node, id_core_set_method_alias, INT2FIX(3));
-
-        PM_POP_IF_POPPED;
+        PUSH_SEND(ret, location, id_core_set_method_alias, INT2FIX(3));
+        if (popped) PUSH_INSN(ret, location, pop);
 
         return;
       }
       case PM_AND_NODE: {
-        pm_and_node_t *and_node = (pm_and_node_t *) node;
+        // a and b
+        // ^^^^^^^
+        const pm_and_node_t *cast = (const pm_and_node_t *) node;
+        const pm_line_column_t location = pm_newline_list_line_column(&scope_node->parser->newline_list, cast->base.location.start);
 
-        LABEL *end_label = NEW_LABEL(lineno);
-        PM_COMPILE_NOT_POPPED(and_node->left);
-        PM_DUP_UNLESS_POPPED;
-        ADD_INSNL(ret, &dummy_line_node, branchunless, end_label);
+        LABEL *end_label = NEW_LABEL((long) location.line);
 
-        PM_POP_UNLESS_POPPED;
-        PM_COMPILE(and_node->right);
+        PM_COMPILE_NOT_POPPED(cast->left);
+        if (!popped) PUSH_INSN(ret, location, dup);
+        PUSH_INSNL(ret, location, branchunless, end_label);
+
+        if (!popped) PUSH_INSN(ret, location, pop);
+        PM_COMPILE(cast->right);
         ADD_LABEL(ret, end_label);
+
         return;
       }
       case PM_ARGUMENTS_NODE:
