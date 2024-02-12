@@ -90,6 +90,7 @@ hash_literal_key_p(VALUE k)
           case NODE_SYM:
           case NODE_LINE:
           case NODE_FILE:
+          case NODE_ENCODING:
             return true;
           default:
             return false;
@@ -193,6 +194,8 @@ node_cdhash_cmp(VALUE val, VALUE lit)
             return node_val->nd_loc.beg_pos.lineno != node_lit->nd_loc.beg_pos.lineno;
           case NODE_FILE:
             return rb_parser_string_hash_cmp(RNODE_FILE(node_val)->path, RNODE_FILE(node_lit)->path);
+          case NODE_ENCODING:
+            return RNODE_ENCODING(node_val)->enc != RNODE_ENCODING(node_lit)->enc;
           default:
             rb_bug("unexpected node: %s, %s", ruby_node_name(type_val), ruby_node_name(type_lit));
         }
@@ -15461,6 +15464,7 @@ nd_type_st_key_enable_p(NODE *node)
       case NODE_SYM:
       case NODE_LINE:
       case NODE_FILE:
+      case NODE_ENCODING:
         return true;
       default:
         return false;
