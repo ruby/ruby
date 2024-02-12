@@ -1587,6 +1587,33 @@ module RubyVM::RJIT
     # @param jit [RubyVM::RJIT::JITState]
     # @param ctx [RubyVM::RJIT::Context]
     # @param asm [RubyVM::RJIT::Assembler]
+    def opt_newarray_hash(jit, ctx, asm)
+      num = jit.operand(0) - 1
+
+      # Save the PC and SP because we may allocate
+      jit_prepare_routine_call(jit, ctx, asm)
+
+      fmt = ctx.stack_pop(1)
+      offset_magnitude = C.VALUE.size * num
+      values_opnd = ctx.sp_opnd(-offset_magnitude)
+      asm.lea(:rax, values_opnd)
+
+      asm.mov(C_ARGS[0], EC)
+      asm.mov(C_ARGS[1], num)
+      asm.mov(C_ARGS[2], :rax)
+      asm.mov(C_ARGS[3], fmt)
+      asm.call(C.rb_vm_opt_newarray_pack)
+
+      ctx.stack_pop(num)
+      stack_ret = ctx.stack_push(Type::Unknown)
+      asm.mov(stack_ret, C_RET)
+
+      KeepCompiling
+    end
+
+    # @param jit [RubyVM::RJIT::JITState]
+    # @param ctx [RubyVM::RJIT::Context]
+    # @param asm [RubyVM::RJIT::Assembler]
     def invokesuper(jit, ctx, asm)
       cd = C.rb_call_data.new(jit.operand(0))
       block = jit.operand(1)
