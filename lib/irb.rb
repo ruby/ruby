@@ -989,7 +989,7 @@ module IRB
         conf[:AT_EXIT].each{|hook| hook.call}
 
         context.io.save_history if save_history
-        Kernel.exit(0) if forced_exit
+        Kernel.exit if forced_exit
       end
     end
 

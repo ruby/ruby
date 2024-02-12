@@ -13,7 +13,7 @@ module IRB
       def execute(*)
         throw :IRB_EXIT, true
       rescue UncaughtThrowError
-        Kernel.exit(0)
+        Kernel.exit!
       end
     end
   end

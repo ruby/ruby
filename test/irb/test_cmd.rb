@@ -58,9 +58,7 @@ module TestIRB
         "irb_info",
         main: main
       )
-      # Because the main object is frozen, IRB would wrap a delegator around it
-      # Which's exit! method can't be overridden and would raise a warning
-      assert_match(/delegator does not forward private method #exit\!/, err)
+      assert_empty(err)
       assert_match(/RUBY_PLATFORM/, out)
     end
   end
