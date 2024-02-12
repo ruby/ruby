@@ -37,12 +37,21 @@
 /*
  * Parser String
  */
+enum rb_parser_string_coderange_type {
+    /** The object's coderange is unclear yet. */
+    RB_PARSER_ENC_CODERANGE_UNKNOWN  = 0,
+    RB_PARSER_ENC_CODERANGE_7BIT     = 1,
+    RB_PARSER_ENC_CODERANGE_VALID    = 2,
+    RB_PARSER_ENC_CODERANGE_BROKEN   = 3
+};
+
 typedef struct rb_parser_string {
+    enum rb_parser_string_coderange_type coderange;
     rb_encoding *enc;
     /* Length of the string, not including terminating NUL character. */
     long len;
     /* Pointer to the contents of the string. */
-    char ptr[FLEX_ARY_LEN];
+    char *ptr;
 } rb_parser_string_t;
 
 /*
@@ -605,7 +614,7 @@ typedef struct RNode_BACK_REF {
     long nd_nth;
 } rb_node_back_ref_t;
 
-/* RNode_MATCH, RNode_LIT, RNode_STR and RNode_XSTR should be same structure */
+/* RNode_MATCH and RNode_LIT should be same structure */
 typedef struct RNode_MATCH {
     NODE node;
 
@@ -673,17 +682,18 @@ typedef struct RNode_IMAGINARY {
     enum rb_numeric_type type;
 } rb_node_imaginary_t;
 
+/* RNode_STR and RNode_XSTR should be same structure */
 typedef struct RNode_STR {
     NODE node;
 
-    VALUE nd_lit;
+    struct rb_parser_string *string;
 } rb_node_str_t;
 
 /* RNode_DSTR, RNode_DXSTR and RNode_DSYM should be same structure */
 typedef struct RNode_DSTR {
     NODE node;
 
-    VALUE nd_lit;
+    struct rb_parser_string *string;
     union {
         long nd_alen;
         struct RNode *nd_end; /* Second dstr node has this structure. See also RNode_LIST */
@@ -694,13 +704,13 @@ typedef struct RNode_DSTR {
 typedef struct RNode_XSTR {
     NODE node;
 
-    VALUE nd_lit;
+    struct rb_parser_string *string;
 } rb_node_xstr_t;
 
 typedef struct RNode_DXSTR {
     NODE node;
 
-    VALUE nd_lit;
+    struct rb_parser_string *string;
     long nd_alen;
     struct RNode_LIST *nd_next;
 } rb_node_dxstr_t;
@@ -714,7 +724,7 @@ typedef struct RNode_EVSTR {
 typedef struct RNode_DREGX {
     NODE node;
 
-    VALUE nd_lit;
+    struct rb_parser_string *string;
     ID nd_cflag;
     struct RNode_LIST *nd_next;
 } rb_node_dregx_t;
@@ -950,7 +960,7 @@ typedef struct RNode_SYM {
 typedef struct RNode_DSYM {
     NODE node;
 
-    VALUE nd_lit;
+    struct rb_parser_string *string;
     long nd_alen;
     struct RNode_LIST *nd_next;
 } rb_node_dsym_t;
@@ -1329,6 +1339,7 @@ typedef struct rb_parser_config_struct {
     int (*enc_isalnum)(OnigCodePoint c, rb_encoding *enc);
     int (*enc_precise_mbclen)(const char *p, const char *e, rb_encoding *enc);
     int (*mbclen_charfound_p)(int len);
+    int (*mbclen_charfound_len)(int len);
     const char *(*enc_name)(rb_encoding *enc);
     char *(*enc_prev_char)(const char *s, const char *p, const char *e, rb_encoding *enc);
     rb_encoding* (*enc_get)(VALUE obj);

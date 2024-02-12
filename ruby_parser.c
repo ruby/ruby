@@ -166,6 +166,12 @@ mbclen_charfound_p(int len)
     return MBCLEN_CHARFOUND_P(len);
 }
 
+static int
+mbclen_charfound_len(int len)
+{
+    return MBCLEN_CHARFOUND_LEN(len);
+}
+
 static const char *
 enc_name(void *enc)
 {
@@ -598,6 +604,7 @@ static const rb_parser_config_t rb_global_parser_config = {
     .enc_isalnum = enc_isalnum,
     .enc_precise_mbclen = enc_precise_mbclen,
     .mbclen_charfound_p = mbclen_charfound_p,
+    .mbclen_charfound_len = mbclen_charfound_len,
     .enc_name = enc_name,
     .enc_prev_char = enc_prev_char,
     .enc_get = enc_get,
@@ -989,10 +996,31 @@ rb_node_imaginary_literal_val(const NODE *n)
 }
 
 VALUE
+rb_node_str_string_val(const NODE *node)
+{
+    rb_parser_string_t *str = RNODE_STR(node)->string;
+    return rb_str_new_parser_string(str);
+}
+
+VALUE
 rb_node_sym_string_val(const NODE *node)
 {
     rb_parser_string_t *str = RNODE_SYM(node)->string;
     return ID2SYM(rb_intern3(str->ptr, str->len, str->enc));
+}
+
+VALUE
+rb_node_dstr_string_val(const NODE *node)
+{
+    rb_parser_string_t *str = RNODE_DSTR(node)->string;
+    return str ? rb_str_new_parser_string(str) : Qnil;
+}
+
+VALUE
+rb_node_dregx_string_val(const NODE *node)
+{
+    rb_parser_string_t *str = RNODE_DREGX(node)->string;
+    return rb_str_new_parser_string(str);
 }
 
 VALUE
@@ -1017,21 +1045,40 @@ VALUE
 rb_node_const_decl_val(const NODE *node)
 {
     VALUE path;
-    if (RNODE_CDECL(node)->nd_vid) {
-        path = rb_id2str(RNODE_CDECL(node)->nd_vid);
+    switch (nd_type(node)) {
+      case NODE_CDECL:
+        if (RNODE_CDECL(node)->nd_vid) {
+            path = rb_id2str(RNODE_CDECL(node)->nd_vid);
+            goto end;
+        }
+        else {
+            node = RNODE_CDECL(node)->nd_else;
+        }
+        break;
+      case NODE_COLON2:
+        break;
+      case NODE_COLON3:
+        // ::Const
+        path = rb_str_new_cstr("::");
+        rb_str_append(path, rb_id2str(RNODE_COLON3(node)->nd_mid));
+        goto end;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+        UNREACHABLE_RETURN(0);
     }
-    else {
-        NODE *n = RNODE_CDECL(node)->nd_else;
-        path = rb_ary_new();
-        for (; n && nd_type_p(n, NODE_COLON2); n = RNODE_COLON2(n)->nd_head) {
-            rb_ary_push(path, rb_id2str(RNODE_COLON2(n)->nd_mid));
+
+    path = rb_ary_new();
+    if (node) {
+        for (; node && nd_type_p(node, NODE_COLON2); node = RNODE_COLON2(node)->nd_head) {
+            rb_ary_push(path, rb_id2str(RNODE_COLON2(node)->nd_mid));
         }
-        if (n && nd_type_p(n, NODE_CONST)) {
+        if (node && nd_type_p(node, NODE_CONST)) {
             // Const::Name
-            rb_ary_push(path, rb_id2str(RNODE_CONST(n)->nd_vid));
+            rb_ary_push(path, rb_id2str(RNODE_CONST(node)->nd_vid));
         }
-        else if (n && nd_type_p(n, NODE_COLON3)) {
+        else if (node && nd_type_p(node, NODE_COLON3)) {
             // ::Const::Name
+            rb_ary_push(path, rb_id2str(RNODE_COLON3(node)->nd_mid));
             rb_ary_push(path, rb_str_new(0, 0));
         }
         else {
@@ -1039,7 +1086,8 @@ rb_node_const_decl_val(const NODE *node)
             rb_ary_push(path, rb_str_new_cstr("..."));
         }
         path = rb_ary_join(rb_ary_reverse(path), rb_str_new_cstr("::"));
-        path = rb_fstring(path);
     }
+  end:
+    path = rb_fstring(path);
     return path;
 }

@@ -2960,7 +2960,7 @@ pub fn gen_branch_stub_hit_trampoline(ocb: &mut OutlinedCb) -> Option<CodePtr> {
 }
 
 /// Return registers to be pushed and popped on branch_stub_hit.
-fn caller_saved_temp_regs() -> impl Iterator<Item = &'static Reg> + DoubleEndedIterator {
+pub fn caller_saved_temp_regs() -> impl Iterator<Item = &'static Reg> + DoubleEndedIterator {
     let temp_regs = Assembler::get_temp_regs().iter();
     let len = temp_regs.len();
     // The return value gen_leave() leaves in C_RET_REG

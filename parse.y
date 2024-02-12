@@ -86,6 +86,7 @@ hash_literal_key_p(VALUE k)
           case NODE_FLOAT:
           case NODE_RATIONAL:
           case NODE_IMAGINARY:
+          case NODE_STR:
           case NODE_SYM:
           case NODE_LINE:
           case NODE_FILE:
@@ -149,14 +150,6 @@ node_cdhash_cmp(VALUE val, VALUE lit)
         return 0;
     }
 
-    /* Special case for __FILE__ and String */
-    if (OBJ_BUILTIN_TYPE(val) == T_NODE && nd_type(RNODE(val)) == NODE_FILE && RB_TYPE_P(lit, T_STRING)) {
-        return rb_str_hash_cmp(rb_node_file_path_val(RNODE(val)), lit);
-    }
-    if (OBJ_BUILTIN_TYPE(lit) == T_NODE && nd_type(RNODE(lit)) == NODE_FILE && RB_TYPE_P(val, T_STRING)) {
-        return rb_str_hash_cmp(rb_node_file_path_val(RNODE(lit)), val);
-    }
-
     if ((OBJ_BUILTIN_TYPE(val) == T_NODE) && (OBJ_BUILTIN_TYPE(lit) == T_NODE)) {
         NODE *node_val = RNODE(val);
         NODE *node_lit = RNODE(lit);
@@ -169,6 +162,14 @@ node_cdhash_cmp(VALUE val, VALUE lit)
         }
         if (type_lit == NODE_INTEGER && type_val == NODE_LINE) {
             return node_integer_line_cmp(node_lit, node_val);
+        }
+
+        /* Special case for String and __FILE__ */
+        if (type_val == NODE_STR && type_lit == NODE_FILE) {
+            return rb_parser_string_hash_cmp(RNODE_STR(node_val)->string, RNODE_FILE(node_lit)->path);
+        }
+        if (type_lit == NODE_STR && type_val == NODE_FILE) {
+            return rb_parser_string_hash_cmp(RNODE_STR(node_lit)->string, RNODE_FILE(node_val)->path);
         }
 
         if (type_val != type_lit) {
@@ -184,6 +185,8 @@ node_cdhash_cmp(VALUE val, VALUE lit)
             return node_rational_cmp(RNODE_RATIONAL(node_val), RNODE_RATIONAL(node_lit));
           case NODE_IMAGINARY:
             return node_imaginary_cmp(RNODE_IMAGINARY(node_val), RNODE_IMAGINARY(node_lit));
+          case NODE_STR:
+            return rb_parser_string_hash_cmp(RNODE_STR(node_val)->string, RNODE_STR(node_lit)->string);
           case NODE_SYM:
             return rb_parser_string_hash_cmp(RNODE_SYM(node_val)->string, RNODE_SYM(node_lit)->string);
           case NODE_LINE:
@@ -224,13 +227,15 @@ node_cdhash_hash(VALUE a)
           case NODE_IMAGINARY:
             val = rb_node_imaginary_literal_val(node);
             return rb_complex_hash(val);
+          case NODE_STR:
+            return rb_str_hash(rb_node_str_string_val(node));
           case NODE_SYM:
             return rb_node_sym_string_val(node);
           case NODE_LINE:
             /* Same with NODE_INTEGER FIXNUM case */
             return (st_index_t)node->nd_loc.beg_pos.lineno;
           case NODE_FILE:
-            /* Same with String in rb_iseq_cdhash_hash */
+            /* Same with NODE_STR */
             return rb_str_hash(rb_node_file_path_val(node));
           case NODE_ENCODING:
             return rb_node_encoding_val(node);
@@ -694,6 +699,8 @@ static void numparam_name(struct parser_params *p, ID id);
 
 #define intern_cstr(n,l,en) rb_intern3(n,l,en)
 
+#define STRING_NEW0() rb_parser_encoding_string_new(p,0,0,p->enc)
+
 #define STR_NEW(ptr,len) rb_enc_str_new((ptr),(len),p->enc)
 #define STR_NEW0() rb_enc_str_new(0,0,p->enc)
 #define STR_NEW2(ptr) rb_enc_str_new((ptr),strlen(ptr),p->enc)
@@ -1122,11 +1129,11 @@ static rb_node_integer_t * rb_node_integer_new(struct parser_params *p, char* va
 static rb_node_float_t * rb_node_float_new(struct parser_params *p, char* val, const YYLTYPE *loc);
 static rb_node_rational_t * rb_node_rational_new(struct parser_params *p, char* val, int base, int seen_point, const YYLTYPE *loc);
 static rb_node_imaginary_t * rb_node_imaginary_new(struct parser_params *p, char* val, int base, int seen_point, enum rb_numeric_type, const YYLTYPE *loc);
-static rb_node_str_t *rb_node_str_new(struct parser_params *p, VALUE nd_lit, const YYLTYPE *loc);
-static rb_node_dstr_t *rb_node_dstr_new0(struct parser_params *p, VALUE nd_lit, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
-static rb_node_dstr_t *rb_node_dstr_new(struct parser_params *p, VALUE nd_lit, const YYLTYPE *loc);
-static rb_node_xstr_t *rb_node_xstr_new(struct parser_params *p, VALUE nd_lit, const YYLTYPE *loc);
-static rb_node_dxstr_t *rb_node_dxstr_new(struct parser_params *p, VALUE nd_lit, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
+static rb_node_str_t *rb_node_str_new(struct parser_params *p, rb_parser_string_t *string, const YYLTYPE *loc);
+static rb_node_dstr_t *rb_node_dstr_new0(struct parser_params *p, rb_parser_string_t *string, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
+static rb_node_dstr_t *rb_node_dstr_new(struct parser_params *p, rb_parser_string_t *string, const YYLTYPE *loc);
+static rb_node_xstr_t *rb_node_xstr_new(struct parser_params *p, rb_parser_string_t *string, const YYLTYPE *loc);
+static rb_node_dxstr_t *rb_node_dxstr_new(struct parser_params *p, rb_parser_string_t *string, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
 static rb_node_evstr_t *rb_node_evstr_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_once_t *rb_node_once_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_args_t *rb_node_args_new(struct parser_params *p, const YYLTYPE *loc);
@@ -1158,7 +1165,7 @@ static rb_node_errinfo_t *rb_node_errinfo_new(struct parser_params *p, const YYL
 static rb_node_defined_t *rb_node_defined_new(struct parser_params *p, NODE *nd_head, const YYLTYPE *loc);
 static rb_node_postexe_t *rb_node_postexe_new(struct parser_params *p, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_sym_t *rb_node_sym_new(struct parser_params *p, VALUE str, const YYLTYPE *loc);
-static rb_node_dsym_t *rb_node_dsym_new(struct parser_params *p, VALUE nd_lit, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
+static rb_node_dsym_t *rb_node_dsym_new(struct parser_params *p, rb_parser_string_t *string, long nd_alen, NODE *nd_next, const YYLTYPE *loc);
 static rb_node_attrasgn_t *rb_node_attrasgn_new(struct parser_params *p, NODE *nd_recv, ID nd_mid, NODE *nd_args, const YYLTYPE *loc);
 static rb_node_lambda_t *rb_node_lambda_new(struct parser_params *p, rb_node_args_t *nd_args, NODE *nd_body, const YYLTYPE *loc);
 static rb_node_aryptn_t *rb_node_aryptn_new(struct parser_params *p, NODE *pre_args, NODE *rest_arg, NODE *post_args, const YYLTYPE *loc);
@@ -1492,9 +1499,9 @@ static rb_ast_id_table_t *local_tbl(struct parser_params*);
 
 static VALUE reg_compile(struct parser_params*, VALUE, int);
 static void reg_fragment_setenc(struct parser_params*, VALUE, int);
-static int reg_fragment_check(struct parser_params*, VALUE, int);
+static int reg_fragment_check(struct parser_params*, rb_parser_string_t*, int);
 
-static int literal_concat0(struct parser_params *p, VALUE head, VALUE tail);
+static int literal_concat0(struct parser_params *p, rb_parser_string_t *head, rb_parser_string_t *tail);
 static NODE *heredoc_dedent(struct parser_params*,NODE*);
 
 static void check_literal_when(struct parser_params *p, NODE *args, const YYLTYPE *loc);
@@ -2130,25 +2137,40 @@ get_nd_args(struct parser_params *p, NODE *node)
 }
 #endif
 
+#define PARSER_STRING_PTR(str) (str->ptr)
+#define PARSER_STRING_LEN(str) (str->len)
+#define STRING_SIZE(str) ((size_t)str->len + 1)
+#define STRING_TERM_LEN(str) (1)
+#define STRING_TERM_FILL(str) (str->ptr[str->len] = '\0')
+#define PARSER_STRING_RESIZE_CAPA_TERM(p,str,capacity,termlen) do {\
+    SIZED_REALLOC_N(str->ptr, char, (size_t)total + termlen, STRING_SIZE(str)); \
+    str->len = total; \
+} while (0)
+#define STRING_SET_LEN(str, n) do { \
+    (str)->len = (n); \
+} while (0)
+#define PARSER_STRING_GETMEM(str, ptrvar, lenvar) \
+    ((ptrvar) = str->ptr,                            \
+     (lenvar) = str->len)
+
 #ifndef RIPPER
 static rb_parser_string_t *
 rb_parser_string_new(rb_parser_t *p, const char *ptr, long len)
 {
-    size_t size;
     rb_parser_string_t *str;
 
     if (len < 0) {
         rb_bug("negative string size (or size too big): %ld", len);
     }
 
-    size = offsetof(rb_parser_string_t, ptr) + len + 1;
-    str = xcalloc(1, size);
+    str = xcalloc(1, sizeof(rb_parser_string_t));
+    str->ptr = xcalloc(len + 1, sizeof(char));
 
     if (ptr) {
-        memcpy(str->ptr, ptr, len);
+        memcpy(PARSER_STRING_PTR(str), ptr, len);
     }
-    str->len = len;
-    str->ptr[len] = '\0';
+    STRING_SET_LEN(str, len);
+    STRING_TERM_FILL(str);
     return str;
 }
 
@@ -2156,6 +2178,7 @@ static rb_parser_string_t *
 rb_parser_encoding_string_new(rb_parser_t *p, const char *ptr, long len, rb_encoding *enc)
 {
     rb_parser_string_t *str = rb_parser_string_new(p, ptr, len);
+    str->coderange = RB_PARSER_ENC_CODERANGE_UNKNOWN;
     str->enc = enc;
     return str;
 }
@@ -2164,10 +2187,18 @@ rb_parser_encoding_string_new(rb_parser_t *p, const char *ptr, long len, rb_enco
 static void
 rb_parser_string_free(rb_parser_t *p, rb_parser_string_t *str)
 {
+    if (!str) return;
+    xfree(PARSER_STRING_PTR(str));
     xfree(str);
 }
 
 #ifndef RIPPER
+static size_t
+rb_parser_str_capacity(rb_parser_string_t *str, const int termlen)
+{
+    return PARSER_STRING_LEN(str);
+}
+
 static char *
 rb_parser_string_end(rb_parser_string_t *str)
 {
@@ -2179,29 +2210,354 @@ rb_parser_string_set_encoding(rb_parser_string_t *str, rb_encoding *enc)
 {
     str->enc = enc;
 }
-
-long
-rb_parser_string_length(rb_parser_string_t *str)
-{
-    return str->len;
-}
-
-char *
-rb_parser_string_pointer(rb_parser_string_t *str)
-{
-    return str->ptr;
-}
 #endif
 
 static rb_encoding *
-rb_parser_string_encoding(rb_parser_string_t *str)
+rb_parser_str_get_encoding(rb_parser_string_t *str)
 {
     return str->enc;
 }
 
 #ifndef RIPPER
+static int
+PARSER_ENC_CODERANGE(rb_parser_string_t *str)
+{
+    return str->coderange;
+}
+
+static void
+PARSER_ENC_CODERANGE_SET(rb_parser_string_t *str, int coderange)
+{
+    str->coderange = coderange;
+}
+
+static void
+PARSER_ENCODING_CODERANGE_SET(rb_parser_string_t *str, rb_encoding *enc, enum rb_parser_string_coderange_type cr)
+{
+    rb_parser_string_set_encoding(str, enc);
+    PARSER_ENC_CODERANGE_SET(str, cr);
+}
+
+static void
+PARSER_ENCODING_CODERANGE_CLEAR(rb_parser_string_t *str)
+{
+    str->coderange = RB_PARSER_ENC_CODERANGE_UNKNOWN;
+}
+
+static bool
+PARSER_ENC_CODERANGE_CLEAN_P(int cr)
+{
+    return cr == RB_PARSER_ENC_CODERANGE_7BIT || cr == RB_PARSER_ENC_CODERANGE_VALID;
+}
+
+static const char *
+rb_parser_search_nonascii(const char *p, const char *e)
+{
+    const char *s = p;
+
+    for (; s < e; s++) {
+        if (*s & 0x80) return s;
+    }
+
+    return NULL;
+}
+
+static int
+rb_parser_coderange_scan(struct parser_params *p, const char *ptr, long len, rb_encoding *enc)
+{
+    const char *e = ptr + len;
+
+    if (enc == rb_ascii8bit_encoding()) {
+        /* enc is ASCII-8BIT.  ASCII-8BIT string never be broken. */
+        ptr = rb_parser_search_nonascii(ptr, e);
+        return ptr ? RB_PARSER_ENC_CODERANGE_VALID : RB_PARSER_ENC_CODERANGE_7BIT;
+    }
+
+    /* parser string encoding is always asciicompat */
+    ptr = rb_parser_search_nonascii(ptr, e);
+    if (!ptr) return RB_PARSER_ENC_CODERANGE_7BIT;
+    for (;;) {
+        int ret = rb_enc_precise_mbclen(ptr, e, enc);
+        if (!MBCLEN_CHARFOUND_P(ret)) return RB_PARSER_ENC_CODERANGE_BROKEN;
+        ptr += MBCLEN_CHARFOUND_LEN(ret);
+        if (ptr == e) break;
+        ptr = rb_parser_search_nonascii(ptr, e);
+        if (!ptr) break;
+    }
+
+    return RB_PARSER_ENC_CODERANGE_VALID;
+}
+
+static int
+rb_parser_enc_coderange_scan(struct parser_params *p, rb_parser_string_t *str, rb_encoding *enc)
+{
+    return rb_parser_coderange_scan(p, PARSER_STRING_PTR(str), PARSER_STRING_LEN(str), enc);
+}
+
+static int
+rb_parser_enc_str_coderange(struct parser_params *p, rb_parser_string_t *str)
+{
+    int cr = PARSER_ENC_CODERANGE(str);
+
+    if (cr == RB_PARSER_ENC_CODERANGE_UNKNOWN) {
+        cr = rb_parser_enc_coderange_scan(p, str, rb_parser_str_get_encoding(str));
+        PARSER_ENC_CODERANGE_SET(str, cr);
+    }
+
+    return cr;
+}
+
+static bool
+rb_parser_is_ascii_string(struct parser_params *p, rb_parser_string_t *str)
+{
+    return rb_parser_enc_str_coderange(p, str) == RB_PARSER_ENC_CODERANGE_7BIT;
+}
+
+static int
+rb_parser_enc_str_asciionly_p(struct parser_params *p, rb_parser_string_t *str)
+{
+    rb_encoding *enc = rb_parser_str_get_encoding(str);
+
+    if (!rb_enc_asciicompat(enc))
+        return FALSE;
+    else if (rb_parser_is_ascii_string(p, str))
+        return TRUE;
+    return FALSE;
+}
+
+static rb_encoding *
+rb_parser_enc_compatible_latter(struct parser_params *p, rb_parser_string_t *str1, rb_parser_string_t *str2, rb_encoding *enc1, rb_encoding *enc2)
+{
+    int cr1, cr2;
+
+    if (PARSER_STRING_LEN(str2) == 0)
+        return enc1;
+    if (PARSER_STRING_LEN(str1) == 0)
+        return (rb_enc_asciicompat(enc1) && rb_parser_enc_str_asciionly_p(p, str2)) ? enc1 : enc2;
+    if (!rb_enc_asciicompat(enc1) || !rb_enc_asciicompat(enc2)) {
+        return 0;
+    }
+
+    cr1 = rb_parser_enc_str_coderange(p, str1);
+    cr2 = rb_parser_enc_str_coderange(p, str2);
+
+    if (cr1 != cr2) {
+        if (cr1 == RB_PARSER_ENC_CODERANGE_7BIT) return enc2;
+        if (cr2 == RB_PARSER_ENC_CODERANGE_7BIT) return enc1;
+    }
+
+    if (cr2 == RB_PARSER_ENC_CODERANGE_7BIT) {
+        return enc1;
+    }
+
+    if (cr1 == RB_PARSER_ENC_CODERANGE_7BIT) {
+        return enc2;
+    }
+
+    return 0;
+}
+
+static rb_encoding *
+rb_parser_enc_compatible(struct parser_params *p, rb_parser_string_t *str1, rb_parser_string_t *str2)
+{
+    rb_encoding *enc1 = rb_parser_str_get_encoding(str1);
+    rb_encoding *enc2 = rb_parser_str_get_encoding(str2);
+
+    if (enc1 == NULL || enc2 == NULL)
+        return 0;
+
+    if (enc1 == enc2) {
+        return enc1;
+    }
+
+    return rb_parser_enc_compatible_latter(p, str1, str2, enc1, enc2);
+}
+
+static void
+rb_parser_str_modify(rb_parser_string_t *str)
+{
+    PARSER_ENCODING_CODERANGE_CLEAR(str);
+}
+
+static void
+rb_parser_str_set_len(struct parser_params *p, rb_parser_string_t *str, long len)
+{
+    long capa;
+    const int termlen = STRING_TERM_LEN(str);
+
+    if (len > (capa = (long)(rb_parser_str_capacity(str, termlen))) || len < 0) {
+        rb_bug("probable buffer overflow: %ld for %ld", len, capa);
+    }
+
+    int cr = PARSER_ENC_CODERANGE(str);
+    if (cr == RB_PARSER_ENC_CODERANGE_UNKNOWN) {
+        /* Leave unknown. */
+    }
+    else if (len > PARSER_STRING_LEN(str)) {
+        PARSER_ENC_CODERANGE_SET(str, RB_PARSER_ENC_CODERANGE_UNKNOWN);
+    }
+    else if (len < PARSER_STRING_LEN(str)) {
+        if (cr != RB_PARSER_ENC_CODERANGE_7BIT) {
+            /* ASCII-only string is keeping after truncated.  Valid
+             * and broken may be invalid or valid, leave unknown. */
+            PARSER_ENC_CODERANGE_SET(str, RB_PARSER_ENC_CODERANGE_UNKNOWN);
+        }
+    }
+
+    STRING_SET_LEN(str, len);
+    STRING_TERM_FILL(str);
+}
+
+static rb_parser_string_t *
+rb_parser_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const char *ptr, long len)
+{
+    rb_parser_str_modify(str);
+    if (len == 0) return 0;
+
+    long total, olen, off = -1;
+    char *sptr;
+    const int termlen = STRING_TERM_LEN(str);
+
+    PARSER_STRING_GETMEM(str, sptr, olen);
+    if (ptr >= sptr && ptr <= sptr + olen) {
+        off = ptr - sptr;
+    }
+
+    if (olen > LONG_MAX - len) {
+        compile_error(p, "string sizes too big");
+        return 0;
+    }
+    total = olen + len;
+    PARSER_STRING_RESIZE_CAPA_TERM(p, str, total, termlen);
+    sptr = PARSER_STRING_PTR(str);
+    if (off != -1) {
+        ptr = sptr + off;
+    }
+    memcpy(sptr + olen, ptr, len);
+    STRING_SET_LEN(str, total);
+    STRING_TERM_FILL(str);
+
+    return str;
+}
+
+static rb_parser_string_t *
+rb_parser_enc_cr_str_buf_cat(struct parser_params *p, rb_parser_string_t *str, const char *ptr, long len,
+    rb_encoding *ptr_enc, int ptr_cr, int *ptr_cr_ret)
+{
+    int str_cr, res_cr;
+    rb_encoding *str_enc, *res_enc;
+
+    str_enc = rb_parser_str_get_encoding(str);
+    str_cr = PARSER_STRING_LEN(str) ? PARSER_ENC_CODERANGE(str) : RB_PARSER_ENC_CODERANGE_7BIT;
+
+    if (str_enc == ptr_enc) {
+        if (str_cr != RB_PARSER_ENC_CODERANGE_UNKNOWN && ptr_cr == RB_PARSER_ENC_CODERANGE_UNKNOWN) {
+            ptr_cr = rb_parser_coderange_scan(p, ptr, len, ptr_enc);
+        }
+    }
+    else {
+        /* parser string encoding is always asciicompat */
+        if (ptr_cr == RB_PARSER_ENC_CODERANGE_UNKNOWN) {
+            ptr_cr = rb_parser_coderange_scan(p, ptr, len, ptr_enc);
+        }
+        if (str_cr == RB_PARSER_ENC_CODERANGE_UNKNOWN) {
+            if (str_enc == rb_ascii8bit_encoding() || ptr_cr != RB_PARSER_ENC_CODERANGE_7BIT) {
+                str_cr = rb_parser_enc_str_coderange(p, str);
+            }
+        }
+    }
+    if (ptr_cr_ret)
+        *ptr_cr_ret = ptr_cr;
+
+    if (str_enc != ptr_enc &&
+        str_cr != RB_PARSER_ENC_CODERANGE_7BIT &&
+        ptr_cr != RB_PARSER_ENC_CODERANGE_7BIT) {
+        goto incompatible;
+    }
+
+    if (str_cr == RB_PARSER_ENC_CODERANGE_UNKNOWN) {
+        res_enc = str_enc;
+        res_cr = RB_PARSER_ENC_CODERANGE_UNKNOWN;
+    }
+    else if (str_cr == RB_PARSER_ENC_CODERANGE_7BIT) {
+        if (ptr_cr == RB_PARSER_ENC_CODERANGE_7BIT) {
+            res_enc = str_enc;
+            res_cr = RB_PARSER_ENC_CODERANGE_7BIT;
+        }
+        else {
+            res_enc = ptr_enc;
+            res_cr = ptr_cr;
+        }
+    }
+    else if (str_cr == RB_PARSER_ENC_CODERANGE_VALID) {
+        res_enc = str_enc;
+        if (PARSER_ENC_CODERANGE_CLEAN_P(ptr_cr))
+            res_cr = str_cr;
+        else
+            res_cr = ptr_cr;
+    }
+    else { /* str_cr == RB_PARSER_ENC_CODERANGE_BROKEN */
+        res_enc = str_enc;
+        res_cr = str_cr;
+        if (0 < len) res_cr = RB_PARSER_ENC_CODERANGE_UNKNOWN;
+    }
+
+    if (len < 0) {
+        compile_error(p, "negative string size (or size too big)");
+    }
+    rb_parser_str_buf_cat(p, str, ptr, len);
+    PARSER_ENCODING_CODERANGE_SET(str, res_enc, res_cr);
+    return str;
+
+  incompatible:
+    compile_error(p, "incompatible character encodings: %s and %s",
+                  rb_enc_name(str_enc), rb_enc_name(ptr_enc));
+    UNREACHABLE_RETURN(0);
+
+}
+
+static rb_parser_string_t *
+rb_parser_str_buf_append(struct parser_params *p, rb_parser_string_t *str, rb_parser_string_t *str2)
+{
+    int str2_cr = rb_parser_enc_str_coderange(p, str2);
+
+    rb_parser_enc_cr_str_buf_cat(p, str, PARSER_STRING_PTR(str2), PARSER_STRING_LEN(str2),
+        rb_parser_str_get_encoding(str2), str2_cr, &str2_cr);
+
+    PARSER_ENC_CODERANGE_SET(str2, str2_cr);
+
+    return str;
+}
+
+static rb_parser_string_t *
+rb_parser_str_resize(struct parser_params *p, rb_parser_string_t *str, long len)
+{
+    if (len < 0) {
+        rb_bug("negative string size (or size too big)");
+    }
+
+    long slen = PARSER_STRING_LEN(str);
+
+    if (slen > len && PARSER_ENC_CODERANGE(str) != RB_PARSER_ENC_CODERANGE_7BIT) {
+        PARSER_ENCODING_CODERANGE_CLEAR(str);
+    }
+
+    {
+        long capa;
+        const int termlen = STRING_TERM_LEN(str);
+
+        if ((capa = slen) < len) {
+            SIZED_REALLOC_N(str->ptr, char, (size_t)len + termlen, STRING_SIZE(str));
+        }
+        else if (len == slen) return str;
+        STRING_SET_LEN(str, len);
+        STRING_TERM_FILL(str);
+    }
+    return str;
+}
+
 #ifndef UNIVERSAL_PARSER
-# define PARSER_STRING_GETMEM(str, ptrvar, lenvar, encvar) \
+# define PARSER_ENC_STRING_GETMEM(str, ptrvar, lenvar, encvar) \
     ((ptrvar) = str->ptr,                            \
      (lenvar) = str->len,                            \
      (encvar) = str->enc)
@@ -2213,8 +2569,8 @@ rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2)
     const char *ptr1, *ptr2;
     rb_encoding *enc1, *enc2;
 
-    PARSER_STRING_GETMEM(str1, ptr1, len1, enc1);
-    PARSER_STRING_GETMEM(str2, ptr2, len2, enc2);
+    PARSER_ENC_STRING_GETMEM(str1, ptr1, len1, enc1);
+    PARSER_ENC_STRING_GETMEM(str2, ptr2, len2, enc2);
 
     return (len1 != len2 ||
             enc1 != enc2 ||
@@ -6001,8 +6357,7 @@ strings		: string
                     /*%%%*/
                         NODE *node = $1;
                         if (!node) {
-                            node = NEW_STR(STR_NEW0(), &@$);
-                            RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_STR(node)->nd_lit);
+                            node = NEW_STR(STRING_NEW0(), &@$);
                         }
                         else {
                             node = evstr2dstr(p, node);
@@ -6238,7 +6593,7 @@ regexp_contents: /* none */
                               case NODE_DSTR:
                                 break;
                               default:
-                                head = list_append(p, NEW_DSTR(Qnil, &@$), head);
+                                head = list_append(p, NEW_DSTR(0, &@$), head);
                                 break;
                             }
                             $$ = list_append(p, head, tail);
@@ -7140,8 +7495,7 @@ static enum yytokentype here_document(struct parser_params*,rb_strterm_heredoc_t
 }
 # define set_yylval_str(x) \
 do { \
-  set_yylval_node(NEW_STR(x, &_cur_loc)); \
-  RB_OBJ_WRITTEN(p->ast, Qnil, x); \
+  set_yylval_node(NEW_STR(rb_str_to_parser_string(p, x), &_cur_loc)); \
 } while(0)
 # define set_yylval_num(x) (yylval.num = (x))
 # define set_yylval_id(x)  (yylval.id = (x))
@@ -7460,7 +7814,7 @@ ruby_show_error_line(struct parser_params *p, VALUE errbuf, const YYLTYPE *yyllo
     const char *pre = "", *post = "", *pend;
     const char *code = "", *caret = "";
     const char *lim;
-    const char *const pbeg = rb_parser_string_pointer(str);
+    const char *const pbeg = PARSER_STRING_PTR(str);
     char *buf;
     long len;
     int i;
@@ -7487,11 +7841,11 @@ ruby_show_error_line(struct parser_params *p, VALUE errbuf, const YYLTYPE *yyllo
     len = ptr_end - ptr;
     if (len > 4) {
         if (ptr > pbeg) {
-            ptr = rb_enc_prev_char(pbeg, ptr, pt, rb_parser_string_encoding(str));
+            ptr = rb_enc_prev_char(pbeg, ptr, pt, rb_parser_str_get_encoding(str));
             if (ptr > pbeg) pre = "...";
         }
         if (ptr_end < pend) {
-            ptr_end = rb_enc_prev_char(pt, ptr_end, pend, rb_parser_string_encoding(str));
+            ptr_end = rb_enc_prev_char(pt, ptr_end, pend, rb_parser_str_get_encoding(str));
             if (ptr_end < pend) post = "...";
         }
     }
@@ -7510,7 +7864,7 @@ ruby_show_error_line(struct parser_params *p, VALUE errbuf, const YYLTYPE *yyllo
             rb_str_cat_cstr(mesg, "\n");
     }
     else {
-        mesg = rb_enc_str_new(0, 0, rb_parser_string_encoding(str));
+        mesg = rb_enc_str_new(0, 0, rb_parser_str_get_encoding(str));
     }
     if (!errbuf && rb_stderr_tty_p()) {
 #define CSI_BEGIN "\033["
@@ -8004,8 +8358,8 @@ add_delayed_token(struct parser_params *p, const char *tok, const char *end, int
 static void
 set_lastline(struct parser_params *p, rb_parser_string_t *str)
 {
-    p->lex.pbeg = p->lex.pcur = rb_parser_string_pointer(str);
-    p->lex.pend = p->lex.pcur + rb_parser_string_length(str);
+    p->lex.pbeg = p->lex.pcur = PARSER_STRING_PTR(str);
+    p->lex.pend = p->lex.pcur + PARSER_STRING_LEN(str);
     p->lex.lastline = str;
 }
 
@@ -9104,8 +9458,8 @@ heredoc_restore(struct parser_params *p, rb_strterm_heredoc_t *here)
     p->lex.strterm = 0;
     line = here->lastline;
     p->lex.lastline = line;
-    p->lex.pbeg = rb_parser_string_pointer(line);
-    p->lex.pend = p->lex.pbeg + rb_parser_string_length(line);
+    p->lex.pbeg = PARSER_STRING_PTR(line);
+    p->lex.pend = p->lex.pbeg + PARSER_STRING_LEN(line);
     p->lex.pcur = p->lex.pbeg + here->offset + here->length + here->quote;
     p->lex.ptok = p->lex.pbeg + here->offset - here->quote;
     p->heredoc_end = p->ruby_sourceline;
@@ -9116,13 +9470,10 @@ heredoc_restore(struct parser_params *p, rb_strterm_heredoc_t *here)
 }
 
 static int
-dedent_string(struct parser_params *p, VALUE string, int width)
+dedent_string_column(const char *str, long len, int width)
 {
-    char *str;
-    long len;
     int i, col = 0;
 
-    RSTRING_GETMEM(string, str, len);
     for (i = 0; i < len && col < width; i++) {
         if (str[i] == ' ') {
             col++;
@@ -9136,23 +9487,39 @@ dedent_string(struct parser_params *p, VALUE string, int width)
             break;
         }
     }
-    if (!i) return 0;
-    rb_str_modify(string);
-    str = RSTRING_PTR(string);
-    if (RSTRING_LEN(string) != len)
-        rb_fatal("literal string changed: %+"PRIsVALUE, string);
-    MEMMOVE(str, str + i, char, len - i);
-    rb_str_set_len(string, len - i);
+
     return i;
 }
 
 #ifndef RIPPER
+static int
+dedent_string(struct parser_params *p, rb_parser_string_t *string, int width)
+{
+    char *str;
+    long len;
+    int i;
+
+    len = PARSER_STRING_LEN(string);
+    str = PARSER_STRING_PTR(string);
+
+    i = dedent_string_column(str, len, width);
+    if (!i) return 0;
+
+    rb_parser_str_modify(string);
+    str = PARSER_STRING_PTR(string);
+    if (PARSER_STRING_LEN(string) != len)
+        rb_fatal("literal string changed: %s", PARSER_STRING_PTR(string));
+    MEMMOVE(str, str + i, char, len - i);
+    rb_parser_str_set_len(p, string, len - i);
+    return i;
+}
+
 static NODE *
 heredoc_dedent(struct parser_params *p, NODE *root)
 {
     NODE *node, *str_node, *prev_node;
     int indent = p->heredoc_indent;
-    VALUE prev_lit = 0;
+    rb_parser_string_t *prev_lit = 0;
 
     if (indent <= 0) return root;
     p->heredoc_indent = 0;
@@ -9162,7 +9529,7 @@ heredoc_dedent(struct parser_params *p, NODE *root)
     if (nd_type_p(root, NODE_LIST)) str_node = RNODE_LIST(root)->nd_head;
 
     while (str_node) {
-        VALUE lit = RNODE_LIT(str_node)->nd_lit;
+        rb_parser_string_t *lit = RNODE_STR(str_node)->string;
         if (nd_fl_newline(str_node)) {
             dedent_string(p, lit, indent);
         }
@@ -9359,7 +9726,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
     rb_encoding *base_enc = 0;
     int bol;
 
-    eos = rb_parser_string_pointer(here->lastline) + here->offset;
+    eos = PARSER_STRING_PTR(here->lastline) + here->offset;
     len = here->length;
     indent = (func = here->func) & STR_FUNC_INDENT;
 
@@ -9415,7 +9782,7 @@ here_document(struct parser_params *p, rb_strterm_heredoc_t *here)
 
     if (!(func & STR_FUNC_EXPAND)) {
         do {
-            ptr = rb_parser_string_pointer(p->lex.lastline);
+            ptr = PARSER_STRING_PTR(p->lex.lastline);
             ptr_end = p->lex.pend;
             if (ptr_end > ptr) {
                 switch (ptr_end[-1]) {
@@ -9979,7 +10346,7 @@ parser_prepare(struct parser_params *p)
         return;
     }
     pushback(p, c);
-    p->enc = rb_parser_string_encoding(p->lex.lastline);
+    p->enc = rb_parser_str_get_encoding(p->lex.lastline);
 }
 
 #ifndef RIPPER
@@ -12252,20 +12619,20 @@ rb_node_imaginary_new(struct parser_params *p, char* val, int base, int seen_poi
 }
 
 static rb_node_str_t *
-rb_node_str_new(struct parser_params *p, VALUE nd_lit, const YYLTYPE *loc)
+rb_node_str_new(struct parser_params *p, rb_parser_string_t *string, const YYLTYPE *loc)
 {
     rb_node_str_t *n = NODE_NEWNODE(NODE_STR, rb_node_str_t, loc);
-    n->nd_lit = nd_lit;
+    n->string = string;
 
     return n;
 }
 
 /* TODO; Use union for NODE_DSTR2 */
 static rb_node_dstr_t *
-rb_node_dstr_new0(struct parser_params *p, VALUE nd_lit, long nd_alen, NODE *nd_next, const YYLTYPE *loc)
+rb_node_dstr_new0(struct parser_params *p, rb_parser_string_t *string, long nd_alen, NODE *nd_next, const YYLTYPE *loc)
 {
     rb_node_dstr_t *n = NODE_NEWNODE(NODE_DSTR, rb_node_dstr_t, loc);
-    n->nd_lit = nd_lit;
+    n->string = string;
     n->as.nd_alen = nd_alen;
     n->nd_next = (rb_node_list_t *)nd_next;
 
@@ -12273,25 +12640,25 @@ rb_node_dstr_new0(struct parser_params *p, VALUE nd_lit, long nd_alen, NODE *nd_
 }
 
 static rb_node_dstr_t *
-rb_node_dstr_new(struct parser_params *p, VALUE nd_lit, const YYLTYPE *loc)
+rb_node_dstr_new(struct parser_params *p, rb_parser_string_t *string, const YYLTYPE *loc)
 {
-    return rb_node_dstr_new0(p, nd_lit, 1, 0, loc);
+    return rb_node_dstr_new0(p, string, 1, 0, loc);
 }
 
 static rb_node_xstr_t *
-rb_node_xstr_new(struct parser_params *p, VALUE nd_lit, const YYLTYPE *loc)
+rb_node_xstr_new(struct parser_params *p, rb_parser_string_t *string, const YYLTYPE *loc)
 {
     rb_node_xstr_t *n = NODE_NEWNODE(NODE_XSTR, rb_node_xstr_t, loc);
-    n->nd_lit = nd_lit;
+    n->string = string;
 
     return n;
 }
 
 static rb_node_dxstr_t *
-rb_node_dxstr_new(struct parser_params *p, VALUE nd_lit, long nd_alen, NODE *nd_next, const YYLTYPE *loc)
+rb_node_dxstr_new(struct parser_params *p, rb_parser_string_t *string, long nd_alen, NODE *nd_next, const YYLTYPE *loc)
 {
     rb_node_dxstr_t *n = NODE_NEWNODE(NODE_DXSTR, rb_node_dxstr_t, loc);
-    n->nd_lit = nd_lit;
+    n->string = string;
     n->nd_alen = nd_alen;
     n->nd_next = (rb_node_list_t *)nd_next;
 
@@ -12308,10 +12675,10 @@ rb_node_sym_new(struct parser_params *p, VALUE str, const YYLTYPE *loc)
 }
 
 static rb_node_dsym_t *
-rb_node_dsym_new(struct parser_params *p, VALUE nd_lit, long nd_alen, NODE *nd_next, const YYLTYPE *loc)
+rb_node_dsym_new(struct parser_params *p, rb_parser_string_t *string, long nd_alen, NODE *nd_next, const YYLTYPE *loc)
 {
     rb_node_dsym_t *n = NODE_NEWNODE(NODE_DSYM, rb_node_dsym_t, loc);
-    n->nd_lit = nd_lit;
+    n->string = string;
     n->nd_alen = nd_alen;
     n->nd_next = (rb_node_list_t *)nd_next;
 
@@ -12854,31 +13221,31 @@ list_concat(NODE *head, NODE *tail)
 }
 
 static int
-literal_concat0(struct parser_params *p, VALUE head, VALUE tail)
+literal_concat0(struct parser_params *p, rb_parser_string_t *head, rb_parser_string_t *tail)
 {
-    if (NIL_P(tail)) return 1;
-    if (!rb_enc_compatible(head, tail)) {
+    if (!tail) return 1;
+    if (!rb_parser_enc_compatible(p, head, tail)) {
         compile_error(p, "string literal encodings differ (%s / %s)",
-                      rb_enc_name(rb_enc_get(head)),
-                      rb_enc_name(rb_enc_get(tail)));
-        rb_str_resize(head, 0);
-        rb_str_resize(tail, 0);
+                      rb_enc_name(rb_parser_str_get_encoding(head)),
+                      rb_enc_name(rb_parser_str_get_encoding(tail)));
+        rb_parser_str_resize(p, head, 0);
+        rb_parser_str_resize(p, tail, 0);
         return 0;
     }
-    rb_str_buf_append(head, tail);
+    rb_parser_str_buf_append(p, head, tail);
     return 1;
 }
 
-static VALUE
+static rb_parser_string_t *
 string_literal_head(struct parser_params *p, enum node_type htype, NODE *head)
 {
-    if (htype != NODE_DSTR) return Qfalse;
+    if (htype != NODE_DSTR) return false;
     if (RNODE_DSTR(head)->nd_next) {
         head = RNODE_LIST(RNODE_LIST(RNODE_DSTR(head)->nd_next)->as.nd_end)->nd_head;
-        if (!head || !nd_type_p(head, NODE_STR)) return Qfalse;
+        if (!head || !nd_type_p(head, NODE_STR)) return false;
     }
-    const VALUE lit = RNODE_DSTR(head)->nd_lit;
-    ASSUME(lit != Qfalse);
+    rb_parser_string_t *lit = RNODE_DSTR(head)->string;
+    ASSUME(lit != false);
     return lit;
 }
 
@@ -12887,7 +13254,7 @@ static NODE *
 literal_concat(struct parser_params *p, NODE *head, NODE *tail, const YYLTYPE *loc)
 {
     enum node_type htype;
-    VALUE lit;
+    rb_parser_string_t *lit;
 
     if (!head) return tail;
     if (!tail) return head;
@@ -12909,14 +13276,14 @@ literal_concat(struct parser_params *p, NODE *head, NODE *tail, const YYLTYPE *l
     }
     switch (nd_type(tail)) {
       case NODE_STR:
-        if ((lit = string_literal_head(p, htype, head)) != Qfalse) {
+        if ((lit = string_literal_head(p, htype, head)) != false) {
             htype = NODE_STR;
         }
         else {
-            lit = RNODE_DSTR(head)->nd_lit;
+            lit = RNODE_DSTR(head)->string;
         }
         if (htype == NODE_STR) {
-            if (!literal_concat0(p, lit, RNODE_STR(tail)->nd_lit)) {
+            if (!literal_concat0(p, lit, RNODE_STR(tail)->string)) {
               error:
                 rb_discard_node(p, head);
                 rb_discard_node(p, tail);
@@ -12931,13 +13298,15 @@ literal_concat(struct parser_params *p, NODE *head, NODE *tail, const YYLTYPE *l
 
       case NODE_DSTR:
         if (htype == NODE_STR) {
-            if (!literal_concat0(p, RNODE_STR(head)->nd_lit, RNODE_DSTR(tail)->nd_lit))
+            if (!literal_concat0(p, RNODE_STR(head)->string, RNODE_DSTR(tail)->string))
                 goto error;
-            RNODE_DSTR(tail)->nd_lit = RNODE_STR(head)->nd_lit;
+            rb_parser_string_free(p, RNODE_DSTR(tail)->string);
+            RNODE_DSTR(tail)->string = RNODE_STR(head)->string;
+            RNODE_STR(head)->string = NULL;
             rb_discard_node(p, head);
             head = tail;
         }
-        else if (NIL_P(RNODE_DSTR(tail)->nd_lit)) {
+        else if (!RNODE_DSTR(tail)->string) {
           append:
             RNODE_DSTR(head)->as.nd_alen += RNODE_DSTR(tail)->as.nd_alen - 1;
             if (!RNODE_DSTR(head)->nd_next) {
@@ -12949,14 +13318,16 @@ literal_concat(struct parser_params *p, NODE *head, NODE *tail, const YYLTYPE *l
             }
             rb_discard_node(p, tail);
         }
-        else if ((lit = string_literal_head(p, htype, head)) != Qfalse) {
-            if (!literal_concat0(p, lit, RNODE_DSTR(tail)->nd_lit))
+        else if ((lit = string_literal_head(p, htype, head)) != false) {
+            if (!literal_concat0(p, lit, RNODE_DSTR(tail)->string))
                 goto error;
-            RNODE_DSTR(tail)->nd_lit = Qnil;
+            rb_parser_string_free(p, RNODE_DSTR(tail)->string);
+            RNODE_DSTR(tail)->string = 0;
             goto append;
         }
         else {
-            list_concat(head, NEW_LIST2(NEW_STR(RNODE_DSTR(tail)->nd_lit, loc), RNODE_DSTR(tail)->as.nd_alen, (NODE *)RNODE_DSTR(tail)->nd_next, loc));
+            list_concat(head, NEW_LIST2(NEW_STR(RNODE_DSTR(tail)->string, loc), RNODE_DSTR(tail)->as.nd_alen, (NODE *)RNODE_DSTR(tail)->nd_next, loc));
+            RNODE_DSTR(tail)->string = 0;
         }
         break;
 
@@ -12985,10 +13356,10 @@ str2dstr(struct parser_params *p, NODE *node)
 {
     NODE *new_node = (NODE *)NODE_NEW_INTERNAL(NODE_DSTR, rb_node_dstr_t);
     nd_copy_flag(new_node, node);
-    RNODE_DSTR(new_node)->nd_lit = RNODE_STR(node)->nd_lit;
+    RNODE_DSTR(new_node)->string = RNODE_STR(node)->string;
     RNODE_DSTR(new_node)->as.nd_alen = 0;
     RNODE_DSTR(new_node)->nd_next = 0;
-    RNODE_STR(node)->nd_lit = 0;
+    RNODE_STR(node)->string = 0;
 
     return new_node;
 }
@@ -13023,9 +13394,7 @@ new_evstr(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 static NODE *
 new_dstr(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 {
-    VALUE lit = STR_NEW0();
-    NODE *dstr = NEW_DSTR(lit, loc);
-    RB_OBJ_WRITTEN(p->ast, Qnil, lit);
+    NODE *dstr = NEW_DSTR(STRING_NEW0(), loc);
     return list_append(p, dstr, node);
 }
 
@@ -13328,7 +13697,7 @@ symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol)
         nd_set_type(symbol, NODE_DSYM);
         break;
       case NODE_STR:
-        symbol = NEW_SYM(RNODE_LIT(symbol)->nd_lit, &RNODE(symbol)->nd_loc);
+        symbol = NEW_SYM(rb_node_str_string_val(symbol), &RNODE(symbol)->nd_loc);
         break;
       default:
         compile_error(p, "unexpected node as symbol: %s", parser_node_name(type));
@@ -13341,7 +13710,6 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
 {
     struct RNode_LIST *list;
     NODE *prev;
-    VALUE lit;
 
     if (!node) {
         node = NEW_LIT(reg_compile(p, STR_NEW0(), options), loc);
@@ -13351,33 +13719,30 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
     switch (nd_type(node)) {
       case NODE_STR:
         {
-            VALUE src = RNODE_STR(node)->nd_lit;
-            nd_set_type(node, NODE_LIT);
-            nd_set_loc(node, loc);
-            RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(node)->nd_lit = reg_compile(p, src, options));
+            VALUE src = rb_node_str_string_val(node);
+            node = NEW_LIT(reg_compile(p, src, options), loc);
+            RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_LIT(node)->nd_lit);
         }
         break;
       default:
-        lit = STR_NEW0();
-        node = NEW_DSTR0(lit, 1, NEW_LIST(node, loc), loc);
-        RB_OBJ_WRITTEN(p->ast, Qnil, lit);
+        node = NEW_DSTR0(STRING_NEW0(), 1, NEW_LIST(node, loc), loc);
         /* fall through */
       case NODE_DSTR:
         nd_set_type(node, NODE_DREGX);
         nd_set_loc(node, loc);
         RNODE_DREGX(node)->nd_cflag = options & RE_OPTION_MASK;
-        if (!NIL_P(RNODE_DREGX(node)->nd_lit)) reg_fragment_check(p, RNODE_DREGX(node)->nd_lit, options);
+        if (RNODE_DREGX(node)->string) reg_fragment_check(p, RNODE_DREGX(node)->string, options);
         for (list = RNODE_DREGX(prev = node)->nd_next; list; list = RNODE_LIST(list->nd_next)) {
             NODE *frag = list->nd_head;
             enum node_type type = nd_type(frag);
             if (type == NODE_STR || (type == NODE_DSTR && !RNODE_DSTR(frag)->nd_next)) {
-                VALUE tail = RNODE_STR(frag)->nd_lit;
-                if (reg_fragment_check(p, tail, options) && prev && !NIL_P(RNODE_DREGX(prev)->nd_lit)) {
-                    VALUE lit = prev == node ? RNODE_DREGX(prev)->nd_lit : RNODE_LIT(RNODE_LIST(prev)->nd_head)->nd_lit;
+                rb_parser_string_t *tail = RNODE_STR(frag)->string;
+                if (reg_fragment_check(p, tail, options) && prev && RNODE_DREGX(prev)->string) {
+                    rb_parser_string_t *lit = prev == node ? RNODE_DREGX(prev)->string : RNODE_STR(RNODE_LIST(prev)->nd_head)->string;
                     if (!literal_concat0(p, lit, tail)) {
                         return NEW_NIL(loc); /* dummy node on error */
                     }
-                    rb_str_resize(tail, 0);
+                    rb_parser_str_resize(p, tail, 0);
                     RNODE_LIST(prev)->nd_next = list->nd_next;
                     rb_discard_node(p, list->nd_head);
                     rb_discard_node(p, (NODE *)list);
@@ -13392,9 +13757,9 @@ new_regexp(struct parser_params *p, NODE *node, int options, const YYLTYPE *loc)
             }
         }
         if (!RNODE_DREGX(node)->nd_next) {
-            VALUE src = RNODE_DREGX(node)->nd_lit;
-            VALUE re = reg_compile(p, src, options);
-            RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_DREGX(node)->nd_lit = re);
+            VALUE src = rb_node_dregx_string_val(node);
+            /* Check string is valid regex */
+            reg_compile(p, src, options);
         }
         if (options & RE_OPTION_ONCE) {
             node = NEW_ONCE(node, loc);
@@ -13415,9 +13780,7 @@ static NODE *
 new_xstring(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 {
     if (!node) {
-        VALUE lit = STR_NEW0();
-        NODE *xstr = NEW_XSTR(lit, loc);
-        RB_OBJ_WRITTEN(p->ast, Qnil, lit);
+        NODE *xstr = NEW_XSTR(STRING_NEW0(), loc);
         return xstr;
     }
     switch (nd_type(node)) {
@@ -13430,7 +13793,7 @@ new_xstring(struct parser_params *p, NODE *node, const YYLTYPE *loc)
         nd_set_loc(node, loc);
         break;
       default:
-        node = NEW_DXSTR(Qnil, 1, NEW_LIST(node, loc), loc);
+        node = NEW_DXSTR(0, 1, NEW_LIST(node, loc), loc);
         break;
     }
     return node;
@@ -13445,9 +13808,6 @@ check_literal_when(struct parser_params *p, NODE *arg, const YYLTYPE *loc)
 
     lit = rb_node_case_when_optimizable_literal(arg);
     if (UNDEF_P(lit)) return;
-    if (nd_type_p(arg, NODE_STR)) {
-        RB_OBJ_WRITTEN(p->ast, Qnil, RNODE_STR(arg)->nd_lit = lit);
-    }
 
     if (NIL_P(p->case_labels)) {
         p->case_labels = rb_obj_hide(rb_hash_new());
@@ -14092,8 +14452,8 @@ shareable_literal_constant(struct parser_params *p, enum shareability shareable,
         return value;
 
       case NODE_STR:
-        lit = rb_fstring(RNODE_STR(value)->nd_lit);
-        nd_set_type(value, NODE_LIT);
+        lit = rb_fstring(rb_node_str_string_val(value));
+        value = NEW_LIT(lit, loc);
         RB_OBJ_WRITE(p->ast, &RNODE_LIT(value)->nd_lit, lit);
         return value;
 
@@ -15078,11 +15438,11 @@ dsym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
         nd_set_loc(node, loc);
         break;
       case NODE_STR:
-        lit = RNODE_STR(node)->nd_lit;
+        lit = rb_node_str_string_val(node);
         node = NEW_SYM(lit, loc);
         break;
       default:
-        node = NEW_DSYM(Qnil, 1, NEW_LIST(node, loc), loc);
+        node = NEW_DSYM(0, 1, NEW_LIST(node, loc), loc);
         break;
     }
     return node;
@@ -15107,14 +15467,36 @@ nd_type_st_key_enable_p(NODE *node)
     }
 }
 
-static VALUE
+static NODE *
 nd_st_key(struct parser_params *p, NODE *node)
+{
+    switch (nd_type(node)) {
+      case NODE_LIT:
+        return (NODE *)RNODE_LIT(node)->nd_lit;
+      case NODE_STR:
+      case NODE_INTEGER:
+      case NODE_FLOAT:
+      case NODE_RATIONAL:
+      case NODE_IMAGINARY:
+      case NODE_SYM:
+      case NODE_LINE:
+      case NODE_ENCODING:
+      case NODE_FILE:
+        return node;
+      default:
+        rb_bug("unexpected node: %s", ruby_node_name(nd_type(node)));
+        UNREACHABLE_RETURN(0);
+    }
+}
+
+static VALUE
+nd_value(struct parser_params *p, NODE *node)
 {
     switch (nd_type(node)) {
       case NODE_LIT:
         return RNODE_LIT(node)->nd_lit;
       case NODE_STR:
-        return RNODE_STR(node)->nd_lit;
+        return rb_node_str_string_val(node);
       case NODE_INTEGER:
         return rb_node_integer_literal_val(node);
       case NODE_FLOAT:
@@ -15159,7 +15541,7 @@ warn_duplicate_keys(struct parser_params *p, NODE *hash)
                  st_delete(literal_keys, (key = (st_data_t)nd_st_key(p, head), &key), &data)) {
             rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
                             "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
-                            nd_st_key(p, head), nd_line(head));
+                            nd_value(p, head), nd_line(head));
         }
         st_insert(literal_keys, (st_data_t)key, (st_data_t)hash);
         hash = next;
@@ -15806,11 +16188,14 @@ reg_fragment_setenc(struct parser_params* p, VALUE str, int options)
 }
 
 static int
-reg_fragment_check(struct parser_params* p, VALUE str, int options)
+reg_fragment_check(struct parser_params* p, rb_parser_string_t *str, int options)
 {
-    VALUE err;
-    reg_fragment_setenc(p, str, options);
-    err = rb_reg_check_preprocess(str);
+    VALUE err, str2;
+    /* TODO */
+    str2 = rb_str_new_parser_string(str);
+    reg_fragment_setenc(p, str2, options);
+    str->enc = rb_enc_get(str2);
+    err = rb_reg_check_preprocess(str2);
     if (err != Qnil) {
         err = rb_obj_as_string(err);
         compile_error(p, "%"PRIsVALUE, err);
@@ -16417,7 +16802,21 @@ rb_ruby_ripper_parse0(rb_parser_t *p)
 int
 rb_ruby_ripper_dedent_string(rb_parser_t *p, VALUE string, int width)
 {
-    return dedent_string(p, string, width);
+    char *str;
+    long len;
+    int i;
+
+    RSTRING_GETMEM(string, str, len);
+    i = dedent_string_column(str, len, width);
+    if (!i) return 0;
+
+    rb_str_modify(string);
+    str = RSTRING_PTR(string);
+    if (RSTRING_LEN(string) != len)
+        rb_fatal("literal string changed: %+"PRIsVALUE, string);
+    MEMMOVE(str, str + i, char, len - i);
+    rb_str_set_len(string, len - i);
+    return i;
 }
 
 VALUE

@@ -1061,6 +1061,11 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
       skipped[gem_name] = "full name unmatch #{spec.full_name}"
       next
     end
+    # Skip install C ext bundled gem if it is build failed or not found
+    if !spec.extensions.empty? && !File.exist?("#{build_dir}/#{gem_name}/gem.build_complete")
+      skipped[gem_name] = "extensions not found or build failed #{spec.full_name}"
+      next
+    end
     spec.extension_dir = "#{extensions_dir}/#{spec.full_name}"
     package = RbInstall::DirPackage.new spec
     ins = RbInstall::UnpackedInstaller.new(package, options)

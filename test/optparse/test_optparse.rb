@@ -73,10 +73,17 @@ class TestOptionParser < Test::Unit::TestCase
     @opt.def_option "-p", "--port=PORT", "port", Integer
     @opt.def_option "-v", "--verbose" do @verbose = true end
     @opt.def_option "-q", "--quiet" do @quiet = true end
+    @opt.def_option "-o", "--option [OPT]" do |opt| @option = opt end
     result = {}
     @opt.parse %w(--host localhost --port 8000 -v), into: result
     assert_equal({host: "localhost", port: 8000, verbose: true}, result)
     assert_equal(true, @verbose)
+    result = {}
+    @opt.parse %w(--option -q), into: result
+    assert_equal({quiet: true, option: nil}, result)
+    result = {}
+    @opt.parse %w(--option OPTION -v), into: result
+    assert_equal({verbose: true, option: "OPTION"}, result)
   end
 
   def test_require_exact
@@ -88,9 +95,9 @@ class TestOptionParser < Test::Unit::TestCase
     end
 
     @opt.require_exact = true
-    %w(--zrs -F -Ffoo).each do |arg|
+    [%w(--zrs foo), %w(--zrs=foo), %w(-F foo), %w(-Ffoo)].each do |args|
       result = {}
-      @opt.parse([arg, 'foo'], into: result)
+      @opt.parse(args, into: result)
       assert_equal({zrs: 'foo'}, result)
     end
 
@@ -99,6 +106,14 @@ class TestOptionParser < Test::Unit::TestCase
     assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-zrs foo))}
     assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-zr foo))}
     assert_raise(OptionParser::InvalidOption) {@opt.parse(%w(-z foo))}
+
+    @opt.def_option('-f', '--[no-]foo', 'foo') {|arg| @foo = arg}
+    @opt.parse(%w[-f])
+    assert_equal(true, @foo)
+    @opt.parse(%w[--foo])
+    assert_equal(true, @foo)
+    @opt.parse(%w[--no-foo])
+    assert_equal(false, @foo)
   end
 
   def test_raise_unknown

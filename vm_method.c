@@ -1063,8 +1063,8 @@ get_overloaded_cme(const rb_callable_method_entry_t *cme)
     }
 }
 
-static const rb_callable_method_entry_t *
-check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_callinfo * const ci)
+const rb_callable_method_entry_t *
+rb_check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_callinfo * const ci)
 {
     if (UNLIKELY(cme->def->iseq_overload) &&
         (vm_ci_flag(ci) & (VM_CALL_ARGS_SIMPLE)) &&

@@ -172,6 +172,8 @@ struct rb_ast_local_table_link {
 static void
 parser_string_free(rb_ast_t *ast, rb_parser_string_t *str)
 {
+    if (!str) return;
+    xfree(str->ptr);
     xfree(str);
 }
 
@@ -179,8 +181,26 @@ static void
 free_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
 {
     switch (nd_type(node)) {
+      case NODE_STR:
+        parser_string_free(ast, RNODE_STR(node)->string);
+        break;
+      case NODE_DSTR:
+        parser_string_free(ast, RNODE_DSTR(node)->string);
+        break;
+      case NODE_XSTR:
+        parser_string_free(ast, RNODE_XSTR(node)->string);
+        break;
+      case NODE_DXSTR:
+        parser_string_free(ast, RNODE_DXSTR(node)->string);
+        break;
       case NODE_SYM:
         parser_string_free(ast, RNODE_SYM(node)->string);
+        break;
+      case NODE_DSYM:
+        parser_string_free(ast, RNODE_DSYM(node)->string);
+        break;
+      case NODE_DREGX:
+        parser_string_free(ast, RNODE_DREGX(node)->string);
         break;
       case NODE_FILE:
         parser_string_free(ast, RNODE_FILE(node)->path);
@@ -251,12 +271,6 @@ nodetype_markable_p(enum node_type type)
     switch (type) {
       case NODE_MATCH:
       case NODE_LIT:
-      case NODE_STR:
-      case NODE_XSTR:
-      case NODE_DSTR:
-      case NODE_DXSTR:
-      case NODE_DREGX:
-      case NODE_DSYM:
         return true;
       default:
         return false;
@@ -363,12 +377,6 @@ mark_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
     switch (nd_type(node)) {
       case NODE_MATCH:
       case NODE_LIT:
-      case NODE_STR:
-      case NODE_XSTR:
-      case NODE_DSTR:
-      case NODE_DXSTR:
-      case NODE_DREGX:
-      case NODE_DSYM:
         rb_gc_mark_movable(RNODE_LIT(node)->nd_lit);
         break;
       default:
@@ -386,12 +394,6 @@ update_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
     switch (nd_type(node)) {
       case NODE_MATCH:
       case NODE_LIT:
-      case NODE_STR:
-      case NODE_XSTR:
-      case NODE_DSTR:
-      case NODE_DXSTR:
-      case NODE_DREGX:
-      case NODE_DSYM:
         RNODE_LIT(node)->nd_lit = rb_gc_location(RNODE_LIT(node)->nd_lit);
         break;
       default:

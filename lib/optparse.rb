@@ -8,7 +8,6 @@
 # See OptionParser for documentation.
 #
 
-
 #--
 # == Developer Documentation (not for RDoc output)
 #
@@ -425,6 +424,7 @@
 # If you have any questions, file a ticket at http://bugs.ruby-lang.org.
 #
 class OptionParser
+  # The version string
   OptionParser::Version = "0.4.0"
 
   # :stopdoc:
@@ -438,6 +438,8 @@ class OptionParser
   # and resolved against a list of acceptable values.
   #
   module Completion
+    # :nodoc:
+
     def self.regexp(key, icase)
       Regexp.new('\A' + Regexp.quote(key).gsub(/\w+\b/, '\&\w*'), icase)
     end
@@ -510,6 +512,8 @@ class OptionParser
   # RequiredArgument, etc.
   #
   class Switch
+    # :nodoc:
+
     attr_reader :pattern, :conv, :short, :long, :arg, :desc, :block
 
     #
@@ -697,6 +701,11 @@ class OptionParser
       q.object_group(self) {pretty_print_contents(q)}
     end
 
+    def omitted_argument(val)   # :nodoc:
+      val.pop if val.size == 3 and val.last.nil?
+      val
+    end
+
     #
     # Switch that takes no arguments.
     #
@@ -710,10 +719,10 @@ class OptionParser
         conv_arg(arg)
       end
 
-      def self.incompatible_argument_styles(*)
+      def self.incompatible_argument_styles(*) # :nodoc:
       end
 
-      def self.pattern
+      def self.pattern          # :nodoc:
         Object
       end
 
@@ -755,7 +764,7 @@ class OptionParser
         if arg
           conv_arg(*parse_arg(arg, &error))
         else
-          conv_arg(arg)
+          omitted_argument conv_arg(arg)
         end
       end
 
@@ -774,13 +783,14 @@ class OptionParser
       #
       def parse(arg, argv, &error)
         if !(val = arg) and (argv.empty? or /\A-./ =~ (val = argv[0]))
-          return nil, block, nil
+          return nil, block
         end
         opt = (val = parse_arg(val, &error))[1]
         val = conv_arg(*val)
         if opt and !arg
           argv.shift
         else
+          omitted_argument val
           val[0] = nil
         end
         val
@@ -798,6 +808,8 @@ class OptionParser
   # matching pattern and converter pair. Also provides summary feature.
   #
   class List
+    # :nodoc:
+
     # Map from acceptable argument types to pattern and converter pairs.
     attr_reader :atype
 
@@ -1033,7 +1045,7 @@ XXX
     to << "#compdef #{name}\n"
     to << COMPSYS_HEADER
     visit(:compsys, {}, {}) {|o, d|
-      to << %Q[  "#{o}[#{d.gsub(/[\"\[\]]/, '\\\\\&')}]" \\\n]
+      to << %Q[  "#{o}[#{d.gsub(/[\\\"\[\]]/, '\\\\\&')}]" \\\n]
     }
     to << "  '*:file:_files' && return 0\n"
   end
@@ -1179,6 +1191,11 @@ XXX
   end
 
   @stack = [DefaultList]
+  #
+  # Returns the global top option list.
+  #
+  # Do not use directly.
+  #
   def self.top() DefaultList end
 
   #
@@ -1291,10 +1308,24 @@ XXX
     end
   end
 
+  #
+  # Shows warning message with the program name
+  #
+  # +mesg+:: Message, defaulted to +$!+.
+  #
+  # See Kernel#warn.
+  #
   def warn(mesg = $!)
     super("#{program_name}: #{mesg}")
   end
 
+  #
+  # Shows message with the program name then aborts.
+  #
+  # +mesg+:: Message, defaulted to +$!+.
+  #
+  # See Kernel#abort.
+  #
   def abort(mesg = $!)
     super("#{program_name}: #{mesg}")
   end
@@ -1648,19 +1679,24 @@ XXX
           opt, rest = $1, $2
           opt.tr!('_', '-')
           begin
-            sw, = complete(:long, opt, true)
-            if require_exact && !sw.long.include?(arg)
-              throw :terminate, arg unless raise_unknown
-              raise InvalidOption, arg
+            if require_exact
+              sw, = search(:long, opt)
+            else
+              sw, = complete(:long, opt, true)
             end
           rescue ParseError
             throw :terminate, arg unless raise_unknown
             raise $!.set_option(arg, true)
+          else
+            unless sw
+              throw :terminate, arg unless raise_unknown
+              raise InvalidOption, arg
+            end
           end
           begin
-            opt, cb, val = sw.parse(rest, argv) {|*exc| raise(*exc)}
-            val = cb.call(val) if cb
-            setter.call(sw.switch_name, val) if setter
+            opt, cb, *val = sw.parse(rest, argv) {|*exc| raise(*exc)}
+            val = callback!(cb, 1, *val) if cb
+            callback!(setter, 2, sw.switch_name, *val) if setter
           rescue ParseError
             raise $!.set_option(arg, rest)
           end
@@ -1690,7 +1726,7 @@ XXX
             raise $!.set_option(arg, true)
           end
           begin
-            opt, cb, val = sw.parse(val, argv) {|*exc| raise(*exc) if eq}
+            opt, cb, *val = sw.parse(val, argv) {|*exc| raise(*exc) if eq}
           rescue ParseError
             raise $!.set_option(arg, arg.length > 2)
           else
@@ -1698,8 +1734,8 @@ XXX
           end
           begin
             argv.unshift(opt) if opt and (!rest or (opt = opt.sub(/\A-*/, '-')) != '-')
-            val = cb.call(val) if cb
-            setter.call(sw.switch_name, val) if setter
+            val = callback!(cb, 1, *val) if cb
+            callback!(setter, 2, sw.switch_name, *val) if setter
           rescue ParseError
             raise $!.set_option(arg, arg.length > 2)
           end
@@ -1724,6 +1760,17 @@ XXX
     argv
   end
   private :parse_in_order
+
+  # Calls callback with _val_.
+  def callback!(cb, max_arity, *args) # :nodoc:
+    if (size = args.size) < max_arity and cb.to_proc.lambda?
+      (arity = cb.arity) < 0 and arity = (1-arity)
+      arity = max_arity if arity > max_arity
+      args[arity - 1] = nil if arity > size
+    end
+    cb.call(*args)
+  end
+  private :callback!
 
   #
   # Parses command line arguments +argv+ in permutation mode and returns
@@ -2320,7 +2367,8 @@ XXX
       super
       obj.instance_eval {@optparse = nil}
     end
-    def initialize(*args)
+
+    def initialize(*args)       # :nodoc:
       super
       @optparse = nil
     end
