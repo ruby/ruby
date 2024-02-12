@@ -1121,6 +1121,7 @@ module RubyVM::RJIT # :nodoc: all
       ci_size: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), ci_size)")],
       stack_max: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), stack_max)")],
       builtin_attrs: [CType::Immediate.parse("unsigned int"), Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), builtin_attrs)")],
+      prism: [self._Bool, Primitive.cexpr!("OFFSETOF((*((struct rb_iseq_constant_body *)NULL)), prism)")],
       mark_bits: [CType::Union.new(
         "", Primitive.cexpr!("SIZEOF(((struct rb_iseq_constant_body *)NULL)->mark_bits)"),
         list: CType::Pointer.new { self.iseq_bits_t },
@@ -1569,6 +1570,10 @@ module RubyVM::RJIT # :nodoc: all
     CType::Stub.new(:rb_snum_t)
   end
 
+  def C._Bool
+    CType::Bool.new
+  end
+
   def C.iseq_bits_t
     CType::Stub.new(:iseq_bits_t)
   end
@@ -1595,10 +1600,6 @@ module RubyVM::RJIT # :nodoc: all
 
   def C.rb_method_refined_t
     CType::Stub.new(:rb_method_refined_t)
-  end
-
-  def C._Bool
-    CType::Bool.new
   end
 
   def C.redblack_node_t
