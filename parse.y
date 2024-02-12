@@ -205,6 +205,8 @@ node_cdhash_cmp(VALUE val, VALUE lit)
     }
 }
 
+static st_index_t rb_parser_str_hash(rb_parser_string_t *str);
+
 static st_index_t
 node_cdhash_hash(VALUE a)
 {
@@ -228,15 +230,15 @@ node_cdhash_hash(VALUE a)
             val = rb_node_imaginary_literal_val(node);
             return rb_complex_hash(val);
           case NODE_STR:
-            return rb_str_hash(rb_node_str_string_val(node));
+            return rb_parser_str_hash(RNODE_STR(node)->string);
           case NODE_SYM:
-            return rb_node_sym_string_val(node);
+            return rb_parser_str_hash(RNODE_SYM(node)->string);
           case NODE_LINE:
             /* Same with NODE_INTEGER FIXNUM case */
             return (st_index_t)node->nd_loc.beg_pos.lineno;
           case NODE_FILE:
             /* Same with NODE_STR */
-            return rb_str_hash(rb_node_file_path_val(node));
+            return rb_parser_str_hash(RNODE_FILE(node)->path);
           case NODE_ENCODING:
             return rb_node_encoding_val(node);
           default:
@@ -2135,6 +2137,24 @@ get_nd_args(struct parser_params *p, NODE *node)
         return 0;
     }
 }
+
+static st_index_t
+djb2(const uint8_t *str, size_t len)
+{
+    st_index_t hash = 5381;
+
+    for (size_t i = 0; i < len; i++) {
+        hash = ((hash << 5) + hash) + str[i];
+    }
+
+    return hash;
+}
+
+static st_index_t
+parser_memhash(const void *ptr, long len)
+{
+    return djb2(ptr, len);
+}
 #endif
 
 #define PARSER_STRING_PTR(str) (str->ptr)
@@ -2193,6 +2213,12 @@ rb_parser_string_free(rb_parser_t *p, rb_parser_string_t *str)
 }
 
 #ifndef RIPPER
+static st_index_t
+rb_parser_str_hash(rb_parser_string_t *str)
+{
+    return parser_memhash((const void *)PARSER_STRING_PTR(str), PARSER_STRING_LEN(str));
+}
+
 static size_t
 rb_parser_str_capacity(rb_parser_string_t *str, const int termlen)
 {
