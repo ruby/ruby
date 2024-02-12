@@ -752,6 +752,7 @@ typedef struct rb_vm_struct {
 
     const struct rb_builtin_function *builtin_function_table;
 
+    st_table *ci_table;
     struct rb_id_table *negative_cme_table;
     st_table *overloaded_cme_table; // cme -> overloaded_cme
 
