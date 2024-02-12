@@ -1415,7 +1415,7 @@ last_expr_node(NODE *expr)
         if (nd_type_p(expr, NODE_BLOCK)) {
             expr = RNODE_BLOCK(RNODE_BLOCK(expr)->nd_end)->nd_head;
         }
-        else if (nd_type_p(expr, NODE_BEGIN)) {
+        else if (nd_type_p(expr, NODE_BEGIN) && RNODE_BEGIN(expr)->nd_body) {
             expr = RNODE_BEGIN(expr)->nd_body;
         }
         else {
