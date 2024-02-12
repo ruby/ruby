@@ -848,6 +848,16 @@ module TestIRB
       assert_match("command: ': code'", out)
     end
 
+    def test_edit_without_arg_and_non_existing_irb_path
+      out, err = execute_lines(
+        "edit",
+        irb_path: '/path/to/file.rb(irb)'
+      )
+
+      assert_empty err
+      assert_match(/Can not find file: \/path\/to\/file\.rb\(irb\)/, out)
+    end
+
     def test_edit_with_path
       out, err = execute_lines(
         "edit #{__FILE__}"

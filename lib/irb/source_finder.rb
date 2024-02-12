@@ -4,12 +4,58 @@ require_relative "ruby-lex"
 
 module IRB
   class SourceFinder
-    Source = Struct.new(
-      :file,       # @param [String] - file name
-      :first_line, # @param [String] - first line
-      :last_line,  # @param [String] - last line
-      keyword_init: true,
-    )
+    class Source
+      attr_reader :file, :line
+      def initialize(file, line, ast_source = nil)
+        @file = file
+        @line = line
+        @ast_source = ast_source
+      end
+
+      def file_exist?
+        File.exist?(@file)
+      end
+
+      def binary_file?
+        # If the line is zero, it means that the target's source is probably in a binary file.
+        @line.zero?
+      end
+
+      def file_content
+        @file_content ||= File.read(@file)
+      end
+
+      def colorized_content
+        if !binary_file? && file_exist?
+          end_line = Source.find_end(file_content, @line)
+          # To correctly colorize, we need to colorize full content and extract the relevant lines.
+          colored = IRB::Color.colorize_code(file_content)
+          colored.lines[@line - 1...end_line].join
+        elsif @ast_source
+          IRB::Color.colorize_code(@ast_source)
+        end
+      end
+
+      def self.find_end(code, first_line)
+        lex = RubyLex.new
+        lines = code.lines[(first_line - 1)..-1]
+        tokens = RubyLex.ripper_lex_without_warning(lines.join)
+        prev_tokens = []
+
+        # chunk with line number
+        tokens.chunk { |tok| tok.pos[0] }.each do |lnum, chunk|
+          code = lines[0..lnum].join
+          prev_tokens.concat chunk
+          continue = lex.should_continue?(prev_tokens)
+          syntax = lex.check_code_syntax(code, local_variables: [])
+          if !continue && syntax == :valid
+            return first_line + lnum
+          end
+        end
+        first_line
+      end
+    end
+
     private_constant :Source
 
     def initialize(irb_context)
@@ -27,39 +73,27 @@ module IRB
         owner = eval(Regexp.last_match[:owner], context_binding)
         method = Regexp.last_match[:method]
         return unless owner.respond_to?(:instance_method)
-        file, line = method_target(owner, super_level, method, "owner")
+        method = method_target(owner, super_level, method, "owner")
+        file, line = method&.source_location
       when /\A((?<receiver>.+)(\.|::))?(?<method>[^ :.]+)\z/ # method, receiver.method, receiver::method
         receiver = eval(Regexp.last_match[:receiver] || 'self', context_binding)
         method = Regexp.last_match[:method]
         return unless receiver.respond_to?(method, true)
-        file, line = method_target(receiver, super_level, method, "receiver")
+        method = method_target(receiver, super_level, method, "receiver")
+        file, line = method&.source_location
       end
-      # If the line is zero, it means that the target's source is probably in a binary file, which we should ignore.
-      if file && line && !line.zero? && File.exist?(file)
-        Source.new(file: file, first_line: line, last_line: find_end(file, line))
+      return unless file && line
+
+      if File.exist?(file)
+        Source.new(file, line)
+      elsif method
+        # Method defined with eval, probably in IRB session
+        source = RubyVM::AbstractSyntaxTree.of(method)&.source rescue nil
+        Source.new(file, line, source)
       end
     end
 
     private
-
-    def find_end(file, first_line)
-      lex = RubyLex.new
-      lines = File.read(file).lines[(first_line - 1)..-1]
-      tokens = RubyLex.ripper_lex_without_warning(lines.join)
-      prev_tokens = []
-
-      # chunk with line number
-      tokens.chunk { |tok| tok.pos[0] }.each do |lnum, chunk|
-        code = lines[0..lnum].join
-        prev_tokens.concat chunk
-        continue = lex.should_continue?(prev_tokens)
-        syntax = lex.check_code_syntax(code, local_variables: [])
-        if !continue && syntax == :valid
-          return first_line + lnum
-        end
-      end
-      first_line
-    end
 
     def method_target(owner_receiver, super_level, method, type)
       case type
@@ -71,7 +105,7 @@ module IRB
       super_level.times do |s|
         target_method = target_method.super_method if target_method
       end
-      target_method.nil? ? nil : target_method.source_location
+      target_method
     rescue NameError
       nil
     end

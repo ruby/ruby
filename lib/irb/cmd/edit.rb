@@ -24,11 +24,9 @@ module IRB
       def execute(*args)
         path = args.first
 
-        if path.nil? && (irb_path = @irb_context.irb_path)
-          path = irb_path
-        end
-
-        if !File.exist?(path)
+        if path.nil?
+          path = @irb_context.irb_path
+        elsif !File.exist?(path)
           source =
             begin
               SourceFinder.new(@irb_context).find_source(path)
@@ -37,12 +35,14 @@ module IRB
               # in this case, we should just ignore the error
             end
 
-          if source
+          if source&.file_exist? && !source.binary_file?
             path = source.file
-          else
-            puts "Can not find file: #{path}"
-            return
           end
+        end
+
+        unless File.exist?(path)
+          puts "Can not find file: #{path}"
+          return
         end
 
         if editor = (ENV['VISUAL'] || ENV['EDITOR'])

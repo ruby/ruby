@@ -666,6 +666,15 @@ module TestIRB
         ], out)
     end
 
+    def test_eval_path
+      @context.irb_path = __FILE__
+      assert_equal("#{__FILE__}(irb)", @context.send(:eval_path))
+      @context.irb_path = 'file/does/not/exist'
+      assert_equal('file/does/not/exist', @context.send(:eval_path))
+      @context.irb_path = "#{__FILE__}(irb)"
+      assert_equal("#{__FILE__}(irb)", @context.send(:eval_path))
+    end
+
     def test_build_completor
       verbose, $VERBOSE = $VERBOSE, nil
       original_completor = IRB.conf[:COMPLETOR]

@@ -979,12 +979,16 @@ module IRB
       end
 
       begin
-        forced_exit = false
+        if defined?(RubyVM.keep_script_lines)
+          keep_script_lines_backup = RubyVM.keep_script_lines
+          RubyVM.keep_script_lines = true
+        end
 
         forced_exit = catch(:IRB_EXIT) do
           eval_input
         end
       ensure
+        RubyVM.keep_script_lines = keep_script_lines_backup if defined?(RubyVM.keep_script_lines)
         trap("SIGINT", prev_trap)
         conf[:AT_EXIT].each{|hook| hook.call}
 

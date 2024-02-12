@@ -301,7 +301,37 @@ module TestIRB
       assert_match(%r[#{@ruby_file.to_path}:5\s+class Bar\r\n  end], out)
     end
 
-    def test_show_source_ignores_binary_source_file
+    def test_show_source_keep_script_lines
+      pend unless defined?(RubyVM.keep_script_lines)
+
+      write_ruby <<~RUBY
+        binding.irb
+      RUBY
+
+      out = run_ruby_file do
+        type "def foo; end"
+        type "show_source foo"
+        type "exit"
+      end
+
+      assert_match(%r[#{@ruby_file.to_path}\(irb\):1\s+def foo; end], out)
+    end
+
+    def test_show_source_unavailable_source
+      write_ruby <<~RUBY
+        binding.irb
+      RUBY
+
+      out = run_ruby_file do
+        type "RubyVM.keep_script_lines = false if defined?(RubyVM.keep_script_lines)"
+        type "def foo; end"
+        type "show_source foo"
+        type "exit"
+      end
+      assert_match(%r[#{@ruby_file.to_path}\(irb\):2\s+Source not available], out)
+    end
+
+    def test_show_source_shows_binary_source
       write_ruby <<~RUBY
         # io-console is an indirect dependency of irb
         require "io/console"
@@ -317,7 +347,7 @@ module TestIRB
 
       # A safeguard to make sure the test subject is actually defined
       refute_match(/NameError/, out)
-      assert_match(%r[Error: Couldn't locate a definition for IO::ConsoleMode], out)
+      assert_match(%r[Defined in binary file:.+io/console], out)
     end
   end
 end

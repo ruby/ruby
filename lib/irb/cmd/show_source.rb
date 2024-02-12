@@ -45,15 +45,18 @@ module IRB
       private
 
       def show_source(source)
-        file_content = IRB::Color.colorize_code(File.read(source.file))
-        code = file_content.lines[(source.first_line - 1)...source.last_line].join
-        content = <<~CONTENT
+        if source.binary_file?
+          content = "\n#{bold('Defined in binary file')}: #{source.file}\n\n"
+        else
+          code = source.colorized_content || 'Source not available'
+          content = <<~CONTENT
 
-          #{bold("From")}: #{source.file}:#{source.first_line}
+            #{bold("From")}: #{source.file}:#{source.line}
 
-          #{code}
-        CONTENT
+            #{code.chomp}
 
+          CONTENT
+        end
         Pager.page_content(content)
       end
 
