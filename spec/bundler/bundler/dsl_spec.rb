@@ -134,6 +134,17 @@ RSpec.describe Bundler::Dsl do
       expect { subject.eval_gemfile("Gemfile") }.
         to raise_error(Bundler::GemfileError, /There was an error evaluating `Gemfile`: ruby_version must match the :engine_version for MRI/)
     end
+
+    it "populates __dir__ and __FILE__ correctly" do
+      abs_path = source_root.join("../fragment.rb").to_s
+      expect(Bundler).to receive(:read_file).with(abs_path).and_return(<<~RUBY)
+        @fragment_dir = __dir__
+        @fragment_file = __FILE__
+      RUBY
+      subject.eval_gemfile("../fragment.rb")
+      expect(subject.instance_variable_get(:@fragment_dir)).to eq(source_root.dirname.to_s)
+      expect(subject.instance_variable_get(:@fragment_file)).to eq(abs_path)
+    end
   end
 
   describe "#gem" do
