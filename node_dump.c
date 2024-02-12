@@ -1155,7 +1155,7 @@ dump_node(VALUE buf, VALUE indent, int comment, const NODE * node)
         ANN("format: [enc]");
         ANN("example: __ENCODING__");
         F_VALUE(enc, rb_node_encoding_val(node), "enc");
-        break;
+        return;
 
       case NODE_ERROR:
         ANN("Broken input recovered by Error Tolerant mode");
