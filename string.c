@@ -6274,6 +6274,12 @@ str_byte_substr(VALUE str, long beg, long len, int empty)
     return str2;
 }
 
+VALUE
+rb_str_byte_substr(VALUE str, VALUE beg, VALUE len)
+{
+    return str_byte_substr(str, NUM2LONG(beg), NUM2LONG(len), TRUE);
+}
+
 static VALUE
 str_byte_aref(VALUE str, VALUE indx)
 {
