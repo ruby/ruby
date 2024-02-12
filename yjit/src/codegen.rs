@@ -6996,13 +6996,8 @@ fn gen_send_iseq(
 
         let mut unspecified_bits = 0;
 
-        // Start by ensuring the stack is large enough for the callee
-        for _ in caller_keyword_len..callee_kw_count {
-            argc += 1;
-            asm.stack_push(Type::Unknown);
-        }
-        // Now this is the stack_opnd() index to the 0th keyword argument.
-        let kwargs_stack_base = kwargs_order.len() as i32 - 1;
+        // The stack_opnd() index to the 0th keyword argument.
+        let kwargs_stack_base = caller_keyword_len_i32 - 1;
 
         // Build the keyword rest parameter hash before we make any changes to the order of
         // the supplied keyword arguments
@@ -7088,6 +7083,14 @@ fn gen_send_iseq(
                 asm.ctx.set_opnd_mapping(stack_kwrest.into(), TempMapping::map_to_stack(Type::THash));
             }
         }
+
+        // Ensure the stack is large enough for the callee
+        for _ in caller_keyword_len..callee_kw_count {
+            argc += 1;
+            asm.stack_push(Type::Unknown);
+        }
+        // Now this is the stack_opnd() index to the 0th keyword argument.
+        let kwargs_stack_base = kwargs_order.len() as i32 - 1;
 
         // Next, we're going to loop through every keyword that was
         // specified by the caller and make sure that it's in the correct
