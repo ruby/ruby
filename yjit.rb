@@ -239,7 +239,7 @@ module RubyVM::YJIT
     private
 
     # Print stats and dump exit locations
-    def print_and_dump_stats
+    def print_and_dump_stats # :nodoc:
       if Primitive.rb_yjit_print_stats_p
         _print_stats
       end
@@ -396,8 +396,7 @@ module RubyVM::YJIT
 
       # Sort calls by decreasing frequency and keep the top N
       pairs = calls.map { |k,v| [k, v] }
-      pairs.sort_by! {|pair| pair[1] }
-      pairs.reverse!
+      pairs.sort_by! {|pair| -pair[1] }
       pairs = pairs[0...how_many]
 
       top_n_total = pairs.sum { |name, count| count }
@@ -405,9 +404,10 @@ module RubyVM::YJIT
 
       out.puts "Top-#{pairs.size} most frequent #{type} calls (#{"%.1f" % top_n_pct}% of #{type} calls):"
 
+      count_width = format_number(0, pairs[0][1]).length
       pairs.each do |name, count|
-        padded_count = format_number_pct(10, count, num_calls)
-        out.puts("#{padded_count}: #{name}")
+        padded_count = format_number_pct(count_width, count, num_calls)
+        out.puts("  #{padded_count}: #{name}")
       end
     end
 
@@ -429,9 +429,10 @@ module RubyVM::YJIT
 
         out.puts "Top-#{exits.size} most frequent exit ops (#{"%.1f" % top_n_exit_pct}% of exits):"
 
+        count_width = format_number(0, exits[0][1]).length
         exits.each do |name, count|
-          padded_count = format_number_pct(10, count, total_exits)
-          out.puts("#{padded_count}: #{name}")
+          padded_count = format_number_pct(count_width, count, total_exits)
+          out.puts("  #{padded_count}: #{name}")
         end
       else
         out.puts "total_exits:           " + format_number(10, total_exits)
@@ -474,7 +475,7 @@ module RubyVM::YJIT
     end
 
     # Format large numbers with comma separators for readability
-    def format_number(pad, number)
+    def format_number(pad, number) # :nodoc:
       s = number.to_s
       i = s.index('.') || s.size
       s.insert(i -= 3, ',') while i > 3
@@ -482,7 +483,7 @@ module RubyVM::YJIT
     end
 
     # Format a number along with a percentage over a total value
-    def format_number_pct(pad, number, total)
+    def format_number_pct(pad, number, total) # :nodoc:
       padded_count = format_number(pad, number)
       percentage = number.fdiv(total) * 100
       formatted_pct = "%4.1f%%" % percentage
