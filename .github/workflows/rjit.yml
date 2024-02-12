@@ -95,11 +95,12 @@ jobs:
 
       - name: make test-spec
         run: |
-          $SETARCH make -s test-spec RUN_OPTS="$RUN_OPTS"
+          $SETARCH make -s test-spec RUN_OPTS="$RUN_OPTS" SPECOPTS="$SPECOPTS"
         timeout-minutes: 10
         env:
           GNUMAKEFLAGS: ''
           RUN_OPTS: ${{ matrix.run_opts }}
+          SPECOPTS: '-T --rjit-call-threshold=1'
 
       - uses: ./.github/actions/slack
         with:
