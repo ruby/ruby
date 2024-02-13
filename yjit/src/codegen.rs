@@ -5345,20 +5345,14 @@ fn jit_rb_str_getbyte(
     _argc: i32,
     _known_recv_class: Option<VALUE>,
 ) -> bool {
-
-
-
     asm_comment!(asm, "String#getbyte");
 
-
-
-    // Don't pop it since we may bail
+    // Don't pop since we may bail
     let idx = asm.stack_opnd(0);
     let recv = asm.stack_opnd(1);
 
     let comptime_idx = jit.peek_at_stack(&asm.ctx, 0);
     if comptime_idx.fixnum_p(){
-        let obj = asm.stack_opnd(0);
         jit_guard_known_klass(
             jit,
             asm,
@@ -5374,35 +5368,39 @@ fn jit_rb_str_getbyte(
         return false;
     }
 
-    // Untag index
+    // Untag the index
     let idx = asm.rshift(idx, Opnd::UImm(1));
 
-    // If index is negative
+    // If index is negative, exit
     asm.cmp(idx, Opnd::UImm(0));
     asm.jl(Target::side_exit(Counter::getbyte_idx_negative));
 
     asm_comment!(asm, "get string length");
+    let recv = asm.load(recv);
     let str_len_opnd = Opnd::mem(
         std::os::raw::c_long::BITS as u8,
         asm.load(recv),
         RUBY_OFFSET_RSTRING_LEN as i32,
     );
 
-    // FIXME: we don't have jge? wtf?
-    //asm.cmp(idx, str_len_opnd);
-    //asm.jge(Target::side_exit(Counter::getbyte_idx_out_of_bounds));
-
-
+    // Exit if the indes is out of bounds
+    asm.cmp(idx, str_len_opnd);
+    asm.jge(Target::side_exit(Counter::getbyte_idx_out_of_bounds));
 
     let str_ptr = get_string_ptr(asm, recv);
-    // FIXME: could use SIB indexing here
+    // FIXME: could use SIB indexing here with proper support in backend
     let str_ptr = asm.add(str_ptr, idx);
     let byte = asm.load(Opnd::mem(8, str_ptr, 0));
 
 
 
+    // FIXME: here we need to zero-extend the byte to 64 bits
 
 
+
+    // Tag the byte
+    let byte = asm.lshift(byte, Opnd::UImm(1));
+    let byte = asm.or(byte, Opnd::UImm(1));
 
 
 
@@ -5411,7 +5409,6 @@ fn jit_rb_str_getbyte(
     asm.mov(out_opnd, byte);
 
     true
-
 }
 
 // Codegen for rb_str_to_s()
