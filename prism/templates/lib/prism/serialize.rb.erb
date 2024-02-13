@@ -83,11 +83,11 @@ module Prism
       end
 
       def load_line_offsets
-        source.instance_variable_set :@offsets, load_varuint.times.map { load_varuint }
+        source.instance_variable_set :@offsets, Array.new(load_varuint) { load_varuint }
       end
 
       def load_comments
-        load_varuint.times.map do
+        Array.new(load_varuint) do
           case load_varuint
           when 0 then InlineComment.new(load_location)
           when 1 then EmbDocComment.new(load_location)
@@ -98,10 +98,10 @@ module Prism
 
       def load_metadata
         comments = load_comments
-        magic_comments = load_varuint.times.map { MagicComment.new(load_location, load_location) }
+        magic_comments = Array.new(load_varuint) { MagicComment.new(load_location, load_location) }
         data_loc = load_optional_location
-        errors = load_varuint.times.map { ParseError.new(load_embedded_string, load_location, load_error_level) }
-        warnings = load_varuint.times.map { ParseWarning.new(load_embedded_string, load_location, load_warning_level) }
+        errors = Array.new(load_varuint) { ParseError.new(load_embedded_string, load_location, load_error_level) }
+        warnings = Array.new(load_varuint) { ParseWarning.new(load_embedded_string, load_location, load_warning_level) }
         [comments, magic_comments, data_loc, errors, warnings]
       end
 
