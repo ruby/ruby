@@ -53,56 +53,64 @@ unsafe impl GlobalAlloc for StatsAlloc {
     }
 }
 
-/// Mapping of C function name to integer indices
+/// Mapping of C function / ISEQ name to integer indices
 /// This is accessed at compilation time only (protected by a lock)
 static mut CFUNC_NAME_TO_IDX: Option<HashMap<String, usize>> = None;
+static mut ISEQ_NAME_TO_IDX: Option<HashMap<String, usize>> = None;
 
-/// Vector of call counts for each C function index
+/// Vector of call counts for each C function / ISEQ index
 /// This is modified (but not resized) by JITted code
 static mut CFUNC_CALL_COUNT: Option<Vec<u64>> = None;
+static mut ISEQ_CALL_COUNT: Option<Vec<u64>> = None;
 
 /// Assign an index to a given cfunc name string
-pub fn get_cfunc_idx(name: &str) -> usize
-{
+pub fn get_cfunc_idx(name: &str) -> usize {
+    unsafe { get_method_idx(name, &mut CFUNC_NAME_TO_IDX, &mut CFUNC_CALL_COUNT) }
+}
+
+/// Assign an index to a given ISEQ name string
+pub fn get_iseq_idx(name: &str) -> usize {
+    unsafe { get_method_idx(name, &mut ISEQ_NAME_TO_IDX, &mut ISEQ_CALL_COUNT) }
+}
+
+fn get_method_idx(
+    name: &str,
+    method_name_to_idx: &mut Option<HashMap<String, usize>>,
+    method_call_count: &mut Option<Vec<u64>>,
+) -> usize {
     //println!("{}", name);
 
-    unsafe {
-        if CFUNC_NAME_TO_IDX.is_none() {
-            CFUNC_NAME_TO_IDX = Some(HashMap::default());
-        }
+    let name_to_idx = method_name_to_idx.get_or_insert_with(HashMap::default);
+    let call_count = method_call_count.get_or_insert_with(Vec::default);
 
-        if CFUNC_CALL_COUNT.is_none() {
-            CFUNC_CALL_COUNT = Some(Vec::default());
-        }
+    match name_to_idx.get(name) {
+        Some(idx) => *idx,
+        None => {
+            let idx = name_to_idx.len();
+            name_to_idx.insert(name.to_string(), idx);
 
-        let name_to_idx = CFUNC_NAME_TO_IDX.as_mut().unwrap();
-
-        match name_to_idx.get(name) {
-            Some(idx) => *idx,
-            None => {
-                let idx = name_to_idx.len();
-                name_to_idx.insert(name.to_string(), idx);
-
-                // Resize the call count vector
-                let cfunc_call_count = CFUNC_CALL_COUNT.as_mut().unwrap();
-                if idx >= cfunc_call_count.len() {
-                    cfunc_call_count.resize(idx + 1, 0);
-                }
-
-                idx
+            // Resize the call count vector
+            if idx >= call_count.len() {
+                call_count.resize(idx + 1, 0);
             }
+
+            idx
         }
     }
 }
 
 // Increment the counter for a C function
-pub extern "C" fn incr_cfunc_counter(idx: usize)
-{
-    unsafe {
-        let cfunc_call_count = CFUNC_CALL_COUNT.as_mut().unwrap();
-        assert!(idx < cfunc_call_count.len());
-        cfunc_call_count[idx] += 1;
-    }
+pub extern "C" fn incr_cfunc_counter(idx: usize) {
+    let cfunc_call_count = unsafe { CFUNC_CALL_COUNT.as_mut().unwrap() };
+    assert!(idx < cfunc_call_count.len());
+    cfunc_call_count[idx] += 1;
+}
+
+// Increment the counter for an ISEQ
+pub extern "C" fn incr_iseq_counter(idx: usize) {
+    let iseq_call_count = unsafe { ISEQ_CALL_COUNT.as_mut().unwrap() };
+    assert!(idx < iseq_call_count.len());
+    iseq_call_count[idx] += 1;
 }
 
 // YJIT exit counts for each instruction type
@@ -372,7 +380,6 @@ make_counters! {
     send_iseq_kwargs_req_and_opt_missing,
     send_iseq_kwargs_mismatch,
     send_iseq_has_post,
-    send_iseq_has_kwrest,
     send_iseq_has_no_kw,
     send_iseq_accepts_no_kwarg,
     send_iseq_materialized_block,
@@ -404,6 +411,7 @@ make_counters! {
     send_send_getter,
     send_send_builtin,
     send_iseq_has_rest_and_captured,
+    send_iseq_has_kwrest_and_captured,
     send_iseq_has_rest_and_splat,
     send_iseq_has_rest_and_kw_supplied,
     send_iseq_has_rest_opt_and_block,
@@ -585,10 +593,11 @@ make_counters! {
     num_send_x86_rel32,
     num_send_x86_reg,
     num_send_dynamic,
-    num_send_inline,
-    num_send_leaf_builtin,
     num_send_cfunc,
     num_send_cfunc_inline,
+    num_send_iseq,
+    num_send_iseq_leaf,
+    num_send_iseq_inline,
 
     num_getivar_megamorphic,
     num_setivar_megamorphic,
@@ -795,19 +804,30 @@ fn rb_yjit_gen_stats_dict(context: bool) -> VALUE {
             rb_hash_aset(hash, key, value);
         }
 
-        // Create a hash for the cfunc call counts
-        let calls_hash = rb_hash_new();
-        rb_hash_aset(hash, rust_str_to_sym("cfunc_calls"), calls_hash);
-        if let Some(cfunc_name_to_idx) = CFUNC_NAME_TO_IDX.as_mut() {
-            let call_counts = CFUNC_CALL_COUNT.as_mut().unwrap();
-
-            for (name, idx) in cfunc_name_to_idx {
-                let count = call_counts[*idx];
-                let key = rust_str_to_sym(name);
-                let value = VALUE::fixnum_from_usize(count as usize);
-                rb_hash_aset(calls_hash, key, value);
+        fn set_call_counts(
+            calls_hash: VALUE,
+            method_name_to_idx: &mut Option<HashMap<String, usize>>,
+            method_call_count: &mut Option<Vec<u64>>,
+        ) {
+            if let (Some(name_to_idx), Some(call_counts)) = (method_name_to_idx, method_call_count) {
+                for (name, idx) in name_to_idx {
+                    let count = call_counts[*idx];
+                    let key = rust_str_to_sym(name);
+                    let value = VALUE::fixnum_from_usize(count as usize);
+                    unsafe { rb_hash_aset(calls_hash, key, value); }
+                }
             }
         }
+
+        // Create a hash for the cfunc call counts
+        let cfunc_calls = rb_hash_new();
+        rb_hash_aset(hash, rust_str_to_sym("cfunc_calls"), cfunc_calls);
+        set_call_counts(cfunc_calls, &mut CFUNC_NAME_TO_IDX, &mut CFUNC_CALL_COUNT);
+
+        // Create a hash for the ISEQ call counts
+        let iseq_calls = rb_hash_new();
+        rb_hash_aset(hash, rust_str_to_sym("iseq_calls"), iseq_calls);
+        set_call_counts(iseq_calls, &mut ISEQ_NAME_TO_IDX, &mut ISEQ_CALL_COUNT);
     }
 
     hash

@@ -514,6 +514,8 @@ jit_exec_exception(rb_execution_context_t *ec)
 # define jit_exec_exception(ec) Qundef
 #endif
 
+static void add_opt_method_entry(const rb_method_entry_t *me);
+
 #include "vm_insnhelper.c"
 
 #include "vm_exec.c"
@@ -2104,6 +2106,8 @@ vm_redefinition_check_method_type(const rb_method_entry_t *me)
         return FALSE;
     }
 
+    if (METHOD_ENTRY_BASIC(me)) return TRUE;
+
     const rb_method_definition_t *def = me->def;
     switch (def->type) {
       case VM_METHOD_TYPE_CFUNC:
@@ -2154,16 +2158,36 @@ rb_vm_check_redefinition_by_prepend(VALUE klass)
 }
 
 static void
-add_opt_method(VALUE klass, ID mid, VALUE bop)
+add_opt_method_entry_bop(const rb_method_entry_t *me, ID mid, enum ruby_basic_operators bop)
+{
+    st_insert(vm_opt_method_def_table, (st_data_t)me->def, (st_data_t)bop);
+    st_insert(vm_opt_mid_table, (st_data_t)mid, (st_data_t)Qtrue);
+}
+
+static void
+add_opt_method(VALUE klass, ID mid, enum ruby_basic_operators bop)
 {
     const rb_method_entry_t *me = rb_method_entry_at(klass, mid);
 
     if (me && vm_redefinition_check_method_type(me)) {
-        st_insert(vm_opt_method_def_table, (st_data_t)me->def, (st_data_t)bop);
-        st_insert(vm_opt_mid_table, (st_data_t)mid, (st_data_t)Qtrue);
+        add_opt_method_entry_bop(me, mid, bop);
     }
     else {
         rb_bug("undefined optimized method: %s", rb_id2name(mid));
+    }
+}
+
+static enum ruby_basic_operators vm_redefinition_bop_for_id(ID mid);
+
+static void
+add_opt_method_entry(const rb_method_entry_t *me)
+{
+    if (me && vm_redefinition_check_method_type(me)) {
+        ID mid = me->called_id;
+        enum ruby_basic_operators bop = vm_redefinition_bop_for_id(mid);
+        if ((int)bop >= 0) {
+            add_opt_method_entry_bop(me, mid, bop);
+        }
     }
 }
 
@@ -2171,10 +2195,7 @@ static void
 vm_init_redefined_flag(void)
 {
     ID mid;
-    VALUE bop;
-
-    vm_opt_method_def_table = st_init_numtable();
-    vm_opt_mid_table = st_init_numtable();
+    enum ruby_basic_operators bop;
 
 #define OP(mid_, bop_) (mid = id##mid_, bop = BOP_##bop_, ruby_vm_redefined_flag[bop] = 0)
 #define C(k) add_opt_method(rb_c##k, mid, bop)
@@ -2211,6 +2232,46 @@ vm_init_redefined_flag(void)
     OP(Default, DEFAULT), (C(Hash));
 #undef C
 #undef OP
+}
+
+static enum ruby_basic_operators
+vm_redefinition_bop_for_id(ID mid)
+{
+    switch (mid) {
+#define OP(mid_, bop_) case id##mid_: return BOP_##bop_
+    OP(PLUS, PLUS);
+    OP(MINUS, MINUS);
+    OP(MULT, MULT);
+    OP(DIV, DIV);
+    OP(MOD, MOD);
+    OP(Eq, EQ);
+    OP(Eqq, EQQ);
+    OP(LT, LT);
+    OP(LE, LE);
+    OP(GT, GT);
+    OP(GE, GE);
+    OP(LTLT, LTLT);
+    OP(AREF, AREF);
+    OP(ASET, ASET);
+    OP(Length, LENGTH);
+    OP(Size, SIZE);
+    OP(EmptyP, EMPTY_P);
+    OP(Succ, SUCC);
+    OP(EqTilde, MATCH);
+    OP(Freeze, FREEZE);
+    OP(UMinus, UMINUS);
+    OP(Max, MAX);
+    OP(Min, MIN);
+    OP(Hash, HASH);
+    OP(Call, CALL);
+    OP(And, AND);
+    OP(Or, OR);
+    OP(NilP, NIL_P);
+    OP(Cmp, CMP);
+    OP(Default, DEFAULT);
+#undef OP
+    }
+    return -1;
 }
 
 /* for vm development */
@@ -4212,6 +4273,9 @@ Init_BareVM(void)
     // setup ractor system
     rb_native_mutex_initialize(&vm->ractor.sync.lock);
     rb_native_cond_initialize(&vm->ractor.sync.terminate_cond);
+
+    vm_opt_method_def_table = st_init_numtable();
+    vm_opt_mid_table = st_init_numtable();
 
 #ifdef RUBY_THREAD_WIN32_H
     rb_native_cond_initialize(&vm->ractor.sync.barrier_cond);

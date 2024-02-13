@@ -737,6 +737,39 @@ describe "Module#prepend" do
     klass.ancestors.take(4).should == [klass, submod, mod, Object]
   end
 
+  # https://bugs.ruby-lang.org/issues/17423
+  describe "when module already exists in ancestor chain" do
+    ruby_version_is ""..."3.1" do
+      it "does not modify the ancestor chain" do
+        m = Module.new do; end
+        a = Module.new do; end
+        b = Class.new do; end
+
+        b.include(a)
+        a.prepend(m)
+        b.ancestors.take(4).should == [b, m, a, Object]
+
+        b.prepend(m)
+        b.ancestors.take(4).should == [b, m, a, Object]
+      end
+    end
+
+    ruby_version_is "3.1" do
+      it "modifies the ancestor chain" do
+        m = Module.new do; end
+        a = Module.new do; end
+        b = Class.new do; end
+
+        b.include(a)
+        a.prepend(m)
+        b.ancestors.take(4).should == [b, m, a, Object]
+
+        b.prepend(m)
+        b.ancestors.take(5).should == [m, b, m, a, Object]
+      end
+    end
+  end
+
   describe "called on a module" do
     describe "included into a class"
     it "does not obscure the module's methods from reflective access" do

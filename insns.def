@@ -563,7 +563,12 @@ splatkw
 (VALUE obj, VALUE block)
 // attr bool leaf = false; /* has rb_to_hash_type() */
 {
-    obj = rb_to_hash_type(hash);
+    if (NIL_P(hash)) {
+        obj = Qnil;
+    }
+    else {
+        obj = rb_to_hash_type(hash);
+    }
 }
 
 /* put new Hash from n elements. n must be an even number. */

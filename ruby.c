@@ -1787,7 +1787,12 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
 
     Init_ext(); /* load statically linked extensions before rubygems */
     Init_extra_exts();
+
+    GET_VM()->running = 0;
     rb_call_builtin_inits();
+    GET_VM()->running = 1;
+    memset(ruby_vm_redefined_flag, 0, sizeof(ruby_vm_redefined_flag));
+
     ruby_init_prelude();
 
     // Initialize JITs after prelude because JITing prelude is typically not optimal.

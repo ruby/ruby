@@ -411,15 +411,15 @@ nucomp_s_alloc(VALUE klass)
 inline static VALUE
 f_complex_new_bang1(VALUE klass, VALUE x)
 {
-    assert(!RB_TYPE_P(x, T_COMPLEX));
+    RUBY_ASSERT(!RB_TYPE_P(x, T_COMPLEX));
     return nucomp_s_new_internal(klass, x, ZERO);
 }
 
 inline static VALUE
 f_complex_new_bang2(VALUE klass, VALUE x, VALUE y)
 {
-    assert(!RB_TYPE_P(x, T_COMPLEX));
-    assert(!RB_TYPE_P(y, T_COMPLEX));
+    RUBY_ASSERT(!RB_TYPE_P(x, T_COMPLEX));
+    RUBY_ASSERT(!RB_TYPE_P(y, T_COMPLEX));
     return nucomp_s_new_internal(klass, x, y);
 }
 
@@ -432,7 +432,7 @@ nucomp_real_check(VALUE num)
         !RB_TYPE_P(num, T_RATIONAL)) {
         if (RB_TYPE_P(num, T_COMPLEX) && nucomp_real_p(num)) {
             VALUE real = RCOMPLEX(num)->real;
-            assert(!RB_TYPE_P(real, T_COMPLEX));
+            RUBY_ASSERT(!RB_TYPE_P(real, T_COMPLEX));
             return real;
         }
         if (!k_numeric_p(num) || !f_real_p(num))

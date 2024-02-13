@@ -2563,6 +2563,13 @@ class Reline::LineEditor
   end
   alias_method :kill_line, :ed_kill_line
 
+  # Editline:: +vi_change_to_eol+ (vi command: +C+) + Kill and change from the cursor to the end of the line.
+  private def vi_change_to_eol(key)
+    ed_kill_line(key)
+
+    @config.editing_mode = :vi_insert
+  end
+
   # Editline:: +vi-kill-line-prev+ (vi: +Ctrl-U+) Delete the string from the
   #            beginning  of the edit buffer to the cursor and save it to the
   #            cut buffer.
