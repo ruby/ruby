@@ -9737,7 +9737,7 @@ parser_lex(pm_parser_t *parser) {
             // and then find the first one.
             pm_lex_mode_t *lex_mode = parser->lex_modes.current;
             const uint8_t *breakpoints = lex_mode->as.list.breakpoints;
-            const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+            const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
 
             // If we haven't found an escape yet, then this buffer will be
             // unallocated since we can refer directly to the source string.
@@ -9746,7 +9746,7 @@ parser_lex(pm_parser_t *parser) {
             while (breakpoint != NULL) {
                 // If we hit a null byte, skip directly past it.
                 if (*breakpoint == '\0') {
-                    breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1));
+                    breakpoint = pm_strpbrk(parser, breakpoint + 1, breakpoints, parser->end - (breakpoint + 1), true);
                     continue;
                 }
 
@@ -9765,7 +9765,7 @@ parser_lex(pm_parser_t *parser) {
                     // we need to continue on past it.
                     if (lex_mode->as.list.nesting > 0) {
                         parser->current.end = breakpoint + 1;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
                         lex_mode->as.list.nesting--;
                         continue;
                     }
@@ -9850,7 +9850,7 @@ parser_lex(pm_parser_t *parser) {
                     }
 
                     token_buffer.cursor = parser->current.end;
-                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
                     continue;
                 }
 
@@ -9863,7 +9863,7 @@ parser_lex(pm_parser_t *parser) {
                         // that looked like an interpolated class or instance variable
                         // like "#@" but wasn't actually. In this case we'll just skip
                         // to the next breakpoint.
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
                         continue;
                     }
 
@@ -9878,7 +9878,7 @@ parser_lex(pm_parser_t *parser) {
                 // and find the next breakpoint.
                 assert(*breakpoint == lex_mode->as.list.incrementor);
                 parser->current.end = breakpoint + 1;
-                breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
                 lex_mode->as.list.nesting++;
                 continue;
             }
@@ -9917,14 +9917,14 @@ parser_lex(pm_parser_t *parser) {
             // regular expression. We'll use strpbrk to find the first of these
             // characters.
             const uint8_t *breakpoints = lex_mode->as.regexp.breakpoints;
-            const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+            const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
             pm_token_buffer_t token_buffer = { { 0 }, 0 };
 
             while (breakpoint != NULL) {
                 // If we hit a null byte, skip directly past it.
                 if (*breakpoint == '\0') {
                     parser->current.end = breakpoint + 1;
-                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
                     continue;
                 }
 
@@ -9946,7 +9946,7 @@ parser_lex(pm_parser_t *parser) {
                         // If the terminator is not a newline, then we can set
                         // the next breakpoint and continue.
                         parser->current.end = breakpoint + 1;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
                         continue;
                     }
                 }
@@ -9956,7 +9956,7 @@ parser_lex(pm_parser_t *parser) {
                 if (*breakpoint == lex_mode->as.regexp.terminator) {
                     if (lex_mode->as.regexp.nesting > 0) {
                         parser->current.end = breakpoint + 1;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
                         lex_mode->as.regexp.nesting--;
                         continue;
                     }
@@ -10055,7 +10055,7 @@ parser_lex(pm_parser_t *parser) {
                     }
 
                     token_buffer.cursor = parser->current.end;
-                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
                     continue;
                 }
 
@@ -10068,7 +10068,7 @@ parser_lex(pm_parser_t *parser) {
                         // something that looked like an interpolated class or
                         // instance variable like "#@" but wasn't actually. In
                         // this case we'll just skip to the next breakpoint.
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
                         continue;
                     }
 
@@ -10083,7 +10083,7 @@ parser_lex(pm_parser_t *parser) {
                 // and find the next breakpoint.
                 assert(*breakpoint == lex_mode->as.regexp.incrementor);
                 parser->current.end = breakpoint + 1;
-                breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, false);
                 lex_mode->as.regexp.nesting++;
                 continue;
             }
@@ -10119,7 +10119,7 @@ parser_lex(pm_parser_t *parser) {
             // string. We'll use strpbrk to find the first of these characters.
             pm_lex_mode_t *lex_mode = parser->lex_modes.current;
             const uint8_t *breakpoints = lex_mode->as.string.breakpoints;
-            const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+            const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
 
             // If we haven't found an escape yet, then this buffer will be
             // unallocated since we can refer directly to the source string.
@@ -10131,7 +10131,7 @@ parser_lex(pm_parser_t *parser) {
                 if (lex_mode->as.string.incrementor != '\0' && *breakpoint == lex_mode->as.string.incrementor) {
                     lex_mode->as.string.nesting++;
                     parser->current.end = breakpoint + 1;
-                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                    breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
                     continue;
                 }
 
@@ -10143,7 +10143,7 @@ parser_lex(pm_parser_t *parser) {
                     // to continue on past it.
                     if (lex_mode->as.string.nesting > 0) {
                         parser->current.end = breakpoint + 1;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
                         lex_mode->as.string.nesting--;
                         continue;
                     }
@@ -10185,7 +10185,7 @@ parser_lex(pm_parser_t *parser) {
                     if (parser->heredoc_end == NULL) {
                         pm_newline_list_append(&parser->newline_list, breakpoint);
                         parser->current.end = breakpoint + 1;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
                         continue;
                     } else {
                         parser->current.end = breakpoint + 1;
@@ -10199,7 +10199,7 @@ parser_lex(pm_parser_t *parser) {
                     case '\0':
                         // Skip directly past the null character.
                         parser->current.end = breakpoint + 1;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
                         break;
                     case '\\': {
                         // Here we hit escapes.
@@ -10268,7 +10268,7 @@ parser_lex(pm_parser_t *parser) {
                         }
 
                         token_buffer.cursor = parser->current.end;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
                         break;
                     }
                     case '#': {
@@ -10279,7 +10279,7 @@ parser_lex(pm_parser_t *parser) {
                             // looked like an interpolated class or instance variable like "#@"
                             // but wasn't actually. In this case we'll just skip to the next
                             // breakpoint.
-                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
                             break;
                         }
 
@@ -10407,7 +10407,7 @@ parser_lex(pm_parser_t *parser) {
                 breakpoints[2] = '\0';
             }
 
-            const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+            const uint8_t *breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
             pm_token_buffer_t token_buffer = { { 0 }, 0 };
             bool was_escaped_newline = false;
 
@@ -10416,7 +10416,7 @@ parser_lex(pm_parser_t *parser) {
                     case '\0':
                         // Skip directly past the null character.
                         parser->current.end = breakpoint + 1;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
                         break;
                     case '\n': {
                         if (parser->heredoc_end != NULL && (parser->heredoc_end > breakpoint)) {
@@ -10491,7 +10491,7 @@ parser_lex(pm_parser_t *parser) {
                         // Otherwise we hit a newline and it wasn't followed by
                         // a terminator, so we can continue parsing.
                         parser->current.end = breakpoint + 1;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
                         break;
                     }
                     case '\\': {
@@ -10555,7 +10555,7 @@ parser_lex(pm_parser_t *parser) {
                         }
 
                         token_buffer.cursor = parser->current.end;
-                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                        breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
                         break;
                     }
                     case '#': {
@@ -10567,7 +10567,7 @@ parser_lex(pm_parser_t *parser) {
                             // or instance variable like "#@" but wasn't
                             // actually. In this case we'll just skip to the
                             // next breakpoint.
-                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end);
+                            breakpoint = pm_strpbrk(parser, parser->current.end, breakpoints, parser->end - parser->current.end, true);
                             break;
                         }
 

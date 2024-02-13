@@ -2253,12 +2253,12 @@ static const uint8_t pm_utf_8_dfa[] = {
 static pm_unicode_codepoint_t
 pm_utf_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
     assert(n >= 0);
-    size_t maximum = (size_t) n;
 
+    size_t maximum = (n > 4) ? 4 : ((size_t) n);
     uint32_t codepoint;
     uint32_t state = 0;
 
-    for (size_t index = 0; index < 4 && index < maximum; index++) {
+    for (size_t index = 0; index < maximum; index++) {
         uint32_t byte = b[index];
         uint32_t type = pm_utf_8_dfa[byte];
 
@@ -2267,7 +2267,7 @@ pm_utf_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
             (0xffu >> type) & (byte);
 
         state = pm_utf_8_dfa[256 + (state * 16) + type];
-        if (!state) {
+        if (state == 0) {
             *width = index + 1;
             return (pm_unicode_codepoint_t) codepoint;
         }
@@ -2282,9 +2282,17 @@ pm_utf_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
  */
 size_t
 pm_encoding_utf_8_char_width(const uint8_t *b, ptrdiff_t n) {
-    size_t width;
-    pm_utf_8_codepoint(b, n, &width);
-    return width;
+    assert(n >= 0);
+
+    size_t maximum = (n > 4) ? 4 : ((size_t) n);
+    uint32_t state = 0;
+
+    for (size_t index = 0; index < maximum; index++) {
+        state = pm_utf_8_dfa[256 + (state * 16) + pm_utf_8_dfa[b[index]]];
+        if (state == 0) return index + 1;
+    }
+
+    return 0;
 }
 
 /**
