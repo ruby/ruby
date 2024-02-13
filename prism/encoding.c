@@ -4187,15 +4187,6 @@ pm_encoding_gbk_char_width(const uint8_t *b, ptrdiff_t n) {
 }
 
 /**
- * Returns the size of the next character in the KOI-8 encoding. This means
- * checking if it's a valid codepoint in KOI-8 and if it is returning 1.
- */
-static size_t
-pm_encoding_koi8_char_width(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {
-    return ((*b >= 0x20 && *b <= 0x7E) || (*b >= 0x80)) ? 1 : 0;
-}
-
-/**
  * Returns the size of the next character in the Shift_JIS encoding, or 0 if a
  * character cannot be decoded from the given bytes.
  */
@@ -4652,7 +4643,7 @@ const pm_encoding_t pm_encodings[] = {
     },
     [PM_ENCODING_KOI8_R] = {
         .name = "KOI8-R",
-        .char_width = pm_encoding_koi8_char_width,
+        .char_width = pm_encoding_single_char_width,
         .alnum_char = pm_encoding_koi8_r_alnum_char,
         .alpha_char = pm_encoding_koi8_r_alpha_char,
         .isupper_char = pm_encoding_koi8_r_isupper_char,
@@ -4660,7 +4651,7 @@ const pm_encoding_t pm_encodings[] = {
     },
     [PM_ENCODING_KOI8_U] = {
         .name = "KOI8-U",
-        .char_width = pm_encoding_koi8_char_width,
+        .char_width = pm_encoding_single_char_width,
         .alnum_char = pm_encoding_koi8_u_alnum_char,
         .alpha_char = pm_encoding_koi8_u_alpha_char,
         .isupper_char = pm_encoding_koi8_u_isupper_char,
