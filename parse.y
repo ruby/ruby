@@ -2780,7 +2780,7 @@ rb_str_to_parser_string(rb_parser_t *p, VALUE str)
 %type <node> literal numeric simple_numeric ssym dsym symbol cpath
 /*ripper*/ %type <node_def_temp> defn_head defs_head k_def
 /*ripper*/ %type <node_exits> block_open k_while k_until k_for allow_exits
-%type <node> top_compstmt top_stmts top_stmt begin_block endless_arg endless_command
+%type <node> top_compstmt top_stmts top_stmt begin_block endless_stmt endless_arg endless_command
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
 %type <node> expr_value expr_value_do arg_value primary_value rel_expr
 %type <node_fcall> fcall
@@ -4215,7 +4215,7 @@ arg		: lhs '=' lex_ctxt arg_rhs
                     /*% %*/
                     /*% ripper: ifop!($1, $3, $6) %*/
                     }
-                | defn_head[head] f_opt_paren_args[args] '=' endless_arg[bodystmt]
+                | defn_head[head] f_opt_paren_args[args] '=' endless_stmt[bodystmt]
                     {
                         endless_method_name(p, get_id($head->nd_mid), &@head);
                         restore_defun(p, $head);
@@ -4228,7 +4228,7 @@ arg		: lhs '=' lex_ctxt arg_rhs
                     /*% ripper: def!($head->nd_mid, $args, $bodystmt) %*/
                         local_pop(p);
                     }
-                | defs_head[head] f_opt_paren_args[args] '=' endless_arg[bodystmt]
+                | defs_head[head] f_opt_paren_args[args] '=' endless_stmt[bodystmt]
                     {
                         endless_method_name(p, get_id($head->nd_mid), &@head);
                         restore_defun(p, $head);
@@ -4247,7 +4247,7 @@ arg		: lhs '=' lex_ctxt arg_rhs
                     }
                 ;
 
-endless_arg	: arg %prec modifier_rescue
+endless_stmt    : endless_arg %prec tLOWEST
                 | endless_arg modifier_rescue after_rescue arg
                     {
                         p->ctxt.in_rescue = $3.in_rescue;
@@ -4256,9 +4256,20 @@ endless_arg	: arg %prec modifier_rescue
                     /*% %*/
                     /*% ripper: rescue_mod!($1, $4) %*/
                     }
+                ;
+
+endless_arg	: arg %prec modifier_rescue
                 | keyword_not opt_nl endless_arg
                     {
                         $$ = call_uni_op(p, method_cond(p, $3, &@3), METHOD_NOT, &@1, &@$);
+                    }
+                | endless_arg keyword_and endless_arg
+                    {
+                        $$ = logop(p, idAND, $1, $3, &@2, &@$);
+                    }
+                | endless_arg keyword_or endless_arg
+                    {
+                        $$ = logop(p, idOR, $1, $3, &@2, &@$);
                     }
                 ;
 
