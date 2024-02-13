@@ -2589,7 +2589,7 @@ pm_scope_node_init(const pm_node_t *node, pm_scope_node_t *scope, pm_scope_node_
         break;
       }
       default:
-        assert(false && "unreachable");
+        rb_bug("unreachable");
         break;
     }
 }
