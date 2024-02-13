@@ -185,12 +185,16 @@ ossl_pkcs7_s_write_smime(int argc, VALUE *argv, VALUE klass)
     BIO *out, *in;
     PKCS7 *p7;
     VALUE str;
-    int flg;
+    int flg, nid;
 
     rb_scan_args(argc, argv, "12", &pkcs7, &data, &flags);
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
     if(NIL_P(data)) data = ossl_pkcs7_get_data(pkcs7);
     GetPKCS7(pkcs7, p7);
+    nid = OBJ_obj2nid(p7->type);
+    if(nid == NID_pkcs7_signed && p7->d.sign == NULL){
+        ossl_raise(ePKCS7Error, NULL);
+    }
     if(!NIL_P(data) && PKCS7_is_detached(p7))
 	flg |= PKCS7_DETACHED;
     in = NIL_P(data) ? NULL : ossl_obj2bio(&data);
