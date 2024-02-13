@@ -5660,66 +5660,98 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // If this hash is popped, then this serves only to ensure we enact
             // all side-effects (like method calls) that are contained within
             // the hash contents.
-            pm_hash_node_t *cast = (pm_hash_node_t *) node;
-            // Elements must be non-empty, otherwise it would be static literal
-            pm_node_list_t *elements = &cast->elements;
+            const pm_hash_node_t *cast = (const pm_hash_node_t *) node;
+            const pm_node_list_t *elements = &cast->elements;
 
-            pm_node_t *cur_node = elements->nodes[0];
-            pm_node_type_t cur_type = PM_NODE_TYPE(cur_node);
-            int elements_of_cur_type = 0;
-            int allocated_hashes = 0;
-
-            if (!PM_NODE_TYPE_P(cur_node, PM_ASSOC_NODE) && !popped) {
-                ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(0));
-                allocated_hashes++;
+            if (popped) {
+                // If this hash is popped, then we can iterate through each
+                // element and compile it. The result of each compilation will
+                // only include the side effects of the element itself.
+                for (size_t index = 0; index < elements->size; index++) {
+                    PM_COMPILE_POPPED(elements->nodes[index]);
+                }
             }
+            else {
+                // If this element is not popped, then we need to create the
+                // hash on the stack. Neighboring plain assoc nodes should be
+                // grouped together (either by newhash or hash merge). Double
+                // splat nodes should be merged using the mege_kwd method call.
+                int assoc_length = 0;
+                bool made_hash = false;
 
-            for (size_t index = 0; index < elements->size; index++) {
-                pm_node_t *cur_node = elements->nodes[index];
-                if (!popped) {
-                    if (!PM_NODE_TYPE_P(cur_node, cur_type)) {
-                        if (!allocated_hashes) {
-                            ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(elements_of_cur_type * 2));
-                        }
-                        else {
-                            if (cur_type == PM_ASSOC_NODE) {
-                                ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(3));
+                for (size_t index = 0; index < elements->size; index++) {
+                    const pm_node_t *element = elements->nodes[index];
+
+                    switch (PM_NODE_TYPE(element)) {
+                      case PM_ASSOC_NODE:
+                        // If this is a plain assoc node, then we can compile it
+                        // directly and then add to the number of assoc nodes
+                        // we've seen so far.
+                        PM_COMPILE_NOT_POPPED(element);
+                        assoc_length++;
+                        break;
+                      case PM_ASSOC_SPLAT_NODE: {
+                        // If we are at a splat and we have already compiled
+                        // some elements of the hash, then we need to either
+                        // create the first hash or merge the current elements
+                        // into the existing hash.
+                        if (assoc_length > 0) {
+                            if (!made_hash) {
+                                ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(assoc_length * 2));
+                                made_hash = true;
                             }
                             else {
-                                ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_kwd, INT2FIX(2));
+                                // Here we are merging plain assoc nodes into
+                                // the hash on the stack.
+                                ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(assoc_length * 2 + 1));
+
+                                // Since we already have a hash on the stack, we
+                                // need to set up the method call for the next
+                                // merge that will occur.
+                                ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                                PM_SWAP;
                             }
+
+                            assoc_length = 0;
                         }
 
+                        // If this is the first time we've seen a splat, then we
+                        // need to create a hash that we can merge into.
+                        if (!made_hash) {
+                            ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                            ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(0));
+                            made_hash = true;
+                        }
+
+                        PM_COMPILE_NOT_POPPED(element);
+                        ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_kwd, INT2FIX(2));
+
+                        // We know that any subsequent elements will need to be
+                        // merged in using one of the special core methods. So
+                        // here we will put the receiver of the merge and then
+                        // swap it with the hash that is going to be the first
+                        // argument.
                         ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
                         PM_SWAP;
-                        PM_COMPILE(elements->nodes[index]);
 
-                        allocated_hashes++;
-                        elements_of_cur_type = 0;
-                        cur_type = PM_NODE_TYPE(cur_node);
+                        break;
+                      }
+                      default:
+                        RUBY_ASSERT("Invalid node type for hash" && false);
+                        break;
                     }
-                    else {
-                        elements_of_cur_type++;
-                        PM_COMPILE(elements->nodes[index]);
-                    }
+                }
+
+                if (!made_hash) {
+                    // If we haven't already made the hash, then this means we
+                    // only saw plain assoc nodes. In this case, we can just
+                    // create the hash directly.
+                    ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(assoc_length * 2));
                 }
                 else {
-                    PM_COMPILE(elements->nodes[index]);
-                }
-            }
-
-            if (!popped) {
-                if (!allocated_hashes) {
-                    ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(elements_of_cur_type * 2));
-                }
-                else {
-                    if (cur_type == PM_ASSOC_NODE) {
-                        ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(3));
-                    }
-                    else {
-                        ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_kwd, INT2FIX(2));
-                    }
+                    // If we have already made the hash, then we need to merge
+                    // the remaining assoc nodes into the hash on the stack.
+                    ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(assoc_length * 2 + 1));
                 }
             }
         }
