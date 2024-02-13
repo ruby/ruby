@@ -179,6 +179,10 @@ jobs:
 
       - run: nmake extract-extlibs
 
+      # On all other platforms, test-spec depending on extract-gems (in common.mk) is enough.
+      # But not for this Visual Studio workflow. So here we extract gems before building.
+      - run: nmake extract-gems
+
       - run: nmake
 
       - run: nmake test
