@@ -5,18 +5,25 @@
 /******************************************************************************/
 
 #define PUSH_INSN(seq, location, insn) \
-  ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (int) (location).line, (int) (location).column, BIN(insn), 0))
+    ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (int) (location).line, (int) (location).column, BIN(insn), 0))
 
 #define PUSH_INSN1(seq, location, insn, op1) \
-  ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (int) (location).line, (int) (location).column, BIN(insn), 1, (VALUE)(op1)))
+    ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (int) (location).line, (int) (location).column, BIN(insn), 1, (VALUE)(op1)))
 
-#define PUSH_INSNL(seq, location, insn, label) (PUSH_INSN1(seq, location, insn, label), LABEL_REF(label))
+#define PUSH_INSNL(seq, location, insn, label) \
+    (PUSH_INSN1(seq, location, insn, label), LABEL_REF(label))
+
+#define PUSH_LABEL(seq, label) \
+    ADD_ELEM((seq), (LINK_ELEMENT *) (label))
 
 #define PUSH_SEND_R(seq, location, id, argc, block, flag, keywords) \
-  ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_send(iseq, (int) (location).line, (int) (location).column, (id), (VALUE)(argc), (block), (VALUE)(flag), (keywords)))
+    ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_send(iseq, (int) (location).line, (int) (location).column, (id), (VALUE)(argc), (block), (VALUE)(flag), (keywords)))
 
 #define PUSH_SEND(seq, location, id, argc) \
-  PUSH_SEND_R((seq), location, (id), (argc), NULL, (VALUE)INT2FIX(0), NULL)
+    PUSH_SEND_R((seq), location, (id), (argc), NULL, (VALUE)INT2FIX(0), NULL)
+
+#define PUSH_TRACE(seq, event) \
+  ADD_ELEM((seq), (LINK_ELEMENT *) new_trace_body(iseq, (event), 0))
 
 /******************************************************************************/
 /* These are helper macros for the compiler.                                  */
@@ -4134,8 +4141,8 @@ pm_compile_case_node_dispatch(VALUE dispatch, const pm_node_t *node, LABEL *labe
 static void
 pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
-    int lineno = (int) pm_newline_list_line_column(&scope_node->parser->newline_list, node->location.start).line;
-    NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
+    const pm_line_column_t location = pm_newline_list_line_column(&scope_node->parser->newline_list, node->location.start);
+    int lineno = (int) location.line;
 
     if (PM_NODE_FLAG_P(node, PM_NODE_FLAG_NEWLINE) && ISEQ_COMPILE_DATA(iseq)->last_line != lineno) {
         int event = RUBY_EVENT_LINE;
@@ -4144,15 +4151,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         if (ISEQ_COVERAGE(iseq) && ISEQ_LINE_COVERAGE(iseq)) {
             event |= RUBY_EVENT_COVERAGE_LINE;
         }
-        ADD_TRACE(ret, event);
+        PUSH_TRACE(ret, event);
     }
+
+    NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
 
     switch (PM_NODE_TYPE(node)) {
       case PM_ALIAS_GLOBAL_VARIABLE_NODE: {
         // alias $foo $bar
         // ^^^^^^^^^^^^^^^
         const pm_alias_global_variable_node_t *cast = (const pm_alias_global_variable_node_t *) node;
-        const pm_line_column_t location = pm_newline_list_line_column(&scope_node->parser->newline_list, cast->base.location.start);
 
         PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
         PUSH_INSN1(ret, location, putobject, ID2SYM(parse_location_symbol(&cast->new_name->location, scope_node->parser)));
@@ -4167,7 +4175,6 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // alias foo bar
         // ^^^^^^^^^^^^^
         const pm_alias_method_node_t *cast = (const pm_alias_method_node_t *) node;
-        const pm_line_column_t location = pm_newline_list_line_column(&scope_node->parser->newline_list, cast->base.location.start);
 
         PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
         PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
@@ -4183,9 +4190,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // a and b
         // ^^^^^^^
         const pm_and_node_t *cast = (const pm_and_node_t *) node;
-        const pm_line_column_t location = pm_newline_list_line_column(&scope_node->parser->newline_list, cast->base.location.start);
-
-        LABEL *end_label = NEW_LABEL((long) location.line);
+        LABEL *end_label = NEW_LABEL(lineno);
 
         PM_COMPILE_NOT_POPPED(cast->left);
         if (!popped) PUSH_INSN(ret, location, dup);
@@ -4193,27 +4198,34 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         if (!popped) PUSH_INSN(ret, location, pop);
         PM_COMPILE(cast->right);
-        ADD_LABEL(ret, end_label);
+        PUSH_LABEL(ret, end_label);
 
         return;
       }
       case PM_ARGUMENTS_NODE:
         // These are ArgumentsNodes that are not compiled directly by their
-        // parent call nodes, used in the cases of NextNodes, ReturnNodes
-        // and BreakNodes. They can create an array like ArrayNode.
+        // parent call nodes, used in the cases of NextNodes, ReturnNodes, and
+        // BreakNodes. They can create an array like ArrayNode.
       case PM_ARRAY_NODE: {
         const pm_node_list_t *elements;
+
         if (PM_NODE_TYPE(node) == PM_ARGUMENTS_NODE) {
-            pm_arguments_node_t *cast = (pm_arguments_node_t *)node;
+            // break foo
+            //       ^^^
+            const pm_arguments_node_t *cast = (const pm_arguments_node_t *)node;
             elements = &cast->arguments;
-            // One element return
+
+            // If we are only returning a single element through one of the jump
+            // nodes, then we will only compile that node directly.
             if (elements->size == 1) {
                 PM_COMPILE(elements->nodes[0]);
                 return;
             }
         }
         else {
-            pm_array_node_t *cast = (pm_array_node_t *)node;
+            // [foo, bar, baz]
+            // ^^^^^^^^^^^^^^^
+            const pm_array_node_t *cast = (const pm_array_node_t *) node;
             elements = &cast->elements;
         }
 
@@ -4226,11 +4238,10 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             if (!popped) {
                 if (elements->size) {
                     VALUE value = pm_static_literal_value(node, scope_node);
-                    ADD_INSN1(ret, &dummy_line_node, duparray, value);
-                    RB_OBJ_WRITTEN(iseq, Qundef, value);
+                    PUSH_INSN1(ret, location, duparray, value);
                 }
                 else {
-                    ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(0));
+                    PUSH_INSN1(ret, location, newarray, INT2FIX(0));
                 }
             }
         }
@@ -4248,26 +4259,26 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // own arrays, followed by a newarray, and then continually
             // concat the arrays with the SplatNode nodes.
             int new_array_size = 0;
+
             bool need_to_concat_array = false;
             bool has_kw_splat = false;
 
             for (size_t index = 0; index < elements->size; index++) {
-                pm_node_t *array_element = elements->nodes[index];
-                if (PM_NODE_TYPE_P(array_element, PM_SPLAT_NODE)) {
-                    pm_splat_node_t *splat_element = (pm_splat_node_t *)array_element;
+                const pm_node_t *element = elements->nodes[index];
 
-                    // If we already have non-splat elements, we need to emit a newarray
-                    // instruction
-                    if (new_array_size) {
-                        ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(new_array_size));
+                if (PM_NODE_TYPE_P(element, PM_SPLAT_NODE)) {
+                    const pm_splat_node_t *splat_element = (const pm_splat_node_t *) element;
 
-                        // We don't want to emit a concat array in the case where
-                        // we're seeing our first splat, and already have elements
-                        if (need_to_concat_array) {
-                            ADD_INSN(ret, &dummy_line_node, concatarray);
-                        }
-
+                    // If we already have non-splat elements, we need to emit a
+                    // newarray instruction.
+                    if (new_array_size > 0) {
+                        PUSH_INSN1(ret, location, newarray, INT2FIX(new_array_size));
                         new_array_size = 0;
+
+                        // We don't want to emit a concat array in the case
+                        // where we're seeing our first splat, and already have
+                        // elements.
+                        if (need_to_concat_array) PUSH_INSN(ret, location, concatarray);
                     }
 
                     if (splat_element->expression) {
@@ -4279,39 +4290,41 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                     }
 
                     if (index > 0) {
-                        ADD_INSN(ret, &dummy_line_node, concatarray);
+                        PUSH_INSN(ret, location, concatarray);
                     }
                     else {
-                        // If this is the first element, we need to splatarray
-                        ADD_INSN1(ret, &dummy_line_node, splatarray, Qtrue);
+                        // If this is the first element of the array then we
+                        // need to splatarray the elements into the list.
+                        PUSH_INSN1(ret, location, splatarray, Qtrue);
                     }
 
+                    // Since we have now seen a splat and are concat-ing arrays,
+                    // all subsequent splats will need to concat as well.
                     need_to_concat_array = true;
                 }
-                else if (PM_NODE_TYPE_P(array_element, PM_KEYWORD_HASH_NODE)) {
+                else if (PM_NODE_TYPE_P(element, PM_KEYWORD_HASH_NODE)) {
                     new_array_size++;
                     has_kw_splat = true;
-                    pm_compile_hash_elements(&((const pm_keyword_hash_node_t *) array_element)->elements, lineno, iseq, ret, scope_node);
+                    pm_compile_hash_elements(&((const pm_keyword_hash_node_t *) element)->elements, lineno, iseq, ret, scope_node);
                 }
                 else {
                     new_array_size++;
-                    PM_COMPILE_NOT_POPPED(array_element);
+                    PM_COMPILE_NOT_POPPED(element);
                 }
             }
 
             if (new_array_size) {
                 if (has_kw_splat) {
-                    ADD_INSN1(ret, &dummy_line_node, newarraykwsplat, INT2FIX(new_array_size));
+                    PUSH_INSN1(ret, location, newarraykwsplat, INT2FIX(new_array_size));
                 }
                 else {
-                    ADD_INSN1(ret, &dummy_line_node, newarray, INT2FIX(new_array_size));
+                    PUSH_INSN1(ret, location, newarray, INT2FIX(new_array_size));
                 }
-                if (need_to_concat_array) {
-                    ADD_INSN(ret, &dummy_line_node, concatarray);
-                }
+
+                if (need_to_concat_array) PUSH_INSN(ret, location, concatarray);
             }
 
-            PM_POP_IF_POPPED;
+            if (popped) PUSH_INSN(ret, location, pop);
         }
         return;
       }
