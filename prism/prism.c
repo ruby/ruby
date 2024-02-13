@@ -14,6 +14,8 @@ pm_version(void) {
  */
 #define PM_TAB_WHITESPACE_SIZE 8
 
+#define PM_DEFAULT_BUFFER_SIZE_BYTES 16
+
 #ifndef PM_DEBUG_LOGGING
 /**
  * Debugging logging will provide you with additional debugging functions as
@@ -8875,8 +8877,8 @@ static void
 pm_token_buffer_escape(pm_parser_t *parser, pm_token_buffer_t *token_buffer) {
     const uint8_t *start;
     if (token_buffer->cursor == NULL) {
-        pm_buffer_init_capacity(&token_buffer->buffer, 16);
-        pm_buffer_init_capacity(&token_buffer->regular_expression_buffer, 16);
+        pm_buffer_init_capacity(&token_buffer->buffer, PM_DEFAULT_BUFFER_SIZE_BYTES);
+        pm_buffer_init_capacity(&token_buffer->regular_expression_buffer, PM_DEFAULT_BUFFER_SIZE_BYTES);
         start = parser->current.start;
     } else {
         start = token_buffer->cursor;
