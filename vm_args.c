@@ -474,10 +474,12 @@ args_setup_kw_parameters_from_kwsplat(rb_execution_context_t *const ec, const rb
 }
 
 static inline void
-args_setup_kw_rest_parameter(VALUE keyword_hash, VALUE *locals, int kw_flag)
+args_setup_kw_rest_parameter(VALUE keyword_hash, VALUE *locals, int kw_flag, bool anon_kwrest)
 {
     if (NIL_P(keyword_hash)) {
-        keyword_hash = rb_hash_new();
+        if (!anon_kwrest) {
+            keyword_hash = rb_hash_new();
+        }
     }
     else if (!(kw_flag & VM_CALL_KW_SPLAT_MUT)) {
         keyword_hash = rb_hash_dup(keyword_hash);
@@ -816,7 +818,8 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         }
     }
     else if (ISEQ_BODY(iseq)->param.flags.has_kwrest) {
-        args_setup_kw_rest_parameter(keyword_hash, locals + ISEQ_BODY(iseq)->param.keyword->rest_start, kw_flag);
+        args_setup_kw_rest_parameter(keyword_hash, locals + ISEQ_BODY(iseq)->param.keyword->rest_start,
+            kw_flag, ISEQ_BODY(iseq)->param.flags.anon_kwrest);
     }
     else if (!NIL_P(keyword_hash) && RHASH_SIZE(keyword_hash) > 0 && arg_setup_type == arg_setup_method) {
         argument_kw_error(ec, iseq, "unknown", rb_hash_keys(keyword_hash));
