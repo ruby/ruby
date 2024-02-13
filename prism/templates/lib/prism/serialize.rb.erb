@@ -79,11 +79,11 @@ module Prism
       end
 
       def load_start_line
-        source.start_line = load_varsint
+        source.instance_variable_set :@start_line, load_varsint
       end
 
       def load_line_offsets
-        source.offsets = load_varuint.times.map { load_varuint }
+        source.instance_variable_set :@offsets, load_varuint.times.map { load_varuint }
       end
 
       def load_comments

@@ -9,10 +9,10 @@ module Prism
     attr_reader :source
 
     # The line number where this source starts.
-    attr_accessor :start_line
+    attr_reader :start_line
 
     # The list of newline byte offsets in the source code.
-    attr_accessor :offsets
+    attr_reader :offsets
 
     # Create a new source object with the given source code.
     def initialize(source)

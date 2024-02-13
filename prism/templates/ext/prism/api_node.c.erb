@@ -49,13 +49,13 @@ pm_source_new(pm_parser_t *parser, rb_encoding *encoding) {
 
 void
 pm_source_init(VALUE source, pm_parser_t *parser) {
-    rb_funcall(source, rb_intern("start_line="), 1, LONG2NUM(parser->start_line));
+    rb_iv_set(source, "@start_line", LONG2NUM(parser->start_line));
 
     VALUE offsets = rb_ary_new_capa(parser->newline_list.size);
     for (size_t index = 0; index < parser->newline_list.size; index++) {
         rb_ary_push(offsets, ULONG2NUM(parser->newline_list.offsets[index]));
     }
-    rb_funcall(source, rb_intern("offsets="), 1, offsets);
+    rb_iv_set(source, "@offsets", offsets);
 }
 
 typedef struct pm_node_stack_node {
