@@ -949,81 +949,98 @@ pm_compile_call_and_or_write_node(bool and_node, pm_node_t *receiver, pm_node_t 
     if (lskip && !popped) ADD_LABEL(ret, lskip);
 }
 
+/**
+ * This function compiles a hash onto the stack. It is used to compile hash
+ * literals and keyword arguments. It is assumed that if we get here that the
+ * contents of the hash are not popped.
+ */
 static void
-pm_arg_compile_keyword_hash_node(pm_keyword_hash_node_t *node, rb_iseq_t *iseq, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node, NODE dummy_line_node)
+pm_compile_hash_elements(const pm_node_list_t *elements, int lineno, rb_iseq_t *iseq, LINK_ANCHOR *const ret, pm_scope_node_t *scope_node)
 {
-    size_t len = node->elements.size;
-    int cur_hash_size = 0;
+    NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
 
-    bool new_hash_emitted = false;
-    for (size_t i = 0; i < len; i++) {
-        pm_node_t *cur_node = node->elements.nodes[i];
-        pm_node_type_t cur_type = PM_NODE_TYPE(cur_node);
+    // If this element is not popped, then we need to create the
+    // hash on the stack. Neighboring plain assoc nodes should be
+    // grouped together (either by newhash or hash merge). Double
+    // splat nodes should be merged using the mege_kwd method call.
+    int assoc_length = 0;
+    bool made_hash = false;
 
-        switch (cur_type) {
+    for (size_t index = 0; index < elements->size; index++) {
+        const pm_node_t *element = elements->nodes[index];
+
+        switch (PM_NODE_TYPE(element)) {
           case PM_ASSOC_NODE: {
-            pm_assoc_node_t *assoc = (pm_assoc_node_t *)cur_node;
-
-            PM_COMPILE(assoc->key);
-            PM_COMPILE(assoc->value);
-            cur_hash_size++;
-
-            // If we're at the last keyword arg, or the last assoc node of this "set",
-            // then we want to either construct a newhash or merge onto previous hashes
-            if (i == (len - 1) || !PM_NODE_TYPE_P(node->elements.nodes[i + 1], cur_type)) {
-                if (new_hash_emitted) {
-                    ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(cur_hash_size * 2 + 1));
-                }
-                else {
-                    if (!popped) {
-                        ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(cur_hash_size * 2));
-                        cur_hash_size = 0;
-                        new_hash_emitted = true;
-                    }
-                }
-            }
-
+            // If this is a plain assoc node, then we can compile it directly
+            // and then add to the number of assoc nodes we've seen so far.
+            PM_COMPILE_NOT_POPPED(element);
+            assoc_length++;
             break;
           }
           case PM_ASSOC_SPLAT_NODE: {
-            if (len > 1) {
-                ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                if (i == 0) {
-                    if (!popped) {
-                        ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(0));
-                        new_hash_emitted = true;
-                    }
+            // If we are at a splat and we have already compiled some elements
+            // of the hash, then we need to either create the first hash or
+            // merge the current elements into the existing hash.
+            if (assoc_length > 0) {
+                if (!made_hash) {
+                    ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(assoc_length * 2));
+                    ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                    PM_SWAP;
+                    made_hash = true;
                 }
                 else {
+                    // Here we are merging plain assoc nodes into the hash on
+                    // the stack.
+                    ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(assoc_length * 2 + 1));
+
+                    // Since we already have a hash on the stack, we need to set
+                    // up the method call for the next merge that will occur.
+                    ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
                     PM_SWAP;
                 }
+
+                assoc_length = 0;
             }
 
-            pm_assoc_splat_node_t *assoc_splat = (pm_assoc_splat_node_t *)cur_node;
-            if (assoc_splat->value != NULL) {
-                PM_COMPILE(assoc_splat->value);
-            }
-            else {
-                pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_POW, 0);
-                ADD_GETLOCAL(ret, &dummy_line_node, index.index, index.level);
-            }
-
-            if (len > 1) {
-                ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_kwd, INT2FIX(2));
+            // If this is the first time we've seen a splat, then we need to
+            // create a hash that we can merge into.
+            if (!made_hash) {
+                ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+                ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(0));
+                made_hash = true;
             }
 
-            if ((i < len - 1) && !PM_NODE_TYPE_P(node->elements.nodes[i + 1], cur_type)) {
+            // Now compile the splat node itself and merge it into the hash.
+            PM_COMPILE_NOT_POPPED(element);
+            ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_kwd, INT2FIX(2));
+
+            // We know that any subsequent elements will need to be merged in
+            // using one of the special core methods. So here we will put the
+            // receiver of the merge and then swap it with the hash that is
+            // going to be the first argument.
+            if (index != elements->size - 1) {
                 ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
                 PM_SWAP;
             }
 
-            cur_hash_size = 0;
             break;
           }
-          default: {
-            rb_bug("Unknown type in keyword argument %s\n", pm_node_type_to_str(PM_NODE_TYPE(cur_node)));
-          }
+          default:
+            RUBY_ASSERT("Invalid node type for hash" && false);
+            break;
         }
+    }
+
+    if (!made_hash) {
+        // If we haven't already made the hash, then this means we only saw
+        // plain assoc nodes. In this case, we can just create the hash
+        // directly.
+        ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(assoc_length * 2));
+    }
+    else if (assoc_length > 0) {
+        // If we have already made the hash, then we need to merge the remaining
+        // assoc nodes into the hash on the stack.
+        ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(assoc_length * 2 + 1));
     }
 }
 
@@ -1059,10 +1076,8 @@ pm_setup_args_core(const pm_arguments_node_t *arguments_node, const pm_node_t *b
 
                 if (has_keyword_splat || has_splat) {
                     *flags |= VM_CALL_KW_SPLAT;
-
                     has_keyword_splat = true;
-
-                    pm_arg_compile_keyword_hash_node(keyword_arg, iseq, ret, false, scope_node, dummy_line_node);
+                    pm_compile_hash_elements(&keyword_arg->elements, nd_line(&dummy_line_node), iseq, ret, scope_node);
                 }
                 else {
                     size_t len = keyword_arg->elements.size;
@@ -4212,7 +4227,13 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                         new_array_size = 0;
                     }
 
-                    PM_COMPILE_NOT_POPPED(splat_element->expression);
+                    if (splat_element->expression) {
+                        PM_COMPILE_NOT_POPPED(splat_element->expression);
+                    }
+                    else {
+                        pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_MULT, 0);
+                        ADD_GETLOCAL(ret, &dummy_line_node, index.index, index.level);
+                    }
 
                     if (index > 0) {
                         ADD_INSN(ret, &dummy_line_node, concatarray);
@@ -4227,8 +4248,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 else if (PM_NODE_TYPE_P(array_element, PM_KEYWORD_HASH_NODE)) {
                     new_array_size++;
                     has_kw_splat = true;
-
-                    pm_arg_compile_keyword_hash_node((pm_keyword_hash_node_t *)array_element, iseq, ret, false, scope_node, dummy_line_node);
+                    pm_compile_hash_elements(&((const pm_keyword_hash_node_t *) array_element)->elements, lineno, iseq, ret, scope_node);
                 }
                 else {
                     new_array_size++;
@@ -4253,17 +4273,34 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_ASSOC_NODE: {
-        pm_assoc_node_t *assoc_node = (pm_assoc_node_t *) node;
-        PM_COMPILE(assoc_node->key);
-        if (assoc_node->value) {
-            PM_COMPILE(assoc_node->value);
-        }
+        // { foo: 1 }
+        //   ^^^^^^
+        //
+        // foo(bar: 1)
+        //     ^^^^^^
+        const pm_assoc_node_t *cast = (const pm_assoc_node_t *) node;
+
+        PM_COMPILE(cast->key);
+        PM_COMPILE(cast->value);
+
         return;
       }
       case PM_ASSOC_SPLAT_NODE: {
-        pm_assoc_splat_node_t *assoc_splat_node = (pm_assoc_splat_node_t *)node;
+        // { **foo }
+        //   ^^^^^
+        //
+        // def foo(**); bar(**); end
+        //                  ^^
+        const pm_assoc_splat_node_t *cast = (const pm_assoc_splat_node_t *) node;
 
-        PM_COMPILE(assoc_splat_node->value);
+        if (cast->value != NULL) {
+            PM_COMPILE(cast->value);
+        }
+        else if (!popped) {
+            pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, PM_CONSTANT_POW, 0);
+            ADD_GETLOCAL(ret, &dummy_line_node, index.index, index.level);
+        }
+
         return;
       }
       case PM_BACK_REFERENCE_READ_NODE: {
@@ -5672,87 +5709,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 }
             }
             else {
-                // If this element is not popped, then we need to create the
-                // hash on the stack. Neighboring plain assoc nodes should be
-                // grouped together (either by newhash or hash merge). Double
-                // splat nodes should be merged using the mege_kwd method call.
-                int assoc_length = 0;
-                bool made_hash = false;
-
-                for (size_t index = 0; index < elements->size; index++) {
-                    const pm_node_t *element = elements->nodes[index];
-
-                    switch (PM_NODE_TYPE(element)) {
-                      case PM_ASSOC_NODE:
-                        // If this is a plain assoc node, then we can compile it
-                        // directly and then add to the number of assoc nodes
-                        // we've seen so far.
-                        PM_COMPILE_NOT_POPPED(element);
-                        assoc_length++;
-                        break;
-                      case PM_ASSOC_SPLAT_NODE: {
-                        // If we are at a splat and we have already compiled
-                        // some elements of the hash, then we need to either
-                        // create the first hash or merge the current elements
-                        // into the existing hash.
-                        if (assoc_length > 0) {
-                            if (!made_hash) {
-                                ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(assoc_length * 2));
-                                made_hash = true;
-                            }
-                            else {
-                                // Here we are merging plain assoc nodes into
-                                // the hash on the stack.
-                                ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(assoc_length * 2 + 1));
-
-                                // Since we already have a hash on the stack, we
-                                // need to set up the method call for the next
-                                // merge that will occur.
-                                ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                                PM_SWAP;
-                            }
-
-                            assoc_length = 0;
-                        }
-
-                        // If this is the first time we've seen a splat, then we
-                        // need to create a hash that we can merge into.
-                        if (!made_hash) {
-                            ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                            ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(0));
-                            made_hash = true;
-                        }
-
-                        PM_COMPILE_NOT_POPPED(element);
-                        ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_kwd, INT2FIX(2));
-
-                        // We know that any subsequent elements will need to be
-                        // merged in using one of the special core methods. So
-                        // here we will put the receiver of the merge and then
-                        // swap it with the hash that is going to be the first
-                        // argument.
-                        ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-                        PM_SWAP;
-
-                        break;
-                      }
-                      default:
-                        RUBY_ASSERT("Invalid node type for hash" && false);
-                        break;
-                    }
-                }
-
-                if (!made_hash) {
-                    // If we haven't already made the hash, then this means we
-                    // only saw plain assoc nodes. In this case, we can just
-                    // create the hash directly.
-                    ADD_INSN1(ret, &dummy_line_node, newhash, INT2FIX(assoc_length * 2));
-                }
-                else {
-                    // If we have already made the hash, then we need to merge
-                    // the remaining assoc nodes into the hash on the stack.
-                    ADD_SEND(ret, &dummy_line_node, id_core_hash_merge_ptr, INT2FIX(assoc_length * 2 + 1));
-                }
+                pm_compile_hash_elements(elements, lineno, iseq, ret, scope_node);
             }
         }
 
