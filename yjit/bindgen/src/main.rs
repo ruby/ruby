@@ -38,6 +38,7 @@ fn main() {
         .clang_args(filtered_clang_args)
         .header("encindex.h")
         .header("internal.h")
+        .header("internal/object.h")
         .header("internal/re.h")
         .header("include/ruby/ruby.h")
         .header("shape.h")
@@ -375,8 +376,10 @@ fn main() {
         // From include/ruby/internal/intern/vm.h
         .allowlist_function("rb_get_alloc_func")
 
-        // From gc.h and internal/gc.h
+        // From internal/object.h
         .allowlist_function("rb_class_allocate_instance")
+
+        // From gc.h and internal/gc.h
         .allowlist_function("rb_obj_info")
         .allowlist_function("ruby_xfree")
 

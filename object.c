@@ -118,6 +118,37 @@ rb_obj_reveal(VALUE obj, VALUE klass)
 }
 
 VALUE
+rb_class_allocate_instance(VALUE klass)
+{
+    uint32_t index_tbl_num_entries = RCLASS_EXT(klass)->max_iv_count;
+
+    size_t size = rb_obj_embedded_size(index_tbl_num_entries);
+    if (!rb_gc_size_allocatable_p(size)) {
+        size = sizeof(struct RObject);
+    }
+
+    NEWOBJ_OF(o, struct RObject, klass,
+              T_OBJECT | ROBJECT_EMBED | (RGENGC_WB_PROTECTED_OBJECT ? FL_WB_PROTECTED : 0), size, 0);
+    VALUE obj = (VALUE)o;
+
+    RUBY_ASSERT(rb_shape_get_shape(obj)->type == SHAPE_ROOT);
+
+    // Set the shape to the specific T_OBJECT shape which is always
+    // SIZE_POOL_COUNT away from the root shape.
+    ROBJECT_SET_SHAPE_ID(obj, ROBJECT_SHAPE_ID(obj) + SIZE_POOL_COUNT);
+
+#if RUBY_DEBUG
+    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
+    VALUE *ptr = ROBJECT_IVPTR(obj);
+    for (size_t i = 0; i < ROBJECT_IV_CAPACITY(obj); i++) {
+        ptr[i] = Qundef;
+    }
+#endif
+
+    return obj;
+}
+
+VALUE
 rb_obj_setup(VALUE obj, VALUE klass, VALUE type)
 {
     VALUE ignored_flags = RUBY_FL_PROMOTED | RUBY_FL_SEEN_OBJ_ID;
