@@ -4538,3 +4538,14 @@ assert_normal_exit %q{
 
   Foo.new.try
 }
+
+# a kwrest case
+assert_equal '[1, 2, {:complete=>false}]', %q{
+  def rest(foo: 1, bar: 2, **kwrest)
+    [foo, bar, kwrest]
+  end
+
+  def callsite = rest(complete: false)
+
+  callsite
+}

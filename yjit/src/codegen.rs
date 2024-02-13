@@ -7085,7 +7085,7 @@ fn gen_send_iseq(
             gen_save_sp(asm);
 
             // Build the kwrest hash. `struct rb_callinfo_kwarg` is malloc'd, so no GC concerns.
-            let kwargs_start = asm.lea(asm.ctx.sp_opnd(-(kwargs_order.len() as i32 * SIZEOF_VALUE_I32) as isize));
+            let kwargs_start = asm.lea(asm.ctx.sp_opnd(-(caller_keyword_len_i32 * SIZEOF_VALUE_I32) as isize));
             let kwrest = asm.ccall(
                 build_kw_rest as _,
                 vec![rest_mask.into(), kwargs_start, Opnd::const_ptr(ci_kwarg.cast())]
@@ -7098,7 +7098,7 @@ fn gen_send_iseq(
             // first before putting kwrest there. Use `rest_collected_idx` because that value went
             // into kwrest so the slot is now free.
             let kwrest_idx = callee_kw_count + usize::from(callee_kw_count > 0);
-            if let (Some(rest_collected_idx), true) = (rest_collected_idx, kwrest_idx < kwargs_order.len()) {
+            if let (Some(rest_collected_idx), true) = (rest_collected_idx, kwrest_idx < caller_keyword_len) {
                 let rest_collected = asm.stack_opnd(kwargs_stack_base - rest_collected_idx);
                 let mapping = asm.ctx.get_opnd_mapping(stack_kwrest.into());
                 asm.mov(rest_collected, stack_kwrest);
