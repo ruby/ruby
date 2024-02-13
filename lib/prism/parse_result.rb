@@ -56,6 +56,23 @@ module Prism
       character_offset(byte_offset) - character_offset(line_start(byte_offset))
     end
 
+    # Returns the offset from the start of the file for the given byte offset
+    # counting in code units for the given encoding.
+    #
+    # This method is tested with UTF-8, UTF-16, and UTF-32. If there is the
+    # concept of code units that differs from the number of characters in other
+    # encodings, it is not captured here.
+    def code_units_offset(byte_offset, encoding)
+      byteslice = source.byteslice(0, byte_offset).encode(encoding)
+      (encoding == Encoding::UTF_16LE || encoding == Encoding::UTF_16BE) ? (byteslice.bytesize / 2) : byteslice.length
+    end
+
+    # Returns the column number in code units for the given encoding for the
+    # given byte offset.
+    def code_units_column(byte_offset, encoding)
+      code_units_offset(byte_offset, encoding) - code_units_offset(line_start(byte_offset), encoding)
+    end
+
     private
 
     # Binary search through the offsets to find the line number for the given
@@ -138,6 +155,11 @@ module Prism
       source.character_offset(start_offset)
     end
 
+    # The offset from the start of the file in code units of the given encoding.
+    def start_code_units_offset(encoding = Encoding::UTF_16LE)
+      source.code_units_offset(start_offset, encoding)
+    end
+
     # The byte offset from the beginning of the source where this location ends.
     def end_offset
       start_offset + length
@@ -147,6 +169,11 @@ module Prism
     # ends.
     def end_character_offset
       source.character_offset(end_offset)
+    end
+
+    # The offset from the start of the file in code units of the given encoding.
+    def end_code_units_offset(encoding = Encoding::UTF_16LE)
+      source.code_units_offset(end_offset, encoding)
     end
 
     # The line number where this location starts.
@@ -177,6 +204,12 @@ module Prism
       source.character_column(start_offset)
     end
 
+    # The column number in code units of the given encoding where this location
+    # starts from the start of the line.
+    def start_code_units_column(encoding = Encoding::UTF_16LE)
+      source.code_units_column(start_offset, encoding)
+    end
+
     # The column number in bytes where this location ends from the start of the
     # line.
     def end_column
@@ -187,6 +220,12 @@ module Prism
     # the line.
     def end_character_column
       source.character_column(end_offset)
+    end
+
+    # The column number in code units of the given encoding where this location
+    # ends from the start of the line.
+    def end_code_units_column(encoding = Encoding::UTF_16LE)
+      source.code_units_column(end_offset, encoding)
     end
 
     # Implement the hash pattern matching interface for Location.
