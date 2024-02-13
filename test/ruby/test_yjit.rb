@@ -1560,6 +1560,19 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_send_polymorphic_method_name
+    assert_compiles(<<~'RUBY', result: %i[ok ok], no_send_fallbacks: true)
+      mid = "dynamic_mid_#{rand(100..200)}"
+      mid_dsym = mid.to_sym
+
+      define_method(mid) { :ok }
+
+      define_method(:send_site) { send(_1) }
+
+      [send_site(mid), send_site(mid_dsym)]
+    RUBY
+  end
+
   private
 
   def code_gc_helpers

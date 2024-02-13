@@ -7994,13 +7994,9 @@ fn gen_send_general(
 
                         let compile_time_name = jit.peek_at_stack(&asm.ctx, argc as isize);
 
-                        if !compile_time_name.string_p() && !compile_time_name.static_sym_p()  {
-                            gen_counter_incr(asm, Counter::send_send_chain_not_string_or_sym);
-                            return None;
-                        }
-
                         mid = unsafe { rb_get_symbol_id(compile_time_name) };
                         if mid == 0 {
+                            // This also rejects method names that need convserion
                             gen_counter_incr(asm, Counter::send_send_null_mid);
                             return None;
                         }
@@ -8015,40 +8011,15 @@ fn gen_send_general(
 
                         jit.assume_method_lookup_stable(asm, ocb, cme);
 
-                        let (known_class, type_mismatch_counter) = {
-                            if compile_time_name.string_p() {
-                                (
-                                    unsafe { rb_cString },
-                                    Counter::guard_send_send_chain_not_string,
-                                )
-                            } else {
-                                (
-                                    unsafe { rb_cSymbol },
-                                    Counter::guard_send_send_chain_not_sym,
-                                )
-                            }
-                        };
-
-                        let name_opnd = asm.stack_opnd(argc);
-                        jit_guard_known_klass(
-                            jit,
+                        asm_comment!(
                             asm,
-                            ocb,
-                            known_class,
-                            name_opnd,
-                            name_opnd.into(),
-                            compile_time_name,
-                            2, // We have string or symbol, so max depth is 2
-                            type_mismatch_counter
+                            "guard sending method name \'{}\'",
+                            unsafe { cstr_to_rust_string(rb_id2name(mid)) }.unwrap_or_else(|| "<unknown>".to_owned()),
                         );
 
-                        // Need to do this here so we don't have too many live
-                        // values for the register allocator.
-                        let name_opnd = asm.load(name_opnd);
-
+                        let name_opnd = asm.stack_opnd(argc);
                         let symbol_id_opnd = asm.ccall(rb_get_symbol_id as *const u8, vec![name_opnd]);
 
-                        asm_comment!(asm, "chain_guard_send");
                         asm.cmp(symbol_id_opnd, mid.into());
                         jit_chain_guard(
                             JCC_JNE,
@@ -8056,7 +8027,7 @@ fn gen_send_general(
                             asm,
                             ocb,
                             SEND_MAX_DEPTH,
-                            Counter::guard_send_send_chain,
+                            Counter::guard_send_send_name_chain,
                         );
 
                         // We have changed the argc, flags, mid, and cme, so we need to re-enter the match
