@@ -27,7 +27,7 @@ module IRB
 
       def colorized_content
         if !binary_file? && file_exist?
-          end_line = Source.find_end(file_content, @line)
+          end_line = find_end
           # To correctly colorize, we need to colorize full content and extract the relevant lines.
           colored = IRB::Color.colorize_code(file_content)
           colored.lines[@line - 1...end_line].join
@@ -36,9 +36,12 @@ module IRB
         end
       end
 
-      def self.find_end(code, first_line)
+      private
+
+      def find_end
         lex = RubyLex.new
-        lines = code.lines[(first_line - 1)..-1]
+        code = file_content
+        lines = code.lines[(@line - 1)..-1]
         tokens = RubyLex.ripper_lex_without_warning(lines.join)
         prev_tokens = []
 
@@ -49,10 +52,10 @@ module IRB
           continue = lex.should_continue?(prev_tokens)
           syntax = lex.check_code_syntax(code, local_variables: [])
           if !continue && syntax == :valid
-            return first_line + lnum
+            return @line + lnum
           end
         end
-        first_line
+        @line
       end
     end
 

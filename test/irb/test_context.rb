@@ -666,13 +666,16 @@ module TestIRB
         ], out)
     end
 
-    def test_eval_path
+    def test_irb_path_setter
       @context.irb_path = __FILE__
-      assert_equal("#{__FILE__}(irb)", @context.send(:eval_path))
+      assert_equal(__FILE__, @context.irb_path)
+      assert_equal("#{__FILE__}(irb)", @context.instance_variable_get(:@eval_path))
       @context.irb_path = 'file/does/not/exist'
-      assert_equal('file/does/not/exist', @context.send(:eval_path))
+      assert_equal('file/does/not/exist', @context.irb_path)
+      assert_equal('file/does/not/exist', @context.instance_variable_get(:@eval_path))
       @context.irb_path = "#{__FILE__}(irb)"
-      assert_equal("#{__FILE__}(irb)", @context.send(:eval_path))
+      assert_equal("#{__FILE__}(irb)", @context.irb_path)
+      assert_equal("#{__FILE__}(irb)", @context.instance_variable_get(:@eval_path))
     end
 
     def test_build_completor
