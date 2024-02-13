@@ -370,7 +370,7 @@ pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node
 {
     // Every node that comes into this function should already be marked as
     // static literal. If it's not, then we have a bug somewhere.
-    assert(pm_static_literal_p(node));
+    RUBY_ASSERT(pm_static_literal_p(node));
 
     switch (PM_NODE_TYPE(node)) {
       case PM_ARRAY_NODE: {
@@ -395,7 +395,7 @@ pm_static_literal_value(const pm_node_t *node, const pm_scope_node_t *scope_node
 
         VALUE array = rb_ary_hidden_new(elements->size * 2);
         for (size_t index = 0; index < elements->size; index++) {
-            assert(PM_NODE_TYPE_P(elements->nodes[index], PM_ASSOC_NODE));
+            RUBY_ASSERT(PM_NODE_TYPE_P(elements->nodes[index], PM_ASSOC_NODE));
             pm_assoc_node_t *cast = (pm_assoc_node_t *) elements->nodes[index];
             VALUE pair[2] = { pm_static_literal_value(cast->key, scope_node), pm_static_literal_value(cast->value, scope_node) };
             rb_ary_cat(array, pair, 2);
@@ -2032,7 +2032,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
                 CHECK(pm_compile_pattern_match(iseq, scope_node, cast->requireds.nodes[index], ret, next_loop_label, in_single_pattern, in_alternation_pattern, false, base_index + 4));
             }
 
-            assert(PM_NODE_TYPE_P(cast->left, PM_SPLAT_NODE));
+            RUBY_ASSERT(PM_NODE_TYPE_P(cast->left, PM_SPLAT_NODE));
             const pm_splat_node_t *left = (const pm_splat_node_t *) cast->left;
 
             if (left->expression != NULL) {
@@ -2043,7 +2043,7 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
                 CHECK(pm_compile_pattern_match(iseq, scope_node, left->expression, ret, find_failed_label, in_single_pattern, in_alternation_pattern, false, base_index + 4));
             }
 
-            assert(PM_NODE_TYPE_P(cast->right, PM_SPLAT_NODE));
+            RUBY_ASSERT(PM_NODE_TYPE_P(cast->right, PM_SPLAT_NODE));
             const pm_splat_node_t *right = (const pm_splat_node_t *) cast->right;
 
             if (right->expression != NULL) {
@@ -2126,10 +2126,10 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
 
             for (size_t index = 0; index < cast->elements.size; index++) {
                 const pm_node_t *element = cast->elements.nodes[index];
-                assert(PM_NODE_TYPE_P(element, PM_ASSOC_NODE));
+                RUBY_ASSERT(PM_NODE_TYPE_P(element, PM_ASSOC_NODE));
 
                 const pm_node_t *key = ((const pm_assoc_node_t *) element)->key;
-                assert(PM_NODE_TYPE_P(key, PM_SYMBOL_NODE));
+                RUBY_ASSERT(PM_NODE_TYPE_P(key, PM_SYMBOL_NODE));
 
                 VALUE symbol = ID2SYM(parse_string_symbol((const pm_symbol_node_t *)key, scope_node->parser));
                 rb_ary_push(keys, symbol);
@@ -2170,11 +2170,11 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
 
             for (size_t index = 0; index < cast->elements.size; index++) {
                 const pm_node_t *element = cast->elements.nodes[index];
-                assert(PM_NODE_TYPE_P(element, PM_ASSOC_NODE));
+                RUBY_ASSERT(PM_NODE_TYPE_P(element, PM_ASSOC_NODE));
 
                 const pm_assoc_node_t *assoc = (const pm_assoc_node_t *) element;
                 const pm_node_t *key = assoc->key;
-                assert(PM_NODE_TYPE_P(key, PM_SYMBOL_NODE));
+                RUBY_ASSERT(PM_NODE_TYPE_P(key, PM_SYMBOL_NODE));
 
                 VALUE symbol = ID2SYM(parse_string_symbol((const pm_symbol_node_t *)key, scope_node->parser));
                 ADD_INSN(ret, &line.node, dup);
@@ -2421,13 +2421,13 @@ pm_compile_pattern(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_node_t
             const pm_if_node_t *cast = (const pm_if_node_t *) node;
             predicate = cast->predicate;
 
-            assert(cast->statements != NULL && cast->statements->body.size == 1);
+            RUBY_ASSERT(cast->statements != NULL && cast->statements->body.size == 1);
             statement = cast->statements->body.nodes[0];
         } else {
             const pm_unless_node_t *cast = (const pm_unless_node_t *) node;
             predicate = cast->predicate;
 
-            assert(cast->statements != NULL && cast->statements->body.size == 1);
+            RUBY_ASSERT(cast->statements != NULL && cast->statements->body.size == 1);
             statement = cast->statements->body.nodes[0];
         }
 
@@ -2894,7 +2894,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *co
         rb_bug("Unsupported node %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
     }
 
-    assert(dtype != DEFINED_NOT_DEFINED);
+    RUBY_ASSERT(dtype != DEFINED_NOT_DEFINED);
 
     ADD_INSN1(ret, &dummy_line_node, putobject, PUSH_VAL(dtype));
 #undef PUSH_VAL
@@ -3057,7 +3057,7 @@ pm_compile_call(rb_iseq_t *iseq, const pm_call_node_t *call_node, LINK_ANCHOR *c
 static void
 pm_add_ensure_iseq(LINK_ANCHOR *const ret, rb_iseq_t *iseq, int is_return, pm_scope_node_t *scope_node)
 {
-    assert(can_add_ensure_iseq(iseq));
+    RUBY_ASSERT(can_add_ensure_iseq(iseq));
 
     struct iseq_compile_data_ensure_node_stack *enlp =
         ISEQ_COMPILE_DATA(iseq)->ensure_node_stack;
@@ -4857,7 +4857,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // finds a match.
         for (size_t index = 0; index < cast->conditions.size; index++) {
             const pm_node_t *condition = cast->conditions.nodes[index];
-            assert(PM_NODE_TYPE_P(condition, PM_IN_NODE));
+            RUBY_ASSERT(PM_NODE_TYPE_P(condition, PM_IN_NODE));
 
             const pm_in_node_t *in_node = (const pm_in_node_t *) condition;
 
@@ -6256,7 +6256,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         if (targets_count == 1) {
             pm_node_t *target = cast->targets.nodes[0];
-            assert(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_TARGET_NODE));
+            RUBY_ASSERT(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_TARGET_NODE));
 
             pm_local_variable_target_node_t *local_target = (pm_local_variable_target_node_t *) target;
             pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, local_target->name, local_target->depth);
@@ -6273,7 +6273,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // to do some bookkeeping.
         for (size_t targets_index = 0; targets_index < targets_count; targets_index++) {
             pm_node_t *target = cast->targets.nodes[targets_index];
-            assert(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_TARGET_NODE));
+            RUBY_ASSERT(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_TARGET_NODE));
 
             pm_local_variable_target_node_t *local_target = (pm_local_variable_target_node_t *) target;
             pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, local_target->name, local_target->depth);
@@ -6296,7 +6296,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         for (size_t targets_index = 0; targets_index < targets_count; targets_index++) {
             pm_node_t *target = cast->targets.nodes[targets_index];
-            assert(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_TARGET_NODE));
+            RUBY_ASSERT(PM_NODE_TYPE_P(target, PM_LOCAL_VARIABLE_TARGET_NODE));
 
             pm_local_variable_target_node_t *local_target = (pm_local_variable_target_node_t *) target;
             pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, local_target->name, local_target->depth);
@@ -7142,7 +7142,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // and we don't want it to impact the rest variables on param
             if (!(PM_NODE_TYPE_P(parameters_node->rest, PM_IMPLICIT_REST_NODE))) {
                 body->param.flags.has_rest = true;
-                assert(body->param.rest_start != -1);
+                RUBY_ASSERT(body->param.rest_start != -1);
 
                 pm_constant_id_t name = ((pm_rest_parameter_node_t *) parameters_node->rest)->name;
 
