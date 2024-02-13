@@ -5329,7 +5329,7 @@ fn jit_rb_str_byteslice(
     let ret_opnd = asm.ccall(rb_str_byte_substr as *const u8, vec![recv, beg, len]);
     asm.stack_pop(3);
 
-    let out_opnd = asm.stack_push(Type::TString);
+    let out_opnd = asm.stack_push(Type::Unknown);
     asm.mov(out_opnd, ret_opnd);
 
     true
