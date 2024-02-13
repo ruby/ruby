@@ -44,16 +44,14 @@ pm_options_version_set(pm_options_t *options, const char *version, size_t length
         return true;
     }
 
-    if (length == 5) {
-        if (strncmp(version, "3.3.0", 5) == 0) {
-            options->version = PM_OPTIONS_VERSION_CRUBY_3_3_0;
-            return true;
-        }
+    if (length == 5 && strncmp(version, "3.3.0", length) == 0) {
+        options->version = PM_OPTIONS_VERSION_CRUBY_3_3_0;
+        return true;
+    }
 
-        if (strncmp(version, "latest", 6) == 0) {
-            options->version = PM_OPTIONS_VERSION_LATEST;
-            return true;
-        }
+    if (length == 6 && strncmp(version, "latest", length) == 0) {
+        options->version = PM_OPTIONS_VERSION_LATEST;
+        return true;
     }
 
     return false;
