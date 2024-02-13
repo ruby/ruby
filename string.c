@@ -11511,7 +11511,7 @@ rb_str_unicode_normalized_p(int argc, VALUE *argv, VALUE str)
 /**********************************************************************
  * Document-class: Symbol
  *
- * A +Symbol+ objects represents a named identifier inside the Ruby interpreter.
+ * A +Symbol+ object represents a named identifier inside the Ruby interpreter.
  *
  * You can create a +Symbol+ object explicitly with:
  *
