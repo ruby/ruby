@@ -34,17 +34,17 @@ module TestIRB
     end
 
     def execute_lines(*lines, conf: {}, main: self, irb_path: nil)
-      IRB.init_config(nil)
-      IRB.conf[:VERBOSE] = false
-      IRB.conf[:PROMPT_MODE] = :SIMPLE
-      IRB.conf[:USE_PAGER] = false
-      IRB.conf.merge!(conf)
-      input = TestInputMethod.new(lines)
-      irb = IRB::Irb.new(IRB::WorkSpace.new(main), input)
-      irb.context.return_format = "=> %s\n"
-      irb.context.irb_path = irb_path if irb_path
-      IRB.conf[:MAIN_CONTEXT] = irb.context
       capture_output do
+        IRB.init_config(nil)
+        IRB.conf[:VERBOSE] = false
+        IRB.conf[:PROMPT_MODE] = :SIMPLE
+        IRB.conf[:USE_PAGER] = false
+        IRB.conf.merge!(conf)
+        input = TestInputMethod.new(lines)
+        irb = IRB::Irb.new(IRB::WorkSpace.new(main), input)
+        irb.context.return_format = "=> %s\n"
+        irb.context.irb_path = irb_path if irb_path
+        IRB.conf[:MAIN_CONTEXT] = irb.context
         irb.eval_input
       end
     end
@@ -58,7 +58,7 @@ module TestIRB
         "irb_info",
         main: main
       )
-      assert_empty err
+      assert_empty(err)
       assert_match(/RUBY_PLATFORM/, out)
     end
   end
@@ -846,6 +846,16 @@ module TestIRB
       assert_empty err
       assert_match("path: #{__FILE__}", out)
       assert_match("command: ': code'", out)
+    end
+
+    def test_edit_without_arg_and_non_existing_irb_path
+      out, err = execute_lines(
+        "edit",
+        irb_path: '/path/to/file.rb(irb)'
+      )
+
+      assert_empty err
+      assert_match(/Can not find file: \/path\/to\/file\.rb\(irb\)/, out)
     end
 
     def test_edit_with_path

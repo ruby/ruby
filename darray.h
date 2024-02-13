@@ -196,7 +196,7 @@ rb_darray_resize_capa_impl(void *ptr_to_ary, size_t new_capa, size_t header_size
         new_ary->size = 0;
     }
 
-    assert(new_ary->size <= new_capa);
+    RUBY_ASSERT(new_ary->size <= new_capa);
 
     new_ary->capa = new_capa;
 

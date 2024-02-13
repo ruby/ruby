@@ -170,7 +170,7 @@ str_enc_fastpath(VALUE str)
         }\
     }\
     else {\
-        assert(!FL_TEST((str), STR_SHARED)); \
+        RUBY_ASSERT(!FL_TEST((str), STR_SHARED)); \
         SIZED_REALLOC_N(RSTRING(str)->as.heap.ptr, char, \
                         (size_t)(capacity) + (termlen), STR_HEAP_SIZE(str)); \
         RSTRING(str)->as.heap.aux.capa = (capacity);\
@@ -179,8 +179,8 @@ str_enc_fastpath(VALUE str)
 
 #define STR_SET_SHARED(str, shared_str) do { \
     if (!FL_TEST(str, STR_FAKESTR)) { \
-        assert(RSTRING_PTR(shared_str) <= RSTRING_PTR(str)); \
-        assert(RSTRING_PTR(str) <= RSTRING_PTR(shared_str) + RSTRING_LEN(shared_str)); \
+        RUBY_ASSERT(RSTRING_PTR(shared_str) <= RSTRING_PTR(str)); \
+        RUBY_ASSERT(RSTRING_PTR(str) <= RSTRING_PTR(shared_str) + RSTRING_LEN(shared_str)); \
         RB_OBJ_WRITE((str), &RSTRING(str)->as.heap.aux.shared, (shared_str)); \
         FL_SET((str), STR_SHARED); \
         FL_SET((shared_str), STR_SHARED_ROOT); \
@@ -385,7 +385,7 @@ fstr_update_callback(st_data_t *key, st_data_t *value, st_data_t data, int exist
             if (STR_SHARED_P(str)) { /* str should not be shared */
                 /* shared substring  */
                 str_make_independent(str);
-                assert(OBJ_FROZEN(str));
+                RUBY_ASSERT(OBJ_FROZEN(str));
             }
             if (!BARE_STRING_P(str)) {
                 str = str_new_frozen(rb_cString, str);
@@ -418,7 +418,7 @@ rb_fstring(VALUE str)
         }
 
         if (FL_TEST_RAW(str, STR_SHARED_ROOT | STR_SHARED) == STR_SHARED_ROOT) {
-            assert(OBJ_FROZEN(str));
+            RUBY_ASSERT(OBJ_FROZEN(str));
             return str;
         }
     }
@@ -452,10 +452,11 @@ register_fstring(VALUE str, bool copy)
     }
     RB_VM_LOCK_LEAVE();
 
-    assert(OBJ_FROZEN(args.fstr));
-    assert(!FL_TEST_RAW(args.fstr, STR_FAKESTR));
-    assert(!FL_TEST_RAW(args.fstr, FL_EXIVAR));
-    assert(RBASIC_CLASS(args.fstr) == rb_cString);
+    RUBY_ASSERT(OBJ_FROZEN(args.fstr));
+    RUBY_ASSERT(!FL_TEST_RAW(args.fstr, STR_FAKESTR));
+    RUBY_ASSERT(!FL_TEST_RAW(args.fstr, FL_EXIVAR));
+    RUBY_ASSERT(RBASIC_CLASS(args.fstr) == rb_cString);
+
     return args.fstr;
 }
 
@@ -844,8 +845,8 @@ static inline VALUE
 str_alloc_embed(VALUE klass, size_t capa)
 {
     size_t size = rb_str_embed_size(capa);
-    assert(size > 0);
-    assert(rb_gc_size_allocatable_p(size));
+    RUBY_ASSERT(size > 0);
+    RUBY_ASSERT(rb_gc_size_allocatable_p(size));
 
     NEWOBJ_OF(str, struct RString, klass,
             T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size, 0);
@@ -1295,7 +1296,8 @@ str_replace_shared_without_enc(VALUE str2, VALUE str)
             root = rb_str_new_frozen(str);
             RSTRING_GETMEM(root, ptr, len);
         }
-        assert(OBJ_FROZEN(root));
+        RUBY_ASSERT(OBJ_FROZEN(root));
+
         if (!STR_EMBED_P(str2) && !FL_TEST_RAW(str2, STR_SHARED|STR_NOFREE)) {
             if (FL_TEST_RAW(str2, STR_SHARED_ROOT)) {
                 rb_fatal("about to free a possible shared root");
@@ -1399,21 +1401,21 @@ rb_str_tmp_frozen_release(VALUE orig, VALUE tmp)
         return;
 
     if (STR_EMBED_P(tmp)) {
-        assert(OBJ_FROZEN_RAW(tmp));
+        RUBY_ASSERT(OBJ_FROZEN_RAW(tmp));
     }
     else if (FL_TEST_RAW(orig, STR_SHARED) &&
             !FL_TEST_RAW(orig, STR_TMPLOCK|RUBY_FL_FREEZE)) {
         VALUE shared = RSTRING(orig)->as.heap.aux.shared;
 
         if (shared == tmp && !FL_TEST_RAW(tmp, STR_BORROWED)) {
-            assert(RSTRING(orig)->as.heap.ptr == RSTRING(tmp)->as.heap.ptr);
-            assert(RSTRING_LEN(orig) == RSTRING_LEN(tmp));
+            RUBY_ASSERT(RSTRING(orig)->as.heap.ptr == RSTRING(tmp)->as.heap.ptr);
+            RUBY_ASSERT(RSTRING_LEN(orig) == RSTRING_LEN(tmp));
 
             /* Unshare orig since the root (tmp) only has this one child. */
             FL_UNSET_RAW(orig, STR_SHARED);
             RSTRING(orig)->as.heap.aux.capa = RSTRING(tmp)->as.heap.aux.capa;
             RBASIC(orig)->flags |= RBASIC(tmp)->flags & STR_NOFREE;
-            assert(OBJ_FROZEN_RAW(tmp));
+            RUBY_ASSERT(OBJ_FROZEN_RAW(tmp));
 
             /* Make tmp embedded and empty so it is safe for sweeping. */
             STR_SET_EMBED(tmp);
@@ -1431,8 +1433,8 @@ str_new_frozen(VALUE klass, VALUE orig)
 static VALUE
 heap_str_make_shared(VALUE klass, VALUE orig)
 {
-    assert(!STR_EMBED_P(orig));
-    assert(!STR_SHARED_P(orig));
+    RUBY_ASSERT(!STR_EMBED_P(orig));
+    RUBY_ASSERT(!STR_SHARED_P(orig));
 
     VALUE str = str_alloc_heap(klass);
     STR_SET_LEN(str, RSTRING_LEN(orig));
@@ -1456,23 +1458,23 @@ str_new_frozen_buffer(VALUE klass, VALUE orig, int copy_encoding)
 
     if (STR_EMBED_P(orig) || STR_EMBEDDABLE_P(len, termlen)) {
         str = str_new0(klass, RSTRING_PTR(orig), len, termlen);
-        assert(STR_EMBED_P(str));
+        RUBY_ASSERT(STR_EMBED_P(str));
     }
     else {
         if (FL_TEST_RAW(orig, STR_SHARED)) {
             VALUE shared = RSTRING(orig)->as.heap.aux.shared;
             long ofs = RSTRING(orig)->as.heap.ptr - RSTRING_PTR(shared);
             long rest = RSTRING_LEN(shared) - ofs - RSTRING_LEN(orig);
-            assert(ofs >= 0);
-            assert(rest >= 0);
-            assert(ofs + rest <= RSTRING_LEN(shared));
-            assert(OBJ_FROZEN(shared));
+            RUBY_ASSERT(ofs >= 0);
+            RUBY_ASSERT(rest >= 0);
+            RUBY_ASSERT(ofs + rest <= RSTRING_LEN(shared));
+            RUBY_ASSERT(OBJ_FROZEN(shared));
 
             if ((ofs > 0) || (rest > 0) ||
                 (klass != RBASIC(shared)->klass) ||
                 ENCODING_GET(shared) != ENCODING_GET(orig)) {
                 str = str_new_shared(klass, shared);
-                assert(!STR_EMBED_P(str));
+                RUBY_ASSERT(!STR_EMBED_P(str));
                 RSTRING(str)->as.heap.ptr += ofs;
                 STR_SET_LEN(str, RSTRING_LEN(str) - (ofs + rest));
             }
@@ -1625,9 +1627,9 @@ str_shared_replace(VALUE str, VALUE str2)
     }
     else {
         if (STR_EMBED_P(str2)) {
-            assert(!FL_TEST(str2, STR_SHARED));
+            RUBY_ASSERT(!FL_TEST(str2, STR_SHARED));
             long len = RSTRING_LEN(str2);
-            assert(len + termlen <= str_embed_capa(str2));
+            RUBY_ASSERT(len + termlen <= str_embed_capa(str2));
 
             char *new_ptr = ALLOC_N(char, len + termlen);
             memcpy(new_ptr, RSTRING(str2)->as.embed.ary, len + termlen);
@@ -1686,7 +1688,7 @@ str_replace(VALUE str, VALUE str2)
     len = RSTRING_LEN(str2);
     if (STR_SHARED_P(str2)) {
         VALUE shared = RSTRING(str2)->as.heap.aux.shared;
-        assert(OBJ_FROZEN(shared));
+        RUBY_ASSERT(OBJ_FROZEN(shared));
         STR_SET_NOEMBED(str);
         STR_SET_LEN(str, len);
         RSTRING(str)->as.heap.ptr = RSTRING_PTR(str2);
@@ -1704,8 +1706,8 @@ static inline VALUE
 ec_str_alloc_embed(struct rb_execution_context_struct *ec, VALUE klass, size_t capa)
 {
     size_t size = rb_str_embed_size(capa);
-    assert(size > 0);
-    assert(rb_gc_size_allocatable_p(size));
+    RUBY_ASSERT(size > 0);
+    RUBY_ASSERT(rb_gc_size_allocatable_p(size));
 
     NEWOBJ_OF(str, struct RString, klass,
             T_STRING | (RGENGC_WB_PROTECTED_STRING ? FL_WB_PROTECTED : 0), size, ec);
@@ -1734,8 +1736,8 @@ str_duplicate_setup(VALUE klass, VALUE str, VALUE dup)
     if (STR_EMBED_P(str)) {
         long len = RSTRING_LEN(str);
 
-        assert(STR_EMBED_P(dup));
-        assert(str_embed_capa(dup) >= len + 1);
+        RUBY_ASSERT(STR_EMBED_P(dup));
+        RUBY_ASSERT(str_embed_capa(dup) >= len + 1);
         MEMCPY(RSTRING(dup)->as.embed.ary, RSTRING(str)->as.embed.ary, char, len + 1);
     }
     else {
@@ -1747,8 +1749,8 @@ str_duplicate_setup(VALUE klass, VALUE str, VALUE dup)
             root = str = str_new_frozen(klass, str);
             flags = FL_TEST_RAW(str, flag_mask);
         }
-        assert(!STR_SHARED_P(root));
-        assert(RB_OBJ_FROZEN_RAW(root));
+        RUBY_ASSERT(!STR_SHARED_P(root));
+        RUBY_ASSERT(RB_OBJ_FROZEN_RAW(root));
 
         RSTRING(dup)->as.heap.ptr = RSTRING_PTR(str);
         FL_SET(root, STR_SHARED_ROOT);
@@ -1877,7 +1879,7 @@ rb_str_init(int argc, VALUE *argv, VALUE str)
             str_modifiable(str);
             if (STR_EMBED_P(str)) { /* make noembed always */
                 char *new_ptr = ALLOC_N(char, (size_t)capa + termlen);
-                assert(RSTRING_LEN(str) + 1 <= str_embed_capa(str));
+                RUBY_ASSERT(RSTRING_LEN(str) + 1 <= str_embed_capa(str));
                 memcpy(new_ptr, RSTRING(str)->as.embed.ary, RSTRING_LEN(str) + 1);
                 RSTRING(str)->as.heap.ptr = new_ptr;
             }
@@ -2306,8 +2308,8 @@ rb_str_plus(VALUE str1, VALUE str2)
 VALUE
 rb_str_opt_plus(VALUE str1, VALUE str2)
 {
-    assert(RBASIC_CLASS(str1) == rb_cString);
-    assert(RBASIC_CLASS(str2) == rb_cString);
+    RUBY_ASSERT(RBASIC_CLASS(str1) == rb_cString);
+    RUBY_ASSERT(RBASIC_CLASS(str2) == rb_cString);
     long len1, len2;
     MAYBE_UNUSED(char) *ptr1, *ptr2;
     RSTRING_GETMEM(str1, ptr1, len1);
@@ -2623,7 +2625,7 @@ rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int terml
     long capa = str_capacity(str, oldtermlen) + oldtermlen;
     long len = RSTRING_LEN(str);
 
-    assert(capa >= len);
+    RUBY_ASSERT(capa >= len);
     if (capa - len < termlen) {
         rb_check_lockedtmp(str);
         str_make_independent_expand(str, len, 0L, termlen);
@@ -2635,7 +2637,7 @@ rb_str_change_terminator_length(VALUE str, const int oldtermlen, const int terml
     else {
         if (!STR_EMBED_P(str)) {
             /* modify capa instead of realloc */
-            assert(!FL_TEST((str), STR_SHARED));
+            RUBY_ASSERT(!FL_TEST((str), STR_SHARED));
             RSTRING(str)->as.heap.aux.capa = capa - termlen;
         }
         if (termlen > oldtermlen) {
@@ -2868,9 +2870,9 @@ str_subseq(VALUE str, long beg, long len)
 {
     VALUE str2;
 
-    assert(beg >= 0);
-    assert(len >= 0);
-    assert(beg+len <= RSTRING_LEN(str));
+    RUBY_ASSERT(beg >= 0);
+    RUBY_ASSERT(len >= 0);
+    RUBY_ASSERT(beg+len <= RSTRING_LEN(str));
 
     const int termlen = TERM_LEN(str);
     if (!SHARABLE_SUBSTRING_P(beg, len, RSTRING_LEN(str))) {
@@ -2891,7 +2893,7 @@ str_subseq(VALUE str, long beg, long len)
     }
     else {
         str_replace_shared(str2, str);
-        assert(!STR_EMBED_P(str2));
+        RUBY_ASSERT(!STR_EMBED_P(str2));
         ENC_CODERANGE_CLEAR(str2);
         RSTRING(str2)->as.heap.ptr += beg;
         if (RSTRING_LEN(str2) > len) {
@@ -5408,8 +5410,9 @@ rb_str_update(VALUE str, long beg, long len, VALUE val)
     if (beg < 0) {
         beg += slen;
     }
-    assert(beg >= 0);
-    assert(beg <= slen);
+    RUBY_ASSERT(beg >= 0);
+    RUBY_ASSERT(beg <= slen);
+
     if (len > slen - beg) {
         len = slen - beg;
     }
@@ -6363,8 +6366,9 @@ str_check_beg_len(VALUE str, long *beg, long *len)
     if (*beg < 0) {
         *beg += slen;
     }
-    assert(*beg >= 0);
-    assert(*beg <= slen);
+    RUBY_ASSERT(*beg >= 0);
+    RUBY_ASSERT(*beg <= slen);
+
     if (*len > slen - *beg) {
         *len = slen - *beg;
     }
@@ -12133,7 +12137,7 @@ void
 Init_String(void)
 {
     rb_cString  = rb_define_class("String", rb_cObject);
-    assert(rb_vm_fstring_table());
+    RUBY_ASSERT(rb_vm_fstring_table());
     st_foreach(rb_vm_fstring_table(), fstring_set_class_i, rb_cString);
     rb_include_module(rb_cString, rb_mComparable);
     rb_define_alloc_func(rb_cString, empty_str_alloc);

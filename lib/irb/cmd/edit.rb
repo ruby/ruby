@@ -24,25 +24,19 @@ module IRB
       def execute(*args)
         path = args.first
 
-        if path.nil? && (irb_path = @irb_context.irb_path)
-          path = irb_path
+        if path.nil?
+          path = @irb_context.irb_path
+        elsif !File.exist?(path)
+          source = SourceFinder.new(@irb_context).find_source(path)
+
+          if source&.file_exist? && !source.binary_file?
+            path = source.file
+          end
         end
 
-        if !File.exist?(path)
-          source =
-            begin
-              SourceFinder.new(@irb_context).find_source(path)
-            rescue NameError
-              # if user enters a path that doesn't exist, it'll cause NameError when passed here because find_source would try to evaluate it as well
-              # in this case, we should just ignore the error
-            end
-
-          if source
-            path = source.file
-          else
-            puts "Can not find file: #{path}"
-            return
-          end
+        unless File.exist?(path)
+          puts "Can not find file: #{path}"
+          return
         end
 
         if editor = (ENV['VISUAL'] || ENV['EDITOR'])

@@ -2045,6 +2045,11 @@ class TestRegexp < Test::Unit::TestCase
     100.times.each { assert(regex.match?(string)) }
   end
 
+  def test_bug_20246 # [Bug #20246]
+    assert_equal '1.2.3', '1.2.3'[/(\d+)(\.\g<1>){2}/]
+    assert_equal '1.2.3', '1.2.3'[/((?:\d|foo|bar)+)(\.\g<1>){2}/]
+  end
+
   def test_linear_time_p
     assert_send [Regexp, :linear_time?, /a/]
     assert_send [Regexp, :linear_time?, 'a']

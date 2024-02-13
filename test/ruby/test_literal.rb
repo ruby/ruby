@@ -498,6 +498,7 @@ class TestRubyLiteral < Test::Unit::TestCase
       '//',
       '__LINE__',
       '__FILE__',
+      '__ENCODING__',
     ) do |key|
       assert_warning(/key #{Regexp.quote(eval(key).inspect)} is duplicated/) { eval("{#{key} => :bar, #{key} => :foo}") }
     end

@@ -31,4 +31,26 @@ describe :binding_clone, shared: true do
       b2.local_variable_defined?(:x).should == false
     end
   end
+
+  ruby_version_is "3.4" do
+    it "copies instance variables" do
+      @b1.instance_variable_set(:@ivar, 1)
+      cl = @b1.send(@method)
+      cl.instance_variables.should == [:@ivar]
+    end
+
+    it "copies the finalizer" do
+      code = <<-RUBY
+        obj = binding
+
+        ObjectSpace.define_finalizer(obj, Proc.new { STDOUT.write "finalized\n" })
+
+        obj.clone
+
+        exit 0
+      RUBY
+
+      ruby_exe(code).lines.sort.should == ["finalized\n", "finalized\n"]
+    end
+  end
 end

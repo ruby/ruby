@@ -77,47 +77,47 @@ should_be_T_ARRAY(VALUE ary)
     return RB_TYPE_P(ary, T_ARRAY);
 }
 
-#define ARY_HEAP_PTR(a) (assert(!ARY_EMBED_P(a)), RARRAY(a)->as.heap.ptr)
-#define ARY_HEAP_LEN(a) (assert(!ARY_EMBED_P(a)), RARRAY(a)->as.heap.len)
-#define ARY_HEAP_CAPA(a) (assert(!ARY_EMBED_P(a)), assert(!ARY_SHARED_ROOT_P(a)), \
+#define ARY_HEAP_PTR(a) (RUBY_ASSERT(!ARY_EMBED_P(a)), RARRAY(a)->as.heap.ptr)
+#define ARY_HEAP_LEN(a) (RUBY_ASSERT(!ARY_EMBED_P(a)), RARRAY(a)->as.heap.len)
+#define ARY_HEAP_CAPA(a) (RUBY_ASSERT(!ARY_EMBED_P(a)), RUBY_ASSERT(!ARY_SHARED_ROOT_P(a)), \
                           RARRAY(a)->as.heap.aux.capa)
 
-#define ARY_EMBED_PTR(a) (assert(ARY_EMBED_P(a)), RARRAY(a)->as.ary)
+#define ARY_EMBED_PTR(a) (RUBY_ASSERT(ARY_EMBED_P(a)), RARRAY(a)->as.ary)
 #define ARY_EMBED_LEN(a) \
-    (assert(ARY_EMBED_P(a)), \
+    (RUBY_ASSERT(ARY_EMBED_P(a)), \
      (long)((RBASIC(a)->flags >> RARRAY_EMBED_LEN_SHIFT) & \
          (RARRAY_EMBED_LEN_MASK >> RARRAY_EMBED_LEN_SHIFT)))
-#define ARY_HEAP_SIZE(a) (assert(!ARY_EMBED_P(a)), assert(ARY_OWNS_HEAP_P(a)), ARY_CAPA(a) * sizeof(VALUE))
+#define ARY_HEAP_SIZE(a) (RUBY_ASSERT(!ARY_EMBED_P(a)), RUBY_ASSERT(ARY_OWNS_HEAP_P(a)), ARY_CAPA(a) * sizeof(VALUE))
 
-#define ARY_OWNS_HEAP_P(a) (assert(should_be_T_ARRAY((VALUE)(a))), \
+#define ARY_OWNS_HEAP_P(a) (RUBY_ASSERT(should_be_T_ARRAY((VALUE)(a))), \
                             !FL_TEST_RAW((a), RARRAY_SHARED_FLAG|RARRAY_EMBED_FLAG))
 
 #define FL_SET_EMBED(a) do { \
-    assert(!ARY_SHARED_P(a)); \
+    RUBY_ASSERT(!ARY_SHARED_P(a)); \
     FL_SET((a), RARRAY_EMBED_FLAG); \
     ary_verify(a); \
 } while (0)
 
 #define FL_UNSET_EMBED(ary) FL_UNSET((ary), RARRAY_EMBED_FLAG|RARRAY_EMBED_LEN_MASK)
 #define FL_SET_SHARED(ary) do { \
-    assert(!ARY_EMBED_P(ary)); \
+    RUBY_ASSERT(!ARY_EMBED_P(ary)); \
     FL_SET((ary), RARRAY_SHARED_FLAG); \
 } while (0)
 #define FL_UNSET_SHARED(ary) FL_UNSET((ary), RARRAY_SHARED_FLAG)
 
 #define ARY_SET_PTR(ary, p) do { \
-    assert(!ARY_EMBED_P(ary)); \
-    assert(!OBJ_FROZEN(ary)); \
+    RUBY_ASSERT(!ARY_EMBED_P(ary)); \
+    RUBY_ASSERT(!OBJ_FROZEN(ary)); \
     RARRAY(ary)->as.heap.ptr = (p); \
 } while (0)
 #define ARY_SET_EMBED_LEN(ary, n) do { \
     long tmp_n = (n); \
-    assert(ARY_EMBED_P(ary)); \
+    RUBY_ASSERT(ARY_EMBED_P(ary)); \
     RBASIC(ary)->flags &= ~RARRAY_EMBED_LEN_MASK; \
     RBASIC(ary)->flags |= (tmp_n) << RARRAY_EMBED_LEN_SHIFT; \
 } while (0)
 #define ARY_SET_HEAP_LEN(ary, n) do { \
-    assert(!ARY_EMBED_P(ary)); \
+    RUBY_ASSERT(!ARY_EMBED_P(ary)); \
     RARRAY(ary)->as.heap.len = (n); \
 } while (0)
 #define ARY_SET_LEN(ary, n) do { \
@@ -127,15 +127,15 @@ should_be_T_ARRAY(VALUE ary)
     else { \
         ARY_SET_HEAP_LEN((ary), (n)); \
     } \
-    assert(RARRAY_LEN(ary) == (n)); \
+    RUBY_ASSERT(RARRAY_LEN(ary) == (n)); \
 } while (0)
 #define ARY_INCREASE_PTR(ary, n) do  { \
-    assert(!ARY_EMBED_P(ary)); \
-    assert(!OBJ_FROZEN(ary)); \
+    RUBY_ASSERT(!ARY_EMBED_P(ary)); \
+    RUBY_ASSERT(!OBJ_FROZEN(ary)); \
     RARRAY(ary)->as.heap.ptr += (n); \
 } while (0)
 #define ARY_INCREASE_LEN(ary, n) do  { \
-    assert(!OBJ_FROZEN(ary)); \
+    RUBY_ASSERT(!OBJ_FROZEN(ary)); \
     if (ARY_EMBED_P(ary)) { \
         ARY_SET_EMBED_LEN((ary), RARRAY_LEN(ary)+(n)); \
     } \
@@ -147,30 +147,30 @@ should_be_T_ARRAY(VALUE ary)
 #define ARY_CAPA(ary) (ARY_EMBED_P(ary) ? ary_embed_capa(ary) : \
                        ARY_SHARED_ROOT_P(ary) ? RARRAY_LEN(ary) : ARY_HEAP_CAPA(ary))
 #define ARY_SET_CAPA(ary, n) do { \
-    assert(!ARY_EMBED_P(ary)); \
-    assert(!ARY_SHARED_P(ary)); \
-    assert(!OBJ_FROZEN(ary)); \
+    RUBY_ASSERT(!ARY_EMBED_P(ary)); \
+    RUBY_ASSERT(!ARY_SHARED_P(ary)); \
+    RUBY_ASSERT(!OBJ_FROZEN(ary)); \
     RARRAY(ary)->as.heap.aux.capa = (n); \
 } while (0)
 
 #define ARY_SHARED_ROOT_OCCUPIED(ary) (!OBJ_FROZEN(ary) && ARY_SHARED_ROOT_REFCNT(ary) == 1)
 #define ARY_SET_SHARED_ROOT_REFCNT(ary, value) do { \
-    assert(ARY_SHARED_ROOT_P(ary)); \
-    assert(!OBJ_FROZEN(ary)); \
-    assert((value) >= 0); \
+    RUBY_ASSERT(ARY_SHARED_ROOT_P(ary)); \
+    RUBY_ASSERT(!OBJ_FROZEN(ary)); \
+    RUBY_ASSERT((value) >= 0); \
     RARRAY(ary)->as.heap.aux.capa = (value); \
 } while (0)
 #define FL_SET_SHARED_ROOT(ary) do { \
-    assert(!OBJ_FROZEN(ary)); \
-    assert(!ARY_EMBED_P(ary)); \
+    RUBY_ASSERT(!OBJ_FROZEN(ary)); \
+    RUBY_ASSERT(!ARY_EMBED_P(ary)); \
     FL_SET((ary), RARRAY_SHARED_ROOT_FLAG); \
 } while (0)
 
 static inline void
 ARY_SET(VALUE a, long i, VALUE v)
 {
-    assert(!ARY_SHARED_P(a));
-    assert(!OBJ_FROZEN(a));
+    RUBY_ASSERT(!ARY_SHARED_P(a));
+    RUBY_ASSERT(!OBJ_FROZEN(a));
 
     RARRAY_ASET(a, i, v);
 }
@@ -180,7 +180,7 @@ static long
 ary_embed_capa(VALUE ary)
 {
     size_t size = rb_gc_obj_slot_size(ary) - offsetof(struct RArray, as.ary);
-    assert(size % sizeof(VALUE) == 0);
+    RUBY_ASSERT(size % sizeof(VALUE) == 0);
     return size / sizeof(VALUE);
 }
 
@@ -234,20 +234,20 @@ rb_ary_size_as_embedded(VALUE ary)
 static VALUE
 ary_verify_(VALUE ary, const char *file, int line)
 {
-    assert(RB_TYPE_P(ary, T_ARRAY));
+    RUBY_ASSERT(RB_TYPE_P(ary, T_ARRAY));
 
     if (ARY_SHARED_P(ary)) {
         VALUE root = ARY_SHARED_ROOT(ary);
         const VALUE *ptr = ARY_HEAP_PTR(ary);
         const VALUE *root_ptr = RARRAY_CONST_PTR(root);
         long len = ARY_HEAP_LEN(ary), root_len = RARRAY_LEN(root);
-        assert(ARY_SHARED_ROOT_P(root) || OBJ_FROZEN(root));
-        assert(root_ptr <= ptr && ptr + len <= root_ptr + root_len);
+        RUBY_ASSERT(ARY_SHARED_ROOT_P(root) || OBJ_FROZEN(root));
+        RUBY_ASSERT(root_ptr <= ptr && ptr + len <= root_ptr + root_len);
         ary_verify(root);
     }
     else if (ARY_EMBED_P(ary)) {
-        assert(!ARY_SHARED_P(ary));
-        assert(RARRAY_LEN(ary) <= ary_embed_capa(ary));
+        RUBY_ASSERT(!ARY_SHARED_P(ary));
+        RUBY_ASSERT(RARRAY_LEN(ary) <= ary_embed_capa(ary));
     }
     else {
         const VALUE *ptr = RARRAY_CONST_PTR(ary);
@@ -325,7 +325,7 @@ ary_memfill(VALUE ary, long beg, long size, VALUE val)
 static void
 ary_memcpy0(VALUE ary, long beg, long argc, const VALUE *argv, VALUE buff_owner_ary)
 {
-    assert(!ARY_SHARED_P(buff_owner_ary));
+    RUBY_ASSERT(!ARY_SHARED_P(buff_owner_ary));
 
     if (argc > (int)(128/sizeof(VALUE)) /* is magic number (cache line size) */) {
         rb_gc_writebarrier_remember(buff_owner_ary);
@@ -379,7 +379,7 @@ ary_heap_realloc(VALUE ary, size_t new_capa)
 void
 rb_ary_make_embedded(VALUE ary)
 {
-    assert(rb_ary_embeddable_p(ary));
+    RUBY_ASSERT(rb_ary_embeddable_p(ary));
     if (!ARY_EMBED_P(ary)) {
         const VALUE *buf = ARY_HEAP_PTR(ary);
         long len = ARY_HEAP_LEN(ary);
@@ -396,9 +396,9 @@ rb_ary_make_embedded(VALUE ary)
 static void
 ary_resize_capa(VALUE ary, long capacity)
 {
-    assert(RARRAY_LEN(ary) <= capacity);
-    assert(!OBJ_FROZEN(ary));
-    assert(!ARY_SHARED_P(ary));
+    RUBY_ASSERT(RARRAY_LEN(ary) <= capacity);
+    RUBY_ASSERT(!OBJ_FROZEN(ary));
+    RUBY_ASSERT(!ARY_SHARED_P(ary));
 
     if (capacity > ary_embed_capa(ary)) {
         size_t new_capa = capacity;
@@ -439,8 +439,8 @@ ary_shrink_capa(VALUE ary)
 {
     long capacity = ARY_HEAP_LEN(ary);
     long old_capa = ARY_HEAP_CAPA(ary);
-    assert(!ARY_SHARED_P(ary));
-    assert(old_capa >= capacity);
+    RUBY_ASSERT(!ARY_SHARED_P(ary));
+    RUBY_ASSERT(old_capa >= capacity);
     if (old_capa > capacity) ary_heap_realloc(ary, capacity);
 
     ary_verify(ary);
@@ -499,7 +499,7 @@ rb_ary_increment_share(VALUE shared_root)
 {
     if (!OBJ_FROZEN(shared_root)) {
         long num = ARY_SHARED_ROOT_REFCNT(shared_root);
-        assert(num >= 0);
+        RUBY_ASSERT(num >= 0);
         ARY_SET_SHARED_ROOT_REFCNT(shared_root, num + 1);
     }
     return shared_root;
@@ -508,9 +508,9 @@ rb_ary_increment_share(VALUE shared_root)
 static void
 rb_ary_set_shared(VALUE ary, VALUE shared_root)
 {
-    assert(!ARY_EMBED_P(ary));
-    assert(!OBJ_FROZEN(ary));
-    assert(ARY_SHARED_ROOT_P(shared_root) || OBJ_FROZEN(shared_root));
+    RUBY_ASSERT(!ARY_EMBED_P(ary));
+    RUBY_ASSERT(!OBJ_FROZEN(ary));
+    RUBY_ASSERT(ARY_SHARED_ROOT_P(shared_root) || OBJ_FROZEN(shared_root));
 
     rb_ary_increment_share(shared_root);
     FL_SET_SHARED(ary);
@@ -665,7 +665,7 @@ static VALUE
 ary_alloc_embed(VALUE klass, long capa)
 {
     size_t size = ary_embed_size(capa);
-    assert(rb_gc_size_allocatable_p(size));
+    RUBY_ASSERT(rb_gc_size_allocatable_p(size));
     NEWOBJ_OF(ary, struct RArray, klass,
                      T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
                      size, 0);
@@ -712,7 +712,7 @@ ary_new(VALUE klass, long capa)
     else {
         ary = ary_alloc_heap(klass);
         ARY_SET_CAPA(ary, capa);
-        assert(!ARY_EMBED_P(ary));
+        RUBY_ASSERT(!ARY_EMBED_P(ary));
 
         ARY_SET_PTR(ary, ary_heap_alloc(capa));
         ARY_SET_HEAP_LEN(ary, 0);
@@ -776,7 +776,7 @@ static VALUE
 ec_ary_alloc_embed(rb_execution_context_t *ec, VALUE klass, long capa)
 {
     size_t size = ary_embed_size(capa);
-    assert(rb_gc_size_allocatable_p(size));
+    RUBY_ASSERT(rb_gc_size_allocatable_p(size));
     NEWOBJ_OF(ary, struct RArray, klass,
             T_ARRAY | RARRAY_EMBED_FLAG | (RGENGC_WB_PROTECTED_ARRAY ? FL_WB_PROTECTED : 0),
             size, ec);
@@ -816,7 +816,7 @@ ec_ary_new(rb_execution_context_t *ec, VALUE klass, long capa)
     else {
         ary = ec_ary_alloc_heap(ec, klass);
         ARY_SET_CAPA(ary, capa);
-        assert(!ARY_EMBED_P(ary));
+        RUBY_ASSERT(!ARY_EMBED_P(ary));
 
         ARY_SET_PTR(ary, ary_heap_alloc(capa));
         ARY_SET_HEAP_LEN(ary, 0);
@@ -948,7 +948,7 @@ ary_make_substitution(VALUE ary)
 
     if (ary_embeddable_p(len)) {
         VALUE subst = rb_ary_new_capa(len);
-        assert(ARY_EMBED_P(subst));
+        RUBY_ASSERT(ARY_EMBED_P(subst));
 
         ary_memcpy(subst, 0, len, RARRAY_CONST_PTR(ary));
         ARY_SET_EMBED_LEN(subst, len);
@@ -1091,8 +1091,8 @@ rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
     rb_ary_modify(ary);
     if (argc == 0) {
         rb_ary_reset(ary);
-        assert(ARY_EMBED_P(ary));
-        assert(ARY_EMBED_LEN(ary) == 0);
+        RUBY_ASSERT(ARY_EMBED_P(ary));
+        RUBY_ASSERT(ARY_EMBED_LEN(ary) == 0);
         if (rb_block_given_p()) {
             rb_warning("given block not used");
         }
@@ -1189,9 +1189,9 @@ rb_ary_store(VALUE ary, long idx, VALUE val)
 static VALUE
 ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
 {
-    assert(offset >= 0);
-    assert(len >= 0);
-    assert(offset+len <= RARRAY_LEN(ary));
+    RUBY_ASSERT(offset >= 0);
+    RUBY_ASSERT(len >= 0);
+    RUBY_ASSERT(offset+len <= RARRAY_LEN(ary));
 
     VALUE result = ary_alloc_heap(klass);
     size_t embed_capa = ary_embed_capa(result);
@@ -1225,10 +1225,10 @@ ary_make_partial(VALUE ary, VALUE klass, long offset, long len)
 static VALUE
 ary_make_partial_step(VALUE ary, VALUE klass, long offset, long len, long step)
 {
-    assert(offset >= 0);
-    assert(len >= 0);
-    assert(offset+len <= RARRAY_LEN(ary));
-    assert(step != 0);
+    RUBY_ASSERT(offset >= 0);
+    RUBY_ASSERT(len >= 0);
+    RUBY_ASSERT(offset+len <= RARRAY_LEN(ary));
+    RUBY_ASSERT(step != 0);
 
     const long orig_len = len;
 
@@ -1563,7 +1563,7 @@ make_room_for_unshift(VALUE ary, const VALUE *head, VALUE *sharedp, int argc, lo
         head = sharedp + argc + room;
     }
     ARY_SET_PTR(ary, head - argc);
-    assert(ARY_SHARED_ROOT_OCCUPIED(ARY_SHARED_ROOT(ary)));
+    RUBY_ASSERT(ARY_SHARED_ROOT_OCCUPIED(ARY_SHARED_ROOT(ary)));
 
     ary_verify(ary);
     return ARY_SHARED_ROOT(ary);
@@ -3340,7 +3340,7 @@ VALUE
 rb_ary_sort_bang(VALUE ary)
 {
     rb_ary_modify(ary);
-    assert(!ARY_SHARED_P(ary));
+    RUBY_ASSERT(!ARY_SHARED_P(ary));
     if (RARRAY_LEN(ary) > 1) {
         VALUE tmp = ary_make_substitution(ary); /* only ary refers tmp */
         struct ary_sort_data data;
@@ -3367,7 +3367,7 @@ rb_ary_sort_bang(VALUE ary)
                 ARY_SET_CAPA(ary, RARRAY_LEN(tmp));
             }
             else {
-                assert(!ARY_SHARED_P(tmp));
+                RUBY_ASSERT(!ARY_SHARED_P(tmp));
                 if (ARY_EMBED_P(ary)) {
                     FL_UNSET_EMBED(ary);
                 }
@@ -4513,7 +4513,7 @@ rb_ary_replace(VALUE copy, VALUE orig)
 
     /* orig has enough space to embed the contents of orig. */
     if (RARRAY_LEN(orig) <= ary_embed_capa(copy)) {
-        assert(ARY_EMBED_P(copy));
+        RUBY_ASSERT(ARY_EMBED_P(copy));
         ary_memcpy(copy, 0, RARRAY_LEN(orig), RARRAY_CONST_PTR(orig));
         ARY_SET_EMBED_LEN(copy, RARRAY_LEN(orig));
     }

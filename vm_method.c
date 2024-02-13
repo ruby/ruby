@@ -522,6 +522,8 @@ rb_method_definition_set(const rb_method_entry_t *me, rb_method_definition_t *de
     rb_method_definition_release(me->def);
     *(rb_method_definition_t **)&me->def = method_definition_addref(def, METHOD_ENTRY_COMPLEMENTED(me));
 
+    if (!ruby_running) add_opt_method_entry(me);
+
     if (opts != NULL) {
         switch (def->type) {
           case VM_METHOD_TYPE_ISEQ:
@@ -1063,8 +1065,8 @@ get_overloaded_cme(const rb_callable_method_entry_t *cme)
     }
 }
 
-static const rb_callable_method_entry_t *
-check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_callinfo * const ci)
+const rb_callable_method_entry_t *
+rb_check_overloaded_cme(const rb_callable_method_entry_t *cme, const struct rb_callinfo * const ci)
 {
     if (UNLIKELY(cme->def->iseq_overload) &&
         (vm_ci_flag(ci) & (VM_CALL_ARGS_SIMPLE)) &&

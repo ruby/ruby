@@ -3,7 +3,7 @@
 require_relative "test_helper"
 
 module Prism
-  class RipperCompatTest < TestCase
+  class RipperTest < TestCase
     def test_binary
       assert_equivalent("1 + 2")
       assert_equivalent("3 - 4 * 5")
@@ -110,17 +110,49 @@ module Prism
       assert_equivalent("a /= b")
     end
 
+    def test_arrays
+      assert_equivalent("[1, 2, 7]")
+      assert_equivalent("[1, [2, 7]]")
+    end
+
+    def test_array_refs
+      assert_equivalent("a[1]")
+      assert_equivalent("a[1] = 7")
+    end
+
+    def test_strings
+      assert_equivalent("'a'")
+      assert_equivalent("'a\01'")
+      assert_equivalent("`a`")
+      assert_equivalent("`a\07`")
+      assert_equivalent('"a#{1}c"')
+      assert_equivalent('"a#{1}b#{2}c"')
+      assert_equivalent("`f\oo`")
+    end
+
+    def test_symbols
+      assert_equivalent(":a")
+      assert_equivalent(":'a'")
+      assert_equivalent(':"a"')
+      assert_equivalent("%s(foo)")
+    end
+
+    def test_assign
+      assert_equivalent("a = b")
+      assert_equivalent("a = 1")
+    end
+
     private
 
     def assert_equivalent(source)
       expected = Ripper.sexp_raw(source)
 
       refute_nil expected
-      assert_equal expected, RipperCompat.sexp_raw(source)
+      assert_equal expected, Prism::Translation::Ripper.sexp_raw(source)
     end
   end
 
-  class RipperCompatFixturesTest < TestCase
+  class RipperFixturesTest < TestCase
     #base = File.join(__dir__, "fixtures")
     #relatives = ENV["FOCUS"] ? [ENV["FOCUS"]] : Dir["**/*.txt", base: base]
     relatives = [
@@ -145,7 +177,7 @@ module Prism
           puts "Could not parse #{path.inspect}!"
         end
         refute_nil expected
-        assert_equal expected, RipperCompat.sexp_raw(source)
+        assert_equal expected, Translation::Ripper.sexp_raw(source)
       end
     end
 
