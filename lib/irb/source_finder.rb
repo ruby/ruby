@@ -4,6 +4,8 @@ require_relative "ruby-lex"
 
 module IRB
   class SourceFinder
+    class EvaluationError < StandardError; end
+
     class Source
       attr_reader :file, :line
       def initialize(file, line, ast_source = nil)
@@ -66,20 +68,19 @@ module IRB
     end
 
     def find_source(signature, super_level = 0)
-      context_binding = @irb_context.workspace.binding
       case signature
       when /\A(::)?[A-Z]\w*(::[A-Z]\w*)*\z/ # Const::Name
-        eval(signature, context_binding) # trigger autoload
-        base = context_binding.receiver.yield_self { |r| r.is_a?(Module) ? r : Object }
+        eval_receiver_or_owner(signature) # trigger autoload
+        base = @irb_context.workspace.binding.receiver.yield_self { |r| r.is_a?(Module) ? r : Object }
         file, line = base.const_source_location(signature)
       when /\A(?<owner>[A-Z]\w*(::[A-Z]\w*)*)#(?<method>[^ :.]+)\z/ # Class#method
-        owner = eval(Regexp.last_match[:owner], context_binding)
+        owner = eval_receiver_or_owner(Regexp.last_match[:owner])
         method = Regexp.last_match[:method]
         return unless owner.respond_to?(:instance_method)
         method = method_target(owner, super_level, method, "owner")
         file, line = method&.source_location
       when /\A((?<receiver>.+)(\.|::))?(?<method>[^ :.]+)\z/ # method, receiver.method, receiver::method
-        receiver = eval(Regexp.last_match[:receiver] || 'self', context_binding)
+        receiver = eval_receiver_or_owner(Regexp.last_match[:receiver] || 'self')
         method = Regexp.last_match[:method]
         return unless receiver.respond_to?(method, true)
         method = method_target(receiver, super_level, method, "receiver")
@@ -94,6 +95,8 @@ module IRB
         source = RubyVM::AbstractSyntaxTree.of(method)&.source rescue nil
         Source.new(file, line, source)
       end
+    rescue EvaluationError
+      nil
     end
 
     private
@@ -111,6 +114,13 @@ module IRB
       target_method
     rescue NameError
       nil
+    end
+
+    def eval_receiver_or_owner(code)
+      context_binding = @irb_context.workspace.binding
+      eval(code, context_binding)
+    rescue NameError
+      raise EvaluationError
     end
   end
 end
