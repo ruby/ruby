@@ -2970,43 +2970,11 @@ rb_newobj(void)
     return newobj_of(GET_RACTOR(), 0, T_NONE, 0, 0, 0, FALSE, RVALUE_SIZE);
 }
 
-static VALUE
-rb_class_instance_allocate_internal(VALUE klass, VALUE flags, bool wb_protected)
-{
-    GC_ASSERT((flags & RUBY_T_MASK) == T_OBJECT);
-    GC_ASSERT(flags & ROBJECT_EMBED);
-
-    size_t size;
-    uint32_t index_tbl_num_entries = RCLASS_EXT(klass)->max_iv_count;
-
-    size = rb_obj_embedded_size(index_tbl_num_entries);
-    if (!rb_gc_size_allocatable_p(size)) {
-        size = sizeof(struct RObject);
-    }
-
-    VALUE obj = newobj_of(GET_RACTOR(), klass, flags, 0, 0, 0, wb_protected, size);
-    RUBY_ASSERT(rb_shape_get_shape(obj)->type == SHAPE_ROOT);
-
-    // Set the shape to the specific T_OBJECT shape which is always
-    // SIZE_POOL_COUNT away from the root shape.
-    ROBJECT_SET_SHAPE_ID(obj, ROBJECT_SHAPE_ID(obj) + SIZE_POOL_COUNT);
-
-#if RUBY_DEBUG
-    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
-    VALUE *ptr = ROBJECT_IVPTR(obj);
-    for (size_t i = 0; i < ROBJECT_IV_CAPACITY(obj); i++) {
-        ptr[i] = Qundef;
-    }
-#endif
-
-    return obj;
-}
-
 VALUE
 rb_newobj_of(VALUE klass, VALUE flags)
 {
     if ((flags & RUBY_T_MASK) == T_OBJECT) {
-        return rb_class_instance_allocate_internal(klass, (flags | ROBJECT_EMBED) & ~FL_WB_PROTECTED, flags & FL_WB_PROTECTED);
+        return rb_class_allocate_instance(klass);
     }
     else {
         return newobj_of(GET_RACTOR(), klass, flags & ~FL_WB_PROTECTED, 0, 0, 0, flags & FL_WB_PROTECTED, RVALUE_SIZE);
@@ -3115,12 +3083,6 @@ rb_imemo_new_debug(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0,
     return memo;
 }
 #endif
-
-VALUE
-rb_class_allocate_instance(VALUE klass)
-{
-    return rb_class_instance_allocate_internal(klass, T_OBJECT | ROBJECT_EMBED, RGENGC_WB_PROTECTED_OBJECT);
-}
 
 static inline void
 rb_data_object_check(VALUE klass)

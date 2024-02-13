@@ -12,6 +12,7 @@
 
 /* object.c */
 size_t rb_obj_embedded_size(uint32_t numiv);
+VALUE rb_class_allocate_instance(VALUE klass);
 VALUE rb_class_search_ancestor(VALUE klass, VALUE super);
 NORETURN(void rb_undefined_alloc(VALUE klass));
 double rb_num_to_dbl(VALUE val);
