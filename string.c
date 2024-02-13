@@ -11740,11 +11740,13 @@ sym_inspect(VALUE sym)
     }
     else {
         rb_encoding *enc = STR_ENC_GET(str);
-
         VALUE orig_str = str;
-        RSTRING_GETMEM(orig_str, ptr, len);
 
+        len = RSTRING_LEN(orig_str);
         str = rb_enc_str_new(0, len + 1, enc);
+
+        // Get data pointer after allocation
+        ptr = RSTRING_PTR(orig_str);
         dest = RSTRING_PTR(str);
         memcpy(dest + 1, ptr, len);
 
