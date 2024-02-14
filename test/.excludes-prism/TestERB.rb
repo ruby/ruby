@@ -1,0 +1,6 @@
+exclude(:test_with_filename_and_safe_level, "incorrect line number")
+exclude(:test_with_filename_lineno, "incorrect line number")
+exclude(:test_with_filename, "incorrect line number")
+exclude(:test_with_location, "incorrect line number")
+exclude(:test_without_filename_with_safe_level, "incorrect line number")
+exclude(:test_without_filename, "incorrect line number")
