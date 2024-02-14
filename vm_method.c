@@ -309,9 +309,6 @@ rb_clear_method_cache(VALUE klass_or_module, ID mid)
     }
 }
 
-// gc.c
-void rb_cc_table_free(VALUE klass);
-
 static int
 invalidate_all_refinement_cc(void *vstart, void *vend, size_t stride, void *data)
 {

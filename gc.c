@@ -3386,12 +3386,6 @@ cvar_table_free_i(VALUE value, void * ctx)
     return ID_TABLE_CONTINUE;
 }
 
-void
-rb_cc_table_free(VALUE klass)
-{
-    cc_table_free(&rb_objspace, klass, TRUE);
-}
-
 static inline void
 make_zombie(rb_objspace_t *objspace, VALUE obj, void (*dfree)(void *), void *data)
 {
