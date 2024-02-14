@@ -102,6 +102,9 @@ pub struct JITState {
 
     /// Address range for Linux perf's [JIT interface](https://github.com/torvalds/linux/blob/master/tools/perf/Documentation/jit-interface.txt)
     perf_map: Rc::<RefCell::<Vec<(CodePtr, Option<CodePtr>, String)>>>,
+
+    /// Stack of symbol names for --yjit-perf
+    perf_stack: Vec<String>,
 }
 
 impl JITState {
@@ -124,6 +127,7 @@ impl JITState {
             stable_constant_names_assumption: None,
             block_assumes_single_ractor: false,
             perf_map: Rc::default(),
+            perf_stack: vec![],
         }
     }
 
@@ -242,9 +246,27 @@ impl JITState {
         self.pending_outgoing.push(branch)
     }
 
+    /// Push a symbol for --yjit-perf
+    fn perf_symbol_push(&mut self, asm: &mut Assembler, symbol_name: &str) {
+        if !self.perf_stack.is_empty() {
+            self.perf_symbol_range_end(asm);
+        }
+        self.perf_stack.push(symbol_name.to_string());
+        self.perf_symbol_range_start(asm, symbol_name);
+    }
+
+    /// Pop the stack-top symbol for --yjit-perf
+    fn perf_symbol_pop(&mut self, asm: &mut Assembler) {
+        self.perf_symbol_range_end(asm);
+        self.perf_stack.pop();
+        if let Some(symbol_name) = self.perf_stack.get(0) {
+            self.perf_symbol_range_start(asm, symbol_name);
+        }
+    }
+
     /// Mark the start address of a symbol to be reported to perf
     fn perf_symbol_range_start(&self, asm: &mut Assembler, symbol_name: &str) {
-        let symbol_name = symbol_name.to_string();
+        let symbol_name = format!("[JIT] {}", symbol_name);
         let syms = self.perf_map.clone();
         asm.pos_marker(move |start, _| syms.borrow_mut().push((start, None, symbol_name.clone())));
     }
@@ -262,6 +284,7 @@ impl JITState {
 
     /// Flush addresses and symbols to /tmp/perf-{pid}.map
     fn flush_perf_symbols(&self, cb: &CodeBlock) {
+        assert_eq!(0, self.perf_stack.len());
         let path = format!("/tmp/perf-{}.map", std::process::id());
         let mut f = std::fs::File::options().create(true).append(true).open(path).unwrap();
         for sym in self.perf_map.borrow().iter() {
@@ -275,6 +298,39 @@ impl JITState {
             }
         }
     }
+}
+
+/// Macro to call jit.perf_symbol_push() without evaluating arguments when
+/// the option is turned off, which is useful for avoiding string allocation.
+macro_rules! jit_perf_symbol_push {
+    ($jit:expr, $asm:expr, $symbol_name:expr, $perf_map:expr) => {
+        if get_option!(perf_map) == Some($perf_map) {
+            $jit.perf_symbol_push($asm, $symbol_name);
+        }
+    };
+}
+
+/// Macro to call jit.perf_symbol_pop(), for consistency with jit_perf_symbol_push!().
+macro_rules! jit_perf_symbol_pop {
+    ($jit:expr, $asm:expr, $perf_map:expr) => {
+        if get_option!(perf_map) == Some($perf_map) {
+            $jit.perf_symbol_pop($asm);
+        }
+    };
+}
+
+/// Macro to push and pop perf symbols around a function definition.
+/// This is useful when the function has early returns.
+macro_rules! perf_fn {
+    (fn $func_name:ident($jit:ident: $jit_t:ty, $asm:ident: $asm_t:ty, $($arg:ident: $type:ty,)*) -> $ret:ty $block:block) => {
+        fn $func_name($jit: $jit_t, $asm: $asm_t, $($arg: $type),*) -> $ret {
+            fn func_body($jit: $jit_t, $asm: $asm_t, $($arg: $type),*) -> $ret $block
+            jit_perf_symbol_push!($jit, $asm, stringify!($func_name), PerfMap::Codegen);
+            let ret = func_body($jit, $asm, $($arg),*);
+            jit_perf_symbol_pop!($jit, $asm, PerfMap::Codegen);
+            ret
+        }
+    };
 }
 
 use crate::codegen::JCCKinds::*;
@@ -944,18 +1000,8 @@ pub fn gen_single_block(
         asm_comment!(asm, "reg_temps: {:08b}", asm.ctx.get_reg_temps().as_u8());
     }
 
-    // Mark the start of a method name symbol for --yjit-perf
-    if get_option!(perf_map) {
-        let comptime_recv_class = jit.peek_at_self().class_of();
-        let class_name = unsafe { cstr_to_rust_string(rb_class2name(comptime_recv_class)) };
-        match (class_name, unsafe { rb_iseq_label(iseq) }) {
-            (Some(class_name), iseq_label) if iseq_label != Qnil => {
-                let iseq_label = ruby_str_to_rust(iseq_label);
-                jit.perf_symbol_range_start(&mut asm, &format!("[JIT] {}#{}", class_name, iseq_label));
-            }
-            _ => {},
-        }
-    }
+    // Mark the start of an ISEQ for --yjit-perf
+    jit_perf_symbol_push!(jit, &mut asm, &get_iseq_name(iseq), PerfMap::ISEQ);
 
     if asm.ctx.is_return_landing() {
         // Continuation of the end of gen_leave().
@@ -1031,7 +1077,9 @@ pub fn gen_single_block(
             }
 
             // Call the code generation function
+            jit_perf_symbol_push!(jit, &mut asm, &insn_name(opcode), PerfMap::Codegen);
             status = gen_fn(&mut jit, &mut asm, ocb);
+            jit_perf_symbol_pop!(jit, &mut asm, PerfMap::Codegen);
         }
 
         // If we can't compile this instruction
@@ -1078,17 +1126,15 @@ pub fn gen_single_block(
         asm.pad_inval_patch();
     }
 
-    // Mark the end of a method name symbol for --yjit-perf
-    if get_option!(perf_map) {
-        jit.perf_symbol_range_end(&mut asm);
-    }
+    // Mark the end of an ISEQ for --yjit-perf
+    jit_perf_symbol_pop!(jit, &mut asm, PerfMap::ISEQ);
 
     // Compile code into the code block
     let (_, gc_offsets) = asm.compile(cb, Some(ocb)).ok_or(())?;
     let end_addr = cb.get_write_ptr();
 
     // Flush perf symbols after asm.compile() writes addresses
-    if get_option!(perf_map) {
+    if get_option!(perf_map).is_some() {
         jit.flush_perf_symbols(cb);
     }
 
@@ -5943,7 +5989,7 @@ fn gen_push_frame(
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_EP), ep);
 }
 
-fn gen_send_cfunc(
+perf_fn!(fn gen_send_cfunc(
     jit: &mut JITState,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
@@ -5993,10 +6039,13 @@ fn gen_send_cfunc(
 
     // Delegate to codegen for C methods if we have it.
     if kw_arg.is_null() && flags & VM_CALL_OPT_SEND == 0 && flags & VM_CALL_ARGS_SPLAT == 0 && (cfunc_argc == -1 || argc == cfunc_argc) {
-        let codegen_p = lookup_cfunc_codegen(unsafe { (*cme).def });
         let expected_stack_after = asm.ctx.get_stack_size() as i32 - argc;
-        if let Some(known_cfunc_codegen) = codegen_p {
-            if known_cfunc_codegen(jit, asm, ocb, ci, cme, block, argc, recv_known_class) {
+        if let Some(known_cfunc_codegen) = lookup_cfunc_codegen(unsafe { (*cme).def }) {
+            jit_perf_symbol_push!(jit, asm, "gen_send_cfunc: known_cfunc_codegen", PerfMap::Codegen);
+            let specialized = known_cfunc_codegen(jit, asm, ocb, ci, cme, block, argc, recv_known_class);
+            jit_perf_symbol_pop!(jit, asm, PerfMap::Codegen);
+
+            if specialized {
                 assert_eq!(expected_stack_after, asm.ctx.get_stack_size() as i32);
                 gen_counter_incr(asm, Counter::num_send_cfunc_inline);
                 // cfunc codegen generated code. Terminate the block so
@@ -6121,6 +6170,7 @@ fn gen_send_cfunc(
         frame_type |= VM_FRAME_FLAG_CFRAME_KW
     }
 
+    jit_perf_symbol_push!(jit, asm, "gen_send_cfunc: gen_push_frame", PerfMap::Codegen);
     gen_push_frame(jit, asm, ControlFrame {
         frame_type,
         specval,
@@ -6134,6 +6184,7 @@ fn gen_send_cfunc(
         },
         iseq: None,
     });
+    jit_perf_symbol_pop!(jit, asm, PerfMap::Codegen);
 
     asm_comment!(asm, "set ec->cfp");
     let new_cfp = asm.lea(Opnd::mem(64, CFP, -(RUBY_SIZEOF_CONTROL_FRAME as i32)));
@@ -6225,7 +6276,7 @@ fn gen_send_cfunc(
     // We do this to end the current block after the call
     jump_to_next_insn(jit, asm, ocb);
     Some(EndBlock)
-}
+});
 
 // Generate RARRAY_LEN. For array_opnd, use Opnd::Reg to reduce memory access,
 // and use Opnd::Mem to save registers.
@@ -6415,7 +6466,7 @@ fn iseq_get_return_value(iseq: IseqPtr) -> Option<VALUE> {
     }
 }
 
-fn gen_send_iseq(
+perf_fn!(fn gen_send_iseq(
     jit: &mut JITState,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
@@ -7307,6 +7358,7 @@ fn gen_send_iseq(
     };
 
     // Setup the new frame
+    jit_perf_symbol_push!(jit, asm, "gen_send_iseq: gen_push_frame", PerfMap::Codegen);
     gen_push_frame(jit, asm, ControlFrame {
         frame_type,
         specval,
@@ -7316,6 +7368,7 @@ fn gen_send_iseq(
         iseq: Some(iseq),
         pc: None, // We are calling into jitted code, which will set the PC as necessary
     });
+    jit_perf_symbol_pop!(jit, asm, PerfMap::Codegen);
 
     // Log the name of the method we're calling to. We intentionally don't do this for inlined ISEQs.
     // We also do this after gen_push_frame() to minimize the impact of spill_temps() on asm.ccall().
@@ -7406,7 +7459,7 @@ fn gen_send_iseq(
     );
 
     Some(EndBlock)
-}
+});
 
 /// This is a helper function to allow us to exit early
 /// during code generation if a predicate is true.
@@ -7681,6 +7734,7 @@ fn gen_send_dynamic<F: Fn(&mut Assembler) -> Opnd>(
     if unsafe { vm_ci_flag((*cd).ci) } & VM_CALL_TAILCALL != 0 {
         return None;
     }
+    jit_perf_symbol_push!(jit, asm, "gen_send_dynamic", PerfMap::Codegen);
 
     // Rewind stack_size using ctx.with_stack_size to allow stack_size changes
     // before you return None.
@@ -7703,10 +7757,12 @@ fn gen_send_dynamic<F: Fn(&mut Assembler) -> Opnd>(
     asm.mov(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), SP);
 
     gen_counter_incr(asm, Counter::num_send_dynamic);
+
+    jit_perf_symbol_pop!(jit, asm, PerfMap::Codegen);
     Some(KeepCompiling)
 }
 
-fn gen_send_general(
+perf_fn!(fn gen_send_general(
     jit: &mut JITState,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
@@ -7779,6 +7835,7 @@ fn gen_send_general(
         return None;
     }
 
+    jit_perf_symbol_push!(jit, asm, "gen_send_general: jit_guard_known_klass", PerfMap::Codegen);
     jit_guard_known_klass(
         jit,
         asm,
@@ -7790,6 +7847,7 @@ fn gen_send_general(
         SEND_MAX_DEPTH,
         Counter::guard_send_klass_megamorphic,
     );
+    jit_perf_symbol_pop!(jit, asm, PerfMap::Codegen);
 
     // Do method lookup
     let mut cme = unsafe { rb_callable_method_entry(comptime_recv_klass, mid) };
@@ -8157,7 +8215,7 @@ fn gen_send_general(
             }
         }
     }
-}
+});
 
 /// Assemble "{class_name}#{method_name}" from a class pointer and a method ID
 fn get_method_name(class: Option<VALUE>, mid: u64) -> String {
