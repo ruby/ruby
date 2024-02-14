@@ -1,5 +1,3 @@
 exclude(:test_eval_ascii_incompatible, "incorrect encoding")
 exclude(:test_eval_location_binding, "incorrect line number")
 exclude(:test_file_encoding, "incorrect encoding")
-exclude(:test_with_filename_and_safe_level, "incorrect line number")
-exclude(:test_with_filename_lineno, "incorrect line number")
