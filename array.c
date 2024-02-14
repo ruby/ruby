@@ -5647,7 +5647,7 @@ rb_ary_union_multi(int argc, VALUE *argv, VALUE ary)
  *     a.intersect?(b)   #=> true
  *     a.intersect?(c)   #=> false
  *
- *  Array elements are compared using <tt>eql?</tt>
+ *  +Array+ elements are compared using <tt>eql?</tt>
  *  (items must also implement +hash+ correctly).
  */
 

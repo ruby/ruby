@@ -6682,7 +6682,7 @@ static const rb_data_type_t env_data_type = {
  *    # Raises SyntaxError (syntax error, unexpected ':', expecting =>):
  *    h = {0: 'zero'}
  *
- *  Hash value can be omitted, meaning that value will be fetched from the context
+ *  +Hash+ value can be omitted, meaning that value will be fetched from the context
  *  by the name of the key:
  *
  *    x = 0
@@ -6733,7 +6733,7 @@ static const rb_data_type_t env_data_type = {
  *
  *  You can create a +Hash+ by calling method Hash.new.
  *
- *  Create an empty Hash:
+ *  Create an empty +Hash+:
  *
  *    h = Hash.new
  *    h # => {}
@@ -6741,7 +6741,7 @@ static const rb_data_type_t env_data_type = {
  *
  *  You can create a +Hash+ by calling method Hash.[].
  *
- *  Create an empty Hash:
+ *  Create an empty +Hash+:
  *
  *    h = Hash[]
  *    h # => {}
