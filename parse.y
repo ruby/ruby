@@ -1588,6 +1588,7 @@ YYLTYPE *rb_parser_set_location_of_heredoc_end(struct parser_params *p, YYLTYPE 
 YYLTYPE *rb_parser_set_location_of_dummy_end(struct parser_params *p, YYLTYPE *yylloc);
 YYLTYPE *rb_parser_set_location_of_none(struct parser_params *p, YYLTYPE *yylloc);
 YYLTYPE *rb_parser_set_location(struct parser_params *p, YYLTYPE *yylloc);
+void ruby_show_error_line(struct parser_params *p, VALUE errbuf, const YYLTYPE *yylloc, int lineno, rb_parser_string_t *str);
 RUBY_SYMBOL_EXPORT_END
 
 static void error_duplicate_pattern_variable(struct parser_params *p, ID id, const YYLTYPE *loc);
@@ -7789,8 +7790,6 @@ parser_precise_mbclen(struct parser_params *p, const char *ptr)
 }
 
 #ifndef RIPPER
-static void ruby_show_error_line(struct parser_params *p, VALUE errbuf, const YYLTYPE *yylloc, int lineno, rb_parser_string_t *str);
-
 static inline void
 parser_show_error_line(struct parser_params *p, const YYLTYPE *yylloc)
 {
@@ -7834,7 +7833,7 @@ parser_yyerror0(struct parser_params *p, const char *msg)
     return parser_yyerror(p, RUBY_SET_YYLLOC(current), msg);
 }
 
-static void
+void
 ruby_show_error_line(struct parser_params *p, VALUE errbuf, const YYLTYPE *yylloc, int lineno, rb_parser_string_t *str)
 {
     VALUE mesg;
@@ -7939,6 +7938,7 @@ ruby_show_error_line(struct parser_params *p, VALUE errbuf, const YYLTYPE *yyllo
     if (!errbuf) rb_write_error_str(mesg);
 }
 #else
+
 static int
 parser_yyerror(struct parser_params *p, const YYLTYPE *yylloc, const char *msg)
 {
@@ -10014,7 +10014,9 @@ parser_set_encode(struct parser_params *p, const char *name)
         excargs[0] = rb_eArgError;
         excargs[2] = rb_make_backtrace();
         rb_ary_unshift(excargs[2], rb_sprintf("%"PRIsVALUE":%d", p->ruby_sourcefile_string, p->ruby_sourceline));
-        rb_exc_raise(rb_make_exception(3, excargs));
+        VALUE exc = rb_make_exception(3, excargs);
+        ruby_show_error_line(p, exc, &(YYLTYPE)RUBY_INIT_YYLLOC(), p->ruby_sourceline, p->lex.lastline);
+        rb_exc_raise(exc);
     }
     enc = rb_enc_from_index(idx);
     if (!rb_enc_asciicompat(enc)) {
@@ -10251,6 +10253,7 @@ parser_magic_comment(struct parser_params *p, const char *str, long len)
 
         do str++; while (--len > 0 && ISSPACE(*str));
         if (!len) break;
+        const char *tok_beg = str;
         if (*str == '"') {
             for (vbeg = ++str; --len > 0 && *str != '"'; str++) {
                 if (*str == '\\') {
@@ -10268,6 +10271,7 @@ parser_magic_comment(struct parser_params *p, const char *str, long len)
             for (vbeg = str; len > 0 && *str != '"' && *str != ';' && !ISSPACE(*str); --len, str++);
             vend = str;
         }
+        const char *tok_end = str;
         if (indicator) {
             while (len > 0 && (*str == ';' || ISSPACE(*str))) --len, str++;
         }
@@ -10289,6 +10293,8 @@ parser_magic_comment(struct parser_params *p, const char *str, long len)
                     n = (*mc->length)(p, vbeg, n);
                 }
                 str_copy(val, vbeg, n);
+                p->lex.ptok = tok_beg;
+                p->lex.pcur = tok_end;
                 (*mc->func)(p, mc->name, RSTRING_PTR(val));
                 break;
             }
@@ -10342,6 +10348,8 @@ set_file_encoding(struct parser_params *p, const char *str, const char *send)
     beg = str;
     while ((*str == '-' || *str == '_' || ISALNUM(*str)) && ++str < send);
     s = rb_str_new(beg, parser_encode_length(p, beg, str - beg));
+    p->lex.ptok = beg;
+    p->lex.pcur = str;
     parser_set_encode(p, RSTRING_PTR(s));
     rb_str_resize(s, 0);
 }
@@ -11249,12 +11257,14 @@ parser_yylex(struct parser_params *p)
 
       case '#':		/* it's a comment */
         p->token_seen = token_seen;
+        const char *const pcur = p->lex.pcur, *const ptok = p->lex.ptok;
         /* no magic_comment in shebang line */
         if (!parser_magic_comment(p, p->lex.pcur, p->lex.pend - p->lex.pcur)) {
             if (comment_at_top(p)) {
                 set_file_encoding(p, p->lex.pcur, p->lex.pend);
             }
         }
+        p->lex.pcur = pcur, p->lex.ptok = ptok;
         lex_goto_eol(p);
         dispatch_scan_event(p, tCOMMENT);
         fallthru = TRUE;
