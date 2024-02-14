@@ -15,10 +15,10 @@ module Prism
     attr_reader :offsets
 
     # Create a new source object with the given source code.
-    def initialize(source)
+    def initialize(source, start_line = 1, offsets = [])
       @source = source
-      @start_line = 1 # set after parsing is done
-      @offsets = [] # set after parsing is done
+      @start_line = start_line # set after parsing is done
+      @offsets = offsets # set after parsing is done
     end
 
     # Perform a byteslice on the source code using the given byte offset and
