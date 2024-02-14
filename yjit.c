@@ -98,13 +98,6 @@ rb_yjit_mark_executable(void *mem_block, uint32_t mem_size)
     }
 }
 
-void
-rb_yjit_wb_should_run(bool should_run)
-{
-    rb_yjit_should_run_wb = should_run;
-    return;
-}
-
 // Free the specified memory block.
 bool
 rb_yjit_mark_unused(void *mem_block, uint32_t mem_size)
