@@ -26,8 +26,12 @@ module Gem
     ].freeze
 
     @aliases_enabled = true
-    def self.aliases_enabled=(value)
+    def self.aliases_enabled=(value) # :nodoc:
       @aliases_enabled = !!value
+    end
+
+    def self.aliases_enabled? # :nodoc:
+      @aliases_enabled
     end
 
     def self.safe_load(input)
