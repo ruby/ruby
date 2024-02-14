@@ -319,17 +319,20 @@ macro_rules! jit_perf_symbol_pop {
     };
 }
 
-/// Macro to push and pop perf symbols around a function definition.
-/// This is useful when the function has early returns.
-macro_rules! perf_fn {
-    (fn $func_name:ident($jit:ident: $jit_t:ty, $asm:ident: $asm_t:ty, $($arg:ident: $type:ty,)*) -> $ret:ty $block:block) => {
-        fn $func_name($jit: $jit_t, $asm: $asm_t, $($arg: $type),*) -> $ret {
-            fn func_body($jit: $jit_t, $asm: $asm_t, $($arg: $type),*) -> $ret $block
-            jit_perf_symbol_push!($jit, $asm, stringify!($func_name), PerfMap::Codegen);
-            let ret = func_body($jit, $asm, $($arg),*);
+/// Macro to push and pop a perf symbol around a function call.
+macro_rules! perf_call {
+    // perf_call!("prefix: ", func(...)) uses "prefix: func" as a symbol.
+    ($prefix:expr, $func_name:ident($jit:expr, $asm:expr$(, $arg:expr)*$(,)?) ) => {
+        {
+            jit_perf_symbol_push!($jit, $asm, &format!("{}{}", $prefix, stringify!($func_name)), PerfMap::Codegen);
+            let ret = $func_name($jit, $asm, $($arg),*);
             jit_perf_symbol_pop!($jit, $asm, PerfMap::Codegen);
             ret
         }
+    };
+    // perf_call! { func(...) } uses "func" as a symbol.
+    { $func_name:ident($jit:expr, $asm:expr$(, $arg:expr)*$(,)?) } => {
+        perf_call!("", $func_name($jit, $asm, $($arg),*))
     };
 }
 
@@ -3352,7 +3355,7 @@ fn gen_opt_neq(
     // opt_neq is passed two rb_call_data as arguments:
     // first for ==, second for !=
     let cd = jit.get_arg(1).as_ptr();
-    return gen_send_general(jit, asm, ocb, cd, None);
+    perf_call! { gen_send_general(jit, asm, ocb, cd, None) }
 }
 
 fn gen_opt_aref(
@@ -5994,7 +5997,7 @@ fn gen_push_frame(
     asm.mov(cfp_opnd(RUBY_OFFSET_CFP_EP), ep);
 }
 
-perf_fn!(fn gen_send_cfunc(
+fn gen_send_cfunc(
     jit: &mut JITState,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
@@ -6046,11 +6049,7 @@ perf_fn!(fn gen_send_cfunc(
     if kw_arg.is_null() && flags & VM_CALL_OPT_SEND == 0 && flags & VM_CALL_ARGS_SPLAT == 0 && (cfunc_argc == -1 || argc == cfunc_argc) {
         let expected_stack_after = asm.ctx.get_stack_size() as i32 - argc;
         if let Some(known_cfunc_codegen) = lookup_cfunc_codegen(unsafe { (*cme).def }) {
-            jit_perf_symbol_push!(jit, asm, "gen_send_cfunc: known_cfunc_codegen", PerfMap::Codegen);
-            let specialized = known_cfunc_codegen(jit, asm, ocb, ci, cme, block, argc, recv_known_class);
-            jit_perf_symbol_pop!(jit, asm, PerfMap::Codegen);
-
-            if specialized {
+            if perf_call!("gen_send_cfunc: ", known_cfunc_codegen(jit, asm, ocb, ci, cme, block, argc, recv_known_class)) {
                 assert_eq!(expected_stack_after, asm.ctx.get_stack_size() as i32);
                 gen_counter_incr(asm, Counter::num_send_cfunc_inline);
                 // cfunc codegen generated code. Terminate the block so
@@ -6175,8 +6174,7 @@ perf_fn!(fn gen_send_cfunc(
         frame_type |= VM_FRAME_FLAG_CFRAME_KW
     }
 
-    jit_perf_symbol_push!(jit, asm, "gen_send_cfunc: gen_push_frame", PerfMap::Codegen);
-    gen_push_frame(jit, asm, ControlFrame {
+    perf_call!("gen_send_cfunc: ", gen_push_frame(jit, asm, ControlFrame {
         frame_type,
         specval,
         cme,
@@ -6188,8 +6186,7 @@ perf_fn!(fn gen_send_cfunc(
             None     // Leave PC uninitialized as cfuncs shouldn't read it
         },
         iseq: None,
-    });
-    jit_perf_symbol_pop!(jit, asm, PerfMap::Codegen);
+    }));
 
     asm_comment!(asm, "set ec->cfp");
     let new_cfp = asm.lea(Opnd::mem(64, CFP, -(RUBY_SIZEOF_CONTROL_FRAME as i32)));
@@ -6281,7 +6278,7 @@ perf_fn!(fn gen_send_cfunc(
     // We do this to end the current block after the call
     jump_to_next_insn(jit, asm, ocb);
     Some(EndBlock)
-});
+}
 
 // Generate RARRAY_LEN. For array_opnd, use Opnd::Reg to reduce memory access,
 // and use Opnd::Mem to save registers.
@@ -6443,7 +6440,7 @@ fn gen_send_bmethod(
     }
 
     let frame_type = VM_FRAME_MAGIC_BLOCK | VM_FRAME_FLAG_BMETHOD | VM_FRAME_FLAG_LAMBDA;
-    gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, Some(capture.ep), cme, block, flags, argc, None)
+    perf_call! { gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, Some(capture.ep), cme, block, flags, argc, None) }
 }
 
 /// Return the ISEQ's return value if it consists of only putnil/putobject and leave.
@@ -6471,7 +6468,7 @@ fn iseq_get_return_value(iseq: IseqPtr) -> Option<VALUE> {
     }
 }
 
-perf_fn!(fn gen_send_iseq(
+fn gen_send_iseq(
     jit: &mut JITState,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
@@ -7090,8 +7087,7 @@ perf_fn!(fn gen_send_iseq(
     };
 
     // Setup the new frame
-    jit_perf_symbol_push!(jit, asm, "gen_send_iseq: gen_push_frame", PerfMap::Codegen);
-    gen_push_frame(jit, asm, ControlFrame {
+    perf_call!("gen_send_iseq: ", gen_push_frame(jit, asm, ControlFrame {
         frame_type,
         specval,
         cme,
@@ -7099,8 +7095,7 @@ perf_fn!(fn gen_send_iseq(
         sp: callee_sp,
         iseq: Some(iseq),
         pc: None, // We are calling into jitted code, which will set the PC as necessary
-    });
-    jit_perf_symbol_pop!(jit, asm, PerfMap::Codegen);
+    }));
 
     // Log the name of the method we're calling to. We intentionally don't do this for inlined ISEQs.
     // We also do this after gen_push_frame() to minimize the impact of spill_temps() on asm.ccall().
@@ -7191,7 +7186,7 @@ perf_fn!(fn gen_send_iseq(
     );
 
     Some(EndBlock)
-});
+}
 
 // Check if we can handle a keyword call
 fn gen_iseq_kw_call_checks(
@@ -7791,7 +7786,7 @@ fn gen_send_dynamic<F: Fn(&mut Assembler) -> Opnd>(
     Some(KeepCompiling)
 }
 
-perf_fn!(fn gen_send_general(
+fn gen_send_general(
     jit: &mut JITState,
     asm: &mut Assembler,
     ocb: &mut OutlinedCb,
@@ -7864,8 +7859,7 @@ perf_fn!(fn gen_send_general(
         return None;
     }
 
-    jit_perf_symbol_push!(jit, asm, "gen_send_general: jit_guard_known_klass", PerfMap::Codegen);
-    jit_guard_known_klass(
+    perf_call!("gen_send_general: ", jit_guard_known_klass(
         jit,
         asm,
         ocb,
@@ -7875,8 +7869,7 @@ perf_fn!(fn gen_send_general(
         comptime_recv,
         SEND_MAX_DEPTH,
         Counter::guard_send_klass_megamorphic,
-    );
-    jit_perf_symbol_pop!(jit, asm, PerfMap::Codegen);
+    ));
 
     // Do method lookup
     let mut cme = unsafe { rb_callable_method_entry(comptime_recv_klass, mid) };
@@ -7927,10 +7920,10 @@ perf_fn!(fn gen_send_general(
             VM_METHOD_TYPE_ISEQ => {
                 let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
                 let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
-                return gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, None, cme, block, flags, argc, None);
+                return perf_call! { gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, None, cme, block, flags, argc, None) };
             }
             VM_METHOD_TYPE_CFUNC => {
-                return gen_send_cfunc(
+                return perf_call! { gen_send_cfunc(
                     jit,
                     asm,
                     ocb,
@@ -7940,7 +7933,7 @@ perf_fn!(fn gen_send_general(
                     Some(comptime_recv_klass),
                     flags,
                     argc,
-                );
+                ) };
             }
             VM_METHOD_TYPE_IVAR => {
                 // This is a .send call not supported right now for getters
@@ -8244,7 +8237,7 @@ perf_fn!(fn gen_send_general(
             }
         }
     }
-});
+}
 
 /// Assemble "{class_name}#{method_name}" from a class pointer and a method ID
 fn get_method_name(class: Option<VALUE>, mid: u64) -> String {
@@ -8300,7 +8293,7 @@ fn gen_opt_send_without_block(
 ) -> Option<CodegenStatus> {
     // Generate specialized code if possible
     let cd = jit.get_arg(0).as_ptr();
-    if let Some(status) = gen_send_general(jit, asm, ocb, cd, None) {
+    if let Some(status) = perf_call! { gen_send_general(jit, asm, ocb, cd, None) } {
         return Some(status);
     }
 
@@ -8324,7 +8317,7 @@ fn gen_send(
     // Generate specialized code if possible
     let cd = jit.get_arg(0).as_ptr();
     let block = jit.get_arg(1).as_optional_ptr().map(|iseq| BlockHandler::BlockISeq(iseq));
-    if let Some(status) = gen_send_general(jit, asm, ocb, cd, block) {
+    if let Some(status) = perf_call! { gen_send_general(jit, asm, ocb, cd, block) } {
         return Some(status);
     }
 
@@ -8437,7 +8430,7 @@ fn gen_invokeblock_specialized(
             Counter::guard_invokeblock_iseq_block_changed,
         );
 
-        gen_send_iseq(jit, asm, ocb, comptime_iseq, ci, VM_FRAME_MAGIC_BLOCK, None, 0 as _, None, flags, argc, Some(captured_opnd))
+        perf_call! { gen_send_iseq(jit, asm, ocb, comptime_iseq, ci, VM_FRAME_MAGIC_BLOCK, None, 0 as _, None, flags, argc, Some(captured_opnd)) }
     } else if comptime_handler.0 & 0x3 == 0x3 { // VM_BH_IFUNC_P
         // We aren't handling CALLER_SETUP_ARG and CALLER_REMOVE_EMPTY_KW_SPLAT yet.
         if flags & VM_CALL_ARGS_SPLAT != 0 {
@@ -8650,10 +8643,10 @@ fn gen_invokesuper_specialized(
         VM_METHOD_TYPE_ISEQ => {
             let iseq = unsafe { get_def_iseq_ptr((*cme).def) };
             let frame_type = VM_FRAME_MAGIC_METHOD | VM_ENV_FLAG_LOCAL;
-            gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, None, cme, Some(block), ci_flags, argc, None)
+            perf_call! { gen_send_iseq(jit, asm, ocb, iseq, ci, frame_type, None, cme, Some(block), ci_flags, argc, None) }
         }
         VM_METHOD_TYPE_CFUNC => {
-            gen_send_cfunc(jit, asm, ocb, ci, cme, Some(block), None, ci_flags, argc)
+            perf_call! { gen_send_cfunc(jit, asm, ocb, ci, cme, Some(block), None, ci_flags, argc) }
         }
         _ => unreachable!(),
     }
@@ -8792,7 +8785,7 @@ fn gen_objtostring(
         Some(KeepCompiling)
     } else {
         let cd = jit.get_arg(0).as_ptr();
-        gen_send_general(jit, asm, ocb, cd, None)
+        perf_call! { gen_send_general(jit, asm, ocb, cd, None) }
     }
 }
 
