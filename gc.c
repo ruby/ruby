@@ -3359,12 +3359,12 @@ cc_table_free_i(VALUE ccs_ptr, void *data_ptr)
     struct cc_tbl_i_data *data = data_ptr;
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
     VM_ASSERT(vm_ccs_p(ccs));
-    vm_ccs_free(ccs, data->alive, data->objspace, data->klass);
+    vm_ccs_free(ccs, false, data->objspace, data->klass);
     return ID_TABLE_CONTINUE;
 }
 
 static void
-cc_table_free(rb_objspace_t *objspace, VALUE klass, bool alive)
+cc_table_free(rb_objspace_t *objspace, VALUE klass)
 {
     struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
 
@@ -3372,7 +3372,6 @@ cc_table_free(rb_objspace_t *objspace, VALUE klass, bool alive)
         struct cc_tbl_i_data data = {
             .objspace = objspace,
             .klass = klass,
-            .alive = alive,
         };
         rb_id_table_foreach_values(cc_tbl, cc_table_free_i, &data);
         rb_id_table_free(cc_tbl);
@@ -3530,7 +3529,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_MODULE:
       case T_CLASS:
         rb_id_table_free(RCLASS_M_TBL(obj));
-        cc_table_free(objspace, obj, FALSE);
+        cc_table_free(objspace, obj);
         if (rb_shape_obj_too_complex(obj)) {
             st_free_table((st_table *)RCLASS_IVPTR(obj));
         }
@@ -3659,7 +3658,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             rb_id_table_free(RCLASS_CALLABLE_M_TBL(obj));
         }
         rb_class_remove_subclass_head(obj);
-        cc_table_free(objspace, obj, FALSE);
+        cc_table_free(objspace, obj);
         rb_class_remove_from_module_subclasses(obj);
         rb_class_remove_from_super_subclasses(obj);
 
