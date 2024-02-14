@@ -12448,6 +12448,7 @@ prism/util/pm_strncasecmp.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_strncasecmp.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.c
 prism/util/pm_strncasecmp.$(OBJEXT): $(top_srcdir)/prism/util/pm_strncasecmp.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/defines.h
+prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/diagnostic.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/encoding.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/options.h
 prism/util/pm_strpbrk.$(OBJEXT): $(top_srcdir)/prism/parser.h
