@@ -411,6 +411,46 @@ fn gen_save_sp_with_offset(asm: &mut Assembler, offset: i8) {
     }
 }
 
+/// Basically jit_prepare_non_leaf_call(), but this registers the current PC
+/// to lazily push a C method frame when it's necessary.
+fn jit_prepare_lazy_cfunc_frame(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    cme: *const rb_callable_method_entry_t,
+    recv_opnd: YARVOpnd,
+) -> bool {
+    // Get the next PC. jit_save_pc() saves that PC.
+    let pc: *mut VALUE = unsafe {
+        let cur_insn_len = insn_len(jit.get_opcode()) as isize;
+        jit.get_pc().offset(cur_insn_len)
+    };
+
+    let pc_to_cfunc = CodegenGlobals::get_pc_to_cfunc();
+    match pc_to_cfunc.get(&pc) {
+        Some(&pc_cme) if pc_cme != cme => {
+            // Bail out if it's not the only cme on this callsite.
+            incr_counter!(num_cfunc_multi_cme);
+            return false;
+        }
+        _ => {
+            // Let rb_yjit_check_pc() lazily push a C frame on this PC.
+            incr_counter!(num_cfunc_lazy_frame);
+            pc_to_cfunc.insert(pc, cme);
+        }
+    }
+
+    // Save the PC to trigger a lazy frame push, and save the SP to get the receiver.
+    // The C func may call a method that doesn't raise, so prepare for invalidation too.
+    jit_prepare_non_leaf_call(jit, asm);
+
+    // Make sure we're ready for calling vm_push_cfunc_frame().
+    let cfunc_argc = unsafe { get_mct_argc(get_cme_def_body_cfunc(cme)) };
+    assert_eq!(recv_opnd, StackOpnd(cfunc_argc as u8)); // We use this for cfp->self
+    assert!(asm.get_leaf_ccall()); // It checks the stack canary we set for known_cfunc_codegen.
+
+    true
+}
+
 /// jit_save_pc() + gen_save_sp(). Should be used before calling a routine that could:
 ///  - Perform GC allocation
 ///  - Take the VM lock through RB_VM_LOCK_ENTER()
@@ -5465,6 +5505,35 @@ fn jit_rb_str_getbyte(
     true
 }
 
+fn jit_rb_str_setbyte(
+    jit: &mut JITState,
+    asm: &mut Assembler,
+    _ocb: &mut OutlinedCb,
+    _ci: *const rb_callinfo,
+    cme: *const rb_callable_method_entry_t,
+    _block: Option<BlockHandler>,
+    _argc: i32,
+    _known_recv_class: Option<VALUE>,
+) -> bool {
+    // Raises when index is out of range. Lazily push a frame in that case.
+    if !jit_prepare_lazy_cfunc_frame(jit, asm, cme, StackOpnd(2)) {
+        return false;
+    }
+    asm_comment!(asm, "String#setbyte");
+
+    let value = asm.stack_opnd(0);
+    let index = asm.stack_opnd(1);
+    let recv = asm.stack_opnd(2);
+
+    let ret_opnd = asm.ccall(rb_str_setbyte as *const u8, vec![recv, index, value]);
+    asm.stack_pop(3); // Keep them on stack during ccall for GC
+
+    let out_opnd = asm.stack_push(Type::UnknownImm);
+    asm.mov(out_opnd, ret_opnd);
+
+    true
+}
+
 // Codegen for rb_str_to_s()
 // When String#to_s is called on a String instance, the method returns self and
 // most of the overhead comes from setting up the method call. We observed that
@@ -9693,6 +9762,7 @@ pub fn yjit_reg_method_codegen_fns() {
         yjit_reg_method(rb_cString, "size", jit_rb_str_length);
         yjit_reg_method(rb_cString, "bytesize", jit_rb_str_bytesize);
         yjit_reg_method(rb_cString, "getbyte", jit_rb_str_getbyte);
+        yjit_reg_method(rb_cString, "setbyte", jit_rb_str_setbyte);
         yjit_reg_method(rb_cString, "byteslice", jit_rb_str_byteslice);
         yjit_reg_method(rb_cString, "<<", jit_rb_str_concat);
         yjit_reg_method(rb_cString, "+@", jit_rb_str_uplus);
@@ -9769,6 +9839,9 @@ pub struct CodegenGlobals {
 
     /// Page indexes for outlined code that are not associated to any ISEQ.
     ocb_pages: Vec<usize>,
+
+    /// Lazily push a frame when it calls rb_yjit_check_pc() with a PC in this HashMap
+    pc_to_cfunc: HashMap<*mut VALUE, *const rb_callable_method_entry_t>,
 }
 
 /// For implementing global code invalidation. A position in the inline
@@ -9860,6 +9933,7 @@ impl CodegenGlobals {
             entry_stub_hit_trampoline,
             global_inval_patches: Vec::new(),
             ocb_pages,
+            pc_to_cfunc: HashMap::new(),
         };
 
         // Initialize the codegen globals instance
@@ -9937,6 +10011,10 @@ impl CodegenGlobals {
 
     pub fn get_ocb_pages() -> &'static Vec<usize> {
         &CodegenGlobals::get_instance().ocb_pages
+    }
+
+    pub fn get_pc_to_cfunc() -> &'static mut HashMap<*mut VALUE, *const rb_callable_method_entry_t> {
+        &mut CodegenGlobals::get_instance().pc_to_cfunc
     }
 }
 

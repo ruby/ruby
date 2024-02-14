@@ -6706,6 +6706,7 @@ error.$(OBJEXT): {$(VPATH)}util.h
 error.$(OBJEXT): {$(VPATH)}vm_core.h
 error.$(OBJEXT): {$(VPATH)}vm_opts.h
 error.$(OBJEXT): {$(VPATH)}warning.rbinc
+error.$(OBJEXT): {$(VPATH)}yjit.h
 eval.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 eval.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 eval.$(OBJEXT): $(CCAN_DIR)/list/list.h
@@ -11413,6 +11414,7 @@ object.$(OBJEXT): {$(VPATH)}vm_core.h
 object.$(OBJEXT): {$(VPATH)}vm_debug.h
 object.$(OBJEXT): {$(VPATH)}vm_opts.h
 object.$(OBJEXT): {$(VPATH)}vm_sync.h
+object.$(OBJEXT): {$(VPATH)}yjit.h
 pack.$(OBJEXT): $(CCAN_DIR)/check_type/check_type.h
 pack.$(OBJEXT): $(CCAN_DIR)/container_of/container_of.h
 pack.$(OBJEXT): $(CCAN_DIR)/list/list.h

@@ -6174,7 +6174,7 @@ rb_str_getbyte(VALUE str, VALUE index)
  *
  *  Related: String#getbyte.
  */
-static VALUE
+VALUE
 rb_str_setbyte(VALUE str, VALUE index, VALUE value)
 {
     long pos = NUM2LONG(index);

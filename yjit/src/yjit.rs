@@ -207,3 +207,19 @@ pub extern "C" fn rb_yjit_simulate_oom_bang(_ec: EcPtr, _ruby_self: VALUE) -> VA
 
     return Qnil;
 }
+
+/// Push a C method frame if the given PC is supposed to lazily push one.
+/// This is called from rb_raise() (at rb_exc_new_str()) and other functions
+/// that may make a method call (e.g. rb_to_int()).
+#[no_mangle]
+pub extern "C" fn rb_yjit_check_pc(pc: *mut VALUE) {
+    if !yjit_enabled_p() {
+        return;
+    }
+
+    incr_counter!(num_cfunc_check_pc);
+    if let Some(&cme) = CodegenGlobals::get_pc_to_cfunc().get(&pc) {
+        incr_counter!(num_cfunc_check_pc_push);
+        unsafe { rb_vm_push_cfunc_frame(cme) }
+    }
+}
