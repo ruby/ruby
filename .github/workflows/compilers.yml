@@ -276,6 +276,8 @@ jobs:
         if: ${{ matrix.entry.check }}
 
       - run: make test-spec
+        env:
+          CHECK_LEAKS: true
         if: ${{ matrix.entry.check }}
 
       - run: make test-annocheck
