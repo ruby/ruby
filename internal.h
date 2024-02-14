@@ -40,10 +40,6 @@
 #undef RClass
 #undef RCLASS_SUPER
 
-/* internal/gc.h */
-#undef NEWOBJ_OF
-#undef RB_NEWOBJ_OF
-
 /* internal/hash.h */
 #undef RHASH_IFNONE
 #undef RHASH_SIZE
