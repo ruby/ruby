@@ -2347,6 +2347,8 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
     if (dump & (DUMP_BIT(prism_parsetree))) {
         pm_parse_result_t result = { 0 };
+        result.options.line = 1;
+
         VALUE error;
 
         if (strcmp(opt->script, "-") == 0) {
@@ -2413,7 +2415,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 
         if ((*rb_ruby_prism_ptr())) {
             ruby_opt_init(opt);
+
             pm_parse_result_t result = { 0 };
+            result.options.line = 1;
+
             VALUE error;
 
             if (strcmp(opt->script, "-") == 0) {

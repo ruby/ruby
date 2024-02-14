@@ -1002,8 +1002,10 @@ pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpa
     if (!option) option = &COMPILE_OPTION_DEFAULT;
 
     pm_location_t *location = &node->base.location;
-    pm_line_column_t start = pm_newline_list_line_column(&node->parser->newline_list, location->start);
-    pm_line_column_t end = pm_newline_list_line_column(&node->parser->newline_list, location->end);
+    int32_t start_line = node->parser->start_line;
+
+    pm_line_column_t start = pm_newline_list_line_column(&node->parser->newline_list, location->start, start_line);
+    pm_line_column_t end = pm_newline_list_line_column(&node->parser->newline_list, location->end, start_line);
 
     rb_code_location_t code_location = (rb_code_location_t) {
         .beg_pos = { .lineno = (int) start.line, .column = (int) start.column },
@@ -1232,8 +1234,9 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
     StringValueCStr(file);
 
     pm_parse_result_t result = { 0 };
-    VALUE error;
+    pm_options_line_set(&result.options, NUM2INT(line));
 
+    VALUE error;
     if (RB_TYPE_P(src, T_FILE)) {
         VALUE filepath = rb_io_path(src);
         error = pm_parse_file(&result, filepath);
@@ -1635,6 +1638,8 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
     VALUE v = rb_vm_push_frame_fname(ec, file);
 
     pm_parse_result_t result = { 0 };
+    result.options.line = 1;
+
     VALUE error = pm_parse_file(&result, file);
 
     if (error == Qnil) {
