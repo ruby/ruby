@@ -18115,7 +18115,7 @@ typedef struct {
     pm_diagnostic_t *error;
 
     /** The start line of the diagnostic message. */
-    uint32_t line;
+    int32_t line;
 
     /** The column start of the diagnostic message. */
     uint32_t column_start;
@@ -18147,12 +18147,13 @@ typedef struct {
 #define PM_COLOR_RESET "\033[0m"
 
 static inline pm_error_t *
-pm_parser_errors_format_sort(const pm_list_t *error_list, const pm_newline_list_t *newline_list) {
+pm_parser_errors_format_sort(const pm_parser_t *parser, const pm_list_t *error_list, const pm_newline_list_t *newline_list) {
     pm_error_t *errors = calloc(error_list->size, sizeof(pm_error_t));
+    int32_t start_line = parser->start_line;
 
     for (pm_diagnostic_t *error = (pm_diagnostic_t *) error_list->head; error != NULL; error = (pm_diagnostic_t *) error->node.next) {
-        pm_line_column_t start = pm_newline_list_line_column(newline_list, error->location.start);
-        pm_line_column_t end = pm_newline_list_line_column(newline_list, error->location.end);
+        pm_line_column_t start = pm_newline_list_line_column(newline_list, error->location.start, start_line);
+        pm_line_column_t end = pm_newline_list_line_column(newline_list, error->location.end, start_line);
 
         // We're going to insert this error into the array in sorted order. We
         // do this by finding the first error that has a line number greater
@@ -18163,8 +18164,8 @@ pm_parser_errors_format_sort(const pm_list_t *error_list, const pm_newline_list_
             (index < error_list->size) &&
             (errors[index].error != NULL) &&
             (
-                (errors[index].line < ((uint32_t) start.line)) ||
-                (errors[index].line == ((uint32_t) start.line) && errors[index].column_start < ((uint32_t) start.column))
+                (errors[index].line < start.line) ||
+                ((errors[index].line == start.line) && (errors[index].column_start < start.column))
             )
         ) index++;
 
@@ -18177,18 +18178,18 @@ pm_parser_errors_format_sort(const pm_list_t *error_list, const pm_newline_list_
         // Finally, we'll insert the error into the array.
         uint32_t column_end;
         if (start.line == end.line) {
-            column_end = (uint32_t) end.column;
+            column_end = end.column;
         } else {
-            column_end = (uint32_t) (newline_list->offsets[start.line] - newline_list->offsets[start.line - 1] - 1);
+            column_end = (uint32_t) (newline_list->offsets[start.line - start_line + 1] - newline_list->offsets[start.line - start_line] - 1);
         }
 
         // Ensure we have at least one column of error.
-        if (((uint32_t) start.column) == column_end) column_end++;
+        if (start.column == column_end) column_end++;
 
         errors[index] = (pm_error_t) {
             .error = error,
-            .line = (uint32_t) start.line,
-            .column_start = (uint32_t) start.column,
+            .line = start.line,
+            .column_start = start.column,
             .column_end = column_end
         };
     }
@@ -18197,17 +18198,19 @@ pm_parser_errors_format_sort(const pm_list_t *error_list, const pm_newline_list_
 }
 
 static inline void
-pm_parser_errors_format_line(const pm_parser_t *parser, const pm_newline_list_t *newline_list, const char *number_prefix, size_t line, pm_buffer_t *buffer) {
-    const uint8_t *start = &parser->start[newline_list->offsets[line - 1]];
+pm_parser_errors_format_line(const pm_parser_t *parser, const pm_newline_list_t *newline_list, const char *number_prefix, int32_t line, pm_buffer_t *buffer) {
+    size_t index = (size_t) (line - parser->start_line);
+
+    const uint8_t *start = &parser->start[newline_list->offsets[index]];
     const uint8_t *end;
 
-    if (line >= newline_list->size) {
+    if (index >= newline_list->size - 1) {
         end = parser->end;
     } else {
-        end = &parser->start[newline_list->offsets[line]];
+        end = &parser->start[newline_list->offsets[index + 1]];
     }
 
-    pm_buffer_append_format(buffer, number_prefix, (uint32_t) line);
+    pm_buffer_append_format(buffer, number_prefix, line);
     pm_buffer_append_string(buffer, (const char *) start, (size_t) (end - start));
 
     if (end == parser->end && end[-1] != '\n') {
@@ -18225,25 +18228,26 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
 
     // First, we're going to sort all of the errors by line number using an
     // insertion sort into a newly allocated array.
+    const int32_t start_line = parser->start_line;
     const pm_newline_list_t *newline_list = &parser->newline_list;
-    pm_error_t *errors = pm_parser_errors_format_sort(error_list, newline_list);
+    pm_error_t *errors = pm_parser_errors_format_sort(parser, error_list, newline_list);
 
     // Now we're going to determine how we're going to format line numbers and
     // blank lines based on the maximum number of digits in the line numbers
     // that are going to be displayed.
     pm_error_format_t error_format;
-    size_t max_line_number = errors[error_list->size - 1].line;
+    int32_t max_line_number = errors[error_list->size - 1].line - start_line;
 
     if (max_line_number < 10) {
         if (colorize) {
             error_format = (pm_error_format_t) {
-                .number_prefix = PM_COLOR_GRAY "%1" PRIu32 " | " PM_COLOR_RESET,
+                .number_prefix = PM_COLOR_GRAY "%1" PRIi32 " | " PM_COLOR_RESET,
                 .blank_prefix = PM_COLOR_GRAY "  | " PM_COLOR_RESET,
                 .divider = PM_COLOR_GRAY "  ~~~~~" PM_COLOR_RESET "\n"
             };
         } else {
             error_format = (pm_error_format_t) {
-                .number_prefix = "%1" PRIu32 " | ",
+                .number_prefix = "%1" PRIi32 " | ",
                 .blank_prefix = "  | ",
                 .divider = "  ~~~~~\n"
             };
@@ -18251,13 +18255,13 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
     } else if (max_line_number < 100) {
         if (colorize) {
             error_format = (pm_error_format_t) {
-                .number_prefix = PM_COLOR_GRAY "%2" PRIu32 " | " PM_COLOR_RESET,
+                .number_prefix = PM_COLOR_GRAY "%2" PRIi32 " | " PM_COLOR_RESET,
                 .blank_prefix = PM_COLOR_GRAY "   | " PM_COLOR_RESET,
                 .divider = PM_COLOR_GRAY "  ~~~~~~" PM_COLOR_RESET "\n"
             };
         } else {
             error_format = (pm_error_format_t) {
-                .number_prefix = "%2" PRIu32 " | ",
+                .number_prefix = "%2" PRIi32 " | ",
                 .blank_prefix = "   | ",
                 .divider = "  ~~~~~~\n"
             };
@@ -18265,13 +18269,13 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
     } else if (max_line_number < 1000) {
         if (colorize) {
             error_format = (pm_error_format_t) {
-                .number_prefix = PM_COLOR_GRAY "%3" PRIu32 " | " PM_COLOR_RESET,
+                .number_prefix = PM_COLOR_GRAY "%3" PRIi32 " | " PM_COLOR_RESET,
                 .blank_prefix = PM_COLOR_GRAY "    | " PM_COLOR_RESET,
                 .divider = PM_COLOR_GRAY "  ~~~~~~~" PM_COLOR_RESET "\n"
             };
         } else {
             error_format = (pm_error_format_t) {
-                .number_prefix = "%3" PRIu32 " | ",
+                .number_prefix = "%3" PRIi32 " | ",
                 .blank_prefix = "    | ",
                 .divider = "  ~~~~~~~\n"
             };
@@ -18279,13 +18283,13 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
     } else if (max_line_number < 10000) {
         if (colorize) {
             error_format = (pm_error_format_t) {
-                .number_prefix = PM_COLOR_GRAY "%4" PRIu32 " | " PM_COLOR_RESET,
+                .number_prefix = PM_COLOR_GRAY "%4" PRIi32 " | " PM_COLOR_RESET,
                 .blank_prefix = PM_COLOR_GRAY "     | " PM_COLOR_RESET,
                 .divider = PM_COLOR_GRAY "  ~~~~~~~~" PM_COLOR_RESET "\n"
             };
         } else {
             error_format = (pm_error_format_t) {
-                .number_prefix = "%4" PRIu32 " | ",
+                .number_prefix = "%4" PRIi32 " | ",
                 .blank_prefix = "     | ",
                 .divider = "  ~~~~~~~~\n"
             };
@@ -18293,13 +18297,13 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
     } else {
         if (colorize) {
             error_format = (pm_error_format_t) {
-                .number_prefix = PM_COLOR_GRAY "%5" PRIu32 " | " PM_COLOR_RESET,
+                .number_prefix = PM_COLOR_GRAY "%5" PRIi32 " | " PM_COLOR_RESET,
                 .blank_prefix = PM_COLOR_GRAY "      | " PM_COLOR_RESET,
                 .divider = PM_COLOR_GRAY "  ~~~~~~~~" PM_COLOR_RESET "\n"
             };
         } else {
             error_format = (pm_error_format_t) {
-                .number_prefix = "%5" PRIu32 " | ",
+                .number_prefix = "%5" PRIi32 " | ",
                 .blank_prefix = "      | ",
                 .divider = "  ~~~~~~~~\n"
             };
@@ -18314,7 +18318,7 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
     // the source before the error to give some context. We'll be careful not to
     // display the same line twice in case the errors are close enough in the
     // source.
-    uint32_t last_line = 0;
+    int32_t last_line = 0;
     const pm_encoding_t *encoding = parser->encoding;
 
     for (size_t index = 0; index < error_list->size; index++) {
@@ -18360,7 +18364,7 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
         pm_buffer_append_string(buffer, error_format.blank_prefix, error_format.blank_prefix_length);
 
         size_t column = 0;
-        const uint8_t *start = &parser->start[newline_list->offsets[error->line - 1]];
+        const uint8_t *start = &parser->start[newline_list->offsets[error->line - start_line]];
 
         while (column < error->column_end) {
             if (column < error->column_start) {
@@ -18384,7 +18388,7 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
         // Here we determine how many lines of padding to display after the
         // error, depending on where the next error is in source.
         last_line = error->line;
-        size_t next_line = (index == error_list->size - 1) ? newline_list->size : errors[index + 1].line;
+        int32_t next_line = (index == error_list->size - 1) ? ((int32_t) newline_list->size) : errors[index + 1].line;
 
         if (next_line - last_line > 1) {
             pm_buffer_append_string(buffer, "  ", 2);

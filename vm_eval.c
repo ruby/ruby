@@ -1661,6 +1661,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
     }
 
     pm_parse_result_t result = { 0 };
+    pm_options_line_set(&result.options, line);
 
     // Cout scopes, one for each parent iseq, plus one for our local scope
     int scopes_count = 0;
@@ -1698,6 +1699,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
         pm_parse_result_free(&result);
         rb_exc_raise(error);
     }
+
     // Create one scope node for each scope passed in, initialize the local
     // lookup table with all the local variable information attached to the
     // scope used by the parser.
@@ -1706,7 +1708,7 @@ pm_eval_make_iseq(VALUE src, VALUE fname, int line,
 
     for (int scopes_index = 0; scopes_index < scopes_count; scopes_index++) {
         pm_scope_node_t *parent_scope = ruby_xcalloc(1, sizeof(pm_scope_node_t));
-        if (parent_scope == NULL) abort();
+        RUBY_ASSERT(parent_scope != NULL);
 
         pm_options_scope_t *options_scope = &result.options.scopes[scopes_count - scopes_index - 1];
         parent_scope->parser = &result.parser;
