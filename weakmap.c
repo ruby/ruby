@@ -4,7 +4,6 @@
 #include "internal/proc.h"
 #include "internal/sanitizers.h"
 #include "ruby/st.h"
-#include "ruby/st.h"
 
 /* ===== WeakMap =====
  *
