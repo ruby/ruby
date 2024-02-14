@@ -389,7 +389,7 @@ fn gen_save_sp(asm: &mut Assembler) {
 fn gen_save_sp_with_offset(asm: &mut Assembler, offset: i8) {
     if asm.ctx.get_sp_offset() != -offset {
         asm_comment!(asm, "save SP to CFP");
-        let stack_pointer = asm.ctx.sp_opnd((offset as i32 * SIZEOF_VALUE_I32) as isize);
+        let stack_pointer = asm.ctx.sp_opnd(offset as i32 * SIZEOF_VALUE_I32);
         let sp_addr = asm.lea(stack_pointer);
         asm.mov(SP, sp_addr);
         let cfp_sp_opnd = Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP);
@@ -1420,7 +1420,7 @@ fn gen_newarray(
     } else {
         asm_comment!(asm, "load pointer to array elements");
         let offset_magnitude = (SIZEOF_VALUE as u32) * n;
-        let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as isize));
+        let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as i32));
         asm.lea(values_opnd)
     };
 
@@ -1621,7 +1621,7 @@ fn gen_pushtoarray(
 
     // Get the operands from the stack
     let ary_opnd = asm.stack_opnd(num as i32);
-    let objp_opnd = asm.lea(asm.ctx.sp_opnd(-(num as isize) * SIZEOF_VALUE as isize));
+    let objp_opnd = asm.lea(asm.ctx.sp_opnd(-(num as i32) * SIZEOF_VALUE_I32));
 
     let ary = asm.ccall(rb_ary_cat as *const u8, vec![ary_opnd, objp_opnd, num.into()]);
     asm.stack_pop(num as usize + 1); // Keep it on stack during ccall for GC
@@ -3043,7 +3043,7 @@ fn gen_concatstrings(
     // Save the PC and SP because we are allocating
     jit_prepare_call_with_gc(jit, asm);
 
-    let values_ptr = asm.lea(asm.ctx.sp_opnd(-((SIZEOF_VALUE as isize) * n as isize)));
+    let values_ptr = asm.lea(asm.ctx.sp_opnd(-(SIZEOF_VALUE_I32 * n as i32)));
 
     // call rb_str_concat_literals(size_t n, const VALUE *strings);
     let return_value = asm.ccall(
@@ -3910,7 +3910,7 @@ fn gen_opt_newarray_max(
     }
 
     let offset_magnitude = (SIZEOF_VALUE as u32) * num;
-    let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as isize));
+    let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as i32));
     let values_ptr = asm.lea(values_opnd);
 
     let val_opnd = asm.ccall(
@@ -3963,7 +3963,7 @@ fn gen_opt_newarray_hash(
     }
 
     let offset_magnitude = (SIZEOF_VALUE as u32) * num;
-    let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as isize));
+    let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as i32));
     let values_ptr = asm.lea(values_opnd);
 
     let val_opnd = asm.ccall(
@@ -3998,7 +3998,7 @@ fn gen_opt_newarray_min(
     }
 
     let offset_magnitude = (SIZEOF_VALUE as u32) * num;
-    let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as isize));
+    let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as i32));
     let values_ptr = asm.lea(values_opnd);
 
     let val_opnd = asm.ccall(
@@ -6068,7 +6068,7 @@ perf_fn!(fn gen_send_cfunc(
     // #define CHECK_VM_STACK_OVERFLOW0(cfp, sp, margin)
     // REG_CFP <= REG_SP + 4 * SIZEOF_VALUE + sizeof(rb_control_frame_t)
     asm_comment!(asm, "stack overflow check");
-    let stack_limit = asm.lea(asm.ctx.sp_opnd((SIZEOF_VALUE * 4 + 2 * RUBY_SIZEOF_CONTROL_FRAME) as isize));
+    let stack_limit = asm.lea(asm.ctx.sp_opnd((SIZEOF_VALUE * 4 + 2 * RUBY_SIZEOF_CONTROL_FRAME) as i32));
     asm.cmp(CFP, stack_limit);
     asm.jbe(Target::side_exit(Counter::guard_send_se_cf_overflow));
 
@@ -6162,7 +6162,7 @@ perf_fn!(fn gen_send_cfunc(
 
     // Increment the stack pointer by 3 (in the callee)
     // sp += 3
-    let sp = asm.lea(asm.ctx.sp_opnd((SIZEOF_VALUE as isize) * 3));
+    let sp = asm.lea(asm.ctx.sp_opnd(SIZEOF_VALUE_I32 * 3));
 
     let specval = if block_arg_type == Some(Type::BlockParamProxy) {
         SpecVal::BlockHandler(Some(BlockHandler::BlockParamProxy))
@@ -6228,7 +6228,7 @@ perf_fn!(fn gen_send_cfunc(
         // rb_f_puts(int argc, VALUE *argv, VALUE recv)
         vec![
             Opnd::Imm(passed_argc.into()),
-            asm.lea(asm.ctx.sp_opnd((-argc * SIZEOF_VALUE_I32) as isize)),
+            asm.lea(asm.ctx.sp_opnd(-argc * SIZEOF_VALUE_I32)),
             asm.stack_opnd(argc),
         ]
     }
@@ -6507,7 +6507,7 @@ perf_fn!(fn gen_send_iseq(
     let arg_setup_block = captured_opnd.is_some(); // arg_setup_type: arg_setup_block (invokeblock)
 
     // For computing offsets to callee locals
-    let num_params = unsafe { get_iseq_body_param_size(iseq) };
+    let num_params = unsafe { get_iseq_body_param_size(iseq) as i32 };
     let num_locals = unsafe { get_iseq_body_local_table_size(iseq) as i32 };
 
     let mut start_pc_offset: u16 = 0;
@@ -6749,7 +6749,7 @@ perf_fn!(fn gen_send_iseq(
     let stack_max: i32 = unsafe { get_iseq_body_stack_max(iseq) }.try_into().unwrap();
     let locals_offs =
         SIZEOF_VALUE_I32 * (num_locals + stack_max) + 2 * (RUBY_SIZEOF_CONTROL_FRAME as i32);
-    let stack_limit = asm.lea(asm.ctx.sp_opnd(locals_offs as isize));
+    let stack_limit = asm.lea(asm.ctx.sp_opnd(locals_offs));
     asm.cmp(CFP, stack_limit);
     asm.jbe(Target::side_exit(Counter::guard_send_se_cf_overflow));
 
@@ -6820,7 +6820,7 @@ perf_fn!(fn gen_send_iseq(
                 return None;
             }
             let proc = asm.stack_pop(1); // Pop first, as argc doesn't account for the block arg
-            let callee_specval = asm.ctx.sp_opnd(callee_specval as isize * SIZEOF_VALUE as isize);
+            let callee_specval = asm.ctx.sp_opnd(callee_specval * SIZEOF_VALUE_I32);
             asm.store(callee_specval, proc);
         }
         None => {
@@ -6878,7 +6878,7 @@ perf_fn!(fn gen_send_iseq(
                 // diff is >0 so no need to worry about null pointer
                 asm_comment!(asm, "load pointer to array elements");
                 let offset_magnitude = SIZEOF_VALUE as u32 * diff;
-                let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as isize));
+                let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as i32));
                 let values_ptr = asm.lea(values_opnd);
 
                 asm_comment!(asm, "prepend stack values to rest array");
@@ -6923,7 +6923,7 @@ perf_fn!(fn gen_send_iseq(
             } else {
                 asm_comment!(asm, "load pointer to array elements");
                 let offset_magnitude = SIZEOF_VALUE as u32 * n;
-                let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as isize));
+                let values_opnd = asm.ctx.sp_opnd(-(offset_magnitude as i32));
                 asm.lea(values_opnd)
             };
 
@@ -7010,14 +7010,14 @@ perf_fn!(fn gen_send_iseq(
         argc = lead_num;
     }
 
-    fn nil_fill(comment: &'static str, fill_range: std::ops::Range<isize>, asm: &mut Assembler) {
+    fn nil_fill(comment: &'static str, fill_range: std::ops::Range<i32>, asm: &mut Assembler) {
         if fill_range.is_empty() {
             return;
         }
 
         asm_comment!(asm, "{}", comment);
         for i in fill_range {
-            let value_slot = asm.ctx.sp_opnd(i * SIZEOF_VALUE as isize);
+            let value_slot = asm.ctx.sp_opnd(i * SIZEOF_VALUE_I32);
             asm.store(value_slot, Qnil.into());
         }
     }
@@ -7026,8 +7026,8 @@ perf_fn!(fn gen_send_iseq(
     nil_fill(
         "nil-initialize missing optionals",
         {
-            let begin = -(argc as isize) + required_num as isize + opts_filled as isize;
-            let end   = -(argc as isize) + required_num as isize + opt_num as isize;
+            let begin = -argc + required_num + opts_filled;
+            let end   = -argc + required_num + opt_num;
 
             begin..end
         },
@@ -7036,7 +7036,7 @@ perf_fn!(fn gen_send_iseq(
     // Nil-initialize the block parameter. It's the last parameter local
     if iseq_has_block_param {
         let block_param = asm.ctx.sp_opnd(
-            SIZEOF_VALUE as isize * (-(argc as isize) + num_params as isize - 1)
+            SIZEOF_VALUE_I32 * (-argc + num_params - 1)
         );
         asm.store(block_param, Qnil.into());
     }
@@ -7044,8 +7044,8 @@ perf_fn!(fn gen_send_iseq(
     nil_fill(
         "nil-initialize locals",
         {
-            let begin = -(argc as isize) + num_params as isize;
-            let end   = -(argc as isize) + num_locals as isize;
+            let begin = -argc + num_params;
+            let end   = -argc + num_locals;
 
             begin..end
         },
@@ -7058,20 +7058,18 @@ perf_fn!(fn gen_send_iseq(
         _ => asm.stack_opnd(argc),
     };
     let captured_self = captured_opnd.is_some();
-    let sp_offset = (argc as isize) + if captured_self { 0 } else { 1 };
+    let sp_offset = argc + if captured_self { 0 } else { 1 };
 
     // Store the updated SP on the current frame (pop arguments and receiver)
     asm_comment!(asm, "store caller sp");
-    let caller_sp = asm.lea(asm.ctx.sp_opnd((SIZEOF_VALUE as isize) * -sp_offset));
+    let caller_sp = asm.lea(asm.ctx.sp_opnd(SIZEOF_VALUE_I32 * -sp_offset));
     asm.store(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SP), caller_sp);
 
     // Store the next PC in the current frame
     jit_save_pc(jit, asm);
 
     // Adjust the callee's stack pointer
-    let offs = (SIZEOF_VALUE as isize) * (
-        -(argc as isize) + num_locals as isize + VM_ENV_DATA_SIZE as isize
-    );
+    let offs = SIZEOF_VALUE_I32 * (-argc + num_locals + VM_ENV_DATA_SIZE as i32);
     let callee_sp = asm.lea(asm.ctx.sp_opnd(offs));
 
     let specval = if let Some(prev_ep) = prev_ep {
@@ -7375,7 +7373,7 @@ fn gen_iseq_kw_call(
         gen_save_sp(asm);
 
         // Build the kwrest hash. `struct rb_callinfo_kwarg` is malloc'd, so no GC concerns.
-        let kwargs_start = asm.lea(asm.ctx.sp_opnd(-(caller_keyword_len_i32 * SIZEOF_VALUE_I32) as isize));
+        let kwargs_start = asm.lea(asm.ctx.sp_opnd(-caller_keyword_len_i32 * SIZEOF_VALUE_I32));
         let kwrest = asm.ccall(
             build_kw_rest as _,
             vec![rest_mask.into(), kwargs_start, Opnd::const_ptr(ci_kwarg.cast())]
@@ -8475,7 +8473,7 @@ fn gen_invokeblock_specialized(
         }
         asm_comment!(asm, "call ifunc");
         let captured_opnd = asm.and(block_handler_opnd, Opnd::Imm(!0x3));
-        let argv = asm.lea(asm.ctx.sp_opnd((-argc * SIZEOF_VALUE_I32) as isize));
+        let argv = asm.lea(asm.ctx.sp_opnd(-argc * SIZEOF_VALUE_I32));
         let ret = asm.ccall(
             rb_vm_yield_with_cfunc as *const u8,
             vec![EC, captured_opnd, argc.into(), argv],
@@ -8827,7 +8825,7 @@ fn gen_toregexp(
     // raise an exception.
     jit_prepare_non_leaf_call(jit, asm);
 
-    let values_ptr = asm.lea(asm.ctx.sp_opnd(-((SIZEOF_VALUE as isize) * (cnt as isize))));
+    let values_ptr = asm.lea(asm.ctx.sp_opnd(-(SIZEOF_VALUE_I32 * cnt as i32)));
 
     let ary = asm.ccall(
         rb_ary_tmp_new_from_values as *const u8,
