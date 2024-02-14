@@ -2952,17 +2952,6 @@ rb_wb_protected_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags, 
     return newobj_of(rb_ec_ractor_ptr(ec), klass, flags, 0, 0, 0, TRUE, size);
 }
 
-VALUE
-rb_newobj_of(VALUE klass, VALUE flags)
-{
-    if ((flags & RUBY_T_MASK) == T_OBJECT) {
-        return rb_class_allocate_instance(klass);
-    }
-    else {
-        return newobj_of(GET_RACTOR(), klass, flags & ~FL_WB_PROTECTED, 0, 0, 0, flags & FL_WB_PROTECTED, RVALUE_SIZE);
-    }
-}
-
 #define UNEXPECTED_NODE(func) \
     rb_bug(#func"(): GC does not handle T_NODE 0x%x(%p) 0x%"PRIxVALUE, \
            BUILTIN_TYPE(obj), (void*)(obj), RBASIC(obj)->flags)

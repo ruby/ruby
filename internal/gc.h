@@ -121,11 +121,6 @@ size_t rb_size_pool_slot_size(unsigned char pool_id);
 struct rb_execution_context_struct; /* in vm_core.h */
 struct rb_objspace; /* in vm_core.h */
 
-#ifdef NEWOBJ_OF
-# undef NEWOBJ_OF
-# undef RB_NEWOBJ_OF
-#endif
-
 #define NEWOBJ_OF(var, T, c, f, s, ec) \
     T *(var) = (T *)(((f) & FL_WB_PROTECTED) ? \
             rb_wb_protected_newobj_of((ec ? ec : GET_EC()), (c), (f) & ~FL_WB_PROTECTED, s) : \
