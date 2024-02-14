@@ -5399,10 +5399,8 @@ fn jit_rb_str_getbyte(
     let index = asm.stack_opnd(0);
     let recv = asm.stack_opnd(1);
 
-    let arg0_type = asm.ctx.get_opnd_type(index.into());
-
     // rb_str_getbyte should be leaf if the index is a fixnum
-    if arg0_type != Type::Fixnum {
+    if asm.ctx.get_opnd_type(index.into()) != Type::Fixnum {
         // Raises when non-integers are passed in
         jit_prepare_non_leaf_call(jit, asm);
     }
