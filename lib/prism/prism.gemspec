@@ -87,6 +87,8 @@ Gem::Specification.new do |spec|
     "lib/prism/serialize.rb",
     "lib/prism/translation.rb",
     "lib/prism/translation/parser.rb",
+    "lib/prism/translation/parser33.rb",
+    "lib/prism/translation/parser34.rb",
     "lib/prism/translation/parser/compiler.rb",
     "lib/prism/translation/parser/lexer.rb",
     "lib/prism/translation/parser/rubocop.rb",
