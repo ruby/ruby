@@ -1704,7 +1704,6 @@ make_writeconv(rb_io_t *fptr)
 /* writing functions */
 struct binwrite_arg {
     rb_io_t *fptr;
-    VALUE str;
     const char *ptr;
     long length;
 };
@@ -1854,7 +1853,7 @@ io_binwrite_requires_flush_write(rb_io_t *fptr, long len, int nosync)
 }
 
 static long
-io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
+io_binwrite(const char *ptr, long len, rb_io_t *fptr, int nosync)
 {
     if (len <= 0) return len;
 
@@ -1867,7 +1866,6 @@ io_binwrite(VALUE str, const char *ptr, long len, rb_io_t *fptr, int nosync)
         struct binwrite_arg arg;
 
         arg.fptr = fptr;
-        arg.str = str;
         arg.ptr = ptr;
         arg.length = len;
 
@@ -1977,7 +1975,7 @@ io_fwrite(VALUE str, rb_io_t *fptr, int nosync)
 
     tmp = rb_str_tmp_frozen_no_embed_acquire(str);
     RSTRING_GETMEM(tmp, ptr, len);
-    n = io_binwrite(tmp, ptr, len, fptr, nosync);
+    n = io_binwrite(ptr, len, fptr, nosync);
     rb_str_tmp_frozen_release(str, tmp);
 
     return n;
@@ -1990,7 +1988,7 @@ rb_io_bufwrite(VALUE io, const void *buf, size_t size)
 
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
-    return (ssize_t)io_binwrite(0, buf, (long)size, fptr, 0);
+    return (ssize_t)io_binwrite(buf, (long)size, fptr, 0);
 }
 
 static VALUE
@@ -13235,7 +13233,7 @@ copy_stream_body(VALUE arg)
         rb_str_resize(str,len);
         read_buffered_data(RSTRING_PTR(str), len, stp->src_fptr);
         if (stp->dst_fptr) { /* IO or filename */
-            if (io_binwrite(str, RSTRING_PTR(str), RSTRING_LEN(str), stp->dst_fptr, 0) < 0)
+            if (io_binwrite(RSTRING_PTR(str), RSTRING_LEN(str), stp->dst_fptr, 0) < 0)
                 rb_sys_fail_on_write(stp->dst_fptr);
         }
         else /* others such as StringIO */
