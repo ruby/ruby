@@ -362,5 +362,36 @@ module TestIRB
       refute_match(/NameError/, out)
       assert_match(%r[Defined in binary file:.+io/console], out)
     end
+
+    def test_show_source_with_constant_lookup
+      write_ruby <<~RUBY
+        X = 1
+        module M
+          Y = 1
+          Z = 2
+        end
+        class A
+          Z = 1
+          Array = 1
+          class B
+            include M
+            Object.new.instance_eval { binding.irb }
+          end
+        end
+      RUBY
+
+      out = run_ruby_file do
+        type "show_source X"
+        type "show_source Y"
+        type "show_source Z"
+        type "show_source Array"
+        type "exit"
+      end
+
+      assert_match(%r[#{@ruby_file.to_path}:1\s+X = 1], out)
+      assert_match(%r[#{@ruby_file.to_path}:3\s+Y = 1], out)
+      assert_match(%r[#{@ruby_file.to_path}:7\s+Z = 1], out)
+      assert_match(%r[#{@ruby_file.to_path}:8\s+Array = 1], out)
+    end
   end
 end

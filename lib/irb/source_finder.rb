@@ -69,10 +69,18 @@ module IRB
 
     def find_source(signature, super_level = 0)
       case signature
-      when /\A(::)?[A-Z]\w*(::[A-Z]\w*)*\z/ # Const::Name
+      when /\A(::)?[A-Z]\w*(::[A-Z]\w*)*\z/ # ConstName, ::ConstName, ConstPath::ConstName
         eval_receiver_or_owner(signature) # trigger autoload
-        base = @irb_context.workspace.binding.receiver.yield_self { |r| r.is_a?(Module) ? r : Object }
-        file, line = base.const_source_location(signature)
+        *parts, name = signature.split('::', -1)
+        base =
+          if parts.empty? # ConstName
+            find_const_owner(name)
+          elsif parts == [''] # ::ConstName
+            Object
+          else # ConstPath::ConstName
+            eval_receiver_or_owner(parts.join('::'))
+          end
+        file, line = base.const_source_location(name)
       when /\A(?<owner>[A-Z]\w*(::[A-Z]\w*)*)#(?<method>[^ :.]+)\z/ # Class#method
         owner = eval_receiver_or_owner(Regexp.last_match[:owner])
         method = Regexp.last_match[:method]
@@ -121,6 +129,11 @@ module IRB
       eval(code, context_binding)
     rescue NameError
       raise EvaluationError
+    end
+
+    def find_const_owner(name)
+      module_nesting = @irb_context.workspace.binding.eval('::Module.nesting')
+      module_nesting.find { |mod| mod.const_defined?(name, false) } || module_nesting.find { |mod| mod.const_defined?(name) } || Object
     end
   end
 end
