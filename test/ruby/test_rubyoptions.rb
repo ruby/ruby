@@ -302,7 +302,7 @@ class TestRubyOptions < Test::Unit::TestCase
 
     assert_in_out_err(%w(--parser=notreal -e) + ["puts :hi"], "", [], /unknown parser notreal/)
 
-    assert_in_out_err(%w(--parser=prism --version), "", /\+PRISM/, warning)
+    assert_in_out_err(%w(--parser=prism --version), "", /\+PRISM/, [])
   end
 
   def test_eval
