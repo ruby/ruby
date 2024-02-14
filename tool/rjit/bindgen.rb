@@ -359,7 +359,7 @@ class BindingGenerator
 end
 
 src_dir = File.expand_path('../..', __dir__)
-src_path = File.join(src_dir, 'rjit_c.rb')
+src_path = File.join(src_dir, 'rblib/rjit_c.rb')
 build_dir = File.expand_path(build_dir)
 cflags = [
   src_dir,

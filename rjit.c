@@ -496,6 +496,6 @@ rjit_stop_stats(rb_execution_context_t *ec, VALUE self)
     return Qnil;
 }
 
-#include "rjit.rbinc"
+#include "rblib/rjit.rbinc"
 
 #endif // USE_RJIT

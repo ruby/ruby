@@ -1205,7 +1205,7 @@ VALUE rb_yjit_get_exit_locations(rb_execution_context_t *ec, VALUE self);
 VALUE rb_yjit_enable(rb_execution_context_t *ec, VALUE self, VALUE gen_stats, VALUE print_stats);
 
 // Preprocessed yjit.rb generated during build
-#include "yjit.rbinc"
+#include "rblib/yjit.rbinc"
 
 // Initialize the GC hooks
 void

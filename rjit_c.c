@@ -537,6 +537,6 @@ extern void* rb_rjit_entry_stub_hit(VALUE branch_stub);
 extern void* rb_rjit_branch_stub_hit(VALUE branch_stub, int sp_offset, int target0_p);
 extern uint64_t rb_vm_insns_count;
 
-#include "rjit_c.rbinc"
+#include "rblib/rjit_c.rbinc"
 
 #endif // USE_RJIT

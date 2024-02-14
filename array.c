@@ -8700,4 +8700,4 @@ Init_Array(void)
     rb_define_method(rb_cArray, "deconstruct", rb_ary_deconstruct, 0);
 }
 
-#include "array.rbinc"
+#include "rblib/array.rbinc"

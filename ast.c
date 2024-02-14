@@ -805,7 +805,7 @@ ast_node_script_lines(rb_execution_context_t *ec, VALUE self)
     return ret;
 }
 
-#include "ast.rbinc"
+#include "rblib/ast.rbinc"
 
 void
 Init_ast(void)

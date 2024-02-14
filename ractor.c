@@ -3847,4 +3847,4 @@ ractor_local_value_set(rb_execution_context_t *ec, VALUE self, VALUE sym, VALUE 
     return val;
 }
 
-#include "ractor.rbinc"
+#include "rblib/ractor.rbinc"

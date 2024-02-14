@@ -4,7 +4,7 @@
 #include "vm_core.h"
 #include "builtin.h"
 
-#include "miniprelude.c"
+#include "rblib/miniprelude.c"
 
 // included from miniinit.c
 

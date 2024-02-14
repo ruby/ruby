@@ -7,29 +7,9 @@
 *.c
 *.y
 
-# prelude
-prelude.rb
 rbconfig.rb
 
-array.rb
-ast.rb
-dir.rb
-gc.rb
-io.rb
-kernel.rb
-marshal.rb
-rjit.rb
-numeric.rb
-nilclass.rb
-pack.rb
-ractor.rb
-string.rb
-symbol.rb
-timev.rb
-thread_sync.rb
-trace_point.rb
-warning.rb
-yjit.rb
+rblib
 
 # Errno::*
 known_errors.inc

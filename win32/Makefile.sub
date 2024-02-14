@@ -533,15 +533,15 @@ NEWLINE_C = $(srcdir)/enc/trans/newline.c
 !else
 NEWLINE_C = enc/trans/newline.c
 !endif
-!if !exist(miniprelude.c) && exist($(srcdir)/miniprelude.c)
-MINIPRELUDE_C = $(srcdir)/miniprelude.c
+!if !exist(rblib/miniprelude.c) && exist($(rblibdir)/miniprelude.c)
+MINIPRELUDE_C = $(rblibdir)/miniprelude.c
 !else
-MINIPRELUDE_C = miniprelude.c
+MINIPRELUDE_C = rblib/miniprelude.c
 !endif
-!if !exist(golf_prelude.c) && exist($(srcdir)/golf_prelude.c)
-GOLF_PRELUDE_C = $(srcdir)/golf_prelude.c
+!if !exist(rblib/golf_prelude.c) && exist($(rblibdir)/golf_prelude.c)
+GOLF_PRELUDE_C = $(rblibdir)/golf_prelude.c
 !else
-GOLF_PRELUDE_C = golf_prelude.c
+GOLF_PRELUDE_C = rblib/golf_prelude.c
 !endif
 RBCONFIG      = ./.rbconfig.time
 

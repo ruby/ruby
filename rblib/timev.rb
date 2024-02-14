@@ -212,7 +212,7 @@
 # For the forms of argument +zone+, see
 # {Timezone Specifiers}[rdoc-ref:Time@Timezone+Specifiers].
 #
-# :include: doc/_timezones.rdoc
+# :include: ../doc/_timezones.rdoc
 class Time
   # Creates a new +Time+ object from the current system time.
   # This is the same as Time.new without arguments.

@@ -1609,7 +1609,7 @@ tracepoint_allow_reentry(rb_execution_context_t *ec, VALUE self)
     return rb_ensure(rb_yield, Qnil, disallow_reentry, (VALUE)arg);
 }
 
-#include "trace_point.rbinc"
+#include "rblib/trace_point.rbinc"
 
 /* This function is called from inits.c */
 void
