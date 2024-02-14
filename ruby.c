@@ -1408,10 +1408,6 @@ proc_long_options(ruby_cmdline_options_t *opt, const char *s, long argc, char **
     else if (is_option_with_arg("parser", Qfalse, Qtrue)) {
         if (strcmp("prism", s) == 0) {
             (*rb_ruby_prism_ptr()) = true;
-            rb_warn("The compiler based on the Prism parser is currently experimental and "
-                    "compatibility with the compiler based on parse.y "
-                    "is not yet complete. Please report any issues you "
-                    "find on the `ruby/prism` issue tracker.");
         }
         else if (strcmp("parse.y", s) == 0) {
             // default behavior
@@ -2088,6 +2084,16 @@ static void
 prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
 {
     ruby_opt_init(opt);
+
+    if (rb_warning_category_enabled_p(RB_WARN_CATEGORY_EXPERIMENTAL)) {
+        rb_category_warn(
+            RB_WARN_CATEGORY_EXPERIMENTAL,
+            "The compiler based on the Prism parser is currently experimental "
+            "and compatibility with the compiler based on parse.y is not yet "
+            "complete. Please report any issues you find on the `ruby/prism` "
+            "issue tracker."
+        );
+    }
 
     memset(result, 0, sizeof(*result));
     result->options.line = 1;
