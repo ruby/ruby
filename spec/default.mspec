@@ -4,6 +4,9 @@ if (opt = ENV["RUBYOPT"]) and (opt = opt.dup).sub!(/(?:\A|\s)-w(?=\z|\s)/, '')
   ENV["RUBYOPT"] = opt
 end
 
+# Disable to run for bundled gems
+ENV["GEM_SKIP"] = ENV["GEM_HOME"] = ENV["GEM_PATH"] = "".freeze
+
 # Enable leakcheckers by ruby/mspec
 ENV["CHECK_LEAKS"] ||= "true"
 
