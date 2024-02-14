@@ -4,8 +4,8 @@ if (opt = ENV["RUBYOPT"]) and (opt = opt.dup).sub!(/(?:\A|\s)-w(?=\z|\s)/, '')
   ENV["RUBYOPT"] = opt
 end
 
-# Enable leakcheckers by ruby/mspec
-ENV["CHECK_LEAKS"] ||= "true"
+# Enable constant leak checks by ruby/mspec
+ENV["CHECK_CONSTANT_LEAKS"] ||= "true"
 
 require "./rbconfig" unless defined?(RbConfig)
 require_relative "../tool/test-coverage" if ENV.key?("COVERAGE")
