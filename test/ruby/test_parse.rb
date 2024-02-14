@@ -755,7 +755,7 @@ x = __ENCODING__
     end
     assert_equal(Encoding.find("UTF-8"), x)
 
-    assert_raise(ArgumentError) do
+    assert_raise(SyntaxError) do
       eval <<-END, nil, __FILE__, __LINE__+1
 # coding = foobarbazquxquux_dummy_enconding
 x = __ENCODING__
@@ -770,33 +770,51 @@ x = __ENCODING__
     end
     assert_equal(__ENCODING__, x)
 
-    assert_raise(ArgumentError) do
+    assert_raise(SyntaxError) do
       EnvUtil.with_default_external(Encoding::US_ASCII) {eval <<-END, nil, __FILE__, __LINE__+1}
 # coding = external
 x = __ENCODING__
       END
     end
 
-    assert_raise(ArgumentError) do
+    assert_raise(SyntaxError) do
       EnvUtil.with_default_internal(Encoding::US_ASCII) {eval <<-END, nil, __FILE__, __LINE__+1}
 # coding = internal
 x = __ENCODING__
       END
     end
 
-    assert_raise(ArgumentError) do
+    assert_raise(SyntaxError) do
       eval <<-END, nil, __FILE__, __LINE__+1
 # coding = filesystem
 x = __ENCODING__
       END
     end
 
-    assert_raise(ArgumentError) do
+    assert_raise(SyntaxError) do
       eval <<-END, nil, __FILE__, __LINE__+1
 # coding = locale
 x = __ENCODING__
       END
     end
+
+    e = assert_raise(SyntaxError) do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# coding: foo
+end #
+      END
+    end
+    assert_include(e.message, "# coding: foo\n          ^~~")
+    assert_include(e.message, "end #")
+
+    e = assert_raise(SyntaxError) do
+      eval <<-END, nil, __FILE__, __LINE__+1
+# coding = foo
+end #
+      END
+    end
+    assert_include(e.message, "# coding = foo\n           ^~~")
+    assert_include(e.message, "end #")
   end
 
   def test_utf8_bom

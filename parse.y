@@ -9995,7 +9995,6 @@ static void
 parser_set_encode(struct parser_params *p, const char *name)
 {
     rb_encoding *enc;
-    VALUE excargs[3];
     int idx = 0;
 
     const char *wrong = 0;
@@ -10009,16 +10008,14 @@ parser_set_encode(struct parser_params *p, const char *name)
     idx = rb_enc_find_index(name);
     if (idx < 0) {
       unknown:
-        excargs[1] = rb_sprintf("unknown encoding name: %s", name);
+        compile_error(p, "unknown encoding name: %s", name);
       error:
-        excargs[0] = rb_eArgError;
-        excargs[2] = rb_make_backtrace();
-        rb_ary_unshift(excargs[2], rb_sprintf("%"PRIsVALUE":%d", p->ruby_sourcefile_string, p->ruby_sourceline));
-        rb_exc_raise(rb_make_exception(3, excargs));
+        parser_show_error_line(p, &(YYLTYPE)RUBY_INIT_YYLLOC());
+        return;
     }
     enc = rb_enc_from_index(idx);
     if (!rb_enc_asciicompat(enc)) {
-        excargs[1] = rb_sprintf("%s is not ASCII compatible", rb_enc_name(enc));
+        compile_error(p, "%s is not ASCII compatible", rb_enc_name(enc));
         goto error;
     }
     p->enc = enc;
@@ -10251,6 +10248,7 @@ parser_magic_comment(struct parser_params *p, const char *str, long len)
 
         do str++; while (--len > 0 && ISSPACE(*str));
         if (!len) break;
+        const char *tok_beg = str;
         if (*str == '"') {
             for (vbeg = ++str; --len > 0 && *str != '"'; str++) {
                 if (*str == '\\') {
@@ -10268,6 +10266,7 @@ parser_magic_comment(struct parser_params *p, const char *str, long len)
             for (vbeg = str; len > 0 && *str != '"' && *str != ';' && !ISSPACE(*str); --len, str++);
             vend = str;
         }
+        const char *tok_end = str;
         if (indicator) {
             while (len > 0 && (*str == ';' || ISSPACE(*str))) --len, str++;
         }
@@ -10289,6 +10288,8 @@ parser_magic_comment(struct parser_params *p, const char *str, long len)
                     n = (*mc->length)(p, vbeg, n);
                 }
                 str_copy(val, vbeg, n);
+                p->lex.ptok = tok_beg;
+                p->lex.pcur = tok_end;
                 (*mc->func)(p, mc->name, RSTRING_PTR(val));
                 break;
             }
@@ -10342,6 +10343,8 @@ set_file_encoding(struct parser_params *p, const char *str, const char *send)
     beg = str;
     while ((*str == '-' || *str == '_' || ISALNUM(*str)) && ++str < send);
     s = rb_str_new(beg, parser_encode_length(p, beg, str - beg));
+    p->lex.ptok = beg;
+    p->lex.pcur = str;
     parser_set_encode(p, RSTRING_PTR(s));
     rb_str_resize(s, 0);
 }
@@ -11249,12 +11252,14 @@ parser_yylex(struct parser_params *p)
 
       case '#':		/* it's a comment */
         p->token_seen = token_seen;
+        const char *const pcur = p->lex.pcur, *const ptok = p->lex.ptok;
         /* no magic_comment in shebang line */
         if (!parser_magic_comment(p, p->lex.pcur, p->lex.pend - p->lex.pcur)) {
             if (comment_at_top(p)) {
                 set_file_encoding(p, p->lex.pcur, p->lex.pend);
             }
         }
+        p->lex.pcur = pcur, p->lex.ptok = ptok;
         lex_goto_eol(p);
         dispatch_scan_event(p, tCOMMENT);
         fallthru = TRUE;

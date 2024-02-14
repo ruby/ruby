@@ -37,12 +37,12 @@ class TestSyntax < Test::Unit::TestCase
     Encoding.list.each do |enc|
       next unless enc.ascii_compatible?
       make_tmpsrc(f, "# -*- coding: #{enc.name} -*-")
-      assert_nothing_raised(ArgumentError, enc.name) {load(f.path)}
+      assert_nothing_raised(SyntaxError, enc.name) {load(f.path)}
     end
     Encoding.list.each do |enc|
       next if enc.ascii_compatible?
       make_tmpsrc(f, "# -*- coding: #{enc.name} -*-")
-      assert_raise(ArgumentError, enc.name) {load(f.path)}
+      assert_raise(SyntaxError, enc.name) {load(f.path)}
     end
   ensure
     f&.close!
