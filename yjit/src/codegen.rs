@@ -5395,11 +5395,18 @@ fn jit_rb_str_getbyte(
     extern "C" {
         fn rb_str_getbyte(str: VALUE, index: VALUE) -> VALUE;
     }
-    // Raises when non-integers are passed in
-    jit_prepare_non_leaf_call(jit, asm);
 
     let index = asm.stack_opnd(0);
     let recv = asm.stack_opnd(1);
+
+    let arg0_type = asm.ctx.get_opnd_type(index.into());
+
+    // rb_str_getbyte should be leaf if the index is a fixnum
+    if arg0_type != Type::Fixnum {
+        // Raises when non-integers are passed in
+        jit_prepare_non_leaf_call(jit, asm);
+    }
+
     let ret_opnd = asm.ccall(rb_str_getbyte as *const u8, vec![recv, index]);
     asm.stack_pop(2); // Keep them on stack during ccall for GC
 
