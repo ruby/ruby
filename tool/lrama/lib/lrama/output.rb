@@ -16,8 +16,7 @@ module Lrama
 
     def initialize(
       out:, output_file_path:, template_name:, grammar_file_path:,
-      header_out: nil, header_file_path: nil,
-      context:, grammar:, error_recovery: false
+      context:, grammar:, header_out: nil, header_file_path: nil, error_recovery: false
     )
       @out = out
       @output_file_path = output_file_path
@@ -159,6 +158,61 @@ module Lrama
         #{comment}
 #line #{@grammar.initial_action.line} "#{@grammar_file_path}"
         {#{@grammar.initial_action.translated_code}}
+      STR
+    end
+
+    def after_shift_function(comment = "")
+      return "" unless @grammar.after_shift
+
+      <<-STR
+        #{comment}
+#line #{@grammar.after_shift.line} "#{@grammar_file_path}"
+        {#{@grammar.after_shift.s_value}(#{parse_param_name});}
+#line [@oline@] [@ofile@]
+      STR
+    end
+
+    def before_reduce_function(comment = "")
+      return "" unless @grammar.before_reduce
+
+      <<-STR
+        #{comment}
+#line #{@grammar.before_reduce.line} "#{@grammar_file_path}"
+        {#{@grammar.before_reduce.s_value}(yylen#{user_args});}
+#line [@oline@] [@ofile@]
+      STR
+    end
+
+    def after_reduce_function(comment = "")
+      return "" unless @grammar.after_reduce
+
+      <<-STR
+        #{comment}
+#line #{@grammar.after_reduce.line} "#{@grammar_file_path}"
+        {#{@grammar.after_reduce.s_value}(yylen#{user_args});}
+#line [@oline@] [@ofile@]
+      STR
+    end
+
+    def after_shift_error_token_function(comment = "")
+      return "" unless @grammar.after_shift_error_token
+
+      <<-STR
+        #{comment}
+#line #{@grammar.after_shift_error_token.line} "#{@grammar_file_path}"
+        {#{@grammar.after_shift_error_token.s_value}(#{parse_param_name});}
+#line [@oline@] [@ofile@]
+      STR
+    end
+
+    def after_pop_stack_function(len, comment = "")
+      return "" unless @grammar.after_pop_stack
+
+      <<-STR
+        #{comment}
+#line #{@grammar.after_pop_stack.line} "#{@grammar_file_path}"
+        {#{@grammar.after_pop_stack.s_value}(#{len}#{user_args});}
+#line [@oline@] [@ofile@]
       STR
     end
 
