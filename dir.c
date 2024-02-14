@@ -3652,6 +3652,7 @@ void
 Init_Dir(void)
 {
     rb_gc_register_address(&chdir_lock.path);
+    rb_gc_register_address(&chdir_lock.thread);
 
     rb_cDir = rb_define_class("Dir", rb_cObject);
 
