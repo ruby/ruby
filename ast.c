@@ -253,6 +253,11 @@ ast_s_of(rb_execution_context_t *ec, VALUE module, VALUE body, VALUE keep_script
     if (!iseq) {
         return Qnil;
     }
+
+    if (ISEQ_BODY(iseq)->prism) {
+        rb_raise(rb_eRuntimeError, "cannot get AST for ISEQ compiled by prism");
+    }
+
     lines = ISEQ_BODY(iseq)->variable.script_lines;
 
     VALUE path = rb_iseq_path(iseq);
