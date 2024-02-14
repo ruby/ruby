@@ -774,7 +774,7 @@ timer_thread_register_waiting(rb_thread_t *th, int fd, enum thread_sched_waiting
                 ccan_list_add_tail(&timer_th.waiting, &th->sched.waiting_reason.node);
             }
             else {
-                RUBY_DEBUG_LOG("abs:%lu", abs);
+                RUBY_DEBUG_LOG("abs:%lu", (unsigned long)abs);
                 VM_ASSERT(flags & thread_sched_waiting_timeout);
 
                 // insert th to sorted list (TODO: O(n))
