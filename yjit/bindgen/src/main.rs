@@ -336,6 +336,7 @@ fn main() {
         .allowlist_function("rb_yjit_set_exception_return")
         .allowlist_type("robject_offsets")
         .allowlist_type("rstring_offsets")
+        .allowlist_var("rb_yjit_should_run_wb")
 
         // from vm_sync.h
         .allowlist_function("rb_vm_barrier")

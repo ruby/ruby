@@ -50,7 +50,7 @@ enum rstring_offsets {
     RUBY_OFFSET_RSTRING_LEN = offsetof(struct RString, len)
 };
 
-bool should_run_wb = false;
+bool rb_yjit_should_run_wb;
 
 // We need size_t to have a known size to simplify code generation and FFI.
 // TODO(alan): check this in configure.ac to fail fast on 32 bit platforms.
@@ -101,7 +101,7 @@ rb_yjit_mark_executable(void *mem_block, uint32_t mem_size)
 void
 rb_yjit_wb_should_run(bool should_run)
 {
-    should_run_wb = should_run;
+    rb_yjit_should_run_wb = should_run;
     return;
 }
 

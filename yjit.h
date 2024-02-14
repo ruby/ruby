@@ -45,7 +45,7 @@ void rb_yjit_before_ractor_spawn(void);
 void rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx);
 void rb_yjit_tracing_invalidate_all(void);
 void rb_yjit_show_usage(int help, int highlight, unsigned int width, int columns);
-void rb_yjit_wb_should_run(bool);
+void rb_yjit_wb_should_run(bool should_run);
 
 #else
 // !USE_YJIT
@@ -67,7 +67,7 @@ static inline void rb_yjit_iseq_free(void *payload) {}
 static inline void rb_yjit_before_ractor_spawn(void) {}
 static inline void rb_yjit_constant_ic_update(const rb_iseq_t *const iseq, IC ic, unsigned insn_idx) {}
 static inline void rb_yjit_tracing_invalidate_all(void) {}
-static inline void void rb_yjit_wb_should_run(bool) {}
+static inline void rb_yjit_wb_should_run(bool should_run) {}
 
 #endif // #if USE_YJIT
 
