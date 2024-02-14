@@ -660,6 +660,12 @@ rb_get_iseq_flags_has_kwrest(const rb_iseq_t *iseq)
 }
 
 bool
+rb_get_iseq_flags_anon_kwrest(const rb_iseq_t *iseq)
+{
+    return iseq->body->param.flags.anon_kwrest;
+}
+
+bool
 rb_get_iseq_flags_has_rest(const rb_iseq_t *iseq)
 {
     return iseq->body->param.flags.has_rest;
