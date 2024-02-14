@@ -148,6 +148,7 @@
 
 #include "builtin.h"
 #include "shape.h"
+#include "yjit.h"
 
 #define rb_setjmp(env) RUBY_SETJMP(env)
 #define rb_jmp_buf rb_jmpbuf_t
@@ -8480,6 +8481,7 @@ gc_marks_finish(rb_objspace_t *objspace)
 #endif
 
         objspace->flags.during_incremental_marking = FALSE;
+        rb_yjit_wb_should_run(false);
         /* check children of all marked wb-unprotected objects */
         for (int i = 0; i < SIZE_POOL_COUNT; i++) {
             gc_marks_wb_unprotected_objects(objspace, SIZE_POOL_EDEN_HEAP(&size_pools[i]));
@@ -9566,9 +9568,11 @@ gc_start(rb_objspace_t *objspace, unsigned int reason)
             reason & GPR_FLAG_IMMEDIATE_MARK ||
             ruby_gc_stressful) {
         objspace->flags.during_incremental_marking = FALSE;
+        rb_yjit_wb_should_run(false);
     }
     else {
         objspace->flags.during_incremental_marking = do_full_mark;
+        rb_yjit_wb_should_run(do_full_mark);
     }
 
     /* Explicitly enable compaction (GC.compact) */

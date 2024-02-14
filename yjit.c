@@ -50,6 +50,8 @@ enum rstring_offsets {
     RUBY_OFFSET_RSTRING_LEN = offsetof(struct RString, len)
 };
 
+bool should_run_wb = false;
+
 // We need size_t to have a known size to simplify code generation and FFI.
 // TODO(alan): check this in configure.ac to fail fast on 32 bit platforms.
 STATIC_ASSERT(64b_size_t, SIZE_MAX == UINT64_MAX);
@@ -94,6 +96,13 @@ rb_yjit_mark_executable(void *mem_block, uint32_t mem_size)
         rb_bug("Couldn't make JIT page (%p, %lu bytes) executable, errno: %s",
             mem_block, (unsigned long)mem_size, strerror(errno));
     }
+}
+
+void
+rb_yjit_wb_should_run(bool should_run)
+{
+    should_run_wb = should_run;
+    return;
 }
 
 // Free the specified memory block.
