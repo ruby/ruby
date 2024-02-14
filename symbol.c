@@ -1140,9 +1140,11 @@ rb_get_symbol_id(VALUE name)
             return 0;
         }
     }
-    else {
-        RUBY_ASSERT_ALWAYS(RB_TYPE_P(name, T_STRING));
+    else if (RB_TYPE_P(name, T_STRING)) {
         return lookup_str_id(name);
+    }
+    else {
+        return 0;
     }
 }
 
