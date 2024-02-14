@@ -8254,6 +8254,10 @@ VALUE
 pm_parse_string(pm_parse_result_t *result, VALUE source, VALUE filepath)
 {
     pm_string_constant_init(&result->input, RSTRING_PTR(source), RSTRING_LEN(source));
+
+    rb_encoding *encoding = rb_enc_get(source);
+    pm_options_encoding_set(&result->options, rb_enc_name(encoding));
+
     return pm_parse_input(result, filepath);
 }
 
