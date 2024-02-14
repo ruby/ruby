@@ -2952,14 +2952,6 @@ rb_wb_protected_newobj_of(rb_execution_context_t *ec, VALUE klass, VALUE flags, 
     return newobj_of(rb_ec_ractor_ptr(ec), klass, flags, 0, 0, 0, TRUE, size);
 }
 
-/* for compatibility */
-
-VALUE
-rb_newobj(void)
-{
-    return newobj_of(GET_RACTOR(), 0, T_NONE, 0, 0, 0, FALSE, RVALUE_SIZE);
-}
-
 VALUE
 rb_newobj_of(VALUE klass, VALUE flags)
 {

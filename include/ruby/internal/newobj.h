@@ -30,21 +30,6 @@
 #include "ruby/assert.h"
 
 /**
- * Declares, allocates, then assigns a new object to the given variable.
- *
- * @param      obj             Variable name.
- * @param      type            Variable type.
- * @exception  rb_eNoMemError  No space left.
- * @return     An allocated object, not initialised.
- * @note       Modern programs tend to use #NEWOBJ_OF instead.
- *
- * @internal
- *
- * :FIXME: Should we deprecate it?
- */
-#define RB_NEWOBJ(obj,type) type *(obj) = RBIMPL_CAST((type *)rb_newobj())
-
-/**
  * Identical  to #RB_NEWOBJ,  except it  also accepts  the allocating  object's
  * class and flags.
  *
@@ -57,20 +42,12 @@
  */
 #define RB_NEWOBJ_OF(obj,type,klass,flags) type *(obj) = RBIMPL_CAST((type *)rb_newobj_of(klass, flags))
 
-#define NEWOBJ     RB_NEWOBJ      /**< @old{RB_NEWOBJ} */
 #define NEWOBJ_OF  RB_NEWOBJ_OF   /**< @old{RB_NEWOBJ_OF} */
 #define OBJSETUP   rb_obj_setup   /**< @old{rb_obj_setup} */
 #define CLONESETUP rb_clone_setup /**< @old{rb_clone_setup} */
 #define DUPSETUP   rb_dup_setup   /**< @old{rb_dup_setup} */
 
 RBIMPL_SYMBOL_EXPORT_BEGIN()
-/**
- * This is the implementation detail of #RB_NEWOBJ.
- *
- * @exception  rb_eNoMemError  No space left.
- * @return     An allocated object, not initialised.
- */
-VALUE rb_newobj(void);
 
 /**
  * This is the implementation detail of #RB_NEWOBJ_OF.
