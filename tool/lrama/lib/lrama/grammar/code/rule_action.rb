@@ -11,8 +11,10 @@ module Lrama
 
         # * ($$) yyval
         # * (@$) yyloc
+        # * ($:$) error
         # * ($1) yyvsp[i]
         # * (@1) yylsp[i]
+        # * ($:1) i - 1
         #
         #
         # Consider a rule like
@@ -24,6 +26,8 @@ module Lrama
         # "Rule"                class: keyword_class { $1 } tSTRING { $2 + $3 } keyword_end { $class = $1 + $keyword_end }
         # "Position in grammar"                   $1     $2      $3          $4          $5
         # "Index for yyvsp"                       -4     -3      -2          -1           0
+        # "$:n"                                  $:1    $:2     $:3         $:4         $:5
+        # "index of $:n"                          -5     -4      -3          -2          -1
         #
         #
         # For the first midrule action:
@@ -31,6 +35,7 @@ module Lrama
         # "Rule"                class: keyword_class { $1 } tSTRING { $2 + $3 } keyword_end { $class = $1 + $keyword_end }
         # "Position in grammar"                   $1
         # "Index for yyvsp"                        0
+        # "$:n"                                  $:1
         def reference_to_c(ref)
           case
           when ref.type == :dollar && ref.name == "$" # $$
@@ -39,6 +44,8 @@ module Lrama
             "(yyval.#{tag.member})"
           when ref.type == :at && ref.name == "$" # @$
             "(yyloc)"
+          when ref.type == :index && ref.name == "$" # $:$
+            raise "$:$ is not supported"
           when ref.type == :dollar # $n
             i = -position_in_rhs + ref.index
             tag = ref.ex_tag || rhs[ref.index - 1].tag
@@ -47,6 +54,9 @@ module Lrama
           when ref.type == :at # @n
             i = -position_in_rhs + ref.index
             "(yylsp[#{i}])"
+          when ref.type == :index # $:n
+            i = -position_in_rhs + ref.index
+            "(#{i} - 1)"
           else
             raise "Unexpected. #{self}, #{ref}"
           end
@@ -70,7 +80,7 @@ module Lrama
         end
 
         def raise_tag_not_found_error(ref)
-          raise "Tag is not specified for '$#{ref.value}' in '#{@rule.to_s}'"
+          raise "Tag is not specified for '$#{ref.value}' in '#{@rule}'"
         end
       end
     end
