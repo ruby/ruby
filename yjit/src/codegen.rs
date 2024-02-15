@@ -2828,7 +2828,7 @@ fn gen_setinstancevariable(
         // If we know the stack value is an immediate, there's no need to
         // generate WB code.
         if !stack_type.is_imm() {
-            asm.spill_temps(); // for ccall
+            asm.spill_temps(); // for ccall (unconditionally spill them for RegTemps consistency)
             let skip_wb = asm.new_label("skip_wb");
             // If the value we're writing is an immediate, we don't need to WB
             asm.test(write_val, (RUBY_IMMEDIATE_MASK as u64).into());
