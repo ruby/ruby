@@ -1,9 +1,6 @@
 require_relative '../../../spec_helper'
+require 'matrix'
 
-ruby_version_is ""..."3.1" do
-  require 'matrix'
-
-  describe "Matrix::Scalar#*" do
-    it "needs to be reviewed for spec completeness"
-  end
+describe "Matrix::Scalar#*" do
+  it "needs to be reviewed for spec completeness"
 end
