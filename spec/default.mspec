@@ -89,7 +89,7 @@ require 'mspec/runner/formatters/dotted'
 
 class DottedFormatter
   prepend Module.new {
-    BASE = __dir__ + "/ruby/"
+    BASE = __dir__ + "/ruby/" unless defined?(BASE)
 
     def initialize(out = nil)
       super
