@@ -43,6 +43,7 @@ module Prism
     end
 
     def test_AssocNode
+      assert_location(AssocNode, "{ '': 1 }", 2...7) { |node| node.elements.first }
       assert_location(AssocNode, "{ foo: :bar }", 2...11) { |node| node.elements.first }
       assert_location(AssocNode, "{ :foo => :bar }", 2...14) { |node| node.elements.first }
       assert_location(AssocNode, "foo(bar: :baz)", 4...13) { |node| node.arguments.arguments.first.elements.first }

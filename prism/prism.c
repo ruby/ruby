@@ -14206,7 +14206,6 @@ parse_strings(pm_parser_t *parser, pm_node_t *current) {
             // If we get here, then we have an end of a label immediately
             // after a start. In that case we'll create an empty symbol
             // node.
-            pm_token_t opening = not_provided(parser);
             pm_token_t content = parse_strings_empty_content(parser->previous.start);
             pm_symbol_node_t *symbol = pm_symbol_node_create(parser, &opening, &content, &parser->previous);
 
