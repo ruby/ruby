@@ -3572,6 +3572,68 @@ pm_hash_node_closing_loc_set(pm_hash_node_t *hash, pm_token_t *token) {
     hash->closing_loc = PM_LOCATION_TOKEN_VALUE(token);
 }
 
+static pm_node_t *
+pm_assignment_value_node(pm_node_t *node) {
+    switch (PM_NODE_TYPE(node)) {
+        case PM_CLASS_VARIABLE_WRITE_NODE: {
+            const pm_class_variable_write_node_t *cast = (pm_class_variable_write_node_t *)node;
+            return cast->value;
+        }
+        case PM_CONSTANT_WRITE_NODE: {
+            const pm_constant_write_node_t *cast = (pm_constant_write_node_t *)node;
+            return cast->value;
+        }
+        case PM_GLOBAL_VARIABLE_WRITE_NODE: {
+            const pm_global_variable_write_node_t *cast = (pm_global_variable_write_node_t *)node;
+            return cast->value;
+        }
+        case PM_INSTANCE_VARIABLE_WRITE_NODE: {
+            const pm_instance_variable_write_node_t *cast = (pm_instance_variable_write_node_t *)node;
+            return cast->value;
+        }
+        case PM_LOCAL_VARIABLE_WRITE_NODE: {
+            const pm_local_variable_write_node_t *cast = (pm_local_variable_write_node_t *)node;
+            return cast->value;
+        }
+        case PM_MULTI_WRITE_NODE: {
+            const pm_multi_write_node_t *cast = (pm_multi_write_node_t *)node;
+            return cast->value;
+        }
+        case PM_PARENTHESES_NODE: {
+            const pm_parentheses_node_t *cast = (pm_parentheses_node_t *)node;
+            if (cast->body != NULL) {
+                return pm_assignment_value_node(cast->body);
+            }
+            return NULL;
+        }
+        case PM_BEGIN_NODE: {
+            const pm_begin_node_t *cast = (pm_begin_node_t *)node;
+            if (cast->statements != NULL) {
+                return pm_assignment_value_node((pm_node_t *) cast->statements);
+            }
+            return NULL;
+        }
+        case PM_STATEMENTS_NODE: {
+            const pm_statements_node_t *cast = (const pm_statements_node_t *) node;
+            return pm_assignment_value_node(cast->body.nodes[cast->body.size - 1]);
+        }
+        default:
+            return NULL;
+    }
+}
+
+/**
+ * Check whether the predicate contains an assigment where the assigned value is a
+ * literal. If such an assignment is found, it generates a warning.
+ */
+static void
+pm_check_predicate_assignment(pm_parser_t *parser, pm_node_t *predicate) {
+    pm_node_t *value = pm_assignment_value_node(predicate);
+    if ((value != NULL) && PM_NODE_FLAG_P(value, PM_NODE_FLAG_STATIC_LITERAL)) {
+        pm_parser_warn_token(parser, &parser->current, PM_WARN_EQUAL_IN_CONDITIONAL);
+    }
+}
+
 /**
  * Allocate a new IfNode node.
  */
@@ -3585,6 +3647,7 @@ pm_if_node_create(pm_parser_t *parser,
     const pm_token_t *end_keyword
 ) {
     pm_conditional_predicate(predicate);
+    pm_check_predicate_assignment(parser, predicate);
     pm_if_node_t *node = PM_ALLOC_NODE(parser, pm_if_node_t);
 
     const uint8_t *end;
@@ -3624,6 +3687,7 @@ pm_if_node_create(pm_parser_t *parser,
 static pm_if_node_t *
 pm_if_node_modifier_create(pm_parser_t *parser, pm_node_t *statement, const pm_token_t *if_keyword, pm_node_t *predicate) {
     pm_conditional_predicate(predicate);
+    pm_check_predicate_assignment(parser, predicate);
     pm_if_node_t *node = PM_ALLOC_NODE(parser, pm_if_node_t);
 
     pm_statements_node_t *statements = pm_statements_node_create(parser);
@@ -3656,6 +3720,7 @@ static pm_if_node_t *
 pm_if_node_ternary_create(pm_parser_t *parser, pm_node_t *predicate, const pm_token_t *qmark, pm_node_t *true_expression, const pm_token_t *colon, pm_node_t *false_expression) {
     pm_assert_value_expression(parser, predicate);
     pm_conditional_predicate(predicate);
+    pm_check_predicate_assignment(parser, predicate);
 
     pm_statements_node_t *if_statements = pm_statements_node_create(parser);
     pm_statements_node_body_append(if_statements, true_expression);
@@ -5899,6 +5964,7 @@ pm_undef_node_append(pm_undef_node_t *node, pm_node_t *name) {
 static pm_unless_node_t *
 pm_unless_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *predicate, const pm_token_t *then_keyword, pm_statements_node_t *statements) {
     pm_conditional_predicate(predicate);
+    pm_check_predicate_assignment(parser, predicate);
     pm_unless_node_t *node = PM_ALLOC_NODE(parser, pm_unless_node_t);
 
     const uint8_t *end;
@@ -5934,6 +6000,7 @@ pm_unless_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t 
 static pm_unless_node_t *
 pm_unless_node_modifier_create(pm_parser_t *parser, pm_node_t *statement, const pm_token_t *unless_keyword, pm_node_t *predicate) {
     pm_conditional_predicate(predicate);
+    pm_check_predicate_assignment(parser, predicate);
     pm_unless_node_t *node = PM_ALLOC_NODE(parser, pm_unless_node_t);
 
     pm_statements_node_t *statements = pm_statements_node_create(parser);
@@ -5971,6 +6038,7 @@ pm_unless_node_end_keyword_loc_set(pm_unless_node_t *node, const pm_token_t *end
 static pm_until_node_t *
 pm_until_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_token_t *closing, pm_node_t *predicate, pm_statements_node_t *statements, pm_node_flags_t flags) {
     pm_until_node_t *node = PM_ALLOC_NODE(parser, pm_until_node_t);
+    pm_check_predicate_assignment(parser, predicate);
 
     *node = (pm_until_node_t) {
         {
@@ -5996,6 +6064,7 @@ pm_until_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_to
 static pm_until_node_t *
 pm_until_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *predicate, pm_statements_node_t *statements, pm_node_flags_t flags) {
     pm_until_node_t *node = PM_ALLOC_NODE(parser, pm_until_node_t);
+    pm_check_predicate_assignment(parser, predicate);
 
     *node = (pm_until_node_t) {
         {
@@ -6065,6 +6134,7 @@ pm_when_node_statements_set(pm_when_node_t *node, pm_statements_node_t *statemen
 static pm_while_node_t *
 pm_while_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_token_t *closing, pm_node_t *predicate, pm_statements_node_t *statements, pm_node_flags_t flags) {
     pm_while_node_t *node = PM_ALLOC_NODE(parser, pm_while_node_t);
+    pm_check_predicate_assignment(parser, predicate);
 
     *node = (pm_while_node_t) {
         {
@@ -6090,6 +6160,7 @@ pm_while_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_to
 static pm_while_node_t *
 pm_while_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *predicate, pm_statements_node_t *statements, pm_node_flags_t flags) {
     pm_while_node_t *node = PM_ALLOC_NODE(parser, pm_while_node_t);
+    pm_check_predicate_assignment(parser, predicate);
 
     *node = (pm_while_node_t) {
         {
@@ -15864,6 +15935,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 } else {
                     receiver = parse_expression(parser, PM_BINDING_POWER_COMPOSITION, true, PM_ERR_NOT_EXPRESSION);
                     pm_conditional_predicate(receiver);
+                    pm_check_predicate_assignment(parser, receiver);
 
                     if (!parser->recovering) {
                         accept1(parser, PM_TOKEN_NEWLINE);
@@ -15874,6 +15946,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             } else {
                 receiver = parse_expression(parser, PM_BINDING_POWER_NOT, true, PM_ERR_NOT_EXPRESSION);
                 pm_conditional_predicate(receiver);
+                pm_check_predicate_assignment(parser, receiver);
             }
 
             return (pm_node_t *) pm_call_node_not_create(parser, receiver, &message, &arguments);
@@ -16544,6 +16617,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_call_node_t *node = pm_call_node_unary_create(parser, &operator, receiver, "!");
 
             pm_conditional_predicate(receiver);
+            pm_check_predicate_assignment(parser, receiver);
             return (pm_node_t *) node;
         }
         case PM_TOKEN_TILDE: {

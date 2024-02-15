@@ -298,6 +298,7 @@ typedef enum {
     PM_WARN_AMBIGUOUS_FIRST_ARGUMENT_PLUS,
     PM_WARN_AMBIGUOUS_PREFIX_STAR,
     PM_WARN_AMBIGUOUS_SLASH,
+    PM_WARN_EQUAL_IN_CONDITIONAL,
     PM_WARN_END_IN_METHOD,
 
     // This is the number of diagnostic codes.
