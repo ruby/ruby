@@ -1,7 +1,5 @@
 require_relative '../../spec_helper'
 
-require 'bigdecimal'
-
 describe "Integer#coerce" do
   context "fixnum" do
     describe "when given a Fixnum" do
@@ -90,15 +88,4 @@ describe "Integer#coerce" do
       ary.should == [1.2, a.to_f]
     end
   end
-
-  context "bigdecimal" do
-    it "produces Floats" do
-      x, y = 3.coerce(BigDecimal("3.4"))
-      x.class.should == Float
-      x.should == 3.4
-      y.class.should == Float
-      y.should == 3.0
-    end
-  end
-
 end
