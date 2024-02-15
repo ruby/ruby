@@ -2783,11 +2783,6 @@ fn gen_setinstancevariable(
             None => {
                 let (new_shape_id, needs_extension, ivar_index) = new_shape.unwrap();
                 if let Some((current_capacity, new_capacity)) = needs_extension {
-                    // We already spilled temps in the case the stack type is _not_ an immediate.
-                    // If it is an immediate, but we need to expand the object, then spill temps
-                    if stack_type.is_imm() {
-                        asm.spill_temps(); // for ccall
-                    }
                     // Generate the C call so that runtime code will increase
                     // the capacity and set the buffer.
                     asm_comment!(asm, "call rb_ensure_iv_list_size");
