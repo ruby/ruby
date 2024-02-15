@@ -124,7 +124,7 @@ VALUE rb_cSymbol;
     FL_SET((str), STR_NOEMBED);\
     FL_UNSET((str), STR_SHARED | STR_SHARED_ROOT | STR_BORROWED);\
 } while (0)
-#define STR_SET_EMBED(str) FL_UNSET((str), (STR_NOEMBED|STR_NOFREE))
+#define STR_SET_EMBED(str) FL_UNSET((str), STR_NOEMBED | STR_SHARED | STR_NOFREE)
 
 #define STR_SET_LEN(str, n) do { \
     RSTRING(str)->len = (n); \
