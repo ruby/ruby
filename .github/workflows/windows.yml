@@ -91,7 +91,7 @@ jobs:
 
       - uses: ruby/setup-ruby@22fdc77bf4148f810455b226c90fb81b5cbc00a7 # v1.171.0
         with:
-          ruby-version: '2.7'
+          ruby-version: '3.0'
           bundler: none
           windows-toolchain: none
 
