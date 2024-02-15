@@ -191,22 +191,25 @@ location_lineno_m(VALUE self)
     return INT2FIX(location_lineno(location_ptr(self)));
 }
 
+VALUE rb_mod_name0(VALUE klass, bool *permanent);
+
 static VALUE
 gen_method_name(VALUE owner, VALUE name)
 {
+    bool permanent;
     if (RB_TYPE_P(owner, T_CLASS) || RB_TYPE_P(owner, T_MODULE)) {
         if (RBASIC(owner)->flags & FL_SINGLETON) {
             VALUE v = RCLASS_ATTACHED_OBJECT(owner);
             if (RB_TYPE_P(v, T_CLASS) || RB_TYPE_P(v, T_MODULE)) {
-                v = rb_class_path(v);
-                if (!NIL_P(v)) {
+                v = rb_mod_name0(v, &permanent);
+                if (permanent && !NIL_P(v)) {
                     return rb_sprintf("%"PRIsVALUE".%"PRIsVALUE, v, name);
                 }
             }
         }
         else {
-            owner = rb_class_path(owner);
-            if (!NIL_P(owner)) {
+            owner = rb_mod_name0(owner, &permanent);
+            if (permanent && !NIL_P(owner)) {
                 return rb_sprintf("%"PRIsVALUE"#%"PRIsVALUE, owner, name);
             }
         }

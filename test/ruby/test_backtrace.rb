@@ -428,4 +428,23 @@ class TestBacktrace < Test::Unit::TestCase
       enum.next
     end;
   end
+
+  def test_no_receiver_for_anonymous_class
+    err = ["-:2:in 'bar': unhandled exception", # Not '#<Class:0xXXX>.bar'
+           "\tfrom -:3:in '<main>'"]
+    assert_in_out_err([], <<-"end;", [], err)
+    foo = Class.new
+    def foo.bar = raise
+    foo.bar
+    end;
+
+    err = ["-:3:in 'baz': unhandled exception", # Not '#<Class:0xXXX>::Bar.baz'
+           "\tfrom -:4:in '<main>'"]
+    assert_in_out_err([], <<-"end;", [], err)
+    foo = Class.new
+    foo::Bar = Class.new
+    def (foo::Bar).baz = raise
+    foo::Bar.baz
+    end;
+  end
 end

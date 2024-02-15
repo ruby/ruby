@@ -111,6 +111,12 @@ classname(VALUE klass, bool *permanent)
     return classpath;
 }
 
+VALUE
+rb_mod_name0(VALUE klass, bool *permanent)
+{
+    return classname(klass, permanent);
+}
+
 /*
  *  call-seq:
  *     mod.name    -> string
