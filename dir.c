@@ -3689,7 +3689,7 @@ Init_Dir(void)
      * {File::FNM_SYSCASE}[rdoc-ref:File::Constants@File-3A-3AFNM_SYSCASE] */
     rb_file_const("FNM_SYSCASE", INT2FIX(FNM_SYSCASE));
     /* Document-const: FNM_SHORTNAME
-     * {File::FNM_SHORTNAME}[rdoc-ref:File::Constants@File-3A-3AFNM_SHORTNAME+-28Windows+Only-29] */
+     * {File::FNM_SHORTNAME}[rdoc-ref:File::Constants@File-3A-3AFNM_SHORTNAME] */
     rb_file_const("FNM_SHORTNAME", INT2FIX(FNM_SHORTNAME));
 }
 

@@ -7665,10 +7665,12 @@ Init_File(void)
      *
      * Flag File::BINARY specifies that the stream is to be accessed in binary mode.
      *
-     * ==== File::SHARE_DELETE (Windows Only)
+     * ==== File::SHARE_DELETE
      *
      * Flag File::SHARE_DELETE enables other processes to open the stream
      * with delete access.
+     *
+     * Windows only.
      *
      * If the stream is opened for (local) delete access without File::SHARE_DELETE,
      * and another process attempts to open it with delete access,
@@ -7744,9 +7746,11 @@ Init_File(void)
      * do not match the directory separator
      * (the value of constant File::SEPARATOR).
      *
-     * ==== File::FNM_SHORTNAME (Windows Only)
+     * ==== File::FNM_SHORTNAME
      *
-     * Flag File::FNM_SHORTNAME Allows patterns to match short names if they exist.
+     * Flag File::FNM_SHORTNAME allows patterns to match short names if they exist.
+     *
+     * Windows only.
      *
      * ==== File::FNM_SYSCASE
      *
@@ -7799,7 +7803,7 @@ Init_File(void)
 #ifndef O_SHARE_DELETE
 # define O_SHARE_DELETE 0
 #endif
-    /* {File::SHARE_DELETE}[rdoc-ref:File::Constants@File-3A-3ASHARE_DELETE+-28Windows+Only-29] */
+    /* {File::SHARE_DELETE}[rdoc-ref:File::Constants@File-3A-3ASHARE_DELETE] */
     rb_define_const(rb_mFConst, "SHARE_DELETE", INT2FIX(O_SHARE_DELETE));
 #ifdef O_SYNC
     /* {File::SYNC}[rdoc-ref:File::Constants@File-3A-3ASYNC-2C+File-3A-3ARSYNC-2C+and+File-3A-3ADSYNC] */
