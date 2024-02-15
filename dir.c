@@ -1082,9 +1082,13 @@ chdir_alone_block_p(void)
         if (rb_thread_current() != chdir_lock.thread)
             rb_raise(rb_eRuntimeError, "conflicting chdir during another chdir block");
         if (!block_given) {
-            rb_warn("conflicting chdir during another chdir block");
             if (!NIL_P(chdir_lock.path)) {
-                rb_compile_warn(RSTRING_PTR(chdir_lock.path), chdir_lock.line, "here");
+                rb_warn("conflicting chdir during another chdir block\n"
+                        "%" PRIsVALUE ":%d: note: previous chdir was here",
+                        chdir_lock.path, chdir_lock.line);
+            }
+            else {
+                rb_warn("conflicting chdir during another chdir block");
             }
         }
     }
