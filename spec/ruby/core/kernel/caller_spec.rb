@@ -39,7 +39,7 @@ describe 'Kernel#caller' do
     path = fixture(__FILE__, "caller_at_exit.rb")
     lines = ruby_exe(path).lines
     lines.size.should == 2
-    lines[0].should =~ /\A#{path}:6:in [`']foo'\n\z/
+    lines[0].should =~ /\A#{path}:6:in [`'](?:Object#)?foo'\n\z/
     lines[1].should =~ /\A#{path}:2:in [`']block in <main>'\n\z/
   end
 
@@ -62,7 +62,7 @@ describe 'Kernel#caller' do
 
       loc = nil
       tap { loc = caller(1, 1)[0] }
-      loc.should =~ /\A<internal:.*in [`']tap'\z/
+      loc.should =~ /\A<internal:.*in [`'](?:Kernel#)?tap'\z/
     end
   end
 end

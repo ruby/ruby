@@ -27,7 +27,7 @@ describe "Exception#backtrace" do
   end
 
   it "includes the name of the method from where self raised in the first element" do
-    @backtrace.first.should =~ /in [`']backtrace'/
+    @backtrace.first.should =~ /in [`'](?:ExceptionSpecs::Backtrace\.)?backtrace'/
   end
 
   it "includes the filename of the location immediately prior to where self raised in the second element" do

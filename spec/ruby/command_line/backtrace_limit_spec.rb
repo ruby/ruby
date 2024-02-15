@@ -54,9 +54,9 @@ backtrace
 
       out.should == <<-MSG
 top
-/fixtures/backtrace.rb:2:in 'a': oops (RuntimeError)
-\tfrom /fixtures/backtrace.rb:6:in 'b'
-\tfrom /fixtures/backtrace.rb:10:in 'c'
+/fixtures/backtrace.rb:2:in 'Object#a': oops (RuntimeError)
+\tfrom /fixtures/backtrace.rb:6:in 'Object#b'
+\tfrom /fixtures/backtrace.rb:10:in 'Object#c'
 \t ... 2 levels...
       MSG
     end
@@ -68,9 +68,9 @@ top
 
       out.should == <<-MSG
 full_message
-/fixtures/backtrace.rb:2:in 'a': oops (RuntimeError)
-\tfrom /fixtures/backtrace.rb:6:in 'b'
-\tfrom /fixtures/backtrace.rb:10:in 'c'
+/fixtures/backtrace.rb:2:in 'Object#a': oops (RuntimeError)
+\tfrom /fixtures/backtrace.rb:6:in 'Object#b'
+\tfrom /fixtures/backtrace.rb:10:in 'Object#c'
 \t ... 2 levels...
       MSG
     end
@@ -82,10 +82,10 @@ full_message
 
       out.should == <<-MSG
 backtrace
-/fixtures/backtrace.rb:2:in 'a'
-/fixtures/backtrace.rb:6:in 'b'
-/fixtures/backtrace.rb:10:in 'c'
-/fixtures/backtrace.rb:14:in 'd'
+/fixtures/backtrace.rb:2:in 'Object#a'
+/fixtures/backtrace.rb:6:in 'Object#b'
+/fixtures/backtrace.rb:10:in 'Object#c'
+/fixtures/backtrace.rb:14:in 'Object#d'
 /fixtures/backtrace.rb:29:in '<main>'
       MSG
     end
