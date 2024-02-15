@@ -240,7 +240,7 @@ for one element in the input or output array.
     # => [4194304]
 
 - <tt>'w'</tt> - BER-encoded integer
-  (see {BER enocding}[https://en.wikipedia.org/wiki/X.690#BER_encoding]):
+  (see {BER encoding}[https://en.wikipedia.org/wiki/X.690#BER_encoding]):
 
     s = [1073741823].pack('w*')
     # => "\x83\xFF\xFF\xFF\x7F"
