@@ -2775,7 +2775,6 @@ fn gen_setinstancevariable(
             Counter::setivar_megamorphic,
         );
 
-        asm.spill_temps(); // for ccall (must be done before write_val is popped)
         let write_val;
 
         match ivar_index {
@@ -2784,6 +2783,11 @@ fn gen_setinstancevariable(
             None => {
                 let (new_shape_id, needs_extension, ivar_index) = new_shape.unwrap();
                 if let Some((current_capacity, new_capacity)) = needs_extension {
+                    // We already spilled temps in the case the stack type is _not_ an immediate.
+                    // If it is an immediate, but we need to expand the object, then spill temps
+                    if stack_type.is_imm() {
+                        asm.spill_temps(); // for ccall
+                    }
                     // Generate the C call so that runtime code will increase
                     // the capacity and set the buffer.
                     asm_comment!(asm, "call rb_ensure_iv_list_size");
@@ -2829,6 +2833,7 @@ fn gen_setinstancevariable(
         // If we know the stack value is an immediate, there's no need to
         // generate WB code.
         if !stack_type.is_imm() {
+            asm.spill_temps(); // for ccall
             let skip_wb = asm.new_label("skip_wb");
             // If the value we're writing is an immediate, we don't need to WB
             asm.test(write_val, (RUBY_IMMEDIATE_MASK as u64).into());
