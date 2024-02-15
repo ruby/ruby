@@ -2763,7 +2763,6 @@ fn gen_setinstancevariable(
                 Opnd::const_ptr(ic as *const u8),
             ]
         );
-        asm.stack_pop(1); // Keep it on stack during ccall for GC
     } else {
         // Get the receiver
         let mut recv = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF));
@@ -2815,7 +2814,7 @@ fn gen_setinstancevariable(
                     recv = asm.load(Opnd::mem(64, CFP, RUBY_OFFSET_CFP_SELF))
                 }
 
-                write_val = asm.stack_pop(1);
+                write_val = asm.stack_opnd(0);
                 gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, needs_extension.is_some());
 
                 asm_comment!(asm, "write shape");
@@ -2833,7 +2832,7 @@ fn gen_setinstancevariable(
                 // the iv index by searching up the shape tree.  If we've
                 // made the transition already, then there's no reason to
                 // update the shape on the object.  Just set the IV.
-                write_val = asm.stack_pop(1);
+                write_val = asm.stack_opnd(0);
                 gen_write_iv(asm, comptime_receiver, recv, ivar_index, write_val, false);
             },
         }
@@ -2863,6 +2862,7 @@ fn gen_setinstancevariable(
             asm.write_label(skip_wb);
         }
     }
+    asm.stack_pop(1); // Keep it on stack during ccall for GC
 
     Some(KeepCompiling)
 }
