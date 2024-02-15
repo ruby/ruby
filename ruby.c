@@ -2304,7 +2304,10 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     ruby_set_script_name(opt->script_name);
     if (dump & DUMP_BIT(yydebug)) {
         dump &= ~DUMP_BIT(yydebug);
-        if (!dump) return Qtrue;
+        if (!dump) {
+            rb_ast_dispose(ast);
+            return Qtrue;
+        }
     }
 
     if (opt->ext.enc.index >= 0) {
