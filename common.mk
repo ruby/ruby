@@ -994,15 +994,6 @@ yes-test-spec: yes-test-spec-precheck
 	$(ACTIONS_ENDGROUP)
 no-test-spec:
 
-test-bundled-gems-spec: $(TEST_RUNNABLE)-test-bundled-gems-spec
-yes-test-bundled-gems-spec: yes-test-spec-precheck
-	$(ACTIONS_GROUP)
-	$(gnumake_recursive)$(Q) \
-	$(RUNRUBY) -r./$(arch)-fake -r$(tooldir)/rubyspec_temp \
-		$(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/bundled_gems.mspec $(MSPECOPT) $(SPECOPTS)
-	$(ACTIONS_ENDGROUP)
-no-test-bundled-gems-spec:
-
 check: $(DOT_WAIT) test-spec
 
 RUNNABLE = $(LIBRUBY_RELATIVE:no=un)-runnable
@@ -1576,8 +1567,8 @@ yes-test-bundled-gems-prepare: yes-test-bundled-gems-precheck
 	$(ACTIONS_ENDGROUP)
 
 PREPARE_BUNDLED_GEMS = test-bundled-gems-prepare
-test-bundled-gems: $(TEST_RUNNABLE)-test-bundled-gems
-yes-test-bundled-gems: test-bundled-gems-run test-bundled-gems-spec
+test-bundled-gems: $(TEST_RUNNABLE)-test-bundled-gems $(TEST_RUNNABLE)-test-bundled-gems-spec
+yes-test-bundled-gems: test-bundled-gems-run
 no-test-bundled-gems:
 
 # Override this to allow failure of specific gems on CI
@@ -1586,6 +1577,15 @@ no-test-bundled-gems:
 BUNDLED_GEMS =
 test-bundled-gems-run: $(PREPARE_BUNDLED_GEMS)
 	$(gnumake_recursive)$(Q) $(XRUBY) $(tooldir)/test-bundled-gems.rb $(BUNDLED_GEMS)
+
+test-bundled-gems-spec: $(TEST_RUNNABLE)-test-bundled-gems-spec
+yes-test-bundled-gems-spec: yes-test-spec-precheck $(PREPARE_BUNDLED_GEMS)
+	$(ACTIONS_GROUP)
+	$(gnumake_recursive)$(Q) \
+	$(RUNRUBY) -r./$(arch)-fake -r$(tooldir)/rubyspec_temp \
+		$(srcdir)/spec/mspec/bin/mspec run -B $(srcdir)/spec/bundled_gems.mspec $(MSPECOPT) $(SPECOPTS)
+	$(ACTIONS_ENDGROUP)
+no-test-bundled-gems-spec:
 
 test-syntax-suggest-precheck: $(TEST_RUNNABLE)-test-syntax-suggest-precheck
 no-test-syntax-suggest-precheck:
