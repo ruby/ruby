@@ -192,15 +192,82 @@ location_lineno_m(VALUE self)
 }
 
 static VALUE
+gen_method_name(VALUE owner, VALUE name)
+{
+    if (RB_TYPE_P(owner, T_CLASS) || RB_TYPE_P(owner, T_MODULE)) {
+        if (RBASIC(owner)->flags & FL_SINGLETON) {
+            VALUE v = RCLASS_ATTACHED_OBJECT(owner);
+            if (RB_TYPE_P(v, T_CLASS) || RB_TYPE_P(v, T_MODULE)) {
+                v = rb_class_path(v);
+                if (!NIL_P(v)) {
+                    return rb_sprintf("%"PRIsVALUE".%"PRIsVALUE, v, name);
+                }
+            }
+        }
+        else {
+            owner = rb_class_path(owner);
+            if (!NIL_P(owner)) {
+                return rb_sprintf("%"PRIsVALUE"#%"PRIsVALUE, owner, name);
+            }
+        }
+    }
+    return name;
+}
+
+static VALUE
+calculate_iseq_label(VALUE owner, const rb_iseq_t *iseq)
+{
+retry:
+    switch (ISEQ_BODY(iseq)->type) {
+      case ISEQ_TYPE_TOP:
+      case ISEQ_TYPE_CLASS:
+      case ISEQ_TYPE_MAIN:
+        return ISEQ_BODY(iseq)->location.label;
+      case ISEQ_TYPE_METHOD:
+        return gen_method_name(owner, ISEQ_BODY(iseq)->location.label);
+      case ISEQ_TYPE_BLOCK:
+      case ISEQ_TYPE_PLAIN: {
+        int level = 0;
+        const rb_iseq_t *orig_iseq = iseq;
+        if (ISEQ_BODY(orig_iseq)->parent_iseq != 0) {
+            while (ISEQ_BODY(orig_iseq)->local_iseq != iseq) {
+                if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_BLOCK) {
+                    level++;
+                }
+                iseq = ISEQ_BODY(iseq)->parent_iseq;
+            }
+        }
+        if (level <= 1) {
+            return rb_sprintf("block in %"PRIsVALUE, calculate_iseq_label(owner, iseq));
+        }
+        else {
+            return rb_sprintf("block (%d levels) in %"PRIsVALUE, level, calculate_iseq_label(owner, iseq));
+        }
+      }
+      case ISEQ_TYPE_RESCUE:
+      case ISEQ_TYPE_ENSURE:
+      case ISEQ_TYPE_EVAL:
+        iseq = ISEQ_BODY(iseq)->parent_iseq;
+        goto retry;
+      default:
+        rb_bug("calculate_iseq_label: unreachable");
+    }
+}
+
+static VALUE
 location_label(rb_backtrace_location_t *loc)
 {
     if (loc->cme && loc->cme->def->type == VM_METHOD_TYPE_CFUNC) {
-        return rb_id2str(loc->cme->def->original_id);
+        return gen_method_name(loc->cme->owner, rb_id2str(loc->cme->def->original_id));
     }
-
-    return ISEQ_BODY(loc->iseq)->location.label;
+    else {
+        VALUE owner = Qnil;
+        if (loc->cme) {
+            owner = loc->cme->owner;
+        }
+        return calculate_iseq_label(owner, loc->iseq);
+    }
 }
-
 /*
  * Returns the label of this frame.
  *
@@ -349,7 +416,7 @@ location_format(VALUE file, int lineno, VALUE name)
 static VALUE
 location_to_str(rb_backtrace_location_t *loc)
 {
-    VALUE file, name;
+    VALUE file, owner = Qnil, name;
     int lineno;
 
     if (loc->cme && loc->cme->def->type == VM_METHOD_TYPE_CFUNC) {
@@ -361,12 +428,15 @@ location_to_str(rb_backtrace_location_t *loc)
             file = GET_VM()->progname;
             lineno = 0;
         }
-        name = rb_id2str(loc->cme->def->original_id);
+        name = gen_method_name(loc->cme->owner, rb_id2str(loc->cme->def->original_id));
     }
     else {
         file = rb_iseq_path(loc->iseq);
         lineno = calc_lineno(loc->iseq, loc->pc);
-        name = ISEQ_BODY(loc->iseq)->location.label;
+        if (loc->cme) {
+            owner = loc->cme->owner;
+        }
+        name = calculate_iseq_label(owner, loc->iseq);
     }
 
     return location_format(file, lineno, name);
@@ -669,7 +739,7 @@ rb_backtrace_use_iseq_first_lineno_for_last_location(VALUE self)
 
     loc = &bt->backtrace[0];
 
-    VM_ASSERT(loc->type == LOCATION_TYPE_ISEQ);
+    VM_ASSERT(!loc->cme || loc->cme->def->type == VM_METHOD_TYPE_ISEQ);
 
     loc->pc = NULL; // means location.first_lineno
 }
