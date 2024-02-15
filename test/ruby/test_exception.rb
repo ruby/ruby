@@ -458,6 +458,17 @@ end.join
     assert_not_match(/:0/, stderr, "[ruby-dev:39116]")
   end
 
+  def test_debug_exception
+    pattern = /-e:1 - cannot load such file/
+    Tempfile.create(%w"debug_exception .rb") do |f|
+      path = f.path
+      f.close
+      File.unlink(path)
+      assert_in_out_err(["-e", "$DEBUG = true; require ARGV[0]", "--", path], "", [], pattern)
+      assert_in_out_err(["--enable=gems", "-e", "$DEBUG = true; require ARGV[0]", "--", path], "", [], pattern)
+    end
+  end
+
   def test_errinfo
     begin
       raise "foo"
