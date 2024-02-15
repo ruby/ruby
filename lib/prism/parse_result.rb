@@ -452,17 +452,19 @@ module Prism
 
   # This represents a token from the Ruby source.
   class Token
+    # The Source object that represents the source this token came from.
+    attr_reader :source
+    private :source
+
     # The type of token that this token is.
     attr_reader :type
 
     # A byteslice of the source that this token represents.
     attr_reader :value
 
-    # A Location object representing the location of this token in the source.
-    attr_reader :location
-
     # Create a new token object with the given type, value, and location.
-    def initialize(type, value, location)
+    def initialize(source, type, value, location)
+      @source = source
       @type = type
       @value = value
       @location = location
@@ -471,6 +473,12 @@ module Prism
     # Implement the hash pattern matching interface for Token.
     def deconstruct_keys(keys)
       { type: type, value: value, location: location }
+    end
+
+    # A Location object representing the location of this token in the source.
+    def location
+      return @location if @location.is_a?(Location)
+      @location = Location.new(source, @location >> 32, @location & 0xFFFFFFFF)
     end
 
     # Implement the pretty print interface for Token.
