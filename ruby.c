@@ -1991,6 +1991,63 @@ env_var_truthy(const char *name)
 
 rb_pid_t rb_fork_ruby(int *status);
 
+static void
+show_help(const char *progname, int help)
+{
+    int tty = isatty(1);
+    int columns = 0;
+    if (help && tty) {
+        const char *pager_env = getenv("RUBY_PAGER");
+        if (!pager_env) pager_env = getenv("PAGER");
+        if (pager_env && *pager_env && isatty(0)) {
+            const char *columns_env = getenv("COLUMNS");
+            if (columns_env) columns = atoi(columns_env);
+            VALUE pager = rb_str_new_cstr(pager_env);
+#ifdef HAVE_WORKING_FORK
+            int fds[2];
+            if (rb_pipe(fds) == 0) {
+                rb_pid_t pid = rb_fork_ruby(NULL);
+                if (pid > 0) {
+                    /* exec PAGER with reading from child */
+                    dup2(fds[0], 0);
+                }
+                else if (pid == 0) {
+                    /* send the help message to the parent PAGER */
+                    dup2(fds[1], 1);
+                    dup2(fds[1], 2);
+                }
+                close(fds[0]);
+                close(fds[1]);
+                if (pid > 0) {
+                    setup_pager_env();
+                    rb_f_exec(1, &pager);
+                    kill(SIGTERM, pid);
+                    rb_waitpid(pid, 0, 0);
+                }
+            }
+#else
+            setup_pager_env();
+            VALUE port = rb_io_popen(pager, rb_str_new_lit("w"), Qnil, Qnil);
+            if (!NIL_P(port)) {
+                int oldout = dup(1);
+                int olderr = dup(2);
+                int fd = RFILE(port)->fptr->fd;
+                tty = tty_enabled();
+                dup2(fd, 1);
+                dup2(fd, 2);
+                usage(progname, 1, tty, columns);
+                fflush(stdout);
+                dup2(oldout, 1);
+                dup2(olderr, 2);
+                rb_io_close(port);
+                return;
+            }
+#endif
+        }
+    }
+    usage(progname, help, tty, columns);
+}
+
 static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
@@ -2011,62 +2068,11 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     const long loaded_before_enc = RARRAY_LEN(vm->loaded_features);
 
     if (opt->dump & (DUMP_BIT(usage)|DUMP_BIT(help))) {
-        int tty = isatty(1);
         const char *const progname =
             (argc > 0 && argv && argv[0] ? argv[0] :
              origarg.argc > 0 && origarg.argv && origarg.argv[0] ? origarg.argv[0] :
              ruby_engine);
-        int columns = 0;
-        if ((opt->dump & DUMP_BIT(help)) && tty) {
-            const char *pager_env = getenv("RUBY_PAGER");
-            if (!pager_env) pager_env = getenv("PAGER");
-            if (pager_env && *pager_env && isatty(0)) {
-                const char *columns_env = getenv("COLUMNS");
-                if (columns_env) columns = atoi(columns_env);
-                VALUE pager = rb_str_new_cstr(pager_env);
-#ifdef HAVE_WORKING_FORK
-                int fds[2];
-                if (rb_pipe(fds) == 0) {
-                    rb_pid_t pid = rb_fork_ruby(NULL);
-                    if (pid > 0) {
-                        /* exec PAGER with reading from child */
-                        dup2(fds[0], 0);
-                    }
-                    else if (pid == 0) {
-                        /* send the help message to the parent PAGER */
-                        dup2(fds[1], 1);
-                        dup2(fds[1], 2);
-                    }
-                    close(fds[0]);
-                    close(fds[1]);
-                    if (pid > 0) {
-                        setup_pager_env();
-                        rb_f_exec(1, &pager);
-                        kill(SIGTERM, pid);
-                        rb_waitpid(pid, 0, 0);
-                    }
-                }
-#else
-                setup_pager_env();
-                VALUE port = rb_io_popen(pager, rb_str_new_lit("w"), Qnil, Qnil);
-                if (!NIL_P(port)) {
-                    int oldout = dup(1);
-                    int olderr = dup(2);
-                    int fd = RFILE(port)->fptr->fd;
-                    tty = tty_enabled();
-                    dup2(fd, 1);
-                    dup2(fd, 2);
-                    usage(progname, 1, tty, columns);
-                    fflush(stdout);
-                    dup2(oldout, 1);
-                    dup2(olderr, 2);
-                    rb_io_close(port);
-                    return Qtrue;
-                }
-#endif
-            }
-        }
-        usage(progname, (opt->dump & DUMP_BIT(help)), tty, columns);
+        show_help(progname, (opt->dump & DUMP_BIT(help)));
         return Qtrue;
     }
 
