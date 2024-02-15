@@ -11,8 +11,10 @@ module Prism
     class Parser
       # This is the special version numbers that should be used in RuboCop
       # configuration files to trigger using prism.
+
       # For Ruby 3.3
       VERSION_3_3 = 80_82_73_83_77.33
+
       # For Ruby 3.4
       VERSION_3_4 = 80_82_73_83_77.34
 
@@ -24,7 +26,7 @@ module Prism
           if ruby_version == Prism::Translation::Parser::VERSION_3_3
             require "prism/translation/parser33"
             Prism::Translation::Parser33
-          if ruby_version == Prism::Translation::Parser::VERSION_3_4
+          elsif ruby_version == Prism::Translation::Parser::VERSION_3_4
             require "prism/translation/parser34"
             Prism::Translation::Parser34
           else
