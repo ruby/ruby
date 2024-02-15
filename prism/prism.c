@@ -51,6 +51,7 @@ debug_context(pm_context_t context) {
         case PM_CONTEXT_IF: return "IF";
         case PM_CONTEXT_MAIN: return "MAIN";
         case PM_CONTEXT_MODULE: return "MODULE";
+        case PM_CONTEXT_NONE: return "NONE";
         case PM_CONTEXT_PARENS: return "PARENS";
         case PM_CONTEXT_POSTEXE: return "POSTEXE";
         case PM_CONTEXT_PREDICATE: return "PREDICATE";
