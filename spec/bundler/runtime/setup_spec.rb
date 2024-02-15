@@ -1532,7 +1532,7 @@ end
       RUBY
 
       expect(last_command.stdboth).not_to include "FAIL"
-      expect(err).to include "private method `require'"
+      expect(err).to match /private method [`']require'/
     end
 
     it "memoizes initial set of specs when requiring bundler/setup, so that even if further code mutates dependencies, Bundler.definition.specs is not affected" do
