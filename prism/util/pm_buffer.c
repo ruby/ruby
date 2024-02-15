@@ -32,7 +32,7 @@ pm_buffer_init(pm_buffer_t *buffer) {
  * Return the value of the buffer.
  */
 char *
-pm_buffer_value(pm_buffer_t *buffer) {
+pm_buffer_value(const pm_buffer_t *buffer) {
     return buffer->value;
 }
 
@@ -40,7 +40,7 @@ pm_buffer_value(pm_buffer_t *buffer) {
  * Return the length of the buffer.
  */
 size_t
-pm_buffer_length(pm_buffer_t *buffer) {
+pm_buffer_length(const pm_buffer_t *buffer) {
     return buffer->length;
 }
 
@@ -178,6 +178,25 @@ void
 pm_buffer_concat(pm_buffer_t *destination, const pm_buffer_t *source) {
     if (source->length > 0) {
         pm_buffer_append(destination, source->value, source->length);
+    }
+}
+
+/**
+ * Clear the buffer by reducing its size to 0. This does not free the allocated
+ * memory, but it does allow the buffer to be reused.
+ */
+void
+pm_buffer_clear(pm_buffer_t *buffer) {
+    buffer->length = 0;
+}
+
+/**
+ * Strip the whitespace from the end of the buffer.
+ */
+void
+pm_buffer_rstrip(pm_buffer_t *buffer) {
+    while (buffer->length > 0 && pm_char_is_whitespace((uint8_t) buffer->value[buffer->length - 1])) {
+        buffer->length--;
     }
 }
 

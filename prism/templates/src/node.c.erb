@@ -160,3 +160,45 @@ pm_node_type_to_str(pm_node_type_t node_type)
     }
     return "";
 }
+
+/**
+ * Visit each of the nodes in this subtree using the given visitor callback.
+ */
+PRISM_EXPORTED_FUNCTION void
+pm_node_visit(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data) {
+    if (!visitor(node, data)) return;
+
+    switch (PM_NODE_TYPE(node)) {
+        <%- nodes.each do |node| -%>
+        <%- if (fields = node.fields.select { |field| field.is_a?(Prism::NodeField) || field.is_a?(Prism::OptionalNodeField) || field.is_a?(Prism::NodeListField) }).any? -%>
+        case <%= node.type %>: {
+            const pm_<%= node.human %>_t *cast = (const pm_<%= node.human %>_t *) node;
+            <%- fields.each do |field| -%>
+
+            // Visit the <%= field.name %> field
+            <%- case field -%>
+            <%- when Prism::NodeField -%>
+            pm_node_visit((const pm_node_t *) cast-><%= field.name %>, visitor, data);
+            <%- when Prism::OptionalNodeField -%>
+            if (cast-><%= field.name %> != NULL) {
+                pm_node_visit((const pm_node_t *) cast-><%= field.name %>, visitor, data);
+            }
+            <%- when Prism::NodeListField -%>
+            const pm_node_list_t *<%= field.name %> = &cast-><%= field.name %>;
+            for (size_t index = 0; index < <%= field.name %>->size; index++) {
+                pm_node_visit(<%= field.name %>->nodes[index], visitor, data);
+            }
+            <%- end -%>
+            <%- end -%>
+
+            break;
+        }
+        <%- else -%>
+        case <%= node.type %>:
+            break;
+        <%- end -%>
+        <%- end -%>
+        case PM_SCOPE_NODE:
+            break;
+    }
+}
