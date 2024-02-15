@@ -621,24 +621,7 @@ class Socket < BasicSocket
 
   class << self
     attr_accessor :tcp_fast_fallback
-
-    def initialize_socket
-      @local_ip_address_list = Socket.ip_address_list
-      @has_public_ipv4_addr = false
-      @has_public_ipv6_addr = false
-      @local_ip_address_list.each do |ai|
-        if ai.ipv6?
-          next if @has_public_ipv6_addr
-          @has_public_ipv6_addr = true unless (ai.ipv6_loopback? || ai.ipv6_multicast? || ai.ipv6_linklocal?)
-        else
-          next if @has_public_ipv4_addr
-          @has_public_ipv4_addr = true unless (ai.ipv4_loopback? || ai.ipv4_multicast? || ai.ip_address.start_with?("169.254"))
-        end
-      end
-    end
   end
-
-  self.initialize_socket
 
   # :call-seq:
   #   Socket.tcp(host, port, local_host=nil, local_port=nil, [opts]) {|socket| ... }
@@ -699,15 +682,7 @@ class Socket < BasicSocket
     ret = loop do
       case state
       when :start
-        specified_family_name, next_state =
-          (host && specified_family_name_and_next_state(host)) ||
-          ((host == "localhost" || host.nil?) &&
-           @local_ip_address_list.none?(&:ipv6_loopback?) ? [:ipv4, :v4c] : nil ) ||
-          ((host != "localhost" && !host.nil?) &&
-           (if @has_public_ipv4_addr && @has_public_ipv6_addr then nil
-            elsif @has_public_ipv4_addr then [:ipv4, :v4c]
-            elsif @has_public_ipv6_addr then [:ipv6, :v6c]
-            end))
+        specified_family_name, next_state = host && specified_family_name_and_next_state(host)
 
         if local_host && local_port
           specified_family_name, next_state = specified_family_name_and_next_state(local_host) unless specified_family_name

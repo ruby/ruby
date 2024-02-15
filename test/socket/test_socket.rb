@@ -783,10 +783,6 @@ class TestSocket < Test::Unit::TestCase
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
 
     begin;
-      exit if Socket.ip_address_list.none? do |ai|
-        ai.ipv6? && (!ai.ipv6_loopback? && !ai.ipv6_multicast? && !ai.ipv6_linklocal?)
-      end
-
       begin
         server = TCPServer.new("::1", 0)
       rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
@@ -840,10 +836,6 @@ class TestSocket < Test::Unit::TestCase
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
 
     begin;
-      exit if Socket.ip_address_list.none? do |ai|
-        ai.ipv6? && (!ai.ipv6_loopback? && !ai.ipv6_multicast? && !ai.ipv6_linklocal?)
-      end
-
       begin
         server = TCPServer.new("::1", 0)
       rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
@@ -902,17 +894,8 @@ class TestSocket < Test::Unit::TestCase
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
 
     begin;
-      Addrinfo.define_singleton_method(:getaddrinfo) { |*_|
-        if Socket.ip_address_list.none? { |ai|
-          ai.ipv6? && (!ai.ipv6_loopback? && !ai.ipv6_multicast? && !ai.ipv6_linklocal?)
-        }
-          raise Errno::ETIMEDOUT
-        else
-          sleep
-        end
-      }
-
-      port = TCPServer.new("127.0.0.1", 0).addr[1]
+      Addrinfo.define_singleton_method(:getaddrinfo) { |*_| sleep }
+      port = TCPServer.new("localhost", 0).addr[1]
 
       assert_raise(Errno::ETIMEDOUT) do
         Socket.tcp("localhost", port, resolv_timeout: 0.01)
@@ -925,13 +908,18 @@ class TestSocket < Test::Unit::TestCase
     assert_separately opts, "#{<<-"begin;"}\n#{<<-'end;'}"
 
     begin;
-      server = TCPServer.new("127.0.0.1", 0)
+      begin
+        server = TCPServer.new("::1", 0)
+      rescue Errno::EADDRNOTAVAIL # IPv6 is not supported
+        exit
+      end
+
       port = server.addr[1]
 
       Addrinfo.define_singleton_method(:getaddrinfo) do |_, _, family, *_|
         case family
-        when Socket::AF_INET6 then sleep(0.01); raise SocketError
-        when Socket::AF_INET then [Addrinfo.tcp("127.0.0.1", port)]
+        when Socket::AF_INET6 then [Addrinfo.tcp("::1", port)]
+        when Socket::AF_INET then sleep(0.001); raise SocketError
         end
       end
 
