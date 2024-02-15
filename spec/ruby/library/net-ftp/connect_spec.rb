@@ -26,10 +26,12 @@ describe "Net::FTP#connect" do
     @ftp.connect(@server.hostname, @server.server_port).should be_nil
   end
 
-  it "prints a small debug line when in debug mode" do
-    @ftp.debug_mode = true
-    -> { @ftp.connect(@server.hostname, @server.server_port) }.should output(/#{"connect: "}#{@server.hostname}#{", "}#{@server.server_port}#{"\\nget: 220 Dummy FTP Server ready!"}/)
-    @ftp.debug_mode = false
+  ruby_version_is ""..."3.1" do
+    it "prints a small debug line when in debug mode" do
+      @ftp.debug_mode = true
+      -> { @ftp.connect(@server.hostname, @server.server_port) }.should output(/#{"connect: "}#{@server.hostname}#{", "}#{@server.server_port}#{"\\nget: 220 Dummy FTP Server ready!"}/)
+      @ftp.debug_mode = false
+    end
   end
 
   it "does not raise any error when the response code is 220" do
