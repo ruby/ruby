@@ -544,6 +544,7 @@ make_counters! {
     objtostring_not_string,
 
     splatkw_not_hash,
+    splatkw_not_nil,
 
     binding_allocations,
     binding_set,

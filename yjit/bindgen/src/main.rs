@@ -421,6 +421,7 @@ fn main() {
         .allowlist_function("rb_get_iseq_flags_has_rest")
         .allowlist_function("rb_get_iseq_flags_has_post")
         .allowlist_function("rb_get_iseq_flags_has_kwrest")
+        .allowlist_function("rb_get_iseq_flags_anon_kwrest")
         .allowlist_function("rb_get_iseq_flags_has_block")
         .allowlist_function("rb_get_iseq_flags_ambiguous_param0")
         .allowlist_function("rb_get_iseq_flags_accepts_no_kwarg")

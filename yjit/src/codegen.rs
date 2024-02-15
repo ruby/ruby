@@ -1530,6 +1530,19 @@ fn gen_splatkw(
         // If a compile-time hash operand is T_HASH, just guard that it's T_HASH.
         let hash_opnd = asm.stack_opnd(1);
         guard_object_is_hash(asm, hash_opnd, hash_opnd.into(), Counter::splatkw_not_hash);
+    } else if comptime_hash.nil_p() {
+        // Speculate we'll see nil if compile-time hash operand is nil
+        let hash_opnd = asm.stack_opnd(1);
+        let hash_opnd_type = asm.ctx.get_opnd_type(hash_opnd.into());
+
+        if hash_opnd_type != Type::Nil {
+            asm.cmp(hash_opnd, Qnil.into());
+            asm.jne(Target::side_exit(Counter::splatkw_not_nil));
+
+            if Type::Nil.diff(hash_opnd_type) != TypeDiff::Incompatible {
+                asm.ctx.upgrade_opnd_type(hash_opnd.into(), Type::Nil);
+            }
+        }
     } else {
         // Otherwise, call #to_hash on the operand if it's not nil.
 
@@ -7283,6 +7296,7 @@ fn gen_iseq_kw_call(
         unsafe { get_cikw_keyword_len(ci_kwarg) }
     };
     let caller_keyword_len: usize = caller_keyword_len_i32.try_into().unwrap();
+    let anon_kwrest = unsafe { rb_get_iseq_flags_anon_kwrest(iseq) };
 
     // This struct represents the metadata about the callee-specified
     // keyword parameters.
@@ -7363,16 +7377,25 @@ fn gen_iseq_kw_call(
             }
         }
 
-        // Save PC and SP before allocating
-        jit_save_pc(jit, asm);
-        gen_save_sp(asm);
+        let (kwrest, kwrest_type) = if rest_mask == 0 && anon_kwrest {
+            // In case the kwrest hash should be empty and is anonymous in the callee,
+            // we can pass nil instead of allocating. Anonymous kwrest can only be
+            // delegated, and nil is the same as an empty hash when delegating.
+            (Qnil.into(), Type::Nil)
+        } else {
+            // Save PC and SP before allocating
+            jit_save_pc(jit, asm);
+            gen_save_sp(asm);
 
-        // Build the kwrest hash. `struct rb_callinfo_kwarg` is malloc'd, so no GC concerns.
-        let kwargs_start = asm.lea(asm.ctx.sp_opnd(-caller_keyword_len_i32 * SIZEOF_VALUE_I32));
-        let kwrest = asm.ccall(
-            build_kw_rest as _,
-            vec![rest_mask.into(), kwargs_start, Opnd::const_ptr(ci_kwarg.cast())]
-        );
+            // Build the kwrest hash. `struct rb_callinfo_kwarg` is malloc'd, so no GC concerns.
+            let kwargs_start = asm.lea(asm.ctx.sp_opnd(-caller_keyword_len_i32 * SIZEOF_VALUE_I32));
+            let hash = asm.ccall(
+                build_kw_rest as _,
+                vec![rest_mask.into(), kwargs_start, Opnd::const_ptr(ci_kwarg.cast())]
+            );
+            (hash, Type::THash)
+        };
+
         // The kwrest parameter sits after `unspecified_bits` if the callee specifies any
         // keywords.
         let stack_kwrest_idx = kwargs_stack_base - callee_kw_count_i32 - i32::from(callee_kw_count > 0);
@@ -7394,7 +7417,7 @@ fn gen_iseq_kw_call(
         asm.ctx.dealloc_temp_reg(stack_kwrest.stack_idx());
         asm.mov(stack_kwrest, kwrest);
         if stack_kwrest_idx >= 0 {
-            asm.ctx.set_opnd_mapping(stack_kwrest.into(), TempMapping::map_to_stack(Type::THash));
+            asm.ctx.set_opnd_mapping(stack_kwrest.into(), TempMapping::map_to_stack(kwrest_type));
         }
     }
 
