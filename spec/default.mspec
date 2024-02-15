@@ -32,13 +32,13 @@ class MSpecScript
   end
 
   # Disable to run for bundled gems in test-spec
-  bundled_gems = File.readlines("gems/bundled_gems").map do |line|
+  set :bundled_gems, (File.readlines("#{srcdir}/gems/bundled_gems").map do |line|
     next if /^\s*(?:#|$)/ =~ line
-    "library/" + line.split.first
-  end.compact
-  stdlibs = Dir.glob("ruby/library/*").map{|d| d.sub(%r'\Aruby/', '')}
+    "#{srcdir}/spec/ruby/library/" + line.split.first
+  end.compact)
+  set :stdlibs, Dir.glob("#{srcdir}/spec/ruby/library/*")
+  set :library, get(:stdlibs).to_a - get(:bundled_gems).to_a
 
-  set :library, stdlibs - bundled_gems
   set :files, get(:command_line) + get(:language) + get(:core) + get(:library) + get(:security) + get(:optional)
 
   if ENV.key?("COVERAGE")
