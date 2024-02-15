@@ -477,8 +477,9 @@ module Prism
 
     # A Location object representing the location of this token in the source.
     def location
-      return @location if @location.is_a?(Location)
-      @location = Location.new(source, @location >> 32, @location & 0xFFFFFFFF)
+      location = @location
+      return location if location.is_a?(Location)
+      @location = Location.new(source, location >> 32, location & 0xFFFFFFFF)
     end
 
     # Implement the pretty print interface for Token.

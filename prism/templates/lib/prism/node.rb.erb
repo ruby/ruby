@@ -9,8 +9,9 @@ module Prism
     # A Location instance that represents the location of this node in the
     # source.
     def location
-      return @location if @location.is_a?(Location)
-      @location = Location.new(source, @location >> 32, @location & 0xFFFFFFFF)
+      location = @location
+      return location if location.is_a?(Location)
+      @location = Location.new(source, location >> 32, location & 0xFFFFFFFF)
     end
 
     def newline? # :nodoc:
@@ -196,18 +197,20 @@ module Prism
     <%- case field -%>
     <%- when Prism::LocationField -%>
     def <%= field.name %>
-      return @<%= field.name %> if @<%= field.name %>.is_a?(Location)
-      @<%= field.name %> = Location.new(source, @<%= field.name %> >> 32, @<%= field.name %> & 0xFFFFFFFF)
+      location = @<%= field.name %>
+      return location if location.is_a?(Location)
+      @<%= field.name %> = Location.new(source, location >> 32, location & 0xFFFFFFFF)
     end
     <%- when Prism::OptionalLocationField -%>
     def <%= field.name %>
-      case @<%= field.name %>
+      location = @<%= field.name %>
+      case location
       when nil
         nil
       when Location
-        @<%= field.name %>
+        location
       else
-        @<%= field.name %> = Location.new(source, @<%= field.name %> >> 32, @<%= field.name %> & 0xFFFFFFFF)
+        @<%= field.name %> = Location.new(source, location >> 32, location & 0xFFFFFFFF)
       end
     end
     <%- else -%>
