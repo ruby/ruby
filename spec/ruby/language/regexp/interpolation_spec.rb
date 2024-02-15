@@ -56,3 +56,12 @@ describe "Regexps with interpolation" do
     %r{#{escape_seq}}n.should == /(?-mix:"\x80")/n
   end
 end
+
+ruby_version_is "3.4" do
+  describe "Regexps with quoting interpolation" do
+    it "escapes interpolation by Regexp.quote" do
+      s = "([.])"
+      eval('/#{= s}/').should == /\(\[\.\]\)/
+    end
+  end
+end

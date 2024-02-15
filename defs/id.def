@@ -59,6 +59,10 @@ firstline, predefined = __LINE__+1, %[\
   name
   nil
   path
+  quote
+  Regexp
+  String
+  Symbol
 
   _                                                     UScore
 

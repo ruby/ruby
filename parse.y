@@ -1433,7 +1433,7 @@ static NODE *arg_append(struct parser_params*,NODE*,NODE*,const YYLTYPE*);
 static NODE *last_arg_append(struct parser_params *p, NODE *args, NODE *last_arg, const YYLTYPE *loc);
 static NODE *rest_arg_append(struct parser_params *p, NODE *args, NODE *rest_arg, const YYLTYPE *loc);
 static NODE *literal_concat(struct parser_params*,NODE*,NODE*,const YYLTYPE*);
-static NODE *new_evstr(struct parser_params*,NODE*,const YYLTYPE*);
+static NODE *new_evstr(struct parser_params*,NODE*,const YYLTYPE*,const YYLTYPE*);
 static NODE *new_dstr(struct parser_params*,NODE*,const YYLTYPE*);
 static NODE *str2dstr(struct parser_params*,NODE*);
 static NODE *evstr2dstr(struct parser_params*,NODE*);
@@ -2826,6 +2826,7 @@ rb_str_to_parser_string(rb_parser_t *p, VALUE str)
 /* ripper */ %type <num>  max_numparam
 /* ripper */ %type <node> numparam
 /* ripper */ %type <id>   it_id
+/* ripper */ %type <num>  string_quote
 %token END_OF_INPUT 0	"end-of-input"
 %token <id> '.'
 
@@ -6682,6 +6683,7 @@ string_content	: tSTRING_CONTENT
                         $<num>$ = p->heredoc_indent;
                         p->heredoc_indent = 0;
                     }[indent]
+                  string_quote[q]
                   compstmt string_dend
                     {
                         COND_POP();
@@ -6693,10 +6695,14 @@ string_content	: tSTRING_CONTENT
                         p->heredoc_line_indent = -1;
                     /*%%%*/
                         if ($compstmt) nd_unset_fl_newline($compstmt);
-                        $$ = new_evstr(p, $compstmt, &@$);
+                        $$ = new_evstr(p, $compstmt, &@$, ($q ? &@q : 0));
                     /*% %*/
                     /*% ripper: string_embexpr!($compstmt) %*/
                     }
+                ;
+
+string_quote	: none {$$ = FALSE;}
+                | '='  {$$ = TRUE;}
                 ;
 
 string_dend	: tSTRING_DEND
@@ -10777,11 +10783,11 @@ parse_percent(struct parser_params *p, const int space_seen, const enum lex_stat
             return tQWORDS_BEG;
 
           case 'I':
-            p->lex.strterm = NEW_STRTERM(str_dword, term, paren);
+            p->lex.strterm = NEW_STRTERM(str_ssym|str_dword, term, paren);
             return tSYMBOLS_BEG;
 
           case 'i':
-            p->lex.strterm = NEW_STRTERM(str_sword, term, paren);
+            p->lex.strterm = NEW_STRTERM(str_ssym|str_sword, term, paren);
             return tQSYMBOLS_BEG;
 
           case 'x':
@@ -13413,10 +13419,26 @@ evstr2dstr(struct parser_params *p, NODE *node)
 }
 
 static NODE *
-new_evstr(struct parser_params *p, NODE *node, const YYLTYPE *loc)
+new_evstr(struct parser_params *p, NODE *node, const YYLTYPE *loc, const YYLTYPE *quote)
 {
     NODE *head = node;
 
+    if (quote) {
+        ID klass_id = idString;
+        rb_strterm_t *strterm = p->lex.strterm;
+        if (strterm) {
+            int func = strterm_is_heredoc(strterm) ?
+                strterm->u.heredoc.func : strterm->u.literal.func;
+            switch (func & (STR_FUNC_REGEXP|STR_FUNC_SYMBOL)) {
+              case STR_FUNC_REGEXP: klass_id = idRegexp; break;
+              case STR_FUNC_SYMBOL: klass_id = idSymbol; break;
+            }
+        }
+        YYLTYPE call_loc = code_loc_gen(quote, loc);
+        node = NEW_CALL(NEW_COLON3(klass_id, quote), idQuote,
+                        NEW_LIST(node, &node->nd_loc), &call_loc);
+        return NEW_EVSTR(node, loc);
+    }
     if (node) {
         switch (nd_type(node)) {
           case NODE_STR:
