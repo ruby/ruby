@@ -4,6 +4,50 @@ require_relative "test_helper"
 
 module Prism
   class RipperTest < TestCase
+    def truffleruby?
+      RUBY_ENGINE == "truffleruby"
+    end
+
+    def windows?
+      Gem.win_platform?
+    end
+
+    # Ripper produces certain ambiguous structures. For instance, it often
+    # adds an :args_add_block with "false" as the block meaning there is
+    # no block call. It can be hard to tell which of multiple equivalent
+    # structures it will produce. This method attempts to return a normalized
+    # comparable structure.
+    def normalized_sexp(parsed)
+      if parsed.is_a?(Array)
+        # For args_add_block, if the third entry is nil or false, remove it.
+        # Note that CRuby Ripper uses false for no block, while older JRuby
+        # uses nil. We need to do this for both.
+        return normalized_sexp(parsed[1]) if parsed[0] == :args_add_block && !parsed[2]
+
+        parsed.each.with_index do |item, idx|
+          if item.is_a?(Array)
+            parsed[idx] = normalized_sexp(parsed[idx])
+          end
+        end
+      end
+
+      parsed
+    end
+
+    def assert_ripper_equivalent(source, path: "inline source code")
+      expected = Ripper.sexp_raw(source)
+
+      refute_nil expected, "Could not parse #{path} with Ripper!"
+      expected = normalized_sexp(expected)
+      actual = Prism::Translation::Ripper.sexp_raw(source)
+      refute_nil actual, "Could not parse #{path} with Prism!"
+      actual = normalized_sexp(actual)
+      assert_equal expected, actual, "Expected Ripper and Prism to give equivalent output for #{path}!"
+    end
+
+  end
+
+  class RipperShortSourceTest < RipperTest
     def test_binary
       assert_equivalent("1 + 2")
       assert_equivalent("3 - 4 * 5")
@@ -36,7 +80,7 @@ module Prism
       assert_equivalent("foo.bar")
 
       # TruffleRuby prints emoji symbols differently in a way that breaks here.
-      if RUBY_ENGINE != "truffleruby"
+      unless truffleruby?
         assert_equivalent("🗻")
         assert_equivalent("🗻.location")
         assert_equivalent("foo.🗻")
@@ -57,9 +101,9 @@ module Prism
     def test_method_call_blocks
       assert_equivalent("foo { |a| a }")
 
-      # assert_equivalent("foo(bar 1)")
-      # assert_equivalent("foo bar 1")
-      # assert_equivalent("foo(bar 1) { 7 }")
+      assert_equivalent("foo(bar 1)")
+      assert_equivalent("foo bar 1")
+      assert_equivalent("foo(bar 1) { 7 }")
     end
 
     def test_method_calls_on_immediate_values
@@ -69,7 +113,7 @@ module Prism
       assert_equivalent("7 and 7")
       assert_equivalent("7 || 7")
       assert_equivalent("7 or 7")
-      #assert_equivalent("'racecar'.reverse")
+      assert_equivalent("'racecar'.reverse")
     end
 
     def test_range
@@ -142,20 +186,49 @@ module Prism
       assert_equivalent("a = 1")
     end
 
+    def test_alias
+      assert_equivalent("alias :foo :bar")
+      assert_equivalent("alias $a $b")
+      assert_equivalent("alias $a $'")
+      assert_equivalent("alias foo bar")
+      assert_equivalent("alias foo if")
+      assert_equivalent("alias :'def' :\"abc\#{1}\"")
+      assert_equivalent("alias :\"abc\#{1}\" :'def'")
+
+      unless truffleruby?
+        assert_equivalent("alias :foo :Ę") # Uppercase Unicode character is a constant
+        assert_equivalent("alias :Ę :foo")
+      end
+
+      assert_equivalent("alias foo +")
+      assert_equivalent("alias foo :+")
+      assert_equivalent("alias :foo :''")
+      assert_equivalent("alias :'' :foo")
+    end
+
+    # This is *exactly* the kind of thing where Ripper would have a weird
+    # special case we didn't handle correctly. We're still testing with
+    # a leading colon since putting random keywords there will often get
+    # parse errors. Mostly we want to know that Ripper will use :@kw
+    # instead of :@ident for the lexer symbol for all of these.
+    def test_keyword_aliases
+      Prism::Translation::Ripper::RUBY_KEYWORDS.each do |keyword|
+        assert_equivalent("alias :foo :#{keyword}")
+      end
+    end
+
     private
 
     def assert_equivalent(source)
-      expected = Ripper.sexp_raw(source)
-
-      refute_nil expected
-      assert_equal expected, Prism::Translation::Ripper.sexp_raw(source)
+      assert_ripper_equivalent(source)
     end
   end
 
-  class RipperFixturesTest < TestCase
+  class RipperFixturesTest < RipperTest
     #base = File.join(__dir__, "fixtures")
     #relatives = ENV["FOCUS"] ? [ENV["FOCUS"]] : Dir["**/*.txt", base: base]
     relatives = [
+      "alias.txt",
       "arithmetic.txt",
       "booleans.txt",
       "boolean_operators.txt",
@@ -172,14 +245,8 @@ module Prism
         # and explicitly set the external encoding to UTF-8 to override the binmode default.
         source = File.read(path, binmode: true, external_encoding: Encoding::UTF_8)
 
-        expected = Ripper.sexp_raw(source)
-        if expected.nil?
-          puts "Could not parse #{path.inspect}!"
-        end
-        refute_nil expected
-        assert_equal expected, Translation::Ripper.sexp_raw(source)
+        assert_ripper_equivalent(source, path: path)
       end
     end
-
   end
 end

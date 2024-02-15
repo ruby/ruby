@@ -222,6 +222,44 @@ module Prism
         on_break(on_args_add_block(args_val, false))
       end
 
+      # Visit an AliasMethodNode.
+      def visit_alias_method_node(node)
+        # For both the old and new name, if there is a colon in the symbol
+        # name (e.g. 'alias :foo :bar') then we do *not* emit the [:symbol] wrapper around
+        # the lexer token (e.g. :@ident) inside [:symbol_literal]. But if there
+        # is no colon (e.g. 'alias foo bar') then we *do* still emit the [:symbol] wrapper.
+
+        if node.new_name.is_a?(SymbolNode) && !node.new_name.opening
+          new_name_val = visit_symbol_literal_node(node.new_name, no_symbol_wrapper: true)
+        else
+          new_name_val = visit(node.new_name)
+        end
+        if node.old_name.is_a?(SymbolNode) && !node.old_name.opening
+          old_name_val = visit_symbol_literal_node(node.old_name, no_symbol_wrapper: true)
+        else
+          old_name_val = visit(node.old_name)
+        end
+
+        on_alias(new_name_val, old_name_val)
+      end
+
+      # Visit an AliasGlobalVariableNode.
+      def visit_alias_global_variable_node(node)
+        on_var_alias(visit(node.new_name), visit(node.old_name))
+      end
+
+      # Visit a GlobalVariableReadNode.
+      def visit_global_variable_read_node(node)
+        bounds(node.location)
+        on_gvar(node.name.to_s)
+      end
+
+      # Visit a BackReferenceReadNode.
+      def visit_back_reference_read_node(node)
+        bounds(node.location)
+        on_backref(node.name.to_s)
+      end
+
       # Visit an AndNode.
       def visit_and_node(node)
         visit_binary_operator(node)
@@ -326,23 +364,7 @@ module Prism
 
       # Visit an InterpolatedStringNode node.
       def visit_interpolated_string_node(node)
-        parts = node.parts.map do |part|
-          case part
-          when StringNode
-            bounds(part.content_loc)
-            on_tstring_content(part.content)
-          when EmbeddedStatementsNode
-            on_string_embexpr(visit(part))
-          else
-            raise NotImplementedError, "Unexpected node type in InterpolatedStringNode"
-          end
-        end
-
-        string_list = parts.inject(on_string_content) do |items, item|
-          on_string_add(items, item)
-        end
-
-        on_string_literal(string_list)
+        on_string_literal(visit_enumerated_node(node))
       end
 
       # Visit an EmbeddedStatementsNode node.
@@ -352,15 +374,12 @@ module Prism
 
       # Visit a SymbolNode node.
       def visit_symbol_node(node)
-        if (opening = node.opening) && (['"', "'"].include?(opening[-1]) || opening.start_with?("%s"))
-          bounds(node.value_loc)
-          tstring_val = on_tstring_content(node.value.to_s)
-          return on_dyna_symbol(on_string_add(on_string_content, tstring_val))
-        end
+        visit_symbol_literal_node(node)
+      end
 
-        bounds(node.value_loc)
-        ident_val = on_ident(node.value.to_s)
-        on_symbol_literal(on_symbol(ident_val))
+      # Visit an InterpolatedSymbolNode node.
+      def visit_interpolated_symbol_node(node)
+        on_dyna_symbol(visit_enumerated_node(node))
       end
 
       # Visit a StatementsNode node.
@@ -459,6 +478,25 @@ module Prism
         end
       end
 
+      # Visit an InterpolatedStringNode or an InterpolatedSymbolNode node.
+      def visit_enumerated_node(node)
+        parts = node.parts.map do |part|
+          case part
+          when StringNode
+            bounds(part.content_loc)
+            on_tstring_content(part.content)
+          when EmbeddedStatementsNode
+            on_string_embexpr(visit(part))
+          else
+            raise NotImplementedError, "Unexpected node type in visit_enumerated_node"
+          end
+        end
+
+        parts.inject(on_string_content) do |items, item|
+          on_string_add(items, item)
+        end
+      end
+
       # Visit an operation-and-assign node, such as +=.
       def visit_binary_op_assign(node, operator: node.operator)
         bounds(node.name_loc)
@@ -485,6 +523,87 @@ module Prism
         args_val = on_args_add_block(on_args_add(on_args_new, first_arg_val), false)
         assign_val = visit(node.arguments.arguments[1])
         on_assign(on_aref_field(visit(node.receiver), args_val), assign_val)
+      end
+
+      # In an alias statement Ripper will emit @kw instead of @ident if the object
+      # being aliased is a Ruby keyword. For instance, in the line "alias :foo :if",
+      # the :if is treated as a lexer keyword. So we need to know what symbols are
+      # also keywords.
+      RUBY_KEYWORDS = [
+        "alias",
+        "and",
+        "begin",
+        "BEGIN",
+        "break",
+        "case",
+        "class",
+        "def",
+        "defined?",
+        "do",
+        "else",
+        "elsif",
+        "end",
+        "END",
+        "ensure",
+        "false",
+        "for",
+        "if",
+        "in",
+        "module",
+        "next",
+        "nil",
+        "not",
+        "or",
+        "redo",
+        "rescue",
+        "retry",
+        "return",
+        "self",
+        "super",
+        "then",
+        "true",
+        "undef",
+        "unless",
+        "until",
+        "when",
+        "while",
+        "yield",
+        "__ENCODING__",
+        "__FILE__",
+        "__LINE__",
+      ]
+
+      # Ripper has several methods of emitting a symbol literal. Inside an alias
+      # sometimes it suppresses the [:symbol] wrapper around ident. If the symbol
+      # is also the name of a keyword (e.g. :if) it will emit a :@kw wrapper, not
+      # an :@ident wrapper, with similar treatment for constants and operators.
+      def visit_symbol_literal_node(node, no_symbol_wrapper: false)
+        if (opening = node.opening) && (['"', "'"].include?(opening[-1]) || opening.start_with?("%s"))
+          bounds(node.value_loc)
+          str_val = node.value.to_s
+          if str_val == ""
+            return on_dyna_symbol(on_string_content)
+          else
+            tstring_val = on_tstring_content(str_val)
+            return on_dyna_symbol(on_string_add(on_string_content, tstring_val))
+          end
+        end
+
+        bounds(node.value_loc)
+        node_name = node.value.to_s
+        if RUBY_KEYWORDS.include?(node_name)
+          token_val = on_kw(node_name)
+        elsif node_name.length == 0
+          raise NotImplementedError
+        elsif /[[:upper:]]/.match(node_name[0])
+          token_val = on_const(node_name)
+        elsif /[[:punct:]]/.match(node_name[0])
+          token_val = on_op(node_name)
+        else
+          token_val = on_ident(node_name)
+        end
+        sym_val = no_symbol_wrapper ? token_val : on_symbol(token_val)
+        on_symbol_literal(sym_val)
       end
 
       # Visit a node that represents a number. We need to explicitly handle the
