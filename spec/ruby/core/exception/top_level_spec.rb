@@ -20,13 +20,13 @@ describe "An Exception reaching the top level" do
     end
     RUBY
     lines = ruby_exe(code, args: "2>&1", exit_status: 1).lines
-    lines.reject! { |l| l.include?('rescue in') }
     lines.map! { |l| l.chomp[/:(in.+)/, 1] }
-    lines.size.should == 4
-    lines[0].should =~ /\Ain [`']raise_wrapped': wrapped \(RuntimeError\)\z/
-    lines[1].should =~ /\Ain [`']<main>'\z/
-    lines[2].should =~ /\Ain [`']raise_cause': the cause \(RuntimeError\)\z/
-    lines[3].should =~ /\Ain [`']<main>'\z/
+    lines.size.should == 5
+    lines[0].should =~ /\Ain [`'](?:Object#)?raise_wrapped': wrapped \(RuntimeError\)\z/
+    lines[1].should =~ /\Ain [`'](?:rescue in )?<main>'\z/
+    lines[2].should =~ /\Ain [`']<main>'\z/
+    lines[3].should =~ /\Ain [`'](?:Object#)?raise_cause': the cause \(RuntimeError\)\z/
+    lines[4].should =~ /\Ain [`']<main>'\z/
   end
 
   describe "with a custom backtrace" do
