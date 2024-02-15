@@ -42,7 +42,7 @@
 
 1. Download ruby source code:
 
-    Select one of the bellow.
+    Select one of the below.
 
     1. Build from the tarball:
 
