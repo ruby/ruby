@@ -930,7 +930,7 @@ describe "Instance variables" do
         obj = Object.new
         def obj.foobar; a = $specs_uninitialized_global_variable; end
 
-        -> { obj.foobar }.should complain(/warning: global variable `\$specs_uninitialized_global_variable' not initialized/, verbose: true)
+        -> { obj.foobar }.should complain(/warning: global variable [`']\$specs_uninitialized_global_variable' not initialized/, verbose: true)
       end
 
       it "doesn't warn at lazy initialization" do

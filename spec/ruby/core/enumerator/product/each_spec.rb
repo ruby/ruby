@@ -34,7 +34,7 @@ ruby_version_is "3.2" do
     it "raises a NoMethodError if the object doesn't respond to #each_entry" do
       -> {
         Enumerator::Product.new(Object.new).each {}
-      }.should raise_error(NoMethodError, /undefined method `each_entry' for/)
+      }.should raise_error(NoMethodError, /undefined method [`']each_entry' for/)
     end
 
     it "returns enumerator if not given a block" do
