@@ -17,6 +17,7 @@ module IRB
 end
 
 module TestIRB
+  RUBY_3_4 = Gem::Version.new(RUBY_VERSION) >= Gem::Version.new("3.4.0.dev")
   class TestCase < Test::Unit::TestCase
     class TestInputMethod < ::IRB::InputMethod
       attr_reader :list, :line_no
