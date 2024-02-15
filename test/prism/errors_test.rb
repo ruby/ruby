@@ -177,7 +177,7 @@ module Prism
 
     def test_incomplete_instance_var_string
       assert_errors expression('%@#@@#'), '%@#@@#', [
-        ["`@#' is not allowed as an instance variable name", 4..5],
+        ["'@#' is not allowed as an instance variable name", 4..5],
         ["unexpected instance variable, expecting end-of-input", 4..5]
       ]
     end
@@ -1258,7 +1258,7 @@ module Prism
 
     def test_unterminated_global_variable
       assert_errors expression("$"), "$", [
-        ["`$' is not allowed as a global variable name", 0..1]
+        ["'$' is not allowed as a global variable name", 0..1]
       ]
     end
 
