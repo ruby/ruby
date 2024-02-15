@@ -10,7 +10,7 @@ ENV["CHECK_CONSTANT_LEAKS"] ||= "true"
 require "./rbconfig" unless defined?(RbConfig)
 require_relative "../tool/test-coverage" if ENV.key?("COVERAGE")
 load File.dirname(__FILE__) + '/ruby/default.mspec'
-OBJDIR = File.expand_path("spec/ruby/optional/capi/ext")
+OBJDIR = File.expand_path("spec/ruby/optional/capi/ext") unless defined?(OBJDIR)
 class MSpecScript
   @testing_ruby = true
 
