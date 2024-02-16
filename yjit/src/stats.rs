@@ -341,7 +341,6 @@ make_counters! {
 
     // Method calls that fallback to dynamic dispatch
     send_keywords,
-    send_kw_splat,
     send_singleton_class,
     send_args_splat_super,
     send_block_arg,
@@ -359,6 +358,7 @@ make_counters! {
     send_missing_method,
     send_refined_method,
     send_private_not_fcall,
+    send_cfunc_kw_splat,
     send_cfunc_ruby_array_varg,
     send_cfunc_argc_mismatch,
     send_cfunc_block_arg,
@@ -376,7 +376,7 @@ make_counters! {
     send_iseq_complex_discard_extras,
     send_iseq_leaf_builtin_block_arg_block_param,
     send_iseq_only_keywords,
-    send_iseq_kw_splat,
+    send_iseq_kw_splat_non_nil,
     send_iseq_kwargs_req_and_opt_missing,
     send_iseq_kwargs_mismatch,
     send_iseq_has_post,
