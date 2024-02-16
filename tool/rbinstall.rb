@@ -1097,12 +1097,12 @@ install?(:ext, :comm, :gem, :'bundled-gems') do
       # This gemspec keep the original dependencies
       path = "#{srcdir}/.bundle/gems/#{gem_name}/#{gem_name}.gemspec"
       unless File.exist?(path)
-          # Try to find the gemspec file for gems that hasn't own gemspec
-          path = "#{srcdir}/.bundle/specifications/#{gem_name}.gemspec"
-          unless File.exist?(path)
-            skipped[gem_name] = "gemspec not found"
-            next
-          end
+        # Try to find the gemspec file for gems that hasn't own gemspec
+        path = "#{srcdir}/.bundle/specifications/#{gem_name}.gemspec"
+        unless File.exist?(path)
+          skipped[gem_name] = "gemspec not found"
+          next
+        end
       end
     end
     spec = load_gemspec(path, "#{srcdir}/.bundle/gems/#{gem_name}")
