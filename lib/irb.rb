@@ -1082,16 +1082,17 @@ module IRB
       loop do
         code = readmultiline
         break unless code
-
-        if code != "\n"
-          yield build_statement(code), @line_no
-        end
+        yield build_statement(code), @line_no
         @line_no += code.count("\n")
       rescue RubyLex::TerminateLineInput
       end
     end
 
     def build_statement(code)
+      if code.match?(/\A\n*\z/)
+        return Statement::EmptyInput.new
+      end
+
       code.force_encoding(@context.io.encoding)
       command_or_alias, arg = code.split(/\s/, 2)
       # Transform a non-identifier alias (@, $) or keywords (next, break)

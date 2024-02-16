@@ -6,7 +6,7 @@ require "tmpdir"
 require_relative "helper"
 
 module TestIRB
-  class DebugCommandTest < IntegrationTestCase
+  class DebuggerIntegrationTest < IntegrationTestCase
     def setup
       super
 
@@ -433,6 +433,30 @@ module TestIRB
 
       assert_match(/irb\(main\):001> next/, output)
       assert_include(output, "Multi-IRB commands are not available when the debugger is enabled.")
+    end
+
+    def test_irb_passes_empty_input_to_debugger_to_repeat_the_last_command
+      write_ruby <<~'ruby'
+        binding.irb
+        puts "foo"
+        puts "bar"
+        puts "baz"
+      ruby
+
+      output = run_ruby_file do
+        type "next"
+        type ""
+        # Test that empty input doesn't repeat expressions
+        type "123"
+        type ""
+        type "next"
+        type ""
+        type ""
+      end
+
+      assert_include(output, "=>   2\| puts \"foo\"")
+      assert_include(output, "=>   3\| puts \"bar\"")
+      assert_include(output, "=>   4\| puts \"baz\"")
     end
   end
 end

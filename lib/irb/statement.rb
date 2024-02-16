@@ -20,6 +20,29 @@ module IRB
       raise NotImplementedError
     end
 
+    class EmptyInput < Statement
+      def is_assignment?
+        false
+      end
+
+      def suppresses_echo?
+        true
+      end
+
+      # Debugger takes empty input to repeat the last command
+      def should_be_handled_by_debugger?
+        true
+      end
+
+      def code
+        ""
+      end
+
+      def evaluable_code
+        code
+      end
+    end
+
     class Expression < Statement
       def initialize(code, is_assignment)
         @code = code
