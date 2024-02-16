@@ -5951,6 +5951,61 @@ parse_symbol_encoding(const pm_parser_t *parser, const pm_string_t *contents) {
     return 0;
 }
 
+static inline pm_node_flags_t
+parse_and_validate_regular_expression_encoding_modifier(pm_parser_t *parser, const pm_string_t *source, const pm_string_t *contents, pm_node_flags_t flags, char modifier, const pm_encoding_t *modifier_encoding) {
+    assert ((modifier == 'n' && modifier_encoding == PM_ENCODING_ASCII_8BIT_ENTRY) ||
+            (modifier == 'u' && modifier_encoding == PM_ENCODING_UTF_8_ENTRY) ||
+            (modifier == 'e' && modifier_encoding == PM_ENCODING_EUC_JP_ENTRY) ||
+            (modifier == 's' && modifier_encoding == PM_ENCODING_WINDOWS_31J_ENTRY));
+
+    // There's special validation logic used if a string does not contain any character escape sequences.
+    if (parser->explicit_encoding == NULL) {
+        // If an ASCII-only string without character escapes is used with an encoding modifier, then resulting Regexp
+        // has the modifier encoding, unless the ASCII-8BIT modifier is used, in which case the Regexp "downgrades" to
+        // the US-ASCII encoding.
+        bool ascii_only = pm_ascii_only_p(contents);
+        if (ascii_only) {
+            return modifier == 'n' ? PM_REGULAR_EXPRESSION_FLAGS_FORCED_US_ASCII_ENCODING : flags;
+        }
+
+        if (parser->encoding == PM_ENCODING_US_ASCII_ENTRY) {
+            if (!ascii_only) {
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_INVALID_MULTIBYTE_CHAR, parser->encoding->name);
+            }
+        } else if (parser->encoding != modifier_encoding) {
+            PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_REGEXP_ENCODING_OPTION_MISMATCH, modifier, parser->encoding->name);
+
+            if (modifier == 'n' && !ascii_only) {
+                PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_REGEXP_NON_ESCAPED_MBC, pm_string_source(source));
+            }
+        }
+
+        return flags;
+    }
+
+    // TODO (nirvdrum 21-Feb-2024): To validate regexp sources with character escape sequences we need to know whether hex or Unicode escape sequences were used and Prism doesn't currently provide that data. We handle a subset of unambiguous cases in the meanwhile.
+    bool mixed_encoding = false;
+
+    if (mixed_encoding) {
+        PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_INVALID_MULTIBYTE_ESCAPE, pm_string_source(source));
+    } else if (modifier != 'n' && parser->explicit_encoding == PM_ENCODING_ASCII_8BIT_ENTRY) {
+        // TODO (nirvdrum 21-Feb-2024): Validate the content is valid in the modifier encoding. Do this on-demand so we don't pay the cost of computation unnecessarily.
+        bool valid_string_in_modifier_encoding = true;
+
+        if (!valid_string_in_modifier_encoding) {
+            PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_INVALID_MULTIBYTE_ESCAPE, pm_string_source(source));
+        }
+    } else if (modifier != 'u' && parser->explicit_encoding == PM_ENCODING_UTF_8_ENTRY) {
+        // TODO (nirvdrum 21-Feb-2024): There's currently no way to tell if the source used hex or Unicode character escapes from `explicit_encoding` alone. If the source encoding was already UTF-8, both character escape types would set `explicit_encoding` to UTF-8, but need to be processed differently. Skip for now.
+        if (parser->encoding != PM_ENCODING_UTF_8_ENTRY) {
+            PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_REGEXP_INCOMPAT_CHAR_ENCODING, pm_string_source(source));
+        }
+    }
+
+    // We've determined the encoding would naturally be EUC-JP and there is no need to force the encoding to anything else.
+    return flags;
+}
+
 /**
  * Ruby "downgrades" the encoding of Regexps to US-ASCII if the associated encoding is ASCII-compatible and
  * the unescaped representation of a Regexp source consists only of US-ASCII code points. This is true even
@@ -5958,9 +6013,50 @@ parse_symbol_encoding(const pm_parser_t *parser, const pm_string_t *contents) {
  * may be explicitly set with an escape sequence.
  */
 static inline pm_node_flags_t
-parse_regular_expression_encoding(const pm_parser_t *parser, const pm_string_t *contents) {
-    // Ruby stipulates that all source files must use an ASCII-compatible encoding. Thus, all regular expressions
-    // appearing in source are eligible for "downgrading" to US-ASCII.
+parse_and_validate_regular_expression_encoding(pm_parser_t *parser, const pm_string_t *source, const pm_string_t *contents, pm_node_flags_t flags) {
+    // TODO (nirvdrum 22-Feb-2024): CRuby reports a special Regexp-specific error for invalid Unicode ranges. We either need to scan again or modify the "invalid Unicode escape sequence" message we already report.
+    bool valid_unicode_range = true;
+    if (parser->explicit_encoding == PM_ENCODING_UTF_8_ENTRY && !valid_unicode_range) {
+        PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_REGEXP_INVALID_UNICODE_RANGE, pm_string_source(source));
+
+        return flags;
+    }
+
+    // US-ASCII strings do not admit multi-byte character literals. However, character escape sequences corresponding
+    // to multi-byte characters are allowed.
+    if (parser->encoding == PM_ENCODING_US_ASCII_ENTRY && parser->explicit_encoding == NULL && !pm_ascii_only_p(contents)) {
+        // CRuby will continue processing even though a SyntaxError has already been detected. It may result in the
+        // following error message appearing twice. We do the same for compatibility.
+        PM_PARSER_ERR_TOKEN_FORMAT(parser, parser->current, PM_ERR_INVALID_MULTIBYTE_CHAR, parser->encoding->name);
+    }
+
+    /**
+     * Start checking modifier flags. We need to process these before considering any explicit encodings that may have
+     * been set by character literals. The order in which the encoding modifiers is checked does not matter. In the
+     * event that both an encoding modifier and an explicit encoding would result in the same encoding we do not set
+     * the corresponding "forced_<encoding>" flag. Instead, the caller should check the encoding modifier flag and
+     * determine the encoding that way.
+     */
+
+    if (flags & PM_REGULAR_EXPRESSION_FLAGS_ASCII_8BIT) {
+        return parse_and_validate_regular_expression_encoding_modifier(parser, source, contents, flags, 'n', PM_ENCODING_ASCII_8BIT_ENTRY);
+    }
+
+    if (flags & PM_REGULAR_EXPRESSION_FLAGS_UTF_8) {
+        return parse_and_validate_regular_expression_encoding_modifier(parser, source, contents, flags, 'u', PM_ENCODING_UTF_8_ENTRY);
+    }
+
+    if (flags & PM_REGULAR_EXPRESSION_FLAGS_EUC_JP) {
+        return parse_and_validate_regular_expression_encoding_modifier(parser, source, contents, flags, 'e', PM_ENCODING_EUC_JP_ENTRY);
+    }
+
+    if (flags & PM_REGULAR_EXPRESSION_FLAGS_WINDOWS_31J) {
+        return parse_and_validate_regular_expression_encoding_modifier(parser, source, contents, flags, 's', PM_ENCODING_WINDOWS_31J_ENTRY);
+    }
+
+    // At this point no encoding modifiers will be present on the regular expression as they would have already
+    // been processed. Ruby stipulates that all source files must use an ASCII-compatible encoding. Thus, all
+    // regular expressions without an encoding modifier appearing in source are eligible for "downgrading" to US-ASCII.
     if (pm_ascii_only_p(contents)) {
         return PM_REGULAR_EXPRESSION_FLAGS_FORCED_US_ASCII_ENCODING;
     }
@@ -5976,6 +6072,7 @@ parse_regular_expression_encoding(const pm_parser_t *parser, const pm_string_t *
             return PM_REGULAR_EXPRESSION_FLAGS_FORCED_BINARY_ENCODING;
         }
     }
+
     return 0;
 }
 
@@ -17030,7 +17127,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 // more easily compiled.
                 if (accept1(parser, PM_TOKEN_REGEXP_END)) {
                     pm_node_t *regular_expression_node = (pm_node_t *) pm_regular_expression_node_create_unescaped(parser, &opening, &content, &parser->previous, &source);
-                    pm_node_flag_set(regular_expression_node, parse_regular_expression_encoding(parser, &unescaped));
+                    pm_node_flag_set(regular_expression_node, parse_and_validate_regular_expression_encoding(parser, &source, &unescaped, regular_expression_node->flags));
                     return regular_expression_node;
                 }
 

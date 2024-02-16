@@ -253,6 +253,18 @@ extern const pm_encoding_t pm_encodings[PM_ENCODING_MAXIMUM];
 #define PM_ENCODING_ASCII_8BIT_ENTRY (&pm_encodings[PM_ENCODING_ASCII_8BIT])
 
 /**
+ * This is the EUC-JP encoding. We need a reference to it to quickly process
+ * regular expression modifiers.
+ */
+#define PM_ENCODING_EUC_JP_ENTRY (&pm_encodings[PM_ENCODING_EUC_JP])
+
+/**
+ * This is the Windows-31J encoding. We need a reference to it to quickly
+ * process regular expression modifiers.
+ */
+#define PM_ENCODING_WINDOWS_31J_ENTRY (&pm_encodings[PM_ENCODING_WINDOWS_31J])
+
+/**
  * Parse the given name of an encoding and return a pointer to the corresponding
  * encoding struct if one can be found, otherwise return NULL.
  *
