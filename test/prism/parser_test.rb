@@ -46,7 +46,6 @@ module Prism
     # These files are either failing to parse or failing to translate, so we'll
     # skip them for now.
     skip_all = %w[
-      arrays.txt
       constants.txt
       dash_heredocs.txt
       dos_endings.txt

@@ -253,12 +253,15 @@ module Prism
               return visit_block(builder.index(visit(node.receiver), token(node.opening_loc), visit_all(arguments), token(node.closing_loc)), block)
             when :[]=
               if node.message != "[]=" && node.arguments && block.nil? && !node.safe_navigation?
+                arguments = node.arguments.arguments[...-1]
+                arguments << node.block if node.block
+
                 return visit_block(
                   builder.assign(
                     builder.index_asgn(
                       visit(node.receiver),
                       token(node.opening_loc),
-                      visit_all(node.arguments.arguments[...-1]),
+                      visit_all(arguments),
                       token(node.closing_loc),
                     ),
                     srange_find(node.message_loc.end_offset, node.arguments.arguments.last.location.start_offset, ["="]),
