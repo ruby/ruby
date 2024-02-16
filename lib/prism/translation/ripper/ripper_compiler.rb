@@ -20,6 +20,37 @@ module Prism
         @result = nil
         @lineno = nil
         @column = nil
+
+        @offset_cache = build_offset_cache(source)
+        @void_stmt_val = on_stmts_add(on_stmts_new, on_void_stmt)
+      end
+
+      # Excerpt a chunk of the source
+      def source_range(start_c, end_c)
+        @source[@offset_cache[start_c]..@offset_cache[end_c]]
+      end
+
+      # Prism deals with offsets in bytes, while Ripper deals with
+      # offsets in characters. We need to handle this conversion in order to
+      # build the parser gem AST.
+      #
+      # If the bytesize of the source is the same as the length, then we can
+      # just use the offset directly. Otherwise, we build an array where the
+      # index is the byte offset and the value is the character offset.
+      def build_offset_cache(source)
+        if source.bytesize == source.length
+          -> (offset) { offset }
+        else
+          offset_cache = []
+          offset = 0
+
+          source.each_char do |char|
+            char.bytesize.times { offset_cache << offset }
+            offset += 1
+          end
+
+          offset_cache << offset
+        end
       end
 
       ############################################################################
@@ -108,9 +139,29 @@ module Prism
       def visit_block_node(node)
         params_val = node.parameters.nil? ? nil : visit(node.parameters)
 
-        body_val = node.body.nil? ? on_stmts_add(on_stmts_new, on_void_stmt) : visit(node.body)
+        # If the body is empty, we use a void statement. If there is
+        # a semicolon after the opening delimiter, we append a void
+        # statement, unless the body is also empty. So we should never
+        # get a double void statement.
 
-        on_brace_block(params_val, body_val)
+        body_val = if node.body.nil?
+          @void_stmt_val
+        elsif node_has_semicolon?(node)
+          v = visit(node.body)
+          raise(NotImplementedError, "Unexpected statement structure #{v.inspect}") if v[0] != :stmts_add
+          v[1] = @void_stmt_val
+          v
+        else
+          visit(node.body)
+        end
+
+        if node.opening == "{"
+          on_brace_block(params_val, body_val)
+        elsif node.opening == "do"
+          on_do_block(params_val, on_bodystmt(body_val, nil, nil, nil))
+        else
+          raise NotImplementedError, "Unexpected Block opening character!"
+        end
       end
 
       # Visit a BlockParametersNode.
@@ -218,7 +269,7 @@ module Prism
       def visit_parentheses_node(node)
         body =
           if node.body.nil?
-            on_stmts_add(on_stmts_new, on_void_stmt)
+            @void_stmt_val
           else
             visit(node.body)
           end
@@ -228,16 +279,80 @@ module Prism
       end
 
       # Visit a BeginNode node.
-      # This is not at all bulletproof against different structures of begin/rescue/else/ensure/end.
       def visit_begin_node(node)
-        rescue_val = node.rescue_clause ? on_rescue(nil, nil, visit(node.rescue_clause), nil) : nil
-        ensure_val = node.ensure_clause ? on_ensure(visit(node.ensure_clause.statements)) : nil
-        on_begin(on_bodystmt(visit(node.statements), rescue_val, nil, ensure_val))
+        rescue_val = node.rescue_clause ? visit(node.rescue_clause) : nil
+        ensure_val = node.ensure_clause ? visit(node.ensure_clause) : nil
+
+        if node.statements
+          stmts_val = visit(node.statements)
+          if node_has_semicolon?(node)
+            # If there's a semicolon, we need to replace [:stmts_new] with
+            # [:stmts_add, [:stmts_new], [:void_stmt]].
+            stmts_val[1] = @void_stmt_val
+          end
+        else
+          stmts_val = @void_stmt_val
+        end
+
+        on_begin(on_bodystmt(stmts_val, rescue_val, nil, ensure_val))
+      end
+
+      # Visit an EnsureNode node.
+      def visit_ensure_node(node)
+        if node.statements
+          # If there are any statements, we need to see if there's a semicolon
+          # between the ensure and the start of the first statement.
+
+          stmts_val = visit(node.statements)
+          if node_has_semicolon?(node)
+            # If there's a semicolon, we need to replace [:stmts_new] with
+            # [:stmts_add, [:stmts_new], [:void_stmt]].
+            stmts_val[1] = @void_stmt_val
+          end
+        else
+          stmts_val = @void_stmt_val
+        end
+        on_ensure(stmts_val)
       end
 
       # Visit a RescueNode node.
       def visit_rescue_node(node)
-        visit(node.statements)
+        consequent_val = nil
+        if node.consequent
+          consequent_val = visit(node.consequent)
+        end
+
+        if node.statements
+          stmts_val = visit(node.statements)
+        else
+          stmts_val = @void_stmt_val
+        end
+
+        if node.reference
+          raise NotImplementedError unless node.reference.is_a?(LocalVariableTargetNode)
+          bounds(node.reference.location)
+          ref_val = on_var_field(on_ident(node.reference.name.to_s))
+        else
+          ref_val = nil
+        end
+
+        # No exception(s)
+        if !node.exceptions || node.exceptions.empty?
+          return on_rescue(nil, ref_val, stmts_val, consequent_val)
+        end
+
+        exc_vals = node.exceptions.map { |exc| visit(exc) }
+
+        if node.exceptions.length == 1
+          return on_rescue(exc_vals, ref_val, stmts_val, consequent_val)
+        end
+
+        inner_vals = exc_vals[0..-2].inject(on_args_new) do |output, exc_val|
+          on_args_add(output, exc_val)
+        end
+        exc_vals = on_mrhs_add(on_mrhs_new_from_args(inner_vals), exc_vals[-1])
+
+        on_rescue(exc_vals, ref_val, stmts_val, consequent_val)
       end
 
       # Visit a ProgramNode node.
@@ -282,6 +397,20 @@ module Prism
       # Visit an InterpolatedStringNode node.
       def visit_interpolated_string_node(node)
         on_string_literal(visit_enumerated_node(node))
+      end
+
+      # Visit a ConstantReadNode node.
+      def visit_constant_read_node(node)
+        bounds(node.location)
+        on_var_ref(on_const(node.name.to_s))
+      end
+
+      # Visit a ConstantWriteNode node.
+      def visit_constant_write_node(node)
+        bounds(node.location)
+        const_val = on_var_field(on_const(node.name.to_s))
+
+        on_assign(const_val, visit(node.value))
       end
 
       # Visit an EmbeddedStatementsNode node.
@@ -556,6 +685,43 @@ module Prism
         left_val = visit(node.left)
         right_val = visit(node.right)
         on_binary(left_val, node.operator.to_sym, right_val)
+      end
+
+      # Some nodes, such as `begin`, `ensure` and `do` may have a semicolon
+      # after the keyword and before the first statement. This affects
+      # Ripper's return values.
+      def node_has_semicolon?(node)
+        first_field, second_field = case node
+        when BeginNode
+          [:begin_keyword_loc, :statements]
+        when EnsureNode
+          [:ensure_keyword_loc, :statements]
+        when BlockNode
+          [:opening_loc, :body]
+        else
+          raise NotImplementedError
+        end
+        first_offs, second_offs = delimiter_offsets_for(node, first_field, second_field)
+
+        # We need to know if there's a semicolon after the keyword, but before
+        # the start of the first statement in the ensure.
+        range_has_string?(first_offs, second_offs, ";")
+      end
+
+      # For a given node, grab the offsets for the end of the first field
+      # and the beginning of the second field.
+      def delimiter_offsets_for(node, first, second)
+        first_field = node.send(first)
+        first_end_loc = first_field.start_offset + first_field.length
+        second_begin_loc = node.send(second).body[0].location.start_offset - 1
+        [first_end_loc, second_begin_loc]
+      end
+
+      # Check whether the source code contains the given substring between the
+      # specified offsets.
+      def range_has_string?(first, last, token)
+        sr = source_range(first, last)
+        sr.include?(token)
       end
 
       # This method is responsible for updating lineno and column information

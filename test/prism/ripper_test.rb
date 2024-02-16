@@ -104,6 +104,15 @@ module Prism
       assert_equivalent("foo(bar 1)")
       assert_equivalent("foo bar 1")
       assert_equivalent("foo(bar 1) { 7 }")
+      assert_equivalent("foo(bar 1) {; 7 }")
+      assert_equivalent("foo(bar 1) {;}")
+
+      assert_equivalent("foo do\n  bar\nend")
+      assert_equivalent("foo do\nend")
+      assert_equivalent("foo do; end")
+      assert_equivalent("foo do bar; end")
+      assert_equivalent("foo do bar end")
+      assert_equivalent("foo do; bar; end")
     end
 
     def test_method_calls_on_immediate_values
@@ -137,14 +146,57 @@ module Prism
       assert_equivalent("[1ri, -1ri, +1ri, 1.5ri, -1.5ri, +1.5ri]")
     end
 
+    def test_begin_end
+      # Empty begin
+      assert_equivalent("begin; end")
+      assert_equivalent("begin end")
+      assert_equivalent("begin; rescue; end")
+
+      assert_equivalent("begin:s.l end")
+    end
+
     def test_begin_rescue
+      # Rescue with exception(s)
+      assert_equivalent("begin a; rescue Exception => ex; c; end")
+      assert_equivalent("begin a; rescue RuntimeError => ex; c; rescue Exception => ex; d; end")
+      assert_equivalent("begin a; rescue RuntimeError => ex; c; rescue Exception => ex; end")
+      assert_equivalent("begin a; rescue RuntimeError,FakeError,Exception => ex; c; end")
+      assert_equivalent("begin a; rescue RuntimeError,FakeError,Exception; c; end")
+
+      # Empty rescue
+      assert_equivalent("begin a; rescue; ensure b; end")
+      assert_equivalent("begin a; rescue; end")
+
+      assert_equivalent("begin; a; ensure; b; end")
+    end
+
+    def test_begin_ensure
+      # Empty ensure
+      assert_equivalent("begin a; rescue; c; ensure; end")
+      assert_equivalent("begin a; ensure; end")
+      assert_equivalent("begin; ensure; end")
+
+      # Ripper treats statements differently, depending whether there's
+      # a semicolon after the keyword.
       assert_equivalent("begin a; rescue; c; ensure b; end")
+      assert_equivalent("begin a; rescue c; ensure b; end")
+      assert_equivalent("begin a; rescue; c; ensure; b; end")
+
+      # Need to make sure we're handling multibyte characters correctly for source offsets
+      assert_equivalent("begin 🗻; rescue; c;     ensure;🗻🗻🗻🗻🗻; end")
+      assert_equivalent("begin 🗻; rescue; c;     ensure 🗻🗻🗻🗻🗻; end")
     end
 
     def test_break
       assert_equivalent("foo { break }")
       assert_equivalent("foo { break 7 }")
       assert_equivalent("foo { break [1, 2, 3] }")
+    end
+
+    def test_constants
+      assert_equivalent("Foo")
+      assert_equivalent("Foo + F🗻")
+      assert_equivalent("Foo = 'soda'")
     end
 
     def test_op_assign
