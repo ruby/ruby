@@ -12324,6 +12324,7 @@ prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/options.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/parser.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/prettyprint.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/util/pm_constant_pool.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/util/pm_list.h
 prism/prettyprint.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
@@ -12409,6 +12410,8 @@ prism/token_type.$(OBJEXT): {$(VPATH)}prism/token_type.c
 prism/util/pm_buffer.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_buffer.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.c
 prism/util/pm_buffer.$(OBJEXT): $(top_srcdir)/prism/util/pm_buffer.h
+prism/util/pm_buffer.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.h
+prism/util/pm_buffer.$(OBJEXT): $(top_srcdir)/prism/util/pm_newline_list.h
 prism/util/pm_buffer.$(OBJEXT): {$(VPATH)}config.h
 prism/util/pm_char.$(OBJEXT): $(top_srcdir)/prism/defines.h
 prism/util/pm_char.$(OBJEXT): $(top_srcdir)/prism/util/pm_char.c
