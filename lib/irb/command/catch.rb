@@ -5,7 +5,7 @@ require_relative "debug"
 module IRB
   # :stopdoc:
 
-  module ExtendCommand
+  module Command
     class Catch < DebugCommand
       def self.transform_args(args)
         args&.dump

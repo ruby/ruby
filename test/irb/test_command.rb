@@ -1,7 +1,6 @@
 # frozen_string_literal: false
 require "rubygems"
 require "irb"
-require "irb/extend-command"
 
 require_relative "helper"
 
@@ -797,7 +796,7 @@ module TestIRB
       assert(possible_rdoc_output.any? { |output| output.match?(out) }, "Expect the `show_doc` command to match one of the possible outputs. Got:\n#{out}")
     ensure
       # this is the only way to reset the redefined method without coupling the test with its implementation
-      EnvUtil.suppress_warning { load "irb/cmd/help.rb" }
+      EnvUtil.suppress_warning { load "irb/command/help.rb" }
     end
 
     def test_show_doc_without_rdoc
@@ -813,7 +812,7 @@ module TestIRB
       assert_include(err, "Can't display document because `rdoc` is not installed.\n")
     ensure
       # this is the only way to reset the redefined method without coupling the test with its implementation
-      EnvUtil.suppress_warning { load "irb/cmd/help.rb" }
+      EnvUtil.suppress_warning { load "irb/command/help.rb" }
     end
   end
 

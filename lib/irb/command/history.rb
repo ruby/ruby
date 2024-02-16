@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
 require "stringio"
-require_relative "nop"
+
 require_relative "../pager"
 
 module IRB
   # :stopdoc:
 
-  module ExtendCommand
-    class History < Nop
+  module Command
+    class History < Base
       category "IRB"
       description "Shows the input history. `-g [query]` or `-G [query]` allows you to filter the output."
 

@@ -3,15 +3,13 @@
 #   load.rb -
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
-
-require_relative "nop"
 require_relative "../ext/loader"
 
 module IRB
   # :stopdoc:
 
-  module ExtendCommand
-    class LoaderCommand < Nop
+  module Command
+    class LoaderCommand < Base
       include IrbLoader
 
       def raise_cmd_argument_error

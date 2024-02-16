@@ -5,7 +5,7 @@ require_relative "debug"
 module IRB
   # :stopdoc:
 
-  module ExtendCommand
+  module Command
     class Delete < DebugCommand
       def execute(*args)
         super(pre_cmds: ["delete", *args].join(" "))

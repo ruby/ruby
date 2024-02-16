@@ -1,10 +1,8 @@
 # frozen_string_literal: true
 
-require_relative "nop"
-
 module IRB
-  module ExtendCommand
-    class ShowDoc < Nop
+  module Command
+    class ShowDoc < Base
       class << self
         def transform_args(args)
           # Return a string literal as is for backward compatibility

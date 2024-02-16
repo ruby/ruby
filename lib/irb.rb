@@ -9,7 +9,7 @@ require "reline"
 
 require_relative "irb/init"
 require_relative "irb/context"
-require_relative "irb/extend-command"
+require_relative "irb/command"
 
 require_relative "irb/ruby-lex"
 require_relative "irb/statement"

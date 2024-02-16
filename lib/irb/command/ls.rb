@@ -2,15 +2,15 @@
 
 require "reline"
 require "stringio"
-require_relative "nop"
+
 require_relative "../pager"
 require_relative "../color"
 
 module IRB
   # :stopdoc:
 
-  module ExtendCommand
-    class Ls < Nop
+  module Command
+    class Ls < Base
       category "Context"
       description "Show methods, constants, and variables. `-g [query]` or `-G [query]` allows you to filter out the output."
 

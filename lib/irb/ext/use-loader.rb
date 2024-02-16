@@ -17,12 +17,12 @@ module IRB
     remove_method :irb_load if method_defined?(:irb_load)
     # Loads the given file similarly to Kernel#load, see IrbLoader#irb_load
     def irb_load(*opts, &b)
-      ExtendCommand::Load.execute(irb_context, *opts, &b)
+      Command::Load.execute(irb_context, *opts, &b)
     end
     remove_method :irb_require if method_defined?(:irb_require)
     # Loads the given file similarly to Kernel#require
     def irb_require(*opts, &b)
-      ExtendCommand::Require.execute(irb_context, *opts, &b)
+      Command::Require.execute(irb_context, *opts, &b)
     end
   end
 

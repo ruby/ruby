@@ -5,14 +5,14 @@ require_relative "debug"
 module IRB
   # :stopdoc:
 
-  module ExtendCommand
-    class Break < DebugCommand
+  module Command
+    class Info < DebugCommand
       def self.transform_args(args)
         args&.dump
       end
 
-      def execute(args = nil)
-        super(pre_cmds: "break #{args}")
+      def execute(*args)
+        super(pre_cmds: ["info", *args].join(" "))
       end
     end
   end

@@ -1,12 +1,10 @@
 # frozen_string_literal: true
 
-require_relative "nop"
-
 module IRB
   # :stopdoc:
 
-  module ExtendCommand
-    class Exit < Nop
+  module Command
+    class Exit < Base
       category "IRB"
       description "Exit the current irb session."
 

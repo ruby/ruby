@@ -3,7 +3,7 @@
 require_relative "show_cmds"
 
 module IRB
-  module ExtendCommand
+  module Command
     class Help < ShowCmds
       category "IRB"
       description "List all available commands and their description."

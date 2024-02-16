@@ -5,10 +5,10 @@ require_relative "debug"
 module IRB
   # :stopdoc:
 
-  module ExtendCommand
-    class Next < DebugCommand
+  module Command
+    class Step < DebugCommand
       def execute(*args)
-        super(do_cmds: ["next", *args].join(" "))
+        super(do_cmds: ["step", *args].join(" "))
       end
     end
   end

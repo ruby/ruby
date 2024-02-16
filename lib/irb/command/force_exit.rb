@@ -1,12 +1,10 @@
 # frozen_string_literal: true
 
-require_relative "nop"
-
 module IRB
   # :stopdoc:
 
-  module ExtendCommand
-    class ForceExit < Nop
+  module Command
+    class ForceExit < Base
       category "IRB"
       description "Exit the current process."
 

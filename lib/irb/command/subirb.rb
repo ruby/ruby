@@ -4,13 +4,11 @@
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 
-require_relative "nop"
-
 module IRB
   # :stopdoc:
 
-  module ExtendCommand
-    class MultiIRBCommand < Nop
+  module Command
+    class MultiIRBCommand < Base
       def execute(*args)
         extend_irb_context
       end

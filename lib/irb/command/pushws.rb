@@ -4,14 +4,13 @@
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 
-require_relative "nop"
 require_relative "../ext/workspaces"
 
 module IRB
   # :stopdoc:
 
-  module ExtendCommand
-    class Workspaces < Nop
+  module Command
+    class Workspaces < Base
       category "Workspace"
       description "Show workspaces."
 

@@ -1,10 +1,15 @@
 # frozen_string_literal: false
 #
-#   irb/extend-command.rb - irb extend command
+#   irb/command.rb - irb command
 #   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 
+require_relative "command/base"
+
 module IRB # :nodoc:
+  module Command; end
+  ExtendCommand = Command
+
   # Installs the default irb extensions command bundle.
   module ExtendCommandBundle
     EXCB = ExtendCommandBundle # :nodoc:
@@ -31,18 +36,18 @@ module IRB # :nodoc:
 
     @EXTEND_COMMANDS = [
       [
-        :irb_exit, :Exit, "cmd/exit",
+        :irb_exit, :Exit, "command/exit",
         [:exit, OVERRIDE_PRIVATE_ONLY],
         [:quit, OVERRIDE_PRIVATE_ONLY],
         [:irb_quit, OVERRIDE_PRIVATE_ONLY],
       ],
       [
-        :irb_exit!, :ForceExit, "cmd/force_exit",
+        :irb_exit!, :ForceExit, "command/force_exit",
         [:exit!, OVERRIDE_PRIVATE_ONLY],
       ],
 
       [
-        :irb_current_working_workspace, :CurrentWorkingWorkspace, "cmd/chws",
+        :irb_current_working_workspace, :CurrentWorkingWorkspace, "command/chws",
         [:cwws, NO_OVERRIDE],
         [:pwws, NO_OVERRIDE],
         [:irb_print_working_workspace, OVERRIDE_ALL],
@@ -54,7 +59,7 @@ module IRB # :nodoc:
         [:irb_pwb, OVERRIDE_ALL],
       ],
       [
-        :irb_change_workspace, :ChangeWorkspace, "cmd/chws",
+        :irb_change_workspace, :ChangeWorkspace, "command/chws",
         [:chws, NO_OVERRIDE],
         [:cws, NO_OVERRIDE],
         [:irb_chws, OVERRIDE_ALL],
@@ -65,13 +70,13 @@ module IRB # :nodoc:
       ],
 
       [
-        :irb_workspaces, :Workspaces, "cmd/pushws",
+        :irb_workspaces, :Workspaces, "command/pushws",
         [:workspaces, NO_OVERRIDE],
         [:irb_bindings, OVERRIDE_ALL],
         [:bindings, NO_OVERRIDE],
       ],
       [
-        :irb_push_workspace, :PushWorkspace, "cmd/pushws",
+        :irb_push_workspace, :PushWorkspace, "command/pushws",
         [:pushws, NO_OVERRIDE],
         [:irb_pushws, OVERRIDE_ALL],
         [:irb_push_binding, OVERRIDE_ALL],
@@ -79,7 +84,7 @@ module IRB # :nodoc:
         [:pushb, NO_OVERRIDE],
       ],
       [
-        :irb_pop_workspace, :PopWorkspace, "cmd/pushws",
+        :irb_pop_workspace, :PopWorkspace, "command/pushws",
         [:popws, NO_OVERRIDE],
         [:irb_popws, OVERRIDE_ALL],
         [:irb_pop_binding, OVERRIDE_ALL],
@@ -88,112 +93,112 @@ module IRB # :nodoc:
       ],
 
       [
-        :irb_load, :Load, "cmd/load"],
+        :irb_load, :Load, "command/load"],
       [
-        :irb_require, :Require, "cmd/load"],
+        :irb_require, :Require, "command/load"],
       [
-        :irb_source, :Source, "cmd/load",
+        :irb_source, :Source, "command/load",
         [:source, NO_OVERRIDE],
       ],
 
       [
-        :irb, :IrbCommand, "cmd/subirb"],
+        :irb, :IrbCommand, "command/subirb"],
       [
-        :irb_jobs, :Jobs, "cmd/subirb",
+        :irb_jobs, :Jobs, "command/subirb",
         [:jobs, NO_OVERRIDE],
       ],
       [
-        :irb_fg, :Foreground, "cmd/subirb",
+        :irb_fg, :Foreground, "command/subirb",
         [:fg, NO_OVERRIDE],
       ],
       [
-        :irb_kill, :Kill, "cmd/subirb",
+        :irb_kill, :Kill, "command/subirb",
         [:kill, OVERRIDE_PRIVATE_ONLY],
       ],
 
       [
-        :irb_debug, :Debug, "cmd/debug",
+        :irb_debug, :Debug, "command/debug",
         [:debug, NO_OVERRIDE],
       ],
       [
-        :irb_edit, :Edit, "cmd/edit",
+        :irb_edit, :Edit, "command/edit",
         [:edit, NO_OVERRIDE],
       ],
       [
-        :irb_break, :Break, "cmd/break",
+        :irb_break, :Break, "command/break",
       ],
       [
-        :irb_catch, :Catch, "cmd/catch",
+        :irb_catch, :Catch, "command/catch",
       ],
       [
-        :irb_next, :Next, "cmd/next"
+        :irb_next, :Next, "command/next"
       ],
       [
-        :irb_delete, :Delete, "cmd/delete",
+        :irb_delete, :Delete, "command/delete",
         [:delete, NO_OVERRIDE],
       ],
       [
-        :irb_step, :Step, "cmd/step",
+        :irb_step, :Step, "command/step",
         [:step, NO_OVERRIDE],
       ],
       [
-        :irb_continue, :Continue, "cmd/continue",
+        :irb_continue, :Continue, "command/continue",
         [:continue, NO_OVERRIDE],
       ],
       [
-        :irb_finish, :Finish, "cmd/finish",
+        :irb_finish, :Finish, "command/finish",
         [:finish, NO_OVERRIDE],
       ],
       [
-        :irb_backtrace, :Backtrace, "cmd/backtrace",
+        :irb_backtrace, :Backtrace, "command/backtrace",
         [:backtrace, NO_OVERRIDE],
         [:bt, NO_OVERRIDE],
       ],
       [
-        :irb_debug_info, :Info, "cmd/info",
+        :irb_debug_info, :Info, "command/info",
         [:info, NO_OVERRIDE],
       ],
 
       [
-        :irb_help, :Help, "cmd/help",
+        :irb_help, :Help, "command/help",
         [:help, NO_OVERRIDE],
       ],
 
       [
-        :irb_show_doc, :ShowDoc, "cmd/show_doc",
+        :irb_show_doc, :ShowDoc, "command/show_doc",
         [:show_doc, NO_OVERRIDE],
       ],
 
       [
-        :irb_info, :IrbInfo, "cmd/irb_info"
+        :irb_info, :IrbInfo, "command/irb_info"
       ],
 
       [
-        :irb_ls, :Ls, "cmd/ls",
+        :irb_ls, :Ls, "command/ls",
         [:ls, NO_OVERRIDE],
       ],
 
       [
-        :irb_measure, :Measure, "cmd/measure",
+        :irb_measure, :Measure, "command/measure",
         [:measure, NO_OVERRIDE],
       ],
 
       [
-        :irb_show_source, :ShowSource, "cmd/show_source",
+        :irb_show_source, :ShowSource, "command/show_source",
         [:show_source, NO_OVERRIDE],
       ],
 
       [
-        :irb_whereami, :Whereami, "cmd/whereami",
+        :irb_whereami, :Whereami, "command/whereami",
         [:whereami, NO_OVERRIDE],
       ],
       [
-        :irb_show_cmds, :ShowCmds, "cmd/show_cmds",
+        :irb_show_cmds, :ShowCmds, "command/show_cmds",
         [:show_cmds, NO_OVERRIDE],
       ],
 
       [
-        :irb_history, :History, "cmd/history",
+        :irb_history, :History, "command/history",
         [:history, NO_OVERRIDE],
         [:hist, NO_OVERRIDE],
       ]
@@ -210,11 +215,11 @@ module IRB # :nodoc:
       end
 
       @EXTEND_COMMANDS.each do |cmd_name, cmd_class, load_file, *aliases|
-        if !defined?(ExtendCommand) || !ExtendCommand.const_defined?(cmd_class, false)
+        if !defined?(Command) || !Command.const_defined?(cmd_class, false)
           require_relative load_file
         end
 
-        klass = ExtendCommand.const_get(cmd_class, false)
+        klass = Command.const_get(cmd_class, false)
         aliases = aliases.map { |a| a.first }
 
         if additional_aliases = user_aliases[cmd_name]
@@ -234,10 +239,10 @@ module IRB # :nodoc:
       @EXTEND_COMMANDS.each do |cmd_name, cmd_class, load_file, *aliases|
         next if cmd_name != command && aliases.all? { |alias_name, _| alias_name != command }
 
-        if !defined?(ExtendCommand) || !ExtendCommand.const_defined?(cmd_class, false)
+        if !defined?(Command) || !Command.const_defined?(cmd_class, false)
           require_relative load_file
         end
-        return ExtendCommand.const_get(cmd_class, false)
+        return Command.const_get(cmd_class, false)
       end
       nil
     end
@@ -267,7 +272,7 @@ module IRB # :nodoc:
       line = __LINE__; eval %[
         def #{cmd_name}(*opts, **kwargs, &b)
           Kernel.require_relative "#{load_file}"
-          ::IRB::ExtendCommand::#{cmd_class}.execute(irb_context, *opts, **kwargs, &b)
+          ::IRB::Command::#{cmd_class}.execute(irb_context, *opts, **kwargs, &b)
         end
       ], nil, __FILE__, line
 

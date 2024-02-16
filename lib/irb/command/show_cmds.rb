@@ -1,14 +1,14 @@
 # frozen_string_literal: true
 
 require "stringio"
-require_relative "nop"
+
 require_relative "../pager"
 
 module IRB
   # :stopdoc:
 
-  module ExtendCommand
-    class ShowCmds < Nop
+  module Command
+    class ShowCmds < Base
       category "IRB"
       description "List all available commands and their description."
 
