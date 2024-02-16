@@ -359,6 +359,8 @@ pm_new_regex(pm_regular_expression_node_t * cast, const pm_parser_t * parser)
     rb_encoding * enc = pm_reg_enc(cast, parser);
 
     VALUE regex = rb_enc_reg_new(RSTRING_PTR(regex_str), RSTRING_LEN(regex_str), enc, pm_reg_flags((const pm_node_t *)cast));
+    RB_GC_GUARD(regex_str);
+
     rb_obj_freeze(regex);
 
     return regex;
@@ -6122,6 +6124,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
             VALUE regex_str = parse_string(&cast->unescaped, parser);
             VALUE regex = rb_reg_new(RSTRING_PTR(regex_str), RSTRING_LEN(regex_str), pm_reg_flags(node));
+            RB_GC_GUARD(regex_str);
 
             ADD_INSN1(ret, &dummy_line_node, putobject, regex);
             ADD_INSN2(ret, &dummy_line_node, getspecial, INT2FIX(0), INT2FIX(0));
@@ -8110,6 +8113,8 @@ pm_parse_input(pm_parse_result_t *result, VALUE filepath)
 {
     // Set up the parser and parse the input.
     pm_options_filepath_set(&result->options, RSTRING_PTR(filepath));
+    RB_GC_GUARD(filepath);
+
     pm_parser_init(&result->parser, pm_string_source(&result->input), pm_string_length(&result->input), &result->options);
     const pm_node_t *node = pm_parse(&result->parser);
 
@@ -8216,7 +8221,9 @@ pm_parse_file(pm_parse_result_t *result, VALUE filepath)
         int e = errno;
 #endif
 
-        return rb_syserr_new(e, RSTRING_PTR(filepath));
+        VALUE err = rb_syserr_new(e, RSTRING_PTR(filepath));
+        RB_GC_GUARD(filepath);
+        return err;
     }
 
     VALUE error = pm_parse_input(result, filepath);
