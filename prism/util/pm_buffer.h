@@ -130,6 +130,25 @@ void pm_buffer_append_varuint(pm_buffer_t *buffer, uint32_t value);
 void pm_buffer_append_varsint(pm_buffer_t *buffer, int32_t value);
 
 /**
+ * The different types of escaping that can be performed by the buffer when
+ * appending a slice of Ruby source code.
+ */
+typedef enum {
+    PM_BUFFER_ESCAPING_RUBY,
+    PM_BUFFER_ESCAPING_JSON
+} pm_buffer_escaping_t;
+
+/**
+ * Append a slice of source code to the buffer.
+ *
+ * @param buffer The buffer to append to.
+ * @param source The source code to append.
+ * @param length The length of the source code to append.
+ * @param escaping The type of escaping to perform.
+ */
+void pm_buffer_append_source(pm_buffer_t *buffer, const uint8_t *source, size_t length, pm_buffer_escaping_t escaping);
+
+/**
  * Prepend the given string to the buffer.
  *
  * @param buffer The buffer to prepend to.

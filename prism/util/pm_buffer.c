@@ -161,6 +161,76 @@ pm_buffer_append_varsint(pm_buffer_t *buffer, int32_t value) {
 }
 
 /**
+ * Append a slice of source code to the buffer.
+ */
+void
+pm_buffer_append_source(pm_buffer_t *buffer, const uint8_t *source, size_t length, pm_buffer_escaping_t escaping) {
+    for (size_t index = 0; index < length; index++) {
+        const uint8_t byte = source[index];
+
+        if ((byte <= 0x06) || (byte >= 0x0E && byte <= 0x1F) || (byte >= 0x7F)) {
+            if (escaping == PM_BUFFER_ESCAPING_RUBY) {
+                pm_buffer_append_format(buffer, "\\x%02X", byte);
+            } else {
+                pm_buffer_append_format(buffer, "\\u%04X", byte);
+            }
+        } else {
+            switch (byte) {
+                case '\a':
+                    if (escaping == PM_BUFFER_ESCAPING_RUBY) {
+                        pm_buffer_append_string(buffer, "\\a", 2);
+                    } else {
+                        pm_buffer_append_format(buffer, "\\u%04X", byte);
+                    }
+                    break;
+                case '\b':
+                    pm_buffer_append_string(buffer, "\\b", 2);
+                    break;
+                case '\t':
+                    pm_buffer_append_string(buffer, "\\t", 2);
+                    break;
+                case '\n':
+                    pm_buffer_append_string(buffer, "\\n", 2);
+                    break;
+                case '\v':
+                    if (escaping == PM_BUFFER_ESCAPING_RUBY) {
+                        pm_buffer_append_string(buffer, "\\v", 2);
+                    } else {
+                        pm_buffer_append_format(buffer, "\\u%04X", byte);
+                    }
+                    break;
+                case '\f':
+                    pm_buffer_append_string(buffer, "\\f", 2);
+                    break;
+                case '\r':
+                    pm_buffer_append_string(buffer, "\\r", 2);
+                    break;
+                case '"':
+                    pm_buffer_append_string(buffer, "\\\"", 2);
+                    break;
+                case '#': {
+                    if (escaping == PM_BUFFER_ESCAPING_RUBY && index + 1 < length) {
+                        const uint8_t next_byte = source[index + 1];
+                        if (next_byte == '{' || next_byte == '@' || next_byte == '$') {
+                            pm_buffer_append_byte(buffer, '\\');
+                        }
+                    }
+
+                    pm_buffer_append_byte(buffer, '#');
+                    break;
+                }
+                case '\\':
+                    pm_buffer_append_string(buffer, "\\\\", 2);
+                    break;
+                default:
+                    pm_buffer_append_byte(buffer, byte);
+                    break;
+            }
+        }
+    }
+}
+
+/**
  * Prepend the given string to the buffer.
  */
 void

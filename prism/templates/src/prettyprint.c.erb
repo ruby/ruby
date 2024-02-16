@@ -1,41 +1,6 @@
 <%# encoding: ASCII -%>
 #include "prism/prettyprint.h"
 
-static void
-prettyprint_source(pm_buffer_t *output_buffer, const uint8_t *source, size_t length) {
-    for (size_t index = 0; index < length; index++) {
-        const uint8_t byte = source[index];
-
-        if ((byte <= 0x06) || (byte >= 0x0E && byte <= 0x1F) || (byte >= 0x7F)) {
-            pm_buffer_append_format(output_buffer, "\\x%02X", byte);
-        } else {
-            switch (byte) {
-                case '\a': pm_buffer_append_string(output_buffer, "\\a", 2); break;
-                case '\b': pm_buffer_append_string(output_buffer, "\\b", 2); break;
-                case '\t': pm_buffer_append_string(output_buffer, "\\t", 2); break;
-                case '\n': pm_buffer_append_string(output_buffer, "\\n", 2); break;
-                case '\v': pm_buffer_append_string(output_buffer, "\\v", 2); break;
-                case '\f': pm_buffer_append_string(output_buffer, "\\f", 2); break;
-                case '\r': pm_buffer_append_string(output_buffer, "\\r", 2); break;
-                case '"': pm_buffer_append_string(output_buffer, "\\\"", 2); break;
-                case '#': {
-                    if (index + 1 < length) {
-                        const uint8_t next_byte = source[index + 1];
-                        if (next_byte == '{' || next_byte == '@' || next_byte == '$') {
-                            pm_buffer_append_byte(output_buffer, '\\');
-                        }
-                    }
-
-                    pm_buffer_append_byte(output_buffer, '#');
-                    break;
-                }
-                case '\\': pm_buffer_append_string(output_buffer, "\\\\", 2); break;
-                default: pm_buffer_append_byte(output_buffer, byte); break;
-            }
-        }
-    }
-}
-
 static inline void
 prettyprint_location(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm_location_t *location) {
     pm_line_column_t start = pm_newline_list_line_column(&parser->newline_list, location->start, parser->start_line);
@@ -93,7 +58,7 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                 }
             <%- when Prism::StringField -%>
                 pm_buffer_append_string(output_buffer, " \"", 2);
-                prettyprint_source(output_buffer, pm_string_source(&cast-><%= field.name %>), pm_string_length(&cast-><%= field.name %>));
+                pm_buffer_append_source(output_buffer, pm_string_source(&cast-><%= field.name %>), pm_string_length(&cast-><%= field.name %>), PM_BUFFER_ESCAPING_RUBY);
                 pm_buffer_append_string(output_buffer, "\"\n", 2);
             <%- when Prism::NodeListField -%>
                 pm_buffer_append_format(output_buffer, " (length: %lu)\n", (unsigned long) (cast-><%= field.name %>.size));
@@ -139,7 +104,7 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                 pm_buffer_append_byte(output_buffer, ' ');
                 prettyprint_location(output_buffer, parser, location);
                 pm_buffer_append_string(output_buffer, " = \"", 4);
-                prettyprint_source(output_buffer, location->start, (size_t) (location->end - location->start));
+                pm_buffer_append_source(output_buffer, location->start, (size_t) (location->end - location->start), PM_BUFFER_ESCAPING_RUBY);
                 pm_buffer_append_string(output_buffer, "\"\n", 2);
             <%- when Prism::OptionalLocationField -%>
                 pm_location_t *location = &cast-><%= field.name %>;
@@ -149,7 +114,7 @@ prettyprint_node(pm_buffer_t *output_buffer, const pm_parser_t *parser, const pm
                     pm_buffer_append_byte(output_buffer, ' ');
                     prettyprint_location(output_buffer, parser, location);
                     pm_buffer_append_string(output_buffer, " = \"", 4);
-                    prettyprint_source(output_buffer, location->start, (size_t) (location->end - location->start));
+                    pm_buffer_append_source(output_buffer, location->start, (size_t) (location->end - location->start), PM_BUFFER_ESCAPING_RUBY);
                     pm_buffer_append_string(output_buffer, "\"\n", 2);
                 }
             <%- when Prism::UInt8Field -%>

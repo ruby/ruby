@@ -188,14 +188,13 @@ const char * pm_token_type_human(pm_token_type_t token_type);
 PRISM_EXPORTED_FUNCTION void pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool colorize);
 
 /**
- * Visit each of the nodes in this subtree using the given visitor callback.
+ * Dump JSON to the given buffer.
  *
- * @param node The node to visit.
- * @param visitor The visitor callback to use. It should return `true` if the
- *       visitor should continue visiting nodes, and `false` if it should stop.
- * @param data The optional data to pass to the visitor.
+ * @param buffer The buffer to serialize to.
+ * @param parser The parser that parsed the node.
+ * @param node The node to serialize.
  */
-PRISM_EXPORTED_FUNCTION void pm_node_visit(const pm_node_t *node, bool (*visitor)(const pm_node_t *node, void *data), void *data);
+PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *node);
 
 /**
  * @mainpage
