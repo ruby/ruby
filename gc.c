@@ -6340,9 +6340,8 @@ mark_stack_free_cache(mark_stack_t *stack)
 }
 
 static void
-push_mark_stack(mark_stack_t *stack, VALUE data)
+push_mark_stack(mark_stack_t *stack, VALUE obj)
 {
-    VALUE obj = data;
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
       case T_CLASS:
@@ -6367,7 +6366,7 @@ push_mark_stack(mark_stack_t *stack, VALUE data)
         if (stack->index == stack->limit) {
             push_mark_stack_chunk(stack);
         }
-        stack->chunk->data[stack->index++] = data;
+        stack->chunk->data[stack->index++] = obj;
         return;
 
       case T_NONE:
@@ -6386,8 +6385,8 @@ push_mark_stack(mark_stack_t *stack, VALUE data)
     }
 
     rb_bug("rb_gc_mark(): unknown data type 0x%x(%p) %s",
-            BUILTIN_TYPE(obj), (void *)data,
-            is_pointer_to_heap(&rb_objspace, (void *)data) ? "corrupted object" : "non object");
+            BUILTIN_TYPE(obj), (void *)obj,
+            is_pointer_to_heap(&rb_objspace, (void *)obj) ? "corrupted object" : "non object");
 }
 
 static int
