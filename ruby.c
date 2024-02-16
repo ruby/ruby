@@ -2141,6 +2141,38 @@ prism_dump_tree(pm_parse_result_t *result)
     return tree;
 }
 
+static void
+process_options_global_setup(const ruby_cmdline_options_t *opt, const rb_iseq_t *iseq)
+{
+    if (OPT_BACKTRACE_LENGTH_LIMIT_VALID_P(opt)) {
+        rb_backtrace_length_limit = opt->backtrace_length_limit;
+    }
+
+    if (opt->do_loop) {
+        rb_define_global_function("sub", rb_f_sub, -1);
+        rb_define_global_function("gsub", rb_f_gsub, -1);
+        rb_define_global_function("chop", rb_f_chop, 0);
+        rb_define_global_function("chomp", rb_f_chomp, -1);
+    }
+
+    rb_define_readonly_boolean("$-p", opt->do_print);
+    rb_define_readonly_boolean("$-l", opt->do_line);
+    rb_define_readonly_boolean("$-a", opt->do_split);
+
+    rb_gvar_ractor_local("$-p");
+    rb_gvar_ractor_local("$-l");
+    rb_gvar_ractor_local("$-a");
+
+    if ((rb_e_script = opt->e_script) != 0) {
+        rb_str_freeze(rb_e_script);
+        rb_gc_register_mark_object(opt->e_script);
+    }
+
+    rb_execution_context_t *ec = GET_EC();
+    VALUE script = (opt->e_script ? opt->e_script : Qnil);
+    rb_exec_event_hook_script_compiled(ec, iseq, script);
+}
+
 static VALUE
 process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
 {
@@ -2417,13 +2449,6 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
         if (!dump) return Qtrue;
     }
 
-    if (opt->do_loop) {
-        rb_define_global_function("sub", rb_f_sub, -1);
-        rb_define_global_function("gsub", rb_f_gsub, -1);
-        rb_define_global_function("chop", rb_f_chop, 0);
-        rb_define_global_function("chomp", rb_f_chomp, -1);
-    }
-
     if (dump & (DUMP_BIT(parsetree)|DUMP_BIT(parsetree_with_comment))) {
         VALUE tree;
         if (result.ast) {
@@ -2482,35 +2507,7 @@ process_options(int argc, char **argv, ruby_cmdline_options_t *opt)
     }
     if (opt->dump & dump_exit_bits) return Qtrue;
 
-    if (OPT_BACKTRACE_LENGTH_LIMIT_VALID_P(opt)) {
-        rb_backtrace_length_limit = opt->backtrace_length_limit;
-    }
-
-    rb_define_readonly_boolean("$-p", opt->do_print);
-    rb_define_readonly_boolean("$-l", opt->do_line);
-    rb_define_readonly_boolean("$-a", opt->do_split);
-
-    rb_gvar_ractor_local("$-p");
-    rb_gvar_ractor_local("$-l");
-    rb_gvar_ractor_local("$-a");
-
-    if ((rb_e_script = opt->e_script) != 0) {
-        rb_str_freeze(rb_e_script);
-        rb_gc_register_mark_object(opt->e_script);
-    }
-
-    {
-        rb_execution_context_t *ec = GET_EC();
-
-        if (opt->e_script) {
-            /* -e */
-            rb_exec_event_hook_script_compiled(ec, iseq, opt->e_script);
-        }
-        else {
-            /* file */
-            rb_exec_event_hook_script_compiled(ec, iseq, Qnil);
-        }
-    }
+    process_options_global_setup(opt, iseq);
     return (VALUE)iseq;
 }
 
