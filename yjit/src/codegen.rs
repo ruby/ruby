@@ -411,8 +411,10 @@ fn jit_prepare_non_leaf_call(
     jit: &mut JITState,
     asm: &mut Assembler
 ) {
-    // Prepare for GC. This also sets PC, which prepares for showing a backtrace.
-    jit_prepare_call_with_gc(jit, asm);
+    // Prepare for GC. Setting PC also prepares for showing a backtrace.
+    jit.record_boundary_patch_point = true; // VM lock could trigger invalidation
+    jit_save_pc(jit, asm); // for allocation tracing
+    gen_save_sp(asm); // protect objects from GC
 
     // In case the routine calls Ruby methods, it can set local variables
     // through Kernel#binding, rb_debug_inspector API, and other means.
@@ -429,6 +431,9 @@ fn jit_prepare_call_with_gc(
     jit.record_boundary_patch_point = true; // VM lock could trigger invalidation
     jit_save_pc(jit, asm); // for allocation tracing
     gen_save_sp(asm); // protect objects from GC
+
+    // Expect a leaf ccall(). You should use jit_prepare_non_leaf_call() if otherwise.
+    asm.leaf_ccall = true;
 }
 
 /// Record the current codeblock write position for rewriting into a jump into
@@ -1083,6 +1088,9 @@ pub fn gen_single_block(
             jit_perf_symbol_push!(jit, &mut asm, &insn_name(opcode), PerfMap::Codegen);
             status = gen_fn(&mut jit, &mut asm, ocb);
             jit_perf_symbol_pop!(jit, &mut asm, PerfMap::Codegen);
+
+            #[cfg(debug_assertions)]
+            assert!(!asm.leaf_ccall, "ccall() wasn't used after leaf_ccall was set in {}", insn_name(opcode));
         }
 
         // If we can't compile this instruction
@@ -5376,18 +5384,26 @@ fn jit_rb_str_byteslice(
     argc: i32,
     _known_recv_class: Option<VALUE>,
 ) -> bool {
-    asm_comment!(asm, "String#byteslice");
-
     if argc != 2 {
         return false
     }
 
-    // Raises when non-integers are passed in
-    jit_prepare_non_leaf_call(jit, asm);
-
     let len = asm.stack_opnd(0);
     let beg = asm.stack_opnd(1);
     let recv = asm.stack_opnd(2);
+
+    // rb_str_byte_substr should be leaf if indexes are fixnums
+    match (asm.ctx.get_opnd_type(beg.into()), asm.ctx.get_opnd_type(len.into())) {
+        (Type::Fixnum, Type::Fixnum) => {},
+        // Raises when non-integers are passed in, which requires the method frame
+        // to be pushed for the backtrace
+        _ => return false,
+    }
+    asm_comment!(asm, "String#byteslice");
+
+    // rb_str_byte_substr allocates a substring
+    jit_prepare_call_with_gc(jit, asm);
+
     let ret_opnd = asm.ccall(rb_str_byte_substr as *const u8, vec![recv, beg, len]);
     asm.stack_pop(3);
 
@@ -5398,7 +5414,7 @@ fn jit_rb_str_byteslice(
 }
 
 fn jit_rb_str_getbyte(
-    jit: &mut JITState,
+    _jit: &mut JITState,
     asm: &mut Assembler,
     _ocb: &mut OutlinedCb,
     _ci: *const rb_callinfo,
@@ -5407,7 +5423,6 @@ fn jit_rb_str_getbyte(
     _argc: i32,
     _known_recv_class: Option<VALUE>,
 ) -> bool {
-    asm_comment!(asm, "String#getbyte");
     extern "C" {
         fn rb_str_getbyte(str: VALUE, index: VALUE) -> VALUE;
     }
@@ -5417,9 +5432,11 @@ fn jit_rb_str_getbyte(
 
     // rb_str_getbyte should be leaf if the index is a fixnum
     if asm.ctx.get_opnd_type(index.into()) != Type::Fixnum {
-        // Raises when non-integers are passed in
-        jit_prepare_non_leaf_call(jit, asm);
+        // Raises when non-integers are passed in, which requires the method frame
+        // to be pushed for the backtrace
+        return false;
     }
+    asm_comment!(asm, "String#getbyte");
 
     let ret_opnd = asm.ccall(rb_str_getbyte as *const u8, vec![recv, index]);
     asm.stack_pop(2); // Keep them on stack during ccall for GC
@@ -5507,10 +5524,11 @@ fn jit_rb_str_concat(
     // Guard that the concat argument is a string
     guard_object_is_string(asm, asm.stack_opnd(0), StackOpnd(0), Counter::guard_send_not_string);
 
-    // Guard buffers from GC since rb_str_buf_append may allocate. During the VM lock on GC,
-    // other Ractors may trigger global invalidation, so we need ctx.clear_local_types().
-    // PC is used on errors like Encoding::CompatibilityError raised by rb_str_buf_append.
+    // Guard buffers from GC since rb_str_buf_append may allocate.
     jit_prepare_non_leaf_call(jit, asm);
+    // rb_str_buf_append may raise Encoding::CompatibilityError, but we accept compromised
+    // backtraces on this method since the interpreter does the same thing on opt_ltlt.
+    asm.leaf_ccall = false;
     asm.spill_temps(); // For ccall. Unconditionally spill them for RegTemps consistency.
 
     let concat_arg = asm.stack_pop(1);
@@ -6068,7 +6086,9 @@ fn gen_send_cfunc(
     if kw_arg.is_null() && flags & VM_CALL_OPT_SEND == 0 && flags & VM_CALL_ARGS_SPLAT == 0 && (cfunc_argc == -1 || argc == cfunc_argc) {
         let expected_stack_after = asm.ctx.get_stack_size() as i32 - argc;
         if let Some(known_cfunc_codegen) = lookup_cfunc_codegen(unsafe { (*cme).def }) {
-            if perf_call!("gen_send_cfunc: ", known_cfunc_codegen(jit, asm, ocb, ci, cme, block, argc, recv_known_class)) {
+            if asm.with_leaf_ccall(|asm|
+                perf_call!("gen_send_cfunc: ", known_cfunc_codegen(jit, asm, ocb, ci, cme, block, argc, recv_known_class))
+            ) {
                 assert_eq!(expected_stack_after, asm.ctx.get_stack_size() as i32);
                 gen_counter_incr(asm, Counter::num_send_cfunc_inline);
                 // cfunc codegen generated code. Terminate the block so
