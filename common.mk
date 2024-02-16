@@ -85,11 +85,8 @@ MAKE_ENC      = -f $(ENC_MK) V="$(V)" UNICODE_HDR_DIR="$(UNICODE_HDR_DIR)" \
 
 PRISM_BUILD_DIR = prism
 
-PRISM_FILES = prism/api_node.$(OBJEXT) \
-		prism/api_pack.$(OBJEXT) \
-		prism/diagnostic.$(OBJEXT) \
+LIBPRISM_FILES = prism/diagnostic.$(OBJEXT) \
 		prism/encoding.$(OBJEXT) \
-		prism/extension.$(OBJEXT) \
 		prism/node.$(OBJEXT) \
 		prism/options.$(OBJEXT) \
 		prism/pack.$(OBJEXT) \
@@ -108,8 +105,14 @@ PRISM_FILES = prism/api_node.$(OBJEXT) \
 		prism/util/pm_string_list.$(OBJEXT) \
 		prism/util/pm_strncasecmp.$(OBJEXT) \
 		prism/util/pm_strpbrk.$(OBJEXT) \
-		prism/prism.$(OBJEXT) \
+		prism/prism.$(OBJEXT)
+
+PRISM_EXT_FILES = prism/api_node.$(OBJEXT) \
+		prism/api_pack.$(OBJEXT) \
+		prism/extension.$(OBJEXT) \
 		prism_init.$(OBJEXT)
+
+PRISM_FILES = $(LIBPRISM_FILES) $(PRISM_EXT_FILES)
 
 COMMONOBJS    = array.$(OBJEXT) \
 		ast.$(OBJEXT) \
@@ -1315,7 +1318,11 @@ $(BUILTIN_BINARY:yes=built)in_binary.inc: $(PREP) $(BUILTIN_RB_SRCS) $(srcdir)/t
 $(BUILTIN_BINARY:no=builtin)_binary.inc:
 	$(Q) echo> $@ // empty $(@F)
 
+$(top_srcdir)/tool/mk_builtin_loader.rb: $(top_srcdir)/tool/collect_builtins
 $(BUILTIN_RB_INCS): $(top_srcdir)/tool/mk_builtin_loader.rb
+
+$(top_srcdir)/tool/collect_builtins: $(top_srcdir)/tool/collect_builtins.c $(LIBPRISM_FILES)
+	$(Q) $(CC) -o $@ -I$(srcdir) -I$(PRISM_SRCDIR) $(top_srcdir)/tool/collect_builtins.c $(LIBPRISM_FILES)
 
 $(srcdir)/revision.h$(no_baseruby:no=~disabled~): $(REVISION_H)
 

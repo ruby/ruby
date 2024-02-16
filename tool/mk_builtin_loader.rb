@@ -1,238 +1,75 @@
 # Parse built-in script and make rbinc file
 
-require 'ripper'
+require 'open3'
 require 'stringio'
+require 'strscan'
 require_relative 'ruby_vm/helpers/c_escape'
 
 SUBLIBS = {}
 REQUIRED = {}
-BUILTIN_ATTRS = %w[leaf inline_block]
-
-def string_literal(lit, str = [])
-  while lit
-    case lit.first
-    when :string_concat, :string_embexpr, :string_content
-      _, *lit = lit
-      lit.each {|s| string_literal(s, str)}
-      return str
-    when :string_literal
-      _, lit = lit
-    when :@tstring_content
-      str << lit[1]
-      return str
-    else
-      raise "unexpected #{lit.first}"
-    end
-  end
-end
-
-# e.g. [:symbol_literal, [:symbol, [:@ident, "inline", [19, 21]]]]
-def symbol_literal(lit)
-  symbol_literal, symbol_lit = lit
-  raise "#{lit.inspect} was not :symbol_literal" if symbol_literal != :symbol_literal
-  symbol, ident_lit = symbol_lit
-  raise "#{symbol_lit.inspect} was not :symbol" if symbol != :symbol
-  ident, symbol_name, = ident_lit
-  raise "#{ident.inspect} was not :@ident" if ident != :@ident
-  symbol_name
-end
-
-def inline_text argc, arg1
-  raise "argc (#{argc}) of inline! should be 1" unless argc == 1
-  arg1 = string_literal(arg1)
-  raise "1st argument should be string literal" unless arg1
-  arg1.join("").rstrip
-end
-
-def inline_attrs(args)
-  raise "args was empty" if args.empty?
-  args.each do |arg|
-    attr = symbol_literal(arg)
-    unless BUILTIN_ATTRS.include?(attr)
-      raise "attr (#{attr}) was not in: #{BUILTIN_ATTRS.join(', ')}"
-    end
-  end
-end
-
-def make_cfunc_name inlines, name, lineno
-  case name
-  when /\[\]/
-    name = '_GETTER'
-  when /\[\]=/
-    name = '_SETTER'
-  else
-    name = name.tr('!?', 'EP')
-  end
-
-  base = "builtin_inline_#{name}_#{lineno}"
-  if inlines[base]
-    1000.times{|i|
-      name = "#{base}_#{i}"
-      return name unless inlines[name]
-    }
-    raise "too many functions in same line..."
-  else
-    base
-  end
-end
-
-def collect_locals tree
-  _type, name, (line, _cols) = tree
-  if locals = LOCALS_DB[[name, line]]
-    locals
-  else
-    if false # for debugging
-      pp LOCALS_DB
-      raise "not found: [#{name}, #{line}]"
-    end
-  end
-end
-
-def collect_builtin base, tree, name, bs, inlines, locals = nil
-  while tree
-    recv = sep = mid = args = nil
-    case tree.first
-    when :def
-      locals = collect_locals(tree[1])
-      tree = tree[3]
-      next
-    when :defs
-      locals = collect_locals(tree[3])
-      tree = tree[5]
-      next
-    when :class
-      name = 'class'
-      tree = tree[3]
-      next
-    when :sclass, :module
-      name = 'class'
-      tree = tree[2]
-      next
-    when :method_add_arg
-      _method_add_arg, mid, (_arg_paren, args) = tree
-      case mid.first
-      when :call
-        _, recv, sep, mid = mid
-      when :fcall
-        _, mid = mid
-      else
-        mid = nil
-      end
-      # w/  trailing comma: [[:method_add_arg, ...]]
-      # w/o trailing comma: [:args_add_block, [[:method_add_arg, ...]], false]
-      if args && args.first == :args_add_block
-        args = args[1]
-      end
-    when :vcall
-      _, mid = tree
-    when :command               # FCALL
-      _, mid, (_, args) = tree
-    when :call, :command_call   # CALL
-      _, recv, sep, mid, (_, args) = tree
-    end
-
-    if mid
-      raise "unknown sexp: #{mid.inspect}" unless %i[@ident @const].include?(mid.first)
-      _, mid, (lineno,) = mid
-      if recv
-        func_name = nil
-        case recv.first
-        when :var_ref
-          _, recv = recv
-          if recv.first == :@const and recv[1] == "Primitive"
-            func_name = mid.to_s
-          end
-        when :vcall
-          _, recv = recv
-          if recv.first == :@ident and recv[1] == "__builtin"
-            func_name = mid.to_s
-          end
-        end
-        collect_builtin(base, recv, name, bs, inlines) unless func_name
-      else
-        func_name = mid[/\A__builtin_(.+)/, 1]
-      end
-      if func_name
-        cfunc_name = func_name
-        args.pop unless (args ||= []).last
-        argc = args.size
-
-        if /(.+)[\!\?]\z/ =~ func_name
-          case $1
-          when 'attr'
-            # Compile-time validation only. compile.c will parse them.
-            inline_attrs(args)
-            break
-          when 'cstmt'
-            text = inline_text argc, args.first
-
-            func_name = "_bi#{lineno}"
-            cfunc_name = make_cfunc_name(inlines, name, lineno)
-            inlines[cfunc_name] = [lineno, text, locals, func_name]
-            argc -= 1
-          when 'cexpr', 'cconst'
-            text = inline_text argc, args.first
-            code = "return #{text};"
-
-            func_name = "_bi#{lineno}"
-            cfunc_name = make_cfunc_name(inlines, name, lineno)
-
-            locals = [] if $1 == 'cconst'
-            inlines[cfunc_name] = [lineno, code, locals, func_name]
-            argc -= 1
-          when 'cinit'
-            text = inline_text argc, args.first
-            func_name = nil # required
-            inlines[inlines.size] = [lineno, text, nil, nil]
-            argc -= 1
-          when 'mandatory_only'
-            func_name = nil
-          when 'arg'
-            argc == 1 or raise "unexpected argument number #{argc}"
-            (arg = args.first)[0] == :symbol_literal or raise "symbol literal expected #{args}"
-            (arg = arg[1])[0] == :symbol or raise "symbol expected #{arg}"
-            (var = arg[1] and var = var[1]) or raise "argument name expected #{arg}"
-            func_name = nil
-          end
-        end
-
-        if bs[func_name] &&
-           bs[func_name] != [argc, cfunc_name]
-          raise "same builtin function \"#{func_name}\", but different arity (was #{bs[func_name]} but #{argc})"
-        end
-
-        bs[func_name] = [argc, cfunc_name] if func_name
-      elsif /\Arequire(?:_relative)\z/ =~ mid and args.size == 1 and
-           (arg1 = args[0])[0] == :string_literal and
-           (arg1 = arg1[1])[0] == :string_content and
-           (arg1 = arg1[1])[0] == :@tstring_content and
-           sublib = arg1[1]
-        if File.exist?(f = File.join(@dir, sublib)+".rb")
-          puts "- #{@base}.rb requires #{sublib}"
-          if REQUIRED[sublib]
-            warn "!!! #{sublib} is required from #{REQUIRED[sublib]} already; ignored"
-          else
-            REQUIRED[sublib] = @base
-            (SUBLIBS[@base] ||= []) << sublib
-          end
-          ARGV.push(f)
-        end
-      end
-      break unless tree = args
-    end
-
-    tree.each do |t|
-      collect_builtin base, t, name, bs, inlines, locals if Array === t
-    end
-    break
-  end
-end
 
 # ruby mk_builtin_loader.rb TARGET_FILE.rb
 # #=> generate TARGET_FILE.rbinc
 #
 
 LOCALS_DB = {} # [method_name, first_line] = locals
+
+def collect_builtin file, bs, inlines
+  stdout, stderr, status = Open3.capture3(File.expand_path("collect_builtins", __dir__), file)
+
+  unless status.success?
+    warn(stderr)
+    exit(1)
+  end
+
+  scanner = StringScanner.new(stdout)
+  while (command = scanner.scan(/BUILTIN|INLINE|REQUIRE/))
+    case command
+    when "BUILTIN"
+      scanner.scan(/ primitive_name=(.+?) argc=(\d+) cfunction_name=(.+?)\n/) or raise "unexpected format"
+
+      primitive_name, argc, cfunction_name = scanner.captures
+      argc = argc.to_i
+
+      if bs[primitive_name] && bs[primitive_name] != [argc, cfunction_name]
+        raise "same builtin function \"#{primitive_name}\", but different arity (was #{bs[primitive_name]} but #{argc})"
+      end
+
+      bs[primitive_name] = [argc, cfunction_name]
+    when "INLINE"
+      scanner.scan(/ key=(.+?) lineno=(\d+) text=((?:.|\n)+?) locals.name=(.*?) locals.lineno=(\d+) primitive_name=(.+?)\n/) or raise "unexpected format"
+
+      key, lineno, text, locals_name, locals_lineno, primitive_name = scanner.captures
+      lineno = lineno.to_i
+      locals_lineno = locals_lineno.to_i
+
+      inline = [lineno, text, nil, primitive_name]
+      inline[2] = LOCALS_DB[[locals_name, locals_lineno]] if locals_lineno != 0
+
+      if inlines.key?(key)
+        found = 1000.times.find { |i| !inlines.key?("#{key}_#{i}") }
+        raise "too many functions in same line..." unless found
+        key = "#{key}_#{found}"
+      end
+
+      inlines[key] = inline
+    when "REQUIRE"
+      scanner.scan(/ (.+)\n/) or raise "unexpected format"
+      sublib = scanner[1]
+
+      if File.exist?(f = File.join(@dir, sublib)+".rb")
+        puts "- #{@base}.rb requires #{sublib}"
+        if REQUIRED[sublib]
+          warn "!!! #{sublib} is required from #{REQUIRED[sublib]} already; ignored"
+        else
+          REQUIRED[sublib] = @base
+          (SUBLIBS[@base] ||= []) << sublib
+        end
+        ARGV.push(f)
+      end
+    end
+  end
+end
 
 def collect_iseq iseq_ary
   # iseq_ary.each_with_index{|e, i| p [i, e]}
@@ -299,9 +136,8 @@ def mk_builtin_header file
   ofile = "#{file}inc"
 
   # bs = { func_name => argc }
-  code = File.read(file)
-  collect_iseq RubyVM::InstructionSequence.compile(code).to_a
-  collect_builtin(base, Ripper.sexp(code), 'top', bs = {}, inlines = {})
+  collect_iseq RubyVM::InstructionSequence.compile_file(file).to_a
+  collect_builtin(file, bs = {}, inlines = {})
 
   begin
     f = File.open(ofile, 'w')
