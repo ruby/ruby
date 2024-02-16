@@ -1351,7 +1351,7 @@ int ruby_enable_autocompact = 0;
 gc_compact_compare_func ruby_autocompact_compare_func;
 #endif
 
-void rb_iseq_mark_and_move(rb_iseq_t *iseq, bool referece_updating);
+void rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating);
 void rb_iseq_free(const rb_iseq_t *iseq);
 size_t rb_iseq_memsize(const rb_iseq_t *iseq);
 void rb_vm_update_references(void *ptr);
