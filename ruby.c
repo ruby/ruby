@@ -2119,7 +2119,7 @@ prism_script(ruby_cmdline_options_t *opt, pm_parse_result_t *result)
             if ((result->parser.start + offset < result->parser.end) && result->parser.start[offset] == '\r') offset++;
             if ((result->parser.start + offset < result->parser.end) && result->parser.start[offset] == '\n') offset++;
 
-            rb_funcall(file, rb_intern("seek"), 2, LONG2NUM(offset), INT2FIX(SEEK_SET));
+            rb_funcall(file, rb_intern_const("seek"), 2, SIZET2NUM(offset), INT2FIX(SEEK_SET));
             rb_define_global_const("DATA", file);
         }
     }
