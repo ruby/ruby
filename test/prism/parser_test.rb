@@ -43,13 +43,16 @@ module Prism
   class ParserTest < TestCase
     base = File.join(__dir__, "fixtures")
 
+    # These files are erroring because of the parser gem being wrong.
+    skip_incorrect = %w[
+      embdoc_no_newline_at_end.txt
+    ]
+
     # These files are either failing to parse or failing to translate, so we'll
     # skip them for now.
-    skip_all = %w[
-      constants.txt
+    skip_all = skip_incorrect | %w[
       dash_heredocs.txt
       dos_endings.txt
-      embdoc_no_newline_at_end.txt
       heredocs_with_ignored_newlines.txt
       regex.txt
       spanning_heredoc.txt
@@ -67,6 +70,7 @@ module Prism
     # output expected by the parser gem, so we'll skip them for now.
     skip_tokens = %w[
       comments.txt
+      constants.txt
       endless_range_in_conditional.txt
       heredoc_with_comment.txt
       heredoc_with_escaped_newline_at_start.txt
