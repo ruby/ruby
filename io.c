@@ -4302,11 +4302,8 @@ rb_io_gets_internal(VALUE io)
  *    File.open('t.txt') {|f| f.gets(12) } # => "First line\n"
  *
  *  With arguments +sep+ and +limit+ given,
- *  combines the two behaviors:
- *
- *  - Returns the next line as determined by line separator +sep+,
- *    or +nil+ if none.
- *  - But returns no more bytes than are allowed by the limit.
+ *  combines the two behaviors
+ *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]).
  *
  *  Optional keyword argument +chomp+ specifies whether line separators
  *  are to be omitted:
@@ -4455,10 +4452,8 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *    f.close
  *
  *  With arguments +sep+ and +limit+ given,
- *  combines the two behaviors:
- *
- *  - Returns lines as determined by line separator +sep+.
- *  - But returns no more bytes in a line than are allowed by the limit.
+ *  combines the two behaviors
+ *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]).
  *
  *  Optional keyword argument +chomp+ specifies whether line separators
  *  are to be omitted:
@@ -4578,10 +4573,8 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *    "ne\n"
  *
  *  With arguments +sep+ and +limit+ given,
- *  combines the two behaviors:
- *
- *  - Calls with the next line as determined by line separator +sep+.
- *  - But returns no more bytes than are allowed by the limit.
+ *  combines the two behaviors
+ *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]).
  *
  *  Optional keyword argument +chomp+ specifies whether line separators
  *  are to be omitted:
@@ -10473,6 +10466,10 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *    $cat t.txt | ruby -e "p readlines 12"
  *    ["First line\n", "Second line\n", "\n", "Fourth line\n", "Fifth line\n"]
  *
+ *  With arguments +sep+ and +limit+ given,
+ *  combines the two behaviors
+ *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]).
+ *
  *  Optional keyword argument +chomp+ specifies whether line separators
  *  are to be omitted:
  *
@@ -11982,7 +11979,7 @@ io_s_foreach(VALUE v)
  *
  *  With argument +limit+ given, parses lines as determined by the default
  *  line separator and the given line-length limit
- *  (see {Line Separator}[rdoc-ref:IO@Line+Separator] and {Line Limit}[rdoc-ref:IO@Line+Limit]:
+ *  (see {Line Separator}[rdoc-ref:IO@Line+Separator] and {Line Limit}[rdoc-ref:IO@Line+Limit]):
  *
  *    File.foreach('t.txt', 7) {|line| p line }
  *
@@ -11998,10 +11995,9 @@ io_s_foreach(VALUE v)
  *    "Fourth l"
  *    "line\n"
  *
- *  With arguments +sep+ and  +limit+ given,
- *  parses lines as determined by the given
- *  line separator and the given line-length limit
- *  (see {Line Separator}[rdoc-ref:IO@Line+Separator] and {Line Limit}[rdoc-ref:IO@Line+Limit]:
+ *  With arguments +sep+ and +limit+ given,
+ *  combines the two behaviors
+ *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]).
  *
  *  Optional keyword arguments +opts+ specify:
  *
@@ -12079,10 +12075,9 @@ io_s_readlines(VALUE v)
  *    IO.readlines('t.txt', 7)
  *    # => ["First l", "ine\n", "Second ", "line\n", "\n", "Third l", "ine\n", "Fourth ", "line\n"]
  *
- *  With arguments +sep+ and  +limit+ given,
- *  parses lines as determined by the given
- *  line separator and the given line-length limit
- *  (see {Line Separator}[rdoc-ref:IO@Line+Separator] and {Line Limit}[rdoc-ref:IO@Line+Limit]:
+ *  With arguments +sep+ and +limit+ given,
+ *  combines the two behaviors
+ *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]).
  *
  *  Optional keyword arguments +opts+ specify:
  *
@@ -15222,6 +15217,18 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    File.open('t.rus') {|f| f.gets(2).size } # => 1
  *    File.open('t.rus') {|f| f.gets(3).size } # => 2
  *    File.open('t.rus') {|f| f.gets(4).size } # => 2
+ *
+ *  ===== Line Separator and Line Limit
+ *
+ *  With arguments +sep+ and +limit+ given, combines the two behaviors:
+ *
+ *  - Returns the next line as determined by line separator +sep+.
+ *  - But returns no more bytes than are allowed by the limit +limit+.
+ *
+ *  Example:
+ *
+ *    File.open('t.txt') {|f| f.gets('li', 20) } # => "First li"
+ *    File.open('t.txt') {|f| f.gets('li', 2) }  # => "Fi"
  *
  *  ===== Line Number
  *
