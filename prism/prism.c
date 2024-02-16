@@ -13531,9 +13531,11 @@ parse_pattern_constant_path(pm_parser_t *parser, pm_node_t *node) {
     } else {
         parser_lex(parser);
         opening = parser->previous;
+        accept1(parser, PM_TOKEN_NEWLINE);
 
         if (!accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
             inner = parse_pattern(parser, true, PM_ERR_PATTERN_EXPRESSION_AFTER_PAREN);
+            accept1(parser, PM_TOKEN_NEWLINE);
             expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_PATTERN_TERM_PAREN);
         }
 
