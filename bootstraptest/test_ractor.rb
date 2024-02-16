@@ -752,6 +752,17 @@ assert_equal '[0, 1]', %q{
   end
 }
 
+# unshareable frozen objects should still be frozen in new ractor after move
+assert_equal 'true', %q{
+r = Ractor.new do
+  obj = receive
+  { frozen: obj.frozen? }
+end
+obj = [Object.new].freeze
+r.send(obj, move: true)
+r.take[:frozen]
+}
+
 # move with yield
 assert_equal 'hello', %q{
   r = Ractor.new do
