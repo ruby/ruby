@@ -1595,6 +1595,8 @@ iseq_insert_nop_between_end_and_cont(rb_iseq_t *iseq)
             }
         }
     }
+
+    RB_GC_GUARD(catch_table_ary);
 }
 
 static int
