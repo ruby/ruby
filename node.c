@@ -86,7 +86,7 @@ rb_node_buffer_new(void)
 #define ruby_xrealloc(var,size) (ast->node_buffer->config->realloc_n((void *)var, 1, size))
 #define rb_gc_mark ast->node_buffer->config->gc_mark
 #define rb_gc_location ast->node_buffer->config->gc_location
-#define rb_gc_mark_movable ast->node_buffer->config->gc_mark_movable
+#define rb_gc_mark_and_move ast->node_buffer->config->gc_mark_and_move
 #undef Qnil
 #define Qnil ast->node_buffer->config->qnil
 #define Qtrue ast->node_buffer->config->qtrue
@@ -367,7 +367,7 @@ iterate_node_values(rb_ast_t *ast, node_buffer_list_t *nb, node_itr_t * func, vo
 }
 
 static void
-mark_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
+mark_and_move_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
 {
 #ifdef UNIVERSAL_PARSER
     bug_report_func rb_bug = ast->node_buffer->config->bug;
@@ -376,53 +376,23 @@ mark_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
     switch (nd_type(node)) {
       case NODE_MATCH:
       case NODE_LIT:
-        rb_gc_mark_movable(RNODE_LIT(node)->nd_lit);
+        rb_gc_mark_and_move(&RNODE_LIT(node)->nd_lit);
         break;
       default:
         rb_bug("unreachable node %s", ruby_node_name(nd_type(node)));
     }
 }
 
-static void
-update_ast_value(rb_ast_t *ast, void *ctx, NODE *node)
-{
-#ifdef UNIVERSAL_PARSER
-    bug_report_func rb_bug = ast->node_buffer->config->bug;
-#endif
-
-    switch (nd_type(node)) {
-      case NODE_MATCH:
-      case NODE_LIT:
-        RNODE_LIT(node)->nd_lit = rb_gc_location(RNODE_LIT(node)->nd_lit);
-        break;
-      default:
-        rb_bug("unreachable");
-    }
-}
-
 void
-rb_ast_update_references(rb_ast_t *ast)
+rb_ast_mark_and_move(rb_ast_t *ast, bool reference_updating)
 {
     if (ast->node_buffer) {
-        ast->node_buffer->tokens = rb_gc_location(ast->node_buffer->tokens);
+        rb_gc_mark_and_move(&ast->node_buffer->tokens);
 
         node_buffer_t *nb = ast->node_buffer;
-        iterate_node_values(ast, &nb->markable, update_ast_value, NULL);
+        iterate_node_values(ast, &nb->markable, mark_and_move_ast_value, NULL);
 
-        if (ast->body.script_lines) ast->body.script_lines = rb_gc_location(ast->body.script_lines);
-    }
-}
-
-void
-rb_ast_mark(rb_ast_t *ast)
-{
-    if (ast->node_buffer) {
-        rb_gc_mark_movable(ast->node_buffer->tokens);
-
-        node_buffer_t *nb = ast->node_buffer;
-        iterate_node_values(ast, &nb->markable, mark_ast_value, NULL);
-
-        if (ast->body.script_lines) rb_gc_mark_movable(ast->body.script_lines);
+        if (ast->body.script_lines) rb_gc_mark_and_move(&ast->body.script_lines);
     }
 }
 
