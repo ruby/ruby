@@ -135,7 +135,7 @@ before_script:
 script:
   - $SETARCH make -s test
   - ../tool/travis_wait.sh $SETARCH make -s test-all RUBYOPT="-w"
-  - $SETARCH make -s test-spec
+  - ../tool/travis_wait.sh $SETARCH make -s test-spec
 
 # We want to be notified when something happens.
 notifications:
