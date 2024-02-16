@@ -6,13 +6,13 @@ require 'rubygems/package'
 # unpack bundled gem files.
 
 module BundledGem
-  DEFAULT_GEMS_DEPENDENCIES = %w[
-    net-protocol # net-ftp
-    time # net-ftp
-    singleton # prime
-    ipaddr # rinda
-    forwardable # prime, rinda
-    ruby2_keywords # drb
+  DEFAULT_GEMS_DEPENDENCIES = [
+    "net-protocol", # net-ftp
+    "time", # net-ftp
+    "singleton", # prime
+    "ipaddr", # rinda
+    "forwardable", # prime, rinda
+    "ruby2_keywords" # drb
   ]
 
   module_function
