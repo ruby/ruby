@@ -3581,6 +3581,10 @@ move_leave(VALUE obj, struct obj_traverse_replace_data *data)
         rb_replace_generic_ivar(v, obj);
     }
 
+    if (OBJ_FROZEN(obj)) {
+        OBJ_FREEZE(v);
+    }
+
     // TODO: generic_ivar
 
     ractor_moved_bang(obj);
