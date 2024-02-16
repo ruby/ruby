@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 
 /**
  * We want to be able to use the PRI* macros for printing out integers, but on
