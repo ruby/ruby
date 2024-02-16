@@ -362,7 +362,6 @@ module RubyVM::YJIT
 
       out.puts "freed_iseq_count:      " + format_number(13, stats[:freed_iseq_count])
       out.puts "invalidation_count:    " + format_number(13, stats[:invalidation_count])
-      out.puts "constant_state_bumps:  " + format_number(13, stats[:constant_state_bumps])
       out.puts "inline_code_size:      " + format_number(13, stats[:inline_code_size])
       out.puts "outlined_code_size:    " + format_number(13, stats[:outlined_code_size])
       out.puts "code_region_size:      " + format_number(13, stats[:code_region_size])
