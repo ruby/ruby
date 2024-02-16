@@ -6522,6 +6522,7 @@ fn gen_send_iseq(
     let iseq_has_block_param = unsafe { get_iseq_flags_has_block(iseq) };
     let arg_setup_block = captured_opnd.is_some(); // arg_setup_type: arg_setup_block (invokeblock)
     let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
+    let splat_call = flags & VM_CALL_ARGS_SPLAT != 0;
 
     // For computing offsets to callee locals
     let num_params = unsafe { get_iseq_body_param_size(iseq) as i32 };
@@ -6539,8 +6540,9 @@ fn gen_send_iseq(
         unsafe { get_cikw_keyword_len(kw_arg) }
     };
 
-    // Arity handling and optional parameter setup
-    let mut opts_filled = argc - required_num - kw_arg_num - i32::from(kw_splat);
+    // Arity handling and optional parameter setup for positional arguments.
+    // Splats are handled later.
+    let mut opts_filled = argc - required_num - kw_arg_num - i32::from(kw_splat) - i32::from(splat_call);
     let opt_num = unsafe { get_iseq_body_param_opt_num(iseq) };
     // With a rest parameter or a yield to a block,
     // callers can pass more than required + optional.
@@ -6594,7 +6596,7 @@ fn gen_send_iseq(
         gen_iseq_kw_call_checks(asm, iseq, kw_arg, has_kwrest, kw_arg_num)?;
     }
 
-    let splat_array_length = if flags & VM_CALL_ARGS_SPLAT != 0 {
+    let splat_array_length = if splat_call {
         let array = jit.peek_at_stack(&asm.ctx, splat_pos as isize);
         let array_length = if array == Qnil {
             0
@@ -6648,7 +6650,7 @@ fn gen_send_iseq(
     if block_arg0_splat {
         // If block_arg0_splat, we still need side exits after splat, but
         // the splat modifies the stack which breaks side exits. So bail out.
-        if flags & VM_CALL_ARGS_SPLAT != 0 {
+        if splat_call {
             gen_counter_incr(asm, Counter::invokeblock_iseq_arg0_args_splat);
             return None;
         }
@@ -6772,7 +6774,7 @@ fn gen_send_iseq(
     asm.cmp(CFP, stack_limit);
     asm.jbe(Target::side_exit(Counter::guard_send_se_cf_overflow));
 
-    if iseq_has_rest && flags & VM_CALL_ARGS_SPLAT != 0 {
+    if iseq_has_rest && splat_call {
         // Insert length guard for a call to copy_splat_args_for_rest_callee()
         // that will come later. We will have made changes to
         // the stack by spilling or handling __send__ shifting
@@ -6879,7 +6881,7 @@ fn gen_send_iseq(
         jit_save_pc(jit, asm);
         gen_save_sp(asm);
 
-        let rest_param_array = if flags & VM_CALL_ARGS_SPLAT != 0 {
+        let rest_param_array = if splat_call {
             let non_rest_arg_count = argc - 1;
             // We start by dupping the array because someone else might have
             // a reference to it. This also normalizes to an ::Array instance.
