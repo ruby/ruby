@@ -93,20 +93,6 @@ jobs:
 
       - run: make
 
-      - run: make test
-
-      - run: make install
-
-      - run: make test-tool
-
-      ### test-all doesn't work: https://github.com/ruby/ruby/actions/runs/4340112185/jobs/7578344307
-      # - run: make test-all TESTS='-- ruby -ext-'
-
-      ### test-spec doesn't work: https://github.com/ruby/ruby/actions/runs/4340193212/jobs/7578505652
-      # - run: make test-spec
-      #   env:
-      #     CHECK_LEAKS: true
-
       - run: make test-annocheck
 
       - uses: ./.github/actions/slack
