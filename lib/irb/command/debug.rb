@@ -11,7 +11,7 @@ module IRB
       BINDING_IRB_FRAME_REGEXPS = [
         '<internal:prelude>',
         binding.method(:irb).source_location.first,
-      ].map { |file| /\A#{Regexp.escape(file)}:\d+:in `irb'\z/ }
+      ].map { |file| /\A#{Regexp.escape(file)}:\d+:in (`|'Binding#)irb'\z/ }
 
       def execute(pre_cmds: nil, do_cmds: nil)
         if irb_context.with_debugger

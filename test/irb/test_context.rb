@@ -72,7 +72,7 @@ module TestIRB
       expected_output =
         if RUBY_3_4
           [
-            :*, /\(irb\):1:in '<top \(required\)>': Foo \(RuntimeError\)\n/,
+            :*, /\(irb\):1:in '<main>': Foo \(RuntimeError\)\n/,
             :*, /#<RuntimeError: Foo>\n/,
             :*, /0$/,
             :*, /0$/,
@@ -107,8 +107,8 @@ module TestIRB
       expected_output =
         if RUBY_3_4
           [
-            :*, /\(irb\):1:in '<top \(required\)>': Foo \(RuntimeError\)\n/,
-            :*, /\(irb\):2:in '<top \(required\)>': Bar \(RuntimeError\)\n/,
+            :*, /\(irb\):1:in '<main>': Foo \(RuntimeError\)\n/,
+            :*, /\(irb\):2:in '<main>': Bar \(RuntimeError\)\n/,
             :*, /#<RuntimeError: Bar>\n/,
           ]
         else
@@ -531,7 +531,7 @@ module TestIRB
           [
             :*, /\(irb\):1:in 'fuga': unhandled exception\n/,
             :*, /\tfrom \(irb\):1:in 'hoge'\n/,
-            :*, /\tfrom \(irb\):1:in '<top \(required\)>'\n/,
+            :*, /\tfrom \(irb\):1:in '<main>'\n/,
             :*
           ]
         elsif RUBY_VERSION < '3.0.0' && STDOUT.tty?
@@ -569,7 +569,7 @@ module TestIRB
           [
             :*, /\(irb\):1:in 'fuga': A\\xF3B \(RuntimeError\)\n/,
             :*, /\tfrom \(irb\):1:in 'hoge'\n/,
-            :*, /\tfrom \(irb\):1:in '<top \(required\)>'\n/,
+            :*, /\tfrom \(irb\):1:in '<main>'\n/,
             :*
           ]
         elsif RUBY_VERSION < '3.0.0' && STDOUT.tty?
