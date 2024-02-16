@@ -461,6 +461,27 @@ str_coderange_scan_restartable(const char *s, const char *e, void *enc, int *cr)
     return rb_str_coderange_scan_restartable(s, e, (rb_encoding *)enc, cr);
 }
 
+static int
+enc_mbminlen(void *enc)
+{
+    return rb_enc_mbminlen((rb_encoding *)enc);
+}
+
+static bool
+enc_isascii(OnigCodePoint c, void *enc)
+{
+    return rb_enc_isascii(c, (rb_encoding *)enc);
+}
+
+static OnigCodePoint
+enc_mbc_to_codepoint(const char *p, const char *e, void *enc)
+{
+    const OnigUChar *up = RBIMPL_CAST((const OnigUChar *)p);
+    const OnigUChar *ue = RBIMPL_CAST((const OnigUChar *)e);
+
+    return ONIGENC_MBC_TO_CODE((rb_encoding *)enc, up, ue);
+}
+
 VALUE rb_io_gets_internal(VALUE io);
 extern VALUE rb_eArgError;
 extern VALUE rb_mRubyVMFrozenCore;
@@ -596,6 +617,10 @@ static const rb_parser_config_t rb_global_parser_config = {
     .encoding_set = encoding_set,
     .encoding_is_ascii8bit = encoding_is_ascii8bit,
     .usascii_encoding = usascii_encoding,
+    .enc_coderange_broken = ENC_CODERANGE_BROKEN,
+    .enc_mbminlen = enc_mbminlen,
+    .enc_isascii = enc_isascii,
+    .enc_mbc_to_codepoint = enc_mbc_to_codepoint,
 
     .ractor_make_shareable = rb_ractor_make_shareable,
 

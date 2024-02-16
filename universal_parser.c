@@ -293,6 +293,9 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_mRubyVMFrozenCore p->config->mRubyVMFrozenCore()
 #undef rb_long2int
 #define rb_long2int p->config->long2int
+#define rb_enc_mbminlen p->config->enc_mbminlen
+#define rb_enc_isascii p->config->enc_isascii
+#define rb_enc_mbc_to_codepoint p->config->enc_mbc_to_codepoint
 
 #define rb_node_case_when_optimizable_literal p->config->node_case_when_optimizable_literal
 
