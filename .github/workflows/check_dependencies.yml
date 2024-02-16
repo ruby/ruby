@@ -53,6 +53,11 @@ jobs:
 
       - uses: ./.github/actions/setup/directories
 
+      - uses: ruby/setup-ruby@22fdc77bf4148f810455b226c90fb81b5cbc00a7 # v1.171.0
+        with:
+          ruby-version: '3.0'
+          bundler: none
+
       - name: Run configure
         run: ./configure -C --disable-install-doc --disable-rubygems --with-gcc 'optflags=-O0' 'debugflags=-save-temps=obj -g'
 

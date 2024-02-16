@@ -17,7 +17,7 @@ class GemTest < Gem::TestCase
 
     output = Gem::Util.popen(*ruby_with_rubygems_and_fake_operating_system_in_load_path(path), "-e", "'require \"rubygems\"'", { err: [:child, :out] }).strip
     assert !$?.success?
-    assert_includes output, "undefined local variable or method 'intentionally_not_implemented_method'"
+    assert_match(/undefined local variable or method [`']intentionally_not_implemented_method'/, output)
     assert_includes output, "Loading the #{operating_system_rb_at(path)} file caused an error. " \
     "This file is owned by your OS, not by rubygems upstream. " \
     "Please find out which OS package this file belongs to and follow the guidelines from your OS to report " \

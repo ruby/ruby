@@ -488,13 +488,14 @@ typedef struct pm_scope {
      * numbered parameters, and to pass information to consumers of the AST
      * about how many numbered parameters exist.
      */
-    uint8_t numbered_parameters;
+    int8_t numbered_parameters;
 } pm_scope_t;
 
 static const uint8_t PM_FORWARDING_POSITIONALS = 0x1;
 static const uint8_t PM_FORWARDING_KEYWORDS = 0x2;
 static const uint8_t PM_FORWARDING_BLOCK = 0x4;
 static const uint8_t PM_FORWARDING_ALL = 0x8;
+static const int8_t PM_NUMBERED_PARAMETERS_DISALLOWED = -1;
 
 /**
  * This struct represents the overall parser. It contains a reference to the

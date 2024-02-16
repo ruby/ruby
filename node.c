@@ -405,9 +405,13 @@ void
 rb_ast_update_references(rb_ast_t *ast)
 {
     if (ast->node_buffer) {
-        node_buffer_t *nb = ast->node_buffer;
+        ast->node_buffer->mark_hash = rb_gc_location(ast->node_buffer->mark_hash);
+        ast->node_buffer->tokens = rb_gc_location(ast->node_buffer->tokens);
 
+        node_buffer_t *nb = ast->node_buffer;
         iterate_node_values(ast, &nb->markable, update_ast_value, NULL);
+
+        if (ast->body.script_lines) ast->body.script_lines = rb_gc_location(ast->body.script_lines);
     }
 }
 
@@ -415,11 +419,13 @@ void
 rb_ast_mark(rb_ast_t *ast)
 {
     if (ast->node_buffer) {
-        rb_gc_mark(ast->node_buffer->mark_hash);
-        rb_gc_mark(ast->node_buffer->tokens);
+        rb_gc_mark_movable(ast->node_buffer->mark_hash);
+        rb_gc_mark_movable(ast->node_buffer->tokens);
+
         node_buffer_t *nb = ast->node_buffer;
         iterate_node_values(ast, &nb->markable, mark_ast_value, NULL);
-        if (ast->body.script_lines) rb_gc_mark(ast->body.script_lines);
+
+        if (ast->body.script_lines) rb_gc_mark_movable(ast->body.script_lines);
     }
 }
 

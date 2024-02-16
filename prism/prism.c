@@ -3573,6 +3573,60 @@ pm_hash_node_closing_loc_set(pm_hash_node_t *hash, pm_token_t *token) {
 }
 
 /**
+ * Retrieve the value being written to the given node.
+ */
+static const pm_node_t *
+pm_write_node_value(const pm_node_t *node) {
+    switch (PM_NODE_TYPE(node)) {
+        case PM_CLASS_VARIABLE_WRITE_NODE:
+            return ((const pm_class_variable_write_node_t *) node)->value;
+        case PM_CONSTANT_WRITE_NODE:
+            return ((const pm_constant_write_node_t * ) node)->value;
+        case PM_GLOBAL_VARIABLE_WRITE_NODE:
+            return ((const pm_global_variable_write_node_t *) node)->value;
+        case PM_INSTANCE_VARIABLE_WRITE_NODE:
+            return ((const pm_instance_variable_write_node_t *) node)->value;
+        case PM_LOCAL_VARIABLE_WRITE_NODE:
+            return ((const pm_local_variable_write_node_t *) node)->value;
+        case PM_MULTI_WRITE_NODE:
+            return ((const pm_multi_write_node_t *) node)->value;
+        case PM_PARENTHESES_NODE: {
+            const pm_parentheses_node_t *cast = (const pm_parentheses_node_t *) node;
+            if (cast->body != NULL) {
+                return pm_write_node_value(cast->body);
+            }
+            return NULL;
+        }
+        case PM_BEGIN_NODE: {
+            const pm_begin_node_t *cast = (const pm_begin_node_t *) node;
+            if (cast->statements != NULL) {
+                return pm_write_node_value((const pm_node_t *) cast->statements);
+            }
+            return NULL;
+        }
+        case PM_STATEMENTS_NODE: {
+            const pm_statements_node_t *cast = (const pm_statements_node_t *) node;
+            return pm_write_node_value(cast->body.nodes[cast->body.size - 1]);
+        }
+        default:
+            return NULL;
+    }
+}
+
+/**
+ * Check whether the predicate contains an assigment where the assigned value is a
+ * literal. If such an assignment is found, it generates a warning.
+ */
+static void
+pm_predicate_check(pm_parser_t *parser, const pm_node_t *predicate) {
+    const pm_node_t *value = pm_write_node_value(predicate);
+
+    if ((value != NULL) && PM_NODE_FLAG_P(value, PM_NODE_FLAG_STATIC_LITERAL)) {
+        pm_parser_warn_token(parser, &parser->current, PM_WARN_EQUAL_IN_CONDITIONAL);
+    }
+}
+
+/**
  * Allocate a new IfNode node.
  */
 static pm_if_node_t *
@@ -3585,6 +3639,7 @@ pm_if_node_create(pm_parser_t *parser,
     const pm_token_t *end_keyword
 ) {
     pm_conditional_predicate(predicate);
+    pm_predicate_check(parser, predicate);
     pm_if_node_t *node = PM_ALLOC_NODE(parser, pm_if_node_t);
 
     const uint8_t *end;
@@ -3624,6 +3679,7 @@ pm_if_node_create(pm_parser_t *parser,
 static pm_if_node_t *
 pm_if_node_modifier_create(pm_parser_t *parser, pm_node_t *statement, const pm_token_t *if_keyword, pm_node_t *predicate) {
     pm_conditional_predicate(predicate);
+    pm_predicate_check(parser, predicate);
     pm_if_node_t *node = PM_ALLOC_NODE(parser, pm_if_node_t);
 
     pm_statements_node_t *statements = pm_statements_node_create(parser);
@@ -3656,6 +3712,7 @@ static pm_if_node_t *
 pm_if_node_ternary_create(pm_parser_t *parser, pm_node_t *predicate, const pm_token_t *qmark, pm_node_t *true_expression, const pm_token_t *colon, pm_node_t *false_expression) {
     pm_assert_value_expression(parser, predicate);
     pm_conditional_predicate(predicate);
+    pm_predicate_check(parser, predicate);
 
     pm_statements_node_t *if_statements = pm_statements_node_create(parser);
     pm_statements_node_body_append(if_statements, true_expression);
@@ -5899,6 +5956,7 @@ pm_undef_node_append(pm_undef_node_t *node, pm_node_t *name) {
 static pm_unless_node_t *
 pm_unless_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *predicate, const pm_token_t *then_keyword, pm_statements_node_t *statements) {
     pm_conditional_predicate(predicate);
+    pm_predicate_check(parser, predicate);
     pm_unless_node_t *node = PM_ALLOC_NODE(parser, pm_unless_node_t);
 
     const uint8_t *end;
@@ -5934,6 +5992,7 @@ pm_unless_node_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t 
 static pm_unless_node_t *
 pm_unless_node_modifier_create(pm_parser_t *parser, pm_node_t *statement, const pm_token_t *unless_keyword, pm_node_t *predicate) {
     pm_conditional_predicate(predicate);
+    pm_predicate_check(parser, predicate);
     pm_unless_node_t *node = PM_ALLOC_NODE(parser, pm_unless_node_t);
 
     pm_statements_node_t *statements = pm_statements_node_create(parser);
@@ -5971,6 +6030,7 @@ pm_unless_node_end_keyword_loc_set(pm_unless_node_t *node, const pm_token_t *end
 static pm_until_node_t *
 pm_until_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_token_t *closing, pm_node_t *predicate, pm_statements_node_t *statements, pm_node_flags_t flags) {
     pm_until_node_t *node = PM_ALLOC_NODE(parser, pm_until_node_t);
+    pm_predicate_check(parser, predicate);
 
     *node = (pm_until_node_t) {
         {
@@ -5996,6 +6056,7 @@ pm_until_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_to
 static pm_until_node_t *
 pm_until_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *predicate, pm_statements_node_t *statements, pm_node_flags_t flags) {
     pm_until_node_t *node = PM_ALLOC_NODE(parser, pm_until_node_t);
+    pm_predicate_check(parser, predicate);
 
     *node = (pm_until_node_t) {
         {
@@ -6065,6 +6126,7 @@ pm_when_node_statements_set(pm_when_node_t *node, pm_statements_node_t *statemen
 static pm_while_node_t *
 pm_while_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_token_t *closing, pm_node_t *predicate, pm_statements_node_t *statements, pm_node_flags_t flags) {
     pm_while_node_t *node = PM_ALLOC_NODE(parser, pm_while_node_t);
+    pm_predicate_check(parser, predicate);
 
     *node = (pm_while_node_t) {
         {
@@ -6090,6 +6152,7 @@ pm_while_node_create(pm_parser_t *parser, const pm_token_t *keyword, const pm_to
 static pm_while_node_t *
 pm_while_node_modifier_create(pm_parser_t *parser, const pm_token_t *keyword, pm_node_t *predicate, pm_statements_node_t *statements, pm_node_flags_t flags) {
     pm_while_node_t *node = PM_ALLOC_NODE(parser, pm_while_node_t);
+    pm_predicate_check(parser, predicate);
 
     *node = (pm_while_node_t) {
         {
@@ -6320,7 +6383,7 @@ pm_parser_local_add(pm_parser_t *parser, pm_constant_id_t constant_id) {
  * Set the numbered_parameters value of the current scope.
  */
 static inline void
-pm_parser_numbered_parameters_set(pm_parser_t *parser, uint8_t numbered_parameters) {
+pm_parser_numbered_parameters_set(pm_parser_t *parser, int8_t numbered_parameters) {
     parser->current_scope->numbered_parameters = numbered_parameters;
 }
 
@@ -12525,10 +12588,10 @@ parse_block(pm_parser_t *parser) {
     }
 
     pm_node_t *parameters = (pm_node_t *) block_parameters;
-    uint8_t maximum = parser->current_scope->numbered_parameters;
+    int8_t maximum = parser->current_scope->numbered_parameters;
 
     if (parameters == NULL && (maximum > 0)) {
-        parameters = (pm_node_t *) pm_numbered_parameters_node_create(parser, &(pm_location_t) { .start = opening.start, .end = parser->previous.end }, maximum);
+        parameters = (pm_node_t *) pm_numbered_parameters_node_create(parser, &(pm_location_t) { .start = opening.start, .end = parser->previous.end }, (uint8_t) maximum);
     }
 
     pm_constant_id_list_t locals = parser->current_scope->locals;
@@ -13226,7 +13289,7 @@ parse_alias_argument(pm_parser_t *parser, bool first) {
 static bool
 outer_scope_using_numbered_parameters_p(pm_parser_t *parser) {
     for (pm_scope_t *scope = parser->current_scope->previous; scope != NULL && !scope->closed; scope = scope->previous) {
-        if (scope->numbered_parameters) return true;
+        if (scope->numbered_parameters > 0) return true;
     }
 
     return false;
@@ -13252,12 +13315,13 @@ parse_variable(pm_parser_t *parser) {
         return pm_local_variable_read_node_create(parser, &parser->previous, (uint32_t) depth);
     }
 
-    if (!parser->current_scope->closed && pm_token_is_numbered_parameter(parser->previous.start, parser->previous.end)) {
+    pm_scope_t *current_scope = parser->current_scope;
+    if (!current_scope->closed && current_scope->numbered_parameters != PM_NUMBERED_PARAMETERS_DISALLOWED && pm_token_is_numbered_parameter(parser->previous.start, parser->previous.end)) {
         // Now that we know we have a numbered parameter, we need to check
         // if it's allowed in this context. If it is, then we will create a
         // local variable read. If it's not, then we'll create a normal call
         // node but add an error.
-        if (parser->current_scope->explicit_params) {
+        if (current_scope->explicit_params) {
             pm_parser_err_previous(parser, PM_ERR_NUMBERED_PARAMETER_NOT_ALLOWED);
         } else if (outer_scope_using_numbered_parameters_p(parser)) {
             pm_parser_err_previous(parser, PM_ERR_NUMBERED_PARAMETER_OUTER_SCOPE);
@@ -13266,9 +13330,9 @@ parse_variable(pm_parser_t *parser) {
             // scopes cannot. We subtract the value for the character '0' to get
             // the actual integer value of the number (only _1 through _9 are
             // valid).
-            uint8_t numbered_parameters = (uint8_t) (parser->previous.start[1] - '0');
-            if (numbered_parameters > parser->current_scope->numbered_parameters) {
-                parser->current_scope->numbered_parameters = numbered_parameters;
+            int8_t numbered_parameters = (int8_t) (parser->previous.start[1] - '0');
+            if (numbered_parameters > current_scope->numbered_parameters) {
+                current_scope->numbered_parameters = numbered_parameters;
                 pm_parser_numbered_parameters_set(parser, numbered_parameters);
             }
 
@@ -13277,7 +13341,7 @@ parse_variable(pm_parser_t *parser) {
             // referencing _2 means that _1 must exist. Therefore here we
             // loop through all of the possibilities and add them into the
             // constant pool.
-            for (uint8_t numbered_parameter = 1; numbered_parameter <= numbered_parameters - 1; numbered_parameter++) {
+            for (int8_t numbered_parameter = 1; numbered_parameter <= numbered_parameters - 1; numbered_parameter++) {
                 pm_parser_local_add_constant(parser, pm_numbered_parameter_names[numbered_parameter - 1], 2);
             }
 
@@ -13460,9 +13524,11 @@ parse_pattern_constant_path(pm_parser_t *parser, pm_node_t *node) {
     } else {
         parser_lex(parser);
         opening = parser->previous;
+        accept1(parser, PM_TOKEN_NEWLINE);
 
         if (!accept1(parser, PM_TOKEN_PARENTHESIS_RIGHT)) {
             inner = parse_pattern(parser, true, PM_ERR_PATTERN_EXPRESSION_AFTER_PAREN);
+            accept1(parser, PM_TOKEN_NEWLINE);
             expect1(parser, PM_TOKEN_PARENTHESIS_RIGHT, PM_ERR_PATTERN_TERM_PAREN);
         }
 
@@ -15864,6 +15930,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
                 } else {
                     receiver = parse_expression(parser, PM_BINDING_POWER_COMPOSITION, true, PM_ERR_NOT_EXPRESSION);
                     pm_conditional_predicate(receiver);
+                    pm_predicate_check(parser, receiver);
 
                     if (!parser->recovering) {
                         accept1(parser, PM_TOKEN_NEWLINE);
@@ -15874,6 +15941,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             } else {
                 receiver = parse_expression(parser, PM_BINDING_POWER_NOT, true, PM_ERR_NOT_EXPRESSION);
                 pm_conditional_predicate(receiver);
+                pm_predicate_check(parser, receiver);
             }
 
             return (pm_node_t *) pm_call_node_not_create(parser, receiver, &message, &arguments);
@@ -16544,6 +16612,7 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             pm_call_node_t *node = pm_call_node_unary_create(parser, &operator, receiver, "!");
 
             pm_conditional_predicate(receiver);
+            pm_predicate_check(parser, receiver);
             return (pm_node_t *) node;
         }
         case PM_TOKEN_TILDE: {
@@ -16666,10 +16735,10 @@ parse_expression_prefix(pm_parser_t *parser, pm_binding_power_t binding_power, b
             }
 
             pm_node_t *parameters = (pm_node_t *) block_parameters;
-            uint8_t maximum = parser->current_scope->numbered_parameters;
+            int8_t maximum = parser->current_scope->numbered_parameters;
 
             if (parameters == NULL && (maximum > 0)) {
-                parameters = (pm_node_t *) pm_numbered_parameters_node_create(parser, &(pm_location_t) { .start = operator.start, .end = parser->previous.end }, maximum);
+                parameters = (pm_node_t *) pm_numbered_parameters_node_create(parser, &(pm_location_t) { .start = operator.start, .end = parser->previous.end }, (uint8_t) maximum);
             }
 
             pm_constant_id_list_t locals = parser->current_scope->locals;
@@ -17939,6 +18008,10 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
         for (size_t scope_index = 0; scope_index < options->scopes_count; scope_index++) {
             const pm_options_scope_t *scope = pm_options_scope_get(options, scope_index);
             pm_parser_scope_push(parser, scope_index == 0);
+
+            // Scopes given from the outside are not allowed to have numbered
+            // parameters.
+            parser->current_scope->numbered_parameters = PM_NUMBERED_PARAMETERS_DISALLOWED;
 
             for (size_t local_index = 0; local_index < scope->locals_count; local_index++) {
                 const pm_string_t *local = pm_options_scope_local_get(scope, local_index);

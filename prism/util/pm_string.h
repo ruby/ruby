@@ -125,6 +125,18 @@ size_t pm_string_memsize(const pm_string_t *string);
 void pm_string_ensure_owned(pm_string_t *string);
 
 /**
+ * Compare the underlying lengths and bytes of two strings. Returns 0 if the
+ * strings are equal, a negative number if the left string is less than the
+ * right string, and a positive number if the left string is greater than the
+ * right string.
+ *
+ * @param left The left string to compare.
+ * @param right The right string to compare.
+ * @return The comparison result.
+ */
+int pm_string_compare(const pm_string_t *left, const pm_string_t *right);
+
+/**
  * Returns the length associated with the string.
  *
  * @param string The string to get the length of.

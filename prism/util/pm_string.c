@@ -169,6 +169,26 @@ pm_string_ensure_owned(pm_string_t *string) {
 }
 
 /**
+ * Compare the underlying lengths and bytes of two strings. Returns 0 if the
+ * strings are equal, a negative number if the left string is less than the
+ * right string, and a positive number if the left string is greater than the
+ * right string.
+ */
+int
+pm_string_compare(const pm_string_t *left, const pm_string_t *right) {
+    size_t left_length = pm_string_length(left);
+    size_t right_length = pm_string_length(right);
+
+    if (left_length < right_length) {
+        return -1;
+    } else if (left_length > right_length) {
+        return 1;
+    }
+
+    return memcmp(pm_string_source(left), pm_string_source(right), left_length);
+}
+
+/**
  * Returns the length associated with the string.
  */
 PRISM_EXPORTED_FUNCTION size_t

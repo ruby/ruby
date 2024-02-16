@@ -32,6 +32,13 @@ RSpec.describe Bundler::Dsl do
       expect(subject.dependencies.first.source.ref).to eq("refs/pull/5/head")
     end
 
+    it "converts :gitlab PR to URI using https" do
+      subject.gem("sparks", gitlab: "https://gitlab.com/indirect/sparks/-/merge_requests/5")
+      gitlab_uri = "https://gitlab.com/indirect/sparks.git"
+      expect(subject.dependencies.first.source.uri).to eq(gitlab_uri)
+      expect(subject.dependencies.first.source.ref).to eq("refs/merge-requests/5/head")
+    end
+
     it "rejects :github PR URI with a branch, ref or tag" do
       expect do
         subject.gem("sparks", github: "https://github.com/indirect/sparks/pull/5", branch: "foo")
@@ -55,12 +62,44 @@ RSpec.describe Bundler::Dsl do
       )
     end
 
+    it "rejects :gitlab PR URI with a branch, ref or tag" do
+      expect do
+        subject.gem("sparks", gitlab: "https://gitlab.com/indirect/sparks/-/merge_requests/5", branch: "foo")
+      end.to raise_error(
+        Bundler::GemfileError,
+        %(The :branch option can't be used with `gitlab: "https://gitlab.com/indirect/sparks/-/merge_requests/5"`),
+      )
+
+      expect do
+        subject.gem("sparks", gitlab: "https://gitlab.com/indirect/sparks/-/merge_requests/5", ref: "foo")
+      end.to raise_error(
+        Bundler::GemfileError,
+        %(The :ref option can't be used with `gitlab: "https://gitlab.com/indirect/sparks/-/merge_requests/5"`),
+      )
+
+      expect do
+        subject.gem("sparks", gitlab: "https://gitlab.com/indirect/sparks/-/merge_requests/5", tag: "foo")
+      end.to raise_error(
+        Bundler::GemfileError,
+        %(The :tag option can't be used with `gitlab: "https://gitlab.com/indirect/sparks/-/merge_requests/5"`),
+      )
+    end
+
     it "rejects :github with :git" do
       expect do
         subject.gem("sparks", github: "indirect/sparks", git: "https://github.com/indirect/sparks.git")
       end.to raise_error(
         Bundler::GemfileError,
         %(The :git option can't be used with `github: "indirect/sparks"`),
+      )
+    end
+
+    it "rejects :gitlab with :git" do
+      expect do
+        subject.gem("sparks", gitlab: "indirect/sparks", git: "https://gitlab.com/indirect/sparks.git")
+      end.to raise_error(
+        Bundler::GemfileError,
+        %(The :git option can't be used with `gitlab: "indirect/sparks"`),
       )
     end
 
@@ -75,6 +114,18 @@ RSpec.describe Bundler::Dsl do
         subject.gem("sparks", github: "rails")
         github_uri = "https://github.com/rails/rails.git"
         expect(subject.dependencies.first.source.uri).to eq(github_uri)
+      end
+
+      it "converts :gitlab to URI using https" do
+        subject.gem("sparks", gitlab: "indirect/sparks")
+        gitlab_uri = "https://gitlab.com/indirect/sparks.git"
+        expect(subject.dependencies.first.source.uri).to eq(gitlab_uri)
+      end
+
+      it "converts :gitlab shortcut to URI using https" do
+        subject.gem("sparks", gitlab: "rails")
+        gitlab_uri = "https://gitlab.com/rails/rails.git"
+        expect(subject.dependencies.first.source.uri).to eq(gitlab_uri)
       end
 
       it "converts numeric :gist to :git" do
@@ -103,8 +154,8 @@ RSpec.describe Bundler::Dsl do
     end
 
     context "default git sources" do
-      it "has bitbucket, gist, and github" do
-        expect(subject.instance_variable_get(:@git_sources).keys.sort).to eq(%w[bitbucket gist github])
+      it "has bitbucket, gist, github, and gitlab" do
+        expect(subject.instance_variable_get(:@git_sources).keys.sort).to eq(%w[bitbucket gist github gitlab])
       end
     end
   end

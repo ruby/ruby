@@ -43,7 +43,6 @@ jobs:
     strategy:
       matrix:
         ruby:
-          - ruby-2.7
           - ruby-3.0
           - ruby-3.1
           - ruby-3.2

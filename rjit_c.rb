@@ -451,69 +451,22 @@ module RubyVM::RJIT # :nodoc: all
   C::VM_METHOD_TYPE_ZSUPER = Primitive.cexpr! %q{ SIZET2NUM(VM_METHOD_TYPE_ZSUPER) }
   C::VM_SPECIAL_OBJECT_VMCORE = Primitive.cexpr! %q{ SIZET2NUM(VM_SPECIAL_OBJECT_VMCORE) }
 
-  def C.block_type_iseq
-    Primitive.cexpr! %q{ SIZET2NUM(block_type_iseq) }
-  end
-
-  def C.idRespond_to_missing
-    Primitive.cexpr! %q{ SIZET2NUM(idRespond_to_missing) }
-  end
-
-  def C.imemo_callinfo
-    Primitive.cexpr! %q{ SIZET2NUM(imemo_callinfo) }
-  end
-
-  def C.imemo_iseq
-    Primitive.cexpr! %q{ SIZET2NUM(imemo_iseq) }
-  end
-
-  def C.rb_block_param_proxy
-    Primitive.cexpr! %q{ SIZET2NUM(rb_block_param_proxy) }
-  end
-
-  def C.rb_cArray
-    Primitive.cexpr! %q{ SIZET2NUM(rb_cArray) }
-  end
-
-  def C.rb_cFalseClass
-    Primitive.cexpr! %q{ SIZET2NUM(rb_cFalseClass) }
-  end
-
-  def C.rb_cFloat
-    Primitive.cexpr! %q{ SIZET2NUM(rb_cFloat) }
-  end
-
-  def C.rb_cInteger
-    Primitive.cexpr! %q{ SIZET2NUM(rb_cInteger) }
-  end
-
-  def C.rb_cNilClass
-    Primitive.cexpr! %q{ SIZET2NUM(rb_cNilClass) }
-  end
-
-  def C.rb_cString
-    Primitive.cexpr! %q{ SIZET2NUM(rb_cString) }
-  end
-
-  def C.rb_cSymbol
-    Primitive.cexpr! %q{ SIZET2NUM(rb_cSymbol) }
-  end
-
-  def C.rb_cTrueClass
-    Primitive.cexpr! %q{ SIZET2NUM(rb_cTrueClass) }
-  end
-
-  def C.rb_mRubyVMFrozenCore
-    Primitive.cexpr! %q{ SIZET2NUM(rb_mRubyVMFrozenCore) }
-  end
-
-  def C.rb_rjit_global_events
-    Primitive.cexpr! %q{ SIZET2NUM(rb_rjit_global_events) }
-  end
-
-  def C.rb_vm_insns_count
-    Primitive.cexpr! %q{ SIZET2NUM(rb_vm_insns_count) }
-  end
+  def C.block_type_iseq = Primitive.cexpr!(%q{ SIZET2NUM(block_type_iseq) })
+  def C.idRespond_to_missing = Primitive.cexpr!(%q{ SIZET2NUM(idRespond_to_missing) })
+  def C.imemo_callinfo = Primitive.cexpr!(%q{ SIZET2NUM(imemo_callinfo) })
+  def C.imemo_iseq = Primitive.cexpr!(%q{ SIZET2NUM(imemo_iseq) })
+  def C.rb_block_param_proxy = Primitive.cexpr!(%q{ SIZET2NUM(rb_block_param_proxy) })
+  def C.rb_cArray = Primitive.cexpr!(%q{ SIZET2NUM(rb_cArray) })
+  def C.rb_cFalseClass = Primitive.cexpr!(%q{ SIZET2NUM(rb_cFalseClass) })
+  def C.rb_cFloat = Primitive.cexpr!(%q{ SIZET2NUM(rb_cFloat) })
+  def C.rb_cInteger = Primitive.cexpr!(%q{ SIZET2NUM(rb_cInteger) })
+  def C.rb_cNilClass = Primitive.cexpr!(%q{ SIZET2NUM(rb_cNilClass) })
+  def C.rb_cString = Primitive.cexpr!(%q{ SIZET2NUM(rb_cString) })
+  def C.rb_cSymbol = Primitive.cexpr!(%q{ SIZET2NUM(rb_cSymbol) })
+  def C.rb_cTrueClass = Primitive.cexpr!(%q{ SIZET2NUM(rb_cTrueClass) })
+  def C.rb_mRubyVMFrozenCore = Primitive.cexpr!(%q{ SIZET2NUM(rb_mRubyVMFrozenCore) })
+  def C.rb_rjit_global_events = Primitive.cexpr!(%q{ SIZET2NUM(rb_rjit_global_events) })
+  def C.rb_vm_insns_count = Primitive.cexpr!(%q{ SIZET2NUM(rb_vm_insns_count) })
 
   def C.rb_ary_clear
     Primitive.cexpr! %q{ SIZET2NUM((size_t)rb_ary_clear) }
