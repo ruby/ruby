@@ -28,7 +28,7 @@ permissions:
 
 jobs:
   compile:
-    name: gcc-11 annocheck
+    name: test-annocheck
 
     runs-on: ubuntu-latest
 
