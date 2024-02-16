@@ -1366,7 +1366,7 @@ typedef struct rb_parser_config_struct {
     void (*gc_register_mark_object)(VALUE object);
     void (*gc_guard)(VALUE);
     void (*gc_mark)(VALUE);
-    void (*gc_mark_movable)(VALUE ptr);
+    void (*gc_mark_and_move)(VALUE *ptr);
     VALUE (*gc_location)(VALUE value);
 
     /* Re */

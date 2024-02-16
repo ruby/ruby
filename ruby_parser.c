@@ -640,7 +640,7 @@ static const rb_parser_config_t rb_global_parser_config = {
     .gc_register_mark_object = rb_gc_register_mark_object,
     .gc_guard = gc_guard,
     .gc_mark = rb_gc_mark,
-    .gc_mark_movable = rb_gc_mark_movable,
+    .gc_mark_and_move = rb_gc_mark_and_move,
     .gc_location = rb_gc_location,
 
     .reg_compile = rb_reg_compile,
