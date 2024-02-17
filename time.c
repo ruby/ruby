@@ -1958,6 +1958,10 @@ rb_timespec_now(struct timespec *ts)
 #endif
 }
 
+/*
+ * Sets the current time information into _time_.
+ * Returns _time_.
+ */
 static VALUE
 time_init_now(rb_execution_context_t *ec, VALUE time, VALUE zone)
 {
@@ -2408,6 +2412,10 @@ vtm_day_wraparound(struct vtm *vtm)
 
 static VALUE time_init_vtm(VALUE time, struct vtm vtm, VALUE zone);
 
+/*
+ * Sets the broken-out time information into _time_.
+ * Returns _time_.
+ */
 static VALUE
 time_init_args(rb_execution_context_t *ec, VALUE time, VALUE year, VALUE mon, VALUE mday,
                VALUE hour, VALUE min, VALUE sec, VALUE zone)
@@ -2537,6 +2545,10 @@ parse_int(const char *ptr, const char *end, const char **endp, size_t *ndigits, 
     return rb_int_parse_cstr(ptr, len, (char **)endp, ndigits, 10, flags);
 }
 
+/*
+ * Parses _str_ and sets the broken-out time information into _time_.
+ * If _str_ is not a String, returns +nil+, otherwise returns _time_.
+ */
 static VALUE
 time_init_parse(rb_execution_context_t *ec, VALUE time, VALUE str, VALUE zone, VALUE precision)
 {
