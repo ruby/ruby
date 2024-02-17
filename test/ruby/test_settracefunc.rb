@@ -1,5 +1,6 @@
 # frozen_string_literal: false
 require 'test/unit'
+EnvUtil.suppress_warning {require 'continuation'}
 
 class TestSetTraceFunc < Test::Unit::TestCase
   def setup
@@ -1258,15 +1259,17 @@ CODE
       end
     }
     assert_normal_exit src % %q{obj.zip({}) {}}, bug7774
-    assert_normal_exit src % %q{
-      require 'continuation'
-      begin
-        c = nil
-        obj.sort_by {|x| callcc {|c2| c ||= c2 }; x }
-        c.call
-      rescue RuntimeError
-      end
-    }, bug7774
+    if respond_to?(:callcc)
+      assert_normal_exit src % %q{
+        require 'continuation'
+        begin
+          c = nil
+          obj.sort_by {|x| callcc {|c2| c ||= c2 }; x }
+          c.call
+        rescue RuntimeError
+        end
+      }, bug7774
+    end
 
     # TracePoint
     tp_b = nil

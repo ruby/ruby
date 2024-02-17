@@ -3561,6 +3561,7 @@ class TestArray < Test::Unit::TestCase
     unless respond_to?(:callcc, true)
       EnvUtil.suppress_warning {require 'continuation'}
     end
+    omit 'requires callcc support' unless respond_to?(:callcc, true)
   end
 end
 
