@@ -5664,6 +5664,12 @@ int_downto(VALUE from, VALUE to)
     return from;
 }
 
+static VALUE
+int_dotimes_size(VALUE num, VALUE args, VALUE eobj)
+{
+    return int_neg_p(num) ? INT2FIX(0) : num;
+}
+
 /*
  *  call-seq:
  *    round(ndigits= 0, half: :up) -> integer

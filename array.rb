@@ -44,7 +44,7 @@ class Array
   def each
     Primitive.attr! :inline_block
     unless defined?(yield)
-      return to_enum(:each) { self.length }
+      return Primitive.cexpr! 'SIZED_ENUMERATOR(self, 0, 0, ary_enum_length)'
     end
     _i = 0
     value = nil
