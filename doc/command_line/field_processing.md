@@ -92,3 +92,33 @@ $ ruby -an -Fs -e "p \$F" desiderata.txt
 ["A", " far a", " po", "", "ible, without ", "urrender,\n"]
 ["be on good term", " with all per", "on", ".\n"]
 ```
+
+## Option `-l`
+
+Option `-l`, when given with option `-n` or `-p`,
+modifies line-ending processing by:
+
+- Setting global variable output record separator `$\`
+  input record separator `$/`;
+  this affects line-oriented output (such a that from Kernel#puts).
+- Calling String#chop! on each line read.
+
+Without option `-l` (unchopped):
+
+```sh
+$ ruby -n -e "p \$_" desiderata.txt
+"Go placidly amid the noise and the haste,\n"
+"and remember what peace there may be in silence.\n"
+"As far as possible, without surrender,\n"
+"be on good terms with all persons.\n"
+```
+
+With option `-l' (chopped):
+
+```sh
+$ ruby -ln -e "p \$_" desiderata.txt
+"Go placidly amid the noise and the haste,"
+"and remember what peace there may be in silence."
+"As far as possible, without surrender,"
+"be on good terms with all persons."
+```
