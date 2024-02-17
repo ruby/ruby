@@ -865,6 +865,9 @@ class TestRubyOptions < Test::Unit::TestCase
     env = Hash === args.first ? args.shift : {}
     args.unshift("--yjit") if self.class.yjit_enabled?
     env.update({'RUBY_ON_BUG' => nil})
+    # ASAN registers a segv handler which prints out "AddressSanitizer: DEADLYSIGNAL" when
+    # catching sigsegv; we don't expect that output, so suppress it.
+    env.update({'ASAN_OPTIONS' => 'handle_segv=0'})
     args.unshift(env)
 
     test_stdin = ""
