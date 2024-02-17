@@ -82,7 +82,9 @@ build_options_scopes(pm_options_t *options, VALUE scopes) {
 
     // Initialize the scopes array.
     size_t scopes_count = RARRAY_LEN(scopes);
-    pm_options_scopes_init(options, scopes_count);
+    if (!pm_options_scopes_init(options, scopes_count)) {
+        rb_raise(rb_eNoMemError, "failed to allocate memory");
+    }
 
     // Iterate over the scopes and add them to the options.
     for (size_t scope_index = 0; scope_index < scopes_count; scope_index++) {
@@ -97,7 +99,9 @@ build_options_scopes(pm_options_t *options, VALUE scopes) {
         // Initialize the scope array.
         size_t locals_count = RARRAY_LEN(scope);
         pm_options_scope_t *options_scope = &options->scopes[scope_index];
-        pm_options_scope_init(options_scope, locals_count);
+        if (!pm_options_scope_init(options_scope, locals_count)) {
+            rb_raise(rb_eNoMemError, "failed to allocate memory");
+        }
 
         // Iterate over the locals and add them to the scope.
         for (size_t local_index = 0; local_index < locals_count; local_index++) {

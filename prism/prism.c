@@ -600,7 +600,7 @@ pm_parser_constant_id_location(pm_parser_t *parser, const uint8_t *start, const 
  * Retrieve the constant pool id for the given string.
  */
 static inline pm_constant_id_t
-pm_parser_constant_id_owned(pm_parser_t *parser, const uint8_t *start, size_t length) {
+pm_parser_constant_id_owned(pm_parser_t *parser, uint8_t *start, size_t length) {
     return pm_constant_pool_insert_owned(&parser->constant_pool, start, length);
 }
 
@@ -6409,7 +6409,7 @@ pm_parser_local_add_token(pm_parser_t *parser, pm_token_t *token) {
  * Add a local variable from an owned string to the current scope.
  */
 static pm_constant_id_t
-pm_parser_local_add_owned(pm_parser_t *parser, const uint8_t *start, size_t length) {
+pm_parser_local_add_owned(pm_parser_t *parser, uint8_t *start, size_t length) {
     pm_constant_id_t constant_id = pm_parser_constant_id_owned(parser, start, length);
     if (constant_id != 0) pm_parser_local_add(parser, constant_id);
     return constant_id;
@@ -16945,7 +16945,7 @@ parse_regular_expression_named_captures(pm_parser_t *parser, const pm_string_t *
                 memcpy(memory, source, length);
                 // This silences clang analyzer warning about leak of memory pointed by `memory`.
                 // NOLINTNEXTLINE(clang-analyzer-*)
-                name = pm_parser_constant_id_owned(parser, (const uint8_t *) memory, length);
+                name = pm_parser_constant_id_owned(parser, (uint8_t *) memory, length);
 
                 if (pm_token_is_numbered_parameter(source, source + length)) {
                     const pm_location_t *location = &call->receiver->location;
@@ -18021,11 +18021,11 @@ pm_parser_init(pm_parser_t *parser, const uint8_t *source, size_t size, const pm
                 const uint8_t *source = pm_string_source(local);
                 size_t length = pm_string_length(local);
 
-                uint8_t *allocated = malloc(length);
+                void *allocated = malloc(length);
                 if (allocated == NULL) continue;
 
-                memcpy((void *) allocated, source, length);
-                pm_parser_local_add_owned(parser, allocated, length);
+                memcpy(allocated, source, length);
+                pm_parser_local_add_owned(parser, (uint8_t *) allocated, length);
             }
         }
     }
@@ -18235,8 +18235,9 @@ typedef struct {
 static inline pm_error_t *
 pm_parser_errors_format_sort(const pm_parser_t *parser, const pm_list_t *error_list, const pm_newline_list_t *newline_list) {
     pm_error_t *errors = calloc(error_list->size, sizeof(pm_error_t));
-    int32_t start_line = parser->start_line;
+    if (errors == NULL) return NULL;
 
+    int32_t start_line = parser->start_line;
     for (pm_diagnostic_t *error = (pm_diagnostic_t *) error_list->head; error != NULL; error = (pm_diagnostic_t *) error->node.next) {
         pm_line_column_t start = pm_newline_list_line_column(newline_list, error->location.start, start_line);
         pm_line_column_t end = pm_newline_list_line_column(newline_list, error->location.end, start_line);
@@ -18316,7 +18317,9 @@ pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool col
     // insertion sort into a newly allocated array.
     const int32_t start_line = parser->start_line;
     const pm_newline_list_t *newline_list = &parser->newline_list;
+
     pm_error_t *errors = pm_parser_errors_format_sort(parser, error_list, newline_list);
+    if (errors == NULL) return;
 
     // Now we're going to determine how we're going to format line numbers and
     // blank lines based on the maximum number of digits in the line numbers

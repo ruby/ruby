@@ -389,13 +389,14 @@ pm_diagnostic_list_append_format(pm_list_t *list, const uint8_t *start, const ui
  */
 void
 pm_diagnostic_list_free(pm_list_t *list) {
-    pm_list_node_t *node, *next;
+    pm_diagnostic_t *node = (pm_diagnostic_t *) list->head;
 
-    for (node = list->head; node != NULL; node = next) {
-        next = node->next;
-        pm_diagnostic_t *diagnostic = (pm_diagnostic_t *) node;
+    while (node != NULL) {
+        pm_diagnostic_t *next = (pm_diagnostic_t *) node->node.next;
 
-        if (diagnostic->owned) free((void *) diagnostic->message);
-        free(diagnostic);
+        if (node->owned) free((void *) node->message);
+        free(node);
+
+        node = next;
     }
 }

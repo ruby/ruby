@@ -287,7 +287,7 @@ pm_constant_pool_insert_shared(pm_constant_pool_t *pool, const uint8_t *start, s
  * potential calls to resize fail.
  */
 pm_constant_id_t
-pm_constant_pool_insert_owned(pm_constant_pool_t *pool, const uint8_t *start, size_t length) {
+pm_constant_pool_insert_owned(pm_constant_pool_t *pool, uint8_t *start, size_t length) {
     return pm_constant_pool_insert(pool, start, length, PM_CONSTANT_POOL_BUCKET_OWNED);
 }
 

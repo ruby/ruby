@@ -47,7 +47,7 @@ pm_buffer_length(const pm_buffer_t *buffer) {
 /**
  * Append the given amount of space to the buffer.
  */
-static inline void
+static inline bool
 pm_buffer_append_length(pm_buffer_t *buffer, size_t length) {
     size_t next_length = buffer->length + length;
 
@@ -61,9 +61,11 @@ pm_buffer_append_length(pm_buffer_t *buffer, size_t length) {
         }
 
         buffer->value = realloc(buffer->value, buffer->capacity);
+        if (buffer->value == NULL) return false;
     }
 
     buffer->length = next_length;
+    return true;
 }
 
 /**
@@ -72,8 +74,9 @@ pm_buffer_append_length(pm_buffer_t *buffer, size_t length) {
 static inline void
 pm_buffer_append(pm_buffer_t *buffer, const void *source, size_t length) {
     size_t cursor = buffer->length;
-    pm_buffer_append_length(buffer, length);
-    memcpy(buffer->value + cursor, source, length);
+    if (pm_buffer_append_length(buffer, length)) {
+        memcpy(buffer->value + cursor, source, length);
+    }
 }
 
 /**
@@ -82,8 +85,9 @@ pm_buffer_append(pm_buffer_t *buffer, const void *source, size_t length) {
 void
 pm_buffer_append_zeroes(pm_buffer_t *buffer, size_t length) {
     size_t cursor = buffer->length;
-    pm_buffer_append_length(buffer, length);
-    memset(buffer->value + cursor, 0, length);
+    if (pm_buffer_append_length(buffer, length)) {
+        memset(buffer->value + cursor, 0, length);
+    }
 }
 
 /**
@@ -100,13 +104,12 @@ pm_buffer_append_format(pm_buffer_t *buffer, const char *format, ...) {
     size_t length = (size_t) (result + 1);
 
     size_t cursor = buffer->length;
-    pm_buffer_append_length(buffer, length);
-
-    va_start(arguments, format);
-    vsnprintf(buffer->value + cursor, length, format, arguments);
-    va_end(arguments);
-
-    buffer->length--;
+    if (pm_buffer_append_length(buffer, length)) {
+        va_start(arguments, format);
+        vsnprintf(buffer->value + cursor, length, format, arguments);
+        va_end(arguments);
+        buffer->length--;
+    }
 }
 
 /**
@@ -236,9 +239,10 @@ pm_buffer_append_source(pm_buffer_t *buffer, const uint8_t *source, size_t lengt
 void
 pm_buffer_prepend_string(pm_buffer_t *buffer, const char *value, size_t length) {
     size_t cursor = buffer->length;
-    pm_buffer_append_length(buffer, length);
-    memmove(buffer->value + length, buffer->value, cursor);
-    memcpy(buffer->value, value, length);
+    if (pm_buffer_append_length(buffer, length)) {
+        memmove(buffer->value + length, buffer->value, cursor);
+        memcpy(buffer->value, value, length);
+    }
 }
 
 /**

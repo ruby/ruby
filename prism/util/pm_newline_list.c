@@ -30,9 +30,10 @@ pm_newline_list_append(pm_newline_list_t *list, const uint8_t *cursor) {
 
         list->capacity = (list->capacity * 3) / 2;
         list->offsets = (size_t *) calloc(list->capacity, sizeof(size_t));
+        if (list->offsets == NULL) return false;
+
         memcpy(list->offsets, original_offsets, list->size * sizeof(size_t));
         free(original_offsets);
-        if (list->offsets == NULL) return false;
     }
 
     assert(*cursor == '\n');

@@ -129,8 +129,9 @@ PRISM_EXPORTED_FUNCTION bool pm_options_version_set(pm_options_t *options, const
  *
  * @param options The options struct to initialize the scopes array on.
  * @param scopes_count The number of scopes to allocate.
+ * @return Whether or not the scopes array was initialized successfully.
  */
-PRISM_EXPORTED_FUNCTION void pm_options_scopes_init(pm_options_t *options, size_t scopes_count);
+PRISM_EXPORTED_FUNCTION bool pm_options_scopes_init(pm_options_t *options, size_t scopes_count);
 
 /**
  * Return a pointer to the scope at the given index within the given options.
@@ -147,8 +148,9 @@ PRISM_EXPORTED_FUNCTION const pm_options_scope_t * pm_options_scope_get(const pm
  *
  * @param scope The scope struct to initialize.
  * @param locals_count The number of locals to allocate.
+ * @return Whether or not the scope was initialized successfully.
  */
-PRISM_EXPORTED_FUNCTION void pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count);
+PRISM_EXPORTED_FUNCTION bool pm_options_scope_init(pm_options_scope_t *scope, size_t locals_count);
 
 /**
  * Return a pointer to the local at the given index within the given scope.
