@@ -2538,7 +2538,7 @@ parse_int(const char *ptr, const char *end, const char **endp, size_t *ndigits, 
 }
 
 static VALUE
-time_init_parse(rb_execution_context_t *ec, VALUE klass, VALUE str, VALUE zone, VALUE precision)
+time_init_parse(rb_execution_context_t *ec, VALUE time, VALUE str, VALUE zone, VALUE precision)
 {
     if (NIL_P(str = rb_check_string_type(str))) return Qnil;
     if (!rb_enc_str_asciicompat_p(str)) {
@@ -2660,7 +2660,7 @@ only_year:
         .sec  = (sec < 0)  ? 0 : sec,
         .subsecx = NIL_P(subsec) ? INT2FIX(0) : subsec,
     };
-    return time_init_vtm(klass, vtm, zone);
+    return time_init_vtm(time, vtm, zone);
 }
 
 static void
