@@ -448,6 +448,11 @@ install?(:local, :arch, :data) do
   if pc and File.file?(pc) and File.size?(pc)
     prepare "pkgconfig data", pkgconfigdir = File.join(libdir, "pkgconfig")
     install pc, pkgconfigdir, :mode => $data_mode
+    if (pkgconfig_base = CONFIG["libdir", true]) != libdir
+      prepare "pkgconfig data link", File.join(pkgconfig_base, "pkgconfig")
+      ln_sf(File.join("..", Path.relative(pkgconfigdir, pkgconfig_base), pc),
+            File.join(pkgconfig_base, "pkgconfig", pc))
+    end
   end
 end
 
