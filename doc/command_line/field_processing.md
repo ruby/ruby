@@ -1,11 +1,11 @@
-# Field Processing
+## Field Processing
 
 Ruby supports <i>field processing</i>.
 
 This means that when certain command-line options are given,
 the invoked Ruby program can process input line-by-line.
 
-## About the Examples
+### About the Examples
 
 Examples here assume that this code (creating file `desiderata.txt`)
 has been executed:
@@ -27,7 +27,7 @@ which passes the Ruby code to be executed on the command line itself:
 $ ruby -e 'puts "Hello, World."'
 ```
 
-## Option `-n`
+### Option `-n`
 
 Option `-n` runs your program in a Kernel#gets loop:
 
@@ -48,7 +48,7 @@ As far as possible, without surrender,
 be on good terms with all persons.
 ```
 
-## Option `-p`
+### Option `-p`
 
 Option `-p` is like option `-n`, but also prints each line:
 
@@ -64,7 +64,7 @@ As far as possible, without surrender,
 be on good terms with all persons.
 ```
 
-## Option `-a`
+### Option `-a`
 
 Option `-a`, when given with either of options `-n` or `-p`,
 splits the string at `$_` into an array of strings at `$F`:
@@ -79,7 +79,7 @@ $ ruby -an -e 'p $F' desiderata.txt
 
 The default field separator used for the splitting is the input field separator `$;`.
 
-## Option `-F`
+### Option `-F`
 
 Option `-F`, when given with option `-a`,
 specifies that its argument is to be the input field separator to be used for splitting:
@@ -95,7 +95,7 @@ $ ruby -an -Fs -e 'p $F' desiderata.txt
 The argument may be a regular expression;
 see String#split.
 
-## Option `-l`
+### Option `-l`
 
 Option `-l`, when given with option `-n` or `-p`,
 modifies line-ending processing by:
