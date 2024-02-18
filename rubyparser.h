@@ -1221,7 +1221,6 @@ typedef struct rb_parser_config_struct {
     /* Object */
     VALUE (*obj_freeze)(VALUE obj);
     VALUE (*obj_hide)(VALUE obj);
-    int (*type_p)(VALUE, int);
     void (*obj_freeze_raw)(VALUE obj);
 
     int (*fixnum_p)(VALUE);
@@ -1373,7 +1372,6 @@ typedef struct rb_parser_config_struct {
     void *(*sized_realloc_n)(void *ptr, size_t new_count, size_t element_size, size_t old_count);
     VALUE (*obj_write)(VALUE, VALUE *, VALUE);
     VALUE (*obj_written)(VALUE, VALUE, VALUE);
-    void (*gc_register_mark_object)(VALUE object);
     void (*gc_guard)(VALUE);
     void (*gc_mark)(VALUE);
     void (*gc_mark_and_move)(VALUE *ptr);
@@ -1413,8 +1411,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*eArgError)(void);
     VALUE (*mRubyVMFrozenCore)(void);
     int (*long2int)(long);
-    int (*special_const_p)(VALUE);
-    int (*builtin_type)(VALUE);
 
     VALUE (*node_case_when_optimizable_literal)(const NODE *const node);
 

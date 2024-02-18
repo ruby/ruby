@@ -402,12 +402,6 @@ rb_errno_ptr2(void)
 }
 
 static int
-type_p(VALUE obj, int t)
-{
-    return (int)RB_TYPE_P(obj, t);
-}
-
-static int
 fixnum_p(VALUE obj)
 {
     return (int)RB_FIXNUM_P(obj);
@@ -447,18 +441,6 @@ static VALUE
 ruby_vm_frozen_core(void)
 {
     return rb_mRubyVMFrozenCore;
-}
-
-static int
-special_const_p(VALUE obj)
-{
-    return (int)RB_SPECIAL_CONST_P(obj);
-}
-
-static int
-builtin_type(VALUE obj)
-{
-    return (int)RB_BUILTIN_TYPE(obj);
 }
 
 static rb_ast_t *
@@ -506,7 +488,6 @@ static const rb_parser_config_t rb_global_parser_config = {
 
     .obj_freeze = rb_obj_freeze,
     .obj_hide = rb_obj_hide,
-    .type_p = type_p,
     .obj_freeze_raw = OBJ_FREEZE_RAW,
 
     .fixnum_p = fixnum_p,
@@ -638,7 +619,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .sized_realloc_n = ruby_sized_realloc_n,
     .obj_write = obj_write,
     .obj_written = obj_written,
-    .gc_register_mark_object = rb_gc_register_mark_object,
     .gc_guard = gc_guard,
     .gc_mark = rb_gc_mark,
     .gc_mark_and_move = rb_gc_mark_and_move,
@@ -673,8 +653,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .eArgError = arg_error,
     .mRubyVMFrozenCore = ruby_vm_frozen_core,
     .long2int = rb_long2int,
-    .special_const_p = special_const_p,
-    .builtin_type = builtin_type,
 
     .node_case_when_optimizable_literal = rb_node_case_when_optimizable_literal,
 

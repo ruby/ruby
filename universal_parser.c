@@ -30,13 +30,6 @@
 #define RSTRING_GETMEM(str, ptrvar, lenvar) \
     ((ptrvar) = RSTRING_PTR(str),           \
      (lenvar) = RSTRING_LEN(str))
-#if defined(USE_FLONUM)
-# /* Take that. */
-#elif SIZEOF_VALUE >= SIZEOF_DOUBLE
-# define USE_FLONUM 1
-#else
-# define USE_FLONUM 0
-#endif
 
 /* parser_st */
 #define st_table parser_st_table
@@ -63,19 +56,6 @@
 #define st_is_member parser_st_is_member
 
 #define rb_encoding void
-
-#undef T_FLOAT
-#define T_FLOAT    0x04
-#undef T_REGEXP
-#define T_REGEXP   0x06
-#undef T_HASH
-#define T_HASH     0x08
-#undef T_BIGNUM
-#define T_BIGNUM   0x0a
-#undef T_COMPLEX
-#define T_COMPLEX  0x0e
-#undef T_RATIONAL
-#define T_RATIONAL 0x0f
 
 #ifndef INTERNAL_IMEMO_H
 struct rb_imemo_tmpbuf_struct {
@@ -118,8 +98,6 @@ struct rb_imemo_tmpbuf_struct {
 
 #define rb_obj_freeze p->config->obj_freeze
 #define rb_obj_hide p->config->obj_hide
-#undef RB_TYPE_P
-#define RB_TYPE_P p->config->type_p
 #undef OBJ_FREEZE_RAW
 #define OBJ_FREEZE_RAW p->config->obj_freeze_raw
 
@@ -271,7 +249,6 @@ struct rb_imemo_tmpbuf_struct {
 #define RB_OBJ_WRITE(old, slot, young) p->config->obj_write((VALUE)(old), (VALUE *)(slot), (VALUE)(young))
 #undef RB_OBJ_WRITTEN
 #define RB_OBJ_WRITTEN(old, oldv, young) p->config->obj_written((VALUE)(old), (VALUE)(oldv), (VALUE)(young))
-#define rb_gc_register_mark_object p->config->gc_register_mark_object
 #undef RB_GC_GUARD
 #define RB_GC_GUARD p->config->gc_guard
 #define rb_gc_mark p->config->gc_mark
@@ -316,10 +293,6 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_mRubyVMFrozenCore p->config->mRubyVMFrozenCore()
 #undef rb_long2int
 #define rb_long2int p->config->long2int
-#undef SPECIAL_CONST_P
-#define SPECIAL_CONST_P p->config->special_const_p
-#undef BUILTIN_TYPE
-#define BUILTIN_TYPE p->config->builtin_type
 
 #define rb_node_case_when_optimizable_literal p->config->node_case_when_optimizable_literal
 

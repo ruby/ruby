@@ -38,8 +38,6 @@
 #include "universal_parser.c"
 
 #ifdef RIPPER
-#undef T_NODE
-#define T_NODE 0x1b
 #define STATIC_ID2SYM p->config->static_id2sym
 #define rb_str_coderange_scan_restartable p->config->str_coderange_scan_restartable
 #endif
