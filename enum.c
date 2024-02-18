@@ -870,134 +870,151 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
 
 /*
  *  call-seq:
- *    inject(symbol) -> object
- *    inject(initial_operand, symbol) -> object
- *    inject {|memo, operand| ... } -> object
- *    inject(initial_operand) {|memo, operand| ... } -> object
+ *    inject(symbol)                -> object
+ *    inject(initial_value, symbol) -> object
+ *    inject {|memo, value| ... }   -> object
+ *    inject(initial_value) {|memo, value| ... } -> object
  *
- *  Returns an object formed from operands via either:
+ *  Returns the result of applying a reducer to an initial value and
+ *  the first element of the Enumerable. It then takes the result and applies the
+ *  function to it and the second element of the collection, and so on. The
+ *  return value is the result returned by the final call to the function.
  *
- *  - A method named by +symbol+.
- *  - A block to which each operand is passed.
+ *  You can think of
  *
- *  With method-name argument +symbol+,
- *  combines operands using the method:
+ *      [ a, b, c, d ].inject(i) { |r, v| fn(r, v) }
  *
- *    # Sum, without initial_operand.
- *    (1..4).inject(:+)     # => 10
- *    # Sum, with initial_operand.
- *    (1..4).inject(10, :+) # => 20
+ *  as being
  *
- *  With a block, passes each operand to the block:
+ *      fn(d, fn(c, fn(b, fn(i, a))))
  *
- *    # Sum of squares, without initial_operand.
- *    (1..4).inject {|sum, n| sum + n*n }    # => 30
- *    # Sum of squares, with initial_operand.
- *    (1..4).inject(2) {|sum, n| sum + n*n } # => 32
+ *  In a way the +inject+ function _injects_ the function
+ *  between the elements of the enumerable.
  *
- *  <b>Operands</b>
+ *  `inject` is aliased as `reduce`. You use it when you want to
+ *  _reduce_ a collection to a single value.
  *
- *  If argument +initial_operand+ is not given,
- *  the operands for +inject+ are simply the elements of +self+.
- *  Example calls and their operands:
+ *  <b>The Calling Sequences</b>
  *
- *  - <tt>(1..4).inject(:+)</tt>:: <tt>[1, 2, 3, 4]</tt>.
- *  - <tt>(1...4).inject(:+)</tt>:: <tt>[1, 2, 3]</tt>.
- *  - <tt>('a'..'d').inject(:+)</tt>:: <tt>['a', 'b', 'c', 'd']</tt>.
- *  - <tt>('a'...'d').inject(:+)</tt>:: <tt>['a', 'b', 'c']</tt>.
+ *  Let's start with the most verbose:
  *
- *  Examples with first operand (which is <tt>self.first</tt>) of various types:
+ *      enum.inject(initial_value) do |result, next_value|
+ *        # do something with +result+ and +next_value+
+ *        # the value returned by the block becomes the
+ *        # value passed in to the next iteration
+ *        # as +result+
+ *      end
  *
- *    # Integer.
- *    (1..4).inject(:+)                # => 10
- *    # Float.
- *    [1.0, 2, 3, 4].inject(:+)        # => 10.0
- *    # Character.
- *    ('a'..'d').inject(:+)            # => "abcd"
- *    # Complex.
- *    [Complex(1, 2), 3, 4].inject(:+) # => (8+2i)
+ *  For example:
  *
- *  If argument +initial_operand+ is given,
- *  the operands for +inject+ are that value plus the elements of +self+.
- *  Example calls their operands:
+ *      product = [ 2, 3, 4 ].inject(1) do |result, next_value|
+ *        result * next_value
+ *      end
+ *      product #=> 24
  *
- *  - <tt>(1..4).inject(10, :+)</tt>:: <tt>[10, 1, 2, 3, 4]</tt>.
- *  - <tt>(1...4).inject(10, :+)</tt>:: <tt>[10, 1, 2, 3]</tt>.
- *  - <tt>('a'..'d').inject('e', :+)</tt>:: <tt>['e', 'a', 'b', 'c', 'd']</tt>.
- *  - <tt>('a'...'d').inject('e', :+)</tt>:: <tt>['e', 'a', 'b', 'c']</tt>.
+ *  When this runs, the block is first called with +1+ (the initial value) and
+ *  +2+ (the first element of the array). The block returns <tt>1*2</tt>, so on
+ *  the next iteration the block is called with +2+ (the previous result) and
+ *  +3+. The block returns +6+, and is called one last time with +6+ and +4+.
+ *  The result of the block, +24+ becomes the value returned by +inject+. This
+ *  code returns the product of the elements in the enumerable.
  *
- *  Examples with +initial_operand+ of various types:
+ *  <b>First Shortcut: Default Initial value</b>
  *
- *    # Integer.
- *    (1..4).inject(2, :+)               # => 12
- *    # Float.
- *    (1..4).inject(2.0, :+)             # => 12.0
- *    # String.
- *    ('a'..'d').inject('foo', :+)       # => "fooabcd"
- *    # Array.
- *    %w[a b c].inject(['x'], :push)     # => ["x", "a", "b", "c"]
- *    # Complex.
- *    (1..4).inject(Complex(2, 2), :+)   # => (12+2i)
+ *  In the case of the previous example, the initial value, +1+, wasn't really
+ *  necessary: the calculation of the product of a list of numbers is self-contained.
  *
- *  <b>Combination by Given \Method</b>
+ *  In these circumstances, you can omit the +initial_value+ parameter. +inject+
+ *  will then initially call the block with the first element of the collection
+ *  as the +result+ parameter and the second element as the +next_value+.
  *
- *  If the method-name argument +symbol+ is given,
- *  the operands are combined by that method:
+ *      [ 2, 3, 4 ].inject do |result, next_value|
+ *        result * next_value
+ *      end
  *
- *  - The first and second operands are combined.
- *  - That result is combined with the third operand.
- *  - That result is combined with the fourth operand.
- *  - And so on.
+ *  This shortcut is convenient, but can only be used when the block produces a result
+ *  which can be passed back to it as a first parameter.
  *
- *  The return value from +inject+ is the result of the last combination.
+ *  Here's an example where that's not the case: it returns a hash where the keys are words
+ *  and the values are the number of occurrences of that word in the enumerable.
  *
- *  This call to +inject+ computes the sum of the operands:
+ *    freqs = File.read("README.md")
+ *      .scan(/\w{2,}/)
+ *      .reduce(Hash.new(0)) do |counts, word|
+ *        counts[word] += 1
+ *        counts
+ *      end
+ *    freqs #=> {"Actions"=>4,
+ *               "Status"=>5,
+ *               "MinGW"=>3,
+ *               "https"=>27,
+ *               "github"=>10,
+ *               "com"=>15, ...
  *
- *    (1..4).inject(:+) # => 10
+ *  Note that the last line of the block is just the word +counts+. This ensures the
+ *  return value of the block is the result taht's being calculated.
  *
- *  Examples with various methods:
+ *  <b>Second Shortcut: a Reducer function</b>
  *
- *    # Integer addition.
- *    (1..4).inject(:+)                # => 10
- *    # Integer multiplication.
- *    (1..4).inject(:*)                # => 24
- *    # Character range concatenation.
- *    ('a'..'d').inject('', :+)        # => "abcd"
- *    # String array concatenation.
- *    %w[foo bar baz].inject('', :+)   # => "foobarbaz"
- *    # Hash update.
- *    h = [{foo: 0, bar: 1}, {baz: 2}, {bat: 3}].inject(:update)
- *    h # => {:foo=>0, :bar=>1, :baz=>2, :bat=>3}
- *    # Hash conversion to nested arrays.
- *    h = {foo: 0, bar: 1}.inject([], :push)
- *    h # => [[:foo, 0], [:bar, 1]]
+ *  A _reducer function_ is a function that takes a partial result and the next value,
+ *  returning the next partial result. The block that is given to +inject+ is a reducer.
  *
- *  <b>Combination by Given Block</b>
+ *  You can also write a reducer as a function and pass the name of that function
+ *  (as a symbol) to +inject+. However, for this to work, the function
  *
- *  If a block is given, the operands are passed to the block:
+ *  1. Must be defined on the type of the result value
+ *  2. Must accept a single parameter, the next value in the collection, and
+ *  3. Must return an updated result which will also implement the function.
  *
- *  - The first call passes the first and second operands.
- *  - The second call passes the result of the first call,
- *    along with the third operand.
- *  - The third call passes the result of the second call,
- *    along with the fourth operand.
- *  - And so on.
+ *  Here's an example that adds elements to a string. The two calls invoke the functions
+ *  String#concat and String#+ on the result so far, passing it the next value.
  *
- *  The return value from +inject+ is the return value from the last block call.
+ *      s = [ "cat", " ", "dog" ].inject("", :concat)
+ *      s #=> "cat dog"
+ *      s = [ "cat", " ", "dog" ].inject("The result is:", :+)
+ *      s #=> "The result is: cat dog"
  *
- *  This call to +inject+ gives a block
- *  that writes the memo and element, and also sums the elements:
+ *  Here's a more complex example when the result object maintains
+ *  state of a different type to the enumerable elements.
  *
- *    (1..4).inject do |memo, element|
- *      p "Memo: #{memo}; element: #{element}"
- *      memo + element
- *    end # => 10
+ *      class Turtle
  *
- *  Output:
+ *        def initialize
+ *          @x = @y = 0
+ *        end
  *
- *    "Memo: 1; element: 2"
- *    "Memo: 3; element: 3"
- *    "Memo: 6; element: 4"
+ *        def move(dir)
+ *          case dir
+ *          when "n" then @y += 1
+ *          when "s" then @y -= 1
+ *          when "e" then @x += 1
+ *          when "w" then @x -= 1
+ *          end
+ *          self
+ *        end
+ *      end
+ *
+ *      position = "nnneesw".chars.reduce(Turtle.new, :move)
+ *      position  #=>> #<Turtle:0x00000001052f4698 @y=2, @x=1>
+ *
+ *  <b>Third Shortcut: Reducer With no Initial Value</b>
+ *
+ *  If your reducer returns a value that it can accept as a parameter, then you
+ *  don't have to pass in an initial value. Here <tt>:*</tt> is the name of the
+ *  _times_ function:
+ *
+ *      product = [ 2, 3, 4 ].inject(:*)
+ *      product # => 24
+ *
+ *  String concatenation again:
+ *
+ *      s = [ "cat", " ", "dog" ].inject(:+)
+ *      s #=> "cat dog"
+ *
+ *  And an example that converts a hash to an array of two-element subarrays.
+ *
+ *      nested = {foo: 0, bar: 1}.inject([], :push)
+ *      nested # => [[:foo, 0], [:bar, 1]]
  *
  *
  */
