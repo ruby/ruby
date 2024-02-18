@@ -39,8 +39,12 @@ module Prism
             comment.location.end_offset <= end_offset
         end
 
-        def <<(comment)
-          node.location.comments << comment
+        def leading_comment(comment)
+          node.location.leading_comment(comment)
+        end
+
+        def trailing_comment(comment)
+          node.location.trailing_comment(comment)
         end
       end
 
@@ -65,8 +69,12 @@ module Prism
           false
         end
 
-        def <<(comment)
-          location.comments << comment
+        def leading_comment(comment)
+          location.leading_comment(comment)
+        end
+
+        def trailing_comment(comment)
+          location.trailing_comment(comment)
         end
       end
 
@@ -84,15 +92,16 @@ module Prism
       def attach!
         parse_result.comments.each do |comment|
           preceding, enclosing, following = nearest_targets(parse_result.value, comment)
-          target =
-            if comment.trailing?
-              preceding || following || enclosing || NodeTarget.new(parse_result.value)
-            else
-              # If a comment exists on its own line, prefer a leading comment.
-              following || preceding || enclosing || NodeTarget.new(parse_result.value)
-            end
 
-          target << comment
+          if comment.trailing?
+            preceding&.trailing_comment(comment) ||
+              (following || enclosing || NodeTarget.new(parse_result.value)).leading_comment(comment)
+          else
+            # If a comment exists on its own line, prefer a leading comment.
+            following&.leading_comment(comment) ||
+              preceding&.trailing_comment(comment) ||
+              (enclosing || NodeTarget.new(parse_result.value)).leading_comment(comment)
+          end
         end
       end
 

@@ -21,6 +21,12 @@ module Prism
       @offsets = offsets # set after parsing is done
     end
 
+    # Returns the encoding of the source code, which is set by parameters to the
+    # parser or by the encoding magic comment.
+    def encoding
+      source.encoding
+    end
+
     # Perform a byteslice on the source code using the given byte offset and
     # byte length.
     def slice(byte_offset, length)
@@ -108,16 +114,46 @@ module Prism
     # The length of this location in bytes.
     attr_reader :length
 
-    # The list of comments attached to this location
-    attr_reader :comments
-
     # Create a new location object with the given source, start byte offset, and
     # byte length.
     def initialize(source, start_offset, length)
       @source = source
       @start_offset = start_offset
       @length = length
-      @comments = []
+
+      # These are used to store comments that are associated with this location.
+      # They are initialized to `nil` to save on memory when there are no
+      # comments to be attached and/or the comment-related APIs are not used.
+      @leading_comments = nil
+      @trailing_comments = nil
+    end
+
+    # These are the comments that are associated with this location that exist
+    # before the start of this location.
+    def leading_comments
+      @leading_comments ||= []
+    end
+
+    # Attach a comment to the leading comments of this location.
+    def leading_comment(comment)
+      leading_comments << comment
+    end
+
+    # These are the comments that are associated with this location that exist
+    # after the end of this location.
+    def trailing_comments
+      @trailing_comments ||= []
+    end
+
+    # Attach a comment to the trailing comments of this location.
+    def trailing_comment(comment)
+      trailing_comments << comment
+    end
+
+    # Returns all comments that are associated with this location (both leading
+    # and trailing comments).
+    def comments
+      (@leading_comments || []).concat(@trailing_comments || [])
     end
 
     # Create a new location object with the given options.
@@ -267,6 +303,11 @@ module Prism
     # Implement the hash pattern matching interface for Comment.
     def deconstruct_keys(keys)
       { location: location }
+    end
+
+    # Returns the content of the comment by slicing it from the source code.
+    def slice
+      location.slice
     end
   end
 
@@ -435,6 +476,11 @@ module Prism
     # Implement the hash pattern matching interface for ParseResult.
     def deconstruct_keys(keys)
       { value: value, comments: comments, magic_comments: magic_comments, data_loc: data_loc, errors: errors, warnings: warnings }
+    end
+
+    # Returns the encoding of the source code that was parsed.
+    def encoding
+      source.encoding
     end
 
     # Returns true if there were no errors during parsing and false if there
