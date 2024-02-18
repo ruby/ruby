@@ -345,19 +345,19 @@ module TestIRB
       assert_include(output, "### Frame control")
     end
 
-    def test_show_cmds_display_different_content_when_debugger_is_enabled
+    def test_help_display_different_content_when_debugger_is_enabled
       write_ruby <<~'ruby'
         binding.irb
       ruby
 
       output = run_ruby_file do
         type "debug"
-        type "show_cmds"
+        type "help"
         type "continue"
       end
 
       # IRB's commands should still be listed
-      assert_match(/show_cmds\s+List all available commands and their description\./, output)
+      assert_match(/help\s+List all available commands/, output)
       # debug gem's commands should be appended at the end
       assert_match(/Debugging \(from debug\.gem\)\s+### Control flow/, output)
     end

@@ -22,11 +22,20 @@ module IRB
           @description
         end
 
+        def help_message(help_message = nil)
+          @help_message = help_message if help_message
+          @help_message
+        end
+
         private
 
         def string_literal?(args)
           sexp = Ripper.sexp(args)
           sexp && sexp.size == 2 && sexp.last&.first&.first == :string_literal
+        end
+
+        def highlight(text)
+          Color.colorize(text, [:BOLD, :BLUE])
         end
       end
 

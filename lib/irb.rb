@@ -811,7 +811,7 @@ require_relative "irb/pager"
 #
 # === Commands
 #
-# Please use the `show_cmds` command to see the list of available commands.
+# Please use the `help` command to see the list of available commands.
 #
 # === IRB Sessions
 #

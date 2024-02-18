@@ -162,6 +162,7 @@ module IRB # :nodoc:
       [
         :irb_help, :Help, "command/help",
         [:help, NO_OVERRIDE],
+        [:show_cmds, NO_OVERRIDE],
       ],
 
       [
@@ -187,16 +188,10 @@ module IRB # :nodoc:
         :irb_show_source, :ShowSource, "command/show_source",
         [:show_source, NO_OVERRIDE],
       ],
-
       [
         :irb_whereami, :Whereami, "command/whereami",
         [:whereami, NO_OVERRIDE],
       ],
-      [
-        :irb_show_cmds, :ShowCmds, "command/show_cmds",
-        [:show_cmds, NO_OVERRIDE],
-      ],
-
       [
         :irb_history, :History, "command/history",
         [:history, NO_OVERRIDE],

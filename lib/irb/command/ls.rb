@@ -12,7 +12,13 @@ module IRB
   module Command
     class Ls < Base
       category "Context"
-      description "Show methods, constants, and variables. `-g [query]` or `-G [query]` allows you to filter out the output."
+      description "Show methods, constants, and variables."
+
+      help_message <<~HELP_MESSAGE
+        Usage: ls [obj] [-g [query]]
+
+          -g [query]  Filter the output with a query.
+      HELP_MESSAGE
 
       def self.transform_args(args)
         if match = args&.match(/\A(?<args>.+\s|)(-g|-G)\s+(?<grep>[^\s]+)\s*\n\z/)

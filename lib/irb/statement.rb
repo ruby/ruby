@@ -83,9 +83,8 @@ module IRB
       end
 
       def should_be_handled_by_debugger?
-        require_relative 'command/help'
         require_relative 'command/debug'
-        IRB::Command::DebugCommand > @command_class || IRB::Command::Help == @command_class
+        IRB::Command::DebugCommand > @command_class
       end
 
       def evaluable_code

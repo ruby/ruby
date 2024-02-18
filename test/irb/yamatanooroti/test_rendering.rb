@@ -356,7 +356,7 @@ class IRB::RenderingTest < Yamatanooroti::TestCase
       puts 'start IRB'
     LINES
     start_terminal(40, 80, %W{ruby -I#{@pwd}/lib #{@pwd}/exe/irb}, startup_message: 'start IRB')
-    write("show_cmds\n")
+    write("help\n")
     write("G") # move to the end of the screen
     write("\C-c") # quit pager
     write("'foo' + 'bar'\n") # eval something to make sure IRB resumes
