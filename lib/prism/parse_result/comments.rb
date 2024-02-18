@@ -27,11 +27,11 @@ module Prism
         end
 
         def start_offset
-          node.location.start_offset
+          node.start_offset
         end
 
         def end_offset
-          node.location.end_offset
+          node.end_offset
         end
 
         def encloses?(comment)
@@ -94,13 +94,20 @@ module Prism
           preceding, enclosing, following = nearest_targets(parse_result.value, comment)
 
           if comment.trailing?
-            preceding&.trailing_comment(comment) ||
+            if preceding
+              preceding.trailing_comment(comment)
+            else
               (following || enclosing || NodeTarget.new(parse_result.value)).leading_comment(comment)
+            end
           else
             # If a comment exists on its own line, prefer a leading comment.
-            following&.leading_comment(comment) ||
-              preceding&.trailing_comment(comment) ||
+            if following
+              following.leading_comment(comment)
+            elsif preceding
+              preceding.trailing_comment(comment)
+            else
               (enclosing || NodeTarget.new(parse_result.value)).leading_comment(comment)
+            end
           end
         end
       end

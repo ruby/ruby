@@ -14,6 +14,20 @@ module Prism
       @location = Location.new(source, location >> 32, location & 0xFFFFFFFF)
     end
 
+    # The start offset of the node in the source. This method is effectively a
+    # delegate method to the location object.
+    def start_offset
+      location = @location
+      location.is_a?(Location) ? location.start_offset : location >> 32
+    end
+
+    # The end offset of the node in the source. This method is effectively a
+    # delegate method to the location object.
+    def end_offset
+      location = @location
+      location.is_a?(Location) ? location.end_offset : ((location >> 32) + (location & 0xFFFFFFFF))
+    end
+
     def newline? # :nodoc:
       @newline ? true : false
     end
