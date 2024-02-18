@@ -16545,39 +16545,6 @@ rb_yytnamerr(struct parser_params *p, char *yyres, const char *yystr)
 #endif
 
 #ifdef RIPPER
-#ifdef RIPPER_DEBUG
-/* :nodoc: */
-static VALUE
-ripper_validate_object(VALUE self, VALUE x)
-{
-    if (x == Qfalse) return x;
-    if (x == Qtrue) return x;
-    if (NIL_P(x)) return x;
-    if (UNDEF_P(x))
-        rb_raise(rb_eArgError, "Qundef given");
-    if (FIXNUM_P(x)) return x;
-    if (SYMBOL_P(x)) return x;
-    switch (BUILTIN_TYPE(x)) {
-      case T_STRING:
-      case T_OBJECT:
-      case T_ARRAY:
-      case T_BIGNUM:
-      case T_FLOAT:
-      case T_COMPLEX:
-      case T_RATIONAL:
-        break;
-      default:
-        rb_raise(rb_eArgError, "wrong type of ruby object: %p (%s)",
-                 (void *)x, rb_obj_classname(x));
-    }
-    if (!RBASIC_CLASS(x)) {
-        rb_raise(rb_eArgError, "hidden ruby object: %p (%s)",
-                 (void *)x, rb_builtin_type_name(TYPE(x)));
-    }
-    return x;
-}
-#endif
-
 #define validate(x) ((x) = (x) == rb_ripper_none ? Qnil : x)
 
 static VALUE
