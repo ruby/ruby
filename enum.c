@@ -891,7 +891,7 @@ ary_inject_op(VALUE ary, VALUE init, VALUE op)
  *  In a way the +inject+ function _injects_ the function
  *  between the elements of the enumerable.
  *
- *  `inject` is aliased as `reduce`. You use it when you want to
+ *  +inject+ is aliased as +reduce+. You use it when you want to
  *  _reduce_ a collection to a single value.
  *
  *  <b>The Calling Sequences</b>
