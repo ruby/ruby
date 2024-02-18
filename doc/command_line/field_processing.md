@@ -24,7 +24,7 @@ The examples also use command-line option `-e`,
 which passes the Ruby code to be executed on the command line itself:
 
 ```sh
-$ ruby -e "puts 'Hello, World.'"
+$ ruby -e 'puts "Hello, World."'
 ```
 
 ## Option `-n`
@@ -38,11 +38,10 @@ end
 ```
 
 Note that `gets` reads the next line and sets global variable `$_`
-to the last read line;
-note also that character `'$'` must be escaped as `'\$'`:
+to the last read line:
 
 ```sh
-$ ruby -n -e "puts \$_" desiderata.txt
+$ ruby -n -e 'puts $_' desiderata.txt
 Go placidly amid the noise and the haste,
 and remember what peace there may be in silence.
 As far as possible, without surrender,
@@ -54,7 +53,7 @@ be on good terms with all persons.
 Option `-p` is like option `-n`, but also prints each line:
 
 ```sh
-$ ruby -p -e "puts \$_.size" desiderata.txt
+$ ruby -p -e 'puts $_.size' desiderata.txt
 42
 Go placidly amid the noise and the haste,
 49
@@ -71,7 +70,7 @@ Option `-a`, when given with either of options `-n` or `-p`,
 splits the string at `$_` into an array of strings at `$F`:
 
 ```sh
-$ ruby -an -e "p \$F" desiderata.txt
+$ ruby -an -e 'p $F' desiderata.txt
 ["Go", "placidly", "amid", "the", "noise", "and", "the", "haste,"]
 ["and", "remember", "what", "peace", "there", "may", "be", "in", "silence."]
 ["As", "far", "as", "possible,", "without", "surrender,"]
@@ -86,12 +85,15 @@ Option `-F`, when given with option `-a`,
 specifies that its argument is to be the input field separator to be used for splitting:
 
 ```sh
-$ ruby -an -Fs -e "p \$F" desiderata.txt
+$ ruby -an -Fs -e 'p $F' desiderata.txt
 ["Go placidly amid the noi", "e and the ha", "te,\n"]
 ["and remember what peace there may be in ", "ilence.\n"]
 ["A", " far a", " po", "", "ible, without ", "urrender,\n"]
 ["be on good term", " with all per", "on", ".\n"]
 ```
+
+The argument may be a regular expression;
+see String#split.
 
 ## Option `-l`
 
@@ -106,7 +108,7 @@ modifies line-ending processing by:
 Without option `-l` (unchopped):
 
 ```sh
-$ ruby -n -e "p \$_" desiderata.txt
+$ ruby -n -e 'p $_' desiderata.txt
 "Go placidly amid the noise and the haste,\n"
 "and remember what peace there may be in silence.\n"
 "As far as possible, without surrender,\n"
@@ -116,7 +118,7 @@ $ ruby -n -e "p \$_" desiderata.txt
 With option `-l' (chopped):
 
 ```sh
-$ ruby -ln -e "p \$_" desiderata.txt
+$ ruby -ln -e 'p $_' desiderata.txt
 "Go placidly amid the noise and the haste,"
 "and remember what peace there may be in silence."
 "As far as possible, without surrender,"
