@@ -34,18 +34,22 @@ vendordir = config["vendordir"]
 rubylibdir = config["rubylibdir"]
 rubyarchdir = config["rubyarchdir"]
 archdir = "#{extout}/#{arch}"
-[bindir, libdir, archdir].uniq.each do |dir|
+exedir = libdirname == "archlibdir" ? "#{config["libexecdir"]}/#{arch}/bin" : bindir
+[exedir, libdir, archdir].uniq.each do |dir|
   File.directory?(dir) or mkdir_p(dir)
+end
+unless exedir == bindir
+  ln_dir_relative(exedir, bindir)
 end
 
 exeext = config["EXEEXT"]
 ruby_install_name = config["ruby_install_name"]
 rubyw_install_name = config["rubyw_install_name"]
 goruby_install_name = "go" + ruby_install_name
-[ruby_install_name, rubyw_install_name, goruby_install_name].map do |ruby|
+[ruby_install_name, rubyw_install_name, goruby_install_name].each do |ruby|
   if ruby and !ruby.empty?
     ruby += exeext
-    ln_relative(ruby, "#{bindir}/#{ruby}", true)
+    ln_relative(ruby, "#{exedir}/#{ruby}", true)
   end
 end
 so = config["LIBRUBY_SO"]
