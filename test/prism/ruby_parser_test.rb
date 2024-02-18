@@ -30,6 +30,7 @@ module Prism
     todos = %w[
       heredocs_nested.txt
       newline_terminated.txt
+      regex_char_width.txt
       seattlerb/bug169.txt
       seattlerb/dstr_evstr.txt
       seattlerb/heredoc_squiggly_interp.txt

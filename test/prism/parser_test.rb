@@ -55,6 +55,7 @@ module Prism
       dos_endings.txt
       heredocs_with_ignored_newlines.txt
       regex.txt
+      regex_char_width.txt
       spanning_heredoc.txt
       spanning_heredoc_newlines.txt
       tilde_heredocs.txt
