@@ -2161,6 +2161,48 @@ eom
     RUBY
   end
 
+  def test_quoting_interpolation
+    str = "abc([.])xyz"
+    assert_equal(/abc([.])xyz/, /#{str}/)
+    assert_equal(/abc\(\[\.\]\)xyz/,  eval('/#{= str}/'))
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      Regexp.singleton_class.prepend Module.new {def quote(s) = "<#{super}>"}
+      str = "abc([.])xyz"
+      assert_equal(/<abc\(\[\.\]\)xyz>/,  /#{= str}/)
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      using Module.new {refine(Regexp.singleton_class) {def quote(s) = "<#{super}>"}}
+      str = "abc([.])xyz"
+      assert_equal(/<abc\(\[\.\]\)xyz>/,  /#{= str}/)
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      String.singleton_class.prepend Module.new {def quote(s) = s.upcase}
+      Symbol.singleton_class.prepend Module.new {def quote(s) = s.upcase}
+      str = "abc"
+      assert_equal("ABC",  "#{= str}")
+      assert_equal(:ABC,  :"#{= str}")
+      assert_equal(["ABC"],  %W"#{= str}")
+      assert_equal([:ABC],  %I"#{= str}")
+    end;
+
+    assert_separately([], "#{<<~"begin;"}\n#{<<~'end;'}")
+    begin;
+      using Module.new {refine(String.singleton_class) {def quote(s) = s.upcase}}
+      using Module.new {refine(Symbol.singleton_class) {def quote(s) = s.upcase}}
+      str = "abc"
+      assert_equal("ABC",  "#{= str}")
+      assert_equal(:ABC,  :"#{= str}")
+      assert_equal(["ABC"],  %W"#{= str}")
+      assert_equal([:ABC],  %I"#{= str}")
+    end;
+  end
+
   private
 
   def not_label(x) @result = x; @not_label ||= nil end
