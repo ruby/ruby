@@ -1277,7 +1277,7 @@ typedef struct rb_parser_config_struct {
     VALUE (*id2str)(ID id);
     VALUE (*id2sym)(ID x);
     ID (*sym2id)(VALUE sym);
-    ID (*check_id_cstr)(const char *ptr, long len, rb_encoding *enc);
+    VALUE (*str_valid_encoding_p)(VALUE str);
 
     /* String */
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 3)
@@ -1294,12 +1294,10 @@ typedef struct rb_parser_config_struct {
     VALUE (*str_resize)(VALUE str, long len);
     VALUE (*str_new)(const char *ptr, long len);
     VALUE (*str_new_cstr)(const char *ptr);
-    VALUE (*setup_fake_str)(struct RString *fake_str, const char *name, long len, rb_encoding *enc);
     VALUE (*fstring)(VALUE);
     int (*is_ascii_string)(VALUE str);
     VALUE (*enc_str_new)(const char *ptr, long len, rb_encoding *enc);
     VALUE (*enc_str_buf_cat)(VALUE str, const char *ptr, long len, rb_encoding *enc);
-    int (*enc_str_coderange)(VALUE str);
     VALUE (*str_buf_append)(VALUE str, VALUE str2);
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 0)
     VALUE (*str_vcatf)(VALUE str, const char *fmt, va_list ap);
@@ -1364,7 +1362,6 @@ typedef struct rb_parser_config_struct {
     void (*encoding_set)(VALUE obj, int encindex);
     int (*encoding_is_ascii8bit)(VALUE obj);
     rb_encoding *(*usascii_encoding)(void);
-    int enc_coderange_broken;
 
     /* Ractor */
     VALUE (*ractor_make_shareable)(VALUE obj);

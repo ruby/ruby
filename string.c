@@ -11030,7 +11030,7 @@ rb_str_b(VALUE str)
  *    "\x80".force_encoding("UTF-8").valid_encoding?     # => false
  */
 
-static VALUE
+VALUE
 rb_str_valid_encoding_p(VALUE str)
 {
     int cr = rb_enc_str_coderange(str);

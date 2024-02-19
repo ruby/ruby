@@ -173,7 +173,7 @@ struct rb_imemo_tmpbuf_struct {
 #define ID2SYM                   p->config->id2sym
 #undef SYM2ID
 #define SYM2ID                   p->config->sym2id
-#define rb_check_id_cstr         p->config->check_id_cstr
+#define rb_str_valid_encoding_p  p->config->str_valid_encoding_p
 
 #define rb_str_catf                       p->config->str_catf
 #undef rb_str_cat_cstr
@@ -192,12 +192,10 @@ struct rb_imemo_tmpbuf_struct {
 #define rb_str_new                        p->config->str_new
 #undef rb_str_new_cstr
 #define rb_str_new_cstr                   p->config->str_new_cstr
-#define rb_setup_fake_str                 p->config->setup_fake_str
 #define rb_fstring                        p->config->fstring
 #define is_ascii_string                   p->config->is_ascii_string
 #define rb_enc_str_new                    p->config->enc_str_new
 #define rb_enc_str_buf_cat                p->config->enc_str_buf_cat
-#define rb_enc_str_coderange              p->config->enc_str_coderange
 #define rb_str_buf_append                 p->config->str_buf_append
 #define rb_str_vcatf                      p->config->str_vcatf
 #undef StringValueCStr
@@ -262,7 +260,6 @@ struct rb_imemo_tmpbuf_struct {
 #define ENCODING_SET            p->config->encoding_set
 #define ENCODING_IS_ASCII8BIT   p->config->encoding_is_ascii8bit
 #define rb_usascii_encoding     p->config->usascii_encoding
-#define ENC_CODERANGE_BROKEN    p->config->enc_coderange_broken
 
 #define rb_ractor_make_shareable p->config->ractor_make_shareable
 

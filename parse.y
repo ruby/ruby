@@ -13728,6 +13728,17 @@ new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc)
 }
 
 static NODE*
+str_to_sym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
+{
+    VALUE lit = rb_node_str_string_val(node);
+    if (!rb_str_valid_encoding_p(lit)) {
+        yyerror1(loc, "invalid symbol");
+        lit = STR_NEW0();
+    }
+    return NEW_SYM(lit, loc);
+}
+
+static NODE*
 symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol)
 {
     enum node_type type = nd_type(symbol);
@@ -13736,7 +13747,7 @@ symbol_append(struct parser_params *p, NODE *symbols, NODE *symbol)
         nd_set_type(symbol, NODE_DSYM);
         break;
       case NODE_STR:
-        symbol = NEW_SYM(rb_node_str_string_val(symbol), &RNODE(symbol)->nd_loc);
+        symbol = str_to_sym_node(p, symbol, &RNODE(symbol)->nd_loc);
         break;
       default:
         compile_error(p, "unexpected node as symbol: %s", parser_node_name(type));
@@ -15465,8 +15476,6 @@ new_hash_pattern_tail(struct parser_params *p, NODE *kw_args, ID kw_rest_arg, co
 static NODE*
 dsym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 {
-    VALUE lit;
-
     if (!node) {
         return NEW_SYM(STR_NEW0(), loc);
     }
@@ -15477,8 +15486,7 @@ dsym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
         nd_set_loc(node, loc);
         break;
       case NODE_STR:
-        lit = rb_node_str_string_val(node);
-        node = NEW_SYM(lit, loc);
+        node = str_to_sym_node(p, node, loc);
         break;
       default:
         node = NEW_DSYM(0, 1, NEW_LIST(node, loc), loc);
@@ -15560,23 +15568,6 @@ nd_value(struct parser_params *p, NODE *node)
 }
 
 static void
-warn_duplicate_keys_check_key(struct parser_params *p, st_data_t key, st_table *literal_keys)
-{
-    if (OBJ_BUILTIN_TYPE(key) == T_NODE && nd_type(key) == NODE_SYM) {
-        rb_parser_string_t *parser_str = RNODE_SYM(key)->string;
-        struct RString fake_str;
-        VALUE str = rb_setup_fake_str(&fake_str, parser_str->ptr, parser_str->len, parser_str->enc);
-        if (rb_enc_asciicompat(parser_str->enc) && rb_enc_str_coderange(str) == ENC_CODERANGE_BROKEN) {
-            st_free_table(literal_keys);
-            /* Since we have a ASCII compatible encoding and the coderange is
-             * broken, sym_check_asciionly should raise an EncodingError. */
-            rb_check_id_cstr(parser_str->ptr, parser_str->len, parser_str->enc);
-            rb_bug("unreachable");
-        }
-    }
-}
-
-static void
 warn_duplicate_keys(struct parser_params *p, NODE *hash)
 {
     struct st_hash_type literal_type = {
@@ -15594,18 +15585,12 @@ warn_duplicate_keys(struct parser_params *p, NODE *hash)
         if (!head) {
             key = (st_data_t)value;
         }
-        else if (nd_type_st_key_enable_p(head)) {
-            warn_duplicate_keys_check_key(p, (st_data_t)head, literal_keys);
-
-            key = (st_data_t)nd_st_key(p, head);
-            if (st_delete(literal_keys, &key, &data)) {
-                rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
-                                "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
-                                nd_value(p, head), nd_line(head));
-            }
+        else if (nd_type_st_key_enable_p(head) &&
+                 st_delete(literal_keys, (key = (st_data_t)nd_st_key(p, head), &key), &data)) {
+            rb_compile_warn(p->ruby_sourcefile, nd_line((NODE *)data),
+                            "key %+"PRIsVALUE" is duplicated and overwritten on line %d",
+                            nd_value(p, head), nd_line(head));
         }
-
-        warn_duplicate_keys_check_key(p, key, literal_keys);
         st_insert(literal_keys, (st_data_t)key, (st_data_t)hash);
         hash = next;
     }

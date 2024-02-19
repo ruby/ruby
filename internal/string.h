@@ -46,6 +46,7 @@ int rb_enc_str_coderange_scan(VALUE str, rb_encoding *enc);
 int rb_ascii8bit_appendable_encoding_index(rb_encoding *enc, unsigned int code);
 VALUE rb_str_include(VALUE str, VALUE arg);
 VALUE rb_str_byte_substr(VALUE str, VALUE beg, VALUE len);
+VALUE rb_str_valid_encoding_p(VALUE str);
 
 static inline bool STR_EMBED_P(VALUE str);
 static inline bool STR_SHARED_P(VALUE str);
