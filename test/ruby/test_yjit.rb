@@ -1458,7 +1458,7 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_str_concat_encoding_mismatch
-    assert_compiles(<<~'RUBY', result: "incompatible character encodings: ASCII-8BIT and EUC-JP")
+    assert_compiles(<<~'RUBY', result: "incompatible character encodings: BINARY (ASCII-8BIT) and EUC-JP")
       def bar(a, b)
         a << b
       rescue => e

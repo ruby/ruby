@@ -1091,7 +1091,7 @@ class TestM17N < Test::Unit::TestCase
     assert_nil(e("\xa1\xa2\xa3\xa4").rindex(e("\xa3")))
     s = e("\xa3\xb0\xa3\xb1\xa3\xb2\xa3\xb3\xa3\xb4")
 
-    a_with_e = /EUC-JP and ASCII-8BIT/
+    a_with_e = /EUC-JP and BINARY \(ASCII-8BIT\)/
     assert_raise_with_message(Encoding::CompatibilityError, a_with_e) do
       s.index(a("\xb1\xa3"))
     end
@@ -1099,7 +1099,7 @@ class TestM17N < Test::Unit::TestCase
       s.rindex(a("\xb1\xa3"))
     end
 
-    a_with_e = /ASCII-8BIT regexp with EUC-JP string/
+    a_with_e = /BINARY \(ASCII-8BIT\) regexp with EUC-JP string/
     assert_raise_with_message(Encoding::CompatibilityError, a_with_e) do
       s.index(Regexp.new(a("\xb1\xa3")))
     end
