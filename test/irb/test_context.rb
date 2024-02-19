@@ -42,6 +42,10 @@ module TestIRB
         omit "Remove me after https://github.com/ruby/prism/issues/2129 is addressed and adopted in TruffleRuby"
       end
 
+      if RUBY_VERSION >= "3.4."
+        omit "Now raises SyntaxError"
+      end
+
       assert_raise_with_message(EncodingError, /invalid symbol/) {
         @context.evaluate(%q[:"\xAE"], 1)
         # The backtrace of this invalid encoding hash doesn't contain lineno.
