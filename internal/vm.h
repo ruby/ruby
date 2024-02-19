@@ -114,6 +114,7 @@ void rb_backtrace_print_as_bugreport(FILE*);
 int rb_backtrace_p(VALUE obj);
 VALUE rb_backtrace_to_str_ary(VALUE obj);
 VALUE rb_backtrace_to_location_ary(VALUE obj);
+VALUE rb_location_ary_to_backtrace(VALUE ary);
 void rb_backtrace_each(VALUE (*iter)(VALUE recv, VALUE str), VALUE output);
 int rb_frame_info_p(VALUE obj);
 int rb_get_node_id_from_frame_info(VALUE obj);

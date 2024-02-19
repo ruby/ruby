@@ -1839,7 +1839,7 @@ static VALUE
 rb_check_backtrace(VALUE bt)
 {
     long i;
-    static const char err[] = "backtrace must be Array of String";
+    static const char err[] = "backtrace must be an Array of String or an Array of Thread::Backtrace::Location";
 
     if (!NIL_P(bt)) {
         if (RB_TYPE_P(bt, T_STRING)) return rb_ary_new3(1, bt);
@@ -1870,7 +1870,15 @@ rb_check_backtrace(VALUE bt)
 static VALUE
 exc_set_backtrace(VALUE exc, VALUE bt)
 {
-    return rb_ivar_set(exc, id_bt, rb_check_backtrace(bt));
+    VALUE btobj = rb_location_ary_to_backtrace(bt);
+    if (RTEST(btobj)) {
+        rb_ivar_set(exc, id_bt, btobj);
+        rb_ivar_set(exc, id_bt_locations, btobj);
+        return bt;
+    }
+    else {
+        return rb_ivar_set(exc, id_bt, rb_check_backtrace(bt));
+    }
 }
 
 VALUE

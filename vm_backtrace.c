@@ -531,6 +531,16 @@ backtrace_alloc(VALUE klass)
     return obj;
 }
 
+static VALUE
+backtrace_alloc_capa(long num_frames, rb_backtrace_t **backtrace)
+{
+    size_t memsize = offsetof(rb_backtrace_t, backtrace) + num_frames * sizeof(rb_backtrace_location_t);
+    VALUE btobj = rb_data_typed_object_zalloc(rb_cBacktrace, memsize, &backtrace_data_type);
+    TypedData_Get_Struct(btobj, rb_backtrace_t, &backtrace_data_type, *backtrace);
+    return btobj;
+}
+
+
 static long
 backtrace_size(const rb_execution_context_t *ec)
 {
@@ -617,9 +627,7 @@ rb_ec_partial_backtrace_object(const rb_execution_context_t *ec, long start_fram
         }
     }
 
-    size_t memsize = offsetof(rb_backtrace_t, backtrace) + num_frames * sizeof(rb_backtrace_location_t);
-    btobj = rb_data_typed_object_zalloc(rb_cBacktrace, memsize, &backtrace_data_type);
-    TypedData_Get_Struct(btobj, rb_backtrace_t, &backtrace_data_type, bt);
+    btobj = backtrace_alloc_capa(num_frames, &bt);
 
     bt->backtrace_size = 0;
     if (num_frames == 0) {
@@ -781,6 +789,40 @@ rb_backtrace_to_location_ary(VALUE self)
         RB_OBJ_WRITE(self, &bt->locary, backtrace_to_location_ary(self));
     }
     return bt->locary;
+}
+
+VALUE
+rb_location_ary_to_backtrace(VALUE ary)
+{
+    if (!RB_TYPE_P(ary, T_ARRAY) || !rb_frame_info_p(RARRAY_AREF(ary, 0))) {
+        return Qfalse;
+    }
+
+    rb_backtrace_t *new_backtrace;
+    long num_frames = RARRAY_LEN(ary);
+    VALUE btobj = backtrace_alloc_capa(num_frames, &new_backtrace);
+
+    for (long index = 0; index < RARRAY_LEN(ary); index++) {
+        VALUE locobj = RARRAY_AREF(ary, index);
+
+        if (!rb_frame_info_p(locobj)) {
+            return Qfalse;
+        }
+
+        struct valued_frame_info *src_vloc;
+        TypedData_Get_Struct(locobj, struct valued_frame_info, &location_data_type, src_vloc);
+
+        rb_backtrace_location_t *dst_location = &new_backtrace->backtrace[index];
+        RB_OBJ_WRITE(btobj, &dst_location->cme, src_vloc->loc->cme);
+        RB_OBJ_WRITE(btobj, &dst_location->iseq, src_vloc->loc->iseq);
+        dst_location->pc = src_vloc->loc->pc;
+
+        new_backtrace->backtrace_size++;
+
+        RB_GC_GUARD(locobj);
+    }
+
+    return btobj;
 }
 
 static VALUE
