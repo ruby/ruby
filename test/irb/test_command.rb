@@ -1,5 +1,4 @@
 # frozen_string_literal: false
-require "rubygems"
 require "irb"
 
 require_relative "helper"

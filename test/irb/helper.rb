@@ -1,5 +1,6 @@
 require "test/unit"
 require "pathname"
+require "rubygems"
 
 begin
   require_relative "../lib/helper"
