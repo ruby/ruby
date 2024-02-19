@@ -153,7 +153,7 @@ module Prism
     # Returns all comments that are associated with this location (both leading
     # and trailing comments).
     def comments
-      (@leading_comments || []).concat(@trailing_comments || [])
+      [*@leading_comments, *@trailing_comments]
     end
 
     # Create a new location object with the given options.
