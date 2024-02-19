@@ -943,7 +943,7 @@ test-all: $(TEST_RUNNABLE)-test-all
 yes-test-all: $(PRECHECK_TEST_ALL)
 	$(ACTIONS_GROUP)
 	$(gnumake_recursive)$(Q)$(exec) $(RUNRUBY) "$(TESTSDIR)/runner.rb" --ruby="$(RUNRUBY)" \
-	$(TEST_EXCLUDES) $(TESTOPTS) $(TESTS) --exclude='rubygems/test_gem_package_task\.rb'
+	$(TEST_EXCLUDES) $(TESTOPTS) $(TESTS)
 	$(ACTIONS_ENDGROUP)
 TESTS_BUILD = mkmf
 no-test-all: PHONY
