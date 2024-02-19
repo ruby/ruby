@@ -173,7 +173,6 @@ struct rb_imemo_tmpbuf_struct {
 #define ID2SYM                   p->config->id2sym
 #undef SYM2ID
 #define SYM2ID                   p->config->sym2id
-#define rb_str_valid_encoding_p  p->config->str_valid_encoding_p
 
 #define rb_str_catf                       p->config->str_catf
 #undef rb_str_cat_cstr

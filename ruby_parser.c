@@ -551,7 +551,6 @@ static const rb_parser_config_t rb_global_parser_config = {
     .id2str = rb_id2str,
     .id2sym = rb_id2sym,
     .sym2id = rb_sym2id,
-    .str_valid_encoding_p = rb_str_valid_encoding_p,
 
     .str_catf = rb_str_catf,
     .str_cat_cstr = rb_str_cat_cstr,

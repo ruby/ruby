@@ -13730,10 +13730,14 @@ new_defined(struct parser_params *p, NODE *expr, const YYLTYPE *loc)
 static NODE*
 str_to_sym_node(struct parser_params *p, NODE *node, const YYLTYPE *loc)
 {
-    VALUE lit = rb_node_str_string_val(node);
-    if (!rb_str_valid_encoding_p(lit)) {
+    VALUE lit;
+    rb_parser_string_t *str = RNODE_STR(node)->string;
+    if (rb_parser_enc_str_coderange(p, str) == RB_PARSER_ENC_CODERANGE_BROKEN) {
         yyerror1(loc, "invalid symbol");
         lit = STR_NEW0();
+    }
+    else {
+        lit = rb_str_new_parser_string(str);
     }
     return NEW_SYM(lit, loc);
 }

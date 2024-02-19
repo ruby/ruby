@@ -1277,7 +1277,6 @@ typedef struct rb_parser_config_struct {
     VALUE (*id2str)(ID id);
     VALUE (*id2sym)(ID x);
     ID (*sym2id)(VALUE sym);
-    VALUE (*str_valid_encoding_p)(VALUE str);
 
     /* String */
     RBIMPL_ATTR_FORMAT(RBIMPL_PRINTF_FORMAT, 2, 3)
