@@ -2118,6 +2118,7 @@ get_nd_args(struct parser_params *p, NODE *node)
 }
 
 #ifndef RIPPER
+#ifndef UNIVERSAL_PARSER
 static st_index_t
 djb2(const uint8_t *str, size_t len)
 {
@@ -2135,6 +2136,7 @@ parser_memhash(const void *ptr, long len)
 {
     return djb2(ptr, len);
 }
+#endif
 #endif
 
 #define PARSER_STRING_PTR(str) (str->ptr)
@@ -2200,11 +2202,13 @@ rb_parser_string_free(rb_parser_t *p, rb_parser_string_t *str)
 }
 
 #ifndef RIPPER
+#ifndef UNIVERSAL_PARSER
 static st_index_t
 rb_parser_str_hash(rb_parser_string_t *str)
 {
     return parser_memhash((const void *)PARSER_STRING_PTR(str), PARSER_STRING_LEN(str));
 }
+#endif
 #endif
 
 static size_t
