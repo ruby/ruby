@@ -1024,7 +1024,7 @@ pub struct Assembler {
     side_exit_stack_size: Option<u8>,
 
     /// If true, the next ccall() should verify its leafness
-    pub leaf_ccall: bool,
+    leaf_ccall: bool,
 }
 
 impl Assembler
@@ -1569,6 +1569,21 @@ impl Assembler
     /// Consume the assembler by creating a new draining iterator.
     pub fn into_draining_iter(self) -> AssemblerDrainingIterator {
         AssemblerDrainingIterator::new(self)
+    }
+
+    /// Return true if the next ccall() is expected to be leaf.
+    pub fn get_leaf_ccall(&mut self) -> bool {
+        self.leaf_ccall
+    }
+
+    /// Assert that the next ccall() is going to be leaf.
+    pub fn expect_leaf_ccall(&mut self) {
+        self.leaf_ccall = true;
+    }
+
+    /// Undo expect_leaf_ccall() as an exception.
+    pub fn allow_non_leaf_ccall(&mut self) {
+        self.leaf_ccall = false;
     }
 }
 

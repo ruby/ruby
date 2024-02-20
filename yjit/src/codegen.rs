@@ -433,7 +433,7 @@ fn jit_prepare_call_with_gc(
     gen_save_sp(asm); // protect objects from GC
 
     // Expect a leaf ccall(). You should use jit_prepare_non_leaf_call() if otherwise.
-    asm.leaf_ccall = true;
+    asm.expect_leaf_ccall();
 }
 
 /// Record the current codeblock write position for rewriting into a jump into
@@ -1090,7 +1090,7 @@ pub fn gen_single_block(
             jit_perf_symbol_pop!(jit, &mut asm, PerfMap::Codegen);
 
             #[cfg(debug_assertions)]
-            assert!(!asm.leaf_ccall, "ccall() wasn't used after leaf_ccall was set in {}", insn_name(opcode));
+            assert!(!asm.get_leaf_ccall(), "ccall() wasn't used after leaf_ccall was set in {}", insn_name(opcode));
         }
 
         // If we can't compile this instruction
@@ -5528,7 +5528,7 @@ fn jit_rb_str_concat(
     jit_prepare_non_leaf_call(jit, asm);
     // rb_str_buf_append may raise Encoding::CompatibilityError, but we accept compromised
     // backtraces on this method since the interpreter does the same thing on opt_ltlt.
-    asm.leaf_ccall = false;
+    asm.allow_non_leaf_ccall();
     asm.spill_temps(); // For ccall. Unconditionally spill them for RegTemps consistency.
 
     let concat_arg = asm.stack_pop(1);
