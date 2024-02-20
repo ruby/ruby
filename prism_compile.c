@@ -646,57 +646,59 @@ again:
     return;
 }
 
+/**
+ * Compile an if or unless node.
+ */
 static void
-pm_compile_if(rb_iseq_t *iseq, const int line, pm_statements_node_t *node_body, pm_node_t *node_else, pm_node_t *predicate, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+pm_compile_conditional(rb_iseq_t *iseq, const pm_line_column_t *line_column, const pm_statements_node_t *statements, const pm_node_t *consequent, const pm_node_t *predicate, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
-    NODE dummy_line_node = generate_dummy_line_node(line, line);
-
-    LABEL *then_label, *else_label, *end_label;
-
-    then_label = NEW_LABEL(line);
-    else_label = NEW_LABEL(line);
-    end_label = 0;
+    const pm_line_column_t location = *line_column;
+    LABEL *then_label = NEW_LABEL(location.line);
+    LABEL *else_label = NEW_LABEL(location.line);
+    LABEL *end_label = NULL;
 
     pm_compile_branch_condition(iseq, ret, predicate, then_label, else_label, false, scope_node);
 
     if (then_label->refcnt) {
-        ADD_LABEL(ret, then_label);
+        PUSH_LABEL(ret, then_label);
 
         DECL_ANCHOR(then_seq);
         INIT_ANCHOR(then_seq);
-        if (node_body) {
-            pm_compile_node(iseq, (pm_node_t *)node_body, then_seq, popped, scope_node);
-        } else {
-            PM_PUTNIL_UNLESS_POPPED;
+
+        if (statements) {
+            pm_compile_node(iseq, (const pm_node_t *) statements, then_seq, popped, scope_node);
+        }
+        else if (!popped) {
+            PUSH_INSN(then_seq, location, putnil);
         }
 
         if (else_label->refcnt) {
-            end_label = NEW_LABEL(line);
-            ADD_INSNL(then_seq, &dummy_line_node, jump, end_label);
-            if (!popped) {
-                ADD_INSN(then_seq, &dummy_line_node, pop);
-            }
+            end_label = NEW_LABEL(location.line);
+            PUSH_INSNL(then_seq, location, jump, end_label);
+            if (!popped) PUSH_INSN(then_seq, location, pop);
         }
+
         ADD_SEQ(ret, then_seq);
     }
 
     if (else_label->refcnt) {
-        ADD_LABEL(ret, else_label);
+        PUSH_LABEL(ret, else_label);
 
         DECL_ANCHOR(else_seq);
         INIT_ANCHOR(else_seq);
-        if (node_else) {
-            pm_compile_node(iseq, (pm_node_t *)node_else, else_seq, popped, scope_node);
+
+        if (consequent) {
+            pm_compile_node(iseq, (const pm_node_t *) consequent, else_seq, popped, scope_node);
         }
-        else {
-            PM_PUTNIL_UNLESS_POPPED;
+        else if (!popped) {
+            PUSH_INSN(else_seq, location, putnil);
         }
 
         ADD_SEQ(ret, else_seq);
     }
 
     if (end_label) {
-        ADD_LABEL(ret, end_label);
+        PUSH_LABEL(ret, end_label);
     }
 
     return;
@@ -5778,13 +5780,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_IF_NODE: {
-        const int line = pm_node_line_number(parser, node);
-        pm_if_node_t *if_node = (pm_if_node_t *)node;
-        pm_statements_node_t *node_body = if_node->statements;
-        pm_node_t *node_else = if_node->consequent;
-        pm_node_t *predicate = if_node->predicate;
-
-        pm_compile_if(iseq, line, node_body, node_else, predicate, ret, popped, scope_node);
+        // if foo then bar end
+        // ^^^^^^^^^^^^^^^^^^^
+        //
+        // bar if foo
+        // ^^^^^^^^^^
+        //
+        // foo ? bar : baz
+        // ^^^^^^^^^^^^^^^
+        const pm_if_node_t *cast = (const pm_if_node_t *) node;
+        pm_compile_conditional(iseq, &location, cast->statements, cast->consequent, cast->predicate, ret, popped, scope_node);
         return;
       }
       case PM_IMAGINARY_NODE: {
@@ -7929,16 +7934,18 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_UNLESS_NODE: {
-        const int line = pm_node_line_number(parser, node);
-        pm_unless_node_t *unless_node = (pm_unless_node_t *)node;
-        pm_node_t *node_body = (pm_node_t *)(unless_node->statements);
-        pm_statements_node_t *node_else = NULL;
-        if (unless_node->consequent != NULL) {
-            node_else = ((pm_else_node_t *)unless_node->consequent)->statements;
+        // unless foo; bar end
+        // ^^^^^^^^^^^^^^^^^^^
+        //
+        // bar unless foo
+        // ^^^^^^^^^^^^^^
+        const pm_unless_node_t *cast = (const pm_unless_node_t *) node;
+        const pm_statements_node_t *consequent = NULL;
+        if (cast->consequent != NULL) {
+            consequent = ((const pm_else_node_t *) cast->consequent)->statements;
         }
-        pm_node_t *predicate = unless_node->predicate;
 
-        pm_compile_if(iseq, line, node_else, node_body, predicate, ret, popped, scope_node);
+        pm_compile_conditional(iseq, &location, consequent, (const pm_node_t *) cast->statements, cast->predicate, ret, popped, scope_node);
         return;
       }
       case PM_UNTIL_NODE: {
