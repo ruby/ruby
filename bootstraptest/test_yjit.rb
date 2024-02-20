@@ -4569,15 +4569,6 @@ assert_equal '[1, []]', %q{
   call_site([1])
 }
 
-# splat+kw_splat+opt+rest
-assert_equal '[1, []]', %q{
-  def opt_rest(a = 0, *rest) = [a, rest]
-
-  def call_site(args) = opt_rest(*args, **nil)
-
-  call_site([1])
-}
-
 # splat and nil kw_splat
 assert_equal 'ok', %q{
   def identity(x) = x
