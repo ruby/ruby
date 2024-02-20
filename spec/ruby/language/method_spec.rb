@@ -1127,6 +1127,18 @@ describe "A method" do
       result = m(1, {foo: :bar})
       result.should == [1, nil, nil, {foo: :bar}, nil, {}]
     end
+
+    ruby_version_is "3.4" do
+      evaluate <<-ruby do
+        def m(a, &nil); a end;
+        ruby
+
+        m(1).should == 1
+
+        -> { m(1) {} }.should raise_error(ArgumentError, 'no block accepted')
+        -> { m(1, &proc {}) }.should raise_error(ArgumentError, 'no block accepted')
+      end
+    end
   end
 
   context 'when passing an empty keyword splat to a method that does not accept keywords' do
