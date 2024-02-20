@@ -4,6 +4,9 @@
 /* These macros operate on pm_line_column_t structs as opposed to NODE*s.     */
 /******************************************************************************/
 
+#define PUSH_ADJUST_RESTORE(seq, label) \
+    ADD_ELEM((seq), (LINK_ELEMENT *) new_adjust_body(iseq, (label), -1))
+
 #define PUSH_INSN(seq, location, insn) \
     ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (int) (location).line, (int) (location).column, BIN(insn), 0))
 
@@ -13,6 +16,9 @@
 #define PUSH_INSNL(seq, location, insn, label) \
     (PUSH_INSN1(seq, location, insn, label), LABEL_REF(label))
 
+#define PUSH_INSN2(seq, location, insn, op1, op2) \
+    ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (int) (location).line, (int) (location).column, BIN(insn), 2, (VALUE)(op1), (VALUE)(op2)))
+
 #define PUSH_LABEL(seq, label) \
     ADD_ELEM((seq), (LINK_ELEMENT *) (label))
 
@@ -21,6 +27,9 @@
 
 #define PUSH_SEND(seq, location, id, argc) \
     PUSH_SEND_R((seq), location, (id), (argc), NULL, (VALUE)INT2FIX(0), NULL)
+
+#define PUSH_SEND_WITH_FLAG(seq, location, id, argc, flag) \
+    PUSH_SEND_R((seq), location, (id), (argc), NULL, (VALUE)(flag), NULL)
 
 #define PUSH_TRACE(seq, event) \
   ADD_ELEM((seq), (LINK_ELEMENT *) new_trace_body(iseq, (event), 0))
@@ -687,70 +696,65 @@ pm_compile_if(rb_iseq_t *iseq, const int line, pm_statements_node_t *node_body, 
     return;
 }
 
+/**
+ * Compile a while or until loop.
+ */
 static void
-pm_compile_while(rb_iseq_t *iseq, int lineno, pm_node_flags_t flags, enum pm_node_type type, pm_statements_node_t *statements, pm_node_t *predicate, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
+pm_compile_loop(rb_iseq_t *iseq, const pm_line_column_t *line_column, pm_node_flags_t flags, enum pm_node_type type, const pm_statements_node_t *statements, const pm_node_t *predicate, LINK_ANCHOR *const ret, bool popped, pm_scope_node_t *scope_node)
 {
-    NODE dummy_line_node = generate_dummy_line_node(lineno, lineno);
+    const pm_line_column_t location = *line_column;
 
     LABEL *prev_start_label = ISEQ_COMPILE_DATA(iseq)->start_label;
     LABEL *prev_end_label = ISEQ_COMPILE_DATA(iseq)->end_label;
     LABEL *prev_redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label;
 
     // TODO: Deal with ensures in here
-    LABEL *next_label = ISEQ_COMPILE_DATA(iseq)->start_label = NEW_LABEL(lineno); /* next  */
-    LABEL *redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label = NEW_LABEL(lineno);  /* redo  */
-    LABEL *break_label = ISEQ_COMPILE_DATA(iseq)->end_label = NEW_LABEL(lineno);  /* break */
-    LABEL *end_label = NEW_LABEL(lineno);
-    LABEL *adjust_label = NEW_LABEL(lineno);
+    LABEL *next_label = ISEQ_COMPILE_DATA(iseq)->start_label = NEW_LABEL(location.line); /* next  */
+    LABEL *redo_label = ISEQ_COMPILE_DATA(iseq)->redo_label = NEW_LABEL(location.line);  /* redo  */
+    LABEL *break_label = ISEQ_COMPILE_DATA(iseq)->end_label = NEW_LABEL(location.line);  /* break */
+    LABEL *end_label = NEW_LABEL(location.line);
+    LABEL *adjust_label = NEW_LABEL(location.line);
 
-    LABEL *next_catch_label = NEW_LABEL(lineno);
+    LABEL *next_catch_label = NEW_LABEL(location.line);
     LABEL *tmp_label = NULL;
 
     // begin; end while true
     if (flags & PM_LOOP_FLAGS_BEGIN_MODIFIER) {
-        tmp_label = NEW_LABEL(lineno);
-        ADD_INSNL(ret, &dummy_line_node, jump, tmp_label);
+        tmp_label = NEW_LABEL(location.line);
+        PUSH_INSNL(ret, location, jump, tmp_label);
     }
     else {
         // while true; end
-        ADD_INSNL(ret, &dummy_line_node, jump, next_label);
+        PUSH_INSNL(ret, location, jump, next_label);
     }
 
-    ADD_LABEL(ret, adjust_label);
-    PM_PUTNIL;
-    ADD_LABEL(ret, next_catch_label);
-    PM_POP;
-    ADD_INSNL(ret, &dummy_line_node, jump, next_label);
-    if (tmp_label) ADD_LABEL(ret, tmp_label);
+    PUSH_LABEL(ret, adjust_label);
+    PUSH_INSN(ret, location, putnil);
+    PUSH_LABEL(ret, next_catch_label);
+    PUSH_INSN(ret, location, pop);
+    PUSH_INSNL(ret, location, jump, next_label);
+    if (tmp_label) PUSH_LABEL(ret, tmp_label);
 
-    ADD_LABEL(ret, redo_label);
-    if (statements) {
-        PM_COMPILE_POPPED((pm_node_t *)statements);
-    }
+    PUSH_LABEL(ret, redo_label);
+    if (statements != NULL) PM_COMPILE_POPPED((const pm_node_t *) statements);
 
-    ADD_LABEL(ret, next_label);
-
+    PUSH_LABEL(ret, next_label);
     if (type == PM_WHILE_NODE) {
         pm_compile_branch_condition(iseq, ret, predicate, redo_label, end_label, popped, scope_node);
     } else if (type == PM_UNTIL_NODE) {
         pm_compile_branch_condition(iseq, ret, predicate, end_label, redo_label, popped, scope_node);
     }
 
-    ADD_LABEL(ret, end_label);
-    ADD_ADJUST_RESTORE(ret, adjust_label);
+    PUSH_LABEL(ret, end_label);
+    PUSH_ADJUST_RESTORE(ret, adjust_label);
+    PUSH_INSN(ret, location, putnil);
 
-    PM_PUTNIL;
+    PUSH_LABEL(ret, break_label);
+    if (popped) PUSH_INSN(ret, location, pop);
 
-    ADD_LABEL(ret, break_label);
-
-    PM_POP_IF_POPPED;
-
-    ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, redo_label, break_label, NULL,
-            break_label);
-    ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, redo_label, break_label, NULL,
-            next_catch_label);
-    ADD_CATCH_ENTRY(CATCH_TYPE_REDO, redo_label, break_label, NULL,
-            ISEQ_COMPILE_DATA(iseq)->redo_label);
+    ADD_CATCH_ENTRY(CATCH_TYPE_BREAK, redo_label, break_label, NULL, break_label);
+    ADD_CATCH_ENTRY(CATCH_TYPE_NEXT, redo_label, break_label, NULL, next_catch_label);
+    ADD_CATCH_ENTRY(CATCH_TYPE_REDO, redo_label, break_label, NULL, ISEQ_COMPILE_DATA(iseq)->redo_label);
 
     ISEQ_COMPILE_DATA(iseq)->start_label = prev_start_label;
     ISEQ_COMPILE_DATA(iseq)->end_label = prev_end_label;
@@ -7798,113 +7802,119 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_SPLAT_NODE: {
-        pm_splat_node_t *splat_node = (pm_splat_node_t *)node;
-        if (splat_node->expression) {
-            PM_COMPILE(splat_node->expression);
+        // foo(*bar)
+        //     ^^^^
+        const pm_splat_node_t *cast = (const pm_splat_node_t *) node;
+        if (cast->expression) {
+            PM_COMPILE(cast->expression);
         }
 
         if (!popped) {
-            ADD_INSN1(ret, &dummy_line_node, splatarray, Qtrue);
+            PUSH_INSN1(ret, location, splatarray, Qtrue);
         }
         return;
       }
       case PM_STATEMENTS_NODE: {
-        pm_statements_node_t *statements_node = (pm_statements_node_t *) node;
-        pm_node_list_t node_list = statements_node->body;
-        if (node_list.size > 0) {
-            for (size_t index = 0; index < node_list.size - 1; index++) {
-                PM_COMPILE_POPPED(node_list.nodes[index]);
+        // A list of statements.
+        const pm_statements_node_t *cast = (const pm_statements_node_t *) node;
+        const pm_node_list_t *body = &cast->body;
+
+        if (body->size > 0) {
+            for (size_t index = 0; index < body->size - 1; index++) {
+                PM_COMPILE_POPPED(body->nodes[index]);
             }
-            PM_COMPILE(node_list.nodes[node_list.size - 1]);
+            PM_COMPILE(body->nodes[body->size - 1]);
         }
         else {
-            PM_PUTNIL;
+            PUSH_INSN(ret, location, putnil);
         }
         return;
       }
       case PM_STRING_NODE: {
+        // "foo"
+        // ^^^^^
         if (!popped) {
-            pm_string_node_t *cast = (pm_string_node_t *) node;
-            VALUE value = parse_string_encoded(node, &cast->unescaped, parser);
-            value = rb_fstring(value);
-            if (node->flags & PM_STRING_FLAGS_FROZEN) {
-                ADD_INSN1(ret, &dummy_line_node, putobject, value);
+            const pm_string_node_t *cast = (const pm_string_node_t *) node;
+            VALUE value = rb_fstring(parse_string_encoded(node, &cast->unescaped, parser));
+
+            if (PM_NODE_FLAG_P(node, PM_STRING_FLAGS_FROZEN)) {
+                PUSH_INSN1(ret, location, putobject, value);
             }
             else {
-                ADD_INSN1(ret, &dummy_line_node, putstring, value);
+                PUSH_INSN1(ret, location, putstring, value);
             }
         }
         return;
       }
       case PM_SUPER_NODE: {
-        pm_super_node_t *super_node = (pm_super_node_t *) node;
+        // super(foo)
+        // ^^^^^^^^^^
+        const pm_super_node_t *cast = (const pm_super_node_t *) node;
 
         DECL_ANCHOR(args);
-
-        int flags = 0;
-        struct rb_callinfo_kwarg *keywords = NULL;
-        const rb_iseq_t *parent_block = ISEQ_COMPILE_DATA(iseq)->current_block;
-
         INIT_ANCHOR(args);
         ISEQ_COMPILE_DATA(iseq)->current_block = NULL;
 
-        PM_PUTSELF;
+        PUSH_INSN(ret, location, putself);
 
-        int argc = pm_setup_args(super_node->arguments, super_node->block, &flags, &keywords, iseq, ret, scope_node, dummy_line_node);
+        int flags = 0;
+        struct rb_callinfo_kwarg *keywords = NULL;
+        int argc = pm_setup_args(cast->arguments, cast->block, &flags, &keywords, iseq, ret, scope_node, dummy_line_node);
         flags |= VM_CALL_SUPER | VM_CALL_FCALL;
 
-        if (super_node->block && PM_NODE_TYPE_P(super_node->block, PM_BLOCK_NODE)) {
+        const rb_iseq_t *parent_block = ISEQ_COMPILE_DATA(iseq)->current_block;
+        if (cast->block && PM_NODE_TYPE_P(cast->block, PM_BLOCK_NODE)) {
             pm_scope_node_t next_scope_node;
-            pm_scope_node_init(super_node->block, &next_scope_node, scope_node, parser);
+            pm_scope_node_init(cast->block, &next_scope_node, scope_node, parser);
             parent_block = NEW_CHILD_ISEQ(&next_scope_node, make_name_for_block(iseq), ISEQ_TYPE_BLOCK, lineno);
             pm_scope_node_destroy(&next_scope_node);
         }
 
         if ((flags & VM_CALL_ARGS_BLOCKARG) && (flags & VM_CALL_KW_SPLAT) && !(flags & VM_CALL_KW_SPLAT_MUT)) {
-            ADD_INSN(args, &dummy_line_node, splatkw);
+            PUSH_INSN(args, location, splatkw);
         }
 
         ADD_SEQ(ret, args);
-        ADD_INSN2(ret, &dummy_line_node, invokesuper,
-                new_callinfo(iseq, 0, argc, flags, keywords, parent_block != NULL),
-                parent_block);
+        PUSH_INSN2(ret, location, invokesuper, new_callinfo(iseq, 0, argc, flags, keywords, parent_block != NULL), parent_block);
 
-        PM_POP_IF_POPPED;
+        if (popped) PUSH_INSN(ret, location, pop);
         return;
       }
       case PM_SYMBOL_NODE: {
-        // Symbols nodes are symbol literals with no interpolation. They are
-        // always marked as static literals.
+        // :foo
+        // ^^^^
         if (!popped) {
             VALUE value = pm_static_literal_value(node, scope_node);
-            ADD_INSN1(ret, &dummy_line_node, putobject, value);
-            RB_OBJ_WRITTEN(iseq, Qundef, value);
+            PUSH_INSN1(ret, location, putobject, value);
         }
         return;
       }
       case PM_TRUE_NODE:
+        // true
+        // ^^^^
         if (!popped) {
-            ADD_INSN1(ret, &dummy_line_node, putobject, Qtrue);
+            PUSH_INSN1(ret, location, putobject, Qtrue);
         }
         return;
       case PM_UNDEF_NODE: {
-        pm_undef_node_t *undef_node = (pm_undef_node_t *) node;
+        // undef foo
+        // ^^^^^^^^^
+        const pm_undef_node_t *cast = (const pm_undef_node_t *) node;
+        const pm_node_list_t *names = &cast->names;
 
-        for (size_t index = 0; index < undef_node->names.size; index++) {
-            ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
-            ADD_INSN1(ret, &dummy_line_node, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
+        for (size_t index = 0; index < names->size; index++) {
+            PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_VMCORE));
+            PUSH_INSN1(ret, location, putspecialobject, INT2FIX(VM_SPECIAL_OBJECT_CBASE));
 
-            PM_COMPILE_NOT_POPPED(undef_node->names.nodes[index]);
+            PM_COMPILE_NOT_POPPED(names->nodes[index]);
+            PUSH_SEND(ret, location, id_core_undef_method, INT2NUM(2));
 
-            ADD_SEND(ret, &dummy_line_node, id_core_undef_method, INT2NUM(2));
-
-            if (index < undef_node->names.size - 1) {
-                PM_POP;
+            if (index < names->size - 1) {
+                PUSH_INSN(ret, location, pop);
             }
         }
 
-        PM_POP_IF_POPPED;
-
+        if (popped) PUSH_INSN(ret, location, pop);
         return;
       }
       case PM_UNLESS_NODE: {
@@ -7921,40 +7931,45 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_UNTIL_NODE: {
-        pm_until_node_t *until_node = (pm_until_node_t *)node;
-        pm_statements_node_t *statements = until_node->statements;
-        pm_node_t *predicate = until_node->predicate;
-        pm_node_flags_t flags = node->flags;
-
-        pm_compile_while(iseq, lineno, flags, node->type, statements, predicate, ret, popped, scope_node);
-        return;
-      }
-      case PM_WHEN_NODE: {
-        rb_bug("Cannot compile a WhenNode directly\n");
+        // until foo; bar end
+        // ^^^^^^^^^^^^^^^^^
+        //
+        // bar until foo
+        // ^^^^^^^^^^^^^
+        const pm_until_node_t *cast = (const pm_until_node_t *) node;
+        pm_compile_loop(iseq, &location, cast->base.flags, PM_UNTIL_NODE, cast->statements, cast->predicate, ret, popped, scope_node);
         return;
       }
       case PM_WHILE_NODE: {
-        pm_while_node_t *while_node = (pm_while_node_t *)node;
-        pm_statements_node_t *statements = while_node->statements;
-        pm_node_t *predicate = while_node->predicate;
-        pm_node_flags_t flags = node->flags;
-
-        pm_compile_while(iseq, lineno, flags, node->type, statements, predicate, ret, popped, scope_node);
+        // while foo; bar end
+        // ^^^^^^^^^^^^^^^^^^
+        //
+        // bar while foo
+        // ^^^^^^^^^^^^^
+        const pm_while_node_t *cast = (const pm_while_node_t *) node;
+        pm_compile_loop(iseq, &location, cast->base.flags, PM_WHILE_NODE, cast->statements, cast->predicate, ret, popped, scope_node);
         return;
       }
       case PM_X_STRING_NODE: {
-        pm_x_string_node_t *cast = (pm_x_string_node_t *) node;
+        // `foo`
+        // ^^^^^
+        const pm_x_string_node_t *cast = (const pm_x_string_node_t *) node;
         VALUE value = parse_string_encoded(node, &cast->unescaped, parser);
 
-        PM_PUTSELF;
-        ADD_INSN1(ret, &dummy_line_node, putobject, value);
-        ADD_SEND_WITH_FLAG(ret, &dummy_line_node, idBackquote, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
+        PUSH_INSN(ret, location, putself);
+        PUSH_INSN1(ret, location, putobject, value);
+        PUSH_SEND_WITH_FLAG(ret, location, idBackquote, INT2NUM(1), INT2FIX(VM_CALL_FCALL | VM_CALL_ARGS_SIMPLE));
+        if (popped) PUSH_INSN(ret, location, pop);
 
-        PM_POP_IF_POPPED;
         return;
       }
       case PM_YIELD_NODE: {
-        pm_yield_node_t *yield_node = (pm_yield_node_t *)node;
+        // yield
+        // ^^^^^
+        //
+        // yield 1
+        // ^^^^^^^
+        const pm_yield_node_t *cast = (const pm_yield_node_t *) node;
 
         switch (ISEQ_BODY(ISEQ_BODY(iseq)->local_iseq)->type) {
           case ISEQ_TYPE_TOP:
@@ -7965,27 +7980,23 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
           default: /* valid */;
         }
 
+        int argc = 0;
         int flags = 0;
         struct rb_callinfo_kwarg *keywords = NULL;
 
-        int argc = 0;
-
-        if (yield_node->arguments) {
-            argc = pm_setup_args(yield_node->arguments, NULL, &flags, &keywords, iseq, ret, scope_node, dummy_line_node);
+        if (cast->arguments) {
+            argc = pm_setup_args(cast->arguments, NULL, &flags, &keywords, iseq, ret, scope_node, dummy_line_node);
         }
 
-        ADD_INSN1(ret, &dummy_line_node, invokeblock, new_callinfo(iseq, 0, argc, flags, keywords, FALSE));
-
-        PM_POP_IF_POPPED;
+        PUSH_INSN1(ret, location, invokeblock, new_callinfo(iseq, 0, argc, flags, keywords, FALSE));
+        if (popped) PUSH_INSN(ret, location, pop);
 
         int level = 0;
-        const rb_iseq_t *tmp_iseq = iseq;
-        for (; tmp_iseq != ISEQ_BODY(iseq)->local_iseq; level++ ) {
+        for (const rb_iseq_t *tmp_iseq = iseq; tmp_iseq != ISEQ_BODY(iseq)->local_iseq; level++) {
             tmp_iseq = ISEQ_BODY(tmp_iseq)->parent_iseq;
         }
 
         if (level > 0) access_outer_variables(iseq, level, rb_intern("yield"), true);
-
         return;
       }
       default:
