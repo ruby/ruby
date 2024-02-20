@@ -588,8 +588,7 @@ module Prism
     "sig/prism/mutation_compiler.rbs",
     "sig/prism/node.rbs",
     "sig/prism/visitor.rbs",
-    "sig/prism/_private/dot_visitor.rbs",
-    "sig/prism/_private/ripper_compat.rbs",
+    "sig/prism/_private/dot_visitor.rbs"
   ]
 end
 

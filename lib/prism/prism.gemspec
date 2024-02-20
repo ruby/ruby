@@ -133,7 +133,6 @@ Gem::Specification.new do |spec|
     "sig/prism/pack.rbs",
     "sig/prism/parse_result.rbs",
     "sig/prism/pattern.rbs",
-    "sig/prism/ripper_compat.rbs",
     "sig/prism/serialize.rbs",
     "sig/prism/visitor.rbs",
     "rbi/prism.rbi",

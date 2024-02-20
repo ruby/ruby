@@ -44,7 +44,7 @@ module Prism
   #
   # For supported options, see Prism::parse.
   def self.lex_compat(source, **options)
-    LexCompat.new(source, **options).result #: ParseResult[Array[[[Integer, Integer], Symbol, String, untyped]]]
+    LexCompat.new(source, **options).result # steep:ignore
   end
 
   # :call-seq:
@@ -54,7 +54,7 @@ module Prism
   # returns the same tokens. Raises SyntaxError if the syntax in source is
   # invalid.
   def self.lex_ripper(source)
-    LexRipper.new(source).result
+    LexRipper.new(source).result # steep:ignore
   end
 
   # :call-seq:

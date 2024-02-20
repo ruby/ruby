@@ -188,12 +188,7 @@ module Prism
 
     # Attach the list of comments to their respective locations in the tree.
     def attach_comments!
-      if ProgramNode === value
-        this = self #: ParseResult[ProgramNode]
-        Comments.new(this).attach!
-      else
-        raise
-      end
+      Comments.new(self).attach! # steep:ignore
     end
   end
 end

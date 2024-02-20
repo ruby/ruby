@@ -87,11 +87,10 @@ module Prism
       return to_enum(__method__ || raise, root) unless block_given?
 
       @compiled ||= compile
-      compiled = @compiled #: Proc
       queue = [root]
 
       while (node = queue.shift)
-        yield node if compiled.call(node)
+        yield node if @compiled.call(node) # steep:ignore
         queue.concat(node.compact_child_nodes)
       end
     end
