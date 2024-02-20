@@ -1739,6 +1739,8 @@ Init_extra_exts(void)
 static void
 ruby_opt_init(ruby_cmdline_options_t *opt)
 {
+    rb_warning_category_update(opt->warn.mask, opt->warn.set);
+
     if (opt->dump & dump_exit_bits) return;
 
     if (FEATURE_SET_P(opt->features, gems)) {
@@ -1753,8 +1755,6 @@ ruby_opt_init(ruby_cmdline_options_t *opt)
             rb_define_module("SyntaxSuggest");
         }
     }
-
-    rb_warning_category_update(opt->warn.mask, opt->warn.set);
 
     /* [Feature #19785] Warning for removed GC environment variable.
      * Remove this in Ruby 3.4. */
