@@ -66,6 +66,20 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 
 ## Compatibility issues
 
+* Error messages and backtrace displays have been changed.
+  * Use a single quote instead of a backtick as a opening quote. [Feature #16495]
+  * Display a class name before a method name (only when the class has a permanent name). [Feature #19117]
+  * `Kernel#caller`, `Thread::Backtrace::Location`'s methods, etc. are also changed accordingly.
+  ```
+  Old:
+  test.rb:1:in `foo': undefined method `time' for an instance of Integer
+          from test.rb:2:in `<main>'
+
+  New:
+  test.rb:1:in 'Object#foo': undefined method 'time' for an instance of Integer
+          from test.rb:2:in `<main>'
+  ```
+
 ## Stdlib compatibility issues
 
 ## C API updates
@@ -76,6 +90,8 @@ See GitHub releases like [GitHub Releases of Logger](https://github.com/ruby/log
 
 ## JIT
 
+[Feature #16495]: https://bugs.ruby-lang.org/issues/16495
 [Feature #18980]: https://bugs.ruby-lang.org/issues/18980
+[Feature #19117]: https://bugs.ruby-lang.org/issues/19117
 [Bug #20064]:     https://bugs.ruby-lang.org/issues/20064
 [Feature #20182]: https://bugs.ruby-lang.org/issues/20182
