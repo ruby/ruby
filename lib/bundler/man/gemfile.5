@@ -1,6 +1,6 @@
 .\" generated with nRonn/v0.11.1
 .\" https://github.com/n-ronn/nronn/tree/0.11.1
-.TH "GEMFILE" "5" "December 2023" ""
+.TH "GEMFILE" "5" "February 2024" ""
 .SH "NAME"
 \fBGemfile\fR \- A format for describing gem dependencies for Ruby programs
 .SH "SYNOPSIS"
@@ -72,7 +72,7 @@ A Ruby engine is an implementation of the Ruby language\.
 .IP "\(bu" 4
 For background: the reference or original implementation of the Ruby programming language is called Matz's Ruby Interpreter \fIhttps://en\.wikipedia\.org/wiki/Ruby_MRI\fR, or MRI for short\. This is named after Ruby creator Yukihiro Matsumoto, also known as Matz\. MRI is also known as CRuby, because it is written in C\. MRI is the most widely used Ruby engine\.
 .IP "\(bu" 4
-Other implementations \fIhttps://www\.ruby\-lang\.org/en/about/\fR of Ruby exist\. Some of the more well\-known implementations include JRuby \fIhttp://jruby\.org/\fR and TruffleRuby \fIhttps://www\.graalvm\.org/ruby/\fR\. Rubinius is an alternative implementation of Ruby written in Ruby\. JRuby is an implementation of Ruby on the JVM, short for Java Virtual Machine\. TruffleRuby is a Ruby implementation on the GraalVM, a language toolkit built on the JVM\.
+Other implementations \fIhttps://www\.ruby\-lang\.org/en/about/\fR of Ruby exist\. Some of the more well\-known implementations include JRuby \fIhttps://www\.jruby\.org/\fR and TruffleRuby \fIhttps://www\.graalvm\.org/ruby/\fR\. Rubinius is an alternative implementation of Ruby written in Ruby\. JRuby is an implementation of Ruby on the JVM, short for Java Virtual Machine\. TruffleRuby is a Ruby implementation on the GraalVM, a language toolkit built on the JVM\.
 .IP "" 0
 .SS "ENGINE VERSION"
 Each application \fImay\fR specify a Ruby engine version\. If an engine version is specified, an engine \fImust\fR also be specified\. If the engine is "ruby" the engine version specified \fImust\fR match the Ruby version\.
@@ -449,7 +449,7 @@ end
 .fi
 .IP "" 0
 .SH "GEMSPEC"
-The \fB\.gemspec\fR \fIhttp://guides\.rubygems\.org/specification\-reference/\fR file is where you provide metadata about your gem to Rubygems\. Some required Gemspec attributes include the name, description, and homepage of your gem\. This is also where you specify the dependencies your gem needs to run\.
+The \fB\.gemspec\fR \fIhttps://guides\.rubygems\.org/specification\-reference/\fR file is where you provide metadata about your gem to Rubygems\. Some required Gemspec attributes include the name, description, and homepage of your gem\. This is also where you specify the dependencies your gem needs to run\.
 .P
 If you wish to use Bundler to help install dependencies for a gem while it is being developed, use the \fBgemspec\fR method to pull in the dependencies listed in the \fB\.gemspec\fR file\.
 .P
