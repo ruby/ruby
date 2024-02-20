@@ -4,6 +4,9 @@
 /* These macros operate on pm_line_column_t structs as opposed to NODE*s.     */
 /******************************************************************************/
 
+#define PUSH_ADJUST(seq, location, label) \
+    ADD_ELEM((seq), (LINK_ELEMENT *) new_adjust_body(iseq, (label), (int) (location).line))
+
 #define PUSH_ADJUST_RESTORE(seq, label) \
     ADD_ELEM((seq), (LINK_ELEMENT *) new_adjust_body(iseq, (label), -1))
 
@@ -18,6 +21,9 @@
 
 #define PUSH_INSN2(seq, location, insn, op1, op2) \
     ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (int) (location).line, (int) (location).column, BIN(insn), 2, (VALUE)(op1), (VALUE)(op2)))
+
+#define PUSH_INSN3(seq, location, insn, op1, op2, op3) \
+    ADD_ELEM((seq), (LINK_ELEMENT *) new_insn_body(iseq, (int) (location).line, (int) (location).column, BIN(insn), 3, (VALUE)(op1), (VALUE)(op2), (VALUE)(op3)))
 
 #define PUSH_LABEL(seq, label) \
     ADD_ELEM((seq), (LINK_ELEMENT *) (label))
@@ -6809,68 +6815,72 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_RETURN_NODE: {
-        pm_arguments_node_t *arguments = ((pm_return_node_t *)node)->arguments;
+        // return
+        // ^^^^^^
+        //
+        // return 1
+        // ^^^^^^^^
+        const pm_return_node_t *cast = (const pm_return_node_t *) node;
+        const pm_arguments_node_t *arguments = cast->arguments;
 
-        if (iseq) {
-            enum rb_iseq_type type = ISEQ_BODY(iseq)->type;
-            LABEL *splabel = 0;
+        enum rb_iseq_type type = ISEQ_BODY(iseq)->type;
+        LABEL *splabel = 0;
 
-            const rb_iseq_t *parent_iseq = iseq;
-            enum rb_iseq_type parent_type = ISEQ_BODY(parent_iseq)->type;
-            while (parent_type == ISEQ_TYPE_RESCUE || parent_type == ISEQ_TYPE_ENSURE) {
-                if (!(parent_iseq = ISEQ_BODY(parent_iseq)->parent_iseq)) break;
-                parent_type = ISEQ_BODY(parent_iseq)->type;
-            }
+        const rb_iseq_t *parent_iseq = iseq;
+        enum rb_iseq_type parent_type = ISEQ_BODY(parent_iseq)->type;
+        while (parent_type == ISEQ_TYPE_RESCUE || parent_type == ISEQ_TYPE_ENSURE) {
+            if (!(parent_iseq = ISEQ_BODY(parent_iseq)->parent_iseq)) break;
+            parent_type = ISEQ_BODY(parent_iseq)->type;
+        }
 
-            switch (parent_type) {
-              case ISEQ_TYPE_TOP:
-              case ISEQ_TYPE_MAIN:
-                if (arguments) {
-                    rb_warn("argument of top-level return is ignored");
-                }
-                if (parent_iseq == iseq) {
-                    type = ISEQ_TYPE_METHOD;
-                }
-                break;
-              default:
-                break;
-            }
-
-            if (type == ISEQ_TYPE_METHOD) {
-                splabel = NEW_LABEL(0);
-                ADD_LABEL(ret, splabel);
-                ADD_ADJUST(ret, &dummy_line_node, 0);
-            }
-
+        switch (parent_type) {
+          case ISEQ_TYPE_TOP:
+          case ISEQ_TYPE_MAIN:
             if (arguments) {
-                PM_COMPILE_NOT_POPPED((pm_node_t *)arguments);
+                rb_warn("argument of top-level return is ignored");
             }
-            else {
-                PM_PUTNIL;
+            if (parent_iseq == iseq) {
+                type = ISEQ_TYPE_METHOD;
             }
+            break;
+          default:
+            break;
+        }
 
-            if (type == ISEQ_TYPE_METHOD && can_add_ensure_iseq(iseq)) {
-                pm_add_ensure_iseq(ret, iseq, 1, scope_node);
-                ADD_TRACE(ret, RUBY_EVENT_RETURN);
-                ADD_INSN(ret, &dummy_line_node, leave);
-                ADD_ADJUST_RESTORE(ret, splabel);
+        if (type == ISEQ_TYPE_METHOD) {
+            splabel = NEW_LABEL(0);
+            PUSH_LABEL(ret, splabel);
+            PUSH_ADJUST(ret, location, 0);
+        }
 
-                PM_PUTNIL_UNLESS_POPPED;
-            }
-            else {
-                ADD_INSN1(ret, &dummy_line_node, throw, INT2FIX(TAG_RETURN));
-                PM_POP_IF_POPPED;
-            }
+        if (arguments) {
+            PM_COMPILE_NOT_POPPED((const pm_node_t *) arguments);
+        }
+        else {
+            PUSH_INSN(ret, location, putnil);
+        }
+
+        if (type == ISEQ_TYPE_METHOD && can_add_ensure_iseq(iseq)) {
+            pm_add_ensure_iseq(ret, iseq, 1, scope_node);
+            PUSH_TRACE(ret, RUBY_EVENT_RETURN);
+            PUSH_INSN(ret, location, leave);
+            PUSH_ADJUST_RESTORE(ret, splabel);
+            if (!popped) PUSH_INSN(ret, location, putnil);
+        }
+        else {
+            PUSH_INSN1(ret, location, throw, INT2FIX(TAG_RETURN));
+            if (popped) PUSH_INSN(ret, location, pop);
         }
 
         return;
       }
       case PM_RETRY_NODE: {
+        // retry
+        // ^^^^^
         if (ISEQ_BODY(iseq)->type == ISEQ_TYPE_RESCUE) {
-            PM_PUTNIL;
-            ADD_INSN1(ret, &dummy_line_node, throw, INT2FIX(TAG_RETRY));
-
-            PM_POP_IF_POPPED;
+            PUSH_INSN(ret, location, putnil);
+            PUSH_INSN1(ret, location, throw, INT2FIX(TAG_RETRY));
+            if (popped) PUSH_INSN(ret, location, pop);
         } else {
             COMPILE_ERROR(ERROR_ARGS "Invalid retry");
             return;
@@ -7745,28 +7755,31 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_SELF_NODE:
+        // self
+        // ^^^^
         if (!popped) {
-            PM_PUTSELF;
+            PUSH_INSN(ret, location, putself);
         }
         return;
       case PM_SINGLETON_CLASS_NODE: {
-        pm_singleton_class_node_t *singleton_class_node = (pm_singleton_class_node_t *)node;
+        // class << self; end
+        // ^^^^^^^^^^^^^^^^^^
+        const pm_singleton_class_node_t *cast = (const pm_singleton_class_node_t *) node;
 
         pm_scope_node_t next_scope_node;
-        pm_scope_node_init((pm_node_t *)singleton_class_node, &next_scope_node, scope_node, parser);
-        const rb_iseq_t *singleton_class = NEW_ISEQ(&next_scope_node, rb_fstring_lit("singleton class"), ISEQ_TYPE_CLASS, lineno);
+        pm_scope_node_init((const pm_node_t *) cast, &next_scope_node, scope_node, parser);
+        const rb_iseq_t *child_iseq = NEW_ISEQ(&next_scope_node, rb_fstring_lit("singleton class"), ISEQ_TYPE_CLASS, location.line);
         pm_scope_node_destroy(&next_scope_node);
 
-        PM_COMPILE_NOT_POPPED(singleton_class_node->expression);
-        PM_PUTNIL;
+        PM_COMPILE_NOT_POPPED(cast->expression);
+        PUSH_INSN(ret, location, putnil);
+
         ID singletonclass;
         CONST_ID(singletonclass, "singletonclass");
+        PUSH_INSN3(ret, location, defineclass, ID2SYM(singletonclass), child_iseq, INT2FIX(VM_DEFINECLASS_TYPE_SINGLETON_CLASS));
 
-        ADD_INSN3(ret, &dummy_line_node, defineclass,
-                ID2SYM(singletonclass), singleton_class,
-                INT2FIX(VM_DEFINECLASS_TYPE_SINGLETON_CLASS));
-        PM_POP_IF_POPPED;
-        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)singleton_class);
+        if (popped) PUSH_INSN(ret, location, pop);
+        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE) child_iseq);
 
         return;
       }
