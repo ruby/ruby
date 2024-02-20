@@ -6486,61 +6486,66 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_OR_NODE: {
-        pm_or_node_t *or_node = (pm_or_node_t *) node;
+        // a or b
+        // ^^^^^^
+        const pm_or_node_t *cast = (const pm_or_node_t *) node;
 
-        LABEL *end_label = NEW_LABEL(lineno);
-        PM_COMPILE_NOT_POPPED(or_node->left);
+        LABEL *end_label = NEW_LABEL(location.line);
+        PM_COMPILE_NOT_POPPED(cast->left);
 
-        PM_DUP_UNLESS_POPPED;
-        ADD_INSNL(ret, &dummy_line_node, branchif, end_label);
+        if (!popped) PUSH_INSN(ret, location, dup);
+        PUSH_INSNL(ret, location, branchif, end_label);
 
-        PM_POP_UNLESS_POPPED;
-        PM_COMPILE(or_node->right);
-        ADD_LABEL(ret, end_label);
+        if (!popped) PUSH_INSN(ret, location, pop);
+        PM_COMPILE(cast->right);
+        PUSH_LABEL(ret, end_label);
 
         return;
       }
       case PM_OPTIONAL_PARAMETER_NODE: {
-        pm_optional_parameter_node_t *optional_parameter_node = (pm_optional_parameter_node_t *)node;
-        PM_COMPILE_NOT_POPPED(optional_parameter_node->value);
+        // def foo(bar = 1); end
+        //         ^^^^^^^
+        const pm_optional_parameter_node_t *cast = (const pm_optional_parameter_node_t *) node;
+        PM_COMPILE_NOT_POPPED(cast->value);
 
-        pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, optional_parameter_node->name, 0);
-
+        pm_local_index_t index = pm_lookup_local_index(iseq, scope_node, cast->name, 0);
         ADD_SETLOCAL(ret, &dummy_line_node, index.index, index.level);
 
         return;
       }
-      case PM_PARAMETERS_NODE: {
-        rb_bug("Cannot compile a ParametersNode directly\n");
-
-        return;
-      }
       case PM_PARENTHESES_NODE: {
-        pm_parentheses_node_t *parentheses_node = (pm_parentheses_node_t *) node;
+        // ()
+        // ^^
+        //
+        // (1)
+        // ^^^
+        const pm_parentheses_node_t *cast = (const pm_parentheses_node_t *) node;
 
-        if (parentheses_node->body == NULL) {
-            PM_PUTNIL_UNLESS_POPPED;
-        } else {
-            PM_COMPILE(parentheses_node->body);
+        if (cast->body != NULL) {
+            PM_COMPILE(cast->body);
+        } else if (!popped) {
+            PUSH_INSN(ret, location, putnil);
         }
 
         return;
       }
       case PM_PRE_EXECUTION_NODE: {
-        pm_pre_execution_node_t *pre_execution_node = (pm_pre_execution_node_t *) node;
+        // BEGIN {}
+        // ^^^^^^^^
+        const pm_pre_execution_node_t *cast = (const pm_pre_execution_node_t *) node;
 
         DECL_ANCHOR(pre_ex);
         INIT_ANCHOR(pre_ex);
 
-        if (pre_execution_node->statements) {
-            pm_node_list_t node_list = pre_execution_node->statements->body;
-            for (size_t index = 0; index < node_list.size; index++) {
-                pm_compile_node(iseq, node_list.nodes[index], pre_ex, true, scope_node);
+        if (cast->statements != NULL) {
+            const pm_node_list_t *body = &cast->statements->body;
+            for (size_t index = 0; index < body->size; index++) {
+                pm_compile_node(iseq, body->nodes[index], pre_ex, true, scope_node);
             }
         }
 
         if (!popped) {
-            ADD_INSN(pre_ex, &dummy_line_node, putnil);
+            PUSH_INSN(pre_ex, location, putnil);
         }
 
         pre_ex->last->next = ret->anchor.next;
@@ -6554,6 +6559,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_POST_EXECUTION_NODE: {
+        // END {}
+        // ^^^^^^
         const rb_iseq_t *child_iseq;
         const rb_iseq_t *prevblock = ISEQ_COMPILE_DATA(iseq)->current_block;
 
@@ -6565,119 +6572,118 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         ISEQ_COMPILE_DATA(iseq)->current_block = child_iseq;
 
         int is_index = ISEQ_BODY(iseq)->ise_size++;
-
-        ADD_INSN2(ret, &dummy_line_node, once, child_iseq, INT2FIX(is_index));
-        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE)child_iseq);
-
-        PM_POP_IF_POPPED;
+        PUSH_INSN2(ret, location, once, child_iseq, INT2FIX(is_index));
+        RB_OBJ_WRITTEN(iseq, Qundef, (VALUE) child_iseq);
+        if (popped) PUSH_INSN(ret, location, pop);
 
         ISEQ_COMPILE_DATA(iseq)->current_block = prevblock;
 
         return;
       }
-      case PM_PROGRAM_NODE: {
-        rb_bug("Cannot compile a ProgramNode directly\n");
-
-        return;
-      }
       case PM_RANGE_NODE: {
-        pm_range_node_t *range_node = (pm_range_node_t *) node;
-        bool exclusive = (range_node->operator_loc.end - range_node->operator_loc.start) == 3;
+        // 0..5
+        // ^^^^
+        const pm_range_node_t *cast = (const pm_range_node_t *) node;
+        bool exclude_end = PM_NODE_FLAG_P(cast, PM_RANGE_FLAGS_EXCLUDE_END);
 
-        if (pm_optimizable_range_item_p(range_node->left) && pm_optimizable_range_item_p(range_node->right))  {
+        if (pm_optimizable_range_item_p(cast->left) && pm_optimizable_range_item_p(cast->right))  {
             if (!popped) {
-                pm_node_t *left = range_node->left;
-                pm_node_t *right = range_node->right;
+                const pm_node_t *left = cast->left;
+                const pm_node_t *right = cast->right;
+
                 VALUE val = rb_range_new(
-                        left && PM_NODE_TYPE_P(left, PM_INTEGER_NODE) ? parse_integer((pm_integer_node_t *) left) : Qnil,
-                        right && PM_NODE_TYPE_P(right, PM_INTEGER_NODE) ? parse_integer((pm_integer_node_t *) right) : Qnil,
-                        exclusive
-                        );
-                ADD_INSN1(ret, &dummy_line_node, putobject, val);
-                RB_OBJ_WRITTEN(iseq, Qundef, val);
+                    (left && PM_NODE_TYPE_P(left, PM_INTEGER_NODE)) ? parse_integer((const pm_integer_node_t *) left) : Qnil,
+                    (right && PM_NODE_TYPE_P(right, PM_INTEGER_NODE)) ? parse_integer((const pm_integer_node_t *) right) : Qnil,
+                    exclude_end
+                );
+
+                PUSH_INSN1(ret, location, putobject, val);
             }
         }
         else {
-            if (range_node->left == NULL) {
-                PM_PUTNIL;
+            if (cast->left == NULL) {
+                PUSH_INSN(ret, location, putnil);
             } else {
-                PM_COMPILE(range_node->left);
+                PM_COMPILE(cast->left);
             }
 
-            if (range_node->right == NULL) {
-                PM_PUTNIL;
+            if (cast->right == NULL) {
+                PUSH_INSN(ret, location, putnil);
             } else {
-                PM_COMPILE(range_node->right);
+                PM_COMPILE(cast->right);
             }
 
             if (!popped) {
-                ADD_INSN1(ret, &dummy_line_node, newrange, INT2FIX(exclusive));
+                PUSH_INSN1(ret, location, newrange, INT2FIX(exclude_end ? 1 : 0));
             }
         }
         return;
       }
       case PM_RATIONAL_NODE: {
+        // 1r
+        // ^^
         if (!popped) {
-            ADD_INSN1(ret, &dummy_line_node, putobject, parse_rational(node));
+            PUSH_INSN1(ret, location, putobject, parse_rational(node));
         }
         return;
       }
       case PM_REDO_NODE: {
+        // redo
+        // ^^^^
         if (ISEQ_COMPILE_DATA(iseq)->redo_label && can_add_ensure_iseq(iseq)) {
             LABEL *splabel = NEW_LABEL(0);
 
-            ADD_LABEL(ret, splabel);
-
-            ADD_ADJUST(ret, &dummy_line_node, ISEQ_COMPILE_DATA(iseq)->redo_label);
-
+            PUSH_LABEL(ret, splabel);
+            PUSH_ADJUST(ret, location, ISEQ_COMPILE_DATA(iseq)->redo_label);
             pm_add_ensure_iseq(ret, iseq, 0, scope_node);
-            ADD_INSNL(ret, &dummy_line_node, jump, ISEQ_COMPILE_DATA(iseq)->redo_label);
-            ADD_ADJUST_RESTORE(ret, splabel);
-            PM_PUTNIL_UNLESS_POPPED;
+
+            PUSH_INSNL(ret, location, jump, ISEQ_COMPILE_DATA(iseq)->redo_label);
+            PUSH_ADJUST_RESTORE(ret, splabel);
+            if (!popped) PUSH_INSN(ret, location, putnil);
         }
         else if (ISEQ_BODY(iseq)->type != ISEQ_TYPE_EVAL && ISEQ_COMPILE_DATA(iseq)->start_label && can_add_ensure_iseq(iseq)) {
             LABEL *splabel = NEW_LABEL(0);
 
-            ADD_LABEL(ret, splabel);
+            PUSH_LABEL(ret, splabel);
             pm_add_ensure_iseq(ret, iseq, 0, scope_node);
-            ADD_ADJUST(ret, &dummy_line_node, ISEQ_COMPILE_DATA(iseq)->start_label);
-            ADD_INSNL(ret, &dummy_line_node, jump, ISEQ_COMPILE_DATA(iseq)->start_label);
-            ADD_ADJUST_RESTORE(ret, splabel);
+            PUSH_ADJUST(ret, location, ISEQ_COMPILE_DATA(iseq)->start_label);
 
-            PM_PUTNIL_UNLESS_POPPED;
+            PUSH_INSNL(ret, location, jump, ISEQ_COMPILE_DATA(iseq)->start_label);
+            PUSH_ADJUST_RESTORE(ret, splabel);
+            if (!popped) PUSH_INSN(ret, location, putnil);
         }
         else {
             const rb_iseq_t *ip = iseq;
 
             while (ip) {
-              if (!ISEQ_COMPILE_DATA(ip)) {
-                  ip = 0;
-                  break;
-              }
+                if (!ISEQ_COMPILE_DATA(ip)) {
+                    ip = 0;
+                    break;
+                }
 
-              if (ISEQ_COMPILE_DATA(ip)->redo_label != 0) {
-                  break;
-              }
-              else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_BLOCK) {
-                  break;
-              }
-              else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_EVAL) {
-                  COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with redo");
-                  return;
-              }
+                if (ISEQ_COMPILE_DATA(ip)->redo_label != 0) {
+                    break;
+                }
+                else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_BLOCK) {
+                    break;
+                }
+                else if (ISEQ_BODY(ip)->type == ISEQ_TYPE_EVAL) {
+                    COMPILE_ERROR(ERROR_ARGS "Can't escape from eval with redo");
+                    return;
+                }
 
-              ip = ISEQ_BODY(ip)->parent_iseq;
-          }
-          if (ip != 0) {
-              PM_PUTNIL;
-              ADD_INSN1(ret, &dummy_line_node, throw, INT2FIX(VM_THROW_NO_ESCAPE_FLAG | TAG_REDO));
+                ip = ISEQ_BODY(ip)->parent_iseq;
+            }
 
-              PM_POP_IF_POPPED;
-          }
-          else {
-            COMPILE_ERROR(ERROR_ARGS "Invalid redo");
-            return;
-          }
+            if (ip != 0) {
+                PUSH_INSN(ret, location, putnil);
+                PUSH_INSN1(ret, location, throw, INT2FIX(VM_THROW_NO_ESCAPE_FLAG | TAG_REDO));
+                if (popped) PUSH_INSN(ret, location, pop);
+            }
+            else {
+                COMPILE_ERROR(ERROR_ARGS "Invalid redo");
+                return;
+            }
         }
         return;
       }
