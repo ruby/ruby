@@ -380,12 +380,14 @@ module SyncDefaultGems
       rm_rf("prism/templates/java")
       rm_rf("prism/templates/rbi")
       rm_rf("prism/templates/sig")
-      rm_rf("lib/prism/prism.#{RbConfig::CONFIG['DLEXT']}")
 
       rm("prism/extconf.rb")
     else
       sync_lib gem, upstream
     end
+
+    # Architecture-dependent files must not pollute libdir.
+    rm_rf(Dir["lib/**/*.#{RbConfig::CONFIG['DLEXT']}"])
     replace_rdoc_ref_all
   end
 
