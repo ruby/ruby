@@ -14,7 +14,8 @@ class TestGemSafeYAML < Gem::TestCase
     aliases_enabled = Gem::SafeYAML.aliases_enabled?
     Gem::SafeYAML.aliases_enabled = false
     refute_predicate Gem::SafeYAML, :aliases_enabled?
-    assert_raise Psych::AliasesNotEnabled do
+    expected_error = defined?(Psych::AliasesNotEnabled) ? Psych::AliasesNotEnabled : Psych::BadAlias
+    assert_raise expected_error do
       Gem::SafeYAML.safe_load("a: &a\nb: *a\n")
     end
   ensure
