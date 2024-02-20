@@ -4903,7 +4903,7 @@ compile_array(rb_iseq_t *iseq, LINK_ANCHOR *const ret, const NODE *node, int pop
 static inline int
 static_literal_node_pair_p(const NODE *node, const rb_iseq_t *iseq)
 {
-    return RNODE_LIST(node)->nd_head && static_literal_node_p(RNODE_LIST(node)->nd_head, iseq, true) && static_literal_node_p(RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_head, iseq, true);
+    return RNODE_LIST(node)->nd_head && static_literal_node_p(RNODE_LIST(node)->nd_head, iseq, true) && static_literal_node_p(RNODE_LIST(RNODE_LIST(node)->nd_next)->nd_head, iseq, false);
 }
 
 static int
