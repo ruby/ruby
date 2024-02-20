@@ -6099,6 +6099,7 @@ fn gen_send_cfunc(
         argc - kw_arg_num + 1
     };
 
+    // Exclude the kw_splat hash from arity check
     if kw_splat {
         passed_argc -= 1;
     }
@@ -6152,6 +6153,7 @@ fn gen_send_cfunc(
         }
     }
 
+    // Pop the empty kw_splat hash
     if kw_splat {
         // Only `**nil` is supported right now. Checked in exit_if_kwsplat_non_nil()
         assert_eq!(Type::Nil, asm.ctx.get_opnd_type(StackOpnd(0)));
