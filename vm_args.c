@@ -12,6 +12,8 @@ NORETURN(static void raise_argument_error(rb_execution_context_t *ec, const rb_i
 NORETURN(static void argument_arity_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_callable_method_entry_t *cme, const int miss_argc, const int min_argc, const int max_argc));
 NORETURN(static void argument_kw_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_callable_method_entry_t *cme, const char *error, const VALUE keys));
 VALUE rb_keyword_error_new(const char *error, VALUE keys); /* class.c */
+static VALUE set_error_backtrace(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_callable_method_entry_t *cme, const VALUE exc);
+
 static VALUE method_missing(rb_execution_context_t *ec, VALUE obj, ID id, int argc, const VALUE *argv,
                             enum method_missing_reason call_status, int kw_splat);
 const rb_callable_method_entry_t *rb_resolve_refined_method_callable(VALUE refinements, const rb_callable_method_entry_t *me);
@@ -959,7 +961,15 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
         argument_kw_error(ec, iseq, cme, "unknown", rb_hash_keys(keyword_hash));
     }
 
-    if (ISEQ_BODY(iseq)->param.flags.has_block) {
+    if (ISEQ_BODY(iseq)->param.flags.accepts_no_block) {
+        VALUE given_block;
+        args_setup_block_parameter(ec, calling, &given_block);
+        if (!NIL_P(given_block)) {
+            VALUE exc = rb_exc_new_cstr(rb_eArgError, "no block accepted");
+            rb_exc_raise(set_error_backtrace(ec, iseq, cme, exc));
+        }
+    }
+    else if (ISEQ_BODY(iseq)->param.flags.has_block) {
         if (ISEQ_BODY(iseq)->local_iseq == iseq) {
             /* Do nothing */
         }
@@ -981,8 +991,8 @@ setup_parameters_complex(rb_execution_context_t * const ec, const rb_iseq_t * co
     return opt_pc;
 }
 
-static void
-raise_argument_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_callable_method_entry_t *cme, const VALUE exc)
+static VALUE
+set_error_backtrace(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_callable_method_entry_t *cme, const VALUE exc)
 {
     VALUE at;
 
@@ -1000,6 +1010,13 @@ raise_argument_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb
 
     rb_ivar_set(exc, idBt_locations, at);
     rb_exc_set_backtrace(exc, at);
+    return exc;
+}
+
+static void
+raise_argument_error(rb_execution_context_t *ec, const rb_iseq_t *iseq, const rb_callable_method_entry_t *cme, const VALUE exc)
+{
+    set_error_backtrace(ec, iseq, cme, exc);
     rb_exc_raise(exc);
 }
 

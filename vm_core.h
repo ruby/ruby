@@ -456,6 +456,7 @@ struct rb_iseq_constant_body {
             unsigned int anon_kwrest: 1;
             unsigned int use_block: 1;
             unsigned int forwardable: 1;
+            unsigned int accepts_no_block: 1;
         } flags;
 
         unsigned int size;
