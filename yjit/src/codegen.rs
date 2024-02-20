@@ -6734,7 +6734,8 @@ fn gen_send_iseq(
     let builtin_func_raw = unsafe { rb_yjit_builtin_function(iseq) };
     let builtin_func = if builtin_func_raw.is_null() { None } else { Some(builtin_func_raw) };
     let opt_send_call = flags & VM_CALL_OPT_SEND != 0; // .send call is not currently supported for builtins
-    if let (None, Some(builtin_info), true, false) = (block, builtin_func, builtin_attrs & BUILTIN_ATTR_LEAF != 0, opt_send_call) {
+    if let (None, Some(builtin_info), true, false, None | Some(0)) =
+           (block, builtin_func, builtin_attrs & BUILTIN_ATTR_LEAF != 0, opt_send_call, splat_array_length) {
         let builtin_argc = unsafe { (*builtin_info).argc };
         if builtin_argc + 1 < (C_ARG_OPNDS.len() as i32) {
             // We pop the block arg without using it because:
@@ -6746,6 +6747,16 @@ fn gen_send_iseq(
                     gen_counter_incr(asm, Counter::send_iseq_leaf_builtin_block_arg_block_param);
                     return None;
                 }
+                asm.stack_pop(1);
+            }
+
+            // Pop empty kw_splat hash which passes nothing (exit_if_kwsplat_non_nil())
+            if kw_splat {
+                asm.stack_pop(1);
+            }
+
+            // Pop empty splat array which passes nothing
+            if let Some(0) = splat_array_length {
                 asm.stack_pop(1);
             }
 
