@@ -1852,7 +1852,10 @@ nucomp_to_r(VALUE self)
 {
     get_dat1(self);
 
-    if (!k_exact_zero_p(dat->imag)) {
+    if (RB_FLOAT_TYPE_P(dat->imag) && FLOAT_ZERO_P(dat->imag)) {
+        /* Do nothing here */
+    }
+    else if (!k_exact_zero_p(dat->imag)) {
         VALUE imag = rb_check_convert_type_with_id(dat->imag, T_RATIONAL, "Rational", idTo_r);
         if (NIL_P(imag) || !k_exact_zero_p(imag)) {
             rb_raise(rb_eRangeError, "can't convert %"PRIsVALUE" into Rational",
