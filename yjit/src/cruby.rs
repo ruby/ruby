@@ -267,7 +267,7 @@ pub fn vm_stack_canary() -> u64 {
     unsafe { rb_vm_stack_canary() }.as_u64()
 }
 
-/// Avoid linking the C function on `cargo test``
+/// Avoid linking the C function in `cargo test`
 #[cfg(test)]
 pub fn vm_stack_canary() -> u64 {
     0
