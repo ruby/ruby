@@ -6677,23 +6677,24 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_REGULAR_EXPRESSION_NODE: {
+        // /foo/
+        // ^^^^^
         if (!popped) {
-            pm_regular_expression_node_t *cast = (pm_regular_expression_node_t *) node;
-
-            VALUE regex = pm_new_regex(cast, parser);
-
-            ADD_INSN1(ret, &dummy_line_node, putobject, regex);
+            VALUE regex = pm_static_literal_value(node, scope_node);
+            PUSH_INSN1(ret, location, putobject, regex);
         }
         return;
       }
       case PM_RESCUE_NODE: {
-        pm_rescue_node_t *cast = (pm_rescue_node_t *) node;
+        // begin; rescue; end
+        //        ^^^^^^^
+        const pm_rescue_node_t *cast = (const pm_rescue_node_t *) node;
         iseq_set_exception_local_table(iseq);
 
         // First, establish the labels that we need to be able to jump to within
         // this compilation block.
-        LABEL *exception_match_label = NEW_LABEL(lineno);
-        LABEL *rescue_end_label = NEW_LABEL(lineno);
+        LABEL *exception_match_label = NEW_LABEL(location.line);
+        LABEL *rescue_end_label = NEW_LABEL(location.line);
 
         // Next, compile each of the exceptions that we're going to be
         // handling. For each one, we'll add instructions to check if the
@@ -6701,7 +6702,7 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         // exception_match_label label. Otherwise it will fall through to the
         // subsequent check. If there are no exceptions, we'll only check
         // StandardError.
-        pm_node_list_t *exceptions = &cast->exceptions;
+        const pm_node_list_t *exceptions = &cast->exceptions;
 
         if (exceptions->size > 0) {
             for (size_t index = 0; index < exceptions->size; index++) {
@@ -6711,25 +6712,25 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 if (PM_NODE_TYPE_P(exceptions->nodes[index], PM_SPLAT_NODE)) {
                     checkmatch_flags |= VM_CHECKMATCH_ARRAY;
                 }
-                ADD_INSN1(ret, &dummy_line_node, checkmatch, INT2FIX(checkmatch_flags));
-                ADD_INSNL(ret, &dummy_line_node, branchif, exception_match_label);
+                PUSH_INSN1(ret, location, checkmatch, INT2FIX(checkmatch_flags));
+                PUSH_INSNL(ret, location, branchif, exception_match_label);
             }
         } else {
             ADD_GETLOCAL(ret, &dummy_line_node, LVAR_ERRINFO, 0);
-            ADD_INSN1(ret, &dummy_line_node, putobject, rb_eStandardError);
-            ADD_INSN1(ret, &dummy_line_node, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
-            ADD_INSNL(ret, &dummy_line_node, branchif, exception_match_label);
+            PUSH_INSN1(ret, location, putobject, rb_eStandardError);
+            PUSH_INSN1(ret, location, checkmatch, INT2FIX(VM_CHECKMATCH_TYPE_RESCUE));
+            PUSH_INSNL(ret, location, branchif, exception_match_label);
         }
 
         // If none of the exceptions that we are matching against matched, then
         // we'll jump straight to the rescue_end_label label.
-        ADD_INSNL(ret, &dummy_line_node, jump, rescue_end_label);
+        PUSH_INSNL(ret, location, jump, rescue_end_label);
 
         // Here we have the exception_match_label, which is where the
         // control-flow goes in the case that one of the exceptions matched.
         // Here we will compile the instructions to handle the exception.
-        ADD_LABEL(ret, exception_match_label);
-        ADD_TRACE(ret, RUBY_EVENT_RESCUE);
+        PUSH_LABEL(ret, exception_match_label);
+        PUSH_TRACE(ret, RUBY_EVENT_RESCUE);
 
         // If we have a reference to the exception, then we'll compile the write
         // into the instruction sequence. This can look quite different
@@ -6763,16 +6764,16 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             // Now restore the end_label
             ISEQ_COMPILE_DATA(iseq)->end_label = prev_end;
         } else {
-            PM_PUTNIL;
+            PUSH_INSN(ret, location, putnil);
         }
 
-        ADD_INSN(ret, &dummy_line_node, leave);
+        PUSH_INSN(ret, location, leave);
 
         // Here we'll insert the rescue_end_label label, which is jumped to if
         // none of the exceptions matched. It will cause the control-flow to
         // either jump to the next rescue clause or it will fall through to the
         // subsequent instruction returning the raised error.
-        ADD_LABEL(ret, rescue_end_label);
+        PUSH_LABEL(ret, rescue_end_label);
         if (cast->consequent) {
             PM_COMPILE((pm_node_t *) cast->consequent);
         } else {
@@ -6782,10 +6783,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
         return;
       }
       case PM_RESCUE_MODIFIER_NODE: {
-        pm_rescue_modifier_node_t *cast = (pm_rescue_modifier_node_t *) node;
+        // foo rescue bar
+        // ^^^^^^^^^^^^^^
+        const pm_rescue_modifier_node_t *cast = (const pm_rescue_modifier_node_t *) node;
 
         pm_scope_node_t rescue_scope_node;
-        pm_scope_node_init((pm_node_t *) cast, &rescue_scope_node, scope_node, parser);
+        pm_scope_node_init((const pm_node_t *) cast, &rescue_scope_node, scope_node, parser);
 
         rb_iseq_t *rescue_iseq = NEW_CHILD_ISEQ(
             &rescue_scope_node,
@@ -6796,19 +6799,18 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
 
         pm_scope_node_destroy(&rescue_scope_node);
 
-        LABEL *lstart = NEW_LABEL(lineno);
-        LABEL *lend = NEW_LABEL(lineno);
-        LABEL *lcont = NEW_LABEL(lineno);
+        LABEL *lstart = NEW_LABEL(location.line);
+        LABEL *lend = NEW_LABEL(location.line);
+        LABEL *lcont = NEW_LABEL(location.line);
 
         lstart->rescued = LABEL_RESCUE_BEG;
         lend->rescued = LABEL_RESCUE_END;
-        ADD_LABEL(ret, lstart);
+        PUSH_LABEL(ret, lstart);
         PM_COMPILE_NOT_POPPED(cast->expression);
-        ADD_LABEL(ret, lend);
-        PM_NOP;
-        ADD_LABEL(ret, lcont);
-
-        PM_POP_IF_POPPED;
+        PUSH_LABEL(ret, lend);
+        PUSH_INSN(ret, location, nop);
+        PUSH_LABEL(ret, lcont);
+        if (popped) PUSH_INSN(ret, location, pop);
 
         ADD_CATCH_ENTRY(CATCH_TYPE_RESCUE, lstart, lend, rescue_iseq, lcont);
         ADD_CATCH_ENTRY(CATCH_TYPE_RETRY, lend, lcont, NULL, lstart);
