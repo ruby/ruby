@@ -446,8 +446,7 @@ ruby_vm_frozen_core(void)
 static rb_ast_t *
 ast_new(VALUE nb)
 {
-    rb_ast_t *ast = (rb_ast_t *)rb_imemo_new(imemo_ast, 0, 0, 0, nb);
-    return ast;
+    return IMEMO_NEW(rb_ast_t, imemo_ast, nb);
 }
 
 static VALUE
