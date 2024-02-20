@@ -215,6 +215,7 @@ vm_ci_new_(ID mid, unsigned int flag, unsigned int argc, const struct rb_callinf
     if (debug) ruby_debug_printf("%s:%d ", file, line);
 
     const struct rb_callinfo *ci = rb_vm_ci_lookup(mid, flag, argc, kwarg);
+
     if (debug) rp(ci);
     if (kwarg) {
         RB_DEBUG_COUNTER_INC(ci_kw);
@@ -328,7 +329,9 @@ vm_cc_new(VALUE klass,
           vm_call_handler call,
           enum vm_cc_type type)
 {
-    const struct rb_callcache *cc = (const struct rb_callcache *)rb_imemo_new(imemo_callcache, (VALUE)cme, (VALUE)call, 0, klass);
+    struct rb_callcache *cc = IMEMO_NEW(struct rb_callcache, imemo_callcache, klass);
+    *((struct rb_callable_method_entry_struct **)&cc->cme_) = (struct rb_callable_method_entry_struct *)cme;
+    *((vm_call_handler *)&cc->call_) = call;
 
     switch (type) {
       case cc_type_normal:

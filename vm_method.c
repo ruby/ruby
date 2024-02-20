@@ -409,13 +409,11 @@ rb_vm_ci_lookup(ID mid, unsigned int flag, unsigned int argc, const struct rb_ca
     if (kwarg) {
         ((struct rb_callinfo_kwarg *)kwarg)->references++;
     }
-    const struct rb_callinfo *new_ci = (const struct rb_callinfo *)
-        rb_imemo_new(
-                imemo_callinfo,
-                (VALUE)mid,
-                (VALUE)flag,
-                (VALUE)argc,
-                (VALUE)kwarg);
+
+    struct rb_callinfo *new_ci = IMEMO_NEW(struct rb_callinfo, imemo_callinfo, (VALUE)kwarg);
+    new_ci->mid = mid;
+    new_ci->flag = flag;
+    new_ci->argc = argc;
 
     RB_VM_LOCK_ENTER();
     {
@@ -764,7 +762,11 @@ static rb_method_entry_t *
 rb_method_entry_alloc(ID called_id, VALUE owner, VALUE defined_class, rb_method_definition_t *def, bool complement)
 {
     if (def) method_definition_addref(def, complement);
-    rb_method_entry_t *me = (rb_method_entry_t *)rb_imemo_new(imemo_ment, (VALUE)def, (VALUE)called_id, owner, defined_class);
+    rb_method_entry_t *me = IMEMO_NEW(rb_method_entry_t, imemo_ment, defined_class);
+    *((rb_method_definition_t **)&me->def) = def;
+    me->called_id = called_id;
+    me->owner = owner;
+
     return me;
 }
 

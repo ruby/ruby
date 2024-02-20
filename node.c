@@ -344,8 +344,7 @@ rb_ast_t *
 rb_ast_new(void)
 {
     node_buffer_t *nb = rb_node_buffer_new();
-    rb_ast_t *ast = (rb_ast_t *)rb_imemo_new(imemo_ast, 0, 0, 0, (VALUE)nb);
-    return ast;
+    return IMEMO_NEW(rb_ast_t, imemo_ast, (VALUE)nb);
 }
 #endif
 

@@ -719,8 +719,13 @@ rb_vm_ifunc_new(rb_block_call_func_t func, const void *data, int min_argc, int m
     arity.argc.min = min_argc;
     arity.argc.max = max_argc;
     rb_execution_context_t *ec = GET_EC();
-    VALUE ret = rb_imemo_new(imemo_ifunc, (VALUE)func, (VALUE)data, arity.packed, (VALUE)rb_vm_svar_lep(ec, ec->cfp));
-    return (struct vm_ifunc *)ret;
+
+    struct vm_ifunc *ifunc = IMEMO_NEW(struct vm_ifunc, imemo_ifunc, (VALUE)rb_vm_svar_lep(ec, ec->cfp));
+    ifunc->func = func;
+    ifunc->data = data;
+    ifunc->argc = arity.argc;
+
+    return ifunc;
 }
 
 VALUE
