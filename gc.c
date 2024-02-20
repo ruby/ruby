@@ -3060,6 +3060,9 @@ imemo_memsize(VALUE obj)
       case imemo_ast:
         size += rb_ast_memsize(&RANY(obj)->as.imemo.ast);
         break;
+      case imemo_callcache:
+      case imemo_callinfo:
+      case imemo_constcache:
       case imemo_cref:
       case imemo_svar:
       case imemo_throw_data:
@@ -3068,7 +3071,7 @@ imemo_memsize(VALUE obj)
       case imemo_parser_strterm:
         break;
       default:
-        /* unreachable */
+        rb_bug("unreachable");
         break;
     }
     return size;
