@@ -3,6 +3,7 @@
 # See `tool/sync_default_gems.rb --help` for how to use this.
 
 require 'fileutils'
+require "rbconfig"
 
 module SyncDefaultGems
   include FileUtils
@@ -379,6 +380,7 @@ module SyncDefaultGems
       rm_rf("prism/templates/java")
       rm_rf("prism/templates/rbi")
       rm_rf("prism/templates/sig")
+      rm_rf("lib/prism/prism.#{RbConfig::CONFIG['DLEXT']}")
 
       rm("prism/extconf.rb")
     else
