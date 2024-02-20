@@ -507,16 +507,16 @@ class TestParse < Test::Unit::TestCase
     end
     def t.dummy(_)
     end
-    eval <<-END, nil, __FILE__, __LINE__+1
+
+    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /block arg given in index/)
+    begin;
       t[42, &blk] ||= 42
-    END
-    assert_equal([:aref, :aset], a)
-    a.clear
-    eval <<-END, nil, __FILE__, __LINE__+1
-    t[42, &blk] ||= t.dummy 42 # command_asgn test
-    END
-    assert_equal([:aref, :aset], a)
-    blk
+    end;
+
+    assert_syntax_error("#{<<~"begin;"}\n#{<<~'end;'}", /block arg given in index/)
+    begin;
+      t[42, &blk] ||= t.dummy 42 # command_asgn test
+    end;
   end
 
   def test_backquote

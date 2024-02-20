@@ -113,17 +113,17 @@ foo.foo[bar] ||= 1
 
 foo.foo[bar] &&= 1
 
-foo[bar, &baz] += 1
+# foo[bar, &baz] += 1
 
-foo[bar, &baz] ||= 1
+# foo[bar, &baz] ||= 1
 
-foo[bar, &baz] &&= 1
+# foo[bar, &baz] &&= 1
 
-foo.foo[bar, &baz] += 1
+# foo.foo[bar, &baz] += 1
 
-foo.foo[bar, &baz] ||= 1
+# foo.foo[bar, &baz] ||= 1
 
-foo.foo[bar, &baz] &&= 1
+# foo.foo[bar, &baz] &&= 1
 
 def f(*); a[*]; end
 

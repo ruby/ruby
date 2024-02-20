@@ -1088,10 +1088,6 @@ assert_equal 'ok', %q{
     'ok'
   end
 }
-assert_equal 'ok', %q{
-  [0][0, &proc{}] += 21
-  'ok'
-}, '[ruby-core:30534]'
 
 # should not cache when splat
 assert_equal 'ok', %q{
