@@ -12,5 +12,5 @@
 : ; abort () { exit 1; }
 
 call :warn "executable host ruby is required.  use --with-baseruby option."
-call :warn "Note that BASERUBY must be Ruby 2.7.0 or later."
+call :warn "Note that BASERUBY must be Ruby 3.0.0 or later."
 call :abort
