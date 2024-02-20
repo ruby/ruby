@@ -15,7 +15,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <unistd.h>
 
 /**
  * We want to be able to use the PRI* macros for printing out integers, but on
@@ -105,8 +104,13 @@
  * If the target platform is POSIX or Windows, we can map a file in memory and
  * read it in a more efficient manner.
  */
-#if defined(_POSIX_MAPPED_FILES) || defined(_WIN32)
+#ifdef _WIN32
 #   define PRISM_HAS_MMAP
+#else
+#   include <unistd.h>
+#   ifdef _POSIX_MAPPED_FILES
+#       define PRISM_HAS_MMAP
+#   endif
 #endif
 
 #endif
