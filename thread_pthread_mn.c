@@ -439,27 +439,35 @@ co_start(struct coroutine_context *from, struct coroutine_context *self)
 
     // Thread is terminated
 
-    VM_ASSERT(!th_has_dedicated_nt(th));
-
-    rb_vm_t *vm = th->vm;
-    bool has_ready_ractor = vm->ractor.sched.grq_cnt > 0; // at least this ractor is not queued
-
-    rb_thread_t *next_th = sched->running;
     struct rb_native_thread *nt = th->nt;
+    bool is_dnt = th_has_dedicated_nt(th);
     native_thread_assign(NULL, th);
     rb_ractor_set_current_ec(th->ractor, NULL);
 
-    if (!has_ready_ractor && next_th && !next_th->nt) {
-        // switch to the next thread
-        thread_sched_set_lock_owner(sched, NULL);
-        thread_sched_switch0(th->sched.context, next_th, nt, true);
-        th->sched.finished = true;
-    }
-    else {
-        // switch to the next Ractor
+    if (is_dnt) {
+        // SNT became DNT while running. Just return to the nt_context
+
         th->sched.finished = true;
         coroutine_transfer0(self, nt->nt_context, true);
     }
+    else {
+        rb_vm_t *vm = th->vm;
+        bool has_ready_ractor = vm->ractor.sched.grq_cnt > 0; // at least this ractor is not queued
+        rb_thread_t *next_th = sched->running;
+
+        if (!has_ready_ractor && next_th && !next_th->nt) {
+            // switch to the next thread
+            thread_sched_set_lock_owner(sched, NULL);
+            thread_sched_switch0(th->sched.context, next_th, nt, true);
+            th->sched.finished = true;
+        }
+        else {
+            // switch to the next Ractor
+            th->sched.finished = true;
+            coroutine_transfer0(self, nt->nt_context, true);
+        }
+    }
+
     rb_bug("unreachable");
 }
 
