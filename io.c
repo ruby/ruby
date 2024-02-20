@@ -201,6 +201,7 @@ static ID id_write, id_read, id_getc, id_flush, id_readpartial, id_set_encoding,
 static VALUE sym_mode, sym_perm, sym_flags, sym_extenc, sym_intenc, sym_encoding, sym_open_args;
 static VALUE sym_textmode, sym_binmode, sym_autoclose;
 static VALUE sym_SET, sym_CUR, sym_END;
+static VALUE sym_slurp, sym_paragraph;
 static VALUE sym_wait_readable, sym_wait_writable;
 #ifdef SEEK_DATA
 static VALUE sym_DATA;
@@ -4041,13 +4042,15 @@ extract_getline_args(int argc, VALUE *argv, struct getline_arg *args)
     if (argc == 1) {
         VALUE tmp = Qnil;
 
-        if (NIL_P(argv[0]) || !NIL_P(tmp = rb_check_string_type(argv[0]))) {
+        if ((argv[0] == sym_slurp) || NIL_P(argv[0]) || !NIL_P(tmp = rb_check_string_type(argv[0]))) {
             rs = tmp;
         }
+        else if (argv[0] == sym_paragraph)
+            rs = rb_str_new2("");
         else {
             lim = argv[0];
         }
-    }
+}
     else if (2 <= argc) {
         rs = argv[0], lim = argv[1];
         if (!NIL_P(rs))
@@ -4257,7 +4260,8 @@ rb_io_gets_internal(VALUE io)
  *  See {Line IO}[rdoc-ref:IO@Line+IO].
  *
  *  With no arguments given, returns the next line
- *  as determined by line separator <tt>$/</tt>, or +nil+ if none:
+ *  as determined by the {default line separator}[rdoc-ref:IO@Default+Line+Separator];
+ *  returns +nil+ if already at end-of-stream:
  *
  *    f = File.open('t.txt')
  *    f.gets # => "First line\n"
@@ -4269,9 +4273,9 @@ rb_io_gets_internal(VALUE io)
  *    f.close
  *
  *  With only string argument +sep+ given,
- *  returns the next line as determined by line separator +sep+,
- *  or +nil+ if none;
- *  see {Line Separator}[rdoc-ref:IO@Line+Separator]:
+ *  returns the next line as determined by the given
+ *  {custom line separator}[rdoc-ref:IO@Custom+Line+Separators];
+ *  returns +nil+ if already at end-of-stream:
  *
  *    f = File.new('t.txt')
  *    f.gets('l')   # => "First l"
@@ -4280,14 +4284,14 @@ rb_io_gets_internal(VALUE io)
  *    f.gets        # => "e\n"
  *    f.close
  *
- *  The two special values for +sep+ are honored:
+ *  {Reading paragraphs and slurping}[rdoc-ref:IO@Paragraphs+and+Slurping]
+ *  are also supported:
  *
  *    f = File.new('t.txt')
- *    # Get all.
- *    f.gets(nil) # => "First line\nSecond line\n\nFourth line\nFifth line\n"
+ *    f.gets(:paragraph)  # => "First line\nSecond line\n\n"
+ *    f.gets(:paragraph)  # => "Fourth line\nFifth line\n"
  *    f.rewind
- *    # Get paragraph (up to two line separators).
- *    f.gets('')  # => "First line\nSecond line\n\n"
+ *    f.gets(:slurp) # => "First line\nSecond line\n\nFourth line\nFifth line\n"
  *    f.close
  *
  *  With only integer argument +limit+ given,
@@ -4298,13 +4302,6 @@ rb_io_gets_internal(VALUE io)
  *    File.open('t.txt') {|f| f.gets(10) } # => "First line"
  *    File.open('t.txt') {|f| f.gets(11) } # => "First line\n"
  *    File.open('t.txt') {|f| f.gets(12) } # => "First line\n"
- *
- *  With arguments +sep+ and +limit+ given,
- *  combines the two behaviors:
- *
- *  - Returns the next line as determined by line separator +sep+,
- *    or +nil+ if none.
- *  - But returns no more bytes than are allowed by the limit.
  *
  *  Optional keyword argument +chomp+ specifies whether line separators
  *  are to be omitted:
@@ -4413,7 +4410,7 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *  See {Line IO}[rdoc-ref:IO@Line+IO].
  *
  *  With no arguments given, returns lines
- *  as determined by line separator <tt>$/</tt>, or +nil+ if none:
+ *  as determined by the {default line separator}[rdoc-ref:IO@Default+Line+Separator]:
  *
  *    f = File.new('t.txt')
  *    f.readlines
@@ -4422,25 +4419,23 @@ static VALUE io_readlines(const struct getline_arg *arg, VALUE io);
  *    f.close
  *
  *  With only string argument +sep+ given,
- *  returns lines as determined by line separator +sep+,
- *  or +nil+ if none;
- *  see {Line Separator}[rdoc-ref:IO@Line+Separator]:
+ *  returns lines as determined by the given
+ *  {custom line separator}[rdoc-ref:IO@Custom+Line+Separators]:
  *
  *    f = File.new('t.txt')
  *    f.readlines('li')
  *    # => ["First li", "ne\nSecond li", "ne\n\nFourth li", "ne\nFifth li", "ne\n"]
  *    f.close
  *
- *  The two special values for +sep+ are honored:
+ *  {Reading paragraphs and slurping}[rdoc-ref:IO@Paragraphs+and+Slurping]
+ *  are also supported:
  *
  *    f = File.new('t.txt')
- *    # Get all into one string.
- *    f.readlines(nil)
- *    # => ["First line\nSecond line\n\nFourth line\nFifth line\n"]
- *    # Get paragraphs (up to two line separators).
- *    f.rewind
- *    f.readlines('')
+ *    f.readlines(:paragraph)
  *    # => ["First line\nSecond line\n\n", "Fourth line\nFifth line\n"]
+ *    f.rewind
+ *    f.readlines(:slurp)
+ *    # => ["First line\nSecond line\n\nFourth line\nFifth line\n"]
  *    f.close
  *
  *  With only integer argument +limit+ given,
@@ -4496,7 +4491,6 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *    each_line(sep = $/, chomp: false) {|line| ... }   -> self
  *    each_line(limit, chomp: false) {|line| ... }      -> self
  *    each_line(sep, limit, chomp: false) {|line| ... } -> self
- *    each_line                                   -> enumerator
  *
  *  Calls the block with each remaining line read from the stream;
  *  returns +self+.
@@ -4504,7 +4498,7 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *  See {Line IO}[rdoc-ref:IO@Line+IO].
  *
  *  With no arguments given, reads lines
- *  as determined by line separator <tt>$/</tt>:
+ *  as determined by the {default line separator}[rdoc-ref:IO@Default+Line+Separator]:
  *
  *    f = File.new('t.txt')
  *    f.each_line {|line| p line }
@@ -4520,8 +4514,8 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *    "Fifth line\n"
  *
  *  With only string argument +sep+ given,
- *  reads lines as determined by line separator +sep+;
- *  see {Line Separator}[rdoc-ref:IO@Line+Separator]:
+ *  reads lines as determined by the given
+ *  {custom line separator}[rdoc-ref:IO@Custom+Line+Separators]:
  *
  *    f = File.new('t.txt')
  *    f.each_line('li') {|line| p line }
@@ -4535,20 +4529,11 @@ io_readlines(const struct getline_arg *arg, VALUE io)
  *    "ne\nFifth li"
  *    "ne\n"
  *
- *  The two special values for +sep+ are honored:
+ *  {Reading paragraphs}[rdoc-ref:IO@Paragraphs+and+Slurping] is also supported:
  *
  *    f = File.new('t.txt')
- *    # Get all into one string.
- *    f.each_line(nil) {|line| p line }
+ *    f.each_line(:paragraph) {|line| p line }
  *    f.close
- *
- *  Output:
- *
- *    "First line\nSecond line\n\nFourth line\nFifth line\n"
- *
- *    f.rewind
- *    # Get paragraphs (up to two line separators).
- *    f.each_line('') {|line| p line }
  *
  *  Output:
  *
@@ -10277,8 +10262,9 @@ static VALUE argf_gets(int, VALUE *, VALUE);
  *  of files in +ARGV+ (or <code>$*</code>), or from standard input if
  *  no files are present on the command line. Returns +nil+ at end of
  *  file. The optional argument specifies the record separator. The
- *  separator is included with the contents of each record. A separator
- *  of +nil+ reads the entire contents, and a zero-length separator
+ *  separator is included with the contents of each record.
+ *  Separator +:slurp+ reads the entire contents,
+ *  and separator +:paragraph+
  *  reads the input one paragraph at a time, where paragraphs are
  *  divided by two consecutive newlines.  If the first argument is an
  *  integer, or optional second argument is given, the returning string
@@ -10440,7 +10426,7 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *  With only string argument +sep+ given,
  *  returns the remaining lines as determined by line separator +sep+,
  *  or +nil+ if none;
- *  see {Line Separator}[rdoc-ref:IO@Line+Separator]:
+ *  see {Line Separators}[rdoc-ref:IO@Line+Separators]:
  *
  *    # Default separator.
  *    $ cat t.txt | ruby -e "p readlines"
@@ -10451,11 +10437,11 @@ static VALUE argf_readlines(int, VALUE *, VALUE);
  *    ["First li", "ne\nSecond li", "ne\n\nFourth li", "ne\nFifth li", "ne\n"]
  *
  *    # Get-all separator.
- *    $ cat t.txt | ruby -e "p readlines nil"
+ *    $ cat t.txt | ruby -e "p readlines :slurp"
  *    ["First line\nSecond line\n\nFourth line\nFifth line\n"]
  *
  *    # Get-paragraph separator.
- *    $ cat t.txt | ruby -e "p readlines ''"
+ *    $ cat t.txt | ruby -e "p readlines :paragraph"
  *    ["First line\nSecond line\n\n", "Fourth line\nFifth line\n"]
  *
  *  With only integer argument +limit+ given,
@@ -11936,10 +11922,9 @@ io_s_foreach(VALUE v)
 
 /*
  *  call-seq:
- *    IO.foreach(path, sep = $/, **opts) {|line| block }       -> nil
- *    IO.foreach(path, limit, **opts) {|line| block }          -> nil
- *    IO.foreach(path, sep, limit, **opts) {|line| block }     -> nil
- *    IO.foreach(...)                                          -> an_enumerator
+ *    IO.foreach(path, sep = $/, **opts) {|line| ... }       -> nil
+ *    IO.foreach(path, limit, **opts) {|line| ... }          -> nil
+ *    IO.foreach(path, sep, limit, **opts) {|line| ... }     -> nil
  *
  *  Calls the block with each successive line read from the stream.
  *
@@ -11950,19 +11935,11 @@ io_s_foreach(VALUE v)
  *  The first argument must be a string that is the path to a file.
  *
  *  With only argument +path+ given, parses lines from the file at the given +path+,
- *  as determined by the default line separator,
+ *  as determined by
+ *  the {default line separator}[rdoc-ref:IO@Default+Line+Separator],
  *  and calls the block with each successive line:
  *
  *    File.foreach('t.txt') {|line| p line }
- *
- *  Output: the same as above.
- *
- *  For both forms, command and path, the remaining arguments are the same.
- *
- *  With argument +sep+ given, parses lines as determined by that line separator
- *  (see {Line Separator}[rdoc-ref:IO@Line+Separator]):
- *
- *    File.foreach('t.txt', 'li') {|line| p line }
  *
  *  Output:
  *
@@ -11972,9 +11949,16 @@ io_s_foreach(VALUE v)
  *    "ne\nFourth li"
  *    "ne\n"
  *
- *  Each paragraph:
+ *  With argument +sep+ given, parses lines as determined by
+ *  that {custom line separator}[rdoc-ref:IO@Custom+Line+Separators]:
  *
- *    File.foreach('t.txt', '') {|paragraph| p paragraph }
+ *    File.foreach('t.txt', 'li') {|line| p line }
+ *
+ *  Output: the same as above.
+ *
+ *  {Reading paragraphs}[rdoc-ref:IO@Paragraphs+and+Slurping] is also supported:
+ *
+ *    File.foreach('t.txt', :paragraph) {|paragraph| p paragraph }
  *
  *  Output:
  *
@@ -11998,11 +11982,6 @@ io_s_foreach(VALUE v)
  *    "ine\n"
  *    "Fourth l"
  *    "line\n"
- *
- *  With arguments +sep+ and  +limit+ given,
- *  parses lines as determined by the given
- *  line separator and the given line-length limit
- *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]):
  *
  *  Optional keyword arguments +opts+ specify:
  *
@@ -12054,24 +12033,23 @@ io_s_readlines(VALUE v)
  *  The first argument must be a string that is the path to a file.
  *
  *  With only argument +path+ given, parses lines from the file at the given +path+,
- *  as determined by the default line separator,
+ *  as determined by
+ *  the {default line separator}[rdoc-ref:IO@Default+Line+Separator],
  *  and returns those lines in an array:
  *
  *    IO.readlines('t.txt')
  *    # => ["First line\n", "Second line\n", "\n", "Third line\n", "Fourth line\n"]
  *
- *  With argument +sep+ given, parses lines as determined by that line separator
- *  (see {Line Separator}[rdoc-ref:IO@Line+Separator]):
+ *  With argument +sep+ given, parses lines as determined by
+ *  that {custom line separator}[rdoc-ref:IO@Custom+Line+Separators]:
  *
- *    # Ordinary separator.
  *    IO.readlines('t.txt', 'li')
  *    # =>["First li", "ne\nSecond li", "ne\n\nThird li", "ne\nFourth li", "ne\n"]
- *    # Get-paragraphs separator.
- *    IO.readlines('t.txt', '')
+ *
+ *  {Reading paragraphs}[rdoc-ref:IO@Paragraphs+and+Slurping] is also supported:
+ *
+ *    IO.readlines('t.txt', :paragraph)
  *    # => ["First line\nSecond line\n\n", "Third line\nFourth line\n"]
- *    # Get-all separator.
- *    IO.readlines('t.txt', nil)
- *    # => ["First line\nSecond line\n\nThird line\nFourth line\n"]
  *
  *  With argument +limit+ given, parses lines as determined by the default
  *  line separator and the given line-length limit
@@ -12079,11 +12057,6 @@ io_s_readlines(VALUE v)
  *
  *    IO.readlines('t.txt', 7)
  *    # => ["First l", "ine\n", "Second ", "line\n", "\n", "Third l", "ine\n", "Fourth ", "line\n"]
- *
- *  With arguments +sep+ and  +limit+ given,
- *  parses lines as determined by the given
- *  line separator and the given line-length limit
- *  (see {Line Separator and Line Limit}[rdoc-ref:IO@Line+Separator+and+Line+Limit]):
  *
  *  Optional keyword arguments +opts+ specify:
  *
@@ -15092,64 +15065,58 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *
  *  == Line \IO
  *
- *  \Class \IO supports line-oriented
- *  {input}[rdoc-ref:IO@Line+Input] and {output}[rdoc-ref:IO@Line+Output]
- *
- *  === Line Input
- *
- *  \Class \IO supports line-oriented input for
- *  {files}[rdoc-ref:IO@File+Line+Input] and {IO streams}[rdoc-ref:IO@Stream+Line+Input]
- *
- *  ==== \File Line Input
- *
- *  You can read lines from a file using these methods:
- *
- *  - IO.foreach: Reads each line and passes it to the given block.
- *  - IO.readlines: Reads and returns all lines in an array.
- *
- *  For each of these methods:
- *
- *  - You can specify {open options}[rdoc-ref:IO@Open+Options].
- *  - Line parsing depends on the effective <i>line separator</i>;
- *    see {Line Separator}[rdoc-ref:IO@Line+Separator].
- *  - The length of each returned line depends on the effective <i>line limit</i>;
- *    see {Line Limit}[rdoc-ref:IO@Line+Limit].
- *
- *  ==== Stream Line Input
- *
- *  You can read lines from an \IO stream using these methods:
+ *  You can read an \IO stream line-by-line using these methods:
  *
  *  - IO#each_line: Reads each remaining line, passing it to the given block.
  *  - IO#gets: Returns the next line.
  *  - IO#readline: Like #gets, but raises an exception at end-of-stream.
  *  - IO#readlines: Returns all remaining lines in an array.
  *
- *  For each of these methods:
+ *  Each of these reader methods accepts:
  *
- *  - Reading may begin mid-line,
- *    depending on the stream's _position_;
- *    see {Position}[rdoc-ref:IO@Position].
- *  - Line parsing depends on the effective <i>line separator</i>;
- *    see {Line Separator}[rdoc-ref:IO@Line+Separator].
- *  - The length of each returned line depends on the effective <i>line limit</i>;
+ *  - An optional line separator, +sep+;
+ *    see {Line Separators}[rdoc-ref:IO@Line+Separators].
+ *  - An optional line-size limit, +limit+;
  *    see {Line Limit}[rdoc-ref:IO@Line+Limit].
  *
- *  ===== Line Separator
- *
- *  Each of the {line input methods}[rdoc-ref:IO@Line+Input] uses a <i>line separator</i>:
- *  the string that determines what is considered a line;
- *  it is sometimes called the <i>input record separator</i>.
- *
- *  The default line separator is taken from global variable <tt>$/</tt>,
- *  whose initial value is <tt>"\n"</tt>.
- *
- *  Generally, the line to be read next is all data
- *  from the current {position}[rdoc-ref:IO@Position]
- *  to the next line separator
- *  (but see {Special Line Separator Values}[rdoc-ref:IO@Special+Line+Separator+Values]):
+ *  For each of these reader methods, reading may begin mid-line,
+ *  depending on the stream's position;
+ *  see {Position}[rdoc-ref:IO@Position]:
  *
  *    f = File.new('t.txt')
- *    # Method gets with no sep argument returns the next line, according to $/.
+ *    f.pos = 27
+ *    f.each_line {|line| p line }
+ *    f.close
+ *
+ *  Output:
+ *
+ *    "rth line\n"
+ *    "Fifth line\n"
+ *
+ *  You can write to an \IO stream line-by-line using this method:
+ *
+ *  - IO#puts: Writes objects to the stream.
+ *
+ *  === Line Separators
+ *
+ *  Each of these methods uses a <i>line separator</i>,
+ *  which is the string that delimits lines:
+ *
+ *  - IO.foreach.
+ *  - IO.readlines.
+ *  - IO#each_line.
+ *  - IO#gets.
+ *  - IO#readline.
+ *  - IO#readlines.
+ *
+ *  ==== Default Line Separator
+ *
+ *  The default line separator is the given by the global variable <tt>$/</tt>,
+ *  whose value is by default <tt>"\n"</tt>.
+ *  The line to be read next is all data from the current position
+ *  to the next line separator:
+ *
+ *    f = File.new('t.txt')
  *    f.gets # => "First line\n"
  *    f.gets # => "Second line\n"
  *    f.gets # => "\n"
@@ -15157,7 +15124,9 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    f.gets # => "Fifth line\n"
  *    f.close
  *
- *  You can use a different line separator by passing argument +sep+:
+ *  ==== Custom Line Separators
+ *
+ *  You can specify a custom line separator by passing string argument +sep+:
  *
  *    f = File.new('t.txt')
  *    f.gets('l')   # => "First l"
@@ -15166,46 +15135,42 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    f.gets        # => "e\n"
  *    f.close
  *
- *  Or by setting global variable <tt>$/</tt>:
+ *  ==== Paragraphs and Slurping
  *
- *    f = File.new('t.txt')
- *    $/ = 'l'
- *    f.gets # => "First l"
- *    f.gets # => "ine\nSecond l"
- *    f.gets # => "ine\n\nFourth l"
- *    f.close
+ *  There are special line separator values for reading paragraphs
+ *  and for "slurping" (that is, reading the entire remaining stream):
  *
- *  ===== Special Line Separator Values
- *
- *  Each of the {line input methods}[rdoc-ref:IO@Line+Input]
- *  accepts two special values for parameter +sep+:
- *
- *  - +nil+: The entire stream is to be read ("slurped") into a single string:
- *
- *      f = File.new('t.txt')
- *      f.gets(nil) # => "First line\nSecond line\n\nFourth line\nFifth line\n"
- *      f.close
- *
- *  - <tt>''</tt> (the empty string): The next "paragraph" is to be read
+ *  - +:paragraph+ (or the empty string <tt>''</tt>): The next _paragraph_ is read
  *    (paragraphs being separated by two consecutive line separators):
  *
  *      f = File.new('t.txt')
- *      f.gets('') # => "First line\nSecond line\n\n"
- *      f.gets('') # => "Fourth line\nFifth line\n"
+ *      f.gets(:paragraph) # => "First line\nSecond line\n\n"
+ *      f.gets(:paragraph) # => "Fourth line\nFifth line\n"
  *      f.close
  *
- *  ===== Line Limit
+ *  - +:slurp+ (or +nil+): The entire stream is read into a single string:
  *
- *  Each of the {line input methods}[rdoc-ref:IO@Line+Input]
- *  uses an integer <i>line limit</i>,
- *  which restricts the number of bytes that may be returned.
- *  (A multi-byte character will not be split, and so a returned line may be slightly longer
- *  than the limit).
+ *      f = File.new('t.txt')
+ *      f.gets(:slurp) # => "First line\nSecond line\n\nFourth line\nFifth line\n"
+ *      f.close
  *
- *  The default limit value is <tt>-1</tt>;
- *  any negative limit value means that there is no limit.
+ *  === Line Limit
  *
- *  If there is no limit, the line is determined only by +sep+.
+ *  Each of these methods uses a <i>line limit</i>,
+ *  which specifies that the number of bytes returned may not be (much) longer
+ *  than the given +limit+;
+ *
+ *  - IO.foreach.
+ *  - IO.readlines.
+ *  - IO#each_line.
+ *  - IO#gets.
+ *  - IO#readline.
+ *  - IO#readlines.
+ *
+ *  A multi-byte character will not be split, and so a line may be slightly longer
+ *  than the given limit.
+ *
+ *  If +limit+ is not given, the line is determined only by +sep+.
  *
  *    # Text with 1-byte characters.
  *    File.open('t.txt') {|f| f.gets(1) }  # => "F"
@@ -15223,9 +15188,11 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *    File.open('t.rus') {|f| f.gets(3).size } # => 2
  *    File.open('t.rus') {|f| f.gets(4).size } # => 2
  *
- *  ===== Line Number
+ *  === Line Number
  *
- *  A readable \IO stream has a non-negative integer <i>line number</i>:
+ *  A readable \IO stream has a non-negative integer <i>line number</i>.
+ *
+ *  The relevant methods:
  *
  *  - IO#lineno: Returns the line number.
  *  - IO#lineno=: Resets and returns the line number.
@@ -15233,7 +15200,7 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *  Unless modified by a call to method IO#lineno=,
  *  the line number is the number of lines read
  *  by certain line-oriented methods,
- *  according to the effective {line separator}[rdoc-ref:IO@Line+Separator]:
+ *  according to the given line separator +sep+:
  *
  *  - IO.foreach: Increments the line number on each call to the block.
  *  - IO#each_line: Increments the line number on each call to the block.
@@ -15322,12 +15289,6 @@ set_LAST_READ_LINE(VALUE val, ID _x, VALUE *_y)
  *      f.seek(0, :SET)
  *      $.          # => 5
  *      f.close
- *
- *  === Line Output
- *
- *  You can write to an \IO stream line-by-line using this method:
- *
- *  - IO#puts: Writes objects to the stream.
  *
  *  == Character \IO
  *
@@ -15891,6 +15852,8 @@ Init_IO(void)
     sym_SET = ID2SYM(rb_intern_const("SET"));
     sym_CUR = ID2SYM(rb_intern_const("CUR"));
     sym_END = ID2SYM(rb_intern_const("END"));
+    sym_slurp = ID2SYM(rb_intern_const("slurp"));
+    sym_paragraph = ID2SYM(rb_intern_const("paragraph"));
 #ifdef SEEK_DATA
     sym_DATA = ID2SYM(rb_intern_const("DATA"));
 #endif
