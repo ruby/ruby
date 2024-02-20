@@ -6605,12 +6605,9 @@ parser_lex_magic_comment_encoding_value(pm_parser_t *parser, const uint8_t *star
     const pm_encoding_t *encoding = pm_encoding_find(start, end);
 
     if (encoding != NULL) {
-        if (encoding != PM_ENCODING_UTF_8_ENTRY) {
-            parser->encoding = encoding;
-            parser->encoding_changed = true;
-            if (parser->encoding_changed_callback != NULL) parser->encoding_changed_callback(parser);
-        }
-
+        parser->encoding = encoding;
+        parser->encoding_changed = (encoding != PM_ENCODING_UTF_8_ENTRY);
+        if (parser->encoding_changed_callback != NULL) parser->encoding_changed_callback(parser);
         return true;
     }
 
