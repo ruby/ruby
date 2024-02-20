@@ -2795,8 +2795,8 @@ rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2)
 %type <node> string_contents xstring_contents regexp_contents string_content
 %type <node> words symbols symbol_list qwords qsymbols word_list qword_list qsym_list word
 %type <node> literal numeric simple_numeric ssym dsym symbol cpath
-/*ripper*/ %type <node_def_temp> defn_head defs_head k_def
-/*ripper*/ %type <node_exits> block_open k_while k_until k_for allow_exits
+%type <node_def_temp> defn_head defs_head k_def
+%type <node_exits> block_open k_while k_until k_for allow_exits
 %type <node> top_compstmt top_stmts top_stmt begin_block endless_arg endless_command
 %type <node> bodystmt compstmt stmts stmt_or_begin stmt expr arg primary command command_call method_call
 %type <node> expr_value expr_value_do arg_value primary_value rel_expr
@@ -2839,9 +2839,9 @@ rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2)
 %type <ctxt> lex_ctxt begin_defined k_class k_module k_END k_rescue k_ensure after_rescue
 %type <ctxt> p_in_kwarg
 %type <tbl>  p_lparen p_lbracket p_pktbl p_pvtbl
-/* ripper */ %type <num>  max_numparam
-/* ripper */ %type <node> numparam
-/* ripper */ %type <id>   it_id
+%type <num>  max_numparam
+%type <node> numparam
+%type <id>   it_id
 %token END_OF_INPUT 0	"end-of-input"
 %token <id> '.'
 
