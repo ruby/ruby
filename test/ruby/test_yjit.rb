@@ -1574,11 +1574,11 @@ class TestYJIT < Test::Unit::TestCase
   end
 
   def test_kw_splat_nil
-    assert_compiles(<<~'RUBY', result: %i[ok ok], no_send_fallbacks: true)
+    assert_compiles(<<~'RUBY', result: %i[ok ok ok], no_send_fallbacks: true)
       def id(x) = x
       def kw_fw(arg, **) = id(arg, **)
       def fw(...) = id(...)
-      def use = [fw(:ok), kw_fw(:ok)]
+      def use = [fw(:ok), kw_fw(:ok), :ok.itself(**nil)]
 
       use
     RUBY

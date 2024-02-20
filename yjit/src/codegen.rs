@@ -6037,11 +6037,8 @@ fn gen_send_cfunc(
         return None;
     }
 
-    // Don't JIT calls with keyword splat
-    if flags & VM_CALL_KW_SPLAT != 0 {
-        gen_counter_incr(asm, Counter::send_cfunc_kw_splat);
-        return None;
-    }
+    exit_if_kwsplat_non_nil(asm, flags, Counter::send_cfunc_kw_splat_non_nil)?;
+    let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
 
     let kw_arg = unsafe { vm_ci_kwarg(ci) };
     let kw_arg_num = if kw_arg.is_null() {
@@ -6065,7 +6062,11 @@ fn gen_send_cfunc(
     gen_counter_incr(asm, Counter::num_send_cfunc);
 
     // Delegate to codegen for C methods if we have it.
-    if kw_arg.is_null() && flags & VM_CALL_OPT_SEND == 0 && flags & VM_CALL_ARGS_SPLAT == 0 && (cfunc_argc == -1 || argc == cfunc_argc) {
+    if kw_arg.is_null() &&
+            !kw_splat &&
+            flags & VM_CALL_OPT_SEND == 0 &&
+            flags & VM_CALL_ARGS_SPLAT == 0 &&
+            (cfunc_argc == -1 || argc == cfunc_argc) {
         let expected_stack_after = asm.ctx.get_stack_size() as i32 - argc;
         if let Some(known_cfunc_codegen) = lookup_cfunc_codegen(unsafe { (*cme).def }) {
             if perf_call!("gen_send_cfunc: ", known_cfunc_codegen(jit, asm, ocb, ci, cme, block, argc, recv_known_class)) {
@@ -6097,6 +6098,11 @@ fn gen_send_cfunc(
     } else {
         argc - kw_arg_num + 1
     };
+
+    // Exclude the kw_splat hash from arity check
+    if kw_splat {
+        passed_argc -= 1;
+    }
 
     // If the argument count doesn't match
     if cfunc_argc >= 0 && cfunc_argc != passed_argc && flags & VM_CALL_ARGS_SPLAT == 0 {
@@ -6145,6 +6151,14 @@ fn gen_send_cfunc(
         _ => {
             assert!(false);
         }
+    }
+
+    // Pop the empty kw_splat hash
+    if kw_splat {
+        // Only `**nil` is supported right now. Checked in exit_if_kwsplat_non_nil()
+        assert_eq!(Type::Nil, asm.ctx.get_opnd_type(StackOpnd(0)));
+        asm.stack_pop(1);
+        argc -= 1;
     }
 
     // push_splat_args does stack manipulation so we can no longer side exit
@@ -6559,7 +6573,7 @@ fn gen_send_iseq(
     exit_if_stack_too_large(iseq)?;
     exit_if_tail_call(asm, ci)?;
     exit_if_has_post(asm, iseq)?;
-    exit_if_kwsplat_non_nil(asm, flags)?;
+    exit_if_kwsplat_non_nil(asm, flags, Counter::send_iseq_kw_splat_non_nil)?;
     exit_if_has_rest_and_captured(asm, iseq_has_rest, captured_opnd)?;
     exit_if_has_kwrest_and_captured(asm, has_kwrest, captured_opnd)?;
     exit_if_has_rest_and_supplying_kws(asm, iseq_has_rest, supplying_kws)?;
@@ -7560,10 +7574,10 @@ fn exit_if_has_post(asm: &mut Assembler, iseq: *const rb_iseq_t) -> Option<()> {
 }
 
 #[must_use]
-fn exit_if_kwsplat_non_nil(asm: &mut Assembler, flags: u32) -> Option<()> {
+fn exit_if_kwsplat_non_nil(asm: &mut Assembler, flags: u32, counter: Counter) -> Option<()> {
     let kw_splat = flags & VM_CALL_KW_SPLAT != 0;
     let kw_splat_stack = StackOpnd((flags & VM_CALL_ARGS_BLOCKARG != 0).into());
-    exit_if(asm, kw_splat && asm.ctx.get_opnd_type(kw_splat_stack) != Type::Nil, Counter::send_iseq_kw_splat_non_nil)
+    exit_if(asm, kw_splat && asm.ctx.get_opnd_type(kw_splat_stack) != Type::Nil, counter)
 }
 
 #[must_use]
