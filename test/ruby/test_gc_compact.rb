@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 require 'test/unit'
-require 'fiddle'
 require 'etc'
 
 if RUBY_PLATFORM =~ /s390x/
@@ -130,10 +129,6 @@ class TestGCCompact < Test::Unit::TestCase
     refute_predicate compact_stats[:moved], :empty?
   end
 
-  def memory_location(obj)
-    (Fiddle.dlwrap(obj) >> 1)
-  end
-
   def big_list(level = 10)
     if level > 0
       big_list(level - 1)
@@ -144,21 +139,6 @@ class TestGCCompact < Test::Unit::TestCase
         Object.new
       } # likely next to each other
     end
-  end
-
-  # Find an object that's allocated in a slot that had a previous
-  # tenant, and that tenant moved and is still alive
-  def find_object_in_recycled_slot(addresses)
-    new_object = nil
-
-    100_000.times do
-      new_object = Object.new
-      if addresses.index memory_location(new_object)
-        break
-      end
-    end
-
-    new_object
   end
 
   def test_complex_hash_keys
