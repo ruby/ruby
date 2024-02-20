@@ -7,17 +7,14 @@ the invoked Ruby program can process input line-by-line.
 
 ### About the Examples
 
-Examples here assume that this code (creating file `desiderata.txt`)
-has been executed:
+Examples here assume that file `desiderata.txt` exists:
 
 ```
-text = <<EOT
+$ cat desiderata.txt
 Go placidly amid the noise and the haste,
 and remember what peace there may be in silence.
 As far as possible, without surrender,
 be on good terms with all persons.
-EOT
-File.write('desiderata.txt', text)
 ```
 
 The examples also use command-line option `-e`,
@@ -77,7 +74,9 @@ $ ruby -an -e 'p $F' desiderata.txt
 ["be", "on", "good", "terms", "with", "all", "persons."]
 ```
 
-The default field separator used for the splitting is the input field separator `$;`.
+For the splitting,
+the default record separator is `$/`,
+and the default field separator  is `$;`.
 
 ### Option `-F`
 
