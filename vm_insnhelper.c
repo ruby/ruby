@@ -337,6 +337,17 @@ vm_push_frame_debug_counter_inc(
 #define vm_push_frame_debug_counter_inc(ec, cfp, t) /* void */
 #endif
 
+// Return a poison value to be set above the stack top to verify leafness.
+VALUE
+rb_vm_stack_canary(void)
+{
+#if VM_CHECK_MODE > 0
+    return vm_stack_canary;
+#else
+    return 0;
+#endif
+}
+
 STATIC_ASSERT(VM_ENV_DATA_INDEX_ME_CREF, VM_ENV_DATA_INDEX_ME_CREF == -2);
 STATIC_ASSERT(VM_ENV_DATA_INDEX_SPECVAL, VM_ENV_DATA_INDEX_SPECVAL == -1);
 STATIC_ASSERT(VM_ENV_DATA_INDEX_FLAGS,   VM_ENV_DATA_INDEX_FLAGS   == -0);

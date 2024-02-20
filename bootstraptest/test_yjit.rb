@@ -2046,6 +2046,16 @@ assert_equal '[97, :nil, 97, :nil, :raised]', %q{
   [getbyte("a", 0), getbyte("a", 1), getbyte("a", -1), getbyte("a", -2), getbyte("a", "a")]
 } unless rjit_enabled? # Not yet working on RJIT
 
+# non-leaf String#byteslice
+assert_equal 'TypeError', %q{
+  def ccall = "".byteslice(nil, nil)
+  begin
+    ccall
+  rescue => e
+    e.class
+  end
+}
+
 # Test << operator on string subclass
 assert_equal 'abab', %q{
   class MyString < String; end
