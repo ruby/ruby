@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 require 'test/unit'
-require 'etc'
 
 if RUBY_PLATFORM =~ /s390x/
   warn "Currently, it is known that the compaction does not work well on s390x; contribution is welcome https://github.com/ruby/ruby/pull/5077"
@@ -109,10 +108,6 @@ class TestGCCompact < Test::Unit::TestCase
     def test_gc_verify_compaction_references_not_implemented
       assert_not_implemented(:verify_compaction_references)
     end
-  end
-
-  def os_page_size
-    return true unless defined?(Etc::SC_PAGE_SIZE)
   end
 
   def test_gc_compact_stats
