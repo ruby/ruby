@@ -54,9 +54,21 @@ jobs:
       matrix:
         include:
           - test_task: 'check'
+            skipped_tests: 'TestGem#test_.*'
+            continue-on-skipped_tests: true
+            configure: '--enable-yjit=dev'
+            yjit_opts: '--yjit-call-threshold=1 --yjit-verify-ctx --yjit-code-gc'
+          - test_task: 'check'
+            skipped_tests: 'TestGem#test_.* TestMkmf.*'
+            continue-on-skipped_tests: true
+            configure: '--enable-yjit=dev'
+            yjit_opts: '--yjit-call-threshold=1 --yjit-verify-ctx --yjit-code-gc'
+          - test_task: 'check'
+            skipped_tests: ''
             configure: '--enable-yjit'
             yjit_opts: '--yjit'
           - test_task: 'check'
+            skipped_tests: ''
             configure: '--enable-yjit=dev'
             yjit_opts: '--yjit-call-threshold=1 --yjit-verify-ctx --yjit-code-gc'
       fail-fast: false
@@ -67,14 +79,14 @@ jobs:
 
     runs-on: macos-arm-oss
 
-    if: >-
-      ${{github.repository == 'ruby/ruby' &&
-      !(false
-      || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.labels.*.name, 'Documentation')
-      || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
-      )}}
+    # if: >-
+    #   ${{github.repository == 'ruby/ruby' &&
+    #   !(false
+    #   || contains(github.event.head_commit.message, '[DOC]')
+    #   || contains(github.event.pull_request.title, '[DOC]')
+    #   || contains(github.event.pull_request.labels.*.name, 'Documentation')
+    #   || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
+    #   )}}
 
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1

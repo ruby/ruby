@@ -25,9 +25,18 @@ jobs:
     strategy:
       matrix:
         test_task: ['check']
+        skipped_tests: ['']
         configure: ['']
         os: ${{ fromJSON(format('["macos-12","macos-13"{0}]', (github.repository == 'ruby/ruby' && ',"macos-arm-oss"' || ''))) }}
         include:
+          - test_task: check
+            skipped_tests: 'TestGem#test_.*'
+            continue-on-skipped_tests: true
+            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-13' }}
+          - test_task: check
+            skipped_tests: 'TestGem#test_.* TestMkmf.*'
+            continue-on-skipped_tests: true
+            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-13' }}
           - test_task: test-all TESTS=--repeat-count=2
             os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-13' }}
           - test_task: test-bundled-gems

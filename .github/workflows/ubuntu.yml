@@ -25,10 +25,17 @@ jobs:
     strategy:
       matrix:
         test_task: [check]
+        skipped_tests: ['']
         arch: ['']
         configure: ['cppflags=-DVM_CHECK_MODE']
         # specifying other jobs with `include` to avoid redundant tests
         include:
+          - test_task: check
+            skipped_tests: 'TestGem#test_.*'
+            continue-on-skipped_tests: true
+          - test_task: check
+            skipped_tests: 'TestGem#test_.* TestMkmf.*'
+            continue-on-skipped_tests: true
           - test_task: check
             arch: i686
           - test_task: check
