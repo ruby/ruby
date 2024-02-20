@@ -4576,3 +4576,9 @@ assert_equal 'ok', %q{
 
   splat_nil_kw_splat([:ok])
 }
+
+# empty splat and kwsplat into leaf builtins
+assert_equal '[1, 1, 1]', %q{
+  empty = []
+  [1.abs(*empty), 1.abs(**nil), 1.bit_length(*empty, **nil)]
+}
