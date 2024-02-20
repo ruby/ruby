@@ -297,7 +297,10 @@ class TestRubyOptions < Test::Unit::TestCase
 
     assert_in_out_err(%w(--parser=prism -e) + ["puts :hi"], "", %w(hi), warning)
     assert_in_out_err(%w(--parser=prism -W:no-experimental -e) + ["puts :hi"], "", %w(hi), [])
-    assert_in_out_err(%w(--parser=prism -W:no-experimental --dump=parsetree -e :hi), "", /"hi"/, [])
+
+    if Encoding.locale_charmap == 'UTF-8'
+      assert_in_out_err(%w(--parser=prism -W:no-experimental --dump=parsetree -e :hi), "", /"hi"/, [])
+    end
 
     assert_in_out_err(%w(--parser=parse.y -e) + ["puts :hi"], "", %w(hi), [])
     assert_norun_with_rflag('--parser=parse.y', '--version', "")
