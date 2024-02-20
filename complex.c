@@ -1841,9 +1841,11 @@ nucomp_to_f(VALUE self)
  *
  *   Complex.rect(1, 0).to_r              # => (1/1)
  *   Complex.rect(1, Rational(0, 1)).to_r # => (1/1)
+ *   Complex.rect(1, 0.0).to_r            # => (1/1)
  *
  * Raises RangeError if <tt>self.imag</tt> is not exactly zero
- * (either <tt>Integer(0)</tt> or <tt>Rational(0, _n_)</tt>).
+ * (either <tt>Integer(0)</tt> or <tt>Rational(0, _n_)</tt>)
+ * and <tt>self.imag.to_r</tt> is not exactly zero.
  *
  * Related: Complex#rationalize.
  */
