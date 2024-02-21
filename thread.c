@@ -656,7 +656,7 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     // Ensure that we are not joinable.
     VM_ASSERT(UNDEF_P(th->value));
 
-    int rb_fiber_scheduler_set_invoked = 0, event_thread_end_hooked = 0;
+    int fiber_scheduler_closed = 0, event_thread_end_hooked = 0;
     VALUE result = Qundef;
 
     EC_PUSH_TAG(th->ec);
@@ -667,8 +667,8 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
         SAVE_ROOT_JMPBUF(th, result = thread_do_start(th));
     }
 
-    if (!rb_fiber_scheduler_set_invoked) {
-        rb_fiber_scheduler_set_invoked = 1;
+    if (!fiber_scheduler_closed) {
+        fiber_scheduler_closed = 1;
         rb_fiber_scheduler_set(Qnil);
     }
 
