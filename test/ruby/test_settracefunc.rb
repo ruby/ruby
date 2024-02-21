@@ -2874,4 +2874,52 @@ CODE
     assert err.kind_of?(RuntimeError)
     assert_equal err.message.to_i + 3, line
   end
+
+  def test_tracepoint_thread_begin
+    target_thread = nil
+
+    trace = TracePoint.new(:thread_begin) do |tp|
+      target_thread = tp.self
+    end
+
+    trace.enable(target_thread: nil) do
+      Thread.new{}.join
+    end
+
+    assert_kind_of(Thread, target_thread)
+  end
+
+  def test_tracepoint_thread_end
+    target_thread = nil
+
+    trace = TracePoint.new(:thread_end) do |tp|
+      target_thread = tp.self
+    end
+
+    trace.enable(target_thread: nil) do
+      Thread.new{}.join
+    end
+
+    assert_kind_of(Thread, target_thread)
+  end
+
+  def test_tracepoint_thread_end_with_exception
+    target_thread = nil
+
+    trace = TracePoint.new(:thread_end) do |tp|
+      target_thread = tp.self
+    end
+
+    trace.enable(target_thread: nil) do
+      thread = Thread.new do
+        Thread.current.report_on_exception = false
+        raise
+      end
+
+      # Ignore the exception raised by the thread:
+      thread.join rescue nil
+    end
+
+    assert_kind_of(Thread, target_thread)
+  end
 end
