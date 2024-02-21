@@ -668,13 +668,13 @@ thread_start_func_2(rb_thread_t *th, VALUE *stack_start)
     }
 
     if (!rb_fiber_scheduler_set_invoked) {
-        rb_fiber_scheduler_set(Qnil);
         rb_fiber_scheduler_set_invoked = 1;
+        rb_fiber_scheduler_set(Qnil);
     }
 
     if (!event_thread_end_hooked) {
-        EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
         event_thread_end_hooked = 1;
+        EXEC_EVENT_HOOK(th->ec, RUBY_EVENT_THREAD_END, th->self, 0, 0, 0, Qundef);
     }
 
     if (state == TAG_NONE) {
