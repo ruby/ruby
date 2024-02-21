@@ -94,6 +94,19 @@ module Prism
       end
     end
 
+    def test_warnings
+      buffer = Parser::Source::Buffer.new("inline ruby with warning", 1)
+      buffer.source = "do_something *array"
+
+      parser = Prism::Translation::Parser.new
+      parser.diagnostics.all_errors_are_fatal = false
+      warning = nil
+      parser.diagnostics.consumer = ->(received) { warning = received }
+      parser.parse(buffer)
+      assert_equal :warning, warning.level
+      assert_includes warning.message, "has been interpreted as"
+    end
+
     private
 
     def assert_equal_parses(filepath, compare_tokens: true)

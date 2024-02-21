@@ -17,9 +17,9 @@ module Prism
         attr_reader :message
 
         # Initialize a new diagnostic with the given message and location.
-        def initialize(message, location)
+        def initialize(message, level, location)
           @message = message
-          super(:error, :prism_error, {}, location, [])
+          super(level, :prism_error, {}, location, [])
         end
       end
 
@@ -113,7 +113,13 @@ module Prism
           next unless valid_error?(error)
 
           location = build_range(error.location, offset_cache)
-          diagnostics.process(Diagnostic.new(error.message, location))
+          diagnostics.process(Diagnostic.new(error.message, :error, location))
+        end
+        result.warnings.each do |warning|
+          next unless valid_error?(warning)
+
+          location = build_range(warning.location, offset_cache)
+          diagnostics.process(Diagnostic.new(warning.message, :warning, location))
         end
 
         result
