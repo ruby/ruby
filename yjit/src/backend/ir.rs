@@ -1586,11 +1586,6 @@ impl Assembler
     pub fn expect_leaf_ccall(&mut self) {
         self.leaf_ccall = true;
     }
-
-    /// Undo expect_leaf_ccall() as an exception.
-    pub fn allow_non_leaf_ccall(&mut self) {
-        self.leaf_ccall = false;
-    }
 }
 
 /// A struct that allows iterating through an assembler's instructions and

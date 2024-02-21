@@ -298,6 +298,16 @@ impl JITState {
             }
         }
     }
+
+    /// Return true if we're compiling a send-like instruction, not an opt_* instruction.
+    pub fn is_sendish(&self) -> bool {
+        match unsafe { rb_iseq_opcode_at_pc(self.iseq, self.pc) } as u32 {
+            YARVINSN_send |
+            YARVINSN_opt_send_without_block |
+            YARVINSN_invokesuper => true,
+            _ => false,
+        }
+    }
 }
 
 /// Macro to call jit.perf_symbol_push() without evaluating arguments when
@@ -5388,12 +5398,8 @@ fn jit_rb_str_byteslice(
         return false
     }
 
-    let len = asm.stack_opnd(0);
-    let beg = asm.stack_opnd(1);
-    let recv = asm.stack_opnd(2);
-
     // rb_str_byte_substr should be leaf if indexes are fixnums
-    match (asm.ctx.get_opnd_type(beg.into()), asm.ctx.get_opnd_type(len.into())) {
+    match (asm.ctx.get_opnd_type(StackOpnd(0)), asm.ctx.get_opnd_type(StackOpnd(1))) {
         (Type::Fixnum, Type::Fixnum) => {},
         // Raises when non-integers are passed in, which requires the method frame
         // to be pushed for the backtrace
@@ -5403,6 +5409,11 @@ fn jit_rb_str_byteslice(
 
     // rb_str_byte_substr allocates a substring
     jit_prepare_call_with_gc(jit, asm);
+
+    // Get stack operands after potential SP change
+    let len = asm.stack_opnd(0);
+    let beg = asm.stack_opnd(1);
+    let recv = asm.stack_opnd(2);
 
     let ret_opnd = asm.ccall(rb_str_byte_substr as *const u8, vec![recv, beg, len]);
     asm.stack_pop(3);
@@ -5525,10 +5536,9 @@ fn jit_rb_str_concat(
     guard_object_is_string(asm, asm.stack_opnd(0), StackOpnd(0), Counter::guard_send_not_string);
 
     // Guard buffers from GC since rb_str_buf_append may allocate.
-    jit_prepare_non_leaf_call(jit, asm);
     // rb_str_buf_append may raise Encoding::CompatibilityError, but we accept compromised
     // backtraces on this method since the interpreter does the same thing on opt_ltlt.
-    asm.allow_non_leaf_ccall();
+    jit_prepare_non_leaf_call(jit, asm);
     asm.spill_temps(); // For ccall. Unconditionally spill them for RegTemps consistency.
 
     let concat_arg = asm.stack_pop(1);
@@ -6088,9 +6098,17 @@ fn gen_send_cfunc(
         let expected_stack_after = asm.ctx.get_stack_size() as i32 - argc;
         if let Some(known_cfunc_codegen) = lookup_cfunc_codegen(unsafe { (*cme).def }) {
             // We don't push a frame for specialized cfunc codegen, so the generated code must be leaf.
-            if asm.with_leaf_ccall(|asm|
+            // However, the interpreter doesn't push a frame on opt_* instruction either, so we allow
+            // non-sendish instructions to break this rule as an exception.
+            let cfunc_codegen = if jit.is_sendish() {
+                asm.with_leaf_ccall(|asm|
+                    perf_call!("gen_send_cfunc: ", known_cfunc_codegen(jit, asm, ocb, ci, cme, block, argc, recv_known_class))
+                )
+            } else {
                 perf_call!("gen_send_cfunc: ", known_cfunc_codegen(jit, asm, ocb, ci, cme, block, argc, recv_known_class))
-            ) {
+            };
+
+            if cfunc_codegen {
                 assert_eq!(expected_stack_after, asm.ctx.get_stack_size() as i32);
                 gen_counter_incr(asm, Counter::num_send_cfunc_inline);
                 // cfunc codegen generated code. Terminate the block so

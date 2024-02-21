@@ -17,9 +17,9 @@ module Prism
         attr_reader :message
 
         # Initialize a new diagnostic with the given message and location.
-        def initialize(message, location)
+        def initialize(message, level, reason, location)
           @message = message
-          super(:error, :prism_error, {}, location, [])
+          super(level, reason, {}, location, [])
         end
       end
 
@@ -106,6 +106,12 @@ module Prism
         true
       end
 
+      # This is a hook to allow consumers to disable some warnings if they don't
+      # want them to block creating the syntax tree.
+      def valid_warning?(warning)
+        true
+      end
+
       # If there was a error generated during the parse, then raise an
       # appropriate syntax error. Otherwise return the result.
       def unwrap(result, offset_cache)
@@ -113,7 +119,13 @@ module Prism
           next unless valid_error?(error)
 
           location = build_range(error.location, offset_cache)
-          diagnostics.process(Diagnostic.new(error.message, location))
+          diagnostics.process(Diagnostic.new(error.message, :error, :prism_error, location))
+        end
+        result.warnings.each do |warning|
+          next unless valid_warning?(warning)
+
+          location = build_range(warning.location, offset_cache)
+          diagnostics.process(Diagnostic.new(warning.message, :warning, :prism_warning, location))
         end
 
         result
