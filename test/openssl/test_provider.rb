@@ -12,8 +12,6 @@ class OpenSSL::TestProvider < OpenSSL::TestCase
   end
 
   def test_openssl_provider_names
-    omit if /freebsd/ =~ RUBY_PLATFORM
-
     with_openssl <<-'end;'
       legacy_provider = OpenSSL::Provider.load("legacy")
       assert_equal(2, OpenSSL::Provider.provider_names.size)
@@ -35,8 +33,6 @@ class OpenSSL::TestProvider < OpenSSL::TestCase
   end
 
   def test_openssl_legacy_provider
-    omit if /freebsd/ =~ RUBY_PLATFORM
-
     with_openssl(<<-'end;')
       OpenSSL::Provider.load("legacy")
       algo = "RC4"
