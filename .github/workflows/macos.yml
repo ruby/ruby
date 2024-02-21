@@ -21,88 +21,10 @@ permissions:
   contents: read
 
 jobs:
-  make:
-    strategy:
-      matrix:
-        test_task: ['check']
-        configure: ['']
-        os: ${{ fromJSON(format('["macos-12","macos-13"{0}]', (github.repository == 'ruby/ruby' && ',"macos-arm-oss"' || ''))) }}
-        include:
-          - test_task: test-all TESTS=--repeat-count=2
-            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-13' }}
-          - test_task: test-bundled-gems
-            os: ${{ github.repository == 'ruby/ruby' && 'macos-arm-oss' || 'macos-13' }}
-      fail-fast: false
-
-    env:
-      GITPULLOPTIONS: --no-tags origin ${{ github.ref }}
-
-    runs-on: ${{ matrix.os }}
-
-    if: >-
-      ${{!(false
-      || contains(github.event.head_commit.message, '[DOC]')
-      || contains(github.event.pull_request.title, '[DOC]')
-      || contains(github.event.pull_request.labels.*.name, 'Documentation')
-      || (github.event_name == 'push' && github.actor == 'dependabot[bot]')
-      )}}
-
-    steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-        with:
-          sparse-checkout-cone-mode: false
-          sparse-checkout: /.github
-
-      - name: Install libraries
-        uses: ./.github/actions/setup/macos
-
-      - uses: ./.github/actions/setup/directories
-        with:
-          srcdir: src
-          builddir: build
-          makeup: true
-          dummy-files: ${{ matrix.test_task == 'check' }}
-
-      - name: Run configure
-        run: ../src/configure -C --disable-install-doc ${{ matrix.configure }}
-
-      - run: make prepare-gems
-        if: ${{ matrix.test_task == 'test-bundled-gems' }}
-
-      - run: make
-
-      - name: make ${{ matrix.test_task }}
-        run: |
-          make -s ${{ matrix.test_task }} ${TESTS:+TESTS=`echo "$TESTS" | sed 's| |$$/ -n!/|g;s|^|-n!/|;s|$|$$/|'`}
-        timeout-minutes: 60
-        env:
-          RUBY_TESTOPTS: '-q --tty=no'
-          TESTS: ${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'minitest,test-unit,debug,bigdecimal,drb,typeprof'
-          PRECHECK_BUNDLED_GEMS: 'no'
-
-      - name: make skipped tests
-        run: |
-          make -s test-all TESTS=`echo "$TESTS" | sed 's| |$$/ -n/|g;s|^|-n/|;s|$|$$/|'`
-        env:
-          GNUMAKEFLAGS: ''
-          RUBY_TESTOPTS: '-v --tty=no'
-          TESTS: ${{ matrix.skipped_tests }}
-          PRECHECK_BUNDLED_GEMS: 'no'
-        if: ${{ matrix.test_task == 'check' && matrix.skipped_tests != '' }}
-        continue-on-error: ${{ matrix.continue-on-skipped_tests || false }}
-
-      - uses: ./.github/actions/slack
-        with:
-          label: ${{ matrix.os }} / ${{ matrix.test_task }} ${{ matrix.configure }}
-          SLACK_WEBHOOK_URL: ${{ secrets.SIMPLER_ALERTS_URL }} # ruby-lang slack: ruby/simpler-alerts-bot
-        if: ${{ failure() }}
-
   result:
     if: ${{ always() }}
     name: ${{ github.workflow }} result
     runs-on: macos-latest
-    needs: [make]
     steps:
       - run: exit 1
         working-directory:
