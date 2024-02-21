@@ -23,17 +23,31 @@ class ErrorHighlightTest < Test::Unit::TestCase
     end
   end
 
+  begin
+    method_not_exist
+  rescue NameError
+    if $!.message.include?("`")
+      def preprocess(msg)
+        msg
+      end
+    else
+      def preprocess(msg)
+        msg.sub("`", "'")
+      end
+    end
+  end
+
   if Exception.method_defined?(:detailed_message)
     def assert_error_message(klass, expected_msg, &blk)
       omit unless klass < ErrorHighlight::CoreExt
       err = assert_raise(klass, &blk)
-      assert_equal(expected_msg.chomp, err.detailed_message(highlight: false).sub(/ \((?:NoMethod|Name)Error\)/, ""))
+      assert_equal(preprocess(expected_msg).chomp, err.detailed_message(highlight: false).sub(/ \((?:NoMethod|Name)Error\)/, ""))
     end
   else
     def assert_error_message(klass, expected_msg, &blk)
       omit unless klass < ErrorHighlight::CoreExt
       err = assert_raise(klass, &blk)
-      assert_equal(expected_msg.chomp, err.message)
+      assert_equal(preprocess(expected_msg).chomp, err.message)
     end
   end
 

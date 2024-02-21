@@ -99,4 +99,18 @@
 #   define PM_STATIC_ASSERT(line, condition, message) typedef char PM_CONCATENATE(static_assert_, line)[(condition) ? 1 : -1]
 #endif
 
+/**
+ * In general, libc for embedded systems does not support memory-mapped files.
+ * If the target platform is POSIX or Windows, we can map a file in memory and
+ * read it in a more efficient manner.
+ */
+#ifdef _WIN32
+#   define PRISM_HAS_MMAP
+#else
+#   include <unistd.h>
+#   ifdef _POSIX_MAPPED_FILES
+#       define PRISM_HAS_MMAP
+#   endif
+#endif
+
 #endif

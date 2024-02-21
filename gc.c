@@ -1351,7 +1351,7 @@ int ruby_enable_autocompact = 0;
 gc_compact_compare_func ruby_autocompact_compare_func;
 #endif
 
-void rb_iseq_mark_and_move(rb_iseq_t *iseq, bool referece_updating);
+void rb_iseq_mark_and_move(rb_iseq_t *iseq, bool reference_updating);
 void rb_iseq_free(const rb_iseq_t *iseq);
 size_t rb_iseq_memsize(const rb_iseq_t *iseq);
 void rb_vm_update_references(void *ptr);
@@ -2799,11 +2799,10 @@ size_pool_idx_for_size(size_t size)
 }
 
 static VALUE
-newobj_alloc(rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_pool_idx, bool vm_locked)
+newobj_alloc(rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t size_pool_idx, bool vm_locked)
 {
     rb_size_pool_t *size_pool = &size_pools[size_pool_idx];
     rb_heap_t *heap = SIZE_POOL_EDEN_HEAP(size_pool);
-    rb_ractor_newobj_cache_t *cache = &cr->newobj_cache;
 
     VALUE obj = ractor_cache_allocate_slot(objspace, cache, size_pool_idx);
 
@@ -2812,7 +2811,7 @@ newobj_alloc(rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_pool_idx, boo
         bool unlock_vm = false;
 
         if (!vm_locked) {
-            RB_VM_LOCK_ENTER_CR_LEV(cr, &lev);
+            RB_VM_LOCK_ENTER_CR_LEV(GET_RACTOR(), &lev);
             vm_locked = true;
             unlock_vm = true;
         }
@@ -2841,7 +2840,7 @@ newobj_alloc(rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_pool_idx, boo
         }
 
         if (unlock_vm) {
-            RB_VM_LOCK_LEAVE_CR_LEV(cr, &lev);
+            RB_VM_LOCK_LEAVE_CR_LEV(GET_RACTOR(), &lev);
         }
     }
 
@@ -2856,15 +2855,15 @@ newobj_zero_slot(VALUE obj)
     memset((char *)obj + sizeof(struct RBasic), 0, rb_gc_obj_slot_size(obj) - sizeof(struct RBasic));
 }
 
-ALWAYS_INLINE(static VALUE newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, int wb_protected, size_t size_pool_idx));
+ALWAYS_INLINE(static VALUE newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, int wb_protected, size_t size_pool_idx));
 
 static inline VALUE
-newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, int wb_protected, size_t size_pool_idx)
+newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, int wb_protected, size_t size_pool_idx)
 {
     VALUE obj;
     unsigned int lev;
 
-    RB_VM_LOCK_ENTER_CR_LEV(cr, &lev);
+    RB_VM_LOCK_ENTER_CR_LEV(GET_RACTOR(), &lev);
     {
         if (UNLIKELY(during_gc || ruby_gc_stressful)) {
             if (during_gc) {
@@ -2880,35 +2879,35 @@ newobj_slowpath(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *
             }
         }
 
-        obj = newobj_alloc(objspace, cr, size_pool_idx, true);
+        obj = newobj_alloc(objspace, cache, size_pool_idx, true);
         newobj_init(klass, flags, wb_protected, objspace, obj);
 
         gc_event_hook_prep(objspace, RUBY_INTERNAL_EVENT_NEWOBJ, obj, newobj_zero_slot(obj));
     }
-    RB_VM_LOCK_LEAVE_CR_LEV(cr, &lev);
+    RB_VM_LOCK_LEAVE_CR_LEV(GET_RACTOR(), &lev);
 
     return obj;
 }
 
 NOINLINE(static VALUE newobj_slowpath_wb_protected(VALUE klass, VALUE flags,
-                                                   rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_pool_idx));
+                                                   rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t size_pool_idx));
 NOINLINE(static VALUE newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags,
-                                                     rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_pool_idx));
+                                                     rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t size_pool_idx));
 
 static VALUE
-newobj_slowpath_wb_protected(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_pool_idx)
+newobj_slowpath_wb_protected(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t size_pool_idx)
 {
-    return newobj_slowpath(klass, flags, objspace, cr, TRUE, size_pool_idx);
+    return newobj_slowpath(klass, flags, objspace, cache, TRUE, size_pool_idx);
 }
 
 static VALUE
-newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_t *cr, size_t size_pool_idx)
+newobj_slowpath_wb_unprotected(VALUE klass, VALUE flags, rb_objspace_t *objspace, rb_ractor_newobj_cache_t *cache, size_t size_pool_idx)
 {
-    return newobj_slowpath(klass, flags, objspace, cr, FALSE, size_pool_idx);
+    return newobj_slowpath(klass, flags, objspace, cache, FALSE, size_pool_idx);
 }
 
 static inline VALUE
-newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr, size_t alloc_size)
+newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected, size_t alloc_size)
 {
     VALUE obj;
     rb_objspace_t *objspace = &rb_objspace;
@@ -2929,28 +2928,23 @@ newobj_of0(VALUE klass, VALUE flags, int wb_protected, rb_ractor_t *cr, size_t a
         flags |= (VALUE)size_pool_idx << SHAPE_FLAG_SHIFT;
     }
 
+    rb_ractor_newobj_cache_t *cache = &cr->newobj_cache;
+
     if (!UNLIKELY(during_gc ||
                   ruby_gc_stressful ||
                   gc_event_newobj_hook_needed_p(objspace)) &&
             wb_protected) {
-        obj = newobj_alloc(objspace, cr, size_pool_idx, false);
+        obj = newobj_alloc(objspace, cache, size_pool_idx, false);
         newobj_init(klass, flags, wb_protected, objspace, obj);
     }
     else {
         RB_DEBUG_COUNTER_INC(obj_newobj_slowpath);
 
         obj = wb_protected ?
-          newobj_slowpath_wb_protected(klass, flags, objspace, cr, size_pool_idx) :
-          newobj_slowpath_wb_unprotected(klass, flags, objspace, cr, size_pool_idx);
+          newobj_slowpath_wb_protected(klass, flags, objspace, cache, size_pool_idx) :
+          newobj_slowpath_wb_unprotected(klass, flags, objspace, cache, size_pool_idx);
     }
 
-    return obj;
-}
-
-static inline VALUE
-newobj_of(rb_ractor_t *cr, VALUE klass, VALUE flags, VALUE v1, VALUE v2, VALUE v3, int wb_protected, size_t alloc_size)
-{
-    VALUE obj = newobj_of0(klass, flags, wb_protected, cr, alloc_size);
     return newobj_fill(obj, v1, v2, v3);
 }
 
@@ -2976,43 +2970,11 @@ rb_newobj(void)
     return newobj_of(GET_RACTOR(), 0, T_NONE, 0, 0, 0, FALSE, RVALUE_SIZE);
 }
 
-static VALUE
-rb_class_instance_allocate_internal(VALUE klass, VALUE flags, bool wb_protected)
-{
-    GC_ASSERT((flags & RUBY_T_MASK) == T_OBJECT);
-    GC_ASSERT(flags & ROBJECT_EMBED);
-
-    size_t size;
-    uint32_t index_tbl_num_entries = RCLASS_EXT(klass)->max_iv_count;
-
-    size = rb_obj_embedded_size(index_tbl_num_entries);
-    if (!rb_gc_size_allocatable_p(size)) {
-        size = sizeof(struct RObject);
-    }
-
-    VALUE obj = newobj_of(GET_RACTOR(), klass, flags, 0, 0, 0, wb_protected, size);
-    RUBY_ASSERT(rb_shape_get_shape(obj)->type == SHAPE_ROOT);
-
-    // Set the shape to the specific T_OBJECT shape which is always
-    // SIZE_POOL_COUNT away from the root shape.
-    ROBJECT_SET_SHAPE_ID(obj, ROBJECT_SHAPE_ID(obj) + SIZE_POOL_COUNT);
-
-#if RUBY_DEBUG
-    RUBY_ASSERT(!rb_shape_obj_too_complex(obj));
-    VALUE *ptr = ROBJECT_IVPTR(obj);
-    for (size_t i = 0; i < ROBJECT_IV_CAPACITY(obj); i++) {
-        ptr[i] = Qundef;
-    }
-#endif
-
-    return obj;
-}
-
 VALUE
 rb_newobj_of(VALUE klass, VALUE flags)
 {
     if ((flags & RUBY_T_MASK) == T_OBJECT) {
-        return rb_class_instance_allocate_internal(klass, (flags | ROBJECT_EMBED) & ~FL_WB_PROTECTED, flags & FL_WB_PROTECTED);
+        return rb_class_allocate_instance(klass);
     }
     else {
         return newobj_of(GET_RACTOR(), klass, flags & ~FL_WB_PROTECTED, 0, 0, 0, flags & FL_WB_PROTECTED, RVALUE_SIZE);
@@ -3051,11 +3013,11 @@ rb_imemo_name(enum imemo_type type)
 #undef rb_imemo_new
 
 VALUE
-rb_imemo_new(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0)
+rb_imemo_new(enum imemo_type type, VALUE v0)
 {
     size_t size = RVALUE_SIZE;
     VALUE flags = T_IMEMO | (type << FL_USHIFT);
-    return newobj_of(GET_RACTOR(), v0, flags, v1, v2, v3, TRUE, size);
+    return newobj_of(GET_RACTOR(), v0, flags, 0, 0, 0, TRUE, size);
 }
 
 static VALUE
@@ -3098,6 +3060,9 @@ imemo_memsize(VALUE obj)
       case imemo_ast:
         size += rb_ast_memsize(&RANY(obj)->as.imemo.ast);
         break;
+      case imemo_callcache:
+      case imemo_callinfo:
+      case imemo_constcache:
       case imemo_cref:
       case imemo_svar:
       case imemo_throw_data:
@@ -3106,7 +3071,7 @@ imemo_memsize(VALUE obj)
       case imemo_parser_strterm:
         break;
       default:
-        /* unreachable */
+        rb_bug("unreachable");
         break;
     }
     return size;
@@ -3114,19 +3079,13 @@ imemo_memsize(VALUE obj)
 
 #if IMEMO_DEBUG
 VALUE
-rb_imemo_new_debug(enum imemo_type type, VALUE v1, VALUE v2, VALUE v3, VALUE v0, const char *file, int line)
+rb_imemo_new_debug(enum imemo_type type, VALUE v0, const char *file, int line)
 {
-    VALUE memo = rb_imemo_new(type, v1, v2, v3, v0);
+    VALUE memo = rb_imemo_new(type, v0);
     fprintf(stderr, "memo %p (type: %d) @ %s:%d\n", (void *)memo, imemo_type(memo), file, line);
     return memo;
 }
 #endif
-
-VALUE
-rb_class_allocate_instance(VALUE klass)
-{
-    return rb_class_instance_allocate_internal(klass, T_OBJECT | ROBJECT_EMBED, RGENGC_WB_PROTECTED_OBJECT);
-}
 
 static inline void
 rb_data_object_check(VALUE klass)
@@ -3403,12 +3362,12 @@ cc_table_free_i(VALUE ccs_ptr, void *data_ptr)
     struct cc_tbl_i_data *data = data_ptr;
     struct rb_class_cc_entries *ccs = (struct rb_class_cc_entries *)ccs_ptr;
     VM_ASSERT(vm_ccs_p(ccs));
-    vm_ccs_free(ccs, data->alive, data->objspace, data->klass);
+    vm_ccs_free(ccs, false, data->objspace, data->klass);
     return ID_TABLE_CONTINUE;
 }
 
 static void
-cc_table_free(rb_objspace_t *objspace, VALUE klass, bool alive)
+cc_table_free(rb_objspace_t *objspace, VALUE klass)
 {
     struct rb_id_table *cc_tbl = RCLASS_CC_TBL(klass);
 
@@ -3416,7 +3375,6 @@ cc_table_free(rb_objspace_t *objspace, VALUE klass, bool alive)
         struct cc_tbl_i_data data = {
             .objspace = objspace,
             .klass = klass,
-            .alive = alive,
         };
         rb_id_table_foreach_values(cc_tbl, cc_table_free_i, &data);
         rb_id_table_free(cc_tbl);
@@ -3428,12 +3386,6 @@ cvar_table_free_i(VALUE value, void * ctx)
 {
     xfree((void *) value);
     return ID_TABLE_CONTINUE;
-}
-
-void
-rb_cc_table_free(VALUE klass)
-{
-    cc_table_free(&rb_objspace, klass, TRUE);
 }
 
 static inline void
@@ -3580,7 +3532,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
       case T_MODULE:
       case T_CLASS:
         rb_id_table_free(RCLASS_M_TBL(obj));
-        cc_table_free(objspace, obj, FALSE);
+        cc_table_free(objspace, obj);
         if (rb_shape_obj_too_complex(obj)) {
             st_free_table((st_table *)RCLASS_IVPTR(obj));
         }
@@ -3709,7 +3661,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
             rb_id_table_free(RCLASS_CALLABLE_M_TBL(obj));
         }
         rb_class_remove_subclass_head(obj);
-        cc_table_free(objspace, obj, FALSE);
+        cc_table_free(objspace, obj);
         rb_class_remove_from_module_subclasses(obj);
         rb_class_remove_from_super_subclasses(obj);
 
@@ -3796,6 +3748,7 @@ obj_free(rb_objspace_t *objspace, VALUE obj)
           case imemo_callinfo:
             {
                 const struct rb_callinfo * ci = ((const struct rb_callinfo *)obj);
+                rb_vm_ci_free(ci);
                 if (ci->kwarg) {
                     ((struct rb_callinfo_kwarg *)ci->kwarg)->references--;
                     if (ci->kwarg->references == 0) xfree((void *)ci->kwarg);
@@ -4759,6 +4712,14 @@ is_live_object(rb_objspace_t *objspace, VALUE ptr)
     else {
         return FALSE;
     }
+}
+
+static bool
+moved_or_living_object_strictly_p(rb_objspace_t *objspace, VALUE obj)
+{
+    return obj &&
+           is_pointer_to_heap(objspace, (void *)obj) &&
+           (is_live_object(objspace, obj) || BUILTIN_TYPE(obj) == T_MOVED);
 }
 
 static inline int
@@ -6391,9 +6352,8 @@ mark_stack_free_cache(mark_stack_t *stack)
 }
 
 static void
-push_mark_stack(mark_stack_t *stack, VALUE data)
+push_mark_stack(mark_stack_t *stack, VALUE obj)
 {
-    VALUE obj = data;
     switch (BUILTIN_TYPE(obj)) {
       case T_OBJECT:
       case T_CLASS:
@@ -6418,7 +6378,7 @@ push_mark_stack(mark_stack_t *stack, VALUE data)
         if (stack->index == stack->limit) {
             push_mark_stack_chunk(stack);
         }
-        stack->chunk->data[stack->index++] = data;
+        stack->chunk->data[stack->index++] = obj;
         return;
 
       case T_NONE:
@@ -6437,8 +6397,8 @@ push_mark_stack(mark_stack_t *stack, VALUE data)
     }
 
     rb_bug("rb_gc_mark(): unknown data type 0x%x(%p) %s",
-            BUILTIN_TYPE(obj), (void *)data,
-            is_pointer_to_heap(&rb_objspace, (void *)data) ? "corrupted object" : "non object");
+            BUILTIN_TYPE(obj), (void *)obj,
+            is_pointer_to_heap(&rb_objspace, (void *)obj) ? "corrupted object" : "non object");
 }
 
 static int
@@ -6727,38 +6687,44 @@ rb_mark_hash(st_table *tbl)
 }
 
 static void
-mark_method_entry(rb_objspace_t *objspace, const rb_method_entry_t *me)
+mark_and_move_method_entry(rb_objspace_t *objspace, rb_method_entry_t *me, bool reference_updating)
 {
-    const rb_method_definition_t *def = me->def;
+    rb_method_definition_t *def = me->def;
 
-    gc_mark(objspace, me->owner);
-    gc_mark(objspace, me->defined_class);
+    rb_gc_mark_and_move(&me->owner);
+    rb_gc_mark_and_move(&me->defined_class);
 
     if (def) {
         switch (def->type) {
           case VM_METHOD_TYPE_ISEQ:
-            if (def->body.iseq.iseqptr) gc_mark(objspace, (VALUE)def->body.iseq.iseqptr);
-            gc_mark(objspace, (VALUE)def->body.iseq.cref);
+            if (def->body.iseq.iseqptr) {
+                rb_gc_mark_and_move_ptr(&def->body.iseq.iseqptr);
+            }
+            rb_gc_mark_and_move_ptr(&def->body.iseq.cref);
 
-            if (def->iseq_overload && me->defined_class) {
-                // it can be a key of "overloaded_cme" table
-                // so it should be pinned.
-                gc_mark_and_pin(objspace, (VALUE)me);
+            if (!reference_updating) {
+                if (def->iseq_overload && me->defined_class) {
+                    // it can be a key of "overloaded_cme" table
+                    // so it should be pinned.
+                    gc_mark_and_pin(objspace, (VALUE)me);
+                }
             }
             break;
           case VM_METHOD_TYPE_ATTRSET:
           case VM_METHOD_TYPE_IVAR:
-            gc_mark(objspace, def->body.attr.location);
+            rb_gc_mark_and_move(&def->body.attr.location);
             break;
           case VM_METHOD_TYPE_BMETHOD:
-            gc_mark(objspace, def->body.bmethod.proc);
-            if (def->body.bmethod.hooks) rb_hook_list_mark(def->body.bmethod.hooks);
+            rb_gc_mark_and_move(&def->body.bmethod.proc);
+            if (!reference_updating) {
+                if (def->body.bmethod.hooks) rb_hook_list_mark(def->body.bmethod.hooks);
+            }
             break;
           case VM_METHOD_TYPE_ALIAS:
-            gc_mark(objspace, (VALUE)def->body.alias.original_me);
+            rb_gc_mark_and_move_ptr(&def->body.alias.original_me);
             return;
           case VM_METHOD_TYPE_REFINED:
-            gc_mark(objspace, (VALUE)def->body.refined.orig_me);
+            rb_gc_mark_and_move_ptr(&def->body.refined.orig_me);
             break;
           case VM_METHOD_TYPE_CFUNC:
           case VM_METHOD_TYPE_ZSUPER:
@@ -7241,65 +7207,80 @@ gc_mark_set_parent(rb_objspace_t *objspace, VALUE obj)
 }
 
 static void
-gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
+gc_mark_and_move_imemo(rb_objspace_t *objspace, VALUE obj, bool reference_updating)
 {
     switch (imemo_type(obj)) {
       case imemo_env:
         {
-            const rb_env_t *env = (const rb_env_t *)obj;
+            rb_env_t *env = (rb_env_t *)obj;
 
             if (LIKELY(env->ep)) {
                 // just after newobj() can be NULL here.
-                GC_ASSERT(env->ep[VM_ENV_DATA_INDEX_ENV] == obj);
-                GC_ASSERT(VM_ENV_ESCAPED_P(env->ep));
-                rb_gc_mark_values((long)env->env_size, env->env);
-                VM_ENV_FLAGS_SET(env->ep, VM_ENV_FLAG_WB_REQUIRED);
-                gc_mark(objspace, (VALUE)rb_vm_env_prev_env(env));
-                gc_mark(objspace, (VALUE)env->iseq);
+                GC_ASSERT(rb_gc_location(env->ep[VM_ENV_DATA_INDEX_ENV]) == rb_gc_location(obj));
+                GC_ASSERT(reference_updating || VM_ENV_ESCAPED_P(env->ep));
+
+                for (unsigned int i = 0; i < env->env_size; i++) {
+                    rb_gc_mark_and_move((VALUE *)&env->env[i]);
+                }
+
+                rb_gc_mark_and_move_ptr(&env->iseq);
+
+                if (reference_updating) {
+                    UPDATE_IF_MOVED(objspace, env->ep[VM_ENV_DATA_INDEX_ENV]);
+                }
+                else {
+                    VM_ENV_FLAGS_SET(env->ep, VM_ENV_FLAG_WB_REQUIRED);
+                    gc_mark(objspace, (VALUE)rb_vm_env_prev_env(env));
+                }
             }
         }
         return;
       case imemo_cref:
-        gc_mark(objspace, RANY(obj)->as.imemo.cref.klass_or_self);
-        gc_mark(objspace, (VALUE)RANY(obj)->as.imemo.cref.next);
-        gc_mark(objspace, RANY(obj)->as.imemo.cref.refinements);
+        rb_gc_mark_and_move(&RANY(obj)->as.imemo.cref.klass_or_self);
+        rb_gc_mark_and_move_ptr(&RANY(obj)->as.imemo.cref.next);
+        rb_gc_mark_and_move(&RANY(obj)->as.imemo.cref.refinements);
         return;
       case imemo_svar:
-        gc_mark(objspace, RANY(obj)->as.imemo.svar.cref_or_me);
-        gc_mark(objspace, RANY(obj)->as.imemo.svar.lastline);
-        gc_mark(objspace, RANY(obj)->as.imemo.svar.backref);
-        gc_mark(objspace, RANY(obj)->as.imemo.svar.others);
+        rb_gc_mark_and_move((VALUE *)&RANY(obj)->as.imemo.svar.cref_or_me);
+        rb_gc_mark_and_move((VALUE *)&RANY(obj)->as.imemo.svar.lastline);
+        rb_gc_mark_and_move((VALUE *)&RANY(obj)->as.imemo.svar.backref);
+        rb_gc_mark_and_move((VALUE *)&RANY(obj)->as.imemo.svar.others);
         return;
       case imemo_throw_data:
-        gc_mark(objspace, RANY(obj)->as.imemo.throw_data.throw_obj);
+        rb_gc_mark_and_move((VALUE *)&RANY(obj)->as.imemo.throw_data.throw_obj);
         return;
       case imemo_ifunc:
-        gc_mark_maybe(objspace, (VALUE)RANY(obj)->as.imemo.ifunc.data);
+        if (!reference_updating) {
+            gc_mark_maybe(objspace, (VALUE)RANY(obj)->as.imemo.ifunc.data);
+        }
         return;
       case imemo_memo:
-        gc_mark(objspace, RANY(obj)->as.imemo.memo.v1);
-        gc_mark(objspace, RANY(obj)->as.imemo.memo.v2);
-        gc_mark_maybe(objspace, RANY(obj)->as.imemo.memo.u3.value);
+        rb_gc_mark_and_move((VALUE *)&RANY(obj)->as.imemo.memo.v1);
+        rb_gc_mark_and_move((VALUE *)&RANY(obj)->as.imemo.memo.v2);
+        if (!reference_updating) {
+            gc_mark_maybe(objspace, RANY(obj)->as.imemo.memo.u3.value);
+        }
         return;
       case imemo_ment:
-        mark_method_entry(objspace, &RANY(obj)->as.imemo.ment);
+        mark_and_move_method_entry(objspace, &RANY(obj)->as.imemo.ment, reference_updating);
         return;
       case imemo_iseq:
-        rb_iseq_mark_and_move((rb_iseq_t *)obj, false);
+        rb_iseq_mark_and_move((rb_iseq_t *)obj, reference_updating);
         return;
       case imemo_tmpbuf:
         {
-            const rb_imemo_tmpbuf_t *m = &RANY(obj)->as.imemo.alloc;
-            do {
-                rb_gc_mark_locations(m->ptr, m->ptr + m->cnt);
-            } while ((m = m->next) != NULL);
+            if (!reference_updating) {
+                const rb_imemo_tmpbuf_t *m = &RANY(obj)->as.imemo.alloc;
+                do {
+                    rb_gc_mark_locations(m->ptr, m->ptr + m->cnt);
+                } while ((m = m->next) != NULL);
+            }
         }
         return;
       case imemo_ast:
-        rb_ast_mark(&RANY(obj)->as.imemo.ast);
+        rb_ast_mark_and_move(&RANY(obj)->as.imemo.ast, reference_updating);
         return;
       case imemo_parser_strterm:
-        return;
       case imemo_callinfo:
         return;
       case imemo_callcache:
@@ -7324,15 +7305,32 @@ gc_mark_imemo(rb_objspace_t *objspace, VALUE obj)
          */
         {
             const struct rb_callcache *cc = (const struct rb_callcache *)obj;
-            if (vm_cc_super_p(cc) || vm_cc_refinement_p(cc)) {
-                gc_mark(objspace, (VALUE)cc->cme_);
+            if (reference_updating) {
+                if (!cc->klass) {
+                    // already invalidated
+                }
+                else {
+                    if (moved_or_living_object_strictly_p(objspace, cc->klass) &&
+                            moved_or_living_object_strictly_p(objspace, (VALUE)cc->cme_)) {
+                        UPDATE_IF_MOVED(objspace, cc->klass);
+                        TYPED_UPDATE_IF_MOVED(objspace, struct rb_callable_method_entry_struct *, cc->cme_);
+                    }
+                    else {
+                        vm_cc_invalidate(cc);
+                    }
+                }
+            }
+            else {
+                if (vm_cc_super_p(cc) || vm_cc_refinement_p(cc)) {
+                    gc_mark(objspace, (VALUE)cc->cme_);
+                }
             }
         }
         return;
       case imemo_constcache:
         {
-            const struct iseq_inline_constant_cache_entry *ice = (struct iseq_inline_constant_cache_entry *)obj;
-            gc_mark(objspace, ice->value);
+            struct iseq_inline_constant_cache_entry *ice = (struct iseq_inline_constant_cache_entry *)obj;
+            rb_gc_mark_and_move(&ice->value);
         }
         return;
 #if VM_CHECK_MODE > 0
@@ -7364,8 +7362,10 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
       case T_FLOAT:
       case T_BIGNUM:
       case T_SYMBOL:
-        /* Not immediates, but does not have references and singleton
-         * class */
+        /* Not immediates, but does not have references and singleton class.
+         *
+         * RSYMBOL(obj)->fstr intentionally not marked. See log for 96815f1e
+         * ("symbol.c: remove rb_gc_mark_symbols()") */
         return;
 
       case T_NIL:
@@ -7378,7 +7378,7 @@ gc_mark_children(rb_objspace_t *objspace, VALUE obj)
         break;
 
       case T_IMEMO:
-        gc_mark_imemo(objspace, obj);
+        gc_mark_and_move_imemo(objspace, obj, false);
         return;
 
       default:
@@ -10410,46 +10410,6 @@ gc_ref_update_hash(rb_objspace_t * objspace, VALUE v)
 }
 
 static void
-gc_ref_update_method_entry(rb_objspace_t *objspace, rb_method_entry_t *me)
-{
-    rb_method_definition_t *def = me->def;
-
-    UPDATE_IF_MOVED(objspace, me->owner);
-    UPDATE_IF_MOVED(objspace, me->defined_class);
-
-    if (def) {
-        switch (def->type) {
-          case VM_METHOD_TYPE_ISEQ:
-            if (def->body.iseq.iseqptr) {
-                TYPED_UPDATE_IF_MOVED(objspace, rb_iseq_t *, def->body.iseq.iseqptr);
-            }
-            TYPED_UPDATE_IF_MOVED(objspace, rb_cref_t *, def->body.iseq.cref);
-            break;
-          case VM_METHOD_TYPE_ATTRSET:
-          case VM_METHOD_TYPE_IVAR:
-            UPDATE_IF_MOVED(objspace, def->body.attr.location);
-            break;
-          case VM_METHOD_TYPE_BMETHOD:
-            UPDATE_IF_MOVED(objspace, def->body.bmethod.proc);
-            break;
-          case VM_METHOD_TYPE_ALIAS:
-            TYPED_UPDATE_IF_MOVED(objspace, struct rb_method_entry_struct *, def->body.alias.original_me);
-            return;
-          case VM_METHOD_TYPE_REFINED:
-            TYPED_UPDATE_IF_MOVED(objspace, struct rb_method_entry_struct *, def->body.refined.orig_me);
-            break;
-          case VM_METHOD_TYPE_CFUNC:
-          case VM_METHOD_TYPE_ZSUPER:
-          case VM_METHOD_TYPE_MISSING:
-          case VM_METHOD_TYPE_OPTIMIZED:
-          case VM_METHOD_TYPE_UNDEF:
-          case VM_METHOD_TYPE_NOTIMPLEMENTED:
-            break;
-        }
-    }
-}
-
-static void
 gc_update_values(rb_objspace_t *objspace, long n, VALUE *values)
 {
     long i;
@@ -10463,93 +10423,6 @@ void
 rb_gc_update_values(long n, VALUE *values)
 {
     gc_update_values(&rb_objspace, n, values);
-}
-
-static bool
-moved_or_living_object_strictly_p(rb_objspace_t *objspace, VALUE obj)
-{
-    return obj &&
-           is_pointer_to_heap(objspace, (void *)obj) &&
-           (is_live_object(objspace, obj) || BUILTIN_TYPE(obj) == T_MOVED);
-}
-
-static void
-gc_ref_update_imemo(rb_objspace_t *objspace, VALUE obj)
-{
-    switch (imemo_type(obj)) {
-      case imemo_env:
-        {
-            rb_env_t *env = (rb_env_t *)obj;
-            if (LIKELY(env->ep)) {
-                // just after newobj() can be NULL here.
-                TYPED_UPDATE_IF_MOVED(objspace, rb_iseq_t *, env->iseq);
-                UPDATE_IF_MOVED(objspace, env->ep[VM_ENV_DATA_INDEX_ENV]);
-                gc_update_values(objspace, (long)env->env_size, (VALUE *)env->env);
-            }
-        }
-        break;
-      case imemo_cref:
-        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.cref.klass_or_self);
-        TYPED_UPDATE_IF_MOVED(objspace, struct rb_cref_struct *, RANY(obj)->as.imemo.cref.next);
-        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.cref.refinements);
-        break;
-      case imemo_svar:
-        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.svar.cref_or_me);
-        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.svar.lastline);
-        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.svar.backref);
-        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.svar.others);
-        break;
-      case imemo_throw_data:
-        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.throw_data.throw_obj);
-        break;
-      case imemo_ifunc:
-        break;
-      case imemo_memo:
-        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.memo.v1);
-        UPDATE_IF_MOVED(objspace, RANY(obj)->as.imemo.memo.v2);
-        break;
-      case imemo_ment:
-        gc_ref_update_method_entry(objspace, &RANY(obj)->as.imemo.ment);
-        break;
-      case imemo_iseq:
-        rb_iseq_mark_and_move((rb_iseq_t *)obj, true);
-        break;
-      case imemo_ast:
-        rb_ast_update_references((rb_ast_t *)obj);
-        break;
-      case imemo_callcache:
-        {
-            const struct rb_callcache *cc = (const struct rb_callcache *)obj;
-
-            if (!cc->klass) {
-                // already invalidated
-            }
-            else {
-                if (moved_or_living_object_strictly_p(objspace, cc->klass) &&
-                    moved_or_living_object_strictly_p(objspace, (VALUE)cc->cme_)) {
-                    UPDATE_IF_MOVED(objspace, cc->klass);
-                    TYPED_UPDATE_IF_MOVED(objspace, struct rb_callable_method_entry_struct *, cc->cme_);
-                }
-                else {
-                    vm_cc_invalidate(cc);
-                }
-            }
-        }
-        break;
-      case imemo_constcache:
-        {
-            const struct iseq_inline_constant_cache_entry *ice = (struct iseq_inline_constant_cache_entry *)obj;
-            UPDATE_IF_MOVED(objspace, ice->value);
-        }
-        break;
-      case imemo_parser_strterm:
-      case imemo_tmpbuf:
-      case imemo_callinfo:
-        break;
-      default:
-        rb_bug("not reachable %d", imemo_type(obj));
-        break;
-    }
 }
 
 static enum rb_id_table_iterator_result
@@ -10804,7 +10677,7 @@ gc_update_object_references(rb_objspace_t *objspace, VALUE obj)
         break;
 
       case T_IMEMO:
-        gc_ref_update_imemo(objspace, obj);
+        gc_mark_and_move_imemo(objspace, obj, true);
         return;
 
       case T_NIL:
@@ -11028,16 +10901,20 @@ gc_update_references(rb_objspace_t *objspace)
  *
  * Returns information about object moved in the most recent \GC compaction.
  *
- * The returned +hash+ has the following keys:
+ * The returned +hash+ contains the following keys:
  *
- * - +:considered+: a hash containing the type of the object as the key and
- *   the number of objects of that type that were considered for movement.
- * - +:moved+: a hash containing the type of the object as the key and the
- *   number of objects of that type that were actually moved.
- * - +:moved_up+: a hash containing the type of the object as the key and the
- *   number of objects of that type that were increased in size.
- * - +:moved_down+: a hash containing the type of the object as the key and
- *   the number of objects of that type that were decreased in size.
+ * [considered]
+ *   Hash containing the type of the object as the key and the number of
+ *   objects of that type that were considered for movement.
+ * [moved]
+ *   Hash containing the type of the object as the key and the number of
+ *   objects of that type that were actually moved.
+ * [moved_up]
+ *   Hash containing the type of the object as the key and the number of
+ *   objects of that type that were increased in size.
+ * [moved_down]
+ *   Hash containing the type of the object as the key and the number of
+ *   objects of that type that were decreased in size.
  *
  * Some objects can't be moved (due to pinning) so these numbers can be used to
  * calculate compaction efficiency.

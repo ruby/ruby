@@ -1,114 +1,111 @@
 require_relative '../../spec_helper'
 
-ruby_version_is ""..."3.4" do
+platform_is_not :windows do
+  require 'syslog'
 
-  platform_is_not :windows do
-    require 'syslog'
+  describe "Syslog.mask" do
+    platform_is_not :windows do
 
-    describe "Syslog.mask" do
-      platform_is_not :windows do
+      before :each do
+        Syslog.opened?.should be_false
+      end
 
-        before :each do
-          Syslog.opened?.should be_false
+      after :each do
+        Syslog.opened?.should be_false
+        # make sure we return the mask to the default value
+        Syslog.open { |s| s.mask = 255 }
+      end
+
+      it "returns the log priority mask" do
+        Syslog.open("rubyspec") do
+          Syslog.mask.should == 255
+          Syslog.mask = 3
+          Syslog.mask.should == 3
+          Syslog.mask = 255
         end
+      end
 
-        after :each do
-          Syslog.opened?.should be_false
-          # make sure we return the mask to the default value
-          Syslog.open { |s| s.mask = 255 }
+      it "defaults to 255" do
+        Syslog.open do |s|
+          s.mask.should == 255
         end
+      end
 
-        it "returns the log priority mask" do
-          Syslog.open("rubyspec") do
+      it "returns nil if the log is closed" do
+        Syslog.should_not.opened?
+        Syslog.mask.should == nil
+      end
+
+      platform_is :darwin do
+        it "resets if the log is reopened" do
+          Syslog.open
+          Syslog.mask.should == 255
+          Syslog.mask = 64
+
+          Syslog.reopen("rubyspec") do
             Syslog.mask.should == 255
-            Syslog.mask = 3
-            Syslog.mask.should == 3
-            Syslog.mask = 255
+          end
+
+          Syslog.open do
+            Syslog.mask.should == 255
           end
         end
+      end
 
-        it "defaults to 255" do
-          Syslog.open do |s|
-            s.mask.should == 255
+      platform_is_not :darwin do
+        it "persists if the log is reopened" do
+          Syslog.open
+          Syslog.mask.should == 255
+          Syslog.mask = 64
+
+          Syslog.reopen("rubyspec") do
+            Syslog.mask.should == 64
           end
-        end
 
-        it "returns nil if the log is closed" do
-          Syslog.should_not.opened?
-          Syslog.mask.should == nil
-        end
-
-        platform_is :darwin do
-          it "resets if the log is reopened" do
-            Syslog.open
-            Syslog.mask.should == 255
-            Syslog.mask = 64
-
-            Syslog.reopen("rubyspec") do
-              Syslog.mask.should == 255
-            end
-
-            Syslog.open do
-              Syslog.mask.should == 255
-            end
-          end
-        end
-
-        platform_is_not :darwin do
-          it "persists if the log is reopened" do
-            Syslog.open
-            Syslog.mask.should == 255
-            Syslog.mask = 64
-
-            Syslog.reopen("rubyspec") do
-              Syslog.mask.should == 64
-            end
-
-            Syslog.open do
-              Syslog.mask.should == 64
-            end
+          Syslog.open do
+            Syslog.mask.should == 64
           end
         end
       end
     end
+  end
 
-    describe "Syslog.mask=" do
-      platform_is_not :windows do
+  describe "Syslog.mask=" do
+    platform_is_not :windows do
 
-        before :each do
-          Syslog.opened?.should be_false
+      before :each do
+        Syslog.opened?.should be_false
+      end
+
+      after :each do
+        Syslog.opened?.should be_false
+        # make sure we return the mask to the default value
+        Syslog.open { |s| s.mask = 255 }
+      end
+
+      it "sets the log priority mask" do
+        Syslog.open do
+          Syslog.mask = 64
+          Syslog.mask.should == 64
         end
+      end
 
-        after :each do
-          Syslog.opened?.should be_false
-          # make sure we return the mask to the default value
-          Syslog.open { |s| s.mask = 255 }
-        end
+      it "raises an error if the log is closed" do
+        -> { Syslog.mask = 1337 }.should raise_error(RuntimeError)
+      end
 
-        it "sets the log priority mask" do
-          Syslog.open do
-            Syslog.mask = 64
-            Syslog.mask.should == 64
-          end
-        end
+      it "only accepts numbers" do
+        Syslog.open do
 
-        it "raises an error if the log is closed" do
-          -> { Syslog.mask = 1337 }.should raise_error(RuntimeError)
-        end
+          Syslog.mask = 1337
+          Syslog.mask.should == 1337
 
-        it "only accepts numbers" do
-          Syslog.open do
+          Syslog.mask = 3.1416
+          Syslog.mask.should == 3
 
-            Syslog.mask = 1337
-            Syslog.mask.should == 1337
+          -> { Syslog.mask = "oh hai" }.should raise_error(TypeError)
+          -> { Syslog.mask = "43" }.should raise_error(TypeError)
 
-            Syslog.mask = 3.1416
-            Syslog.mask.should == 3
-
-            -> { Syslog.mask = "oh hai" }.should raise_error(TypeError)
-            -> { Syslog.mask = "43" }.should raise_error(TypeError)
-
-          end
         end
       end
     end

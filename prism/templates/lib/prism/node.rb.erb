@@ -2,9 +2,31 @@ module Prism
   # This represents a node in the tree. It is the parent class of all of the
   # various node types.
   class Node
+    # A pointer to the source that this node was created from.
+    attr_reader :source
+    private :source
+
     # A Location instance that represents the location of this node in the
     # source.
-    attr_reader :location
+    def location
+      location = @location
+      return location if location.is_a?(Location)
+      @location = Location.new(source, location >> 32, location & 0xFFFFFFFF)
+    end
+
+    # The start offset of the node in the source. This method is effectively a
+    # delegate method to the location object.
+    def start_offset
+      location = @location
+      location.is_a?(Location) ? location.start_offset : location >> 32
+    end
+
+    # The end offset of the node in the source. This method is effectively a
+    # delegate method to the location object.
+    def end_offset
+      location = @location
+      location.is_a?(Location) ? location.end_offset : ((location >> 32) + (location & 0xFFFFFFFF))
+    end
 
     def newline? # :nodoc:
       @newline ? true : false
@@ -52,7 +74,7 @@ module Prism
     # Returns an array of child nodes, including `nil`s in the place of optional
     # nodes that were not present.
     def child_nodes
-      raise NoMethodError, "undefined method `#{__method__}' for #{inspect}"
+      raise NoMethodError, "undefined method `child_nodes' for #{inspect}"
     end
 
     alias deconstruct child_nodes
@@ -81,24 +103,14 @@ module Prism
   #<%= line %>
   <%- end -%>
   class <%= node.name -%> < Node
-    <%- node.fields.each do |field| -%>
-    <%- if field.comment.nil? -%>
-    # <%= "private " if field.is_a?(Prism::FlagsField) %>attr_reader <%= field.name %>: <%= field.rbs_class %>
-    <%- else -%>
-    <%- field.each_comment_line do |line| -%>
-    #<%= line %>
-    <%- end -%>
-    <%- end -%>
-    attr_reader :<%= field.name -%><%= "\n    private :#{field.name}" if field.is_a?(Prism::FlagsField) %>
-
-    <%- end -%>
     # def initialize: (<%= (node.fields.map { |field| "#{field.rbs_class} #{field.name}" } + ["Location location"]).join(", ") %>) -> void
-    def initialize(<%= (node.fields.map(&:name) + ["location"]).join(", ") %>)
+    def initialize(source, <%= (node.fields.map(&:name) + ["location"]).join(", ") %>)
+      @source = source
       @newline = false
+      @location = location
       <%- node.fields.each do |field| -%>
       @<%= field.name %> = <%= field.name %>
       <%- end -%>
-      @location = location
     end
 
     # def accept: (Visitor visitor) -> void
@@ -173,6 +185,7 @@ module Prism
     # def copy: (**params) -> <%= node.name %>
     def copy(**params)
       <%= node.name %>.new(
+        source,
         <%- (node.fields.map(&:name) + ["location"]).map do |name| -%>
         params.fetch(:<%= name %>) { <%= name %> },
         <%- end -%>
@@ -186,6 +199,39 @@ module Prism
     def deconstruct_keys(keys)
       { <%= (node.fields.map { |field| "#{field.name}: #{field.name}" } + ["location: location"]).join(", ") %> }
     end
+
+    <%- node.fields.each do |field| -%>
+    <%- if field.comment.nil? -%>
+    # <%= "private " if field.is_a?(Prism::FlagsField) %>attr_reader <%= field.name %>: <%= field.rbs_class %>
+    <%- else -%>
+    <%- field.each_comment_line do |line| -%>
+    #<%= line %>
+    <%- end -%>
+    <%- end -%>
+    <%- case field -%>
+    <%- when Prism::LocationField -%>
+    def <%= field.name %>
+      location = @<%= field.name %>
+      return location if location.is_a?(Location)
+      @<%= field.name %> = Location.new(source, location >> 32, location & 0xFFFFFFFF)
+    end
+    <%- when Prism::OptionalLocationField -%>
+    def <%= field.name %>
+      location = @<%= field.name %>
+      case location
+      when nil
+        nil
+      when Location
+        location
+      else
+        @<%= field.name %> = Location.new(source, location >> 32, location & 0xFFFFFFFF)
+      end
+    end
+    <%- else -%>
+    attr_reader :<%= field.name -%><%= "\n    private :#{field.name}" if field.is_a?(Prism::FlagsField) %>
+    <%- end -%>
+
+    <%- end -%>
     <%- node.fields.each do |field| -%>
     <%- case field -%>
     <%- when Prism::LocationField -%>

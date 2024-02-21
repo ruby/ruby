@@ -9,7 +9,7 @@ module Prism
     def test_constant_path_with_invalid_token_after
       assert_error_messages "A::$b", [
         "expected a constant after the `::` operator",
-        "expected a newline or semicolon after the statement"
+        "unexpected global variable, expecting end-of-input"
       ]
     end
 
@@ -151,7 +151,7 @@ module Prism
     def test_unterminated_interpolated_string
       expr = expression('"hello')
       assert_errors expr, '"hello', [
-        ["expected a closing delimiter for the string literal", 6..6]
+        ["unterminated string meets end of file", 6..6]
       ]
       assert_equal expr.unescaped, "hello"
       assert_equal expr.closing, ""
@@ -160,7 +160,7 @@ module Prism
     def test_unterminated_string
       expr = expression("'hello")
       assert_errors expr, "'hello", [
-        ["expected a closing delimiter for the string literal", 0..1]
+        ["unterminated string meets end of file", 0..1]
       ]
       assert_equal expr.unescaped, "hello"
       assert_equal expr.closing, ""
@@ -169,7 +169,7 @@ module Prism
     def test_unterminated_empty_string
       expr = expression('"')
       assert_errors expr, '"', [
-        ["expected a closing delimiter for the string literal", 1..1]
+        ["unterminated string meets end of file", 1..1]
       ]
       assert_equal expr.unescaped, ""
       assert_equal expr.closing, ""
@@ -177,8 +177,8 @@ module Prism
 
     def test_incomplete_instance_var_string
       assert_errors expression('%@#@@#'), '%@#@@#', [
-        ["incomplete instance variable", 4..5],
-        ["expected a newline or semicolon after the statement", 4..4]
+        ["'@#' is not allowed as an instance variable name", 4..5],
+        ["unexpected instance variable, expecting end-of-input", 4..5]
       ]
     end
 
@@ -190,7 +190,7 @@ module Prism
 
     def test_unterminated_parenthesized_expression
       assert_errors expression('(1 + 2'), '(1 + 2', [
-        ["expected a newline or semicolon after the statement", 6..6],
+        ["unexpected end of file, expecting end-of-input", 6..6],
         ["unexpected end of file, assuming it is closing the parent top level context", 6..6],
         ["expected a matching `)`", 6..6]
       ]
@@ -198,7 +198,7 @@ module Prism
 
     def test_missing_terminator_in_parentheses
       assert_error_messages "(0 0)", [
-        "expected a newline or semicolon after the statement"
+        "unexpected integer, expecting end-of-input"
       ]
     end
 
@@ -224,24 +224,24 @@ module Prism
 
     def test_1_2_3
       assert_errors expression("(1, 2, 3)"), "(1, 2, 3)", [
-        ["expected a newline or semicolon after the statement", 2..2],
+        ["unexpected ',', expecting end-of-input", 2..3],
         ["unexpected ',', ignoring it", 2..3],
         ["expected a matching `)`", 2..2],
-        ["expected a newline or semicolon after the statement", 2..2],
+        ["unexpected ',', expecting end-of-input", 2..3],
         ["unexpected ',', ignoring it", 2..3],
-        ["expected a newline or semicolon after the statement", 5..5],
+        ["unexpected ',', expecting end-of-input", 5..6],
         ["unexpected ',', ignoring it", 5..6],
-        ["expected a newline or semicolon after the statement", 8..8],
+        ["unexpected ')', expecting end-of-input", 8..9],
         ["unexpected ')', ignoring it", 8..9]
       ]
     end
 
     def test_return_1_2_3
       assert_error_messages "return(1, 2, 3)", [
-        "expected a newline or semicolon after the statement",
+        "unexpected ',', expecting end-of-input",
         "unexpected ',', ignoring it",
         "expected a matching `)`",
-        "expected a newline or semicolon after the statement",
+        "unexpected ')', expecting end-of-input",
         "unexpected ')', ignoring it"
       ]
     end
@@ -254,10 +254,10 @@ module Prism
 
     def test_next_1_2_3
       assert_errors expression("next(1, 2, 3)"), "next(1, 2, 3)", [
-        ["expected a newline or semicolon after the statement", 6..6],
+        ["unexpected ',', expecting end-of-input", 6..7],
         ["unexpected ',', ignoring it", 6..7],
         ["expected a matching `)`", 6..6],
-        ["expected a newline or semicolon after the statement", 12..12],
+        ["unexpected ')', expecting end-of-input", 12..13],
         ["unexpected ')', ignoring it", 12..13]
       ]
     end
@@ -270,10 +270,10 @@ module Prism
 
     def test_break_1_2_3
       assert_errors expression("break(1, 2, 3)"), "break(1, 2, 3)", [
-        ["expected a newline or semicolon after the statement", 7..7],
+        ["unexpected ',', expecting end-of-input", 7..8],
         ["unexpected ',', ignoring it", 7..8],
         ["expected a matching `)`", 7..7],
-        ["expected a newline or semicolon after the statement", 13..13],
+        ["unexpected ')', expecting end-of-input", 13..14],
         ["unexpected ')', ignoring it", 13..14]
       ]
     end
@@ -300,14 +300,14 @@ module Prism
     def test_top_level_constant_with_downcased_identifier
       assert_error_messages "::foo", [
         "expected a constant after the `::` operator",
-        "expected a newline or semicolon after the statement"
+        "unexpected local variable or method, expecting end-of-input"
       ]
     end
 
     def test_top_level_constant_starting_with_downcased_identifier
       assert_error_messages "::foo::A", [
         "expected a constant after the `::` operator",
-        "expected a newline or semicolon after the statement"
+        "unexpected local variable or method, expecting end-of-input"
       ]
     end
 
@@ -354,7 +354,7 @@ module Prism
 
     def test_block_beginning_with_brace_and_ending_with_end
       assert_error_messages "x.each { x end", [
-        "expected a newline or semicolon after the statement",
+        "unexpected 'end', expecting end-of-input",
         "unexpected 'end', ignoring it",
         "unexpected end of file, assuming it is closing the parent top level context",
         "expected a block beginning with `{` to end with `}`"
@@ -403,7 +403,7 @@ module Prism
     def test_arguments_binding_power_for_and
       assert_error_messages "foo(*bar and baz)", [
         "expected a `)` to close the arguments",
-        "expected a newline or semicolon after the statement",
+        "unexpected ')', expecting end-of-input",
         "unexpected ')', ignoring it"
       ]
     end
@@ -1124,8 +1124,8 @@ module Prism
       )
 
       assert_errors expected, "begin\n$+ = nil\n$1466 = nil\nend", [
-        ["immutable variable as a write target", 6..8],
-        ["immutable variable as a write target", 15..20]
+        ["Can't set variable $+", 6..8],
+        ["Can't set variable $1466", 15..20]
       ]
     end
 
@@ -1258,20 +1258,19 @@ module Prism
 
     def test_unterminated_global_variable
       assert_errors expression("$"), "$", [
-        ["invalid global variable", 0..1]
+        ["'$' is not allowed as a global variable name", 0..1]
       ]
     end
 
     def test_invalid_global_variable_write
       assert_errors expression("$',"), "$',", [
-        ["immutable variable as a write target", 0..2],
+        ["Can't set variable $'", 0..2],
         ["unexpected write target", 0..2]
       ]
     end
 
     def test_invalid_multi_target
       error_messages = ["unexpected write target"]
-      immutable = "immutable variable as a write target"
 
       assert_error_messages "foo,", error_messages
       assert_error_messages "foo = 1; foo,", error_messages
@@ -1280,8 +1279,8 @@ module Prism
       assert_error_messages "@foo,", error_messages
       assert_error_messages "@@foo,", error_messages
       assert_error_messages "$foo,", error_messages
-      assert_error_messages "$1,", [immutable, *error_messages]
-      assert_error_messages "$+,", [immutable, *error_messages]
+      assert_error_messages "$1,", ["Can't set variable $1", *error_messages]
+      assert_error_messages "$+,", ["Can't set variable $+", *error_messages]
       assert_error_messages "Foo,", error_messages
       assert_error_messages "::Foo,", error_messages
       assert_error_messages "Foo::Foo,", error_messages
@@ -1471,9 +1470,10 @@ module Prism
 
     def test_shadow_args_in_lambda
       source = "->a;b{}"
+
       assert_errors expression(source), source, [
         ["expected a `do` keyword or a `{` to open the lambda block", 3..3],
-        ["expected a newline or semicolon after the statement", 7..7],
+        ["unexpected end of file, expecting end-of-input", 7..7],
         ["unexpected end of file, assuming it is closing the parent top level context", 7..7],
         ["expected a lambda block beginning with `do` to end with `end`", 7..7]
       ]
@@ -1517,14 +1517,14 @@ module Prism
     def test_symbol_in_keyword_parameter
       source = "def foo(x:'y':); end"
       assert_errors expression(source), source, [
-        ["expected a closing delimiter for the string literal", 14..14],
+        ["unexpected label terminator, expected a string literal terminator", 12..14]
       ]
     end
 
     def test_symbol_in_hash
       source = "{x:'y':}"
       assert_errors expression(source), source, [
-        ["expected a closing delimiter for the string literal", 7..7],
+        ["unexpected label terminator, expected a string literal terminator", 5..7]
       ]
     end
 
@@ -1545,19 +1545,19 @@ module Prism
       RUBY
 
       assert_errors expression(source), source, [
-        ["expected a newline or semicolon after the statement", 6..6],
+        ["unexpected '+', expecting end-of-input", 7..8],
         ["unexpected '+', ignoring it", 7..8],
-        ["expected a newline or semicolon after the statement", 17..17],
+        ["unexpected '+', expecting end-of-input", 18..19],
         ["unexpected '+', ignoring it", 18..19]
       ]
     end
 
     def test_rational_number_with_exponential_portion
       source = '1e1r; 1e1ri'
-      message = 'expected a newline or semicolon after the statement'
+
       assert_errors expression(source), source, [
-        [message, 3..3],
-        [message, 9..9]
+        ["unexpected local variable or method, expecting end-of-input", 3..4],
+        ["unexpected local variable or method, expecting end-of-input", 9..11]
       ]
     end
 
@@ -1845,7 +1845,7 @@ module Prism
       source = '1....2'
 
       assert_errors expression(source), source, [
-        ["expected a newline or semicolon after the statement", 4..4],
+        ["unexpected '.', expecting end-of-input", 4..5],
         ["unexpected '.', ignoring it", 4..5]
       ]
     end
@@ -1879,21 +1879,21 @@ module Prism
       RUBY
 
       assert_errors expression(source), source, [
-        ["expected a newline or semicolon after the statement", 9..9],
+        ["unexpected '+', expecting end-of-input", 10..11],
         ["unexpected '+', ignoring it", 10..11],
-        ["expected a newline or semicolon after the statement", 23..23],
+        ["unexpected '.', expecting end-of-input", 23..24],
         ["unexpected '.', ignoring it", 23..24],
-        ["expected a newline or semicolon after the statement", 39..39],
+        ["unexpected '+', expecting end-of-input", 40..41],
         ["unexpected '+', ignoring it", 40..41],
-        ["expected a newline or semicolon after the statement", 57..57],
+        ["unexpected '.', expecting end-of-input", 57..58],
         ["unexpected '.', ignoring it", 57..58],
-        ["expected a newline or semicolon after the statement", 71..71],
+        ["unexpected '+', expecting end-of-input", 72..73],
         ["unexpected '+', ignoring it", 72..73],
-        ["expected a newline or semicolon after the statement", 87..87],
+        ["unexpected '.', expecting end-of-input", 87..88],
         ["unexpected '.', ignoring it", 87..88],
-        ["expected a newline or semicolon after the statement", 97..97],
+        ["unexpected '+', expecting end-of-input", 98..99],
         ["unexpected '+', ignoring it", 98..99],
-        ["expected a newline or semicolon after the statement", 109..109],
+        ["unexpected '.', expecting end-of-input", 109..110],
         ["unexpected '.', ignoring it", 109..110]
       ]
     end
@@ -1920,9 +1920,9 @@ module Prism
       RUBY
 
       assert_errors expression(source), source, [
-        ["expected a newline or semicolon after the statement", 3..3],
+        ["unexpected '..', expecting end-of-input", 3..5],
         ["unexpected '..', ignoring it", 3..5],
-        ["expected a newline or semicolon after the statement", 10..10],
+        ["unexpected '..', expecting end-of-input", 10..12],
         ["unexpected '..', ignoring it", 10..12]
       ]
     end
@@ -2004,13 +2004,12 @@ module Prism
         foo 1 in a
         a = foo 2 in b
       RUBY
-      message1 = 'unexpected `in` keyword in arguments'
-      message2 = 'expected a newline or semicolon after the statement'
+
       assert_errors expression(source), source, [
-        [message1, 9..10],
-        [message2, 8..8],
-        [message1, 24..25],
-        [message2, 23..23],
+        ["unexpected `in` keyword in arguments", 9..10],
+        ["unexpected local variable or method, expecting end-of-input", 9..10],
+        ["unexpected `in` keyword in arguments", 24..25],
+        ["unexpected local variable or method, expecting end-of-input", 24..25]
       ]
     end
 
@@ -2032,17 +2031,17 @@ module Prism
       RUBY
 
       assert_errors expression(source), source, [
-        ["expected a newline or semicolon after the statement", 6..6],
+        ["unexpected '==', expecting end-of-input", 7..9],
         ["unexpected '==', ignoring it", 7..9],
-        ["expected a newline or semicolon after the statement", 18..18],
+        ["unexpected '!=', expecting end-of-input", 19..21],
         ["unexpected '!=', ignoring it", 19..21],
-        ["expected a newline or semicolon after the statement", 31..31],
+        ["unexpected '===', expecting end-of-input", 32..35],
         ["unexpected '===', ignoring it", 32..35],
-        ["expected a newline or semicolon after the statement", 44..44],
+        ["unexpected '=~', expecting end-of-input", 45..47],
         ["unexpected '=~', ignoring it", 45..47],
-        ["expected a newline or semicolon after the statement", 56..56],
+        ["unexpected '!~', expecting end-of-input", 57..59],
         ["unexpected '!~', ignoring it", 57..59],
-        ["expected a newline or semicolon after the statement", 69..69],
+        ["unexpected '<=>', expecting end-of-input", 70..73],
         ["unexpected '<=>', ignoring it", 70..73]
       ]
     end
@@ -2112,6 +2111,36 @@ module Prism
         ["cannot define singleton method for literals", 404..407]
       ]
       assert_errors expression(source), source, errors, compare_ripper: false
+    end
+
+    def test_assignment_to_literal_in_conditionals
+      source = <<~RUBY
+        if (a = 2); end
+        if ($a = 2); end
+        if (@a = 2); end
+        if (@@a = 2); end
+        if a elsif b = 2; end
+        unless (a = 2); end
+        unless ($a = 2); end
+        unless (@a = 2); end
+        unless (@@a = 2); end
+        while (a = 2); end
+        while ($a = 2); end
+        while (@a = 2); end
+        while (@@a = 2); end
+        until (a = 2); end
+        until ($a = 2); end
+        until (@a = 2); end
+        until (@@a = 2); end
+        foo if a = 2
+        foo if (a, b = 2)
+        (@foo = 1) ? a : b
+        !(a = 2)
+        not a = 2
+      RUBY
+      assert_warning_messages source, [
+        "found `= literal' in conditional, should be =="
+      ] * source.lines.count
     end
 
     private

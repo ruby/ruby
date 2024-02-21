@@ -2304,6 +2304,11 @@ nt_start(void *ptr)
                 // timeout -> deleted.
                 break;
             }
+
+            if (nt->dedicated) {
+                // SNT becomes DNT while running
+                break;
+            }
         }
     }
 
@@ -3420,6 +3425,18 @@ rb_thread_execute_hooks(rb_event_flag_t event, rb_thread_t *th)
     if ((r = pthread_rwlock_unlock(&rb_internal_thread_event_hooks_rw_lock))) {
         rb_bug_errno("pthread_rwlock_unlock", r);
     }
+}
+
+// return true if the current thread acquires DNT.
+// return false if the current thread already acquires DNT.
+bool
+rb_thread_lock_native_thread(void)
+{
+    rb_thread_t *th = GET_THREAD();
+    bool is_snt = th->nt->dedicated == 0;
+    native_thread_dedicated_inc(th->vm, th->ractor, th->nt);
+
+    return is_snt;
 }
 
 #endif /* THREAD_SYSTEM_DEPENDENT_IMPLEMENTATION */

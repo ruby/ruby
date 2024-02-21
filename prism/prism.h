@@ -188,6 +188,15 @@ const char * pm_token_type_human(pm_token_type_t token_type);
 PRISM_EXPORTED_FUNCTION void pm_parser_errors_format(const pm_parser_t *parser, pm_buffer_t *buffer, bool colorize);
 
 /**
+ * Dump JSON to the given buffer.
+ *
+ * @param buffer The buffer to serialize to.
+ * @param parser The parser that parsed the node.
+ * @param node The node to serialize.
+ */
+PRISM_EXPORTED_FUNCTION void pm_dump_json(pm_buffer_t *buffer, const pm_parser_t *parser, const pm_node_t *node);
+
+/**
  * @mainpage
  *
  * Prism is a parser for the Ruby programming language. It is designed to be

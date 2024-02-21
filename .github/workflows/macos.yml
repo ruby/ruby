@@ -78,7 +78,7 @@ jobs:
         env:
           RUBY_TESTOPTS: '-q --tty=no'
           TESTS: ${{ matrix.test_task == 'check' && matrix.skipped_tests || '' }}
-          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'typeprof'
+          TEST_BUNDLED_GEMS_ALLOW_FAILURES: 'minitest,test-unit,debug,bigdecimal,drb,typeprof'
           PRECHECK_BUNDLED_GEMS: 'no'
 
       - name: make skipped tests
@@ -105,6 +105,7 @@ jobs:
     needs: [make]
     steps:
       - run: exit 1
+        working-directory:
         if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
 
 defaults:

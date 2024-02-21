@@ -9,18 +9,22 @@ module Prism
     attr_reader :source
 
     # The line number where this source starts.
-    attr_accessor :start_line
+    attr_reader :start_line
 
     # The list of newline byte offsets in the source code.
     attr_reader :offsets
 
-    # Create a new source object with the given source code and newline byte
-    # offsets. If no newline byte offsets are given, they will be computed from
-    # the source code.
-    def initialize(source, start_line = 1, offsets = compute_offsets(source))
+    # Create a new source object with the given source code.
+    def initialize(source, start_line = 1, offsets = [])
       @source = source
-      @start_line = start_line
-      @offsets = offsets
+      @start_line = start_line # set after parsing is done
+      @offsets = offsets # set after parsing is done
+    end
+
+    # Returns the encoding of the source code, which is set by parameters to the
+    # parser or by the encoding magic comment.
+    def encoding
+      source.encoding
     end
 
     # Perform a byteslice on the source code using the given byte offset and
@@ -56,6 +60,23 @@ module Prism
       character_offset(byte_offset) - character_offset(line_start(byte_offset))
     end
 
+    # Returns the offset from the start of the file for the given byte offset
+    # counting in code units for the given encoding.
+    #
+    # This method is tested with UTF-8, UTF-16, and UTF-32. If there is the
+    # concept of code units that differs from the number of characters in other
+    # encodings, it is not captured here.
+    def code_units_offset(byte_offset, encoding)
+      byteslice = source.byteslice(0, byte_offset).encode(encoding)
+      (encoding == Encoding::UTF_16LE || encoding == Encoding::UTF_16BE) ? (byteslice.bytesize / 2) : byteslice.length
+    end
+
+    # Returns the column number in code units for the given encoding for the
+    # given byte offset.
+    def code_units_column(byte_offset, encoding)
+      code_units_offset(byte_offset, encoding) - code_units_offset(line_start(byte_offset), encoding)
+    end
+
     private
 
     # Binary search through the offsets to find the line number for the given
@@ -77,14 +98,6 @@ module Prism
 
       left - 1
     end
-
-    # Find all of the newlines in the source code and return their byte offsets
-    # from the start of the string an array.
-    def compute_offsets(code)
-      offsets = [0]
-      code.b.scan("\n") { offsets << $~.end(0) }
-      offsets
-    end
   end
 
   # This represents a location in the source.
@@ -101,16 +114,46 @@ module Prism
     # The length of this location in bytes.
     attr_reader :length
 
-    # The list of comments attached to this location
-    attr_reader :comments
-
     # Create a new location object with the given source, start byte offset, and
     # byte length.
     def initialize(source, start_offset, length)
       @source = source
       @start_offset = start_offset
       @length = length
-      @comments = []
+
+      # These are used to store comments that are associated with this location.
+      # They are initialized to `nil` to save on memory when there are no
+      # comments to be attached and/or the comment-related APIs are not used.
+      @leading_comments = nil
+      @trailing_comments = nil
+    end
+
+    # These are the comments that are associated with this location that exist
+    # before the start of this location.
+    def leading_comments
+      @leading_comments ||= []
+    end
+
+    # Attach a comment to the leading comments of this location.
+    def leading_comment(comment)
+      leading_comments << comment
+    end
+
+    # These are the comments that are associated with this location that exist
+    # after the end of this location.
+    def trailing_comments
+      @trailing_comments ||= []
+    end
+
+    # Attach a comment to the trailing comments of this location.
+    def trailing_comment(comment)
+      trailing_comments << comment
+    end
+
+    # Returns all comments that are associated with this location (both leading
+    # and trailing comments).
+    def comments
+      [*@leading_comments, *@trailing_comments]
     end
 
     # Create a new location object with the given options.
@@ -138,6 +181,11 @@ module Prism
       source.character_offset(start_offset)
     end
 
+    # The offset from the start of the file in code units of the given encoding.
+    def start_code_units_offset(encoding = Encoding::UTF_16LE)
+      source.code_units_offset(start_offset, encoding)
+    end
+
     # The byte offset from the beginning of the source where this location ends.
     def end_offset
       start_offset + length
@@ -147,6 +195,11 @@ module Prism
     # ends.
     def end_character_offset
       source.character_offset(end_offset)
+    end
+
+    # The offset from the start of the file in code units of the given encoding.
+    def end_code_units_offset(encoding = Encoding::UTF_16LE)
+      source.code_units_offset(end_offset, encoding)
     end
 
     # The line number where this location starts.
@@ -177,6 +230,12 @@ module Prism
       source.character_column(start_offset)
     end
 
+    # The column number in code units of the given encoding where this location
+    # starts from the start of the line.
+    def start_code_units_column(encoding = Encoding::UTF_16LE)
+      source.code_units_column(start_offset, encoding)
+    end
+
     # The column number in bytes where this location ends from the start of the
     # line.
     def end_column
@@ -187,6 +246,12 @@ module Prism
     # the line.
     def end_character_column
       source.character_column(end_offset)
+    end
+
+    # The column number in code units of the given encoding where this location
+    # ends from the start of the line.
+    def end_code_units_column(encoding = Encoding::UTF_16LE)
+      source.code_units_column(end_offset, encoding)
     end
 
     # Implement the hash pattern matching interface for Location.
@@ -238,6 +303,11 @@ module Prism
     # Implement the hash pattern matching interface for Comment.
     def deconstruct_keys(keys)
       { location: location }
+    end
+
+    # Returns the content of the comment by slicing it from the source code.
+    def slice
+      location.slice
     end
   end
 
@@ -408,6 +478,11 @@ module Prism
       { value: value, comments: comments, magic_comments: magic_comments, data_loc: data_loc, errors: errors, warnings: warnings }
     end
 
+    # Returns the encoding of the source code that was parsed.
+    def encoding
+      source.encoding
+    end
+
     # Returns true if there were no errors during parsing and false if there
     # were.
     def success?
@@ -423,17 +498,19 @@ module Prism
 
   # This represents a token from the Ruby source.
   class Token
+    # The Source object that represents the source this token came from.
+    attr_reader :source
+    private :source
+
     # The type of token that this token is.
     attr_reader :type
 
     # A byteslice of the source that this token represents.
     attr_reader :value
 
-    # A Location object representing the location of this token in the source.
-    attr_reader :location
-
     # Create a new token object with the given type, value, and location.
-    def initialize(type, value, location)
+    def initialize(source, type, value, location)
+      @source = source
       @type = type
       @value = value
       @location = location
@@ -442,6 +519,13 @@ module Prism
     # Implement the hash pattern matching interface for Token.
     def deconstruct_keys(keys)
       { type: type, value: value, location: location }
+    end
+
+    # A Location object representing the location of this token in the source.
+    def location
+      location = @location
+      return location if location.is_a?(Location)
+      @location = Location.new(source, location >> 32, location & 0xFFFFFFFF)
     end
 
     # Implement the pretty print interface for Token.

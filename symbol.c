@@ -630,22 +630,23 @@ dsymbol_alloc(rb_symbols_t *symbols, const VALUE klass, const VALUE str, rb_enco
 {
     ASSERT_vm_locking();
 
-    const VALUE dsym = rb_newobj_of(klass, T_SYMBOL | FL_WB_PROTECTED);
+    NEWOBJ_OF(obj, struct RSymbol, klass, T_SYMBOL | FL_WB_PROTECTED, sizeof(struct RSymbol), 0);
+
     long hashval;
 
-    rb_enc_set_index(dsym, rb_enc_to_index(enc));
-    OBJ_FREEZE(dsym);
-    RB_OBJ_WRITE(dsym, &RSYMBOL(dsym)->fstr, str);
-    RSYMBOL(dsym)->id = type;
+    rb_enc_set_index((VALUE)obj, rb_enc_to_index(enc));
+    OBJ_FREEZE((VALUE)obj);
+    RB_OBJ_WRITE((VALUE)obj, &obj->fstr, str);
+    obj->id = type;
 
     /* we want hashval to be in Fixnum range [ruby-core:15713] r15672 */
     hashval = (long)rb_str_hash(str);
-    RSYMBOL(dsym)->hashval = RSHIFT((long)hashval, 1);
-    register_sym(symbols, str, dsym);
+    obj->hashval = RSHIFT((long)hashval, 1);
+    register_sym(symbols, str, (VALUE)obj);
     rb_hash_aset(symbols->dsymbol_fstr_hash, str, Qtrue);
-    RUBY_DTRACE_CREATE_HOOK(SYMBOL, RSTRING_PTR(RSYMBOL(dsym)->fstr));
+    RUBY_DTRACE_CREATE_HOOK(SYMBOL, RSTRING_PTR(obj->fstr));
 
-    return dsym;
+    return (VALUE)obj;
 }
 
 static inline VALUE
@@ -842,7 +843,7 @@ rb_gc_free_dsymbol(VALUE sym)
  *     str.intern   -> symbol
  *     str.to_sym   -> symbol
  *
- *  Returns the Symbol corresponding to <i>str</i>, creating the
+ *  Returns the +Symbol+ corresponding to <i>str</i>, creating the
  *  symbol if it did not previously exist. See Symbol#id2name.
  *
  *     "Koala".intern         #=> :Koala
@@ -1139,9 +1140,11 @@ rb_get_symbol_id(VALUE name)
             return 0;
         }
     }
-    else {
-        RUBY_ASSERT_ALWAYS(RB_TYPE_P(name, T_STRING));
+    else if (RB_TYPE_P(name, T_STRING)) {
         return lookup_str_id(name);
+    }
+    else {
+        return 0;
     }
 }
 

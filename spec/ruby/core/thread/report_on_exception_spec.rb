@@ -78,11 +78,11 @@ describe "Thread#report_on_exception=" do
       -> {
         go = true
         Thread.pass while t.alive?
-      }.should output("", <<ERR)
-#{t.inspect} terminated with exception (report_on_exception is true):
-#{__FILE__}:#{line_raise}:in `foo': Thread#report_on_exception specs backtrace order (RuntimeError)
-\tfrom #{__FILE__}:#{line_call_foo}:in `block (4 levels) in <top (required)>'
-ERR
+      }.should output("", /\A
+#{Regexp.quote(t.inspect)}\sterminated\swith\sexception\s\(report_on_exception\sis\strue\):\n
+#{Regexp.quote(__FILE__)}:#{line_raise}:in\s[`']foo':\sThread\#report_on_exception\sspecs\sbacktrace\sorder\s\(RuntimeError\)\n
+\tfrom\s#{Regexp.quote(__FILE__)}:#{line_call_foo}:in\s[`']block\s\(4\slevels\)\sin\s<top\s\(required\)>'\n
+\z/x)
 
       -> {
         t.join

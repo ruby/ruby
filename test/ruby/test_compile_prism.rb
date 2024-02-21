@@ -1838,6 +1838,15 @@ end
       assert_prism_eval("-> { to_s }.call")
     end
 
+    def test_LambdaNode_with_multiline_args
+      assert_prism_eval(<<-CODE)
+        -> (a,
+            b) {
+              a + b
+            }.call(1, 2)
+      CODE
+    end
+
     def test_ModuleNode
       assert_prism_eval("module M; end")
       assert_prism_eval("module M::N; end")
@@ -2634,6 +2643,43 @@ end
     #  Miscellaneous                                                           #
     ############################################################################
 
+    def test_eval
+      assert_prism_eval("eval('1 + 1')", raw: true)
+      assert_prism_eval("a = 1; eval('a + 1')", raw: true)
+
+      assert_prism_eval(<<~CODE, raw: true)
+        def prism_eval_splat(**bar)
+          eval("bar")
+        end
+        prism_eval_splat(bar: 10)
+      CODE
+
+      assert_prism_eval(<<~CODE, raw: true)
+        def prism_eval_keywords(baz:)
+          eval("baz")
+        end
+        prism_eval_keywords(baz: 10)
+      CODE
+
+      assert_prism_eval(<<~CODE, raw: true)
+        [1].each do |a|
+          [2].each do |b|
+            c = 3
+            eval("a + b + c")
+          end
+        end
+      CODE
+
+      assert_prism_eval(<<~CODE, raw: true)
+        def prism_eval_binding(b)
+          eval("bar", b)
+        end
+
+        bar = :ok
+        prism_eval_binding(binding)
+      CODE
+    end
+
     def test_ScopeNode
       assert_separately(%w[], <<~'RUBY')
         def compare_eval(source)
@@ -2676,6 +2722,22 @@ end
     def test_encoding
       assert_prism_eval('"però"')
       assert_prism_eval(":però")
+    end
+
+    def test_parse_file
+      assert_nothing_raised do
+        RubyVM::InstructionSequence.compile_file_prism(__FILE__)
+      end
+
+      error = assert_raise Errno::ENOENT do
+        RubyVM::InstructionSequence.compile_file_prism("idontexist.rb")
+      end
+
+      assert_equal "No such file or directory - idontexist.rb", error.message
+
+      assert_raise TypeError do
+        RubyVM::InstructionSequence.compile_file_prism(nil)
+      end
     end
 
     private

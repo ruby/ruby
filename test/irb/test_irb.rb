@@ -58,6 +58,24 @@ module TestIRB
       assert_include output, "=> \"It's a foo\""
       assert_include output, "=> \"It's a bar\""
     end
+
+    def test_empty_input_echoing_behaviour
+      write_ruby <<~'RUBY'
+        binding.irb
+      RUBY
+
+      output = run_ruby_file do
+        type ""
+        type "  "
+        type "exit"
+      end
+
+      # Input cramped together due to how Reline's Reline::GeneralIO works
+      assert_include(
+        output,
+        "irb(main):001> irb(main):002> irb(main):002>  irb(main):002>   => nil\r\n"
+      )
+    end
   end
 
   class IrbIOConfigurationTest < TestCase

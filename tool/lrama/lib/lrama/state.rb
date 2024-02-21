@@ -29,8 +29,8 @@ module Lrama
     end
 
     def non_default_reduces
-      reduces.select do |reduce|
-        reduce.rule != @default_reduction_rule
+      reduces.reject do |reduce|
+        reduce.rule == @default_reduction_rule
       end
     end
 
@@ -105,8 +105,8 @@ module Lrama
     end
 
     def selected_term_transitions
-      term_transitions.select do |shift, next_state|
-        !shift.not_selected
+      term_transitions.reject do |shift, next_state|
+        shift.not_selected
       end
     end
 

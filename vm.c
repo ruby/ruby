@@ -228,7 +228,6 @@ vm_cref_new0(VALUE klass, rb_method_visibility_t visi, int module_func, rb_cref_
 {
     VALUE refinements = Qnil;
     int omod_shared = FALSE;
-    rb_cref_t *cref;
 
     /* scope */
     union {
@@ -251,7 +250,10 @@ vm_cref_new0(VALUE klass, rb_method_visibility_t visi, int module_func, rb_cref_
 
     VM_ASSERT(singleton || klass);
 
-    cref = (rb_cref_t *)rb_imemo_new(imemo_cref, klass, (VALUE)(use_prev_prev ? CREF_NEXT(prev_cref) : prev_cref), scope_visi.value, refinements);
+    rb_cref_t *cref = IMEMO_NEW(rb_cref_t, imemo_cref, refinements);
+    cref->klass_or_self = klass;
+    cref->next = use_prev_prev ? CREF_NEXT(prev_cref) : prev_cref;
+    *((rb_scope_visibility_t *)&cref->scope_visi) = scope_visi.visi;
 
     if (pushed_by_eval) CREF_PUSHED_BY_EVAL_SET(cref);
     if (omod_shared) CREF_OMOD_SHARED_SET(cref);
@@ -513,6 +515,8 @@ jit_exec_exception(rb_execution_context_t *ec)
 # define jit_compile_exception(ec) ((rb_jit_func_t)0)
 # define jit_exec_exception(ec) Qundef
 #endif
+
+static void add_opt_method_entry(const rb_method_entry_t *me);
 
 #include "vm_insnhelper.c"
 
@@ -977,7 +981,7 @@ vm_make_env_each(const rb_execution_context_t * const ec, rb_control_frame_t *co
 
     // Careful with order in the following sequence. Each allocation can move objects.
     env_body = ALLOC_N(VALUE, env_size);
-    rb_env_t *env = (rb_env_t *)rb_imemo_new(imemo_env, 0, 0, 0, 0);
+    rb_env_t *env = IMEMO_NEW(rb_env_t, imemo_env, 0);
 
     // Set up env without WB since it's brand new (similar to newobj_init(), newobj_fill())
     MEMCPY(env_body, ep - (local_size - 1 /* specval */), VALUE, local_size);
@@ -1244,7 +1248,7 @@ env_copy(const VALUE *src_ep, VALUE read_only_variables)
                         VALUE msg = rb_sprintf("can not make shareable Proc because it can refer"
                                                " unshareable object %+" PRIsVALUE " from ", v);
                         if (name)
-                            rb_str_catf(msg, "variable `%" PRIsVALUE "'", name);
+                            rb_str_catf(msg, "variable '%" PRIsVALUE "'", name);
                         else
                             rb_str_cat_cstr(msg, "a hidden variable");
                         rb_exc_raise(rb_exc_new_str(rb_eRactorIsolationError, msg));
@@ -1303,11 +1307,11 @@ proc_shared_outer_variables(struct rb_id_table *outer_variables, bool isolate, c
             rb_str_append(str, name);
         }
         if (*sep == ',') rb_str_cat_cstr(str, ")");
-        rb_str_cat_cstr(str, data.yield ? " and uses `yield'." : ".");
+        rb_str_cat_cstr(str, data.yield ? " and uses 'yield'." : ".");
         rb_exc_raise(rb_exc_new_str(rb_eArgError, str));
     }
     else if (data.yield) {
-        rb_raise(rb_eArgError, "can not %s because it uses `yield'.", message);
+        rb_raise(rb_eArgError, "can not %s because it uses 'yield'.", message);
     }
 
     return data.read_only;
@@ -2104,6 +2108,8 @@ vm_redefinition_check_method_type(const rb_method_entry_t *me)
         return FALSE;
     }
 
+    if (METHOD_ENTRY_BASIC(me)) return TRUE;
+
     const rb_method_definition_t *def = me->def;
     switch (def->type) {
       case VM_METHOD_TYPE_CFUNC:
@@ -2154,16 +2160,36 @@ rb_vm_check_redefinition_by_prepend(VALUE klass)
 }
 
 static void
-add_opt_method(VALUE klass, ID mid, VALUE bop)
+add_opt_method_entry_bop(const rb_method_entry_t *me, ID mid, enum ruby_basic_operators bop)
+{
+    st_insert(vm_opt_method_def_table, (st_data_t)me->def, (st_data_t)bop);
+    st_insert(vm_opt_mid_table, (st_data_t)mid, (st_data_t)Qtrue);
+}
+
+static void
+add_opt_method(VALUE klass, ID mid, enum ruby_basic_operators bop)
 {
     const rb_method_entry_t *me = rb_method_entry_at(klass, mid);
 
     if (me && vm_redefinition_check_method_type(me)) {
-        st_insert(vm_opt_method_def_table, (st_data_t)me->def, (st_data_t)bop);
-        st_insert(vm_opt_mid_table, (st_data_t)mid, (st_data_t)Qtrue);
+        add_opt_method_entry_bop(me, mid, bop);
     }
     else {
         rb_bug("undefined optimized method: %s", rb_id2name(mid));
+    }
+}
+
+static enum ruby_basic_operators vm_redefinition_bop_for_id(ID mid);
+
+static void
+add_opt_method_entry(const rb_method_entry_t *me)
+{
+    if (me && vm_redefinition_check_method_type(me)) {
+        ID mid = me->called_id;
+        enum ruby_basic_operators bop = vm_redefinition_bop_for_id(mid);
+        if ((int)bop >= 0) {
+            add_opt_method_entry_bop(me, mid, bop);
+        }
     }
 }
 
@@ -2171,10 +2197,7 @@ static void
 vm_init_redefined_flag(void)
 {
     ID mid;
-    VALUE bop;
-
-    vm_opt_method_def_table = st_init_numtable();
-    vm_opt_mid_table = st_init_numtable();
+    enum ruby_basic_operators bop;
 
 #define OP(mid_, bop_) (mid = id##mid_, bop = BOP_##bop_, ruby_vm_redefined_flag[bop] = 0)
 #define C(k) add_opt_method(rb_c##k, mid, bop)
@@ -2211,6 +2234,46 @@ vm_init_redefined_flag(void)
     OP(Default, DEFAULT), (C(Hash));
 #undef C
 #undef OP
+}
+
+static enum ruby_basic_operators
+vm_redefinition_bop_for_id(ID mid)
+{
+    switch (mid) {
+#define OP(mid_, bop_) case id##mid_: return BOP_##bop_
+    OP(PLUS, PLUS);
+    OP(MINUS, MINUS);
+    OP(MULT, MULT);
+    OP(DIV, DIV);
+    OP(MOD, MOD);
+    OP(Eq, EQ);
+    OP(Eqq, EQQ);
+    OP(LT, LT);
+    OP(LE, LE);
+    OP(GT, GT);
+    OP(GE, GE);
+    OP(LTLT, LTLT);
+    OP(AREF, AREF);
+    OP(ASET, ASET);
+    OP(Length, LENGTH);
+    OP(Size, SIZE);
+    OP(EmptyP, EMPTY_P);
+    OP(Succ, SUCC);
+    OP(EqTilde, MATCH);
+    OP(Freeze, FREEZE);
+    OP(UMinus, UMINUS);
+    OP(Max, MAX);
+    OP(Min, MIN);
+    OP(Hash, HASH);
+    OP(Call, CALL);
+    OP(And, AND);
+    OP(Or, OR);
+    OP(NilP, NIL_P);
+    OP(Cmp, CMP);
+    OP(Default, DEFAULT);
+#undef OP
+    }
+    return -1;
 }
 
 /* for vm development */
@@ -2812,6 +2875,7 @@ rb_vm_update_references(void *ptr)
     if (ptr) {
         rb_vm_t *vm = ptr;
 
+        rb_gc_update_tbl_refs(vm->ci_table);
         rb_gc_update_tbl_refs(vm->frozen_strings);
         vm->mark_object_ary = rb_gc_location(vm->mark_object_ary);
         vm->load_path = rb_gc_location(vm->load_path);
@@ -3058,6 +3122,10 @@ ruby_vm_destruct(rb_vm_t *vm)
             st_free_table(vm->loading_table);
             vm->loading_table = 0;
         }
+        if (vm->ci_table) {
+            st_free_table(vm->ci_table);
+            vm->ci_table = NULL;
+        }
         if (vm->frozen_strings) {
             st_free_table(vm->frozen_strings);
             vm->frozen_strings = 0;
@@ -3148,6 +3216,7 @@ vm_memsize(const void *ptr)
         rb_vm_memsize_workqueue(&vm->workqueue) +
         rb_st_memsize(vm->defined_module_hash) +
         vm_memsize_at_exit_list(vm->at_exit) +
+        rb_st_memsize(vm->ci_table) +
         rb_st_memsize(vm->frozen_strings) +
         vm_memsize_builtin_function_table(vm->builtin_function_table) +
         rb_id_table_memsize(vm->negative_cme_table) +
@@ -4213,6 +4282,9 @@ Init_BareVM(void)
     rb_native_mutex_initialize(&vm->ractor.sync.lock);
     rb_native_cond_initialize(&vm->ractor.sync.terminate_cond);
 
+    vm_opt_method_def_table = st_init_numtable();
+    vm_opt_mid_table = st_init_numtable();
+
 #ifdef RUBY_THREAD_WIN32_H
     rb_native_cond_initialize(&vm->ractor.sync.barrier_cond);
 #endif
@@ -4239,6 +4311,7 @@ Init_vm_objects(void)
     /* initialize mark object array, hash */
     vm->mark_object_ary = rb_ary_hidden_new(128);
     vm->loading_table = st_init_strtable();
+    vm->ci_table = st_init_table(&vm_ci_hashtype);
     vm->frozen_strings = st_init_table_with_size(&rb_fstring_hash_type, 10000);
 }
 

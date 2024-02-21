@@ -3,11 +3,14 @@
 require_relative "test_helper"
 
 begin
+  verbose, $VERBOSE = $VERBOSE, nil
   require "parser/current"
 rescue LoadError
   # In CRuby's CI, we're not going to test against the parser gem because we
   # don't want to have to install it. So in this case we'll just skip this test.
   return
+ensure
+  $VERBOSE = verbose
 end
 
 # First, opt in to every AST feature.
@@ -40,16 +43,19 @@ module Prism
   class ParserTest < TestCase
     base = File.join(__dir__, "fixtures")
 
+    # These files are erroring because of the parser gem being wrong.
+    skip_incorrect = %w[
+      embdoc_no_newline_at_end.txt
+    ]
+
     # These files are either failing to parse or failing to translate, so we'll
     # skip them for now.
-    skip_all = %w[
-      arrays.txt
-      constants.txt
+    skip_all = skip_incorrect | %w[
       dash_heredocs.txt
       dos_endings.txt
-      embdoc_no_newline_at_end.txt
       heredocs_with_ignored_newlines.txt
       regex.txt
+      regex_char_width.txt
       spanning_heredoc.txt
       spanning_heredoc_newlines.txt
       tilde_heredocs.txt
@@ -65,6 +71,7 @@ module Prism
     # output expected by the parser gem, so we'll skip them for now.
     skip_tokens = %w[
       comments.txt
+      constants.txt
       endless_range_in_conditional.txt
       heredoc_with_comment.txt
       heredoc_with_escaped_newline_at_start.txt

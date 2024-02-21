@@ -161,6 +161,9 @@ install:
     pend "terminates on mswin" if vc_windows? && ruby_repo?
 
     extension_in_lib(false) do
+      @orig_install_extension_in_lib = Gem.configuration.install_extension_in_lib
+      Gem.configuration.install_extension_in_lib = false
+
       @spec.extensions << "ext/extconf.rb"
 
       ext_dir = File.join @spec.gem_dir, "ext"
@@ -194,6 +197,8 @@ install:
       assert_path_not_exist File.join @spec.gem_dir, "lib", "a.rb"
       assert_path_not_exist File.join @spec.gem_dir, "lib", "a", "b.rb"
     end
+  ensure
+    Gem.configuration.install_extension_in_lib = @orig_install_extension_in_lib
   end
 
   def test_build_extensions_none

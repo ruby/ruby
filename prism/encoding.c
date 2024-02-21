@@ -2253,12 +2253,12 @@ static const uint8_t pm_utf_8_dfa[] = {
 static pm_unicode_codepoint_t
 pm_utf_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
     assert(n >= 0);
-    size_t maximum = (size_t) n;
 
+    size_t maximum = (n > 4) ? 4 : ((size_t) n);
     uint32_t codepoint;
     uint32_t state = 0;
 
-    for (size_t index = 0; index < 4 && index < maximum; index++) {
+    for (size_t index = 0; index < maximum; index++) {
         uint32_t byte = b[index];
         uint32_t type = pm_utf_8_dfa[byte];
 
@@ -2267,7 +2267,7 @@ pm_utf_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
             (0xffu >> type) & (byte);
 
         state = pm_utf_8_dfa[256 + (state * 16) + type];
-        if (!state) {
+        if (state == 0) {
             *width = index + 1;
             return (pm_unicode_codepoint_t) codepoint;
         }
@@ -2282,9 +2282,17 @@ pm_utf_8_codepoint(const uint8_t *b, ptrdiff_t n, size_t *width) {
  */
 size_t
 pm_encoding_utf_8_char_width(const uint8_t *b, ptrdiff_t n) {
-    size_t width;
-    pm_utf_8_codepoint(b, n, &width);
-    return width;
+    assert(n >= 0);
+
+    size_t maximum = (n > 4) ? 4 : ((size_t) n);
+    uint32_t state = 0;
+
+    for (size_t index = 0; index < maximum; index++) {
+        state = pm_utf_8_dfa[256 + (state * 16) + pm_utf_8_dfa[b[index]]];
+        if (state == 0) return index + 1;
+    }
+
+    return 0;
 }
 
 /**
@@ -4187,15 +4195,6 @@ pm_encoding_gbk_char_width(const uint8_t *b, ptrdiff_t n) {
 }
 
 /**
- * Returns the size of the next character in the KOI-8 encoding. This means
- * checking if it's a valid codepoint in KOI-8 and if it is returning 1.
- */
-static size_t
-pm_encoding_koi8_char_width(const uint8_t *b, PRISM_ATTRIBUTE_UNUSED ptrdiff_t n) {
-    return ((*b >= 0x20 && *b <= 0x7E) || (*b >= 0x80)) ? 1 : 0;
-}
-
-/**
  * Returns the size of the next character in the Shift_JIS encoding, or 0 if a
  * character cannot be decoded from the given bytes.
  */
@@ -4652,7 +4651,7 @@ const pm_encoding_t pm_encodings[] = {
     },
     [PM_ENCODING_KOI8_R] = {
         .name = "KOI8-R",
-        .char_width = pm_encoding_koi8_char_width,
+        .char_width = pm_encoding_single_char_width,
         .alnum_char = pm_encoding_koi8_r_alnum_char,
         .alpha_char = pm_encoding_koi8_r_alpha_char,
         .isupper_char = pm_encoding_koi8_r_isupper_char,
@@ -4660,7 +4659,7 @@ const pm_encoding_t pm_encodings[] = {
     },
     [PM_ENCODING_KOI8_U] = {
         .name = "KOI8-U",
-        .char_width = pm_encoding_koi8_char_width,
+        .char_width = pm_encoding_single_char_width,
         .alnum_char = pm_encoding_koi8_u_alnum_char,
         .alpha_char = pm_encoding_koi8_u_alpha_char,
         .isupper_char = pm_encoding_koi8_u_isupper_char,

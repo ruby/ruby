@@ -1,8 +1,14 @@
 # TODO: Validate position is not over rule rhs
 
+require "forwardable"
+
 module Lrama
   class States
     class Item < Struct.new(:rule, :position, keyword_init: true)
+      extend Forwardable
+
+      def_delegators "rule", :lhs, :rhs
+
       # Optimization for States#setup_state
       def hash
         [rule_id, position].hash
@@ -18,14 +24,6 @@ module Lrama
 
       def number_of_rest_symbols
         rhs.count - position
-      end
-
-      def lhs
-        rule.lhs
-      end
-
-      def rhs
-        rule.rhs
       end
 
       def next_sym

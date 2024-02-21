@@ -27,11 +27,11 @@ module Prism
         end
 
         def start_offset
-          node.location.start_offset
+          node.start_offset
         end
 
         def end_offset
-          node.location.end_offset
+          node.end_offset
         end
 
         def encloses?(comment)
@@ -39,8 +39,12 @@ module Prism
             comment.location.end_offset <= end_offset
         end
 
-        def <<(comment)
-          node.location.comments << comment
+        def leading_comment(comment)
+          node.location.leading_comment(comment)
+        end
+
+        def trailing_comment(comment)
+          node.location.trailing_comment(comment)
         end
       end
 
@@ -65,8 +69,12 @@ module Prism
           false
         end
 
-        def <<(comment)
-          location.comments << comment
+        def leading_comment(comment)
+          location.leading_comment(comment)
+        end
+
+        def trailing_comment(comment)
+          location.trailing_comment(comment)
         end
       end
 
@@ -84,15 +92,23 @@ module Prism
       def attach!
         parse_result.comments.each do |comment|
           preceding, enclosing, following = nearest_targets(parse_result.value, comment)
-          target =
-            if comment.trailing?
-              preceding || following || enclosing || NodeTarget.new(parse_result.value)
-            else
-              # If a comment exists on its own line, prefer a leading comment.
-              following || preceding || enclosing || NodeTarget.new(parse_result.value)
-            end
 
-          target << comment
+          if comment.trailing?
+            if preceding
+              preceding.trailing_comment(comment)
+            else
+              (following || enclosing || NodeTarget.new(parse_result.value)).leading_comment(comment)
+            end
+          else
+            # If a comment exists on its own line, prefer a leading comment.
+            if following
+              following.leading_comment(comment)
+            elsif preceding
+              preceding.trailing_comment(comment)
+            else
+              (enclosing || NodeTarget.new(parse_result.value)).leading_comment(comment)
+            end
+          end
         end
       end
 

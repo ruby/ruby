@@ -1455,6 +1455,16 @@ class Reline::KeyActor::ViInsert::Test < Reline::TestCase
     assert_line('c')
   end
 
+  def test_vi_change_to_eol
+    input_keys("abcdef\C-[2hC")
+    assert_line("abc")
+    input_keys("\C-[0C")
+    assert_line("")
+    assert_cursor(0)
+    assert_cursor_max(0)
+    assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
+  end
+
   def test_vi_motion_operators
     assert_instance_of(Reline::KeyActor::ViInsert, @config.editing_mode)
 

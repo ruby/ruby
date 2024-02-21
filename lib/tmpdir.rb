@@ -158,7 +158,7 @@ class Dir
         n ||= 0
         n += 1
         retry if !max_try or n < max_try
-        raise "cannot generate temporary name using `#{basename}' under `#{tmpdir}'"
+        raise "cannot generate temporary name using '#{basename}' under '#{tmpdir}'"
       end
       path
     end

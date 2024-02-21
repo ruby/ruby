@@ -75,8 +75,8 @@ AC_ARG_WITH(baseruby,
 	[
 		AC_PATH_PROG([BASERUBY], [ruby], [false])
 	])
-# BASERUBY must be >= 2.7.0. Note that `"2.7.0" > "2.7"` is true.
-AS_IF([test "$HAVE_BASERUBY" != no -a "`RUBYOPT=- $BASERUBY --disable=gems -e 'print 42 if RUBY_VERSION > "2.7"' 2>/dev/null`" = 42], [
+# BASERUBY must be >= 3.0.0. Note that `"3.0.0" > "3.0"` is true.
+AS_IF([test "$HAVE_BASERUBY" != no -a "`RUBYOPT=- $BASERUBY --disable=gems -e 'print true if RUBY_VERSION > "3.0"' 2>/dev/null`" = true], [
     AS_CASE(["$build_os"], [mingw*], [
         # Can MSys shell run a command with a drive letter?
         RUBYOPT=- `cygpath -ma "$BASERUBY"` --disable=gems -e exit 2>/dev/null || HAVE_BASERUBY=no
@@ -3555,7 +3555,7 @@ AS_CASE("$enable_shared", [yes], [
 	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ['-Wl,-soname,$(LIBRUBY_SONAME)' "$LDFLAGS_OPTDIR"])
 	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
 	AS_IF([test "$load_relative" = yes], [
-	    libprefix="'\$\${ORIGIN}/../${libdir_basename}'"
+	    libprefix="'\$\${ORIGIN}/../${multiarch+../../}${libdir_basename}'"
 	    LIBRUBY_RPATHFLAGS="-Wl,-rpath,${libprefix}"
 	    LIBRUBY_RELATIVE=yes
 	])
@@ -3567,7 +3567,7 @@ AS_CASE("$enable_shared", [yes], [
 	    LIBRUBY_SO="$LIBRUBY_SO.\$(TEENY)"
 	    LIBRUBY_ALIASES=''
 	], [test "$load_relative" = yes], [
-	    libprefix="'\$\$ORIGIN/../${libdir_basename}'"
+	    libprefix="'\$\$ORIGIN/../${multiarch+../../}${libdir_basename}'"
 	    LIBRUBY_RPATHFLAGS="-Wl,-rpath,${libprefix}"
 	    LIBRUBY_RELATIVE=yes
 	])
@@ -3591,7 +3591,7 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_ALIASES='$(LIBRUBY_SONAME) lib$(RUBY_SO_NAME).$(SOEXT)'
 	RUBY_APPEND_OPTIONS(LIBRUBY_DLDFLAGS, ["${linker_flag}-h${linker_flag:+,}"'$(@F)'])
 	AS_IF([test "$load_relative" = yes], [
-	    libprefix="'\$\$ORIGIN/../${libdir_basename}'"
+	    libprefix="'\$\$ORIGIN/../${multiarch+../../}${libdir_basename}'"
 	    LIBRUBY_RPATHFLAGS="-R${libprefix}"
 	    LIBRUBY_RELATIVE=yes
 	], [
@@ -3608,7 +3608,7 @@ AS_CASE("$enable_shared", [yes], [
 	LIBRUBY_SONAME='$(LIBRUBY_SO)'
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).$(SOEXT)'
 	AS_IF([test "$load_relative" = yes], [
-	    libprefix="@executable_path/../${libdir_basename}"
+	    libprefix="@executable_path/../${multiarch+../../}${libdir_basename}"
 	    LIBRUBY_RELATIVE=yes
 	])
 	LIBRUBY_DLDFLAGS="$LIBRUBY_DLDFLAGS -install_name ${libprefix}"'/$(LIBRUBY_SONAME)'

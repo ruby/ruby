@@ -1123,9 +1123,9 @@ CODE
       when :line
         assert_match(/ in /, str)
       when :call, :c_call
-        assert_match(/call \`/, str) # #<TracePoint:c_call `inherited' ../trunk/test.rb:11>
+        assert_match(/call \'/, str) # #<TracePoint:c_call 'inherited' ../trunk/test.rb:11>
       when :return, :c_return
-        assert_match(/return \`/, str) # #<TracePoint:return `m' ../trunk/test.rb:3>
+        assert_match(/return \'/, str) # #<TracePoint:return 'm' ../trunk/test.rb:3>
       when /thread/
         assert_match(/\#<Thread:/, str) # #<TracePoint:thread_end of #<Thread:0x87076c0>>
       else
@@ -2873,5 +2873,53 @@ CODE
     assert_equal [], lines
     assert err.kind_of?(RuntimeError)
     assert_equal err.message.to_i + 3, line
+  end
+
+  def test_tracepoint_thread_begin
+    target_thread = nil
+
+    trace = TracePoint.new(:thread_begin) do |tp|
+      target_thread = tp.self
+    end
+
+    trace.enable(target_thread: nil) do
+      Thread.new{}.join
+    end
+
+    assert_kind_of(Thread, target_thread)
+  end
+
+  def test_tracepoint_thread_end
+    target_thread = nil
+
+    trace = TracePoint.new(:thread_end) do |tp|
+      target_thread = tp.self
+    end
+
+    trace.enable(target_thread: nil) do
+      Thread.new{}.join
+    end
+
+    assert_kind_of(Thread, target_thread)
+  end
+
+  def test_tracepoint_thread_end_with_exception
+    target_thread = nil
+
+    trace = TracePoint.new(:thread_end) do |tp|
+      target_thread = tp.self
+    end
+
+    trace.enable(target_thread: nil) do
+      thread = Thread.new do
+        Thread.current.report_on_exception = false
+        raise
+      end
+
+      # Ignore the exception raised by the thread:
+      thread.join rescue nil
+    end
+
+    assert_kind_of(Thread, target_thread)
   end
 end

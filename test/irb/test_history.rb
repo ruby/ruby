@@ -379,6 +379,62 @@ module TestIRB
       HISTORY
     end
 
+    def test_nested_history_saving_from_inner_session_with_exit!
+      write_history ""
+
+      write_ruby <<~'RUBY'
+        def foo
+          binding.irb
+        end
+
+        binding.irb
+      RUBY
+
+      run_ruby_file do
+        type "'outer session'"
+        type "foo"
+        type "'inner session'"
+        type "exit!"
+      end
+
+      assert_equal <<~HISTORY, @history_file.open.read
+        'outer session'
+        foo
+        'inner session'
+        exit!
+      HISTORY
+    end
+
+    def test_nested_history_saving_from_outer_session_with_exit!
+      write_history ""
+
+      write_ruby <<~'RUBY'
+        def foo
+          binding.irb
+        end
+
+        binding.irb
+      RUBY
+
+      run_ruby_file do
+        type "'outer session'"
+        type "foo"
+        type "'inner session'"
+        type "exit"
+        type "'outer session again'"
+        type "exit!"
+      end
+
+      assert_equal <<~HISTORY, @history_file.open.read
+        'outer session'
+        foo
+        'inner session'
+        exit
+        'outer session again'
+        exit!
+      HISTORY
+    end
+
     def test_history_saving_with_nested_sessions_and_prior_history
       write_history <<~HISTORY
         old_history_1

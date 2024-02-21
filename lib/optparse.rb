@@ -8,7 +8,6 @@
 # See OptionParser for documentation.
 #
 
-
 #--
 # == Developer Documentation (not for RDoc output)
 #
@@ -425,6 +424,7 @@
 # If you have any questions, file a ticket at http://bugs.ruby-lang.org.
 #
 class OptionParser
+  # The version string
   OptionParser::Version = "0.4.0"
 
   # :stopdoc:
@@ -438,6 +438,8 @@ class OptionParser
   # and resolved against a list of acceptable values.
   #
   module Completion
+    # :nodoc:
+
     def self.regexp(key, icase)
       Regexp.new('\A' + Regexp.quote(key).gsub(/\w+\b/, '\&\w*'), icase)
     end
@@ -510,6 +512,8 @@ class OptionParser
   # RequiredArgument, etc.
   #
   class Switch
+    # :nodoc:
+
     attr_reader :pattern, :conv, :short, :long, :arg, :desc, :block
 
     #
@@ -715,10 +719,10 @@ class OptionParser
         conv_arg(arg)
       end
 
-      def self.incompatible_argument_styles(*)
+      def self.incompatible_argument_styles(*) # :nodoc:
       end
 
-      def self.pattern
+      def self.pattern          # :nodoc:
         Object
       end
 
@@ -804,6 +808,8 @@ class OptionParser
   # matching pattern and converter pair. Also provides summary feature.
   #
   class List
+    # :nodoc:
+
     # Map from acceptable argument types to pattern and converter pairs.
     attr_reader :atype
 
@@ -843,7 +849,7 @@ class OptionParser
     def accept(t, pat = /.*/m, &block)
       if pat
         pat.respond_to?(:match) or
-          raise TypeError, "has no `match'", ParseError.filter_backtrace(caller(2))
+          raise TypeError, "has no 'match'", ParseError.filter_backtrace(caller(2))
       else
         pat = t if t.respond_to?(:match)
       end
@@ -1054,7 +1060,7 @@ XXX
   # Shows option summary.
   #
   Officious['help'] = proc do |parser|
-    Switch::NoArgument.new(nil, nil, ["-h"], ["--help"]) do |arg|
+    Switch::NoArgument.new do |arg|
       puts parser.help
       exit
     end
@@ -1185,6 +1191,11 @@ XXX
   end
 
   @stack = [DefaultList]
+  #
+  # Returns the global top option list.
+  #
+  # Do not use directly.
+  #
   def self.top() DefaultList end
 
   #
@@ -1297,10 +1308,24 @@ XXX
     end
   end
 
+  #
+  # Shows warning message with the program name
+  #
+  # +mesg+:: Message, defaulted to +$!+.
+  #
+  # See Kernel#warn.
+  #
   def warn(mesg = $!)
     super("#{program_name}: #{mesg}")
   end
 
+  #
+  # Shows message with the program name then aborts.
+  #
+  # +mesg+:: Message, defaulted to +$!+.
+  #
+  # See Kernel#abort.
+  #
   def abort(mesg = $!)
     super("#{program_name}: #{mesg}")
   end
@@ -1479,7 +1504,7 @@ XXX
           default_style = default_style.guess(arg = a)
           default_pattern, conv = search(:atype, o) unless default_pattern
         end
-        ldesc << "--#{q}" << "--no-#{q}"
+        ldesc << "--[no-]#{q}"
         (o = q.downcase).tr!('_', '-')
         long << o
         not_pattern, not_conv = search(:atype, FalseClass) unless not_style
@@ -1654,14 +1679,19 @@ XXX
           opt, rest = $1, $2
           opt.tr!('_', '-')
           begin
-            sw, = complete(:long, opt, true)
-            if require_exact && !sw.long.include?("--#{opt}")
-              throw :terminate, arg unless raise_unknown
-              raise InvalidOption, arg
+            if require_exact
+              sw, = search(:long, opt)
+            else
+              sw, = complete(:long, opt, true)
             end
           rescue ParseError
             throw :terminate, arg unless raise_unknown
             raise $!.set_option(arg, true)
+          else
+            unless sw
+              throw :terminate, arg unless raise_unknown
+              raise InvalidOption, arg
+            end
           end
           begin
             opt, cb, *val = sw.parse(rest, argv) {|*exc| raise(*exc)}
@@ -2337,7 +2367,8 @@ XXX
       super
       obj.instance_eval {@optparse = nil}
     end
-    def initialize(*args)
+
+    def initialize(*args)       # :nodoc:
       super
       @optparse = nil
     end

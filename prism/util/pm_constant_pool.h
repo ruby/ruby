@@ -186,7 +186,7 @@ pm_constant_id_t pm_constant_pool_insert_shared(pm_constant_pool_t *pool, const 
  * @param length The length of the constant.
  * @return The id of the constant.
  */
-pm_constant_id_t pm_constant_pool_insert_owned(pm_constant_pool_t *pool, const uint8_t *start, size_t length);
+pm_constant_id_t pm_constant_pool_insert_owned(pm_constant_pool_t *pool, uint8_t *start, size_t length);
 
 /**
  * Insert a constant into a constant pool from memory that is constant. Returns

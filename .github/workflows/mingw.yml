@@ -8,7 +8,6 @@ on:
       - '**.rdoc'
       - '**/.document'
       - '.*.yml'
-      - '.*.yml'
   pull_request:
     paths-ignore:
       - 'doc/**'
@@ -16,7 +15,6 @@ on:
       - '**.md'
       - '**.rdoc'
       - '**/.document'
-      - '.*.yml'
       - '.*.yml'
   merge_group:
 
@@ -51,7 +49,7 @@ jobs:
         include:
           # To mitigate flakiness of MinGW CI, we test only one runtime that newer MSYS2 uses.
           - msystem: 'UCRT64'
-            baseruby: '2.7'
+            baseruby: '3.0'
             test_task: 'check'
             test-all-opts: '--name=!/TestObjSpace#test_reachable_objects_during_iteration/'
       fail-fast: false

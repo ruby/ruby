@@ -65,7 +65,7 @@ fn yjit_init() {
     }
 
     // Make sure --yjit-perf doesn't append symbols to an old file
-    if get_option!(perf_map) {
+    if get_option!(perf_map).is_some() {
         let perf_map = format!("/tmp/perf-{}.map", std::process::id());
         let _ = std::fs::remove_file(&perf_map);
         println!("YJIT perf map: {perf_map}");

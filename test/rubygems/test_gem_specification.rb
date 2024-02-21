@@ -2517,6 +2517,26 @@ end
     assert_match(/^platform: ruby$/, @a1.to_yaml)
   end
 
+  def test_to_yaml_no_autorequire
+    yaml_str = @a1.to_yaml
+
+    refute_match(/^autorequire:/, yaml_str)
+  end
+
+  def test_to_yaml_no_signing_key
+    @a1.signing_key = nil
+    yaml_str = @a1.to_yaml
+
+    refute_match(/^signing_key:/, yaml_str)
+  end
+
+  def test_to_yaml_no_post_install_message
+    @a1.post_install_message = nil
+    yaml_str = @a1.to_yaml
+
+    refute_match(/^post_install_message:/, yaml_str)
+  end
+
   def test_validate
     util_setup_validate
 

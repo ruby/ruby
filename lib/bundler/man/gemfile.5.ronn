@@ -96,7 +96,7 @@ What exactly is an Engine?
 
   - [Other implementations](https://www.ruby-lang.org/en/about/) of Ruby exist.
     Some of the more well-known implementations include
-    [JRuby](http://jruby.org/) and [TruffleRuby](https://www.graalvm.org/ruby/).
+    [JRuby](https://www.jruby.org/) and [TruffleRuby](https://www.graalvm.org/ruby/).
     Rubinius is an alternative implementation of Ruby written in Ruby.
     JRuby is an implementation of Ruby on the JVM, short for Java Virtual Machine.
     TruffleRuby is a Ruby implementation on the GraalVM, a language toolkit built on the JVM.
@@ -509,7 +509,7 @@ software is installed or some other conditions are met.
 
 ## GEMSPEC
 
-The [`.gemspec`](http://guides.rubygems.org/specification-reference/) file is where
+The [`.gemspec`](https://guides.rubygems.org/specification-reference/) file is where
  you provide metadata about your gem to Rubygems. Some required Gemspec
  attributes include the name, description, and homepage of your gem. This is
  also where you specify the dependencies your gem needs to run.

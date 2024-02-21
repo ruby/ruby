@@ -43,7 +43,6 @@ class Gem::Ext::ExtConfBuilder < Gem::Ext::Builder
 
       full_tmp_dest = File.join(extension_dir, tmp_dest_relative)
 
-      # TODO: remove in RubyGems 4
       if Gem.install_extension_in_lib && lib_dir
         FileUtils.mkdir_p lib_dir
         entries = Dir.entries(full_tmp_dest) - %w[. ..]

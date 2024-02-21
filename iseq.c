@@ -925,6 +925,14 @@ rb_iseq_new_eval(const rb_ast_body_t *ast, VALUE name, VALUE path, VALUE realpat
                                 parent, isolated_depth, ISEQ_TYPE_EVAL, &COMPILE_OPTION_DEFAULT);
 }
 
+rb_iseq_t *
+pm_iseq_new_eval(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpath,
+                     int first_lineno, const rb_iseq_t *parent, int isolated_depth)
+{
+        return pm_iseq_new_with_opt(node, name, path, realpath, first_lineno,
+                                    parent, isolated_depth, ISEQ_TYPE_EVAL, &COMPILE_OPTION_DEFAULT);
+}
+
 static inline rb_iseq_t *
 iseq_translate(rb_iseq_t *iseq)
 {
@@ -991,11 +999,15 @@ pm_iseq_new_with_opt(pm_scope_node_t *node, VALUE name, VALUE path, VALUE realpa
                      enum rb_iseq_type type, const rb_compile_option_t *option)
 {
     rb_iseq_t *iseq = iseq_alloc();
+    ISEQ_BODY(iseq)->prism = true;
+
     if (!option) option = &COMPILE_OPTION_DEFAULT;
 
     pm_location_t *location = &node->base.location;
-    pm_line_column_t start = pm_newline_list_line_column(&node->parser->newline_list, location->start);
-    pm_line_column_t end = pm_newline_list_line_column(&node->parser->newline_list, location->end);
+    int32_t start_line = node->parser->start_line;
+
+    pm_line_column_t start = pm_newline_list_line_column(&node->parser->newline_list, location->start, start_line);
+    pm_line_column_t end = pm_newline_list_line_column(&node->parser->newline_list, location->end, start_line);
 
     rb_code_location_t code_location = (rb_code_location_t) {
         .beg_pos = { .lineno = (int) start.line, .column = (int) start.column },
@@ -1132,6 +1144,10 @@ iseq_load(VALUE data, const rb_iseq_t *parent, VALUE opt)
         tmp_loc.end_pos.column = NUM2INT(rb_ary_entry(code_location, 3));
     }
 
+    if (RTEST(rb_hash_aref(misc, ID2SYM(rb_intern("prism"))))) {
+        ISEQ_BODY(iseq)->prism = true;
+    }
+
     make_compile_option(&option, opt);
     option.peephole_optimization = FALSE; /* because peephole optimization can modify original iseq */
     prepare_iseq_build(iseq, name, path, realpath, first_lineno, &tmp_loc, NUM2INT(node_id),
@@ -1224,8 +1240,9 @@ pm_iseq_compile_with_option(VALUE src, VALUE file, VALUE realpath, VALUE line, V
     StringValueCStr(file);
 
     pm_parse_result_t result = { 0 };
-    VALUE error;
+    pm_options_line_set(&result.options, NUM2INT(line));
 
+    VALUE error;
     if (RB_TYPE_P(src, T_FILE)) {
         VALUE filepath = rb_io_path(src);
         error = pm_parse_file(&result, filepath);
@@ -1627,6 +1644,8 @@ iseqw_s_compile_file_prism(int argc, VALUE *argv, VALUE self)
     VALUE v = rb_vm_push_frame_fname(ec, file);
 
     pm_parse_result_t result = { 0 };
+    result.options.line = 1;
+
     VALUE error = pm_parse_file(&result, file);
 
     if (error == Qnil) {
@@ -3361,6 +3380,7 @@ iseq_data_to_ary(const rb_iseq_t *iseq)
 #ifdef USE_ISEQ_NODE_ID
     rb_hash_aset(misc, ID2SYM(rb_intern("node_ids")), node_ids);
 #endif
+    rb_hash_aset(misc, ID2SYM(rb_intern("prism")), iseq_body->prism ? Qtrue : Qfalse);
 
     /*
      * [:magic, :major_version, :minor_version, :format_type, :misc,

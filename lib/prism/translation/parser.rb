@@ -43,7 +43,7 @@ module Prism
         source = source_buffer.source
 
         offset_cache = build_offset_cache(source)
-        result = unwrap(Prism.parse(source, filepath: source_buffer.name), offset_cache)
+        result = unwrap(Prism.parse(source, filepath: source_buffer.name, version: convert_for_prism(version)), offset_cache)
 
         build_ast(result.value, offset_cache)
       ensure
@@ -56,7 +56,7 @@ module Prism
         source = source_buffer.source
 
         offset_cache = build_offset_cache(source)
-        result = unwrap(Prism.parse(source, filepath: source_buffer.name), offset_cache)
+        result = unwrap(Prism.parse(source, filepath: source_buffer.name, version: convert_for_prism(version)), offset_cache)
 
         [
           build_ast(result.value, offset_cache),
@@ -75,7 +75,7 @@ module Prism
         offset_cache = build_offset_cache(source)
         result =
           begin
-            unwrap(Prism.parse_lex(source, filepath: source_buffer.name), offset_cache)
+            unwrap(Prism.parse_lex(source, filepath: source_buffer.name, version: convert_for_prism(version)), offset_cache)
           rescue ::Parser::SyntaxError
             raise if !recover
           end
@@ -166,6 +166,18 @@ module Prism
           offset_cache[location.start_offset],
           offset_cache[location.end_offset]
         )
+      end
+
+      # Converts the version format handled by Parser to the format handled by Prism.
+      def convert_for_prism(version)
+        case version
+        when 33
+          "3.3.0"
+        when 34
+          "3.4.0"
+        else
+          "latest"
+        end
       end
 
       require_relative "parser/compiler"

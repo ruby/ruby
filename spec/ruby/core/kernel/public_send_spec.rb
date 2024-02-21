@@ -105,11 +105,11 @@ describe "Kernel#public_send" do
   end
 
   it "includes `public_send` in the backtrace when passed not enough arguments" do
-    -> { public_send() }.should raise_error(ArgumentError) { |e| e.backtrace[0].should.include?("`public_send'") }
+    -> { public_send() }.should raise_error(ArgumentError) { |e| e.backtrace[0].should =~ /[`'](?:Kernel#)?public_send'/ }
   end
 
   it "includes `public_send` in the backtrace when passed a single incorrect argument" do
-    -> { public_send(Object.new) }.should raise_error(TypeError) { |e| e.backtrace[0].should.include?("`public_send'") }
+    -> { public_send(Object.new) }.should raise_error(TypeError) { |e| e.backtrace[0].should =~ /[`'](?:Kernel#)?public_send'/ }
   end
 
   it_behaves_like :basicobject_send, :public_send

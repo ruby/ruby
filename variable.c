@@ -111,6 +111,12 @@ classname(VALUE klass, bool *permanent)
     return classpath;
 }
 
+VALUE
+rb_mod_name0(VALUE klass, bool *permanent)
+{
+    return classname(klass, permanent);
+}
+
 /*
  *  call-seq:
  *     mod.name    -> string
@@ -532,7 +538,7 @@ rb_global_entry(ID id)
 VALUE
 rb_gvar_undef_getter(ID id, VALUE *_)
 {
-    rb_warning("global variable `%"PRIsVALUE"' not initialized", QUOTE_ID(id));
+    rb_warning("global variable '%"PRIsVALUE"' not initialized", QUOTE_ID(id));
 
     return Qnil;
 }
@@ -906,7 +912,7 @@ rb_gv_get(const char *name)
     ID id = find_global_id(name);
 
     if (!id) {
-        rb_warning("global variable `%s' not initialized", name);
+        rb_warning("global variable '%s' not initialized", name);
         return Qnil;
     }
 
@@ -2198,7 +2204,7 @@ rb_obj_instance_variables(VALUE obj)
 #define rb_is_constant_id rb_is_const_id
 #define rb_is_constant_name rb_is_const_name
 #define id_for_var(obj, name, part, type) \
-    id_for_var_message(obj, name, type, "`%1$s' is not allowed as "#part" "#type" variable name")
+    id_for_var_message(obj, name, type, "'%1$s' is not allowed as "#part" "#type" variable name")
 #define id_for_var_message(obj, name, type, message) \
     check_id_type(obj, &(name), rb_is_##type##_id, rb_is_##type##_name, message, strlen(message))
 static ID
@@ -3693,7 +3699,7 @@ rb_define_const(VALUE klass, const char *name, VALUE val)
     ID id = rb_intern(name);
 
     if (!rb_is_const_id(id)) {
-        rb_warn("rb_define_const: invalid name `%s' for constant", name);
+        rb_warn("rb_define_const: invalid name '%s' for constant", name);
     }
     rb_gc_register_mark_object(val);
     rb_const_set(klass, id, val);

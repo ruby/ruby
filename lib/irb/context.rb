@@ -77,7 +77,7 @@ module IRB
       else
         @irb_name = IRB.conf[:IRB_NAME]+"#"+IRB.JobManager.n_jobs.to_s
       end
-      @irb_path = "(" + @irb_name + ")"
+      self.irb_path = "(" + @irb_name + ")"
 
       case input_method
       when nil
@@ -121,11 +121,11 @@ module IRB
       when '-'
         @io = FileInputMethod.new($stdin)
         @irb_name = '-'
-        @irb_path = '-'
+        self.irb_path = '-'
       when String
         @io = FileInputMethod.new(input_method)
         @irb_name = File.basename(input_method)
-        @irb_path = input_method
+        self.irb_path = input_method
       else
         @io = input_method
       end
@@ -246,9 +246,27 @@ module IRB
     # Can be either name from <code>IRB.conf[:IRB_NAME]</code>, or the number of
     # the current job set by JobManager, such as <code>irb#2</code>
     attr_accessor :irb_name
-    # Can be either the #irb_name surrounded by parenthesis, or the
-    # +input_method+ passed to Context.new
-    attr_accessor :irb_path
+
+    # Can be one of the following:
+    # - the #irb_name surrounded by parenthesis
+    # - the +input_method+ passed to Context.new
+    # - the file path of the current IRB context in a binding.irb session
+    attr_reader :irb_path
+
+    # Sets @irb_path to the given +path+ as well as @eval_path
+    # @eval_path is used for evaluating code in the context of IRB session
+    # It's the same as irb_path, but with the IRB name postfix
+    # This makes sure users can distinguish the methods defined in the IRB session
+    # from the methods defined in the current file's context, especially with binding.irb
+    def irb_path=(path)
+      @irb_path = path
+
+      if File.exist?(path)
+        @eval_path = "#{path}(#{IRB.conf[:IRB_NAME]})"
+      else
+        @eval_path = path
+      end
+    end
 
     # Whether multiline editor mode is enabled or not.
     #
@@ -557,7 +575,7 @@ module IRB
 
       if IRB.conf[:MEASURE] && !IRB.conf[:MEASURE_CALLBACKS].empty?
         last_proc = proc do
-          result = @workspace.evaluate(line, irb_path, line_no)
+          result = @workspace.evaluate(line, @eval_path, line_no)
         end
         IRB.conf[:MEASURE_CALLBACKS].inject(last_proc) do |chain, item|
           _name, callback, arg = item
@@ -568,7 +586,7 @@ module IRB
           end
         end.call
       else
-        result = @workspace.evaluate(line, irb_path, line_no)
+        result = @workspace.evaluate(line, @eval_path, line_no)
       end
 
       set_last_value(result)

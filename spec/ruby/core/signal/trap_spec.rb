@@ -242,8 +242,8 @@ describe "Signal.trap" do
 
     it "raises ArgumentError when passed unknown signal" do
       -> { Signal.trap(300) { } }.should raise_error(ArgumentError, "invalid signal number (300)")
-      -> { Signal.trap("USR10") { } }.should raise_error(ArgumentError, "unsupported signal `SIGUSR10'")
-      -> { Signal.trap("SIGUSR10") { } }.should raise_error(ArgumentError, "unsupported signal `SIGUSR10'")
+      -> { Signal.trap("USR10") { } }.should raise_error(ArgumentError, /\Aunsupported signal [`']SIGUSR10'\z/)
+      -> { Signal.trap("SIGUSR10") { } }.should raise_error(ArgumentError, /\Aunsupported signal [`']SIGUSR10'\z/)
     end
 
     it "raises ArgumentError when passed signal is not Integer, String or Symbol" do
