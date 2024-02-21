@@ -804,6 +804,16 @@ class TestHash < Test::Unit::TestCase
     assert_equal(nil,     h['koala'])
   end
 
+  def test_exchange_value
+    h = @cls.new
+    assert_equal(nil, h.exchange_value(:k, 1))
+    assert_equal({ k: 1 }, h)
+    assert_equal(1, h.exchange_value(:k, 2))
+    assert_equal({ k: 2 }, h)
+    assert_equal(2, h.exchange_value(:k, 3))
+    assert_equal({ k: 3 }, h)
+  end
+
   def test_to_a
     assert_equal([], @cls[].to_a)
     assert_equal([[1,2]], @cls[ 1=>2 ].to_a)
