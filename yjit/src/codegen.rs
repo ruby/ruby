@@ -300,7 +300,7 @@ impl JITState {
     }
 
     /// Return true if we're compiling a send-like instruction, not an opt_* instruction.
-    pub fn on_send_insn(&self) -> bool {
+    pub fn is_sendish(&self) -> bool {
         match unsafe { rb_iseq_opcode_at_pc(self.iseq, self.pc) } as u32 {
             YARVINSN_send |
             YARVINSN_opt_send_without_block |
@@ -6099,7 +6099,7 @@ fn gen_send_cfunc(
             // We don't push a frame for specialized cfunc codegen, so the generated code must be leaf.
             // However, the interpreter doesn't push a frame on opt_* instruction either, so we allow
             // non-send instructions to break this rule as an exception.
-            if asm.with_leaf_ccall(jit.on_send_insn(), |asm|
+            if asm.with_leaf_ccall(jit.is_sendish(), |asm|
                 perf_call!("gen_send_cfunc: ", known_cfunc_codegen(jit, asm, ocb, ci, cme, block, argc, recv_known_class))
             ) {
                 assert_eq!(expected_stack_after, asm.ctx.get_stack_size() as i32);
