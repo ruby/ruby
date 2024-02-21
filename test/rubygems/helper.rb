@@ -475,6 +475,10 @@ class Gem::TestCase < Test::Unit::TestCase
 
     @back_ui.close
 
+    if Gem.win_platform?
+      @@tempdirs.each {|tempdir| FileUtils.rm_rf tempdir if File.exist?(tempdir) }
+    end
+
     assert_empty @@tempdirs.select {|tempdir| File.exist?(tempdir) }
   end
 
