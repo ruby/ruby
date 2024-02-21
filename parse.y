@@ -881,7 +881,7 @@ parser_token2id(struct parser_params *p, enum yytokentype tok)
     switch ((int) tok) {
 #define TOKEN2ID(tok) case tok: return rb_intern(#tok);
 #define TOKEN2ID2(tok, name) case tok: return rb_intern(name);
-      TOKEN2ID2(' ', "words_sep")
+      TOKEN2ID2(' ', " ")
       TOKEN2ID2('!', "!")
       TOKEN2ID2('%', "%");
       TOKEN2ID2('&', "&");
@@ -2736,7 +2736,7 @@ rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2)
 
 %type <node> singleton strings string string1 xstring regexp
 %type <node> string_contents xstring_contents regexp_contents string_content
-%type <node> words symbols symbol_list qwords qsymbols word_list qword_list qsym_list word
+%type <node> symbol_list word_list qword_list qsym_list word
 %type <node> literal numeric simple_numeric ssym dsym symbol cpath
 %type <node_def_temp> defn_head defs_head k_def
 %type <node_exits> block_open k_while k_until k_for allow_exits
@@ -2875,6 +2875,17 @@ rb_parser_string_hash_cmp(rb_parser_string_t *str1, rb_parser_string_t *str2)
 %right '!' '~' tUPLUS
 
 %token tLAST_TOKEN
+
+/*
+ *	parameterizing rules
+ */
+
+%rule words(begin_token, word_list): begin_token words_sep word_list tSTRING_END
+                                        {
+                                            $$ = make_list($3, &@$);
+                                        /*% ripper: array!($:3) %*/
+                                        }
+                                    ;
 
 %%
 program		:  {
@@ -4331,10 +4342,10 @@ primary		: literal
                 | strings
                 | xstring
                 | regexp
-                | words
-                | qwords
-                | symbols
-                | qsymbols
+                | words(tWORDS_BEG, word_list)
+                | words(tQWORDS_BEG, qword_list)
+                | words(tSYMBOLS_BEG, symbol_list)
+                | words(tQSYMBOLS_BEG, qsym_list)
                 | var_ref
                 | backref
                 | tFID
@@ -5847,10 +5858,10 @@ p_primitive	: literal
                 | strings
                 | xstring
                 | regexp
-                | words
-                | qwords
-                | symbols
-                | qsymbols
+                | words(tWORDS_BEG, word_list)
+                | words(tQWORDS_BEG, qword_list)
+                | words(tSYMBOLS_BEG, symbol_list)
+                | words(tQSYMBOLS_BEG, qsym_list)
                 | keyword_variable
                     {
                         if (!($$ = gettable(p, $1, &@$))) $$ = NEW_ERROR(&@$);
@@ -6033,13 +6044,6 @@ words_sep	: ' ' {}
                 | words_sep ' '
                 ;
 
-words		: tWORDS_BEG words_sep word_list tSTRING_END
-                    {
-                        $$ = make_list($3, &@$);
-                    /*% ripper: array!($:3) %*/
-                    }
-                ;
-
 word_list	: /* none */
                     {
                         $$ = 0;
@@ -6061,13 +6065,6 @@ word		: string_content
                     }
                 ;
 
-symbols 	: tSYMBOLS_BEG words_sep symbol_list tSTRING_END
-                    {
-                        $$ = make_list($3, &@$);
-                    /*% ripper: array!($:3) %*/
-                    }
-                ;
-
 symbol_list	: /* none */
                     {
                         $$ = 0;
@@ -6077,20 +6074,6 @@ symbol_list	: /* none */
                     {
                         $$ = symbol_append(p, $1, evstr2dstr(p, $2));
                     /*% ripper: symbols_add!($:1, $:2) %*/
-                    }
-                ;
-
-qwords		: tQWORDS_BEG words_sep qword_list tSTRING_END
-                    {
-                        $$ = make_list($3, &@$);
-                    /*% ripper: array!($:3) %*/
-                    }
-                ;
-
-qsymbols	: tQSYMBOLS_BEG words_sep qsym_list tSTRING_END
-                    {
-                        $$ = make_list($3, &@$);
-                    /*% ripper: array!($:3) %*/
                     }
                 ;
 
