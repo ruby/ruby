@@ -1594,6 +1594,12 @@ class TestYJIT < Test::Unit::TestCase
     RUBY
   end
 
+  def test_byteslice_sp_invalidation
+    assert_compiles(<<~'RUBY', result: 'ok', no_send_fallbacks: true)
+      "okng".itself.byteslice(0, 2)
+    RUBY
+  end
+
   private
 
   def code_gc_helpers
