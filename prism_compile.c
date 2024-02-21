@@ -4524,6 +4524,7 @@ pm_compile_defined_expr0(rb_iseq_t *iseq, const pm_node_t *node, const pm_node_l
       case PM_PARAMETERS_NODE:
       case PM_KEYWORD_REST_PARAMETER_NODE:
       case PM_NO_KEYWORDS_PARAMETER_NODE:
+      case PM_NO_BLOCK_PARAMETER_NODE:
       case PM_NUMBERED_PARAMETERS_NODE:
       case PM_OPTIONAL_KEYWORD_PARAMETER_NODE:
       case PM_OPTIONAL_PARAMETER_NODE:
@@ -6340,7 +6341,7 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         }
     }
 
-    if (parameters_node && parameters_node->block) {
+    if (parameters_node && parameters_node->block && PM_NODE_TYPE_P(parameters_node->block, PM_BLOCK_PARAMETER_NODE)) {
         const pm_block_parameter_node_t *block_node = (const pm_block_parameter_node_t *) parameters_node->block;
 
         if (PM_NODE_FLAG_P(block_node, PM_PARAMETER_FLAGS_REPEATED_PARAMETER) || !block_node->name) {
@@ -6686,26 +6687,38 @@ pm_compile_scope_node(rb_iseq_t *iseq, pm_scope_node_t *scope_node, const pm_nod
         // def foo(a, (b, *c, d), e = 1, *f, g, (h, *i, j), k:, l: 1, **m, &n)
         //                                                                  ^^
         if (parameters_node->block) {
-            body->param.block_start = local_index;
-            body->param.flags.has_block = true;
-            iseq_set_use_block(iseq);
+            switch (PM_NODE_TYPE(parameters_node->block)) {
+              case PM_BLOCK_PARAMETER_NODE: {
+                body->param.block_start = local_index;
+                body->param.flags.has_block = true;
 
-            pm_constant_id_t name = ((const pm_block_parameter_node_t *) parameters_node->block)->name;
+                iseq_set_use_block(iseq);
 
-            if (name) {
-                if (PM_NODE_FLAG_P(parameters_node->block, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
-                    ID local = pm_constant_id_lookup(scope_node, name);
-                    local_table_for_iseq->ids[local_index] = local;
+                pm_constant_id_t name = ((const pm_block_parameter_node_t *) parameters_node->block)->name;
+
+                if (name) {
+                    if (PM_NODE_FLAG_P(parameters_node->block, PM_PARAMETER_FLAGS_REPEATED_PARAMETER)) {
+                        ID local = pm_constant_id_lookup(scope_node, name);
+                        local_table_for_iseq->ids[local_index] = local;
+                    }
+                    else {
+                        pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                    }
                 }
                 else {
-                    pm_insert_local_index(name, local_index, index_lookup_table, local_table_for_iseq, scope_node);
+                    pm_insert_local_special(idAnd, local_index, index_lookup_table, local_table_for_iseq);
                 }
-            }
-            else {
-                pm_insert_local_special(idAnd, local_index, index_lookup_table, local_table_for_iseq);
-            }
 
-            local_index++;
+                local_index++;
+                break;
+              }
+              case PM_NO_BLOCK_PARAMETER_NODE: {
+                body->param.flags.accepts_no_block = true;
+                break;
+              }
+              default:
+                rb_bug("node type %s not expected as block parameter", pm_node_type_to_str(PM_NODE_TYPE(parameters_node->block)));
+            }
         }
     }
 
@@ -9953,6 +9966,12 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             PUSH_INSN(ret, location, putnil);
         }
 
+        return;
+      }
+      case PM_NO_BLOCK_PARAMETER_NODE: {
+        // def foo(&nil); end
+        //         ^^^^
+        ISEQ_BODY(iseq)->param.flags.accepts_no_block = TRUE;
         return;
       }
       case PM_NO_KEYWORDS_PARAMETER_NODE: {
