@@ -143,6 +143,12 @@ static inline VALUE rb_imemo_tmpbuf_auto_free_pointer_new_from_an_RString(VALUE 
 static inline void MEMO_V1_SET(struct MEMO *m, VALUE v);
 static inline void MEMO_V2_SET(struct MEMO *m, VALUE v);
 
+size_t rb_imemo_memsize(VALUE obj);
+void rb_cc_table_mark(VALUE klass);
+void rb_imemo_mark_and_move(VALUE obj, bool reference_updating);
+void rb_cc_table_free(VALUE klass);
+void rb_imemo_free(VALUE obj);
+
 RUBY_SYMBOL_EXPORT_BEGIN
 #if IMEMO_DEBUG
 VALUE rb_imemo_new_debug(enum imemo_type type, VALUE v0, const char *file, int line);
