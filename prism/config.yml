@@ -1948,6 +1948,12 @@ nodes:
 
           `foo #{bar} baz`
           ^^^^^^^^^^^^^^^^
+  - name: ItParametersNode
+    comment: |
+      Represents an implicit set of parameters through the use of the `it` keyword within a block or lambda.
+
+          -> { it + it }
+          ^^^^^^^^^^^^^^
   - name: KeywordHashNode
     fields:
       - name: flags
