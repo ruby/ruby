@@ -6935,6 +6935,9 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
                 body->param.lead_num = ((pm_numbered_parameters_node_t *) scope_node->parameters)->maximum;
                 break;
               }
+              case PM_IT_PARAMETERS_NODE:
+                body->param.lead_num = 1;
+                break;
               default:
                 rb_bug("Unexpected node type for parameters: %s", pm_node_type_to_str(PM_NODE_TYPE(node)));
             }
@@ -6947,7 +6950,8 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             requireds_list = &parameters_node->requireds;
             keywords_list = &parameters_node->keywords;
             posts_list = &parameters_node->posts;
-        } else if (scope_node->parameters && PM_NODE_TYPE_P(scope_node->parameters, PM_NUMBERED_PARAMETERS_NODE)) {
+        }
+        else if (scope_node->parameters && (PM_NODE_TYPE_P(scope_node->parameters, PM_NUMBERED_PARAMETERS_NODE) || PM_NODE_TYPE_P(scope_node->parameters, PM_IT_PARAMETERS_NODE))) {
             body->param.opt_num = 0;
         }
         else {
@@ -7500,6 +7504,19 @@ pm_compile_node(rb_iseq_t *iseq, const pm_node_t *node, LINK_ANCHOR *const ret, 
             body->param.lead_num = maximum;
             body->param.flags.has_lead = true;
         }
+
+        // Fill in the it variable, if it exists
+        if (scope_node->parameters && PM_NODE_TYPE_P(scope_node->parameters, PM_IT_PARAMETERS_NODE)) {
+            const uint8_t param_name[] = { '0', 'i', 't' };
+            pm_constant_id_t constant_id = pm_constant_pool_find(&parser->constant_pool, param_name, 3);
+            RUBY_ASSERT(constant_id && "parser should have inserted 0it for 'it' local");
+
+            ID local = rb_make_temporary_id(local_index);
+            local_table_for_iseq->ids[local_index] = local;
+            st_insert(index_lookup_table, (st_data_t) constant_id, (st_data_t) local_index);
+            local_index++;
+        }
+
         //********END OF STEP 3**********
 
         //********STEP 4**********
